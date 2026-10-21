@@ -10838,6 +10838,42 @@ html,button,input,select,textarea { font-family: "IRANSans",Tahoma,sans-serif; }
           document.getElementById("mobileUpdate").hidden =
             !registration?.waiting;
         }
+
+        const installNoticeKey="edu-manager:pwa-notice:v1";
+        const isInstalled=()=>matchMedia("(display-mode: standalone)").matches||!!navigator.standalone;
+        function rememberInstallNotice(){try{localStorage.setItem(installNoticeKey,"seen");}catch{}}
+        function closeInstallNotice(){const d=document.getElementById("pwaWelcome");if(d){d.close?.();d.remove();}}
+        function paintInstallNotice(){
+          const button=document.getElementById("pwaWelcomeInstall");
+          if(button)button.textContent=installEvent?"نصب برنامه روی دستگاه":"راهنمای نصب روی دستگاه";
+          const status=document.getElementById("pwaWelcomeStatus");
+          if(status)status.textContent=offlineReady?"✓ فایل‌های برنامه برای اجرای آفلاین ذخیره شدند.":"در حال دریافت فایل‌های اجرای آفلاین؛ فعلاً اینترنت را متصل نگه دارید.";
+        }
+        async function requestInstall(){
+          if(!installEvent){closeInstallNotice();help();return;}
+          const event=installEvent;installEvent=null;
+          try{
+            await event.prompt();
+            const choice=await event.userChoice;
+            if(choice.outcome==="accepted"){rememberInstallNotice();closeInstallNotice();}
+          }catch{closeInstallNotice();help();}
+          paint();paintInstallNotice();
+        }
+        function firstVisitInstall(){
+          if(location.protocol==="file:"||!isSecureContext||isInstalled())return;
+          try{if(localStorage.getItem(installNoticeKey)==="seen")return;}catch{}
+          const d=document.createElement("dialog");d.id="pwaWelcome";
+          d.setAttribute("aria-labelledby","pwaWelcomeTitle");
+          d.style.cssText="box-sizing:border-box;direction:rtl;font-family:IRANSans,Tahoma,sans-serif;width:min(440px,calc(100% - 24px));max-height:calc(100dvh - 32px);overflow:auto;border:0;border-radius:20px;padding:24px;color:#1e293b;background:#fff;box-shadow:0 16px 64px #0004;line-height:1.9";
+          d.innerHTML='<h2 id="pwaWelcomeTitle" style="font-size:1.2rem;margin:0 0 12px">برنامه را روی دستگاهت نصب کن</h2><p>برای دسترسی از صفحه اصلی و استفاده بدون اینترنت، مدیریت کلاس را نصب کن.</p><p id="pwaWelcomeStatus" role="status" aria-live="polite"></p><p style="font-size:.9rem">در آیفون و آیپد: منوی اشتراک‌گذاری (Share) ← افزودن به صفحه اصلی (Add to Home Screen). در اندروید و رایانه از دکمه نصب یا منوی مرورگر استفاده کن.</p><div style="display:flex;flex-wrap:wrap;gap:8px"><button id="pwaWelcomeInstall" type="button" style="flex:1;min-height:44px">نصب برنامه روی دستگاه</button><button id="pwaWelcomeLater" type="button" class="ghost" style="min-height:44px">فعلاً ادامه می‌دهم</button></div>';
+          document.body.append(d);
+          d.querySelector("#pwaWelcomeInstall").onclick=requestInstall;
+          d.querySelector("#pwaWelcomeLater").onclick=()=>{rememberInstallNotice();closeInstallNotice();};
+          d.addEventListener("cancel",()=>{rememberInstallNotice();});
+          if(d.showModal)d.showModal();else d.setAttribute("open","");
+          paintInstallNotice();
+        }
+
         function shell() {
           const bar = document.createElement("aside");
           bar.className = "mobile-bar no-print";
@@ -10845,14 +10881,7 @@ html,button,input,select,textarea { font-family: "IRANSans",Tahoma,sans-serif; }
           bar.innerHTML =
             '<strong>مدیریت کلاس</strong><span id="mobileStatus" role="status" aria-live="polite"></span><button id="mobileInstall" hidden>نصب برنامه</button><button id="mobileUpdate" hidden>نسخه جدید آماده است</button><button id="mobileHelp" class="ghost">نصب و راهنما</button>';
           document.body.prepend(bar);
-          document.getElementById("mobileInstall").onclick = async () => {
-            if (!installEvent) return;
-            const event = installEvent;
-            installEvent = null;
-            await event.prompt();
-            await event.userChoice;
-            paint();
-          };
+          document.getElementById("mobileInstall").onclick = requestInstall;
           document.getElementById("mobileUpdate").onclick = update;
           document.getElementById("mobileHelp").onclick = help;
         }
@@ -10880,6 +10909,7 @@ html,button,input,select,textarea { font-family: "IRANSans",Tahoma,sans-serif; }
           channel.port1.onmessage = (e) => {
             offlineReady = e.data?.ready === true;
             paint();
+            paintInstallNotice();
             channel.port1.close();
           };
           worker.postMessage({ type: "OFFLINE_STATUS" }, [channel.port2]);
@@ -10906,9 +10936,12 @@ html,button,input,select,textarea { font-family: "IRANSans",Tahoma,sans-serif; }
           e.preventDefault();
           installEvent = e;
           paint();
+          paintInstallNotice();
         });
         window.addEventListener("appinstalled", () => {
           installEvent = null;
+          rememberInstallNotice();
+          closeInstallNotice();
           paint();
         });
         window.addEventListener("online", paint);
@@ -10916,6 +10949,7 @@ html,button,input,select,textarea { font-family: "IRANSans",Tahoma,sans-serif; }
         document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&navigator.onLine)registration?.update().catch(()=>{}); });
         window.addEventListener("load", async () => {
           shell();
+          firstVisitInstall();
           if (location.protocol === "file:") {
             text(
               "فایل مستقل آفلاین؛ نصب استاندارد PWA از لینک امن انجام می‌شود.",
