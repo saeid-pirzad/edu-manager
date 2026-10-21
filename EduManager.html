@@ -1783,6 +1783,152 @@ table[data-ui-layout=matrix] thead [data-identity]{z-index:3;background:#eef2fa!
 }
 }
 </style>
+<style id="mobileWidthFix">
+@media screen{
+html{max-inline-size:100%;scroll-padding-bottom:100px}
+body{min-inline-size:0;max-inline-size:100%;padding-inline:env(safe-area-inset-right) env(safe-area-inset-left)}
+#app{inline-size:100%;min-inline-size:0}
+#app>*,#modalBody>*,.topbar,.header-brand,.header-actions,.navigation-menu,.workspace-bar,.card,.row,.form-row,.course-grid,.course-field{min-inline-size:0;max-inline-size:100%}
+.row>*:not(table),.form-row>*:not(table){min-inline-size:0;max-inline-size:100%}
+.responsive-scroll,.table-scroll{inline-size:100%;max-inline-size:100%;min-inline-size:0;contain:inline-size}
+.student-profile-info,.lesson-identity>div,.list-item>div{min-inline-size:0;overflow-wrap:anywhere}
+.view-heading h2,.modal-header h3,.card h3,.course-field label{overflow-wrap:anywhere}
+.cal-popup{width:min(300px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto}
+.modal-dialog{min-inline-size:0;max-inline-size:100%}
+.modal-body{min-inline-size:0;overflow-wrap:anywhere}
+@media(max-width:700px){
+.topbar .header-brand{display:flex!important;flex-wrap:nowrap!important;width:100%;min-width:0}
+.topbar .header-brand h1{min-width:0;flex:1}
+.topbar .header-brand>.header-action{flex:0 0 auto}
+.topbar .header-actions>.header-action,.topbar .header-dropdown>.header-action{white-space:normal;overflow-wrap:anywhere}
+.topbar .header-action>span{overflow-wrap:anywhere}
+.form-row{display:flex;flex-direction:column;align-items:stretch}
+.form-row>label{flex:none;min-width:0!important;width:100%;margin:0}
+.form-row>input:not([type=checkbox]):not([type=radio]),.form-row>select,.form-row>textarea{width:100%!important;min-width:0!important}
+.course-field input:not([type=checkbox]):not([type=radio]),.course-field select,.course-field textarea{width:100%;min-width:0}
+#modalBody>.row{flex-wrap:wrap}
+#modalBody>.row>button{flex:1 1 auto}
+#uiBottomNav{padding-inline:max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-left))}
+}
+@media(max-width:360px){
+#app{padding-inline:10px}
+.student-profile{padding:12px}
+.student-profile-actions{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.student-more{grid-column:1/-1}
+.student-more-menu{width:min(245px,calc(100vw - 64px))}
+.lesson-actions{gap:6px}
+.lesson-actions button{font-size:.7rem;padding-inline:6px}
+}
+}
+</style>
+<style id="mobileExperienceV2">
+.mobile-install-help,.mobile-add-action{display:none}
+@media screen and (max-width:700px),screen and (max-width:1000px) and (pointer:coarse){
+body{background:#f7f8fc}\ninput:not([type=checkbox]):not([type=radio]),select,textarea{font-size:16px;max-width:100%;min-width:0}\n.modal-overlay{align-items:flex-end;padding:12px 0 0}\n.modal-dialog{width:100%;max-height:calc(var(--app-viewport,100dvh) - 12px);border-radius:20px 20px 0 0}\n.topbar .navigation-menu:not([open])>.actions{display:none!important}
+#app{display:flex;flex-direction:column;padding:0 14px calc(88px + env(safe-area-inset-bottom));gap:0}
+#app>*{order:5;width:100%;min-width:0}
+#app>.topbar{order:0}
+#app>.workspace-bar{order:1}
+#app>.breadcrumb,#app>.ui-hero{order:2}
+#app>.view-heading,#app>.ui-stats{order:3}
+#app>.tabs{order:4}
+#app>.student-directory,#app>.class-lessons{order:5}
+#app>.quick-create,#app>.lesson-create{order:7}
+#app>.student-import,#app>.lesson-schedule{order:8}
+.topbar{position:sticky;top:0;z-index:75;display:block!important;padding:9px 0!important;margin:0!important;background:#f7f8fc;border:0}
+.topbar .header-brand{width:calc(100% - 52px)!important;min-height:44px;align-items:center;flex-wrap:nowrap}
+.topbar .header-brand>.header-action{display:none!important}
+.topbar h1{font-size:.98rem!important;gap:9px}
+.topbar h1 small{display:none}
+.brand-mark{width:36px;height:36px;border-radius:11px;box-shadow:none}
+.brand-mark svg{width:21px;height:21px}
+.topbar .navigation-menu{width:0!important;height:0;margin:0;flex:none}
+.topbar .navigation-menu>summary{position:absolute;left:0;top:9px;display:grid;place-items:center;width:42px;min-height:42px;height:42px;padding:0;background:#fff;border:1px solid #e6eaf2;border-radius:12px;font-size:0}
+.topbar .navigation-menu>summary::after{content:"≡";font-size:28px;line-height:1;color:#43516b;font-weight:400}
+.topbar .navigation-menu[open]>summary::after{content:"×";font-size:25px}
+.topbar .navigation-menu[open] .header-actions{position:absolute;inset-inline:0;top:60px;margin:0;padding:12px!important;max-height:calc(var(--app-viewport,100dvh) - 148px);overflow-y:auto;overscroll-behavior:contain;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;background:#fff;border:1px solid #e4e9f2;border-radius:18px;box-shadow:0 18px 48px #22335b26}
+.topbar .header-actions>.header-action:last-child{grid-column:auto;background:#fff;justify-content:flex-start;border:1px solid #e5eaf3}
+.topbar .header-actions>.mobile-install-help{display:flex;font-size:.7rem!important;grid-column:1/-1!important;justify-content:center!important;background:#f4f6fc!important}
+.workspace-bar{display:flex;align-items:center;flex-wrap:wrap;gap:5px!important;padding:4px 0 10px!important;margin:0 0 12px!important;border:0;border-bottom:1px solid #e4e9f2;border-radius:0!important;background:transparent!important;box-shadow:none;min-height:42px}
+.workspace-bar>strong{font-size:.64rem;flex:1 1 120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52%;color:#64748b;font-weight:400}
+.workspace-bar>#saveStatus{font-size:.6rem;flex:none;padding:3px 6px;line-height:1.6}
+#saveStatus[data-state=saved]{font-size:0}
+#saveStatus[data-state=saved]::before{content:"✓ ذخیره شد";font-size:.6rem}
+.workspace-tools:not([open]){margin:0!important;flex:none!important;width:auto}
+.workspace-tools summary{font-size:0;padding:4px 7px;min-height:36px;display:flex;align-items:center;color:#64748b;list-style:none}
+.workspace-tools summary::-webkit-details-marker{display:none}
+.workspace-tools summary::after{content:"دوره و پشتیبان ⌄";font-size:.61rem}
+.workspace-tools[open]{width:100%;flex-basis:100%}
+.workspace-tools .tool-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.workspace-tools .tool-actions small{grid-column:1/-1;font-size:.65rem}
+.mobile-bar[data-offline-ready=true]:not(:has(#mobileUpdate:not([hidden]))):not([data-update-error=true]){display:none}
+.breadcrumb{font-size:.63rem;padding:0;margin:0 0 6px;line-height:1.8}
+.view-heading{margin:0 0 14px}
+.view-heading h2{font-size:1.12rem;line-height:1.8;letter-spacing:-.3px}
+.view-heading p{font-size:.68rem;margin-top:3px}
+.tabs{margin:0 0 14px;padding:4px;border-radius:13px}
+.tabs button{font-size:.73rem;min-height:40px;padding:8px 10px}
+.ui-hero{background:none;color:#18233d;box-shadow:none;padding:8px 0 16px;margin:0;border-radius:0}
+.ui-hero .eyebrow,.ui-hero>p:last-child{display:none}
+.ui-hero h2{color:#18233d;font-size:1.22rem;line-height:1.8;margin:0}
+.ui-stats{margin-bottom:18px;gap:8px}
+.ui-stat{border:1px solid #e6eaf2;padding:10px 12px}
+.ui-stat strong{font-size:1.22rem}
+.card{border:1px solid #e6eaf2;border-radius:18px;box-shadow:none;margin-bottom:14px;padding:16px}
+.class-lessons,.student-directory{padding:0}
+.lesson-list-heading,.roster-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px}
+.lesson-list-heading h3,.roster-heading h3{font-size:.93rem}
+.lesson-list-heading p,.roster-heading p{display:none}
+.mobile-add-action{display:block;flex-shrink:0;background:#4f46e5;color:white;font-size:.7rem;min-height:40px;padding:8px 12px;border-radius:11px}
+.roster-toolbar{grid-template-columns:minmax(0,1fr) 110px;padding:0 14px;gap:8px}
+.roster-toolbar label>span{font-size:.63rem}
+.roster-toolbar input,.roster-toolbar select{padding:9px 8px;min-height:44px;font-size:.8rem!important}
+.roster-results{font-size:.63rem;padding-inline:14px;margin:9px 0}
+.student-roster{padding:0 12px 12px;gap:10px}
+.student-profile{padding:13px;border-radius:14px}
+.student-profile-info h4{font-size:.84rem}
+.student-profile-actions{padding-top:10px;margin-top:10px;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) auto}
+.student-more{grid-column:auto}
+.student-profile-actions button,.student-more summary{min-height:44px;font-size:.72rem;padding:8px}
+.student-avatar{width:38px;height:38px;border-radius:12px;font-size:.75rem}
+.lesson-items{padding-inline:14px}
+.lesson-item{gap:11px;padding:16px 0}
+.lesson-identity h4{font-size:.89rem}
+.lesson-policy{font-size:.68rem}
+.lesson-schedule{flex-direction:row;align-items:center;gap:10px;padding:14px}
+.lesson-schedule p{display:none}
+.lesson-schedule strong{font-size:.75rem}
+.lesson-schedule button{width:auto;font-size:.65rem;min-height:38px;padding-inline:9px}
+.mobile-grade-panel{padding:14px}
+.mobile-grade-panel>h3{display:none}
+.grade-help{margin:0 0 12px;border:1px solid #e5eaf3;border-radius:10px;background:#f8faff}
+.grade-help summary{cursor:pointer;min-height:40px;padding:9px 12px;color:#52617b;font-size:.7rem}
+.grade-help p{font-size:.72rem;line-height:2;padding:0 12px 12px;margin:0}
+table[data-ui-layout=cards] tbody tr{padding:13px;border-radius:14px;gap:10px}
+table[data-ui-layout=cards] tbody td[data-identity]{font-size:.87rem;padding-bottom:8px!important}
+table[data-ui-layout=cards] td input:not([type=checkbox]):not([type=radio]){min-height:48px;background:#f8faff;font-size:1.05rem!important;font-weight:500}
+#uiBottomNav{display:grid;z-index:80;padding-top:6px;box-shadow:0 -4px 24px #24315b06;background:#fff}
+#uiBottomNav button{min-height:50px;font-size:.62rem}
+#uiBottomNav svg{width:21px;height:21px}
+details.quick-create,details.lesson-create,details.student-import{scroll-margin-top:76px}
+}
+@media screen and (max-width:340px){
+.workspace-bar>strong{max-width:43%;font-size:.59rem;flex-basis:95px}
+.workspace-tools summary::after{content:"ابزارها ⌄"}
+.roster-toolbar{grid-template-columns:minmax(0,1fr)}
+.student-profile-actions{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.student-more{grid-column:1/-1}
+}
+</style>
+<style id="mobileHomeNavigation">
+@media screen and (max-width:700px),screen and (max-width:1000px) and (pointer:coarse){
+.topbar .header-brand{width:calc(100% - 104px)!important}
+.topbar .header-brand>.header-home{display:inline-flex!important;position:absolute;left:50px;top:9px;width:44px;height:44px;min-height:44px;padding:0!important;justify-content:center;border:1px solid #e6eaf2;border-radius:12px;background:#fff;color:#52617b;box-shadow:none}
+.topbar .header-brand>.header-home>span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.topbar .header-brand>.header-home>svg{width:21px;height:21px}
+.topbar .header-brand>.header-home.is-active{color:#4f46e5;background:#eef2ff;border-color:#dce3ff}
+}
+</style>
 </head>
   <body>
     <div class="cal-popup" id="calPopup"></div>
@@ -2545,7 +2691,7 @@ table[data-ui-layout=matrix] thead [data-identity]{z-index:3;background:#eef2fa!
           calendar:"M4 5h16v16H4zM8 3v4M16 3v4M4 10h16M8 14h2M14 14h2",
           settings:"M9 4h6l1 3 3 1 1 6-3 2-1 3H9l-1-3-3-2 1-6 3-1 1-3ZM15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0",
           data:"M4 5h16v15H4zM4 9h16M8 13h8M8 16h5",
-          home:"M3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9",
+          home:"M3 10 12 3l9 7M5 9v12h5v-7h4v7h5V9",
           book:"M12 5C9 3 6 3 3 4v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1Zm0 0v15",
           copy:"M8 3h12v14H8zM4 7v14h12",
           upload:"M12 16V3M7 8l5-5 5 5M4 15v6h16v-6",
@@ -2555,8 +2701,8 @@ table[data-ui-layout=matrix] thead [data-identity]{z-index:3;background:#eef2fa!
         const caret='<svg class="header-caret" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m6 8 4 4 4-4"/></svg>';
         const sub=(label,key,action,danger=false)=>'<button type="button" '+(danger?'class="danger-item" ':'')+'onclick="'+action+'">'+icon(icons[key])+'<span>'+label+'</span></button>';
         let h='<div class="topbar"><div class="header-brand"><h1>مدیریت کلاس</h1>';
-        if(state.view!=="schools")h+=btn("خانه","home","goSchools()",false,'class-placeholder=""');
-        h+='</div><div class="actions header-actions"><div class="header-dropdown">'+btn("مدیریت کلاس","school","toggleClassMenu(event)",["schools","school","class","lesson"].includes(state.view),'id="classMenuButton" aria-controls="classMenu" aria-expanded="false"').replace('</button>',caret+'</button>')+'<div class="data-menu" id="classMenu" aria-label="مدیریت کلاس">'+sub("مدارس","school","closeClassMenu();goSchools()")+sub("کلاس‌ها","school","closeClassMenu();goCurrentClass()")+sub("دروس","book","closeClassMenu();goCurrentLesson()")+'</div></div>';
+        h+=btn("خانه","home","goSchools()",state.view==="schools",'aria-label="خانه"').replace('class="header-action','class="header-home header-action');
+        h+='</div><div class="actions header-actions"><div class="header-dropdown">'+btn("مدیریت کلاس","school","toggleClassMenu(event)",["school","class","lesson"].includes(state.view),'id="classMenuButton" aria-controls="classMenu" aria-expanded="false"').replace('</button>',caret+'</button>')+'<div class="data-menu" id="classMenu" aria-label="مدیریت کلاس">'+sub("مدارس","school","closeClassMenu();goSchools()")+sub("کلاس‌ها","school","closeClassMenu();goCurrentClass()")+sub("دروس","book","closeClassMenu();goCurrentLesson()")+'</div></div>';
         h+=btn("گزارش‌ها","report","goReports()",state.view==="reports")+btn("برنامه هفتگی","calendar","goMaster()",state.view==="master");
         h+='<div class="header-dropdown">'+btn("داده‌ها","data","toggleDataMenu(event)",false,'id="dataMenuButton" aria-controls="dataMenu" aria-expanded="false"').replace('</button>',caret+'</button>')+'<div class="data-menu" id="dataMenu" aria-label="مدیریت داده‌ها">'+sub("پشتیبان‌گیری","copy","closeDataMenu();exportBackup()")+sub("بازیابی از فایل","upload","closeDataMenu();document.getElementById(\'importFile\').click()")+sub("حذف کامل داده‌ها","trash","closeDataMenu();wipeAllData()",true)+'</div></div>';
         h+=btn("تنظیمات","settings","openSettingsModal()")+'</div></div>';
@@ -4109,7 +4255,7 @@ table[data-ui-layout=matrix] thead [data-identity]{z-index:3;background:#eef2fa!
         let h = headerHtml();
         const classes=db.schools.flatMap(s=>s.classes||[]);
         const counts=[db.schools.length,classes.length,classes.reduce((n,c)=>n+(c.students?.length||0),0)];
-        h += '<section class="ui-hero"><p class="eyebrow">مدیریت کلاس، همراه هر روز شما</p><h2>کلاس‌هایت را با خیال راحت مدیریت کن</h2><p>مدرسه‌ات را انتخاب کن؛ نمره‌ها، حضور‌وغیاب و گزارش‌ها یک‌جا هستند.</p></section><section class="ui-stats" aria-label="نمای کلی">'+counts.map((n,i)=>'<div class="ui-stat"><strong>'+n.toLocaleString("fa-IR")+'</strong><span>'+["مدرسه","کلاس","هنرجو"][i]+'</span></div>').join("")+'</section>';
+        h += '<section class="ui-hero"><p class="eyebrow">مدیریت کلاس، همراه هر روز شما</p><h2>مدرسه‌ها و کلاس‌های من</h2><p>مدرسه‌ات را انتخاب کن؛ نمره‌ها، حضور‌وغیاب و گزارش‌ها یک‌جا هستند.</p></section><section class="ui-stats" aria-label="نمای کلی">'+counts.map((n,i)=>'<div class="ui-stat"><strong>'+n.toLocaleString("fa-IR")+'</strong><span>'+["مدرسه","کلاس","هنرجو"][i]+'</span></div>').join("")+'</section>';
 
         h += `<div class="card"><h3>افزودن مدرسه</h3>
     <form onsubmit="addSchool(event)" class="row">
@@ -11177,7 +11323,46 @@ table[data-ui-layout=matrix] thead [data-identity]{z-index:3;background:#eef2fa!
           }
         }
 
+
+        function mobileExperience(){
+          const app=document.getElementById("app");
+          if(!app)return;
+          const tools=app.querySelector(".workspace-tools"),bar=app.querySelector(".workspace-bar");
+          if(tools&&bar){
+            for(const button of [...bar.children].filter(x=>x.tagName==="BUTTON"))tools.querySelector(".tool-actions")?.prepend(button);
+            const strong=bar.querySelector(":scope > strong");
+            if(strong&&!strong.title)strong.title=strong.textContent;
+          }
+          const nav=app.querySelector(".navigation-menu");
+          if(nav){
+            const summary=nav.querySelector(":scope > summary");
+            summary?.setAttribute("aria-label","ابزارها و تنظیمات برنامه");
+            if(!nav.querySelector(".mobile-install-help")){
+              const button=document.createElement("button");button.type="button";button.className="mobile-install-help header-action";button.textContent="نصب و راهنمای آفلاین";button.onclick=()=>window.EduPWA?.help();nav.querySelector(".actions")?.append(button);
+            }
+          }
+          const pairs=[[".student-directory",".student-add","افزودن هنرجو"],[".class-lessons",".lesson-create","افزودن درس"]];
+          for(const [sectionSelector,formSelector,label] of pairs){
+            const section=app.querySelector(sectionSelector),form=app.querySelector(formSelector);
+            if(!section||!form||section.querySelector(".mobile-add-action"))continue;
+            const heading=section.querySelector("header");
+            if(heading){const button=document.createElement("button");button.type="button";button.className="mobile-add-action";button.textContent="+ افزودن";button.setAttribute("aria-label",label);button.onclick=()=>{form.open=true;form.scrollIntoView({block:"start",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});form.querySelector("input")?.focus({preventScroll:true});};heading.append(button);}
+          }
+          const gradeArea=app.querySelector("#lessonGradesArea");
+          if(gradeArea){
+            for(const card of gradeArea.querySelectorAll(".card")){
+              if(!card.classList.contains("mobile-grade-panel"))card.classList.add("mobile-grade-panel");
+              const intro=[...card.children].find(x=>x.tagName==="P");
+              if(intro&&!card.querySelector(".grade-help")){
+                const details=document.createElement("details");details.className="grade-help";details.open=innerWidth>700&&!matchMedia("(max-width:1000px) and (pointer:coarse)").matches;
+                const summary=document.createElement("summary");summary.textContent="قواعد محاسبه و راهنما";details.append(summary);intro.before(details);details.append(intro);
+              }
+            }
+          }
+        }
+
         function enhance() {
+          mobileExperience();
           polishExperience();
           updateDesign();
           pending = false;
@@ -11249,14 +11434,15 @@ table[data-ui-layout=matrix] thead [data-identity]{z-index:3;background:#eef2fa!
             backup.textContent = "ذخیره پشتیبان";
             backup.onclick = () =>
               exportBackup().catch((e) => alert(e.message));
-            bar.append(backup, tools);
+            box.prepend(backup);
+            bar.append(tools);
           }
           const topbar = document.querySelector(".topbar"),
             actions = topbar?.querySelector(".actions");
           if (actions && !topbar.querySelector(".navigation-menu")) {
             const menu = document.createElement("details");
             menu.className = "navigation-menu no-print";
-            menu.open = innerWidth > 700;
+            menu.open = innerWidth > 700 && !matchMedia("(max-width:1000px) and (pointer:coarse)").matches;
             menu.innerHTML = "<summary>فهرست برنامه</summary>";
             actions.before(menu);
             menu.append(actions);
@@ -11281,7 +11467,7 @@ table[data-ui-layout=matrix] thead [data-identity]{z-index:3;background:#eef2fa!
             "--app-viewport",
             (window.visualViewport?.height || innerHeight) + "px",
           );
-          const wide = innerWidth > 700;
+          const wide = innerWidth > 700 && !matchMedia("(max-width:1000px) and (pointer:coarse)").matches;
           if (wide !== wideLayout) {
             wideLayout = wide;
             for (const menu of document.querySelectorAll(".navigation-menu"))
@@ -11332,6 +11518,8 @@ table[data-ui-layout=matrix] thead [data-identity]{z-index:3;background:#eef2fa!
               : "آفلاین — اطلاعات روی دستگاه ذخیره می‌شود"
             : "در حال آماده‌سازی اجرای آفلاین…";
           text(updateMessage || status);
+          document.getElementById("mobileBar").dataset.offlineReady=String(offlineReady);
+          document.getElementById("mobileBar").dataset.updateError=String(!!updateMessage);
           document.getElementById("mobileInstall").hidden =
             !installEvent ||
             matchMedia("(display-mode: standalone)").matches ||
