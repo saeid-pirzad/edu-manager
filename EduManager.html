@@ -1822,7 +1822,7 @@ body{min-inline-size:0;max-inline-size:100%;padding-inline:env(safe-area-inset-r
 }
 </style>
 <style id="mobileExperienceV2">
-.mobile-install-help,.mobile-add-action{display:none}
+.mobile-add-action{display:none}
 @media screen and (max-width:700px),screen and (max-width:1000px) and (pointer:coarse){
 body{background:#f7f8fc}\ninput:not([type=checkbox]):not([type=radio]),select,textarea{font-size:16px;max-width:100%;min-width:0}\n.modal-overlay{align-items:flex-end;padding:12px 0 0}\n.modal-dialog{width:100%;max-height:calc(var(--app-viewport,100dvh) - 12px);border-radius:20px 20px 0 0}\n.topbar .navigation-menu:not([open])>.actions{display:none!important}
 #app{display:flex;flex-direction:column;padding:0 14px calc(88px + env(safe-area-inset-bottom));gap:0}
@@ -1848,7 +1848,6 @@ body{background:#f7f8fc}\ninput:not([type=checkbox]):not([type=radio]),select,te
 .topbar .navigation-menu[open]>summary::after{content:"×";font-size:25px}
 .topbar .navigation-menu[open] .header-actions{position:absolute;inset-inline:0;top:60px;margin:0;padding:12px!important;max-height:calc(var(--app-viewport,100dvh) - 148px);overflow-y:auto;overscroll-behavior:contain;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;background:#fff;border:1px solid #e4e9f2;border-radius:18px;box-shadow:0 18px 48px #22335b26}
 .topbar .header-actions>.header-action:last-child{grid-column:auto;background:#fff;justify-content:flex-start;border:1px solid #e5eaf3}
-.topbar .header-actions>.mobile-install-help{display:flex;font-size:.7rem!important;grid-column:1/-1!important;justify-content:center!important;background:#f4f6fc!important}
 .workspace-bar{display:flex;align-items:center;flex-wrap:wrap;gap:5px!important;padding:4px 0 10px!important;margin:0 0 12px!important;border:0;border-bottom:1px solid #e4e9f2;border-radius:0!important;background:transparent!important;box-shadow:none;min-height:42px}
 .workspace-bar>strong{font-size:.64rem;flex:1 1 120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52%;color:#64748b;font-weight:400}
 .workspace-bar>#saveStatus{font-size:.6rem;flex:none;padding:3px 6px;line-height:1.6}
@@ -1861,7 +1860,6 @@ body{background:#f7f8fc}\ninput:not([type=checkbox]):not([type=radio]),select,te
 .workspace-tools[open]{width:100%;flex-basis:100%}
 .workspace-tools .tool-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
 .workspace-tools .tool-actions small{grid-column:1/-1;font-size:.65rem}
-.mobile-bar[data-offline-ready=true]:not(:has(#mobileUpdate:not([hidden]))):not([data-update-error=true]){display:none}
 .breadcrumb{font-size:.63rem;padding:0;margin:0 0 6px;line-height:1.8}
 .view-heading{margin:0 0 14px}
 .view-heading h2{font-size:1.12rem;line-height:1.8;letter-spacing:-.3px}
@@ -1927,6 +1925,44 @@ details.quick-create,details.lesson-create,details.student-import{scroll-margin-
 .topbar .header-brand>.header-home>span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .topbar .header-brand>.header-home>svg{width:21px;height:21px}
 .topbar .header-brand>.header-home.is-active{color:#4f46e5;background:#eef2ff;border-color:#dce3ff}
+}
+</style>
+<style id="dropdownLayoutFix">
+@media screen and (max-width:700px),screen and (max-width:1000px) and (pointer:coarse){
+.topbar .navigation-menu[open] .header-actions{display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:10px!important;max-height:calc(var(--app-viewport,100dvh) - 138px);overflow-x:hidden}
+.topbar .header-actions>.header-dropdown,.topbar .header-actions>.header-dropdown:has(.data-menu.open){display:block;width:100%;grid-column:auto;flex:none}
+.topbar .header-actions>.header-action,.topbar .header-dropdown>.header-action{width:100%;min-height:46px;justify-content:flex-start;padding:11px 12px;font-size:.8rem;white-space:normal}
+.topbar .header-actions>.header-action:last-child{width:100%;grid-column:auto;justify-content:flex-start;background:#fff;border:1px solid #e5eaf3}
+.topbar .header-dropdown .data-menu{position:static!important;inset:auto!important;transform:none!important;width:100%;min-width:0;max-width:100%;margin:6px 0 0;padding:5px 7px;background:#f8faff;border:1px solid #e3e8f4;border-radius:12px;box-shadow:none}
+.topbar .header-dropdown .data-menu button{width:100%;min-height:46px;padding:10px 12px;font-size:.76rem;white-space:normal}
+.topbar .header-dropdown .data-menu button span{min-width:0;overflow-wrap:anywhere}
+.topbar .header-dropdown .header-action[aria-expanded=true]{box-shadow:none;background:#eef2ff;color:#4338ca;border-color:#dce3ff}
+.topbar .header-dropdown .header-action[aria-expanded=true] .header-caret{color:#6366f1}
+}
+</style>
+<style id="headerHomeConsistency">
+@media screen{
+.topbar .header-brand{display:flex;align-items:center;gap:12px;min-width:0}
+.topbar .header-brand h1{min-width:0;margin:0}
+.topbar .header-brand>.header-home{display:inline-flex!important;align-items:center;justify-content:center;flex:0 0 44px;width:44px;height:44px;min-height:44px;padding:0!important;border:1px solid #e6eaf2;border-radius:12px;background:#fff;color:#52617b}
+.topbar .header-brand>.header-home>svg{width:21px;height:21px}
+.topbar .header-brand>.header-home>span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.topbar .header-brand>.header-home.is-active{background:#eef2ff;color:#4f46e5;border-color:#dce3ff}
+#uiBottomNav{direction:rtl}
+.mobile-bar #mobileHelp{display:inline-flex;align-items:center;justify-content:center;min-height:36px}
+@media(min-width:701px) and (max-width:1000px) and (pointer:fine){
+.topbar .header-brand{width:100%;justify-content:space-between}
+.topbar .header-brand h1{flex:1}
+.topbar .header-brand>.header-home{position:static;margin:0}
+}
+@media(min-width:1001px){
+.topbar .header-brand{width:auto}
+.topbar .header-brand>.header-home{position:static;margin:0}
+}
+@media(max-width:700px),(max-width:1000px) and (pointer:coarse){
+.topbar .header-brand{width:calc(100% - 104px)!important}
+.topbar .header-brand>.header-home{position:absolute;left:50px;top:9px;right:auto}
+}
 }
 </style>
 </head>
@@ -2717,9 +2753,11 @@ details.quick-create,details.lesson-create,details.student-import{scroll-margin-
       function closeClassMenu(){setHeaderMenu("classMenu",false);}
       function toggleDataMenu(e){e.stopPropagation();const open=!document.getElementById("dataMenu")?.classList.contains("open");closeClassMenu();setHeaderMenu("dataMenu",open);}
       function closeDataMenu(){setHeaderMenu("dataMenu",false);}
-      document.addEventListener("click",()=>{closeClassMenu();closeDataMenu();});
+      document.addEventListener("click",e=>{closeClassMenu();closeDataMenu();const nav=document.querySelector(".navigation-menu");if(nav&&!e.target.closest(".navigation-menu")&&matchMedia("(max-width:700px), (max-width:1000px) and (pointer:coarse)").matches)nav.open=false;});
       document.addEventListener("keydown",e=>{
         if(e.key!=="Escape")return;
+        const nav=document.querySelector(".navigation-menu");
+        if(nav?.open&&!document.querySelector(".header-dropdown .data-menu.open")&&matchMedia("(max-width:700px), (max-width:1000px) and (pointer:coarse)").matches){nav.open=false;nav.querySelector("summary")?.focus();e.preventDefault();return;}
         const open=document.querySelector(".header-dropdown .data-menu.open");
         if(open){const button=document.getElementById(open.id+"Button");closeClassMenu();closeDataMenu();button?.focus();e.preventDefault();}
       });
@@ -11337,9 +11375,7 @@ details.quick-create,details.lesson-create,details.student-import{scroll-margin-
           if(nav){
             const summary=nav.querySelector(":scope > summary");
             summary?.setAttribute("aria-label","ابزارها و تنظیمات برنامه");
-            if(!nav.querySelector(".mobile-install-help")){
-              const button=document.createElement("button");button.type="button";button.className="mobile-install-help header-action";button.textContent="نصب و راهنمای آفلاین";button.onclick=()=>window.EduPWA?.help();nav.querySelector(".actions")?.append(button);
-            }
+
           }
           const pairs=[[".student-directory",".student-add","افزودن هنرجو"],[".class-lessons",".lesson-create","افزودن درس"]];
           for(const [sectionSelector,formSelector,label] of pairs){
@@ -11446,6 +11482,8 @@ details.quick-create,details.lesson-create,details.student-import{scroll-margin-
             menu.innerHTML = "<summary>فهرست برنامه</summary>";
             actions.before(menu);
             menu.append(actions);
+            menu.addEventListener("toggle",()=>{if(!menu.open){closeClassMenu();closeDataMenu();}});
+            actions.addEventListener("click",e=>{const button=e.target.closest("button");if(button&&!button.hasAttribute("aria-controls")&&matchMedia("(max-width:700px), (max-width:1000px) and (pointer:coarse)").matches)menu.open=false;});
             const settings = actions.querySelector(
               'button[onclick="openSettingsModal()"]',
             );
