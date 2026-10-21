@@ -2195,6 +2195,27 @@ details.quick-create,details.lesson-create,details.student-import{scroll-margin-
 @media(max-width:340px){.dashboard-entity-actions{grid-template-columns:1fr 1fr}.dashboard-entity-more{grid-column:1/-1}.report-filter-grid{grid-template-columns:minmax(0,1fr)}}
 }
 </style>
+<style id="dashboardMetricsDesign">
+@media screen{
+.dashboard-metrics{gap:14px}
+.dashboard-metrics .ui-stat{--metric-ink:#4f46e5;--metric-tint:#eef2ff;--metric-border:#e0e7ff;display:grid;grid-template-columns:38px minmax(0,1fr);grid-template-areas:"icon value" "label label";align-items:center;gap:12px 10px;border:1px solid var(--metric-border);border-radius:18px;padding:18px;background:linear-gradient(135deg,#fff 40%,var(--metric-tint));box-shadow:0 4px 14px #26366a04;min-width:0}
+.dashboard-metrics .metric-class{--metric-ink:#0f766e;--metric-tint:#e8f6f1;--metric-border:#d6eae2}
+.dashboard-metrics .metric-student{--metric-ink:#a16207;--metric-tint:#fff7e6;--metric-border:#f2e5c8}
+.dashboard-metrics .metric-icon{grid-area:icon;display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:var(--metric-tint);color:var(--metric-ink)}
+.metric-icon svg{display:block;width:22px;height:22px}
+.dashboard-metrics .ui-stat strong{grid-area:value;justify-self:end;font-size:1.85rem;line-height:1.3;font-weight:700;color:var(--metric-ink);font-variant-numeric:tabular-nums;max-width:100%;overflow-wrap:anywhere}
+.dashboard-metrics .metric-label{grid-area:label;color:#52617b;font-size:.8rem;font-weight:500;line-height:1.6}
+@media(max-width:700px),(max-width:1000px) and (pointer:coarse){
+.dashboard-metrics{gap:9px;margin-bottom:18px}
+.dashboard-metrics .ui-stat{grid-template-columns:30px minmax(0,1fr);gap:12px 6px;border-radius:16px;padding:13px 11px;min-height:104px}
+.dashboard-metrics .metric-icon{width:30px;height:30px;border-radius:10px}
+.dashboard-metrics .metric-icon svg{width:19px;height:19px}
+.dashboard-metrics .ui-stat strong{font-size:clamp(1.25rem,4.8vw,1.7rem)}
+.dashboard-metrics .metric-label{font-size:.73rem}
+}
+@media(max-width:340px){.dashboard-metrics{gap:7px}.dashboard-metrics .ui-stat{grid-template-columns:26px minmax(0,1fr);padding:12px 8px;gap:10px 4px}.dashboard-metrics .metric-icon{width:26px;height:28px;border-radius:8px}.dashboard-metrics .metric-icon svg{width:17px;height:17px}.dashboard-metrics .ui-stat strong{font-size:1.2rem}}
+}
+</style>
 </head>
   <body>
     <div class="cal-popup" id="calPopup"></div>
@@ -4530,10 +4551,18 @@ details.quick-create,details.lesson-create,details.student-import{scroll-margin-
         let count=0;for(const item of root.querySelectorAll(".dashboard-entity")){item.hidden=!item.dataset.name.replace(/ي/g,"ی").replace(/ك/g,"ک").includes(q);if(!item.hidden)count++;}
         const message=root.querySelector(".dashboard-search-result");message.hidden=!q;message.textContent=count?count.toLocaleString("fa-IR")+" مورد پیدا شد":"موردی با این نام پیدا نشد.";
       }
+
       function dashboardStats(classes,schoolCount){
         const values=[schoolCount,classes.length,classes.reduce((n,c)=>n+c.students.length,0)];
-        return '<section class="ui-stats" aria-label="نمای کلی">'+values.map((n,i)=>'<div class="ui-stat"><strong>'+n.toLocaleString("fa-IR")+'</strong><span>'+["مدرسه","کلاس","هنرجو"][i]+'</span></div>').join("")+'</section>';
+        const labels=["مدرسه","کلاس","هنرجو"];
+        const icons=[
+          "M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M8 9h1M15 9h1M8 12h1M15 12h1",
+          "M3 4h18v12H3zM8 21h8M12 16v5M7 8h10M7 12h5",
+          "M15 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0M5 21v-3a7 7 0 0 1 14 0v3M18 4a3 3 0 0 1 0 6M21 20v-3a5 5 0 0 0-2-4"
+        ];
+        return '<section class="ui-stats dashboard-metrics" aria-label="نمای کلی">'+values.map((n,i)=>'<div class="ui-stat metric-'+["school","class","student"][i]+'"><span class="metric-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="'+icons[i]+'"/></svg></span><strong>'+n.toLocaleString("fa-IR")+'</strong><span class="metric-label">'+labels[i]+'</span></div>').join("")+'</section>';
       }
+
       function dashboardDirectory(items,kind,schoolId=""){
         const isSchool=kind==="schools",name=isSchool?"مدرسه‌ها":"کلاس‌ها";
         let h='<section class="card dashboard-directory"><header class="dashboard-section-heading"><div><h3>'+name+' <span class="lesson-count">'+items.length.toLocaleString("fa-IR")+'</span></h3><p>مدیریت اطلاعات و دسترسی مستقیم به گزارش‌ها</p></div></header>';
