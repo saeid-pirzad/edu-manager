@@ -1687,6 +1687,54 @@ table[data-ui-layout=matrix] thead [data-identity]{z-index:3;background:#eef2fa!
 }
 }
 </style>
+<style id="studentDirectoryDesign">
+@media screen{
+.student-add-form{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+.student-add-form label{display:flex;flex-direction:column;gap:7px;font-size:.78rem;min-width:0}
+.student-add-form label .muted{display:contents}
+.student-add-form input{width:100%;min-width:0}
+.student-import summary{font-size:.82rem;cursor:pointer;min-height:36px;color:#4338ca}
+.student-import p{font-size:.75rem;line-height:1.9;color:#64748b}
+.student-import .row{gap:8px}
+.student-import button{font-size:.76rem}
+.student-directory{padding:0;overflow:visible}
+.roster-heading{padding:20px 18px 14px}
+.roster-heading h3{display:flex;align-items:center;gap:8px;margin:0!important}
+.roster-heading p{font-size:.74rem;color:#64748b;margin:5px 0 0}
+.roster-toolbar{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;padding:0 18px}
+.roster-toolbar[hidden]{display:none}
+.roster-toolbar label{display:flex;flex-direction:column;gap:6px;font-size:.7rem;color:#64748b;min-width:0}
+.roster-toolbar input,.roster-toolbar select{width:100%;min-width:0}
+.roster-results{padding:0 18px;margin:12px 0;font-size:.69rem;color:#64748b}
+.student-roster{padding:0 16px 16px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+.student-profile{border:1px solid #e5eaf3;border-radius:16px;background:#fff;min-width:0;padding:16px}
+.student-profile[hidden],.roster-no-results[hidden]{display:none!important}
+.student-profile-main{display:flex;align-items:center;gap:10px;min-width:0}
+.student-avatar{width:44px;height:44px;flex-shrink:0;display:grid;place-items:center;background:#eef2ff;color:#4f46e5;border-radius:14px;font-size:.85rem;font-weight:500}
+.student-profile-info{min-width:0;flex:1}
+.student-profile-info h4{font-size:.87rem;margin:0 0 4px;overflow-wrap:anywhere;line-height:1.9}
+.student-profile-info p{font-size:.68rem;color:#64748b;margin:0;overflow-wrap:anywhere}
+.student-code-missing{color:#8a6418}
+.student-row-number{align-self:flex-start;font-size:.66rem;color:#64748b;background:#f6f8fc;border-radius:7px;padding:2px 7px}
+.student-profile-actions{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) auto;gap:6px;margin-top:14px;padding-top:12px;border-top:1px solid #edf1f7}
+.student-profile-actions button,.student-more summary{font-size:.68rem;min-height:42px;padding:8px 9px;border-radius:10px;white-space:normal}
+.student-report{background:#eef2ff;color:#4338ca}
+.student-more{position:relative}
+.student-more summary{cursor:pointer;list-style:none;border:1px solid #e5eaf3;color:#64748b;display:flex;align-items:center;justify-content:center}
+.student-more summary::-webkit-details-marker{display:none}
+.student-more[open] summary{background:#f3f5fc;color:#4338ca}
+.student-more-menu{position:absolute;top:calc(100% + 6px);inset-inline-end:0;z-index:35;display:grid;gap:6px;width:min(245px,75vw);padding:8px;border:1px solid #e5eaf3;background:#fff;border-radius:14px;box-shadow:0 12px 36px #18233d20}
+.student-more-menu button{text-align:start}
+.roster-no-results{margin:0 16px 16px}
+@media(min-width:701px){
+.student-add-form{grid-template-columns:1.5fr 1fr auto;align-items:end}
+.roster-toolbar{grid-template-columns:minmax(0,1fr) 180px}
+.student-roster{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(min-width:1100px){.student-roster{grid-template-columns:repeat(3,minmax(0,1fr))}}
+}
+@media print{.student-add,.student-import,.roster-toolbar,.roster-results,.student-profile-actions,.roster-no-results{display:none!important}.student-profile{break-inside:avoid;border-bottom:1px solid #ccc;padding:10px}.student-avatar,.student-row-number{display:none}}
+</style>
 </head>
   <body>
     <div class="cal-popup" id="calPopup"></div>
@@ -4107,37 +4155,35 @@ table[data-ui-layout=matrix] thead [data-identity]{z-index:3;background:#eef2fa!
         return h+'</div></section>';
       }
 
-      function renderStudentsTab(c) {
-        let h = `<div class="card"><h3>افزودن دانش‌آموز (تکی)</h3>
-    <form onsubmit="addStudent(event)" class="row">
-      <input name="name" placeholder="نام و نام خانوادگی" required style="flex:2"><input name="code" placeholder="کد دانش‌آموز (اختیاری)" style="flex:1">
-      <button type="submit">➕ افزودن</button>
-    </form>
-  </div>
-  <div class="card" style="background:#f0fdf4;border:1px solid #bbf7d0">
-    <h3 style="color:#166534">📥 افزودن گروهی با فایل CSV</h3>
-    <p class="muted" style="font-size:.85em">ابتدا قالب را دانلود کنید، لیست دانش‌آموزان را در ستون «نام» بنویسید و فایل را ذخیره کنید. سپس آپلود نمایید.</p>
-    <div class="row">
-      <button class="success" onclick="downloadExcelTemplate()">📥 دانلود قالب CSV</button>
-      <button class="master-btn" onclick="document.getElementById('excelFile').click()">📤 آپلود لیست دانش‌آموزان</button>
-    </div>
-  </div>
-  <div class="card"><h3>👥 لیست دانش‌آموزان (${c.students.length})</h3>`;
-        if (!c.students.length) h += `<div class="empty">دانش‌آموزی نیست</div>`;
-        else {
-          const sortedStudents = getSortedStudents(c);
-          h += `<table><thead><tr><th>#</th><th>نام</th><th>عملیات</th></tr></thead><tbody>`;
-          sortedStudents.forEach((s, i) => {
-            h += `<tr><td>${i + 1}</td><td>${esc(s.name)}</td><td>
-        <button class="ghost" onclick="openEditStudentModal('${s.id}')" style="font-size:.8em;padding:4px 8px">✏️ ویرایش</button>
-        <button class="ghost" onclick="openTransferModal('${s.id}')" style="font-size:.8em;padding:4px 8px">📤 انتقال/کپی</button>
-        <button class="danger" onclick="deleteStudent('${s.id}')">حذف</button>
-      </td></tr>`;
-          });
-          h += `</tbody></table>`;
+
+      function filterStudentRoster(control){
+        const root=control.closest(".student-directory"),list=root.querySelector(".student-roster");
+        const norm=s=>String(s||"").replace(/ي/g,"ی").replace(/ك/g,"ک").replace(/[۰-۹]/g,c=>c.charCodeAt(0)-1776).replace(/[٠-٩]/g,c=>c.charCodeAt(0)-1632).replace(/‌/g," ").replace(/\s+/g," ").trim();
+        const query=norm(root.querySelector('input[type="search"]').value),sort=root.querySelector("select").value,collator=new Intl.Collator("fa",{numeric:true,sensitivity:"base"});
+        const cards=[...list.children];
+        cards.sort((a,b)=>{
+          if(sort==="family")return Number(a.dataset.order)-Number(b.dataset.order);
+          if(sort==="code"){if(!a.dataset.code)return b.dataset.code?1:Number(a.dataset.order)-Number(b.dataset.order);if(!b.dataset.code)return -1;return collator.compare(norm(a.dataset.code),norm(b.dataset.code))||Number(a.dataset.order)-Number(b.dataset.order);}
+          return collator.compare(a.dataset.name,b.dataset.name)||Number(a.dataset.order)-Number(b.dataset.order);
+        });
+        let count=0;
+        for(const card of cards){card.hidden=!norm(card.dataset.name+" "+card.dataset.code).includes(query);if(!card.hidden)count++;list.append(card);}
+        root.querySelector(".roster-results").textContent=count.toLocaleString("fa-IR")+" نفر از "+cards.length.toLocaleString("fa-IR")+" هنرجو";
+        root.querySelector(".roster-no-results").hidden=count>0||cards.length===0;
+      }
+      function renderStudentsTab(c){
+        const students=getSortedStudents(c);
+        let h='<details class="card quick-create student-add" '+(!students.length?'open':'')+'><summary>افزودن هنرجوی جدید</summary><form onsubmit="addStudent(event)" class="student-add-form"><label>نام و نام خانوادگی<input name="name" placeholder="نام کامل هنرجو" required maxlength="200"></label><label>کد دانش‌آموزی <span class="muted">(اختیاری)</span><input name="code" placeholder="کد یکتا در کلاس" inputmode="numeric"></label><button type="submit">افزودن هنرجو</button></form></details>';
+        h+='<details class="card student-import no-print"><summary>افزودن گروهی از فایل CSV</summary><p>ابتدا قالب را بگیرید، نام هنرجویان را وارد کنید و فایل تکمیل‌شده را برای بررسی بارگذاری کنید.</p><div class="row"><button class="ghost" onclick="downloadExcelTemplate()">دریافت قالب CSV</button><button onclick="document.getElementById(\'excelFile\').click()">انتخاب فایل CSV</button></div></details>';
+        h+='<section class="card student-directory"><header class="roster-heading"><div><h3>هنرجویان کلاس <span class="lesson-count">'+students.length.toLocaleString("fa-IR")+'</span></h3><p>مشخصات، کارنامه و مدیریت اعضای کلاس</p></div></header>';
+        if(!students.length)h+='<div class="empty"><strong>هنوز هنرجویی در این کلاس نیست</strong><p>از فرم بالا یک هنرجو اضافه کنید یا فهرست کلاس را با CSV وارد کنید.</p></div>';
+        h+='<div class="roster-toolbar no-print" '+(!students.length?'hidden':'')+'><label class="roster-search"><span>جست‌وجو در کلاس</span><input type="search" placeholder="نام یا کد دانش‌آموزی…" oninput="filterStudentRoster(this)"></label><label class="roster-sort"><span>مرتب‌سازی</span><select onchange="filterStudentRoster(this)"><option value="family">نام خانوادگی</option><option value="name">نام</option><option value="code">کد دانش‌آموزی</option></select></label></div><p class="roster-results" role="status" aria-live="polite">'+students.length.toLocaleString("fa-IR")+' نفر از '+students.length.toLocaleString("fa-IR")+' هنرجو</p><div class="student-roster">';
+        for(const [i,st] of students.entries()){
+          const id=esc(st.id),initial=esc(st.name.trim().split(/\s+/).map(x=>[...x][0]).filter(Boolean).slice(0,2).join(" "));
+          h+='<article class="student-profile" data-name="'+esc(st.name)+'" data-code="'+esc(st.code||"")+'" data-order="'+i+'"><div class="student-profile-main"><span class="student-avatar" aria-hidden="true">'+initial+'</span><div class="student-profile-info"><h4>'+esc(st.name)+'</h4><p>'+(st.code?'کد دانش‌آموزی: <bdi>'+esc(st.code)+'</bdi>':'<span class="student-code-missing">کد ثبت نشده</span>')+'</p></div><span class="student-row-number" aria-label="ردیف '+(i+1)+'">'+(i+1).toLocaleString("fa-IR")+'</span></div><div class="student-profile-actions no-print"><button class="ghost" onclick="openEditStudentModal(\''+id+'\')">ویرایش مشخصات</button><button class="student-report" onclick="showModal(\'کارنامه هنرجو\',buildDetailedKarnamehHtml(getClassObj(state.schoolId,state.classId),\''+id+'\'))">کارنامه</button><details class="student-more"><summary aria-label="عملیات بیشتر برای '+esc(st.name)+'">بیشتر</summary><div class="student-more-menu"><button class="ghost" onclick="openTransferModal(\''+id+'\')">انتقال / کپی به کلاس دیگر</button><button class="danger" onclick="deleteStudent(\''+id+'\')">بایگانی هنرجو</button></div></details></div></article>';
         }
-        h += `</div>`;
-        return h + buildArchiveHtml(c);
+        h+='</div><div class="empty roster-no-results" hidden>هنرجویی پیدا نشد؛ نام یا کد دیگری جست‌وجو کنید.</div></section>';
+        return h+buildArchiveHtml(c);
       }
 
       function downloadExcelTemplate() {
