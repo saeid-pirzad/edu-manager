@@ -1496,6 +1496,74 @@ tbody tr:hover{background:#f8faff}
 }
 @media print{#uiBottomNav,.ui-hero,.ui-stats{display:none!important}}
 </style>
+<style id="classLessonsDesign">
+@media screen{
+.lesson-schedule{display:flex;align-items:center;justify-content:space-between;gap:16px;background:#eef2ff;border:1px solid #e0e7ff;border-radius:16px;padding:16px 18px;margin-bottom:16px}
+.lesson-schedule strong{font-size:.85rem;color:#3730a3}
+.lesson-schedule p,.lesson-list-heading p{margin:3px 0 0;font-size:.75rem;color:#64748b}
+.lesson-schedule button{flex-shrink:0}
+.lesson-create>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px}
+.lesson-create>summary::-webkit-details-marker{display:none}
+.lesson-create summary strong{display:block;font-size:.9rem}
+.lesson-create summary small{display:block;font-size:.73rem;color:#64748b;font-weight:400;margin-top:3px}
+.lesson-plus{display:grid;place-items:center;width:36px;height:36px;flex-shrink:0;border-radius:11px;background:#eef2ff;color:#4f46e5;font-size:24px}
+.lesson-create[open] .lesson-plus{transform:rotate(45deg)}
+.lesson-create-form{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;padding-top:20px;margin-top:12px;border-top:1px solid #edf1f7}
+.lesson-create-form label{display:flex;flex-direction:column;gap:7px;font-size:.78rem;font-weight:500;min-width:0}
+.lesson-create-form input,.lesson-create-form select{width:100%;min-width:0}
+.lesson-create-form label .muted{display:contents}
+.lesson-create-form button{align-self:end}
+.lesson-form-note{font-size:.72rem;color:#64748b;line-height:1.9;margin:14px 0 0}
+.class-lessons{padding:0;overflow:visible}
+.lesson-list-heading{padding:18px 18px 16px;border-bottom:1px solid #edf1f7}
+.lesson-list-heading h3{display:flex;align-items:center;gap:10px;margin:0!important}
+.lesson-count{background:#eef2ff;color:#4f46e5;border-radius:8px;min-width:27px;padding:1px 8px;font-size:.75rem;text-align:center}
+.lesson-items{padding:0 16px}
+.lesson-item{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;padding:20px 0;border-bottom:1px solid #edf1f7}
+.lesson-item:last-child{border-bottom:0}
+.lesson-identity{display:flex;align-items:center;gap:12px;min-width:0}
+.lesson-identity h4{font-size:.95rem;margin:0 0 4px;line-height:1.8;overflow-wrap:anywhere}
+.lesson-identity p{font-size:.74rem;color:#64748b;margin:0}
+.lesson-symbol{width:46px;height:46px;display:grid;place-items:center;border-radius:14px;flex-shrink:0}
+.lesson-symbol svg{width:24px;height:24px}
+.lesson-symbol.dual,.lesson-mode.dual{color:#0f766e;background:#e8f7f3}
+.lesson-symbol.modular,.lesson-mode.modular{color:#4f46e5;background:#eef2ff}
+.lesson-meta{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+.lesson-mode{font-size:.7rem;padding:4px 10px;border-radius:8px;font-weight:500}
+.lesson-period{font-size:.73rem;color:#64748b}
+.lesson-policy{font-size:.74rem;line-height:1.9;color:#52617b;margin:0;background:#f8faff;border:1px solid #eef2f8;padding:10px 12px;border-radius:10px}
+.lesson-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;align-items:start}
+.lesson-actions button,.lesson-more>summary{font-size:.73rem;min-height:44px;margin:0;width:100%;padding:9px 10px}
+.lesson-enter{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.lesson-config{background:transparent!important;color:#52617b!important;border:1px solid #e5eaf3}
+.lesson-more{min-width:0;position:relative}
+.lesson-more>summary{list-style:none;display:flex;align-items:center;justify-content:center;border:1px solid #e5eaf3;border-radius:12px;cursor:pointer;color:#52617b;background:#fff}
+.lesson-more>summary::-webkit-details-marker{display:none}
+.lesson-more[open]>summary{background:#eef2ff;color:#4338ca}
+.lesson-more-menu{position:absolute;inset-inline-end:0;top:calc(100% + 6px);z-index:35;width:min(240px,75vw);padding:8px;border:1px solid #e5eaf3;background:white;border-radius:14px;box-shadow:0 12px 36px #18233d20;display:grid;gap:6px}
+.lesson-more-menu button{text-align:start}
+.lesson-empty{margin:18px 0;display:flex;flex-direction:column;align-items:center;gap:8px}
+.lesson-empty svg{width:36px;height:36px;color:#818cf8}
+.lesson-empty strong{font-size:.9rem;color:#334155}
+.lesson-empty p{margin:0;font-size:.76rem}
+@media(max-width:420px){.lesson-schedule{align-items:flex-start;flex-direction:column;gap:10px}.lesson-schedule button{width:100%}}
+@media(min-width:701px){
+.lesson-create-form{grid-template-columns:repeat(2,minmax(0,1fr))}
+.lesson-create-form button{justify-self:start;min-width:140px}
+.lesson-item{grid-template-columns:minmax(0,1fr) auto;gap:12px 20px;padding:22px 4px}
+.lesson-meta{justify-content:flex-end}
+.lesson-policy,.lesson-actions{grid-column:1/-1}
+.lesson-actions{display:flex;flex-wrap:wrap;align-items:center}
+.lesson-actions button{width:auto;padding-inline:16px}
+.lesson-more{margin-inline-start:auto}
+.lesson-more>summary{min-width:70px}
+.lesson-more-menu button{width:100%}
+.lesson-items{padding-inline:22px}
+}
+@media(min-width:1100px){.lesson-create-form{grid-template-columns:2fr 1.5fr .8fr 1.2fr auto}.lesson-policy{max-width:100%}}
+}
+@media print{.lesson-schedule,.lesson-create,.lesson-more{display:none!important}.lesson-item{break-inside:avoid;border-bottom:1px solid #ccc;padding:12px}.lesson-identity h4{margin:0}.lesson-symbol{display:none}}
+</style>
 </head>
   <body>
     <div class="cal-popup" id="calPopup"></div>
@@ -3901,42 +3969,19 @@ tbody tr:hover{background:#f8faff}
         return h;
       }
 
+
       function renderLessonsTab(c) {
-        let h = `<div class="card" style="background:#eef2ff;border-right:4px solid #7c3aed">
-    <p style="margin:0">💡 برای تنظیم برنامه هفتگی این کلاس، از دکمهٔ <b>«📅 برنامه هفتگی»</b> بالای صفحه استفاده کنید.
-    <button class="master-btn" onclick="goMaster('${c.id}')" style="margin-right:8px;padding:4px 10px;font-size:.85em">نمایش در برنامه</button></p>
-  </div>`;
-        h += `<div class="card"><h3>افزودن درس</h3>
-    <form onsubmit="addLesson(event)" class="row">
-      <input name="name" placeholder="نام درس" required style="flex:2">
-      <input name="teacher" placeholder="نام دبیر (اختیاری)" style="flex:1.5">
-      <input name="periods" type="number" placeholder="زنگ در هفته" value="2" min="1" max="10" style="width:110px">
-      <select name="gradeMode" aria-label="روش اولیه ارزشیابی"><option value="kardanesh">نظری و عملی</option><option value="standard">پودمانی</option></select>
-      <button type="submit">➕ افزودن</button>
-    </form>
-    <p class="muted" style="font-size:.85em">پس از واردکردن نام، شناسنامه و قواعد ابلاغیه سالانه را تکمیل کنید. شاخه تحصیلی و روش ارزشیابی جدا انتخاب می‌شوند.</p></div>
-    <div class="card"><h3>📚 دروس کلاس (${(c.lessons || []).length})</h3>`;
-        if (!c.lessons || !c.lessons.length)
-          h += `<div class="empty">هنوز درسی اضافه نشده</div>`;
-        else {
-          h += `<table><thead><tr><th>درس</th><th>دبیر</th><th>زنگ/هفته</th><th>قواعد ارزشیابی</th><th>عملیات</th></tr></thead><tbody>`;
-          c.lessons.forEach((l) => {
-            h += `<tr>
-        <td><strong>${esc(l.name)}</strong></td>
-        <td>${esc(l.teacher || "—")}</td>
-        <td>${l.periodsPerWeek || 2}</td>
-        <td>${esc(EduPolicy.describe(l))}</td>
-        <td>
-          <button class="success" onclick="goLesson('${l.id}')" style="font-size:.8em;padding:5px 10px">📖 ورود</button>
-          <button class="master-btn" onclick="openBulkScoreModal('${l.id}')" style="font-size:.8em;padding:4px 8px">📝 ثبت گروهی</button>
-          <button class="ghost" onclick="EduV24.course.copy('${l.id}').catch(EduV24.course.error)">کپی تعریف بدون نمرات</button><button class="ghost" onclick="openLessonConfig('${l.id}')" style="font-size:.8em;padding:4px 8px">⚙️</button>
-          <button class="danger" onclick="deleteLesson('${l.id}')">×</button>
-        </td></tr>`;
-          });
-          h += `</tbody></table>`;
+        const lessons=c.lessons||[];
+        const book='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5c-3-2-6-2-9-1v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1Zm0 0v15"/></svg>';
+        let h='<section class="lesson-schedule no-print"><div><strong>برنامه هفتگی کلاس</strong><p>روز و ساعت برگزاری درس‌ها را تنظیم کنید.</p></div><button class="ghost" onclick="goMaster(\''+esc(c.id)+'\')">مشاهده برنامه ←</button></section>';
+        h+='<details class="card lesson-create no-print" '+(!lessons.length?'open':'')+'><summary><span><strong>افزودن درس جدید</strong><small>تعریف درس و روش ارزشیابی</small></span><span class="lesson-plus" aria-hidden="true">+</span></summary><form onsubmit="addLesson(event)" class="lesson-create-form"><label>نام درس<input name="name" placeholder="مثلاً دانش فنی پایه" required></label><label>نام دبیر <span class="muted">(اختیاری)</span><input name="teacher" placeholder="نام و نام خانوادگی"></label><label>زنگ در هفته<input name="periods" type="number" value="2" min="1" max="10" required inputmode="numeric"></label><label>روش ارزشیابی<select name="gradeMode"><option value="kardanesh">نظری و عملی</option><option value="standard">پودمانی</option></select></label><button type="submit">افزودن درس</button></form><p class="lesson-form-note">پس از افزودن درس، شناسنامه و قواعد ابلاغیه سالانه را از «تنظیمات درس» تکمیل کنید.</p></details>';
+        h+='<section class="card class-lessons"><header class="lesson-list-heading"><div><h3>دروس کلاس <span class="lesson-count">'+lessons.length.toLocaleString("fa-IR")+'</span></h3><p>ورود به درس، ثبت نمره و مدیریت ارزشیابی</p></div></header><div class="lesson-items">';
+        if(!lessons.length)h+='<div class="empty lesson-empty">'+book+'<strong>اولین درس کلاس را تعریف کنید</strong><p>نام درس و روش ارزشیابی را در فرم بالا وارد کنید.</p></div>';
+        for(const l of lessons){
+          const id=esc(l.id),dual=l.gradeMode==="kardanesh";
+          h+='<article class="lesson-item"><div class="lesson-identity"><span class="lesson-symbol '+(dual?'dual':'modular')+'">'+book+'</span><div><h4>'+esc(l.name)+'</h4><p>'+esc(l.teacher||"دبیر تعیین نشده")+'</p></div></div><div class="lesson-meta"><span class="lesson-mode '+(dual?'dual':'modular')+'">'+(dual?'نظری و عملی':'پودمانی')+'</span><span class="lesson-period">'+Number(l.periodsPerWeek||2).toLocaleString("fa-IR")+' زنگ در هفته</span></div><p class="lesson-policy">'+esc(EduPolicy.describe(l))+'</p><div class="lesson-actions no-print"><button class="lesson-enter" onclick="goLesson(\''+id+'\')">ورود به درس <span aria-hidden="true">←</span></button><button class="ghost" onclick="openBulkScoreModal(\''+id+'\')">ثبت گروهی نمره</button><button class="lesson-config ghost" onclick="openLessonConfig(\''+id+'\')">تنظیمات درس</button><details class="lesson-more"><summary aria-label="عملیات بیشتر برای '+esc(l.name)+'">بیشتر</summary><div class="lesson-more-menu"><button class="ghost" onclick="EduV24.course.copy(\''+id+'\').catch(EduV24.course.error)">کپی تعریف بدون نمرات</button><button class="danger" onclick="deleteLesson(\''+id+'\')">حذف درس</button></div></details></div></article>';
         }
-        h += `</div>`;
-        return h;
+        return h+'</div></section>';
       }
 
       function renderStudentsTab(c) {
