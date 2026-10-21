@@ -10977,6 +10977,7 @@ tbody tr:hover{background:#f8faff}
           installEvent,
           pendingUpdate = false,
           offlineReady = false;
+        let updateMessage="", updateTimer;
         function text(message) {
           const el = document.getElementById("mobileStatus");
           if (el) el.textContent = message;
@@ -10992,7 +10993,7 @@ tbody tr:hover{background:#f8faff}
               ? "آماده اجرای آفلاین"
               : "آفلاین — اطلاعات روی دستگاه ذخیره می‌شود"
             : "در حال آماده‌سازی اجرای آفلاین…";
-          text(status);
+          text(updateMessage || status);
           document.getElementById("mobileInstall").hidden =
             !installEvent ||
             matchMedia("(display-mode: standalone)").matches ||
@@ -11122,24 +11123,22 @@ tbody tr:hover{background:#f8faff}
           };
           worker.postMessage({ type: "OFFLINE_STATUS" }, [channel.port2]);
         }
+
         async function update() {
-          if (!registration?.waiting || pendingUpdate) return;
-          try {
-            await window.EduV24?.flushDrafts({ strict: true });
-            if (
-              !confirm(
-                "ویرایش‌های معتبر ذخیره شدند. نسخه جدید برنامه دریافت شده است؛ اکنون برنامه باز شود؟",
-              )
-            )
-              return;
-            pendingUpdate = true;
-            document.getElementById("mobileUpdate").disabled = true;
-            text("در حال اعمال نسخه جدید…");
-            registration.waiting.postMessage({ type: "APPLY_UPDATE" });
-          } catch (e) {
-            text(e.message || "ابتدا ویرایش‌های ذخیره‌نشده را بررسی کنید.");
-          }
+          if(pendingUpdate)return;
+          const button=document.getElementById("mobileUpdate");
+          try{
+            if(!registration?.waiting){await registration?.update();if(!registration?.waiting){updateMessage="هنوز نسخه جدید برای اعمال آماده نیست؛ چند لحظه دیگر تلاش کنید.";paint();return;}}
+            button.disabled=true;
+            updateMessage="در حال ذخیره ویرایش‌ها پیش از به‌روزرسانی…";paint();
+            await window.EduV24?.flushDrafts({strict:true});
+            if(!confirm("ویرایش‌ها ذخیره شدند. برای اعمال نسخه جدید، پنجره‌های دیگر برنامه باید بسته باشند. ادامه می‌دهید؟")){updateMessage="";button.disabled=false;paint();return;}
+            pendingUpdate=true;updateMessage="در حال اعمال نسخه جدید…";paint();
+            updateTimer=setTimeout(()=>{pendingUpdate=false;button.disabled=false;updateMessage="اعمال نسخه کامل نشد؛ پنجره‌های دیگر برنامه را ببندید و دوباره تلاش کنید.";paint();},15000);
+            registration.waiting.postMessage({type:"APPLY_UPDATE"});
+          }catch(e){clearTimeout(updateTimer);pendingUpdate=false;button.disabled=false;updateMessage=e.message||"ابتدا ویرایش‌های ذخیره‌نشده را بررسی کنید.";paint();}
         }
+
         window.addEventListener("beforeinstallprompt", (e) => {
           e.preventDefault();
           installEvent = e;
@@ -11172,16 +11171,17 @@ tbody tr:hover{background:#f8faff}
             return;
           }
           navigator.serviceWorker.addEventListener("controllerchange", () => {
-            if (pendingUpdate) location.reload();
+            if (pendingUpdate) { clearTimeout(updateTimer); location.reload(); }
             else status();
           });
           navigator.serviceWorker.addEventListener("message", (e) => {
             if (e.data?.type === "UPDATE_BLOCKED") {
+              clearTimeout(updateTimer);
               pendingUpdate = false;
               document.getElementById("mobileUpdate").disabled = false;
-              text(
-                "برای به‌روزرسانی، تب‌ها و پنجره‌های دیگر همین برنامه را ببندید.",
-              );
+              updateMessage="به‌روزرسانی متوقف شد: برنامه در پنجره دیگری باز است.";
+              paint();
+              if(window.showModal)showModal("برای به‌روزرسانی، پنجره‌های دیگر را ببندید","<p>این برنامه هم‌زمان در بیش از یک تب یا پنجره باز است. پنجره نصب‌شده روی گوشی هم محسوب می‌شود.</p><p>ویرایش‌ها را ذخیره کنید؛ همه پنجره‌های دیگر این برنامه را ببندید، فقط همین پنجره را نگه دارید و دوباره «نسخه جدید آماده است» را بزنید.</p><p>حذف برنامه یا پاک‌کردن اطلاعات مرورگر لازم نیست.</p>");
             }
           });
           try {

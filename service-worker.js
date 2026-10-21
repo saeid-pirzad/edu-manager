@@ -1,6 +1,6 @@
 'use strict';
 // Update VERSION whenever the main HTML or install manifest changes.
-const VERSION = 'e6298379016bed52';
+const VERSION = '7ca15f933bf2b6e2';
 const BASE = new URL('./', self.location.href);
 const PREFIX = 'edu-manager:' + BASE.pathname + ':';
 const CACHE = PREFIX + VERSION;
