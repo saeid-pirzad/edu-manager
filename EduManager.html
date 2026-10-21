@@ -1602,6 +1602,91 @@ table[data-ui-layout=matrix] thead [data-identity]{z-index:3;background:#eef2fa!
 }
 @media print{.table-pan-hint{display:none!important}}
 </style>
+<style id="experiencePolish">
+@media screen{
+.topbar h1{display:flex;align-items:center;gap:10px;font-size:1rem!important;line-height:1.5}
+.topbar h1 small{display:block;font-size:.63rem;color:#64748b;font-weight:400;margin-top:3px;letter-spacing:0}
+.brand-mark{display:grid;place-items:center;flex-shrink:0;width:42px;height:42px;background:#4f46e5;color:#fff;border-radius:13px;box-shadow:0 4px 10px #4f46e51a}
+.brand-mark svg{width:24px;height:24px}
+.workspace-bar{gap:6px!important;padding:10px 12px!important;align-items:center;margin-block:0 16px!important;border-radius:12px!important}
+.workspace-bar>strong{font-size:.73rem}
+.workspace-bar>#saveStatus{padding:3px 7px;font-size:.66rem;flex:0 1 auto}
+.workspace-bar>button.ghost{min-height:34px;font-size:.68rem;padding:5px 8px;flex:0 1 auto}
+.workspace-tools:not([open]){margin-inline-start:auto}
+.workspace-tools summary{padding:5px 6px;min-height:34px;font-size:.67rem}
+.workspace-tools[open]{border-top:1px solid #edf1f7;padding-top:5px}
+.workspace-tools .tool-actions button{font-size:.73rem}
+.mobile-bar{padding-block:5px}
+.mobile-bar button{min-height:32px}
+.mobile-bar #mobileHelp{background:transparent;font-size:.65rem}
+.breadcrumb{background:transparent;border:0;font-size:.7rem;color:#64748b;padding:4px 0;margin-bottom:8px;line-height:2}
+.breadcrumb a{display:inline-block;padding-block:3px}
+.view-heading{margin:4px 0 18px}
+.view-heading h2{font-size:1.25rem;margin:0;letter-spacing:-.5px;line-height:1.7}
+.view-heading p{margin:5px 0 0;font-size:.75rem;color:#64748b}
+.quick-create>summary{list-style:none;cursor:pointer;min-height:38px;display:flex;align-items:center;justify-content:space-between;font-size:.86rem;font-weight:500}
+.quick-create>summary::-webkit-details-marker{display:none}
+.quick-create>summary::after{content:"+";display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:#eef2ff;color:#4f46e5;font-size:22px;font-weight:400}
+.quick-create[open]>summary::after{content:"−"}
+.quick-create[open]>form{border-top:1px solid #edf1f7;padding-top:16px;margin-top:12px}
+.list-search{margin:0 0 16px}
+.list-search input{width:100%;background:#f8faff!important;min-height:44px}
+.search-feedback{font-size:.72rem;color:#64748b;margin:8px 2px}
+.list-item[hidden]{display:none!important}
+.list-item>div:first-child{min-width:0}
+.list-item>div:first-child>.muted{display:block;font-size:.74rem;margin-top:4px}
+.list-item>button.danger{background:transparent;border:1px solid #fee2e2;flex-shrink:0;font-size:.7rem}
+.list-item[role=link]{border-inline-start:3px solid #e0e7ff}
+.card>h3{line-height:1.8}
+.form-row{gap:10px;margin-block:14px}
+.form-row label{font-size:.82rem;color:#475569}
+.modal-header{background:#fbfcff;border-radius:22px 22px 0 0}
+.modal-header button{min-width:40px;min-height:40px;border-radius:12px;background:#edf1f7;color:#52617b}
+#modalBody>h4{font-size:.92rem;padding-bottom:10px;border-bottom:1px solid #edf1f7}
+#modalBody>p{font-size:.82rem;line-height:2;color:#52617b}
+.course-grid{gap:14px}
+.course-field>label{font-size:.78rem}
+.course-field small{font-size:.7rem;line-height:1.8}
+.att-btns button{border:1px solid #e2e8f0!important;background:#f8faff;color:#64748b}
+.att-btns button.present.active{background:#e4f5ed!important;color:#166534!important;border-color:#a7dfbf!important}
+.att-btns button.absent.active{background:#fff0f0!important;color:#b91c1c!important;border-color:#fecaca!important}
+.att-btns button.late.active{background:#fff7e5!important;color:#92400e!important;border-color:#fcd78e!important}
+.att-btns button.active{font-weight:700;box-shadow:inset 0 0 0 1px currentColor}
+.shamsi-display{font-size:.75rem;color:#4f46e5;background:#eef2ff;border-radius:8px;padding:5px 10px}
+.login-box{padding:28px 22px}
+.login-box input{width:100%;margin-block:12px}
+.login-box button{width:100%;margin-top:8px}
+@media(max-width:700px){
+#app{padding-top:12px}
+.topbar{padding-bottom:12px!important}
+.topbar>div:first-child{gap:8px!important}
+.topbar>div:first-child>button{font-size:.7rem!important;min-height:36px;padding:6px 10px!important}
+.navigation-menu summary{padding:8px 12px;min-height:40px;font-size:.75rem}
+.workspace-bar>strong{flex:1 1 auto;font-size:.7rem}
+.workspace-bar>.workspace-tools:not([open]){flex:0 1 auto}
+.workspace-bar>button.ghost{margin-inline-start:auto}
+.workspace-tools[open]{flex-basis:100%}
+.ui-hero{padding:20px;margin-bottom:12px;border-radius:18px}
+.ui-hero h2{font-size:1.15rem;line-height:1.8}
+.ui-hero p{font-size:.75rem}
+.ui-stats{gap:8px;margin-bottom:16px}
+.ui-stat{padding:10px 12px;border-radius:13px}
+.ui-stat strong{font-size:1.25rem}
+.ui-stat span{font-size:.7rem}
+.view-heading h2{font-size:1.15rem}
+.att-btns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;width:100%}
+.att-btns button{margin:0;font-size:.74rem;min-width:0;padding:8px 4px}
+.modal-header{padding:14px 16px}
+}
+@media(min-width:701px){
+.topbar{border-bottom:1px solid #e5eaf3;margin-bottom:14px!important}
+.view-heading h2{font-size:1.5rem}
+.workspace-bar>strong{flex:0 1 auto}
+.workspace-tools:not([open]){margin-inline-start:auto}
+.ui-hero h2{font-size:1.6rem}
+}
+}
+</style>
 </head>
   <body>
     <div class="cal-popup" id="calPopup"></div>
@@ -10971,7 +11056,57 @@ table[data-ui-layout=matrix] thead [data-identity]{z-index:3;background:#eef2fa!
           }
         }
 
+
+        function polishExperience(){
+          const app=document.getElementById("app"),top=app?.querySelector(".topbar"),bar=app?.querySelector(".workspace-bar");
+          if(top&&bar&&top.nextElementSibling!==bar)bar.before(top);
+          if(top){
+            const title=top.querySelector("h1");
+            if(title&&!title.dataset.branded){title.dataset.branded="1";title.innerHTML='<span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5C9 3 6 3 3 4v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1Zm0 0v15"/></svg></span><span>مدیریت کلاس<small>دفتر همراه هنرآموز</small></span>';}
+          }
+          const crumb=app?.querySelector(".breadcrumb");
+          if(crumb){
+            crumb.setAttribute("aria-label","مسیر جاری");
+            for(const link of crumb.querySelectorAll("a[onclick]")){
+              if(!link.hasAttribute("tabindex")){link.tabIndex=0;link.setAttribute("role","link");link.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();link.click();}});}
+            }
+            if(!app.querySelector(".view-heading")&&["school","class","lesson"].includes(state.view)){
+              const school=db.schools.find(s=>s.id===state.schoolId),c=school?.classes.find(c=>c.id===state.classId),l=c?.lessons.find(l=>l.id===state.lessonId);
+              const title=state.view==="lesson"?l?.name:state.view==="class"?c?.name:school?.name;
+              const note=state.view==="lesson"?"نمرات، هنرجویان و جلسات این درس":state.view==="class"?((c?.students.length||0).toLocaleString("fa-IR")+" هنرجو · "+(c?.lessons.length||0).toLocaleString("fa-IR")+" درس"):"کلاس‌ها و هنرجویان مدرسه";
+              if(title){const heading=document.createElement("header");heading.className="view-heading no-print";const h=document.createElement("h2"),p=document.createElement("p");h.textContent=title;p.textContent=note;heading.append(h,p);crumb.after(heading);}
+            }
+          }
+          for(const form of app?.querySelectorAll('form[onsubmit]')||[]){
+            const action=form.getAttribute("onsubmit")||"";
+            if(!/^(addSchool|addClass|addStudent)\(event\)/.test(action))continue;
+            const card=form.closest(".card");
+            if(!card||card.tagName==="DETAILS"||!card.querySelector("h3"))continue;
+            const detail=document.createElement("details");detail.className=card.className+" quick-create";
+            const heading=card.querySelector("h3"),summary=document.createElement("summary");
+            summary.textContent=heading.textContent.replace(/^[^آ-یa-zA-Z]+/,"");
+            const empty=state.view==="schools"?!db.schools.length:state.view==="school"?!db.schools.find(s=>s.id===state.schoolId)?.classes.length:!getClassObj(state.schoolId,state.classId)?.students.length;
+            detail.open=!!empty;heading.remove();detail.append(summary);
+            while(card.firstChild)detail.append(card.firstChild);
+            card.replaceWith(detail);
+          }
+          for(const card of app?.querySelectorAll(".card")||[]){
+            const items=[...card.children].filter(el=>el.matches(".list-item[onclick]"));
+            if(items.length<4||card.querySelector(".list-search"))continue;
+            const box=document.createElement("div");box.className="list-search no-print";
+            const input=document.createElement("input");input.type="search";input.placeholder="جست‌وجو در این فهرست…";input.setAttribute("aria-label","جست‌وجو در فهرست");
+            const result=document.createElement("p");result.className="search-feedback";result.setAttribute("role","status");result.hidden=true;
+            const normalize=s=>s.replace(/ي/g,"ی").replace(/ك/g,"ک").replace(/\s+/g," ").trim();
+            input.oninput=()=>{const query=normalize(input.value);let count=0;for(const item of items){const match=normalize(item.textContent).includes(query);item.hidden=!match;if(match)count++;}result.hidden=!query;result.textContent=count?count.toLocaleString("fa-IR")+" مورد پیدا شد":"موردی پیدا نشد؛ عبارت دیگری وارد کنید.";};
+            box.append(input,result);items[0].before(box);
+          }
+          for(const input of document.querySelectorAll('#app input[placeholder],#modalBody input[placeholder],#modalBody textarea[placeholder]')){
+            if(!input.hasAttribute("aria-label")&&!input.labels?.length)input.setAttribute("aria-label",input.placeholder);
+          }
+        }
+
         function enhance() {
+          polishExperience();
           updateDesign();
           pending = false;
           for (const table of document.querySelectorAll(
