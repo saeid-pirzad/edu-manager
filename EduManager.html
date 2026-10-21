@@ -10817,6 +10817,8 @@
           if (el) el.textContent = message;
         }
         function paint() {
+          if(!document.getElementById("mobileInstall"))return;
+          if(location.protocol==="file:"){text("فایل مستقل آفلاین؛ نصب PWA از لینک امن انجام می‌شود.");return;}
           const status = offlineReady
             ? navigator.onLine
               ? "آماده اجرای آفلاین"
@@ -10932,16 +10934,16 @@
               "./service-worker.js",
               { updateViaCache: "none" },
             );
-            registration.addEventListener("updatefound", () => {
-              const w = registration.installing;
-              w?.addEventListener("statechange", () => {
-                if (w.state === "installed") {
-                  paint();
-                  status();
-                }
+            function watchInstalling() {
+              const worker=registration.installing;
+              worker?.addEventListener("statechange",()=>{
+                if(worker.state==="installed"){paint();status();}
+                if(worker.state==="redundant"&&!offlineReady)text("دانلود آفلاین کامل نشد؛ اینترنت را بررسی و دوباره تلاش کنید.");
               });
-            });
-            await navigator.serviceWorker.ready;
+            }
+            registration.addEventListener("updatefound",watchInstalling);
+            watchInstalling();
+            await Promise.race([navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(Error("Offline setup timed out")),30000))]);
             await status();
             paint();
           } catch (e) {
