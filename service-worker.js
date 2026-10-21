@@ -1,6 +1,6 @@
 'use strict';
 // Update VERSION whenever the main HTML or install manifest changes.
-const VERSION = '7ca15f933bf2b6e2';
+const VERSION = '69dded14fc5726d0';
 const BASE = new URL('./', self.location.href);
 const PREFIX = 'edu-manager:' + BASE.pathname + ':';
 const CACHE = PREFIX + VERSION;
@@ -54,12 +54,8 @@ self.addEventListener('message', event => {
     event.ports[0]?.postMessage({ready, version: VERSION});
   })());
   if (event.data?.type === 'APPLY_UPDATE') event.waitUntil((async () => {
-    const clients = (await self.clients.matchAll({type: 'window', includeUncontrolled: true}))
-      .filter(client => new URL(client.url).pathname.startsWith(BASE.pathname));
-    if (clients.length > 1) {
-      event.source?.postMessage({type: 'UPDATE_BLOCKED'});
-      return;
-    }
+    // Applying cached assets does not reload other windows or modify their data.
+    // Only the requesting page reloads itself after saving its drafts.
     await self.skipWaiting();
   })());
 });

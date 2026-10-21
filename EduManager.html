@@ -11132,9 +11132,9 @@ tbody tr:hover{background:#f8faff}
             button.disabled=true;
             updateMessage="در حال ذخیره ویرایش‌ها پیش از به‌روزرسانی…";paint();
             await window.EduV24?.flushDrafts({strict:true});
-            if(!confirm("ویرایش‌ها ذخیره شدند. برای اعمال نسخه جدید، پنجره‌های دیگر برنامه باید بسته باشند. ادامه می‌دهید؟")){updateMessage="";button.disabled=false;paint();return;}
+            if(!confirm("ویرایش‌های این پنجره ذخیره شدند. نسخه جدید در همین پنجره باز شود؟")){updateMessage="";button.disabled=false;paint();return;}
             pendingUpdate=true;updateMessage="در حال اعمال نسخه جدید…";paint();
-            updateTimer=setTimeout(()=>{pendingUpdate=false;button.disabled=false;updateMessage="اعمال نسخه کامل نشد؛ پنجره‌های دیگر برنامه را ببندید و دوباره تلاش کنید.";paint();},15000);
+            updateTimer=setTimeout(()=>{pendingUpdate=false;button.disabled=false;updateMessage="اعمال نسخه کامل نشد؛ برنامه را با اینترنت دوباره باز کنید و تلاش کنید.";paint();},15000);
             registration.waiting.postMessage({type:"APPLY_UPDATE"});
           }catch(e){clearTimeout(updateTimer);pendingUpdate=false;button.disabled=false;updateMessage=e.message||"ابتدا ویرایش‌های ذخیره‌نشده را بررسی کنید.";paint();}
         }
