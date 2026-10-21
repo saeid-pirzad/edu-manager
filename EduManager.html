@@ -5629,6 +5629,262 @@
           break-inside: avoid;
         }
       }
+
+      /* Daily work dashboard: content order follows the daily workflow. */
+      .dashboard-work {
+        margin-block: 18px 22px;
+        min-width: 0;
+      }
+      .dashboard-work-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+      .dashboard-work-heading h2 {
+        margin: 2px 0 6px;
+        font-size: 1.2rem;
+      }
+      .dashboard-work-heading p {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.8rem;
+      }
+      .dashboard-work-heading .eyebrow {
+        color: #4f46e5;
+        font-weight: 700;
+      }
+      .dashboard-tasks {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .dashboard-task {
+        min-width: 0;
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        padding: 18px;
+        background: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .dashboard-task > strong {
+        font-size: 1.8rem;
+        line-height: 1.3;
+        font-variant-numeric: tabular-nums;
+      }
+      .dashboard-task h3 {
+        font-size: 0.9rem;
+        margin: 10px 0 5px;
+      }
+      .dashboard-task p {
+        color: #64748b;
+        font-size: 0.75rem;
+        margin: 0 0 12px;
+      }
+      .dashboard-task button,
+      .dashboard-task-clear {
+        margin-top: auto;
+      }
+      .dashboard-task-clear {
+        font-size: 0.75rem;
+        color: #475569;
+        padding-block: 10px;
+      }
+      .task-amber > strong {
+        color: #a16207;
+      }
+      .task-indigo > strong {
+        color: #4338ca;
+      }
+      .task-rose > strong {
+        color: #be123c;
+      }
+      .dashboard-work-notice {
+        border-inline-start: 3px solid #d97706;
+        padding: 10px 12px;
+        background: #fffbeb;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        color: #854d0e;
+        line-height: 1.9;
+      }
+      .dashboard-agenda {
+        margin-top: 14px;
+        padding: 18px;
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        background: #fff;
+        min-width: 0;
+      }
+      .dashboard-agenda > h3 {
+        margin: 0 0 10px;
+        font-size: 1rem;
+      }
+      .dashboard-agenda-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding-block: 12px;
+        border-bottom: 1px solid #edf1f7;
+      }
+      .dashboard-agenda-row:last-child {
+        border-bottom: 0;
+        padding-bottom: 0;
+      }
+      .dashboard-agenda-row > div {
+        flex: 1;
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      .dashboard-agenda-row h4 {
+        margin: 0 0 4px;
+        font-size: 0.85rem;
+      }
+      .dashboard-agenda-row p {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.75rem;
+      }
+      .dashboard-agenda-row button {
+        flex-shrink: 0;
+        min-height: 44px;
+      }
+      .dashboard-period {
+        border-radius: 10px;
+        padding: 8px;
+        background: #eef2ff;
+        color: #4338ca;
+        font-size: 0.75rem;
+        white-space: nowrap;
+      }
+      body.modal-open {
+        overflow: hidden;
+      }
+      .modal-overlay {
+        overscroll-behavior: contain;
+      }
+      :where(
+        button,
+        a,
+        summary,
+        input,
+        select,
+        textarea,
+        [tabindex]
+      ):focus-visible {
+        outline: 3px solid #4f46e5;
+        outline-offset: 3px;
+      }
+      @media (max-width: 700px) {
+        .dashboard-work-heading {
+          align-items: flex-start;
+        }
+        .dashboard-work-heading h2 {
+          font-size: 1.05rem;
+        }
+        .dashboard-work-heading > button {
+          font-size: 0.75rem;
+          min-height: 44px;
+        }
+        .dashboard-tasks {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 8px;
+        }
+        .dashboard-task {
+          display: grid;
+          grid-template-columns: 48px minmax(0, 1fr) auto;
+          gap: 3px 10px;
+          padding: 14px;
+          align-items: center;
+          border-radius: 14px;
+        }
+        .dashboard-task > strong {
+          grid-column: 1;
+          grid-row: 1 / 3;
+          font-size: 1.5rem;
+          text-align: center;
+        }
+        .dashboard-task h3 {
+          grid-column: 2;
+          margin: 0;
+          font-size: 0.8rem;
+        }
+        .dashboard-task p {
+          grid-column: 2;
+          margin: 0;
+          font-size: 0.68rem;
+        }
+        .dashboard-task button,
+        .dashboard-task-clear {
+          grid-column: 3;
+          grid-row: 1 / 3;
+          margin: 0;
+          font-size: 0.68rem;
+          max-width: 110px;
+        }
+        .dashboard-task-clear {
+          max-width: 85px;
+          line-height: 1.8;
+        }
+        .dashboard-agenda {
+          padding: 14px;
+        }
+        .dashboard-agenda-row {
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+        .dashboard-agenda-row > div {
+          flex-basis: calc(100% - 70px);
+        }
+        .dashboard-agenda-row button {
+          width: 100%;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+
+      .skip-link {
+        position: fixed;
+        inset-block-start: 8px;
+        inset-inline-start: 12px;
+        z-index: 20000;
+        padding: 12px 18px;
+        border-radius: 10px;
+        background: #312e81;
+        color: white;
+        transform: translateY(-200%);
+      }
+      .skip-link:focus {
+        transform: translateY(0);
+      }
+
+      /* Match visual order to the daily workflow on mobile. */
+      #app > .dashboard-work {
+        order: 4;
+      }
+      #app > .dashboard-report-links {
+        order: 5;
+      }
+      .calendar-close {
+        width: 100%;
+        min-height: 44px;
+        margin-top: 10px;
+      }
+      .cal-header button {
+        min-width: 44px;
+        min-height: 44px;
+      }
     </style>
 
     <link
@@ -5646,7 +5902,8 @@
   </head>
   <body>
     <div class="cal-popup" id="calPopup"></div>
-    <div id="app"></div>
+    <a class="skip-link" href="#app">رفتن به محتوای اصلی</a>
+    <main id="app" tabindex="-1"></main>
     <div id="modal" class="modal-overlay hidden">
       <div
         class="modal-dialog"
@@ -5854,6 +6111,74 @@
         calSelectedJalali = null;
       const calPopup = document.getElementById("calPopup");
 
+      function closeShamsiCalendar(restoreFocus = false) {
+        calPopup.classList.remove("open");
+        const proxy = calTargetInput?.nextElementSibling;
+        if (proxy?.dataset.gregorianTarget)
+          proxy.setAttribute("aria-expanded", "false");
+        if (restoreFocus)
+          requestAnimationFrame(() => {
+            const target = proxy?.isConnected
+              ? proxy
+              : proxy?.id
+                ? document.getElementById(proxy.id)
+                : null;
+            if (
+              target &&
+              !target.matches(":disabled") &&
+              !target.closest("[inert]")
+            )
+              target.focus({ preventScroll: true });
+          });
+      }
+      // The calendar is a nested popup: Escape closes it before its parent dialog.
+      document.addEventListener(
+        "keydown",
+        (event) => {
+          if (!calPopup.classList.contains("open")) return;
+          if (event.key === "Escape") {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            closeShamsiCalendar(true);
+          } else if (event.key === "Tab") {
+            const nodes = [
+              ...calPopup.querySelectorAll("button:not(:disabled)"),
+            ].filter((element) => element.getClientRects().length);
+            if (!nodes.length) return;
+            const first = nodes[0],
+              last = nodes[nodes.length - 1];
+            if (
+              event.shiftKey &&
+              (document.activeElement === first ||
+                !nodes.includes(document.activeElement))
+            ) {
+              event.preventDefault();
+              event.stopImmediatePropagation();
+              last.focus();
+            } else if (
+              !event.shiftKey &&
+              (document.activeElement === last ||
+                !nodes.includes(document.activeElement))
+            ) {
+              event.preventDefault();
+              event.stopImmediatePropagation();
+              first.focus();
+            } else event.stopImmediatePropagation();
+          }
+        },
+        true,
+      );
+
+      function syncShamsiDisabledInputs() {
+        for (const input of document.querySelectorAll(
+          'input[type="date"][data-shamsi-applied]',
+        )) {
+          const proxy = input.nextElementSibling;
+          if (proxy?.dataset.gregorianTarget)
+            proxy.disabled = input.matches(":disabled") || input.readOnly;
+        }
+      }
+
       function initShamsiPickers() {
         const dateInputs = document.querySelectorAll('input[type="date"]');
         dateInputs.forEach((input) => {
@@ -5867,6 +6192,19 @@
           shamsiInput.style.display = "";
           shamsiInput.placeholder = "انتخاب تاریخ";
           shamsiInput.readOnly = true;
+          shamsiInput.disabled = input.matches(":disabled") || input.readOnly;
+          if (input.id) shamsiInput.id = input.id + "-shamsi";
+          shamsiInput.setAttribute(
+            "aria-label",
+            input.getAttribute("aria-label") ||
+              [...(input.labels || [])]
+                .map((label) => label.textContent.trim())
+                .join(" ") ||
+              "انتخاب تاریخ",
+          );
+          shamsiInput.setAttribute("aria-haspopup", "dialog");
+          shamsiInput.setAttribute("aria-controls", "calPopup");
+          shamsiInput.setAttribute("aria-expanded", "false");
           shamsiInput.dataset.gregorianTarget = "true";
           const gVal = input.value;
           if (gVal) {
@@ -5884,8 +6222,28 @@
             }
           }
           input.parentNode.insertBefore(shamsiInput, input.nextSibling);
+          shamsiInput.addEventListener("keydown", (event) => {
+            if (["Enter", " ", "ArrowDown"].includes(event.key)) {
+              event.preventDefault();
+              shamsiInput.click();
+            }
+          });
           shamsiInput.addEventListener("click", (e) => {
             e.stopPropagation();
+            if (
+              input.matches(":disabled") ||
+              input.readOnly ||
+              !input.isConnected
+            )
+              return;
+            closeShamsiCalendar();
+            (input.closest("#modal")
+              ? document.querySelector("#modal .modal-dialog")
+              : document.body
+            ).append(calPopup);
+            calPopup.setAttribute("role", "dialog");
+            calPopup.setAttribute("aria-label", "انتخاب تاریخ شمسی");
+            shamsiInput.setAttribute("aria-expanded", "true");
             calTargetInput = input;
             if (shamsiInput.dataset.jy) {
               calSelectedJalali = [
@@ -5924,9 +6282,12 @@
             if (top < 10) top = 10;
 
             calPopup.style.left = left + "px";
-            calPopup.style.top = top + window.scrollY + "px";
+            calPopup.style.top = top + "px";
             // برای اینکه مطمئن شویم روی موبایل درست در مرکز قفل میشه
-            calPopup.style.position = "absolute";
+            calPopup.style.position = "fixed";
+            calPopup
+              .querySelector(".selected,.today,.cal-days button:not(:disabled)")
+              ?.focus({ preventScroll: true });
           });
         });
       }
@@ -5954,16 +6315,16 @@
         const firstDay = (new Date(gy, gm - 1, gd).getDay() + 1) % 7;
         let h = "";
         h += `<div class="cal-header">
-    <button onclick="event.stopPropagation(); calChangeMonth(-1)" title="ماه قبل">‹</button>
+    <button onclick="event.stopPropagation(); calChangeMonth(-1)" title="ماه قبل" aria-label="ماه قبل" data-calendar-direction="-1">‹</button>
     <div class="cal-title">${MONTHS_FA[calViewMonth - 1]} ${toFaNum(calViewYear)}</div>
-    <button onclick="event.stopPropagation(); calChangeMonth(1)" title="ماه بعد">›</button>
+    <button onclick="event.stopPropagation(); calChangeMonth(1)" title="ماه بعد" aria-label="ماه بعد" data-calendar-direction="1">›</button>
   </div>`;
         h += `<div class="cal-weekdays">`;
         WEEKDAYS_FA.forEach((d) => (h += `<div>${d}</div>`));
         h += `</div>`;
         h += `<div class="cal-days">`;
         for (let i = 0; i < firstDay; i++)
-          h += `<button class="empty"></button>`;
+          h += `<button class="empty" disabled tabindex="-1" aria-hidden="true"></button>`;
         for (let d = 1; d <= daysCount; d++) {
           let cls = "";
           if (calViewYear === tjy && calViewMonth === tjm && d === tjd)
@@ -5975,10 +6336,12 @@
             calSelectedJalali[2] === d
           )
             cls = "selected";
-          h += `<button class="${cls}" onclick="event.stopPropagation(); calSelectDay(${d}, this)">${toFaNum(d)}</button>`;
+          h += `<button class="${cls}" aria-label="${toFaNum(d)} ${MONTHS_FA[calViewMonth - 1]} ${toFaNum(calViewYear)}" aria-pressed="${cls === "selected"}" onclick="event.stopPropagation(); calSelectDay(${d}, this)">${toFaNum(d)}</button>`;
         }
         h += `</div>`;
         h += `<div class="cal-footer">امروز: ${toFaNum(tjy)}/${toFaNum(String(tjm).padStart(2, "0"))}/${toFaNum(String(tjd).padStart(2, "0"))}</div>`;
+        h +=
+          '<button type="button" class="ghost calendar-close" onclick="event.stopPropagation();closeShamsiCalendar(true)">بستن تقویم</button>';
         calPopup.innerHTML = h;
       }
 
@@ -5993,6 +6356,11 @@
           calViewYear++;
         }
         renderShamsiCalendar(calTargetInput);
+        calPopup
+          .querySelector(
+            '[data-calendar-direction="' + (delta < 0 ? "-1" : "1") + '"]',
+          )
+          ?.focus({ preventScroll: true });
       };
 
       window.calSelectDay = function (d) {
@@ -6012,7 +6380,7 @@
             next.dataset.jd = d;
           }
         }
-        calPopup.classList.remove("open");
+        closeShamsiCalendar(true);
         if (calTargetInput) {
           calTargetInput.dispatchEvent(new Event("input", { bubbles: true }));
           calTargetInput.dispatchEvent(new Event("change", { bubbles: true }));
@@ -6025,7 +6393,7 @@
           !calPopup.contains(e.target) &&
           !e.target.closest("[data-gregorian-target]")
         ) {
-          calPopup.classList.remove("open");
+          closeShamsiCalendar();
         }
       });
       // ==================== پایان تقویم شمسی ====================
@@ -6522,6 +6890,32 @@
         closeClassMenu();
         setHeaderMenu("dataMenu", open);
       }
+
+      const contextualMenuSelector =
+        ".dashboard-entity-more,.lesson-more,.student-more";
+      function closeContextualMenus(except = null) {
+        for (const menu of document.querySelectorAll(contextualMenuSelector))
+          if (menu !== except && menu.open) menu.open = false;
+      }
+      document.addEventListener(
+        "toggle",
+        (event) => {
+          if (
+            event.target.matches?.(contextualMenuSelector) &&
+            event.target.open
+          )
+            closeContextualMenus(event.target);
+        },
+        true,
+      );
+      document.addEventListener("click", (event) => {
+        const current = event.target.closest?.(contextualMenuSelector);
+        if (current && event.target.closest("button,a"))
+          current.querySelector("summary")?.focus({ preventScroll: true });
+        closeContextualMenus(
+          current && !event.target.closest("button,a") ? current : null,
+        );
+      });
       function closeDataMenu() {
         setHeaderMenu("dataMenu", false);
       }
@@ -6539,7 +6933,20 @@
           nav.open = false;
       });
       document.addEventListener("keydown", (e) => {
-        if (e.key !== "Escape") return;
+        if (
+          e.key !== "Escape" ||
+          !document.getElementById("modal").classList.contains("hidden")
+        )
+          return;
+        const contextMenu = document.querySelector(
+          ".dashboard-entity-more[open],.lesson-more[open],.student-more[open]",
+        );
+        if (contextMenu) {
+          contextMenu.open = false;
+          contextMenu.querySelector("summary")?.focus();
+          e.preventDefault();
+          return;
+        }
         const nav = document.querySelector(".navigation-menu");
         if (
           nav?.open &&
@@ -7922,9 +8329,9 @@
               h += `<tr>
           <td>${i + 1}</td>
           <td>${esc(st.name)}</td>
-          <td><input type="number" step="0.25" min="0" max="20" value="${existing.m ?? ""}" 
+          <td><input type="number" step="0.25" min="0" max="20" value="${existing.m ?? ""}"
                onchange="saveBulkScore('${lesson.id}','${p.id}','${u.id}','${st.id}','m',this.value)"></td>
-          <td><input type="number" step="0.25" min="0" max="20" value="${existing.p ?? ""}" 
+          <td><input type="number" step="0.25" min="0" max="20" value="${existing.p ?? ""}"
                onchange="saveBulkScore('${lesson.id}','${p.id}','${u.id}','${st.id}','p',this.value)"></td>
         </tr>`;
             });
@@ -8296,7 +8703,11 @@
             (isSchool ? "comprehensive" : "karnameh") +
             "')\">" +
             (isSchool ? "گزارش مدرسه" : "کارنامه کلاس") +
-            '</button><details class="dashboard-entity-more"><summary aria-label="عملیات بیشتر برای ' +
+            '</button><details class="dashboard-entity-more"><summary id="entity-menu-' +
+            (isSchool ? "school" : "class") +
+            "-" +
+            id +
+            '" aria-label="عملیات بیشتر برای ' +
             esc(item.name) +
             '">بیشتر</summary><div><button class="danger" onclick="' +
             (isSchool ? "deleteSchool" : "deleteClass") +
@@ -8308,12 +8719,257 @@
         }
         return h + "</div></section>";
       }
+
+      // Dashboard data stays separate from its markup and never mutates grades.
+      let dashboardWorkCache = null;
+      function dashboardWorkModel(date = todayISO()) {
+        const scope = globalThis.EduV24?.getReportContext();
+        const cacheKey = scope ? JSON.stringify([date, scope]) : null;
+        if (cacheKey && dashboardWorkCache?.key === cacheKey)
+          return dashboardWorkCache.model;
+        const todaySessions = db.sessions.filter(
+          (session) => session.date === date,
+        );
+        const classes = new Map(
+          db.schools.flatMap((school) =>
+            school.classes.map((c) => [c.id, { school, c }]),
+          ),
+        );
+        const attendance = [];
+        for (const session of todaySessions) {
+          const c = classes.get(session.classId)?.c;
+          if (!c) continue;
+          const members = session.roster || c.students;
+          const unknown = members.filter(
+            (student) =>
+              !/^(present|absent|late(?::\d+)?)$/.test(
+                session.attendance?.[student.id] || "",
+              ),
+          ).length;
+          if (unknown) attendance.push({ session, unknown, className: c.name });
+        }
+        const grading = {
+          incomplete: 0,
+          remedial: 0,
+          unconfirmed: 0,
+          errors: 0,
+          firstIncompleteClassId: "",
+          firstRemedialClassId: "",
+        };
+        for (const { c } of classes.values())
+          for (const lesson of c.lessons || []) {
+            if (!lesson.gradingPolicy?.confirmed) grading.unconfirmed++;
+            for (const student of c.students) {
+              try {
+                const result = calcStudentLesson(c, lesson, student.id);
+                if (result.passed === false) {
+                  grading.remedial++;
+                  grading.firstRemedialClassId ||= c.id;
+                } else if (result.complete === false || result.final == null) {
+                  grading.incomplete++;
+                  grading.firstIncompleteClassId ||= c.id;
+                }
+              } catch {
+                grading.errors++;
+              }
+            }
+          }
+        const planned = [],
+          day = getDayIdxFromDate(date);
+        if ((db.activeDays || []).includes(day))
+          for (let period = 0; period < (db.periods || 6); period++) {
+            const entry = getMasterEntry(day, period, date);
+            if (!entry) continue;
+            const found = classes.get(entry.classId);
+            const lesson = found?.c.lessons.find(
+              (l) => l.id === entry.lessonId,
+            );
+            if (!found || !lesson) continue;
+            planned.push({
+              period,
+              day,
+              className: found.c.name,
+              schoolName: found.school.name,
+              lessonName: lesson.name,
+              session:
+                todaySessions.find(
+                  (s) =>
+                    s.classId === entry.classId &&
+                    s.lessonId === entry.lessonId &&
+                    s.period === period,
+                ) || null,
+            });
+          }
+        const model = {
+          date,
+          attendance,
+          grading,
+          planned,
+          sessions: todaySessions.length,
+          closed: !!scope?.closed,
+        };
+        if (cacheKey) dashboardWorkCache = { key: cacheKey, model };
+        return model;
+      }
+      function dashboardEnsureToday(date) {
+        if (date === todayISO()) return true;
+        dashboardWorkCache = null;
+        render();
+        alert(
+          "تاریخ روز تغییر کرده است؛ میز کار به‌روز شد. جلسه امروز را دوباره انتخاب کنید.",
+        );
+        return false;
+      }
+      function dashboardStartSession(day, period, date) {
+        if (dashboardEnsureToday(date)) clickMasterCell(day, period);
+      }
+      function dashboardOpenSession(id) {
+        const session = db.sessions.find((s) => s.id === id);
+        if (session && dashboardEnsureToday(session.date))
+          openSessionModal(session);
+      }
+      function dashboardReviewGrades(classId) {
+        const found = findClassById(classId);
+        if (!found) return;
+        state.schoolId = found.school.id;
+        goClass(classId);
+      }
+      function dashboardDailyReport() {
+        openReportScope("", "", "daily");
+        EduPeriodicReports.set("date", todayISO());
+      }
+      function renderDashboardWork() {
+        if (!db.schools.some((school) => school.classes.length)) return "";
+        const model = dashboardWorkModel(),
+          fa = (n) => n.toLocaleString("fa-IR");
+        const pendingPeople = model.attendance.reduce(
+          (n, item) => n + item.unknown,
+          0,
+        );
+        let html =
+          '<section class="dashboard-work no-print" aria-labelledby="dashboardWorkTitle">' +
+          '<header class="dashboard-work-heading"><div><p class="eyebrow">میز کار روزانه</p><h2 id="dashboardWorkTitle">امروز چه کاری داریم؟</h2><p>' +
+          esc(faDate(model.date)) +
+          " · " +
+          fa(model.sessions) +
+          " جلسه ثبت‌شده</p></div>" +
+          '<button class="ghost" onclick="dashboardDailyReport()">گزارش روزانه</button></header>';
+        html += '<div class="dashboard-tasks">';
+        const tasks = [
+          {
+            count: pendingPeople,
+            label: "حضور‌وغیاب تعیین‌نشده",
+            detail: "نفرـجلسه در جلسات امروز",
+            tone: "amber",
+            action: model.attendance.length
+              ? "dashboardOpenSession('" +
+                esc(model.attendance[0].session.id) +
+                "')"
+              : "",
+            button: "تکمیل حضور‌وغیاب",
+          },
+          {
+            count: model.grading.incomplete,
+            label: "نمره ناتمام",
+            detail: "هنرجوـدرس در دوره جاری",
+            tone: "indigo",
+            action: model.grading.firstIncompleteClassId
+              ? "dashboardReviewGrades('" +
+                esc(model.grading.firstIncompleteClassId) +
+                "')"
+              : "",
+            button: "بررسی دروس",
+          },
+          {
+            count: model.grading.remedial,
+            label: "نیازمند جبران",
+            detail: "هنرجوـدرس؛ جدا از نمره ناقص",
+            tone: "rose",
+            action: model.grading.firstRemedialClassId
+              ? "dashboardReviewGrades('" +
+                esc(model.grading.firstRemedialClassId) +
+                "')"
+              : "",
+            button: "بررسی نتیجه‌ها",
+          },
+        ];
+        for (const task of tasks)
+          html +=
+            '<article class="dashboard-task task-' +
+            task.tone +
+            '"><strong>' +
+            fa(task.count) +
+            "</strong><h3>" +
+            task.label +
+            "</h3><p>" +
+            task.detail +
+            "</p>" +
+            (task.count && task.action
+              ? '<button class="ghost" onclick="' +
+                task.action +
+                '">' +
+                task.button +
+                "</button>"
+              : '<span class="dashboard-task-clear">موردی برای پیگیری نیست</span>') +
+            "</article>";
+        html += "</div>";
+        if (model.grading.unconfirmed || model.grading.errors)
+          html +=
+            '<p class="dashboard-work-notice" role="status">' +
+            (model.grading.unconfirmed
+              ? fa(model.grading.unconfirmed) +
+                " درس با قواعد تأییدنشده یا قدیمی؛ پیش از ارائه کارنامه، تنظیمات درس را بررسی کنید. "
+              : "") +
+            (model.grading.errors
+              ? fa(model.grading.errors) +
+                " نتیجه قابل محاسبه نیست و نیاز به بررسی دارد."
+              : "") +
+            "</p>";
+        html +=
+          '<section class="dashboard-agenda" aria-labelledby="dashboardAgendaTitle"><h3 id="dashboardAgendaTitle">برنامه امروز</h3>';
+        if (!model.planned.length)
+          html +=
+            '<p class="muted">برای امروز زنگی در برنامه هفتگی تعریف نشده است. نبود جلسه به معنی غیبت هنرجو نیست.</p><button class="ghost" onclick="goMaster()">مشاهده برنامه هفتگی</button>';
+        else
+          for (const item of model.planned)
+            html +=
+              '<article class="dashboard-agenda-row"><span class="dashboard-period">' +
+              esc(getPeriodName(item.period)) +
+              "</span><div><h4>" +
+              esc(item.lessonName) +
+              "</h4><p>" +
+              esc(item.schoolName + " · " + item.className) +
+              '</p></div><button class="' +
+              (item.session ? "ghost" : "") +
+              '" onclick="' +
+              (item.session
+                ? "dashboardOpenSession('" + esc(item.session.id) + "')"
+                : "dashboardStartSession(" +
+                  item.day +
+                  "," +
+                  item.period +
+                  ",\'" +
+                  model.date +
+                  "\')") +
+              '"' +
+              (model.closed && !item.session ? " disabled" : "") +
+              ">" +
+              (item.session
+                ? "مشاهده جلسه"
+                : model.closed
+                  ? "دوره بسته است"
+                  : "ثبت جلسه") +
+              "</button></article>";
+        return html + "</section></section>";
+      }
+
       function renderSchools() {
         const classes = db.schools.flatMap((s) => s.classes || []);
         let h =
           headerHtml() +
           '<section class="ui-hero"><p class="eyebrow">مدیریت کلاس، همراه هر روز شما</p><h2>مدرسه‌ها و کلاس‌های من</h2><p>از نمای کلی تا گزارش هر کلاس، همه‌چیز در دسترس شماست.</p></section>' +
-          dashboardStats(classes, db.schools.length);
+          dashboardStats(classes, db.schools.length) +
+          renderDashboardWork();
         h +=
           '<section class="dashboard-report-links no-print"><button onclick="openReportScope()"><span class="dashboard-shortcut-symbol" aria-hidden="true">↗</span><span><strong>گزارش فعالیت‌ها</strong><small>جلسات و حضور‌وغیاب مدارس</small></span><span aria-hidden="true">←</span></button><button onclick="openReportScope(\'\',\'\',\'karnameh\')"><span class="dashboard-shortcut-symbol teal" aria-hidden="true">▤</span><span><strong>کارنامه کلاس‌ها</strong><small>نمرات و وضعیت تکمیل دروس</small></span><span aria-hidden="true">←</span></button></section>';
         h += dashboardDirectory(db.schools, "schools");
@@ -8420,7 +9076,9 @@
             id +
             '\')">ثبت گروهی نمره</button><button class="lesson-config ghost" onclick="openLessonConfig(\'' +
             id +
-            '\')">تنظیمات درس</button><details class="lesson-more"><summary aria-label="عملیات بیشتر برای ' +
+            '\')">تنظیمات درس</button><details class="lesson-more"><summary id="lesson-menu-' +
+            id +
+            '" aria-label="عملیات بیشتر برای ' +
             esc(l.name) +
             '">بیشتر</summary><div class="lesson-more-menu"><button class="ghost" onclick="EduV24.course.copy(\'' +
             id +
@@ -8542,7 +9200,11 @@
             id +
             "')\">ویرایش مشخصات</button><button class=\"student-report\" onclick=\"showModal('کارنامه هنرجو',buildDetailedKarnamehHtml(getClassObj(state.schoolId,state.classId),'" +
             id +
-            '\'))">کارنامه</button><details class="student-more"><summary aria-label="عملیات بیشتر برای ' +
+            '\'))">کارنامه</button><details class="student-more"><summary id="student-menu-' +
+            esc(c.id) +
+            "-" +
+            id +
+            '" aria-label="عملیات بیشتر برای ' +
             esc(st.name) +
             '">بیشتر</summary><div class="student-more-menu"><button class="ghost" onclick="openTransferModal(\'' +
             id +
@@ -8674,9 +9336,9 @@
         const school = getSchool(state.schoolId);
         let h = headerHtml();
         h += `<div class="breadcrumb">
-    <a onclick="goSchools()">مدارس</a> ← 
-    <a onclick="goSchool('${school.id}')">${esc(school.name)}</a> ← 
-    <a onclick="backToClass()">${esc(c.name)}</a> ← 
+    <a onclick="goSchools()">مدارس</a> ←
+    <a onclick="goSchool('${school.id}')">${esc(school.name)}</a> ←
+    <a onclick="backToClass()">${esc(c.name)}</a> ←
     <strong>${esc(lesson.name)}</strong>${lesson.teacher ? ` <span class="muted">(${esc(lesson.teacher)})</span>` : ""}
   </div>`;
         h += `<div class="tabs">
@@ -8744,7 +9406,7 @@
       <input type="number" name="period" min="1" max="12" placeholder="شماره زنگ" required value="1" style="width:120px">
       <button type="submit">➕ افزودن/بازکردن</button>
     </form></div>
-    
+
     <div class="card">
       <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:10px">
         <h3 style="margin:0">📅 جلسات ثبت‌شده (${sessions.length})</h3>
@@ -9397,7 +10059,7 @@
     <div style="margin-bottom:10px">
       <strong>${DAYS[day]} — زنگ ${period + 1}</strong>
     </div>
-    
+
     <div class="form-row" style="margin-bottom:6px">
       <label style="min-width:60px">کلاس:</label>
       <select id="sessNewClass" style="flex:1" onchange="updateSessionLessonOptions()">
@@ -10011,15 +10673,82 @@
         openSessionModal(sess);
       }
 
+      let modalReturnFocus = null;
+      function setModalBackground(inert) {
+        document.body.classList.toggle("modal-open", inert);
+        for (const id of ["app", "uiBottomNav", "mobileBar"]) {
+          const element = document.getElementById(id);
+          if (element) element.inert = inert;
+        }
+      }
+      function modalFocusableElements() {
+        return [
+          ...document.querySelectorAll(
+            "#modal button,#modal input,#modal select,#modal textarea,#modal a[href],#modal [tabindex]",
+          ),
+        ].filter(
+          (element) =>
+            element.tabIndex >= 0 &&
+            !element.matches(":disabled") &&
+            element.getClientRects().length &&
+            getComputedStyle(element).visibility !== "hidden" &&
+            !element.closest("[inert]"),
+        );
+      }
       function showModal(title, html) {
+        const modal = document.getElementById("modal");
+        if (modal.classList.contains("hidden")) {
+          const opener = document.activeElement;
+          modalReturnFocus =
+            opener && opener !== document.body
+              ? {
+                  element: opener,
+                  id: opener.id,
+                  action: opener.getAttribute("onclick"),
+                }
+              : null;
+        }
         document.getElementById("modalTitle").textContent = title;
         document.getElementById("modalBody").innerHTML = html;
-        document.getElementById("modal").classList.remove("hidden");
+        modal.classList.remove("hidden");
+        modal.setAttribute("aria-hidden", "false");
+        setModalBackground(true);
+        modal.querySelector(".modal-dialog").focus({ preventScroll: true });
         setTimeout(initShamsiPickers, 0);
       }
       function closeModal() {
-        document.getElementById("modal").classList.add("hidden");
+        const modal = document.getElementById("modal");
+        closeShamsiCalendar();
+        modal.classList.add("hidden");
+        modal.setAttribute("aria-hidden", "true");
+        setModalBackground(false);
+        const previous = modalReturnFocus;
+        modalReturnFocus = null;
         render();
+        requestAnimationFrame(() => {
+          if (!modal.classList.contains("hidden")) return;
+          let target = previous?.element?.isConnected
+            ? previous.element
+            : (previous?.id && document.getElementById(previous.id)) ||
+              (previous?.action &&
+                [
+                  ...document.querySelectorAll(
+                    "#app button[onclick],#app a[onclick]",
+                  ),
+                ].find(
+                  (element) =>
+                    element.getAttribute("onclick") === previous.action,
+                )) ||
+              document.getElementById("app");
+          const closedMenu = target?.closest("details:not([open])");
+          if (closedMenu) target = closedMenu.querySelector("summary");
+          if (
+            target &&
+            !target.matches(":disabled") &&
+            !target.closest("[inert]")
+          )
+            target.focus({ preventScroll: true });
+        });
       }
 
       async function exportBackup() {
@@ -13067,6 +13796,7 @@
                     (busy > 0 && !el.matches("[data-grade]"));
               }
             });
+          syncShamsiDisabledInputs();
         }
 
         function renderV24() {
@@ -14989,10 +15719,6 @@
         }
 
         function installUI() {
-          const style = document.createElement("link");
-          style.rel = "stylesheet";
-          style.href = "edumanager-v24.css";
-          if (!globalThis.__EDU_SINGLE_FILE__) document.head.append(style);
           window.addEventListener("beforeunload", (event) => {
             if (busy || drafts.size || draftRecoveryFailed) {
               event.preventDefault();
@@ -15034,6 +15760,7 @@
             const overlay = document.getElementById("modal");
             if (overlay.classList.contains("hidden")) return;
             if (event.key === "Escape") {
+              event.preventDefault();
               if (drafts.size) {
                 flushDrafts({ strict: true })
                   .then(() => closeModal())
@@ -15042,18 +15769,22 @@
               return;
             }
             if (event.key === "Tab") {
-              const nodes = [
-                ...overlay.querySelectorAll(
-                  "button,input,select,textarea,a[href],[tabindex]",
-                ),
-              ].filter((el) => !el.disabled && el.offsetParent !== null);
+              const nodes = modalFocusableElements();
               if (nodes.length) {
                 const first = nodes[0],
                   last = nodes[nodes.length - 1];
-                if (event.shiftKey && document.activeElement === first) {
+                if (
+                  event.shiftKey &&
+                  (document.activeElement === first ||
+                    !nodes.includes(document.activeElement))
+                ) {
                   event.preventDefault();
                   last.focus();
-                } else if (!event.shiftKey && document.activeElement === last) {
+                } else if (
+                  !event.shiftKey &&
+                  (document.activeElement === last ||
+                    !nodes.includes(document.activeElement))
+                ) {
                   event.preventDefault();
                   first.focus();
                 }
@@ -15089,11 +15820,12 @@
           setTimeout(() => {
             applyDrafts();
             lockControls();
-            document
-              .querySelector(
-                "#modal input:not([disabled]),#modal button:not([disabled])",
-              )
-              ?.focus();
+            if (!document.getElementById("modal").classList.contains("hidden"))
+              (
+                modalFocusableElements().find((element) =>
+                  element.closest("#modalBody"),
+                ) || document.querySelector("#modal .modal-dialog")
+              )?.focus({ preventScroll: true });
           }, 0);
         }
 
@@ -15188,6 +15920,7 @@
               id: workspace?.id || "",
               revision: workspace?.revision || 0,
               pendingDrafts: drafts.size,
+              closed: !!workspace?.closed,
             }),
             normalizeDB,
             validateV24,
@@ -15912,6 +16645,9 @@
             document.body.append(nav);
           }
           nav.hidden = !!(db.settings.password && !isAuthenticated);
+          nav.inert = !document
+            .getElementById("modal")
+            .classList.contains("hidden");
           const current = ["school", "class", "lesson"].includes(state.view)
             ? "class"
             : state.view;
@@ -16310,119 +17046,135 @@
           }
         }
 
+        const designRoots = [];
+        const designObserver = new MutationObserver(schedule);
+        function observeDesignRoots() {
+          for (const root of designRoots)
+            designObserver.observe(root, { childList: true, subtree: true });
+        }
         function enhance() {
-          polishReportFilters();
-          mobileExperience();
-          polishExperience();
-          updateDesign();
-          pending = false;
-          for (const table of document.querySelectorAll(
-            "#app table,#modalBody table",
-          )) {
-            if (!table.dataset.responsiveSized) {
-              const columns = Math.max(
-                1,
-                ...[...table.rows]
-                  .slice(0, 3)
-                  .map((row) =>
-                    [...row.cells].reduce((n, cell) => n + cell.colSpan, 0),
-                  ),
-              );
-              table.style.minWidth =
-                (columns >= 4 ? columns * 120 : Math.min(380, columns * 140)) +
-                "px";
-              table.dataset.responsiveSized = "1";
-            }
-          }
-          for (const container of document.querySelectorAll(".table-scroll")) {
-            if (!container.hasAttribute("tabindex")) {
-              container.tabIndex = 0;
-              container.setAttribute("role", "region");
-              container.setAttribute("aria-label", "جدول با پیمایش افقی");
-            }
-          }
-          for (const table of document.querySelectorAll(
-            "#app table,#modalBody table",
-          )) {
-            if (table.closest(".responsive-scroll,.table-scroll")) continue;
-            const wrap = document.createElement("div");
-            wrap.className = "responsive-scroll";
-            wrap.tabIndex = 0;
-            wrap.setAttribute("role", "region");
-            wrap.setAttribute(
-              "aria-label",
-              "جدول؛ برای دیدن ستون‌های دیگر افقی پیمایش کنید",
-            );
-            table.before(wrap);
-            wrap.append(table);
-          }
-          styleDataTables();
-          for (const grid of document.querySelectorAll("#app .schedule-grid")) {
-            if (grid.parentElement.classList.contains("responsive-scroll"))
-              continue;
-            const wrap = document.createElement("div");
-            wrap.className = "responsive-scroll";
-            wrap.tabIndex = 0;
-            wrap.setAttribute("role", "region");
-            wrap.setAttribute("aria-label", "برنامه هفتگی با پیمایش افقی");
-            grid.before(wrap);
-            wrap.append(grid);
-          }
-          const bar = document.querySelector(".workspace-bar");
-          if (bar && !bar.querySelector(".workspace-tools")) {
-            const tools = document.createElement("details");
-            tools.className = "workspace-tools no-print";
-            tools.innerHTML =
-              '<summary>مدیریت و پشتیبان‌ها</summary><div class="tool-actions"></div>';
-            const box = tools.querySelector(".tool-actions");
-            for (const button of [...bar.querySelectorAll("button")])
-              box.append(button);
-            for (const small of [...bar.querySelectorAll("small")])
-              box.append(small);
-            const backup = document.createElement("button");
-            backup.className = "ghost";
-            backup.textContent = "ذخیره پشتیبان";
-            backup.onclick = () =>
-              exportBackup().catch((e) => alert(e.message));
-            box.prepend(backup);
-            bar.append(tools);
-          }
-          const topbar = document.querySelector(".topbar"),
-            actions = topbar?.querySelector(".actions");
-          if (actions && !topbar.querySelector(".navigation-menu")) {
-            const menu = document.createElement("details");
-            menu.className = "navigation-menu no-print";
-            menu.open =
-              innerWidth > 700 &&
-              !matchMedia("(max-width:1000px) and (pointer:coarse)").matches;
-            menu.innerHTML =
-              '<summary title="ابزارها و تنظیمات"><span class="menu-toggle-label">فهرست برنامه</span><svg class="menu-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path class="menu-line-top" d="M5 12h14"/><path class="menu-line-middle" d="M5 12h14"/><path class="menu-line-bottom" d="M5 12h14"/></svg></summary>';
-            actions.before(menu);
-            menu.append(actions);
-            menu.addEventListener("toggle", () => {
-              if (!menu.open) {
-                closeClassMenu();
-                closeDataMenu();
+          designObserver.disconnect();
+          try {
+            polishReportFilters();
+            mobileExperience();
+            polishExperience();
+            updateDesign();
+            for (const table of document.querySelectorAll(
+              "#app table,#modalBody table",
+            )) {
+              if (!table.dataset.responsiveSized) {
+                const columns = Math.max(
+                  1,
+                  ...[...table.rows]
+                    .slice(0, 3)
+                    .map((row) =>
+                      [...row.cells].reduce((n, cell) => n + cell.colSpan, 0),
+                    ),
+                );
+                table.style.minWidth =
+                  (columns >= 4
+                    ? columns * 120
+                    : Math.min(380, columns * 140)) + "px";
+                table.dataset.responsiveSized = "1";
               }
-            });
-            actions.addEventListener("click", (e) => {
-              const button = e.target.closest("button");
-              if (
-                button &&
-                !button.hasAttribute("aria-controls") &&
-                matchMedia(
-                  "(max-width:700px), (max-width:1000px) and (pointer:coarse)",
-                ).matches
-              )
-                menu.open = false;
-            });
-            const settings = actions.querySelector(
-              'button[onclick="openSettingsModal()"]',
-            );
-            if (settings) {
-              settings.setAttribute("aria-label", "تنظیمات برنامه");
-              settings.title = "تنظیمات برنامه";
             }
+            for (const container of document.querySelectorAll(
+              ".table-scroll",
+            )) {
+              if (!container.hasAttribute("tabindex")) {
+                container.tabIndex = 0;
+                container.setAttribute("role", "region");
+                container.setAttribute("aria-label", "جدول با پیمایش افقی");
+              }
+            }
+            for (const table of document.querySelectorAll(
+              "#app table,#modalBody table",
+            )) {
+              if (table.closest(".responsive-scroll,.table-scroll")) continue;
+              const wrap = document.createElement("div");
+              wrap.className = "responsive-scroll";
+              wrap.tabIndex = 0;
+              wrap.setAttribute("role", "region");
+              wrap.setAttribute(
+                "aria-label",
+                "جدول؛ برای دیدن ستون‌های دیگر افقی پیمایش کنید",
+              );
+              table.before(wrap);
+              wrap.append(table);
+            }
+            styleDataTables();
+            for (const grid of document.querySelectorAll(
+              "#app .schedule-grid",
+            )) {
+              if (grid.parentElement.classList.contains("responsive-scroll"))
+                continue;
+              const wrap = document.createElement("div");
+              wrap.className = "responsive-scroll";
+              wrap.tabIndex = 0;
+              wrap.setAttribute("role", "region");
+              wrap.setAttribute("aria-label", "برنامه هفتگی با پیمایش افقی");
+              grid.before(wrap);
+              wrap.append(grid);
+            }
+            const bar = document.querySelector(".workspace-bar");
+            if (bar && !bar.querySelector(".workspace-tools")) {
+              const tools = document.createElement("details");
+              tools.className = "workspace-tools no-print";
+              tools.innerHTML =
+                '<summary>مدیریت و پشتیبان‌ها</summary><div class="tool-actions"></div>';
+              const box = tools.querySelector(".tool-actions");
+              for (const button of [...bar.querySelectorAll("button")])
+                box.append(button);
+              for (const small of [...bar.querySelectorAll("small")])
+                box.append(small);
+              const backup = document.createElement("button");
+              backup.className = "ghost";
+              backup.textContent = "ذخیره پشتیبان";
+              backup.onclick = () =>
+                exportBackup().catch((e) => alert(e.message));
+              box.prepend(backup);
+              bar.append(tools);
+            }
+            const topbar = document.querySelector(".topbar"),
+              actions = topbar?.querySelector(".actions");
+            if (actions && !topbar.querySelector(".navigation-menu")) {
+              const menu = document.createElement("details");
+              menu.className = "navigation-menu no-print";
+              menu.open =
+                innerWidth > 700 &&
+                !matchMedia("(max-width:1000px) and (pointer:coarse)").matches;
+              menu.innerHTML =
+                '<summary title="ابزارها و تنظیمات"><span class="menu-toggle-label">فهرست برنامه</span><svg class="menu-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path class="menu-line-top" d="M5 12h14"/><path class="menu-line-middle" d="M5 12h14"/><path class="menu-line-bottom" d="M5 12h14"/></svg></summary>';
+              actions.before(menu);
+              menu.append(actions);
+              menu.addEventListener("toggle", () => {
+                if (!menu.open) {
+                  closeClassMenu();
+                  closeDataMenu();
+                }
+              });
+              actions.addEventListener("click", (e) => {
+                const button = e.target.closest("button");
+                if (
+                  button &&
+                  !button.hasAttribute("aria-controls") &&
+                  matchMedia(
+                    "(max-width:700px), (max-width:1000px) and (pointer:coarse)",
+                  ).matches
+                )
+                  menu.open = false;
+              });
+              const settings = actions.querySelector(
+                'button[onclick="openSettingsModal()"]',
+              );
+              if (settings) {
+                settings.setAttribute("aria-label", "تنظیمات برنامه");
+                settings.title = "تنظیمات برنامه";
+              }
+            }
+          } finally {
+            pending = false;
+            observeDesignRoots();
           }
         }
         function schedule() {
@@ -16451,11 +17203,7 @@
             document.getElementById("app"),
             document.getElementById("modalBody"),
           ])
-            if (el)
-              new MutationObserver(schedule).observe(el, {
-                childList: true,
-                subtree: true,
-              });
+            if (el) designRoots.push(el);
           enhance();
           viewport();
           window.visualViewport?.addEventListener("resize", viewport);
