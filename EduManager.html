@@ -2096,6 +2096,105 @@ details.quick-create,details.lesson-create,details.student-import{scroll-margin-
 @media(max-width:700px),(max-width:1000px) and (pointer:coarse){.week-config-actions{display:grid;grid-template-columns:1fr 1fr}.week-config-actions>.danger{grid-column:1/-1;margin:0;background:transparent;border:1px solid #fee2e2}}
 }
 </style>
+<style id="dashboardReportsDesign">
+@media screen{
+.dashboard-report-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:20px}
+.dashboard-report-links>button{display:flex;align-items:center;gap:12px;text-align:start;min-width:0;min-height:92px;border:1px solid #e4e9f3;background:#fff;color:#26334c;border-radius:18px;padding:18px}
+.dashboard-report-links>button:hover{background:#f8faff;border-color:#c7d2fe}
+.dashboard-report-links>button>span:nth-child(2){flex:1;min-width:0}
+.dashboard-report-links strong{display:block;font-size:.88rem}
+.dashboard-report-links small{display:block;color:#64748b;font-weight:400;font-size:.7rem;margin-top:4px}
+.dashboard-shortcut-symbol{display:grid;place-items:center;width:42px;height:42px;flex:none;border-radius:13px;background:#eef2ff;color:#4f46e5;font-size:24px}
+.dashboard-shortcut-symbol.teal{background:#e6f6f1;color:#0f766e}
+.dashboard-directory{padding:0}
+.dashboard-section-heading{padding:20px}
+.dashboard-section-heading h3{display:flex;align-items:center;gap:9px;margin:0!important}
+.dashboard-section-heading p{font-size:.73rem;color:#64748b;margin:6px 0 0}
+.dashboard-entities{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:0 18px 18px}
+.dashboard-entity{min-width:0;border:1px solid #e5eaf3;border-radius:16px;padding:16px;background:#fff}
+.dashboard-entity[hidden],.dashboard-search-result[hidden]{display:none!important}
+.dashboard-entity-info{display:flex;align-items:center;gap:12px;min-width:0}
+.dashboard-entity-info>div{min-width:0}
+.dashboard-entity-info h4{font-size:.92rem;margin:0 0 5px;overflow-wrap:anywhere;line-height:1.9}
+.dashboard-entity-info p{font-size:.72rem;color:#64748b;margin:0}
+.dashboard-entity-symbol{display:grid;place-items:center;width:44px;height:44px;border-radius:13px;background:#eef2ff;color:#4f46e5;font-weight:500;flex:none}
+.dashboard-entity-actions{display:grid;grid-template-columns:1.2fr 1fr auto;gap:6px;border-top:1px solid #edf1f7;padding-top:12px;margin-top:16px}
+.dashboard-entity-actions button,.dashboard-entity-more summary{font-size:.7rem;min-height:42px;padding:8px 10px;border-radius:10px}
+.dashboard-entity-more{position:relative}
+.dashboard-entity-more summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:center;border:1px solid #e5eaf3;color:#64748b}
+.dashboard-entity-more summary::-webkit-details-marker{display:none}
+.dashboard-entity-more>div{position:absolute;inset-inline-end:0;top:calc(100% + 6px);z-index:35;min-width:150px;padding:8px;background:#fff;border:1px solid #e5eaf3;border-radius:12px;box-shadow:0 12px 32px #23345a15}
+.dashboard-entity-more button{width:100%;text-align:start}
+.dashboard-search{display:flex;flex-direction:column;gap:6px;padding:0 18px 14px;color:#64748b;font-size:.73rem}
+.dashboard-search input{width:100%;min-width:0}
+.dashboard-search-result{font-size:.7rem;color:#64748b;margin:0 18px 14px}
+.school-overview{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid #e3e8f5;background:#f1f4ff;border-radius:16px;padding:16px 18px;margin-bottom:18px}
+.school-overview>div{display:flex;gap:14px;color:#52617b;font-size:.8rem}
+.school-overview button{font-size:.75rem}
+.class-context-actions{display:flex;gap:8px;margin:0 0 16px}
+.class-context-actions button{min-height:42px;font-size:.74rem}
+.report-page-heading{margin:6px 0 16px}
+.report-page-heading>p{color:#64748b;font-size:.72rem;margin:0 0 4px}
+.report-page-heading h2{font-size:1.5rem;margin:0 0 8px;letter-spacing:-.5px}
+.report-page-heading>span{display:inline-block;background:#eef2ff;color:#4338ca;border-radius:8px;padding:4px 10px;font-size:.72rem;max-width:100%;overflow-wrap:anywhere}
+.report-scope-summary{display:flex;flex-wrap:wrap;gap:18px;padding:0 0 18px;color:#64748b;font-size:.76rem}
+.report-scope-summary strong{color:#26334c;font-size:1rem;margin-inline-end:3px}
+.report-filter-card{background:#fff}
+.report-filter-card>h3{font-size:.96rem}
+.report-filter-card>p{font-size:.75rem!important;color:#64748b}
+.report-filter-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:14px!important}
+.report-filter-field{display:flex;flex-direction:column;gap:7px;min-width:0;font-size:.73rem;color:#52617b}
+.report-filter-field select,.report-filter-field input{width:100%;min-width:0}
+.report-options{padding:0!important;border:1px solid #e5eaf3;border-radius:12px;background:#f9fbff;margin-top:18px}
+.report-options>summary{min-height:44px;cursor:pointer;padding:12px 14px;color:#4338ca;font-size:.76rem}
+.report-options[open]{padding:0 14px 14px!important}
+.report-options[open]>summary{margin-inline:-14px}
+.report-options label{border:1px solid #e4e9f3;background:#fff;padding:7px 10px;border-radius:10px;font-size:.74rem}
+.report-options label:has(input:checked){background:#eef2ff;border-color:#c7d2fe;color:#4338ca}
+.report-options input{accent-color:#4f46e5}
+#globalReportOutput>.card,#lessonReportOutput>.card,#karnamehTabOutput>.card{border-radius:18px}
+.report-document{border:1px solid #e5eaf3;border-radius:16px;padding:18px;background:#fff}
+@media(max-width:700px),(max-width:1000px) and (pointer:coarse){
+#app>.dashboard-report-links{order:4}
+#app>.dashboard-directory{order:5}
+#app>.class-context-actions{order:4}
+#app>.report-page-heading{order:2}
+#app>.report-scope-summary{order:3}
+#app>.report-navigation{order:4}
+#app>.report-filter-card{order:5}
+#app>#globalReportOutput,#app>#lessonReportOutput,#app>#karnamehTabOutput{order:6}
+.dashboard-report-links{gap:9px;margin-bottom:16px}
+.dashboard-report-links>button{align-items:flex-start;flex-wrap:wrap;padding:13px;gap:8px;min-height:116px;border-radius:15px}
+.dashboard-report-links>button>span:nth-child(2){flex:1 1 100%}
+.dashboard-report-links>button>span:last-child{display:none}
+.dashboard-report-links strong{font-size:.78rem}
+.dashboard-report-links small{font-size:.65rem;line-height:1.8}
+.dashboard-shortcut-symbol{width:32px;height:32px;border-radius:10px;font-size:21px}
+.dashboard-entities{grid-template-columns:minmax(0,1fr);gap:10px;padding:0 12px 12px}
+.dashboard-section-heading{padding:16px}
+.dashboard-section-heading p{font-size:.67rem}
+.dashboard-entity{padding:14px}
+.dashboard-entity-actions{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) auto}
+.dashboard-entity-actions button,.dashboard-entity-more summary{font-size:.68rem;min-height:44px;padding-inline:8px}
+.school-overview{padding:14px;flex-wrap:wrap}
+.school-overview>div{font-size:.74rem}
+.school-overview button{font-size:.7rem;min-height:42px}
+.class-context-actions button{flex:1;font-size:.71rem;padding-inline:9px}
+.report-page-heading h2{font-size:1.2rem}
+.report-scope-summary{gap:14px;font-size:.7rem;padding-bottom:14px}
+.report-scope-summary strong{font-size:.9rem}
+.report-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 10px!important}
+.report-filter-field{font-size:.68rem}
+.report-filter-field input,.report-filter-field select{padding:10px 8px;font-size:.82rem!important;min-height:46px}
+.report-options>summary{font-size:.71rem}
+.report-options .row{gap:7px}
+.report-options label{flex:1 1 42%;font-size:.7rem;padding:7px}
+.report-options input[type=checkbox],.report-options input[type=radio]{width:18px;height:18px;min-height:18px}
+.report-document{padding:14px}
+}
+@media(max-width:340px){.dashboard-entity-actions{grid-template-columns:1fr 1fr}.dashboard-entity-more{grid-column:1/-1}.report-filter-grid{grid-template-columns:minmax(0,1fr)}}
+}
+</style>
 </head>
   <body>
     <div class="cal-popup" id="calPopup"></div>
@@ -3000,25 +3099,24 @@ details.quick-create,details.lesson-create,details.student-import{scroll-margin-
       }
 
       // ==================== صفحه گزارش ====================
-      function renderReports() {
-        let h = headerHtml();
-        h += `<div class="tabs" style="margin-bottom:16px">
-    <button class="${state.reportTab === "comprehensive" ? "active" : ""}" onclick="setReportTab('comprehensive')">📈 گزارش گیری جامع</button>
-    <button class="${state.reportTab === "lessonReport" ? "active" : ""}" onclick="setReportTab('lessonReport')">📊 گزارش درس</button>
-    <button class="${state.reportTab === "karnameh" ? "active" : ""}" onclick="setReportTab('karnameh')">📋 کارنامه</button>
-  </div>`;
-        if (state.reportTab === "comprehensive") h += renderComprehensiveTab();
-        else if (state.reportTab === "lessonReport")
-          h += renderLessonReportTabHtml();
-        else h += renderKarnamehTabHtml();
+
+      function renderReports(){
+        const tab=state.reportTab||"comprehensive";
+        const filter=tab==="comprehensive"?globalFilter:tab==="lessonReport"?lessonReportFilter:karnamehFilter;
+        const schools=db.schools.filter(s=>!filter.schoolId||s.id===filter.schoolId),classes=schools.flatMap(s=>s.classes).filter(c=>!filter.classId||c.id===filter.classId);
+        const scope=(filter.schoolId?schools[0]?.name:"همه مدارس")||"مدرسه انتخاب‌شده";
+        let h=headerHtml()+'<header class="report-page-heading"><p>تصویر روشن از عملکرد کلاس‌ها</p><h2>گزارش‌ها و کارنامه‌ها</h2><span>'+esc(scope)+(filter.classId?' · '+esc(classes[0]?.name||"کلاس انتخاب‌شده"):'')+'</span></header>';
+        h+='<section class="report-scope-summary no-print"><span><strong>'+classes.length.toLocaleString("fa-IR")+'</strong> کلاس</span><span><strong>'+classes.reduce((n,c)=>n+c.students.length,0).toLocaleString("fa-IR")+'</strong> هنرجو</span><span><strong>'+classes.reduce((n,c)=>n+(c.lessons||[]).length,0).toLocaleString("fa-IR")+'</strong> درس در محدوده</span></section>';
+        h+='<nav class="tabs report-navigation no-print" aria-label="نوع گزارش">'+[["comprehensive","گزارش فعالیت‌ها"],["lessonReport","گزارش دروس"],["karnameh","کارنامه‌ها"]].map(([key,label])=>'<button type="button" '+(tab===key?'aria-current="page" ':'')+'class="'+(tab===key?'active':'')+'" onclick="setReportTab(\''+key+'\')">'+label+'</button>').join("")+'</nav>';
+        if(tab==="comprehensive")h+=renderComprehensiveTab();else if(tab==="lessonReport")h+=renderLessonReportTabHtml();else h+=renderKarnamehTabHtml();
         return h;
       }
 
       // --- زیربخش ۱: گزارش جامع ---
       function renderComprehensiveTab() {
         let h = `<div class="card">
-    <h3>📈 گزارش گیری جامع</h3>
-    <p class="muted" style="font-size:.85em">برای گزارش روزانه، تاریخ را انتخاب کنید و تعیین کنید اسامی چه کسانی نمایش داده شود.</p>
+    <h3>گزارش فعالیت‌ها</h3>
+    <p class="muted" style="font-size:.85em">مدرسه یا کلاس را انتخاب کنید؛ برای گزارش روزانه، تاریخ جلسه را هم مشخص کنید.</p>
     <div class="row">
       <input type="date" value="${globalFilter.date}" onchange="updateGlobalFilter('date', this.value)" title="فیلتر تاریخ">
       <select onchange="updateGlobalFilter('schoolId', this.value)">
@@ -4420,55 +4518,50 @@ details.quick-create,details.lesson-create,details.student-import{scroll-margin-
         }
       }
 
-      function renderSchools() {
-        let h = headerHtml();
-        const classes=db.schools.flatMap(s=>s.classes||[]);
-        const counts=[db.schools.length,classes.length,classes.reduce((n,c)=>n+(c.students?.length||0),0)];
-        h += '<section class="ui-hero"><p class="eyebrow">مدیریت کلاس، همراه هر روز شما</p><h2>مدرسه‌ها و کلاس‌های من</h2><p>مدرسه‌ات را انتخاب کن؛ نمره‌ها، حضور‌وغیاب و گزارش‌ها یک‌جا هستند.</p></section><section class="ui-stats" aria-label="نمای کلی">'+counts.map((n,i)=>'<div class="ui-stat"><strong>'+n.toLocaleString("fa-IR")+'</strong><span>'+["مدرسه","کلاس","هنرجو"][i]+'</span></div>').join("")+'</section>';
 
-        h += `<div class="card"><h3>افزودن مدرسه</h3>
-    <form onsubmit="addSchool(event)" class="row">
-      <input name="name" placeholder="نام مدرسه" required style="flex:1"><button type="submit">➕ افزودن</button>
-    </form></div>
-    <div class="card"><h3>مدارس (${db.schools.length})</h3>`;
-        if (!db.schools.length)
-          h += `<div class="empty">هنوز مدرسه‌ای نیست</div>`;
-        else
-          h += db.schools
-            .map(
-              (s) => `<div class="list-item" onclick="goSchool('${s.id}')">
-    <div><strong>🏫 ${esc(s.name)}</strong><span class="muted"> — ${s.classes.length} کلاس</span></div>
-    <button class="danger" onclick="event.stopPropagation();deleteSchool('${s.id}')">حذف</button></div>`,
-            )
-            .join("");
-        h += `</div>`;
+      function openReportScope(schoolId="",classId="",tab="comprehensive"){
+        globalFilter={...globalFilter,date:"",schoolId,classId,lessonId:"",studentId:"",period:""};
+        lessonReportFilter={schoolId,classId,lessonId:""};
+        karnamehFilter={schoolId,classId,studentId:""};
+        state.view="reports";state.reportTab=tab;render();
+      }
+      function filterDashboardEntities(input){
+        const root=input.closest(".dashboard-directory"),q=input.value.replace(/ي/g,"ی").replace(/ك/g,"ک").trim();
+        let count=0;for(const item of root.querySelectorAll(".dashboard-entity")){item.hidden=!item.dataset.name.replace(/ي/g,"ی").replace(/ك/g,"ک").includes(q);if(!item.hidden)count++;}
+        const message=root.querySelector(".dashboard-search-result");message.hidden=!q;message.textContent=count?count.toLocaleString("fa-IR")+" مورد پیدا شد":"موردی با این نام پیدا نشد.";
+      }
+      function dashboardStats(classes,schoolCount){
+        const values=[schoolCount,classes.length,classes.reduce((n,c)=>n+c.students.length,0)];
+        return '<section class="ui-stats" aria-label="نمای کلی">'+values.map((n,i)=>'<div class="ui-stat"><strong>'+n.toLocaleString("fa-IR")+'</strong><span>'+["مدرسه","کلاس","هنرجو"][i]+'</span></div>').join("")+'</section>';
+      }
+      function dashboardDirectory(items,kind,schoolId=""){
+        const isSchool=kind==="schools",name=isSchool?"مدرسه‌ها":"کلاس‌ها";
+        let h='<section class="card dashboard-directory"><header class="dashboard-section-heading"><div><h3>'+name+' <span class="lesson-count">'+items.length.toLocaleString("fa-IR")+'</span></h3><p>مدیریت اطلاعات و دسترسی مستقیم به گزارش‌ها</p></div></header>';
+        if(items.length>=4)h+='<label class="dashboard-search no-print"><span>جست‌وجو در '+name+'</span><input type="search" placeholder="نام '+(isSchool?'مدرسه':'کلاس')+'…" oninput="filterDashboardEntities(this)"></label>';
+        h+='<p class="dashboard-search-result no-print" role="status" hidden></p><div class="dashboard-entities">';
+        if(!items.length)h+='<div class="empty"><strong>هنوز '+(isSchool?'مدرسه‌ای':'کلاسی')+' اضافه نشده</strong><p>از فرم افزودن، اولین '+(isSchool?'مدرسه':'کلاس')+' را تعریف کنید.</p></div>';
+        for(const item of items){
+          const id=esc(item.id),classes=isSchool?item.classes:[item],students=classes.reduce((n,c)=>n+c.students.length,0);
+          const meta=isSchool?classes.length.toLocaleString("fa-IR")+" کلاس · "+students.toLocaleString("fa-IR")+" هنرجو":students.toLocaleString("fa-IR")+" هنرجو · "+(item.lessons||[]).length.toLocaleString("fa-IR")+" درس";
+          h+='<article class="dashboard-entity" data-name="'+esc(item.name)+'"><div class="dashboard-entity-info"><span class="dashboard-entity-symbol" aria-hidden="true">'+(isSchool?'م':'ک')+'</span><div><h4>'+esc(item.name)+'</h4><p>'+meta+'</p></div></div><div class="dashboard-entity-actions no-print"><button onclick="'+(isSchool?'goSchool':'goClass')+'(\''+id+'\')">'+(isSchool?'ورود به مدرسه':'مدیریت کلاس')+' ←</button><button class="ghost" onclick="openReportScope(\''+(isSchool?id:esc(schoolId))+'\',\''+(isSchool?'':id)+'\',\''+(isSchool?'comprehensive':'karnameh')+'\')">'+(isSchool?'گزارش مدرسه':'کارنامه کلاس')+'</button><details class="dashboard-entity-more"><summary aria-label="عملیات بیشتر برای '+esc(item.name)+'">بیشتر</summary><div><button class="danger" onclick="'+(isSchool?'deleteSchool':'deleteClass')+'(\''+id+'\')">حذف '+(isSchool?'مدرسه':'کلاس')+'</button></div></details></div></article>';
+        }
+        return h+'</div></section>';
+      }
+      function renderSchools(){
+        const classes=db.schools.flatMap(s=>s.classes||[]);
+        let h=headerHtml()+'<section class="ui-hero"><p class="eyebrow">مدیریت کلاس، همراه هر روز شما</p><h2>مدرسه‌ها و کلاس‌های من</h2><p>از نمای کلی تا گزارش هر کلاس، همه‌چیز در دسترس شماست.</p></section>'+dashboardStats(classes,db.schools.length);
+        h+='<section class="dashboard-report-links no-print"><button onclick="openReportScope()"><span class="dashboard-shortcut-symbol" aria-hidden="true">↗</span><span><strong>گزارش فعالیت‌ها</strong><small>جلسات و حضور‌وغیاب مدارس</small></span><span aria-hidden="true">←</span></button><button onclick="openReportScope(\'\',\'\',\'karnameh\')"><span class="dashboard-shortcut-symbol teal" aria-hidden="true">▤</span><span><strong>کارنامه کلاس‌ها</strong><small>نمرات و وضعیت تکمیل دروس</small></span><span aria-hidden="true">←</span></button></section>';
+        h+=dashboardDirectory(db.schools,"schools");
+        h+='<div class="card"><h3>افزودن مدرسه</h3><form onsubmit="addSchool(event)" class="row"><input name="name" placeholder="نام مدرسه" required style="flex:1"><button type="submit">افزودن مدرسه</button></form></div>';
         return h;
       }
-
-      function renderSchool() {
-        const school = getSchool(state.schoolId);
-        if (!school) {
-          state.view = "schools";
-          return renderSchools();
-        }
-        let h = headerHtml();
-        h += `<div class="breadcrumb"><a onclick="goSchools()">مدارس</a> ← ${esc(school.name)}</div>`;
-        h += `<div class="card"><h3>افزودن کلاس</h3>
-    <form onsubmit="addClass(event)" class="row">
-      <input name="name" placeholder="نام کلاس" required style="flex:1"><button type="submit">➕ افزودن</button>
-    </form></div>
-    <div class="card"><h3>کلاس‌ها (${school.classes.length})</h3>`;
-        if (!school.classes.length)
-          h += `<div class="empty">هنوز کلاسی نیست</div>`;
-        else
-          h += school.classes
-            .map(
-              (c) => `<div class="list-item" onclick="goClass('${c.id}')">
-    <div><strong>📚 ${esc(c.name)}</strong><span class="muted"> — ${c.students.length} دانش‌آموز، ${(c.lessons || []).length} درس</span></div>
-    <button class="danger" onclick="event.stopPropagation();deleteClass('${c.id}')">حذف</button></div>`,
-            )
-            .join("");
-        h += `</div>`;
+      function renderSchool(){
+        const school=getSchool(state.schoolId);if(!school){state.view="schools";return renderSchools();}
+        let h=headerHtml()+'<div class="breadcrumb"><a onclick="goSchools()">مدارس</a> ← '+esc(school.name)+'</div>';
+        const count=school.classes.reduce((n,c)=>n+c.students.length,0);
+        h+='<section class="school-overview no-print"><div><span>'+school.classes.length.toLocaleString("fa-IR")+' کلاس</span><span>'+count.toLocaleString("fa-IR")+' هنرجو</span></div><button onclick="openReportScope(\''+esc(school.id)+'\')">گزارش این مدرسه ←</button></section>';
+        h+=dashboardDirectory(school.classes,"classes",school.id);
+        h+='<div class="card"><h3>افزودن کلاس</h3><form onsubmit="addClass(event)" class="row"><input name="name" placeholder="نام کلاس" required style="flex:1"><button type="submit">افزودن کلاس</button></form></div>';
         return h;
       }
 
@@ -4481,6 +4574,7 @@ details.quick-create,details.lesson-create,details.student-import{scroll-margin-
         const school = getSchool(state.schoolId);
         let h = headerHtml();
         h += `<div class="breadcrumb"><a onclick="goSchools()">مدارس</a> ← <a onclick="goSchool('${school.id}')">${esc(school.name)}</a> ← ${esc(c.name)}</div>`;
+        h += '<div class="class-context-actions no-print"><button onclick="openReportScope(\''+esc(school.id)+'\',\''+esc(c.id)+'\',\'karnameh\')">کارنامه این کلاس</button><button class="ghost" onclick="goMaster(\''+esc(c.id)+'\')">برنامه کلاس</button></div>';
         h += `<div class="tabs">
     <button class="${state.tab === "lessons" ? "active" : ""}" onclick="setTab('lessons')">📚 دروس</button>
     <button class="${state.tab === "students" ? "active" : ""}" onclick="setTab('students')">👥 دانش‌آموزان</button>
@@ -11477,7 +11571,31 @@ details.quick-create,details.lesson-create,details.student-import{scroll-margin-
           }
         }
 
+
+        function polishReportFilters(){
+          if(state.view!=="reports")return;
+          const names={schoolId:"مدرسه",classId:"کلاس",lessonId:"درس",studentId:"هنرجو",date:"تاریخ جلسه",period:"زنگ"};
+          for(const control of document.querySelectorAll('#app select[onchange*="Filter"],#app input[type="date"][onchange*="GlobalFilter"]')){
+            const action=control.getAttribute("onchange")||"",key=action.match(/'([^']+)'/)?.[1],caption=names[key];
+            if(!caption||control.closest(".report-filter-field"))continue;
+            const label=document.createElement("label");label.className="report-filter-field";
+            const pairedDate=control.type==="date"&&control.nextElementSibling?.dataset.gregorianTarget==="true"?control.nextElementSibling:null;
+            const text=document.createElement("span");text.textContent=caption;control.before(label);label.append(text,control);
+            if(pairedDate){label.append(pairedDate);pairedDate.setAttribute("aria-label",caption);}
+            const row=label.parentElement;if(!row.classList.contains("report-filter-grid"))row.classList.add("report-filter-grid");
+            row.closest(".card")?.classList.add("report-filter-card");
+          }
+          const box=document.querySelector("#app .filter-box");
+          if(box&&box.tagName!=="DETAILS"){
+            const details=document.createElement("details");details.className="filter-box report-options";
+            details.open=!!state.reportOptionsOpen;details.ontoggle=()=>{state.reportOptionsOpen=details.open;};
+            const summary=document.createElement("summary");summary.textContent="تنظیم محتوای گزارش و نمایش اسامی";
+            details.append(summary);while(box.firstChild)details.append(box.firstChild);box.replaceWith(details);
+          }
+        }
+
         function enhance() {
+          polishReportFilters();
           mobileExperience();
           polishExperience();
           updateDesign();
