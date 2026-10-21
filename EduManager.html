@@ -5234,45 +5234,397 @@
         }
       }
     </style>
-  <style id="selectControlsDesign">
-@media screen{
-body select:not([multiple]):not([size]){
-  -webkit-appearance:none;appearance:none;
-  background-color:#fff;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='m6 8 4 4 4-4' stroke='%2364748b' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important;
-  background-repeat:no-repeat!important;background-position:left 12px center!important;background-size:18px 18px!important;
-  padding-inline-start:12px!important;padding-inline-end:40px!important;
-  min-height:46px;max-width:100%;min-width:0;
-  border:1px solid #dce3ef;border-radius:12px;
-  color:#26334c;font-family:IRANSans,Tahoma,sans-serif;font-size:.85rem;
-  line-height:1.7;cursor:pointer;text-align:start;
-  white-space:nowrap;text-overflow:ellipsis;overflow:hidden;
-  box-shadow:0 1px 2px #24315b03;
-  transition:border-color .16s,box-shadow .16s,background-color .16s;
-}
-body select:not([multiple]):not([size]):hover:not(:disabled){border-color:#a5b4d2;background-color:#fbfcff}
-body select:not([multiple]):not([size]):focus{
-  outline:none;border-color:#6366f1;background-color:#fff;
-  box-shadow:0 0 0 3px #6366f126;
-}
-body select:not([multiple]):not([size]):disabled{
-  opacity:1;cursor:not-allowed;background-color:#f1f4f9;
-  border-color:#e3e8f0;color:#78859b;box-shadow:none;
-}
-body select:not([multiple]):not([size]):has(>option:checked[value=""]){color:#64748b}
-body select:not([multiple]):not([size])[aria-invalid="true"]{border-color:#dc2626;box-shadow:0 0 0 3px #dc262615}
-body select:not([multiple]):not([size]) option{background:#fff;color:#26334c;font:inherit}
-html[dir=ltr] select:not([multiple]):not([size]),[dir=ltr] select:not([multiple]):not([size]){background-position:right 12px center!important}
-@media(max-width:700px),(max-width:1000px) and (pointer:coarse){
-  body select:not([multiple]):not([size]){min-height:48px;font-size:16px!important;border-radius:12px}
-}
-@media(prefers-reduced-motion:reduce){body select{transition:none!important}}
-@media(forced-colors:active){
-  body select:not([multiple]):not([size]){appearance:auto;background-image:none!important;padding-inline-end:12px!important;border-color:ButtonText}
-}
-}
-</style>
-</head>
+    <style id="selectControlsDesign">
+      @media screen {
+        body select:not([multiple]):not([size]) {
+          -webkit-appearance: none;
+          appearance: none;
+          background-color: #fff;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='m6 8 4 4 4-4' stroke='%2364748b' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+          background-repeat: no-repeat !important;
+          background-position: left 12px center !important;
+          background-size: 18px 18px !important;
+          padding-inline-start: 12px !important;
+          padding-inline-end: 40px !important;
+          min-height: 46px;
+          max-width: 100%;
+          min-width: 0;
+          border: 1px solid #dce3ef;
+          border-radius: 12px;
+          color: #26334c;
+          font-family: IRANSans, Tahoma, sans-serif;
+          font-size: 0.85rem;
+          line-height: 1.7;
+          cursor: pointer;
+          text-align: start;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          overflow: hidden;
+          box-shadow: 0 1px 2px #24315b03;
+          transition:
+            border-color 0.16s,
+            box-shadow 0.16s,
+            background-color 0.16s;
+        }
+        body select:not([multiple]):not([size]):hover:not(:disabled) {
+          border-color: #a5b4d2;
+          background-color: #fbfcff;
+        }
+        body select:not([multiple]):not([size]):focus {
+          outline: none;
+          border-color: #6366f1;
+          background-color: #fff;
+          box-shadow: 0 0 0 3px #6366f126;
+        }
+        body select:not([multiple]):not([size]):disabled {
+          opacity: 1;
+          cursor: not-allowed;
+          background-color: #f1f4f9;
+          border-color: #e3e8f0;
+          color: #78859b;
+          box-shadow: none;
+        }
+        body
+          select:not([multiple]):not([size]):has(> option:checked[value=""]) {
+          color: #64748b;
+        }
+        body select:not([multiple]):not([size])[aria-invalid="true"] {
+          border-color: #dc2626;
+          box-shadow: 0 0 0 3px #dc262615;
+        }
+        body select:not([multiple]):not([size]) option {
+          background: #fff;
+          color: #26334c;
+          font: inherit;
+        }
+        html[dir="ltr"] select:not([multiple]):not([size]),
+        [dir="ltr"] select:not([multiple]):not([size]) {
+          background-position: right 12px center !important;
+        }
+        @media (max-width: 700px), (max-width: 1000px) and (pointer: coarse) {
+          body select:not([multiple]):not([size]) {
+            min-height: 48px;
+            font-size: 16px !important;
+            border-radius: 12px;
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          body select {
+            transition: none !important;
+          }
+        }
+        @media (forced-colors: active) {
+          body select:not([multiple]):not([size]) {
+            appearance: auto;
+            background-image: none !important;
+            padding-inline-end: 12px !important;
+            border-color: ButtonText;
+          }
+        }
+      }
+    </style>
+    <style id="periodicReportsDesign">
+      @media screen {
+        .report-navigation {
+          flex-wrap: nowrap;
+          overflow-x: auto;
+        }
+        .report-navigation button {
+          flex: 1 0 auto;
+          white-space: nowrap;
+        }
+        .periodic-controls > p {
+          color: #64748b;
+          font-size: 0.75rem;
+          line-height: 1.9;
+        }
+        .periodic-control-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 14px;
+        }
+        .periodic-control-grid label,
+        .periodic-note-field {
+          display: flex;
+          flex-direction: column;
+          gap: 7px;
+          min-width: 0;
+          font-size: 0.74rem;
+          color: #52617b;
+        }
+        .periodic-control-grid input,
+        .periodic-control-grid select,
+        .periodic-note-field textarea {
+          width: 100%;
+          min-width: 0;
+        }
+        .periodic-note-field {
+          margin-top: 16px;
+        }
+        .periodic-build {
+          margin-top: 16px;
+          min-height: 46px;
+        }
+        #periodicError {
+          color: #b91c1c;
+          font-size: 0.78rem;
+          line-height: 1.9;
+        }
+        .periodic-document {
+          padding: 24px;
+        }
+        .periodic-document-heading {
+          border-bottom: 1px solid #e5eaf3;
+          padding-bottom: 16px;
+          margin-bottom: 16px;
+        }
+        .periodic-document-heading > span {
+          display: inline-block;
+          background: #eef2ff;
+          color: #4338ca;
+          padding: 4px 10px;
+          border-radius: 8px;
+          font-size: 0.72rem;
+        }
+        .periodic-document-heading h2 {
+          font-size: 1.35rem;
+          margin: 12px 0 5px;
+        }
+        .periodic-document-heading h3 {
+          margin: 0 0 8px;
+          font-size: 1rem;
+        }
+        .periodic-document-heading p {
+          font-size: 0.8rem;
+          color: #52617b;
+          margin: 4px 0;
+        }
+        .periodic-document-heading small {
+          font-size: 0.68rem;
+          color: #64748b;
+        }
+        .periodic-export-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-bottom: 18px;
+        }
+        .periodic-export-actions button {
+          font-size: 0.76rem;
+          min-height: 44px;
+        }
+        .periodic-summary {
+          display: grid;
+          grid-template-columns: repeat(5, minmax(0, 1fr));
+          gap: 9px;
+        }
+        .periodic-summary > div {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          padding: 12px;
+          border: 1px solid #e5eaf3;
+          border-radius: 12px;
+          background: #f8faff;
+        }
+        .periodic-summary strong {
+          font-size: 1.25rem;
+          color: #4338ca;
+        }
+        .periodic-summary span {
+          font-size: 0.69rem;
+          color: #64748b;
+        }
+        .periodic-method {
+          font-size: 0.72rem;
+          line-height: 1.9;
+          color: #64748b;
+          padding: 10px 0;
+        }
+        .periodic-document > h3 {
+          font-size: 0.95rem;
+          margin-top: 24px;
+        }
+        .periodic-session {
+          padding-block: 12px;
+          border-top: 1px solid #e5eaf3;
+        }
+        .periodic-session h4 {
+          font-size: 0.85rem;
+          margin: 0 0 6px;
+        }
+        .periodic-session > p {
+          font-size: 0.74rem;
+          color: #64748b;
+        }
+        .periodic-document td {
+          white-space: pre-wrap;
+          overflow-wrap: anywhere;
+        }
+        .periodic-note {
+          white-space: pre-wrap;
+          font-size: 0.82rem;
+          line-height: 2;
+        }
+        .periodic-warnings {
+          border: 1px solid #f2dfbc;
+          border-radius: 12px;
+          background: #fffaf0;
+          padding: 14px;
+          font-size: 0.75rem;
+          color: #805e20;
+        }
+        .periodic-warnings ul,
+        .periodic-footer ul {
+          padding-inline-start: 20px;
+          line-height: 1.9;
+        }
+        .periodic-footer {
+          border-top: 1px solid #e5eaf3;
+          margin-top: 22px;
+          padding-top: 16px;
+          font-size: 0.72rem;
+          color: #64748b;
+        }
+        .periodic-footer p {
+          line-height: 2.2;
+        }
+        @media (max-width: 700px), (max-width: 1000px) and (pointer: coarse) {
+          #app > .periodic-controls {
+            order: 5;
+          }
+          #app > #periodicReportOutput {
+            order: 6;
+          }
+          .periodic-control-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px 10px;
+          }
+          .periodic-control-grid label {
+            font-size: 0.69rem;
+          }
+          .periodic-build {
+            width: 100%;
+          }
+          .periodic-document {
+            padding: 16px;
+          }
+          .periodic-document-heading h2 {
+            font-size: 1.16rem;
+          }
+          .periodic-document-heading h3 {
+            font-size: 0.94rem;
+          }
+          .periodic-summary {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 7px;
+          }
+          .periodic-summary > div {
+            padding: 10px;
+          }
+          .periodic-summary strong {
+            font-size: 1.15rem;
+          }
+          .periodic-summary span {
+            font-size: 0.66rem;
+          }
+          .periodic-export-actions button {
+            flex: 1;
+            min-height: 44px;
+            font-size: 0.71rem;
+          }
+        }
+        @media (max-width: 340px) {
+          .periodic-control-grid {
+            grid-template-columns: minmax(0, 1fr);
+          }
+        }
+      }
+      @media print {
+        .periodic-controls,
+        .periodic-export-actions {
+          display: none !important;
+        }
+        .periodic-document {
+          padding: 0 !important;
+          box-shadow: none !important;
+          border: 0 !important;
+          background: white !important;
+        }
+        .periodic-document-heading {
+          border-bottom: 1px solid #777;
+          padding-bottom: 12px;
+        }
+        .periodic-document-heading h2 {
+          font-size: 18pt;
+          margin: 8px 0;
+        }
+        .periodic-document-heading h3 {
+          font-size: 13pt;
+          margin: 4px 0;
+        }
+        .periodic-document-heading p,
+        .periodic-document-heading small {
+          font-size: 10pt;
+        }
+        .periodic-summary {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          border-block: 1px solid #bbb;
+          padding: 10px 0;
+          margin: 12px 0;
+        }
+        .periodic-summary > div {
+          display: flex;
+          gap: 5px;
+          padding-inline-end: 10px;
+        }
+        .periodic-document table {
+          width: 100% !important;
+          min-width: 0 !important;
+          border-collapse: collapse;
+        }
+        .periodic-document th,
+        .periodic-document td {
+          font-size: 9pt;
+          white-space: pre-wrap;
+          overflow-wrap: anywhere;
+          padding: 6px;
+          border: 1px solid #bbb;
+        }
+        .periodic-document .table-scroll {
+          overflow: visible !important;
+          max-width: none !important;
+        }
+        .periodic-method,
+        .periodic-note,
+        .periodic-footer,
+        .periodic-warnings {
+          font-size: 9pt;
+          line-height: 1.9;
+        }
+        .periodic-note {
+          white-space: pre-wrap;
+        }
+        .periodic-session {
+          margin-top: 14px;
+        }
+        .periodic-session h4 {
+          font-size: 11pt;
+          margin-bottom: 4px;
+          break-after: avoid;
+        }
+        .periodic-document > h3 {
+          font-size: 12pt;
+          break-after: avoid;
+        }
+        .periodic-document tr {
+          break-inside: avoid;
+        }
+      }
+    </style>
+  </head>
   <body>
     <div class="cal-popup" id="calPopup"></div>
     <div id="app"></div>
@@ -6302,8 +6654,11 @@ html[dir=ltr] select:not([multiple]):not([size]),[dir=ltr] select:not([multiple]
 
       function renderReports() {
         const tab = state.reportTab || "comprehensive";
-        const filter =
-          tab === "comprehensive"
+        const periodic = ["daily", "weekly"].includes(tab);
+        const periodicContent = periodic ? EduPeriodicReports.render(tab) : "";
+        const filter = periodic
+          ? EduPeriodicReports.filters
+          : tab === "comprehensive"
             ? globalFilter
             : tab === "lessonReport"
               ? lessonReportFilter
@@ -6343,6 +6698,8 @@ html[dir=ltr] select:not([multiple]):not([size]),[dir=ltr] select:not([multiple]
             ["comprehensive", "گزارش فعالیت‌ها"],
             ["lessonReport", "گزارش دروس"],
             ["karnameh", "کارنامه‌ها"],
+            ["daily", "گزارش روزانه"],
+            ["weekly", "گزارش هفتگی"],
           ]
             .map(
               ([key, label]) =>
@@ -6360,6 +6717,7 @@ html[dir=ltr] select:not([multiple]):not([size]),[dir=ltr] select:not([multiple]
           "</nav>";
         if (tab === "comprehensive") h += renderComprehensiveTab();
         else if (tab === "lessonReport") h += renderLessonReportTabHtml();
+        else if (periodic) h += periodicContent;
         else h += renderKarnamehTabHtml();
         return h;
       }
@@ -6368,7 +6726,7 @@ html[dir=ltr] select:not([multiple]):not([size]),[dir=ltr] select:not([multiple]
       function renderComprehensiveTab() {
         let h = `<div class="card">
     <h3>گزارش فعالیت‌ها</h3>
-    <p class="muted" style="font-size:.85em">مدرسه یا کلاس را انتخاب کنید؛ برای گزارش روزانه، تاریخ جلسه را هم مشخص کنید.</p>
+    <p class="muted" style="font-size:.85em">گزارش مدیریتی جلسات ثبت‌شده. برای ارسال به اولیا، گزارش روزانه یا هفتگی را با مخاطب «اولیا» تهیه کنید.</p>
     <div class="row">
       <input type="date" value="${globalFilter.date}" onchange="updateGlobalFilter('date', this.value)" title="فیلتر تاریخ">
       <select onchange="updateGlobalFilter('schoolId', this.value)">
@@ -6394,6 +6752,9 @@ html[dir=ltr] select:not([multiple]):not([size]),[dir=ltr] select:not([multiple]
       <select onchange="updateGlobalFilter('lessonId', this.value)">
         <option value="">همه دروس</option>
         ${db.schools
+          .filter(
+            (s) => !globalFilter.schoolId || s.id === globalFilter.schoolId,
+          )
           .map((s) => s.classes)
           .flat()
           .filter((c) => !globalFilter.classId || c.id === globalFilter.classId)
@@ -6410,6 +6771,9 @@ html[dir=ltr] select:not([multiple]):not([size]),[dir=ltr] select:not([multiple]
       <select onchange="updateGlobalFilter('studentId', this.value)">
         <option value="">همه دانش‌آموزان</option>
         ${db.schools
+          .filter(
+            (s) => !globalFilter.schoolId || s.id === globalFilter.schoolId,
+          )
           .map((s) => s.classes)
           .flat()
           .filter((c) => !globalFilter.classId || c.id === globalFilter.classId)
@@ -6504,7 +6868,14 @@ html[dir=ltr] select:not([multiple]):not([size]),[dir=ltr] select:not([multiple]
               const hasScore = s.scores.some(
                 (x) => x.studentId === globalFilter.studentId,
               );
-              if (!hasAtt && !hasScore) return false;
+              const roster =
+                s.roster || getClassObj(s.schoolId, s.classId)?.students || [];
+              if (
+                !hasAtt &&
+                !hasScore &&
+                !roster.some((st) => st.id === globalFilter.studentId)
+              )
+                return false;
             }
             return true;
           })
@@ -7048,8 +7419,10 @@ html[dir=ltr] select:not([multiple]):not([size]),[dir=ltr] select:not([multiple]
         ${allClasses
           .filter(
             (x) =>
-              !lessonReportFilter.classId ||
-              x.class.id === lessonReportFilter.classId,
+              (!lessonReportFilter.schoolId ||
+                x.school.id === lessonReportFilter.schoolId) &&
+              (!lessonReportFilter.classId ||
+                x.class.id === lessonReportFilter.classId),
           )
           .map((x) =>
             (x.class.lessons || [])
@@ -7255,7 +7628,10 @@ html[dir=ltr] select:not([multiple]):not([size]),[dir=ltr] select:not([multiple]
         ${allClasses
           .filter(
             (x) =>
-              !karnamehFilter.classId || x.class.id === karnamehFilter.classId,
+              (!karnamehFilter.schoolId ||
+                x.school.id === karnamehFilter.schoolId) &&
+              (!karnamehFilter.classId ||
+                x.class.id === karnamehFilter.classId),
           )
           .map((x) =>
             getSortedStudents({
@@ -15502,6 +15878,15 @@ html[dir=ltr] select:not([multiple]):not([size]),[dir=ltr] select:not([multiple]
 
         function polishReportFilters() {
           if (state.view !== "reports") return;
+          const tabs = document.querySelector(".report-navigation"),
+            active = tabs?.querySelector(".active");
+          if (tabs && active && tabs.scrollWidth > tabs.clientWidth) {
+            const box = tabs.getBoundingClientRect(),
+              r = active.getBoundingClientRect();
+            if (r.left < box.left || r.right > box.right)
+              tabs.scrollLeft +=
+                r.left - (box.left + (box.width - r.width) / 2);
+          }
           const names = {
             schoolId: "مدرسه",
             classId: "کلاس",
@@ -16016,6 +16401,1008 @@ html[dir=ltr] select:not([multiple]):not([size]),[dir=ltr] select:not([multiple]
           help,
         };
       })();
+    </script>
+    <script>
+      (function (root) {
+        "use strict";
+        const localToday = () => {
+          const d = new Date();
+          return [
+            d.getFullYear(),
+            String(d.getMonth() + 1).padStart(2, "0"),
+            String(d.getDate()).padStart(2, "0"),
+          ].join("-");
+        };
+        function isoDate(value) {
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(value))
+            throw Error("تاریخ معتبر انتخاب کنید.");
+          const d = new Date(value + "T12:00:00Z");
+          if (!Number.isFinite(+d) || d.toISOString().slice(0, 10) !== value)
+            throw Error("تاریخ معتبر انتخاب کنید.");
+          return d;
+        }
+        function addDays(value, n) {
+          const d = isoDate(value);
+          d.setUTCDate(d.getUTCDate() + n);
+          return d.toISOString().slice(0, 10);
+        }
+        function range(mode, date) {
+          if (!["daily", "weekly"].includes(mode))
+            throw Error("نوع گزارش نامعتبر است.");
+          const d = isoDate(date);
+          const start =
+            mode === "weekly"
+              ? addDays(date, -((d.getUTCDay() + 1) % 7))
+              : date;
+          return { start, end: mode === "weekly" ? addDays(start, 6) : start };
+        }
+        const filters = {
+          mode: "daily",
+          date: localToday(),
+          schoolId: "",
+          classId: "",
+          studentId: "",
+          audience: "management",
+          author: "",
+        };
+        const notes = new Map();
+        let last = null,
+          busy = false;
+        const noteKey = (f) =>
+          [
+            f.mode,
+            f.date,
+            f.schoolId,
+            f.classId,
+            f.audience,
+            f.audience === "parent" ? f.studentId : "",
+          ].join("|");
+        const inputSnapshot = () => ({
+          ...filters,
+          note: notes.get(noteKey(filters)) || "",
+        });
+        const emptyCounts = () => ({
+          present: 0,
+          absent: 0,
+          late: 0,
+          unknown: 0,
+          lateMinutes: 0,
+          lateMinutesRecorded: 0,
+        });
+        function attendance(value) {
+          if (value === "present")
+            return { status: "present", label: "حاضر", minutes: null };
+          if (value === "absent")
+            return { status: "absent", label: "غایب", minutes: null };
+          const match =
+            typeof value === "string" ? value.match(/^late(?::(\d+))?$/) : null;
+          if (match)
+            return {
+              status: "late",
+              label: "با تأخیر",
+              minutes: match[1] === undefined ? null : Number(match[1]),
+            };
+          return { status: "unknown", label: "تعیین نشده", minutes: null };
+        }
+        function tally(counts, a) {
+          counts[a.status]++;
+          if (a.minutes !== null && Number.isSafeInteger(a.minutes)) {
+            counts.lateMinutes += a.minutes;
+            counts.lateMinutesRecorded++;
+          }
+        }
+        function build(source, options) {
+          const f = { ...options },
+            dates = range(f.mode, f.date),
+            school = source.schools.find((s) => s.id === f.schoolId);
+          if (!school) throw Error("مدرسه گزارش را انتخاب کنید.");
+          if (!["management", "parent"].includes(f.audience))
+            throw Error("مخاطب گزارش نامعتبر است.");
+          const classes = school.classes.filter(
+            (c) => !f.classId || c.id === f.classId,
+          );
+          if (f.classId && !classes.length)
+            throw Error("کلاس انتخاب‌شده متعلق به این مدرسه نیست.");
+          let selected = null;
+          if (f.audience === "parent") {
+            if (!f.classId || !f.studentId)
+              throw Error("برای گزارش اولیا، کلاس و یک هنرجو را انتخاب کنید.");
+            const c = classes[0];
+            selected = [
+              ...(c.students || []),
+              ...(c.archivedStudents || []),
+            ].find((st) => st.id === f.studentId);
+            if (!selected) {
+              for (const x of source.sessions.filter(
+                (x) => x.schoolId === school.id && x.classId === c.id,
+              )) {
+                selected = x.roster?.find((st) => st.id === f.studentId);
+                if (selected) break;
+              }
+            }
+            if (!selected) throw Error("هنرجو در کلاس انتخاب‌شده پیدا نشد.");
+          }
+          const warnings = new Set(),
+            seen = new Set(),
+            slots = new Set(),
+            students = new Map(),
+            lessons = new Map(),
+            byDate = new Map(),
+            sessions = [];
+          const total = emptyCounts();
+          for (const x of [...source.sessions].sort(
+            (a, b) =>
+              a.date.localeCompare(b.date) ||
+              a.period - b.period ||
+              a.id.localeCompare(b.id),
+          )) {
+            if (
+              x.schoolId !== school.id ||
+              !classes.some((c) => c.id === x.classId) ||
+              x.date < dates.start ||
+              x.date > dates.end
+            )
+              continue;
+            if (seen.has(x.id)) {
+              warnings.add("یک شناسه جلسه تکراری فقط یک بار شمارش شد.");
+              continue;
+            }
+            seen.add(x.id);
+            const c = classes.find((c) => c.id === x.classId),
+              lesson = (c.lessons || []).find((l) => l.id === x.lessonId);
+            const known = new Map(
+              [
+                ...(c.students || []),
+                ...(c.archivedStudents || []),
+                ...(x.roster || []),
+              ].map((st) => [st.id, st]),
+            );
+            const roster = Array.isArray(x.roster)
+              ? x.roster
+              : c.students || [];
+            const ids = new Set([
+              ...roster.map((st) => st.id),
+              ...Object.keys(x.attendance || {}),
+              ...(x.scores || []).map((sc) => sc.studentId),
+            ]);
+            if (f.audience === "parent" && !ids.has(f.studentId)) continue;
+            if (!Array.isArray(x.roster))
+              warnings.add(
+                "فهرست تاریخی برخی جلسات موجود نیست؛ برای آن جلسات از فهرست فعلی کلاس و سوابق ثبت‌شده استفاده شده است.",
+              );
+            const slot = [x.date, x.classId, x.period].join("|");
+            if (slots.has(slot))
+              warnings.add(
+                "برای برخی زنگ‌ها بیش از یک جلسه ثبت شده است؛ شمار جلسات را بررسی کنید.",
+              );
+            slots.add(slot);
+            if (!lesson)
+              warnings.add(
+                "تعریف بعضی درس‌های دارای جلسه در دسترس نیست؛ سوابق جلسه حفظ شده‌اند.",
+              );
+            const sessionCounts = emptyCounts(),
+              participants = [],
+              marks = [];
+            for (const sid of ids) {
+              if (f.audience === "parent" && sid !== f.studentId) continue;
+              const st = known.get(sid),
+                a = attendance(x.attendance?.[sid]);
+              tally(total, a);
+              tally(sessionCounts, a);
+              const key = c.id + "|" + sid;
+              if (!students.has(key))
+                students.set(key, {
+                  studentId: sid,
+                  name: st?.name || "هنرجوی فاقد مشخصات",
+                  code: st?.code || "",
+                  className: c.name,
+                  sessions: 0,
+                  ...emptyCounts(),
+                  markCount: 0,
+                });
+              const row = students.get(key);
+              row.sessions++;
+              tally(row, a);
+              const own = (x.scores || []).filter((sc) => sc.studentId === sid);
+              row.markCount += own.length;
+              const scores = own.map((sc) => ({
+                type: sc.type,
+                value: sc.value ?? null,
+                note: String(sc.note || ""),
+                label:
+                  {
+                    mostamar: "مستمر",
+                    payani: "پایانی",
+                    positive: "امتیاز مثبت",
+                    negative: "امتیاز منفی",
+                    homework: "تکلیف",
+                    activity: "فعالیت",
+                  }[sc.type] || "ثبت دیگر",
+              }));
+              participants.push({
+                studentId: sid,
+                name: st?.name || "هنرجوی فاقد مشخصات",
+                code: st?.code || "",
+                attendance: a,
+                ...(scores.length ? { scores } : { scores: [] }),
+              });
+              for (const score of scores)
+                marks.push({
+                  studentId: sid,
+                  name: st?.name || "هنرجوی فاقد مشخصات",
+                  ...score,
+                });
+            }
+            const lessonKey = c.id + "|" + x.lessonId;
+            if (!lessons.has(lessonKey))
+              lessons.set(lessonKey, {
+                className: c.name,
+                lessonName: lesson?.name || "درس فاقد تعریف",
+                sessions: 0,
+                ...emptyCounts(),
+                markCount: 0,
+              });
+            const lessonRow = lessons.get(lessonKey);
+            lessonRow.sessions++;
+            lessonRow.markCount += marks.length;
+            for (const key of Object.keys(sessionCounts))
+              lessonRow[key] += sessionCounts[key];
+            if (!byDate.has(x.date))
+              byDate.set(x.date, {
+                date: x.date,
+                sessions: 0,
+                ...emptyCounts(),
+                markCount: 0,
+              });
+            const day = byDate.get(x.date);
+            day.sessions++;
+            day.markCount += marks.length;
+            for (const key of Object.keys(sessionCounts))
+              day[key] += sessionCounts[key];
+            const pod = lesson?.poudmans?.find((p) => p.id === x.poudmanId),
+              unit = pod?.units?.find((u) => u.id === x.unitId);
+            sessions.push({
+              id: x.id,
+              date: x.date,
+              period: x.period,
+              className: c.name,
+              lessonName: lesson?.name || "درس فاقد تعریف",
+              moduleName: pod?.name || "",
+              unitName: unit?.name || "",
+              teacher: lesson?.teacher || "",
+              counts: sessionCounts,
+              participants,
+              marks,
+            });
+          }
+          const known = total.present + total.absent + total.late;
+          return {
+            format: "EduManager.PeriodicReport",
+            version: 1,
+            generatedAt: new Date().toISOString(),
+            academicYear: source.settings.academicYear,
+            mode: f.mode,
+            audience: f.audience,
+            start: dates.start,
+            end: dates.end,
+            school: { id: school.id, name: school.name },
+            class: f.classId
+              ? { id: classes[0].id, name: classes[0].name }
+              : null,
+            student: selected
+              ? {
+                  id: selected.id,
+                  name: selected.name,
+                  code: selected.code || "",
+                }
+              : null,
+            author: String(f.author || "").slice(0, 200),
+            note: String(f.note || "").slice(0, 10000),
+            summary: {
+              sessions: sessions.length,
+              students: students.size,
+              ...total,
+              attendanceRate: known
+                ? Number(
+                    (((total.present + total.late) * 100) / known).toFixed(1),
+                  )
+                : null,
+              recordedMarks: sessions.reduce((n, s) => n + s.marks.length, 0),
+            },
+            days: Array.from(
+              { length: f.mode === "weekly" ? 7 : 1 },
+              (_, i) =>
+                byDate.get(addDays(dates.start, i)) || {
+                  date: addDays(dates.start, i),
+                  sessions: 0,
+                  ...emptyCounts(),
+                  markCount: 0,
+                },
+            ),
+            students: [...students.values()],
+            lessons: [...lessons.values()],
+            sessions,
+            currentGrades: [],
+            warnings: [...warnings],
+            definitions: [
+              "حضور و غیاب با واحد نفرـجلسه شمارش شده است؛ یک هنرجو در دو زنگ، دو مشاهده دارد.",
+              "نرخ حضور = حاضر و دارای تأخیر، تقسیم بر موارد تعیین‌شده؛ موارد تعیین‌نشده در مخرج نیستند.",
+              "گزارش فقط جلسات ثبت‌شده را پوشش می‌دهد؛ نبود جلسه یا نمره به معنی غیبت یا نمره صفر نیست.",
+              "نمرات و امتیازهای جلسات این بازه، نمره نهایی درس محسوب نمی‌شوند.",
+            ],
+          };
+        }
+        const num = (value) =>
+          value === null || value === undefined
+            ? "—"
+            : Number(value).toLocaleString("fa-IR", {
+                maximumFractionDigits: 2,
+              });
+        function table(headers, rows) {
+          return (
+            '<div class="table-scroll"><table><thead><tr>' +
+            headers.map((x) => "<th>" + esc(x) + "</th>").join("") +
+            "</tr></thead><tbody>" +
+            rows
+              .map(
+                (row) =>
+                  "<tr>" +
+                  row.map((cell) => "<td>" + esc(cell) + "</td>").join("") +
+                  "</tr>",
+              )
+              .join("") +
+            "</tbody></table></div>"
+          );
+        }
+        function textReport(m) {
+          const lines = [
+            (m.mode === "daily" ? "گزارش روزانه" : "گزارش هفتگی") +
+              " — " +
+              (m.audience === "parent" ? "ویژه اولیا" : "ویژه مدیریت مدرسه"),
+            "مدرسه: " + m.school.name,
+            "بازه: " + faDate(m.start) + " تا " + faDate(m.end),
+            "سال تحصیلی: " + m.academicYear,
+          ];
+          if (m.class) lines.push("کلاس: " + m.class.name);
+          if (m.student)
+            lines.push(
+              "هنرجو: " +
+                m.student.name +
+                " | کد: " +
+                (m.student.code || "ثبت نشده"),
+            );
+          lines.push(
+            "زمان تهیه: " + new Date(m.generatedAt).toLocaleString("fa-IR"),
+            "",
+            "خلاصه",
+            "جلسات ثبت‌شده: " + num(m.summary.sessions),
+            "حاضر: " +
+              num(m.summary.present) +
+              " | غایب: " +
+              num(m.summary.absent) +
+              " | تأخیر: " +
+              num(m.summary.late) +
+              " | تعیین‌نشده: " +
+              num(m.summary.unknown) +
+              " (نفرـجلسه)",
+            "نرخ حضور از موارد تعیین‌شده: " +
+              (m.summary.attendanceRate === null
+                ? "قابل محاسبه نیست"
+                : num(m.summary.attendanceRate) + "٪"),
+            "تعداد ثبت‌های نمره، تکلیف و فعالیت: " +
+              num(m.summary.recordedMarks),
+            "",
+          );
+          if (!m.sessions.length)
+            lines.push("در این بازه و محدوده، جلسه مرتبطی ثبت نشده است.");
+          for (const d of m.days)
+            lines.push(
+              faDate(d.date) +
+                ": " +
+                num(d.sessions) +
+                " جلسه؛ حاضر " +
+                num(d.present) +
+                "، غایب " +
+                num(d.absent) +
+                "، تأخیر " +
+                num(d.late) +
+                "، تعیین‌نشده " +
+                num(d.unknown),
+            );
+          if (m.audience === "management") {
+            lines.push("", "جمع‌بندی درس‌ها");
+            for (const l of m.lessons)
+              lines.push(
+                l.className +
+                  " / " +
+                  l.lessonName +
+                  ": " +
+                  num(l.sessions) +
+                  " جلسه؛ حاضر " +
+                  num(l.present) +
+                  "، غایب " +
+                  num(l.absent) +
+                  "، تأخیر " +
+                  num(l.late) +
+                  "، تعیین‌نشده " +
+                  num(l.unknown),
+              );
+            lines.push("", "وضعیت هنرجویان");
+            for (const st of m.students)
+              lines.push(
+                st.name +
+                  " / " +
+                  st.className +
+                  ": حاضر " +
+                  num(st.present) +
+                  "، غایب " +
+                  num(st.absent) +
+                  "، تأخیر " +
+                  num(st.late) +
+                  "، تعیین‌نشده " +
+                  num(st.unknown),
+              );
+          }
+          lines.push("", "جزئیات جلسات");
+          for (const s of m.sessions) {
+            lines.push(
+              "",
+              faDate(s.date) +
+                " | زنگ " +
+                num(s.period + 1) +
+                " | " +
+                s.className +
+                " | " +
+                s.lessonName +
+                (s.moduleName ? " | پودمان: " + s.moduleName : "") +
+                (s.unitName ? " | واحد: " + s.unitName : "") +
+                (s.teacher ? " | دبیر: " + s.teacher : ""),
+            );
+            for (const p of s.participants)
+              lines.push(
+                p.name +
+                  ": " +
+                  p.attendance.label +
+                  (p.attendance.minutes === null
+                    ? ""
+                    : " (" + num(p.attendance.minutes) + " دقیقه)") +
+                  (p.scores.length
+                    ? " | " +
+                      p.scores
+                        .map(
+                          (sc) =>
+                            sc.label +
+                            ": " +
+                            (sc.value ?? "—") +
+                            (sc.note ? " — " + sc.note : ""),
+                        )
+                        .join(" | ")
+                    : " | نمره یا فعالیتی ثبت نشده"),
+              );
+          }
+          if (m.currentGrades.length) {
+            lines.push(
+              "",
+              "آخرین وضعیت تجمعی درس‌ها تا زمان تهیه گزارش؛ محدود به بازه بالا نیست",
+            );
+            for (const g of m.currentGrades)
+              lines.push(
+                g.lessonName +
+                  ": " +
+                  (g.method === "dual"
+                    ? "عملی " +
+                      num(g.practical) +
+                      " | نظری " +
+                      num(g.theory) +
+                      " | "
+                    : "") +
+                  "نهایی " +
+                  g.final +
+                  " | " +
+                  g.status +
+                  " | " +
+                  g.policy,
+              );
+          }
+          if (m.currentGrades.some((g) => g.modules?.length)) {
+            lines.push("", "جزئیات تجمعی پودمان‌ها تا زمان تهیه گزارش");
+            for (const g of m.currentGrades)
+              for (const p of g.modules || [])
+                lines.push(
+                  g.lessonName +
+                    " / " +
+                    p.name +
+                    ": مستمر " +
+                    num(p.continuous) +
+                    " | شایستگی " +
+                    num(p.competency) +
+                    " | نمره پودمان " +
+                    num(p.final) +
+                    " | " +
+                    (p.reason || (p.passed ? "احراز شده" : "نیازمند بررسی")),
+                );
+          }
+          if (m.note) lines.push("", "توضیحات تنظیم‌کننده", m.note);
+          if (m.warnings.length)
+            lines.push("", "موارد نیازمند بررسی", ...m.warnings);
+          lines.push(
+            "",
+            "توضیح روش گزارش",
+            ...m.definitions,
+            "",
+            "تنظیم‌کننده: " + (m.author || "........................"),
+            "امضا: ........................",
+          );
+          return lines.join("\n");
+        }
+        function documentHtml(m) {
+          let h =
+            '<article class="card report-document periodic-document"><header class="periodic-document-heading"><span>' +
+            (m.audience === "parent"
+              ? "ویژه اولیا — اطلاعات یک هنرجو"
+              : "ویژه مدیریت مدرسه") +
+            "</span><h2>" +
+            (m.mode === "daily" ? "گزارش روزانه" : "گزارش هفتگی") +
+            "</h2><h3>" +
+            esc(m.school.name) +
+            "</h3><p>" +
+            esc(faDate(m.start)) +
+            " تا " +
+            esc(faDate(m.end)) +
+            " · سال تحصیلی " +
+            esc(m.academicYear) +
+            "</p>" +
+            (m.class ? "<p>کلاس: " + esc(m.class.name) + "</p>" : "") +
+            (m.student
+              ? "<p><strong>هنرجو: " +
+                esc(m.student.name) +
+                "</strong> · کد: " +
+                esc(m.student.code || "ثبت نشده") +
+                "</p>"
+              : "") +
+            "<small>تهیه‌شده در " +
+            esc(new Date(m.generatedAt).toLocaleString("fa-IR")) +
+            "</small></header>";
+          h +=
+            '<div class="periodic-export-actions no-print"><button data-periodic-print onclick="EduPeriodicReports.output(\'print\')">چاپ / PDF</button><button class="ghost" onclick="EduPeriodicReports.output(\'txt\')">فایل متن</button><button class="ghost" onclick="EduPeriodicReports.output(\'json\')">فایل JSON</button></div>';
+          h +=
+            '<section class="periodic-summary">' +
+            [
+              ["جلسه ثبت‌شده", m.summary.sessions],
+              ["حاضر", m.summary.present],
+              ["غایب", m.summary.absent],
+              ["با تأخیر", m.summary.late],
+              ["تعیین‌نشده", m.summary.unknown],
+            ]
+              .map(
+                ([label, n]) =>
+                  "<div><strong>" +
+                  num(n) +
+                  "</strong><span>" +
+                  label +
+                  "</span></div>",
+              )
+              .join("") +
+            '</section><p class="periodic-method">واحد آمار حضور: نفرـجلسه. نرخ حضور از موارد تعیین‌شده: ' +
+            (m.summary.attendanceRate === null
+              ? "قابل محاسبه نیست"
+              : num(m.summary.attendanceRate) + "٪") +
+            ". نمرات زیر، ثبت‌های همین بازه‌اند و نمره نهایی درس نیستند.</p>";
+          if (!m.sessions.length)
+            h +=
+              '<div class="empty">در این بازه و محدوده، جلسه مرتبطی ثبت نشده است.</div>';
+          h +=
+            "<h3>مرور " +
+            (m.mode === "weekly" ? "روزهای هفته" : "روز") +
+            "</h3>" +
+            table(
+              ["تاریخ", "جلسه", "حاضر / غایب / تأخیر", "تعیین‌نشده"],
+              m.days.map((d) => [
+                faDate(d.date),
+                num(d.sessions),
+                num(d.present) + " / " + num(d.absent) + " / " + num(d.late),
+                num(d.unknown),
+              ]),
+            );
+          if (m.audience === "management" && m.sessions.length) {
+            h +=
+              "<h3>جمع‌بندی کلاس‌ها و درس‌ها</h3>" +
+              table(
+                [
+                  "کلاس / درس",
+                  "جلسه",
+                  "حاضر / غایب / تأخیر",
+                  "تعیین‌نشده",
+                  "ثبت نمره و فعالیت",
+                ],
+                m.lessons.map((l) => [
+                  l.className + " / " + l.lessonName,
+                  num(l.sessions),
+                  num(l.present) + " / " + num(l.absent) + " / " + num(l.late),
+                  num(l.unknown),
+                  num(l.markCount),
+                ]),
+              );
+            h +=
+              "<h3>پیگیری وضعیت هنرجویان</h3>" +
+              table(
+                ["هنرجو / کلاس", "جلسه", "حاضر", "غایب", "تأخیر", "تعیین‌نشده"],
+                m.students.map((st) => [
+                  st.name + " / " + st.className,
+                  num(st.sessions),
+                  num(st.present),
+                  num(st.absent),
+                  num(st.late),
+                  num(st.unknown),
+                ]),
+              );
+          }
+          h += "<h3>جزئیات جلسات و ثبت‌ها</h3>";
+          for (const s of m.sessions) {
+            h +=
+              '<section class="periodic-session"><h4>' +
+              esc(faDate(s.date)) +
+              " · زنگ " +
+              num(s.period + 1) +
+              " · " +
+              esc(s.className) +
+              "</h4><p>" +
+              esc(s.lessonName) +
+              (s.moduleName ? " · " + esc(s.moduleName) : "") +
+              (s.unitName ? " / " + esc(s.unitName) : "") +
+              (s.teacher ? " · دبیر: " + esc(s.teacher) : "") +
+              "</p>";
+            h += table(
+              ["هنرجو", "وضعیت حضور", "نمره، تکلیف و فعالیت ثبت‌شده"],
+              s.participants.map((p) => [
+                p.name,
+                p.attendance.label +
+                  (p.attendance.minutes === null
+                    ? ""
+                    : " · " + num(p.attendance.minutes) + " دقیقه"),
+                p.scores.length
+                  ? p.scores
+                      .map(
+                        (sc) =>
+                          sc.label +
+                          ": " +
+                          (sc.value ?? "—") +
+                          (sc.note ? " — " + sc.note : ""),
+                      )
+                      .join("\n")
+                  : "ثبت نشده",
+              ]),
+            );
+            h += "</section>";
+          }
+          if (m.currentGrades.length)
+            h +=
+              '<h3>آخرین وضعیت تجمعی نمرات درس‌ها</h3><p class="periodic-method">این بخش وضعیت فعلی درس است، محدود به بازه گزارش نیست و ممکن است نمرات خارج از این بازه را شامل شود.</p>' +
+              table(
+                [
+                  "درس",
+                  "عملی فعلی",
+                  "نظری فعلی",
+                  "نهایی فعلی",
+                  "وضعیت",
+                  "قواعد",
+                ],
+                m.currentGrades.map((g) => [
+                  g.lessonName,
+                  g.method === "dual" ? num(g.practical) : "—",
+                  g.method === "dual" ? num(g.theory) : "—",
+                  g.final,
+                  g.status,
+                  g.policy,
+                ]),
+              );
+          if (m.currentGrades.some((g) => g.modules?.length))
+            h +=
+              "<h3>جزئیات تجمعی پودمان‌ها</h3>" +
+              table(
+                [
+                  "درس / پودمان",
+                  "مستمر",
+                  "شایستگی",
+                  "نمره پودمان",
+                  "وضعیت و دلیل",
+                ],
+                m.currentGrades.flatMap((g) =>
+                  (g.modules || []).map((p) => [
+                    g.lessonName + " / " + p.name,
+                    num(p.continuous),
+                    num(p.competency),
+                    num(p.final),
+                    p.reason || (p.passed ? "احراز شده" : "نیازمند بررسی"),
+                  ]),
+                ),
+              );
+          if (m.note)
+            h +=
+              '<h3>توضیحات تنظیم‌کننده</h3><p class="periodic-note">' +
+              esc(m.note) +
+              "</p>";
+          if (m.warnings.length)
+            h +=
+              '<aside class="periodic-warnings"><strong>موارد نیازمند بررسی</strong><ul>' +
+              m.warnings.map((w) => "<li>" + esc(w) + "</li>").join("") +
+              "</ul></aside>";
+          h +=
+            '<footer class="periodic-footer"><h4>مبنای گزارش</h4><ul>' +
+            m.definitions.map((d) => "<li>" + esc(d) + "</li>").join("") +
+            "</ul><p>تنظیم‌کننده: " +
+            esc(m.author || "........................") +
+            "<br>امضا: ........................</p></footer></article>";
+          return h;
+        }
+        function initialize(mode) {
+          filters.mode = mode;
+          if (!db.schools.some((s) => s.id === filters.schoolId)) {
+            filters.schoolId = db.schools.some(
+              (s) => s.id === globalFilter.schoolId,
+            )
+              ? globalFilter.schoolId
+              : db.schools[0]?.id || "";
+            filters.classId = "";
+            filters.studentId = "";
+          }
+          const school = db.schools.find((s) => s.id === filters.schoolId);
+          if (
+            filters.classId &&
+            !school?.classes.some((c) => c.id === filters.classId)
+          ) {
+            filters.classId = "";
+            filters.studentId = "";
+          }
+        }
+        function render(mode) {
+          initialize(mode);
+          const f = filters,
+            school = db.schools.find((s) => s.id === f.schoolId),
+            c = school?.classes.find((c) => c.id === f.classId);
+          const people = new Map(
+            [...(c?.students || []), ...(c?.archivedStudents || [])].map(
+              (st) => [st.id, st],
+            ),
+          );
+          if (c)
+            for (const x of db.sessions.filter(
+              (x) => x.schoolId === school.id && x.classId === c.id,
+            ))
+              for (const st of x.roster || [])
+                if (!people.has(st.id)) people.set(st.id, st);
+          const option = (value, label, chosen) =>
+            '<option value="' +
+            esc(value) +
+            '" ' +
+            (value === chosen ? "selected" : "") +
+            ">" +
+            esc(label) +
+            "</option>";
+          let h =
+            '<section class="card periodic-controls no-print"><h3>تهیه گزارش ' +
+            (mode === "daily" ? "روزانه" : "هفتگی") +
+            '</h3><p>گزارش هفتگی از شنبه تا جمعه است. گزارش اولیا فقط اطلاعات هنرجوی انتخاب‌شده را در بر می‌گیرد.</p><div class="periodic-control-grid"><label>مخاطب<select onchange="EduPeriodicReports.set(\'audience\',this.value)">' +
+            option("management", "مدیریت مدرسه", f.audience) +
+            option("parent", "اولیای یک هنرجو", f.audience) +
+            "</select></label><label>" +
+            (mode === "weekly" ? "یک تاریخ از هفته" : "تاریخ گزارش") +
+            '<input type="date" value="' +
+            esc(f.date) +
+            '" onchange="EduPeriodicReports.set(\'date\',this.value)"></label><label>مدرسه<select onchange="EduPeriodicReports.set(\'schoolId\',this.value)">' +
+            option("", "انتخاب مدرسه", f.schoolId) +
+            db.schools.map((s) => option(s.id, s.name, f.schoolId)).join("") +
+            "</select></label><label>کلاس<select onchange=\"EduPeriodicReports.set('classId',this.value)\">" +
+            option(
+              "",
+              f.audience === "parent"
+                ? "انتخاب کلاس"
+                : "همه کلاس‌های این مدرسه",
+              f.classId,
+            ) +
+            (school?.classes || [])
+              .map((c) => option(c.id, c.name, f.classId))
+              .join("") +
+            "</select></label>";
+          if (f.audience === "parent")
+            h +=
+              "<label>هنرجو<select onchange=\"EduPeriodicReports.set('studentId',this.value)\">" +
+              option("", "انتخاب هنرجو", f.studentId) +
+              [...people.values()]
+                .sort((a, b) => a.name.localeCompare(b.name, "fa"))
+                .map((st) =>
+                  option(
+                    st.id,
+                    st.name + (st.code ? " — " + st.code : ""),
+                    f.studentId,
+                  ),
+                )
+                .join("") +
+              "</select></label>";
+          h +=
+            '<label>نام تنظیم‌کننده (اختیاری)<input value="' +
+            esc(f.author) +
+            '" maxlength="200" oninput="EduPeriodicReports.author(this.value)"></label></div><label class="periodic-note-field">توضیحات این گزارش (اختیاری)<textarea rows="3" maxlength="10000" oninput="EduPeriodicReports.note(this.value)">' +
+            esc(notes.get(noteKey(f)) || "") +
+            '</textarea></label><button class="periodic-build" onclick="EduPeriodicReports.generate()">تهیه گزارش ' +
+            (mode === "daily" ? "روزانه" : "هفتگی") +
+            '</button><p id="periodicError" role="alert"></p></section><div id="periodicReportOutput">';
+          h +=
+            last && last.signature === JSON.stringify(inputSnapshot())
+              ? documentHtml(last.model)
+              : '<div class="card empty">محدوده و مخاطب را انتخاب کنید و «تهیه گزارش» را بزنید.</div>';
+          return h + "</div>";
+        }
+        function set(key, value) {
+          if (
+            !["audience", "date", "schoolId", "classId", "studentId"].includes(
+              key,
+            )
+          )
+            return;
+          filters[key] = value;
+          if (key === "schoolId") {
+            filters.classId = "";
+            filters.studentId = "";
+          }
+          if (key === "classId" || key === "audience") filters.studentId = "";
+          last = null;
+          root.render();
+        }
+        function error(e) {
+          const el = document.getElementById("periodicError");
+          if (el) el.textContent = e.message || String(e);
+        }
+        async function generate() {
+          if (busy) return null;
+          busy = true;
+          const input = inputSnapshot(),
+            signature = JSON.stringify(input);
+          const buttons = [
+            ...document.querySelectorAll(
+              ".periodic-build,.periodic-export-actions button",
+            ),
+          ];
+          buttons.forEach((b) => (b.disabled = true));
+          try {
+            const alert = document.getElementById("periodicError");
+            if (alert) alert.textContent = "";
+            await root.EduV24.flushDrafts({ strict: true });
+            if (signature !== JSON.stringify(inputSnapshot()))
+              throw Error(
+                "تنظیمات گزارش تغییر کرده است؛ دوباره گزارش را تهیه کنید.",
+              );
+            const model = build(db, input);
+            if (model.audience === "parent") {
+              const c = db.schools
+                .find((s) => s.id === input.schoolId)
+                .classes.find((c) => c.id === input.classId);
+              for (const l of c.lessons || []) {
+                try {
+                  const r = calcStudentLesson(c, l, input.studentId);
+                  model.currentGrades.push({
+                    lessonName: l.name,
+                    method:
+                      l.gradingPolicy?.method ||
+                      (l.gradeMode === "kardanesh" ? "dual" : "modular"),
+                    practical: r.practical ?? null,
+                    theory: r.theory ?? null,
+                    final:
+                      typeof r.final === "number" && Number.isFinite(r.final)
+                        ? num(r.final)
+                        : "—",
+                    status:
+                      r.reason ||
+                      (r.final === null || r.final === undefined
+                        ? "ناقص"
+                        : gradeStatus(r)),
+                    modules: (r.modules || []).map((m) => {
+                      const g =
+                        l.poudmans.find((p) => p.id === m.id)?.podScores?.[
+                          input.studentId
+                        ] || {};
+                      return {
+                        name: m.name,
+                        continuous: g.m ?? null,
+                        competency: g.c ?? null,
+                        final: m.final,
+                        passed: m.passed,
+                        complete: m.complete,
+                        reason: m.reason || "",
+                      };
+                    }),
+                    policy: l.gradingPolicy
+                      ? l.gradingPolicy.confirmed
+                        ? "تأییدشده توسط کاربر"
+                        : "پیش‌نویس تأییدنشده"
+                      : "قواعد ثبت‌شده درس",
+                  });
+                } catch {
+                  model.currentGrades.push({
+                    lessonName: l.name,
+                    final: "—",
+                    status: "نیازمند بررسی",
+                    policy: "محاسبه در دسترس نیست",
+                  });
+                }
+              }
+            }
+            last = { signature, model };
+            const out = document.getElementById("periodicReportOutput");
+            if (out) out.innerHTML = documentHtml(model);
+            return model;
+          } catch (e) {
+            last = null;
+            const out = document.getElementById("periodicReportOutput");
+            if (out)
+              out.innerHTML =
+                '<div class="card empty">گزارش تهیه نشد؛ پیام بالا را بررسی کنید.</div>';
+            error(e);
+            return null;
+          } finally {
+            busy = false;
+            document
+              .querySelectorAll(
+                ".periodic-build,.periodic-export-actions button",
+              )
+              .forEach((b) => (b.disabled = false));
+          }
+        }
+        async function output(kind) {
+          const model = await generate();
+          if (!model) return;
+          if (kind === "print") {
+            await root.EduV24.printReport(
+              document.querySelector("[data-periodic-print]"),
+            );
+            return;
+          }
+          if (!["txt", "json"].includes(kind)) return;
+          const content =
+            kind === "json"
+              ? JSON.stringify(model, null, 2)
+              : textReport(model);
+          const blob = new Blob([content], {
+              type:
+                kind === "json"
+                  ? "application/json;charset=utf-8"
+                  : "text/plain;charset=utf-8",
+            }),
+            url = URL.createObjectURL(blob),
+            a = document.createElement("a");
+          a.href = url;
+          a.download =
+            "edu-" +
+            model.mode +
+            "-" +
+            model.start +
+            "-" +
+            model.audience +
+            "." +
+            kind;
+          a.click();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+        root.EduPeriodicReports = {
+          filters,
+          render,
+          set,
+          generate,
+          output,
+          build,
+          range,
+          addDays,
+          textReport,
+          documentHtml,
+          note(value) {
+            notes.set(noteKey(filters), String(value).slice(0, 10000));
+          },
+          author(value) {
+            filters.author = String(value).slice(0, 200);
+          },
+          getLast: () => last?.model || null,
+        };
+      })(globalThis);
     </script>
   </body>
 </html>
