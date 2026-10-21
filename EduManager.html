@@ -1735,6 +1735,54 @@ table[data-ui-layout=matrix] thead [data-identity]{z-index:3;background:#eef2fa!
 }
 @media print{.student-add,.student-import,.roster-toolbar,.roster-results,.student-profile-actions,.roster-no-results{display:none!important}.student-profile{break-inside:avoid;border-bottom:1px solid #ccc;padding:10px}.student-avatar,.student-row-number{display:none}}
 </style>
+<style id="headerActionsDesign">
+@media screen{
+.topbar .header-brand>.header-action{font-size:.72rem!important;min-height:38px;padding:6px 10px!important;border:1px solid #e5eaf3;background:#fff;color:#64748b}
+.topbar .header-actions{gap:7px;align-items:center}
+.header-dropdown{position:relative;min-width:0}
+.topbar .header-action{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 13px;border:1px solid transparent;border-radius:12px;background:transparent;color:#52617b;font-size:.76rem;font-weight:500;line-height:1.5;box-shadow:none;white-space:nowrap}
+.topbar .header-action>svg{width:20px;height:20px;flex-shrink:0}
+.topbar .header-action>span{min-width:0}
+.topbar .header-action .header-caret{width:14px;height:14px;margin-inline-start:2px;color:#94a3b8;transition:transform .18s}
+.topbar .header-action:hover{color:#4338ca;background:#eef2ff;border-color:#e0e7ff}
+.topbar .header-action:active{background:#e0e7ff}
+.topbar .header-action.is-active{background:#eef2ff;border-color:#dce3ff;color:#4338ca}
+.topbar .header-action[aria-expanded=true]{background:#4f46e5;color:#fff;border-color:#4f46e5;box-shadow:0 4px 12px #4f46e51a}
+.topbar .header-action[aria-expanded=true] .header-caret{transform:rotate(180deg);color:#e0e7ff}
+.header-dropdown .data-menu{top:calc(100% + 8px);inset-inline-start:0;inset-inline-end:auto;border:1px solid #e5eaf3;border-radius:16px;box-shadow:0 12px 40px #24315a1a;padding:7px;min-width:224px;width:max-content;max-width:calc(100vw - 36px);background:#fff}
+.header-dropdown .data-menu button{display:flex;align-items:center;gap:10px;min-height:44px;padding:10px 12px;font-size:.76rem;border-radius:10px;line-height:1.7}
+.header-dropdown .data-menu button svg{width:18px;height:18px;flex-shrink:0;color:#71809b}
+.header-dropdown .data-menu button:hover{background:#f1f4ff;color:#4338ca}
+.header-dropdown .data-menu button.danger-item{margin-top:5px;border-top:1px solid #fee2e2;border-radius:0 0 10px 10px;padding-top:12px;color:#b91c1c}
+.header-dropdown .data-menu button.danger-item svg{color:#dc2626}
+.header-dropdown .data-menu button.danger-item:hover{background:#fff1f2}
+.navigation-menu>summary{display:flex;align-items:center;justify-content:space-between;gap:8px;list-style:none;background:#fff;border:1px solid #e5eaf3;border-radius:12px;color:#52617b}
+.navigation-menu>summary::-webkit-details-marker{display:none}
+.navigation-menu>summary::after{content:"⌄";font-size:18px;line-height:1}
+.navigation-menu[open]>summary{color:#4338ca;border-color:#c7d2fe;background:#f8f9ff}
+.navigation-menu[open]>summary::after{content:"⌃"}
+@media(max-width:700px){
+.topbar .header-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:12px 0 4px}
+.topbar .header-actions>.header-action,.topbar .header-dropdown>.header-action{width:100%;min-height:48px;justify-content:flex-start;border:1px solid #e5eaf3;background:#fff;padding:12px;font-size:.76rem}
+.topbar .header-actions>.header-dropdown{width:100%;min-width:0}
+.topbar .header-actions>.header-dropdown:has(.data-menu.open){grid-column:1/-1}
+.topbar .header-action.is-active{background:#eef2ff;border-color:#dce3ff}
+.topbar .header-action .header-caret{margin-inline-start:auto}
+.header-dropdown .data-menu{position:static;min-width:0;max-width:100%;width:100%;box-shadow:none;margin-top:6px;background:#fafbff}
+.topbar .header-actions>.header-action:last-child{grid-column:1/-1;justify-content:center;background:#f3f6fb;border-color:transparent}
+}
+@media(min-width:701px){
+.navigation-menu>summary{display:none}
+.topbar .header-actions{background:#fff;padding:5px!important;border:1px solid #e5eaf3;border-radius:16px;gap:4px}
+.navigation-menu{flex:0 1 auto}
+}
+@media(min-width:701px) and (max-width:1000px){
+.topbar .navigation-menu{width:100%;flex:1 1 100%}
+.topbar .header-actions{justify-content:space-between}
+.topbar .header-actions>.header-action,.topbar .header-dropdown>.header-action{padding-inline:10px}
+}
+}
+</style>
 </head>
   <body>
     <div class="cal-popup" id="calPopup"></div>
@@ -2488,61 +2536,48 @@ table[data-ui-layout=matrix] thead [data-identity]{z-index:3;background:#eef2fa!
         }
       }
 
-      function headerHtml() {
-        return `<div class="topbar">
-    <div style="display:flex;align-items:center;gap:10px">
-      <h1>🏫 سامانه مدیریت مدرسه</h1>
-      ${state.view !== "schools" ? `<button class="ghost" onclick="goSchools()" style="font-size:.85em;padding:4px 10px">🏠 خانه</button>` : ""}
-    </div>
-    <div class="actions">
-      <div style="position:relative;">
-        <button class="master-btn" onclick="toggleClassMenu(event)">🏫 مدیریت کلاس ▾</button>
-        <div class="data-menu" id="classMenu">
-          <button onclick="closeClassMenu();goSchools()">🏫 مدارس</button>
-          <button onclick="closeClassMenu();goCurrentClass()">📚 کلاس‌ها</button>
-          <button onclick="closeClassMenu();goCurrentLesson()">📖 دروس</button>
-        </div>
-      </div>
-      <button class="report-btn" onclick="goReports()">📈 گزارش</button>
-      <button class="master-btn" onclick="goMaster()">📅 برنامه هفتگی</button>
-      <button class="ghost" onclick="openSettingsModal()">⚙️</button>
-      <div style="position:relative;">
-        <button class="data-btn" onclick="toggleDataMenu(event)">🗄️ داده‌ها ▾</button>
-        <div class="data-menu" id="dataMenu">
-          <button onclick="closeDataMenu();exportBackup()">💾 پشتیبان‌گیری</button>
-          <button onclick="closeDataMenu();document.getElementById('importFile').click()">📂 بازیابی از فایل</button>
-          <button class="danger-item" onclick="closeDataMenu();wipeAllData()">🗑️ حذف کامل داده‌ها</button>
-        </div>
-      </div>
-    </div>
-  </div>`;
+
+      function headerHtml(){
+        const icon=path=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="'+path+'"/></svg>';
+        const icons={
+          school:"M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M8 9h1M15 9h1M8 12h1M15 12h1",
+          report:"M4 3v18h17M8 17v-5M13 17V8M18 17V5",
+          calendar:"M4 5h16v16H4zM8 3v4M16 3v4M4 10h16M8 14h2M14 14h2",
+          settings:"M9 4h6l1 3 3 1 1 6-3 2-1 3H9l-1-3-3-2 1-6 3-1 1-3ZM15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0",
+          data:"M4 5h16v15H4zM4 9h16M8 13h8M8 16h5",
+          home:"M3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9",
+          book:"M12 5C9 3 6 3 3 4v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1Zm0 0v15",
+          copy:"M8 3h12v14H8zM4 7v14h12",
+          upload:"M12 16V3M7 8l5-5 5 5M4 15v6h16v-6",
+          trash:"M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7"
+        };
+        const btn=(label,key,action,active=false,extra="")=>'<button type="button" class="header-action'+(active?' is-active':'')+'" onclick="'+action+'" '+(active?'aria-current="page" ':'')+extra+'>'+icon(icons[key])+'<span>'+label+'</span></button>';
+        const caret='<svg class="header-caret" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m6 8 4 4 4-4"/></svg>';
+        const sub=(label,key,action,danger=false)=>'<button type="button" '+(danger?'class="danger-item" ':'')+'onclick="'+action+'">'+icon(icons[key])+'<span>'+label+'</span></button>';
+        let h='<div class="topbar"><div class="header-brand"><h1>مدیریت کلاس</h1>';
+        if(state.view!=="schools")h+=btn("خانه","home","goSchools()",false,'class-placeholder=""');
+        h+='</div><div class="actions header-actions"><div class="header-dropdown">'+btn("مدیریت کلاس","school","toggleClassMenu(event)",["schools","school","class","lesson"].includes(state.view),'id="classMenuButton" aria-controls="classMenu" aria-expanded="false"').replace('</button>',caret+'</button>')+'<div class="data-menu" id="classMenu" aria-label="مدیریت کلاس">'+sub("مدارس","school","closeClassMenu();goSchools()")+sub("کلاس‌ها","school","closeClassMenu();goCurrentClass()")+sub("دروس","book","closeClassMenu();goCurrentLesson()")+'</div></div>';
+        h+=btn("گزارش‌ها","report","goReports()",state.view==="reports")+btn("برنامه هفتگی","calendar","goMaster()",state.view==="master");
+        h+='<div class="header-dropdown">'+btn("داده‌ها","data","toggleDataMenu(event)",false,'id="dataMenuButton" aria-controls="dataMenu" aria-expanded="false"').replace('</button>',caret+'</button>')+'<div class="data-menu" id="dataMenu" aria-label="مدیریت داده‌ها">'+sub("پشتیبان‌گیری","copy","closeDataMenu();exportBackup()")+sub("بازیابی از فایل","upload","closeDataMenu();document.getElementById(\'importFile\').click()")+sub("حذف کامل داده‌ها","trash","closeDataMenu();wipeAllData()",true)+'</div></div>';
+        h+=btn("تنظیمات","settings","openSettingsModal()")+'</div></div>';
+        return h;
       }
-      function toggleClassMenu(e) {
-        e.stopPropagation();
-        document.getElementById("dataMenu").classList.remove("open");
-        document.getElementById("classMenu").classList.toggle("open");
+      function setHeaderMenu(id,open){
+        const menu=document.getElementById(id),button=document.getElementById(id+"Button");
+        menu?.classList.toggle("open",open);
+        button?.setAttribute("aria-expanded",String(open));
       }
-      function closeClassMenu() {
-        const m = document.getElementById("classMenu");
-        if (m) m.classList.remove("open");
-      }
-      function toggleDataMenu(e) {
-        e.stopPropagation();
-        document.getElementById("classMenu").classList.remove("open");
-        document.getElementById("dataMenu").classList.toggle("open");
-      }
-      function closeDataMenu() {
-        const m = document.getElementById("dataMenu");
-        if (m) m.classList.remove("open");
-      }
-      document.addEventListener("click", () => {
-        const cm = document.getElementById("classMenu");
-        if (cm) cm.classList.remove("open");
-        const dm = document.getElementById("dataMenu");
-        if (dm) dm.classList.remove("open");
+      function toggleClassMenu(e){e.stopPropagation();const open=!document.getElementById("classMenu")?.classList.contains("open");closeDataMenu();setHeaderMenu("classMenu",open);}
+      function closeClassMenu(){setHeaderMenu("classMenu",false);}
+      function toggleDataMenu(e){e.stopPropagation();const open=!document.getElementById("dataMenu")?.classList.contains("open");closeClassMenu();setHeaderMenu("dataMenu",open);}
+      function closeDataMenu(){setHeaderMenu("dataMenu",false);}
+      document.addEventListener("click",()=>{closeClassMenu();closeDataMenu();});
+      document.addEventListener("keydown",e=>{
+        if(e.key!=="Escape")return;
+        const open=document.querySelector(".header-dropdown .data-menu.open");
+        if(open){const button=document.getElementById(open.id+"Button");closeClassMenu();closeDataMenu();button?.focus();e.preventDefault();}
       });
 
-      // توابع اصلاح‌شده برای منوی مدیریت کلاس
       function goCurrentClass() {
         if (state.classId) {
           goClass(state.classId);
