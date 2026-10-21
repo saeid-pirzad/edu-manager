@@ -1968,10 +1968,10 @@ details.quick-create,details.lesson-create,details.student-import{scroll-margin-
 <style id="hamburgerButtonDesign">
 .menu-toggle-icon{display:none}
 @media screen and (max-width:700px),screen and (max-width:1000px) and (pointer:coarse){
-.topbar .navigation-menu>summary{width:44px;height:44px;min-height:44px;border:1px solid #e6eaf2;border-radius:12px;background:#fff;color:#52617b;box-shadow:0 1px 2px #25345a04;transition:background .18s,border-color .18s,box-shadow .18s;touch-action:manipulation}
+.topbar .navigation-menu>summary{display:flex;align-items:center;justify-content:center;place-content:center;gap:0;padding:0;line-height:0;width:44px;height:44px;min-height:44px;border:1px solid #e6eaf2;border-radius:12px;background:#fff;color:#52617b;box-shadow:0 1px 2px #25345a04;transition:background .18s,border-color .18s,box-shadow .18s;touch-action:manipulation}
 .topbar .navigation-menu>summary::after{content:none!important;display:none}
 .menu-toggle-label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-.menu-toggle-icon{display:block;width:24px;height:24px;pointer-events:none}
+.menu-toggle-icon{display:block;flex:0 0 24px;width:24px;height:24px;margin:0;pointer-events:none}
 .menu-toggle-icon path{transform-origin:12px 12px;transition:transform .2s ease,opacity .15s ease}
 .menu-line-top{transform:translateY(-5px)}
 .menu-line-bottom{transform:translateY(5px)}
