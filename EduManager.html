@@ -6308,17 +6308,8 @@ table[data-ui-layout=matrix] thead [data-identity]{z-index:3;background:#eef2fa!
             typeof p.requireGate !== "boolean"
           )
             throw Error("وضعیت تأیید نامعتبر است.");
-          if (
-            p.confirmed &&
-            (!p.circularNumber.trim() ||
-              !p.circularDate.trim() ||
-              !p.reference.trim() ||
-              !p.code.trim() ||
-              !p.authority.trim())
-          )
-            throw Error(
-              "برای تأیید قواعد، کد درس، متولی و شماره، تاریخ و مرجع ابلاغیه را تکمیل کنید.",
-            );
+          if (p.confirmed && !p.code.trim())
+            throw Error("برای تأیید قواعد، کد درس / استاندارد را تکمیل کنید.");
           for (const k of [
             "practicalWeight",
             "theoryMin",
@@ -6631,7 +6622,7 @@ table[data-ui-layout=matrix] thead [data-identity]{z-index:3;background:#eef2fa!
               locked,
             };
             const info = l.courseInfo || p;
-            let h = `<p>تعریف درس براساس ابلاغیه سالانه. همه نمرات ورودی و حدنصاب‌ها بر مقیاس صفر تا بیست هستند. تأیید قواعد به معنی تأیید شماست.</p><div id="courseError" role="alert"></div><div class="course-grid">`;
+            let h = `<p>تعریف درس براساس ابلاغیه سالانه. همه نمرات ورودی و حدنصاب‌ها بر مقیاس صفر تا بیست هستند. تأیید قواعد به معنی تأیید شماست. شماره، تاریخ و مرجع ابلاغیه و متولی استاندارد اختیاری‌اند و می‌توانند خالی بمانند.</p><div id="courseError" role="alert"></div><div class="course-grid">`;
             h +=
               input("name", "نام درس", l.name) +
               input("teacher", "هنرآموز / دبیر", l.teacher) +
@@ -6671,7 +6662,7 @@ table[data-ui-layout=matrix] thead [data-identity]{z-index:3;background:#eef2fa!
                 ],
                 info.branch || p.branch,
               ) +
-              input("authority", "متولی استاندارد", info.authority);
+              input("authority", "متولی استاندارد (اختیاری)", info.authority);
             h +=
               '</div><fieldset id="coursePolicy" ' +
               (locked ? "disabled" : "") +
@@ -6694,9 +6685,9 @@ table[data-ui-layout=matrix] thead [data-identity]{z-index:3;background:#eef2fa!
                 p.method,
                 'onchange="EduV24.course.toggleMethod()"',
               ) +
-              input("circularNumber", "شماره ابلاغیه", p.circularNumber) +
-              input("circularDate", "تاریخ ابلاغیه", p.circularDate) +
-              input("reference", "مرجع / بند / صفحه ابلاغیه", p.reference) +
+              input("circularNumber", "شماره ابلاغیه (اختیاری)", p.circularNumber) +
+              input("circularDate", "تاریخ ابلاغیه (اختیاری)", p.circularDate) +
+              input("reference", "مرجع / بند / صفحه ابلاغیه (اختیاری)", p.reference) +
               "</div>";
             h +=
               '<div id="courseDual" class="course-grid">' +
