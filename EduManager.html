@@ -11631,6 +11631,15 @@
       }
 
 
+      function validateReportNotes(value, workspaceId) {
+        if (value === undefined) return {};
+        if (!value || typeof value !== "object" || Array.isArray(value))
+          throw Error("بخش توضیحات گزارش در پشتیبان معتبر نیست.");
+        for (const [key, text] of Object.entries(value))
+          if (typeof text !== "string" || !key.startsWith(workspaceId + "|") || key.split("|").length !== 7)
+            throw Error("توضیحات گزارش با دوره پشتیبان سازگار نیست.");
+        return Object.fromEntries(Object.entries(value));
+      }
       function historicalRoster(c, session) {
         const recorded = new Set([
           ...Object.keys(session.attendance || {}),
@@ -13447,50 +13456,137 @@
           });
         }
 
-        async function openDatabase() {
-          if (!globalThis.indexedDB)
-            throw Error(
-              "این مرورگر IndexedDB را در اختیار برنامه قرار نمی‌دهد.",
-            );
+
+        const RESET_RECORD_KEY = "@installation-reset", RESET_EPOCH_KEY = "EduManager.resetEpoch";
+        let resetBusy = false, connectionRetired = false, installationToken = "";
+        function ownedDataKey(key) {
+          return key.startsWith("Edu24.") || key.startsWith("EduManager.periodicDrafts.") ||
+            key === STORAGE_KEY || key === STORAGE_KEY + "_beforeImport";
+        }
+        function retireConnection(dbConnection) {
+          dbConnection.close();
+          connectionRetired = true;
+          ready = false;
+          blocked = true;
+          clearTimeout(draftTimer);
+          clearInterval(automaticBackupTimer);
+          automaticBackupTimer = null;
+          setStatus("بانک اطلاعات در پنجره دیگری تغییر می‌کند؛ برای ادامه صفحه را دوباره بارگذاری کنید.", "error");
+          lockControls();
+        }
+        function forgetInstallation() {
+          clearTimeout(draftTimer);
+          clearInterval(automaticBackupTimer);
+          automaticBackupTimer = null;
+          drafts.clear();
+          draftGeneration++;
+          writeFailureGeneration++;
+          committed.clear();
+          draftRecoveryFailed = false;
+          window.EduPeriodicReports?.resetDrafts();
+          db = v24DefaultDB();
+          workspace = null;
+          ready = false;
+          blocked = true;
+          connectionRetired = true;
+          isAuthenticated = false;
+        }
+        function resetScreen(message) {
+          const modal = document.getElementById("modal");
+          modal.classList.add("hidden");
+          modal.setAttribute("aria-hidden", "true");
+          document.getElementById("modalBody").replaceChildren();
+          setModalBackground(false);
+          document.getElementById("app").innerHTML = '<div class="card" role="alert"><h2>پاک‌سازی اطلاعات</h2><p>' + esc(message) + '</p><button onclick="location.reload()">بارگذاری مجدد و ادامه</button></div>';
+        }
+        function invalidateInstallation() {
+          forgetInstallation();
+          resetScreen("اطلاعات برنامه در پنجره دیگری حذف شده است. برای شروع با اطلاعات خالی، برنامه را دوباره بارگذاری کنید.");
+        }
+        async function completeResetCleanup(dbConnection, marker) {
+          for (const key of Object.keys(localStorage))
+            if (ownedDataKey(key)) localStorage.removeItem(key);
+          localStorage.setItem(RESET_EPOCH_KEY, marker.value.token);
+          for (const key of Object.keys(sessionStorage))
+            if (key.startsWith("Edu24.")) sessionStorage.removeItem(key);
+          if (localStorage.getItem(RESET_EPOCH_KEY) !== marker.value.token ||
+              Object.keys(localStorage).some(ownedDataKey))
+            throw Error("پاک‌سازی حافظه مرورگر کامل نشده است.");
+          const tx = dbConnection.transaction("records", "readwrite"), done = transactionDone(tx);
+          const store = tx.objectStore("records"), request = store.get(RESET_RECORD_KEY);
+          request.onsuccess = () => {
+            if (request.result?.value?.token !== marker.value.token) { tx.abort(); return; }
+            store.put({...marker, value: {...marker.value, phase: "complete"}});
+          };
+          await done;
+        }
+        function resetDatabase(version, marker) {
           return new Promise((resolve, reject) => {
-            const request = indexedDB.open("EduManagerProfessional", 2);
+            const request = indexedDB.open("EduManagerProfessional", version);
+            let cancelled = false, upgraded = false;
+            request.onblocked = () => {
+              cancelled = true;
+              const error = Error("حذف انجام نشد؛ یک اتصال دیگر بانک را باز نگه داشته است. پنجره‌های دیگر برنامه را ببندید و دوباره بارگذاری کنید.");
+              error.resetBlocked = true;
+              reject(error);
+            };
             request.onupgradeneeded = () => {
-              const connection = request.result;
-              for (const [name, keyPath] of [
-                ["records", "key"],
-                ["catalog", "id"],
-                ["events", "id"],
-                ["backups", "id"],
-                ["undo", "id"],
-                ["reports", "id"],
-                ["drafts", "key"],
-              ]) {
-                if (connection.objectStoreNames.contains(name)) continue;
-                const store = connection.createObjectStore(name, {
-                  keyPath,
-                  ...(name === "events" ? { autoIncrement: true } : {}),
-                });
-                if (name === "events" || name === "drafts")
-                  store.createIndex("workspace", "workspace");
-              }
+              if (cancelled) { request.transaction.abort(); return; }
+              upgraded = true;
+              for (const name of request.result.objectStoreNames)
+                request.transaction.objectStore(name).clear();
+              request.transaction.objectStore("records").put(marker);
             };
             request.onsuccess = () => {
-              const connection = request.result;
-              connection.onversionchange = () => {
-                connection.close();
-                blocked = true;
-                setStatus(
-                  "برنامه در تب دیگر ارتقا یافت؛ صفحه را دوباره بارگذاری کنید.",
-                  "error",
-                );
-              };
-              resolve(connection);
+              if (cancelled || !upgraded) {
+                request.result.close();
+                reject(Error("بانک در پنجره دیگری تغییر کرده است؛ حذف تکراری انجام نشد."));
+                return;
+              }
+              resolve(request.result);
             };
-            request.onerror = () => reject(request.error);
-            request.onblocked = () =>
-              reject(
-                Error("تب قدیمی برنامه را ببندید و دوباره بارگذاری کنید."),
-              );
+            request.onerror = () => reject(request.error || Error("حذف اطلاعات ثبت نشد."));
+          });
+        }
+
+        async function openDatabase() {
+          if (!globalThis.indexedDB)
+            throw Error("این مرورگر IndexedDB را در اختیار برنامه قرار نمی‌دهد.");
+          return new Promise((resolve, reject) => {
+            function open(version) {
+              const request = version === undefined
+                ? indexedDB.open("EduManagerProfessional")
+                : indexedDB.open("EduManagerProfessional", version);
+              let cancelled = false;
+              request.onupgradeneeded = () => {
+                if (cancelled) { request.transaction.abort(); return; }
+                const target = request.result;
+                for (const [name, keyPath] of [
+                  ["records", "key"], ["catalog", "id"], ["events", "id"],
+                  ["backups", "id"], ["undo", "id"], ["reports", "id"], ["drafts", "key"],
+                ]) {
+                  if (target.objectStoreNames.contains(name)) continue;
+                  const store = target.createObjectStore(name, {keyPath, ...(name === "events" ? {autoIncrement: true} : {})});
+                  if (name === "events" || name === "drafts") store.createIndex("workspace", "workspace");
+                }
+              };
+              request.onsuccess = () => {
+                const target = request.result;
+                if (cancelled) { target.close(); return; }
+                if (target.version < 2 || ["records","catalog","events","backups","undo","reports","drafts"].some(name => !target.objectStoreNames.contains(name))) {
+                  const nextVersion = Math.max(2, target.version + 1);
+                  target.close(); open(nextVersion); return;
+                }
+                target.onversionchange = () => retireConnection(target);
+                resolve(target);
+              };
+              request.onerror = () => reject(request.error);
+              request.onblocked = () => {
+                cancelled = true;
+                reject(Error("اتصال قدیمی بانک را ببندید و دوباره بارگذاری کنید."));
+              };
+            }
+            open();
           });
         }
 
@@ -13796,6 +13892,7 @@
         }
 
         function saveDBV24(scope = {}) {
+          if (resetBusy || connectionRetired) return Promise.reject(Error("ثبت هنگام پاک‌سازی یا تغییر بانک متوقف است."));
           if (fileMode)
             return Promise.reject(
               Error(
@@ -13913,9 +14010,17 @@
           try {
             await claimTab();
             connection = await openDatabase();
+            connectionRetired = false;
+            const resetMarker = await readRecord("records", RESET_RECORD_KEY);
+            installationToken = resetMarker?.value?.token || "";
+            if (!resetMarker) try { installationToken = localStorage.getItem(RESET_EPOCH_KEY) || ""; } catch {}
+            if (resetMarker?.value?.phase === "cleanup") {
+              try { await completeResetCleanup(connection, resetMarker); await claimTab(); }
+              catch(error) { forgetInstallation(); resetScreen("حذف بانک انجام شده است؛ پاک‌سازی حافظه مرورگر هنوز کامل نشده است. برای ادامه، دوباره بارگذاری کنید. " + error.message); return; }
+            }
             let periods = await allFrom("catalog");
             if (!periods.length) {
-              const raw = localStorage.getItem(STORAGE_KEY);
+              const raw = resetMarker ? null : localStorage.getItem(STORAGE_KEY);
               let data;
               if (raw) {
                 const original = JSON.parse(raw);
@@ -13924,11 +14029,10 @@
                   original.settings?.academicTerm || "سوابق پیشین";
                 await putBackup(original, "انتقال نسخه قبلی", null);
               } else data = v24DefaultDB();
-              const created = await installWorkspace(data, {
-                id: "initial",
-                year: data.settings.academicYear,
-                term: data.settings.academicTerm,
-              });
+              const initialId = resetMarker ? "reset-" + resetMarker.value.token : "initial";
+              let created;
+              try { created = await installWorkspace(data, {id: initialId, year: data.settings.academicYear, term: data.settings.academicTerm}); }
+              catch(error) { created = await readRecord("catalog", initialId); if (!created) throw error; }
               periods = [created];
               const check = await readWorkspace(created.id);
               if (!check.data) throw Error("بازخوانی انتقال تأیید نشد.");
@@ -13951,6 +14055,7 @@
               rememberPeriod(workspace.id);
             } catch (ignore) {}
             setStatus("اطلاعات ذخیره‌شده خوانده شد.", "saved");
+            hydrateReportNotes(workspace);
             await loadDrafts();
             ready = true;
             render();
@@ -14066,7 +14171,7 @@
         }
 
         function storeDrafts() {
-          if (!workspace) return Promise.resolve();
+          if (!workspace || resetBusy || connectionRetired) return Promise.resolve();
           const key = draftStorageKey(),
             entry = {
               key,
@@ -14094,6 +14199,7 @@
           const operation = draftWriter
             .catch(() => {})
             .then(async () => {
+              if (connectionRetired) return;
               if (!targetConnection?.objectStoreNames.contains("drafts"))
                 throw Error("ذخیره پایدار پیش‌نویس در دسترس نیست.");
               let tx;
@@ -14205,6 +14311,7 @@
         }
 
         function gradeInput(input) {
+          if (resetBusy || connectionRetired) return;
           const item = contextFromInput(input),
             key = inputKey(item),
             parsed = parseDraft(item);
@@ -14225,6 +14332,7 @@
         }
 
         function clearGrade(input) {
+          if (resetBusy || connectionRetired) return;
           const item = contextFromInput(input);
           if (
             !confirm(
@@ -14250,6 +14358,7 @@
         }
 
         async function flushDrafts({ strict = false } = {}) {
+          if (resetBusy || connectionRetired) throw Error("ثبت هنگام پاک‌سازی یا تغییر بانک متوقف است.");
           clearTimeout(draftTimer);
           if (flushing) {
             await flushing;
@@ -15029,6 +15138,7 @@
           );
           // Never embed a full snapshot inside another full snapshot.
           stores.backups = stores.backups.filter((row) => !row.full);
+          stores.records = stores.records.filter(row => row.key !== RESET_RECORD_KEY);
           const gradeDrafts = portableGradeDrafts(
             stores.drafts,
             stores.catalog,
@@ -15037,7 +15147,7 @@
           const reportDrafts = {};
           for (const period of stores.catalog) {
             if (window.EduPeriodicReports?.getDrafts) {
-              reportDrafts[period.id] = window.EduPeriodicReports.getDrafts(period.id);
+              reportDrafts[period.id] = window.EduPeriodicReports.getDrafts(period.id, period.reportNotesRecovery);
               continue;
             }
             try {
@@ -15121,6 +15231,8 @@
           for (const name of backupStores)
             if (!Array.isArray(value.stores?.[name]))
               throw Error("بخش پشتیبان ناقص است: " + name);
+          if (value.reportDrafts !== undefined && (!value.reportDrafts || typeof value.reportDrafts !== "object" || Array.isArray(value.reportDrafts)))
+            throw Error("فهرست توضیحات پشتیبان معتبر نیست.");
           const ids = new Set(),
             periods = [];
           for (const period of value.stores.catalog) {
@@ -15133,6 +15245,8 @@
               typeof period.createdAt !== "string"
             )
               throw Error("شناسنامه دوره در پشتیبان نامعتبر است.");
+            validateReportNotes(period.reportNotesRecovery, period.id);
+            validateReportNotes(value.reportDrafts?.[period.id], period.id);
             ids.add(period.id);
             const records = value.stores.records.filter(
               (r) => r.workspace === period.id,
@@ -15154,6 +15268,8 @@
               throw Error("عنوان دوره با اطلاعات پشتیبان سازگار نیست.");
             periods.push({ period, data: normalized });
           }
+          if (Object.keys(value.reportDrafts || {}).some(id => !ids.has(id)))
+            throw Error("توضیحات گزارش متعلق به دوره ناموجود است.");
           if (!periods.length || !ids.has(value.activeWorkspace))
             throw Error("دوره فعال پشتیبان موجود نیست.");
           for (const name of [
@@ -15256,7 +15372,12 @@
                 term = recoveryPeriodTerm(term, id);
               occupied.add(period.year + "|" + normalizedName(term));
               data.settings.academicTerm = term;
-              rows.catalog.push({ ...period, id, term });
+              const reportNotes = {
+                ...validateReportNotes(period.reportNotesRecovery, period.id),
+                ...validateReportNotes(source.reportDrafts?.[period.id], period.id),
+              };
+              const reportNotesRecovery = Object.fromEntries(Object.entries(reportNotes).map(([key, text]) => [id + key.slice(period.id.length), text]));
+              rows.catalog.push({ ...period, id, term, reportNotesRecovery });
               for (const [logical, value] of collectRecords(data))
                 rows.records.push({
                   key: id + "|" + logical,
@@ -15315,23 +15436,14 @@
             let reportNotesFailed = false;
             for (const [oldId, id] of mapping) {
               try {
-                const saved = source.reportDrafts?.[oldId] || {};
-                const renamed = Object.fromEntries(
-                  Object.entries(saved).map(([key, value]) => [
-                    key.startsWith(oldId + "|")
-                      ? id + key.slice(oldId.length)
-                      : key,
-                    value,
-                  ]),
-                );
-                localStorage.setItem(
-                  "EduManager.periodicDrafts." + id,
-                  JSON.stringify(renamed),
-                );
+                const saved = rows.catalog.find(period => period.id === id).reportNotesRecovery;
+                if (window.EduPeriodicReports?.restoreDrafts) {
+                  if (!window.EduPeriodicReports.restoreDrafts(id, saved)) throw Error("ذخیره معمول توضیحات کامل نشد.");
+                } else localStorage.setItem("EduManager.periodicDrafts." + id, JSON.stringify(saved));
               } catch {
                 reportNotesFailed = true;
                 setStatus(
-                  "دوره‌ها بازیابی شدند؛ ذخیره توضیحات گزارش روی دستگاه انجام نشد.",
+                  "دوره‌ها بازیابی شدند؛ نسخه توضیحات در بانک داخلی محفوظ است. ذخیره توضیحات گزارش را دوباره امتحان کنید.",
                   "error",
                 );
               }
@@ -15351,7 +15463,7 @@
                     " پیش‌نویس نمره از بخش پیش‌نویس نشست‌های دیگر نیازمند بررسی است."
                   : "") +
                 (reportNotesFailed
-                  ? " ذخیره توضیحات گزارش روی دستگاه انجام نشد."
+                  ? " نسخه توضیحات در بانک داخلی محفوظ است؛ ذخیره معمول آن‌ها نیاز به تلاش مجدد دارد."
                   : ""),
               reportNotesFailed ? "error" : "saved",
             );
@@ -15788,6 +15900,12 @@
           );
         }
 
+        function hydrateReportNotes(period) {
+          if (!period.reportNotesRecovery || !Object.keys(period.reportNotesRecovery).length) return true;
+          const saved = window.EduPeriodicReports?.restoreDrafts(period.id, period.reportNotesRecovery);
+          if (saved === false) setStatus("اطلاعات خوانده شد؛ توضیحات بازیابی‌شده در بانک داخلی محفوظ است. ذخیره توضیحات را از صفحه گزارش دوباره امتحان کنید.", "error");
+          return saved !== false;
+        }
         async function switchPeriod(id) {
           if (id === workspace.id) {
             closeModal();
@@ -15814,6 +15932,7 @@
             reportTab: "comprehensive",
           };
           rememberPeriod(id);
+          hydrateReportNotes(workspace);
           await loadDrafts();
           closeModal();
           render();
@@ -16803,60 +16922,85 @@
           } finally { studentSaving = false; finish(); }
         }
 
-        async function wipeAllV24() {
-          showModal(
-            "حذف کامل اطلاعات همه دوره‌ها",
-            '<p>تمام دوره‌ها، پشتیبان‌های داخلی، تاریخچه و کارنامه‌های ثابت حذف می‌شوند. ابتدا فایل مستقل تهیه کنید.</p><button onclick="exportBackup()">ذخیره فایل دوره فعلی</button><label>برای تأیید، «حذف» را بنویسید <input id="wipeText"></label><label><input type="checkbox" id="wipeBackup"> از دوره‌های مورد نیاز پشتیبان مستقل دارم.</label><button class="danger" onclick="EduV24.confirmWipe()">حذف کامل</button>',
-          );
-        }
 
+        async function wipeAllV24() {
+          if (fileMode || !ready || connectionRetired) return handleError(Error("ابتدا نسخه آماده برنامه را باز کنید."));
+          showModal("حذف کامل اطلاعات همه دوره‌ها",
+            '<form class="record-editor" id="wipeEditor" onsubmit="event.preventDefault();EduV24.confirmWipe()"><div class="record-editor-context"><h4>حذف اطلاعات همین مرورگر</h4><p>تمام دوره‌ها، نمرات، جلسات، پیش‌نویس‌ها، توضیحات گزارش، تاریخچه، کارنامه‌های ثابت و پشتیبان‌های داخلی پاک می‌شوند.</p></div><p>برنامه نصب‌شده و فایل‌های پشتیبان بیرون برنامه حذف نمی‌شوند. پیش از ادامه، پشتیبان کامل همه دوره‌ها را در فایل مستقل نگه دارید.</p><button type="button" class="ghost" onclick="EduV24.exportFullBackup()">دریافت پشتیبان کامل همه دوره‌ها</button><label for="wipeText">برای تأیید، «حذف» را بنویسید</label><input id="wipeText" autocomplete="off"><label><input type="checkbox" id="wipeBackup"> پشتیبان مستقل موردنیاز را نگه داشته‌ام.</label><p id="wipeError" class="entity-create-error" role="alert"></p><div class="row record-editor-actions"><button type="button" class="ghost" onclick="closeModal()">انصراف</button><button type="submit" class="danger">حذف کامل اطلاعات</button></div></form>');
+        }
         async function confirmWipe() {
-          if (fileMode)
-            throw Error(
-              "این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.",
-            );
-          if (
-            document.getElementById("wipeText").value !== "حذف" ||
-            !document.getElementById("wipeBackup").checked
-          )
-            throw Error("متن تأیید و گزینه پشتیبان را تکمیل کنید.");
-          if (
-            !confirm(
-              "آخرین تأیید: همه اطلاعات این برنامه از این مرورگر حذف شوند؟",
-            )
-          )
-            return;
-          await writer.catch(() => {});
-          const stores = [
-              "records",
-              "catalog",
-              "events",
-              "backups",
-              "reports",
-              "undo",
-            ],
-            tx = connection.transaction(stores, "readwrite"),
-            done = transactionDone(tx);
-          for (const name of stores) tx.objectStore(name).clear();
-          await done;
-          for (const key of Object.keys(localStorage))
-            if (
-              key.startsWith("Edu24.") ||
-              key === STORAGE_KEY ||
-              key === STORAGE_KEY + "_beforeImport"
-            )
-              localStorage.removeItem(key);
-          drafts.clear();
-          blocked = false;
-          storageBlocked = false;
-          ready = false;
-          isAuthenticated = false;
-          workspace = null;
-          closeModal();
-          await bootstrapV24();
+          if (resetBusy) return false;
+          const form = document.querySelector("#modal:not(.hidden) #wipeEditor");
+          if (!form) return false;
+          if (fileMode || !ready || connectionRetired) return false;
+          if (document.getElementById("wipeText").value !== "حذف" || !document.getElementById("wipeBackup").checked) {
+            showRecordEditorError(recordFieldError("متن تأیید و گزینه پشتیبان را تکمیل کنید.", "wipeText"), "wipeError");
+            return false;
+          }
+          if (!confirm("آخرین تأیید: همه اطلاعات این برنامه از این مرورگر حذف شوند؟")) return false;
+          resetBusy = true;
+          const finish = beginRecordEditorSave(form), wasBlocked = blocked;
+          let committedReset = false, resetConnection = null;
+          const marker = {key: RESET_RECORD_KEY, workspace: null, logical: "installation-reset", value: {token: uid(), phase: "cleanup", at: new Date().toISOString()}};
+          try {
+            clearTimeout(draftTimer);
+            clearInterval(automaticBackupTimer);
+          automaticBackupTimer = null;
+            if (flushing) await flushing.catch(() => {});
+            await writer.catch(() => {});
+            await draftWriter.catch(() => {});
+            const nextVersion = connection.version + 1;
+            connectionRetired = true;
+            ready = false;
+            connection.close();
+            resetConnection = await resetDatabase(nextVersion, marker);
+            committedReset = true;
+            broadcast({type: "installation-reset", token: marker.value.token});
+            forgetInstallation();
+            await completeResetCleanup(resetConnection, marker);
+            installationToken = marker.value.token;
+            finish();
+            rememberRecordEditor();
+            closeModal();
+            resetScreen("اطلاعات پاک شد؛ برنامه با اطلاعات خالی دوباره باز می‌شود.");
+            location.reload();
+            return true;
+          } catch(error) {
+            if (committedReset) {
+              forgetInstallation();
+              resetScreen("اطلاعات بانک حذف شد، اما پاک‌سازی حافظه مرورگر کامل نشد. با بارگذاری مجدد، پاک‌سازی ادامه پیدا می‌کند و داده قدیمی وارد نخواهد شد. " + error.message);
+            } else if (error.resetBlocked) {
+              resetScreen(error.message + " حذف معلق پس از بستن آن اتصال نیز خودکار اجرا نخواهد شد.");
+            } else {
+              try {
+                connection = await openDatabase();
+                connectionRetired = false;
+                const observedReset = await readRecord("records", RESET_RECORD_KEY);
+                if (connectionRetired || (observedReset?.value?.token || "") !== installationToken) {
+                  connection.close();
+                  invalidateInstallation();
+                  return false;
+                }
+                ready = true;
+                blocked = wasBlocked;
+                showRecordEditorError(Error("حذف ثبت نشد؛ اطلاعات قبلی محفوظ است. " + error.message), "wipeError");
+                startAutomaticBackups();
+              } catch(reopenError) {
+                resetScreen("حذف ثبت نشد؛ برای خواندن دوباره اطلاعات، برنامه را بارگذاری کنید. " + reopenError.message);
+              }
+            }
+            return false;
+          } finally {
+            resetConnection?.close();
+            finish();
+            if (!committedReset) resetBusy = false;
+          }
         }
 
         function installUI() {
+          window.addEventListener("storage", event => {
+            if (event.key === RESET_EPOCH_KEY && event.newValue && event.newValue !== installationToken && !resetBusy) invalidateInstallation();
+          });
           window.addEventListener("beforeunload", (event) => {
             if (
               busy ||
@@ -16941,6 +17085,7 @@
           if (channel)
             channel.onmessage = (event) => {
               const message = event.data;
+              if (message.type === "installation-reset" && !resetBusy) { invalidateInstallation(); return; }
               if (tabMessage(message)) return;
               if (
                 workspace &&
@@ -17092,7 +17237,7 @@
         let entityEditing = null,
           entitySaving = false;
         function assertEntityWritable() {
-          if (fileMode || !ready || blocked || workspace?.closed)
+          if (fileMode || !ready || resetBusy || connectionRetired || blocked || workspace?.closed)
             throw Error("دوره فعلی قابل ویرایش نیست.");
         }
         async function openEntityEditor(kind, id, schoolId = "") {
@@ -17756,6 +17901,8 @@
             preparePrint,
             commitCSV,
             saveStudent,
+            recoverReportNotes: () => workspace ? hydrateReportNotes(workspace) : true,
+            canWriteReportNotes: () => !resetBusy && !connectionRetired,
             confirmWipe,
             saveDB: saveDBV24,
             bootstrap: bootstrapV24,
@@ -19454,7 +19601,7 @@
         // Report drafts and signatures belong to the actual academic period.
 
         // Only notes that have not reached local storage stay in memory.
-        const notes = new Map(), noteReadErrors = new Map();
+        const notes = new Map(), noteReadErrors = new Map(), recoveryNotes = new Map();
         const context = () =>
           root.EduV24?.getReportContext() || { id: "", revision: 0 };
         const draftStorageKey = (id = context().id) =>
@@ -19471,7 +19618,7 @@
           if (notes.has(key)) return notes.get(key);
           const id = key.split("|")[0];
           try {
-            const saved = storedNotes(id);
+            const saved = getDrafts(id);
             if (Object.prototype.hasOwnProperty.call(saved, key)) return saved[key];
             const parts = key.split("|");
             if (parts[1] !== "weekly" || !parts[2].startsWith("week:")) return "";
@@ -19491,6 +19638,7 @@
           }
         }
         function persistNote(key, value) {
+          if (root.EduV24?.canWriteReportNotes?.() === false) return false;
           notes.set(key, value);
           const id = key.split("|")[0];
           try {
@@ -19509,7 +19657,7 @@
           if (!pending && !noteReadErrors.has(context().id)) return "";
           return '<div class="periodic-warnings" role="alert"><p>' +
             (pending
-              ? 'توضیحات ' + pending + ' گزارش هنوز روی دستگاه ذخیره نشده است. متن را پیش از بستن برنامه در فایل گزارش ذخیره کنید.'
+              ? 'توضیحات ' + pending + ' گزارش هنوز کامل ذخیره نشده است. متن را پیش از بستن برنامه در فایل گزارش ذخیره کنید.'
               : 'خواندن توضیحات ذخیره‌شده انجام نشد؛ فایل پشتیبان را برای بررسی نگه دارید.') +
             '</p><button type="button" class="ghost" onclick="EduPeriodicReports.retryNotes()">تلاش مجدد ذخیره توضیحات</button></div>';
         }
@@ -19525,12 +19673,35 @@
           paintNoteState();
           return !noteReadErrors.has(id) && ![...notes.keys()].some(key => key.split("|")[0] === id);
         }
-        function getDrafts(id) {
-          const saved = storedNotes(id);
+        function getDrafts(id, recovery = recoveryNotes.get(id)) {
+          const saved = {...validateReportNotes(recovery, id), ...storedNotes(id)};
           for (const [key, value] of notes)
             if (key.split("|")[0] === id) saved[key] = value;
           return saved;
         }
+        function restoreDrafts(id, value) {
+          if (root.EduV24?.canWriteReportNotes?.() === false) return false;
+          const recovered = validateReportNotes(value, id);
+          recoveryNotes.set(id, recovered);
+          let merged = {...recovered};
+          try {
+            const saved = storedNotes(id);
+            merged = {...recovered, ...saved};
+            for (const [key, text] of notes)
+              if (key.split("|")[0] === id) merged[key] = text;
+            if (Object.entries(merged).some(([key, text]) => !Object.prototype.hasOwnProperty.call(saved, key) || saved[key] !== text))
+              localStorage.setItem(draftStorageKey(id), JSON.stringify(merged));
+            for (const [key, text] of [...notes])
+              if (key.split("|")[0] === id && merged[key] === text) notes.delete(key);
+            return true;
+          } catch(error) {
+            for (const [key, text] of Object.entries(merged))
+              if (!notes.has(key)) notes.set(key, text);
+            noteReadErrors.set(id, error.message || String(error));
+            return false;
+          }
+        }
+        function resetDrafts() { notes.clear(); noteReadErrors.clear(); recoveryNotes.clear(); last = null; }
         root.addEventListener("beforeunload", event => {
           if (notes.size) { event.preventDefault(); event.returnValue = ""; }
         });
@@ -20616,9 +20787,12 @@
           },
           retryNotes,
           getDrafts,
+          restoreDrafts,
+          resetDrafts,
           getLast: () =>
             last && last.signature === reportSignature() ? last.model : null,
         };
+        root.EduV24?.recoverReportNotes?.();
       })(globalThis);
     </script>
   </body>
