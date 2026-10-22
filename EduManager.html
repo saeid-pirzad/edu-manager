@@ -5972,6 +5972,8 @@
       .student-add-form .entity-create-error {
         grid-column: 1 / -1;
       }
+      .control-lock-note { grid-column: 1 / -1; flex: 1 0 100%; color: #92400e; font-size: .8rem; margin: 0; overflow-wrap: anywhere; }
+      .control-lock-note[hidden] { display: none; }
       .entity-create-error {
         flex: 1 0 100%;
         margin: 0;
@@ -6381,7 +6383,7 @@
         )) {
           const proxy = input.nextElementSibling;
           if (proxy?.dataset.gregorianTarget)
-            proxy.disabled = input.matches(":disabled") || input.readOnly;
+            setControlDisabled(proxy, input.matches(":disabled") || input.readOnly);
         }
       }
 
@@ -6398,7 +6400,7 @@
           shamsiInput.style.display = "";
           shamsiInput.placeholder = "انتخاب تاریخ";
           shamsiInput.readOnly = true;
-          shamsiInput.disabled = input.matches(":disabled") || input.readOnly;
+          setControlDisabled(shamsiInput, input.matches(":disabled") || input.readOnly);
           if (input.id) shamsiInput.id = input.id + "-shamsi";
           shamsiInput.setAttribute(
             "aria-label",
@@ -6911,7 +6913,7 @@
         e.preventDefault();
         const input = document.getElementById("loginPass"),
           button = e.target.querySelector("button");
-        if (button) button.disabled = true;
+        if (button) setControlLock(button, "button-operation", true);
         try {
           const password = input.value,
             stored = db.settings.password;
@@ -6929,7 +6931,7 @@
         } catch (err) {
           alert("ورود انجام نشد: " + err.message);
         } finally {
-          if (button) button.disabled = false;
+          if (button) setControlLock(button, "button-operation", false);
         }
       }
 
@@ -8760,7 +8762,7 @@
       }
 
       async function saveSettings(button) {
-        if (button) button.disabled = true;
+        if (button) setControlLock(button, "button-operation", true);
         try {
           const password = document.getElementById("newPass").value,
             remove = document.getElementById("removePassword").checked;
@@ -8774,7 +8776,7 @@
         } catch (err) {
           alert("تنظیمات ثبت نشد: " + err.message);
         } finally {
-          if (button) button.disabled = false;
+          if (button) setControlLock(button, "button-operation", false);
         }
       }
 
@@ -10099,7 +10101,7 @@
         h +=
           '</div></section><section><h4>تعداد زنگ‌های روزانه</h4><div class="week-period-controls"><button class="ghost" onclick="changePeriods(-1)" aria-label="کاهش تعداد زنگ">−</button><strong>' +
           number(periods) +
-          ' زنگ</strong><button class="ghost" onclick="changePeriods(1)" aria-label="افزایش تعداد زنگ">+</button></div></section><section><h4>مبنای هفته‌های فرد و زوج</h4><p>تاریخ شنبه‌ای را انتخاب کنید که مبنای محاسبه هفته‌ها باشد.</p><div class="week-start-date"><label>تاریخ شروع<input type="date" id="weekStartInput" value="' +
+          ' زنگ</strong><button class="ghost" onclick="changePeriods(1)" aria-label="افزایش تعداد زنگ">+</button></div></section><section><h4>مبنای هفته‌های فرد و زوج</h4><p>تاریخ شنبه‌ای را انتخاب کنید که مبنای محاسبه هفته‌ها باشد.</p><div class="week-start-date"><label>تاریخ شروع<input type="date" id="weekStartInput" data-mutating="1" value="' +
           esc(db.settings.weekStartDate || date) +
           '" onchange="document.getElementById(\'shamsiWeekStart\').textContent=toShamsi(this.value)"></label><span class="shamsi-display" id="shamsiWeekStart">' +
           esc(toShamsi(db.settings.weekStartDate || date)) +
@@ -11062,7 +11064,7 @@
         );
         const ui = form._reviewUI;
         ui.panel.hidden = changes.length === 0;
-        ui.reset.disabled = busy;
+        setControlLock(ui.reset, "review-saving", busy);
         ui.status.textContent = busy
           ? "در حال ذخیره تغییرات…"
           : changes.length
@@ -11117,28 +11119,55 @@
       }
       document.addEventListener("input", scheduleRecordEditorReview);
       document.addEventListener("change", scheduleRecordEditorReview);
+
+      const controlDisabledStates = new WeakMap(), recordSaveStates = new WeakMap();
+      function setControlDisabled(control, disabled) {
+        if (!control || !("disabled" in control)) return;
+        const state = controlDisabledStates.get(control);
+        if (state) {
+          state.intrinsic = !!disabled;
+          control.disabled = state.intrinsic || state.locks.size > 0;
+        } else control.disabled = !!disabled;
+      }
+      function setControlLock(control, reason, locked) {
+        if (!control || !("disabled" in control)) return;
+        let state = controlDisabledStates.get(control);
+        if (!state) {
+          if (!locked) return;
+          state = {intrinsic: control.disabled, locks: new Set()};
+          controlDisabledStates.set(control, state);
+          control.dataset.controlLock = "1";
+        }
+        if (locked) state.locks.add(reason); else state.locks.delete(reason);
+        const disabled = state.intrinsic || state.locks.size > 0;
+        if (control.disabled !== disabled) control.disabled = disabled;
+      }
       function beginRecordEditorSave(form) {
         if (!form) return () => {};
-        form
-          .querySelectorAll('[aria-invalid="true"]')
-          .forEach((el) => el.removeAttribute("aria-invalid"));
-        form.querySelectorAll('[role="alert"]').forEach((el) => {
-          el.textContent = "";
-        });
-        const controls = [...form.elements].map((el) => [el, el.disabled]);
+        form.querySelectorAll('[aria-invalid="true"]').forEach(el => el.removeAttribute("aria-invalid"));
+        form.querySelectorAll('[role="alert"]').forEach(el => { el.textContent = ""; });
+        const token = Symbol("record-save");
+        let pending = recordSaveStates.get(form);
+        if (!pending) { pending = new Set(); recordSaveStates.set(form, pending); }
+        pending.add(token);
         form.setAttribute("aria-busy", "true");
         updateRecordEditorReview(form);
-        controls.forEach(([el]) => {
-          el.disabled = true;
-        });
+        const controls = [...form.elements];
+        controls.forEach(control => setControlLock(control, token, true));
+        syncShamsiDisabledInputs();
+        let finished = false;
         return () => {
-          form.removeAttribute("aria-busy");
-          controls.forEach(([el, disabled]) => {
-            if (el.isConnected) el.disabled = disabled;
-          });
+          if (finished) return;
+          finished = true;
+          pending.delete(token);
+          if (!pending.size) form.removeAttribute("aria-busy");
+          controls.forEach(control => setControlLock(control, token, false));
           updateRecordEditorReview(form);
+          window.EduV24?.refreshControlLocks?.();
+          syncShamsiDisabledInputs();
         };
       }
+
       function recordEditorState(form) {
         return JSON.stringify(
           [
@@ -12688,7 +12717,7 @@
               form
                 .querySelectorAll("input,select,textarea,button[type=submit]")
                 .forEach((el) => {
-                  el.disabled = true;
+                  setControlDisabled(el, true);
                 });
               const note = document.createElement("p");
               note.className = "course-readonly-note";
@@ -12728,8 +12757,7 @@
             const method = document.getElementById("course_method");
             document.getElementById("course_branch").value =
               method.value === "dual" ? "kardanesh" : "fani";
-            document.getElementById("course_branch").disabled =
-              !!editing?.locked || method.disabled;
+            setControlDisabled(document.getElementById("course_branch"), !!editing?.locked || method.matches(":disabled"));
             document.getElementById("courseDual").hidden =
               val("method") !== "dual";
             document.getElementById("courseModular").hidden =
@@ -14086,13 +14114,7 @@
             el.textContent = busy ? "در حال ذخیره…" : status.message;
             el.dataset.state = busy ? "pending" : status.type;
           }
-          document.querySelectorAll("[data-mutating]").forEach((el) => {
-            el.disabled =
-              blocked ||
-              !!workspace?.closed ||
-              fileMode ||
-              (busy > 0 && !el.matches("[data-grade]"));
-          });
+          syncControlLocks();
         }
 
         function inputKey(d) {
@@ -14714,8 +14736,57 @@
           showModal("ثبت گروهی نمرات", html);
         }
 
-        function lockControls() {
-          const names = [
+
+        function syncControlLocks() {
+          const readonly = fileMode || blocked || connectionRetired || resetBusy || !ready || !!workspace?.closed;
+          const modalBody = document.getElementById("modalBody");
+          const modalWrite = modalBody && !modalBody.querySelector("form") &&
+            [...modalBody.querySelectorAll("[data-mutating]")].some(el => el.tagName !== "FORM");
+          const candidates = new Set(document.querySelectorAll('[data-control-lock],[data-mutating]:is(input,select,textarea,button),form[data-mutating] :is(input,select,textarea,button),form[aria-busy="true"] :is(input,select,textarea,button)'));
+          if (modalWrite) modalBody.querySelectorAll("input,select,textarea").forEach(control => candidates.add(control));
+          candidates.forEach(control => {
+            const form = control.form;
+            const formWrite = form?.dataset.mutating === "1";
+            const field = control.matches("input,select,textarea");
+            const mutation = control.dataset.mutating === "1" ||
+              (formWrite && (field || control.type === "submit")) ||
+              (modalWrite && field && modalBody.contains(control));
+            if (mutation && control.dataset.gregorianTarget === undefined)
+              control.dataset.mutating = "1";
+            setControlLock(control, "workspace-readonly", mutation && readonly);
+            setControlLock(control, "workspace-saving", mutation && busy > 0 && !control.matches("[data-grade]"));
+            setControlLock(control, "form-saving", !!form?.matches('[aria-busy="true"]'));
+          });
+          for (const form of document.querySelectorAll('form[data-mutating="1"]')) {
+            const existing = form.querySelector(".course-readonly-note");
+            let note = form.querySelector(".control-lock-note");
+            if (readonly && !existing && !note) {
+              note = document.createElement("p");
+              note.className = "control-lock-note";
+              note.setAttribute("role", "status");
+              (form.querySelector(".record-editor-context") || form).prepend(note);
+            }
+            if (note) {
+              note.hidden = !readonly || !!existing;
+              note.textContent = workspace?.closed
+                ? "دوره بسته است؛ این فرم فقط خواندنی است. گزارش و پشتیبان همچنان در دسترس‌اند."
+                : "ویرایش فعلاً متوقف است؛ پیام وضعیت ذخیره‌سازی را بررسی کنید.";
+            }
+          }
+          let modalNote = modalBody?.querySelector(".standalone-lock-note");
+          if (readonly && modalWrite && !modalNote) {
+            modalNote = document.createElement("p");
+            modalNote.className = "control-lock-note standalone-lock-note";
+            modalNote.setAttribute("role", "status");
+            modalBody.prepend(modalNote);
+          }
+          if (modalNote) {
+            modalNote.hidden = !readonly || !modalWrite;
+            modalNote.textContent = workspace?.closed ? "دوره بسته است؛ این تنظیمات فقط نمایش داده می‌شوند." : "ویرایش فعلاً متوقف است؛ پیام وضعیت ذخیره‌سازی را بررسی کنید.";
+          }
+          syncShamsiDisabledInputs();
+        }
+          const mutatingNames = [
             "confirmDeletion",
             "saveMembership",
             "saveEntityEditor",
@@ -14761,28 +14832,16 @@
             "toggleUnitApplyDirect",
             "toggleAllApplyForLessonInLesson",
           ];
-          document
-            .querySelectorAll("button,input,select,textarea,form")
-            .forEach((el) => {
-              const handlers = ["onclick", "onchange", "oninput", "onsubmit"]
-                .map((k) => el.getAttribute(k) || "")
-                .join(" ");
-              const mutation =
-                el.matches("[data-grade],.grade-clear") ||
-                names.some((name) =>
-                  new RegExp("\\b" + name + "\\(").test(handlers),
-                );
-              if (mutation) {
-                el.dataset.mutating = "1";
-                if (el.tagName !== "FORM")
-                  el.disabled =
-                    !!workspace?.closed ||
-                    fileMode ||
-                    blocked ||
-                    (busy > 0 && !el.matches("[data-grade]"));
-              }
-            });
-          syncShamsiDisabledInputs();
+        const mutationCall = new RegExp("\\b(?:" + mutatingNames.join("|") + ")\\s*\\(");
+        function lockControls() {
+          for (const element of document.querySelectorAll("button,input,select,textarea,form")) {
+            if (element.matches("[data-grade],.grade-clear,[data-mutating]")) element.dataset.mutating = "1";
+            else {
+              const handlers = ["onclick","onchange","oninput","onsubmit"].map(key => element.getAttribute(key) || "").join(" ");
+              if (mutationCall.test(handlers)) element.dataset.mutating = "1";
+            }
+          }
+          syncControlLocks();
         }
 
         function renderV24() {
@@ -15347,7 +15406,7 @@
             throw Error("??????? ?? ??? ??????? ?? ????? ?? ??? ????.");
           fullRestoreBusy = true;
           const button = document.querySelector("[data-full-restore]");
-          if (button) button.disabled = true;
+          if (button) setControlLock(button, "button-operation", true);
           try {
             if (!pendingFullBackup)
               throw Error("ابتدا فایل پشتیبان کامل را انتخاب کنید.");
@@ -15470,7 +15529,7 @@
             return periods.length;
           } finally {
             fullRestoreBusy = false;
-            if (button?.isConnected) button.disabled = false;
+            if (button?.isConnected) setControlLock(button, "button-operation", false);
           }
         }
 
@@ -16992,8 +17051,8 @@
             return false;
           } finally {
             resetConnection?.close();
-            finish();
             if (!committedReset) resetBusy = false;
+            finish();
           }
         }
 
@@ -17901,6 +17960,7 @@
             preparePrint,
             commitCSV,
             saveStudent,
+            refreshControlLocks: lockControls,
             recoverReportNotes: () => workspace ? hydrateReportNotes(workspace) : true,
             canWriteReportNotes: () => !resetBusy && !connectionRetired,
             confirmWipe,
