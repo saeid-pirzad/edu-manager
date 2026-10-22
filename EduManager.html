@@ -5885,6 +5885,13 @@
         min-width: 44px;
         min-height: 44px;
       }
+
+      @media print {
+        #printRoot .student-summary { table-layout:fixed!important; }
+        #printRoot .student-summary th:first-child,#printRoot .student-summary td:first-child { width:48%; }
+        #printRoot .student-summary th:not(:first-child),#printRoot .student-summary td:not(:first-child) { width:10.4%; text-align:center; }
+        #printRoot .periodic-document h3,#printRoot .periodic-document h4 { break-after:avoid; page-break-after:avoid; }
+      }
     </style>
 
     <link
@@ -12458,6 +12465,8 @@
           pendingImport = null,
           pendingCSV = null,
           failNextWrite = false;
+        let writeFailureGeneration = 0;
+        let draftWriter = Promise.resolve(), draftWritesPending = 0;
         let draftGeneration = 0;
         let tabId,
           tabClaimed = false,
@@ -12760,19 +12769,14 @@
               "این مرورگر IndexedDB را در اختیار برنامه قرار نمی‌دهد.",
             );
           return new Promise((resolve, reject) => {
-            const request = indexedDB.open("EduManagerProfessional", 1);
+            const request = indexedDB.open("EduManagerProfessional", 2);
             request.onupgradeneeded = () => {
               const connection = request.result;
-              connection.createObjectStore("records", { keyPath: "key" });
-              connection.createObjectStore("catalog", { keyPath: "id" });
-              const history = connection.createObjectStore("events", {
-                keyPath: "id",
-                autoIncrement: true,
-              });
-              history.createIndex("workspace", "workspace");
-              connection.createObjectStore("backups", { keyPath: "id" });
-              connection.createObjectStore("undo", { keyPath: "id" });
-              connection.createObjectStore("reports", { keyPath: "id" });
+              for (const [name, keyPath] of [["records","key"],["catalog","id"],["events","id"],["backups","id"],["undo","id"],["reports","id"],["drafts","key"]]) {
+                if (connection.objectStoreNames.contains(name)) continue;
+                const store = connection.createObjectStore(name, { keyPath, ...(name === "events" ? { autoIncrement: true } : {}) });
+                if (name === "events" || name === "drafts") store.createIndex("workspace","workspace");
+              }
             };
             request.onsuccess = () => {
               const connection = request.result;
@@ -13074,14 +13078,24 @@
           if (fileMode)
             return Promise.reject(
               Error(
-                "برای ویرایش پایدار، Start-EduManager.cmd را اجرا کنید. حالت فایل فقط برای انتقال سوابق است.",
+                "برای ویرایش، نسخه نصب‌شده برنامه یا نشانی HTTPS آن را باز کنید. حالت فایل فقط برای انتقال سوابق است.",
               ),
             );
+          const generation = writeFailureGeneration,
+            targetWorkspace = workspace?.id;
           busy++;
           paintStatus();
           const operation = writer
             .catch(() => {})
             .then(async () => {
+              if (generation !== writeFailureGeneration)
+                throw Error(
+                  "ثبت قبلی ناموفق بود؛ این درخواست هم ثبت نشده است. تغییر را دوباره اعمال کنید.",
+                );
+              if (workspace?.id !== targetWorkspace)
+                throw Error(
+                  "دوره تغییر کرده است؛ این درخواست در دوره دیگری ثبت نشد.",
+                );
               checkScope(scope);
               await commitRecords(collectRecords(db, scope), {
                 ...scope,
@@ -13095,6 +13109,8 @@
               try {
                 db = (await readWorkspace(workspace.id)).data;
               } catch (ignore) {}
+              // Invalidate every request queued against the in-memory data that was rolled back.
+              writeFailureGeneration++;
               setStatus("تغییر ذخیره نشد: " + error.message, "error");
               render();
               throw error;
@@ -13176,12 +13192,13 @@
             committed = loaded.records;
             storageBlocked = false;
             storageProblem = "";
-            ready = true;
+
             try {
               rememberPeriod(workspace.id);
             } catch (ignore) {}
             setStatus("اطلاعات ذخیره‌شده خوانده شد.", "saved");
-            loadDrafts();
+            await loadDrafts();
+            ready = true;
             render();
             await recoverDrafts();
             if (navigator.storage?.persist)
@@ -13235,91 +13252,107 @@
           return draftBaseKey() + "." + documentToken;
         }
 
-        function storeDrafts() {
-          try {
-            const key = draftStorageKey(),
-              raw = JSON.parse(localStorage.getItem(key) || "null");
-            if (
-              raw &&
-              !Array.isArray(raw) &&
-              Number(raw.generation) > draftGeneration
-            )
-              return;
-            localStorage.setItem(
-              key,
-              JSON.stringify({
-                owner: documentToken,
-                generation: draftGeneration,
-                entries: [...drafts.values()],
-                updatedAt: new Date().toISOString(),
-              }),
-            );
-            draftRecoveryFailed = false;
-          } catch (error) {
-            draftRecoveryFailed = true;
-            setStatus(
-              "پیش‌نویس ثبت نشد؛ تا ذخیره موفق صفحه را نبندید.",
-              "error",
-            );
-          }
+        function isSupportedGradeDraft(item) {
+          return !!item && ["k", "u", "pod"].includes(item.kind) &&
+            typeof item.value === "string" && item.value.length <= 100;
         }
 
-        function loadDrafts() {
+        async function persistedGradeDrafts(prefix) {
+          const records = new Map();
+          const add = (key, raw) => {
+            const entry = { key, entries: Array.isArray(raw) ? raw : raw?.entries || [],
+              generation: Array.isArray(raw) ? 0 : Number(raw?.generation || 0), updatedAt: raw?.updatedAt || "" };
+            if (!Array.isArray(entry.entries) || !Number.isSafeInteger(entry.generation) || entry.generation < 0)
+              throw Error("ساختار پیش‌نویس معتبر نیست.");
+            const previous = records.get(key);
+            if (!previous || entry.generation > previous.generation ||
+                (entry.generation === previous.generation && entry.updatedAt > previous.updatedAt)) records.set(key, entry);
+          };
+          let unreadable = false;
+          try {
+            for (const key of Object.keys(localStorage).filter((key) => key.startsWith(prefix)))
+              try { add(key, JSON.parse(localStorage.getItem(key))); } catch { unreadable = true; }
+          } catch { unreadable = true; }
+          if (connection?.objectStoreNames.contains("drafts")) {
+            const tx = connection.transaction("drafts", "readonly");
+            const rows = await requestPromise(tx.objectStore("drafts").index("workspace").getAll(workspace.id));
+            for (const row of rows) if (row.key.startsWith(prefix)) add(row.key, row);
+          }
+          if (unreadable && !records.size) throw Error("خواندن پیش‌نویس‌های قبلی انجام نشد.");
+          return [...records.values()];
+        }
+
+        function storeDrafts() {
+          if (!workspace) return Promise.resolve();
+          const key = draftStorageKey(), entry = {
+            key, workspace: workspace.id, owner: documentToken, generation: draftGeneration,
+            entries: clone([...drafts.values()]), updatedAt: new Date().toISOString(),
+          };
+          let localFailure = false;
+          try {
+            const current = JSON.parse(localStorage.getItem(key) || "null");
+            if (current && !Array.isArray(current) && Number(current.generation) > draftGeneration) return Promise.resolve();
+            localStorage.setItem(key, JSON.stringify(entry));
+          } catch { localFailure = true; }
+          const targetConnection = connection;
+          draftWritesPending++;
+          const operation = draftWriter.catch(() => {}).then(async () => {
+            if (!targetConnection?.objectStoreNames.contains("drafts")) throw Error("ذخیره پایدار پیش‌نویس در دسترس نیست.");
+            let tx;
+            try { tx = targetConnection.transaction("drafts", "readwrite", { durability: "strict" }); }
+            catch (error) {
+              if (!(error instanceof TypeError)) throw error;
+              tx = targetConnection.transaction("drafts", "readwrite");
+            }
+            const done = transactionDone(tx), store = tx.objectStore("drafts"), request = store.get(key);
+            request.onsuccess = () => {
+              if (!request.result || request.result.generation <= entry.generation) store.put(entry);
+            };
+            await done;
+            draftRecoveryFailed = false;
+            if (localFailure && entry.entries.length) setStatus("پیش‌نویس پایدار محفوظ است؛ در انتظار ثبت نمره.", "pending");
+          }).catch((error) => {
+            draftRecoveryFailed = true;
+            setStatus("ذخیره پایدار پیش‌نویس انجام نشد؛ تا ثبت موفق نمره صفحه را نبندید. " + error.message, "error");
+            throw error;
+          }).finally(() => { draftWritesPending--; });
+          draftWriter = operation;
+          operation.catch(() => {});
+          return operation;
+        }
+
+        async function loadDrafts() {
           drafts.clear();
           try {
-            const base = draftBaseKey(),
-              records = Object.keys(localStorage)
-                .filter((key) => key === base || key.startsWith(base + "."))
-                .map((key) => {
-                  const raw = JSON.parse(localStorage.getItem(key) || "null");
-                  return {
-                    key,
-                    entries: Array.isArray(raw) ? raw : raw?.entries || [],
-                    generation: Array.isArray(raw)
-                      ? 0
-                      : Number(raw?.generation || 0),
-                    updatedAt: raw?.updatedAt || "",
-                  };
-                });
-            for (const r of records)
-              if (
-                !Array.isArray(r.entries) ||
-                !Number.isSafeInteger(r.generation) ||
-                r.generation < 0
-              )
-                throw Error("ساختار پیش‌نویس معتبر نیست.");
-            records.sort(
-              (a, b) =>
-                b.generation - a.generation ||
-                b.updatedAt.localeCompare(a.updatedAt),
-            );
+            const base = draftBaseKey();
+            const records = (await persistedGradeDrafts(base))
+              .filter((row) => row.key === base || row.key.startsWith(base + "."));
+            records.sort((a, b) => b.generation - a.generation || b.updatedAt.localeCompare(a.updatedAt));
             const saved = records[0];
             draftGeneration = (saved?.generation || 0) + 1;
-            for (const item of saved?.entries || [])
-              if (
-                item &&
-                ["k", "u"].includes(item.kind) &&
-                typeof item.value === "string" &&
-                item.value.length < 100
-              )
-                drafts.set(inputKey(item), item);
-            storeDrafts();
-            if (!draftRecoveryFailed)
-              for (const old of records)
-                if (old.generation < draftGeneration - 1)
-                  localStorage.removeItem(old.key);
+            for (const original of saved?.entries || []) {
+              if (!isSupportedGradeDraft(original)) continue;
+              const stale = !Number.isInteger(original.baseRevision) || original.baseRevision !== workspace.revision;
+              const item = stale ? { ...original, review: true, error: "اطلاعات از زمان این پیش‌نویس تغییر کرده یا نسخه مرجع نامعلوم است؛ نیازمند بررسی" } : original;
+              drafts.set(inputKey(item), item);
+            }
+            await storeDrafts();
+            for (const old of records) if (old.generation < draftGeneration - 1) {
+              try { localStorage.removeItem(old.key); } catch {}
+              const tx = connection.transaction("drafts", "readwrite"), done = transactionDone(tx);
+              tx.objectStore("drafts").delete(old.key);
+              await done;
+            }
           } catch (error) {
             draftRecoveryFailed = true;
-            setStatus(
-              "پیش‌نویس قبلی خوانده نشد؛ داده اصلی محفوظ است.",
-              "error",
-            );
+            setStatus("پیش‌نویس قبلی خوانده نشد؛ داده اصلی محفوظ است. " + error.message, "error");
           }
         }
 
         function contextFromInput(input) {
           return {
             kind: input.dataset.kind,
+            baseRevision: workspace.revision,
             classId: input.dataset.class,
             lid: input.dataset.lesson,
             sid: input.dataset.student,
@@ -13455,7 +13488,7 @@
               await saveDBV24({ classId, action: "ثبت نمره (" + c.name + ")" });
               for (const [key, item] of items)
                 if (drafts.get(key) === item) drafts.delete(key);
-              storeDrafts();
+              await storeDrafts();
             }
             if (!drafts.size) setStatus("همه نمرات ذخیره شدند.", "saved");
             else
@@ -13477,7 +13510,7 @@
                   if (blocked) item.review = true;
                 }
               }
-              storeDrafts();
+              await storeDrafts();
               setStatus(
                 "نمرات ذخیره نشدند؛ پیش‌نویس محفوظ است. " + error.message,
                 "error",
@@ -14084,22 +14117,51 @@
         ];
         let automaticBackupTimer = null,
           automaticBackupBusy = false;
+        function portableGradeDrafts(rows, periods) {
+          const ids = new Set(periods.map((p) => p.id)), byKey = new Map();
+          const add = (key, raw) => {
+            const match = key.match(/^Edu24\.drafts\.([A-Za-z0-9_-]+)\.([A-Za-z0-9_-]+)/);
+            if (!match || !ids.has(match[1])) return;
+            const row = { key, workspace: match[1], generation: Array.isArray(raw) ? 0 : Number(raw?.generation || 0),
+              entries: Array.isArray(raw) ? raw : raw?.entries || [], updatedAt: raw?.updatedAt || "" };
+            if (!Array.isArray(row.entries) || !row.entries.every(isSupportedGradeDraft) || !Number.isSafeInteger(row.generation) || row.generation < 0) return;
+            const old = byKey.get(key);
+            if (!old || row.generation > old.generation || (row.generation === old.generation && row.updatedAt > old.updatedAt)) byKey.set(key, row);
+          };
+          for (const row of rows) add(row.key, row);
+          try {
+            for (const key of Object.keys(localStorage).filter((key) => key.startsWith("Edu24.drafts.")))
+              try { add(key, JSON.parse(localStorage.getItem(key))); } catch {}
+          } catch {}
+          const byTab = new Map();
+          for (const row of byKey.values()) {
+            const tab = row.key.split(".").slice(0,4).join("."), old = byTab.get(tab);
+            if (!old || row.generation > old.generation || (row.generation === old.generation && row.updatedAt > old.updatedAt)) byTab.set(tab,row);
+          }
+          return [...byTab.values()].filter((row) => row.entries.length);
+        }
+
         async function snapshotInstallation() {
           await flushDrafts({ strict: true });
-          await writer;
-          const tx = connection.transaction(backupStores, "readonly"),
+          // Strict draft flush succeeded; a prior structural write failure must not block exporting durable records.
+          await writer.catch(() => {});
+          await draftWriter.catch(() => {});
+          const names = [...backupStores, "drafts"];
+          const tx = connection.transaction(names, "readonly"),
             done = transactionDone(tx);
           const values = await Promise.all(
-            backupStores.map((name) =>
+            names.map((name) =>
               requestPromise(tx.objectStore(name).getAll()),
             ),
           );
           await done;
           const stores = Object.fromEntries(
-            backupStores.map((name, i) => [name, values[i]]),
+            names.map((name, i) => [name, values[i]]),
           );
           // Never embed a full snapshot inside another full snapshot.
           stores.backups = stores.backups.filter((row) => !row.full);
+          const gradeDrafts = portableGradeDrafts(stores.drafts, stores.catalog);
+          delete stores.drafts;
           const reportDrafts = {};
           for (const period of stores.catalog) {
             try {
@@ -14114,12 +14176,13 @@
           }
           return {
             format: "EduManager.FullBackup",
-            version: 1,
+            version: 2,
             schemaVersion: 25,
             exportedAt: new Date().toISOString(),
             activeWorkspace: workspace.id,
             stores,
             reportDrafts,
+            gradeDrafts,
           };
         }
         async function exportFullBackup() {
@@ -14166,7 +14229,7 @@
         function validateFullBackup(value) {
           if (
             value?.format !== "EduManager.FullBackup" ||
-            value.version !== 1 ||
+            ![1, 2].includes(value.version) ||
             value.schemaVersion !== 25
           )
             throw Error("ساختار پشتیبان کامل پشتیبانی نمی‌شود.");
@@ -14245,9 +14308,17 @@
                   legacy: (row.db?.schemaVersion || 23) < 24,
                 });
             }
+          if (value.version === 2 && !Array.isArray(value.gradeDrafts)) throw Error("بخش پیش‌نویس نمره پشتیبان ناقص است.");
+          const draftKeys = new Set();
+          for (const row of value.gradeDrafts || []) {
+            if (!ids.has(row.workspace) || typeof row.key !== "string" || !row.key.startsWith("Edu24.drafts." + row.workspace + ".") || draftKeys.has(row.key) ||
+                !Number.isSafeInteger(row.generation) || row.generation < 0 || !Array.isArray(row.entries) || !row.entries.every(isSupportedGradeDraft) || typeof row.updatedAt !== "string")
+              throw Error("پیش‌نویس نمره پشتیبان نامعتبر است.");
+            draftKeys.add(row.key);
+          }
           return periods;
         }
-        let pendingFullBackup = null;
+        let pendingFullBackup = null, fullRestoreBusy = false;
         function previewFullBackup(value) {
           const periods = validateFullBackup(value);
           pendingFullBackup = value;
@@ -14256,17 +14327,23 @@
             "<p>" +
               periods.length +
               " دوره به همراه تاریخچه و گزارش‌های بایگانی‌شده بازیابی می‌شود.</p>" +
-              "<p>دوره‌های فعلی حفظ می‌شوند؛ نسخه‌های بازیابی‌شده با شناسه مستقل اضافه می‌شوند.</p>" +
-              '<button onclick="EduV24.restoreFullBackup().catch(EduV24.course.error)">افزودن همه دوره‌های بازیابی‌شده</button><p id="courseError" role="alert"></p>',
+              ((value.gradeDrafts || []).length ? "<p>" + value.gradeDrafts.reduce((n, row) => n + row.entries.length, 0) + " پیش‌نویس نمره هم همراه فایل است؛ پس از بازیابی فقط با بررسی شما اعمال می‌شود.</p>" : "") +
+            "<p>دوره‌های فعلی حفظ می‌شوند؛ نسخه‌های بازیابی‌شده با شناسه مستقل اضافه می‌شوند.</p>" +
+              '<button data-full-restore onclick="EduV24.restoreFullBackup().catch(EduV24.course.error)">افزودن همه دوره‌های بازیابی‌شده</button><p id="courseError" role="alert"></p>',
           );
         }
         async function restoreFullBackup() {
+          if (fullRestoreBusy) throw Error("??????? ?? ??? ??????? ?? ????? ?? ??? ????.");
+          fullRestoreBusy = true;
+          const button = document.querySelector("[data-full-restore]");
+          if (button) button.disabled = true;
+          try {
           if (!pendingFullBackup)
             throw Error("ابتدا فایل پشتیبان کامل را انتخاب کنید.");
+          const source = pendingFullBackup;
           await flushDrafts({ strict: true });
-          await writer;
-          const source = pendingFullBackup,
-            periods = validateFullBackup(source);
+          await writer.catch(() => {});
+          const periods = validateFullBackup(source);
           const mapping = new Map(
             periods.map(({ period }) => [period.id, uid()]),
           );
@@ -14299,11 +14376,18 @@
               else row.id = name === "undo" ? mapping.get(original.id) : uid();
               rows[name].push(row);
             }
-          const tx = connection.transaction(backupStores, "readwrite"),
+          rows.drafts = (source.gradeDrafts || []).map((row) => ({ ...clone(row),
+            key: "Edu24.drafts." + mapping.get(row.workspace) + row.key.slice(("Edu24.drafts." + row.workspace).length),
+            workspace: mapping.get(row.workspace), owner: "imported",
+            entries: row.entries.map((item) => ({ ...clone(item), review: true, error: "بازیابی از فایل؛ نیازمند بررسی" })),
+          }));
+          const restoredStores = [...backupStores, "drafts"];
+          const tx = connection.transaction(restoredStores, "readwrite"),
             done = transactionDone(tx);
-          for (const name of backupStores)
+          for (const name of restoredStores)
             for (const row of rows[name]) tx.objectStore(name).add(row);
           await done;
+          let reportNotesFailed = false;
           for (const [oldId, id] of mapping) {
             try {
               const saved = source.reportDrafts?.[oldId] || {};
@@ -14320,6 +14404,7 @@
                 JSON.stringify(renamed),
               );
             } catch {
+              reportNotesFailed = true;
               setStatus(
                 "دوره‌ها بازیابی شدند؛ ذخیره توضیحات گزارش روی دستگاه انجام نشد.",
                 "error",
@@ -14328,7 +14413,14 @@
           }
           pendingFullBackup = null;
           await switchPeriod(mapping.get(source.activeWorkspace));
+          const pendingGrades = (source.gradeDrafts || []).reduce((n, row) => n + row.entries.length, 0);
+          setStatus(periods.length + " دوره بازیابی شد." + (pendingGrades ? " " + pendingGrades + " پیش‌نویس نمره از بخش پیش‌نویس نشست‌های دیگر نیازمند بررسی است." : "") + (reportNotesFailed ? " ذخیره توضیحات گزارش روی دستگاه انجام نشد." : ""), reportNotesFailed ? "error" : "saved");
           return periods.length;
+
+          } finally {
+            fullRestoreBusy = false;
+            if (button?.isConnected) button.disabled = false;
+          }
         }
 
         async function exportBackupV24() {
@@ -14560,7 +14652,7 @@
         async function confirmImport() {
           if (fileMode)
             throw Error(
-              "این عملیات را از راه‌انداز Start-EduManager.cmd انجام دهید.",
+              "این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.",
             );
           if (!pendingImport || pendingImport.workspace !== workspace.id)
             throw Error("پیش‌نمایش بازیابی منقضی شده است.");
@@ -14684,7 +14776,7 @@
         async function undoLast() {
           if (fileMode)
             throw Error(
-              "این عملیات را از راه‌انداز Start-EduManager.cmd انجام دهید.",
+              "این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.",
             );
           await flushDrafts({ strict: true });
           await writer.catch(() => {});
@@ -14783,7 +14875,7 @@
             reportTab: "comprehensive",
           };
           rememberPeriod(id);
-          loadDrafts();
+          await loadDrafts();
           closeModal();
           render();
           await recoverDrafts();
@@ -14801,7 +14893,7 @@
         async function createNewPeriod() {
           if (fileMode)
             throw Error(
-              "این عملیات را از راه‌انداز Start-EduManager.cmd انجام دهید.",
+              "این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.",
             );
           await flushDrafts({ strict: true });
           const year = asciiDigits(document.getElementById("periodYear").value),
@@ -14859,7 +14951,7 @@
         async function savePeriodLabel() {
           if (fileMode)
             throw Error(
-              "این عملیات را از راه‌انداز Start-EduManager.cmd انجام دهید.",
+              "این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.",
             );
           const year = asciiDigits(document.getElementById("editYear").value),
             term = document.getElementById("editTerm").value.trim();
@@ -14930,7 +15022,7 @@
         async function finalizePeriod() {
           if (fileMode)
             throw Error(
-              "این عملیات را از راه‌انداز Start-EduManager.cmd انجام دهید.",
+              "این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.",
             );
           await flushDrafts({ strict: true });
           await writer.catch(() => {});
@@ -15007,7 +15099,7 @@
         async function reopenPeriod() {
           if (fileMode)
             throw Error(
-              "این عملیات را از راه‌انداز Start-EduManager.cmd انجام دهید.",
+              "این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.",
             );
           if (!workspace.closed) return;
           if (
@@ -15675,7 +15767,7 @@
         async function confirmWipe() {
           if (fileMode)
             throw Error(
-              "این عملیات را از راه‌انداز Start-EduManager.cmd انجام دهید.",
+              "این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.",
             );
           if (
             document.getElementById("wipeText").value !== "حذف" ||
@@ -15720,7 +15812,7 @@
 
         function installUI() {
           window.addEventListener("beforeunload", (event) => {
-            if (busy || drafts.size || draftRecoveryFailed) {
+            if (busy || drafts.size || draftRecoveryFailed || draftWritesPending) {
               event.preventDefault();
               event.returnValue = "";
             }
@@ -15960,6 +16052,7 @@
             test: {
               getState: () => ({
                 db,
+                ready,
                 workspace,
                 blocked,
                 busy,
@@ -15969,6 +16062,7 @@
               settle: async () => {
                 await flushDrafts();
                 await writer;
+                await draftWriter;
               },
               failNextWrite: () => {
                 if (!globalThis.__EDU_TEST_MODE__)
@@ -15979,47 +16073,41 @@
             },
           };
         }
-        function discardDrafts() {
+        async function discardDrafts() {
           if (!drafts.size) return;
-          if (
-            !confirm(
-              "ویرایش‌های ثبت‌نشده کنار گذاشته شوند؟ داده‌های ذخیره‌شده تغییر نمی‌کنند.",
-            )
-          )
-            return;
+          if (!confirm("ویرایش‌های ثبت‌نشده کنار گذاشته شوند؟ داده‌های ذخیره‌شده تغییر نمی‌کنند.")) return;
+          const previous = [...drafts];
           drafts.clear();
           clearTimeout(draftTimer);
-          storeDrafts();
-          readWorkspace(workspace.id)
-            .then((loaded) => {
-              db = loaded.data;
-              setStatus("ویرایش‌های ثبت‌نشده لغو شدند.", "saved");
-              render();
-            })
-            .catch(handleError);
+          try { await storeDrafts(); }
+          catch (error) {
+            for (const [key, value] of previous) drafts.set(key, value);
+            await storeDrafts().catch(() => {});
+            throw error;
+          }
+          db = (await readWorkspace(workspace.id)).data;
+          setStatus("ویرایش‌های ثبت‌نشده لغو شدند.", "saved");
+          render();
         }
 
         function reviewDrafts() {
           const items = [...drafts.values()].filter((x) => x.review);
           showModal(
             "بررسی پیش‌نویس پس از تعارض",
-            "<p>این ورودی‌ها پیش از تغییر داده در تب دیگر نوشته شده‌اند و خودکار اعمال نمی‌شوند. مقدار ثبت‌شده جدید و ویرایش خود را بررسی کنید.</p><table><thead><tr><th>دانش‌آموز / بخش</th><th>ثبت‌شده جدید</th><th>ویرایش شما</th></tr></thead><tbody>" +
+            "<p>این ورودی‌ها پیش از تغییر داده در تب دیگر نوشته شده‌اند و خودکار اعمال نمی‌شوند. مقدار ثبت‌شده جدید و ویرایش خود را بررسی کنید.</p><table><thead><tr><th>هنرجو، درس و بخش</th><th>ثبت‌شده جدید</th><th>ویرایش شما</th></tr></thead><tbody>" +
               items
                 .map((item) => {
                   const c = findClass(item.classId),
                     l = getLessonObj(c, item.lid),
                     st = getStudentObj(c, item.sid);
-                  const source =
-                    item.kind === "k"
-                      ? l?.kardaneshScores?.[item.sid]
-                      : l?.poudmans
-                          .find((p) => p.id === item.pid)
-                          ?.units.find((u) => u.id === item.uid)?.unitScores?.[
-                          item.sid
-                        ];
+                  const pod = l?.poudmans?.find((p) => p.id === item.pid);
+                  const source = item.kind === "k" ? l?.kardaneshScores?.[item.sid] :
+                    item.kind === "pod" ? pod?.podScores?.[item.sid] : pod?.units.find((u) => u.id === item.uid)?.unitScores?.[item.sid];
+                  const fieldLabel = ({ practical: "عملی", theory: "نظری", m: "مستمر", p: "پایانی", c: "شایستگی" })[item.field] || item.field;
+                  const description = [c?.name, st?.name || item.sid, l?.name || item.lid, item.kind === "pod" ? pod?.name : "", fieldLabel].filter(Boolean).join(" / ");
                   return (
                     "<tr><td>" +
-                    esc((st?.name || item.sid) + " / " + item.field) +
+                    esc(description) +
                     "</td><td>" +
                     esc(source?.[item.field] ?? "—") +
                     "</td><td>" +
@@ -16040,9 +16128,10 @@
           for (const item of drafts.values())
             if (item.review) {
               item.review = false;
+              item.baseRevision = workspace.revision;
               item.error = "";
             }
-          storeDrafts();
+          await storeDrafts();
           await flushDrafts({ strict: true });
           closeModal();
           render();
@@ -16316,34 +16405,14 @@
           return false;
         }
 
-        function openOtherDrafts() {
+        async function openOtherDrafts() {
           const prefix = "Edu24.drafts." + workspace.id + ".",
             byTab = new Map();
-          for (const key of Object.keys(localStorage).filter(
-            (key) =>
-              key.startsWith(prefix) &&
-              !key.startsWith(draftBaseKey() + ".") &&
-              key !== draftBaseKey(),
-          )) {
-            try {
-              const raw = JSON.parse(localStorage.getItem(key) || "null"),
-                entry = {
-                  key,
-                  items: Array.isArray(raw) ? raw : raw?.entries || [],
-                  generation: Array.isArray(raw)
-                    ? 0
-                    : Number(raw?.generation || 0),
-                  at: raw?.updatedAt || "",
-                },
-                otherTab = key.slice(prefix.length).split(".")[0],
-                old = byTab.get(otherTab);
-              if (
-                !old ||
-                entry.generation > old.generation ||
-                (entry.generation === old.generation && entry.at > old.at)
-              )
-                byTab.set(otherTab, entry);
-            } catch (ignore) {}
+          for (const row of await persistedGradeDrafts(prefix)) {
+            if (row.key === draftBaseKey() || row.key.startsWith(draftBaseKey() + ".")) continue;
+            const entry = { key: row.key, items: row.entries, generation: row.generation, at: row.updatedAt };
+            const otherTab = row.key.slice(prefix.length).split(".")[0], old = byTab.get(otherTab);
+            if (!old || entry.generation > old.generation || (entry.generation === old.generation && entry.at > old.at)) byTab.set(otherTab, entry);
           }
           const entries = [...byTab.values()].filter((x) => x.items.length);
           showModal(
@@ -16366,21 +16435,37 @@
           );
         }
 
-        function adoptDrafts(key) {
+        async function consumeDraftSource(record) {
+          const same = (raw) => {
+            if (!raw) return true;
+            const entries = Array.isArray(raw) ? raw : raw.entries || [];
+            const generation = Array.isArray(raw) ? 0 : Number(raw.generation || 0);
+            return generation === record.generation && JSON.stringify(entries) === JSON.stringify(record.entries) &&
+              (raw.updatedAt || "") === record.updatedAt;
+          };
+          const updatedAt = new Date(Math.max(Date.now(), Date.parse(record.updatedAt) || 0) + 1).toISOString();
+          const tombstone = { key: record.key, workspace: workspace.id, owner: "received",
+            generation: record.generation, entries: [], updatedAt };
+          const tx = connection.transaction("drafts", "readwrite"), done = transactionDone(tx);
+          const store = tx.objectStore("drafts"), request = store.get(record.key);
+          request.onsuccess = () => { if (same(request.result)) store.put(tombstone); };
+          await done;
+          try {
+            const raw = JSON.parse(localStorage.getItem(record.key) || "null");
+            if (same(raw)) localStorage.setItem(record.key, JSON.stringify(tombstone));
+          } catch {}
+        }
+
+        async function adoptDrafts(key) {
           const prefix = "Edu24.drafts." + workspace.id + ".";
           if (!key.startsWith(prefix) || key === draftStorageKey())
             throw Error("کلید معتبر نیست.");
-          const parsed = JSON.parse(localStorage.getItem(key) || "null"),
-            items = Array.isArray(parsed) ? parsed : parsed?.entries || [];
+          const record = (await persistedGradeDrafts(prefix)).find((row) => row.key === key);
+          if (!record) throw Error("پیش‌نویس پیدا نشد.");
+          const items = record.entries;
           if (!Array.isArray(items)) throw Error("پیش‌نویس نامعتبر است.");
+          if (items.some((item) => !isSupportedGradeDraft(item))) throw Error("ورودی نامعتبر است؛ هیچ پیش‌نویسی دریافت نشد.");
           for (const original of items) {
-            if (
-              !original ||
-              !["k", "u"].includes(original.kind) ||
-              typeof original.value !== "string" ||
-              original.value.length > 100
-            )
-              throw Error("ورودی نامعتبر است.");
             const item = {
               ...original,
               review: true,
@@ -16388,7 +16473,8 @@
             };
             drafts.set(inputKey(item), item);
           }
-          storeDrafts();
+          await storeDrafts();
+          await consumeDraftSource(record);
           reviewDrafts();
         }
 
@@ -16408,7 +16494,7 @@
           title.textContent = "حالت انتقال سوابق؛ فقط خواندنی";
           const text = document.createElement("p");
           text.textContent =
-            "برای استفاده روزمره، Start-EduManager.cmd را در همین پوشه اجرا کنید. ابتدا فایل پشتیبان سوابق قبلی را دریافت و سپس در برنامه محلی بازیابی کنید.";
+            "برای استفاده روزمره، نسخه نصب‌شده برنامه یا نشانی HTTPS آن را باز کنید. ابتدا فایل پشتیبان سوابق قبلی را دریافت و سپس در همان نسخه بازیابی کنید.";
           const button = document.createElement("button");
           button.textContent = "دریافت فایل انتقال سوابق";
           button.onclick = () => exportBackup();
@@ -17583,6 +17669,7 @@
           classId: "",
           studentId: "",
           audience: "management",
+          detailLevel: "summary",
           author: "",
         };
         // Report drafts and signatures belong to the actual academic period.
@@ -17871,6 +17958,7 @@
             academicYear: source.settings.academicYear,
             mode: f.mode,
             audience: f.audience,
+            detailLevel: f.audience === "parent" ? "full" : f.detailLevel === "full" ? "full" : "summary",
             start: dates.start,
             end: dates.end,
             school: { id: school.id, name: school.name },
@@ -17926,9 +18014,9 @@
             : Number(value).toLocaleString("fa-IR", {
                 maximumFractionDigits: 2,
               });
-        function table(headers, rows) {
+        function table(headers, rows, kind = "") {
           return (
-            '<div class="table-scroll"><table><thead><tr>' +
+            '<div class="table-scroll"><table' + (kind ? ' class="' + esc(kind) + '"' : "") + '><thead><tr>' +
             headers.map((x) => "<th>" + esc(x) + "</th>").join("") +
             "</tr></thead><tbody>" +
             rows
@@ -17942,6 +18030,11 @@
             "</tbody></table></div>"
           );
         }
+        function reportParticipants(model, session) {
+          return model.audience === "management" && model.detailLevel === "summary"
+            ? session.participants.filter((participant) => participant.scores.length)
+            : session.participants;
+        }
         function textReport(m) {
           const lines = [
             (m.mode === "daily" ? "گزارش روزانه" : "گزارش هفتگی") +
@@ -17951,6 +18044,7 @@
             "بازه: " + faDate(m.start) + " تا " + faDate(m.end),
             "سال تحصیلی: " + m.academicYear,
           ];
+          if (m.audience === "management" && m.detailLevel === "summary") lines.push("نمایش خلاصه مدیریتی: آمار همه هنرجویان و تمام ثبت‌های فعالیت؛ ریز حضور هر جلسه در نمایش کامل و فایل JSON موجود است.");
           if (m.class) lines.push("کلاس: " + m.class.name);
           if (m.student)
             lines.push(
@@ -18046,7 +18140,7 @@
                 (s.unitName ? " | واحد: " + s.unitName : "") +
                 (s.teacher ? " | دبیر: " + s.teacher : ""),
             );
-            for (const p of s.participants)
+            for (const p of reportParticipants(m, s))
               lines.push(
                 p.name +
                   ": " +
@@ -18128,7 +18222,7 @@
             '<article class="card report-document periodic-document"><header class="periodic-document-heading"><span>' +
             (m.audience === "parent"
               ? "ویژه اولیا — اطلاعات یک هنرجو"
-              : "ویژه مدیریت مدرسه") +
+              : "ویژه مدیریت مدرسه — " + (m.detailLevel === "summary" ? "خلاصه مدیریتی" : "جزئیات کامل")) +
             "</span><h2>" +
             (m.mode === "daily" ? "گزارش روزانه" : "گزارش هفتگی") +
             "</h2><h3>" +
@@ -18211,21 +18305,18 @@
                   num(l.markCount),
                 ]),
               );
-            h +=
-              "<h3>پیگیری وضعیت هنرجویان</h3>" +
+            h += "<h3>پیگیری وضعیت هنرجویان</h3>" +
               table(
-                ["هنرجو / کلاس", "جلسه", "حاضر", "غایب", "تأخیر", "تعیین‌نشده"],
+                [m.class ? "هنرجو" : "هنرجو / کلاس", "جلسه", "حاضر", "غایب", "تأخیر", "تعیین‌نشده"],
                 m.students.map((st) => [
-                  st.name + " / " + st.className,
-                  num(st.sessions),
-                  num(st.present),
-                  num(st.absent),
-                  num(st.late),
-                  num(st.unknown),
+                  st.name + (m.class ? "" : " / " + st.className),
+                  num(st.sessions), num(st.present), num(st.absent), num(st.late), num(st.unknown),
                 ]),
+                "student-summary",
               );
           }
           h += "<h3>جزئیات جلسات و ثبت‌ها</h3>";
+          if (m.audience === "management" && m.detailLevel === "summary") h += '<p class="periodic-method">نمایش خلاصه: آمار همه هنرجویان و همه ثبت‌های فعالیت حفظ شده است؛ برای ریز حضور هر هنرجو در هر جلسه، نمایش «جزئیات کامل» را انتخاب کنید. فایل JSON جزئیات کامل همین محدوده را دارد.</p>';
           for (const s of m.sessions) {
             h +=
               '<section class="periodic-session"><h4>' +
@@ -18240,9 +18331,10 @@
               (s.unitName ? " / " + esc(s.unitName) : "") +
               (s.teacher ? " · دبیر: " + esc(s.teacher) : "") +
               "</p>";
+            if (m.audience === "management" && m.detailLevel === "summary") h += '<p class="periodic-method">حاضر: ' + num(s.counts.present) + ' · غایب: ' + num(s.counts.absent) + ' · تأخیر: ' + num(s.counts.late) + ' · تعیین‌نشده: ' + num(s.counts.unknown) + '</p>';
             h += table(
               ["هنرجو", "وضعیت حضور", "نمره، تکلیف و فعالیت ثبت‌شده"],
-              s.participants.map((p) => [
+              reportParticipants(m, s).map((p) => [
                 p.name,
                 p.attendance.label +
                   (p.attendance.minutes === null
@@ -18407,6 +18499,7 @@
                 )
                 .join("") +
               "</select></label>";
+          if (f.audience === "management") h += '<label>سطح جزئیات<select onchange="EduPeriodicReports.set(\'detailLevel\',this.value)"><option value="summary" ' + (f.detailLevel === "summary" ? "selected" : "") + '>خلاصه مدیریتی و فعالیت‌ها</option><option value="full" ' + (f.detailLevel === "full" ? "selected" : "") + '>جزئیات کامل حضور هر جلسه</option></select></label>';
           h +=
             '<label>نام تنظیم‌کننده (اختیاری)<input value="' +
             esc(f.author) +
@@ -18427,11 +18520,12 @@
         }
         function set(key, value) {
           if (
-            !["audience", "date", "schoolId", "classId", "studentId"].includes(
+            !["audience", "date", "schoolId", "classId", "studentId", "detailLevel"].includes(
               key,
             )
           )
             return;
+          if (key === "detailLevel" && !["summary", "full"].includes(value)) return;
           filters[key] = value;
           if (key === "schoolId") {
             filters.classId = "";
