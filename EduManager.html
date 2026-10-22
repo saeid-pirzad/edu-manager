@@ -461,7 +461,7 @@
         border-radius: 14px;
         width: 100%;
         max-width: 900px;
-        max-height: 90vh;
+        max-height: calc(var(--app-viewport, 100dvh) - 40px);
         display: flex;
         flex-direction: column;
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -3297,6 +3297,7 @@
           .form-row > textarea {
             width: 100% !important;
             min-width: 0 !important;
+            flex: 0 0 auto;
           }
           .course-field input:not([type="checkbox"]):not([type="radio"]),
           .course-field select,
@@ -3341,6 +3342,16 @@
         }
       }
 
+      @media screen {
+        .modal-overlay {
+          top: var(--app-viewport-top, 0px);
+          bottom: auto;
+          height: var(--app-viewport, 100dvh);
+        }
+        .modal-header { flex-shrink: 0; }
+        .modal-body { min-height: 0; }
+      }
+
       /* mobileExperienceV2 */
 
       .mobile-add-action {
@@ -3351,23 +3362,23 @@
         body {
           background: #f7f8fc;
         }
-        \ninput:not([type="checkbox"]):not([type="radio"]),
+        input:not([type="checkbox"]):not([type="radio"]),
         select,
         textarea {
           font-size: 16px;
           max-width: 100%;
           min-width: 0;
         }
-        \n.modal-overlay {
+        .modal-overlay {
           align-items: flex-end;
           padding: 12px 0 0;
         }
-        \n.modal-dialog {
+        .modal-dialog {
           width: 100%;
           max-height: calc(var(--app-viewport, 100dvh) - 12px);
           border-radius: 20px 20px 0 0;
         }
-        \n.topbar .navigation-menu:not([open]) > .actions {
+        .topbar .navigation-menu:not([open]) > .actions {
           display: none !important;
         }
         #app {
@@ -9224,17 +9235,32 @@
         return h + buildArchiveHtml(c);
       }
 
+      // Keep the link alive while mobile browsers hand the file to their download manager.
+      function downloadLocalFile(blob, name) {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = name;
+        link.hidden = true;
+        document.body.append(link);
+        const cleanup = () => {
+          link.remove();
+          URL.revokeObjectURL(url);
+        };
+        try {
+          link.click();
+        } catch (error) {
+          cleanup();
+          throw error;
+        }
+        setTimeout(cleanup, 60000);
+      }
       function downloadExcelTemplate() {
         const csv =
           "\uFEFF" +
           "ردیف,نام و نام خانوادگی\n1,مثال: علی رضایی\n2,مثال: محمد احمدی\n";
         const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "قالب-دانش‌آموزان.csv";
-        a.click();
-        URL.revokeObjectURL(url);
+        downloadLocalFile(blob, "قالب-دانش‌آموزان.csv");
       }
       function handleExcelImport(e) {
         const file = e.target.files[0];
@@ -10783,12 +10809,7 @@
           }
         }
         const blob = new Blob([jsonString], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = fileName;
-        a.click();
-        URL.revokeObjectURL(url);
+        downloadLocalFile(blob, fileName);
       }
 
       function handleImport(e) {
@@ -11161,14 +11182,7 @@
       function downloadRawRecovery() {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (raw === null) return alert("نسخه خامی وجود ندارد.");
-        const url = URL.createObjectURL(
-            new Blob([raw], { type: "application/json" }),
-          ),
-          a = document.createElement("a");
-        a.href = url;
-        a.download = "school-raw-recovery.json";
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        downloadLocalFile(new Blob([raw], { type: "application/json" }), "school-raw-recovery.json");
       }
 
       function snapshotRoster(c) {
@@ -14094,16 +14108,10 @@
         }
 
         function downloadJSON(value, name) {
-          const url = URL.createObjectURL(
-              new Blob([JSON.stringify(value, null, 2)], {
-                type: "application/json;charset=utf-8",
-              }),
-            ),
-            a = document.createElement("a");
-          a.href = url;
-          a.download = name;
-          a.click();
-          setTimeout(() => URL.revokeObjectURL(url), 1500);
+          downloadLocalFile(
+            new Blob([JSON.stringify(value, null, 2)], { type: "application/json;charset=utf-8" }),
+            name,
+          );
         }
 
         // One transaction captures a consistent installation snapshot.
@@ -15673,16 +15681,8 @@
         }
 
         function downloadCSVTemplate() {
-          const text =
-              "\uFEFFکد دانش‌آموز,نام و نام خانوادگی\n1001,مثال: علی رضایی\n1002,مثال: علی رضایی\n",
-            url = URL.createObjectURL(
-              new Blob([text], { type: "text/csv;charset=utf-8" }),
-            ),
-            a = document.createElement("a");
-          a.href = url;
-          a.download = "قالب-دانش‌آموزان.csv";
-          a.click();
-          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          const text = "\uFEFFکد دانش‌آموز,نام و نام خانوادگی\n1001,مثال: علی رضایی\n1002,مثال: علی رضایی\n";
+          downloadLocalFile(new Blob([text], { type: "text/csv;charset=utf-8" }), "قالب-دانش‌آموزان.csv");
         }
 
         async function addStudentV24(e) {
@@ -16321,14 +16321,7 @@
         async function rawRecoveryV24() {
           const legacy = localStorage.getItem(STORAGE_KEY);
           if (legacy !== null) {
-            const url = URL.createObjectURL(
-                new Blob([legacy], { type: "application/json" }),
-              ),
-              a = document.createElement("a");
-            a.href = url;
-            a.download = "school-legacy-raw-recovery.json";
-            a.click();
-            setTimeout(() => URL.revokeObjectURL(url), 1500);
+            downloadLocalFile(new Blob([legacy], { type: "application/json" }), "school-legacy-raw-recovery.json");
             return;
           }
           if (!connection)
@@ -17275,6 +17268,10 @@
             "--app-viewport",
             (window.visualViewport?.height || innerHeight) + "px",
           );
+          document.documentElement.style.setProperty(
+            "--app-viewport-top",
+            (window.visualViewport?.offsetTop || 0) + "px",
+          );
           const wide =
             innerWidth > 700 &&
             !matchMedia("(max-width:1000px) and (pointer:coarse)").matches;
@@ -17293,6 +17290,7 @@
           enhance();
           viewport();
           window.visualViewport?.addEventListener("resize", viewport);
+          window.visualViewport?.addEventListener("scroll", viewport);
           window.addEventListener("resize", viewport);
         }
         if (document.readyState === "loading")
@@ -18649,25 +18647,9 @@
               ? JSON.stringify(model, null, 2)
               : textReport(model);
           const blob = new Blob([content], {
-              type:
-                kind === "json"
-                  ? "application/json;charset=utf-8"
-                  : "text/plain;charset=utf-8",
-            }),
-            url = URL.createObjectURL(blob),
-            a = document.createElement("a");
-          a.href = url;
-          a.download =
-            "edu-" +
-            model.mode +
-            "-" +
-            model.start +
-            "-" +
-            model.audience +
-            "." +
-            kind;
-          a.click();
-          setTimeout(() => URL.revokeObjectURL(url), 1000);
+            type: kind === "json" ? "application/json;charset=utf-8" : "text/plain;charset=utf-8",
+          });
+          downloadLocalFile(blob, "edu-" + model.mode + "-" + model.start + "-" + model.audience + "." + kind);
         }
         root.EduPeriodicReports = {
           filters,
