@@ -5969,6 +5969,9 @@
       .record-change-row span:last-child {
         color: #166534;
       }
+      .student-add-form .entity-create-error {
+        grid-column: 1 / -1;
+      }
       .entity-create-error {
         flex: 1 0 100%;
         margin: 0;
@@ -9374,7 +9377,7 @@
         let h =
           '<details class="card quick-create student-add" ' +
           (!students.length ? "open" : "") +
-          '><summary>افزودن هنرجوی جدید</summary><form onsubmit="addStudent(event)" class="student-add-form"><label>نام و نام خانوادگی<input name="name" placeholder="نام کامل هنرجو" required maxlength="200"></label><label>کد دانش‌آموزی <span class="muted">(اختیاری)</span><input name="code" placeholder="کد یکتا در کلاس" inputmode="numeric"></label><button type="submit">افزودن هنرجو</button></form></details>';
+          '><summary>افزودن هنرجوی جدید</summary><form onsubmit="addStudent(event)" class="student-add-form" data-entity-create="student" novalidate><label>نام و نام خانوادگی<input id="studentCreateName" name="name" aria-describedby="studentCreateError" placeholder="نام کامل هنرجو" required maxlength="200"></label><label>کد دانش‌آموزی <span class="muted">(اختیاری)</span><input id="studentCreateCode" name="code" maxlength="120" aria-describedby="studentCreateError" placeholder="کد یکتا در کلاس" inputmode="numeric"></label><button type="submit">افزودن هنرجو</button><p id="studentCreateError" class="entity-create-error" role="alert"></p></form></details>';
         h +=
           '<details class="card student-import no-print"><summary>افزودن گروهی از فایل CSV</summary><p>ابتدا قالب را بگیرید، نام هنرجویان را وارد کنید و فایل تکمیل‌شده را برای بررسی بارگذاری کنید.</p><div class="row"><button class="ghost" onclick="downloadExcelTemplate()">دریافت قالب CSV</button><button onclick="document.getElementById(\'excelFile\').click()">انتخاب فایل CSV</button></div></details>';
         h +=
@@ -11627,11 +11630,26 @@
         return x.roster || [...c.students, ...(c.archivedStudents || [])];
       }
 
+
+      function historicalRoster(c, session) {
+        const recorded = new Set([
+          ...Object.keys(session.attendance || {}),
+          ...(session.scores || []).map(score => score.studentId),
+        ]);
+        if (!recorded.size) return snapshotRoster(c);
+        const known = new Map([...c.students, ...(c.archivedStudents || [])].map(student => [student.id, student]));
+        return [...recorded].map(id => {
+          const student = known.get(id);
+          if (!student) throw Error("عضو ثبت‌شده در جلسه، در سوابق کلاس وجود ندارد: " + id);
+          return structuredClone(student);
+        });
+      }
+
       function archiveStudent(c, st) {
         db.sessions
           .filter((x) => x.classId === c.id)
           .forEach((x) => {
-            if (!x.roster) x.roster = snapshotRoster(c);
+            if (!x.roster) x.roster = historicalRoster(c, x);
           });
         (c.archivedStudents || (c.archivedStudents = [])).push({ ...st });
         c.students = c.students.filter((x) => x.id !== st.id);
@@ -13394,15 +13412,7 @@
                   }
               for (const x of d.sessions.filter((x) => x.classId === c.id)) {
                 if (!x.roster) {
-                  const recorded = new Set([
-                    ...Object.keys(x.attendance || {}),
-                    ...(x.scores || []).map((sc) => sc.studentId),
-                  ]);
-                  x.roster = recorded.size
-                    ? [...recorded].map((id) =>
-                        clone(all.get(id) || { id, name: id }),
-                      )
-                    : c.students.map((st) => ({ id: st.id, name: st.name }));
+                  x.roster = historicalRoster(c, x);
                 } else if (legacy) {
                   const members = new Set(x.roster.map((st) => st.id));
                   for (const id of [
@@ -15026,6 +15036,10 @@
           delete stores.drafts;
           const reportDrafts = {};
           for (const period of stores.catalog) {
+            if (window.EduPeriodicReports?.getDrafts) {
+              reportDrafts[period.id] = window.EduPeriodicReports.getDrafts(period.id);
+              continue;
+            }
             try {
               reportDrafts[period.id] = JSON.parse(
                 localStorage.getItem(
@@ -16674,76 +16688,119 @@
           );
         }
 
-        async function addStudentV24(e) {
-          e.preventDefault();
-          const c = getClassObj(state.schoolId, state.classId),
-            name = e.target.name.value.trim(),
-            code = asciiDigits(e.target.code?.value || "");
-          if (!c || !name) return;
-          if (code && knownStudents(c).some((st) => st.code === code))
-            throw Error("کد دانش‌آموز در این کلاس وجود دارد.");
-          c.students.push({ id: uid(), name, ...(code ? { code } : {}) });
-          await saveDBV24({ classId: c.id, action: "افزودن دانش‌آموز" });
-          e.target.reset();
-          render();
-        }
 
-        function editStudentV24(sid) {
-          const c = getClassObj(state.schoolId, state.classId),
-            st = getStudentObj(c, sid);
-          if (!st) return;
-          showModal(
-            "ویرایش دانش‌آموز",
-            '<label>نام <input id="editStudentName" value="' +
-              esc(st.name) +
-              '"></label><label>کد دانش‌آموز <input id="editStudentCode" value="' +
-              esc(st.code || "") +
-              '"></label><p>نام تاریخی جلسات قبلی حفظ می‌شود.</p><button onclick="EduV24.saveStudent(\'' +
-              sid +
-              "')\">ذخیره</button>",
-          );
+        let studentCreationBusy = false, studentEditing = null, studentSaving = false;
+        function studentIdentity(nameValue, codeValue, previous = null, nameId = "editStudentName", codeId = "editStudentCode") {
+          const name = String(nameValue || "").trim(), code = asciiDigits(codeValue);
+          if (!normalizedName(name) || (name.length > 200 && name !== previous?.name))
+            throw recordFieldError("نام معتبر با حداکثر ۲۰۰ نویسه وارد کنید.", nameId);
+          if (code.length > 120 && code !== previous?.code)
+            throw recordFieldError("کد هنرجو باید حداکثر ۱۲۰ نویسه باشد.", codeId);
+          return {name, code};
         }
-
-        async function saveStudent(sid) {
-          const c = getClassObj(state.schoolId, state.classId),
-            st = getStudentObj(c, sid),
-            name = document.getElementById("editStudentName").value.trim(),
-            code = asciiDigits(
-              document.getElementById("editStudentCode").value,
-            );
-          if (!name) throw Error("نام خالی نباشد.");
-          if (
-            code &&
-            knownStudents(c).some((x) => x.id !== sid && x.code === code)
-          )
-            throw Error("کد دانش‌آموز تکراری است.");
-          const wasRecovered = !!st.recovered;
-          st.name = name;
-          st.code = code;
-          if (st.recovered && !name.startsWith("دانش‌آموز بازیابی‌شده")) {
-            st.recovered = false;
-            for (const session of db.sessions.filter((x) => x.classId === c.id))
-              for (const member of session.roster || [])
-                if (member.id === sid && member.recovered) {
-                  member.name = name;
-                  member.recovered = false;
-                }
-            const unresolved = db.schools.some((s) =>
-              s.classes.some((cl) =>
-                knownStudents(cl).some((x) => x.id === sid && x.recovered),
-              ),
-            );
-            if (!unresolved)
-              db.migrationWarnings = (db.migrationWarnings || []).filter(
-                (message) => !message.includes(sid),
-              );
-          }
-          await saveDBV24({
-            ...(wasRecovered ? {} : { classId: c.id }),
-            action: "اصلاح مشخصات دانش‌آموز",
-          });
-          closeModal();
-          render();
+        async function addStudentV24(event) {
+          event.preventDefault();
+          if (studentCreationBusy) return false;
+          const form = event.target;
+          const values = {name: form.elements.namedItem("name").value, code: form.elements.namedItem("code")?.value || ""};
+          const target = {workspace: workspace?.id, schoolId: state.schoolId, classId: state.classId};
+          const sameTarget = () => target.workspace === workspace?.id && target.schoolId === state.schoolId && target.classId === state.classId;
+          studentCreationBusy = true;
+          const finish = beginRecordEditorSave(form);
+          try {
+            assertEntityWritable();
+            const {name, code} = studentIdentity(values.name, values.code, null, "studentCreateName", "studentCreateCode");
+            await flushDrafts({strict: true});
+            await writer.catch(() => {});
+            assertEntityWritable();
+            if (!sameTarget()) throw Error("کلاس یا دوره تغییر کرده است؛ ثبت انجام نشد.");
+            const c = getClassObj(target.schoolId, target.classId);
+            if (!c) throw Error("کلاس مقصد دیگر وجود ندارد.");
+            if (code && knownStudents(c).some(st => st.code === code))
+              throw recordFieldError("این کد در فهرست فعال یا بایگانی کلاس وجود دارد؛ رکورد موجود را بررسی کنید.", "studentCreateCode");
+            freezeClassRosters(c);
+            c.students.push({id: uid(), name, ...(code ? {code} : {})});
+            await saveDBV24({action: "افزودن هنرجو: " + name});
+            render();
+            return true;
+          } catch(error) {
+            const current = sameTarget() ? document.querySelector('form[data-entity-create="student"]') : null;
+            if (current) {
+              current.elements.namedItem("name").value = values.name;
+              current.elements.namedItem("code").value = values.code;
+              current.querySelector('[role="alert"]').textContent = error.message;
+              const input = document.getElementById(error.fieldId || "studentCreateName");
+              if (error.fieldId) input?.setAttribute("aria-invalid", "true");
+              current.closest("details").open = true;
+              requestAnimationFrame(() => {
+                if (current.isConnected) current.closest("details").open = true;
+                if (input?.isConnected && !input.disabled) input.focus({preventScroll: true});
+              });
+            } else handleError(error);
+            return false;
+          } finally { studentCreationBusy = false; finish(); }
+        }
+        async function editStudentV24(studentId) {
+          try {
+            const origin = {workspace: workspace?.id, schoolId: state.schoolId, classId: state.classId};
+            assertEntityWritable();
+            await flushDrafts({strict: true});
+            assertEntityWritable();
+            if (origin.workspace !== workspace.id || origin.schoolId !== state.schoolId || origin.classId !== state.classId)
+              throw Error("کلاس یا دوره تغییر کرده است؛ ویرایش را دوباره باز کنید.");
+            const c = getClassObj(origin.schoolId, origin.classId), student = c && getStudentObj(c, studentId);
+            if (!student) throw Error("هنرجو دیگر در این کلاس وجود ندارد.");
+            const context = {...origin, studentId, revision: workspace.revision};
+            const html = '<form class="record-editor" id="studentEditor" novalidate onsubmit="event.preventDefault();EduV24.saveStudent()"><div class="record-editor-context"><h4>' + esc(student.name) + '</h4><p>' + esc(getSchool(origin.schoolId).name + " / " + c.name) + (c.students.some(x => x.id === studentId) ? " · هنرجوی فعال" : " · سوابق بایگانی‌شده") + '</p></div><label for="editStudentName">نام و نام خانوادگی</label><input id="editStudentName" value="' + esc(student.name) + '"><label for="editStudentCode">کد هنرجو (اختیاری)</label><input id="editStudentCode" inputmode="numeric" value="' + esc(student.code || "") + '"><p>شناسه، نمرات و نام تاریخی جلسات قبلی حفظ می‌شوند. اصلاح نام موقت بازیابی‌شده، فقط نام‌های نیازمند بررسی همان هنرجو در جلسات این کلاس را نیز اصلاح می‌کند.</p><p id="studentEditError" class="entity-create-error" role="alert"></p><div class="row record-editor-actions"><button type="button" class="ghost" onclick="closeModal()">انصراف</button><button type="submit">ذخیره مشخصات</button></div></form>';
+            if (showModal("ویرایش مشخصات هنرجو", html) !== false) studentEditing = context;
+          } catch(error) { handleError(error); }
+        }
+        async function saveStudent(studentId) {
+          if (studentSaving) return;
+          const form = document.querySelector("#modal:not(.hidden) #studentEditor");
+          if (!form) return;
+          studentSaving = true;
+          const finish = beginRecordEditorSave(form);
+          try {
+            const context = studentEditing;
+            const check = () => {
+              assertEntityWritable();
+              if (!context || (studentId && studentId !== context.studentId) || context.workspace !== workspace.id || context.revision !== workspace.revision || context.schoolId !== state.schoolId || context.classId !== state.classId)
+                throw Error("کلاس، دوره یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.");
+              const c = getClassObj(context.schoolId, context.classId), student = c && getStudentObj(c, context.studentId);
+              if (!student) throw Error("هنرجو دیگر در این کلاس وجود ندارد.");
+              return {c, student};
+            };
+            let {student} = check();
+            const {name, code} = studentIdentity(document.getElementById("editStudentName").value, document.getElementById("editStudentCode").value, student);
+            await flushDrafts({strict: true});
+            await writer.catch(() => {});
+            const current = check(), c = current.c;
+            student = current.student;
+            if (code && knownStudents(c).some(x => x.id !== student.id && x.code === code))
+              throw recordFieldError("این کد در فهرست فعال یا بایگانی کلاس وجود دارد.", "editStudentCode");
+            if (student.name !== name || (student.code || "") !== code || (student.recovered && !name.startsWith("دانش‌آموز بازیابی‌شده"))) {
+              freezeClassRosters(c);
+              student.name = name;
+              student.code = code;
+              if (student.recovered && !name.startsWith("دانش‌آموز بازیابی‌شده")) {
+                student.recovered = false;
+                for (const session of db.sessions.filter(x => x.classId === c.id))
+                  for (const member of session.roster || [])
+                    if (member.id === student.id && member.recovered) { member.name = name; member.recovered = false; }
+                const unresolved = db.schools.some(s => s.classes.some(cl => knownStudents(cl).some(x => x.id === student.id && x.recovered)));
+                if (!unresolved) db.migrationWarnings = (db.migrationWarnings || []).filter(message => !message.includes(student.id));
+              }
+              await saveDBV24({action: "اصلاح مشخصات هنرجو: " + name});
+            }
+            finish();
+            rememberRecordEditor();
+            studentEditing = null;
+            closeModal();
+            render();
+          } catch(error) {
+            if (!showRecordEditorError(error, "studentEditError")) handleError(error);
+          } finally { studentSaving = false; finish(); }
         }
 
         async function wipeAllV24() {
@@ -17179,7 +17236,7 @@
           membershipBusy = false;
         function freezeClassRosters(c) {
           for (const session of db.sessions.filter((x) => x.classId === c.id))
-            if (!session.roster) session.roster = snapshotRoster(c);
+            if (!session.roster) session.roster = historicalRoster(c, session);
         }
         async function openMembership(action, studentId) {
           try {
@@ -19395,45 +19452,95 @@
           author: "",
         };
         // Report drafts and signatures belong to the actual academic period.
-        const notes = new Map();
+
+        // Only notes that have not reached local storage stay in memory.
+        const notes = new Map(), noteReadErrors = new Map();
         const context = () =>
           root.EduV24?.getReportContext() || { id: "", revision: 0 };
         const draftStorageKey = (id = context().id) =>
           "EduManager.periodicDrafts." + id;
+        function storedNotes(id = context().id) {
+          const saved = JSON.parse(localStorage.getItem(draftStorageKey(id)) || "{}");
+          if (!saved || typeof saved !== "object" || Array.isArray(saved) ||
+              Object.values(saved).some(value => typeof value !== "string"))
+            throw Error("ساختار توضیحات ذخیره‌شده معتبر نیست.");
+          noteReadErrors.delete(id);
+          return saved;
+        }
         function readNote(key) {
           if (notes.has(key)) return notes.get(key);
+          const id = key.split("|")[0];
           try {
-            return (
-              JSON.parse(localStorage.getItem(draftStorageKey()) || "{}")[
-                key
-              ] || ""
-            );
-          } catch {
+            const saved = storedNotes(id);
+            if (Object.prototype.hasOwnProperty.call(saved, key)) return saved[key];
+            const parts = key.split("|");
+            if (parts[1] !== "weekly" || !parts[2].startsWith("week:")) return "";
+            const start = parts[2].slice(5), end = addDays(start, 6);
+            const matches = Object.entries(saved).filter(([oldKey, value]) => {
+              const old = oldKey.split("|");
+              return value.trim() && old.length === parts.length &&
+                old.every((part, i) => i === 2 || part === parts[i]) &&
+                /^\d{4}-\d{2}-\d{2}$/.test(old[2]) && old[2] >= start && old[2] <= end;
+            }).sort(([a], [b]) => a.localeCompare(b));
+            const unique = matches.filter(([,value], i) => matches.findIndex(([,other]) => other === value) === i);
+            if (unique.length === 1) return unique[0][1];
+            return unique.map(([oldKey, value]) => "یادداشت ثبت‌شده در " + oldKey.split("|")[2] + ":\n" + value).join("\n\n");
+          } catch(error) {
+            noteReadErrors.set(id, error.message || String(error));
             return "";
           }
         }
         function persistNote(key, value) {
           notes.set(key, value);
+          const id = key.split("|")[0];
           try {
-            const saved = JSON.parse(
-              localStorage.getItem(draftStorageKey()) || "{}",
-            );
+            const saved = storedNotes(id);
             saved[key] = value;
-            localStorage.setItem(draftStorageKey(), JSON.stringify(saved));
-          } catch {
-            const el = document.getElementById("periodicError");
-            if (el)
-              el.textContent =
-                "توضیحات فقط در این صفحه مانده است؛ ذخیره روی دستگاه انجام نشد. خروجی فایل بگیرید.";
+            localStorage.setItem(draftStorageKey(id), JSON.stringify(saved));
+            notes.delete(key);
+            return true;
+          } catch(error) {
+            noteReadErrors.set(id, error.message || String(error));
+            return false;
           }
         }
+        function noteWarning() {
+          const pending = [...notes.keys()].filter(key => key.split("|")[0] === context().id).length;
+          if (!pending && !noteReadErrors.has(context().id)) return "";
+          return '<div class="periodic-warnings" role="alert"><p>' +
+            (pending
+              ? 'توضیحات ' + pending + ' گزارش هنوز روی دستگاه ذخیره نشده است. متن را پیش از بستن برنامه در فایل گزارش ذخیره کنید.'
+              : 'خواندن توضیحات ذخیره‌شده انجام نشد؛ فایل پشتیبان را برای بررسی نگه دارید.') +
+            '</p><button type="button" class="ghost" onclick="EduPeriodicReports.retryNotes()">تلاش مجدد ذخیره توضیحات</button></div>';
+        }
+        function paintNoteState() {
+          const el = document.getElementById("periodicNoteStatus");
+          if (el) el.innerHTML = noteWarning();
+        }
+        function retryNotes() {
+          const id = context().id;
+          for (const [key, value] of [...notes])
+            if (key.split("|")[0] === id) persistNote(key, value);
+          try { storedNotes(id); } catch(error) { noteReadErrors.set(id, error.message || String(error)); }
+          paintNoteState();
+          return !noteReadErrors.has(id) && ![...notes.keys()].some(key => key.split("|")[0] === id);
+        }
+        function getDrafts(id) {
+          const saved = storedNotes(id);
+          for (const [key, value] of notes)
+            if (key.split("|")[0] === id) saved[key] = value;
+          return saved;
+        }
+        root.addEventListener("beforeunload", event => {
+          if (notes.size) { event.preventDefault(); event.returnValue = ""; }
+        });
         let last = null,
           busy = false;
         const noteKey = (f) =>
           [
             context().id,
             f.mode,
-            f.date,
+            f.mode === "weekly" ? "week:" + range("weekly", f.date).start : f.date,
             f.schoolId,
             f.classId,
             f.audience,
@@ -19700,7 +19807,7 @@
                 }
               : null,
             author: String(f.author || "").slice(0, 200),
-            note: String(f.note || "").slice(0, 10000),
+            note: String(f.note || ""),
             summary: {
               sessions: sessions.length,
               students: students.size,
@@ -20311,9 +20418,9 @@
           h +=
             '<label>نام تنظیم‌کننده (اختیاری)<input value="' +
             esc(f.author) +
-            '" maxlength="200" oninput="EduPeriodicReports.author(this.value)"></label></div><label class="periodic-note-field">توضیحات این گزارش (اختیاری)<textarea rows="3" maxlength="10000" oninput="EduPeriodicReports.note(this.value)">' +
+            '" maxlength="200" oninput="EduPeriodicReports.author(this.value)"></label></div><label class="periodic-note-field">توضیحات این گزارش (اختیاری)<textarea rows="3" maxlength="' + Math.max(10000, readNote(noteKey(f)).length) + '" oninput="EduPeriodicReports.note(this.value)">' +
             esc(readNote(noteKey(f))) +
-            '</textarea></label><button class="periodic-build" onclick="EduPeriodicReports.generate()">تهیه گزارش ' +
+            '</textarea></label><div id="periodicNoteStatus">' + noteWarning() + '</div><button class="periodic-build" onclick="EduPeriodicReports.generate()">تهیه گزارش ' +
             (mode === "daily" ? "روزانه" : "هفتگی") +
             '</button><p id="periodicError" role="alert"></p></section><div id="periodicReportOutput">';
           h +=
@@ -20340,6 +20447,9 @@
             return;
           if (key === "detailLevel" && !["summary", "full"].includes(value))
             return;
+          if (key === "date") {
+            try { isoDate(value); } catch(e) { error(e); return; }
+          }
           filters[key] = value;
           if (key === "schoolId") {
             filters.classId = "";
@@ -20356,8 +20466,7 @@
         async function generate() {
           if (busy) return null;
           busy = true;
-          const input = inputSnapshot(),
-            signature = JSON.stringify(input);
+          let input, signature;
           const buttons = [
             ...document.querySelectorAll(
               ".periodic-build,.periodic-export-actions button",
@@ -20365,6 +20474,10 @@
           ];
           buttons.forEach((b) => (b.disabled = true));
           try {
+            input = inputSnapshot();
+            if (noteReadErrors.has(context().id) && !notes.has(noteKey(filters)))
+              throw Error("توضیحات ذخیره‌شده این گزارش قابل خواندن نیست؛ پیش از تهیه گزارش آن را بررسی کنید.");
+            signature = JSON.stringify(input);
             const alert = document.getElementById("periodicError");
             if (alert) alert.textContent = "";
             await root.EduV24.flushDrafts({ strict: true });
@@ -20493,11 +20606,16 @@
           textReport,
           documentHtml,
           note(value) {
-            persistNote(noteKey(filters), String(value).slice(0, 10000));
+            const key = noteKey(filters);
+            const saved = persistNote(key, String(value).slice(0, Math.max(10000, readNote(key).length)));
+            paintNoteState();
+            return saved;
           },
           author(value) {
             filters.author = String(value).slice(0, 200);
           },
+          retryNotes,
+          getDrafts,
           getLast: () =>
             last && last.signature === reportSignature() ? last.model : null,
         };
