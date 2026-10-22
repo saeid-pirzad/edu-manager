@@ -6070,6 +6070,13 @@
         background: #fff1f2;
         color: #b91c1c;
       }
+      #periodLabelError {
+        color: #b91c1c;
+        margin: 0;
+      }
+      #periodLabelError:empty {
+        display: none;
+      }
       #entityEditError:empty {
         display: none;
       }
@@ -8773,6 +8780,7 @@
         classId = "",
         tab = "comprehensive",
       ) {
+        window.EduPeriodicReports?.selectScope(schoolId, classId);
         globalFilter = {
           ...globalFilter,
           date: "",
@@ -13687,13 +13695,34 @@
             ),
             done = transactionDone(tx);
           let conflict = false,
+            labelConflict = false,
             nextCatalog;
           const catalog = tx.objectStore("catalog"),
+            meta = records.get("meta"),
+            labelChanged =
+              meta &&
+              (meta.settings?.academicYear !== workspace.year ||
+                meta.settings?.academicTerm !== workspace.term),
+            labels = labelChanged ? catalog.getAll() : null,
             get = catalog.get(workspace.id);
           get.onsuccess = () => {
             const live = get.result;
             if (!live || live.revision !== workspace.revision) {
               conflict = true;
+              tx.abort();
+              return;
+            }
+            if (
+              labels &&
+              labels.result.some(
+                (row) =>
+                  row.id !== workspace.id &&
+                  row.year === meta.settings.academicYear &&
+                  normalizedName(row.term) ===
+                    normalizedName(meta.settings.academicTerm),
+              )
+            ) {
+              labelConflict = true;
               tx.abort();
               return;
             }
@@ -13734,6 +13763,10 @@
           try {
             await done;
           } catch (e) {
+            if (labelConflict)
+              throw Error(
+                "دوره دیگری با همین سال و عنوان نوبت وجود دارد؛ عنوان متمایز انتخاب کنید.",
+              );
             if (conflict) {
               blocked = true;
               throw Error(
@@ -13801,36 +13834,69 @@
           return operation;
         }
 
+        function recoveryPeriodTerm(term, marker) {
+          const suffix = " — بازیابی " + marker;
+          return (
+            term
+              .slice(0, Math.max(0, 60 - suffix.length))
+              .replace(/[\uD800-\uDBFF]$/, "") + suffix
+          );
+        }
         async function installWorkspace(data, details) {
           const id = details.id || uid(),
-            now = new Date().toISOString(),
-            catalog = {
-              id,
-              year: details.year || data.settings.academicYear,
-              term: details.term || data.settings.academicTerm || "نامشخص",
-              revision: 1,
-              closed: false,
-              createdAt: now,
-              updatedAt: now,
-            };
-          const records = collectRecords(data);
+            now = new Date().toISOString();
+          const catalog = {
+            id,
+            year: details.year || data.settings.academicYear,
+            term: details.term || data.settings.academicTerm || "نامشخص",
+            revision: 1,
+            closed: false,
+            createdAt: now,
+            updatedAt: now,
+          };
+          const installed = clone(data);
+          installed.settings.academicYear = catalog.year;
+          installed.settings.academicTerm = catalog.term;
+          validateV24(installed);
+          const records = collectRecords(installed);
           const tx = connection.transaction(
               ["records", "catalog"],
               "readwrite",
             ),
             done = transactionDone(tx);
-          tx.objectStore("catalog").put(catalog);
-          for (const [logical, value] of records)
-            tx.objectStore("records").put({
-              key: id + "|" + logical,
-              workspace: id,
-              logical,
-              value,
-            });
-          await done;
+          let duplicate = false;
+          const store = tx.objectStore("catalog"),
+            existing = store.getAll();
+          existing.onsuccess = () => {
+            if (
+              existing.result.some(
+                (row) =>
+                  row.year === catalog.year &&
+                  normalizedName(row.term) === normalizedName(catalog.term),
+              )
+            ) {
+              duplicate = true;
+              tx.abort();
+              return;
+            }
+            store.add(catalog);
+            for (const [logical, value] of records)
+              tx.objectStore("records").put({
+                key: id + "|" + logical,
+                workspace: id,
+                logical,
+                value,
+              });
+          };
+          try {
+            await done;
+          } catch (error) {
+            if (duplicate)
+              throw Error("دوره دیگری با همین سال و عنوان نوبت وجود دارد.");
+            throw error;
+          }
           return catalog;
         }
-
         async function bootstrapV24() {
           document.getElementById("app").innerHTML =
             '<div class="card" role="status">در حال خواندن امن اطلاعات…</div>';
@@ -14531,7 +14597,10 @@
 
         function lockControls() {
           const names = [
+            "confirmDeletion",
+            "saveMembership",
             "saveEntityEditor",
+            "savePeriodLabel",
             "saveSettings",
             "save",
             "copy",
@@ -15160,16 +15229,18 @@
               periods.map(({ period }) => [period.id, uid()]),
             );
             const existing = await allFrom("catalog");
+            const occupied = new Set(
+              existing.map((p) => p.year + "|" + normalizedName(p.term)),
+            );
             const rows = Object.fromEntries(
               backupStores.map((name) => [name, []]),
             );
             for (const { period, data } of periods) {
               const id = mapping.get(period.id);
               let term = period.term;
-              if (
-                existing.some((p) => p.year === period.year && p.term === term)
-              )
-                term += " — بازیابی " + id;
+              if (occupied.has(period.year + "|" + normalizedName(term)))
+                term = recoveryPeriodTerm(term, id);
+              occupied.add(period.year + "|" + normalizedName(term));
               data.settings.academicTerm = term;
               rows.catalog.push({ ...period, id, term });
               for (const [logical, value] of collectRecords(data))
@@ -15189,6 +15260,22 @@
                 if (name === "events") delete row.id;
                 else
                   row.id = name === "undo" ? mapping.get(original.id) : uid();
+                if (name === "undo") {
+                  const originalPeriod = source.stores.catalog.find(
+                    (p) => p.id === original.id,
+                  );
+                  const importedPeriod = rows.catalog.find(
+                    (p) => p.id === row.id,
+                  );
+                  for (const before of row.before || [])
+                    if (
+                      before.key === "meta" &&
+                      before.value?.settings?.academicYear ===
+                        originalPeriod?.year &&
+                      before.value.settings.academicTerm === originalPeriod.term
+                    )
+                      before.value.settings.academicTerm = importedPeriod.term;
+                }
                 rows[name].push(row);
               }
             rows.drafts = (source.gradeDrafts || []).map((row) => ({
@@ -15498,10 +15585,10 @@
             const candidate = normalizeDB(pendingImport.candidate);
             const created = await installWorkspace(candidate, {
               year: candidate.settings.academicYear,
-              term:
-                (candidate.settings.academicTerm || "بازیابی") +
-                " — بازیابی " +
-                new Date().toLocaleTimeString("fa-IR"),
+              term: recoveryPeriodTerm(
+                candidate.settings.academicTerm || "بازیابی",
+                uid(),
+              ),
             });
             pendingImport = null;
             await switchPeriod(created.id);
@@ -15784,37 +15871,95 @@
           await switchPeriod(created.id);
         }
 
-        function editPeriodLabel() {
-          showModal(
-            "عنوان دوره",
-            '<label>سال <input id="editYear" value="' +
+        let periodLabelEditing = null,
+          periodLabelSaving = false;
+        async function editPeriodLabel() {
+          assertEntityWritable();
+          const previous = periodLabelEditing;
+          periodLabelEditing = {
+            id: workspace.id,
+            revision: workspace.revision,
+          };
+          const opened = showModal(
+            "اصلاح عنوان نوبت",
+            '<form id="periodLabelEditor" class="record-editor" novalidate onsubmit="event.preventDefault();EduV24.savePeriodLabel()"><div class="record-editor-context"><span>دوره فعال</span><h4>' +
+              esc(workspace.year + " / " + workspace.term) +
+              '</h4><p>کلاس‌ها، نمرات و سوابق این دوره حفظ می‌شوند.</p></div><label class="course-field">سال تحصیلی<input id="editYear" value="' +
               esc(workspace.year) +
-              '"></label><label>نوبت <input id="editTerm" value="' +
+              '" readonly aria-describedby="periodYearHint"></label><p id="periodYearHint" class="muted">سال این دوره ثابت است؛ برای سال دیگر از «دوره جدید» استفاده کنید تا سوابق و قواعد سالانه مستقل بمانند.</p><label class="course-field">عنوان نوبت<input id="editTerm" value="' +
               esc(workspace.term) +
-              '"></label><button onclick="EduV24.savePeriodLabel()">ذخیره عنوان</button>',
+              '" maxlength="60" aria-describedby="periodLabelError" autocomplete="off"></label><p class="muted">این عنوان در فهرست دوره‌ها و گزارش‌های جاری نمایش داده می‌شود؛ کارنامه‌های ثابت قبلی تغییر نمی‌کنند.</p><p id="periodLabelError" role="alert"></p><div class="record-editor-actions"><button type="submit" data-mutating="1">ذخیره عنوان نوبت</button><button type="button" class="ghost" onclick="closeModal()">انصراف</button></div></form>',
           );
+          if (opened === false) {
+            periodLabelEditing = previous;
+            return false;
+          }
+          rememberRecordEditor();
+          return true;
         }
-
         async function savePeriodLabel() {
-          if (fileMode)
-            throw Error(
-              "این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.",
-            );
-          const year = asciiDigits(document.getElementById("editYear").value),
-            term = document.getElementById("editTerm").value.trim();
-          if (
-            !/^\d{4}-\d{4}$/.test(year) ||
-            Number(year.slice(5)) - Number(year.slice(0, 4)) !== 1 ||
-            !term ||
-            term.length > 60
-          )
-            throw Error("عنوان سال یا نوبت معتبر نیست.");
-          db.settings.academicYear = year;
-          db.settings.academicTerm = term;
-          await saveDBV24({ action: "اصلاح عنوان سال و نوبت" });
-          await openPeriods();
+          if (periodLabelSaving) return false;
+          periodLabelSaving = true;
+          const form = document.querySelector(
+            "#modal:not(.hidden) #periodLabelEditor",
+          );
+          const finishSave = beginRecordEditorSave(form);
+          try {
+            assertEntityWritable();
+            const edit = periodLabelEditing;
+            if (
+              !form ||
+              !edit ||
+              edit.id !== workspace.id ||
+              edit.revision !== workspace.revision
+            )
+              throw Error(
+                "دوره یا اطلاعات از زمان باز شدن فرم تغییر کرده است؛ فرم را دوباره باز کنید.",
+              );
+            const year = asciiDigits(document.getElementById("editYear").value);
+            const term = document
+              .getElementById("editTerm")
+              .value.trim()
+              .replace(/\s+/g, " ");
+            if (year !== workspace.year)
+              throw recordFieldError(
+                "سال دوره از این فرم قابل تغییر نیست؛ برای سال دیگر دوره مستقل بسازید.",
+                "editYear",
+              );
+            if (!normalizedName(term) || term.length > 60)
+              throw recordFieldError(
+                "عنوان نوبت را با حداکثر ۶۰ نویسه وارد کنید.",
+                "editTerm",
+              );
+            await flushDrafts({ strict: true });
+            assertEntityWritable();
+            if (
+              edit.id !== workspace.id ||
+              edit.revision !== workspace.revision
+            )
+              throw Error(
+                "دوره یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.",
+              );
+            if (term !== workspace.term) {
+              db.settings.academicTerm = term;
+              await saveDBV24({ action: "اصلاح عنوان نوبت" });
+            }
+            periodLabelEditing = null;
+            finishSave();
+            rememberRecordEditor();
+            await openPeriods();
+            return true;
+          } catch (error) {
+            if (error.message?.includes("عنوان نوبت وجود دارد"))
+              error.fieldId = "editTerm";
+            if (!showRecordEditorError(error, "periodLabelError"))
+              handleError(error);
+            return false;
+          } finally {
+            periodLabelSaving = false;
+            finishSave();
+          }
         }
-
         function finalReportData() {
           const classes = [];
           let missing = [];
@@ -17029,6 +17174,407 @@
             finishSave();
           }
         }
+
+        let membershipContext = null,
+          membershipBusy = false;
+        function freezeClassRosters(c) {
+          for (const session of db.sessions.filter((x) => x.classId === c.id))
+            if (!session.roster) session.roster = snapshotRoster(c);
+        }
+        async function openMembership(action, studentId) {
+          try {
+            assertEntityWritable();
+            const origin = {
+              workspace: workspace.id,
+              schoolId: state.schoolId,
+              classId: state.classId,
+            };
+            await flushDrafts({ strict: true });
+            assertEntityWritable();
+            if (
+              origin.workspace !== workspace.id ||
+              origin.schoolId !== state.schoolId ||
+              origin.classId !== state.classId
+            )
+              throw Error(
+                "صفحه یا دوره تغییر کرده است؛ عملیات را دوباره باز کنید.",
+              );
+            const c = getClassObj(origin.schoolId, origin.classId);
+            const student = (
+              action === "restore" ? c?.archivedStudents : c?.students
+            )?.find((x) => x.id === studentId);
+            if (!student) throw Error("هنرجو در فهرست موردنظر وجود ندارد.");
+            const context = {
+              ...origin,
+              action,
+              studentId,
+              revision: workspace.revision,
+            };
+            const title =
+              action === "transfer"
+                ? "انتقال یا کپی هنرجو"
+                : action === "archive"
+                  ? "بایگانی هنرجو"
+                  : "بازگردانی هنرجو";
+            const activeElsewhere = db.schools.flatMap((s) =>
+              s.classes
+                .filter(
+                  (cl) =>
+                    cl.id !== c.id &&
+                    cl.students.some((st) => st.id === studentId),
+                )
+                .map((cl) => s.name + " / " + cl.name),
+            );
+            let body =
+              '<form class="record-editor" onsubmit="event.preventDefault();EduV24.saveMembership()"><div class="record-editor-context"><h4>' +
+              esc(student.name) +
+              "</h4><p>" +
+              esc(getSchool(origin.schoolId).name + " / " + c.name) +
+              "</p></div>";
+            if (action === "transfer") {
+              const options = db.schools.flatMap((s) =>
+                s.classes
+                  .filter((cl) => cl.id !== c.id)
+                  .map(
+                    (cl) =>
+                      '<option value="' +
+                      esc(cl.id) +
+                      '">' +
+                      esc(s.name + " / " + cl.name) +
+                      "</option>",
+                  ),
+              );
+              body +=
+                '<label for="transferTarget">کلاس مقصد</label><select id="transferTarget"><option value="">کلاس مقصد را انتخاب کنید</option>' +
+                options.join("") +
+                "</select><p>انتقال: عضویت فعال در مبدأ بایگانی می‌شود و شناسه هنرجو در مقصد حفظ می‌شود. کپی: هنرجویی با شناسه جدید در مقصد ساخته می‌شود و مبدأ فعال می‌ماند.</p><p>نمرات و جلسات مبدأ به مقصد منتقل نمی‌شوند. اگر همین هنرجو قبلاً در مقصد بوده، انتقال دوباره، عضویت او را با حفظ سوابق قبلی مقصد فعال می‌کند.</p>";
+              if (!options.length)
+                body +=
+                  "<p>کلاس دیگری وجود ندارد؛ ابتدا کلاس مقصد را تعریف کنید.</p>";
+            } else if (action === "archive") {
+              body +=
+                "<p>هنرجو از فهرست فعال خارج می‌شود؛ نمرات، حضور‌وغیاب و نام او در جلسات گذشته حفظ می‌شوند. بازگردانی از بخش سوابق بایگانی‌شده امکان‌پذیر است.</p>";
+            } else {
+              body +=
+                "<p>عضویت فعال در این کلاس با همان شناسه و نمرات قبلی برقرار می‌شود. جلسات گذشته تغییر نمی‌کنند.</p>";
+              if (activeElsewhere.length)
+                body +=
+                  "<p>این هنرجو در " +
+                  esc(activeElsewhere.join("، ")) +
+                  " نیز فعال است. بازگردانی، عضویت او در آن کلاس‌ها را لغو نمی‌کند.</p>";
+            }
+            body +=
+              '<p id="membershipError" role="alert"></p><div class="row record-editor-actions"><button type="button" class="ghost" onclick="closeModal()">انصراف</button>';
+            if (action === "transfer")
+              body +=
+                '<button type="button" class="ghost" onclick="EduV24.saveMembership(\'copy\')">کپی به مقصد</button>';
+            body +=
+              '<button type="submit">' +
+              (action === "transfer"
+                ? "انتقال به مقصد"
+                : action === "archive"
+                  ? "بایگانی هنرجو"
+                  : "بازگردانی هنرجو") +
+              "</button></div></form>";
+            if (showModal(title, body) !== false) membershipContext = context;
+          } catch (error) {
+            handleError(error);
+          }
+        }
+        async function saveMembership(mode = "") {
+          if (membershipBusy) return;
+          const form = document
+            .querySelector("#modal:not(.hidden) #membershipError")
+            ?.closest("form");
+          if (!form) return;
+          membershipBusy = true;
+          const finish = beginRecordEditorSave(form);
+          try {
+            const context = membershipContext;
+            const check = () => {
+              assertEntityWritable();
+              if (
+                !context ||
+                context.workspace !== workspace.id ||
+                context.revision !== workspace.revision
+              )
+                throw Error(
+                  "دوره یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.",
+                );
+              const c = getClassObj(context.schoolId, context.classId);
+              const student = (
+                context.action === "restore" ? c?.archivedStudents : c?.students
+              )?.find((x) => x.id === context.studentId);
+              if (!student)
+                throw Error("هنرجو دیگر در فهرست موردنظر وجود ندارد.");
+              return { c, student };
+            };
+            check();
+            await flushDrafts({ strict: true });
+            await writer.catch(() => {});
+            const { c, student } = check();
+            let action;
+            if (context.action === "transfer") {
+              const targetId = document.getElementById("transferTarget").value;
+              const destination = findClass(targetId);
+              if (!destination || destination.id === c.id)
+                throw recordFieldError(
+                  "یک کلاس مقصد معتبر انتخاب کنید.",
+                  "transferTarget",
+                );
+              const isCopy = mode === "copy";
+              if (
+                !isCopy &&
+                destination.students.some((x) => x.id === student.id)
+              )
+                throw recordFieldError(
+                  "هنرجو در مقصد فعال است؛ انتقال دوباره انجام نمی‌شود.",
+                  "transferTarget",
+                );
+              if (
+                student.code &&
+                knownStudents(destination).some(
+                  (x) =>
+                    x.code === student.code && (isCopy || x.id !== student.id),
+                )
+              )
+                throw recordFieldError(
+                  "کد هنرجو در فهرست فعال یا بایگانی مقصد وجود دارد؛ ابتدا هویت رکورد مقصد را بررسی کنید.",
+                  "transferTarget",
+                );
+              freezeClassRosters(destination);
+              if (isCopy)
+                destination.students.push({ ...clone(student), id: uid() });
+              else {
+                destination.archivedStudents = (
+                  destination.archivedStudents || []
+                ).filter((x) => x.id !== student.id);
+                destination.students.push(clone(student));
+                archiveStudent(c, student);
+              }
+              action =
+                (isCopy ? "کپی " : "انتقال ") +
+                student.name +
+                " از " +
+                c.name +
+                " به " +
+                destination.name;
+            } else if (context.action === "archive") {
+              archiveStudent(c, student);
+              action = "بایگانی هنرجو: " + student.name;
+            } else {
+              if (c.students.some((x) => x.id === student.id))
+                throw Error("هنرجو در این کلاس فعال است.");
+              if (
+                student.code &&
+                c.students.some((x) => x.code === student.code)
+              )
+                throw Error(
+                  "کد هنرجو در فهرست فعال تکراری است؛ ابتدا مشخصات را اصلاح کنید.",
+                );
+              freezeClassRosters(c);
+              c.students.push(clone(student));
+              c.archivedStudents = c.archivedStudents.filter(
+                (x) => x.id !== student.id,
+              );
+              action = "بازگردانی هنرجو: " + student.name;
+            }
+            await saveDBV24({ action });
+            finish();
+            rememberRecordEditor();
+            membershipContext = null;
+            closeModal();
+            render();
+            setStatus(action + "؛ سوابق جلسات قبلی حفظ شدند.", "saved");
+          } catch (error) {
+            if (!showRecordEditorError(error, "membershipError"))
+              handleError(error);
+          } finally {
+            membershipBusy = false;
+            finish();
+          }
+        }
+        let deletionContext = null,
+          deletionBusy = false;
+        function deletionTarget(kind, id, schoolId, classId) {
+          const school = getSchool(schoolId),
+            cls = school?.classes.find((x) => x.id === classId);
+          const item =
+            kind === "school"
+              ? school
+              : kind === "class"
+                ? cls
+                : cls?.lessons.find((x) => x.id === id);
+          if (!item || item.id !== id)
+            throw Error("مورد انتخاب‌شده دیگر وجود ندارد.");
+          const classes = kind === "school" ? school.classes : [cls];
+          const classIds = new Set(classes.map((x) => x.id));
+          const lessons =
+            kind === "lesson" ? [item] : classes.flatMap((x) => x.lessons);
+          const lessonIds = new Set(lessons.map((x) => x.id));
+          const matches = (x) =>
+            kind === "school"
+              ? x.schoolId === school.id ||
+                classIds.has(x.classId) ||
+                lessonIds.has(x.lessonId)
+              : kind === "class"
+                ? x.classId === cls.id || lessonIds.has(x.lessonId)
+                : x.lessonId === id;
+          return { school, cls, item, matches, classes, lessons };
+        }
+        function openDeletion(kind, id) {
+          try {
+            assertEntityWritable();
+            const schoolId = kind === "school" ? id : state.schoolId;
+            const classId = kind === "class" ? id : state.classId;
+            const target = deletionTarget(kind, id, schoolId, classId);
+            const context = {
+              kind,
+              id,
+              schoolId,
+              classId,
+              workspace: workspace.id,
+              revision: workspace.revision,
+            };
+            const students =
+              kind === "lesson"
+                ? 0
+                : target.classes.reduce(
+                    (n, c) =>
+                      n +
+                      (c.students || []).length +
+                      (c.archivedStudents || []).length,
+                    0,
+                  );
+            const sessions = db.sessions.filter(target.matches).length;
+            const slots = Object.values(db.masterSchedule || {}).filter(
+              target.matches,
+            ).length;
+            const label =
+              kind === "school" ? "مدرسه" : kind === "class" ? "کلاس" : "درس";
+            const html =
+              '<form class="record-editor" onsubmit="event.preventDefault();EduV24.confirmDeletion()"><p>حذف ' +
+              label +
+              " «" +
+              esc(target.item.name) +
+              "» شامل سوابق زیر است:</p><ul>" +
+              (kind === "school"
+                ? "<li>" + target.classes.length + " کلاس</li>"
+                : "") +
+              (kind !== "lesson"
+                ? "<li>" + students + " هنرجوی فعال و بایگانی‌شده</li>"
+                : "") +
+              "<li>" +
+              target.lessons.length +
+              " درس و نمرات وابسته</li><li>" +
+              sessions +
+              " جلسه و سوابق حضور و فعالیت</li><li>" +
+              slots +
+              " خانه برنامه هفتگی</li></ul>" +
+              "<p>پیش از حذف، پشتیبان داخلی از کل دوره ذخیره می‌شود. برای بازیابی از بخش پشتیبان‌ها استفاده کنید؛ بلافاصله پس از حذف، بازگردانی آخرین تغییر نیز در دسترس است. پشتیبان داخلی جای فایل مستقل را نمی‌گیرد.</p>" +
+              '<label for="deleteEntityName">برای تأیید، نام ' +
+              label +
+              " را وارد کنید: " +
+              esc(target.item.name) +
+              '</label><input id="deleteEntityName" autocomplete="off" maxlength="500"><p id="deleteEntityError" role="alert"></p><div class="row"><button type="button" class="ghost" onclick="closeModal()">انصراف</button><button type="submit" class="danger">ذخیره پشتیبان و حذف</button></div></form>';
+            if (showModal("بررسی حذف " + label, html) !== false)
+              deletionContext = context;
+          } catch (error) {
+            handleError(error);
+          }
+        }
+        async function confirmDeletion() {
+          if (deletionBusy) return;
+          const form = document.querySelector(
+            "#modal:not(.hidden) #deleteEntityName",
+          )?.form;
+          if (!form) return;
+          deletionBusy = true;
+          const finish = beginRecordEditorSave(form);
+          try {
+            const context = deletionContext;
+            const check = () => {
+              assertEntityWritable();
+              if (
+                !context ||
+                context.workspace !== workspace.id ||
+                context.revision !== workspace.revision
+              )
+                throw Error(
+                  "اطلاعات یا دوره تغییر کرده است؛ پنجره حذف را دوباره باز کنید.",
+                );
+              return deletionTarget(
+                context.kind,
+                context.id,
+                context.schoolId,
+                context.classId,
+              );
+            };
+            let target = check();
+            if (
+              document.getElementById("deleteEntityName").value.trim() !==
+              target.item.name.trim()
+            )
+              throw recordFieldError(
+                "نام واردشده با نام مورد انتخاب‌شده یکسان نیست.",
+                "deleteEntityName",
+              );
+            await flushDrafts({ strict: true });
+            await writer.catch(() => {});
+            target = check();
+            await putBackup(
+              db,
+              "پیش از حذف: " + target.item.name,
+              context.workspace,
+            );
+            target = check();
+            const name = target.item.name;
+            if (context.kind === "school")
+              db.schools = db.schools.filter((x) => x.id !== context.id);
+            else if (context.kind === "class")
+              target.school.classes = target.school.classes.filter(
+                (x) => x.id !== context.id,
+              );
+            else
+              target.cls.lessons = target.cls.lessons.filter(
+                (x) => x.id !== context.id,
+              );
+            db.sessions = db.sessions.filter((x) => !target.matches(x));
+            Object.keys(db.masterSchedule || {}).forEach((key) => {
+              if (target.matches(db.masterSchedule[key]))
+                delete db.masterSchedule[key];
+            });
+            await saveDBV24({ action: "حذف " + name + " و سوابق مرتبط" });
+            finish();
+            rememberRecordEditor();
+            deletionContext = null;
+            if (context.kind === "school" && state.schoolId === context.id) {
+              state.view = "schools";
+              state.schoolId = null;
+              state.classId = null;
+            }
+            if (context.kind === "class" && state.classId === context.id) {
+              state.view = "school";
+              state.classId = null;
+            }
+            if (context.kind === "lesson" && state.lessonId === context.id) {
+              state.view = "class";
+              state.lessonId = null;
+            }
+            render();
+            closeModal();
+            setStatus(
+              "حذف انجام شد؛ پشتیبان پیش از حذف ذخیره شده است.",
+              "saved",
+            );
+          } catch (error) {
+            if (!showRecordEditorError(error, "deleteEntityError"))
+              handleError(error);
+          } finally {
+            deletionBusy = false;
+            finish();
+          }
+        }
         function installGlobals() {
           Object.assign(window, {
             sessionStudent: (c, x, id) =>
@@ -17075,6 +17621,16 @@
             handleImport: handleImportV24,
             handleExcelImport: csvImportV24,
             downloadExcelTemplate: downloadCSVTemplate,
+            openTransferModal: (id) => openMembership("transfer", id),
+            deleteStudent: (id) => openMembership("archive", id),
+            restoreStudent: (id) => openMembership("restore", id),
+            doTransfer: (id, copy) =>
+              membershipContext?.studentId === id
+                ? saveMembership(copy ? "copy" : "")
+                : undefined,
+            deleteSchool: (id) => openDeletion("school", id),
+            deleteClass: (id) => openDeletion("class", id),
+            deleteLesson: (id) => openDeletion("lesson", id),
             addSchool: (event) => createEntityV24(event, "school"),
             addClass: (event) => createEntityV24(event, "class"),
             addStudent: addStudentV24,
@@ -17091,6 +17647,8 @@
             course: courseUI,
             openEntityEditor,
             saveEntityEditor,
+            confirmDeletion,
+            saveMembership,
             openOtherDrafts,
             adoptDrafts,
             showHistoryEvent,
@@ -19619,8 +20177,48 @@
             "<br>امضا: ........................</p></footer></article>";
           return h;
         }
+        let filterWorkspace = "";
+        function selectScope(schoolId = "", classId = "") {
+          let school = schoolId
+            ? db.schools.find((s) => s.id === schoolId)
+            : null;
+          if (schoolId && !school)
+            throw Error("مدرسه این گزارش دیگر وجود ندارد؛ فهرست را تازه کنید.");
+          if (classId) {
+            school =
+              school ||
+              db.schools.find((s) => s.classes.some((c) => c.id === classId));
+            if (!school?.classes.some((c) => c.id === classId))
+              throw Error("کلاس انتخاب‌شده متعلق به این مدرسه نیست.");
+          }
+          school =
+            school ||
+            db.schools.find((s) => s.id === filters.schoolId) ||
+            db.schools[0];
+          Object.assign(filters, {
+            schoolId: school?.id || "",
+            classId,
+            studentId: "",
+            audience: "management",
+            date: localToday(),
+          });
+          filterWorkspace = context().id;
+          last = null;
+        }
         function initialize(mode) {
           filters.mode = mode;
+          const workspaceId = context().id;
+          if (filterWorkspace && filterWorkspace !== workspaceId) {
+            Object.assign(filters, {
+              schoolId: "",
+              classId: "",
+              studentId: "",
+              audience: "management",
+              date: localToday(),
+            });
+            last = null;
+          }
+          filterWorkspace = workspaceId;
           if (!db.schools.some((s) => s.id === filters.schoolId)) {
             filters.schoolId = db.schools.some(
               (s) => s.id === globalFilter.schoolId,
@@ -19884,6 +20482,7 @@
         }
         root.EduPeriodicReports = {
           filters,
+          selectScope,
           render,
           set,
           generate,
