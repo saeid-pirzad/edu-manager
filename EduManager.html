@@ -3348,8 +3348,12 @@
           bottom: auto;
           height: var(--app-viewport, 100dvh);
         }
-        .modal-header { flex-shrink: 0; }
-        .modal-body { min-height: 0; }
+        .modal-header {
+          flex-shrink: 0;
+        }
+        .modal-body {
+          min-height: 0;
+        }
       }
 
       /* mobileExperienceV2 */
@@ -5898,27 +5902,185 @@
       }
 
       @media print {
-        #printRoot .student-summary { table-layout:fixed!important; }
-        #printRoot .student-summary th:first-child,#printRoot .student-summary td:first-child { width:48%; }
-        #printRoot .student-summary th:not(:first-child),#printRoot .student-summary td:not(:first-child) { width:10.4%; text-align:center; }
-        #printRoot .periodic-document h3,#printRoot .periodic-document h4 { break-after:avoid; page-break-after:avoid; }
+        #printRoot .student-summary {
+          table-layout: fixed !important;
+        }
+        #printRoot .student-summary th:first-child,
+        #printRoot .student-summary td:first-child {
+          width: 48%;
+        }
+        #printRoot .student-summary th:not(:first-child),
+        #printRoot .student-summary td:not(:first-child) {
+          width: 10.4%;
+          text-align: center;
+        }
+        #printRoot .periodic-document h3,
+        #printRoot .periodic-document h4 {
+          break-after: avoid;
+          page-break-after: avoid;
+        }
       }
-      .record-editor { display:grid; gap:16px; }
-      .record-editor-context { padding:16px; border:1px solid #e0e7ff; border-radius:16px; background:#f8faff; }
-      .record-editor-context span { color:#64748b; font-size:.78rem; }
-      .record-editor-context h4 { margin:4px 0; font-size:1.05rem; overflow-wrap:anywhere; }
-      .record-editor-context p { margin:0; color:#52617b; font-size:.83rem; }
-      .record-editor-actions { display:flex; gap:10px; position:sticky; bottom:-20px; z-index:2; background:#fff; padding:14px 0; border-top:1px solid #e5eaf3; }
-      .record-editor-actions button { min-height:44px; }
-      .course-policy-section { border:1px solid #e5eaf3; border-radius:14px; padding:12px; }
-      .course-policy-section > summary { cursor:pointer; font-weight:600; min-height:44px; display:flex; align-items:center; gap:8px; }
-      .course-policy-section > summary::before { content:"+"; color:#4f46e5; font-size:1.25rem; }
-      .course-policy-section[open] > summary::before { content:"−"; }
-      .course-policy-section > summary::-webkit-details-marker { display:none; }
-      .entity-context-edit { margin:0 0 14px; }
-      #entityEditError { margin:0; padding:10px; border-radius:10px; background:#fff1f2; color:#b91c1c; }
-      #entityEditError:empty { display:none; }
-      @media (max-width:700px) { .record-editor-actions { bottom:-16px; } .record-editor-actions button { flex:1; } }
+      .record-editor-context .record-editor-state {
+        margin-top: 10px;
+        font-size: 0.75rem;
+        color: #64748b;
+      }
+      .record-editor-state[data-state="changed"] {
+        color: #92400e;
+      }
+      .record-editor-state[data-state="pending"] {
+        color: #4338ca;
+      }
+      .record-editor-review {
+        border: 1px solid #dce3f3;
+        border-radius: 14px;
+        padding: 12px;
+        background: #fafbff;
+      }
+      .record-editor-review[hidden] {
+        display: none;
+      }
+      .record-editor-review > summary {
+        cursor: pointer;
+        min-height: 44px;
+        font-weight: 600;
+      }
+      .record-change-list {
+        display: grid;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+      .record-change-row {
+        display: grid;
+        gap: 4px;
+        padding: 10px;
+        border-radius: 10px;
+        background: #fff;
+        overflow-wrap: anywhere;
+      }
+      .record-change-row strong {
+        font-size: 0.82rem;
+      }
+      .record-change-row span {
+        font-size: 0.78rem;
+        color: #64748b;
+        white-space: pre-wrap;
+      }
+      .record-change-row span:last-child {
+        color: #166534;
+      }
+      .entity-create-error {
+        flex: 1 0 100%;
+        margin: 0;
+        color: #b91c1c;
+        overflow-wrap: anywhere;
+      }
+      .entity-create-error:empty {
+        display: none;
+      }
+      [data-entity-create] [aria-invalid="true"] {
+        border-color: #e11d48;
+      }
+      .record-editor {
+        display: grid;
+        gap: 16px;
+      }
+      .record-editor [aria-invalid="true"] {
+        border-color: #e11d48;
+        background: #fff7f8;
+      }
+      .record-editor-context {
+        padding: 16px;
+        border: 1px solid #e0e7ff;
+        border-radius: 16px;
+        background: #f8faff;
+      }
+      .record-editor-context span {
+        color: #64748b;
+        font-size: 0.78rem;
+      }
+      .record-editor-context h4 {
+        margin: 4px 0;
+        font-size: 1.05rem;
+        overflow-wrap: anywhere;
+      }
+      .record-editor-context p {
+        margin: 0;
+        color: #52617b;
+        font-size: 0.83rem;
+      }
+      .record-editor-actions {
+        display: flex;
+        gap: 10px;
+        position: sticky;
+        bottom: -20px;
+        z-index: 2;
+        background: #fff;
+        padding: 14px 0;
+        border-top: 1px solid #e5eaf3;
+      }
+      .record-editor-actions button {
+        min-height: 44px;
+      }
+      .course-policy-section {
+        border: 1px solid #e5eaf3;
+        border-radius: 14px;
+        padding: 12px;
+      }
+      .course-name-section #courseStructure {
+        display: grid;
+        gap: 12px;
+      }
+      .course-name-section #courseStructure > .card {
+        margin: 0;
+        padding: 14px;
+      }
+      .course-name-section .course-field {
+        margin-bottom: 10px;
+      }
+      .course-name-section[hidden] {
+        display: none;
+      }
+      .course-policy-section > summary {
+        cursor: pointer;
+        font-weight: 600;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .course-policy-section > summary::before {
+        content: "+";
+        color: #4f46e5;
+        font-size: 1.25rem;
+      }
+      .course-policy-section[open] > summary::before {
+        content: "−";
+      }
+      .course-policy-section > summary::-webkit-details-marker {
+        display: none;
+      }
+      .entity-context-edit {
+        margin: 0 0 14px;
+      }
+      #entityEditError {
+        margin: 0;
+        padding: 10px;
+        border-radius: 10px;
+        background: #fff1f2;
+        color: #b91c1c;
+      }
+      #entityEditError:empty {
+        display: none;
+      }
+      @media (max-width: 700px) {
+        .record-editor-actions {
+          bottom: -16px;
+        }
+        .record-editor-actions button {
+          flex: 1;
+        }
+      }
     </style>
 
     <link
@@ -8744,7 +8906,11 @@
             '" aria-label="عملیات بیشتر برای ' +
             esc(item.name) +
             '">بیشتر</summary><div><button class="ghost" data-mutating="1" onclick="EduV24.openEntityEditor(\'' +
-            (isSchool ? "school" : "class") + "\',\'" + id + "\',\'" + (isSchool ? "" : esc(schoolId)) +
+            (isSchool ? "school" : "class") +
+            "\',\'" +
+            id +
+            "\',\'" +
+            (isSchool ? "" : esc(schoolId)) +
             '\')">ویرایش مشخصات</button><button class="danger" onclick="' +
             (isSchool ? "deleteSchool" : "deleteClass") +
             "('" +
@@ -9010,7 +9176,7 @@
           '<section class="dashboard-report-links no-print"><button onclick="openReportScope()"><span class="dashboard-shortcut-symbol" aria-hidden="true">↗</span><span><strong>گزارش فعالیت‌ها</strong><small>جلسات و حضور‌وغیاب مدارس</small></span><span aria-hidden="true">←</span></button><button onclick="openReportScope(\'\',\'\',\'karnameh\')"><span class="dashboard-shortcut-symbol teal" aria-hidden="true">▤</span><span><strong>کارنامه کلاس‌ها</strong><small>نمرات و وضعیت تکمیل دروس</small></span><span aria-hidden="true">←</span></button></section>';
         h += dashboardDirectory(db.schools, "schools");
         h +=
-          '<div class="card"><h3>افزودن مدرسه</h3><form onsubmit="addSchool(event)" class="row"><input name="name" placeholder="نام مدرسه" required style="flex:1"><button type="submit">افزودن مدرسه</button></form></div>';
+          '<div class="card"><h3>افزودن مدرسه</h3><form onsubmit="addSchool(event)" data-entity-create="school" class="row"><input id="schoolCreateName" name="name" placeholder="نام مدرسه" aria-label="نام مدرسه جدید" aria-describedby="schoolCreateError" required maxlength="500" style="flex:1"><button type="submit" data-mutating="1">افزودن مدرسه</button><p id="schoolCreateError" class="entity-create-error" role="alert"></p></form></div>';
         return h;
       }
       function renderSchool() {
@@ -9033,10 +9199,13 @@
           " هنرجو</span></div><button onclick=\"openReportScope('" +
           esc(school.id) +
           "')\">گزارش این مدرسه ←</button></section>";
-        h += '<div class="entity-context-edit no-print"><button class="ghost" data-mutating="1" onclick="EduV24.openEntityEditor(\'school\',\'' + esc(school.id) + '\')">ویرایش مشخصات مدرسه</button></div>';
+        h +=
+          '<div class="entity-context-edit no-print"><button class="ghost" data-mutating="1" onclick="EduV24.openEntityEditor(\'school\',\'' +
+          esc(school.id) +
+          "')\">ویرایش مشخصات مدرسه</button></div>";
         h += dashboardDirectory(school.classes, "classes", school.id);
         h +=
-          '<div class="card"><h3>افزودن کلاس</h3><form onsubmit="addClass(event)" class="row"><input name="name" placeholder="نام کلاس" required style="flex:1"><button type="submit">افزودن کلاس</button></form></div>';
+          '<div class="card"><h3>افزودن کلاس</h3><form onsubmit="addClass(event)" data-entity-create="class" class="row"><input id="classCreateName" name="name" placeholder="نام کلاس" aria-label="نام کلاس جدید" aria-describedby="classCreateError" required maxlength="500" style="flex:1"><button type="submit" data-mutating="1">افزودن کلاس</button><p id="classCreateError" class="entity-create-error" role="alert"></p></form></div>';
         return h;
       }
 
@@ -9057,7 +9226,12 @@
           "','karnameh')\">کارنامه این کلاس</button><button class=\"ghost\" onclick=\"goMaster('" +
           esc(c.id) +
           "')\">برنامه کلاس</button></div>";
-        h += '<div class="entity-context-edit no-print"><button class="ghost" data-mutating="1" onclick="EduV24.openEntityEditor(\'class\',\'' + esc(c.id) + '\',\'' + esc(school.id) + '\')">ویرایش مشخصات کلاس</button></div>';
+        h +=
+          '<div class="entity-context-edit no-print"><button class="ghost" data-mutating="1" onclick="EduV24.openEntityEditor(\'class\',\'' +
+          esc(c.id) +
+          "','" +
+          esc(school.id) +
+          "')\">ویرایش مشخصات کلاس</button></div>";
         h += `<div class="tabs">
     <button class="${state.tab === "lessons" ? "active" : ""}" onclick="setTab('lessons')">📚 دروس</button>
     <button class="${state.tab === "students" ? "active" : ""}" onclick="setTab('students')">👥 دانش‌آموزان</button>
@@ -9118,7 +9292,13 @@
             id +
             '" aria-label="عملیات بیشتر برای ' +
             esc(l.name) +
-            '">بیشتر</summary><div class="lesson-more-menu"><button class="ghost" onclick="EduV24.course.copy(\'' +
+            '">بیشتر</summary><div class="lesson-more-menu">' +
+            (!dual && l.poudmans.length
+              ? '<button class="ghost" data-mutating="1" onclick="EduV24.course.openNames(\'' +
+                id +
+                "').catch(EduV24.course.error)\">ویرایش نام پودمان‌ها</button>"
+              : "") +
+            '<button class="ghost" onclick="EduV24.course.copy(\'' +
             id +
             '\').catch(EduV24.course.error)">کپی تعریف بدون نمرات</button><button class="danger" onclick="deleteLesson(\'' +
             id +
@@ -10213,15 +10393,6 @@
         if (sess) openSessionModal(sess);
       }
 
-      async function addSchool(e) {
-        e.preventDefault();
-        const n = e.target.name.value.trim();
-        if (!n) return;
-        db.schools.push({ id: uid(), name: n, classes: [] });
-        await saveDB();
-        e.target.reset();
-        render();
-      }
       async function deleteSchool(id) {
         if (!confirm("مدرسه و تمام داده‌هایش حذف شوند؟")) return;
         const school = db.schools.find((s) => s.id === id);
@@ -10234,17 +10405,6 @@
             delete db.masterSchedule[k];
         });
         await saveDB();
-        render();
-      }
-      async function addClass(e) {
-        e.preventDefault();
-        const s = getSchool(state.schoolId);
-        if (!s) return;
-        const n = e.target.name.value.trim();
-        if (!n) return;
-        s.classes.push({ id: uid(), name: n, students: [], lessons: [] });
-        await saveDB();
-        e.target.reset();
         render();
       }
       async function deleteClass(id) {
@@ -10749,6 +10909,19 @@
         );
       }
       function showModal(title, html) {
+        if (
+          document.querySelector(
+            '#modal:not(.hidden) .record-editor[aria-busy="true"]',
+          )
+        )
+          return false;
+        if (
+          hasRecordEditorChanges() &&
+          !confirm(
+            "تغییرات فرم فعلی ذخیره نشده‌اند؛ کنار گذاشته شوند و پنجره جدید باز شود؟",
+          )
+        )
+          return false;
         const modal = document.getElementById("modal");
         if (modal.classList.contains("hidden")) {
           const opener = document.activeElement;
@@ -10768,32 +10941,234 @@
         setModalBackground(true);
         modal.querySelector(".modal-dialog").focus({ preventScroll: true });
         setTimeout(initShamsiPickers, 0);
+        return true;
       }
+      function recordFieldError(message, fieldId) {
+        return Object.assign(Error(message), { fieldId });
+      }
+      function recordFieldLabel(fieldId) {
+        const label = document.getElementById(fieldId)?.closest("label");
+        if (!label) return "این فیلد";
+        return (
+          [...label.childNodes]
+            .filter((node) => node.nodeType === Node.TEXT_NODE)
+            .map((node) => node.textContent)
+            .join(" ")
+            .trim() ||
+          label.querySelector("span")?.textContent.trim() ||
+          "این فیلد"
+        );
+      }
+      function showRecordEditorError(error, errorId) {
+        const message = document.getElementById(errorId);
+        if (!message) return false;
+        message.textContent = error.message || String(error);
+        const field = document.getElementById(
+          error.fieldId ||
+            (error.message?.includes("کد درس") ? "course_code" : ""),
+        );
+        if (field?.closest(".record-editor")) {
+          field.setAttribute("aria-invalid", "true");
+          const descriptions = new Set(
+            (field.getAttribute("aria-describedby") || "")
+              .split(/\s+/)
+              .filter(Boolean),
+          );
+          descriptions.add(errorId);
+          field.setAttribute("aria-describedby", [...descriptions].join(" "));
+          for (
+            let parent = field.parentElement;
+            parent;
+            parent = parent.parentElement
+          )
+            if (parent.tagName === "DETAILS") parent.open = true;
+          requestAnimationFrame(() => {
+            if (!field.isConnected || field.disabled) return;
+            field.focus({ preventScroll: true });
+            field.scrollIntoView({ block: "nearest" });
+          });
+        } else message.scrollIntoView({ block: "nearest" });
+        return true;
+      }
+      function resetRecordEditor(form) {
+        if (
+          !form?.dataset.savedState ||
+          form.getAttribute("aria-busy") === "true"
+        )
+          return;
+        const controls = new Map(
+          [...form.elements].map((el) => [el.id || el.name, el]),
+        );
+        for (const [key, value] of JSON.parse(form.dataset.savedState)) {
+          const field = controls.get(key);
+          if (!field) continue;
+          if (/^(checkbox|radio)$/.test(field.type)) field.checked = value;
+          else field.value = value;
+        }
+        if (form.querySelector("#course_method"))
+          window.EduV24.course.toggleMethod();
+        form
+          .querySelectorAll('[aria-invalid="true"]')
+          .forEach((el) => el.removeAttribute("aria-invalid"));
+        form.querySelectorAll('[role="alert"]').forEach((el) => {
+          el.textContent = "";
+        });
+        updateRecordEditorReview(form);
+      }
+      function updateRecordEditorReview(form) {
+        if (!form?.matches(".record-editor") || !form.dataset.savedState)
+          return;
+        const state = recordEditorState(form),
+          busy = form.getAttribute("aria-busy") === "true";
+        if (form._reviewSignature === state + busy) return;
+        form._reviewSignature = state + busy;
+        if (!form._reviewUI) {
+          const status = document.createElement("p");
+          status.className = "record-editor-state";
+          status.setAttribute("role", "status");
+          status.setAttribute("aria-live", "polite");
+          form.querySelector(".record-editor-context")?.append(status);
+          const panel = document.createElement("details");
+          panel.className = "record-editor-review";
+          const summary = document.createElement("summary"),
+            list = document.createElement("div"),
+            reset = document.createElement("button");
+          list.className = "record-change-list";
+          reset.type = "button";
+          reset.className = "ghost";
+          reset.textContent = "بازگردانی مقادیر فرم";
+          reset.addEventListener("click", () => resetRecordEditor(form));
+          panel.append(summary, list, reset);
+          form.querySelector(".record-editor-actions")?.before(panel);
+          form._reviewUI = { status, panel, summary, list, reset };
+        }
+        const before = new Map(JSON.parse(form.dataset.savedState));
+        const controls = new Map(
+          [...form.elements].map((el) => [el.id || el.name, el]),
+        );
+        const changes = JSON.parse(state).filter(
+          ([key, value]) => before.has(key) && before.get(key) !== value,
+        );
+        const ui = form._reviewUI;
+        ui.panel.hidden = changes.length === 0;
+        ui.reset.disabled = busy;
+        ui.status.textContent = busy
+          ? "در حال ذخیره تغییرات…"
+          : changes.length
+            ? changes.length.toLocaleString("fa-IR") +
+              " مورد تغییر؛ هنوز ذخیره نشده"
+            : "بدون تغییر ذخیره‌نشده";
+        ui.status.dataset.state = busy
+          ? "pending"
+          : changes.length
+            ? "changed"
+            : "clean";
+        ui.summary.textContent =
+          "بازبینی " +
+          changes.length.toLocaleString("fa-IR") +
+          " تغییر پیش از ذخیره";
+        const display = (field, value) =>
+          typeof value === "boolean"
+            ? value
+              ? "فعال"
+              : "غیرفعال"
+            : value === ""
+              ? "خالی"
+              : field?.tagName === "SELECT"
+                ? [...field.options].find((o) => o.value === value)
+                    ?.textContent || value
+                : value;
+        ui.list.replaceChildren(
+          ...changes.map(([key, value]) => {
+            const field = controls.get(key),
+              row = document.createElement("div"),
+              title = document.createElement("strong");
+            const oldValue = document.createElement("span"),
+              newValue = document.createElement("span");
+            row.className = "record-change-row";
+            title.textContent = recordFieldLabel(key);
+            oldValue.textContent = "قبلی: " + display(field, before.get(key));
+            newValue.textContent = "جدید: " + display(field, value);
+            row.append(title, oldValue, newValue);
+            return row;
+          }),
+        );
+      }
+      let recordReviewScheduled = false;
+      function scheduleRecordEditorReview(event) {
+        const form = event.target.closest?.(".record-editor");
+        if (!form || recordReviewScheduled) return;
+        recordReviewScheduled = true;
+        requestAnimationFrame(() => {
+          recordReviewScheduled = false;
+          if (form.isConnected) updateRecordEditorReview(form);
+        });
+      }
+      document.addEventListener("input", scheduleRecordEditorReview);
+      document.addEventListener("change", scheduleRecordEditorReview);
       function beginRecordEditorSave(form) {
         if (!form) return () => {};
-        const controls = [...form.elements].map(el => [el, el.disabled]);
+        form
+          .querySelectorAll('[aria-invalid="true"]')
+          .forEach((el) => el.removeAttribute("aria-invalid"));
+        form.querySelectorAll('[role="alert"]').forEach((el) => {
+          el.textContent = "";
+        });
+        const controls = [...form.elements].map((el) => [el, el.disabled]);
         form.setAttribute("aria-busy", "true");
-        controls.forEach(([el]) => { el.disabled = true; });
+        updateRecordEditorReview(form);
+        controls.forEach(([el]) => {
+          el.disabled = true;
+        });
         return () => {
           form.removeAttribute("aria-busy");
-          controls.forEach(([el, disabled]) => { if (el.isConnected) el.disabled = disabled; });
+          controls.forEach(([el, disabled]) => {
+            if (el.isConnected) el.disabled = disabled;
+          });
+          updateRecordEditorReview(form);
         };
       }
       function recordEditorState(form) {
-        return JSON.stringify([...form.querySelectorAll("input:not([data-gregorian-target]),select,textarea")].map(x =>
-          [x.id || x.name, /^(checkbox|radio)$/.test(x.type) ? x.checked : x.value]));
+        return JSON.stringify(
+          [
+            ...form.querySelectorAll(
+              "input:not([data-gregorian-target]),select,textarea",
+            ),
+          ].map((x) => [
+            x.id || x.name,
+            /^(checkbox|radio)$/.test(x.type) ? x.checked : x.value,
+          ]),
+        );
       }
       function rememberRecordEditor() {
         const form = document.querySelector("#modal .record-editor");
-        if (form) form.dataset.savedState = recordEditorState(form);
+        if (form) {
+          form.dataset.savedState = recordEditorState(form);
+          form._reviewSignature = null;
+          updateRecordEditorReview(form);
+        }
       }
       function hasRecordEditorChanges() {
-        const form = document.querySelector("#modal:not(.hidden) .record-editor");
-        return !!form?.dataset.savedState && form.dataset.savedState !== recordEditorState(form);
+        const form = document.querySelector(
+          "#modal:not(.hidden) .record-editor",
+        );
+        return (
+          !!form?.dataset.savedState &&
+          form.dataset.savedState !== recordEditorState(form)
+        );
       }
       function closeModal() {
-        if (document.querySelector('#modal:not(.hidden) .record-editor[aria-busy="true"]')) return;
-        if (hasRecordEditorChanges() && !confirm("تغییرات این فرم ذخیره نشده‌اند؛ بدون ذخیره بسته شود؟")) return;
+        if (
+          document.querySelector(
+            '#modal:not(.hidden) .record-editor[aria-busy="true"]',
+          )
+        )
+          return;
+        if (
+          hasRecordEditorChanges() &&
+          !confirm("تغییرات این فرم ذخیره نشده‌اند؛ بدون ذخیره بسته شود؟")
+        )
+          return;
         const modal = document.getElementById("modal");
         closeShamsiCalendar();
         modal.classList.add("hidden");
@@ -11226,7 +11601,10 @@
       function downloadRawRecovery() {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (raw === null) return alert("نسخه خامی وجود ندارد.");
-        downloadLocalFile(new Blob([raw], { type: "application/json" }), "school-raw-recovery.json");
+        downloadLocalFile(
+          new Blob([raw], { type: "application/json" }),
+          "school-raw-recovery.json",
+        );
       }
 
       function snapshotRoster(c) {
@@ -11798,10 +12176,32 @@
             )
           );
         }
+        // Descriptive corrections are separate from the historical grading policy.
+        function identity(l, year) {
+          const policy = l.gradingPolicy || {},
+            metadata = l.courseInfo || {};
+          const info = {};
+          for (const key of ["year", "grade", "field", "code", "authority"])
+            info[key] =
+              typeof metadata[key] === "string"
+                ? metadata[key]
+                : typeof policy[key] === "string"
+                  ? policy[key]
+                  : "";
+          info.year = year ?? info.year;
+          info.grade = info.grade || "10";
+          info.branch =
+            (policy.method ||
+              (l.gradeMode === "kardanesh" ? "dual" : "modular")) === "dual"
+              ? "kardanesh"
+              : "fani";
+          return info;
+        }
         function freshCopy(l, id, newYear, newId) {
           const next = clone(l);
           next.id = id;
           next.kardaneshScores = {};
+          next.courseInfo = identity(l, newYear);
           for (const p of next.poudmans) {
             p.id = newId();
             p.podScores = {};
@@ -11811,6 +12211,7 @@
             }
           }
           if (next.gradingPolicy) {
+            Object.assign(next.gradingPolicy, next.courseInfo);
             next.gradingPolicy.year = newYear;
             next.gradingPolicy.revision = 1;
             next.gradingPolicy.confirmed = false;
@@ -11826,7 +12227,7 @@
           return (
             (p.branch === "fani" ? "فنی‌وحرفه‌ای" : "کاردانش") +
             " | پایه " +
-            (l.courseInfo?.grade || p.grade) +
+            identity(l).grade +
             " | " +
             p.year +
             " | " +
@@ -11860,6 +12261,7 @@
           lesson,
           hasGrades,
           freshCopy,
+          identity,
           describe,
           clone,
         };
@@ -11871,7 +12273,8 @@
         root.EduCourseUI = function (api) {
           const { esc } = api;
           const P = root.EduPolicy;
-          let editing = null, saving = false;
+          let editing = null,
+            saving = false;
           const input = (id, label, value, type = "text", extra = "") =>
             `<label class="course-field">${label}<input id="course_${id}" type="${type}" value="${esc(value ?? "")}" ${extra}></label>`;
           const select = (id, label, values, value, extra = "") =>
@@ -11888,7 +12291,12 @@
           function number(id) {
             const t = api.asciiDigits(val(id));
             if (!t || !/^\d+(?:\.\d{1,6})?$/.test(t))
-              throw Error("عدد معتبر وارد کنید: " + id);
+              throw recordFieldError(
+                "برای «" +
+                  recordFieldLabel("course_" + id) +
+                  "» عدد معتبر وارد کنید.",
+                "course_" + id,
+              );
             return Number(t);
           }
           function makePods(count, unitCount) {
@@ -11904,11 +12312,115 @@
               })),
             }));
           }
+          function prepareStructureNameEditor(lesson) {
+            if (!lesson.poudmans.length) return;
+            const structure = document.getElementById("courseStructure");
+            const section = document.createElement("details");
+            section.id = "courseNames";
+            section.className = "course-policy-section course-name-section";
+            const summary = document.createElement("summary"),
+              note = document.createElement("p");
+            summary.textContent = "نام پودمان‌ها و واحدهای یادگیری";
+            note.className = "muted";
+            note.textContent =
+              "اصلاح عنوان، شناسه‌ها، نمرات و ارتباط جلسات را تغییر نمی‌دهد. تعداد و ساختار در بخش قواعد ارزشیابی تنظیم می‌شوند.";
+            section.append(summary, note, structure);
+            document
+              .getElementById("coursePolicy")
+              .closest("details")
+              .after(section);
+            const policyGrid = document.querySelector(
+              "#courseModular > .course-grid",
+            );
+            lesson.poudmans.forEach((pod, index) => {
+              const count = document
+                .getElementById("course_unitCount_" + pod.id)
+                ?.closest("label");
+              if (count) {
+                count.firstChild.textContent =
+                  "تعداد واحدهای «" + pod.name + "»";
+                policyGrid.append(count);
+              }
+              const label = document
+                .getElementById("course_pod_" + pod.id)
+                ?.closest("label");
+              if (label)
+                label.firstChild.textContent =
+                  "نام پودمان " + (index + 1).toLocaleString("fa-IR");
+              pod.units.forEach((unit, unitIndex) => {
+                const label = document
+                  .getElementById("course_unit_" + unit.id)
+                  ?.closest("label");
+                if (label)
+                  label.firstChild.textContent =
+                    "نام واحد " +
+                    (unitIndex + 1).toLocaleString("fa-IR") +
+                    " · " +
+                    pod.name;
+              });
+            });
+          }
+          function applyStructureNames(lesson) {
+            const originalNames = new Map();
+            const rename = (item, prefix) => {
+              originalNames.set(item.id, item.name);
+              const value = val(prefix + item.id);
+              if (value === undefined) return;
+              const name = value.trim();
+              if (!normalizedName(name) || name.length > 500)
+                throw recordFieldError(
+                  "عنوان معتبر با حداکثر ۵۰۰ نویسه وارد کنید.",
+                  "course_" + prefix + item.id,
+                );
+              item.name = name;
+            };
+            for (const pod of lesson.poudmans) {
+              rename(pod, "pod_");
+              for (const unit of pod.units) rename(unit, "unit_");
+            }
+            const distinct = (items, prefix, label) => {
+              for (const item of items)
+                if (
+                  normalizedName(item.name) !==
+                    normalizedName(originalNames.get(item.id)) &&
+                  items.some(
+                    (other) =>
+                      other.id !== item.id &&
+                      normalizedName(other.name) === normalizedName(item.name),
+                  )
+                )
+                  throw recordFieldError(
+                    label + " تکراری است؛ عنوان متمایز انتخاب کنید.",
+                    "course_" + prefix + item.id,
+                  );
+            };
+            distinct(lesson.poudmans, "pod_", "نام پودمان");
+            for (const pod of lesson.poudmans)
+              distinct(pod.units, "unit_", "نام واحد در این پودمان");
+          }
           async function open(lid = "", seed) {
+            const requested = {
+              workspace: api.context().id,
+              classId: api.state().classId,
+            };
             await api.flushDrafts({ strict: true });
+            if (
+              requested.workspace !== api.context().id ||
+              requested.classId !== api.state().classId
+            )
+              throw Error(
+                "دوره یا کلاس هنگام باز شدن فرم تغییر کرد؛ دوباره وارد تنظیمات درس شوید.",
+              );
             const c = currentClass();
             if (!c) return;
             const original = c.lessons.find((l) => l.id === lid);
+            if (lid && !original && !seed)
+              throw Error(
+                "این درس دیگر در کلاس وجود ندارد؛ فهرست دروس را تازه کنید.",
+              );
+            const school = api
+              .getDB()
+              .schools.find((s) => s.classes.some((x) => x.id === c.id));
             const l = seed ||
               original || {
                 id: api.uid(),
@@ -11937,6 +12449,7 @@
                 l.gradeMode === "kardanesh" ? "dual" : "modular",
                 api.year(),
               );
+            const previousEditing = editing;
             editing = {
               context: api.context(),
               classId: c.id,
@@ -11944,8 +12457,8 @@
               seed: structuredClone(l),
               locked,
             };
-            const info = l.courseInfo || p;
-            let h = `<form class="record-editor" novalidate onsubmit="event.preventDefault();EduV24.course.save().catch(EduV24.course.error)"><div class="record-editor-context"><span>مشخصات درس</span><h4>${esc(c.name)}</h4><p>نام، دبیر و مشخصات توصیفی قابل اصلاح‌اند؛ نمرات و جلسات حفظ می‌شوند.</p></div><p>تعریف درس براساس ابلاغیه سالانه. نمره نهایی بر مقیاس صفر تا بیست است؛ دامنه هر ورودی تابع قواعد درس است. تأیید قواعد به معنی تأیید شماست. شماره، تاریخ و مرجع ابلاغیه و متولی استاندارد اختیاری‌اند و می‌توانند خالی بمانند.</p><div id="courseError" role="alert"></div><div class="course-grid">`;
+            const info = P.identity(l, api.year());
+            let h = `<form class="record-editor" novalidate onsubmit="event.preventDefault();EduV24.course.save().catch(EduV24.course.error)"><div class="record-editor-context"><span>مشخصات درس</span><h4>${esc((school?.name ? school.name + " / " : "") + c.name)}</h4><p>نام، دبیر و مشخصات توصیفی قابل اصلاح‌اند؛ نمرات و جلسات حفظ می‌شوند.</p></div><p>تعریف درس براساس ابلاغیه سالانه. نمره نهایی بر مقیاس صفر تا بیست است؛ دامنه هر ورودی تابع قواعد درس است. تأیید قواعد به معنی تأیید شماست. شماره، تاریخ و مرجع ابلاغیه و متولی استاندارد اختیاری‌اند و می‌توانند خالی بمانند.</p><div id="courseError" role="alert"></div><div class="course-grid">`;
             h +=
               input("name", "نام درس", l.name) +
               input("teacher", "هنرآموز / دبیر", l.teacher) +
@@ -11988,7 +12501,11 @@
               ) +
               input("authority", "متولی استاندارد (اختیاری)", info.authority);
             h +=
-              '</div><details class="course-policy-section" ' + (!original ? 'open' : '') + '><summary>قواعد ارزشیابی و ساختار درس' + (locked ? ' · قفل‌شده به‌دلیل سابقه نمره' : '') + '</summary><fieldset id="coursePolicy" ' +
+              '</div><details class="course-policy-section" ' +
+              (!original ? "open" : "") +
+              "><summary>قواعد ارزشیابی و ساختار درس" +
+              (locked ? " · قفل‌شده به‌دلیل سابقه نمره" : "") +
+              '</summary><fieldset id="coursePolicy" ' +
               (locked ? "disabled" : "") +
               "><legend>نسخه قواعد ارزشیابی</legend>";
             if (locked)
@@ -12121,12 +12638,49 @@
               "> قواعد را با ابلاغیه این سال تطبیق داده‌ام</label></p></fieldset></details>";
             h +=
               '<div class="record-editor-actions"><button type="submit" data-mutating="1">ذخیره تغییرات درس</button><button type="button" class="ghost" onclick="closeModal()">انصراف</button></div></form>';
-            api.showModal(
+            const opened = api.showModal(
               original ? "تنظیمات درس و ابلاغیه" : "تعریف درس جدید",
               h,
             );
+            if (opened === false) {
+              editing = previousEditing;
+              return false;
+            }
+            prepareStructureNameEditor(l);
             toggleMethod();
+            if (api.context().readOnly) {
+              const form = document.querySelector("#modal .record-editor");
+              form
+                .querySelectorAll("input,select,textarea,button[type=submit]")
+                .forEach((el) => {
+                  el.disabled = true;
+                });
+              const note = document.createElement("p");
+              note.className = "course-readonly-note";
+              note.textContent = api.context().closed
+                ? "دوره بسته است؛ اطلاعات فقط نمایش داده می‌شوند. ویرایش پس از بازگشایی دوره امکان‌پذیر است."
+                : "اطلاعات فعلاً فقط خواندنی‌اند؛ پیام وضعیت ذخیره‌سازی را بررسی و صفحه را بازخوانی کنید.";
+              form.querySelector(".record-editor-context").append(note);
+            }
             rememberRecordEditor();
+          }
+          async function openNames(lid) {
+            const opened = await open(lid);
+            if (opened === false) return;
+            const section = document.getElementById("courseNames");
+            if (!section || section.hidden) return;
+            section.open = true;
+            setTimeout(() => {
+              if (
+                !section.isConnected ||
+                document.getElementById("modal").classList.contains("hidden")
+              )
+                return;
+              section
+                .querySelector("input:not(:disabled)")
+                ?.focus({ preventScroll: true });
+              section.scrollIntoView({ block: "start" });
+            }, 0);
           }
           function toggleBranch() {
             const branch = document.getElementById("course_branch");
@@ -12145,41 +12699,57 @@
               val("method") !== "dual";
             document.getElementById("courseModular").hidden =
               val("method") !== "modular";
+            const names = document.getElementById("courseNames");
+            if (names) names.hidden = val("method") !== "modular";
           }
           function error(e) {
-            const el = document.getElementById("courseError");
-            if (el) {
-              el.textContent = e.message;
-              el.scrollIntoView({ block: "nearest", behavior: "smooth" });
-            } else api.error(e);
+            if (!showRecordEditorError(e, "courseError")) api.error(e);
           }
           async function save() {
             if (saving) return;
             saving = true;
-            const finishSave = beginRecordEditorSave(document.querySelector("#modal .record-editor"));
+            const finishSave = beginRecordEditorSave(
+              document.querySelector("#modal .record-editor"),
+            );
             try {
               writable();
-              if (!document.querySelector("#modal:not(.hidden) #course_name")) throw Error("فرم درس باز نیست.");
-              if (!editing || editing.context.id !== api.context().id || editing.context.revision !== api.context().revision)
-                throw Error("اطلاعات از زمان باز شدن فرم تغییر کرده است؛ فرم را دوباره باز کنید.");
+              if (!document.querySelector("#modal:not(.hidden) #course_name"))
+                throw Error("فرم درس باز نیست.");
+              if (
+                !editing ||
+                editing.context.id !== api.context().id ||
+                editing.context.revision !== api.context().revision
+              )
+                throw Error(
+                  "اطلاعات از زمان باز شدن فرم تغییر کرده است؛ فرم را دوباره باز کنید.",
+                );
               await api.flushDrafts({ strict: true });
               writable();
-              if (!editing || editing.context.id !== api.context().id || editing.context.revision !== api.context().revision)
-                throw Error("دوره یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.");
+              if (
+                !editing ||
+                editing.context.id !== api.context().id ||
+                editing.context.revision !== api.context().revision
+              )
+                throw Error(
+                  "دوره یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.",
+                );
               const c = api.findClass(editing.classId),
                 original = c?.lessons.find((l) => l.id === editing.id),
                 next = structuredClone(original || editing.seed);
-              if (!c || (editing.id && !original)) throw Error("درس مقصد دیگر وجود ندارد.");
+              if (!c || (editing.id && !original))
+                throw Error("درس مقصد دیگر وجود ندارد.");
               const name = val("name").trim(),
                 periods = number("periods");
-              if (
-                !normalizedName(name) ||
-                name.length > 500 ||
-                !Number.isInteger(periods) ||
-                periods < 1 ||
-                periods > 10
-              )
-                throw Error("نام درس و زنگ هفتگی را درست وارد کنید.");
+              if (!normalizedName(name) || name.length > 500)
+                throw recordFieldError(
+                  "نام درس را با حداکثر ۵۰۰ نویسه وارد کنید.",
+                  "course_name",
+                );
+              if (!Number.isInteger(periods) || periods < 1 || periods > 10)
+                throw recordFieldError(
+                  "زنگ در هفته باید عدد صحیح بین ۱ تا ۱۰ باشد.",
+                  "course_periods",
+                );
               const info = {};
               for (const k of [
                 "year",
@@ -12190,11 +12760,28 @@
                 "authority",
               ])
                 info[k] = val(k).trim();
-              if (!["10", "11", "12"].includes(info.grade) || !["fani", "kardanesh"].includes(info.branch) ||
-                  Object.values(info).some(x => x.length > 500) || val("teacher").trim().length > 500)
-                throw Error("شناسنامه درس معتبر نیست؛ طول مشخصات حداکثر ۵۰۰ نویسه باشد.");
-              if (c.lessons.some(l => l.id !== original?.id && normalizedName(l.name) === normalizedName(name)))
-                throw Error("درسی با همین نام در این کلاس وجود دارد.");
+              if (
+                !["10", "11", "12"].includes(info.grade) ||
+                !["fani", "kardanesh"].includes(info.branch) ||
+                Object.values(info).some((x) => x.length > 500) ||
+                val("teacher").trim().length > 500
+              )
+                throw Error(
+                  "شناسنامه درس معتبر نیست؛ طول مشخصات حداکثر ۵۰۰ نویسه باشد.",
+                );
+              if (
+                (!original ||
+                  normalizedName(original.name) !== normalizedName(name)) &&
+                c.lessons.some(
+                  (l) =>
+                    l.id !== original?.id &&
+                    normalizedName(l.name) === normalizedName(name),
+                )
+              )
+                throw recordFieldError(
+                  "درسی با همین نام در این کلاس وجود دارد.",
+                  "course_name",
+                );
               if (info.year !== api.year())
                 throw Error("سال درس با دوره فعال یکسان نیست.");
               const locked =
@@ -12218,12 +12805,26 @@
                 Object.assign(p, info);
                 for (const k of ["circularNumber", "circularDate", "reference"])
                   p[k] = val(k).trim();
-                const numericFields = p.method === "dual"
-                  ? ["practicalWeight", "theoryMin", "practicalMin", "passMin"]
-                  : ["mostamarMax", "continuousStep", "competencyFactor", "competencyMin", "moduleMin", "unitCount"];
+                const numericFields =
+                  p.method === "dual"
+                    ? [
+                        "practicalWeight",
+                        "theoryMin",
+                        "practicalMin",
+                        "passMin",
+                      ]
+                    : [
+                        "mostamarMax",
+                        "continuousStep",
+                        "competencyFactor",
+                        "competencyMin",
+                        "moduleMin",
+                        "unitCount",
+                      ];
                 for (const k of numericFields) p[k] = number(k);
                 p.confirmed = checked("confirmed");
-                p.requireGate = p.method === "modular" && checked("requireGate");
+                p.requireGate =
+                  p.method === "modular" && checked("requireGate");
                 const baseline = original?.gradingPolicy;
                 p.revision = baseline?.revision || 1;
                 if (
@@ -12238,7 +12839,8 @@
                   throw Error("تعداد پودمان بین ۱ تا ۲۰ باشد.");
                 const methodChanged =
                   original &&
-                  (original.gradeMode === "kardanesh") !== (p.method === "dual");
+                  (original.gradeMode === "kardanesh") !==
+                    (p.method === "dual");
                 if (
                   (checked("rebuild") || methodChanged) &&
                   api.getDB().sessions.some((s) => s.lessonId === next.id)
@@ -12260,7 +12862,9 @@
                         throw Error("تعداد واحدهای هر پودمان ۱ تا ۱۰ باشد.");
                       if (count !== pod.units.length) {
                         if (
-                          api.getDB().sessions.some((s) => s.lessonId === next.id)
+                          api
+                            .getDB()
+                            .sessions.some((s) => s.lessonId === next.id)
                         )
                           throw Error(
                             "برای تغییر تعداد واحدهای درس دارای جلسه، کپی جدید بسازید.",
@@ -12277,25 +12881,21 @@
                         );
                       }
                     }
-                    const pn = val("pod_" + pod.id);
-                    if (pn !== undefined) {
-                      if (!pn.trim()) throw Error("نام پودمان خالی نباشد.");
-                      pod.name = pn.trim();
-                    }
-                    for (const u of pod.units) {
-                      const un = val("unit_" + u.id);
-                      if (un !== undefined) {
-                        if (!un.trim()) throw Error("نام واحد خالی نباشد.");
-                        u.name = un.trim();
-                      }
-                    }
                   }
                 next.gradeMode = p.method === "dual" ? "kardanesh" : "standard";
                 next.gradingPolicy = p;
               } else {
-                const branch = (original.gradingPolicy?.method || (original.gradeMode === "kardanesh" ? "dual" : "modular")) === "dual" ? "kardanesh" : "fani";
-                if (info.branch !== branch) throw Error("شاخه و روش درس دارای نمره قابل تغییر نیست.");
+                const branch =
+                  (original.gradingPolicy?.method ||
+                    (original.gradeMode === "kardanesh"
+                      ? "dual"
+                      : "modular")) === "dual"
+                    ? "kardanesh"
+                    : "fani";
+                if (info.branch !== branch)
+                  throw Error("شاخه و روش درس دارای نمره قابل تغییر نیست.");
               }
+              if (next.gradeMode !== "kardanesh") applyStructureNames(next);
               next.courseInfo = info;
               next.name = name;
               next.teacher = val("teacher").trim();
@@ -12346,7 +12946,7 @@
                 l.gradeMode === "kardanesh" ? "dual" : "modular",
                 api.year(),
               );
-            delete next.courseInfo;
+            Object.assign(next.gradingPolicy, P.identity(next, api.year()));
             await open("", next);
           }
           async function gate(lid, pid, sid, value) {
@@ -12485,6 +13085,7 @@
           }
           return {
             open,
+            openNames,
             save,
             add,
             copy,
@@ -12530,7 +13131,8 @@
           pendingCSV = null,
           failNextWrite = false;
         let writeFailureGeneration = 0;
-        let draftWriter = Promise.resolve(), draftWritesPending = 0;
+        let draftWriter = Promise.resolve(),
+          draftWritesPending = 0;
         let draftGeneration = 0;
         let tabId,
           tabClaimed = false,
@@ -12836,10 +13438,22 @@
             const request = indexedDB.open("EduManagerProfessional", 2);
             request.onupgradeneeded = () => {
               const connection = request.result;
-              for (const [name, keyPath] of [["records","key"],["catalog","id"],["events","id"],["backups","id"],["undo","id"],["reports","id"],["drafts","key"]]) {
+              for (const [name, keyPath] of [
+                ["records", "key"],
+                ["catalog", "id"],
+                ["events", "id"],
+                ["backups", "id"],
+                ["undo", "id"],
+                ["reports", "id"],
+                ["drafts", "key"],
+              ]) {
                 if (connection.objectStoreNames.contains(name)) continue;
-                const store = connection.createObjectStore(name, { keyPath, ...(name === "events" ? { autoIncrement: true } : {}) });
-                if (name === "events" || name === "drafts") store.createIndex("workspace","workspace");
+                const store = connection.createObjectStore(name, {
+                  keyPath,
+                  ...(name === "events" ? { autoIncrement: true } : {}),
+                });
+                if (name === "events" || name === "drafts")
+                  store.createIndex("workspace", "workspace");
               }
             };
             request.onsuccess = () => {
@@ -13317,69 +13931,134 @@
         }
 
         function isSupportedGradeDraft(item) {
-          return !!item && ["k", "u", "pod"].includes(item.kind) &&
-            typeof item.value === "string" && item.value.length <= 100;
+          return (
+            !!item &&
+            ["k", "u", "pod"].includes(item.kind) &&
+            typeof item.value === "string" &&
+            item.value.length <= 100
+          );
         }
 
         async function persistedGradeDrafts(prefix) {
           const records = new Map();
           const add = (key, raw) => {
-            const entry = { key, entries: Array.isArray(raw) ? raw : raw?.entries || [],
-              generation: Array.isArray(raw) ? 0 : Number(raw?.generation || 0), updatedAt: raw?.updatedAt || "" };
-            if (!Array.isArray(entry.entries) || !Number.isSafeInteger(entry.generation) || entry.generation < 0)
+            const entry = {
+              key,
+              entries: Array.isArray(raw) ? raw : raw?.entries || [],
+              generation: Array.isArray(raw) ? 0 : Number(raw?.generation || 0),
+              updatedAt: raw?.updatedAt || "",
+            };
+            if (
+              !Array.isArray(entry.entries) ||
+              !Number.isSafeInteger(entry.generation) ||
+              entry.generation < 0
+            )
               throw Error("ساختار پیش‌نویس معتبر نیست.");
             const previous = records.get(key);
-            if (!previous || entry.generation > previous.generation ||
-                (entry.generation === previous.generation && entry.updatedAt > previous.updatedAt)) records.set(key, entry);
+            if (
+              !previous ||
+              entry.generation > previous.generation ||
+              (entry.generation === previous.generation &&
+                entry.updatedAt > previous.updatedAt)
+            )
+              records.set(key, entry);
           };
           let unreadable = false;
           try {
-            for (const key of Object.keys(localStorage).filter((key) => key.startsWith(prefix)))
-              try { add(key, JSON.parse(localStorage.getItem(key))); } catch { unreadable = true; }
-          } catch { unreadable = true; }
+            for (const key of Object.keys(localStorage).filter((key) =>
+              key.startsWith(prefix),
+            ))
+              try {
+                add(key, JSON.parse(localStorage.getItem(key)));
+              } catch {
+                unreadable = true;
+              }
+          } catch {
+            unreadable = true;
+          }
           if (connection?.objectStoreNames.contains("drafts")) {
             const tx = connection.transaction("drafts", "readonly");
-            const rows = await requestPromise(tx.objectStore("drafts").index("workspace").getAll(workspace.id));
-            for (const row of rows) if (row.key.startsWith(prefix)) add(row.key, row);
+            const rows = await requestPromise(
+              tx.objectStore("drafts").index("workspace").getAll(workspace.id),
+            );
+            for (const row of rows)
+              if (row.key.startsWith(prefix)) add(row.key, row);
           }
-          if (unreadable && !records.size) throw Error("خواندن پیش‌نویس‌های قبلی انجام نشد.");
+          if (unreadable && !records.size)
+            throw Error("خواندن پیش‌نویس‌های قبلی انجام نشد.");
           return [...records.values()];
         }
 
         function storeDrafts() {
           if (!workspace) return Promise.resolve();
-          const key = draftStorageKey(), entry = {
-            key, workspace: workspace.id, owner: documentToken, generation: draftGeneration,
-            entries: clone([...drafts.values()]), updatedAt: new Date().toISOString(),
-          };
+          const key = draftStorageKey(),
+            entry = {
+              key,
+              workspace: workspace.id,
+              owner: documentToken,
+              generation: draftGeneration,
+              entries: clone([...drafts.values()]),
+              updatedAt: new Date().toISOString(),
+            };
           let localFailure = false;
           try {
             const current = JSON.parse(localStorage.getItem(key) || "null");
-            if (current && !Array.isArray(current) && Number(current.generation) > draftGeneration) return Promise.resolve();
+            if (
+              current &&
+              !Array.isArray(current) &&
+              Number(current.generation) > draftGeneration
+            )
+              return Promise.resolve();
             localStorage.setItem(key, JSON.stringify(entry));
-          } catch { localFailure = true; }
+          } catch {
+            localFailure = true;
+          }
           const targetConnection = connection;
           draftWritesPending++;
-          const operation = draftWriter.catch(() => {}).then(async () => {
-            if (!targetConnection?.objectStoreNames.contains("drafts")) throw Error("ذخیره پایدار پیش‌نویس در دسترس نیست.");
-            let tx;
-            try { tx = targetConnection.transaction("drafts", "readwrite", { durability: "strict" }); }
-            catch (error) {
-              if (!(error instanceof TypeError)) throw error;
-              tx = targetConnection.transaction("drafts", "readwrite");
-            }
-            const done = transactionDone(tx), store = tx.objectStore("drafts"), request = store.get(key);
-            request.onsuccess = () => {
-              if (!request.result || request.result.generation <= entry.generation) store.put(entry);
-            };
-            await done;
-            draftRecoveryFailed = false;
-            if (localFailure && entry.entries.length) setStatus("پیش‌نویس پایدار محفوظ است؛ در انتظار ثبت نمره.", "pending");
-          }).catch((error) => {
-            draftRecoveryFailed = true;
-            setStatus("ذخیره پایدار پیش‌نویس انجام نشد؛ تا ثبت موفق نمره صفحه را نبندید. " + error.message, "error");
-            throw error;
-          }).finally(() => { draftWritesPending--; });
+          const operation = draftWriter
+            .catch(() => {})
+            .then(async () => {
+              if (!targetConnection?.objectStoreNames.contains("drafts"))
+                throw Error("ذخیره پایدار پیش‌نویس در دسترس نیست.");
+              let tx;
+              try {
+                tx = targetConnection.transaction("drafts", "readwrite", {
+                  durability: "strict",
+                });
+              } catch (error) {
+                if (!(error instanceof TypeError)) throw error;
+                tx = targetConnection.transaction("drafts", "readwrite");
+              }
+              const done = transactionDone(tx),
+                store = tx.objectStore("drafts"),
+                request = store.get(key);
+              request.onsuccess = () => {
+                if (
+                  !request.result ||
+                  request.result.generation <= entry.generation
+                )
+                  store.put(entry);
+              };
+              await done;
+              draftRecoveryFailed = false;
+              if (localFailure && entry.entries.length)
+                setStatus(
+                  "پیش‌نویس پایدار محفوظ است؛ در انتظار ثبت نمره.",
+                  "pending",
+                );
+            })
+            .catch((error) => {
+              draftRecoveryFailed = true;
+              setStatus(
+                "ذخیره پایدار پیش‌نویس انجام نشد؛ تا ثبت موفق نمره صفحه را نبندید. " +
+                  error.message,
+                "error",
+              );
+              throw error;
+            })
+            .finally(() => {
+              draftWritesPending--;
+            });
           draftWriter = operation;
           operation.catch(() => {});
           return operation;
@@ -13389,27 +14068,48 @@
           drafts.clear();
           try {
             const base = draftBaseKey();
-            const records = (await persistedGradeDrafts(base))
-              .filter((row) => row.key === base || row.key.startsWith(base + "."));
-            records.sort((a, b) => b.generation - a.generation || b.updatedAt.localeCompare(a.updatedAt));
+            const records = (await persistedGradeDrafts(base)).filter(
+              (row) => row.key === base || row.key.startsWith(base + "."),
+            );
+            records.sort(
+              (a, b) =>
+                b.generation - a.generation ||
+                b.updatedAt.localeCompare(a.updatedAt),
+            );
             const saved = records[0];
             draftGeneration = (saved?.generation || 0) + 1;
             for (const original of saved?.entries || []) {
               if (!isSupportedGradeDraft(original)) continue;
-              const stale = !Number.isInteger(original.baseRevision) || original.baseRevision !== workspace.revision;
-              const item = stale ? { ...original, review: true, error: "اطلاعات از زمان این پیش‌نویس تغییر کرده یا نسخه مرجع نامعلوم است؛ نیازمند بررسی" } : original;
+              const stale =
+                !Number.isInteger(original.baseRevision) ||
+                original.baseRevision !== workspace.revision;
+              const item = stale
+                ? {
+                    ...original,
+                    review: true,
+                    error:
+                      "اطلاعات از زمان این پیش‌نویس تغییر کرده یا نسخه مرجع نامعلوم است؛ نیازمند بررسی",
+                  }
+                : original;
               drafts.set(inputKey(item), item);
             }
             await storeDrafts();
-            for (const old of records) if (old.generation < draftGeneration - 1) {
-              try { localStorage.removeItem(old.key); } catch {}
-              const tx = connection.transaction("drafts", "readwrite"), done = transactionDone(tx);
-              tx.objectStore("drafts").delete(old.key);
-              await done;
-            }
+            for (const old of records)
+              if (old.generation < draftGeneration - 1) {
+                try {
+                  localStorage.removeItem(old.key);
+                } catch {}
+                const tx = connection.transaction("drafts", "readwrite"),
+                  done = transactionDone(tx);
+                tx.objectStore("drafts").delete(old.key);
+                await done;
+              }
           } catch (error) {
             draftRecoveryFailed = true;
-            setStatus("پیش‌نویس قبلی خوانده نشد؛ داده اصلی محفوظ است. " + error.message, "error");
+            setStatus(
+              "پیش‌نویس قبلی خوانده نشد؛ داده اصلی محفوظ است. " + error.message,
+              "error",
+            );
           }
         }
 
@@ -14160,7 +14860,9 @@
 
         function downloadJSON(value, name) {
           downloadLocalFile(
-            new Blob([JSON.stringify(value, null, 2)], { type: "application/json;charset=utf-8" }),
+            new Blob([JSON.stringify(value, null, 2)], {
+              type: "application/json;charset=utf-8",
+            }),
             name,
           );
         }
@@ -14177,25 +14879,56 @@
         let automaticBackupTimer = null,
           automaticBackupBusy = false;
         function portableGradeDrafts(rows, periods) {
-          const ids = new Set(periods.map((p) => p.id)), byKey = new Map();
+          const ids = new Set(periods.map((p) => p.id)),
+            byKey = new Map();
           const add = (key, raw) => {
-            const match = key.match(/^Edu24\.drafts\.([A-Za-z0-9_-]+)\.([A-Za-z0-9_-]+)/);
+            const match = key.match(
+              /^Edu24\.drafts\.([A-Za-z0-9_-]+)\.([A-Za-z0-9_-]+)/,
+            );
             if (!match || !ids.has(match[1])) return;
-            const row = { key, workspace: match[1], generation: Array.isArray(raw) ? 0 : Number(raw?.generation || 0),
-              entries: Array.isArray(raw) ? raw : raw?.entries || [], updatedAt: raw?.updatedAt || "" };
-            if (!Array.isArray(row.entries) || !row.entries.every(isSupportedGradeDraft) || !Number.isSafeInteger(row.generation) || row.generation < 0) return;
+            const row = {
+              key,
+              workspace: match[1],
+              generation: Array.isArray(raw) ? 0 : Number(raw?.generation || 0),
+              entries: Array.isArray(raw) ? raw : raw?.entries || [],
+              updatedAt: raw?.updatedAt || "",
+            };
+            if (
+              !Array.isArray(row.entries) ||
+              !row.entries.every(isSupportedGradeDraft) ||
+              !Number.isSafeInteger(row.generation) ||
+              row.generation < 0
+            )
+              return;
             const old = byKey.get(key);
-            if (!old || row.generation > old.generation || (row.generation === old.generation && row.updatedAt > old.updatedAt)) byKey.set(key, row);
+            if (
+              !old ||
+              row.generation > old.generation ||
+              (row.generation === old.generation &&
+                row.updatedAt > old.updatedAt)
+            )
+              byKey.set(key, row);
           };
           for (const row of rows) add(row.key, row);
           try {
-            for (const key of Object.keys(localStorage).filter((key) => key.startsWith("Edu24.drafts.")))
-              try { add(key, JSON.parse(localStorage.getItem(key))); } catch {}
+            for (const key of Object.keys(localStorage).filter((key) =>
+              key.startsWith("Edu24.drafts."),
+            ))
+              try {
+                add(key, JSON.parse(localStorage.getItem(key)));
+              } catch {}
           } catch {}
           const byTab = new Map();
           for (const row of byKey.values()) {
-            const tab = row.key.split(".").slice(0,4).join("."), old = byTab.get(tab);
-            if (!old || row.generation > old.generation || (row.generation === old.generation && row.updatedAt > old.updatedAt)) byTab.set(tab,row);
+            const tab = row.key.split(".").slice(0, 4).join("."),
+              old = byTab.get(tab);
+            if (
+              !old ||
+              row.generation > old.generation ||
+              (row.generation === old.generation &&
+                row.updatedAt > old.updatedAt)
+            )
+              byTab.set(tab, row);
           }
           return [...byTab.values()].filter((row) => row.entries.length);
         }
@@ -14209,9 +14942,7 @@
           const tx = connection.transaction(names, "readonly"),
             done = transactionDone(tx);
           const values = await Promise.all(
-            names.map((name) =>
-              requestPromise(tx.objectStore(name).getAll()),
-            ),
+            names.map((name) => requestPromise(tx.objectStore(name).getAll())),
           );
           await done;
           const stores = Object.fromEntries(
@@ -14219,7 +14950,10 @@
           );
           // Never embed a full snapshot inside another full snapshot.
           stores.backups = stores.backups.filter((row) => !row.full);
-          const gradeDrafts = portableGradeDrafts(stores.drafts, stores.catalog);
+          const gradeDrafts = portableGradeDrafts(
+            stores.drafts,
+            stores.catalog,
+          );
           delete stores.drafts;
           const reportDrafts = {};
           for (const period of stores.catalog) {
@@ -14367,17 +15101,28 @@
                   legacy: (row.db?.schemaVersion || 23) < 24,
                 });
             }
-          if (value.version === 2 && !Array.isArray(value.gradeDrafts)) throw Error("بخش پیش‌نویس نمره پشتیبان ناقص است.");
+          if (value.version === 2 && !Array.isArray(value.gradeDrafts))
+            throw Error("بخش پیش‌نویس نمره پشتیبان ناقص است.");
           const draftKeys = new Set();
           for (const row of value.gradeDrafts || []) {
-            if (!ids.has(row.workspace) || typeof row.key !== "string" || !row.key.startsWith("Edu24.drafts." + row.workspace + ".") || draftKeys.has(row.key) ||
-                !Number.isSafeInteger(row.generation) || row.generation < 0 || !Array.isArray(row.entries) || !row.entries.every(isSupportedGradeDraft) || typeof row.updatedAt !== "string")
+            if (
+              !ids.has(row.workspace) ||
+              typeof row.key !== "string" ||
+              !row.key.startsWith("Edu24.drafts." + row.workspace + ".") ||
+              draftKeys.has(row.key) ||
+              !Number.isSafeInteger(row.generation) ||
+              row.generation < 0 ||
+              !Array.isArray(row.entries) ||
+              !row.entries.every(isSupportedGradeDraft) ||
+              typeof row.updatedAt !== "string"
+            )
               throw Error("پیش‌نویس نمره پشتیبان نامعتبر است.");
             draftKeys.add(row.key);
           }
           return periods;
         }
-        let pendingFullBackup = null, fullRestoreBusy = false;
+        let pendingFullBackup = null,
+          fullRestoreBusy = false;
         function previewFullBackup(value) {
           const periods = validateFullBackup(value);
           pendingFullBackup = value;
@@ -14386,96 +15131,130 @@
             "<p>" +
               periods.length +
               " دوره به همراه تاریخچه و گزارش‌های بایگانی‌شده بازیابی می‌شود.</p>" +
-              ((value.gradeDrafts || []).length ? "<p>" + value.gradeDrafts.reduce((n, row) => n + row.entries.length, 0) + " پیش‌نویس نمره هم همراه فایل است؛ پس از بازیابی فقط با بررسی شما اعمال می‌شود.</p>" : "") +
-            "<p>دوره‌های فعلی حفظ می‌شوند؛ نسخه‌های بازیابی‌شده با شناسه مستقل اضافه می‌شوند.</p>" +
+              ((value.gradeDrafts || []).length
+                ? "<p>" +
+                  value.gradeDrafts.reduce(
+                    (n, row) => n + row.entries.length,
+                    0,
+                  ) +
+                  " پیش‌نویس نمره هم همراه فایل است؛ پس از بازیابی فقط با بررسی شما اعمال می‌شود.</p>"
+                : "") +
+              "<p>دوره‌های فعلی حفظ می‌شوند؛ نسخه‌های بازیابی‌شده با شناسه مستقل اضافه می‌شوند.</p>" +
               '<button data-full-restore onclick="EduV24.restoreFullBackup().catch(EduV24.course.error)">افزودن همه دوره‌های بازیابی‌شده</button><p id="courseError" role="alert"></p>',
           );
         }
         async function restoreFullBackup() {
-          if (fullRestoreBusy) throw Error("??????? ?? ??? ??????? ?? ????? ?? ??? ????.");
+          if (fullRestoreBusy)
+            throw Error("??????? ?? ??? ??????? ?? ????? ?? ??? ????.");
           fullRestoreBusy = true;
           const button = document.querySelector("[data-full-restore]");
           if (button) button.disabled = true;
           try {
-          if (!pendingFullBackup)
-            throw Error("ابتدا فایل پشتیبان کامل را انتخاب کنید.");
-          const source = pendingFullBackup;
-          await flushDrafts({ strict: true });
-          await writer.catch(() => {});
-          const periods = validateFullBackup(source);
-          const mapping = new Map(
-            periods.map(({ period }) => [period.id, uid()]),
-          );
-          const existing = await allFrom("catalog");
-          const rows = Object.fromEntries(
-            backupStores.map((name) => [name, []]),
-          );
-          for (const { period, data } of periods) {
-            const id = mapping.get(period.id);
-            let term = period.term;
-            if (existing.some((p) => p.year === period.year && p.term === term))
-              term += " — بازیابی " + id;
-            data.settings.academicTerm = term;
-            rows.catalog.push({ ...period, id, term });
-            for (const [logical, value] of collectRecords(data))
-              rows.records.push({
-                key: id + "|" + logical,
-                workspace: id,
-                logical,
-                value,
-              });
-          }
-          for (const name of ["events", "undo", "reports", "backups"])
-            for (const original of source.stores[name]) {
-              if (name === "backups" && original.full) continue;
-              const row = clone(original);
-              if (row.workspace != null)
-                row.workspace = mapping.get(row.workspace);
-              if (name === "events") delete row.id;
-              else row.id = name === "undo" ? mapping.get(original.id) : uid();
-              rows[name].push(row);
-            }
-          rows.drafts = (source.gradeDrafts || []).map((row) => ({ ...clone(row),
-            key: "Edu24.drafts." + mapping.get(row.workspace) + row.key.slice(("Edu24.drafts." + row.workspace).length),
-            workspace: mapping.get(row.workspace), owner: "imported",
-            entries: row.entries.map((item) => ({ ...clone(item), review: true, error: "بازیابی از فایل؛ نیازمند بررسی" })),
-          }));
-          const restoredStores = [...backupStores, "drafts"];
-          const tx = connection.transaction(restoredStores, "readwrite"),
-            done = transactionDone(tx);
-          for (const name of restoredStores)
-            for (const row of rows[name]) tx.objectStore(name).add(row);
-          await done;
-          let reportNotesFailed = false;
-          for (const [oldId, id] of mapping) {
-            try {
-              const saved = source.reportDrafts?.[oldId] || {};
-              const renamed = Object.fromEntries(
-                Object.entries(saved).map(([key, value]) => [
-                  key.startsWith(oldId + "|")
-                    ? id + key.slice(oldId.length)
-                    : key,
+            if (!pendingFullBackup)
+              throw Error("ابتدا فایل پشتیبان کامل را انتخاب کنید.");
+            const source = pendingFullBackup;
+            await flushDrafts({ strict: true });
+            await writer.catch(() => {});
+            const periods = validateFullBackup(source);
+            const mapping = new Map(
+              periods.map(({ period }) => [period.id, uid()]),
+            );
+            const existing = await allFrom("catalog");
+            const rows = Object.fromEntries(
+              backupStores.map((name) => [name, []]),
+            );
+            for (const { period, data } of periods) {
+              const id = mapping.get(period.id);
+              let term = period.term;
+              if (
+                existing.some((p) => p.year === period.year && p.term === term)
+              )
+                term += " — بازیابی " + id;
+              data.settings.academicTerm = term;
+              rows.catalog.push({ ...period, id, term });
+              for (const [logical, value] of collectRecords(data))
+                rows.records.push({
+                  key: id + "|" + logical,
+                  workspace: id,
+                  logical,
                   value,
-                ]),
-              );
-              localStorage.setItem(
-                "EduManager.periodicDrafts." + id,
-                JSON.stringify(renamed),
-              );
-            } catch {
-              reportNotesFailed = true;
-              setStatus(
-                "دوره‌ها بازیابی شدند؛ ذخیره توضیحات گزارش روی دستگاه انجام نشد.",
-                "error",
-              );
+                });
             }
-          }
-          pendingFullBackup = null;
-          await switchPeriod(mapping.get(source.activeWorkspace));
-          const pendingGrades = (source.gradeDrafts || []).reduce((n, row) => n + row.entries.length, 0);
-          setStatus(periods.length + " دوره بازیابی شد." + (pendingGrades ? " " + pendingGrades + " پیش‌نویس نمره از بخش پیش‌نویس نشست‌های دیگر نیازمند بررسی است." : "") + (reportNotesFailed ? " ذخیره توضیحات گزارش روی دستگاه انجام نشد." : ""), reportNotesFailed ? "error" : "saved");
-          return periods.length;
-
+            for (const name of ["events", "undo", "reports", "backups"])
+              for (const original of source.stores[name]) {
+                if (name === "backups" && original.full) continue;
+                const row = clone(original);
+                if (row.workspace != null)
+                  row.workspace = mapping.get(row.workspace);
+                if (name === "events") delete row.id;
+                else
+                  row.id = name === "undo" ? mapping.get(original.id) : uid();
+                rows[name].push(row);
+              }
+            rows.drafts = (source.gradeDrafts || []).map((row) => ({
+              ...clone(row),
+              key:
+                "Edu24.drafts." +
+                mapping.get(row.workspace) +
+                row.key.slice(("Edu24.drafts." + row.workspace).length),
+              workspace: mapping.get(row.workspace),
+              owner: "imported",
+              entries: row.entries.map((item) => ({
+                ...clone(item),
+                review: true,
+                error: "بازیابی از فایل؛ نیازمند بررسی",
+              })),
+            }));
+            const restoredStores = [...backupStores, "drafts"];
+            const tx = connection.transaction(restoredStores, "readwrite"),
+              done = transactionDone(tx);
+            for (const name of restoredStores)
+              for (const row of rows[name]) tx.objectStore(name).add(row);
+            await done;
+            let reportNotesFailed = false;
+            for (const [oldId, id] of mapping) {
+              try {
+                const saved = source.reportDrafts?.[oldId] || {};
+                const renamed = Object.fromEntries(
+                  Object.entries(saved).map(([key, value]) => [
+                    key.startsWith(oldId + "|")
+                      ? id + key.slice(oldId.length)
+                      : key,
+                    value,
+                  ]),
+                );
+                localStorage.setItem(
+                  "EduManager.periodicDrafts." + id,
+                  JSON.stringify(renamed),
+                );
+              } catch {
+                reportNotesFailed = true;
+                setStatus(
+                  "دوره‌ها بازیابی شدند؛ ذخیره توضیحات گزارش روی دستگاه انجام نشد.",
+                  "error",
+                );
+              }
+            }
+            pendingFullBackup = null;
+            await switchPeriod(mapping.get(source.activeWorkspace));
+            const pendingGrades = (source.gradeDrafts || []).reduce(
+              (n, row) => n + row.entries.length,
+              0,
+            );
+            setStatus(
+              periods.length +
+                " دوره بازیابی شد." +
+                (pendingGrades
+                  ? " " +
+                    pendingGrades +
+                    " پیش‌نویس نمره از بخش پیش‌نویس نشست‌های دیگر نیازمند بررسی است."
+                  : "") +
+                (reportNotesFailed
+                  ? " ذخیره توضیحات گزارش روی دستگاه انجام نشد."
+                  : ""),
+              reportNotesFailed ? "error" : "saved",
+            );
+            return periods.length;
           } finally {
             fullRestoreBusy = false;
             if (button?.isConnected) button.disabled = false;
@@ -14975,15 +15754,24 @@
               c.archivedStudents = [];
               for (const l of c.lessons) {
                 l.kardaneshScores = {};
-                if (l.gradingPolicy && l.gradingPolicy.year !== year) {
-                  l.gradingPolicy.year = year;
-                  l.gradingPolicy.confirmed = false;
-                  l.gradingPolicy.revision = 1;
-                  l.gradingPolicy.circularNumber = "";
-                  l.gradingPolicy.circularDate = "";
-                  l.gradingPolicy.reference = "";
+                const info = EduPolicy.identity(l, year);
+                if (l.gradingPolicy) {
+                  const changedYear = l.gradingPolicy.year !== year;
+                  const changedIdentity = Object.entries(info).some(
+                    ([key, value]) => l.gradingPolicy[key] !== value,
+                  );
+                  Object.assign(l.gradingPolicy, info);
+                  if (changedYear || changedIdentity) {
+                    l.gradingPolicy.confirmed = false;
+                    l.gradingPolicy.revision = 1;
+                  }
+                  if (changedYear) {
+                    l.gradingPolicy.circularNumber = "";
+                    l.gradingPolicy.circularDate = "";
+                    l.gradingPolicy.reference = "";
+                  }
                 }
-                if (l.courseInfo) l.courseInfo.year = year;
+                if (l.courseInfo || l.gradingPolicy) l.courseInfo = info;
                 for (const p of l.poudmans) p.podScores = {};
                 for (const p of l.poudmans)
                   for (const u of p.units) u.unitScores = {};
@@ -15046,6 +15834,7 @@
                     name: l.name,
                     mode: l.gradeMode,
                     policy: l.gradingPolicy ? clone(l.gradingPolicy) : null,
+                    courseInfo: EduPolicy.identity(l, workspace.year),
                     modules: result.modules || null,
                     reason: result.reason || "",
                     teacher: l.teacher || "",
@@ -15732,8 +16521,12 @@
         }
 
         function downloadCSVTemplate() {
-          const text = "\uFEFFکد دانش‌آموز,نام و نام خانوادگی\n1001,مثال: علی رضایی\n1002,مثال: علی رضایی\n";
-          downloadLocalFile(new Blob([text], { type: "text/csv;charset=utf-8" }), "قالب-دانش‌آموزان.csv");
+          const text =
+            "\uFEFFکد دانش‌آموز,نام و نام خانوادگی\n1001,مثال: علی رضایی\n1002,مثال: علی رضایی\n";
+          downloadLocalFile(
+            new Blob([text], { type: "text/csv;charset=utf-8" }),
+            "قالب-دانش‌آموزان.csv",
+          );
         }
 
         async function addStudentV24(e) {
@@ -15863,7 +16656,16 @@
 
         function installUI() {
           window.addEventListener("beforeunload", (event) => {
-            if (busy || drafts.size || draftRecoveryFailed || draftWritesPending || hasRecordEditorChanges() || document.querySelector('.record-editor[aria-busy="true"]')) {
+            if (
+              busy ||
+              drafts.size ||
+              draftRecoveryFailed ||
+              draftWritesPending ||
+              hasRecordEditorChanges() ||
+              document.querySelector(
+                '.record-editor[aria-busy="true"],[data-entity-create][aria-busy="true"]',
+              )
+            ) {
               event.preventDefault();
               event.returnValue = "";
             }
@@ -15959,7 +16761,7 @@
         }
 
         function showModalV24(title, html) {
-          old.showModal(title, html);
+          if (old.showModal(title, html) === false) return false;
           setTimeout(() => {
             applyDrafts();
             lockControls();
@@ -15970,6 +16772,7 @@
                 ) || document.querySelector("#modal .modal-dialog")
               )?.focus({ preventScroll: true });
           }, 0);
+          return true;
         }
 
         async function loginV24(e) {
@@ -15989,56 +16792,229 @@
           if (isAuthenticated) await recoverDrafts();
         }
 
-        let entityEditing = null, entitySaving = false;
+        let entityCreationBusy = false;
+        async function createEntityV24(event, kind) {
+          event.preventDefault();
+          if (entityCreationBusy) return false;
+          const form = event.target,
+            name = String(form.elements.namedItem("name")?.value || "")
+              .trim()
+              .replace(/\s+/g, " ");
+          const target = {
+            workspace: workspace?.id,
+            schoolId: state.schoolId,
+            view: state.view,
+          };
+          const fieldId = kind + "CreateName";
+          entityCreationBusy = true;
+          const finishSave = beginRecordEditorSave(form);
+          try {
+            assertEntityWritable();
+            if (!normalizedName(name) || name.length > 500)
+              throw recordFieldError(
+                "نام معتبر با حداکثر ۵۰۰ نویسه وارد کنید.",
+                fieldId,
+              );
+            await flushDrafts({ strict: true });
+            assertEntityWritable();
+            if (
+              target.workspace !== workspace.id ||
+              target.view !== state.view ||
+              (kind === "class" && target.schoolId !== state.schoolId)
+            )
+              throw Error("دوره یا صفحه مقصد تغییر کرده است؛ ثبت انجام نشد.");
+            const school = kind === "class" ? getSchool(target.schoolId) : null;
+            if (kind === "class" && !school)
+              throw Error("مدرسه مقصد وجود ندارد.");
+            const peers = kind === "school" ? db.schools : school.classes;
+            if (
+              peers.some((x) => normalizedName(x.name) === normalizedName(name))
+            )
+              throw recordFieldError(
+                kind === "school"
+                  ? "مدرسه‌ای با همین نام وجود دارد."
+                  : "کلاسی با همین نام در این مدرسه وجود دارد.",
+                fieldId,
+              );
+            peers.push(
+              kind === "school"
+                ? { id: uid(), name, classes: [] }
+                : {
+                    id: uid(),
+                    name,
+                    students: [],
+                    archivedStudents: [],
+                    lessons: [],
+                  },
+            );
+            await saveDBV24({
+              action:
+                "افزودن " +
+                (kind === "school" ? "مدرسه" : "کلاس") +
+                ": " +
+                name,
+            });
+            render();
+            return true;
+          } catch (error) {
+            const sameTarget =
+              target.workspace === workspace?.id &&
+              target.view === state.view &&
+              (kind !== "class" || target.schoolId === state.schoolId);
+            const currentForm = sameTarget
+              ? document.querySelector(
+                  'form[data-entity-create="' + kind + '"]',
+                )
+              : null;
+            if (currentForm) {
+              const input = currentForm.elements.namedItem("name");
+              input.value = name;
+              currentForm.querySelector(".entity-create-error").textContent =
+                error.message;
+              const detail = currentForm.closest("details");
+              if (detail) detail.open = true;
+              if (error.fieldId) input.setAttribute("aria-invalid", "true");
+              requestAnimationFrame(() => {
+                const currentDetail = input.closest("details");
+                if (currentDetail) currentDetail.open = true;
+                if (input.isConnected && !input.disabled)
+                  input.focus({ preventScroll: true });
+              });
+            } else handleError(error);
+            return false;
+          } finally {
+            entityCreationBusy = false;
+            finishSave();
+          }
+        }
+        let entityEditing = null,
+          entitySaving = false;
         function assertEntityWritable() {
-          if (fileMode || !ready || blocked || workspace?.closed) throw Error("دوره فعلی قابل ویرایش نیست.");
+          if (fileMode || !ready || blocked || workspace?.closed)
+            throw Error("دوره فعلی قابل ویرایش نیست.");
         }
         async function openEntityEditor(kind, id, schoolId = "") {
+          const requestedWorkspace = workspace?.id;
           assertEntityWritable();
           await flushDrafts({ strict: true });
           assertEntityWritable();
-          if (!["school", "class"].includes(kind)) throw Error("نوع اطلاعات نامعتبر است.");
-          const school = kind === "school" ? getSchool(id) : getSchool(schoolId);
-          const item = kind === "school" ? school : school?.classes.find(c => c.id === id);
+          if (requestedWorkspace !== workspace.id)
+            throw Error(
+              "دوره هنگام باز شدن فرم تغییر کرد؛ دوباره ویرایش را باز کنید.",
+            );
+          if (!["school", "class"].includes(kind))
+            throw Error("نوع اطلاعات نامعتبر است.");
+          const school =
+            kind === "school" ? getSchool(id) : getSchool(schoolId);
+          const item =
+            kind === "school"
+              ? school
+              : school?.classes.find((c) => c.id === id);
           if (!item) throw Error("اطلاعات پیدا نشد؛ صفحه را تازه کنید.");
-          entityEditing = { kind, id, schoolId: school.id, workspace: workspace.id, revision: workspace.revision };
+          const previousEditing = entityEditing;
+          entityEditing = {
+            kind,
+            id,
+            schoolId: school.id,
+            workspace: workspace.id,
+            revision: workspace.revision,
+          };
           const label = kind === "school" ? "مدرسه" : "کلاس";
           const classes = kind === "school" ? item.classes : [item];
           const count = classes.reduce((n, c) => n + c.students.length, 0);
-          showModal("ویرایش مشخصات " + label,
-            '<form class="record-editor" onsubmit="event.preventDefault();EduV24.saveEntityEditor()"><div class="record-editor-context"><span>' + esc(workspace.year + " · " + workspace.term) +
-            '</span><h4>' + esc(item.name) + '</h4><p>' + esc(kind === "class" ? school.name : classes.length.toLocaleString("fa-IR") + " کلاس") +
-            " · " + count.toLocaleString("fa-IR") + ' هنرجو</p></div><label class="course-field">نام ' + label +
-            '<input id="entityEditName" name="name" value="' + esc(item.name) + '" required maxlength="500" autocomplete="off" aria-describedby="entityEditHint entityEditError"></label>' +
-            '<p id="entityEditHint" class="muted">تغییر نام در همین دوره اعمال می‌شود؛ نمرات، جلسات و برنامه هفتگی حفظ می‌شوند. کارنامه‌های نهایی قبلی تغییر نمی‌کنند.</p><p id="entityEditError" role="alert"></p>' +
-            '<div class="record-editor-actions"><button type="submit" data-mutating="1">ذخیره تغییرات</button><button type="button" class="ghost" onclick="closeModal()">انصراف</button></div></form>');
+          const opened = showModal(
+            "ویرایش مشخصات " + label,
+            '<form class="record-editor" onsubmit="event.preventDefault();EduV24.saveEntityEditor()"><div class="record-editor-context"><span>' +
+              esc(workspace.year + " · " + workspace.term) +
+              "</span><h4>" +
+              esc(item.name) +
+              "</h4><p>" +
+              esc(
+                kind === "class"
+                  ? school.name
+                  : classes.length.toLocaleString("fa-IR") + " کلاس",
+              ) +
+              " · " +
+              count.toLocaleString("fa-IR") +
+              ' هنرجو</p></div><label class="course-field">نام ' +
+              label +
+              '<input id="entityEditName" name="name" value="' +
+              esc(item.name) +
+              '" required maxlength="500" autocomplete="off" aria-describedby="entityEditHint entityEditError"></label>' +
+              '<p id="entityEditHint" class="muted">تغییر نام در همین دوره اعمال می‌شود؛ نمرات، جلسات و برنامه هفتگی حفظ می‌شوند. کارنامه‌های نهایی قبلی تغییر نمی‌کنند.</p><p id="entityEditError" role="alert"></p>' +
+              '<div class="record-editor-actions"><button type="submit" data-mutating="1">ذخیره تغییرات</button><button type="button" class="ghost" onclick="closeModal()">انصراف</button></div></form>',
+          );
+          if (opened === false) {
+            entityEditing = previousEditing;
+            return false;
+          }
           rememberRecordEditor();
         }
         async function saveEntityEditor() {
           if (entitySaving) return;
           entitySaving = true;
-          const finishSave = beginRecordEditorSave(document.querySelector("#modal .record-editor"));
+          const finishSave = beginRecordEditorSave(
+            document.querySelector("#modal .record-editor"),
+          );
           try {
             assertEntityWritable();
-            if (!document.querySelector("#modal:not(.hidden) #entityEditName")) throw Error("فرم ویرایش باز نیست.");
+            if (!document.querySelector("#modal:not(.hidden) #entityEditName"))
+              throw Error("فرم ویرایش باز نیست.");
             const edit = entityEditing;
-            if (!edit || edit.workspace !== workspace.id || edit.revision !== workspace.revision)
-              throw Error("اطلاعات از زمان باز شدن فرم تغییر کرده است؛ فرم را دوباره باز کنید.");
-            const name = document.getElementById("entityEditName").value.trim().replace(/\s+/g, " ");
-            if (!normalizedName(name) || name.length > 500) throw Error("نام معتبر با حداکثر ۵۰۰ نویسه وارد کنید.");
+            if (
+              !edit ||
+              edit.workspace !== workspace.id ||
+              edit.revision !== workspace.revision
+            )
+              throw Error(
+                "اطلاعات از زمان باز شدن فرم تغییر کرده است؛ فرم را دوباره باز کنید.",
+              );
+            const name = document
+              .getElementById("entityEditName")
+              .value.trim()
+              .replace(/\s+/g, " ");
+            if (!normalizedName(name) || name.length > 500)
+              throw recordFieldError(
+                "نام معتبر با حداکثر ۵۰۰ نویسه وارد کنید.",
+                "entityEditName",
+              );
             await flushDrafts({ strict: true });
             assertEntityWritable();
-            if (edit.workspace !== workspace.id || edit.revision !== workspace.revision)
-              throw Error("دوره یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.");
+            if (
+              edit.workspace !== workspace.id ||
+              edit.revision !== workspace.revision
+            )
+              throw Error(
+                "دوره یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.",
+              );
             const school = getSchool(edit.schoolId);
-            const item = edit.kind === "school" ? school : school?.classes.find(c => c.id === edit.id);
+            const item =
+              edit.kind === "school"
+                ? school
+                : school?.classes.find((c) => c.id === edit.id);
             if (!item) throw Error("اطلاعات مقصد دیگر وجود ندارد.");
             const peers = edit.kind === "school" ? db.schools : school.classes;
-            if (peers.some(x => x.id !== item.id && normalizedName(x.name) === normalizedName(name)))
-              throw Error(edit.kind === "school" ? "مدرسه‌ای با همین نام وجود دارد." : "کلاسی با همین نام در این مدرسه وجود دارد.");
+            if (
+              normalizedName(item.name) !== normalizedName(name) &&
+              peers.some(
+                (x) =>
+                  x.id !== item.id &&
+                  normalizedName(x.name) === normalizedName(name),
+              )
+            )
+              throw recordFieldError(
+                edit.kind === "school"
+                  ? "مدرسه‌ای با همین نام وجود دارد."
+                  : "کلاسی با همین نام در این مدرسه وجود دارد.",
+                "entityEditName",
+              );
             if (item.name !== name) {
               item.name = name;
-              await saveDBV24({ ...(edit.kind === "class" ? { classId: item.id } : {}), action: "ویرایش نام " + (edit.kind === "school" ? "مدرسه" : "کلاس") });
+              await saveDBV24({
+                ...(edit.kind === "class" ? { classId: item.id } : {}),
+                action:
+                  "ویرایش نام " + (edit.kind === "school" ? "مدرسه" : "کلاس"),
+              });
             }
             entityEditing = null;
             finishSave();
@@ -16046,9 +17022,8 @@
             closeModal();
             render();
           } catch (error) {
-            const el = document.getElementById("entityEditError");
-            if (el) el.textContent = error.message;
-            else handleError(error);
+            if (!showRecordEditorError(error, "entityEditError"))
+              handleError(error);
           } finally {
             entitySaving = false;
             finishSave();
@@ -16100,6 +17075,8 @@
             handleImport: handleImportV24,
             handleExcelImport: csvImportV24,
             downloadExcelTemplate: downloadCSVTemplate,
+            addSchool: (event) => createEntityV24(event, "school"),
+            addClass: (event) => createEntityV24(event, "class"),
             addStudent: addStudentV24,
             openEditStudentModal: editStudentV24,
             buildArchiveHtml: buildArchiveV24,
@@ -16193,12 +17170,18 @@
         }
         async function discardDrafts() {
           if (!drafts.size) return;
-          if (!confirm("ویرایش‌های ثبت‌نشده کنار گذاشته شوند؟ داده‌های ذخیره‌شده تغییر نمی‌کنند.")) return;
+          if (
+            !confirm(
+              "ویرایش‌های ثبت‌نشده کنار گذاشته شوند؟ داده‌های ذخیره‌شده تغییر نمی‌کنند.",
+            )
+          )
+            return;
           const previous = [...drafts];
           drafts.clear();
           clearTimeout(draftTimer);
-          try { await storeDrafts(); }
-          catch (error) {
+          try {
+            await storeDrafts();
+          } catch (error) {
             for (const [key, value] of previous) drafts.set(key, value);
             await storeDrafts().catch(() => {});
             throw error;
@@ -16219,10 +17202,30 @@
                     l = getLessonObj(c, item.lid),
                     st = getStudentObj(c, item.sid);
                   const pod = l?.poudmans?.find((p) => p.id === item.pid);
-                  const source = item.kind === "k" ? l?.kardaneshScores?.[item.sid] :
-                    item.kind === "pod" ? pod?.podScores?.[item.sid] : pod?.units.find((u) => u.id === item.uid)?.unitScores?.[item.sid];
-                  const fieldLabel = ({ practical: "عملی", theory: "نظری", m: "مستمر", p: "پایانی", c: "شایستگی" })[item.field] || item.field;
-                  const description = [c?.name, st?.name || item.sid, l?.name || item.lid, item.kind === "pod" ? pod?.name : "", fieldLabel].filter(Boolean).join(" / ");
+                  const source =
+                    item.kind === "k"
+                      ? l?.kardaneshScores?.[item.sid]
+                      : item.kind === "pod"
+                        ? pod?.podScores?.[item.sid]
+                        : pod?.units.find((u) => u.id === item.uid)
+                            ?.unitScores?.[item.sid];
+                  const fieldLabel =
+                    {
+                      practical: "عملی",
+                      theory: "نظری",
+                      m: "مستمر",
+                      p: "پایانی",
+                      c: "شایستگی",
+                    }[item.field] || item.field;
+                  const description = [
+                    c?.name,
+                    st?.name || item.sid,
+                    l?.name || item.lid,
+                    item.kind === "pod" ? pod?.name : "",
+                    fieldLabel,
+                  ]
+                    .filter(Boolean)
+                    .join(" / ");
                   return (
                     "<tr><td>" +
                     esc(description) +
@@ -16439,7 +17442,10 @@
         async function rawRecoveryV24() {
           const legacy = localStorage.getItem(STORAGE_KEY);
           if (legacy !== null) {
-            downloadLocalFile(new Blob([legacy], { type: "application/json" }), "school-legacy-raw-recovery.json");
+            downloadLocalFile(
+              new Blob([legacy], { type: "application/json" }),
+              "school-legacy-raw-recovery.json",
+            );
             return;
           }
           if (!connection)
@@ -16520,10 +17526,25 @@
           const prefix = "Edu24.drafts." + workspace.id + ".",
             byTab = new Map();
           for (const row of await persistedGradeDrafts(prefix)) {
-            if (row.key === draftBaseKey() || row.key.startsWith(draftBaseKey() + ".")) continue;
-            const entry = { key: row.key, items: row.entries, generation: row.generation, at: row.updatedAt };
-            const otherTab = row.key.slice(prefix.length).split(".")[0], old = byTab.get(otherTab);
-            if (!old || entry.generation > old.generation || (entry.generation === old.generation && entry.at > old.at)) byTab.set(otherTab, entry);
+            if (
+              row.key === draftBaseKey() ||
+              row.key.startsWith(draftBaseKey() + ".")
+            )
+              continue;
+            const entry = {
+              key: row.key,
+              items: row.entries,
+              generation: row.generation,
+              at: row.updatedAt,
+            };
+            const otherTab = row.key.slice(prefix.length).split(".")[0],
+              old = byTab.get(otherTab);
+            if (
+              !old ||
+              entry.generation > old.generation ||
+              (entry.generation === old.generation && entry.at > old.at)
+            )
+              byTab.set(otherTab, entry);
           }
           const entries = [...byTab.values()].filter((x) => x.items.length);
           showModal(
@@ -16550,20 +17571,38 @@
           const same = (raw) => {
             if (!raw) return true;
             const entries = Array.isArray(raw) ? raw : raw.entries || [];
-            const generation = Array.isArray(raw) ? 0 : Number(raw.generation || 0);
-            return generation === record.generation && JSON.stringify(entries) === JSON.stringify(record.entries) &&
-              (raw.updatedAt || "") === record.updatedAt;
+            const generation = Array.isArray(raw)
+              ? 0
+              : Number(raw.generation || 0);
+            return (
+              generation === record.generation &&
+              JSON.stringify(entries) === JSON.stringify(record.entries) &&
+              (raw.updatedAt || "") === record.updatedAt
+            );
           };
-          const updatedAt = new Date(Math.max(Date.now(), Date.parse(record.updatedAt) || 0) + 1).toISOString();
-          const tombstone = { key: record.key, workspace: workspace.id, owner: "received",
-            generation: record.generation, entries: [], updatedAt };
-          const tx = connection.transaction("drafts", "readwrite"), done = transactionDone(tx);
-          const store = tx.objectStore("drafts"), request = store.get(record.key);
-          request.onsuccess = () => { if (same(request.result)) store.put(tombstone); };
+          const updatedAt = new Date(
+            Math.max(Date.now(), Date.parse(record.updatedAt) || 0) + 1,
+          ).toISOString();
+          const tombstone = {
+            key: record.key,
+            workspace: workspace.id,
+            owner: "received",
+            generation: record.generation,
+            entries: [],
+            updatedAt,
+          };
+          const tx = connection.transaction("drafts", "readwrite"),
+            done = transactionDone(tx);
+          const store = tx.objectStore("drafts"),
+            request = store.get(record.key);
+          request.onsuccess = () => {
+            if (same(request.result)) store.put(tombstone);
+          };
           await done;
           try {
             const raw = JSON.parse(localStorage.getItem(record.key) || "null");
-            if (same(raw)) localStorage.setItem(record.key, JSON.stringify(tombstone));
+            if (same(raw))
+              localStorage.setItem(record.key, JSON.stringify(tombstone));
           } catch {}
         }
 
@@ -16571,11 +17610,14 @@
           const prefix = "Edu24.drafts." + workspace.id + ".";
           if (!key.startsWith(prefix) || key === draftStorageKey())
             throw Error("کلید معتبر نیست.");
-          const record = (await persistedGradeDrafts(prefix)).find((row) => row.key === key);
+          const record = (await persistedGradeDrafts(prefix)).find(
+            (row) => row.key === key,
+          );
           if (!record) throw Error("پیش‌نویس پیدا نشد.");
           const items = record.entries;
           if (!Array.isArray(items)) throw Error("پیش‌نویس نامعتبر است.");
-          if (items.some((item) => !isSupportedGradeDraft(item))) throw Error("ورودی نامعتبر است؛ هیچ پیش‌نویسی دریافت نشد.");
+          if (items.some((item) => !isSupportedGradeDraft(item)))
+            throw Error("ورودی نامعتبر است؛ هیچ پیش‌نویسی دریافت نشد.");
           for (const original of items) {
             const item = {
               ...original,
@@ -16751,7 +17793,12 @@
           asciiDigits,
           findClass,
           getDB: () => db,
-          context: () => ({ id: workspace?.id, revision: workspace?.revision }),
+          context: () => ({
+            id: workspace?.id,
+            revision: workspace?.revision,
+            closed: !!workspace?.closed,
+            readOnly: fileMode || !!workspace?.closed || blocked || !ready,
+          }),
           state: () => state,
           year: () => db.settings.academicYear,
           assertWritable: () => {
@@ -18075,7 +19122,12 @@
             academicYear: source.settings.academicYear,
             mode: f.mode,
             audience: f.audience,
-            detailLevel: f.audience === "parent" ? "full" : f.detailLevel === "full" ? "full" : "summary",
+            detailLevel:
+              f.audience === "parent"
+                ? "full"
+                : f.detailLevel === "full"
+                  ? "full"
+                  : "summary",
             start: dates.start,
             end: dates.end,
             school: { id: school.id, name: school.name },
@@ -18133,7 +19185,9 @@
               });
         function table(headers, rows, kind = "") {
           return (
-            '<div class="table-scroll"><table' + (kind ? ' class="' + esc(kind) + '"' : "") + '><thead><tr>' +
+            '<div class="table-scroll"><table' +
+            (kind ? ' class="' + esc(kind) + '"' : "") +
+            "><thead><tr>" +
             headers.map((x) => "<th>" + esc(x) + "</th>").join("") +
             "</tr></thead><tbody>" +
             rows
@@ -18148,8 +19202,11 @@
           );
         }
         function reportParticipants(model, session) {
-          return model.audience === "management" && model.detailLevel === "summary"
-            ? session.participants.filter((participant) => participant.scores.length)
+          return model.audience === "management" &&
+            model.detailLevel === "summary"
+            ? session.participants.filter(
+                (participant) => participant.scores.length,
+              )
             : session.participants;
         }
         function textReport(m) {
@@ -18161,7 +19218,10 @@
             "بازه: " + faDate(m.start) + " تا " + faDate(m.end),
             "سال تحصیلی: " + m.academicYear,
           ];
-          if (m.audience === "management" && m.detailLevel === "summary") lines.push("نمایش خلاصه مدیریتی: آمار همه هنرجویان و تمام ثبت‌های فعالیت؛ ریز حضور هر جلسه در نمایش کامل و فایل JSON موجود است.");
+          if (m.audience === "management" && m.detailLevel === "summary")
+            lines.push(
+              "نمایش خلاصه مدیریتی: آمار همه هنرجویان و تمام ثبت‌های فعالیت؛ ریز حضور هر جلسه در نمایش کامل و فایل JSON موجود است.",
+            );
           if (m.class) lines.push("کلاس: " + m.class.name);
           if (m.student)
             lines.push(
@@ -18339,7 +19399,10 @@
             '<article class="card report-document periodic-document"><header class="periodic-document-heading"><span>' +
             (m.audience === "parent"
               ? "ویژه اولیا — اطلاعات یک هنرجو"
-              : "ویژه مدیریت مدرسه — " + (m.detailLevel === "summary" ? "خلاصه مدیریتی" : "جزئیات کامل")) +
+              : "ویژه مدیریت مدرسه — " +
+                (m.detailLevel === "summary"
+                  ? "خلاصه مدیریتی"
+                  : "جزئیات کامل")) +
             "</span><h2>" +
             (m.mode === "daily" ? "گزارش روزانه" : "گزارش هفتگی") +
             "</h2><h3>" +
@@ -18422,18 +19485,32 @@
                   num(l.markCount),
                 ]),
               );
-            h += "<h3>پیگیری وضعیت هنرجویان</h3>" +
+            h +=
+              "<h3>پیگیری وضعیت هنرجویان</h3>" +
               table(
-                [m.class ? "هنرجو" : "هنرجو / کلاس", "جلسه", "حاضر", "غایب", "تأخیر", "تعیین‌نشده"],
+                [
+                  m.class ? "هنرجو" : "هنرجو / کلاس",
+                  "جلسه",
+                  "حاضر",
+                  "غایب",
+                  "تأخیر",
+                  "تعیین‌نشده",
+                ],
                 m.students.map((st) => [
                   st.name + (m.class ? "" : " / " + st.className),
-                  num(st.sessions), num(st.present), num(st.absent), num(st.late), num(st.unknown),
+                  num(st.sessions),
+                  num(st.present),
+                  num(st.absent),
+                  num(st.late),
+                  num(st.unknown),
                 ]),
                 "student-summary",
               );
           }
           h += "<h3>جزئیات جلسات و ثبت‌ها</h3>";
-          if (m.audience === "management" && m.detailLevel === "summary") h += '<p class="periodic-method">نمایش خلاصه: آمار همه هنرجویان و همه ثبت‌های فعالیت حفظ شده است؛ برای ریز حضور هر هنرجو در هر جلسه، نمایش «جزئیات کامل» را انتخاب کنید. فایل JSON جزئیات کامل همین محدوده را دارد.</p>';
+          if (m.audience === "management" && m.detailLevel === "summary")
+            h +=
+              '<p class="periodic-method">نمایش خلاصه: آمار همه هنرجویان و همه ثبت‌های فعالیت حفظ شده است؛ برای ریز حضور هر هنرجو در هر جلسه، نمایش «جزئیات کامل» را انتخاب کنید. فایل JSON جزئیات کامل همین محدوده را دارد.</p>';
           for (const s of m.sessions) {
             h +=
               '<section class="periodic-session"><h4>' +
@@ -18448,7 +19525,17 @@
               (s.unitName ? " / " + esc(s.unitName) : "") +
               (s.teacher ? " · دبیر: " + esc(s.teacher) : "") +
               "</p>";
-            if (m.audience === "management" && m.detailLevel === "summary") h += '<p class="periodic-method">حاضر: ' + num(s.counts.present) + ' · غایب: ' + num(s.counts.absent) + ' · تأخیر: ' + num(s.counts.late) + ' · تعیین‌نشده: ' + num(s.counts.unknown) + '</p>';
+            if (m.audience === "management" && m.detailLevel === "summary")
+              h +=
+                '<p class="periodic-method">حاضر: ' +
+                num(s.counts.present) +
+                " · غایب: " +
+                num(s.counts.absent) +
+                " · تأخیر: " +
+                num(s.counts.late) +
+                " · تعیین‌نشده: " +
+                num(s.counts.unknown) +
+                "</p>";
             h += table(
               ["هنرجو", "وضعیت حضور", "نمره، تکلیف و فعالیت ثبت‌شده"],
               reportParticipants(m, s).map((p) => [
@@ -18616,7 +19703,13 @@
                 )
                 .join("") +
               "</select></label>";
-          if (f.audience === "management") h += '<label>سطح جزئیات<select onchange="EduPeriodicReports.set(\'detailLevel\',this.value)"><option value="summary" ' + (f.detailLevel === "summary" ? "selected" : "") + '>خلاصه مدیریتی و فعالیت‌ها</option><option value="full" ' + (f.detailLevel === "full" ? "selected" : "") + '>جزئیات کامل حضور هر جلسه</option></select></label>';
+          if (f.audience === "management")
+            h +=
+              '<label>سطح جزئیات<select onchange="EduPeriodicReports.set(\'detailLevel\',this.value)"><option value="summary" ' +
+              (f.detailLevel === "summary" ? "selected" : "") +
+              '>خلاصه مدیریتی و فعالیت‌ها</option><option value="full" ' +
+              (f.detailLevel === "full" ? "selected" : "") +
+              ">جزئیات کامل حضور هر جلسه</option></select></label>";
           h +=
             '<label>نام تنظیم‌کننده (اختیاری)<input value="' +
             esc(f.author) +
@@ -18637,12 +19730,18 @@
         }
         function set(key, value) {
           if (
-            !["audience", "date", "schoolId", "classId", "studentId", "detailLevel"].includes(
-              key,
-            )
+            ![
+              "audience",
+              "date",
+              "schoolId",
+              "classId",
+              "studentId",
+              "detailLevel",
+            ].includes(key)
           )
             return;
-          if (key === "detailLevel" && !["summary", "full"].includes(value)) return;
+          if (key === "detailLevel" && !["summary", "full"].includes(value))
+            return;
           filters[key] = value;
           if (key === "schoolId") {
             filters.classId = "";
@@ -18766,9 +19865,22 @@
               ? JSON.stringify(model, null, 2)
               : textReport(model);
           const blob = new Blob([content], {
-            type: kind === "json" ? "application/json;charset=utf-8" : "text/plain;charset=utf-8",
+            type:
+              kind === "json"
+                ? "application/json;charset=utf-8"
+                : "text/plain;charset=utf-8",
           });
-          downloadLocalFile(blob, "edu-" + model.mode + "-" + model.start + "-" + model.audience + "." + kind);
+          downloadLocalFile(
+            blob,
+            "edu-" +
+              model.mode +
+              "-" +
+              model.start +
+              "-" +
+              model.audience +
+              "." +
+              kind,
+          );
         }
         root.EduPeriodicReports = {
           filters,
