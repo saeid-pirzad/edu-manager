@@ -6174,6 +6174,34 @@
         "#9333ea",
       ];
 
+      // Shared data-boundary rules; grading maps only read their own records.
+      const RESERVED_RECORD_IDS = new Set(["__proto__", "constructor", "prototype", ...Object.getOwnPropertyNames(Object.prototype)]);
+      function isDataObject(value) { return value !== null && typeof value === "object" && !Array.isArray(value); }
+      function isSafeRecordId(value) {
+        return typeof value === "string" && /^[A-Za-z0-9_-]{1,120}$/.test(value) && !RESERVED_RECORD_IDS.has(value);
+      }
+      function assertSafeDataTree(value) {
+        const pending = [value], seen = new WeakSet();
+        while (pending.length) {
+          const current = pending.pop();
+          if (!current || typeof current !== "object" || seen.has(current)) continue;
+          seen.add(current);
+          for (const key of Object.keys(current)) {
+            if (["__proto__", "constructor", "prototype"].includes(key)) throw Error("کلید غیرمجاز در داده ورودی.");
+            pending.push(current[key]);
+          }
+        }
+      }
+      function ownScoreRecord(source, id) {
+        const value = isDataObject(source) && Object.hasOwn(source, id) ? source[id] : null;
+        return Object.assign(Object.create(null), isDataObject(value) ? value : null);
+      }
+      function writableScoreRecord(source, id) {
+        if (!isDataObject(source) || !isSafeRecordId(id)) throw Error("شناسه یا مخزن نمره نامعتبر است.");
+        const record = ownScoreRecord(source, id);
+        source[id] = record;
+        return record;
+      }
       function uid() {
         return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
       }
@@ -8533,7 +8561,7 @@
         </tr></thead><tbody>`;
             const sortedStudents = getSortedStudents(c);
             sortedStudents.forEach((st, i) => {
-              const existing = u.unitScores?.[st.id] || {};
+              const existing = ownScoreRecord(u.unitScores, st.id) || {};
               h += `<tr>
           <td>${i + 1}</td>
           <td>${esc(st.name)}</td>
@@ -8560,7 +8588,7 @@
         const u = p?.units.find((x) => x.id === uId);
         if (!u) return;
         if (!u.unitScores) u.unitScores = {};
-        if (!u.unitScores[stId]) u.unitScores[stId] = {};
+        u.unitScores[stId] = writableScoreRecord(u.unitScores, stId);
         const v = value === "" ? null : parseFloat(value);
         if (v === null || isNaN(v)) delete u.unitScores[stId][field];
         else {
@@ -8690,7 +8718,7 @@
 
         lesson.poudmans.forEach((p) => {
           p.units.forEach((u) => {
-            const us = u.unitScores?.[stId];
+            const us = ownScoreRecord(u.unitScores, stId);
             if (us) {
               if (us.m !== undefined && us.m !== null)
                 details[p.id][u.id].m = us.m;
@@ -10960,7 +10988,8 @@
         return Object.assign(Error(message), { fieldId });
       }
       function recordFieldLabel(fieldId) {
-        const label = document.getElementById(fieldId)?.closest("label");
+        const field = document.getElementById(fieldId);
+        const label = field?.closest("label") || field?.labels?.[0];
         if (!label) return "این فیلد";
         return (
           [...label.childNodes]
@@ -11433,7 +11462,7 @@
             if (!Array.isArray(x)) fail(m);
           },
           id = (x) => {
-            if (typeof x !== "string" || !/^[A-Za-z0-9_-]{1,120}$/.test(x))
+            if (!isSafeRecordId(x))
               fail("شناسه");
           },
           text = (x) => {
@@ -11452,16 +11481,8 @@
           )
             fail("تاریخ");
         };
-        const walk = (x) => {
-          if (!x || typeof x !== "object") return;
-          for (const k of Object.keys(x)) {
-            if (["__proto__", "constructor", "prototype"].includes(k))
-              fail("کلید غیرمجاز");
-            walk(x[k]);
-          }
-        };
         if (!obj(d)) fail("بانک");
-        walk(d);
+        assertSafeDataTree(d);
         arr(d.schools, "مدارس");
         arr(d.sessions, "جلسات");
         const classes = new Map(),
@@ -11696,7 +11717,7 @@
       function calcStudentLesson(c, lesson, stId) {
         const r = calcStudentLessonBase(c, lesson, stId);
         if (lesson.gradeMode !== "kardanesh") return r;
-        const g = lesson.kardaneshScores?.[stId] || {};
+        const g = ownScoreRecord(lesson.kardaneshScores, stId);
         r.practical = g.practical ?? null;
         r.theory = g.theory ?? null;
         r.avgM = r.theory;
@@ -11812,7 +11833,7 @@
           return;
         }
         input.setCustomValidity("");
-        const g = (l.kardaneshScores || (l.kardaneshScores = {}))[sid] || {};
+        const g = writableScoreRecord(l.kardaneshScores || (l.kardaneshScores = {}), sid);
         if (value === null) delete g[field];
         else g[field] = value;
         l.kardaneshScores[sid] = g;
@@ -12168,6 +12189,7 @@
           };
         }
         function moduleResult(p, g = {}) {
+          g = Object.assign(Object.create(null), isDataObject(g) ? g : null);
           const complete =
             g.m != null &&
             g.c != null &&
@@ -12203,7 +12225,7 @@
           const modules = pods.map((pod) => ({
             id: pod.id,
             name: pod.name,
-            ...moduleResult(p, pod.podScores?.[sid]),
+            ...moduleResult(p, ownScoreRecord(pod.podScores, sid)),
           }));
           const present = modules.filter((x) => x.final != null),
             complete = modules.length > 0 && modules.every((x) => x.complete);
@@ -13025,7 +13047,7 @@
             )
               throw Error("معیار نامعتبر است.");
             p.podScores = p.podScores || {};
-            const g = p.podScores[sid] || {};
+            const g = writableScoreRecord(p.podScores, sid);
             if (value === "") delete g.gate;
             else if (["yes", "no"].includes(value)) g.gate = value === "yes";
             else throw Error("وضعیت معیار نامعتبر است.");
@@ -13103,7 +13125,7 @@
                 (policy.requireGate ? "<th>معیارهای الزامی و ایمنی</th>" : "") +
                 "<th>نمره پودمان</th><th>نتیجه و دلیل</th></tr></thead><tbody>";
               for (const st of students) {
-                const g = pod.podScores?.[st.id] || {},
+                const g = ownScoreRecord(pod.podScores, st.id),
                   r = P.moduleResult(policy, g);
                 h +=
                   `<tr><td>${esc(st.name)}</td><td>` +
@@ -13374,6 +13396,7 @@
         }
 
         function normalizeDB(input, { legacy = false } = {}) {
+          assertSafeDataTree(input);
           if (input?.schemaVersion > 25)
             throw Error("این بانک متعلق به نسخه جدیدتر برنامه است.");
           const d = clone(input);
@@ -13415,13 +13438,7 @@
                     for (const id of Object.keys(u.unitScores))
                       references.add(id);
                   }
-                for (const g of Object.values(l.kardaneshScores))
-                  Object.assign(
-                    g,
-                    l.gradingPolicy?.method === "dual"
-                      ? EduPolicy.dual(l.gradingPolicy, g.practical, g.theory)
-                      : weightedKardanesh(g.practical, g.theory),
-                  );
+                deriveDualGrades(l);
               }
               for (const x of d.sessions.filter((x) => x.classId === c.id)) {
                 for (const st of x.roster || []) references.add(st.id);
@@ -13662,44 +13679,66 @@
           return output;
         }
 
-        function decodeWorkspaceRecords(records) {
-          const meta = records.find((x) => x.logical === "meta");
-          if (!meta) throw Error("داده دوره موجود نیست.");
-          const value = clone(meta.value),
-            layout = value.layout;
+        function logicalRecordType(logical) {
+          if (logical === "meta") return {kind: "meta"};
+          const match = typeof logical === "string" && /^(class|session):([A-Za-z0-9_-]{1,120})$/.exec(logical);
+          if (!match || !isSafeRecordId(match[2])) throw Error("نوع یا شناسه رکورد دوره نامعتبر است.");
+          return {kind: match[1], id: match[2]};
+        }
+        function validateLogicalValue(logical, value) {
+          const type = logicalRecordType(logical);
+          if (!isDataObject(value) || (type.kind !== "meta" && value.id !== type.id))
+            throw Error("شناسه داخل رکورد با کلید ذخیره آن سازگار نیست.");
+          return type;
+        }
+        function decodeWorkspaceRecords(records, {workspaceId} = {}) {
+          if (!Array.isArray(records)) throw Error("فهرست رکوردهای دوره معتبر نیست.");
+          const byKey = new Map();
+          for (const row of records) {
+            if (!isDataObject(row) || byKey.has(row.logical)) throw Error("رکورد دوره ناقص یا تکراری است.");
+            if (workspaceId !== undefined && (row.workspace !== workspaceId || row.key !== workspaceId + "|" + row.logical))
+              throw Error("مالک دوره یا کلید رکورد معتبر نیست.");
+            validateLogicalValue(row.logical, row.value);
+            byKey.set(row.logical, row.value);
+          }
+          const meta = byKey.get("meta");
+          if (!meta || !Array.isArray(meta.layout)) throw Error("داده یا چیدمان اصلی دوره موجود نیست.");
+          const value = clone(meta), referenced = new Set();
           delete value.layout;
-          const byKey = new Map(records.map((x) => [x.logical, x.value]));
-          value.schools = layout.map((s) => ({
-            id: s.id,
-            name: s.name,
-            classes: s.classes.map((id) => clone(byKey.get("class:" + id))),
-          }));
-          value.sessions = records
-            .filter((x) => x.logical.startsWith("session:"))
-            .map((x) => clone(x.value));
-          return {
-            data: normalizeDB(value),
-            records: new Map(
-              records.map((x) => [x.logical, JSON.stringify(x.value)]),
-            ),
-          };
+          value.schools = meta.layout.map(school => {
+            if (!isDataObject(school) || !isSafeRecordId(school.id) || !Array.isArray(school.classes))
+              throw Error("چیدمان مدرسه معتبر نیست.");
+            return {id: school.id, name: school.name, classes: school.classes.map(id => {
+              if (!isSafeRecordId(id) || referenced.has(id) || !byKey.has("class:" + id))
+                throw Error("کلاس چیدمان موجود نیست یا تکرار شده است.");
+              referenced.add(id);
+              return clone(byKey.get("class:" + id));
+            })};
+          });
+          for (const logical of byKey.keys())
+            if (logical.startsWith("class:") && !referenced.has(logical.slice(6)))
+              throw Error("یک کلاس در رکوردها وجود دارد اما در چیدمان دوره معرفی نشده است؛ بازیابی متوقف شد.");
+          value.sessions = records.filter(row => row.logical.startsWith("session:")).map(row => clone(row.value));
+          return {data: normalizeDB(value), records: new Map(records.map(row => [row.logical, JSON.stringify(row.value)]))};
         }
 
         async function readWorkspace(id) {
           return decodeWorkspaceRecords(
             (await allFrom("records")).filter((row) => row.workspace === id),
+            {workspaceId: id},
           );
         }
 
+        function deriveDualGrades(lesson) {
+          for (const [id, target] of Object.entries(lesson.kardaneshScores || {})) {
+            const grade = ownScoreRecord(lesson.kardaneshScores, id);
+            Object.assign(target, lesson.gradingPolicy?.method === "dual"
+              ? EduPolicy.dual(lesson.gradingPolicy, grade.practical, grade.theory)
+              : weightedKardanesh(grade.practical, grade.theory));
+          }
+        }
         function deriveClass(c) {
-          for (const l of c.lessons)
-            for (const g of Object.values(l.kardaneshScores || {}))
-              Object.assign(
-                g,
-                l.gradingPolicy?.method === "dual"
-                  ? EduPolicy.dual(l.gradingPolicy, g.practical, g.theory)
-                  : weightedKardanesh(g.practical, g.theory),
-              );
+          for (const lesson of c.lessons) deriveDualGrades(lesson);
         }
 
         function checkScope(scope) {
@@ -14422,8 +14461,7 @@
                   )
                     throw Error("نوع نمره معتبر نیست.");
                   target =
-                    (l.kardaneshScores || (l.kardaneshScores = {}))[item.sid] ||
-                    {};
+                    writableScoreRecord(l.kardaneshScores || (l.kardaneshScores = {}), item.sid);
                   l.kardaneshScores[item.sid] = target;
                 } else if (item.kind === "pod") {
                   const pod = l.poudmans.find((p) => p.id === item.pid);
@@ -14434,7 +14472,7 @@
                   )
                     throw Error("پودمان یا نوع نمره نامعتبر است.");
                   pod.podScores = pod.podScores || {};
-                  target = pod.podScores[item.sid] || {};
+                  target = writableScoreRecord(pod.podScores, item.sid);
                   pod.podScores[item.sid] = target;
                 } else {
                   if (l.gradingPolicy)
@@ -14446,7 +14484,7 @@
                     ?.units.find((u) => u.id === item.uid);
                   if (!unit) throw Error("واحد پیش‌نویس موجود نیست.");
                   target =
-                    (unit.unitScores || (unit.unitScores = {}))[item.sid] || {};
+                    writableScoreRecord(unit.unitScores || (unit.unitScores = {}), item.sid);
                   unit.unitScores[item.sid] = target;
                 }
                 if (item.remove) delete target[item.field];
@@ -14720,14 +14758,14 @@
                         kind: "u",
                         pid: p.id,
                         uid: u.id,
-                        value: u.unitScores?.[st.id]?.m,
+                        value: ownScoreRecord(u.unitScores, st.id)?.m,
                       }) +
                       "</td><td>" +
                       gradeCell(c, l, st, "p", {
                         kind: "u",
                         pid: p.id,
                         uid: u.id,
-                        value: u.unitScores?.[st.id]?.p,
+                        value: ownScoreRecord(u.unitScores, st.id)?.p,
                       }) +
                       "</td></tr>",
                   )
@@ -15278,30 +15316,24 @@
             value.schemaVersion !== 25
           )
             throw Error("ساختار پشتیبان کامل پشتیبانی نمی‌شود.");
-          const inspect = (object) => {
-            if (!object || typeof object !== "object") return;
-            for (const key of Object.keys(object)) {
-              if (["__proto__", "constructor", "prototype"].includes(key))
-                throw Error("کلید نامعتبر در فایل پشتیبان.");
-              inspect(object[key]);
-            }
-          };
-          inspect(value);
+          assertSafeDataTree(value);
           for (const name of backupStores)
             if (!Array.isArray(value.stores?.[name]))
               throw Error("بخش پشتیبان ناقص است: " + name);
           if (value.reportDrafts !== undefined && (!value.reportDrafts || typeof value.reportDrafts !== "object" || Array.isArray(value.reportDrafts)))
             throw Error("فهرست توضیحات پشتیبان معتبر نیست.");
-          const ids = new Set(),
+          const ids = new Set(), recordSets = new Map(),
             periods = [];
+          for (const row of value.stores.records)
+            if (!isDataObject(row) || !isSafeRecordId(row.workspace)) throw Error("رکورد داده باید متعلق به یک دوره معتبر باشد.");
           for (const period of value.stores.catalog) {
             if (
-              !/^[A-Za-z0-9_-]{1,120}$/.test(period.id) ||
+              !isDataObject(period) || !isSafeRecordId(period.id) ||
               ids.has(period.id) ||
-              !Number.isInteger(period.revision) ||
+              !Number.isSafeInteger(period.revision) ||
               period.revision < 0 ||
               typeof period.closed !== "boolean" ||
-              typeof period.createdAt !== "string"
+              typeof period.createdAt !== "string" || !Number.isFinite(Date.parse(period.createdAt))
             )
               throw Error("شناسنامه دوره در پشتیبان نامعتبر است.");
             validateReportNotes(period.reportNotesRecovery, period.id);
@@ -15319,7 +15351,8 @@
               records.some((r) => r.key !== period.id + "|" + r.logical)
             )
               throw Error("رکوردهای دوره ناقص یا تکراری است.");
-            const normalized = decodeWorkspaceRecords(records).data;
+            const normalized = decodeWorkspaceRecords(records, {workspaceId: period.id}).data;
+            recordSets.set(period.id, new Map(records.map(row => [row.logical, row.value])));
             if (
               normalized.settings.academicYear !== period.year ||
               normalized.settings.academicTerm !== period.term
@@ -15340,25 +15373,27 @@
           ])
             for (const row of value.stores[name]) {
               if (
-                !row ||
-                typeof row !== "object" ||
+                !isDataObject(row) ||
                 (row.workspace != null && !ids.has(row.workspace))
               )
                 throw Error("رکورد خارج از دوره‌های پشتیبان است.");
-              if (name === "undo" && !ids.has(row.id))
-                throw Error("شناسه بازگردانی نامعتبر است.");
-              if (
-                name === "reports" &&
-                (!Array.isArray(row.classes) ||
-                  typeof row.year !== "string" ||
-                  typeof row.term !== "string")
-              )
-                throw Error("کارنامه بایگانی‌شده نامعتبر است.");
+              if (name === "undo" && !ids.has(row.id)) throw Error("شناسه بازگردانی نامعتبر است.");
+              if (name === "reports") {
+                if (!ids.has(row.workspace)) throw Error("کارنامه ثابت متعلق به دوره موجود نیست.");
+                validateFrozenReport(row);
+              }
               if (name === "backups" && !row.full)
                 normalizeDB(row.db, {
                   legacy: (row.db?.schemaVersion || 23) < 24,
                 });
             }
+          const undoIds = new Set();
+          for (const undo of value.stores.undo) {
+            if (undoIds.has(undo.id)) throw Error("رکورد بازگردانی دوره تکراری است.");
+            undoIds.add(undo.id);
+            const period = periods.find(item => item.period.id === undo.id)?.period;
+            validatedUndoCandidate(undo, recordSets.get(undo.id), period);
+          }
           if (value.version === 2 && !Array.isArray(value.gradeDrafts))
             throw Error("بخش پیش‌نویس نمره پشتیبان ناقص است.");
           const draftKeys = new Set();
@@ -15883,25 +15918,51 @@
           );
         }
 
-        async function undoLast() {
-          if (fileMode)
-            throw Error(
-              "این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.",
-            );
-          await flushDrafts({ strict: true });
-          await writer.catch(() => {});
-          const undo = await readRecord("undo", workspace.id);
-          if (!undo || undo.revision !== workspace.revision)
-            throw Error("آخرین تغییر قابل بازگردانی نیست.");
-          if (!confirm("آخرین تغییر «" + undo.action + "» بازگردانده شود؟"))
-            return;
-          const candidate = new Map(
-            [...committed].map(([k, v]) => [k, JSON.parse(v)]),
-          );
-          for (const oldRecord of undo.before) {
-            if (oldRecord.value === null) candidate.delete(oldRecord.key);
-            else candidate.set(oldRecord.key, oldRecord.value);
+        function validatedUndoCandidate(undo, records, period) {
+          assertSafeDataTree(undo);
+          if (!isDataObject(undo) || !period || !isSafeRecordId(undo.id) || undo.id !== period.id ||
+              (undo.workspace !== undefined && undo.workspace !== period.id) ||
+              !Number.isSafeInteger(undo.revision) || undo.revision < 1 || undo.revision > period.revision ||
+              typeof undo.action !== "string" || undo.action.length > 10000 || !Array.isArray(undo.before) || !(records instanceof Map))
+            throw Error("ساختار یا نسخه بازگردانی معتبر نیست.");
+          const keys = new Set(), candidate = new Map([...records].map(([key, value]) => [key, clone(value)]));
+          for (const before of undo.before) {
+            if (!isDataObject(before) || !Object.hasOwn(before, "value") || keys.has(before.key)) throw Error("رکورد بازگردانی ناقص یا تکراری است.");
+            logicalRecordType(before.key);
+            keys.add(before.key);
+            if (before.value === null) candidate.delete(before.key);
+            else { validateLogicalValue(before.key, before.value); candidate.set(before.key, clone(before.value)); }
           }
+          // A stale undo cannot be executed; only an undo matching these records has a testable candidate.
+          if (undo.revision === period.revision)
+            decodeWorkspaceRecords([...candidate].map(([logical, value]) => ({logical, value})));
+          return candidate;
+        }
+        let undoBusy = false;
+        async function undoLast() {
+          if (undoBusy) return false;
+          undoBusy = true;
+          busy++;
+          paintStatus();
+          try {
+            await flushDrafts({ strict: true });
+            await writer.catch(() => {});
+            assertEntityWritable();
+            const target = {id: workspace.id, revision: workspace.revision};
+            const operation = performUndo(target);
+            writer = operation;
+            return await operation;
+          } finally { undoBusy = false; busy--; paintStatus(); }
+        }
+        async function performUndo(target) {
+          const undo = await readRecord("undo", target.id);
+          if (!undo || workspace.id !== target.id || workspace.revision !== target.revision || undo.revision !== target.revision)
+            throw Error("آخرین تغییر قابل بازگردانی نیست.");
+          const candidate = validatedUndoCandidate(undo,
+            new Map([...committed].map(([key, value]) => [key, JSON.parse(value)])), workspace);
+          if (!confirm("آخرین تغییر «" + undo.action + "» بازگردانده شود؟")) return false;
+          assertEntityWritable();
+          if (workspace.id !== target.id || workspace.revision !== target.revision) throw Error("دوره یا اطلاعات بازگردانی تغییر کرده است.");
           await commitRecords(candidate, {
             action: "بازگردانی: " + undo.action,
             replace: true,
@@ -15913,6 +15974,7 @@
           closeModal();
           render();
           setStatus("آخرین تغییر بازگردانده شد.", "saved");
+          return true;
         }
 
         async function openPeriods() {
@@ -16242,6 +16304,7 @@
               at,
               classes: report.classes,
             };
+          validateFrozenReport(snapshot);
           let finalizedWorkspace;
           const tx = connection.transaction(
               ["catalog", "reports", "events", "undo"],
@@ -16326,9 +16389,48 @@
           render();
         }
 
+        function validateFrozenReport(report) {
+          const fail = () => { throw Error("ساختار کارنامه ثابت معتبر نیست؛ فایل اصلی را برای بررسی نگه دارید."); };
+          const text = value => typeof value === "string" && value.length <= 10000;
+          const score = value => value == null || (typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 20);
+          const optionalBoolean = value => value == null || typeof value === "boolean";
+          assertSafeDataTree(report);
+          if (!isDataObject(report) || !isSafeRecordId(report.id) || !isSafeRecordId(report.workspace) ||
+              !text(report.year) || !text(report.term) || typeof report.at !== "string" || !Number.isFinite(Date.parse(report.at)) || !Array.isArray(report.classes)) fail();
+          for (const c of report.classes) {
+            if (!isDataObject(c) || !text(c.school) || !text(c.name) || !Array.isArray(c.students)) fail();
+            const students = new Set();
+            for (const st of c.students) {
+              if (!isDataObject(st) || !isSafeRecordId(st.id) || students.has(st.id) || !text(st.name) ||
+                  (st.code !== undefined && !text(st.code)) || !score(st.average) || !Array.isArray(st.lessons)) fail();
+              students.add(st.id);
+              const lessons = new Set();
+              for (const l of st.lessons) {
+                if (!isDataObject(l) || !isSafeRecordId(l.id) || lessons.has(l.id) || !text(l.name) ||
+                    (l.mode !== undefined && !["standard", "kardanesh"].includes(l.mode)) || !optionalBoolean(l.passed) ||
+                    (l.reason !== undefined && !text(l.reason)) || (l.teacher !== undefined && !text(l.teacher)) ||
+                    (l.policy != null && !isDataObject(l.policy)) || (l.courseInfo != null && !isDataObject(l.courseInfo)) ||
+                    ["practical", "theory", "mostamar", "payani", "final", "threshold"].some(key => !score(l[key]))) fail();
+                lessons.add(l.id);
+                if (l.modules != null) {
+                  if (!Array.isArray(l.modules)) fail();
+                  const modules = new Set();
+                  for (const m of l.modules) {
+                    if (!isDataObject(m) || !isSafeRecordId(m.id) || modules.has(m.id) || !text(m.name) || !score(m.final) ||
+                        !optionalBoolean(m.passed) || !optionalBoolean(m.complete) || (m.reason !== undefined && !text(m.reason))) fail();
+                    modules.add(m.id);
+                  }
+                }
+              }
+            }
+          }
+          return true;
+        }
+
         async function showFrozenReport(id) {
           const report = await readRecord("reports", id);
           if (!report) throw Error("کارنامه ثابت موجود نیست.");
+          validateFrozenReport(report);
           showModal(
             "کارنامه نهایی ثابت",
             "<h2>" +
@@ -16354,24 +16456,24 @@
                                 "<tr><td>" +
                                 esc(l.name) +
                                 "</td><td>" +
-                                (l.mode === "kardanesh"
+                                esc((l.mode === "kardanesh"
                                   ? l.practical
-                                  : l.payani) +
+                                  : l.payani) ?? "—") +
                                 "</td><td>" +
-                                (l.mode === "kardanesh"
+                                esc((l.mode === "kardanesh"
                                   ? l.theory
-                                  : l.mostamar) +
+                                  : l.mostamar) ?? "—") +
                                 "</td><td>" +
                                 finalText(l) +
                                 "</td><td>" +
-                                (l.policy || l.mode === "kardanesh"
+                                esc(l.policy || l.mode === "kardanesh"
                                   ? gradeStatus(l)
                                   : "ثبت نهایی") +
                                 "</td></tr>",
                             )
                             .join("") +
                           "</tbody></table><p>میانگین نهایی: " +
-                          (st.average === null ? "—" : st.average.toFixed(2)) +
+                          (Number.isFinite(st.average) ? st.average.toFixed(2) : "—") +
                           "</p>",
                       )
                       .join(""),
@@ -16405,7 +16507,7 @@
           };
         }
         function scoreSource(c, l, p, u, sid, field) {
-          if (u.unitScores?.[sid]?.[field] != null)
+          if (ownScoreRecord(u.unitScores, sid)[field] != null)
             return "ثبت گروهی (اولویت بالاتر)";
           const type = field === "m" ? "mostamar" : "payani";
           const x = db.sessions
@@ -16711,7 +16813,7 @@
           const headers = rows[0].map(normalizedName),
             nameIndex = headers.findIndex((x) => x.includes("نام")),
             codeIndex = headers.findIndex(
-              (x) => x.includes("کد") && x.includes("دانش"),
+              (x) => x === "کد" || (x.includes("کد") && (x.includes("دانش") || x.includes("هنرجو"))),
             );
           if (nameIndex < 0) throw Error("ستون نام یافت نشد.");
           const codes = new Set(),
@@ -16723,9 +16825,10 @@
               throw Error("تعداد ستون ردیف " + (i + 1) + " معتبر نیست.");
             const name = normalizedName(row[nameIndex]),
               code = codeIndex < 0 ? "" : asciiDigits(row[codeIndex]);
-            if (!name || name.includes("مثال:")) continue;
-            if (name.length > 200 || /[\r\n<>]/.test(name) || code.length > 100)
-              throw Error("نام یا کد ردیف " + (i + 1) + " معتبر نیست.");
+            if (row.every(cell => !String(cell).trim())) continue;
+            if (name.startsWith('مثال:')) continue;
+            try { studentIdentity(name, code); }
+            catch (error) { throw Error('ردیف ' + (i + 1) + ': ' + error.message); }
             if (code && codes.has(code))
               throw Error("کد " + code + " در فایل تکراری است.");
             if (code) codes.add(code);
@@ -16733,7 +16836,7 @@
                 ? knownStudents(c).find((st) => st.code === code)
                 : null,
               sameName =
-                c.students.some((st) => normalizedName(st.name) === name) ||
+                knownStudents(c).some((st) => normalizedName(st.name) === name) ||
                 names.has(name);
             plan.push({
               row: i + 1,
@@ -16754,17 +16857,29 @@
         async function csvImportV24(e) {
           const file = e.target.files[0];
           if (!file) return;
+          const origin = {workspace: workspace?.id, schoolId: state.schoolId, classId: state.classId, revision: workspace?.revision};
           try {
+            assertEntityWritable();
             await flushDrafts({ strict: true });
-            if (workspace.closed) throw Error("دوره بسته است.");
+            await writer.catch(() => {});
+            assertEntityWritable();
+            if (origin.workspace !== workspace.id || origin.schoolId !== state.schoolId || origin.classId !== state.classId)
+              throw Error("کلاس یا دوره تغییر کرده است؛ فایل را دوباره انتخاب کنید.");
+            origin.revision = workspace.revision;
             if (file.size > 5 * 1024 * 1024)
               throw Error("حداکثر حجم CSV پنج مگابایت است.");
             const c = getClassObj(state.schoolId, state.classId);
             if (!c) throw Error("کلاس انتخاب نشده است.");
-            const plan = csvPlan(await file.text(), c);
-            pendingCSV = { workspace: workspace.id, classId: c.id, plan };
-            showModal(
+            const text = await file.text();
+            await writer.catch(() => {});
+            assertEntityWritable();
+            if (origin.workspace !== workspace.id || origin.schoolId !== state.schoolId || origin.classId !== state.classId || origin.revision !== workspace.revision)
+              throw Error("کلاس، دوره یا اطلاعات تغییر کرده است؛ فایل را دوباره انتخاب کنید.");
+            const plan = csvPlan(text, getClassObj(origin.schoolId, origin.classId));
+            if (!plan.length) throw Error("فایل ردیف قابل ثبت ندارد.");
+            const opened = showModal(
               "پیش‌نمایش ورود دانش‌آموزان",
+              '<form id="studentCSVEditor" class="record-editor" onsubmit="event.preventDefault();EduV24.commitCSV()"><div class="record-editor-context"><h4>' + esc(c.name) + '</h4></div>' +
               "<p>افراد هم‌نام خودکار ادغام نمی‌شوند. برای دو فرد هم‌نام، افزودن فرد مستقل را آگاهانه انتخاب کنید. کد دانش‌آموزی اختیاری ولی یکتا در کلاس است.</p><table><thead><tr><th>ردیف</th><th>نام</th><th>کد</th><th>وضعیت</th><th>تصمیم</th></tr></thead><tbody>" +
                 plan
                   .map(
@@ -16781,7 +16896,7 @@
                         : r.duplicate
                           ? "هم‌نام؛ نیازمند بررسی"
                           : "جدید") +
-                      '</td><td><select data-csv-row="' +
+                      '</td><td><select id="csvDecision' + i + '" data-csv-row="' +
                       i +
                       '"><option value="skip" ' +
                       (r.choice === "skip" ? "selected" : "") +
@@ -16798,8 +16913,9 @@
                       "</select></td></tr>",
                   )
                   .join("") +
-                '</tbody></table><button onclick="EduV24.commitCSV()">اعمال تصمیم‌ها</button><p id="operationError" role="alert"></p>',
+                '</tbody></table><div class="record-editor-actions"><button type="submit">اعمال تصمیم‌ها</button><button type="button" class="ghost" onclick="closeModal()">انصراف</button></div><p id="operationError" role="alert"></p></form>',
             );
+            if (opened !== false) { pendingCSV = {...origin, plan}; rememberRecordEditor(); }
           } catch (error) {
             handleError(error);
           } finally {
@@ -16807,54 +16923,59 @@
           }
         }
 
+        let csvSaving = false;
         async function commitCSV() {
-          if (!pendingCSV || pendingCSV.workspace !== workspace.id)
-            throw Error("پیش‌نمایش منقضی شده است.");
-          const c = findClass(pendingCSV.classId);
-          if (!c) throw Error("کلاس موجود نیست.");
-          const before = clone(c.students);
-          let added = 0,
-            updated = 0;
+          if (csvSaving) return false;
+          const form = document.querySelector('#modal:not(.hidden) #studentCSVEditor');
+          if (!form) return false;
+          csvSaving = true;
+          const context = pendingCSV;
+          const choices = [...form.querySelectorAll('[data-csv-row]')].map(el => el.value);
+          const finish = beginRecordEditorSave(form);
           try {
-            for (let i = 0; i < pendingCSV.plan.length; i++) {
-              const r = pendingCSV.plan[i],
-                choice = document.querySelector(
-                  '[data-csv-row="' + i + '"]',
-                ).value;
-              if (choice === "add" && !r.existingId) {
-                c.students.push({
-                  id: uid(),
-                  name: r.name,
-                  ...(r.code ? { code: r.code } : {}),
-                });
-                added++;
-              } else if (choice === "update" && r.existingId && !r.archived) {
-                const st = c.students.find((st) => st.id === r.existingId);
-                if (!st) throw Error("دانش‌آموز مقصد تغییر کرده است.");
-                st.name = r.name;
-                updated++;
-              }
-            }
-            await saveDBV24({
-              classId: c.id,
-              action:
-                "ورود CSV با پیش‌نمایش: " +
-                added +
-                " افزوده، " +
-                updated +
-                " اصلاح",
+            const check = () => {
+              assertEntityWritable();
+              if (!context || context.workspace !== workspace.id || context.revision !== workspace.revision || context.schoolId !== state.schoolId || context.classId !== state.classId)
+                throw Error('کلاس، دوره یا اطلاعات تغییر کرده است؛ پیش‌نمایش را دوباره بسازید.');
+              const c = getClassObj(context.schoolId, context.classId);
+              if (!c) throw Error('کلاس دیگر وجود ندارد.');
+              return c;
+            };
+            check();
+            await flushDrafts({strict: true});
+            await writer.catch(() => {});
+            const c = check(), additions = [], updates = [];
+            const codes = new Set(knownStudents(c).map(st => st.code).filter(Boolean));
+            context.plan.forEach((row, i) => {
+              const choice = choices[i];
+              if (choice === 'skip') return;
+              const identity = studentIdentity(row.name, row.code);
+              if (choice === 'add' && !row.existingId) {
+                if (identity.code && codes.has(identity.code)) throw Error('کد هنرجو در کلاس تکراری است: ' + identity.code);
+                if (identity.code) codes.add(identity.code);
+                additions.push({id: uid(), ...identity});
+              } else if (choice === 'update' && row.existingId && !row.archived) {
+                const student = c.students.find(st => st.id === row.existingId && st.code === identity.code);
+                if (!student) throw Error('هویت هنرجوی مقصد تغییر کرده است؛ فایل را دوباره بررسی کنید.');
+                if (student.name !== identity.name || student.recovered) updates.push({student, identity});
+              } else throw Error('تصمیم ردیف ' + row.row + ' معتبر نیست.');
             });
+            if (!additions.length && !updates.length) throw Error('تغییری برای ثبت انتخاب نشده است.');
+            freezeClassRosters(c);
+            for (const {student, identity} of updates) applyStudentIdentity(c, student, identity);
+            c.students.push(...additions);
+            await saveDBV24({action: 'ورود CSV: ' + additions.length + ' افزوده، ' + updates.length + ' اصلاح'});
+            finish();
+            rememberRecordEditor();
             pendingCSV = null;
             closeModal();
             render();
-            setStatus(
-              "CSV اعمال شد: " + added + " افزوده و " + updated + " اصلاح.",
-              "saved",
-            );
+            setStatus('CSV اعمال شد: ' + additions.length + ' افزوده و ' + updates.length + ' اصلاح.', 'saved');
+            return true;
           } catch (error) {
-            c.students = before;
-            handleError(error);
-          }
+            if (!showRecordEditorError(error, 'operationError')) handleError(error);
+            return false;
+          } finally { csvSaving = false; finish(); }
         }
 
         function downloadCSVTemplate() {
@@ -16875,6 +16996,18 @@
           if (code.length > 120 && code !== previous?.code)
             throw recordFieldError("کد هنرجو باید حداکثر ۱۲۰ نویسه باشد.", codeId);
           return {name, code};
+        }
+        function applyStudentIdentity(c, student, {name, code}) {
+          student.name = name;
+          student.code = code;
+          if (student.recovered && !name.startsWith('دانش‌آموز بازیابی‌شده')) {
+            student.recovered = false;
+            for (const session of db.sessions.filter(x => x.classId === c.id))
+              for (const member of session.roster || [])
+                if (member.id === student.id && member.recovered) { member.name = name; member.recovered = false; }
+            const unresolved = db.schools.some(s => s.classes.some(cl => knownStudents(cl).some(x => x.id === student.id && x.recovered)));
+            if (!unresolved) db.migrationWarnings = (db.migrationWarnings || []).filter(message => !message.includes(student.id));
+          }
         }
         async function addStudentV24(event) {
           event.preventDefault();
@@ -16929,8 +17062,11 @@
             const c = getClassObj(origin.schoolId, origin.classId), student = c && getStudentObj(c, studentId);
             if (!student) throw Error("هنرجو دیگر در این کلاس وجود ندارد.");
             const context = {...origin, studentId, revision: workspace.revision};
-            const html = '<form class="record-editor" id="studentEditor" novalidate onsubmit="event.preventDefault();EduV24.saveStudent()"><div class="record-editor-context"><h4>' + esc(student.name) + '</h4><p>' + esc(getSchool(origin.schoolId).name + " / " + c.name) + (c.students.some(x => x.id === studentId) ? " · هنرجوی فعال" : " · سوابق بایگانی‌شده") + '</p></div><label for="editStudentName">نام و نام خانوادگی</label><input id="editStudentName" value="' + esc(student.name) + '"><label for="editStudentCode">کد هنرجو (اختیاری)</label><input id="editStudentCode" inputmode="numeric" value="' + esc(student.code || "") + '"><p>شناسه، نمرات و نام تاریخی جلسات قبلی حفظ می‌شوند. اصلاح نام موقت بازیابی‌شده، فقط نام‌های نیازمند بررسی همان هنرجو در جلسات این کلاس را نیز اصلاح می‌کند.</p><p id="studentEditError" class="entity-create-error" role="alert"></p><div class="row record-editor-actions"><button type="button" class="ghost" onclick="closeModal()">انصراف</button><button type="submit">ذخیره مشخصات</button></div></form>';
-            if (showModal("ویرایش مشخصات هنرجو", html) !== false) studentEditing = context;
+            const html = '<form class="record-editor" id="studentEditor" novalidate onsubmit="event.preventDefault();EduV24.saveStudent()"><div class="record-editor-context"><h4>' + esc(student.name) + '</h4><p>' + esc(getSchool(origin.schoolId).name + " / " + c.name) + (c.students.some(x => x.id === studentId) ? " · هنرجوی فعال" : " · سوابق بایگانی‌شده") + '</p></div><label for="editStudentName">نام و نام خانوادگی</label><input id="editStudentName" name="name" required autocomplete="off" aria-describedby="studentEditError" value="' + esc(student.name) + '"><label for="editStudentCode">کد هنرجو (اختیاری)</label><input id="editStudentCode" name="code" inputmode="numeric" autocomplete="off" aria-describedby="studentEditError" value="' + esc(student.code || "") + '"><p>شناسه، نمرات و نام تاریخی جلسات قبلی حفظ می‌شوند. اصلاح نام موقت بازیابی‌شده، فقط نام‌های نیازمند بررسی همان هنرجو در جلسات این کلاس را نیز اصلاح می‌کند.</p><p id="studentEditError" class="entity-create-error" role="alert"></p><div class="row record-editor-actions"><button type="button" class="ghost" onclick="closeModal()">انصراف</button><button type="submit">ذخیره مشخصات</button></div></form>';
+            if (showModal("ویرایش مشخصات هنرجو", html) !== false) {
+              studentEditing = context;
+              rememberRecordEditor();
+            }
           } catch(error) { handleError(error); }
         }
         async function saveStudent(studentId) {
@@ -16959,16 +17095,7 @@
               throw recordFieldError("این کد در فهرست فعال یا بایگانی کلاس وجود دارد.", "editStudentCode");
             if (student.name !== name || (student.code || "") !== code || (student.recovered && !name.startsWith("دانش‌آموز بازیابی‌شده"))) {
               freezeClassRosters(c);
-              student.name = name;
-              student.code = code;
-              if (student.recovered && !name.startsWith("دانش‌آموز بازیابی‌شده")) {
-                student.recovered = false;
-                for (const session of db.sessions.filter(x => x.classId === c.id))
-                  for (const member of session.roster || [])
-                    if (member.id === student.id && member.recovered) { member.name = name; member.recovered = false; }
-                const unresolved = db.schools.some(s => s.classes.some(cl => knownStudents(cl).some(x => x.id === student.id && x.recovered)));
-                if (!unresolved) db.migrationWarnings = (db.migrationWarnings || []).filter(message => !message.includes(student.id));
-              }
+              applyStudentIdentity(c, student, {name, code});
               await saveDBV24({action: "اصلاح مشخصات هنرجو: " + name});
             }
             finish();
@@ -17537,7 +17664,7 @@
                   ? "بایگانی هنرجو"
                   : "بازگردانی هنرجو") +
               "</button></div></form>";
-            if (showModal(title, body) !== false) membershipContext = context;
+            if (showModal(title, body) !== false) { membershipContext = context; rememberRecordEditor(); }
           } catch (error) {
             handleError(error);
           }
@@ -18026,11 +18153,10 @@
                   const pod = l?.poudmans?.find((p) => p.id === item.pid);
                   const source =
                     item.kind === "k"
-                      ? l?.kardaneshScores?.[item.sid]
+                      ? ownScoreRecord(l?.kardaneshScores, item.sid)
                       : item.kind === "pod"
-                        ? pod?.podScores?.[item.sid]
-                        : pod?.units.find((u) => u.id === item.uid)
-                            ?.unitScores?.[item.sid];
+                        ? ownScoreRecord(pod?.podScores, item.sid)
+                        : ownScoreRecord(pod?.units.find((u) => u.id === item.uid)?.unitScores, item.sid);
                   const fieldLabel =
                     {
                       practical: "عملی",
@@ -18582,7 +18708,7 @@
             if (!l?.gradingPolicy) continue;
             const r = EduPolicy.moduleResult(
               l.gradingPolicy,
-              pod.podScores?.[sid],
+              ownScoreRecord(pod.podScores, sid),
             );
             el.textContent = el.dataset.podFinal
               ? finalText(r)
@@ -20742,9 +20868,7 @@
                         : gradeStatus(r)),
                     modules: (r.modules || []).map((m) => {
                       const g =
-                        l.poudmans.find((p) => p.id === m.id)?.podScores?.[
-                          input.studentId
-                        ] || {};
+                        ownScoreRecord(l.poudmans.find((p) => p.id === m.id)?.podScores, input.studentId);
                       return {
                         name: m.name,
                         continuous: g.m ?? null,
