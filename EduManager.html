@@ -8635,8 +8635,8 @@
       }
 
       // ==================== محاسبه نمرات اصلاح‌شده ====================
-      function calcStudentLessonBase(c, lesson, stId) {
-        const sess = db.sessions
+      function calcStudentLessonBase(c, lesson, stId, source = db) {
+        const sess = source.sessions
           .filter((x) => x.classId === c.id && x.lessonId === lesson.id)
           .sort(
             (a, b) =>
@@ -8782,31 +8782,7 @@
       }
 
       // ==================== تنظیمات، پشتیبان، بقیه ====================
-      function openSettingsModal() {
-        showModal(
-          "تنظیمات",
-          '<div class="form-row"><label for="newPass">رمز جدید:</label><input type="password" id="newPass" autocomplete="new-password" placeholder="خالی: حفظ رمز فعلی"></div><label><input type="checkbox" id="removePassword"> حذف رمز ورود</label><p class="muted">رمز به‌صورت هش ذخیره می‌شود. اطلاعات مدرسه و فایل پشتیبان رمزگذاری نشده‌اند.</p><div class="row"><button onclick="saveSettings(this)">ذخیره</button><button class="ghost" onclick="closeModal()">انصراف</button></div>',
-        );
-      }
-
-      async function saveSettings(button) {
-        if (button) setControlLock(button, "button-operation", true);
-        try {
-          const password = document.getElementById("newPass").value,
-            remove = document.getElementById("removePassword").checked;
-          if (remove) db.settings.password = "";
-          else if (password)
-            db.settings.password = await hashPassword(password);
-          await saveDB();
-          isAuthenticated = true;
-          closeModal();
-          alert("تنظیمات ذخیره شد.");
-        } catch (err) {
-          alert("تنظیمات ثبت نشد: " + err.message);
-        } finally {
-          if (button) setControlLock(button, "button-operation", false);
-        }
-      }
+      // The persistence layer installs the settings editor and its save command.
 
       function openReportScope(
         schoolId = "",
@@ -11045,7 +11021,7 @@
           const field = controls.get(key);
           if (!field) continue;
           if (/^(checkbox|radio)$/.test(field.type)) field.checked = value;
-          else field.value = value;
+          else field.value = field.type === "password" ? "" : value;
         }
         if (form.querySelector("#course_method"))
           window.EduV24.course.toggleMethod();
@@ -11205,7 +11181,7 @@
             ),
           ].map((x) => [
             x.id || x.name,
-            /^(checkbox|radio)$/.test(x.type) ? x.checked : x.value,
+            /^(checkbox|radio)$/.test(x.type) ? x.checked : x.type === "password" ? (x.value ? "رمز جدید وارد شده" : "") : x.value,
           ]),
         );
       }
@@ -11714,8 +11690,8 @@
         c.students = c.students.filter((x) => x.id !== st.id);
       }
 
-      function calcStudentLesson(c, lesson, stId) {
-        const r = calcStudentLessonBase(c, lesson, stId);
+      function calcStudentLesson(c, lesson, stId, source = db) {
+        const r = calcStudentLessonBase(c, lesson, stId, source);
         if (lesson.gradeMode !== "kardanesh") return r;
         const g = ownScoreRecord(lesson.kardaneshScores, stId);
         r.practical = g.practical ?? null;
@@ -14622,8 +14598,8 @@
           });
         }
 
-        function calcV24(c, l, sid) {
-          const r = old.calcStudentLesson(c, l, sid);
+        function calcV24(c, l, sid, source = db) {
+          const r = old.calcStudentLesson(c, l, sid, source);
           if (l.gradingPolicy) {
             const p = l.gradingPolicy;
             if (p.method === "dual")
@@ -16795,14 +16771,20 @@
           return root;
         }
 
-        async function printReport(button) {
+        async function printReport(button, {context, validate} = {}) {
           try {
+            const expected = context || captureWorkspaceContext();
             await flushDrafts({ strict: true });
             await writer.catch(() => {});
+            if (!fileMode) await assertReportSnapshot(expected);
+            if (validate && !validate()) throw Error("محدوده یا متن گزارش تغییر کرده است؛ گزارش را دوباره تهیه کنید.");
             preparePrint(button);
             if (!globalThis.__EDU_PRINT_TEST__) window.print();
+            return true;
           } catch (error) {
+            if (context) throw error;
             handleError(error);
+            return false;
           }
         }
 
@@ -17278,17 +17260,7 @@
                 message.workspace === workspace.id &&
                 message.revision > workspace.revision
               ) {
-                blocked = true;
-                for (const item of drafts.values()) {
-                  item.review = true;
-                  item.error = "تعارض؛ نیازمند بررسی پس از بارگذاری مجدد";
-                }
-                if (drafts.size) storeDrafts();
-                setStatus(
-                  "داده این دوره در تب دیگری تغییر کرد. پیش‌نویس محفوظ است؛ صفحه را دوباره بارگذاری کنید.",
-                  "error",
-                );
-                lockControls();
+                markWorkspaceConflict();
               }
             };
         }
@@ -17420,6 +17392,134 @@
             finishSave();
           }
         }
+
+        function captureWorkspaceContext() {
+          return Object.freeze({id: workspace?.id || "", revision: workspace?.revision || 0});
+        }
+        function assertWorkspaceReadable() {
+          if (fileMode || !ready || resetBusy || connectionRetired || !workspace)
+            throw Error("اطلاعات آماده خواندن نیست؛ برنامه را دوباره باز کنید.");
+          if (blocked)
+            throw Error("اطلاعات این پنجره قدیمی است؛ صفحه را دوباره بارگذاری و گزارش یا فرم را دوباره تهیه کنید.");
+          if (db.settings.password && !isAuthenticated) throw Error("ابتدا وارد دوره شوید.");
+        }
+        function assertWorkspaceContext(context, {write = false} = {}) {
+          assertWorkspaceReadable();
+          if (!context || context.id !== workspace.id || context.revision !== workspace.revision)
+            throw Error("دوره یا اطلاعات تغییر کرده است؛ فرم یا گزارش را دوباره باز کنید.");
+          if (write) assertEntityWritable();
+        }
+        function markWorkspaceConflict() {
+          blocked = true;
+          for (const item of drafts.values()) {
+            item.review = true;
+            item.error = "تعارض؛ نیازمند بررسی پس از بارگذاری مجدد";
+          }
+          if (drafts.size) storeDrafts();
+          const message = "داده این دوره در تب دیگری تغییر کرد. پیش‌نویس محفوظ است؛ صفحه را دوباره بارگذاری کنید.";
+          setStatus(message, "error");
+          lockControls();
+          window.EduPeriodicReports?.invalidate(message);
+        }
+        function assertLiveWorkspace(live, context) {
+          assertWorkspaceContext(context);
+          if (!live || live.revision !== context.revision) {
+            markWorkspaceConflict();
+            throw Error("اطلاعات بانک در پنجره دیگری تغییر کرده است؛ صفحه را دوباره بارگذاری کنید.");
+          }
+        }
+        async function assertReportSnapshot(context) {
+          assertWorkspaceContext(context);
+          if (busy || drafts.size) throw Error("ثبت یا ویرایش ناتمام وجود دارد؛ گزارش را پس از ذخیره دوباره تهیه کنید.");
+          const live = await readRecord("catalog", context.id);
+          assertLiveWorkspace(live, context);
+          if (busy || drafts.size) throw Error("اطلاعات هنگام آماده‌سازی خروجی تغییر کرد؛ گزارش را دوباره تهیه کنید.");
+          return true;
+        }
+        async function prepareReportSnapshot() {
+          assertWorkspaceReadable();
+          const origin = workspace.id;
+          await flushDrafts({strict: true});
+          await writer.catch(() => {});
+          assertWorkspaceReadable();
+          if (workspace.id !== origin) throw Error("دوره هنگام تهیه گزارش تغییر کرد؛ گزارش را دوباره باز کنید.");
+          const context = captureWorkspaceContext();
+          const tx = connection.transaction(["catalog", "records"], "readonly"), done = transactionDone(tx);
+          const [live, rows] = await Promise.all([
+            requestPromise(tx.objectStore("catalog").get(context.id)),
+            requestPromise(tx.objectStore("records").getAll()),
+          ]);
+          await done;
+          assertLiveWorkspace(live, context);
+          if (busy || drafts.size) throw Error("ویرایش تازه‌ای ثبت شده است؛ گزارش را دوباره تهیه کنید.");
+          const data = decodeWorkspaceRecords(rows.filter(row => row.workspace === context.id), {workspaceId: context.id}).data;
+          return {context, data};
+        }
+
+        let settingsEditing = null, settingsSaving = false;
+        async function openSettingsV24() {
+          const origin = workspace?.id;
+          try {
+            if (ready && !fileMode && !blocked && !resetBusy && !connectionRetired && !workspace?.closed) {
+              await flushDrafts({strict: true});
+              await writer.catch(() => {});
+            }
+            if (origin !== workspace?.id) throw Error("دوره تغییر کرده است؛ تنظیمات را دوباره باز کنید.");
+            const context = captureWorkspaceContext();
+            const opened = showModal("تنظیمات",
+              '<form id="settingsEditor" class="record-editor" novalidate onsubmit="event.preventDefault();saveSettings()">' +
+              '<div class="record-editor-context"><h4>رمز ورود این دوره</h4><p>' + esc((workspace?.year || "") + " / " + (workspace?.term || "")) + '</p></div>' +
+              '<label class="course-field" for="newPass">رمز جدید<input type="password" id="newPass" autocomplete="new-password" aria-describedby="settingsHint settingsError" placeholder="خالی: حفظ رمز فعلی"></label>' +
+              '<label><input type="checkbox" id="removePassword"> حذف رمز ورود</label>' +
+              '<p id="settingsHint" class="muted">رمز خالی، رمز فعلی را حفظ می‌کند. برای حذف، گزینه حذف را انتخاب و کادر رمز جدید را خالی کنید. اطلاعات مدرسه و فایل پشتیبان رمزگذاری نشده‌اند.</p>' +
+              '<p id="settingsError" role="alert" class="entity-create-error"></p>' +
+              '<div class="record-editor-actions"><button type="submit">ذخیره تنظیمات</button><button type="button" class="ghost" onclick="closeModal()">انصراف</button></div></form>');
+            if (opened !== false) {
+              settingsEditing = {...context, form: document.getElementById("settingsEditor")};
+              rememberRecordEditor();
+            }
+          } catch (error) { handleError(error); }
+        }
+        async function saveSettingsV24() {
+          if (settingsSaving) return false;
+          const form = document.querySelector("#modal:not(.hidden) #settingsEditor");
+          if (!form) return false;
+          const context = settingsEditing, passwordInput = form.querySelector("#newPass");
+          const password = passwordInput.value, remove = form.querySelector("#removePassword").checked;
+          settingsSaving = true;
+          const finish = beginRecordEditorSave(form);
+          try {
+            const check = () => {
+              assertWorkspaceContext(context, {write: true});
+              if (context !== settingsEditing || context.form !== form || !form.isConnected)
+                throw Error("فرم تنظیمات عوض شده است؛ آن را دوباره باز کنید.");
+            };
+            check();
+            if (remove && password) throw recordFieldError("برای حذف رمز، کادر رمز جدید را خالی کنید یا گزینه حذف را بردارید.", "newPass");
+            await flushDrafts({strict: true});
+            await writer.catch(() => {});
+            check();
+            const nextPassword = remove ? "" : password ? await hashPassword(password) : db.settings.password;
+            check();
+            if (nextPassword !== db.settings.password) {
+              db.settings.password = nextPassword;
+              await saveDBV24({action: remove ? "حذف رمز ورود دوره" : "تغییر رمز ورود دوره"});
+            }
+            isAuthenticated = true;
+            passwordInput.value = "";
+            form.querySelector("#removePassword").checked = false;
+            finish();
+            rememberRecordEditor();
+            settingsEditing = null;
+            closeModal();
+            setStatus("تنظیمات این دوره ذخیره شد.", "saved");
+            return true;
+          } catch (error) {
+            if (!showRecordEditorError(error, "settingsError")) handleError(error);
+            return false;
+          } finally { settingsSaving = false; finish(); }
+        }
+
         let entityEditing = null,
           entitySaving = false;
         function assertEntityWritable() {
@@ -17965,6 +18065,8 @@
         }
         function installGlobals() {
           Object.assign(window, {
+            openSettingsModal: openSettingsV24,
+            saveSettings: saveSettingsV24,
             sessionStudent: (c, x, id) =>
               sessionRoster(c, x).find((st) => st.id === id) ||
               getStudentObj(c, id),
@@ -18054,7 +18156,15 @@
               revision: workspace?.revision || 0,
               pendingDrafts: drafts.size,
               closed: !!workspace?.closed,
+              ready,
+              blocked,
+              retired: connectionRetired,
+              resetting: resetBusy,
+              saving: busy,
+              authenticated: !db.settings.password || isAuthenticated,
             }),
+            prepareReportSnapshot,
+            assertReportSnapshot,
             normalizeDB,
             validateV24,
             averageLabel,
@@ -20820,6 +20930,15 @@
           const el = document.getElementById("periodicError");
           if (el) el.textContent = e.message || String(e);
         }
+        function invalidate(message = "اطلاعات گزارش تغییر کرده است؛ دوباره گزارش را تهیه کنید.") {
+          last = null;
+          const out = document.getElementById("periodicReportOutput");
+          if (out) out.innerHTML = '<div class="card empty" role="status">' + esc(message) + '</div>';
+          error(Error(message));
+        }
+        function isPreparedCurrent(prepared) {
+          return !!prepared && last === prepared && prepared.signature === reportSignature();
+        }
         async function generate() {
           if (busy) return null;
           busy = true;
@@ -20837,19 +20956,19 @@
             signature = JSON.stringify(input);
             const alert = document.getElementById("periodicError");
             if (alert) alert.textContent = "";
-            await root.EduV24.flushDrafts({ strict: true });
+            const snapshot = await root.EduV24.prepareReportSnapshot();
             if (signature !== JSON.stringify(inputSnapshot()))
               throw Error(
                 "تنظیمات گزارش تغییر کرده است؛ دوباره گزارش را تهیه کنید.",
               );
-            const model = build(db, input);
+            const model = build(snapshot.data, input);
             if (model.audience === "parent") {
-              const c = db.schools
+              const c = snapshot.data.schools
                 .find((s) => s.id === input.schoolId)
                 .classes.find((c) => c.id === input.classId);
               for (const l of c.lessons || []) {
                 try {
-                  const r = calcStudentLesson(c, l, input.studentId);
+                  const r = calcStudentLesson(c, l, input.studentId, snapshot.data);
                   model.currentGrades.push({
                     lessonName: l.name,
                     method:
@@ -20895,17 +21014,14 @@
                 }
               }
             }
-            last = { signature: reportSignature(), model };
+            await root.EduV24.assertReportSnapshot(snapshot.context);
+            if (signature !== JSON.stringify(inputSnapshot())) throw Error("تنظیمات گزارش تغییر کرده است؛ دوباره گزارش را تهیه کنید.");
+            last = { signature: reportSignature(), context: snapshot.context, model };
             const out = document.getElementById("periodicReportOutput");
             if (out) out.innerHTML = documentHtml(model);
             return model;
           } catch (e) {
-            last = null;
-            const out = document.getElementById("periodicReportOutput");
-            if (out)
-              out.innerHTML =
-                '<div class="card empty">گزارش تهیه نشد؛ پیام بالا را بررسی کنید.</div>';
-            error(e);
+            invalidate(e.message || String(e));
             return null;
           } finally {
             busy = false;
@@ -20918,41 +21034,50 @@
         }
         async function output(kind) {
           const model = await generate();
-          if (!model) return;
-          if (kind === "print") {
-            await root.EduV24.printReport(
-              document.querySelector("[data-periodic-print]"),
-            );
-            return;
-          }
-          if (!["txt", "json"].includes(kind)) return;
-          const content =
-            kind === "json"
-              ? JSON.stringify(model, null, 2)
-              : textReport(model);
-          const blob = new Blob([content], {
-            type:
+          if (!model) return false;
+          const prepared = last;
+          try {
+            if (!isPreparedCurrent(prepared)) throw Error("گزارش دیگر معتبر نیست؛ دوباره آن را تهیه کنید.");
+            if (kind === "print") {
+              await root.EduV24.printReport(
+                document.querySelector("[data-periodic-print]"),
+                {context: prepared.context, validate: () => isPreparedCurrent(prepared)},
+              );
+              return true;
+            }
+            if (!["txt", "json"].includes(kind)) return false;
+            await root.EduV24.assertReportSnapshot(prepared.context);
+            if (!isPreparedCurrent(prepared)) throw Error("محدوده یا متن گزارش تغییر کرده است؛ دوباره گزارش را تهیه کنید.");
+            const content =
               kind === "json"
-                ? "application/json;charset=utf-8"
-                : "text/plain;charset=utf-8",
-          });
-          downloadLocalFile(
-            blob,
-            "edu-" +
-              model.mode +
-              "-" +
-              model.start +
-              "-" +
-              model.audience +
-              "." +
-              kind,
-          );
+                ? JSON.stringify(model, null, 2)
+                : textReport(model);
+            const blob = new Blob([content], {
+              type:
+                kind === "json"
+                  ? "application/json;charset=utf-8"
+                  : "text/plain;charset=utf-8",
+            });
+            downloadLocalFile(
+              blob,
+              "edu-" +
+                model.mode +
+                "-" +
+                model.start +
+                "-" +
+                model.audience +
+                "." +
+                kind,
+            );
+            return true;
+          } catch (e) { invalidate(e.message || String(e)); return false; }
         }
         root.EduPeriodicReports = {
           filters,
           selectScope,
           render,
           set,
+          invalidate,
           generate,
           output,
           build,

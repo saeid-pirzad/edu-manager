@@ -323,6 +323,98 @@ async function refactorFlows() {
   return results;
 }
 
+
+async function contextFlows() {
+ const cases=[],record=(id,name,pass,details={})=>cases.push({id,name,pass:!!pass,...details});
+ const context=()=>EduV24.getReportContext();
+ const rows=store=>new Promise((resolve,reject)=>{const q=EduV24.test.getConnection().transaction(store).objectStore(store).getAll();q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);});
+ try {
+  closeModal(); await EduV24.reopenPeriod(); closeModal();
+  await openSettingsModal();
+  const revision=context().revision;
+  record("C01","settings no-op does not create a revision",await saveSettings() && context().revision===revision);
+  await openSettingsModal();
+  document.getElementById("newPass").value="private-test-secret";
+  document.getElementById("removePassword").checked=true;
+  record("C02","contradictory password settings rejected with form retained",!(await saveSettings()) && !db.settings.password && !!document.querySelector("#settingsError").textContent);
+  document.getElementById("removePassword").checked=false;
+  record("C03","password not exposed in form baseline",!document.getElementById("settingsEditor").dataset.savedState?.includes("private-test-secret"));
+  record("C04","real password hash persists and verifies",await saveSettings() && await verifyPassword("private-test-secret",db.settings.password));
+  await openSettingsModal(); document.getElementById("removePassword").checked=true;
+  record("C05","password removal persists",await saveSettings() && !db.settings.password);
+  await openSettingsModal();document.getElementById("newPass").value="retry-secret";
+  EduV24.test.failNextWrite();
+  const failed=await saveSettings();
+  record("C06","failed settings write retains retryable form and durable password",!failed && document.getElementById("newPass")?.value==="retry-secret" && !(await rows("records")).find(x=>x.workspace===context().id&&x.key==="meta")?.value.settings.password);
+  record("C07","settings retry persists intended password",await saveSettings() && await verifyPassword("retry-secret",db.settings.password));
+  await openSettingsModal();document.getElementById("removePassword").checked=true;await saveSettings();
+  const original=hashPassword;
+  await openSettingsModal();document.getElementById("newPass").value="race-secret";
+  hashPassword=()=>new Promise(resolve=>window.__releaseHash=resolve);
+  const saving=saveSettings();
+  for(let i=0;i<100&&!window.__releaseHash;i++)await new Promise(r=>setTimeout(r,5));
+  closeModal();
+  record("C08","busy settings form cannot be closed",!document.getElementById("modal").classList.contains("hidden"));
+  db.schools[0].name+=" race";await saveDB();
+  window.__releaseHash("should-never-be-written");const raced=await saving;hashPassword=original;delete window.__releaseHash;
+  record("C09","revision change during hashing rejects save without changing password",!raced&&!db.settings.password&&!!document.getElementById("settingsError").textContent);
+  document.getElementById("newPass").value="";closeModal();
+
+  const activeId=context().id,other=(await rows("catalog")).find(x=>x.id!==activeId);
+  if(!other)throw Error("Second period fixture missing");
+  await openSettingsModal();document.getElementById("newPass").value="wrong-period-secret";
+  hashPassword=()=>new Promise(resolve=>window.__releaseHash=resolve);
+  const switchingSave=saveSettings();
+  for(let i=0;i<100&&!window.__releaseHash;i++)await new Promise(r=>setTimeout(r,5));
+  const beforeCatalog=JSON.stringify((await rows("records")).filter(x=>x.key==="meta"));
+  await EduV24.switchPeriod(other.id);
+  window.__releaseHash("must-not-write");const switchResult=await switchingSave;
+  hashPassword=original;delete window.__releaseHash;
+  record("C16","period switch during hashing leaves both periods unchanged",!switchResult&&JSON.stringify((await rows("records")).filter(x=>x.key==="meta"))===beforeCatalog);
+  document.getElementById("newPass").value="";closeModal();await EduV24.switchPeriod(activeId);
+  const reports=EduPeriodicReports;
+  reports.render("daily");reports.selectScope("school_a","class_a");reports.set("date","2026-10-24");
+  const daily=await reports.generate();
+  record("C17","daily report generated from durable snapshot",!!daily&&reports.getLast()===daily);
+  reports.render("weekly");
+  record("C18","weekly report generated from durable snapshot",!!await reports.generate());
+  reports.set("audience","parent");reports.set("studentId","student_a");
+  const parent=await reports.generate();
+  record("C19","parent report includes current student grades",parent?.audience==="parent"&&parent.currentGrades.length===2);
+  const prepare=EduV24.prepareReportSnapshot;let release;
+  EduV24.prepareReportSnapshot=async()=>{const data=await prepare();await new Promise(resolve=>release=resolve);return data;};
+  const pendingReport=reports.generate();
+  for(let i=0;i<100&&!release;i++)await new Promise(r=>setTimeout(r,5));
+  reports.author("changed during preparation");release();
+  const changed=await pendingReport;EduV24.prepareReportSnapshot=prepare;
+  record("C20","changing report text during preparation discards obsolete output",changed===null&&reports.getLast()===null);
+
+  const snap=await EduV24.prepareReportSnapshot();
+  record("C10","report snapshot matches current durable workspace",snap.context.id===context().id&&snap.context.revision===context().revision&&snap.data.schools[0].name===db.schools[0].name);
+  snap.data.schools[0].name="detached snapshot";
+  record("C11","report snapshot mutations cannot change live data",db.schools[0].name!=="detached snapshot");
+  db.schools[0].name+=" newer";await saveDB();
+  let stale=false;try{await EduV24.assertReportSnapshot(snap.context);}catch{stale=true;}
+  record("C12","report snapshot rejected after local commit",stale);
+  const current=await EduV24.prepareReportSnapshot();
+  await new Promise((resolve,reject)=>{const tx=EduV24.test.getConnection().transaction("catalog","readwrite"),s=tx.objectStore("catalog"),q=s.get(current.context.id);q.onsuccess=()=>s.put({...q.result,revision:q.result.revision+1});tx.oncomplete=resolve;tx.onabort=()=>reject(tx.error);});
+  let remote=false;try{await EduV24.assertReportSnapshot(current.context);}catch{remote=true;}
+  record("C13","catalog revision conflict detected without BroadcastChannel",remote&&context().blocked);
+  let denied=false;try{await EduV24.prepareReportSnapshot();}catch{denied=true;}
+  record("C14","blocked tab cannot prepare another report",denied);
+  let prints=0;const originalPrint=window.print;window.print=()=>prints++;
+  const printed=await EduV24.printReport();window.print=originalPrint;
+  record("C15","blocked tab cannot print",printed===false&&prints===0);
+
+  let downloads=0;const originalDownload=downloadLocalFile;downloadLocalFile=()=>downloads++;
+  const json=await EduPeriodicReports.output("json"),txt=await EduPeriodicReports.output("txt");
+  downloadLocalFile=originalDownload;
+  record("C21","blocked tab cannot export daily or weekly files",json===false&&txt===false&&downloads===0);
+
+ }catch(error){record("C99","context flow completed",false,{error:error.stack||error.message});}
+ return cases;
+}
+
 async function main() {
   if (process.argv.includes("--help")) {
     console.log("node audit/data-integrity.cjs\nDeveloper audit: temporary loopback server + isolated Edge profile; no application source changes.\nRequires Node.js 22+ and Edge. Override browser executable with EDUMANAGER_EDGE.\nExit 1 means a required integrity check failed; exit 2 means the audit runner could not complete.");
@@ -419,10 +511,12 @@ async function main() {
     }
     const reload = await evaluate("({ready:!!window.EduV24?.test?.getState().ready,offline:!navigator.onLine,closed:window.EduV24?.getReportContext().closed,grade:db.schools[0]?.classes[0]?.lessons[0]?.kardaneshScores.student_b?.theory})");
     cases.push({id: "F12", name: "restored data and closed period survive an offline reload", pass: reload.ready && reload.offline && reload.closed && reload.grade === 12, ...reload});
+    await cdp("Network.emulateNetworkConditions", {offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
+    cases.push(...await evaluate("(" + contextFlows.toString() + ")()"));
     const hash = crypto.createHash("sha256").update(fs.readFileSync(application))
       .update(fs.readFileSync(path.join(root, "app.webmanifest"))).digest("hex").slice(0, 16);
     const result = {
-      stage: "1-data-integrity", applicationRelease: hash, executedAt: new Date().toISOString(),
+      stage: "2-data-integrity-and-operation-context", applicationRelease: hash, executedAt: new Date().toISOString(),
       profile, total: cases.length, passed: cases.filter(test => test.pass).length,
       failed: cases.filter(test => !test.pass).length, cases
     };

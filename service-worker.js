@@ -1,6 +1,6 @@
 "use strict";
 // Release identifier is derived from the HTML and manifest.
-const VERSION = "3b1c71c20eb6c78d";
+const VERSION = "e54e001e79f5de9c";
 const BASE = new URL("./", self.location.href);
 const PREFIX = "edu-manager:" + BASE.pathname + ":";
 const CACHE = PREFIX + VERSION;
