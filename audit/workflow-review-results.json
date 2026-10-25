@@ -1,0 +1,153 @@
+{
+  "applicationRelease": "45d310b243e5ce8a",
+  "executedAt": "2026-10-25T13:29:42.769Z",
+  "baseline": {
+    "total": 211,
+    "passed": 211
+  },
+  "total": 224,
+  "passed": 217,
+  "failed": 7,
+  "cases": [
+    {
+      "id": "R01",
+      "name": "accepted imported grades produce a finite annual result",
+      "pass": false,
+      "observed": {
+        "importAccepted": true,
+        "complete": true,
+        "annualFinal": "NaN",
+        "serializedFinal": null
+      }
+    },
+    {
+      "id": "R02",
+      "name": "rounded display does not turn a failing annual grade into a pass",
+      "pass": true,
+      "observed": {
+        "final": 13.9999993,
+        "passed": false,
+        "display": "13.9999993 (کمتر از 14)"
+      }
+    },
+    {
+      "id": "R03",
+      "name": "legacy technical grade is present in annual display and text",
+      "pass": false,
+      "observed": {
+        "rows": [
+          {
+            "term": "اول",
+            "final": 16.8,
+            "modules": 0
+          },
+          {
+            "term": "دوم",
+            "final": 16.8,
+            "modules": 0
+          }
+        ],
+        "has1680": false,
+        "textHas1680": false
+      }
+    },
+    {
+      "id": "R04",
+      "name": "restored academic year can be selected for annual report",
+      "pass": false,
+      "observed": {
+        "activeTerm": "اول — بازیابی mvnv6vee3jnsi — بازیاب — بازیابی mvnv707xmv0yo",
+        "error": "گزارش سالانه را از نوبت «اول» یا «دوم» سال تحصیلی باز کنید. دوره بازیابی‌شده یا عنوان سفارشی نباید با نوبت اصلی اشتباه گرفته شود."
+      }
+    },
+    {
+      "id": "R05",
+      "name": "period completeness requires midterm and final components",
+      "pass": false,
+      "observed": {
+        "closed": true,
+        "midterm": null,
+        "final": 16.2
+      }
+    },
+    {
+      "id": "R06",
+      "name": "durable backup remains available with invalid uncommitted grade",
+      "pass": false,
+      "observed": {
+        "error": "ابتدا ورودی نامعتبر یا خالی را اصلاح کنید یا با دکمه پاک‌کردن حذف کنید.",
+        "drafts": 1
+      }
+    },
+    {
+      "id": "R07",
+      "name": "starting a lesson cannot silently open another lesson's session",
+      "pass": false,
+      "observed": {
+        "requestedLesson": "lesson_modular",
+        "openedLesson": "lesson_dual",
+        "confirmation": "جلسه‌ای برای این تاریخ و زنگ وجود دارد. باز شود؟"
+      }
+    },
+    {
+      "id": "R08",
+      "name": "class-grade control distinguishes a 0-20 grade from activity points",
+      "pass": false,
+      "observed": {
+        "error": "",
+        "storedValue": 1000,
+        "controlLabel": "نمره کلاسی / فعالیت"
+      }
+    },
+    {
+      "id": "U-home",
+      "name": "320px long names: interactive controls remain reachable in home",
+      "pass": true,
+      "observed": {
+        "viewport": 320,
+        "documentWidth": 305,
+        "clipped": []
+      }
+    },
+    {
+      "id": "U-class",
+      "name": "320px long names: interactive controls remain reachable in class",
+      "pass": true,
+      "observed": {
+        "viewport": 320,
+        "documentWidth": 305,
+        "clipped": []
+      }
+    },
+    {
+      "id": "U-lesson",
+      "name": "320px long names: interactive controls remain reachable in lesson",
+      "pass": true,
+      "observed": {
+        "viewport": 320,
+        "documentWidth": 305,
+        "clipped": []
+      }
+    },
+    {
+      "id": "U-grades",
+      "name": "320px long names: interactive controls remain reachable in grades",
+      "pass": true,
+      "observed": {
+        "viewport": 320,
+        "documentWidth": 305,
+        "clipped": []
+      }
+    },
+    {
+      "id": "U-reports",
+      "name": "320px long names: interactive controls remain reachable in reports",
+      "pass": true,
+      "observed": {
+        "viewport": 320,
+        "documentWidth": 305,
+        "clipped": []
+      }
+    }
+  ]
+}

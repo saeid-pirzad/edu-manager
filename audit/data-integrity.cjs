@@ -284,7 +284,7 @@ async function refactorFlows() {
       for (const c of school.classes)
         for (const l of c.lessons)
           if (l.gradeMode === "kardanesh") {
-            for (const student of c.students) l.kardaneshScores[student.id] = {practical: 18, theory: 12};
+            for (const student of c.students) l.kardaneshScores[student.id] = {practical: 18, theory: 12, midtermPractical:18, midtermTheory:12};
           } else {
             for (const pod of l.poudmans)
               for (const student of c.students) pod.podScores[student.id] = {m: 2, c: 2};
@@ -332,6 +332,7 @@ async function contextFlows() {
   closeModal(); await EduV24.reopenPeriod(); closeModal();
   const gradingClass=db.schools[0].classes[0],gradingLesson=gradingClass.lessons[0];
   const oldFinal=EduV24.assessmentResult(gradingLesson,"student_b","final").final;
+  const oldMidtermTheory=gradingLesson.kardaneshScores.student_b?.midtermTheory??null;
   state.schoolId="school_a";state.classId="class_a";state.lessonId=gradingLesson.id;
   showModal("Midterm test",buildLessonGradesHtml(gradingClass,gradingLesson));document.querySelector(".assessment-stage").open=true;
   for(const [field,value] of [["midtermPractical","16"],["midtermTheory","20"]]){
@@ -341,7 +342,7 @@ async function contextFlows() {
   record("G12","native midterm inputs persist independent weighted result",EduV24.assessmentResult(gradingLesson,"student_b","midterm").final===17.2&&EduV24.assessmentResult(gradingLesson,"student_b","final").final===oldFinal);
   record("G13","midterm result refreshes in visible editor",[...document.querySelectorAll("[data-assessment-final]")].find(x=>x.dataset.assessmentFinal==="student_b"&&x.dataset.stage==="midterm")?.textContent==="17.20");
   await EduV24.undoLast();const currentLesson=db.schools[0].classes[0].lessons[0];
-  record("G14","midterm undo preserves final components",EduV24.assessmentResult(currentLesson,"student_b","midterm").final===null&&EduV24.assessmentResult(currentLesson,"student_b","final").final===oldFinal);
+  record("G14","midterm undo preserves final components",(currentLesson.kardaneshScores.student_b.midtermTheory??null)===oldMidtermTheory&&currentLesson.kardaneshScores.student_b.midtermPractical===16&&EduV24.assessmentResult(currentLesson,"student_b","final").final===oldFinal);
   closeModal();
   await openSettingsModal();
   closeModal();const gradeBackup=await EduV24.snapshotInstallation();EduV24.validateFullBackup(gradeBackup);
@@ -353,9 +354,9 @@ async function contextFlows() {
   await toggleAtt(absent,"absent");
   record("J01","attendance action saves from simplified session",getSessionById(session.id).attendance.student_a==="absent");
   showSessionPanel("activity");const sessionForm=document.querySelector(".session-entry-form");
-  sessionForm.elements.studentId.value="student_a";sessionForm.elements.type.value="activity";sessionForm.elements.value.value="18";sessionForm.elements.note.value="session workflow test";
+  sessionForm.elements.studentId.value="student_a";sessionForm.elements.type.value="classGrade";sessionForm.elements.value.value="18";sessionForm.elements.note.value="session workflow test";
   await addSessionScore({preventDefault(){},target:sessionForm},session.id);
-  record("J02","activity form saves class mark and keeps active panel",getSessionById(session.id).scores.some(score=>score.studentId==="student_a"&&score.type==="activity"&&score.value===18)&&!document.querySelector("[data-session-panel=activity]").hidden);
+  record("J02","activity form saves class mark and keeps active panel",getSessionById(session.id).scores.some(score=>score.studentId==="student_a"&&score.type==="classGrade"&&score.value===18)&&!document.querySelector("[data-session-panel=activity]").hidden);
   closeModal();await openSettingsModal();
   const revision=context().revision;
   record("C01","settings no-op does not create a revision",await saveSettings() && context().revision===revision);

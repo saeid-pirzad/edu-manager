@@ -1,0 +1,360 @@
+{
+  "applicationRelease": "598fdb36e33cfc7d",
+  "schemaVersion": 26,
+  "executedAt": "2026-10-25T14:04:37.096Z",
+  "total": 254,
+  "passed": 254,
+  "failed": 0,
+  "baseline": {
+    "total": 211,
+    "passed": 211
+  },
+  "cases": [
+    {
+      "id": "R01",
+      "name": "accepted imported grades produce a finite annual result",
+      "pass": true,
+      "observed": {
+        "importAccepted": true,
+        "complete": true,
+        "annualFinal": "1e-100",
+        "serializedFinal": 1e-100
+      }
+    },
+    {
+      "id": "R02",
+      "name": "rounded display does not turn a failing annual grade into a pass",
+      "pass": true,
+      "observed": {
+        "final": 13.9999993,
+        "passed": false,
+        "display": "13.9999993 (کمتر از 14)"
+      }
+    },
+    {
+      "id": "R03",
+      "name": "legacy technical grade is present in annual display and text",
+      "pass": true,
+      "observed": {
+        "rows": [
+          {
+            "term": "اول",
+            "final": 16.8,
+            "modules": 0
+          },
+          {
+            "term": "دوم",
+            "final": 16.8,
+            "modules": 0
+          }
+        ],
+        "has1680": true,
+        "textHas1680": true
+      }
+    },
+    {
+      "id": "R04",
+      "name": "restored academic year can be selected for annual report",
+      "pass": true,
+      "observed": {
+        "activeTerm": "دوم — بازیابی mvnwfs34e4q1y",
+        "error": "",
+        "selected": [
+          "mvnwfs34lqndd",
+          "mvnwfs34e4q1y"
+        ]
+      }
+    },
+    {
+      "id": "R05",
+      "name": "period completeness requires midterm and final components",
+      "pass": true,
+      "observed": {
+        "closed": false,
+        "midterm": null,
+        "final": 16.2
+      }
+    },
+    {
+      "id": "R06",
+      "name": "durable backup remains available with invalid uncommitted grade",
+      "pass": true,
+      "observed": {
+        "error": "",
+        "drafts": 1
+      }
+    },
+    {
+      "id": "R07",
+      "name": "starting a lesson cannot silently open another lesson's session",
+      "pass": true,
+      "observed": {
+        "requestedLesson": "lesson_modular",
+        "openedLesson": "lesson_dual",
+        "confirmation": "این زنگ به درس «درس نظری و عملی» تعلق دارد، نه «درس پودمانی».\n۱۴۰۵/۸/۲، زنگ 1\nآیا وارد جلسه درس «درس نظری و عملی» می‌شوید؟"
+      }
+    },
+    {
+      "id": "R08",
+      "name": "class-grade control distinguishes a 0-20 grade from activity points",
+      "pass": true,
+      "observed": {
+        "error": "عدد صفر تا بیست، با حداکثر شش رقم اعشار وارد کنید.",
+        "storedValue": 18,
+        "controlLabel": "نمره کلاسی (۰ تا ۲۰)"
+      }
+    },
+    {
+      "id": "P01",
+      "name": "tiny imported grade retains its finite annual value",
+      "pass": true,
+      "observed": {
+        "value": 1e-100,
+        "annual": 1e-100
+      }
+    },
+    {
+      "id": "P02",
+      "name": "tiny imported grade retains its finite annual value",
+      "pass": true,
+      "observed": {
+        "value": 5e-324,
+        "annual": 5e-324
+      }
+    },
+    {
+      "id": "P03",
+      "name": "class-grade endpoint persists without changing official grade",
+      "pass": true,
+      "observed": {}
+    },
+    {
+      "id": "P04",
+      "name": "class-grade endpoint persists without changing official grade",
+      "pass": true,
+      "observed": {}
+    },
+    {
+      "id": "P05",
+      "name": "activity points remain distinct and keep their previous range",
+      "pass": true,
+      "observed": {}
+    },
+    {
+      "id": "P06",
+      "name": "import cannot bypass the class-grade limit",
+      "pass": true,
+      "observed": {}
+    },
+    {
+      "id": "P07",
+      "name": "schema 25 keeps activity semantics during migration to 26",
+      "pass": true,
+      "observed": {}
+    },
+    {
+      "id": "P08",
+      "name": "periodic and copied session reports label class grades",
+      "pass": true,
+      "observed": {}
+    },
+    {
+      "id": "P09",
+      "name": "concurrent term closing issues exactly one frozen report",
+      "pass": true,
+      "observed": {
+        "fulfilled": 1,
+        "issued": 1
+      }
+    },
+    {
+      "id": "P10",
+      "name": "frozen report preserves both raw assessment pairs",
+      "pass": true,
+      "observed": {}
+    },
+    {
+      "id": "P11",
+      "name": "both assessments are visible in the frozen report",
+      "pass": true,
+      "observed": {}
+    },
+    {
+      "id": "P12",
+      "name": "historical frozen report remains readable without fabricated midterm",
+      "pass": true,
+      "observed": {}
+    },
+    {
+      "id": "P13",
+      "name": "malformed frozen midterm cannot enter a full restore",
+      "pass": true,
+      "observed": {}
+    },
+    {
+      "id": "P14",
+      "name": "editing reopened term never rewrites its previous frozen assessments",
+      "pass": true,
+      "observed": {}
+    },
+    {
+      "id": "P15",
+      "name": "annual report refuses the same period in both roles",
+      "pass": true,
+      "observed": {}
+    },
+    {
+      "id": "P16",
+      "name": "known first/second roles cannot be swapped by a dropdown",
+      "pass": true,
+      "observed": {}
+    },
+    {
+      "id": "P17",
+      "name": "annual pair cannot cross academic years",
+      "pass": true,
+      "observed": {}
+    },
+    {
+      "id": "P18",
+      "name": "annual dropdowns generate a report from the selected actual pair",
+      "pass": true,
+      "observed": {}
+    },
+    {
+      "id": "P19",
+      "name": "backup contains invalid draft separately from valid durable grade",
+      "pass": true,
+      "observed": {}
+    },
+    {
+      "id": "P20",
+      "name": "backup format declares schema 26",
+      "pass": true,
+      "observed": {}
+    },
+    {
+      "id": "P21",
+      "name": "restored invalid draft stays review-only and never becomes a grade",
+      "pass": true,
+      "observed": {}
+    },
+    {
+      "id": "P22",
+      "name": "annual note remaps both selected workspace references during restore",
+      "pass": true,
+      "observed": {}
+    },
+    {
+      "id": "P23",
+      "name": "restored two-term report preserves average and pair-specific note",
+      "pass": true,
+      "observed": {}
+    },
+    {
+      "id": "U-home",
+      "name": "320px long names: interactive controls remain reachable in home",
+      "pass": true,
+      "observed": {
+        "viewport": 320,
+        "documentWidth": 305,
+        "clipped": []
+      }
+    },
+    {
+      "id": "U-class",
+      "name": "320px long names: interactive controls remain reachable in class",
+      "pass": true,
+      "observed": {
+        "viewport": 320,
+        "documentWidth": 305,
+        "clipped": []
+      }
+    },
+    {
+      "id": "U-lesson",
+      "name": "320px long names: interactive controls remain reachable in lesson",
+      "pass": true,
+      "observed": {
+        "viewport": 320,
+        "documentWidth": 305,
+        "clipped": []
+      }
+    },
+    {
+      "id": "U-grades",
+      "name": "320px long names: interactive controls remain reachable in grades",
+      "pass": true,
+      "observed": {
+        "viewport": 320,
+        "documentWidth": 305,
+        "clipped": []
+      }
+    },
+    {
+      "id": "U-reports",
+      "name": "320px long names: interactive controls remain reachable in reports",
+      "pass": true,
+      "observed": {
+        "viewport": 320,
+        "documentWidth": 305,
+        "clipped": []
+      }
+    },
+    {
+      "id": "U-annual",
+      "name": "320px long names: interactive controls remain reachable in annual",
+      "pass": true,
+      "observed": {
+        "viewport": 320,
+        "documentWidth": 305,
+        "clipped": []
+      }
+    },
+    {
+      "id": "W01",
+      "name": "previous release installs offline with schema 25",
+      "pass": true,
+      "observed": {
+        "oldVersion": "45d310b243e5ce8a"
+      }
+    },
+    {
+      "id": "W02",
+      "name": "failed upgrade keeps previous complete offline cache",
+      "pass": true,
+      "observed": {
+        "caches": [
+          "edu-manager:/edu-manager/:45d310b243e5ce8a"
+        ],
+        "failedDownloads": 1
+      }
+    },
+    {
+      "id": "W03",
+      "name": "previous release and data survive offline after failed upgrade",
+      "pass": true,
+      "observed": {}
+    },
+    {
+      "id": "W04",
+      "name": "actual update button loads new release and migrates read model",
+      "pass": true,
+      "observed": {}
+    },
+    {
+      "id": "W05",
+      "name": "new type persists while old activity points retain meaning",
+      "pass": true,
+      "observed": {}
+    },
+    {
+      "id": "W06",
+      "name": "new release reloads offline with both old and new score types",
+      "pass": true,
+      "observed": {
+        "newVersion": "598fdb36e33cfc7d"
+      }
+    }
+  ]
+}

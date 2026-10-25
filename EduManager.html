@@ -6272,12 +6272,31 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
         "پنجشنبه",
         "جمعه",
       ];
+      function finiteRatio(n, d) {
+        if (d === 0n) throw Error("مخرج محاسبه نمره صفر است.");
+        if (n === 0n) return 0;
+        const negative = (n < 0n) !== (d < 0n); n = n < 0n ? -n : n; d = d < 0n ? -d : d;
+        let exponent = n.toString().length - d.toString().length;
+        if (exponent >= 0 ? n < d * 10n ** BigInt(exponent) : n * 10n ** BigInt(-exponent) < d) exponent--;
+        const scale = 20 - exponent;
+        const numerator = scale >= 0 ? n * 10n ** BigInt(scale) : n;
+        const denominator = scale >= 0 ? d : d * 10n ** BigInt(-scale);
+        const significant = (numerator + denominator / 2n) / denominator;
+        const result = Number((negative ? "-" : "") + significant.toString() + "e" + String(-scale));
+        if (!Number.isFinite(result)) throw Error("نتیجه محاسبه نمره خارج از دامنه معتبر است.");
+        return result;
+      }
+      function reduceGradeFraction(n,d) {
+        let a=n < 0n ? -n : n,b=d;while(b){const remainder=a%b;a=b;b=remainder;}
+        return {n:n/(a||1n),d:d/(a||1n)};
+      }
       const TYPE_LABELS = {
         mostamar: "مستمر",
         payani: "پایانی",
         positive: "مثبت",
         negative: "منفی",
-        activity: "فعالیت",
+        classGrade: "نمره کلاسی",
+        activity: "امتیاز فعالیت",
         homework: "تکلیف",
       };
       const COLORS = [
@@ -7721,7 +7740,8 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
                   .map((x) => `${x.value}`)
                   .map(esc)
                   .join("، ");
-                h += `<td>${ms || "—"} / ${ps || "—"}</td>`;
+                const classMarks=myScores.filter(score=>score.type==="classGrade").map(score=>score.value).join("، ");
+                h += "<td>"+(ms||"—")+" / "+(ps||"—")+(classMarks ? "<br>کلاسی: "+esc(classMarks) : "")+"</td>";
               }
               if (globalFilter.showPosNeg) {
                 const pos = myScores.filter((x) => x.type === "positive");
@@ -7767,7 +7787,8 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
                 const pay = sess.scores.filter(
                   (x) => x.type === "payani",
                 ).length;
-                h += `<td>${m || pay ? `مستمر:${m} پایانی:${pay}` : '<span class="muted">-</span>'}</td>`;
+                const classMarks=sess.scores.filter(score=>score.type==="classGrade").length;
+                h += "<td>"+(m||pay||classMarks ? "مستمر: "+m+" · پایانی: "+pay+" · کلاسی: "+classMarks : "—")+"</td>";
               }
               if (globalFilter.showPosNeg) {
                 const pos = sess.scores.filter(
@@ -7854,7 +7875,7 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
               }
               if (globalFilter.showScores) {
                 const exams = sess.scores.filter(
-                  (x) => x.type === "mostamar" || x.type === "payani",
+                  (x) => x.type === "mostamar" || x.type === "payani" || x.type === "classGrade",
                 );
                 if (exams.length)
                   h +=
@@ -7975,6 +7996,7 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
                   .filter((x) => x.type === "payani")
                   .map((x) => x.value)
                   .join("، ");
+                if (my.some(score=>score.type==="classGrade")) text += "   - نمره کلاسی: "+my.filter(score=>score.type==="classGrade").map(score=>score.value).join("، ")+"\n";
                 if (ms || ps)
                   text += `   - مستمر: ${ms || "—"} | پایانی: ${ps || "—"}\n`;
               }
@@ -8008,6 +8030,8 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
                 const pay = sess.scores.filter(
                   (x) => x.type === "payani",
                 ).length;
+                const classMarks=sess.scores.filter(score=>score.type==="classGrade");
+                if(classMarks.length)text += "   - نمرات کلاسی: "+classMarks.map(score=>score.value).join("، ")+"\n";
                 if (m || pay)
                   text += `   - 📊 نمرات: مستمر ${m} | پایانی ${pay}\n`;
               }
@@ -8080,7 +8104,7 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
               }
               if (globalFilter.showScores) {
                 const ex = sess.scores.filter(
-                  (x) => x.type === "mostamar" || x.type === "payani",
+                  (x) => x.type === "mostamar" || x.type === "payani" || x.type === "classGrade",
                 );
                 if (ex.length)
                   text +=
@@ -9816,7 +9840,11 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
           (s) => s.classId === c.id && s.date === date && s.period === period,
         );
         if (existing) {
-          if (confirm("جلسه‌ای برای این تاریخ و زنگ وجود دارد. باز شود؟"))
+          const existingLesson = getLessonObj(c,existing.lessonId);
+          const message = existing.lessonId === lessonId
+            ? "جلسه همین درس در این تاریخ و زنگ وجود دارد. ادامه داده شود؟"
+            : "این زنگ به درس «" + (existingLesson?.name || "درس دیگر") + "» تعلق دارد، نه «" + (getLessonObj(c,lessonId)?.name || "درس انتخاب‌شده") + "».\n" + faDate(date) + "، زنگ " + (period+1) + "\nآیا وارد جلسه درس «" + (existingLesson?.name || "درس دیگر") + "» می‌شوید؟";
+          if (confirm(message))
             openSessionModal(existing);
           return;
         }
@@ -9999,6 +10027,8 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
             text += `➖ منفی (${neg.length}): ${neg.join("، ")}\n`;
           if (hw.length) text += `📋 تکلیف (${hw.length}): ${hw.join("، ")}\n`;
         }
+        const marks=session.scores.filter(score=>["classGrade","activity","mostamar","payani"].includes(score.type));
+        if(marks.length)text += "\nنمرات و امتیازهای ثبت‌شده:\n"+marks.map(score=>{const student=sessionStudent(c,session,score.studentId);return (student?.name||"هنرجوی نامشخص")+" · "+TYPE_LABELS[score.type]+": "+score.value+(score.note?" · "+score.note:"");}).join("\n")+"\n";
         return text;
       }
 
@@ -10811,7 +10841,7 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
         .join("")}</select>
       <select name="type" aria-label="نوع فعالیت" required>
         ${!lesson.gradingPolicy && lesson.gradeMode !== "kardanesh" ? `<option value="mostamar">مستمر</option><option value="payani">پایانی</option>` : ""}
-        <option value="activity">نمره کلاسی / فعالیت</option><option value="positive">مثبت</option><option value="negative">منفی</option>
+        <option value="classGrade">نمره کلاسی (۰ تا ۲۰)</option><option value="activity">امتیاز فعالیت</option><option value="positive">مثبت</option><option value="negative">منفی</option>
         <option value="homework">تکلیف</option>
       </select>
       <input name="value" aria-label="مقدار" type="text" inputmode="decimal" placeholder="مقدار" required style="width:80px">
@@ -11676,7 +11706,7 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
               sc.value < 0
             )
               fail("امتیاز");
-            if (["mostamar", "payani"].includes(sc.type)) score(sc.value);
+            if (["mostamar", "payani", "classGrade"].includes(sc.type)) score(sc.value);
             if (sc.note !== undefined) text(sc.note);
           });
           if (x.roster !== undefined) {
@@ -12091,7 +12121,7 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
           const n = x.n * y.d * w.n + y.n * x.d * (100n * w.d - w.n),
             d = 100n * w.d * x.d * y.d;
           const t = decimal(minimum);
-          return { final: Number(n) / Number(d), passed: n * t.d >= t.n * d };
+          return { final: finiteRatio(n,d), passed: n * t.d >= t.n * d };
         }
         function defaults(method = "dual", year = "") {
           return {
@@ -12274,7 +12304,7 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
             n = x.n * y.d + BigInt(g.c) * y.n * x.d,
             d = x.d * y.d,
             t = decimal(p.moduleMin);
-          const final = Number(n) / Number(d),
+          const final = finiteRatio(n,d),
             reasons = [];
           if (g.c < p.competencyMin) reasons.push("حد شایستگی احراز نشده");
           if (n * t.d < t.n * d)
@@ -13315,7 +13345,7 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
 
         function v24DefaultDB() {
           const d = old.defaultDB();
-          d.schemaVersion = 25;
+          d.schemaVersion = 26;
           d.settings.academicYear = currentYearLabel();
           d.settings.academicTerm = "اول";
           return d;
@@ -13372,7 +13402,7 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
             b = fraction(theory),
             n = 7n * a.n * b.d + 3n * b.n * a.d,
             d = 10n * a.d * b.d;
-          return { final: Number(n) / Number(d), passed: n >= 14n * d };
+          return { final: finiteRatio(n,d), passed: n >= 14n * d };
         }
 
         function finalText(result) {
@@ -13399,7 +13429,7 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
           if (
             d.schemaVersion !== undefined &&
             (!Number.isInteger(d.schemaVersion) ||
-              d.schemaVersion > 25 ||
+              d.schemaVersion > 26 ||
               d.schemaVersion < 22)
           )
             throw Error("نسخه ساختار داده پشتیبانی نمی‌شود.");
@@ -13465,7 +13495,7 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
 
         function normalizeDB(input, { legacy = false } = {}) {
           assertSafeDataTree(input);
-          if (input?.schemaVersion > 25)
+          if (input?.schemaVersion > 26)
             throw Error("این بانک متعلق به نسخه جدیدتر برنامه است.");
           const d = clone(input);
           const defaults = v24DefaultDB();
@@ -13548,7 +13578,7 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
                 }
               }
             }
-          d.schemaVersion = 25;
+          d.schemaVersion = 26;
           d.migrationWarnings = [...new Set(warnings)];
           validateV24(d);
           return d;
@@ -13980,6 +14010,7 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
               ...live,
               year: records.get("meta")?.settings?.academicYear ?? live.year,
               term: records.get("meta")?.settings?.academicTerm ?? live.term,
+              termKind: live.termKind || academicTermKind(live.term),
               revision: live.revision + 1,
               updatedAt: new Date().toISOString(),
             };
@@ -14076,6 +14107,13 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
           return operation;
         }
 
+        function remapReportNoteKey(key,target,mapping) {
+          const segments=key.split("|");segments[0]=target;
+          if(segments[1]==="annual"&&segments[2].startsWith("academic-year:")){
+            const refs=segments[2].split(":");for(let i=1;i<refs.length;i++)if(mapping.has(refs[i]))refs[i]=mapping.get(refs[i]);segments[2]=refs.join(":");
+          }
+          return segments.join("|");
+        }
         function recoveryPeriodTerm(term, marker) {
           const suffix = " — بازیابی " + marker;
           return (
@@ -14084,6 +14122,10 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
               .replace(/[\uD800-\uDBFF]$/, "") + suffix
           );
         }
+        function academicTermKind(term) {
+          const base=String(term||"").split(" — بازیابی ")[0];
+          return ({"اول":"first","دوم":"second","تابستان":"summer"})[base] || null;
+        }
         async function installWorkspace(data, details) {
           const id = details.id || uid(),
             now = new Date().toISOString();
@@ -14091,6 +14133,7 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
             id,
             year: details.year || data.settings.academicYear,
             term: details.term || data.settings.academicTerm || "نامشخص",
+            termKind: details.termKind || academicTermKind(details.term || data.settings.academicTerm),
             revision: 1,
             closed: false,
             createdAt: now,
@@ -14740,9 +14783,9 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
               for (const item of components) {
                 const p = fraction(item.practical), t = fraction(item.theory);
                 const n = 7n*p.n*t.d + 3n*t.n*p.d, d = 10n*p.d*t.d;
-                total = {n:total.n*d+n*total.d,d:total.d*d};
+                total = reduceGradeFraction(total.n*d+n*total.d,total.d*d);
               }
-              final = Number(total.n)/Number(total.d*4n); passed = total.n >= 14n*total.d*4n;
+              final = finiteRatio(total.n,total.d*4n); passed = total.n >= 14n*total.d*4n;
             }
             rows.push({...identity,components,complete,final,passed,threshold:14});
           }
@@ -14756,7 +14799,10 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
               if (studentId && st.id !== studentId) continue;
               for (const lesson of c.lessons.filter(l=>l.gradeMode!=="kardanesh")) {
                 const r=calcV24(c,lesson,st.id,part.data);
-                rows.push({classId:c.id,className:c.name,studentId:st.id,studentName:st.name,lessonId:lesson.id,lessonName:lesson.name,term:part.period.term,final:r.final??null,complete:r.complete??false,passed:r.passed??null,modules:(r.modules||[]).map(m=>({name:m.name,final:m.final??null,complete:m.complete,passed:m.passed,reason:m.reason||""}))});
+                const legacy = !lesson.gradingPolicy;
+                const legacyUnits = legacy ? lesson.poudmans.flatMap(pod=>pod.units.map(unit=>({moduleName:pod.name,unitName:unit.name,mostamar:r.details?.[pod.id]?.[unit.id]?.m??null,payani:r.details?.[pod.id]?.[unit.id]?.p??null,final:r.details?.[pod.id]?.[unit.id]?.final??null}))) : [];
+                const complete = legacy ? legacyUnits.length > 0 && legacyUnits.every(unit=>Number.isFinite(unit.final)) : r.complete??false;
+                rows.push({classId:c.id,className:c.name,studentId:st.id,studentName:st.name,lessonId:lesson.id,lessonName:lesson.name,term:part.period.term,method:legacy?"legacy-unit":"modular",legacyUnits,provisionalAverage:legacy?r.final??null:null,final:legacy&&!complete?null:r.final??null,complete,passed:legacy?null:r.passed??null,modules:(r.modules||[]).map(m=>({name:m.name,final:m.final??null,complete:m.complete,passed:m.passed,reason:m.reason||""}))});
               }
             }
           }
@@ -15126,7 +15172,11 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
           )
             throw Error("دانش‌آموز یا نوع امتیاز نامعتبر است.");
           let value;
-          if (["mostamar", "payani"].includes(type)) {
+          if (type === "classGrade") {
+            const parsed = parseGrade(f.value.value);
+            if (!parsed.ok) throw Error(parsed.message);
+            value = parsed.value;
+          } else if (["mostamar", "payani"].includes(type)) {
             if (l.gradingPolicy || l.gradeMode === "kardanesh")
               throw Error("نمرات رسمی را در بخش نمرات درس ثبت کنید.");
             if (!x.poudmanId || !x.unitId)
@@ -15332,10 +15382,14 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
         }
 
         async function snapshotInstallation() {
-          await flushDrafts({ strict: true });
-          // Strict draft flush succeeded; a prior structural write failure must not block exporting durable records.
+          if (!ready || resetBusy || connectionRetired) throw Error("بانک برای تهیه پشتیبان آماده نیست.");
+          const snapshotNotes=[];
+          try { await flushDrafts(); } catch(error) { snapshotNotes.push("ثبت نمرات ناتمام نشد؛ داده پایدار و پیش‌نویس‌ها جداگانه حفظ شدند: " + error.message); }
           await writer.catch(() => {});
+          await storeDrafts().catch(error => snapshotNotes.push("پیش‌نویس حافظه نیز در فایل قرار گرفت: " + error.message));
           await draftWriter.catch(() => {});
+          const activeWorkspace=workspace.id;
+          const currentDrafts={key:draftStorageKey(),workspace:activeWorkspace,owner:documentToken,generation:draftGeneration,entries:clone([...drafts.values()]),updatedAt:new Date().toISOString()};
           const names = [...backupStores, "drafts"];
           const tx = connection.transaction(names, "readonly"),
             done = transactionDone(tx);
@@ -15350,7 +15404,7 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
           stores.backups = stores.backups.filter((row) => !row.full);
           stores.records = stores.records.filter(row => row.key !== RESET_RECORD_KEY);
           const gradeDrafts = portableGradeDrafts(
-            stores.drafts,
+            [...stores.drafts,currentDrafts],
             stores.catalog,
           );
           delete stores.drafts;
@@ -15373,9 +15427,10 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
           return {
             format: "EduManager.FullBackup",
             version: 2,
-            schemaVersion: 25,
+            schemaVersion: 26,
             exportedAt: new Date().toISOString(),
-            activeWorkspace: workspace.id,
+            activeWorkspace,
+            snapshotNotes,
             stores,
             reportDrafts,
             gradeDrafts,
@@ -15385,7 +15440,7 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
           const content = await snapshotInstallation();
           downloadJSON(content, "پشتیبان-کامل-" + todayISO() + ".json");
           setStatus(
-            "دانلود پشتیبان همه دوره‌ها درخواست شد؛ فایل را بیرون برنامه بررسی کنید.",
+            "دانلود پشتیبان همه دوره‌ها درخواست شد" + (content.gradeDrafts.length ? "؛ پیش‌نویس‌های ناتمام هم جداگانه در فایل حفظ شدند" : "") + "؛ فایل را بیرون برنامه بررسی کنید.",
             "saved",
           );
           return content.stores.catalog.length;
@@ -15426,7 +15481,7 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
           if (
             value?.format !== "EduManager.FullBackup" ||
             ![1, 2].includes(value.version) ||
-            value.schemaVersion !== 25
+            ![25,26].includes(value.schemaVersion)
           )
             throw Error("ساختار پشتیبان کامل پشتیبانی نمی‌شود.");
           assertSafeDataTree(value);
@@ -15449,6 +15504,7 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
               typeof period.createdAt !== "string" || !Number.isFinite(Date.parse(period.createdAt))
             )
               throw Error("شناسنامه دوره در پشتیبان نامعتبر است.");
+            if (period.termKind != null && !["first","second","summer"].includes(period.termKind)) throw Error("نوع نوبت تحصیلی در پشتیبان معتبر نیست.");
             validateReportNotes(period.reportNotesRecovery, period.id);
             validateReportNotes(value.reportDrafts?.[period.id], period.id);
             ids.add(period.id);
@@ -15583,8 +15639,8 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
                 ...validateReportNotes(period.reportNotesRecovery, period.id),
                 ...validateReportNotes(source.reportDrafts?.[period.id], period.id),
               };
-              const reportNotesRecovery = Object.fromEntries(Object.entries(reportNotes).map(([key, text]) => [id + key.slice(period.id.length), text]));
-              rows.catalog.push({ ...period, id, term, reportNotesRecovery });
+              const reportNotesRecovery = Object.fromEntries(Object.entries(reportNotes).map(([key, text]) => [remapReportNoteKey(key,id,mapping), text]));
+              rows.catalog.push({ ...period, id, term, termKind:period.termKind || academicTermKind(period.term), reportNotesRecovery });
               for (const [logical, value] of collectRecords(data))
                 rows.records.push({
                   key: id + "|" + logical,
@@ -15870,12 +15926,12 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
             if (
               parsed.version !== undefined &&
               (!Number.isInteger(parsed.version) ||
-                parsed.version > 25 ||
+                parsed.version > 26 ||
                 parsed.version < 1)
             )
               throw Error("نسخه پشتیبان پشتیبانی نمی‌شود.");
             const source = parsed.db || parsed;
-            if (source.schemaVersion > 25)
+            if (source.schemaVersion > 26)
               throw Error("نسخه ساختار جدیدتر پشتیبانی نمی‌شود.");
             const candidate = normalizeDB(source, {
               legacy: (source.schemaVersion ?? parsed.version ?? 23) < 24,
@@ -16335,6 +16391,11 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
               const students = getSortedStudents(c).map((st) => {
                 const lessons = c.lessons.map((l) => {
                   const result = calcV24(c, l, st.id);
+                  const assessments = l.gradeMode === "kardanesh" ? {version:1,midterm:assessmentResult(l,st.id,"midterm"),final:assessmentResult(l,st.id,"final")} : null;
+                  if (assessments) for (const [stage,r] of [["میان‌ترم",assessments.midterm],["پایان‌ترم",assessments.final]]) {
+                    if (r.practical === null) missing.push(c.name+" / "+st.name+" / "+l.name+" / "+stage+" / عملی");
+                    if (r.theory === null) missing.push(c.name+" / "+st.name+" / "+l.name+" / "+stage+" / تئوری");
+                  }
                   if (l.gradingPolicy && !l.gradingPolicy.confirmed)
                     missing.push(
                       c.name + " / " + l.name + " / قواعد ابلاغیه تأیید نشده",
@@ -16345,6 +16406,7 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
                     id: l.id,
                     name: l.name,
                     mode: l.gradeMode,
+                    ...(assessments ? {assessments} : {}),
                     policy: l.gradingPolicy ? clone(l.gradingPolicy) : null,
                     courseInfo: EduPolicy.identity(l, workspace.year),
                     modules: result.modules || null,
@@ -16380,12 +16442,17 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
         }
 
         async function finalizePeriod() {
+          assertWorkspaceReadable();
+          assertEntityWritable();
+          const origin=workspace.id;
           if (fileMode)
             throw Error(
               "این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.",
             );
           await flushDrafts({ strict: true });
           await writer.catch(() => {});
+          if (workspace.id !== origin) throw Error("دوره هنگام بستن تغییر کرد؛ دوباره تلاش کنید.");
+          const context=captureWorkspaceContext();
           const report = finalReportData();
           if (report.missing.length) {
             handleError(
@@ -16408,10 +16475,12 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
           )
             return;
           await putBackup(db, "پیش از بستن دوره");
+          assertWorkspaceContext(context,{write:true});
+          if (busy || drafts.size) throw Error("ویرایش تازه‌ای هنگام بستن دوره ایجاد شد؛ ابتدا آن را ذخیره و دوباره تلاش کنید.");
           const at = new Date().toISOString(),
             snapshot = {
               id: uid(),
-              workspace: workspace.id,
+              workspace: context.id,
               year: workspace.year,
               term: workspace.term,
               at,
@@ -16424,9 +16493,9 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
               "readwrite",
             ),
             done = transactionDone(tx);
-          const request = tx.objectStore("catalog").get(workspace.id);
+          const request = tx.objectStore("catalog").get(context.id);
           request.onsuccess = () => {
-            if (request.result.revision !== workspace.revision) {
+            if (!request.result || request.result.closed || request.result.revision !== context.revision || workspace.id !== context.id) {
               tx.abort();
               return;
             }
@@ -16438,7 +16507,7 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
             };
             tx.objectStore("catalog").put(finalizedWorkspace);
             tx.objectStore("reports").put(snapshot);
-            tx.objectStore("undo").delete(workspace.id);
+            tx.objectStore("undo").delete(context.id);
             tx.objectStore("events").add({
               workspace: workspace.id,
               at,
@@ -16525,6 +16594,16 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
                     (l.policy != null && !isDataObject(l.policy)) || (l.courseInfo != null && !isDataObject(l.courseInfo)) ||
                     ["practical", "theory", "mostamar", "payani", "final", "threshold"].some(key => !score(l[key]))) fail();
                 lessons.add(l.id);
+                if (l.assessments !== undefined) {
+                  if (l.mode !== "kardanesh" || !isDataObject(l.assessments) || l.assessments.version !== 1) fail();
+                  for (const stage of ["midterm","final"]) {
+                    const r=l.assessments[stage];
+                    if (!isDataObject(r) || !score(r.practical) || !score(r.theory) || r.practical==null || r.theory==null || !score(r.final) || r.complete!==true) fail();
+                    const expected=weightedKardanesh(r.practical,r.theory);
+                    if (r.final!==expected.final || r.passed!==expected.passed) fail();
+                  }
+                  if (l.practical!==l.assessments.final.practical || l.theory!==l.assessments.final.theory || l.final!==l.assessments.final.final || l.passed!==l.assessments.final.passed) fail();
+                }
                 if (l.modules != null) {
                   if (!Array.isArray(l.modules)) fail();
                   const modules = new Set();
@@ -16562,7 +16641,7 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
                         (st) =>
                           "<h4>" +
                           esc(st.name) +
-                          "</h4><table><thead><tr><th>درس</th><th>عملی / پایانی</th><th>تئوری / مستمر</th><th>نهایی</th><th>وضعیت</th></tr></thead><tbody>" +
+                          "</h4><table><thead><tr><th>درس</th><th>عملی / پایانی</th><th>تئوری / مستمر</th><th>میان‌ترم کاردانش</th><th>پایان‌ترم / نتیجه درس</th><th>وضعیت</th></tr></thead><tbody>" +
                           st.lessons
                             .map(
                               (l) =>
@@ -16577,7 +16656,8 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
                                   ? l.theory
                                   : l.mostamar) ?? "—") +
                                 "</td><td>" +
-                                finalText(l) +
+                                (l.mode === "kardanesh" ? l.assessments ? finalText(l.assessments.midterm) + "<small> عملی " + esc(l.assessments.midterm.practical) + " · تئوری " + esc(l.assessments.midterm.theory) + "</small>" : "ثبت نشده در نسخه قدیمی" : "—") +
+                                "</td><td>" + finalText(l) +
                                 "</td><td>" +
                                 esc(l.policy || l.mode === "kardanesh"
                                   ? gradeStatus(l)
@@ -17577,9 +17657,8 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
           if (busy || drafts.size) throw Error("اطلاعات هنگام آماده‌سازی خروجی تغییر کرد؛ گزارش را دوباره تهیه کنید.");
           return true;
         }
-        async function prepareAnnualReportSnapshot() {
+        async function prepareAnnualReportSnapshot(periodIds = {}) {
           assertWorkspaceReadable();
-          if (!["اول","دوم"].includes(workspace.term)) throw Error("گزارش سالانه را از نوبت «اول» یا «دوم» سال تحصیلی باز کنید. دوره بازیابی‌شده یا عنوان سفارشی نباید با نوبت اصلی اشتباه گرفته شود.");
           const origin = workspace.id;
           await flushDrafts({strict: true}); await writer.catch(() => {});
           assertWorkspaceReadable();
@@ -17589,9 +17668,20 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
           const [catalog, records] = await Promise.all([requestPromise(tx.objectStore("catalog").getAll()), requestPromise(tx.objectStore("records").getAll())]);
           await done;
           assertLiveWorkspace(catalog.find(row => row.id === context.id), context);
-          const periods = ["اول", "دوم"].map(term => catalog.find(row => row.year === workspace.year && row.term === term));
-          if (periods.some(row => !row)) throw Error("برای گزارش سالانه، هر دو نوبت «اول» و «دوم» همین سال تحصیلی باید وجود داشته باشند. آن‌ها را از ابزارها ← دوره‌ها ایجاد کنید.");
-          const parts = periods.map(period => ({period, data: decodeWorkspaceRecords(records.filter(row => row.workspace === period.id), {workspaceId: period.id}).data}));
+          let periods;
+          if (periodIds.first || periodIds.second) {
+            if (!isSafeRecordId(periodIds.first) || !isSafeRecordId(periodIds.second) || periodIds.first===periodIds.second) throw Error("هر دو نوبت متمایز اول و دوم را انتخاب کنید.");
+            periods=[periodIds.first,periodIds.second].map(id=>catalog.find(row=>row.id===id));
+            if (periods.some(row=>!row || row.year!==workspace.year)) throw Error("هر دو نوبت باید متعلق به سال تحصیلی فعال باشند.");
+            for (let i=0;i<periods.length;i++) {const kind=periods[i].termKind||academicTermKind(periods[i].term);if(kind && kind!==["first","second"][i]) throw Error("نوع دوره انتخاب‌شده با نوبت اول/دوم مطابقت ندارد.");}
+          } else {
+            const candidates=["first","second"].map(kind=>catalog.filter(row=>row.year===workspace.year&&(row.termKind||academicTermKind(row.term))===kind));
+            if (candidates.every(rows=>rows.length===1) && candidates.some(rows=>rows[0].id===workspace.id)) periods=candidates.map(rows=>rows[0]);
+            else if (["اول","دوم"].includes(workspace.term)) periods=["اول","دوم"].map(term=>catalog.find(row=>row.year===workspace.year&&row.term===term));
+            else throw Error("برای دوره بازیابی‌شده یا عنوان سفارشی، هر دو نوبت اول و دوم را در فرم گزارش انتخاب کنید؛ انتخاب خودکار مبهم است.");
+            if (periods.some(row=>!row)) throw Error("برای گزارش سالانه، هر دو نوبت همین سال تحصیلی باید وجود داشته باشند؛ آن‌ها را انتخاب یا ایجاد کنید.");
+          }
+          const parts = periods.map((period,index) => ({period:{...period,term:index===0?"اول":"دوم",displayTerm:period.term}, data: decodeWorkspaceRecords(records.filter(row => row.workspace === period.id), {workspaceId: period.id}).data}));
           for (const part of parts) {
             const password = part.data.settings.password;
             if (password && part.period.id !== workspace.id) {
@@ -17620,8 +17710,13 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
           await assertReportSnapshot(guarded);
           return {context: guarded, data, parts};
         }
-        async function prepareReportSnapshot({annual = false} = {}) {
-          if (annual) return prepareAnnualReportSnapshot();
+        async function listAnnualReportPeriods() {
+          assertWorkspaceReadable();const context=captureWorkspaceContext();const rows=await allFrom("catalog");
+          assertLiveWorkspace(rows.find(row=>row.id===context.id),context);
+          return rows.filter(row=>row.year===workspace.year).map(row=>({id:row.id,year:row.year,term:row.term,termKind:row.termKind||academicTermKind(row.term),closed:row.closed}));
+        }
+        async function prepareReportSnapshot({annual = false, periodIds} = {}) {
+          if (annual) return prepareAnnualReportSnapshot(periodIds);
           assertWorkspaceReadable();
           const origin = workspace.id;
           await flushDrafts({strict: true});
@@ -18341,6 +18436,8 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
               revision: workspace?.revision || 0,
               pendingDrafts: drafts.size,
               closed: !!workspace?.closed,
+              year: workspace?.year || "",
+              term: workspace?.term || "",
               ready,
               blocked,
               retired: connectionRetired,
@@ -18349,6 +18446,7 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
               authenticated: !db.settings.password || isAuthenticated,
             }),
             prepareReportSnapshot,
+            listAnnualReportPeriods,
             assessmentResult,
             annualGradeRows,
             annualTechnicalRows,
@@ -20089,6 +20187,8 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
         const modeLabel = mode => ({daily: "روزانه", weekly: "هفتگی", monthly: "ماهانه", annual: "سالانه"})[mode] || "دوره‌ای";
         const filters = {
           mode: "daily",
+          annualFirstId: "",
+          annualSecondId: "",
           date: localToday(),
           schoolId: "",
           classId: "",
@@ -20210,7 +20310,7 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
           [
             context().id,
             f.mode,
-            f.mode === "weekly" ? "week:" + range("weekly", f.date).start : f.mode === "monthly" ? "month:" + range("monthly", f.date).start : f.mode === "annual" ? "academic-year" : f.date,
+            f.mode === "weekly" ? "week:" + range("weekly", f.date).start : f.mode === "monthly" ? "month:" + range("monthly", f.date).start : f.mode === "annual" ? "academic-year:" + (f.annualFirstId||"auto") + ":" + (f.annualSecondId||"auto") : f.date,
             f.schoolId,
             f.classId,
             f.audience,
@@ -20390,7 +20490,8 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
                     positive: "امتیاز مثبت",
                     negative: "امتیاز منفی",
                     homework: "تکلیف",
-                    activity: "فعالیت",
+                    classGrade: "نمره کلاسی",
+                    activity: "امتیاز فعالیت",
                   }[sc.type] || "ثبت دیگر",
               }));
               participants.push({
@@ -20732,6 +20833,8 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
             lines.push("", "نمرات فنی — به تفکیک نوبت و پودمان");
             for (const grade of m.technicalGrades) {
               lines.push(grade.studentName + " | " + grade.className + " | " + grade.lessonName + " | نوبت " + grade.term);
+              lines.push((grade.method === "legacy-unit" ? "نتیجه روش قدیمی (پودمان رسمی نیست): " : "نتیجه درس: ") + root.EduV24.finalText(grade) + (grade.complete ? "" : " — ناقص"));
+              for (const unit of grade.legacyUnits || []) lines.push(unit.moduleName + " / " + unit.unitName + ": مستمر " + (unit.mostamar??"—") + "، پایانی " + (unit.payani??"—") + "، ترکیبی " + root.EduV24.finalText(unit));
               for (const module of grade.modules) lines.push(module.name + ": " + root.EduV24.finalText(module) + (module.complete ? (module.passed ? " — قبول" : " — نیازمند جبران") : " — ناقص"));
             }
           }
@@ -20860,7 +20963,11 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
           }
           if (m.technicalGrades?.length) {
             h += "<section><h3>نمرات فنی به تفکیک نوبت و پودمان</h3>";
-            for (const grade of m.technicalGrades) h += "<h4>" + esc(grade.studentName + " · " + grade.className + " · " + grade.lessonName + " · نوبت " + grade.term) + "</h4>" + table(["پودمان","نمره","وضعیت"],grade.modules.map(module=>[module.name,root.EduV24.finalText(module),module.complete ? (module.passed ? "قبول" : "نیازمند جبران") : "ناقص"]));
+            for (const grade of m.technicalGrades) {
+              h += "<h4>" + esc(grade.studentName + " · " + grade.className + " · " + grade.lessonName + " · نوبت " + grade.term) + "</h4><p>" + (grade.method === "legacy-unit" ? "روش قدیمی؛ نتیجه زیر نمره رسمی پودمان نیست: " : "نتیجه درس: ") + esc(root.EduV24.finalText(grade)) + (grade.complete ? "" : " — ناقص") + "</p>";
+              if (grade.method === "legacy-unit") h += table(["پودمان / واحد","مستمر","پایانی","نمره ترکیبی"],(grade.legacyUnits||[]).map(unit=>[unit.moduleName+" / "+unit.unitName,unit.mostamar??"—",unit.payani??"—",root.EduV24.finalText(unit)]));
+              else h += table(["پودمان","نمره","وضعیت"],grade.modules.map(module=>[module.name,root.EduV24.finalText(module),module.complete ? (module.passed ? "قبول" : "نیازمند جبران") : "ناقص"]));
+            }
             h += "</section>";
           }
           if (m.annualGrades) {
@@ -21022,7 +21129,9 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
               studentId: "",
               audience: "management",
               date: localToday(),
+              annualFirstId: "",annualSecondId: "",
             });
+            annualPeriodList=[];
             last = null;
           }
           filterWorkspace = workspaceId;
@@ -21044,8 +21153,22 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
             filters.studentId = "";
           }
         }
+        let annualPeriodList=[], annualLoadingFor="";
+        function loadAnnualPeriodChoices() {
+          const expected=context().id;if(annualLoadingFor===expected)return;annualLoadingFor=expected;
+          root.EduV24.listAnnualReportPeriods().then(rows=>{
+            if(context().id!==expected || filters.mode!=="annual")return;
+            annualPeriodList=rows;
+            for (const [field,id] of [["annualFirstId","annualFirstPeriod"],["annualSecondId","annualSecondPeriod"]]) {
+              const select=document.getElementById(id);if(!select)continue;
+              select.innerHTML='<option value="">انتخاب خودکار در صورت نبود ابهام</option>'+rows.map(row=>'<option value="'+esc(row.id)+'"'+(filters[field]===row.id?" selected":"")+'>'+esc(row.term)+(row.closed?" · بسته":"")+"</option>").join("");
+              select.disabled=false;
+            }
+          }).catch(error).finally(()=>{if(annualLoadingFor===expected)annualLoadingFor="";});
+        }
         function render(mode) {
           initialize(mode);
+          if(mode==="annual")setTimeout(loadAnnualPeriodChoices,0);
           const f = filters,
             school = db.schools.find((s) => s.id === f.schoolId),
             c = school?.classes.find((c) => c.id === f.classId);
@@ -21093,6 +21216,9 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
               .map((c) => option(c.id, c.name, f.classId))
               .join("") +
             "</select></label>";
+          if (mode === "annual") {
+            for(const [field,id,label] of [["annualFirstId","annualFirstPeriod","اطلاعات نوبت اول"],["annualSecondId","annualSecondPeriod","اطلاعات نوبت دوم"]]) h += '<label>'+label+'<select id="'+id+'" onchange="EduPeriodicReports.set(\''+field+'\',this.value)">'+option("","انتخاب خودکار در صورت نبود ابهام",f[field])+annualPeriodList.map(row=>option(row.id,row.term+(row.closed?" · بسته":""),f[field])).join("")+"</select></label>";
+          }
           if (f.audience === "parent")
             h +=
               "<label>هنرجو<select onchange=\"EduPeriodicReports.set('studentId',this.value)\">" +
@@ -21142,6 +21268,7 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
               "classId",
               "studentId",
               "detailLevel",
+              "annualFirstId","annualSecondId",
             ].includes(key)
           )
             return;
@@ -21189,7 +21316,7 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
             signature = JSON.stringify(input);
             const alert = document.getElementById("periodicError");
             if (alert) alert.textContent = "";
-            const snapshot = await root.EduV24.prepareReportSnapshot({annual: input.mode === "annual"});
+            const snapshot = await root.EduV24.prepareReportSnapshot({annual: input.mode === "annual",periodIds:{first:input.annualFirstId,second:input.annualSecondId}});
             if (signature !== JSON.stringify(inputSnapshot()))
               throw Error(
                 "تنظیمات گزارش تغییر کرده است؛ دوباره گزارش را تهیه کنید.",
@@ -21250,8 +21377,9 @@ body { background: #f4f7fb; color: var(--workflow-ink); }
             if (input.mode === "annual") {
               model.technicalGrades = root.EduV24.annualTechnicalRows(snapshot.parts, input.schoolId, input.classId, input.audience === "parent" ? input.studentId : "");
               model.annualGrades = root.EduV24.annualGradeRows(snapshot.parts, input.schoolId, input.classId, input.audience === "parent" ? input.studentId : "");
-              model.periods = snapshot.parts.map(part => ({id: part.period.id, term: part.period.term, revision: part.period.revision}));
+              model.periods = snapshot.parts.map(part => ({id: part.period.id, term: part.period.term, label: part.period.displayTerm || part.period.term, revision: part.period.revision}));
               model.definitions.push("کاردانش: هر مرحله عملی ۷۰٪ و تئوری ۳۰٪؛ نهایی سالانه میانگین برابر هر چهار مرحله است. نمره ناقص، صفر محسوب نمی‌شود.");
+              for(const part of snapshot.parts) model.definitions.push("منبع نوبت " + part.period.term + ": " + part.period.displayTerm);
               model.definitions.push("گزارش سالانه از مهر تا شهریور و شامل نوبت‌های اول و دوم همین سال تحصیلی است؛ تابستان مستقل است.");
               model.definitions.push("کلاس و هنرجو با شناسه مشترک بین نوبت‌ها مرتبط می‌شوند؛ شباهت نام، دلیل ادغام افراد نیست.");
             }
