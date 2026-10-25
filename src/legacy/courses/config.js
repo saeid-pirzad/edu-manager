@@ -1,4 +1,4 @@
-      function openLessonConfig(lId) {
+      function legacy_openLessonConfig(lId) {
         const c = getClassObj(state.schoolId, state.classId);
         const lesson = getLessonObj(c, lId);
         if (!lesson) return;
@@ -27,7 +27,7 @@
     <button onclick="saveLessonConfig('${lId}')">💾 ذخیره</button></div>`;
         showModal("تنظیمات درس", h);
       }
-      async function saveLessonConfig(lId) {
+      async function legacy_saveLessonConfig(lId) {
         const c = getClassObj(state.schoolId, state.classId);
         const lesson = getLessonObj(c, lId);
         const mode = document.getElementById("cfgGradeMode").value;

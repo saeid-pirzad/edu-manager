@@ -30,7 +30,7 @@
           status: policyStatus,
         });
 
-        installGlobals();
+        installRuntimeAPI();
         if (!globalThis.__EDU_TEST_MODE__ && !globalThis.__EDU_UNIT_TEST__)
           delete window.EduV24.test;
         if (!globalThis.__EDU_UNIT_TEST__) {

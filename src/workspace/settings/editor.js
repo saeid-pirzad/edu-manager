@@ -19,7 +19,7 @@
             const context = captureWorkspaceContext();
             const opened = showModal(
               "تنظیمات",
-              '<form id="settingsEditor" class="record-editor" novalidate onsubmit="event.preventDefault();saveSettings()">' +
+              '<form id="settingsEditor" class="record-editor" novalidate>' +
                 '<div class="record-editor-context"><h4>رمز ورود این دوره</h4><p>' +
                 esc((workspace?.year || "") + " / " + (workspace?.term || "")) +
                 "</p></div>" +
@@ -27,13 +27,19 @@
                 '<label><input type="checkbox" id="removePassword"> حذف رمز ورود</label>' +
                 '<p id="settingsHint" class="muted">رمز خالی، رمز فعلی را حفظ می‌کند. برای حذف، گزینه حذف را انتخاب و کادر رمز جدید را خالی کنید. اطلاعات مدرسه و فایل پشتیبان رمزگذاری نشده‌اند.</p>' +
                 '<p id="settingsError" role="alert" class="entity-create-error"></p>' +
-                '<div class="record-editor-actions"><button type="submit">ذخیره تنظیمات</button><button type="button" class="ghost" onclick="closeModal()">انصراف</button></div></form>',
+                '<div class="record-editor-actions"><button type="submit">ذخیره تنظیمات</button><button type="button" class="ghost" data-settings-cancel>انصراف</button></div></form>',
             );
             if (opened !== false) {
               settingsEditing = {
                 ...context,
                 form: document.getElementById("settingsEditor"),
               };
+              settingsEditing.form.addEventListener("submit", event => {
+                event.preventDefault();
+                void saveSettingsV24();
+              });
+              settingsEditing.form.querySelector("[data-settings-cancel]")
+                .addEventListener("click", () => closeModal());
               rememberRecordEditor();
             }
           } catch (error) {

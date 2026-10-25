@@ -35,7 +35,8 @@
         "src/legacy/validation/database.js",
         "src/legacy/students/roster.js",
         "src/legacy/grading/kardanesh.js",
-        "src/legacy/students/archive.js"
+        "src/legacy/students/archive.js",
+        "src/legacy/core/runtime-facade.js"
       ]
     },
     {
@@ -56,6 +57,7 @@
         "src/workspace/drafts/inputs.js",
         "src/workspace/drafts/flush.js",
         "src/workspace/grading/cells.js",
+        "src/workspace/grading/events.js",
         "src/workspace/grading/results.js",
         "src/workspace/grading/editors.js",
         "src/workspace/ui/locks-render.js",
@@ -119,9 +121,11 @@
         "src/ui/course/state-controls.js",
         "src/ui/course/structure-names.js",
         "src/ui/course/form.js",
+        "src/ui/course/form-events.js",
         "src/ui/course/method.js",
         "src/ui/course/save.js",
         "src/ui/course/copy-gate.js",
+        "src/ui/course/table-events.js",
         "src/ui/course/table-api.js"
       ]
     },
@@ -164,7 +168,9 @@
       "output": "assets/scripts/dialogs-ui.js",
       "scope": "global",
       "sources": [
-        "src/ui/dialogs.js"
+        "src/ui/dialogs.js",
+        "src/ui/shell-events.js",
+        "src/ui/header-events.js"
       ]
     },
     {
@@ -309,6 +315,13 @@
         "src/styles/workflow/layout.css",
         "src/styles/workflow/components.css",
         "src/styles/workflow/identity.css"
+      ]
+    },
+    {
+      "output": "assets/scripts/runtime-api.js",
+      "scope": "global",
+      "sources": [
+        "src/core/runtime-api.js"
       ]
     }
   ]

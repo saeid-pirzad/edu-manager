@@ -36,3 +36,4 @@
         }
         return { n: n / (a || 1n), d: d / (a || 1n) };
       }
+//# sourceMappingURL=grade-math.js.map

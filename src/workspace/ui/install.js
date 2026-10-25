@@ -1,4 +1,5 @@
         function installUI() {
+          installGradeEvents();
           window.addEventListener("storage", (event) => {
             if (
               event.key === RESET_EPOCH_KEY &&

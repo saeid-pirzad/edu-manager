@@ -1,5 +1,5 @@
-        function installGlobals() {
-          Object.assign(window, {
+        function installRuntimeAPI() {
+          EduRuntimeAPI.install({
             openSettingsModal: openSettingsV24,
             saveSettings: saveSettingsV24,
             sessionStudent: (c, x, id) =>

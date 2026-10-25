@@ -1,4 +1,4 @@
-      function prepareDB(input) {
+      function legacy_prepareDB(input) {
         const d = JSON.parse(JSON.stringify(input));
         validateDB(d);
         const result = Object.assign(defaultDB(), d);
@@ -44,7 +44,7 @@
         return result;
       }
 
-      function validateDB(d) {
+      function legacy_validateDB(d) {
         const fail = (m) => {
             throw Error("ساختار نامعتبر: " + m);
           },

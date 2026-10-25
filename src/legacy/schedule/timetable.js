@@ -357,7 +357,7 @@
         render();
       }
 
-      function clickMasterCell(day, period) {
+      function legacy_clickMasterCell(day, period) {
         const entry = getMasterEntry(day, period, todayISO());
         if (!entry || !entry.lessonId) {
           openMasterConfig(day, period);

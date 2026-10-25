@@ -45,6 +45,7 @@
                   element: opener,
                   id: opener.id,
                   action: opener.getAttribute("onclick"),
+                  headerAction: opener.getAttribute("data-header-action"),
                 }
               : null;
         }
@@ -334,11 +335,17 @@
         const previous = modalReturnFocus;
         modalReturnFocus = null;
         render();
-        requestAnimationFrame(() => {
+        // Wait for the shell's scheduled DOM enhancement before focusing;
+        // moving the focused control into its new menu otherwise drops focus.
+        requestAnimationFrame(() => requestAnimationFrame(() => {
           if (!modal.classList.contains("hidden")) return;
           let target = previous?.element?.isConnected
             ? previous.element
             : (previous?.id && document.getElementById(previous.id)) ||
+              (previous?.headerAction &&
+                [...document.querySelectorAll("#app button[data-header-action]")].find(
+                  element => element.dataset.headerAction === previous.headerAction,
+                )) ||
               (previous?.action &&
                 [
                   ...document.querySelectorAll(
@@ -357,5 +364,47 @@
             !target.closest("[inert]")
           )
             target.focus({ preventScroll: true });
-        });
+        }));
       }
+// Source: src/ui/shell-events.js
+"use strict";
+
+// The shell exists before these scripts load. Bind only explicit elements and
+// call the stable entry points at event time; no code is evaluated from markup.
+(() => {
+  const bindings = [
+    ["modalClose", "click", () => closeModal()],
+    ["importFile", "change", event => handleImport(event)],
+    ["excelFile", "change", event => handleExcelImport(event)],
+  ];
+  for (const [id, eventName, handler] of bindings) {
+    const element = document.getElementById(id);
+    if (!element) throw Error("Missing application shell element: " + id);
+    element.addEventListener(eventName, handler);
+  }
+})();
+// Source: src/ui/header-events.js
+"use strict";
+
+// Delegation survives header replacement; tokens are not executable code.
+(() => {
+  const app = document.getElementById("app");
+  const actions = new Map([
+    ["schools", () => goSchools()],
+    ["reports", () => goReports()],
+    ["master", () => goMaster()],
+    ["settings", () => openSettingsModal()],
+    ["toggle-data", event => toggleDataMenu(event)],
+    ["export", () => { closeDataMenu(); exportBackup(); }],
+    ["import", () => { closeDataMenu(); document.getElementById("importFile").click(); }],
+    ["wipe", () => { closeDataMenu(); wipeAllData(); }],
+  ]);
+  app.addEventListener("click", event => {
+    const button = event.target.closest?.("button[data-header-action]");
+    if (!button || !app.contains(button) || !button.closest(".topbar") ||
+        button.disabled || button.closest("[inert]")) return;
+    const action = actions.get(button.dataset.headerAction);
+    if (action) action(event);
+  });
+})();
+//# sourceMappingURL=dialogs-ui.js.map

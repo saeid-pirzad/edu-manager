@@ -120,7 +120,7 @@
         return db.sessions.find((s) => s.id === id);
       }
 
-      function setAllAttendance(status) {
+      function legacy_setAllAttendance(status) {
         const sess = db.sessions.find((s) => s.id === currentSessionId);
         if (!sess) return;
         const c = getClassObj(sess.schoolId, sess.classId);
@@ -200,7 +200,7 @@
         await saveDB({ sessionId: sess.id });
         openSessionModal(sess);
       }
-      function updateSessionUnits() {
+      function legacy_updateSessionUnits() {
         const sess = db.sessions.find((s) => s.id === currentSessionId);
         if (!sess) return;
         sess.poudmanId = document.getElementById("sessPoudman").value || null;
@@ -217,13 +217,13 @@
                 .join("")
             : "");
       }
-      function saveSessionUnit() {
+      function legacy_saveSessionUnit() {
         const sess = db.sessions.find((s) => s.id === currentSessionId);
         if (!sess) return;
         sess.unitId = document.getElementById("sessUnit").value || null;
         saveDB();
       }
-      function addSessionScore(e, sessionId) {
+      function legacy_addSessionScore(e, sessionId) {
         e.preventDefault();
         const sess = db.sessions.find((s) => s.id === sessionId);
         if (!sess) return;

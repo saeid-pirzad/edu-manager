@@ -4,16 +4,16 @@
           location.protocol === "file:" &&
           !globalThis.__EDU_SINGLE_FILE__;
         const old = {
-          defaultDB,
-          validateDB,
-          render,
-          calcStudentLesson,
-          clickMasterCell,
+          defaultDB: legacy_defaultDB,
+          validateDB: legacy_validateDB,
+          render: legacy_render,
+          calcStudentLesson: legacy_calcStudentLesson,
+          clickMasterCell: legacy_clickMasterCell,
           showModal,
-          checkPassword,
-          buildLessonGradesHtml,
-          renderLessonStudents,
-          buildLessonReportHtml,
+          checkPassword: legacy_checkPassword,
+          buildLessonGradesHtml: legacy_buildLessonGradesHtml,
+          renderLessonStudents: legacy_renderLessonStudents,
+          buildLessonReportHtml: legacy_buildLessonReportHtml,
         };
         let connection,
           workspace,

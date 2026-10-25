@@ -85,7 +85,7 @@
                   h +=
                     "<td>" +
                     (editable
-                      ? `<select aria-label="معیارهای الزامی ${esc(st.name)}" data-course-gate onchange="EduV24.course.gate('${l.id}','${pod.id}','${st.id}',this.value).catch(EduV24.course.error)"><option value="" ${g.gate == null ? "selected" : ""}>بررسی نشده</option><option value="yes" ${g.gate === true ? "selected" : ""}>احراز شده</option><option value="no" ${g.gate === false ? "selected" : ""}>احراز نشده</option></select>`
+                      ? `<select aria-label="معیارهای الزامی ${esc(st.name)}" data-course-gate data-lesson-id="${esc(l.id)}" data-pod-id="${esc(pod.id)}" data-student-id="${esc(st.id)}"><option value="" ${g.gate == null ? "selected" : ""}>بررسی نشده</option><option value="yes" ${g.gate === true ? "selected" : ""}>احراز شده</option><option value="no" ${g.gate === false ? "selected" : ""}>احراز نشده</option></select>`
                       : g.gate === true
                         ? "احراز شده"
                         : g.gate === false
@@ -104,6 +104,7 @@
             }
             return h + "</tbody></table></div>";
           }
+          installCourseTableEvents();
           return {
             open,
             openNames,

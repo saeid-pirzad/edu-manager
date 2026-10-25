@@ -1,4 +1,4 @@
-      function buildLessonGradesHtml(c, lesson) {
+      function legacy_buildLessonGradesHtml(c, lesson) {
         if (lesson.gradeMode === "kardanesh")
           return buildKardaneshGradesHtml(c, lesson);
         let allPos = true,

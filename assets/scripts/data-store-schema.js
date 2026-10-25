@@ -19,3 +19,4 @@ globalThis.EduDataStoreSchema = Object.freeze({
     Object.freeze({ name: "drafts", keyPath: "key", workspaceIndex: true }),
   ]),
 });
+//# sourceMappingURL=data-store-schema.js.map

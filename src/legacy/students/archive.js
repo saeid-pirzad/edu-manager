@@ -7,7 +7,7 @@
           .trim();
       }
 
-      async function restoreStudent(studentId) {
+      async function legacy_restoreStudent(studentId) {
         const c = getClassObj(state.schoolId, state.classId),
           st = (c?.archivedStudents || []).find((x) => x.id === studentId);
         if (!st) return;
@@ -21,7 +21,7 @@
         render();
       }
 
-      function buildArchiveHtml(c) {
+      function legacy_buildArchiveHtml(c) {
         if (!c.archivedStudents?.length) return "";
         return (
           '<div class="card"><h3>سوابق بایگانی‌شده</h3><p>سوابق کلاس قبلی حفظ شده‌اند. بازگردانی، عضویت فعال در این کلاس را دوباره برقرار می‌کند.</p>' +

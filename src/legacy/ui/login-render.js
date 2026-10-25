@@ -4,14 +4,15 @@
     <div class="login-box">
       <h2>🔒 ورود به سامانه</h2>
       <p class="muted">لطفاً رمز عبور خود را وارد کنید</p>
-      <form onsubmit="checkPassword(event)">
+      <form id="loginForm">
         <input type="password" id="loginPass" placeholder="****" required autofocus>
         <button type="submit">ورود</button>
       </form>
     </div>
   `;
+        app.querySelector("#loginForm").addEventListener("submit", checkPassword);
       }
-      async function checkPassword(e) {
+      async function legacy_checkPassword(e) {
         e.preventDefault();
         const input = document.getElementById("loginPass"),
           button = e.target.querySelector("button");
@@ -37,7 +38,7 @@
         }
       }
 
-      function render() {
+      function legacy_render() {
         if (db.settings.password && !isAuthenticated) {
           renderLogin();
           return;

@@ -58,7 +58,7 @@
               locked,
             };
             const info = P.identity(l, api.year());
-            let h = `<form class="record-editor" novalidate onsubmit="event.preventDefault();EduV24.course.save().catch(EduV24.course.error)"><div class="record-editor-context"><span>مشخصات درس</span><h4>${esc((school?.name ? school.name + " / " : "") + c.name)}</h4><p>نام، دبیر و مشخصات توصیفی قابل اصلاح‌اند؛ نمرات و جلسات حفظ می‌شوند.</p></div><p>تعریف درس براساس ابلاغیه سالانه. نمره نهایی بر مقیاس صفر تا بیست است؛ دامنه هر ورودی تابع قواعد درس است. تأیید قواعد به معنی تأیید شماست. شماره، تاریخ و مرجع ابلاغیه و متولی استاندارد اختیاری‌اند و می‌توانند خالی بمانند.</p><div id="courseError" role="alert"></div><div class="course-grid">`;
+            let h = `<form class="record-editor" novalidate><div class="record-editor-context"><span>مشخصات درس</span><h4>${esc((school?.name ? school.name + " / " : "") + c.name)}</h4><p>نام، دبیر و مشخصات توصیفی قابل اصلاح‌اند؛ نمرات و جلسات حفظ می‌شوند.</p></div><p>تعریف درس براساس ابلاغیه سالانه. نمره نهایی بر مقیاس صفر تا بیست است؛ دامنه هر ورودی تابع قواعد درس است. تأیید قواعد به معنی تأیید شماست. شماره، تاریخ و مرجع ابلاغیه و متولی استاندارد اختیاری‌اند و می‌توانند خالی بمانند.</p><div id="courseError" role="alert"></div><div class="course-grid">`;
             h +=
               input("name", "نام درس", l.name) +
               input("teacher", "هنرآموز / دبیر", l.teacher) +
@@ -97,7 +97,6 @@
                   ["fani", "فنی‌وحرفه‌ای"],
                 ],
                 info.branch || p.branch,
-                'onchange="EduV24.course.toggleBranch()"',
               ) +
               input("authority", "متولی استاندارد (اختیاری)", info.authority);
             h +=
@@ -124,7 +123,6 @@
                   ["modular", "پودمانی با شایستگی"],
                 ],
                 p.method,
-                'onchange="EduV24.course.toggleMethod()"',
               ) +
               input(
                 "circularNumber",
@@ -237,7 +235,7 @@
               (p.confirmed ? "checked" : "") +
               "> قواعد را با ابلاغیه این سال تطبیق داده‌ام</label></p></fieldset></details>";
             h +=
-              '<div class="record-editor-actions"><button type="submit" data-mutating="1">ذخیره تغییرات درس</button><button type="button" class="ghost" onclick="closeModal()">انصراف</button></div></form>';
+              '<div class="record-editor-actions"><button type="submit" data-mutating="1">ذخیره تغییرات درس</button><button type="button" class="ghost" data-course-cancel>انصراف</button></div></form>';
             const opened = api.showModal(
               original ? "تنظیمات درس و ابلاغیه" : "تعریف درس جدید",
               h,
@@ -246,6 +244,7 @@
               editing = previousEditing;
               return false;
             }
+            bindCourseFormEvents(document.querySelector("#modal .record-editor"));
             prepareStructureNameEditor(l);
             toggleMethod();
             if (api.context().readOnly) {

@@ -43,7 +43,7 @@
       >
         <div class="modal-header">
           <h3 id="modalTitle"></h3>
-          <button onclick="closeModal()" aria-label="بستن پنجره">×</button>
+          <button type="button" id="modalClose" aria-label="بستن پنجره">×</button>
         </div>
         <div class="modal-body" id="modalBody"></div>
       </div>
@@ -53,18 +53,17 @@
       id="importFile"
       hidden
       accept=".json"
-      onchange="handleImport(event)"
     />
     <input
       type="file"
       id="excelFile"
       hidden
       accept=".csv"
-      onchange="handleExcelImport(event)"
     />
     <script src="./assets/scripts/data-store-schema.js"></script>
     <script src="./assets/scripts/data-store-runtime.js"></script>
     <script src="./assets/scripts/data-store.js"></script>
+    <script src="./assets/scripts/runtime-api.js"></script>
     <script src="./assets/scripts/grade-math.js"></script>
     <script src="./assets/scripts/data-boundary.js"></script>
     <script src="./assets/scripts/calendar-math.js"></script>

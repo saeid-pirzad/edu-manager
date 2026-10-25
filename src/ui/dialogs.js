@@ -43,6 +43,7 @@
                   element: opener,
                   id: opener.id,
                   action: opener.getAttribute("onclick"),
+                  headerAction: opener.getAttribute("data-header-action"),
                 }
               : null;
         }
@@ -332,11 +333,17 @@
         const previous = modalReturnFocus;
         modalReturnFocus = null;
         render();
-        requestAnimationFrame(() => {
+        // Wait for the shell's scheduled DOM enhancement before focusing;
+        // moving the focused control into its new menu otherwise drops focus.
+        requestAnimationFrame(() => requestAnimationFrame(() => {
           if (!modal.classList.contains("hidden")) return;
           let target = previous?.element?.isConnected
             ? previous.element
             : (previous?.id && document.getElementById(previous.id)) ||
+              (previous?.headerAction &&
+                [...document.querySelectorAll("#app button[data-header-action]")].find(
+                  element => element.dataset.headerAction === previous.headerAction,
+                )) ||
               (previous?.action &&
                 [
                   ...document.querySelectorAll(
@@ -355,5 +362,5 @@
             !target.closest("[inert]")
           )
             target.focus({ preventScroll: true });
-        });
+        }));
       }

@@ -192,7 +192,7 @@ root.EduCourseUI = function (api) {
               locked,
             };
             const info = P.identity(l, api.year());
-            let h = `<form class="record-editor" novalidate onsubmit="event.preventDefault();EduV24.course.save().catch(EduV24.course.error)"><div class="record-editor-context"><span>مشخصات درس</span><h4>${esc((school?.name ? school.name + " / " : "") + c.name)}</h4><p>نام، دبیر و مشخصات توصیفی قابل اصلاح‌اند؛ نمرات و جلسات حفظ می‌شوند.</p></div><p>تعریف درس براساس ابلاغیه سالانه. نمره نهایی بر مقیاس صفر تا بیست است؛ دامنه هر ورودی تابع قواعد درس است. تأیید قواعد به معنی تأیید شماست. شماره، تاریخ و مرجع ابلاغیه و متولی استاندارد اختیاری‌اند و می‌توانند خالی بمانند.</p><div id="courseError" role="alert"></div><div class="course-grid">`;
+            let h = `<form class="record-editor" novalidate><div class="record-editor-context"><span>مشخصات درس</span><h4>${esc((school?.name ? school.name + " / " : "") + c.name)}</h4><p>نام، دبیر و مشخصات توصیفی قابل اصلاح‌اند؛ نمرات و جلسات حفظ می‌شوند.</p></div><p>تعریف درس براساس ابلاغیه سالانه. نمره نهایی بر مقیاس صفر تا بیست است؛ دامنه هر ورودی تابع قواعد درس است. تأیید قواعد به معنی تأیید شماست. شماره، تاریخ و مرجع ابلاغیه و متولی استاندارد اختیاری‌اند و می‌توانند خالی بمانند.</p><div id="courseError" role="alert"></div><div class="course-grid">`;
             h +=
               input("name", "نام درس", l.name) +
               input("teacher", "هنرآموز / دبیر", l.teacher) +
@@ -231,7 +231,6 @@ root.EduCourseUI = function (api) {
                   ["fani", "فنی‌وحرفه‌ای"],
                 ],
                 info.branch || p.branch,
-                'onchange="EduV24.course.toggleBranch()"',
               ) +
               input("authority", "متولی استاندارد (اختیاری)", info.authority);
             h +=
@@ -258,7 +257,6 @@ root.EduCourseUI = function (api) {
                   ["modular", "پودمانی با شایستگی"],
                 ],
                 p.method,
-                'onchange="EduV24.course.toggleMethod()"',
               ) +
               input(
                 "circularNumber",
@@ -371,7 +369,7 @@ root.EduCourseUI = function (api) {
               (p.confirmed ? "checked" : "") +
               "> قواعد را با ابلاغیه این سال تطبیق داده‌ام</label></p></fieldset></details>";
             h +=
-              '<div class="record-editor-actions"><button type="submit" data-mutating="1">ذخیره تغییرات درس</button><button type="button" class="ghost" onclick="closeModal()">انصراف</button></div></form>';
+              '<div class="record-editor-actions"><button type="submit" data-mutating="1">ذخیره تغییرات درس</button><button type="button" class="ghost" data-course-cancel>انصراف</button></div></form>';
             const opened = api.showModal(
               original ? "تنظیمات درس و ابلاغیه" : "تعریف درس جدید",
               h,
@@ -380,6 +378,7 @@ root.EduCourseUI = function (api) {
               editing = previousEditing;
               return false;
             }
+            bindCourseFormEvents(document.querySelector("#modal .record-editor"));
             prepareStructureNameEditor(l);
             toggleMethod();
             if (api.context().readOnly) {
@@ -397,6 +396,17 @@ root.EduCourseUI = function (api) {
               form.querySelector(".record-editor-context").append(note);
             }
             rememberRecordEditor();
+          }
+// Source: src/ui/course/form-events.js
+          // Bind to this form instance only after the modal accepts replacement.
+          function bindCourseFormEvents(form) {
+            form.addEventListener("submit", event => {
+              event.preventDefault();
+              void save().catch(error);
+            });
+            form.querySelector("#course_branch").addEventListener("change", toggleBranch);
+            form.querySelector("#course_method").addEventListener("change", toggleMethod);
+            form.querySelector("[data-course-cancel]").addEventListener("click", () => closeModal());
           }
 // Source: src/ui/course/method.js
           async function openNames(lid) {
@@ -716,6 +726,19 @@ root.EduCourseUI = function (api) {
               table(c, l, null, true),
             );
           }
+// Source: src/ui/course/table-events.js
+          function installCourseTableEvents() {
+            const body = document.getElementById("modalBody");
+            body.addEventListener("change", event => {
+              const control = event.target;
+              if (!control.matches?.("select[data-course-gate]") ||
+                  !body.contains(control) || control.matches(":disabled") ||
+                  control.closest("[inert]")) return;
+              const { lessonId, podId, studentId } = control.dataset;
+              if (!lessonId || !podId || !studentId) return;
+              void gate(lessonId, podId, studentId, control.value).catch(error);
+            });
+          }
 // Source: src/ui/course/table-api.js
           function table(c, l, sid, editable = false) {
             const policy = l.gradingPolicy;
@@ -804,7 +827,7 @@ root.EduCourseUI = function (api) {
                   h +=
                     "<td>" +
                     (editable
-                      ? `<select aria-label="معیارهای الزامی ${esc(st.name)}" data-course-gate onchange="EduV24.course.gate('${l.id}','${pod.id}','${st.id}',this.value).catch(EduV24.course.error)"><option value="" ${g.gate == null ? "selected" : ""}>بررسی نشده</option><option value="yes" ${g.gate === true ? "selected" : ""}>احراز شده</option><option value="no" ${g.gate === false ? "selected" : ""}>احراز نشده</option></select>`
+                      ? `<select aria-label="معیارهای الزامی ${esc(st.name)}" data-course-gate data-lesson-id="${esc(l.id)}" data-pod-id="${esc(pod.id)}" data-student-id="${esc(st.id)}"><option value="" ${g.gate == null ? "selected" : ""}>بررسی نشده</option><option value="yes" ${g.gate === true ? "selected" : ""}>احراز شده</option><option value="no" ${g.gate === false ? "selected" : ""}>احراز نشده</option></select>`
                       : g.gate === true
                         ? "احراز شده"
                         : g.gate === false
@@ -823,6 +846,7 @@ root.EduCourseUI = function (api) {
             }
             return h + "</tbody></table></div>";
           }
+          installCourseTableEvents();
           return {
             open,
             openNames,
@@ -837,3 +861,4 @@ root.EduCourseUI = function (api) {
           };
 };
 })(globalThis);
+//# sourceMappingURL=course-ui.js.map

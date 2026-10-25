@@ -554,6 +554,7 @@
               menu.innerHTML =
                 '<summary title="ابزارها و تنظیمات"><span class="menu-toggle-label">فهرست برنامه</span><svg class="menu-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path class="menu-line-top" d="M5 12h14"/><path class="menu-line-middle" d="M5 12h14"/><path class="menu-line-bottom" d="M5 12h14"/></svg></summary>';
               actions.before(menu);
+              menu.querySelector("summary").id = "headerNavigationToggle";
               menu.append(actions);
               menu.addEventListener("toggle", () => {
                 if (!menu.open) {
@@ -569,11 +570,13 @@
                   matchMedia(
                     "(max-width:700px), (max-width:1000px) and (pointer:coarse)",
                   ).matches
-                )
+                ) {
                   menu.open = false;
+                  menu.querySelector("summary").focus({ preventScroll: true });
+                }
               });
               const settings = actions.querySelector(
-                'button[onclick="openSettingsModal()"]',
+                'button[data-header-action="settings"]',
               );
               if (settings) {
                 settings.setAttribute("aria-label", "تنظیمات برنامه");
@@ -626,3 +629,4 @@
           document.addEventListener("DOMContentLoaded", start);
         else start();
       })();
+//# sourceMappingURL=app-shell-ui.js.map

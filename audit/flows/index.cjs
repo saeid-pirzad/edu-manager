@@ -13,4 +13,8 @@ module.exports = {
   seniorReviewFlows: require("./seniorReviewFlows.cjs"),
   seniorUiReview: require("./seniorUiReview.cjs"),
   postFixFlows: require("./postFixFlows.cjs"),
+  headerEvents: require("./headerEvents.cjs"),
+  courseFormEvents: require("./courseFormEvents.cjs"),
+  courseTableEvents: require("./courseTableEvents.cjs"),
+  gradeEvents: require("./gradeEvents.cjs"),
 };

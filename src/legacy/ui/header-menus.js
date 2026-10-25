@@ -20,7 +20,7 @@
         const btn = (label, key, action, active = false, extra = "") =>
           '<button type="button" class="header-action' +
           (active ? " is-active" : "") +
-          '" onclick="' +
+          '" data-header-action="' +
           action +
           '" ' +
           (active ? 'aria-current="page" ' : "") +
@@ -35,7 +35,7 @@
         const sub = (label, key, action, danger = false) =>
           '<button type="button" ' +
           (danger ? 'class="danger-item" ' : "") +
-          'onclick="' +
+          'data-header-action="' +
           action +
           '">' +
           icon(icons[key]) +
@@ -47,17 +47,17 @@
         h += btn(
           "خانه",
           "home",
-          "goSchools()",
+          "schools",
           state.view === "schools",
           'aria-label="خانه"',
         ).replace('class="header-action', 'class="header-home header-action');
         h += '</div><div class="actions header-actions">';
         h +=
-          btn("گزارش‌ها", "report", "goReports()", state.view === "reports") +
+          btn("گزارش‌ها", "report", "reports", state.view === "reports") +
           btn(
             "برنامه هفتگی",
             "calendar",
-            "goMaster()",
+            "master",
             state.view === "master",
           );
         h +=
@@ -65,25 +65,25 @@
           btn(
             "داده‌ها",
             "data",
-            "toggleDataMenu(event)",
+            "toggle-data",
             false,
             'id="dataMenuButton" aria-controls="dataMenu" aria-expanded="false"',
           ).replace("</button>", caret + "</button>") +
           '<div class="data-menu" id="dataMenu" aria-label="مدیریت داده‌ها">' +
-          sub("پشتیبان‌گیری", "copy", "closeDataMenu();exportBackup()") +
+          sub("پشتیبان‌گیری", "copy", "export") +
           sub(
             "بازیابی از فایل",
             "upload",
-            "closeDataMenu();document.getElementById(\'importFile\').click()",
+            "import",
           ) +
           sub(
             "حذف کامل داده‌ها",
             "trash",
-            "closeDataMenu();wipeAllData()",
+            "wipe",
             true,
           ) +
           "</div></div>";
-        h += btn("تنظیمات", "settings", "openSettingsModal()") + "</div></div>";
+        h += btn("تنظیمات", "settings", "settings") + "</div></div>";
         return h;
       }
       function setHeaderMenu(id, open) {

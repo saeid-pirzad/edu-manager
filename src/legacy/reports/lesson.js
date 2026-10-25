@@ -80,7 +80,7 @@
         out.innerHTML = buildLessonReportHtml(cls.classObj, lesson);
       }
 
-      function buildLessonReportHtml(c, lesson) {
+      function legacy_buildLessonReportHtml(c, lesson) {
         const sessions = db.sessions
           .filter((x) => x.classId === c.id && x.lessonId === lesson.id)
           .sort((a, b) => a.date.localeCompare(b.date));

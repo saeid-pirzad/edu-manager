@@ -50,7 +50,7 @@
         if (!d.activeDays) d.activeDays = [0, 1, 2, 3, 4, 5];
       }
 
-      function saveDB() {
+      function legacy_saveDB() {
         try {
           if (storageBlocked) throw Error(storageProblem);
           if (localStorage.getItem(STORAGE_KEY) !== storageSnapshot)

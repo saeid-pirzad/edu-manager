@@ -28,7 +28,7 @@
         return h;
       }
 
-      function renderLessonStudents(c, lesson) {
+      function legacy_renderLessonStudents(c, lesson) {
         if (lesson.gradeMode === "kardanesh")
           return buildKardaneshSummaryHtml(c, lesson);
         let h = `<div class="card"><h3>👥 دانش‌آموزان این درس</h3>

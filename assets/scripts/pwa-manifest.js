@@ -10,3 +10,4 @@ if (location.protocol !== "file:") {
   manifest.href = "./app.webmanifest";
   document.head.append(manifest);
 }
+//# sourceMappingURL=pwa-manifest.js.map

@@ -7,16 +7,16 @@
           location.protocol === "file:" &&
           !globalThis.__EDU_SINGLE_FILE__;
         const old = {
-          defaultDB,
-          validateDB,
-          render,
-          calcStudentLesson,
-          clickMasterCell,
+          defaultDB: legacy_defaultDB,
+          validateDB: legacy_validateDB,
+          render: legacy_render,
+          calcStudentLesson: legacy_calcStudentLesson,
+          clickMasterCell: legacy_clickMasterCell,
           showModal,
-          checkPassword,
-          buildLessonGradesHtml,
-          renderLessonStudents,
-          buildLessonReportHtml,
+          checkPassword: legacy_checkPassword,
+          buildLessonGradesHtml: legacy_buildLessonGradesHtml,
+          renderLessonStudents: legacy_renderLessonStudents,
+          buildLessonReportHtml: legacy_buildLessonReportHtml,
         };
         let connection,
           workspace,
@@ -1241,19 +1241,19 @@
             shown = draft ? draft.value : (value ?? "");
           return (
             '<div class="grade-editor"><input type="text" inputmode="decimal" autocomplete="off" dir="ltr" data-grade="1" data-kind="' +
-            kind +
+            esc(kind) +
             '" data-class="' +
-            c.id +
+            esc(c.id) +
             '" data-lesson="' +
-            l.id +
+            esc(l.id) +
             '" data-student="' +
-            st.id +
+            esc(st.id) +
             '" data-pod="' +
-            pid +
+            esc(pid) +
             '" data-unit="' +
-            unitId +
+            esc(unitId) +
             '" data-field="' +
-            field +
+            esc(field) +
             '" value="' +
             esc(shown) +
             '" aria-label="' +
@@ -1270,7 +1270,7 @@
                         ? "مستمر"
                         : "پایانی"),
             ) +
-            '" oninput="EduV24.gradeInput(this)" onblur="EduV24.flushDrafts().catch(()=>{})"><button type="button" class="ghost grade-clear no-print" aria-label="پاک‌کردن نمره" onclick="EduV24.clearGrade(this.previousElementSibling)">پاک‌کردن</button><small class="grade-note" aria-live="polite">' +
+            '"><button type="button" class="ghost grade-clear no-print" data-clear-grade aria-label="پاک‌کردن نمره">پاک‌کردن</button><small class="grade-note" aria-live="polite">' +
             esc(draft ? draft.error || "در انتظار ذخیره" : "") +
             "</small></div>"
           );
@@ -1288,6 +1288,25 @@
           });
         }
 
+// Source: src/workspace/grading/events.js
+        function installGradeEvents() {
+          const isEditableGrade = input =>
+            input?.matches?.('input[data-grade="1"]') &&
+            !input.matches(":disabled") && !input.closest("[inert]");
+          document.addEventListener("input", event => {
+            if (isEditableGrade(event.target)) gradeInput(event.target);
+          });
+          // focusout bubbles, unlike the former inline blur handler.
+          document.addEventListener("focusout", event => {
+            if (isEditableGrade(event.target)) void flushDrafts().catch(() => {});
+          });
+          document.addEventListener("click", event => {
+            const button = event.target.closest?.("button[data-clear-grade]");
+            if (!button || button.matches(":disabled") || button.closest("[inert]")) return;
+            const input = button.previousElementSibling;
+            if (isEditableGrade(input)) clearGrade(input);
+          });
+        }
 // Source: src/workspace/grading/results.js
         function calcV24(c, l, sid, source = db) {
           const r = old.calcStudentLesson(c, l, sid, source);
@@ -4319,6 +4338,7 @@
 
 // Source: src/workspace/ui/install.js
         function installUI() {
+          installGradeEvents();
           window.addEventListener("storage", (event) => {
             if (
               event.key === RESET_EPOCH_KEY &&
@@ -4874,7 +4894,7 @@
             const context = captureWorkspaceContext();
             const opened = showModal(
               "تنظیمات",
-              '<form id="settingsEditor" class="record-editor" novalidate onsubmit="event.preventDefault();saveSettings()">' +
+              '<form id="settingsEditor" class="record-editor" novalidate>' +
                 '<div class="record-editor-context"><h4>رمز ورود این دوره</h4><p>' +
                 esc((workspace?.year || "") + " / " + (workspace?.term || "")) +
                 "</p></div>" +
@@ -4882,13 +4902,19 @@
                 '<label><input type="checkbox" id="removePassword"> حذف رمز ورود</label>' +
                 '<p id="settingsHint" class="muted">رمز خالی، رمز فعلی را حفظ می‌کند. برای حذف، گزینه حذف را انتخاب و کادر رمز جدید را خالی کنید. اطلاعات مدرسه و فایل پشتیبان رمزگذاری نشده‌اند.</p>' +
                 '<p id="settingsError" role="alert" class="entity-create-error"></p>' +
-                '<div class="record-editor-actions"><button type="submit">ذخیره تنظیمات</button><button type="button" class="ghost" onclick="closeModal()">انصراف</button></div></form>',
+                '<div class="record-editor-actions"><button type="submit">ذخیره تنظیمات</button><button type="button" class="ghost" data-settings-cancel>انصراف</button></div></form>',
             );
             if (opened !== false) {
               settingsEditing = {
                 ...context,
                 form: document.getElementById("settingsEditor"),
               };
+              settingsEditing.form.addEventListener("submit", event => {
+                event.preventDefault();
+                void saveSettingsV24();
+              });
+              settingsEditing.form.querySelector("[data-settings-cancel]")
+                .addEventListener("click", () => closeModal());
               rememberRecordEditor();
             }
           } catch (error) {
@@ -5514,8 +5540,8 @@
           }
         }
 // Source: src/workspace/core/public-api.js
-        function installGlobals() {
-          Object.assign(window, {
+        function installRuntimeAPI() {
+          EduRuntimeAPI.install({
             openSettingsModal: openSettingsV24,
             saveSettings: saveSettingsV24,
             sessionStudent: (c, x, id) =>
@@ -6351,7 +6377,7 @@
           status: policyStatus,
         });
 
-        installGlobals();
+        installRuntimeAPI();
         if (!globalThis.__EDU_TEST_MODE__ && !globalThis.__EDU_UNIT_TEST__)
           delete window.EduV24.test;
         if (!globalThis.__EDU_UNIT_TEST__) {
@@ -6359,3 +6385,4 @@
           bootstrapV24();
         }
 })();
+//# sourceMappingURL=workspace-runtime.js.map

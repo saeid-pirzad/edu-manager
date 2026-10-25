@@ -65,13 +65,7 @@ module.exports = async function auditPwaUpgrade({ cdp, debuggerUrl, root }) {
     response.setHeader("Cache-Control", "no-store");
     response.setHeader(
       "Content-Type",
-      name.endsWith(".html")
-        ? "text/html; charset=utf-8"
-        : name.endsWith(".css")
-          ? "text/css; charset=utf-8"
-          : name.endsWith(".js")
-            ? "application/javascript"
-            : "application/manifest+json",
+      require("./application-files.cjs").contentType(name),
     );
     response.end((phase === "old" ? oldFiles : newFiles).get(name));
   });

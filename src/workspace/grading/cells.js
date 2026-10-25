@@ -19,19 +19,19 @@
             shown = draft ? draft.value : (value ?? "");
           return (
             '<div class="grade-editor"><input type="text" inputmode="decimal" autocomplete="off" dir="ltr" data-grade="1" data-kind="' +
-            kind +
+            esc(kind) +
             '" data-class="' +
-            c.id +
+            esc(c.id) +
             '" data-lesson="' +
-            l.id +
+            esc(l.id) +
             '" data-student="' +
-            st.id +
+            esc(st.id) +
             '" data-pod="' +
-            pid +
+            esc(pid) +
             '" data-unit="' +
-            unitId +
+            esc(unitId) +
             '" data-field="' +
-            field +
+            esc(field) +
             '" value="' +
             esc(shown) +
             '" aria-label="' +
@@ -48,7 +48,7 @@
                         ? "مستمر"
                         : "پایانی"),
             ) +
-            '" oninput="EduV24.gradeInput(this)" onblur="EduV24.flushDrafts().catch(()=>{})"><button type="button" class="ghost grade-clear no-print" aria-label="پاک‌کردن نمره" onclick="EduV24.clearGrade(this.previousElementSibling)">پاک‌کردن</button><small class="grade-note" aria-live="polite">' +
+            '"><button type="button" class="ghost grade-clear no-print" data-clear-grade aria-label="پاک‌کردن نمره">پاک‌کردن</button><small class="grade-note" aria-live="polite">' +
             esc(draft ? draft.error || "در انتظار ذخیره" : "") +
             "</small></div>"
           );

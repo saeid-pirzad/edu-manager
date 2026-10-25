@@ -46,7 +46,7 @@
           ],
         }));
       }
-      function defaultDB() {
+      function legacy_defaultDB() {
         return {
           schools: [],
           sessions: [],

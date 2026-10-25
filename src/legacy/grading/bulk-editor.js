@@ -1,4 +1,4 @@
-      function openBulkScoreModal(lessonId) {
+      function legacy_openBulkScoreModal(lessonId) {
         const c = getClassObj(state.schoolId, state.classId);
         const lesson = getLessonObj(c, lessonId);
         if (!c || !lesson) return;

@@ -1,4 +1,4 @@
-      async function deleteSchool(id) {
+      async function legacy_deleteSchool(id) {
         if (!confirm("مدرسه و تمام داده‌هایش حذف شوند؟")) return;
         const school = db.schools.find((s) => s.id === id);
         const classIds = (school?.classes || []).map((c) => c.id);
@@ -12,7 +12,7 @@
         await saveDB();
         render();
       }
-      async function deleteClass(id) {
+      async function legacy_deleteClass(id) {
         if (!confirm("کلاس و تمام داده‌هایش حذف شوند؟")) return;
         const s = getSchool(state.schoolId);
         s.classes = s.classes.filter((c) => c.id !== id);
@@ -23,7 +23,7 @@
         await saveDB();
         render();
       }
-      function addStudent(e) {
+      function legacy_addStudent(e) {
         e.preventDefault();
         const c = getClassObj(state.schoolId, state.classId);
         if (!c) return;
@@ -34,7 +34,7 @@
         e.target.reset();
         render();
       }
-      async function deleteStudent(stId) {
+      async function legacy_deleteStudent(stId) {
         if (!confirm("دانش‌آموز از فهرست فعال خارج و سوابق بایگانی شود؟"))
           return;
         const c = getClassObj(state.schoolId, state.classId),
@@ -46,7 +46,7 @@
         }
       }
 
-      async function addLesson(e) {
+      async function legacy_addLesson(e) {
         e.preventDefault();
         const c = getClassObj(state.schoolId, state.classId);
         if (!c) return;
@@ -73,7 +73,7 @@
         e.target.reset();
         render();
       }
-      async function deleteLesson(id) {
+      async function legacy_deleteLesson(id) {
         if (!confirm("درس و تمام نمراتش حذف شوند؟")) return;
         const c = getClassObj(state.schoolId, state.classId);
         c.lessons = c.lessons.filter((l) => l.id !== id);
@@ -85,7 +85,7 @@
         render();
       }
 
-      function openTransferModal(stId) {
+      function legacy_openTransferModal(stId) {
         const c = getClassObj(state.schoolId, state.classId);
         const student = getStudentObj(c, stId);
         if (!student) return;
@@ -109,7 +109,7 @@
     <button onclick="doTransfer('${stId}',false)">📤 انتقال</button></div>`;
         showModal("انتقال/کپی دانش‌آموز", h);
       }
-      async function doTransfer(stId, isCopy) {
+      async function legacy_doTransfer(stId, isCopy) {
         const targetId = document.getElementById("transferTarget").value;
         const srcC = getClassObj(state.schoolId, state.classId);
         const student = srcC.students.find((s) => s.id === stId);

@@ -1,4 +1,4 @@
-      function downloadRawRecovery() {
+      function legacy_downloadRawRecovery() {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (raw === null) return alert("نسخه خامی وجود ندارد.");
         downloadLocalFile(

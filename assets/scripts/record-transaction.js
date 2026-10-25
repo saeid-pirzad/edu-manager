@@ -96,3 +96,4 @@ globalThis.EduRecordTransaction = Object.freeze({
     return nextCatalog;
   },
 });
+//# sourceMappingURL=record-transaction.js.map

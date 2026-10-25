@@ -132,7 +132,7 @@
           ],
         }));
       }
-      function defaultDB() {
+      function legacy_defaultDB() {
         return {
           schools: [],
           sessions: [],
@@ -234,7 +234,7 @@
         if (!d.activeDays) d.activeDays = [0, 1, 2, 3, 4, 5];
       }
 
-      function saveDB() {
+      function legacy_saveDB() {
         try {
           if (storageBlocked) throw Error(storageProblem);
           if (localStorage.getItem(STORAGE_KEY) !== storageSnapshot)
@@ -388,14 +388,15 @@
     <div class="login-box">
       <h2>🔒 ورود به سامانه</h2>
       <p class="muted">لطفاً رمز عبور خود را وارد کنید</p>
-      <form onsubmit="checkPassword(event)">
+      <form id="loginForm">
         <input type="password" id="loginPass" placeholder="****" required autofocus>
         <button type="submit">ورود</button>
       </form>
     </div>
   `;
+        app.querySelector("#loginForm").addEventListener("submit", checkPassword);
       }
-      async function checkPassword(e) {
+      async function legacy_checkPassword(e) {
         e.preventDefault();
         const input = document.getElementById("loginPass"),
           button = e.target.querySelector("button");
@@ -421,7 +422,7 @@
         }
       }
 
-      function render() {
+      function legacy_render() {
         if (db.settings.password && !isAuthenticated) {
           renderLogin();
           return;
@@ -481,7 +482,7 @@
         const btn = (label, key, action, active = false, extra = "") =>
           '<button type="button" class="header-action' +
           (active ? " is-active" : "") +
-          '" onclick="' +
+          '" data-header-action="' +
           action +
           '" ' +
           (active ? 'aria-current="page" ' : "") +
@@ -496,7 +497,7 @@
         const sub = (label, key, action, danger = false) =>
           '<button type="button" ' +
           (danger ? 'class="danger-item" ' : "") +
-          'onclick="' +
+          'data-header-action="' +
           action +
           '">' +
           icon(icons[key]) +
@@ -508,17 +509,17 @@
         h += btn(
           "خانه",
           "home",
-          "goSchools()",
+          "schools",
           state.view === "schools",
           'aria-label="خانه"',
         ).replace('class="header-action', 'class="header-home header-action');
         h += '</div><div class="actions header-actions">';
         h +=
-          btn("گزارش‌ها", "report", "goReports()", state.view === "reports") +
+          btn("گزارش‌ها", "report", "reports", state.view === "reports") +
           btn(
             "برنامه هفتگی",
             "calendar",
-            "goMaster()",
+            "master",
             state.view === "master",
           );
         h +=
@@ -526,25 +527,25 @@
           btn(
             "داده‌ها",
             "data",
-            "toggleDataMenu(event)",
+            "toggle-data",
             false,
             'id="dataMenuButton" aria-controls="dataMenu" aria-expanded="false"',
           ).replace("</button>", caret + "</button>") +
           '<div class="data-menu" id="dataMenu" aria-label="مدیریت داده‌ها">' +
-          sub("پشتیبان‌گیری", "copy", "closeDataMenu();exportBackup()") +
+          sub("پشتیبان‌گیری", "copy", "export") +
           sub(
             "بازیابی از فایل",
             "upload",
-            "closeDataMenu();document.getElementById(\'importFile\').click()",
+            "import",
           ) +
           sub(
             "حذف کامل داده‌ها",
             "trash",
-            "closeDataMenu();wipeAllData()",
+            "wipe",
             true,
           ) +
           "</div></div>";
-        h += btn("تنظیمات", "settings", "openSettingsModal()") + "</div></div>";
+        h += btn("تنظیمات", "settings", "settings") + "</div></div>";
         return h;
       }
       function setHeaderMenu(id, open) {
@@ -1627,7 +1628,7 @@
         out.innerHTML = buildLessonReportHtml(cls.classObj, lesson);
       }
 
-      function buildLessonReportHtml(c, lesson) {
+      function legacy_buildLessonReportHtml(c, lesson) {
         const sessions = db.sessions
           .filter((x) => x.classId === c.id && x.lessonId === lesson.id)
           .sort((a, b) => a.date.localeCompare(b.date));
@@ -1843,7 +1844,7 @@
         else out.innerHTML = buildOverviewKarnamehHtml(c);
       }
 
-      function buildOverviewKarnamehHtml(c) {
+      function legacy_buildOverviewKarnamehHtml(c) {
         const lessons = c.lessons || [];
         let h = `<div class="card"><h3>📋 نمای کلی کارنامه کلاس ${esc(c.name)}</h3>
     <div class="row no-print" style="justify-content:flex-end;margin-bottom:14px">
@@ -1879,7 +1880,7 @@
         return h;
       }
 
-      function buildDetailedKarnamehHtml(c, stId) {
+      function legacy_buildDetailedKarnamehHtml(c, stId) {
         const student = getStudentObj(c, stId);
         if (!student)
           return `<div class="card"><div class="empty">دانش‌آموز یافت نشد</div></div>`;
@@ -1999,7 +2000,7 @@
         renderKarnamehTabReports();
       }
 
-      function generateParentReportText(student, c) {
+      function legacy_generateParentReportText(student, c) {
         let text = `📋 گزارش وضعیت دانش‌آموز\n👤 نام: ${student.name} | کلاس: ${c.name}\n`;
         text += `📅 تاریخ گزارش: ${faDate(todayISO())}\n================================\n\n`;
         let hasData = false;
@@ -2026,7 +2027,7 @@
 
       // ==================== ثبت گروهی نمرات ====================
 // Source: src/legacy/grading/bulk-editor.js
-      function openBulkScoreModal(lessonId) {
+      function legacy_openBulkScoreModal(lessonId) {
         const c = getClassObj(state.schoolId, state.classId);
         const lesson = getLessonObj(c, lessonId);
         if (!c || !lesson) return;
@@ -2979,14 +2980,14 @@
         setTimeout(cleanup, 60000);
       }
 // Source: src/legacy/students/csv-import.js
-      function downloadExcelTemplate() {
+      function legacy_downloadExcelTemplate() {
         const csv =
           "\uFEFF" +
           "ردیف,نام و نام خانوادگی\n1,مثال: علی رضایی\n2,مثال: محمد احمدی\n";
         const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
         downloadLocalFile(blob, "قالب-دانش‌آموزان.csv");
       }
-      function handleExcelImport(e) {
+      function legacy_handleExcelImport(e) {
         const file = e.target.files[0];
         if (!file) return;
         const schoolId = state.schoolId,
@@ -3057,7 +3058,7 @@
       }
 
 // Source: src/legacy/students/editor.js
-      function openEditStudentModal(stId) {
+      function legacy_openEditStudentModal(stId) {
         const c = getClassObj(state.schoolId, state.classId);
         const student = getStudentObj(c, stId);
         if (!student) return;
@@ -3111,7 +3112,7 @@
         return h;
       }
 
-      function renderLessonStudents(c, lesson) {
+      function legacy_renderLessonStudents(c, lesson) {
         if (lesson.gradeMode === "kardanesh")
           return buildKardaneshSummaryHtml(c, lesson);
         let h = `<div class="card"><h3>👥 دانش‌آموزان این درس</h3>
@@ -3304,7 +3305,7 @@
       }
 
 // Source: src/legacy/grading/lesson-editor.js
-      function buildLessonGradesHtml(c, lesson) {
+      function legacy_buildLessonGradesHtml(c, lesson) {
         if (lesson.gradeMode === "kardanesh")
           return buildKardaneshGradesHtml(c, lesson);
         let allPos = true,
@@ -3849,7 +3850,7 @@
         render();
       }
 
-      function clickMasterCell(day, period) {
+      function legacy_clickMasterCell(day, period) {
         const entry = getMasterEntry(day, period, todayISO());
         if (!entry || !entry.lessonId) {
           openMasterConfig(day, period);
@@ -3982,7 +3983,7 @@
       }
 
 // Source: src/legacy/students/membership.js
-      async function deleteSchool(id) {
+      async function legacy_deleteSchool(id) {
         if (!confirm("مدرسه و تمام داده‌هایش حذف شوند؟")) return;
         const school = db.schools.find((s) => s.id === id);
         const classIds = (school?.classes || []).map((c) => c.id);
@@ -3996,7 +3997,7 @@
         await saveDB();
         render();
       }
-      async function deleteClass(id) {
+      async function legacy_deleteClass(id) {
         if (!confirm("کلاس و تمام داده‌هایش حذف شوند؟")) return;
         const s = getSchool(state.schoolId);
         s.classes = s.classes.filter((c) => c.id !== id);
@@ -4007,7 +4008,7 @@
         await saveDB();
         render();
       }
-      function addStudent(e) {
+      function legacy_addStudent(e) {
         e.preventDefault();
         const c = getClassObj(state.schoolId, state.classId);
         if (!c) return;
@@ -4018,7 +4019,7 @@
         e.target.reset();
         render();
       }
-      async function deleteStudent(stId) {
+      async function legacy_deleteStudent(stId) {
         if (!confirm("دانش‌آموز از فهرست فعال خارج و سوابق بایگانی شود؟"))
           return;
         const c = getClassObj(state.schoolId, state.classId),
@@ -4030,7 +4031,7 @@
         }
       }
 
-      async function addLesson(e) {
+      async function legacy_addLesson(e) {
         e.preventDefault();
         const c = getClassObj(state.schoolId, state.classId);
         if (!c) return;
@@ -4057,7 +4058,7 @@
         e.target.reset();
         render();
       }
-      async function deleteLesson(id) {
+      async function legacy_deleteLesson(id) {
         if (!confirm("درس و تمام نمراتش حذف شوند؟")) return;
         const c = getClassObj(state.schoolId, state.classId);
         c.lessons = c.lessons.filter((l) => l.id !== id);
@@ -4069,7 +4070,7 @@
         render();
       }
 
-      function openTransferModal(stId) {
+      function legacy_openTransferModal(stId) {
         const c = getClassObj(state.schoolId, state.classId);
         const student = getStudentObj(c, stId);
         if (!student) return;
@@ -4093,7 +4094,7 @@
     <button onclick="doTransfer('${stId}',false)">📤 انتقال</button></div>`;
         showModal("انتقال/کپی دانش‌آموز", h);
       }
-      async function doTransfer(stId, isCopy) {
+      async function legacy_doTransfer(stId, isCopy) {
         const targetId = document.getElementById("transferTarget").value;
         const srcC = getClassObj(state.schoolId, state.classId);
         const student = srcC.students.find((s) => s.id === stId);
@@ -4134,7 +4135,7 @@
       }
 
 // Source: src/legacy/courses/config.js
-      function openLessonConfig(lId) {
+      function legacy_openLessonConfig(lId) {
         const c = getClassObj(state.schoolId, state.classId);
         const lesson = getLessonObj(c, lId);
         if (!lesson) return;
@@ -4163,7 +4164,7 @@
     <button onclick="saveLessonConfig('${lId}')">💾 ذخیره</button></div>`;
         showModal("تنظیمات درس", h);
       }
-      async function saveLessonConfig(lId) {
+      async function legacy_saveLessonConfig(lId) {
         const c = getClassObj(state.schoolId, state.classId);
         const lesson = getLessonObj(c, lId);
         const mode = document.getElementById("cfgGradeMode").value;
@@ -4345,7 +4346,7 @@
         return db.sessions.find((s) => s.id === id);
       }
 
-      function setAllAttendance(status) {
+      function legacy_setAllAttendance(status) {
         const sess = db.sessions.find((s) => s.id === currentSessionId);
         if (!sess) return;
         const c = getClassObj(sess.schoolId, sess.classId);
@@ -4425,7 +4426,7 @@
         await saveDB({ sessionId: sess.id });
         openSessionModal(sess);
       }
-      function updateSessionUnits() {
+      function legacy_updateSessionUnits() {
         const sess = db.sessions.find((s) => s.id === currentSessionId);
         if (!sess) return;
         sess.poudmanId = document.getElementById("sessPoudman").value || null;
@@ -4442,13 +4443,13 @@
                 .join("")
             : "");
       }
-      function saveSessionUnit() {
+      function legacy_saveSessionUnit() {
         const sess = db.sessions.find((s) => s.id === currentSessionId);
         if (!sess) return;
         sess.unitId = document.getElementById("sessUnit").value || null;
         saveDB();
       }
-      function addSessionScore(e, sessionId) {
+      function legacy_addSessionScore(e, sessionId) {
         e.preventDefault();
         const sess = db.sessions.find((s) => s.id === sessionId);
         if (!sess) return;
@@ -4498,7 +4499,7 @@
       }
 
 // Source: src/legacy/data/backup-import.js
-      async function exportBackup() {
+      async function legacy_exportBackup() {
         const data = { version: 23, exportedAt: new Date().toISOString(), db };
         const jsonString = JSON.stringify(data, null, 2);
         const fileName = `پشتیبان-مدرسه-${todayISO()}.json`;
@@ -4526,7 +4527,7 @@
         downloadLocalFile(blob, fileName);
       }
 
-      function handleImport(e) {
+      function legacy_handleImport(e) {
         const file = e.target.files[0];
         if (!file) return;
         if (file.size > 20 * 1024 * 1024) {
@@ -4586,7 +4587,7 @@
         reader.readAsText(file, "UTF-8");
       }
 
-      function wipeAllData() {
+      function legacy_wipeAllData() {
         const t1 = confirm(
           "⚠️ آیا از پاک کردن کامل تمام داده‌ها مطمئن هستید؟ این عمل غیرقابل بازگشت است.",
         );
@@ -4634,7 +4635,7 @@
       }
 
 // Source: src/legacy/validation/database.js
-      function prepareDB(input) {
+      function legacy_prepareDB(input) {
         const d = JSON.parse(JSON.stringify(input));
         validateDB(d);
         const result = Object.assign(defaultDB(), d);
@@ -4680,7 +4681,7 @@
         return result;
       }
 
-      function validateDB(d) {
+      function legacy_validateDB(d) {
         const fail = (m) => {
             throw Error("ساختار نامعتبر: " + m);
           },
@@ -4892,7 +4893,7 @@
       }
 
 // Source: src/legacy/students/roster.js
-      function downloadRawRecovery() {
+      function legacy_downloadRawRecovery() {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (raw === null) return alert("نسخه خامی وجود ندارد.");
         downloadLocalFile(
@@ -4957,7 +4958,7 @@
       }
 
 // Source: src/legacy/grading/kardanesh.js
-      function calcStudentLesson(c, lesson, stId, source = db) {
+      function legacy_calcStudentLesson(c, lesson, stId, source = db) {
         const r = calcStudentLessonBase(c, lesson, stId, source);
         if (lesson.gradeMode !== "kardanesh") return r;
         const g = ownScoreRecord(lesson.kardaneshScores, stId);
@@ -4973,11 +4974,11 @@
         return r;
       }
 
-      function gradeStatus(r) {
+      function legacy_gradeStatus(r) {
         return r.final === null ? "ناقص" : r.passed ? "قبول" : "مردود";
       }
 
-      function buildKardaneshSummaryHtml(c, l, studentId) {
+      function legacy_buildKardaneshSummaryHtml(c, l, studentId) {
         return (
           '<div class="card"><h3>کاردانش — ' +
           esc(l.name) +
@@ -5009,7 +5010,7 @@
         );
       }
 
-      function buildKardaneshGradesHtml(c, l) {
+      function legacy_buildKardaneshGradesHtml(c, l) {
         return (
           '<div class="card"><h3>ثبت نمرات کاردانش — ' +
           esc(l.name) +
@@ -5116,7 +5117,7 @@
           .trim();
       }
 
-      async function restoreStudent(studentId) {
+      async function legacy_restoreStudent(studentId) {
         const c = getClassObj(state.schoolId, state.classId),
           st = (c?.archivedStudents || []).find((x) => x.id === studentId);
         if (!st) return;
@@ -5130,7 +5131,7 @@
         render();
       }
 
-      function buildArchiveHtml(c) {
+      function legacy_buildArchiveHtml(c) {
         if (!c.archivedStudents?.length) return "";
         return (
           '<div class="card"><h3>سوابق بایگانی‌شده</h3><p>سوابق کلاس قبلی حفظ شده‌اند. بازگردانی، عضویت فعال در این کلاس را دوباره برقرار می‌کند.</p>' +
@@ -5155,3 +5156,197 @@
         if (c)
           showModal("کارنامه بایگانی", buildDetailedKarnamehHtml(c, studentId));
       }
+// Source: src/legacy/core/runtime-facade.js
+// Stable entry points used by existing markup and browser integrations.
+function openSettingsModal(...args) {
+  return EduRuntimeAPI.invoke("openSettingsModal", undefined, this, args);
+}
+
+function saveSettings(...args) {
+  return EduRuntimeAPI.invoke("saveSettings", undefined, this, args);
+}
+
+function sessionStudent(...args) {
+  return EduRuntimeAPI.invoke("sessionStudent", undefined, this, args);
+}
+
+function knownStudentCode(...args) {
+  return EduRuntimeAPI.invoke("knownStudentCode", undefined, this, args);
+}
+
+function downloadRawRecovery(...args) {
+  return EduRuntimeAPI.invoke("downloadRawRecovery", legacy_downloadRawRecovery, this, args);
+}
+
+function openLessonConfig(...args) {
+  return EduRuntimeAPI.invoke("openLessonConfig", legacy_openLessonConfig, this, args);
+}
+
+function saveLessonConfig(...args) {
+  return EduRuntimeAPI.invoke("saveLessonConfig", legacy_saveLessonConfig, this, args);
+}
+
+function addLesson(...args) {
+  return EduRuntimeAPI.invoke("addLesson", legacy_addLesson, this, args);
+}
+
+function gradeStatus(...args) {
+  return EduRuntimeAPI.invoke("gradeStatus", legacy_gradeStatus, this, args);
+}
+
+function buildLessonGradesHtml(...args) {
+  return EduRuntimeAPI.invoke("buildLessonGradesHtml", legacy_buildLessonGradesHtml, this, args);
+}
+
+function renderLessonStudents(...args) {
+  return EduRuntimeAPI.invoke("renderLessonStudents", legacy_renderLessonStudents, this, args);
+}
+
+function buildLessonReportHtml(...args) {
+  return EduRuntimeAPI.invoke("buildLessonReportHtml", legacy_buildLessonReportHtml, this, args);
+}
+
+function defaultDB(...args) {
+  return EduRuntimeAPI.invoke("defaultDB", legacy_defaultDB, this, args);
+}
+
+function prepareDB(...args) {
+  return EduRuntimeAPI.invoke("prepareDB", legacy_prepareDB, this, args);
+}
+
+function validateDB(...args) {
+  return EduRuntimeAPI.invoke("validateDB", legacy_validateDB, this, args);
+}
+
+function saveDB(...args) {
+  return EduRuntimeAPI.invoke("saveDB", legacy_saveDB, this, args);
+}
+
+function render(...args) {
+  return EduRuntimeAPI.invoke("render", legacy_render, this, args);
+}
+
+function calcStudentLesson(...args) {
+  return EduRuntimeAPI.invoke("calcStudentLesson", legacy_calcStudentLesson, this, args);
+}
+
+function buildKardaneshGradesHtml(...args) {
+  return EduRuntimeAPI.invoke("buildKardaneshGradesHtml", legacy_buildKardaneshGradesHtml, this, args);
+}
+
+function buildKardaneshSummaryHtml(...args) {
+  return EduRuntimeAPI.invoke("buildKardaneshSummaryHtml", legacy_buildKardaneshSummaryHtml, this, args);
+}
+
+function openBulkScoreModal(...args) {
+  return EduRuntimeAPI.invoke("openBulkScoreModal", legacy_openBulkScoreModal, this, args);
+}
+
+function setAllAttendance(...args) {
+  return EduRuntimeAPI.invoke("setAllAttendance", legacy_setAllAttendance, this, args);
+}
+
+function saveSessionUnit(...args) {
+  return EduRuntimeAPI.invoke("saveSessionUnit", legacy_saveSessionUnit, this, args);
+}
+
+function updateSessionUnits(...args) {
+  return EduRuntimeAPI.invoke("updateSessionUnits", legacy_updateSessionUnits, this, args);
+}
+
+function addSessionScore(...args) {
+  return EduRuntimeAPI.invoke("addSessionScore", legacy_addSessionScore, this, args);
+}
+
+function clickMasterCell(...args) {
+  return EduRuntimeAPI.invoke("clickMasterCell", legacy_clickMasterCell, this, args);
+}
+
+function exportBackup(...args) {
+  return EduRuntimeAPI.invoke("exportBackup", legacy_exportBackup, this, args);
+}
+
+function handleImport(...args) {
+  return EduRuntimeAPI.invoke("handleImport", legacy_handleImport, this, args);
+}
+
+function handleExcelImport(...args) {
+  return EduRuntimeAPI.invoke("handleExcelImport", legacy_handleExcelImport, this, args);
+}
+
+function downloadExcelTemplate(...args) {
+  return EduRuntimeAPI.invoke("downloadExcelTemplate", legacy_downloadExcelTemplate, this, args);
+}
+
+function openTransferModal(...args) {
+  return EduRuntimeAPI.invoke("openTransferModal", legacy_openTransferModal, this, args);
+}
+
+function deleteStudent(...args) {
+  return EduRuntimeAPI.invoke("deleteStudent", legacy_deleteStudent, this, args);
+}
+
+function restoreStudent(...args) {
+  return EduRuntimeAPI.invoke("restoreStudent", legacy_restoreStudent, this, args);
+}
+
+function doTransfer(...args) {
+  return EduRuntimeAPI.invoke("doTransfer", legacy_doTransfer, this, args);
+}
+
+function deleteSchool(...args) {
+  return EduRuntimeAPI.invoke("deleteSchool", legacy_deleteSchool, this, args);
+}
+
+function deleteClass(...args) {
+  return EduRuntimeAPI.invoke("deleteClass", legacy_deleteClass, this, args);
+}
+
+function deleteLesson(...args) {
+  return EduRuntimeAPI.invoke("deleteLesson", legacy_deleteLesson, this, args);
+}
+
+function addSchool(...args) {
+  return EduRuntimeAPI.invoke("addSchool", undefined, this, args);
+}
+
+function addClass(...args) {
+  return EduRuntimeAPI.invoke("addClass", undefined, this, args);
+}
+
+function addStudent(...args) {
+  return EduRuntimeAPI.invoke("addStudent", legacy_addStudent, this, args);
+}
+
+function openEditStudentModal(...args) {
+  return EduRuntimeAPI.invoke("openEditStudentModal", legacy_openEditStudentModal, this, args);
+}
+
+function buildArchiveHtml(...args) {
+  return EduRuntimeAPI.invoke("buildArchiveHtml", legacy_buildArchiveHtml, this, args);
+}
+
+function buildOverviewKarnamehHtml(...args) {
+  return EduRuntimeAPI.invoke("buildOverviewKarnamehHtml", legacy_buildOverviewKarnamehHtml, this, args);
+}
+
+function buildDetailedKarnamehHtml(...args) {
+  return EduRuntimeAPI.invoke("buildDetailedKarnamehHtml", legacy_buildDetailedKarnamehHtml, this, args);
+}
+
+function generateParentReportText(...args) {
+  return EduRuntimeAPI.invoke("generateParentReportText", legacy_generateParentReportText, this, args);
+}
+
+function wipeAllData(...args) {
+  return EduRuntimeAPI.invoke("wipeAllData", legacy_wipeAllData, this, args);
+}
+
+function showModal(...args) {
+  return EduRuntimeAPI.invoke("showModal", undefined, this, args);
+}
+
+function checkPassword(...args) {
+  return EduRuntimeAPI.invoke("checkPassword", legacy_checkPassword, this, args);
+}
+//# sourceMappingURL=legacy-ui.js.map

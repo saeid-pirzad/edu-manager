@@ -1,4 +1,4 @@
-      function calcStudentLesson(c, lesson, stId, source = db) {
+      function legacy_calcStudentLesson(c, lesson, stId, source = db) {
         const r = calcStudentLessonBase(c, lesson, stId, source);
         if (lesson.gradeMode !== "kardanesh") return r;
         const g = ownScoreRecord(lesson.kardaneshScores, stId);
@@ -14,11 +14,11 @@
         return r;
       }
 
-      function gradeStatus(r) {
+      function legacy_gradeStatus(r) {
         return r.final === null ? "ناقص" : r.passed ? "قبول" : "مردود";
       }
 
-      function buildKardaneshSummaryHtml(c, l, studentId) {
+      function legacy_buildKardaneshSummaryHtml(c, l, studentId) {
         return (
           '<div class="card"><h3>کاردانش — ' +
           esc(l.name) +
@@ -50,7 +50,7 @@
         );
       }
 
-      function buildKardaneshGradesHtml(c, l) {
+      function legacy_buildKardaneshGradesHtml(c, l) {
         return (
           '<div class="card"><h3>ثبت نمرات کاردانش — ' +
           esc(l.name) +

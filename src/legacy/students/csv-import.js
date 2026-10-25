@@ -1,11 +1,11 @@
-      function downloadExcelTemplate() {
+      function legacy_downloadExcelTemplate() {
         const csv =
           "\uFEFF" +
           "ردیف,نام و نام خانوادگی\n1,مثال: علی رضایی\n2,مثال: محمد احمدی\n";
         const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
         downloadLocalFile(blob, "قالب-دانش‌آموزان.csv");
       }
-      function handleExcelImport(e) {
+      function legacy_handleExcelImport(e) {
         const file = e.target.files[0];
         if (!file) return;
         const schoolId = state.schoolId,

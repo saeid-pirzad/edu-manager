@@ -1,7 +1,7 @@
 "use strict";
 // Extended synthetic review uses the same isolated runner as integrity checks.
 const { main } = require("./data-integrity.cjs");
-const { seniorReviewFlows, seniorUiReview, postFixFlows } = require("./flows/index.cjs");
+const { seniorReviewFlows, seniorUiReview, postFixFlows, headerEvents, courseFormEvents, courseTableEvents, gradeEvents } = require("./flows/index.cjs");
 
 if (process.argv.includes("--help")) {
   console.log("node audit/workflow-review.cjs\nSynthetic browser regression and two-release PWA upgrade. Requires Node.js 22+, Edge and Git history containing 594217b.");
@@ -20,6 +20,10 @@ if (process.argv.includes("--help")) {
       if (!ready) throw Error("Application did not recover before the extended review.");
       cases.push(...await evaluate("(" + seniorReviewFlows.toString() + ")()"));
       cases.push(...await evaluate("(" + postFixFlows.toString() + ")()"));
+      cases.push(...await evaluate("(" + headerEvents.toString() + ")()"));
+      cases.push(...await evaluate("(" + courseFormEvents.toString() + ")()"));
+      cases.push(...await evaluate("(" + courseTableEvents.toString() + ")()"));
+      cases.push(...await evaluate("(" + gradeEvents.toString() + ")()"));
       await cdp("Emulation.setDeviceMetricsOverride", { width: 320, height: 800, deviceScaleFactor: 1, mobile: false });
       cases.push(...await evaluate("(" + seniorUiReview.toString() + ")()"));
       cases.push(...await require("./pwa-upgrade.cjs")({ cdp, debuggerUrl: ws.url, root }));

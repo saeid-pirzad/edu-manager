@@ -1,4 +1,4 @@
-      async function exportBackup() {
+      async function legacy_exportBackup() {
         const data = { version: 23, exportedAt: new Date().toISOString(), db };
         const jsonString = JSON.stringify(data, null, 2);
         const fileName = `پشتیبان-مدرسه-${todayISO()}.json`;
@@ -26,7 +26,7 @@
         downloadLocalFile(blob, fileName);
       }
 
-      function handleImport(e) {
+      function legacy_handleImport(e) {
         const file = e.target.files[0];
         if (!file) return;
         if (file.size > 20 * 1024 * 1024) {
@@ -86,7 +86,7 @@
         reader.readAsText(file, "UTF-8");
       }
 
-      function wipeAllData() {
+      function legacy_wipeAllData() {
         const t1 = confirm(
           "⚠️ آیا از پاک کردن کامل تمام داده‌ها مطمئن هستید؟ این عمل غیرقابل بازگشت است.",
         );

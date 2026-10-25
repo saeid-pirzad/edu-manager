@@ -119,3 +119,4 @@ globalThis.EduWorkspaceRecords = Object.freeze({
     return Object.freeze({ metaValue, collectRecords, logicalRecordType, validateLogicalValue, decodeWorkspaceRecords });
   },
 });
+//# sourceMappingURL=workspace-records.js.map

@@ -86,7 +86,7 @@
         else out.innerHTML = buildOverviewKarnamehHtml(c);
       }
 
-      function buildOverviewKarnamehHtml(c) {
+      function legacy_buildOverviewKarnamehHtml(c) {
         const lessons = c.lessons || [];
         let h = `<div class="card"><h3>📋 نمای کلی کارنامه کلاس ${esc(c.name)}</h3>
     <div class="row no-print" style="justify-content:flex-end;margin-bottom:14px">
@@ -122,7 +122,7 @@
         return h;
       }
 
-      function buildDetailedKarnamehHtml(c, stId) {
+      function legacy_buildDetailedKarnamehHtml(c, stId) {
         const student = getStudentObj(c, stId);
         if (!student)
           return `<div class="card"><div class="empty">دانش‌آموز یافت نشد</div></div>`;
@@ -242,7 +242,7 @@
         renderKarnamehTabReports();
       }
 
-      function generateParentReportText(student, c) {
+      function legacy_generateParentReportText(student, c) {
         let text = `📋 گزارش وضعیت دانش‌آموز\n👤 نام: ${student.name} | کلاس: ${c.name}\n`;
         text += `📅 تاریخ گزارش: ${faDate(todayISO())}\n================================\n\n`;
         let hasData = false;

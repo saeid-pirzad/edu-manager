@@ -57,3 +57,4 @@ globalThis.EduGradeDrafts = (() => {
         }
   return Object.freeze({ isSupportedGradeDraft, portableGradeDrafts });
 })();
+//# sourceMappingURL=grade-drafts.js.map

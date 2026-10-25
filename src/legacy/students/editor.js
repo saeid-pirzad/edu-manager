@@ -1,4 +1,4 @@
-      function openEditStudentModal(stId) {
+      function legacy_openEditStudentModal(stId) {
         const c = getClassObj(state.schoolId, state.classId);
         const student = getStudentObj(c, stId);
         if (!student) return;
