@@ -1,0 +1,138 @@
+"use strict";
+
+// Validates full-backup structure. Domain validators are explicit dependencies;
+// this module does not access DOM, live workspace state or IndexedDB.
+globalThis.EduFullBackupValidator = Object.freeze({
+  create({ backupStores, assertSafeDataTree, isDataObject, isSafeRecordId, validateReportNotes, decodeWorkspaceRecords, validateFrozenReport, normalizeDB, validatedUndoCandidate, isSupportedGradeDraft }) {
+        function validateFullBackup(value) {
+          if (
+            value?.format !== "EduManager.FullBackup" ||
+            ![1, 2].includes(value.version) ||
+            ![25, 26].includes(value.schemaVersion)
+          )
+            throw Error("ساختار پشتیبان کامل پشتیبانی نمی‌شود.");
+          assertSafeDataTree(value);
+          for (const name of backupStores)
+            if (!Array.isArray(value.stores?.[name]))
+              throw Error("بخش پشتیبان ناقص است: " + name);
+          if (
+            value.reportDrafts !== undefined &&
+            (!value.reportDrafts ||
+              typeof value.reportDrafts !== "object" ||
+              Array.isArray(value.reportDrafts))
+          )
+            throw Error("فهرست توضیحات پشتیبان معتبر نیست.");
+          const ids = new Set(),
+            recordSets = new Map(),
+            periods = [];
+          for (const row of value.stores.records)
+            if (!isDataObject(row) || !isSafeRecordId(row.workspace))
+              throw Error("رکورد داده باید متعلق به یک دوره معتبر باشد.");
+          for (const period of value.stores.catalog) {
+            if (
+              !isDataObject(period) ||
+              !isSafeRecordId(period.id) ||
+              ids.has(period.id) ||
+              !Number.isSafeInteger(period.revision) ||
+              period.revision < 0 ||
+              typeof period.closed !== "boolean" ||
+              typeof period.createdAt !== "string" ||
+              !Number.isFinite(Date.parse(period.createdAt))
+            )
+              throw Error("شناسنامه دوره در پشتیبان نامعتبر است.");
+            if (
+              period.termKind != null &&
+              !["first", "second", "summer"].includes(period.termKind)
+            )
+              throw Error("نوع نوبت تحصیلی در پشتیبان معتبر نیست.");
+            validateReportNotes(period.reportNotesRecovery, period.id);
+            validateReportNotes(value.reportDrafts?.[period.id], period.id);
+            ids.add(period.id);
+            const records = value.stores.records.filter(
+              (r) => r.workspace === period.id,
+            );
+            const logical = new Map(records.map((r) => [r.logical, r.value]));
+            const meta = logical.get("meta");
+            if (
+              !meta ||
+              !Array.isArray(meta.layout) ||
+              logical.size !== records.length ||
+              records.some((r) => r.key !== period.id + "|" + r.logical)
+            )
+              throw Error("رکوردهای دوره ناقص یا تکراری است.");
+            const normalized = decodeWorkspaceRecords(records, {
+              workspaceId: period.id,
+            }).data;
+            recordSets.set(
+              period.id,
+              new Map(records.map((row) => [row.logical, row.value])),
+            );
+            if (
+              normalized.settings.academicYear !== period.year ||
+              normalized.settings.academicTerm !== period.term
+            )
+              throw Error("عنوان دوره با اطلاعات پشتیبان سازگار نیست.");
+            periods.push({ period, data: normalized });
+          }
+          if (Object.keys(value.reportDrafts || {}).some((id) => !ids.has(id)))
+            throw Error("توضیحات گزارش متعلق به دوره ناموجود است.");
+          if (!periods.length || !ids.has(value.activeWorkspace))
+            throw Error("دوره فعال پشتیبان موجود نیست.");
+          for (const name of [
+            "records",
+            "events",
+            "undo",
+            "reports",
+            "backups",
+          ])
+            for (const row of value.stores[name]) {
+              if (
+                !isDataObject(row) ||
+                (row.workspace != null && !ids.has(row.workspace))
+              )
+                throw Error("رکورد خارج از دوره‌های پشتیبان است.");
+              if (name === "undo" && !ids.has(row.id))
+                throw Error("شناسه بازگردانی نامعتبر است.");
+              if (name === "reports") {
+                if (!ids.has(row.workspace))
+                  throw Error("کارنامه ثابت متعلق به دوره موجود نیست.");
+                validateFrozenReport(row);
+              }
+              if (name === "backups" && !row.full)
+                normalizeDB(row.db, {
+                  legacy: (row.db?.schemaVersion || 23) < 24,
+                });
+            }
+          const undoIds = new Set();
+          for (const undo of value.stores.undo) {
+            if (undoIds.has(undo.id))
+              throw Error("رکورد بازگردانی دوره تکراری است.");
+            undoIds.add(undo.id);
+            const period = periods.find(
+              (item) => item.period.id === undo.id,
+            )?.period;
+            validatedUndoCandidate(undo, recordSets.get(undo.id), period);
+          }
+          if (value.version === 2 && !Array.isArray(value.gradeDrafts))
+            throw Error("بخش پیش‌نویس نمره پشتیبان ناقص است.");
+          const draftKeys = new Set();
+          for (const row of value.gradeDrafts || []) {
+            if (
+              !ids.has(row.workspace) ||
+              typeof row.key !== "string" ||
+              !row.key.startsWith("Edu24.drafts." + row.workspace + ".") ||
+              draftKeys.has(row.key) ||
+              !Number.isSafeInteger(row.generation) ||
+              row.generation < 0 ||
+              !Array.isArray(row.entries) ||
+              !row.entries.every(isSupportedGradeDraft) ||
+              typeof row.updatedAt !== "string"
+            )
+              throw Error("پیش‌نویس نمره پشتیبان نامعتبر است.");
+            draftKeys.add(row.key);
+          }
+          return periods;
+        }
+    return validateFullBackup;
+  },
+});

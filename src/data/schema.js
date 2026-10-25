@@ -1,0 +1,19 @@
+"use strict";
+
+// Immutable persistence contract. The legacy core consumes this during the
+// gradual extraction of IndexedDB operations into a dedicated adapter.
+globalThis.EduDataStoreSchema = Object.freeze({
+  databaseName: "EduManagerProfessional",
+  minimumVersion: 2,
+  workspaceIndexName: "workspace",
+  workspaceIndexKeyPath: "workspace",
+  stores: Object.freeze([
+    Object.freeze({ name: "records", keyPath: "key" }),
+    Object.freeze({ name: "catalog", keyPath: "id" }),
+    Object.freeze({ name: "events", keyPath: "id", autoIncrement: true, workspaceIndex: true }),
+    Object.freeze({ name: "backups", keyPath: "id" }),
+    Object.freeze({ name: "undo", keyPath: "id" }),
+    Object.freeze({ name: "reports", keyPath: "id" }),
+    Object.freeze({ name: "drafts", keyPath: "key", workspaceIndex: true }),
+  ]),
+});

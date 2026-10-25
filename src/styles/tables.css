@@ -1,0 +1,203 @@
+      /* allTablesDesign */
+
+      @media screen {
+        table[data-ui-layout] {
+          border-collapse: separate;
+          border-spacing: 0;
+          width: 100%;
+          font-variant-numeric: tabular-nums;
+        }
+        table[data-ui-layout] thead th {
+          font-weight: 500;
+          line-height: 1.8;
+          background: #f3f6fc;
+          border-bottom: 1px solid #e2e8f0;
+          vertical-align: middle;
+        }
+        table[data-ui-layout] td {
+          vertical-align: middle;
+          line-height: 1.8;
+        }
+        table[data-ui-layout] tbody tr:last-child td {
+          border-bottom: 0;
+        }
+        table[data-ui-layout]
+          td
+          input:not([type="checkbox"]):not([type="radio"]),
+        table[data-ui-layout] td select {
+          min-width: 76px;
+          max-width: 100%;
+          border-radius: 10px;
+          text-align: center;
+        }
+        table[data-ui-layout] td input:focus {
+          box-shadow: 0 0 0 3px #6366f119;
+        }
+        table[data-ui-layout] td button {
+          margin: 3px;
+          font-size: 0.75rem;
+          min-height: 40px;
+        }
+        table[data-ui-layout] td[data-identity] {
+          font-weight: 500;
+          color: #26334c;
+        }
+        .table-pan-hint {
+          position: sticky;
+          right: 0;
+          max-width: 100%;
+          width: 100%;
+          padding: 9px 12px;
+          font-size: 0.7rem;
+          color: #64748b;
+          background: #f8faff;
+          border-bottom: 1px solid #e5eaf3;
+        }
+        .att-row {
+          border: 1px solid #e5eaf3;
+          border-radius: 14px;
+          background: #fff;
+          padding: 14px;
+          margin-block: 10px;
+          gap: 10px;
+        }
+        .att-row button {
+          min-height: 44px;
+          border-radius: 10px;
+        }
+        @media (max-width: 700px) {
+          .responsive-scroll[data-ui-layout="cards"],
+          .table-scroll[data-ui-layout="cards"] {
+            border: 0;
+            border-radius: 0;
+            overflow: visible;
+            background: transparent;
+          }
+          table[data-ui-layout="cards"] {
+            display: block;
+            min-width: 0 !important;
+            background: transparent;
+            box-shadow: none !important;
+          }
+          table[data-ui-layout="cards"] thead {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip-path: inset(50%);
+            white-space: nowrap;
+          }
+          table[data-ui-layout="cards"] tbody {
+            display: grid;
+            gap: 12px;
+            min-width: 0;
+          }
+          table[data-ui-layout="cards"] tbody tr {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 16px;
+            min-width: 0;
+            box-shadow: 0 3px 12px #23345a04;
+          }
+          table[data-ui-layout="cards"] tbody tr:hover {
+            background: #fff;
+          }
+          table[data-ui-layout="cards"] tbody td {
+            display: block;
+            position: static !important;
+            width: auto !important;
+            min-width: 0 !important;
+            max-width: none !important;
+            padding: 0 !important;
+            border: 0 !important;
+            background: transparent !important;
+            text-align: start !important;
+            overflow-wrap: anywhere;
+          }
+          table[data-ui-layout="cards"] tbody td::before {
+            content: attr(data-label);
+            display: block;
+            font-size: 0.68rem;
+            color: #64748b;
+            font-weight: 400;
+            margin-bottom: 5px;
+            line-height: 1.7;
+          }
+          table[data-ui-layout="cards"] tbody td[data-identity] {
+            grid-column: 1/-1;
+            font-size: 0.93rem;
+            padding-bottom: 10px !important;
+            border-bottom: 1px solid #edf1f7 !important;
+          }
+          table[data-ui-layout="cards"] tbody td[data-actions] {
+            grid-column: 1/-1;
+            border-top: 1px solid #edf1f7 !important;
+            padding-top: 10px !important;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+          }
+          table[data-ui-layout="cards"] tbody td[data-actions]::before {
+            flex-basis: 100%;
+          }
+          table[data-ui-layout="cards"] tbody td[data-actions] button {
+            flex: 1 1 auto;
+            margin: 0;
+            min-height: 44px;
+          }
+          table[data-ui-layout="cards"]
+            td
+            input:not([type="checkbox"]):not([type="radio"]),
+          table[data-ui-layout="cards"] td select {
+            width: 100% !important;
+            min-width: 0 !important;
+            min-height: 46px;
+          }
+          table[data-ui-layout="cards"] td input + button {
+            margin-inline: 0;
+          }
+          table[data-ui-layout="matrix"] th,
+          table[data-ui-layout="matrix"] td {
+            font-size: 0.77rem;
+            padding: 11px 12px;
+          }
+          table[data-ui-layout="matrix"] td:first-child:not([data-identity]),
+          table[data-ui-layout="matrix"] th:first-child:not([data-identity]) {
+            position: static !important;
+            min-width: 50px;
+          }
+          table[data-ui-layout="matrix"] [data-identity] {
+            position: sticky !important;
+            right: 0;
+            min-width: 128px !important;
+            max-width: 180px !important;
+            z-index: 2;
+            background: #f8faff !important;
+            box-shadow: -3px 0 5px #26334c08;
+          }
+          table[data-ui-layout="matrix"] thead [data-identity] {
+            z-index: 3;
+            background: #eef2fa !important;
+          }
+          .att-row {
+            align-items: flex-start;
+          }
+          .att-row > span,
+          .att-row > strong {
+            flex: 1 1 100%;
+            font-size: 0.9rem;
+          }
+        }
+      }
+      @media print {
+        .table-pan-hint {
+          display: none !important;
+        }
+      }
+

@@ -1,0 +1,315 @@
+{
+  "version": 1,
+  "bundles": [
+    {
+      "output": "assets/scripts/legacy-ui.js",
+      "scope": "global",
+      "sources": [
+        "src/legacy/core/formatting.js",
+        "src/legacy/core/state.js",
+        "src/legacy/data/legacy-storage.js",
+        "src/legacy/data/selectors.js",
+        "src/legacy/ui/navigation.js",
+        "src/legacy/ui/login-render.js",
+        "src/legacy/ui/header-menus.js",
+        "src/legacy/ui/clipboard.js",
+        "src/legacy/reports/comprehensive.js",
+        "src/legacy/reports/lesson.js",
+        "src/legacy/reports/student.js",
+        "src/legacy/grading/bulk-editor.js",
+        "src/legacy/grading/calculation.js",
+        "src/legacy/ui/dashboard.js",
+        "src/legacy/ui/school-class.js",
+        "src/legacy/data/download.js",
+        "src/legacy/students/csv-import.js",
+        "src/legacy/students/editor.js",
+        "src/legacy/ui/lesson.js",
+        "src/legacy/sessions/actions.js",
+        "src/legacy/grading/lesson-editor.js",
+        "src/legacy/reports/session-text.js",
+        "src/legacy/schedule/timetable.js",
+        "src/legacy/students/membership.js",
+        "src/legacy/courses/config.js",
+        "src/legacy/sessions/dialog.js",
+        "src/legacy/data/backup-import.js",
+        "src/legacy/validation/database.js",
+        "src/legacy/students/roster.js",
+        "src/legacy/grading/kardanesh.js",
+        "src/legacy/students/archive.js"
+      ]
+    },
+    {
+      "output": "assets/scripts/workspace-runtime.js",
+      "scope": "workspace",
+      "sources": [
+        "src/workspace/core/state.js",
+        "src/workspace/domain/defaults-numbers.js",
+        "src/workspace/validation/database.js",
+        "src/workspace/data/reset.js",
+        "src/workspace/data/records.js",
+        "src/workspace/grading/scope.js",
+        "src/workspace/data/save.js",
+        "src/workspace/periods/install.js",
+        "src/workspace/core/bootstrap.js",
+        "src/workspace/ui/save-status.js",
+        "src/workspace/drafts/persistence.js",
+        "src/workspace/drafts/inputs.js",
+        "src/workspace/drafts/flush.js",
+        "src/workspace/grading/cells.js",
+        "src/workspace/grading/results.js",
+        "src/workspace/grading/editors.js",
+        "src/workspace/ui/locks-render.js",
+        "src/workspace/sessions/actions.js",
+        "src/workspace/backups/local.js",
+        "src/workspace/backups/full-export.js",
+        "src/workspace/backups/full-restore.js",
+        "src/workspace/backups/period-import.js",
+        "src/workspace/history/undo.js",
+        "src/workspace/periods/switch-create.js",
+        "src/workspace/periods/labels.js",
+        "src/workspace/reports/finalize.js",
+        "src/workspace/reports/student.js",
+        "src/workspace/reports/printing.js",
+        "src/workspace/students/csv-import.js",
+        "src/workspace/students/editor.js",
+        "src/workspace/data/wipe.js",
+        "src/workspace/ui/install.js",
+        "src/workspace/entities/create.js",
+        "src/workspace/reports/snapshots.js",
+        "src/workspace/settings/editor.js",
+        "src/workspace/entities/edit.js",
+        "src/workspace/students/membership.js",
+        "src/workspace/entities/delete.js",
+        "src/workspace/core/public-api.js",
+        "src/workspace/drafts/review.js",
+        "src/workspace/history/viewer.js",
+        "src/workspace/students/archive.js",
+        "src/workspace/data/raw-recovery.js",
+        "src/workspace/collaboration/session-drafts.js",
+        "src/workspace/courses/rules.js",
+        "src/workspace/courses/results.js",
+        "src/workspace/core/start.js"
+      ]
+    },
+    {
+      "output": "assets/scripts/app-shell-ui.js",
+      "scope": "global",
+      "sources": [
+        "src/ui/app-shell.js"
+      ]
+    },
+    {
+      "output": "assets/scripts/calendar-math.js",
+      "scope": "global",
+      "sources": [
+        "src/domain/calendar.js"
+      ]
+    },
+    {
+      "output": "assets/scripts/calendar-ui.js",
+      "scope": "global",
+      "sources": [
+        "src/ui/calendar.js"
+      ]
+    },
+    {
+      "output": "assets/scripts/course-ui.js",
+      "scope": "course",
+      "sources": [
+        "src/ui/course/state-controls.js",
+        "src/ui/course/structure-names.js",
+        "src/ui/course/form.js",
+        "src/ui/course/method.js",
+        "src/ui/course/save.js",
+        "src/ui/course/copy-gate.js",
+        "src/ui/course/table-api.js"
+      ]
+    },
+    {
+      "output": "assets/scripts/csv-parser.js",
+      "scope": "global",
+      "sources": [
+        "src/domain/csv-parser.js"
+      ]
+    },
+    {
+      "output": "assets/scripts/data-boundary.js",
+      "scope": "global",
+      "sources": [
+        "src/domain/data-boundary.js"
+      ]
+    },
+    {
+      "output": "assets/scripts/data-store-runtime.js",
+      "scope": "global",
+      "sources": [
+        "src/data/idb-promises.js"
+      ]
+    },
+    {
+      "output": "assets/scripts/data-store-schema.js",
+      "scope": "global",
+      "sources": [
+        "src/data/schema.js"
+      ]
+    },
+    {
+      "output": "assets/scripts/data-store.js",
+      "scope": "global",
+      "sources": [
+        "src/data/idb-connection.js"
+      ]
+    },
+    {
+      "output": "assets/scripts/dialogs-ui.js",
+      "scope": "global",
+      "sources": [
+        "src/ui/dialogs.js"
+      ]
+    },
+    {
+      "output": "assets/scripts/frozen-report-validator.js",
+      "scope": "global",
+      "sources": [
+        "src/validation/frozen-report.js"
+      ]
+    },
+    {
+      "output": "assets/scripts/full-backup-validator.js",
+      "scope": "global",
+      "sources": [
+        "src/validation/full-backup.js"
+      ]
+    },
+    {
+      "output": "assets/scripts/grade-drafts.js",
+      "scope": "global",
+      "sources": [
+        "src/domain/grade-drafts.js"
+      ]
+    },
+    {
+      "output": "assets/scripts/grade-math.js",
+      "scope": "global",
+      "sources": [
+        "src/domain/grade-math.js"
+      ]
+    },
+    {
+      "output": "assets/scripts/grade-policy.js",
+      "scope": "global",
+      "sources": [
+        "src/domain/grade-policy.js"
+      ]
+    },
+    {
+      "output": "assets/scripts/history-changes.js",
+      "scope": "global",
+      "sources": [
+        "src/domain/history-changes.js"
+      ]
+    },
+    {
+      "output": "assets/scripts/password-service.js",
+      "scope": "global",
+      "sources": [
+        "src/domain/password.js"
+      ]
+    },
+    {
+      "output": "assets/scripts/periodic-reports.js",
+      "scope": "periodic",
+      "sources": [
+        "src/reports/periodic/date-range.js",
+        "src/reports/periodic/notes.js",
+        "src/reports/periodic/model.js",
+        "src/reports/periodic/text.js",
+        "src/reports/periodic/document.js",
+        "src/reports/periodic/filters.js",
+        "src/reports/periodic/render.js",
+        "src/reports/periodic/generate.js",
+        "src/reports/periodic/output.js"
+      ]
+    },
+    {
+      "output": "assets/scripts/pwa-manifest.js",
+      "scope": "global",
+      "sources": [
+        "src/pwa/manifest.js"
+      ]
+    },
+    {
+      "output": "assets/scripts/pwa-ui.js",
+      "scope": "global",
+      "sources": [
+        "src/pwa/install-update.js"
+      ]
+    },
+    {
+      "output": "assets/scripts/record-commit-plan.js",
+      "scope": "global",
+      "sources": [
+        "src/data/commit-plan.js"
+      ]
+    },
+    {
+      "output": "assets/scripts/record-transaction.js",
+      "scope": "global",
+      "sources": [
+        "src/data/record-transaction.js"
+      ]
+    },
+    {
+      "output": "assets/scripts/undo-validator.js",
+      "scope": "global",
+      "sources": [
+        "src/validation/undo.js"
+      ]
+    },
+    {
+      "output": "assets/scripts/workspace-records.js",
+      "scope": "global",
+      "sources": [
+        "src/data/workspace-records.js"
+      ]
+    },
+    {
+      "output": "assets/styles/app.css",
+      "scope": "css",
+      "sources": [
+        "src/styles/fonts.css",
+        "src/styles/base.css",
+        "src/styles/calendar.css",
+        "src/styles/responsive.css",
+        "src/styles/mobile-first.css",
+        "src/styles/class-lessons.css",
+        "src/styles/tables.css",
+        "src/styles/experience.css",
+        "src/styles/students.css",
+        "src/styles/header.css",
+        "src/styles/mobile-width.css",
+        "src/styles/mobile-experience.css",
+        "src/styles/mobile-navigation.css",
+        "src/styles/dropdowns.css",
+        "src/styles/header-consistency.css",
+        "src/styles/hamburger.css",
+        "src/styles/weekly-schedule.css",
+        "src/styles/weekly-config.css",
+        "src/styles/dashboard-reports.css",
+        "src/styles/dashboard-metrics.css",
+        "src/styles/select-controls.css",
+        "src/styles/periodic-reports.css",
+        "src/styles/daily-dashboard.css"
+      ]
+    },
+    {
+      "output": "assets/styles/daily-workflow.css",
+      "scope": "css",
+      "sources": [
+        "src/styles/workflow/layout.css",
+        "src/styles/workflow/components.css",
+        "src/styles/workflow/identity.css"
+      ]
+    }
+  ]
+}

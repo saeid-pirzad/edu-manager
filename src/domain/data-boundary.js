@@ -1,0 +1,50 @@
+"use strict";
+
+      const RESERVED_RECORD_IDS = new Set([
+        "__proto__",
+        "constructor",
+        "prototype",
+        ...Object.getOwnPropertyNames(Object.prototype),
+      ]);
+      function isDataObject(value) {
+        return (
+          value !== null && typeof value === "object" && !Array.isArray(value)
+        );
+      }
+      function isSafeRecordId(value) {
+        return (
+          typeof value === "string" &&
+          /^[A-Za-z0-9_-]{1,120}$/.test(value) &&
+          !RESERVED_RECORD_IDS.has(value)
+        );
+      }
+      function assertSafeDataTree(value) {
+        const pending = [value],
+          seen = new WeakSet();
+        while (pending.length) {
+          const current = pending.pop();
+          if (!current || typeof current !== "object" || seen.has(current))
+            continue;
+          seen.add(current);
+          for (const key of Object.keys(current)) {
+            if (["__proto__", "constructor", "prototype"].includes(key))
+              throw Error("کلید غیرمجاز در داده ورودی.");
+            pending.push(current[key]);
+          }
+        }
+      }
+      function ownScoreRecord(source, id) {
+        const value =
+          isDataObject(source) && Object.hasOwn(source, id) ? source[id] : null;
+        return Object.assign(
+          Object.create(null),
+          isDataObject(value) ? value : null,
+        );
+      }
+      function writableScoreRecord(source, id) {
+        if (!isDataObject(source) || !isSafeRecordId(id))
+          throw Error("شناسه یا مخزن نمره نامعتبر است.");
+        const record = ownScoreRecord(source, id);
+        source[id] = record;
+        return record;
+      }

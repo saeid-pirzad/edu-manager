@@ -1,0 +1,351 @@
+      /* experiencePolish */
+
+      @media screen {
+        .topbar h1 {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 1rem !important;
+          line-height: 1.5;
+        }
+        .topbar h1 small {
+          display: block;
+          font-size: 0.63rem;
+          color: #64748b;
+          font-weight: 400;
+          margin-top: 3px;
+          letter-spacing: 0;
+        }
+        .brand-mark {
+          display: grid;
+          place-items: center;
+          flex-shrink: 0;
+          width: 42px;
+          height: 42px;
+          background: #4f46e5;
+          color: #fff;
+          border-radius: 13px;
+          box-shadow: 0 4px 10px #4f46e51a;
+        }
+        .brand-mark svg {
+          width: 24px;
+          height: 24px;
+        }
+        .workspace-bar {
+          gap: 6px !important;
+          padding: 10px 12px !important;
+          align-items: center;
+          margin-block: 0 16px !important;
+          border-radius: 12px !important;
+        }
+        .workspace-bar > strong {
+          font-size: 0.73rem;
+        }
+        .workspace-bar > #saveStatus {
+          padding: 3px 7px;
+          font-size: 0.66rem;
+          flex: 0 1 auto;
+        }
+        .workspace-bar > button.ghost {
+          min-height: 34px;
+          font-size: 0.68rem;
+          padding: 5px 8px;
+          flex: 0 1 auto;
+        }
+        .workspace-tools:not([open]) {
+          margin-inline-start: auto;
+        }
+        .workspace-tools summary {
+          padding: 5px 6px;
+          min-height: 34px;
+          font-size: 0.67rem;
+        }
+        .workspace-tools[open] {
+          border-top: 1px solid #edf1f7;
+          padding-top: 5px;
+        }
+        .workspace-tools .tool-actions button {
+          font-size: 0.73rem;
+        }
+        .mobile-bar {
+          padding-block: 5px;
+        }
+        .mobile-bar #mobileHelp {
+          background: transparent;
+          font-size: 0.65rem;
+        }
+        .breadcrumb {
+          background: transparent;
+          border: 0;
+          font-size: 0.7rem;
+          color: #64748b;
+          padding: 4px 0;
+          margin-bottom: 8px;
+          line-height: 2;
+        }
+        .breadcrumb a {
+          display: inline-block;
+          padding-block: 3px;
+        }
+        .view-heading {
+          margin: 4px 0 18px;
+        }
+        .view-heading h2 {
+          font-size: 1.25rem;
+          margin: 0;
+          letter-spacing: -0.5px;
+          line-height: 1.7;
+        }
+        .view-heading p {
+          margin: 5px 0 0;
+          font-size: 0.75rem;
+          color: #64748b;
+        }
+        .quick-create > summary {
+          list-style: none;
+          cursor: pointer;
+          min-height: 38px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          font-size: 0.86rem;
+          font-weight: 500;
+        }
+        .quick-create > summary::-webkit-details-marker {
+          display: none;
+        }
+        .quick-create > summary::after {
+          content: "+";
+          display: grid;
+          place-items: center;
+          width: 30px;
+          height: 30px;
+          border-radius: 9px;
+          background: #eef2ff;
+          color: #4f46e5;
+          font-size: 22px;
+          font-weight: 400;
+        }
+        .quick-create[open] > summary::after {
+          content: "−";
+        }
+        .quick-create[open] > form {
+          border-top: 1px solid #edf1f7;
+          padding-top: 16px;
+          margin-top: 12px;
+        }
+        .list-search {
+          margin: 0 0 16px;
+        }
+        .list-search input {
+          width: 100%;
+          background: #f8faff !important;
+          min-height: 44px;
+        }
+        .search-feedback {
+          font-size: 0.72rem;
+          color: #64748b;
+          margin: 8px 2px;
+        }
+        .list-item[hidden] {
+          display: none !important;
+        }
+        .list-item > div:first-child {
+          min-width: 0;
+        }
+        .list-item > div:first-child > .muted {
+          display: block;
+          font-size: 0.74rem;
+          margin-top: 4px;
+        }
+        .list-item > button.danger {
+          background: transparent;
+          border: 1px solid #fee2e2;
+          flex-shrink: 0;
+          font-size: 0.7rem;
+        }
+        .list-item[role="link"] {
+          border-inline-start: 3px solid #e0e7ff;
+        }
+        .card > h3 {
+          line-height: 1.8;
+        }
+        .form-row {
+          gap: 10px;
+          margin-block: 14px;
+        }
+        .form-row label {
+          font-size: 0.82rem;
+          color: #475569;
+        }
+        .modal-header {
+          background: #fbfcff;
+          border-radius: 22px 22px 0 0;
+        }
+        .modal-header button {
+          min-width: 40px;
+          min-height: 40px;
+          border-radius: 12px;
+          background: #edf1f7;
+          color: #52617b;
+        }
+        #modalBody > h4 {
+          font-size: 0.92rem;
+          padding-bottom: 10px;
+          border-bottom: 1px solid #edf1f7;
+        }
+        #modalBody > p {
+          font-size: 0.82rem;
+          line-height: 2;
+          color: #52617b;
+        }
+        .course-grid {
+          gap: 14px;
+        }
+        .course-field > label {
+          font-size: 0.78rem;
+        }
+        .course-field small {
+          font-size: 0.7rem;
+          line-height: 1.8;
+        }
+        .att-btns button {
+          border: 1px solid #e2e8f0 !important;
+          background: #f8faff;
+          color: #64748b;
+        }
+        .att-btns button.present.active {
+          background: #e4f5ed !important;
+          color: #166534 !important;
+          border-color: #a7dfbf !important;
+        }
+        .att-btns button.absent.active {
+          background: #fff0f0 !important;
+          color: #b91c1c !important;
+          border-color: #fecaca !important;
+        }
+        .att-btns button.late.active {
+          background: #fff7e5 !important;
+          color: #92400e !important;
+          border-color: #fcd78e !important;
+        }
+        .att-btns button.active {
+          font-weight: 700;
+          box-shadow: inset 0 0 0 1px currentColor;
+        }
+        .shamsi-display {
+          font-size: 0.75rem;
+          color: #4f46e5;
+          background: #eef2ff;
+          border-radius: 8px;
+          padding: 5px 10px;
+        }
+        .login-box {
+          padding: 28px 22px;
+        }
+        .login-box input {
+          width: 100%;
+          margin-block: 12px;
+        }
+        .login-box button {
+          width: 100%;
+          margin-top: 8px;
+        }
+        @media (max-width: 700px) {
+          #app {
+            padding-top: 12px;
+          }
+          .topbar {
+            padding-bottom: 12px !important;
+          }
+          .topbar > div:first-child {
+            gap: 8px !important;
+          }
+          .topbar > div:first-child > button {
+            font-size: 0.7rem !important;
+            min-height: 36px;
+            padding: 6px 10px !important;
+          }
+          .navigation-menu summary {
+            padding: 8px 12px;
+            min-height: 40px;
+            font-size: 0.75rem;
+          }
+          .workspace-bar > strong {
+            flex: 1 1 auto;
+            font-size: 0.7rem;
+          }
+          .workspace-bar > .workspace-tools:not([open]) {
+            flex: 0 1 auto;
+          }
+          .workspace-bar > button.ghost {
+            margin-inline-start: auto;
+          }
+          .workspace-tools[open] {
+            flex-basis: 100%;
+          }
+          .ui-hero {
+            padding: 20px;
+            margin-bottom: 12px;
+            border-radius: 18px;
+          }
+          .ui-hero h2 {
+            font-size: 1.15rem;
+            line-height: 1.8;
+          }
+          .ui-hero p {
+            font-size: 0.75rem;
+          }
+          .ui-stats {
+            gap: 8px;
+            margin-bottom: 16px;
+          }
+          .ui-stat {
+            padding: 10px 12px;
+            border-radius: 13px;
+          }
+          .ui-stat strong {
+            font-size: 1.25rem;
+          }
+          .ui-stat span {
+            font-size: 0.7rem;
+          }
+          .view-heading h2 {
+            font-size: 1.15rem;
+          }
+          .att-btns {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 6px;
+            width: 100%;
+          }
+          .att-btns button {
+            margin: 0;
+            font-size: 0.74rem;
+            min-width: 0;
+            padding: 8px 4px;
+          }
+          .modal-header {
+            padding: 14px 16px;
+          }
+        }
+        @media (min-width: 701px) {
+          .topbar {
+            border-bottom: 1px solid #e5eaf3;
+            margin-bottom: 14px !important;
+          }
+          .view-heading h2 {
+            font-size: 1.5rem;
+          }
+          .workspace-bar > strong {
+            flex: 0 1 auto;
+          }
+          .workspace-tools:not([open]) {
+            margin-inline-start: auto;
+          }
+          .ui-hero h2 {
+            font-size: 1.6rem;
+          }
+        }
+      }
+

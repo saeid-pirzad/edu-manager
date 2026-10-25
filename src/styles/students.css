@@ -1,0 +1,244 @@
+      /* studentDirectoryDesign */
+
+      @media screen {
+        .student-add-form {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr);
+          gap: 14px;
+        }
+        .student-add-form label {
+          display: flex;
+          flex-direction: column;
+          gap: 7px;
+          font-size: 0.78rem;
+          min-width: 0;
+        }
+        .student-add-form label .muted {
+          display: contents;
+        }
+        .student-add-form input {
+          width: 100%;
+          min-width: 0;
+        }
+        .student-import summary {
+          font-size: 0.82rem;
+          cursor: pointer;
+          min-height: 36px;
+          color: #4338ca;
+        }
+        .student-import p {
+          font-size: 0.75rem;
+          line-height: 1.9;
+          color: #64748b;
+        }
+        .student-import .row {
+          gap: 8px;
+        }
+        .student-import button {
+          font-size: 0.76rem;
+        }
+        .student-directory {
+          padding: 0;
+          overflow: visible;
+        }
+        .roster-heading {
+          padding: 20px 18px 14px;
+        }
+        .roster-heading h3 {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin: 0 !important;
+        }
+        .roster-heading p {
+          font-size: 0.74rem;
+          color: #64748b;
+          margin: 5px 0 0;
+        }
+        .roster-toolbar {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr);
+          gap: 10px;
+          padding: 0 18px;
+        }
+        .roster-toolbar[hidden] {
+          display: none;
+        }
+        .roster-toolbar label {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          font-size: 0.7rem;
+          color: #64748b;
+          min-width: 0;
+        }
+        .roster-toolbar input,
+        .roster-toolbar select {
+          width: 100%;
+          min-width: 0;
+        }
+        .roster-results {
+          padding: 0 18px;
+          margin: 12px 0;
+          font-size: 0.69rem;
+          color: #64748b;
+        }
+        .student-roster {
+          padding: 0 16px 16px;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr);
+          gap: 12px;
+        }
+        .student-profile {
+          border: 1px solid #e5eaf3;
+          border-radius: 16px;
+          background: #fff;
+          min-width: 0;
+          padding: 16px;
+        }
+        .student-profile[hidden],
+        .roster-no-results[hidden] {
+          display: none !important;
+        }
+        .student-profile-main {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-width: 0;
+        }
+        .student-avatar {
+          width: 44px;
+          height: 44px;
+          flex-shrink: 0;
+          display: grid;
+          place-items: center;
+          background: #eef2ff;
+          color: #4f46e5;
+          border-radius: 14px;
+          font-size: 0.85rem;
+          font-weight: 500;
+        }
+        .student-profile-info {
+          min-width: 0;
+          flex: 1;
+        }
+        .student-profile-info h4 {
+          font-size: 0.87rem;
+          margin: 0 0 4px;
+          overflow-wrap: anywhere;
+          line-height: 1.9;
+        }
+        .student-profile-info p {
+          font-size: 0.68rem;
+          color: #64748b;
+          margin: 0;
+          overflow-wrap: anywhere;
+        }
+        .student-code-missing {
+          color: #8a6418;
+        }
+        .student-row-number {
+          align-self: flex-start;
+          font-size: 0.66rem;
+          color: #64748b;
+          background: #f6f8fc;
+          border-radius: 7px;
+          padding: 2px 7px;
+        }
+        .student-profile-actions {
+          display: grid;
+          grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) auto;
+          gap: 6px;
+          margin-top: 14px;
+          padding-top: 12px;
+          border-top: 1px solid #edf1f7;
+        }
+        .student-profile-actions button,
+        .student-more summary {
+          font-size: 0.68rem;
+          min-height: 42px;
+          padding: 8px 9px;
+          border-radius: 10px;
+          white-space: normal;
+        }
+        .student-report {
+          background: #eef2ff;
+          color: #4338ca;
+        }
+        .student-more {
+          position: relative;
+        }
+        .student-more summary {
+          cursor: pointer;
+          list-style: none;
+          border: 1px solid #e5eaf3;
+          color: #64748b;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .student-more summary::-webkit-details-marker {
+          display: none;
+        }
+        .student-more[open] summary {
+          background: #f3f5fc;
+          color: #4338ca;
+        }
+        .student-more-menu {
+          position: absolute;
+          top: calc(100% + 6px);
+          inset-inline-end: 0;
+          z-index: 35;
+          display: grid;
+          gap: 6px;
+          width: min(245px, 75vw);
+          padding: 8px;
+          border: 1px solid #e5eaf3;
+          background: #fff;
+          border-radius: 14px;
+          box-shadow: 0 12px 36px #18233d20;
+        }
+        .student-more-menu button {
+          text-align: start;
+        }
+        .roster-no-results {
+          margin: 0 16px 16px;
+        }
+        @media (min-width: 701px) {
+          .student-add-form {
+            grid-template-columns: 1.5fr 1fr auto;
+            align-items: end;
+          }
+          .roster-toolbar {
+            grid-template-columns: minmax(0, 1fr) 180px;
+          }
+          .student-roster {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        }
+        @media (min-width: 1100px) {
+          .student-roster {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+          }
+        }
+      }
+      @media print {
+        .student-add,
+        .student-import,
+        .roster-toolbar,
+        .roster-results,
+        .student-profile-actions,
+        .roster-no-results {
+          display: none !important;
+        }
+        .student-profile {
+          break-inside: avoid;
+          border-bottom: 1px solid #ccc;
+          padding: 10px;
+        }
+        .student-avatar,
+        .student-row-number {
+          display: none;
+        }
+      }
+

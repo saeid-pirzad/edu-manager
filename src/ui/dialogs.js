@@ -1,0 +1,359 @@
+      let modalReturnFocus = null;
+      function setModalBackground(inert) {
+        document.body.classList.toggle("modal-open", inert);
+        for (const id of ["app", "uiBottomNav", "mobileBar"]) {
+          const element = document.getElementById(id);
+          if (element) element.inert = inert;
+        }
+      }
+      function modalFocusableElements() {
+        return [
+          ...document.querySelectorAll(
+            "#modal button,#modal input,#modal select,#modal textarea,#modal a[href],#modal [tabindex]",
+          ),
+        ].filter(
+          (element) =>
+            element.tabIndex >= 0 &&
+            !element.matches(":disabled") &&
+            element.getClientRects().length &&
+            getComputedStyle(element).visibility !== "hidden" &&
+            !element.closest("[inert]"),
+        );
+      }
+      function showModal(title, html) {
+        if (
+          document.querySelector(
+            '#modal:not(.hidden) .record-editor[aria-busy="true"]',
+          )
+        )
+          return false;
+        if (
+          hasRecordEditorChanges() &&
+          !confirm(
+            "تغییرات فرم فعلی ذخیره نشده‌اند؛ کنار گذاشته شوند و پنجره جدید باز شود؟",
+          )
+        )
+          return false;
+        const modal = document.getElementById("modal");
+        if (modal.classList.contains("hidden")) {
+          const opener = document.activeElement;
+          modalReturnFocus =
+            opener && opener !== document.body
+              ? {
+                  element: opener,
+                  id: opener.id,
+                  action: opener.getAttribute("onclick"),
+                }
+              : null;
+        }
+        document.getElementById("modalTitle").textContent = title;
+        document.getElementById("modalBody").innerHTML = html;
+        modal.classList.remove("hidden");
+        modal.setAttribute("aria-hidden", "false");
+        setModalBackground(true);
+        modal.querySelector(".modal-dialog").focus({ preventScroll: true });
+        setTimeout(initShamsiPickers, 0);
+        return true;
+      }
+      function recordFieldError(message, fieldId) {
+        return Object.assign(Error(message), { fieldId });
+      }
+      function recordFieldLabel(fieldId) {
+        const field = document.getElementById(fieldId);
+        const label = field?.closest("label") || field?.labels?.[0];
+        if (!label) return "این فیلد";
+        return (
+          [...label.childNodes]
+            .filter((node) => node.nodeType === Node.TEXT_NODE)
+            .map((node) => node.textContent)
+            .join(" ")
+            .trim() ||
+          label.querySelector("span")?.textContent.trim() ||
+          "این فیلد"
+        );
+      }
+      function showRecordEditorError(error, errorId) {
+        const message = document.getElementById(errorId);
+        if (!message) return false;
+        message.textContent = error.message || String(error);
+        const field = document.getElementById(
+          error.fieldId ||
+            (error.message?.includes("کد درس") ? "course_code" : ""),
+        );
+        if (field?.closest(".record-editor")) {
+          field.setAttribute("aria-invalid", "true");
+          const descriptions = new Set(
+            (field.getAttribute("aria-describedby") || "")
+              .split(/\s+/)
+              .filter(Boolean),
+          );
+          descriptions.add(errorId);
+          field.setAttribute("aria-describedby", [...descriptions].join(" "));
+          for (
+            let parent = field.parentElement;
+            parent;
+            parent = parent.parentElement
+          )
+            if (parent.tagName === "DETAILS") parent.open = true;
+          requestAnimationFrame(() => {
+            if (!field.isConnected || field.disabled) return;
+            field.focus({ preventScroll: true });
+            field.scrollIntoView({ block: "nearest" });
+          });
+        } else message.scrollIntoView({ block: "nearest" });
+        return true;
+      }
+      function resetRecordEditor(form) {
+        if (
+          !form?.dataset.savedState ||
+          form.getAttribute("aria-busy") === "true"
+        )
+          return;
+        const controls = new Map(
+          [...form.elements].map((el) => [el.id || el.name, el]),
+        );
+        for (const [key, value] of JSON.parse(form.dataset.savedState)) {
+          const field = controls.get(key);
+          if (!field) continue;
+          if (/^(checkbox|radio)$/.test(field.type)) field.checked = value;
+          else field.value = field.type === "password" ? "" : value;
+        }
+        if (form.querySelector("#course_method"))
+          window.EduV24.course.toggleMethod();
+        form
+          .querySelectorAll('[aria-invalid="true"]')
+          .forEach((el) => el.removeAttribute("aria-invalid"));
+        form.querySelectorAll('[role="alert"]').forEach((el) => {
+          el.textContent = "";
+        });
+        updateRecordEditorReview(form);
+      }
+      function updateRecordEditorReview(form) {
+        if (!form?.matches(".record-editor") || !form.dataset.savedState)
+          return;
+        const state = recordEditorState(form),
+          busy = form.getAttribute("aria-busy") === "true";
+        if (form._reviewSignature === state + busy) return;
+        form._reviewSignature = state + busy;
+        if (!form._reviewUI) {
+          const status = document.createElement("p");
+          status.className = "record-editor-state";
+          status.setAttribute("role", "status");
+          status.setAttribute("aria-live", "polite");
+          form.querySelector(".record-editor-context")?.append(status);
+          const panel = document.createElement("details");
+          panel.className = "record-editor-review";
+          const summary = document.createElement("summary"),
+            list = document.createElement("div"),
+            reset = document.createElement("button");
+          list.className = "record-change-list";
+          reset.type = "button";
+          reset.className = "ghost";
+          reset.textContent = "بازگردانی مقادیر فرم";
+          reset.addEventListener("click", () => resetRecordEditor(form));
+          panel.append(summary, list, reset);
+          form.querySelector(".record-editor-actions")?.before(panel);
+          form._reviewUI = { status, panel, summary, list, reset };
+        }
+        const before = new Map(JSON.parse(form.dataset.savedState));
+        const controls = new Map(
+          [...form.elements].map((el) => [el.id || el.name, el]),
+        );
+        const changes = JSON.parse(state).filter(
+          ([key, value]) => before.has(key) && before.get(key) !== value,
+        );
+        const ui = form._reviewUI;
+        ui.panel.hidden = changes.length === 0;
+        setControlLock(ui.reset, "review-saving", busy);
+        ui.status.textContent = busy
+          ? "در حال ذخیره تغییرات…"
+          : changes.length
+            ? changes.length.toLocaleString("fa-IR") +
+              " مورد تغییر؛ هنوز ذخیره نشده"
+            : "بدون تغییر ذخیره‌نشده";
+        ui.status.dataset.state = busy
+          ? "pending"
+          : changes.length
+            ? "changed"
+            : "clean";
+        ui.summary.textContent =
+          "بازبینی " +
+          changes.length.toLocaleString("fa-IR") +
+          " تغییر پیش از ذخیره";
+        const display = (field, value) =>
+          typeof value === "boolean"
+            ? value
+              ? "فعال"
+              : "غیرفعال"
+            : value === ""
+              ? "خالی"
+              : field?.tagName === "SELECT"
+                ? [...field.options].find((o) => o.value === value)
+                    ?.textContent || value
+                : value;
+        ui.list.replaceChildren(
+          ...changes.map(([key, value]) => {
+            const field = controls.get(key),
+              row = document.createElement("div"),
+              title = document.createElement("strong");
+            const oldValue = document.createElement("span"),
+              newValue = document.createElement("span");
+            row.className = "record-change-row";
+            title.textContent = recordFieldLabel(key);
+            oldValue.textContent = "قبلی: " + display(field, before.get(key));
+            newValue.textContent = "جدید: " + display(field, value);
+            row.append(title, oldValue, newValue);
+            return row;
+          }),
+        );
+      }
+      let recordReviewScheduled = false;
+      function scheduleRecordEditorReview(event) {
+        const form = event.target.closest?.(".record-editor");
+        if (!form || recordReviewScheduled) return;
+        recordReviewScheduled = true;
+        requestAnimationFrame(() => {
+          recordReviewScheduled = false;
+          if (form.isConnected) updateRecordEditorReview(form);
+        });
+      }
+      document.addEventListener("input", scheduleRecordEditorReview);
+      document.addEventListener("change", scheduleRecordEditorReview);
+
+      const controlDisabledStates = new WeakMap(),
+        recordSaveStates = new WeakMap();
+      function setControlDisabled(control, disabled) {
+        if (!control || !("disabled" in control)) return;
+        const state = controlDisabledStates.get(control);
+        if (state) {
+          state.intrinsic = !!disabled;
+          control.disabled = state.intrinsic || state.locks.size > 0;
+        } else control.disabled = !!disabled;
+      }
+      function setControlLock(control, reason, locked) {
+        if (!control || !("disabled" in control)) return;
+        let state = controlDisabledStates.get(control);
+        if (!state) {
+          if (!locked) return;
+          state = { intrinsic: control.disabled, locks: new Set() };
+          controlDisabledStates.set(control, state);
+          control.dataset.controlLock = "1";
+        }
+        if (locked) state.locks.add(reason);
+        else state.locks.delete(reason);
+        const disabled = state.intrinsic || state.locks.size > 0;
+        if (control.disabled !== disabled) control.disabled = disabled;
+      }
+      function beginRecordEditorSave(form) {
+        if (!form) return () => {};
+        form
+          .querySelectorAll('[aria-invalid="true"]')
+          .forEach((el) => el.removeAttribute("aria-invalid"));
+        form.querySelectorAll('[role="alert"]').forEach((el) => {
+          el.textContent = "";
+        });
+        const token = Symbol("record-save");
+        let pending = recordSaveStates.get(form);
+        if (!pending) {
+          pending = new Set();
+          recordSaveStates.set(form, pending);
+        }
+        pending.add(token);
+        form.setAttribute("aria-busy", "true");
+        updateRecordEditorReview(form);
+        const controls = [...form.elements];
+        controls.forEach((control) => setControlLock(control, token, true));
+        syncShamsiDisabledInputs();
+        let finished = false;
+        return () => {
+          if (finished) return;
+          finished = true;
+          pending.delete(token);
+          if (!pending.size) form.removeAttribute("aria-busy");
+          controls.forEach((control) => setControlLock(control, token, false));
+          updateRecordEditorReview(form);
+          window.EduV24?.refreshControlLocks?.();
+          syncShamsiDisabledInputs();
+        };
+      }
+
+      function recordEditorState(form) {
+        return JSON.stringify(
+          [
+            ...form.querySelectorAll(
+              "input:not([data-gregorian-target]),select,textarea",
+            ),
+          ].map((x) => [
+            x.id || x.name,
+            /^(checkbox|radio)$/.test(x.type)
+              ? x.checked
+              : x.type === "password"
+                ? x.value
+                  ? "رمز جدید وارد شده"
+                  : ""
+                : x.value,
+          ]),
+        );
+      }
+      function rememberRecordEditor() {
+        const form = document.querySelector("#modal .record-editor");
+        if (form) {
+          form.dataset.savedState = recordEditorState(form);
+          form._reviewSignature = null;
+          updateRecordEditorReview(form);
+        }
+      }
+      function hasRecordEditorChanges() {
+        const form = document.querySelector(
+          "#modal:not(.hidden) .record-editor",
+        );
+        return (
+          !!form?.dataset.savedState &&
+          form.dataset.savedState !== recordEditorState(form)
+        );
+      }
+      function closeModal() {
+        if (
+          document.querySelector(
+            '#modal:not(.hidden) .record-editor[aria-busy="true"]',
+          )
+        )
+          return;
+        if (
+          hasRecordEditorChanges() &&
+          !confirm("تغییرات این فرم ذخیره نشده‌اند؛ بدون ذخیره بسته شود؟")
+        )
+          return;
+        const modal = document.getElementById("modal");
+        closeShamsiCalendar();
+        modal.classList.add("hidden");
+        modal.setAttribute("aria-hidden", "true");
+        setModalBackground(false);
+        const previous = modalReturnFocus;
+        modalReturnFocus = null;
+        render();
+        requestAnimationFrame(() => {
+          if (!modal.classList.contains("hidden")) return;
+          let target = previous?.element?.isConnected
+            ? previous.element
+            : (previous?.id && document.getElementById(previous.id)) ||
+              (previous?.action &&
+                [
+                  ...document.querySelectorAll(
+                    "#app button[onclick],#app a[onclick]",
+                  ),
+                ].find(
+                  (element) =>
+                    element.getAttribute("onclick") === previous.action,
+                )) ||
+              document.getElementById("app");
+          const closedMenu = target?.closest("details:not([open])");
+          if (closedMenu) target = closedMenu.querySelector("summary");
+          if (
+            target &&
+            !target.matches(":disabled") &&
+            !target.closest("[inert]")
+          )
+            target.focus({ preventScroll: true });
+        });
+      }

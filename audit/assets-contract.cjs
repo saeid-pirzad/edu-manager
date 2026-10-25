@@ -1,28 +1,20 @@
 "use strict";
-
-// Static guard for every browser asset introduced during the incremental refactor.
 const fs = require("node:fs");
 const path = require("node:path");
+const vm = require("node:vm");
+const assert = require("node:assert/strict");
+const { applicationFiles } = require("./application-files.cjs");
 
 const root = path.resolve(__dirname, "..");
-const html = fs.readFileSync(path.join(root, "EduManager.html"), "utf8");
+const files = applicationFiles(root);
 const worker = fs.readFileSync(path.join(root, "service-worker.js"), "utf8");
-const integrity = fs.readFileSync(path.join(root, "audit", "data-integrity.cjs"), "utf8");
-const upgrade = fs.readFileSync(path.join(root, "audit", "pwa-upgrade.cjs"), "utf8");
-const assets = [...html.matchAll(/<script\s+src="\.\/(assets\/scripts\/[^"?#]+)"/g)].map(
-  ([, asset]) => asset,
-);
-assets.push(...[...html.matchAll(/<link\b[^>]*href="\.\/(assets\/styles\/[^"?#]+)"/g)].map(([, asset]) => asset));
-
-if (!assets.length) throw Error("No external application scripts were declared.");
-
-for (const asset of assets) {
-  if (!fs.existsSync(path.join(root, asset))) throw Error(`Missing asset: ${asset}`);
-  if (!worker.includes(`"${asset}"`)) throw Error(`Asset is not cached offline: ${asset}`);
-  if (!integrity.includes(`"/edu-manager/${asset}"`))
-    throw Error(`Integrity server does not serve: ${asset}`);
-  if (!upgrade.includes(`"${asset}"`))
-    throw Error(`Upgrade server does not serve: ${asset}`);
+const declaration = worker.match(/const FILES\s*=\s*(\[[\s\S]*?\]);/);
+assert.ok(declaration, "Service worker cache list is missing");
+const cached = Array.from(vm.runInNewContext(declaration[1]));
+assert.equal(new Set(cached).size, cached.length, "Duplicate offline cache entry");
+assert.deepEqual([...cached].sort(), [...files.keys()].filter(name => name !== "service-worker.js").sort(),
+  "Offline cache must contain exactly the application shell and its dependencies");
+for (const name of files.keys()) {
+  if (name.endsWith(".js")) new vm.Script(fs.readFileSync(path.join(root, name), "utf8"), { filename: name });
 }
-
-console.log(`Asset contract verified for ${assets.length} external assets.`);
+console.log(`Asset contract verified for ${files.size - 4} external assets.`);

@@ -1,0 +1,122 @@
+      /* Workflow identity: decorative local SVGs and a consistent color hierarchy. */
+      .workflow-icon {
+        width: 20px;
+        height: 20px;
+        flex: 0 0 20px;
+        vertical-align: middle;
+      }
+      .dashboard-entity-symbol .workflow-icon {
+        width: 28px;
+        height: 28px;
+      }
+      .workflow-welcome {
+        border-bottom: 1px solid var(--workflow-line);
+        margin-bottom: 18px;
+      }
+      .workflow-welcome h2 {
+        color: #37318b;
+        margin: 0;
+      }
+      .workflow-welcome p {
+        color: var(--workflow-muted);
+        line-height: 1.9;
+      }
+      .dashboard-entity-actions > button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      .dashboard-directory .dashboard-section-heading {
+        border-bottom: 1px solid #edf0f7;
+        padding-bottom: 14px;
+        margin-bottom: 16px;
+      }
+      .dashboard-entity {
+        border-inline-start: 4px solid #8276df;
+        box-shadow: 0 4px 16px #26205208;
+      }
+      .dashboard-entity-info p {
+        line-height: 1.9;
+        color: var(--workflow-muted);
+      }
+      #app .dashboard-entity-actions > button:first-child {
+        box-shadow: 0 4px 10px #4f46c81a;
+      }
+      #app .dashboard-entity-actions > button.ghost {
+        background: #f7f8fd;
+      }
+      #app .lesson-count {
+        background: #efedff;
+        color: #4b409f;
+        border: 0;
+        font-variant-numeric: tabular-nums;
+      }
+      #app .topbar {
+        border-bottom: 1px solid #e1e3f1;
+        box-shadow: 0 5px 18px #25205705;
+      }
+      #app .header-brand h1 {
+        color: #37318b;
+      }
+      #app .header-action.is-active {
+        background: #efedff;
+        color: #4338a7;
+        border-color: #dcd7fb;
+      }
+      #app .tabs > button.active,
+      #app .tabs > button[aria-current="page"] {
+        color: #4338a7;
+        box-shadow: 0 2px 8px #4338a712;
+      }
+      #app .student-avatar {
+        background: #eaf3ff;
+        color: #2b5997;
+      }
+      #app .lesson-item {
+        border-inline-start: 3px solid #8276df;
+      }
+      #app .session-card {
+        border-inline-start: 3px solid #35a391;
+      }
+      #app .assessment-stage > summary {
+        background: #f5f3ff;
+        border-radius: 13px;
+        color: #433887;
+      }
+      #uiBottomNav button[aria-current="page"] {
+        background: #efedff;
+        color: #4338a7;
+        border-radius: 14px;
+      }
+      #uiBottomNav button[aria-current="page"] svg {
+        stroke-width: 2.2;
+      }
+      @media (hover: hover) {
+        #app .dashboard-entity-actions > button:first-child:hover,
+        .workflow-welcome button:hover {
+          filter: brightness(0.94);
+        }
+      }
+      @media (max-width: 700px) {
+        .workflow-welcome {
+          margin-bottom: 14px;
+        }
+        .dashboard-entity-symbol {
+          flex-shrink: 0;
+        }
+        .dashboard-entity-actions > button:first-child {
+          justify-content: space-between;
+          padding-inline: 16px;
+        }
+      }
+      @media print {
+        .workflow-icon {
+          display: none;
+        }
+        .dashboard-entity {
+          box-shadow: none;
+          border-inline-start-width: 1px;
+        }
+      }
+    

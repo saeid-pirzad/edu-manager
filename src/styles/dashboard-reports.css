@@ -1,0 +1,479 @@
+      /* dashboardReportsDesign */
+
+      @media screen {
+        .dashboard-report-links {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 14px;
+          margin-bottom: 20px;
+        }
+        .dashboard-report-links > button {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          text-align: start;
+          min-width: 0;
+          min-height: 92px;
+          border: 1px solid #e4e9f3;
+          background: #fff;
+          color: #26334c;
+          border-radius: 18px;
+          padding: 18px;
+        }
+        .dashboard-report-links > button:hover {
+          background: #f8faff;
+          border-color: #c7d2fe;
+        }
+        .dashboard-report-links > button > span:nth-child(2) {
+          flex: 1;
+          min-width: 0;
+        }
+        .dashboard-report-links strong {
+          display: block;
+          font-size: 0.88rem;
+        }
+        .dashboard-report-links small {
+          display: block;
+          color: #64748b;
+          font-weight: 400;
+          font-size: 0.7rem;
+          margin-top: 4px;
+        }
+        .dashboard-shortcut-symbol {
+          display: grid;
+          place-items: center;
+          width: 42px;
+          height: 42px;
+          flex: none;
+          border-radius: 13px;
+          background: #eef2ff;
+          color: #4f46e5;
+          font-size: 24px;
+        }
+        .dashboard-shortcut-symbol.teal {
+          background: #e6f6f1;
+          color: #0f766e;
+        }
+        .dashboard-directory {
+          padding: 0;
+        }
+        .dashboard-section-heading {
+          padding: 20px;
+        }
+        .dashboard-section-heading h3 {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          margin: 0 !important;
+        }
+        .dashboard-section-heading p {
+          font-size: 0.73rem;
+          color: #64748b;
+          margin: 6px 0 0;
+        }
+        .dashboard-entities {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 14px;
+          padding: 0 18px 18px;
+        }
+        .dashboard-entity {
+          min-width: 0;
+          border: 1px solid #e5eaf3;
+          border-radius: 16px;
+          padding: 16px;
+          background: #fff;
+        }
+        .dashboard-entity[hidden],
+        .dashboard-search-result[hidden] {
+          display: none !important;
+        }
+        .dashboard-entity-info {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          min-width: 0;
+        }
+        .dashboard-entity-info > div {
+          min-width: 0;
+        }
+        .dashboard-entity-info h4 {
+          font-size: 0.92rem;
+          margin: 0 0 5px;
+          overflow-wrap: anywhere;
+          line-height: 1.9;
+        }
+        .dashboard-entity-info p {
+          font-size: 0.72rem;
+          color: #64748b;
+          margin: 0;
+        }
+        .dashboard-entity-symbol {
+          display: grid;
+          place-items: center;
+          width: 44px;
+          height: 44px;
+          border-radius: 13px;
+          background: #eef2ff;
+          color: #4f46e5;
+          font-weight: 500;
+          flex: none;
+        }
+        .dashboard-entity-actions {
+          display: grid;
+          grid-template-columns: 1.2fr 1fr auto;
+          gap: 6px;
+          border-top: 1px solid #edf1f7;
+          padding-top: 12px;
+          margin-top: 16px;
+        }
+        .dashboard-entity-actions button,
+        .dashboard-entity-more summary {
+          font-size: 0.7rem;
+          min-height: 42px;
+          padding: 8px 10px;
+          border-radius: 10px;
+        }
+        .dashboard-entity-more {
+          position: relative;
+        }
+        .dashboard-entity-more summary {
+          list-style: none;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid #e5eaf3;
+          color: #64748b;
+        }
+        .dashboard-entity-more summary::-webkit-details-marker {
+          display: none;
+        }
+        .dashboard-entity-more > div {
+          position: absolute;
+          inset-inline-end: 0;
+          top: calc(100% + 6px);
+          z-index: 35;
+          min-width: 150px;
+          padding: 8px;
+          background: #fff;
+          border: 1px solid #e5eaf3;
+          border-radius: 12px;
+          box-shadow: 0 12px 32px #23345a15;
+        }
+        .dashboard-entity-more button {
+          width: 100%;
+          text-align: start;
+        }
+        .dashboard-search {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          padding: 0 18px 14px;
+          color: #64748b;
+          font-size: 0.73rem;
+        }
+        .dashboard-search input {
+          width: 100%;
+          min-width: 0;
+        }
+        .dashboard-search-result {
+          font-size: 0.7rem;
+          color: #64748b;
+          margin: 0 18px 14px;
+        }
+        .school-overview {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          border: 1px solid #e3e8f5;
+          background: #f1f4ff;
+          border-radius: 16px;
+          padding: 16px 18px;
+          margin-bottom: 18px;
+        }
+        .school-overview > div {
+          display: flex;
+          gap: 14px;
+          color: #52617b;
+          font-size: 0.8rem;
+        }
+        .school-overview button {
+          font-size: 0.75rem;
+        }
+        .class-context-actions {
+          display: flex;
+          gap: 8px;
+          margin: 0 0 16px;
+        }
+        .class-context-actions button {
+          min-height: 42px;
+          font-size: 0.74rem;
+        }
+        .report-page-heading {
+          margin: 6px 0 16px;
+        }
+        .report-page-heading > p {
+          color: #64748b;
+          font-size: 0.72rem;
+          margin: 0 0 4px;
+        }
+        .report-page-heading h2 {
+          font-size: 1.5rem;
+          margin: 0 0 8px;
+          letter-spacing: -0.5px;
+        }
+        .report-page-heading > span {
+          display: inline-block;
+          background: #eef2ff;
+          color: #4338ca;
+          border-radius: 8px;
+          padding: 4px 10px;
+          font-size: 0.72rem;
+          max-width: 100%;
+          overflow-wrap: anywhere;
+        }
+        .report-scope-summary {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 18px;
+          padding: 0 0 18px;
+          color: #64748b;
+          font-size: 0.76rem;
+        }
+        .report-scope-summary strong {
+          color: #26334c;
+          font-size: 1rem;
+          margin-inline-end: 3px;
+        }
+        .report-filter-card {
+          background: #fff;
+        }
+        .report-filter-card > h3 {
+          font-size: 0.96rem;
+        }
+        .report-filter-card > p {
+          font-size: 0.75rem !important;
+          color: #64748b;
+        }
+        .report-filter-grid {
+          display: grid !important;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          align-items: end;
+          gap: 14px !important;
+        }
+        .report-filter-field {
+          display: flex;
+          flex-direction: column;
+          gap: 7px;
+          min-width: 0;
+          font-size: 0.73rem;
+          color: #52617b;
+        }
+        .report-filter-field select,
+        .report-filter-field input {
+          width: 100%;
+          min-width: 0;
+        }
+        .report-options {
+          padding: 0 !important;
+          border: 1px solid #e5eaf3;
+          border-radius: 12px;
+          background: #f9fbff;
+          margin-top: 18px;
+        }
+        .report-options > summary {
+          min-height: 44px;
+          cursor: pointer;
+          padding: 12px 14px;
+          color: #4338ca;
+          font-size: 0.76rem;
+        }
+        .report-options[open] {
+          padding: 0 14px 14px !important;
+        }
+        .report-options[open] > summary {
+          margin-inline: -14px;
+        }
+        .report-options label {
+          border: 1px solid #e4e9f3;
+          background: #fff;
+          padding: 7px 10px;
+          border-radius: 10px;
+          font-size: 0.74rem;
+        }
+        .report-options label:has(input:checked) {
+          background: #eef2ff;
+          border-color: #c7d2fe;
+          color: #4338ca;
+        }
+        .report-options input {
+          accent-color: #4f46e5;
+        }
+        #globalReportOutput > .card,
+        #lessonReportOutput > .card,
+        #karnamehTabOutput > .card {
+          border-radius: 18px;
+        }
+        .report-document {
+          border: 1px solid #e5eaf3;
+          border-radius: 16px;
+          padding: 18px;
+          background: #fff;
+        }
+        @media (max-width: 700px), (max-width: 1000px) and (pointer: coarse) {
+          #app > .dashboard-report-links {
+            order: 4;
+          }
+          #app > .dashboard-directory {
+            order: 5;
+          }
+          #app > .class-context-actions {
+            order: 4;
+          }
+          #app > .report-page-heading {
+            order: 2;
+          }
+          #app > .report-scope-summary {
+            order: 3;
+          }
+          #app > .report-navigation {
+            order: 4;
+          }
+          #app > .report-filter-card {
+            order: 5;
+          }
+          #app > #globalReportOutput,
+          #app > #lessonReportOutput,
+          #app > #karnamehTabOutput {
+            order: 6;
+          }
+          .dashboard-report-links {
+            gap: 9px;
+            margin-bottom: 16px;
+          }
+          .dashboard-report-links > button {
+            align-items: flex-start;
+            flex-wrap: wrap;
+            padding: 13px;
+            gap: 8px;
+            min-height: 116px;
+            border-radius: 15px;
+          }
+          .dashboard-report-links > button > span:nth-child(2) {
+            flex: 1 1 100%;
+          }
+          .dashboard-report-links > button > span:last-child {
+            display: none;
+          }
+          .dashboard-report-links strong {
+            font-size: 0.78rem;
+          }
+          .dashboard-report-links small {
+            font-size: 0.65rem;
+            line-height: 1.8;
+          }
+          .dashboard-shortcut-symbol {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            font-size: 21px;
+          }
+          .dashboard-entities {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 10px;
+            padding: 0 12px 12px;
+          }
+          .dashboard-section-heading {
+            padding: 16px;
+          }
+          .dashboard-section-heading p {
+            font-size: 0.67rem;
+          }
+          .dashboard-entity {
+            padding: 14px;
+          }
+          .dashboard-entity-actions {
+            grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) auto;
+          }
+          .dashboard-entity-actions button,
+          .dashboard-entity-more summary {
+            font-size: 0.68rem;
+            min-height: 44px;
+            padding-inline: 8px;
+          }
+          .school-overview {
+            padding: 14px;
+            flex-wrap: wrap;
+          }
+          .school-overview > div {
+            font-size: 0.74rem;
+          }
+          .school-overview button {
+            font-size: 0.7rem;
+            min-height: 42px;
+          }
+          .class-context-actions button {
+            flex: 1;
+            font-size: 0.71rem;
+            padding-inline: 9px;
+          }
+          .report-page-heading h2 {
+            font-size: 1.2rem;
+          }
+          .report-scope-summary {
+            gap: 14px;
+            font-size: 0.7rem;
+            padding-bottom: 14px;
+          }
+          .report-scope-summary strong {
+            font-size: 0.9rem;
+          }
+          .report-filter-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px 10px !important;
+          }
+          .report-filter-field {
+            font-size: 0.68rem;
+          }
+          .report-filter-field input,
+          .report-filter-field select {
+            padding: 10px 8px;
+            font-size: 0.82rem !important;
+            min-height: 46px;
+          }
+          .report-options > summary {
+            font-size: 0.71rem;
+          }
+          .report-options .row {
+            gap: 7px;
+          }
+          .report-options label {
+            flex: 1 1 42%;
+            font-size: 0.7rem;
+            padding: 7px;
+          }
+          .report-options input[type="checkbox"],
+          .report-options input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            min-height: 18px;
+          }
+          .report-document {
+            padding: 14px;
+          }
+        }
+        @media (max-width: 340px) {
+          .dashboard-entity-actions {
+            grid-template-columns: 1fr 1fr;
+          }
+          .dashboard-entity-more {
+            grid-column: 1/-1;
+          }
+          .report-filter-grid {
+            grid-template-columns: minmax(0, 1fr);
+          }
+        }
+      }
+
