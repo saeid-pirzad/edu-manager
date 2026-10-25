@@ -458,7 +458,7 @@ async function workflowChecks(width) {
   if(name==="lesson")check("session-first","lesson opens on sessions",state.tab==="sessions");
   check(name+"-tools","maintenance disclosure is collapsed",!document.querySelector(".workspace-tools")?.open&&!document.querySelector(".workspace-bar > button"));
   if(name==="lesson"){
-    openSessionModal(db.sessions[0]);await new Promise(r=>setTimeout(r,50));
+    document.querySelector(".session-open").click();await new Promise(r=>setTimeout(r,50));
     check("attendance-default","session opens with attendance only",!!document.querySelector("[data-session-panel=activity]")?.hidden&&!document.querySelector("[data-session-panel=attendance]")?.hidden);
     document.querySelector("[data-session-tab=activity]").click();
     check("activity-tab","native activity tab switches panels",document.querySelector("[data-session-panel=attendance]").hidden&&!document.querySelector("[data-session-panel=activity]").hidden);
@@ -676,6 +676,10 @@ async function main() {
         await evaluate("closeModal();goSchool(\"school_a\");goClass(\"class_a\");goLesson(\"lesson_dual\");setTab(\"grades\")");
         await delay(100);const gradesShot=await cdp("Page.captureScreenshot",{format:"png"});
         fs.writeFileSync(path.join(profile,"mobile-grades.png"),Buffer.from(gradesShot.data,"base64"));
+        await evaluate("setTab(\"sessions\")");await delay(100);
+        const sessionsShot=await cdp("Page.captureScreenshot",{format:"png"});fs.writeFileSync(path.join(profile,"mobile-sessions.png"),Buffer.from(sessionsShot.data,"base64"));
+        await evaluate("goSchools()");await delay(100);
+        const homeShot=await cdp("Page.captureScreenshot",{format:"png"});fs.writeFileSync(path.join(profile,"mobile-home.png"),Buffer.from(homeShot.data,"base64"));
       }
     }
     cases.push(...await evaluate("(" + annualChecks.toString() + ")()"));
