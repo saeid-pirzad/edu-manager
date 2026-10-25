@@ -1,0 +1,831 @@
+      (function (root) {
+        "use strict";
+        root.EduCourseUI = function (api) {
+          const { esc } = api;
+          const P = root.EduPolicy;
+          let editing = null,
+            saving = false;
+          const input = (id, label, value, type = "text", extra = "") =>
+            `<label class="course-field">${label}<input id="course_${id}" type="${type}" value="${esc(value ?? "")}" ${extra}></label>`;
+          const select = (id, label, values, value, extra = "") =>
+            `<label class="course-field">${label}<select id="course_${id}" ${extra}>${values.map(([v, t]) => `<option value="${v}" ${String(v) === String(value) ? "selected" : ""}>${t}</option>`).join("")}</select></label>`;
+          const val = (id) => document.getElementById("course_" + id)?.value;
+          const checked = (id) =>
+            !!document.getElementById("course_" + id)?.checked;
+          function currentClass() {
+            return api.findClass(api.state().classId);
+          }
+          function writable() {
+            api.assertWritable();
+          }
+          function number(id) {
+            const t = api.asciiDigits(val(id));
+            if (!t || !/^\d+(?:\.\d{1,6})?$/.test(t))
+              throw recordFieldError(
+                "برای «" +
+                  recordFieldLabel("course_" + id) +
+                  "» عدد معتبر وارد کنید.",
+                "course_" + id,
+              );
+            return Number(t);
+          }
+          function makePods(count, unitCount) {
+            return Array.from({ length: count }, (_, i) => ({
+              id: api.uid(),
+              name: "پودمان " + (i + 1),
+              podScores: {},
+              units: Array.from({ length: unitCount }, (_, j) => ({
+                id: api.uid(),
+                name: "واحد یادگیری " + (j + 1),
+                unitScores: {},
+                applyOptions: {},
+              })),
+            }));
+          }
+          function prepareStructureNameEditor(lesson) {
+            if (!lesson.poudmans.length) return;
+            const structure = document.getElementById("courseStructure");
+            const section = document.createElement("details");
+            section.id = "courseNames";
+            section.className = "course-policy-section course-name-section";
+            const summary = document.createElement("summary"),
+              note = document.createElement("p");
+            summary.textContent = "نام پودمان‌ها و واحدهای یادگیری";
+            note.className = "muted";
+            note.textContent =
+              "اصلاح عنوان، شناسه‌ها، نمرات و ارتباط جلسات را تغییر نمی‌دهد. تعداد و ساختار در بخش قواعد ارزشیابی تنظیم می‌شوند.";
+            section.append(summary, note, structure);
+            document
+              .getElementById("coursePolicy")
+              .closest("details")
+              .after(section);
+            const policyGrid = document.querySelector(
+              "#courseModular > .course-grid",
+            );
+            lesson.poudmans.forEach((pod, index) => {
+              const count = document
+                .getElementById("course_unitCount_" + pod.id)
+                ?.closest("label");
+              if (count) {
+                count.firstChild.textContent =
+                  "تعداد واحدهای «" + pod.name + "»";
+                policyGrid.append(count);
+              }
+              const label = document
+                .getElementById("course_pod_" + pod.id)
+                ?.closest("label");
+              if (label)
+                label.firstChild.textContent =
+                  "نام پودمان " + (index + 1).toLocaleString("fa-IR");
+              pod.units.forEach((unit, unitIndex) => {
+                const label = document
+                  .getElementById("course_unit_" + unit.id)
+                  ?.closest("label");
+                if (label)
+                  label.firstChild.textContent =
+                    "نام واحد " +
+                    (unitIndex + 1).toLocaleString("fa-IR") +
+                    " · " +
+                    pod.name;
+              });
+            });
+          }
+          function applyStructureNames(lesson) {
+            const originalNames = new Map();
+            const rename = (item, prefix) => {
+              originalNames.set(item.id, item.name);
+              const value = val(prefix + item.id);
+              if (value === undefined) return;
+              const name = value.trim();
+              if (!normalizedName(name) || name.length > 500)
+                throw recordFieldError(
+                  "عنوان معتبر با حداکثر ۵۰۰ نویسه وارد کنید.",
+                  "course_" + prefix + item.id,
+                );
+              item.name = name;
+            };
+            for (const pod of lesson.poudmans) {
+              rename(pod, "pod_");
+              for (const unit of pod.units) rename(unit, "unit_");
+            }
+            const distinct = (items, prefix, label) => {
+              for (const item of items)
+                if (
+                  normalizedName(item.name) !==
+                    normalizedName(originalNames.get(item.id)) &&
+                  items.some(
+                    (other) =>
+                      other.id !== item.id &&
+                      normalizedName(other.name) === normalizedName(item.name),
+                  )
+                )
+                  throw recordFieldError(
+                    label + " تکراری است؛ عنوان متمایز انتخاب کنید.",
+                    "course_" + prefix + item.id,
+                  );
+            };
+            distinct(lesson.poudmans, "pod_", "نام پودمان");
+            for (const pod of lesson.poudmans)
+              distinct(pod.units, "unit_", "نام واحد در این پودمان");
+          }
+          async function open(lid = "", seed) {
+            const requested = {
+              workspace: api.context().id,
+              classId: api.state().classId,
+            };
+            await api.flushDrafts({ strict: true });
+            if (
+              requested.workspace !== api.context().id ||
+              requested.classId !== api.state().classId
+            )
+              throw Error(
+                "دوره یا کلاس هنگام باز شدن فرم تغییر کرد؛ دوباره وارد تنظیمات درس شوید.",
+              );
+            const c = currentClass();
+            if (!c) return;
+            const original = c.lessons.find((l) => l.id === lid);
+            if (lid && !original && !seed)
+              throw Error(
+                "این درس دیگر در کلاس وجود ندارد؛ فهرست دروس را تازه کنید.",
+              );
+            const school = api
+              .getDB()
+              .schools.find((s) => s.classes.some((x) => x.id === c.id));
+            const l = seed ||
+              original || {
+                id: api.uid(),
+                name: "",
+                teacher: "",
+                periodsPerWeek: 2,
+                gradeMode: "kardanesh",
+                kardaneshScores: {},
+                poudmans: [],
+              };
+            const locked =
+              !!original &&
+              (P.hasGrades(original) ||
+                api
+                  .getDB()
+                  .sessions.some(
+                    (s) =>
+                      s.lessonId === lid &&
+                      s.scores.some((g) =>
+                        ["mostamar", "payani"].includes(g.type),
+                      ),
+                  ));
+            const p =
+              l.gradingPolicy ||
+              P.defaults(
+                l.gradeMode === "kardanesh" ? "dual" : "modular",
+                api.year(),
+              );
+            const previousEditing = editing;
+            editing = {
+              context: api.context(),
+              classId: c.id,
+              id: original?.id || null,
+              seed: structuredClone(l),
+              locked,
+            };
+            const info = P.identity(l, api.year());
+            let h = `<form class="record-editor" novalidate onsubmit="event.preventDefault();EduV24.course.save().catch(EduV24.course.error)"><div class="record-editor-context"><span>مشخصات درس</span><h4>${esc((school?.name ? school.name + " / " : "") + c.name)}</h4><p>نام، دبیر و مشخصات توصیفی قابل اصلاح‌اند؛ نمرات و جلسات حفظ می‌شوند.</p></div><p>تعریف درس براساس ابلاغیه سالانه. نمره نهایی بر مقیاس صفر تا بیست است؛ دامنه هر ورودی تابع قواعد درس است. تأیید قواعد به معنی تأیید شماست. شماره، تاریخ و مرجع ابلاغیه و متولی استاندارد اختیاری‌اند و می‌توانند خالی بمانند.</p><div id="courseError" role="alert"></div><div class="course-grid">`;
+            h +=
+              input("name", "نام درس", l.name) +
+              input("teacher", "هنرآموز / دبیر", l.teacher) +
+              input(
+                "periods",
+                "زنگ در هفته",
+                l.periodsPerWeek,
+                "number",
+                'min="1" max="10"',
+              );
+            h +=
+              input(
+                "year",
+                "سال تحصیلی",
+                info.year || api.year(),
+                "text",
+                "readonly",
+              ) +
+              select(
+                "grade",
+                "پایه",
+                [
+                  ["10", "دهم"],
+                  ["11", "یازدهم"],
+                  ["12", "دوازدهم"],
+                ],
+                info.grade || "10",
+              ) +
+              input("field", "رشته", info.field) +
+              input("code", "کد درس / استاندارد", info.code) +
+              select(
+                "branch",
+                "شاخه تحصیلی",
+                [
+                  ["kardanesh", "کاردانش"],
+                  ["fani", "فنی‌وحرفه‌ای"],
+                ],
+                info.branch || p.branch,
+                'onchange="EduV24.course.toggleBranch()"',
+              ) +
+              input("authority", "متولی استاندارد (اختیاری)", info.authority);
+            h +=
+              '</div><details class="course-policy-section" ' +
+              (!original ? "open" : "") +
+              "><summary>قواعد ارزشیابی و ساختار درس" +
+              (locked ? " · قفل‌شده به‌دلیل سابقه نمره" : "") +
+              '</summary><fieldset id="coursePolicy" ' +
+              (locked ? "disabled" : "") +
+              "><legend>نسخه قواعد ارزشیابی</legend>";
+            if (locked)
+              h +=
+                "<p>این درس سابقه نمره دارد؛ روش، ساختار و مرجع قواعد قفل است. برای ابلاغیه جدید، تعریف درس را بدون نمرات کپی کنید.</p>";
+            if (locked && !l.gradingPolicy)
+              h +=
+                "<p>محاسبه قبلی حفظ می‌شود؛ این درس هنوز به قواعد ابلاغیه متصل نشده است.</p>";
+            h +=
+              '<div class="course-grid">' +
+              select(
+                "method",
+                "روش ارزشیابی",
+                [
+                  ["dual", "نظری و عملی"],
+                  ["modular", "پودمانی با شایستگی"],
+                ],
+                p.method,
+                'onchange="EduV24.course.toggleMethod()"',
+              ) +
+              input(
+                "circularNumber",
+                "شماره ابلاغیه (اختیاری)",
+                p.circularNumber,
+              ) +
+              input("circularDate", "تاریخ ابلاغیه (اختیاری)", p.circularDate) +
+              input(
+                "reference",
+                "مرجع / بند / صفحه ابلاغیه (اختیاری)",
+                p.reference,
+              ) +
+              "</div>";
+            h +=
+              '<div id="courseDual" class="course-grid">' +
+              input(
+                "practicalWeight",
+                "سهم عملی (درصد)؛ باقی برای نظری",
+                70,
+                "number",
+                'readonly aria-readonly="true"',
+              ) +
+              input(
+                "theoryMin",
+                "حداقل مستقل نظری",
+                0,
+                "number",
+                'readonly aria-readonly="true"',
+              ) +
+              input(
+                "practicalMin",
+                "حداقل مستقل عملی",
+                0,
+                "number",
+                'readonly aria-readonly="true"',
+              ) +
+              input(
+                "passMin",
+                "حداقل نمره نهایی",
+                14,
+                "number",
+                'readonly aria-readonly="true"',
+              ) +
+              "</div>";
+            h +=
+              '<div id="courseModular"><div class="course-grid">' +
+              input(
+                "mostamarMax",
+                "حداکثر نمره مستمر",
+                p.mostamarMax,
+                "number",
+                'min="0.1" max="20" step="any"',
+              ) +
+              input(
+                "continuousStep",
+                "گام مجاز مستمر",
+                p.continuousStep,
+                "number",
+                'min="0.000001" step="any"',
+              ) +
+              input(
+                "competencyFactor",
+                "ضریب شایستگی (سطح ۱، ۲، ۳)",
+                p.competencyFactor,
+                "number",
+                'min="0.1" step="any"',
+              ) +
+              select(
+                "competencyMin",
+                "حداقل سطح شایستگی",
+                [
+                  [1, "۱"],
+                  [2, "۲"],
+                  [3, "۳"],
+                ],
+                p.competencyMin,
+              ) +
+              input(
+                "moduleMin",
+                "حداقل نمره هر پودمان",
+                p.moduleMin,
+                "number",
+                'min="0" max="20" step="any"',
+              ) +
+              input(
+                "podCount",
+                "تعداد پودمان",
+                l.poudmans.length || 5,
+                "number",
+                'min="1" max="20"',
+              ) +
+              input(
+                "unitCount",
+                "تعداد پیش‌فرض واحد هر پودمان",
+                p.unitCount,
+                "number",
+                'min="1" max="10"',
+              ) +
+              '</div><label><input id="course_requireGate" type="checkbox" ' +
+              (p.requireGate ? "checked" : "") +
+              '> تأیید معیارهای الزامی و ایمنی برای قبولی لازم باشد</label><p>حداکثر مستمر + ۳ × ضریب شایستگی باید ۲۰ شود. واحدهای یادگیری برای سازمان‌دهی فعالیت‌ها هستند؛ نمره رسمی در سطح پودمان ثبت می‌شود.</p><div id="courseStructure">';
+            for (const pod of l.poudmans) {
+              h += `<div class="card">${input("pod_" + pod.id, "نام پودمان", pod.name)}${input("unitCount_" + pod.id, "تعداد واحدهای همین پودمان", pod.units.length, "number", 'min="1" max="10"')}`;
+              for (const u of pod.units)
+                h += input("unit_" + u.id, "نام واحد یادگیری", u.name);
+              h += "</div>";
+            }
+            h +=
+              '</div><p>تعدادها هنگام ساخت درس جدید اعمال می‌شوند. برای تغییر ساختار درس بدون نمره، گزینه زیر را فعال کنید.</p><label><input id="course_rebuild" type="checkbox"> بازسازی پودمان‌ها و واحدها با تعدادهای بالا</label></div><p><label><input id="course_confirmed" type="checkbox" ' +
+              (p.confirmed ? "checked" : "") +
+              "> قواعد را با ابلاغیه این سال تطبیق داده‌ام</label></p></fieldset></details>";
+            h +=
+              '<div class="record-editor-actions"><button type="submit" data-mutating="1">ذخیره تغییرات درس</button><button type="button" class="ghost" onclick="closeModal()">انصراف</button></div></form>';
+            const opened = api.showModal(
+              original ? "تنظیمات درس و ابلاغیه" : "تعریف درس جدید",
+              h,
+            );
+            if (opened === false) {
+              editing = previousEditing;
+              return false;
+            }
+            prepareStructureNameEditor(l);
+            toggleMethod();
+            if (api.context().readOnly) {
+              const form = document.querySelector("#modal .record-editor");
+              form
+                .querySelectorAll("input,select,textarea,button[type=submit]")
+                .forEach((el) => {
+                  setControlDisabled(el, true);
+                });
+              const note = document.createElement("p");
+              note.className = "course-readonly-note";
+              note.textContent = api.context().closed
+                ? "دوره بسته است؛ اطلاعات فقط نمایش داده می‌شوند. ویرایش پس از بازگشایی دوره امکان‌پذیر است."
+                : "اطلاعات فعلاً فقط خواندنی‌اند؛ پیام وضعیت ذخیره‌سازی را بررسی و صفحه را بازخوانی کنید.";
+              form.querySelector(".record-editor-context").append(note);
+            }
+            rememberRecordEditor();
+          }
+          async function openNames(lid) {
+            const opened = await open(lid);
+            if (opened === false) return;
+            const section = document.getElementById("courseNames");
+            if (!section || section.hidden) return;
+            section.open = true;
+            setTimeout(() => {
+              if (
+                !section.isConnected ||
+                document.getElementById("modal").classList.contains("hidden")
+              )
+                return;
+              section
+                .querySelector("input:not(:disabled)")
+                ?.focus({ preventScroll: true });
+              section.scrollIntoView({ block: "start" });
+            }, 0);
+          }
+          function toggleBranch() {
+            const branch = document.getElementById("course_branch");
+            const method = document.getElementById("course_method");
+            if (editing?.locked || method.disabled) return;
+            method.value = branch.value === "kardanesh" ? "dual" : "modular";
+            toggleMethod();
+          }
+          function toggleMethod() {
+            const method = document.getElementById("course_method");
+            document.getElementById("course_branch").value =
+              method.value === "dual" ? "kardanesh" : "fani";
+            setControlDisabled(
+              document.getElementById("course_branch"),
+              !!editing?.locked || method.matches(":disabled"),
+            );
+            document.getElementById("courseDual").hidden =
+              val("method") !== "dual";
+            document.getElementById("courseModular").hidden =
+              val("method") !== "modular";
+            const names = document.getElementById("courseNames");
+            if (names) names.hidden = val("method") !== "modular";
+          }
+          function error(e) {
+            if (!showRecordEditorError(e, "courseError")) api.error(e);
+          }
+          async function save() {
+            if (saving) return;
+            saving = true;
+            const finishSave = beginRecordEditorSave(
+              document.querySelector("#modal .record-editor"),
+            );
+            try {
+              writable();
+              if (!document.querySelector("#modal:not(.hidden) #course_name"))
+                throw Error("فرم درس باز نیست.");
+              if (
+                !editing ||
+                editing.context.id !== api.context().id ||
+                editing.context.revision !== api.context().revision
+              )
+                throw Error(
+                  "اطلاعات از زمان باز شدن فرم تغییر کرده است؛ فرم را دوباره باز کنید.",
+                );
+              await api.flushDrafts({ strict: true });
+              writable();
+              if (
+                !editing ||
+                editing.context.id !== api.context().id ||
+                editing.context.revision !== api.context().revision
+              )
+                throw Error(
+                  "دوره یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.",
+                );
+              const c = api.findClass(editing.classId),
+                original = c?.lessons.find((l) => l.id === editing.id),
+                next = structuredClone(original || editing.seed);
+              if (!c || (editing.id && !original))
+                throw Error("درس مقصد دیگر وجود ندارد.");
+              const name = val("name").trim(),
+                periods = number("periods");
+              if (!normalizedName(name) || name.length > 500)
+                throw recordFieldError(
+                  "نام درس را با حداکثر ۵۰۰ نویسه وارد کنید.",
+                  "course_name",
+                );
+              if (!Number.isInteger(periods) || periods < 1 || periods > 10)
+                throw recordFieldError(
+                  "زنگ در هفته باید عدد صحیح بین ۱ تا ۱۰ باشد.",
+                  "course_periods",
+                );
+              const info = {};
+              for (const k of [
+                "year",
+                "grade",
+                "field",
+                "code",
+                "branch",
+                "authority",
+              ])
+                info[k] = val(k).trim();
+              if (
+                !["10", "11", "12"].includes(info.grade) ||
+                !["fani", "kardanesh"].includes(info.branch) ||
+                Object.values(info).some((x) => x.length > 500) ||
+                val("teacher").trim().length > 500
+              )
+                throw Error(
+                  "شناسنامه درس معتبر نیست؛ طول مشخصات حداکثر ۵۰۰ نویسه باشد.",
+                );
+              if (
+                (!original ||
+                  normalizedName(original.name) !== normalizedName(name)) &&
+                c.lessons.some(
+                  (l) =>
+                    l.id !== original?.id &&
+                    normalizedName(l.name) === normalizedName(name),
+                )
+              )
+                throw recordFieldError(
+                  "درسی با همین نام در این کلاس وجود دارد.",
+                  "course_name",
+                );
+              if (info.year !== api.year())
+                throw Error("سال درس با دوره فعال یکسان نیست.");
+              const locked =
+                !!original &&
+                (P.hasGrades(original) ||
+                  api
+                    .getDB()
+                    .sessions.some(
+                      (s) =>
+                        s.lessonId === original.id &&
+                        s.scores.some((g) =>
+                          ["mostamar", "payani"].includes(g.type),
+                        ),
+                    ));
+              if (locked !== editing.locked)
+                throw Error(
+                  "سوابق این درس تغییر کرده است؛ فرم را دوباره باز کنید.",
+                );
+              if (!locked) {
+                const p = P.defaults(val("method"), api.year());
+                Object.assign(p, info);
+                for (const k of ["circularNumber", "circularDate", "reference"])
+                  p[k] = val(k).trim();
+                const numericFields =
+                  p.method === "dual"
+                    ? [
+                        "practicalWeight",
+                        "theoryMin",
+                        "practicalMin",
+                        "passMin",
+                      ]
+                    : [
+                        "mostamarMax",
+                        "continuousStep",
+                        "competencyFactor",
+                        "competencyMin",
+                        "moduleMin",
+                        "unitCount",
+                      ];
+                for (const k of numericFields) p[k] = number(k);
+                p.confirmed = checked("confirmed");
+                p.requireGate =
+                  p.method === "modular" && checked("requireGate");
+                const baseline = original?.gradingPolicy;
+                p.revision = baseline?.revision || 1;
+                if (
+                  baseline &&
+                  JSON.stringify({ ...p, revision: 1 }) !==
+                    JSON.stringify({ ...baseline, revision: 1 })
+                )
+                  p.revision++;
+                P.validate(p);
+                const count = p.method === "modular" ? number("podCount") : 1;
+                if (!Number.isInteger(count) || count < 1 || count > 20)
+                  throw Error("تعداد پودمان بین ۱ تا ۲۰ باشد.");
+                const methodChanged =
+                  original &&
+                  (original.gradeMode === "kardanesh") !==
+                    (p.method === "dual");
+                if (
+                  (checked("rebuild") || methodChanged) &&
+                  api.getDB().sessions.some((s) => s.lessonId === next.id)
+                )
+                  throw Error(
+                    "درس دارای جلسه است؛ برای تغییر ساختار یک کپی جدید بسازید.",
+                  );
+                if (
+                  p.method === "modular" &&
+                  (!next.poudmans.length || checked("rebuild"))
+                )
+                  next.poudmans = makePods(count, p.unitCount);
+                else
+                  for (const pod of next.poudmans) {
+                    const requested = val("unitCount_" + pod.id);
+                    if (requested !== undefined) {
+                      const count = number("unitCount_" + pod.id);
+                      if (!Number.isInteger(count) || count < 1 || count > 10)
+                        throw Error("تعداد واحدهای هر پودمان ۱ تا ۱۰ باشد.");
+                      if (count !== pod.units.length) {
+                        if (
+                          api
+                            .getDB()
+                            .sessions.some((s) => s.lessonId === next.id)
+                        )
+                          throw Error(
+                            "برای تغییر تعداد واحدهای درس دارای جلسه، کپی جدید بسازید.",
+                          );
+                        pod.units = Array.from(
+                          { length: count },
+                          (_, i) =>
+                            pod.units[i] || {
+                              id: api.uid(),
+                              name: "واحد یادگیری " + (i + 1),
+                              unitScores: {},
+                              applyOptions: {},
+                            },
+                        );
+                      }
+                    }
+                  }
+                next.gradeMode = p.method === "dual" ? "kardanesh" : "standard";
+                next.gradingPolicy = p;
+              } else {
+                const branch =
+                  (original.gradingPolicy?.method ||
+                    (original.gradeMode === "kardanesh"
+                      ? "dual"
+                      : "modular")) === "dual"
+                    ? "kardanesh"
+                    : "fani";
+                if (info.branch !== branch)
+                  throw Error("شاخه و روش درس دارای نمره قابل تغییر نیست.");
+              }
+              if (next.gradeMode !== "kardanesh") applyStructureNames(next);
+              next.courseInfo = info;
+              next.name = name;
+              next.teacher = val("teacher").trim();
+              next.periodsPerWeek = periods;
+              next.weightMostamar = next.weightMostamar ?? 40;
+              next.weightPayani = next.weightPayani ?? 60;
+              next.kardaneshScores = next.kardaneshScores || {};
+              if (original) c.lessons[c.lessons.indexOf(original)] = next;
+              else c.lessons.push(next);
+              await api.saveDB({
+                classId: c.id,
+                action: original
+                  ? "اصلاح شناسنامه درس و ابلاغیه"
+                  : "تعریف درس براساس ابلاغیه",
+              });
+              editing = null;
+              finishSave();
+              rememberRecordEditor();
+              api.closeModal();
+              api.render();
+            } finally {
+              saving = false;
+              finishSave();
+            }
+          }
+          async function add(e) {
+            e.preventDefault();
+            await open("", {
+              id: api.uid(),
+              name: e.target.name.value.trim(),
+              teacher: e.target.teacher.value.trim(),
+              periodsPerWeek: Number(e.target.periods.value) || 2,
+              gradeMode: e.target.gradeMode.value,
+              kardaneshScores: {},
+              poudmans: [],
+            });
+          }
+          async function copy(lid) {
+            writable();
+            await api.flushDrafts({ strict: true });
+            const c = currentClass(),
+              l = c.lessons.find((l) => l.id === lid);
+            if (!l) return;
+            const next = P.freshCopy(l, api.uid(), api.year(), api.uid);
+            next.name = l.name + " (کپی)";
+            if (!next.gradingPolicy)
+              next.gradingPolicy = P.defaults(
+                l.gradeMode === "kardanesh" ? "dual" : "modular",
+                api.year(),
+              );
+            Object.assign(next.gradingPolicy, P.identity(next, api.year()));
+            await open("", next);
+          }
+          async function gate(lid, pid, sid, value) {
+            writable();
+            await api.flushDrafts({ strict: true });
+            const c = currentClass(),
+              l = c.lessons.find((l) => l.id === lid),
+              p = l?.poudmans.find((p) => p.id === pid);
+            if (
+              !p ||
+              !c.students.some((s) => s.id === sid) ||
+              !l.gradingPolicy?.requireGate
+            )
+              throw Error("معیار نامعتبر است.");
+            p.podScores = p.podScores || {};
+            const g = writableScoreRecord(p.podScores, sid);
+            if (value === "") delete g.gate;
+            else if (["yes", "no"].includes(value)) g.gate = value === "yes";
+            else throw Error("وضعیت معیار نامعتبر است.");
+            p.podScores[sid] = g;
+            await api.saveDB({
+              classId: c.id,
+              action: "تأیید معیارهای الزامی پودمان",
+            });
+            api.render();
+            api.showModal(
+              "ثبت نمرات براساس قواعد درس",
+              table(c, l, null, true),
+            );
+          }
+          function table(c, l, sid, editable = false) {
+            const policy = l.gradingPolicy;
+            if (!policy) return "";
+            const students = api
+              .students(sid ? { students: api.knownStudents(c) } : c)
+              .filter((s) => !sid || s.id === sid);
+            let h =
+              '<div class="card"><h3>' +
+              esc(l.name) +
+              "</h3><p>" +
+              esc(P.describe(l)) +
+              "</p><p>ابلاغیه " +
+              esc(policy.circularNumber || "ثبت نشده") +
+              " | " +
+              esc(policy.circularDate) +
+              " | " +
+              esc(policy.reference) +
+              "</p><p>حضور و امتیازهای جلسه به نمره رسمی اضافه نمی‌شوند.</p>";
+            if (!policy.confirmed)
+              h +=
+                '<p class="course-warning">نتایج براساس قواعد پیش‌نویس هستند؛ پیش از بستن کارنامه، قواعد را با ابلاغیه تطبیق دهید.</p>';
+            if (policy.method === "dual") {
+              h +=
+                '<div class="table-scroll"><table><thead><tr><th>هنرجو</th><th>عملی</th><th>نظری</th><th>نهایی</th><th>نتیجه و دلیل</th></tr></thead><tbody>';
+              for (const st of students) {
+                const r = api.calc(c, l, st.id);
+                h +=
+                  "<tr><td>" +
+                  esc(st.name) +
+                  "</td><td>" +
+                  (editable
+                    ? api.gradeCell(c, l, st, "practical", {
+                        value: r.practical,
+                      })
+                    : (r.practical ?? "—")) +
+                  "</td><td>" +
+                  (editable
+                    ? api.gradeCell(c, l, st, "theory", { value: r.theory })
+                    : (r.theory ?? "—")) +
+                  '</td><td data-kfinal="' +
+                  st.id +
+                  '">' +
+                  api.finalText(r) +
+                  '</td><td data-kstatus="' +
+                  st.id +
+                  '">' +
+                  esc(api.status(r)) +
+                  "</td></tr>";
+              }
+              return h + "</tbody></table></div></div>";
+            }
+            for (const pod of l.poudmans) {
+              h +=
+                "<h4>" +
+                esc(pod.name) +
+                "</h4><p>" +
+                pod.units.map((u) => esc(u.name)).join(" / ") +
+                '</p><div class="table-scroll"><table><thead><tr><th>هنرجو</th><th>مستمر از ' +
+                policy.mostamarMax +
+                "</th><th>شایستگی ۱ / ۲ / ۳</th>" +
+                (policy.requireGate ? "<th>معیارهای الزامی و ایمنی</th>" : "") +
+                "<th>نمره پودمان</th><th>نتیجه و دلیل</th></tr></thead><tbody>";
+              for (const st of students) {
+                const g = ownScoreRecord(pod.podScores, st.id),
+                  r = P.moduleResult(policy, g);
+                h +=
+                  `<tr><td>${esc(st.name)}</td><td>` +
+                  (editable
+                    ? api.gradeCell(c, l, st, "m", {
+                        kind: "pod",
+                        pid: pod.id,
+                        value: g.m,
+                      })
+                    : (g.m ?? "—")) +
+                  "</td><td>" +
+                  (editable
+                    ? api.gradeCell(c, l, st, "c", {
+                        kind: "pod",
+                        pid: pod.id,
+                        value: g.c,
+                      })
+                    : (g.c ?? "—")) +
+                  "</td>";
+                if (policy.requireGate)
+                  h +=
+                    "<td>" +
+                    (editable
+                      ? `<select aria-label="معیارهای الزامی ${esc(st.name)}" data-course-gate onchange="EduV24.course.gate('${l.id}','${pod.id}','${st.id}',this.value).catch(EduV24.course.error)"><option value="" ${g.gate == null ? "selected" : ""}>بررسی نشده</option><option value="yes" ${g.gate === true ? "selected" : ""}>احراز شده</option><option value="no" ${g.gate === false ? "selected" : ""}>احراز نشده</option></select>`
+                      : g.gate === true
+                        ? "احراز شده"
+                        : g.gate === false
+                          ? "احراز نشده"
+                          : "بررسی نشده") +
+                    "</td>";
+                h += `<td data-pod-final="${pod.id}|${st.id}">${api.finalText(r)}</td><td data-pod-status="${pod.id}|${st.id}">${esc(api.status(r))}</td></tr>`;
+              }
+              h += "</tbody></table></div>";
+            }
+            h +=
+              "<h4>نتیجه درس</h4><table><thead><tr><th>هنرجو</th><th>نهایی قابل ثبت</th><th>میانگین محاسباتی</th><th>وضعیت</th></tr></thead><tbody>";
+            for (const st of students) {
+              const r = api.calc(c, l, st.id);
+              h += `<tr><td>${esc(st.name)}</td><td data-course-final="${l.id}|${st.id}">${api.finalText(r)}</td><td data-course-mean="${l.id}|${st.id}">${r.provisionalAverage == null ? "—" : r.provisionalAverage.toFixed(2)}</td><td data-course-status="${l.id}|${st.id}">${esc(api.status(r))}</td></tr>`;
+            }
+            return h + "</tbody></table></div>";
+          }
+          return {
+            open,
+            openNames,
+            save,
+            add,
+            copy,
+            gate,
+            table,
+            toggleMethod,
+            toggleBranch,
+            error,
+          };
+        };
+      })(globalThis);

@@ -1,11 +1,39 @@
 "use strict";
-// Release identifier is derived from the HTML and manifest.
-const VERSION = "0ac49aa6151134b4";
+// Bump on any shell, manifest, script or stylesheet change.
+const VERSION = "20261025-frozen-validator-14";
 const BASE = new URL("./", self.location.href);
 const PREFIX = "edu-manager:" + BASE.pathname + ":";
 const CACHE = PREFIX + VERSION;
 const STAGING = CACHE + ":staging";
-const FILES = ["EduManager.html", "index.html", "app.webmanifest"];
+const FILES = [
+  "EduManager.html",
+  "index.html",
+  "app.webmanifest",
+  "assets/scripts/pwa-manifest.js",
+  "assets/scripts/grade-policy.js",
+  "assets/scripts/course-ui.js",
+  "assets/scripts/app-shell-ui.js",
+  "assets/scripts/pwa-ui.js",
+  "assets/scripts/periodic-reports.js",
+  "assets/scripts/data-store-schema.js",
+  "assets/scripts/data-store-runtime.js",
+  "assets/scripts/data-store.js",
+  "assets/scripts/legacy-ui.js",
+  "assets/scripts/csv-parser.js",
+  "assets/scripts/password-service.js",
+  "assets/scripts/calendar-math.js",
+  "assets/scripts/calendar-ui.js",
+  "assets/scripts/dialogs-ui.js",
+  "assets/scripts/workspace-records.js",
+  "assets/scripts/history-changes.js",
+  "assets/scripts/record-commit-plan.js",
+  "assets/scripts/record-transaction.js",
+  "assets/scripts/full-backup-validator.js",
+  "assets/scripts/frozen-report-validator.js",
+  "assets/scripts/workspace-runtime.js",
+  "assets/styles/app.css",
+  "assets/styles/daily-workflow.css",
+];
 const URLS = FILES.map((name) => new URL(name, BASE).href);
 const APP = new URL("EduManager.html", BASE).href;
 let activationReady = Promise.resolve();

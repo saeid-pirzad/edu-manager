@@ -1,0 +1,17 @@
+{
+  "name": "edu-manager",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Offline-first classroom and grading manager",
+  "scripts": {
+    "test": "npm run test:unit && node audit/assets-contract.cjs && node audit/data-store-contract.cjs && node audit/workflow-review.cjs",
+    "test:unit": "node --test audit/csv-parser.test.cjs audit/password-service.test.cjs audit/calendar-math.test.cjs audit/workspace-records.test.cjs audit/history-changes.test.cjs audit/record-commit-plan.test.cjs audit/frozen-report-validator.test.cjs",
+    "test:assets": "node audit/assets-contract.cjs",
+    "test:data-contract": "node audit/data-store-contract.cjs",
+    "test:integrity": "node audit/data-integrity.cjs",
+    "audit": "node audit/workflow-review.cjs"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

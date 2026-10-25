@@ -1,0 +1,19 @@
+"use strict";
+
+// Small, dependency-free primitives shared by the current legacy core and the
+// future IndexedDB adapter. Keep error propagation exact during migration.
+globalThis.EduDataStoreRuntime = Object.freeze({
+  requestPromise(request) {
+    return new Promise((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  },
+  transactionDone(tx) {
+    return new Promise((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onabort = () => reject(tx.error || Error("تراکنش لغو شد."));
+      tx.onerror = () => {};
+    });
+  },
+});

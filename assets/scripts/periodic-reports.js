@@ -1,0 +1,1726 @@
+      (function (root) {
+        "use strict";
+        const localToday = () => {
+          const d = new Date();
+          return [
+            d.getFullYear(),
+            String(d.getMonth() + 1).padStart(2, "0"),
+            String(d.getDate()).padStart(2, "0"),
+          ].join("-");
+        };
+        function isoDate(value) {
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(value))
+            throw Error("تاریخ معتبر انتخاب کنید.");
+          const d = new Date(value + "T12:00:00Z");
+          if (!Number.isFinite(+d) || d.toISOString().slice(0, 10) !== value)
+            throw Error("تاریخ معتبر انتخاب کنید.");
+          return d;
+        }
+        function addDays(value, n) {
+          const d = isoDate(value);
+          d.setUTCDate(d.getUTCDate() + n);
+          return d.toISOString().slice(0, 10);
+        }
+        function range(mode, date, academicYear) {
+          if (!["daily", "weekly", "monthly", "annual"].includes(mode))
+            throw Error("نوع گزارش نامعتبر است.");
+          const d = isoDate(date);
+          if (mode === "annual") {
+            if (
+              !/^\d{4}-\d{4}$/.test(academicYear || "") ||
+              Number(academicYear.slice(5)) !==
+                Number(academicYear.slice(0, 4)) + 1
+            )
+              throw Error("سال تحصیلی گزارش معتبر نیست.");
+            const iso = (parts) =>
+              parts
+                .map((v, i) => (i ? String(v).padStart(2, "0") : String(v)))
+                .join("-");
+            return {
+              start: iso(
+                jalaliToGregorian(Number(academicYear.slice(0, 4)), 7, 1),
+              ),
+              end: addDays(
+                iso(jalaliToGregorian(Number(academicYear.slice(5)), 7, 1)),
+                -1,
+              ),
+            };
+          }
+          if (mode === "monthly") {
+            const [jy, jm] = gregorianToJalali(
+              d.getUTCFullYear(),
+              d.getUTCMonth() + 1,
+              d.getUTCDate(),
+            );
+            const iso = (parts) =>
+              parts
+                .map((v, i) => (i ? String(v).padStart(2, "0") : String(v)))
+                .join("-");
+            const start = iso(jalaliToGregorian(jy, jm, 1));
+            const next = iso(
+              jalaliToGregorian(
+                jm === 12 ? jy + 1 : jy,
+                jm === 12 ? 1 : jm + 1,
+                1,
+              ),
+            );
+            return { start, end: addDays(next, -1) };
+          }
+          const start =
+            mode === "weekly"
+              ? addDays(date, -((d.getUTCDay() + 1) % 7))
+              : date;
+          return { start, end: mode === "weekly" ? addDays(start, 6) : start };
+        }
+        const modeLabel = (mode) =>
+          ({
+            daily: "روزانه",
+            weekly: "هفتگی",
+            monthly: "ماهانه",
+            annual: "سالانه",
+          })[mode] || "دوره‌ای";
+        const filters = {
+          mode: "daily",
+          annualFirstId: "",
+          annualSecondId: "",
+          date: localToday(),
+          schoolId: "",
+          classId: "",
+          studentId: "",
+          audience: "management",
+          detailLevel: "summary",
+          author: "",
+        };
+        // Report drafts and signatures belong to the actual academic period.
+
+        // Only notes that have not reached local storage stay in memory.
+        const notes = new Map(),
+          noteReadErrors = new Map(),
+          recoveryNotes = new Map();
+        const context = () =>
+          root.EduV24?.getReportContext() || { id: "", revision: 0 };
+        const draftStorageKey = (id = context().id) =>
+          "EduManager.periodicDrafts." + id;
+        function storedNotes(id = context().id) {
+          const saved = JSON.parse(
+            localStorage.getItem(draftStorageKey(id)) || "{}",
+          );
+          if (
+            !saved ||
+            typeof saved !== "object" ||
+            Array.isArray(saved) ||
+            Object.values(saved).some((value) => typeof value !== "string")
+          )
+            throw Error("ساختار توضیحات ذخیره‌شده معتبر نیست.");
+          noteReadErrors.delete(id);
+          return saved;
+        }
+        function readNote(key) {
+          if (notes.has(key)) return notes.get(key);
+          const id = key.split("|")[0];
+          try {
+            const saved = getDrafts(id);
+            if (Object.prototype.hasOwnProperty.call(saved, key))
+              return saved[key];
+            const parts = key.split("|");
+            if (parts[1] !== "weekly" || !parts[2].startsWith("week:"))
+              return "";
+            const start = parts[2].slice(5),
+              end = addDays(start, 6);
+            const matches = Object.entries(saved)
+              .filter(([oldKey, value]) => {
+                const old = oldKey.split("|");
+                return (
+                  value.trim() &&
+                  old.length === parts.length &&
+                  old.every((part, i) => i === 2 || part === parts[i]) &&
+                  /^\d{4}-\d{2}-\d{2}$/.test(old[2]) &&
+                  old[2] >= start &&
+                  old[2] <= end
+                );
+              })
+              .sort(([a], [b]) => a.localeCompare(b));
+            const unique = matches.filter(
+              ([, value], i) =>
+                matches.findIndex(([, other]) => other === value) === i,
+            );
+            if (unique.length === 1) return unique[0][1];
+            return unique
+              .map(
+                ([oldKey, value]) =>
+                  "یادداشت ثبت‌شده در " + oldKey.split("|")[2] + ":\n" + value,
+              )
+              .join("\n\n");
+          } catch (error) {
+            noteReadErrors.set(id, error.message || String(error));
+            return "";
+          }
+        }
+        function persistNote(key, value) {
+          if (root.EduV24?.canWriteReportNotes?.() === false) return false;
+          notes.set(key, value);
+          const id = key.split("|")[0];
+          try {
+            const saved = storedNotes(id);
+            saved[key] = value;
+            localStorage.setItem(draftStorageKey(id), JSON.stringify(saved));
+            notes.delete(key);
+            return true;
+          } catch (error) {
+            noteReadErrors.set(id, error.message || String(error));
+            return false;
+          }
+        }
+        function noteWarning() {
+          const pending = [...notes.keys()].filter(
+            (key) => key.split("|")[0] === context().id,
+          ).length;
+          if (!pending && !noteReadErrors.has(context().id)) return "";
+          return (
+            '<div class="periodic-warnings" role="alert"><p>' +
+            (pending
+              ? "توضیحات " +
+                pending +
+                " گزارش هنوز کامل ذخیره نشده است. متن را پیش از بستن برنامه در فایل گزارش ذخیره کنید."
+              : "خواندن توضیحات ذخیره‌شده انجام نشد؛ فایل پشتیبان را برای بررسی نگه دارید.") +
+            '</p><button type="button" class="ghost" onclick="EduPeriodicReports.retryNotes()">تلاش مجدد ذخیره توضیحات</button></div>'
+          );
+        }
+        function paintNoteState() {
+          const el = document.getElementById("periodicNoteStatus");
+          if (el) el.innerHTML = noteWarning();
+        }
+        function retryNotes() {
+          const id = context().id;
+          for (const [key, value] of [...notes])
+            if (key.split("|")[0] === id) persistNote(key, value);
+          try {
+            storedNotes(id);
+          } catch (error) {
+            noteReadErrors.set(id, error.message || String(error));
+          }
+          paintNoteState();
+          return (
+            !noteReadErrors.has(id) &&
+            ![...notes.keys()].some((key) => key.split("|")[0] === id)
+          );
+        }
+        function getDrafts(id, recovery = recoveryNotes.get(id)) {
+          const saved = {
+            ...validateReportNotes(recovery, id),
+            ...storedNotes(id),
+          };
+          for (const [key, value] of notes)
+            if (key.split("|")[0] === id) saved[key] = value;
+          return saved;
+        }
+        function restoreDrafts(id, value) {
+          if (root.EduV24?.canWriteReportNotes?.() === false) return false;
+          const recovered = validateReportNotes(value, id);
+          recoveryNotes.set(id, recovered);
+          let merged = { ...recovered };
+          try {
+            const saved = storedNotes(id);
+            merged = { ...recovered, ...saved };
+            for (const [key, text] of notes)
+              if (key.split("|")[0] === id) merged[key] = text;
+            if (
+              Object.entries(merged).some(
+                ([key, text]) =>
+                  !Object.prototype.hasOwnProperty.call(saved, key) ||
+                  saved[key] !== text,
+              )
+            )
+              localStorage.setItem(draftStorageKey(id), JSON.stringify(merged));
+            for (const [key, text] of [...notes])
+              if (key.split("|")[0] === id && merged[key] === text)
+                notes.delete(key);
+            return true;
+          } catch (error) {
+            for (const [key, text] of Object.entries(merged))
+              if (!notes.has(key)) notes.set(key, text);
+            noteReadErrors.set(id, error.message || String(error));
+            return false;
+          }
+        }
+        function resetDrafts() {
+          notes.clear();
+          noteReadErrors.clear();
+          recoveryNotes.clear();
+          last = null;
+        }
+        root.addEventListener("beforeunload", (event) => {
+          if (notes.size) {
+            event.preventDefault();
+            event.returnValue = "";
+          }
+        });
+        let last = null,
+          busy = false;
+        const noteKey = (f) =>
+          [
+            context().id,
+            f.mode,
+            f.mode === "weekly"
+              ? "week:" + range("weekly", f.date).start
+              : f.mode === "monthly"
+                ? "month:" + range("monthly", f.date).start
+                : f.mode === "annual"
+                  ? "academic-year:" +
+                    (f.annualFirstId || "auto") +
+                    ":" +
+                    (f.annualSecondId || "auto")
+                  : f.date,
+            f.schoolId,
+            f.classId,
+            f.audience,
+            f.audience === "parent" ? f.studentId : "",
+          ].join("|");
+        const inputSnapshot = () => ({
+          ...filters,
+          workspaceId: context().id,
+          note: readNote(noteKey(filters)),
+        });
+        const reportSignature = () =>
+          JSON.stringify({ input: inputSnapshot(), context: context() });
+        const emptyCounts = () => ({
+          present: 0,
+          absent: 0,
+          late: 0,
+          unknown: 0,
+          lateMinutes: 0,
+          lateMinutesRecorded: 0,
+        });
+        function attendance(value) {
+          if (value === "present")
+            return { status: "present", label: "حاضر", minutes: null };
+          if (value === "absent")
+            return { status: "absent", label: "غایب", minutes: null };
+          const match =
+            typeof value === "string" ? value.match(/^late(?::(\d+))?$/) : null;
+          if (match)
+            return {
+              status: "late",
+              label: "با تأخیر",
+              minutes: match[1] === undefined ? null : Number(match[1]),
+            };
+          return { status: "unknown", label: "تعیین نشده", minutes: null };
+        }
+        function tally(counts, a) {
+          counts[a.status]++;
+          if (a.minutes !== null && Number.isSafeInteger(a.minutes)) {
+            counts.lateMinutes += a.minutes;
+            counts.lateMinutesRecorded++;
+          }
+        }
+        function build(source, options) {
+          const f = { ...options },
+            dates = range(f.mode, f.date, source.settings.academicYear),
+            school = source.schools.find((s) => s.id === f.schoolId);
+          if (!school) throw Error("مدرسه گزارش را انتخاب کنید.");
+          if (!["management", "parent"].includes(f.audience))
+            throw Error("مخاطب گزارش نامعتبر است.");
+          const classes = school.classes.filter(
+            (c) => !f.classId || c.id === f.classId,
+          );
+          if (f.classId && !classes.length)
+            throw Error("کلاس انتخاب‌شده متعلق به این مدرسه نیست.");
+          let selected = null;
+          if (f.audience === "parent") {
+            if (!f.classId || !f.studentId)
+              throw Error("برای گزارش اولیا، کلاس و یک هنرجو را انتخاب کنید.");
+            const c = classes[0];
+            selected = [
+              ...(c.students || []),
+              ...(c.archivedStudents || []),
+            ].find((st) => st.id === f.studentId);
+            if (!selected) {
+              for (const x of source.sessions.filter(
+                (x) => x.schoolId === school.id && x.classId === c.id,
+              )) {
+                selected = x.roster?.find((st) => st.id === f.studentId);
+                if (selected) break;
+              }
+            }
+            if (!selected) throw Error("هنرجو در کلاس انتخاب‌شده پیدا نشد.");
+          }
+          const warnings = new Set(),
+            seen = new Set(),
+            slots = new Set(),
+            students = new Map(),
+            lessons = new Map(),
+            byDate = new Map(),
+            sessions = [];
+          const total = emptyCounts();
+          for (const x of [...source.sessions].sort(
+            (a, b) =>
+              a.date.localeCompare(b.date) ||
+              a.period - b.period ||
+              a.id.localeCompare(b.id),
+          )) {
+            if (
+              x.schoolId !== school.id ||
+              !classes.some((c) => c.id === x.classId) ||
+              x.date < dates.start ||
+              x.date > dates.end
+            )
+              continue;
+            if (seen.has(x.id)) {
+              warnings.add("یک شناسه جلسه تکراری فقط یک بار شمارش شد.");
+              continue;
+            }
+            seen.add(x.id);
+            const c = classes.find((c) => c.id === x.classId),
+              lesson = (c.lessons || []).find((l) => l.id === x.lessonId);
+            const known = new Map(
+              [
+                ...(c.students || []),
+                ...(c.archivedStudents || []),
+                ...(x.roster || []).map((st) => ({
+                  ...[
+                    ...(c.students || []),
+                    ...(c.archivedStudents || []),
+                  ].find((current) => current.id === st.id),
+                  ...st,
+                  code:
+                    st.code ||
+                    [...(c.students || []), ...(c.archivedStudents || [])].find(
+                      (current) => current.id === st.id,
+                    )?.code ||
+                    "",
+                })),
+              ].map((st) => [st.id, st]),
+            );
+            const roster = Array.isArray(x.roster)
+              ? x.roster
+              : c.students || [];
+            const ids = new Set([
+              ...roster.map((st) => st.id),
+              ...Object.keys(x.attendance || {}),
+              ...(x.scores || []).map((sc) => sc.studentId),
+            ]);
+            if (f.audience === "parent" && !ids.has(f.studentId)) continue;
+            if (!Array.isArray(x.roster))
+              warnings.add(
+                "فهرست تاریخی برخی جلسات موجود نیست؛ برای آن جلسات از فهرست فعلی کلاس و سوابق ثبت‌شده استفاده شده است.",
+              );
+            const slot = [x.date, x.classId, x.period].join("|");
+            if (slots.has(slot))
+              warnings.add(
+                "برای برخی زنگ‌ها بیش از یک جلسه ثبت شده است؛ شمار جلسات را بررسی کنید.",
+              );
+            slots.add(slot);
+            if (!lesson)
+              warnings.add(
+                "تعریف بعضی درس‌های دارای جلسه در دسترس نیست؛ سوابق جلسه حفظ شده‌اند.",
+              );
+            const sessionCounts = emptyCounts(),
+              participants = [],
+              marks = [];
+            for (const sid of ids) {
+              if (f.audience === "parent" && sid !== f.studentId) continue;
+              const st = known.get(sid),
+                a = attendance(x.attendance?.[sid]);
+              tally(total, a);
+              tally(sessionCounts, a);
+              const key = c.id + "|" + sid;
+              if (!students.has(key))
+                students.set(key, {
+                  studentId: sid,
+                  name: st?.name || "هنرجوی فاقد مشخصات",
+                  code: st?.code || "",
+                  className: c.name,
+                  sessions: 0,
+                  ...emptyCounts(),
+                  markCount: 0,
+                });
+              const row = students.get(key);
+              row.sessions++;
+              tally(row, a);
+              const own = (x.scores || []).filter((sc) => sc.studentId === sid);
+              row.markCount += own.length;
+              const scores = own.map((sc) => ({
+                type: sc.type,
+                value: sc.value ?? null,
+                note: String(sc.note || ""),
+                label:
+                  {
+                    mostamar: "مستمر",
+                    payani: "پایانی",
+                    positive: "امتیاز مثبت",
+                    negative: "امتیاز منفی",
+                    homework: "تکلیف",
+                    classGrade: "نمره کلاسی",
+                    activity: "امتیاز فعالیت",
+                  }[sc.type] || "ثبت دیگر",
+              }));
+              participants.push({
+                studentId: sid,
+                name: st?.name || "هنرجوی فاقد مشخصات",
+                code: st?.code || "",
+                attendance: a,
+                ...(scores.length ? { scores } : { scores: [] }),
+              });
+              for (const score of scores)
+                marks.push({
+                  studentId: sid,
+                  name: st?.name || "هنرجوی فاقد مشخصات",
+                  ...score,
+                });
+            }
+            const lessonKey = c.id + "|" + x.lessonId;
+            if (!lessons.has(lessonKey))
+              lessons.set(lessonKey, {
+                className: c.name,
+                lessonName: lesson?.name || "درس فاقد تعریف",
+                sessions: 0,
+                ...emptyCounts(),
+                markCount: 0,
+              });
+            const lessonRow = lessons.get(lessonKey);
+            lessonRow.sessions++;
+            lessonRow.markCount += marks.length;
+            for (const key of Object.keys(sessionCounts))
+              lessonRow[key] += sessionCounts[key];
+            if (!byDate.has(x.date))
+              byDate.set(x.date, {
+                date: x.date,
+                sessions: 0,
+                ...emptyCounts(),
+                markCount: 0,
+              });
+            const day = byDate.get(x.date);
+            day.sessions++;
+            day.markCount += marks.length;
+            for (const key of Object.keys(sessionCounts))
+              day[key] += sessionCounts[key];
+            const pod = lesson?.poudmans?.find((p) => p.id === x.poudmanId),
+              unit = pod?.units?.find((u) => u.id === x.unitId);
+            sessions.push({
+              id: x.id,
+              date: x.date,
+              period: x.period,
+              className: c.name,
+              lessonName: lesson?.name || "درس فاقد تعریف",
+              moduleName: pod?.name || "",
+              unitName: unit?.name || "",
+              teacher: lesson?.teacher || "",
+              counts: sessionCounts,
+              participants,
+              marks,
+            });
+          }
+          const known = total.present + total.absent + total.late;
+          return {
+            format: "EduManager.PeriodicReport",
+            version: 1,
+            generatedAt: new Date().toISOString(),
+            academicYear: source.settings.academicYear,
+            mode: f.mode,
+            audience: f.audience,
+            detailLevel:
+              f.audience === "parent"
+                ? "full"
+                : f.detailLevel === "full"
+                  ? "full"
+                  : "summary",
+            start: dates.start,
+            end: dates.end,
+            school: { id: school.id, name: school.name },
+            class: f.classId
+              ? { id: classes[0].id, name: classes[0].name }
+              : null,
+            student: selected
+              ? {
+                  id: selected.id,
+                  name: selected.name,
+                  code: selected.code || "",
+                }
+              : null,
+            author: String(f.author || "").slice(0, 200),
+            note: String(f.note || ""),
+            summary: {
+              sessions: sessions.length,
+              students: students.size,
+              ...total,
+              attendanceRate: known
+                ? Number(
+                    (((total.present + total.late) * 100) / known).toFixed(1),
+                  )
+                : null,
+              recordedMarks: sessions.reduce((n, s) => n + s.marks.length, 0),
+            },
+            days: Array.from(
+              {
+                length:
+                  Math.round(
+                    (isoDate(dates.end) - isoDate(dates.start)) / 86400000,
+                  ) + 1,
+              },
+              (_, i) =>
+                byDate.get(addDays(dates.start, i)) || {
+                  date: addDays(dates.start, i),
+                  sessions: 0,
+                  ...emptyCounts(),
+                  markCount: 0,
+                },
+            ),
+            students: [...students.values()],
+            lessons: [...lessons.values()],
+            sessions,
+            currentGrades: [],
+            warnings: [...warnings],
+            definitions: [
+              "حضور و غیاب با واحد نفرـجلسه شمارش شده است؛ یک هنرجو در دو زنگ، دو مشاهده دارد.",
+              "نرخ حضور = حاضر و دارای تأخیر، تقسیم بر موارد تعیین‌شده؛ موارد تعیین‌نشده در مخرج نیستند.",
+              "گزارش فقط جلسات ثبت‌شده را پوشش می‌دهد؛ نبود جلسه یا نمره به معنی غیبت یا نمره صفر نیست.",
+              "نمرات و امتیازهای جلسات این بازه، نمره نهایی درس محسوب نمی‌شوند.",
+            ],
+          };
+        }
+        const num = (value) =>
+          value === null || value === undefined
+            ? "—"
+            : Number(value).toLocaleString("fa-IR", {
+                maximumFractionDigits: 2,
+              });
+        function table(headers, rows, kind = "") {
+          return (
+            '<div class="table-scroll"><table' +
+            (kind ? ' class="' + esc(kind) + '"' : "") +
+            "><thead><tr>" +
+            headers.map((x) => "<th>" + esc(x) + "</th>").join("") +
+            "</tr></thead><tbody>" +
+            rows
+              .map(
+                (row) =>
+                  "<tr>" +
+                  row.map((cell) => "<td>" + esc(cell) + "</td>").join("") +
+                  "</tr>",
+              )
+              .join("") +
+            "</tbody></table></div>"
+          );
+        }
+        function reportParticipants(model, session) {
+          return model.audience === "management" &&
+            model.detailLevel === "summary"
+            ? session.participants.filter(
+                (participant) => participant.scores.length,
+              )
+            : session.participants;
+        }
+        const displayedDays = (m) =>
+          ["monthly", "annual"].includes(m.mode) && m.detailLevel === "summary"
+            ? m.days.filter((day) => day.sessions > 0)
+            : m.days;
+        function textReport(m) {
+          const lines = [
+            "گزارش " +
+              modeLabel(m.mode) +
+              " — " +
+              (m.audience === "parent" ? "ویژه اولیا" : "ویژه مدیریت مدرسه"),
+            "مدرسه: " + m.school.name,
+            "بازه: " + faDate(m.start) + " تا " + faDate(m.end),
+            "سال تحصیلی: " + m.academicYear,
+          ];
+          if (m.audience === "management" && m.detailLevel === "summary")
+            lines.push(
+              "نمایش خلاصه مدیریتی: آمار همه هنرجویان و تمام ثبت‌های فعالیت؛ ریز حضور هر جلسه در نمایش کامل و فایل JSON موجود است.",
+            );
+          if (m.class) lines.push("کلاس: " + m.class.name);
+          if (m.student)
+            lines.push(
+              "هنرجو: " +
+                m.student.name +
+                " | کد: " +
+                (m.student.code || "ثبت نشده"),
+            );
+          lines.push(
+            "زمان تهیه: " + new Date(m.generatedAt).toLocaleString("fa-IR"),
+            "",
+            "خلاصه",
+            "جلسات ثبت‌شده: " + num(m.summary.sessions),
+            "حاضر: " +
+              num(m.summary.present) +
+              " | غایب: " +
+              num(m.summary.absent) +
+              " | تأخیر: " +
+              num(m.summary.late) +
+              " | تعیین‌نشده: " +
+              num(m.summary.unknown) +
+              " (نفرـجلسه)",
+            "نرخ حضور از موارد تعیین‌شده: " +
+              (m.summary.attendanceRate === null
+                ? "قابل محاسبه نیست"
+                : num(m.summary.attendanceRate) + "٪"),
+            "تعداد ثبت‌های نمره، تکلیف و فعالیت: " +
+              num(m.summary.recordedMarks),
+            "",
+          );
+          if (!m.sessions.length)
+            lines.push("در این بازه و محدوده، جلسه مرتبطی ثبت نشده است.");
+          for (const d of displayedDays(m))
+            lines.push(
+              faDate(d.date) +
+                ": " +
+                num(d.sessions) +
+                " جلسه؛ حاضر " +
+                num(d.present) +
+                "، غایب " +
+                num(d.absent) +
+                "، تأخیر " +
+                num(d.late) +
+                "، تعیین‌نشده " +
+                num(d.unknown),
+            );
+          if (m.audience === "management") {
+            lines.push("", "جمع‌بندی درس‌ها");
+            for (const l of m.lessons)
+              lines.push(
+                l.className +
+                  " / " +
+                  l.lessonName +
+                  ": " +
+                  num(l.sessions) +
+                  " جلسه؛ حاضر " +
+                  num(l.present) +
+                  "، غایب " +
+                  num(l.absent) +
+                  "، تأخیر " +
+                  num(l.late) +
+                  "، تعیین‌نشده " +
+                  num(l.unknown),
+              );
+            lines.push("", "وضعیت هنرجویان");
+            for (const st of m.students)
+              lines.push(
+                st.name +
+                  " / " +
+                  st.className +
+                  ": حاضر " +
+                  num(st.present) +
+                  "، غایب " +
+                  num(st.absent) +
+                  "، تأخیر " +
+                  num(st.late) +
+                  "، تعیین‌نشده " +
+                  num(st.unknown),
+              );
+          }
+          lines.push("", "جزئیات جلسات");
+          for (const s of m.sessions) {
+            lines.push(
+              "",
+              faDate(s.date) +
+                " | زنگ " +
+                num(s.period + 1) +
+                " | " +
+                s.className +
+                " | " +
+                s.lessonName +
+                (s.moduleName ? " | پودمان: " + s.moduleName : "") +
+                (s.unitName ? " | واحد: " + s.unitName : "") +
+                (s.teacher ? " | دبیر: " + s.teacher : ""),
+            );
+            for (const p of reportParticipants(m, s))
+              lines.push(
+                p.name +
+                  ": " +
+                  p.attendance.label +
+                  (p.attendance.minutes === null
+                    ? ""
+                    : " (" + num(p.attendance.minutes) + " دقیقه)") +
+                  (p.scores.length
+                    ? " | " +
+                      p.scores
+                        .map(
+                          (sc) =>
+                            sc.label +
+                            ": " +
+                            (sc.value ?? "—") +
+                            (sc.note ? " — " + sc.note : ""),
+                        )
+                        .join(" | ")
+                    : " | نمره یا فعالیتی ثبت نشده"),
+              );
+          }
+          if (m.currentGrades.length) {
+            lines.push(
+              "",
+              "آخرین وضعیت تجمعی درس‌ها تا زمان تهیه گزارش؛ محدود به بازه بالا نیست",
+            );
+            for (const g of m.currentGrades)
+              lines.push(
+                g.lessonName +
+                  ": " +
+                  (g.method === "dual"
+                    ? "عملی " +
+                      num(g.practical) +
+                      " | نظری " +
+                      num(g.theory) +
+                      " | "
+                    : "") +
+                  "نهایی " +
+                  g.final +
+                  " | " +
+                  g.status +
+                  " | " +
+                  g.policy,
+              );
+          }
+          if (m.currentGrades.some((g) => g.modules?.length)) {
+            lines.push("", "جزئیات تجمعی پودمان‌ها تا زمان تهیه گزارش");
+            for (const g of m.currentGrades)
+              for (const p of g.modules || [])
+                lines.push(
+                  g.lessonName +
+                    " / " +
+                    p.name +
+                    ": مستمر " +
+                    num(p.continuous) +
+                    " | شایستگی " +
+                    num(p.competency) +
+                    " | نمره پودمان " +
+                    num(p.final) +
+                    " | " +
+                    (p.reason || (p.passed ? "احراز شده" : "نیازمند بررسی")),
+                );
+          }
+          if (m.note) lines.push("", "توضیحات تنظیم‌کننده", m.note);
+          if (m.warnings.length)
+            lines.push("", "موارد نیازمند بررسی", ...m.warnings);
+          lines.push(
+            "",
+            "توضیح روش گزارش",
+            ...m.definitions,
+            "",
+            "تنظیم‌کننده: " + (m.author || "........................"),
+            "امضا: ........................",
+          );
+          if (m.technicalGrades?.length) {
+            lines.push("", "نمرات فنی — به تفکیک نوبت و پودمان");
+            for (const grade of m.technicalGrades) {
+              lines.push(
+                grade.studentName +
+                  " | " +
+                  grade.className +
+                  " | " +
+                  grade.lessonName +
+                  " | نوبت " +
+                  grade.term,
+              );
+              lines.push(
+                (grade.method === "legacy-unit"
+                  ? "نتیجه روش قدیمی (پودمان رسمی نیست): "
+                  : "نتیجه درس: ") +
+                  root.EduV24.finalText(grade) +
+                  (grade.complete ? "" : " — ناقص"),
+              );
+              for (const unit of grade.legacyUnits || [])
+                lines.push(
+                  unit.moduleName +
+                    " / " +
+                    unit.unitName +
+                    ": مستمر " +
+                    (unit.mostamar ?? "—") +
+                    "، پایانی " +
+                    (unit.payani ?? "—") +
+                    "، ترکیبی " +
+                    root.EduV24.finalText(unit),
+                );
+              for (const module of grade.modules)
+                lines.push(
+                  module.name +
+                    ": " +
+                    root.EduV24.finalText(module) +
+                    (module.complete
+                      ? module.passed
+                        ? " — قبول"
+                        : " — نیازمند جبران"
+                      : " — ناقص"),
+                );
+            }
+          }
+          if (m.annualGrades) {
+            lines.push("", "نمرات سالانه کاردانش — میانگین برابر چهار مرحله");
+            for (const grade of m.annualGrades) {
+              lines.push(
+                grade.className +
+                  " | " +
+                  grade.studentName +
+                  " | " +
+                  grade.lessonName,
+              );
+              for (const item of grade.components)
+                lines.push(
+                  (item.stage === "midterm" ? "میان‌ترم " : "پایان‌ترم ") +
+                    item.term +
+                    ": عملی " +
+                    (item.practical ?? "ثبت نشده") +
+                    "، تئوری " +
+                    (item.theory ?? "ثبت نشده") +
+                    "، ترکیبی " +
+                    root.EduV24.finalText(item),
+                );
+              lines.push(
+                "نهایی سالانه: " +
+                  root.EduV24.finalText(grade) +
+                  (grade.complete
+                    ? grade.passed
+                      ? " — قبول"
+                      : " — نیازمند جبران"
+                    : " — ناقص؛ هر چهار نمره لازم است"),
+              );
+            }
+          }
+          return lines.join("\n");
+        }
+        function documentHtml(m) {
+          let h =
+            '<article class="card report-document periodic-document"><header class="periodic-document-heading"><span>' +
+            (m.audience === "parent"
+              ? "ویژه اولیا — اطلاعات یک هنرجو"
+              : "ویژه مدیریت مدرسه — " +
+                (m.detailLevel === "summary"
+                  ? "خلاصه مدیریتی"
+                  : "جزئیات کامل")) +
+            "</span><h2>" +
+            ("گزارش " + modeLabel(m.mode)) +
+            "</h2><h3>" +
+            esc(m.school.name) +
+            "</h3><p>" +
+            esc(faDate(m.start)) +
+            " تا " +
+            esc(faDate(m.end)) +
+            " · سال تحصیلی " +
+            esc(m.academicYear) +
+            "</p>" +
+            (m.class ? "<p>کلاس: " + esc(m.class.name) + "</p>" : "") +
+            (m.student
+              ? "<p><strong>هنرجو: " +
+                esc(m.student.name) +
+                "</strong> · کد: " +
+                esc(m.student.code || "ثبت نشده") +
+                "</p>"
+              : "") +
+            "<small>تهیه‌شده در " +
+            esc(new Date(m.generatedAt).toLocaleString("fa-IR")) +
+            "</small></header>";
+          h +=
+            '<div class="periodic-export-actions no-print"><button data-periodic-print onclick="EduPeriodicReports.output(\'print\')">چاپ / PDF</button><button class="ghost" onclick="EduPeriodicReports.output(\'txt\')">فایل متن</button><button class="ghost" onclick="EduPeriodicReports.output(\'json\')">فایل JSON</button></div>';
+          h +=
+            '<section class="periodic-summary">' +
+            [
+              ["جلسه ثبت‌شده", m.summary.sessions],
+              ["حاضر", m.summary.present],
+              ["غایب", m.summary.absent],
+              ["با تأخیر", m.summary.late],
+              ["تعیین‌نشده", m.summary.unknown],
+            ]
+              .map(
+                ([label, n]) =>
+                  "<div><strong>" +
+                  num(n) +
+                  "</strong><span>" +
+                  label +
+                  "</span></div>",
+              )
+              .join("") +
+            '</section><p class="periodic-method">واحد آمار حضور: نفرـجلسه. نرخ حضور از موارد تعیین‌شده: ' +
+            (m.summary.attendanceRate === null
+              ? "قابل محاسبه نیست"
+              : num(m.summary.attendanceRate) + "٪") +
+            ". نمرات زیر، ثبت‌های همین بازه‌اند و نمره نهایی درس نیستند.</p>";
+          if (!m.sessions.length)
+            h +=
+              '<div class="empty">در این بازه و محدوده، جلسه مرتبطی ثبت نشده است.</div>';
+          h +=
+            "<h3>مرور " +
+            (m.mode === "weekly"
+              ? "روزهای هفته"
+              : ["monthly", "annual"].includes(m.mode) &&
+                  m.detailLevel === "summary"
+                ? "روزهای دارای جلسه"
+                : "روز") +
+            "</h3>" +
+            table(
+              ["تاریخ", "جلسه", "حاضر / غایب / تأخیر", "تعیین‌نشده"],
+              displayedDays(m).map((d) => [
+                faDate(d.date),
+                num(d.sessions),
+                num(d.present) + " / " + num(d.absent) + " / " + num(d.late),
+                num(d.unknown),
+              ]),
+            );
+          if (m.audience === "management" && m.sessions.length) {
+            h +=
+              "<h3>جمع‌بندی کلاس‌ها و درس‌ها</h3>" +
+              table(
+                [
+                  "کلاس / درس",
+                  "جلسه",
+                  "حاضر / غایب / تأخیر",
+                  "تعیین‌نشده",
+                  "ثبت نمره و فعالیت",
+                ],
+                m.lessons.map((l) => [
+                  l.className + " / " + l.lessonName,
+                  num(l.sessions),
+                  num(l.present) + " / " + num(l.absent) + " / " + num(l.late),
+                  num(l.unknown),
+                  num(l.markCount),
+                ]),
+              );
+            h +=
+              "<h3>پیگیری وضعیت هنرجویان</h3>" +
+              table(
+                [
+                  m.class ? "هنرجو" : "هنرجو / کلاس",
+                  "جلسه",
+                  "حاضر",
+                  "غایب",
+                  "تأخیر",
+                  "تعیین‌نشده",
+                ],
+                m.students.map((st) => [
+                  st.name + (m.class ? "" : " / " + st.className),
+                  num(st.sessions),
+                  num(st.present),
+                  num(st.absent),
+                  num(st.late),
+                  num(st.unknown),
+                ]),
+                "student-summary",
+              );
+          }
+          if (m.technicalGrades?.length) {
+            h += "<section><h3>نمرات فنی به تفکیک نوبت و پودمان</h3>";
+            for (const grade of m.technicalGrades) {
+              h +=
+                "<h4>" +
+                esc(
+                  grade.studentName +
+                    " · " +
+                    grade.className +
+                    " · " +
+                    grade.lessonName +
+                    " · نوبت " +
+                    grade.term,
+                ) +
+                "</h4><p>" +
+                (grade.method === "legacy-unit"
+                  ? "روش قدیمی؛ نتیجه زیر نمره رسمی پودمان نیست: "
+                  : "نتیجه درس: ") +
+                esc(root.EduV24.finalText(grade)) +
+                (grade.complete ? "" : " — ناقص") +
+                "</p>";
+              if (grade.method === "legacy-unit")
+                h += table(
+                  ["پودمان / واحد", "مستمر", "پایانی", "نمره ترکیبی"],
+                  (grade.legacyUnits || []).map((unit) => [
+                    unit.moduleName + " / " + unit.unitName,
+                    unit.mostamar ?? "—",
+                    unit.payani ?? "—",
+                    root.EduV24.finalText(unit),
+                  ]),
+                );
+              else
+                h += table(
+                  ["پودمان", "نمره", "وضعیت"],
+                  grade.modules.map((module) => [
+                    module.name,
+                    root.EduV24.finalText(module),
+                    module.complete
+                      ? module.passed
+                        ? "قبول"
+                        : "نیازمند جبران"
+                      : "ناقص",
+                  ]),
+                );
+            }
+            h += "</section>";
+          }
+          if (m.annualGrades) {
+            h +=
+              '<section class="annual-grades"><h3>نمرات سالانه کاردانش</h3><p>میانگین برابر چهار نمره؛ هر مرحله عملی ۷۰٪ و تئوری ۳۰٪. نمره ناقص، صفر نیست.</p><div class="assessment-students">';
+            for (const grade of m.annualGrades) {
+              h +=
+                '<article class="assessment-student"><h4>' +
+                esc(grade.studentName) +
+                "</h4><p>" +
+                esc(grade.className + " · " + grade.lessonName) +
+                '</p><div class="annual-grade-components">';
+              for (const item of grade.components)
+                h +=
+                  "<span>" +
+                  (item.stage === "midterm" ? "میان‌ترم " : "پایان‌ترم ") +
+                  esc(item.term) +
+                  ": <strong>" +
+                  esc(root.EduV24.finalText(item)) +
+                  "</strong><br>عملی " +
+                  esc(item.practical ?? "—") +
+                  " · تئوری " +
+                  esc(item.theory ?? "—") +
+                  "</span>";
+              h +=
+                "</div><p>نهایی سالانه: <strong>" +
+                esc(root.EduV24.finalText(grade)) +
+                "</strong> · " +
+                (grade.complete
+                  ? grade.passed
+                    ? "قبول"
+                    : "نیازمند جبران"
+                  : "ناقص؛ هر چهار نمره لازم است") +
+                "</p></article>";
+            }
+            h += "</div></section>";
+          }
+          h += "<h3>جزئیات جلسات و ثبت‌ها</h3>";
+          if (m.audience === "management" && m.detailLevel === "summary")
+            h +=
+              '<p class="periodic-method">نمایش خلاصه: آمار همه هنرجویان و همه ثبت‌های فعالیت حفظ شده است؛ برای ریز حضور هر هنرجو در هر جلسه، نمایش «جزئیات کامل» را انتخاب کنید. فایل JSON جزئیات کامل همین محدوده را دارد.</p>';
+          for (const s of m.sessions) {
+            h +=
+              '<section class="periodic-session"><h4>' +
+              esc(faDate(s.date)) +
+              " · زنگ " +
+              num(s.period + 1) +
+              " · " +
+              esc(s.className) +
+              "</h4><p>" +
+              esc(s.lessonName) +
+              (s.moduleName ? " · " + esc(s.moduleName) : "") +
+              (s.unitName ? " / " + esc(s.unitName) : "") +
+              (s.teacher ? " · دبیر: " + esc(s.teacher) : "") +
+              "</p>";
+            if (m.audience === "management" && m.detailLevel === "summary")
+              h +=
+                '<p class="periodic-method">حاضر: ' +
+                num(s.counts.present) +
+                " · غایب: " +
+                num(s.counts.absent) +
+                " · تأخیر: " +
+                num(s.counts.late) +
+                " · تعیین‌نشده: " +
+                num(s.counts.unknown) +
+                "</p>";
+            h += table(
+              ["هنرجو", "وضعیت حضور", "نمره، تکلیف و فعالیت ثبت‌شده"],
+              reportParticipants(m, s).map((p) => [
+                p.name,
+                p.attendance.label +
+                  (p.attendance.minutes === null
+                    ? ""
+                    : " · " + num(p.attendance.minutes) + " دقیقه"),
+                p.scores.length
+                  ? p.scores
+                      .map(
+                        (sc) =>
+                          sc.label +
+                          ": " +
+                          (sc.value ?? "—") +
+                          (sc.note ? " — " + sc.note : ""),
+                      )
+                      .join("\n")
+                  : "ثبت نشده",
+              ]),
+            );
+            h += "</section>";
+          }
+          if (m.currentGrades.length)
+            h +=
+              '<h3>آخرین وضعیت تجمعی نمرات درس‌ها</h3><p class="periodic-method">این بخش وضعیت فعلی درس است، محدود به بازه گزارش نیست و ممکن است نمرات خارج از این بازه را شامل شود.</p>' +
+              table(
+                [
+                  "درس",
+                  "عملی فعلی",
+                  "نظری فعلی",
+                  "نهایی فعلی",
+                  "وضعیت",
+                  "قواعد",
+                ],
+                m.currentGrades.map((g) => [
+                  g.lessonName,
+                  g.method === "dual" ? num(g.practical) : "—",
+                  g.method === "dual" ? num(g.theory) : "—",
+                  g.final,
+                  g.status,
+                  g.policy,
+                ]),
+              );
+          if (m.currentGrades.some((g) => g.modules?.length))
+            h +=
+              "<h3>جزئیات تجمعی پودمان‌ها</h3>" +
+              table(
+                [
+                  "درس / پودمان",
+                  "مستمر",
+                  "شایستگی",
+                  "نمره پودمان",
+                  "وضعیت و دلیل",
+                ],
+                m.currentGrades.flatMap((g) =>
+                  (g.modules || []).map((p) => [
+                    g.lessonName + " / " + p.name,
+                    num(p.continuous),
+                    num(p.competency),
+                    num(p.final),
+                    p.reason || (p.passed ? "احراز شده" : "نیازمند بررسی"),
+                  ]),
+                ),
+              );
+          if (m.note)
+            h +=
+              '<h3>توضیحات تنظیم‌کننده</h3><p class="periodic-note">' +
+              esc(m.note) +
+              "</p>";
+          if (m.warnings.length)
+            h +=
+              '<aside class="periodic-warnings"><strong>موارد نیازمند بررسی</strong><ul>' +
+              m.warnings.map((w) => "<li>" + esc(w) + "</li>").join("") +
+              "</ul></aside>";
+          h +=
+            '<footer class="periodic-footer"><h4>مبنای گزارش</h4><ul>' +
+            m.definitions.map((d) => "<li>" + esc(d) + "</li>").join("") +
+            "</ul><p>تنظیم‌کننده: " +
+            esc(m.author || "........................") +
+            "<br>امضا: ........................</p></footer></article>";
+          return h;
+        }
+        let filterWorkspace = "";
+        function selectScope(schoolId = "", classId = "") {
+          let school = schoolId
+            ? db.schools.find((s) => s.id === schoolId)
+            : null;
+          if (schoolId && !school)
+            throw Error("مدرسه این گزارش دیگر وجود ندارد؛ فهرست را تازه کنید.");
+          if (classId) {
+            school =
+              school ||
+              db.schools.find((s) => s.classes.some((c) => c.id === classId));
+            if (!school?.classes.some((c) => c.id === classId))
+              throw Error("کلاس انتخاب‌شده متعلق به این مدرسه نیست.");
+          }
+          school =
+            school ||
+            db.schools.find((s) => s.id === filters.schoolId) ||
+            db.schools[0];
+          Object.assign(filters, {
+            schoolId: school?.id || "",
+            classId,
+            studentId: "",
+            audience: "management",
+            date: localToday(),
+          });
+          filterWorkspace = context().id;
+          last = null;
+        }
+        function initialize(mode) {
+          filters.mode = mode;
+          const workspaceId = context().id;
+          if (filterWorkspace && filterWorkspace !== workspaceId) {
+            Object.assign(filters, {
+              schoolId: "",
+              classId: "",
+              studentId: "",
+              audience: "management",
+              date: localToday(),
+              annualFirstId: "",
+              annualSecondId: "",
+            });
+            annualPeriodList = [];
+            last = null;
+          }
+          filterWorkspace = workspaceId;
+          if (!db.schools.some((s) => s.id === filters.schoolId)) {
+            filters.schoolId = db.schools.some(
+              (s) => s.id === globalFilter.schoolId,
+            )
+              ? globalFilter.schoolId
+              : db.schools[0]?.id || "";
+            filters.classId = "";
+            filters.studentId = "";
+          }
+          const school = db.schools.find((s) => s.id === filters.schoolId);
+          if (
+            filters.classId &&
+            !school?.classes.some((c) => c.id === filters.classId)
+          ) {
+            filters.classId = "";
+            filters.studentId = "";
+          }
+        }
+        let annualPeriodList = [],
+          annualLoadingFor = "";
+        function loadAnnualPeriodChoices() {
+          const expected = context().id;
+          if (annualLoadingFor === expected) return;
+          annualLoadingFor = expected;
+          root.EduV24.listAnnualReportPeriods()
+            .then((rows) => {
+              if (context().id !== expected || filters.mode !== "annual")
+                return;
+              annualPeriodList = rows;
+              for (const [field, id] of [
+                ["annualFirstId", "annualFirstPeriod"],
+                ["annualSecondId", "annualSecondPeriod"],
+              ]) {
+                const select = document.getElementById(id);
+                if (!select) continue;
+                select.innerHTML =
+                  '<option value="">انتخاب خودکار در صورت نبود ابهام</option>' +
+                  rows
+                    .map(
+                      (row) =>
+                        '<option value="' +
+                        esc(row.id) +
+                        '"' +
+                        (filters[field] === row.id ? " selected" : "") +
+                        ">" +
+                        esc(row.term) +
+                        (row.closed ? " · بسته" : "") +
+                        "</option>",
+                    )
+                    .join("");
+                select.disabled = false;
+              }
+            })
+            .catch(error)
+            .finally(() => {
+              if (annualLoadingFor === expected) annualLoadingFor = "";
+            });
+        }
+        function render(mode) {
+          initialize(mode);
+          if (mode === "annual") setTimeout(loadAnnualPeriodChoices, 0);
+          const f = filters,
+            school = db.schools.find((s) => s.id === f.schoolId),
+            c = school?.classes.find((c) => c.id === f.classId);
+          const people = new Map(
+            [...(c?.students || []), ...(c?.archivedStudents || [])].map(
+              (st) => [st.id, st],
+            ),
+          );
+          if (c)
+            for (const x of db.sessions.filter(
+              (x) => x.schoolId === school.id && x.classId === c.id,
+            ))
+              for (const st of x.roster || [])
+                if (!people.has(st.id)) people.set(st.id, st);
+          const option = (value, label, chosen) =>
+            '<option value="' +
+            esc(value) +
+            '" ' +
+            (value === chosen ? "selected" : "") +
+            ">" +
+            esc(label) +
+            "</option>";
+          let h =
+            '<section class="card periodic-controls no-print"><h3>تهیه گزارش ' +
+            modeLabel(mode) +
+            '</h3><p>هفتگی: شنبه تا جمعه. ماهانه: ماه شمسی. سالانه: مهر تا شهریور، نوبت اول و دوم سال تحصیلی فعال. گزارش اولیا فقط اطلاعات هنرجوی انتخاب‌شده را در بر می‌گیرد.</p><div class="periodic-control-grid"><label>مخاطب<select onchange="EduPeriodicReports.set(\'audience\',this.value)">' +
+            option("management", "مدیریت مدرسه", f.audience) +
+            option("parent", "اولیای یک هنرجو", f.audience) +
+            "</select></label><label>" +
+            (mode === "annual"
+              ? "سال تحصیلی " + esc(db.settings.academicYear)
+              : mode === "weekly"
+                ? "یک تاریخ از هفته"
+                : mode === "monthly"
+                  ? "یک تاریخ از ماه شمسی"
+                  : "تاریخ گزارش") +
+            '<input type="' +
+            (mode === "annual" ? "hidden" : "date") +
+            '" value="' +
+            esc(f.date) +
+            '" onchange="EduPeriodicReports.set(\'date\',this.value)"></label><label>مدرسه<select onchange="EduPeriodicReports.set(\'schoolId\',this.value)">' +
+            option("", "انتخاب مدرسه", f.schoolId) +
+            db.schools.map((s) => option(s.id, s.name, f.schoolId)).join("") +
+            "</select></label><label>کلاس<select onchange=\"EduPeriodicReports.set('classId',this.value)\">" +
+            option(
+              "",
+              f.audience === "parent"
+                ? "انتخاب کلاس"
+                : "همه کلاس‌های این مدرسه",
+              f.classId,
+            ) +
+            (school?.classes || [])
+              .map((c) => option(c.id, c.name, f.classId))
+              .join("") +
+            "</select></label>";
+          if (mode === "annual") {
+            for (const [field, id, label] of [
+              ["annualFirstId", "annualFirstPeriod", "اطلاعات نوبت اول"],
+              ["annualSecondId", "annualSecondPeriod", "اطلاعات نوبت دوم"],
+            ])
+              h +=
+                "<label>" +
+                label +
+                '<select id="' +
+                id +
+                '" onchange="EduPeriodicReports.set(\'' +
+                field +
+                "',this.value)\">" +
+                option("", "انتخاب خودکار در صورت نبود ابهام", f[field]) +
+                annualPeriodList
+                  .map((row) =>
+                    option(
+                      row.id,
+                      row.term + (row.closed ? " · بسته" : ""),
+                      f[field],
+                    ),
+                  )
+                  .join("") +
+                "</select></label>";
+          }
+          if (f.audience === "parent")
+            h +=
+              "<label>هنرجو<select onchange=\"EduPeriodicReports.set('studentId',this.value)\">" +
+              option("", "انتخاب هنرجو", f.studentId) +
+              [...people.values()]
+                .sort((a, b) => a.name.localeCompare(b.name, "fa"))
+                .map((st) =>
+                  option(
+                    st.id,
+                    st.name + (st.code ? " — " + st.code : ""),
+                    f.studentId,
+                  ),
+                )
+                .join("") +
+              "</select></label>";
+          if (f.audience === "management")
+            h +=
+              '<label>سطح جزئیات<select onchange="EduPeriodicReports.set(\'detailLevel\',this.value)"><option value="summary" ' +
+              (f.detailLevel === "summary" ? "selected" : "") +
+              '>خلاصه مدیریتی و فعالیت‌ها</option><option value="full" ' +
+              (f.detailLevel === "full" ? "selected" : "") +
+              ">جزئیات کامل حضور هر جلسه</option></select></label>";
+          h +=
+            '<label>نام تنظیم‌کننده (اختیاری)<input value="' +
+            esc(f.author) +
+            '" maxlength="200" oninput="EduPeriodicReports.author(this.value)"></label></div><label class="periodic-note-field">توضیحات این گزارش (اختیاری)<textarea rows="3" maxlength="' +
+            Math.max(10000, readNote(noteKey(f)).length) +
+            '" oninput="EduPeriodicReports.note(this.value)">' +
+            esc(readNote(noteKey(f))) +
+            '</textarea></label><div id="periodicNoteStatus">' +
+            noteWarning() +
+            '</div><button class="periodic-build" onclick="EduPeriodicReports.generate()">تهیه گزارش ' +
+            modeLabel(mode) +
+            '</button><p id="periodicError" role="alert"></p></section><div id="periodicReportOutput">';
+          h +=
+            last && last.signature === reportSignature()
+              ? documentHtml(last.model)
+              : '<div class="card empty" role="status">' +
+                (last
+                  ? "اطلاعات یا دوره تغییر کرده است؛ برای نمایش نتیجه معتبر، گزارش را دوباره تهیه کنید."
+                  : "محدوده و مخاطب را انتخاب کنید و «تهیه گزارش» را بزنید.") +
+                "</div>";
+          return h + "</div>";
+        }
+        function set(key, value) {
+          if (
+            ![
+              "audience",
+              "date",
+              "schoolId",
+              "classId",
+              "studentId",
+              "detailLevel",
+              "annualFirstId",
+              "annualSecondId",
+            ].includes(key)
+          )
+            return;
+          if (key === "detailLevel" && !["summary", "full"].includes(value))
+            return;
+          if (key === "date") {
+            try {
+              isoDate(value);
+            } catch (e) {
+              error(e);
+              return;
+            }
+          }
+          filters[key] = value;
+          if (key === "schoolId") {
+            filters.classId = "";
+            filters.studentId = "";
+          }
+          if (key === "classId" || key === "audience") filters.studentId = "";
+          last = null;
+          root.render();
+        }
+        function error(e) {
+          const el = document.getElementById("periodicError");
+          if (el) el.textContent = e.message || String(e);
+        }
+        function invalidate(
+          message = "اطلاعات گزارش تغییر کرده است؛ دوباره گزارش را تهیه کنید.",
+        ) {
+          last = null;
+          const out = document.getElementById("periodicReportOutput");
+          if (out)
+            out.innerHTML =
+              '<div class="card empty" role="status">' +
+              esc(message) +
+              "</div>";
+          error(Error(message));
+        }
+        function isPreparedCurrent(prepared) {
+          return (
+            !!prepared &&
+            last === prepared &&
+            prepared.signature === reportSignature()
+          );
+        }
+        async function generate() {
+          if (busy) return null;
+          busy = true;
+          let input, signature;
+          const buttons = [
+            ...document.querySelectorAll(
+              ".periodic-build,.periodic-export-actions button",
+            ),
+          ];
+          buttons.forEach((b) => (b.disabled = true));
+          try {
+            input = inputSnapshot();
+            if (
+              noteReadErrors.has(context().id) &&
+              !notes.has(noteKey(filters))
+            )
+              throw Error(
+                "توضیحات ذخیره‌شده این گزارش قابل خواندن نیست؛ پیش از تهیه گزارش آن را بررسی کنید.",
+              );
+            signature = JSON.stringify(input);
+            const alert = document.getElementById("periodicError");
+            if (alert) alert.textContent = "";
+            const snapshot = await root.EduV24.prepareReportSnapshot({
+              annual: input.mode === "annual",
+              periodIds: {
+                first: input.annualFirstId,
+                second: input.annualSecondId,
+              },
+            });
+            if (signature !== JSON.stringify(inputSnapshot()))
+              throw Error(
+                "تنظیمات گزارش تغییر کرده است؛ دوباره گزارش را تهیه کنید.",
+              );
+            const model = build(snapshot.data, input);
+            if (model.audience === "parent" && input.mode !== "annual") {
+              const c = snapshot.data.schools
+                .find((s) => s.id === input.schoolId)
+                .classes.find((c) => c.id === input.classId);
+              for (const l of c.lessons || []) {
+                try {
+                  const r = calcStudentLesson(
+                    c,
+                    l,
+                    input.studentId,
+                    snapshot.data,
+                  );
+                  model.currentGrades.push({
+                    lessonName: l.name,
+                    method:
+                      l.gradingPolicy?.method ||
+                      (l.gradeMode === "kardanesh" ? "dual" : "modular"),
+                    practical: r.practical ?? null,
+                    theory: r.theory ?? null,
+                    final:
+                      typeof r.final === "number" && Number.isFinite(r.final)
+                        ? root.EduV24.finalText(r)
+                        : "—",
+                    status:
+                      r.reason ||
+                      (r.final === null || r.final === undefined
+                        ? "ناقص"
+                        : gradeStatus(r)),
+                    modules: (r.modules || []).map((m) => {
+                      const g = ownScoreRecord(
+                        l.poudmans.find((p) => p.id === m.id)?.podScores,
+                        input.studentId,
+                      );
+                      return {
+                        name: m.name,
+                        continuous: g.m ?? null,
+                        competency: g.c ?? null,
+                        final: m.final,
+                        passed: m.passed,
+                        complete: m.complete,
+                        reason: m.reason || "",
+                      };
+                    }),
+                    policy: l.gradingPolicy
+                      ? l.gradingPolicy.confirmed
+                        ? "تأییدشده توسط کاربر"
+                        : "پیش‌نویس تأییدنشده"
+                      : "قواعد ثبت‌شده درس",
+                  });
+                } catch {
+                  model.currentGrades.push({
+                    lessonName: l.name,
+                    final: "—",
+                    status: "نیازمند بررسی",
+                    policy: "محاسبه در دسترس نیست",
+                  });
+                }
+              }
+            }
+            if (input.mode === "annual") {
+              model.technicalGrades = root.EduV24.annualTechnicalRows(
+                snapshot.parts,
+                input.schoolId,
+                input.classId,
+                input.audience === "parent" ? input.studentId : "",
+              );
+              model.annualGrades = root.EduV24.annualGradeRows(
+                snapshot.parts,
+                input.schoolId,
+                input.classId,
+                input.audience === "parent" ? input.studentId : "",
+              );
+              model.periods = snapshot.parts.map((part) => ({
+                id: part.period.id,
+                term: part.period.term,
+                label: part.period.displayTerm || part.period.term,
+                revision: part.period.revision,
+              }));
+              model.definitions.push(
+                "کاردانش: هر مرحله عملی ۷۰٪ و تئوری ۳۰٪؛ نهایی سالانه میانگین برابر هر چهار مرحله است. نمره ناقص، صفر محسوب نمی‌شود.",
+              );
+              for (const part of snapshot.parts)
+                model.definitions.push(
+                  "منبع نوبت " +
+                    part.period.term +
+                    ": " +
+                    part.period.displayTerm,
+                );
+              model.definitions.push(
+                "گزارش سالانه از مهر تا شهریور و شامل نوبت‌های اول و دوم همین سال تحصیلی است؛ تابستان مستقل است.",
+              );
+              model.definitions.push(
+                "کلاس و هنرجو با شناسه مشترک بین نوبت‌ها مرتبط می‌شوند؛ شباهت نام، دلیل ادغام افراد نیست.",
+              );
+            }
+            await root.EduV24.assertReportSnapshot(snapshot.context);
+            if (signature !== JSON.stringify(inputSnapshot()))
+              throw Error(
+                "تنظیمات گزارش تغییر کرده است؛ دوباره گزارش را تهیه کنید.",
+              );
+            last = {
+              signature: reportSignature(),
+              context: snapshot.context,
+              model,
+            };
+            const out = document.getElementById("periodicReportOutput");
+            if (out) out.innerHTML = documentHtml(model);
+            return model;
+          } catch (e) {
+            invalidate(e.message || String(e));
+            return null;
+          } finally {
+            busy = false;
+            document
+              .querySelectorAll(
+                ".periodic-build,.periodic-export-actions button",
+              )
+              .forEach((b) => (b.disabled = false));
+          }
+        }
+        async function output(kind) {
+          const model = await generate();
+          if (!model) return false;
+          const prepared = last;
+          try {
+            if (!isPreparedCurrent(prepared))
+              throw Error("گزارش دیگر معتبر نیست؛ دوباره آن را تهیه کنید.");
+            if (kind === "print") {
+              await root.EduV24.printReport(
+                document.querySelector("[data-periodic-print]"),
+                {
+                  context: prepared.context,
+                  validate: () => isPreparedCurrent(prepared),
+                },
+              );
+              return true;
+            }
+            if (!["txt", "json"].includes(kind)) return false;
+            await root.EduV24.assertReportSnapshot(prepared.context);
+            if (!isPreparedCurrent(prepared))
+              throw Error(
+                "محدوده یا متن گزارش تغییر کرده است؛ دوباره گزارش را تهیه کنید.",
+              );
+            const content =
+              kind === "json"
+                ? JSON.stringify(model, null, 2)
+                : textReport(model);
+            const blob = new Blob([content], {
+              type:
+                kind === "json"
+                  ? "application/json;charset=utf-8"
+                  : "text/plain;charset=utf-8",
+            });
+            downloadLocalFile(
+              blob,
+              "edu-" +
+                model.mode +
+                "-" +
+                model.start +
+                "-" +
+                model.audience +
+                "." +
+                kind,
+            );
+            return true;
+          } catch (e) {
+            invalidate(e.message || String(e));
+            return false;
+          }
+        }
+        root.EduPeriodicReports = {
+          filters,
+          selectScope,
+          render,
+          set,
+          invalidate,
+          workspaceChanged(message) {
+            if (
+              last?.context?.members?.some(
+                (member) =>
+                  member.id === message.workspace &&
+                  message.revision > member.revision,
+              )
+            )
+              invalidate(
+                "اطلاعات یکی از نوبت‌های گزارش سالانه تغییر کرد؛ گزارش را دوباره تهیه کنید.",
+              );
+          },
+          generate,
+          output,
+          build,
+          range,
+          addDays,
+          textReport,
+          documentHtml,
+          note(value) {
+            const key = noteKey(filters);
+            const saved = persistNote(
+              key,
+              String(value).slice(0, Math.max(10000, readNote(key).length)),
+            );
+            paintNoteState();
+            return saved;
+          },
+          author(value) {
+            filters.author = String(value).slice(0, 200);
+          },
+          retryNotes,
+          getDrafts,
+          restoreDrafts,
+          resetDrafts,
+          getLast: () =>
+            last && last.signature === reportSignature() ? last.model : null,
+        };
+        root.EduV24?.recoverReportNotes?.();
+      })(globalThis);

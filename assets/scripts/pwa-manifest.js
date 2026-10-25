@@ -1,0 +1,10 @@
+"use strict";
+
+// Kept separate from the application shell so PWA setup has one clear owner.
+// This must remain a classic script: it is loaded synchronously by EduManager.html.
+if (location.protocol !== "file:") {
+  const manifest = document.createElement("link");
+  manifest.rel = "manifest";
+  manifest.href = "./app.webmanifest";
+  document.head.append(manifest);
+}

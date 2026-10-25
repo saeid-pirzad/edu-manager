@@ -6,8 +6,23 @@ const {execFileSync}=require("node:child_process");
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 module.exports=async function auditPwaUpgrade({cdp,debuggerUrl,root}){
  const cases=[],record=(id,name,pass,observed={})=>cases.push({id,name,pass:!!pass,observed});
- const names=["EduManager.html","index.html","app.webmanifest","service-worker.js"];
- const oldFiles=new Map(names.map(name=>[name,execFileSync("git",["show","594217b:"+name],{cwd:root,encoding:"utf8",maxBuffer:5*1024*1024,windowsHide:true})]));
+ const oldNames=["EduManager.html","index.html","app.webmanifest","service-worker.js"];
+ const names=[...oldNames,"assets/scripts/data-store-schema.js","assets/scripts/data-store-runtime.js","assets/scripts/pwa-manifest.js","assets/scripts/grade-policy.js","assets/scripts/course-ui.js","assets/scripts/app-shell-ui.js","assets/scripts/pwa-ui.js","assets/scripts/periodic-reports.js"];
+ const oldFiles=new Map(oldNames.map(name=>[name,execFileSync("git",["show","594217b:"+name],{cwd:root,encoding:"utf8",maxBuffer:5*1024*1024,windowsHide:true})]));
+ names.push("assets/scripts/data-store.js");
+ names.push("assets/scripts/legacy-ui.js", "assets/scripts/workspace-runtime.js");
+ names.push("assets/scripts/csv-parser.js");
+ names.push("assets/scripts/password-service.js");
+ names.push("assets/scripts/calendar-math.js");
+ names.push("assets/scripts/calendar-ui.js");
+ names.push("assets/scripts/dialogs-ui.js");
+ names.push("assets/scripts/workspace-records.js");
+ names.push("assets/scripts/history-changes.js");
+ names.push("assets/scripts/record-commit-plan.js");
+ names.push("assets/scripts/record-transaction.js");
+ names.push("assets/scripts/full-backup-validator.js");
+ names.push("assets/scripts/frozen-report-validator.js");
+ names.push("assets/styles/app.css", "assets/styles/daily-workflow.css");
  const newFiles=new Map(names.map(name=>[name,fs.readFileSync(path.join(root,name),"utf8")]));
  const oldVersion=oldFiles.get("service-worker.js").match(/const VERSION = "([^"]+)"/)[1],newVersion=newFiles.get("service-worker.js").match(/const VERSION = "([^"]+)"/)[1];
  if(oldVersion===newVersion)throw Error("Upgrade audit requires distinct release identifiers.");
@@ -17,7 +32,7 @@ module.exports=async function auditPwaUpgrade({cdp,debuggerUrl,root}){
   if(!names.includes(name)){response.writeHead(404);response.end();return;}
   if(phase==="new"&&failDownload&&name==="EduManager.html"){failedDownloads++;response.writeHead(503);response.end("Synthetic installation failure");return;}
   response.setHeader("Cache-Control","no-store");
-  response.setHeader("Content-Type",name.endsWith(".html")?"text/html; charset=utf-8":name.endsWith(".js")?"application/javascript":"application/manifest+json");
+  response.setHeader("Content-Type",name.endsWith(".html")?"text/html; charset=utf-8":name.endsWith(".css")?"text/css; charset=utf-8":name.endsWith(".js")?"application/javascript":"application/manifest+json");
   response.end((phase==="old"?oldFiles:newFiles).get(name));
  });
  await new Promise(resolve=>server.listen(0,"127.0.0.1",resolve));
