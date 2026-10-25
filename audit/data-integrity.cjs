@@ -330,7 +330,33 @@ async function contextFlows() {
  const rows=store=>new Promise((resolve,reject)=>{const q=EduV24.test.getConnection().transaction(store).objectStore(store).getAll();q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);});
  try {
   closeModal(); await EduV24.reopenPeriod(); closeModal();
+  const gradingClass=db.schools[0].classes[0],gradingLesson=gradingClass.lessons[0];
+  const oldFinal=EduV24.assessmentResult(gradingLesson,"student_b","final").final;
+  state.schoolId="school_a";state.classId="class_a";state.lessonId=gradingLesson.id;
+  showModal("Midterm test",buildLessonGradesHtml(gradingClass,gradingLesson));document.querySelector(".assessment-stage").open=true;
+  for(const [field,value] of [["midtermPractical","16"],["midtermTheory","20"]]){
+    const input=[...document.querySelectorAll("[data-grade]")].find(x=>x.dataset.student==="student_b"&&x.dataset.field===field);
+    input.value=value;input.dispatchEvent(new Event("input",{bubbles:true}));await EduV24.flushDrafts({strict:true});
+  }
+  record("G12","native midterm inputs persist independent weighted result",EduV24.assessmentResult(gradingLesson,"student_b","midterm").final===17.2&&EduV24.assessmentResult(gradingLesson,"student_b","final").final===oldFinal);
+  record("G13","midterm result refreshes in visible editor",[...document.querySelectorAll("[data-assessment-final]")].find(x=>x.dataset.assessmentFinal==="student_b"&&x.dataset.stage==="midterm")?.textContent==="17.20");
+  await EduV24.undoLast();const currentLesson=db.schools[0].classes[0].lessons[0];
+  record("G14","midterm undo preserves final components",EduV24.assessmentResult(currentLesson,"student_b","midterm").final===null&&EduV24.assessmentResult(currentLesson,"student_b","final").final===oldFinal);
+  closeModal();
   await openSettingsModal();
+  closeModal();const gradeBackup=await EduV24.snapshotInstallation();EduV24.validateFullBackup(gradeBackup);
+  record("G15","full backup retains midterm components",gradeBackup.stores.records.some(row=>row.value?.lessons?.some(lesson=>lesson.kardaneshScores?.student_b?.midtermPractical===16)));
+  EduV24.previewFullBackup(gradeBackup);await EduV24.restoreFullBackup();
+  record("G16","full restore preserves midterm and prior final scores",db.schools[0].classes[0].lessons[0].kardaneshScores.student_b.midtermPractical===16&&EduV24.assessmentResult(db.schools[0].classes[0].lessons[0],"student_b","final").final===oldFinal);
+  const session=db.sessions[0];closeModal();openSessionModal(session);
+  const absent=document.querySelector(".att-btns[data-sid=student_a] .absent");
+  await toggleAtt(absent,"absent");
+  record("J01","attendance action saves from simplified session",getSessionById(session.id).attendance.student_a==="absent");
+  showSessionPanel("activity");const sessionForm=document.querySelector(".session-entry-form");
+  sessionForm.elements.studentId.value="student_a";sessionForm.elements.type.value="activity";sessionForm.elements.value.value="18";sessionForm.elements.note.value="session workflow test";
+  await addSessionScore({preventDefault(){},target:sessionForm},session.id);
+  record("J02","activity form saves class mark and keeps active panel",getSessionById(session.id).scores.some(score=>score.studentId==="student_a"&&score.type==="activity"&&score.value===18)&&!document.querySelector("[data-session-panel=activity]").hidden);
+  closeModal();await openSettingsModal();
   const revision=context().revision;
   record("C01","settings no-op does not create a revision",await saveSettings() && context().revision===revision);
   await openSettingsModal();
@@ -415,6 +441,131 @@ async function contextFlows() {
  return cases;
 }
 
+
+async function workflowChecks(width) {
+ document.getElementById("pwaWelcomeLater")?.click();
+ const cases=[],check=(id,name,pass,extra={})=>cases.push({id:"W"+width+"-"+id,name,pass:!!pass,...extra});
+ closeModal();
+ const pages=[
+  ["schools",()=>goSchools()],["school",()=>goSchool("school_a")],["class",()=>goClass("class_a")],
+  ["lesson",()=>goLesson("lesson_dual")],["master",()=>goMaster("class_a")],["reports",()=>{goReports();setReportTab("monthly");}]
+ ];
+ for(const [name,open]of pages){
+  open();await new Promise(r=>setTimeout(r,80));
+  check(name,"viewport contains "+name,document.documentElement.scrollWidth<=innerWidth+1,{viewport:innerWidth,content:document.documentElement.scrollWidth});
+  if(name==="schools")check("quiet-home","home has schools without duplicate dashboard panels",!!document.querySelector(".workflow-welcome")&&!document.querySelector(".dashboard-report-links,.dashboard-work,.ui-hero"));
+  if(name==="class")check("roster-first","class opens on student roster",state.tab==="students");
+  if(name==="lesson")check("session-first","lesson opens on sessions",state.tab==="sessions");
+  check(name+"-tools","maintenance disclosure is collapsed",!document.querySelector(".workspace-tools")?.open&&!document.querySelector(".workspace-bar > button"));
+  if(name==="lesson"){
+    openSessionModal(db.sessions[0]);await new Promise(r=>setTimeout(r,50));
+    check("attendance-default","session opens with attendance only",!!document.querySelector("[data-session-panel=activity]")?.hidden&&!document.querySelector("[data-session-panel=attendance]")?.hidden);
+    document.querySelector("[data-session-tab=activity]").click();
+    check("activity-tab","native activity tab switches panels",document.querySelector("[data-session-panel=attendance]").hidden&&!document.querySelector("[data-session-panel=activity]").hidden);
+    check("session-width","session fits viewport",document.documentElement.scrollWidth<=innerWidth+1);
+    closeModal();
+  }
+ }
+ return cases;
+}
+async function monthlyChecks(){
+ const cases=[],check=(id,name,pass)=>cases.push({id,name,pass:!!pass});
+ for(const [id,date,start,end,days]of [
+  ["M01","2024-03-20","2024-03-20","2024-04-19",31],
+  ["M02","2025-03-19","2025-02-19","2025-03-20",30],
+  ["M03","2025-03-21","2025-03-21","2025-04-20",31],
+  ["M04","2026-10-25","2026-10-23","2026-11-21",30]
+ ]){
+  const range=EduPeriodicReports.range("monthly",date);
+  const m=EduPeriodicReports.build(db,{mode:"monthly",date,schoolId:"school_a",classId:"class_a",audience:"management",detailLevel:"summary"});
+  check(id,"Persian month boundary and complete daily rows "+date,range.start===start&&range.end===end&&m.days.length===days&&m.days.at(-1).date===end);
+ }
+ EduPeriodicReports.render("monthly");EduPeriodicReports.selectScope("school_a","class_a");EduPeriodicReports.set("date","2026-10-25");
+ const m=await EduPeriodicReports.generate();
+ check("M05","monthly report generates and displays correct heading",!!m&&EduPeriodicReports.documentHtml(m).includes("گزارش ماهانه")&&EduPeriodicReports.textReport(m).includes("ماهانه"));
+ return cases;
+}
+
+
+async function annualChecks(){
+ const cases=[],record=(id,name,pass,extra={})=>cases.push({id,name,pass:!!pass,...extra});
+ const previous=EduV24.getReportContext().id;
+ try{
+  if(!["اول","دوم"].includes(EduV24.test.getState().workspace.term)){
+    let denied=false;try{await EduV24.prepareReportSnapshot({annual:true});}catch(error){denied=error.message.includes("بازیابی");}
+    record("Y12","restored alias cannot silently report another canonical period",denied);
+  }
+  closeModal();await EduV24.openNewPeriod();document.getElementById("periodYear").value="1407-1408";document.getElementById("periodTerm").value="اول";await EduV24.createNewPeriod();
+  const first=EduV24.getReportContext().id;
+  db.sessions=[{id:"annual_session",schoolId:"school_a",classId:"class_a",lessonId:"lesson_dual",date:"2028-10-25",period:0,poudmanId:null,unitId:null,roster:structuredClone(db.schools[0].classes[0].students),attendance:{student_a:"present"},scores:[{studentId:"student_a",type:"positive",value:1,note:"first term"}]}];
+  db.schools[0].classes[0].lessons[0].kardaneshScores.student_a={midtermPractical:10,midtermTheory:20,practical:20,theory:0};
+  await saveDB();
+  let missing=false;try{await EduV24.prepareReportSnapshot({annual:true});}catch(error){missing=error.message.includes("هر دو");}
+  record("Y01","annual report refuses a missing second term",missing);
+  await EduV24.openNewPeriod();document.getElementById("periodYear").value="1407-1408";document.getElementById("periodTerm").value="دوم";await EduV24.createNewPeriod();
+  db.sessions=[{id:"annual_session",schoolId:"school_a",classId:"class_a",lessonId:"lesson_dual",date:"2029-03-25",period:0,poudmanId:null,unitId:null,roster:structuredClone(db.schools[0].classes[0].students),attendance:{student_a:"absent"},scores:[{studentId:"student_a",type:"negative",value:1,note:"second term"}]}];
+  db.schools[0].classes[0].lessons[0].kardaneshScores.student_a={midtermPractical:18,midtermTheory:12,practical:20,theory:20};
+  await saveDB();
+  const snapshot=await EduV24.prepareReportSnapshot({annual:true});
+  record("Y02","annual snapshot includes both terms and distinct session identities",snapshot.parts.length===2&&snapshot.data.sessions.length===2&&new Set(snapshot.data.sessions.map(x=>x.id)).size===2);
+  EduPeriodicReports.render("annual");EduPeriodicReports.selectScope("school_a","class_a");
+  const model=await EduPeriodicReports.generate();
+  record("Y03","annual report combines both terms within academic year",model?.summary.sessions===2&&model.periods.length===2&&model.summary.present===1&&model.summary.absent===1);
+  record("Y11","annual summary skips empty calendar rows while JSON retains all days",!EduPeriodicReports.documentHtml(model).includes(faDate("2028-09-23"))&&model.days.some(day=>day.date==="2028-09-23"));
+  record("Y04","annual report enumerates complete academic year",model?.start==="2028-09-22"&&model.end==="2029-09-21"&&model.days.length===365,{start:model?.start,end:model?.end,days:model?.days.length});
+  EduPeriodicReports.set("audience","parent");EduPeriodicReports.set("studentId","student_a");const parent=await EduPeriodicReports.generate();
+  record("Y10","annual report preserves technical module grades per term and selected student",parent?.technicalGrades.length===2&&parent.technicalGrades.every(row=>row.studentId==="student_a"&&row.modules.length===1)&&EduPeriodicReports.textReport(parent).includes("پودمان"));
+  record("Y09","annual report displays and exports four assessments and equal average",parent?.annualGrades.length===1&&parent.annualGrades[0].final===15.8&&EduPeriodicReports.textReport(parent).includes("15.80")&&EduPeriodicReports.documentHtml(parent).includes("15.80"));
+  record("Y05","annual parent report isolates selected student",parent?.students.length===1&&parent.students[0].studentId==="student_a"&&parent.sessions.every(s=>s.participants.every(st=>st.studentId==="student_a")));
+  const connection=EduV24.test.getConnection();
+  const read=id=>new Promise((resolve,reject)=>{const q=connection.transaction("catalog").objectStore("catalog").get(id);q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);});
+  const write=value=>new Promise((resolve,reject)=>{const tx=connection.transaction("catalog","readwrite");tx.objectStore("catalog").put(value);tx.oncomplete=resolve;tx.onabort=()=>reject(tx.error);});
+  const original=await read(first);await write({...original,revision:original.revision+1});
+  let conflict=false;try{await EduV24.assertReportSnapshot(snapshot.context);}catch{conflict=true;}
+  record("Y06","annual output guard detects change in other term",conflict);
+  await write(original);
+  const second=EduV24.getReportContext().id;
+  await EduV24.switchPeriod(first);await openSettingsModal();document.getElementById("newPass").value="annual-access";await saveSettings();await EduV24.switchPeriod(second);
+  const oldPrompt=window.prompt;window.prompt=()=>null;let denied=false;
+  try{await EduV24.prepareReportSnapshot({annual:true});}catch{denied=true;}
+  record("Y07","protected other term cannot be read without its password",denied);
+  window.prompt=()=>"annual-access";const authorized=await EduV24.prepareReportSnapshot({annual:true});window.prompt=oldPrompt;
+  record("Y08","correct other-term password permits annual snapshot",authorized.parts.length===2);
+ }catch(error){record("Y99","annual flow completed",false,{error:error.stack||error.message});}
+ finally{closeModal();await EduV24.switchPeriod(previous);}
+ return cases;
+}
+
+
+async function assessmentChecks(){
+ const cases=[],check=(id,name,pass,extra={})=>cases.push({id,name,pass:!!pass,...extra});
+ const fixture=structuredClone(window.auditFixture);
+ const lesson=fixture.schools[0].classes[0].lessons[0];
+ lesson.kardaneshScores.student_a={practical:20,theory:0,midtermPractical:10,midtermTheory:20};
+ let normalized=EduV24.normalizeDB(fixture);
+ check("G01","normalization preserves independent midterm and final components",normalized.schools[0].classes[0].lessons[0].kardaneshScores.student_a.midtermPractical===10&&normalized.schools[0].classes[0].lessons[0].kardaneshScores.student_a.practical===20);
+ for(const [id,value]of [["G02",-1],["G03",21],["G04","18"],["G05",{}]]){
+  const corrupt=structuredClone(fixture);corrupt.schools[0].classes[0].lessons[0].kardaneshScores.student_a.midtermTheory=value;
+  let rejected=false;try{EduV24.normalizeDB(corrupt);}catch{rejected=true;}
+  check(id,"invalid midterm component rejected "+JSON.stringify(value),rejected);
+ }
+ const a=EduV24.assessmentResult(lesson,"student_a","midterm"),b=EduV24.assessmentResult(lesson,"student_a","final");
+ check("G06","each assessment uses 70/30 independently",a.final===13&&b.final===14&&b.passed===true);
+ const second=structuredClone(fixture);second.schools[0].classes[0].lessons[0].kardaneshScores.student_a={practical:20,theory:20,midtermPractical:18,midtermTheory:12};
+ const parts=[{period:{term:"اول"},data:fixture},{period:{term:"دوم"},data:second}];
+ const rows=EduV24.annualGradeRows(parts,"school_a","class_a","student_a"),grade=rows[0];
+ check("G07","annual grade is equal mean of all four assessments",rows.length===1&&grade.components.length===4&&grade.final===15.8&&grade.complete,{final:grade.final});
+ delete second.schools[0].classes[0].lessons[0].kardaneshScores.student_a.midtermTheory;
+ const incomplete=EduV24.annualGradeRows(parts,"school_a","class_a","student_a")[0];
+ check("G08","missing component prevents annual average and is not counted as zero",!incomplete.complete&&incomplete.final===null&&incomplete.passed===null);
+ check("G09","annual grade request cannot include another student",EduV24.annualGradeRows(parts,"school_a","class_a","student_a").every(row=>row.studentId==="student_a"));
+ const legacy=EduV24.assessmentResult({kardaneshScores:{student_a:{practical:18,theory:12}}},"student_a","midterm");
+ check("G10","legacy final scores never become fabricated midterm scores",legacy.final===null&&legacy.practical===null);
+ const custom={...EduPolicy.defaults("dual","1405-1406"),practicalWeight:90,passMin:10,theoryMin:19};
+ check("G11","dual calculation follows confirmed 70/30 business rule",EduPolicy.dual(custom,20,0).final===14&&EduPolicy.dual(custom,20,0).passed);
+ return cases;
+}
+
 async function main() {
   if (process.argv.includes("--help")) {
     console.log("node audit/data-integrity.cjs\nDeveloper audit: temporary loopback server + isolated Edge profile; no application source changes.\nRequires Node.js 22+ and Edge. Override browser executable with EDUMANAGER_EDGE.\nExit 1 means a required integrity check failed; exit 2 means the audit runner could not complete.");
@@ -493,11 +644,12 @@ async function main() {
     }
     if (!ready) throw Error("Application did not become ready in the isolated profile.");
     const data = await evaluate("(" + matrix.toString() + ")()");
+    const grades = await evaluate("(" + assessmentChecks.toString() + ")()");
     const backup = await evaluate("(" + backupMatrix.toString() + ")()");
     const integration = await evaluate("(" + orphanRestore.toString() + ")()");
     const frozenReport = await evaluate("(" + malformedFrozenReport.toString() + ")()");
     const flows = await evaluate("(" + refactorFlows.toString() + ")()");
-    const cases = [...data, ...backup, integration, frozenReport, ...flows];
+    const cases = [...data, ...grades, ...backup, integration, frozenReport, ...flows];
     for (let i = 0; i < 100; i++) {
       if (await evaluate("!!(window.EduPWA?.getStatus().offlineReady && navigator.serviceWorker.controller)")) break;
       await delay(100);
@@ -512,11 +664,26 @@ async function main() {
     const reload = await evaluate("({ready:!!window.EduV24?.test?.getState().ready,offline:!navigator.onLine,closed:window.EduV24?.getReportContext().closed,grade:db.schools[0]?.classes[0]?.lessons[0]?.kardaneshScores.student_b?.theory})");
     cases.push({id: "F12", name: "restored data and closed period survive an offline reload", pass: reload.ready && reload.offline && reload.closed && reload.grade === 12, ...reload});
     await cdp("Network.emulateNetworkConditions", {offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
+    cases.push(...await evaluate("(" + monthlyChecks.toString() + ")()"));
+    for (const width of [360,390,768,1280]) {
+      await cdp("Emulation.setDeviceMetricsOverride",{width,height:850,deviceScaleFactor:1,mobile:false});
+      cases.push(...await evaluate("(" + workflowChecks.toString() + ")("+width+")"));
+      if(width===390){
+        await evaluate("openSessionModal(db.sessions[0]);showSessionPanel(\"activity\")");
+        await delay(100);
+        const shot=await cdp("Page.captureScreenshot",{format:"png"});
+        fs.writeFileSync(path.join(profile,"mobile-session.png"),Buffer.from(shot.data,"base64"));
+        await evaluate("closeModal();goSchool(\"school_a\");goClass(\"class_a\");goLesson(\"lesson_dual\");setTab(\"grades\")");
+        await delay(100);const gradesShot=await cdp("Page.captureScreenshot",{format:"png"});
+        fs.writeFileSync(path.join(profile,"mobile-grades.png"),Buffer.from(gradesShot.data,"base64"));
+      }
+    }
+    cases.push(...await evaluate("(" + annualChecks.toString() + ")()"));
     cases.push(...await evaluate("(" + contextFlows.toString() + ")()"));
     const hash = crypto.createHash("sha256").update(fs.readFileSync(application))
       .update(fs.readFileSync(path.join(root, "app.webmanifest"))).digest("hex").slice(0, 16);
     const result = {
-      stage: "2-data-integrity-and-operation-context", applicationRelease: hash, executedAt: new Date().toISOString(),
+      stage: "3-simple-workflow-mobile-and-four-assessments", applicationRelease: hash, executedAt: new Date().toISOString(),
       profile, total: cases.length, passed: cases.filter(test => test.pass).length,
       failed: cases.filter(test => !test.pass).length, cases
     };
