@@ -7,6 +7,7 @@ module.exports = async function singleFile() {
   });
   const originalPicker = window.showSaveFilePicker;
   let frame;
+  let failedHandle;
   const waitFor = async (check) => {
     for (let i = 0; i < 150; i++) {
       if (await check()) return;
@@ -73,7 +74,6 @@ module.exports = async function singleFile() {
       pass: true,
       observed: {},
     });
-    const previous = await (await handle.getFile()).text();
     frame = document.createElement("iframe");
     frame.src = location.href;
     document.body.append(frame);
@@ -81,8 +81,9 @@ module.exports = async function singleFile() {
     await waitFor(() =>
       frame.contentWindow.document
         .getElementById("singleFileBadge")
-        ?.textContent.includes(handle.name),
+        ?.textContent.startsWith("ذخیره شد:"),
     );
+    const previous = await (await handle.getFile()).text();
     click("single-file-stop");
     await waitFor(() =>
       document
@@ -116,11 +117,82 @@ module.exports = async function singleFile() {
       pass: !persisted && (await (await handle.getFile()).text()) === previous,
       observed: {},
     });
+    frame.remove();
+    frame = null;
+    failedHandle = await directory.getFileHandle("single-file-denied.json", {
+      create: true,
+    });
+    const prototype = Object.getPrototypeOf(failedHandle);
+    const originalCreate = prototype.createWritable;
+    const originalDownload = downloadLocalFile;
+    let manualDownloads = 0;
+    try {
+      prototype.createWritable = async function (...args) {
+        if (this.name === failedHandle.name)
+          throw new DOMException("platform denied write", "NotAllowedError");
+        return originalCreate.apply(this, args);
+      };
+      downloadLocalFile = () => {
+        manualDownloads++;
+      };
+      window.showSaveFilePicker = async () => failedHandle;
+      click("single-file-choose");
+      await waitFor(() =>
+        document
+          .getElementById("singleFileStatus")
+          ?.textContent.includes("اجازه نوشتن"),
+      );
+      const fallback = document.getElementById("singleFileFallback");
+      cases.push({
+        id: "SF06",
+        name: "platform-denied first write shows manual fallback and never reports an empty file as saved",
+        pass:
+          !fallback.hidden &&
+          (await failedHandle.getFile()).size === 0 &&
+          manualDownloads === 0,
+        observed: {},
+      });
+      fallback.querySelector('[data-workspace-action="export-full"]').click();
+      await waitFor(() => manualDownloads === 1);
+      cases.push({
+        id: "SF07",
+        name: "manual fallback remains usable and is only downloaded on explicit click",
+        pass:
+          manualDownloads === 1 &&
+          !document.getElementById("singleFileFallback").hidden,
+        observed: {},
+      });
+    } finally {
+      prototype.createWritable = originalCreate;
+      downloadLocalFile = originalDownload;
+    }
+    click("single-file-save");
+    await waitFor(() =>
+      document
+        .getElementById("singleFileStatus")
+        ?.textContent.startsWith("ذخیره شد:"),
+    );
+    cases.push({
+      id: "SF08",
+      name: "successful retry confirms the real file and dismisses the failure fallback",
+      pass:
+        document.getElementById("singleFileFallback").hidden &&
+        (await failedHandle.getFile()).size > 0,
+      observed: {},
+    });
+    click("single-file-stop");
+    await waitFor(() =>
+      document
+        .getElementById("singleFileStatus")
+        ?.textContent.includes("اتصال متوقف شد"),
+    );
   } finally {
     frame?.remove();
     window.showSaveFilePicker = originalPicker;
     closeModal();
     await directory.removeEntry("single-file-regression.json").catch(() => {});
+    if (failedHandle)
+      await directory.removeEntry("single-file-denied.json").catch(() => {});
   }
   return cases;
 };

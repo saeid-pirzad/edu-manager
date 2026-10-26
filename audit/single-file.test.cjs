@@ -134,6 +134,87 @@ test("single-file backup replaces the same JSON with additions, edits and deleti
   assert.equal(f.writes, 3);
 });
 
+test("API presence and granted permissions do not activate a rejected first write", async () => {
+  const f = fixture();
+  f.handle.createWritable = async () => {
+    throw Object.assign(Error("platform blocked"), { name: "NotAllowedError" });
+  };
+  assert.equal(await f.context.chooseSingleFile(), false);
+  assert.equal(f.contents, "");
+  assert.equal(f.getStored().savedAt, "");
+  assert.equal(vm.runInContext("singleFileTimer", f.context), null);
+  assert.equal(vm.runInContext("singleFileFailure", f.context), true);
+  assert.match(vm.runInContext("singleFileMessage", f.context), /اجازه نوشتن/);
+  assert.match(f.context.singleFilePanel(), /دریافت دستی پشتیبان کامل/);
+  assert.doesNotMatch(
+    f.context.singleFilePanel(),
+    /id="singleFileFallback" hidden/,
+  );
+});
+
+test("timer starts only after first close and nonempty-file confirmation", async () => {
+  const f = fixture();
+  const original = f.handle.createWritable;
+  f.handle.createWritable = async () => {
+    assert.equal(vm.runInContext("singleFileTimer", f.context), null);
+    const stream = await original();
+    const close = stream.close;
+    stream.close = async () => {
+      assert.equal(vm.runInContext("singleFileTimer", f.context), null);
+      await close();
+    };
+    return stream;
+  };
+  assert.equal(await f.context.chooseSingleFile(), true);
+  assert.notEqual(vm.runInContext("singleFileTimer", f.context), null);
+  assert.ok(f.getStored().savedAt);
+});
+
+test("failed or empty first close never confirms activation", async () => {
+  for (const close of [
+    async () => {
+      throw Error("close failed");
+    },
+    async () => {},
+  ]) {
+    const f = fixture();
+    f.handle.createWritable = async () => ({
+      write: async () => {},
+      close,
+      abort: async () => {},
+    });
+    assert.equal(await f.context.chooseSingleFile(), false);
+    assert.equal(f.getStored().savedAt, "");
+    assert.equal(vm.runInContext("singleFileTimer", f.context), null);
+  }
+});
+
+test("pending initial activation stays paused after reload and can recover with save now", async () => {
+  const f = fixture();
+  const original = f.handle.createWritable;
+  f.handle.createWritable = async () => {
+    throw Error("not writable");
+  };
+  await f.context.chooseSingleFile();
+  await f.context.restoreSingleFile();
+  assert.equal(vm.runInContext("singleFileTimer", f.context), null);
+  assert.match(vm.runInContext("singleFileMessage", f.context), /تأیید نشده/);
+  f.handle.createWritable = original;
+  assert.equal(await f.context.resumeSingleFile(), true);
+  assert.notEqual(vm.runInContext("singleFileTimer", f.context), null);
+  assert.equal(vm.runInContext("singleFileFailure", f.context), false);
+});
+
+test("missing picker offers a manual backup without pretending automatic support", () => {
+  const f = fixture();
+  delete f.context.window.showSaveFilePicker;
+  assert.match(f.context.singleFilePanel(), /در دسترس نیست/);
+  assert.match(
+    f.context.singleFilePanel(),
+    /data-workspace-action="export-full"/,
+  );
+});
+
 test("save now takes a fresh snapshot after an older in-flight write", async () => {
   const f = fixture();
   await f.context.chooseSingleFile();

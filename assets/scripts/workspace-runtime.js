@@ -2164,6 +2164,7 @@ let singleFile = null,
   singleFileTimer = null,
   singleFileDebounce = null,
   singleFileWriting = null,
+  singleFileFailure = false,
   singleFileMessage = "ذخیره خودکار در فایل هنوز فعال نیست.";
 
 function singleFileStatus(message) {
@@ -2175,12 +2176,29 @@ function singleFileStatus(message) {
 }
 function singleFilePanel() {
   if (!window.showSaveFilePicker)
-    return "<p>ذخیره خودکار در فایل در این مرورگر پشتیبانی نمی‌شود؛ از Chrome یا Edge دسکتاپ استفاده کنید. دریافت دستی پشتیبان همچنان ممکن است.</p>";
+    return (
+      "<p>ذخیره خودکار در فایل در این محیط در دسترس نیست. برای فایل خودکار از مرورگر سازگار مانند Chrome استفاده کنید؛ پشتیبان دستی همچنان در دسترس است.</p>" +
+      singleFileFallbackPanel(true)
+    );
   return (
     '<section><h3>یک فایل JSON ثابت</h3><p>همه دوره‌ها و داده‌ها در همان فایل به‌روز می‌شوند؛ فایل جدید ساخته نمی‌شود. هنگام باز بودن برنامه، تغییرات ثبت‌شده پس از حدود ۲ ثانیه و سایر تغییرات حداکثر هر ۳۰ ثانیه بررسی می‌شوند. پیش از بستن برنامه «ذخیره اکنون» را بزنید و تأیید را ببینید.</p><p id="singleFileStatus" role="status">' +
     esc(singleFileMessage) +
-    '</p><div class="row"><button data-workspace-action="single-file-choose">انتخاب فایل و فعال‌سازی</button><button class="ghost" data-workspace-action="single-file-save">ذخیره اکنون / اجازه مجدد</button><button class="ghost" data-workspace-action="single-file-stop">توقف اتصال فایل</button></div><p>فایل را می‌توانید کنار پروژه یا در پوشه دلخواه خود انتخاب کنید. بازیابی با گزینه «بازیابی از فایل» است؛ ویرایش دستی فایل خودکار وارد برنامه نمی‌شود.</p></section>'
+    "</p>" +
+    singleFileFallbackPanel(singleFileFailure) +
+    '<div class="row"><button data-workspace-action="single-file-choose">انتخاب فایل و فعال‌سازی</button><button class="ghost" data-workspace-action="single-file-save">ذخیره اکنون / اجازه مجدد</button><button class="ghost" data-workspace-action="single-file-stop">توقف اتصال فایل</button></div><p>فایل را می‌توانید کنار پروژه یا در پوشه دلخواه خود انتخاب کنید. ساخت فایل یا بازشدن پنجره انتخاب، تأیید ذخیره نیست؛ فعال‌سازی فقط بعد از اولین نوشتن موفق انجام می‌شود. بازیابی با گزینه «بازیابی از فایل» است؛ ویرایش دستی فایل خودکار وارد برنامه نمی‌شود.</p></section>'
   );
+}
+function singleFileFallbackPanel(visible) {
+  return (
+    '<div id="singleFileFallback"' +
+    (visible ? "" : " hidden") +
+    '><p>ذخیره خودکار فایل فعال نیست. فایل خالی پشتیبان قابل بازیابی نیست. می‌توانید مجوز یا محل فایل را عوض کنید، از مرورگر دیگری مانند Chrome استفاده کنید، یا پشتیبان کامل را دستی دریافت کنید. دریافت دستی، ذخیره خودکار را فعال نمی‌کند.</p><button class="ghost" data-workspace-action="export-full">دریافت دستی پشتیبان کامل</button></div>'
+  );
+}
+function showSingleFileFallback(visible) {
+  singleFileFailure = visible;
+  const element = document.getElementById("singleFileFallback");
+  if (element) element.hidden = !visible;
 }
 async function persistSingleFile({
   replace = false,
@@ -2250,8 +2268,13 @@ async function singleFileCurrent(target) {
 }
 function failSingleFile(error) {
   pauseSingleFile();
+  showSingleFileFallback(true);
+  const denied =
+    error?.name === "NotAllowedError" || error?.name === "SecurityError";
   const message =
-    "فایل خودکار به‌روز نشد: " + (error?.message || String(error));
+    (denied
+      ? "ذخیره خودکار متوقف است؛ مرورگر یا سیستم اجازه نوشتن فایل را نداد. از اجازه مجدد، انتخاب محل دیگر یا پشتیبان دستی استفاده کنید. جزئیات: "
+      : "فایل خودکار به‌روز نشد: ") + (error?.message || String(error));
   singleFileStatus(message);
   setStatus(message, "error");
   return false;
@@ -2275,22 +2298,25 @@ async function restoreSingleFile() {
   try {
     singleFile = (await readRecord("drafts", singleFileKey)) || null;
     if (!singleFile) return;
+    if (!singleFile.savedAt) {
+      pauseSingleFile();
+      showSingleFileFallback(true);
+      singleFileStatus(
+        "اولین ذخیره فایل تأیید نشده؛ ذخیره خودکار فعال نیست. «ذخیره اکنون / اجازه مجدد» را بزنید یا پشتیبان دستی بگیرید.",
+      );
+      return;
+    }
     if (
       (await singleFile.handle.queryPermission({ mode: "readwrite" })) ===
       "granted"
     ) {
-      startSingleFile();
-      singleFileStatus("اتصال فایل فعال: " + singleFile.handle.name);
-      scheduleSingleFile();
+      if (await syncSingleFile()) startSingleFile();
     } else
       singleFileStatus(
         "مجوز فایل نیاز به تأیید دارد؛ «ذخیره اکنون / اجازه مجدد» را بزنید.",
       );
   } catch (error) {
-    pauseSingleFile();
-    singleFileStatus(
-      "اتصال فایل بازیابی نشد؛ دوباره فایل را انتخاب کنید. " + error.message,
-    );
+    failSingleFile(error);
   }
 }
 async function chooseSingleFile() {
@@ -2311,7 +2337,7 @@ async function chooseSingleFile() {
     });
   } catch (error) {
     if (error.name === "AbortError") return;
-    throw error;
+    return failSingleFile(error);
   }
   if (!/\.json$/i.test(handle.name)) throw Error("فقط فایل JSON انتخاب کنید.");
   const file = await handle.getFile();
@@ -2338,12 +2364,11 @@ async function chooseSingleFile() {
       type: "single-file-changed",
       connectionId: singleFile.connectionId,
     });
-    startSingleFile();
-    await syncSingleFile();
+    const saved = await syncSingleFile();
+    if (saved) startSingleFile();
+    return saved;
   } catch (error) {
-    pauseSingleFile();
-    singleFileStatus("اتصال فایل ذخیره نشد: " + error.message);
-    throw error;
+    return failSingleFile(error);
   }
 }
 async function resumeSingleFile() {
@@ -2356,6 +2381,7 @@ async function resumeSingleFile() {
       "granted"
     ) {
       pauseSingleFile();
+      showSingleFileFallback(true);
       singleFileStatus("اجازه نوشتن داده نشد؛ فایل به‌روز نشده است.");
       return false;
     }
@@ -2363,8 +2389,10 @@ async function resumeSingleFile() {
     // An explicit save queues a fresh snapshot after any older write finishes.
     if (singleFileWriting && !(await singleFileWriting)) return false;
     if (!(await singleFileCurrent(target))) return false;
-    startSingleFile();
-    return await syncSingleFile();
+    pauseSingleFile();
+    const saved = await syncSingleFile();
+    if (saved) startSingleFile();
+    return saved;
   } catch (error) {
     return failSingleFile(error);
   }
@@ -2418,10 +2446,15 @@ function syncSingleFile() {
       await stream.close();
       stream = null;
       const saved = await target.handle.getFile();
+      if (!saved.size)
+        throw Error(
+          "فایل پس از نوشتن خالی است؛ ذخیره تأیید نشد. پشتیبان دستی بگیرید.",
+        );
       target.modified = saved.lastModified;
       target.size = saved.size;
       target.savedAt = snapshot.exportedAt;
       if (!(await persistSingleFile({ target }))) return false;
+      showSingleFileFallback(false);
       singleFileStatus(
         "ذخیره شد: " +
           target.handle.name +
