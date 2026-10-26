@@ -152,6 +152,179 @@
   .entity-quick-create .entity-create-error {
     flex-basis: 100%;
   }
+  /* One neutral disclosure and one real submit per creation workflow. */
+  #app > .workflow-welcome {
+    order: 2;
+  }
+  #app > .create-panel {
+    order: 4;
+  }
+  #app .create-panel {
+    padding: 0;
+    border: 1px solid var(--workflow-line);
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: none;
+  }
+  #app .create-panel[open] {
+    border-color: #dcc4aa;
+    box-shadow: 0 4px 18px #58595b07;
+  }
+  #app .create-panel > summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 76px;
+    padding: 14px 16px;
+    margin: 0;
+    border: 0;
+    border-radius: 16px;
+    background: transparent;
+    color: var(--workflow-ink);
+    list-style: none;
+    cursor: pointer;
+  }
+  #app .create-panel > summary::before,
+  #app .create-panel > summary::after,
+  #app .create-panel > summary::-webkit-details-marker {
+    display: none;
+    content: none;
+  }
+  .create-panel-symbol {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    border-radius: 12px;
+    color: #7c5105;
+    background: #fff6df;
+  }
+  .create-panel-title {
+    display: grid;
+    flex: 1;
+    min-width: 0;
+    gap: 4px;
+    text-align: start;
+  }
+  #app .create-panel-title strong {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--workflow-ink);
+  }
+  #app .create-panel-title small {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--workflow-muted);
+    line-height: 1.8;
+    margin: 0;
+  }
+  .create-panel-toggle {
+    width: 10px;
+    height: 10px;
+    flex: 0 0 10px;
+    margin-inline: 8px 4px;
+    border-right: 2px solid #636466;
+    border-bottom: 2px solid #636466;
+    transform: rotate(45deg);
+  }
+  .create-panel[open] .create-panel-toggle {
+    transform: rotate(225deg);
+  }
+  #app .create-panel > form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    padding: 18px 16px 16px;
+    margin: 0;
+    border-top: 1px solid var(--workflow-line);
+    align-items: start;
+  }
+  #app .create-panel form label {
+    display: grid;
+    gap: 7px;
+    font-size: 14px;
+    color: #454649;
+    min-width: 0;
+  }
+  #app .create-panel form :is(input, select) {
+    width: 100%;
+    min-height: 48px;
+    background: #faf9f7;
+    border-radius: 10px;
+  }
+  #app .create-panel-footer,
+  #app .create-panel .entity-create-error {
+    grid-column: 1 / -1;
+  }
+  .create-panel .entity-create-error:empty {
+    display: none;
+  }
+  .create-panel-footer {
+    padding-top: 2px;
+  }
+  #app .create-panel-footer > button {
+    width: 100%;
+    min-height: 48px;
+    font-size: 14px;
+    border-radius: 10px;
+  }
+  #app .create-panel > .lesson-form-note {
+    margin: 0;
+    padding: 0 16px 16px;
+  }
+  #app .dashboard-entity,
+  #app .lesson-item,
+  #app .student-profile {
+    border: 1px solid var(--workflow-line);
+    border-inline-start: 1px solid var(--workflow-line);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 3px 12px #58595b05;
+  }
+  #app .dashboard-entity-symbol,
+  #app .lesson-symbol,
+  #app .student-avatar {
+    background: #f5f1eb;
+    color: #66503c;
+    border-radius: 12px;
+  }
+  #app .dashboard-entity-actions > button:first-child,
+  #app button.lesson-enter,
+  #app button.student-report {
+    background: var(--brand-charcoal);
+    color: #fff;
+    box-shadow: none;
+  }
+  #app .dashboard-entity-info,
+  #app .lesson-identity,
+  #app .student-profile-main {
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eeece9;
+  }
+  #app .dashboard-entity-info h4,
+  #app .lesson-identity h4,
+  #app .student-profile-info h4 {
+    font-size: 16px;
+    line-height: 1.8;
+    margin-block: 0 4px;
+    overflow-wrap: anywhere;
+  }
+  #app .dashboard-entity-actions {
+    margin-top: 12px;
+  }
+  @media (min-width: 701px) {
+    #app .create-panel > form {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    #app .entity-quick-create .entity-create-field {
+      grid-column: 1 / -1;
+    }
+    #app .create-panel-footer > button {
+      width: auto;
+      min-width: 160px;
+    }
+  }
   .backup-hub {
     display: grid;
     gap: 18px;

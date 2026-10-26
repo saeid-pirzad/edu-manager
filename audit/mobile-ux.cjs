@@ -16,6 +16,22 @@ async function inspectMobileUx() {
       observed,
     });
   const fits = () => document.documentElement.scrollWidth <= innerWidth + 1;
+  const checkCreate = async (kind) => {
+    const panel = document.querySelector(".create-panel");
+    panel.open = false;
+    panel.querySelector("summary").click();
+    await pause();
+    add(
+      kind +
+        " creation has one submit, a neutral heading and no injected duplicate add action",
+      panel.open &&
+        panel.querySelectorAll('[type="submit"]').length === 1 &&
+        !/ثبت|افزودن/.test(panel.querySelector("summary").textContent) &&
+        !document.querySelector(".mobile-add-action"),
+    );
+    add(kind + " expanded creation fits the viewport", fits());
+    panel.open = false;
+  };
   closeModal();
   goSchools();
   await pause();
@@ -56,12 +72,21 @@ async function inspectMobileUx() {
     ].every((control) => control.getBoundingClientRect().height >= 44),
   );
   document.querySelector(".entity-quick-create").open = false;
+  await checkCreate("school");
   const school = db.schools[0],
     classroom = school.classes[0];
   goSchool(school.id);
+  await pause();
+  await checkCreate("class");
   goClass(classroom.id);
   await pause();
   add("class view fits the viewport", fits());
+  await checkCreate("student");
+  setTab("lessons");
+  await pause();
+  await checkCreate("lesson");
+  setTab("students");
+  await pause();
   add(
     "active section is announced without relying on color alone",
     document
@@ -151,6 +176,22 @@ module.exports = async function mobileUx({ cdp, evaluate, cases, delay }) {
       ["home", "goSchools()"],
       ["settings", "openSettingsModal()"],
       ["backups", "EduV24.openBackups()"],
+      [
+        "new-school",
+        "goSchools();document.querySelector('.create-panel').open=true;document.querySelector('.create-panel').scrollIntoView({block:'center'})",
+      ],
+      [
+        "new-class",
+        "goSchool(db.schools[0].id);document.querySelector('.create-panel').open=true;document.querySelector('.create-panel').scrollIntoView({block:'center'})",
+      ],
+      [
+        "new-student",
+        "goSchool(db.schools[0].id);goClass(db.schools[0].classes[0].id);document.querySelector('.create-panel').open=true;document.querySelector('.create-panel').scrollIntoView({block:'center'})",
+      ],
+      [
+        "new-lesson",
+        "setTab('lessons');document.querySelector('.create-panel').open=true;document.querySelector('.create-panel').scrollIntoView({block:'center'})",
+      ],
     ]) {
       await evaluate("closeModal()");
       await evaluate(action);

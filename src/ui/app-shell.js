@@ -374,35 +374,6 @@
       const summary = nav.querySelector(":scope > summary");
       summary?.setAttribute("aria-label", "ابزارها و تنظیمات برنامه");
     }
-    const pairs = [
-      [".student-directory", ".student-add", "افزودن هنرجو"],
-      [".class-lessons", ".lesson-create", "افزودن درس"],
-    ];
-    for (const [sectionSelector, formSelector, label] of pairs) {
-      const section = app.querySelector(sectionSelector),
-        form = app.querySelector(formSelector);
-      if (!section || !form || section.querySelector(".mobile-add-action"))
-        continue;
-      const heading = section.querySelector("header");
-      if (heading) {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "mobile-add-action";
-        button.textContent = "+ افزودن";
-        button.setAttribute("aria-label", label);
-        button.onclick = () => {
-          form.open = true;
-          form.scrollIntoView({
-            block: "start",
-            behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
-              ? "auto"
-              : "smooth",
-          });
-          form.querySelector("input")?.focus({ preventScroll: true });
-        };
-        heading.append(button);
-      }
-    }
     const gradeArea = app.querySelector("#lessonGradesArea");
     if (gradeArea) {
       for (const card of gradeArea.querySelectorAll(".card")) {

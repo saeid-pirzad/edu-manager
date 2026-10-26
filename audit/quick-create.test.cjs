@@ -6,6 +6,10 @@ const fs = require("node:fs"),
   vm = require("node:vm");
 const context = vm.createContext({});
 vm.runInContext(
+  fs.readFileSync(path.join(__dirname, "../src/core/icons.js"), "utf8"),
+  context,
+);
+vm.runInContext(
   fs.readFileSync(
     path.join(__dirname, "../src/legacy/ui/school-class.js"),
     "utf8",
@@ -44,5 +48,27 @@ test("progressive create forms preserve explicit action tokens, stable fields an
     );
     assert.match(html, /type="submit" data-mutating="1"/);
     assert.match(html, /role="alert"/);
+    assert.equal((html.match(/type="submit"/g) || []).length, 1);
+    assert.doesNotMatch(
+      html.match(/<summary>[\s\S]*?<\/summary>/)[0],
+      /ثبت|افزودن/,
+    );
+  }
+});
+
+test("lesson and student create panels have one submit and a non-action heading", () => {
+  context.esc = String;
+  context.getSortedStudents = (classroom) => classroom.students;
+  context.buildArchiveHtml = () => "";
+  for (const html of [
+    context.renderLessonsTab({ id: "test", lessons: [] }),
+    context.renderStudentsTab({ id: "test", students: [] }),
+  ]) {
+    assert.equal((html.match(/type="submit"/g) || []).length, 1);
+    assert.match(html, /create-panel-footer/);
+    assert.doesNotMatch(
+      html.match(/<summary>[\s\S]*?<\/summary>/)[0],
+      /ثبت|افزودن/,
+    );
   }
 });

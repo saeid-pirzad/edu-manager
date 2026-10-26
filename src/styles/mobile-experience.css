@@ -1,8 +1,5 @@
 /* mobileExperienceV2 */
 
-.mobile-add-action {
-  display: none;
-}
 @media screen and (max-width: 700px),
   screen and (max-width: 1000px) and (pointer: coarse) {
   body {
@@ -311,16 +308,6 @@
   .lesson-list-heading p,
   .roster-heading p {
     display: none;
-  }
-  .mobile-add-action {
-    display: block;
-    flex-shrink: 0;
-    background: #4f46e5;
-    color: white;
-    font-size: 0.7rem;
-    min-height: 40px;
-    padding: 8px 12px;
-    border-radius: 11px;
   }
   .roster-toolbar {
     grid-template-columns: minmax(0, 1fr) 110px;

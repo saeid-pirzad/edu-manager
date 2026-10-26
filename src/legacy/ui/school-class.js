@@ -1,17 +1,30 @@
+function createPanelHeading(icon, title, note) {
+  return (
+    '<summary><span class="create-panel-symbol" aria-hidden="true">' +
+    EduIcons.html(icon) +
+    '</span><span class="create-panel-title"><strong>' +
+    title +
+    "</strong><small>" +
+    note +
+    '</small></span><span class="create-panel-toggle" aria-hidden="true"></span></summary>'
+  );
+}
 function renderEntityQuickCreate(kind, empty) {
   const school = kind === "school";
   const label = school ? "مدرسه" : "کلاس";
   const token = school ? "1" : "5";
   return (
-    '<details class="card quick-create entity-quick-create no-print"' +
+    '<details class="card quick-create entity-quick-create create-panel no-print"' +
     (empty ? " open" : "") +
-    "><summary>+ افزودن " +
-    label +
-    '</summary><p class="muted">' +
-    (school
-      ? "برای شروع، نام مدرسه را وارد کنید؛ کلاس‌ها را در مرحله بعد اضافه می‌کنید."
-      : "نام کلاس را وارد کنید؛ سپس هنرجویان و درس‌ها را اضافه کنید.") +
-    '</p><form data-legacy-submit="ui-school-class:' +
+    ">" +
+    createPanelHeading(
+      school ? "school" : "classroom",
+      label + " جدید",
+      school
+        ? "نام مدرسه؛ کلاس‌ها در مرحله بعد"
+        : "نام کلاس؛ هنرجویان و درس‌ها در مرحله بعد",
+    ) +
+    '<form data-legacy-submit="ui-school-class:' +
     token +
     '" data-entity-create="' +
     kind +
@@ -23,9 +36,9 @@ function renderEntityQuickCreate(kind, empty) {
     (school ? "مثلاً هنرستان دانش" : "مثلاً دهم شبکه") +
     '" aria-describedby="' +
     kind +
-    'CreateError" required maxlength="500"></label><button type="submit" data-mutating="1">افزودن ' +
+    'CreateError" required maxlength="500"></label><div class="create-panel-footer"><button type="submit" data-mutating="1">ثبت ' +
     label +
-    '</button><p id="' +
+    '</button></div><p id="' +
     kind +
     'CreateError" class="entity-create-error" role="alert"></p></form></details>'
   );
@@ -34,8 +47,8 @@ function renderSchools() {
   let h =
     headerHtml() +
     `<section class="workflow-welcome no-print"><h2>مدرسه‌های من</h2><p>مدرسه را انتخاب کنید؛ سپس دانش‌آموزان و درس‌های کلاس را آماده کنید.</p><button data-legacy-click="ui-school-class:0">برنامه هفتگی من</button></section>`;
-  h += dashboardDirectory(db.schools, "schools");
   h += renderEntityQuickCreate("school", !db.schools.length);
+  h += dashboardDirectory(db.schools, "schools");
   return h;
 }
 function renderSchool() {
@@ -52,8 +65,8 @@ function renderSchool() {
   const count = school.classes.reduce((n, c) => n + c.students.length, 0);
   h += `<section class="school-overview no-print"><div><span>${school.classes.length.toLocaleString("fa-IR")} کلاس</span><span>${count.toLocaleString("fa-IR")} هنرجو</span></div><button data-legacy-click="ui-school-class:3" data-legacy-click-arg2="${esc(school.id)}">گزارش این مدرسه ←</button></section>`;
   h += `<div class="entity-context-edit no-print"><button class="ghost" data-mutating="1" data-legacy-click="ui-school-class:4" data-legacy-click-arg0="${esc(school.id)}">ویرایش مشخصات مدرسه</button></div>`;
-  h += dashboardDirectory(school.classes, "classes", school.id);
   h += renderEntityQuickCreate("class", !school.classes.length);
+  h += dashboardDirectory(school.classes, "classes", school.id);
   return h;
 }
 
@@ -83,9 +96,11 @@ function renderLessonsTab(c) {
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5c-3-2-6-2-9-1v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1Zm0 0v15"/></svg>';
   let h = `<section class="lesson-schedule no-print"><div><strong>برنامه هفتگی کلاس</strong><p>روز و ساعت برگزاری درس‌ها را تنظیم کنید.</p></div><button class="ghost" data-legacy-click="ui-school-class:12" data-legacy-click-arg0="${esc(c.id)}">مشاهده برنامه ←</button></section>`;
   h +=
-    '<details class="card lesson-create no-print" ' +
+    '<details class="card lesson-create create-panel no-print" ' +
     (!lessons.length ? "open" : "") +
-    `><summary><span><strong>افزودن درس جدید</strong><small>تعریف درس و روش ارزشیابی</small></span><span class="lesson-plus" aria-hidden="true">+</span></summary><form data-legacy-submit="ui-school-class:13" class="lesson-create-form"><label>نام درس<input name="name" placeholder="مثلاً دانش فنی پایه" required></label><label>نام دبیر <span class="muted">(اختیاری)</span><input name="teacher" placeholder="نام و نام خانوادگی"></label><label>زنگ در هفته<input name="periods" type="number" value="2" min="1" max="10" required inputmode="numeric"></label><label>روش ارزشیابی<select name="gradeMode"><option value="kardanesh">کاردانش — عملی و تئوری</option><option value="standard">فنی — پودمان و واحد کار</option></select></label><button type="submit">افزودن درس</button></form><p class="lesson-form-note">کاردانش: عملی ۷۰٪ و تئوری ۳۰٪. فنی: پودمان و واحد کار. تنظیمات بیشتر در صورت نیاز در دسترس است.</p></details>`;
+    ">" +
+    createPanelHeading("book", "درس جدید", "نام درس و شیوه ارزشیابی") +
+    `<form data-legacy-submit="ui-school-class:13" class="lesson-create-form"><label>نام درس<input name="name" placeholder="مثلاً دانش فنی پایه" required></label><label>نام دبیر <span class="muted">(اختیاری)</span><input name="teacher" placeholder="نام و نام خانوادگی"></label><label>زنگ در هفته<input name="periods" type="number" value="2" min="1" max="10" required inputmode="numeric"></label><label>روش ارزشیابی<select name="gradeMode"><option value="kardanesh">کاردانش — عملی و تئوری</option><option value="standard">فنی — پودمان و واحد کار</option></select></label><div class="create-panel-footer"><button type="submit">ثبت درس</button></div></form><p class="lesson-form-note">کاردانش: عملی ۷۰٪ و تئوری ۳۰٪. فنی: پودمان و واحد کار. تنظیمات بیشتر در صورت نیاز در دسترس است.</p></details>`;
   h +=
     '<section class="card class-lessons"><header class="lesson-list-heading"><div><h3>دروس کلاس <span class="lesson-count">' +
     lessons.length.toLocaleString("fa-IR") +
@@ -164,9 +179,11 @@ function filterStudentRoster(control) {
 function renderStudentsTab(c) {
   const students = getSortedStudents(c);
   let h =
-    '<details class="card quick-create student-add" ' +
+    '<details class="card quick-create student-add create-panel" ' +
     (!students.length ? "open" : "") +
-    `><summary>افزودن هنرجوی جدید</summary><form data-legacy-submit="ui-school-class:16" class="student-add-form" data-entity-create="student" novalidate><label>نام و نام خانوادگی<input id="studentCreateName" name="name" aria-describedby="studentCreateError" placeholder="نام کامل هنرجو" required maxlength="200"></label><label>کد دانش‌آموزی <span class="muted">(اختیاری)</span><input id="studentCreateCode" name="code" maxlength="120" aria-describedby="studentCreateError" placeholder="کد یکتا در کلاس" inputmode="numeric"></label><button type="submit">افزودن هنرجو</button><p id="studentCreateError" class="entity-create-error" role="alert"></p></form></details>`;
+    ">" +
+    createPanelHeading("users", "هنرجوی جدید", "نام کامل و کد اختیاری") +
+    `<form data-legacy-submit="ui-school-class:16" class="student-add-form" data-entity-create="student" novalidate><label>نام و نام خانوادگی<input id="studentCreateName" name="name" aria-describedby="studentCreateError" placeholder="نام کامل هنرجو" required maxlength="200"></label><label>کد دانش‌آموزی <span class="muted">(اختیاری)</span><input id="studentCreateCode" name="code" maxlength="120" aria-describedby="studentCreateError" placeholder="کد یکتا در کلاس" inputmode="numeric"></label><div class="create-panel-footer"><button type="submit">ثبت هنرجو</button></div><p id="studentCreateError" class="entity-create-error" role="alert"></p></form></details>`;
   h += `<details class="card student-import no-print"><summary>افزودن گروهی از فایل CSV</summary><p>ابتدا قالب را بگیرید، نام هنرجویان را وارد کنید و فایل تکمیل‌شده را برای بررسی بارگذاری کنید.</p><div class="row"><button class="ghost" data-legacy-click="ui-school-class:17">دریافت قالب CSV</button><button data-legacy-click="ui-school-class:18">انتخاب فایل CSV</button></div></details>`;
   h +=
     '<section class="card student-directory"><header class="roster-heading"><div><h3>هنرجویان کلاس <span class="lesson-count">' +
