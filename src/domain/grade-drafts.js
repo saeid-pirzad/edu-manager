@@ -3,55 +3,57 @@
 // Pure draft selection; newer empty entries prevent old drafts resurfacing.
 globalThis.EduGradeDrafts = (() => {
   function isSupportedGradeDraft(item) {
-    return !!item && ["k", "u", "pod"].includes(item.kind) &&
-      typeof item.value === "string" && item.value.length <= 100;
+    return (
+      !!item &&
+      ["k", "u", "pod"].includes(item.kind) &&
+      typeof item.value === "string" &&
+      item.value.length <= 100
+    );
   }
-        function portableGradeDrafts(rows, periods, storedRows = []) {
-          const ids = new Set(periods.map((p) => p.id)),
-            byKey = new Map();
-          const add = (key, raw) => {
-            const match = key.match(
-              /^Edu24\.drafts\.([A-Za-z0-9_-]+)\.([A-Za-z0-9_-]+)/,
-            );
-            if (!match || !ids.has(match[1])) return;
-            const row = {
-              key,
-              workspace: match[1],
-              generation: Array.isArray(raw) ? 0 : Number(raw?.generation || 0),
-              entries: Array.isArray(raw) ? raw : raw?.entries || [],
-              updatedAt: raw?.updatedAt || "",
-            };
-            if (
-              !Array.isArray(row.entries) ||
-              !row.entries.every(isSupportedGradeDraft) ||
-              !Number.isSafeInteger(row.generation) ||
-              row.generation < 0
-            )
-              return;
-            const old = byKey.get(key);
-            if (
-              !old ||
-              row.generation > old.generation ||
-              (row.generation === old.generation &&
-                row.updatedAt > old.updatedAt)
-            )
-              byKey.set(key, row);
-          };
-          for (const row of rows) add(row.key, row);
-          for (const row of storedRows) add(row.key, row.value);
-          const byTab = new Map();
-          for (const row of byKey.values()) {
-            const tab = row.key.split(".").slice(0, 4).join("."),
-              old = byTab.get(tab);
-            if (
-              !old ||
-              row.generation > old.generation ||
-              (row.generation === old.generation &&
-                row.updatedAt > old.updatedAt)
-            )
-              byTab.set(tab, row);
-          }
-          return [...byTab.values()].filter((row) => row.entries.length);
-        }
+  function portableGradeDrafts(rows, periods, storedRows = []) {
+    const ids = new Set(periods.map((p) => p.id)),
+      byKey = new Map();
+    const add = (key, raw) => {
+      const match = key.match(
+        /^Edu24\.drafts\.([A-Za-z0-9_-]+)\.([A-Za-z0-9_-]+)/,
+      );
+      if (!match || !ids.has(match[1])) return;
+      const row = {
+        key,
+        workspace: match[1],
+        generation: Array.isArray(raw) ? 0 : Number(raw?.generation || 0),
+        entries: Array.isArray(raw) ? raw : raw?.entries || [],
+        updatedAt: raw?.updatedAt || "",
+      };
+      if (
+        !Array.isArray(row.entries) ||
+        !row.entries.every(isSupportedGradeDraft) ||
+        !Number.isSafeInteger(row.generation) ||
+        row.generation < 0
+      )
+        return;
+      const old = byKey.get(key);
+      if (
+        !old ||
+        row.generation > old.generation ||
+        (row.generation === old.generation && row.updatedAt > old.updatedAt)
+      )
+        byKey.set(key, row);
+    };
+    for (const row of rows) add(row.key, row);
+    for (const row of storedRows) add(row.key, row.value);
+    const byTab = new Map();
+    for (const row of byKey.values()) {
+      const tab = row.key.split(".").slice(0, 4).join("."),
+        old = byTab.get(tab);
+      if (
+        !old ||
+        row.generation > old.generation ||
+        (row.generation === old.generation && row.updatedAt > old.updatedAt)
+      )
+        byTab.set(tab, row);
+    }
+    return [...byTab.values()].filter((row) => row.entries.length);
+  }
   return Object.freeze({ isSupportedGradeDraft, portableGradeDrafts });
 })();

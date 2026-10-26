@@ -13,8 +13,12 @@ globalThis.EduRuntimeAPI = (() => {
       implementations = Object.freeze(Object.fromEntries(entries));
     },
     invoke(name, fallback, receiver, args) {
-      const handler = implementations && Object.hasOwn(implementations, name) ? implementations[name] : fallback;
-      if (typeof handler !== "function") throw Error("Runtime API is not ready: " + name);
+      const handler =
+        implementations && Object.hasOwn(implementations, name)
+          ? implementations[name]
+          : fallback;
+      if (typeof handler !== "function")
+        throw Error("Runtime API is not ready: " + name);
       return Reflect.apply(handler, receiver, args);
     },
   });

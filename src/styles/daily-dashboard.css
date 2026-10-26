@@ -1,458 +1,449 @@
-      /* Daily work dashboard: content order follows the daily workflow. */
-      .dashboard-work {
-        margin-block: 18px 22px;
-        min-width: 0;
-      }
-      .dashboard-work-heading {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        margin-bottom: 14px;
-      }
-      .dashboard-work-heading h2 {
-        margin: 2px 0 6px;
-        font-size: 1.2rem;
-      }
-      .dashboard-work-heading p {
-        margin: 0;
-        color: #64748b;
-        font-size: 0.8rem;
-      }
-      .dashboard-work-heading .eyebrow {
-        color: #4f46e5;
-        font-weight: 700;
-      }
-      .dashboard-tasks {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 12px;
-      }
-      .dashboard-task {
-        min-width: 0;
-        border: 1px solid #e2e8f0;
-        border-radius: 18px;
-        padding: 18px;
-        background: #fff;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-      }
-      .dashboard-task > strong {
-        font-size: 1.8rem;
-        line-height: 1.3;
-        font-variant-numeric: tabular-nums;
-      }
-      .dashboard-task h3 {
-        font-size: 0.9rem;
-        margin: 10px 0 5px;
-      }
-      .dashboard-task p {
-        color: #64748b;
-        font-size: 0.75rem;
-        margin: 0 0 12px;
-      }
-      .dashboard-task button,
-      .dashboard-task-clear {
-        margin-top: auto;
-      }
-      .dashboard-task-clear {
-        font-size: 0.75rem;
-        color: #475569;
-        padding-block: 10px;
-      }
-      .task-amber > strong {
-        color: #a16207;
-      }
-      .task-indigo > strong {
-        color: #4338ca;
-      }
-      .task-rose > strong {
-        color: #be123c;
-      }
-      .dashboard-work-notice {
-        border-inline-start: 3px solid #d97706;
-        padding: 10px 12px;
-        background: #fffbeb;
-        border-radius: 8px;
-        font-size: 0.8rem;
-        color: #854d0e;
-        line-height: 1.9;
-      }
-      .dashboard-agenda {
-        margin-top: 14px;
-        padding: 18px;
-        border: 1px solid #e2e8f0;
-        border-radius: 18px;
-        background: #fff;
-        min-width: 0;
-      }
-      .dashboard-agenda > h3 {
-        margin: 0 0 10px;
-        font-size: 1rem;
-      }
-      .dashboard-agenda-row {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding-block: 12px;
-        border-bottom: 1px solid #edf1f7;
-      }
-      .dashboard-agenda-row:last-child {
-        border-bottom: 0;
-        padding-bottom: 0;
-      }
-      .dashboard-agenda-row > div {
-        flex: 1;
-        min-width: 0;
-        overflow-wrap: anywhere;
-      }
-      .dashboard-agenda-row h4 {
-        margin: 0 0 4px;
-        font-size: 0.85rem;
-      }
-      .dashboard-agenda-row p {
-        margin: 0;
-        color: #64748b;
-        font-size: 0.75rem;
-      }
-      .dashboard-agenda-row button {
-        flex-shrink: 0;
-        min-height: 44px;
-      }
-      .dashboard-period {
-        border-radius: 10px;
-        padding: 8px;
-        background: #eef2ff;
-        color: #4338ca;
-        font-size: 0.75rem;
-        white-space: nowrap;
-      }
-      body.modal-open {
-        overflow: hidden;
-      }
-      .modal-overlay {
-        overscroll-behavior: contain;
-      }
-      :where(
-        button,
-        a,
-        summary,
-        input,
-        select,
-        textarea,
-        [tabindex]
-      ):focus-visible {
-        outline: 3px solid #4f46e5;
-        outline-offset: 3px;
-      }
-      @media (max-width: 700px) {
-        .dashboard-work-heading {
-          align-items: flex-start;
-        }
-        .dashboard-work-heading h2 {
-          font-size: 1.05rem;
-        }
-        .dashboard-work-heading > button {
-          font-size: 0.75rem;
-          min-height: 44px;
-        }
-        .dashboard-tasks {
-          grid-template-columns: minmax(0, 1fr);
-          gap: 8px;
-        }
-        .dashboard-task {
-          display: grid;
-          grid-template-columns: 48px minmax(0, 1fr) auto;
-          gap: 3px 10px;
-          padding: 14px;
-          align-items: center;
-          border-radius: 14px;
-        }
-        .dashboard-task > strong {
-          grid-column: 1;
-          grid-row: 1 / 3;
-          font-size: 1.5rem;
-          text-align: center;
-        }
-        .dashboard-task h3 {
-          grid-column: 2;
-          margin: 0;
-          font-size: 0.8rem;
-        }
-        .dashboard-task p {
-          grid-column: 2;
-          margin: 0;
-          font-size: 0.68rem;
-        }
-        .dashboard-task button,
-        .dashboard-task-clear {
-          grid-column: 3;
-          grid-row: 1 / 3;
-          margin: 0;
-          font-size: 0.68rem;
-          max-width: 110px;
-        }
-        .dashboard-task-clear {
-          max-width: 85px;
-          line-height: 1.8;
-        }
-        .dashboard-agenda {
-          padding: 14px;
-        }
-        .dashboard-agenda-row {
-          flex-wrap: wrap;
-          gap: 8px;
-        }
-        .dashboard-agenda-row > div {
-          flex-basis: calc(100% - 70px);
-        }
-        .dashboard-agenda-row button {
-          width: 100%;
-        }
-      }
-      @media (prefers-reduced-motion: reduce) {
-        *,
-        *::before,
-        *::after {
-          scroll-behavior: auto !important;
-          animation-duration: 0.01ms !important;
-          animation-iteration-count: 1 !important;
-          transition-duration: 0.01ms !important;
-        }
-      }
+/* Daily work dashboard: content order follows the daily workflow. */
+.dashboard-work {
+  margin-block: 18px 22px;
+  min-width: 0;
+}
+.dashboard-work-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.dashboard-work-heading h2 {
+  margin: 2px 0 6px;
+  font-size: 1.2rem;
+}
+.dashboard-work-heading p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.8rem;
+}
+.dashboard-work-heading .eyebrow {
+  color: #4f46e5;
+  font-weight: 700;
+}
+.dashboard-tasks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.dashboard-task {
+  min-width: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 18px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.dashboard-task > strong {
+  font-size: 1.8rem;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+}
+.dashboard-task h3 {
+  font-size: 0.9rem;
+  margin: 10px 0 5px;
+}
+.dashboard-task p {
+  color: #64748b;
+  font-size: 0.75rem;
+  margin: 0 0 12px;
+}
+.dashboard-task button,
+.dashboard-task-clear {
+  margin-top: auto;
+}
+.dashboard-task-clear {
+  font-size: 0.75rem;
+  color: #475569;
+  padding-block: 10px;
+}
+.task-amber > strong {
+  color: #a16207;
+}
+.task-indigo > strong {
+  color: #4338ca;
+}
+.task-rose > strong {
+  color: #be123c;
+}
+.dashboard-work-notice {
+  border-inline-start: 3px solid #d97706;
+  padding: 10px 12px;
+  background: #fffbeb;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: #854d0e;
+  line-height: 1.9;
+}
+.dashboard-agenda {
+  margin-top: 14px;
+  padding: 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: #fff;
+  min-width: 0;
+}
+.dashboard-agenda > h3 {
+  margin: 0 0 10px;
+  font-size: 1rem;
+}
+.dashboard-agenda-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-block: 12px;
+  border-bottom: 1px solid #edf1f7;
+}
+.dashboard-agenda-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.dashboard-agenda-row > div {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.dashboard-agenda-row h4 {
+  margin: 0 0 4px;
+  font-size: 0.85rem;
+}
+.dashboard-agenda-row p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.75rem;
+}
+.dashboard-agenda-row button {
+  flex-shrink: 0;
+  min-height: 44px;
+}
+.dashboard-period {
+  border-radius: 10px;
+  padding: 8px;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+body.modal-open {
+  overflow: hidden;
+}
+.modal-overlay {
+  overscroll-behavior: contain;
+}
+:where(button, a, summary, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid #4f46e5;
+  outline-offset: 3px;
+}
+@media (max-width: 700px) {
+  .dashboard-work-heading {
+    align-items: flex-start;
+  }
+  .dashboard-work-heading h2 {
+    font-size: 1.05rem;
+  }
+  .dashboard-work-heading > button {
+    font-size: 0.75rem;
+    min-height: 44px;
+  }
+  .dashboard-tasks {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .dashboard-task {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    gap: 3px 10px;
+    padding: 14px;
+    align-items: center;
+    border-radius: 14px;
+  }
+  .dashboard-task > strong {
+    grid-column: 1;
+    grid-row: 1 / 3;
+    font-size: 1.5rem;
+    text-align: center;
+  }
+  .dashboard-task h3 {
+    grid-column: 2;
+    margin: 0;
+    font-size: 0.8rem;
+  }
+  .dashboard-task p {
+    grid-column: 2;
+    margin: 0;
+    font-size: 0.68rem;
+  }
+  .dashboard-task button,
+  .dashboard-task-clear {
+    grid-column: 3;
+    grid-row: 1 / 3;
+    margin: 0;
+    font-size: 0.68rem;
+    max-width: 110px;
+  }
+  .dashboard-task-clear {
+    max-width: 85px;
+    line-height: 1.8;
+  }
+  .dashboard-agenda {
+    padding: 14px;
+  }
+  .dashboard-agenda-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .dashboard-agenda-row > div {
+    flex-basis: calc(100% - 70px);
+  }
+  .dashboard-agenda-row button {
+    width: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
 
-      .skip-link {
-        position: fixed;
-        inset-block-start: 8px;
-        inset-inline-start: 12px;
-        z-index: 20000;
-        padding: 12px 18px;
-        border-radius: 10px;
-        background: #312e81;
-        color: white;
-        transform: translateY(-200%);
-      }
-      .skip-link:focus {
-        transform: translateY(0);
-      }
+.skip-link {
+  position: fixed;
+  inset-block-start: 8px;
+  inset-inline-start: 12px;
+  z-index: 20000;
+  padding: 12px 18px;
+  border-radius: 10px;
+  background: #312e81;
+  color: white;
+  transform: translateY(-200%);
+}
+.skip-link:focus {
+  transform: translateY(0);
+}
 
-      /* Match visual order to the daily workflow on mobile. */
-      #app > .dashboard-work {
-        order: 4;
-      }
-      #app > .dashboard-report-links {
-        order: 5;
-      }
-      .calendar-close {
-        width: 100%;
-        min-height: 44px;
-        margin-top: 10px;
-      }
-      .cal-header button {
-        min-width: 44px;
-        min-height: 44px;
-      }
+/* Match visual order to the daily workflow on mobile. */
+#app > .dashboard-work {
+  order: 4;
+}
+#app > .dashboard-report-links {
+  order: 5;
+}
+.calendar-close {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 10px;
+}
+.cal-header button {
+  min-width: 44px;
+  min-height: 44px;
+}
 
-      @media print {
-        #printRoot .student-summary {
-          table-layout: fixed !important;
-        }
-        #printRoot .student-summary th:first-child,
-        #printRoot .student-summary td:first-child {
-          width: 48%;
-        }
-        #printRoot .student-summary th:not(:first-child),
-        #printRoot .student-summary td:not(:first-child) {
-          width: 10.4%;
-          text-align: center;
-        }
-        #printRoot .periodic-document h3,
-        #printRoot .periodic-document h4 {
-          break-after: avoid;
-          page-break-after: avoid;
-        }
-      }
-      .record-editor-context .record-editor-state {
-        margin-top: 10px;
-        font-size: 0.75rem;
-        color: #64748b;
-      }
-      .record-editor-state[data-state="changed"] {
-        color: #92400e;
-      }
-      .record-editor-state[data-state="pending"] {
-        color: #4338ca;
-      }
-      .record-editor-review {
-        border: 1px solid #dce3f3;
-        border-radius: 14px;
-        padding: 12px;
-        background: #fafbff;
-      }
-      .record-editor-review[hidden] {
-        display: none;
-      }
-      .record-editor-review > summary {
-        cursor: pointer;
-        min-height: 44px;
-        font-weight: 600;
-      }
-      .record-change-list {
-        display: grid;
-        gap: 10px;
-        margin-bottom: 12px;
-      }
-      .record-change-row {
-        display: grid;
-        gap: 4px;
-        padding: 10px;
-        border-radius: 10px;
-        background: #fff;
-        overflow-wrap: anywhere;
-      }
-      .record-change-row strong {
-        font-size: 0.82rem;
-      }
-      .record-change-row span {
-        font-size: 0.78rem;
-        color: #64748b;
-        white-space: pre-wrap;
-      }
-      .record-change-row span:last-child {
-        color: #166534;
-      }
-      .student-add-form .entity-create-error {
-        grid-column: 1 / -1;
-      }
-      .control-lock-note {
-        grid-column: 1 / -1;
-        flex: 1 0 100%;
-        color: #92400e;
-        font-size: 0.8rem;
-        margin: 0;
-        overflow-wrap: anywhere;
-      }
-      .control-lock-note[hidden] {
-        display: none;
-      }
-      .entity-create-error {
-        flex: 1 0 100%;
-        margin: 0;
-        color: #b91c1c;
-        overflow-wrap: anywhere;
-      }
-      .entity-create-error:empty {
-        display: none;
-      }
-      [data-entity-create] [aria-invalid="true"] {
-        border-color: #e11d48;
-      }
-      .record-editor {
-        display: grid;
-        gap: 16px;
-      }
-      .record-editor [aria-invalid="true"] {
-        border-color: #e11d48;
-        background: #fff7f8;
-      }
-      .record-editor-context {
-        padding: 16px;
-        border: 1px solid #e0e7ff;
-        border-radius: 16px;
-        background: #f8faff;
-      }
-      .record-editor-context span {
-        color: #64748b;
-        font-size: 0.78rem;
-      }
-      .record-editor-context h4 {
-        margin: 4px 0;
-        font-size: 1.05rem;
-        overflow-wrap: anywhere;
-      }
-      .record-editor-context p {
-        margin: 0;
-        color: #52617b;
-        font-size: 0.83rem;
-      }
-      .record-editor-actions {
-        display: flex;
-        gap: 10px;
-        position: sticky;
-        bottom: -20px;
-        z-index: 2;
-        background: #fff;
-        padding: 14px 0;
-        border-top: 1px solid #e5eaf3;
-      }
-      .record-editor-actions button {
-        min-height: 44px;
-      }
-      .course-policy-section {
-        border: 1px solid #e5eaf3;
-        border-radius: 14px;
-        padding: 12px;
-      }
-      .course-name-section #courseStructure {
-        display: grid;
-        gap: 12px;
-      }
-      .course-name-section #courseStructure > .card {
-        margin: 0;
-        padding: 14px;
-      }
-      .course-name-section .course-field {
-        margin-bottom: 10px;
-      }
-      .course-name-section[hidden] {
-        display: none;
-      }
-      .course-policy-section > summary {
-        cursor: pointer;
-        font-weight: 600;
-        min-height: 44px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      .course-policy-section > summary::before {
-        content: "+";
-        color: #4f46e5;
-        font-size: 1.25rem;
-      }
-      .course-policy-section[open] > summary::before {
-        content: "−";
-      }
-      .course-policy-section > summary::-webkit-details-marker {
-        display: none;
-      }
-      .entity-context-edit {
-        margin: 0 0 14px;
-      }
-      #entityEditError {
-        margin: 0;
-        padding: 10px;
-        border-radius: 10px;
-        background: #fff1f2;
-        color: #b91c1c;
-      }
-      #periodLabelError {
-        color: #b91c1c;
-        margin: 0;
-      }
-      #periodLabelError:empty {
-        display: none;
-      }
-      #entityEditError:empty {
-        display: none;
-      }
-      @media (max-width: 700px) {
-        .record-editor-actions {
-          bottom: -16px;
-        }
-        .record-editor-actions button {
-          flex: 1;
-        }
-      }
-
+@media print {
+  #printRoot .student-summary {
+    table-layout: fixed !important;
+  }
+  #printRoot .student-summary th:first-child,
+  #printRoot .student-summary td:first-child {
+    width: 48%;
+  }
+  #printRoot .student-summary th:not(:first-child),
+  #printRoot .student-summary td:not(:first-child) {
+    width: 10.4%;
+    text-align: center;
+  }
+  #printRoot .periodic-document h3,
+  #printRoot .periodic-document h4 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+}
+.record-editor-context .record-editor-state {
+  margin-top: 10px;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+.record-editor-state[data-state="changed"] {
+  color: #92400e;
+}
+.record-editor-state[data-state="pending"] {
+  color: #4338ca;
+}
+.record-editor-review {
+  border: 1px solid #dce3f3;
+  border-radius: 14px;
+  padding: 12px;
+  background: #fafbff;
+}
+.record-editor-review[hidden] {
+  display: none;
+}
+.record-editor-review > summary {
+  cursor: pointer;
+  min-height: 44px;
+  font-weight: 600;
+}
+.record-change-list {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.record-change-row {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border-radius: 10px;
+  background: #fff;
+  overflow-wrap: anywhere;
+}
+.record-change-row strong {
+  font-size: 0.82rem;
+}
+.record-change-row span {
+  font-size: 0.78rem;
+  color: #64748b;
+  white-space: pre-wrap;
+}
+.record-change-row span:last-child {
+  color: #166534;
+}
+.student-add-form .entity-create-error {
+  grid-column: 1 / -1;
+}
+.control-lock-note {
+  grid-column: 1 / -1;
+  flex: 1 0 100%;
+  color: #92400e;
+  font-size: 0.8rem;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.control-lock-note[hidden] {
+  display: none;
+}
+.entity-create-error {
+  flex: 1 0 100%;
+  margin: 0;
+  color: #b91c1c;
+  overflow-wrap: anywhere;
+}
+.entity-create-error:empty {
+  display: none;
+}
+[data-entity-create] [aria-invalid="true"] {
+  border-color: #e11d48;
+}
+.record-editor {
+  display: grid;
+  gap: 16px;
+}
+.record-editor [aria-invalid="true"] {
+  border-color: #e11d48;
+  background: #fff7f8;
+}
+.record-editor-context {
+  padding: 16px;
+  border: 1px solid #e0e7ff;
+  border-radius: 16px;
+  background: #f8faff;
+}
+.record-editor-context span {
+  color: #64748b;
+  font-size: 0.78rem;
+}
+.record-editor-context h4 {
+  margin: 4px 0;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+.record-editor-context p {
+  margin: 0;
+  color: #52617b;
+  font-size: 0.83rem;
+}
+.record-editor-actions {
+  display: flex;
+  gap: 10px;
+  position: sticky;
+  bottom: -20px;
+  z-index: 2;
+  background: #fff;
+  padding: 14px 0;
+  border-top: 1px solid #e5eaf3;
+}
+.record-editor-actions button {
+  min-height: 44px;
+}
+.course-policy-section {
+  border: 1px solid #e5eaf3;
+  border-radius: 14px;
+  padding: 12px;
+}
+.course-name-section #courseStructure {
+  display: grid;
+  gap: 12px;
+}
+.course-name-section #courseStructure > .card {
+  margin: 0;
+  padding: 14px;
+}
+.course-name-section .course-field {
+  margin-bottom: 10px;
+}
+.course-name-section[hidden] {
+  display: none;
+}
+.course-policy-section > summary {
+  cursor: pointer;
+  font-weight: 600;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.course-policy-section > summary::before {
+  content: "+";
+  color: #4f46e5;
+  font-size: 1.25rem;
+}
+.course-policy-section[open] > summary::before {
+  content: "−";
+}
+.course-policy-section > summary::-webkit-details-marker {
+  display: none;
+}
+.entity-context-edit {
+  margin: 0 0 14px;
+}
+#entityEditError {
+  margin: 0;
+  padding: 10px;
+  border-radius: 10px;
+  background: #fff1f2;
+  color: #b91c1c;
+}
+#periodLabelError {
+  color: #b91c1c;
+  margin: 0;
+}
+#periodLabelError:empty {
+  display: none;
+}
+#entityEditError:empty {
+  display: none;
+}
+@media (max-width: 700px) {
+  .record-editor-actions {
+    bottom: -16px;
+  }
+  .record-editor-actions button {
+    flex: 1;
+  }
+}

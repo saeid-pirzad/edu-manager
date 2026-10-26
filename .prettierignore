@@ -1,0 +1,5 @@
+node_modules/
+assets/
+package-lock.json
+service-worker.js
+docs/REFACTOR-AUDIT-2026-10-25.md

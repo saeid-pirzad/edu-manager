@@ -4,116 +4,113 @@
 // and layout on decode. Business normalization is supplied by the caller.
 globalThis.EduWorkspaceRecords = Object.freeze({
   create({ clone, normalizeDB, isDataObject, isSafeRecordId }) {
-        function metaValue(d) {
-          const { schools, sessions, ...meta } = d;
-          return {
-            ...meta,
-            layout: schools.map((s) => ({
-              id: s.id,
-              name: s.name,
-              classes: s.classes.map((c) => c.id),
-            })),
-          };
-        }
+    function metaValue(d) {
+      const { schools, sessions, ...meta } = d;
+      return {
+        ...meta,
+        layout: schools.map((s) => ({
+          id: s.id,
+          name: s.name,
+          classes: s.classes.map((c) => c.id),
+        })),
+      };
+    }
 
-        function collectRecords(d, scope = {}) {
-          const output = new Map([["meta", metaValue(d)]]);
-          for (const s of d.schools)
-            for (const c of s.classes)
-              if (
-                (!scope.classId && !scope.sessionId) ||
-                scope.classId === c.id
-              )
-                output.set("class:" + c.id, clone(c));
-          for (const x of d.sessions)
-            if (
-              (!scope.classId && !scope.sessionId) ||
-              scope.sessionId === x.id
-            )
-              output.set("session:" + x.id, clone(x));
-          return output;
-        }
+    function collectRecords(d, scope = {}) {
+      const output = new Map([["meta", metaValue(d)]]);
+      for (const s of d.schools)
+        for (const c of s.classes)
+          if ((!scope.classId && !scope.sessionId) || scope.classId === c.id)
+            output.set("class:" + c.id, clone(c));
+      for (const x of d.sessions)
+        if ((!scope.classId && !scope.sessionId) || scope.sessionId === x.id)
+          output.set("session:" + x.id, clone(x));
+      return output;
+    }
 
-        function logicalRecordType(logical) {
-          if (logical === "meta") return { kind: "meta" };
-          const match =
-            typeof logical === "string" &&
-            /^(class|session):([A-Za-z0-9_-]{1,120})$/.exec(logical);
-          if (!match || !isSafeRecordId(match[2]))
-            throw Error("نوع یا شناسه رکورد دوره نامعتبر است.");
-          return { kind: match[1], id: match[2] };
-        }
-        function validateLogicalValue(logical, value) {
-          const type = logicalRecordType(logical);
-          if (
-            !isDataObject(value) ||
-            (type.kind !== "meta" && value.id !== type.id)
-          )
-            throw Error("شناسه داخل رکورد با کلید ذخیره آن سازگار نیست.");
-          return type;
-        }
-        function decodeWorkspaceRecords(records, { workspaceId } = {}) {
-          if (!Array.isArray(records))
-            throw Error("فهرست رکوردهای دوره معتبر نیست.");
-          const byKey = new Map();
-          for (const row of records) {
-            if (!isDataObject(row) || byKey.has(row.logical))
-              throw Error("رکورد دوره ناقص یا تکراری است.");
+    function logicalRecordType(logical) {
+      if (logical === "meta") return { kind: "meta" };
+      const match =
+        typeof logical === "string" &&
+        /^(class|session):([A-Za-z0-9_-]{1,120})$/.exec(logical);
+      if (!match || !isSafeRecordId(match[2]))
+        throw Error("نوع یا شناسه رکورد دوره نامعتبر است.");
+      return { kind: match[1], id: match[2] };
+    }
+    function validateLogicalValue(logical, value) {
+      const type = logicalRecordType(logical);
+      if (
+        !isDataObject(value) ||
+        (type.kind !== "meta" && value.id !== type.id)
+      )
+        throw Error("شناسه داخل رکورد با کلید ذخیره آن سازگار نیست.");
+      return type;
+    }
+    function decodeWorkspaceRecords(records, { workspaceId } = {}) {
+      if (!Array.isArray(records))
+        throw Error("فهرست رکوردهای دوره معتبر نیست.");
+      const byKey = new Map();
+      for (const row of records) {
+        if (!isDataObject(row) || byKey.has(row.logical))
+          throw Error("رکورد دوره ناقص یا تکراری است.");
+        if (
+          workspaceId !== undefined &&
+          (row.workspace !== workspaceId ||
+            row.key !== workspaceId + "|" + row.logical)
+        )
+          throw Error("مالک دوره یا کلید رکورد معتبر نیست.");
+        validateLogicalValue(row.logical, row.value);
+        byKey.set(row.logical, row.value);
+      }
+      const meta = byKey.get("meta");
+      if (!meta || !Array.isArray(meta.layout))
+        throw Error("داده یا چیدمان اصلی دوره موجود نیست.");
+      const value = clone(meta),
+        referenced = new Set();
+      delete value.layout;
+      value.schools = meta.layout.map((school) => {
+        if (
+          !isDataObject(school) ||
+          !isSafeRecordId(school.id) ||
+          !Array.isArray(school.classes)
+        )
+          throw Error("چیدمان مدرسه معتبر نیست.");
+        return {
+          id: school.id,
+          name: school.name,
+          classes: school.classes.map((id) => {
             if (
-              workspaceId !== undefined &&
-              (row.workspace !== workspaceId ||
-                row.key !== workspaceId + "|" + row.logical)
+              !isSafeRecordId(id) ||
+              referenced.has(id) ||
+              !byKey.has("class:" + id)
             )
-              throw Error("مالک دوره یا کلید رکورد معتبر نیست.");
-            validateLogicalValue(row.logical, row.value);
-            byKey.set(row.logical, row.value);
-          }
-          const meta = byKey.get("meta");
-          if (!meta || !Array.isArray(meta.layout))
-            throw Error("داده یا چیدمان اصلی دوره موجود نیست.");
-          const value = clone(meta),
-            referenced = new Set();
-          delete value.layout;
-          value.schools = meta.layout.map((school) => {
-            if (
-              !isDataObject(school) ||
-              !isSafeRecordId(school.id) ||
-              !Array.isArray(school.classes)
-            )
-              throw Error("چیدمان مدرسه معتبر نیست.");
-            return {
-              id: school.id,
-              name: school.name,
-              classes: school.classes.map((id) => {
-                if (
-                  !isSafeRecordId(id) ||
-                  referenced.has(id) ||
-                  !byKey.has("class:" + id)
-                )
-                  throw Error("کلاس چیدمان موجود نیست یا تکرار شده است.");
-                referenced.add(id);
-                return clone(byKey.get("class:" + id));
-              }),
-            };
-          });
-          for (const logical of byKey.keys())
-            if (
-              logical.startsWith("class:") &&
-              !referenced.has(logical.slice(6))
-            )
-              throw Error(
-                "یک کلاس در رکوردها وجود دارد اما در چیدمان دوره معرفی نشده است؛ بازیابی متوقف شد.",
-              );
-          value.sessions = records
-            .filter((row) => row.logical.startsWith("session:"))
-            .map((row) => clone(row.value));
-          return {
-            data: normalizeDB(value),
-            records: new Map(
-              records.map((row) => [row.logical, JSON.stringify(row.value)]),
-            ),
-          };
-        }
-    return Object.freeze({ metaValue, collectRecords, logicalRecordType, validateLogicalValue, decodeWorkspaceRecords });
+              throw Error("کلاس چیدمان موجود نیست یا تکرار شده است.");
+            referenced.add(id);
+            return clone(byKey.get("class:" + id));
+          }),
+        };
+      });
+      for (const logical of byKey.keys())
+        if (logical.startsWith("class:") && !referenced.has(logical.slice(6)))
+          throw Error(
+            "یک کلاس در رکوردها وجود دارد اما در چیدمان دوره معرفی نشده است؛ بازیابی متوقف شد.",
+          );
+      value.sessions = records
+        .filter((row) => row.logical.startsWith("session:"))
+        .map((row) => clone(row.value));
+      return {
+        data: normalizeDB(value),
+        records: new Map(
+          records.map((row) => [row.logical, JSON.stringify(row.value)]),
+        ),
+      };
+    }
+    return Object.freeze({
+      metaValue,
+      collectRecords,
+      logicalRecordType,
+      validateLogicalValue,
+      decodeWorkspaceRecords,
+    });
   },
 });

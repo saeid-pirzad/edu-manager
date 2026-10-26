@@ -3,6 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta
+      http-equiv="Content-Security-Policy"
+      content="script-src 'self'; object-src 'none'; base-uri 'self'"
+    />
+    <meta
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
@@ -27,7 +31,11 @@
       href="data:image/png;base64,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"
     />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <link id="daily-workflow-styles" rel="stylesheet" href="./assets/styles/daily-workflow.css" />
+    <link
+      id="daily-workflow-styles"
+      rel="stylesheet"
+      href="./assets/styles/daily-workflow.css"
+    />
   </head>
   <body>
     <div class="cal-popup" id="calPopup"></div>
@@ -43,23 +51,15 @@
       >
         <div class="modal-header">
           <h3 id="modalTitle"></h3>
-          <button type="button" id="modalClose" aria-label="بستن پنجره">×</button>
+          <button type="button" id="modalClose" aria-label="بستن پنجره">
+            ×
+          </button>
         </div>
         <div class="modal-body" id="modalBody"></div>
       </div>
     </div>
-    <input
-      type="file"
-      id="importFile"
-      hidden
-      accept=".json"
-    />
-    <input
-      type="file"
-      id="excelFile"
-      hidden
-      accept=".csv"
-    />
+    <input type="file" id="importFile" hidden accept=".json" />
+    <input type="file" id="excelFile" hidden accept=".csv" />
     <script src="./assets/scripts/data-store-schema.js"></script>
     <script src="./assets/scripts/data-store-runtime.js"></script>
     <script src="./assets/scripts/data-store.js"></script>

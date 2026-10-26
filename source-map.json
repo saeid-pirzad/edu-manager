@@ -11,31 +11,48 @@
         "src/legacy/data/selectors.js",
         "src/legacy/ui/navigation.js",
         "src/legacy/ui/login-render.js",
+        "src/legacy/events/ui-login-render.js",
         "src/legacy/ui/header-menus.js",
         "src/legacy/ui/clipboard.js",
+        "src/legacy/events/ui-clipboard.js",
         "src/legacy/reports/comprehensive.js",
+        "src/legacy/events/reports-comprehensive.js",
         "src/legacy/reports/lesson.js",
+        "src/legacy/events/reports-lesson.js",
         "src/legacy/reports/student.js",
+        "src/legacy/events/reports-student.js",
         "src/legacy/grading/bulk-editor.js",
+        "src/legacy/events/grading-bulk-editor.js",
         "src/legacy/grading/calculation.js",
         "src/legacy/ui/dashboard.js",
+        "src/legacy/events/ui-dashboard.js",
         "src/legacy/ui/school-class.js",
+        "src/legacy/events/ui-school-class.js",
         "src/legacy/data/download.js",
         "src/legacy/students/csv-import.js",
         "src/legacy/students/editor.js",
+        "src/legacy/events/students-editor.js",
         "src/legacy/ui/lesson.js",
+        "src/legacy/events/ui-lesson.js",
         "src/legacy/sessions/actions.js",
         "src/legacy/grading/lesson-editor.js",
+        "src/legacy/events/grading-lesson-editor.js",
         "src/legacy/reports/session-text.js",
         "src/legacy/schedule/timetable.js",
+        "src/legacy/events/schedule-timetable.js",
         "src/legacy/students/membership.js",
+        "src/legacy/events/students-membership.js",
         "src/legacy/courses/config.js",
+        "src/legacy/events/courses-config.js",
         "src/legacy/sessions/dialog.js",
+        "src/legacy/events/sessions-dialog.js",
         "src/legacy/data/backup-import.js",
         "src/legacy/validation/database.js",
         "src/legacy/students/roster.js",
         "src/legacy/grading/kardanesh.js",
+        "src/legacy/events/grading-kardanesh.js",
         "src/legacy/students/archive.js",
+        "src/legacy/events/students-archive.js",
         "src/legacy/core/runtime-facade.js"
       ]
     },
@@ -44,6 +61,7 @@
       "scope": "workspace",
       "sources": [
         "src/workspace/core/state.js",
+        "src/workspace/core/async-target.js",
         "src/workspace/domain/defaults-numbers.js",
         "src/workspace/validation/database.js",
         "src/workspace/data/reset.js",
@@ -76,6 +94,7 @@
         "src/workspace/students/editor.js",
         "src/workspace/data/wipe.js",
         "src/workspace/ui/install.js",
+        "src/workspace/ui/actions.js",
         "src/workspace/entities/create.js",
         "src/workspace/reports/snapshots.js",
         "src/workspace/settings/editor.js",
@@ -96,23 +115,17 @@
     {
       "output": "assets/scripts/app-shell-ui.js",
       "scope": "global",
-      "sources": [
-        "src/ui/app-shell.js"
-      ]
+      "sources": ["src/ui/app-shell.js"]
     },
     {
       "output": "assets/scripts/calendar-math.js",
       "scope": "global",
-      "sources": [
-        "src/domain/calendar.js"
-      ]
+      "sources": ["src/domain/calendar.js"]
     },
     {
       "output": "assets/scripts/calendar-ui.js",
       "scope": "global",
-      "sources": [
-        "src/ui/calendar.js"
-      ]
+      "sources": ["src/ui/calendar.js", "src/ui/events-calendar.js"]
     },
     {
       "output": "assets/scripts/course-ui.js",
@@ -132,37 +145,27 @@
     {
       "output": "assets/scripts/csv-parser.js",
       "scope": "global",
-      "sources": [
-        "src/domain/csv-parser.js"
-      ]
+      "sources": ["src/domain/csv-parser.js"]
     },
     {
       "output": "assets/scripts/data-boundary.js",
       "scope": "global",
-      "sources": [
-        "src/domain/data-boundary.js"
-      ]
+      "sources": ["src/domain/data-boundary.js"]
     },
     {
       "output": "assets/scripts/data-store-runtime.js",
       "scope": "global",
-      "sources": [
-        "src/data/idb-promises.js"
-      ]
+      "sources": ["src/data/idb-promises.js"]
     },
     {
       "output": "assets/scripts/data-store-schema.js",
       "scope": "global",
-      "sources": [
-        "src/data/schema.js"
-      ]
+      "sources": ["src/data/schema.js"]
     },
     {
       "output": "assets/scripts/data-store.js",
       "scope": "global",
-      "sources": [
-        "src/data/idb-connection.js"
-      ]
+      "sources": ["src/data/idb-connection.js"]
     },
     {
       "output": "assets/scripts/dialogs-ui.js",
@@ -176,51 +179,37 @@
     {
       "output": "assets/scripts/frozen-report-validator.js",
       "scope": "global",
-      "sources": [
-        "src/validation/frozen-report.js"
-      ]
+      "sources": ["src/validation/frozen-report.js"]
     },
     {
       "output": "assets/scripts/full-backup-validator.js",
       "scope": "global",
-      "sources": [
-        "src/validation/full-backup.js"
-      ]
+      "sources": ["src/validation/full-backup.js"]
     },
     {
       "output": "assets/scripts/grade-drafts.js",
       "scope": "global",
-      "sources": [
-        "src/domain/grade-drafts.js"
-      ]
+      "sources": ["src/domain/grade-drafts.js"]
     },
     {
       "output": "assets/scripts/grade-math.js",
       "scope": "global",
-      "sources": [
-        "src/domain/grade-math.js"
-      ]
+      "sources": ["src/domain/grade-math.js"]
     },
     {
       "output": "assets/scripts/grade-policy.js",
       "scope": "global",
-      "sources": [
-        "src/domain/grade-policy.js"
-      ]
+      "sources": ["src/domain/grade-policy.js"]
     },
     {
       "output": "assets/scripts/history-changes.js",
       "scope": "global",
-      "sources": [
-        "src/domain/history-changes.js"
-      ]
+      "sources": ["src/domain/history-changes.js"]
     },
     {
       "output": "assets/scripts/password-service.js",
       "scope": "global",
-      "sources": [
-        "src/domain/password.js"
-      ]
+      "sources": ["src/domain/password.js"]
     },
     {
       "output": "assets/scripts/periodic-reports.js",
@@ -228,11 +217,14 @@
       "sources": [
         "src/reports/periodic/date-range.js",
         "src/reports/periodic/notes.js",
+        "src/reports/periodic/events-notes.js",
         "src/reports/periodic/model.js",
         "src/reports/periodic/text.js",
         "src/reports/periodic/document.js",
+        "src/reports/periodic/events-document.js",
         "src/reports/periodic/filters.js",
         "src/reports/periodic/render.js",
+        "src/reports/periodic/events-render.js",
         "src/reports/periodic/generate.js",
         "src/reports/periodic/output.js"
       ]
@@ -240,44 +232,32 @@
     {
       "output": "assets/scripts/pwa-manifest.js",
       "scope": "global",
-      "sources": [
-        "src/pwa/manifest.js"
-      ]
+      "sources": ["src/pwa/manifest.js"]
     },
     {
       "output": "assets/scripts/pwa-ui.js",
       "scope": "global",
-      "sources": [
-        "src/pwa/install-update.js"
-      ]
+      "sources": ["src/pwa/install-update.js"]
     },
     {
       "output": "assets/scripts/record-commit-plan.js",
       "scope": "global",
-      "sources": [
-        "src/data/commit-plan.js"
-      ]
+      "sources": ["src/data/commit-plan.js"]
     },
     {
       "output": "assets/scripts/record-transaction.js",
       "scope": "global",
-      "sources": [
-        "src/data/record-transaction.js"
-      ]
+      "sources": ["src/data/record-transaction.js"]
     },
     {
       "output": "assets/scripts/undo-validator.js",
       "scope": "global",
-      "sources": [
-        "src/validation/undo.js"
-      ]
+      "sources": ["src/validation/undo.js"]
     },
     {
       "output": "assets/scripts/workspace-records.js",
       "scope": "global",
-      "sources": [
-        "src/data/workspace-records.js"
-      ]
+      "sources": ["src/data/workspace-records.js"]
     },
     {
       "output": "assets/styles/app.css",
@@ -320,9 +300,7 @@
     {
       "output": "assets/scripts/runtime-api.js",
       "scope": "global",
-      "sources": [
-        "src/core/runtime-api.js"
-      ]
+      "sources": ["src/core/runtime-api.js", "src/legacy/core/events.js"]
     }
   ]
 }

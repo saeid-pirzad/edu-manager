@@ -5,49 +5,61 @@
 // Produces a detached undo candidate; persistence and current-state checks
 // stay in the caller. Historical stale undo is validated but not executed.
 globalThis.EduUndoValidator = Object.freeze({
-  validate(undo, records, period, { assertSafeDataTree, isDataObject, isSafeRecordId, clone, logicalRecordType, validateLogicalValue, decodeWorkspaceRecords }) {
-          assertSafeDataTree(undo);
-          if (
-            !isDataObject(undo) ||
-            !period ||
-            !isSafeRecordId(undo.id) ||
-            undo.id !== period.id ||
-            (undo.workspace !== undefined && undo.workspace !== period.id) ||
-            !Number.isSafeInteger(undo.revision) ||
-            undo.revision < 1 ||
-            undo.revision > period.revision ||
-            typeof undo.action !== "string" ||
-            undo.action.length > 10000 ||
-            !Array.isArray(undo.before) ||
-            !(records instanceof Map)
-          )
-            throw Error("ساختار یا نسخه بازگردانی معتبر نیست.");
-          const keys = new Set(),
-            candidate = new Map(
-              [...records].map(([key, value]) => [key, clone(value)]),
-            );
-          for (const before of undo.before) {
-            if (
-              !isDataObject(before) ||
-              !Object.hasOwn(before, "value") ||
-              keys.has(before.key)
-            )
-              throw Error("رکورد بازگردانی ناقص یا تکراری است.");
-            logicalRecordType(before.key);
-            keys.add(before.key);
-            if (before.value === null) candidate.delete(before.key);
-            else {
-              validateLogicalValue(before.key, before.value);
-              candidate.set(before.key, clone(before.value));
-            }
-          }
-          // A stale undo cannot be executed; only an undo matching these records has a testable candidate.
-          if (undo.revision === period.revision)
-            decodeWorkspaceRecords(
-              [...candidate].map(([logical, value]) => ({ logical, value })),
-            );
-          return candidate;
-        
+  validate(
+    undo,
+    records,
+    period,
+    {
+      assertSafeDataTree,
+      isDataObject,
+      isSafeRecordId,
+      clone,
+      logicalRecordType,
+      validateLogicalValue,
+      decodeWorkspaceRecords,
+    },
+  ) {
+    assertSafeDataTree(undo);
+    if (
+      !isDataObject(undo) ||
+      !period ||
+      !isSafeRecordId(undo.id) ||
+      undo.id !== period.id ||
+      (undo.workspace !== undefined && undo.workspace !== period.id) ||
+      !Number.isSafeInteger(undo.revision) ||
+      undo.revision < 1 ||
+      undo.revision > period.revision ||
+      typeof undo.action !== "string" ||
+      undo.action.length > 10000 ||
+      !Array.isArray(undo.before) ||
+      !(records instanceof Map)
+    )
+      throw Error("ساختار یا نسخه بازگردانی معتبر نیست.");
+    const keys = new Set(),
+      candidate = new Map(
+        [...records].map(([key, value]) => [key, clone(value)]),
+      );
+    for (const before of undo.before) {
+      if (
+        !isDataObject(before) ||
+        !Object.hasOwn(before, "value") ||
+        keys.has(before.key)
+      )
+        throw Error("رکورد بازگردانی ناقص یا تکراری است.");
+      logicalRecordType(before.key);
+      keys.add(before.key);
+      if (before.value === null) candidate.delete(before.key);
+      else {
+        validateLogicalValue(before.key, before.value);
+        candidate.set(before.key, clone(before.value));
+      }
+    }
+    // A stale undo cannot be executed; only an undo matching these records has a testable candidate.
+    if (undo.revision === period.revision)
+      decodeWorkspaceRecords(
+        [...candidate].map(([logical, value]) => ({ logical, value })),
+      );
+    return candidate;
   },
 });
 //# sourceMappingURL=undo-validator.js.map

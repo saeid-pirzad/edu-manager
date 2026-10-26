@@ -258,7 +258,6 @@ async function postFixFlows() {
                 midtermTheory: 12,
               };
     await saveDB();
-    const pair = { first: firstId, second: secondId };
     let wrongPair = false;
     try {
       await EduV24.prepareReportSnapshot({

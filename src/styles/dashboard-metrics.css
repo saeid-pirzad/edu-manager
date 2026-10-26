@@ -1,117 +1,116 @@
-      /* dashboardMetricsDesign */
+/* dashboardMetricsDesign */
 
-      @media screen {
-        .dashboard-metrics {
-          gap: 14px;
-        }
-        .dashboard-metrics .ui-stat {
-          --metric-ink: #4f46e5;
-          --metric-tint: #eef2ff;
-          --metric-border: #e0e7ff;
-          display: grid;
-          grid-template-columns: 38px minmax(0, 1fr);
-          grid-template-areas: "icon value" "label label";
-          align-items: center;
-          gap: 12px 10px;
-          border: 1px solid var(--metric-border);
-          border-radius: 18px;
-          padding: 18px;
-          background: linear-gradient(135deg, #fff 40%, var(--metric-tint));
-          box-shadow: 0 4px 14px #26366a04;
-          min-width: 0;
-        }
-        .dashboard-metrics .metric-class {
-          --metric-ink: #0f766e;
-          --metric-tint: #e8f6f1;
-          --metric-border: #d6eae2;
-        }
-        .dashboard-metrics .metric-student {
-          --metric-ink: #a16207;
-          --metric-tint: #fff7e6;
-          --metric-border: #f2e5c8;
-        }
-        .dashboard-metrics .metric-icon {
-          grid-area: icon;
-          display: grid;
-          place-items: center;
-          width: 38px;
-          height: 38px;
-          border-radius: 12px;
-          background: var(--metric-tint);
-          color: var(--metric-ink);
-        }
-        .metric-icon svg {
-          display: block;
-          width: 22px;
-          height: 22px;
-        }
-        .dashboard-metrics .ui-stat strong {
-          grid-area: value;
-          justify-self: end;
-          font-size: 1.85rem;
-          line-height: 1.3;
-          font-weight: 700;
-          color: var(--metric-ink);
-          font-variant-numeric: tabular-nums;
-          max-width: 100%;
-          overflow-wrap: anywhere;
-        }
-        .dashboard-metrics .metric-label {
-          grid-area: label;
-          color: #52617b;
-          font-size: 0.8rem;
-          font-weight: 500;
-          line-height: 1.6;
-        }
-        @media (max-width: 700px), (max-width: 1000px) and (pointer: coarse) {
-          .dashboard-metrics {
-            gap: 9px;
-            margin-bottom: 18px;
-          }
-          .dashboard-metrics .ui-stat {
-            grid-template-columns: 30px minmax(0, 1fr);
-            gap: 12px 6px;
-            border-radius: 16px;
-            padding: 13px 11px;
-            min-height: 104px;
-          }
-          .dashboard-metrics .metric-icon {
-            width: 30px;
-            height: 30px;
-            border-radius: 10px;
-          }
-          .dashboard-metrics .metric-icon svg {
-            width: 19px;
-            height: 19px;
-          }
-          .dashboard-metrics .ui-stat strong {
-            font-size: clamp(1.25rem, 4.8vw, 1.7rem);
-          }
-          .dashboard-metrics .metric-label {
-            font-size: 0.73rem;
-          }
-        }
-        @media (max-width: 340px) {
-          .dashboard-metrics {
-            gap: 7px;
-          }
-          .dashboard-metrics .ui-stat {
-            grid-template-columns: 26px minmax(0, 1fr);
-            padding: 12px 8px;
-            gap: 10px 4px;
-          }
-          .dashboard-metrics .metric-icon {
-            width: 26px;
-            height: 28px;
-            border-radius: 8px;
-          }
-          .dashboard-metrics .metric-icon svg {
-            width: 17px;
-            height: 17px;
-          }
-          .dashboard-metrics .ui-stat strong {
-            font-size: 1.2rem;
-          }
-        }
-      }
-
+@media screen {
+  .dashboard-metrics {
+    gap: 14px;
+  }
+  .dashboard-metrics .ui-stat {
+    --metric-ink: #4f46e5;
+    --metric-tint: #eef2ff;
+    --metric-border: #e0e7ff;
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr);
+    grid-template-areas: "icon value" "label label";
+    align-items: center;
+    gap: 12px 10px;
+    border: 1px solid var(--metric-border);
+    border-radius: 18px;
+    padding: 18px;
+    background: linear-gradient(135deg, #fff 40%, var(--metric-tint));
+    box-shadow: 0 4px 14px #26366a04;
+    min-width: 0;
+  }
+  .dashboard-metrics .metric-class {
+    --metric-ink: #0f766e;
+    --metric-tint: #e8f6f1;
+    --metric-border: #d6eae2;
+  }
+  .dashboard-metrics .metric-student {
+    --metric-ink: #a16207;
+    --metric-tint: #fff7e6;
+    --metric-border: #f2e5c8;
+  }
+  .dashboard-metrics .metric-icon {
+    grid-area: icon;
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: var(--metric-tint);
+    color: var(--metric-ink);
+  }
+  .metric-icon svg {
+    display: block;
+    width: 22px;
+    height: 22px;
+  }
+  .dashboard-metrics .ui-stat strong {
+    grid-area: value;
+    justify-self: end;
+    font-size: 1.85rem;
+    line-height: 1.3;
+    font-weight: 700;
+    color: var(--metric-ink);
+    font-variant-numeric: tabular-nums;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+  .dashboard-metrics .metric-label {
+    grid-area: label;
+    color: #52617b;
+    font-size: 0.8rem;
+    font-weight: 500;
+    line-height: 1.6;
+  }
+  @media (max-width: 700px), (max-width: 1000px) and (pointer: coarse) {
+    .dashboard-metrics {
+      gap: 9px;
+      margin-bottom: 18px;
+    }
+    .dashboard-metrics .ui-stat {
+      grid-template-columns: 30px minmax(0, 1fr);
+      gap: 12px 6px;
+      border-radius: 16px;
+      padding: 13px 11px;
+      min-height: 104px;
+    }
+    .dashboard-metrics .metric-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 10px;
+    }
+    .dashboard-metrics .metric-icon svg {
+      width: 19px;
+      height: 19px;
+    }
+    .dashboard-metrics .ui-stat strong {
+      font-size: clamp(1.25rem, 4.8vw, 1.7rem);
+    }
+    .dashboard-metrics .metric-label {
+      font-size: 0.73rem;
+    }
+  }
+  @media (max-width: 340px) {
+    .dashboard-metrics {
+      gap: 7px;
+    }
+    .dashboard-metrics .ui-stat {
+      grid-template-columns: 26px minmax(0, 1fr);
+      padding: 12px 8px;
+      gap: 10px 4px;
+    }
+    .dashboard-metrics .metric-icon {
+      width: 26px;
+      height: 28px;
+      border-radius: 8px;
+    }
+    .dashboard-metrics .metric-icon svg {
+      width: 17px;
+      height: 17px;
+    }
+    .dashboard-metrics .ui-stat strong {
+      font-size: 1.2rem;
+    }
+  }
+}

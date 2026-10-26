@@ -1,467 +1,466 @@
-      /* Responsive base */
+/* Responsive base */
 
-      .workspace-bar {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex-wrap: wrap;
-        background: #fff;
-        padding: 12px;
-        border-radius: 10px;
-        margin: 12px 0;
-      }
-      .workspace-bar small {
-        flex-basis: 100%;
-        color: #475569;
-      }
-      #saveStatus {
-        padding: 6px 10px;
-        border-radius: 6px;
-        font-size: 0.9em;
-      }
-      #saveStatus[data-state="saved"] {
-        background: #dcfce7;
-        color: #166534;
-      }
-      #saveStatus[data-state="pending"] {
-        background: #fef3c7;
-        color: #92400e;
-      }
-      #saveStatus[data-state="error"] {
-        background: #fee2e2;
-        color: #991b1b;
-      }
-      .grade-editor {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 4px;
-        min-width: 130px;
-      }
-      .grade-editor input {
-        width: 90px;
-        max-width: 100%;
-        padding: 7px;
-      }
-      .grade-editor input[aria-invalid="true"] {
-        border: 2px solid #dc2626;
-        background: #fff7f7;
-      }
-      .grade-editor .grade-clear {
-        padding: 4px;
-        font-size: 0.7em;
-      }
-      .grade-note {
-        flex-basis: 100%;
-        font-size: 0.7em;
-        color: #64748b;
-      }
-      .table-scroll {
-        overflow-x: auto;
-      }
-      button:disabled,
-      input:disabled,
-      select:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
-      details.card summary {
-        cursor: pointer;
-      }
-      details.card td {
-        word-break: break-word;
-      }
-      #printRoot {
-        display: none;
-      }
-      .report-document h3 {
-        break-after: avoid;
-      }
-      input[type="text"][data-grade] {
-        letter-spacing: 0;
-        text-align: center;
-      }
-      @media print {
-        body > * {
-          display: none !important;
-        }
-        body > #printRoot {
-          display: block !important;
-          position: static !important;
-          width: auto !important;
-          max-width: none !important;
-          background: #fff !important;
-          color: #000 !important;
-          font-family: IRANSans, Tahoma, sans-serif;
-          font-size: 9pt !important;
-          direction: rtl;
-        }
-        #printRoot * {
-          position: static !important;
-          max-height: none !important;
-          height: auto !important;
-          overflow: visible !important;
-          box-shadow: none !important;
-        }
-        #printRoot .card {
-          border: 0 !important;
-          padding: 4px !important;
-          margin: 0 0 8px !important;
-          page-break-inside: auto !important;
-          break-inside: auto !important;
-        }
-        #printRoot table {
-          width: 100% !important;
-          table-layout: fixed !important;
-          font-size: 8pt !important;
-        }
-        #printRoot th,
-        #printRoot td {
-          padding: 4px !important;
-          overflow-wrap: anywhere !important;
-          word-break: break-word !important;
-          border: 1px solid #bbb !important;
-        }
-        #printRoot thead {
-          display: table-header-group !important;
-        }
-        #printRoot tr {
-          break-inside: avoid !important;
-        }
-        #printRoot h1,
-        #printRoot h2,
-        #printRoot h3,
-        #printRoot h4 {
-          break-after: avoid !important;
-        }
-        #printRoot .no-print,
-        #printRoot button,
-        #printRoot input,
-        #printRoot select {
-          display: none !important;
-        }
-      }
-      .course-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 12px;
-        margin: 12px 0;
-      }
-      .course-field {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-      }
-      .course-field input,
-      .course-field select {
-        width: 100%;
-        box-sizing: border-box;
-      }
-      #coursePolicy {
-        border: 1px solid #cbd5e1;
-        border-radius: 10px;
-        margin: 16px 0;
-        padding: 14px;
-      }
-      #courseError,
-      .course-warning {
-        color: #991b1b;
-        background: #fef2f2;
-        padding: 8px;
-        border-radius: 6px;
-      }
-      [hidden] {
-        display: none !important;
-      }
+.workspace-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: #fff;
+  padding: 12px;
+  border-radius: 10px;
+  margin: 12px 0;
+}
+.workspace-bar small {
+  flex-basis: 100%;
+  color: #475569;
+}
+#saveStatus {
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.9em;
+}
+#saveStatus[data-state="saved"] {
+  background: #dcfce7;
+  color: #166534;
+}
+#saveStatus[data-state="pending"] {
+  background: #fef3c7;
+  color: #92400e;
+}
+#saveStatus[data-state="error"] {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.grade-editor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 130px;
+}
+.grade-editor input {
+  width: 90px;
+  max-width: 100%;
+  padding: 7px;
+}
+.grade-editor input[aria-invalid="true"] {
+  border: 2px solid #dc2626;
+  background: #fff7f7;
+}
+.grade-editor .grade-clear {
+  padding: 4px;
+  font-size: 0.7em;
+}
+.grade-note {
+  flex-basis: 100%;
+  font-size: 0.7em;
+  color: #64748b;
+}
+.table-scroll {
+  overflow-x: auto;
+}
+button:disabled,
+input:disabled,
+select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+details.card summary {
+  cursor: pointer;
+}
+details.card td {
+  word-break: break-word;
+}
+#printRoot {
+  display: none;
+}
+.report-document h3 {
+  break-after: avoid;
+}
+input[type="text"][data-grade] {
+  letter-spacing: 0;
+  text-align: center;
+}
+@media print {
+  body > * {
+    display: none !important;
+  }
+  body > #printRoot {
+    display: block !important;
+    position: static !important;
+    width: auto !important;
+    max-width: none !important;
+    background: #fff !important;
+    color: #000 !important;
+    font-family: IRANSans, Tahoma, sans-serif;
+    font-size: 9pt !important;
+    direction: rtl;
+  }
+  #printRoot * {
+    position: static !important;
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+  }
+  #printRoot .card {
+    border: 0 !important;
+    padding: 4px !important;
+    margin: 0 0 8px !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+  #printRoot table {
+    width: 100% !important;
+    table-layout: fixed !important;
+    font-size: 8pt !important;
+  }
+  #printRoot th,
+  #printRoot td {
+    padding: 4px !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+    border: 1px solid #bbb !important;
+  }
+  #printRoot thead {
+    display: table-header-group !important;
+  }
+  #printRoot tr {
+    break-inside: avoid !important;
+  }
+  #printRoot h1,
+  #printRoot h2,
+  #printRoot h3,
+  #printRoot h4 {
+    break-after: avoid !important;
+  }
+  #printRoot .no-print,
+  #printRoot button,
+  #printRoot input,
+  #printRoot select {
+    display: none !important;
+  }
+}
+.course-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+.course-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.course-field input,
+.course-field select {
+  width: 100%;
+  box-sizing: border-box;
+}
+#coursePolicy {
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  margin: 16px 0;
+  padding: 14px;
+}
+#courseError,
+.course-warning {
+  color: #991b1b;
+  background: #fef2f2;
+  padding: 8px;
+  border-radius: 6px;
+}
+[hidden] {
+  display: none !important;
+}
 
-      html {
-        -webkit-text-size-adjust: 100%;
-      }
-      body {
-        font-family: "IRANSans", Tahoma, Arial, sans-serif;
-        overflow-wrap: anywhere;
-        padding-bottom: env(safe-area-inset-bottom);
-      }
-      #app,
-      .card,
-      .row,
-      .topbar,
-      .tabs,
-      .form-row,
-      .workspace-bar {
-        min-width: 0;
-      }
-      button,
-      input,
-      select,
-      textarea {
-        font: inherit;
-      }
-      button,
-      summary {
-        touch-action: manipulation;
-      }
-      .responsive-scroll {
-        max-width: 100%;
-        width: 100%;
-        min-width: 0;
-        overflow: auto;
-        overscroll-behavior-x: contain;
-        -webkit-overflow-scrolling: touch;
-        margin-block: 8px;
-      }
-      .responsive-scroll:focus-visible {
-        outline: 2px solid #4f46e5;
-        outline-offset: 2px;
-      }
-      .responsive-scroll table {
-        margin: 0;
-      }
-      .responsive-scroll th,
-      .table-scroll th {
-        white-space: nowrap;
-      }
-      .responsive-scroll table th:first-child,
-      .responsive-scroll table td:first-child,
-      .table-scroll table th:first-child,
-      .table-scroll table td:first-child {
-        min-width: 120px;
-      }
-      .responsive-scroll table th:first-child,
-      .responsive-scroll table td:first-child {
-        position: sticky;
-        right: 0;
-        background: #f8fafc;
-        z-index: 1;
-        max-width: 200px;
-        overflow-wrap: anywhere;
-      }
-      .workspace-tools {
-        width: 100%;
-      }
-      .workspace-tools summary {
-        cursor: pointer;
-        color: #4338ca;
-        padding: 10px;
-        min-height: 44px;
-      }
-      .workspace-tools .tool-actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        padding: 8px 0;
-      }
-      .workspace-tools:not([open]) {
-        width: auto;
-      }
-      .local-mode-note {
-        font-size: 0.8rem;
-        color: #475569;
-        padding: 8px 12px;
-        background: #eef2ff;
-      }
-      .navigation-menu summary {
-        cursor: pointer;
-        padding: 10px 12px;
-        min-height: 44px;
-        color: #4338ca;
-        background: #eef2ff;
-        border-radius: 8px;
-      }
-      @media (min-width: 701px) {
-        .navigation-menu > summary {
-          display: none;
-        }
-        .navigation-menu {
-          flex: 1;
-        }
-        .navigation-menu .actions {
-          justify-content: flex-end;
-        }
-      }
-      @media (max-width: 700px) {
-        #app {
-          padding: 8px;
-        }
-        .topbar,
-        .row,
-        .form-row {
-          flex-wrap: wrap;
-          gap: 8px;
-        }
-        .topbar {
-          margin-block: 8px !important;
-        }
-        .navigation-menu {
-          width: 100%;
-        }
-        .topbar > div:first-child {
-          width: 100%;
-          justify-content: space-between;
-        }
-        .topbar h1 {
-          margin: 0;
-          font-size: 1rem;
-        }
-        .row > * {
-          min-width: 0;
-          max-width: 100%;
-        }
-        input:not([type="checkbox"]):not([type="radio"]),
-        select,
-        textarea {
-          font-size: 16px !important;
-          min-height: 44px;
-          max-width: 100%;
-        }
-        button {
-          min-height: 44px;
-          white-space: normal;
-        }
-        input[type="checkbox"],
-        input[type="radio"] {
-          width: 20px;
-          height: 20px;
-          min-height: 20px;
-          flex: none;
-        }
-        label:has(input[type="checkbox"]),
-        label:has(input[type="radio"]) {
-          min-height: 44px;
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-        }
-        form.row > input:not([type="checkbox"]):not([type="radio"]),
-        form.row > select {
-          flex: 1 1 100% !important;
-          width: 100% !important;
-        }
-        form.row > button {
-          flex: 1 1 auto;
-        }
-        .card {
-          padding: 12px;
-          max-width: 100%;
-          overflow: visible;
-        }
-        .tabs {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 6px;
-        }
-        .tabs button {
-          flex: 1 1 0;
-          min-width: 0;
-          font-size: 0.85rem;
-          padding: 10px 4px;
-        }
-        .course-grid {
-          grid-template-columns: minmax(0, 1fr);
-        }
-        .course-field {
-          min-width: 0;
-        }
-        .workspace-bar {
-          gap: 8px;
-          padding: 10px;
-        }
-        .workspace-bar > strong,
-        .workspace-bar > #saveStatus {
-          flex-basis: 100%;
-        }
-        .workspace-bar > button {
-          flex: 1 1 auto;
-        }
-        .workspace-tools .tool-actions button {
-          flex: 1 1 45%;
-        }
-        .modal-overlay {
-          padding: 8px;
-        }
-        .modal-dialog {
-          width: 100%;
-          max-width: calc(100vw - 16px);
-          max-height: calc(var(--app-viewport, 100dvh) - 16px);
-        }
-        .modal-header {
-          padding: 8px 12px;
-          gap: 8px;
-        }
-        .modal-header h3 {
-          font-size: 1rem;
-        }
-        .modal-header button {
-          min-width: 44px;
-          flex-shrink: 0;
-        }
-        .modal-body {
-          padding: 12px;
-          min-width: 0;
-          overflow: auto;
-        }
-        .form-row {
-          align-items: stretch;
-        }
-        .form-row > input,
-        .form-row > select,
-        .form-row > textarea {
-          min-width: 0;
-          flex: 1 1 150px;
-        }
-        .att-row {
-          flex-wrap: wrap;
-          gap: 8px;
-        }
-        .att-name {
-          flex: 1 1 100%;
-        }
-        .att-btns {
-          width: 100%;
-          flex-wrap: wrap;
-        }
-        .att-btns button {
-          flex: 1;
-        }
-        .grade-editor {
-          min-width: 112px;
-        }
-        .grade-editor input {
-          width: 80px;
-        }
-        .grade-clear {
-          min-width: 44px;
-        }
-        .responsive-scroll table th:first-child,
-        .responsive-scroll table td:first-child {
-          max-width: 135px;
-        }
-        .mobile-bar {
-          gap: 6px;
-          padding: 8px;
-        }
-        .mobile-bar > strong {
-          display: none;
-        }
-        .mobile-bar > span {
-          flex: 1 1 100%;
-        }
-      }
-      @media print {
-        .responsive-scroll {
-          overflow: visible;
-          max-height: none;
-        }
-        .responsive-scroll table,
-        .table-scroll table {
-          min-width: 0 !important;
-        }
-        .responsive-scroll table th:first-child,
-        .responsive-scroll table td:first-child {
-          position: static;
-        }
-        .workspace-tools,
-        .local-mode-note {
-          display: none !important;
-        }
-      }
-
+html {
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  font-family: "IRANSans", Tahoma, Arial, sans-serif;
+  overflow-wrap: anywhere;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+#app,
+.card,
+.row,
+.topbar,
+.tabs,
+.form-row,
+.workspace-bar {
+  min-width: 0;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+button,
+summary {
+  touch-action: manipulation;
+}
+.responsive-scroll {
+  max-width: 100%;
+  width: 100%;
+  min-width: 0;
+  overflow: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  margin-block: 8px;
+}
+.responsive-scroll:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
+.responsive-scroll table {
+  margin: 0;
+}
+.responsive-scroll th,
+.table-scroll th {
+  white-space: nowrap;
+}
+.responsive-scroll table th:first-child,
+.responsive-scroll table td:first-child,
+.table-scroll table th:first-child,
+.table-scroll table td:first-child {
+  min-width: 120px;
+}
+.responsive-scroll table th:first-child,
+.responsive-scroll table td:first-child {
+  position: sticky;
+  right: 0;
+  background: #f8fafc;
+  z-index: 1;
+  max-width: 200px;
+  overflow-wrap: anywhere;
+}
+.workspace-tools {
+  width: 100%;
+}
+.workspace-tools summary {
+  cursor: pointer;
+  color: #4338ca;
+  padding: 10px;
+  min-height: 44px;
+}
+.workspace-tools .tool-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 0;
+}
+.workspace-tools:not([open]) {
+  width: auto;
+}
+.local-mode-note {
+  font-size: 0.8rem;
+  color: #475569;
+  padding: 8px 12px;
+  background: #eef2ff;
+}
+.navigation-menu summary {
+  cursor: pointer;
+  padding: 10px 12px;
+  min-height: 44px;
+  color: #4338ca;
+  background: #eef2ff;
+  border-radius: 8px;
+}
+@media (min-width: 701px) {
+  .navigation-menu > summary {
+    display: none;
+  }
+  .navigation-menu {
+    flex: 1;
+  }
+  .navigation-menu .actions {
+    justify-content: flex-end;
+  }
+}
+@media (max-width: 700px) {
+  #app {
+    padding: 8px;
+  }
+  .topbar,
+  .row,
+  .form-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .topbar {
+    margin-block: 8px !important;
+  }
+  .navigation-menu {
+    width: 100%;
+  }
+  .topbar > div:first-child {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1rem;
+  }
+  .row > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+    min-height: 44px;
+    max-width: 100%;
+  }
+  button {
+    min-height: 44px;
+    white-space: normal;
+  }
+  input[type="checkbox"],
+  input[type="radio"] {
+    width: 20px;
+    height: 20px;
+    min-height: 20px;
+    flex: none;
+  }
+  label:has(input[type="checkbox"]),
+  label:has(input[type="radio"]) {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  form.row > input:not([type="checkbox"]):not([type="radio"]),
+  form.row > select {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+  }
+  form.row > button {
+    flex: 1 1 auto;
+  }
+  .card {
+    padding: 12px;
+    max-width: 100%;
+    overflow: visible;
+  }
+  .tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .tabs button {
+    flex: 1 1 0;
+    min-width: 0;
+    font-size: 0.85rem;
+    padding: 10px 4px;
+  }
+  .course-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .course-field {
+    min-width: 0;
+  }
+  .workspace-bar {
+    gap: 8px;
+    padding: 10px;
+  }
+  .workspace-bar > strong,
+  .workspace-bar > #saveStatus {
+    flex-basis: 100%;
+  }
+  .workspace-bar > button {
+    flex: 1 1 auto;
+  }
+  .workspace-tools .tool-actions button {
+    flex: 1 1 45%;
+  }
+  .modal-overlay {
+    padding: 8px;
+  }
+  .modal-dialog {
+    width: 100%;
+    max-width: calc(100vw - 16px);
+    max-height: calc(var(--app-viewport, 100dvh) - 16px);
+  }
+  .modal-header {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  .modal-header h3 {
+    font-size: 1rem;
+  }
+  .modal-header button {
+    min-width: 44px;
+    flex-shrink: 0;
+  }
+  .modal-body {
+    padding: 12px;
+    min-width: 0;
+    overflow: auto;
+  }
+  .form-row {
+    align-items: stretch;
+  }
+  .form-row > input,
+  .form-row > select,
+  .form-row > textarea {
+    min-width: 0;
+    flex: 1 1 150px;
+  }
+  .att-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .att-name {
+    flex: 1 1 100%;
+  }
+  .att-btns {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .att-btns button {
+    flex: 1;
+  }
+  .grade-editor {
+    min-width: 112px;
+  }
+  .grade-editor input {
+    width: 80px;
+  }
+  .grade-clear {
+    min-width: 44px;
+  }
+  .responsive-scroll table th:first-child,
+  .responsive-scroll table td:first-child {
+    max-width: 135px;
+  }
+  .mobile-bar {
+    gap: 6px;
+    padding: 8px;
+  }
+  .mobile-bar > strong {
+    display: none;
+  }
+  .mobile-bar > span {
+    flex: 1 1 100%;
+  }
+}
+@media print {
+  .responsive-scroll {
+    overflow: visible;
+    max-height: none;
+  }
+  .responsive-scroll table,
+  .table-scroll table {
+    min-width: 0 !important;
+  }
+  .responsive-scroll table th:first-child,
+  .responsive-scroll table td:first-child {
+    position: static;
+  }
+  .workspace-tools,
+  .local-mode-note {
+    display: none !important;
+  }
+}

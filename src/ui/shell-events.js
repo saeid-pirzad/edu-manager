@@ -5,8 +5,8 @@
 (() => {
   const bindings = [
     ["modalClose", "click", () => closeModal()],
-    ["importFile", "change", event => handleImport(event)],
-    ["excelFile", "change", event => handleExcelImport(event)],
+    ["importFile", "change", (event) => handleImport(event)],
+    ["excelFile", "change", (event) => handleExcelImport(event)],
   ];
   for (const [id, eventName, handler] of bindings) {
     const element = document.getElementById(id);

@@ -1,93 +1,92 @@
-      /* hamburgerButtonDesign */
+/* hamburgerButtonDesign */
 
-      .menu-toggle-icon {
-        display: none;
-      }
-      @media screen and (max-width: 700px),
-        screen and (max-width: 1000px) and (pointer: coarse) {
-        .topbar .navigation-menu > summary {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          place-content: center;
-          gap: 0;
-          padding: 0;
-          line-height: 0;
-          width: 44px;
-          height: 44px;
-          min-height: 44px;
-          border: 1px solid #e6eaf2;
-          border-radius: 12px;
-          background: #fff;
-          color: #52617b;
-          box-shadow: 0 1px 2px #25345a04;
-          transition:
-            background 0.18s,
-            border-color 0.18s,
-            box-shadow 0.18s;
-          touch-action: manipulation;
-        }
-        .topbar .navigation-menu > summary::after {
-          content: none !important;
-          display: none;
-        }
-        .menu-toggle-label {
-          position: absolute;
-          width: 1px;
-          height: 1px;
-          overflow: hidden;
-          clip-path: inset(50%);
-          white-space: nowrap;
-        }
-        .menu-toggle-icon {
-          display: block;
-          flex: 0 0 24px;
-          width: 24px;
-          height: 24px;
-          margin: 0;
-          pointer-events: none;
-        }
-        .menu-toggle-icon path {
-          transform-origin: 12px 12px;
-          transition:
-            transform 0.2s ease,
-            opacity 0.15s ease;
-        }
-        .menu-line-top {
-          transform: translateY(-5px);
-        }
-        .menu-line-bottom {
-          transform: translateY(5px);
-        }
-        .topbar .navigation-menu > summary:hover {
-          background: #f5f7ff;
-          border-color: #c7d2fe;
-          color: #4f46e5;
-        }
-        .topbar .navigation-menu > summary:focus-visible {
-          outline: 3px solid #a5b4fc;
-          outline-offset: 3px;
-        }
-        .topbar .navigation-menu[open] > summary {
-          background: #eef2ff;
-          border-color: #c7d2fe;
-          color: #4f46e5;
-          box-shadow: none;
-        }
-        .navigation-menu[open] .menu-line-top {
-          transform: rotate(45deg);
-        }
-        .navigation-menu[open] .menu-line-middle {
-          opacity: 0;
-          transform: scaleX(0.25);
-        }
-        .navigation-menu[open] .menu-line-bottom {
-          transform: rotate(-45deg);
-        }
-      }
-      @media (prefers-reduced-motion: reduce) {
-        .menu-toggle-icon path {
-          transition: none;
-        }
-      }
-
+.menu-toggle-icon {
+  display: none;
+}
+@media screen and (max-width: 700px),
+  screen and (max-width: 1000px) and (pointer: coarse) {
+  .topbar .navigation-menu > summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    place-content: center;
+    gap: 0;
+    padding: 0;
+    line-height: 0;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    border: 1px solid #e6eaf2;
+    border-radius: 12px;
+    background: #fff;
+    color: #52617b;
+    box-shadow: 0 1px 2px #25345a04;
+    transition:
+      background 0.18s,
+      border-color 0.18s,
+      box-shadow 0.18s;
+    touch-action: manipulation;
+  }
+  .topbar .navigation-menu > summary::after {
+    content: none !important;
+    display: none;
+  }
+  .menu-toggle-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .menu-toggle-icon {
+    display: block;
+    flex: 0 0 24px;
+    width: 24px;
+    height: 24px;
+    margin: 0;
+    pointer-events: none;
+  }
+  .menu-toggle-icon path {
+    transform-origin: 12px 12px;
+    transition:
+      transform 0.2s ease,
+      opacity 0.15s ease;
+  }
+  .menu-line-top {
+    transform: translateY(-5px);
+  }
+  .menu-line-bottom {
+    transform: translateY(5px);
+  }
+  .topbar .navigation-menu > summary:hover {
+    background: #f5f7ff;
+    border-color: #c7d2fe;
+    color: #4f46e5;
+  }
+  .topbar .navigation-menu > summary:focus-visible {
+    outline: 3px solid #a5b4fc;
+    outline-offset: 3px;
+  }
+  .topbar .navigation-menu[open] > summary {
+    background: #eef2ff;
+    border-color: #c7d2fe;
+    color: #4f46e5;
+    box-shadow: none;
+  }
+  .navigation-menu[open] .menu-line-top {
+    transform: rotate(45deg);
+  }
+  .navigation-menu[open] .menu-line-middle {
+    opacity: 0;
+    transform: scaleX(0.25);
+  }
+  .navigation-menu[open] .menu-line-bottom {
+    transform: rotate(-45deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu-toggle-icon path {
+    transition: none;
+  }
+}

@@ -1,42 +1,41 @@
-      /* mobileHomeNavigation */
+/* mobileHomeNavigation */
 
-      @media screen and (max-width: 700px),
-        screen and (max-width: 1000px) and (pointer: coarse) {
-        .topbar .header-brand {
-          width: calc(100% - 104px) !important;
-        }
-        .topbar .header-brand > .header-home {
-          display: inline-flex !important;
-          position: absolute;
-          left: 50px;
-          top: 9px;
-          width: 44px;
-          height: 44px;
-          min-height: 44px;
-          padding: 0 !important;
-          justify-content: center;
-          border: 1px solid #e6eaf2;
-          border-radius: 12px;
-          background: #fff;
-          color: #52617b;
-          box-shadow: none;
-        }
-        .topbar .header-brand > .header-home > span {
-          position: absolute;
-          width: 1px;
-          height: 1px;
-          overflow: hidden;
-          clip-path: inset(50%);
-          white-space: nowrap;
-        }
-        .topbar .header-brand > .header-home > svg {
-          width: 21px;
-          height: 21px;
-        }
-        .topbar .header-brand > .header-home.is-active {
-          color: #4f46e5;
-          background: #eef2ff;
-          border-color: #dce3ff;
-        }
-      }
-
+@media screen and (max-width: 700px),
+  screen and (max-width: 1000px) and (pointer: coarse) {
+  .topbar .header-brand {
+    width: calc(100% - 104px) !important;
+  }
+  .topbar .header-brand > .header-home {
+    display: inline-flex !important;
+    position: absolute;
+    left: 50px;
+    top: 9px;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    padding: 0 !important;
+    justify-content: center;
+    border: 1px solid #e6eaf2;
+    border-radius: 12px;
+    background: #fff;
+    color: #52617b;
+    box-shadow: none;
+  }
+  .topbar .header-brand > .header-home > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .topbar .header-brand > .header-home > svg {
+    width: 21px;
+    height: 21px;
+  }
+  .topbar .header-brand > .header-home.is-active {
+    color: #4f46e5;
+    background: #eef2ff;
+    border-color: #dce3ff;
+  }
+}

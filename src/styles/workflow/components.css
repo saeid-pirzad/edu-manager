@@ -1,479 +1,478 @@
-      /* Shared visual language for the everyday workflow. */
-      :root {
-        --workflow-ink: #172b4d;
-        --workflow-muted: #526580;
-        --workflow-line: #dce5ef;
-        --workflow-accent: #4f46c8;
-        --workflow-soft: #efedff;
-      }
-      body {
-        background: #f4f7fb;
-        color: var(--workflow-ink);
-      }
-      #app {
-        max-width: 1120px;
-        margin-inline: auto;
-      }
-      #app .card {
-        border: 1px solid var(--workflow-line);
-        box-shadow: 0 3px 16px #172b4d04;
-        border-radius: 18px;
-      }
-      #app :is(h2, h3, h4) {
-        letter-spacing: -0.3px;
-        line-height: 1.65;
-      }
-      #app :is(input, select, textarea),
-      #modalBody :is(input, select, textarea) {
-        border-color: var(--workflow-line);
-        border-radius: 12px;
-      }
-      #app :is(button, summary, input, select, textarea):focus-visible,
-      #modal :is(button, summary, input, select, textarea):focus-visible {
-        outline: 3px solid #8aa7fa;
-        outline-offset: 3px;
-      }
-      #app button {
-        border-radius: 12px;
-      }
-      #app button.ghost {
-        color: #3d5274;
-        border: 1px solid var(--workflow-line);
-        background: #fff;
-      }
-      #app .breadcrumb {
-        line-height: 2;
-        font-size: 12px;
-        color: var(--workflow-muted);
-        margin-block: 14px;
-      }
-      .workflow-welcome {
-        padding: 24px 0 18px;
-        grid-template-columns: minmax(0, 1fr) auto;
-        align-items: center;
-      }
-      .workflow-welcome h2 {
-        font-size: 25px;
-      }
-      .workflow-welcome p {
-        grid-column: 1;
-        max-width: 58ch;
-      }
-      .workflow-welcome button,
-      .session-create-form > button,
-      #app .lesson-enter {
-        background: var(--workflow-accent);
-      }
-      .workflow-welcome button {
-        grid-column: 2;
-        grid-row: 1 / 3;
-        min-height: 46px;
-      }
-      .dashboard-section-heading p,
-      .roster-heading p,
-      .lesson-list-heading p {
-        color: var(--workflow-muted);
-        font-size: 13px;
-        line-height: 1.9;
-      }
-      .dashboard-entities {
-        gap: 12px;
-      }
-      .dashboard-entity {
-        background: #fff;
-        border: 1px solid var(--workflow-line);
-        border-radius: 16px;
-        padding: 18px;
-        box-shadow: none;
-        gap: 18px;
-      }
-      .dashboard-entity-symbol {
-        background: var(--workflow-soft);
-        color: var(--workflow-accent);
-        border-radius: 14px;
-        width: 48px;
-        height: 48px;
-        font-size: 18px;
-      }
-      .dashboard-entity-info h4 {
-        font-size: 17px;
-      }
-      .dashboard-entity-actions {
-        gap: 8px;
-      }
-      .dashboard-entity-actions > button:first-child {
-        background: var(--workflow-accent);
-        color: #fff;
-        min-height: 44px;
-      }
-      .dashboard-entity-more > summary,
-      .student-more > summary,
-      .lesson-more > summary {
-        border: 1px solid var(--workflow-line);
-        border-radius: 12px;
-        background: #fff;
-        min-height: 44px;
-      }
-      .workspace-bar {
-        background: transparent !important;
-        border: 0 !important;
-        border-bottom: 1px solid var(--workflow-line) !important;
-        box-shadow: none !important;
-        padding-block: 10px !important;
-      }
-      .workspace-tools > summary {
-        color: var(--workflow-muted);
-        font-size: 12px;
-        gap: 8px;
-      }
-      .workspace-tools > summary::after {
-        content: "⌄";
-        font-size: 12px;
-      }
-      #app .tabs {
-        background: #eaf0f8;
-        border: 0;
-        border-radius: 14px;
-        padding: 5px;
-        gap: 5px;
-      }
-      #app .tabs > button {
-        min-height: 44px;
-        border-radius: 10px;
-        background: transparent;
-        color: #526580;
-        border: 0;
-        box-shadow: none;
-      }
-      #app .tabs > button.active,
-      #app .tabs > button[aria-current="page"] {
-        background: #fff;
-        color: #234bbd;
-        box-shadow: 0 2px 7px #172b4d0b;
-      }
-      .student-profile {
-        border: 1px solid var(--workflow-line);
-        border-radius: 15px;
-        box-shadow: none;
-        padding: 16px;
-      }
-      .student-avatar {
-        background: var(--workflow-soft);
-        color: var(--workflow-accent);
-        border-radius: 13px;
-      }
-      .student-profile-info h4 {
-        font-size: 15px;
-      }
-      .student-profile-info p {
-        color: var(--workflow-muted);
-        font-size: 12px;
-      }
-      .student-row-number {
-        font-variant-numeric: tabular-nums;
-        color: #60738c;
-      }
-      .roster-toolbar {
-        padding: 12px;
-        background: #f5f8fc;
-        border-radius: 14px;
-        gap: 12px;
-      }
-      .roster-toolbar label > span {
-        color: var(--workflow-muted);
-        font-size: 12px;
-      }
-      .lesson-item {
-        border: 1px solid var(--workflow-line);
-        box-shadow: none;
-        border-radius: 16px;
-      }
-      .lesson-policy {
-        font-size: 12px;
-        line-height: 1.9;
-        color: var(--workflow-muted);
-      }
-      .quick-create > summary,
-      .student-import > summary,
-      .lesson-create > summary {
-        min-height: 48px;
-      }
-      .session-create .session-create-form {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 130px auto;
-        gap: 12px;
-        align-items: end;
-      }
-      .session-create-form label {
-        display: grid;
-        gap: 7px;
-        color: var(--workflow-muted);
-        font-size: 13px;
-        min-width: 0;
-      }
-      .session-create-form :is(input, button) {
-        min-height: 46px;
-        width: 100%;
-        min-width: 0;
-      }
-      .session-list-heading {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        margin-bottom: 16px;
-      }
-      .session-list-heading h3 {
-        margin: 0;
-      }
-      .session-list-actions {
-        position: relative;
-      }
-      .session-list-actions > summary {
-        cursor: pointer;
-        padding: 10px;
-        font-size: 12px;
-        color: var(--workflow-muted);
-      }
-      .session-list-actions > div {
-        position: absolute;
-        inset-inline-end: 0;
-        top: 100%;
-        z-index: 5;
-        padding: 10px;
-        background: #fff;
-        border: 1px solid var(--workflow-line);
-        border-radius: 12px;
-        box-shadow: 0 8px 24px #172b4d12;
-        min-width: 180px;
-      }
-      .session-card {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        border: 1px solid var(--workflow-line);
-        border-radius: 15px;
-        margin-block: 10px;
-        padding: 8px;
-        align-items: center;
-        gap: 8px;
-      }
-      #app button.session-open {
-        text-align: start;
-        background: transparent;
-        color: var(--workflow-ink);
-        padding: 10px;
-        width: 100%;
-        display: grid;
-        gap: 8px;
-        box-shadow: none;
-        border: 0;
-      }
-      .session-open > strong {
-        font-size: 15px;
-      }
-      .session-unit {
-        color: var(--workflow-muted);
-        font-size: 12px;
-        line-height: 1.8;
-      }
-      .session-counts {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-      }
-      .session-counts > span {
-        background: #f0f4f9;
-        color: #475b76;
-        border-radius: 8px;
-        padding: 4px 8px;
-        font-size: 11px;
-      }
-      .session-card > .session-delete {
-        width: 44px;
-        min-height: 44px;
-        padding: 8px;
-        background: transparent;
-        border: 1px solid #f0d9dc;
-        color: #b42335;
-      }
-      .assessment-student {
-        background: #fff;
-        border-color: var(--workflow-line);
-      }
-      .assessment-student > p {
-        padding-top: 12px;
-        border-top: 1px solid #edf1f6;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 7px;
-        align-items: center;
-        color: var(--workflow-muted);
-      }
-      .assessment-student [data-assessment-final] {
-        font-size: 19px;
-        color: var(--workflow-accent);
-        font-variant-numeric: tabular-nums;
-      }
-      .assessment-inputs label {
-        font-size: 13px;
-        color: var(--workflow-muted);
-      }
-      .assessment-inputs input {
-        font-size: 18px;
-        text-align: center;
-      }
-      .session-mode-picker button {
-        border-radius: 12px;
-      }
-      .session-workspace .att-row {
-        border-bottom: 1px solid #edf1f6;
-      }
-      .session-workspace .att-btns button {
-        border-radius: 10px;
-      }
-      .session-workspace .att-btns .present.active {
-        background: #dcfce7;
-        color: #166534;
-        border-color: #86efac;
-      }
-      .session-workspace .att-btns .absent.active {
-        background: #fee2e2;
-        color: #991b1b;
-        border-color: #fca5a5;
-      }
-      .session-workspace .att-btns .late.active {
-        background: #fef3c7;
-        color: #92400e;
-        border-color: #fcd34d;
-      }
-      @media (hover: hover) {
-        .dashboard-entity:hover,
-        .lesson-item:hover,
-        .student-profile:hover,
-        .session-card:hover {
-          border-color: #b7c8e6;
-        }
-        #app button.session-open:hover {
-          background: #f5f8ff;
-        }
-      }
-      @media (max-width: 700px) {
-        #app {
-          padding-inline: 14px;
-        }
-        #app .card {
-          border-radius: 16px;
-          padding: 15px;
-        }
-        .workflow-welcome {
-          grid-template-columns: minmax(0, 1fr);
-          padding: 18px 0;
-          gap: 8px;
-        }
-        .workflow-welcome h2 {
-          font-size: 22px;
-        }
-        .workflow-welcome p {
-          font-size: 13px;
-        }
-        .workflow-welcome button {
-          grid-column: 1;
-          grid-row: auto;
-          justify-self: stretch;
-          margin-top: 6px;
-          width: 100%;
-        }
-        .dashboard-entity {
-          padding: 15px;
-          gap: 14px;
-        }
-        .dashboard-entity-info {
-          align-items: center;
-          gap: 12px;
-        }
-        .dashboard-entity-actions {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) auto;
-          width: 100%;
-        }
-        .dashboard-entity-actions > button:first-child {
-          grid-column: 1/-1;
-          width: 100%;
-          min-height: 48px;
-        }
-        .dashboard-entity-actions > button.ghost {
-          width: 100%;
-          font-size: 12px;
-        }
-        .dashboard-entity-more {
-          margin: 0;
-        }
-        .dashboard-entity-more > summary {
-          min-width: 65px;
-          font-size: 12px;
-        }
-        .roster-toolbar {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr);
-        }
-        .roster-toolbar :is(input, select) {
-          min-height: 46px;
-          width: 100%;
-          min-width: 0;
-        }
-        .student-profile {
-          padding: 14px;
-        }
-        .student-avatar {
-          width: 42px;
-          height: 42px;
-        }
-        .student-profile-info h4 {
-          font-size: 14px;
-          line-height: 1.8;
-        }
-        .session-create .session-create-form {
-          grid-template-columns: minmax(0, 1fr) 100px;
-        }
-        .session-create-form > button {
-          grid-column: 1/-1;
-        }
-        .session-list-heading {
-          align-items: center;
-        }
-        .session-list-heading h3 {
-          font-size: 16px;
-        }
-        .session-card {
-          padding: 5px;
-        }
-        .session-open > strong {
-          font-size: 14px;
-        }
-        .session-counts > span {
-          font-size: 10px;
-          padding: 4px 6px;
-        }
-        .assessment-students {
-          padding: 8px;
-          gap: 10px;
-        }
-        .assessment-student {
-          padding: 12px;
-          border-radius: 13px;
-        }
-        .assessment-stage > summary {
-          font-size: 14px;
-        }
-        #uiBottomNav {
-          box-shadow: 0 -4px 20px #172b4d09;
-        }
-      }
-      @media (prefers-reduced-motion: reduce) {
-        .dashboard-entity,
-        .student-profile,
-        .lesson-item {
-          transition: none !important;
-        }
-      }
-
+/* Shared visual language for the everyday workflow. */
+:root {
+  --workflow-ink: #172b4d;
+  --workflow-muted: #526580;
+  --workflow-line: #dce5ef;
+  --workflow-accent: #4f46c8;
+  --workflow-soft: #efedff;
+}
+body {
+  background: #f4f7fb;
+  color: var(--workflow-ink);
+}
+#app {
+  max-width: 1120px;
+  margin-inline: auto;
+}
+#app .card {
+  border: 1px solid var(--workflow-line);
+  box-shadow: 0 3px 16px #172b4d04;
+  border-radius: 18px;
+}
+#app :is(h2, h3, h4) {
+  letter-spacing: -0.3px;
+  line-height: 1.65;
+}
+#app :is(input, select, textarea),
+#modalBody :is(input, select, textarea) {
+  border-color: var(--workflow-line);
+  border-radius: 12px;
+}
+#app :is(button, summary, input, select, textarea):focus-visible,
+#modal :is(button, summary, input, select, textarea):focus-visible {
+  outline: 3px solid #8aa7fa;
+  outline-offset: 3px;
+}
+#app button {
+  border-radius: 12px;
+}
+#app button.ghost {
+  color: #3d5274;
+  border: 1px solid var(--workflow-line);
+  background: #fff;
+}
+#app .breadcrumb {
+  line-height: 2;
+  font-size: 12px;
+  color: var(--workflow-muted);
+  margin-block: 14px;
+}
+.workflow-welcome {
+  padding: 24px 0 18px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+.workflow-welcome h2 {
+  font-size: 25px;
+}
+.workflow-welcome p {
+  grid-column: 1;
+  max-width: 58ch;
+}
+.workflow-welcome button,
+.session-create-form > button,
+#app .lesson-enter {
+  background: var(--workflow-accent);
+}
+.workflow-welcome button {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  min-height: 46px;
+}
+.dashboard-section-heading p,
+.roster-heading p,
+.lesson-list-heading p {
+  color: var(--workflow-muted);
+  font-size: 13px;
+  line-height: 1.9;
+}
+.dashboard-entities {
+  gap: 12px;
+}
+.dashboard-entity {
+  background: #fff;
+  border: 1px solid var(--workflow-line);
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: none;
+  gap: 18px;
+}
+.dashboard-entity-symbol {
+  background: var(--workflow-soft);
+  color: var(--workflow-accent);
+  border-radius: 14px;
+  width: 48px;
+  height: 48px;
+  font-size: 18px;
+}
+.dashboard-entity-info h4 {
+  font-size: 17px;
+}
+.dashboard-entity-actions {
+  gap: 8px;
+}
+.dashboard-entity-actions > button:first-child {
+  background: var(--workflow-accent);
+  color: #fff;
+  min-height: 44px;
+}
+.dashboard-entity-more > summary,
+.student-more > summary,
+.lesson-more > summary {
+  border: 1px solid var(--workflow-line);
+  border-radius: 12px;
+  background: #fff;
+  min-height: 44px;
+}
+.workspace-bar {
+  background: transparent !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--workflow-line) !important;
+  box-shadow: none !important;
+  padding-block: 10px !important;
+}
+.workspace-tools > summary {
+  color: var(--workflow-muted);
+  font-size: 12px;
+  gap: 8px;
+}
+.workspace-tools > summary::after {
+  content: "⌄";
+  font-size: 12px;
+}
+#app .tabs {
+  background: #eaf0f8;
+  border: 0;
+  border-radius: 14px;
+  padding: 5px;
+  gap: 5px;
+}
+#app .tabs > button {
+  min-height: 44px;
+  border-radius: 10px;
+  background: transparent;
+  color: #526580;
+  border: 0;
+  box-shadow: none;
+}
+#app .tabs > button.active,
+#app .tabs > button[aria-current="page"] {
+  background: #fff;
+  color: #234bbd;
+  box-shadow: 0 2px 7px #172b4d0b;
+}
+.student-profile {
+  border: 1px solid var(--workflow-line);
+  border-radius: 15px;
+  box-shadow: none;
+  padding: 16px;
+}
+.student-avatar {
+  background: var(--workflow-soft);
+  color: var(--workflow-accent);
+  border-radius: 13px;
+}
+.student-profile-info h4 {
+  font-size: 15px;
+}
+.student-profile-info p {
+  color: var(--workflow-muted);
+  font-size: 12px;
+}
+.student-row-number {
+  font-variant-numeric: tabular-nums;
+  color: #60738c;
+}
+.roster-toolbar {
+  padding: 12px;
+  background: #f5f8fc;
+  border-radius: 14px;
+  gap: 12px;
+}
+.roster-toolbar label > span {
+  color: var(--workflow-muted);
+  font-size: 12px;
+}
+.lesson-item {
+  border: 1px solid var(--workflow-line);
+  box-shadow: none;
+  border-radius: 16px;
+}
+.lesson-policy {
+  font-size: 12px;
+  line-height: 1.9;
+  color: var(--workflow-muted);
+}
+.quick-create > summary,
+.student-import > summary,
+.lesson-create > summary {
+  min-height: 48px;
+}
+.session-create .session-create-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 130px auto;
+  gap: 12px;
+  align-items: end;
+}
+.session-create-form label {
+  display: grid;
+  gap: 7px;
+  color: var(--workflow-muted);
+  font-size: 13px;
+  min-width: 0;
+}
+.session-create-form :is(input, button) {
+  min-height: 46px;
+  width: 100%;
+  min-width: 0;
+}
+.session-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.session-list-heading h3 {
+  margin: 0;
+}
+.session-list-actions {
+  position: relative;
+}
+.session-list-actions > summary {
+  cursor: pointer;
+  padding: 10px;
+  font-size: 12px;
+  color: var(--workflow-muted);
+}
+.session-list-actions > div {
+  position: absolute;
+  inset-inline-end: 0;
+  top: 100%;
+  z-index: 5;
+  padding: 10px;
+  background: #fff;
+  border: 1px solid var(--workflow-line);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px #172b4d12;
+  min-width: 180px;
+}
+.session-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  border: 1px solid var(--workflow-line);
+  border-radius: 15px;
+  margin-block: 10px;
+  padding: 8px;
+  align-items: center;
+  gap: 8px;
+}
+#app button.session-open {
+  text-align: start;
+  background: transparent;
+  color: var(--workflow-ink);
+  padding: 10px;
+  width: 100%;
+  display: grid;
+  gap: 8px;
+  box-shadow: none;
+  border: 0;
+}
+.session-open > strong {
+  font-size: 15px;
+}
+.session-unit {
+  color: var(--workflow-muted);
+  font-size: 12px;
+  line-height: 1.8;
+}
+.session-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.session-counts > span {
+  background: #f0f4f9;
+  color: #475b76;
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 11px;
+}
+.session-card > .session-delete {
+  width: 44px;
+  min-height: 44px;
+  padding: 8px;
+  background: transparent;
+  border: 1px solid #f0d9dc;
+  color: #b42335;
+}
+.assessment-student {
+  background: #fff;
+  border-color: var(--workflow-line);
+}
+.assessment-student > p {
+  padding-top: 12px;
+  border-top: 1px solid #edf1f6;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+  color: var(--workflow-muted);
+}
+.assessment-student [data-assessment-final] {
+  font-size: 19px;
+  color: var(--workflow-accent);
+  font-variant-numeric: tabular-nums;
+}
+.assessment-inputs label {
+  font-size: 13px;
+  color: var(--workflow-muted);
+}
+.assessment-inputs input {
+  font-size: 18px;
+  text-align: center;
+}
+.session-mode-picker button {
+  border-radius: 12px;
+}
+.session-workspace .att-row {
+  border-bottom: 1px solid #edf1f6;
+}
+.session-workspace .att-btns button {
+  border-radius: 10px;
+}
+.session-workspace .att-btns .present.active {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #86efac;
+}
+.session-workspace .att-btns .absent.active {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fca5a5;
+}
+.session-workspace .att-btns .late.active {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #fcd34d;
+}
+@media (hover: hover) {
+  .dashboard-entity:hover,
+  .lesson-item:hover,
+  .student-profile:hover,
+  .session-card:hover {
+    border-color: #b7c8e6;
+  }
+  #app button.session-open:hover {
+    background: #f5f8ff;
+  }
+}
+@media (max-width: 700px) {
+  #app {
+    padding-inline: 14px;
+  }
+  #app .card {
+    border-radius: 16px;
+    padding: 15px;
+  }
+  .workflow-welcome {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 18px 0;
+    gap: 8px;
+  }
+  .workflow-welcome h2 {
+    font-size: 22px;
+  }
+  .workflow-welcome p {
+    font-size: 13px;
+  }
+  .workflow-welcome button {
+    grid-column: 1;
+    grid-row: auto;
+    justify-self: stretch;
+    margin-top: 6px;
+    width: 100%;
+  }
+  .dashboard-entity {
+    padding: 15px;
+    gap: 14px;
+  }
+  .dashboard-entity-info {
+    align-items: center;
+    gap: 12px;
+  }
+  .dashboard-entity-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    width: 100%;
+  }
+  .dashboard-entity-actions > button:first-child {
+    grid-column: 1/-1;
+    width: 100%;
+    min-height: 48px;
+  }
+  .dashboard-entity-actions > button.ghost {
+    width: 100%;
+    font-size: 12px;
+  }
+  .dashboard-entity-more {
+    margin: 0;
+  }
+  .dashboard-entity-more > summary {
+    min-width: 65px;
+    font-size: 12px;
+  }
+  .roster-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .roster-toolbar :is(input, select) {
+    min-height: 46px;
+    width: 100%;
+    min-width: 0;
+  }
+  .student-profile {
+    padding: 14px;
+  }
+  .student-avatar {
+    width: 42px;
+    height: 42px;
+  }
+  .student-profile-info h4 {
+    font-size: 14px;
+    line-height: 1.8;
+  }
+  .session-create .session-create-form {
+    grid-template-columns: minmax(0, 1fr) 100px;
+  }
+  .session-create-form > button {
+    grid-column: 1/-1;
+  }
+  .session-list-heading {
+    align-items: center;
+  }
+  .session-list-heading h3 {
+    font-size: 16px;
+  }
+  .session-card {
+    padding: 5px;
+  }
+  .session-open > strong {
+    font-size: 14px;
+  }
+  .session-counts > span {
+    font-size: 10px;
+    padding: 4px 6px;
+  }
+  .assessment-students {
+    padding: 8px;
+    gap: 10px;
+  }
+  .assessment-student {
+    padding: 12px;
+    border-radius: 13px;
+  }
+  .assessment-stage > summary {
+    font-size: 14px;
+  }
+  #uiBottomNav {
+    box-shadow: 0 -4px 20px #172b4d09;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-entity,
+  .student-profile,
+  .lesson-item {
+    transition: none !important;
+  }
+}

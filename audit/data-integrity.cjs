@@ -11,9 +11,23 @@ const { spawn } = require("node:child_process");
 const root = path.resolve(__dirname, "..");
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const { matrix, backupMatrix, orphanRestore, malformedFrozenReport, refactorFlows, contextFlows, workflowChecks, monthlyChecks, annualChecks, assessmentChecks } = require("./flows/index.cjs");
+const {
+  matrix,
+  backupMatrix,
+  orphanRestore,
+  malformedFrozenReport,
+  refactorFlows,
+  contextFlows,
+  workflowChecks,
+  monthlyChecks,
+  annualChecks,
+  assessmentChecks,
+} = require("./flows/index.cjs");
 
-async function main({ runExtra, stage = "3-simple-workflow-mobile-and-four-assessments" } = {}) {
+async function main({
+  runExtra,
+  stage = "3-simple-workflow-mobile-and-four-assessments",
+} = {}) {
   if (process.argv.includes("--help")) {
     console.log(
       "node audit/data-integrity.cjs\nDeveloper audit: temporary loopback server + isolated Edge profile; no application source changes.\nRequires Node.js 22+ and Edge. Override browser executable with EDUMANAGER_EDGE.\nExit 1 means a required integrity check failed; exit 2 means the audit runner could not complete.",
@@ -31,8 +45,15 @@ async function main({ runExtra, stage = "3-simple-workflow-mobile-and-four-asses
   const profile = fs.mkdtempSync(
     path.join(os.tmpdir(), "edu-integrity-audit-"),
   );
-  const applicationFiles = require("./application-files.cjs").applicationFiles(root);
-  const files = new Map([...applicationFiles].map(([name, type]) => ["/edu-manager/" + name, [name, type]]));
+  const applicationFiles = require("./application-files.cjs").applicationFiles(
+    root,
+  );
+  const files = new Map(
+    [...applicationFiles].map(([name, type]) => [
+      "/edu-manager/" + name,
+      [name, type],
+    ]),
+  );
   files.set("/edu-manager/", ["index.html", "text/html; charset=utf-8"]);
   const server = http.createServer((request, response) => {
     const file = files.get(new URL(request.url, "http://localhost").pathname);
@@ -295,7 +316,8 @@ async function main({ runExtra, stage = "3-simple-workflow-mobile-and-four-asses
   }
 }
 module.exports = { main };
-if (require.main === module) main().catch((error) => {
-  console.error(error.stack || String(error));
-  process.exitCode = 2;
-});
+if (require.main === module)
+  main().catch((error) => {
+    console.error(error.stack || String(error));
+    process.exitCode = 2;
+  });

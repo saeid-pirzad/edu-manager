@@ -16,15 +16,30 @@ function knownStudentCode(...args) {
 }
 
 function downloadRawRecovery(...args) {
-  return EduRuntimeAPI.invoke("downloadRawRecovery", legacy_downloadRawRecovery, this, args);
+  return EduRuntimeAPI.invoke(
+    "downloadRawRecovery",
+    legacy_downloadRawRecovery,
+    this,
+    args,
+  );
 }
 
 function openLessonConfig(...args) {
-  return EduRuntimeAPI.invoke("openLessonConfig", legacy_openLessonConfig, this, args);
+  return EduRuntimeAPI.invoke(
+    "openLessonConfig",
+    legacy_openLessonConfig,
+    this,
+    args,
+  );
 }
 
 function saveLessonConfig(...args) {
-  return EduRuntimeAPI.invoke("saveLessonConfig", legacy_saveLessonConfig, this, args);
+  return EduRuntimeAPI.invoke(
+    "saveLessonConfig",
+    legacy_saveLessonConfig,
+    this,
+    args,
+  );
 }
 
 function addLesson(...args) {
@@ -36,15 +51,30 @@ function gradeStatus(...args) {
 }
 
 function buildLessonGradesHtml(...args) {
-  return EduRuntimeAPI.invoke("buildLessonGradesHtml", legacy_buildLessonGradesHtml, this, args);
+  return EduRuntimeAPI.invoke(
+    "buildLessonGradesHtml",
+    legacy_buildLessonGradesHtml,
+    this,
+    args,
+  );
 }
 
 function renderLessonStudents(...args) {
-  return EduRuntimeAPI.invoke("renderLessonStudents", legacy_renderLessonStudents, this, args);
+  return EduRuntimeAPI.invoke(
+    "renderLessonStudents",
+    legacy_renderLessonStudents,
+    this,
+    args,
+  );
 }
 
 function buildLessonReportHtml(...args) {
-  return EduRuntimeAPI.invoke("buildLessonReportHtml", legacy_buildLessonReportHtml, this, args);
+  return EduRuntimeAPI.invoke(
+    "buildLessonReportHtml",
+    legacy_buildLessonReportHtml,
+    this,
+    args,
+  );
 }
 
 function defaultDB(...args) {
@@ -68,39 +98,84 @@ function render(...args) {
 }
 
 function calcStudentLesson(...args) {
-  return EduRuntimeAPI.invoke("calcStudentLesson", legacy_calcStudentLesson, this, args);
+  return EduRuntimeAPI.invoke(
+    "calcStudentLesson",
+    legacy_calcStudentLesson,
+    this,
+    args,
+  );
 }
 
 function buildKardaneshGradesHtml(...args) {
-  return EduRuntimeAPI.invoke("buildKardaneshGradesHtml", legacy_buildKardaneshGradesHtml, this, args);
+  return EduRuntimeAPI.invoke(
+    "buildKardaneshGradesHtml",
+    legacy_buildKardaneshGradesHtml,
+    this,
+    args,
+  );
 }
 
 function buildKardaneshSummaryHtml(...args) {
-  return EduRuntimeAPI.invoke("buildKardaneshSummaryHtml", legacy_buildKardaneshSummaryHtml, this, args);
+  return EduRuntimeAPI.invoke(
+    "buildKardaneshSummaryHtml",
+    legacy_buildKardaneshSummaryHtml,
+    this,
+    args,
+  );
 }
 
 function openBulkScoreModal(...args) {
-  return EduRuntimeAPI.invoke("openBulkScoreModal", legacy_openBulkScoreModal, this, args);
+  return EduRuntimeAPI.invoke(
+    "openBulkScoreModal",
+    legacy_openBulkScoreModal,
+    this,
+    args,
+  );
 }
 
 function setAllAttendance(...args) {
-  return EduRuntimeAPI.invoke("setAllAttendance", legacy_setAllAttendance, this, args);
+  return EduRuntimeAPI.invoke(
+    "setAllAttendance",
+    legacy_setAllAttendance,
+    this,
+    args,
+  );
 }
 
 function saveSessionUnit(...args) {
-  return EduRuntimeAPI.invoke("saveSessionUnit", legacy_saveSessionUnit, this, args);
+  return EduRuntimeAPI.invoke(
+    "saveSessionUnit",
+    legacy_saveSessionUnit,
+    this,
+    args,
+  );
 }
 
 function updateSessionUnits(...args) {
-  return EduRuntimeAPI.invoke("updateSessionUnits", legacy_updateSessionUnits, this, args);
+  return EduRuntimeAPI.invoke(
+    "updateSessionUnits",
+    legacy_updateSessionUnits,
+    this,
+    args,
+  );
 }
 
 function addSessionScore(...args) {
-  return EduRuntimeAPI.invoke("addSessionScore", legacy_addSessionScore, this, args);
+  return EduRuntimeAPI.invoke(
+    "addSessionScore",
+    legacy_addSessionScore,
+    this,
+    args,
+  );
 }
 
 function clickMasterCell(...args) {
-  return EduRuntimeAPI.invoke("clickMasterCell", legacy_clickMasterCell, this, args);
+  return EduRuntimeAPI.invoke(
+    "clickMasterCell",
+    legacy_clickMasterCell,
+    this,
+    args,
+  );
 }
 
 function exportBackup(...args) {
@@ -112,23 +187,48 @@ function handleImport(...args) {
 }
 
 function handleExcelImport(...args) {
-  return EduRuntimeAPI.invoke("handleExcelImport", legacy_handleExcelImport, this, args);
+  return EduRuntimeAPI.invoke(
+    "handleExcelImport",
+    legacy_handleExcelImport,
+    this,
+    args,
+  );
 }
 
 function downloadExcelTemplate(...args) {
-  return EduRuntimeAPI.invoke("downloadExcelTemplate", legacy_downloadExcelTemplate, this, args);
+  return EduRuntimeAPI.invoke(
+    "downloadExcelTemplate",
+    legacy_downloadExcelTemplate,
+    this,
+    args,
+  );
 }
 
 function openTransferModal(...args) {
-  return EduRuntimeAPI.invoke("openTransferModal", legacy_openTransferModal, this, args);
+  return EduRuntimeAPI.invoke(
+    "openTransferModal",
+    legacy_openTransferModal,
+    this,
+    args,
+  );
 }
 
 function deleteStudent(...args) {
-  return EduRuntimeAPI.invoke("deleteStudent", legacy_deleteStudent, this, args);
+  return EduRuntimeAPI.invoke(
+    "deleteStudent",
+    legacy_deleteStudent,
+    this,
+    args,
+  );
 }
 
 function restoreStudent(...args) {
-  return EduRuntimeAPI.invoke("restoreStudent", legacy_restoreStudent, this, args);
+  return EduRuntimeAPI.invoke(
+    "restoreStudent",
+    legacy_restoreStudent,
+    this,
+    args,
+  );
 }
 
 function doTransfer(...args) {
@@ -160,23 +260,48 @@ function addStudent(...args) {
 }
 
 function openEditStudentModal(...args) {
-  return EduRuntimeAPI.invoke("openEditStudentModal", legacy_openEditStudentModal, this, args);
+  return EduRuntimeAPI.invoke(
+    "openEditStudentModal",
+    legacy_openEditStudentModal,
+    this,
+    args,
+  );
 }
 
 function buildArchiveHtml(...args) {
-  return EduRuntimeAPI.invoke("buildArchiveHtml", legacy_buildArchiveHtml, this, args);
+  return EduRuntimeAPI.invoke(
+    "buildArchiveHtml",
+    legacy_buildArchiveHtml,
+    this,
+    args,
+  );
 }
 
 function buildOverviewKarnamehHtml(...args) {
-  return EduRuntimeAPI.invoke("buildOverviewKarnamehHtml", legacy_buildOverviewKarnamehHtml, this, args);
+  return EduRuntimeAPI.invoke(
+    "buildOverviewKarnamehHtml",
+    legacy_buildOverviewKarnamehHtml,
+    this,
+    args,
+  );
 }
 
 function buildDetailedKarnamehHtml(...args) {
-  return EduRuntimeAPI.invoke("buildDetailedKarnamehHtml", legacy_buildDetailedKarnamehHtml, this, args);
+  return EduRuntimeAPI.invoke(
+    "buildDetailedKarnamehHtml",
+    legacy_buildDetailedKarnamehHtml,
+    this,
+    args,
+  );
 }
 
 function generateParentReportText(...args) {
-  return EduRuntimeAPI.invoke("generateParentReportText", legacy_generateParentReportText, this, args);
+  return EduRuntimeAPI.invoke(
+    "generateParentReportText",
+    legacy_generateParentReportText,
+    this,
+    args,
+  );
 }
 
 function wipeAllData(...args) {
@@ -184,9 +309,14 @@ function wipeAllData(...args) {
 }
 
 function showModal(...args) {
-  return EduRuntimeAPI.invoke("showModal", undefined, this, args);
+  return EduRuntimeAPI.invoke("showModal", legacy_showModal, this, args);
 }
 
 function checkPassword(...args) {
-  return EduRuntimeAPI.invoke("checkPassword", legacy_checkPassword, this, args);
+  return EduRuntimeAPI.invoke(
+    "checkPassword",
+    legacy_checkPassword,
+    this,
+    args,
+  );
 }

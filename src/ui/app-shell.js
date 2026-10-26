@@ -1,629 +1,596 @@
-      (function () {
-        "use strict";
-        let pending = false;
+(function () {
+  "use strict";
+  let pending = false;
 
-        function updateDesign() {
-          let nav = document.getElementById("uiBottomNav");
-          if (!nav) {
-            nav = document.createElement("nav");
-            nav.id = "uiBottomNav";
-            nav.className = "no-print";
-            nav.setAttribute("aria-label", "دسترسی اصلی");
-            const items = [
-              [
-                "schools",
-                "خانه",
-                "M3 10 12 3l9 7M5 9v12h5v-7h4v7h5V9",
-                () => goSchools(),
-              ],
-              [
-                "class",
-                "کلاس‌ها",
-                "M4 4h16v14H4zM8 21h8M12 18v3M8 8h8M8 12h5",
-                () => goCurrentClass(),
-              ],
-              [
-                "master",
-                "برنامه",
-                "M4 5h16v16H4zM8 3v4M16 3v4M4 10h16M8 14h2M14 14h2",
-                () => goMaster(),
-              ],
-              [
-                "reports",
-                "گزارش‌ها",
-                "M4 3v18h17M8 17v-5M13 17V8M18 17V5",
-                () => goReports(),
-              ],
-            ];
-            for (const [view, label, path, action] of items) {
-              const b = document.createElement("button");
-              b.type = "button";
-              b.dataset.view = view;
-              b.innerHTML =
-                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' +
-                path +
-                '"/></svg><span>' +
-                label +
-                "</span>";
-              b.onclick = action;
-              nav.append(b);
-            }
-            document.body.append(nav);
+  function updateDesign() {
+    let nav = document.getElementById("uiBottomNav");
+    if (!nav) {
+      nav = document.createElement("nav");
+      nav.id = "uiBottomNav";
+      nav.className = "no-print";
+      nav.setAttribute("aria-label", "دسترسی اصلی");
+      const items = [
+        [
+          "schools",
+          "خانه",
+          "M3 10 12 3l9 7M5 9v12h5v-7h4v7h5V9",
+          () => goSchools(),
+        ],
+        [
+          "class",
+          "کلاس‌ها",
+          "M4 4h16v14H4zM8 21h8M12 18v3M8 8h8M8 12h5",
+          () => goCurrentClass(),
+        ],
+        [
+          "master",
+          "برنامه",
+          "M4 5h16v16H4zM8 3v4M16 3v4M4 10h16M8 14h2M14 14h2",
+          () => goMaster(),
+        ],
+        [
+          "reports",
+          "گزارش‌ها",
+          "M4 3v18h17M8 17v-5M13 17V8M18 17V5",
+          () => goReports(),
+        ],
+      ];
+      for (const [view, label, path, action] of items) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.dataset.view = view;
+        b.innerHTML =
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' +
+          path +
+          '"/></svg><span>' +
+          label +
+          "</span>";
+        b.onclick = action;
+        nav.append(b);
+      }
+      document.body.append(nav);
+    }
+    nav.hidden = !!(db.settings.password && !isAuthenticated);
+    nav.inert = !document.getElementById("modal").classList.contains("hidden");
+    const current = ["school", "class", "lesson"].includes(state.view)
+      ? "class"
+      : state.view;
+    for (const b of nav.children) {
+      const value = b.dataset.view === current ? "page" : "false";
+      if (b.getAttribute("aria-current") !== value)
+        b.setAttribute("aria-current", value);
+    }
+    for (const item of document.querySelectorAll(
+      "#app .list-item[onclick],#app .list-item[data-legacy-click]",
+    )) {
+      if (!item.hasAttribute("tabindex")) {
+        item.tabIndex = 0;
+        item.setAttribute("role", "link");
+        item.addEventListener("keydown", (e) => {
+          if (e.target === item && (e.key === "Enter" || e.key === " ")) {
+            e.preventDefault();
+            item.click();
           }
-          nav.hidden = !!(db.settings.password && !isAuthenticated);
-          nav.inert = !document
-            .getElementById("modal")
-            .classList.contains("hidden");
-          const current = ["school", "class", "lesson"].includes(state.view)
-            ? "class"
-            : state.view;
-          for (const b of nav.children) {
-            const value = b.dataset.view === current ? "page" : "false";
-            if (b.getAttribute("aria-current") !== value)
-              b.setAttribute("aria-current", value);
-          }
-          for (const item of document.querySelectorAll(
-            "#app .list-item[onclick]",
-          )) {
-            if (!item.hasAttribute("tabindex")) {
-              item.tabIndex = 0;
-              item.setAttribute("role", "link");
-              item.addEventListener("keydown", (e) => {
-                if (e.target === item && (e.key === "Enter" || e.key === " ")) {
-                  e.preventDefault();
-                  item.click();
-                }
-              });
-            }
-          }
-          for (const input of document.querySelectorAll(
-            '#app form input[name="name"]',
-          )) {
-            if (!input.getAttribute("aria-label"))
-              input.setAttribute("aria-label", input.placeholder || "نام");
-          }
-        }
+        });
+      }
+    }
+    for (const input of document.querySelectorAll(
+      '#app form input[name="name"]',
+    )) {
+      if (!input.getAttribute("aria-label"))
+        input.setAttribute("aria-label", input.placeholder || "نام");
+    }
+  }
 
-        function styleDataTables() {
-          for (const table of document.querySelectorAll(
-            "#app table,#modalBody table",
-          )) {
-            const head = table.tHead;
-            if (!head || !head.rows.length) continue;
-            const headers = [...head.rows[0].cells];
-            const labels = headers.map((c) => c.textContent.trim());
-            const bodyRows = [...table.tBodies].flatMap((b) => [...b.rows]);
-            const simple =
-              !table.classList.contains("week-table") &&
-              head.rows.length === 1 &&
-              headers.length <= 6 &&
-              headers.every((c) => c.colSpan === 1) &&
-              bodyRows.every(
-                (r) =>
-                  r.cells.length === headers.length &&
-                  [...r.cells].every((c) => c.colSpan === 1 && c.rowSpan === 1),
-              );
-            const layout = simple ? "cards" : "matrix";
-            if (table.dataset.uiLayout !== layout)
-              table.dataset.uiLayout = layout;
-            for (const th of table.querySelectorAll("thead th"))
-              if (!th.hasAttribute("scope"))
-                th.setAttribute("scope", th.colSpan > 1 ? "colgroup" : "col");
-            const identity = Math.max(
-              0,
-              labels.findIndex((t) =>
-                /دانش‌آموز|هنرجو|نام|درس|سال.*نوبت/.test(t),
-              ),
-            );
-            for (const row of bodyRows) {
-              for (const [i, cell] of [...row.cells].entries()) {
-                const label = labels[i] || "عملیات";
-                if (simple && cell.dataset.label !== label)
-                  cell.dataset.label = label;
-                if (i === identity && !cell.hasAttribute("data-identity"))
-                  cell.setAttribute("data-identity", "");
-                const actions =
-                  simple &&
-                  (/عملیات|تصمیم/.test(label) ||
-                    (!labels[i] && cell.querySelector("button")));
-                if (actions && !cell.hasAttribute("data-actions"))
-                  cell.setAttribute("data-actions", "");
-                for (const input of cell.querySelectorAll(
-                  "input,select,textarea",
-                )) {
-                  if (!input.hasAttribute("aria-label")) {
-                    const who = row.cells[identity]?.textContent.trim() || "";
-                    input.setAttribute(
-                      "aria-label",
-                      label + (who ? " — " + who : ""),
-                    );
-                  }
-                }
-                for (const button of cell.querySelectorAll("button")) {
-                  if (
-                    !button.hasAttribute("aria-label") &&
-                    /^[×✕⚙️]+$/.test(button.textContent.trim())
-                  )
-                    button.setAttribute(
-                      "aria-label",
-                      button.classList.contains("danger")
-                        ? "حذف ردیف"
-                        : "تنظیمات ردیف",
-                    );
-                }
-              }
-            }
-            if (!simple) {
-              const index = headers.indexOf(headers[identity]);
-              const th = headers[index];
-              if (th && !th.hasAttribute("data-identity"))
-                th.setAttribute("data-identity", "");
-            }
-            const wrap = table.closest(".responsive-scroll,.table-scroll");
-            if (wrap) {
-              if (wrap.dataset.uiLayout !== layout)
-                wrap.dataset.uiLayout = layout;
-              if (!simple && !wrap.querySelector(".table-pan-hint")) {
-                const hint = document.createElement("div");
-                hint.className = "table-pan-hint no-print";
-                hint.textContent =
-                  "برای دیدن ستون‌های بیشتر، جدول را افقی بکشید ↔";
-                wrap.prepend(hint);
-              }
-            }
-          }
-        }
-
-        function polishExperience() {
-          const app = document.getElementById("app"),
-            top = app?.querySelector(".topbar"),
-            bar = app?.querySelector(".workspace-bar");
-          if (top && bar && top.nextElementSibling !== bar) bar.before(top);
-          if (top) {
-            const title = top.querySelector("h1");
-            if (title && !title.dataset.branded) {
-              title.dataset.branded = "1";
-              title.innerHTML =
-                '<span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5C9 3 6 3 3 4v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1Zm0 0v15"/></svg></span><span>مدیریت کلاس<small>دفتر همراه هنرآموز</small></span>';
-            }
-          }
-          const crumb = app?.querySelector(".breadcrumb");
-          if (crumb) {
-            crumb.setAttribute("aria-label", "مسیر جاری");
-            for (const link of crumb.querySelectorAll("a[onclick]")) {
-              if (!link.hasAttribute("tabindex")) {
-                link.tabIndex = 0;
-                link.setAttribute("role", "link");
-                link.addEventListener("keydown", (e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    link.click();
-                  }
-                });
-              }
-            }
-            if (
-              !app.querySelector(".view-heading") &&
-              ["school", "class", "lesson"].includes(state.view)
-            ) {
-              const school = db.schools.find((s) => s.id === state.schoolId),
-                c = school?.classes.find((c) => c.id === state.classId),
-                l = c?.lessons.find((l) => l.id === state.lessonId);
-              const title =
-                state.view === "lesson"
-                  ? l?.name
-                  : state.view === "class"
-                    ? c?.name
-                    : school?.name;
-              const note =
-                state.view === "lesson"
-                  ? "نمرات، هنرجویان و جلسات این درس"
-                  : state.view === "class"
-                    ? (c?.students.length || 0).toLocaleString("fa-IR") +
-                      " هنرجو · " +
-                      (c?.lessons.length || 0).toLocaleString("fa-IR") +
-                      " درس"
-                    : "کلاس‌ها و هنرجویان مدرسه";
-              if (title) {
-                const heading = document.createElement("header");
-                heading.className = "view-heading no-print";
-                const h = document.createElement("h2"),
-                  p = document.createElement("p");
-                h.textContent = title;
-                p.textContent = note;
-                heading.append(h, p);
-                crumb.after(heading);
-              }
-            }
-          }
-          for (const form of app?.querySelectorAll("form[onsubmit]") || []) {
-            const action = form.getAttribute("onsubmit") || "";
-            if (!/^(addSchool|addClass|addStudent)\(event\)/.test(action))
-              continue;
-            const card = form.closest(".card");
-            if (
-              !card ||
-              card.tagName === "DETAILS" ||
-              !card.querySelector("h3")
-            )
-              continue;
-            const detail = document.createElement("details");
-            detail.className = card.className + " quick-create";
-            const heading = card.querySelector("h3"),
-              summary = document.createElement("summary");
-            summary.textContent = heading.textContent.replace(
-              /^[^آ-یa-zA-Z]+/,
-              "",
-            );
-            const empty =
-              state.view === "schools"
-                ? !db.schools.length
-                : state.view === "school"
-                  ? !db.schools.find((s) => s.id === state.schoolId)?.classes
-                      .length
-                  : !getClassObj(state.schoolId, state.classId)?.students
-                      .length;
-            detail.open = !!empty;
-            heading.remove();
-            detail.append(summary);
-            while (card.firstChild) detail.append(card.firstChild);
-            card.replaceWith(detail);
-          }
-          for (const card of app?.querySelectorAll(".card") || []) {
-            const items = [...card.children].filter((el) =>
-              el.matches(".list-item[onclick]"),
-            );
-            if (items.length < 4 || card.querySelector(".list-search"))
-              continue;
-            const box = document.createElement("div");
-            box.className = "list-search no-print";
-            const input = document.createElement("input");
-            input.type = "search";
-            input.placeholder = "جست‌وجو در این فهرست…";
-            input.setAttribute("aria-label", "جست‌وجو در فهرست");
-            const result = document.createElement("p");
-            result.className = "search-feedback";
-            result.setAttribute("role", "status");
-            result.hidden = true;
-            const normalize = (s) =>
-              s
-                .replace(/ي/g, "ی")
-                .replace(/ك/g, "ک")
-                .replace(/\s+/g, " ")
-                .trim();
-            input.oninput = () => {
-              const query = normalize(input.value);
-              let count = 0;
-              for (const item of items) {
-                const match = normalize(item.textContent).includes(query);
-                item.hidden = !match;
-                if (match) count++;
-              }
-              result.hidden = !query;
-              result.textContent = count
-                ? count.toLocaleString("fa-IR") + " مورد پیدا شد"
-                : "موردی پیدا نشد؛ عبارت دیگری وارد کنید.";
-            };
-            box.append(input, result);
-            items[0].before(box);
-          }
-          for (const input of document.querySelectorAll(
-            "#app input[placeholder],#modalBody input[placeholder],#modalBody textarea[placeholder]",
-          )) {
-            if (!input.hasAttribute("aria-label") && !input.labels?.length)
-              input.setAttribute("aria-label", input.placeholder);
-          }
-        }
-
-        function mobileExperience() {
-          const app = document.getElementById("app");
-          if (!app) return;
-          const tools = app.querySelector(".workspace-tools"),
-            bar = app.querySelector(".workspace-bar");
-          if (tools && bar) {
-            for (const button of [...bar.children].filter(
-              (x) => x.tagName === "BUTTON",
-            ))
-              tools.querySelector(".tool-actions")?.prepend(button);
-            const strong = bar.querySelector(":scope > strong");
-            if (strong && !strong.title) strong.title = strong.textContent;
-          }
-          const nav = app.querySelector(".navigation-menu");
-          if (nav) {
-            const summary = nav.querySelector(":scope > summary");
-            summary?.setAttribute("aria-label", "ابزارها و تنظیمات برنامه");
-          }
-          const pairs = [
-            [".student-directory", ".student-add", "افزودن هنرجو"],
-            [".class-lessons", ".lesson-create", "افزودن درس"],
-          ];
-          for (const [sectionSelector, formSelector, label] of pairs) {
-            const section = app.querySelector(sectionSelector),
-              form = app.querySelector(formSelector);
-            if (
-              !section ||
-              !form ||
-              section.querySelector(".mobile-add-action")
-            )
-              continue;
-            const heading = section.querySelector("header");
-            if (heading) {
-              const button = document.createElement("button");
-              button.type = "button";
-              button.className = "mobile-add-action";
-              button.textContent = "+ افزودن";
-              button.setAttribute("aria-label", label);
-              button.onclick = () => {
-                form.open = true;
-                form.scrollIntoView({
-                  block: "start",
-                  behavior: matchMedia("(prefers-reduced-motion: reduce)")
-                    .matches
-                    ? "auto"
-                    : "smooth",
-                });
-                form.querySelector("input")?.focus({ preventScroll: true });
-              };
-              heading.append(button);
-            }
-          }
-          const gradeArea = app.querySelector("#lessonGradesArea");
-          if (gradeArea) {
-            for (const card of gradeArea.querySelectorAll(".card")) {
-              if (!card.classList.contains("mobile-grade-panel"))
-                card.classList.add("mobile-grade-panel");
-              const intro = [...card.children].find((x) => x.tagName === "P");
-              if (intro && !card.querySelector(".grade-help")) {
-                const details = document.createElement("details");
-                details.className = "grade-help";
-                details.open =
-                  innerWidth > 700 &&
-                  !matchMedia("(max-width:1000px) and (pointer:coarse)")
-                    .matches;
-                const summary = document.createElement("summary");
-                summary.textContent = "قواعد محاسبه و راهنما";
-                details.append(summary);
-                intro.before(details);
-                details.append(intro);
-              }
-            }
-          }
-        }
-
-        function polishReportFilters() {
-          if (state.view !== "reports") return;
-          const tabs = document.querySelector(".report-navigation"),
-            active = tabs?.querySelector(".active");
-          if (tabs && active && tabs.scrollWidth > tabs.clientWidth) {
-            const box = tabs.getBoundingClientRect(),
-              r = active.getBoundingClientRect();
-            if (r.left < box.left || r.right > box.right)
-              tabs.scrollLeft +=
-                r.left - (box.left + (box.width - r.width) / 2);
-          }
-          const names = {
-            schoolId: "مدرسه",
-            classId: "کلاس",
-            lessonId: "درس",
-            studentId: "هنرجو",
-            date: "تاریخ جلسه",
-            period: "زنگ",
-          };
-          for (const control of document.querySelectorAll(
-            '#app select[onchange*="Filter"],#app input[type="date"][onchange*="GlobalFilter"]',
-          )) {
-            const action = control.getAttribute("onchange") || "",
-              key = action.match(/'([^']+)'/)?.[1],
-              caption = names[key];
-            if (!caption || control.closest(".report-filter-field")) continue;
-            const label = document.createElement("label");
-            label.className = "report-filter-field";
-            const pairedDate =
-              control.type === "date" &&
-              control.nextElementSibling?.dataset.gregorianTarget === "true"
-                ? control.nextElementSibling
-                : null;
-            const text = document.createElement("span");
-            text.textContent = caption;
-            control.before(label);
-            label.append(text, control);
-            if (pairedDate) {
-              label.append(pairedDate);
-              pairedDate.setAttribute("aria-label", caption);
-            }
-            const row = label.parentElement;
-            if (!row.classList.contains("report-filter-grid"))
-              row.classList.add("report-filter-grid");
-            row.closest(".card")?.classList.add("report-filter-card");
-          }
-          const box = document.querySelector("#app .filter-box");
-          if (box && box.tagName !== "DETAILS") {
-            const details = document.createElement("details");
-            details.className = "filter-box report-options";
-            details.open = !!state.reportOptionsOpen;
-            details.ontoggle = () => {
-              state.reportOptionsOpen = details.open;
-            };
-            const summary = document.createElement("summary");
-            summary.textContent = "تنظیم محتوای گزارش و نمایش اسامی";
-            details.append(summary);
-            while (box.firstChild) details.append(box.firstChild);
-            box.replaceWith(details);
-          }
-        }
-
-        const designRoots = [];
-        const designObserver = new MutationObserver(schedule);
-        function observeDesignRoots() {
-          for (const root of designRoots)
-            designObserver.observe(root, { childList: true, subtree: true });
-        }
-        function enhance() {
-          designObserver.disconnect();
-          try {
-            polishReportFilters();
-            mobileExperience();
-            polishExperience();
-            updateDesign();
-            for (const table of document.querySelectorAll(
-              "#app table,#modalBody table",
-            )) {
-              if (!table.dataset.responsiveSized) {
-                const columns = Math.max(
-                  1,
-                  ...[...table.rows]
-                    .slice(0, 3)
-                    .map((row) =>
-                      [...row.cells].reduce((n, cell) => n + cell.colSpan, 0),
-                    ),
-                );
-                table.style.minWidth =
-                  (columns >= 4
-                    ? columns * 120
-                    : Math.min(380, columns * 140)) + "px";
-                table.dataset.responsiveSized = "1";
-              }
-            }
-            for (const container of document.querySelectorAll(
-              ".table-scroll",
-            )) {
-              if (!container.hasAttribute("tabindex")) {
-                container.tabIndex = 0;
-                container.setAttribute("role", "region");
-                container.setAttribute("aria-label", "جدول با پیمایش افقی");
-              }
-            }
-            for (const table of document.querySelectorAll(
-              "#app table,#modalBody table",
-            )) {
-              if (table.closest(".responsive-scroll,.table-scroll")) continue;
-              const wrap = document.createElement("div");
-              wrap.className = "responsive-scroll";
-              wrap.tabIndex = 0;
-              wrap.setAttribute("role", "region");
-              wrap.setAttribute(
+  function styleDataTables() {
+    for (const table of document.querySelectorAll(
+      "#app table,#modalBody table",
+    )) {
+      const head = table.tHead;
+      if (!head || !head.rows.length) continue;
+      const headers = [...head.rows[0].cells];
+      const labels = headers.map((c) => c.textContent.trim());
+      const bodyRows = [...table.tBodies].flatMap((b) => [...b.rows]);
+      const simple =
+        !table.classList.contains("week-table") &&
+        head.rows.length === 1 &&
+        headers.length <= 6 &&
+        headers.every((c) => c.colSpan === 1) &&
+        bodyRows.every(
+          (r) =>
+            r.cells.length === headers.length &&
+            [...r.cells].every((c) => c.colSpan === 1 && c.rowSpan === 1),
+        );
+      const layout = simple ? "cards" : "matrix";
+      if (table.dataset.uiLayout !== layout) table.dataset.uiLayout = layout;
+      for (const th of table.querySelectorAll("thead th"))
+        if (!th.hasAttribute("scope"))
+          th.setAttribute("scope", th.colSpan > 1 ? "colgroup" : "col");
+      const identity = Math.max(
+        0,
+        labels.findIndex((t) => /دانش‌آموز|هنرجو|نام|درس|سال.*نوبت/.test(t)),
+      );
+      for (const row of bodyRows) {
+        for (const [i, cell] of [...row.cells].entries()) {
+          const label = labels[i] || "عملیات";
+          if (simple && cell.dataset.label !== label)
+            cell.dataset.label = label;
+          if (i === identity && !cell.hasAttribute("data-identity"))
+            cell.setAttribute("data-identity", "");
+          const actions =
+            simple &&
+            (/عملیات|تصمیم/.test(label) ||
+              (!labels[i] && cell.querySelector("button")));
+          if (actions && !cell.hasAttribute("data-actions"))
+            cell.setAttribute("data-actions", "");
+          for (const input of cell.querySelectorAll("input,select,textarea")) {
+            if (!input.hasAttribute("aria-label")) {
+              const who = row.cells[identity]?.textContent.trim() || "";
+              input.setAttribute(
                 "aria-label",
-                "جدول؛ برای دیدن ستون‌های دیگر افقی پیمایش کنید",
+                label + (who ? " — " + who : ""),
               );
-              table.before(wrap);
-              wrap.append(table);
             }
-            styleDataTables();
-            for (const grid of document.querySelectorAll(
-              "#app .schedule-grid",
-            )) {
-              if (grid.parentElement.classList.contains("responsive-scroll"))
-                continue;
-              const wrap = document.createElement("div");
-              wrap.className = "responsive-scroll";
-              wrap.tabIndex = 0;
-              wrap.setAttribute("role", "region");
-              wrap.setAttribute("aria-label", "برنامه هفتگی با پیمایش افقی");
-              grid.before(wrap);
-              wrap.append(grid);
-            }
-            const bar = document.querySelector(".workspace-bar");
-            if (bar && !bar.querySelector(".workspace-tools")) {
-              const tools = document.createElement("details");
-              tools.className = "workspace-tools no-print";
-              tools.innerHTML =
-                '<summary>مدیریت و پشتیبان‌ها</summary><div class="tool-actions"></div>';
-              const box = tools.querySelector(".tool-actions");
-              for (const button of [...bar.querySelectorAll("button")])
-                box.append(button);
-              for (const small of [...bar.querySelectorAll("small")])
-                box.append(small);
-              const backup = document.createElement("button");
-              backup.className = "ghost";
-              backup.textContent = "ذخیره پشتیبان";
-              backup.onclick = () =>
-                exportBackup().catch((e) => alert(e.message));
-              box.prepend(backup);
-              bar.append(tools);
-            }
-            const topbar = document.querySelector(".topbar"),
-              actions = topbar?.querySelector(".actions");
-            if (actions && !topbar.querySelector(".navigation-menu")) {
-              const menu = document.createElement("details");
-              menu.className = "navigation-menu no-print";
-              menu.open =
-                innerWidth > 700 &&
-                !matchMedia("(max-width:1000px) and (pointer:coarse)").matches;
-              menu.innerHTML =
-                '<summary title="ابزارها و تنظیمات"><span class="menu-toggle-label">فهرست برنامه</span><svg class="menu-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path class="menu-line-top" d="M5 12h14"/><path class="menu-line-middle" d="M5 12h14"/><path class="menu-line-bottom" d="M5 12h14"/></svg></summary>';
-              actions.before(menu);
-              menu.querySelector("summary").id = "headerNavigationToggle";
-              menu.append(actions);
-              menu.addEventListener("toggle", () => {
-                if (!menu.open) {
-                  closeClassMenu();
-                  closeDataMenu();
-                }
-              });
-              actions.addEventListener("click", (e) => {
-                const button = e.target.closest("button");
-                if (
-                  button &&
-                  !button.hasAttribute("aria-controls") &&
-                  matchMedia(
-                    "(max-width:700px), (max-width:1000px) and (pointer:coarse)",
-                  ).matches
-                ) {
-                  menu.open = false;
-                  menu.querySelector("summary").focus({ preventScroll: true });
-                }
-              });
-              const settings = actions.querySelector(
-                'button[data-header-action="settings"]',
+          }
+          for (const button of cell.querySelectorAll("button")) {
+            if (
+              !button.hasAttribute("aria-label") &&
+              /^(?:×|✕|⚙️)+$/.test(button.textContent.trim())
+            )
+              button.setAttribute(
+                "aria-label",
+                button.classList.contains("danger")
+                  ? "حذف ردیف"
+                  : "تنظیمات ردیف",
               );
-              if (settings) {
-                settings.setAttribute("aria-label", "تنظیمات برنامه");
-                settings.title = "تنظیمات برنامه";
-              }
-            }
-          } finally {
-            pending = false;
-            observeDesignRoots();
           }
         }
-        function schedule() {
-          if (!pending) {
-            pending = true;
-            requestAnimationFrame(enhance);
-          }
+      }
+      if (!simple) {
+        const index = headers.indexOf(headers[identity]);
+        const th = headers[index];
+        if (th && !th.hasAttribute("data-identity"))
+          th.setAttribute("data-identity", "");
+      }
+      const wrap = table.closest(".responsive-scroll,.table-scroll");
+      if (wrap) {
+        if (wrap.dataset.uiLayout !== layout) wrap.dataset.uiLayout = layout;
+        if (!simple && !wrap.querySelector(".table-pan-hint")) {
+          const hint = document.createElement("div");
+          hint.className = "table-pan-hint no-print";
+          hint.textContent = "برای دیدن ستون‌های بیشتر، جدول را افقی بکشید ↔";
+          wrap.prepend(hint);
         }
-        let wideLayout;
-        function viewport() {
-          document.documentElement.style.setProperty(
-            "--app-viewport",
-            (window.visualViewport?.height || innerHeight) + "px",
-          );
-          document.documentElement.style.setProperty(
-            "--app-viewport-top",
-            (window.visualViewport?.offsetTop || 0) + "px",
-          );
-          const wide =
+      }
+    }
+  }
+
+  function polishExperience() {
+    const app = document.getElementById("app"),
+      top = app?.querySelector(".topbar"),
+      bar = app?.querySelector(".workspace-bar");
+    if (top && bar && top.nextElementSibling !== bar) bar.before(top);
+    if (top) {
+      const title = top.querySelector("h1");
+      if (title && !title.dataset.branded) {
+        title.dataset.branded = "1";
+        title.innerHTML =
+          '<span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5C9 3 6 3 3 4v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1Zm0 0v15"/></svg></span><span>مدیریت کلاس<small>دفتر همراه هنرآموز</small></span>';
+      }
+    }
+    const crumb = app?.querySelector(".breadcrumb");
+    if (crumb) {
+      crumb.setAttribute("aria-label", "مسیر جاری");
+      for (const link of crumb.querySelectorAll(
+        "a[onclick],a[data-legacy-click]",
+      )) {
+        if (!link.hasAttribute("tabindex")) {
+          link.tabIndex = 0;
+          link.setAttribute("role", "link");
+          link.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              link.click();
+            }
+          });
+        }
+      }
+      if (
+        !app.querySelector(".view-heading") &&
+        ["school", "class", "lesson"].includes(state.view)
+      ) {
+        const school = db.schools.find((s) => s.id === state.schoolId),
+          c = school?.classes.find((c) => c.id === state.classId),
+          l = c?.lessons.find((l) => l.id === state.lessonId);
+        const title =
+          state.view === "lesson"
+            ? l?.name
+            : state.view === "class"
+              ? c?.name
+              : school?.name;
+        const note =
+          state.view === "lesson"
+            ? "نمرات، هنرجویان و جلسات این درس"
+            : state.view === "class"
+              ? (c?.students.length || 0).toLocaleString("fa-IR") +
+                " هنرجو · " +
+                (c?.lessons.length || 0).toLocaleString("fa-IR") +
+                " درس"
+              : "کلاس‌ها و هنرجویان مدرسه";
+        if (title) {
+          const heading = document.createElement("header");
+          heading.className = "view-heading no-print";
+          const h = document.createElement("h2"),
+            p = document.createElement("p");
+          h.textContent = title;
+          p.textContent = note;
+          heading.append(h, p);
+          crumb.after(heading);
+        }
+      }
+    }
+    for (const form of app?.querySelectorAll("form[onsubmit]") || []) {
+      const action = form.getAttribute("onsubmit") || "";
+      if (!/^(addSchool|addClass|addStudent)\(event\)/.test(action)) continue;
+      const card = form.closest(".card");
+      if (!card || card.tagName === "DETAILS" || !card.querySelector("h3"))
+        continue;
+      const detail = document.createElement("details");
+      detail.className = card.className + " quick-create";
+      const heading = card.querySelector("h3"),
+        summary = document.createElement("summary");
+      summary.textContent = heading.textContent.replace(/^[^آ-یa-zA-Z]+/, "");
+      const empty =
+        state.view === "schools"
+          ? !db.schools.length
+          : state.view === "school"
+            ? !db.schools.find((s) => s.id === state.schoolId)?.classes.length
+            : !getClassObj(state.schoolId, state.classId)?.students.length;
+      detail.open = !!empty;
+      heading.remove();
+      detail.append(summary);
+      while (card.firstChild) detail.append(card.firstChild);
+      card.replaceWith(detail);
+    }
+    for (const card of app?.querySelectorAll(".card") || []) {
+      const items = [...card.children].filter((el) =>
+        el.matches(".list-item[onclick],.list-item[data-legacy-click]"),
+      );
+      if (items.length < 4 || card.querySelector(".list-search")) continue;
+      const box = document.createElement("div");
+      box.className = "list-search no-print";
+      const input = document.createElement("input");
+      input.type = "search";
+      input.placeholder = "جست‌وجو در این فهرست…";
+      input.setAttribute("aria-label", "جست‌وجو در فهرست");
+      const result = document.createElement("p");
+      result.className = "search-feedback";
+      result.setAttribute("role", "status");
+      result.hidden = true;
+      const normalize = (s) =>
+        s.replace(/ي/g, "ی").replace(/ك/g, "ک").replace(/\s+/g, " ").trim();
+      input.oninput = () => {
+        const query = normalize(input.value);
+        let count = 0;
+        for (const item of items) {
+          const match = normalize(item.textContent).includes(query);
+          item.hidden = !match;
+          if (match) count++;
+        }
+        result.hidden = !query;
+        result.textContent = count
+          ? count.toLocaleString("fa-IR") + " مورد پیدا شد"
+          : "موردی پیدا نشد؛ عبارت دیگری وارد کنید.";
+      };
+      box.append(input, result);
+      items[0].before(box);
+    }
+    for (const input of document.querySelectorAll(
+      "#app input[placeholder],#modalBody input[placeholder],#modalBody textarea[placeholder]",
+    )) {
+      if (!input.hasAttribute("aria-label") && !input.labels?.length)
+        input.setAttribute("aria-label", input.placeholder);
+    }
+  }
+
+  function mobileExperience() {
+    const app = document.getElementById("app");
+    if (!app) return;
+    const tools = app.querySelector(".workspace-tools"),
+      bar = app.querySelector(".workspace-bar");
+    if (tools && bar) {
+      for (const button of [...bar.children].filter(
+        (x) => x.tagName === "BUTTON",
+      ))
+        tools.querySelector(".tool-actions")?.prepend(button);
+      const strong = bar.querySelector(":scope > strong");
+      if (strong && !strong.title) strong.title = strong.textContent;
+    }
+    const nav = app.querySelector(".navigation-menu");
+    if (nav) {
+      const summary = nav.querySelector(":scope > summary");
+      summary?.setAttribute("aria-label", "ابزارها و تنظیمات برنامه");
+    }
+    const pairs = [
+      [".student-directory", ".student-add", "افزودن هنرجو"],
+      [".class-lessons", ".lesson-create", "افزودن درس"],
+    ];
+    for (const [sectionSelector, formSelector, label] of pairs) {
+      const section = app.querySelector(sectionSelector),
+        form = app.querySelector(formSelector);
+      if (!section || !form || section.querySelector(".mobile-add-action"))
+        continue;
+      const heading = section.querySelector("header");
+      if (heading) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "mobile-add-action";
+        button.textContent = "+ افزودن";
+        button.setAttribute("aria-label", label);
+        button.onclick = () => {
+          form.open = true;
+          form.scrollIntoView({
+            block: "start",
+            behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
+              ? "auto"
+              : "smooth",
+          });
+          form.querySelector("input")?.focus({ preventScroll: true });
+        };
+        heading.append(button);
+      }
+    }
+    const gradeArea = app.querySelector("#lessonGradesArea");
+    if (gradeArea) {
+      for (const card of gradeArea.querySelectorAll(".card")) {
+        if (!card.classList.contains("mobile-grade-panel"))
+          card.classList.add("mobile-grade-panel");
+        const intro = [...card.children].find((x) => x.tagName === "P");
+        if (intro && !card.querySelector(".grade-help")) {
+          const details = document.createElement("details");
+          details.className = "grade-help";
+          details.open =
             innerWidth > 700 &&
             !matchMedia("(max-width:1000px) and (pointer:coarse)").matches;
-          if (wide !== wideLayout) {
-            wideLayout = wide;
-            for (const menu of document.querySelectorAll(".navigation-menu"))
-              menu.open = wide;
+          const summary = document.createElement("summary");
+          summary.textContent = "قواعد محاسبه و راهنما";
+          details.append(summary);
+          intro.before(details);
+          details.append(intro);
+        }
+      }
+    }
+  }
+
+  function polishReportFilters() {
+    if (state.view !== "reports") return;
+    const tabs = document.querySelector(".report-navigation"),
+      active = tabs?.querySelector(".active");
+    if (tabs && active && tabs.scrollWidth > tabs.clientWidth) {
+      const box = tabs.getBoundingClientRect(),
+        r = active.getBoundingClientRect();
+      if (r.left < box.left || r.right > box.right)
+        tabs.scrollLeft += r.left - (box.left + (box.width - r.width) / 2);
+    }
+    const names = {
+      schoolId: "مدرسه",
+      classId: "کلاس",
+      lessonId: "درس",
+      studentId: "هنرجو",
+      date: "تاریخ جلسه",
+      period: "زنگ",
+    };
+    for (const control of document.querySelectorAll(
+      '#app select[onchange*="Filter"],#app input[type="date"][onchange*="GlobalFilter"],#app select[data-legacy-change],#app input[type="date"][data-legacy-change]',
+    )) {
+      const action =
+          control.getAttribute("onchange") ||
+          EduLegacyEvents.source(control.getAttribute("data-legacy-change")),
+        key = action.match(/["']([^"']+)["']/)?.[1],
+        caption = names[key];
+      if (!caption || control.closest(".report-filter-field")) continue;
+      const label = document.createElement("label");
+      label.className = "report-filter-field";
+      const pairedDate =
+        control.type === "date" &&
+        control.nextElementSibling?.dataset.gregorianTarget === "true"
+          ? control.nextElementSibling
+          : null;
+      const text = document.createElement("span");
+      text.textContent = caption;
+      control.before(label);
+      label.append(text, control);
+      if (pairedDate) {
+        label.append(pairedDate);
+        pairedDate.setAttribute("aria-label", caption);
+      }
+      const row = label.parentElement;
+      if (!row.classList.contains("report-filter-grid"))
+        row.classList.add("report-filter-grid");
+      row.closest(".card")?.classList.add("report-filter-card");
+    }
+    const box = document.querySelector("#app .filter-box");
+    if (box && box.tagName !== "DETAILS") {
+      const details = document.createElement("details");
+      details.className = "filter-box report-options";
+      details.open = !!state.reportOptionsOpen;
+      details.ontoggle = () => {
+        state.reportOptionsOpen = details.open;
+      };
+      const summary = document.createElement("summary");
+      summary.textContent = "تنظیم محتوای گزارش و نمایش اسامی";
+      details.append(summary);
+      while (box.firstChild) details.append(box.firstChild);
+      box.replaceWith(details);
+    }
+  }
+
+  const designRoots = [];
+  const designObserver = new MutationObserver(schedule);
+  function observeDesignRoots() {
+    for (const root of designRoots)
+      designObserver.observe(root, { childList: true, subtree: true });
+  }
+  function enhance() {
+    designObserver.disconnect();
+    try {
+      polishReportFilters();
+      mobileExperience();
+      polishExperience();
+      updateDesign();
+      for (const table of document.querySelectorAll(
+        "#app table,#modalBody table",
+      )) {
+        if (!table.dataset.responsiveSized) {
+          const columns = Math.max(
+            1,
+            ...[...table.rows]
+              .slice(0, 3)
+              .map((row) =>
+                [...row.cells].reduce((n, cell) => n + cell.colSpan, 0),
+              ),
+          );
+          table.style.minWidth =
+            (columns >= 4 ? columns * 120 : Math.min(380, columns * 140)) +
+            "px";
+          table.dataset.responsiveSized = "1";
+        }
+      }
+      for (const container of document.querySelectorAll(".table-scroll")) {
+        if (!container.hasAttribute("tabindex")) {
+          container.tabIndex = 0;
+          container.setAttribute("role", "region");
+          container.setAttribute("aria-label", "جدول با پیمایش افقی");
+        }
+      }
+      for (const table of document.querySelectorAll(
+        "#app table,#modalBody table",
+      )) {
+        if (table.closest(".responsive-scroll,.table-scroll")) continue;
+        const wrap = document.createElement("div");
+        wrap.className = "responsive-scroll";
+        wrap.tabIndex = 0;
+        wrap.setAttribute("role", "region");
+        wrap.setAttribute(
+          "aria-label",
+          "جدول؛ برای دیدن ستون‌های دیگر افقی پیمایش کنید",
+        );
+        table.before(wrap);
+        wrap.append(table);
+      }
+      styleDataTables();
+      for (const grid of document.querySelectorAll("#app .schedule-grid")) {
+        if (grid.parentElement.classList.contains("responsive-scroll"))
+          continue;
+        const wrap = document.createElement("div");
+        wrap.className = "responsive-scroll";
+        wrap.tabIndex = 0;
+        wrap.setAttribute("role", "region");
+        wrap.setAttribute("aria-label", "برنامه هفتگی با پیمایش افقی");
+        grid.before(wrap);
+        wrap.append(grid);
+      }
+      const bar = document.querySelector(".workspace-bar");
+      if (bar && !bar.querySelector(".workspace-tools")) {
+        const tools = document.createElement("details");
+        tools.className = "workspace-tools no-print";
+        tools.innerHTML =
+          '<summary>مدیریت و پشتیبان‌ها</summary><div class="tool-actions"></div>';
+        const box = tools.querySelector(".tool-actions");
+        for (const button of [...bar.querySelectorAll("button")])
+          box.append(button);
+        for (const small of [...bar.querySelectorAll("small")])
+          box.append(small);
+        const backup = document.createElement("button");
+        backup.className = "ghost";
+        backup.textContent = "ذخیره پشتیبان";
+        backup.onclick = () => exportBackup().catch((e) => alert(e.message));
+        box.prepend(backup);
+        bar.append(tools);
+      }
+      const topbar = document.querySelector(".topbar"),
+        actions = topbar?.querySelector(".actions");
+      if (actions && !topbar.querySelector(".navigation-menu")) {
+        const menu = document.createElement("details");
+        menu.className = "navigation-menu no-print";
+        menu.open =
+          innerWidth > 700 &&
+          !matchMedia("(max-width:1000px) and (pointer:coarse)").matches;
+        menu.innerHTML =
+          '<summary title="ابزارها و تنظیمات"><span class="menu-toggle-label">فهرست برنامه</span><svg class="menu-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path class="menu-line-top" d="M5 12h14"/><path class="menu-line-middle" d="M5 12h14"/><path class="menu-line-bottom" d="M5 12h14"/></svg></summary>';
+        actions.before(menu);
+        menu.querySelector("summary").id = "headerNavigationToggle";
+        menu.append(actions);
+        menu.addEventListener("toggle", () => {
+          if (!menu.open) {
+            closeClassMenu();
+            closeDataMenu();
           }
+        });
+        actions.addEventListener("click", (e) => {
+          const button = e.target.closest("button");
+          if (
+            button &&
+            !button.hasAttribute("aria-controls") &&
+            matchMedia(
+              "(max-width:700px), (max-width:1000px) and (pointer:coarse)",
+            ).matches
+          ) {
+            menu.open = false;
+            menu.querySelector("summary").focus({ preventScroll: true });
+          }
+        });
+        const settings = actions.querySelector(
+          'button[data-header-action="settings"]',
+        );
+        if (settings) {
+          settings.setAttribute("aria-label", "تنظیمات برنامه");
+          settings.title = "تنظیمات برنامه";
         }
-        function start() {
-          for (const el of [
-            document.getElementById("app"),
-            document.getElementById("modalBody"),
-          ])
-            if (el) designRoots.push(el);
-          enhance();
-          viewport();
-          window.visualViewport?.addEventListener("resize", viewport);
-          window.visualViewport?.addEventListener("scroll", viewport);
-          window.addEventListener("resize", viewport);
-        }
-        if (document.readyState === "loading")
-          document.addEventListener("DOMContentLoaded", start);
-        else start();
-      })();
+      }
+    } finally {
+      pending = false;
+      observeDesignRoots();
+    }
+  }
+  function schedule() {
+    if (!pending) {
+      pending = true;
+      requestAnimationFrame(enhance);
+    }
+  }
+  let wideLayout;
+  function viewport() {
+    document.documentElement.style.setProperty(
+      "--app-viewport",
+      (window.visualViewport?.height || innerHeight) + "px",
+    );
+    document.documentElement.style.setProperty(
+      "--app-viewport-top",
+      (window.visualViewport?.offsetTop || 0) + "px",
+    );
+    const wide =
+      innerWidth > 700 &&
+      !matchMedia("(max-width:1000px) and (pointer:coarse)").matches;
+    if (wide !== wideLayout) {
+      wideLayout = wide;
+      for (const menu of document.querySelectorAll(".navigation-menu"))
+        menu.open = wide;
+    }
+  }
+  function start() {
+    for (const el of [
+      document.getElementById("app"),
+      document.getElementById("modalBody"),
+    ])
+      if (el) designRoots.push(el);
+    enhance();
+    viewport();
+    window.visualViewport?.addEventListener("resize", viewport);
+    window.visualViewport?.addEventListener("scroll", viewport);
+    window.addEventListener("resize", viewport);
+  }
+  if (document.readyState === "loading")
+    document.addEventListener("DOMContentLoaded", start);
+  else start();
+})();

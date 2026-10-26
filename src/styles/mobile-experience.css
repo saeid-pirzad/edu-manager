@@ -1,488 +1,487 @@
-      /* mobileExperienceV2 */
+/* mobileExperienceV2 */
 
-      .mobile-add-action {
-        display: none;
-      }
-      @media screen and (max-width: 700px),
-        screen and (max-width: 1000px) and (pointer: coarse) {
-        body {
-          background: #f7f8fc;
-        }
-        input:not([type="checkbox"]):not([type="radio"]),
-        select,
-        textarea {
-          font-size: 16px;
-          max-width: 100%;
-          min-width: 0;
-        }
-        .modal-overlay {
-          align-items: flex-end;
-          padding: 12px 0 0;
-        }
-        .modal-dialog {
-          width: 100%;
-          max-height: calc(var(--app-viewport, 100dvh) - 12px);
-          border-radius: 20px 20px 0 0;
-        }
-        .topbar .navigation-menu:not([open]) > .actions {
-          display: none !important;
-        }
-        #app {
-          display: flex;
-          flex-direction: column;
-          padding: 0 14px calc(88px + env(safe-area-inset-bottom));
-          gap: 0;
-        }
-        #app > * {
-          order: 5;
-          width: 100%;
-          min-width: 0;
-        }
-        #app > .topbar {
-          order: 0;
-        }
-        #app > .workspace-bar {
-          order: 1;
-        }
-        #app > .breadcrumb,
-        #app > .ui-hero {
-          order: 2;
-        }
-        #app > .view-heading,
-        #app > .ui-stats {
-          order: 3;
-        }
-        #app > .tabs {
-          order: 4;
-        }
-        #app > .student-directory,
-        #app > .class-lessons {
-          order: 5;
-        }
-        #app > .quick-create,
-        #app > .lesson-create {
-          order: 7;
-        }
-        #app > .student-import,
-        #app > .lesson-schedule {
-          order: 8;
-        }
-        .topbar {
-          position: sticky;
-          top: 0;
-          z-index: 75;
-          display: block !important;
-          padding: 9px 0 !important;
-          margin: 0 !important;
-          background: #f7f8fc;
-          border: 0;
-        }
-        .topbar .header-brand {
-          width: calc(100% - 52px) !important;
-          min-height: 44px;
-          align-items: center;
-          flex-wrap: nowrap;
-        }
-        .topbar .header-brand > .header-action {
-          display: none !important;
-        }
-        .topbar h1 {
-          font-size: 0.98rem !important;
-          gap: 9px;
-        }
-        .topbar h1 small {
-          display: none;
-        }
-        .brand-mark {
-          width: 36px;
-          height: 36px;
-          border-radius: 11px;
-          box-shadow: none;
-        }
-        .brand-mark svg {
-          width: 21px;
-          height: 21px;
-        }
-        .topbar .navigation-menu {
-          width: 0 !important;
-          height: 0;
-          margin: 0;
-          flex: none;
-        }
-        .topbar .navigation-menu > summary {
-          position: absolute;
-          left: 0;
-          top: 9px;
-          display: grid;
-          place-items: center;
-          width: 42px;
-          min-height: 42px;
-          height: 42px;
-          padding: 0;
-          background: #fff;
-          border: 1px solid #e6eaf2;
-          border-radius: 12px;
-          font-size: 0;
-        }
-        .topbar .navigation-menu > summary::after {
-          content: "≡";
-          font-size: 28px;
-          line-height: 1;
-          color: #43516b;
-          font-weight: 400;
-        }
-        .topbar .navigation-menu[open] > summary::after {
-          content: "×";
-          font-size: 25px;
-        }
-        .topbar .navigation-menu[open] .header-actions {
-          position: absolute;
-          inset-inline: 0;
-          top: 60px;
-          margin: 0;
-          padding: 12px !important;
-          max-height: calc(var(--app-viewport, 100dvh) - 148px);
-          overflow-y: auto;
-          overscroll-behavior: contain;
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          width: 100%;
-          background: #fff;
-          border: 1px solid #e4e9f2;
-          border-radius: 18px;
-          box-shadow: 0 18px 48px #22335b26;
-        }
-        .topbar .header-actions > .header-action:last-child {
-          grid-column: auto;
-          background: #fff;
-          justify-content: flex-start;
-          border: 1px solid #e5eaf3;
-        }
-        .workspace-bar {
-          display: flex;
-          align-items: center;
-          flex-wrap: wrap;
-          gap: 5px !important;
-          padding: 4px 0 10px !important;
-          margin: 0 0 12px !important;
-          border: 0;
-          border-bottom: 1px solid #e4e9f2;
-          border-radius: 0 !important;
-          background: transparent !important;
-          box-shadow: none;
-          min-height: 42px;
-        }
-        .workspace-bar > strong {
-          font-size: 0.64rem;
-          flex: 1 1 120px;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          max-width: 52%;
-          color: #64748b;
-          font-weight: 400;
-        }
-        .workspace-bar > #saveStatus {
-          font-size: 0.6rem;
-          flex: none;
-          padding: 3px 6px;
-          line-height: 1.6;
-        }
-        #saveStatus[data-state="saved"] {
-          font-size: 0;
-        }
-        #saveStatus[data-state="saved"]::before {
-          content: "✓ ذخیره شد";
-          font-size: 0.6rem;
-        }
-        .workspace-tools:not([open]) {
-          margin: 0 !important;
-          flex: none !important;
-          width: auto;
-        }
-        .workspace-tools summary {
-          font-size: 0;
-          padding: 4px 7px;
-          min-height: 36px;
-          display: flex;
-          align-items: center;
-          color: #64748b;
-          list-style: none;
-        }
-        .workspace-tools summary::-webkit-details-marker {
-          display: none;
-        }
-        .workspace-tools summary::after {
-          content: "دوره و پشتیبان ⌄";
-          font-size: 0.61rem;
-        }
-        .workspace-tools[open] {
-          width: 100%;
-          flex-basis: 100%;
-        }
-        .workspace-tools .tool-actions {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-        .workspace-tools .tool-actions small {
-          grid-column: 1/-1;
-          font-size: 0.65rem;
-        }
-        .breadcrumb {
-          font-size: 0.63rem;
-          padding: 0;
-          margin: 0 0 6px;
-          line-height: 1.8;
-        }
-        .view-heading {
-          margin: 0 0 14px;
-        }
-        .view-heading h2 {
-          font-size: 1.12rem;
-          line-height: 1.8;
-          letter-spacing: -0.3px;
-        }
-        .view-heading p {
-          font-size: 0.68rem;
-          margin-top: 3px;
-        }
-        .tabs {
-          margin: 0 0 14px;
-          padding: 4px;
-          border-radius: 13px;
-        }
-        .tabs button {
-          font-size: 0.73rem;
-          min-height: 40px;
-          padding: 8px 10px;
-        }
-        .ui-hero {
-          background: none;
-          color: #18233d;
-          box-shadow: none;
-          padding: 8px 0 16px;
-          margin: 0;
-          border-radius: 0;
-        }
-        .ui-hero .eyebrow,
-        .ui-hero > p:last-child {
-          display: none;
-        }
-        .ui-hero h2 {
-          color: #18233d;
-          font-size: 1.22rem;
-          line-height: 1.8;
-          margin: 0;
-        }
-        .ui-stats {
-          margin-bottom: 18px;
-          gap: 8px;
-        }
-        .ui-stat {
-          border: 1px solid #e6eaf2;
-          padding: 10px 12px;
-        }
-        .ui-stat strong {
-          font-size: 1.22rem;
-        }
-        .card {
-          border: 1px solid #e6eaf2;
-          border-radius: 18px;
-          box-shadow: none;
-          margin-bottom: 14px;
-          padding: 16px;
-        }
-        .class-lessons,
-        .student-directory {
-          padding: 0;
-        }
-        .lesson-list-heading,
-        .roster-heading {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 10px;
-          padding: 16px;
-        }
-        .lesson-list-heading h3,
-        .roster-heading h3 {
-          font-size: 0.93rem;
-        }
-        .lesson-list-heading p,
-        .roster-heading p {
-          display: none;
-        }
-        .mobile-add-action {
-          display: block;
-          flex-shrink: 0;
-          background: #4f46e5;
-          color: white;
-          font-size: 0.7rem;
-          min-height: 40px;
-          padding: 8px 12px;
-          border-radius: 11px;
-        }
-        .roster-toolbar {
-          grid-template-columns: minmax(0, 1fr) 110px;
-          padding: 0 14px;
-          gap: 8px;
-        }
-        .roster-toolbar label > span {
-          font-size: 0.63rem;
-        }
-        .roster-toolbar input,
-        .roster-toolbar select {
-          padding: 9px 8px;
-          min-height: 44px;
-          font-size: 0.8rem !important;
-        }
-        .roster-results {
-          font-size: 0.63rem;
-          padding-inline: 14px;
-          margin: 9px 0;
-        }
-        .student-roster {
-          padding: 0 12px 12px;
-          gap: 10px;
-        }
-        .student-profile {
-          padding: 13px;
-          border-radius: 14px;
-        }
-        .student-profile-info h4 {
-          font-size: 0.84rem;
-        }
-        .student-profile-actions {
-          padding-top: 10px;
-          margin-top: 10px;
-          grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) auto;
-        }
-        .student-more {
-          grid-column: auto;
-        }
-        .student-profile-actions button,
-        .student-more summary {
-          min-height: 44px;
-          font-size: 0.72rem;
-          padding: 8px;
-        }
-        .student-avatar {
-          width: 38px;
-          height: 38px;
-          border-radius: 12px;
-          font-size: 0.75rem;
-        }
-        .lesson-items {
-          padding-inline: 14px;
-        }
-        .lesson-item {
-          gap: 11px;
-          padding: 16px 0;
-        }
-        .lesson-identity h4 {
-          font-size: 0.89rem;
-        }
-        .lesson-policy {
-          font-size: 0.68rem;
-        }
-        .lesson-schedule {
-          flex-direction: row;
-          align-items: center;
-          gap: 10px;
-          padding: 14px;
-        }
-        .lesson-schedule p {
-          display: none;
-        }
-        .lesson-schedule strong {
-          font-size: 0.75rem;
-        }
-        .lesson-schedule button {
-          width: auto;
-          font-size: 0.65rem;
-          min-height: 38px;
-          padding-inline: 9px;
-        }
-        .mobile-grade-panel {
-          padding: 14px;
-        }
-        .mobile-grade-panel > h3 {
-          display: none;
-        }
-        .grade-help {
-          margin: 0 0 12px;
-          border: 1px solid #e5eaf3;
-          border-radius: 10px;
-          background: #f8faff;
-        }
-        .grade-help summary {
-          cursor: pointer;
-          min-height: 40px;
-          padding: 9px 12px;
-          color: #52617b;
-          font-size: 0.7rem;
-        }
-        .grade-help p {
-          font-size: 0.72rem;
-          line-height: 2;
-          padding: 0 12px 12px;
-          margin: 0;
-        }
-        table[data-ui-layout="cards"] tbody tr {
-          padding: 13px;
-          border-radius: 14px;
-          gap: 10px;
-        }
-        table[data-ui-layout="cards"] tbody td[data-identity] {
-          font-size: 0.87rem;
-          padding-bottom: 8px !important;
-        }
-        table[data-ui-layout="cards"]
-          td
-          input:not([type="checkbox"]):not([type="radio"]) {
-          min-height: 48px;
-          background: #f8faff;
-          font-size: 1.05rem !important;
-          font-weight: 500;
-        }
-        #uiBottomNav {
-          display: grid;
-          z-index: 80;
-          padding-top: 6px;
-          box-shadow: 0 -4px 24px #24315b06;
-          background: #fff;
-        }
-        #uiBottomNav button {
-          min-height: 50px;
-          font-size: 0.62rem;
-        }
-        #uiBottomNav svg {
-          width: 21px;
-          height: 21px;
-        }
-        details.quick-create,
-        details.lesson-create,
-        details.student-import {
-          scroll-margin-top: 76px;
-        }
-      }
-      @media screen and (max-width: 340px) {
-        .workspace-bar > strong {
-          max-width: 43%;
-          font-size: 0.59rem;
-          flex-basis: 95px;
-        }
-        .workspace-tools summary::after {
-          content: "ابزارها ⌄";
-        }
-        .roster-toolbar {
-          grid-template-columns: minmax(0, 1fr);
-        }
-        .student-profile-actions {
-          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-        }
-        .student-more {
-          grid-column: 1/-1;
-        }
-      }
-
+.mobile-add-action {
+  display: none;
+}
+@media screen and (max-width: 700px),
+  screen and (max-width: 1000px) and (pointer: coarse) {
+  body {
+    background: #f7f8fc;
+  }
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 12px 0 0;
+  }
+  .modal-dialog {
+    width: 100%;
+    max-height: calc(var(--app-viewport, 100dvh) - 12px);
+    border-radius: 20px 20px 0 0;
+  }
+  .topbar .navigation-menu:not([open]) > .actions {
+    display: none !important;
+  }
+  #app {
+    display: flex;
+    flex-direction: column;
+    padding: 0 14px calc(88px + env(safe-area-inset-bottom));
+    gap: 0;
+  }
+  #app > * {
+    order: 5;
+    width: 100%;
+    min-width: 0;
+  }
+  #app > .topbar {
+    order: 0;
+  }
+  #app > .workspace-bar {
+    order: 1;
+  }
+  #app > .breadcrumb,
+  #app > .ui-hero {
+    order: 2;
+  }
+  #app > .view-heading,
+  #app > .ui-stats {
+    order: 3;
+  }
+  #app > .tabs {
+    order: 4;
+  }
+  #app > .student-directory,
+  #app > .class-lessons {
+    order: 5;
+  }
+  #app > .quick-create,
+  #app > .lesson-create {
+    order: 7;
+  }
+  #app > .student-import,
+  #app > .lesson-schedule {
+    order: 8;
+  }
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 75;
+    display: block !important;
+    padding: 9px 0 !important;
+    margin: 0 !important;
+    background: #f7f8fc;
+    border: 0;
+  }
+  .topbar .header-brand {
+    width: calc(100% - 52px) !important;
+    min-height: 44px;
+    align-items: center;
+    flex-wrap: nowrap;
+  }
+  .topbar .header-brand > .header-action {
+    display: none !important;
+  }
+  .topbar h1 {
+    font-size: 0.98rem !important;
+    gap: 9px;
+  }
+  .topbar h1 small {
+    display: none;
+  }
+  .brand-mark {
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+    box-shadow: none;
+  }
+  .brand-mark svg {
+    width: 21px;
+    height: 21px;
+  }
+  .topbar .navigation-menu {
+    width: 0 !important;
+    height: 0;
+    margin: 0;
+    flex: none;
+  }
+  .topbar .navigation-menu > summary {
+    position: absolute;
+    left: 0;
+    top: 9px;
+    display: grid;
+    place-items: center;
+    width: 42px;
+    min-height: 42px;
+    height: 42px;
+    padding: 0;
+    background: #fff;
+    border: 1px solid #e6eaf2;
+    border-radius: 12px;
+    font-size: 0;
+  }
+  .topbar .navigation-menu > summary::after {
+    content: "≡";
+    font-size: 28px;
+    line-height: 1;
+    color: #43516b;
+    font-weight: 400;
+  }
+  .topbar .navigation-menu[open] > summary::after {
+    content: "×";
+    font-size: 25px;
+  }
+  .topbar .navigation-menu[open] .header-actions {
+    position: absolute;
+    inset-inline: 0;
+    top: 60px;
+    margin: 0;
+    padding: 12px !important;
+    max-height: calc(var(--app-viewport, 100dvh) - 148px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    background: #fff;
+    border: 1px solid #e4e9f2;
+    border-radius: 18px;
+    box-shadow: 0 18px 48px #22335b26;
+  }
+  .topbar .header-actions > .header-action:last-child {
+    grid-column: auto;
+    background: #fff;
+    justify-content: flex-start;
+    border: 1px solid #e5eaf3;
+  }
+  .workspace-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px !important;
+    padding: 4px 0 10px !important;
+    margin: 0 0 12px !important;
+    border: 0;
+    border-bottom: 1px solid #e4e9f2;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none;
+    min-height: 42px;
+  }
+  .workspace-bar > strong {
+    font-size: 0.64rem;
+    flex: 1 1 120px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 52%;
+    color: #64748b;
+    font-weight: 400;
+  }
+  .workspace-bar > #saveStatus {
+    font-size: 0.6rem;
+    flex: none;
+    padding: 3px 6px;
+    line-height: 1.6;
+  }
+  #saveStatus[data-state="saved"] {
+    font-size: 0;
+  }
+  #saveStatus[data-state="saved"]::before {
+    content: "✓ ذخیره شد";
+    font-size: 0.6rem;
+  }
+  .workspace-tools:not([open]) {
+    margin: 0 !important;
+    flex: none !important;
+    width: auto;
+  }
+  .workspace-tools summary {
+    font-size: 0;
+    padding: 4px 7px;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    color: #64748b;
+    list-style: none;
+  }
+  .workspace-tools summary::-webkit-details-marker {
+    display: none;
+  }
+  .workspace-tools summary::after {
+    content: "دوره و پشتیبان ⌄";
+    font-size: 0.61rem;
+  }
+  .workspace-tools[open] {
+    width: 100%;
+    flex-basis: 100%;
+  }
+  .workspace-tools .tool-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .workspace-tools .tool-actions small {
+    grid-column: 1/-1;
+    font-size: 0.65rem;
+  }
+  .breadcrumb {
+    font-size: 0.63rem;
+    padding: 0;
+    margin: 0 0 6px;
+    line-height: 1.8;
+  }
+  .view-heading {
+    margin: 0 0 14px;
+  }
+  .view-heading h2 {
+    font-size: 1.12rem;
+    line-height: 1.8;
+    letter-spacing: -0.3px;
+  }
+  .view-heading p {
+    font-size: 0.68rem;
+    margin-top: 3px;
+  }
+  .tabs {
+    margin: 0 0 14px;
+    padding: 4px;
+    border-radius: 13px;
+  }
+  .tabs button {
+    font-size: 0.73rem;
+    min-height: 40px;
+    padding: 8px 10px;
+  }
+  .ui-hero {
+    background: none;
+    color: #18233d;
+    box-shadow: none;
+    padding: 8px 0 16px;
+    margin: 0;
+    border-radius: 0;
+  }
+  .ui-hero .eyebrow,
+  .ui-hero > p:last-child {
+    display: none;
+  }
+  .ui-hero h2 {
+    color: #18233d;
+    font-size: 1.22rem;
+    line-height: 1.8;
+    margin: 0;
+  }
+  .ui-stats {
+    margin-bottom: 18px;
+    gap: 8px;
+  }
+  .ui-stat {
+    border: 1px solid #e6eaf2;
+    padding: 10px 12px;
+  }
+  .ui-stat strong {
+    font-size: 1.22rem;
+  }
+  .card {
+    border: 1px solid #e6eaf2;
+    border-radius: 18px;
+    box-shadow: none;
+    margin-bottom: 14px;
+    padding: 16px;
+  }
+  .class-lessons,
+  .student-directory {
+    padding: 0;
+  }
+  .lesson-list-heading,
+  .roster-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 16px;
+  }
+  .lesson-list-heading h3,
+  .roster-heading h3 {
+    font-size: 0.93rem;
+  }
+  .lesson-list-heading p,
+  .roster-heading p {
+    display: none;
+  }
+  .mobile-add-action {
+    display: block;
+    flex-shrink: 0;
+    background: #4f46e5;
+    color: white;
+    font-size: 0.7rem;
+    min-height: 40px;
+    padding: 8px 12px;
+    border-radius: 11px;
+  }
+  .roster-toolbar {
+    grid-template-columns: minmax(0, 1fr) 110px;
+    padding: 0 14px;
+    gap: 8px;
+  }
+  .roster-toolbar label > span {
+    font-size: 0.63rem;
+  }
+  .roster-toolbar input,
+  .roster-toolbar select {
+    padding: 9px 8px;
+    min-height: 44px;
+    font-size: 0.8rem !important;
+  }
+  .roster-results {
+    font-size: 0.63rem;
+    padding-inline: 14px;
+    margin: 9px 0;
+  }
+  .student-roster {
+    padding: 0 12px 12px;
+    gap: 10px;
+  }
+  .student-profile {
+    padding: 13px;
+    border-radius: 14px;
+  }
+  .student-profile-info h4 {
+    font-size: 0.84rem;
+  }
+  .student-profile-actions {
+    padding-top: 10px;
+    margin-top: 10px;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) auto;
+  }
+  .student-more {
+    grid-column: auto;
+  }
+  .student-profile-actions button,
+  .student-more summary {
+    min-height: 44px;
+    font-size: 0.72rem;
+    padding: 8px;
+  }
+  .student-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+  }
+  .lesson-items {
+    padding-inline: 14px;
+  }
+  .lesson-item {
+    gap: 11px;
+    padding: 16px 0;
+  }
+  .lesson-identity h4 {
+    font-size: 0.89rem;
+  }
+  .lesson-policy {
+    font-size: 0.68rem;
+  }
+  .lesson-schedule {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    padding: 14px;
+  }
+  .lesson-schedule p {
+    display: none;
+  }
+  .lesson-schedule strong {
+    font-size: 0.75rem;
+  }
+  .lesson-schedule button {
+    width: auto;
+    font-size: 0.65rem;
+    min-height: 38px;
+    padding-inline: 9px;
+  }
+  .mobile-grade-panel {
+    padding: 14px;
+  }
+  .mobile-grade-panel > h3 {
+    display: none;
+  }
+  .grade-help {
+    margin: 0 0 12px;
+    border: 1px solid #e5eaf3;
+    border-radius: 10px;
+    background: #f8faff;
+  }
+  .grade-help summary {
+    cursor: pointer;
+    min-height: 40px;
+    padding: 9px 12px;
+    color: #52617b;
+    font-size: 0.7rem;
+  }
+  .grade-help p {
+    font-size: 0.72rem;
+    line-height: 2;
+    padding: 0 12px 12px;
+    margin: 0;
+  }
+  table[data-ui-layout="cards"] tbody tr {
+    padding: 13px;
+    border-radius: 14px;
+    gap: 10px;
+  }
+  table[data-ui-layout="cards"] tbody td[data-identity] {
+    font-size: 0.87rem;
+    padding-bottom: 8px !important;
+  }
+  table[data-ui-layout="cards"]
+    td
+    input:not([type="checkbox"]):not([type="radio"]) {
+    min-height: 48px;
+    background: #f8faff;
+    font-size: 1.05rem !important;
+    font-weight: 500;
+  }
+  #uiBottomNav {
+    display: grid;
+    z-index: 80;
+    padding-top: 6px;
+    box-shadow: 0 -4px 24px #24315b06;
+    background: #fff;
+  }
+  #uiBottomNav button {
+    min-height: 50px;
+    font-size: 0.62rem;
+  }
+  #uiBottomNav svg {
+    width: 21px;
+    height: 21px;
+  }
+  details.quick-create,
+  details.lesson-create,
+  details.student-import {
+    scroll-margin-top: 76px;
+  }
+}
+@media screen and (max-width: 340px) {
+  .workspace-bar > strong {
+    max-width: 43%;
+    font-size: 0.59rem;
+    flex-basis: 95px;
+  }
+  .workspace-tools summary::after {
+    content: "ابزارها ⌄";
+  }
+  .roster-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .student-profile-actions {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .student-more {
+    grid-column: 1/-1;
+  }
+}

@@ -2,17 +2,38 @@
 
 // Builds a write plan without mutating live data or touching IndexedDB.
 globalThis.EduRecordCommitPlan = Object.freeze({
-  create(records, committed, { replace = false, changesBetween = globalThis.EduHistoryChanges.changesBetween } = {}) {
-    const values = new Map([...records].map(([key, value]) => [key, JSON.stringify(value)]));
-    const changed = [...values].filter(([key, value]) => committed.get(key) !== value);
-    const removed = replace ? [...committed.keys()].filter(key => !values.has(key)) : [];
+  create(
+    records,
+    committed,
+    {
+      replace = false,
+      changesBetween = globalThis.EduHistoryChanges.changesBetween,
+    } = {},
+  ) {
+    const values = new Map(
+      [...records].map(([key, value]) => [key, JSON.stringify(value)]),
+    );
+    const changed = [...values].filter(
+      ([key, value]) => committed.get(key) !== value,
+    );
+    const removed = replace
+      ? [...committed.keys()].filter((key) => !values.has(key))
+      : [];
     const before = [
-      ...changed.map(([key]) => ({ key, value: committed.has(key) ? JSON.parse(committed.get(key)) : null })),
-      ...removed.map(key => ({ key, value: JSON.parse(committed.get(key)) })),
+      ...changed.map(([key]) => ({
+        key,
+        value: committed.has(key) ? JSON.parse(committed.get(key)) : null,
+      })),
+      ...removed.map((key) => ({ key, value: JSON.parse(committed.get(key)) })),
     ];
     const changes = [];
     for (const [key, json] of changed)
-      changesBetween(committed.has(key) ? JSON.parse(committed.get(key)) : null, JSON.parse(json), key, changes);
+      changesBetween(
+        committed.has(key) ? JSON.parse(committed.get(key)) : null,
+        JSON.parse(json),
+        key,
+        changes,
+      );
     for (const key of removed)
       changesBetween(JSON.parse(committed.get(key)), null, key, changes);
     return { changed, removed, before, changes };

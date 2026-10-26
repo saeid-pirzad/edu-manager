@@ -1,10 +1,16 @@
 "use strict";
-const { test } = require("node:test"), assert = require("node:assert/strict");
-const fs = require("node:fs"), path = require("node:path"), vm = require("node:vm");
+const { test } = require("node:test"),
+  assert = require("node:assert/strict");
+const fs = require("node:fs"),
+  path = require("node:path"),
+  vm = require("node:vm");
 const context = vm.createContext({ structuredClone });
 // Deliberately no DOM, storage or legacy-ui script in this context.
 for (const file of ["grade-math.js", "data-boundary.js", "grade-policy.js"])
-  vm.runInContext(fs.readFileSync(path.join(__dirname, "../assets/scripts", file), "utf8"), context);
+  vm.runInContext(
+    fs.readFileSync(path.join(__dirname, "../assets/scripts", file), "utf8"),
+    context,
+  );
 const policy = context.EduPolicy;
 
 test("grade domain works independently and respects the exact passing boundary", () => {
@@ -32,7 +38,9 @@ test("score records cannot inherit grades or accept reserved identifiers", () =>
   assert.equal(context.ownScoreRecord(source, "student").practical, undefined);
   for (const id of ["__proto__", "constructor", "toString", "prototype"])
     assert.equal(context.isSafeRecordId(id), false);
-  assert.throws(() => context.assertSafeDataTree(JSON.parse('{"__proto__": {"polluted": true}}')));
+  assert.throws(() =>
+    context.assertSafeDataTree(JSON.parse('{"__proto__": {"polluted": true}}')),
+  );
 });
 test("modular grading requires competency and honors missing input", () => {
   const p = policy.defaults("modular", "1405-1406");

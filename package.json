@@ -6,6 +6,11 @@
   "scripts": {
     "build": "node scripts/build.cjs",
     "build:check": "node scripts/build.cjs --check",
+    "lint": "npm run build:check && node scripts/lint.cjs",
+    "format": "prettier --write src scripts audit EduManager.html index.html source-map.json package.json README.md AUDIT.md docs/ARCHITECTURE.md docs/REFACTOR-RESULT.md docs/AUDIT-2026-10-25.md .github/workflows/ci.yml",
+    "format:check": "prettier --check src scripts audit EduManager.html index.html source-map.json package.json README.md AUDIT.md docs/ARCHITECTURE.md docs/REFACTOR-RESULT.md docs/AUDIT-2026-10-25.md .github/workflows/ci.yml",
+    "check": "npm run format:check && npm run lint && npm test",
+    "bench": "npm run build:check && node scripts/benchmark.cjs",
     "dev": "npm run build && node scripts/serve.cjs",
     "test": "npm run build:check && npm run test:unit && node audit/assets-contract.cjs && node audit/data-store-contract.cjs && node audit/workflow-review.cjs",
     "test:unit": "node --test",
@@ -15,6 +20,12 @@
     "audit": "npm test"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.13.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.0.0",
+    "globals": "16.5.0",
+    "prettier": "3.9.9"
   }
 }

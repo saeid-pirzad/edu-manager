@@ -17,4 +17,9 @@ module.exports = {
   courseFormEvents: require("./courseFormEvents.cjs"),
   courseTableEvents: require("./courseTableEvents.cjs"),
   gradeEvents: require("./gradeEvents.cjs"),
+  periodLabelEvents: require("./periodLabelEvents.cjs"),
+  securityRendering: require("./securityRendering.cjs"),
+  delegatedUi: require("./delegatedUi.cjs"),
+  asyncTargets: require("./asyncTargets.cjs"),
+  largeTable: require("./largeTable.cjs"),
 };

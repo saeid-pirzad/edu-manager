@@ -10,7 +10,12 @@ globalThis.EduDataStoreSchema = Object.freeze({
   stores: Object.freeze([
     Object.freeze({ name: "records", keyPath: "key" }),
     Object.freeze({ name: "catalog", keyPath: "id" }),
-    Object.freeze({ name: "events", keyPath: "id", autoIncrement: true, workspaceIndex: true }),
+    Object.freeze({
+      name: "events",
+      keyPath: "id",
+      autoIncrement: true,
+      workspaceIndex: true,
+    }),
     Object.freeze({ name: "backups", keyPath: "id" }),
     Object.freeze({ name: "undo", keyPath: "id" }),
     Object.freeze({ name: "reports", keyPath: "id" }),

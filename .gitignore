@@ -2,5 +2,6 @@ node_modules/
 coverage/
 .cache/
 *.log
+/audit/*-results.json
 .DS_Store
 Thumbs.db

@@ -4,66 +4,122 @@
 
 // Owns connection lifecycle and non-destructive schema upgrades.
 globalThis.EduDataStore = Object.freeze({
-  open({ schema = globalThis.EduDataStoreSchema, factory = globalThis.indexedDB, onVersionChange = connection => connection.close() } = {}) {
-    if (!factory) return Promise.reject(Error("این مرورگر IndexedDB را در اختیار برنامه قرار نمی‌دهد."));
+  open({
+    schema = globalThis.EduDataStoreSchema,
+    factory = globalThis.indexedDB,
+    onVersionChange = (connection) => connection.close(),
+  } = {}) {
+    if (!factory)
+      return Promise.reject(
+        Error("این مرورگر IndexedDB را در اختیار برنامه قرار نمی‌دهد."),
+      );
     return new Promise((resolve, reject) => {
       function open(version) {
-        const request = version === undefined
-          ? factory.open(schema.databaseName)
-          : factory.open(schema.databaseName, version);
-        let cancelled = false, failure;
+        const request =
+          version === undefined
+            ? factory.open(schema.databaseName)
+            : factory.open(schema.databaseName, version);
+        let cancelled = false,
+          failure;
         request.onupgradeneeded = () => {
-          if (cancelled) { request.transaction.abort(); return; }
+          if (cancelled) {
+            request.transaction.abort();
+            return;
+          }
           try {
             for (const definition of schema.stores) {
-              const store = request.result.objectStoreNames.contains(definition.name)
+              const store = request.result.objectStoreNames.contains(
+                definition.name,
+              )
                 ? request.transaction.objectStore(definition.name)
                 : request.result.createObjectStore(definition.name, {
                     keyPath: definition.keyPath,
                     autoIncrement: !!definition.autoIncrement,
                   });
-              if (store.keyPath !== definition.keyPath || store.autoIncrement !== !!definition.autoIncrement)
-                throw Error("ساختار مخزن اطلاعات ناسازگار است: " + definition.name);
-              if (definition.workspaceIndex && !store.indexNames.contains(schema.workspaceIndexName))
-                store.createIndex(schema.workspaceIndexName, schema.workspaceIndexKeyPath);
+              if (
+                store.keyPath !== definition.keyPath ||
+                store.autoIncrement !== !!definition.autoIncrement
+              )
+                throw Error(
+                  "ساختار مخزن اطلاعات ناسازگار است: " + definition.name,
+                );
+              if (
+                definition.workspaceIndex &&
+                !store.indexNames.contains(schema.workspaceIndexName)
+              )
+                store.createIndex(
+                  schema.workspaceIndexName,
+                  schema.workspaceIndexKeyPath,
+                );
             }
-          } catch (error) { failure = error; request.transaction.abort(); }
+          } catch (error) {
+            failure = error;
+            request.transaction.abort();
+          }
         };
         request.onsuccess = async () => {
           const connection = request.result;
-          if (cancelled) { connection.close(); return; }
+          if (cancelled) {
+            connection.close();
+            return;
+          }
           try {
             let upgrade = connection.version < schema.minimumVersion;
             const inspections = [];
             for (const definition of schema.stores) {
-              if (!connection.objectStoreNames.contains(definition.name)) { upgrade = true; continue; }
+              if (!connection.objectStoreNames.contains(definition.name)) {
+                upgrade = true;
+                continue;
+              }
               const transaction = connection.transaction(definition.name);
-              inspections.push(new Promise(resolve => {
-                transaction.oncomplete = resolve;
-                transaction.onabort = resolve;
-              }));
+              inspections.push(
+                new Promise((resolve) => {
+                  transaction.oncomplete = resolve;
+                  transaction.onabort = resolve;
+                }),
+              );
               const store = transaction.objectStore(definition.name);
-              if (store.keyPath !== definition.keyPath || store.autoIncrement !== !!definition.autoIncrement)
-                throw Error("ساختار مخزن اطلاعات ناسازگار است: " + definition.name);
+              if (
+                store.keyPath !== definition.keyPath ||
+                store.autoIncrement !== !!definition.autoIncrement
+              )
+                throw Error(
+                  "ساختار مخزن اطلاعات ناسازگار است: " + definition.name,
+                );
               if (definition.workspaceIndex) {
-                if (!store.indexNames.contains(schema.workspaceIndexName)) upgrade = true;
+                if (!store.indexNames.contains(schema.workspaceIndexName))
+                  upgrade = true;
                 else {
                   const index = store.index(schema.workspaceIndexName);
-                  if (index.keyPath !== schema.workspaceIndexKeyPath || index.unique || index.multiEntry)
-                    throw Error("ساختار نمایه اطلاعات ناسازگار است: " + definition.name);
+                  if (
+                    index.keyPath !== schema.workspaceIndexKeyPath ||
+                    index.unique ||
+                    index.multiEntry
+                  )
+                    throw Error(
+                      "ساختار نمایه اطلاعات ناسازگار است: " + definition.name,
+                    );
                 }
               }
             }
             if (upgrade) {
-              const next = Math.max(schema.minimumVersion, connection.version + 1);
+              const next = Math.max(
+                schema.minimumVersion,
+                connection.version + 1,
+              );
               // Finish schema-inspection transactions before requesting a version
               // upgrade; otherwise our own closing connection can block it.
               await Promise.all(inspections);
-              connection.close(); open(next); return;
+              connection.close();
+              open(next);
+              return;
             }
             connection.onversionchange = () => onVersionChange(connection);
             resolve(connection);
-          } catch (error) { connection.close(); reject(error); }
+          } catch (error) {
+            connection.close();
+            reject(error);
+          }
         };
         request.onerror = () => reject(failure || request.error);
         request.onblocked = () => {

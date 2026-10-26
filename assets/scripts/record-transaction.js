@@ -4,95 +4,111 @@
 
 // Atomic persistence boundary. State and UI updates belong to the caller.
 globalThis.EduRecordTransaction = Object.freeze({
-  async commit({ connection, workspace, records, changed, removed, before, changes, action, keepUndo, normalizedName, academicTermKind }) {
+  async commit({
+    connection,
+    workspace,
+    records,
+    changed,
+    removed,
+    before,
+    changes,
+    action,
+    keepUndo,
+    normalizedName,
+    academicTermKind,
+  }) {
     const { transactionDone } = globalThis.EduDataStoreRuntime;
-    const recordKey = logical => workspace.id + "|" + logical;
-          const tx = connection.transaction(
-              ["records", "catalog", "events", "undo"],
-              "readwrite",
-            ),
-            done = transactionDone(tx);
-          let conflict = false,
-            labelConflict = false,
-            nextCatalog;
-          const catalog = tx.objectStore("catalog"),
-            meta = records.get("meta"),
-            labelChanged =
-              meta &&
-              (meta.settings?.academicYear !== workspace.year ||
-                meta.settings?.academicTerm !== workspace.term),
-            labels = labelChanged ? catalog.getAll() : null,
-            get = catalog.get(workspace.id);
-          get.onsuccess = () => {
-            const live = get.result;
-            if (!live || live.revision !== workspace.revision) {
-              conflict = true;
-              tx.abort();
-              return;
-            }
-            if (
-              labels &&
-              labels.result.some(
-                (row) =>
-                  row.id !== workspace.id &&
-                  row.year === meta.settings.academicYear &&
-                  normalizedName(row.term) ===
-                    normalizedName(meta.settings.academicTerm),
-              )
-            ) {
-              labelConflict = true;
-              tx.abort();
-              return;
-            }
-            for (const [logical, json] of changed)
-              tx.objectStore("records").put({
-                key: recordKey(logical),
-                workspace: workspace.id,
-                logical,
-                value: JSON.parse(json),
-              });
-            for (const logical of removed)
-              tx.objectStore("records").delete(recordKey(logical));
-            const next = {
-              ...live,
-              year: records.get("meta")?.settings?.academicYear ?? live.year,
-              term: records.get("meta")?.settings?.academicTerm ?? live.term,
-              termKind: live.termKind || academicTermKind(live.term),
-              revision: live.revision + 1,
-              updatedAt: new Date().toISOString(),
-            };
-            nextCatalog = next;
-            catalog.put(next);
-            tx.objectStore("events").add({
-              workspace: workspace.id,
-              at: next.updatedAt,
-              action,
-              revision: next.revision,
-              changes,
-            });
-            if (keepUndo)
-              tx.objectStore("undo").put({
-                id: workspace.id,
-                action,
-                revision: next.revision,
-                before,
-              });
-            else tx.objectStore("undo").delete(workspace.id);
-          };
-          try {
-            await done;
-          } catch (e) {
-            if (labelConflict)
-              throw Error(
-                "دوره دیگری با همین سال و عنوان نوبت وجود دارد؛ عنوان متمایز انتخاب کنید.",
-              );
-            if (conflict) {
-              const error = Error("داده در تب دیگری تغییر کرده است؛ برای جلوگیری از بازنویسی، صفحه را دوباره بارگذاری کنید.");
-              error.code = "WORKSPACE_CONFLICT";
-              throw error;
-            }
-            throw e;
-          }
+    const recordKey = (logical) => workspace.id + "|" + logical;
+    const tx = connection.transaction(
+        ["records", "catalog", "events", "undo"],
+        "readwrite",
+      ),
+      done = transactionDone(tx);
+    let conflict = false,
+      labelConflict = false,
+      nextCatalog;
+    const catalog = tx.objectStore("catalog"),
+      meta = records.get("meta"),
+      labelChanged =
+        meta &&
+        (meta.settings?.academicYear !== workspace.year ||
+          meta.settings?.academicTerm !== workspace.term),
+      labels = labelChanged ? catalog.getAll() : null,
+      get = catalog.get(workspace.id);
+    get.onsuccess = () => {
+      const live = get.result;
+      if (!live || live.revision !== workspace.revision) {
+        conflict = true;
+        tx.abort();
+        return;
+      }
+      if (
+        labels &&
+        labels.result.some(
+          (row) =>
+            row.id !== workspace.id &&
+            row.year === meta.settings.academicYear &&
+            normalizedName(row.term) ===
+              normalizedName(meta.settings.academicTerm),
+        )
+      ) {
+        labelConflict = true;
+        tx.abort();
+        return;
+      }
+      for (const [logical, json] of changed)
+        tx.objectStore("records").put({
+          key: recordKey(logical),
+          workspace: workspace.id,
+          logical,
+          value: JSON.parse(json),
+        });
+      for (const logical of removed)
+        tx.objectStore("records").delete(recordKey(logical));
+      const next = {
+        ...live,
+        year: records.get("meta")?.settings?.academicYear ?? live.year,
+        term: records.get("meta")?.settings?.academicTerm ?? live.term,
+        termKind: live.termKind || academicTermKind(live.term),
+        revision: live.revision + 1,
+        updatedAt: new Date().toISOString(),
+      };
+      nextCatalog = next;
+      catalog.put(next);
+      tx.objectStore("events").add({
+        workspace: workspace.id,
+        at: next.updatedAt,
+        action,
+        revision: next.revision,
+        changes,
+      });
+      if (keepUndo)
+        tx.objectStore("undo").put({
+          id: workspace.id,
+          action,
+          revision: next.revision,
+          before,
+        });
+      else tx.objectStore("undo").delete(workspace.id);
+    };
+    try {
+      await done;
+    } catch (e) {
+      if (labelConflict)
+        throw Error(
+          "دوره دیگری با همین سال و عنوان نوبت وجود دارد؛ عنوان متمایز انتخاب کنید.",
+          { cause: e },
+        );
+      if (conflict) {
+        const error = Error(
+          "داده در تب دیگری تغییر کرده است؛ برای جلوگیری از بازنویسی، صفحه را دوباره بارگذاری کنید.",
+          { cause: e },
+        );
+        error.code = "WORKSPACE_CONFLICT";
+        throw error;
+      }
+      throw e;
+    }
     return nextCatalog;
   },
 });

@@ -1,165 +1,164 @@
-      /* mobileWidthFix */
+/* mobileWidthFix */
 
-      @media screen {
-        html {
-          max-inline-size: 100%;
-          scroll-padding-bottom: 100px;
-        }
-        body {
-          min-inline-size: 0;
-          max-inline-size: 100%;
-          padding-inline: env(safe-area-inset-right) env(safe-area-inset-left);
-        }
-        #app {
-          inline-size: 100%;
-          min-inline-size: 0;
-        }
-        #app > *,
-        #modalBody > *,
-        .topbar,
-        .header-brand,
-        .header-actions,
-        .navigation-menu,
-        .workspace-bar,
-        .card,
-        .row,
-        .form-row,
-        .course-grid,
-        .course-field {
-          min-inline-size: 0;
-          max-inline-size: 100%;
-        }
-        .row > *:not(table),
-        .form-row > *:not(table) {
-          min-inline-size: 0;
-          max-inline-size: 100%;
-        }
-        .responsive-scroll,
-        .table-scroll {
-          inline-size: 100%;
-          max-inline-size: 100%;
-          min-inline-size: 0;
-          contain: inline-size;
-        }
-        .student-profile-info,
-        .lesson-identity > div,
-        .list-item > div {
-          min-inline-size: 0;
-          overflow-wrap: anywhere;
-        }
-        .view-heading h2,
-        .modal-header h3,
-        .card h3,
-        .course-field label {
-          overflow-wrap: anywhere;
-        }
-        .cal-popup {
-          width: min(300px, calc(100vw - 24px));
-          max-height: calc(100dvh - 24px);
-          overflow: auto;
-        }
-        .modal-dialog {
-          min-inline-size: 0;
-          max-inline-size: 100%;
-        }
-        .modal-body {
-          min-inline-size: 0;
-          overflow-wrap: anywhere;
-        }
-        @media (max-width: 700px) {
-          .topbar .header-brand {
-            display: flex !important;
-            flex-wrap: nowrap !important;
-            width: 100%;
-            min-width: 0;
-          }
-          .topbar .header-brand h1 {
-            min-width: 0;
-            flex: 1;
-          }
-          .topbar .header-brand > .header-action {
-            flex: 0 0 auto;
-          }
-          .topbar .header-actions > .header-action,
-          .topbar .header-dropdown > .header-action {
-            white-space: normal;
-            overflow-wrap: anywhere;
-          }
-          .topbar .header-action > span {
-            overflow-wrap: anywhere;
-          }
-          .form-row {
-            display: flex;
-            flex-direction: column;
-            align-items: stretch;
-          }
-          .form-row > label {
-            flex: none;
-            min-width: 0 !important;
-            width: 100%;
-            margin: 0;
-          }
-          .form-row > input:not([type="checkbox"]):not([type="radio"]),
-          .form-row > select,
-          .form-row > textarea {
-            width: 100% !important;
-            min-width: 0 !important;
-            flex: 0 0 auto;
-          }
-          .course-field input:not([type="checkbox"]):not([type="radio"]),
-          .course-field select,
-          .course-field textarea {
-            width: 100%;
-            min-width: 0;
-          }
-          #modalBody > .row {
-            flex-wrap: wrap;
-          }
-          #modalBody > .row > button {
-            flex: 1 1 auto;
-          }
-          #uiBottomNav {
-            padding-inline: max(8px, env(safe-area-inset-right))
-              max(8px, env(safe-area-inset-left));
-          }
-        }
-        @media (max-width: 360px) {
-          #app {
-            padding-inline: 10px;
-          }
-          .student-profile {
-            padding: 12px;
-          }
-          .student-profile-actions {
-            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-          }
-          .student-more {
-            grid-column: 1/-1;
-          }
-          .student-more-menu {
-            width: min(245px, calc(100vw - 64px));
-          }
-          .lesson-actions {
-            gap: 6px;
-          }
-          .lesson-actions button {
-            font-size: 0.7rem;
-            padding-inline: 6px;
-          }
-        }
-      }
+@media screen {
+  html {
+    max-inline-size: 100%;
+    scroll-padding-bottom: 100px;
+  }
+  body {
+    min-inline-size: 0;
+    max-inline-size: 100%;
+    padding-inline: env(safe-area-inset-right) env(safe-area-inset-left);
+  }
+  #app {
+    inline-size: 100%;
+    min-inline-size: 0;
+  }
+  #app > *,
+  #modalBody > *,
+  .topbar,
+  .header-brand,
+  .header-actions,
+  .navigation-menu,
+  .workspace-bar,
+  .card,
+  .row,
+  .form-row,
+  .course-grid,
+  .course-field {
+    min-inline-size: 0;
+    max-inline-size: 100%;
+  }
+  .row > *:not(table),
+  .form-row > *:not(table) {
+    min-inline-size: 0;
+    max-inline-size: 100%;
+  }
+  .responsive-scroll,
+  .table-scroll {
+    inline-size: 100%;
+    max-inline-size: 100%;
+    min-inline-size: 0;
+    contain: inline-size;
+  }
+  .student-profile-info,
+  .lesson-identity > div,
+  .list-item > div {
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
+  }
+  .view-heading h2,
+  .modal-header h3,
+  .card h3,
+  .course-field label {
+    overflow-wrap: anywhere;
+  }
+  .cal-popup {
+    width: min(300px, calc(100vw - 24px));
+    max-height: calc(100dvh - 24px);
+    overflow: auto;
+  }
+  .modal-dialog {
+    min-inline-size: 0;
+    max-inline-size: 100%;
+  }
+  .modal-body {
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
+  }
+  @media (max-width: 700px) {
+    .topbar .header-brand {
+      display: flex !important;
+      flex-wrap: nowrap !important;
+      width: 100%;
+      min-width: 0;
+    }
+    .topbar .header-brand h1 {
+      min-width: 0;
+      flex: 1;
+    }
+    .topbar .header-brand > .header-action {
+      flex: 0 0 auto;
+    }
+    .topbar .header-actions > .header-action,
+    .topbar .header-dropdown > .header-action {
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+    .topbar .header-action > span {
+      overflow-wrap: anywhere;
+    }
+    .form-row {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .form-row > label {
+      flex: none;
+      min-width: 0 !important;
+      width: 100%;
+      margin: 0;
+    }
+    .form-row > input:not([type="checkbox"]):not([type="radio"]),
+    .form-row > select,
+    .form-row > textarea {
+      width: 100% !important;
+      min-width: 0 !important;
+      flex: 0 0 auto;
+    }
+    .course-field input:not([type="checkbox"]):not([type="radio"]),
+    .course-field select,
+    .course-field textarea {
+      width: 100%;
+      min-width: 0;
+    }
+    #modalBody > .row {
+      flex-wrap: wrap;
+    }
+    #modalBody > .row > button {
+      flex: 1 1 auto;
+    }
+    #uiBottomNav {
+      padding-inline: max(8px, env(safe-area-inset-right))
+        max(8px, env(safe-area-inset-left));
+    }
+  }
+  @media (max-width: 360px) {
+    #app {
+      padding-inline: 10px;
+    }
+    .student-profile {
+      padding: 12px;
+    }
+    .student-profile-actions {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+    .student-more {
+      grid-column: 1/-1;
+    }
+    .student-more-menu {
+      width: min(245px, calc(100vw - 64px));
+    }
+    .lesson-actions {
+      gap: 6px;
+    }
+    .lesson-actions button {
+      font-size: 0.7rem;
+      padding-inline: 6px;
+    }
+  }
+}
 
-      @media screen {
-        .modal-overlay {
-          top: var(--app-viewport-top, 0px);
-          bottom: auto;
-          height: var(--app-viewport, 100dvh);
-        }
-        .modal-header {
-          flex-shrink: 0;
-        }
-        .modal-body {
-          min-height: 0;
-        }
-      }
-
+@media screen {
+  .modal-overlay {
+    top: var(--app-viewport-top, 0px);
+    bottom: auto;
+    height: var(--app-viewport, 100dvh);
+  }
+  .modal-header {
+    flex-shrink: 0;
+  }
+  .modal-body {
+    min-height: 0;
+  }
+}

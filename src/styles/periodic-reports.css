@@ -1,302 +1,301 @@
-      /* periodicReportsDesign */
+/* periodicReportsDesign */
 
-      @media screen {
-        .report-navigation {
-          flex-wrap: nowrap;
-          overflow-x: auto;
-        }
-        .report-navigation button {
-          flex: 1 0 auto;
-          white-space: nowrap;
-        }
-        .periodic-controls > p {
-          color: #64748b;
-          font-size: 0.75rem;
-          line-height: 1.9;
-        }
-        .periodic-control-grid {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 14px;
-        }
-        .periodic-control-grid label,
-        .periodic-note-field {
-          display: flex;
-          flex-direction: column;
-          gap: 7px;
-          min-width: 0;
-          font-size: 0.74rem;
-          color: #52617b;
-        }
-        .periodic-control-grid input,
-        .periodic-control-grid select,
-        .periodic-note-field textarea {
-          width: 100%;
-          min-width: 0;
-        }
-        .periodic-note-field {
-          margin-top: 16px;
-        }
-        .periodic-build {
-          margin-top: 16px;
-          min-height: 46px;
-        }
-        #periodicError {
-          color: #b91c1c;
-          font-size: 0.78rem;
-          line-height: 1.9;
-        }
-        .periodic-document {
-          padding: 24px;
-        }
-        .periodic-document-heading {
-          border-bottom: 1px solid #e5eaf3;
-          padding-bottom: 16px;
-          margin-bottom: 16px;
-        }
-        .periodic-document-heading > span {
-          display: inline-block;
-          background: #eef2ff;
-          color: #4338ca;
-          padding: 4px 10px;
-          border-radius: 8px;
-          font-size: 0.72rem;
-        }
-        .periodic-document-heading h2 {
-          font-size: 1.35rem;
-          margin: 12px 0 5px;
-        }
-        .periodic-document-heading h3 {
-          margin: 0 0 8px;
-          font-size: 1rem;
-        }
-        .periodic-document-heading p {
-          font-size: 0.8rem;
-          color: #52617b;
-          margin: 4px 0;
-        }
-        .periodic-document-heading small {
-          font-size: 0.68rem;
-          color: #64748b;
-        }
-        .periodic-export-actions {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          margin-bottom: 18px;
-        }
-        .periodic-export-actions button {
-          font-size: 0.76rem;
-          min-height: 44px;
-        }
-        .periodic-summary {
-          display: grid;
-          grid-template-columns: repeat(5, minmax(0, 1fr));
-          gap: 9px;
-        }
-        .periodic-summary > div {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-          padding: 12px;
-          border: 1px solid #e5eaf3;
-          border-radius: 12px;
-          background: #f8faff;
-        }
-        .periodic-summary strong {
-          font-size: 1.25rem;
-          color: #4338ca;
-        }
-        .periodic-summary span {
-          font-size: 0.69rem;
-          color: #64748b;
-        }
-        .periodic-method {
-          font-size: 0.72rem;
-          line-height: 1.9;
-          color: #64748b;
-          padding: 10px 0;
-        }
-        .periodic-document > h3 {
-          font-size: 0.95rem;
-          margin-top: 24px;
-        }
-        .periodic-session {
-          padding-block: 12px;
-          border-top: 1px solid #e5eaf3;
-        }
-        .periodic-session h4 {
-          font-size: 0.85rem;
-          margin: 0 0 6px;
-        }
-        .periodic-session > p {
-          font-size: 0.74rem;
-          color: #64748b;
-        }
-        .periodic-document td {
-          white-space: pre-wrap;
-          overflow-wrap: anywhere;
-        }
-        .periodic-note {
-          white-space: pre-wrap;
-          font-size: 0.82rem;
-          line-height: 2;
-        }
-        .periodic-warnings {
-          border: 1px solid #f2dfbc;
-          border-radius: 12px;
-          background: #fffaf0;
-          padding: 14px;
-          font-size: 0.75rem;
-          color: #805e20;
-        }
-        .periodic-warnings ul,
-        .periodic-footer ul {
-          padding-inline-start: 20px;
-          line-height: 1.9;
-        }
-        .periodic-footer {
-          border-top: 1px solid #e5eaf3;
-          margin-top: 22px;
-          padding-top: 16px;
-          font-size: 0.72rem;
-          color: #64748b;
-        }
-        .periodic-footer p {
-          line-height: 2.2;
-        }
-        @media (max-width: 700px), (max-width: 1000px) and (pointer: coarse) {
-          #app > .periodic-controls {
-            order: 5;
-          }
-          #app > #periodicReportOutput {
-            order: 6;
-          }
-          .periodic-control-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 12px 10px;
-          }
-          .periodic-control-grid label {
-            font-size: 0.69rem;
-          }
-          .periodic-build {
-            width: 100%;
-          }
-          .periodic-document {
-            padding: 16px;
-          }
-          .periodic-document-heading h2 {
-            font-size: 1.16rem;
-          }
-          .periodic-document-heading h3 {
-            font-size: 0.94rem;
-          }
-          .periodic-summary {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 7px;
-          }
-          .periodic-summary > div {
-            padding: 10px;
-          }
-          .periodic-summary strong {
-            font-size: 1.15rem;
-          }
-          .periodic-summary span {
-            font-size: 0.66rem;
-          }
-          .periodic-export-actions button {
-            flex: 1;
-            min-height: 44px;
-            font-size: 0.71rem;
-          }
-        }
-        @media (max-width: 340px) {
-          .periodic-control-grid {
-            grid-template-columns: minmax(0, 1fr);
-          }
-        }
-      }
-      @media print {
-        .periodic-controls,
-        .periodic-export-actions {
-          display: none !important;
-        }
-        .periodic-document {
-          padding: 0 !important;
-          box-shadow: none !important;
-          border: 0 !important;
-          background: white !important;
-        }
-        .periodic-document-heading {
-          border-bottom: 1px solid #777;
-          padding-bottom: 12px;
-        }
-        .periodic-document-heading h2 {
-          font-size: 18pt;
-          margin: 8px 0;
-        }
-        .periodic-document-heading h3 {
-          font-size: 13pt;
-          margin: 4px 0;
-        }
-        .periodic-document-heading p,
-        .periodic-document-heading small {
-          font-size: 10pt;
-        }
-        .periodic-summary {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 10px;
-          border-block: 1px solid #bbb;
-          padding: 10px 0;
-          margin: 12px 0;
-        }
-        .periodic-summary > div {
-          display: flex;
-          gap: 5px;
-          padding-inline-end: 10px;
-        }
-        .periodic-document table {
-          width: 100% !important;
-          min-width: 0 !important;
-          border-collapse: collapse;
-        }
-        .periodic-document th,
-        .periodic-document td {
-          font-size: 9pt;
-          white-space: pre-wrap;
-          overflow-wrap: anywhere;
-          padding: 6px;
-          border: 1px solid #bbb;
-        }
-        .periodic-document .table-scroll {
-          overflow: visible !important;
-          max-width: none !important;
-        }
-        .periodic-method,
-        .periodic-note,
-        .periodic-footer,
-        .periodic-warnings {
-          font-size: 9pt;
-          line-height: 1.9;
-        }
-        .periodic-note {
-          white-space: pre-wrap;
-        }
-        .periodic-session {
-          margin-top: 14px;
-        }
-        .periodic-session h4 {
-          font-size: 11pt;
-          margin-bottom: 4px;
-          break-after: avoid;
-        }
-        .periodic-document > h3 {
-          font-size: 12pt;
-          break-after: avoid;
-        }
-        .periodic-document tr {
-          break-inside: avoid;
-        }
-      }
-
+@media screen {
+  .report-navigation {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+  .report-navigation button {
+    flex: 1 0 auto;
+    white-space: nowrap;
+  }
+  .periodic-controls > p {
+    color: #64748b;
+    font-size: 0.75rem;
+    line-height: 1.9;
+  }
+  .periodic-control-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .periodic-control-grid label,
+  .periodic-note-field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-width: 0;
+    font-size: 0.74rem;
+    color: #52617b;
+  }
+  .periodic-control-grid input,
+  .periodic-control-grid select,
+  .periodic-note-field textarea {
+    width: 100%;
+    min-width: 0;
+  }
+  .periodic-note-field {
+    margin-top: 16px;
+  }
+  .periodic-build {
+    margin-top: 16px;
+    min-height: 46px;
+  }
+  #periodicError {
+    color: #b91c1c;
+    font-size: 0.78rem;
+    line-height: 1.9;
+  }
+  .periodic-document {
+    padding: 24px;
+  }
+  .periodic-document-heading {
+    border-bottom: 1px solid #e5eaf3;
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+  }
+  .periodic-document-heading > span {
+    display: inline-block;
+    background: #eef2ff;
+    color: #4338ca;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.72rem;
+  }
+  .periodic-document-heading h2 {
+    font-size: 1.35rem;
+    margin: 12px 0 5px;
+  }
+  .periodic-document-heading h3 {
+    margin: 0 0 8px;
+    font-size: 1rem;
+  }
+  .periodic-document-heading p {
+    font-size: 0.8rem;
+    color: #52617b;
+    margin: 4px 0;
+  }
+  .periodic-document-heading small {
+    font-size: 0.68rem;
+    color: #64748b;
+  }
+  .periodic-export-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+  .periodic-export-actions button {
+    font-size: 0.76rem;
+    min-height: 44px;
+  }
+  .periodic-summary {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 9px;
+  }
+  .periodic-summary > div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px;
+    border: 1px solid #e5eaf3;
+    border-radius: 12px;
+    background: #f8faff;
+  }
+  .periodic-summary strong {
+    font-size: 1.25rem;
+    color: #4338ca;
+  }
+  .periodic-summary span {
+    font-size: 0.69rem;
+    color: #64748b;
+  }
+  .periodic-method {
+    font-size: 0.72rem;
+    line-height: 1.9;
+    color: #64748b;
+    padding: 10px 0;
+  }
+  .periodic-document > h3 {
+    font-size: 0.95rem;
+    margin-top: 24px;
+  }
+  .periodic-session {
+    padding-block: 12px;
+    border-top: 1px solid #e5eaf3;
+  }
+  .periodic-session h4 {
+    font-size: 0.85rem;
+    margin: 0 0 6px;
+  }
+  .periodic-session > p {
+    font-size: 0.74rem;
+    color: #64748b;
+  }
+  .periodic-document td {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .periodic-note {
+    white-space: pre-wrap;
+    font-size: 0.82rem;
+    line-height: 2;
+  }
+  .periodic-warnings {
+    border: 1px solid #f2dfbc;
+    border-radius: 12px;
+    background: #fffaf0;
+    padding: 14px;
+    font-size: 0.75rem;
+    color: #805e20;
+  }
+  .periodic-warnings ul,
+  .periodic-footer ul {
+    padding-inline-start: 20px;
+    line-height: 1.9;
+  }
+  .periodic-footer {
+    border-top: 1px solid #e5eaf3;
+    margin-top: 22px;
+    padding-top: 16px;
+    font-size: 0.72rem;
+    color: #64748b;
+  }
+  .periodic-footer p {
+    line-height: 2.2;
+  }
+  @media (max-width: 700px), (max-width: 1000px) and (pointer: coarse) {
+    #app > .periodic-controls {
+      order: 5;
+    }
+    #app > #periodicReportOutput {
+      order: 6;
+    }
+    .periodic-control-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px 10px;
+    }
+    .periodic-control-grid label {
+      font-size: 0.69rem;
+    }
+    .periodic-build {
+      width: 100%;
+    }
+    .periodic-document {
+      padding: 16px;
+    }
+    .periodic-document-heading h2 {
+      font-size: 1.16rem;
+    }
+    .periodic-document-heading h3 {
+      font-size: 0.94rem;
+    }
+    .periodic-summary {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 7px;
+    }
+    .periodic-summary > div {
+      padding: 10px;
+    }
+    .periodic-summary strong {
+      font-size: 1.15rem;
+    }
+    .periodic-summary span {
+      font-size: 0.66rem;
+    }
+    .periodic-export-actions button {
+      flex: 1;
+      min-height: 44px;
+      font-size: 0.71rem;
+    }
+  }
+  @media (max-width: 340px) {
+    .periodic-control-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+}
+@media print {
+  .periodic-controls,
+  .periodic-export-actions {
+    display: none !important;
+  }
+  .periodic-document {
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: 0 !important;
+    background: white !important;
+  }
+  .periodic-document-heading {
+    border-bottom: 1px solid #777;
+    padding-bottom: 12px;
+  }
+  .periodic-document-heading h2 {
+    font-size: 18pt;
+    margin: 8px 0;
+  }
+  .periodic-document-heading h3 {
+    font-size: 13pt;
+    margin: 4px 0;
+  }
+  .periodic-document-heading p,
+  .periodic-document-heading small {
+    font-size: 10pt;
+  }
+  .periodic-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    border-block: 1px solid #bbb;
+    padding: 10px 0;
+    margin: 12px 0;
+  }
+  .periodic-summary > div {
+    display: flex;
+    gap: 5px;
+    padding-inline-end: 10px;
+  }
+  .periodic-document table {
+    width: 100% !important;
+    min-width: 0 !important;
+    border-collapse: collapse;
+  }
+  .periodic-document th,
+  .periodic-document td {
+    font-size: 9pt;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    padding: 6px;
+    border: 1px solid #bbb;
+  }
+  .periodic-document .table-scroll {
+    overflow: visible !important;
+    max-width: none !important;
+  }
+  .periodic-method,
+  .periodic-note,
+  .periodic-footer,
+  .periodic-warnings {
+    font-size: 9pt;
+    line-height: 1.9;
+  }
+  .periodic-note {
+    white-space: pre-wrap;
+  }
+  .periodic-session {
+    margin-top: 14px;
+  }
+  .periodic-session h4 {
+    font-size: 11pt;
+    margin-bottom: 4px;
+    break-after: avoid;
+  }
+  .periodic-document > h3 {
+    font-size: 12pt;
+    break-after: avoid;
+  }
+  .periodic-document tr {
+    break-inside: avoid;
+  }
+}

@@ -1,16 +1,16 @@
-      function renderLessonReportTabHtml() {
-        const allClasses = [];
-        db.schools.forEach((s) =>
-          s.classes.forEach((c) => allClasses.push({ school: s, class: c })),
-        );
-        let h = `<div class="card">
+function renderLessonReportTabHtml() {
+  const allClasses = [];
+  db.schools.forEach((s) =>
+    s.classes.forEach((c) => allClasses.push({ school: s, class: c })),
+  );
+  let h = `<div class="card">
     <h3>📊 گزارش درس</h3>
     <div class="row">
-      <select onchange="updateLessonReportFilter('schoolId', this.value)">
+      <select data-legacy-change="reports-lesson:0">
         <option value="">همه مدارس</option>
         ${db.schools.map((s) => `<option value="${s.id}" ${lessonReportFilter.schoolId === s.id ? "selected" : ""}>${esc(s.name)}</option>`).join("")}
       </select>
-      <select onchange="updateLessonReportFilter('classId', this.value)">
+      <select data-legacy-change="reports-lesson:1">
         <option value="">همه کلاس‌ها</option>
         ${allClasses
           .filter(
@@ -24,7 +24,7 @@
           )
           .join("")}
       </select>
-      <select onchange="updateLessonReportFilter('lessonId', this.value)">
+      <select data-legacy-change="reports-lesson:2">
         <option value="">همه دروس</option>
         ${allClasses
           .filter(
@@ -47,76 +47,74 @@
     </div>
   </div>
   <div id="lessonReportTabOutput"></div>`;
-        return h;
-      }
-      function updateLessonReportFilter(key, val) {
-        lessonReportFilter[key] = val;
-        if (key === "schoolId") {
-          lessonReportFilter.classId = "";
-          lessonReportFilter.lessonId = "";
-        }
-        if (key === "classId") {
-          lessonReportFilter.lessonId = "";
-        }
-        render();
-      }
-      function renderLessonReportTab() {
-        const out = document.getElementById("lessonReportTabOutput");
-        if (!out) return;
-        if (!lessonReportFilter.lessonId) {
-          out.innerHTML = `<div class="card"><div class="empty">لطفاً یک درس انتخاب کنید.</div></div>`;
-          return;
-        }
-        const cls = findClassById(lessonReportFilter.classId);
-        if (!cls) {
-          out.innerHTML = `<div class="card"><div class="empty">کلاس یافت نشد.</div></div>`;
-          return;
-        }
-        const lesson = getLessonObj(cls.classObj, lessonReportFilter.lessonId);
-        if (!lesson) {
-          out.innerHTML = `<div class="card"><div class="empty">درس یافت نشد.</div></div>`;
-          return;
-        }
-        out.innerHTML = buildLessonReportHtml(cls.classObj, lesson);
-      }
+  return h;
+}
+function updateLessonReportFilter(key, val) {
+  lessonReportFilter[key] = val;
+  if (key === "schoolId") {
+    lessonReportFilter.classId = "";
+    lessonReportFilter.lessonId = "";
+  }
+  if (key === "classId") {
+    lessonReportFilter.lessonId = "";
+  }
+  render();
+}
+function renderLessonReportTab() {
+  const out = document.getElementById("lessonReportTabOutput");
+  if (!out) return;
+  if (!lessonReportFilter.lessonId) {
+    out.innerHTML = `<div class="card"><div class="empty">لطفاً یک درس انتخاب کنید.</div></div>`;
+    return;
+  }
+  const cls = findClassById(lessonReportFilter.classId);
+  if (!cls) {
+    out.innerHTML = `<div class="card"><div class="empty">کلاس یافت نشد.</div></div>`;
+    return;
+  }
+  const lesson = getLessonObj(cls.classObj, lessonReportFilter.lessonId);
+  if (!lesson) {
+    out.innerHTML = `<div class="card"><div class="empty">درس یافت نشد.</div></div>`;
+    return;
+  }
+  out.innerHTML = buildLessonReportHtml(cls.classObj, lesson);
+}
 
-      function legacy_buildLessonReportHtml(c, lesson) {
-        const sessions = db.sessions
-          .filter((x) => x.classId === c.id && x.lessonId === lesson.id)
-          .sort((a, b) => a.date.localeCompare(b.date));
-        let h = `<div class="card"><h3>📊 گزارش درس ${esc(lesson.name)}${lesson.teacher ? ` — ${esc(lesson.teacher)}` : ""}</h3>
+function legacy_buildLessonReportHtml(c, lesson) {
+  const sessions = db.sessions
+    .filter((x) => x.classId === c.id && x.lessonId === lesson.id)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  let h = `<div class="card"><h3>📊 گزارش درس ${esc(lesson.name)}${lesson.teacher ? ` — ${esc(lesson.teacher)}` : ""}</h3>
     <div class="row no-print" style="justify-content:flex-end;margin-bottom:14px">
-      <button class="success" onclick="copyLessonReportForVicePrincipal('${lesson.id}')">📋 کپی متن برای معاون</button>
-      <button onclick="EduV24.printReport(this)">🖨️ چاپ / PDF</button>
+      <button class="success" data-legacy-click="reports-lesson:3" data-legacy-click-arg2="${esc(lesson.id)}">📋 کپی متن برای معاون</button>
+      <button data-legacy-click="reports-lesson:4">🖨️ چاپ / PDF</button>
     </div>
     <p class="muted">${sessions.length} جلسه ثبت شده</p>`;
-        if (lesson.gradeMode === "kardanesh")
-          h += buildKardaneshSummaryHtml(c, lesson);
-        if (!sessions.length) h += `<div class="empty">جلسه‌ای ثبت نشده</div>`;
-        else
-          sessions.forEach((sess) => {
-            const present = [],
-              absent = [],
-              late = [];
-            sessionStudents(c, sess).forEach((s) => {
-              const st = sess.attendance[s.id];
-              if (st === "present") present.push(s.name);
-              else if (st === "absent") absent.push(s.name);
-              else if (st && st.startsWith("late")) {
-                const mins = st.includes(":") ? st.split(":")[1] : "";
-                late.push(`${s.name} ${mins ? `(${mins}د)` : ""}`);
-              }
-            });
-            const pos = sess.scores.filter((x) => x.type === "positive");
-            const neg = sess.scores.filter((x) => x.type === "negative");
-            const hw = sess.scores.filter((x) => x.type === "homework");
-            const poudman = lesson.poudmans.find(
-              (p) => p.id === sess.poudmanId,
-            );
-            const unit = poudman
-              ? poudman.units.find((u) => u.id === sess.unitId)
-              : null;
-            h += `<div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin:10px 0">
+  if (lesson.gradeMode === "kardanesh")
+    h += buildKardaneshSummaryHtml(c, lesson);
+  if (!sessions.length) h += `<div class="empty">جلسه‌ای ثبت نشده</div>`;
+  else
+    sessions.forEach((sess) => {
+      const present = [],
+        absent = [],
+        late = [];
+      sessionStudents(c, sess).forEach((s) => {
+        const st = sess.attendance[s.id];
+        if (st === "present") present.push(s.name);
+        else if (st === "absent") absent.push(s.name);
+        else if (st && st.startsWith("late")) {
+          const mins = st.includes(":") ? st.split(":")[1] : "";
+          late.push(`${s.name} ${mins ? `(${mins}د)` : ""}`);
+        }
+      });
+      const pos = sess.scores.filter((x) => x.type === "positive");
+      const neg = sess.scores.filter((x) => x.type === "negative");
+      const hw = sess.scores.filter((x) => x.type === "homework");
+      const poudman = lesson.poudmans.find((p) => p.id === sess.poudmanId);
+      const unit = poudman
+        ? poudman.units.find((u) => u.id === sess.unitId)
+        : null;
+      h += `<div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin:10px 0">
       <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
         <strong>${faDate(sess.date)} — زنگ ${sess.period + 1}</strong>
         <span class="muted">${lesson.gradeMode === "kardanesh" ? "کاردانش: تئوری و عملی" : (poudman ? esc(poudman.name) : "—") + " / " + (unit ? esc(unit.name) : "—")}</span>
@@ -162,48 +160,48 @@
           : ""
       }
     </div>`;
-          });
-        h += `<h4>خلاصه هر دانش‌آموز</h4>
+    });
+  h += `<h4>خلاصه هر دانش‌آموز</h4>
     <table class="karnameh-table"><thead><tr>
       <th>دانش‌آموز</th><th>حاضر</th><th>غایب</th><th>تأخیر</th>
       <th>➕ مثبت</th><th>➖ منفی</th><th>📝 تکلیف</th><th>مستمر / تئوری</th><th>پایانی / عملی</th><th>نهایی</th>
     </tr></thead><tbody>`;
-        const sortedStudents = getSortedStudents(c);
-        sortedStudents.forEach((st) => {
-          const s = calcStudentLesson(c, lesson, st.id);
-          h += `<tr><td>${esc(st.name)}</td>
+  const sortedStudents = getSortedStudents(c);
+  sortedStudents.forEach((st) => {
+    const s = calcStudentLesson(c, lesson, st.id);
+    h += `<tr><td>${esc(st.name)}</td>
       <td>${s.att.present}</td><td>${s.att.absent}</td><td>${s.att.late}</td>
       <td style="color:#059669">${s.posCount}</td><td style="color:#dc2626">${s.negCount}</td><td>${s.hwCount}</td>
       <td>${s.avgM !== null ? s.avgM.toFixed(2) : "—"}</td>
       <td>${s.avgP !== null ? s.avgP.toFixed(2) : "—"}</td>
       <td><b>${s.final !== null ? s.final.toFixed(2) : "—"}</b></td></tr>`;
-        });
-        h += `</tbody></table></div>`;
-        return h;
-      }
+  });
+  h += `</tbody></table></div>`;
+  return h;
+}
 
-      function copyLessonReportForVicePrincipal(lessonId) {
-        const cls = findClassById(lessonReportFilter.classId);
-        if (!cls) return;
-        const c = cls.classObj;
-        const lesson = getLessonObj(c, lessonId);
-        if (!c || !lesson) return;
-        const sessions = db.sessions
-          .filter((x) => x.classId === c.id && x.lessonId === lesson.id)
-          .sort((a, b) => a.date.localeCompare(b.date));
-        let text = `📊 گزارش درس: ${lesson.name} (کلاس ${c.name})\n👨‍🏫 دبیر: ${lesson.teacher || "---"}\n================================\n\n`;
-        if (!sessions.length) text += `هنوز جلسه‌ای ثبت نشده است.\n`;
-        sessions.forEach((sess) => {
-          text += generateSessionReportText(sess, c, lesson) + `\n`;
-        });
-        text += `================================\n📌 خلاصه وضعیت دانش‌آموزان:\n`;
-        getSortedStudents(c).forEach((st) => {
-          const s = calcStudentLesson(c, lesson, st.id);
-          text += `- ${st.name}: غایب ${s.att.absent} | ➕ ${s.posCount} | ➖ ${s.negCount} | نهایی: ${s.final !== null ? s.final.toFixed(2) : "---"}\n`;
-        });
-        text += `\n✅ تولید شده توسط سامانه مدیریت مدرسه`;
-        const dummyBtn = document.createElement("button");
-        copyToClipboard(text, dummyBtn);
-      }
+function copyLessonReportForVicePrincipal(lessonId) {
+  const cls = findClassById(lessonReportFilter.classId);
+  if (!cls) return;
+  const c = cls.classObj;
+  const lesson = getLessonObj(c, lessonId);
+  if (!c || !lesson) return;
+  const sessions = db.sessions
+    .filter((x) => x.classId === c.id && x.lessonId === lesson.id)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  let text = `📊 گزارش درس: ${lesson.name} (کلاس ${c.name})\n👨‍🏫 دبیر: ${lesson.teacher || "---"}\n================================\n\n`;
+  if (!sessions.length) text += `هنوز جلسه‌ای ثبت نشده است.\n`;
+  sessions.forEach((sess) => {
+    text += generateSessionReportText(sess, c, lesson) + `\n`;
+  });
+  text += `================================\n📌 خلاصه وضعیت دانش‌آموزان:\n`;
+  getSortedStudents(c).forEach((st) => {
+    const s = calcStudentLesson(c, lesson, st.id);
+    text += `- ${st.name}: غایب ${s.att.absent} | ➕ ${s.posCount} | ➖ ${s.negCount} | نهایی: ${s.final !== null ? s.final.toFixed(2) : "---"}\n`;
+  });
+  text += `\n✅ تولید شده توسط سامانه مدیریت مدرسه`;
+  const dummyBtn = document.createElement("button");
+  copyToClipboard(text, dummyBtn);
+}
 
-      // ==================== زیربخش ۳: کارنامه ====================
+// ==================== زیربخش ۳: کارنامه ====================
