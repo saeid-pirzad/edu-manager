@@ -86,6 +86,9 @@ async function openBackups() {
     "پشتیبان و بازیابی",
     "<p>پشتیبان داخلی روی همین دستگاه است. یک فایل مستقل در پوشه امن یا حافظه دیگر نگه دارید.</p><p>" +
       esc(estimate) +
+      "</p>" +
+      singleFilePanel() +
+      "<p>" +
       '</p><div class="row"><button data-workspace-action="export-period">ذخیره فایل همین دوره</button><button data-workspace-action="export-full">پشتیبان کامل همه دوره‌ها</button><button class="ghost" data-workspace-action="choose-import">بازیابی از فایل</button></div><p>' +
       esc(lastExternalBackupLabel()) +
       "</p><table><thead><tr><th>زمان</th><th>نوع</th><th>عملیات</th></tr></thead><tbody>" +

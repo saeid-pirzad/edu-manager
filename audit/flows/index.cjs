@@ -21,5 +21,6 @@ module.exports = {
   securityRendering: require("./securityRendering.cjs"),
   delegatedUi: require("./delegatedUi.cjs"),
   asyncTargets: require("./asyncTargets.cjs"),
+  singleFile: require("./singleFile.cjs"),
   largeTable: require("./largeTable.cjs"),
 };

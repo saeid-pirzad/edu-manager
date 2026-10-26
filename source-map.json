@@ -82,6 +82,7 @@
         "src/workspace/sessions/actions.js",
         "src/workspace/backups/local.js",
         "src/workspace/backups/full-export.js",
+        "src/workspace/backups/single-file.js",
         "src/workspace/backups/full-restore.js",
         "src/workspace/backups/period-import.js",
         "src/workspace/history/undo.js",

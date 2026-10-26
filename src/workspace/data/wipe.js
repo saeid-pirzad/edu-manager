@@ -24,6 +24,7 @@ async function confirmWipe() {
   if (!confirm("آخرین تأیید: همه اطلاعات این برنامه از این مرورگر حذف شوند؟"))
     return false;
   resetBusy = true;
+  pauseSingleFile();
   const finish = beginRecordEditorSave(form),
     wasBlocked = blocked;
   let committedReset = false,
@@ -43,6 +44,7 @@ async function confirmWipe() {
     clearInterval(automaticBackupTimer);
     automaticBackupTimer = null;
     if (flushing) await flushing.catch(() => {});
+    if (singleFileWriting) await singleFileWriting.catch(() => {});
     await writer.catch(() => {});
     await draftWriter.catch(() => {});
     const nextVersion = connection.version + 1;

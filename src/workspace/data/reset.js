@@ -14,6 +14,7 @@ function ownedDataKey(key) {
   );
 }
 function retireConnection(dbConnection) {
+  pauseSingleFile();
   dbConnection.close();
   connectionRetired = true;
   ready = false;
@@ -28,6 +29,8 @@ function retireConnection(dbConnection) {
   lockControls();
 }
 function forgetInstallation() {
+  pauseSingleFile();
+  singleFile = null;
   clearTimeout(draftTimer);
   clearInterval(automaticBackupTimer);
   automaticBackupTimer = null;

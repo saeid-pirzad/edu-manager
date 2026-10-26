@@ -167,6 +167,13 @@ function renderV24() {
     "</small>" +
     '<button class="ghost" data-workspace-action="other-drafts">پیش‌نویس نشست دیگر</button></div></details>';
   app.prepend(panel);
+  if (window.showSaveFilePicker) {
+    const fileStatus = document.createElement("small");
+    fileStatus.id = "singleFileBadge";
+    fileStatus.setAttribute("role", "status");
+    fileStatus.textContent = singleFileMessage;
+    panel.append(fileStatus);
+  }
   if (db.migrationWarnings?.length) {
     const info = document.createElement("div");
     info.className = "card";

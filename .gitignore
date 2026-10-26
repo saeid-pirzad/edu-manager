@@ -5,3 +5,4 @@ coverage/
 /audit/*-results.json
 .DS_Store
 Thumbs.db
+/EduManager-data.json

@@ -79,6 +79,7 @@ async function bootstrapV24() {
     if (navigator.storage?.persist) navigator.storage.persist().catch(() => {});
     await ensureDailyBackup();
     startAutomaticBackups();
+    await restoreSingleFile();
   } catch (error) {
     blocked = true;
     storageBlocked = true;

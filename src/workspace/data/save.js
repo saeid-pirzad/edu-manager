@@ -79,6 +79,7 @@ function saveDBV24(scope = {}) {
       storageBlocked = false;
       storageProblem = "";
       setStatus("تغییرات ذخیره شد.", "saved");
+      scheduleSingleFile();
     })
     .catch(async (error) => {
       try {

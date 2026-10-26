@@ -13,6 +13,7 @@ const {
   securityRendering,
   delegatedUi,
   asyncTargets,
+  singleFile,
   largeTable,
 } = require("./flows/index.cjs");
 
@@ -54,6 +55,7 @@ if (process.argv.includes("--help")) {
       );
       cases.push(...(await evaluate("(" + delegatedUi.toString() + ")()")));
       cases.push(...(await evaluate("(" + asyncTargets.toString() + ")()")));
+      cases.push(...(await evaluate("(" + singleFile.toString() + ")()")));
       cases.push(...(await evaluate("(" + largeTable.toString() + ")()")));
       await cdp("Emulation.setDeviceMetricsOverride", {
         width: 320,
