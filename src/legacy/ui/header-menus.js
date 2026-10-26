@@ -1,3 +1,29 @@
+function breadcrumbHtml(items) {
+  return (
+    '<nav class="breadcrumb" aria-label="مسیر جاری"><ol>' +
+    items
+      .map((item, index) => {
+        const label = "<bdi>" + esc(item.label) + "</bdi>";
+        const content =
+          index === items.length - 1
+            ? '<span aria-current="page">' + label + "</span>"
+            : item.action
+              ? '<a data-legacy-click="' +
+                esc(item.action) +
+                '"' +
+                (item.schoolId
+                  ? ' data-legacy-click-arg0="' + esc(item.schoolId) + '"'
+                  : "") +
+                ">" +
+                label +
+                "</a>"
+              : "<span>" + label + "</span>";
+        return "<li>" + content + "</li>";
+      })
+      .join("") +
+    "</ol></nav>"
+  );
+}
 function headerHtml() {
   const icon = (path) =>
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' +

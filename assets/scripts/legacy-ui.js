@@ -456,6 +456,32 @@ EduLegacyEvents.register("ui-login-render:0", function (event) {
   return downloadRawRecovery();
 });
 // Source: src/legacy/ui/header-menus.js
+function breadcrumbHtml(items) {
+  return (
+    '<nav class="breadcrumb" aria-label="مسیر جاری"><ol>' +
+    items
+      .map((item, index) => {
+        const label = "<bdi>" + esc(item.label) + "</bdi>";
+        const content =
+          index === items.length - 1
+            ? '<span aria-current="page">' + label + "</span>"
+            : item.action
+              ? '<a data-legacy-click="' +
+                esc(item.action) +
+                '"' +
+                (item.schoolId
+                  ? ' data-legacy-click-arg0="' + esc(item.schoolId) + '"'
+                  : "") +
+                ">" +
+                label +
+                "</a>"
+              : "<span>" + label + "</span>";
+        return "<li>" + content + "</li>";
+      })
+      .join("") +
+    "</ol></nav>"
+  );
+}
 function headerHtml() {
   const icon = (path) =>
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' +
@@ -2946,12 +2972,11 @@ function renderSchool() {
   }
   let h =
     headerHtml() +
-    `<div class="breadcrumb"><a data-legacy-click="ui-school-class:2">مدارس</a> ← ` +
-    esc(school.name) +
-    "</div>";
-  const count = school.classes.reduce((n, c) => n + c.students.length, 0);
-  h += `<section class="school-overview no-print"><div><span>${school.classes.length.toLocaleString("fa-IR")} کلاس</span><span>${count.toLocaleString("fa-IR")} هنرجو</span></div></section>`;
-  h += `<div class="entity-context-edit no-print"><button class="ghost" data-mutating="1" data-legacy-click="ui-school-class:4" data-legacy-click-arg0="${esc(school.id)}">ویرایش مشخصات مدرسه</button></div>`;
+    breadcrumbHtml([
+      { label: "مدرسه‌ها", action: "ui-school-class:2" },
+      { label: school.name },
+      { label: "کلاس‌ها" },
+    ]);
   h += renderEntityQuickCreate("class", !school.classes.length);
   h += dashboardDirectory(school.classes, "classes", school.id);
   return h;
@@ -2965,8 +2990,12 @@ function renderClass() {
   }
   const school = getSchool(state.schoolId);
   let h = headerHtml();
-  h += `<div class="breadcrumb"><a data-legacy-click="ui-school-class:6">مدارس</a> ← <a data-legacy-click="ui-school-class:7" data-legacy-click-arg0="${esc(school.id)}">${esc(school.name)}</a> ← ${esc(c.name)}</div>`;
-  h += `<div class="entity-context-edit no-print"><button class="ghost" data-mutating="1" data-legacy-click="ui-school-class:9" data-legacy-click-arg0="${esc(c.id)}" data-legacy-click-arg1="${esc(school.id)}">ویرایش مشخصات کلاس</button></div>`;
+  h += breadcrumbHtml([
+    { label: "مدرسه‌ها", action: "ui-school-class:6" },
+    { label: school.name, action: "ui-school-class:7", schoolId: school.id },
+    { label: c.name },
+    { label: state.tab === "students" ? "دانش‌آموزان" : "درس‌ها" },
+  ]);
   h += `<div class="tabs">
     <button class="${state.tab === "lessons" ? "active" : ""}" data-legacy-click="ui-school-class:10">📚 دروس</button>
     <button class="${state.tab === "students" ? "active" : ""}" data-legacy-click="ui-school-class:11">👥 دانش‌آموزان</button>
@@ -3392,12 +3421,12 @@ function renderLesson() {
   }
   const school = getSchool(state.schoolId);
   let h = headerHtml();
-  h += `<div class="breadcrumb">
-    <a data-legacy-click="ui-lesson:0">مدارس</a> ←
-    <a data-legacy-click="ui-lesson:1" data-legacy-click-arg0="${esc(school.id)}">${esc(school.name)}</a> ←
-    <a data-legacy-click="ui-lesson:2">${esc(c.name)}</a> ←
-    <strong>${esc(lesson.name)}</strong>${lesson.teacher ? ` <span class="muted">(${esc(lesson.teacher)})</span>` : ""}
-  </div>`;
+  h += breadcrumbHtml([
+    { label: "مدرسه‌ها", action: "ui-lesson:0" },
+    { label: school.name, action: "ui-lesson:1", schoolId: school.id },
+    { label: c.name, action: "ui-lesson:2" },
+    { label: lesson.name },
+  ]);
   h += `<div class="tabs">
     <button class="${state.tab === "students" ? "active" : ""}" data-legacy-click="ui-lesson:3">👥 عملکرد هنرجویان</button>
     <button class="${state.tab === "sessions" ? "active" : ""}" data-legacy-click="ui-lesson:4">📅 جلسات و حضور‌وغیاب</button>

@@ -938,6 +938,42 @@ body {
   #app .breadcrumb a {
     color: var(--workflow-accent);
   }
+  #app .breadcrumb ol {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  #app .breadcrumb li {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+  #app .breadcrumb li + li::before {
+    content: "/";
+    color: #8d8d8d;
+    flex-shrink: 0;
+  }
+  #app .breadcrumb :is(a, span) {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+  #app .breadcrumb a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  #app .breadcrumb [aria-current="page"] {
+    font-weight: 600;
+    color: var(--workflow-ink);
+  }
   #app button.master-btn,
   #app button.report-btn {
     background: #fffaed;

@@ -25,6 +25,14 @@ module.exports = async function scopedNavigation() {
   goSchool(school.id);
   await pause();
   add(
+    "CRUMB01",
+    "class directory title is classes, not the school name, with no parent-school edit control",
+    document.querySelector(".view-heading h2")?.textContent === "کلاس‌ها" &&
+      !document.querySelector('[data-legacy-click="ui-school-class:4"]') &&
+      document.querySelector('.breadcrumb [aria-current="page"]')
+        ?.textContent === "کلاس‌ها",
+  );
+  add(
     "SCOPE02",
     "class directory is scoped to the selected school without report actions",
     !!document.querySelector('[data-entity-create="class"]') &&
@@ -34,6 +42,14 @@ module.exports = async function scopedNavigation() {
   );
   goClass(classroom.id);
   await pause();
+  add(
+    "CRUMB02",
+    "lesson directory title is lessons, not the parent class, and parent editing is absent",
+    document.querySelector(".view-heading h2")?.textContent === "درس‌ها" &&
+      !document.querySelector(".entity-context-edit") &&
+      document.querySelector('.breadcrumb [aria-current="page"]')
+        ?.textContent === "درس‌ها",
+  );
   add(
     "SCOPE03",
     "class has exactly lesson and student management tabs without report or schedule actions",
@@ -61,6 +77,28 @@ module.exports = async function scopedNavigation() {
       !document.querySelector(
         '.lesson-schedule,[data-legacy-click="ui-school-class:23"]',
       ),
+  );
+  goLesson(classroom.lessons[0].id);
+  await pause();
+  add(
+    "CRUMB03",
+    "lesson breadcrumb has one isolated current lesson and correct class return",
+    document.querySelectorAll('.breadcrumb [aria-current="page"]').length ===
+      1 &&
+      document.querySelector('.breadcrumb [aria-current="page"]')
+        .textContent === classroom.lessons[0].name &&
+      document.querySelectorAll(".breadcrumb bdi").length === 4,
+  );
+  document
+    .querySelector('.breadcrumb [data-legacy-click="ui-lesson:2"]')
+    .click();
+  await pause();
+  add(
+    "CRUMB04",
+    "breadcrumb returns to the selected class lesson list",
+    state.view === "class" &&
+      state.classId === classroom.id &&
+      state.tab === "lessons",
   );
   goLesson(classroom.lessons[0].id);
   await pause();

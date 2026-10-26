@@ -11,12 +11,12 @@ function renderLesson() {
   }
   const school = getSchool(state.schoolId);
   let h = headerHtml();
-  h += `<div class="breadcrumb">
-    <a data-legacy-click="ui-lesson:0">مدارس</a> ←
-    <a data-legacy-click="ui-lesson:1" data-legacy-click-arg0="${esc(school.id)}">${esc(school.name)}</a> ←
-    <a data-legacy-click="ui-lesson:2">${esc(c.name)}</a> ←
-    <strong>${esc(lesson.name)}</strong>${lesson.teacher ? ` <span class="muted">(${esc(lesson.teacher)})</span>` : ""}
-  </div>`;
+  h += breadcrumbHtml([
+    { label: "مدرسه‌ها", action: "ui-lesson:0" },
+    { label: school.name, action: "ui-lesson:1", schoolId: school.id },
+    { label: c.name, action: "ui-lesson:2" },
+    { label: lesson.name },
+  ]);
   h += `<div class="tabs">
     <button class="${state.tab === "students" ? "active" : ""}" data-legacy-click="ui-lesson:3">👥 عملکرد هنرجویان</button>
     <button class="${state.tab === "sessions" ? "active" : ""}" data-legacy-click="ui-lesson:4">📅 جلسات و حضور‌وغیاب</button>

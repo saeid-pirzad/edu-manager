@@ -269,8 +269,10 @@
           state.view === "lesson"
             ? l?.name
             : state.view === "class"
-              ? c?.name
-              : school?.name;
+              ? state.tab === "students"
+                ? "دانش‌آموزان"
+                : "درس‌ها"
+              : "کلاس‌ها";
         const note =
           state.view === "lesson"
             ? "نمرات، هنرجویان و جلسات این درس"
