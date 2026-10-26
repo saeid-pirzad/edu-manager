@@ -10,6 +10,7 @@ function fixture() {
     writes = 0,
     aborts = 0,
     fail = false;
+  let stored = null;
   const handle = {
     name: "EduManager-data.json",
     getFile: async () => ({ size: contents.length, lastModified: modified }),
@@ -48,6 +49,38 @@ function fixture() {
     confirm: () => true,
     esc: String,
     setStatus() {},
+    uid: () => "file-" + Math.random(),
+    broadcast() {},
+    readRecord: async () => stored && { ...stored },
+    transactionDone: (tx) => tx.finished,
+    connection: {
+      transaction: () => {
+        let finish;
+        const finished = new Promise((resolve) => {
+          finish = resolve;
+        });
+        return {
+          finished,
+          objectStore: () => ({
+            get: () => {
+              const request = {};
+              queueMicrotask(() => {
+                request.result = stored && { ...stored };
+                request.onsuccess();
+                finish();
+              });
+              return request;
+            },
+            put: (value) => {
+              stored = { ...value };
+            },
+            delete: () => {
+              stored = null;
+            },
+          }),
+        };
+      },
+    },
     snapshotInstallation: async () => ({
       format: "EduManager.FullBackup",
       exportedAt: new Date().toISOString(),
@@ -61,7 +94,6 @@ function fixture() {
     ),
     context,
   );
-  context.persistSingleFile = async () => {};
   return {
     context,
     handle,
@@ -81,6 +113,10 @@ function fixture() {
     failWrites() {
       fail = true;
     },
+    getStored: () => stored && { ...stored },
+    setStored: (value) => {
+      stored = value;
+    },
   };
 }
 test("single-file backup replaces the same JSON with additions, edits and deletions", async () => {
@@ -96,6 +132,144 @@ test("single-file backup replaces the same JSON with additions, edits and deleti
   await f.context.syncSingleFile();
   assert.equal(JSON.parse(f.contents).stores.records.length, 0);
   assert.equal(f.writes, 3);
+});
+
+test("save now takes a fresh snapshot after an older in-flight write", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  let release, entered;
+  const started = new Promise((resolve) => {
+    entered = resolve;
+  });
+  const original = f.handle.createWritable;
+  let delayOnce = true;
+  f.handle.createWritable = async () => {
+    const stream = await original();
+    const write = stream.write;
+    stream.write = async (json) => {
+      if (delayOnce) {
+        delayOnce = false;
+        entered();
+        await new Promise((resolve) => {
+          release = resolve;
+        });
+      }
+      await write(json);
+    };
+    return stream;
+  };
+  const old = f.context.syncSingleFile();
+  await started;
+  f.context.snapshotInstallation = async () => ({
+    stores: { records: [{ value: 2 }] },
+  });
+  const requested = f.context.resumeSingleFile();
+  await Promise.resolve();
+  release();
+  await Promise.all([old, requested]);
+  assert.equal(JSON.parse(f.contents).stores.records[0].value, 2);
+});
+
+test("permission service rejection pauses and reports instead of rejecting", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  f.handle.requestPermission = async () => {
+    throw Error("permission service failed");
+  };
+  assert.equal(await f.context.resumeSingleFile(), false);
+  assert.equal(vm.runInContext("singleFileTimer", f.context), null);
+  assert.match(
+    vm.runInContext("singleFileMessage", f.context),
+    /permission service failed/,
+  );
+});
+
+test("sync and async Web Lock failures are contained and pause timers", async () => {
+  for (const request of [
+    () => {
+      throw Error("lock failed");
+    },
+    async () => {
+      throw Error("lock failed");
+    },
+  ]) {
+    const f = fixture();
+    await f.context.chooseSingleFile();
+    f.context.navigator.locks = { request };
+    assert.equal(await f.context.syncSingleFile(), false);
+    assert.equal(vm.runInContext("singleFileTimer", f.context), null);
+    assert.match(
+      vm.runInContext("singleFileMessage", f.context),
+      /lock failed/,
+    );
+  }
+});
+
+test("disconnected or replaced persistent settings cannot be resurrected by a stale tab", async () => {
+  for (const replacement of [null, { connectionId: "another-connection" }]) {
+    const f = fixture();
+    await f.context.chooseSingleFile();
+    const previous = f.contents;
+    f.setStored(replacement);
+    assert.equal(await f.context.syncSingleFile(), false);
+    assert.equal(f.contents, previous);
+    assert.deepEqual(f.getStored(), replacement);
+    assert.equal(vm.runInContext("singleFile", f.context), null);
+  }
+});
+
+test("stop message aborts an in-flight stream and cannot recreate its configuration", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  const previous = f.contents;
+  const original = f.handle.createWritable;
+  f.handle.createWritable = async () => {
+    const stream = await original();
+    const write = stream.write;
+    stream.write = async (json) => {
+      await write(json);
+      f.setStored(null);
+      f.context.singleFileChanged({
+        type: "single-file-changed",
+        connectionId: null,
+      });
+    };
+    return stream;
+  };
+  assert.equal(await f.context.syncSingleFile(), false);
+  assert.equal(f.aborts, 1);
+  assert.equal(f.contents, previous);
+  assert.equal(f.getStored(), null);
+});
+
+test("persistent disconnect aborts an in-flight stream even without BroadcastChannel", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  const previous = f.contents;
+  const original = f.handle.createWritable;
+  f.handle.createWritable = async () => {
+    const stream = await original();
+    const write = stream.write;
+    stream.write = async (json) => {
+      await write(json);
+      f.setStored(null);
+    };
+    return stream;
+  };
+  assert.equal(await f.context.syncSingleFile(), false);
+  assert.equal(f.aborts, 1);
+  assert.equal(f.contents, previous);
+  assert.equal(f.getStored(), null);
+});
+
+test("metadata compare-and-set cannot overwrite a replacement or recreate a deleted connection", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  for (const replacement of [null, { connectionId: "replacement" }]) {
+    f.setStored(replacement);
+    assert.equal(await f.context.persistSingleFile(), false);
+    assert.deepEqual(f.getStored(), replacement);
+  }
 });
 test("cancelled picker or refused replacement never writes", async () => {
   const f = fixture();

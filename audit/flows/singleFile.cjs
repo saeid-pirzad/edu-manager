@@ -6,6 +6,7 @@ module.exports = async function singleFile() {
     create: true,
   });
   const originalPicker = window.showSaveFilePicker;
+  let frame;
   const waitFor = async (check) => {
     for (let i = 0; i < 150; i++) {
       if (await check()) return;
@@ -73,6 +74,15 @@ module.exports = async function singleFile() {
       observed: {},
     });
     const previous = await (await handle.getFile()).text();
+    frame = document.createElement("iframe");
+    frame.src = location.href;
+    document.body.append(frame);
+    await waitFor(() => frame.contentWindow.EduV24?.test.getState().ready);
+    await waitFor(() =>
+      frame.contentWindow.document
+        .getElementById("singleFileBadge")
+        ?.textContent.includes(handle.name),
+    );
     click("single-file-stop");
     await waitFor(() =>
       document
@@ -85,7 +95,29 @@ module.exports = async function singleFile() {
       pass: (await (await handle.getFile()).text()) === previous,
       observed: {},
     });
+    await waitFor(() =>
+      frame.contentWindow.document
+        .getElementById("singleFileBadge")
+        ?.textContent.includes("پنجره دیگری"),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 2300));
+    const persisted = await new Promise((resolve, reject) => {
+      const request = EduV24.test
+        .getConnection()
+        .transaction("drafts")
+        .objectStore("drafts")
+        .get("EduManager.singleFile");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    cases.push({
+      id: "SF05",
+      name: "disconnect propagates to another app document and cannot be resurrected",
+      pass: !persisted && (await (await handle.getFile()).text()) === previous,
+      observed: {},
+    });
   } finally {
+    frame?.remove();
     window.showSaveFilePicker = originalPicker;
     closeModal();
     await directory.removeEntry("single-file-regression.json").catch(() => {});

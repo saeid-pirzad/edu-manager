@@ -22,14 +22,79 @@ function singleFilePanel() {
     '</p><div class="row"><button data-workspace-action="single-file-choose">انتخاب فایل و فعال‌سازی</button><button class="ghost" data-workspace-action="single-file-save">ذخیره اکنون / اجازه مجدد</button><button class="ghost" data-workspace-action="single-file-stop">توقف اتصال فایل</button></div><p>فایل را می‌توانید کنار پروژه یا در پوشه دلخواه خود انتخاب کنید. بازیابی با گزینه «بازیابی از فایل» است؛ ویرایش دستی فایل خودکار وارد برنامه نمی‌شود.</p></section>'
   );
 }
-async function persistSingleFile() {
-  if (!ready || resetBusy || connectionRetired) return;
+async function persistSingleFile({
+  replace = false,
+  target = singleFile,
+} = {}) {
+  if (!ready || resetBusy || connectionRetired) return false;
   const tx = connection.transaction("drafts", "readwrite"),
     done = transactionDone(tx);
-  if (singleFile)
-    tx.objectStore("drafts").put({ key: singleFileKey, ...singleFile });
-  else tx.objectStore("drafts").delete(singleFileKey);
+  const store = tx.objectStore("drafts");
+  let changed = false;
+  const request = store.get(singleFileKey);
+  request.onsuccess = () => {
+    // A stale tab must never recreate a disconnected/replaced configuration.
+    if (
+      !replace &&
+      (!request.result ||
+        (request.result.connectionId || "") !== (target?.connectionId || ""))
+    )
+      return;
+    if (singleFile === target && target)
+      store.put({ key: singleFileKey, ...target });
+    else if (!singleFile) store.delete(singleFileKey);
+    else return;
+    changed = true;
+  };
   await done;
+  return changed;
+}
+function singleFileChanged(message) {
+  if (message.type !== "single-file-changed") return false;
+  if (singleFile && (singleFile.connectionId || "") !== message.connectionId) {
+    pauseSingleFile();
+    singleFile = null;
+    singleFileStatus(
+      "اتصال فایل در پنجره دیگری متوقف یا عوض شد؛ برای ادامه دوباره فایل را انتخاب کنید.",
+    );
+  }
+  return true;
+}
+async function singleFileCurrent(target) {
+  if (
+    singleFile !== target ||
+    !ready ||
+    blocked ||
+    resetBusy ||
+    connectionRetired
+  )
+    return false;
+  const stored = await readRecord("drafts", singleFileKey);
+  if (!stored || (stored.connectionId || "") !== (target.connectionId || "")) {
+    if (singleFile === target) {
+      pauseSingleFile();
+      singleFile = null;
+      singleFileStatus(
+        "اتصال فایل در پنجره دیگری متوقف یا عوض شد؛ دوباره فایل را انتخاب کنید.",
+      );
+    }
+    return false;
+  }
+  return (
+    singleFile === target &&
+    ready &&
+    !blocked &&
+    !resetBusy &&
+    !connectionRetired
+  );
+}
+function failSingleFile(error) {
+  pauseSingleFile();
+  const message =
+    "فایل خودکار به‌روز نشد: " + (error?.message || String(error));
+  singleFileStatus(message);
+  setStatus(message, "error");
+  return false;
 }
 function pauseSingleFile() {
   clearInterval(singleFileTimer);
@@ -101,13 +166,18 @@ async function chooseSingleFile() {
   if (singleFileWriting) await singleFileWriting;
   if (!ready || resetBusy || connectionRetired) return;
   singleFile = {
+    connectionId: uid(),
     handle,
     modified: file.lastModified,
     size: file.size,
     savedAt: "",
   };
   try {
-    await persistSingleFile();
+    await persistSingleFile({ replace: true });
+    broadcast({
+      type: "single-file-changed",
+      connectionId: singleFile.connectionId,
+    });
     startSingleFile();
     await syncSingleFile();
   } catch (error) {
@@ -118,33 +188,51 @@ async function chooseSingleFile() {
 }
 async function resumeSingleFile() {
   if (!singleFile) throw Error("ابتدا فایل JSON را انتخاب کنید.");
-  // Permission request also needs the explicit click, not an automatic timer.
-  if (
-    (await singleFile.handle.requestPermission({ mode: "readwrite" })) !==
-    "granted"
-  ) {
-    pauseSingleFile();
-    singleFileStatus("اجازه نوشتن داده نشد؛ فایل به‌روز نشده است.");
-    return;
+  const target = singleFile;
+  try {
+    // Permission request also needs the explicit click, not an automatic timer.
+    if (
+      (await target.handle.requestPermission({ mode: "readwrite" })) !==
+      "granted"
+    ) {
+      pauseSingleFile();
+      singleFileStatus("اجازه نوشتن داده نشد؛ فایل به‌روز نشده است.");
+      return false;
+    }
+    if (!(await singleFileCurrent(target))) return false;
+    // An explicit save queues a fresh snapshot after any older write finishes.
+    if (singleFileWriting && !(await singleFileWriting)) return false;
+    if (!(await singleFileCurrent(target))) return false;
+    startSingleFile();
+    return await syncSingleFile();
+  } catch (error) {
+    return failSingleFile(error);
   }
-  startSingleFile();
-  return syncSingleFile();
 }
 async function disableSingleFile() {
+  const target = singleFile;
   pauseSingleFile();
-  if (singleFileWriting) await singleFileWriting;
   singleFile = null;
-  await persistSingleFile();
-  singleFileStatus("اتصال متوقف شد؛ فایل موجود حذف نشده است.");
+  try {
+    if (await persistSingleFile({ target }))
+      broadcast({ type: "single-file-changed", connectionId: null });
+    if (singleFileWriting) await singleFileWriting;
+    singleFileStatus("اتصال متوقف شد؛ فایل موجود حذف نشده است.");
+  } catch (error) {
+    singleFile = target;
+    return failSingleFile(error);
+  }
 }
 function syncSingleFile() {
   if (singleFileWriting) return singleFileWriting;
   if (!singleFile || !ready || blocked || resetBusy || connectionRetired)
     return Promise.resolve(false);
   const target = singleFile;
+  singleFileStatus("در حال ذخیره فایل: " + target.handle.name);
   const write = async () => {
     let stream;
     try {
+      if (!(await singleFileCurrent(target))) return false;
       const snapshot = await snapshotInstallation();
       const json = JSON.stringify(snapshot, null, 2);
       if (
@@ -160,10 +248,10 @@ function syncSingleFile() {
         throw Error(
           "فایل بیرون از این اتصال تغییر کرده؛ برای جلوگیری از بازنویسی، دوباره آن را انتخاب کنید.",
         );
-      if (!ready || resetBusy || connectionRetired) return false;
+      if (!(await singleFileCurrent(target))) return false;
       stream = await target.handle.createWritable();
       await stream.write(json);
-      if (resetBusy || connectionRetired) {
+      if (!(await singleFileCurrent(target))) {
         await stream.abort();
         return false;
       }
@@ -173,7 +261,7 @@ function syncSingleFile() {
       target.modified = saved.lastModified;
       target.size = saved.size;
       target.savedAt = snapshot.exportedAt;
-      await persistSingleFile();
+      if (!(await persistSingleFile({ target }))) return false;
       singleFileStatus(
         "ذخیره شد: " +
           target.handle.name +
@@ -183,20 +271,19 @@ function syncSingleFile() {
       return true;
     } catch (error) {
       if (stream) await stream.abort().catch(() => {});
-      pauseSingleFile();
-      const message = "فایل خودکار به‌روز نشد: " + error.message;
-      singleFileStatus(message);
-      setStatus(message, "error");
-      return false;
+      return failSingleFile(error);
     }
   };
   // Serialize tabs on this origin; timestamp checks reject stale/external writers.
-  singleFileWriting = (
-    navigator.locks
-      ? navigator.locks.request("EduManager.singleFile", write)
-      : write()
-  ).finally(() => {
-    singleFileWriting = null;
-  });
+  singleFileWriting = Promise.resolve()
+    .then(() =>
+      navigator.locks
+        ? navigator.locks.request("EduManager.singleFile", write)
+        : write(),
+    )
+    .catch(failSingleFile)
+    .finally(() => {
+      singleFileWriting = null;
+    });
   return singleFileWriting;
 }
