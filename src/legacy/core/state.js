@@ -67,7 +67,7 @@ let state = {
   schoolId: null,
   classId: null,
   lessonId: null,
-  tab: "students",
+  tab: "lessons",
   masterFilter: null,
   reportTab: "comprehensive",
 };

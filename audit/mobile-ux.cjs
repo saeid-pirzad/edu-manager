@@ -83,6 +83,12 @@ async function inspectMobileUx() {
   goClass(classroom.id);
   await pause();
   add("class view fits the viewport", fits());
+  add(
+    "selecting a class lands on its own lessons",
+    state.tab === "lessons" && !!document.querySelector(".class-lessons"),
+  );
+  setTab("students");
+  await pause();
   await checkCreate("student");
   setTab("lessons");
   await pause();
@@ -188,7 +194,7 @@ module.exports = async function mobileUx({ cdp, evaluate, cases, delay }) {
       ],
       [
         "new-student",
-        "goSchool(db.schools[0].id);goClass(db.schools[0].classes[0].id);document.querySelector('.create-panel').open=true;document.querySelector('.create-panel').scrollIntoView({block:'center'})",
+        "goSchool(db.schools[0].id);goClass(db.schools[0].classes[0].id);setTab('students');document.querySelector('.create-panel').open=true;document.querySelector('.create-panel').scrollIntoView({block:'center'})",
       ],
       [
         "new-lesson",

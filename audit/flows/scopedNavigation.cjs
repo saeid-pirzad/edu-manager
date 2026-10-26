@@ -39,7 +39,16 @@ module.exports = async function scopedNavigation() {
     "class has exactly lesson and student management tabs without report or schedule actions",
     document.querySelectorAll("#app .tabs > button").length === 2 &&
       !document.querySelector(".class-context-actions,.student-report") &&
-      !!document.querySelector('[data-entity-create="student"]'),
+      state.tab === "lessons" &&
+      !!document.querySelector(".class-lessons"),
+  );
+  setTab("students");
+  await pause();
+  add(
+    "SCOPE09",
+    "student CRUD remains explicitly accessible from its own class tab",
+    !!document.querySelector('[data-entity-create="student"]') &&
+      !!document.querySelector(".student-directory"),
   );
   setTab("lessons");
   await pause();

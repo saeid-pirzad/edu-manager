@@ -40,9 +40,9 @@ async function workflowChecks(width) {
       );
     if (name === "class")
       check(
-        "roster-first",
-        "class opens on student roster",
-        state.tab === "students",
+        "lessons-first",
+        "class opens on its lesson directory",
+        state.tab === "lessons" && !!document.querySelector(".class-lessons"),
       );
     if (name === "lesson")
       check(

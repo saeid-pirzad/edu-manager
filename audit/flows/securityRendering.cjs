@@ -33,6 +33,7 @@ module.exports = async function securityRendering() {
       safe(document.getElementById("app")),
     );
     goClass(classroom.id);
+    setTab("students");
     check(
       "SEC03",
       "student name payload cannot create active markup",

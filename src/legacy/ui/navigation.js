@@ -4,7 +4,7 @@ function goSchools() {
     schoolId: null,
     classId: null,
     lessonId: null,
-    tab: "students",
+    tab: "lessons",
     masterFilter: null,
     reportTab: "comprehensive",
   };
@@ -21,7 +21,7 @@ function goClass(id) {
   state.view = "class";
   state.classId = id;
   state.lessonId = null;
-  state.tab = "students";
+  state.tab = "lessons";
   render();
 }
 function goLesson(id) {
