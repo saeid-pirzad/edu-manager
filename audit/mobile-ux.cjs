@@ -73,6 +73,47 @@ async function inspectMobileUx() {
       ),
     ].every((control) => control.getBoundingClientRect().height >= 44),
   );
+  const enter = document.querySelector(".dashboard-entity .entity-enter");
+  add(
+    "school entry has one arrow, a clear destination label and a touch target",
+    getComputedStyle(enter).backgroundColor === "rgb(254, 240, 240)" &&
+      getComputedStyle(enter).color === "rgb(192, 20, 27)" &&
+      enter.textContent.trim() === "کلاس‌های مدرسه" &&
+      enter.querySelectorAll("svg").length === 1 &&
+      enter.getBoundingClientRect().height >= 44,
+  );
+  const menu = document.querySelector(".dashboard-entity-more");
+  menu.querySelector("summary").click();
+  await pause();
+  const panel = menu.querySelector(".entity-menu-panel");
+  menu.scrollIntoView({ block: "center" });
+  await pause();
+  const rect = panel.getBoundingClientRect();
+  add(
+    "school actions expand inside their card rather than clipping or overlapping another card",
+    menu.open &&
+      getComputedStyle(panel).position === "static" &&
+      rect.left >= -1 &&
+      rect.right <= innerWidth + 1 &&
+      [...panel.querySelectorAll("button")].every(
+        (button) => button.getBoundingClientRect().height >= 44,
+      ),
+  );
+  const nextMenu = document.querySelectorAll(".dashboard-entity-more")[1];
+  if (nextMenu) {
+    nextMenu.querySelector("summary").click();
+    await pause();
+    add(
+      "opening another school menu closes the previous menu",
+      nextMenu.open && !menu.open,
+    );
+  }
+  document.querySelector(".workflow-welcome h2").click();
+  await pause();
+  add(
+    "outside click closes school action disclosures",
+    !document.querySelector(".dashboard-entity-more[open]"),
+  );
   document.querySelector(".entity-quick-create").open = false;
   await checkCreate("school");
   const school = db.schools[0],
@@ -182,6 +223,10 @@ module.exports = async function mobileUx({ cdp, evaluate, cases, delay }) {
     cases.push(...(await evaluate("(" + inspectMobileUx.toString() + ")()")));
     for (const [name, action] of [
       ["home", "goSchools()"],
+      [
+        "school-actions",
+        "goSchools();document.querySelector('.dashboard-entity-more').open=true;document.querySelector('.dashboard-entity').scrollIntoView({block:'center'})",
+      ],
       ["settings", "openSettingsModal()"],
       ["backups", "EduV24.openBackups()"],
       [

@@ -1221,6 +1221,96 @@ body {
   #app .dashboard-entity-actions > button:first-child {
     grid-column: auto;
   }
+  #app .dashboard-entity-actions > button.entity-enter {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+    padding: 12px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.8;
+    background: var(--workflow-soft);
+    color: var(--workflow-accent);
+    border: 1px solid #f3cdcf;
+    border-radius: 12px;
+    white-space: normal;
+    text-align: start;
+  }
+  .entity-enter-arrow {
+    display: inline-flex;
+    flex: 0 0 20px;
+  }
+  #app .dashboard-entity-more > summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 88px;
+    min-height: 48px;
+    padding: 10px;
+    border-radius: 12px;
+    background: #faf9f7;
+    border: 1px solid var(--workflow-line);
+    color: #454649;
+    font-size: 13px;
+    line-height: 1.8;
+    list-style: none;
+  }
+  #app .dashboard-entity-more > summary > span:first-child {
+    display: inline-flex;
+  }
+  #app .dashboard-entity-more:not([open]) > summary {
+    height: 100%;
+  }
+  #app .dashboard-entity-more > summary::after {
+    content: none;
+  }
+  #app .dashboard-entity-more[open] {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+  #app
+    .dashboard-entity-actions:has(.dashboard-entity-more[open])
+    > .entity-enter {
+    grid-column: 1 / -1;
+  }
+  #app .dashboard-entity-more[open] > summary {
+    justify-content: flex-start;
+    background: #fffaed;
+    border-color: #e3cc9e;
+    color: #7c5105;
+  }
+  /* Inline disclosure cannot be clipped by a card or escape the viewport. */
+  #app .dashboard-entity-more > .entity-menu-panel {
+    position: static;
+    inset: auto;
+    min-width: 0;
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    margin-top: 8px;
+    padding: 10px;
+    border-radius: 12px;
+    border-color: var(--workflow-line);
+    background: #faf9f7;
+    box-shadow: none;
+  }
+  #app .entity-menu-panel > button {
+    min-height: 46px;
+    font-size: 14px;
+    text-align: start;
+    white-space: normal;
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  #app .entity-menu-panel > button.danger {
+    background: #fff0ed;
+    color: #9f3021;
+    border: 1px solid #f0d2cb;
+  }
   #app .student-profile-actions {
     grid-template-columns: minmax(0, 1fr) auto;
   }
