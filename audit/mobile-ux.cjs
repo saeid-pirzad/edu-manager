@@ -34,6 +34,18 @@ async function inspectMobileUx() {
     width: document.documentElement.scrollWidth,
   });
   document.querySelector(".entity-quick-create").open = true;
+  add(
+    "Reactium palette uses warm background and red primary actions",
+    getComputedStyle(document.body).backgroundColor === "rgb(247, 246, 244)" &&
+      getComputedStyle(document.querySelector(".workflow-welcome button"))
+        .backgroundColor === "rgb(192, 20, 27)",
+  );
+  add(
+    "icons decorate controls without hiding readable labels",
+    document.querySelectorAll("#app .control-icon svg").length >= 3 &&
+      document.querySelector(".workflow-welcome button").textContent.trim()
+        .length > 0,
+  );
   await pause();
   add(
     "expanded creation form has touch-sized controls",
@@ -101,6 +113,16 @@ async function inspectMobileUx() {
   await pause();
   const full = document.querySelector(
     '.backup-manual [data-workspace-action="export-full"]',
+  );
+  add(
+    "backup controls have distinct local icons and preserved action labels",
+    document.querySelector('[data-workspace-action="export-full"] .ui-icon') &&
+      document.querySelector(
+        '[data-workspace-action="choose-import"] .ui-icon',
+      ) &&
+      document.querySelector(
+        '[data-workspace-action="single-file-choose"] .ui-icon',
+      ),
   );
   add(
     "backup workflow prioritizes full export and keeps internal history secondary",

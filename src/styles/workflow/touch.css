@@ -2,17 +2,95 @@
    Screen-only so reports retain their existing print layout. */
 @media screen {
   :root {
-    --workflow-accent: #4c3fb8;
-    --workflow-muted: #526078;
-    --workflow-line: #dfe5ef;
+    /* Reactium reference: Mellat red / orange / warm charcoal. */
+    --brand-red: #ed1c24;
+    --brand-orange: #fcaf17;
+    --brand-charcoal: #58595b;
+    --brand-canvas: #f7f6f4;
+    --brand-hover: #921019;
+    --workflow-accent: #c0141b;
+    --workflow-soft: #fef0f0;
+    --workflow-ink: #2d3440;
+    --workflow-muted: #636466;
+    --workflow-line: #e4e2df;
+    --ui-primary: var(--workflow-accent);
+    --ui-ink: var(--workflow-ink);
+    --ui-muted: var(--workflow-muted);
+    --ui-line: var(--workflow-line);
     --touch-teal: #0d7166;
     --touch-amber: #875800;
   }
   body {
-    background: #f5f6fb;
+    background: var(--brand-canvas);
   }
   #app .topbar {
-    background: #f5f6fb;
+    background: var(--brand-canvas);
+  }
+  .control-icon {
+    display: inline-flex;
+    vertical-align: middle;
+    margin-inline-end: 6px;
+    pointer-events: none;
+    flex-shrink: 0;
+  }
+  .ui-icon {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+  }
+  #app .brand-mark {
+    background: var(--brand-charcoal);
+    box-shadow: 0 3px 0 var(--brand-orange);
+  }
+  #app .header-brand > .header-home.is-active {
+    background: var(--workflow-soft);
+    border-color: #fbd0d1;
+    color: var(--workflow-accent);
+  }
+  #app .tabs {
+    background: #eeece9;
+  }
+  #app button.ghost,
+  #modalBody button.ghost {
+    background: #f4f3f1;
+    color: #454649;
+    border-color: var(--workflow-line);
+  }
+  #app .tabs > button.active,
+  #app .tabs > button[aria-current="page"] {
+    background: #fff;
+    color: var(--workflow-accent);
+    box-shadow: inset 0 -3px var(--brand-red);
+  }
+  #app :is(input, select, textarea):focus,
+  #modalBody :is(input, select, textarea):focus {
+    border-color: #a87008;
+    outline: 2px solid #fcaf1770;
+    outline-offset: 2px;
+  }
+  #app .breadcrumb a {
+    color: var(--workflow-accent);
+  }
+  #app button.master-btn,
+  #app button.report-btn {
+    background: #fffaed;
+    color: #7c5105;
+  }
+  #app .session-mode-picker [aria-pressed="false"] {
+    background: #f4f3f1;
+    color: #454649;
+  }
+  #mobileBar {
+    background: #fff9ea;
+    border-color: var(--brand-orange);
+    color: #7c5105;
+  }
+  #mobileBar button:not(.ghost) {
+    background: var(--workflow-accent);
+  }
+  #uiBottomNav button[aria-current="page"] {
+    background: var(--workflow-soft);
+    color: var(--workflow-accent);
   }
   #app .workspace-bar {
     margin-bottom: 10px;
@@ -124,19 +202,19 @@
     font-weight: 600;
   }
   #app .workflow-welcome {
-    border: 1px solid #dfdcf4;
+    border: 1px solid #efded2;
     border-radius: 20px;
-    background: linear-gradient(120deg, #efedfc, #f8faff);
+    background: linear-gradient(120deg, #fffaed, #fef0f0);
     padding: 22px;
     margin-block: 10px 20px;
     gap: 10px;
   }
   #app .workflow-welcome h2 {
-    color: #332c75;
+    color: #640b11;
     font-size: clamp(21px, 3vw, 27px);
   }
   #app .workflow-welcome p {
-    color: #505777;
+    color: #636466;
     font-size: 14px;
   }
   #app .workflow-welcome button {
@@ -177,7 +255,7 @@
     overflow: hidden;
   }
   #modal .modal-header {
-    background: #f8f9fd;
+    background: #faf9f7;
     border-bottom: 1px solid var(--workflow-line);
     padding: 12px 18px;
     gap: 12px;
@@ -200,8 +278,8 @@
     scroll-padding-block: 16px 100px;
   }
   #modalBody .record-editor-context {
-    background: #f1effc;
-    border-inline-start: 3px solid #7665cf;
+    background: #fffaed;
+    border-inline-start: 3px solid var(--brand-orange);
     border-radius: 12px;
     padding: 14px;
   }

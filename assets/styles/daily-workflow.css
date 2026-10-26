@@ -273,7 +273,7 @@
   --workflow-soft: #efedff;
 }
 body {
-  background: #f4f7fb;
+  background: var(--brand-canvas, #f4f7fb);
   color: var(--workflow-ink);
 }
 #app {
@@ -296,7 +296,7 @@ body {
 }
 #app :is(button, summary, input, select, textarea):focus-visible,
 #modal :is(button, summary, input, select, textarea):focus-visible {
-  outline: 3px solid #8aa7fa;
+  outline: 3px solid #b77708;
   outline-offset: 3px;
 }
 #app button {
@@ -759,7 +759,7 @@ body {
   margin-bottom: 18px;
 }
 .workflow-welcome h2 {
-  color: #37318b;
+  color: var(--workflow-ink);
   margin: 0;
 }
 .workflow-welcome p {
@@ -778,7 +778,7 @@ body {
   margin-bottom: 16px;
 }
 .dashboard-entity {
-  border-inline-start: 4px solid #8276df;
+  border-inline-start: 4px solid var(--brand-red, #8276df);
   box-shadow: 0 4px 16px #26205208;
 }
 .dashboard-entity-info p {
@@ -786,52 +786,52 @@ body {
   color: var(--workflow-muted);
 }
 #app .dashboard-entity-actions > button:first-child {
-  box-shadow: 0 4px 10px #4f46c81a;
+  box-shadow: 0 4px 10px #92101915;
 }
 #app .dashboard-entity-actions > button.ghost {
-  background: #f7f8fd;
+  background: #faf9f7;
 }
 #app .lesson-count {
-  background: #efedff;
-  color: #4b409f;
+  background: var(--workflow-soft);
+  color: var(--workflow-accent);
   border: 0;
   font-variant-numeric: tabular-nums;
 }
 #app .topbar {
-  border-bottom: 1px solid #e1e3f1;
+  border-bottom: 1px solid var(--workflow-line);
   box-shadow: 0 5px 18px #25205705;
 }
 #app .header-brand h1 {
-  color: #37318b;
+  color: var(--workflow-ink);
 }
 #app .header-action.is-active {
-  background: #efedff;
-  color: #4338a7;
-  border-color: #dcd7fb;
+  background: var(--workflow-soft);
+  color: var(--workflow-accent);
+  border-color: #fbd0d1;
 }
 #app .tabs > button.active,
 #app .tabs > button[aria-current="page"] {
-  color: #4338a7;
-  box-shadow: 0 2px 8px #4338a712;
+  color: var(--workflow-accent);
+  box-shadow: 0 2px 8px #92101912;
 }
 #app .student-avatar {
-  background: #eaf3ff;
-  color: #2b5997;
+  background: #fffaed;
+  color: #7c5105;
 }
 #app .lesson-item {
-  border-inline-start: 3px solid #8276df;
+  border-inline-start: 3px solid var(--brand-orange, #8276df);
 }
 #app .session-card {
   border-inline-start: 3px solid #35a391;
 }
 #app .assessment-stage > summary {
-  background: #f5f3ff;
+  background: #fffaed;
   border-radius: 13px;
-  color: #433887;
+  color: #7c5105;
 }
 #uiBottomNav button[aria-current="page"] {
-  background: #efedff;
-  color: #4338a7;
+  background: var(--workflow-soft);
+  color: var(--workflow-accent);
   border-radius: 14px;
 }
 #uiBottomNav button[aria-current="page"] svg {
@@ -869,17 +869,95 @@ body {
    Screen-only so reports retain their existing print layout. */
 @media screen {
   :root {
-    --workflow-accent: #4c3fb8;
-    --workflow-muted: #526078;
-    --workflow-line: #dfe5ef;
+    /* Reactium reference: Mellat red / orange / warm charcoal. */
+    --brand-red: #ed1c24;
+    --brand-orange: #fcaf17;
+    --brand-charcoal: #58595b;
+    --brand-canvas: #f7f6f4;
+    --brand-hover: #921019;
+    --workflow-accent: #c0141b;
+    --workflow-soft: #fef0f0;
+    --workflow-ink: #2d3440;
+    --workflow-muted: #636466;
+    --workflow-line: #e4e2df;
+    --ui-primary: var(--workflow-accent);
+    --ui-ink: var(--workflow-ink);
+    --ui-muted: var(--workflow-muted);
+    --ui-line: var(--workflow-line);
     --touch-teal: #0d7166;
     --touch-amber: #875800;
   }
   body {
-    background: #f5f6fb;
+    background: var(--brand-canvas);
   }
   #app .topbar {
-    background: #f5f6fb;
+    background: var(--brand-canvas);
+  }
+  .control-icon {
+    display: inline-flex;
+    vertical-align: middle;
+    margin-inline-end: 6px;
+    pointer-events: none;
+    flex-shrink: 0;
+  }
+  .ui-icon {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+  }
+  #app .brand-mark {
+    background: var(--brand-charcoal);
+    box-shadow: 0 3px 0 var(--brand-orange);
+  }
+  #app .header-brand > .header-home.is-active {
+    background: var(--workflow-soft);
+    border-color: #fbd0d1;
+    color: var(--workflow-accent);
+  }
+  #app .tabs {
+    background: #eeece9;
+  }
+  #app button.ghost,
+  #modalBody button.ghost {
+    background: #f4f3f1;
+    color: #454649;
+    border-color: var(--workflow-line);
+  }
+  #app .tabs > button.active,
+  #app .tabs > button[aria-current="page"] {
+    background: #fff;
+    color: var(--workflow-accent);
+    box-shadow: inset 0 -3px var(--brand-red);
+  }
+  #app :is(input, select, textarea):focus,
+  #modalBody :is(input, select, textarea):focus {
+    border-color: #a87008;
+    outline: 2px solid #fcaf1770;
+    outline-offset: 2px;
+  }
+  #app .breadcrumb a {
+    color: var(--workflow-accent);
+  }
+  #app button.master-btn,
+  #app button.report-btn {
+    background: #fffaed;
+    color: #7c5105;
+  }
+  #app .session-mode-picker [aria-pressed="false"] {
+    background: #f4f3f1;
+    color: #454649;
+  }
+  #mobileBar {
+    background: #fff9ea;
+    border-color: var(--brand-orange);
+    color: #7c5105;
+  }
+  #mobileBar button:not(.ghost) {
+    background: var(--workflow-accent);
+  }
+  #uiBottomNav button[aria-current="page"] {
+    background: var(--workflow-soft);
+    color: var(--workflow-accent);
   }
   #app .workspace-bar {
     margin-bottom: 10px;
@@ -991,19 +1069,19 @@ body {
     font-weight: 600;
   }
   #app .workflow-welcome {
-    border: 1px solid #dfdcf4;
+    border: 1px solid #efded2;
     border-radius: 20px;
-    background: linear-gradient(120deg, #efedfc, #f8faff);
+    background: linear-gradient(120deg, #fffaed, #fef0f0);
     padding: 22px;
     margin-block: 10px 20px;
     gap: 10px;
   }
   #app .workflow-welcome h2 {
-    color: #332c75;
+    color: #640b11;
     font-size: clamp(21px, 3vw, 27px);
   }
   #app .workflow-welcome p {
-    color: #505777;
+    color: #636466;
     font-size: 14px;
   }
   #app .workflow-welcome button {
@@ -1044,7 +1122,7 @@ body {
     overflow: hidden;
   }
   #modal .modal-header {
-    background: #f8f9fd;
+    background: #faf9f7;
     border-bottom: 1px solid var(--workflow-line);
     padding: 12px 18px;
     gap: 12px;
@@ -1067,8 +1145,8 @@ body {
     scroll-padding-block: 16px 100px;
   }
   #modalBody .record-editor-context {
-    background: #f1effc;
-    border-inline-start: 3px solid #7665cf;
+    background: #fffaed;
+    border-inline-start: 3px solid var(--brand-orange);
     border-radius: 12px;
     padding: 14px;
   }

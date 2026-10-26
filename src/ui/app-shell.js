@@ -1,6 +1,64 @@
 (function () {
   "use strict";
   let pending = false;
+  function decorateIcons() {
+    const actions = {
+      periods: "calendar",
+      history: "clock",
+      backups: "shield",
+      "export-full": "download",
+      "export-period": "download",
+      "choose-import": "upload",
+      "single-file-choose": "folder",
+      "single-file-save": "save",
+      "single-file-stop": "disconnect",
+      "discard-drafts": "undo",
+      "review-drafts": "grades",
+      "other-drafts": "users",
+      "download-backup": "download",
+      "preview-backup": "undo",
+      "restore-full": "upload",
+      "new-period": "add",
+      "create-period": "add",
+      "edit-period-label": "edit",
+      "finalize-period": "check",
+      "reopen-period": "undo",
+      print: "print",
+      close: "close",
+    };
+    const labels = [
+      [/^افزودن|^\+ افزودن/, "add"],
+      [/^ذخیره|^ثبت/, "save"],
+      [/^ویرایش/, "edit"],
+      [/^حذف/, "trash"],
+      [/^انصراف/, "close"],
+      [/برنامه هفتگی|^برنامه کلاس/, "calendar"],
+      [/گزارش|کارنامه/, "report"],
+      [/^ورود به مدرسه|^مدیریت کلاس/, "arrow"],
+      [/^پشتیبان/, "shield"],
+      [/نمرات|نمره و فعالیت/, "grades"],
+      [/حضور و غیاب/, "attendance"],
+      [/^دانش‌آموزان|^هنرجویان/, "users"],
+      [/^دروس$/, "book"],
+      [/^ابزارها/, "settings"],
+    ];
+    for (const control of document.querySelectorAll(
+      "#app button,#modalBody button,.entity-quick-create > summary,.workspace-tools > summary",
+    )) {
+      if (control.querySelector("svg,.control-icon")) continue;
+      const label = control.textContent.trim();
+      if (!label || /^(?:×|✕|[۰-۹0-9]+)$/.test(label)) continue;
+      const name =
+        actions[control.dataset.workspaceAction] ||
+        labels.find(([pattern]) => pattern.test(label))?.[1];
+      if (!name) continue;
+      const icon = document.createElement("span");
+      icon.className = "control-icon";
+      icon.setAttribute("aria-hidden", "true");
+      icon.innerHTML = EduIcons.html(name);
+      control.prepend(icon);
+    }
+  }
 
   function updateDesign() {
     let nav = document.getElementById("uiBottomNav");
@@ -443,6 +501,7 @@
       mobileExperience();
       polishExperience();
       updateDesign();
+      decorateIcons();
       for (const table of document.querySelectorAll(
         "#app table,#modalBody table",
       )) {

@@ -14,7 +14,7 @@
   margin-bottom: 18px;
 }
 .workflow-welcome h2 {
-  color: #37318b;
+  color: var(--workflow-ink);
   margin: 0;
 }
 .workflow-welcome p {
@@ -33,7 +33,7 @@
   margin-bottom: 16px;
 }
 .dashboard-entity {
-  border-inline-start: 4px solid #8276df;
+  border-inline-start: 4px solid var(--brand-red, #8276df);
   box-shadow: 0 4px 16px #26205208;
 }
 .dashboard-entity-info p {
@@ -41,52 +41,52 @@
   color: var(--workflow-muted);
 }
 #app .dashboard-entity-actions > button:first-child {
-  box-shadow: 0 4px 10px #4f46c81a;
+  box-shadow: 0 4px 10px #92101915;
 }
 #app .dashboard-entity-actions > button.ghost {
-  background: #f7f8fd;
+  background: #faf9f7;
 }
 #app .lesson-count {
-  background: #efedff;
-  color: #4b409f;
+  background: var(--workflow-soft);
+  color: var(--workflow-accent);
   border: 0;
   font-variant-numeric: tabular-nums;
 }
 #app .topbar {
-  border-bottom: 1px solid #e1e3f1;
+  border-bottom: 1px solid var(--workflow-line);
   box-shadow: 0 5px 18px #25205705;
 }
 #app .header-brand h1 {
-  color: #37318b;
+  color: var(--workflow-ink);
 }
 #app .header-action.is-active {
-  background: #efedff;
-  color: #4338a7;
-  border-color: #dcd7fb;
+  background: var(--workflow-soft);
+  color: var(--workflow-accent);
+  border-color: #fbd0d1;
 }
 #app .tabs > button.active,
 #app .tabs > button[aria-current="page"] {
-  color: #4338a7;
-  box-shadow: 0 2px 8px #4338a712;
+  color: var(--workflow-accent);
+  box-shadow: 0 2px 8px #92101912;
 }
 #app .student-avatar {
-  background: #eaf3ff;
-  color: #2b5997;
+  background: #fffaed;
+  color: #7c5105;
 }
 #app .lesson-item {
-  border-inline-start: 3px solid #8276df;
+  border-inline-start: 3px solid var(--brand-orange, #8276df);
 }
 #app .session-card {
   border-inline-start: 3px solid #35a391;
 }
 #app .assessment-stage > summary {
-  background: #f5f3ff;
+  background: #fffaed;
   border-radius: 13px;
-  color: #433887;
+  color: #7c5105;
 }
 #uiBottomNav button[aria-current="page"] {
-  background: #efedff;
-  color: #4338a7;
+  background: var(--workflow-soft);
+  color: var(--workflow-accent);
   border-radius: 14px;
 }
 #uiBottomNav button[aria-current="page"] svg {

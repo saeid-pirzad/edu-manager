@@ -7,7 +7,7 @@
   --workflow-soft: #efedff;
 }
 body {
-  background: #f4f7fb;
+  background: var(--brand-canvas, #f4f7fb);
   color: var(--workflow-ink);
 }
 #app {
@@ -30,7 +30,7 @@ body {
 }
 #app :is(button, summary, input, select, textarea):focus-visible,
 #modal :is(button, summary, input, select, textarea):focus-visible {
-  outline: 3px solid #8aa7fa;
+  outline: 3px solid #b77708;
   outline-offset: 3px;
 }
 #app button {

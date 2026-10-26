@@ -302,7 +302,11 @@
     {
       "output": "assets/scripts/runtime-api.js",
       "scope": "global",
-      "sources": ["src/core/runtime-api.js", "src/legacy/core/events.js"]
+      "sources": [
+        "src/core/runtime-api.js",
+        "src/core/icons.js",
+        "src/legacy/core/events.js"
+      ]
     }
   ]
 }
