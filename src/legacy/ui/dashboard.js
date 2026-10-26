@@ -86,7 +86,11 @@ function dashboardDirectory(items, kind, schoolId = "") {
     name +
     ' <span class="lesson-count">' +
     items.length.toLocaleString("fa-IR") +
-    "</span></h3><p>مدیریت اطلاعات و دسترسی مستقیم به گزارش‌ها</p></div></header>";
+    "</span></h3><p>" +
+    (isSchool
+      ? "مدیریت مدرسه‌ها و ورود به کلاس‌ها"
+      : "مدیریت کلاس‌های همین مدرسه") +
+    "</p></div></header>";
   if (items.length >= 4)
     h +=
       '<label class="dashboard-search no-print"><span>جست‌وجو در ' +
@@ -117,7 +121,7 @@ function dashboardDirectory(items, kind, schoolId = "") {
         (item.lessons || []).length.toLocaleString("fa-IR") +
         " درس";
     h +=
-      `<article class="dashboard-entity" data-name="${esc(item.name)}"><div class="dashboard-entity-info"><span class="dashboard-entity-symbol" aria-hidden="true">${workflowIcon(isSchool ? "school" : "classroom")}</span><div><h4>${esc(item.name)}</h4><p>${meta}</p></div></div><div class="dashboard-entity-actions no-print"><button data-legacy-click="dashboard-open" data-kind="${isSchool ? "school" : "class"}" data-key="${id}">${isSchool ? "ورود به مدرسه" : "مدیریت کلاس"} ←</button><button class="ghost" data-legacy-click="ui-dashboard:1" data-legacy-click-arg7="${esc(isSchool ? id : esc(schoolId))}" data-legacy-click-arg8="${esc(isSchool ? "" : id)}" data-legacy-click-arg9="${esc(isSchool ? "comprehensive" : "karnameh")}">${workflowIcon("report")}${isSchool ? "گزارش مدرسه" : "کارنامه کلاس"}</button><details class="dashboard-entity-more"><summary id="entity-menu-${isSchool ? "school" : "class"}-${id}" aria-label="عملیات بیشتر برای ${esc(item.name)}">بیشتر</summary><div><button class="ghost" data-mutating="1" data-legacy-click="ui-dashboard:4" data-legacy-click-arg15="${esc(isSchool ? "school" : "class")}" data-legacy-click-arg16="${esc(id)}" data-legacy-click-arg17="${esc(isSchool ? "" : esc(schoolId))}">ویرایش مشخصات</button><button class="danger" data-legacy-click="dashboard-delete" data-kind="${isSchool ? "school" : "class"}" data-key="${id}">حذف ` +
+      `<article class="dashboard-entity" data-name="${esc(item.name)}"><div class="dashboard-entity-info"><span class="dashboard-entity-symbol" aria-hidden="true">${workflowIcon(isSchool ? "school" : "classroom")}</span><div><h4>${esc(item.name)}</h4><p>${meta}</p></div></div><div class="dashboard-entity-actions no-print"><button data-legacy-click="dashboard-open" data-kind="${isSchool ? "school" : "class"}" data-key="${id}">${isSchool ? "ورود به مدرسه" : "مدیریت کلاس"} ←</button><details class="dashboard-entity-more"><summary id="entity-menu-${isSchool ? "school" : "class"}-${id}" aria-label="عملیات بیشتر برای ${esc(item.name)}">بیشتر</summary><div><button class="ghost" data-mutating="1" data-legacy-click="ui-dashboard:4" data-legacy-click-arg15="${esc(isSchool ? "school" : "class")}" data-legacy-click-arg16="${esc(id)}" data-legacy-click-arg17="${esc(isSchool ? "" : esc(schoolId))}">ویرایش مشخصات</button><button class="danger" data-legacy-click="dashboard-delete" data-kind="${isSchool ? "school" : "class"}" data-key="${id}">حذف ` +
       (isSchool ? "مدرسه" : "کلاس") +
       "</button></div></details></div></article>";
   }

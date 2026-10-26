@@ -14,6 +14,7 @@ const {
   delegatedUi,
   asyncTargets,
   singleFile,
+  scopedNavigation,
   largeTable,
 } = require("./flows/index.cjs");
 
@@ -56,6 +57,9 @@ if (process.argv.includes("--help")) {
       cases.push(...(await evaluate("(" + delegatedUi.toString() + ")()")));
       cases.push(...(await evaluate("(" + asyncTargets.toString() + ")()")));
       cases.push(...(await evaluate("(" + singleFile.toString() + ")()")));
+      cases.push(
+        ...(await evaluate("(" + scopedNavigation.toString() + ")()")),
+      );
       cases.push(...(await evaluate("(" + largeTable.toString() + ")()")));
       await require("./mobile-ux.cjs")({ cdp, evaluate, cases, delay });
       await cdp("Emulation.setDeviceMetricsOverride", {

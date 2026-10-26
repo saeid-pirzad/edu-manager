@@ -46,7 +46,7 @@ function renderEntityQuickCreate(kind, empty) {
 function renderSchools() {
   let h =
     headerHtml() +
-    `<section class="workflow-welcome no-print"><h2>مدرسه‌های من</h2><p>مدرسه را انتخاب کنید؛ سپس دانش‌آموزان و درس‌های کلاس را آماده کنید.</p><button data-legacy-click="ui-school-class:0">برنامه هفتگی من</button></section>`;
+    `<section class="workflow-welcome no-print"><h2>مدرسه‌های من</h2><p>مدرسه‌ها را اضافه، ویرایش یا حذف کنید؛ برای مدیریت کلاس‌ها وارد مدرسه شوید.</p></section>`;
   h += renderEntityQuickCreate("school", !db.schools.length);
   h += dashboardDirectory(db.schools, "schools");
   return h;
@@ -63,7 +63,7 @@ function renderSchool() {
     esc(school.name) +
     "</div>";
   const count = school.classes.reduce((n, c) => n + c.students.length, 0);
-  h += `<section class="school-overview no-print"><div><span>${school.classes.length.toLocaleString("fa-IR")} کلاس</span><span>${count.toLocaleString("fa-IR")} هنرجو</span></div><button data-legacy-click="ui-school-class:3" data-legacy-click-arg2="${esc(school.id)}">گزارش این مدرسه ←</button></section>`;
+  h += `<section class="school-overview no-print"><div><span>${school.classes.length.toLocaleString("fa-IR")} کلاس</span><span>${count.toLocaleString("fa-IR")} هنرجو</span></div></section>`;
   h += `<div class="entity-context-edit no-print"><button class="ghost" data-mutating="1" data-legacy-click="ui-school-class:4" data-legacy-click-arg0="${esc(school.id)}">ویرایش مشخصات مدرسه</button></div>`;
   h += renderEntityQuickCreate("class", !school.classes.length);
   h += dashboardDirectory(school.classes, "classes", school.id);
@@ -79,7 +79,6 @@ function renderClass() {
   const school = getSchool(state.schoolId);
   let h = headerHtml();
   h += `<div class="breadcrumb"><a data-legacy-click="ui-school-class:6">مدارس</a> ← <a data-legacy-click="ui-school-class:7" data-legacy-click-arg0="${esc(school.id)}">${esc(school.name)}</a> ← ${esc(c.name)}</div>`;
-  h += `<div class="class-context-actions no-print"><button data-legacy-click="ui-school-class:8" data-legacy-click-arg0="${esc(school.id)}" data-legacy-click-arg1="${esc(c.id)}">کارنامه این کلاس</button><button class="ghost" data-legacy-click="ui-school-class:22" data-legacy-click-arg2="${esc(c.id)}">برنامه کلاس</button></div>`;
   h += `<div class="entity-context-edit no-print"><button class="ghost" data-mutating="1" data-legacy-click="ui-school-class:9" data-legacy-click-arg0="${esc(c.id)}" data-legacy-click-arg1="${esc(school.id)}">ویرایش مشخصات کلاس</button></div>`;
   h += `<div class="tabs">
     <button class="${state.tab === "lessons" ? "active" : ""}" data-legacy-click="ui-school-class:10">📚 دروس</button>
@@ -94,7 +93,7 @@ function renderLessonsTab(c) {
   const lessons = c.lessons || [];
   const book =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5c-3-2-6-2-9-1v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1Zm0 0v15"/></svg>';
-  let h = `<section class="lesson-schedule no-print"><div><strong>برنامه هفتگی کلاس</strong><p>روز و ساعت برگزاری درس‌ها را تنظیم کنید.</p></div><button class="ghost" data-legacy-click="ui-school-class:12" data-legacy-click-arg0="${esc(c.id)}">مشاهده برنامه ←</button></section>`;
+  let h = "";
   h +=
     '<details class="card lesson-create create-panel no-print" ' +
     (!lessons.length ? "open" : "") +
@@ -104,7 +103,7 @@ function renderLessonsTab(c) {
   h +=
     '<section class="card class-lessons"><header class="lesson-list-heading"><div><h3>دروس کلاس <span class="lesson-count">' +
     lessons.length.toLocaleString("fa-IR") +
-    '</span></h3><p>ورود به درس، ثبت نمره و مدیریت ارزشیابی</p></div></header><div class="lesson-items">';
+    '</span></h3><p>تعریف و ویرایش درس‌ها؛ برای کلاس‌داری وارد درس شوید.</p></div></header><div class="lesson-items">';
   if (!lessons.length)
     h +=
       '<div class="empty lesson-empty">' +
@@ -113,7 +112,7 @@ function renderLessonsTab(c) {
   for (const l of lessons) {
     const id = esc(l.id),
       dual = l.gradeMode === "kardanesh";
-    h += `<article class="lesson-item"><div class="lesson-identity"><span class="lesson-symbol ${dual ? "dual" : "modular"}">${book}</span><div><h4>${esc(l.name)}</h4><p>${esc(l.teacher || "دبیر تعیین نشده")}</p></div></div><div class="lesson-meta"><span class="lesson-mode ${dual ? "dual" : "modular"}">${dual ? "نظری و عملی" : "پودمانی"}</span><span class="lesson-period">${Number(l.periodsPerWeek || 2).toLocaleString("fa-IR")} زنگ در هفته</span></div><p class="lesson-policy">${esc(EduPolicy.describe(l))}</p><div class="lesson-actions no-print"><button class="lesson-enter" data-legacy-click="ui-school-class:14" data-legacy-click-arg8="${esc(id)}">ورود به درس <span aria-hidden="true">←</span></button><button class="ghost" data-legacy-click="ui-school-class:23" data-legacy-click-arg9="${esc(id)}">ثبت گروهی نمره</button><button class="lesson-config ghost" data-legacy-click="ui-school-class:25" data-legacy-click-arg10="${esc(id)}">تنظیمات درس</button><details class="lesson-more"><summary id="lesson-menu-${id}" aria-label="عملیات بیشتر برای ${esc(l.name)}">بیشتر</summary><div class="lesson-more-menu">${
+    h += `<article class="lesson-item"><div class="lesson-identity"><span class="lesson-symbol ${dual ? "dual" : "modular"}">${book}</span><div><h4>${esc(l.name)}</h4><p>${esc(l.teacher || "دبیر تعیین نشده")}</p></div></div><div class="lesson-meta"><span class="lesson-mode ${dual ? "dual" : "modular"}">${dual ? "نظری و عملی" : "پودمانی"}</span><span class="lesson-period">${Number(l.periodsPerWeek || 2).toLocaleString("fa-IR")} زنگ در هفته</span></div><p class="lesson-policy">${esc(EduPolicy.describe(l))}</p><div class="lesson-actions no-print"><button class="lesson-enter" data-legacy-click="ui-school-class:14" data-legacy-click-arg8="${esc(id)}">ورود به درس <span aria-hidden="true">←</span></button><button class="lesson-config ghost" data-legacy-click="ui-school-class:25" data-legacy-click-arg10="${esc(id)}">ویرایش درس</button><details class="lesson-more"><summary id="lesson-menu-${id}" aria-label="عملیات بیشتر برای ${esc(l.name)}">بیشتر</summary><div class="lesson-more-menu">${
       !dual && l.poudmans.length
         ? `<button class="ghost" data-mutating="1" data-legacy-click="ui-school-class:15" data-legacy-click-arg0="${esc(id)}">ویرایش نام پودمان‌ها</button>`
         : ""
@@ -188,7 +187,7 @@ function renderStudentsTab(c) {
   h +=
     '<section class="card student-directory"><header class="roster-heading"><div><h3>هنرجویان کلاس <span class="lesson-count">' +
     students.length.toLocaleString("fa-IR") +
-    "</span></h3><p>مشخصات، کارنامه و مدیریت اعضای کلاس</p></div></header>";
+    "</span></h3><p>افزودن، ویرایش و مدیریت اعضای همین کلاس</p></div></header>";
   if (!students.length)
     h +=
       '<div class="empty"><strong>هنوز هنرجویی در این کلاس نیست</strong><p>از فرم بالا یک هنرجو اضافه کنید یا فهرست کلاس را با CSV وارد کنید.</p></div>';
@@ -215,7 +214,7 @@ function renderStudentsTab(c) {
       st.code
         ? "کد دانش‌آموزی: <bdi>" + esc(st.code) + "</bdi>"
         : '<span class="student-code-missing">کد ثبت نشده</span>'
-    }</p></div><span class="student-row-number" aria-label="ردیف ${i + 1}">${(i + 1).toLocaleString("fa-IR")}</span></div><div class="student-profile-actions no-print"><button class="ghost" data-legacy-click="ui-school-class:21" data-legacy-click-arg8="${esc(id)}">ویرایش مشخصات</button><button class="student-report" data-legacy-click="ui-school-class:24" data-legacy-click-arg9="${esc(id)}">کارنامه</button><details class="student-more"><summary id="student-menu-${esc(c.id)}-${id}" aria-label="عملیات بیشتر برای ${esc(st.name)}">بیشتر</summary><div class="student-more-menu"><button class="ghost" data-legacy-click="ui-school-class:26" data-legacy-click-arg13="${esc(id)}">انتقال / کپی به کلاس دیگر</button><button class="danger" data-legacy-click="ui-school-class:28" data-legacy-click-arg14="${esc(id)}">بایگانی هنرجو</button></div></details></div></article>`;
+    }</p></div><span class="student-row-number" aria-label="ردیف ${i + 1}">${(i + 1).toLocaleString("fa-IR")}</span></div><div class="student-profile-actions no-print"><button class="ghost" data-legacy-click="ui-school-class:21" data-legacy-click-arg8="${esc(id)}">ویرایش مشخصات</button><details class="student-more"><summary id="student-menu-${esc(c.id)}-${id}" aria-label="عملیات بیشتر برای ${esc(st.name)}">بیشتر</summary><div class="student-more-menu"><button class="ghost" data-legacy-click="ui-school-class:26" data-legacy-click-arg13="${esc(id)}">انتقال / کپی به کلاس دیگر</button><button class="danger" data-legacy-click="ui-school-class:28" data-legacy-click-arg14="${esc(id)}">بایگانی هنرجو</button></div></details></div></article>`;
   }
   h +=
     '</div><div class="empty roster-no-results" hidden>هنرجویی پیدا نشد؛ نام یا کد دیگری جست‌وجو کنید.</div></section>';

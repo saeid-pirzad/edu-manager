@@ -53,14 +53,16 @@ async function inspectMobileUx() {
   add(
     "Reactium palette uses warm background and red primary actions",
     getComputedStyle(document.body).backgroundColor === "rgb(247, 246, 244)" &&
-      getComputedStyle(document.querySelector(".workflow-welcome button"))
-        .backgroundColor === "rgb(192, 20, 27)",
+      getComputedStyle(
+        document.querySelector('.entity-quick-create button[type="submit"]'),
+      ).backgroundColor === "rgb(192, 20, 27)",
   );
   add(
     "icons decorate controls without hiding readable labels",
     document.querySelectorAll("#app .control-icon svg").length >= 3 &&
-      document.querySelector(".workflow-welcome button").textContent.trim()
-        .length > 0,
+      document
+        .querySelector('.entity-quick-create button[type="submit"]')
+        .textContent.trim().length > 0,
   );
   await pause();
   add(

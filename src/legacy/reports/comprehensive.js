@@ -36,6 +36,7 @@ function renderReports() {
   h +=
     '<nav class="tabs report-navigation no-print" aria-label="نوع گزارش">' +
     [
+      ["karnameh", "کارنامه نمرات"],
       ["daily", "روزانه"],
       ["weekly", "هفتگی"],
       ["monthly", "ماهانه"],
@@ -49,7 +50,7 @@ function renderReports() {
       )
       .join("") +
     "</nav>";
-  h += `<details class="report-extra no-print"><summary>کارنامه و گزارش‌های دیگر</summary><div class="row"><button class="ghost" data-legacy-click="reports-comprehensive:1">کارنامه نمرات</button><button class="ghost" data-legacy-click="reports-comprehensive:2">ریز فعالیت‌ها</button><button class="ghost" data-legacy-click="reports-comprehensive:3">گزارش دروس</button></div></details>`;
+  h += `<details class="report-extra no-print"><summary>گزارش‌های دیگر</summary><div class="row"><button class="ghost" data-legacy-click="reports-comprehensive:2">ریز فعالیت‌ها</button><button class="ghost" data-legacy-click="reports-comprehensive:3">گزارش دروس</button></div></details>`;
   if (tab === "comprehensive") h += renderComprehensiveTab();
   else if (tab === "lessonReport") h += renderLessonReportTabHtml();
   else if (periodic) h += periodicContent;

@@ -22,5 +22,6 @@ module.exports = {
   delegatedUi: require("./delegatedUi.cjs"),
   asyncTargets: require("./asyncTargets.cjs"),
   singleFile: require("./singleFile.cjs"),
+  scopedNavigation: require("./scopedNavigation.cjs"),
   largeTable: require("./largeTable.cjs"),
 };

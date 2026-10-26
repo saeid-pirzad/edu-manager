@@ -18,8 +18,8 @@ function renderLesson() {
     <strong>${esc(lesson.name)}</strong>${lesson.teacher ? ` <span class="muted">(${esc(lesson.teacher)})</span>` : ""}
   </div>`;
   h += `<div class="tabs">
-    <button class="${state.tab === "students" ? "active" : ""}" data-legacy-click="ui-lesson:3">👥 دانش‌آموزان</button>
-    <button class="${state.tab === "sessions" ? "active" : ""}" data-legacy-click="ui-lesson:4">📅 جلسات</button>
+    <button class="${state.tab === "students" ? "active" : ""}" data-legacy-click="ui-lesson:3">👥 عملکرد هنرجویان</button>
+    <button class="${state.tab === "sessions" ? "active" : ""}" data-legacy-click="ui-lesson:4">📅 جلسات و حضور‌وغیاب</button>
     <button class="${state.tab === "grades" ? "active" : ""}" data-legacy-click="ui-lesson:5">📝 نمرات</button>
   </div>`;
   if (state.tab === "students") h += renderLessonStudents(c, lesson);

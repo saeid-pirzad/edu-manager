@@ -1179,6 +1179,18 @@ body {
   }
   #app .dashboard-entity-actions {
     margin-top: 12px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  #app .dashboard-entity-actions > button:first-child {
+    grid-column: auto;
+  }
+  #app .student-profile-actions {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  #app .workflow-welcome:not(:has(button)) {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 16px 18px;
   }
   @media (min-width: 701px) {
     #app .create-panel > form {
