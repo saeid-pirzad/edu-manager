@@ -62,6 +62,11 @@
       if (b.getAttribute("aria-current") !== value)
         b.setAttribute("aria-current", value);
     }
+    for (const button of document.querySelectorAll("#app .tabs > button")) {
+      const pressed = String(button.classList.contains("active"));
+      if (button.getAttribute("aria-pressed") !== pressed)
+        button.setAttribute("aria-pressed", pressed);
+    }
     for (const item of document.querySelectorAll(
       "#app .list-item[onclick],#app .list-item[data-legacy-click]",
     )) {

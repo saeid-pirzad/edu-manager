@@ -102,6 +102,19 @@
     background: var(--touch-teal);
     min-height: 48px;
   }
+  .backup-automatic > .row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .backup-automatic > .row > button {
+    min-width: 0;
+    white-space: normal;
+    line-height: 1.8;
+  }
+  .backup-automatic > .row > button:first-child {
+    grid-column: 1 / -1;
+  }
   .backup-history > summary,
   .backup-help > summary {
     cursor: pointer;
@@ -238,7 +251,8 @@
   #app :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]),
   #modal
     :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]) {
-    font-size: 16px;
+    /* Legacy editors have inline em sizes; touch readability takes precedence. */
+    font-size: 16px !important;
     scroll-margin-block: 90px;
   }
   #modal :is(input[type="checkbox"], input[type="radio"]) {

@@ -50,6 +50,12 @@ async function inspectMobileUx() {
   goClass(classroom.id);
   await pause();
   add("class view fits the viewport", fits());
+  add(
+    "active section is announced without relying on color alone",
+    document
+      .querySelector("#app .tabs > button.active")
+      ?.getAttribute("aria-pressed") === "true",
+  );
   if (innerWidth <= 1000)
     add(
       "text inputs use readable non-zooming 16px text",
