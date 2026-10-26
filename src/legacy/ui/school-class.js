@@ -1,9 +1,41 @@
+function renderEntityQuickCreate(kind, empty) {
+  const school = kind === "school";
+  const label = school ? "مدرسه" : "کلاس";
+  const token = school ? "1" : "5";
+  return (
+    '<details class="card quick-create entity-quick-create no-print"' +
+    (empty ? " open" : "") +
+    "><summary>+ افزودن " +
+    label +
+    '</summary><p class="muted">' +
+    (school
+      ? "برای شروع، نام مدرسه را وارد کنید؛ کلاس‌ها را در مرحله بعد اضافه می‌کنید."
+      : "نام کلاس را وارد کنید؛ سپس هنرجویان و درس‌ها را اضافه کنید.") +
+    '</p><form data-legacy-submit="ui-school-class:' +
+    token +
+    '" data-entity-create="' +
+    kind +
+    '" class="row"><label class="entity-create-field">نام ' +
+    label +
+    '<input id="' +
+    kind +
+    'CreateName" name="name" placeholder="' +
+    (school ? "مثلاً هنرستان دانش" : "مثلاً دهم شبکه") +
+    '" aria-describedby="' +
+    kind +
+    'CreateError" required maxlength="500"></label><button type="submit" data-mutating="1">افزودن ' +
+    label +
+    '</button><p id="' +
+    kind +
+    'CreateError" class="entity-create-error" role="alert"></p></form></details>'
+  );
+}
 function renderSchools() {
   let h =
     headerHtml() +
     `<section class="workflow-welcome no-print"><h2>مدرسه‌های من</h2><p>مدرسه را انتخاب کنید؛ سپس دانش‌آموزان و درس‌های کلاس را آماده کنید.</p><button data-legacy-click="ui-school-class:0">برنامه هفتگی من</button></section>`;
   h += dashboardDirectory(db.schools, "schools");
-  h += `<div class="card"><h3>افزودن مدرسه</h3><form data-legacy-submit="ui-school-class:1" data-entity-create="school" class="row"><input id="schoolCreateName" name="name" placeholder="نام مدرسه" aria-label="نام مدرسه جدید" aria-describedby="schoolCreateError" required maxlength="500" style="flex:1"><button type="submit" data-mutating="1">افزودن مدرسه</button><p id="schoolCreateError" class="entity-create-error" role="alert"></p></form></div>`;
+  h += renderEntityQuickCreate("school", !db.schools.length);
   return h;
 }
 function renderSchool() {
@@ -21,7 +53,7 @@ function renderSchool() {
   h += `<section class="school-overview no-print"><div><span>${school.classes.length.toLocaleString("fa-IR")} کلاس</span><span>${count.toLocaleString("fa-IR")} هنرجو</span></div><button data-legacy-click="ui-school-class:3" data-legacy-click-arg2="${esc(school.id)}">گزارش این مدرسه ←</button></section>`;
   h += `<div class="entity-context-edit no-print"><button class="ghost" data-mutating="1" data-legacy-click="ui-school-class:4" data-legacy-click-arg0="${esc(school.id)}">ویرایش مشخصات مدرسه</button></div>`;
   h += dashboardDirectory(school.classes, "classes", school.id);
-  h += `<div class="card"><h3>افزودن کلاس</h3><form data-legacy-submit="ui-school-class:5" data-entity-create="class" class="row"><input id="classCreateName" name="name" placeholder="نام کلاس" aria-label="نام کلاس جدید" aria-describedby="classCreateError" required maxlength="500" style="flex:1"><button type="submit" data-mutating="1">افزودن کلاس</button><p id="classCreateError" class="entity-create-error" role="alert"></p></form></div>`;
+  h += renderEntityQuickCreate("class", !school.classes.length);
   return h;
 }
 

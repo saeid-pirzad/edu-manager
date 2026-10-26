@@ -84,14 +84,13 @@ async function openBackups() {
   }
   showModal(
     "پشتیبان و بازیابی",
-    "<p>پشتیبان داخلی روی همین دستگاه است. یک فایل مستقل در پوشه امن یا حافظه دیگر نگه دارید.</p><p>" +
-      esc(estimate) +
-      "</p>" +
-      singleFilePanel() +
-      "<p>" +
-      '</p><div class="row"><button data-workspace-action="export-period">ذخیره فایل همین دوره</button><button data-workspace-action="export-full">پشتیبان کامل همه دوره‌ها</button><button class="ghost" data-workspace-action="choose-import">بازیابی از فایل</button></div><p>' +
+    '<div class="backup-hub"><section class="backup-manual"><h4>فایل پشتیبان شما</h4><p>یک نسخه مستقل از اطلاعات بگیرید یا فایل قبلی را بازیابی کنید.</p><div class="backup-action-grid"><button data-workspace-action="export-full">دریافت پشتیبان کامل</button><button class="ghost" data-workspace-action="choose-import">بازیابی از فایل</button><button class="ghost" data-workspace-action="export-period">فقط دوره جاری</button></div><p class="muted">' +
       esc(lastExternalBackupLabel()) +
-      "</p><table><thead><tr><th>زمان</th><th>نوع</th><th>عملیات</th></tr></thead><tbody>" +
+      "</p></section>" +
+      singleFilePanel() +
+      '<details class="backup-history"><summary>نسخه‌های داخلی برنامه (' +
+      rows.length.toLocaleString("fa-IR") +
+      ")</summary><p>این نسخه‌ها داخل همین مرورگرند؛ جای فایل مستقل را نمی‌گیرند.</p><table><thead><tr><th>زمان</th><th>نوع</th><th>عملیات</th></tr></thead><tbody>" +
       rows
         .map(
           (x) =>
@@ -106,7 +105,9 @@ async function openBackups() {
             '">پیش‌نمایش بازیابی</button></td></tr>',
         )
         .join("") +
-      "</tbody></table>",
+      '</tbody></table></details><details class="backup-help"><summary>فضای ذخیره‌سازی مرورگر</summary><p>' +
+      esc(estimate) +
+      "</p></details></div>",
   );
 }
 

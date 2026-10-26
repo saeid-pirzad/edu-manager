@@ -79,7 +79,7 @@
     for (const input of document.querySelectorAll(
       '#app form input[name="name"]',
     )) {
-      if (!input.getAttribute("aria-label"))
+      if (!input.getAttribute("aria-label") && !input.labels?.length)
         input.setAttribute("aria-label", input.placeholder || "نام");
     }
   }
@@ -563,6 +563,13 @@
   }
   let wideLayout;
   function viewport() {
+    const visualHeight = window.visualViewport?.height || innerHeight;
+    const editing = document.activeElement?.matches(
+      'input:not([type="checkbox"]):not([type="radio"]),textarea,[contenteditable="true"]',
+    );
+    document.documentElement.dataset.keyboardOpen = String(
+      !!editing && innerHeight - visualHeight > 120,
+    );
     document.documentElement.style.setProperty(
       "--app-viewport",
       (window.visualViewport?.height || innerHeight) + "px",
@@ -591,6 +598,10 @@
     window.visualViewport?.addEventListener("resize", viewport);
     window.visualViewport?.addEventListener("scroll", viewport);
     window.addEventListener("resize", viewport);
+    document.addEventListener("focusin", viewport);
+    document.addEventListener("focusout", () =>
+      requestAnimationFrame(viewport),
+    );
   }
   if (document.readyState === "loading")
     document.addEventListener("DOMContentLoaded", start);

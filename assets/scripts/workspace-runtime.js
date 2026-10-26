@@ -1786,7 +1786,11 @@ function renderV24() {
     fileStatus.id = "singleFileBadge";
     fileStatus.setAttribute("role", "status");
     fileStatus.textContent = singleFileMessage;
-    panel.append(fileStatus);
+    // Routine file details stay in tools; failures remain visible on the page.
+    (singleFileFailure
+      ? panel
+      : panel.querySelector(".workspace-tool-actions")
+    ).append(fileStatus);
   }
   if (db.migrationWarnings?.length) {
     const info = document.createElement("div");
@@ -2172,7 +2176,15 @@ function singleFileStatus(message) {
   const element = document.getElementById("singleFileStatus");
   if (element) element.textContent = message;
   const badge = document.getElementById("singleFileBadge");
-  if (badge) badge.textContent = message;
+  if (badge) {
+    badge.textContent = message;
+    const panel = badge.closest(".workspace-bar");
+    const destination = singleFileFailure
+      ? panel
+      : panel?.querySelector(".workspace-tool-actions");
+    if (destination && badge.parentElement !== destination)
+      destination.append(badge);
+  }
 }
 function singleFilePanel() {
   if (!window.showSaveFilePicker)
@@ -2181,11 +2193,11 @@ function singleFilePanel() {
       singleFileFallbackPanel(true)
     );
   return (
-    '<section><h3>یک فایل JSON ثابت</h3><p>همه دوره‌ها و داده‌ها در همان فایل به‌روز می‌شوند؛ فایل جدید ساخته نمی‌شود. هنگام باز بودن برنامه، تغییرات ثبت‌شده پس از حدود ۲ ثانیه و سایر تغییرات حداکثر هر ۳۰ ثانیه بررسی می‌شوند. پیش از بستن برنامه «ذخیره اکنون» را بزنید و تأیید را ببینید.</p><p id="singleFileStatus" role="status">' +
+    '<section class="backup-automatic"><h3>ذخیره خودکار در یک فایل</h3><p>فایل را یک‌بار انتخاب کنید؛ برنامه هنگام باز بودن، همان فایل را به‌روز می‌کند.</p><p id="singleFileStatus" role="status">' +
     esc(singleFileMessage) +
     "</p>" +
     singleFileFallbackPanel(singleFileFailure) +
-    '<div class="row"><button data-workspace-action="single-file-choose">انتخاب فایل و فعال‌سازی</button><button class="ghost" data-workspace-action="single-file-save">ذخیره اکنون / اجازه مجدد</button><button class="ghost" data-workspace-action="single-file-stop">توقف اتصال فایل</button></div><p>فایل را می‌توانید کنار پروژه یا در پوشه دلخواه خود انتخاب کنید. ساخت فایل یا بازشدن پنجره انتخاب، تأیید ذخیره نیست؛ فعال‌سازی فقط بعد از اولین نوشتن موفق انجام می‌شود. بازیابی با گزینه «بازیابی از فایل» است؛ ویرایش دستی فایل خودکار وارد برنامه نمی‌شود.</p></section>'
+    '<div class="row"><button data-workspace-action="single-file-choose">انتخاب فایل و فعال‌سازی</button><button class="ghost" data-workspace-action="single-file-save">ذخیره اکنون / اجازه مجدد</button><button class="ghost" data-workspace-action="single-file-stop">توقف اتصال فایل</button></div><details class="backup-help"><summary>راهنما و محدودیت‌های ذخیره خودکار</summary><p>تغییرات ثبت‌شده پس از حدود ۲ ثانیه و سایر تغییرات هر ۳۰ ثانیه بررسی می‌شوند؛ زمان‌بندی در پس‌زمینه ممکن است به تأخیر بیفتد. قبل از خروج «ذخیره اکنون» را بزنید و تأیید را ببینید. با برنامه بسته یا دستگاه خاموش، نوشتن انجام نمی‌شود.</p><p>فایل را می‌توانید کنار پروژه یا در پوشه دلخواه انتخاب کنید. ساخت فایل یا بازشدن پنجره انتخاب، تأیید ذخیره نیست؛ فعال‌سازی فقط بعد از اولین نوشتن موفق انجام می‌شود. بازیابی با گزینه «بازیابی از فایل» است؛ ویرایش دستی فایل خودکار وارد برنامه نمی‌شود.</p></details></section>'
   );
 }
 function singleFileFallbackPanel(visible) {
@@ -2739,14 +2751,13 @@ async function openBackups() {
   }
   showModal(
     "پشتیبان و بازیابی",
-    "<p>پشتیبان داخلی روی همین دستگاه است. یک فایل مستقل در پوشه امن یا حافظه دیگر نگه دارید.</p><p>" +
-      esc(estimate) +
-      "</p>" +
-      singleFilePanel() +
-      "<p>" +
-      '</p><div class="row"><button data-workspace-action="export-period">ذخیره فایل همین دوره</button><button data-workspace-action="export-full">پشتیبان کامل همه دوره‌ها</button><button class="ghost" data-workspace-action="choose-import">بازیابی از فایل</button></div><p>' +
+    '<div class="backup-hub"><section class="backup-manual"><h4>فایل پشتیبان شما</h4><p>یک نسخه مستقل از اطلاعات بگیرید یا فایل قبلی را بازیابی کنید.</p><div class="backup-action-grid"><button data-workspace-action="export-full">دریافت پشتیبان کامل</button><button class="ghost" data-workspace-action="choose-import">بازیابی از فایل</button><button class="ghost" data-workspace-action="export-period">فقط دوره جاری</button></div><p class="muted">' +
       esc(lastExternalBackupLabel()) +
-      "</p><table><thead><tr><th>زمان</th><th>نوع</th><th>عملیات</th></tr></thead><tbody>" +
+      "</p></section>" +
+      singleFilePanel() +
+      '<details class="backup-history"><summary>نسخه‌های داخلی برنامه (' +
+      rows.length.toLocaleString("fa-IR") +
+      ")</summary><p>این نسخه‌ها داخل همین مرورگرند؛ جای فایل مستقل را نمی‌گیرند.</p><table><thead><tr><th>زمان</th><th>نوع</th><th>عملیات</th></tr></thead><tbody>" +
       rows
         .map(
           (x) =>
@@ -2761,7 +2772,9 @@ async function openBackups() {
             '">پیش‌نمایش بازیابی</button></td></tr>',
         )
         .join("") +
-      "</tbody></table>",
+      '</tbody></table></details><details class="backup-help"><summary>فضای ذخیره‌سازی مرورگر</summary><p>' +
+      esc(estimate) +
+      "</p></details></div>",
   );
 }
 

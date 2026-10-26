@@ -1,0 +1,330 @@
+/* Touch product layer: shared hierarchy, tablet layouts and focused mobile forms.
+   Screen-only so reports retain their existing print layout. */
+@media screen {
+  :root {
+    --workflow-accent: #4c3fb8;
+    --workflow-muted: #526078;
+    --workflow-line: #dfe5ef;
+    --touch-teal: #0d7166;
+    --touch-amber: #875800;
+  }
+  body {
+    background: #f5f6fb;
+  }
+  #app .topbar {
+    background: #f5f6fb;
+  }
+  #app .workspace-bar {
+    margin-bottom: 10px;
+    font-size: 12px;
+  }
+  #app .workspace-bar > strong {
+    color: #526078;
+    font-weight: 500;
+    line-height: 1.8;
+  }
+  #app .workspace-bar #saveStatus {
+    text-align: start;
+    width: auto;
+    border-radius: 10px;
+    padding: 6px 10px;
+    line-height: 1.8;
+    overflow-wrap: anywhere;
+  }
+  #app #saveStatus[data-state="saved"] {
+    background: #e7f5ef;
+    color: #14634c;
+  }
+  #app #saveStatus[data-state="pending"] {
+    background: #fff3d6;
+    color: #765000;
+  }
+  #app #saveStatus[data-state="error"],
+  #app .workspace-bar > #singleFileBadge {
+    background: #fff0ed;
+    color: #9f3021;
+    padding: 10px 12px;
+    border-radius: 10px;
+    grid-column: 1 / -1;
+    line-height: 1.9;
+    overflow-wrap: anywhere;
+  }
+  .workspace-tool-actions {
+    box-shadow: 0 8px 24px #25335c0a;
+  }
+  .entity-quick-create > summary {
+    cursor: pointer;
+    min-height: 48px;
+    padding-block: 8px;
+    font-weight: 600;
+    color: var(--workflow-accent);
+  }
+  .entity-quick-create form {
+    align-items: end;
+  }
+  .entity-create-field {
+    display: grid;
+    flex: 1 1 200px;
+    gap: 8px;
+    font-size: 14px;
+  }
+  .entity-create-field input {
+    width: 100%;
+  }
+  .entity-quick-create .entity-create-error {
+    flex-basis: 100%;
+  }
+  .backup-hub {
+    display: grid;
+    gap: 18px;
+  }
+  .backup-hub > section,
+  .backup-hub > details {
+    border: 1px solid var(--workflow-line);
+    border-radius: 16px;
+    padding: 16px;
+  }
+  .backup-hub h4 {
+    margin: 0;
+    font-size: 17px;
+  }
+  .backup-hub p {
+    font-size: 14px;
+    line-height: 1.9;
+  }
+  .backup-action-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .backup-action-grid > :first-child {
+    grid-column: 1 / -1;
+    background: var(--touch-teal);
+    min-height: 48px;
+  }
+  .backup-history > summary,
+  .backup-help > summary {
+    cursor: pointer;
+    min-height: 44px;
+    line-height: 1.9;
+    padding-block: 8px;
+    font-weight: 600;
+  }
+  #app .workflow-welcome {
+    border: 1px solid #dfdcf4;
+    border-radius: 20px;
+    background: linear-gradient(120deg, #efedfc, #f8faff);
+    padding: 22px;
+    margin-block: 10px 20px;
+    gap: 10px;
+  }
+  #app .workflow-welcome h2 {
+    color: #332c75;
+    font-size: clamp(21px, 3vw, 27px);
+  }
+  #app .workflow-welcome p {
+    color: #505777;
+    font-size: 14px;
+  }
+  #app .workflow-welcome button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .dashboard-entity:nth-child(3n + 2) {
+    border-inline-start-color: #29a496;
+  }
+  .dashboard-entity:nth-child(3n + 2) .dashboard-entity-symbol {
+    background: #e6f6f1;
+    color: var(--touch-teal);
+  }
+  .dashboard-entity:nth-child(3n) {
+    border-inline-start-color: #dbab49;
+  }
+  .dashboard-entity:nth-child(3n) .dashboard-entity-symbol {
+    background: #fff4d9;
+    color: var(--touch-amber);
+  }
+  #app button.success,
+  #modal button.success {
+    background: var(--touch-teal);
+    color: #fff;
+  }
+  #app button.danger,
+  #modal button.danger {
+    background: #b62f40;
+    color: #fff;
+  }
+  #app .tabs > button {
+    font-weight: 600;
+  }
+  #modal .modal-dialog {
+    border: 1px solid var(--workflow-line);
+    overflow: hidden;
+  }
+  #modal .modal-header {
+    background: #f8f9fd;
+    border-bottom: 1px solid var(--workflow-line);
+    padding: 12px 18px;
+    gap: 12px;
+  }
+  #modal .modal-header h3 {
+    font-size: 16px;
+    line-height: 1.8;
+    overflow-wrap: anywhere;
+  }
+  #modalClose {
+    flex-shrink: 0;
+    width: 44px;
+    min-height: 44px;
+    border-radius: 12px;
+    background: #eaeef6;
+    color: #364665;
+  }
+  #modal .modal-body {
+    overscroll-behavior: contain;
+    scroll-padding-block: 16px 100px;
+  }
+  #modalBody .record-editor-context {
+    background: #f1effc;
+    border-inline-start: 3px solid #7665cf;
+    border-radius: 12px;
+    padding: 14px;
+  }
+  #modalBody .record-editor > label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #334360;
+    line-height: 1.8;
+  }
+  #modalBody .record-editor-actions {
+    position: sticky;
+    bottom: -1px;
+    z-index: 4;
+    background: #fff;
+    border-top: 1px solid var(--workflow-line);
+    padding: 12px 0 max(12px, env(safe-area-inset-bottom));
+    margin-bottom: 0;
+    box-shadow: 0 -8px 14px #26365c05;
+  }
+  #modalBody :is(input, select, textarea)[aria-invalid="true"] {
+    border: 2px solid #b62f40;
+    background: #fff6f5;
+  }
+  #modalBody .entity-create-error:not(:empty) {
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: #fff0ed;
+    color: #9f3021;
+  }
+  #uiBottomNav {
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+  [data-keyboard-open="true"] #uiBottomNav {
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+@media screen and (max-width: 1000px) {
+  #app :is(button, summary),
+  #modal :is(button, summary) {
+    touch-action: manipulation;
+  }
+  #app button:not(.grade-clear),
+  #modal button:not(.grade-clear) {
+    min-height: 46px;
+  }
+  #app :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]),
+  #modal
+    :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]) {
+    font-size: 16px;
+    scroll-margin-block: 90px;
+  }
+  #modal :is(input[type="checkbox"], input[type="radio"]) {
+    width: 22px;
+    height: 22px;
+    accent-color: var(--workflow-accent);
+    vertical-align: middle;
+  }
+  .workspace-tool-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .workspace-tool-actions :is(small, #singleFileBadge) {
+    grid-column: 1 / -1;
+  }
+  .workspace-tool-actions button {
+    white-space: normal;
+  }
+}
+@media screen and (max-width: 700px) {
+  #app .workspace-bar {
+    padding: 8px 0 12px !important;
+    row-gap: 6px !important;
+  }
+  .workspace-tools > summary {
+    font-size: 12px;
+  }
+  #app .workflow-welcome {
+    padding: 18px;
+    margin-block: 6px 16px;
+  }
+  #app .dashboard-entity {
+    padding: 14px;
+  }
+  #app .dashboard-entity-info h4 {
+    font-size: 16px;
+  }
+  #app .dashboard-entity-info p {
+    font-size: 13px;
+  }
+  #app .tabs {
+    gap: 4px;
+    padding: 4px;
+    scroll-padding-inline: 12px;
+  }
+  #app .tabs button {
+    font-size: 13px;
+    padding-inline: 14px;
+  }
+  #modal .modal-body {
+    padding: 16px;
+  }
+  #modalBody .record-editor-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  #modalBody .record-editor-actions > button {
+    flex: 1 1 110px;
+    min-height: 48px;
+    white-space: normal;
+  }
+  #uiBottomNav button {
+    min-height: 54px;
+    font-size: 12px;
+    gap: 4px;
+  }
+}
+@media screen and (min-width: 701px) and (max-width: 1100px) {
+  #app {
+    padding-inline: 24px;
+  }
+  .dashboard-entities {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+  .dashboard-entity {
+    height: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .dashboard-entity-actions {
+    flex-wrap: wrap;
+  }
+  .modal-dialog {
+    width: min(92vw, 840px);
+  }
+}

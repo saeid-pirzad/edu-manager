@@ -172,7 +172,11 @@ function renderV24() {
     fileStatus.id = "singleFileBadge";
     fileStatus.setAttribute("role", "status");
     fileStatus.textContent = singleFileMessage;
-    panel.append(fileStatus);
+    // Routine file details stay in tools; failures remain visible on the page.
+    (singleFileFailure
+      ? panel
+      : panel.querySelector(".workspace-tool-actions")
+    ).append(fileStatus);
   }
   if (db.migrationWarnings?.length) {
     const info = document.createElement("div");

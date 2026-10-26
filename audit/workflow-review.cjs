@@ -57,6 +57,7 @@ if (process.argv.includes("--help")) {
       cases.push(...(await evaluate("(" + asyncTargets.toString() + ")()")));
       cases.push(...(await evaluate("(" + singleFile.toString() + ")()")));
       cases.push(...(await evaluate("(" + largeTable.toString() + ")()")));
+      await require("./mobile-ux.cjs")({ cdp, evaluate, cases, delay });
       await cdp("Emulation.setDeviceMetricsOverride", {
         width: 320,
         height: 800,
