@@ -389,6 +389,18 @@ body.modal-open {
   border-radius: 16px;
 }
 @media screen {
+  #app .header-actions > .header-home {
+    position: static;
+    flex: 0 0 auto;
+    gap: 8px;
+    min-height: 44px;
+    margin: 0;
+  }
+  #app .header-actions > .header-home.is-active {
+    color: #c0141b;
+    background: #fef0f0;
+    border-color: #f3cdcf;
+  }
   #app .workspace-bar.workspace-bar-compact {
     display: flex !important;
     flex-wrap: wrap;
@@ -497,7 +509,39 @@ body.modal-open {
   }
   @media (max-width: 700px), (max-width: 1000px) and (pointer: coarse) {
     #app .navigation-menu[open] .header-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: stretch;
+      gap: 4px;
+      padding: 6px !important;
       flex-wrap: nowrap;
+      scrollbar-gutter: stable;
+    }
+    #app .header-actions > .header-dropdown {
+      grid-column: 1 / -1;
+    }
+    #app .header-actions > .header-action,
+    #app .header-actions .header-dropdown > .header-action,
+    #app .header-actions .workspace-tools > summary,
+    #app .header-actions .workspace-tool-actions .workspace-tool-button,
+    #app .header-actions .data-menu button {
+      min-height: 40px;
+      padding: 4px 7px;
+      font-size: 12px;
+      line-height: 1.5;
+      border-radius: 8px;
+    }
+    #app .header-actions .header-action > svg,
+    #app .header-actions .workspace-tool-icon svg,
+    #app .header-actions .workspace-tools-symbol svg {
+      width: 16px;
+      height: 16px;
+    }
+    #app .header-actions .workspace-tool-icon {
+      flex-basis: 16px;
+    }
+    #app .header-actions .workspace-tool-button {
+      gap: 5px;
     }
     #app .header-actions > .workspace-tools {
       grid-column: 1 / -1;
@@ -512,9 +556,31 @@ body.modal-open {
       overflow: visible;
       box-sizing: border-box;
       box-shadow: none;
+      gap: 4px;
+      padding: 4px;
+      margin-top: 4px;
     }
     #app .header-actions .workspace-tool-group {
-      grid-template-columns: minmax(0, 1fr);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 4px;
+    }
+    #app .header-actions .workspace-period-context {
+      gap: 4px;
+      padding: 2px 0;
+      font-size: 11px;
+    }
+    #app .header-actions .workspace-period-context > span {
+      padding: 2px 5px;
+    }
+    #app .header-actions .workspace-draft-tools > summary {
+      min-height: 40px;
+      padding: 5px 8px;
+      font-size: 12px;
+    }
+    #app .header-actions .workspace-tool-actions > #singleFileBadge {
+      padding: 5px 8px;
+      font-size: 11px;
+      line-height: 1.6;
     }
   }
   #app .workspace-tools > summary::-webkit-details-marker {

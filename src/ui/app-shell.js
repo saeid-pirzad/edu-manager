@@ -358,6 +358,20 @@
     }
   }
 
+  function positionHomeAction() {
+    const home = document.querySelector("#app .topbar .header-home");
+    if (!home) return;
+    const wide =
+      innerWidth > 700 &&
+      !matchMedia("(max-width:1000px) and (pointer:coarse)").matches;
+    const target = document.querySelector(
+      wide ? "#app .topbar .header-actions" : "#app .topbar .header-brand",
+    );
+    if (target && home.parentElement !== target) {
+      if (wide) target.prepend(home);
+      else target.append(home);
+    }
+  }
   function mobileExperience() {
     const app = document.getElementById("app");
     if (!app) return;
@@ -578,6 +592,7 @@
           settings.title = "تنظیمات برنامه";
         }
       }
+      positionHomeAction();
     } finally {
       pending = false;
       observeDesignRoots();
@@ -609,6 +624,7 @@
     const wide =
       innerWidth > 700 &&
       !matchMedia("(max-width:1000px) and (pointer:coarse)").matches;
+    positionHomeAction();
     if (wide !== wideLayout) {
       wideLayout = wide;
       for (const menu of document.querySelectorAll(".navigation-menu"))

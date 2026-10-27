@@ -22,7 +22,20 @@ async function inspectWorkspaceTools() {
     summary = tools.querySelector(":scope > summary");
   const navigation = document.querySelector(".navigation-menu");
   if (navigation) navigation.open = true;
+  window.scrollTo(0, 0);
   await pause();
+  const desktop =
+    innerWidth > 700 &&
+    !matchMedia("(max-width:1000px) and (pointer:coarse)").matches;
+  const home = document.querySelector(".topbar .header-home");
+  add(
+    "home belongs to desktop navigation while retaining its mobile header position",
+    document.querySelectorAll(".topbar .header-home").length === 1 &&
+      home.parentElement.matches(
+        desktop ? ".header-actions" : ".header-brand",
+      ) &&
+      (!desktop || home === home.parentElement.firstElementChild),
+  );
   add(
     "tools replace settings in main navigation, with settings nested inside",
     !!tools.closest(".topbar .header-actions") &&
@@ -78,7 +91,9 @@ async function inspectWorkspaceTools() {
       .every((el) => {
         const rect = el.getBoundingClientRect();
         return (
-          rect.left >= 0 && rect.right <= innerWidth + 1 && rect.height >= 44
+          rect.left >= 0 &&
+          rect.right <= innerWidth + 1 &&
+          rect.height >= (desktop ? 44 : 40)
         );
       });
   add("workspace main actions fit touch and desktop viewports", fits());
@@ -157,10 +172,15 @@ module.exports = async function workspaceToolsUx({
   delay,
 }) {
   const previews = fs.mkdtempSync(path.join(os.tmpdir(), "edu-tools-ux-"));
-  for (const width of [320, 390, 600, 768, 1024, 1280, 1440, 1920]) {
+  const sizes = [320, 390, 600, 768, 1024, 1280, 1440, 1920].map((width) => [
+    width,
+    900,
+  ]);
+  sizes.push([320, 568], [390, 667], [667, 375]);
+  for (const [width, height] of sizes) {
     await cdp("Emulation.setDeviceMetricsOverride", {
       width,
-      height: 900,
+      height,
       deviceScaleFactor: 1,
       mobile: false,
     });
@@ -173,7 +193,7 @@ module.exports = async function workspaceToolsUx({
     await delay(100);
     const shot = await cdp("Page.captureScreenshot", { format: "png" });
     fs.writeFileSync(
-      path.join(previews, width + ".png"),
+      path.join(previews, width + "x" + height + ".png"),
       Buffer.from(shot.data, "base64"),
     );
     await evaluate("document.querySelector('.workspace-tools').open=false");
