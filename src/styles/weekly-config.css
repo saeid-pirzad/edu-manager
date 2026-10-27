@@ -73,3 +73,40 @@
     }
   }
 }
+
+@media screen {
+  #modal:has(.week-config-intro) .modal-dialog { width: min(100%, 540px); }
+  .week-config-intro { background: #f7f3ec; border: 1px solid #e7dfd2; border-radius: 12px; padding: 16px; }
+  .week-config-intro strong { color: #79522c; font-size: 15px; }
+  .week-config-intro p, .week-config-note { color: #81796e; font-size: 11px; }
+  .week-config-section { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 8px 12px; padding: 16px; border-color: #e7e3dc; border-radius: 12px; }
+  .week-config-section h4 { grid-column: 1 / -1; margin: 0 0 6px; font-size: 13px; }
+  .week-config-section label { margin: 0; font-size: 11px; color: #81796e; }
+  .week-config-section label:first-of-type { grid-column: 1; grid-row: 2; }
+  .week-config-section label:last-of-type { grid-column: 2; grid-row: 2; }
+  .week-config-section select { grid-row: 3; min-height: 44px; border-radius: 9px; background: #faf9f7; font-size: 13px; }
+  .week-config-exceptions > summary { color: #79522c; background: #f7f5f0; border: 1px solid #e7e3dc; border-radius: 10px; font-size: 12px; }
+  .week-config-actions { padding-top: 14px; border-top: 1px solid #e7e3dc; }
+  .week-config-actions > button { min-width: 0; border-radius: 9px; }
+  .week-config-actions > button:first-child { background: #79522c; color: #fff; }
+  .week-config-actions > .danger { background: #fff4f1; border: 1px solid #efd8d2; color: #a04738; }
+}
+@media screen and (max-width: 600px) {
+  #modal:has(.week-config-intro) { padding: 12px; align-items: center; }
+  #modal:has(.week-config-intro) .modal-dialog { max-height: calc(var(--app-viewport,100dvh) - 24px); border-radius: 16px; }
+  #modal:has(.week-config-intro) .modal-body { padding: 14px; }
+  .week-config-section { padding: 12px; gap: 8px; }
+  .week-config-section select { font-size: 16px; }
+}
+
+@media screen {
+  #modalBody .week-config-note { margin: 12px 0 0; color: #81796e; font-size: 11px; line-height: 1.9; }
+  #modalBody .week-config-actions > .danger { background: #fff4f1; border: 1px solid #efd8d2; color: #a04738; }
+}
+@media screen and (max-width: 400px) {
+  .week-config-section { grid-template-columns: minmax(0,1fr); }
+  .week-config-section label:first-of-type { grid-column: 1; grid-row: 2; }
+  .week-config-section select:first-of-type { grid-column: 1; grid-row: 3; }
+  .week-config-section label:last-of-type { grid-column: 1; grid-row: 4; margin-top: 6px; }
+  .week-config-section select:last-of-type { grid-column: 1; grid-row: 5; }
+}

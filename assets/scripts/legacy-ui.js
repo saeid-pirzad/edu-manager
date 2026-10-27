@@ -3995,7 +3995,7 @@ function renderMaster() {
     return s + "</div></article>";
   };
   let h = headerHtml();
-  h += `<header class="week-heading"><div><p>برنامه آموزشی شما</p><h2>برنامه هفتگی</h2></div><button class="ghost no-print" data-legacy-click="schedule-timetable:2">تنظیمات برنامه</button></header>`;
+  h += `<header class="week-heading"><h2>برنامه هفتگی</h2><button type="button" class="ghost no-print" data-legacy-click="schedule-timetable:2">تنظیمات برنامه</button></header>`;
   h +=
     '<section class="card week-overview"><div class="week-overview-info"><span class="week-parity ' +
     parity +
@@ -4048,7 +4048,7 @@ function renderMaster() {
     for (let p = 0; p < periods; p++) h += slot(selected, p);
     h += "</div></section>";
     h +=
-      '<section class="card week-desktop"><header><h3>نمای کامل هفته</h3><p>برای ثبت اطلاعات، جلسه را باز کنید؛ برای تغییر درس از تنظیم زنگ استفاده کنید.</p></header><div class="table-scroll"><table class="week-table"><thead><tr><th>روز / زنگ</th>';
+      '<details class="card week-desktop"><summary>نمای کامل هفته</summary><header><p>برای ثبت اطلاعات، جلسه را باز کنید؛ برای تغییر درس از تنظیم زنگ استفاده کنید.</p></header><div class="table-scroll" tabindex="0" role="region" aria-label="جدول برنامه هفتگی"><table class="week-table"><thead><tr><th scope="col">روز / زنگ</th>';
     for (let p = 0; p < periods; p++) h += "<th>زنگ " + number(p + 1) + "</th>";
     h += "</tr></thead><tbody>";
     for (const d of days) {
@@ -4061,7 +4061,7 @@ function renderMaster() {
         h += "<td>" + slot(d, p, true) + "</td>";
       h += "</tr>";
     }
-    h += "</tbody></table></div></section>";
+    h += "</tbody></table></div></details>";
   }
   h +=
     '<details class="card week-settings no-print" ' +
@@ -4075,7 +4075,7 @@ function renderMaster() {
   h +=
     `</div></section><section><h4>تعداد زنگ‌های روزانه</h4><div class="week-period-controls"><button class="ghost" data-legacy-click="schedule-timetable:6" aria-label="کاهش تعداد زنگ">−</button><strong>` +
     number(periods) +
-    ` زنگ</strong><button class="ghost" data-legacy-click="schedule-timetable:7" aria-label="افزایش تعداد زنگ">+</button></div></section><section><h4>مبنای هفته‌های فرد و زوج</h4><p>تاریخ شنبه‌ای را انتخاب کنید که مبنای محاسبه هفته‌ها باشد.</p><div class="week-start-date"><label>تاریخ شروع<input type="date" id="weekStartInput" data-mutating="1" value="` +
+    ` زنگ</strong><button class="ghost" data-legacy-click="schedule-timetable:7" aria-label="افزایش تعداد زنگ">+</button></div><p class="week-save-hint">تغییر روزها و تعداد زنگ‌ها خودکار ذخیره می‌شود.</p></section><section><h4>مبنای هفته‌های فرد و زوج</h4><p>تاریخ شنبه‌ای را انتخاب کنید که مبنای محاسبه هفته‌ها باشد.</p><div class="week-start-date"><label>تاریخ شروع<input type="date" id="weekStartInput" data-mutating="1" value="` +
     esc(db.settings.weekStartDate || date) +
     `" data-legacy-change="schedule-timetable:8"></label><span class="shamsi-display" id="shamsiWeekStart">` +
     esc(toShamsi(db.settings.weekStartDate || date)) +

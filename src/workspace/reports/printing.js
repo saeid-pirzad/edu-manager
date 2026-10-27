@@ -14,6 +14,9 @@ function preparePrint(button) {
       document.getElementById("app");
   if (!source) throw Error("گزارشی برای چاپ انتخاب نشده است.");
   const copy = source.cloneNode(true);
+  copy.querySelectorAll("details.week-desktop").forEach((details) => {
+    details.open = true;
+  });
   copy
     .querySelectorAll("button,.no-print,form,script,select")
     .forEach((x) => x.remove());
