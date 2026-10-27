@@ -733,46 +733,46 @@
   }
 }
 @media screen {
-  #modal:has([data-workspace-submit="save-entity"]) {
+  #modal:has(:is([data-workspace-submit="save-entity"], #studentEditor)) {
     align-items: center;
     padding: 20px;
   }
-  #modal:has([data-workspace-submit="save-entity"]) .modal-dialog {
+  #modal:has(:is([data-workspace-submit="save-entity"], #studentEditor)) .modal-dialog {
     width: 100%;
     max-width: 460px;
     max-height: calc(var(--app-viewport, 100dvh) - 40px);
     border-radius: 20px;
     box-shadow: 0 24px 80px #2d34402b;
   }
-  #modal:has([data-workspace-submit="save-entity"]) .modal-header {
+  #modal:has(:is([data-workspace-submit="save-entity"], #studentEditor)) .modal-header {
     padding: 16px 20px;
     background: #fff;
   }
-  #modal:has([data-workspace-submit="save-entity"]) .modal-body {
+  #modal:has(:is([data-workspace-submit="save-entity"], #studentEditor)) .modal-body {
     padding: 20px;
   }
-  #modalBody [data-workspace-submit="save-entity"] {
+  #modalBody :is([data-workspace-submit="save-entity"], #studentEditor) {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 18px;
   }
-  #modalBody [data-workspace-submit="save-entity"] .record-editor-context {
+  #modalBody :is([data-workspace-submit="save-entity"], #studentEditor) .record-editor-context {
     padding: 14px 16px;
     background: #f7f6f4;
     border: 1px solid var(--workflow-line);
     border-radius: 12px;
   }
-  #modalBody [data-workspace-submit="save-entity"] .record-editor-context h4 {
+  #modalBody :is([data-workspace-submit="save-entity"], #studentEditor) .record-editor-context h4 {
     margin-block: 6px;
     font-size: 16px;
     overflow-wrap: anywhere;
   }
-  #modalBody [data-workspace-submit="save-entity"] > label {
+  #modalBody :is([data-workspace-submit="save-entity"], #studentEditor) > label {
     display: grid;
     gap: 8px;
     font-size: 14px;
   }
-  #modalBody [data-workspace-submit="save-entity"] input {
+  #modalBody :is([data-workspace-submit="save-entity"], #studentEditor) input {
     width: 100%;
     min-height: 48px;
     border-radius: 10px;
@@ -785,7 +785,7 @@
   #modalBody #entityEditError:empty {
     display: none;
   }
-  #modalBody [data-workspace-submit="save-entity"] .record-editor-actions {
+  #modalBody :is([data-workspace-submit="save-entity"], #studentEditor) .record-editor-actions {
     position: static;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -794,20 +794,20 @@
     padding: 16px 0 0;
     box-shadow: none;
   }
-  #modalBody [data-workspace-submit="save-entity"] .record-editor-actions button {
+  #modalBody :is([data-workspace-submit="save-entity"], #studentEditor) .record-editor-actions button {
     min-height: 46px;
     border-radius: 10px;
     padding-inline: 20px;
   }
 }
 @media screen and (max-width: 700px) {
-  #modal:has([data-workspace-submit="save-entity"]) {
+  #modal:has(:is([data-workspace-submit="save-entity"], #studentEditor)) {
     padding: max(12px, env(safe-area-inset-top))
       max(12px, env(safe-area-inset-right))
       max(12px, env(safe-area-inset-bottom))
       max(12px, env(safe-area-inset-left));
   }
-  #modal:has([data-workspace-submit="save-entity"]) .modal-dialog {
+  #modal:has(:is([data-workspace-submit="save-entity"], #studentEditor)) .modal-dialog {
     max-height: calc(
       var(--app-viewport, 100dvh) - max(12px, env(safe-area-inset-top)) -
         max(12px, env(safe-area-inset-bottom))
@@ -815,35 +815,35 @@
     min-height: 0;
     border-radius: 16px;
   }
-  #modal:has([data-workspace-submit="save-entity"]) .modal-header {
+  #modal:has(:is([data-workspace-submit="save-entity"], #studentEditor)) .modal-header {
     flex-shrink: 0;
     padding: 12px 14px;
     gap: 8px;
   }
-  #modal:has([data-workspace-submit="save-entity"]) .modal-header h3 {
+  #modal:has(:is([data-workspace-submit="save-entity"], #studentEditor)) .modal-header h3 {
     font-size: 15px;
   }
-  #modal:has([data-workspace-submit="save-entity"]) .modal-body {
+  #modal:has(:is([data-workspace-submit="save-entity"], #studentEditor)) .modal-body {
     min-height: 0;
     padding: 16px;
     scroll-padding-block: 12px;
   }
-  #modalBody [data-workspace-submit="save-entity"] {
+  #modalBody :is([data-workspace-submit="save-entity"], #studentEditor) {
     gap: 14px;
   }
-  #modalBody [data-workspace-submit="save-entity"] .record-editor-context {
+  #modalBody :is([data-workspace-submit="save-entity"], #studentEditor) .record-editor-context {
     padding: 12px;
   }
-  #modalBody [data-workspace-submit="save-entity"] input {
+  #modalBody :is([data-workspace-submit="save-entity"], #studentEditor) input {
     font-size: 16px;
     scroll-margin-block: 12px;
   }
-  #modalBody [data-workspace-submit="save-entity"] .record-editor-actions {
+  #modalBody :is([data-workspace-submit="save-entity"], #studentEditor) .record-editor-actions {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 8px;
     padding-top: 12px;
   }
-  #modalBody [data-workspace-submit="save-entity"] .record-editor-actions button {
+  #modalBody :is([data-workspace-submit="save-entity"], #studentEditor) .record-editor-actions button {
     min-width: 0;
     min-height: 48px;
     padding-inline: 8px;
@@ -879,7 +879,8 @@
   }
   #app .lesson-actions {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 240px) auto;
+    justify-content: start;
     align-items: start;
     gap: 12px;
   }
@@ -895,10 +896,10 @@
     white-space: normal;
     text-align: start;
   }
-  #app .lesson-more {
+  #app :is(.lesson-more, .student-more) {
     margin: 0;
   }
-  #app .lesson-more > summary {
+  #app :is(.lesson-more, .student-more) > summary {
     min-width: 92px;
     min-height: 48px;
     padding: 10px 12px;
@@ -907,19 +908,19 @@
     border-color: var(--workflow-line);
     font-size: 13px;
   }
-  #app .lesson-more > summary:hover,
-  #app .lesson-more[open] > summary {
+  #app :is(.lesson-more, .student-more) > summary:hover,
+  #app :is(.lesson-more, .student-more)[open] > summary {
     background: #f4f3f1;
     border-color: #b9b6b1;
   }
-  #app .lesson-more > summary:focus-visible {
+  #app :is(.lesson-more, .student-more) > summary:focus-visible {
     outline: 2px solid var(--workflow-accent);
     outline-offset: 3px;
   }
-  #app .lesson-more[open] {
+  #app :is(.lesson-more, .student-more)[open] {
     z-index: 40;
   }
-  #app .lesson-more-menu {
+  #app :is(.lesson-more-menu, .student-more-menu) {
     top: auto;
     bottom: calc(100% + 8px);
     width: min(240px, calc(100vw - 64px));
@@ -929,7 +930,7 @@
     border-radius: 12px;
     box-shadow: 0 8px 28px #2d344024;
   }
-  #app .lesson-more-menu button {
+  #app :is(.lesson-more-menu, .student-more-menu) button {
     width: 100%;
     min-height: 46px;
     padding: 10px 12px;
@@ -940,14 +941,14 @@
     border: 1px solid transparent;
     color: #454649;
   }
-  #app .lesson-more-menu button:hover {
+  #app :is(.lesson-more-menu, .student-more-menu) button:hover {
     background: #f4f3f1;
   }
-  #app .lesson-more-menu button.danger {
+  #app :is(.lesson-more-menu, .student-more-menu) button.danger {
     color: #9f3021;
     border-top-color: var(--workflow-line);
   }
-  #app .lesson-more-menu button.danger:hover {
+  #app :is(.lesson-more-menu, .student-more-menu) button.danger:hover {
     background: #fff0ed;
   }
   #modal:has(#courseError) .modal-dialog {
@@ -1012,6 +1013,106 @@
     white-space: normal;
     min-height: 48px;
     padding-inline: 12px;
+  }
+}
+@media screen {
+  #app .student-profile-actions {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 12px;
+  }
+  #app .student-profile-actions > button {
+    min-height: 48px;
+    padding: 12px 14px;
+    font-size: 14px;
+    border-radius: 12px;
+    background: var(--workflow-soft);
+    color: var(--workflow-accent);
+    border: 1px solid #f3cdcf;
+  }
+  #app .student-profile-info p {
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  #app .student-row-number {
+    background: #f4f3f1;
+    color: var(--workflow-muted);
+    font-size: 12px;
+  }
+  #app .roster-toolbar input,
+  #app .roster-toolbar select {
+    min-height: 48px;
+    border-radius: 10px;
+  }
+  #app .roster-toolbar label > span,
+  #app .roster-results {
+    font-size: 13px;
+  }
+  #modalBody #studentEditor {
+    gap: 8px;
+  }
+  #modalBody #studentEditor > label {
+    margin-top: 8px;
+  }
+  #modalBody #studentEditor > p:not(.entity-create-error) {
+    margin: 6px 0;
+    font-size: 12px;
+    line-height: 1.9;
+    color: var(--workflow-muted);
+  }
+  #modalBody #studentEditError:empty {
+    display: none;
+  }
+  #modalBody #studentEditor .record-editor-actions > button[type="submit"] {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  #modalBody #studentEditor .record-editor-actions > button[type="button"] {
+    grid-column: 2;
+    grid-row: 1;
+  }
+}
+@media screen and (min-width: 1101px) {
+  #app:has(> .student-directory) {
+    display: flex;
+    flex-direction: column;
+  }
+  #app:has(> .student-directory) > .topbar { order: 0; }
+  #app:has(> .student-directory) > .workspace-bar { order: 1; }
+  #app:has(> .student-directory) > .breadcrumb { order: 2; }
+  #app:has(> .student-directory) > .tabs { order: 3; }
+  #app:has(> .student-directory) > .student-directory { order: 4; }
+  #app:has(> .student-directory) > .student-add { order: 5; }
+  #app:has(> .student-directory) > .student-import { order: 6; }
+  #app:has(> .student-directory) > .student-archive {
+    order: 7;
+  }
+  #app .student-roster {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding: 0 20px 20px;
+  }
+  #app .student-profile {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 24px;
+    padding: 18px 20px;
+  }
+  #app .student-profile-main {
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+  #app .student-profile-actions {
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  #app .student-profile-info h4 {
+    font-size: 17px;
+  }
+  #app .student-profile-actions > button {
+    min-width: 150px;
   }
 }
 @media screen and (min-width: 1101px) {

@@ -6170,7 +6170,7 @@ async function openHistoryV24(limit = 50) {
 function buildArchiveV24(c) {
   if (!c.archivedStudents?.length) return "";
   return (
-    '<div class="card"><h3>سوابق بایگانی‌شده</h3>' +
+    '<div class="card student-archive"><h3>سوابق بایگانی‌شده</h3>' +
     c.archivedStudents
       .map(
         (st) =>
