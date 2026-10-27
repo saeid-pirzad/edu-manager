@@ -2007,6 +2007,203 @@ body {
     font-size: 12px;
   }
 }
+@media screen {
+  #app .session-directory {
+    padding: 0;
+    overflow: visible;
+  }
+  #app .session-list-heading {
+    padding: 20px;
+    margin: 0;
+    gap: 16px;
+    border-bottom: 1px solid var(--workflow-line);
+    align-items: center;
+  }
+  #app .session-list-heading h3 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-size: 18px;
+  }
+  #app .session-list-heading p {
+    margin: 6px 0 0;
+    color: var(--workflow-muted);
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  #app .session-list {
+    display: grid;
+    gap: 14px;
+    padding: 20px;
+  }
+  #app .session-card {
+    position: relative;
+    margin: 0;
+    padding: 0;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    border: 1px solid var(--workflow-line);
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: none;
+  }
+  #app .session-card.is-today {
+    border-color: #d9bd95;
+    box-shadow: inset 3px 0 0 #fcaf17;
+  }
+  #app button.session-open {
+    padding: 20px;
+    border-radius: 16px;
+    gap: 16px;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+  #app button.session-open:hover {
+    background: #faf9f7;
+  }
+  #app button.session-open:focus-visible,
+  #app .session-delete:focus-visible {
+    outline: 2px solid var(--workflow-accent);
+    outline-offset: 3px;
+  }
+  .session-identity {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-inline-end: 52px;
+    min-width: 0;
+  }
+  .session-calendar {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    flex: 0 0 46px;
+    background: #f5f1eb;
+    color: #79522c;
+    border-radius: 12px;
+  }
+  .session-date {
+    display: grid;
+    gap: 5px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .session-date strong {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.8;
+  }
+  .session-period {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--workflow-muted);
+  }
+  .session-today {
+    border-radius: 8px;
+    padding: 4px 8px;
+    background: #fff4d9;
+    color: #875800;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  #app .session-unit {
+    grid-column: 1 / -1;
+    font-size: 13px;
+    font-weight: 400;
+    overflow-wrap: anywhere;
+  }
+  #app .session-counts {
+    grid-column: 1;
+    gap: 8px;
+  }
+  #app .session-counts > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.8;
+    font-weight: 400;
+    font-variant-numeric: tabular-nums;
+  }
+  #app .session-counts .session-present { background: #eaf5ef; color: #14634c; }
+  #app .session-counts .session-absent { background: #fff0ed; color: #9f3021; }
+  #app .session-counts .session-late { background: #fff4d9; color: #875800; }
+  #app .session-counts .session-activities { background: #f4f3f1; color: #454649; }
+  .session-enter-label {
+    grid-column: 2;
+    grid-row: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 12px 14px;
+    border: 1px solid #f3cdcf;
+    border-radius: 12px;
+    background: var(--workflow-soft);
+    color: var(--workflow-accent);
+    font-size: 14px;
+    line-height: 24px;
+    white-space: nowrap;
+  }
+  .session-enter-label > span {
+    display: inline-flex;
+  }
+  #app .session-card > .session-delete {
+    position: absolute;
+    inset-inline-end: 16px;
+    top: 16px;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 10px;
+    border: 1px solid var(--workflow-line);
+    border-radius: 10px;
+    color: #8a6661;
+    background: #fff;
+  }
+  #app .session-card > .session-delete:hover {
+    background: #fff0ed;
+    border-color: #f0d2cb;
+    color: #9f3021;
+  }
+}
+@media screen and (max-width: 700px) {
+  #app .session-list-heading {
+    padding: 16px;
+    align-items: start;
+  }
+  #app .session-list-heading h3 { font-size: 16px; }
+  #app .session-list-heading p { font-size: 12px; }
+  #app .session-list { padding: 12px; gap: 12px; }
+  #app button.session-open {
+    padding: 14px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+  #app .session-identity { gap: 8px; flex-wrap: wrap; }
+  #app .session-calendar { width: 40px; height: 40px; flex-basis: 40px; }
+  #app .session-date strong { font-size: 14px; }
+  #app .session-counts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+  #app .session-counts > span { justify-content: center; padding: 6px; }
+  #app .session-enter-label { grid-column: 1; grid-row: auto; }
+  #app .session-card > .session-delete { top: 12px; inset-inline-end: 12px; }
+}
+@media print {
+  .session-delete,
+  .session-enter-label,
+  .session-calendar { display: none !important; }
+}
 @media screen and (min-width: 1101px) {
   #app .student-roster {
     grid-template-columns: minmax(0, 1fr);

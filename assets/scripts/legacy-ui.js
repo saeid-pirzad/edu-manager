@@ -3490,12 +3490,12 @@ function renderLessonSessions(c, lesson) {
     '<label>شماره زنگ<input type="number" name="period" min="1" max="12" required value="1" inputmode="numeric"></label>' +
     '<button type="submit">شروع / ادامه جلسه</button></form></section>';
   h +=
-    '<section class="card session-directory"><header class="session-list-heading"><h3>جلسات درس <span class="lesson-count">' +
+    '<section class="card session-directory"><header class="session-list-heading"><div><h3>جلسات درس <span class="lesson-count">' +
     sessions.length.toLocaleString("fa-IR") +
-    "</span></h3>";
+    "</span></h3><p>جدیدترین جلسه‌ها؛ برای ثبت حضور و فعالیت، وارد جلسه شوید.</p></div>";
   if (sessions.length)
     h += `<details class="session-list-actions"><summary>گزینه‌ها</summary><div><button class="danger" data-legacy-click="ui-lesson:7" data-legacy-click-arg0="${esc(classId)}" data-legacy-click-arg1="${esc(lessonId)}">حذف همه جلسات</button></div></details>`;
-  h += "</header>";
+  h += '</header><div class="session-list">';
   if (!sessions.length)
     h +=
       '<div class="empty"><strong>اولین جلسه را شروع کنید</strong><p>تاریخ و زنگ را در فرم بالا انتخاب کنید؛ سپس حضور و فعالیت کلاس را ثبت کنید.</p></div>';
@@ -3514,22 +3514,28 @@ function renderLessonSessions(c, lesson) {
         " · زنگ " +
         (session.period + 1).toLocaleString("fa-IR");
     h +=
-      `<article class="session-card"><button type="button" class="session-open" data-legacy-click="ui-lesson:8" data-legacy-click-arg0="${esc(id)}" aria-label="ورود به جلسه ` +
+      `<article class="session-card${session.date === todayISO() ? " is-today" : ""}"><button type="button" class="session-open" data-legacy-click="ui-lesson:8" data-legacy-click-arg0="${esc(id)}" aria-label="ورود به جلسه ` +
       esc(title) +
-      '"><strong>' +
-      esc(title) +
-      "</strong>";
+      '"><span class="session-identity"><span class="session-calendar" aria-hidden="true">' +
+      EduIcons.html("calendar") +
+      '</span><span class="session-date"><strong>' +
+      esc(faDate(session.date)) +
+      '</strong><span class="session-period">زنگ ' +
+      (session.period + 1).toLocaleString("fa-IR") +
+      '</span></span>' +
+      (session.date === todayISO() ? '<span class="session-today">امروز</span>' : "") +
+      "</span>";
     if (pod || unit)
       h +=
         '<span class="session-unit">' +
         esc([pod?.name, unit?.name].filter(Boolean).join(" / ")) +
         "</span>";
     h +=
-      `<span class="session-counts"><span>حاضر ${counts.present.toLocaleString("fa-IR")}</span><span>غایب ${counts.absent.toLocaleString("fa-IR")}</span><span>تأخیر ${counts.late.toLocaleString("fa-IR")}</span><span>${session.scores.length.toLocaleString("fa-IR")} فعالیت</span></span></button><button type="button" class="session-delete" data-legacy-click="ui-lesson:9" data-legacy-click-arg4="${esc(id)}" aria-label="حذف جلسه ` +
+      `<span class="session-counts"><span class="session-present"><b>${counts.present.toLocaleString("fa-IR")}</b> حاضر</span><span class="session-absent"><b>${counts.absent.toLocaleString("fa-IR")}</b> غایب</span><span class="session-late"><b>${counts.late.toLocaleString("fa-IR")}</b> تأخیر</span><span class="session-activities"><b>${session.scores.length.toLocaleString("fa-IR")}</b> فعالیت</span></span><span class="session-enter-label">ورود به جلسه <span aria-hidden="true">${EduIcons.html("arrow")}</span></span></button><button type="button" class="session-delete" data-legacy-click="ui-lesson:9" data-legacy-click-arg4="${esc(id)}" aria-label="حذف جلسه ` +
       esc(title) +
       '"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/></svg></button></article>';
   }
-  return h + "</section>";
+  return h + "</div></section>";
 }
 // Source: src/legacy/events/ui-lesson.js
 // Event handlers extracted from src/legacy/ui/lesson.js.
