@@ -380,10 +380,10 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    width: 48px;
-    min-width: 48px;
+    width: auto;
+    min-width: 118px;
     min-height: 48px;
-    padding: 10px;
+    padding: 10px 12px;
     border-radius: 12px;
     background: #fff;
     border: 1px solid var(--workflow-line);
@@ -396,7 +396,8 @@
     display: inline-flex;
   }
   #app .dashboard-entity-more > summary > span:last-child {
-    display: none;
+    display: inline;
+    white-space: nowrap;
   }
   #app .dashboard-entity-more > summary:hover {
     background: #f4f3f1;
@@ -422,6 +423,7 @@
     grid-column: 1 / -1;
   }
   #app .dashboard-entity-more[open] > summary {
+    width: fit-content;
     margin-inline-start: auto;
     background: #f4f3f1;
     border-color: #b9b6b1;
@@ -758,6 +760,9 @@
     align-items: stretch;
     gap: 20px;
     padding: 0 20px 20px;
+  }
+  #app:has(> .workflow-welcome) .dashboard-entities {
+    grid-template-columns: minmax(0, 1fr);
   }
   #app .dashboard-entity {
     display: flex;
