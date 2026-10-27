@@ -80,6 +80,7 @@
         "src/workspace/grading/editors.js",
         "src/workspace/ui/locks-render.js",
         "src/workspace/sessions/actions.js",
+        "src/workspace/schedule/actions.js",
         "src/workspace/backups/local.js",
         "src/workspace/backups/full-export.js",
         "src/workspace/backups/single-file.js",
