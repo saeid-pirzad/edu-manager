@@ -288,3 +288,46 @@ test("unchanged session date does not enqueue an unnecessary save", async () => 
   await f.run("date");
   assert.equal(f.writes.length, 0);
 });
+
+for (const index of [-1, 0.5, NaN, "0", 2]) {
+  test(`score removal rejects invalid index without deleting another score: ${index}`, async () => {
+    const f = fixture();
+    f.session.scores.push({ value: 16 }, { value: 18 });
+    await assert.rejects(
+      f.c.removeSessionScoreV24("session", index),
+      /امتیاز انتخاب/,
+    );
+    assert.equal(f.session.scores.length, 2);
+    assert.equal(f.writes.length, 0);
+  });
+}
+test("score removal deletes only its selected row and persists the session scope", async () => {
+  const f = fixture();
+  f.session.scores.push({ value: 16 }, { value: 18 });
+  await f.c.removeSessionScoreV24("session", 0);
+  assert.equal(f.session.scores.length, 1);
+  assert.equal(f.session.scores[0].value, 18);
+  assert.equal(f.writes[0].sessionId, "session");
+  assert.equal(f.modals.length, 1);
+});
+for (const kind of ["connection", "session"]) {
+  test(`late score removal does not reopen a changed ${kind}`, async () => {
+    const f = fixture();
+    f.session.scores.push({ value: 18 });
+    f.c.saveDBV24 = async () => {
+      if (kind === "connection") f.c.connection = {};
+      else f.c.currentSessionId = "other";
+    };
+    await f.c.removeSessionScoreV24("session", 0);
+    assert.equal(f.modals.length, 0);
+  });
+}
+test("read-only score removal fails before mutating scores", async () => {
+  const f = fixture();
+  f.session.scores.push({ value: 18 });
+  f.c.assertEntityWritable = () => {
+    throw Error("closed");
+  };
+  await assert.rejects(f.c.removeSessionScoreV24("session", 0), /closed/);
+  assert.equal(f.session.scores.length, 1);
+});

@@ -1,7 +1,8 @@
 let settingsEditing = null,
   settingsSaving = false;
 async function openSettingsV24() {
-  const origin = workspace?.id;
+  const origin = workspace?.id,
+    sourceConnection = connection;
   try {
     if (
       ready &&
@@ -14,7 +15,7 @@ async function openSettingsV24() {
       await flushDrafts({ strict: true });
       await writer.catch(() => {});
     }
-    if (origin !== workspace?.id)
+    if (origin !== workspace?.id || connection !== sourceConnection)
       throw Error("دوره تغییر کرده است؛ تنظیمات را دوباره باز کنید.");
     const context = captureWorkspaceContext();
     const opened = showModal(
@@ -22,10 +23,14 @@ async function openSettingsV24() {
       '<form id="settingsEditor" class="record-editor settings-editor" novalidate>' +
         '<div class="record-editor-context settings-context"><span class="settings-eyebrow">دسترسی به دوره</span><h4>رمز ورود</h4><p>' +
         esc((workspace?.year || "") + " / " + (workspace?.term || "")) +
-        '</p><span class="settings-password-state' + (db.settings.password ? ' is-enabled' : '') + '">' +
-        (db.settings.password ? 'رمز ورود فعال است' : 'ورود بدون رمز') + '</span></div>' +
+        '</p><span class="settings-password-state' +
+        (db.settings.password ? " is-enabled" : "") +
+        '">' +
+        (db.settings.password ? "رمز ورود فعال است" : "ورود بدون رمز") +
+        "</span></div>" +
         '<section class="settings-section" aria-labelledby="settingsPasswordTitle"><h5 id="settingsPasswordTitle">' +
-        (db.settings.password ? 'تغییر رمز' : 'افزودن رمز') + '</h5><p>این رمز فقط برای ورود به همین دوره استفاده می‌شود.</p>' +
+        (db.settings.password ? "تغییر رمز" : "افزودن رمز") +
+        "</h5><p>این رمز فقط برای ورود به همین دوره استفاده می‌شود.</p>" +
         '<label class="course-field" for="newPass">رمز جدید<input type="password" id="newPass" autocomplete="new-password" aria-describedby="settingsHint settingsError" placeholder="رمز جدید را وارد کنید"></label>' +
         '<p id="settingsHint" class="settings-field-hint">اگر این کادر را خالی بگذارید، رمز فعلی تغییر نمی‌کند.</p></section>' +
         '<section class="settings-remove-section" aria-label="حذف رمز"><label class="settings-remove-option"><input type="checkbox" id="removePassword" aria-describedby="settingsRemoveHint"><span>حذف رمز ورود<small id="settingsRemoveHint">برای ورود بدون رمز، این گزینه را انتخاب و کادر رمز جدید را خالی کنید.</small></span></label></section>' +
@@ -36,6 +41,7 @@ async function openSettingsV24() {
     if (opened !== false) {
       settingsEditing = {
         ...context,
+        connection: sourceConnection,
         form: document.getElementById("settingsEditor"),
       };
       settingsEditing.form.addEventListener("submit", (event) => {
@@ -56,6 +62,7 @@ async function saveSettingsV24() {
   const form = document.querySelector("#modal:not(.hidden) #settingsEditor");
   if (!form) return false;
   const context = settingsEditing,
+    sourceConnection = connection,
     passwordInput = form.querySelector("#newPass");
   const password = passwordInput.value,
     remove = form.querySelector("#removePassword").checked;
@@ -66,6 +73,8 @@ async function saveSettingsV24() {
       assertWorkspaceContext(context, { write: true });
       if (
         context !== settingsEditing ||
+        connection !== sourceConnection ||
+        (context.connection && context.connection !== sourceConnection) ||
         context.form !== form ||
         !form.isConnected
       )
@@ -92,6 +101,16 @@ async function saveSettingsV24() {
         action: remove ? "حذف رمز ورود دوره" : "تغییر رمز ورود دوره",
       });
     }
+    if (
+      settingsEditing !== context ||
+      connection !== sourceConnection ||
+      workspace.id !== context.id ||
+      !form.isConnected ||
+      periodLoading ||
+      resetBusy ||
+      connectionRetired
+    )
+      return true;
     isAuthenticated = true;
     passwordInput.value = "";
     form.querySelector("#removePassword").checked = false;

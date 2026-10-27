@@ -22,6 +22,7 @@ function fixture(opened = true, password = "") {
     db: { settings: { password } },
     workspace: { id: "one", year: "1405", term: "first" },
     ready: false,
+    connection: {},
     captureWorkspaceContext: () => ({ id: "one" }),
     esc: (value) => value,
     showModal: (title, html) => {

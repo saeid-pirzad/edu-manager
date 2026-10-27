@@ -15,6 +15,74 @@ function preserveSessionAction(id) {
     !connectionRetired;
 }
 
+async function toggleAttendanceV24(button, status) {
+  if (button.isConnected === false)
+    throw Error("کنترل حضور مربوط به صفحهٔ قبلی است؛ جلسه را دوباره باز کنید.");
+  const id = currentSessionId,
+    isCurrent = preserveSessionAction(id),
+    session = getSessionById(id),
+    wrap = button.parentElement,
+    studentId = wrap?.dataset.sid;
+  if (!session) throw Error("جلسه دیگر وجود ندارد.");
+  const cls = findClass(session.classId);
+  if (
+    !cls ||
+    !sessionRoster(cls, session).some((student) => student.id === studentId)
+  )
+    throw Error("هنرجو در فهرست این جلسه وجود ندارد.");
+  if (!["present", "absent", "late"].includes(status))
+    throw Error("وضعیت حضور نامعتبر است.");
+  const previous = session.attendance[studentId],
+    selected =
+      status === "late" ? previous?.startsWith("late") : previous === status;
+  let value = status;
+  if (!selected && status === "late") {
+    const answer = prompt("دقیقه تأخیر: عدد صحیح صفر تا ۹۹۹", "10");
+    if (answer === null) return false;
+    const minutes = asciiDigits(answer);
+    if (!/^\d{1,3}$/.test(minutes)) throw Error("دقیقه نامعتبر است.");
+    value = "late:" + Number(minutes);
+  }
+  assertEntityWritable();
+  if (!isCurrent() || getSessionById(id) !== session)
+    throw Error("جلسه یا اتصال بانک تغییر کرده است؛ حضور ثبت نشد.");
+  if (selected) delete session.attendance[studentId];
+  else session.attendance[studentId] = value;
+  await saveDBV24({ sessionId: id, action: "ثبت حضور و غیاب هنرجو" });
+  if (isCurrent() && button.isConnected !== false) {
+    const saved = getSessionById(id)?.attendance[studentId];
+    for (const control of wrap.querySelectorAll("button")) {
+      const kind = ["present", "absent", "late"].find((name) =>
+        control.classList.contains(name),
+      );
+      control.classList.remove("active");
+      if (kind === "present") control.textContent = "حاضر";
+      if (kind === "absent") control.textContent = "غایب";
+      if (kind === "late") control.textContent = "تأخیر";
+      if (
+        kind &&
+        (kind === "late" ? saved?.startsWith("late") : saved === kind)
+      ) {
+        control.classList.add("active");
+        if (kind === "late" && saved.includes(":"))
+          control.textContent = "تأخیر (" + Number(saved.split(":")[1]) + "د)";
+      }
+    }
+  }
+  return true;
+}
+
+async function removeSessionScoreV24(id, index) {
+  const isCurrent = preserveSessionAction(id);
+  const session = getSessionById(id);
+  if (!session) throw Error("جلسه دیگر وجود ندارد.");
+  if (!Number.isInteger(index) || index < 0 || index >= session.scores.length)
+    throw Error("امتیاز انتخاب‌شده دیگر وجود ندارد.");
+  session.scores.splice(index, 1);
+  await saveDBV24({ sessionId: id, action: "حذف امتیاز جلسه" });
+  if (isCurrent()) openSessionModal(getSessionById(id));
+}
+
 function validateSessionDate(date) {
   const parsed = /^\d{4}-\d{2}-\d{2}$/.test(date)
     ? new Date(date + "T00:00:00.000Z")
@@ -26,6 +94,68 @@ function validateSessionDate(date) {
   )
     throw Error("تاریخ معتبر نیست.");
   return date;
+}
+
+let sessionDeletionBusy = false;
+async function deleteSessionsV24({ id, classId, lessonId }) {
+  if (sessionDeletionBusy) return false;
+  sessionDeletionBusy = true;
+  try {
+    assertEntityWritable();
+    const origin = workspace.id,
+      sourceConnection = connection,
+      schoolId = state.schoolId,
+      selectedClass = state.classId,
+      selectedLesson = state.lessonId,
+      selectedSession = currentSessionId;
+    const isCurrent = () =>
+      workspace.id === origin &&
+      connection === sourceConnection &&
+      state.schoolId === schoolId &&
+      state.classId === selectedClass &&
+      state.lessonId === selectedLesson &&
+      currentSessionId === selectedSession &&
+      !periodLoading &&
+      !resetBusy &&
+      !connectionRetired;
+    await flushDrafts({ strict: true });
+    await writer.catch(() => {});
+    assertEntityWritable();
+    if (!isCurrent())
+      throw Error("صفحه یا دوره تغییر کرده است؛ حذف انجام نشد.");
+    const matches = id
+      ? (session) => session.id === id
+      : (session) =>
+          session.classId === classId && session.lessonId === lessonId;
+    const targets = db.sessions.filter(matches);
+    if (!targets.length) return false;
+    if (
+      !confirm(
+        id
+          ? "آیا از حذف این جلسه مطمئن هستید؟ اطلاعات حضور و نمرات آن پاک خواهد شد."
+          : "⚠️ هشدار: آیا از حذف تمام جلسات این درس مطمئن هستید؟ تمام حضور و غیاب‌ها و نمرات ثبت شده در این جلسات برای همیشه پاک می‌شوند.",
+      )
+    )
+      return false;
+    db.sessions = db.sessions.filter((session) => !matches(session));
+    await saveDBV24({ action: id ? "حذف جلسه" : "حذف گروهی جلسات درس" });
+    if (isCurrent()) {
+      if (targets.some((session) => session.id === selectedSession)) {
+        closeModal();
+        currentSessionId = null;
+      }
+      render();
+    }
+    return true;
+  } finally {
+    sessionDeletionBusy = false;
+  }
+}
+function deleteSessionV24(id) {
+  return deleteSessionsV24({ id });
+}
+function deleteAllSessionsV24(classId, lessonId) {
+  return deleteSessionsV24({ classId, lessonId });
 }
 
 let manualSessionBusy = false;
