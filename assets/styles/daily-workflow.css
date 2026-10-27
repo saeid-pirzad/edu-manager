@@ -2074,4 +2074,36 @@ body {
     width: min(92vw, 840px);
   }
 }
+@media screen and (min-width: 1101px) {
+  #app :is(.dashboard-entity-actions, .lesson-actions) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+  }
+  #app :is(.dashboard-entity-more, .lesson-more) {
+    margin: 0;
+    align-self: center;
+  }
+  #app :is(.dashboard-entity-actions, .lesson-actions) > button,
+  #app :is(.dashboard-entity-more, .lesson-more) > summary {
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    height: 48px;
+    min-height: 48px;
+    margin: 0;
+    padding: 0 14px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 24px;
+    white-space: nowrap;
+    border-radius: 12px;
+  }
+  #app :is(.dashboard-entity-more, .lesson-more) > summary {
+    min-width: 100px;
+    justify-content: center;
+    gap: 6px;
+  }
+}
 /*# sourceMappingURL=daily-workflow.css.map */
