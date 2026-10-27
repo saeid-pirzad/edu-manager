@@ -6434,6 +6434,24 @@ body.modal-open {
     font-size: 12px;
     line-height: 1.9;
   }
+  #app .workspace-period-context > span {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 5px 10px;
+    border-radius: 8px;
+    background: #fff1f1;
+    color: #a61b24;
+  }
+  #app .workspace-period-context > span + span {
+    background: #fff5db;
+    color: #805600;
+  }
+  #app .workspace-period-context bdi {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
   #app .workspace-tools > summary {
     display: flex;
     align-items: center;
@@ -6576,24 +6594,56 @@ body.modal-open {
   }
   #app .workspace-draft-tools {
     padding: 0;
-    border-top: 1px solid #e5e2dd;
+    border: 0;
+    border-radius: 10px;
+    background: #f7f6f4;
   }
   #app .workspace-draft-tools > summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     min-height: 44px;
-    padding: 10px 0;
+    padding: 10px 12px;
+    box-sizing: border-box;
+    border: 0;
+    border-radius: 10px;
+    box-shadow: none;
+    background: transparent;
+    list-style: none;
     font-size: 13px;
     color: #58595b;
   }
+  #app .workspace-draft-tools > summary::-webkit-details-marker {
+    display: none;
+  }
+  #app .workspace-draft-tools > summary:hover {
+    background: #efede9;
+  }
   #app .workspace-draft-tools > summary::after {
-    content: "⌄";
+    content: "";
+    display: block;
+    flex: 0 0 6px;
+    width: 6px;
+    height: 6px;
+    border-inline-end: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(45deg);
     margin-inline-start: auto;
   }
-  .workspace-draft-tools[open] {
-    padding-bottom: 10px;
+  #app .workspace-draft-tools[open] > summary::after {
+    transform: rotate(225deg);
+  }
+  #app .workspace-draft-tools[open] > .workspace-draft-actions {
+    padding: 0 8px 8px;
   }
   #app .workspace-tool-actions > #singleFileBadge {
-    padding: 0 4px;
-    color: #706b64;
+    display: block;
+    margin: 0;
+    padding: 9px 12px;
+    border-radius: 8px;
+    background: #fff5db;
+    color: #805600;
+    font-size: 12px;
     overflow-wrap: anywhere;
     line-height: 1.9;
   }
