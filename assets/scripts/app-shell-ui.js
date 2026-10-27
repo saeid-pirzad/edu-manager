@@ -277,7 +277,7 @@
               : "کلاس‌ها";
         const note =
           state.view === "lesson"
-            ? "نمرات، هنرجویان و جلسات این درس"
+            ? "نمرات و جلسات این درس"
             : state.view === "class"
               ? (c?.students.length || 0).toLocaleString("fa-IR") +
                 " هنرجو · " +

@@ -11,10 +11,6 @@ EduLegacyEvents.register("ui-lesson:2", function (event) {
   return backToClass();
 });
 
-EduLegacyEvents.register("ui-lesson:3", function (event) {
-  return setTab("students");
-});
-
 EduLegacyEvents.register("ui-lesson:4", function (event) {
   return setTab("sessions");
 });

@@ -1962,21 +1962,52 @@ body {
     grid-row: 1;
   }
 }
-@media screen and (min-width: 1101px) {
+@media screen {
   #app:has(> .student-directory) {
     display: flex;
     flex-direction: column;
   }
+  #app:has(> .student-directory) > * {
+    min-width: 0;
+  }
   #app:has(> .student-directory) > .topbar { order: 0; }
   #app:has(> .student-directory) > .workspace-bar { order: 1; }
   #app:has(> .student-directory) > .breadcrumb { order: 2; }
-  #app:has(> .student-directory) > .tabs { order: 3; }
-  #app:has(> .student-directory) > .student-directory { order: 4; }
-  #app:has(> .student-directory) > .student-add { order: 5; }
-  #app:has(> .student-directory) > .student-import { order: 6; }
-  #app:has(> .student-directory) > .student-archive {
-    order: 7;
+  #app:has(> .student-directory) > .view-heading { order: 3; }
+  #app:has(> .student-directory) > .tabs { order: 4; }
+  #app:has(> .student-directory) > .student-directory { order: 5; }
+  #app:has(> .student-directory) > .student-add { order: 6; }
+  #app:has(> .student-directory) > .student-import { order: 7; }
+  #app:has(> .student-directory) > .student-archive { order: 8; }
+  #app .student-directory {
+    padding: 0;
   }
+  #app .roster-heading {
+    padding: 20px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--workflow-line);
+  }
+  #app .roster-toolbar,
+  #app .roster-results {
+    padding-inline: 20px;
+  }
+  #app .student-import {
+    padding: 16px;
+    background: #faf9f7;
+    box-shadow: none;
+  }
+  #app .student-import > summary {
+    min-height: 44px;
+    color: var(--workflow-ink);
+    font-size: 14px;
+    font-weight: 600;
+  }
+  #app .student-add-form label .muted {
+    display: inline;
+    font-size: 12px;
+  }
+}
+@media screen and (min-width: 1101px) {
   #app .student-roster {
     grid-template-columns: minmax(0, 1fr);
     gap: 12px;
@@ -1984,18 +2015,16 @@ body {
   }
   #app .student-profile {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 24px;
-    padding: 18px 20px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    padding: 22px;
   }
   #app .student-profile-main {
-    padding-bottom: 0;
-    border-bottom: 0;
+    padding-bottom: 18px;
   }
   #app .student-profile-actions {
     margin: 0;
-    padding: 0;
+    padding: 18px 0 0;
     border: 0;
   }
   #app .student-profile-info h4 {

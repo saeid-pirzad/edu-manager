@@ -9,6 +9,7 @@ function renderLesson() {
     state.view = "class";
     return renderClass();
   }
+  if (!["sessions", "grades"].includes(state.tab)) state.tab = "sessions";
   const school = getSchool(state.schoolId);
   let h = headerHtml();
   h += breadcrumbHtml([
@@ -18,12 +19,10 @@ function renderLesson() {
     { label: lesson.name },
   ]);
   h += `<div class="tabs">
-    <button class="${state.tab === "students" ? "active" : ""}" data-legacy-click="ui-lesson:3">👥 عملکرد هنرجویان</button>
     <button class="${state.tab === "sessions" ? "active" : ""}" data-legacy-click="ui-lesson:4">📅 جلسات و حضور‌وغیاب</button>
     <button class="${state.tab === "grades" ? "active" : ""}" data-legacy-click="ui-lesson:5">📝 نمرات</button>
   </div>`;
-  if (state.tab === "students") h += renderLessonStudents(c, lesson);
-  else if (state.tab === "sessions") h += renderLessonSessions(c, lesson);
+  if (state.tab === "sessions") h += renderLessonSessions(c, lesson);
   else h += `<div id="lessonGradesArea"></div>`;
   return h;
 }
