@@ -162,6 +162,11 @@ function refreshGradeResults() {
       note.dataset.state = item ? (item.error ? "error" : "pending") : filled ? "saved" : "idle";
     }
   });
+  for (const row of document.querySelectorAll(".gradebook .assessment-student")) {
+    const notes = [...row.querySelectorAll(".grade-note")];
+    row.dataset.editState = notes.some((note) => note.dataset.state === "error") ? "error" :
+      notes.some((note) => note.dataset.state === "pending") ? "pending" : "saved";
+  }
 }
 
 async function openBulkV24(lid) {

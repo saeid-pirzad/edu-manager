@@ -1024,11 +1024,14 @@ function gradeInput(input) {
   item.error = parsed.ok ? "" : parsed.message;
   drafts.set(key, item);
   input.setAttribute("aria-invalid", parsed.ok ? "false" : "true");
+  const row = input.closest(".assessment-student");
+  if (row) row.dataset.editState = parsed.ok ? "pending" : "error";
   const note = input.parentElement?.querySelector(".grade-note");
   if (note) {
     note.textContent = parsed.ok ? "در انتظار ذخیره" : parsed.message;
     note.dataset.state = parsed.ok ? "pending" : "error";
   }
+  if (row?.querySelector('.grade-note[data-state="error"]')) row.dataset.editState = "error";
   storeDrafts();
   setStatus(
     parsed.ok ? "ویرایش در انتظار ذخیره است." : parsed.message,
@@ -1054,11 +1057,14 @@ function clearGrade(input) {
   drafts.set(inputKey(item), item);
   input.value = "";
   input.setAttribute("aria-invalid", "false");
+  const row = input.closest(".assessment-student");
+  if (row) row.dataset.editState = "pending";
   const note = input.parentElement?.querySelector(".grade-note");
   if (note) {
     note.textContent = "در انتظار ذخیره";
     note.dataset.state = "pending";
   }
+  if (row?.querySelector('.grade-note[data-state="error"]')) row.dataset.editState = "error";
   storeDrafts();
   flushDrafts().catch(() => {});
 }
@@ -1272,7 +1278,6 @@ function gradeCell(
     "</small></div>"
   );
 }
-
 function applyDrafts() {
   document.querySelectorAll("[data-grade]").forEach((input) => {
     const item = drafts.get(inputKey(contextFromInput(input)));
@@ -1284,6 +1289,8 @@ function applyDrafts() {
         note.textContent = item.error || "در انتظار ذخیره";
         note.dataset.state = item.error ? "error" : "pending";
       }
+      const row = input.closest(".assessment-student");
+      if (row) row.dataset.editState = row.querySelector('.grade-note[data-state="error"]') ? "error" : "pending";
     }
   });
 }
@@ -1323,9 +1330,14 @@ function installGradeEvents() {
     if (root && !event.target.closest("[inert]")) filterAssessmentRows(root);
   });
   document.addEventListener("keydown", (event) => {
-    if (event.key !== "Enter" || event.isComposing || event.ctrlKey || event.altKey || event.metaKey) return;
+    if (event.isComposing || event.ctrlKey || event.altKey || event.metaKey) return;
+    if (event.key !== "Enter") return;
     const input = event.target;
     if (!isEditableGrade(input)) return;
+    if (input.getAttribute?.("aria-invalid") === "true") {
+      event.preventDefault();
+      return;
+    }
     const root = input.closest(".gradebook");
     if (!root) return;
     const fields = [...root.querySelectorAll("input[data-grade]")].filter((field) =>
@@ -1680,6 +1692,11 @@ function refreshGradeResults() {
       note.dataset.state = item ? (item.error ? "error" : "pending") : filled ? "saved" : "idle";
     }
   });
+  for (const row of document.querySelectorAll(".gradebook .assessment-student")) {
+    const notes = [...row.querySelectorAll(".grade-note")];
+    row.dataset.editState = notes.some((note) => note.dataset.state === "error") ? "error" :
+      notes.some((note) => note.dataset.state === "pending") ? "pending" : "saved";
+  }
 }
 
 async function openBulkV24(lid) {
@@ -6581,6 +6598,8 @@ function validateCourse(l, ids, year) {
 }
 // Source: src/workspace/courses/results.js
 function policyStatus(r) {
+  if (r.complete === false && r.final == null && r.passed !== false)
+    return r.reason || "در انتظار ثبت نمره";
   let label =
     r.passed === false
       ? "نیازمند جبران"
@@ -6610,6 +6629,8 @@ function refreshPolicyResults() {
       ownScoreRecord(pod.podScores, sid),
     );
     el.textContent = el.dataset.podFinal ? finalText(r) : policyStatus(r);
+    const row = el.closest(".assessment-student");
+    if (row) row.dataset.resultState = !r.complete ? "incomplete" : r.passed ? "passed" : "review";
   }
   for (const el of document.querySelectorAll(
     "[data-course-final],[data-course-mean],[data-course-status]",

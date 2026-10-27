@@ -381,18 +381,10 @@
       for (const card of gradeArea.querySelectorAll(".card")) {
         if (!card.classList.contains("mobile-grade-panel"))
           card.classList.add("mobile-grade-panel");
-        const intro = [...card.children].find((x) => x.tagName === "P");
-        if (intro && !card.querySelector(".grade-help")) {
-          const details = document.createElement("details");
-          details.className = "grade-help";
-          details.open =
-            innerWidth > 700 &&
-            !matchMedia("(max-width:1000px) and (pointer:coarse)").matches;
-          const summary = document.createElement("summary");
-          summary.textContent = "قواعد محاسبه و راهنما";
-          details.append(summary);
-          intro.before(details);
-          details.append(intro);
+        if (!card.dataset.gradeHelpRemoved) {
+          const intro = [...card.children].find((x) => x.tagName === "P");
+          intro?.remove();
+          card.dataset.gradeHelpRemoved = "true";
         }
       }
     }

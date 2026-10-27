@@ -142,6 +142,15 @@ test("grade delegation accepts replacement inputs, flushes focusout and clears t
     ["clear", replacement],
   ]);
 });
+test("Enter keeps an invalid grade focused for correction", () => {
+  const f = fixture();
+  const target = input();
+  target.getAttribute = () => "true";
+  let prevented = false;
+  f.listeners.get("keydown")({ key: "Enter", target, preventDefault: () => { prevented = true; } });
+  assert.equal(prevented, true);
+  assert.deepEqual(f.calls, []);
+});
 test("grade delegation ignores disabled, inert and unrelated inputs and clear controls", () => {
   const f = fixture();
   for (const options of [

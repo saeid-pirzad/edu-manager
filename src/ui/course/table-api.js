@@ -18,30 +18,22 @@ function modularGradebook(c, l, students) {
   const key = moduleSelectionKey(c, l);
   const selected = l.poudmans.find((p) => p.id === selectedGradeModules.get(key)) || l.poudmans[0];
   const policy = l.gradingPolicy;
-  let h = '<div class="card gradebook modular-gradebook" data-module-selection-key="' + esc(key) + '"><header class="gradebook-heading"><div><span class="gradebook-eyebrow">دفتر نمره پودمانی</span><h3>' + esc(l.name) + '</h3><p>ثبت نمره هر پودمان، مستقل از پودمان‌های دیگر</p></div><span class="gradebook-class-count">' + students.length.toLocaleString("fa-IR") + ' دانش‌آموز</span></header>';
-  h += '<div class="module-toolbar"><label class="module-picker"><span>انتخاب پودمان</span><select data-module-picker>' + l.poudmans.map((pod, index) => '<option value="' + esc(pod.id) + '"' + (pod.id === selected?.id ? ' selected' : '') + '>' + (index + 1).toLocaleString("fa-IR") + ' · ' + esc(pod.name) + '</option>').join("") + '</select></label><label class="gradebook-search"><span>جست‌وجوی دانش‌آموز</span><input type="search" data-assessment-search="" placeholder="نام دانش‌آموز…" autocomplete="off"></label></div>';
-  h += '<details class="gradebook-help"><summary>راهنمای نمره و شایستگی</summary><p>' + esc(P.describe(l)) + ' · حضور و فعالیت جلسه به نمره رسمی اضافه نمی‌شود.</p></details>';
-  if (!policy.confirmed) h += '<p class="module-policy-notice">قواعد این درس هنوز تأیید نشده‌اند؛ نتیجه‌ها پیش‌نویس‌اند.</p>';
+  let h = '<div class="card gradebook modular-gradebook module-simple" data-module-selection-key="' + esc(key) + '"><header class="module-simple-heading"><h3>' + esc(l.name) + '</h3>' + '</header>';
+  h += '<div class="module-toolbar"><select data-module-picker aria-label="انتخاب پودمان">' + l.poudmans.map((pod, index) => '<option value="' + esc(pod.id) + '"' + (pod.id === selected?.id ? ' selected' : '') + '>' + (index + 1).toLocaleString("fa-IR") + ' · ' + esc(pod.name) + '</option>').join("") + '</select><input type="search" data-assessment-search="" aria-label="جست‌وجوی دانش‌آموز" placeholder="جست‌وجوی دانش‌آموز…" autocomplete="off"></div>';
   if (!students.length) h += '<div class="empty">ابتدا دانش‌آموزان کلاس را اضافه کنید.</div>';
   for (const pod of l.poudmans) {
-    h += '<section class="module-panel" data-module-panel="' + esc(pod.id) + '" aria-label="' + esc(pod.name) + '"' + (pod.id === selected?.id ? '' : ' hidden') + '><details class="module-units"><summary>واحدهای یادگیری این پودمان</summary><p>' + pod.units.map((u) => esc(u.name)).join(" · ") + '</p></details><div class="assessment-students">';
+    h += '<section class="module-panel" data-module-panel="' + esc(pod.id) + '" aria-label="' + esc(pod.name) + '"' + (pod.id === selected?.id ? '' : ' hidden') + '><div class="assessment-students">';
     for (const [index, st] of students.entries()) {
       const score = ownScoreRecord(pod.podScores, st.id);
       const result = P.moduleResult(policy, score);
-      h += '<article class="assessment-student" data-assessment-name="' + esc(st.name) + '"><div class="gradebook-student"><span class="gradebook-number" aria-hidden="true">' + (index + 1).toLocaleString("fa-IR") + '</span><h4>' + esc(st.name) + '</h4></div><div class="assessment-inputs"><label><span>مستمر <small>از ' + policy.mostamarMax.toLocaleString("fa-IR") + '</small></span>' + api.gradeCell(c, l, st, "m", { kind: "pod", pid: pod.id, value: score.m }) + '</label><label><span>شایستگی <small>۱، ۲ یا ۳</small></span>' + api.gradeCell(c, l, st, "c", { kind: "pod", pid: pod.id, value: score.c }) + '</label></div><div class="gradebook-result"><span>نمره پودمان</span><strong data-pod-final="' + esc(pod.id + "|" + st.id) + '">' + api.finalText(result) + '</strong><span data-pod-status="' + esc(pod.id + "|" + st.id) + '">' + esc(api.status(result)) + '</span></div>';
-      if (policy.requireGate)
-        h += '<label class="module-gate"><span>معیارهای الزامی و ایمنی</span><select aria-label="معیارهای الزامی ' + esc(st.name) + '" data-course-gate data-lesson-id="' + esc(l.id) + '" data-pod-id="' + esc(pod.id) + '" data-student-id="' + esc(st.id) + '"><option value=""' + (score.gate == null ? ' selected' : '') + '>بررسی نشده</option><option value="yes"' + (score.gate === true ? ' selected' : '') + '>احراز شده</option><option value="no"' + (score.gate === false ? ' selected' : '') + '>احراز نشده</option></select></label>';
+      h += '<article class="assessment-student" data-result-state="' + (!result.complete ? "incomplete" : result.passed ? "passed" : "review") + '" data-assessment-name="' + esc(st.name) + '"><div class="gradebook-student"><h4 title="' + esc(st.name) + '">' + esc(st.name) + '</h4></div><div class="assessment-inputs"><label><span>مستمر <small>از ' + policy.mostamarMax.toLocaleString("fa-IR") + '</small></span>' + api.gradeCell(c, l, st, "m", { kind: "pod", pid: pod.id, value: score.m }) + '</label><label><span>شایستگی <small>۱، ۲ یا ۳</small></span>' + api.gradeCell(c, l, st, "c", { kind: "pod", pid: pod.id, value: score.c }) + '</label></div><div class="gradebook-result"><span>نمره پودمان</span><strong data-pod-final="' + esc(pod.id + "|" + st.id) + '">' + api.finalText(result) + '</strong><span data-pod-status="' + esc(pod.id + "|" + st.id) + '">' + esc(api.status(result)) + '</span></div>';
       h += '</article>';
     }
     h += '</div></section>';
   }
-  h += '<p class="gradebook-no-results" role="status" hidden>دانش‌آموزی با این نام پیدا نشد.</p><details class="module-overview"><summary>خلاصه نتیجه کل درس</summary><div class="table-scroll"><table><thead><tr><th>دانش‌آموز</th><th>نهایی قابل ثبت</th><th>میانگین محاسباتی</th><th>وضعیت</th></tr></thead><tbody>';
-  for (const st of students) {
-    const r = api.calc(c, l, st.id);
-    h += '<tr><td>' + esc(st.name) + '</td><td data-course-final="' + esc(l.id + "|" + st.id) + '">' + api.finalText(r) + '</td><td data-course-mean="' + esc(l.id + "|" + st.id) + '">' + (r.provisionalAverage == null ? "—" : r.provisionalAverage.toFixed(2)) + '</td><td data-course-status="' + esc(l.id + "|" + st.id) + '">' + esc(api.status(r)) + '</td></tr>';
-  }
-  return h + '</tbody></table></div></details></div>';
+  return h + '<p class="gradebook-no-results" role="status" hidden>دانش‌آموزی با این نام پیدا نشد.</p></div>';
 }
+
 function table(c, l, sid, editable = false) {
   const policy = l.gradingPolicy;
   if (!policy) return "";
@@ -123,7 +115,6 @@ function table(c, l, sid, editable = false) {
       '</p><div class="table-scroll"><table><thead><tr><th>هنرجو</th><th>مستمر از ' +
       policy.mostamarMax +
       "</th><th>شایستگی ۱ / ۲ / ۳</th>" +
-      (policy.requireGate ? "<th>معیارهای الزامی و ایمنی</th>" : "") +
       "<th>نمره پودمان</th><th>نتیجه و دلیل</th></tr></thead><tbody>";
     for (const st of students) {
       const g = ownScoreRecord(pod.podScores, st.id),
@@ -146,17 +137,6 @@ function table(c, l, sid, editable = false) {
             })
           : (g.c ?? "—")) +
         "</td>";
-      if (policy.requireGate)
-        h +=
-          "<td>" +
-          (editable
-            ? `<select aria-label="معیارهای الزامی ${esc(st.name)}" data-course-gate data-lesson-id="${esc(l.id)}" data-pod-id="${esc(pod.id)}" data-student-id="${esc(st.id)}"><option value="" ${g.gate == null ? "selected" : ""}>بررسی نشده</option><option value="yes" ${g.gate === true ? "selected" : ""}>احراز شده</option><option value="no" ${g.gate === false ? "selected" : ""}>احراز نشده</option></select>`
-            : g.gate === true
-              ? "احراز شده"
-              : g.gate === false
-                ? "احراز نشده"
-                : "بررسی نشده") +
-          "</td>";
       h += `<td data-pod-final="${pod.id}|${st.id}">${api.finalText(r)}</td><td data-pod-status="${pod.id}|${st.id}">${esc(api.status(r))}</td></tr>`;
     }
     h += "</tbody></table></div>";

@@ -33,9 +33,14 @@ function installGradeEvents() {
     if (root && !event.target.closest("[inert]")) filterAssessmentRows(root);
   });
   document.addEventListener("keydown", (event) => {
-    if (event.key !== "Enter" || event.isComposing || event.ctrlKey || event.altKey || event.metaKey) return;
+    if (event.isComposing || event.ctrlKey || event.altKey || event.metaKey) return;
+    if (event.key !== "Enter") return;
     const input = event.target;
     if (!isEditableGrade(input)) return;
+    if (input.getAttribute?.("aria-invalid") === "true") {
+      event.preventDefault();
+      return;
+    }
     const root = input.closest(".gradebook");
     if (!root) return;
     const fields = [...root.querySelectorAll("input[data-grade]")].filter((field) =>

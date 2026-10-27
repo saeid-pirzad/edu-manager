@@ -59,3 +59,16 @@ test("modular grading requires competency and honors missing input", () => {
   assert.equal(policy.moduleResult(p, { m: 5, c: 1 }).passed, false);
   assert.equal(policy.moduleResult(p, { m: 5 }).complete, false);
 });
+test("legacy gate settings cannot block a completed module or change its score", () => {
+  const p = { ...policy.defaults("modular", "1405-1406"), requireGate: true };
+  for (const gate of [undefined, false, true]) {
+    const result = policy.moduleResult(p, { m: 5, c: 3, gate });
+    assert.equal(result.complete, true);
+    assert.equal(result.final, 20);
+    assert.equal(result.passed, true);
+  }
+  assert.equal(policy.moduleResult(p, {}).reason, "نمره‌ای ثبت نشده");
+  assert.equal(policy.moduleResult(p, { c: 2 }).reason, "مستمر ثبت نشده");
+  assert.equal(policy.moduleResult(p, { m: 0 }).reason, "شایستگی ثبت نشده");
+  assert.equal(policy.moduleResult(p, { m: 0, c: 2 }).complete, true);
+});

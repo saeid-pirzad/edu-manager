@@ -21,11 +21,14 @@ function gradeInput(input) {
   item.error = parsed.ok ? "" : parsed.message;
   drafts.set(key, item);
   input.setAttribute("aria-invalid", parsed.ok ? "false" : "true");
+  const row = input.closest(".assessment-student");
+  if (row) row.dataset.editState = parsed.ok ? "pending" : "error";
   const note = input.parentElement?.querySelector(".grade-note");
   if (note) {
     note.textContent = parsed.ok ? "در انتظار ذخیره" : parsed.message;
     note.dataset.state = parsed.ok ? "pending" : "error";
   }
+  if (row?.querySelector('.grade-note[data-state="error"]')) row.dataset.editState = "error";
   storeDrafts();
   setStatus(
     parsed.ok ? "ویرایش در انتظار ذخیره است." : parsed.message,
@@ -51,11 +54,14 @@ function clearGrade(input) {
   drafts.set(inputKey(item), item);
   input.value = "";
   input.setAttribute("aria-invalid", "false");
+  const row = input.closest(".assessment-student");
+  if (row) row.dataset.editState = "pending";
   const note = input.parentElement?.querySelector(".grade-note");
   if (note) {
     note.textContent = "در انتظار ذخیره";
     note.dataset.state = "pending";
   }
+  if (row?.querySelector('.grade-note[data-state="error"]')) row.dataset.editState = "error";
   storeDrafts();
   flushDrafts().catch(() => {});
 }

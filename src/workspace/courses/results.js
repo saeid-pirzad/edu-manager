@@ -1,4 +1,6 @@
 function policyStatus(r) {
+  if (r.complete === false && r.final == null && r.passed !== false)
+    return r.reason || "در انتظار ثبت نمره";
   let label =
     r.passed === false
       ? "نیازمند جبران"
@@ -28,6 +30,8 @@ function refreshPolicyResults() {
       ownScoreRecord(pod.podScores, sid),
     );
     el.textContent = el.dataset.podFinal ? finalText(r) : policyStatus(r);
+    const row = el.closest(".assessment-student");
+    if (row) row.dataset.resultState = !r.complete ? "incomplete" : r.passed ? "passed" : "review";
   }
   for (const el of document.querySelectorAll(
     "[data-course-final],[data-course-mean],[data-course-status]",

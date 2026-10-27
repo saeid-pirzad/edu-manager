@@ -97,7 +97,7 @@ async function save() {
             ];
       for (const k of numericFields) p[k] = number(k);
       p.confirmed = checked("confirmed");
-      p.requireGate = p.method === "modular" && checked("requireGate");
+      p.requireGate = false;
       const baseline = original?.gradingPolicy;
       p.revision = baseline?.revision || 1;
       if (

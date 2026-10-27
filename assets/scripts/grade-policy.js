@@ -208,16 +208,13 @@
   }
   function moduleResult(p, g = {}) {
     g = Object.assign(Object.create(null), isDataObject(g) ? g : null);
-    const complete =
-      g.m != null &&
-      g.c != null &&
-      (!p.requireGate || typeof g.gate === "boolean");
+    const complete = g.m != null && g.c != null;
     if (!complete)
       return {
         final: null,
         passed: null,
         complete: false,
-        reason: "نمره یا تأیید معیارها ناقص است.",
+        reason: g.m == null && g.c == null ? "نمره‌ای ثبت نشده" : g.m == null ? "مستمر ثبت نشده" : "شایستگی ثبت نشده",
       };
     const x = decimal(g.m),
       y = decimal(p.competencyFactor),
@@ -228,7 +225,6 @@
       reasons = [];
     if (g.c < p.competencyMin) reasons.push("حد شایستگی احراز نشده");
     if (n * t.d < t.n * d) reasons.push("نمره پودمان کمتر از " + p.moduleMin);
-    if (p.requireGate && !g.gate) reasons.push("معیارهای الزامی احراز نشده");
     return {
       final,
       passed: !reasons.length,

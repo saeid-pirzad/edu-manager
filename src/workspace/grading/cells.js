@@ -53,7 +53,6 @@ function gradeCell(
     "</small></div>"
   );
 }
-
 function applyDrafts() {
   document.querySelectorAll("[data-grade]").forEach((input) => {
     const item = drafts.get(inputKey(contextFromInput(input)));
@@ -65,6 +64,8 @@ function applyDrafts() {
         note.textContent = item.error || "در انتظار ذخیره";
         note.dataset.state = item.error ? "error" : "pending";
       }
+      const row = input.closest(".assessment-student");
+      if (row) row.dataset.editState = row.querySelector('.grade-note[data-state="error"]') ? "error" : "pending";
     }
   });
 }

@@ -206,9 +206,7 @@ async function open(lid = "", seed) {
       "number",
       'min="1" max="10"',
     ) +
-    '</div><label><input id="course_requireGate" type="checkbox" ' +
-    (p.requireGate ? "checked" : "") +
-    '> تأیید معیارهای الزامی و ایمنی برای قبولی لازم باشد</label><p>حداکثر مستمر + ۳ × ضریب شایستگی باید ۲۰ شود. واحدهای یادگیری برای سازمان‌دهی فعالیت‌ها هستند؛ نمره رسمی در سطح پودمان ثبت می‌شود.</p><div id="courseStructure">';
+    '</div><p>حداکثر مستمر + ۳ × ضریب شایستگی باید ۲۰ شود. واحدهای یادگیری برای سازمان‌دهی فعالیت‌ها هستند؛ نمره رسمی در سطح پودمان ثبت می‌شود.</p><div id="courseStructure">';
   for (const pod of l.poudmans) {
     h += `<div class="card">${input("pod_" + pod.id, "نام پودمان", pod.name)}${input("unitCount_" + pod.id, "تعداد واحدهای همین پودمان", pod.units.length, "number", 'min="1" max="10"')}`;
     for (const u of pod.units)

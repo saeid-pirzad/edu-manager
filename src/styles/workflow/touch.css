@@ -1497,9 +1497,9 @@
     font-weight: 600;
   }
   #modalBody .session-attendance-list .attendance-number {
-    width: 38px;
-    height: 38px;
-    flex-basis: 38px;
+    width: 30px;
+    height: 30px;
+    flex-basis: 30px;
     border-radius: 12px;
     font-size: 15px;
   }
@@ -1530,7 +1530,7 @@
   #modalBody .session-workspace .att-name { display: flex; align-items: center; gap: 10px; min-width: 0; font-size: 14px; overflow-wrap: anywhere; }
   .attendance-number { display: grid; place-items: center; width: 32px; height: 32px; flex: 0 0 32px; border: 1px solid #e8d7c1; border-radius: 10px; background: #fff8ed; color: #79522c; font-size: 13px; }
   #modalBody .session-workspace .att-btns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-  #modalBody .session-workspace .att-btns button { min-width: 66px; min-height: 44px; padding: 8px; border: 1px solid var(--workflow-line); background: #faf9f7; color: var(--workflow-muted); font-size: 12px; white-space: normal; }
+  #modalBody .session-workspace .att-btns button { min-width: 76px; height: 44px; min-height: 44px; padding: 6px 18px; border: 1px solid var(--workflow-line); background: #faf9f7; color: var(--workflow-muted); font-size: 15px; white-space: nowrap; }
   #modalBody .session-workspace .att-btns .present.active { background: #eaf5ef; color: #14634c; border-color: #83b5a3; }
   #modalBody .session-workspace .att-btns .absent.active { background: #fff0ed; color: #9f3021; border-color: #dc9b92; }
   #modalBody .session-workspace .att-btns .late.active { background: #fff4d9; color: #875800; border-color: #d9bd78; }
@@ -1552,9 +1552,9 @@
   .session-attendance-heading { align-items: stretch; flex-direction: column; }
   .session-attendance-bulk > button { flex: 1; }
   #modalBody .session-workspace .att-row {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 14px;
-    padding: 14px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 10px;
   }
   #modalBody .session-attendance-list {
     padding: 8px;
@@ -1563,7 +1563,11 @@
   #modalBody .session-attendance-list .att-btns {
     padding: 4px;
   }
-  #modalBody .session-workspace .att-btns button { min-height: 46px; min-width: 0; font-size: 13px; }
+  #modalBody .session-workspace .att-name { gap: 6px; font-size: 12px; }
+  #modalBody .session-attendance-list .attendance-number { width: 26px; height: 26px; flex-basis: 26px; font-size: 12px; border-radius: 8px; }
+  #modalBody .session-attendance-list .att-name > span:last-child { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  #modalBody .session-attendance-list .att-btns { padding: 3px; gap: 2px; grid-template-columns: auto auto auto; align-items: center; }
+  #modalBody .session-workspace .att-btns button { height: 44px; min-height: 44px; min-width: 54px; padding: 4px 10px; font-size: 14px; line-height: 1.4; }
   #modalBody .session-workspace-footer { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
   #modalBody .session-workspace-footer button { min-width: 0; white-space: normal; padding-inline: 12px; }
 }

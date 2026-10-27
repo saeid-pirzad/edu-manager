@@ -2364,9 +2364,9 @@ body {
     font-weight: 600;
   }
   #modalBody .session-attendance-list .attendance-number {
-    width: 38px;
-    height: 38px;
-    flex-basis: 38px;
+    width: 30px;
+    height: 30px;
+    flex-basis: 30px;
     border-radius: 12px;
     font-size: 15px;
   }
@@ -2397,7 +2397,7 @@ body {
   #modalBody .session-workspace .att-name { display: flex; align-items: center; gap: 10px; min-width: 0; font-size: 14px; overflow-wrap: anywhere; }
   .attendance-number { display: grid; place-items: center; width: 32px; height: 32px; flex: 0 0 32px; border: 1px solid #e8d7c1; border-radius: 10px; background: #fff8ed; color: #79522c; font-size: 13px; }
   #modalBody .session-workspace .att-btns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-  #modalBody .session-workspace .att-btns button { min-width: 66px; min-height: 44px; padding: 8px; border: 1px solid var(--workflow-line); background: #faf9f7; color: var(--workflow-muted); font-size: 12px; white-space: normal; }
+  #modalBody .session-workspace .att-btns button { min-width: 76px; height: 44px; min-height: 44px; padding: 6px 18px; border: 1px solid var(--workflow-line); background: #faf9f7; color: var(--workflow-muted); font-size: 15px; white-space: nowrap; }
   #modalBody .session-workspace .att-btns .present.active { background: #eaf5ef; color: #14634c; border-color: #83b5a3; }
   #modalBody .session-workspace .att-btns .absent.active { background: #fff0ed; color: #9f3021; border-color: #dc9b92; }
   #modalBody .session-workspace .att-btns .late.active { background: #fff4d9; color: #875800; border-color: #d9bd78; }
@@ -2419,9 +2419,9 @@ body {
   .session-attendance-heading { align-items: stretch; flex-direction: column; }
   .session-attendance-bulk > button { flex: 1; }
   #modalBody .session-workspace .att-row {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 14px;
-    padding: 14px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 10px;
   }
   #modalBody .session-attendance-list {
     padding: 8px;
@@ -2430,7 +2430,11 @@ body {
   #modalBody .session-attendance-list .att-btns {
     padding: 4px;
   }
-  #modalBody .session-workspace .att-btns button { min-height: 46px; min-width: 0; font-size: 13px; }
+  #modalBody .session-workspace .att-name { gap: 6px; font-size: 12px; }
+  #modalBody .session-attendance-list .attendance-number { width: 26px; height: 26px; flex-basis: 26px; font-size: 12px; border-radius: 8px; }
+  #modalBody .session-attendance-list .att-name > span:last-child { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  #modalBody .session-attendance-list .att-btns { padding: 3px; gap: 2px; grid-template-columns: auto auto auto; align-items: center; }
+  #modalBody .session-workspace .att-btns button { height: 44px; min-height: 44px; min-width: 54px; padding: 4px 10px; font-size: 14px; line-height: 1.4; }
   #modalBody .session-workspace-footer { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
   #modalBody .session-workspace-footer button { min-width: 0; white-space: normal; padding-inline: 12px; }
 }
@@ -3137,6 +3141,61 @@ body {
     align-items: end;
     gap: 16px;
   }
+  .modular-gradebook .assessment-inputs {
+    grid-template-columns: minmax(0, .75fr) minmax(145px, 1.25fr);
+  }
+  .modular-gradebook .assessment-student:focus-within {
+    background: #fffdf8;
+    box-shadow: inset -3px 0 0 #e8d7c1;
+  }
+  .modular-gradebook .assessment-student[data-edit-state="error"] {
+    background: #fff9f7;
+    box-shadow: inset -3px 0 0 #b62f40;
+  }
+  .gradebook .assessment-student[data-edit-state="pending"] .gradebook-result strong,
+  .gradebook .assessment-student[data-edit-state="error"] .gradebook-result strong {
+    opacity: .45;
+  }
+  :is(#lessonGradesArea, #modalBody) .competency-choices button:focus-visible {
+    outline: 2px solid #a87008;
+    outline-offset: 1px;
+    background: #fff8e8;
+  }
+  :is(#lessonGradesArea, #modalBody) .competency-editor > input[data-grade] {
+    display: none;
+  }
+  .competency-choices {
+    grid-column: 1;
+    grid-row: 1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid #d7d2ca;
+    border-radius: 9px;
+    background: #f7f6f4;
+  }
+  :is(#lessonGradesArea, #modalBody) .competency-choices button {
+    min-width: 0;
+    min-height: 40px;
+    padding: 4px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: #636466;
+    font-size: 17px;
+    font-weight: 500;
+  }
+  :is(#lessonGradesArea, #modalBody) .competency-choices button[aria-pressed="true"] {
+    background: #fff;
+    border-color: #c4b9a8;
+    color: #79522c;
+    box-shadow: 0 1px 3px #2d344010;
+    font-weight: 700;
+  }
+  .gradebook [data-result-state="passed"] [data-pod-status] { color: #14634c; }
+  .gradebook [data-result-state="review"] [data-pod-status] { color: #9f3021; }
+  .gradebook [data-result-state="incomplete"] [data-pod-final] { color: #9a958e; }
   .module-toolbar .gradebook-search { width: 100%; }
   .module-picker { display: grid; gap: 6px; min-width: 0; }
   .module-picker > span { font-size: 12px; color: var(--workflow-muted); }
@@ -3171,6 +3230,236 @@ body {
   .module-gate { grid-column: 1; display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid #eeece9; }
   .module-gate select { width: 100%; font-size: 16px; }
   .modular-gradebook .gradebook-result [data-pod-status] { margin-inline-start: auto; }
+}
+@media screen and (max-width: 380px) {
+  .modular-gradebook .assessment-inputs { grid-template-columns: minmax(0, 1fr); }
+}
+@media screen {
+  .module-simple-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .module-simple-heading h3 { margin: 0; font-size: 18px; }
+  .module-draft { color: #875800; font-size: 11px; }
+  .module-simple .module-toolbar { margin-bottom: 20px; }
+  .module-simple .module-toolbar > :is(input, select) {
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    padding: 10px 12px;
+    border: 1px solid var(--workflow-line);
+    border-radius: 9px;
+    background: #fff;
+    font-size: 14px;
+  }
+  .module-simple .assessment-inputs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .module-simple .assessment-student:focus-within,
+  .module-simple .assessment-student[data-edit-state="error"] {
+    background: transparent;
+    box-shadow: none;
+  }
+  .module-simple .gradebook-result [data-pod-final] { font-size: 18px; }
+  .module-simple .gradebook-result [data-pod-status] { color: var(--workflow-muted); }
+}
+@media screen and (max-width: 600px) {
+  .module-simple .module-toolbar > :is(input, select) { font-size: 16px; }
+  :is(#lessonGradesArea, #modalBody) .module-simple .assessment-students { gap: 0; border-top: 1px solid var(--workflow-line); }
+  :is(#lessonGradesArea, #modalBody) .module-simple .assessment-student {
+    padding: 16px 0;
+    border: 0;
+    border-bottom: 1px solid var(--workflow-line);
+    border-radius: 0;
+    gap: 12px;
+  }
+  .module-simple .gradebook-result { border-top: 0; padding-top: 0; }
+}
+@media screen {
+  :is(#lessonGradesArea, #modalBody) .module-simple input[data-grade] {
+    min-height: 32px;
+    height: 32px;
+    padding: 2px 4px 2px 20px;
+    border: 1px solid #d9d5ce;
+    background: #faf9f7;
+    color: #303438;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+    border-radius: 8px;
+    caret-color: #79522c;
+    transition: border-color .15s, background-color .15s, box-shadow .15s;
+  }
+  :is(#lessonGradesArea, #modalBody) .module-simple input[data-grade]::placeholder {
+    color: #b3ada4;
+    font-weight: 400;
+  }
+  :is(#lessonGradesArea, #modalBody) .module-simple input[data-grade]:hover:not(:disabled) {
+    border-color: #b8b0a4;
+  }
+  :is(#lessonGradesArea, #modalBody) .module-simple input[data-grade]:focus {
+    border-color: #a88a63;
+    background: #fff;
+    outline: none;
+    box-shadow: 0 0 0 3px #d9bd952b;
+  }
+  :is(#lessonGradesArea, #modalBody) .module-simple input[data-grade][aria-invalid="true"] {
+    border: 1px solid #b62f40;
+    background: #fff6f4;
+    box-shadow: 0 0 0 2px #b62f4012;
+  }
+  :is(#lessonGradesArea, #modalBody) .module-simple input[data-grade]::selection {
+    background: #f2dfbf;
+    color: #303438;
+  }
+  :is(#lessonGradesArea, #modalBody) .module-simple .grade-editor .grade-clear {
+    width: 20px;
+    min-height: 28px;
+    font-size: 14px;
+    color: #a19a90;
+    border-radius: 5px;
+    line-height: 1;
+  }
+  :is(#lessonGradesArea, #modalBody) .module-simple .grade-editor .grade-clear:hover {
+    color: #9f3021;
+    background: #fbe9e5;
+  }
+  :is(#lessonGradesArea, #modalBody) .module-simple .grade-editor { grid-template-columns: minmax(0, 1fr) 20px; }
+}
+@media screen and (max-width: 600px) {
+  #app #lessonGradesArea > .module-simple { padding: 12px; width: 100%; min-width: 0; }
+  :is(#lessonGradesArea, #modalBody) .module-simple .assessment-student {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) 50px;
+    align-items: start;
+    gap: 8px;
+    padding: 14px 0;
+  }
+  .module-simple .gradebook-student { padding-top: 22px; }
+  .module-simple .gradebook-student { overflow: hidden; }
+  :is(#lessonGradesArea, #modalBody) .module-simple .assessment-student h4 {
+    font-size: 12px;
+    line-height: 1.7;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .module-simple .assessment-inputs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .module-simple .assessment-inputs label > span {
+    justify-content: center;
+    font-size: 10px;
+  }
+  .module-simple .assessment-inputs label > span small { display: none; }
+  .module-simple .gradebook-result {
+    grid-column: 3;
+    display: grid;
+    gap: 4px;
+    padding: 0;
+    text-align: center;
+    padding-inline-start: 8px;
+  }
+  .module-simple .gradebook-result > span:first-child { font-size: 0; }
+  .module-simple .gradebook-result > span:first-child::after { content: "نهایی"; font-size: 10px; }
+  .module-simple .gradebook-result [data-pod-final] {
+    display: grid;
+    place-items: center;
+    min-height: 32px;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+  .module-simple .gradebook-result [data-pod-status] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .module-simple .grade-note { font-size: 9px; line-height: 1.6; }
+}
+@media screen {
+  .module-simple .assessment-student[data-result-state="passed"] .gradebook-result [data-pod-final] {
+    color: #14634c;
+  }
+  .module-simple .assessment-student[data-result-state="review"] .gradebook-result [data-pod-final] {
+    color: #b62f40;
+  }
+  .module-simple .assessment-student[data-result-state="incomplete"] .gradebook-result [data-pod-final] {
+    color: #9a958e;
+  }
+}
+@media screen {
+  :is(#lessonGradesArea, #modalBody) .module-simple .assessment-students {
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid #eeece9;
+    border-radius: 16px;
+    background: #f7f6f4;
+  }
+  :is(#lessonGradesArea, #modalBody) .module-simple .assessment-student {
+    padding: 16px;
+    border: 1px solid var(--workflow-line);
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 2px 6px #2d344003;
+  }
+  .module-simple .assessment-student:focus-within {
+    border-color: #b9b6b1;
+    background: #fff;
+    box-shadow: 0 0 0 2px #58595b0a;
+  }
+}
+@media screen and (max-width: 600px) {
+  :is(#lessonGradesArea, #modalBody) .module-simple .assessment-students {
+    padding: 6px;
+    gap: 8px;
+    border-radius: 14px;
+  }
+  :is(#lessonGradesArea, #modalBody) .module-simple .assessment-student {
+    grid-template-columns: minmax(0, .85fr) minmax(0, 1.65fr) 54px;
+    gap: 6px;
+    padding: 10px 8px;
+    border-radius: 10px;
+  }
+}
+@media screen {
+  :is(#lessonGradesArea, #modalBody) .gradebook .assessment-inputs {
+    grid-template-columns: repeat(2, minmax(0, 88px));
+    justify-content: end;
+    justify-self: end;
+    gap: 12px;
+    width: 100%;
+    max-width: 188px;
+  }
+  :is(#lessonGradesArea, #modalBody) .gradebook .assessment-inputs.general-inputs {
+    grid-template-columns: minmax(0, 88px);
+    max-width: 88px;
+  }
+  :is(#lessonGradesArea, #modalBody) .gradebook .assessment-inputs label > span {
+    justify-content: center;
+    text-align: center;
+  }
+  :is(#lessonGradesArea, #modalBody) .gradebook .grade-editor {
+    max-width: 88px;
+  }
+}
+@media screen and (max-width: 700px) {
+  :is(#lessonGradesArea, #modalBody) .gradebook .assessment-inputs {
+    grid-template-columns: repeat(2, minmax(0, 64px));
+    gap: 8px;
+    max-width: 136px;
+  }
+  :is(#lessonGradesArea, #modalBody) .gradebook .assessment-inputs.general-inputs {
+    grid-template-columns: minmax(0, 64px);
+    max-width: 64px;
+  }
+  :is(#lessonGradesArea, #modalBody) .gradebook .grade-editor {
+    max-width: 64px;
+  }
 }
 @media print {
   .module-toolbar { display: none !important; }
