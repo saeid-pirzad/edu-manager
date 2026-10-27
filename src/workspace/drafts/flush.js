@@ -96,7 +96,10 @@ async function flushDrafts({ strict = false } = {}) {
         "error",
       );
     refreshGradeResults();
-    if (!document.activeElement?.matches?.("[data-grade]")) render();
+    if (
+      !document.activeElement?.matches?.("[data-grade]") &&
+      !document.activeElement?.closest?.(".gradebook")
+    ) render();
   })()
     .catch(async (error) => {
       try {

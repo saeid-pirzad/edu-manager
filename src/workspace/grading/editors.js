@@ -45,6 +45,7 @@ function buildAssessmentEditor(c, l) {
   const stage = assessmentSelectedStage;
   const stageName = (mid ? "میان‌ترم " : "پایان‌ترم ") + workspace.term;
   const students = getSortedStudents(c);
+  const completed = students.filter((st) => assessmentResult(l, st.id, stage).complete).length;
   let html = '<div class="card assessment-editor gradebook"><header class="gradebook-heading"><div><span class="gradebook-eyebrow">دفتر نمره</span><h3>' +
     esc(l.name) + '</h3><p>' + (general ? "درس عمومی · یک نمره از ۲۰" : "کاردانش · عملی و تئوری") +
     '</p></div><span class="gradebook-class-count">' + students.length.toLocaleString("fa-IR") +
@@ -56,13 +57,14 @@ function buildAssessmentEditor(c, l) {
   html += '<details class="gradebook-help"><summary>راهنمای ثبت و محاسبه</summary><p>' +
     (general ? "هر مرحله یک نمره مستقل از صفر تا بیست دارد." : "نمره هر مرحله از ۷۰٪ عملی و ۳۰٪ تئوری محاسبه می‌شود؛ هر دو نمره لازم‌اند.") +
     ' نمره ثبت‌نشده با صفر متفاوت است. برای حذف نمره از × کنار ورودی استفاده کنید. هر نوبت در دوره مربوط به خودش ذخیره می‌شود.</p></details>';
+  html += '<div class="gradebook-review"><label class="gradebook-incomplete"><input type="checkbox" data-assessment-incomplete>فقط نمره‌های ناقص</label><div class="gradebook-progress"><span data-assessment-progress-text>' + completed.toLocaleString("fa-IR") + ' از ' + students.length.toLocaleString("fa-IR") + ' تکمیل شده</span><progress data-assessment-progress max="' + Math.max(1, students.length) + '" value="' + completed + '" aria-label="تکمیل نمرات این مرحله"></progress></div></div>';
   html += '<section class="assessment-stage" aria-label="' + esc(stageName) + '"><div class="assessment-students">';
   if (!students.length)
     html += '<div class="empty"><strong>هنوز دانش‌آموزی در کلاس نیست</strong><p>ابتدا از تب دانش‌آموزان، اعضای کلاس را اضافه کنید.</p></div>';
   for (const [index, st] of students.entries()) {
       const r = assessmentResult(l, st.id, stage);
       html +=
-        '<article class="assessment-student" data-assessment-name="' + esc(st.name) + '"><div class="gradebook-student"><span class="gradebook-number" aria-hidden="true">' +
+        '<article class="assessment-student" data-assessment-complete="' + r.complete + '" data-result-state="' + assessmentResultState(r) + '" data-assessment-name="' + esc(st.name) + '"><div class="gradebook-student"><span class="gradebook-number" aria-hidden="true">' +
         (index + 1).toLocaleString("fa-IR") + '</span><h4>' + esc(st.name) +
         '</h4></div><div class="assessment-inputs' + (general ? " general-inputs" : "") + '">' +
         (general ? "" : '<label><span>عملی <small>از ۲۰</small></span>' + gradeCell(c, l, st, mid ? "midtermPractical" : "practical", {
@@ -83,6 +85,11 @@ function buildAssessmentEditor(c, l) {
         "</span></div></article>";
   }
   return html + '</div><p class="gradebook-no-results" role="status" hidden>دانش‌آموزی با این نام پیدا نشد.</p></section></div>';
+}
+function assessmentResultState(result) {
+  if (!result.complete) return "incomplete";
+  if (result.passed === false) return "review";
+  return result.passed === true ? "passed" : "complete";
 }
 function buildKardaneshSummary(c, l, sid) {
   if (l.gradingPolicy) return courseUI.table(c, l, sid, false);
@@ -126,6 +133,8 @@ function refreshGradeResults() {
       el.dataset.stage,
     );
     el.textContent = finalText(result);
+    article.dataset.assessmentComplete = String(result.complete);
+    article.dataset.resultState = assessmentResultState(result);
     article.querySelector("[data-assessment-status]").textContent =
       result.complete ? gradeStatus(result) : "ناقص";
   }
@@ -141,11 +150,22 @@ function refreshGradeResults() {
     if (statusEl) statusEl.textContent = gradeStatus(r);
   });
   refreshPolicyResults();
+  for (const root of document.querySelectorAll(".gradebook")) {
+    const rows = [...root.querySelectorAll("[data-assessment-complete]")];
+    const completed = rows.filter((row) => row.dataset.assessmentComplete === "true").length;
+    const progress = root.querySelector("[data-assessment-progress]");
+    const text = root.querySelector("[data-assessment-progress-text]");
+    if (progress) progress.value = completed;
+    if (text) text.textContent = completed.toLocaleString("fa-IR") + " از " + rows.length.toLocaleString("fa-IR") + " تکمیل شده";
+  }
   document.querySelectorAll("[data-grade]").forEach((input) => {
     const note = input.parentElement.querySelector(".grade-note"),
       item = drafts.get(inputKey(contextFromInput(input)));
-    if (note)
-      note.textContent = item ? item.error || "در انتظار ذخیره" : "ذخیره شد";
+    if (note) {
+      const filled = input.value.trim() !== "";
+      note.textContent = item ? item.error || "در انتظار ذخیره" : filled ? "ذخیره شد" : "";
+      note.dataset.state = item ? (item.error ? "error" : "pending") : filled ? "saved" : "idle";
+    }
   });
 }
 

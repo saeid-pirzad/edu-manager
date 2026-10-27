@@ -61,7 +61,10 @@ function applyDrafts() {
       input.value = item.value;
       input.setAttribute("aria-invalid", item.error ? "true" : "false");
       const note = input.parentElement.querySelector(".grade-note");
-      if (note) note.textContent = item.error || "در انتظار ذخیره";
+      if (note) {
+        note.textContent = item.error || "در انتظار ذخیره";
+        note.dataset.state = item.error ? "error" : "pending";
+      }
     }
   });
 }

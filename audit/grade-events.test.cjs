@@ -42,7 +42,8 @@ test("gradebook search normalizes Persian names without submitting or replacing 
   const message = { hidden: true };
   const root = {
     querySelectorAll: () => rows,
-    querySelector: () => message,
+    querySelector: (selector) => selector === "[data-assessment-search]" ? search :
+      selector === "[data-assessment-incomplete]" ? null : message,
   };
   const search = {
     dataset: { assessmentSearch: "" },
@@ -64,6 +65,60 @@ test("gradebook search normalizes Persian names without submitting or replacing 
   assert.equal(rows[0].grade, grade);
   assert.equal(grade.value, "17.5");
   assert.deepEqual(f.calls, []);
+});
+test("incomplete filter combines with search and keeps completed zero grades out", () => {
+  const f = fixture();
+  const search = { value: "" };
+  const toggle = { checked: true };
+  const message = {};
+  const rows = [
+    { dataset: { assessmentName: "علی رضایی", assessmentComplete: "true" } },
+    { dataset: { assessmentName: "رضا کریمی", assessmentComplete: "false" } },
+  ];
+  const root = {
+    querySelector: (selector) => selector === "[data-assessment-search]" ? search :
+      selector === "[data-assessment-incomplete]" ? toggle : message,
+    querySelectorAll: () => rows,
+  };
+  const target = { dataset: { assessmentIncomplete: "" }, closest: (selector) => selector === ".gradebook" ? root : null };
+  const filter = () => f.listeners.get("change")({ target });
+  filter();
+  assert.equal(rows[0].hidden, true);
+  assert.equal(rows[1].hidden, false);
+  search.value = "رضایی";
+  filter();
+  assert.equal(rows.every((r) => r.hidden), true);
+  assert.equal(message.hidden, false);
+  toggle.checked = false;
+  filter();
+  assert.equal(rows[0].hidden, false);
+  assert.equal(rows[1].hidden, true);
+});
+test("Enter and Shift+Enter navigate visible editable grades without selecting hidden or disabled fields", () => {
+  const f = fixture();
+  const calls = [];
+  const root = { querySelectorAll: () => fields };
+  const field = (name, options = {}) => ({
+    disabled: !!options.disabled,
+    readOnly: false,
+    matches: (selector) => selector === ":disabled" ? !!options.disabled : true,
+    closest: (selector) => selector === ".gradebook" ? root : selector === "[hidden]" && options.hidden ? {} : null,
+    getClientRects: () => [{}],
+    focus: () => calls.push("focus:" + name),
+    select: () => calls.push("select:" + name),
+    scrollIntoView: () => calls.push("scroll:" + name),
+  });
+  const first = field("first"), second = field("second");
+  const fields = [first, field("hidden", { hidden: true }), field("disabled", { disabled: true }), second];
+  const press = (target, extra = {}) => f.listeners.get("keydown")({ key: "Enter", target, preventDefault: () => calls.push("prevent"), ...extra });
+  press(first);
+  assert.deepEqual(calls, ["prevent", "focus:second", "select:second", "scroll:second"]);
+  calls.length = 0;
+  press(second, { shiftKey: true });
+  assert.deepEqual(calls, ["prevent", "focus:first", "select:first", "scroll:first"]);
+  calls.length = 0;
+  press(first, { isComposing: true });
+  assert.deepEqual(calls, []);
 });
 test("grade delegation accepts replacement inputs, flushes focusout and clears the paired input", async () => {
   const f = fixture(),

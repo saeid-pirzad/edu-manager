@@ -1,3 +1,17 @@
+function filterAssessmentRows(root) {
+  const normalize = (value) => String(value).replace(/ي/g, "ی").replace(/ك/g, "ک").replace(/‌/g, " ").replace(/\s+/g, " ").trim();
+  const query = normalize(root.querySelector("[data-assessment-search]").value);
+  const incompleteOnly = !!root.querySelector("[data-assessment-incomplete]")?.checked;
+  let visible = 0;
+  for (const row of root.querySelectorAll("[data-assessment-name]")) {
+    row.hidden = !normalize(row.dataset.assessmentName).includes(query) ||
+      (incompleteOnly && row.dataset.assessmentComplete === "true");
+    if (!row.hidden) visible++;
+  }
+  const message = root.querySelector(".gradebook-no-results");
+  message.hidden = (!query && !incompleteOnly) || visible > 0;
+  message.textContent = incompleteOnly && !query ? "همه نمره‌های این مرحله تکمیل شده‌اند." : "دانش‌آموزی با این مشخصات پیدا نشد.";
+}
 function installGradeEvents() {
   const isEditableGrade = (input) =>
     input?.matches?.('input[data-grade="1"]') &&
@@ -7,17 +21,34 @@ function installGradeEvents() {
     if (event.target.dataset?.assessmentSearch !== undefined) {
       const root = event.target.closest(".gradebook");
       if (!root || event.target.closest("[inert]")) return;
-      const normalize = (value) => String(value).replace(/ي/g, "ی").replace(/ك/g, "ک").replace(/‌/g, " ").replace(/\s+/g, " ").trim();
-      const query = normalize(event.target.value);
-      let visible = 0;
-      for (const row of root.querySelectorAll("[data-assessment-name]")) {
-        row.hidden = !normalize(row.dataset.assessmentName).includes(query);
-        if (!row.hidden) visible++;
-      }
-      root.querySelector(".gradebook-no-results").hidden = !query || visible > 0;
+      filterAssessmentRows(root);
       return;
     }
     if (isEditableGrade(event.target)) gradeInput(event.target);
+  });
+  document.addEventListener("change", (event) => {
+    if (event.target.dataset?.assessmentIncomplete === undefined) return;
+    const root = event.target.closest(".gradebook");
+    if (root && !event.target.closest("[inert]")) filterAssessmentRows(root);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" || event.isComposing || event.ctrlKey || event.altKey || event.metaKey) return;
+    const input = event.target;
+    if (!isEditableGrade(input)) return;
+    const root = input.closest(".gradebook");
+    if (!root) return;
+    const fields = [...root.querySelectorAll("input[data-grade]")].filter((field) =>
+      !field.disabled && !field.readOnly && !field.closest("[hidden]") && field.getClientRects().length,
+    );
+    const index = fields.indexOf(input);
+    if (index < 0) return;
+    const next = fields[index + (event.shiftKey ? -1 : 1)];
+    event.preventDefault();
+    if (next) {
+      next.focus({ preventScroll: true });
+      next.select();
+      next.scrollIntoView({ block: "nearest", behavior: "auto" });
+    }
   });
   // focusout bubbles, unlike the former inline blur handler.
   document.addEventListener("focusout", (event) => {

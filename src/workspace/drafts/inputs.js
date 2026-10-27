@@ -22,7 +22,10 @@ function gradeInput(input) {
   drafts.set(key, item);
   input.setAttribute("aria-invalid", parsed.ok ? "false" : "true");
   const note = input.parentElement?.querySelector(".grade-note");
-  if (note) note.textContent = parsed.ok ? "در انتظار ذخیره" : parsed.message;
+  if (note) {
+    note.textContent = parsed.ok ? "در انتظار ذخیره" : parsed.message;
+    note.dataset.state = parsed.ok ? "pending" : "error";
+  }
   storeDrafts();
   setStatus(
     parsed.ok ? "ویرایش در انتظار ذخیره است." : parsed.message,
@@ -47,6 +50,12 @@ function clearGrade(input) {
   item.error = "";
   drafts.set(inputKey(item), item);
   input.value = "";
+  input.setAttribute("aria-invalid", "false");
+  const note = input.parentElement?.querySelector(".grade-note");
+  if (note) {
+    note.textContent = "در انتظار ذخیره";
+    note.dataset.state = "pending";
+  }
   storeDrafts();
   flushDrafts().catch(() => {});
 }
