@@ -8,7 +8,7 @@ const source = fs.readFileSync(
   path.join(__dirname, "../src/workspace/settings/editor.js"),
   "utf8",
 );
-function fixture(opened = true) {
+function fixture(opened = true, password = "") {
   const listeners = new Map(),
     calls = [];
   const form = {
@@ -19,6 +19,7 @@ function fixture(opened = true) {
     }),
   };
   const context = vm.createContext({
+    db: { settings: { password } },
     workspace: { id: "one", year: "1405", term: "first" },
     ready: false,
     captureWorkspaceContext: () => ({ id: "one" }),
@@ -62,4 +63,15 @@ test("settings does not bind or replace editor state when opening is refused", a
   await f.context.openSettingsV24();
   assert.equal(f.listeners.size, 0);
   assert.equal(f.calls.length, 1);
+});
+test("settings shows the current password state without exposing its stored value", async () => {
+  const enabled = fixture(true, "private-stored-hash");
+  await enabled.context.openSettingsV24();
+  assert.match(enabled.calls[0], /رمز ورود فعال است/);
+  assert.match(enabled.calls[0], /تغییر رمز/);
+  assert.doesNotMatch(enabled.calls[0], /private-stored-hash/);
+  const disabled = fixture();
+  await disabled.context.openSettingsV24();
+  assert.match(disabled.calls[0], /ورود بدون رمز/);
+  assert.match(disabled.calls[0], /افزودن رمز/);
 });

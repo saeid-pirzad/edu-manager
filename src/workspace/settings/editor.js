@@ -18,14 +18,18 @@ async function openSettingsV24() {
       throw Error("دوره تغییر کرده است؛ تنظیمات را دوباره باز کنید.");
     const context = captureWorkspaceContext();
     const opened = showModal(
-      "تنظیمات",
-      '<form id="settingsEditor" class="record-editor" novalidate>' +
-        '<div class="record-editor-context"><h4>رمز ورود این دوره</h4><p>' +
+      "تنظیمات دوره",
+      '<form id="settingsEditor" class="record-editor settings-editor" novalidate>' +
+        '<div class="record-editor-context settings-context"><span class="settings-eyebrow">دسترسی به دوره</span><h4>رمز ورود</h4><p>' +
         esc((workspace?.year || "") + " / " + (workspace?.term || "")) +
-        "</p></div>" +
-        '<label class="course-field" for="newPass">رمز جدید<input type="password" id="newPass" autocomplete="new-password" aria-describedby="settingsHint settingsError" placeholder="خالی: حفظ رمز فعلی"></label>' +
-        '<label><input type="checkbox" id="removePassword"> حذف رمز ورود</label>' +
-        '<p id="settingsHint" class="muted">رمز خالی، رمز فعلی را حفظ می‌کند. برای حذف، گزینه حذف را انتخاب و کادر رمز جدید را خالی کنید. اطلاعات مدرسه و فایل پشتیبان رمزگذاری نشده‌اند.</p>' +
+        '</p><span class="settings-password-state' + (db.settings.password ? ' is-enabled' : '') + '">' +
+        (db.settings.password ? 'رمز ورود فعال است' : 'ورود بدون رمز') + '</span></div>' +
+        '<section class="settings-section" aria-labelledby="settingsPasswordTitle"><h5 id="settingsPasswordTitle">' +
+        (db.settings.password ? 'تغییر رمز' : 'افزودن رمز') + '</h5><p>این رمز فقط برای ورود به همین دوره استفاده می‌شود.</p>' +
+        '<label class="course-field" for="newPass">رمز جدید<input type="password" id="newPass" autocomplete="new-password" aria-describedby="settingsHint settingsError" placeholder="رمز جدید را وارد کنید"></label>' +
+        '<p id="settingsHint" class="settings-field-hint">اگر این کادر را خالی بگذارید، رمز فعلی تغییر نمی‌کند.</p></section>' +
+        '<section class="settings-remove-section" aria-label="حذف رمز"><label class="settings-remove-option"><input type="checkbox" id="removePassword" aria-describedby="settingsRemoveHint"><span>حذف رمز ورود<small id="settingsRemoveHint">برای ورود بدون رمز، این گزینه را انتخاب و کادر رمز جدید را خالی کنید.</small></span></label></section>' +
+        '<p class="settings-privacy-note">رمز ورود، اطلاعات مدرسه و فایل‌های پشتیبان را رمزگذاری نمی‌کند.</p>' +
         '<p id="settingsError" role="alert" class="entity-create-error"></p>' +
         '<div class="record-editor-actions"><button type="submit">ذخیره تنظیمات</button><button type="button" class="ghost" data-settings-cancel>انصراف</button></div></form>',
     );

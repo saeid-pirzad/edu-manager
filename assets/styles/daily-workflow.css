@@ -2590,6 +2590,37 @@ body {
     gap: 6px;
   }
 }
+
+@media screen {
+  #modal:has(.settings-editor) .modal-dialog { width: min(100%, 480px); }
+  #modalBody .settings-editor { gap: 18px; }
+  #modalBody .settings-context { position: relative; padding: 18px; border: 1px solid #e7e3dc; border-radius: 14px; background: #f7f6f3; }
+  #modalBody .settings-context h4 { margin: 6px 0; font-size: 21px; }
+  #modalBody .settings-context p { margin: 0; color: #76716a; font-size: 12px; }
+  .settings-eyebrow { font-size: 11px; color: #76716a; }
+  .settings-password-state { display: inline-flex; align-items: center; gap: 6px; margin-top: 14px; padding: 5px 10px; border-radius: 20px; background: #eae8e3; color: #615d55; font-size: 11px; }
+  .settings-password-state::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .settings-password-state.is-enabled { background: #e5f1e9; color: #23644d; }
+  #modalBody .settings-section { padding: 0; border: 0; background: transparent; }
+  #modalBody .settings-section h5 { margin: 0 0 6px; font-size: 14px; }
+  #modalBody .settings-section > p { margin: 0 0 16px; font-size: 12px; line-height: 1.9; color: #76716a; }
+  #modalBody .settings-section .course-field { gap: 8px; font-size: 12px; }
+  #modalBody .settings-section input { height: 44px; min-height: 44px; border-radius: 10px; font-size: 14px; background: #fff; }
+  #modalBody .settings-section .settings-field-hint { margin: 8px 0 0; font-size: 11px; }
+  .settings-remove-section { padding: 14px; border: 1px solid #e7e3dc; border-radius: 12px; background: #faf9f7; }
+  #modalBody .settings-remove-option { display: flex; align-items: flex-start; gap: 10px; margin: 0; font-size: 13px; cursor: pointer; }
+  #modalBody .settings-remove-option input { width: 18px; height: 18px; min-height: 18px; margin: 3px 0 0; flex: 0 0 18px; accent-color: #79522c; }
+  .settings-remove-option small { display: block; margin-top: 5px; color: #76716a; font-size: 11px; line-height: 1.9; font-weight: 400; }
+  #modalBody .settings-privacy-note { margin: 0; font-size: 11px; line-height: 1.9; color: #76716a; }
+  #modalBody .settings-editor .record-editor-actions { display: flex; gap: 8px; padding-top: 16px; border-top: 1px solid #eeece9; }
+  #modalBody .settings-editor .record-editor-actions button { flex: 0 0 auto; min-width: 0; min-height: 44px; padding: 10px 16px; border-radius: 10px; font-size: 13px; white-space: nowrap; }
+  #modalBody .settings-editor .record-editor-actions button[type=submit] { flex: 1; background: #79522c; color: #fff; }
+}
+@media screen and (max-width: 600px) {
+  #modal:has(.settings-editor) { padding: 12px; align-items: center; }
+  #modal:has(.settings-editor) .modal-dialog { max-height: calc(var(--app-viewport, 100dvh) - 24px); border-radius: 16px; }
+  #modal:has(.settings-editor) .modal-body { padding: 16px; }
+}
 /* Source: src/styles/workflow/grades.css */
 /* Flat gradebook rows on desktop; a single student per card on mobile. */
 @media screen {
