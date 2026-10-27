@@ -381,7 +381,7 @@
     justify-content: center;
     gap: 6px;
     width: auto;
-    min-width: 118px;
+    min-width: 92px;
     min-height: 48px;
     padding: 10px 12px;
     border-radius: 12px;
@@ -414,36 +414,30 @@
     content: none;
   }
   #app .dashboard-entity-more[open] {
-    grid-column: 1 / -1;
-    width: 100%;
-  }
-  #app
-    .dashboard-entity-actions:has(.dashboard-entity-more[open])
-    > .entity-enter {
-    grid-column: 1 / -1;
+    z-index: 40;
   }
   #app .dashboard-entity-more[open] > summary {
-    width: fit-content;
-    margin-inline-start: auto;
     background: #f4f3f1;
     border-color: #b9b6b1;
     color: var(--workflow-ink);
   }
-  /* Inline disclosure cannot be clipped by a card or escape the viewport. */
+  /* Float above the trigger without resizing the card or its action row. */
   #app .dashboard-entity-more > .entity-menu-panel {
-    position: static;
+    position: absolute;
     inset: auto;
+    inset-inline-end: 0;
+    bottom: calc(100% + 8px);
     min-width: 0;
-    width: 100%;
+    width: min(220px, calc(100vw - 64px));
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 4px;
-    margin-top: 10px;
+    margin: 0;
     padding: 6px;
     border-radius: 12px;
     border-color: var(--workflow-line);
     background: #fff;
-    box-shadow: none;
+    box-shadow: 0 8px 28px #2d344024;
   }
   #app .entity-menu-panel > button {
     display: flex;

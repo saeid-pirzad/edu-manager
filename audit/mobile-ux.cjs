@@ -90,9 +90,9 @@ async function inspectMobileUx() {
   await pause();
   const rect = panel.getBoundingClientRect();
   add(
-    "school actions expand inside their card rather than clipping or overlapping another card",
+    "school actions float without escaping the viewport",
     menu.open &&
-      getComputedStyle(panel).position === "static" &&
+      getComputedStyle(panel).position === "absolute" &&
       rect.left >= -1 &&
       rect.right <= innerWidth + 1 &&
       [...panel.querySelectorAll("button")].every(
