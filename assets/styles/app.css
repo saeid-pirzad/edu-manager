@@ -4513,10 +4513,12 @@ summary {
   }
 }
 @media print {
-  .week-agenda,
   .week-settings,
   .week-heading > button {
     display: none !important;
+  }
+  .week-agenda {
+    display: block !important;
   }
   .week-desktop {
     display: block !important;
@@ -4587,6 +4589,14 @@ summary {
   .week-desktop > summary { cursor: pointer; padding: 6px 0; font-size: 13px; font-weight: 600; color: #655d52; }
   .week-desktop > header p { margin-top: 14px; color: #81796e; }
   .week-table th { min-width: 165px; }
+  .week-table th:first-child,
+  .week-table .week-day-cell {
+    width: 80px;
+    min-width: 80px;
+    max-width: 80px;
+    padding: 10px 6px !important;
+    white-space: nowrap;
+  }
   .week-table .week-slot { min-height: 150px; background: #faf9f7; }
   .week-table .week-day-cell { background: #f7f3ec !important; }
   .week-day-cell small { color: #79522c; }

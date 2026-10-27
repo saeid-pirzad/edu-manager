@@ -2673,6 +2673,19 @@ body {
   #app .week-start-date .shamsi-display { font-size: 11px; color: #81796e; margin: 0; }
   #app .week-start-date > button { width: 100%; min-height: 42px; margin: 4px 0 0; font-size: 12px; }
 }
+
+@media screen {
+  #app .table-scroll .week-table > thead > tr > th:first-child,
+  #app .table-scroll .week-table > tbody > tr > .week-day-cell {
+    width: 52px !important;
+    min-width: 52px !important;
+    max-width: 52px !important;
+    padding: 8px 4px !important;
+    font-size: 11px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
 /* Source: src/styles/workflow/grades.css */
 /* Flat gradebook rows on desktop; a single student per card on mobile. */
 @media screen {

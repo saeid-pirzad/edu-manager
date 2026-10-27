@@ -118,21 +118,6 @@ function renderMaster() {
       ' زنگ</span></div><div class="week-slot-list">';
     for (let p = 0; p < periods; p++) h += slot(selected, p);
     h += "</div></section>";
-    h +=
-      '<details class="card week-desktop"><summary>نمای کامل هفته</summary><header><p>برای ثبت اطلاعات، جلسه را باز کنید؛ برای تغییر درس از تنظیم زنگ استفاده کنید.</p></header><div class="table-scroll" tabindex="0" role="region" aria-label="جدول برنامه هفتگی"><table class="week-table"><thead><tr><th scope="col">روز / زنگ</th>';
-    for (let p = 0; p < periods; p++) h += "<th>زنگ " + number(p + 1) + "</th>";
-    h += "</tr></thead><tbody>";
-    for (const d of days) {
-      h +=
-        '<tr><td class="week-day-cell">' +
-        esc(DAYS[d]) +
-        (d === today ? "<small>امروز</small>" : "") +
-        "</td>";
-      for (let p = 0; p < periods; p++)
-        h += "<td>" + slot(d, p, true) + "</td>";
-      h += "</tr>";
-    }
-    h += "</tbody></table></div></details>";
   }
   h +=
     '<details class="card week-settings no-print" ' +
