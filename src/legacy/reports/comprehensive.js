@@ -695,7 +695,7 @@ function copyGlobalReportText(btn) {
       text += `--------------------------------\n`;
     });
   }
-  text += `\n✅ تولید شده توسط سامانه مدیریت مدرسه`;
+  text += `\n✅ تولید شده توسط کلاس‌یار`;
   copyToClipboard(text, btn);
 }
 

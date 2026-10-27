@@ -68,7 +68,7 @@ function headerHtml() {
     "<span>" +
     label +
     "</span></button>";
-  let h = '<div class="topbar"><div class="header-brand"><h1>مدیریت کلاس</h1>';
+  let h = '<div class="topbar"><div class="header-brand"><h1>کلاس‌یار</h1>';
   h += btn(
     "خانه",
     "home",

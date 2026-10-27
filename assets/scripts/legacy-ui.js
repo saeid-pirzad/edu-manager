@@ -526,7 +526,7 @@ function headerHtml() {
     "<span>" +
     label +
     "</span></button>";
-  let h = '<div class="topbar"><div class="header-brand"><h1>مدیریت کلاس</h1>';
+  let h = '<div class="topbar"><div class="header-brand"><h1>کلاس‌یار</h1>';
   h += btn(
     "خانه",
     "home",
@@ -1467,7 +1467,7 @@ function copyGlobalReportText(btn) {
       text += `--------------------------------\n`;
     });
   }
-  text += `\n✅ تولید شده توسط سامانه مدیریت مدرسه`;
+  text += `\n✅ تولید شده توسط کلاس‌یار`;
   copyToClipboard(text, btn);
 }
 
@@ -1763,7 +1763,7 @@ function copyLessonReportForVicePrincipal(lessonId) {
     const s = calcStudentLesson(c, lesson, st.id);
     text += `- ${st.name}: غایب ${s.att.absent} | ➕ ${s.posCount} | ➖ ${s.negCount} | نهایی: ${s.final !== null ? s.final.toFixed(2) : "---"}\n`;
   });
-  text += `\n✅ تولید شده توسط سامانه مدیریت مدرسه`;
+  text += `\n✅ تولید شده توسط کلاس‌یار`;
   const dummyBtn = document.createElement("button");
   copyToClipboard(text, dummyBtn);
 }
@@ -2053,7 +2053,7 @@ function legacy_generateParentReportText(student, c) {
     }
   });
   if (!hasData) text += `هنوز هیچ اطلاعاتی برای این دانش‌آموز ثبت نشده است.\n`;
-  text += `\n✅ تولید شده توسط سامانه مدیریت مدرسه`;
+  text += `\n✅ تولید شده توسط کلاس‌یار`;
   return text;
 }
 

@@ -96,7 +96,7 @@
     d.style.cssText =
       "box-sizing:border-box;direction:rtl;font-family:IRANSans,Tahoma,sans-serif;width:min(440px,calc(100% - 24px));max-height:calc(100dvh - 32px);overflow:auto;border:0;border-radius:20px;padding:24px;color:#1e293b;background:#fff;box-shadow:0 16px 64px #0004;line-height:1.9";
     d.innerHTML =
-      '<h2 id="pwaWelcomeTitle" style="font-size:1.2rem;margin:0 0 12px">برنامه را روی دستگاهت نصب کن</h2><p>برای دسترسی از صفحه اصلی و استفاده بدون اینترنت، مدیریت کلاس را نصب کن.</p><p id="pwaWelcomeStatus" role="status" aria-live="polite"></p><p style="font-size:.9rem">در آیفون و آیپد: منوی اشتراک‌گذاری (Share) ← افزودن به صفحه اصلی (Add to Home Screen). در اندروید و رایانه از دکمه نصب یا منوی مرورگر استفاده کن.</p><div style="display:flex;flex-wrap:wrap;gap:8px"><button id="pwaWelcomeInstall" type="button" style="flex:1;min-height:44px">نصب برنامه روی دستگاه</button><button id="pwaWelcomeLater" type="button" class="ghost" style="min-height:44px">فعلاً ادامه می‌دهم</button></div>';
+      '<h2 id="pwaWelcomeTitle" style="font-size:1.2rem;margin:0 0 12px">برنامه را روی دستگاهت نصب کن</h2><p>برای دسترسی از صفحه اصلی و استفاده بدون اینترنت، کلاس‌یار را نصب کن.</p><p id="pwaWelcomeStatus" role="status" aria-live="polite"></p><p style="font-size:.9rem">در آیفون و آیپد: منوی اشتراک‌گذاری (Share) ← افزودن به صفحه اصلی (Add to Home Screen). در اندروید و رایانه از دکمه نصب یا منوی مرورگر استفاده کن.</p><div style="display:flex;flex-wrap:wrap;gap:8px"><button id="pwaWelcomeInstall" type="button" style="flex:1;min-height:44px">نصب برنامه روی دستگاه</button><button id="pwaWelcomeLater" type="button" class="ghost" style="min-height:44px">فعلاً ادامه می‌دهم</button></div>';
     document.body.append(d);
     d.querySelector("#pwaWelcomeInstall").onclick = requestInstall;
     d.querySelector("#pwaWelcomeLater").onclick = () => {
@@ -116,7 +116,7 @@
     bar.className = "mobile-bar no-print";
     bar.id = "mobileBar";
     bar.innerHTML =
-      '<strong>مدیریت کلاس</strong><span id="mobileStatus" role="status" aria-live="polite"></span><button id="mobileInstall" hidden>نصب برنامه</button><button id="mobileUpdate" hidden>نسخه جدید آماده است</button><button id="mobileHelp" class="ghost">نصب و راهنما</button>';
+      '<strong>کلاس‌یار</strong><span id="mobileStatus" role="status" aria-live="polite"></span><button id="mobileInstall" hidden>نصب برنامه</button><button id="mobileUpdate" hidden>نسخه جدید آماده است</button><button id="mobileHelp" class="ghost">نصب و راهنما</button>';
     document.body.prepend(bar);
     document.getElementById("mobileInstall").onclick = requestInstall;
     document.getElementById("mobileUpdate").onclick = update;

@@ -199,7 +199,7 @@ function copyLessonReportForVicePrincipal(lessonId) {
     const s = calcStudentLesson(c, lesson, st.id);
     text += `- ${st.name}: غایب ${s.att.absent} | ➕ ${s.posCount} | ➖ ${s.negCount} | نهایی: ${s.final !== null ? s.final.toFixed(2) : "---"}\n`;
   });
-  text += `\n✅ تولید شده توسط سامانه مدیریت مدرسه`;
+  text += `\n✅ تولید شده توسط کلاس‌یار`;
   const dummyBtn = document.createElement("button");
   copyToClipboard(text, dummyBtn);
 }

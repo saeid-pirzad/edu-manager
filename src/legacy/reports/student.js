@@ -258,7 +258,7 @@ function legacy_generateParentReportText(student, c) {
     }
   });
   if (!hasData) text += `هنوز هیچ اطلاعاتی برای این دانش‌آموز ثبت نشده است.\n`;
-  text += `\n✅ تولید شده توسط سامانه مدیریت مدرسه`;
+  text += `\n✅ تولید شده توسط کلاس‌یار`;
   return text;
 }
 
