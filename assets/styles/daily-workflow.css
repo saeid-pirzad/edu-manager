@@ -1599,6 +1599,74 @@ body {
     gap: 4px;
   }
 }
+@media screen {
+  #modal:has([data-workspace-submit="save-entity"]) {
+    align-items: center;
+    padding: 20px;
+  }
+  #modal:has([data-workspace-submit="save-entity"]) .modal-dialog {
+    width: 100%;
+    max-width: 460px;
+    max-height: calc(var(--app-viewport, 100dvh) - 40px);
+    border-radius: 20px;
+    box-shadow: 0 24px 80px #2d34402b;
+  }
+  #modal:has([data-workspace-submit="save-entity"]) .modal-header {
+    padding: 16px 20px;
+    background: #fff;
+  }
+  #modal:has([data-workspace-submit="save-entity"]) .modal-body {
+    padding: 20px;
+  }
+  #modalBody [data-workspace-submit="save-entity"] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+  #modalBody [data-workspace-submit="save-entity"] .record-editor-context {
+    padding: 14px 16px;
+    background: #f7f6f4;
+    border: 1px solid var(--workflow-line);
+    border-radius: 12px;
+  }
+  #modalBody [data-workspace-submit="save-entity"] .record-editor-context h4 {
+    margin-block: 6px;
+    font-size: 16px;
+    overflow-wrap: anywhere;
+  }
+  #modalBody [data-workspace-submit="save-entity"] > label {
+    display: grid;
+    gap: 8px;
+    font-size: 14px;
+  }
+  #modalBody [data-workspace-submit="save-entity"] input {
+    width: 100%;
+    min-height: 48px;
+    border-radius: 10px;
+  }
+  #modalBody #entityEditHint {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.9;
+  }
+  #modalBody #entityEditError:empty {
+    display: none;
+  }
+  #modalBody [data-workspace-submit="save-entity"] .record-editor-actions {
+    position: static;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    margin: 0;
+    padding: 16px 0 0;
+    box-shadow: none;
+  }
+  #modalBody [data-workspace-submit="save-entity"] .record-editor-actions button {
+    min-height: 46px;
+    border-radius: 10px;
+    padding-inline: 20px;
+  }
+}
 @media screen and (min-width: 1101px) {
   #app:has(> .workflow-welcome) {
     display: flex;
