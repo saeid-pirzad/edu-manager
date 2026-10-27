@@ -58,6 +58,10 @@ function initialize(mode) {
 }
 let annualPeriodList = [],
   annualLoadingFor = "";
+function annualPeriodOptions(field) {
+  const kind = field === "annualFirstId" ? "first" : "second";
+  return annualPeriodList.filter((row) => !row.termKind || row.termKind === kind);
+}
 function loadAnnualPeriodChoices() {
   const expected = context().id;
   if (annualLoadingFor === expected) return;
@@ -74,7 +78,7 @@ function loadAnnualPeriodChoices() {
         if (!select) continue;
         select.innerHTML =
           '<option value="">انتخاب خودکار در صورت نبود ابهام</option>' +
-          rows
+          annualPeriodOptions(field)
             .map(
               (row) =>
                 '<option value="' +

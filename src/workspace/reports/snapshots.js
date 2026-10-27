@@ -122,6 +122,8 @@ async function prepareAnnualReportSnapshot(periodIds = {}) {
           (row.termKind || academicTermKind(row.term)) === kind,
       ),
     );
+    if (candidates.some((rows) => rows.length > 1))
+      throw Error("برای یکی از نوبت‌ها چند دوره وجود دارد؛ نوبت اول و دوم را در فرم گزارش مشخص کنید.");
     if (
       candidates.every((rows) => rows.length === 1) &&
       candidates.some((rows) => rows[0].id === workspace.id)

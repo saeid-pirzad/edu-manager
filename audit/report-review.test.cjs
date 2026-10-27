@@ -88,3 +88,29 @@ test("periodic print returns failure when the print operation is rejected", asyn
   vm.runInContext(source("src/reports/periodic/output.js").split("root.EduPeriodicReports =")[0], context);
   assert.equal(await context.output("print"), false);
 });
+test("annual selectors keep first and second terms separate and retain unclassified restored periods", () => {
+  const context = vm.createContext({});
+  vm.runInContext(source("src/reports/periodic/filters.js"), context);
+  vm.runInContext('annualPeriodList = [{id:"a",termKind:"first"},{id:"b",termKind:"second"},{id:"restored",termKind:null}]', context);
+  assert.equal(context.annualPeriodOptions("annualFirstId").map((r) => r.id).join(","), "a,restored");
+  assert.equal(context.annualPeriodOptions("annualSecondId").map((r) => r.id).join(","), "b,restored");
+});
+test("annual snapshots reject ambiguous automatic selection and mismatched explicit term roles", async () => {
+  const catalog = [
+    { id: "first", year: "1405", term: "اول", termKind: "first", revision: 0 },
+    { id: "restored_first", year: "1405", term: "اول بازیابی", termKind: "first", revision: 0 },
+    { id: "second", year: "1405", term: "دوم", termKind: "second", revision: 0 },
+  ];
+  const context = vm.createContext({
+    workspace: catalog[0], db: { settings: {} }, ready: true, fileMode: false,
+    resetBusy: false, connectionRetired: false, blocked: false, busy: 0,
+    drafts: new Map(), flushDrafts: async () => {}, writer: Promise.resolve(),
+    isSafeRecordId: (id) => typeof id === "string" && !!id,
+    requestPromise: async (value) => value, transactionDone: async () => {},
+    connection: { transaction: () => ({ objectStore: (name) => ({ getAll: () => name === "catalog" ? catalog : [] }) }) },
+  });
+  vm.runInContext(source("src/workspace/reports/snapshots.js"), context);
+  await assert.rejects(context.prepareAnnualReportSnapshot(), /چند دوره/);
+  await assert.rejects(context.prepareAnnualReportSnapshot({ first: "second", second: "first" }), /مطابقت ندارد/);
+  await assert.rejects(context.prepareAnnualReportSnapshot({ first: "first", second: "first" }), /متمایز/);
+});

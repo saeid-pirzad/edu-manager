@@ -1213,6 +1213,10 @@ function initialize(mode) {
 }
 let annualPeriodList = [],
   annualLoadingFor = "";
+function annualPeriodOptions(field) {
+  const kind = field === "annualFirstId" ? "first" : "second";
+  return annualPeriodList.filter((row) => !row.termKind || row.termKind === kind);
+}
 function loadAnnualPeriodChoices() {
   const expected = context().id;
   if (annualLoadingFor === expected) return;
@@ -1229,7 +1233,7 @@ function loadAnnualPeriodChoices() {
         if (!select) continue;
         select.innerHTML =
           '<option value="">انتخاب خودکار در صورت نبود ابهام</option>' +
-          rows
+          annualPeriodOptions(field)
             .map(
               (row) =>
                 '<option value="' +
@@ -1283,19 +1287,17 @@ function render(mode) {
     `</h3><p>هفتگی: شنبه تا جمعه. ماهانه: ماه شمسی. سالانه: مهر تا شهریور، نوبت اول و دوم سال تحصیلی فعال. گزارش اولیا فقط اطلاعات هنرجوی انتخاب‌شده را در بر می‌گیرد.</p><div class="periodic-control-grid"><label>مخاطب<select data-legacy-change="reports-periodic-render:0">` +
     option("management", "مدیریت مدرسه", f.audience) +
     option("parent", "اولیای یک هنرجو", f.audience) +
-    "</select></label><label>" +
+    "</select></label>" +
     (mode === "annual"
-      ? "سال تحصیلی " + esc(db.settings.academicYear)
-      : mode === "weekly"
+      ? '<div class="periodic-year-field"><span>سال تحصیلی</span><strong>' + esc(db.settings.academicYear) + '</strong></div>'
+      : '<label>' + (mode === "weekly"
         ? "یک تاریخ از هفته"
         : mode === "monthly"
           ? "یک تاریخ از ماه شمسی"
           : "تاریخ گزارش") +
-    '<input type="' +
-    (mode === "annual" ? "hidden" : "date") +
-    '" value="' +
-    esc(f.date) +
-    `" data-legacy-change="reports-periodic-render:1"></label><label>مدرسه<select data-legacy-change="reports-periodic-render:2">` +
+        '<input type="date" value="' + esc(f.date) +
+        '" data-legacy-change="reports-periodic-render:1"></label>') +
+    `<label>مدرسه<select data-legacy-change="reports-periodic-render:2">` +
     option("", "انتخاب مدرسه", f.schoolId) +
     db.schools.map((s) => option(s.id, s.name, f.schoolId)).join("") +
     `</select></label><label>کلاس<select data-legacy-change="reports-periodic-render:3">` +
@@ -1316,7 +1318,7 @@ function render(mode) {
       h +=
         `<label>${label}<select id="${id}" data-legacy-change="reports-periodic-render:4" data-legacy-change-arg2="${esc(field)}">` +
         option("", "انتخاب خودکار در صورت نبود ابهام", f[field]) +
-        annualPeriodList
+        annualPeriodOptions(field)
           .map((row) =>
             option(row.id, row.term + (row.closed ? " · بسته" : ""), f[field]),
           )

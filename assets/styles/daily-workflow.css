@@ -2751,6 +2751,11 @@ body {
   .grade-report-section h3 { break-after: avoid; }
   .grade-report .table-scroll { overflow: visible !important; }
 }
+
+@media screen {
+  .periodic-year-field { display: flex; flex-direction: column; justify-content: flex-end; gap: 7px; min-width: 0; color: #726b61; font-size: 12px; }
+  .periodic-year-field strong { display: flex; align-items: center; min-height: 44px; padding: 10px 12px; border: 1px solid #e7e3dc; border-radius: 9px; background: #f2efe8; color: #655d52; font-size: 14px; font-weight: 500; }
+}
 /* Source: src/styles/workflow/grades.css */
 /* Flat gradebook rows on desktop; a single student per card on mobile. */
 @media screen {

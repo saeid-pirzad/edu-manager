@@ -416,7 +416,7 @@
           EduLegacyEvents.source(control.getAttribute("data-legacy-change")),
         key = action.match(/["']([^"']+)["']/)?.[1],
         caption = names[key];
-      if (!caption || control.closest(".report-filter-field")) continue;
+      if (!caption || control.closest("label") || control.labels?.length) continue;
       const label = document.createElement("label");
       label.className = "report-filter-field";
       const pairedDate =

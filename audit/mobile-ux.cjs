@@ -155,6 +155,17 @@ async function inspectMobileUx() {
           (control) => parseFloat(getComputedStyle(control).fontSize) >= 16,
         ),
     );
+  goReports();
+  for (const mode of ["daily", "weekly", "monthly", "annual"]) {
+    setReportTab(mode);
+    await pause();
+    const controls = document.querySelector(".periodic-controls");
+    add(mode + " report has no duplicated nested field labels",
+      !!controls && !controls.querySelector("label label"));
+    add(mode + " report preserves one date picker",
+      controls.querySelectorAll('[data-gregorian-target="true"]').length ===
+        (mode === "annual" ? 0 : 1));
+  }
   await openSettingsModal();
   await pause();
   const modal = document.querySelector(".modal-dialog"),
