@@ -93,3 +93,27 @@ test("lesson and student create panels have one submit and a non-action heading"
     );
   }
 });
+test("all directory renderers place their list before creation even when empty", () => {
+  context.headerHtml = () => "";
+  context.breadcrumbHtml = () => "";
+  context.dashboardDirectory = () =>
+    '<section class="dashboard-directory"></section>';
+  context.db = { schools: [] };
+  context.state = { schoolId: "school" };
+  context.getSchool = () => ({ id: "school", name: "مدرسه", classes: [] });
+  for (const [html, marker] of [
+    [context.renderSchools(), 'class="dashboard-directory"'],
+    [context.renderSchool(), 'class="dashboard-directory"'],
+    [
+      context.renderLessonsTab({ id: "test", lessons: [] }),
+      'class="card class-lessons"',
+    ],
+    [
+      context.renderStudentsTab({ id: "test", students: [] }),
+      'class="card student-directory"',
+    ],
+  ]) {
+    assert.ok(html.indexOf(marker) >= 0);
+    assert.ok(html.indexOf(marker) < html.indexOf('<details class="card'));
+  }
+});

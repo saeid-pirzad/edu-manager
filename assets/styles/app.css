@@ -6389,6 +6389,35 @@ body.modal-open {
   border-radius: 16px;
 }
 @media screen {
+  #app:has(> .dashboard-directory):has(> .entity-quick-create) {
+    display: flex;
+    flex-direction: column;
+  }
+  #app:has(> .dashboard-directory):has(> .entity-quick-create) > * {
+    min-width: 0;
+  }
+  #app:has(> .dashboard-directory):has(> .entity-quick-create) > .topbar {
+    order: 0;
+  }
+  #app:has(> .dashboard-directory):has(> .entity-quick-create)
+    > .workspace-bar {
+    order: 1;
+  }
+  #app:has(> .dashboard-directory):has(> .entity-quick-create) > .breadcrumb {
+    order: 2;
+  }
+  #app:has(> .dashboard-directory):has(> .entity-quick-create)
+    > :is(.workflow-welcome, .view-heading) {
+    order: 3;
+  }
+  #app:has(> .dashboard-directory):has(> .entity-quick-create)
+    > .dashboard-directory {
+    order: 4;
+  }
+  #app:has(> .dashboard-directory):has(> .entity-quick-create)
+    > .entity-quick-create {
+    order: 5;
+  }
   #modal:has(.deletion-editor) .modal-dialog {
     max-width: 520px;
   }

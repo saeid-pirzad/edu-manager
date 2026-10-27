@@ -2973,8 +2973,8 @@ function renderSchools() {
   let h =
     headerHtml() +
     `<section class="workflow-welcome no-print"><h2>مدرسه‌های من</h2><p>مدرسه‌ها را اضافه، ویرایش یا حذف کنید؛ برای مدیریت کلاس‌ها وارد مدرسه شوید.</p></section>`;
-  h += renderEntityQuickCreate("school", !db.schools.length);
   h += dashboardDirectory(db.schools, "schools");
+  h += renderEntityQuickCreate("school", !db.schools.length);
   return h;
 }
 function renderSchool() {
@@ -2990,8 +2990,8 @@ function renderSchool() {
       { label: school.name },
       { label: "کلاس‌ها" },
     ]);
-  h += renderEntityQuickCreate("class", !school.classes.length);
   h += dashboardDirectory(school.classes, "classes", school.id);
+  h += renderEntityQuickCreate("class", !school.classes.length);
   return h;
 }
 
