@@ -4058,9 +4058,9 @@ function renderMaster() {
       esc(day) +
       "</span></label>";
   h +=
-    `</div></section><section><h4>تعداد زنگ‌های روزانه</h4><div class="week-period-controls"><button class="ghost" data-legacy-click="schedule-timetable:6" aria-label="کاهش تعداد زنگ">−</button><strong>` +
+    `</div></section><section><h4>تعداد زنگ‌های روزانه</h4><div class="week-period-controls"><button class="ghost" data-legacy-click="schedule-timetable:6" aria-label="کاهش تعداد زنگ"><svg class="week-step-icon" width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 10h12"/></svg></button><strong>` +
     number(periods) +
-    ` زنگ</strong><button class="ghost" data-legacy-click="schedule-timetable:7" aria-label="افزایش تعداد زنگ">+</button></div><p class="week-save-hint">تغییر روزها و تعداد زنگ‌ها خودکار ذخیره می‌شود.</p></section><section><h4>مبنای هفته‌های فرد و زوج</h4><p>تاریخ شنبه‌ای را انتخاب کنید که مبنای محاسبه هفته‌ها باشد.</p><div class="week-start-date"><label>تاریخ شروع<input type="date" id="weekStartInput" data-mutating="1" value="` +
+    ` زنگ</strong><button class="ghost" data-legacy-click="schedule-timetable:7" aria-label="افزایش تعداد زنگ"><svg class="week-step-icon" width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 10h12"/><path d="M10 4v12"/></svg></button></div><p class="week-save-hint">تغییر روزها و تعداد زنگ‌ها خودکار ذخیره می‌شود.</p></section><section><h4>مبنای هفته‌های فرد و زوج</h4><p>تاریخ شنبه‌ای را انتخاب کنید که مبنای محاسبه هفته‌ها باشد.</p><div class="week-start-date"><label>تاریخ شروع<input type="date" id="weekStartInput" data-mutating="1" value="` +
     esc(db.settings.weekStartDate || date) +
     `" data-legacy-change="schedule-timetable:8"></label><span class="shamsi-display" id="shamsiWeekStart">` +
     esc(toShamsi(db.settings.weekStartDate || date)) +

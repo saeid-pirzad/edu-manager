@@ -2686,6 +2686,11 @@ body {
     overflow-wrap: anywhere;
   }
 }
+
+@media screen {
+  #app .week-period-controls > button { display: flex; align-items: center; justify-content: center; padding: 0; gap: 0; line-height: 1; }
+  #app .week-period-controls .week-step-icon { display: block; flex: 0 0 18px; width: 18px; height: 18px; margin: 0; }
+}
 /* Source: src/styles/workflow/grades.css */
 /* Flat gradebook rows on desktop; a single student per card on mobile. */
 @media screen {
