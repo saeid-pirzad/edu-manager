@@ -8,14 +8,18 @@ const courseUI = EduCourseUI({
     id: workspace?.id,
     revision: workspace?.revision,
     closed: !!workspace?.closed,
-    readOnly: fileMode || !!workspace?.closed || blocked || !ready,
+    readOnly:
+      fileMode ||
+      !!workspace?.closed ||
+      blocked ||
+      !ready ||
+      periodLoading ||
+      resetBusy ||
+      connectionRetired,
   }),
   state: () => state,
   year: () => db.settings.academicYear,
-  assertWritable: () => {
-    if (fileMode || workspace?.closed || blocked || !ready)
-      throw Error("دوره فعلی قابل ویرایش نیست.");
-  },
+  assertWritable: assertEntityWritable,
   flushDrafts,
   saveDB: saveDBV24,
   showModal: showModalV24,

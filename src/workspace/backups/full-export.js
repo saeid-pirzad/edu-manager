@@ -13,8 +13,28 @@ function portableGradeDrafts(rows, periods) {
 }
 
 async function snapshotInstallation() {
-  if (!ready || resetBusy || connectionRetired)
-    throw Error("بانک برای تهیه پشتیبان آماده نیست.");
+  const origin = workspace?.id;
+  const check = () => {
+    if (
+      !ready ||
+      periodLoading ||
+      resetBusy ||
+      connectionRetired ||
+      workspace?.id !== origin
+    )
+      throw Object.assign(
+        Error(
+          "بانک یا دوره هنگام تهیه پشتیبان آماده نیست؛ پس از پایان جابه‌جایی دوباره تلاش کنید.",
+        ),
+        {
+          code:
+            periodLoading || workspace?.id !== origin
+              ? "BACKUP_CONTEXT_CHANGED"
+              : "BACKUP_NOT_READY",
+        },
+      );
+  };
+  check();
   const snapshotNotes = [];
   try {
     await flushDrafts();
@@ -25,12 +45,14 @@ async function snapshotInstallation() {
     );
   }
   await writer.catch(() => {});
+  check();
   await storeDrafts().catch((error) =>
     snapshotNotes.push(
       "پیش‌نویس حافظه نیز در فایل قرار گرفت: " + error.message,
     ),
   );
   await draftWriter.catch(() => {});
+  check();
   const activeWorkspace = workspace.id;
   const currentDrafts = {
     key: draftStorageKey(),
@@ -99,7 +121,14 @@ async function exportFullBackup() {
   return content.stores.catalog.length;
 }
 async function automaticFullBackup() {
-  if (!ready || blocked || automaticBackupBusy || document.hidden) return;
+  if (
+    !ready ||
+    periodLoading ||
+    blocked ||
+    automaticBackupBusy ||
+    document.hidden
+  )
+    return;
   automaticBackupBusy = true;
   try {
     const snapshot = await snapshotInstallation();
@@ -114,6 +143,7 @@ async function automaticFullBackup() {
     });
     await done;
   } catch (error) {
+    if (error.code === "BACKUP_CONTEXT_CHANGED") return;
     setStatus("پشتیبان خودکار کامل ساخته نشد؛ " + error.message, "error");
   } finally {
     automaticBackupBusy = false;

@@ -36,11 +36,16 @@ globalThis.EduFullBackupValidator = Object.freeze({
       )
         throw Error("فهرست توضیحات پشتیبان معتبر نیست.");
       const ids = new Set(),
+        recordsByWorkspace = new Map(),
         recordSets = new Map(),
         periods = [];
-      for (const row of value.stores.records)
+      for (const row of value.stores.records) {
         if (!isDataObject(row) || !isSafeRecordId(row.workspace))
           throw Error("رکورد داده باید متعلق به یک دوره معتبر باشد.");
+        if (!recordsByWorkspace.has(row.workspace))
+          recordsByWorkspace.set(row.workspace, []);
+        recordsByWorkspace.get(row.workspace).push(row);
+      }
       for (const period of value.stores.catalog) {
         if (
           !isDataObject(period) ||
@@ -61,9 +66,7 @@ globalThis.EduFullBackupValidator = Object.freeze({
         validateReportNotes(period.reportNotesRecovery, period.id);
         validateReportNotes(value.reportDrafts?.[period.id], period.id);
         ids.add(period.id);
-        const records = value.stores.records.filter(
-          (r) => r.workspace === period.id,
-        );
+        const records = recordsByWorkspace.get(period.id) || [];
         const logical = new Map(records.map((r) => [r.logical, r.value]));
         const meta = logical.get("meta");
         if (
@@ -100,6 +103,23 @@ globalThis.EduFullBackupValidator = Object.freeze({
             throw Error("رکورد خارج از دوره‌های پشتیبان است.");
           if (name === "undo" && !ids.has(row.id))
             throw Error("شناسه بازگردانی نامعتبر است.");
+          if (
+            name === "events" &&
+            (typeof row.action !== "string" ||
+              row.action.length > 10000 ||
+              typeof row.at !== "string" ||
+              !Number.isFinite(Date.parse(row.at)) ||
+              (row.revision !== undefined &&
+                (!Number.isSafeInteger(row.revision) || row.revision < 0)) ||
+              !Array.isArray(row.changes) ||
+              row.changes.some(
+                (change) =>
+                  !isDataObject(change) ||
+                  typeof change.path !== "string" ||
+                  change.path.length > 10000,
+              ))
+          )
+            throw Error("ساختار تاریخچه پشتیبان معتبر نیست.");
           if (name === "reports") {
             if (!ids.has(row.workspace))
               throw Error("کارنامه ثابت متعلق به دوره موجود نیست.");
@@ -125,6 +145,7 @@ globalThis.EduFullBackupValidator = Object.freeze({
       const draftKeys = new Set();
       for (const row of value.gradeDrafts || []) {
         if (
+          !isDataObject(row) ||
           !ids.has(row.workspace) ||
           typeof row.key !== "string" ||
           !row.key.startsWith("Edu24.drafts." + row.workspace + ".") ||

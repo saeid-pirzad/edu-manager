@@ -106,10 +106,13 @@ async function confirmDeletion() {
   const finish = beginRecordEditorSave(form);
   try {
     const context = deletionContext;
+    const sourceConnection = connection;
     const check = () => {
       assertEntityWritable();
       if (
         !context ||
+        deletionContext !== context ||
+        connection !== sourceConnection ||
         context.workspace !== workspace.id ||
         context.revision !== workspace.revision
       )
@@ -153,6 +156,15 @@ async function confirmDeletion() {
       if (target.matches(db.masterSchedule[key])) delete db.masterSchedule[key];
     });
     await saveDBV24({ action: "حذف " + name + " و سوابق مرتبط" });
+    if (
+      deletionContext !== context ||
+      workspace.id !== context.workspace ||
+      connection !== sourceConnection ||
+      periodLoading ||
+      resetBusy ||
+      connectionRetired
+    )
+      return;
     finish();
     rememberRecordEditor();
     deletionContext = null;

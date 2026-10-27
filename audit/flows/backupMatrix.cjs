@@ -159,6 +159,33 @@ async function backupMatrix() {
   test("B22", "duplicate catalog period identifier", "reject", (v) =>
     v.stores.catalog.push(structuredClone(v.stores.catalog[0])),
   );
+  const event = () => ({
+    workspace: period.id,
+    at: "2026-10-27T00:00:00Z",
+    action: "imported history",
+    changes: [],
+  });
+  test("B23", "history changes must be an array", "reject", (v) =>
+    v.stores.events.push({ ...event(), changes: null }),
+  );
+  test("B24", "history change entries cannot be null", "reject", (v) =>
+    v.stores.events.push({ ...event(), changes: [null] }),
+  );
+  test("B25", "history paths must be strings", "reject", (v) =>
+    v.stores.events.push({ ...event(), changes: [{ path: 123 }] }),
+  );
+  test("B26", "history timestamps must be valid", "reject", (v) =>
+    v.stores.events.push({ ...event(), at: "invalid" }),
+  );
+  test("B27", "history action must be text", "reject", (v) =>
+    v.stores.events.push({ ...event(), action: {} }),
+  );
+  test("B28", "grade-draft rows cannot be null", "reject", (v) =>
+    v.gradeDrafts.push(null),
+  );
+  test("B29", "legacy history can omit revision", "accept", (v) =>
+    v.stores.events.push(event()),
+  );
   window.auditInstallation = base;
   return results;
 }

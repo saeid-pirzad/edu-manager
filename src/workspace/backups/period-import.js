@@ -1,4 +1,18 @@
 async function exportBackupV24() {
+  const origin = workspace.id;
+  const ensureSource = () => {
+    if (
+      !ready ||
+      periodLoading ||
+      resetBusy ||
+      connectionRetired ||
+      workspace.id !== origin
+    )
+      throw new Error(
+        "دوره هنگام تهیه پشتیبان تغییر کرده است؛ دوباره تلاش کنید.",
+      );
+  };
+  ensureSource();
   let excludedDrafts = 0;
   try {
     await flushDrafts({ strict: true });
@@ -10,24 +24,22 @@ async function exportBackupV24() {
     );
   }
   await writer.catch(() => {});
-  const durable = (await readWorkspace(workspace.id)).data;
+  ensureSource();
+  const snapshot = await readWorkspaceSnapshot(origin);
+  ensureSource();
+  const { period, data: durable } = snapshot;
   const content = {
       version: 25,
       exportedAt: new Date().toISOString(),
       excludedDrafts,
-      period: { year: workspace.year, term: workspace.term },
+      period: { year: period.year, term: period.term },
       db: durable,
     },
     name =
-      "مدرسه-" +
-      workspace.year +
-      "-" +
-      workspace.term +
-      "-" +
-      todayISO() +
-      ".json";
+      "مدرسه-" + period.year + "-" + period.term + "-" + todayISO() + ".json";
   let confirmed = false;
   if (window.showSaveFilePicker) {
+    let writable;
     try {
       const handle = await window.showSaveFilePicker({
         suggestedName: name,
@@ -38,18 +50,26 @@ async function exportBackupV24() {
           },
         ],
       });
-      const writable = await handle.createWritable();
+      writable = await handle.createWritable();
       await writable.write(JSON.stringify(content, null, 2));
       await writable.close();
+      writable = null;
+      const file = await handle.getFile();
+      if (!file.size) throw new Error("فایل پشتیبان خالی است.");
       confirmed = true;
     } catch (error) {
+      if (writable) {
+        try {
+          await writable.abort();
+        } catch (ignore) {}
+      }
       if (error.name === "AbortError") return false;
       downloadJSON(content, name);
     }
   } else downloadJSON(content, name);
   try {
     localStorage.setItem(
-      "Edu24.externalBackup." + workspace.id,
+      "Edu24.externalBackup." + origin,
       JSON.stringify({ date: todayISO(), confirmed }),
     );
   } catch (ignore) {}
@@ -112,8 +132,12 @@ async function openBackups() {
 }
 
 async function downloadInternalBackup(id) {
+  const ensureCurrent = preserveAsyncTarget();
   const b = await readRecord("backups", id);
+  ensureCurrent();
   if (!b) throw Error("پشتیبان موجود نیست.");
+  if (b.workspace !== workspace.id && b.workspace !== null)
+    throw Error("این پشتیبان متعلق به دورهٔ انتخاب‌شده نیست.");
   if (b.full) {
     downloadJSON(b.full, "پشتیبان-کامل-" + b.at.slice(0, 10) + ".json");
     return;
@@ -129,7 +153,12 @@ async function downloadInternalBackup(id) {
 }
 
 async function previewInternalBackup(id) {
+  const ensureCurrent = preserveAsyncTarget();
   const b = await readRecord("backups", id);
+  ensureCurrent();
+  if (!b) throw Error("پشتیبان موجود نیست.");
+  if (b.workspace !== workspace.id && b.workspace !== null)
+    throw Error("این پشتیبان متعلق به دورهٔ انتخاب‌شده نیست.");
   if (b?.full) {
     previewFullBackup(b.full);
     return;
@@ -183,13 +212,36 @@ function previewImport(candidate, label) {
   if (opened !== false) pendingImport = preview;
 }
 
+let backupImportReading = false;
 async function handleImportV24(e) {
   const file = e.target.files[0];
   if (!file) return;
+  if (backupImportReading) {
+    e.target.value = "";
+    handleError(new Error("خواندن فایل پشتیبان در حال انجام است؛ صبر کنید."));
+    return;
+  }
+  backupImportReading = true;
+  const startedReady = ready;
+  const origin = workspace?.id;
+  const ensureDestination = () => {
+    if (
+      ready !== startedReady ||
+      workspace?.id !== origin ||
+      resetBusy ||
+      periodLoading ||
+      (startedReady && connectionRetired)
+    )
+      throw Error(
+        "مقصد بازیابی هنگام خواندن فایل تغییر کرد؛ فایل را دوباره انتخاب کنید.",
+      );
+  };
   try {
+    ensureDestination();
     if (file.size > 100 * 1024 * 1024)
       throw Error("حداکثر حجم فایل پشتیبان صد مگابایت است.");
     const parsed = JSON.parse(await file.text());
+    ensureDestination();
     if (parsed.format === "EduManager.FullBackup") {
       previewFullBackup(parsed);
       return;
@@ -208,13 +260,34 @@ async function handleImportV24(e) {
       legacy: (source.schemaVersion ?? parsed.version ?? 23) < 24,
     });
     if (!ready) {
-      if (!connection) connection = await openDatabase();
-      workspace = await installWorkspace(candidate, {
+      if (!connection) {
+        const opened = await openDatabase();
+        try {
+          ensureDestination();
+          if (connection && connection !== opened)
+            throw Error("اتصال بانک هنگام بازیابی تغییر کرده است.");
+        } catch (error) {
+          if (connection !== opened) opened.close();
+          throw error;
+        }
+        connection = opened;
+      }
+      ensureDestination();
+      const recoveryConnection = connection;
+      const ensureRecovery = () => {
+        ensureDestination();
+        if (connection !== recoveryConnection)
+          throw Error("اتصال بانک هنگام بازیابی تغییر کرده است.");
+      };
+      const created = await installWorkspace(candidate, {
         id: uid(),
         year: candidate.settings.academicYear,
         term: candidate.settings.academicTerm,
       });
-      const loaded = await readWorkspace(workspace.id);
+      ensureRecovery();
+      const loaded = await readWorkspace(created.id);
+      ensureRecovery();
+      workspace = created;
       db = loaded.data;
       committed = loaded.records;
       ready = true;
@@ -226,10 +299,12 @@ async function handleImportV24(e) {
       return;
     }
     await flushDrafts({ strict: true });
+    ensureDestination();
     previewImport(candidate, file.name);
   } catch (error) {
     handleError(error);
   } finally {
+    backupImportReading = false;
     e.target.value = "";
   }
 }
@@ -248,24 +323,35 @@ async function confirmImport() {
       throw Error("پیش‌نمایش بازیابی منقضی شده است.");
     const preview = pendingImport;
     const context = { id: preview.workspace, revision: preview.revision };
+    const creatingNew = document.getElementById("restoreMode").value === "new";
     const check = (write = false) => {
-      assertWorkspaceContext(context, { write });
+      // An independent import never replaces source data. Its own draft flush
+      // may advance the source revision before a failed navigation is retried.
+      assertWorkspaceContext(
+        creatingNew
+          ? { id: context.id, revision: workspace.revision }
+          : context,
+        { write },
+      );
       if (pendingImport !== preview)
         throw Error("پیش‌نمایش بازیابی تغییر کرده است؛ دوباره بررسی کنید.");
     };
     check();
-    if (document.getElementById("restoreMode").value === "new") {
-      const candidate = normalizeDB(preview.candidate);
-      const created = await installWorkspace(candidate, {
-        year: candidate.settings.academicYear,
-        term: recoveryPeriodTerm(
-          candidate.settings.academicTerm || "بازیابی",
-          uid(),
-        ),
-      });
+    if (creatingNew) {
+      if (!preview.createdWorkspace) {
+        const candidate = normalizeDB(preview.candidate);
+        const created = await installWorkspace(candidate, {
+          year: candidate.settings.academicYear,
+          term: recoveryPeriodTerm(
+            candidate.settings.academicTerm || "بازیابی",
+            uid(),
+          ),
+        });
+        preview.createdWorkspace = created.id;
+      }
       check();
-      pendingImport = null;
-      await switchPeriod(created.id);
+      await switchPeriod(preview.createdWorkspace);
+      if (pendingImport === preview) pendingImport = null;
       return;
     }
     if (!document.getElementById("restoreExternalConfirmed").checked) {

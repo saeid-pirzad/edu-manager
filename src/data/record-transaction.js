@@ -15,6 +15,9 @@ globalThis.EduRecordTransaction = Object.freeze({
     normalizedName,
     academicTermKind,
   }) {
+    // Compare against the request's original catalog, not a live UI object
+    // that can change before IndexedDB delivers its callbacks.
+    workspace = { ...workspace };
     const { transactionDone } = globalThis.EduDataStoreRuntime;
     const recordKey = (logical) => workspace.id + "|" + logical;
     const tx = connection.transaction(
@@ -24,71 +27,89 @@ globalThis.EduRecordTransaction = Object.freeze({
       done = transactionDone(tx);
     let conflict = false,
       labelConflict = false,
-      nextCatalog;
-    const catalog = tx.objectStore("catalog"),
-      meta = records.get("meta"),
-      labelChanged =
-        meta &&
-        (meta.settings?.academicYear !== workspace.year ||
-          meta.settings?.academicTerm !== workspace.term),
-      labels = labelChanged ? catalog.getAll() : null,
-      get = catalog.get(workspace.id);
-    get.onsuccess = () => {
-      const live = get.result;
-      if (!live || live.revision !== workspace.revision) {
-        conflict = true;
+      nextCatalog,
+      queueError;
+    const abortQueue = (error) => {
+      queueError = error;
+      try {
         tx.abort();
-        return;
-      }
-      if (
-        labels &&
-        labels.result.some(
-          (row) =>
-            row.id !== workspace.id &&
-            row.year === meta.settings.academicYear &&
-            normalizedName(row.term) ===
-              normalizedName(meta.settings.academicTerm),
-        )
-      ) {
-        labelConflict = true;
-        tx.abort();
-        return;
-      }
-      for (const [logical, json] of changed)
-        tx.objectStore("records").put({
-          key: recordKey(logical),
-          workspace: workspace.id,
-          logical,
-          value: JSON.parse(json),
-        });
-      for (const logical of removed)
-        tx.objectStore("records").delete(recordKey(logical));
-      const next = {
-        ...live,
-        year: records.get("meta")?.settings?.academicYear ?? live.year,
-        term: records.get("meta")?.settings?.academicTerm ?? live.term,
-        termKind: live.termKind || academicTermKind(live.term),
-        revision: live.revision + 1,
-        updatedAt: new Date().toISOString(),
-      };
-      nextCatalog = next;
-      catalog.put(next);
-      tx.objectStore("events").add({
-        workspace: workspace.id,
-        at: next.updatedAt,
-        action,
-        revision: next.revision,
-        changes,
-      });
-      if (keepUndo)
-        tx.objectStore("undo").put({
-          id: workspace.id,
-          action,
-          revision: next.revision,
-          before,
-        });
-      else tx.objectStore("undo").delete(workspace.id);
+      } catch (ignore) {}
     };
+    try {
+      const catalog = tx.objectStore("catalog"),
+        sourceMeta = records.get("meta"),
+        meta = sourceMeta ? { settings: { ...sourceMeta.settings } } : null,
+        labelChanged =
+          meta &&
+          (meta.settings?.academicYear !== workspace.year ||
+            meta.settings?.academicTerm !== workspace.term),
+        labels = labelChanged ? catalog.getAll() : null,
+        get = catalog.get(workspace.id);
+      get.onsuccess = () => {
+        try {
+          const live = get.result;
+          if (!live || live.revision !== workspace.revision) {
+            conflict = true;
+            tx.abort();
+            return;
+          }
+          if (
+            labels &&
+            labels.result.some(
+              (row) =>
+                row.id !== workspace.id &&
+                row.year === meta.settings.academicYear &&
+                normalizedName(row.term) ===
+                  normalizedName(meta.settings.academicTerm),
+            )
+          ) {
+            labelConflict = true;
+            tx.abort();
+            return;
+          }
+          for (const [logical, json] of changed)
+            tx.objectStore("records").put({
+              key: recordKey(logical),
+              workspace: workspace.id,
+              logical,
+              value: JSON.parse(json),
+            });
+          for (const logical of removed)
+            tx.objectStore("records").delete(recordKey(logical));
+          const next = {
+            ...live,
+            year: meta?.settings?.academicYear ?? live.year,
+            term: meta?.settings?.academicTerm ?? live.term,
+            // Editing the display label must not move grades between annual
+            // terms. For legacy rows infer the role from the original label.
+            termKind: live.termKind || academicTermKind(live.term),
+            revision: live.revision + 1,
+            updatedAt: new Date().toISOString(),
+          };
+          nextCatalog = next;
+          catalog.put(next);
+          tx.objectStore("events").add({
+            workspace: workspace.id,
+            at: next.updatedAt,
+            action,
+            revision: next.revision,
+            changes,
+          });
+          if (keepUndo)
+            tx.objectStore("undo").put({
+              id: workspace.id,
+              action,
+              revision: next.revision,
+              before,
+            });
+          else tx.objectStore("undo").delete(workspace.id);
+        } catch (error) {
+          abortQueue(error);
+        }
+      };
+    } catch (error) {
+      abortQueue(error);
+    }
     try {
       await done;
     } catch (e) {
@@ -105,7 +126,7 @@ globalThis.EduRecordTransaction = Object.freeze({
         error.code = "WORKSPACE_CONFLICT";
         throw error;
       }
-      throw e;
+      throw queueError || e;
     }
     return nextCatalog;
   },

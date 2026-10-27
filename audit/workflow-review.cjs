@@ -84,6 +84,16 @@ if (process.argv.includes("--help")) {
         )),
       );
       cases.push(
+        ...(await evaluate(
+          "(" + require("./flows/workspaceScale.cjs").toString() + ")()",
+        )),
+      );
+      cases.push(
+        ...(await evaluate(
+          "(" + require("./flows/fullRestoreSafety.cjs").toString() + ")()",
+        )),
+      );
+      cases.push(
         ...(await require("./local-file.cjs")({ cdp, evaluate, root, delay })),
       );
       cases.push(

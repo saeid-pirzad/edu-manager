@@ -147,7 +147,8 @@ async function finalizePeriod() {
       !request.result ||
       request.result.closed ||
       request.result.revision !== context.revision ||
-      workspace.id !== context.id
+      workspace.id !== context.id ||
+      workspace.revision !== context.revision
     ) {
       tx.abort();
       return;
@@ -162,7 +163,7 @@ async function finalizePeriod() {
     tx.objectStore("reports").put(snapshot);
     tx.objectStore("undo").delete(context.id);
     tx.objectStore("events").add({
-      workspace: workspace.id,
+      workspace: context.id,
       at,
       revision: finalizedWorkspace.revision,
       action: "بستن دوره و ثبت کارنامه ثابت",
@@ -170,16 +171,19 @@ async function finalizePeriod() {
     });
   };
   await done;
-  workspace = finalizedWorkspace;
   broadcast({
-    workspace: workspace.id,
-    revision: workspace.revision,
+    workspace: context.id,
+    revision: finalizedWorkspace.revision,
   });
+  if (workspace.id !== context.id || workspace.revision !== context.revision)
+    return;
+  workspace = finalizedWorkspace;
   await openPeriods();
   render();
 }
 
 async function reopenPeriod() {
+  assertWorkspaceReadable();
   if (fileMode)
     throw Error(
       "این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.",
@@ -191,12 +195,19 @@ async function reopenPeriod() {
     )
   )
     return;
+  const context = captureWorkspaceContext();
   let reopenedWorkspace;
   const tx = connection.transaction(["catalog", "events"], "readwrite"),
     done = transactionDone(tx),
-    request = tx.objectStore("catalog").get(workspace.id);
+    request = tx.objectStore("catalog").get(context.id);
   request.onsuccess = () => {
-    if (request.result.revision !== workspace.revision) {
+    if (
+      !request.result ||
+      !request.result.closed ||
+      request.result.revision !== context.revision ||
+      workspace.id !== context.id ||
+      workspace.revision !== context.revision
+    ) {
       tx.abort();
       return;
     }
@@ -207,7 +218,7 @@ async function reopenPeriod() {
     };
     tx.objectStore("catalog").put(reopenedWorkspace);
     tx.objectStore("events").add({
-      workspace: workspace.id,
+      workspace: context.id,
       at: new Date().toISOString(),
       revision: reopenedWorkspace.revision,
       action: "بازگشایی دوره؛ کارنامه ثابت پیشین محفوظ است",
@@ -215,11 +226,13 @@ async function reopenPeriod() {
     });
   };
   await done;
-  workspace = reopenedWorkspace;
   broadcast({
-    workspace: workspace.id,
-    revision: workspace.revision,
+    workspace: context.id,
+    revision: reopenedWorkspace.revision,
   });
+  if (workspace.id !== context.id || workspace.revision !== context.revision)
+    return;
+  workspace = reopenedWorkspace;
   await openPeriods();
   render();
 }

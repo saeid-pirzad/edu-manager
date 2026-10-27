@@ -5,6 +5,7 @@ function syncControlLocks() {
     connectionRetired ||
     resetBusy ||
     !ready ||
+    periodLoading ||
     !!workspace?.closed;
   const modalBody = document.getElementById("modalBody");
   const modalWrite =

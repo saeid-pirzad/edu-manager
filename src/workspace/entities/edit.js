@@ -4,6 +4,7 @@ function assertEntityWritable() {
   if (
     fileMode ||
     !ready ||
+    periodLoading ||
     resetBusy ||
     connectionRetired ||
     blocked ||

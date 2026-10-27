@@ -14,7 +14,7 @@ function contextFromInput(input) {
 }
 
 function gradeInput(input) {
-  if (resetBusy || connectionRetired) return;
+  if (resetBusy || connectionRetired || periodLoading) return;
   const item = contextFromInput(input),
     key = inputKey(item),
     parsed = parseDraft(item);
@@ -28,7 +28,8 @@ function gradeInput(input) {
     note.textContent = parsed.ok ? "در انتظار ذخیره" : parsed.message;
     note.dataset.state = parsed.ok ? "pending" : "error";
   }
-  if (row?.querySelector('.grade-note[data-state="error"]')) row.dataset.editState = "error";
+  if (row?.querySelector('.grade-note[data-state="error"]'))
+    row.dataset.editState = "error";
   storeDrafts();
   setStatus(
     parsed.ok ? "ویرایش در انتظار ذخیره است." : parsed.message,
@@ -40,7 +41,7 @@ function gradeInput(input) {
 }
 
 function clearGrade(input) {
-  if (resetBusy || connectionRetired) return;
+  if (resetBusy || connectionRetired || periodLoading) return;
   const item = contextFromInput(input);
   if (
     !confirm(
@@ -61,7 +62,8 @@ function clearGrade(input) {
     note.textContent = "در انتظار ذخیره";
     note.dataset.state = "pending";
   }
-  if (row?.querySelector('.grade-note[data-state="error"]')) row.dataset.editState = "error";
+  if (row?.querySelector('.grade-note[data-state="error"]'))
+    row.dataset.editState = "error";
   storeDrafts();
   flushDrafts().catch(() => {});
 }

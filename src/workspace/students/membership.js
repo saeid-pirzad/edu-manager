@@ -113,10 +113,15 @@ async function saveMembership(mode = "") {
   const finish = beginRecordEditorSave(form);
   try {
     const context = membershipContext;
+    const sourceConnection = connection;
     const check = () => {
       assertEntityWritable();
       if (
         !context ||
+        membershipContext !== context ||
+        connection !== sourceConnection ||
+        state.schoolId !== context.schoolId ||
+        state.classId !== context.classId ||
         context.workspace !== workspace.id ||
         context.revision !== workspace.revision
       )
@@ -191,6 +196,17 @@ async function saveMembership(mode = "") {
       action = "بازگردانی هنرجو: " + student.name;
     }
     await saveDBV24({ action });
+    if (
+      membershipContext !== context ||
+      connection !== sourceConnection ||
+      workspace.id !== context.workspace ||
+      state.schoolId !== context.schoolId ||
+      state.classId !== context.classId ||
+      periodLoading ||
+      resetBusy ||
+      connectionRetired
+    )
+      return;
     finish();
     rememberRecordEditor();
     membershipContext = null;

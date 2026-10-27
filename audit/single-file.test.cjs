@@ -36,6 +36,7 @@ function fixture() {
   };
   const context = vm.createContext({
     ready: true,
+    periodLoading: false,
     blocked: false,
     resetBusy: false,
     connectionRetired: false,
@@ -144,6 +145,34 @@ test("file status moves between navigation and the persistent warning area on fa
   f.context.showSingleFileFallback(false);
   f.context.singleFileStatus("saved");
   assert.equal(badge.parentElement, tools);
+});
+test("automatic file sync skips period transitions without failing or disconnecting the mirror", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  f.context.periodLoading = true;
+  assert.equal(await f.context.syncSingleFile(), false);
+  assert.equal(f.writes, 1);
+  assert.equal(vm.runInContext("singleFileFailure", f.context), false);
+  f.context.periodLoading = false;
+  assert.equal(await f.context.syncSingleFile(), true);
+  assert.equal(f.writes, 2);
+});
+test("a snapshot interrupted by a period switch does not pause or fail automatic file saving", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  const snapshot = f.context.snapshotInstallation;
+  f.context.snapshotInstallation = async () => {
+    throw Object.assign(Error("period moved"), {
+      code: "BACKUP_CONTEXT_CHANGED",
+    });
+  };
+  assert.equal(await f.context.syncSingleFile(), false);
+  assert.equal(f.writes, 1);
+  assert.equal(vm.runInContext("singleFileFailure", f.context), false);
+  assert.equal(vm.runInContext("singleFileTimer", f.context), 1);
+  f.context.snapshotInstallation = snapshot;
+  assert.equal(await f.context.syncSingleFile(), true);
+  assert.equal(f.writes, 2);
 });
 test("single-file backup replaces the same JSON with additions, edits and deletions", async () => {
   const f = fixture();

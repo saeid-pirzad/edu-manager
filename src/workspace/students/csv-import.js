@@ -3,13 +3,29 @@ function csvPlan(text, c) {
   if (rows.length < 2)
     throw Error("فایل باید سرستون و دست‌کم یک ردیف داشته باشد.");
   const headers = rows[0].map(normalizedName),
-    nameIndex = headers.findIndex((x) => x.includes("نام")),
-    codeIndex = headers.findIndex(
-      (x) =>
-        x === "کد" ||
-        (x.includes("کد") && (x.includes("دانش") || x.includes("هنرجو"))),
+    nameColumns = headers.flatMap((x, index) =>
+      x.includes("نام") ? [index] : [],
+    ),
+    codeColumns = headers.flatMap((x, index) =>
+      x === "کد" ||
+      (x.includes("کد") && (x.includes("دانش") || x.includes("هنرجو")))
+        ? [index]
+        : [],
     );
-  if (nameIndex < 0) throw Error("ستون نام یافت نشد.");
+  if (!nameColumns.length) throw Error("ستون نام یافت نشد.");
+  if (nameColumns.length > 1 || codeColumns.length > 1)
+    throw Error(
+      "ستون نام یا کد مبهم است؛ برای هرکدام فقط یک ستون در فایل نگه دارید.",
+    );
+  const nameIndex = nameColumns[0],
+    codeIndex = codeColumns[0] ?? -1,
+    known = knownStudents(c),
+    existingCodes = new Map(),
+    existingNames = new Set(known.map((st) => normalizedName(st.name))),
+    activeIds = new Set(c.students.map((st) => st.id));
+  for (const student of known)
+    if (student.code && !existingCodes.has(student.code))
+      existingCodes.set(student.code, student);
   const codes = new Set(),
     names = new Set(),
     plan = [];
@@ -29,16 +45,14 @@ function csvPlan(text, c) {
     if (code && codes.has(code))
       throw Error("کد " + code + " در فایل تکراری است.");
     if (code) codes.add(code);
-    const exact = code ? knownStudents(c).find((st) => st.code === code) : null,
-      sameName =
-        knownStudents(c).some((st) => normalizedName(st.name) === name) ||
-        names.has(name);
+    const exact = code ? existingCodes.get(code) : null,
+      sameName = existingNames.has(name) || names.has(name);
     plan.push({
       row: i + 1,
       name,
       code,
       existingId: exact?.id || null,
-      archived: exact ? !c.students.some((st) => st.id === exact.id) : false,
+      archived: exact ? !activeIds.has(exact.id) : false,
       duplicate: !exact && sameName,
       choice: exact ? "skip" : sameName ? "skip" : "add",
     });
@@ -128,6 +142,7 @@ async function csvImportV24(e) {
   if (errorBox) errorBox.textContent = "";
   const origin = {
     workspace: workspace?.id,
+    connection,
     schoolId: state.schoolId,
     classId: state.classId,
     revision: workspace?.revision,
@@ -139,6 +154,7 @@ async function csvImportV24(e) {
     assertEntityWritable();
     if (
       origin.workspace !== workspace.id ||
+      origin.connection !== connection ||
       origin.schoolId !== state.schoolId ||
       origin.classId !== state.classId
     )
@@ -153,6 +169,7 @@ async function csvImportV24(e) {
     assertEntityWritable();
     if (
       origin.workspace !== workspace.id ||
+      origin.connection !== connection ||
       origin.schoolId !== state.schoolId ||
       origin.classId !== state.classId ||
       origin.revision !== workspace.revision
@@ -195,6 +212,7 @@ async function commitCSV() {
   if (!form) return false;
   csvSaving = true;
   const context = pendingCSV;
+  const sourceConnection = connection;
   const choices = [...form.querySelectorAll("[data-csv-row]")].map(
     (el) => el.value,
   );
@@ -204,6 +222,9 @@ async function commitCSV() {
       assertEntityWritable();
       if (
         !context ||
+        pendingCSV !== context ||
+        connection !== sourceConnection ||
+        (context.connection && context.connection !== connection) ||
         context.workspace !== workspace.id ||
         context.revision !== workspace.revision ||
         context.schoolId !== state.schoolId ||
@@ -227,6 +248,9 @@ async function commitCSV() {
         .map((st) => st.code)
         .filter(Boolean),
     );
+    const activeById = new Map(
+      c.students.map((student) => [student.id, student]),
+    );
     context.plan.forEach((row, i) => {
       const choice = choices[i];
       if (choice === "skip") return;
@@ -237,10 +261,8 @@ async function commitCSV() {
         if (identity.code) codes.add(identity.code);
         additions.push({ id: uid(), ...identity });
       } else if (choice === "update" && row.existingId && !row.archived) {
-        const student = c.students.find(
-          (st) => st.id === row.existingId && st.code === identity.code,
-        );
-        if (!student)
+        const student = activeById.get(row.existingId);
+        if (!student || student.code !== identity.code)
           throw Error(
             "هویت هنرجوی مقصد تغییر کرده است؛ فایل را دوباره بررسی کنید.",
           );
@@ -253,7 +275,7 @@ async function commitCSV() {
     freezeClassRosters(c);
     for (const { student, identity } of updates)
       applyStudentIdentity(c, student, identity);
-    c.students.push(...additions);
+    for (const student of additions) c.students.push(student);
     await saveDBV24({
       action:
         "ورود CSV: " +
@@ -262,6 +284,17 @@ async function commitCSV() {
         updates.length +
         " اصلاح",
     });
+    if (
+      pendingCSV !== context ||
+      connection !== sourceConnection ||
+      workspace.id !== context.workspace ||
+      state.schoolId !== context.schoolId ||
+      state.classId !== context.classId ||
+      periodLoading ||
+      resetBusy ||
+      connectionRetired
+    )
+      return true;
     finish();
     rememberRecordEditor();
     pendingCSV = null;

@@ -48,11 +48,13 @@ async function addStudentV24(event) {
   };
   const target = {
     workspace: workspace?.id,
+    connection,
     schoolId: state.schoolId,
     classId: state.classId,
   };
   const sameTarget = () =>
     target.workspace === workspace?.id &&
+    target.connection === connection &&
     target.schoolId === state.schoolId &&
     target.classId === state.classId;
   studentCreationBusy = true;
@@ -81,7 +83,8 @@ async function addStudentV24(event) {
     freezeClassRosters(c);
     c.students.push({ id: uid(), name, ...(code ? { code } : {}) });
     await saveDBV24({ action: "افزودن هنرجو: " + name });
-    render();
+    if (sameTarget() && !periodLoading && !resetBusy && !connectionRetired)
+      render();
     return true;
   } catch (error) {
     const current = sameTarget()
@@ -161,10 +164,13 @@ async function saveStudent(studentId) {
   const finish = beginRecordEditorSave(form);
   try {
     const context = studentEditing;
+    const sourceConnection = connection;
     const check = () => {
       assertEntityWritable();
       if (
         !context ||
+        studentEditing !== context ||
+        connection !== sourceConnection ||
         (studentId && studentId !== context.studentId) ||
         context.workspace !== workspace.id ||
         context.revision !== workspace.revision ||
@@ -207,6 +213,17 @@ async function saveStudent(studentId) {
       applyStudentIdentity(c, student, { name, code });
       await saveDBV24({ action: "اصلاح مشخصات هنرجو: " + name });
     }
+    if (
+      studentEditing !== context ||
+      connection !== sourceConnection ||
+      workspace.id !== context.workspace ||
+      state.schoolId !== context.schoolId ||
+      state.classId !== context.classId ||
+      periodLoading ||
+      resetBusy ||
+      connectionRetired
+    )
+      return;
     finish();
     rememberRecordEditor();
     studentEditing = null;

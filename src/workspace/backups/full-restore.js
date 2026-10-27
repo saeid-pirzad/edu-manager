@@ -13,6 +13,10 @@ const validateFullBackup = EduFullBackupValidator.create({
 let pendingFullBackup = null,
   fullRestoreBusy = false;
 function previewFullBackup(value) {
+  if (fullRestoreBusy)
+    throw Error(
+      "بازیابی کامل در حال انجام است؛ تا پایان آن فایل دیگری انتخاب نکنید.",
+    );
   const periods = validateFullBackup(value);
   const opened = showModal(
     "بازیابی پشتیبان کامل",
@@ -39,11 +43,27 @@ async function restoreFullBackup() {
     if (!pendingFullBackup)
       throw Error("ابتدا فایل پشتیبان کامل را انتخاب کنید.");
     const source = pendingFullBackup;
+    const origin = workspace?.id;
+    const check = () => {
+      if (
+        resetBusy ||
+        connectionRetired ||
+        periodLoading ||
+        workspace?.id !== origin ||
+        pendingFullBackup !== source
+      )
+        throw Error(
+          "بانک، دوره یا پیش‌نمایش هنگام بازیابی تغییر کرده است؛ دوباره بررسی کنید.",
+        );
+    };
+    check();
     await flushDrafts({ strict: true });
     await writer.catch(() => {});
+    check();
     const periods = validateFullBackup(source);
     const mapping = new Map(periods.map(({ period }) => [period.id, uid()]));
     const existing = await allFrom("catalog");
+    check();
     const occupied = new Set(
       existing.map((p) => p.year + "|" + normalizedName(p.term)),
     );
@@ -119,8 +139,14 @@ async function restoreFullBackup() {
     const restoredStores = [...backupStores, "drafts"];
     const tx = connection.transaction(restoredStores, "readwrite"),
       done = transactionDone(tx);
-    for (const name of restoredStores)
-      for (const row of rows[name]) tx.objectStore(name).add(row);
+    try {
+      for (const name of restoredStores)
+        for (const row of rows[name]) tx.objectStore(name).add(row);
+    } catch (error) {
+      tx.abort();
+      await done.catch(() => {});
+      throw error;
+    }
     await done;
     let reportNotesFailed = false;
     for (const [oldId, id] of mapping) {
@@ -145,7 +171,13 @@ async function restoreFullBackup() {
       }
     }
     pendingFullBackup = null;
-    await switchPeriod(mapping.get(source.activeWorkspace));
+    if (
+      !resetBusy &&
+      !connectionRetired &&
+      !periodLoading &&
+      workspace?.id === origin
+    )
+      await switchPeriod(mapping.get(source.activeWorkspace));
     const pendingGrades = (source.gradeDrafts || []).reduce(
       (n, row) => n + row.entries.length,
       0,

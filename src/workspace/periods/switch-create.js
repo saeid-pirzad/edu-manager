@@ -63,37 +63,52 @@ function hydrateReportNotes(period) {
     );
   return saved !== false;
 }
+let periodSwitchBusy = false;
 async function switchPeriod(id) {
-  if (id === workspace.id) {
+  if (periodSwitchBusy)
+    throw Error("جابه‌جایی دوره در حال انجام است؛ صبر کنید.");
+  periodSwitchBusy = true;
+  try {
+    if (id === workspace.id) {
+      closeModal();
+      return;
+    }
+    await flushDrafts({ strict: true });
+    await writer.catch(() => {});
+    periodLoading = true;
+    lockControls();
+    const loaded = await readWorkspaceSnapshot(id);
+    if (!ready || resetBusy || connectionRetired)
+      throw Error(
+        "بانک هنگام جابه‌جایی تغییر کرد؛ صفحه را دوباره بارگذاری کنید.",
+      );
+    workspace = loaded.period;
+    db = loaded.data;
+    committed = loaded.records;
+    blocked = false;
+    storageBlocked = false;
+    drafts.clear();
+    isAuthenticated = false;
+    state = {
+      view: "schools",
+      schoolId: null,
+      classId: null,
+      lessonId: null,
+      tab: "students",
+      reportTab: "comprehensive",
+    };
+    rememberPeriod(id);
+    hydrateReportNotes(workspace);
+    await loadDrafts();
+    periodLoading = false;
     closeModal();
-    return;
+    render();
+    await recoverDrafts();
+  } finally {
+    periodLoading = false;
+    periodSwitchBusy = false;
+    lockControls();
   }
-  await flushDrafts({ strict: true });
-  await writer.catch(() => {});
-  const next = await readRecord("catalog", id);
-  if (!next) throw Error("دوره موجود نیست.");
-  const loaded = await readWorkspace(id);
-  workspace = next;
-  db = loaded.data;
-  committed = loaded.records;
-  blocked = false;
-  storageBlocked = false;
-  drafts.clear();
-  isAuthenticated = false;
-  state = {
-    view: "schools",
-    schoolId: null,
-    classId: null,
-    lessonId: null,
-    tab: "students",
-    reportTab: "comprehensive",
-  };
-  rememberPeriod(id);
-  hydrateReportNotes(workspace);
-  await loadDrafts();
-  closeModal();
-  render();
-  await recoverDrafts();
 }
 
 function openNewPeriod() {
@@ -105,57 +120,73 @@ function openNewPeriod() {
   );
 }
 
+let newPeriodBusy = false;
 async function createNewPeriod() {
-  if (fileMode)
-    throw Error(
-      "این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.",
-    );
-  await flushDrafts({ strict: true });
-  const year = asciiDigits(document.getElementById("periodYear").value),
-    term = document.getElementById("periodTerm").value;
-  if (
-    !/^\d{4}-\d{4}$/.test(year) ||
-    Number(year.slice(5)) - Number(year.slice(0, 4)) !== 1
-  )
-    throw Error("سال را مانند 1405-1406 وارد کنید.");
-  const existing = await allFrom("catalog");
-  if (existing.some((x) => x.year === year && x.term === term))
-    throw Error("این سال و نوبت قبلاً ساخته شده است.");
-  const next = clone(db);
-  next.sessions = [];
-  next.migrationWarnings = [];
-  next.settings.academicYear = year;
-  next.settings.academicTerm = term;
-  for (const school of next.schools)
-    for (const c of school.classes) {
-      c.archivedStudents = [];
-      for (const l of c.lessons) {
-        l.kardaneshScores = {};
-        const info = EduPolicy.identity(l, year);
-        if (l.gradingPolicy) {
-          const changedYear = l.gradingPolicy.year !== year;
-          const changedIdentity = Object.entries(info).some(
-            ([key, value]) => l.gradingPolicy[key] !== value,
-          );
-          Object.assign(l.gradingPolicy, info);
-          if (changedYear || changedIdentity) {
-            l.gradingPolicy.confirmed = false;
-            l.gradingPolicy.revision = 1;
+  if (newPeriodBusy) throw Error("ساخت دوره در حال انجام است؛ صبر کنید.");
+  newPeriodBusy = true;
+  try {
+    const ensureCurrent = preserveAsyncTarget();
+    if (fileMode)
+      throw Error(
+        "این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.",
+      );
+    const year = asciiDigits(document.getElementById("periodYear").value),
+      term = document.getElementById("periodTerm").value;
+    if (!["اول", "دوم", "تابستان"].includes(term))
+      throw Error("نوبت انتخاب‌شده معتبر نیست.");
+    await flushDrafts({ strict: true });
+    await writer.catch(() => {});
+    ensureCurrent();
+    const context = captureWorkspaceContext();
+    if (
+      !/^\d{4}-\d{4}$/.test(year) ||
+      Number(year.slice(5)) - Number(year.slice(0, 4)) !== 1
+    )
+      throw Error("سال را مانند 1405-1406 وارد کنید.");
+    const existing = await allFrom("catalog");
+    assertWorkspaceContext(context);
+    if (existing.some((x) => x.year === year && x.term === term))
+      throw Error("این سال و نوبت قبلاً ساخته شده است.");
+    const next = clone(db);
+    next.sessions = [];
+    next.migrationWarnings = [];
+    next.settings.academicYear = year;
+    next.settings.academicTerm = term;
+    for (const school of next.schools)
+      for (const c of school.classes) {
+        c.archivedStudents = [];
+        for (const l of c.lessons) {
+          l.kardaneshScores = {};
+          const info = EduPolicy.identity(l, year);
+          if (l.gradingPolicy) {
+            const changedYear = l.gradingPolicy.year !== year;
+            const changedIdentity = Object.entries(info).some(
+              ([key, value]) => l.gradingPolicy[key] !== value,
+            );
+            Object.assign(l.gradingPolicy, info);
+            if (changedYear || changedIdentity) {
+              l.gradingPolicy.confirmed = false;
+              l.gradingPolicy.revision = 1;
+            }
+            if (changedYear) {
+              l.gradingPolicy.circularNumber = "";
+              l.gradingPolicy.circularDate = "";
+              l.gradingPolicy.reference = "";
+            }
           }
-          if (changedYear) {
-            l.gradingPolicy.circularNumber = "";
-            l.gradingPolicy.circularDate = "";
-            l.gradingPolicy.reference = "";
-          }
+          if (l.courseInfo || l.gradingPolicy) l.courseInfo = info;
+          for (const p of l.poudmans) p.podScores = {};
+          for (const p of l.poudmans)
+            for (const u of p.units) u.unitScores = {};
         }
-        if (l.courseInfo || l.gradingPolicy) l.courseInfo = info;
-        for (const p of l.poudmans) p.podScores = {};
-        for (const p of l.poudmans) for (const u of p.units) u.unitScores = {};
       }
-    }
-  const created = await installWorkspace(normalizeDB(next), {
-    year,
-    term,
-  });
-  await switchPeriod(created.id);
+    const created = await installWorkspace(normalizeDB(next), {
+      year,
+      term,
+    });
+    assertWorkspaceContext(context);
+    await switchPeriod(created.id);
+  } finally {
+    newPeriodBusy = false;
+  }
 }

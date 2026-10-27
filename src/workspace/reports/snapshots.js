@@ -5,7 +5,14 @@ function captureWorkspaceContext() {
   });
 }
 function assertWorkspaceReadable() {
-  if (fileMode || !ready || resetBusy || connectionRetired || !workspace)
+  if (
+    fileMode ||
+    !ready ||
+    periodLoading ||
+    resetBusy ||
+    connectionRetired ||
+    !workspace
+  )
     throw Error("اطلاعات آماده خواندن نیست؛ برنامه را دوباره باز کنید.");
   if (blocked)
     throw Error(
@@ -76,26 +83,7 @@ async function assertReportSnapshot(context) {
     );
   return true;
 }
-async function prepareAnnualReportSnapshot(periodIds = {}) {
-  assertWorkspaceReadable();
-  const origin = workspace.id;
-  await flushDrafts({ strict: true });
-  await writer.catch(() => {});
-  assertWorkspaceReadable();
-  if (workspace.id !== origin)
-    throw Error("دوره تغییر کرد؛ گزارش سالانه را دوباره تهیه کنید.");
-  const context = captureWorkspaceContext();
-  const tx = connection.transaction(["catalog", "records"], "readonly"),
-    done = transactionDone(tx);
-  const [catalog, records] = await Promise.all([
-    requestPromise(tx.objectStore("catalog").getAll()),
-    requestPromise(tx.objectStore("records").getAll()),
-  ]);
-  await done;
-  assertLiveWorkspace(
-    catalog.find((row) => row.id === context.id),
-    context,
-  );
+function selectAnnualPeriods(catalog, periodIds, active) {
   let periods;
   if (periodIds.first || periodIds.second) {
     if (
@@ -107,31 +95,28 @@ async function prepareAnnualReportSnapshot(periodIds = {}) {
     periods = [periodIds.first, periodIds.second].map((id) =>
       catalog.find((row) => row.id === id),
     );
-    if (periods.some((row) => !row || row.year !== workspace.year))
+    if (periods.some((row) => !row || row.year !== active.year))
       throw Error("هر دو نوبت باید متعلق به سال تحصیلی فعال باشند.");
-    for (let i = 0; i < periods.length; i++) {
-      const kind = periods[i].termKind || academicTermKind(periods[i].term);
-      if (kind && kind !== ["first", "second"][i])
-        throw Error("نوع دوره انتخاب‌شده با نوبت اول/دوم مطابقت ندارد.");
-    }
   } else {
     const candidates = ["first", "second"].map((kind) =>
       catalog.filter(
         (row) =>
-          row.year === workspace.year &&
+          row.year === active.year &&
           (row.termKind || academicTermKind(row.term)) === kind,
       ),
     );
     if (candidates.some((rows) => rows.length > 1))
-      throw Error("برای یکی از نوبت‌ها چند دوره وجود دارد؛ نوبت اول و دوم را در فرم گزارش مشخص کنید.");
+      throw Error(
+        "برای یکی از نوبت‌ها چند دوره وجود دارد؛ نوبت اول و دوم را در فرم گزارش مشخص کنید.",
+      );
     if (
       candidates.every((rows) => rows.length === 1) &&
-      candidates.some((rows) => rows[0].id === workspace.id)
+      candidates.some((rows) => rows[0].id === active.id)
     )
       periods = candidates.map((rows) => rows[0]);
-    else if (["اول", "دوم"].includes(workspace.term))
+    else if (["اول", "دوم"].includes(active.term))
       periods = ["اول", "دوم"].map((term) =>
-        catalog.find((row) => row.year === workspace.year && row.term === term),
+        catalog.find((row) => row.year === active.year && row.term === term),
       );
     else
       throw Error(
@@ -142,16 +127,69 @@ async function prepareAnnualReportSnapshot(periodIds = {}) {
         "برای گزارش سالانه، هر دو نوبت همین سال تحصیلی باید وجود داشته باشند؛ آن‌ها را انتخاب یا ایجاد کنید.",
       );
   }
+  // The legacy label fallback must obey the same role checks as an explicit
+  // selection. A display label cannot override a saved annual-term role.
+  for (let i = 0; i < periods.length; i++) {
+    const kind = periods[i].termKind || academicTermKind(periods[i].term);
+    if (kind && kind !== ["first", "second"][i])
+      throw Error("نوع دوره انتخاب‌شده با نوبت اول/دوم مطابقت ندارد.");
+  }
+  return periods;
+}
+async function readAnnualRecordSets(context, periodIds) {
+  const tx = connection.transaction(["catalog", "records"], "readonly");
+  const done = transactionDone(tx);
+  let periods;
+  const pending = new Promise((resolve, reject) => {
+    const request = tx.objectStore("catalog").getAll();
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      try {
+        assertLiveWorkspace(
+          request.result.find((row) => row.id === context.id),
+          context,
+        );
+        periods = selectAnnualPeriods(request.result, periodIds, workspace);
+        // Queue both bounded reads inside the active IDB callback, before
+        // awaiting anything. Catalog and records remain one consistent snapshot.
+        Promise.all(
+          periods.map(async (period) =>
+            requestPromise(
+              workspaceRecordRequest(tx.objectStore("records"), period.id),
+            ),
+          ),
+        ).then(resolve, reject);
+      } catch (error) {
+        reject(error);
+        tx.abort();
+      }
+    };
+  });
+  const [recordSets] = await Promise.all([pending, done]);
+  assertWorkspaceContext(context);
+  return { periods, recordSets };
+}
+async function prepareAnnualReportSnapshot(periodIds = {}) {
+  assertWorkspaceReadable();
+  const origin = workspace.id;
+  await flushDrafts({ strict: true });
+  await writer.catch(() => {});
+  assertWorkspaceReadable();
+  if (workspace.id !== origin)
+    throw Error("دوره تغییر کرد؛ گزارش سالانه را دوباره تهیه کنید.");
+  const context = captureWorkspaceContext();
+  const { periods, recordSets } = await readAnnualRecordSets(
+    context,
+    periodIds,
+  );
   const parts = periods.map((period, index) => ({
     period: {
       ...period,
       term: index === 0 ? "اول" : "دوم",
       displayTerm: period.term,
     },
-    data: decodeWorkspaceRecords(
-      records.filter((row) => row.workspace === period.id),
-      { workspaceId: period.id },
-    ).data,
+    data: decodeWorkspaceRecords(recordSets[index], { workspaceId: period.id })
+      .data,
   }));
   for (const part of parts) {
     const password = part.data.settings.password;
@@ -251,7 +289,9 @@ async function prepareReportSnapshot({ annual = false, periodIds } = {}) {
     done = transactionDone(tx);
   const [live, rows] = await Promise.all([
     requestPromise(tx.objectStore("catalog").get(context.id)),
-    requestPromise(tx.objectStore("records").getAll()),
+    requestPromise(
+      workspaceRecordRequest(tx.objectStore("records"), context.id),
+    ),
   ]);
   await done;
   assertLiveWorkspace(live, context);

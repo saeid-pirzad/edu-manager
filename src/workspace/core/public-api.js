@@ -22,7 +22,9 @@ function installRuntimeAPI() {
     buildLessonReportHtml: (c, l) =>
       l.gradeMode === "kardanesh" || l.gradingPolicy
         ? '<div class="card report-document grade-report"><button class="no-print" data-workspace-action="print">چاپ / PDF</button>' +
-          (l.gradeMode === "kardanesh" ? termAssessmentReport(c, l) : courseUI.table(c, l)) +
+          (l.gradeMode === "kardanesh"
+            ? termAssessmentReport(c, l)
+            : courseUI.table(c, l)) +
           "</div>"
         : old.buildLessonReportHtml(c, l),
     defaultDB: v24DefaultDB,
@@ -35,6 +37,8 @@ function installRuntimeAPI() {
     buildKardaneshSummaryHtml: buildKardaneshSummary,
     openBulkScoreModal: openBulkV24,
     setAllAttendance: setAllAttendanceV24,
+    changeSessionDate: changeSessionDateV24,
+    addManualSession: addManualSessionV24,
     saveSessionUnit: saveSessionUnitV24,
     updateSessionUnits: updateSessionUnitsV24,
     addSessionScore: addSessionScoreV24,
@@ -90,7 +94,7 @@ function installRuntimeAPI() {
       closed: !!workspace?.closed,
       year: workspace?.year || "",
       term: workspace?.term || "",
-      ready,
+      ready: ready && !periodLoading,
       blocked,
       retired: connectionRetired,
       resetting: resetBusy,
@@ -138,7 +142,8 @@ function installRuntimeAPI() {
     refreshControlLocks: lockControls,
     recoverReportNotes: () =>
       workspace ? hydrateReportNotes(workspace) : true,
-    canWriteReportNotes: () => !resetBusy && !connectionRetired,
+    canWriteReportNotes: () =>
+      !periodLoading && !resetBusy && !connectionRetired,
     confirmWipe,
     saveDB: saveDBV24,
     bootstrap: bootstrapV24,

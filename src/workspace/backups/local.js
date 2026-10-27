@@ -30,17 +30,34 @@ async function putBackup(data, label, workspaceId = workspace?.id) {
 }
 
 async function ensureDailyBackup() {
+  const origin = workspace?.id;
+  const sourceAvailable = () =>
+    !!origin &&
+    ready &&
+    !periodLoading &&
+    !resetBusy &&
+    !connectionRetired &&
+    workspace?.id === origin;
+  if (!sourceAvailable()) return false;
   try {
+    await writer.catch(() => {});
+    if (!sourceAvailable()) return false;
     const existing = (await allFrom("backups")).filter(
-      (x) => x.workspace === workspace.id,
+      (x) => x.workspace === origin,
     );
-    if (!existing.some((x) => x.at.slice(0, 10) === todayISO()))
-      await putBackup(db, "خودکار روزانه");
+    if (!sourceAvailable()) return false;
+    if (existing.some((x) => x.at.slice(0, 10) === todayISO())) return false;
+    const snapshot = await readWorkspaceSnapshot(origin);
+    if (!sourceAvailable()) return false;
+    await putBackup(snapshot.data, "خودکار روزانه", origin);
+    return true;
   } catch (error) {
-    setStatus(
-      "اطلاعات خوانده شد؛ پشتیبان داخلی ساخته نشد. پشتیبان فایل تهیه کنید.",
-      "error",
-    );
+    if (sourceAvailable())
+      setStatus(
+        "اطلاعات خوانده شد؛ پشتیبان داخلی ساخته نشد. پشتیبان فایل تهیه کنید.",
+        "error",
+      );
+    return false;
   }
 }
 

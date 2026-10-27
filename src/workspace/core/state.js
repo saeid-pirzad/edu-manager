@@ -18,6 +18,7 @@ const old = {
 let connection,
   workspace,
   ready = false,
+  periodLoading = false,
   blocked = false,
   busy = 0,
   writer = Promise.resolve(),

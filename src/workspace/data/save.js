@@ -10,6 +10,17 @@ async function commitRecords(
   if (blocked) throw Error("ذخیره مسدود است؛ صفحه را دوباره بارگذاری کنید.");
   if (workspace.closed && !allowClosed)
     throw Error("این دوره بسته است؛ ابتدا آن را بازگشایی کنید.");
+  const sourceWorkspace = workspace,
+    sourceRevision = workspace.revision,
+    sourceConnection = connection,
+    sourceCommitted = committed;
+  const isCurrentCommit = () =>
+    workspace === sourceWorkspace &&
+    workspace.revision === sourceRevision &&
+    connection === sourceConnection &&
+    committed === sourceCommitted &&
+    !resetBusy &&
+    !connectionRetired;
   const { changed, removed, before, changes } = EduRecordCommitPlan.create(
     records,
     committed,
@@ -23,8 +34,8 @@ async function commitRecords(
   let nextCatalog;
   try {
     nextCatalog = await EduRecordTransaction.commit({
-      connection,
-      workspace,
+      connection: sourceConnection,
+      workspace: sourceWorkspace,
       records,
       changed,
       removed,
@@ -36,20 +47,25 @@ async function commitRecords(
       academicTermKind,
     });
   } catch (error) {
-    if (error.code === "WORKSPACE_CONFLICT") blocked = true;
+    if (error.code === "WORKSPACE_CONFLICT" && isCurrentCommit())
+      blocked = true;
     throw error;
   }
-  for (const [key, json] of changed) committed.set(key, json);
-  for (const key of removed) committed.delete(key);
-  workspace = nextCatalog;
-  broadcast({
-    workspace: workspace.id,
-    revision: workspace.revision,
-  });
+  if (isCurrentCommit()) {
+    for (const [key, json] of changed) sourceCommitted.set(key, json);
+    for (const key of removed) sourceCommitted.delete(key);
+    workspace = nextCatalog;
+  }
+  if (connection === sourceConnection && !resetBusy && !connectionRetired)
+    broadcast({ workspace: nextCatalog.id, revision: nextCatalog.revision });
   return true;
 }
 
 function saveDBV24(scope = {}) {
+  if (periodLoading)
+    return Promise.reject(
+      Error("دوره در حال خواندن است؛ پس از پایان جابه‌جایی دوباره تلاش کنید."),
+    );
   if (resetBusy || connectionRetired)
     return Promise.reject(Error("ثبت هنگام پاک‌سازی یا تغییر بانک متوقف است."));
   if (fileMode)
@@ -59,7 +75,14 @@ function saveDBV24(scope = {}) {
       ),
     );
   const generation = writeFailureGeneration,
-    targetWorkspace = workspace?.id;
+    targetWorkspace = workspace?.id,
+    targetConnection = connection;
+  const isCurrentTarget = () =>
+    workspace?.id === targetWorkspace &&
+    connection === targetConnection &&
+    !periodLoading &&
+    !resetBusy &&
+    !connectionRetired;
   busy++;
   paintStatus();
   const operation = writer
@@ -69,26 +92,32 @@ function saveDBV24(scope = {}) {
         throw Error(
           "ثبت قبلی ناموفق بود؛ این درخواست هم ثبت نشده است. تغییر را دوباره اعمال کنید.",
         );
-      if (workspace?.id !== targetWorkspace)
-        throw Error("دوره تغییر کرده است؛ این درخواست در دوره دیگری ثبت نشد.");
+      if (!isCurrentTarget())
+        throw Error("دوره یا اتصال بانک تغییر کرده است؛ این درخواست ثبت نشد.");
       checkScope(scope);
       await commitRecords(collectRecords(db, scope), {
         ...scope,
         replace: !scope.classId && !scope.sessionId,
       });
+      if (!isCurrentTarget()) return;
       storageBlocked = false;
       storageProblem = "";
       setStatus("تغییرات ذخیره شد.", "saved");
       scheduleSingleFile();
     })
     .catch(async (error) => {
-      try {
-        db = (await readWorkspace(workspace.id)).data;
-      } catch (ignore) {}
+      if (isCurrentTarget()) {
+        try {
+          const loaded = await readWorkspace(targetWorkspace);
+          if (isCurrentTarget()) db = loaded.data;
+        } catch (ignore) {}
+      }
       // Invalidate every request queued against the in-memory data that was rolled back.
       writeFailureGeneration++;
-      setStatus("تغییر ذخیره نشد: " + error.message, "error");
-      render();
+      if (isCurrentTarget()) {
+        setStatus("تغییر ذخیره نشد: " + error.message, "error");
+        render();
+      }
       throw error;
     })
     .finally(() => {

@@ -90,6 +90,7 @@ async function singleFileCurrent(target) {
   if (
     singleFile !== target ||
     !ready ||
+    periodLoading ||
     blocked ||
     resetBusy ||
     connectionRetired
@@ -109,6 +110,7 @@ async function singleFileCurrent(target) {
   return (
     singleFile === target &&
     ready &&
+    !periodLoading &&
     !blocked &&
     !resetBusy &&
     !connectionRetired
@@ -261,7 +263,14 @@ async function disableSingleFile() {
 }
 function syncSingleFile() {
   if (singleFileWriting) return singleFileWriting;
-  if (!singleFile || !ready || blocked || resetBusy || connectionRetired)
+  if (
+    !singleFile ||
+    !ready ||
+    periodLoading ||
+    blocked ||
+    resetBusy ||
+    connectionRetired
+  )
     return Promise.resolve(false);
   const target = singleFile;
   singleFileStatus("در حال ذخیره فایل: " + target.handle.name);
@@ -312,6 +321,12 @@ function syncSingleFile() {
       return true;
     } catch (error) {
       if (stream) await stream.abort().catch(() => {});
+      if (error.code === "BACKUP_CONTEXT_CHANGED") {
+        singleFileStatus(
+          "ذخیره فایل پس از پایان جابه‌جایی دوباره بررسی می‌شود.",
+        );
+        return false;
+      }
       return failSingleFile(error);
     }
   };

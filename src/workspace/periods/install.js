@@ -43,30 +43,45 @@ async function installWorkspace(data, details) {
   const records = collectRecords(installed);
   const tx = connection.transaction(["records", "catalog"], "readwrite"),
     done = transactionDone(tx);
-  let duplicate = false;
-  const store = tx.objectStore("catalog"),
-    existing = store.getAll();
-  existing.onsuccess = () => {
-    if (
-      existing.result.some(
-        (row) =>
-          row.year === catalog.year &&
-          normalizedName(row.term) === normalizedName(catalog.term),
-      )
-    ) {
-      duplicate = true;
+  let duplicate = false,
+    queueError;
+  const abortQueue = (error) => {
+    queueError = error;
+    try {
       tx.abort();
-      return;
-    }
-    store.add(catalog);
-    for (const [logical, value] of records)
-      tx.objectStore("records").put({
-        key: id + "|" + logical,
-        workspace: id,
-        logical,
-        value,
-      });
+    } catch (ignore) {}
   };
+  try {
+    const store = tx.objectStore("catalog"),
+      existing = store.getAll();
+    existing.onsuccess = () => {
+      try {
+        if (
+          existing.result.some(
+            (row) =>
+              row.year === catalog.year &&
+              normalizedName(row.term) === normalizedName(catalog.term),
+          )
+        ) {
+          duplicate = true;
+          tx.abort();
+          return;
+        }
+        store.add(catalog);
+        for (const [logical, value] of records)
+          tx.objectStore("records").put({
+            key: id + "|" + logical,
+            workspace: id,
+            logical,
+            value,
+          });
+      } catch (error) {
+        abortQueue(error);
+      }
+    };
+  } catch (error) {
+    abortQueue(error);
+  }
   try {
     await done;
   } catch (error) {
@@ -74,7 +89,7 @@ async function installWorkspace(data, details) {
       throw Error("دوره دیگری با همین سال و عنوان نوبت وجود دارد.", {
         cause: error,
       });
-    throw error;
+    throw queueError || error;
   }
   return catalog;
 }

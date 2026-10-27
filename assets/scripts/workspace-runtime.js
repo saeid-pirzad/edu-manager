@@ -21,6 +21,7 @@ const old = {
 let connection,
   workspace,
   ready = false,
+  periodLoading = false,
   blocked = false,
   busy = 0,
   writer = Promise.resolve(),
@@ -473,10 +474,27 @@ const {
 });
 
 async function readWorkspace(id) {
+  const tx = connection.transaction("records", "readonly");
   return decodeWorkspaceRecords(
-    (await allFrom("records")).filter((row) => row.workspace === id),
+    await requestPromise(workspaceRecordRequest(tx.objectStore("records"), id)),
     { workspaceId: id },
   );
+}
+function workspaceRecordRequest(store, id) {
+  // Record keys are workspaceId + "|" + logical. The next ASCII character
+  // bounds the entire prefix without a schema upgrade or a full-store scan.
+  return store.getAll(IDBKeyRange.bound(id + "|", id + "}", false, true));
+}
+async function readWorkspaceSnapshot(id) {
+  const tx = connection.transaction(["catalog", "records"], "readonly");
+  const done = transactionDone(tx);
+  const [period, rows] = await Promise.all([
+    requestPromise(tx.objectStore("catalog").get(id)),
+    requestPromise(workspaceRecordRequest(tx.objectStore("records"), id)),
+    done,
+  ]);
+  if (!period) throw Error("دوره موجود نیست.");
+  return { period, ...decodeWorkspaceRecords(rows, { workspaceId: id }) };
 }
 // Source: src/workspace/grading/scope.js
 function deriveDualGrades(lesson) {
@@ -537,6 +555,17 @@ async function commitRecords(
   if (blocked) throw Error("ذخیره مسدود است؛ صفحه را دوباره بارگذاری کنید.");
   if (workspace.closed && !allowClosed)
     throw Error("این دوره بسته است؛ ابتدا آن را بازگشایی کنید.");
+  const sourceWorkspace = workspace,
+    sourceRevision = workspace.revision,
+    sourceConnection = connection,
+    sourceCommitted = committed;
+  const isCurrentCommit = () =>
+    workspace === sourceWorkspace &&
+    workspace.revision === sourceRevision &&
+    connection === sourceConnection &&
+    committed === sourceCommitted &&
+    !resetBusy &&
+    !connectionRetired;
   const { changed, removed, before, changes } = EduRecordCommitPlan.create(
     records,
     committed,
@@ -550,8 +579,8 @@ async function commitRecords(
   let nextCatalog;
   try {
     nextCatalog = await EduRecordTransaction.commit({
-      connection,
-      workspace,
+      connection: sourceConnection,
+      workspace: sourceWorkspace,
       records,
       changed,
       removed,
@@ -563,20 +592,25 @@ async function commitRecords(
       academicTermKind,
     });
   } catch (error) {
-    if (error.code === "WORKSPACE_CONFLICT") blocked = true;
+    if (error.code === "WORKSPACE_CONFLICT" && isCurrentCommit())
+      blocked = true;
     throw error;
   }
-  for (const [key, json] of changed) committed.set(key, json);
-  for (const key of removed) committed.delete(key);
-  workspace = nextCatalog;
-  broadcast({
-    workspace: workspace.id,
-    revision: workspace.revision,
-  });
+  if (isCurrentCommit()) {
+    for (const [key, json] of changed) sourceCommitted.set(key, json);
+    for (const key of removed) sourceCommitted.delete(key);
+    workspace = nextCatalog;
+  }
+  if (connection === sourceConnection && !resetBusy && !connectionRetired)
+    broadcast({ workspace: nextCatalog.id, revision: nextCatalog.revision });
   return true;
 }
 
 function saveDBV24(scope = {}) {
+  if (periodLoading)
+    return Promise.reject(
+      Error("دوره در حال خواندن است؛ پس از پایان جابه‌جایی دوباره تلاش کنید."),
+    );
   if (resetBusy || connectionRetired)
     return Promise.reject(Error("ثبت هنگام پاک‌سازی یا تغییر بانک متوقف است."));
   if (fileMode)
@@ -586,7 +620,14 @@ function saveDBV24(scope = {}) {
       ),
     );
   const generation = writeFailureGeneration,
-    targetWorkspace = workspace?.id;
+    targetWorkspace = workspace?.id,
+    targetConnection = connection;
+  const isCurrentTarget = () =>
+    workspace?.id === targetWorkspace &&
+    connection === targetConnection &&
+    !periodLoading &&
+    !resetBusy &&
+    !connectionRetired;
   busy++;
   paintStatus();
   const operation = writer
@@ -596,26 +637,32 @@ function saveDBV24(scope = {}) {
         throw Error(
           "ثبت قبلی ناموفق بود؛ این درخواست هم ثبت نشده است. تغییر را دوباره اعمال کنید.",
         );
-      if (workspace?.id !== targetWorkspace)
-        throw Error("دوره تغییر کرده است؛ این درخواست در دوره دیگری ثبت نشد.");
+      if (!isCurrentTarget())
+        throw Error("دوره یا اتصال بانک تغییر کرده است؛ این درخواست ثبت نشد.");
       checkScope(scope);
       await commitRecords(collectRecords(db, scope), {
         ...scope,
         replace: !scope.classId && !scope.sessionId,
       });
+      if (!isCurrentTarget()) return;
       storageBlocked = false;
       storageProblem = "";
       setStatus("تغییرات ذخیره شد.", "saved");
       scheduleSingleFile();
     })
     .catch(async (error) => {
-      try {
-        db = (await readWorkspace(workspace.id)).data;
-      } catch (ignore) {}
+      if (isCurrentTarget()) {
+        try {
+          const loaded = await readWorkspace(targetWorkspace);
+          if (isCurrentTarget()) db = loaded.data;
+        } catch (ignore) {}
+      }
       // Invalidate every request queued against the in-memory data that was rolled back.
       writeFailureGeneration++;
-      setStatus("تغییر ذخیره نشد: " + error.message, "error");
-      render();
+      if (isCurrentTarget()) {
+        setStatus("تغییر ذخیره نشد: " + error.message, "error");
+        render();
+      }
       throw error;
     })
     .finally(() => {
@@ -671,30 +718,45 @@ async function installWorkspace(data, details) {
   const records = collectRecords(installed);
   const tx = connection.transaction(["records", "catalog"], "readwrite"),
     done = transactionDone(tx);
-  let duplicate = false;
-  const store = tx.objectStore("catalog"),
-    existing = store.getAll();
-  existing.onsuccess = () => {
-    if (
-      existing.result.some(
-        (row) =>
-          row.year === catalog.year &&
-          normalizedName(row.term) === normalizedName(catalog.term),
-      )
-    ) {
-      duplicate = true;
+  let duplicate = false,
+    queueError;
+  const abortQueue = (error) => {
+    queueError = error;
+    try {
       tx.abort();
-      return;
-    }
-    store.add(catalog);
-    for (const [logical, value] of records)
-      tx.objectStore("records").put({
-        key: id + "|" + logical,
-        workspace: id,
-        logical,
-        value,
-      });
+    } catch (ignore) {}
   };
+  try {
+    const store = tx.objectStore("catalog"),
+      existing = store.getAll();
+    existing.onsuccess = () => {
+      try {
+        if (
+          existing.result.some(
+            (row) =>
+              row.year === catalog.year &&
+              normalizedName(row.term) === normalizedName(catalog.term),
+          )
+        ) {
+          duplicate = true;
+          tx.abort();
+          return;
+        }
+        store.add(catalog);
+        for (const [logical, value] of records)
+          tx.objectStore("records").put({
+            key: id + "|" + logical,
+            workspace: id,
+            logical,
+            value,
+          });
+      } catch (error) {
+        abortQueue(error);
+      }
+    };
+  } catch (error) {
+    abortQueue(error);
+  }
   try {
     await done;
   } catch (error) {
@@ -702,7 +764,7 @@ async function installWorkspace(data, details) {
       throw Error("دوره دیگری با همین سال و عنوان نوبت وجود دارد.", {
         cause: error,
       });
-    throw error;
+    throw queueError || error;
   }
   return catalog;
 }
@@ -1018,7 +1080,7 @@ function contextFromInput(input) {
 }
 
 function gradeInput(input) {
-  if (resetBusy || connectionRetired) return;
+  if (resetBusy || connectionRetired || periodLoading) return;
   const item = contextFromInput(input),
     key = inputKey(item),
     parsed = parseDraft(item);
@@ -1032,7 +1094,8 @@ function gradeInput(input) {
     note.textContent = parsed.ok ? "در انتظار ذخیره" : parsed.message;
     note.dataset.state = parsed.ok ? "pending" : "error";
   }
-  if (row?.querySelector('.grade-note[data-state="error"]')) row.dataset.editState = "error";
+  if (row?.querySelector('.grade-note[data-state="error"]'))
+    row.dataset.editState = "error";
   storeDrafts();
   setStatus(
     parsed.ok ? "ویرایش در انتظار ذخیره است." : parsed.message,
@@ -1044,7 +1107,7 @@ function gradeInput(input) {
 }
 
 function clearGrade(input) {
-  if (resetBusy || connectionRetired) return;
+  if (resetBusy || connectionRetired || periodLoading) return;
   const item = contextFromInput(input);
   if (
     !confirm(
@@ -1065,7 +1128,8 @@ function clearGrade(input) {
     note.textContent = "در انتظار ذخیره";
     note.dataset.state = "pending";
   }
-  if (row?.querySelector('.grade-note[data-state="error"]')) row.dataset.editState = "error";
+  if (row?.querySelector('.grade-note[data-state="error"]'))
+    row.dataset.editState = "error";
   storeDrafts();
   flushDrafts().catch(() => {});
 }
@@ -1790,6 +1854,7 @@ function syncControlLocks() {
     connectionRetired ||
     resetBusy ||
     !ready ||
+    periodLoading ||
     !!workspace?.closed;
   const modalBody = document.getElementById("modalBody");
   const modalWrite =
@@ -2021,16 +2086,146 @@ function sessionRoster(c, x) {
   return x.roster || c.students.map((st) => ({ id: st.id, name: st.name }));
 }
 
+function preserveSessionAction(id) {
+  assertEntityWritable();
+  const origin = workspace.id,
+    sourceConnection = connection;
+  return () =>
+    workspace.id === origin &&
+    connection === sourceConnection &&
+    currentSessionId === id &&
+    !periodLoading &&
+    !resetBusy &&
+    !connectionRetired;
+}
+
+function validateSessionDate(date) {
+  const parsed = /^\d{4}-\d{2}-\d{2}$/.test(date)
+    ? new Date(date + "T00:00:00.000Z")
+    : null;
+  if (
+    !parsed ||
+    !Number.isFinite(parsed.getTime()) ||
+    parsed.toISOString().slice(0, 10) !== date
+  )
+    throw Error("تاریخ معتبر نیست.");
+  return date;
+}
+
+let manualSessionBusy = false;
+async function addManualSessionV24(event, lessonId) {
+  event.preventDefault();
+  if (manualSessionBusy) return false;
+  manualSessionBusy = true;
+  try {
+    assertEntityWritable();
+    const date = validateSessionDate(event.target.date.value),
+      text = asciiDigits(event.target.period.value);
+    if (!/^\d{1,2}$/.test(text) || Number(text) < 1 || Number(text) > 12)
+      throw Error("شماره زنگ باید عدد صحیح یک تا دوازده باشد.");
+    const period = Number(text) - 1,
+      origin = workspace.id,
+      sourceConnection = connection,
+      schoolId = state.schoolId,
+      classId = state.classId,
+      selectedLesson = state.lessonId,
+      selectedSession = currentSessionId;
+    const isCurrent = () =>
+      workspace.id === origin &&
+      connection === sourceConnection &&
+      state.schoolId === schoolId &&
+      state.classId === classId &&
+      state.lessonId === selectedLesson &&
+      currentSessionId === selectedSession &&
+      !periodLoading &&
+      !resetBusy &&
+      !connectionRetired;
+    await flushDrafts({ strict: true });
+    await writer.catch(() => {});
+    assertEntityWritable();
+    if (!isCurrent()) throw Error("صفحه یا دوره تغییر کرده است؛ جلسه ثبت نشد.");
+    const cls = getClassObj(schoolId, classId);
+    if (!cls || !getLessonObj(cls, lessonId))
+      throw Error("کلاس یا درس مقصد دیگر وجود ندارد.");
+    const existing = db.sessions.find(
+      (session) =>
+        session.classId === classId &&
+        session.date === date &&
+        session.period === period,
+    );
+    if (existing) {
+      const message =
+        existing.lessonId === lessonId
+          ? "جلسه همین درس در این تاریخ و زنگ وجود دارد. ادامه داده شود؟"
+          : "این زنگ به درس دیگری تعلق دارد؛ وارد جلسهٔ ثبت‌شده شوید؟";
+      if (confirm(message) && isCurrent()) openSessionModal(existing);
+      return false;
+    }
+    const session = {
+      id: uid(),
+      schoolId,
+      classId,
+      date,
+      period,
+      lessonId,
+      poudmanId: null,
+      unitId: null,
+      attendance: {},
+      scores: [],
+      roster: snapshotRoster(cls),
+    };
+    db.sessions.push(session);
+    await saveDBV24({ sessionId: session.id, action: "ایجاد جلسه دستی" });
+    if (isCurrent()) openSessionModal(getSessionById(session.id));
+    return true;
+  } finally {
+    manualSessionBusy = false;
+  }
+}
+
+async function changeSessionDateV24(id) {
+  const isCurrent = preserveSessionAction(id);
+  const session = getSessionById(id);
+  if (!session) throw Error("جلسه دیگر وجود ندارد.");
+  const date = validateSessionDate(document.getElementById("sessDate").value);
+  if (date === session.date) return;
+  const conflict = db.sessions.find(
+    (other) =>
+      other.id !== id &&
+      other.classId === session.classId &&
+      other.date === date &&
+      other.period === session.period,
+  );
+  if (conflict) {
+    if (
+      confirm("برای این تاریخ و زنگ جلسه‌ای ثبت شده. آن را باز کنیم؟") &&
+      isCurrent()
+    )
+      openSessionModal(conflict);
+    return;
+  }
+  session.date = date;
+  await saveDBV24({ sessionId: id, action: "تغییر تاریخ جلسه" });
+  if (isCurrent()) openSessionModal(getSessionById(id));
+}
+
 async function setAllAttendanceV24(statusValue) {
+  const isCurrent = preserveSessionAction(currentSessionId);
+  if (
+    typeof statusValue !== "string" ||
+    !/^(present|absent|late(?::\d{1,3})?)$/.test(statusValue)
+  )
+    throw Error("وضعیت حضور نامعتبر است.");
   const x = getSessionById(currentSessionId),
     c = findClass(x?.classId);
   if (!x || !c) return;
   for (const st of sessionRoster(c, x)) x.attendance[st.id] = statusValue;
   await saveDBV24({ sessionId: x.id, action: "حضور و غیاب گروهی" });
-  openSessionModal(getSessionById(x.id));
+  if (isCurrent()) openSessionModal(getSessionById(x.id));
 }
 
 async function saveSessionUnitV24() {
+  const isCurrent = preserveSessionAction(currentSessionId);
   const x = getSessionById(currentSessionId);
   if (!x) return;
   const pid = document.getElementById("sessPoudman").value || null,
@@ -2041,9 +2236,11 @@ async function saveSessionUnitV24() {
     openSessionModal(x);
     return;
   }
-  const c = findClass(x.classId),
-    l = getLessonObj(c, x.lessonId),
-    p = l.poudmans.find((p) => p.id === pid),
+  const c = findClass(x.classId);
+  if (!c) throw Error("کلاس جلسه دیگر وجود ندارد.");
+  const l = getLessonObj(c, x.lessonId);
+  if (!l) throw Error("درس جلسه دیگر وجود ندارد.");
+  const p = l.poudmans.find((p) => p.id === pid),
     u = p?.units.find((u) => u.id === unitId);
   if ((pid && !p) || (unitId && !u)) throw Error("واحد نامعتبر");
   if (
@@ -2067,14 +2264,18 @@ async function saveSessionUnitV24() {
     sessionId: x.id,
     action: "تغییر واحد جلسه با تأیید اثر بر سوابق",
   });
-  openSessionModal(getSessionById(x.id));
+  if (isCurrent()) openSessionModal(getSessionById(x.id));
 }
 
 function updateSessionUnitsV24() {
-  const x = getSessionById(currentSessionId),
-    c = findClass(x.classId),
-    l = getLessonObj(c, x.lessonId),
-    pid = document.getElementById("sessPoudman").value,
+  assertEntityWritable();
+  const x = getSessionById(currentSessionId);
+  if (!x) throw Error("جلسه دیگر وجود ندارد.");
+  const c = findClass(x.classId);
+  if (!c) throw Error("کلاس جلسه دیگر وجود ندارد.");
+  const l = getLessonObj(c, x.lessonId);
+  if (!l) throw Error("درس جلسه دیگر وجود ندارد.");
+  const pid = document.getElementById("sessPoudman").value,
     p = l.poudmans.find((p) => p.id === pid);
   document.getElementById("sessUnit").innerHTML =
     '<option value="">— انتخاب واحد برای اعمال تغییر —</option>' +
@@ -2090,12 +2291,19 @@ function updateSessionUnitsV24() {
 
 async function addSessionScoreV24(e, id) {
   e.preventDefault();
-  const x = getSessionById(id),
-    c = findClass(x.classId),
-    l = getLessonObj(c, x.lessonId),
-    f = e.target,
+  const isCurrent = preserveSessionAction(id);
+  const x = getSessionById(id);
+  if (!x) throw Error("جلسه دیگر وجود ندارد.");
+  const c = findClass(x.classId);
+  if (!c) throw Error("کلاس جلسه دیگر وجود ندارد.");
+  const l = getLessonObj(c, x.lessonId);
+  if (!l) throw Error("درس جلسه دیگر وجود ندارد.");
+  const f = e.target,
     type = f.type.value,
     sid = f.studentId.value;
+  const note = f.note.value.trim();
+  if (note.length > 10000)
+    throw Error("توضیح امتیاز باید حداکثر ۱۰۰۰۰ نویسه باشد.");
   if (
     !Object.hasOwn(TYPE_LABELS, type) ||
     !sessionRoster(c, x).some((st) => st.id === sid)
@@ -2129,14 +2337,14 @@ async function addSessionScoreV24(e, id) {
     studentId: sid,
     type,
     value,
-    note: f.note.value.trim(),
+    note,
     recordedAt: new Date().toISOString(),
   });
   await saveDBV24({
     sessionId: id,
     action: "ثبت یا اصلاح " + TYPE_LABELS[type],
   });
-  openSessionModal(getSessionById(id));
+  if (isCurrent()) openSessionModal(getSessionById(id));
 }
 
 function clickMasterV24(day, period) {
@@ -2197,17 +2405,34 @@ async function putBackup(data, label, workspaceId = workspace?.id) {
 }
 
 async function ensureDailyBackup() {
+  const origin = workspace?.id;
+  const sourceAvailable = () =>
+    !!origin &&
+    ready &&
+    !periodLoading &&
+    !resetBusy &&
+    !connectionRetired &&
+    workspace?.id === origin;
+  if (!sourceAvailable()) return false;
   try {
+    await writer.catch(() => {});
+    if (!sourceAvailable()) return false;
     const existing = (await allFrom("backups")).filter(
-      (x) => x.workspace === workspace.id,
+      (x) => x.workspace === origin,
     );
-    if (!existing.some((x) => x.at.slice(0, 10) === todayISO()))
-      await putBackup(db, "خودکار روزانه");
+    if (!sourceAvailable()) return false;
+    if (existing.some((x) => x.at.slice(0, 10) === todayISO())) return false;
+    const snapshot = await readWorkspaceSnapshot(origin);
+    if (!sourceAvailable()) return false;
+    await putBackup(snapshot.data, "خودکار روزانه", origin);
+    return true;
   } catch (error) {
-    setStatus(
-      "اطلاعات خوانده شد؛ پشتیبان داخلی ساخته نشد. پشتیبان فایل تهیه کنید.",
-      "error",
-    );
+    if (sourceAvailable())
+      setStatus(
+        "اطلاعات خوانده شد؛ پشتیبان داخلی ساخته نشد. پشتیبان فایل تهیه کنید.",
+        "error",
+      );
+    return false;
   }
 }
 
@@ -2263,8 +2488,28 @@ function portableGradeDrafts(rows, periods) {
 }
 
 async function snapshotInstallation() {
-  if (!ready || resetBusy || connectionRetired)
-    throw Error("بانک برای تهیه پشتیبان آماده نیست.");
+  const origin = workspace?.id;
+  const check = () => {
+    if (
+      !ready ||
+      periodLoading ||
+      resetBusy ||
+      connectionRetired ||
+      workspace?.id !== origin
+    )
+      throw Object.assign(
+        Error(
+          "بانک یا دوره هنگام تهیه پشتیبان آماده نیست؛ پس از پایان جابه‌جایی دوباره تلاش کنید.",
+        ),
+        {
+          code:
+            periodLoading || workspace?.id !== origin
+              ? "BACKUP_CONTEXT_CHANGED"
+              : "BACKUP_NOT_READY",
+        },
+      );
+  };
+  check();
   const snapshotNotes = [];
   try {
     await flushDrafts();
@@ -2275,12 +2520,14 @@ async function snapshotInstallation() {
     );
   }
   await writer.catch(() => {});
+  check();
   await storeDrafts().catch((error) =>
     snapshotNotes.push(
       "پیش‌نویس حافظه نیز در فایل قرار گرفت: " + error.message,
     ),
   );
   await draftWriter.catch(() => {});
+  check();
   const activeWorkspace = workspace.id;
   const currentDrafts = {
     key: draftStorageKey(),
@@ -2349,7 +2596,14 @@ async function exportFullBackup() {
   return content.stores.catalog.length;
 }
 async function automaticFullBackup() {
-  if (!ready || blocked || automaticBackupBusy || document.hidden) return;
+  if (
+    !ready ||
+    periodLoading ||
+    blocked ||
+    automaticBackupBusy ||
+    document.hidden
+  )
+    return;
   automaticBackupBusy = true;
   try {
     const snapshot = await snapshotInstallation();
@@ -2364,6 +2618,7 @@ async function automaticFullBackup() {
     });
     await done;
   } catch (error) {
+    if (error.code === "BACKUP_CONTEXT_CHANGED") return;
     setStatus("پشتیبان خودکار کامل ساخته نشد؛ " + error.message, "error");
   } finally {
     automaticBackupBusy = false;
@@ -2466,6 +2721,7 @@ async function singleFileCurrent(target) {
   if (
     singleFile !== target ||
     !ready ||
+    periodLoading ||
     blocked ||
     resetBusy ||
     connectionRetired
@@ -2485,6 +2741,7 @@ async function singleFileCurrent(target) {
   return (
     singleFile === target &&
     ready &&
+    !periodLoading &&
     !blocked &&
     !resetBusy &&
     !connectionRetired
@@ -2637,7 +2894,14 @@ async function disableSingleFile() {
 }
 function syncSingleFile() {
   if (singleFileWriting) return singleFileWriting;
-  if (!singleFile || !ready || blocked || resetBusy || connectionRetired)
+  if (
+    !singleFile ||
+    !ready ||
+    periodLoading ||
+    blocked ||
+    resetBusy ||
+    connectionRetired
+  )
     return Promise.resolve(false);
   const target = singleFile;
   singleFileStatus("در حال ذخیره فایل: " + target.handle.name);
@@ -2688,6 +2952,12 @@ function syncSingleFile() {
       return true;
     } catch (error) {
       if (stream) await stream.abort().catch(() => {});
+      if (error.code === "BACKUP_CONTEXT_CHANGED") {
+        singleFileStatus(
+          "ذخیره فایل پس از پایان جابه‌جایی دوباره بررسی می‌شود.",
+        );
+        return false;
+      }
       return failSingleFile(error);
     }
   };
@@ -2720,6 +2990,10 @@ const validateFullBackup = EduFullBackupValidator.create({
 let pendingFullBackup = null,
   fullRestoreBusy = false;
 function previewFullBackup(value) {
+  if (fullRestoreBusy)
+    throw Error(
+      "بازیابی کامل در حال انجام است؛ تا پایان آن فایل دیگری انتخاب نکنید.",
+    );
   const periods = validateFullBackup(value);
   const opened = showModal(
     "بازیابی پشتیبان کامل",
@@ -2746,11 +3020,27 @@ async function restoreFullBackup() {
     if (!pendingFullBackup)
       throw Error("ابتدا فایل پشتیبان کامل را انتخاب کنید.");
     const source = pendingFullBackup;
+    const origin = workspace?.id;
+    const check = () => {
+      if (
+        resetBusy ||
+        connectionRetired ||
+        periodLoading ||
+        workspace?.id !== origin ||
+        pendingFullBackup !== source
+      )
+        throw Error(
+          "بانک، دوره یا پیش‌نمایش هنگام بازیابی تغییر کرده است؛ دوباره بررسی کنید.",
+        );
+    };
+    check();
     await flushDrafts({ strict: true });
     await writer.catch(() => {});
+    check();
     const periods = validateFullBackup(source);
     const mapping = new Map(periods.map(({ period }) => [period.id, uid()]));
     const existing = await allFrom("catalog");
+    check();
     const occupied = new Set(
       existing.map((p) => p.year + "|" + normalizedName(p.term)),
     );
@@ -2826,8 +3116,14 @@ async function restoreFullBackup() {
     const restoredStores = [...backupStores, "drafts"];
     const tx = connection.transaction(restoredStores, "readwrite"),
       done = transactionDone(tx);
-    for (const name of restoredStores)
-      for (const row of rows[name]) tx.objectStore(name).add(row);
+    try {
+      for (const name of restoredStores)
+        for (const row of rows[name]) tx.objectStore(name).add(row);
+    } catch (error) {
+      tx.abort();
+      await done.catch(() => {});
+      throw error;
+    }
     await done;
     let reportNotesFailed = false;
     for (const [oldId, id] of mapping) {
@@ -2852,7 +3148,13 @@ async function restoreFullBackup() {
       }
     }
     pendingFullBackup = null;
-    await switchPeriod(mapping.get(source.activeWorkspace));
+    if (
+      !resetBusy &&
+      !connectionRetired &&
+      !periodLoading &&
+      workspace?.id === origin
+    )
+      await switchPeriod(mapping.get(source.activeWorkspace));
     const pendingGrades = (source.gradeDrafts || []).reduce(
       (n, row) => n + row.entries.length,
       0,
@@ -2878,6 +3180,20 @@ async function restoreFullBackup() {
 }
 // Source: src/workspace/backups/period-import.js
 async function exportBackupV24() {
+  const origin = workspace.id;
+  const ensureSource = () => {
+    if (
+      !ready ||
+      periodLoading ||
+      resetBusy ||
+      connectionRetired ||
+      workspace.id !== origin
+    )
+      throw new Error(
+        "دوره هنگام تهیه پشتیبان تغییر کرده است؛ دوباره تلاش کنید.",
+      );
+  };
+  ensureSource();
   let excludedDrafts = 0;
   try {
     await flushDrafts({ strict: true });
@@ -2889,24 +3205,22 @@ async function exportBackupV24() {
     );
   }
   await writer.catch(() => {});
-  const durable = (await readWorkspace(workspace.id)).data;
+  ensureSource();
+  const snapshot = await readWorkspaceSnapshot(origin);
+  ensureSource();
+  const { period, data: durable } = snapshot;
   const content = {
       version: 25,
       exportedAt: new Date().toISOString(),
       excludedDrafts,
-      period: { year: workspace.year, term: workspace.term },
+      period: { year: period.year, term: period.term },
       db: durable,
     },
     name =
-      "مدرسه-" +
-      workspace.year +
-      "-" +
-      workspace.term +
-      "-" +
-      todayISO() +
-      ".json";
+      "مدرسه-" + period.year + "-" + period.term + "-" + todayISO() + ".json";
   let confirmed = false;
   if (window.showSaveFilePicker) {
+    let writable;
     try {
       const handle = await window.showSaveFilePicker({
         suggestedName: name,
@@ -2917,18 +3231,26 @@ async function exportBackupV24() {
           },
         ],
       });
-      const writable = await handle.createWritable();
+      writable = await handle.createWritable();
       await writable.write(JSON.stringify(content, null, 2));
       await writable.close();
+      writable = null;
+      const file = await handle.getFile();
+      if (!file.size) throw new Error("فایل پشتیبان خالی است.");
       confirmed = true;
     } catch (error) {
+      if (writable) {
+        try {
+          await writable.abort();
+        } catch (ignore) {}
+      }
       if (error.name === "AbortError") return false;
       downloadJSON(content, name);
     }
   } else downloadJSON(content, name);
   try {
     localStorage.setItem(
-      "Edu24.externalBackup." + workspace.id,
+      "Edu24.externalBackup." + origin,
       JSON.stringify({ date: todayISO(), confirmed }),
     );
   } catch (ignore) {}
@@ -2991,8 +3313,12 @@ async function openBackups() {
 }
 
 async function downloadInternalBackup(id) {
+  const ensureCurrent = preserveAsyncTarget();
   const b = await readRecord("backups", id);
+  ensureCurrent();
   if (!b) throw Error("پشتیبان موجود نیست.");
+  if (b.workspace !== workspace.id && b.workspace !== null)
+    throw Error("این پشتیبان متعلق به دورهٔ انتخاب‌شده نیست.");
   if (b.full) {
     downloadJSON(b.full, "پشتیبان-کامل-" + b.at.slice(0, 10) + ".json");
     return;
@@ -3008,7 +3334,12 @@ async function downloadInternalBackup(id) {
 }
 
 async function previewInternalBackup(id) {
+  const ensureCurrent = preserveAsyncTarget();
   const b = await readRecord("backups", id);
+  ensureCurrent();
+  if (!b) throw Error("پشتیبان موجود نیست.");
+  if (b.workspace !== workspace.id && b.workspace !== null)
+    throw Error("این پشتیبان متعلق به دورهٔ انتخاب‌شده نیست.");
   if (b?.full) {
     previewFullBackup(b.full);
     return;
@@ -3062,13 +3393,36 @@ function previewImport(candidate, label) {
   if (opened !== false) pendingImport = preview;
 }
 
+let backupImportReading = false;
 async function handleImportV24(e) {
   const file = e.target.files[0];
   if (!file) return;
+  if (backupImportReading) {
+    e.target.value = "";
+    handleError(new Error("خواندن فایل پشتیبان در حال انجام است؛ صبر کنید."));
+    return;
+  }
+  backupImportReading = true;
+  const startedReady = ready;
+  const origin = workspace?.id;
+  const ensureDestination = () => {
+    if (
+      ready !== startedReady ||
+      workspace?.id !== origin ||
+      resetBusy ||
+      periodLoading ||
+      (startedReady && connectionRetired)
+    )
+      throw Error(
+        "مقصد بازیابی هنگام خواندن فایل تغییر کرد؛ فایل را دوباره انتخاب کنید.",
+      );
+  };
   try {
+    ensureDestination();
     if (file.size > 100 * 1024 * 1024)
       throw Error("حداکثر حجم فایل پشتیبان صد مگابایت است.");
     const parsed = JSON.parse(await file.text());
+    ensureDestination();
     if (parsed.format === "EduManager.FullBackup") {
       previewFullBackup(parsed);
       return;
@@ -3087,13 +3441,34 @@ async function handleImportV24(e) {
       legacy: (source.schemaVersion ?? parsed.version ?? 23) < 24,
     });
     if (!ready) {
-      if (!connection) connection = await openDatabase();
-      workspace = await installWorkspace(candidate, {
+      if (!connection) {
+        const opened = await openDatabase();
+        try {
+          ensureDestination();
+          if (connection && connection !== opened)
+            throw Error("اتصال بانک هنگام بازیابی تغییر کرده است.");
+        } catch (error) {
+          if (connection !== opened) opened.close();
+          throw error;
+        }
+        connection = opened;
+      }
+      ensureDestination();
+      const recoveryConnection = connection;
+      const ensureRecovery = () => {
+        ensureDestination();
+        if (connection !== recoveryConnection)
+          throw Error("اتصال بانک هنگام بازیابی تغییر کرده است.");
+      };
+      const created = await installWorkspace(candidate, {
         id: uid(),
         year: candidate.settings.academicYear,
         term: candidate.settings.academicTerm,
       });
-      const loaded = await readWorkspace(workspace.id);
+      ensureRecovery();
+      const loaded = await readWorkspace(created.id);
+      ensureRecovery();
+      workspace = created;
       db = loaded.data;
       committed = loaded.records;
       ready = true;
@@ -3105,10 +3480,12 @@ async function handleImportV24(e) {
       return;
     }
     await flushDrafts({ strict: true });
+    ensureDestination();
     previewImport(candidate, file.name);
   } catch (error) {
     handleError(error);
   } finally {
+    backupImportReading = false;
     e.target.value = "";
   }
 }
@@ -3127,24 +3504,35 @@ async function confirmImport() {
       throw Error("پیش‌نمایش بازیابی منقضی شده است.");
     const preview = pendingImport;
     const context = { id: preview.workspace, revision: preview.revision };
+    const creatingNew = document.getElementById("restoreMode").value === "new";
     const check = (write = false) => {
-      assertWorkspaceContext(context, { write });
+      // An independent import never replaces source data. Its own draft flush
+      // may advance the source revision before a failed navigation is retried.
+      assertWorkspaceContext(
+        creatingNew
+          ? { id: context.id, revision: workspace.revision }
+          : context,
+        { write },
+      );
       if (pendingImport !== preview)
         throw Error("پیش‌نمایش بازیابی تغییر کرده است؛ دوباره بررسی کنید.");
     };
     check();
-    if (document.getElementById("restoreMode").value === "new") {
-      const candidate = normalizeDB(preview.candidate);
-      const created = await installWorkspace(candidate, {
-        year: candidate.settings.academicYear,
-        term: recoveryPeriodTerm(
-          candidate.settings.academicTerm || "بازیابی",
-          uid(),
-        ),
-      });
+    if (creatingNew) {
+      if (!preview.createdWorkspace) {
+        const candidate = normalizeDB(preview.candidate);
+        const created = await installWorkspace(candidate, {
+          year: candidate.settings.academicYear,
+          term: recoveryPeriodTerm(
+            candidate.settings.academicTerm || "بازیابی",
+            uid(),
+          ),
+        });
+        preview.createdWorkspace = created.id;
+      }
       check();
-      pendingImport = null;
-      await switchPeriod(created.id);
+      await switchPeriod(preview.createdWorkspace);
+      if (pendingImport === preview) pendingImport = null;
       return;
     }
     if (!document.getElementById("restoreExternalConfirmed").checked) {
@@ -3209,13 +3597,34 @@ async function confirmImport() {
 }
 // Source: src/workspace/history/undo.js
 async function openHistory(limit = 50) {
+  const ensureCurrent = preserveAsyncTarget();
   await writer.catch(() => {});
-  const tx = connection.transaction("events", "readonly"),
-    events = await requestPromise(
-      tx.objectStore("events").index("workspace").getAll(workspace.id),
-    );
+  ensureCurrent();
+  const origin = workspace.id,
+    sourceConnection = connection,
+    tx = sourceConnection.transaction(["events", "undo"], "readonly"),
+    done = transactionDone(tx);
+  // Convert synchronous request-creation errors to rejections before joining
+  // them with transaction completion, so every pending promise has a handler.
+  const read = async (operation) => requestPromise(operation());
+  let events, undo;
+  try {
+    [events, undo] = await Promise.all([
+      read(() => tx.objectStore("events").index("workspace").getAll(origin)),
+      read(() => tx.objectStore("undo").get(origin)),
+      done,
+    ]);
+  } catch (error) {
+    try {
+      tx.abort();
+    } catch (ignore) {}
+    await done.catch(() => {});
+    throw error;
+  }
+  ensureCurrent();
+  if (connection !== sourceConnection)
+    throw Error("اتصال بانک هنگام خواندن تاریخچه تغییر کرده است.");
   events.sort((a, b) => b.id - a.id);
-  const undo = await readRecord("undo", workspace.id);
   showModal(
     "تاریخچه تغییرات",
     "<p>تغییرات با زمان، مقدار قبل و بعد ثبت می‌شوند. اصلاح نمره و تغییر واحد هم در این فهرست هستند.</p>" +
@@ -3272,8 +3681,10 @@ async function undoLast() {
   busy++;
   paintStatus();
   try {
+    const ensureCurrent = preserveAsyncTarget();
     await flushDrafts({ strict: true });
     await writer.catch(() => {});
+    ensureCurrent();
     assertEntityWritable();
     const target = { id: workspace.id, revision: workspace.revision };
     const operation = performUndo(target);
@@ -3286,10 +3697,17 @@ async function undoLast() {
   }
 }
 async function performUndo(target) {
+  const sourceConnection = connection;
+  const isCurrentTarget = () =>
+    workspace.id === target.id &&
+    connection === sourceConnection &&
+    !periodLoading &&
+    !resetBusy &&
+    !connectionRetired;
   const undo = await readRecord("undo", target.id);
   if (
     !undo ||
-    workspace.id !== target.id ||
+    !isCurrentTarget() ||
     workspace.revision !== target.revision ||
     undo.revision !== target.revision
   )
@@ -3302,14 +3720,17 @@ async function performUndo(target) {
   if (!confirm("آخرین تغییر «" + undo.action + "» بازگردانده شود؟"))
     return false;
   assertEntityWritable();
-  if (workspace.id !== target.id || workspace.revision !== target.revision)
+  if (!isCurrentTarget() || workspace.revision !== target.revision)
     throw Error("دوره یا اطلاعات بازگردانی تغییر کرده است.");
   await commitRecords(candidate, {
     action: "بازگردانی: " + undo.action,
     replace: true,
     keepUndo: false,
   });
-  const loaded = await readWorkspace(workspace.id);
+  if (!isCurrentTarget()) return true;
+  const savedRevision = workspace.revision;
+  const loaded = await readWorkspace(target.id);
+  if (!isCurrentTarget() || workspace.revision !== savedRevision) return true;
   db = loaded.data;
   committed = loaded.records;
   closeModal();
@@ -3383,37 +3804,52 @@ function hydrateReportNotes(period) {
     );
   return saved !== false;
 }
+let periodSwitchBusy = false;
 async function switchPeriod(id) {
-  if (id === workspace.id) {
+  if (periodSwitchBusy)
+    throw Error("جابه‌جایی دوره در حال انجام است؛ صبر کنید.");
+  periodSwitchBusy = true;
+  try {
+    if (id === workspace.id) {
+      closeModal();
+      return;
+    }
+    await flushDrafts({ strict: true });
+    await writer.catch(() => {});
+    periodLoading = true;
+    lockControls();
+    const loaded = await readWorkspaceSnapshot(id);
+    if (!ready || resetBusy || connectionRetired)
+      throw Error(
+        "بانک هنگام جابه‌جایی تغییر کرد؛ صفحه را دوباره بارگذاری کنید.",
+      );
+    workspace = loaded.period;
+    db = loaded.data;
+    committed = loaded.records;
+    blocked = false;
+    storageBlocked = false;
+    drafts.clear();
+    isAuthenticated = false;
+    state = {
+      view: "schools",
+      schoolId: null,
+      classId: null,
+      lessonId: null,
+      tab: "students",
+      reportTab: "comprehensive",
+    };
+    rememberPeriod(id);
+    hydrateReportNotes(workspace);
+    await loadDrafts();
+    periodLoading = false;
     closeModal();
-    return;
+    render();
+    await recoverDrafts();
+  } finally {
+    periodLoading = false;
+    periodSwitchBusy = false;
+    lockControls();
   }
-  await flushDrafts({ strict: true });
-  await writer.catch(() => {});
-  const next = await readRecord("catalog", id);
-  if (!next) throw Error("دوره موجود نیست.");
-  const loaded = await readWorkspace(id);
-  workspace = next;
-  db = loaded.data;
-  committed = loaded.records;
-  blocked = false;
-  storageBlocked = false;
-  drafts.clear();
-  isAuthenticated = false;
-  state = {
-    view: "schools",
-    schoolId: null,
-    classId: null,
-    lessonId: null,
-    tab: "students",
-    reportTab: "comprehensive",
-  };
-  rememberPeriod(id);
-  hydrateReportNotes(workspace);
-  await loadDrafts();
-  closeModal();
-  render();
-  await recoverDrafts();
 }
 
 function openNewPeriod() {
@@ -3425,59 +3861,75 @@ function openNewPeriod() {
   );
 }
 
+let newPeriodBusy = false;
 async function createNewPeriod() {
-  if (fileMode)
-    throw Error(
-      "این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.",
-    );
-  await flushDrafts({ strict: true });
-  const year = asciiDigits(document.getElementById("periodYear").value),
-    term = document.getElementById("periodTerm").value;
-  if (
-    !/^\d{4}-\d{4}$/.test(year) ||
-    Number(year.slice(5)) - Number(year.slice(0, 4)) !== 1
-  )
-    throw Error("سال را مانند 1405-1406 وارد کنید.");
-  const existing = await allFrom("catalog");
-  if (existing.some((x) => x.year === year && x.term === term))
-    throw Error("این سال و نوبت قبلاً ساخته شده است.");
-  const next = clone(db);
-  next.sessions = [];
-  next.migrationWarnings = [];
-  next.settings.academicYear = year;
-  next.settings.academicTerm = term;
-  for (const school of next.schools)
-    for (const c of school.classes) {
-      c.archivedStudents = [];
-      for (const l of c.lessons) {
-        l.kardaneshScores = {};
-        const info = EduPolicy.identity(l, year);
-        if (l.gradingPolicy) {
-          const changedYear = l.gradingPolicy.year !== year;
-          const changedIdentity = Object.entries(info).some(
-            ([key, value]) => l.gradingPolicy[key] !== value,
-          );
-          Object.assign(l.gradingPolicy, info);
-          if (changedYear || changedIdentity) {
-            l.gradingPolicy.confirmed = false;
-            l.gradingPolicy.revision = 1;
+  if (newPeriodBusy) throw Error("ساخت دوره در حال انجام است؛ صبر کنید.");
+  newPeriodBusy = true;
+  try {
+    const ensureCurrent = preserveAsyncTarget();
+    if (fileMode)
+      throw Error(
+        "این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.",
+      );
+    const year = asciiDigits(document.getElementById("periodYear").value),
+      term = document.getElementById("periodTerm").value;
+    if (!["اول", "دوم", "تابستان"].includes(term))
+      throw Error("نوبت انتخاب‌شده معتبر نیست.");
+    await flushDrafts({ strict: true });
+    await writer.catch(() => {});
+    ensureCurrent();
+    const context = captureWorkspaceContext();
+    if (
+      !/^\d{4}-\d{4}$/.test(year) ||
+      Number(year.slice(5)) - Number(year.slice(0, 4)) !== 1
+    )
+      throw Error("سال را مانند 1405-1406 وارد کنید.");
+    const existing = await allFrom("catalog");
+    assertWorkspaceContext(context);
+    if (existing.some((x) => x.year === year && x.term === term))
+      throw Error("این سال و نوبت قبلاً ساخته شده است.");
+    const next = clone(db);
+    next.sessions = [];
+    next.migrationWarnings = [];
+    next.settings.academicYear = year;
+    next.settings.academicTerm = term;
+    for (const school of next.schools)
+      for (const c of school.classes) {
+        c.archivedStudents = [];
+        for (const l of c.lessons) {
+          l.kardaneshScores = {};
+          const info = EduPolicy.identity(l, year);
+          if (l.gradingPolicy) {
+            const changedYear = l.gradingPolicy.year !== year;
+            const changedIdentity = Object.entries(info).some(
+              ([key, value]) => l.gradingPolicy[key] !== value,
+            );
+            Object.assign(l.gradingPolicy, info);
+            if (changedYear || changedIdentity) {
+              l.gradingPolicy.confirmed = false;
+              l.gradingPolicy.revision = 1;
+            }
+            if (changedYear) {
+              l.gradingPolicy.circularNumber = "";
+              l.gradingPolicy.circularDate = "";
+              l.gradingPolicy.reference = "";
+            }
           }
-          if (changedYear) {
-            l.gradingPolicy.circularNumber = "";
-            l.gradingPolicy.circularDate = "";
-            l.gradingPolicy.reference = "";
-          }
+          if (l.courseInfo || l.gradingPolicy) l.courseInfo = info;
+          for (const p of l.poudmans) p.podScores = {};
+          for (const p of l.poudmans)
+            for (const u of p.units) u.unitScores = {};
         }
-        if (l.courseInfo || l.gradingPolicy) l.courseInfo = info;
-        for (const p of l.poudmans) p.podScores = {};
-        for (const p of l.poudmans) for (const u of p.units) u.unitScores = {};
       }
-    }
-  const created = await installWorkspace(normalizeDB(next), {
-    year,
-    term,
-  });
-  await switchPeriod(created.id);
+    const created = await installWorkspace(normalizeDB(next), {
+      year,
+      term,
+    });
+    assertWorkspaceContext(context);
+    await switchPeriod(created.id);
+  } finally {
+    newPeriodBusy = false;
+  }
 }
 // Source: src/workspace/periods/labels.js
 let periodLabelEditing = null,
@@ -3719,7 +4171,8 @@ async function finalizePeriod() {
       !request.result ||
       request.result.closed ||
       request.result.revision !== context.revision ||
-      workspace.id !== context.id
+      workspace.id !== context.id ||
+      workspace.revision !== context.revision
     ) {
       tx.abort();
       return;
@@ -3734,7 +4187,7 @@ async function finalizePeriod() {
     tx.objectStore("reports").put(snapshot);
     tx.objectStore("undo").delete(context.id);
     tx.objectStore("events").add({
-      workspace: workspace.id,
+      workspace: context.id,
       at,
       revision: finalizedWorkspace.revision,
       action: "بستن دوره و ثبت کارنامه ثابت",
@@ -3742,16 +4195,19 @@ async function finalizePeriod() {
     });
   };
   await done;
-  workspace = finalizedWorkspace;
   broadcast({
-    workspace: workspace.id,
-    revision: workspace.revision,
+    workspace: context.id,
+    revision: finalizedWorkspace.revision,
   });
+  if (workspace.id !== context.id || workspace.revision !== context.revision)
+    return;
+  workspace = finalizedWorkspace;
   await openPeriods();
   render();
 }
 
 async function reopenPeriod() {
+  assertWorkspaceReadable();
   if (fileMode)
     throw Error(
       "این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.",
@@ -3763,12 +4219,19 @@ async function reopenPeriod() {
     )
   )
     return;
+  const context = captureWorkspaceContext();
   let reopenedWorkspace;
   const tx = connection.transaction(["catalog", "events"], "readwrite"),
     done = transactionDone(tx),
-    request = tx.objectStore("catalog").get(workspace.id);
+    request = tx.objectStore("catalog").get(context.id);
   request.onsuccess = () => {
-    if (request.result.revision !== workspace.revision) {
+    if (
+      !request.result ||
+      !request.result.closed ||
+      request.result.revision !== context.revision ||
+      workspace.id !== context.id ||
+      workspace.revision !== context.revision
+    ) {
       tx.abort();
       return;
     }
@@ -3779,7 +4242,7 @@ async function reopenPeriod() {
     };
     tx.objectStore("catalog").put(reopenedWorkspace);
     tx.objectStore("events").add({
-      workspace: workspace.id,
+      workspace: context.id,
       at: new Date().toISOString(),
       revision: reopenedWorkspace.revision,
       action: "بازگشایی دوره؛ کارنامه ثابت پیشین محفوظ است",
@@ -3787,11 +4250,13 @@ async function reopenPeriod() {
     });
   };
   await done;
-  workspace = reopenedWorkspace;
   broadcast({
-    workspace: workspace.id,
-    revision: workspace.revision,
+    workspace: context.id,
+    revision: reopenedWorkspace.revision,
   });
+  if (workspace.id !== context.id || workspace.revision !== context.revision)
+    return;
+  workspace = reopenedWorkspace;
   await openPeriods();
   render();
 }
@@ -4282,13 +4747,29 @@ function csvPlan(text, c) {
   if (rows.length < 2)
     throw Error("فایل باید سرستون و دست‌کم یک ردیف داشته باشد.");
   const headers = rows[0].map(normalizedName),
-    nameIndex = headers.findIndex((x) => x.includes("نام")),
-    codeIndex = headers.findIndex(
-      (x) =>
-        x === "کد" ||
-        (x.includes("کد") && (x.includes("دانش") || x.includes("هنرجو"))),
+    nameColumns = headers.flatMap((x, index) =>
+      x.includes("نام") ? [index] : [],
+    ),
+    codeColumns = headers.flatMap((x, index) =>
+      x === "کد" ||
+      (x.includes("کد") && (x.includes("دانش") || x.includes("هنرجو")))
+        ? [index]
+        : [],
     );
-  if (nameIndex < 0) throw Error("ستون نام یافت نشد.");
+  if (!nameColumns.length) throw Error("ستون نام یافت نشد.");
+  if (nameColumns.length > 1 || codeColumns.length > 1)
+    throw Error(
+      "ستون نام یا کد مبهم است؛ برای هرکدام فقط یک ستون در فایل نگه دارید.",
+    );
+  const nameIndex = nameColumns[0],
+    codeIndex = codeColumns[0] ?? -1,
+    known = knownStudents(c),
+    existingCodes = new Map(),
+    existingNames = new Set(known.map((st) => normalizedName(st.name))),
+    activeIds = new Set(c.students.map((st) => st.id));
+  for (const student of known)
+    if (student.code && !existingCodes.has(student.code))
+      existingCodes.set(student.code, student);
   const codes = new Set(),
     names = new Set(),
     plan = [];
@@ -4308,16 +4789,14 @@ function csvPlan(text, c) {
     if (code && codes.has(code))
       throw Error("کد " + code + " در فایل تکراری است.");
     if (code) codes.add(code);
-    const exact = code ? knownStudents(c).find((st) => st.code === code) : null,
-      sameName =
-        knownStudents(c).some((st) => normalizedName(st.name) === name) ||
-        names.has(name);
+    const exact = code ? existingCodes.get(code) : null,
+      sameName = existingNames.has(name) || names.has(name);
     plan.push({
       row: i + 1,
       name,
       code,
       existingId: exact?.id || null,
-      archived: exact ? !c.students.some((st) => st.id === exact.id) : false,
+      archived: exact ? !activeIds.has(exact.id) : false,
       duplicate: !exact && sameName,
       choice: exact ? "skip" : sameName ? "skip" : "add",
     });
@@ -4407,6 +4886,7 @@ async function csvImportV24(e) {
   if (errorBox) errorBox.textContent = "";
   const origin = {
     workspace: workspace?.id,
+    connection,
     schoolId: state.schoolId,
     classId: state.classId,
     revision: workspace?.revision,
@@ -4418,6 +4898,7 @@ async function csvImportV24(e) {
     assertEntityWritable();
     if (
       origin.workspace !== workspace.id ||
+      origin.connection !== connection ||
       origin.schoolId !== state.schoolId ||
       origin.classId !== state.classId
     )
@@ -4432,6 +4913,7 @@ async function csvImportV24(e) {
     assertEntityWritable();
     if (
       origin.workspace !== workspace.id ||
+      origin.connection !== connection ||
       origin.schoolId !== state.schoolId ||
       origin.classId !== state.classId ||
       origin.revision !== workspace.revision
@@ -4474,6 +4956,7 @@ async function commitCSV() {
   if (!form) return false;
   csvSaving = true;
   const context = pendingCSV;
+  const sourceConnection = connection;
   const choices = [...form.querySelectorAll("[data-csv-row]")].map(
     (el) => el.value,
   );
@@ -4483,6 +4966,9 @@ async function commitCSV() {
       assertEntityWritable();
       if (
         !context ||
+        pendingCSV !== context ||
+        connection !== sourceConnection ||
+        (context.connection && context.connection !== connection) ||
         context.workspace !== workspace.id ||
         context.revision !== workspace.revision ||
         context.schoolId !== state.schoolId ||
@@ -4506,6 +4992,9 @@ async function commitCSV() {
         .map((st) => st.code)
         .filter(Boolean),
     );
+    const activeById = new Map(
+      c.students.map((student) => [student.id, student]),
+    );
     context.plan.forEach((row, i) => {
       const choice = choices[i];
       if (choice === "skip") return;
@@ -4516,10 +5005,8 @@ async function commitCSV() {
         if (identity.code) codes.add(identity.code);
         additions.push({ id: uid(), ...identity });
       } else if (choice === "update" && row.existingId && !row.archived) {
-        const student = c.students.find(
-          (st) => st.id === row.existingId && st.code === identity.code,
-        );
-        if (!student)
+        const student = activeById.get(row.existingId);
+        if (!student || student.code !== identity.code)
           throw Error(
             "هویت هنرجوی مقصد تغییر کرده است؛ فایل را دوباره بررسی کنید.",
           );
@@ -4532,7 +5019,7 @@ async function commitCSV() {
     freezeClassRosters(c);
     for (const { student, identity } of updates)
       applyStudentIdentity(c, student, identity);
-    c.students.push(...additions);
+    for (const student of additions) c.students.push(student);
     await saveDBV24({
       action:
         "ورود CSV: " +
@@ -4541,6 +5028,17 @@ async function commitCSV() {
         updates.length +
         " اصلاح",
     });
+    if (
+      pendingCSV !== context ||
+      connection !== sourceConnection ||
+      workspace.id !== context.workspace ||
+      state.schoolId !== context.schoolId ||
+      state.classId !== context.classId ||
+      periodLoading ||
+      resetBusy ||
+      connectionRetired
+    )
+      return true;
     finish();
     rememberRecordEditor();
     pendingCSV = null;
@@ -4623,11 +5121,13 @@ async function addStudentV24(event) {
   };
   const target = {
     workspace: workspace?.id,
+    connection,
     schoolId: state.schoolId,
     classId: state.classId,
   };
   const sameTarget = () =>
     target.workspace === workspace?.id &&
+    target.connection === connection &&
     target.schoolId === state.schoolId &&
     target.classId === state.classId;
   studentCreationBusy = true;
@@ -4656,7 +5156,8 @@ async function addStudentV24(event) {
     freezeClassRosters(c);
     c.students.push({ id: uid(), name, ...(code ? { code } : {}) });
     await saveDBV24({ action: "افزودن هنرجو: " + name });
-    render();
+    if (sameTarget() && !periodLoading && !resetBusy && !connectionRetired)
+      render();
     return true;
   } catch (error) {
     const current = sameTarget()
@@ -4736,10 +5237,13 @@ async function saveStudent(studentId) {
   const finish = beginRecordEditorSave(form);
   try {
     const context = studentEditing;
+    const sourceConnection = connection;
     const check = () => {
       assertEntityWritable();
       if (
         !context ||
+        studentEditing !== context ||
+        connection !== sourceConnection ||
         (studentId && studentId !== context.studentId) ||
         context.workspace !== workspace.id ||
         context.revision !== workspace.revision ||
@@ -4782,6 +5286,17 @@ async function saveStudent(studentId) {
       applyStudentIdentity(c, student, { name, code });
       await saveDBV24({ action: "اصلاح مشخصات هنرجو: " + name });
     }
+    if (
+      studentEditing !== context ||
+      connection !== sourceConnection ||
+      workspace.id !== context.workspace ||
+      state.schoolId !== context.schoolId ||
+      state.classId !== context.classId ||
+      periodLoading ||
+      resetBusy ||
+      connectionRetired
+    )
+      return;
     finish();
     rememberRecordEditor();
     studentEditing = null;
@@ -5252,7 +5767,14 @@ function captureWorkspaceContext() {
   });
 }
 function assertWorkspaceReadable() {
-  if (fileMode || !ready || resetBusy || connectionRetired || !workspace)
+  if (
+    fileMode ||
+    !ready ||
+    periodLoading ||
+    resetBusy ||
+    connectionRetired ||
+    !workspace
+  )
     throw Error("اطلاعات آماده خواندن نیست؛ برنامه را دوباره باز کنید.");
   if (blocked)
     throw Error(
@@ -5323,26 +5845,7 @@ async function assertReportSnapshot(context) {
     );
   return true;
 }
-async function prepareAnnualReportSnapshot(periodIds = {}) {
-  assertWorkspaceReadable();
-  const origin = workspace.id;
-  await flushDrafts({ strict: true });
-  await writer.catch(() => {});
-  assertWorkspaceReadable();
-  if (workspace.id !== origin)
-    throw Error("دوره تغییر کرد؛ گزارش سالانه را دوباره تهیه کنید.");
-  const context = captureWorkspaceContext();
-  const tx = connection.transaction(["catalog", "records"], "readonly"),
-    done = transactionDone(tx);
-  const [catalog, records] = await Promise.all([
-    requestPromise(tx.objectStore("catalog").getAll()),
-    requestPromise(tx.objectStore("records").getAll()),
-  ]);
-  await done;
-  assertLiveWorkspace(
-    catalog.find((row) => row.id === context.id),
-    context,
-  );
+function selectAnnualPeriods(catalog, periodIds, active) {
   let periods;
   if (periodIds.first || periodIds.second) {
     if (
@@ -5354,31 +5857,28 @@ async function prepareAnnualReportSnapshot(periodIds = {}) {
     periods = [periodIds.first, periodIds.second].map((id) =>
       catalog.find((row) => row.id === id),
     );
-    if (periods.some((row) => !row || row.year !== workspace.year))
+    if (periods.some((row) => !row || row.year !== active.year))
       throw Error("هر دو نوبت باید متعلق به سال تحصیلی فعال باشند.");
-    for (let i = 0; i < periods.length; i++) {
-      const kind = periods[i].termKind || academicTermKind(periods[i].term);
-      if (kind && kind !== ["first", "second"][i])
-        throw Error("نوع دوره انتخاب‌شده با نوبت اول/دوم مطابقت ندارد.");
-    }
   } else {
     const candidates = ["first", "second"].map((kind) =>
       catalog.filter(
         (row) =>
-          row.year === workspace.year &&
+          row.year === active.year &&
           (row.termKind || academicTermKind(row.term)) === kind,
       ),
     );
     if (candidates.some((rows) => rows.length > 1))
-      throw Error("برای یکی از نوبت‌ها چند دوره وجود دارد؛ نوبت اول و دوم را در فرم گزارش مشخص کنید.");
+      throw Error(
+        "برای یکی از نوبت‌ها چند دوره وجود دارد؛ نوبت اول و دوم را در فرم گزارش مشخص کنید.",
+      );
     if (
       candidates.every((rows) => rows.length === 1) &&
-      candidates.some((rows) => rows[0].id === workspace.id)
+      candidates.some((rows) => rows[0].id === active.id)
     )
       periods = candidates.map((rows) => rows[0]);
-    else if (["اول", "دوم"].includes(workspace.term))
+    else if (["اول", "دوم"].includes(active.term))
       periods = ["اول", "دوم"].map((term) =>
-        catalog.find((row) => row.year === workspace.year && row.term === term),
+        catalog.find((row) => row.year === active.year && row.term === term),
       );
     else
       throw Error(
@@ -5389,16 +5889,69 @@ async function prepareAnnualReportSnapshot(periodIds = {}) {
         "برای گزارش سالانه، هر دو نوبت همین سال تحصیلی باید وجود داشته باشند؛ آن‌ها را انتخاب یا ایجاد کنید.",
       );
   }
+  // The legacy label fallback must obey the same role checks as an explicit
+  // selection. A display label cannot override a saved annual-term role.
+  for (let i = 0; i < periods.length; i++) {
+    const kind = periods[i].termKind || academicTermKind(periods[i].term);
+    if (kind && kind !== ["first", "second"][i])
+      throw Error("نوع دوره انتخاب‌شده با نوبت اول/دوم مطابقت ندارد.");
+  }
+  return periods;
+}
+async function readAnnualRecordSets(context, periodIds) {
+  const tx = connection.transaction(["catalog", "records"], "readonly");
+  const done = transactionDone(tx);
+  let periods;
+  const pending = new Promise((resolve, reject) => {
+    const request = tx.objectStore("catalog").getAll();
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      try {
+        assertLiveWorkspace(
+          request.result.find((row) => row.id === context.id),
+          context,
+        );
+        periods = selectAnnualPeriods(request.result, periodIds, workspace);
+        // Queue both bounded reads inside the active IDB callback, before
+        // awaiting anything. Catalog and records remain one consistent snapshot.
+        Promise.all(
+          periods.map(async (period) =>
+            requestPromise(
+              workspaceRecordRequest(tx.objectStore("records"), period.id),
+            ),
+          ),
+        ).then(resolve, reject);
+      } catch (error) {
+        reject(error);
+        tx.abort();
+      }
+    };
+  });
+  const [recordSets] = await Promise.all([pending, done]);
+  assertWorkspaceContext(context);
+  return { periods, recordSets };
+}
+async function prepareAnnualReportSnapshot(periodIds = {}) {
+  assertWorkspaceReadable();
+  const origin = workspace.id;
+  await flushDrafts({ strict: true });
+  await writer.catch(() => {});
+  assertWorkspaceReadable();
+  if (workspace.id !== origin)
+    throw Error("دوره تغییر کرد؛ گزارش سالانه را دوباره تهیه کنید.");
+  const context = captureWorkspaceContext();
+  const { periods, recordSets } = await readAnnualRecordSets(
+    context,
+    periodIds,
+  );
   const parts = periods.map((period, index) => ({
     period: {
       ...period,
       term: index === 0 ? "اول" : "دوم",
       displayTerm: period.term,
     },
-    data: decodeWorkspaceRecords(
-      records.filter((row) => row.workspace === period.id),
-      { workspaceId: period.id },
-    ).data,
+    data: decodeWorkspaceRecords(recordSets[index], { workspaceId: period.id })
+      .data,
   }));
   for (const part of parts) {
     const password = part.data.settings.password;
@@ -5498,7 +6051,9 @@ async function prepareReportSnapshot({ annual = false, periodIds } = {}) {
     done = transactionDone(tx);
   const [live, rows] = await Promise.all([
     requestPromise(tx.objectStore("catalog").get(context.id)),
-    requestPromise(tx.objectStore("records").getAll()),
+    requestPromise(
+      workspaceRecordRequest(tx.objectStore("records"), context.id),
+    ),
   ]);
   await done;
   assertLiveWorkspace(live, context);
@@ -5629,6 +6184,7 @@ function assertEntityWritable() {
   if (
     fileMode ||
     !ready ||
+    periodLoading ||
     resetBusy ||
     connectionRetired ||
     blocked ||
@@ -5875,10 +6431,15 @@ async function saveMembership(mode = "") {
   const finish = beginRecordEditorSave(form);
   try {
     const context = membershipContext;
+    const sourceConnection = connection;
     const check = () => {
       assertEntityWritable();
       if (
         !context ||
+        membershipContext !== context ||
+        connection !== sourceConnection ||
+        state.schoolId !== context.schoolId ||
+        state.classId !== context.classId ||
         context.workspace !== workspace.id ||
         context.revision !== workspace.revision
       )
@@ -5953,6 +6514,17 @@ async function saveMembership(mode = "") {
       action = "بازگردانی هنرجو: " + student.name;
     }
     await saveDBV24({ action });
+    if (
+      membershipContext !== context ||
+      connection !== sourceConnection ||
+      workspace.id !== context.workspace ||
+      state.schoolId !== context.schoolId ||
+      state.classId !== context.classId ||
+      periodLoading ||
+      resetBusy ||
+      connectionRetired
+    )
+      return;
     finish();
     rememberRecordEditor();
     membershipContext = null;
@@ -6075,10 +6647,13 @@ async function confirmDeletion() {
   const finish = beginRecordEditorSave(form);
   try {
     const context = deletionContext;
+    const sourceConnection = connection;
     const check = () => {
       assertEntityWritable();
       if (
         !context ||
+        deletionContext !== context ||
+        connection !== sourceConnection ||
         context.workspace !== workspace.id ||
         context.revision !== workspace.revision
       )
@@ -6122,6 +6697,15 @@ async function confirmDeletion() {
       if (target.matches(db.masterSchedule[key])) delete db.masterSchedule[key];
     });
     await saveDBV24({ action: "حذف " + name + " و سوابق مرتبط" });
+    if (
+      deletionContext !== context ||
+      workspace.id !== context.workspace ||
+      connection !== sourceConnection ||
+      periodLoading ||
+      resetBusy ||
+      connectionRetired
+    )
+      return;
     finish();
     rememberRecordEditor();
     deletionContext = null;
@@ -6173,7 +6757,9 @@ function installRuntimeAPI() {
     buildLessonReportHtml: (c, l) =>
       l.gradeMode === "kardanesh" || l.gradingPolicy
         ? '<div class="card report-document grade-report"><button class="no-print" data-workspace-action="print">چاپ / PDF</button>' +
-          (l.gradeMode === "kardanesh" ? termAssessmentReport(c, l) : courseUI.table(c, l)) +
+          (l.gradeMode === "kardanesh"
+            ? termAssessmentReport(c, l)
+            : courseUI.table(c, l)) +
           "</div>"
         : old.buildLessonReportHtml(c, l),
     defaultDB: v24DefaultDB,
@@ -6186,6 +6772,8 @@ function installRuntimeAPI() {
     buildKardaneshSummaryHtml: buildKardaneshSummary,
     openBulkScoreModal: openBulkV24,
     setAllAttendance: setAllAttendanceV24,
+    changeSessionDate: changeSessionDateV24,
+    addManualSession: addManualSessionV24,
     saveSessionUnit: saveSessionUnitV24,
     updateSessionUnits: updateSessionUnitsV24,
     addSessionScore: addSessionScoreV24,
@@ -6241,7 +6829,7 @@ function installRuntimeAPI() {
       closed: !!workspace?.closed,
       year: workspace?.year || "",
       term: workspace?.term || "",
-      ready,
+      ready: ready && !periodLoading,
       blocked,
       retired: connectionRetired,
       resetting: resetBusy,
@@ -6289,7 +6877,8 @@ function installRuntimeAPI() {
     refreshControlLocks: lockControls,
     recoverReportNotes: () =>
       workspace ? hydrateReportNotes(workspace) : true,
-    canWriteReportNotes: () => !resetBusy && !connectionRetired,
+    canWriteReportNotes: () =>
+      !periodLoading && !resetBusy && !connectionRetired,
     confirmWipe,
     saveDB: saveDBV24,
     bootstrap: bootstrapV24,
@@ -6922,14 +7511,18 @@ const courseUI = EduCourseUI({
     id: workspace?.id,
     revision: workspace?.revision,
     closed: !!workspace?.closed,
-    readOnly: fileMode || !!workspace?.closed || blocked || !ready,
+    readOnly:
+      fileMode ||
+      !!workspace?.closed ||
+      blocked ||
+      !ready ||
+      periodLoading ||
+      resetBusy ||
+      connectionRetired,
   }),
   state: () => state,
   year: () => db.settings.academicYear,
-  assertWritable: () => {
-    if (fileMode || workspace?.closed || blocked || !ready)
-      throw Error("دوره فعلی قابل ویرایش نیست.");
-  },
+  assertWritable: assertEntityWritable,
   flushDrafts,
   saveDB: saveDBV24,
   showModal: showModalV24,

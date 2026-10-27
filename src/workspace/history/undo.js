@@ -1,11 +1,32 @@
 async function openHistory(limit = 50) {
+  const ensureCurrent = preserveAsyncTarget();
   await writer.catch(() => {});
-  const tx = connection.transaction("events", "readonly"),
-    events = await requestPromise(
-      tx.objectStore("events").index("workspace").getAll(workspace.id),
-    );
+  ensureCurrent();
+  const origin = workspace.id,
+    sourceConnection = connection,
+    tx = sourceConnection.transaction(["events", "undo"], "readonly"),
+    done = transactionDone(tx);
+  // Convert synchronous request-creation errors to rejections before joining
+  // them with transaction completion, so every pending promise has a handler.
+  const read = async (operation) => requestPromise(operation());
+  let events, undo;
+  try {
+    [events, undo] = await Promise.all([
+      read(() => tx.objectStore("events").index("workspace").getAll(origin)),
+      read(() => tx.objectStore("undo").get(origin)),
+      done,
+    ]);
+  } catch (error) {
+    try {
+      tx.abort();
+    } catch (ignore) {}
+    await done.catch(() => {});
+    throw error;
+  }
+  ensureCurrent();
+  if (connection !== sourceConnection)
+    throw Error("اتصال بانک هنگام خواندن تاریخچه تغییر کرده است.");
   events.sort((a, b) => b.id - a.id);
-  const undo = await readRecord("undo", workspace.id);
   showModal(
     "تاریخچه تغییرات",
     "<p>تغییرات با زمان، مقدار قبل و بعد ثبت می‌شوند. اصلاح نمره و تغییر واحد هم در این فهرست هستند.</p>" +
@@ -62,8 +83,10 @@ async function undoLast() {
   busy++;
   paintStatus();
   try {
+    const ensureCurrent = preserveAsyncTarget();
     await flushDrafts({ strict: true });
     await writer.catch(() => {});
+    ensureCurrent();
     assertEntityWritable();
     const target = { id: workspace.id, revision: workspace.revision };
     const operation = performUndo(target);
@@ -76,10 +99,17 @@ async function undoLast() {
   }
 }
 async function performUndo(target) {
+  const sourceConnection = connection;
+  const isCurrentTarget = () =>
+    workspace.id === target.id &&
+    connection === sourceConnection &&
+    !periodLoading &&
+    !resetBusy &&
+    !connectionRetired;
   const undo = await readRecord("undo", target.id);
   if (
     !undo ||
-    workspace.id !== target.id ||
+    !isCurrentTarget() ||
     workspace.revision !== target.revision ||
     undo.revision !== target.revision
   )
@@ -92,14 +122,17 @@ async function performUndo(target) {
   if (!confirm("آخرین تغییر «" + undo.action + "» بازگردانده شود؟"))
     return false;
   assertEntityWritable();
-  if (workspace.id !== target.id || workspace.revision !== target.revision)
+  if (!isCurrentTarget() || workspace.revision !== target.revision)
     throw Error("دوره یا اطلاعات بازگردانی تغییر کرده است.");
   await commitRecords(candidate, {
     action: "بازگردانی: " + undo.action,
     replace: true,
     keepUndo: false,
   });
-  const loaded = await readWorkspace(workspace.id);
+  if (!isCurrentTarget()) return true;
+  const savedRevision = workspace.revision;
+  const loaded = await readWorkspace(target.id);
+  if (!isCurrentTarget() || workspace.revision !== savedRevision) return true;
   db = loaded.data;
   committed = loaded.records;
   closeModal();
