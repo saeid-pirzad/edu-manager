@@ -380,11 +380,12 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    min-width: 88px;
+    width: 48px;
+    min-width: 48px;
     min-height: 48px;
     padding: 10px;
     border-radius: 12px;
-    background: #faf9f7;
+    background: #fff;
     border: 1px solid var(--workflow-line);
     color: #454649;
     font-size: 13px;
@@ -393,6 +394,17 @@
   }
   #app .dashboard-entity-more > summary > span:first-child {
     display: inline-flex;
+  }
+  #app .dashboard-entity-more > summary > span:last-child {
+    display: none;
+  }
+  #app .dashboard-entity-more > summary:hover {
+    background: #f4f3f1;
+    border-color: #b9b6b1;
+  }
+  #app .dashboard-entity-more > summary:focus-visible {
+    outline: 2px solid var(--workflow-accent);
+    outline-offset: 3px;
   }
   #app .dashboard-entity-more:not([open]) > summary {
     height: 100%;
@@ -410,10 +422,10 @@
     grid-column: 1 / -1;
   }
   #app .dashboard-entity-more[open] > summary {
-    justify-content: flex-start;
-    background: #fffaed;
-    border-color: #e3cc9e;
-    color: #7c5105;
+    margin-inline-start: auto;
+    background: #f4f3f1;
+    border-color: #b9b6b1;
+    color: var(--workflow-ink);
   }
   /* Inline disclosure cannot be clipped by a card or escape the viewport. */
   #app .dashboard-entity-more > .entity-menu-panel {
@@ -423,15 +435,18 @@
     width: 100%;
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: 8px;
-    margin-top: 8px;
-    padding: 10px;
+    gap: 4px;
+    margin-top: 10px;
+    padding: 6px;
     border-radius: 12px;
     border-color: var(--workflow-line);
-    background: #faf9f7;
+    background: #fff;
     box-shadow: none;
   }
   #app .entity-menu-panel > button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     min-height: 46px;
     font-size: 14px;
     text-align: start;
@@ -439,10 +454,21 @@
     border-radius: 10px;
     padding: 10px 12px;
   }
+  #app .entity-menu-panel > button.ghost {
+    background: transparent;
+    border-color: transparent;
+  }
+  #app .entity-menu-panel > button.ghost:hover {
+    background: #f4f3f1;
+  }
   #app .entity-menu-panel > button.danger {
-    background: #fff0ed;
+    background: transparent;
     color: #9f3021;
-    border: 1px solid #f0d2cb;
+    border: 1px solid transparent;
+    border-top-color: var(--workflow-line);
+  }
+  #app .entity-menu-panel > button.danger:hover {
+    background: #fff0ed;
   }
   #app .student-profile-actions {
     grid-template-columns: minmax(0, 1fr) auto;
@@ -711,6 +737,22 @@
   }
 }
 @media screen and (min-width: 1101px) {
+  #app:has(> .workflow-welcome) {
+    display: flex;
+    flex-direction: column;
+  }
+  #app:has(> .workflow-welcome) > * {
+    min-width: 0;
+  }
+  #app:has(> .workflow-welcome) > .topbar {
+    order: 0;
+  }
+  #app:has(> .workflow-welcome) > .workspace-bar {
+    order: 1;
+  }
+  #app:has(> .workflow-welcome) > .dashboard-directory {
+    order: 3;
+  }
   #app .dashboard-entities {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: stretch;
