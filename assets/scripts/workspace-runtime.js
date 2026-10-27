@@ -1279,6 +1279,19 @@ function installGradeEvents() {
     !input.matches(":disabled") &&
     !input.closest("[inert]");
   document.addEventListener("input", (event) => {
+    if (event.target.dataset?.assessmentSearch !== undefined) {
+      const root = event.target.closest(".gradebook");
+      if (!root || event.target.closest("[inert]")) return;
+      const normalize = (value) => String(value).replace(/ي/g, "ی").replace(/ك/g, "ک").replace(/‌/g, " ").replace(/\s+/g, " ").trim();
+      const query = normalize(event.target.value);
+      let visible = 0;
+      for (const row of root.querySelectorAll("[data-assessment-name]")) {
+        row.hidden = !normalize(row.dataset.assessmentName).includes(query);
+        if (!row.hidden) visible++;
+      }
+      root.querySelector(".gradebook-no-results").hidden = !query || visible > 0;
+      return;
+    }
     if (isEditableGrade(event.target)) gradeInput(event.target);
   });
   // focusout bubbles, unlike the former inline blur handler.
@@ -1499,48 +1512,38 @@ async function openAssessmentStage(button) {
 }
 function buildAssessmentEditor(c, l) {
   const general = l.gradingPolicy?.subjectType === "general";
-  let html =
-    '<div class="card assessment-editor"><h3>' + (general ? "نمرات درس عمومی — " : "نمرات کاردانش — ") +
-    esc(l.name) +
-    "</h3><p>" + (general ? "در هر مرحله یک نمره از صفر تا بیست ثبت کنید. میان‌ترم و پایان‌ترم هر دو نوبت مستقل‌اند." : "هر مرحله: عملی ۷۰٪ + تئوری ۳۰٪. نتیجه سالانه: میانگین میان‌ترم و پایان‌ترم هر دو نوبت؛ هر چهار نمره لازم است.") + "</p>" +
-    '<div class="grades-intro"><span>ثبت نمرات رسمی</span><p>نمره‌ها را از صفر تا بیست وارد کنید؛ وضعیت ذخیره زیر هر ورودی نمایش داده می‌شود.</p><small>' +
-    c.students.length.toLocaleString("fa-IR") +
-    " دانش‌آموز · نوبت " +
-    esc(workspace.term) +
-    "</small></div>";
-  html += '<nav class="assessment-navigation" aria-label="چهار مرحله نمرات سال">';
+  const mid = assessmentSelectedStage === "midterm";
+  const stage = assessmentSelectedStage;
+  const stageName = (mid ? "میان‌ترم " : "پایان‌ترم ") + workspace.term;
+  const students = getSortedStudents(c);
+  let html = '<div class="card assessment-editor gradebook"><header class="gradebook-heading"><div><span class="gradebook-eyebrow">دفتر نمره</span><h3>' +
+    esc(l.name) + '</h3><p>' + (general ? "درس عمومی · یک نمره از ۲۰" : "کاردانش · عملی و تئوری") +
+    '</p></div><span class="gradebook-class-count">' + students.length.toLocaleString("fa-IR") +
+    ' دانش‌آموز</span></header><nav class="assessment-navigation" aria-label="چهار مرحله نمرات سال">';
   for (const term of ["اول", "دوم"])
-    for (const stage of ["midterm", "final"])
-      html += '<button type="button" data-workspace-action="assessment-stage" data-term="' + term + '" data-stage="' + stage + '" aria-pressed="' + (workspace.term === term && assessmentSelectedStage === stage) + '"><small>نوبت ' + term + '</small><span>' + (stage === "midterm" ? "میان‌ترم " : "پایان‌ترم ") + term + '</span></button>';
-  html += '</nav><p class="assessment-period-note">هر نوبت در دوره مستقل خودش ذخیره می‌شود؛ انتخاب نوبت دیگر، همان دوره را باز می‌کند.</p>';
-  for (const stage of ["midterm", "final"]) {
-    if (stage !== assessmentSelectedStage) continue;
-    const mid = stage === "midterm";
-    html +=
-      '<details class="assessment-stage" ' +
-      "open" +
-      "><summary>" +
-      (mid ? "میان‌ترم" : "پایان‌ترم") +
-      " نوبت " +
-      esc(workspace.term) +
-      '</summary><div class="assessment-students">';
-    if (!c.students.length)
-      html +=
-        '<div class="empty"><strong>هنوز دانش‌آموزی در کلاس نیست</strong><p>برای ثبت نمره، ابتدا از تب دانش‌آموزان اعضای کلاس را اضافه کنید.</p></div>';
-    for (const st of getSortedStudents(c)) {
+    for (const item of ["midterm", "final"])
+      html += '<button type="button" data-workspace-action="assessment-stage" data-term="' + term + '" data-stage="' + item + '" aria-pressed="' + (workspace.term === term && stage === item) + '">' + (item === "midterm" ? "میان‌ترم " : "پایان‌ترم ") + term + '</button>';
+  html += '</nav><div class="gradebook-toolbar"><div><h4>' + esc(stageName) + '</h4><p>نمره از ۰ تا ۲۰ · ذخیره خودکار</p></div><label class="gradebook-search"><span>جست‌وجوی دانش‌آموز</span><input type="search" data-assessment-search="" placeholder="نام دانش‌آموز…" autocomplete="off"></label></div>';
+  html += '<details class="gradebook-help"><summary>راهنمای ثبت و محاسبه</summary><p>' +
+    (general ? "هر مرحله یک نمره مستقل از صفر تا بیست دارد." : "نمره هر مرحله از ۷۰٪ عملی و ۳۰٪ تئوری محاسبه می‌شود؛ هر دو نمره لازم‌اند.") +
+    ' نمره ثبت‌نشده با صفر متفاوت است. برای حذف نمره از × کنار ورودی استفاده کنید. هر نوبت در دوره مربوط به خودش ذخیره می‌شود.</p></details>';
+  html += '<section class="assessment-stage" aria-label="' + esc(stageName) + '"><div class="assessment-students">';
+  if (!students.length)
+    html += '<div class="empty"><strong>هنوز دانش‌آموزی در کلاس نیست</strong><p>ابتدا از تب دانش‌آموزان، اعضای کلاس را اضافه کنید.</p></div>';
+  for (const [index, st] of students.entries()) {
       const r = assessmentResult(l, st.id, stage);
       html +=
-        '<article class="assessment-student"><h4>' +
-        esc(st.name) +
-        '</h4><div class="assessment-inputs' + (general ? " general-inputs" : "") + '">' +
-        (general ? "" : '<label>عملی <small>از ۲۰</small>' + gradeCell(c, l, st, mid ? "midtermPractical" : "practical", {
+        '<article class="assessment-student" data-assessment-name="' + esc(st.name) + '"><div class="gradebook-student"><span class="gradebook-number" aria-hidden="true">' +
+        (index + 1).toLocaleString("fa-IR") + '</span><h4>' + esc(st.name) +
+        '</h4></div><div class="assessment-inputs' + (general ? " general-inputs" : "") + '">' +
+        (general ? "" : '<label><span>عملی <small>از ۲۰</small></span>' + gradeCell(c, l, st, mid ? "midtermPractical" : "practical", {
           value: r.practical,
         }) + "</label>") +
-        '<label>' + (general ? "نمره" : "تئوری") + '<small>از ۲۰</small>' +
+        '<label><span>' + (general ? "نمره" : "تئوری") + '<small>از ۲۰</small></span>' +
         gradeCell(c, l, st, mid ? "midtermTheory" : "theory", {
           value: r.theory,
         }) +
-        '</label></div><p>نمره این مرحله: <strong data-assessment-final="' +
+        '</label></div><div class="gradebook-result"><span>نتیجه</span><strong data-assessment-final="' +
         esc(st.id) +
         '" data-stage="' +
         stage +
@@ -1548,11 +1551,9 @@ function buildAssessmentEditor(c, l) {
         finalText(r) +
         "</strong> <span data-assessment-status>" +
         (r.complete ? gradeStatus(r) : "ناقص") +
-        "</span></p></article>";
-    }
-    html += "</div></details>";
+        "</span></div></article>";
   }
-  return html + "</div>";
+  return html + '</div><p class="gradebook-no-results" role="status" hidden>دانش‌آموزی با این نام پیدا نشد.</p></section></div>';
 }
 function buildKardaneshSummary(c, l, sid) {
   if (l.gradingPolicy) return courseUI.table(c, l, sid, false);

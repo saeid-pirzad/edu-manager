@@ -32,6 +32,39 @@ const input = (options = {}) => ({
     selector === ":disabled" ? !!options.disabled : !options.unrelated,
   closest: () => !!options.inert,
 });
+test("gradebook search normalizes Persian names without submitting or replacing grade fields", () => {
+  const f = fixture();
+  const grade = { value: "17.5" };
+  const rows = [
+    { dataset: { assessmentName: "علی کریمی" }, grade },
+    { dataset: { assessmentName: "محمد رضایی" } },
+  ];
+  const message = { hidden: true };
+  const root = {
+    querySelectorAll: () => rows,
+    querySelector: () => message,
+  };
+  const search = {
+    dataset: { assessmentSearch: "" },
+    value: "كريمي",
+    closest: (selector) => selector === ".gradebook" ? root : null,
+  };
+  const filter = () => f.listeners.get("input")({ target: search });
+  filter();
+  assert.equal(rows[0].hidden, false);
+  assert.equal(rows[1].hidden, true);
+  assert.equal(message.hidden, true);
+  search.value = "نام ناموجود";
+  filter();
+  assert.equal(message.hidden, false);
+  search.value = "";
+  filter();
+  assert.equal(rows.every((row) => !row.hidden), true);
+  assert.equal(message.hidden, true);
+  assert.equal(rows[0].grade, grade);
+  assert.equal(grade.value, "17.5");
+  assert.deepEqual(f.calls, []);
+});
 test("grade delegation accepts replacement inputs, flushes focusout and clears the paired input", async () => {
   const f = fixture(),
     first = input(),

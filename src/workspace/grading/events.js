@@ -4,6 +4,19 @@ function installGradeEvents() {
     !input.matches(":disabled") &&
     !input.closest("[inert]");
   document.addEventListener("input", (event) => {
+    if (event.target.dataset?.assessmentSearch !== undefined) {
+      const root = event.target.closest(".gradebook");
+      if (!root || event.target.closest("[inert]")) return;
+      const normalize = (value) => String(value).replace(/ي/g, "ی").replace(/ك/g, "ک").replace(/‌/g, " ").replace(/\s+/g, " ").trim();
+      const query = normalize(event.target.value);
+      let visible = 0;
+      for (const row of root.querySelectorAll("[data-assessment-name]")) {
+        row.hidden = !normalize(row.dataset.assessmentName).includes(query);
+        if (!row.hidden) visible++;
+      }
+      root.querySelector(".gradebook-no-results").hidden = !query || visible > 0;
+      return;
+    }
     if (isEditableGrade(event.target)) gradeInput(event.target);
   });
   // focusout bubbles, unlike the former inline blur handler.
