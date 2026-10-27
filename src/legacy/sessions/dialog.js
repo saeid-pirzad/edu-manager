@@ -57,7 +57,7 @@ function openSessionModal(session) {
       <button type="button" class="success" data-legacy-click="sessions-dialog:6">همه حاضر</button>
       <button type="button" class="danger" data-legacy-click="sessions-dialog:7">همه غایب</button>
     </div>
-  </div><div>`;
+  </div><div class="session-attendance-list">`;
   const sortedStudents = getSortedStudents({
     students: sessionStudents(c, session),
   });
@@ -70,7 +70,7 @@ function openSessionModal(session) {
     const lateMins = isLate && st.includes(":") ? Number(st.split(":")[1]) : "";
     h += `<div class="att-row">
       <div class="att-name"><span class="attendance-number" aria-hidden="true">${(i + 1).toLocaleString("fa-IR")}</span><span>${esc(s.name)}</span></div>
-      <div class="att-btns" data-sid="${s.id}">
+      <div class="att-btns" data-sid="${s.id}" role="group" aria-label="وضعیت حضور ${esc(s.name)}">
         <button type="button" class="present ${isPresent ? "active" : ""}" data-legacy-click="sessions-dialog:8">حاضر</button>
         <button type="button" class="late ${isLate ? "active" : ""}" data-legacy-click="sessions-dialog:9">تأخیر ${isLate && lateMins ? `(${lateMins}د)` : ""}</button>
         <button type="button" class="absent ${isAbsent ? "active" : ""}" data-legacy-click="sessions-dialog:10">غایب</button>

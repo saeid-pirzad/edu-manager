@@ -2285,7 +2285,58 @@ body {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 16px;
-    padding: 12px 0;
+    padding: 16px;
+    border: 1px solid var(--workflow-line);
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 2px 6px #2d344003;
+  }
+  #modalBody .session-attendance-list {
+    display: grid;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid #eeece9;
+    border-radius: 16px;
+    background: #f7f6f4;
+  }
+  #modalBody .session-attendance-list .att-row:focus-within {
+    border-color: #b9b6b1;
+    box-shadow: 0 0 0 2px #58595b0a;
+  }
+  #modalBody .session-attendance-list .att-name > span:last-child {
+    line-height: 1.9;
+    font-weight: 600;
+  }
+  #modalBody .session-attendance-list .attendance-number {
+    width: 38px;
+    height: 38px;
+    flex-basis: 38px;
+    border-radius: 12px;
+    font-size: 15px;
+  }
+  #modalBody .session-attendance-list .att-btns {
+    padding: 4px;
+    gap: 4px;
+    border-radius: 12px;
+    background: #f4f3f1;
+  }
+  #modalBody .session-attendance-list .att-btns button {
+    background: transparent;
+    border-color: transparent;
+    border-radius: 9px;
+    line-height: 1.8;
+  }
+  #modalBody .session-attendance-list .att-btns button:not(.active):hover {
+    background: #fff;
+    border-color: var(--workflow-line);
+  }
+  #modalBody .session-attendance-list .att-btns button.active {
+    font-weight: 600;
+    box-shadow: 0 2px 4px #2d34400a;
+  }
+  #modalBody .session-attendance-list .att-btns button:focus-visible {
+    outline: 2px solid var(--workflow-accent);
+    outline-offset: 1px;
   }
   #modalBody .session-workspace .att-name { display: flex; align-items: center; gap: 10px; min-width: 0; font-size: 14px; overflow-wrap: anywhere; }
   .attendance-number { display: grid; place-items: center; width: 32px; height: 32px; flex: 0 0 32px; border: 1px solid #e8d7c1; border-radius: 10px; background: #fff8ed; color: #79522c; font-size: 13px; }
@@ -2311,7 +2362,18 @@ body {
   #modalBody .session-unit-fields { grid-template-columns: minmax(0, 1fr); gap: 8px; }
   .session-attendance-heading { align-items: stretch; flex-direction: column; }
   .session-attendance-bulk > button { flex: 1; }
-  #modalBody .session-workspace .att-row { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  #modalBody .session-workspace .att-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    padding: 14px;
+  }
+  #modalBody .session-attendance-list {
+    padding: 8px;
+    gap: 10px;
+  }
+  #modalBody .session-attendance-list .att-btns {
+    padding: 4px;
+  }
   #modalBody .session-workspace .att-btns button { min-height: 46px; min-width: 0; font-size: 13px; }
   #modalBody .session-workspace-footer { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
   #modalBody .session-workspace-footer button { min-width: 0; white-space: normal; padding-inline: 12px; }
