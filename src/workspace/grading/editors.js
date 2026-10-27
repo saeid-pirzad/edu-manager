@@ -45,7 +45,6 @@ function buildAssessmentEditor(c, l) {
   const stage = assessmentSelectedStage;
   const stageName = (mid ? "میان‌ترم " : "پایان‌ترم ") + workspace.term;
   const students = getSortedStudents(c);
-  const completed = students.filter((st) => assessmentResult(l, st.id, stage).complete).length;
   let html = '<div class="card assessment-editor gradebook"><header class="gradebook-heading"><div><span class="gradebook-eyebrow">دفتر نمره</span><h3>' +
     esc(l.name) + '</h3><p>' + (general ? "درس عمومی · یک نمره از ۲۰" : "کاردانش · عملی و تئوری") +
     '</p></div><span class="gradebook-class-count">' + students.length.toLocaleString("fa-IR") +
@@ -53,11 +52,7 @@ function buildAssessmentEditor(c, l) {
   for (const term of ["اول", "دوم"])
     for (const item of ["midterm", "final"])
       html += '<button type="button" data-workspace-action="assessment-stage" data-term="' + term + '" data-stage="' + item + '" aria-pressed="' + (workspace.term === term && stage === item) + '">' + (item === "midterm" ? "میان‌ترم " : "پایان‌ترم ") + term + '</button>';
-  html += '</nav><div class="gradebook-toolbar"><div><h4>' + esc(stageName) + '</h4><p>نمره از ۰ تا ۲۰ · ذخیره خودکار</p></div><label class="gradebook-search"><span>جست‌وجوی دانش‌آموز</span><input type="search" data-assessment-search="" placeholder="نام دانش‌آموز…" autocomplete="off"></label></div>';
-  html += '<details class="gradebook-help"><summary>راهنمای ثبت و محاسبه</summary><p>' +
-    (general ? "هر مرحله یک نمره مستقل از صفر تا بیست دارد." : "نمره هر مرحله از ۷۰٪ عملی و ۳۰٪ تئوری محاسبه می‌شود؛ هر دو نمره لازم‌اند.") +
-    ' نمره ثبت‌نشده با صفر متفاوت است. برای حذف نمره از × کنار ورودی استفاده کنید. هر نوبت در دوره مربوط به خودش ذخیره می‌شود.</p></details>';
-  html += '<div class="gradebook-review"><label class="gradebook-incomplete"><input type="checkbox" data-assessment-incomplete>فقط نمره‌های ناقص</label><div class="gradebook-progress"><span data-assessment-progress-text>' + completed.toLocaleString("fa-IR") + ' از ' + students.length.toLocaleString("fa-IR") + ' تکمیل شده</span><progress data-assessment-progress max="' + Math.max(1, students.length) + '" value="' + completed + '" aria-label="تکمیل نمرات این مرحله"></progress></div></div>';
+  html += '</nav><div class="gradebook-simple-search"><input type="search" data-assessment-search="" aria-label="جست‌وجوی دانش‌آموز" placeholder="جست‌وجوی دانش‌آموز…" autocomplete="off"></div>';
   html += '<section class="assessment-stage" aria-label="' + esc(stageName) + '"><div class="assessment-students">';
   if (!students.length)
     html += '<div class="empty"><strong>هنوز دانش‌آموزی در کلاس نیست</strong><p>ابتدا از تب دانش‌آموزان، اعضای کلاس را اضافه کنید.</p></div>';

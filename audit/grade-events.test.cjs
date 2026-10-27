@@ -43,7 +43,7 @@ test("gradebook search normalizes Persian names without submitting or replacing 
   const root = {
     querySelectorAll: () => rows,
     querySelector: (selector) => selector === "[data-assessment-search]" ? search :
-      selector === "[data-assessment-incomplete]" ? null : message,
+      selector === ".gradebook-no-results" ? message : null,
   };
   const search = {
     dataset: { assessmentSearch: "" },
@@ -77,7 +77,8 @@ test("incomplete filter combines with search and keeps completed zero grades out
   ];
   const root = {
     querySelector: (selector) => selector === "[data-assessment-search]" ? search :
-      selector === "[data-assessment-incomplete]" ? toggle : message,
+      selector === "[data-assessment-incomplete]" ? toggle :
+      selector === ".gradebook-no-results" ? message : null,
     querySelectorAll: () => rows,
   };
   const target = { dataset: { assessmentIncomplete: "" }, closest: (selector) => selector === ".gradebook" ? root : null };

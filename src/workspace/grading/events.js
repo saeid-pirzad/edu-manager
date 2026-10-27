@@ -3,7 +3,8 @@ function filterAssessmentRows(root) {
   const query = normalize(root.querySelector("[data-assessment-search]").value);
   const incompleteOnly = !!root.querySelector("[data-assessment-incomplete]")?.checked;
   let visible = 0;
-  for (const row of root.querySelectorAll("[data-assessment-name]")) {
+  const activePanel = root.querySelector("[data-module-panel]:not([hidden])") || root;
+  for (const row of activePanel.querySelectorAll("[data-assessment-name]")) {
     row.hidden = !normalize(row.dataset.assessmentName).includes(query) ||
       (incompleteOnly && row.dataset.assessmentComplete === "true");
     if (!row.hidden) visible++;

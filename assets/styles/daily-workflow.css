@@ -2691,6 +2691,19 @@ body {
     background: #faf9f7;
     font-size: 14px;
   }
+  .gradebook-simple-search {
+    margin-bottom: 18px;
+  }
+  .gradebook-simple-search input {
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    padding: 10px 12px;
+    border: 1px solid #dcd8d2;
+    border-radius: 10px;
+    background: #faf9f7;
+    font-size: 16px;
+  }
   .gradebook-help {
     margin: 14px 0 18px;
   }
@@ -3117,7 +3130,51 @@ body {
   }
 
 }
+@media screen {
+  .module-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(180px, .7fr);
+    align-items: end;
+    gap: 16px;
+  }
+  .module-toolbar .gradebook-search { width: 100%; }
+  .module-picker { display: grid; gap: 6px; min-width: 0; }
+  .module-picker > span { font-size: 12px; color: var(--workflow-muted); }
+  .module-picker select {
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    padding: 10px 12px;
+    border: 1px solid #d7d2ca;
+    border-radius: 10px;
+    background: #faf9f7;
+    font-size: 14px;
+    color: var(--workflow-ink);
+  }
+  .module-panel[hidden] { display: none !important; }
+  .module-units { margin-bottom: 16px; font-size: 12px; color: var(--workflow-muted); }
+  .module-units summary { padding-block: 10px; min-height: 44px; cursor: pointer; }
+  .module-units p { margin: 0; padding: 12px; background: #f7f6f4; border-radius: 8px; line-height: 1.9; }
+  .module-policy-notice { margin: 12px 0; font-size: 12px; line-height: 1.9; color: #875800; }
+  .modular-gradebook .gradebook-result [data-pod-final] { font-size: 22px; font-weight: 600; color: var(--workflow-ink); }
+  .modular-gradebook .gradebook-result [data-pod-status] { font-size: 11px; line-height: 1.9; color: var(--workflow-muted); }
+  .module-gate { grid-column: 2 / -1; display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--workflow-muted); }
+  .module-gate select { width: min(220px, 100%); min-width: 0; min-height: 44px; border-radius: 9px; font-size: 13px; }
+  .module-overview { margin-top: 24px; border-top: 1px solid var(--workflow-line); }
+  .module-overview > summary { padding: 16px 0; min-height: 48px; font-size: 13px; color: var(--workflow-ink); cursor: pointer; }
+  .module-overview .table-scroll { overflow-x: auto; }
+  .module-overview table { min-width: 520px; }
+}
+@media screen and (max-width: 600px) {
+  .module-toolbar { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .module-picker select { font-size: 16px; }
+  .module-gate { grid-column: 1; display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid #eeece9; }
+  .module-gate select { width: 100%; font-size: 16px; }
+  .modular-gradebook .gradebook-result [data-pod-status] { margin-inline-start: auto; }
+}
 @media print {
+  .module-toolbar { display: none !important; }
+  .module-panel[hidden] { display: block !important; }
   .gradebook-search, .gradebook-help, .gradebook .assessment-navigation {
     display: none !important;
   }

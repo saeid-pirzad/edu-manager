@@ -60,10 +60,11 @@ async function gate(lid, pid, sid, value) {
   if (value === "") delete g.gate;
   else if (["yes", "no"].includes(value)) g.gate = value === "yes";
   p.podScores[sid] = g;
+  const inModal = !!document.querySelector("#modal:not(.hidden) [data-course-gate]");
   await api.saveDB({
     classId: c.id,
     action: "تأیید معیارهای الزامی پودمان",
   });
   api.render();
-  api.showModal("ثبت نمرات براساس قواعد درس", table(c, l, null, true));
+  if (inModal) api.showModal("ثبت نمرات براساس قواعد درس", table(c, l, null, true));
 }
