@@ -1782,3 +1782,27 @@
     white-space: nowrap;
   }
 }
+
+@media screen and (max-width: 700px) {
+  #app .week-settings { padding: 12px; border-radius: 14px; background: #f7f6f3; }
+  #app .week-settings > summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 42px; padding: 4px 2px; list-style: none; font-size: 13px; }
+  #app .week-settings > summary::-webkit-details-marker { display: none; }
+  #app .week-settings > summary::after { content: '+'; display: grid; place-items: center; width: 26px; height: 26px; flex: 0 0 26px; border: 1px solid #e4ddd3; border-radius: 8px; background: #fff; color: #79522c; font-size: 18px; font-weight: 400; }
+  #app .week-settings[open] > summary::after { content: '\2212'; }
+  #app .week-settings > section { margin: 10px 0 0; padding: 14px 12px; border: 1px solid #e7e3dc; border-radius: 12px; background: #fff; }
+  #app .week-settings h4 { margin: 0 0 6px; font-size: 13px; }
+  #app .week-settings section > p { font-size: 11px; color: #81796e; line-height: 1.9; margin: 0 0 12px; }
+  #app .week-working-days { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  #app .week-working-days label { justify-content: center; gap: 5px; min-width: 0; min-height: 42px; margin: 0; padding: 6px 3px; font-size: 11px; white-space: nowrap; border-radius: 9px; }
+  #app .week-working-days label:last-child { grid-column: 1 / -1; }
+  #app .week-working-days input { flex: 0 0 14px; width: 14px; height: 14px; min-height: 14px; margin: 0; }
+  #app .week-period-controls { display: grid; grid-template-columns: 40px minmax(0, 1fr) 40px; width: 100%; gap: 8px; align-items: center; padding: 5px; }
+  #app .week-period-controls button { display: grid; place-items: center; width: 40px; height: 40px; min-width: 0; min-height: 40px; padding: 0; margin: 0; font-size: 22px; line-height: 1; }
+  #app .week-period-controls strong { text-align: center; font-size: 14px; }
+  #app .week-settings section > .week-save-hint { margin: 10px 0 0; font-size: 10px; }
+  #app .week-start-date { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; width: 100%; }
+  #app .week-start-date label { width: 100%; min-width: 0; gap: 6px; font-size: 11px; }
+  #app .week-start-date input { width: 100%; min-width: 0; height: 44px; min-height: 44px; margin: 0; padding: 8px 10px; border: 1px solid #ded8ce; border-radius: 9px; background: #faf9f7; font-size: 16px; }
+  #app .week-start-date .shamsi-display { font-size: 11px; color: #81796e; margin: 0; }
+  #app .week-start-date > button { width: 100%; min-height: 42px; margin: 4px 0 0; font-size: 12px; }
+}
