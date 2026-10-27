@@ -94,6 +94,12 @@ async function open(lid = "", seed) {
     '</summary><fieldset id="coursePolicy" ' +
     (locked ? "disabled" : "") +
     "><legend>نسخه قواعد ارزشیابی</legend>";
+  h += select(
+    "subjectType",
+    "نوع درس",
+    [["vocational", "تخصصی / کاردانش"], ["general", "عمومی؛ یک نمره از ۲۰ در هر مرحله"]],
+    p.subjectType || "vocational",
+  );
   if (locked)
     h +=
       "<p>این درس سابقه نمره دارد؛ روش، ساختار و مرجع قواعد قفل است. برای ابلاغیه جدید، تعریف درس را بدون نمرات کپی کنید.</p>";

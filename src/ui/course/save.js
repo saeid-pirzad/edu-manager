@@ -79,6 +79,8 @@ async function save() {
       throw Error("سوابق این درس تغییر کرده است؛ فرم را دوباره باز کنید.");
     if (!locked) {
       const p = P.defaults(val("method"), api.year());
+      p.subjectType = val("subjectType") || "vocational";
+      if (p.subjectType === "general") p.method = "dual";
       Object.assign(p, info);
       for (const k of ["circularNumber", "circularDate", "reference"])
         p[k] = val(k).trim();

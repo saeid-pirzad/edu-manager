@@ -34,13 +34,13 @@ function gradeCell(
     esc(field) +
     '" value="' +
     esc(shown) +
-    '" aria-label="' +
+    '" placeholder="—" aria-label="' +
     esc(
       st.name +
         " " +
-        (field === "practical"
+        (field === "practical" || field === "midtermPractical"
           ? "عملی"
-          : field === "theory"
+          : field === "theory" || field === "midtermTheory"
             ? "تئوری"
             : field === "c"
               ? "شایستگی"
@@ -48,7 +48,7 @@ function gradeCell(
                 ? "مستمر"
                 : "پایانی"),
     ) +
-    '"><button type="button" class="ghost grade-clear no-print" data-clear-grade aria-label="پاک‌کردن نمره">پاک‌کردن</button><small class="grade-note" aria-live="polite">' +
+    '"><button type="button" class="ghost grade-clear no-print" data-clear-grade aria-label="پاک‌کردن نمره" title="پاک‌کردن نمره">×</button><small class="grade-note" aria-live="polite">' +
     esc(draft ? draft.error || "در انتظار ذخیره" : "") +
     "</small></div>"
   );

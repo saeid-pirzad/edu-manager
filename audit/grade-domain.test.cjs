@@ -12,6 +12,17 @@ for (const file of ["grade-math.js", "data-boundary.js", "grade-policy.js"])
     context,
   );
 const policy = context.EduPolicy;
+test("general subjects need one grade, preserve zero and do not use vocational weighting", () => {
+  const p = { ...policy.defaults("dual", "1405-1406"), subjectType: "general" };
+  assert.equal(policy.validate(p), true);
+  assert.equal(policy.dual(p, null, 0).final, 0);
+  assert.equal(policy.dual(p, null, 0).complete, true);
+  assert.equal(policy.dual(p, 20, 12).final, 12);
+  assert.equal(policy.dual(p, 20, null).complete, false);
+  assert.equal(policy.dual(p, 20, null).final, null);
+  assert.equal(policy.dual(p, null, 8).passed, null);
+  assert.throws(() => policy.validate({ ...p, method: "modular" }));
+});
 
 test("grade domain works independently and respects the exact passing boundary", () => {
   const p = policy.defaults("dual", "1405-1406");

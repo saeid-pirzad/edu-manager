@@ -59,6 +59,10 @@
     };
   }
   function validate(p) {
+    if (p?.subjectType !== undefined && !["general", "vocational"].includes(p.subjectType))
+      throw Error("نوع درس نامعتبر است.");
+    if (p?.subjectType === "general" && p.method !== "dual")
+      throw Error("درس عمومی نمره مستقیم دارد.");
     if (
       !p ||
       p.version !== 1 ||
@@ -164,6 +168,13 @@
     return { ok: true, value: v };
   }
   function dual(p, practical, theory) {
+    if (p.subjectType === "general")
+      return {
+        final: theory ?? null,
+        complete: theory != null,
+        passed: null,
+        reason: theory == null ? "نمره ثبت نشده است." : "",
+      };
     p = {
       ...p,
       practicalWeight: 70,
@@ -315,6 +326,8 @@
     return next;
   }
   function describe(l) {
+    if (l.gradingPolicy?.subjectType === "general")
+      return "درس عمومی؛ هر مرحله یک نمره از صفر تا بیست";
     const p =
       l.gradingPolicy?.method === "dual"
         ? {

@@ -1,6 +1,7 @@
 // Explicit command dispatch: tokens are data, never code or global function names.
 function installWorkspaceActions() {
   const commands = new Map([
+    ["assessment-stage", (button) => openAssessmentStage(button)],
     ["switch-period", (button) => switchPeriod(button.dataset.key)],
     ["frozen-report", (button) => showFrozenReport(button.dataset.key)],
     ["download-backup", (button) => downloadInternalBackup(button.dataset.key)],

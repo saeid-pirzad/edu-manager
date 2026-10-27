@@ -5,7 +5,10 @@ async function add(e) {
     name: e.target.name.value.trim(),
     teacher: e.target.teacher.value.trim(),
     periodsPerWeek: Number(e.target.periods.value) || 2,
-    gradeMode: e.target.gradeMode.value,
+      gradeMode: e.target.gradeMode.value === "general" ? "kardanesh" : e.target.gradeMode.value,
+      ...(e.target.gradeMode.value === "general" ? {
+        gradingPolicy: { ...P.defaults("dual", api.year()), subjectType: "general" },
+      } : {}),
     kardaneshScores: {},
     poudmans: [],
   });

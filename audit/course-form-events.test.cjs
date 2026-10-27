@@ -37,6 +37,7 @@ test("course form binds branch, method, cancellation and submission without inli
   });
   f.listeners.get("#course_branch:change")();
   f.listeners.get("#course_method:change")();
+  f.listeners.get("#course_subjectType:change")();
   f.listeners.get("[data-course-cancel]:click")();
   f.listeners.get("submit")({
     preventDefault: () => {
@@ -44,10 +45,10 @@ test("course form binds branch, method, cancellation and submission without inli
     },
   });
   await Promise.resolve();
-  assert.equal(f.listeners.size, 4);
+  assert.equal(f.listeners.size, 5);
   assert.equal(saved, 1);
   assert.equal(prevented, true);
-  assert.deepEqual(f.calls, ["branch", "method", "cancel"]);
+  assert.deepEqual(f.calls, ["branch", "method", "method", "cancel"]);
 });
 test("course submit forwards asynchronous failure to the existing error presenter", async () => {
   const failure = Error("write rejected");

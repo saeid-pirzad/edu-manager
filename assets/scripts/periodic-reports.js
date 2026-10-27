@@ -826,10 +826,8 @@ function textReport(m) {
         lines.push(
           (item.stage === "midterm" ? "میان‌ترم " : "پایان‌ترم ") +
             item.term +
-            ": عملی " +
-            (item.practical ?? "ثبت نشده") +
-            "، تئوری " +
-            (item.theory ?? "ثبت نشده") +
+            (grade.general ? ": نمره " + (item.theory ?? "ثبت نشده") : ": عملی " +
+            (item.practical ?? "ثبت نشده") + "، تئوری " + (item.theory ?? "ثبت نشده")) +
             "، ترکیبی " +
             root.EduV24.finalText(item),
         );
@@ -837,7 +835,7 @@ function textReport(m) {
         "نهایی سالانه: " +
           root.EduV24.finalText(grade) +
           (grade.complete
-            ? grade.passed
+            ? grade.general ? " — تکمیل" : grade.passed
               ? " — قبول"
               : " — نیازمند جبران"
             : " — ناقص؛ هر چهار نمره لازم است"),
@@ -1010,7 +1008,7 @@ function documentHtml(m) {
   }
   if (m.annualGrades) {
     h +=
-      '<section class="annual-grades"><h3>نمرات سالانه کاردانش</h3><p>میانگین برابر چهار نمره؛ هر مرحله عملی ۷۰٪ و تئوری ۳۰٪. نمره ناقص، صفر نیست.</p><div class="assessment-students">';
+      '<section class="annual-grades"><h3>نمرات چهار مرحله سال</h3><p>درس عمومی در هر مرحله یک نمره دارد؛ در کاردانش هر مرحله عملی ۷۰٪ و تئوری ۳۰٪ است. نمره ثبت‌نشده، صفر نیست.</p><div class="assessment-students">';
     for (const grade of m.annualGrades) {
       h +=
         '<article class="assessment-student"><h4>' +
@@ -1025,17 +1023,16 @@ function documentHtml(m) {
           esc(item.term) +
           ": <strong>" +
           esc(root.EduV24.finalText(item)) +
-          "</strong><br>عملی " +
-          esc(item.practical ?? "—") +
-          " · تئوری " +
-          esc(item.theory ?? "—") +
+          "</strong><br>" +
+          (grade.general ? "نمره " + esc(item.theory ?? "—") : "عملی " +
+          esc(item.practical ?? "—") + " · تئوری " + esc(item.theory ?? "—")) +
           "</span>";
       h +=
         "</div><p>نهایی سالانه: <strong>" +
         esc(root.EduV24.finalText(grade)) +
         "</strong> · " +
         (grade.complete
-          ? grade.passed
+          ? grade.general ? "تکمیل" : grade.passed
             ? "قبول"
             : "نیازمند جبران"
           : "ناقص؛ هر چهار نمره لازم است") +

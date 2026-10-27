@@ -91,13 +91,15 @@ globalThis.EduFrozenReportValidator = Object.freeze({
                 !isDataObject(r) ||
                 !score(r.practical) ||
                 !score(r.theory) ||
-                r.practical == null ||
+                (l.policy?.subjectType !== "general" && r.practical == null) ||
                 r.theory == null ||
                 !score(r.final) ||
                 r.complete !== true
               )
                 fail();
-              const expected = weightedKardanesh(r.practical, r.theory);
+              const expected = l.policy?.subjectType === "general"
+                ? { final: r.theory, passed: null }
+                : weightedKardanesh(r.practical, r.theory);
               if (r.final !== expected.final || r.passed !== expected.passed)
                 fail();
             }

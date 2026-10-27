@@ -29,6 +29,16 @@ function table(c, l, sid, editable = false) {
       h +
       '<div class="empty"><strong>دانش‌آموزی برای نمایش نیست</strong><p>برای ثبت نمره، ابتدا اعضای کلاس را از تب دانش‌آموزان اضافه کنید.</p></div></div>'
     );
+  if (policy.subjectType === "general") {
+    h += '<div class="table-scroll"><table><thead><tr><th>دانش‌آموز</th><th>نمره از ۲۰</th><th>وضعیت</th></tr></thead><tbody>';
+    for (const st of students) {
+      const r = api.calc(c, l, st.id);
+      h += '<tr><td>' + esc(st.name) + '</td><td>' +
+        (editable ? api.gradeCell(c, l, st, "theory", { value: r.theory }) : api.finalText(r)) +
+        '</td><td>' + esc(api.status(r)) + '</td></tr>';
+    }
+    return h + '</tbody></table></div></div>';
+  }
   if (policy.method === "dual") {
     h +=
       '<div class="table-scroll"><table><thead><tr><th>هنرجو</th><th>عملی</th><th>نظری</th><th>نهایی</th><th>نتیجه و دلیل</th></tr></thead><tbody>';

@@ -219,6 +219,12 @@ async function open(lid = "", seed) {
     '</summary><fieldset id="coursePolicy" ' +
     (locked ? "disabled" : "") +
     "><legend>نسخه قواعد ارزشیابی</legend>";
+  h += select(
+    "subjectType",
+    "نوع درس",
+    [["vocational", "تخصصی / کاردانش"], ["general", "عمومی؛ یک نمره از ۲۰ در هر مرحله"]],
+    p.subjectType || "vocational",
+  );
   if (locked)
     h +=
       "<p>این درس سابقه نمره دارد؛ روش، ساختار و مرجع قواعد قفل است. برای ابلاغیه جدید، تعریف درس را بدون نمرات کپی کنید.</p>";
@@ -376,6 +382,7 @@ function bindCourseFormEvents(form) {
   });
   form.querySelector("#course_branch").addEventListener("change", toggleBranch);
   form.querySelector("#course_method").addEventListener("change", toggleMethod);
+  form.querySelector("#course_subjectType")?.addEventListener("change", toggleMethod);
   form
     .querySelector("[data-course-cancel]")
     .addEventListener("click", () => closeModal());
@@ -408,13 +415,15 @@ function toggleBranch() {
 }
 function toggleMethod() {
   const method = document.getElementById("course_method");
+  const general = val("subjectType") === "general";
+  if (general) method.value = "dual";
   document.getElementById("course_branch").value =
     method.value === "dual" ? "kardanesh" : "fani";
   setControlDisabled(
     document.getElementById("course_branch"),
     !!editing?.locked || method.matches(":disabled"),
   );
-  document.getElementById("courseDual").hidden = val("method") !== "dual";
+  document.getElementById("courseDual").hidden = general || val("method") !== "dual";
   document.getElementById("courseModular").hidden = val("method") !== "modular";
   const names = document.getElementById("courseNames");
   if (names) names.hidden = val("method") !== "modular";
@@ -504,6 +513,8 @@ async function save() {
       throw Error("سوابق این درس تغییر کرده است؛ فرم را دوباره باز کنید.");
     if (!locked) {
       const p = P.defaults(val("method"), api.year());
+      p.subjectType = val("subjectType") || "vocational";
+      if (p.subjectType === "general") p.method = "dual";
       Object.assign(p, info);
       for (const k of ["circularNumber", "circularDate", "reference"])
         p[k] = val(k).trim();
@@ -618,7 +629,10 @@ async function add(e) {
     name: e.target.name.value.trim(),
     teacher: e.target.teacher.value.trim(),
     periodsPerWeek: Number(e.target.periods.value) || 2,
-    gradeMode: e.target.gradeMode.value,
+      gradeMode: e.target.gradeMode.value === "general" ? "kardanesh" : e.target.gradeMode.value,
+      ...(e.target.gradeMode.value === "general" ? {
+        gradingPolicy: { ...P.defaults("dual", api.year()), subjectType: "general" },
+      } : {}),
     kardaneshScores: {},
     poudmans: [],
   });
@@ -726,6 +740,16 @@ function table(c, l, sid, editable = false) {
       h +
       '<div class="empty"><strong>دانش‌آموزی برای نمایش نیست</strong><p>برای ثبت نمره، ابتدا اعضای کلاس را از تب دانش‌آموزان اضافه کنید.</p></div></div>'
     );
+  if (policy.subjectType === "general") {
+    h += '<div class="table-scroll"><table><thead><tr><th>دانش‌آموز</th><th>نمره از ۲۰</th><th>وضعیت</th></tr></thead><tbody>';
+    for (const st of students) {
+      const r = api.calc(c, l, st.id);
+      h += '<tr><td>' + esc(st.name) + '</td><td>' +
+        (editable ? api.gradeCell(c, l, st, "theory", { value: r.theory }) : api.finalText(r)) +
+        '</td><td>' + esc(api.status(r)) + '</td></tr>';
+    }
+    return h + '</tbody></table></div></div>';
+  }
   if (policy.method === "dual") {
     h +=
       '<div class="table-scroll"><table><thead><tr><th>هنرجو</th><th>عملی</th><th>نظری</th><th>نهایی</th><th>نتیجه و دلیل</th></tr></thead><tbody>';

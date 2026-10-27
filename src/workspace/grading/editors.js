@@ -1,21 +1,66 @@
 function buildKardaneshEditor(c, l) {
   return buildAssessmentEditor(c, l);
 }
+let assessmentSelectedStage = "midterm";
+async function openAssessmentStage(button) {
+  const inModal = !!button.closest?.("#modalBody");
+  const term = button.dataset.term;
+  const stage = button.dataset.stage;
+  if (!["اول", "دوم"].includes(term) || !["midterm", "final"].includes(stage))
+    throw Error("مرحله ارزشیابی نامعتبر است.");
+  const ensureCurrent = preserveAsyncTarget({ classScoped: true });
+  const origin = { ...state };
+  await flushDrafts({ strict: true });
+  ensureCurrent();
+  if (term !== workspace.term) {
+    const periods = await allFrom("catalog");
+    ensureCurrent();
+    const target = periods.find((p) => p.year === workspace.year && p.term === term);
+    if (!target) {
+      openNewPeriod();
+      document.getElementById("periodYear").value = workspace.year;
+      document.getElementById("periodTerm").value = term;
+      return;
+    }
+    const loaded = await readWorkspace(target.id);
+    ensureCurrent();
+    const targetLesson = loaded.data.schools.find((s) => s.id === origin.schoolId)
+      ?.classes.find((c) => c.id === origin.classId)?.lessons.find((l) => l.id === origin.lessonId);
+    if (!targetLesson)
+      throw Error("این درس در نوبت مقصد وجود ندارد؛ ابتدا فهرست دروس آن نوبت را بررسی کنید.");
+    await switchPeriod(target.id);
+  }
+  assessmentSelectedStage = stage;
+  state = { ...origin, view: "lesson", tab: "grades" };
+  render();
+  if (inModal) {
+    const c = getClassObj(state.schoolId, state.classId);
+    const l = getLessonObj(c, state.lessonId);
+    if (c && l) showModal("ثبت نمرات", buildAssessmentEditor(c, l));
+  }
+}
 function buildAssessmentEditor(c, l) {
+  const general = l.gradingPolicy?.subjectType === "general";
   let html =
-    '<div class="card assessment-editor"><h3>نمرات کاردانش — ' +
+    '<div class="card assessment-editor"><h3>' + (general ? "نمرات درس عمومی — " : "نمرات کاردانش — ") +
     esc(l.name) +
-    "</h3><p>هر مرحله: عملی ۷۰٪ + تئوری ۳۰٪. نتیجه سالانه: میانگین میان‌ترم و پایان‌ترم هر دو نوبت؛ هر چهار نمره لازم است.</p>" +
+    "</h3><p>" + (general ? "در هر مرحله یک نمره از صفر تا بیست ثبت کنید. میان‌ترم و پایان‌ترم هر دو نوبت مستقل‌اند." : "هر مرحله: عملی ۷۰٪ + تئوری ۳۰٪. نتیجه سالانه: میانگین میان‌ترم و پایان‌ترم هر دو نوبت؛ هر چهار نمره لازم است.") + "</p>" +
     '<div class="grades-intro"><span>ثبت نمرات رسمی</span><p>نمره‌ها را از صفر تا بیست وارد کنید؛ وضعیت ذخیره زیر هر ورودی نمایش داده می‌شود.</p><small>' +
     c.students.length.toLocaleString("fa-IR") +
     " دانش‌آموز · نوبت " +
     esc(workspace.term) +
     "</small></div>";
+  html += '<nav class="assessment-navigation" aria-label="چهار مرحله نمرات سال">';
+  for (const term of ["اول", "دوم"])
+    for (const stage of ["midterm", "final"])
+      html += '<button type="button" data-workspace-action="assessment-stage" data-term="' + term + '" data-stage="' + stage + '" aria-pressed="' + (workspace.term === term && assessmentSelectedStage === stage) + '"><small>نوبت ' + term + '</small><span>' + (stage === "midterm" ? "میان‌ترم " : "پایان‌ترم ") + term + '</span></button>';
+  html += '</nav><p class="assessment-period-note">هر نوبت در دوره مستقل خودش ذخیره می‌شود؛ انتخاب نوبت دیگر، همان دوره را باز می‌کند.</p>';
   for (const stage of ["midterm", "final"]) {
+    if (stage !== assessmentSelectedStage) continue;
     const mid = stage === "midterm";
     html +=
       '<details class="assessment-stage" ' +
-      (!mid ? "open" : "") +
+      "open" +
       "><summary>" +
       (mid ? "میان‌ترم" : "پایان‌ترم") +
       " نوبت " +
@@ -29,11 +74,11 @@ function buildAssessmentEditor(c, l) {
       html +=
         '<article class="assessment-student"><h4>' +
         esc(st.name) +
-        '</h4><div class="assessment-inputs"><label>عملی' +
-        gradeCell(c, l, st, mid ? "midtermPractical" : "practical", {
+        '</h4><div class="assessment-inputs' + (general ? " general-inputs" : "") + '">' +
+        (general ? "" : '<label>عملی <small>از ۲۰</small>' + gradeCell(c, l, st, mid ? "midtermPractical" : "practical", {
           value: r.practical,
-        }) +
-        "</label><label>تئوری" +
+        }) + "</label>") +
+        '<label>' + (general ? "نمره" : "تئوری") + '<small>از ۲۰</small>' +
         gradeCell(c, l, st, mid ? "midtermTheory" : "theory", {
           value: r.theory,
         }) +

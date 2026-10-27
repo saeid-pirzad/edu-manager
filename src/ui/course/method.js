@@ -25,13 +25,15 @@ function toggleBranch() {
 }
 function toggleMethod() {
   const method = document.getElementById("course_method");
+  const general = val("subjectType") === "general";
+  if (general) method.value = "dual";
   document.getElementById("course_branch").value =
     method.value === "dual" ? "kardanesh" : "fani";
   setControlDisabled(
     document.getElementById("course_branch"),
     !!editing?.locked || method.matches(":disabled"),
   );
-  document.getElementById("courseDual").hidden = val("method") !== "dual";
+  document.getElementById("courseDual").hidden = general || val("method") !== "dual";
   document.getElementById("courseModular").hidden = val("method") !== "modular";
   const names = document.getElementById("courseNames");
   if (names) names.hidden = val("method") !== "modular";

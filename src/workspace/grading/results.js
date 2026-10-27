@@ -23,6 +23,8 @@ function assessmentResult(lesson, sid, stage = "final") {
     grade[stage === "midterm" ? "midtermPractical" : "practical"] ?? null;
   const theory =
     grade[stage === "midterm" ? "midtermTheory" : "theory"] ?? null;
+  if (lesson.gradingPolicy?.subjectType === "general")
+    return { practical: null, theory, ...EduPolicy.dual(lesson.gradingPolicy, null, theory) };
   return {
     practical,
     theory,
@@ -50,6 +52,7 @@ function annualGradeRows(parts, schoolId, classId, studentId = "") {
             studentName: st.name,
             lessonId: lesson.id,
             lessonName: lesson.name,
+            general: lesson.gradingPolicy?.subjectType === "general",
           });
       }
     }
@@ -81,14 +84,14 @@ function annualGradeRows(parts, schoolId, classId, studentId = "") {
     if (complete) {
       let total = { n: 0n, d: 1n };
       for (const item of components) {
-        const p = fraction(item.practical),
+        const p = fraction(identity.general ? 0 : item.practical),
           t = fraction(item.theory);
-        const n = 7n * p.n * t.d + 3n * t.n * p.d,
-          d = 10n * p.d * t.d;
+        const n = identity.general ? t.n : 7n * p.n * t.d + 3n * t.n * p.d,
+          d = identity.general ? t.d : 10n * p.d * t.d;
         total = reduceGradeFraction(total.n * d + n * total.d, total.d * d);
       }
       final = finiteRatio(total.n, total.d * 4n);
-      passed = total.n >= 14n * total.d * 4n;
+      passed = identity.general ? null : total.n >= 14n * total.d * 4n;
     }
     rows.push({
       ...identity,
@@ -96,7 +99,7 @@ function annualGradeRows(parts, schoolId, classId, studentId = "") {
       complete,
       final,
       passed,
-      threshold: 14,
+      threshold: identity.general ? null : 14,
     });
   }
   return rows;

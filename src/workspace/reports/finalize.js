@@ -19,7 +19,7 @@ function finalReportData() {
               ["میان‌ترم", assessments.midterm],
               ["پایان‌ترم", assessments.final],
             ]) {
-              if (r.practical === null)
+              if (l.gradingPolicy?.subjectType !== "general" && r.practical === null)
                 missing.push(
                   c.name +
                     " / " +

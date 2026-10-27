@@ -260,10 +260,8 @@ function textReport(m) {
         lines.push(
           (item.stage === "midterm" ? "میان‌ترم " : "پایان‌ترم ") +
             item.term +
-            ": عملی " +
-            (item.practical ?? "ثبت نشده") +
-            "، تئوری " +
-            (item.theory ?? "ثبت نشده") +
+            (grade.general ? ": نمره " + (item.theory ?? "ثبت نشده") : ": عملی " +
+            (item.practical ?? "ثبت نشده") + "، تئوری " + (item.theory ?? "ثبت نشده")) +
             "، ترکیبی " +
             root.EduV24.finalText(item),
         );
@@ -271,7 +269,7 @@ function textReport(m) {
         "نهایی سالانه: " +
           root.EduV24.finalText(grade) +
           (grade.complete
-            ? grade.passed
+            ? grade.general ? " — تکمیل" : grade.passed
               ? " — قبول"
               : " — نیازمند جبران"
             : " — ناقص؛ هر چهار نمره لازم است"),
