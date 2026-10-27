@@ -8,6 +8,7 @@ function paintStatus() {
   if (el) {
     el.textContent = busy ? "در حال ذخیره…" : status.message;
     el.dataset.state = busy ? "pending" : status.type;
+    el.hidden = !busy && (status.type === "saved" || !status.message);
   }
   syncControlLocks();
 }

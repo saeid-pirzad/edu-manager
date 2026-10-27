@@ -65,6 +65,12 @@ if (process.argv.includes("--help")) {
       await require("./csv-ux.cjs")({ cdp, evaluate, cases, delay });
       await require("./student-create-ux.cjs")({ cdp, evaluate, cases, delay });
       await require("./list-first-layout.cjs")({ cdp, evaluate, cases, delay });
+      await require("./workspace-tools-ux.cjs")({
+        cdp,
+        evaluate,
+        cases,
+        delay,
+      });
       await cdp("Emulation.setDeviceMetricsOverride", {
         width: 320,
         height: 800,

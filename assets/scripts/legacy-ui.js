@@ -580,7 +580,7 @@ function toggleDataMenu(e) {
 }
 
 const contextualMenuSelector =
-  ".dashboard-entity-more,.lesson-more,.student-more,.session-list-actions";
+  ".dashboard-entity-more,.lesson-more,.student-more,.session-list-actions,.workspace-tools";
 function closeContextualMenus(except = null) {
   for (const menu of document.querySelectorAll(contextualMenuSelector))
     if (menu !== except && menu.open) menu.open = false;
@@ -623,7 +623,7 @@ document.addEventListener("keydown", (e) => {
   )
     return;
   const contextMenu = document.querySelector(
-    ".dashboard-entity-more[open],.lesson-more[open],.student-more[open],.session-list-actions[open]",
+    ".dashboard-entity-more[open],.lesson-more[open],.student-more[open],.session-list-actions[open],.workspace-tools[open]",
   );
   if (contextMenu) {
     contextMenu.open = false;

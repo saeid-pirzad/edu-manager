@@ -144,6 +144,43 @@ function lockControls() {
   syncControlLocks();
 }
 
+function workspaceToolsHtml() {
+  const button = (action, icon, title, extra = "") =>
+    '<button type="button" class="ghost workspace-tool-button ' +
+    extra +
+    '" data-workspace-action="' +
+    action +
+    '"><span class="workspace-tool-icon" aria-hidden="true">' +
+    EduIcons.html(icon) +
+    "</span><span>" +
+    esc(title) +
+    "</span></button>";
+  return (
+    '<details class="workspace-tools"><summary><span class="workspace-tools-symbol" aria-hidden="true">' +
+    EduIcons.html("settings") +
+    '</span><span>ابزارها و تنظیمات</span><span class="workspace-tools-chevron" aria-hidden="true"></span></summary><div class="workspace-tool-actions"><div class="workspace-tool-group">' +
+    button("backups", "shield", "پشتیبان و بازیابی", "workspace-tool-primary") +
+    button("periods", "calendar", "دوره‌های تحصیلی") +
+    button("history", "clock", "تاریخچه") +
+    '<button type="button" class="ghost workspace-tool-button" data-header-action="settings"><span class="workspace-tool-icon" aria-hidden="true">' +
+    EduIcons.html("settings") +
+    "</span><span>تنظیمات برنامه</span></button>" +
+    '</div><div class="workspace-period-context"><span>سال تحصیلی: <bdi>' +
+    esc(String(workspace.year).replace(/\d/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[digit])) +
+    "</bdi></span><span>نوبت: <bdi>" +
+    esc(workspace.term) +
+    '</bdi></span></div><details class="workspace-draft-tools"><summary>بازیابی پیش‌نویس‌ها</summary><div class="workspace-draft-actions">' +
+    button("review-drafts", "grades", "بررسی تعارض نمره‌ها") +
+    button("other-drafts", "undo", "بازیابی ورودی‌های قبلی") +
+    button(
+      "discard-drafts",
+      "trash",
+      "لغو پیش‌نویس نمره‌ها",
+      "workspace-tool-caution",
+    ) +
+    "</div></details></div></details>"
+  );
+}
 function renderV24() {
   if (!ready) return;
   const coursePanel = courseUI.preserveEditor();
@@ -159,16 +196,17 @@ function renderV24() {
     return;
   }
   const panel = document.createElement("div");
-  panel.className = "workspace-bar no-print";
+  panel.className = "workspace-bar workspace-bar-compact no-print";
   panel.innerHTML =
-    "<strong>" +
-    esc(workspace.year + " — " + workspace.term) +
-    (workspace.closed ? " · بسته‌شده" : " · در حال کار") +
-    '</strong><span id="saveStatus" role="status" aria-live="polite"></span><details class="workspace-tools"><summary>ابزارها و پشتیبان</summary><div class="workspace-tool-actions"><button class="ghost" data-workspace-action="periods">دوره‌ها و بستن کارنامه</button><button class="ghost" data-workspace-action="history">تاریخچه / بازگردانی</button><button class="ghost" data-workspace-action="backups">پشتیبان‌ها</button><button class="ghost" data-workspace-action="discard-drafts">لغو ویرایش ثبت‌نشده</button><button class="ghost" data-workspace-action="review-drafts">بررسی پیش‌نویس تعارض</button><small>پشتیبان فایل: ' +
-    esc(lastExternalBackupLabel()) +
-    "</small>" +
-    '<button class="ghost" data-workspace-action="other-drafts">پیش‌نویس نشست دیگر</button></div></details>';
+    (workspace.closed
+      ? '<span class="workspace-closed-note">دوره بسته است؛ فقط مشاهده</span>'
+      : "") +
+    '<span id="saveStatus" role="status" aria-live="polite"></span>' +
+    workspaceToolsHtml();
   app.prepend(panel);
+  const tools = panel.querySelector(".workspace-tools");
+  const settings = app.querySelector('.topbar [data-header-action="settings"]');
+  if (settings) settings.replaceWith(tools);
   if (window.showSaveFilePicker) {
     const fileStatus = document.createElement("small");
     fileStatus.id = "singleFileBadge";
@@ -177,7 +215,7 @@ function renderV24() {
     // Routine file details stay in tools; failures remain visible on the page.
     (singleFileFailure
       ? panel
-      : panel.querySelector(".workspace-tool-actions")
+      : tools.querySelector(".workspace-tool-actions")
     ).append(fileStatus);
   }
   if (db.migrationWarnings?.length) {

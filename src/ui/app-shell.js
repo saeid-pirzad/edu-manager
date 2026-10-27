@@ -416,7 +416,8 @@
           EduLegacyEvents.source(control.getAttribute("data-legacy-change")),
         key = action.match(/["']([^"']+)["']/)?.[1],
         caption = names[key];
-      if (!caption || control.closest("label") || control.labels?.length) continue;
+      if (!caption || control.closest("label") || control.labels?.length)
+        continue;
       const label = document.createElement("label");
       label.className = "report-filter-field";
       const pairedDate =
@@ -520,7 +521,7 @@
         wrap.append(grid);
       }
       const bar = document.querySelector(".workspace-bar");
-      if (bar && !bar.querySelector(".workspace-tools")) {
+      if (bar && !document.querySelector("#app .workspace-tools")) {
         const tools = document.createElement("details");
         tools.className = "workspace-tools no-print";
         tools.innerHTML =
