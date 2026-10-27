@@ -852,30 +852,30 @@
   }
 }
 @media screen and (min-width: 1101px) {
-  #app:has(> .workflow-welcome) {
+  #app:has(> .dashboard-directory) {
     display: flex;
     flex-direction: column;
   }
-  #app:has(> .workflow-welcome) > * {
+  #app:has(> .dashboard-directory) > * {
     min-width: 0;
   }
-  #app:has(> .workflow-welcome) > .topbar {
+  #app:has(> .dashboard-directory) > .topbar {
     order: 0;
   }
-  #app:has(> .workflow-welcome) > .workspace-bar {
+  #app:has(> .dashboard-directory) > .workspace-bar {
     order: 1;
   }
-  #app:has(> .workflow-welcome) > .dashboard-directory {
+  #app:has(> .dashboard-directory) > .breadcrumb {
+    order: 2;
+  }
+  #app:has(> .dashboard-directory) > .dashboard-directory {
     order: 3;
   }
   #app .dashboard-entities {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     align-items: stretch;
     gap: 20px;
     padding: 0 20px 20px;
-  }
-  #app:has(> .workflow-welcome) .dashboard-entities {
-    grid-template-columns: minmax(0, 1fr);
   }
   #app .dashboard-entity {
     display: flex;
