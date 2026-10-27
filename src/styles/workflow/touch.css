@@ -710,6 +710,47 @@
     gap: 4px;
   }
 }
+@media screen and (min-width: 1101px) {
+  #app .dashboard-entities {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 20px;
+    padding: 0 20px 20px;
+  }
+  #app .dashboard-entity {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 22px;
+  }
+  #app .dashboard-entity-info {
+    flex: 1;
+    align-items: flex-start;
+    gap: 16px;
+    padding-bottom: 18px;
+  }
+  #app .dashboard-entity-info > div {
+    flex: 1;
+  }
+  #app .dashboard-entity-info h4 {
+    font-size: 18px;
+  }
+  #app .dashboard-entity-info p {
+    font-size: 14px;
+  }
+  #app .dashboard-entity-actions {
+    width: 100%;
+    margin-top: 0;
+    padding-top: 18px;
+    border-top: 0;
+    align-items: start;
+    gap: 12px;
+  }
+  #app .dashboard-entities > .empty {
+    grid-column: 1 / -1;
+  }
+}
 @media screen and (min-width: 701px) and (max-width: 1100px) {
   #app {
     padding-inline: 24px;
