@@ -9,8 +9,16 @@ function validateFrozenReport(report) {
 }
 
 async function showFrozenReport(id) {
+  const ensureCurrent = preserveAsyncTarget(),
+    origin = workspace.id,
+    sourceConnection = connection;
   const report = await readRecord("reports", id);
+  ensureCurrent();
+  if (connection !== sourceConnection)
+    throw Error("اتصال بانک هنگام خواندن کارنامه تغییر کرده است.");
   if (!report) throw Error("کارنامه ثابت موجود نیست.");
+  if (report.workspace !== origin)
+    throw Error("این کارنامه متعلق به دورهٔ انتخاب‌شده نیست.");
   validateFrozenReport(report);
   showModal(
     "کارنامه نهایی ثابت",
