@@ -354,7 +354,7 @@
   #app .dashboard-entity-actions > button:first-child {
     grid-column: auto;
   }
-  #app .dashboard-entity-actions > button.entity-enter {
+  #app :is(.dashboard-entity-actions > button.entity-enter, button.lesson-enter) {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -375,7 +375,7 @@
     display: inline-flex;
     flex: 0 0 20px;
   }
-  #app .dashboard-entity-more > summary {
+  #app :is(.dashboard-entity-more, .lesson-more) > summary {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -392,25 +392,25 @@
     line-height: 1.8;
     list-style: none;
   }
-  #app .dashboard-entity-more > summary > span:first-child {
+  #app :is(.dashboard-entity-more, .lesson-more) > summary > span:first-child {
     display: inline-flex;
   }
-  #app .dashboard-entity-more > summary > span:last-child {
+  #app :is(.dashboard-entity-more, .lesson-more) > summary > span:last-child {
     display: inline;
     white-space: nowrap;
   }
-  #app .dashboard-entity-more > summary:hover {
+  #app :is(.dashboard-entity-more, .lesson-more) > summary:hover {
     background: #f4f3f1;
     border-color: #b9b6b1;
   }
-  #app .dashboard-entity-more > summary:focus-visible {
+  #app :is(.dashboard-entity-more, .lesson-more) > summary:focus-visible {
     outline: 2px solid var(--workflow-accent);
     outline-offset: 3px;
   }
   #app .dashboard-entity-more:not([open]) > summary {
     height: 100%;
   }
-  #app .dashboard-entity-more > summary::after {
+  #app :is(.dashboard-entity-more, .lesson-more) > summary::after {
     content: none;
   }
   #app .dashboard-entity-more[open] {
@@ -879,8 +879,7 @@
   }
   #app .lesson-actions {
     display: grid;
-    grid-template-columns: minmax(0, 240px) auto;
-    justify-content: start;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: start;
     gap: 12px;
   }
