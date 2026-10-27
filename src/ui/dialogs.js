@@ -132,10 +132,27 @@ function resetRecordEditor(form) {
 }
 function updateRecordEditorReview(form) {
   if (!form?.matches(".record-editor") || !form.dataset.savedState) return;
+  if (form.dataset.reviewMode === "none") return;
   const state = recordEditorState(form),
     busy = form.getAttribute("aria-busy") === "true";
   if (form._reviewSignature === state + busy) return;
   form._reviewSignature = state + busy;
+  if (form.id === "courseEditor") {
+    const context = form.querySelector(".course-editor-status");
+    if (!context) return;
+    let status = context.querySelector(".record-editor-state");
+    if (!status) {
+      status = document.createElement("p");
+      status.className = "record-editor-state";
+      status.setAttribute("role", "status");
+      status.setAttribute("aria-live", "polite");
+      context.append(status);
+    }
+    status.textContent = busy ? "در حال ذخیره تغییرات…" : "";
+    status.hidden = !busy;
+    context.hidden = !busy && !context.querySelector(".course-readonly-note");
+    return;
+  }
   if (!form._reviewUI) {
     const status = document.createElement("p");
     status.className = "record-editor-state";
@@ -293,8 +310,9 @@ function recordEditorState(form) {
     ]),
   );
 }
-function rememberRecordEditor() {
-  const form = document.querySelector("#modal .record-editor");
+function rememberRecordEditor(
+  form = document.querySelector("#modal .record-editor"),
+) {
   if (form) {
     form.dataset.savedState = recordEditorState(form);
     form._reviewSignature = null;
@@ -302,10 +320,14 @@ function rememberRecordEditor() {
   }
 }
 function hasRecordEditorChanges() {
-  const form = document.querySelector("#modal:not(.hidden) .record-editor");
-  return (
-    !!form?.dataset.savedState &&
-    form.dataset.savedState !== recordEditorState(form)
+  return [
+    ...document.querySelectorAll(
+      "#modal:not(.hidden) .record-editor, #app #courseEditor",
+    ),
+  ].some(
+    (form) =>
+      !!form.dataset.savedState &&
+      form.dataset.savedState !== recordEditorState(form),
   );
 }
 function closeModal() {

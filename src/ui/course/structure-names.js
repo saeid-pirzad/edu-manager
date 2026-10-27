@@ -9,18 +9,10 @@ function prepareStructureNameEditor(lesson) {
   summary.textContent = "نام پودمان‌ها و واحدهای یادگیری";
   note.className = "muted";
   note.textContent =
-    "اصلاح عنوان، شناسه‌ها، نمرات و ارتباط جلسات را تغییر نمی‌دهد. تعداد و ساختار در بخش قواعد ارزشیابی تنظیم می‌شوند.";
+    "می‌توانید نام‌ها را اصلاح کنید؛ نمرات، جلسات و ساختار درس تغییر نمی‌کنند.";
   section.append(summary, note, structure);
-  document.getElementById("coursePolicy").closest("details").after(section);
-  const policyGrid = document.querySelector("#courseModular > .course-grid");
+  document.getElementById("coursePolicy").after(section);
   lesson.poudmans.forEach((pod, index) => {
-    const count = document
-      .getElementById("course_unitCount_" + pod.id)
-      ?.closest("label");
-    if (count) {
-      count.firstChild.textContent = "تعداد واحدهای «" + pod.name + "»";
-      policyGrid.append(count);
-    }
     const label = document
       .getElementById("course_pod_" + pod.id)
       ?.closest("label");
@@ -33,10 +25,7 @@ function prepareStructureNameEditor(lesson) {
         ?.closest("label");
       if (label)
         label.firstChild.textContent =
-          "نام واحد " +
-          (unitIndex + 1).toLocaleString("fa-IR") +
-          " · " +
-          pod.name;
+          "نام واحد " + (unitIndex + 1).toLocaleString("fa-IR");
     });
   });
 }

@@ -53,31 +53,45 @@ function openDeletion(kind, id) {
     ).length;
     const label =
       kind === "school" ? "مدرسه" : kind === "class" ? "کلاس" : "درس";
+    const count = (value, title) =>
+      `<li><strong>${value.toLocaleString("fa-IR")}</strong><span>${title}</span></li>`;
     const html =
-      '<form class="record-editor" data-workspace-submit="confirm-deletion"><p>حذف ' +
-      label +
-      " «" +
+      '<form class="record-editor deletion-editor" data-workspace-submit="confirm-deletion" novalidate>' +
+      '<div class="deletion-target"><span class="deletion-symbol" aria-hidden="true">' +
+      EduIcons.html("trash") +
+      "</span><strong><bdi>" +
       esc(target.item.name) +
-      "» شامل سوابق زیر است:</p><ul>" +
-      (kind === "school" ? "<li>" + target.classes.length + " کلاس</li>" : "") +
+      '</bdi></strong></div><p id="deleteEntityWarning" class="deletion-warning">' +
+      (kind === "lesson"
+        ? "این درس همراه با نمرات، جلسات و سوابق حضور و فعالیت آن حذف می‌شود. هنرجویان کلاس حذف نمی‌شوند."
+        : "این " +
+          label +
+          " و تمام درس‌ها، نمرات و سوابق وابسته به آن حذف می‌شوند.") +
+      '</p><ul class="deletion-impact" aria-label="سوابق مرتبط">' +
+      (kind === "school" ? count(target.classes.length, "کلاس") : "") +
       (kind !== "lesson"
-        ? "<li>" + students + " هنرجوی فعال و بایگانی‌شده</li>"
+        ? count(students, "هنرجوی فعال و بایگانی") +
+          count(target.lessons.length, "درس")
         : "") +
-      "<li>" +
-      target.lessons.length +
-      " درس و نمرات وابسته</li><li>" +
-      sessions +
-      " جلسه و سوابق حضور و فعالیت</li><li>" +
-      slots +
-      " خانه برنامه هفتگی</li></ul>" +
-      "<p>پیش از حذف، پشتیبان داخلی از کل دوره ذخیره می‌شود. برای بازیابی از بخش پشتیبان‌ها استفاده کنید؛ بلافاصله پس از حذف، بازگردانی آخرین تغییر نیز در دسترس است. پشتیبان داخلی جای فایل مستقل را نمی‌گیرد.</p>" +
-      '<label for="deleteEntityName">برای تأیید، نام ' +
+      count(sessions, "جلسه") +
+      count(slots, "زنگ برنامه هفتگی") +
+      '</ul><p class="deletion-backup-note">پیش از حذف، پشتیبان داخلی ذخیره می‌شود؛ این پشتیبان جای فایل مستقل را نمی‌گیرد.</p>' +
+      '<label class="deletion-confirm" for="deleteEntityName">برای تأیید، نام ' +
       label +
-      " را وارد کنید: " +
-      esc(target.item.name) +
-      '</label><input id="deleteEntityName" autocomplete="off" maxlength="500"><p id="deleteEntityError" role="alert"></p><div class="row"><button type="button" class="ghost" data-workspace-action="close">انصراف</button><button type="submit" class="danger">ذخیره پشتیبان و حذف</button></div></form>';
-    if (showModal("بررسی حذف " + label, html) !== false)
+      ' را بنویسید<input id="deleteEntityName" autocomplete="off" spellcheck="false" maxlength="500" aria-describedby="deleteEntityWarning deleteEntityError"></label>' +
+      '<p id="deleteEntityError" role="alert"></p><div class="record-editor-actions"><button type="button" class="ghost" data-workspace-action="close">انصراف</button><button type="submit" class="danger" data-mutating="1">حذف ' +
+      label +
+      "</button></div></form>";
+    if (showModal("حذف " + label, html) !== false) {
       deletionContext = context;
+      setTimeout(
+        () =>
+          document
+            .querySelector('.deletion-editor [data-workspace-action="close"]')
+            ?.focus({ preventScroll: true }),
+        0,
+      );
+    }
   } catch (error) {
     handleError(error);
   }

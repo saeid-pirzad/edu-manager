@@ -12,6 +12,34 @@ for (const file of ["grade-math.js", "data-boundary.js", "grade-policy.js"])
     context,
   );
 const policy = context.EduPolicy;
+test("configurable dual grading uses saved weights and the exact passing threshold", () => {
+  const p = {
+    ...policy.defaults("dual", "1405-1406"),
+    dualConfigurable: true,
+    practicalWeight: 60,
+    passMin: 12,
+  };
+  assert.equal(policy.validate(p), true);
+  assert.equal(policy.dual(p, 20, 0).final, 12);
+  assert.equal(policy.dual(p, 20, 0).passed, true);
+  assert.equal(policy.dual(p, 19.999999, 0).passed, false);
+  assert.equal(policy.dual(p, 18, 12).final, 15.6);
+  assert.equal(policy.dual({ ...p, practicalWeight: 0 }, 20, 10).final, 10);
+  assert.equal(policy.dual({ ...p, practicalWeight: 100 }, 20, 10).final, 20);
+  assert.match(policy.describe({ gradingPolicy: p }), /60/);
+  assert.throws(() => policy.validate({ ...p, practicalWeight: 101 }));
+  assert.throws(() => policy.validate({ ...p, passMin: 21 }));
+});
+test("historical dual policies retain their prior calculation until explicitly configured", () => {
+  const old = {
+    ...policy.defaults("dual", "1405-1406"),
+    practicalWeight: 90,
+    passMin: 10,
+  };
+  assert.equal(policy.dual(old, 20, 0).final, 14);
+  assert.equal(policy.dualSettings(old).practicalWeight, 70);
+  assert.equal(policy.dualSettings(old).passMin, 14);
+});
 test("general subjects need one grade, preserve zero and do not use vocational weighting", () => {
   const p = { ...policy.defaults("dual", "1405-1406"), subjectType: "general" };
   assert.equal(policy.validate(p), true);

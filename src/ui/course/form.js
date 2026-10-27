@@ -1,9 +1,18 @@
 async function open(lid = "", seed) {
+  const activeForm = document.getElementById("courseEditor");
+  if (saving || activeForm?.getAttribute("aria-busy") === "true") return false;
+  if (
+    activeForm &&
+    activeForm.dataset.savedState !== recordEditorState(activeForm) &&
+    !confirm("تغییرات درس ذخیره نشده‌اند؛ فرم دیگری باز شود؟")
+  )
+    return false;
   const requested = {
     workspace: api.context().id,
     classId: api.state().classId,
   };
   await api.flushDrafts({ strict: true });
+  if (saving) return false;
   if (
     requested.workspace !== api.context().id ||
     requested.classId !== api.state().classId
@@ -16,19 +25,7 @@ async function open(lid = "", seed) {
   const original = c.lessons.find((l) => l.id === lid);
   if (lid && !original && !seed)
     throw Error("این درس دیگر در کلاس وجود ندارد؛ فهرست دروس را تازه کنید.");
-  const school = api
-    .getDB()
-    .schools.find((s) => s.classes.some((x) => x.id === c.id));
-  const l = seed ||
-    original || {
-      id: api.uid(),
-      name: "",
-      teacher: "",
-      periodsPerWeek: 2,
-      gradeMode: "kardanesh",
-      kardaneshScores: {},
-      poudmans: [],
-    };
+  const l = seed || original || newCourseSeed();
   const locked =
     !!original &&
     (P.hasGrades(original) ||
@@ -39,159 +36,138 @@ async function open(lid = "", seed) {
             s.lessonId === lid &&
             s.scores.some((g) => ["mostamar", "payani"].includes(g.type)),
         ));
-  const p =
-    l.gradingPolicy ||
-    P.defaults(l.gradeMode === "kardanesh" ? "dual" : "modular", api.year());
-  const previousEditing = editing;
+  editing = null;
+  api.showCourseClass();
+  const panel = document.querySelector("#app .lesson-create");
+  if (!panel) return false;
   editing = {
+    pageState: { ...api.state() },
     context: api.context(),
     classId: c.id,
     id: original?.id || null,
     seed: structuredClone(l),
     locked,
   };
-  const info = P.identity(l, api.year());
-  let h = `<form class="record-editor" novalidate><div class="record-editor-context"><span>مشخصات درس</span><h4>${esc((school?.name ? school.name + " / " : "") + c.name)}</h4><p>نام، دبیر و مشخصات توصیفی قابل اصلاح‌اند؛ نمرات و جلسات حفظ می‌شوند.</p></div><p>تعریف درس براساس ابلاغیه سالانه. نمره نهایی بر مقیاس صفر تا بیست است؛ دامنه هر ورودی تابع قواعد درس است. تأیید قواعد به معنی تأیید شماست. شماره، تاریخ و مرجع ابلاغیه و متولی استاندارد اختیاری‌اند و می‌توانند خالی بمانند.</p><div id="courseError" role="alert"></div><div class="course-grid">`;
+  const h = courseFormHtml(l, original, locked);
+  const summary = panel.querySelector("summary");
+  summary.querySelector("strong").textContent = original
+    ? "ویرایش درس"
+    : "درس جدید";
+  summary.querySelector("small").textContent = original
+    ? "اصلاح مشخصات همین درس"
+    : "مشخصات درس را وارد کنید";
+  panel.replaceChildren(summary);
+  panel.insertAdjacentHTML("beforeend", h);
+  panel.open = true;
+  initializeCourseForm(l);
+  const form = panel.querySelector(".record-editor");
+  form.querySelector("#course_name").focus({ preventScroll: true });
+  panel.scrollIntoView({ block: "start", behavior: "smooth" });
+}
+function courseFormHtml(l, original, locked) {
+  const p =
+    l.gradingPolicy ||
+    P.defaults(l.gradeMode === "kardanesh" ? "dual" : "modular", api.year());
+  const info = P.identity(l, api.year(), currentClass());
+  let h =
+    '<form id="courseEditor" class="record-editor course-simple-editor" novalidate><div id="courseError" role="alert"></div><div class="course-grid course-basic-fields">';
   h +=
     input("name", "نام درس", l.name) +
-    input("teacher", "هنرآموز / دبیر", l.teacher) +
+    input("teacher", "نام دبیر (اختیاری)", l.teacher) +
     input(
       "periods",
       "زنگ در هفته",
-      l.periodsPerWeek,
+      l.periodsPerWeek ?? 2,
       "number",
       'min="1" max="10"',
     );
+  h += "</div>";
+  const retainedMetadata = {
+    year: info.year || api.year(),
+    branch: info.branch || p.branch,
+    authority: info.authority,
+    circularNumber: p.circularNumber,
+    circularDate: p.circularDate,
+    reference: p.reference,
+  };
+  for (const [key, value] of Object.entries(retainedMetadata))
+    h += `<input id="course_${key}" type="hidden" value="${esc(value ?? "")}">`;
   h +=
-    input("year", "سال تحصیلی", info.year || api.year(), "text", "readonly") +
-    select(
-      "grade",
-      "پایه",
-      [
-        ["10", "دهم"],
-        ["11", "یازدهم"],
-        ["12", "دوازدهم"],
-      ],
-      info.grade || "10",
-    ) +
-    input("field", "رشته", info.field) +
-    input("code", "کد درس / استاندارد", info.code) +
-    select(
-      "branch",
-      "شاخه تحصیلی",
-      [
-        ["kardanesh", "کاردانش"],
-        ["fani", "فنی‌وحرفه‌ای"],
-      ],
-      info.branch || p.branch,
-    ) +
-    input("authority", "متولی استاندارد (اختیاری)", info.authority);
-  h +=
-    '</div><details class="course-policy-section" ' +
-    (!original ? "open" : "") +
-    "><summary>قواعد ارزشیابی و ساختار درس" +
-    (locked ? " · قفل‌شده به‌دلیل سابقه نمره" : "") +
-    '</summary><fieldset id="coursePolicy" ' +
+    '<fieldset id="coursePolicy" class="course-main-policy" ' +
     (locked ? "disabled" : "") +
-    "><legend>نسخه قواعد ارزشیابی</legend>";
+    '><legend>نمره‌دهی درس</legend><div class="course-grid course-method-fields">';
   h += select(
     "subjectType",
     "نوع درس",
-    [["vocational", "تخصصی / کاردانش"], ["general", "عمومی؛ یک نمره از ۲۰ در هر مرحله"]],
+    [
+      ["vocational", "تخصصی / مهارتی"],
+      ["general", "عمومی — نمره مستقیم از ۲۰"],
+    ],
     p.subjectType || "vocational",
   );
-  if (locked)
-    h +=
-      "<p>این درس سابقه نمره دارد؛ روش، ساختار و مرجع قواعد قفل است. برای ابلاغیه جدید، تعریف درس را بدون نمرات کپی کنید.</p>";
-  if (locked && !l.gradingPolicy)
-    h +=
-      "<p>محاسبه قبلی حفظ می‌شود؛ این درس هنوز به قواعد ابلاغیه متصل نشده است.</p>";
   h +=
-    '<div class="course-grid">' +
     select(
       "method",
-      "روش ارزشیابی",
+      "شیوه نمره‌دهی",
       [
         ["dual", "نظری و عملی"],
-        ["modular", "پودمانی با شایستگی"],
+        ["modular", "پودمانی"],
       ],
       p.method,
-    ) +
-    input("circularNumber", "شماره ابلاغیه (اختیاری)", p.circularNumber) +
-    input("circularDate", "تاریخ ابلاغیه (اختیاری)", p.circularDate) +
-    input("reference", "مرجع / بند / صفحه ابلاغیه (اختیاری)", p.reference) +
-    "</div>";
+    ) + "</div>";
+  if (locked)
+    h +=
+      '<p class="course-lock-note">برای حفظ نمرات قبلی، روش و ساختار نمره‌دهی قابل تغییر نیست.</p>';
+  if (locked && !l.gradingPolicy)
+    h += "<p>محاسبه نمرات با روش قبلی حفظ می‌شود.</p>";
+  const dual = P.dualSettings(p);
   h +=
-    '<div id="courseDual" class="course-grid">' +
+    '<div id="courseDual" class="course-grid course-dual-fields">' +
     input(
       "practicalWeight",
-      "سهم عملی (درصد)؛ باقی برای نظری",
-      70,
+      "سهم عملی (٪)",
+      dual.practicalWeight,
       "number",
-      'readonly aria-readonly="true"',
+      'min="0" max="100" step="any" inputmode="decimal"',
     ) +
     input(
-      "theoryMin",
-      "حداقل مستقل نظری",
-      0,
-      "number",
-      'readonly aria-readonly="true"',
-    ) +
-    input(
-      "practicalMin",
-      "حداقل مستقل عملی",
-      0,
-      "number",
-      'readonly aria-readonly="true"',
+      "theoryWeight",
+      "سهم نظری (٪) — خودکار",
+      100 - dual.practicalWeight,
+      "text",
+      "readonly",
     ) +
     input(
       "passMin",
-      "حداقل نمره نهایی",
-      14,
+      "حداقل نمره قبولی",
+      dual.passMin,
       "number",
-      'readonly aria-readonly="true"',
+      'min="0" max="20" step="any" inputmode="decimal"',
     ) +
-    "</div>";
+    `<input id="course_theoryMin" type="hidden" value="${esc(dual.theoryMin)}"><input id="course_practicalMin" type="hidden" value="${esc(dual.practicalMin)}"></div>`;
   h +=
-    '<div id="courseModular"><div class="course-grid">' +
+    '<div id="courseModular" class="course-modular-fields"><div class="course-grid">' +
     input(
-      "mostamarMax",
-      "حداکثر نمره مستمر",
-      p.mostamarMax,
+      "moduleMin",
+      "حد قبولی هر پودمان",
+      p.moduleMin,
       "number",
-      'min="0.1" max="20" step="any"',
-    ) +
-    input(
-      "continuousStep",
-      "گام مجاز مستمر",
-      p.continuousStep,
-      "number",
-      'min="0.000001" step="any"',
-    ) +
-    input(
-      "competencyFactor",
-      "ضریب شایستگی (سطح ۱، ۲، ۳)",
-      p.competencyFactor,
-      "number",
-      'min="0.1" step="any"',
+      'min="0" max="20" step="any" inputmode="decimal"',
     ) +
     select(
       "competencyMin",
       "حداقل سطح شایستگی",
       [
-        [1, "۱"],
-        [2, "۲"],
-        [3, "۳"],
+        [1, "سطح ۱"],
+        [2, "سطح ۲"],
+        [3, "سطح ۳"],
       ],
       p.competencyMin,
     ) +
-    input(
-      "moduleMin",
-      "حداقل نمره هر پودمان",
-      p.moduleMin,
-      "number",
-      'min="0" max="20" step="any"',
-    ) +
+    '<div id="courseAdvanced" class="course-structure-fields">';
+  for (const key of ["mostamarMax", "continuousStep", "competencyFactor"])
+    h += `<input id="course_${key}" type="hidden" value="${esc(p[key])}">`;
+  h +=
     input(
       "podCount",
       "تعداد پودمان",
@@ -201,37 +177,32 @@ async function open(lid = "", seed) {
     ) +
     input(
       "unitCount",
-      "تعداد پیش‌فرض واحد هر پودمان",
+      "واحد در هر پودمان",
       p.unitCount,
       "number",
       'min="1" max="10"',
     ) +
-    '</div><p>حداکثر مستمر + ۳ × ضریب شایستگی باید ۲۰ شود. واحدهای یادگیری برای سازمان‌دهی فعالیت‌ها هستند؛ نمره رسمی در سطح پودمان ثبت می‌شود.</p><div id="courseStructure">';
-  for (const pod of l.poudmans) {
-    h += `<div class="card">${input("pod_" + pod.id, "نام پودمان", pod.name)}${input("unitCount_" + pod.id, "تعداد واحدهای همین پودمان", pod.units.length, "number", 'min="1" max="10"')}`;
+    '</div></div><div id="courseStructure">';
+  for (const [index, pod] of l.poudmans.entries()) {
+    h += `<details class="course-pod-editor" ${index === 0 ? "open" : ""}><summary>پودمان ${(index + 1).toLocaleString("fa-IR")}<span class="muted">${pod.units.length.toLocaleString("fa-IR")} واحد یادگیری</span></summary><div class="course-grid">${input("pod_" + pod.id, "نام پودمان", pod.name)}`;
     for (const u of pod.units)
       h += input("unit_" + u.id, "نام واحد یادگیری", u.name);
-    h += "</div>";
+    h += "</div></details>";
   }
+  h += "</div></div></fieldset>";
   h +=
-    '</div><p>تعدادها هنگام ساخت درس جدید اعمال می‌شوند. برای تغییر ساختار درس بدون نمره، گزینه زیر را فعال کنید.</p><label><input id="course_rebuild" type="checkbox"> بازسازی پودمان‌ها و واحدها با تعدادهای بالا</label></div><p><label><input id="course_confirmed" type="checkbox" ' +
-    (p.confirmed ? "checked" : "") +
-    "> قواعد را با ابلاغیه این سال تطبیق داده‌ام</label></p></fieldset></details>";
-  h +=
-    '<div class="record-editor-actions"><button type="submit" data-mutating="1">ذخیره تغییرات درس</button><button type="button" class="ghost" data-course-cancel>انصراف</button></div></form>';
-  const opened = api.showModal(
-    original ? "تنظیمات درس و ابلاغیه" : "تعریف درس جدید",
-    h,
-  );
-  if (opened === false) {
-    editing = previousEditing;
-    return false;
-  }
-  bindCourseFormEvents(document.querySelector("#modal .record-editor"));
+    '<div class="record-editor-context course-editor-status"></div><div class="record-editor-actions create-panel-footer"><button type="submit" data-mutating="1">' +
+    (original ? "ذخیره تغییرات" : "ثبت درس") +
+    '</button><button type="button" class="ghost" data-course-cancel>انصراف</button></div></form>';
+  return h;
+}
+function initializeCourseForm(l) {
+  const form = document.getElementById("courseEditor");
+  form.dataset.courseBound = "1";
+  bindCourseFormEvents(form);
   prepareStructureNameEditor(l);
   toggleMethod();
   if (api.context().readOnly) {
-    const form = document.querySelector("#modal .record-editor");
     form
       .querySelectorAll("input,select,textarea,button[type=submit]")
       .forEach((el) => {
@@ -244,5 +215,5 @@ async function open(lid = "", seed) {
       : "اطلاعات فعلاً فقط خواندنی‌اند؛ پیام وضعیت ذخیره‌سازی را بررسی و صفحه را بازخوانی کنید.";
     form.querySelector(".record-editor-context").append(note);
   }
-  rememberRecordEditor();
+  rememberRecordEditor(form);
 }

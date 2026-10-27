@@ -6,8 +6,13 @@ function bindCourseFormEvents(form) {
   });
   form.querySelector("#course_branch").addEventListener("change", toggleBranch);
   form.querySelector("#course_method").addEventListener("change", toggleMethod);
-  form.querySelector("#course_subjectType")?.addEventListener("change", toggleMethod);
+  form
+    .querySelector("#course_practicalWeight")
+    .addEventListener("input", syncTheoryWeight);
+  form
+    .querySelector("#course_subjectType")
+    ?.addEventListener("change", toggleMethod);
   form
     .querySelector("[data-course-cancel]")
-    .addEventListener("click", () => closeModal());
+    .addEventListener("click", () => cancelEditor());
 }

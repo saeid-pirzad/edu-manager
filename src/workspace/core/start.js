@@ -21,6 +21,12 @@ const courseUI = EduCourseUI({
   showModal: showModalV24,
   closeModal: () => closeModal(),
   render: () => render(),
+  showCourseClass: () => {
+    state.view = "class";
+    state.lessonId = null;
+    state.tab = "lessons";
+    render();
+  },
   error: handleError,
   students: getSortedStudents,
   knownStudents,

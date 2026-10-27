@@ -37,7 +37,7 @@
       method,
       year,
       branch: method === "dual" ? "kardanesh" : "fani",
-      grade: "10",
+      grade: "",
       field: "",
       code: "",
       authority: "",
@@ -59,7 +59,15 @@
     };
   }
   function validate(p) {
-    if (p?.subjectType !== undefined && !["general", "vocational"].includes(p.subjectType))
+    if (
+      p?.dualConfigurable !== undefined &&
+      typeof p.dualConfigurable !== "boolean"
+    )
+      throw Error("وضعیت تنظیم ضرایب نامعتبر است.");
+    if (
+      p?.subjectType !== undefined &&
+      !["general", "vocational"].includes(p.subjectType)
+    )
       throw Error("نوع درس نامعتبر است.");
     if (p?.subjectType === "general" && p.method !== "dual")
       throw Error("درس عمومی نمره مستقیم دارد.");
@@ -73,7 +81,7 @@
       throw Error("نسخه یا روش ارزشیابی نامعتبر است.");
     if (
       !["kardanesh", "fani"].includes(p.branch) ||
-      !["10", "11", "12"].includes(p.grade)
+      !["", "10", "11", "12"].includes(p.grade)
     )
       throw Error("شاخه یا پایه نامعتبر است.");
     if ((p.branch === "kardanesh") !== (p.method === "dual"))
@@ -167,6 +175,17 @@
     }
     return { ok: true, value: v };
   }
+  function dualSettings(p) {
+    return p.dualConfigurable === true
+      ? p
+      : {
+          ...p,
+          practicalWeight: 70,
+          theoryMin: 0,
+          practicalMin: 0,
+          passMin: 14,
+        };
+  }
   function dual(p, practical, theory) {
     if (p.subjectType === "general")
       return {
@@ -175,13 +194,7 @@
         passed: null,
         reason: theory == null ? "نمره ثبت نشده است." : "",
       };
-    p = {
-      ...p,
-      practicalWeight: 70,
-      theoryMin: 0,
-      practicalMin: 0,
-      passMin: 14,
-    };
+    p = dualSettings(p);
     if (practical == null || theory == null)
       return {
         final: null,
@@ -212,7 +225,12 @@
         final: null,
         passed: null,
         complete: false,
-        reason: g.m == null && g.c == null ? "نمره‌ای ثبت نشده" : g.m == null ? "مستمر ثبت نشده" : "شایستگی ثبت نشده",
+        reason:
+          g.m == null && g.c == null
+            ? "نمره‌ای ثبت نشده"
+            : g.m == null
+              ? "مستمر ثبت نشده"
+              : "شایستگی ثبت نشده",
       };
     const x = decimal(g.m),
       y = decimal(p.competencyFactor),
@@ -277,7 +295,7 @@
     );
   }
   // Descriptive corrections are separate from the historical grading policy.
-  function identity(l, year) {
+  function identity(l, year, classroom) {
     const policy = l.gradingPolicy || {},
       metadata = l.courseInfo || {};
     const info = {};
@@ -289,7 +307,10 @@
             ? policy[key]
             : "";
     info.year = year ?? info.year;
-    info.grade = info.grade || "10";
+    if (!info.grade && ["10", "11", "12"].includes(classroom?.grade))
+      info.grade = classroom.grade;
+    if (!info.field && typeof classroom?.field === "string")
+      info.field = classroom.field;
     info.branch =
       (policy.method || (l.gradeMode === "kardanesh" ? "dual" : "modular")) ===
       "dual"
@@ -326,13 +347,7 @@
       return "درس عمومی؛ هر مرحله یک نمره از صفر تا بیست";
     const p =
       l.gradingPolicy?.method === "dual"
-        ? {
-            ...l.gradingPolicy,
-            practicalWeight: 70,
-            theoryMin: 0,
-            practicalMin: 0,
-            passMin: 14,
-          }
+        ? dualSettings(l.gradingPolicy)
         : l.gradingPolicy;
     if (!p) return "قواعد قبلی — بدون مرجع ابلاغیه";
     return (
@@ -368,6 +383,7 @@
     validate,
     parse,
     dual,
+    dualSettings,
     moduleResult,
     lesson,
     hasGrades,

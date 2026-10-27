@@ -160,11 +160,15 @@ async function inspectMobileUx() {
     setReportTab(mode);
     await pause();
     const controls = document.querySelector(".periodic-controls");
-    add(mode + " report has no duplicated nested field labels",
-      !!controls && !controls.querySelector("label label"));
-    add(mode + " report preserves one date picker",
+    add(
+      mode + " report has no duplicated nested field labels",
+      !!controls && !controls.querySelector("label label"),
+    );
+    add(
+      mode + " report preserves one date picker",
       controls.querySelectorAll('[data-gregorian-target="true"]').length ===
-        (mode === "annual" ? 0 : 1));
+        (mode === "annual" ? 0 : 1),
+    );
   }
   await openSettingsModal();
   await pause();
@@ -218,6 +222,140 @@ async function inspectMobileUx() {
   closeModal();
   goSchools();
   await pause();
+  goSchool(db.schools[0].id);
+  goClass(db.schools[0].classes[0].id);
+  await EduV24.course.open(db.schools[0].classes[0].lessons[0].id);
+  await pause();
+  const courseForm = document.getElementById("courseEditor");
+  add(
+    "course editor fields fit the viewport without horizontal scrolling",
+    courseForm.scrollWidth <= courseForm.clientWidth + 1 &&
+      [...courseForm.querySelectorAll("input,select")]
+        .filter((control) => control.getClientRects().length)
+        .every((control) => {
+          const rect = control.getBoundingClientRect();
+          return (
+            rect.left >= 0 && rect.right <= innerWidth && rect.height >= 44
+          );
+        }),
+  );
+  const periodsRect = courseForm
+    .querySelector("#course_periods")
+    .getBoundingClientRect();
+  const teacherRect = courseForm
+    .querySelector("#course_teacher")
+    .getBoundingClientRect();
+  add(
+    "short weekly-period and grade fields stay compact instead of filling wide rows",
+    periodsRect.width <= 141 &&
+      [...courseForm.querySelectorAll("#courseDual input:not([type=hidden])")]
+        .filter((input) => input.getClientRects().length)
+        .every(
+          (input) =>
+            input.getBoundingClientRect().width <=
+            courseForm.querySelector("#courseDual").clientWidth / 2 + 1,
+        ),
+  );
+  add(
+    "related basic fields align on the same row except on narrow phones",
+    innerWidth < 360 || Math.abs(periodsRect.bottom - teacherRect.bottom) <= 2,
+  );
+  const courseFooter = courseForm.querySelector(".record-editor-actions");
+  courseFooter.scrollIntoView({ block: "end" });
+  await pause();
+  add(
+    "course save and cancel remain reachable with touch-sized targets",
+    courseFooter.getBoundingClientRect().bottom <= innerHeight + 1 &&
+      [...courseFooter.querySelectorAll("button")].every(
+        (button) => button.getBoundingClientRect().height >= 44,
+      ),
+  );
+  add(
+    "course keyboard order follows the displayed primary and optional sections",
+    !!(
+      courseForm
+        .querySelector(".course-basic-fields")
+        .compareDocumentPosition(courseForm.querySelector("#coursePolicy")) &
+      Node.DOCUMENT_POSITION_FOLLOWING
+    ),
+  );
+  closeModal();
+  goSchools();
+  goSchool(db.schools[0].id);
+  goClass(db.schools[0].classes[0].id);
+  const beforeDeletion = JSON.stringify(db);
+  const deletionLesson = db.schools[0].classes[0].lessons[0];
+  deleteLesson(deletionLesson.id);
+  await pause();
+  const deletionForm = document.querySelector(".deletion-editor");
+  add(
+    "lesson deletion dialog explains the impact and defaults focus to cancellation",
+    !!deletionForm &&
+      document.activeElement ===
+        deletionForm.querySelector('[data-workspace-action="close"]') &&
+      deletionForm.textContent.includes("هنرجویان کلاس حذف نمی‌شوند") &&
+      deletionForm.querySelector(".deletion-target bdi").textContent ===
+        deletionLesson.name,
+  );
+  add(
+    "lesson deletion fits the viewport and has touch-sized confirmation controls",
+    deletionForm.scrollWidth <= deletionForm.clientWidth + 1 &&
+      [...deletionForm.querySelectorAll("input,button")].every((control) => {
+        const rect = control.getBoundingClientRect();
+        return rect.left >= 0 && rect.right <= innerWidth && rect.height >= 44;
+      }),
+  );
+  document.getElementById("deleteEntityName").value = "نام نادرست برای آزمون";
+  deletionForm.dispatchEvent(
+    new Event("submit", { bubbles: true, cancelable: true }),
+  );
+  for (
+    let attempt = 0;
+    attempt < 100 && !document.getElementById("deleteEntityError").textContent;
+    attempt++
+  )
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  add(
+    "incorrect deletion confirmation preserves every record and shows an inline error",
+    !!document.getElementById("deleteEntityError").textContent &&
+      JSON.stringify(db) === beforeDeletion &&
+      deletionForm.isConnected,
+  );
+  deletionForm.querySelector('[data-workspace-action="close"]').click();
+  add(
+    "cancelling lesson deletion closes the dialog without modifying data",
+    document.getElementById("modal").classList.contains("hidden") &&
+      JSON.stringify(db) === beforeDeletion,
+  );
+  const modularForm = document.getElementById("courseEditor");
+  modularForm.closest("details").open = true;
+  document.getElementById("course_method").value = "modular";
+  document
+    .getElementById("course_method")
+    .dispatchEvent(new Event("change", { bubbles: true }));
+  await pause();
+  add(
+    "modular counts and thresholds stay readable and compact at each breakpoint",
+    [
+      ...modularForm.querySelectorAll(
+        "#courseModular input:not([type=hidden]),#courseModular select",
+      ),
+    ].every((control) => {
+      const rect = control.getBoundingClientRect();
+      return (
+        rect.width <=
+          modularForm.querySelector("#courseModular > .course-grid")
+            .clientWidth /
+            2 +
+            1 &&
+        rect.height >= 44 &&
+        rect.left >= 0 &&
+        rect.right <= innerWidth
+      );
+    }) && fits(),
+  );
+  EduV24.course.cancelEditor();
+  goSchools();
   return cases;
 }
 module.exports = async function mobileUx({ cdp, evaluate, cases, delay }) {
@@ -256,6 +394,18 @@ module.exports = async function mobileUx({ cdp, evaluate, cases, delay }) {
         "new-lesson",
         "setTab('lessons');document.querySelector('.create-panel').open=true;document.querySelector('.create-panel').scrollIntoView({block:'center'})",
       ],
+      [
+        "edit-course",
+        "EduV24.course.open(db.schools[0].classes[0].lessons[0].id)",
+      ],
+      [
+        "delete-course",
+        "goSchool(db.schools[0].id);goClass(db.schools[0].classes[0].id);deleteLesson(db.schools[0].classes[0].lessons[0].id)",
+      ],
+      [
+        "new-modular-course",
+        "goSchool(db.schools[0].id);goClass(db.schools[0].classes[0].id);document.querySelector('.lesson-create').open=true;document.getElementById('course_method').value='modular';document.getElementById('course_method').dispatchEvent(new Event('change',{bubbles:true}));document.querySelector('.lesson-create').scrollIntoView({block:'start'})",
+      ],
     ]) {
       await evaluate("closeModal()");
       await evaluate(action);
@@ -269,5 +419,6 @@ module.exports = async function mobileUx({ cdp, evaluate, cases, delay }) {
     await evaluate("closeModal();goSchools()");
   }
   console.log("Mobile UI previews: " + previews);
+  await require("./course-responsive.cjs")({ cdp, evaluate, cases, delay });
   await cdp("Emulation.setTouchEmulationEnabled", { enabled: false });
 };

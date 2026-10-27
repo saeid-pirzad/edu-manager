@@ -133,6 +133,7 @@
       "scope": "course",
       "sources": [
         "src/ui/course/state-controls.js",
+        "src/ui/course/inline-editor.js",
         "src/ui/course/structure-names.js",
         "src/ui/course/form.js",
         "src/ui/course/form-events.js",

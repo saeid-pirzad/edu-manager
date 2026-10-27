@@ -1,12 +1,12 @@
-function createPanelHeading(icon, title, note) {
+function createPanelHeading(icon, title, note = "") {
   return (
     '<summary><span class="create-panel-symbol" aria-hidden="true">' +
     EduIcons.html(icon) +
     '</span><span class="create-panel-title"><strong>' +
     title +
-    "</strong><small>" +
-    note +
-    '</small></span><span class="create-panel-toggle" aria-hidden="true"></span></summary>'
+    "</strong>" +
+    (note ? "<small>" + note + "</small>" : "") +
+    '</span><span class="create-panel-toggle" aria-hidden="true"></span></summary>'
   );
 }
 function renderEntityQuickCreate(kind, empty) {
@@ -96,14 +96,12 @@ function renderLessonsTab(c) {
   const lessons = c.lessons || [];
   const book =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5c-3-2-6-2-9-1v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1Zm0 0v15"/></svg>';
-  let h = "";
-  h +=
-    '<details class="card lesson-create create-panel no-print" ' +
-    (!lessons.length ? "open" : "") +
-    ">" +
+  const create =
+    '<details class="card lesson-create create-panel no-print">' +
     createPanelHeading("book", "درس جدید", "نام درس و شیوه ارزشیابی") +
-    `<form data-legacy-submit="ui-school-class:13" class="lesson-create-form"><label>نام درس<input name="name" placeholder="مثلاً دانش فنی پایه" required></label><label>نام دبیر <span class="muted">(اختیاری)</span><input name="teacher" placeholder="نام و نام خانوادگی"></label><label>زنگ در هفته<input name="periods" type="number" value="2" min="1" max="10" required inputmode="numeric"></label><label>روش ارزشیابی<select name="gradeMode"><option value="kardanesh">کاردانش — عملی و تئوری</option><option value="general">عمومی — یک نمره از ۲۰</option><option value="standard">فنی — پودمان و واحد کار</option></select></label><div class="create-panel-footer"><button type="submit">ثبت درس</button></div></form><p class="lesson-form-note">کاردانش: عملی ۷۰٪ و تئوری ۳۰٪. فنی: پودمان و واحد کار. تنظیمات بیشتر در صورت نیاز در دسترس است.</p></details>`;
-  h +=
+    EduV24.course.renderCreate() +
+    "</details>";
+  let h =
     '<section class="card class-lessons"><header class="lesson-list-heading"><div><h3>دروس کلاس <span class="lesson-count">' +
     lessons.length.toLocaleString("fa-IR") +
     '</span></h3><p>تعریف و ویرایش درس‌ها؛ برای کلاس‌داری وارد درس شوید.</p></div></header><div class="lesson-items">';
@@ -122,7 +120,7 @@ function renderLessonsTab(c) {
         : ""
     }<button class="ghost" data-legacy-click="ui-school-class:27" data-legacy-click-arg14="${esc(id)}">کپی تعریف بدون نمرات</button><button class="danger" data-legacy-click="ui-school-class:29" data-legacy-click-arg15="${esc(id)}">حذف درس</button></div></details></div></article>`;
   }
-  return h + "</div></section>";
+  return h + "</div></section>" + create;
 }
 
 function filterStudentRoster(control) {
@@ -172,7 +170,10 @@ function filterStudentRoster(control) {
       count++;
       const avatar = card.querySelector(".student-avatar");
       avatar.textContent = count.toLocaleString("fa-IR");
-      avatar.setAttribute("aria-label", "ردیف " + count.toLocaleString("fa-IR"));
+      avatar.setAttribute(
+        "aria-label",
+        "ردیف " + count.toLocaleString("fa-IR"),
+      );
     }
     list.append(card);
   }
@@ -186,14 +187,19 @@ function filterStudentRoster(control) {
 }
 function renderStudentsTab(c) {
   const students = getSortedStudents(c);
+  let create =
+    '<details class="card quick-create student-add create-panel">' +
+    createPanelHeading("users", "هنرجوی جدید") +
+    `<form data-legacy-submit="ui-school-class:16" class="student-add-form" data-entity-create="student" novalidate><label>نام و نام خانوادگی<input id="studentCreateName" name="name" aria-describedby="studentCreateError" placeholder="نام کامل هنرجو" required maxlength="200"></label><label><span class="student-field-heading">کد دانش‌آموزی <span class="student-field-optional">(اختیاری)</span></span><input id="studentCreateCode" name="code" maxlength="120" aria-describedby="studentCreateError" placeholder="کد یکتا در کلاس" inputmode="numeric"></label><div class="create-panel-footer"><button type="submit">ثبت هنرجو</button></div><p id="studentCreateError" class="entity-create-error" role="alert"></p></form></details>`;
+  create +=
+    '<details class="card student-import create-panel no-print">' +
+    createPanelHeading(
+      "upload",
+      "افزودن گروهی از فایل CSV",
+      "ابتدا بررسی، سپس ثبت در همین کلاس",
+    ) +
+    '<div class="csv-import-body"><ol class="csv-import-steps"><li>قالب را دریافت کنید.</li><li>نام‌ها و کدهای اختیاری را وارد و با فرمت CSV UTF-8 ذخیره کنید.</li><li>فایل را انتخاب و پیش‌نمایش را بررسی کنید.</li></ol><div class="csv-import-actions"><button type="button" class="ghost" data-legacy-click="ui-school-class:17">دریافت قالب CSV</button><button type="button" data-mutating="1" data-legacy-click="ui-school-class:18">انتخاب و بررسی فایل</button></div><p class="csv-import-note">حداکثر ۵ مگابایت؛ تا تأیید پیش‌نمایش، اطلاعاتی ثبت نمی‌شود.</p><p class="csv-import-status" role="status" aria-live="polite"></p><p class="csv-import-error" role="alert"></p></div></details>';
   let h =
-    '<details class="card quick-create student-add create-panel" ' +
-    (!students.length ? "open" : "") +
-    ">" +
-    createPanelHeading("users", "هنرجوی جدید", "نام کامل و کد اختیاری") +
-    `<form data-legacy-submit="ui-school-class:16" class="student-add-form" data-entity-create="student" novalidate><label>نام و نام خانوادگی<input id="studentCreateName" name="name" aria-describedby="studentCreateError" placeholder="نام کامل هنرجو" required maxlength="200"></label><label>کد دانش‌آموزی <span class="muted">(اختیاری)</span><input id="studentCreateCode" name="code" maxlength="120" aria-describedby="studentCreateError" placeholder="کد یکتا در کلاس" inputmode="numeric"></label><div class="create-panel-footer"><button type="submit">ثبت هنرجو</button></div><p id="studentCreateError" class="entity-create-error" role="alert"></p></form></details>`;
-  h += `<details class="card student-import no-print"><summary>افزودن گروهی از فایل CSV</summary><p>ابتدا قالب را بگیرید، نام هنرجویان را وارد کنید و فایل تکمیل‌شده را برای بررسی بارگذاری کنید.</p><div class="row"><button class="ghost" data-legacy-click="ui-school-class:17">دریافت قالب CSV</button><button data-legacy-click="ui-school-class:18">انتخاب فایل CSV</button></div></details>`;
-  h +=
     '<section class="card student-directory"><header class="roster-heading"><div><h3>هنرجویان کلاس <span class="lesson-count">' +
     students.length.toLocaleString("fa-IR") +
     "</span></h3><p>افزودن، ویرایش و مدیریت اعضای همین کلاس</p></div></header>";
@@ -218,7 +224,7 @@ function renderStudentsTab(c) {
   }
   h +=
     '</div><div class="empty roster-no-results" hidden>هنرجویی پیدا نشد؛ نام یا کد دیگری جست‌وجو کنید.</div></section>';
-  return h + buildArchiveHtml(c);
+  return h + create + buildArchiveHtml(c);
 }
 
 // Keep the link alive while mobile browsers hand the file to their download manager.

@@ -146,7 +146,9 @@ function lockControls() {
 
 function renderV24() {
   if (!ready) return;
+  const coursePanel = courseUI.preserveEditor();
   old.render();
+  courseUI.restoreEditor(coursePanel);
   const app = document.getElementById("app");
   if (db.settings.password && !isAuthenticated) {
     const banner = document.createElement("div");
@@ -186,6 +188,7 @@ function renderV24() {
     app.append(info);
   }
   if (fileMode) fileModeBanner(app);
+  courseUI.activateCreate();
   applyDrafts();
   lockControls();
   paintStatus();

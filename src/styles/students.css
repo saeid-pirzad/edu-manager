@@ -20,6 +20,49 @@
     width: 100%;
     min-width: 0;
   }
+  #app .student-add.create-panel {
+    container: student-create / inline-size;
+  }
+  #app:has(> .student-directory) > .student-add.create-panel {
+    order: 6;
+  }
+  #app:has(> .student-directory) > .student-import.create-panel {
+    order: 7;
+  }
+  #app:has(> .student-add) > .student-directory.card {
+    order: 5;
+  }
+  #app .student-add.create-panel .student-add-form {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    align-items: end;
+  }
+  #app .student-add.create-panel .student-add-form label {
+    align-content: end;
+    font-size: 13px;
+  }
+  #app .student-add.create-panel .student-add-form input {
+    font-size: 16px;
+    min-height: 48px;
+    background: #fff;
+  }
+  #app .student-add .create-panel-footer {
+    padding-top: 0;
+  }
+  #app .student-field-heading {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  #app .student-field-optional {
+    color: #9a6700;
+    background: #fff8e6;
+    padding: 0 6px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+  }
   .student-import summary {
     font-size: 0.82rem;
     cursor: pointer;
@@ -36,6 +79,180 @@
   }
   .student-import button {
     font-size: 0.76rem;
+  }
+  #app .student-import.create-panel {
+    padding: 0;
+    background: #fff;
+  }
+  #app .student-import.create-panel > summary {
+    padding: 16px;
+    list-style: none;
+  }
+  .csv-import-body {
+    padding: 16px;
+    border-top: 1px solid #e5e2dd;
+  }
+  .csv-import-steps {
+    margin: 0 0 16px;
+    padding-inline-start: 22px;
+    color: #58595b;
+    font-size: 13px;
+    line-height: 2;
+  }
+  .csv-import-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  #app .csv-import-actions button {
+    min-width: 0;
+    min-height: 48px;
+    padding: 10px;
+    font-size: 13px;
+    white-space: normal;
+  }
+  #app .csv-import-note {
+    margin: 12px 0 0;
+    color: #706b64;
+  }
+  .csv-import-error:not(:empty) {
+    padding: 12px;
+    border-radius: 10px;
+    background: #fef0f0;
+    color: #a51d26;
+  }
+  :is(.csv-import-error, .csv-import-status):empty {
+    display: none;
+  }
+  #modal:has(#studentCSVEditor) .modal-dialog {
+    max-width: 940px;
+  }
+  #modalBody .csv-preview-editor {
+    gap: 16px;
+  }
+  .csv-preview-context {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px;
+    overflow-wrap: anywhere;
+  }
+  .csv-preview-context > span {
+    color: #706b64;
+    font-size: 12px;
+  }
+  .csv-preview-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .csv-preview-summary > span {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px;
+    border-radius: 10px;
+    background: #f7f6f4;
+    font-size: 12px;
+    color: #706b64;
+  }
+  .csv-preview-summary strong {
+    font-size: 20px;
+    color: #454649;
+  }
+  .csv-preview-help {
+    margin: 0;
+    font-size: 13px;
+    color: #706b64;
+    line-height: 1.9;
+  }
+  .csv-preview-list {
+    display: grid;
+    gap: 10px;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+  }
+  .csv-preview-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(190px, 240px);
+    align-items: center;
+    gap: 14px;
+    padding: 14px;
+    border: 1px solid #e5e2dd;
+    border-radius: 12px;
+  }
+  .csv-row-identity {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .csv-row-identity strong {
+    font-size: 14px;
+  }
+  .csv-row-identity small {
+    display: block;
+    margin-top: 6px;
+    color: #706b64;
+    font-size: 12px;
+  }
+  .csv-row-number {
+    display: grid;
+    place-items: center;
+    flex: 0 0 32px;
+    min-height: 32px;
+    border-radius: 8px;
+    background: #f7f6f4;
+    color: #706b64;
+    font-size: 12px;
+  }
+  .csv-row-status {
+    justify-self: start;
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 12px;
+  }
+  .csv-row-status.is-new {
+    background: #edf8f4;
+    color: #23644e;
+  }
+  .csv-row-status.needs-review {
+    background: #fff8e6;
+    color: #9a6700;
+  }
+  #modalBody .csv-row-decision {
+    display: grid;
+    min-width: 0;
+    gap: 6px;
+    font-size: 12px;
+  }
+  #modalBody .csv-row-decision select {
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    font-size: 16px;
+  }
+  #studentCSVEditor #operationError:empty {
+    display: none;
+  }
+  #modalBody #studentCSVEditor .record-editor-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+  #modalBody #studentCSVEditor .record-editor-actions button {
+    min-width: 0;
+    min-height: 48px;
+    white-space: normal;
+    font-size: 14px;
+  }
+  @media (max-width: 700px) {
+    .csv-preview-row {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 10px;
+    }
   }
   .student-directory {
     padding: 0;
@@ -220,6 +437,23 @@
     .student-roster {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
+  }
+}
+@container student-create (min-width: 560px) {
+  #app .student-add.create-panel .student-add-form {
+    grid-template-columns: minmax(0, 2fr) minmax(200px, 1fr);
+  }
+  #app .student-add.create-panel .create-panel-footer {
+    width: 180px;
+  }
+}
+@container student-create (min-width: 820px) {
+  #app .student-add.create-panel .student-add-form {
+    grid-template-columns: minmax(0, 2fr) minmax(200px, 1fr) 160px;
+  }
+  #app .student-add.create-panel .create-panel-footer {
+    grid-column: auto;
+    width: auto;
   }
 }
 @media print {

@@ -58,8 +58,29 @@ test("progressive create forms preserve explicit action tokens, stable fields an
 
 test("lesson and student create panels have one submit and a non-action heading", () => {
   context.esc = String;
+  context.EduV24 = {
+    course: {
+      renderCreate: () =>
+        '<form><div class="create-panel-footer"><button type="submit">ثبت درس</button></div></form>',
+    },
+  };
   context.getSortedStudents = (classroom) => classroom.students;
   context.buildArchiveHtml = () => "";
+  assert.doesNotMatch(
+    context
+      .renderLessonsTab({ id: "test", lessons: [] })
+      .match(/<details[^>]*>/)[0],
+    /\sopen(?:\s|>)/,
+  );
+  const studentForm = context.renderStudentsTab({ id: "test", students: [] });
+  const studentHeading = studentForm.match(/<summary>[\s\S]*?<\/summary>/)[0];
+  assert.match(studentHeading, /هنرجوی جدید/);
+  assert.doesNotMatch(studentHeading, /<small>|نام کامل و کد اختیاری/);
+  assert.doesNotMatch(studentForm.match(/<details[^>]*>/)[0], /\sopen(?:\s|>)/);
+  assert.match(
+    studentForm,
+    /class="student-field-heading">کد دانش‌آموزی <span class="student-field-optional">\(اختیاری\)<\/span><\/span>/,
+  );
   for (const html of [
     context.renderLessonsTab({ id: "test", lessons: [] }),
     context.renderStudentsTab({ id: "test", students: [] }),

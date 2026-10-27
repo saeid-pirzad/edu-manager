@@ -1896,7 +1896,9 @@ function lockControls() {
 
 function renderV24() {
   if (!ready) return;
+  const coursePanel = courseUI.preserveEditor();
   old.render();
+  courseUI.restoreEditor(coursePanel);
   const app = document.getElementById("app");
   if (db.settings.password && !isAuthenticated) {
     const banner = document.createElement("div");
@@ -1936,6 +1938,7 @@ function renderV24() {
     app.append(info);
   }
   if (fileMode) fileModeBanner(app);
+  courseUI.activateCreate();
   applyDrafts();
   lockControls();
   paintStatus();
@@ -4168,9 +4171,85 @@ function csvPlan(text, c) {
   return plan;
 }
 
+function csvPreviewHtml(plan, c, filename) {
+  const fresh = plan.filter((row) => row.choice === "add").length;
+  return (
+    '<form id="studentCSVEditor" class="record-editor csv-preview-editor" data-review-mode="none" data-workspace-submit="commit-csv" data-mutating="1">' +
+    '<div class="csv-preview-context"><strong><bdi>' +
+    esc(c.name) +
+    "</bdi></strong><span><bdi>" +
+    esc(filename || "فایل CSV") +
+    "</bdi></span></div>" +
+    '<div class="csv-preview-summary"><span><strong>' +
+    plan.length.toLocaleString("fa-IR") +
+    "</strong> ردیف</span><span><strong>" +
+    fresh.toLocaleString("fa-IR") +
+    "</strong> آمادهٔ افزودن</span><span><strong>" +
+    (plan.length - fresh).toLocaleString("fa-IR") +
+    "</strong> نیازمند بررسی</span></div>" +
+    '<p class="csv-preview-help">کدهای موجود و افراد هم‌نام خودکار اضافه یا ادغام نمی‌شوند؛ تصمیم هر ردیف را بررسی کنید.</p>' +
+    '<ol class="csv-preview-list">' +
+    plan
+      .map(
+        (row, index) =>
+          '<li class="csv-preview-row"><div class="csv-row-identity"><span class="csv-row-number">' +
+          row.row.toLocaleString("fa-IR") +
+          "</span><div><strong><bdi>" +
+          esc(row.name) +
+          "</bdi></strong><small>کد: <bdi>" +
+          esc(row.code || "ثبت نشده") +
+          "</bdi></small></div></div>" +
+          '<span class="csv-row-status ' +
+          (row.choice === "add" ? "is-new" : "needs-review") +
+          '">' +
+          (row.existingId
+            ? row.archived
+              ? "کد موجود در بایگانی"
+              : "کد موجود در کلاس"
+            : row.duplicate
+              ? "هم‌نام؛ بررسی شود"
+              : "هنرجوی جدید") +
+          "</span>" +
+          '<label class="csv-row-decision" for="csvDecision' +
+          index +
+          '"><span>تصمیم برای این ردیف</span><select id="csvDecision' +
+          index +
+          '" data-csv-row="' +
+          index +
+          '"><option value="skip" ' +
+          (row.choice === "skip" ? "selected" : "") +
+          ">ثبت نشود</option>" +
+          (!row.existingId
+            ? '<option value="add" ' +
+              (row.choice === "add" ? "selected" : "") +
+              ">" +
+              (row.duplicate ? "افزودن به‌عنوان فرد مستقل" : "افزودن هنرجو") +
+              "</option>"
+            : !row.archived
+              ? '<option value="update">اصلاح نام صاحب این کد</option>'
+              : "") +
+          "</select></label></li>",
+      )
+      .join("") +
+    '</ol><p id="operationError" role="alert"></p><div class="record-editor-actions"><button type="submit">ثبت موارد انتخاب‌شده</button><button type="button" class="ghost" data-workspace-action="close">انصراف</button></div></form>'
+  );
+}
+let csvReading = false;
 async function csvImportV24(e) {
+  if (csvReading) return;
   const file = e.target.files[0];
   if (!file) return;
+  csvReading = true;
+  const panel = document.querySelector(".student-import");
+  const button = panel?.querySelector(
+    '[data-legacy-click="ui-school-class:18"]',
+  );
+  const status = panel?.querySelector(".csv-import-status");
+  const errorBox = panel?.querySelector(".csv-import-error");
+  if (button) setControlLock(button, "csv-reading", true);
+  if (panel) panel.setAttribute("aria-busy", "true");
+  if (status) status.textContent = "در حال بررسی فایل…";
+  if (errorBox) errorBox.textContent = "";
   const origin = {
     workspace: workspace?.id,
     schoolId: state.schoolId,
@@ -4209,53 +4288,26 @@ async function csvImportV24(e) {
     if (!plan.length) throw Error("فایل ردیف قابل ثبت ندارد.");
     const opened = showModal(
       "پیش‌نمایش ورود دانش‌آموزان",
-      '<form id="studentCSVEditor" class="record-editor" data-workspace-submit="commit-csv" data-mutating="1"><div class="record-editor-context"><h4>' +
-        esc(c.name) +
-        "</h4></div>" +
-        "<p>افراد هم‌نام خودکار ادغام نمی‌شوند. برای دو فرد هم‌نام، افزودن فرد مستقل را آگاهانه انتخاب کنید. کد دانش‌آموزی اختیاری ولی یکتا در کلاس است.</p><table><thead><tr><th>ردیف</th><th>نام</th><th>کد</th><th>وضعیت</th><th>تصمیم</th></tr></thead><tbody>" +
-        plan
-          .map(
-            (r, i) =>
-              "<tr><td>" +
-              r.row +
-              "</td><td>" +
-              esc(r.name) +
-              "</td><td>" +
-              esc(r.code) +
-              "</td><td>" +
-              (r.existingId
-                ? "کد موجود" + (r.archived ? " در بایگانی" : "")
-                : r.duplicate
-                  ? "هم‌نام؛ نیازمند بررسی"
-                  : "جدید") +
-              '</td><td><select id="csvDecision' +
-              i +
-              '" data-csv-row="' +
-              i +
-              '"><option value="skip" ' +
-              (r.choice === "skip" ? "selected" : "") +
-              ">رد کردن</option>" +
-              (!r.existingId
-                ? '<option value="add" ' +
-                  (r.choice === "add" ? "selected" : "") +
-                  ">" +
-                  (r.duplicate ? "افزودن فرد مستقل هم‌نام" : "افزودن") +
-                  "</option>"
-                : !r.archived
-                  ? '<option value="update">اصلاح نام فرد با این کد</option>'
-                  : "") +
-              "</select></td></tr>",
-          )
-          .join("") +
-        '</tbody></table><div class="record-editor-actions"><button type="submit">اعمال تصمیم‌ها</button><button type="button" class="ghost" data-workspace-action="close">انصراف</button></div><p id="operationError" role="alert"></p></form>',
+      csvPreviewHtml(plan, c, file.name),
     );
     if (opened !== false) {
       pendingCSV = { ...origin, plan };
       rememberRecordEditor();
     }
   } catch (error) {
-    handleError(error);
+    if (
+      errorBox?.isConnected &&
+      origin.workspace === workspace?.id &&
+      origin.classId === state.classId
+    ) {
+      panel.open = true;
+      errorBox.textContent = error.message || String(error);
+    } else handleError(error);
   } finally {
+    csvReading = false;
+    if (button) setControlLock(button, "csv-reading", false);
+    if (panel) panel.removeAttribute("aria-busy");
+    if (status) status.textContent = "";
     e.target.value = "";
   }
 }
@@ -5815,31 +5867,45 @@ function openDeletion(kind, id) {
     ).length;
     const label =
       kind === "school" ? "مدرسه" : kind === "class" ? "کلاس" : "درس";
+    const count = (value, title) =>
+      `<li><strong>${value.toLocaleString("fa-IR")}</strong><span>${title}</span></li>`;
     const html =
-      '<form class="record-editor" data-workspace-submit="confirm-deletion"><p>حذف ' +
-      label +
-      " «" +
+      '<form class="record-editor deletion-editor" data-workspace-submit="confirm-deletion" novalidate>' +
+      '<div class="deletion-target"><span class="deletion-symbol" aria-hidden="true">' +
+      EduIcons.html("trash") +
+      "</span><strong><bdi>" +
       esc(target.item.name) +
-      "» شامل سوابق زیر است:</p><ul>" +
-      (kind === "school" ? "<li>" + target.classes.length + " کلاس</li>" : "") +
+      '</bdi></strong></div><p id="deleteEntityWarning" class="deletion-warning">' +
+      (kind === "lesson"
+        ? "این درس همراه با نمرات، جلسات و سوابق حضور و فعالیت آن حذف می‌شود. هنرجویان کلاس حذف نمی‌شوند."
+        : "این " +
+          label +
+          " و تمام درس‌ها، نمرات و سوابق وابسته به آن حذف می‌شوند.") +
+      '</p><ul class="deletion-impact" aria-label="سوابق مرتبط">' +
+      (kind === "school" ? count(target.classes.length, "کلاس") : "") +
       (kind !== "lesson"
-        ? "<li>" + students + " هنرجوی فعال و بایگانی‌شده</li>"
+        ? count(students, "هنرجوی فعال و بایگانی") +
+          count(target.lessons.length, "درس")
         : "") +
-      "<li>" +
-      target.lessons.length +
-      " درس و نمرات وابسته</li><li>" +
-      sessions +
-      " جلسه و سوابق حضور و فعالیت</li><li>" +
-      slots +
-      " خانه برنامه هفتگی</li></ul>" +
-      "<p>پیش از حذف، پشتیبان داخلی از کل دوره ذخیره می‌شود. برای بازیابی از بخش پشتیبان‌ها استفاده کنید؛ بلافاصله پس از حذف، بازگردانی آخرین تغییر نیز در دسترس است. پشتیبان داخلی جای فایل مستقل را نمی‌گیرد.</p>" +
-      '<label for="deleteEntityName">برای تأیید، نام ' +
+      count(sessions, "جلسه") +
+      count(slots, "زنگ برنامه هفتگی") +
+      '</ul><p class="deletion-backup-note">پیش از حذف، پشتیبان داخلی ذخیره می‌شود؛ این پشتیبان جای فایل مستقل را نمی‌گیرد.</p>' +
+      '<label class="deletion-confirm" for="deleteEntityName">برای تأیید، نام ' +
       label +
-      " را وارد کنید: " +
-      esc(target.item.name) +
-      '</label><input id="deleteEntityName" autocomplete="off" maxlength="500"><p id="deleteEntityError" role="alert"></p><div class="row"><button type="button" class="ghost" data-workspace-action="close">انصراف</button><button type="submit" class="danger">ذخیره پشتیبان و حذف</button></div></form>';
-    if (showModal("بررسی حذف " + label, html) !== false)
+      ' را بنویسید<input id="deleteEntityName" autocomplete="off" spellcheck="false" maxlength="500" aria-describedby="deleteEntityWarning deleteEntityError"></label>' +
+      '<p id="deleteEntityError" role="alert"></p><div class="record-editor-actions"><button type="button" class="ghost" data-workspace-action="close">انصراف</button><button type="submit" class="danger" data-mutating="1">حذف ' +
+      label +
+      "</button></div></form>";
+    if (showModal("حذف " + label, html) !== false) {
       deletionContext = context;
+      setTimeout(
+        () =>
+          document
+            .querySelector('.deletion-editor [data-workspace-action="close"]')
+            ?.focus({ preventScroll: true }),
+        0,
+      );
+    }
   } catch (error) {
     handleError(error);
   }
@@ -6714,6 +6780,12 @@ const courseUI = EduCourseUI({
   showModal: showModalV24,
   closeModal: () => closeModal(),
   render: () => render(),
+  showCourseClass: () => {
+    state.view = "class";
+    state.lessonId = null;
+    state.tab = "lessons";
+    render();
+  },
   error: handleError,
   students: getSortedStudents,
   knownStudents,

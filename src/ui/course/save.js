@@ -2,11 +2,11 @@ async function save() {
   if (saving) return;
   saving = true;
   const finishSave = beginRecordEditorSave(
-    document.querySelector("#modal .record-editor"),
+    document.getElementById("courseEditor"),
   );
   try {
     writable();
-    if (!document.querySelector("#modal:not(.hidden) #course_name"))
+    if (!document.querySelector("#app #courseEditor #course_name"))
       throw Error("فرم درس باز نیست.");
     if (
       !editing ||
@@ -41,11 +41,10 @@ async function save() {
         "زنگ در هفته باید عدد صحیح بین ۱ تا ۱۰ باشد.",
         "course_periods",
       );
-    const info = {};
-    for (const k of ["year", "grade", "field", "code", "branch", "authority"])
-      info[k] = val(k).trim();
+    const info = P.identity(original || editing.seed, api.year(), c);
+    info.branch = val("branch");
     if (
-      !["10", "11", "12"].includes(info.grade) ||
+      !["", "10", "11", "12"].includes(info.grade) ||
       !["fani", "kardanesh"].includes(info.branch) ||
       Object.values(info).some((x) => x.length > 500) ||
       val("teacher").trim().length > 500
@@ -85,18 +84,54 @@ async function save() {
       for (const k of ["circularNumber", "circularDate", "reference"])
         p[k] = val(k).trim();
       const numericFields =
-        p.method === "dual"
-          ? ["practicalWeight", "theoryMin", "practicalMin", "passMin"]
-          : [
-              "mostamarMax",
-              "continuousStep",
-              "competencyFactor",
-              "competencyMin",
-              "moduleMin",
-              "unitCount",
-            ];
+        p.subjectType === "general"
+          ? []
+          : p.method === "dual"
+            ? ["practicalWeight", "theoryMin", "practicalMin", "passMin"]
+            : [
+                "mostamarMax",
+                "continuousStep",
+                "competencyFactor",
+                "competencyMin",
+                "moduleMin",
+                "unitCount",
+              ];
       for (const k of numericFields) p[k] = number(k);
-      p.confirmed = checked("confirmed");
+      if (p.method === "modular") {
+        if (p.moduleMin > 20)
+          throw recordFieldError(
+            "حداقل قبولی هر پودمان باید بین صفر و بیست باشد.",
+            "course_moduleMin",
+          );
+        if (![1, 2, 3].includes(p.competencyMin))
+          throw recordFieldError(
+            "سطح شایستگی را انتخاب کنید.",
+            "course_competencyMin",
+          );
+        if (
+          !Number.isInteger(p.unitCount) ||
+          p.unitCount < 1 ||
+          p.unitCount > 10
+        )
+          throw recordFieldError(
+            "تعداد واحد باید عدد صحیح بین ۱ تا ۱۰ باشد.",
+            "course_unitCount",
+          );
+      }
+      if (p.method === "dual" && p.subjectType !== "general") {
+        if (p.practicalWeight > 100)
+          throw recordFieldError(
+            "سهم عملی باید بین صفر و صد باشد.",
+            "course_practicalWeight",
+          );
+        if (p.passMin > 20)
+          throw recordFieldError(
+            "حداقل قبولی باید بین صفر و بیست باشد.",
+            "course_passMin",
+          );
+        p.dualConfigurable = true;
+      }
+      p.confirmed = editing.seed.gradingPolicy?.confirmed === true;
       p.requireGate = false;
       const baseline = original?.gradingPolicy;
       p.revision = baseline?.revision || 1;
@@ -109,21 +144,21 @@ async function save() {
       P.validate(p);
       const count = p.method === "modular" ? number("podCount") : 1;
       if (!Number.isInteger(count) || count < 1 || count > 20)
-        throw Error("تعداد پودمان بین ۱ تا ۲۰ باشد.");
+        throw recordFieldError(
+          "تعداد پودمان باید عدد صحیح بین ۱ تا ۲۰ باشد.",
+          "course_podCount",
+        );
       const methodChanged =
         original &&
         (original.gradeMode === "kardanesh") !== (p.method === "dual");
       if (
-        (checked("rebuild") || methodChanged) &&
+        methodChanged &&
         api.getDB().sessions.some((s) => s.lessonId === next.id)
       )
         throw Error(
           "درس دارای جلسه است؛ برای تغییر ساختار یک کپی جدید بسازید.",
         );
-      if (
-        p.method === "modular" &&
-        (!next.poudmans.length || checked("rebuild"))
-      )
+      if (p.method === "modular" && !next.poudmans.length)
         next.poudmans = makePods(count, p.unitCount);
       else
         for (const pod of next.poudmans) {
@@ -179,8 +214,6 @@ async function save() {
     });
     editing = null;
     finishSave();
-    rememberRecordEditor();
-    api.closeModal();
     api.render();
   } finally {
     saving = false;
