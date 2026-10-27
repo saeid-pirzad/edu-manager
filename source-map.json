@@ -296,7 +296,8 @@
         "src/styles/workflow/layout.css",
         "src/styles/workflow/components.css",
         "src/styles/workflow/identity.css",
-        "src/styles/workflow/touch.css"
+        "src/styles/workflow/touch.css",
+        "src/styles/workflow/grades.css"
       ]
     },
     {

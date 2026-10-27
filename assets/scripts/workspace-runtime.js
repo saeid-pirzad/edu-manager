@@ -1460,7 +1460,12 @@ function buildAssessmentEditor(c, l) {
   let html =
     '<div class="card assessment-editor"><h3>نمرات کاردانش — ' +
     esc(l.name) +
-    "</h3><p>هر مرحله: عملی ۷۰٪ + تئوری ۳۰٪. نتیجه سالانه: میانگین میان‌ترم و پایان‌ترم هر دو نوبت؛ هر چهار نمره لازم است.</p>";
+    "</h3><p>هر مرحله: عملی ۷۰٪ + تئوری ۳۰٪. نتیجه سالانه: میانگین میان‌ترم و پایان‌ترم هر دو نوبت؛ هر چهار نمره لازم است.</p>" +
+    '<div class="grades-intro"><span>ثبت نمرات رسمی</span><p>نمره‌ها را از صفر تا بیست وارد کنید؛ وضعیت ذخیره زیر هر ورودی نمایش داده می‌شود.</p><small>' +
+    c.students.length.toLocaleString("fa-IR") +
+    " دانش‌آموز · نوبت " +
+    esc(workspace.term) +
+    "</small></div>";
   for (const stage of ["midterm", "final"]) {
     const mid = stage === "midterm";
     html +=
@@ -1471,6 +1476,9 @@ function buildAssessmentEditor(c, l) {
       " نوبت " +
       esc(workspace.term) +
       '</summary><div class="assessment-students">';
+    if (!c.students.length)
+      html +=
+        '<div class="empty"><strong>هنوز دانش‌آموزی در کلاس نیست</strong><p>برای ثبت نمره، ابتدا از تب دانش‌آموزان اعضای کلاس را اضافه کنید.</p></div>';
     for (const st of getSortedStudents(c)) {
       const r = assessmentResult(l, st.id, stage);
       html +=

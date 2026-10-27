@@ -1,0 +1,252 @@
+/* Grade entry and results; scoped to the lesson tab and its grade editor. */
+@media screen {
+  #lessonGradesArea {
+    min-width: 0;
+  }
+  #app #lessonGradesArea > .card {
+    padding: 22px;
+    border-radius: 18px;
+  }
+  #lessonGradesArea > .card > h3 {
+    display: block;
+    margin: 0 0 18px;
+    font-size: 18px;
+    line-height: 1.8;
+    overflow-wrap: anywhere;
+  }
+  #lessonGradesArea .grade-help {
+    margin: 0 0 18px;
+    border: 1px solid var(--workflow-line);
+    border-radius: 12px;
+    background: #faf9f7;
+  }
+  #lessonGradesArea .grade-help summary {
+    min-height: 44px;
+    padding: 12px 14px;
+    color: var(--workflow-muted);
+    font-size: 13px;
+    cursor: pointer;
+  }
+  #lessonGradesArea .grade-help p {
+    margin: 0;
+    padding: 0 14px 14px;
+    font-size: 13px;
+    line-height: 2;
+    color: var(--workflow-muted);
+  }
+  .grades-intro {
+    display: grid;
+    gap: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+    background: #f7f6f4;
+    border: 1px solid var(--workflow-line);
+    border-radius: 14px;
+  }
+  .grades-intro > span {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--workflow-ink);
+  }
+  .grades-intro p,
+  .grades-intro small {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.9;
+    color: var(--workflow-muted);
+  }
+  #lessonGradesArea .assessment-stage {
+    margin: 16px 0 0;
+    border: 1px solid var(--workflow-line);
+    border-radius: 14px;
+    background: #faf9f7;
+  }
+  #lessonGradesArea .assessment-stage > summary {
+    padding: 16px;
+    color: var(--workflow-ink);
+    font-size: 15px;
+    min-height: 52px;
+  }
+  #lessonGradesArea .assessment-stage[open] > summary {
+    border-bottom: 1px solid var(--workflow-line);
+  }
+  #lessonGradesArea .assessment-students {
+    padding: 16px;
+    gap: 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  #lessonGradesArea .assessment-student {
+    padding: 18px;
+    background: #fff;
+    border: 1px solid var(--workflow-line);
+    border-radius: 14px;
+  }
+  #lessonGradesArea .assessment-student h4 {
+    font-size: 15px;
+    line-height: 1.9;
+    padding-bottom: 12px;
+    margin: 0 0 14px;
+    border-bottom: 1px solid #eeece9;
+    overflow-wrap: anywhere;
+  }
+  #lessonGradesArea .assessment-inputs label {
+    display: grid;
+    align-content: start;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--workflow-muted);
+  }
+  :is(#lessonGradesArea, #modalBody:has(.assessment-editor, .course-grades)) .grade-editor {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+    min-width: 0;
+    width: 100%;
+  }
+  :is(#lessonGradesArea, #modalBody:has(.assessment-editor, .course-grades)) input[data-grade] {
+    width: 100%;
+    min-width: 0;
+    min-height: 50px;
+    padding: 10px;
+    border: 1px solid #ccc7c0;
+    border-radius: 10px;
+    background: #fff;
+    color: var(--workflow-ink);
+    font-size: 20px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+  :is(#lessonGradesArea, #modalBody:has(.assessment-editor, .course-grades)) input[data-grade]:focus {
+    outline: 2px solid #fcaf1770;
+    outline-offset: 2px;
+    border-color: #a87008;
+  }
+  :is(#lessonGradesArea, #modalBody:has(.assessment-editor, .course-grades)) input[data-grade][aria-invalid="true"] {
+    border: 2px solid #b62f40;
+    background: #fff0ed;
+  }
+  #lessonGradesArea .grade-editor .grade-clear {
+    justify-self: end;
+    min-height: 32px;
+    padding: 4px 8px;
+    background: transparent;
+    border: 0;
+    color: var(--workflow-muted);
+    font-size: 11px;
+  }
+  #lessonGradesArea .grade-editor .grade-clear:hover {
+    color: #9f3021;
+    background: #fff0ed;
+  }
+  #lessonGradesArea .grade-note {
+    min-height: 18px;
+    font-size: 11px;
+    line-height: 1.8;
+    overflow-wrap: anywhere;
+  }
+  #lessonGradesArea .assessment-student > p {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+    padding-top: 12px;
+    font-size: 12px;
+  }
+  #lessonGradesArea [data-assessment-final] {
+    font-size: 22px;
+    color: var(--workflow-ink);
+    font-variant-numeric: tabular-nums;
+  }
+  #lessonGradesArea [data-assessment-status] {
+    margin-inline-start: auto;
+    padding: 4px 8px;
+    border-radius: 8px;
+    background: #f4f3f1;
+    color: #454649;
+    font-size: 11px;
+  }
+  #lessonGradesArea .course-warning {
+    padding: 14px;
+    border: 1px solid #e3cc9e;
+    border-radius: 12px;
+    background: #fff8e8;
+    color: #7c5105;
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  #lessonGradesArea .course-grades > p {
+    color: var(--workflow-muted);
+    font-size: 12px;
+    line-height: 1.9;
+  }
+  #lessonGradesArea .course-grades > h4 {
+    margin: 24px 0 10px;
+    padding-inline-start: 12px;
+    border-inline-start: 3px solid #fcaf17;
+    font-size: 16px;
+  }
+  #lessonGradesArea .table-scroll {
+    border: 1px solid var(--workflow-line);
+    border-radius: 12px;
+    margin-block: 14px;
+  }
+  #lessonGradesArea table {
+    margin: 0;
+    width: 100%;
+    font-size: 13px;
+  }
+  #lessonGradesArea th {
+    background: #f4f3f1;
+    color: #454649;
+    padding: 14px 12px;
+    font-size: 12px;
+    line-height: 1.8;
+  }
+  #lessonGradesArea td {
+    padding: 14px 12px;
+    vertical-align: middle;
+    line-height: 1.9;
+  }
+  #lessonGradesArea tbody tr:focus-within {
+    background: #fffbf2;
+  }
+  #lessonGradesArea :is([data-pod-final], [data-kfinal], [data-course-final]) {
+    font-size: 18px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  #lessonGradesArea .assessment-students > .empty {
+    grid-column: 1 / -1;
+  }
+}
+@media screen and (max-width: 700px) {
+  #app #lessonGradesArea > .card {
+    padding: 14px;
+    border-radius: 16px;
+  }
+  #lessonGradesArea > .card > h3 {
+    font-size: 16px;
+    margin-bottom: 14px;
+  }
+  #lessonGradesArea .assessment-students {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 10px;
+    gap: 12px;
+  }
+  #lessonGradesArea .assessment-student {
+    padding: 14px;
+  }
+  #lessonGradesArea .assessment-inputs {
+    gap: 10px;
+  }
+  #lessonGradesArea .grade-editor .grade-clear {
+    min-height: 44px;
+  }
+  #lessonGradesArea .grades-intro {
+    padding: 14px;
+  }
+  #lessonGradesArea .course-grades table:not([data-ui-layout="cards"]) {
+    min-width: 620px;
+  }
+}

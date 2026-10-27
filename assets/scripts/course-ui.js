@@ -702,7 +702,7 @@ function table(c, l, sid, editable = false) {
     .students(sid ? { students: api.knownStudents(c) } : c)
     .filter((s) => !sid || s.id === sid);
   let h =
-    '<div class="card"><h3>' +
+    '<div class="card course-grades"><h3>' +
     esc(l.name) +
     "</h3><p>" +
     esc(P.describe(l)) +
@@ -716,6 +716,16 @@ function table(c, l, sid, editable = false) {
   if (!policy.confirmed)
     h +=
       '<p class="course-warning">نتایج براساس قواعد پیش‌نویس هستند؛ پیش از بستن کارنامه، قواعد را با ابلاغیه تطبیق دهید.</p>';
+  if (editable)
+    h +=
+      '<div class="grades-intro"><span>ثبت نمرات رسمی</span><p>نمره هر دانش‌آموز را در ستون مربوط وارد کنید؛ وضعیت ذخیره زیر هر ورودی نمایش داده می‌شود.</p><small>' +
+      students.length.toLocaleString("fa-IR") +
+      " دانش‌آموز</small></div>";
+  if (!students.length)
+    return (
+      h +
+      '<div class="empty"><strong>دانش‌آموزی برای نمایش نیست</strong><p>برای ثبت نمره، ابتدا اعضای کلاس را از تب دانش‌آموزان اضافه کنید.</p></div></div>'
+    );
   if (policy.method === "dual") {
     h +=
       '<div class="table-scroll"><table><thead><tr><th>هنرجو</th><th>عملی</th><th>نظری</th><th>نهایی</th><th>نتیجه و دلیل</th></tr></thead><tbody>';
