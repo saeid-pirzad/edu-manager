@@ -1718,6 +1718,181 @@ body {
     white-space: normal;
   }
 }
+@media screen {
+  #app .lesson-items {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    padding: 18px;
+  }
+  #app .lesson-item {
+    min-width: 0;
+    gap: 14px;
+  }
+  #app .lesson-identity > div {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  #app .lesson-meta {
+    align-content: start;
+    font-size: 13px;
+  }
+  #app .lesson-policy {
+    background: #f7f6f4;
+    border-color: var(--workflow-line);
+    color: var(--workflow-muted);
+    padding: 12px 14px;
+    overflow-wrap: anywhere;
+  }
+  #app .lesson-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 12px;
+  }
+  #app button.lesson-enter {
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--workflow-soft);
+    color: var(--workflow-accent);
+    border: 1px solid #f3cdcf;
+    font-size: 14px;
+    white-space: normal;
+    text-align: start;
+  }
+  #app .lesson-more {
+    margin: 0;
+  }
+  #app .lesson-more > summary {
+    min-width: 92px;
+    min-height: 48px;
+    padding: 10px 12px;
+    background: #fff;
+    color: #454649;
+    border-color: var(--workflow-line);
+    font-size: 13px;
+  }
+  #app .lesson-more > summary:hover,
+  #app .lesson-more[open] > summary {
+    background: #f4f3f1;
+    border-color: #b9b6b1;
+  }
+  #app .lesson-more > summary:focus-visible {
+    outline: 2px solid var(--workflow-accent);
+    outline-offset: 3px;
+  }
+  #app .lesson-more[open] {
+    z-index: 40;
+  }
+  #app .lesson-more-menu {
+    top: auto;
+    bottom: calc(100% + 8px);
+    width: min(240px, calc(100vw - 64px));
+    padding: 6px;
+    gap: 4px;
+    border-color: var(--workflow-line);
+    border-radius: 12px;
+    box-shadow: 0 8px 28px #2d344024;
+  }
+  #app .lesson-more-menu button {
+    width: 100%;
+    min-height: 46px;
+    padding: 10px 12px;
+    font-size: 14px;
+    white-space: normal;
+    border-radius: 10px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: #454649;
+  }
+  #app .lesson-more-menu button:hover {
+    background: #f4f3f1;
+  }
+  #app .lesson-more-menu button.danger {
+    color: #9f3021;
+    border-top-color: var(--workflow-line);
+  }
+  #app .lesson-more-menu button.danger:hover {
+    background: #fff0ed;
+  }
+  #modal:has(#courseError) .modal-dialog {
+    width: 100%;
+    max-width: 680px;
+    border-radius: 20px;
+  }
+  #modal:has(#courseError) .modal-header {
+    background: #fff;
+  }
+  #modal:has(#courseError) .modal-body {
+    min-height: 0;
+  }
+  #modalBody:has(#courseError) .record-editor-context {
+    background: #f7f6f4;
+    border: 1px solid var(--workflow-line);
+    border-radius: 12px;
+  }
+  #modalBody:has(#courseError) .course-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+  #modalBody:has(#courseError) .course-field {
+    min-width: 0;
+  }
+  #modalBody:has(#courseError) #courseError:empty {
+    display: none;
+  }
+}
+@media screen and (max-width: 700px) {
+  #app .lesson-items {
+    padding: 12px 0 0;
+    gap: 12px;
+  }
+  #modal:has(#courseError) {
+    padding: 12px;
+    align-items: center;
+  }
+  #modal:has(#courseError) .modal-dialog {
+    max-height: calc(var(--app-viewport, 100dvh) - 24px);
+    border-radius: 16px;
+  }
+  #modal:has(#courseError) .modal-header {
+    padding: 12px 14px;
+    flex-shrink: 0;
+  }
+  #modal:has(#courseError) .modal-body {
+    padding: 16px;
+  }
+  #modalBody:has(#courseError) .course-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+  #modalBody:has(#courseError) .record-editor-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+  #modalBody:has(#courseError) .record-editor-actions button {
+    min-width: 0;
+    white-space: normal;
+    min-height: 48px;
+    padding-inline: 12px;
+  }
+}
+@media screen and (min-width: 1101px) {
+  #app:has(> .class-lessons) {
+    display: flex;
+    flex-direction: column;
+  }
+  #app:has(> .class-lessons) > .topbar { order: 0; }
+  #app:has(> .class-lessons) > .workspace-bar { order: 1; }
+  #app:has(> .class-lessons) > .breadcrumb { order: 2; }
+  #app:has(> .class-lessons) > .tabs { order: 3; }
+  #app:has(> .class-lessons) > .class-lessons { order: 4; }
+  #app:has(> .class-lessons) > .lesson-create { order: 5; }
+}
 @media screen and (min-width: 1101px) {
   #app:has(> .dashboard-directory) {
     display: flex;
