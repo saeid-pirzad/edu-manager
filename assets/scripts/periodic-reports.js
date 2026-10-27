@@ -1609,14 +1609,13 @@ async function output(kind) {
     if (!isPreparedCurrent(prepared))
       throw Error("گزارش دیگر معتبر نیست؛ دوباره آن را تهیه کنید.");
     if (kind === "print") {
-      await root.EduV24.printReport(
+      return await root.EduV24.printReport(
         document.querySelector("[data-periodic-print]"),
         {
           context: prepared.context,
           validate: () => isPreparedCurrent(prepared),
         },
       );
-      return true;
     }
     if (!["txt", "json"].includes(kind)) return false;
     await root.EduV24.assertReportSnapshot(prepared.context);

@@ -20,9 +20,9 @@ function installRuntimeAPI() {
     renderLessonStudents: (c, l) =>
       l.gradingPolicy ? courseUI.table(c, l) : old.renderLessonStudents(c, l),
     buildLessonReportHtml: (c, l) =>
-      l.gradingPolicy
-        ? '<div class="card"><button class="no-print" data-workspace-action="print">چاپ / PDF</button>' +
-          courseUI.table(c, l) +
+      l.gradeMode === "kardanesh" || l.gradingPolicy
+        ? '<div class="card report-document grade-report"><button class="no-print" data-workspace-action="print">چاپ / PDF</button>' +
+          (l.gradeMode === "kardanesh" ? termAssessmentReport(c, l) : courseUI.table(c, l)) +
           "</div>"
         : old.buildLessonReportHtml(c, l),
     defaultDB: v24DefaultDB,

@@ -118,9 +118,9 @@
     min-height: 46px;
   }
   .report-navigation {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    overflow: visible !important;
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
   }
   .report-navigation button {
     min-width: 0 !important;
@@ -2690,6 +2690,66 @@ body {
 @media screen {
   #app .week-period-controls > button { display: flex; align-items: center; justify-content: center; padding: 0; gap: 0; line-height: 1; }
   #app .week-period-controls .week-step-icon { display: block; flex: 0 0 18px; width: 18px; height: 18px; margin: 0; }
+}
+
+@media screen {
+  #app .report-page-heading { margin-block: 8px 18px; }
+  #app .report-page-heading > p { color: #81796e; }
+  #app .report-page-heading > span { background: #f2eadf; color: #79522c; border-radius: 20px; }
+  #app .report-scope-summary { gap: 8px; padding-bottom: 16px; }
+  #app .report-scope-summary > span { padding: 7px 12px; border: 1px solid #e7e3dc; border-radius: 10px; background: #fff; color: #81796e; font-size: 11px; }
+  #app .report-navigation { display: flex; flex-wrap: nowrap; gap: 5px; padding: 5px; margin-bottom: 14px; border: 1px solid #e7e3dc; border-radius: 13px; background: #efede8; overflow-x: auto; }
+  #app .report-navigation > button { min-height: 42px; margin: 0; padding: 8px 16px; border: 1px solid transparent; border-radius: 9px; background: transparent; color: #726b61; font-size: 12px; box-shadow: none; white-space: nowrap; }
+  #app .report-navigation > button.active { background: #fff; border-color: #e2d9cd; color: #79522c; font-weight: 600; box-shadow: 0 2px 5px #392b1208; }
+  #app .report-extra { margin: 0 0 16px; }
+  #app .report-extra > summary { min-height: 36px; color: #81796e; font-size: 11px; cursor: pointer; }
+  #app :is(.periodic-controls,.report-filter-card) { padding: 20px; border: 1px solid #e7e3dc; border-radius: 15px; box-shadow: none; }
+  #app :is(.periodic-controls,.report-filter-card) > h3 { margin: 0 0 14px; font-size: 15px; }
+  #app :is(.periodic-control-grid,.report-filter-grid) { gap: 12px !important; }
+  #app :is(.periodic-controls,.report-filter-card) :is(select,input:not([type=checkbox]):not([type=radio]):not([type=hidden])) { width: 100%; min-width: 0; min-height: 44px; border: 1px solid #ded8ce; border-radius: 9px; background: #faf9f7; font-size: 14px; }
+  #app :is(.periodic-control-grid,.report-filter-field,.periodic-note-field) { color: #726b61; font-size: 12px; }
+  #app .periodic-note-field textarea { border: 1px solid #ded8ce; border-radius: 10px; background: #faf9f7; padding: 10px; font-size: 14px; resize: vertical; }
+  #app .periodic-build { min-height: 44px; padding-inline: 20px; border-radius: 10px; background: #79522c; color: #fff; font-size: 13px; }
+  #app :is(.grade-report,.periodic-document) { padding: 22px; border: 1px solid #e7e3dc; border-radius: 15px; box-shadow: none; }
+  #app .grade-report > :is(h2,h3) { margin: 0 0 8px; font-size: 19px; }
+  #app .grade-report > p { margin: 8px 0 16px; font-size: 12px; line-height: 1.9; color: #81796e; }
+  #app .grade-report > button { min-height: 42px; margin-bottom: 16px; border-radius: 9px; font-size: 12px; background: #79522c; color: #fff; }
+  #app .grade-report-section { margin-top: 18px; padding: 16px; border: 1px solid #e7e3dc; border-radius: 12px; background: #faf9f7; box-shadow: none; }
+  #app .grade-report-section > h3 { margin: 0 0 6px; font-size: 14px; }
+  #app .report-term-label { margin: 0 0 14px; color: #81796e; font-size: 11px; }
+  #app .grade-report .table-scroll { border: 1px solid #e7e3dc; border-radius: 10px; background: #fff; }
+  #app .grade-report table { margin: 0; }
+  #app .grade-report th { background: #f2efe8; color: #655d52; font-size: 11px; }
+  #app .grade-report td { padding: 12px 10px; font-size: 12px; }
+  #app .periodic-document-heading { border-color: #e7e3dc; }
+  #app .periodic-document-heading > span { background: #f2eadf; color: #79522c; border-radius: 20px; }
+  #app .periodic-summary > div { background: #faf9f7; border-color: #e7e3dc; }
+  #app .periodic-summary strong { color: #79522c; }
+  #app .report-empty { padding: 24px 18px; border: 1px dashed #ded8ce; border-radius: 14px; background: #faf9f7; text-align: center; }
+  #app .report-empty h3 { font-size: 15px; }
+  #app .report-empty p { color: #81796e; font-size: 12px; line-height: 1.9; }
+}
+@media screen and (max-width: 700px) {
+  #app > .periodic-controls, #app > .report-extra { order: 5; }
+  #app > #periodicReportOutput, #app > #lessonReportTabOutput { order: 6; }
+  #app .report-page-heading h2 { font-size: 21px; }
+  #app .report-scope-summary { gap: 6px; }
+  #app .report-scope-summary > span { flex: 1; padding: 7px 6px; text-align: center; font-size: 10px; }
+  #app .report-navigation > button { flex: 0 0 auto; padding: 8px 12px; font-size: 12px; }
+  #app :is(.periodic-controls,.report-filter-card,.grade-report,.periodic-document) { padding: 14px; }
+  #app :is(.periodic-control-grid,.report-filter-grid) { grid-template-columns: minmax(0,1fr); gap: 12px !important; }
+  #app :is(.periodic-controls,.report-filter-card) :is(select,input:not([type=checkbox]):not([type=radio]):not([type=hidden])), #app .periodic-note-field textarea { font-size: 16px; }
+  #app .periodic-build { width: 100%; }
+  #app .grade-report > :is(h2,h3) { font-size: 17px; }
+  #app .grade-report-section { padding: 10px; }
+  #app .periodic-export-actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; }
+  #app .periodic-export-actions > button:first-child { grid-column: 1 / -1; }
+  #app .periodic-export-actions > button { min-width: 0; margin: 0; font-size: 12px; }
+}
+@media print {
+  .grade-report-section { break-inside: auto; margin-top: 12px; }
+  .grade-report-section h3 { break-after: avoid; }
+  .grade-report .table-scroll { overflow: visible !important; }
 }
 /* Source: src/styles/workflow/grades.css */
 /* Flat gradebook rows on desktop; a single student per card on mobile. */

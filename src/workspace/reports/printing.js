@@ -6,11 +6,13 @@ function preparePrint(button) {
       : !modal.classList.contains("hidden");
   let source = isModal
     ? document.getElementById("modalBody")
-    : button?.closest(".report-document") ||
+    : button?.closest(".report-document,#karnamehTabOutput,#lessonReportTabOutput,#lessonReportOutput,#globalReportOutput,#periodicReportOutput") ||
+      button?.closest(".card") ||
       document.getElementById("karnamehTabOutput") ||
+      document.getElementById("lessonReportTabOutput") ||
       document.getElementById("lessonReportOutput") ||
       document.getElementById("globalReportOutput") ||
-      button?.closest(".card") ||
+      document.getElementById("periodicReportOutput") ||
       document.getElementById("app");
   if (!source) throw Error("گزارشی برای چاپ انتخاب نشده است.");
   const copy = source.cloneNode(true);
@@ -43,10 +45,9 @@ function preparePrint(button) {
     "</p></header>";
   root.append(copy);
   document.body.append(root);
-  const columns = Math.max(
-    0,
-    ...[...copy.querySelectorAll("tr")].map((tr) => tr.children.length),
-  );
+  const columns = Math.max(0, ...[...copy.querySelectorAll("tr")].map((tr) =>
+    [...tr.children].reduce((sum, cell) => sum + (Number(cell.colSpan) || 1), 0),
+  ));
   document.getElementById("printPageStyle")?.remove();
   const style = document.createElement("style");
   style.id = "printPageStyle";

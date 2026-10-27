@@ -116,9 +116,9 @@
     min-height: 46px;
   }
   .report-navigation {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    overflow: visible !important;
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
   }
   .report-navigation button {
     min-width: 0 !important;
