@@ -352,7 +352,13 @@
     grid-template-columns: minmax(0, 1fr) auto;
   }
   #app .dashboard-entity-actions > button:first-child {
-    grid-column: auto;
+    grid-column: 1;
+    grid-row: 1;
+  }
+  #app .dashboard-entity-more {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
   }
   #app :is(.dashboard-entity-actions > button.entity-enter, button.lesson-enter) {
     display: flex;
@@ -883,6 +889,16 @@
     align-items: start;
     gap: 12px;
   }
+  #app .lesson-actions > .lesson-enter {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+  }
+  #app .lesson-actions > .lesson-more {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+  }
   #app button.lesson-enter {
     width: 100%;
     min-height: 48px;
@@ -1033,10 +1049,18 @@
     font-size: 13px;
     line-height: 1.9;
   }
-  #app .student-row-number {
-    background: #f4f3f1;
-    color: var(--workflow-muted);
-    font-size: 12px;
+  #app .student-avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    background: linear-gradient(145deg, #fff8ed, #f5e9d9);
+    color: #79522c;
+    border: 1px solid #e8d7c1;
+    box-shadow: inset 0 1px 0 #ffffff;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
   }
   #app .roster-toolbar input,
   #app .roster-toolbar select {

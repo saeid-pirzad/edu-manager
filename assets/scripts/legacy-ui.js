@@ -3080,7 +3080,12 @@ function filterStudentRoster(control) {
     card.hidden = !norm(card.dataset.name + " " + card.dataset.code).includes(
       query,
     );
-    if (!card.hidden) count++;
+    if (!card.hidden) {
+      count++;
+      const avatar = card.querySelector(".student-avatar");
+      avatar.textContent = count.toLocaleString("fa-IR");
+      avatar.setAttribute("aria-label", "ردیف " + count.toLocaleString("fa-IR"));
+    }
     list.append(card);
   }
   root.querySelector(".roster-results").textContent =
@@ -3116,21 +3121,12 @@ function renderStudentsTab(c) {
     students.length.toLocaleString("fa-IR") +
     ' هنرجو</p><div class="student-roster">';
   for (const [i, st] of students.entries()) {
-    const id = esc(st.id),
-      initial = esc(
-        st.name
-          .trim()
-          .split(/\s+/)
-          .map((x) => [...x][0])
-          .filter(Boolean)
-          .slice(0, 2)
-          .join(" "),
-      );
-    h += `<article class="student-profile" data-name="${esc(st.name)}" data-code="${esc(st.code || "")}" data-order="${i}"><div class="student-profile-main"><span class="student-avatar" aria-hidden="true">${initial}</span><div class="student-profile-info"><h4>${esc(st.name)}</h4><p>${
+    const id = esc(st.id);
+    h += `<article class="student-profile" data-name="${esc(st.name)}" data-code="${esc(st.code || "")}" data-order="${i}"><div class="student-profile-main"><span class="student-avatar" aria-label="ردیف ${(i + 1).toLocaleString("fa-IR")}">${(i + 1).toLocaleString("fa-IR")}</span><div class="student-profile-info"><h4>${esc(st.name)}</h4><p>${
       st.code
         ? "کد دانش‌آموزی: <bdi>" + esc(st.code) + "</bdi>"
         : '<span class="student-code-missing">کد ثبت نشده</span>'
-    }</p></div><span class="student-row-number" aria-label="ردیف ${i + 1}">${(i + 1).toLocaleString("fa-IR")}</span></div><div class="student-profile-actions no-print"><button class="ghost" data-legacy-click="ui-school-class:21" data-legacy-click-arg8="${esc(id)}">ویرایش مشخصات</button><details class="student-more"><summary id="student-menu-${esc(c.id)}-${id}" aria-label="عملیات بیشتر برای ${esc(st.name)}">بیشتر</summary><div class="student-more-menu"><button class="ghost" data-legacy-click="ui-school-class:26" data-legacy-click-arg13="${esc(id)}">انتقال / کپی به کلاس دیگر</button><button class="danger" data-legacy-click="ui-school-class:28" data-legacy-click-arg14="${esc(id)}">بایگانی هنرجو</button></div></details></div></article>`;
+    }</p></div></div><div class="student-profile-actions no-print"><button class="ghost" data-legacy-click="ui-school-class:21" data-legacy-click-arg8="${esc(id)}">ویرایش مشخصات</button><details class="student-more"><summary id="student-menu-${esc(c.id)}-${id}" aria-label="عملیات بیشتر برای ${esc(st.name)}">بیشتر</summary><div class="student-more-menu"><button class="ghost" data-legacy-click="ui-school-class:26" data-legacy-click-arg13="${esc(id)}">انتقال / کپی به کلاس دیگر</button><button class="danger" data-legacy-click="ui-school-class:28" data-legacy-click-arg14="${esc(id)}">بایگانی هنرجو</button></div></details></div></article>`;
   }
   h +=
     '</div><div class="empty roster-no-results" hidden>هنرجویی پیدا نشد؛ نام یا کد دیگری جست‌وجو کنید.</div></section>';
