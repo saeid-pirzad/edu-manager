@@ -71,7 +71,7 @@ module.exports = async function scopedNavigation() {
   add(
     "SCOPE04",
     "lesson directory contains lesson CRUD rather than classroom score entry",
-    !!document.querySelector(".lesson-create-form") &&
+    !!document.querySelector(".lesson-create #courseEditor") &&
       !!document.querySelector(".lesson-enter") &&
       !!document.querySelector(".lesson-config") &&
       !document.querySelector(

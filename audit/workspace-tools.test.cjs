@@ -45,7 +45,10 @@ test("workspace tools preserve all six explicit commands and prioritize backup w
 });
 test("workspace tools and advanced draft actions start collapsed with native keyboard disclosures", () => {
   const html = context.workspaceToolsHtml();
-  assert.match(html, /^<details class="workspace-tools"><summary>/);
+  assert.match(
+    html,
+    /^<details class="workspace-tools"><summary id="workspaceToolsToggle">/,
+  );
   assert.match(html, /<details class="workspace-draft-tools"><summary>/);
   assert.match(html, /workspace-tool-caution/);
   assert.doesNotMatch(html, /role="menu"|<details[^>]*\sopen/);

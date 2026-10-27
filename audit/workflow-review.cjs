@@ -79,6 +79,11 @@ if (process.argv.includes("--help")) {
       });
       cases.push(...(await evaluate("(" + seniorUiReview.toString() + ")()")));
       cases.push(
+        ...(await evaluate(
+          "(" + require("./flows/businessConsistency.cjs").toString() + ")()",
+        )),
+      );
+      cases.push(
         ...(await require("./local-file.cjs")({ cdp, evaluate, root, delay })),
       );
       cases.push(

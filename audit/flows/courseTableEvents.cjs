@@ -31,43 +31,35 @@ module.exports = async function courseTableEvents() {
     "Gate event test",
     EduV24.course.table(classroom, lesson, null, true),
   );
-  const pod = lesson.poudmans[0],
-    student = classroom.students[0];
-  const selector =
-    'select[data-course-gate][data-pod-id="' +
-    pod.id +
-    '"][data-student-id="' +
-    student.id +
-    '"]';
-  const first = document.querySelector(selector);
   check(
     "CT01",
-    "gate table exposes escaped identifiers without inline onchange",
-    !!first &&
-      !first.hasAttribute("onchange") &&
-      first.dataset.lessonId === lesson.id,
+    "new modular lessons do not reintroduce removed mandatory-gate settings",
+    lesson.gradingPolicy.requireGate === false &&
+      !document.querySelector("[data-course-gate]"),
   );
-  for (const [index, value] of ["yes", "no", ""].entries()) {
-    const control = document.querySelector(selector);
-    control.value = value;
-    control.dispatchEvent(new Event("change", { bubbles: true }));
-    for (
-      let attempt = 0;
-      attempt < 200 && document.querySelector(selector) === control;
-      attempt++
-    )
-      await new Promise((resolve) => setTimeout(resolve, 10));
-    const stored = pod.podScores[student.id];
-    check(
-      "CT0" + (index + 2),
-      "gate listener persists and rerenders state: " + (value || "unreviewed"),
-      document.querySelector(selector) !== control &&
-        (value === ""
-          ? !Object.hasOwn(stored, "gate")
-          : stored.gate === (value === "yes")) &&
-        document.querySelector(selector)?.value === value,
-    );
-  }
+  const picker = document.querySelector("#modalBody [data-module-picker]");
+  const lastPod = lesson.poudmans.at(-1);
+  picker.value = lastPod.id;
+  picker.dispatchEvent(new Event("change", { bubbles: true }));
+  check(
+    "CT02",
+    "module picker selects only the requested module panel",
+    [...document.querySelectorAll("#modalBody [data-module-panel]")].every(
+      (panel) => panel.hidden === (panel.dataset.modulePanel !== lastPod.id),
+    ),
+  );
+  const controls = [...document.querySelectorAll("#modalBody [data-grade]")];
+  check(
+    "CT03",
+    "modular gradebook supplies grade identifiers without executable inline handlers",
+    controls.length ===
+      lesson.poudmans.length * classroom.students.length * 2 &&
+      controls.every(
+        (control) =>
+          control.dataset.lesson === lesson.id &&
+          !control.hasAttribute("oninput"),
+      ),
+  );
   closeModal();
   goSchools();
   return results;

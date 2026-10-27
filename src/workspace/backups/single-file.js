@@ -14,10 +14,10 @@ function singleFileStatus(message) {
   const badge = document.getElementById("singleFileBadge");
   if (badge) {
     badge.textContent = message;
-    const panel = badge.closest(".workspace-bar");
+    const panel = document.querySelector("#app .workspace-bar");
     const destination = singleFileFailure
       ? panel
-      : panel?.querySelector(".workspace-tool-actions");
+      : document.querySelector("#app .workspace-tool-actions");
     if (destination && badge.parentElement !== destination)
       destination.append(badge);
   }

@@ -62,15 +62,33 @@ async function refactorFlows() {
     );
     state.schoolId = "school_a";
     state.classId = "class_a";
+    state.lessonId = currentClass().lessons[0].id;
     showModal(
       "ثبت نمره آزمایشی",
       buildLessonGradesHtml(currentClass(), currentClass().lessons[0]),
     );
+    const finalStage = document.querySelector(
+      '#modalBody [data-workspace-action="assessment-stage"][data-stage="final"][data-term="' +
+        EduV24.getReportContext().term +
+        '"]',
+    );
+    finalStage.click();
+    for (
+      let attempt = 0;
+      attempt < 100 &&
+      !document.querySelector(
+        '#modalBody [data-grade][data-field="practical"]',
+      );
+      attempt++
+    )
+      await new Promise((resolve) => setTimeout(resolve, 10));
     for (const [field, value] of [
       ["practical", "18"],
       ["theory", "12"],
     ]) {
-      const input = [...document.querySelectorAll("[data-grade]")].find(
+      const input = [
+        ...document.querySelectorAll("#modalBody [data-grade]"),
+      ].find(
         (x) => x.dataset.student === "student_b" && x.dataset.field === field,
       );
       if (!input) throw Error("Grade input missing: " + field);

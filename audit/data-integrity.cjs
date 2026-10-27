@@ -166,6 +166,8 @@ async function main({
       "(" + malformedFrozenReport.toString() + ")()",
     );
     const flows = await evaluate("(" + refactorFlows.toString() + ")()");
+    for (const failure of flows.filter((row) => !row.pass))
+      console.error("Integration failure: " + JSON.stringify(failure));
     const cases = [
       ...data,
       ...grades,

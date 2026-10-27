@@ -156,7 +156,7 @@ function workspaceToolsHtml() {
     esc(title) +
     "</span></button>";
   return (
-    '<details class="workspace-tools"><summary><span class="workspace-tools-symbol" aria-hidden="true">' +
+    '<details class="workspace-tools"><summary id="workspaceToolsToggle"><span class="workspace-tools-symbol" aria-hidden="true">' +
     EduIcons.html("settings") +
     '</span><span>ابزارها و تنظیمات</span><span class="workspace-tools-chevron" aria-hidden="true"></span></summary><div class="workspace-tool-actions"><div class="workspace-tool-group">' +
     button("backups", "shield", "پشتیبان و بازیابی", "workspace-tool-primary") +

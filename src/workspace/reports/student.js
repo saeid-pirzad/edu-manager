@@ -4,6 +4,7 @@ function validateFrozenReport(report) {
     isDataObject,
     isSafeRecordId,
     weightedKardanesh,
+    gradePolicy: EduPolicy,
   });
 }
 
@@ -49,11 +50,13 @@ async function showFrozenReport(id) {
                         (l.mode === "kardanesh"
                           ? l.assessments
                             ? finalText(l.assessments.midterm) +
-                              (l.policy?.subjectType === "general" ? "" : "<small> عملی " +
-                              esc(l.assessments.midterm.practical) +
-                              " · تئوری " +
-                              esc(l.assessments.midterm.theory) +
-                              "</small>")
+                              (l.policy?.subjectType === "general"
+                                ? ""
+                                : "<small> عملی " +
+                                  esc(l.assessments.midterm.practical) +
+                                  " · تئوری " +
+                                  esc(l.assessments.midterm.theory) +
+                                  "</small>")
                             : "ثبت نشده در نسخه قدیمی"
                           : "—") +
                         "</td><td>" +
@@ -126,8 +129,15 @@ function overviewV24(c) {
   const lessons = c.lessons || [];
   const students = getSortedStudents(c);
   if (!lessons.length || !students.length)
-    return '<div class="card report-empty" role="status"><h3>کارنامه کلاس ' + esc(c.name) +
-      '</h3><p>' + (!students.length ? 'هنوز دانش‌آموزی در این کلاس ثبت نشده است.' : 'برای تهیه کارنامه، ابتدا دروس کلاس را اضافه کنید.') + '</p></div>';
+    return (
+      '<div class="card report-empty" role="status"><h3>کارنامه کلاس ' +
+      esc(c.name) +
+      "</h3><p>" +
+      (!students.length
+        ? "هنوز دانش‌آموزی در این کلاس ثبت نشده است."
+        : "برای تهیه کارنامه، ابتدا دروس کلاس را اضافه کنید.") +
+      "</p></div>"
+    );
   return (
     '<div class="card report-document grade-report"><h3>کارنامه کلاس ' +
     esc(c.name) +
@@ -172,23 +182,48 @@ function overviewV24(c) {
 
 function termAssessmentReport(c, lesson, sid = "") {
   const general = lesson.gradingPolicy?.subjectType === "general";
-  const students = getSortedStudents(sid ? { students: knownStudents(c) } : c)
-    .filter((st) => !sid || st.id === sid);
-  let html = '<section class="card grade-report-section"><h3>' + esc(lesson.name) +
-    '</h3><p class="report-term-label">نوبت ' + esc(workspace.term) +
-    ' · ' + (general ? 'عمومی · نمره از ۲۰' : 'کاردانش · عملی و نظری از ۲۰') + '</p>';
-  if (!students.length) return html + '<div class="empty">دانش‌آموزی برای نمایش نیست.</div></section>';
-  html += '<div class="table-scroll"><table><thead><tr><th scope="col">دانش‌آموز</th><th scope="col">مرحله</th>' +
-    (general ? '' : '<th scope="col">عملی</th><th scope="col">نظری</th>') +
+  const students = getSortedStudents(
+    sid ? { students: knownStudents(c) } : c,
+  ).filter((st) => !sid || st.id === sid);
+  let html =
+    '<section class="card grade-report-section"><h3>' +
+    esc(lesson.name) +
+    '</h3><p class="report-term-label">نوبت ' +
+    esc(workspace.term) +
+    " · " +
+    (general ? "عمومی · نمره از ۲۰" : "کاردانش · عملی و نظری از ۲۰") +
+    "</p>";
+  if (!students.length)
+    return (
+      html + '<div class="empty">دانش‌آموزی برای نمایش نیست.</div></section>'
+    );
+  html +=
+    '<div class="table-scroll"><table><thead><tr><th scope="col">دانش‌آموز</th><th scope="col">مرحله</th>' +
+    (general ? "" : '<th scope="col">عملی</th><th scope="col">نظری</th>') +
     '<th scope="col">نمره</th><th scope="col">وضعیت</th></tr></thead><tbody>';
-  for (const st of students) for (const stage of ["midterm", "final"]) {
-    const r = assessmentResult(lesson, st.id, stage);
-    html += '<tr><td>' + esc(st.name) + '</td><td>' +
-      (stage === 'midterm' ? 'میان‌ترم' : 'پایان‌ترم') + '</td>' +
-      (general ? '' : '<td>' + esc(r.practical ?? '—') + '</td><td>' + esc(r.theory ?? '—') + '</td>') +
-      '<td><strong>' + finalText(r) + '</strong></td><td>' + esc(gradeStatus(r)) + '</td></tr>';
-  }
-  return html + '</tbody></table></div></section>';
+  for (const st of students)
+    for (const stage of ["midterm", "final"]) {
+      const r = assessmentResult(lesson, st.id, stage);
+      html +=
+        "<tr><td>" +
+        esc(st.name) +
+        "</td><td>" +
+        (stage === "midterm" ? "میان‌ترم" : "پایان‌ترم") +
+        "</td>" +
+        (general
+          ? ""
+          : "<td>" +
+            esc(r.practical ?? "—") +
+            "</td><td>" +
+            esc(r.theory ?? "—") +
+            "</td>") +
+        "<td><strong>" +
+        finalText(r) +
+        "</strong></td><td>" +
+        esc(gradeStatus(r)) +
+        "</td></tr>";
+    }
+  return html + "</tbody></table></div></section>";
 }
 
 function detailedV24(c, sid) {
@@ -197,7 +232,12 @@ function detailedV24(c, sid) {
   const lessons = c.lessons || [],
     stats = lessons.map((l) => calcV24(c, l, sid)),
     mean = averageLabel(stats);
-  if (!lessons.length) return '<div class="card report-empty" role="status"><h3>کارنامه ' + esc(st.name) + '</h3><p>هنوز درسی برای این کلاس ثبت نشده است.</p></div>';
+  if (!lessons.length)
+    return (
+      '<div class="card report-empty" role="status"><h3>کارنامه ' +
+      esc(st.name) +
+      "</h3><p>هنوز درسی برای این کلاس ثبت نشده است.</p></div>"
+    );
   let html =
     '<div class="card report-document grade-report"><h2>کارنامه ' +
     esc(st.name) +
@@ -307,12 +347,27 @@ function parentReportV24(st, c) {
       l.name +
       "\n" +
       (l.gradeMode === "kardanesh"
-        ? ["midterm", "final"].map((stage) => {
-            const result = assessmentResult(l, st.id, stage);
-            return (stage === "midterm" ? "میان‌ترم" : "پایان‌ترم") + " نوبت " + workspace.term + ": " +
-              (l.gradingPolicy?.subjectType === "general" ? "" : "عملی " + (result.practical ?? "—") + " | نظری " + (result.theory ?? "—") + " | ") +
-              finalText(result) + " — " + gradeStatus(result);
-          }).join("\n")
+        ? ["midterm", "final"]
+            .map((stage) => {
+              const result = assessmentResult(l, st.id, stage);
+              return (
+                (stage === "midterm" ? "میان‌ترم" : "پایان‌ترم") +
+                " نوبت " +
+                workspace.term +
+                ": " +
+                (l.gradingPolicy?.subjectType === "general"
+                  ? ""
+                  : "عملی " +
+                    (result.practical ?? "—") +
+                    " | نظری " +
+                    (result.theory ?? "—") +
+                    " | ") +
+                finalText(result) +
+                " — " +
+                gradeStatus(result)
+              );
+            })
+            .join("\n")
         : l.gradingPolicy?.method === "modular"
           ? r.modules
               .map(

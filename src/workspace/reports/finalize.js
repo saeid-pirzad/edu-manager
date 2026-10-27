@@ -19,7 +19,10 @@ function finalReportData() {
               ["میان‌ترم", assessments.midterm],
               ["پایان‌ترم", assessments.final],
             ]) {
-              if (l.gradingPolicy?.subjectType !== "general" && r.practical === null)
+              if (
+                l.gradingPolicy?.subjectType !== "general" &&
+                r.practical === null
+              )
                 missing.push(
                   c.name +
                     " / " +
@@ -42,10 +45,6 @@ function finalReportData() {
                     " / تئوری",
                 );
             }
-          if (l.gradingPolicy && !l.gradingPolicy.confirmed)
-            missing.push(
-              c.name + " / " + l.name + " / قواعد ابلاغیه تأیید نشده",
-            );
           if (result.final === null && result.passed !== false)
             missing.push(c.name + " / " + st.name + " / " + l.name);
           return {

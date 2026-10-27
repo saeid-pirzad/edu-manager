@@ -38,6 +38,7 @@ module.exports = async function headerEvents() {
   const settings = button("settings");
   const navigation = settings.closest(".navigation-menu");
   if (navigation) navigation.open = true;
+  settings.closest(".workspace-tools").open = true;
   settings.focus();
   settings.click();
   for (
@@ -59,6 +60,8 @@ module.exports = async function headerEvents() {
     "H06",
     "closing settings restores focus to a visible header action or mobile menu toggle",
     document.activeElement === button("settings") ||
+      document.activeElement ===
+        document.getElementById("workspaceToolsToggle") ||
       document.activeElement ===
         document.getElementById("headerNavigationToggle"),
   );

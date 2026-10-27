@@ -6,7 +6,13 @@
 globalThis.EduFrozenReportValidator = Object.freeze({
   validate(
     report,
-    { assertSafeDataTree, isDataObject, isSafeRecordId, weightedKardanesh },
+    {
+      assertSafeDataTree,
+      isDataObject,
+      isSafeRecordId,
+      weightedKardanesh,
+      gradePolicy,
+    },
   ) {
     const fail = () => {
       throw Error(
@@ -99,9 +105,16 @@ globalThis.EduFrozenReportValidator = Object.freeze({
                 r.complete !== true
               )
                 fail();
-              const expected = l.policy?.subjectType === "general"
-                ? { final: r.theory, passed: null }
-                : weightedKardanesh(r.practical, r.theory);
+              if (l.policy?.dualConfigurable === true) {
+                if (!gradePolicy || l.policy.method !== "dual") fail();
+                gradePolicy.validate(l.policy);
+              }
+              const expected =
+                l.policy?.dualConfigurable === true
+                  ? gradePolicy.dual(l.policy, r.practical, r.theory)
+                  : l.policy?.subjectType === "general"
+                    ? { final: r.theory, passed: null }
+                    : weightedKardanesh(r.practical, r.theory);
               if (r.final !== expected.final || r.passed !== expected.passed)
                 fail();
             }

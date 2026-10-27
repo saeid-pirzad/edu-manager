@@ -119,6 +119,32 @@ function fixture() {
     },
   };
 }
+test("file status moves between navigation and the persistent warning area on failure and recovery", () => {
+  const f = fixture();
+  const panel = {
+      append(el) {
+        el.parentElement = this;
+      },
+    },
+    tools = {
+      append(el) {
+        el.parentElement = this;
+      },
+    };
+  const badge = { parentElement: tools };
+  f.context.document = {
+    getElementById: (id) => (id === "singleFileBadge" ? badge : null),
+    querySelector: (selector) =>
+      selector === "#app .workspace-bar" ? panel : tools,
+  };
+  f.context.showSingleFileFallback(true);
+  f.context.singleFileStatus("write failed");
+  assert.equal(badge.parentElement, panel);
+  assert.equal(badge.textContent, "write failed");
+  f.context.showSingleFileFallback(false);
+  f.context.singleFileStatus("saved");
+  assert.equal(badge.parentElement, tools);
+});
 test("single-file backup replaces the same JSON with additions, edits and deletions", async () => {
   const f = fixture();
   await f.context.chooseSingleFile();

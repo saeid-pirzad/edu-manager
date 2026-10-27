@@ -24,7 +24,17 @@ function assessmentResult(lesson, sid, stage = "final") {
   const theory =
     grade[stage === "midterm" ? "midtermTheory" : "theory"] ?? null;
   if (lesson.gradingPolicy?.subjectType === "general")
-    return { practical: null, theory, ...EduPolicy.dual(lesson.gradingPolicy, null, theory) };
+    return {
+      practical: null,
+      theory,
+      ...EduPolicy.dual(lesson.gradingPolicy, null, theory),
+    };
+  if (lesson.gradingPolicy?.method === "dual")
+    return {
+      practical,
+      theory,
+      ...EduPolicy.dual(lesson.gradingPolicy, practical, theory),
+    };
   return {
     practical,
     theory,
@@ -58,6 +68,7 @@ function annualGradeRows(parts, schoolId, classId, studentId = "") {
     }
   for (const identity of identities.values()) {
     const components = [];
+    let annualThreshold = 14;
     for (const term of ["اول", "دوم"]) {
       const part = parts.find((item) => item.period.term === term);
       const lesson = part?.data.schools
@@ -66,6 +77,18 @@ function annualGradeRows(parts, schoolId, classId, studentId = "") {
         ?.lessons.find(
           (l) => l.id === identity.lessonId && l.gradeMode === "kardanesh",
         );
+      if (
+        lesson &&
+        (lesson.gradingPolicy?.subjectType === "general") !== identity.general
+      )
+        throw Error(
+          "نوع درس در دو نوبت یکسان نیست؛ گزارش سالانه این درس قابل محاسبه نیست.",
+        );
+      const settings =
+        lesson?.gradingPolicy?.method === "dual"
+          ? EduPolicy.dualSettings(lesson.gradingPolicy)
+          : { practicalWeight: 70, passMin: 14 };
+      if (lesson) annualThreshold = settings.passMin;
       for (const stage of ["midterm", "final"]) {
         const r = lesson
           ? assessmentResult(lesson, identity.studentId, stage)
@@ -75,7 +98,12 @@ function annualGradeRows(parts, schoolId, classId, studentId = "") {
               final: null,
               complete: false,
             };
-        components.push({ term, stage, ...r });
+        components.push({
+          term,
+          stage,
+          ...r,
+          practicalWeight: settings.practicalWeight,
+        });
       }
     }
     const complete = components.every((item) => item.complete);
@@ -86,12 +114,18 @@ function annualGradeRows(parts, schoolId, classId, studentId = "") {
       for (const item of components) {
         const p = fraction(identity.general ? 0 : item.practical),
           t = fraction(item.theory);
-        const n = identity.general ? t.n : 7n * p.n * t.d + 3n * t.n * p.d,
-          d = identity.general ? t.d : 10n * p.d * t.d;
+        const weight = fraction(item.practicalWeight);
+        const n = identity.general
+            ? t.n
+            : weight.n * p.n * t.d + (100n * weight.d - weight.n) * t.n * p.d,
+          d = identity.general ? t.d : 100n * weight.d * p.d * t.d;
         total = reduceGradeFraction(total.n * d + n * total.d, total.d * d);
       }
       final = finiteRatio(total.n, total.d * 4n);
-      passed = identity.general ? null : total.n >= 14n * total.d * 4n;
+      const minimum = fraction(annualThreshold);
+      passed = identity.general
+        ? null
+        : total.n * minimum.d >= minimum.n * total.d * 4n;
     }
     rows.push({
       ...identity,
@@ -99,7 +133,7 @@ function annualGradeRows(parts, schoolId, classId, studentId = "") {
       complete,
       final,
       passed,
-      threshold: identity.general ? null : 14,
+      threshold: identity.general ? null : annualThreshold,
     });
   }
   return rows;

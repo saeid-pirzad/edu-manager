@@ -385,8 +385,11 @@ function closeModal() {
               (element) => element.getAttribute("onclick") === previous.action,
             )) ||
           document.getElementById("app");
-      const closedMenu = target?.closest("details:not([open])");
-      if (closedMenu) target = closedMenu.querySelector("summary");
+      let closedMenu = target?.closest("details:not([open])");
+      while (closedMenu) {
+        target = closedMenu.querySelector(":scope > summary");
+        closedMenu = closedMenu.parentElement?.closest("details:not([open])");
+      }
       if (target && !target.matches(":disabled") && !target.closest("[inert]"))
         target.focus({ preventScroll: true });
     }),

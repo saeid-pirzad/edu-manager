@@ -14,8 +14,7 @@ let pendingFullBackup = null,
   fullRestoreBusy = false;
 function previewFullBackup(value) {
   const periods = validateFullBackup(value);
-  pendingFullBackup = value;
-  showModal(
+  const opened = showModal(
     "بازیابی پشتیبان کامل",
     "<p>" +
       periods.length +
@@ -28,6 +27,7 @@ function previewFullBackup(value) {
       "<p>دوره‌های فعلی حفظ می‌شوند؛ نسخه‌های بازیابی‌شده با شناسه مستقل اضافه می‌شوند.</p>" +
       '<button data-full-restore data-workspace-action="restore-full">افزودن همه دوره‌های بازیابی‌شده</button><p id="courseError" role="alert"></p>',
   );
+  if (opened !== false) pendingFullBackup = value;
 }
 async function restoreFullBackup() {
   if (fullRestoreBusy)

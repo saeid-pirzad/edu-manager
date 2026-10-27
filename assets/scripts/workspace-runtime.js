@@ -1393,7 +1393,17 @@ function assessmentResult(lesson, sid, stage = "final") {
   const theory =
     grade[stage === "midterm" ? "midtermTheory" : "theory"] ?? null;
   if (lesson.gradingPolicy?.subjectType === "general")
-    return { practical: null, theory, ...EduPolicy.dual(lesson.gradingPolicy, null, theory) };
+    return {
+      practical: null,
+      theory,
+      ...EduPolicy.dual(lesson.gradingPolicy, null, theory),
+    };
+  if (lesson.gradingPolicy?.method === "dual")
+    return {
+      practical,
+      theory,
+      ...EduPolicy.dual(lesson.gradingPolicy, practical, theory),
+    };
   return {
     practical,
     theory,
@@ -1427,6 +1437,7 @@ function annualGradeRows(parts, schoolId, classId, studentId = "") {
     }
   for (const identity of identities.values()) {
     const components = [];
+    let annualThreshold = 14;
     for (const term of ["اول", "دوم"]) {
       const part = parts.find((item) => item.period.term === term);
       const lesson = part?.data.schools
@@ -1435,6 +1446,18 @@ function annualGradeRows(parts, schoolId, classId, studentId = "") {
         ?.lessons.find(
           (l) => l.id === identity.lessonId && l.gradeMode === "kardanesh",
         );
+      if (
+        lesson &&
+        (lesson.gradingPolicy?.subjectType === "general") !== identity.general
+      )
+        throw Error(
+          "نوع درس در دو نوبت یکسان نیست؛ گزارش سالانه این درس قابل محاسبه نیست.",
+        );
+      const settings =
+        lesson?.gradingPolicy?.method === "dual"
+          ? EduPolicy.dualSettings(lesson.gradingPolicy)
+          : { practicalWeight: 70, passMin: 14 };
+      if (lesson) annualThreshold = settings.passMin;
       for (const stage of ["midterm", "final"]) {
         const r = lesson
           ? assessmentResult(lesson, identity.studentId, stage)
@@ -1444,7 +1467,12 @@ function annualGradeRows(parts, schoolId, classId, studentId = "") {
               final: null,
               complete: false,
             };
-        components.push({ term, stage, ...r });
+        components.push({
+          term,
+          stage,
+          ...r,
+          practicalWeight: settings.practicalWeight,
+        });
       }
     }
     const complete = components.every((item) => item.complete);
@@ -1455,12 +1483,18 @@ function annualGradeRows(parts, schoolId, classId, studentId = "") {
       for (const item of components) {
         const p = fraction(identity.general ? 0 : item.practical),
           t = fraction(item.theory);
-        const n = identity.general ? t.n : 7n * p.n * t.d + 3n * t.n * p.d,
-          d = identity.general ? t.d : 10n * p.d * t.d;
+        const weight = fraction(item.practicalWeight);
+        const n = identity.general
+            ? t.n
+            : weight.n * p.n * t.d + (100n * weight.d - weight.n) * t.n * p.d,
+          d = identity.general ? t.d : 100n * weight.d * p.d * t.d;
         total = reduceGradeFraction(total.n * d + n * total.d, total.d * d);
       }
       final = finiteRatio(total.n, total.d * 4n);
-      passed = identity.general ? null : total.n >= 14n * total.d * 4n;
+      const minimum = fraction(annualThreshold);
+      passed = identity.general
+        ? null
+        : total.n * minimum.d >= minimum.n * total.d * 4n;
     }
     rows.push({
       ...identity,
@@ -1468,7 +1502,7 @@ function annualGradeRows(parts, schoolId, classId, studentId = "") {
       complete,
       final,
       passed,
-      threshold: identity.general ? null : 14,
+      threshold: identity.general ? null : annualThreshold,
     });
   }
   return rows;
@@ -1907,7 +1941,7 @@ function workspaceToolsHtml() {
     esc(title) +
     "</span></button>";
   return (
-    '<details class="workspace-tools"><summary><span class="workspace-tools-symbol" aria-hidden="true">' +
+    '<details class="workspace-tools"><summary id="workspaceToolsToggle"><span class="workspace-tools-symbol" aria-hidden="true">' +
     EduIcons.html("settings") +
     '</span><span>ابزارها و تنظیمات</span><span class="workspace-tools-chevron" aria-hidden="true"></span></summary><div class="workspace-tool-actions"><div class="workspace-tool-group">' +
     button("backups", "shield", "پشتیبان و بازیابی", "workspace-tool-primary") +
@@ -2356,10 +2390,10 @@ function singleFileStatus(message) {
   const badge = document.getElementById("singleFileBadge");
   if (badge) {
     badge.textContent = message;
-    const panel = badge.closest(".workspace-bar");
+    const panel = document.querySelector("#app .workspace-bar");
     const destination = singleFileFailure
       ? panel
-      : panel?.querySelector(".workspace-tool-actions");
+      : document.querySelector("#app .workspace-tool-actions");
     if (destination && badge.parentElement !== destination)
       destination.append(badge);
   }
@@ -2687,8 +2721,7 @@ let pendingFullBackup = null,
   fullRestoreBusy = false;
 function previewFullBackup(value) {
   const periods = validateFullBackup(value);
-  pendingFullBackup = value;
-  showModal(
+  const opened = showModal(
     "بازیابی پشتیبان کامل",
     "<p>" +
       periods.length +
@@ -2701,6 +2734,7 @@ function previewFullBackup(value) {
       "<p>دوره‌های فعلی حفظ می‌شوند؛ نسخه‌های بازیابی‌شده با شناسه مستقل اضافه می‌شوند.</p>" +
       '<button data-full-restore data-workspace-action="restore-full">افزودن همه دوره‌های بازیابی‌شده</button><p id="courseError" role="alert"></p>',
   );
+  if (opened !== false) pendingFullBackup = value;
 }
 async function restoreFullBackup() {
   if (fullRestoreBusy)
@@ -2987,10 +3021,15 @@ async function previewInternalBackup(id) {
 }
 
 function previewImport(candidate, label) {
-  pendingImport = { candidate, label, workspace: workspace?.id };
+  const preview = {
+    candidate,
+    label,
+    workspace: workspace?.id,
+    revision: workspace?.revision,
+  };
   const classes = candidate.schools.flatMap((s) => s.classes),
     students = classes.reduce((n, c) => n + c.students.length, 0);
-  showModal(
+  const opened = showModal(
     "پیش‌نمایش بازیابی",
     "<p>منبع: " +
       esc(label) +
@@ -3020,6 +3059,7 @@ function previewImport(candidate, label) {
       (candidate.settings.academicYear === workspace.year ? "selected" : "") +
       '>جایگزینی دوره فعلی</option></select></label><p>در حالت جایگزینی، این کار اطلاعات دوره فعلی را جایگزین می‌کند. دوره‌های دیگر حفظ می‌شوند. پیش از جایگزینی فایل مستقل تهیه کنید.</p><button data-workspace-action="export-period">۱. ذخیره پشتیبان مستقلِ اطلاعات فعلی</button><p><label><input id="restoreExternalConfirmed" type="checkbox"> فایل پشتیبان فعلی را بیرون از برنامه ذخیره و بررسی کرده‌ام.</label></p><button data-mutating="1" data-workspace-action="confirm-import" data-mutating="1">۲. جایگزینی اطلاعات این دوره</button><p id="operationError" role="alert"></p>',
   );
+  if (opened !== false) pendingImport = preview;
 }
 
 async function handleImportV24(e) {
@@ -3073,76 +3113,98 @@ async function handleImportV24(e) {
   }
 }
 
+let periodImportBusy = false;
 async function confirmImport() {
-  if (fileMode)
-    throw Error(
-      "این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.",
-    );
-  if (!pendingImport || pendingImport.workspace !== workspace.id)
-    throw Error("پیش‌نمایش بازیابی منقضی شده است.");
-  if (document.getElementById("restoreMode").value === "new") {
-    const candidate = normalizeDB(pendingImport.candidate);
-    const created = await installWorkspace(candidate, {
-      year: candidate.settings.academicYear,
-      term: recoveryPeriodTerm(
-        candidate.settings.academicTerm || "بازیابی",
-        uid(),
-      ),
-    });
-    pendingImport = null;
-    await switchPeriod(created.id);
-    return;
-  }
-  if (!document.getElementById("restoreExternalConfirmed").checked) {
-    handleError(Error("ابتدا نسخه مستقل را ذخیره و وجود فایل را تأیید کنید."));
-    return;
-  }
-  if (workspace.closed)
-    throw Error(
-      "دوره بسته است؛ برای بازیابی در آن ابتدا دوره را بازگشایی کنید.",
-    );
-  if (!confirm("اطلاعات این دوره با نسخه پیش‌نمایش جایگزین شود؟")) return;
-  await flushDrafts({ strict: true });
-  await writer.catch(() => {});
-  const candidate = normalizeDB(pendingImport.candidate);
-  candidate.settings.academicYear = workspace.year;
-  candidate.settings.academicTerm = workspace.term;
+  if (periodImportBusy)
+    throw Error("بازیابی در حال انجام است؛ تا پایان آن صبر کنید.");
+  periodImportBusy = true;
   try {
-    await putBackup(db, "پیش از بازیابی");
-  } catch (error) {
-    setStatus(
-      "پشتیبان داخلی جا نشد؛ نسخه مستقلِ تأییدشده مسیر بازیابی است.",
-      "pending",
-    );
-  }
-  busy++;
-  paintStatus();
-  try {
-    await commitRecords(collectRecords(candidate), {
-      action: "بازیابی پشتیبان: " + pendingImport.label,
-      replace: true,
-      keepUndo: false,
-    });
-    db = candidate;
-    drafts.clear();
-    storeDrafts();
-    pendingImport = null;
-    isAuthenticated = false;
-    state = {
-      view: "schools",
-      schoolId: null,
-      classId: null,
-      lessonId: null,
-      tab: "students",
-      reportTab: "comprehensive",
+    if (fileMode)
+      throw Error(
+        "این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.",
+      );
+    if (!pendingImport || pendingImport.workspace !== workspace.id)
+      throw Error("پیش‌نمایش بازیابی منقضی شده است.");
+    const preview = pendingImport;
+    const context = { id: preview.workspace, revision: preview.revision };
+    const check = (write = false) => {
+      assertWorkspaceContext(context, { write });
+      if (pendingImport !== preview)
+        throw Error("پیش‌نمایش بازیابی تغییر کرده است؛ دوباره بررسی کنید.");
     };
-    closeModal();
-    setStatus("بازیابی تراکنشی انجام شد.", "saved");
-  } catch (error) {
-    handleError(error);
+    check();
+    if (document.getElementById("restoreMode").value === "new") {
+      const candidate = normalizeDB(preview.candidate);
+      const created = await installWorkspace(candidate, {
+        year: candidate.settings.academicYear,
+        term: recoveryPeriodTerm(
+          candidate.settings.academicTerm || "بازیابی",
+          uid(),
+        ),
+      });
+      check();
+      pendingImport = null;
+      await switchPeriod(created.id);
+      return;
+    }
+    if (!document.getElementById("restoreExternalConfirmed").checked) {
+      handleError(
+        Error("ابتدا نسخه مستقل را ذخیره و وجود فایل را تأیید کنید."),
+      );
+      return;
+    }
+    if (workspace.closed)
+      throw Error(
+        "دوره بسته است؛ برای بازیابی در آن ابتدا دوره را بازگشایی کنید.",
+      );
+    if (!confirm("اطلاعات این دوره با نسخه پیش‌نمایش جایگزین شود؟")) return;
+    await flushDrafts({ strict: true });
+    await writer.catch(() => {});
+    check(true);
+    const candidate = normalizeDB(preview.candidate);
+    candidate.settings.academicYear = workspace.year;
+    candidate.settings.academicTerm = workspace.term;
+    validateV24(candidate);
+    try {
+      await putBackup(db, "پیش از بازیابی");
+    } catch (error) {
+      setStatus(
+        "پشتیبان داخلی جا نشد؛ نسخه مستقلِ تأییدشده مسیر بازیابی است.",
+        "pending",
+      );
+    }
+    check(true);
+    busy++;
+    paintStatus();
+    try {
+      await commitRecords(collectRecords(candidate), {
+        action: "بازیابی پشتیبان: " + preview.label,
+        replace: true,
+        keepUndo: false,
+      });
+      db = candidate;
+      drafts.clear();
+      storeDrafts();
+      pendingImport = null;
+      isAuthenticated = false;
+      state = {
+        view: "schools",
+        schoolId: null,
+        classId: null,
+        lessonId: null,
+        tab: "students",
+        reportTab: "comprehensive",
+      };
+      closeModal();
+      setStatus("بازیابی تراکنشی انجام شد.", "saved");
+    } catch (error) {
+      handleError(error);
+    } finally {
+      busy--;
+      render();
+    }
   } finally {
-    busy--;
-    render();
+    periodImportBusy = false;
   }
 }
 // Source: src/workspace/history/undo.js
@@ -3529,7 +3591,10 @@ function finalReportData() {
               ["میان‌ترم", assessments.midterm],
               ["پایان‌ترم", assessments.final],
             ]) {
-              if (l.gradingPolicy?.subjectType !== "general" && r.practical === null)
+              if (
+                l.gradingPolicy?.subjectType !== "general" &&
+                r.practical === null
+              )
                 missing.push(
                   c.name +
                     " / " +
@@ -3552,10 +3617,6 @@ function finalReportData() {
                     " / تئوری",
                 );
             }
-          if (l.gradingPolicy && !l.gradingPolicy.confirmed)
-            missing.push(
-              c.name + " / " + l.name + " / قواعد ابلاغیه تأیید نشده",
-            );
           if (result.final === null && result.passed !== false)
             missing.push(c.name + " / " + st.name + " / " + l.name);
           return {
@@ -3741,6 +3802,7 @@ function validateFrozenReport(report) {
     isDataObject,
     isSafeRecordId,
     weightedKardanesh,
+    gradePolicy: EduPolicy,
   });
 }
 
@@ -3786,11 +3848,13 @@ async function showFrozenReport(id) {
                         (l.mode === "kardanesh"
                           ? l.assessments
                             ? finalText(l.assessments.midterm) +
-                              (l.policy?.subjectType === "general" ? "" : "<small> عملی " +
-                              esc(l.assessments.midterm.practical) +
-                              " · تئوری " +
-                              esc(l.assessments.midterm.theory) +
-                              "</small>")
+                              (l.policy?.subjectType === "general"
+                                ? ""
+                                : "<small> عملی " +
+                                  esc(l.assessments.midterm.practical) +
+                                  " · تئوری " +
+                                  esc(l.assessments.midterm.theory) +
+                                  "</small>")
                             : "ثبت نشده در نسخه قدیمی"
                           : "—") +
                         "</td><td>" +
@@ -3863,8 +3927,15 @@ function overviewV24(c) {
   const lessons = c.lessons || [];
   const students = getSortedStudents(c);
   if (!lessons.length || !students.length)
-    return '<div class="card report-empty" role="status"><h3>کارنامه کلاس ' + esc(c.name) +
-      '</h3><p>' + (!students.length ? 'هنوز دانش‌آموزی در این کلاس ثبت نشده است.' : 'برای تهیه کارنامه، ابتدا دروس کلاس را اضافه کنید.') + '</p></div>';
+    return (
+      '<div class="card report-empty" role="status"><h3>کارنامه کلاس ' +
+      esc(c.name) +
+      "</h3><p>" +
+      (!students.length
+        ? "هنوز دانش‌آموزی در این کلاس ثبت نشده است."
+        : "برای تهیه کارنامه، ابتدا دروس کلاس را اضافه کنید.") +
+      "</p></div>"
+    );
   return (
     '<div class="card report-document grade-report"><h3>کارنامه کلاس ' +
     esc(c.name) +
@@ -3909,23 +3980,48 @@ function overviewV24(c) {
 
 function termAssessmentReport(c, lesson, sid = "") {
   const general = lesson.gradingPolicy?.subjectType === "general";
-  const students = getSortedStudents(sid ? { students: knownStudents(c) } : c)
-    .filter((st) => !sid || st.id === sid);
-  let html = '<section class="card grade-report-section"><h3>' + esc(lesson.name) +
-    '</h3><p class="report-term-label">نوبت ' + esc(workspace.term) +
-    ' · ' + (general ? 'عمومی · نمره از ۲۰' : 'کاردانش · عملی و نظری از ۲۰') + '</p>';
-  if (!students.length) return html + '<div class="empty">دانش‌آموزی برای نمایش نیست.</div></section>';
-  html += '<div class="table-scroll"><table><thead><tr><th scope="col">دانش‌آموز</th><th scope="col">مرحله</th>' +
-    (general ? '' : '<th scope="col">عملی</th><th scope="col">نظری</th>') +
+  const students = getSortedStudents(
+    sid ? { students: knownStudents(c) } : c,
+  ).filter((st) => !sid || st.id === sid);
+  let html =
+    '<section class="card grade-report-section"><h3>' +
+    esc(lesson.name) +
+    '</h3><p class="report-term-label">نوبت ' +
+    esc(workspace.term) +
+    " · " +
+    (general ? "عمومی · نمره از ۲۰" : "کاردانش · عملی و نظری از ۲۰") +
+    "</p>";
+  if (!students.length)
+    return (
+      html + '<div class="empty">دانش‌آموزی برای نمایش نیست.</div></section>'
+    );
+  html +=
+    '<div class="table-scroll"><table><thead><tr><th scope="col">دانش‌آموز</th><th scope="col">مرحله</th>' +
+    (general ? "" : '<th scope="col">عملی</th><th scope="col">نظری</th>') +
     '<th scope="col">نمره</th><th scope="col">وضعیت</th></tr></thead><tbody>';
-  for (const st of students) for (const stage of ["midterm", "final"]) {
-    const r = assessmentResult(lesson, st.id, stage);
-    html += '<tr><td>' + esc(st.name) + '</td><td>' +
-      (stage === 'midterm' ? 'میان‌ترم' : 'پایان‌ترم') + '</td>' +
-      (general ? '' : '<td>' + esc(r.practical ?? '—') + '</td><td>' + esc(r.theory ?? '—') + '</td>') +
-      '<td><strong>' + finalText(r) + '</strong></td><td>' + esc(gradeStatus(r)) + '</td></tr>';
-  }
-  return html + '</tbody></table></div></section>';
+  for (const st of students)
+    for (const stage of ["midterm", "final"]) {
+      const r = assessmentResult(lesson, st.id, stage);
+      html +=
+        "<tr><td>" +
+        esc(st.name) +
+        "</td><td>" +
+        (stage === "midterm" ? "میان‌ترم" : "پایان‌ترم") +
+        "</td>" +
+        (general
+          ? ""
+          : "<td>" +
+            esc(r.practical ?? "—") +
+            "</td><td>" +
+            esc(r.theory ?? "—") +
+            "</td>") +
+        "<td><strong>" +
+        finalText(r) +
+        "</strong></td><td>" +
+        esc(gradeStatus(r)) +
+        "</td></tr>";
+    }
+  return html + "</tbody></table></div></section>";
 }
 
 function detailedV24(c, sid) {
@@ -3934,7 +4030,12 @@ function detailedV24(c, sid) {
   const lessons = c.lessons || [],
     stats = lessons.map((l) => calcV24(c, l, sid)),
     mean = averageLabel(stats);
-  if (!lessons.length) return '<div class="card report-empty" role="status"><h3>کارنامه ' + esc(st.name) + '</h3><p>هنوز درسی برای این کلاس ثبت نشده است.</p></div>';
+  if (!lessons.length)
+    return (
+      '<div class="card report-empty" role="status"><h3>کارنامه ' +
+      esc(st.name) +
+      "</h3><p>هنوز درسی برای این کلاس ثبت نشده است.</p></div>"
+    );
   let html =
     '<div class="card report-document grade-report"><h2>کارنامه ' +
     esc(st.name) +
@@ -4044,12 +4145,27 @@ function parentReportV24(st, c) {
       l.name +
       "\n" +
       (l.gradeMode === "kardanesh"
-        ? ["midterm", "final"].map((stage) => {
-            const result = assessmentResult(l, st.id, stage);
-            return (stage === "midterm" ? "میان‌ترم" : "پایان‌ترم") + " نوبت " + workspace.term + ": " +
-              (l.gradingPolicy?.subjectType === "general" ? "" : "عملی " + (result.practical ?? "—") + " | نظری " + (result.theory ?? "—") + " | ") +
-              finalText(result) + " — " + gradeStatus(result);
-          }).join("\n")
+        ? ["midterm", "final"]
+            .map((stage) => {
+              const result = assessmentResult(l, st.id, stage);
+              return (
+                (stage === "midterm" ? "میان‌ترم" : "پایان‌ترم") +
+                " نوبت " +
+                workspace.term +
+                ": " +
+                (l.gradingPolicy?.subjectType === "general"
+                  ? ""
+                  : "عملی " +
+                    (result.practical ?? "—") +
+                    " | نظری " +
+                    (result.theory ?? "—") +
+                    " | ") +
+                finalText(result) +
+                " — " +
+                gradeStatus(result)
+              );
+            })
+            .join("\n")
         : l.gradingPolicy?.method === "modular"
           ? r.modules
               .map(

@@ -142,10 +142,15 @@ async function previewInternalBackup(id) {
 }
 
 function previewImport(candidate, label) {
-  pendingImport = { candidate, label, workspace: workspace?.id };
+  const preview = {
+    candidate,
+    label,
+    workspace: workspace?.id,
+    revision: workspace?.revision,
+  };
   const classes = candidate.schools.flatMap((s) => s.classes),
     students = classes.reduce((n, c) => n + c.students.length, 0);
-  showModal(
+  const opened = showModal(
     "پیش‌نمایش بازیابی",
     "<p>منبع: " +
       esc(label) +
@@ -175,6 +180,7 @@ function previewImport(candidate, label) {
       (candidate.settings.academicYear === workspace.year ? "selected" : "") +
       '>جایگزینی دوره فعلی</option></select></label><p>در حالت جایگزینی، این کار اطلاعات دوره فعلی را جایگزین می‌کند. دوره‌های دیگر حفظ می‌شوند. پیش از جایگزینی فایل مستقل تهیه کنید.</p><button data-workspace-action="export-period">۱. ذخیره پشتیبان مستقلِ اطلاعات فعلی</button><p><label><input id="restoreExternalConfirmed" type="checkbox"> فایل پشتیبان فعلی را بیرون از برنامه ذخیره و بررسی کرده‌ام.</label></p><button data-mutating="1" data-workspace-action="confirm-import" data-mutating="1">۲. جایگزینی اطلاعات این دوره</button><p id="operationError" role="alert"></p>',
   );
+  if (opened !== false) pendingImport = preview;
 }
 
 async function handleImportV24(e) {
@@ -228,75 +234,97 @@ async function handleImportV24(e) {
   }
 }
 
+let periodImportBusy = false;
 async function confirmImport() {
-  if (fileMode)
-    throw Error(
-      "این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.",
-    );
-  if (!pendingImport || pendingImport.workspace !== workspace.id)
-    throw Error("پیش‌نمایش بازیابی منقضی شده است.");
-  if (document.getElementById("restoreMode").value === "new") {
-    const candidate = normalizeDB(pendingImport.candidate);
-    const created = await installWorkspace(candidate, {
-      year: candidate.settings.academicYear,
-      term: recoveryPeriodTerm(
-        candidate.settings.academicTerm || "بازیابی",
-        uid(),
-      ),
-    });
-    pendingImport = null;
-    await switchPeriod(created.id);
-    return;
-  }
-  if (!document.getElementById("restoreExternalConfirmed").checked) {
-    handleError(Error("ابتدا نسخه مستقل را ذخیره و وجود فایل را تأیید کنید."));
-    return;
-  }
-  if (workspace.closed)
-    throw Error(
-      "دوره بسته است؛ برای بازیابی در آن ابتدا دوره را بازگشایی کنید.",
-    );
-  if (!confirm("اطلاعات این دوره با نسخه پیش‌نمایش جایگزین شود؟")) return;
-  await flushDrafts({ strict: true });
-  await writer.catch(() => {});
-  const candidate = normalizeDB(pendingImport.candidate);
-  candidate.settings.academicYear = workspace.year;
-  candidate.settings.academicTerm = workspace.term;
+  if (periodImportBusy)
+    throw Error("بازیابی در حال انجام است؛ تا پایان آن صبر کنید.");
+  periodImportBusy = true;
   try {
-    await putBackup(db, "پیش از بازیابی");
-  } catch (error) {
-    setStatus(
-      "پشتیبان داخلی جا نشد؛ نسخه مستقلِ تأییدشده مسیر بازیابی است.",
-      "pending",
-    );
-  }
-  busy++;
-  paintStatus();
-  try {
-    await commitRecords(collectRecords(candidate), {
-      action: "بازیابی پشتیبان: " + pendingImport.label,
-      replace: true,
-      keepUndo: false,
-    });
-    db = candidate;
-    drafts.clear();
-    storeDrafts();
-    pendingImport = null;
-    isAuthenticated = false;
-    state = {
-      view: "schools",
-      schoolId: null,
-      classId: null,
-      lessonId: null,
-      tab: "students",
-      reportTab: "comprehensive",
+    if (fileMode)
+      throw Error(
+        "این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.",
+      );
+    if (!pendingImport || pendingImport.workspace !== workspace.id)
+      throw Error("پیش‌نمایش بازیابی منقضی شده است.");
+    const preview = pendingImport;
+    const context = { id: preview.workspace, revision: preview.revision };
+    const check = (write = false) => {
+      assertWorkspaceContext(context, { write });
+      if (pendingImport !== preview)
+        throw Error("پیش‌نمایش بازیابی تغییر کرده است؛ دوباره بررسی کنید.");
     };
-    closeModal();
-    setStatus("بازیابی تراکنشی انجام شد.", "saved");
-  } catch (error) {
-    handleError(error);
+    check();
+    if (document.getElementById("restoreMode").value === "new") {
+      const candidate = normalizeDB(preview.candidate);
+      const created = await installWorkspace(candidate, {
+        year: candidate.settings.academicYear,
+        term: recoveryPeriodTerm(
+          candidate.settings.academicTerm || "بازیابی",
+          uid(),
+        ),
+      });
+      check();
+      pendingImport = null;
+      await switchPeriod(created.id);
+      return;
+    }
+    if (!document.getElementById("restoreExternalConfirmed").checked) {
+      handleError(
+        Error("ابتدا نسخه مستقل را ذخیره و وجود فایل را تأیید کنید."),
+      );
+      return;
+    }
+    if (workspace.closed)
+      throw Error(
+        "دوره بسته است؛ برای بازیابی در آن ابتدا دوره را بازگشایی کنید.",
+      );
+    if (!confirm("اطلاعات این دوره با نسخه پیش‌نمایش جایگزین شود؟")) return;
+    await flushDrafts({ strict: true });
+    await writer.catch(() => {});
+    check(true);
+    const candidate = normalizeDB(preview.candidate);
+    candidate.settings.academicYear = workspace.year;
+    candidate.settings.academicTerm = workspace.term;
+    validateV24(candidate);
+    try {
+      await putBackup(db, "پیش از بازیابی");
+    } catch (error) {
+      setStatus(
+        "پشتیبان داخلی جا نشد؛ نسخه مستقلِ تأییدشده مسیر بازیابی است.",
+        "pending",
+      );
+    }
+    check(true);
+    busy++;
+    paintStatus();
+    try {
+      await commitRecords(collectRecords(candidate), {
+        action: "بازیابی پشتیبان: " + preview.label,
+        replace: true,
+        keepUndo: false,
+      });
+      db = candidate;
+      drafts.clear();
+      storeDrafts();
+      pendingImport = null;
+      isAuthenticated = false;
+      state = {
+        view: "schools",
+        schoolId: null,
+        classId: null,
+        lessonId: null,
+        tab: "students",
+        reportTab: "comprehensive",
+      };
+      closeModal();
+      setStatus("بازیابی تراکنشی انجام شد.", "saved");
+    } catch (error) {
+      handleError(error);
+    } finally {
+      busy--;
+      render();
+    }
   } finally {
-    busy--;
-    render();
+    periodImportBusy = false;
   }
 }

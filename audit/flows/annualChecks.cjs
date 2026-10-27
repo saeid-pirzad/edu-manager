@@ -11,7 +11,7 @@ async function annualChecks() {
       try {
         await EduV24.prepareReportSnapshot({ annual: true });
       } catch (error) {
-        denied = error.message.includes("بازیابی");
+        denied = /بازیابی|چند دوره|مبهم/.test(error.message);
       }
       record(
         "Y12",
