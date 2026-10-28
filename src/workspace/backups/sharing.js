@@ -73,16 +73,22 @@ async function openBackupShare() {
       "KelasYar-Backup-" + content.exportedAt.replace(/[:.]/g, "-") + ".json";
     session.blob = new Blob([json], { type: "application/json" });
     if (typeof File === "function")
-      session.file = new File([session.blob], session.name, {
-        type: "application/json",
-      });
+      // Chromium rejects .json attachments on some platforms even when
+      // canShare reports support. TXT is permitted and keeps identical JSON bytes.
+      session.file = new File(
+        [session.blob],
+        session.name.replace(/\.json$/, ".txt"),
+        {
+          type: "text/plain",
+        },
+      );
     session.context = captureWorkspaceContext();
     checkBackupShare(session);
     const fileInfo = session.panel.querySelector("[data-backup-share-file]");
     fileInfo.hidden = false;
     fileInfo.innerHTML =
       '<strong dir="ltr">' +
-      esc(session.name) +
+      esc(session.file?.name || session.name) +
       "</strong><span>" +
       content.stores.catalog.length.toLocaleString("fa-IR") +
       " دوره · " +
@@ -90,6 +96,9 @@ async function openBackupShare() {
       " کیلوبایت</span><span>زمان تهیه: " +
       esc(new Date(content.exportedAt).toLocaleString("fa-IR")) +
       "</span>";
+    if (session.file)
+      fileInfo.innerHTML +=
+        "<span>ارسال با پسوند TXT؛ قابل بازیابی در کلاس‌یار. دانلود مستقیم با پسوند JSON است.</span>";
     const draftCount = (content.gradeDrafts || []).reduce(
       (count, row) => count + row.entries.length,
       0,
@@ -165,7 +174,9 @@ async function sharePreparedBackup(button) {
       session,
       error.name === "AbortError"
         ? "اشتراک‌گذاری لغو شد؛ فایل آماده است و می‌توانید دوباره تلاش کنید."
-        : "ارسال انجام نشد: " +
+        : error.name === "NotAllowedError"
+          ? "مرورگر اجازه اشتراک‌گذاری فایل را نداد. ارسال را با لمس مستقیم دکمه و در صفحه اصلی برنامه امتحان کنید؛ اگر محدودیت ادامه داشت، فایل را دریافت و در برنامه مقصد پیوست کنید."
+          : "ارسال انجام نشد: " +
             error.message +
             " می‌توانید فایل را دریافت و دستی پیوست کنید.",
       error.name === "AbortError" ? "ready" : "error",

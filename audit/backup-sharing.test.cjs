@@ -93,7 +93,7 @@ function fixture() {
     },
     navigator: {
       canShare: ({ files }) =>
-        files.length === 1 && files[0].type === "application/json",
+        files.length === 1 && files[0].type === "text/plain",
       share: async (value) => {
         shares.push(value);
       },
@@ -120,7 +120,7 @@ function fixture() {
     },
   };
 }
-test("backup preparation validates and builds an exact JSON file without sending or downloading", async () => {
+test("backup preparation shares exact JSON bytes as a Chromium-compatible TXT attachment", async () => {
   const f = fixture();
   assert.equal(await f.c.openBackupShare(), true);
   assert.equal(f.shares.length, 0);
@@ -128,8 +128,8 @@ test("backup preparation validates and builds an exact JSON file without sending
   assert.equal(f.shareButton().hidden, false);
   await f.c.sharePreparedBackup(f.shareButton());
   const file = f.shares[0].files[0];
-  assert.equal(file.type, "application/json");
-  assert.match(file.name, /^KelasYar-Backup-.*\.json$/);
+  assert.equal(file.type, "text/plain");
+  assert.match(file.name, /^KelasYar-Backup-.*\.txt$/);
   assert.deepEqual(JSON.parse(await file.text()), f.content);
 });
 test("native share is invoked synchronously within the second click, before any await", async () => {
@@ -145,6 +145,25 @@ test("native share is invoked synchronously within the second click, before any 
   active = false;
   assert.equal(called, true);
   assert.equal(await operation, true);
+});
+
+test("Chromium permission denial for JSON is avoided even when canShare overreports support", async () => {
+  const f = fixture();
+  f.c.navigator.canShare = () => true;
+  f.c.navigator.share = async ({ files }) => {
+    if (files[0].type === "application/json" || files[0].name.endsWith(".json"))
+      throw Object.assign(Error("Permission denied"), {
+        name: "NotAllowedError",
+      });
+    f.shares.push(files[0]);
+  };
+  await f.c.openBackupShare();
+  assert.equal(await f.c.sharePreparedBackup(f.shareButton()), true);
+  assert.equal(f.shares[0].type, "text/plain");
+  assert.deepEqual(JSON.parse(await f.shares[0].text()), f.content);
+  assert.equal(f.c.downloadPreparedBackup(), true);
+  assert.match(f.downloads[0].name, /\.json$/);
+  assert.equal(await f.downloads[0].blob.text(), await f.shares[0].text());
 });
 test("unsupported sharing has an explicit manual download containing all original data", async () => {
   for (const setup of [
@@ -195,7 +214,7 @@ test("permission and platform errors leave manual download available without aut
   };
   assert.equal(await f.c.sharePreparedBackup(f.shareButton()), false);
   assert.equal(f.downloads.length, 0);
-  assert.match(f.status(), /denied/);
+  assert.match(f.status(), /مرورگر اجازه/);
   assert.equal(f.c.downloadPreparedBackup(), true);
 });
 test("changed revision, period or connection blocks both share and manual download", async () => {

@@ -52,9 +52,9 @@ module.exports = async function backupSharing() {
     const validated = EduV24.validateFullBackup(parsed);
     record(
       "BKS02",
-      "shared JSON is a validated full backup with unchanged active-period data",
-      file.name.endsWith(".json") &&
-        file.type === "application/json" &&
+      "shared TXT contains validated JSON with unchanged active-period data",
+      file.name.endsWith(".txt") &&
+        file.type === "text/plain" &&
         JSON.stringify(
           validated.find((row) => row.period.id === parsed.activeWorkspace)
             .data,
@@ -110,7 +110,17 @@ module.exports = async function backupSharing() {
     );
     const origin = EduV24.getReportContext().id;
     try {
-      EduV24.previewFullBackup(parsed);
+      const transfer = new DataTransfer();
+      transfer.items.add(file);
+      const input = document.getElementById("importFile");
+      input.files = transfer.files;
+      await handleImport({ target: input });
+      record(
+        "BKS08",
+        "the restore picker accepts shared TXT and opens the full-backup import preview",
+        input.accept.includes(".txt") &&
+          !!document.querySelector("[data-full-restore]"),
+      );
       await EduV24.restoreFullBackup();
       const restoredData = structuredClone(db);
       // Restoring beside the source intentionally gives the period a new label.
