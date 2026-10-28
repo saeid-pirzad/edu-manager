@@ -18,6 +18,33 @@ async function inspectWorkspaceTools() {
       requestAnimationFrame(() => requestAnimationFrame(resolve)),
     );
   await pause();
+  const directoryFits = () => {
+    const list = document.querySelector(".dashboard-entities");
+    const cards = [...list.querySelectorAll(":scope > .dashboard-entity")];
+    const rects = cards.map((card) => card.getBoundingClientRect());
+    return (
+      getComputedStyle(list).gridTemplateColumns.trim().split(/\s+/).length ===
+        1 &&
+      rects.every(
+        (rect, index) =>
+          rect.left >= 0 &&
+          rect.right <= innerWidth + 1 &&
+          (!index || rect.top >= rects[index - 1].bottom),
+      )
+    );
+  };
+  add(
+    "school cards use full-width stacked rows at every viewport",
+    directoryFits(),
+  );
+  goSchool(db.schools[0].id);
+  await pause();
+  add(
+    "class cards use full-width stacked rows at every viewport",
+    directoryFits(),
+  );
+  goSchools();
+  await pause();
   const tools = document.querySelector(".workspace-tools"),
     summary = tools.querySelector(":scope > summary");
   const navigation = document.querySelector(".navigation-menu");

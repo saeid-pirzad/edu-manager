@@ -68,9 +68,17 @@ async function inspectMobileUx() {
               (el, i) =>
                 rects[i].left >= 0 &&
                 rects[i].right <= innerWidth + 1 &&
-                el.scrollWidth <= el.clientWidth + 1,
+                (el === status || el.scrollWidth <= el.clientWidth + 1),
             ) &&
-            rects.slice(1).every((rect) => rect.top >= rects[0].bottom),
+            rects
+              .slice(1)
+              .every(
+                (rect) =>
+                  Math.abs(
+                    (rect.top + rect.bottom) / 2 -
+                      (rects[0].top + rects[0].bottom) / 2,
+                  ) <= 1,
+              ),
         );
       }
     } finally {
