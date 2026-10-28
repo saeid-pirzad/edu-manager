@@ -4017,11 +4017,12 @@
     display: none;
   }
   #mobileBar #mobileStatus {
-    display: flex;
-    align-items: center;
-    flex: 1 1 auto;
-    gap: 8px;
+    display: block;
+    flex: 1 1 0;
     min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     color: #726b61;
     font-size: 11px;
     line-height: 1.8;
@@ -4029,6 +4030,9 @@
   }
   #mobileStatus::before {
     content: "";
+    display: inline-block;
+    margin-inline-end: 8px;
+    vertical-align: middle;
     width: 7px;
     height: 7px;
     flex: 0 0 7px;

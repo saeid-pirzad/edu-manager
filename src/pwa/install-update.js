@@ -8,7 +8,10 @@
     updateTimer;
   function text(message) {
     const el = document.getElementById("mobileStatus");
-    if (el) el.textContent = message;
+    if (el) {
+      el.textContent = message;
+      el.title = message;
+    }
   }
   function paint() {
     if (!document.getElementById("mobileInstall")) return;
