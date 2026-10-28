@@ -640,22 +640,14 @@ document.addEventListener("keydown", (e) => {
 });
 
 function goCurrentClass() {
-  if (state.classId) {
-    goClass(state.classId);
-  } else if (state.schoolId) {
-    const school = getSchool(state.schoolId);
-    if (school && school.classes.length > 0) goClass(school.classes[0].id);
-    else goSchool(state.schoolId);
-  } else {
-    if (db.schools.length > 0 && db.schools[0].classes.length > 0) {
-      state.schoolId = db.schools[0].id;
-      goClass(db.schools[0].classes[0].id);
-    } else if (db.schools.length > 0) {
-      goSchool(db.schools[0].id);
-    } else {
-      goSchools();
-    }
-  }
+  const school =
+    db.schools.find((item) => item.id === state.schoolId) ||
+    db.schools.find((item) =>
+      item.classes.some((c) => c.id === state.classId),
+    ) ||
+    db.schools[0];
+  if (school) goSchool(school.id);
+  else goSchools();
 }
 
 function goCurrentLesson() {
