@@ -110,6 +110,7 @@ module.exports = async function auditPwaUpgrade({ cdp, debuggerUrl, root }) {
         expression,
         awaitPromise: true,
         returnByValue: true,
+        userGesture: true,
       });
       if (result.exceptionDetails)
         throw Error(JSON.stringify(result.exceptionDetails));
@@ -199,6 +200,29 @@ module.exports = async function auditPwaUpgrade({ cdp, debuggerUrl, root }) {
     );
     await until("!!window.EduPWA?.getStatus().waiting", "new release waiting");
     await evaluate(
+      'window.__upgradePeer=window.open(location.href,"upgrade-peer");true',
+    );
+    await until(
+      '!!(window.__upgradePeer&&!window.__upgradePeer.closed&&window.__upgradePeer.document.readyState==="complete"&&window.__upgradePeer.navigator.serviceWorker.controller)',
+      "second controlled application window",
+    );
+    await evaluate(
+      'document.getElementById("pwaWelcomeLater")?.click();document.getElementById("mobileUpdate").click();true',
+    );
+    await until(
+      'document.getElementById("mobileStatus")?.textContent.includes("پنجره دیگری")',
+      "update blocked by second window",
+    );
+    record(
+      "W03b",
+      "update refuses another open window and keeps the previous release active",
+      await evaluate(
+        "db.schemaVersion===25&&window.EduPWA.getStatus().waiting&&!window.__upgradePeer.closed",
+      ),
+    );
+    await evaluate("window.__upgradePeer.close();true");
+    await until("window.__upgradePeer.closed", "second window closed");
+    await evaluate(
       'document.getElementById("pwaWelcomeLater")?.click();document.getElementById("mobileUpdate").click();true',
     );
     await until(
@@ -247,6 +271,12 @@ module.exports = async function auditPwaUpgrade({ cdp, debuggerUrl, root }) {
       error: error.stack || error.message,
     });
   } finally {
+    if (session)
+      try {
+        await session("Runtime.evaluate", {
+          expression: "window.__upgradePeer?.close();true",
+        });
+      } catch {}
     if (target)
       try {
         await cdp("Target.closeTarget", { targetId: target });

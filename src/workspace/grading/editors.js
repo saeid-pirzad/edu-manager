@@ -15,7 +15,9 @@ async function openAssessmentStage(button) {
   if (term !== workspace.term) {
     const periods = await allFrom("catalog");
     ensureCurrent();
-    const target = periods.find((p) => p.year === workspace.year && p.term === term);
+    const target = periods.find(
+      (p) => p.year === workspace.year && p.term === term,
+    );
     if (!target) {
       openNewPeriod();
       document.getElementById("periodYear").value = workspace.year;
@@ -24,10 +26,14 @@ async function openAssessmentStage(button) {
     }
     const loaded = await readWorkspace(target.id);
     ensureCurrent();
-    const targetLesson = loaded.data.schools.find((s) => s.id === origin.schoolId)
-      ?.classes.find((c) => c.id === origin.classId)?.lessons.find((l) => l.id === origin.lessonId);
+    const targetLesson = loaded.data.schools
+      .find((s) => s.id === origin.schoolId)
+      ?.classes.find((c) => c.id === origin.classId)
+      ?.lessons.find((l) => l.id === origin.lessonId);
     if (!targetLesson)
-      throw Error("این درس در نوبت مقصد وجود ندارد؛ ابتدا فهرست دروس آن نوبت را بررسی کنید.");
+      throw Error(
+        "این درس در نوبت مقصد وجود ندارد؛ ابتدا فهرست دروس آن نوبت را بررسی کنید.",
+      );
     await switchPeriod(target.id);
   }
   assessmentSelectedStage = stage;
@@ -45,41 +51,79 @@ function buildAssessmentEditor(c, l) {
   const stage = assessmentSelectedStage;
   const stageName = (mid ? "میان‌ترم " : "پایان‌ترم ") + workspace.term;
   const students = getSortedStudents(c);
-  let html = '<div class="card assessment-editor gradebook"><header class="gradebook-heading"><div><span class="gradebook-eyebrow">دفتر نمره</span><h3>' +
-    esc(l.name) + '</h3><p>' + (general ? "درس عمومی · یک نمره از ۲۰" : "کاردانش · عملی و تئوری") +
-    '</p></div><span class="gradebook-class-count">' + students.length.toLocaleString("fa-IR") +
+  let html =
+    '<div class="card assessment-editor gradebook"><header class="gradebook-heading"><div><span class="gradebook-eyebrow">دفتر نمره</span><h3>' +
+    esc(l.name) +
+    "</h3><p>" +
+    (general ? "درس عمومی · یک نمره از ۲۰" : "کاردانش · عملی و تئوری") +
+    '</p></div><span class="gradebook-class-count">' +
+    students.length.toLocaleString("fa-IR") +
     ' دانش‌آموز</span></header><nav class="assessment-navigation" aria-label="چهار مرحله نمرات سال">';
   for (const term of ["اول", "دوم"])
     for (const item of ["midterm", "final"])
-      html += '<button type="button" data-workspace-action="assessment-stage" data-term="' + term + '" data-stage="' + item + '" aria-pressed="' + (workspace.term === term && stage === item) + '">' + (item === "midterm" ? "میان‌ترم " : "پایان‌ترم ") + term + '</button>';
-  html += '</nav><div class="gradebook-simple-search"><input type="search" data-assessment-search="" aria-label="جست‌وجوی دانش‌آموز" placeholder="جست‌وجوی دانش‌آموز…" autocomplete="off"></div>';
-  html += '<section class="assessment-stage" aria-label="' + esc(stageName) + '"><div class="assessment-students">';
-  if (!students.length)
-    html += '<div class="empty"><strong>هنوز دانش‌آموزی در کلاس نیست</strong><p>ابتدا از تب دانش‌آموزان، اعضای کلاس را اضافه کنید.</p></div>';
-  for (const [index, st] of students.entries()) {
-      const r = assessmentResult(l, st.id, stage);
       html +=
-        '<article class="assessment-student" data-assessment-complete="' + r.complete + '" data-result-state="' + assessmentResultState(r) + '" data-assessment-name="' + esc(st.name) + '"><div class="gradebook-student"><span class="gradebook-number" aria-hidden="true">' +
-        (index + 1).toLocaleString("fa-IR") + '</span><h4>' + esc(st.name) +
-        '</h4></div><div class="assessment-inputs' + (general ? " general-inputs" : "") + '">' +
-        (general ? "" : '<label><span>عملی <small>از ۲۰</small></span>' + gradeCell(c, l, st, mid ? "midtermPractical" : "practical", {
-          value: r.practical,
-        }) + "</label>") +
-        '<label><span>' + (general ? "نمره" : "تئوری") + '<small>از ۲۰</small></span>' +
-        gradeCell(c, l, st, mid ? "midtermTheory" : "theory", {
-          value: r.theory,
-        }) +
-        '</label></div><div class="gradebook-result"><span>نتیجه</span><strong data-assessment-final="' +
-        esc(st.id) +
+        '<button type="button" data-workspace-action="assessment-stage" data-term="' +
+        term +
         '" data-stage="' +
-        stage +
+        item +
+        '" aria-pressed="' +
+        (workspace.term === term && stage === item) +
         '">' +
-        finalText(r) +
-        "</strong> <span data-assessment-status>" +
-        (r.complete ? gradeStatus(r) : "ناقص") +
-        "</span></div></article>";
+        (item === "midterm" ? "میان‌ترم " : "پایان‌ترم ") +
+        term +
+        "</button>";
+  html +=
+    '</nav><div class="gradebook-simple-search"><input type="search" data-assessment-search="" aria-label="جست‌وجوی دانش‌آموز" placeholder="جست‌وجوی دانش‌آموز…" autocomplete="off"></div>';
+  html +=
+    '<section class="assessment-stage" aria-label="' +
+    esc(stageName) +
+    '"><div class="assessment-students">';
+  if (!students.length)
+    html +=
+      '<div class="empty"><strong>هنوز دانش‌آموزی در کلاس نیست</strong><p>ابتدا از تب دانش‌آموزان، اعضای کلاس را اضافه کنید.</p></div>';
+  for (const [index, st] of students.entries()) {
+    const r = assessmentResult(l, st.id, stage);
+    html +=
+      '<article class="assessment-student" data-assessment-complete="' +
+      r.complete +
+      '" data-result-state="' +
+      assessmentResultState(r) +
+      '" data-assessment-name="' +
+      esc(st.name) +
+      '"><div class="gradebook-student"><span class="gradebook-number" aria-hidden="true">' +
+      (index + 1).toLocaleString("fa-IR") +
+      "</span><h4>" +
+      esc(st.name) +
+      '</h4></div><div class="assessment-inputs' +
+      (general ? " general-inputs" : "") +
+      '">' +
+      (general
+        ? ""
+        : "<label><span>عملی <small>از ۲۰</small></span>" +
+          gradeCell(c, l, st, mid ? "midtermPractical" : "practical", {
+            value: r.practical,
+          }) +
+          "</label>") +
+      "<label><span>" +
+      (general ? "نمره" : "تئوری") +
+      "<small>از ۲۰</small></span>" +
+      gradeCell(c, l, st, mid ? "midtermTheory" : "theory", {
+        value: r.theory,
+      }) +
+      '</label></div><div class="gradebook-result"><span>نتیجه</span><strong data-assessment-final="' +
+      esc(st.id) +
+      '" data-stage="' +
+      stage +
+      '">' +
+      finalText(r) +
+      "</strong> <span data-assessment-status>" +
+      (r.complete ? gradeStatus(r) : "ناقص") +
+      "</span></div></article>";
   }
-  return html + '</div><p class="gradebook-no-results" role="status" hidden>دانش‌آموزی با این نام پیدا نشد.</p></section></div>';
+  return (
+    html +
+    '</div><p class="gradebook-no-results" role="status" hidden>دانش‌آموزی با این نام پیدا نشد.</p></section></div>'
+  );
 }
 function assessmentResultState(result) {
   if (!result.complete) return "incomplete";
@@ -147,25 +191,47 @@ function refreshGradeResults() {
   refreshPolicyResults();
   for (const root of document.querySelectorAll(".gradebook")) {
     const rows = [...root.querySelectorAll("[data-assessment-complete]")];
-    const completed = rows.filter((row) => row.dataset.assessmentComplete === "true").length;
+    const completed = rows.filter(
+      (row) => row.dataset.assessmentComplete === "true",
+    ).length;
     const progress = root.querySelector("[data-assessment-progress]");
     const text = root.querySelector("[data-assessment-progress-text]");
     if (progress) progress.value = completed;
-    if (text) text.textContent = completed.toLocaleString("fa-IR") + " از " + rows.length.toLocaleString("fa-IR") + " تکمیل شده";
+    if (text)
+      text.textContent =
+        completed.toLocaleString("fa-IR") +
+        " از " +
+        rows.length.toLocaleString("fa-IR") +
+        " تکمیل شده";
   }
   document.querySelectorAll("[data-grade]").forEach((input) => {
     const note = input.parentElement.querySelector(".grade-note"),
       item = drafts.get(inputKey(contextFromInput(input)));
     if (note) {
       const filled = input.value.trim() !== "";
-      note.textContent = item ? item.error || "در انتظار ذخیره" : filled ? "ذخیره شد" : "";
-      note.dataset.state = item ? (item.error ? "error" : "pending") : filled ? "saved" : "idle";
+      note.textContent = item
+        ? item.error || "در انتظار ذخیره"
+        : filled
+          ? "ذخیره شد"
+          : "";
+      note.dataset.state = item
+        ? item.error
+          ? "error"
+          : "pending"
+        : filled
+          ? "saved"
+          : "idle";
     }
   });
-  for (const row of document.querySelectorAll(".gradebook .assessment-student")) {
+  for (const row of document.querySelectorAll(
+    ".gradebook .assessment-student",
+  )) {
     const notes = [...row.querySelectorAll(".grade-note")];
-    row.dataset.editState = notes.some((note) => note.dataset.state === "error") ? "error" :
-      notes.some((note) => note.dataset.state === "pending") ? "pending" : "saved";
+    row.dataset.editState = notes.some((note) => note.dataset.state === "error")
+      ? "error"
+      : notes.some((note) => note.dataset.state === "pending")
+        ? "pending"
+        : "saved";
   }
 }
 

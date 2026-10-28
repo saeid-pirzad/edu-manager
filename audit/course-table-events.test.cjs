@@ -9,20 +9,31 @@ const source = fs.readFileSync(
   "utf8",
 );
 test("course controls work in the main grade tab as well as the modal", async () => {
-  const listeners = new Map(), calls = [];
-  const body = { contains: () => false, addEventListener: (name, handler) => listeners.set("modal", handler) };
-  const app = { contains: () => true, addEventListener: (name, handler) => listeners.set("app", handler) };
+  const listeners = new Map(),
+    calls = [];
+  const body = {
+    contains: () => false,
+    addEventListener: (name, handler) => listeners.set("modal", handler),
+  };
+  const app = {
+    contains: () => true,
+    addEventListener: (name, handler) => listeners.set("app", handler),
+  };
   const context = vm.createContext({
-    document: { getElementById: (id) => id === "app" ? app : body },
+    document: { getElementById: (id) => (id === "app" ? app : body) },
     selectGradeModule: () => calls.push("module"),
     gate: async (...args) => calls.push(args),
-    error: (error) => { throw error; },
+    error: (error) => {
+      throw error;
+    },
   });
   vm.runInContext(source, context);
   context.installCourseTableEvents();
   const target = {
-    dataset: { lessonId: "lesson", podId: "pod", studentId: "student" }, value: "yes",
-    matches: (selector) => selector !== ":disabled", closest: () => null,
+    dataset: { lessonId: "lesson", podId: "pod", studentId: "student" },
+    value: "yes",
+    matches: (selector) => selector !== ":disabled",
+    closest: () => null,
   };
   listeners.get("app")({ target });
   await Promise.resolve();

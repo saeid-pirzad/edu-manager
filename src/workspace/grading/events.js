@@ -1,17 +1,29 @@
 function filterAssessmentRows(root) {
-  const normalize = (value) => String(value).replace(/ي/g, "ی").replace(/ك/g, "ک").replace(/‌/g, " ").replace(/\s+/g, " ").trim();
+  const normalize = (value) =>
+    String(value)
+      .replace(/ي/g, "ی")
+      .replace(/ك/g, "ک")
+      .replace(/‌/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
   const query = normalize(root.querySelector("[data-assessment-search]").value);
-  const incompleteOnly = !!root.querySelector("[data-assessment-incomplete]")?.checked;
+  const incompleteOnly = !!root.querySelector("[data-assessment-incomplete]")
+    ?.checked;
   let visible = 0;
-  const activePanel = root.querySelector("[data-module-panel]:not([hidden])") || root;
+  const activePanel =
+    root.querySelector("[data-module-panel]:not([hidden])") || root;
   for (const row of activePanel.querySelectorAll("[data-assessment-name]")) {
-    row.hidden = !normalize(row.dataset.assessmentName).includes(query) ||
+    row.hidden =
+      !normalize(row.dataset.assessmentName).includes(query) ||
       (incompleteOnly && row.dataset.assessmentComplete === "true");
     if (!row.hidden) visible++;
   }
   const message = root.querySelector(".gradebook-no-results");
   message.hidden = (!query && !incompleteOnly) || visible > 0;
-  message.textContent = incompleteOnly && !query ? "همه نمره‌های این مرحله تکمیل شده‌اند." : "دانش‌آموزی با این مشخصات پیدا نشد.";
+  message.textContent =
+    incompleteOnly && !query
+      ? "همه نمره‌های این مرحله تکمیل شده‌اند."
+      : "دانش‌آموزی با این مشخصات پیدا نشد.";
 }
 function installGradeEvents() {
   const isEditableGrade = (input) =>
@@ -33,7 +45,8 @@ function installGradeEvents() {
     if (root && !event.target.closest("[inert]")) filterAssessmentRows(root);
   });
   document.addEventListener("keydown", (event) => {
-    if (event.isComposing || event.ctrlKey || event.altKey || event.metaKey) return;
+    if (event.isComposing || event.ctrlKey || event.altKey || event.metaKey)
+      return;
     if (event.key !== "Enter") return;
     const input = event.target;
     if (!isEditableGrade(input)) return;
@@ -43,8 +56,12 @@ function installGradeEvents() {
     }
     const root = input.closest(".gradebook");
     if (!root) return;
-    const fields = [...root.querySelectorAll("input[data-grade]")].filter((field) =>
-      !field.disabled && !field.readOnly && !field.closest("[hidden]") && field.getClientRects().length,
+    const fields = [...root.querySelectorAll("input[data-grade]")].filter(
+      (field) =>
+        !field.disabled &&
+        !field.readOnly &&
+        !field.closest("[hidden]") &&
+        field.getClientRects().length,
     );
     const index = fields.indexOf(input);
     if (index < 0) return;

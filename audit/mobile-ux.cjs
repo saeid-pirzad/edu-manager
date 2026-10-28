@@ -83,6 +83,23 @@ async function inspectMobileUx() {
       enter.getBoundingClientRect().height >= 44,
   );
   const menu = document.querySelector(".dashboard-entity-more");
+  const label = enter.querySelector("span"),
+    textRange = document.createRange();
+  textRange.selectNodeContents(label);
+  add(
+    "school entry label stays on one line beside an equally tall more button",
+    textRange.getClientRects().length === 1 &&
+      label.scrollWidth <= label.clientWidth + 1 &&
+      enter.getBoundingClientRect().height <= 52 &&
+      Math.abs(
+        enter.getBoundingClientRect().height -
+          menu.querySelector("summary").getBoundingClientRect().height,
+      ) <= 1,
+    {
+      height: enter.getBoundingClientRect().height,
+      textLines: textRange.getClientRects().length,
+    },
+  );
   menu.querySelector("summary").click();
   await pause();
   const panel = menu.querySelector(".entity-menu-panel");

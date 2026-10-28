@@ -826,8 +826,12 @@ function textReport(m) {
         lines.push(
           (item.stage === "midterm" ? "میان‌ترم " : "پایان‌ترم ") +
             item.term +
-            (grade.general ? ": نمره " + (item.theory ?? "ثبت نشده") : ": عملی " +
-            (item.practical ?? "ثبت نشده") + "، تئوری " + (item.theory ?? "ثبت نشده")) +
+            (grade.general
+              ? ": نمره " + (item.theory ?? "ثبت نشده")
+              : ": عملی " +
+                (item.practical ?? "ثبت نشده") +
+                "، تئوری " +
+                (item.theory ?? "ثبت نشده")) +
             "، ترکیبی " +
             root.EduV24.finalText(item),
         );
@@ -835,9 +839,11 @@ function textReport(m) {
         "نهایی سالانه: " +
           root.EduV24.finalText(grade) +
           (grade.complete
-            ? grade.general ? " — تکمیل" : grade.passed
-              ? " — قبول"
-              : " — نیازمند جبران"
+            ? grade.general
+              ? " — تکمیل"
+              : grade.passed
+                ? " — قبول"
+                : " — نیازمند جبران"
             : " — ناقص؛ هر چهار نمره لازم است"),
       );
     }
@@ -1024,17 +1030,23 @@ function documentHtml(m) {
           ": <strong>" +
           esc(root.EduV24.finalText(item)) +
           "</strong><br>" +
-          (grade.general ? "نمره " + esc(item.theory ?? "—") : "عملی " +
-          esc(item.practical ?? "—") + " · تئوری " + esc(item.theory ?? "—")) +
+          (grade.general
+            ? "نمره " + esc(item.theory ?? "—")
+            : "عملی " +
+              esc(item.practical ?? "—") +
+              " · تئوری " +
+              esc(item.theory ?? "—")) +
           "</span>";
       h +=
         "</div><p>نهایی سالانه: <strong>" +
         esc(root.EduV24.finalText(grade)) +
         "</strong> · " +
         (grade.complete
-          ? grade.general ? "تکمیل" : grade.passed
-            ? "قبول"
-            : "نیازمند جبران"
+          ? grade.general
+            ? "تکمیل"
+            : grade.passed
+              ? "قبول"
+              : "نیازمند جبران"
           : "ناقص؛ هر چهار نمره لازم است") +
         "</p></article>";
     }
@@ -1215,7 +1227,9 @@ let annualPeriodList = [],
   annualLoadingFor = "";
 function annualPeriodOptions(field) {
   const kind = field === "annualFirstId" ? "first" : "second";
-  return annualPeriodList.filter((row) => !row.termKind || row.termKind === kind);
+  return annualPeriodList.filter(
+    (row) => !row.termKind || row.termKind === kind,
+  );
 }
 function loadAnnualPeriodChoices() {
   const expected = context().id;
@@ -1289,13 +1303,17 @@ function render(mode) {
     option("parent", "اولیای یک هنرجو", f.audience) +
     "</select></label>" +
     (mode === "annual"
-      ? '<div class="periodic-year-field"><span>سال تحصیلی</span><strong>' + esc(db.settings.academicYear) + '</strong></div>'
-      : '<label>' + (mode === "weekly"
-        ? "یک تاریخ از هفته"
-        : mode === "monthly"
-          ? "یک تاریخ از ماه شمسی"
-          : "تاریخ گزارش") +
-        '<input type="date" value="' + esc(f.date) +
+      ? '<div class="periodic-year-field"><span>سال تحصیلی</span><strong>' +
+        esc(db.settings.academicYear) +
+        "</strong></div>"
+      : "<label>" +
+        (mode === "weekly"
+          ? "یک تاریخ از هفته"
+          : mode === "monthly"
+            ? "یک تاریخ از ماه شمسی"
+            : "تاریخ گزارش") +
+        '<input type="date" value="' +
+        esc(f.date) +
         '" data-legacy-change="reports-periodic-render:1"></label>') +
     `<label>مدرسه<select data-legacy-change="reports-periodic-render:2">` +
     option("", "انتخاب مدرسه", f.schoolId) +

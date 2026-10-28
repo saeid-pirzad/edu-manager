@@ -61,7 +61,8 @@ function openSessionModal(session) {
   const sortedStudents = getSortedStudents({
     students: sessionStudents(c, session),
   });
-  if (!sortedStudents.length) h += `<div class="empty">دانش‌آموزی در این جلسه نیست</div>`;
+  if (!sortedStudents.length)
+    h += `<div class="empty">دانش‌آموزی در این جلسه نیست</div>`;
   sortedStudents.forEach((s, i) => {
     const st = session.attendance[s.id] || "";
     const isPresent = st === "present";

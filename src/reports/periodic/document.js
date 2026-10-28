@@ -177,17 +177,23 @@ function documentHtml(m) {
           ": <strong>" +
           esc(root.EduV24.finalText(item)) +
           "</strong><br>" +
-          (grade.general ? "نمره " + esc(item.theory ?? "—") : "عملی " +
-          esc(item.practical ?? "—") + " · تئوری " + esc(item.theory ?? "—")) +
+          (grade.general
+            ? "نمره " + esc(item.theory ?? "—")
+            : "عملی " +
+              esc(item.practical ?? "—") +
+              " · تئوری " +
+              esc(item.theory ?? "—")) +
           "</span>";
       h +=
         "</div><p>نهایی سالانه: <strong>" +
         esc(root.EduV24.finalText(grade)) +
         "</strong> · " +
         (grade.complete
-          ? grade.general ? "تکمیل" : grade.passed
-            ? "قبول"
-            : "نیازمند جبران"
+          ? grade.general
+            ? "تکمیل"
+            : grade.passed
+              ? "قبول"
+              : "نیازمند جبران"
           : "ناقص؛ هر چهار نمره لازم است") +
         "</p></article>";
     }

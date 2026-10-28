@@ -31,7 +31,12 @@ function refreshPolicyResults() {
     );
     el.textContent = el.dataset.podFinal ? finalText(r) : policyStatus(r);
     const row = el.closest(".assessment-student");
-    if (row) row.dataset.resultState = !r.complete ? "incomplete" : r.passed ? "passed" : "review";
+    if (row)
+      row.dataset.resultState = !r.complete
+        ? "incomplete"
+        : r.passed
+          ? "passed"
+          : "review";
   }
   for (const el of document.querySelectorAll(
     "[data-course-final],[data-course-mean],[data-course-status]",

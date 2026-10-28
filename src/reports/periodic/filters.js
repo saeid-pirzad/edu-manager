@@ -60,7 +60,9 @@ let annualPeriodList = [],
   annualLoadingFor = "";
 function annualPeriodOptions(field) {
   const kind = field === "annualFirstId" ? "first" : "second";
-  return annualPeriodList.filter((row) => !row.termKind || row.termKind === kind);
+  return annualPeriodList.filter(
+    (row) => !row.termKind || row.termKind === kind,
+  );
 }
 function loadAnnualPeriodChoices() {
   const expected = context().id;

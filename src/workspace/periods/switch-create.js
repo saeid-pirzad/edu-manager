@@ -32,7 +32,9 @@ async function openPeriods() {
         ? '<button data-workspace-action="reopen-period">بازگشایی با ثبت در تاریخچه</button>'
         : '<button data-workspace-action="finalize-period">بستن دوره و ثبت کارنامه نهایی</button><button class="ghost" data-workspace-action="edit-period-label">اصلاح عنوان دوره</button>') +
       '</div></section><section class="period-reports"><h4>کارنامه‌های نهایی ثبت‌شده</h4>' +
-      (reports.length ? "" : '<p class="period-intro">هنوز کارنامه نهایی برای این دوره ثبت نشده است.</p>') +
+      (reports.length
+        ? ""
+        : '<p class="period-intro">هنوز کارنامه نهایی برای این دوره ثبت نشده است.</p>') +
       reports
         .map(
           (r) =>

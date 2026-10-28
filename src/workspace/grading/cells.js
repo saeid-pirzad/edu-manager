@@ -65,7 +65,12 @@ function applyDrafts() {
         note.dataset.state = item.error ? "error" : "pending";
       }
       const row = input.closest(".assessment-student");
-      if (row) row.dataset.editState = row.querySelector('.grade-note[data-state="error"]') ? "error" : "pending";
+      if (row)
+        row.dataset.editState = row.querySelector(
+          '.grade-note[data-state="error"]',
+        )
+          ? "error"
+          : "pending";
     }
   });
 }

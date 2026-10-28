@@ -440,42 +440,217 @@
 }
 
 @media screen {
-  .week-heading { margin: 6px 0 20px; }
-  .week-heading p, .week-overview-info > span:last-child, .week-filter { color: #81796e; }
-  .week-heading button { min-height: 42px; border: 1px solid #e6e0d7; border-radius: 10px; background: #fff; }
-  .week-overview { padding: 18px; border: 1px solid #e6e0d7; border-radius: 16px; box-shadow: none; }
-  .week-parity { background: #f4eadb; color: #79522c; border-radius: 20px; }
-  .week-filter select { min-height: 42px; border-radius: 10px; background: #faf9f7; font-size: 13px; }
-  .week-agenda { display: block; margin-block: 20px; }
-  .week-day-picker { display: flex; gap: 6px; overflow-x: auto; padding: 6px; border: 1px solid #e7e3dc; border-radius: 14px; background: #f2f0ec; overscroll-behavior-x: contain; }
-  .week-day-picker button { display: flex; align-items: center; justify-content: center; gap: 8px; flex: 1 0 auto; min-height: 44px; min-width: 88px; margin: 0; padding: 8px 14px; border: 1px solid transparent; border-radius: 10px; background: transparent; color: #726b61; font-size: 13px; box-shadow: none; }
-  .week-day-picker button small { font-size: 10px; }
-  .week-day-picker button[aria-pressed=true] { background: #fff; border-color: #e2d9cd; color: #79522c; box-shadow: 0 2px 6px #392b1210; font-weight: 600; }
-  .week-day-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 20px 2px 12px; }
-  .week-day-heading h3 { margin: 0; font-size: 16px; }
-  .week-day-heading span { font-size: 11px; color: #81796e; }
-  .week-slot-list { display: grid; gap: 10px; padding: 12px; border: 1px solid #e9e5df; border-radius: 16px; background: #f7f6f3; }
-  .week-slot-list .week-slot { display: grid; grid-template-columns: 48px minmax(0,1fr); align-items: center; gap: 16px; padding: 16px; border: 1px solid #e6e0d7; border-radius: 12px; background: #fff; }
-  .week-period { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 44px; min-height: 52px; padding: 0; border-radius: 10px; background: #f7f1e7; }
-  .week-period span { font-size: 10px; color: #97836a; }
-  .week-period strong { font-size: 22px; color: #79522c; font-weight: 600; }
-  .week-slot-list .week-slot.is-filled .week-slot-content { display: grid; grid-template-columns: minmax(0,1fr) auto; column-gap: 20px; }
-  .week-slot-list .week-class-label, .week-slot-list .week-slot h4, .week-slot-list .week-slot p { grid-column: 1; }
-  .week-class-label { color: #79522c; font-size: 12px; }
-  .week-school, .week-slot p { color: #81796e; }
-  .week-slot-list .week-slot h4 { margin: 5px 0 3px; font-size: 15px; }
-  .week-slot-list .week-slot p { margin: 0; font-size: 11px; }
-  .week-slot-list .week-slot-actions { grid-column: 2; grid-row: 1 / 4; align-items: center; flex-wrap: nowrap; }
-  .week-slot button { border-radius: 9px; font-size: 12px; }
-  .week-slot-actions button:first-child { background: #79522c; color: #fff; }
-  .week-slot-actions button.ghost { background: #f7f6f3; color: #655d52; border: 1px solid #e6e0d7; }
-  .week-slot-list .week-slot.is-empty .week-slot-content, .week-slot-list .week-slot.is-other .week-slot-content { display: grid; grid-template-columns: minmax(0,1fr) auto; column-gap: 12px; align-items: center; }
-  .week-slot-list :is(.is-empty,.is-other) button { grid-column: 2; grid-row: 1 / 3; width: auto; background: #f5f2ec; color: #79522c; border: 1px solid #e6e0d7; }
-  .week-slot-list .week-slot.is-empty { border-style: dashed; background: #fdfcfb; }
-  .week-desktop { display: block; padding: 16px; border: 1px solid #e6e0d7; border-radius: 14px; box-shadow: none; }
-  .week-desktop > summary { cursor: pointer; padding: 6px 0; font-size: 13px; font-weight: 600; color: #655d52; }
-  .week-desktop > header p { margin-top: 14px; color: #81796e; }
-  .week-table th { min-width: 165px; }
+  .week-heading {
+    margin: 6px 0 20px;
+  }
+  .week-heading p,
+  .week-overview-info > span:last-child,
+  .week-filter {
+    color: #81796e;
+  }
+  .week-heading button {
+    min-height: 42px;
+    border: 1px solid #e6e0d7;
+    border-radius: 10px;
+    background: #fff;
+  }
+  .week-overview {
+    padding: 18px;
+    border: 1px solid #e6e0d7;
+    border-radius: 16px;
+    box-shadow: none;
+  }
+  .week-parity {
+    background: #f4eadb;
+    color: #79522c;
+    border-radius: 20px;
+  }
+  .week-filter select {
+    min-height: 42px;
+    border-radius: 10px;
+    background: #faf9f7;
+    font-size: 13px;
+  }
+  .week-agenda {
+    display: block;
+    margin-block: 20px;
+  }
+  .week-day-picker {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 6px;
+    border: 1px solid #e7e3dc;
+    border-radius: 14px;
+    background: #f2f0ec;
+    overscroll-behavior-x: contain;
+  }
+  .week-day-picker button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex: 1 0 auto;
+    min-height: 44px;
+    min-width: 88px;
+    margin: 0;
+    padding: 8px 14px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: transparent;
+    color: #726b61;
+    font-size: 13px;
+    box-shadow: none;
+  }
+  .week-day-picker button small {
+    font-size: 10px;
+  }
+  .week-day-picker button[aria-pressed="true"] {
+    background: #fff;
+    border-color: #e2d9cd;
+    color: #79522c;
+    box-shadow: 0 2px 6px #392b1210;
+    font-weight: 600;
+  }
+  .week-day-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 20px 2px 12px;
+  }
+  .week-day-heading h3 {
+    margin: 0;
+    font-size: 16px;
+  }
+  .week-day-heading span {
+    font-size: 11px;
+    color: #81796e;
+  }
+  .week-slot-list {
+    display: grid;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid #e9e5df;
+    border-radius: 16px;
+    background: #f7f6f3;
+  }
+  .week-slot-list .week-slot {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr);
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    border: 1px solid #e6e0d7;
+    border-radius: 12px;
+    background: #fff;
+  }
+  .week-period {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    width: 44px;
+    min-height: 52px;
+    padding: 0;
+    border-radius: 10px;
+    background: #f7f1e7;
+  }
+  .week-period span {
+    font-size: 10px;
+    color: #97836a;
+  }
+  .week-period strong {
+    font-size: 22px;
+    color: #79522c;
+    font-weight: 600;
+  }
+  .week-slot-list .week-slot.is-filled .week-slot-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 20px;
+  }
+  .week-slot-list .week-class-label,
+  .week-slot-list .week-slot h4,
+  .week-slot-list .week-slot p {
+    grid-column: 1;
+  }
+  .week-class-label {
+    color: #79522c;
+    font-size: 12px;
+  }
+  .week-school,
+  .week-slot p {
+    color: #81796e;
+  }
+  .week-slot-list .week-slot h4 {
+    margin: 5px 0 3px;
+    font-size: 15px;
+  }
+  .week-slot-list .week-slot p {
+    margin: 0;
+    font-size: 11px;
+  }
+  .week-slot-list .week-slot-actions {
+    grid-column: 2;
+    grid-row: 1 / 4;
+    align-items: center;
+    flex-wrap: nowrap;
+  }
+  .week-slot button {
+    border-radius: 9px;
+    font-size: 12px;
+  }
+  .week-slot-actions button:first-child {
+    background: #79522c;
+    color: #fff;
+  }
+  .week-slot-actions button.ghost {
+    background: #f7f6f3;
+    color: #655d52;
+    border: 1px solid #e6e0d7;
+  }
+  .week-slot-list .week-slot.is-empty .week-slot-content,
+  .week-slot-list .week-slot.is-other .week-slot-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 12px;
+    align-items: center;
+  }
+  .week-slot-list :is(.is-empty, .is-other) button {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    width: auto;
+    background: #f5f2ec;
+    color: #79522c;
+    border: 1px solid #e6e0d7;
+  }
+  .week-slot-list .week-slot.is-empty {
+    border-style: dashed;
+    background: #fdfcfb;
+  }
+  .week-desktop {
+    display: block;
+    padding: 16px;
+    border: 1px solid #e6e0d7;
+    border-radius: 14px;
+    box-shadow: none;
+  }
+  .week-desktop > summary {
+    cursor: pointer;
+    padding: 6px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #655d52;
+  }
+  .week-desktop > header p {
+    margin-top: 14px;
+    color: #81796e;
+  }
+  .week-table th {
+    min-width: 165px;
+  }
   .week-table th:first-child,
   .week-table .week-day-cell {
     width: 80px;
@@ -484,47 +659,177 @@
     padding: 10px 6px !important;
     white-space: nowrap;
   }
-  .week-table .week-slot { min-height: 150px; background: #faf9f7; }
-  .week-table .week-day-cell { background: #f7f3ec !important; }
-  .week-day-cell small { color: #79522c; }
-  .week-settings { padding: 18px; border: 1px solid #e6e0d7; border-radius: 14px; box-shadow: none; }
-  .week-settings > summary { display: list-item; min-height: 0; padding: 6px 0; color: #655d52; font-size: 13px; font-weight: 600; }
-  .week-working-days label { background: #faf9f7; border-color: #e7e3dc; border-radius: 10px; }
-  .week-working-days label:has(input:checked) { background: #f7efdf; border-color: #cfb893; color: #79522c; }
-  .week-working-days input { accent-color: #79522c; width: 16px; height: 16px; min-height: 16px; }
-  .week-period-controls { display: inline-flex; gap: 16px; padding: 5px; border: 1px solid #e6e0d7; border-radius: 12px; background: #faf9f7; }
-  .week-period-controls button { background: #fff; border: 1px solid #e6e0d7; border-radius: 8px; }
-  .week-settings section > .week-save-hint { margin: 10px 0 0; font-size: 11px; color: #81796e; }
-  .week-start-date button { background: #79522c; color: #fff; border-radius: 10px; min-height: 44px; }
-  .week-day-picker button:focus-visible, .week-desktop > summary:focus-visible { outline: 2px solid #a88a63; outline-offset: 2px; }
+  .week-table .week-slot {
+    min-height: 150px;
+    background: #faf9f7;
+  }
+  .week-table .week-day-cell {
+    background: #f7f3ec !important;
+  }
+  .week-day-cell small {
+    color: #79522c;
+  }
+  .week-settings {
+    padding: 18px;
+    border: 1px solid #e6e0d7;
+    border-radius: 14px;
+    box-shadow: none;
+  }
+  .week-settings > summary {
+    display: list-item;
+    min-height: 0;
+    padding: 6px 0;
+    color: #655d52;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .week-working-days label {
+    background: #faf9f7;
+    border-color: #e7e3dc;
+    border-radius: 10px;
+  }
+  .week-working-days label:has(input:checked) {
+    background: #f7efdf;
+    border-color: #cfb893;
+    color: #79522c;
+  }
+  .week-working-days input {
+    accent-color: #79522c;
+    width: 16px;
+    height: 16px;
+    min-height: 16px;
+  }
+  .week-period-controls {
+    display: inline-flex;
+    gap: 16px;
+    padding: 5px;
+    border: 1px solid #e6e0d7;
+    border-radius: 12px;
+    background: #faf9f7;
+  }
+  .week-period-controls button {
+    background: #fff;
+    border: 1px solid #e6e0d7;
+    border-radius: 8px;
+  }
+  .week-settings section > .week-save-hint {
+    margin: 10px 0 0;
+    font-size: 11px;
+    color: #81796e;
+  }
+  .week-start-date button {
+    background: #79522c;
+    color: #fff;
+    border-radius: 10px;
+    min-height: 44px;
+  }
+  .week-day-picker button:focus-visible,
+  .week-desktop > summary:focus-visible {
+    outline: 2px solid #a88a63;
+    outline-offset: 2px;
+  }
 }
 @media screen and (max-width: 700px) {
-  .week-heading h2 { font-size: 20px; }
-  .week-heading button { padding: 8px 10px; font-size: 11px; }
-  .week-overview { flex-direction: column; align-items: stretch; gap: 14px; padding: 14px; }
-  .week-filter { min-width: 0; }
-  .week-filter select { font-size: 16px !important; }
-  .week-day-picker button { flex-direction: column; gap: 2px; min-width: 76px; padding: 6px 10px; font-size: 12px; }
-  .week-day-heading { gap: 8px; }
-  .week-day-heading h3 { font-size: 14px; }
-  .week-day-heading span { font-size: 10px; }
-  .week-slot-list { padding: 7px; gap: 8px; }
-  .week-slot-list .week-slot { grid-template-columns: 34px minmax(0,1fr); gap: 9px; padding: 12px 10px; }
-  .week-period { min-width: 0; width: 34px; min-height: 46px; }
-  .week-period strong { font-size: 19px; }
-  .week-slot-list .week-slot.is-filled .week-slot-content, .week-slot-list .week-slot.is-empty .week-slot-content, .week-slot-list .week-slot.is-other .week-slot-content { grid-template-columns: minmax(0,1fr); }
-  .week-slot-list .week-slot h4 { font-size: 14px; }
-  .week-slot-list .week-slot-actions, .week-slot-list :is(.is-empty,.is-other) button { grid-column: 1; grid-row: auto; margin-top: 12px; }
-  .week-slot-list .week-slot-actions { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 6px; }
-  .week-slot-list .week-slot-actions button { min-width: 0; padding: 8px 5px; min-height: 42px; font-size: 11px; white-space: nowrap; }
-  .week-slot-list .week-slot.is-empty .week-add { width: 100%; background: #f5f2ec; }
-  .week-desktop { display: block; }
-  .week-settings { padding: 14px; }
+  .week-heading h2 {
+    font-size: 20px;
+  }
+  .week-heading button {
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+  .week-overview {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    padding: 14px;
+  }
+  .week-filter {
+    min-width: 0;
+  }
+  .week-filter select {
+    font-size: 16px !important;
+  }
+  .week-day-picker button {
+    flex-direction: column;
+    gap: 2px;
+    min-width: 76px;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  .week-day-heading {
+    gap: 8px;
+  }
+  .week-day-heading h3 {
+    font-size: 14px;
+  }
+  .week-day-heading span {
+    font-size: 10px;
+  }
+  .week-slot-list {
+    padding: 7px;
+    gap: 8px;
+  }
+  .week-slot-list .week-slot {
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 9px;
+    padding: 12px 10px;
+  }
+  .week-period {
+    min-width: 0;
+    width: 34px;
+    min-height: 46px;
+  }
+  .week-period strong {
+    font-size: 19px;
+  }
+  .week-slot-list .week-slot.is-filled .week-slot-content,
+  .week-slot-list .week-slot.is-empty .week-slot-content,
+  .week-slot-list .week-slot.is-other .week-slot-content {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .week-slot-list .week-slot h4 {
+    font-size: 14px;
+  }
+  .week-slot-list .week-slot-actions,
+  .week-slot-list :is(.is-empty, .is-other) button {
+    grid-column: 1;
+    grid-row: auto;
+    margin-top: 12px;
+  }
+  .week-slot-list .week-slot-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 6px;
+  }
+  .week-slot-list .week-slot-actions button {
+    min-width: 0;
+    padding: 8px 5px;
+    min-height: 42px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .week-slot-list .week-slot.is-empty .week-add {
+    width: 100%;
+    background: #f5f2ec;
+  }
+  .week-desktop {
+    display: block;
+  }
+  .week-settings {
+    padding: 14px;
+  }
 }
 @media print {
-  .week-desktop > summary { display: none; }
-  .week-desktop > :not(summary) { display: block !important; }
-  .week-desktop::details-content { display: block; content-visibility: visible; }
+  .week-desktop > summary {
+    display: none;
+  }
+  .week-desktop > :not(summary) {
+    display: block !important;
+  }
+  .week-desktop::details-content {
+    display: block;
+    content-visibility: visible;
+  }
 }
 
 @media screen and (max-width: 700px) {
@@ -546,7 +851,30 @@
     align-items: center;
     gap: 4px 10px;
   }
-  #app .week-slot-list .is-empty h4 { grid-column: 1; margin: 0; font-size: 13px; color: #655d52; }
-  #app .week-slot-list .is-empty p { grid-column: 1; min-width: 0; margin: 0; font-size: 10px; line-height: 1.9; white-space: normal; overflow: visible; }
-  #app .week-slot-list .week-slot.is-empty .week-add { grid-column: 2; grid-row: 1 / 3; width: auto; min-width: 0; min-height: 38px; margin: 0; padding: 7px; font-size: 11px; white-space: nowrap; }
+  #app .week-slot-list .is-empty h4 {
+    grid-column: 1;
+    margin: 0;
+    font-size: 13px;
+    color: #655d52;
+  }
+  #app .week-slot-list .is-empty p {
+    grid-column: 1;
+    min-width: 0;
+    margin: 0;
+    font-size: 10px;
+    line-height: 1.9;
+    white-space: normal;
+    overflow: visible;
+  }
+  #app .week-slot-list .week-slot.is-empty .week-add {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    width: auto;
+    min-width: 0;
+    min-height: 38px;
+    margin: 0;
+    padding: 7px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
 }

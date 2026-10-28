@@ -51,7 +51,11 @@ function fixture() {
       },
     },
   });
-  for (const name of ["core/async-target.js", "history/undo.js"])
+  for (const name of [
+    "core/async-target.js",
+    "history/viewer.js",
+    "history/undo.js",
+  ])
     vm.runInContext(
       fs.readFileSync(path.join(__dirname, "../src/workspace", name), "utf8"),
       c,
@@ -60,7 +64,7 @@ function fixture() {
 }
 test("history reads events and undo in the same source transaction and preserves pagination", async () => {
   const f = fixture();
-  await f.c.openHistory(2);
+  await f.c.openHistoryV24(2);
   assert.deepEqual(f.requests, [
     ["events", "first"],
     ["undo", "first"],
@@ -78,7 +82,7 @@ test("history rejects navigation while waiting for queued writes", async () => {
       f.c.workspace.id = "second";
     },
   };
-  await assert.rejects(f.c.openHistory());
+  await assert.rejects(f.c.openHistoryV24());
   assert.equal(f.requests.length + f.modals.length, 0);
 });
 for (const kind of ["workspace", "connection", "readability"]) {
@@ -89,7 +93,7 @@ for (const kind of ["workspace", "connection", "readability"]) {
       else if (kind === "connection") f.c.connection = {};
       else f.c.readable = false;
     };
-    await assert.rejects(f.c.openHistory());
+    await assert.rejects(f.c.openHistoryV24());
     assert.equal(f.modals.length, 0);
   });
 }
@@ -100,7 +104,7 @@ test("history waits for transaction completion before opening its modal", async 
     new Promise((resolve) => {
       finish = resolve;
     });
-  const pending = f.c.openHistory();
+  const pending = f.c.openHistoryV24();
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(f.modals.length, 0);
   finish();
@@ -112,7 +116,7 @@ test("history transaction failure produces no partial modal", async () => {
   f.c.transactionDone = async () => {
     throw Error("read failure");
   };
-  await assert.rejects(f.c.openHistory(), /read failure/);
+  await assert.rejects(f.c.openHistoryV24(), /read failure/);
   assert.equal(f.modals.length, 0);
 });
 
@@ -140,7 +144,7 @@ for (const storeName of ["events", "undo"]) {
       };
       return tx;
     };
-    await assert.rejects(f.c.openHistory(), (error) => error === failure);
+    await assert.rejects(f.c.openHistoryV24(), (error) => error === failure);
     assert.equal(aborted, 1);
     assert.equal(f.modals.length, 0);
   });
@@ -166,7 +170,7 @@ test("history handles a rejected request alongside a synchronous failure", async
       };
     },
   });
-  await assert.rejects(f.c.openHistory(), /request failure/);
+  await assert.rejects(f.c.openHistoryV24(), /request failure/);
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(f.modals.length, 0);
 });
@@ -176,8 +180,8 @@ test("history can be reopened after a failed transaction without retaining parti
   f.c.transactionDone = async () => {
     throw Error("failed read");
   };
-  await assert.rejects(f.c.openHistory());
+  await assert.rejects(f.c.openHistoryV24());
   f.c.transactionDone = async () => {};
-  await f.c.openHistory();
+  await f.c.openHistoryV24();
   assert.equal(f.modals.length, 1);
 });

@@ -41,18 +41,9 @@ function installUI() {
         : Error(String(event.reason)),
     );
   });
-  window.addEventListener("beforeprint", () => {
-    if (!document.getElementById("printRoot") && ready) {
-      if (drafts.size) {
-        const root = document.createElement("div");
-        root.id = "printRoot";
-        root.textContent =
-          "چاپ انجام نشد: ابتدا ورودی‌های ذخیره‌نشده را اصلاح یا لغو کنید.";
-        document.body.append(root);
-      } else preparePrint(null);
-    }
-  });
+  window.addEventListener("beforeprint", beforeReportPrint);
   window.addEventListener("afterprint", () => {
+    printAuthorization = null;
     document.getElementById("printRoot")?.remove();
     document.getElementById("printPageStyle")?.remove();
   });

@@ -37,7 +37,8 @@ async function showHistoryEvent(id, limit = 100) {
           '" data-limit="' +
           (limit + 100) +
           '">نمایش تغییرهای بیشتر</button>'
-        : "") + '</div>',
+        : "") +
+      "</div>",
   );
 }
 
@@ -107,24 +108,10 @@ function changeLabel(path) {
 }
 
 async function openHistoryV24(limit = 50) {
-  await writer.catch(() => {});
-  const events = await new Promise((resolve, reject) => {
-    const tx = connection.transaction("events", "readonly"),
-      request = tx
-        .objectStore("events")
-        .index("workspace")
-        .openCursor(IDBKeyRange.only(workspace.id), "prev"),
-      rows = [];
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => {
-      const cursor = request.result;
-      if (cursor && rows.length < limit + 1) {
-        rows.push(cursor.value);
-        cursor.continue();
-      } else resolve(rows);
-    };
-  });
-  const undo = await readRecord("undo", workspace.id);
+  return openHistory(limit);
+}
+
+function renderHistory(events, undo, limit) {
   showModal(
     "تاریخچه تغییرات",
     '<div class="history-hub"><p class="history-intro">زمان و مقادیر قبل و بعد هر تغییر ثبت می‌شوند.</p>' +
@@ -134,13 +121,18 @@ async function openHistoryV24(limit = 50) {
           "</button>"
         : "") +
       '<div class="history-list">' +
-      (!events.length ? '<div class="history-empty">هنوز تغییری برای این دوره ثبت نشده است.</div>' : '') +
+      (!events.length
+        ? '<div class="history-empty">هنوز تغییری برای این دوره ثبت نشده است.</div>'
+        : "") +
       events
         .slice(0, limit)
         .map(
           (e) =>
             '<article class="history-entry"><div class="history-entry-info"><h4>' +
-            esc(e.action) + '</h4><div class="history-entry-meta"><time datetime="' + esc(e.at) + '">' +
+            esc(e.action) +
+            '</h4><div class="history-entry-meta"><time datetime="' +
+            esc(e.at) +
+            '">' +
             esc(new Date(e.at).toLocaleString("fa-IR")) +
             '</time><span class="history-count">' +
             e.changes.length +
@@ -148,11 +140,13 @@ async function openHistoryV24(limit = 50) {
             esc(e.id) +
             '">جزئیات</button></article>',
         )
-        .join("") + '</div>' +
+        .join("") +
+      "</div>" +
       (events.length > limit
         ? '<button data-workspace-action="history-more" data-limit="' +
           (limit + 50) +
           '">نمایش موارد بیشتر</button>'
-        : "") + '</div>',
+        : "") +
+      "</div>",
   );
 }

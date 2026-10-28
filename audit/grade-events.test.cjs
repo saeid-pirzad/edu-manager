@@ -42,13 +42,17 @@ test("gradebook search normalizes Persian names without submitting or replacing 
   const message = { hidden: true };
   const root = {
     querySelectorAll: () => rows,
-    querySelector: (selector) => selector === "[data-assessment-search]" ? search :
-      selector === ".gradebook-no-results" ? message : null,
+    querySelector: (selector) =>
+      selector === "[data-assessment-search]"
+        ? search
+        : selector === ".gradebook-no-results"
+          ? message
+          : null,
   };
   const search = {
     dataset: { assessmentSearch: "" },
     value: "كريمي",
-    closest: (selector) => selector === ".gradebook" ? root : null,
+    closest: (selector) => (selector === ".gradebook" ? root : null),
   };
   const filter = () => f.listeners.get("input")({ target: search });
   filter();
@@ -60,7 +64,10 @@ test("gradebook search normalizes Persian names without submitting or replacing 
   assert.equal(message.hidden, false);
   search.value = "";
   filter();
-  assert.equal(rows.every((row) => !row.hidden), true);
+  assert.equal(
+    rows.every((row) => !row.hidden),
+    true,
+  );
   assert.equal(message.hidden, true);
   assert.equal(rows[0].grade, grade);
   assert.equal(grade.value, "17.5");
@@ -76,19 +83,30 @@ test("incomplete filter combines with search and keeps completed zero grades out
     { dataset: { assessmentName: "رضا کریمی", assessmentComplete: "false" } },
   ];
   const root = {
-    querySelector: (selector) => selector === "[data-assessment-search]" ? search :
-      selector === "[data-assessment-incomplete]" ? toggle :
-      selector === ".gradebook-no-results" ? message : null,
+    querySelector: (selector) =>
+      selector === "[data-assessment-search]"
+        ? search
+        : selector === "[data-assessment-incomplete]"
+          ? toggle
+          : selector === ".gradebook-no-results"
+            ? message
+            : null,
     querySelectorAll: () => rows,
   };
-  const target = { dataset: { assessmentIncomplete: "" }, closest: (selector) => selector === ".gradebook" ? root : null };
+  const target = {
+    dataset: { assessmentIncomplete: "" },
+    closest: (selector) => (selector === ".gradebook" ? root : null),
+  };
   const filter = () => f.listeners.get("change")({ target });
   filter();
   assert.equal(rows[0].hidden, true);
   assert.equal(rows[1].hidden, false);
   search.value = "رضایی";
   filter();
-  assert.equal(rows.every((r) => r.hidden), true);
+  assert.equal(
+    rows.every((r) => r.hidden),
+    true,
+  );
   assert.equal(message.hidden, false);
   toggle.checked = false;
   filter();
@@ -102,21 +120,49 @@ test("Enter and Shift+Enter navigate visible editable grades without selecting h
   const field = (name, options = {}) => ({
     disabled: !!options.disabled,
     readOnly: false,
-    matches: (selector) => selector === ":disabled" ? !!options.disabled : true,
-    closest: (selector) => selector === ".gradebook" ? root : selector === "[hidden]" && options.hidden ? {} : null,
+    matches: (selector) =>
+      selector === ":disabled" ? !!options.disabled : true,
+    closest: (selector) =>
+      selector === ".gradebook"
+        ? root
+        : selector === "[hidden]" && options.hidden
+          ? {}
+          : null,
     getClientRects: () => [{}],
     focus: () => calls.push("focus:" + name),
     select: () => calls.push("select:" + name),
     scrollIntoView: () => calls.push("scroll:" + name),
   });
-  const first = field("first"), second = field("second");
-  const fields = [first, field("hidden", { hidden: true }), field("disabled", { disabled: true }), second];
-  const press = (target, extra = {}) => f.listeners.get("keydown")({ key: "Enter", target, preventDefault: () => calls.push("prevent"), ...extra });
+  const first = field("first"),
+    second = field("second");
+  const fields = [
+    first,
+    field("hidden", { hidden: true }),
+    field("disabled", { disabled: true }),
+    second,
+  ];
+  const press = (target, extra = {}) =>
+    f.listeners.get("keydown")({
+      key: "Enter",
+      target,
+      preventDefault: () => calls.push("prevent"),
+      ...extra,
+    });
   press(first);
-  assert.deepEqual(calls, ["prevent", "focus:second", "select:second", "scroll:second"]);
+  assert.deepEqual(calls, [
+    "prevent",
+    "focus:second",
+    "select:second",
+    "scroll:second",
+  ]);
   calls.length = 0;
   press(second, { shiftKey: true });
-  assert.deepEqual(calls, ["prevent", "focus:first", "select:first", "scroll:first"]);
+  assert.deepEqual(calls, [
+    "prevent",
+    "focus:first",
+    "select:first",
+    "scroll:first",
+  ]);
   calls.length = 0;
   press(first, { isComposing: true });
   assert.deepEqual(calls, []);
@@ -147,7 +193,13 @@ test("Enter keeps an invalid grade focused for correction", () => {
   const target = input();
   target.getAttribute = () => "true";
   let prevented = false;
-  f.listeners.get("keydown")({ key: "Enter", target, preventDefault: () => { prevented = true; } });
+  f.listeners.get("keydown")({
+    key: "Enter",
+    target,
+    preventDefault: () => {
+      prevented = true;
+    },
+  });
   assert.equal(prevented, true);
   assert.deepEqual(f.calls, []);
 });

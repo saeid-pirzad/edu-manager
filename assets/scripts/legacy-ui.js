@@ -1623,13 +1623,16 @@ function updateLessonReportFilter(key, val) {
     lessonReportFilter.lessonId = "";
   }
   if (key === "lessonId" && val) {
-    const selected = db.schools.flatMap((school) =>
-      school.classes.map((c) => ({ school, c })),
-    ).find(({ school, c }) =>
-      (!lessonReportFilter.schoolId || school.id === lessonReportFilter.schoolId) &&
-      (!lessonReportFilter.classId || c.id === lessonReportFilter.classId) &&
-      c.lessons.some((lesson) => lesson.id === val),
-    );
+    const selected = db.schools
+      .flatMap((school) => school.classes.map((c) => ({ school, c })))
+      .find(
+        ({ school, c }) =>
+          (!lessonReportFilter.schoolId ||
+            school.id === lessonReportFilter.schoolId) &&
+          (!lessonReportFilter.classId ||
+            c.id === lessonReportFilter.classId) &&
+          c.lessons.some((lesson) => lesson.id === val),
+      );
     if (selected) {
       lessonReportFilter.schoolId = selected.school.id;
       lessonReportFilter.classId = selected.c.id;
@@ -3542,8 +3545,10 @@ function renderLessonSessions(c, lesson) {
       esc(faDate(session.date)) +
       '</strong><span class="session-period">زنگ ' +
       (session.period + 1).toLocaleString("fa-IR") +
-      '</span></span>' +
-      (session.date === todayISO() ? '<span class="session-today">امروز</span>' : "") +
+      "</span></span>" +
+      (session.date === todayISO()
+        ? '<span class="session-today">امروز</span>'
+        : "") +
       "</span>";
     if (pod || unit)
       h +=
@@ -4799,7 +4804,8 @@ function openSessionModal(session) {
   const sortedStudents = getSortedStudents({
     students: sessionStudents(c, session),
   });
-  if (!sortedStudents.length) h += `<div class="empty">دانش‌آموزی در این جلسه نیست</div>`;
+  if (!sortedStudents.length)
+    h += `<div class="empty">دانش‌آموزی در این جلسه نیست</div>`;
   sortedStudents.forEach((s, i) => {
     const st = session.attendance[s.id] || "";
     const isPresent = st === "present";

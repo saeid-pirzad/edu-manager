@@ -789,7 +789,11 @@ function installCourseTableEvents() {
   const body = document.getElementById("modalBody");
   const change = (event) => {
     const control = event.target;
-    if (control.dataset?.modulePicker !== undefined && !control.matches(":disabled") && !control.closest("[inert]")) {
+    if (
+      control.dataset?.modulePicker !== undefined &&
+      !control.matches(":disabled") &&
+      !control.closest("[inert]")
+    ) {
       selectGradeModule(control);
       return;
     }

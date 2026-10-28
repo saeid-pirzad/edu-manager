@@ -1,4 +1,27 @@
+let printAuthorization = null;
+
+function beforeReportPrint() {
+  try {
+    if (!printAuthorization || !document.getElementById("printRoot"))
+      throw Error("برای چاپ معتبر، از دکمه «چاپ / PDF» گزارش استفاده کنید.");
+    if (!fileMode) assertWorkspaceContext(printAuthorization);
+    if (busy || drafts.size || draftWritesPending || draftRecoveryFailed)
+      throw Error(
+        "ثبت اطلاعات کامل نشده است؛ پس از ذخیره، گزارش را دوباره چاپ کنید.",
+      );
+    return;
+  } catch (error) {
+    printAuthorization = null;
+    document.getElementById("printRoot")?.remove();
+    const root = document.createElement("div");
+    root.id = "printRoot";
+    root.textContent = "چاپ انجام نشد: " + error.message;
+    document.body.append(root);
+  }
+}
+
 function preparePrint(button) {
+  printAuthorization = null;
   document.getElementById("printRoot")?.remove();
   const modal = document.getElementById("modal"),
     isModal = button
@@ -6,7 +29,9 @@ function preparePrint(button) {
       : !modal.classList.contains("hidden");
   let source = isModal
     ? document.getElementById("modalBody")
-    : button?.closest(".report-document,#karnamehTabOutput,#lessonReportTabOutput,#lessonReportOutput,#globalReportOutput,#periodicReportOutput") ||
+    : button?.closest(
+        ".report-document,#karnamehTabOutput,#lessonReportTabOutput,#lessonReportOutput,#globalReportOutput,#periodicReportOutput",
+      ) ||
       button?.closest(".card") ||
       document.getElementById("karnamehTabOutput") ||
       document.getElementById("lessonReportTabOutput") ||
@@ -45,9 +70,15 @@ function preparePrint(button) {
     "</p></header>";
   root.append(copy);
   document.body.append(root);
-  const columns = Math.max(0, ...[...copy.querySelectorAll("tr")].map((tr) =>
-    [...tr.children].reduce((sum, cell) => sum + (Number(cell.colSpan) || 1), 0),
-  ));
+  const columns = Math.max(
+    0,
+    ...[...copy.querySelectorAll("tr")].map((tr) =>
+      [...tr.children].reduce(
+        (sum, cell) => sum + (Number(cell.colSpan) || 1),
+        0,
+      ),
+    ),
+  );
   document.getElementById("printPageStyle")?.remove();
   const style = document.createElement("style");
   style.id = "printPageStyle";
@@ -70,6 +101,7 @@ async function printReport(button, { context, validate } = {}) {
         "محدوده یا متن گزارش تغییر کرده است؛ گزارش را دوباره تهیه کنید.",
       );
     preparePrint(button);
+    printAuthorization = expected;
     if (!globalThis.__EDU_PRINT_TEST__) window.print();
     return true;
   } catch (error) {

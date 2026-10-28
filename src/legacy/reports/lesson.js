@@ -59,13 +59,16 @@ function updateLessonReportFilter(key, val) {
     lessonReportFilter.lessonId = "";
   }
   if (key === "lessonId" && val) {
-    const selected = db.schools.flatMap((school) =>
-      school.classes.map((c) => ({ school, c })),
-    ).find(({ school, c }) =>
-      (!lessonReportFilter.schoolId || school.id === lessonReportFilter.schoolId) &&
-      (!lessonReportFilter.classId || c.id === lessonReportFilter.classId) &&
-      c.lessons.some((lesson) => lesson.id === val),
-    );
+    const selected = db.schools
+      .flatMap((school) => school.classes.map((c) => ({ school, c })))
+      .find(
+        ({ school, c }) =>
+          (!lessonReportFilter.schoolId ||
+            school.id === lessonReportFilter.schoolId) &&
+          (!lessonReportFilter.classId ||
+            c.id === lessonReportFilter.classId) &&
+          c.lessons.some((lesson) => lesson.id === val),
+      );
     if (selected) {
       lessonReportFilter.schoolId = selected.school.id;
       lessonReportFilter.classId = selected.c.id;

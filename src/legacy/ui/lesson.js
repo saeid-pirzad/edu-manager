@@ -116,8 +116,10 @@ function renderLessonSessions(c, lesson) {
       esc(faDate(session.date)) +
       '</strong><span class="session-period">زنگ ' +
       (session.period + 1).toLocaleString("fa-IR") +
-      '</span></span>' +
-      (session.date === todayISO() ? '<span class="session-today">امروز</span>' : "") +
+      "</span></span>" +
+      (session.date === todayISO()
+        ? '<span class="session-today">امروز</span>'
+        : "") +
       "</span>";
     if (pod || unit)
       h +=

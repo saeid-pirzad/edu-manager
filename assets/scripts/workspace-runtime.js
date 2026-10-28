@@ -1243,7 +1243,8 @@ async function flushDrafts({ strict = false } = {}) {
     if (
       !document.activeElement?.matches?.("[data-grade]") &&
       !document.activeElement?.closest?.(".gradebook")
-    ) render();
+    )
+      render();
   })()
     .catch(async (error) => {
       try {
@@ -1355,25 +1356,42 @@ function applyDrafts() {
         note.dataset.state = item.error ? "error" : "pending";
       }
       const row = input.closest(".assessment-student");
-      if (row) row.dataset.editState = row.querySelector('.grade-note[data-state="error"]') ? "error" : "pending";
+      if (row)
+        row.dataset.editState = row.querySelector(
+          '.grade-note[data-state="error"]',
+        )
+          ? "error"
+          : "pending";
     }
   });
 }
 // Source: src/workspace/grading/events.js
 function filterAssessmentRows(root) {
-  const normalize = (value) => String(value).replace(/ي/g, "ی").replace(/ك/g, "ک").replace(/‌/g, " ").replace(/\s+/g, " ").trim();
+  const normalize = (value) =>
+    String(value)
+      .replace(/ي/g, "ی")
+      .replace(/ك/g, "ک")
+      .replace(/‌/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
   const query = normalize(root.querySelector("[data-assessment-search]").value);
-  const incompleteOnly = !!root.querySelector("[data-assessment-incomplete]")?.checked;
+  const incompleteOnly = !!root.querySelector("[data-assessment-incomplete]")
+    ?.checked;
   let visible = 0;
-  const activePanel = root.querySelector("[data-module-panel]:not([hidden])") || root;
+  const activePanel =
+    root.querySelector("[data-module-panel]:not([hidden])") || root;
   for (const row of activePanel.querySelectorAll("[data-assessment-name]")) {
-    row.hidden = !normalize(row.dataset.assessmentName).includes(query) ||
+    row.hidden =
+      !normalize(row.dataset.assessmentName).includes(query) ||
       (incompleteOnly && row.dataset.assessmentComplete === "true");
     if (!row.hidden) visible++;
   }
   const message = root.querySelector(".gradebook-no-results");
   message.hidden = (!query && !incompleteOnly) || visible > 0;
-  message.textContent = incompleteOnly && !query ? "همه نمره‌های این مرحله تکمیل شده‌اند." : "دانش‌آموزی با این مشخصات پیدا نشد.";
+  message.textContent =
+    incompleteOnly && !query
+      ? "همه نمره‌های این مرحله تکمیل شده‌اند."
+      : "دانش‌آموزی با این مشخصات پیدا نشد.";
 }
 function installGradeEvents() {
   const isEditableGrade = (input) =>
@@ -1395,7 +1413,8 @@ function installGradeEvents() {
     if (root && !event.target.closest("[inert]")) filterAssessmentRows(root);
   });
   document.addEventListener("keydown", (event) => {
-    if (event.isComposing || event.ctrlKey || event.altKey || event.metaKey) return;
+    if (event.isComposing || event.ctrlKey || event.altKey || event.metaKey)
+      return;
     if (event.key !== "Enter") return;
     const input = event.target;
     if (!isEditableGrade(input)) return;
@@ -1405,8 +1424,12 @@ function installGradeEvents() {
     }
     const root = input.closest(".gradebook");
     if (!root) return;
-    const fields = [...root.querySelectorAll("input[data-grade]")].filter((field) =>
-      !field.disabled && !field.readOnly && !field.closest("[hidden]") && field.getClientRects().length,
+    const fields = [...root.querySelectorAll("input[data-grade]")].filter(
+      (field) =>
+        !field.disabled &&
+        !field.readOnly &&
+        !field.closest("[hidden]") &&
+        field.getClientRects().length,
     );
     const index = fields.indexOf(input);
     if (index < 0) return;
@@ -1644,7 +1667,9 @@ async function openAssessmentStage(button) {
   if (term !== workspace.term) {
     const periods = await allFrom("catalog");
     ensureCurrent();
-    const target = periods.find((p) => p.year === workspace.year && p.term === term);
+    const target = periods.find(
+      (p) => p.year === workspace.year && p.term === term,
+    );
     if (!target) {
       openNewPeriod();
       document.getElementById("periodYear").value = workspace.year;
@@ -1653,10 +1678,14 @@ async function openAssessmentStage(button) {
     }
     const loaded = await readWorkspace(target.id);
     ensureCurrent();
-    const targetLesson = loaded.data.schools.find((s) => s.id === origin.schoolId)
-      ?.classes.find((c) => c.id === origin.classId)?.lessons.find((l) => l.id === origin.lessonId);
+    const targetLesson = loaded.data.schools
+      .find((s) => s.id === origin.schoolId)
+      ?.classes.find((c) => c.id === origin.classId)
+      ?.lessons.find((l) => l.id === origin.lessonId);
     if (!targetLesson)
-      throw Error("این درس در نوبت مقصد وجود ندارد؛ ابتدا فهرست دروس آن نوبت را بررسی کنید.");
+      throw Error(
+        "این درس در نوبت مقصد وجود ندارد؛ ابتدا فهرست دروس آن نوبت را بررسی کنید.",
+      );
     await switchPeriod(target.id);
   }
   assessmentSelectedStage = stage;
@@ -1674,41 +1703,79 @@ function buildAssessmentEditor(c, l) {
   const stage = assessmentSelectedStage;
   const stageName = (mid ? "میان‌ترم " : "پایان‌ترم ") + workspace.term;
   const students = getSortedStudents(c);
-  let html = '<div class="card assessment-editor gradebook"><header class="gradebook-heading"><div><span class="gradebook-eyebrow">دفتر نمره</span><h3>' +
-    esc(l.name) + '</h3><p>' + (general ? "درس عمومی · یک نمره از ۲۰" : "کاردانش · عملی و تئوری") +
-    '</p></div><span class="gradebook-class-count">' + students.length.toLocaleString("fa-IR") +
+  let html =
+    '<div class="card assessment-editor gradebook"><header class="gradebook-heading"><div><span class="gradebook-eyebrow">دفتر نمره</span><h3>' +
+    esc(l.name) +
+    "</h3><p>" +
+    (general ? "درس عمومی · یک نمره از ۲۰" : "کاردانش · عملی و تئوری") +
+    '</p></div><span class="gradebook-class-count">' +
+    students.length.toLocaleString("fa-IR") +
     ' دانش‌آموز</span></header><nav class="assessment-navigation" aria-label="چهار مرحله نمرات سال">';
   for (const term of ["اول", "دوم"])
     for (const item of ["midterm", "final"])
-      html += '<button type="button" data-workspace-action="assessment-stage" data-term="' + term + '" data-stage="' + item + '" aria-pressed="' + (workspace.term === term && stage === item) + '">' + (item === "midterm" ? "میان‌ترم " : "پایان‌ترم ") + term + '</button>';
-  html += '</nav><div class="gradebook-simple-search"><input type="search" data-assessment-search="" aria-label="جست‌وجوی دانش‌آموز" placeholder="جست‌وجوی دانش‌آموز…" autocomplete="off"></div>';
-  html += '<section class="assessment-stage" aria-label="' + esc(stageName) + '"><div class="assessment-students">';
-  if (!students.length)
-    html += '<div class="empty"><strong>هنوز دانش‌آموزی در کلاس نیست</strong><p>ابتدا از تب دانش‌آموزان، اعضای کلاس را اضافه کنید.</p></div>';
-  for (const [index, st] of students.entries()) {
-      const r = assessmentResult(l, st.id, stage);
       html +=
-        '<article class="assessment-student" data-assessment-complete="' + r.complete + '" data-result-state="' + assessmentResultState(r) + '" data-assessment-name="' + esc(st.name) + '"><div class="gradebook-student"><span class="gradebook-number" aria-hidden="true">' +
-        (index + 1).toLocaleString("fa-IR") + '</span><h4>' + esc(st.name) +
-        '</h4></div><div class="assessment-inputs' + (general ? " general-inputs" : "") + '">' +
-        (general ? "" : '<label><span>عملی <small>از ۲۰</small></span>' + gradeCell(c, l, st, mid ? "midtermPractical" : "practical", {
-          value: r.practical,
-        }) + "</label>") +
-        '<label><span>' + (general ? "نمره" : "تئوری") + '<small>از ۲۰</small></span>' +
-        gradeCell(c, l, st, mid ? "midtermTheory" : "theory", {
-          value: r.theory,
-        }) +
-        '</label></div><div class="gradebook-result"><span>نتیجه</span><strong data-assessment-final="' +
-        esc(st.id) +
+        '<button type="button" data-workspace-action="assessment-stage" data-term="' +
+        term +
         '" data-stage="' +
-        stage +
+        item +
+        '" aria-pressed="' +
+        (workspace.term === term && stage === item) +
         '">' +
-        finalText(r) +
-        "</strong> <span data-assessment-status>" +
-        (r.complete ? gradeStatus(r) : "ناقص") +
-        "</span></div></article>";
+        (item === "midterm" ? "میان‌ترم " : "پایان‌ترم ") +
+        term +
+        "</button>";
+  html +=
+    '</nav><div class="gradebook-simple-search"><input type="search" data-assessment-search="" aria-label="جست‌وجوی دانش‌آموز" placeholder="جست‌وجوی دانش‌آموز…" autocomplete="off"></div>';
+  html +=
+    '<section class="assessment-stage" aria-label="' +
+    esc(stageName) +
+    '"><div class="assessment-students">';
+  if (!students.length)
+    html +=
+      '<div class="empty"><strong>هنوز دانش‌آموزی در کلاس نیست</strong><p>ابتدا از تب دانش‌آموزان، اعضای کلاس را اضافه کنید.</p></div>';
+  for (const [index, st] of students.entries()) {
+    const r = assessmentResult(l, st.id, stage);
+    html +=
+      '<article class="assessment-student" data-assessment-complete="' +
+      r.complete +
+      '" data-result-state="' +
+      assessmentResultState(r) +
+      '" data-assessment-name="' +
+      esc(st.name) +
+      '"><div class="gradebook-student"><span class="gradebook-number" aria-hidden="true">' +
+      (index + 1).toLocaleString("fa-IR") +
+      "</span><h4>" +
+      esc(st.name) +
+      '</h4></div><div class="assessment-inputs' +
+      (general ? " general-inputs" : "") +
+      '">' +
+      (general
+        ? ""
+        : "<label><span>عملی <small>از ۲۰</small></span>" +
+          gradeCell(c, l, st, mid ? "midtermPractical" : "practical", {
+            value: r.practical,
+          }) +
+          "</label>") +
+      "<label><span>" +
+      (general ? "نمره" : "تئوری") +
+      "<small>از ۲۰</small></span>" +
+      gradeCell(c, l, st, mid ? "midtermTheory" : "theory", {
+        value: r.theory,
+      }) +
+      '</label></div><div class="gradebook-result"><span>نتیجه</span><strong data-assessment-final="' +
+      esc(st.id) +
+      '" data-stage="' +
+      stage +
+      '">' +
+      finalText(r) +
+      "</strong> <span data-assessment-status>" +
+      (r.complete ? gradeStatus(r) : "ناقص") +
+      "</span></div></article>";
   }
-  return html + '</div><p class="gradebook-no-results" role="status" hidden>دانش‌آموزی با این نام پیدا نشد.</p></section></div>';
+  return (
+    html +
+    '</div><p class="gradebook-no-results" role="status" hidden>دانش‌آموزی با این نام پیدا نشد.</p></section></div>'
+  );
 }
 function assessmentResultState(result) {
   if (!result.complete) return "incomplete";
@@ -1776,25 +1843,47 @@ function refreshGradeResults() {
   refreshPolicyResults();
   for (const root of document.querySelectorAll(".gradebook")) {
     const rows = [...root.querySelectorAll("[data-assessment-complete]")];
-    const completed = rows.filter((row) => row.dataset.assessmentComplete === "true").length;
+    const completed = rows.filter(
+      (row) => row.dataset.assessmentComplete === "true",
+    ).length;
     const progress = root.querySelector("[data-assessment-progress]");
     const text = root.querySelector("[data-assessment-progress-text]");
     if (progress) progress.value = completed;
-    if (text) text.textContent = completed.toLocaleString("fa-IR") + " از " + rows.length.toLocaleString("fa-IR") + " تکمیل شده";
+    if (text)
+      text.textContent =
+        completed.toLocaleString("fa-IR") +
+        " از " +
+        rows.length.toLocaleString("fa-IR") +
+        " تکمیل شده";
   }
   document.querySelectorAll("[data-grade]").forEach((input) => {
     const note = input.parentElement.querySelector(".grade-note"),
       item = drafts.get(inputKey(contextFromInput(input)));
     if (note) {
       const filled = input.value.trim() !== "";
-      note.textContent = item ? item.error || "در انتظار ذخیره" : filled ? "ذخیره شد" : "";
-      note.dataset.state = item ? (item.error ? "error" : "pending") : filled ? "saved" : "idle";
+      note.textContent = item
+        ? item.error || "در انتظار ذخیره"
+        : filled
+          ? "ذخیره شد"
+          : "";
+      note.dataset.state = item
+        ? item.error
+          ? "error"
+          : "pending"
+        : filled
+          ? "saved"
+          : "idle";
     }
   });
-  for (const row of document.querySelectorAll(".gradebook .assessment-student")) {
+  for (const row of document.querySelectorAll(
+    ".gradebook .assessment-student",
+  )) {
     const notes = [...row.querySelectorAll(".grade-note")];
-    row.dataset.editState = notes.some((note) => note.dataset.state === "error") ? "error" :
-      notes.some((note) => note.dataset.state === "pending") ? "pending" : "saved";
+    row.dataset.editState = notes.some((note) => note.dataset.state === "error")
+      ? "error"
+      : notes.some((note) => note.dataset.state === "pending")
+        ? "pending"
+        : "saved";
   }
 }
 
@@ -3957,42 +4046,7 @@ async function openHistory(limit = 50) {
   if (connection !== sourceConnection)
     throw Error("اتصال بانک هنگام خواندن تاریخچه تغییر کرده است.");
   events.sort((a, b) => b.id - a.id);
-  showModal(
-    "تاریخچه تغییرات",
-    "<p>تغییرات با زمان، مقدار قبل و بعد ثبت می‌شوند. اصلاح نمره و تغییر واحد هم در این فهرست هستند.</p>" +
-      (undo
-        ? '<button data-mutating="1" data-workspace-action="undo">بازگردانی آخرین تغییر: ' +
-          esc(undo.action) +
-          "</button>"
-        : "") +
-      events
-        .slice(0, limit)
-        .map(
-          (e) =>
-            '<details class="card"><summary>' +
-            esc(new Date(e.at).toLocaleString("fa-IR") + " — " + e.action) +
-            "</summary><table><thead><tr><th>مسیر</th><th>قبل</th><th>بعد</th></tr></thead><tbody>" +
-            e.changes
-              .map(
-                (change) =>
-                  '<tr><td dir="ltr">' +
-                  esc(change.path) +
-                  "</td><td>" +
-                  esc(JSON.stringify(change.before)) +
-                  "</td><td>" +
-                  esc(JSON.stringify(change.after)) +
-                  "</td></tr>",
-              )
-              .join("") +
-            "</tbody></table></details>",
-        )
-        .join("") +
-      (events.length > limit
-        ? '<button data-workspace-action="history-more" data-limit="' +
-          (limit + 50) +
-          '">نمایش موارد بیشتر</button>'
-        : ""),
-  );
+  renderHistory(events, undo, limit);
 }
 
 function validatedUndoCandidate(undo, records, period) {
@@ -4105,7 +4159,9 @@ async function openPeriods() {
         ? '<button data-workspace-action="reopen-period">بازگشایی با ثبت در تاریخچه</button>'
         : '<button data-workspace-action="finalize-period">بستن دوره و ثبت کارنامه نهایی</button><button class="ghost" data-workspace-action="edit-period-label">اصلاح عنوان دوره</button>') +
       '</div></section><section class="period-reports"><h4>کارنامه‌های نهایی ثبت‌شده</h4>' +
-      (reports.length ? "" : '<p class="period-intro">هنوز کارنامه نهایی برای این دوره ثبت نشده است.</p>') +
+      (reports.length
+        ? ""
+        : '<p class="period-intro">هنوز کارنامه نهایی برای این دوره ثبت نشده است.</p>') +
       reports
         .map(
           (r) =>
@@ -4678,9 +4734,11 @@ async function showFrozenReport(id) {
                   (Number.isFinite(st.average) ? st.average.toFixed(2) : "—") +
                   "</p></article>",
               )
-              .join("") + '</section>',
+              .join("") +
+            "</section>",
         )
-        .join("") + '</div>',
+        .join("") +
+      "</div>",
   );
 }
 
@@ -5002,7 +5060,30 @@ function parentReportV24(st, c) {
   );
 }
 // Source: src/workspace/reports/printing.js
+let printAuthorization = null;
+
+function beforeReportPrint() {
+  try {
+    if (!printAuthorization || !document.getElementById("printRoot"))
+      throw Error("برای چاپ معتبر، از دکمه «چاپ / PDF» گزارش استفاده کنید.");
+    if (!fileMode) assertWorkspaceContext(printAuthorization);
+    if (busy || drafts.size || draftWritesPending || draftRecoveryFailed)
+      throw Error(
+        "ثبت اطلاعات کامل نشده است؛ پس از ذخیره، گزارش را دوباره چاپ کنید.",
+      );
+    return;
+  } catch (error) {
+    printAuthorization = null;
+    document.getElementById("printRoot")?.remove();
+    const root = document.createElement("div");
+    root.id = "printRoot";
+    root.textContent = "چاپ انجام نشد: " + error.message;
+    document.body.append(root);
+  }
+}
+
 function preparePrint(button) {
+  printAuthorization = null;
   document.getElementById("printRoot")?.remove();
   const modal = document.getElementById("modal"),
     isModal = button
@@ -5010,7 +5091,9 @@ function preparePrint(button) {
       : !modal.classList.contains("hidden");
   let source = isModal
     ? document.getElementById("modalBody")
-    : button?.closest(".report-document,#karnamehTabOutput,#lessonReportTabOutput,#lessonReportOutput,#globalReportOutput,#periodicReportOutput") ||
+    : button?.closest(
+        ".report-document,#karnamehTabOutput,#lessonReportTabOutput,#lessonReportOutput,#globalReportOutput,#periodicReportOutput",
+      ) ||
       button?.closest(".card") ||
       document.getElementById("karnamehTabOutput") ||
       document.getElementById("lessonReportTabOutput") ||
@@ -5049,9 +5132,15 @@ function preparePrint(button) {
     "</p></header>";
   root.append(copy);
   document.body.append(root);
-  const columns = Math.max(0, ...[...copy.querySelectorAll("tr")].map((tr) =>
-    [...tr.children].reduce((sum, cell) => sum + (Number(cell.colSpan) || 1), 0),
-  ));
+  const columns = Math.max(
+    0,
+    ...[...copy.querySelectorAll("tr")].map((tr) =>
+      [...tr.children].reduce(
+        (sum, cell) => sum + (Number(cell.colSpan) || 1),
+        0,
+      ),
+    ),
+  );
   document.getElementById("printPageStyle")?.remove();
   const style = document.createElement("style");
   style.id = "printPageStyle";
@@ -5074,6 +5163,7 @@ async function printReport(button, { context, validate } = {}) {
         "محدوده یا متن گزارش تغییر کرده است؛ گزارش را دوباره تهیه کنید.",
       );
     preparePrint(button);
+    printAuthorization = expected;
     if (!globalThis.__EDU_PRINT_TEST__) window.print();
     return true;
   } catch (error) {
@@ -5656,7 +5746,14 @@ async function wipeAllV24() {
     return handleError(Error("ابتدا نسخه آماده برنامه را باز کنید."));
   showModal(
     "حذف کامل اطلاعات همه دوره‌ها",
-    '<form class="record-editor" id="wipeEditor" data-workspace-submit="confirm-wipe"><div class="record-editor-context"><h4>حذف اطلاعات همین مرورگر</h4><p>تمام دوره‌ها، نمرات، جلسات، پیش‌نویس‌ها، توضیحات گزارش، تاریخچه، کارنامه‌های ثابت و پشتیبان‌های داخلی پاک می‌شوند.</p></div><p>برنامه نصب‌شده و فایل‌های پشتیبان بیرون برنامه حذف نمی‌شوند. پیش از ادامه، پشتیبان کامل همه دوره‌ها را در فایل مستقل نگه دارید.</p><button type="button" class="ghost" data-workspace-action="export-full">دریافت پشتیبان کامل همه دوره‌ها</button><label for="wipeText">برای تأیید، «حذف» را بنویسید</label><input id="wipeText" autocomplete="off"><label><input type="checkbox" id="wipeBackup"> پشتیبان مستقل موردنیاز را نگه داشته‌ام.</label><p id="wipeError" class="entity-create-error" role="alert"></p><div class="row record-editor-actions"><button type="button" class="ghost" data-workspace-action="close">انصراف</button><button type="submit" class="danger">حذف کامل اطلاعات</button></div></form>',
+    '<form class="record-editor wipe-editor" id="wipeEditor" data-workspace-submit="confirm-wipe" aria-describedby="wipeWarning">' +
+      '<section class="wipe-warning" id="wipeWarning"><span class="wipe-symbol" aria-hidden="true">' +
+      EduIcons.html("trash") +
+      "</span><div><h4>همه دوره‌ها از این مرورگر پاک می‌شوند</h4><p>این عملیات تمام اطلاعات ذخیره‌شده داخل برنامه را حذف می‌کند.</p></div></section>" +
+      '<section class="wipe-scope" aria-label="اطلاعاتی که حذف می‌شوند"><h4>چه چیزهایی حذف می‌شوند؟</h4><ul><li>همه دوره‌ها، مدرسه‌ها، کلاس‌ها و دانش‌آموزان</li><li>نمرات، جلسات و سوابق حضور و غیاب</li><li>پیش‌نویس‌ها، توضیحات گزارش و تاریخچه تغییرات</li><li>کارنامه‌های ثابت و پشتیبان‌های داخلی</li></ul></section>' +
+      '<section class="wipe-backup"><h4>اول یک نسخه مستقل نگه دارید</h4><p>برنامه نصب‌شده و فایل‌های پشتیبان بیرون برنامه باقی می‌مانند. برای نگهداری اطلاعات همه دوره‌ها، پشتیبان کامل را دریافت کنید.</p><button type="button" class="ghost wipe-export" data-workspace-action="export-full">دریافت پشتیبان کامل همه دوره‌ها</button></section>' +
+      '<div class="wipe-confirmation"><label for="wipeText">برای تأیید، «حذف» را بنویسید</label><input id="wipeText" autocomplete="off" spellcheck="false" aria-describedby="wipeError" placeholder="حذف"><label class="wipe-backup-check" for="wipeBackup"><input type="checkbox" id="wipeBackup"><span>پشتیبان مستقل موردنیاز را نگه داشته‌ام.</span></label></div>' +
+      '<p id="wipeError" class="entity-create-error" role="alert"></p><div class="record-editor-actions wipe-actions"><button type="button" class="ghost" data-workspace-action="close">انصراف</button><button type="submit" class="danger">حذف کامل اطلاعات</button></div></form>',
   );
 }
 async function confirmWipe() {
@@ -5809,18 +5906,9 @@ function installUI() {
         : Error(String(event.reason)),
     );
   });
-  window.addEventListener("beforeprint", () => {
-    if (!document.getElementById("printRoot") && ready) {
-      if (drafts.size) {
-        const root = document.createElement("div");
-        root.id = "printRoot";
-        root.textContent =
-          "چاپ انجام نشد: ابتدا ورودی‌های ذخیره‌نشده را اصلاح یا لغو کنید.";
-        document.body.append(root);
-      } else preparePrint(null);
-    }
-  });
+  window.addEventListener("beforeprint", beforeReportPrint);
   window.addEventListener("afterprint", () => {
+    printAuthorization = null;
     document.getElementById("printRoot")?.remove();
     document.getElementById("printPageStyle")?.remove();
   });
@@ -7409,7 +7497,8 @@ async function showHistoryEvent(id, limit = 100) {
           '" data-limit="' +
           (limit + 100) +
           '">نمایش تغییرهای بیشتر</button>'
-        : "") + '</div>',
+        : "") +
+      "</div>",
   );
 }
 
@@ -7479,24 +7568,10 @@ function changeLabel(path) {
 }
 
 async function openHistoryV24(limit = 50) {
-  await writer.catch(() => {});
-  const events = await new Promise((resolve, reject) => {
-    const tx = connection.transaction("events", "readonly"),
-      request = tx
-        .objectStore("events")
-        .index("workspace")
-        .openCursor(IDBKeyRange.only(workspace.id), "prev"),
-      rows = [];
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => {
-      const cursor = request.result;
-      if (cursor && rows.length < limit + 1) {
-        rows.push(cursor.value);
-        cursor.continue();
-      } else resolve(rows);
-    };
-  });
-  const undo = await readRecord("undo", workspace.id);
+  return openHistory(limit);
+}
+
+function renderHistory(events, undo, limit) {
   showModal(
     "تاریخچه تغییرات",
     '<div class="history-hub"><p class="history-intro">زمان و مقادیر قبل و بعد هر تغییر ثبت می‌شوند.</p>' +
@@ -7506,13 +7581,18 @@ async function openHistoryV24(limit = 50) {
           "</button>"
         : "") +
       '<div class="history-list">' +
-      (!events.length ? '<div class="history-empty">هنوز تغییری برای این دوره ثبت نشده است.</div>' : '') +
+      (!events.length
+        ? '<div class="history-empty">هنوز تغییری برای این دوره ثبت نشده است.</div>'
+        : "") +
       events
         .slice(0, limit)
         .map(
           (e) =>
             '<article class="history-entry"><div class="history-entry-info"><h4>' +
-            esc(e.action) + '</h4><div class="history-entry-meta"><time datetime="' + esc(e.at) + '">' +
+            esc(e.action) +
+            '</h4><div class="history-entry-meta"><time datetime="' +
+            esc(e.at) +
+            '">' +
             esc(new Date(e.at).toLocaleString("fa-IR")) +
             '</time><span class="history-count">' +
             e.changes.length +
@@ -7520,12 +7600,14 @@ async function openHistoryV24(limit = 50) {
             esc(e.id) +
             '">جزئیات</button></article>',
         )
-        .join("") + '</div>' +
+        .join("") +
+      "</div>" +
       (events.length > limit
         ? '<button data-workspace-action="history-more" data-limit="' +
           (limit + 50) +
           '">نمایش موارد بیشتر</button>'
-        : "") + '</div>',
+        : "") +
+      "</div>",
   );
 }
 // Source: src/workspace/students/archive.js
@@ -7634,9 +7716,12 @@ function tabMessage(message) {
 }
 
 async function openOtherDrafts() {
+  const ensureCurrent = preserveAsyncTarget();
   const prefix = "Edu24.drafts." + workspace.id + ".",
     byTab = new Map();
-  for (const row of await persistedGradeDrafts(prefix)) {
+  const rows = await persistedGradeDrafts(prefix);
+  ensureCurrent();
+  for (const row of rows) {
     if (row.key === draftBaseKey() || row.key.startsWith(draftBaseKey() + "."))
       continue;
     const entry = {
@@ -7657,7 +7742,8 @@ async function openOtherDrafts() {
   const entries = [...byTab.values()].filter((x) => x.items.length);
   showModal(
     "پیش‌نویس نشست‌های دیگر",
-    '<div class="other-drafts"><header class="other-drafts-heading"><span>' + entries.length.toLocaleString("fa-IR") +
+    '<div class="other-drafts"><header class="other-drafts-heading"><span>' +
+      entries.length.toLocaleString("fa-IR") +
       ' نشست دارای پیش‌نویس</span><p>فقط جدیدترین پیش‌نویس هر نشست نمایش داده می‌شود. دریافت آن نیازمند بررسی و تأیید مقدار ثبت‌شده است.</p></header><div class="other-drafts-list">' +
       (entries.length
         ? entries
@@ -7672,11 +7758,18 @@ async function openOtherDrafts() {
                 '" data-workspace-action="adopt-drafts">دریافت برای بررسی</button></article>',
             )
             .join("")
-        : '<div class="other-drafts-empty">پیش‌نویس دیگری یافت نشد.</div>') + '</div></div>',
+        : '<div class="other-drafts-empty">پیش‌نویس دیگری یافت نشد.</div>') +
+      "</div></div>",
   );
 }
 
-async function consumeDraftSource(record) {
+async function consumeDraftSource(
+  record,
+  origin,
+  sourceConnection,
+  ensureCurrent,
+) {
+  ensureCurrent();
   const same = (raw) => {
     if (!raw) return true;
     const entries = Array.isArray(raw) ? raw : raw.entries || [];
@@ -7692,13 +7785,13 @@ async function consumeDraftSource(record) {
   ).toISOString();
   const tombstone = {
     key: record.key,
-    workspace: workspace.id,
+    workspace: origin,
     owner: "received",
     generation: record.generation,
     entries: [],
     updatedAt,
   };
-  const tx = connection.transaction("drafts", "readwrite"),
+  const tx = sourceConnection.transaction("drafts", "readwrite"),
     done = transactionDone(tx);
   const store = tx.objectStore("drafts"),
     request = store.get(record.key);
@@ -7706,35 +7799,62 @@ async function consumeDraftSource(record) {
     if (same(request.result)) store.put(tombstone);
   };
   await done;
+  ensureCurrent();
   try {
     const raw = JSON.parse(localStorage.getItem(record.key) || "null");
     if (same(raw)) localStorage.setItem(record.key, JSON.stringify(tombstone));
   } catch {}
 }
 
+let adoptingDrafts = false;
 async function adoptDrafts(key) {
-  const prefix = "Edu24.drafts." + workspace.id + ".";
-  if (!key.startsWith(prefix) || key === draftStorageKey())
-    throw Error("کلید معتبر نیست.");
-  const record = (await persistedGradeDrafts(prefix)).find(
-    (row) => row.key === key,
-  );
-  if (!record) throw Error("پیش‌نویس پیدا نشد.");
-  const items = record.entries;
-  if (!Array.isArray(items)) throw Error("پیش‌نویس نامعتبر است.");
-  if (items.some((item) => !isSupportedGradeDraft(item)))
-    throw Error("ورودی نامعتبر است؛ هیچ پیش‌نویسی دریافت نشد.");
-  for (const original of items) {
-    const item = {
-      ...original,
-      review: true,
-      error: "بازیابی از نشست دیگر؛ نیازمند بررسی",
-    };
-    drafts.set(inputKey(item), item);
+  if (adoptingDrafts) throw Error("دریافت پیش‌نویس در حال انجام است.");
+  adoptingDrafts = true;
+  try {
+    const target = preserveAsyncTarget(),
+      origin = workspace.id,
+      sourceConnection = connection,
+      ensureCurrent = () => {
+        target();
+        if (connection !== sourceConnection)
+          throw Error(
+            "اتصال بانک تغییر کرده است؛ دریافت را دوباره انجام دهید.",
+          );
+      };
+    const prefix = "Edu24.drafts." + workspace.id + ".";
+    if (!key.startsWith(prefix) || key === draftStorageKey())
+      throw Error("کلید معتبر نیست.");
+    const record = (await persistedGradeDrafts(prefix)).find(
+      (row) => row.key === key,
+    );
+    ensureCurrent();
+    if (!record) throw Error("پیش‌نویس پیدا نشد.");
+    const items = record.entries;
+    if (!Array.isArray(items)) throw Error("پیش‌نویس نامعتبر است.");
+    if (items.some((item) => !isSupportedGradeDraft(item)))
+      throw Error("ورودی نامعتبر است؛ هیچ پیش‌نویسی دریافت نشد.");
+    // Reject the whole import before mutating anything. Both candidates remain
+    // recoverable until the user saves or discards the existing local edits.
+    if (items.some((item) => drafts.has(inputKey(item))))
+      throw Error(
+        "برای این نمره‌ها ویرایش ثبت‌نشده دارید؛ ابتدا آن‌ها را ذخیره یا بررسی کنید، سپس پیش‌نویس نشست دیگر را دریافت کنید. هیچ ورودی جایگزین نشد.",
+      );
+    for (const original of items) {
+      const item = {
+        ...original,
+        review: true,
+        error: "بازیابی از نشست دیگر؛ نیازمند بررسی",
+      };
+      drafts.set(inputKey(item), item);
+    }
+    await storeDrafts();
+    ensureCurrent();
+    await consumeDraftSource(record, origin, sourceConnection, ensureCurrent);
+    ensureCurrent();
+    reviewDrafts();
+  } finally {
+    adoptingDrafts = false;
   }
-  await storeDrafts();
-  await consumeDraftSource(record);
-  reviewDrafts();
 }
 
 function broadcast(message) {
@@ -7856,7 +7976,12 @@ function refreshPolicyResults() {
     );
     el.textContent = el.dataset.podFinal ? finalText(r) : policyStatus(r);
     const row = el.closest(".assessment-student");
-    if (row) row.dataset.resultState = !r.complete ? "incomplete" : r.passed ? "passed" : "review";
+    if (row)
+      row.dataset.resultState = !r.complete
+        ? "incomplete"
+        : r.passed
+          ? "passed"
+          : "review";
   }
   for (const el of document.querySelectorAll(
     "[data-course-final],[data-course-mean],[data-course-status]",

@@ -82,9 +82,11 @@ async function showFrozenReport(id) {
                   (Number.isFinite(st.average) ? st.average.toFixed(2) : "—") +
                   "</p></article>",
               )
-              .join("") + '</section>',
+              .join("") +
+            "</section>",
         )
-        .join("") + '</div>',
+        .join("") +
+      "</div>",
   );
 }
 

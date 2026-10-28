@@ -32,13 +32,17 @@ function render(mode) {
     option("parent", "اولیای یک هنرجو", f.audience) +
     "</select></label>" +
     (mode === "annual"
-      ? '<div class="periodic-year-field"><span>سال تحصیلی</span><strong>' + esc(db.settings.academicYear) + '</strong></div>'
-      : '<label>' + (mode === "weekly"
-        ? "یک تاریخ از هفته"
-        : mode === "monthly"
-          ? "یک تاریخ از ماه شمسی"
-          : "تاریخ گزارش") +
-        '<input type="date" value="' + esc(f.date) +
+      ? '<div class="periodic-year-field"><span>سال تحصیلی</span><strong>' +
+        esc(db.settings.academicYear) +
+        "</strong></div>"
+      : "<label>" +
+        (mode === "weekly"
+          ? "یک تاریخ از هفته"
+          : mode === "monthly"
+            ? "یک تاریخ از ماه شمسی"
+            : "تاریخ گزارش") +
+        '<input type="date" value="' +
+        esc(f.date) +
         '" data-legacy-change="reports-periodic-render:1"></label>') +
     `<label>مدرسه<select data-legacy-change="reports-periodic-render:2">` +
     option("", "انتخاب مدرسه", f.schoolId) +

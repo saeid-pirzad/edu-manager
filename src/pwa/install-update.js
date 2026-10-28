@@ -114,9 +114,22 @@
     bar.className = "mobile-bar no-print";
     bar.id = "mobileBar";
     bar.setAttribute("aria-label", "وضعیت، نصب و به‌روزرسانی برنامه");
-    const icon = (path) => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + path + '"/></svg>';
+    const icon = (path) =>
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' +
+      path +
+      '"/></svg>';
     bar.innerHTML =
-      '<strong>کلاس‌یار</strong><span id="mobileStatus" role="status" aria-live="polite"></span><div class="app-service-actions"><button type="button" id="mobileInstall" hidden>' + icon('M12 3v12m-4-4 4 4 4-4M4 16v5h16v-5') + '<span>نصب برنامه</span></button><button type="button" id="mobileUpdate" hidden>' + icon('M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1') + '<span>نسخه جدید آماده است</span></button><button type="button" id="mobileHelp" class="ghost">' + icon('M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2-3 4m.1 3h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0') + '<span>نصب و راهنما</span></button></div>';
+      '<strong>کلاس‌یار</strong><span id="mobileStatus" role="status" aria-live="polite"></span><div class="app-service-actions"><button type="button" id="mobileInstall" hidden>' +
+      icon("M12 3v12m-4-4 4 4 4-4M4 16v5h16v-5") +
+      '<span>نصب برنامه</span></button><button type="button" id="mobileUpdate" hidden>' +
+      icon(
+        "M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1",
+      ) +
+      '<span>نسخه جدید آماده است</span></button><button type="button" id="mobileHelp" class="ghost">' +
+      icon(
+        "M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2-3 4m.1 3h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0",
+      ) +
+      "<span>نصب و راهنما</span></button></div>";
     document.body.prepend(bar);
     document.getElementById("mobileInstall").onclick = requestInstall;
     document.getElementById("mobileUpdate").onclick = update;

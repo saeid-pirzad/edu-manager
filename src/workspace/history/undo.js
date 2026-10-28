@@ -27,42 +27,7 @@ async function openHistory(limit = 50) {
   if (connection !== sourceConnection)
     throw Error("اتصال بانک هنگام خواندن تاریخچه تغییر کرده است.");
   events.sort((a, b) => b.id - a.id);
-  showModal(
-    "تاریخچه تغییرات",
-    "<p>تغییرات با زمان، مقدار قبل و بعد ثبت می‌شوند. اصلاح نمره و تغییر واحد هم در این فهرست هستند.</p>" +
-      (undo
-        ? '<button data-mutating="1" data-workspace-action="undo">بازگردانی آخرین تغییر: ' +
-          esc(undo.action) +
-          "</button>"
-        : "") +
-      events
-        .slice(0, limit)
-        .map(
-          (e) =>
-            '<details class="card"><summary>' +
-            esc(new Date(e.at).toLocaleString("fa-IR") + " — " + e.action) +
-            "</summary><table><thead><tr><th>مسیر</th><th>قبل</th><th>بعد</th></tr></thead><tbody>" +
-            e.changes
-              .map(
-                (change) =>
-                  '<tr><td dir="ltr">' +
-                  esc(change.path) +
-                  "</td><td>" +
-                  esc(JSON.stringify(change.before)) +
-                  "</td><td>" +
-                  esc(JSON.stringify(change.after)) +
-                  "</td></tr>",
-              )
-              .join("") +
-            "</tbody></table></details>",
-        )
-        .join("") +
-      (events.length > limit
-        ? '<button data-workspace-action="history-more" data-limit="' +
-          (limit + 50) +
-          '">نمایش موارد بیشتر</button>'
-        : ""),
-  );
+  renderHistory(events, undo, limit);
 }
 
 function validatedUndoCandidate(undo, records, period) {
