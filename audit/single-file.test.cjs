@@ -120,7 +120,7 @@ function fixture() {
     },
   };
 }
-test("file status moves between navigation and the persistent warning area on failure and recovery", () => {
+test("file warning stays visible on failure and hides after recovery without returning to tools", () => {
   const f = fixture();
   const panel = {
       append(el) {
@@ -142,9 +142,11 @@ test("file status moves between navigation and the persistent warning area on fa
   f.context.singleFileStatus("write failed");
   assert.equal(badge.parentElement, panel);
   assert.equal(badge.textContent, "write failed");
+  assert.equal(badge.hidden, false);
   f.context.showSingleFileFallback(false);
   f.context.singleFileStatus("saved");
-  assert.equal(badge.parentElement, tools);
+  assert.equal(badge.parentElement, panel);
+  assert.equal(badge.hidden, true);
 });
 test("automatic file sync skips period transitions without failing or disconnecting the mirror", async () => {
   const f = fixture();

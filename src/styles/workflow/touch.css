@@ -4816,3 +4816,100 @@
     box-shadow: none;
   }
 }
+@media screen {
+  #app .schools-welcome-footer {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 16px;
+    min-width: 0;
+  }
+  #app .schools-period-context {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    color: #805c51;
+    font-size: 11px;
+    line-height: 1.9;
+  }
+  #app .schools-period-context > span {
+    white-space: nowrap;
+  }
+  #app .schools-period-context bdi {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  #app .schools-welcome-footer .schools-about {
+    margin-inline-start: auto;
+  }
+  #app .workspace-bar > #singleFileBadge[hidden] {
+    display: none;
+  }
+}
+@media screen and (max-width: 700px),
+  screen and (max-width: 1000px) and (pointer: coarse) {
+  #app .navigation-menu[open] .header-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    padding: 6px !important;
+  }
+  #app .navigation-menu .header-actions > .header-action,
+  #app .navigation-menu .header-actions > .workspace-tools > summary {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 7px;
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    margin: 0;
+    padding: 7px 9px;
+    box-sizing: border-box;
+    border: 1px solid #eee5df;
+    border-radius: 11px;
+    background: #fff;
+    color: #554b46;
+    font-size: 12px;
+    line-height: 1.7;
+    text-align: start;
+    white-space: nowrap;
+  }
+  #app .navigation-menu .header-actions > .header-action > svg,
+  #app .navigation-menu .workspace-tools-symbol svg {
+    flex: 0 0 18px;
+    width: 18px;
+    height: 18px;
+  }
+  #app .navigation-menu .header-actions > .header-action > span {
+    min-width: 0;
+    white-space: nowrap;
+  }
+  #app .navigation-menu .header-actions > .header-action:is(:hover, .is-active),
+  #app .navigation-menu .header-actions > .workspace-tools[open] > summary {
+    border-color: #edc9c6;
+    background: #fff1ef;
+    color: #b52d35;
+  }
+  #app .navigation-menu .workspace-tool-description {
+    display: none;
+  }
+  #app .navigation-menu .workspace-tool-actions .workspace-tool-button {
+    min-height: 44px;
+    padding: 6px 8px;
+    gap: 8px;
+  }
+  #app .navigation-menu .workspace-tool-icon {
+    flex-basis: 28px;
+    height: 28px;
+    border-radius: 8px;
+  }
+  #app .navigation-menu .workspace-tool-copy {
+    font-size: 12px;
+  }
+  #app .navigation-menu .workspace-tools > .workspace-tool-actions {
+    padding: 6px;
+    gap: 6px;
+  }
+}

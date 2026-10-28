@@ -50,9 +50,10 @@ async function inspectWorkspaceTools() {
       !tools.querySelector(".workspace-file-status,.workspace-tool-label"),
   );
   add(
-    "active period is secondary inside tools and routine status does not occupy the header",
+    "active period belongs to the welcome banner and routine file status stays out of tools",
     !document.querySelector(".workspace-bar > strong") &&
-      !!tools.querySelector(".workspace-period-context") &&
+      !!document.querySelector(".schools-welcome .schools-period-context") &&
+      !tools.querySelector(".workspace-period-context,#singleFileBadge") &&
       (document.getElementById("saveStatus").dataset.state !== "saved" ||
         document.getElementById("saveStatus").hidden),
   );
@@ -100,6 +101,20 @@ async function inspectWorkspaceTools() {
         );
       });
   add("workspace main actions fit touch and desktop viewports", fits());
+  if (!desktop) {
+    const navigationActions = [
+      ...document.querySelectorAll(".header-actions > .header-action"),
+      summary,
+    ];
+    const rects = navigationActions.map((el) => el.getBoundingClientRect());
+    add(
+      "compact navigation keeps reports and schedule together with unbroken labels",
+      rects.every((rect) => rect.height >= 44) &&
+        Math.abs(rects[0].top - rects[1].top) <= 1 &&
+        Math.abs(rects[0].width - rects[1].width) <= 1 &&
+        navigationActions.every((el) => el.scrollWidth <= el.clientWidth + 1),
+    );
+  }
   tools.querySelector(".workspace-draft-tools > summary").click();
   await pause();
   add(

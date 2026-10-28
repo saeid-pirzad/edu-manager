@@ -6847,7 +6847,11 @@ body.modal-open {
   }
   #app
     .workspace-bar-compact:not(
-      :has(.workspace-closed-note, #saveStatus:not([hidden]), #singleFileBadge)
+      :has(
+        .workspace-closed-note,
+        #saveStatus:not([hidden]),
+        #singleFileBadge:not([hidden])
+      )
     ) {
     display: none !important;
   }

@@ -2121,11 +2121,7 @@ function workspaceToolsHtml() {
     '<button type="button" class="ghost workspace-tool-button" data-header-action="settings"><span class="workspace-tool-icon" aria-hidden="true">' +
     EduIcons.html("settings") +
     '</span><span class="workspace-tool-copy"><span>تنظیمات برنامه</span><span class="workspace-tool-description">شخصی‌سازی و تنظیم گزینه‌های برنامه</span></span></button>' +
-    '</div><div class="workspace-period-context"><span>سال تحصیلی: <bdi>' +
-    esc(String(workspace.year).replace(/\d/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[digit])) +
-    "</bdi></span><span>نوبت: <bdi>" +
-    esc(workspace.term) +
-    '</bdi></span></div><details class="workspace-draft-tools"><summary>بازیابی پیش‌نویس‌ها</summary><div class="workspace-draft-actions">' +
+    '</div><details class="workspace-draft-tools"><summary>بازیابی پیش‌نویس‌ها</summary><div class="workspace-draft-actions">' +
     button("review-drafts", "grades", "بررسی تعارض نمره‌ها") +
     button("other-drafts", "undo", "بازیابی ورودی‌های قبلی") +
     button(
@@ -2163,16 +2159,30 @@ function renderV24() {
   const tools = panel.querySelector(".workspace-tools");
   const settings = app.querySelector('.topbar [data-header-action="settings"]');
   if (settings) settings.replaceWith(tools);
+  const welcome = app.querySelector(".schools-welcome");
+  if (welcome) {
+    const footer = document.createElement("div");
+    footer.className = "schools-welcome-footer";
+    footer.innerHTML =
+      '<div class="schools-period-context"><span>سال تحصیلی: <bdi>' +
+      esc(
+        String(workspace.year).replace(/\d/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[digit]),
+      ) +
+      "</bdi></span><span>نوبت: <bdi>" +
+      esc(workspace.term) +
+      "</bdi></span></div>";
+    const about = welcome.querySelector(".schools-about");
+    if (about) footer.append(about);
+    welcome.append(footer);
+  }
   if (window.showSaveFilePicker) {
     const fileStatus = document.createElement("small");
     fileStatus.id = "singleFileBadge";
     fileStatus.setAttribute("role", "status");
+    fileStatus.hidden = !singleFileFailure;
     fileStatus.textContent = singleFileMessage;
-    // Routine file details stay in tools; failures remain visible on the page.
-    (singleFileFailure
-      ? panel
-      : tools.querySelector(".workspace-tool-actions")
-    ).append(fileStatus);
+    // Connection details live in backups; only failures need a page notice.
+    panel.append(fileStatus);
   }
   if (db.migrationWarnings?.length) {
     const info = document.createElement("div");
@@ -3291,10 +3301,9 @@ function singleFileStatus(message) {
   const badge = document.getElementById("singleFileBadge");
   if (badge) {
     badge.textContent = message;
+    badge.hidden = !singleFileFailure;
     const panel = document.querySelector("#app .workspace-bar");
-    const destination = singleFileFailure
-      ? panel
-      : document.querySelector("#app .workspace-tool-actions");
+    const destination = panel;
     if (destination && badge.parentElement !== destination)
       destination.append(badge);
   }

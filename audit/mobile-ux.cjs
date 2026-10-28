@@ -43,8 +43,8 @@ async function inspectMobileUx() {
   );
   const badge = document.getElementById("singleFileBadge");
   add(
-    "routine file status is discoverable in tools without occupying the main workflow",
-    !badge || !!badge.closest(".workspace-tools"),
+    "routine file status stays hidden without occupying navigation or the main workflow",
+    !badge || badge.hidden,
   );
   add("home fits the viewport without horizontal page scrolling", fits(), {
     width: document.documentElement.scrollWidth,
