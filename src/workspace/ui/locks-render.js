@@ -183,7 +183,9 @@ function workspaceToolsHtml() {
     '<button type="button" class="ghost workspace-tool-button" data-header-action="settings"><span class="workspace-tool-icon" aria-hidden="true">' +
     EduIcons.html("settings") +
     '</span><span class="workspace-tool-copy"><span>تنظیمات برنامه</span><span class="workspace-tool-description">شخصی‌سازی و تنظیم گزینه‌های برنامه</span></span></button>' +
-    '</div><details class="workspace-draft-tools"><summary>بازیابی پیش‌نویس‌ها</summary><div class="workspace-draft-actions">' +
+    '</div><details class="workspace-draft-tools"><summary><span class="workspace-draft-symbol" aria-hidden="true">' +
+    EduIcons.html("undo") +
+    '</span><span>بازیابی پیش‌نویس‌ها</span><span class="workspace-draft-chevron" aria-hidden="true"></span></summary><div class="workspace-draft-actions">' +
     button("review-drafts", "grades", "بررسی تعارض نمره‌ها") +
     button("other-drafts", "undo", "بازیابی ورودی‌های قبلی") +
     button(

@@ -4913,3 +4913,80 @@
     gap: 6px;
   }
 }
+@media screen {
+  #app .header-actions .workspace-draft-tools {
+    overflow: hidden;
+    background: #faf8f5;
+    border-color: #e9e1d8;
+  }
+  #app .header-actions .workspace-draft-tools > summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 8px 10px;
+    margin: 0;
+    font-weight: 500;
+    line-height: 1.7;
+    color: #655244;
+    cursor: pointer;
+  }
+  #app .header-actions .workspace-draft-tools > summary::after {
+    content: none;
+  }
+  #app .workspace-draft-symbol {
+    display: flex;
+    flex: 0 0 18px;
+    color: #8b5137;
+  }
+  #app .workspace-draft-symbol svg {
+    width: 18px;
+    height: 18px;
+  }
+  #app .workspace-draft-chevron {
+    flex: 0 0 6px;
+    width: 6px;
+    height: 6px;
+    margin-inline-start: auto;
+    border-inline-end: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(45deg);
+  }
+  #app .workspace-draft-tools[open] .workspace-draft-chevron {
+    transform: rotate(225deg);
+  }
+  #app .header-actions .workspace-draft-tools[open] > summary {
+    background: #f2ece5;
+    border-radius: 0;
+  }
+  #app .header-actions .workspace-draft-tools[open] > .workspace-draft-actions {
+    padding: 6px;
+    gap: 4px;
+    border-top: 1px solid #e9e1d8;
+  }
+  #app .header-actions .workspace-draft-actions .workspace-tool-button {
+    min-height: 44px;
+    padding: 6px 8px;
+    gap: 8px;
+    border-radius: 8px;
+  }
+  #app .header-actions .workspace-draft-actions .workspace-tool-copy {
+    font-size: 12px;
+    font-weight: 500;
+  }
+  #app .header-actions .workspace-draft-actions .workspace-tool-caution {
+    margin-top: 4px;
+    border-color: #efd9d2;
+  }
+}
+@media screen and (max-width: 700px),
+  screen and (max-width: 1000px) and (pointer: coarse) {
+  #app .topbar .header-home,
+  #app .navigation-menu [data-header-action="reports"],
+  #app .navigation-menu [data-header-action="master"] {
+    display: none !important;
+  }
+  #app .topbar .header-brand {
+    width: calc(100% - 54px) !important;
+  }
+}

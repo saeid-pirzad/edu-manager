@@ -29,12 +29,18 @@ async function inspectWorkspaceTools() {
     !matchMedia("(max-width:1000px) and (pointer:coarse)").matches;
   const home = document.querySelector(".topbar .header-home");
   add(
-    "home belongs to desktop navigation while retaining its mobile header position",
+    "home is visible in desktop navigation and hidden in the compact header",
     document.querySelectorAll(".topbar .header-home").length === 1 &&
       home.parentElement.matches(
         desktop ? ".header-actions" : ".header-brand",
       ) &&
-      (!desktop || home === home.parentElement.firstElementChild),
+      (desktop
+        ? home === home.parentElement.firstElementChild &&
+          home.getClientRects().length > 0
+        : home.getClientRects().length === 0 &&
+          !!document.querySelector(
+            '#uiBottomNav [data-ui-nav="home"],#uiBottomNav button',
+          )),
   );
   add(
     "tools replace settings in main navigation, with settings nested inside",
@@ -103,15 +109,21 @@ async function inspectWorkspaceTools() {
   add("workspace main actions fit touch and desktop viewports", fits());
   if (!desktop) {
     const navigationActions = [
-      ...document.querySelectorAll(".header-actions > .header-action"),
+      ...[
+        ...document.querySelectorAll(".header-actions > .header-action"),
+      ].filter((el) => el.getClientRects().length),
       summary,
     ];
     const rects = navigationActions.map((el) => el.getBoundingClientRect());
     add(
-      "compact navigation keeps reports and schedule together with unbroken labels",
+      "compact navigation excludes duplicate bottom navigation actions and keeps labels unbroken",
       rects.every((rect) => rect.height >= 44) &&
-        Math.abs(rects[0].top - rects[1].top) <= 1 &&
         Math.abs(rects[0].width - rects[1].width) <= 1 &&
+        [
+          ...document.querySelectorAll(
+            '.navigation-menu [data-header-action="reports"],.navigation-menu [data-header-action="master"]',
+          ),
+        ].every((el) => el.getClientRects().length === 0) &&
         navigationActions.every((el) => el.scrollWidth <= el.clientWidth + 1),
     );
   }
