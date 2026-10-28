@@ -4085,7 +4085,7 @@ async function openPeriods() {
   ensureCurrent();
   showModal(
     "دوره‌های تحصیلی و کارنامه نهایی",
-    "<p>هر دوره، کلاس‌ها، نمرات و جلسات مستقل دارد. بستن دوره فقط پس از تکمیل همه نمرات انجام می‌شود و نسخه ثابت کارنامه نگه داشته می‌شود.</p><table><thead><tr><th>سال / نوبت</th><th>وضعیت</th><th></th></tr></thead><tbody>" +
+    '<div class="period-hub"><p class="period-intro">هر دوره، کلاس‌ها، نمرات و جلسات مستقل دارد. بستن دوره فقط پس از تکمیل همه نمرات انجام می‌شود و نسخه ثابت کارنامه نگه داشته می‌شود.</p><section class="period-list"><h4>دوره‌های تحصیلی</h4><table><thead><tr><th>سال / نوبت</th><th>وضعیت</th><th>انتخاب دوره</th></tr></thead><tbody>' +
       all
         .map(
           (w) =>
@@ -4100,22 +4100,23 @@ async function openPeriods() {
             "</button></td></tr>",
         )
         .join("") +
-      '</tbody></table><div class="row"><button data-workspace-action="new-period">دوره جدید با فهرست فعلی و بدون نمره</button>' +
+      '</tbody></table></section><section class="period-management"><h4>مدیریت دوره فعال</h4><div class="row period-actions"><button data-workspace-action="new-period">دوره جدید با فهرست فعلی و بدون نمره</button>' +
       (workspace.closed
         ? '<button data-workspace-action="reopen-period">بازگشایی با ثبت در تاریخچه</button>'
         : '<button data-workspace-action="finalize-period">بستن دوره و ثبت کارنامه نهایی</button><button class="ghost" data-workspace-action="edit-period-label">اصلاح عنوان دوره</button>') +
-      "</div>" +
+      '</div></section><section class="period-reports"><h4>کارنامه‌های نهایی ثبت‌شده</h4>' +
+      (reports.length ? "" : '<p class="period-intro">هنوز کارنامه نهایی برای این دوره ثبت نشده است.</p>') +
       reports
         .map(
           (r) =>
-            '<div class="row"><span>کارنامه ثابت ' +
+            '<div class="row period-report-row"><span>کارنامه ثابت ' +
             esc(new Date(r.at).toLocaleString("fa-IR")) +
             '</span><button class="ghost" data-workspace-action="frozen-report" data-key="' +
             esc(r.id) +
             '">مشاهده / چاپ</button></div>',
         )
         .join("") +
-      '<p id="operationError" role="alert"></p>',
+      '</section><p id="operationError" role="alert"></p></div>',
   );
 }
 
@@ -4187,9 +4188,9 @@ async function switchPeriod(id) {
 function openNewPeriod() {
   showModal(
     "دوره تحصیلی جدید",
-    '<label>سال تحصیلی <input id="periodYear" value="' +
+    '<div class="period-create"><label>سال تحصیلی <input id="periodYear" value="' +
       esc(currentYearLabel()) +
-      '"></label><label>نوبت <select id="periodTerm"><option>اول</option><option>دوم</option><option>تابستان</option></select></label><p>فهرست دانش‌آموزان فعال، دروس و تنظیم برنامه کپی می‌شود. نمرات، جلسات و بایگانی دوره قبلی منتقل نمی‌شوند.</p><button data-workspace-action="create-period">ایجاد دوره مستقل</button>',
+      '"></label><label>نوبت <select id="periodTerm"><option>اول</option><option>دوم</option><option>تابستان</option></select></label><p>فهرست دانش‌آموزان فعال، دروس و تنظیم برنامه کپی می‌شود. نمرات، جلسات و بایگانی دوره قبلی منتقل نمی‌شوند.</p><button data-workspace-action="create-period">ایجاد دوره مستقل</button></div>',
   );
 }
 
@@ -4617,23 +4618,23 @@ async function showFrozenReport(id) {
   validateFrozenReport(report);
   showModal(
     "کارنامه نهایی ثابت",
-    "<h2>" +
+    '<div class="frozen-report"><header class="frozen-report-heading"><h2>' +
       esc(report.year + " / " + report.term) +
       "</h2><p>نسخه ثابت ثبت‌شده در " +
       esc(new Date(report.at).toLocaleString("fa-IR")) +
-      '</p><button data-workspace-action="print">چاپ / PDF</button>' +
+      '</p><button data-workspace-action="print">چاپ / PDF</button></header>' +
       report.classes
         .map(
           (c) =>
-            "<h3>" +
+            '<section class="frozen-class"><h3>' +
             esc(c.school + " / " + c.name) +
             "</h3>" +
             c.students
               .map(
                 (st) =>
-                  "<h4>" +
+                  '<article class="frozen-student"><h4>' +
                   esc(st.name) +
-                  "</h4><table><thead><tr><th>درس</th><th>عملی / پایانی</th><th>نظری / مستمر</th><th>میان‌ترم</th><th>پایان‌ترم / نتیجه درس</th><th>وضعیت</th></tr></thead><tbody>" +
+                  '</h4><div class="table-scroll"><table><thead><tr><th>درس</th><th>عملی / پایانی</th><th>نظری / مستمر</th><th>میان‌ترم</th><th>پایان‌ترم / نتیجه درس</th><th>وضعیت</th></tr></thead><tbody>' +
                   st.lessons
                     .map(
                       (l) =>
@@ -4673,13 +4674,13 @@ async function showFrozenReport(id) {
                         "</td></tr>",
                     )
                     .join("") +
-                  "</tbody></table><p>میانگین نهایی: " +
+                  '</tbody></table></div><p class="frozen-average">میانگین نهایی: ' +
                   (Number.isFinite(st.average) ? st.average.toFixed(2) : "—") +
-                  "</p>",
+                  "</p></article>",
               )
-              .join(""),
+              .join("") + '</section>',
         )
-        .join(""),
+        .join("") + '</div>',
   );
 }
 
@@ -7302,7 +7303,9 @@ function reviewDrafts() {
   const items = [...drafts.values()].filter((x) => x.review);
   showModal(
     "بررسی پیش‌نویس پس از تعارض",
-    "<p>این ورودی‌ها پیش از تغییر داده در تب دیگر نوشته شده‌اند و خودکار اعمال نمی‌شوند. مقدار ثبت‌شده جدید و ویرایش خود را بررسی کنید.</p><table><thead><tr><th>هنرجو، درس و بخش</th><th>ثبت‌شده جدید</th><th>ویرایش شما</th></tr></thead><tbody>" +
+    '<div class="draft-review"><header class="draft-review-heading"><span class="draft-review-count">' +
+      items.length.toLocaleString("fa-IR") +
+      ' پیش‌نویس نیازمند بررسی</span><p>این ورودی‌ها پیش از تغییر داده در تب دیگر نوشته شده‌اند و خودکار اعمال نمی‌شوند. مقدار ثبت‌شده جدید و ویرایش خود را بررسی کنید.</p></header><div class="table-scroll draft-review-table"><table><thead><tr><th>هنرجو، درس و بخش</th><th>ثبت‌شده جدید</th><th>ویرایش شما</th></tr></thead><tbody>' +
       items
         .map((item) => {
           const c = findClass(item.classId),
@@ -7322,6 +7325,8 @@ function reviewDrafts() {
             {
               practical: "عملی",
               theory: "نظری",
+              midtermPractical: "عملی میان‌ترم",
+              midtermTheory: "نظری میان‌ترم",
               m: "مستمر",
               p: "پایانی",
               c: "شایستگی",
@@ -7338,15 +7343,15 @@ function reviewDrafts() {
           return (
             "<tr><td>" +
             esc(description) +
-            "</td><td>" +
+            '</td><td class="draft-review-current"><strong dir="auto">' +
             esc(source?.[item.field] ?? "—") +
-            "</td><td>" +
+            '</strong></td><td class="draft-review-proposed"><strong dir="auto">' +
             esc(item.remove ? "حذف نمره" : item.value) +
-            "</td></tr>"
+            "</strong></td></tr>"
           );
         })
         .join("") +
-      '</tbody></table><button data-workspace-action="approve-drafts">ورودی‌ها را بررسی کرده‌ام؛ اعمال شوند</button><button class="ghost" data-workspace-action="discard-drafts">لغو این ویرایش‌ها</button>',
+      '</tbody></table></div><div class="draft-review-actions"><button data-workspace-action="approve-drafts">ورودی‌ها را بررسی کرده‌ام؛ اعمال شوند</button><button class="ghost" data-workspace-action="discard-drafts">لغو این ویرایش‌ها</button></div></div>',
   );
 }
 
@@ -7377,34 +7382,34 @@ async function showHistoryEvent(id, limit = 100) {
   };
   showModal(
     event.action,
-    "<p>" +
+    '<div class="history-detail"><header class="history-detail-heading"><p>' +
       esc(new Date(event.at).toLocaleString("fa-IR")) +
       " · " +
       event.changes.length +
       ' تغییر</p><button class="ghost" data-workspace-action="download-event" data-key="' +
       esc(event.id) +
-      '">دریافت جزئیات کامل</button><table><thead><tr><th>بخش</th><th>قبل</th><th>بعد</th></tr></thead><tbody>' +
+      '">دریافت جزئیات کامل</button></header><div class="table-scroll history-diff"><table><thead><tr><th>بخش</th><th>قبل</th><th>بعد</th></tr></thead><tbody>' +
       event.changes
         .slice(0, limit)
         .map(
           (change) =>
             "<tr><td>" +
             esc(changeLabel(change.path)) +
-            "</td><td>" +
+            '</td><td><pre dir="auto">' +
             esc(display(change.before)) +
-            "</td><td>" +
+            '</pre></td><td><pre dir="auto">' +
             esc(display(change.after)) +
-            "</td></tr>",
+            "</pre></td></tr>",
         )
         .join("") +
-      "</tbody></table>" +
+      "</tbody></table></div>" +
       (event.changes.length > limit
         ? '<button data-workspace-action="history-event" data-key="' +
           esc(event.id) +
           '" data-limit="' +
           (limit + 100) +
           '">نمایش تغییرهای بیشتر</button>'
-        : ""),
+        : "") + '</div>',
   );
 }
 
@@ -7494,30 +7499,33 @@ async function openHistoryV24(limit = 50) {
   const undo = await readRecord("undo", workspace.id);
   showModal(
     "تاریخچه تغییرات",
-    "<p>زمان و مقادیر قبل و بعد هر تغییر ثبت می‌شوند.</p>" +
+    '<div class="history-hub"><p class="history-intro">زمان و مقادیر قبل و بعد هر تغییر ثبت می‌شوند.</p>' +
       (undo
         ? '<button data-mutating="1" data-workspace-action="undo">بازگردانی آخرین تغییر: ' +
           esc(undo.action) +
           "</button>"
         : "") +
+      '<div class="history-list">' +
+      (!events.length ? '<div class="history-empty">هنوز تغییری برای این دوره ثبت نشده است.</div>' : '') +
       events
         .slice(0, limit)
         .map(
           (e) =>
-            '<div class="row"><span>' +
-            esc(new Date(e.at).toLocaleString("fa-IR") + " — " + e.action) +
-            " · " +
+            '<article class="history-entry"><div class="history-entry-info"><h4>' +
+            esc(e.action) + '</h4><div class="history-entry-meta"><time datetime="' + esc(e.at) + '">' +
+            esc(new Date(e.at).toLocaleString("fa-IR")) +
+            '</time><span class="history-count">' +
             e.changes.length +
-            ' تغییر</span><button class="ghost" data-workspace-action="history-event" data-key="' +
+            ' تغییر</span></div></div><button class="ghost" data-workspace-action="history-event" data-key="' +
             esc(e.id) +
-            '">جزئیات</button></div>',
+            '">جزئیات</button></article>',
         )
-        .join("") +
+        .join("") + '</div>' +
       (events.length > limit
         ? '<button data-workspace-action="history-more" data-limit="' +
           (limit + 50) +
           '">نمایش موارد بیشتر</button>'
-        : ""),
+        : "") + '</div>',
   );
 }
 // Source: src/workspace/students/archive.js
@@ -7649,21 +7657,22 @@ async function openOtherDrafts() {
   const entries = [...byTab.values()].filter((x) => x.items.length);
   showModal(
     "پیش‌نویس نشست‌های دیگر",
-    "<p>فقط جدیدترین پیش‌نویس هر نشست نمایش داده می‌شود. دریافت آن نیازمند بررسی و تأیید مقدار ثبت‌شده است.</p>" +
+    '<div class="other-drafts"><header class="other-drafts-heading"><span>' + entries.length.toLocaleString("fa-IR") +
+      ' نشست دارای پیش‌نویس</span><p>فقط جدیدترین پیش‌نویس هر نشست نمایش داده می‌شود. دریافت آن نیازمند بررسی و تأیید مقدار ثبت‌شده است.</p></header><div class="other-drafts-list">' +
       (entries.length
         ? entries
             .map(
               (entry) =>
-                '<div class="card"><p>' +
+                '<article class="other-draft-entry"><div class="other-draft-info"><strong>' +
                 entry.items.length +
-                " ورودی · " +
+                ' ورودی ثبت‌نشده</strong><span class="other-draft-time" dir="auto">' +
                 esc(entry.items.at(-1)?.at || "") +
-                '</p><button class="ghost" data-key="' +
+                '</span></div><button class="ghost" data-key="' +
                 esc(entry.key) +
-                '" data-workspace-action="adopt-drafts">دریافت برای بررسی</button></div>',
+                '" data-workspace-action="adopt-drafts">دریافت برای بررسی</button></article>',
             )
             .join("")
-        : "<p>پیش‌نویس دیگری یافت نشد.</p>"),
+        : '<div class="other-drafts-empty">پیش‌نویس دیگری یافت نشد.</div>') + '</div></div>',
   );
 }
 

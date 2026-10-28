@@ -22,23 +22,23 @@ async function showFrozenReport(id) {
   validateFrozenReport(report);
   showModal(
     "کارنامه نهایی ثابت",
-    "<h2>" +
+    '<div class="frozen-report"><header class="frozen-report-heading"><h2>' +
       esc(report.year + " / " + report.term) +
       "</h2><p>نسخه ثابت ثبت‌شده در " +
       esc(new Date(report.at).toLocaleString("fa-IR")) +
-      '</p><button data-workspace-action="print">چاپ / PDF</button>' +
+      '</p><button data-workspace-action="print">چاپ / PDF</button></header>' +
       report.classes
         .map(
           (c) =>
-            "<h3>" +
+            '<section class="frozen-class"><h3>' +
             esc(c.school + " / " + c.name) +
             "</h3>" +
             c.students
               .map(
                 (st) =>
-                  "<h4>" +
+                  '<article class="frozen-student"><h4>' +
                   esc(st.name) +
-                  "</h4><table><thead><tr><th>درس</th><th>عملی / پایانی</th><th>نظری / مستمر</th><th>میان‌ترم</th><th>پایان‌ترم / نتیجه درس</th><th>وضعیت</th></tr></thead><tbody>" +
+                  '</h4><div class="table-scroll"><table><thead><tr><th>درس</th><th>عملی / پایانی</th><th>نظری / مستمر</th><th>میان‌ترم</th><th>پایان‌ترم / نتیجه درس</th><th>وضعیت</th></tr></thead><tbody>' +
                   st.lessons
                     .map(
                       (l) =>
@@ -78,13 +78,13 @@ async function showFrozenReport(id) {
                         "</td></tr>",
                     )
                     .join("") +
-                  "</tbody></table><p>میانگین نهایی: " +
+                  '</tbody></table></div><p class="frozen-average">میانگین نهایی: ' +
                   (Number.isFinite(st.average) ? st.average.toFixed(2) : "—") +
-                  "</p>",
+                  "</p></article>",
               )
-              .join(""),
+              .join("") + '</section>',
         )
-        .join(""),
+        .join("") + '</div>',
   );
 }
 

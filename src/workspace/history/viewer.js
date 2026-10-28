@@ -10,34 +10,34 @@ async function showHistoryEvent(id, limit = 100) {
   };
   showModal(
     event.action,
-    "<p>" +
+    '<div class="history-detail"><header class="history-detail-heading"><p>' +
       esc(new Date(event.at).toLocaleString("fa-IR")) +
       " · " +
       event.changes.length +
       ' تغییر</p><button class="ghost" data-workspace-action="download-event" data-key="' +
       esc(event.id) +
-      '">دریافت جزئیات کامل</button><table><thead><tr><th>بخش</th><th>قبل</th><th>بعد</th></tr></thead><tbody>' +
+      '">دریافت جزئیات کامل</button></header><div class="table-scroll history-diff"><table><thead><tr><th>بخش</th><th>قبل</th><th>بعد</th></tr></thead><tbody>' +
       event.changes
         .slice(0, limit)
         .map(
           (change) =>
             "<tr><td>" +
             esc(changeLabel(change.path)) +
-            "</td><td>" +
+            '</td><td><pre dir="auto">' +
             esc(display(change.before)) +
-            "</td><td>" +
+            '</pre></td><td><pre dir="auto">' +
             esc(display(change.after)) +
-            "</td></tr>",
+            "</pre></td></tr>",
         )
         .join("") +
-      "</tbody></table>" +
+      "</tbody></table></div>" +
       (event.changes.length > limit
         ? '<button data-workspace-action="history-event" data-key="' +
           esc(event.id) +
           '" data-limit="' +
           (limit + 100) +
           '">نمایش تغییرهای بیشتر</button>'
-        : ""),
+        : "") + '</div>',
   );
 }
 
@@ -127,29 +127,32 @@ async function openHistoryV24(limit = 50) {
   const undo = await readRecord("undo", workspace.id);
   showModal(
     "تاریخچه تغییرات",
-    "<p>زمان و مقادیر قبل و بعد هر تغییر ثبت می‌شوند.</p>" +
+    '<div class="history-hub"><p class="history-intro">زمان و مقادیر قبل و بعد هر تغییر ثبت می‌شوند.</p>' +
       (undo
         ? '<button data-mutating="1" data-workspace-action="undo">بازگردانی آخرین تغییر: ' +
           esc(undo.action) +
           "</button>"
         : "") +
+      '<div class="history-list">' +
+      (!events.length ? '<div class="history-empty">هنوز تغییری برای این دوره ثبت نشده است.</div>' : '') +
       events
         .slice(0, limit)
         .map(
           (e) =>
-            '<div class="row"><span>' +
-            esc(new Date(e.at).toLocaleString("fa-IR") + " — " + e.action) +
-            " · " +
+            '<article class="history-entry"><div class="history-entry-info"><h4>' +
+            esc(e.action) + '</h4><div class="history-entry-meta"><time datetime="' + esc(e.at) + '">' +
+            esc(new Date(e.at).toLocaleString("fa-IR")) +
+            '</time><span class="history-count">' +
             e.changes.length +
-            ' تغییر</span><button class="ghost" data-workspace-action="history-event" data-key="' +
+            ' تغییر</span></div></div><button class="ghost" data-workspace-action="history-event" data-key="' +
             esc(e.id) +
-            '">جزئیات</button></div>',
+            '">جزئیات</button></article>',
         )
-        .join("") +
+        .join("") + '</div>' +
       (events.length > limit
         ? '<button data-workspace-action="history-more" data-limit="' +
           (limit + 50) +
           '">نمایش موارد بیشتر</button>'
-        : ""),
+        : "") + '</div>',
   );
 }

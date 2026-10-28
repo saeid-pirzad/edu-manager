@@ -2756,6 +2756,260 @@ body {
   .periodic-year-field { display: flex; flex-direction: column; justify-content: flex-end; gap: 7px; min-width: 0; color: #726b61; font-size: 12px; }
   .periodic-year-field strong { display: flex; align-items: center; min-height: 44px; padding: 10px 12px; border: 1px solid #e7e3dc; border-radius: 9px; background: #f2efe8; color: #655d52; font-size: 14px; font-weight: 500; }
 }
+
+@media screen {
+  #modal:has(.backup-hub) .modal-dialog { width: min(100%, 640px); max-height: calc(var(--app-viewport, 100dvh) - 48px); border-radius: 18px; }
+  #modal:has(.backup-hub) .modal-header { padding: 14px 20px; background: #fff; }
+  #modal:has(.backup-hub) .modal-header h3 { font-size: 17px; }
+  #modal:has(.backup-hub) .modal-body { padding: 18px; background: #f7f6f3; }
+  #modalBody .backup-hub { display: grid; gap: 12px; min-width: 0; }
+  #modalBody .backup-hub > :is(section,details) { min-width: 0; padding: 18px; border: 1px solid #e5e0d7; border-radius: 13px; background: #fff; }
+  #modalBody .backup-hub :is(h3,h4) { margin: 0 0 7px; color: #363735; font-size: 15px; line-height: 1.8; }
+  #modalBody .backup-hub p { margin: 0 0 14px; color: #81796e; font-size: 12px; line-height: 1.95; }
+  #modalBody .backup-hub button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-width: 0; min-height: 44px; margin: 0; padding: 10px 12px; border-radius: 9px; font-size: 12px; line-height: 1.7; white-space: normal; }
+  #modalBody .backup-action-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+  #modalBody .backup-action-grid > button:first-child { min-height: 46px; background: #79522c; color: #fff; border: 1px solid #79522c; }
+  #modalBody .backup-hub button.ghost { border: 1px solid #e5e0d7; background: #faf9f7; color: #655d52; }
+  #modalBody .backup-manual > p:last-child { margin: 12px 0 0; padding-top: 12px; border-top: 1px solid #eeebe5; font-size: 11px; }
+  #modalBody .backup-automatic > .row { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin: 0; }
+  #modalBody .backup-automatic > .row > button:first-child { background: #f5efe5; color: #79522c; border: 1px solid #dbcbb3; }
+  #modalBody .backup-automatic > .row > button:last-child { color: #9f5548; background: #fffaf8; border-color: #eddcd5; }
+  #modalBody .backup-hub #singleFileStatus { padding: 10px 12px; border: 1px solid #e8e0d3; border-radius: 9px; background: #faf6ee; color: #795f3c; font-size: 11px; }
+  #modalBody .backup-automatic > .backup-help { margin-top: 14px; padding-top: 6px; border-top: 1px solid #eeebe5; }
+  #modalBody .backup-hub details > summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 40px; padding: 4px 0; list-style: none; color: #655d52; font-size: 12px; font-weight: 600; cursor: pointer; }
+  #modalBody .backup-hub details > summary::-webkit-details-marker { display: none; }
+  #modalBody .backup-hub details > summary::after { content: '+'; display: grid; place-items: center; flex: 0 0 24px; width: 24px; height: 24px; border-radius: 7px; background: #f4f1eb; color: #79522c; font-size: 17px; font-weight: 400; }
+  #modalBody .backup-hub details[open] > summary { margin-bottom: 10px; }
+  #modalBody .backup-hub details[open] > summary::after { content: '-'; }
+  #modalBody .backup-hub > details { padding-block: 10px; }
+  #modalBody .backup-help > p:last-child { margin-bottom: 0; }
+  #modalBody .backup-hub > p { margin: 0; padding: 14px; border: 1px solid #e8e0d3; border-radius: 12px; background: #faf6ee; }
+  #modalBody .backup-hub #singleFileFallback:not([hidden]) { margin-bottom: 14px; padding: 12px; border: 1px solid #ead4b6; border-radius: 10px; background: #fff9ef; }
+  #modalBody .backup-hub #singleFileFallback p { margin-bottom: 10px; font-size: 11px; }
+  #modalBody .backup-history table { width: 100%; margin: 0; font-size: 12px; }
+  #modalBody .backup-history th { background: #f5f2ec; color: #726b61; font-size: 11px; }
+  #modalBody .backup-history td { font-size: 11px; padding: 10px 8px; }
+  #modalBody .backup-history td:last-child button { margin: 3px; padding: 7px 9px; font-size: 11px; min-height: 38px; }
+  #modalBody .backup-hub :is(button,summary):focus-visible { outline: 2px solid #a88a63; outline-offset: 2px; }
+}
+@media screen and (max-width: 700px) {
+  #modal:has(.backup-hub) { padding: 10px; align-items: center; }
+  #modal:has(.backup-hub) .modal-dialog { max-height: calc(var(--app-viewport,100dvh) - 20px); border-radius: 16px; }
+  #modal:has(.backup-hub) .modal-header { padding: 10px 14px; }
+  #modal:has(.backup-hub) .modal-header h3 { font-size: 15px; }
+  #modal:has(.backup-hub) .modal-body { padding: 10px; }
+  #modalBody .backup-hub { gap: 10px; }
+  #modalBody .backup-hub > :is(section,details) { padding: 14px 12px; border-radius: 11px; }
+  #modalBody .backup-hub > details { padding-block: 8px; }
+  #modalBody .backup-hub :is(h3,h4) { font-size: 14px; }
+  #modalBody .backup-hub p { font-size: 11px; margin-bottom: 12px; }
+  #modalBody .backup-hub button { padding: 9px 7px; font-size: 11px; gap: 5px; }
+  #modalBody .backup-history table[data-ui-layout=cards] tbody { gap: 8px; }
+  #modalBody .backup-history table[data-ui-layout=cards] tbody tr { padding: 12px; border-color: #e5e0d7; border-radius: 10px; box-shadow: none; }
+  #modalBody .backup-history table[data-ui-layout=cards] td[data-actions] { gap: 6px; }
+}
+
+@media screen {
+  #modal:has(.period-hub,.period-create) .modal-dialog { width: min(100%, 640px); max-height: calc(var(--app-viewport,100dvh) - 48px); border-radius: 18px; }
+  #modal:has(.frozen-report) .modal-dialog { width: min(100%, 960px); max-height: calc(var(--app-viewport,100dvh) - 48px); border-radius: 18px; }
+  #modal:has(.period-hub,.period-create,.frozen-report) .modal-header { padding: 14px 20px; background: #fff; }
+  #modal:has(.period-hub,.period-create,.frozen-report) .modal-header h3 { font-size: 16px; }
+  #modal:has(.period-hub,.period-create,.frozen-report) .modal-body { padding: 18px; background: #f7f6f3; }
+  #modalBody :is(.period-hub,.frozen-report) { display: grid; gap: 12px; min-width: 0; }
+  #modalBody :is(.period-hub,.period-create,.frozen-report) button { min-width: 0; min-height: 42px; padding: 9px 12px; margin: 0; border-radius: 9px; font-size: 12px; line-height: 1.8; }
+  #modalBody .period-hub > section { min-width: 0; padding: 16px; border: 1px solid #e5e0d7; border-radius: 13px; background: #fff; }
+  #modalBody .period-hub h4 { margin: 0 0 12px; font-size: 14px; }
+  #modalBody .period-intro { margin: 0; padding: 14px 16px; border: 1px solid #e8e0d3; border-radius: 12px; background: #faf6ee; color: #81715b; font-size: 12px; line-height: 1.95; }
+  #modalBody .period-list table { width: 100%; margin: 0; }
+  #modalBody .period-list th { background: #f5f2ec; color: #726b61; font-size: 11px; }
+  #modalBody .period-list td { padding: 10px 8px; font-size: 12px; }
+  #modalBody .period-hub button.ghost { background: #faf9f7; border: 1px solid #e5e0d7; color: #655d52; }
+  #modalBody .period-actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin: 0; }
+  #modalBody .period-actions > button:first-child { grid-column: 1 / -1; background: #79522c; color: #fff; }
+  #modalBody .period-actions > :is([data-workspace-action=finalize-period],[data-workspace-action=reopen-period]) { background: #faf4e9; border: 1px solid #e1cba7; color: #79522c; }
+  #modalBody .period-report-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: nowrap; gap: 12px; margin: 0; padding: 12px 0; border-top: 1px solid #eeebe5; }
+  #modalBody .period-report-row span { flex: 1; min-width: 0; font-size: 12px; line-height: 1.9; color: #81796e; }
+  #modalBody .period-report-row button { flex: 0 0 auto; }
+  #modalBody .period-create { display: grid; gap: 16px; padding: 18px; border: 1px solid #e5e0d7; border-radius: 13px; background: #fff; }
+  #modalBody .period-create label { display: grid; gap: 7px; margin: 0; font-size: 12px; color: #726b61; }
+  #modalBody .period-create :is(input,select) { width: 100%; min-width: 0; min-height: 44px; margin: 0; border: 1px solid #ded8ce; border-radius: 9px; background: #faf9f7; font-size: 16px; }
+  #modalBody .period-create p { margin: 0; color: #81796e; font-size: 12px; line-height: 1.95; }
+  #modalBody .period-create > button { background: #79522c; color: #fff; }
+  #modalBody .frozen-report-heading { padding: 18px; border: 1px solid #e5e0d7; border-radius: 13px; background: #fff; }
+  #modalBody .frozen-report-heading h2 { margin: 0 0 8px; font-size: 20px; }
+  #modalBody .frozen-report-heading p { margin: 0 0 14px; color: #81796e; font-size: 12px; line-height: 1.9; }
+  #modalBody .frozen-report-heading > button { background: #79522c; color: #fff; }
+  #modalBody .frozen-class { min-width: 0; }
+  #modalBody .frozen-class > h3 { margin: 12px 0; padding-inline: 4px; font-size: 15px; }
+  #modalBody .frozen-student { min-width: 0; padding: 16px; margin-bottom: 12px; border: 1px solid #e5e0d7; border-radius: 13px; background: #fff; }
+  #modalBody .frozen-student > h4 { margin: 0 0 14px; font-size: 15px; }
+  #modalBody .frozen-student .table-scroll { border: 1px solid #e7e3dc; border-radius: 10px; }
+  #modalBody .frozen-student table { width: 100%; margin: 0; }
+  #modalBody .frozen-student th { background: #f5f2ec; color: #726b61; font-size: 11px; }
+  #modalBody .frozen-student td { padding: 10px 8px; font-size: 12px; }
+  #modalBody .frozen-student td small { display: block; margin-top: 4px; color: #81796e; font-size: 10px; }
+  #modalBody .frozen-average { display: inline-block; margin: 14px 0 0; padding: 8px 12px; border: 1px solid #dfd4c3; border-radius: 9px; background: #f7f1e7; color: #79522c; font-size: 13px; font-weight: 600; }
+}
+@media screen and (max-width: 700px) {
+  #modal:has(.period-hub,.period-create,.frozen-report) { padding: 10px; align-items: center; }
+  #modal:has(.period-hub,.period-create,.frozen-report) .modal-dialog { max-height: calc(var(--app-viewport,100dvh) - 20px); border-radius: 16px; }
+  #modal:has(.period-hub,.period-create,.frozen-report) .modal-header { padding: 10px 14px; }
+  #modal:has(.period-hub,.period-create,.frozen-report) .modal-header h3 { font-size: 14px; }
+  #modal:has(.period-hub,.period-create,.frozen-report) .modal-body { padding: 10px; }
+  #modalBody .period-hub > section, #modalBody :is(.period-create,.frozen-report-heading,.frozen-student) { padding: 14px 12px; border-radius: 11px; }
+  #modalBody .period-intro { padding: 12px; font-size: 11px; }
+  #modalBody .period-list table[data-ui-layout=cards] tbody { gap: 8px; }
+  #modalBody .period-list table[data-ui-layout=cards] tbody tr { padding: 12px; border-color: #e5e0d7; border-radius: 10px; box-shadow: none; }
+  #modalBody .period-actions { grid-template-columns: minmax(0,1fr); }
+  #modalBody .period-hub button { font-size: 11px; }
+  #modalBody .period-report-row { gap: 8px; }
+  #modalBody .period-report-row span { font-size: 11px; }
+  #modalBody .frozen-report-heading h2 { font-size: 18px; }
+  #modalBody .frozen-class > h3 { font-size: 13px; }
+  #modalBody .frozen-student table[data-ui-layout=cards] tbody tr { padding: 12px; border-color: #e5e0d7; border-radius: 10px; box-shadow: none; }
+}
+@media print {
+  .frozen-student { break-inside: auto; margin-block: 12px; }
+  .frozen-student > h4 { break-after: avoid; }
+  .frozen-student .table-scroll { overflow: visible !important; }
+}
+
+@media screen {
+  #modal:has(.history-hub) .modal-dialog { width: min(100%,680px); max-height: calc(var(--app-viewport,100dvh) - 48px); border-radius: 18px; }
+  #modal:has(.history-detail) .modal-dialog { width: min(100%,900px); max-height: calc(var(--app-viewport,100dvh) - 48px); border-radius: 18px; }
+  #modal:has(.history-hub,.history-detail) .modal-header { padding: 14px 20px; background: #fff; }
+  #modal:has(.history-hub,.history-detail) .modal-header h3 { font-size: 16px; }
+  #modal:has(.history-hub,.history-detail) .modal-body { padding: 18px; background: #f7f6f3; }
+  #modalBody :is(.history-hub,.history-detail) { display: grid; gap: 12px; min-width: 0; }
+  #modalBody :is(.history-hub,.history-detail) button { min-width: 0; min-height: 42px; padding: 9px 12px; margin: 0; border-radius: 9px; font-size: 12px; line-height: 1.8; }
+  #modalBody .history-intro { margin: 0; padding: 14px; border: 1px solid #e8e0d3; border-radius: 12px; background: #faf6ee; color: #81715b; font-size: 12px; line-height: 1.95; }
+  #modalBody .history-hub > [data-workspace-action=undo] { background: #f5ede0; border: 1px solid #dbcbb3; color: #79522c; text-align: start; }
+  #modalBody .history-list { display: grid; gap: 8px; }
+  #modalBody .history-entry { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 14px; padding: 16px; border: 1px solid #e5e0d7; border-radius: 12px; background: #fff; }
+  #modalBody .history-entry-info { min-width: 0; }
+  #modalBody .history-entry h4 { margin: 0 0 8px; font-size: 13px; line-height: 1.9; overflow-wrap: anywhere; }
+  #modalBody .history-entry-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; color: #81796e; font-size: 11px; }
+  #modalBody .history-count { padding: 3px 8px; border-radius: 20px; background: #f4f1eb; color: #81715b; font-size: 10px; white-space: nowrap; }
+  #modalBody .history-entry > button { background: #faf9f7; border: 1px solid #e5e0d7; color: #655d52; }
+  #modalBody .history-hub > [data-workspace-action=history-more], #modalBody .history-detail > button { background: #fff; border: 1px solid #e5e0d7; color: #79522c; }
+  #modalBody .history-empty { padding: 28px 16px; border: 1px dashed #ded8ce; border-radius: 12px; background: #fff; color: #81796e; text-align: center; font-size: 12px; line-height: 1.9; }
+  #modalBody .history-detail-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 16px; border: 1px solid #e5e0d7; border-radius: 12px; background: #fff; }
+  #modalBody .history-detail-heading p { margin: 0; color: #81796e; font-size: 12px; line-height: 1.9; }
+  #modalBody .history-detail-heading button { background: #79522c; border: 1px solid #79522c; color: #fff; }
+  #modalBody .history-diff { border: 1px solid #e5e0d7; border-radius: 12px; background: #fff; }
+  #modalBody .history-diff table { width: 100%; margin: 0; table-layout: fixed; }
+  #modalBody .history-diff th { background: #f5f2ec; color: #726b61; font-size: 12px; }
+  #modalBody .history-diff td { padding: 12px; vertical-align: top; font-size: 12px; overflow-wrap: anywhere; }
+  #modalBody .history-diff pre { min-width: 0; margin: 0; padding: 10px; border-radius: 8px; background: #f7f6f3; color: #655d52; font-family: inherit; font-size: 12px; line-height: 1.9; white-space: pre-wrap; overflow-wrap: anywhere; }
+  #modalBody .history-diff td:last-child pre { background: #edf5ef; color: #35634c; }
+}
+@media screen and (max-width: 700px) {
+  #modal:has(.history-hub,.history-detail) { padding: 10px; align-items: center; }
+  #modal:has(.history-hub,.history-detail) .modal-dialog { max-height: calc(var(--app-viewport,100dvh) - 20px); border-radius: 16px; }
+  #modal:has(.history-hub,.history-detail) .modal-header { padding: 10px 14px; }
+  #modal:has(.history-hub,.history-detail) .modal-header h3 { font-size: 14px; }
+  #modal:has(.history-hub,.history-detail) .modal-body { padding: 10px; }
+  #modalBody .history-intro { font-size: 11px; padding: 12px; }
+  #modalBody .history-entry { padding: 12px; gap: 10px; }
+  #modalBody .history-entry h4 { font-size: 12px; }
+  #modalBody .history-entry-meta { font-size: 10px; gap: 6px; }
+  #modalBody .history-entry > button { padding: 8px 10px; font-size: 11px; }
+  #modalBody .history-detail-heading { padding: 12px; }
+  #modalBody .history-detail-heading button { width: 100%; }
+  #modalBody .history-diff table[data-ui-layout=cards] tbody { gap: 8px; padding: 8px; }
+  #modalBody .history-diff table[data-ui-layout=cards] tbody tr { padding: 12px; border-color: #e5e0d7; border-radius: 10px; box-shadow: none; }
+  #modalBody .history-diff table[data-ui-layout=cards] td:not([data-identity]) { grid-column: 1 / -1; }
+  #modalBody .history-diff pre { padding: 9px; font-size: 11px; }
+}
+
+@media screen {
+  #modal:has(.draft-review) .modal-dialog { width: min(100%,780px); max-height: calc(var(--app-viewport,100dvh) - 48px); border-radius: 18px; }
+  #modal:has(.draft-review) .modal-header { padding: 14px 20px; background: #fff; }
+  #modal:has(.draft-review) .modal-header h3 { font-size: 16px; }
+  #modal:has(.draft-review) .modal-body { padding: 18px; background: #f7f6f3; }
+  #modalBody .draft-review { display: grid; gap: 14px; min-width: 0; }
+  #modalBody .draft-review-heading { padding: 16px; border: 1px solid #e4d7c4; border-radius: 12px; background: #faf6ee; }
+  #modalBody .draft-review-count { display: inline-block; padding: 4px 9px; border-radius: 20px; background: #efe4d1; color: #79522c; font-size: 11px; font-weight: 600; }
+  #modalBody .draft-review-heading p { margin: 10px 0 0; color: #81715b; font-size: 12px; line-height: 1.95; }
+  #modalBody .draft-review-table { border: 1px solid #e5e0d7; border-radius: 12px; background: #fff; }
+  #modalBody .draft-review-table table { width: 100%; margin: 0; table-layout: fixed; }
+  #modalBody .draft-review-table th { padding: 12px; background: #f5f2ec; color: #726b61; font-size: 12px; }
+  #modalBody .draft-review-table th:first-child { width: 50%; }
+  #modalBody .draft-review-table td { padding: 14px 12px; vertical-align: middle; font-size: 12px; line-height: 1.95; overflow-wrap: anywhere; }
+  #modalBody .draft-review-table :is(.draft-review-current,.draft-review-proposed) { text-align: center; }
+  #modalBody .draft-review-table strong { display: inline-flex; align-items: center; justify-content: center; min-width: 52px; min-height: 36px; padding: 4px 10px; border: 1px solid #e6e0d7; border-radius: 8px; background: #f5f3ef; color: #655d52; font-size: 15px; font-weight: 600; }
+  #modalBody .draft-review-proposed strong { border-color: #cfdfd3; background: #edf5ef; color: #35634c; }
+  #modalBody .draft-review-actions { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; padding-top: 14px; border-top: 1px solid #e5e0d7; }
+  #modalBody .draft-review-actions button { min-width: 0; min-height: 44px; margin: 0; padding: 10px 14px; border-radius: 9px; font-size: 12px; line-height: 1.8; white-space: normal; }
+  #modalBody .draft-review-actions > button:first-child { background: #79522c; border: 1px solid #79522c; color: #fff; }
+  #modalBody .draft-review-actions > button.ghost { background: #fffaf8; border: 1px solid #eddcd5; color: #9f5548; }
+}
+@media screen and (max-width: 700px) {
+  #modal:has(.draft-review) { padding: 10px; align-items: center; }
+  #modal:has(.draft-review) .modal-dialog { max-height: calc(var(--app-viewport,100dvh) - 20px); border-radius: 16px; }
+  #modal:has(.draft-review) .modal-header { padding: 10px 14px; }
+  #modal:has(.draft-review) .modal-header h3 { font-size: 14px; }
+  #modal:has(.draft-review) .modal-body { padding: 10px; }
+  #modalBody .draft-review-heading { padding: 12px; }
+  #modalBody .draft-review-heading p { font-size: 11px; }
+  #modalBody .draft-review-table table[data-ui-layout=cards] tbody { gap: 8px; padding: 8px; }
+  #modalBody .draft-review-table table[data-ui-layout=cards] tbody tr { padding: 12px; gap: 10px; border-color: #e5e0d7; border-radius: 10px; box-shadow: none; }
+  #modalBody .draft-review-table table[data-ui-layout=cards] td:first-child { font-size: 12px; }
+  #modalBody .draft-review-table table[data-ui-layout=cards] :is(.draft-review-current,.draft-review-proposed) { text-align: center !important; }
+  #modalBody .draft-review-table strong { width: 100%; font-size: 14px; }
+  #modalBody .draft-review-actions { grid-template-columns: minmax(0,1fr); }
+  #modalBody .draft-review-actions button { font-size: 11px; }
+}
+
+@media screen {
+  #modal:has(.other-drafts) .modal-dialog { width: min(100%,620px); max-height: calc(var(--app-viewport,100dvh) - 48px); border-radius: 18px; }
+  #modal:has(.other-drafts) .modal-header { padding: 14px 20px; background: #fff; }
+  #modal:has(.other-drafts) .modal-header h3 { font-size: 16px; }
+  #modal:has(.other-drafts) .modal-body { padding: 18px; background: #f7f6f3; }
+  #modalBody .other-drafts { display: grid; gap: 14px; min-width: 0; }
+  #modalBody .other-drafts-heading { padding: 16px; border: 1px solid #e8e0d3; border-radius: 12px; background: #faf6ee; }
+  #modalBody .other-drafts-heading > span { display: inline-block; padding: 4px 9px; border-radius: 20px; background: #efe4d1; color: #79522c; font-size: 11px; font-weight: 600; }
+  #modalBody .other-drafts-heading p { margin: 10px 0 0; color: #81715b; font-size: 12px; line-height: 1.95; }
+  #modalBody .other-drafts-list { display: grid; gap: 10px; }
+  #modalBody .other-draft-entry { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 16px; padding: 16px; border: 1px solid #e5e0d7; border-radius: 12px; background: #fff; }
+  #modalBody .other-draft-info { display: grid; gap: 8px; min-width: 0; }
+  #modalBody .other-draft-info strong { font-size: 13px; font-weight: 600; line-height: 1.8; }
+  #modalBody .other-draft-time { color: #81796e; font-size: 11px; line-height: 1.8; overflow-wrap: anywhere; text-align: start; }
+  #modalBody .other-draft-entry > button { min-width: 0; min-height: 42px; margin: 0; padding: 9px 12px; border: 1px solid #dbcbb3; border-radius: 9px; background: #f5efe5; color: #79522c; font-size: 12px; line-height: 1.8; white-space: nowrap; }
+  #modalBody .other-drafts-empty { padding: 30px 16px; border: 1px dashed #ded8ce; border-radius: 12px; background: #fff; color: #81796e; text-align: center; font-size: 12px; line-height: 1.9; }
+}
+@media screen and (max-width: 700px) {
+  #modal:has(.other-drafts) { padding: 10px; align-items: center; }
+  #modal:has(.other-drafts) .modal-dialog { max-height: calc(var(--app-viewport,100dvh) - 20px); border-radius: 16px; }
+  #modal:has(.other-drafts) .modal-header { padding: 10px 14px; }
+  #modal:has(.other-drafts) .modal-header h3 { font-size: 14px; }
+  #modal:has(.other-drafts) .modal-body { padding: 10px; }
+  #modalBody .other-drafts-heading { padding: 12px; }
+  #modalBody .other-drafts-heading p { font-size: 11px; }
+  #modalBody .other-draft-entry { grid-template-columns: minmax(0,1fr); padding: 14px 12px; gap: 12px; }
+  #modalBody .other-draft-entry > button { width: 100%; font-size: 11px; }
+}
+
+@media screen {
+  #app .workflow-welcome.schools-welcome { display: grid; position: relative; isolation: isolate; overflow: hidden; grid-template-columns: 68px minmax(0,1fr); align-items: center; gap: 22px; min-height: 174px; margin-block: 10px 24px; padding: 32px; border: 1px solid #f1d3c1; border-radius: 22px; background: radial-gradient(ellipse at 12% 0%,#ffd69d85,transparent 50%),linear-gradient(110deg,#fff3d9,#ffe6df 55%,#fff4ed); box-shadow: 0 8px 24px #ba603510; }
+  #app .schools-welcome::before { content: ''; position: absolute; z-index: -1; inset-inline-end: -45px; top: -90px; width: 250px; height: 250px; border: 34px solid #ffffff50; border-radius: 50%; pointer-events: none; }
+  #app .schools-welcome::after { content: ''; position: absolute; z-index: -1; inset-inline-end: 110px; bottom: -115px; width: 190px; height: 190px; border: 1px solid #d9795533; border-radius: 38px; background: #ffffff25; transform: rotate(32deg); pointer-events: none; }
+  #app .schools-welcome-icon { display: grid; place-items: center; position: relative; width: 68px; height: 68px; border: 1px solid #ffffff80; border-radius: 20px; background: linear-gradient(145deg,#e66b51,#be2938); color: #fffaf4; box-shadow: 0 8px 18px #b9343526,inset 0 1px 0 #ffffff40; transform: rotate(-6deg); }
+  #app .schools-welcome-icon svg { display: block; width: 34px; height: 34px; }
+  #app .schools-welcome-copy { position: relative; display: grid; gap: 10px; min-width: 0; }
+  #app .schools-welcome h2 { margin: 0; color: #8b2731; font-size: 30px; line-height: 1.6; }
+  #app .schools-welcome p { max-width: 580px; margin: 0; color: #805c51; font-size: 13px; line-height: 1.95; }
+}
+@media screen and (max-width: 700px) {
+  #app .workflow-welcome.schools-welcome { grid-template-columns: 48px minmax(0,1fr); align-items: center; gap: 14px; min-height: 158px; padding: 26px 16px; border-radius: 18px; margin-block: 8px 20px; }
+  #app .schools-welcome-icon { width: 48px; height: 48px; border-radius: 15px; margin: 0; }
+  #app .schools-welcome::before { width: 170px; height: 170px; border-width: 24px; top: -95px; inset-inline-end: -65px; }
+  #app .schools-welcome::after { width: 130px; height: 130px; inset-inline-end: 35px; bottom: -100px; }
+  #app .schools-welcome-icon svg { width: 23px; height: 23px; }
+  #app .schools-welcome-copy { gap: 5px; }
+  #app .schools-welcome h2 { font-size: 22px; }
+  #app .schools-welcome p { font-size: 12px; }
+}
 /* Source: src/styles/workflow/grades.css */
 /* Flat gradebook rows on desktop; a single student per card on mobile. */
 @media screen {

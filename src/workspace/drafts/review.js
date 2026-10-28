@@ -25,7 +25,9 @@ function reviewDrafts() {
   const items = [...drafts.values()].filter((x) => x.review);
   showModal(
     "بررسی پیش‌نویس پس از تعارض",
-    "<p>این ورودی‌ها پیش از تغییر داده در تب دیگر نوشته شده‌اند و خودکار اعمال نمی‌شوند. مقدار ثبت‌شده جدید و ویرایش خود را بررسی کنید.</p><table><thead><tr><th>هنرجو، درس و بخش</th><th>ثبت‌شده جدید</th><th>ویرایش شما</th></tr></thead><tbody>" +
+    '<div class="draft-review"><header class="draft-review-heading"><span class="draft-review-count">' +
+      items.length.toLocaleString("fa-IR") +
+      ' پیش‌نویس نیازمند بررسی</span><p>این ورودی‌ها پیش از تغییر داده در تب دیگر نوشته شده‌اند و خودکار اعمال نمی‌شوند. مقدار ثبت‌شده جدید و ویرایش خود را بررسی کنید.</p></header><div class="table-scroll draft-review-table"><table><thead><tr><th>هنرجو، درس و بخش</th><th>ثبت‌شده جدید</th><th>ویرایش شما</th></tr></thead><tbody>' +
       items
         .map((item) => {
           const c = findClass(item.classId),
@@ -45,6 +47,8 @@ function reviewDrafts() {
             {
               practical: "عملی",
               theory: "نظری",
+              midtermPractical: "عملی میان‌ترم",
+              midtermTheory: "نظری میان‌ترم",
               m: "مستمر",
               p: "پایانی",
               c: "شایستگی",
@@ -61,15 +65,15 @@ function reviewDrafts() {
           return (
             "<tr><td>" +
             esc(description) +
-            "</td><td>" +
+            '</td><td class="draft-review-current"><strong dir="auto">' +
             esc(source?.[item.field] ?? "—") +
-            "</td><td>" +
+            '</strong></td><td class="draft-review-proposed"><strong dir="auto">' +
             esc(item.remove ? "حذف نمره" : item.value) +
-            "</td></tr>"
+            "</strong></td></tr>"
           );
         })
         .join("") +
-      '</tbody></table><button data-workspace-action="approve-drafts">ورودی‌ها را بررسی کرده‌ام؛ اعمال شوند</button><button class="ghost" data-workspace-action="discard-drafts">لغو این ویرایش‌ها</button>',
+      '</tbody></table></div><div class="draft-review-actions"><button data-workspace-action="approve-drafts">ورودی‌ها را بررسی کرده‌ام؛ اعمال شوند</button><button class="ghost" data-workspace-action="discard-drafts">لغو این ویرایش‌ها</button></div></div>',
   );
 }
 

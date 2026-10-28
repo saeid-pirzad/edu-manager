@@ -12,7 +12,7 @@ async function openPeriods() {
   ensureCurrent();
   showModal(
     "دوره‌های تحصیلی و کارنامه نهایی",
-    "<p>هر دوره، کلاس‌ها، نمرات و جلسات مستقل دارد. بستن دوره فقط پس از تکمیل همه نمرات انجام می‌شود و نسخه ثابت کارنامه نگه داشته می‌شود.</p><table><thead><tr><th>سال / نوبت</th><th>وضعیت</th><th></th></tr></thead><tbody>" +
+    '<div class="period-hub"><p class="period-intro">هر دوره، کلاس‌ها، نمرات و جلسات مستقل دارد. بستن دوره فقط پس از تکمیل همه نمرات انجام می‌شود و نسخه ثابت کارنامه نگه داشته می‌شود.</p><section class="period-list"><h4>دوره‌های تحصیلی</h4><table><thead><tr><th>سال / نوبت</th><th>وضعیت</th><th>انتخاب دوره</th></tr></thead><tbody>' +
       all
         .map(
           (w) =>
@@ -27,22 +27,23 @@ async function openPeriods() {
             "</button></td></tr>",
         )
         .join("") +
-      '</tbody></table><div class="row"><button data-workspace-action="new-period">دوره جدید با فهرست فعلی و بدون نمره</button>' +
+      '</tbody></table></section><section class="period-management"><h4>مدیریت دوره فعال</h4><div class="row period-actions"><button data-workspace-action="new-period">دوره جدید با فهرست فعلی و بدون نمره</button>' +
       (workspace.closed
         ? '<button data-workspace-action="reopen-period">بازگشایی با ثبت در تاریخچه</button>'
         : '<button data-workspace-action="finalize-period">بستن دوره و ثبت کارنامه نهایی</button><button class="ghost" data-workspace-action="edit-period-label">اصلاح عنوان دوره</button>') +
-      "</div>" +
+      '</div></section><section class="period-reports"><h4>کارنامه‌های نهایی ثبت‌شده</h4>' +
+      (reports.length ? "" : '<p class="period-intro">هنوز کارنامه نهایی برای این دوره ثبت نشده است.</p>') +
       reports
         .map(
           (r) =>
-            '<div class="row"><span>کارنامه ثابت ' +
+            '<div class="row period-report-row"><span>کارنامه ثابت ' +
             esc(new Date(r.at).toLocaleString("fa-IR")) +
             '</span><button class="ghost" data-workspace-action="frozen-report" data-key="' +
             esc(r.id) +
             '">مشاهده / چاپ</button></div>',
         )
         .join("") +
-      '<p id="operationError" role="alert"></p>',
+      '</section><p id="operationError" role="alert"></p></div>',
   );
 }
 
@@ -114,9 +115,9 @@ async function switchPeriod(id) {
 function openNewPeriod() {
   showModal(
     "دوره تحصیلی جدید",
-    '<label>سال تحصیلی <input id="periodYear" value="' +
+    '<div class="period-create"><label>سال تحصیلی <input id="periodYear" value="' +
       esc(currentYearLabel()) +
-      '"></label><label>نوبت <select id="periodTerm"><option>اول</option><option>دوم</option><option>تابستان</option></select></label><p>فهرست دانش‌آموزان فعال، دروس و تنظیم برنامه کپی می‌شود. نمرات، جلسات و بایگانی دوره قبلی منتقل نمی‌شوند.</p><button data-workspace-action="create-period">ایجاد دوره مستقل</button>',
+      '"></label><label>نوبت <select id="periodTerm"><option>اول</option><option>دوم</option><option>تابستان</option></select></label><p>فهرست دانش‌آموزان فعال، دروس و تنظیم برنامه کپی می‌شود. نمرات، جلسات و بایگانی دوره قبلی منتقل نمی‌شوند.</p><button data-workspace-action="create-period">ایجاد دوره مستقل</button></div>',
   );
 }
 

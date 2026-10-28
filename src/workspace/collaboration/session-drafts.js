@@ -74,21 +74,22 @@ async function openOtherDrafts() {
   const entries = [...byTab.values()].filter((x) => x.items.length);
   showModal(
     "پیش‌نویس نشست‌های دیگر",
-    "<p>فقط جدیدترین پیش‌نویس هر نشست نمایش داده می‌شود. دریافت آن نیازمند بررسی و تأیید مقدار ثبت‌شده است.</p>" +
+    '<div class="other-drafts"><header class="other-drafts-heading"><span>' + entries.length.toLocaleString("fa-IR") +
+      ' نشست دارای پیش‌نویس</span><p>فقط جدیدترین پیش‌نویس هر نشست نمایش داده می‌شود. دریافت آن نیازمند بررسی و تأیید مقدار ثبت‌شده است.</p></header><div class="other-drafts-list">' +
       (entries.length
         ? entries
             .map(
               (entry) =>
-                '<div class="card"><p>' +
+                '<article class="other-draft-entry"><div class="other-draft-info"><strong>' +
                 entry.items.length +
-                " ورودی · " +
+                ' ورودی ثبت‌نشده</strong><span class="other-draft-time" dir="auto">' +
                 esc(entry.items.at(-1)?.at || "") +
-                '</p><button class="ghost" data-key="' +
+                '</span></div><button class="ghost" data-key="' +
                 esc(entry.key) +
-                '" data-workspace-action="adopt-drafts">دریافت برای بررسی</button></div>',
+                '" data-workspace-action="adopt-drafts">دریافت برای بررسی</button></article>',
             )
             .join("")
-        : "<p>پیش‌نویس دیگری یافت نشد.</p>"),
+        : '<div class="other-drafts-empty">پیش‌نویس دیگری یافت نشد.</div>') + '</div></div>',
   );
 }
 
