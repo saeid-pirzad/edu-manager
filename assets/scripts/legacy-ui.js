@@ -2975,7 +2975,7 @@ function renderEntityQuickCreate(kind, empty) {
 function renderSchools() {
   let h =
     headerHtml() +
-    `<section class="workflow-welcome schools-welcome no-print"><span class="schools-welcome-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M8 9h1M15 9h1M8 12h1M15 12h1"/></svg></span><div class="schools-welcome-copy"><h2>مدرسه‌های من</h2><p>مدرسه‌ها را اضافه، ویرایش یا حذف کنید؛ برای مدیریت کلاس‌ها وارد مدرسه شوید.</p></div></section>`;
+    `<section class="workflow-welcome schools-welcome no-print"><span class="schools-welcome-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M8 9h1M15 9h1M8 12h1M15 12h1"/></svg></span><div class="schools-welcome-copy"><h2>مدرسه‌های من</h2><p>مدرسه‌ها را اضافه، ویرایش یا حذف کنید؛ برای مدیریت کلاس‌ها وارد مدرسه شوید.</p></div><button type="button" class="schools-about" data-about-action="open"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></svg><span>درباره و ارتباط</span></button></section>`;
   h += dashboardDirectory(db.schools, "schools");
   h += renderEntityQuickCreate("school", !db.schools.length);
   return h;

@@ -92,7 +92,7 @@ test("header toggle receives the original event; unknown, inert and unrelated co
     f.click("wipe", options);
   assert.equal(f.calls.length, 1);
 });
-test("rendered header contains only the eight declared action tokens and no inline handlers", () => {
+test("rendered header contains only the declared action tokens and no inline handlers", () => {
   const context = vm.createContext({
     state: { view: "schools" },
     document: { addEventListener() {} },

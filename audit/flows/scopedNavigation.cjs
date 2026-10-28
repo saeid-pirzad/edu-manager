@@ -18,7 +18,7 @@ module.exports = async function scopedNavigation() {
     "schools contain school CRUD and child navigation, not report or schedule shortcuts",
     !!document.querySelector('[data-entity-create="school"]') &&
       !document.querySelector(
-        '.workflow-welcome button,.dashboard-directory [data-legacy-click="ui-dashboard:1"]',
+        '.workflow-welcome button:not([data-about-action="open"]),.dashboard-directory [data-legacy-click="ui-dashboard:1"]',
       ) &&
       !!document.querySelector('[data-legacy-click="dashboard-delete"]'),
   );

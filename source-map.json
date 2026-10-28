@@ -175,6 +175,7 @@
       "scope": "global",
       "sources": [
         "src/ui/dialogs.js",
+        "src/ui/about.js",
         "src/ui/shell-events.js",
         "src/ui/header-events.js"
       ]

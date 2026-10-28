@@ -3852,6 +3852,39 @@
     gap: 10px;
     min-width: 0;
   }
+  #app .schools-welcome .schools-about {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: end;
+    width: auto;
+    min-height: 44px;
+    margin: 0;
+    padding: 8px 14px;
+    gap: 8px;
+    border: 1px solid #e5bca5;
+    border-radius: 12px;
+    background: #fffaf3;
+    color: #8b3934;
+    box-shadow: 0 3px 10px #a6522910;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.8;
+    white-space: nowrap;
+  }
+  #app .schools-welcome .schools-about svg {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+  }
+  #app .schools-welcome .schools-about:hover {
+    background: #fff;
+    border-color: #bf7760;
+    color: #9d2426;
+  }
+  #app .schools-welcome .schools-about:focus-visible {
+    outline: 2px solid #a83e36;
+    outline-offset: 3px;
+  }
   #app .schools-welcome h2 {
     margin: 0;
     color: #8b2731;
@@ -4378,5 +4411,184 @@
   }
   #modalBody .wipe-actions .danger:hover {
     background: var(--brand-hover);
+  }
+}
+@media screen {
+  #modal:has(.about-app) .modal-dialog {
+    width: min(100%, 540px);
+  }
+  #modalBody .about-app {
+    display: grid;
+    gap: 18px;
+    color: var(--workflow-ink);
+  }
+  #modalBody .about-app p {
+    margin: 0;
+    color: var(--workflow-muted);
+    font-size: 12px;
+    line-height: 2;
+  }
+  .about-hero {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    border: 1px solid #f4d7bd;
+    border-radius: 16px;
+    background: linear-gradient(125deg, #fff6e4, #fff0ec);
+  }
+  .about-mark {
+    display: grid;
+    place-items: center;
+    flex: 0 0 56px;
+    height: 56px;
+    color: #fff;
+    background: var(--workflow-accent);
+    border-radius: 16px;
+    box-shadow: 0 6px 16px #c0141b20;
+  }
+  .about-mark svg {
+    width: 30px;
+    height: 30px;
+  }
+  .about-eyebrow {
+    font-size: 11px;
+    color: #8a6454;
+  }
+  #modalBody .about-hero h4 {
+    margin: 3px 0 5px;
+    font-size: 27px;
+    line-height: 1.5;
+    color: #9d2426;
+  }
+  .about-features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .about-features span {
+    padding: 5px 9px;
+    border: 1px solid var(--workflow-line);
+    border-radius: 20px;
+    background: #faf9f7;
+    color: #71665a;
+    font-size: 10px;
+  }
+  .about-section {
+    padding-top: 16px;
+    border-top: 1px solid var(--workflow-line);
+    min-width: 0;
+  }
+  #modalBody .about-section h4 {
+    margin: 0 0 7px;
+    font-size: 14px;
+    line-height: 1.8;
+  }
+  .about-project-link {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    margin-top: 12px;
+    padding: 8px 12px;
+    border: 1px solid #f3cdcf;
+    border-radius: 10px;
+    background: var(--workflow-soft);
+    color: var(--workflow-accent);
+    text-decoration: none;
+    font-size: 13px;
+  }
+  .about-project-link:hover {
+    background: #fbe4e4;
+  }
+  .about-contact-list {
+    display: grid;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .about-contact-link {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 5px 12px;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid var(--workflow-line);
+    border-radius: 10px;
+    background: #faf9f7;
+    color: var(--workflow-ink);
+    font-size: 12px;
+    text-decoration: none;
+  }
+  .about-contact-link > span {
+    color: var(--workflow-muted);
+    font-size: 11px;
+  }
+  .about-contact-link bdi {
+    overflow-wrap: anywhere;
+    min-width: 0;
+  }
+  .about-contact-link:hover {
+    background: var(--workflow-soft);
+    border-color: #f3cdcf;
+  }
+  .about-contact-link:focus-visible {
+    outline: 2px solid var(--workflow-accent);
+    outline-offset: 3px;
+  }
+  .about-signature .about-role {
+    display: grid;
+    gap: 3px;
+    margin: 3px 0;
+  }
+  .about-project-link:focus-visible {
+    outline: 2px solid var(--workflow-accent);
+    outline-offset: 3px;
+  }
+  .about-signature {
+    display: grid;
+    gap: 5px;
+    text-align: center;
+    padding: 18px;
+    border-radius: 14px;
+    background: #f7f6f3;
+  }
+  .about-signature > span {
+    font-size: 11px;
+    color: var(--workflow-muted);
+  }
+  .about-signature > strong {
+    font-size: 20px;
+    color: #76542f;
+  }
+  .about-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  #modalBody .about-actions button {
+    min-height: 44px;
+    margin: 0;
+    font-size: 12px;
+    white-space: normal;
+  }
+  .about-actions > button:first-child {
+    flex: 1;
+  }
+}
+@media screen and (max-width: 400px) {
+  .about-hero {
+    gap: 10px;
+    padding: 14px;
+  }
+  .about-mark {
+    flex-basis: 42px;
+    height: 42px;
+    border-radius: 12px;
+  }
+  #modalBody .about-hero h4 {
+    font-size: 23px;
   }
 }
