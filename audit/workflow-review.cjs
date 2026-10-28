@@ -97,6 +97,11 @@ if (process.argv.includes("--help")) {
         ...(await require("./local-file.cjs")({ cdp, evaluate, root, delay })),
       );
       cases.push(
+        ...(await evaluate(
+          "(" + require("./flows/backupSharing.cjs").toString() + ")()",
+        )),
+      );
+      cases.push(
         ...(await require("./pwa-upgrade.cjs")({
           cdp,
           debuggerUrl: ws.url,

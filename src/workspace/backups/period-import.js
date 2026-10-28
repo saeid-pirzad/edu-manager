@@ -104,7 +104,7 @@ async function openBackups() {
   }
   showModal(
     "پشتیبان و بازیابی",
-    '<div class="backup-hub"><section class="backup-manual"><h4>فایل پشتیبان شما</h4><p>یک نسخه مستقل از اطلاعات بگیرید یا فایل قبلی را بازیابی کنید.</p><div class="backup-action-grid"><button data-workspace-action="export-full">دریافت پشتیبان کامل</button><button class="ghost" data-workspace-action="choose-import">بازیابی از فایل</button><button class="ghost" data-workspace-action="export-period">فقط دوره جاری</button></div><p class="muted">' +
+    '<div class="backup-hub"><section class="backup-manual"><h4>فایل پشتیبان شما</h4><p>یک نسخه مستقل از اطلاعات بگیرید، برای خودتان بفرستید یا فایل قبلی را بازیابی کنید.</p><div class="backup-action-grid"><button data-workspace-action="export-full">دریافت پشتیبان کامل</button><button class="ghost backup-share-entry" data-workspace-action="prepare-share-backup">اشتراک‌گذاری پشتیبان کامل</button><button class="ghost" data-workspace-action="choose-import">بازیابی از فایل</button><button class="ghost" data-workspace-action="export-period">فقط دوره جاری</button></div><p class="muted">' +
       esc(lastExternalBackupLabel()) +
       "</p></section>" +
       singleFilePanel() +
