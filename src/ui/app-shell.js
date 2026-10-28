@@ -7,6 +7,7 @@
       history: "clock",
       backups: "shield",
       "export-full": "download",
+      "open-wipe": "trash",
       "prepare-share-backup": "upload",
       "share-backup-file": "upload",
       "download-share-backup": "download",

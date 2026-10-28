@@ -19,27 +19,21 @@ for (const file of ["src/core/icons.js", "src/workspace/ui/locks-render.js"])
     fs.readFileSync(path.join(__dirname, "..", file), "utf8"),
     context,
   );
-test("workspace tools preserve all six explicit commands and prioritize backup without inline handlers", () => {
+test("workspace tools retain period, history and draft commands without a duplicate backup entry", () => {
   const html = context.workspaceToolsHtml();
   assert.deepEqual(
     [...html.matchAll(/data-workspace-action="([^"]+)"/g)].map(
       (match) => match[1],
     ),
-    [
-      "backups",
-      "periods",
-      "history",
-      "review-drafts",
-      "other-drafts",
-      "discard-drafts",
-    ],
+    ["periods", "history", "review-drafts", "other-drafts", "discard-drafts"],
   );
   assert.doesNotMatch(html, /\son\w+=|<script>/i);
   assert.doesNotMatch(
     html,
     /workspace-tool-label|workspace-file-status|<small>/,
   );
-  assert.equal((html.match(/<button/g) || []).length, 7);
+  assert.equal((html.match(/<button/g) || []).length, 6);
+  assert.doesNotMatch(html, /data-workspace-action="backups"/);
   assert.match(html, /data-header-action="settings"/);
   assert.match(html, /ابزارها و تنظیمات/);
 });

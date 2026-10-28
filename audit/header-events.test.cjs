@@ -30,10 +30,6 @@ function fixture() {
     "goReports",
     "goMaster",
     "openSettingsModal",
-    "toggleDataMenu",
-    "closeDataMenu",
-    "exportBackup",
-    "wipeAllData",
   ])
     context[name] = (...args) => calls.push([name, ...args]);
   vm.runInNewContext(source, context);
@@ -52,7 +48,7 @@ function fixture() {
     },
   };
 }
-test("header actions preserve navigation and data-operation ordering", () => {
+test("header preserves navigation and ignores removed data commands", () => {
   const f = fixture();
   for (const action of [
     "schools",
@@ -69,18 +65,12 @@ test("header actions preserve navigation and data-operation ordering", () => {
     ["goReports"],
     ["goMaster"],
     ["openSettingsModal"],
-    ["closeDataMenu"],
-    ["exportBackup"],
-    ["closeDataMenu"],
-    "file",
-    ["closeDataMenu"],
-    ["wipeAllData"],
   ]);
 });
-test("header toggle receives the original event; unknown, inert and unrelated controls do nothing", () => {
+test("removed, unknown, inert and unrelated header commands do nothing", () => {
   const f = fixture();
-  const event = f.click("toggle-data");
-  assert.deepEqual(f.calls, [["toggleDataMenu", event]]);
+  for (const action of ["toggle-data", "export", "import", "wipe"])
+    f.click(action);
   for (const action of ["toString", "constructor", "goSchools()", "unknown"])
     f.click(action);
   for (const options of [
@@ -90,7 +80,7 @@ test("header toggle receives the original event; unknown, inert and unrelated co
     { noHeader: true },
   ])
     f.click("wipe", options);
-  assert.equal(f.calls.length, 1);
+  assert.equal(f.calls.length, 0);
 });
 test("rendered header contains only the declared action tokens and no inline handlers", () => {
   const context = vm.createContext({
@@ -102,20 +92,15 @@ test("rendered header contains only the declared action tokens and no inline han
     context,
   );
   const html = context.headerHtml();
+  assert.equal(
+    (html.match(/data-workspace-action="backups"/g) || []).length,
+    1,
+  );
   assert.doesNotMatch(html, /\son[a-z]+\s*=/i);
   assert.deepEqual(
     [...html.matchAll(/data-header-action="([^"]+)"/g)].map(
       (match) => match[1],
     ),
-    [
-      "schools",
-      "reports",
-      "master",
-      "toggle-data",
-      "export",
-      "import",
-      "wipe",
-      "settings",
-    ],
+    ["schools", "reports", "master", "settings"],
   );
 });

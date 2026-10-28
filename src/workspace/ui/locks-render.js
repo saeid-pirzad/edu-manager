@@ -146,26 +146,43 @@ function lockControls() {
 }
 
 function workspaceToolsHtml() {
-  const button = (action, icon, title, extra = "") =>
+  const button = (action, icon, title, extra = "", description = "") =>
     '<button type="button" class="ghost workspace-tool-button ' +
     extra +
     '" data-workspace-action="' +
     action +
     '"><span class="workspace-tool-icon" aria-hidden="true">' +
     EduIcons.html(icon) +
-    "</span><span>" +
+    '</span><span class="workspace-tool-copy"><span>' +
     esc(title) +
+    "</span>" +
+    (description
+      ? '<span class="workspace-tool-description">' +
+        esc(description) +
+        "</span>"
+      : "") +
     "</span></button>";
   return (
     '<details class="workspace-tools"><summary id="workspaceToolsToggle"><span class="workspace-tools-symbol" aria-hidden="true">' +
     EduIcons.html("settings") +
     '</span><span>ابزارها و تنظیمات</span><span class="workspace-tools-chevron" aria-hidden="true"></span></summary><div class="workspace-tool-actions"><div class="workspace-tool-group">' +
-    button("backups", "shield", "پشتیبان و بازیابی", "workspace-tool-primary") +
-    button("periods", "calendar", "دوره‌های تحصیلی") +
-    button("history", "clock", "تاریخچه") +
+    button(
+      "periods",
+      "calendar",
+      "دوره‌های تحصیلی",
+      "",
+      "انتخاب و مدیریت سال و نوبت تحصیلی",
+    ) +
+    button(
+      "history",
+      "clock",
+      "تاریخچه تغییرات",
+      "",
+      "مرور تغییرات ثبت‌شده در اطلاعات",
+    ) +
     '<button type="button" class="ghost workspace-tool-button" data-header-action="settings"><span class="workspace-tool-icon" aria-hidden="true">' +
     EduIcons.html("settings") +
-    "</span><span>تنظیمات برنامه</span></button>" +
+    '</span><span class="workspace-tool-copy"><span>تنظیمات برنامه</span><span class="workspace-tool-description">شخصی‌سازی و تنظیم گزینه‌های برنامه</span></span></button>' +
     '</div><div class="workspace-period-context"><span>سال تحصیلی: <bdi>' +
     esc(String(workspace.year).replace(/\d/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[digit])) +
     "</bdi></span><span>نوبت: <bdi>" +

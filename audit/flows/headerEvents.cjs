@@ -20,21 +20,54 @@ module.exports = async function headerEvents() {
     "delegated header survives full header replacement",
     state.view === "master",
   );
-  button("toggle-data").click();
   check(
     "H03",
-    "data menu stays open despite document outside-click listener",
-    document.getElementById("dataMenu").classList.contains("open") &&
-      document
-        .getElementById("dataMenuButton")
-        .getAttribute("aria-expanded") === "true",
+    "redundant data menu and its header commands are absent",
+    !document.getElementById("dataMenu") &&
+      !button("toggle-data") &&
+      !button("export") &&
+      !button("import") &&
+      !button("wipe"),
   );
-  button("toggle-data").click();
+  await new Promise((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(resolve)),
+  );
+  document.querySelector(".navigation-menu").open = true;
+  document
+    .querySelector('.header-actions > [data-workspace-action="backups"]')
+    .click();
+  for (
+    let i = 0;
+    i < 100 && !document.querySelector("#modal:not(.hidden) .backup-manual");
+    i++
+  )
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  check(
+    "H03b",
+    "standalone backup header opens full export, sharing, restore, file connection, history and reset",
+    [
+      "export-full",
+      "prepare-share-backup",
+      "choose-import",
+      "export-period",
+      "single-file-choose",
+      "open-wipe",
+    ].every((action) =>
+      document.querySelector('#modal [data-workspace-action="' + action + '"]'),
+    ) && !!document.querySelector("#modal .backup-history"),
+  );
+  document.querySelector(".backup-reset").open = true;
+  document.querySelector('[data-workspace-action="open-wipe"]').click();
+  for (let i = 0; i < 100 && !document.getElementById("wipeEditor"); i++)
+    await new Promise((resolve) => setTimeout(resolve, 10));
   check(
     "H04",
-    "second delegated toggle closes data menu",
-    !document.getElementById("dataMenu").classList.contains("open"),
+    "full wipe remains reachable from backup tools and requires explicit confirmation",
+    !!document.getElementById("wipeEditor") &&
+      document.getElementById("wipeText").value === "" &&
+      !document.getElementById("wipeBackup").checked,
   );
+  closeModal();
   const settings = button("settings");
   const navigation = settings.closest(".navigation-menu");
   if (navigation) navigation.open = true;

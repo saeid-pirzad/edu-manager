@@ -79,9 +79,12 @@ async function inspectWorkspaceTools() {
   );
   const actions = [...tools.querySelectorAll("button")];
   add(
-    "backup is the primary action and technical draft commands stay secondary",
-    tools.querySelector("button").dataset.workspaceAction === "backups" &&
-      actions.filter((button) => button.getClientRects().length).length === 4 &&
+    "backup has its own header entry while technical draft commands stay inside tools",
+    !tools.querySelector('[data-workspace-action="backups"]') &&
+      !!document.querySelector(
+        '.header-actions > [data-workspace-action="backups"]',
+      ) &&
+      actions.filter((button) => button.getClientRects().length).length === 3 &&
       tools.querySelectorAll(".workspace-draft-tools button").length === 3,
   );
   const fits = () =>
@@ -123,7 +126,9 @@ async function inspectWorkspaceTools() {
     !tools.open && document.activeElement === summary,
   );
   summary.click();
-  tools.querySelector('[data-workspace-action="backups"]').click();
+  document
+    .querySelector('.header-actions > [data-workspace-action="backups"]')
+    .click();
   for (
     let attempt = 0;
     attempt < 100 &&

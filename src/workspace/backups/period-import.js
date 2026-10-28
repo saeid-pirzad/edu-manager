@@ -127,7 +127,7 @@ async function openBackups() {
         .join("") +
       '</tbody></table></details><details class="backup-help"><summary>فضای ذخیره‌سازی مرورگر</summary><p>' +
       esc(estimate) +
-      "</p></details></div>",
+      '</p></details><details class="backup-reset"><summary>پاک‌سازی اطلاعات</summary><p>برای شروع دوباره، می‌توانید اطلاعات همه دوره‌ها را از همین مرورگر پاک کنید. حذف فقط پس از تکمیل تأییدها انجام می‌شود.</p><button type="button" class="danger" data-workspace-action="open-wipe">حذف کامل اطلاعات همه دوره‌ها</button></details></div>',
   );
 }
 

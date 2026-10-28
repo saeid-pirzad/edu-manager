@@ -4674,3 +4674,145 @@
     display: none;
   }
 }
+@media screen {
+  #modalBody .backup-reset > button {
+    width: 100%;
+    min-height: 44px;
+    margin-top: 12px;
+    border: 1px solid #efc8cb;
+    background: #fff2f2;
+    color: #ac2632;
+    white-space: normal;
+  }
+  #modalBody .backup-reset > button:hover {
+    background: #ffe5e5;
+    border-color: #d99b9f;
+  }
+}
+@media screen and (max-width: 700px),
+  screen and (max-width: 1000px) and (pointer: coarse) {
+  #app .header-actions > [data-workspace-action="backups"] {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    min-height: 44px;
+  }
+}
+/* Keep the tools disclosure readable within both navigation layouts. */
+@media screen {
+  #app .header-actions > .workspace-tools > .workspace-tool-actions {
+    width: min(360px, calc(100vw - 32px));
+    padding: 12px;
+    gap: 12px;
+    border: 1px solid #e7e1dc;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 16px 40px #382d2424;
+    box-sizing: border-box;
+    overscroll-behavior: contain;
+  }
+  #app .header-actions .workspace-tool-group,
+  #app .header-actions .workspace-draft-actions {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+  #app .header-actions .workspace-tool-actions .workspace-tool-button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 60px;
+    padding: 10px;
+    margin: 0;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    background: #fff;
+    color: #393737;
+    line-height: 1.7;
+    text-align: start;
+    white-space: normal;
+    box-shadow: none;
+  }
+  #app .header-actions .workspace-tool-actions .workspace-tool-button:hover {
+    background: #fcf3ef;
+    border-color: #f0ddd3;
+  }
+  #app .header-actions .workspace-tool-button:focus-visible,
+  #app .header-actions .workspace-tools summary:focus-visible {
+    outline: 2px solid #b94735;
+    outline-offset: 2px;
+  }
+  #app .header-actions .workspace-tool-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 36px;
+    height: 36px;
+    border-radius: 11px;
+    background: #f7eee7;
+    color: #8b5137;
+  }
+  #app .header-actions .workspace-tool-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+  #app .header-actions .workspace-tool-copy {
+    display: grid;
+    min-width: 0;
+    gap: 2px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  #app .header-actions .workspace-tool-description {
+    font-size: 11px;
+    font-weight: 400;
+    color: #73706d;
+    overflow-wrap: anywhere;
+  }
+  #app .header-actions .workspace-period-context {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 10px 4px 0;
+    border-top: 1px solid #eee9e4;
+    font-size: 11px;
+  }
+  #app .header-actions .workspace-period-context > span {
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: #f6f4f1;
+    color: #68615b;
+  }
+  #app .header-actions .workspace-draft-tools {
+    background: #f7f6f4;
+    border: 1px solid #eee9e4;
+    border-radius: 12px;
+  }
+  #app .header-actions .workspace-draft-tools > summary {
+    min-height: 46px;
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  #app .header-actions .workspace-draft-actions .workspace-tool-button {
+    min-height: 46px;
+    padding: 8px;
+  }
+  #app .header-actions .workspace-draft-actions .workspace-tool-icon {
+    flex-basis: 28px;
+    height: 28px;
+    background: transparent;
+  }
+  #app .header-actions .workspace-tool-actions .workspace-tool-caution {
+    color: #9d3b32;
+    background: #fff5f2;
+  }
+  #app .header-actions .workspace-tool-caution .workspace-tool-icon {
+    color: inherit;
+  }
+}
+@media screen and (max-width: 700px),
+  screen and (max-width: 1000px) and (pointer: coarse) {
+  #app .header-actions > .workspace-tools > .workspace-tool-actions {
+    width: 100%;
+    padding: 8px;
+    margin-top: 6px;
+    box-shadow: none;
+  }
+}

@@ -8,28 +8,6 @@
     ["reports", () => goReports()],
     ["master", () => goMaster()],
     ["settings", () => openSettingsModal()],
-    ["toggle-data", (event) => toggleDataMenu(event)],
-    [
-      "export",
-      () => {
-        closeDataMenu();
-        exportBackup();
-      },
-    ],
-    [
-      "import",
-      () => {
-        closeDataMenu();
-        document.getElementById("importFile").click();
-      },
-    ],
-    [
-      "wipe",
-      () => {
-        closeDataMenu();
-        wipeAllData();
-      },
-    ],
   ]);
   app.addEventListener("click", (event) => {
     const button = event.target.closest?.("button[data-header-action]");

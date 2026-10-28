@@ -38,6 +38,7 @@ function installWorkspaceActions() {
     ["periods", () => openPeriods()],
     ["history", () => openHistoryV24()],
     ["backups", () => openBackups()],
+    ["open-wipe", () => wipeAllV24()],
     ["discard-drafts", () => discardDrafts()],
     ["review-drafts", () => reviewDrafts()],
     ["other-drafts", () => openOtherDrafts()],

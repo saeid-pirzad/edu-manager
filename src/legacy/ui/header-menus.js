@@ -42,6 +42,7 @@ function headerHtml() {
     copy: "M8 3h12v14H8zM4 7v14h12",
     upload: "M12 16V3M7 8l5-5 5 5M4 15v6h16v-6",
     trash: "M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7",
+    shield: "M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3ZM8 12l3 3 5-6",
   };
   const btn = (label, key, action, active = false, extra = "") =>
     '<button type="button" class="header-action' +
@@ -52,18 +53,6 @@ function headerHtml() {
     (active ? 'aria-current="page" ' : "") +
     extra +
     ">" +
-    icon(icons[key]) +
-    "<span>" +
-    label +
-    "</span></button>";
-  const caret =
-    '<svg class="header-caret" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m6 8 4 4 4-4"/></svg>';
-  const sub = (label, key, action, danger = false) =>
-    '<button type="button" ' +
-    (danger ? 'class="danger-item" ' : "") +
-    'data-header-action="' +
-    action +
-    '">' +
     icon(icons[key]) +
     "<span>" +
     label +
@@ -80,20 +69,10 @@ function headerHtml() {
   h +=
     btn("گزارش‌ها", "report", "reports", state.view === "reports") +
     btn("برنامه هفتگی", "calendar", "master", state.view === "master");
-  h +=
-    '<div class="header-dropdown">' +
-    btn(
-      "داده‌ها",
-      "data",
-      "toggle-data",
-      false,
-      'id="dataMenuButton" aria-controls="dataMenu" aria-expanded="false"',
-    ).replace("</button>", caret + "</button>") +
-    '<div class="data-menu" id="dataMenu" aria-label="مدیریت داده‌ها">' +
-    sub("پشتیبان‌گیری", "copy", "export") +
-    sub("بازیابی از فایل", "upload", "import") +
-    sub("حذف کامل داده‌ها", "trash", "wipe", true) +
-    "</div></div>";
+  h += btn("پشتیبان و بازیابی", "shield", "backups").replace(
+    'data-header-action="backups"',
+    'data-workspace-action="backups"',
+  );
   h += btn("تنظیمات", "settings", "settings") + "</div></div>";
   return h;
 }
@@ -113,12 +92,6 @@ function toggleClassMenu(e) {
 }
 function closeClassMenu() {
   setHeaderMenu("classMenu", false);
-}
-function toggleDataMenu(e) {
-  e.stopPropagation();
-  const open = !document.getElementById("dataMenu")?.classList.contains("open");
-  closeClassMenu();
-  setHeaderMenu("dataMenu", open);
 }
 
 const contextualMenuSelector =
