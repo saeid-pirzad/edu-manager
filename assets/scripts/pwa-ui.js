@@ -115,8 +115,10 @@
     const bar = document.createElement("aside");
     bar.className = "mobile-bar no-print";
     bar.id = "mobileBar";
+    bar.setAttribute("aria-label", "وضعیت، نصب و به‌روزرسانی برنامه");
+    const icon = (path) => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + path + '"/></svg>';
     bar.innerHTML =
-      '<strong>کلاس‌یار</strong><span id="mobileStatus" role="status" aria-live="polite"></span><button id="mobileInstall" hidden>نصب برنامه</button><button id="mobileUpdate" hidden>نسخه جدید آماده است</button><button id="mobileHelp" class="ghost">نصب و راهنما</button>';
+      '<strong>کلاس‌یار</strong><span id="mobileStatus" role="status" aria-live="polite"></span><div class="app-service-actions"><button type="button" id="mobileInstall" hidden>' + icon('M12 3v12m-4-4 4 4 4-4M4 16v5h16v-5') + '<span>نصب برنامه</span></button><button type="button" id="mobileUpdate" hidden>' + icon('M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1') + '<span>نسخه جدید آماده است</span></button><button type="button" id="mobileHelp" class="ghost">' + icon('M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2-3 4m.1 3h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0') + '<span>نصب و راهنما</span></button></div>';
     document.body.prepend(bar);
     document.getElementById("mobileInstall").onclick = requestInstall;
     document.getElementById("mobileUpdate").onclick = update;
@@ -126,11 +128,11 @@
     const installed =
       matchMedia("(display-mode: standalone)").matches || navigator.standalone;
     const html =
-      "<p>" +
+      '<div class="offline-help"><section class="offline-help-section"><h4>نصب روی دستگاه</h4><p>' +
       (installed
         ? "برنامه از آیکن نصب‌شده اجرا شده است."
         : "در اندروید و رایانه از گزینه «نصب برنامه» مرورگر استفاده کنید. در آیفون و آیپد از اشتراک‌گذاری و «افزودن به صفحه اصلی» استفاده کنید.") +
-      "</p><p>دریافت اولیه و به‌روزرسانی به اینترنت نیاز دارد. بعد از نمایش «آماده اجرای آفلاین»، برنامه بدون اینترنت باز می‌شود. یک بار از آیکن نصب‌شده باز کنید و آماده‌بودن را بررسی کنید.</p><p>اطلاعات هر دستگاه و مرورگر جداست. برای انتقال اطلاعات، از داده‌ها «پشتیبان» بگیرید و فایل را در دستگاه دیگر بازیابی کنید. پاک‌کردن داده‌های مرورگر یا حذف برنامه ممکن است اطلاعات این دستگاه را پاک کند؛ فایل مستقل را نگه دارید.</p><p>این برنامه همگام‌سازی خودکار بین دستگاه‌ها ندارد.</p>";
+      '</p></section><section class="offline-help-section"><h4>استفاده بدون اینترنت</h4><p>دریافت اولیه و به‌روزرسانی به اینترنت نیاز دارد. بعد از نمایش <strong class="offline-ready-label">آماده اجرای آفلاین</strong>، برنامه بدون اینترنت باز می‌شود. یک بار از آیکن نصب‌شده باز کنید و آماده‌بودن را بررسی کنید.</p></section><section class="offline-help-section offline-help-storage"><h4>نگهداری و انتقال اطلاعات</h4><p>اطلاعات هر دستگاه و مرورگر جداست. برای انتقال اطلاعات، از داده‌ها «پشتیبان» بگیرید و فایل را در دستگاه دیگر بازیابی کنید. پاک‌کردن داده‌های مرورگر یا حذف برنامه ممکن است اطلاعات این دستگاه را پاک کند؛ فایل مستقل را نگه دارید.</p><p class="offline-help-note">این برنامه همگام‌سازی خودکار بین دستگاه‌ها ندارد.</p></section></div>';
     if (window.showModal) showModal("نصب و استفاده آفلاین", html);
     else
       alert(

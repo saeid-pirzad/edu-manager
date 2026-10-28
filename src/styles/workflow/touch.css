@@ -2155,3 +2155,58 @@
   #app .topbar .header-action:hover { background: #f7eae3; border-color: #e7d1c5; color: #9b2932; box-shadow: none; }
   #app .topbar .header-action:is(.is-active,[aria-current=page],[aria-expanded=true]):hover { background: #fde2dd; border-color: #e7b9b0; color: #9b1f2a; }
 }
+
+@media screen {
+  #mobileBar { display: flex; align-items: center; flex-wrap: nowrap; gap: 16px; min-height: 48px; padding: 7px max(20px,calc((100% - 1064px)/2)); border-bottom: 1px solid #e4ded4; background: #f0ede7; color: #726b61; }
+  #mobileBar > strong { display: none; }
+  #mobileBar #mobileStatus { display: flex; align-items: center; flex: 1 1 auto; gap: 8px; min-width: 0; color: #726b61; font-size: 11px; line-height: 1.8; overflow-wrap: anywhere; }
+  #mobileStatus::before { content: ''; width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; background: #bb8a3d; box-shadow: 0 0 0 3px #bb8a3d12; }
+  #mobileBar[data-offline-ready=true] #mobileStatus::before { background: #418368; box-shadow: 0 0 0 3px #41836812; }
+  #mobileBar[data-update-error=true] #mobileStatus::before { background: #b95145; box-shadow: 0 0 0 3px #b9514512; }
+  #mobileBar .app-service-actions { display: flex; align-items: center; justify-content: flex-end; flex: 0 0 auto; gap: 6px; min-width: 0; }
+  #mobileBar button:not([hidden]) { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; min-width: 0; margin: 0; padding: 7px 11px; border: 1px solid #ddd3c5; border-radius: 9px; background: #fffaf4; color: #79522c; font-size: 11px; font-weight: 500; line-height: 1.7; box-shadow: none; }
+  #mobileBar button svg { display: block; flex: 0 0 16px; width: 16px; height: 16px; }
+  #mobileBar #mobileUpdate { background: #79522c; color: #fff; border-color: #79522c; }
+  #mobileBar #mobileHelp { background: transparent; color: #726b61; border-color: transparent; }
+  #mobileBar button:focus-visible { outline: 2px solid #b77c4a; outline-offset: 2px; }
+  #mobileBar button:disabled { opacity: .6; cursor: wait; }
+}
+@media screen and (hover:hover) {
+  #mobileBar button:not(:disabled):hover { background: #eee3d4; border-color: #cdb897; color: #684423; }
+  #mobileBar #mobileUpdate:not(:disabled):hover { background: #684423; border-color: #684423; color: #fff; }
+  #mobileBar #mobileHelp:hover { background: #e6e0d6; border-color: #ded5c7; }
+}
+@media screen and (max-width: 700px) {
+  #mobileBar { gap: 8px; min-height: 46px; padding: 8px 14px; }
+  #mobileBar #mobileStatus { flex: 1 1 auto; gap: 7px; font-size: 10px; line-height: 1.9; }
+  #mobileBar button:not([hidden]) { min-height: 36px; padding: 6px 8px; font-size: 10px; gap: 5px; }
+  #mobileBar:has(#mobileInstall:not([hidden]),#mobileUpdate:not([hidden])) { display: grid; grid-template-columns: minmax(0,1fr); gap: 8px; }
+  #mobileBar:has(#mobileInstall:not([hidden]),#mobileUpdate:not([hidden])) .app-service-actions { width: 100%; }
+  #mobileBar:has(#mobileInstall:not([hidden]),#mobileUpdate:not([hidden])) button:not([hidden]) { flex: 1 1 0; }
+}
+
+@media screen {
+  #modal:has(.offline-help) .modal-dialog { width: min(100%,600px); max-height: calc(var(--app-viewport,100dvh) - 48px); border-radius: 18px; }
+  #modal:has(.offline-help) .modal-header { padding: 14px 20px; background: #fff; }
+  #modal:has(.offline-help) .modal-header h3 { font-size: 16px; }
+  #modal:has(.offline-help) .modal-body { padding: 18px; background: #f7f6f3; }
+  #modalBody .offline-help { display: grid; gap: 12px; counter-reset: offline-step; min-width: 0; }
+  #modalBody .offline-help-section { padding: 18px; border: 1px solid #e5e0d7; border-radius: 13px; background: #fff; counter-increment: offline-step; }
+  #modalBody .offline-help-section h4 { display: flex; align-items: center; gap: 9px; margin: 0 0 12px; color: #363735; font-size: 14px; line-height: 1.8; }
+  #modalBody .offline-help-section h4::before { content: counter(offline-step); display: grid; place-items: center; flex: 0 0 26px; width: 26px; height: 26px; border: 1px solid #e5d5bd; border-radius: 8px; background: #f7efe2; color: #79522c; font-size: 12px; font-weight: 500; }
+  #modalBody .offline-help-section p { margin: 0; color: #81796e; font-size: 12px; line-height: 2.05; }
+  #modalBody .offline-ready-label { padding: 2px 5px; border-radius: 5px; background: #edf5ef; color: #35634c; font-size: inherit; font-weight: 500; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+  #modalBody .offline-help-storage { border-color: #e8dcc9; background: #fffcf6; }
+  #modalBody .offline-help-section .offline-help-note { margin-top: 12px; padding-top: 12px; border-top: 1px solid #e9e0d3; font-size: 11px; color: #795f3c; }
+}
+@media screen and (max-width: 700px) {
+  #modal:has(.offline-help) { padding: 10px; align-items: center; }
+  #modal:has(.offline-help) .modal-dialog { max-height: calc(var(--app-viewport,100dvh) - 20px); border-radius: 16px; }
+  #modal:has(.offline-help) .modal-header { padding: 10px 14px; }
+  #modal:has(.offline-help) .modal-header h3 { font-size: 14px; }
+  #modal:has(.offline-help) .modal-body { padding: 10px; }
+  #modalBody .offline-help { gap: 10px; }
+  #modalBody .offline-help-section { padding: 14px 12px; border-radius: 11px; }
+  #modalBody .offline-help-section h4 { gap: 8px; font-size: 13px; }
+  #modalBody .offline-help-section p { font-size: 11px; }
+}
