@@ -2143,3 +2143,15 @@
   #app .schools-welcome h2 { font-size: 22px; }
   #app .schools-welcome p { font-size: 12px; }
 }
+
+@media screen {
+  #app .topbar .header-action { background: transparent; border-color: transparent; color: #655d58; box-shadow: none; transition: background-color .15s,border-color .15s,color .15s; }
+  #app .topbar .header-action:is(.is-active,[aria-current=page],[aria-expanded=true]) { background: #fff0ed; border-color: #efc9c2; color: #b52531; box-shadow: none; }
+  #app .topbar .header-action[aria-expanded=true] .header-caret { color: currentColor; }
+  #app .topbar .header-action:active { background: #f9d9d3; border-color: #e7b9b0; color: #9b1f2a; box-shadow: none; transform: none; }
+  #app .topbar .header-action:focus-visible { outline: 2px solid #b77c4a; outline-offset: 3px; }
+}
+@media screen and (hover: hover) {
+  #app .topbar .header-action:hover { background: #f7eae3; border-color: #e7d1c5; color: #9b2932; box-shadow: none; }
+  #app .topbar .header-action:is(.is-active,[aria-current=page],[aria-expanded=true]):hover { background: #fde2dd; border-color: #e7b9b0; color: #9b1f2a; }
+}
