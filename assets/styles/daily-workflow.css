@@ -5902,6 +5902,58 @@ body {
     border-color: #eee8e1;
   }
 }
+@media screen and (max-width: 700px),
+  screen and (max-width: 1000px) and (pointer: coarse) {
+  #mobileBar,
+  #mobileBar:has(#mobileInstall:not([hidden]), #mobileUpdate:not([hidden])) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+    padding: 8px 12px;
+  }
+  #mobileBar #mobileStatus {
+    display: block;
+    width: 100%;
+    font-size: 10px;
+    line-height: 1.9;
+  }
+  #mobileBar #mobileStatus::before {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-inline-end: 7px;
+    vertical-align: middle;
+  }
+  #mobileBar .app-service-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
+    width: 100%;
+    gap: 6px;
+  }
+  #mobileBar .app-service-actions > button:not([hidden]) {
+    width: 100%;
+    min-height: 40px;
+    padding: 7px 8px;
+    box-sizing: border-box;
+    font-size: 11px;
+    white-space: normal;
+    line-height: 1.7;
+  }
+  #mobileBar button[hidden] {
+    display: none !important;
+  }
+  #mobileBar:not(
+      :has(#mobileInstall:not([hidden]), #mobileUpdate:not([hidden]))
+    )
+    .app-service-actions {
+    justify-self: end;
+    width: auto;
+  }
+  #mobileBar:has(#mobileInstall:not([hidden])):has(#mobileUpdate:not([hidden]))
+    #mobileHelp {
+    grid-column: 1 / -1;
+  }
+}
 /* Source: src/styles/workflow/grades.css */
 /* Flat gradebook rows on desktop; a single student per card on mobile. */
 @media screen {

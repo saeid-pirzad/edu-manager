@@ -35,6 +35,48 @@ async function inspectMobileUx() {
   closeModal();
   goSchools();
   await pause();
+  if (innerWidth <= 700) {
+    const install = document.getElementById("mobileInstall"),
+      update = document.getElementById("mobileUpdate"),
+      status = document.getElementById("mobileStatus"),
+      help = document.getElementById("mobileHelp");
+    const original = [install.hidden, update.hidden, status.textContent];
+    try {
+      status.textContent =
+        "فایل مستقل آفلاین؛ نصب استاندارد PWA از لینک امن انجام می‌شود.";
+      for (const [showInstall, showUpdate] of [
+        [false, false],
+        [false, true],
+        [true, true],
+      ]) {
+        install.hidden = !showInstall;
+        update.hidden = !showUpdate;
+        await pause();
+        const elements = [
+          status,
+          help,
+          ...[install, update].filter((el) => !el.hidden),
+        ];
+        const rects = elements.map((el) => el.getBoundingClientRect());
+        add(
+          "service bar fits with install=" +
+            showInstall +
+            " update=" +
+            showUpdate,
+          fits() &&
+            elements.every(
+              (el, i) =>
+                rects[i].left >= 0 &&
+                rects[i].right <= innerWidth + 1 &&
+                el.scrollWidth <= el.clientWidth + 1,
+            ) &&
+            rects.slice(1).every((rect) => rect.top >= rects[0].bottom),
+        );
+      }
+    } finally {
+      [install.hidden, update.hidden, status.textContent] = original;
+    }
+  }
   const field = document.querySelector(".entity-create-field input");
   add(
     "school creation is progressively disclosed with a persistent accessible label",
