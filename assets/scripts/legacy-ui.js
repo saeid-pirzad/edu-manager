@@ -599,6 +599,19 @@ document.addEventListener("keydown", (e) => {
     ".dashboard-entity-more[open],.lesson-more[open],.student-more[open],.session-list-actions[open],.workspace-tools[open]",
   );
   if (contextMenu) {
+    const compactNavigation = contextMenu.closest(".navigation-menu");
+    if (
+      contextMenu.matches(".workspace-tools") &&
+      compactNavigation &&
+      matchMedia("(max-width:700px), (max-width:1000px) and (pointer:coarse)")
+        .matches
+    ) {
+      compactNavigation.open = false;
+      contextMenu.open = false;
+      compactNavigation.querySelector(":scope > summary")?.focus();
+      e.preventDefault();
+      return;
+    }
     contextMenu.open = false;
     contextMenu.querySelector("summary")?.focus();
     e.preventDefault();

@@ -98,6 +98,17 @@
           "M4 3v18h17M8 17v-5M13 17V8M18 17V5",
           () => goReports(),
         ],
+        [
+          "backups",
+          "پشتیبان",
+          "M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3ZM8 12l3 3 5-6",
+          () =>
+            document
+              .querySelector(
+                '#app .header-actions > [data-workspace-action="backups"]',
+              )
+              ?.click(),
+        ],
       ];
       for (const [view, label, path, action] of items) {
         const b = document.createElement("button");
@@ -572,6 +583,14 @@
         menu.querySelector("summary").id = "headerNavigationToggle";
         menu.append(actions);
         menu.addEventListener("toggle", () => {
+          if (
+            matchMedia(
+              "(max-width:700px), (max-width:1000px) and (pointer:coarse)",
+            ).matches
+          ) {
+            const tools = menu.querySelector(".workspace-tools");
+            if (tools) tools.open = menu.open;
+          }
           if (!menu.open) {
             closeClassMenu();
             closeDataMenu();

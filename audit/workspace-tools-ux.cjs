@@ -49,8 +49,8 @@ async function inspectWorkspaceTools() {
       tools.querySelectorAll('[data-header-action="settings"]').length === 1,
   );
   add(
-    "workspace tools begin closed with advanced drafts collapsed",
-    !tools.open &&
+    "tools expand directly in compact navigation with advanced drafts collapsed",
+    tools.open === !desktop &&
       !tools.querySelector(".workspace-draft-tools").open &&
       getComputedStyle(summary, "::after").content === "none" &&
       !tools.querySelector(".workspace-file-status,.workspace-tool-label"),
@@ -72,7 +72,7 @@ async function inspectWorkspaceTools() {
     document.querySelector(".workflow-welcome"),
   ];
   const beforeRects = stableElements.map((el) => el.getBoundingClientRect());
-  summary.click();
+  if (desktop) summary.click();
   await pause();
   add(
     "opening tools preserves header, sibling actions and page content geometry",
@@ -112,19 +112,36 @@ async function inspectWorkspaceTools() {
       ...[
         ...document.querySelectorAll(".header-actions > .header-action"),
       ].filter((el) => el.getClientRects().length),
-      summary,
+      ...tools.querySelectorAll(".workspace-tool-group > button"),
     ];
     const rects = navigationActions.map((el) => el.getBoundingClientRect());
     add(
       "compact navigation excludes duplicate bottom navigation actions and keeps labels unbroken",
       rects.every((rect) => rect.height >= 44) &&
-        Math.abs(rects[0].width - rects[1].width) <= 1 &&
         [
           ...document.querySelectorAll(
             '.navigation-menu [data-header-action="reports"],.navigation-menu [data-header-action="master"]',
           ),
         ].every((el) => el.getClientRects().length === 0) &&
         navigationActions.every((el) => el.scrollWidth <= el.clientWidth + 1),
+    );
+  }
+  if (!desktop) {
+    const bottomButtons = [...document.querySelectorAll("#uiBottomNav button")];
+    add(
+      "five bottom navigation buttons fit without wrapping or horizontal overflow",
+      bottomButtons.length === 5 &&
+        bottomButtons.every((el) => {
+          const rect = el.getBoundingClientRect();
+          return (
+            rect.left >= 0 &&
+            rect.right <= innerWidth + 1 &&
+            el.scrollWidth <= el.clientWidth + 1
+          );
+        }) &&
+        !document
+          .querySelector('.header-actions > [data-workspace-action="backups"]')
+          .getClientRects().length,
     );
   }
   tools.querySelector(".workspace-draft-tools > summary").click();
@@ -139,8 +156,12 @@ async function inspectWorkspaceTools() {
     !tools.open && JSON.stringify(db) === before,
   );
   if (navigation) navigation.open = true;
-  summary.click();
-  summary.focus();
+  await pause();
+  if (desktop) summary.click();
+  const trigger = desktop
+    ? summary
+    : navigation.querySelector(":scope > summary");
+  trigger.focus();
   document.dispatchEvent(
     new KeyboardEvent("keydown", {
       key: "Escape",
@@ -150,11 +171,15 @@ async function inspectWorkspaceTools() {
   );
   add(
     "Escape closes workspace tools and returns focus to its trigger",
-    !tools.open && document.activeElement === summary,
+    !tools.open && document.activeElement === trigger,
   );
-  summary.click();
+  if (desktop) summary.click();
   document
-    .querySelector('.header-actions > [data-workspace-action="backups"]')
+    .querySelector(
+      desktop
+        ? '.header-actions > [data-workspace-action="backups"]'
+        : '#uiBottomNav [data-view="backups"]',
+    )
     .click();
   for (
     let attempt = 0;

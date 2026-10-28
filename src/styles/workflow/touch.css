@@ -4983,10 +4983,55 @@
   screen and (max-width: 1000px) and (pointer: coarse) {
   #app .topbar .header-home,
   #app .navigation-menu [data-header-action="reports"],
-  #app .navigation-menu [data-header-action="master"] {
+  #app .navigation-menu [data-header-action="master"],
+  #app .navigation-menu [data-workspace-action="backups"] {
     display: none !important;
   }
   #app .topbar .header-brand {
     width: calc(100% - 54px) !important;
+  }
+  #uiBottomNav {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 2px;
+    padding-inline: 6px;
+  }
+  #uiBottomNav button {
+    min-width: 0;
+    padding-inline: 2px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+}
+@media screen and (max-width: 700px),
+  screen and (max-width: 1000px) and (pointer: coarse) {
+  #app .navigation-menu[open] .header-actions {
+    display: block;
+    padding: 10px !important;
+    border-radius: 16px;
+    background: #fff;
+  }
+  #app .navigation-menu .header-actions > .workspace-tools > summary {
+    display: none;
+  }
+  #app
+    .navigation-menu
+    .header-actions
+    > .workspace-tools
+    > .workspace-tool-actions {
+    margin: 0;
+    padding: 0;
+    gap: 10px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  #app .navigation-menu .workspace-tool-group {
+    gap: 4px;
+  }
+  #app .navigation-menu .workspace-tool-group .workspace-tool-button {
+    min-height: 46px;
+    background: #faf8f5;
+    border-color: #eee8e1;
   }
 }
