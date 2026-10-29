@@ -1,0 +1,1480 @@
+{
+  "format": "EduManager.FullBackup",
+  "version": 2,
+  "schemaVersion": 26,
+  "exportedAt": "2026-10-28T09:18:38.082Z",
+  "activeWorkspace": "initial",
+  "snapshotNotes": [],
+  "stores": {
+    "records": [
+      {
+        "key": "initial|class:mvrsyv09vo95i",
+        "workspace": "initial",
+        "logical": "class:mvrsyv09vo95i",
+        "value": {
+          "id": "mvrsyv09vo95i",
+          "name": "یازدهم تصویرسازی",
+          "students": [
+            {
+              "id": "mvrwfj1w4h3w5",
+              "name": "محمدعلی آرون",
+              "code": "1"
+            },
+            {
+              "id": "mvrwfj1woix7c",
+              "name": "کسری عاصفی",
+              "code": "2"
+            },
+            {
+              "id": "mvrwfj1wvh6ww",
+              "name": "محمدامین اسدی",
+              "code": "3"
+            },
+            {
+              "id": "mvrwfj1weuor9",
+              "name": "محمدحسین اصلان بیگی",
+              "code": "4"
+            },
+            {
+              "id": "mvrwfj1w0eew9",
+              "name": "پرهام اماقلی",
+              "code": "5"
+            },
+            {
+              "id": "mvrwfj1w589hp",
+              "name": "امیر حیدری",
+              "code": "6"
+            },
+            {
+              "id": "mvrwfj1w4r5o0",
+              "name": "علیسا خلخالی",
+              "code": "7"
+            },
+            {
+              "id": "mvrwfj1wmnqez",
+              "name": "محمدآرتا خلخالی",
+              "code": "8"
+            },
+            {
+              "id": "mvrwfj1wa5tfb",
+              "name": "امیرحسین دژم",
+              "code": "9"
+            },
+            {
+              "id": "mvrwfj1x2ol46",
+              "name": "محمدرضا شریفی عراقی",
+              "code": "10"
+            },
+            {
+              "id": "mvrwfj1xtcp2g",
+              "name": "نیما صداقت",
+              "code": "11"
+            },
+            {
+              "id": "mvrwfj1xfg31o",
+              "name": "محمدطه صفانور",
+              "code": "12"
+            },
+            {
+              "id": "mvrwfj1xd9q5g",
+              "name": "امیرمهدی عبدالحسینی",
+              "code": "13"
+            },
+            {
+              "id": "mvrwfj1xjfm0t",
+              "name": "امیرحسین قاسمی",
+              "code": "14"
+            },
+            {
+              "id": "mvrwfj1xzee69",
+              "name": "آیدین کاظمی پیرنق",
+              "code": "15"
+            },
+            {
+              "id": "mvrwfj1xlfjel",
+              "name": "آرش کریمی",
+              "code": "16"
+            },
+            {
+              "id": "mvrwfj1x4a4he",
+              "name": "امیرمحمد گل محمدی ثمرین",
+              "code": "17"
+            },
+            {
+              "id": "mvrwfj1xqrmnp",
+              "name": "حمیدرضا محمدی",
+              "code": "18"
+            },
+            {
+              "id": "mvrwfj1x0qnxp",
+              "name": "علی محمدی",
+              "code": "19"
+            },
+            {
+              "id": "mvrwfj1xjv9rk",
+              "name": "امیررضا محمودی",
+              "code": "20"
+            },
+            {
+              "id": "mvrwfj1x4ho8x",
+              "name": "آرمان مسعودزاده",
+              "code": "21"
+            },
+            {
+              "id": "mvrwfj1xlzwg5",
+              "name": "سیدعلی مشکانی",
+              "code": "22"
+            },
+            {
+              "id": "mvrwfj1xf697x",
+              "name": "مرتضی نجفی",
+              "code": "23"
+            },
+            {
+              "id": "mvrwfj1xpq2fn",
+              "name": "مهدی نجفی",
+              "code": "24"
+            },
+            {
+              "id": "mvrwfj1xj90gs",
+              "name": "امیرعلی یوسف رضائی",
+              "code": "25"
+            }
+          ],
+          "archivedStudents": [],
+          "lessons": [
+            {
+              "id": "mvrsz7r82mu63",
+              "name": "رایانه کار پیشرفته",
+              "teacher": "پیرزاد",
+              "periodsPerWeek": 4,
+              "gradeMode": "kardanesh",
+              "kardaneshScores": {},
+              "poudmans": [],
+              "gradingPolicy": {
+                "version": 1,
+                "revision": 1,
+                "method": "dual",
+                "year": "1405-1406",
+                "branch": "kardanesh",
+                "grade": "",
+                "field": "",
+                "code": "",
+                "authority": "",
+                "circularNumber": "",
+                "circularDate": "",
+                "reference": "",
+                "confirmed": false,
+                "practicalWeight": 70,
+                "theoryMin": 0,
+                "practicalMin": 0,
+                "passMin": 14,
+                "mostamarMax": 5,
+                "competencyFactor": 5,
+                "competencyMin": 2,
+                "moduleMin": 12,
+                "continuousStep": 0.5,
+                "requireGate": false,
+                "unitCount": 1,
+                "subjectType": "vocational",
+                "dualConfigurable": true
+              },
+              "courseInfo": {
+                "year": "1405-1406",
+                "grade": "",
+                "field": "",
+                "code": "",
+                "authority": "",
+                "branch": "kardanesh"
+              },
+              "weightMostamar": 40,
+              "weightPayani": 60
+            },
+            {
+              "id": "mvrszu17kub5f",
+              "name": "کاربر ایلاستریتور",
+              "teacher": "پیرزاد",
+              "periodsPerWeek": 2,
+              "gradeMode": "kardanesh",
+              "kardaneshScores": {},
+              "poudmans": [],
+              "gradingPolicy": {
+                "version": 1,
+                "revision": 1,
+                "method": "dual",
+                "year": "1405-1406",
+                "branch": "kardanesh",
+                "grade": "",
+                "field": "",
+                "code": "",
+                "authority": "",
+                "circularNumber": "",
+                "circularDate": "",
+                "reference": "",
+                "confirmed": false,
+                "practicalWeight": 70,
+                "theoryMin": 0,
+                "practicalMin": 0,
+                "passMin": 14,
+                "mostamarMax": 5,
+                "competencyFactor": 5,
+                "competencyMin": 2,
+                "moduleMin": 12,
+                "continuousStep": 0.5,
+                "requireGate": false,
+                "unitCount": 1,
+                "subjectType": "vocational",
+                "dualConfigurable": true
+              },
+              "courseInfo": {
+                "year": "1405-1406",
+                "grade": "",
+                "field": "",
+                "code": "",
+                "authority": "",
+                "branch": "kardanesh"
+              },
+              "weightMostamar": 40,
+              "weightPayani": 60
+            },
+            {
+              "id": "mvrt0evprqcs8",
+              "name": "کاربر کورل دراو",
+              "teacher": "پیرزاد",
+              "periodsPerWeek": 2,
+              "gradeMode": "kardanesh",
+              "kardaneshScores": {},
+              "poudmans": [],
+              "gradingPolicy": {
+                "version": 1,
+                "revision": 1,
+                "method": "dual",
+                "year": "1405-1406",
+                "branch": "kardanesh",
+                "grade": "",
+                "field": "",
+                "code": "",
+                "authority": "",
+                "circularNumber": "",
+                "circularDate": "",
+                "reference": "",
+                "confirmed": false,
+                "practicalWeight": 70,
+                "theoryMin": 0,
+                "practicalMin": 0,
+                "passMin": 14,
+                "mostamarMax": 5,
+                "competencyFactor": 5,
+                "competencyMin": 2,
+                "moduleMin": 12,
+                "continuousStep": 0.5,
+                "requireGate": false,
+                "unitCount": 1,
+                "subjectType": "vocational",
+                "dualConfigurable": true
+              },
+              "courseInfo": {
+                "year": "1405-1406",
+                "grade": "",
+                "field": "",
+                "code": "",
+                "authority": "",
+                "branch": "kardanesh"
+              },
+              "weightMostamar": 40,
+              "weightPayani": 60
+            }
+          ]
+        }
+      },
+      {
+        "key": "initial|class:mvrt12glosu6b",
+        "workspace": "initial",
+        "logical": "class:mvrt12glosu6b",
+        "value": {
+          "id": "mvrt12glosu6b",
+          "name": "دوازدهم تصویرسازی",
+          "students": [
+            {
+              "id": "mvrwg9gc3a1do",
+              "name": "امید باغچی",
+              "code": "1"
+            },
+            {
+              "id": "mvrwg9gcehe3c",
+              "name": "مهدی براتی",
+              "code": "2"
+            },
+            {
+              "id": "mvrwg9gclp5gy",
+              "name": "محمد حسین پرورده",
+              "code": "3"
+            },
+            {
+              "id": "mvrwg9gc7izot",
+              "name": "سیدمحمدحسین پیمان",
+              "code": "4"
+            },
+            {
+              "id": "mvrwg9gcu0h7e",
+              "name": "محمدداوود حسینی",
+              "code": "5"
+            },
+            {
+              "id": "mvrwg9gc4g63l",
+              "name": "عطا خدامیان",
+              "code": "6"
+            },
+            {
+              "id": "mvrwg9gckbre1",
+              "name": "محمدابراهیم دارائی",
+              "code": "7"
+            },
+            {
+              "id": "mvrwg9gcxhzm5",
+              "name": "سیدامیرحسین درخشان",
+              "code": "8"
+            },
+            {
+              "id": "mvrwg9gcal0yh",
+              "name": "عرفان ذاکری ساعی",
+              "code": "9"
+            },
+            {
+              "id": "mvrwg9gcp6ln2",
+              "name": "ابوالفضل رحیمی",
+              "code": "10"
+            },
+            {
+              "id": "mvrwg9gctho79",
+              "name": "محمد امین سعیدی",
+              "code": "11"
+            },
+            {
+              "id": "mvrwg9gc0p5yb",
+              "name": "عباس سلیمان پورثمرین",
+              "code": "12"
+            },
+            {
+              "id": "mvrwg9gc8yiau",
+              "name": "یاسین شیران قصاب",
+              "code": "13"
+            },
+            {
+              "id": "mvrwg9gck6y3i",
+              "name": "مهدی صادقیان",
+              "code": "14"
+            },
+            {
+              "id": "mvrwg9gccykt1",
+              "name": "بردیا صفردوست",
+              "code": "15"
+            },
+            {
+              "id": "mvrwg9gcwv2uf",
+              "name": "پارسا صفری",
+              "code": "16"
+            },
+            {
+              "id": "mvrwg9gcbduyq",
+              "name": "محمد طاهرخانی",
+              "code": "17"
+            },
+            {
+              "id": "mvrwg9gcx8las",
+              "name": "ابوالفضل عبدالملکی",
+              "code": "18"
+            },
+            {
+              "id": "mvrwg9gcveq4r",
+              "name": "والا فرخی",
+              "code": "19"
+            },
+            {
+              "id": "mvrwg9gcnu1oq",
+              "name": "کثری کثیری قهی",
+              "code": "20"
+            },
+            {
+              "id": "mvrwg9gc345sg",
+              "name": "مهدی ماشینی",
+              "code": "21"
+            },
+            {
+              "id": "mvrwg9gcxbycp",
+              "name": "مجتبی محبی",
+              "code": "22"
+            },
+            {
+              "id": "mvrwg9gchlrp7",
+              "name": "سبحان محبی منش",
+              "code": "23"
+            },
+            {
+              "id": "mvrwg9gczaewj",
+              "name": "امیرحسین محمدی ادواری",
+              "code": "24"
+            },
+            {
+              "id": "mvrwg9gcgaw4u",
+              "name": "امیرعلی معروف خانی",
+              "code": "25"
+            },
+            {
+              "id": "mvrwg9gcv291i",
+              "name": "یاسین منصور",
+              "code": "26"
+            },
+            {
+              "id": "mvrwg9gc911fy",
+              "name": "سیدعلی موسوی",
+              "code": "27"
+            },
+            {
+              "id": "mvrwg9gc5aahn",
+              "name": "محمدمجید نقی پور",
+              "code": "28"
+            },
+            {
+              "id": "mvrwg9gcb5k83",
+              "name": "امیریوسفخانی",
+              "code": "29"
+            }
+          ],
+          "archivedStudents": [],
+          "lessons": [
+            {
+              "id": "mvrt14l96b25l",
+              "name": "کاربر افترافکت",
+              "teacher": "پیرزاد",
+              "periodsPerWeek": 2,
+              "gradeMode": "kardanesh",
+              "kardaneshScores": {},
+              "poudmans": [],
+              "gradingPolicy": {
+                "version": 1,
+                "revision": 1,
+                "method": "dual",
+                "year": "1405-1406",
+                "branch": "kardanesh",
+                "grade": "",
+                "field": "",
+                "code": "",
+                "authority": "",
+                "circularNumber": "",
+                "circularDate": "",
+                "reference": "",
+                "confirmed": false,
+                "practicalWeight": 70,
+                "theoryMin": 0,
+                "practicalMin": 0,
+                "passMin": 14,
+                "mostamarMax": 5,
+                "competencyFactor": 5,
+                "competencyMin": 2,
+                "moduleMin": 12,
+                "continuousStep": 0.5,
+                "requireGate": false,
+                "unitCount": 1,
+                "subjectType": "vocational",
+                "dualConfigurable": true
+              },
+              "courseInfo": {
+                "year": "1405-1406",
+                "grade": "",
+                "field": "",
+                "code": "",
+                "authority": "",
+                "branch": "kardanesh"
+              },
+              "weightMostamar": 40,
+              "weightPayani": 60
+            }
+          ]
+        }
+      },
+      {
+        "key": "initial|meta",
+        "workspace": "initial",
+        "logical": "meta",
+        "value": {
+          "masterSchedule": {},
+          "activeDays": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "periods": 6,
+          "settings": {
+            "weekStartDate": "2026-10-28",
+            "academicYear": "1405-1406",
+            "password": "",
+            "academicTerm": "اول"
+          },
+          "schemaVersion": 26,
+          "migrationWarnings": [],
+          "layout": [
+            {
+              "id": "mvrsyhdhy1tp1",
+              "name": "هنرستان حافط",
+              "classes": [
+                "mvrsyv09vo95i",
+                "mvrt12glosu6b"
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "catalog": [
+      {
+        "id": "initial",
+        "year": "1405-1406",
+        "term": "اول",
+        "termKind": "first",
+        "revision": 11,
+        "closed": false,
+        "createdAt": "2026-10-28T07:35:55.080Z",
+        "updatedAt": "2026-10-28T09:15:55.757Z"
+      }
+    ],
+    "events": [
+      {
+        "workspace": "initial",
+        "at": "2026-10-28T07:38:07.360Z",
+        "action": "افزودن مدرسه: هنرستان حافط",
+        "revision": 2,
+        "changes": [
+          {
+            "path": "meta.layout.0",
+            "before": null,
+            "after": {
+              "id": "mvrsyhdhy1tp1",
+              "name": "هنرستان حافط",
+              "classes": []
+            }
+          },
+          {
+            "path": "meta.migrationWarnings",
+            "before": null,
+            "after": []
+          }
+        ],
+        "id": 1
+      },
+      {
+        "workspace": "initial",
+        "at": "2026-10-28T07:38:25.046Z",
+        "action": "افزودن کلاس: یازدهم تصویرسازی",
+        "revision": 3,
+        "changes": [
+          {
+            "path": "meta.layout.0.classes.0",
+            "before": null,
+            "after": "mvrsyv09vo95i"
+          },
+          {
+            "path": "class:mvrsyv09vo95i",
+            "before": null,
+            "after": {
+              "id": "mvrsyv09vo95i",
+              "name": "یازدهم تصویرسازی",
+              "students": [],
+              "archivedStudents": [],
+              "lessons": []
+            }
+          }
+        ],
+        "id": 2
+      },
+      {
+        "workspace": "initial",
+        "at": "2026-10-28T07:39:10.399Z",
+        "action": "تعریف درس براساس ابلاغیه",
+        "revision": 4,
+        "changes": [
+          {
+            "path": "class:mvrsyv09vo95i.lessons.0",
+            "before": null,
+            "after": {
+              "id": "mvrsz7r82mu63",
+              "name": "رایانه کار پیشرفته",
+              "teacher": "پیرزاد",
+              "periodsPerWeek": 4,
+              "gradeMode": "kardanesh",
+              "kardaneshScores": {},
+              "poudmans": [],
+              "gradingPolicy": {
+                "version": 1,
+                "revision": 1,
+                "method": "dual",
+                "year": "1405-1406",
+                "branch": "kardanesh",
+                "grade": "",
+                "field": "",
+                "code": "",
+                "authority": "",
+                "circularNumber": "",
+                "circularDate": "",
+                "reference": "",
+                "confirmed": false,
+                "practicalWeight": 70,
+                "theoryMin": 0,
+                "practicalMin": 0,
+                "passMin": 14,
+                "mostamarMax": 5,
+                "competencyFactor": 5,
+                "competencyMin": 2,
+                "moduleMin": 12,
+                "continuousStep": 0.5,
+                "requireGate": false,
+                "unitCount": 1,
+                "subjectType": "vocational",
+                "dualConfigurable": true
+              },
+              "courseInfo": {
+                "year": "1405-1406",
+                "grade": "",
+                "field": "",
+                "code": "",
+                "authority": "",
+                "branch": "kardanesh"
+              },
+              "weightMostamar": 40,
+              "weightPayani": 60
+            }
+          }
+        ],
+        "id": 3
+      },
+      {
+        "workspace": "initial",
+        "at": "2026-10-28T07:39:26.522Z",
+        "action": "تعریف درس براساس ابلاغیه",
+        "revision": 5,
+        "changes": [
+          {
+            "path": "class:mvrsyv09vo95i.lessons.1",
+            "before": null,
+            "after": {
+              "id": "mvrszu17kub5f",
+              "name": "کار ایلاستریتور",
+              "teacher": "پیرزاد",
+              "periodsPerWeek": 2,
+              "gradeMode": "kardanesh",
+              "kardaneshScores": {},
+              "poudmans": [],
+              "gradingPolicy": {
+                "version": 1,
+                "revision": 1,
+                "method": "dual",
+                "year": "1405-1406",
+                "branch": "kardanesh",
+                "grade": "",
+                "field": "",
+                "code": "",
+                "authority": "",
+                "circularNumber": "",
+                "circularDate": "",
+                "reference": "",
+                "confirmed": false,
+                "practicalWeight": 70,
+                "theoryMin": 0,
+                "practicalMin": 0,
+                "passMin": 14,
+                "mostamarMax": 5,
+                "competencyFactor": 5,
+                "competencyMin": 2,
+                "moduleMin": 12,
+                "continuousStep": 0.5,
+                "requireGate": false,
+                "unitCount": 1,
+                "subjectType": "vocational",
+                "dualConfigurable": true
+              },
+              "courseInfo": {
+                "year": "1405-1406",
+                "grade": "",
+                "field": "",
+                "code": "",
+                "authority": "",
+                "branch": "kardanesh"
+              },
+              "weightMostamar": 40,
+              "weightPayani": 60
+            }
+          }
+        ],
+        "id": 4
+      },
+      {
+        "workspace": "initial",
+        "at": "2026-10-28T07:39:37.416Z",
+        "action": "اصلاح شناسنامه درس و ابلاغیه",
+        "revision": 6,
+        "changes": [
+          {
+            "path": "class:mvrsyv09vo95i.lessons.1.name",
+            "before": "کار ایلاستریتور",
+            "after": "کاربر ایلاستریتور"
+          }
+        ],
+        "id": 5
+      },
+      {
+        "workspace": "initial",
+        "at": "2026-10-28T07:39:51.842Z",
+        "action": "تعریف درس براساس ابلاغیه",
+        "revision": 7,
+        "changes": [
+          {
+            "path": "class:mvrsyv09vo95i.lessons.2",
+            "before": null,
+            "after": {
+              "id": "mvrt0evprqcs8",
+              "name": "کاربر کورل دراو",
+              "teacher": "پیرزاد",
+              "periodsPerWeek": 2,
+              "gradeMode": "kardanesh",
+              "kardaneshScores": {},
+              "poudmans": [],
+              "gradingPolicy": {
+                "version": 1,
+                "revision": 1,
+                "method": "dual",
+                "year": "1405-1406",
+                "branch": "kardanesh",
+                "grade": "",
+                "field": "",
+                "code": "",
+                "authority": "",
+                "circularNumber": "",
+                "circularDate": "",
+                "reference": "",
+                "confirmed": false,
+                "practicalWeight": 70,
+                "theoryMin": 0,
+                "practicalMin": 0,
+                "passMin": 14,
+                "mostamarMax": 5,
+                "competencyFactor": 5,
+                "competencyMin": 2,
+                "moduleMin": 12,
+                "continuousStep": 0.5,
+                "requireGate": false,
+                "unitCount": 1,
+                "subjectType": "vocational",
+                "dualConfigurable": true
+              },
+              "courseInfo": {
+                "year": "1405-1406",
+                "grade": "",
+                "field": "",
+                "code": "",
+                "authority": "",
+                "branch": "kardanesh"
+              },
+              "weightMostamar": 40,
+              "weightPayani": 60
+            }
+          }
+        ],
+        "id": 6
+      },
+      {
+        "workspace": "initial",
+        "at": "2026-10-28T07:40:08.011Z",
+        "action": "افزودن کلاس: دوازدهم تصویرسازی",
+        "revision": 8,
+        "changes": [
+          {
+            "path": "meta.layout.0.classes.1",
+            "before": null,
+            "after": "mvrt12glosu6b"
+          },
+          {
+            "path": "class:mvrt12glosu6b",
+            "before": null,
+            "after": {
+              "id": "mvrt12glosu6b",
+              "name": "دوازدهم تصویرسازی",
+              "students": [],
+              "archivedStudents": [],
+              "lessons": []
+            }
+          }
+        ],
+        "id": 7
+      },
+      {
+        "workspace": "initial",
+        "at": "2026-10-28T07:40:23.833Z",
+        "action": "تعریف درس براساس ابلاغیه",
+        "revision": 9,
+        "changes": [
+          {
+            "path": "class:mvrt12glosu6b.lessons.0",
+            "before": null,
+            "after": {
+              "id": "mvrt14l96b25l",
+              "name": "کاربر افترافکت",
+              "teacher": "پیرزاد",
+              "periodsPerWeek": 2,
+              "gradeMode": "kardanesh",
+              "kardaneshScores": {},
+              "poudmans": [],
+              "gradingPolicy": {
+                "version": 1,
+                "revision": 1,
+                "method": "dual",
+                "year": "1405-1406",
+                "branch": "kardanesh",
+                "grade": "",
+                "field": "",
+                "code": "",
+                "authority": "",
+                "circularNumber": "",
+                "circularDate": "",
+                "reference": "",
+                "confirmed": false,
+                "practicalWeight": 70,
+                "theoryMin": 0,
+                "practicalMin": 0,
+                "passMin": 14,
+                "mostamarMax": 5,
+                "competencyFactor": 5,
+                "competencyMin": 2,
+                "moduleMin": 12,
+                "continuousStep": 0.5,
+                "requireGate": false,
+                "unitCount": 1,
+                "subjectType": "vocational",
+                "dualConfigurable": true
+              },
+              "courseInfo": {
+                "year": "1405-1406",
+                "grade": "",
+                "field": "",
+                "code": "",
+                "authority": "",
+                "branch": "kardanesh"
+              },
+              "weightMostamar": 40,
+              "weightPayani": 60
+            }
+          }
+        ],
+        "id": 8
+      },
+      {
+        "workspace": "initial",
+        "at": "2026-10-28T09:15:21.545Z",
+        "action": "ورود CSV: 25 افزوده، 0 اصلاح",
+        "revision": 10,
+        "changes": [
+          {
+            "path": "class:mvrsyv09vo95i.students.0",
+            "before": null,
+            "after": {
+              "id": "mvrwfj1w4h3w5",
+              "name": "محمدعلی آرون",
+              "code": "1"
+            }
+          },
+          {
+            "path": "class:mvrsyv09vo95i.students.1",
+            "before": null,
+            "after": {
+              "id": "mvrwfj1woix7c",
+              "name": "کسری عاصفی",
+              "code": "2"
+            }
+          },
+          {
+            "path": "class:mvrsyv09vo95i.students.2",
+            "before": null,
+            "after": {
+              "id": "mvrwfj1wvh6ww",
+              "name": "محمدامین اسدی",
+              "code": "3"
+            }
+          },
+          {
+            "path": "class:mvrsyv09vo95i.students.3",
+            "before": null,
+            "after": {
+              "id": "mvrwfj1weuor9",
+              "name": "محمدحسین اصلان بیگی",
+              "code": "4"
+            }
+          },
+          {
+            "path": "class:mvrsyv09vo95i.students.4",
+            "before": null,
+            "after": {
+              "id": "mvrwfj1w0eew9",
+              "name": "پرهام اماقلی",
+              "code": "5"
+            }
+          },
+          {
+            "path": "class:mvrsyv09vo95i.students.5",
+            "before": null,
+            "after": {
+              "id": "mvrwfj1w589hp",
+              "name": "امیر حیدری",
+              "code": "6"
+            }
+          },
+          {
+            "path": "class:mvrsyv09vo95i.students.6",
+            "before": null,
+            "after": {
+              "id": "mvrwfj1w4r5o0",
+              "name": "علیسا خلخالی",
+              "code": "7"
+            }
+          },
+          {
+            "path": "class:mvrsyv09vo95i.students.7",
+            "before": null,
+            "after": {
+              "id": "mvrwfj1wmnqez",
+              "name": "محمدآرتا خلخالی",
+              "code": "8"
+            }
+          },
+          {
+            "path": "class:mvrsyv09vo95i.students.8",
+            "before": null,
+            "after": {
+              "id": "mvrwfj1wa5tfb",
+              "name": "امیرحسین دژم",
+              "code": "9"
+            }
+          },
+          {
+            "path": "class:mvrsyv09vo95i.students.9",
+            "before": null,
+            "after": {
+              "id": "mvrwfj1x2ol46",
+              "name": "محمدرضا شریفی عراقی",
+              "code": "10"
+            }
+          },
+          {
+            "path": "class:mvrsyv09vo95i.students.10",
+            "before": null,
+            "after": {
+              "id": "mvrwfj1xtcp2g",
+              "name": "نیما صداقت",
+              "code": "11"
+            }
+          },
+          {
+            "path": "class:mvrsyv09vo95i.students.11",
+            "before": null,
+            "after": {
+              "id": "mvrwfj1xfg31o",
+              "name": "محمدطه صفانور",
+              "code": "12"
+            }
+          },
+          {
+            "path": "class:mvrsyv09vo95i.students.12",
+            "before": null,
+            "after": {
+              "id": "mvrwfj1xd9q5g",
+              "name": "امیرمهدی عبدالحسینی",
+              "code": "13"
+            }
+          },
+          {
+            "path": "class:mvrsyv09vo95i.students.13",
+            "before": null,
+            "after": {
+              "id": "mvrwfj1xjfm0t",
+              "name": "امیرحسین قاسمی",
+              "code": "14"
+            }
+          },
+          {
+            "path": "class:mvrsyv09vo95i.students.14",
+            "before": null,
+            "after": {
+              "id": "mvrwfj1xzee69",
+              "name": "آیدین کاظمی پیرنق",
+              "code": "15"
+            }
+          },
+          {
+            "path": "class:mvrsyv09vo95i.students.15",
+            "before": null,
+            "after": {
+              "id": "mvrwfj1xlfjel",
+              "name": "آرش کریمی",
+              "code": "16"
+            }
+          },
+          {
+            "path": "class:mvrsyv09vo95i.students.16",
+            "before": null,
+            "after": {
+              "id": "mvrwfj1x4a4he",
+              "name": "امیرمحمد گل محمدی ثمرین",
+              "code": "17"
+            }
+          },
+          {
+            "path": "class:mvrsyv09vo95i.students.17",
+            "before": null,
+            "after": {
+              "id": "mvrwfj1xqrmnp",
+              "name": "حمیدرضا محمدی",
+              "code": "18"
+            }
+          },
+          {
+            "path": "class:mvrsyv09vo95i.students.18",
+            "before": null,
+            "after": {
+              "id": "mvrwfj1x0qnxp",
+              "name": "علی محمدی",
+              "code": "19"
+            }
+          },
+          {
+            "path": "class:mvrsyv09vo95i.students.19",
+            "before": null,
+            "after": {
+              "id": "mvrwfj1xjv9rk",
+              "name": "امیررضا محمودی",
+              "code": "20"
+            }
+          },
+          {
+            "path": "class:mvrsyv09vo95i.students.20",
+            "before": null,
+            "after": {
+              "id": "mvrwfj1x4ho8x",
+              "name": "آرمان مسعودزاده",
+              "code": "21"
+            }
+          },
+          {
+            "path": "class:mvrsyv09vo95i.students.21",
+            "before": null,
+            "after": {
+              "id": "mvrwfj1xlzwg5",
+              "name": "سیدعلی مشکانی",
+              "code": "22"
+            }
+          },
+          {
+            "path": "class:mvrsyv09vo95i.students.22",
+            "before": null,
+            "after": {
+              "id": "mvrwfj1xf697x",
+              "name": "مرتضی نجفی",
+              "code": "23"
+            }
+          },
+          {
+            "path": "class:mvrsyv09vo95i.students.23",
+            "before": null,
+            "after": {
+              "id": "mvrwfj1xpq2fn",
+              "name": "مهدی نجفی",
+              "code": "24"
+            }
+          },
+          {
+            "path": "class:mvrsyv09vo95i.students.24",
+            "before": null,
+            "after": {
+              "id": "mvrwfj1xj90gs",
+              "name": "امیرعلی یوسف رضائی",
+              "code": "25"
+            }
+          }
+        ],
+        "id": 9
+      },
+      {
+        "workspace": "initial",
+        "at": "2026-10-28T09:15:55.757Z",
+        "action": "ورود CSV: 29 افزوده، 0 اصلاح",
+        "revision": 11,
+        "changes": [
+          {
+            "path": "class:mvrt12glosu6b.students.0",
+            "before": null,
+            "after": {
+              "id": "mvrwg9gc3a1do",
+              "name": "امید باغچی",
+              "code": "1"
+            }
+          },
+          {
+            "path": "class:mvrt12glosu6b.students.1",
+            "before": null,
+            "after": {
+              "id": "mvrwg9gcehe3c",
+              "name": "مهدی براتی",
+              "code": "2"
+            }
+          },
+          {
+            "path": "class:mvrt12glosu6b.students.2",
+            "before": null,
+            "after": {
+              "id": "mvrwg9gclp5gy",
+              "name": "محمد حسین پرورده",
+              "code": "3"
+            }
+          },
+          {
+            "path": "class:mvrt12glosu6b.students.3",
+            "before": null,
+            "after": {
+              "id": "mvrwg9gc7izot",
+              "name": "سیدمحمدحسین پیمان",
+              "code": "4"
+            }
+          },
+          {
+            "path": "class:mvrt12glosu6b.students.4",
+            "before": null,
+            "after": {
+              "id": "mvrwg9gcu0h7e",
+              "name": "محمدداوود حسینی",
+              "code": "5"
+            }
+          },
+          {
+            "path": "class:mvrt12glosu6b.students.5",
+            "before": null,
+            "after": {
+              "id": "mvrwg9gc4g63l",
+              "name": "عطا خدامیان",
+              "code": "6"
+            }
+          },
+          {
+            "path": "class:mvrt12glosu6b.students.6",
+            "before": null,
+            "after": {
+              "id": "mvrwg9gckbre1",
+              "name": "محمدابراهیم دارائی",
+              "code": "7"
+            }
+          },
+          {
+            "path": "class:mvrt12glosu6b.students.7",
+            "before": null,
+            "after": {
+              "id": "mvrwg9gcxhzm5",
+              "name": "سیدامیرحسین درخشان",
+              "code": "8"
+            }
+          },
+          {
+            "path": "class:mvrt12glosu6b.students.8",
+            "before": null,
+            "after": {
+              "id": "mvrwg9gcal0yh",
+              "name": "عرفان ذاکری ساعی",
+              "code": "9"
+            }
+          },
+          {
+            "path": "class:mvrt12glosu6b.students.9",
+            "before": null,
+            "after": {
+              "id": "mvrwg9gcp6ln2",
+              "name": "ابوالفضل رحیمی",
+              "code": "10"
+            }
+          },
+          {
+            "path": "class:mvrt12glosu6b.students.10",
+            "before": null,
+            "after": {
+              "id": "mvrwg9gctho79",
+              "name": "محمد امین سعیدی",
+              "code": "11"
+            }
+          },
+          {
+            "path": "class:mvrt12glosu6b.students.11",
+            "before": null,
+            "after": {
+              "id": "mvrwg9gc0p5yb",
+              "name": "عباس سلیمان پورثمرین",
+              "code": "12"
+            }
+          },
+          {
+            "path": "class:mvrt12glosu6b.students.12",
+            "before": null,
+            "after": {
+              "id": "mvrwg9gc8yiau",
+              "name": "یاسین شیران قصاب",
+              "code": "13"
+            }
+          },
+          {
+            "path": "class:mvrt12glosu6b.students.13",
+            "before": null,
+            "after": {
+              "id": "mvrwg9gck6y3i",
+              "name": "مهدی صادقیان",
+              "code": "14"
+            }
+          },
+          {
+            "path": "class:mvrt12glosu6b.students.14",
+            "before": null,
+            "after": {
+              "id": "mvrwg9gccykt1",
+              "name": "بردیا صفردوست",
+              "code": "15"
+            }
+          },
+          {
+            "path": "class:mvrt12glosu6b.students.15",
+            "before": null,
+            "after": {
+              "id": "mvrwg9gcwv2uf",
+              "name": "پارسا صفری",
+              "code": "16"
+            }
+          },
+          {
+            "path": "class:mvrt12glosu6b.students.16",
+            "before": null,
+            "after": {
+              "id": "mvrwg9gcbduyq",
+              "name": "محمد طاهرخانی",
+              "code": "17"
+            }
+          },
+          {
+            "path": "class:mvrt12glosu6b.students.17",
+            "before": null,
+            "after": {
+              "id": "mvrwg9gcx8las",
+              "name": "ابوالفضل عبدالملکی",
+              "code": "18"
+            }
+          },
+          {
+            "path": "class:mvrt12glosu6b.students.18",
+            "before": null,
+            "after": {
+              "id": "mvrwg9gcveq4r",
+              "name": "والا فرخی",
+              "code": "19"
+            }
+          },
+          {
+            "path": "class:mvrt12glosu6b.students.19",
+            "before": null,
+            "after": {
+              "id": "mvrwg9gcnu1oq",
+              "name": "کثری کثیری قهی",
+              "code": "20"
+            }
+          },
+          {
+            "path": "class:mvrt12glosu6b.students.20",
+            "before": null,
+            "after": {
+              "id": "mvrwg9gc345sg",
+              "name": "مهدی ماشینی",
+              "code": "21"
+            }
+          },
+          {
+            "path": "class:mvrt12glosu6b.students.21",
+            "before": null,
+            "after": {
+              "id": "mvrwg9gcxbycp",
+              "name": "مجتبی محبی",
+              "code": "22"
+            }
+          },
+          {
+            "path": "class:mvrt12glosu6b.students.22",
+            "before": null,
+            "after": {
+              "id": "mvrwg9gchlrp7",
+              "name": "سبحان محبی منش",
+              "code": "23"
+            }
+          },
+          {
+            "path": "class:mvrt12glosu6b.students.23",
+            "before": null,
+            "after": {
+              "id": "mvrwg9gczaewj",
+              "name": "امیرحسین محمدی ادواری",
+              "code": "24"
+            }
+          },
+          {
+            "path": "class:mvrt12glosu6b.students.24",
+            "before": null,
+            "after": {
+              "id": "mvrwg9gcgaw4u",
+              "name": "امیرعلی معروف خانی",
+              "code": "25"
+            }
+          },
+          {
+            "path": "class:mvrt12glosu6b.students.25",
+            "before": null,
+            "after": {
+              "id": "mvrwg9gcv291i",
+              "name": "یاسین منصور",
+              "code": "26"
+            }
+          },
+          {
+            "path": "class:mvrt12glosu6b.students.26",
+            "before": null,
+            "after": {
+              "id": "mvrwg9gc911fy",
+              "name": "سیدعلی موسوی",
+              "code": "27"
+            }
+          },
+          {
+            "path": "class:mvrt12glosu6b.students.27",
+            "before": null,
+            "after": {
+              "id": "mvrwg9gc5aahn",
+              "name": "محمدمجید نقی پور",
+              "code": "28"
+            }
+          },
+          {
+            "path": "class:mvrt12glosu6b.students.28",
+            "before": null,
+            "after": {
+              "id": "mvrwg9gcb5k83",
+              "name": "امیریوسفخانی",
+              "code": "29"
+            }
+          }
+        ],
+        "id": 10
+      }
+    ],
+    "backups": [
+      {
+        "id": "mvrsvnkm1w4ho",
+        "workspace": "initial",
+        "at": "2026-10-28T07:35:55.414Z",
+        "label": "خودکار روزانه",
+        "db": {
+          "masterSchedule": {},
+          "activeDays": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "periods": 6,
+          "settings": {
+            "weekStartDate": "2026-10-28",
+            "academicYear": "1405-1406",
+            "password": "",
+            "academicTerm": "اول"
+          },
+          "schemaVersion": 26,
+          "schools": [],
+          "sessions": [],
+          "migrationWarnings": []
+        }
+      }
+    ],
+    "undo": [
+      {
+        "id": "initial",
+        "action": "ورود CSV: 29 افزوده، 0 اصلاح",
+        "revision": 11,
+        "before": [
+          {
+            "key": "class:mvrt12glosu6b",
+            "value": {
+              "id": "mvrt12glosu6b",
+              "name": "دوازدهم تصویرسازی",
+              "students": [],
+              "archivedStudents": [],
+              "lessons": [
+                {
+                  "id": "mvrt14l96b25l",
+                  "name": "کاربر افترافکت",
+                  "teacher": "پیرزاد",
+                  "periodsPerWeek": 2,
+                  "gradeMode": "kardanesh",
+                  "kardaneshScores": {},
+                  "poudmans": [],
+                  "gradingPolicy": {
+                    "version": 1,
+                    "revision": 1,
+                    "method": "dual",
+                    "year": "1405-1406",
+                    "branch": "kardanesh",
+                    "grade": "",
+                    "field": "",
+                    "code": "",
+                    "authority": "",
+                    "circularNumber": "",
+                    "circularDate": "",
+                    "reference": "",
+                    "confirmed": false,
+                    "practicalWeight": 70,
+                    "theoryMin": 0,
+                    "practicalMin": 0,
+                    "passMin": 14,
+                    "mostamarMax": 5,
+                    "competencyFactor": 5,
+                    "competencyMin": 2,
+                    "moduleMin": 12,
+                    "continuousStep": 0.5,
+                    "requireGate": false,
+                    "unitCount": 1,
+                    "subjectType": "vocational",
+                    "dualConfigurable": true
+                  },
+                  "courseInfo": {
+                    "year": "1405-1406",
+                    "grade": "",
+                    "field": "",
+                    "code": "",
+                    "authority": "",
+                    "branch": "kardanesh"
+                  },
+                  "weightMostamar": 40,
+                  "weightPayani": 60
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "reports": []
+  },
+  "reportDrafts": {
+    "initial": {}
+  },
+  "gradeDrafts": []
+}
