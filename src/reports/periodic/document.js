@@ -39,13 +39,105 @@ function studentFollowupHtml(m) {
           '"><dt>' +
           label +
           "</dt><dd>" +
-          num(student[key] ?? 0) +
+          num(
+            key === "present"
+              ? (student.present || 0) + (student.late || 0)
+              : (student[key] ?? 0),
+          ) +
           "</dd></div>";
       h += "</dl></li>";
     }
     h += "</ol></section>";
   }
   return h + "</section>";
+}
+
+function sessionDetailsHtml(m, s) {
+  const statuses = [
+    ["present", "حاضر"],
+    ["absent", "غایب"],
+    ["leave", "مرخصی"],
+    ["late", "تأخیر"],
+    ["unknown", "تعیین‌نشده"],
+  ];
+  let html =
+    '<section class="periodic-session"><header class="report-session-heading"><span class="report-session-date"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4M16 3v4M4 11h16"/></svg>' +
+    esc(faDate(s.date)) +
+    '</span><span class="report-session-period">زنگ ' +
+    num(s.period + 1) +
+    '</span></header><div class="report-session-identity"><h4>' +
+    esc(s.className) +
+    '</h4><div class="report-session-lesson"><strong>' +
+    esc(s.lessonName) +
+    "</strong>" +
+    (s.moduleName
+      ? "<small>" +
+        esc(s.moduleName) +
+        (s.unitName ? " / " + esc(s.unitName) : "") +
+        "</small>"
+      : s.unitName
+        ? "<small>" + esc(s.unitName) + "</small>"
+        : "") +
+    "</div>" +
+    (s.teacher
+      ? '<p class="report-session-teacher">دبیر: <b>' +
+        esc(s.teacher) +
+        "</b></p>"
+      : "") +
+    "</div>";
+  if (m.audience === "management" && m.detailLevel === "summary") {
+    html += '<dl class="report-session-counts">';
+    for (const [key, label] of statuses)
+      html +=
+        '<div class="report-metric report-metric-' +
+        key +
+        '"><dt>' +
+        label +
+        "</dt><dd>" +
+        num(
+          key === "present"
+            ? (s.counts.present || 0) + (s.counts.late || 0)
+            : s.counts[key],
+        ) +
+        "</dd></div>";
+    html += "</dl>";
+  }
+  const participants = reportParticipants(m, s);
+  if (participants.length) {
+    html += '<ol class="report-session-students">';
+    for (const p of participants) {
+      const status = statuses.some(([key]) => key === p.attendance.status)
+        ? p.attendance.status
+        : "unknown";
+      html +=
+        '<li><div class="report-session-student-heading"><strong>' +
+        esc(p.name) +
+        '</strong><span class="report-session-attendance report-metric report-metric-' +
+        status +
+        '">' +
+        esc(p.attendance.label) +
+        (p.attendance.minutes == null
+          ? ""
+          : " · " + num(p.attendance.minutes) + " دقیقه") +
+        "</span></div>";
+      if (p.scores.length) {
+        html += '<ul class="report-session-scores">';
+        for (const score of p.scores)
+          html +=
+            "<li><span>" +
+            esc(score.label) +
+            "</span><strong>" +
+            esc(score.value ?? "—") +
+            "</strong>" +
+            (score.note ? "<p>" + esc(score.note) + "</p>" : "") +
+            "</li>";
+        html += "</ul>";
+      }
+      html += "</li>";
+    }
+    html += "</ol>";
+  }
+  return html + "</section>";
 }
 
 function documentHtml(m) {
@@ -79,80 +171,31 @@ function documentHtml(m) {
     "</small></header>";
   h += `<div class="periodic-export-actions no-print"><button class="success" data-deputy-copy data-legacy-click="reports-periodic-document:deputy">کپی برای معاون</button><button data-periodic-print data-legacy-click="reports-periodic-document:0">چاپ / PDF</button><button class="ghost" data-legacy-click="reports-periodic-document:1">فایل متن</button><button class="ghost" data-legacy-click="reports-periodic-document:2">فایل JSON</button></div>`;
   h +=
-    '<section class="periodic-summary">' +
+    '<section class="periodic-summary" aria-label="خلاصه آمار گزارش">' +
     [
-      ["جلسه ثبت‌شده", m.summary.sessions],
-      ["حاضر", m.summary.present],
-      ["غایب", m.summary.absent],
-      ["مرخصی", m.summary.leave],
-      ["با تأخیر", m.summary.late],
-      ["تعیین‌نشده", m.summary.unknown],
+      ["جلسه ثبت‌شده", m.summary.sessions, "sessions"],
+      ["حاضر", (m.summary.present || 0) + (m.summary.late || 0), "present"],
+      ["غایب", m.summary.absent, "absent"],
+      ["مرخصی", m.summary.leave, "leave"],
+      ["با تأخیر", m.summary.late, "late"],
+      ["تعیین‌نشده", m.summary.unknown, "unknown"],
     ]
       .map(
-        ([label, n]) =>
-          "<div><strong>" +
+        ([label, n, status]) =>
+          '<div data-summary-status="' +
+          status +
+          '"><strong>' +
           num(n) +
           "</strong><span>" +
           label +
           "</span></div>",
       )
       .join("") +
-    '</section><p class="periodic-method">واحد آمار حضور: نفرـجلسه. نرخ حضور از موارد تعیین‌شده، به‌جز مرخصی: ' +
-    (m.summary.attendanceRate === null
-      ? "قابل محاسبه نیست"
-      : num(m.summary.attendanceRate) + "٪") +
-    ". نمرات زیر، ثبت‌های همین بازه‌اند و نمره نهایی درس نیستند.</p>";
+    "</section>";
   if (!m.sessions.length)
     h +=
       '<div class="empty">در این بازه و محدوده، جلسه مرتبطی ثبت نشده است.</div>';
-  h +=
-    "<h3>مرور " +
-    (m.mode === "weekly"
-      ? "روزهای هفته"
-      : ["monthly", "annual"].includes(m.mode) && m.detailLevel === "summary"
-        ? "روزهای دارای جلسه"
-        : "روز") +
-    "</h3>" +
-    table(
-      ["تاریخ", "جلسه", "حاضر / غایب / تأخیر / مرخصی", "تعیین‌نشده"],
-      displayedDays(m).map((d) => [
-        faDate(d.date),
-        num(d.sessions),
-        num(d.present) +
-          " / " +
-          num(d.absent) +
-          " / " +
-          num(d.late) +
-          " / " +
-          num(d.leave),
-        num(d.unknown),
-      ]),
-    );
   if (m.audience === "management" && m.sessions.length) {
-    h +=
-      "<h3>جمع‌بندی کلاس‌ها و درس‌ها</h3>" +
-      table(
-        [
-          "کلاس / درس",
-          "جلسه",
-          "حاضر / غایب / تأخیر / مرخصی",
-          "تعیین‌نشده",
-          "ثبت نمره و فعالیت",
-        ],
-        m.lessons.map((l) => [
-          l.className + " / " + l.lessonName,
-          num(l.sessions),
-          num(l.present) +
-            " / " +
-            num(l.absent) +
-            " / " +
-            num(l.late) +
-            " / " +
-            num(l.leave),
-          num(l.unknown),
-          num(l.markCount),
-        ]),
-      );
     h += studentFollowupHtml(m);
   }
   if (m.technicalGrades?.length) {
@@ -243,59 +286,7 @@ function documentHtml(m) {
     h += "</div></section>";
   }
   h += "<h3>جزئیات جلسات و ثبت‌ها</h3>";
-  if (m.audience === "management" && m.detailLevel === "summary")
-    h +=
-      '<p class="periodic-method">نمایش خلاصه: آمار همه هنرجویان و همه ثبت‌های فعالیت حفظ شده است؛ برای ریز حضور هر هنرجو در هر جلسه، نمایش «جزئیات کامل» را انتخاب کنید. فایل JSON جزئیات کامل همین محدوده را دارد.</p>';
-  for (const s of m.sessions) {
-    h +=
-      '<section class="periodic-session"><h4>' +
-      esc(faDate(s.date)) +
-      " · زنگ " +
-      num(s.period + 1) +
-      " · " +
-      esc(s.className) +
-      "</h4><p>" +
-      esc(s.lessonName) +
-      (s.moduleName ? " · " + esc(s.moduleName) : "") +
-      (s.unitName ? " / " + esc(s.unitName) : "") +
-      (s.teacher ? " · دبیر: " + esc(s.teacher) : "") +
-      "</p>";
-    if (m.audience === "management" && m.detailLevel === "summary")
-      h +=
-        '<p class="periodic-method">حاضر: ' +
-        num(s.counts.present) +
-        " · غایب: " +
-        num(s.counts.absent) +
-        " · مرخصی: " +
-        num(s.counts.leave) +
-        " · تأخیر: " +
-        num(s.counts.late) +
-        " · تعیین‌نشده: " +
-        num(s.counts.unknown) +
-        "</p>";
-    h += table(
-      ["هنرجو", "وضعیت حضور", "نمره، تکلیف و فعالیت ثبت‌شده"],
-      reportParticipants(m, s).map((p) => [
-        p.name,
-        p.attendance.label +
-          (p.attendance.minutes === null
-            ? ""
-            : " · " + num(p.attendance.minutes) + " دقیقه"),
-        p.scores.length
-          ? p.scores
-              .map(
-                (sc) =>
-                  sc.label +
-                  ": " +
-                  (sc.value ?? "—") +
-                  (sc.note ? " — " + sc.note : ""),
-              )
-              .join("\n")
-          : "ثبت نشده",
-      ]),
-    );
-    h += "</section>";
-  }
+  for (const s of m.sessions) h += sessionDetailsHtml(m, s);
   if (m.currentGrades.length)
     h +=
       '<h3>آخرین وضعیت تجمعی نمرات درس‌ها</h3><p class="periodic-method">این بخش وضعیت فعلی درس است، محدود به بازه گزارش نیست و ممکن است نمرات خارج از این بازه را شامل شود.</p>' +
@@ -335,11 +326,18 @@ function documentHtml(m) {
       '<aside class="periodic-warnings"><strong>موارد نیازمند بررسی</strong><ul>' +
       m.warnings.map((w) => "<li>" + esc(w) + "</li>").join("") +
       "</ul></aside>";
+  const definitions = m.definitions
+    .map((d) => "<li>" + esc(d) + "</li>")
+    .join("");
   h +=
-    '<footer class="periodic-footer"><h4>مبنای گزارش</h4><ul>' +
-    m.definitions.map((d) => "<li>" + esc(d) + "</li>").join("") +
-    "</ul><p>تنظیم‌کننده: " +
-    esc(m.author || "........................") +
-    "<br>امضا: ........................</p></footer></article>";
+    '<footer class="periodic-footer"><details class="report-basis no-print"><summary>مبنای گزارش<span aria-hidden="true">⌄</span></summary><ul>' +
+    definitions +
+    '</ul></details><div class="report-basis-print"><h4>مبنای گزارش</h4><ul>' +
+    definitions +
+    '</ul></div><div class="report-signoff"><div><span>تنظیم‌کننده</span>' +
+    (m.author
+      ? "<strong>" + esc(m.author) + "</strong>"
+      : '<span class="report-signoff-line" aria-label="محل نام تنظیم‌کننده"></span>') +
+    '</div><div><span>امضا</span><span class="report-signoff-line" aria-label="محل امضا"></span></div></div></footer></article>';
   return h;
 }

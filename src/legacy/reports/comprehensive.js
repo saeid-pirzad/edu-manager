@@ -341,7 +341,7 @@ function generateGlobalReport() {
           const l = Object.values(sess.attendance).filter(
             (x) => x && x.startsWith("late"),
           ).length;
-          h += `<td>✅${p} ❌${a} ⏰${l} · مرخصی ${leaveCount}</td>`;
+          h += `<td>✅${p + l} ❌${a} ⏰${l} · مرخصی ${leaveCount}</td>`;
         }
         if (globalFilter.showScores) {
           const m = sess.scores.filter((x) => x.type === "mostamar").length;
@@ -407,6 +407,7 @@ function generateGlobalReport() {
             else if (status === "leave") leaveNames.push(st.name);
             else if (status === "absent") absentNames.push(st.name);
             else if (status && status.startsWith("late")) {
+              presentNames.push(st.name);
               const mins = status.includes(":") ? status.split(":")[1] : "";
               lateNames.push(`${st.name} ${mins ? "(" + mins + "د)" : ""}`);
             }
@@ -578,7 +579,7 @@ function copyGlobalReportText(btn) {
           const l = Object.values(sess.attendance).filter(
             (x) => x && x.startsWith("late"),
           ).length;
-          text += `   👥 حضور: حاضر ${p} | غایب ${a} | مرخصی ${leaveCount} | تأخیر ${l}\n`;
+          text += `   👥 حضور: حاضر ${p + l} | غایب ${a} | مرخصی ${leaveCount} | تأخیر ${l}\n`;
         }
         if (globalFilter.showScores) {
           const m = sess.scores.filter((x) => x.type === "mostamar").length;
@@ -631,6 +632,7 @@ function copyGlobalReportText(btn) {
             else if (status === "leave") leaveNames.push(st.name);
             else if (status === "absent") absentNames.push(st.name);
             else if (status && status.startsWith("late")) {
+              presentNames.push(st.name);
               const mins = status.includes(":") ? status.split(":")[1] : "";
               lateNames.push(`${st.name} ${mins ? "(" + mins + "د)" : ""}`);
             }

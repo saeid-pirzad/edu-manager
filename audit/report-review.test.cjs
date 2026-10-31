@@ -86,7 +86,11 @@ test("print uses the clicked report and counts merged columns for page orientati
     querySelectorAll: (selector) =>
       selector === "tr" ? [{ children: [{ colSpan: 5 }, { colSpan: 4 }] }] : [],
   };
-  const clickedReport = { cloneNode: () => copy };
+  const clickedReport = {
+    cloneNode: () => copy,
+    matches: () => false,
+    querySelector: () => null,
+  };
   const wrongReport = {
     cloneNode: () => {
       throw Error("Unrelated report printed");

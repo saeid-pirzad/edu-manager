@@ -27,10 +27,6 @@ function reportParticipants(model, session) {
     ? session.participants.filter((participant) => participant.scores.length)
     : session.participants;
 }
-const displayedDays = (m) =>
-  ["monthly", "annual"].includes(m.mode) && m.detailLevel === "summary"
-    ? m.days.filter((day) => day.sessions > 0)
-    : m.days;
 function textReport(m) {
   const lines = [
     "گزارش " +
@@ -56,7 +52,7 @@ function textReport(m) {
     "خلاصه",
     "جلسات ثبت‌شده: " + num(m.summary.sessions),
     "حاضر: " +
-      num(m.summary.present) +
+      num((m.summary.present || 0) + (m.summary.late || 0)) +
       " | غایب: " +
       num(m.summary.absent) +
       " | مرخصی: " +
@@ -75,42 +71,7 @@ function textReport(m) {
   );
   if (!m.sessions.length)
     lines.push("در این بازه و محدوده، جلسه مرتبطی ثبت نشده است.");
-  for (const d of displayedDays(m))
-    lines.push(
-      faDate(d.date) +
-        ": " +
-        num(d.sessions) +
-        " جلسه؛ حاضر " +
-        num(d.present) +
-        "، غایب " +
-        num(d.absent) +
-        " | مرخصی: " +
-        num(d.leave) +
-        "، تأخیر " +
-        num(d.late) +
-        "، تعیین‌نشده " +
-        num(d.unknown),
-    );
   if (m.audience === "management") {
-    lines.push("", "جمع‌بندی درس‌ها");
-    for (const l of m.lessons)
-      lines.push(
-        l.className +
-          " / " +
-          l.lessonName +
-          ": " +
-          num(l.sessions) +
-          " جلسه؛ حاضر " +
-          num(l.present) +
-          "، غایب " +
-          num(l.absent) +
-          " | مرخصی: " +
-          num(l.leave) +
-          "، تأخیر " +
-          num(l.late) +
-          "، تعیین‌نشده " +
-          num(l.unknown),
-      );
     lines.push("", "وضعیت هنرجویان");
     for (const st of m.students)
       lines.push(
@@ -118,7 +79,7 @@ function textReport(m) {
           " / " +
           st.className +
           ": حاضر " +
-          num(st.present) +
+          num((st.present || 0) + (st.late || 0)) +
           "، غایب " +
           num(st.absent) +
           " | مرخصی: " +
@@ -340,7 +301,10 @@ function deputyReport(m) {
       "کلاس: " + session.className + " | درس: " + session.lessonName,
       "دبیر: " + (session.teacher || "—"),
       "",
-      colors.present + " حاضر: " + num(people.present.length) + " نفر",
+      colors.present +
+        " حاضر: " +
+        num(people.present.length + people.late.length) +
+        " نفر",
     );
     for (const [status, label] of statuses.slice(1)) {
       const names = people[status].map(
@@ -364,7 +328,10 @@ function deputyReport(m) {
       lines.push("⚠️ فهرست حضور این جلسه خالی است؛ بررسی شود.");
   }
   if (!sessions.length) lines.push("", "در این بازه جلسه‌ای ثبت نشده است.");
-  lines.push("", "مرخصی جدا از غیبت است؛ تعیین‌نشده به معنی غیبت نیست.");
+  lines.push(
+    "",
+    "تأخیر جزو حاضرین است؛ مرخصی جدا از غیبت است؛ تعیین‌نشده به معنی غیبت نیست.",
+  );
   if (m.note) lines.push("", "توضیحات: " + m.note);
   if (m.author) lines.push("تنظیم‌کننده: " + m.author);
   return lines.join("\n");

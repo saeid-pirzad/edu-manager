@@ -5196,7 +5196,7 @@ function detailedV24(c, sid) {
               ? "ناقص"
               : "تکمیل") +
           "</td><td>" +
-          r.att.present +
+          ((r.att.present || 0) + (r.att.late || 0)) +
           " / " +
           r.att.absent +
           " / " +
@@ -5312,7 +5312,7 @@ function parentReportV24(st, c) {
         ? " | " + gradeStatus(r)
         : "") +
       "\nحاضر " +
-      r.att.present +
+      ((r.att.present || 0) + (r.att.late || 0)) +
       " | غایب " +
       r.att.absent +
       " | مرخصی " +
@@ -5353,6 +5353,87 @@ function beforeReportPrint() {
   }
 }
 
+function preservePeriodicAppearance(source, copy) {
+  const properties = [
+    "display",
+    "box-sizing",
+    "direction",
+    "font-family",
+    "font-size",
+    "font-weight",
+    "font-style",
+    "line-height",
+    "letter-spacing",
+    "color",
+    "background-color",
+    "background-image",
+    "text-align",
+    "text-decoration",
+    "white-space",
+    "overflow-wrap",
+    "word-break",
+    "border-top",
+    "border-right",
+    "border-bottom",
+    "border-left",
+    "border-radius",
+    "padding",
+    "margin",
+    "gap",
+    "row-gap",
+    "column-gap",
+    "flex-direction",
+    "flex-wrap",
+    "flex-grow",
+    "flex-shrink",
+    "flex-basis",
+    "align-items",
+    "align-content",
+    "align-self",
+    "justify-content",
+    "grid-column",
+    "grid-row",
+    "list-style",
+    "font-variant-numeric",
+  ];
+  const originals = [source, ...source.querySelectorAll("*")];
+  const clones = [copy, ...copy.querySelectorAll("*")];
+  originals.forEach((original, index) => {
+    const target = clones[index],
+      style = getComputedStyle(original);
+    for (const property of properties)
+      target.style.setProperty(
+        property,
+        style.getPropertyValue(property),
+        "important",
+      );
+    // Preserve column proportions without fixing a phone/desktop width onto A4.
+    if (style.display === "grid") {
+      const columns = style.gridTemplateColumns;
+      target.style.setProperty(
+        "grid-template-columns",
+        /^\d/.test(columns) &&
+          columns.split(" ").every((value) => /^\d+(\.\d+)?px$/.test(value))
+          ? columns
+              .split(" ")
+              .map((value) => "minmax(0, " + parseFloat(value) + "fr)")
+              .join(" ")
+          : columns,
+        "important",
+      );
+    }
+    target.style.setProperty("print-color-adjust", "exact", "important");
+    target.style.setProperty(
+      "-webkit-print-color-adjust",
+      "exact",
+      "important",
+    );
+  });
+  // Print the same disclosure state the user sees, not a second expanded footer.
+  copy.querySelector(".report-basis")?.classList.remove("no-print");
+  copy.style.setProperty("break-inside", "auto", "important");
+}
+
 function preparePrint(button) {
   printAuthorization = null;
   document.getElementById("printRoot")?.remove();
@@ -5374,6 +5455,10 @@ function preparePrint(button) {
       document.getElementById("app");
   if (!source) throw Error("گزارشی برای چاپ انتخاب نشده است.");
   const copy = source.cloneNode(true);
+  const periodic =
+    source.matches(".periodic-document") ||
+    !!source.querySelector(".periodic-document");
+  if (periodic) preservePeriodicAppearance(source, copy);
   copy
     .querySelectorAll("button,.no-print,form,script,select")
     .forEach((x) => x.remove());
@@ -5395,12 +5480,13 @@ function preparePrint(button) {
   });
   const root = document.createElement("div");
   root.id = "printRoot";
-  root.innerHTML =
-    "<header><h1>گزارش مدرسه</h1><p>" +
-    esc(workspace.year + " / " + workspace.term) +
-    " · " +
-    esc(new Date().toLocaleString("fa-IR")) +
-    "</p></header>";
+  root.innerHTML = periodic
+    ? ""
+    : "<header><h1>گزارش مدرسه</h1><p>" +
+      esc(workspace.year + " / " + workspace.term) +
+      " · " +
+      esc(new Date().toLocaleString("fa-IR")) +
+      "</p></header>";
   root.append(copy);
   document.body.append(root);
   const columns = Math.max(

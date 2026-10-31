@@ -3508,11 +3508,11 @@ body {
     border-radius: 20px;
   }
   #app .periodic-summary > div {
-    background: #faf9f7;
-    border-color: #e7e3dc;
+    background: var(--summary-bg, #f3f5fb);
+    border-color: var(--summary-border, #e1e5f0);
   }
   #app .periodic-summary strong {
-    color: #79522c;
+    color: inherit;
   }
   #app .report-empty {
     padding: 24px 18px;
@@ -3589,7 +3589,7 @@ body {
   }
   #app .periodic-export-actions {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 6px;
   }
   #app .periodic-export-actions > button:first-child {
@@ -3597,6 +3597,8 @@ body {
   }
   #app .periodic-export-actions > button {
     min-width: 0;
+    padding-inline: 4px;
+    white-space: nowrap;
     margin: 0;
     font-size: 12px;
   }

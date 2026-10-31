@@ -277,7 +277,7 @@ function detailedV24(c, sid) {
               ? "ناقص"
               : "تکمیل") +
           "</td><td>" +
-          r.att.present +
+          ((r.att.present || 0) + (r.att.late || 0)) +
           " / " +
           r.att.absent +
           " / " +
@@ -393,7 +393,7 @@ function parentReportV24(st, c) {
         ? " | " + gradeStatus(r)
         : "") +
       "\nحاضر " +
-      r.att.present +
+      ((r.att.present || 0) + (r.att.late || 0)) +
       " | غایب " +
       r.att.absent +
       " | مرخصی " +

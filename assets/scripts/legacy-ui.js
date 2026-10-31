@@ -1101,7 +1101,7 @@ function generateGlobalReport() {
           const l = Object.values(sess.attendance).filter(
             (x) => x && x.startsWith("late"),
           ).length;
-          h += `<td>✅${p} ❌${a} ⏰${l} · مرخصی ${leaveCount}</td>`;
+          h += `<td>✅${p + l} ❌${a} ⏰${l} · مرخصی ${leaveCount}</td>`;
         }
         if (globalFilter.showScores) {
           const m = sess.scores.filter((x) => x.type === "mostamar").length;
@@ -1167,6 +1167,7 @@ function generateGlobalReport() {
             else if (status === "leave") leaveNames.push(st.name);
             else if (status === "absent") absentNames.push(st.name);
             else if (status && status.startsWith("late")) {
+              presentNames.push(st.name);
               const mins = status.includes(":") ? status.split(":")[1] : "";
               lateNames.push(`${st.name} ${mins ? "(" + mins + "د)" : ""}`);
             }
@@ -1338,7 +1339,7 @@ function copyGlobalReportText(btn) {
           const l = Object.values(sess.attendance).filter(
             (x) => x && x.startsWith("late"),
           ).length;
-          text += `   👥 حضور: حاضر ${p} | غایب ${a} | مرخصی ${leaveCount} | تأخیر ${l}\n`;
+          text += `   👥 حضور: حاضر ${p + l} | غایب ${a} | مرخصی ${leaveCount} | تأخیر ${l}\n`;
         }
         if (globalFilter.showScores) {
           const m = sess.scores.filter((x) => x.type === "mostamar").length;
@@ -1391,6 +1392,7 @@ function copyGlobalReportText(btn) {
             else if (status === "leave") leaveNames.push(st.name);
             else if (status === "absent") absentNames.push(st.name);
             else if (status && status.startsWith("late")) {
+              presentNames.push(st.name);
               const mins = status.includes(":") ? status.split(":")[1] : "";
               lateNames.push(`${st.name} ${mins ? "(" + mins + "د)" : ""}`);
             }
@@ -1691,6 +1693,7 @@ function legacy_buildLessonReportHtml(c, lesson) {
         else if (st === "leave") leave.push(s.name);
         else if (st === "absent") absent.push(s.name);
         else if (st && st.startsWith("late")) {
+          present.push(s.name);
           const mins = st.includes(":") ? st.split(":")[1] : "";
           late.push(`${s.name} ${mins ? `(${mins}د)` : ""}`);
         }
@@ -1758,7 +1761,7 @@ function legacy_buildLessonReportHtml(c, lesson) {
   sortedStudents.forEach((st) => {
     const s = calcStudentLesson(c, lesson, st.id);
     h += `<tr><td>${esc(st.name)}</td>
-      <td>${s.att.present}</td><td>${s.att.absent}</td><td>${s.att.leave || 0}</td><td>${s.att.late}</td>
+      <td>${(s.att.present || 0) + (s.att.late || 0)}</td><td>${s.att.absent}</td><td>${s.att.leave || 0}</td><td>${s.att.late}</td>
       <td style="color:#059669">${s.posCount}</td><td style="color:#dc2626">${s.negCount}</td><td>${s.hwCount}</td>
       <td>${s.avgM !== null ? s.avgM.toFixed(2) : "—"}</td>
       <td>${s.avgP !== null ? s.avgP.toFixed(2) : "—"}</td>
@@ -1972,7 +1975,7 @@ function legacy_buildDetailedKarnamehHtml(c, stId) {
       <td>${s.avgP !== null ? s.avgP.toFixed(2) : "—"}</td>
       <td><b>${s.final !== null ? s.final.toFixed(2) : "—"}</b></td>
       <td style="color:#059669">${s.posCount}</td><td style="color:#dc2626">${s.negCount}</td><td>${s.hwCount}</td>
-      <td>${s.att.present}</td><td>${s.att.absent}</td><td>${s.att.leave || 0}</td>
+      <td>${(s.att.present || 0) + (s.att.late || 0)}</td><td>${s.att.absent}</td><td>${s.att.leave || 0}</td>
       <td style="background:#eef2ff;font-weight:700;color:#4338ca">${s.final !== null ? s.final.toFixed(2) : "—"}</td></tr>`;
   });
   const overallAvg = countFinal > 0 ? (sumFinal / countFinal).toFixed(2) : "—";
@@ -2021,7 +2024,7 @@ function legacy_buildDetailedKarnamehHtml(c, stId) {
         h += `<td>${esc(u.name)}</td>
           <td>${d.m !== null ? d.m : "—"}</td><td>${d.p !== null ? d.p : "—"}</td>
           <td style="color:#059669">${d.pos || 0}</td><td style="color:#dc2626">${d.neg || 0}</td><td>${d.hw || 0}</td>
-          <td>${d.att ? d.att.present : 0}</td><td>${d.att ? d.att.absent : 0}</td><td>${d.att?.leave || 0}</td>
+          <td>${(d.att?.present || 0) + (d.att?.late || 0)}</td><td>${d.att ? d.att.absent : 0}</td><td>${d.att?.leave || 0}</td>
           <td class="no-print"><div style="display:flex;gap:4px;flex-wrap:wrap">
             <label title="مثبت" style="cursor:pointer"><input type="checkbox" ${ao.pos ? "checked" : ""} data-legacy-change="reports-student:10" data-legacy-change-arg9="${esc(l.id)}" data-legacy-change-arg10="${esc(p.id)}" data-legacy-change-arg11="${esc(u.id)}"></label>
             <label title="منفی" style="cursor:pointer"><input type="checkbox" ${ao.neg ? "checked" : ""} data-legacy-change="reports-student:11" data-legacy-change-arg13="${esc(l.id)}" data-legacy-change-arg14="${esc(p.id)}" data-legacy-change-arg15="${esc(u.id)}"></label>
@@ -2074,7 +2077,7 @@ function legacy_generateParentReportText(student, c) {
     ) {
       hasData = true;
       text += `📚 درس: ${lesson.name} (دبیر: ${lesson.teacher || "---"})\n`;
-      text += `- حضور: حاضر ${stats.att.present} | غایب ${stats.att.absent} | مرخصی ${stats.att.leave || 0} | تأخیر ${stats.att.late}\n`;
+      text += `- حضور: حاضر ${(stats.att.present || 0) + (stats.att.late || 0)} | غایب ${stats.att.absent} | مرخصی ${stats.att.leave || 0} | تأخیر ${stats.att.late}\n`;
       text += `- امتیازات: ➕ ${stats.posCount} | ➖ ${stats.negCount} | 📝 ${stats.hwCount}\n`;
       text += `- نمرات: ${lesson.gradeMode === "kardanesh" ? "تئوری" : "مستمر"} ${stats.avgM !== null ? stats.avgM.toFixed(2) : "---"} | ${lesson.gradeMode === "kardanesh" ? "عملی" : "پایانی"} ${stats.avgP !== null ? stats.avgP.toFixed(2) : "---"}\n`;
       text += `- نمره نهایی: ${stats.final !== null ? stats.final.toFixed(2) : "---"}${lesson.gradeMode === "kardanesh" ? " | " + gradeStatus(stats) : ""}\n--------------------------------\n`;

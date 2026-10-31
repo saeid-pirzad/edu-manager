@@ -121,6 +121,7 @@ function legacy_buildLessonReportHtml(c, lesson) {
         else if (st === "leave") leave.push(s.name);
         else if (st === "absent") absent.push(s.name);
         else if (st && st.startsWith("late")) {
+          present.push(s.name);
           const mins = st.includes(":") ? st.split(":")[1] : "";
           late.push(`${s.name} ${mins ? `(${mins}د)` : ""}`);
         }
@@ -188,7 +189,7 @@ function legacy_buildLessonReportHtml(c, lesson) {
   sortedStudents.forEach((st) => {
     const s = calcStudentLesson(c, lesson, st.id);
     h += `<tr><td>${esc(st.name)}</td>
-      <td>${s.att.present}</td><td>${s.att.absent}</td><td>${s.att.leave || 0}</td><td>${s.att.late}</td>
+      <td>${(s.att.present || 0) + (s.att.late || 0)}</td><td>${s.att.absent}</td><td>${s.att.leave || 0}</td><td>${s.att.late}</td>
       <td style="color:#059669">${s.posCount}</td><td style="color:#dc2626">${s.negCount}</td><td>${s.hwCount}</td>
       <td>${s.avgM !== null ? s.avgM.toFixed(2) : "—"}</td>
       <td>${s.avgP !== null ? s.avgP.toFixed(2) : "—"}</td>
