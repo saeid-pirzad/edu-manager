@@ -243,6 +243,7 @@ function build(source, options) {
       id: x.id,
       date: x.date,
       period: x.period,
+      classId: c.id,
       className: c.name,
       lessonName: lesson?.name || "درس فاقد تعریف",
       moduleName: pod?.name || "",
