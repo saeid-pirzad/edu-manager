@@ -2896,6 +2896,20 @@ EduLegacyEvents.register("ui-dashboard:4", function (event) {
   );
 });
 // Source: src/legacy/ui/school-class.js
+// Stable identity colors do not change when the roster is filtered or sorted.
+function studentAvatarHtml(studentId) {
+  const tone =
+    Array.from(String(studentId)).reduce(
+      (hash, char) => (Math.imul(hash, 31) + char.codePointAt(0)) >>> 0,
+      0,
+    ) % 5;
+  return (
+    '<span class="student-avatar student-avatar-icon" data-tone="' +
+    tone +
+    '" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" focusable="false"><circle cx="24" cy="24" r="19" fill="currentColor" opacity=".09"/><circle cx="24" cy="18" r="7" fill="currentColor"/><path d="M11 38c0-7.2 5.8-12 13-12s13 4.8 13 12c-3.5 3.1-8 4.5-13 4.5S14.5 41.1 11 38Z" fill="currentColor"/><path d="M20 16a4 4 0 0 1 4-4" stroke="white" stroke-opacity=".5" stroke-width="2" stroke-linecap="round"/><path d="m36 7 1.1 3.4L40.5 12l-3.4 1.2L36 17l-1.2-3.8L31.5 12l3.3-1.6L36 7Z" fill="currentColor" opacity=".65"/></svg></span>'
+  );
+}
+
 function createPanelHeading(icon, title, note = "") {
   return (
     '<summary><span class="create-panel-symbol" aria-hidden="true">' +
@@ -3074,12 +3088,6 @@ function filterStudentRoster(control) {
     );
     if (!card.hidden) {
       count++;
-      const avatar = card.querySelector(".student-avatar");
-      avatar.textContent = count.toLocaleString("fa-IR");
-      avatar.setAttribute(
-        "aria-label",
-        "ردیف " + count.toLocaleString("fa-IR"),
-      );
     }
     list.append(card);
   }
@@ -3122,7 +3130,7 @@ function renderStudentsTab(c) {
     ' هنرجو</p><div class="student-roster">';
   for (const [i, st] of students.entries()) {
     const id = esc(st.id);
-    h += `<article class="student-profile" data-name="${esc(st.name)}" data-code="${esc(st.code || "")}" data-order="${i}"><div class="student-profile-main"><span class="student-avatar" aria-label="ردیف ${(i + 1).toLocaleString("fa-IR")}">${(i + 1).toLocaleString("fa-IR")}</span><div class="student-profile-info"><h4>${esc(st.name)}</h4><p>${
+    h += `<article class="student-profile" data-name="${esc(st.name)}" data-code="${esc(st.code || "")}" data-order="${i}"><div class="student-profile-main">${studentAvatarHtml(st.id)}<div class="student-profile-info"><h4>${esc(st.name)}</h4><p>${
       st.code
         ? "کد دانش‌آموزی: <bdi>" + esc(st.code) + "</bdi>"
         : '<span class="student-code-missing">کد ثبت نشده</span>'
