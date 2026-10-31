@@ -3,56 +3,45 @@ function renderKarnamehTabHtml() {
   db.schools.forEach((s) =>
     s.classes.forEach((c) => allClasses.push({ school: s, class: c })),
   );
-  let h = `<div class="card">
-    <h3>📋 کارنامه</h3>
-    <div class="row">
-      <select data-legacy-change="reports-student:0">
-        <option value="">انتخاب مدرسه</option>
-        ${db.schools.map((s) => `<option value="${s.id}" ${karnamehFilter.schoolId === s.id ? "selected" : ""}>${esc(s.name)}</option>`).join("")}
-      </select>
-      <select data-legacy-change="reports-student:1">
-        <option value="">انتخاب کلاس</option>
-        ${allClasses
-          .filter(
-            (x) =>
-              !karnamehFilter.schoolId ||
-              x.school.id === karnamehFilter.schoolId,
-          )
-          .map(
-            (x) =>
-              `<option value="${x.class.id}" ${karnamehFilter.classId === x.class.id ? "selected" : ""}>${esc(x.school.name)} / ${esc(x.class.name)}</option>`,
-          )
-          .join("")}
-      </select>
-      <select data-legacy-change="reports-student:2">
-        <option value="">همه دانش‌آموزان (نمای کلی)</option>
-        ${allClasses
-          .filter(
-            (x) =>
-              (!karnamehFilter.schoolId ||
-                x.school.id === karnamehFilter.schoolId) &&
-              (!karnamehFilter.classId ||
-                x.class.id === karnamehFilter.classId),
-          )
-          .map((x) =>
-            getSortedStudents({
-              students: [
-                ...x.class.students,
-                ...(x.class.archivedStudents || []),
-              ],
-            })
-              .map(
-                (st) =>
-                  `<option value="${st.id}" ${karnamehFilter.studentId === st.id ? "selected" : ""}>${esc(st.name)}</option>`,
-              )
-              .join(""),
-          )
-          .join("")}
-      </select>
-    </div>
-  </div>
-  <div id="karnamehTabOutput"></div>`;
-  return h;
+  if (!db.schools.some((school) => school.id === karnamehFilter.schoolId))
+    karnamehFilter.schoolId = "";
+  const classes = allClasses.filter(
+    (item) =>
+      !karnamehFilter.schoolId || item.school.id === karnamehFilter.schoolId,
+  );
+  const selected = classes.find(
+    (item) => item.class.id === karnamehFilter.classId,
+  );
+  if (!selected) {
+    karnamehFilter.classId = "";
+    karnamehFilter.studentId = "";
+  }
+  const students = selected
+    ? getSortedStudents({
+        students: [
+          ...new Map(
+            [
+              ...selected.class.students,
+              ...(selected.class.archivedStudents || []),
+            ].map((student) => [student.id, student]),
+          ).values(),
+        ],
+      })
+    : [];
+  if (!students.some((student) => student.id === karnamehFilter.studentId))
+    karnamehFilter.studentId = "";
+  const groups = db.schools
+    .map((school) => {
+      const items = classes.filter((item) => item.school.id === school.id);
+      if (!items.length) return "";
+      return `<optgroup label="${esc(school.name)}">${items.map((item) => `<option value="${esc(item.class.id)}" ${karnamehFilter.classId === item.class.id ? "selected" : ""}>${esc(item.class.name)}</option>`).join("")}</optgroup>`;
+    })
+    .join("");
+  return `<section class="card karnameh-controls no-print"><header><h3>کارنامه نمرات</h3><p>نمای کلی کلاس یا کارنامهٔ یک هنرجو را انتخاب کنید.</p></header><div class="karnameh-filter-grid">
+    <label for="karnamehSchool">مدرسه<select id="karnamehSchool" data-legacy-change="reports-student:0"><option value="">همه مدارس</option>${db.schools.map((school) => `<option value="${esc(school.id)}" ${karnamehFilter.schoolId === school.id ? "selected" : ""}>${esc(school.name)}</option>`).join("")}</select></label>
+    <label for="karnamehClass">کلاس<select id="karnamehClass" data-legacy-change="reports-student:1" ${classes.length ? "" : "disabled"}><option value="">${classes.length ? "کلاس را انتخاب کنید" : "هنوز کلاسی ثبت نشده"}</option>${groups}</select></label>
+    <label for="karnamehStudent">نمایش کارنامه<select id="karnamehStudent" data-legacy-change="reports-student:2" ${selected ? "" : "disabled"}><option value="">${selected ? "نمای کلی کلاس" : "ابتدا کلاس را انتخاب کنید"}</option>${students.map((student) => `<option value="${esc(student.id)}" ${karnamehFilter.studentId === student.id ? "selected" : ""}>${esc(student.name)}${selected.class.students.some((item) => item.id === student.id) ? "" : " — بایگانی"}</option>`).join("")}</select></label>
+    </div></section><div id="karnamehTabOutput" aria-live="polite"></div>`;
 }
 function updateKarnamehFilter(key, val) {
   karnamehFilter[key] = val;
@@ -77,10 +66,12 @@ function renderKarnamehTabReports() {
     out.innerHTML = `<div class="card"><div class="empty">کلاس یافت نشد.</div></div>`;
     return;
   }
-  const c = cls.classObj;
-  if (karnamehFilter.studentId)
-    out.innerHTML = buildDetailedKarnamehHtml(c, karnamehFilter.studentId);
-  else out.innerHTML = buildOverviewKarnamehHtml(c);
+  if (karnamehFilter.schoolId && cls.school?.id !== karnamehFilter.schoolId) {
+    out.innerHTML =
+      '<div class="card report-empty" role="status"><p>کلاس انتخاب‌شده متعلق به این مدرسه نیست؛ کلاس را دوباره انتخاب کنید.</p></div>';
+    return;
+  }
+  return EduV24.renderAcademicKarnameh(out, { ...karnamehFilter });
 }
 
 function legacy_buildOverviewKarnamehHtml(c) {

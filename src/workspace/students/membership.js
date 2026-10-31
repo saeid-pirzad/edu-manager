@@ -45,31 +45,45 @@ async function openMembership(action, studentId) {
         )
         .map((cl) => s.name + " / " + cl.name),
     );
+    let hasDestination = true;
     let body =
-      '<form class="record-editor" data-workspace-submit="save-membership"><div class="record-editor-context"><h4>' +
+      '<form class="record-editor membership-editor" data-workspace-submit="save-membership"><div class="record-editor-context"><span>هنرجو و کلاس مبدأ</span><h4>' +
       esc(student.name) +
       "</h4><p>" +
       esc(getSchool(origin.schoolId).name + " / " + c.name) +
       "</p></div>";
     if (action === "transfer") {
-      const options = db.schools.flatMap((s) =>
-        s.classes
-          .filter((cl) => cl.id !== c.id)
-          .map(
-            (cl) =>
-              '<option value="' +
-              esc(cl.id) +
-              '">' +
-              esc(s.name + " / " + cl.name) +
-              "</option>",
-          ),
-      );
-      body +=
-        '<label for="transferTarget">کلاس مقصد</label><select id="transferTarget"><option value="">کلاس مقصد را انتخاب کنید</option>' +
-        options.join("") +
-        "</select><p>انتقال: عضویت فعال در مبدأ بایگانی می‌شود و شناسه هنرجو در مقصد حفظ می‌شود. کپی: هنرجویی با شناسه جدید در مقصد ساخته می‌شود و مبدأ فعال می‌ماند.</p><p>نمرات و جلسات مبدأ به مقصد منتقل نمی‌شوند. اگر همین هنرجو قبلاً در مقصد بوده، انتقال دوباره، عضویت او را با حفظ سوابق قبلی مقصد فعال می‌کند.</p>";
-      if (!options.length)
-        body += "<p>کلاس دیگری وجود ندارد؛ ابتدا کلاس مقصد را تعریف کنید.</p>";
+      const options = db.schools
+        .map((school) => {
+          const classes = school.classes.filter((cl) => cl.id !== c.id);
+          if (!classes.length) return "";
+          return (
+            '<optgroup label="' +
+            esc(school.name) +
+            '">' +
+            classes
+              .map(
+                (cl) =>
+                  '<option value="' +
+                  esc(cl.id) +
+                  '">' +
+                  esc(cl.name) +
+                  "</option>",
+              )
+              .join("") +
+            "</optgroup>"
+          );
+        })
+        .filter(Boolean);
+      hasDestination = options.length > 0;
+      if (hasDestination)
+        body +=
+          '<label class="membership-destination" for="transferTarget">کلاس مقصد<select id="transferTarget" required aria-describedby="membershipError"><option value="">کلاس مقصد را انتخاب کنید</option>' +
+          options.join("") +
+          '</select></label><fieldset class="membership-mode"><legend>نوع عملیات</legend><label><input type="radio" name="membershipMode" value="transfer" checked><span><strong>انتقال</strong><small>در مقصد فعال و در مبدأ بایگانی می‌شود.</small></span></label><label><input type="radio" name="membershipMode" value="copy" id="membershipCopy"><span><strong>کپی</strong><small>نسخه‌ای جدا در مقصد ساخته می‌شود؛ مبدأ باقی می‌ماند.</small></span></label></fieldset><p class="membership-note">نمرات و حضور و غیاب قبلی در مبدأ محفوظ می‌مانند و به مقصد منتقل نمی‌شوند.</p>';
+      else
+        body +=
+          '<p class="membership-empty" role="status">کلاس مقصدی وجود ندارد. ابتدا یک کلاس دیگر بسازید، سپس برای انتقال یا کپی برگردید.</p>';
     } else if (action === "archive") {
       body +=
         "<p>هنرجو از فهرست فعال خارج می‌شود؛ نمرات، حضور‌وغیاب و نام او در جلسات گذشته حفظ می‌شوند. بازگردانی از بخش سوابق بایگانی‌شده امکان‌پذیر است.</p>";
@@ -84,20 +98,29 @@ async function openMembership(action, studentId) {
     }
     body +=
       '<p id="membershipError" role="alert"></p><div class="row record-editor-actions"><button type="button" class="ghost" data-workspace-action="close">انصراف</button>';
-    if (action === "transfer")
+    if (hasDestination)
       body +=
-        '<button type="button" class="ghost" data-workspace-action="copy-membership">کپی به مقصد</button>';
-    body +=
-      '<button type="submit">' +
-      (action === "transfer"
-        ? "انتقال به مقصد"
-        : action === "archive"
-          ? "بایگانی هنرجو"
-          : "بازگردانی هنرجو") +
-      "</button></div></form>";
+        '<button type="submit">' +
+        (action === "transfer"
+          ? "انتقال هنرجو"
+          : action === "archive"
+            ? "بایگانی هنرجو"
+            : "بازگردانی هنرجو") +
+        "</button>";
+    body += "</div></form>";
     if (showModal(title, body) !== false) {
       membershipContext = context;
       rememberRecordEditor();
+      if (action === "transfer" && hasDestination) {
+        const form = document.querySelector("#modal .membership-editor");
+        form.addEventListener("change", (event) => {
+          if (event.target.name !== "membershipMode") return;
+          form.querySelector('button[type="submit"]').textContent =
+            form.querySelector("#membershipCopy").checked
+              ? "کپی هنرجو"
+              : "انتقال هنرجو";
+        });
+      }
     }
   } catch (error) {
     handleError(error);
@@ -146,7 +169,10 @@ async function saveMembership(mode = "") {
           "یک کلاس مقصد معتبر انتخاب کنید.",
           "transferTarget",
         );
-      const isCopy = mode === "copy";
+      const isCopy =
+        mode === "copy" ||
+        (mode === "" &&
+          document.getElementById("membershipCopy")?.checked === true);
       if (!isCopy && destination.students.some((x) => x.id === student.id))
         throw recordFieldError(
           "هنرجو در مقصد فعال است؛ انتقال دوباره انجام نمی‌شود.",

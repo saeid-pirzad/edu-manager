@@ -77,6 +77,16 @@ async function assertReportSnapshot(context) {
     throw Error(
       "اطلاعات یکی از نوبت‌های گزارش سالانه تغییر کرده است؛ گزارش را دوباره تهیه کنید.",
     );
+  if (context.karnamehYear) {
+    const periods = selectKarnamehPeriods(catalog, {}, workspace);
+    if (
+      periods.length !== context.members.length ||
+      periods.some(
+        (period) => !context.members.some((member) => member.id === period.id),
+      )
+    )
+      throw Error("نوبت‌های سال تغییر کرده‌اند؛ کارنامه را دوباره تهیه کنید.");
+  }
   if (busy || drafts.size)
     throw Error(
       "اطلاعات هنگام آماده‌سازی خروجی تغییر کرد؛ گزارش را دوباره تهیه کنید.",
@@ -133,7 +143,11 @@ function selectAnnualPeriods(catalog, periodIds, active) {
   }
   return periods;
 }
-async function readAnnualRecordSets(context, periodIds) {
+async function readAnnualRecordSets(
+  context,
+  periodIds,
+  selectPeriods = selectAnnualPeriods,
+) {
   const tx = connection.transaction(["catalog", "records"], "readonly");
   const done = transactionDone(tx);
   let periods;
@@ -146,7 +160,7 @@ async function readAnnualRecordSets(context, periodIds) {
           request.result.find((row) => row.id === context.id),
           context,
         );
-        periods = selectAnnualPeriods(request.result, periodIds, workspace);
+        periods = selectPeriods(request.result, periodIds, workspace);
         // Queue both bounded reads inside the active IDB callback, before
         // awaiting anything. Catalog and records remain one consistent snapshot.
         Promise.all(
@@ -165,6 +179,72 @@ async function readAnnualRecordSets(context, periodIds) {
   const [recordSets] = await Promise.all([pending, done]);
   assertWorkspaceContext(context);
   return { periods, recordSets };
+}
+function selectKarnamehPeriods(catalog, unused, active) {
+  const groups = ["first", "second"].map((kind) =>
+    catalog.filter(
+      (row) =>
+        row.year === active.year &&
+        (row.termKind || academicTermKind(row.term)) === kind,
+    ),
+  );
+  if (groups.some((rows) => rows.length > 1))
+    throw Error(
+      "این سال چند نسخه از یک نوبت دارد؛ مدیریت نوبت‌ها را بررسی کنید.",
+    );
+  const periods = groups.flat();
+  if (!periods.some((period) => period.id === active.id))
+    throw Error("نوع نوبت فعلی برای کارنامهٔ چهارمرحله‌ای مشخص نیست.");
+  return periods;
+}
+async function prepareKarnamehSnapshot() {
+  assertWorkspaceReadable();
+  const origin = workspace.id;
+  await flushDrafts({ strict: true });
+  await writer.catch(() => {});
+  assertWorkspaceReadable();
+  if (workspace.id !== origin)
+    throw Error("نوبت تغییر کرد؛ کارنامه را دوباره انتخاب کنید.");
+  const context = captureWorkspaceContext();
+  const { periods, recordSets } = await readAnnualRecordSets(
+    context,
+    {},
+    selectKarnamehPeriods,
+  );
+  const parts = periods.map((period, index) => ({
+    period: {
+      ...period,
+      term:
+        (period.termKind || academicTermKind(period.term)) === "first"
+          ? "اول"
+          : "دوم",
+    },
+    data: decodeWorkspaceRecords(recordSets[index], { workspaceId: period.id })
+      .data,
+  }));
+  for (const part of parts) {
+    if (part.period.id === origin || !part.data.settings.password) continue;
+    const password = prompt(
+      "برای نمایش نمرات نوبت " +
+        part.period.term +
+        "، رمز همان نوبت را وارد کنید:",
+    );
+    if (
+      password === null ||
+      !(await verifyPassword(password, part.data.settings.password))
+    )
+      throw Error("دسترسی به نوبت دیگر تأیید نشد؛ کارنامه نمایش داده نشد.");
+  }
+  const guarded = {
+    ...context,
+    karnamehYear: workspace.year,
+    members: periods.map((period) => ({
+      id: period.id,
+      revision: period.revision,
+    })),
+  };
+  await assertReportSnapshot(guarded);
+  return { context: guarded, parts };
 }
 function annualSessionCopy(part, session) {
   const classroom = part.data.schools

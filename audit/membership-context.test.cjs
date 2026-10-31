@@ -130,3 +130,71 @@ test("restoring archived membership retains student id and the frozen historical
   assert.equal(f.c.db.sessions[0].roster[0].name, "Historical name");
   assert.equal(f.errors.length, 0);
 });
+
+function transferFixture(copy = false) {
+  const f = fixture();
+  const destination = {
+    id: "destination",
+    name: "Destination",
+    students: [],
+    archivedStudents: [],
+    lessons: [],
+  };
+  f.c.context.action = "transfer";
+  f.c.findClass = (id) => (id === destination.id ? destination : null);
+  f.c.knownStudents = (classroom) => [
+    ...classroom.students,
+    ...classroom.archivedStudents,
+  ];
+  f.c.uid = () => "new-student";
+  f.c.document.getElementById = (id) =>
+    id === "transferTarget" ? { value: destination.id } : { checked: copy };
+  f.c.db.schools = [
+    { id: "school", name: "School", classes: [f.cls, destination] },
+  ];
+  f.c.getSchool = () => f.c.db.schools[0];
+  f.c.esc = String;
+  f.c.handleError = (error) => f.errors.push(error);
+  f.c.showModal = (title, html) => {
+    f.html = html;
+    return true;
+  };
+  f.c.document.querySelector = () => ({
+    closest: () => ({}),
+    addEventListener() {},
+  });
+  return { f, destination };
+}
+test("transfer preview groups destinations and uses one explicit operation selector", async () => {
+  const { f } = transferFixture();
+  await f.c.openMembership("transfer", "student");
+  assert.equal(f.errors.length, 0);
+  assert.match(f.html, /<optgroup label="School">/);
+  assert.match(f.html, /id="membershipCopy"/);
+  assert.match(f.html, /name="membershipMode" value="transfer" checked/);
+  assert.equal((f.html.match(/type="submit"/g) || []).length, 1);
+  assert.doesNotMatch(f.html, /data-workspace-action="copy-membership"/);
+});
+test("transfer preview with no destination hides both operation and submit controls", async () => {
+  const { f } = transferFixture();
+  f.c.db.schools[0].classes = [f.cls];
+  await f.c.openMembership("transfer", "student");
+  assert.match(f.html, /کلاس مقصدی وجود ندارد/);
+  assert.doesNotMatch(
+    f.html,
+    /type="submit"|id="transferTarget"|membershipMode/,
+  );
+});
+for (const copy of [false, true]) {
+  test(`selected ${copy ? "copy" : "transfer"} preserves source history and applies correct identity semantics`, async () => {
+    const { f, destination } = transferFixture(copy);
+    const oldScores = JSON.stringify(f.cls.lessons);
+    await f.c.saveMembership();
+    assert.equal(f.errors.length, 0);
+    assert.equal(destination.students[0].id, copy ? "new-student" : "student");
+    assert.equal(f.cls.students.length, copy ? 1 : 0);
+    assert.equal(JSON.stringify(f.cls.lessons), oldScores);
+    assert.equal(destination.lessons.length, 0);
+    if (!copy) assert.equal(f.c.db.sessions[0].roster[0].id, "student");
+  });
+}

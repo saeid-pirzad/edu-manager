@@ -10,19 +10,31 @@ async function openAssessmentStage(button) {
     throw Error("مرحله ارزشیابی نامعتبر است.");
   const ensureCurrent = preserveAsyncTarget({ classScoped: true });
   const origin = { ...state };
+  const editor = button.closest?.(".assessment-editor")?.dataset;
+  if (editor?.assessmentLesson) origin.lessonId = editor.assessmentLesson;
   await flushDrafts({ strict: true });
   ensureCurrent();
-  if (term !== workspace.term) {
+  const currentKind = workspace.termKind || academicTermKind(workspace.term);
+  const requestedKind = academicTermKind(term);
+  if (requestedKind !== currentKind) {
     const periods = await allFrom("catalog");
     ensureCurrent();
-    const target = periods.find(
-      (p) => p.year === workspace.year && p.term === term,
+    const matches = periods.filter(
+      (p) =>
+        p.year === workspace.year &&
+        (p.termKind || academicTermKind(p.term)) === requestedKind,
     );
+    if (matches.length > 1)
+      throw Error(
+        "برای این سال چند نسخه از نوبت مقصد وجود دارد؛ ابتدا مدیریت نوبت‌ها را بررسی کنید.",
+      );
+    const target = matches[0];
     if (!target) {
-      openNewPeriod();
-      document.getElementById("periodYear").value = workspace.year;
-      document.getElementById("periodTerm").value = term;
-      return;
+      throw Error(
+        "نوبت " +
+          term +
+          " این سال هنوز شروع نشده است. آن را از مدیریت نوبت‌های تحصیلی شروع کنید؛ نوبت جدید از صفحهٔ ثبت نمره ساخته نمی‌شود.",
+      );
     }
     const loaded = await readWorkspace(target.id);
     ensureCurrent();
@@ -35,6 +47,10 @@ async function openAssessmentStage(button) {
         "این درس در نوبت مقصد وجود ندارد؛ ابتدا فهرست دروس آن نوبت را بررسی کنید.",
       );
     await switchPeriod(target.id);
+    if (workspace.id !== target.id)
+      throw Error(
+        "نوبت فعال تغییر کرده است؛ صفحهٔ ثبت نمره را دوباره باز کنید.",
+      );
   }
   assessmentSelectedStage = stage;
   state = { ...origin, view: "lesson", tab: "grades" };
@@ -51,27 +67,45 @@ function buildAssessmentEditor(c, l) {
   const stage = assessmentSelectedStage;
   const stageName = (mid ? "میان‌ترم " : "پایان‌ترم ") + workspace.term;
   const students = getSortedStudents(c);
+  const term =
+    (workspace.termKind || academicTermKind(workspace.term)) === "second"
+      ? "دوم"
+      : "اول";
+  const weights = assessmentWeights(l);
   let html =
-    '<div class="card assessment-editor gradebook"><header class="gradebook-heading"><div><span class="gradebook-eyebrow">دفتر نمره</span><h3>' +
+    '<div class="card assessment-editor gradebook" data-assessment-lesson="' +
+    esc(l.id) +
+    '"><header class="gradebook-heading"><div><span class="gradebook-eyebrow">دفتر نمره</span><h3>' +
     esc(l.name) +
     "</h3><p>" +
     (general ? "درس عمومی · یک نمره از ۲۰" : "کاردانش · عملی و تئوری") +
     '</p></div><span class="gradebook-class-count">' +
     students.length.toLocaleString("fa-IR") +
-    ' دانش‌آموز</span></header><nav class="assessment-navigation" aria-label="چهار مرحله نمرات سال">';
-  for (const term of ["اول", "دوم"])
-    for (const item of ["midterm", "final"])
-      html +=
-        '<button type="button" data-workspace-action="assessment-stage" data-term="' +
-        term +
-        '" data-stage="' +
-        item +
-        '" aria-pressed="' +
-        (workspace.term === term && stage === item) +
-        '">' +
-        (item === "midterm" ? "میان‌ترم " : "پایان‌ترم ") +
-        term +
-        "</button>";
+    ' دانش‌آموز</span></header><nav class="assessment-navigation assessment-term-navigation" aria-label="انتخاب نوبت تحصیلی">';
+  for (const item of ["اول", "دوم"])
+    html +=
+      '<button type="button" data-workspace-action="assessment-stage" data-term="' +
+      item +
+      '" data-stage="' +
+      stage +
+      '" aria-pressed="' +
+      (term === item) +
+      '">نوبت ' +
+      item +
+      "</button>";
+  html +=
+    '</nav><nav class="assessment-navigation assessment-stage-navigation" aria-label="مرحله نمره‌دهی نوبت فعال">';
+  for (const item of ["midterm", "final"])
+    html +=
+      '<button type="button" data-workspace-action="assessment-stage" data-term="' +
+      term +
+      '" data-stage="' +
+      item +
+      '" aria-pressed="' +
+      (stage === item) +
+      '">' +
+      (item === "midterm" ? "میان‌ترم" : "پایان‌ترم") +
+      "</button>";
   html +=
     '</nav><div class="gradebook-simple-search"><input type="search" data-assessment-search="" aria-label="جست‌وجوی دانش‌آموز" placeholder="جست‌وجوی دانش‌آموز…" autocomplete="off"></div>';
   html +=
@@ -99,18 +133,28 @@ function buildAssessmentEditor(c, l) {
       '">' +
       (general
         ? ""
-        : "<label><span>عملی <small>از ۲۰</small></span>" +
+        : '<label><span class="assessment-field-heading"><span>عملی<small class="assessment-field-range">از ۲۰</small></span><small class="assessment-field-weight"><bdi>' +
+          weights.practical.toLocaleString("fa-IR") +
+          "٪</bdi></small></span>" +
           gradeCell(c, l, st, mid ? "midtermPractical" : "practical", {
             value: r.practical,
           }) +
           "</label>") +
-      "<label><span>" +
+      '<label><span class="assessment-field-heading"><span>' +
       (general ? "نمره" : "تئوری") +
-      "<small>از ۲۰</small></span>" +
+      '<small class="assessment-field-range">از ۲۰</small></span>' +
+      (general
+        ? ""
+        : '<small class="assessment-field-weight"><bdi>' +
+          weights.theory.toLocaleString("fa-IR") +
+          "٪</bdi></small>") +
+      "</span>" +
       gradeCell(c, l, st, mid ? "midtermTheory" : "theory", {
         value: r.theory,
       }) +
-      '</label></div><div class="gradebook-result"><span>نتیجه</span><strong data-assessment-final="' +
+      '</label></div><div class="gradebook-result"><span>' +
+      (general ? "نمره ثبت‌شده" : "میانگین وزنی") +
+      '</span><strong data-assessment-final="' +
       esc(st.id) +
       '" data-stage="' +
       stage +

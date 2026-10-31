@@ -98,6 +98,50 @@ function fixture() {
   );
   return { c, catalog, reads, finish, aborted: () => aborted };
 }
+
+test("four-stage karnameh reads only the available terms of the active year and accepts an unstarted second term", async () => {
+  const { c, catalog, reads, finish } = fixture();
+  catalog.splice(1, 1);
+  const context = c.captureWorkspaceContext();
+  const pending = c.readAnnualRecordSets(context, {}, c.selectKarnamehPeriods);
+  finish();
+  const snapshot = await pending;
+  assert.deepEqual(reads, ["first"]);
+  assert.equal(snapshot.periods.length, 1);
+});
+
+test("karnameh term lookup rejects duplicate roles and never treats another year as the missing term", () => {
+  const { c, catalog } = fixture();
+  catalog[1].year = "1406-1407";
+  assert.equal(c.selectKarnamehPeriods(catalog, {}, c.workspace).length, 1);
+  catalog.push({ ...catalog[0], id: "duplicate" });
+  assert.throws(
+    () => c.selectKarnamehPeriods(catalog, {}, c.workspace),
+    /چند نسخه/,
+  );
+});
+
+test("cross-term karnameh never returns protected grades when access is cancelled", async () => {
+  const { c, catalog } = fixture();
+  c.flushDrafts = async () => {};
+  c.writer = Promise.resolve();
+  c.readAnnualRecordSets = async () => ({
+    periods: catalog.slice(0, 2),
+    recordSets: [[], []],
+  });
+  c.decodeWorkspaceRecords = (rows, options) => ({
+    data: {
+      settings: {
+        password: options.workspaceId === "second" ? "protected" : "",
+      },
+    },
+  });
+  c.prompt = () => null;
+  c.verifyPassword = () => {
+    throw Error("Cancelled password must not be checked");
+  };
+  await assert.rejects(c.prepareKarnamehSnapshot(), /دسترسی.*تأیید نشد/);
+});
 test("annual merge retains term-specific lesson metadata and infers legacy rosters from their own term", async () => {
   const { c, catalog } = fixture();
   const makeData = (name, sid, teacher) => ({
@@ -340,6 +384,21 @@ test("automatic label fallback cannot override saved second and summer roles", (
   assert.throws(
     () => c.selectAnnualPeriods(catalog, {}, catalog[0]),
     /مطابقت ندارد/,
+  );
+});
+
+test("karnameh snapshot rejects a newly created second term before printing", async () => {
+  const { c, catalog } = fixture();
+  c.busy = 0;
+  c.allFrom = async () => catalog;
+  await assert.rejects(
+    c.assertReportSnapshot({
+      id: "first",
+      revision: 2,
+      members: [{ id: "first", revision: 2 }],
+      karnamehYear: "1405-1406",
+    }),
+    /نوبت‌های سال تغییر/,
   );
 });
 

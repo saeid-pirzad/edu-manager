@@ -2,6 +2,10 @@
 function installWorkspaceActions() {
   const commands = new Map([
     ["assessment-stage", (button) => openAssessmentStage(button)],
+    [
+      "karnameh-student",
+      (button) => openKarnamehStudent(button.dataset.class, button.dataset.key),
+    ],
     ["switch-period", (button) => switchPeriod(button.dataset.key)],
     ["frozen-report", (button) => showFrozenReport(button.dataset.key)],
     ["adopt-drafts", (button) => adoptDrafts(button.dataset.key)],
@@ -48,7 +52,15 @@ function installWorkspaceActions() {
     ["confirm-undo", () => confirmUndo()],
     ["raw-recovery", () => rawRecoveryV24()],
     ["choose-import", () => document.getElementById("importFile").click()],
-    ["print", (button) => printReport(button)],
+    [
+      "print",
+      (button) =>
+        printReport(button, {
+          context: karnamehSnapshots.get(
+            button.closest(".karnameh-year-document"),
+          ),
+        }),
+    ],
     ["close", () => closeModal()],
     ["reload", () => location.reload()],
   ]);

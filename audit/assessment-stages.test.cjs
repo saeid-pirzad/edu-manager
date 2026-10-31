@@ -19,6 +19,7 @@ function fixture() {
       tab: "grades",
     },
     assertWorkspaceReadable() {},
+    academicTermKind: (term) => ({ اول: "first", دوم: "second" })[term] || null,
     flushDrafts: async () => calls.push("flush"),
     allFrom: async () => [{ id: "second", year: "1405-1406", term: "دوم" }],
     readWorkspace: async () => ({
@@ -67,6 +68,20 @@ test("assessment navigation cannot retarget another class while waiting for draf
   assert.equal(context.workspace.id, "first");
 });
 
+test("assessment modal keeps its own lesson identity when opened outside the lesson page", async () => {
+  const { context } = fixture();
+  context.state.lessonId = null;
+  await context.openAssessmentStage({
+    dataset: { term: "دوم", stage: "final" },
+    closest: (selector) =>
+      selector === ".assessment-editor"
+        ? { dataset: { assessmentLesson: "lesson" } }
+        : null,
+  });
+  assert.equal(context.state.lessonId, "lesson");
+  assert.equal(context.workspace.id, "second");
+});
+
 test("assessment navigation refuses a target term without the same lesson", async () => {
   const { context, calls } = fixture();
   context.readWorkspace = async () => ({ data: { schools: [] } });
@@ -75,6 +90,92 @@ test("assessment navigation refuses a target term without the same lesson", asyn
   );
   assert.deepEqual(calls, ["flush"]);
   assert.equal(context.workspace.id, "first");
+});
+
+test("missing or ambiguous destination terms never open academic creation from grade entry", async () => {
+  for (const rows of [
+    [],
+    [
+      { id: "a", year: "1405-1406", termKind: "second" },
+      { id: "b", year: "1405-1406", termKind: "second" },
+    ],
+  ]) {
+    const { context, calls } = fixture();
+    context.allFrom = async () => rows;
+    context.openNewPeriod = () => {
+      throw Error("must not create a period from grades");
+    };
+    await assert.rejects(
+      context.openAssessmentStage({ dataset: { term: "دوم", stage: "final" } }),
+      /مدیریت نوبت/,
+    );
+    assert.deepEqual(calls, ["flush"]);
+  }
+});
+
+test("assessment routing follows term identity even after the visible title is renamed", async () => {
+  const { context, calls } = fixture();
+  context.workspace.term = "نیمسال پاییز";
+  context.workspace.termKind = "first";
+  context.allFrom = async () => [
+    {
+      id: "second",
+      year: "1405-1406",
+      term: "نیمسال بهار",
+      termKind: "second",
+    },
+  ];
+  await context.openAssessmentStage({
+    dataset: { term: "اول", stage: "final" },
+  });
+  assert.deepEqual(calls, ["flush", "render"]);
+  calls.length = 0;
+  await context.openAssessmentStage({
+    dataset: { term: "دوم", stage: "midterm" },
+  });
+  assert.deepEqual(calls, ["flush", "second", "render"]);
+});
+
+test("configured practical and theory weights are shared by both grade stages", () => {
+  const context = vm.createContext({
+    structuredClone,
+    ownScoreRecord: (records, id) => records?.[id] || {},
+  });
+  vm.runInContext(read("domain/grade-math.js"), context);
+  vm.runInContext(read("domain/grade-policy.js"), context);
+  vm.runInContext(read("workspace/grading/results.js"), context);
+  const lesson = {
+    gradingPolicy: {
+      ...context.EduPolicy.defaults("dual", "1405-1406"),
+      dualConfigurable: true,
+      practicalWeight: 60,
+    },
+    kardaneshScores: {
+      student: {
+        midtermPractical: 10,
+        midtermTheory: 20,
+        practical: 18,
+        theory: 12,
+      },
+    },
+  };
+  assert.equal(context.assessmentWeights(lesson).practical, 60);
+  assert.equal(context.assessmentWeights(lesson).theory, 40);
+  assert.equal(
+    context.assessmentResult(lesson, "student", "midterm").final,
+    14,
+  );
+  assert.equal(
+    context.assessmentResult(lesson, "student", "final").final,
+    15.6,
+  );
+  lesson.kardaneshScores.student.practical = 0;
+  assert.equal(context.assessmentResult(lesson, "student", "final").final, 4.8);
+  delete lesson.kardaneshScores.student.theory;
+  assert.equal(
+    context.assessmentResult(lesson, "student", "final").final,
+    null,
+  );
 });
 
 test("general assessment keeps the two stages separate and missing grades distinct from zero", () => {

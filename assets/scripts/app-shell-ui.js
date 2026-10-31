@@ -171,7 +171,7 @@
       const simple =
         !table.classList.contains("week-table") &&
         head.rows.length === 1 &&
-        headers.length <= 6 &&
+        (headers.length <= 6 || table.dataset.mobileLayout === "cards") &&
         headers.every((c) => c.colSpan === 1) &&
         bodyRows.every(
           (r) =>

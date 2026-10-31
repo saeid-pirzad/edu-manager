@@ -1,3 +1,24 @@
+function openKarnamehStudent(classId, studentId = "") {
+  assertWorkspaceReadable();
+  const found = findClassById(classId);
+  if (
+    !found ||
+    (studentId &&
+      ![
+        ...found.classObj.students,
+        ...(found.classObj.archivedStudents || []),
+      ].some((student) => student.id === studentId))
+  )
+    throw Error(
+      "هنرجو یا کلاس دیگر در دسترس نیست؛ کارنامه را دوباره انتخاب کنید.",
+    );
+  karnamehFilter = { schoolId: found.school.id, classId, studentId };
+  state.view = "reports";
+  state.reportTab = "karnameh";
+  closeModal();
+  render();
+}
+
 function validateFrozenReport(report) {
   return EduFrozenReportValidator.validate(report, {
     assertSafeDataTree,
@@ -6,6 +27,51 @@ function validateFrozenReport(report) {
     weightedKardanesh,
     gradePolicy: EduPolicy,
   });
+}
+
+function frozenLessonRows(lesson) {
+  const dual = lesson.mode === "kardanesh";
+  const stages = dual ? ["midterm", "final"] : ["final"];
+  return stages
+    .map((stage) => {
+      const result = dual
+        ? lesson.assessments?.[stage] || (stage === "final" ? lesson : null)
+        : lesson;
+      const practical = result
+        ? lesson.policy?.subjectType === "general"
+          ? null
+          : dual
+            ? result.practical
+            : lesson.payani
+        : null;
+      const theory = result ? (dual ? result.theory : lesson.mostamar) : null;
+      return (
+        "<tr><td>" +
+        esc(lesson.name) +
+        "</td><td>" +
+        (dual ? (stage === "midterm" ? "میان‌ترم" : "پایان‌ترم") : "—") +
+        "</td><td>" +
+        esc(practical ?? "—") +
+        "</td><td>" +
+        esc(theory ?? "—") +
+        "</td><td>" +
+        (result ? finalText(result) : "—") +
+        "</td><td>" +
+        esc(
+          result
+            ? lesson.policy || dual
+              ? gradeStatus(
+                  stage === "final"
+                    ? { ...result, reason: lesson.reason || result.reason }
+                    : result,
+                )
+              : "ثبت نهایی"
+            : "ثبت نشده در نسخه قدیمی",
+        ) +
+        "</td></tr>"
+      );
+    })
+    .join("");
 }
 
 async function showFrozenReport(id) {
@@ -38,46 +104,8 @@ async function showFrozenReport(id) {
                 (st) =>
                   '<article class="frozen-student"><h4>' +
                   esc(st.name) +
-                  '</h4><div class="table-scroll"><table><thead><tr><th>درس</th><th>عملی / پایانی</th><th>نظری / مستمر</th><th>میان‌ترم</th><th>پایان‌ترم / نتیجه درس</th><th>وضعیت</th></tr></thead><tbody>' +
-                  st.lessons
-                    .map(
-                      (l) =>
-                        "<tr><td>" +
-                        esc(l.name) +
-                        "</td><td>" +
-                        esc(
-                          (l.mode === "kardanesh" ? l.practical : l.payani) ??
-                            "—",
-                        ) +
-                        "</td><td>" +
-                        esc(
-                          (l.mode === "kardanesh" ? l.theory : l.mostamar) ??
-                            "—",
-                        ) +
-                        "</td><td>" +
-                        (l.mode === "kardanesh"
-                          ? l.assessments
-                            ? finalText(l.assessments.midterm) +
-                              (l.policy?.subjectType === "general"
-                                ? ""
-                                : "<small> عملی " +
-                                  esc(l.assessments.midterm.practical) +
-                                  " · تئوری " +
-                                  esc(l.assessments.midterm.theory) +
-                                  "</small>")
-                            : "ثبت نشده در نسخه قدیمی"
-                          : "—") +
-                        "</td><td>" +
-                        finalText(l) +
-                        "</td><td>" +
-                        esc(
-                          l.policy || l.mode === "kardanesh"
-                            ? gradeStatus(l)
-                            : "ثبت نهایی",
-                        ) +
-                        "</td></tr>",
-                    )
-                    .join("") +
+                  '</h4><div class="table-scroll"><table><thead><tr><th>درس</th><th>مرحله</th><th>عملی / پایانی</th><th>نظری / مستمر</th><th>میانگین / نتیجه</th><th>وضعیت</th></tr></thead><tbody>' +
+                  st.lessons.map(frozenLessonRows).join("") +
                   '</tbody></table></div><p class="frozen-average">میانگین نهایی: ' +
                   (Number.isFinite(st.average) ? st.average.toFixed(2) : "—") +
                   "</p></article>",
@@ -135,9 +163,88 @@ function scoreSource(c, l, p, u, sid, field) {
   return x ? "جلسه " + faDate(x.date) + " / زنگ " + (x.period + 1) : "ثبت نشده";
 }
 
-function overviewV24(c) {
+function gradeReportStatus(result, label) {
+  const tone =
+    result.complete === false ||
+    (result.final == null && result.passed !== false)
+      ? "pending"
+      : result.passed === false
+        ? "remedial"
+        : result.passed === true
+          ? "passed"
+          : "complete";
+  return (
+    '<span class="report-grade-status is-' +
+    tone +
+    '">' +
+    esc(label) +
+    "</span>"
+  );
+}
+
+function assessmentOverviewCell(lesson, sid, parts = null, classId = "") {
+  const general = lesson.gradingPolicy?.subjectType === "general";
+  const stages = parts
+    ? ["اول", "دوم"].flatMap((term) =>
+        ["midterm", "final"].map((stage) => ({ term, stage })),
+      )
+    : ["midterm", "final"].map((stage) => ({ term: "", stage }));
+  return (
+    '<div class="report-assessment-stages' +
+    (general ? " report-assessment-general" : "") +
+    '"><div class="report-mobile-score-heading" aria-hidden="true"><span>مرحله</span><div>' +
+    (general ? "" : "<span>عملی</span><span>نظری</span>") +
+    "<span>نتیجه</span></div></div>" +
+    stages
+      .map(({ term, stage }) => {
+        const source = parts
+          ? parts
+              .find((part) => part.period.term === term)
+              ?.data.schools.flatMap((school) => school.classes)
+              .find((classroom) => classroom.id === classId)
+              ?.lessons.find((item) => item.id === lesson.id)
+          : lesson;
+        if (
+          source &&
+          (source.gradingPolicy?.subjectType === "general") !== general
+        )
+          throw Error(
+            "نوع درس «" +
+              lesson.name +
+              "» در دو نوبت سازگار نیست؛ تنظیمات درس را بررسی کنید.",
+          );
+        const result = source
+          ? assessmentResult(source, sid, stage)
+          : { practical: null, theory: null, final: null, complete: false };
+        return (
+          '<div class="report-lesson-stage"><span class="report-stage-title">' +
+          (stage === "midterm" ? "میان‌ترم" : "پایان‌ترم") +
+          (term ? " " + term : "") +
+          '</span><div class="report-stage-values">' +
+          (general
+            ? ""
+            : '<span><span class="report-score-label">عملی</span> <b>' +
+              esc(result.practical ?? "—") +
+              '</b></span><span><span class="report-score-label">نظری</span> <b>' +
+              esc(result.theory ?? "—") +
+              "</b></span>") +
+          '<span><span class="report-score-label">' +
+          (general ? "نمره" : "میانگین") +
+          "</span> <strong>" +
+          finalText(result) +
+          "</strong></span></div></div>"
+        );
+      })
+      .join("") +
+    "</div>"
+  );
+}
+
+function overviewV24(c, options = {}) {
   const lessons = c.lessons || [];
-  const students = getSortedStudents(c);
+  const students = getSortedStudents(
+    options.student ? { students: [options.student] } : c,
+  );
   if (!lessons.length || !students.length)
     return (
       '<div class="card report-empty" role="status"><h3>کارنامه کلاس ' +
@@ -149,40 +256,61 @@ function overviewV24(c) {
       "</p></div>"
     );
   return (
-    '<div class="card report-document grade-report"><h3>کارنامه کلاس ' +
+    '<div class="card report-document grade-report"><header class="karnameh-report-heading"><div><span class="karnameh-report-kind">نمای کلی کلاس</span><h3>کارنامه کلاس ' +
     esc(c.name) +
     "</h3><p>" +
     esc(workspace.year + " / " + workspace.term) +
-    '</p><button class="no-print" data-workspace-action="print">چاپ / PDF</button><div class="table-scroll"><table><thead><tr><th>دانش‌آموز</th>' +
+    '</p></div><button class="no-print" data-workspace-action="print">چاپ / PDF</button></header><div class="karnameh-report-meta"><span>' +
+    students.length.toLocaleString("fa-IR") +
+    " هنرجو</span><span>" +
+    lessons.length.toLocaleString("fa-IR") +
+    " درس</span><span>" +
+    (options.parts
+      ? "۴ مرحلهٔ نمره‌دهی"
+      : workspace.closed
+        ? "نوبت بسته‌شده"
+        : "نمرات ثبت‌شده تا این لحظه") +
+    '</span></div><div class="table-scroll"><table class="grade-report-table karnameh-overview' +
+    (options.parts && lessons.length > 2 ? " karnameh-many-lessons" : "") +
+    '" data-mobile-layout="cards"><thead><tr><th scope="col">دانش‌آموز</th>' +
     lessons.map((l) => "<th>" + esc(l.name) + "</th>").join("") +
-    "<th>میانگین و وضعیت تکمیل</th></tr></thead><tbody>" +
+    "</tr></thead><tbody>" +
     students
       .map((st) => {
-        const results = lessons.map((l) => calcV24(c, l, st.id)),
-          mean = averageLabel(results);
+        const results = lessons.map((l) => calcV24(c, l, st.id));
         return (
-          "<tr><td>" +
+          '<tr><td><button type="button" class="karnameh-student-link no-print" data-workspace-action="karnameh-student" data-class="' +
+          esc(c.id) +
+          '" data-key="' +
+          esc(st.id) +
+          '" aria-label="' +
+          esc("نمایش کارنامهٔ " + st.name) +
+          '">' +
           esc(st.name) +
-          "</td>" +
+          '</button><span class="karnameh-student-print">' +
+          esc(st.name) +
+          "</span></td>" +
           results
-            .map(
-              (r, i) =>
-                "<td>" +
-                finalText(r) +
-                (lessons[i].gradingPolicy ||
-                lessons[i].gradeMode === "kardanesh"
-                  ? " · " + gradeStatus(r)
-                  : r.final === null
-                    ? " · ناقص"
-                    : "") +
-                "</td>",
+            .map((r, i) =>
+              lessons[i].gradeMode === "kardanesh"
+                ? '<td data-report-lesson="' +
+                  esc(lessons[i].name) +
+                  '" class="report-grade-cell report-assessment-cell">' +
+                  assessmentOverviewCell(
+                    lessons[i],
+                    st.id,
+                    options.parts,
+                    c.id,
+                  ) +
+                  "</td>"
+                : '<td data-report-lesson="' +
+                  esc(lessons[i].name) +
+                  '" class="report-grade-cell"><strong>' +
+                  finalText(r) +
+                  "</strong></td>",
             )
             .join("") +
-          "<td>" +
-          (mean.average === null ? "—" : mean.average.toFixed(2)) +
-          "<br>" +
-          esc(mean.label) +
-          "</td></tr>"
+          "</tr>"
         );
       })
       .join("") +
@@ -190,8 +318,88 @@ function overviewV24(c) {
   );
 }
 
+const karnamehSnapshots = new WeakMap();
+let karnamehRenderGeneration = 0;
+async function renderAcademicKarnameh(out, filter) {
+  const generation = ++karnamehRenderGeneration;
+  const origin = captureWorkspaceContext();
+  const current = () =>
+    generation === karnamehRenderGeneration &&
+    out.isConnected &&
+    document.getElementById("karnamehTabOutput") === out &&
+    state.view === "reports" &&
+    state.reportTab === "karnameh" &&
+    workspace.id === origin.id &&
+    karnamehFilter.classId === filter.classId &&
+    karnamehFilter.studentId === filter.studentId;
+  out.innerHTML =
+    '<div class="card" role="status">در حال خواندن نمرات نوبت اول و دوم…</div>';
+  try {
+    const snapshot = await prepareKarnamehSnapshot();
+    if (!current()) return;
+    const active = snapshot.parts.find((part) => part.period.id === origin.id);
+    const school = active.data.schools.find((item) =>
+      item.classes.some((classroom) => classroom.id === filter.classId),
+    );
+    const classroom = school?.classes.find(
+      (item) => item.id === filter.classId,
+    );
+    if (!classroom) throw Error("کلاس در نوبت فعلی موجود نیست.");
+    const lessons = new Map(
+      classroom.lessons.map((lesson) => [lesson.id, lesson]),
+    );
+    for (const part of snapshot.parts)
+      for (const lesson of part.data.schools
+        .find((item) => item.id === school.id)
+        ?.classes.find((item) => item.id === classroom.id)?.lessons || [])
+        if (lesson.gradeMode === "kardanesh" && !lessons.has(lesson.id))
+          lessons.set(lesson.id, lesson);
+    const merged = { ...classroom, lessons: [...lessons.values()] };
+    const student = filter.studentId
+      ? knownStudents(classroom).find((item) => item.id === filter.studentId)
+      : null;
+    if (filter.studentId && !student)
+      throw Error("هنرجو در کلاس انتخاب‌شده موجود نیست.");
+    out.innerHTML = overviewV24(merged, { parts: snapshot.parts, student });
+    const report = out.querySelector(".report-document");
+    if (report) {
+      report.classList.add("karnameh-year-document");
+      const heading = report.querySelector(".karnameh-report-heading");
+      heading.querySelector("h3").textContent = student
+        ? "کارنامه " + student.name
+        : "کارنامه کلاس " + classroom.name;
+      if (student) {
+        const title = document.createElement("h2");
+        title.textContent = heading.querySelector("h3").textContent;
+        heading.querySelector("h3").replaceWith(title);
+        const actions = document.createElement("div");
+        actions.className = "karnameh-report-actions no-print";
+        const back = document.createElement("button");
+        back.type = "button";
+        back.className = "ghost";
+        back.dataset.workspaceAction = "karnameh-student";
+        back.dataset.class = classroom.id;
+        back.dataset.key = "";
+        back.textContent = "نمای کلی کلاس";
+        actions.append(back, heading.querySelector("button"));
+        heading.append(actions);
+      }
+      heading.querySelector("p").textContent =
+        school.name + " · " + workspace.year + " · نوبت اول و دوم";
+      karnamehSnapshots.set(report, snapshot.context);
+    }
+  } catch (error) {
+    if (current())
+      out.innerHTML =
+        '<div class="card report-empty" role="alert"><p>' +
+        esc(error.message) +
+        "</p></div>";
+  }
+}
+
 function termAssessmentReport(c, lesson, sid = "") {
   const general = lesson.gradingPolicy?.subjectType === "general";
+  const weights = assessmentWeights(lesson);
   const students = getSortedStudents(
     sid ? { students: knownStudents(c) } : c,
   ).filter((st) => !sid || st.id === sid);
@@ -201,16 +409,24 @@ function termAssessmentReport(c, lesson, sid = "") {
     '</h3><p class="report-term-label">نوبت ' +
     esc(workspace.term) +
     " · " +
-    (general ? "عمومی · نمره از ۲۰" : "کاردانش · عملی و نظری از ۲۰") +
+    (general
+      ? "عمومی · نمره از ۲۰"
+      : "عملی " +
+        weights.practical.toLocaleString("fa-IR") +
+        "٪ · نظری " +
+        weights.theory.toLocaleString("fa-IR") +
+        "٪ · نتیجهٔ وزنی از ۲۰") +
     "</p>";
   if (!students.length)
     return (
       html + '<div class="empty">دانش‌آموزی برای نمایش نیست.</div></section>'
     );
   html +=
-    '<div class="table-scroll"><table><thead><tr><th scope="col">دانش‌آموز</th><th scope="col">مرحله</th>' +
+    '<div class="table-scroll"><table class="grade-report-table"><thead><tr><th scope="col">دانش‌آموز</th><th scope="col">مرحله</th>' +
     (general ? "" : '<th scope="col">عملی</th><th scope="col">نظری</th>') +
-    '<th scope="col">نمره</th><th scope="col">وضعیت</th></tr></thead><tbody>';
+    '<th scope="col">' +
+    (general ? "نمره" : "میانگین وزنی") +
+    '</th><th scope="col">وضعیت</th></tr></thead><tbody>';
   for (const st of students)
     for (const stage of ["midterm", "final"]) {
       const r = assessmentResult(lesson, st.id, stage);
@@ -230,7 +446,7 @@ function termAssessmentReport(c, lesson, sid = "") {
         "<td><strong>" +
         finalText(r) +
         "</strong></td><td>" +
-        esc(gradeStatus(r)) +
+        gradeReportStatus(r, gradeStatus(r)) +
         "</td></tr>";
     }
   return html + "</tbody></table></div></section>";
@@ -249,7 +465,7 @@ function detailedV24(c, sid) {
       "</h3><p>هنوز درسی برای این کلاس ثبت نشده است.</p></div>"
     );
   let html =
-    '<div class="card report-document grade-report"><h2>کارنامه ' +
+    '<div class="card report-document grade-report"><header class="karnameh-report-heading"><div><span class="karnameh-report-kind">کارنامه هنرجو</span><h2>کارنامه ' +
     esc(st.name) +
     "</h2><p>کلاس " +
     esc(c.name) +
@@ -257,7 +473,9 @@ function detailedV24(c, sid) {
     esc(workspace.year + " / " + workspace.term) +
     " | " +
     (workspace.closed ? "دوره بسته" : "گزارش در حال کار") +
-    '</p><button class="no-print" data-workspace-action="print">چاپ / PDF</button><div class="table-scroll"><table><thead><tr><th>درس</th><th>عملی / پایانی</th><th>تئوری / مستمر</th><th>نهایی</th><th>وضعیت</th><th>حاضر / غایب / تأخیر / مرخصی</th></tr></thead><tbody>' +
+    '</p></div><div class="karnameh-report-actions no-print"><button type="button" class="ghost" data-workspace-action="karnameh-student" data-class="' +
+    esc(c.id) +
+    '" data-key="">نمای کلی کلاس</button><button data-workspace-action="print">چاپ / PDF</button></div></header><div class="table-scroll"><table class="grade-report-table karnameh-individual"><thead><tr><th>درس</th><th>عملی / پایانی</th><th>تئوری / مستمر</th><th>نتیجه پایان‌ترم / درس</th><th>وضعیت</th><th>حضور و غیاب</th></tr></thead><tbody>' +
     lessons
       .map((l, i) => {
         const r = stats[i];
@@ -265,26 +483,29 @@ function detailedV24(c, sid) {
           "<tr><td>" +
           esc(l.name) +
           "</td><td>" +
-          (r.avgP ?? "—") +
+          ((l.gradeMode === "kardanesh" ? r.practical : r.avgP) ?? "—") +
           "</td><td>" +
-          (r.avgM ?? "—") +
-          "</td><td>" +
+          ((l.gradeMode === "kardanesh" ? r.theory : r.avgM) ?? "—") +
+          '</td><td class="report-final-cell"><strong>' +
           finalText(r) +
-          "</td><td>" +
-          (l.gradingPolicy || l.gradeMode === "kardanesh"
-            ? gradeStatus(r)
-            : r.final === null
-              ? "ناقص"
-              : "تکمیل") +
-          "</td><td>" +
+          "</strong></td><td>" +
+          gradeReportStatus(
+            r,
+            l.gradingPolicy || l.gradeMode === "kardanesh"
+              ? gradeStatus(r)
+              : r.final === null
+                ? "ناقص"
+                : "تکمیل",
+          ) +
+          '</td><td><div class="report-attendance-counts"><span class="is-present">حاضر <b>' +
           ((r.att.present || 0) + (r.att.late || 0)) +
-          " / " +
+          '</b></span><span class="is-absent">غایب <b>' +
           r.att.absent +
-          " / " +
+          '</b></span><span class="is-late">تأخیر <b>' +
           r.att.late +
-          " / " +
+          '</b></span><span class="is-leave">مرخصی <b>' +
           (r.att.leave || 0) +
-          "</td></tr>"
+          "</b></span></div></td></tr>"
         );
       })
       .join("") +

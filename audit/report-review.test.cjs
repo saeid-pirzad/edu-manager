@@ -18,6 +18,7 @@ function fixture() {
     esc: (v) => String(v),
     getSortedStudents: (c) => c.students,
     knownStudents: (c) => c.students,
+    assessmentWeights: () => ({ practical: 70, theory: 30 }),
     getStudentObj: (c, id) => c.students.find((s) => s.id === id),
     assessmentResult: (l, sid, stage) =>
       stage === "midterm"
@@ -51,12 +52,126 @@ test("general report shows one grade per stage and no vocational component colum
   assert.match(html, /<strong>0\.00<\/strong>/);
   assert.match(html, /نوبت اول/);
 });
+test("grade status styling distinguishes missing, failed and passed scores without treating zero as missing", () => {
+  const { context } = fixture();
+  assert.match(
+    context.gradeReportStatus(
+      { final: 0, complete: true, passed: false },
+      "جبران",
+    ),
+    /is-remedial/,
+  );
+  assert.match(
+    context.gradeReportStatus({ final: null, complete: false }, "ناقص"),
+    /is-pending/,
+  );
+  assert.match(
+    context.gradeReportStatus(
+      { final: 18, complete: true, passed: true },
+      "قبول",
+    ),
+    /is-passed/,
+  );
+  assert.match(
+    context.gradeReportStatus({ final: 18, complete: true }, "ثبت شده"),
+    /is-complete/,
+  );
+});
+
 test("empty class report does not display a misleading average or empty grade grid", () => {
   const { context, c } = fixture();
   assert.match(context.overviewV24(c), /ابتدا دروس کلاس/);
   c.students = [];
   assert.match(context.overviewV24(c), /هنوز دانش‌آموزی/);
   assert.doesNotMatch(context.overviewV24(c), /<table|میانگین/);
+});
+
+test("year report adapts to variable lesson counts without dropping lesson cells", () => {
+  const { context, c } = fixture();
+  context.calcV24 = () => ({ final: null, complete: false });
+  for (const count of [1, 2, 3, 6, 15, 30]) {
+    c.lessons = Array.from({ length: count }, (_, i) => ({
+      id: "lesson-" + i,
+      name: "درس " + i,
+      gradeMode: "kardanesh",
+    }));
+    const html = context.overviewV24(c, { parts: [] });
+    assert.equal((html.match(/data-report-lesson=/g) || []).length, count);
+    assert.equal(
+      (html.match(/class="report-lesson-stage"/g) || []).length,
+      count * 4,
+    );
+    assert.equal(html.includes("karnameh-many-lessons"), count > 2);
+    assert.doesNotMatch(html, /report-average-cell/);
+    assert.doesNotMatch(html, /report-grade-status|نیازمند جبران|قبول/);
+  }
+  c.lessons = [];
+  assert.doesNotMatch(context.overviewV24(c, { parts: [] }), /<table/);
+});
+
+test("individual vocational report shows actual practical and theory fields, not modular averages", () => {
+  const { context, c } = fixture();
+  c.lessons = [{ id: "dual", name: "مهارت", gradeMode: "kardanesh" }];
+  context.calcV24 = () => ({
+    practical: 18,
+    theory: 12,
+    avgP: null,
+    avgM: null,
+    final: 15.6,
+    complete: true,
+    passed: true,
+    att: {},
+  });
+  const html = context.detailedV24(c, "s");
+  assert.match(html, /<td>18<\/td><td>12<\/td>/);
+  assert.match(html, /15\.60/);
+  assert.match(html, /میان‌ترم/);
+  assert.match(html, /پایان‌ترم/);
+});
+
+test("class and frozen reports preserve practical, theory and weighted result for each stage", () => {
+  const { context } = fixture();
+  const html = context.assessmentOverviewCell({ gradeMode: "kardanesh" }, "s");
+  assert.equal((html.match(/report-lesson-stage/g) || []).length, 2);
+  assert.match(html, /عملی/);
+  assert.match(html, /نظری/);
+  assert.match(html, /میانگین/);
+  const lesson = {
+    name: "درس",
+    mode: "kardanesh",
+    assessments: {
+      midterm: { practical: 10, theory: 20, final: 14, complete: true },
+      final: { practical: 18, theory: 12, final: 15.6, complete: true },
+    },
+  };
+  const frozen = context.frozenLessonRows(lesson);
+  assert.match(frozen, /میان‌ترم<\/td><td>10<\/td><td>20<\/td><td>14\.00/);
+  assert.match(frozen, /پایان‌ترم<\/td><td>18<\/td><td>12<\/td><td>15\.60/);
+});
+
+test("student report navigation validates membership and supports returning to the same class", () => {
+  const { context, c } = fixture();
+  c.archivedStudents = [{ id: "archived", name: "بایگانی" }];
+  const school = { id: "school" };
+  context.assertWorkspaceReadable = () => {};
+  context.findClassById = (id) =>
+    id === c.id ? { school, classObj: c } : null;
+  context.state = {};
+  context.closeModal = () => {};
+  let renders = 0;
+  context.render = () => renders++;
+  context.openKarnamehStudent(c.id, "archived");
+  assert.equal(context.karnamehFilter.studentId, "archived");
+  assert.equal(context.state.reportTab, "karnameh");
+  assert.throws(
+    () => context.openKarnamehStudent(c.id, "foreign"),
+    /در دسترس نیست/,
+  );
+  assert.equal(context.karnamehFilter.studentId, "archived");
+  context.openKarnamehStudent(c.id);
+  assert.equal(context.karnamehFilter.studentId, "");
+  assert.equal(context.karnamehFilter.classId, c.id);
+  assert.equal(renders, 2);
 });
 test("choosing a lesson without a class resolves its school and class", () => {
   const context = vm.createContext({

@@ -17,6 +17,14 @@ function calcV24(c, l, sid, source = db) {
   return r;
 }
 
+function assessmentWeights(lesson) {
+  const practical =
+    lesson.gradingPolicy?.method === "dual"
+      ? EduPolicy.dualSettings(lesson.gradingPolicy).practicalWeight
+      : 70;
+  return { practical, theory: 100 - practical };
+}
+
 function assessmentResult(lesson, sid, stage = "final") {
   if (!["midterm", "final"].includes(stage))
     throw Error("مرحله ارزشیابی نامعتبر است.");

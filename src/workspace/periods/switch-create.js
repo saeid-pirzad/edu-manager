@@ -249,7 +249,10 @@ async function confirmDeletePeriod() {
           cursor.onsuccess = () => {
             const entry = cursor.result;
             if (!entry) return;
-            if (entry.value.workspace === preview.id) {
+            if (
+              entry.value.workspace === preview.id ||
+              (name === "undo" && entry.value.id === preview.id)
+            ) {
               if (name === "backups")
                 entry.update({
                   ...entry.value,

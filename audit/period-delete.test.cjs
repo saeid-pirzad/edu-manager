@@ -194,7 +194,7 @@ for (const failure of [false, true]) {
               openCursor() {
                 const request = {};
                 const entries = [
-                  { workspace: "second" },
+                  name === "undo" ? { id: "second" } : { workspace: "second" },
                   { workspace: "first" },
                   { workspace: null },
                 ];
@@ -205,7 +205,10 @@ for (const failure of [false, true]) {
                     ? {
                         value,
                         delete() {
-                          queued.push({ name, owner: value.workspace });
+                          queued.push({
+                            name,
+                            owner: value.workspace || value.id,
+                          });
                         },
                         update(updated) {
                           queued.push({ name, updated });
@@ -245,6 +248,11 @@ for (const failure of [false, true]) {
       );
       assert.ok(
         !queued.some((entry) => entry.name === "backups" && entry.owner),
+      );
+      assert.ok(
+        queued.some(
+          (entry) => entry.name === "undo" && entry.owner === "second",
+        ),
       );
       assert.ok(
         queued.some(

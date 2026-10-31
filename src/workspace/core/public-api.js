@@ -110,6 +110,7 @@ function installRuntimeAPI() {
       authenticated: !db.settings.password || isAuthenticated,
     }),
     prepareReportSnapshot,
+    renderAcademicKarnameh,
     listAnnualReportPeriods,
     assessmentResult,
     annualGradeRows,

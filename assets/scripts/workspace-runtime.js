@@ -1512,6 +1512,14 @@ function calcV24(c, l, sid, source = db) {
   return r;
 }
 
+function assessmentWeights(lesson) {
+  const practical =
+    lesson.gradingPolicy?.method === "dual"
+      ? EduPolicy.dualSettings(lesson.gradingPolicy).practicalWeight
+      : 70;
+  return { practical, theory: 100 - practical };
+}
+
 function assessmentResult(lesson, sid, stage = "final") {
   if (!["midterm", "final"].includes(stage))
     throw Error("مرحله ارزشیابی نامعتبر است.");
@@ -1707,19 +1715,31 @@ async function openAssessmentStage(button) {
     throw Error("مرحله ارزشیابی نامعتبر است.");
   const ensureCurrent = preserveAsyncTarget({ classScoped: true });
   const origin = { ...state };
+  const editor = button.closest?.(".assessment-editor")?.dataset;
+  if (editor?.assessmentLesson) origin.lessonId = editor.assessmentLesson;
   await flushDrafts({ strict: true });
   ensureCurrent();
-  if (term !== workspace.term) {
+  const currentKind = workspace.termKind || academicTermKind(workspace.term);
+  const requestedKind = academicTermKind(term);
+  if (requestedKind !== currentKind) {
     const periods = await allFrom("catalog");
     ensureCurrent();
-    const target = periods.find(
-      (p) => p.year === workspace.year && p.term === term,
+    const matches = periods.filter(
+      (p) =>
+        p.year === workspace.year &&
+        (p.termKind || academicTermKind(p.term)) === requestedKind,
     );
+    if (matches.length > 1)
+      throw Error(
+        "برای این سال چند نسخه از نوبت مقصد وجود دارد؛ ابتدا مدیریت نوبت‌ها را بررسی کنید.",
+      );
+    const target = matches[0];
     if (!target) {
-      openNewPeriod();
-      document.getElementById("periodYear").value = workspace.year;
-      document.getElementById("periodTerm").value = term;
-      return;
+      throw Error(
+        "نوبت " +
+          term +
+          " این سال هنوز شروع نشده است. آن را از مدیریت نوبت‌های تحصیلی شروع کنید؛ نوبت جدید از صفحهٔ ثبت نمره ساخته نمی‌شود.",
+      );
     }
     const loaded = await readWorkspace(target.id);
     ensureCurrent();
@@ -1732,6 +1752,10 @@ async function openAssessmentStage(button) {
         "این درس در نوبت مقصد وجود ندارد؛ ابتدا فهرست دروس آن نوبت را بررسی کنید.",
       );
     await switchPeriod(target.id);
+    if (workspace.id !== target.id)
+      throw Error(
+        "نوبت فعال تغییر کرده است؛ صفحهٔ ثبت نمره را دوباره باز کنید.",
+      );
   }
   assessmentSelectedStage = stage;
   state = { ...origin, view: "lesson", tab: "grades" };
@@ -1748,27 +1772,45 @@ function buildAssessmentEditor(c, l) {
   const stage = assessmentSelectedStage;
   const stageName = (mid ? "میان‌ترم " : "پایان‌ترم ") + workspace.term;
   const students = getSortedStudents(c);
+  const term =
+    (workspace.termKind || academicTermKind(workspace.term)) === "second"
+      ? "دوم"
+      : "اول";
+  const weights = assessmentWeights(l);
   let html =
-    '<div class="card assessment-editor gradebook"><header class="gradebook-heading"><div><span class="gradebook-eyebrow">دفتر نمره</span><h3>' +
+    '<div class="card assessment-editor gradebook" data-assessment-lesson="' +
+    esc(l.id) +
+    '"><header class="gradebook-heading"><div><span class="gradebook-eyebrow">دفتر نمره</span><h3>' +
     esc(l.name) +
     "</h3><p>" +
     (general ? "درس عمومی · یک نمره از ۲۰" : "کاردانش · عملی و تئوری") +
     '</p></div><span class="gradebook-class-count">' +
     students.length.toLocaleString("fa-IR") +
-    ' دانش‌آموز</span></header><nav class="assessment-navigation" aria-label="چهار مرحله نمرات سال">';
-  for (const term of ["اول", "دوم"])
-    for (const item of ["midterm", "final"])
-      html +=
-        '<button type="button" data-workspace-action="assessment-stage" data-term="' +
-        term +
-        '" data-stage="' +
-        item +
-        '" aria-pressed="' +
-        (workspace.term === term && stage === item) +
-        '">' +
-        (item === "midterm" ? "میان‌ترم " : "پایان‌ترم ") +
-        term +
-        "</button>";
+    ' دانش‌آموز</span></header><nav class="assessment-navigation assessment-term-navigation" aria-label="انتخاب نوبت تحصیلی">';
+  for (const item of ["اول", "دوم"])
+    html +=
+      '<button type="button" data-workspace-action="assessment-stage" data-term="' +
+      item +
+      '" data-stage="' +
+      stage +
+      '" aria-pressed="' +
+      (term === item) +
+      '">نوبت ' +
+      item +
+      "</button>";
+  html +=
+    '</nav><nav class="assessment-navigation assessment-stage-navigation" aria-label="مرحله نمره‌دهی نوبت فعال">';
+  for (const item of ["midterm", "final"])
+    html +=
+      '<button type="button" data-workspace-action="assessment-stage" data-term="' +
+      term +
+      '" data-stage="' +
+      item +
+      '" aria-pressed="' +
+      (stage === item) +
+      '">' +
+      (item === "midterm" ? "میان‌ترم" : "پایان‌ترم") +
+      "</button>";
   html +=
     '</nav><div class="gradebook-simple-search"><input type="search" data-assessment-search="" aria-label="جست‌وجوی دانش‌آموز" placeholder="جست‌وجوی دانش‌آموز…" autocomplete="off"></div>';
   html +=
@@ -1796,18 +1838,28 @@ function buildAssessmentEditor(c, l) {
       '">' +
       (general
         ? ""
-        : "<label><span>عملی <small>از ۲۰</small></span>" +
+        : '<label><span class="assessment-field-heading"><span>عملی<small class="assessment-field-range">از ۲۰</small></span><small class="assessment-field-weight"><bdi>' +
+          weights.practical.toLocaleString("fa-IR") +
+          "٪</bdi></small></span>" +
           gradeCell(c, l, st, mid ? "midtermPractical" : "practical", {
             value: r.practical,
           }) +
           "</label>") +
-      "<label><span>" +
+      '<label><span class="assessment-field-heading"><span>' +
       (general ? "نمره" : "تئوری") +
-      "<small>از ۲۰</small></span>" +
+      '<small class="assessment-field-range">از ۲۰</small></span>' +
+      (general
+        ? ""
+        : '<small class="assessment-field-weight"><bdi>' +
+          weights.theory.toLocaleString("fa-IR") +
+          "٪</bdi></small>") +
+      "</span>" +
       gradeCell(c, l, st, mid ? "midtermTheory" : "theory", {
         value: r.theory,
       }) +
-      '</label></div><div class="gradebook-result"><span>نتیجه</span><strong data-assessment-final="' +
+      '</label></div><div class="gradebook-result"><span>' +
+      (general ? "نمره ثبت‌شده" : "میانگین وزنی") +
+      '</span><strong data-assessment-final="' +
       esc(st.id) +
       '" data-stage="' +
       stage +
@@ -4668,7 +4720,10 @@ async function confirmDeletePeriod() {
           cursor.onsuccess = () => {
             const entry = cursor.result;
             if (!entry) return;
-            if (entry.value.workspace === preview.id) {
+            if (
+              entry.value.workspace === preview.id ||
+              (name === "undo" && entry.value.id === preview.id)
+            ) {
               if (name === "backups")
                 entry.update({
                   ...entry.value,
@@ -5262,6 +5317,27 @@ async function reopenPeriod() {
   render();
 }
 // Source: src/workspace/reports/student.js
+function openKarnamehStudent(classId, studentId = "") {
+  assertWorkspaceReadable();
+  const found = findClassById(classId);
+  if (
+    !found ||
+    (studentId &&
+      ![
+        ...found.classObj.students,
+        ...(found.classObj.archivedStudents || []),
+      ].some((student) => student.id === studentId))
+  )
+    throw Error(
+      "هنرجو یا کلاس دیگر در دسترس نیست؛ کارنامه را دوباره انتخاب کنید.",
+    );
+  karnamehFilter = { schoolId: found.school.id, classId, studentId };
+  state.view = "reports";
+  state.reportTab = "karnameh";
+  closeModal();
+  render();
+}
+
 function validateFrozenReport(report) {
   return EduFrozenReportValidator.validate(report, {
     assertSafeDataTree,
@@ -5270,6 +5346,51 @@ function validateFrozenReport(report) {
     weightedKardanesh,
     gradePolicy: EduPolicy,
   });
+}
+
+function frozenLessonRows(lesson) {
+  const dual = lesson.mode === "kardanesh";
+  const stages = dual ? ["midterm", "final"] : ["final"];
+  return stages
+    .map((stage) => {
+      const result = dual
+        ? lesson.assessments?.[stage] || (stage === "final" ? lesson : null)
+        : lesson;
+      const practical = result
+        ? lesson.policy?.subjectType === "general"
+          ? null
+          : dual
+            ? result.practical
+            : lesson.payani
+        : null;
+      const theory = result ? (dual ? result.theory : lesson.mostamar) : null;
+      return (
+        "<tr><td>" +
+        esc(lesson.name) +
+        "</td><td>" +
+        (dual ? (stage === "midterm" ? "میان‌ترم" : "پایان‌ترم") : "—") +
+        "</td><td>" +
+        esc(practical ?? "—") +
+        "</td><td>" +
+        esc(theory ?? "—") +
+        "</td><td>" +
+        (result ? finalText(result) : "—") +
+        "</td><td>" +
+        esc(
+          result
+            ? lesson.policy || dual
+              ? gradeStatus(
+                  stage === "final"
+                    ? { ...result, reason: lesson.reason || result.reason }
+                    : result,
+                )
+              : "ثبت نهایی"
+            : "ثبت نشده در نسخه قدیمی",
+        ) +
+        "</td></tr>"
+      );
+    })
+    .join("");
 }
 
 async function showFrozenReport(id) {
@@ -5302,46 +5423,8 @@ async function showFrozenReport(id) {
                 (st) =>
                   '<article class="frozen-student"><h4>' +
                   esc(st.name) +
-                  '</h4><div class="table-scroll"><table><thead><tr><th>درس</th><th>عملی / پایانی</th><th>نظری / مستمر</th><th>میان‌ترم</th><th>پایان‌ترم / نتیجه درس</th><th>وضعیت</th></tr></thead><tbody>' +
-                  st.lessons
-                    .map(
-                      (l) =>
-                        "<tr><td>" +
-                        esc(l.name) +
-                        "</td><td>" +
-                        esc(
-                          (l.mode === "kardanesh" ? l.practical : l.payani) ??
-                            "—",
-                        ) +
-                        "</td><td>" +
-                        esc(
-                          (l.mode === "kardanesh" ? l.theory : l.mostamar) ??
-                            "—",
-                        ) +
-                        "</td><td>" +
-                        (l.mode === "kardanesh"
-                          ? l.assessments
-                            ? finalText(l.assessments.midterm) +
-                              (l.policy?.subjectType === "general"
-                                ? ""
-                                : "<small> عملی " +
-                                  esc(l.assessments.midterm.practical) +
-                                  " · تئوری " +
-                                  esc(l.assessments.midterm.theory) +
-                                  "</small>")
-                            : "ثبت نشده در نسخه قدیمی"
-                          : "—") +
-                        "</td><td>" +
-                        finalText(l) +
-                        "</td><td>" +
-                        esc(
-                          l.policy || l.mode === "kardanesh"
-                            ? gradeStatus(l)
-                            : "ثبت نهایی",
-                        ) +
-                        "</td></tr>",
-                    )
-                    .join("") +
+                  '</h4><div class="table-scroll"><table><thead><tr><th>درس</th><th>مرحله</th><th>عملی / پایانی</th><th>نظری / مستمر</th><th>میانگین / نتیجه</th><th>وضعیت</th></tr></thead><tbody>' +
+                  st.lessons.map(frozenLessonRows).join("") +
                   '</tbody></table></div><p class="frozen-average">میانگین نهایی: ' +
                   (Number.isFinite(st.average) ? st.average.toFixed(2) : "—") +
                   "</p></article>",
@@ -5399,9 +5482,88 @@ function scoreSource(c, l, p, u, sid, field) {
   return x ? "جلسه " + faDate(x.date) + " / زنگ " + (x.period + 1) : "ثبت نشده";
 }
 
-function overviewV24(c) {
+function gradeReportStatus(result, label) {
+  const tone =
+    result.complete === false ||
+    (result.final == null && result.passed !== false)
+      ? "pending"
+      : result.passed === false
+        ? "remedial"
+        : result.passed === true
+          ? "passed"
+          : "complete";
+  return (
+    '<span class="report-grade-status is-' +
+    tone +
+    '">' +
+    esc(label) +
+    "</span>"
+  );
+}
+
+function assessmentOverviewCell(lesson, sid, parts = null, classId = "") {
+  const general = lesson.gradingPolicy?.subjectType === "general";
+  const stages = parts
+    ? ["اول", "دوم"].flatMap((term) =>
+        ["midterm", "final"].map((stage) => ({ term, stage })),
+      )
+    : ["midterm", "final"].map((stage) => ({ term: "", stage }));
+  return (
+    '<div class="report-assessment-stages' +
+    (general ? " report-assessment-general" : "") +
+    '"><div class="report-mobile-score-heading" aria-hidden="true"><span>مرحله</span><div>' +
+    (general ? "" : "<span>عملی</span><span>نظری</span>") +
+    "<span>نتیجه</span></div></div>" +
+    stages
+      .map(({ term, stage }) => {
+        const source = parts
+          ? parts
+              .find((part) => part.period.term === term)
+              ?.data.schools.flatMap((school) => school.classes)
+              .find((classroom) => classroom.id === classId)
+              ?.lessons.find((item) => item.id === lesson.id)
+          : lesson;
+        if (
+          source &&
+          (source.gradingPolicy?.subjectType === "general") !== general
+        )
+          throw Error(
+            "نوع درس «" +
+              lesson.name +
+              "» در دو نوبت سازگار نیست؛ تنظیمات درس را بررسی کنید.",
+          );
+        const result = source
+          ? assessmentResult(source, sid, stage)
+          : { practical: null, theory: null, final: null, complete: false };
+        return (
+          '<div class="report-lesson-stage"><span class="report-stage-title">' +
+          (stage === "midterm" ? "میان‌ترم" : "پایان‌ترم") +
+          (term ? " " + term : "") +
+          '</span><div class="report-stage-values">' +
+          (general
+            ? ""
+            : '<span><span class="report-score-label">عملی</span> <b>' +
+              esc(result.practical ?? "—") +
+              '</b></span><span><span class="report-score-label">نظری</span> <b>' +
+              esc(result.theory ?? "—") +
+              "</b></span>") +
+          '<span><span class="report-score-label">' +
+          (general ? "نمره" : "میانگین") +
+          "</span> <strong>" +
+          finalText(result) +
+          "</strong></span></div></div>"
+        );
+      })
+      .join("") +
+    "</div>"
+  );
+}
+
+function overviewV24(c, options = {}) {
   const lessons = c.lessons || [];
-  const students = getSortedStudents(c);
+  const students = getSortedStudents(
+    options.student ? { students: [options.student] } : c,
+  );
   if (!lessons.length || !students.length)
     return (
       '<div class="card report-empty" role="status"><h3>کارنامه کلاس ' +
@@ -5413,40 +5575,61 @@ function overviewV24(c) {
       "</p></div>"
     );
   return (
-    '<div class="card report-document grade-report"><h3>کارنامه کلاس ' +
+    '<div class="card report-document grade-report"><header class="karnameh-report-heading"><div><span class="karnameh-report-kind">نمای کلی کلاس</span><h3>کارنامه کلاس ' +
     esc(c.name) +
     "</h3><p>" +
     esc(workspace.year + " / " + workspace.term) +
-    '</p><button class="no-print" data-workspace-action="print">چاپ / PDF</button><div class="table-scroll"><table><thead><tr><th>دانش‌آموز</th>' +
+    '</p></div><button class="no-print" data-workspace-action="print">چاپ / PDF</button></header><div class="karnameh-report-meta"><span>' +
+    students.length.toLocaleString("fa-IR") +
+    " هنرجو</span><span>" +
+    lessons.length.toLocaleString("fa-IR") +
+    " درس</span><span>" +
+    (options.parts
+      ? "۴ مرحلهٔ نمره‌دهی"
+      : workspace.closed
+        ? "نوبت بسته‌شده"
+        : "نمرات ثبت‌شده تا این لحظه") +
+    '</span></div><div class="table-scroll"><table class="grade-report-table karnameh-overview' +
+    (options.parts && lessons.length > 2 ? " karnameh-many-lessons" : "") +
+    '" data-mobile-layout="cards"><thead><tr><th scope="col">دانش‌آموز</th>' +
     lessons.map((l) => "<th>" + esc(l.name) + "</th>").join("") +
-    "<th>میانگین و وضعیت تکمیل</th></tr></thead><tbody>" +
+    "</tr></thead><tbody>" +
     students
       .map((st) => {
-        const results = lessons.map((l) => calcV24(c, l, st.id)),
-          mean = averageLabel(results);
+        const results = lessons.map((l) => calcV24(c, l, st.id));
         return (
-          "<tr><td>" +
+          '<tr><td><button type="button" class="karnameh-student-link no-print" data-workspace-action="karnameh-student" data-class="' +
+          esc(c.id) +
+          '" data-key="' +
+          esc(st.id) +
+          '" aria-label="' +
+          esc("نمایش کارنامهٔ " + st.name) +
+          '">' +
           esc(st.name) +
-          "</td>" +
+          '</button><span class="karnameh-student-print">' +
+          esc(st.name) +
+          "</span></td>" +
           results
-            .map(
-              (r, i) =>
-                "<td>" +
-                finalText(r) +
-                (lessons[i].gradingPolicy ||
-                lessons[i].gradeMode === "kardanesh"
-                  ? " · " + gradeStatus(r)
-                  : r.final === null
-                    ? " · ناقص"
-                    : "") +
-                "</td>",
+            .map((r, i) =>
+              lessons[i].gradeMode === "kardanesh"
+                ? '<td data-report-lesson="' +
+                  esc(lessons[i].name) +
+                  '" class="report-grade-cell report-assessment-cell">' +
+                  assessmentOverviewCell(
+                    lessons[i],
+                    st.id,
+                    options.parts,
+                    c.id,
+                  ) +
+                  "</td>"
+                : '<td data-report-lesson="' +
+                  esc(lessons[i].name) +
+                  '" class="report-grade-cell"><strong>' +
+                  finalText(r) +
+                  "</strong></td>",
             )
             .join("") +
-          "<td>" +
-          (mean.average === null ? "—" : mean.average.toFixed(2)) +
-          "<br>" +
-          esc(mean.label) +
-          "</td></tr>"
+          "</tr>"
         );
       })
       .join("") +
@@ -5454,8 +5637,88 @@ function overviewV24(c) {
   );
 }
 
+const karnamehSnapshots = new WeakMap();
+let karnamehRenderGeneration = 0;
+async function renderAcademicKarnameh(out, filter) {
+  const generation = ++karnamehRenderGeneration;
+  const origin = captureWorkspaceContext();
+  const current = () =>
+    generation === karnamehRenderGeneration &&
+    out.isConnected &&
+    document.getElementById("karnamehTabOutput") === out &&
+    state.view === "reports" &&
+    state.reportTab === "karnameh" &&
+    workspace.id === origin.id &&
+    karnamehFilter.classId === filter.classId &&
+    karnamehFilter.studentId === filter.studentId;
+  out.innerHTML =
+    '<div class="card" role="status">در حال خواندن نمرات نوبت اول و دوم…</div>';
+  try {
+    const snapshot = await prepareKarnamehSnapshot();
+    if (!current()) return;
+    const active = snapshot.parts.find((part) => part.period.id === origin.id);
+    const school = active.data.schools.find((item) =>
+      item.classes.some((classroom) => classroom.id === filter.classId),
+    );
+    const classroom = school?.classes.find(
+      (item) => item.id === filter.classId,
+    );
+    if (!classroom) throw Error("کلاس در نوبت فعلی موجود نیست.");
+    const lessons = new Map(
+      classroom.lessons.map((lesson) => [lesson.id, lesson]),
+    );
+    for (const part of snapshot.parts)
+      for (const lesson of part.data.schools
+        .find((item) => item.id === school.id)
+        ?.classes.find((item) => item.id === classroom.id)?.lessons || [])
+        if (lesson.gradeMode === "kardanesh" && !lessons.has(lesson.id))
+          lessons.set(lesson.id, lesson);
+    const merged = { ...classroom, lessons: [...lessons.values()] };
+    const student = filter.studentId
+      ? knownStudents(classroom).find((item) => item.id === filter.studentId)
+      : null;
+    if (filter.studentId && !student)
+      throw Error("هنرجو در کلاس انتخاب‌شده موجود نیست.");
+    out.innerHTML = overviewV24(merged, { parts: snapshot.parts, student });
+    const report = out.querySelector(".report-document");
+    if (report) {
+      report.classList.add("karnameh-year-document");
+      const heading = report.querySelector(".karnameh-report-heading");
+      heading.querySelector("h3").textContent = student
+        ? "کارنامه " + student.name
+        : "کارنامه کلاس " + classroom.name;
+      if (student) {
+        const title = document.createElement("h2");
+        title.textContent = heading.querySelector("h3").textContent;
+        heading.querySelector("h3").replaceWith(title);
+        const actions = document.createElement("div");
+        actions.className = "karnameh-report-actions no-print";
+        const back = document.createElement("button");
+        back.type = "button";
+        back.className = "ghost";
+        back.dataset.workspaceAction = "karnameh-student";
+        back.dataset.class = classroom.id;
+        back.dataset.key = "";
+        back.textContent = "نمای کلی کلاس";
+        actions.append(back, heading.querySelector("button"));
+        heading.append(actions);
+      }
+      heading.querySelector("p").textContent =
+        school.name + " · " + workspace.year + " · نوبت اول و دوم";
+      karnamehSnapshots.set(report, snapshot.context);
+    }
+  } catch (error) {
+    if (current())
+      out.innerHTML =
+        '<div class="card report-empty" role="alert"><p>' +
+        esc(error.message) +
+        "</p></div>";
+  }
+}
+
 function termAssessmentReport(c, lesson, sid = "") {
   const general = lesson.gradingPolicy?.subjectType === "general";
+  const weights = assessmentWeights(lesson);
   const students = getSortedStudents(
     sid ? { students: knownStudents(c) } : c,
   ).filter((st) => !sid || st.id === sid);
@@ -5465,16 +5728,24 @@ function termAssessmentReport(c, lesson, sid = "") {
     '</h3><p class="report-term-label">نوبت ' +
     esc(workspace.term) +
     " · " +
-    (general ? "عمومی · نمره از ۲۰" : "کاردانش · عملی و نظری از ۲۰") +
+    (general
+      ? "عمومی · نمره از ۲۰"
+      : "عملی " +
+        weights.practical.toLocaleString("fa-IR") +
+        "٪ · نظری " +
+        weights.theory.toLocaleString("fa-IR") +
+        "٪ · نتیجهٔ وزنی از ۲۰") +
     "</p>";
   if (!students.length)
     return (
       html + '<div class="empty">دانش‌آموزی برای نمایش نیست.</div></section>'
     );
   html +=
-    '<div class="table-scroll"><table><thead><tr><th scope="col">دانش‌آموز</th><th scope="col">مرحله</th>' +
+    '<div class="table-scroll"><table class="grade-report-table"><thead><tr><th scope="col">دانش‌آموز</th><th scope="col">مرحله</th>' +
     (general ? "" : '<th scope="col">عملی</th><th scope="col">نظری</th>') +
-    '<th scope="col">نمره</th><th scope="col">وضعیت</th></tr></thead><tbody>';
+    '<th scope="col">' +
+    (general ? "نمره" : "میانگین وزنی") +
+    '</th><th scope="col">وضعیت</th></tr></thead><tbody>';
   for (const st of students)
     for (const stage of ["midterm", "final"]) {
       const r = assessmentResult(lesson, st.id, stage);
@@ -5494,7 +5765,7 @@ function termAssessmentReport(c, lesson, sid = "") {
         "<td><strong>" +
         finalText(r) +
         "</strong></td><td>" +
-        esc(gradeStatus(r)) +
+        gradeReportStatus(r, gradeStatus(r)) +
         "</td></tr>";
     }
   return html + "</tbody></table></div></section>";
@@ -5513,7 +5784,7 @@ function detailedV24(c, sid) {
       "</h3><p>هنوز درسی برای این کلاس ثبت نشده است.</p></div>"
     );
   let html =
-    '<div class="card report-document grade-report"><h2>کارنامه ' +
+    '<div class="card report-document grade-report"><header class="karnameh-report-heading"><div><span class="karnameh-report-kind">کارنامه هنرجو</span><h2>کارنامه ' +
     esc(st.name) +
     "</h2><p>کلاس " +
     esc(c.name) +
@@ -5521,7 +5792,9 @@ function detailedV24(c, sid) {
     esc(workspace.year + " / " + workspace.term) +
     " | " +
     (workspace.closed ? "دوره بسته" : "گزارش در حال کار") +
-    '</p><button class="no-print" data-workspace-action="print">چاپ / PDF</button><div class="table-scroll"><table><thead><tr><th>درس</th><th>عملی / پایانی</th><th>تئوری / مستمر</th><th>نهایی</th><th>وضعیت</th><th>حاضر / غایب / تأخیر / مرخصی</th></tr></thead><tbody>' +
+    '</p></div><div class="karnameh-report-actions no-print"><button type="button" class="ghost" data-workspace-action="karnameh-student" data-class="' +
+    esc(c.id) +
+    '" data-key="">نمای کلی کلاس</button><button data-workspace-action="print">چاپ / PDF</button></div></header><div class="table-scroll"><table class="grade-report-table karnameh-individual"><thead><tr><th>درس</th><th>عملی / پایانی</th><th>تئوری / مستمر</th><th>نتیجه پایان‌ترم / درس</th><th>وضعیت</th><th>حضور و غیاب</th></tr></thead><tbody>' +
     lessons
       .map((l, i) => {
         const r = stats[i];
@@ -5529,26 +5802,29 @@ function detailedV24(c, sid) {
           "<tr><td>" +
           esc(l.name) +
           "</td><td>" +
-          (r.avgP ?? "—") +
+          ((l.gradeMode === "kardanesh" ? r.practical : r.avgP) ?? "—") +
           "</td><td>" +
-          (r.avgM ?? "—") +
-          "</td><td>" +
+          ((l.gradeMode === "kardanesh" ? r.theory : r.avgM) ?? "—") +
+          '</td><td class="report-final-cell"><strong>' +
           finalText(r) +
-          "</td><td>" +
-          (l.gradingPolicy || l.gradeMode === "kardanesh"
-            ? gradeStatus(r)
-            : r.final === null
-              ? "ناقص"
-              : "تکمیل") +
-          "</td><td>" +
+          "</strong></td><td>" +
+          gradeReportStatus(
+            r,
+            l.gradingPolicy || l.gradeMode === "kardanesh"
+              ? gradeStatus(r)
+              : r.final === null
+                ? "ناقص"
+                : "تکمیل",
+          ) +
+          '</td><td><div class="report-attendance-counts"><span class="is-present">حاضر <b>' +
           ((r.att.present || 0) + (r.att.late || 0)) +
-          " / " +
+          '</b></span><span class="is-absent">غایب <b>' +
           r.att.absent +
-          " / " +
+          '</b></span><span class="is-late">تأخیر <b>' +
           r.att.late +
-          " / " +
+          '</b></span><span class="is-leave">مرخصی <b>' +
           (r.att.leave || 0) +
-          "</td></tr>"
+          "</b></span></div></td></tr>"
         );
       })
       .join("") +
@@ -6709,6 +6985,10 @@ async function loginV24(e) {
 function installWorkspaceActions() {
   const commands = new Map([
     ["assessment-stage", (button) => openAssessmentStage(button)],
+    [
+      "karnameh-student",
+      (button) => openKarnamehStudent(button.dataset.class, button.dataset.key),
+    ],
     ["switch-period", (button) => switchPeriod(button.dataset.key)],
     ["frozen-report", (button) => showFrozenReport(button.dataset.key)],
     ["adopt-drafts", (button) => adoptDrafts(button.dataset.key)],
@@ -6755,7 +7035,15 @@ function installWorkspaceActions() {
     ["confirm-undo", () => confirmUndo()],
     ["raw-recovery", () => rawRecoveryV24()],
     ["choose-import", () => document.getElementById("importFile").click()],
-    ["print", (button) => printReport(button)],
+    [
+      "print",
+      (button) =>
+        printReport(button, {
+          context: karnamehSnapshots.get(
+            button.closest(".karnameh-year-document"),
+          ),
+        }),
+    ],
     ["close", () => closeModal()],
     ["reload", () => location.reload()],
   ]);
@@ -6966,6 +7254,16 @@ async function assertReportSnapshot(context) {
     throw Error(
       "اطلاعات یکی از نوبت‌های گزارش سالانه تغییر کرده است؛ گزارش را دوباره تهیه کنید.",
     );
+  if (context.karnamehYear) {
+    const periods = selectKarnamehPeriods(catalog, {}, workspace);
+    if (
+      periods.length !== context.members.length ||
+      periods.some(
+        (period) => !context.members.some((member) => member.id === period.id),
+      )
+    )
+      throw Error("نوبت‌های سال تغییر کرده‌اند؛ کارنامه را دوباره تهیه کنید.");
+  }
   if (busy || drafts.size)
     throw Error(
       "اطلاعات هنگام آماده‌سازی خروجی تغییر کرد؛ گزارش را دوباره تهیه کنید.",
@@ -7022,7 +7320,11 @@ function selectAnnualPeriods(catalog, periodIds, active) {
   }
   return periods;
 }
-async function readAnnualRecordSets(context, periodIds) {
+async function readAnnualRecordSets(
+  context,
+  periodIds,
+  selectPeriods = selectAnnualPeriods,
+) {
   const tx = connection.transaction(["catalog", "records"], "readonly");
   const done = transactionDone(tx);
   let periods;
@@ -7035,7 +7337,7 @@ async function readAnnualRecordSets(context, periodIds) {
           request.result.find((row) => row.id === context.id),
           context,
         );
-        periods = selectAnnualPeriods(request.result, periodIds, workspace);
+        periods = selectPeriods(request.result, periodIds, workspace);
         // Queue both bounded reads inside the active IDB callback, before
         // awaiting anything. Catalog and records remain one consistent snapshot.
         Promise.all(
@@ -7054,6 +7356,72 @@ async function readAnnualRecordSets(context, periodIds) {
   const [recordSets] = await Promise.all([pending, done]);
   assertWorkspaceContext(context);
   return { periods, recordSets };
+}
+function selectKarnamehPeriods(catalog, unused, active) {
+  const groups = ["first", "second"].map((kind) =>
+    catalog.filter(
+      (row) =>
+        row.year === active.year &&
+        (row.termKind || academicTermKind(row.term)) === kind,
+    ),
+  );
+  if (groups.some((rows) => rows.length > 1))
+    throw Error(
+      "این سال چند نسخه از یک نوبت دارد؛ مدیریت نوبت‌ها را بررسی کنید.",
+    );
+  const periods = groups.flat();
+  if (!periods.some((period) => period.id === active.id))
+    throw Error("نوع نوبت فعلی برای کارنامهٔ چهارمرحله‌ای مشخص نیست.");
+  return periods;
+}
+async function prepareKarnamehSnapshot() {
+  assertWorkspaceReadable();
+  const origin = workspace.id;
+  await flushDrafts({ strict: true });
+  await writer.catch(() => {});
+  assertWorkspaceReadable();
+  if (workspace.id !== origin)
+    throw Error("نوبت تغییر کرد؛ کارنامه را دوباره انتخاب کنید.");
+  const context = captureWorkspaceContext();
+  const { periods, recordSets } = await readAnnualRecordSets(
+    context,
+    {},
+    selectKarnamehPeriods,
+  );
+  const parts = periods.map((period, index) => ({
+    period: {
+      ...period,
+      term:
+        (period.termKind || academicTermKind(period.term)) === "first"
+          ? "اول"
+          : "دوم",
+    },
+    data: decodeWorkspaceRecords(recordSets[index], { workspaceId: period.id })
+      .data,
+  }));
+  for (const part of parts) {
+    if (part.period.id === origin || !part.data.settings.password) continue;
+    const password = prompt(
+      "برای نمایش نمرات نوبت " +
+        part.period.term +
+        "، رمز همان نوبت را وارد کنید:",
+    );
+    if (
+      password === null ||
+      !(await verifyPassword(password, part.data.settings.password))
+    )
+      throw Error("دسترسی به نوبت دیگر تأیید نشد؛ کارنامه نمایش داده نشد.");
+  }
+  const guarded = {
+    ...context,
+    karnamehYear: workspace.year,
+    members: periods.map((period) => ({
+      id: period.id,
+      revision: period.revision,
+    })),
+  };
+  await assertReportSnapshot(guarded);
+  return { context: guarded, parts };
 }
 function annualSessionCopy(part, session) {
   const classroom = part.data.schools
@@ -7532,31 +7900,45 @@ async function openMembership(action, studentId) {
         )
         .map((cl) => s.name + " / " + cl.name),
     );
+    let hasDestination = true;
     let body =
-      '<form class="record-editor" data-workspace-submit="save-membership"><div class="record-editor-context"><h4>' +
+      '<form class="record-editor membership-editor" data-workspace-submit="save-membership"><div class="record-editor-context"><span>هنرجو و کلاس مبدأ</span><h4>' +
       esc(student.name) +
       "</h4><p>" +
       esc(getSchool(origin.schoolId).name + " / " + c.name) +
       "</p></div>";
     if (action === "transfer") {
-      const options = db.schools.flatMap((s) =>
-        s.classes
-          .filter((cl) => cl.id !== c.id)
-          .map(
-            (cl) =>
-              '<option value="' +
-              esc(cl.id) +
-              '">' +
-              esc(s.name + " / " + cl.name) +
-              "</option>",
-          ),
-      );
-      body +=
-        '<label for="transferTarget">کلاس مقصد</label><select id="transferTarget"><option value="">کلاس مقصد را انتخاب کنید</option>' +
-        options.join("") +
-        "</select><p>انتقال: عضویت فعال در مبدأ بایگانی می‌شود و شناسه هنرجو در مقصد حفظ می‌شود. کپی: هنرجویی با شناسه جدید در مقصد ساخته می‌شود و مبدأ فعال می‌ماند.</p><p>نمرات و جلسات مبدأ به مقصد منتقل نمی‌شوند. اگر همین هنرجو قبلاً در مقصد بوده، انتقال دوباره، عضویت او را با حفظ سوابق قبلی مقصد فعال می‌کند.</p>";
-      if (!options.length)
-        body += "<p>کلاس دیگری وجود ندارد؛ ابتدا کلاس مقصد را تعریف کنید.</p>";
+      const options = db.schools
+        .map((school) => {
+          const classes = school.classes.filter((cl) => cl.id !== c.id);
+          if (!classes.length) return "";
+          return (
+            '<optgroup label="' +
+            esc(school.name) +
+            '">' +
+            classes
+              .map(
+                (cl) =>
+                  '<option value="' +
+                  esc(cl.id) +
+                  '">' +
+                  esc(cl.name) +
+                  "</option>",
+              )
+              .join("") +
+            "</optgroup>"
+          );
+        })
+        .filter(Boolean);
+      hasDestination = options.length > 0;
+      if (hasDestination)
+        body +=
+          '<label class="membership-destination" for="transferTarget">کلاس مقصد<select id="transferTarget" required aria-describedby="membershipError"><option value="">کلاس مقصد را انتخاب کنید</option>' +
+          options.join("") +
+          '</select></label><fieldset class="membership-mode"><legend>نوع عملیات</legend><label><input type="radio" name="membershipMode" value="transfer" checked><span><strong>انتقال</strong><small>در مقصد فعال و در مبدأ بایگانی می‌شود.</small></span></label><label><input type="radio" name="membershipMode" value="copy" id="membershipCopy"><span><strong>کپی</strong><small>نسخه‌ای جدا در مقصد ساخته می‌شود؛ مبدأ باقی می‌ماند.</small></span></label></fieldset><p class="membership-note">نمرات و حضور و غیاب قبلی در مبدأ محفوظ می‌مانند و به مقصد منتقل نمی‌شوند.</p>';
+      else
+        body +=
+          '<p class="membership-empty" role="status">کلاس مقصدی وجود ندارد. ابتدا یک کلاس دیگر بسازید، سپس برای انتقال یا کپی برگردید.</p>';
     } else if (action === "archive") {
       body +=
         "<p>هنرجو از فهرست فعال خارج می‌شود؛ نمرات، حضور‌وغیاب و نام او در جلسات گذشته حفظ می‌شوند. بازگردانی از بخش سوابق بایگانی‌شده امکان‌پذیر است.</p>";
@@ -7571,20 +7953,29 @@ async function openMembership(action, studentId) {
     }
     body +=
       '<p id="membershipError" role="alert"></p><div class="row record-editor-actions"><button type="button" class="ghost" data-workspace-action="close">انصراف</button>';
-    if (action === "transfer")
+    if (hasDestination)
       body +=
-        '<button type="button" class="ghost" data-workspace-action="copy-membership">کپی به مقصد</button>';
-    body +=
-      '<button type="submit">' +
-      (action === "transfer"
-        ? "انتقال به مقصد"
-        : action === "archive"
-          ? "بایگانی هنرجو"
-          : "بازگردانی هنرجو") +
-      "</button></div></form>";
+        '<button type="submit">' +
+        (action === "transfer"
+          ? "انتقال هنرجو"
+          : action === "archive"
+            ? "بایگانی هنرجو"
+            : "بازگردانی هنرجو") +
+        "</button>";
+    body += "</div></form>";
     if (showModal(title, body) !== false) {
       membershipContext = context;
       rememberRecordEditor();
+      if (action === "transfer" && hasDestination) {
+        const form = document.querySelector("#modal .membership-editor");
+        form.addEventListener("change", (event) => {
+          if (event.target.name !== "membershipMode") return;
+          form.querySelector('button[type="submit"]').textContent =
+            form.querySelector("#membershipCopy").checked
+              ? "کپی هنرجو"
+              : "انتقال هنرجو";
+        });
+      }
     }
   } catch (error) {
     handleError(error);
@@ -7633,7 +8024,10 @@ async function saveMembership(mode = "") {
           "یک کلاس مقصد معتبر انتخاب کنید.",
           "transferTarget",
         );
-      const isCopy = mode === "copy";
+      const isCopy =
+        mode === "copy" ||
+        (mode === "" &&
+          document.getElementById("membershipCopy")?.checked === true);
       if (!isCopy && destination.students.some((x) => x.id === student.id))
         throw recordFieldError(
           "هنرجو در مقصد فعال است؛ انتقال دوباره انجام نمی‌شود.",
@@ -8014,6 +8408,7 @@ function installRuntimeAPI() {
       authenticated: !db.settings.password || isAuthenticated,
     }),
     prepareReportSnapshot,
+    renderAcademicKarnameh,
     listAnnualReportPeriods,
     assessmentResult,
     annualGradeRows,

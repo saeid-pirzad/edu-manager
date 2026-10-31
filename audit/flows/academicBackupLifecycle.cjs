@@ -185,6 +185,36 @@ module.exports = async function academicBackupLifecycle() {
         grades[0].complete &&
         Math.abs(grades[0].final - (firstGrade + 20) / 2) < 1e-8,
     );
+    goReports();
+    setReportTab("karnameh");
+    updateKarnamehFilter("schoolId", school.id);
+    updateKarnamehFilter("classId", classroom.id);
+    updateKarnamehFilter("studentId", student.id);
+    for (
+      let attempt = 0;
+      attempt < 200 &&
+      document.querySelectorAll(
+        ".karnameh-year-document .report-stage-values strong",
+      ).length !== 4;
+      attempt++
+    )
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    const displayed = [
+      ...document.querySelectorAll(
+        ".karnameh-year-document .report-stage-values strong",
+      ),
+    ].map((element) => element.textContent);
+    check(
+      "ACADEMIC10",
+      "karnameh displays distinct weighted grades from both original terms without an overall-average column",
+      displayed.length === 4 &&
+        displayed[0] === firstGrade.toFixed(2) &&
+        displayed[1] === firstGrade.toFixed(2) &&
+        displayed[2] === "20.00" &&
+        displayed[3] === "20.00" &&
+        !document.querySelector(".karnameh-year-document .report-average-cell"),
+      { displayed },
+    );
   } catch (error) {
     check("ACADEMIC99", "academic-year and backup lifecycle completed", false, {
       error: error.stack || error.message,

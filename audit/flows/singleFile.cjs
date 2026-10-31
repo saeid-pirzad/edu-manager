@@ -152,7 +152,9 @@ module.exports = async function singleFile() {
           manualDownloads === 0,
         observed: {},
       });
-      fallback.querySelector('[data-workspace-action="export-full"]').click();
+      document
+        .querySelector('.backup-manual [data-workspace-action="export-full"]')
+        .click();
       await waitFor(() => manualDownloads === 1);
       cases.push({
         id: "SF07",

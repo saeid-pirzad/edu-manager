@@ -5210,3 +5210,771 @@
     color: #fff;
   }
 }
+@media screen {
+  #modal:has(.membership-editor) .modal-dialog {
+    width: min(100%, 520px);
+  }
+  #modalBody .membership-editor {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    min-width: 0;
+  }
+  .membership-editor .record-editor-context {
+    padding: 14px;
+    border: 1px solid #e8e0d3;
+    border-radius: 12px;
+    background: #faf6ee;
+  }
+  .membership-editor .record-editor-context h4 {
+    color: #79522c;
+  }
+  .membership-editor .membership-destination {
+    display: grid;
+    gap: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0;
+  }
+  .membership-editor #transferTarget {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    margin: 0;
+    font-size: 16px;
+    border: 1px solid #ded8ce;
+    border-radius: 9px;
+    background: #fff;
+  }
+  .membership-editor .membership-mode {
+    display: grid;
+    gap: 8px;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  .membership-mode legend {
+    padding: 0 0 8px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .membership-editor .membership-mode label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    min-width: 0;
+    padding: 12px;
+    margin: 0;
+    border: 1px solid #e5e0d7;
+    border-radius: 10px;
+    background: #faf9f7;
+    cursor: pointer;
+  }
+  .membership-mode label:has(input:checked) {
+    border-color: #c6ac85;
+    background: #faf4e9;
+  }
+  .membership-mode label:focus-within {
+    outline: 2px solid #79522c;
+    outline-offset: 2px;
+  }
+  .membership-editor .membership-mode input {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 auto;
+    margin: 3px 0 0;
+    accent-color: #79522c;
+  }
+  .membership-mode label > span {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+  }
+  .membership-mode strong {
+    font-size: 13px;
+    color: #65503b;
+  }
+  .membership-mode small {
+    font-size: 12px;
+    color: #81796e;
+    line-height: 1.8;
+  }
+  .membership-editor :is(.membership-note, .membership-empty) {
+    margin: 0;
+    color: #81715b;
+    font-size: 12px;
+    line-height: 1.9;
+  }
+  .membership-editor .record-editor-actions {
+    position: static;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    gap: 8px;
+    margin: 0;
+    padding: 12px 0 0;
+    border-top: 1px solid #eeebe5;
+  }
+  .membership-editor .record-editor-actions button {
+    min-width: 0;
+    min-height: 44px;
+    margin: 0;
+    white-space: normal;
+    border-radius: 9px;
+    font-size: 13px;
+  }
+  .membership-editor .record-editor-actions button[type="submit"] {
+    background: #79522c;
+    color: #fff;
+    border: 1px solid #79522c;
+  }
+  .membership-editor .record-editor-actions > button:only-child {
+    grid-column: 1 / -1;
+  }
+}
+@media screen {
+  #app .karnameh-controls {
+    padding: 18px;
+    border: 1px solid #e5e0d7;
+    border-radius: 13px;
+    background: #fff;
+  }
+  .karnameh-controls h3 {
+    margin: 0;
+    font-size: 17px;
+    color: #65503b;
+  }
+  .karnameh-controls header p {
+    margin: 6px 0 16px;
+    color: #81796e;
+    font-size: 12px;
+  }
+  .karnameh-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .karnameh-filter-grid label {
+    display: grid;
+    gap: 7px;
+    min-width: 0;
+    margin: 0;
+    font-size: 13px;
+    color: #655d52;
+  }
+  .karnameh-filter-grid select {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    margin: 0;
+    font-size: 16px;
+    border: 1px solid #ded8ce;
+    border-radius: 9px;
+    background: #faf9f7;
+  }
+  .karnameh-filter-grid select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .karnameh-report-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .karnameh-report-heading > div {
+    min-width: 0;
+  }
+  .karnameh-report-heading :is(h2, h3) {
+    margin: 5px 0;
+    font-size: 19px;
+    overflow-wrap: anywhere;
+  }
+  .karnameh-report-heading p {
+    margin: 0;
+    color: #81796e;
+    font-size: 12px;
+    line-height: 1.9;
+  }
+  .karnameh-report-kind {
+    color: #79522c;
+    font-size: 12px;
+  }
+  .karnameh-report-heading button {
+    flex: 0 0 auto;
+    min-height: 44px;
+    margin: 0;
+    border-radius: 9px;
+    background: #79522c;
+    color: #fff;
+  }
+  .karnameh-report-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .karnameh-report-meta span {
+    padding: 5px 10px;
+    border-radius: 8px;
+    background: #faf6ee;
+    color: #79522c;
+    font-size: 12px;
+  }
+}
+@media screen and (max-width: 700px) {
+  .karnameh-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .karnameh-filter-grid > label:last-child {
+    grid-column: 1 / -1;
+  }
+}
+@media screen and (max-width: 400px) {
+  .karnameh-filter-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .karnameh-report-heading {
+    align-items: flex-start;
+  }
+  .karnameh-report-heading :is(h2, h3) {
+    font-size: 16px;
+  }
+}
+@media screen {
+  #app .grade-report .table-scroll {
+    margin-block: 14px;
+    border-color: #e5e0d7;
+    border-radius: 12px;
+  }
+  #app .grade-report .grade-report-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  #app .grade-report .grade-report-table :is(th, td) {
+    text-align: center;
+    vertical-align: middle;
+    line-height: 1.8;
+  }
+  #app .grade-report .grade-report-table th {
+    padding: 12px;
+    background: #f5f0e7;
+    color: #73583b;
+    border-bottom: 1px solid #ded4c4;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  #app .grade-report .grade-report-table td {
+    padding: 14px 12px;
+    border-bottom: 1px solid #eee9e1;
+    font-size: 13px;
+  }
+  #app .grade-report .grade-report-table tbody tr:nth-child(even) td {
+    background: #fcfaf6;
+  }
+  #app .grade-report .grade-report-table tbody tr:hover td {
+    background: #faf4e9;
+  }
+  #app .grade-report .grade-report-table :is(th, td):first-child {
+    text-align: start;
+    min-width: 130px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+  #app .grade-report .karnameh-overview th:not(:first-child) {
+    min-width: 115px;
+    max-width: 190px;
+  }
+  .report-grade-cell > strong,
+  .report-average-cell > strong,
+  .report-final-cell > strong {
+    display: block;
+    font-size: 16px;
+    color: #493c2d;
+    font-variant-numeric: tabular-nums;
+  }
+  .report-average-cell small {
+    display: block;
+    margin-top: 6px;
+    color: #81796e;
+    font-size: 11px;
+    line-height: 1.8;
+  }
+  .report-grade-status {
+    display: inline-block;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin-block: 4px;
+    padding: 3px 9px;
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.8;
+    overflow-wrap: anywhere;
+  }
+  .report-grade-status.is-passed {
+    color: #2d6650;
+    background: #eaf4ed;
+  }
+  .report-grade-status.is-remedial {
+    color: #a34638;
+    background: #fbece7;
+  }
+  .report-grade-status.is-pending {
+    color: #8a6529;
+    background: #fff3d9;
+  }
+  .report-grade-status.is-complete {
+    color: #655d52;
+    background: #f2eee6;
+  }
+  .report-attendance-counts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+    min-width: 150px;
+    font-size: 11px;
+  }
+  .report-attendance-counts span {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 4px 7px;
+    border-radius: 6px;
+  }
+  .report-attendance-counts .is-present {
+    color: #2d6650;
+    background: #eaf4ed;
+  }
+  .report-attendance-counts .is-absent {
+    color: #a34638;
+    background: #fbece7;
+  }
+  .report-attendance-counts .is-late {
+    color: #8a6529;
+    background: #fff3d9;
+  }
+  .report-attendance-counts .is-leave {
+    color: #77598b;
+    background: #f2ecf7;
+  }
+}
+@media screen and (max-width: 700px),
+  screen and (max-width: 1000px) and (pointer: coarse) {
+  #app .grade-report table.grade-report-table[data-ui-layout="cards"] tbody tr {
+    padding: 14px;
+    gap: 12px;
+    border-color: #e5e0d7;
+    border-radius: 12px;
+    box-shadow: none;
+  }
+  #app
+    .grade-report
+    .grade-report-table[data-ui-layout="cards"]
+    td[data-identity] {
+    color: #65503b;
+    font-size: 14px;
+    border-bottom-color: #eee9e1 !important;
+  }
+  #app .grade-report .grade-report-table[data-ui-layout="cards"] td::before {
+    color: #81796e;
+    font-size: 11px;
+  }
+  #app
+    .grade-report
+    .grade-report-table[data-ui-layout="cards"]
+    .report-average-cell {
+    grid-column: 1 / -1;
+  }
+  #app
+    .grade-report
+    .karnameh-individual[data-ui-layout="cards"]
+    td:last-child {
+    grid-column: 1 / -1;
+  }
+  .report-attendance-counts {
+    min-width: 0;
+  }
+}
+@media print {
+  .grade-report-table .report-grade-status {
+    display: block;
+    font-size: 9pt;
+  }
+  .grade-report-table .report-attendance-counts span {
+    display: inline-block;
+    margin-inline-end: 8px;
+  }
+  .grade-report-table .report-average-cell small {
+    display: block;
+  }
+}
+@media screen {
+  .gradebook .assessment-term-navigation {
+    margin-bottom: 8px;
+    background: #faf6ee;
+  }
+  .gradebook .assessment-stage-navigation {
+    margin-bottom: 18px;
+  }
+  .grade-report-table .report-lesson-stage + .report-lesson-stage {
+    padding-top: 8px;
+    margin-top: 8px;
+    border-top: 1px solid #e9e1d5;
+  }
+  .report-lesson-stage > span {
+    color: #81715b;
+    font-size: 11px;
+  }
+  .report-stage-values {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 5px;
+    font-size: 11px;
+    color: #81796e;
+  }
+  .report-stage-values b,
+  .report-stage-values strong {
+    color: #493c2d;
+    font-variant-numeric: tabular-nums;
+  }
+  .report-stage-values strong {
+    font-size: 14px;
+  }
+  #app .karnameh-overview td.report-assessment-cell {
+    min-width: 170px;
+  }
+}
+@media screen {
+  .karnameh-student-print {
+    display: none;
+  }
+  #app .grade-report .karnameh-student-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    max-width: 100%;
+    margin: 0;
+    padding: 5px 8px;
+    border: 1px solid #e8e0d3;
+    border-radius: 8px;
+    background: #faf6ee;
+    color: #79522c;
+    font: inherit;
+    font-weight: 600;
+    text-align: start;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  #app .grade-report .karnameh-student-link:hover {
+    background: #f3e8d7;
+    border-color: #c6ac85;
+  }
+  .karnameh-student-link:focus-visible {
+    outline: 2px solid #79522c;
+    outline-offset: 2px;
+  }
+  .karnameh-report-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .karnameh-report-heading .karnameh-report-actions .ghost {
+    background: #faf9f7;
+    border: 1px solid #e5e0d7;
+    color: #655d52;
+  }
+}
+@media screen and (max-width: 600px) {
+  .karnameh-report-heading:has(.karnameh-report-actions) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .karnameh-report-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .karnameh-report-actions button {
+    min-width: 0;
+    font-size: 12px;
+    white-space: normal;
+  }
+}
+@media screen and (max-width: 700px),
+  screen and (max-width: 1000px) and (pointer: coarse) {
+  #app .karnameh-overview[data-ui-layout="cards"] td.report-assessment-cell {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+  .karnameh-overview[data-ui-layout="cards"] .report-lesson-stage {
+    display: grid;
+    grid-template-columns: 70px minmax(0, 1fr);
+    gap: 4px 8px;
+    align-items: center;
+  }
+  .karnameh-overview[data-ui-layout="cards"]
+    .report-lesson-stage
+    .report-grade-status {
+    grid-column: 2;
+    justify-self: start;
+  }
+  .karnameh-overview[data-ui-layout="cards"] .report-stage-values {
+    margin: 0;
+    justify-content: flex-start;
+  }
+}
+.report-mobile-score-heading {
+  display: none;
+}
+@media screen {
+  .karnameh-year-document .report-assessment-stages {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    min-width: 0;
+  }
+  .karnameh-year-document .report-assessment-stages .report-lesson-stage {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: 5px;
+    padding: 8px;
+    margin: 0;
+    border: 1px solid #e8e0d3;
+    border-radius: 8px;
+    background: #fffdf9;
+    min-width: 0;
+  }
+  .karnameh-year-document .report-lesson-stage > span {
+    color: #79522c;
+    font-weight: 600;
+  }
+  .karnameh-year-document .report-stage-values {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    margin: 0;
+    text-align: center;
+  }
+  .karnameh-year-document .report-stage-values > span {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .karnameh-year-document .report-stage-values :is(b, strong) {
+    font-size: 14px;
+  }
+  .karnameh-year-document .report-assessment-stages .report-grade-status {
+    grid-column: auto;
+    justify-self: start;
+    margin: 0;
+    font-size: 10px;
+  }
+  #app .karnameh-year-document .karnameh-overview td.report-assessment-cell {
+    min-width: 300px;
+  }
+}
+@media screen and (max-width: 700px),
+  screen and (max-width: 1000px) and (pointer: coarse) {
+  #app
+    .karnameh-year-document
+    .karnameh-overview[data-ui-layout="cards"]
+    td.report-assessment-cell {
+    min-width: 0;
+  }
+}
+@media screen and (max-width: 700px) {
+  .karnameh-year-document .report-assessment-stages {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  #app .karnameh-year-document .report-lesson-stage {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  #app
+    .karnameh-year-document
+    .report-lesson-stage
+    > :is(.report-stage-values, .report-grade-status) {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+  #app .karnameh-year-document .report-lesson-stage > .report-stage-title {
+    display: block;
+    grid-column: 1 / -1;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding-block-end: 6px;
+    border-bottom: 1px solid #eee7db;
+    font-size: 12px;
+    line-height: 1.8;
+    text-align: start;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: normal;
+  }
+}
+@media screen {
+  #app .karnameh-year-document .report-assessment-stages {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    border: 1px solid #e8e0d3;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fffdf9;
+  }
+  #app .karnameh-year-document .report-mobile-score-heading,
+  #app .karnameh-year-document .report-assessment-stages .report-lesson-stage {
+    display: grid;
+    grid-template-columns: 84px minmax(0, 1fr);
+    align-items: center;
+    gap: 6px;
+    padding: 10px 8px;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+  #app .karnameh-year-document .report-mobile-score-heading {
+    background: #f5efe5;
+    color: #79522c;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  #app .karnameh-year-document .report-mobile-score-heading > div {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    text-align: center;
+  }
+  #app .karnameh-year-document .report-lesson-stage + .report-lesson-stage {
+    border-top: 1px solid #eee7db;
+  }
+  #app .karnameh-year-document .report-lesson-stage > .report-stage-title {
+    display: block;
+    grid-column: 1;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.8;
+    text-align: start;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: normal;
+  }
+  #app .karnameh-year-document .report-lesson-stage > .report-stage-values {
+    grid-column: 2;
+    min-width: 0;
+  }
+  #app .karnameh-year-document .report-score-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  #app .karnameh-year-document .report-assessment-general .report-stage-values,
+  #app
+    .karnameh-year-document
+    .report-assessment-general
+    .report-mobile-score-heading
+    > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  #app
+    .karnameh-year-document
+    .karnameh-overview
+    td[data-report-lesson]::before {
+    font-size: 13px;
+    font-weight: 700;
+    margin-block: 8px;
+    color: #79522c;
+  }
+}
+/* A variable lesson count must not turn the year report into a wide canvas. */
+@media screen and (min-width: 701px) {
+  #app .karnameh-year-document table.karnameh-many-lessons,
+  #app .karnameh-year-document .karnameh-many-lessons tbody {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+  #app .karnameh-year-document .karnameh-many-lessons thead {
+    display: none;
+  }
+  #app .karnameh-year-document .karnameh-many-lessons tbody tr {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+    gap: 12px;
+    margin-block: 12px;
+    padding: 12px;
+    border: 1px solid #e8e0d3;
+    border-radius: 10px;
+  }
+  #app .karnameh-year-document .karnameh-many-lessons tbody td {
+    display: block;
+    min-width: 0;
+    width: auto;
+    overflow-wrap: anywhere;
+  }
+  #app .karnameh-year-document .karnameh-many-lessons tbody td:first-child {
+    grid-column: 1 / -1;
+  }
+  #app
+    .karnameh-year-document
+    .karnameh-many-lessons
+    td[data-report-lesson]::before {
+    content: attr(data-report-lesson);
+    display: block;
+    margin-block-end: 8px;
+    color: #79522c;
+    font-weight: 600;
+  }
+}
+@media print {
+  .karnameh-year-document .karnameh-overview,
+  .karnameh-year-document .karnameh-overview tbody {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+  .karnameh-year-document .karnameh-overview thead {
+    display: none;
+  }
+  .karnameh-year-document .karnameh-overview tbody tr {
+    display: block;
+    break-inside: auto;
+    margin-block: 12pt;
+  }
+  .karnameh-year-document .karnameh-overview tbody td {
+    display: block;
+    width: auto;
+    min-width: 0;
+    break-inside: avoid;
+  }
+  .karnameh-year-document td[data-report-lesson]::before {
+    content: attr(data-report-lesson);
+    display: block;
+    font-weight: bold;
+  }
+  .karnameh-year-document .report-lesson-stage {
+    margin-block: 6px;
+    break-inside: avoid;
+  }
+  .karnameh-year-document .report-stage-values span {
+    display: inline-block;
+    margin-inline-end: 8px;
+  }
+}
