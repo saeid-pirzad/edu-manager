@@ -755,7 +755,7 @@ function textReport(m) {
     "امضا: ........................",
   );
   if (m.technicalGrades?.length) {
-    lines.push("", "نمرات فنی — به تفکیک نوبت و پودمان");
+    lines.push("", "نمرات فنی و پودمانی");
     for (const grade of m.technicalGrades) {
       lines.push(
         grade.studentName +
@@ -763,8 +763,7 @@ function textReport(m) {
           grade.className +
           " | " +
           grade.lessonName +
-          " | نوبت " +
-          grade.term,
+          (grade.method === "modular" ? " | سالانه" : " | نوبت " + grade.term),
       );
       lines.push(
         (grade.method === "legacy-unit"
@@ -1131,7 +1130,7 @@ function documentHtml(m) {
     h += studentFollowupHtml(m);
   }
   if (m.technicalGrades?.length) {
-    h += "<section><h3>نمرات فنی به تفکیک نوبت و پودمان</h3>";
+    h += "<section><h3>نمرات فنی و پودمانی</h3>";
     for (const grade of m.technicalGrades) {
       h +=
         "<h4>" +
@@ -1141,8 +1140,9 @@ function documentHtml(m) {
             grade.className +
             " · " +
             grade.lessonName +
-            " · نوبت " +
-            grade.term,
+            (grade.method === "modular"
+              ? " · سالانه"
+              : " · نوبت " + grade.term),
         ) +
         "</h4><p>" +
         (grade.method === "legacy-unit"

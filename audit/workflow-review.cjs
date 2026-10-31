@@ -106,7 +106,13 @@ if (process.argv.includes("--help")) {
           "(" + require("./flows/backupSharing.cjs").toString() + ")()",
         )),
       );
-      await require("./academic-backup-lifecycle.cjs")({ cdp, evaluate, cases });
+      await require("./academic-backup-lifecycle.cjs")({
+        cdp,
+        evaluate,
+        cases,
+      });
+      await require("./period-import-browser.cjs")({ cdp, evaluate, cases });
+      await require("./annual-modular-browser.cjs")({ cdp, evaluate, cases });
       cases.push(
         ...(await require("./pwa-upgrade.cjs")({
           cdp,

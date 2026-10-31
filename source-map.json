@@ -66,6 +66,7 @@
         "src/workspace/validation/database.js",
         "src/workspace/data/reset.js",
         "src/workspace/data/records.js",
+        "src/workspace/grading/annual-modular.js",
         "src/workspace/grading/scope.js",
         "src/workspace/data/save.js",
         "src/workspace/periods/install.js",
@@ -203,7 +204,7 @@
     {
       "output": "assets/scripts/grade-policy.js",
       "scope": "global",
-      "sources": ["src/domain/grade-policy.js"]
+      "sources": ["src/domain/grade-policy.js", "src/domain/annual-modules.js"]
     },
     {
       "output": "assets/scripts/history-changes.js",

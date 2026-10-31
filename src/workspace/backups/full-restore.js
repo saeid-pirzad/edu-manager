@@ -219,6 +219,9 @@ async function restoreFullBackup() {
     broadcast({ type: "installation-restored" });
     await completeResetCleanup(connection, marker);
     window.EduPeriodicReports?.resetDrafts();
+    const annual = globalThis.EduAnnualModules
+      ? await synchronizeAnnualForRead(source.activeWorkspace)
+      : null;
     const loaded = await readWorkspaceSnapshot(source.activeWorkspace);
     workspace = loaded.period;
     db = loaded.data;
@@ -256,6 +259,13 @@ async function restoreFullBackup() {
           : " توضیحات گزارش در بانک محفوظ‌اند؛ ذخیره موقت آن‌ها نیازمند تلاش مجدد است."),
       notesSaved ? "saved" : "pending",
     );
+    for (const change of annual?.changed || [])
+      broadcast({ ...change, annualModular: true });
+    if (annual?.conflicts.length)
+      setStatus(
+        "بازیابی انجام شد؛ ثبت‌های متعارض قدیمی پودمانی حفظ شدند و نیاز به بررسی دارند.",
+        "error",
+      );
     return periods.length;
   } catch (error) {
     if (committedRestore) {

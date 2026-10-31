@@ -31,6 +31,7 @@ async function confirmWipe() {
   if (!confirm("آخرین تأیید: همه اطلاعات این برنامه از این مرورگر حذف شوند؟"))
     return false;
   resetBusy = true;
+  const hadFileTimer = !!singleFileTimer;
   pauseSingleFile();
   const finish = beginRecordEditorSave(form),
     wasBlocked = blocked;
@@ -112,7 +113,18 @@ async function confirmWipe() {
     return false;
   } finally {
     resetConnection?.close();
-    if (!committedReset) resetBusy = false;
+    if (!committedReset) {
+      resetBusy = false;
+      if (
+        hadFileTimer &&
+        singleFile &&
+        !singleFileFailure &&
+        ready &&
+        !blocked &&
+        !connectionRetired
+      )
+        startSingleFile();
+    }
     finish();
   }
 }

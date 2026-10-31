@@ -185,10 +185,13 @@ async function annualChecks() {
     );
     record(
       "Y10",
-      "annual report preserves technical module grades per term and selected student",
-      parent?.technicalGrades.length === 2 &&
+      "annual report shows one shared modular course for the selected student",
+      parent?.technicalGrades.length === 1 &&
         parent.technicalGrades.every(
-          (row) => row.studentId === "student_a" && row.modules.length === 1,
+          (row) =>
+            row.studentId === "student_a" &&
+            row.modules.length === 1 &&
+            row.term === "سالانه",
         ) &&
         EduPeriodicReports.textReport(parent).includes("پودمان"),
     );

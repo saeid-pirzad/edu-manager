@@ -41,6 +41,14 @@ function workspaceRecordRequest(store, id) {
   // bounds the entire prefix without a schema upgrade or a full-store scan.
   return store.getAll(IDBKeyRange.bound(id + "|", id + "}", false, true));
 }
+async function synchronizeAnnualForRead(id) {
+  try {
+    return await synchronizeAnnualModularGrades(id);
+  } catch (error) {
+    if (error.code !== "ANNUAL_PERIOD_AMBIGUOUS") throw error;
+    return { changed: [], conflicts: [{ message: error.message }] };
+  }
+}
 async function readWorkspaceSnapshot(id) {
   const tx = connection.transaction(["catalog", "records"], "readonly");
   const done = transactionDone(tx);

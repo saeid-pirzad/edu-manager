@@ -32,6 +32,7 @@ async function commitRecords(
     throw new DOMException("آزمون شکست ذخیره", "QuotaExceededError");
   }
   let nextCatalog;
+  const annualChanged = [];
   try {
     nextCatalog = await EduRecordTransaction.commit({
       connection: sourceConnection,
@@ -45,6 +46,7 @@ async function commitRecords(
       keepUndo,
       normalizedName,
       academicTermKind,
+      annualChanged,
     });
   } catch (error) {
     if (error.code === "WORKSPACE_CONFLICT" && isCurrentCommit())
@@ -56,8 +58,11 @@ async function commitRecords(
     for (const key of removed) sourceCommitted.delete(key);
     workspace = nextCatalog;
   }
-  if (connection === sourceConnection && !resetBusy && !connectionRetired)
+  if (connection === sourceConnection && !resetBusy && !connectionRetired) {
     broadcast({ workspace: nextCatalog.id, revision: nextCatalog.revision });
+    for (const change of annualChanged)
+      broadcast({ ...change, annualModular: true });
+  }
   return true;
 }
 

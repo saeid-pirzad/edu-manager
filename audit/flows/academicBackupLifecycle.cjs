@@ -194,14 +194,14 @@ module.exports = async function academicBackupLifecycle() {
       let attempt = 0;
       attempt < 200 &&
       document.querySelectorAll(
-        ".karnameh-year-document .report-stage-values strong",
+        ".karnameh-year-document .report-assessment-stages .report-stage-values strong",
       ).length !== 4;
       attempt++
     )
       await new Promise((resolve) => setTimeout(resolve, 25));
     const displayed = [
       ...document.querySelectorAll(
-        ".karnameh-year-document .report-stage-values strong",
+        ".karnameh-year-document .report-assessment-stages .report-stage-values strong",
       ),
     ].map((element) => element.textContent);
     check(

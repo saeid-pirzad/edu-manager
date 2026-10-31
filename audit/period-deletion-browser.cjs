@@ -214,6 +214,29 @@ async function deletionFlow() {
     );
     closeModal();
     const reportClass = findClassById(sourceClass.id).classObj;
+    const modular = {
+      ...structuredClone(vocational),
+      id: uid(),
+      name: "درس پودمانی آزمون کارنامه",
+      gradeMode: "standard",
+      gradingPolicy: EduPolicy.defaults("modular", "1420-1421"),
+      kardaneshScores: {},
+      poudmans: [
+        {
+          id: uid(),
+          name: "پودمان ثبت‌شده",
+          units: [{ id: uid(), name: "واحد اول", unitScores: {} }],
+          podScores: { [student.id]: { m: 4, c: 3 } },
+        },
+        {
+          id: uid(),
+          name: "پودمان ثبت‌نشده",
+          units: [{ id: uid(), name: "واحد دوم", unitScores: {} }],
+          podScores: {},
+        },
+      ],
+    };
+    reportClass.lessons.push(modular);
     while (reportClass.lessons.length < 6)
       reportClass.lessons.push({
         ...structuredClone(vocational),
@@ -303,6 +326,51 @@ async function deletionFlow() {
       (cell) => cell.textContent === vocational.name,
     );
     const stageReport = gradeTable.tBodies[0].rows[0].cells[lessonIndex];
+    const modularIndex = [...gradeTable.tHead.rows[0].cells].findIndex(
+      (cell) => cell.textContent === modular.name,
+    );
+    const modularReport = gradeTable.tBodies[0].rows[0].cells[modularIndex];
+    const moduleRows = [
+      ...modularReport.querySelectorAll(".report-module-row"),
+    ];
+    check(
+      "KARNAMEH_PARTIAL_MODULAR_GRADES_VISIBLE",
+      moduleRows.length === 2 &&
+        moduleRows[0].querySelectorAll("b")[0].textContent === "4" &&
+        moduleRows[0].querySelectorAll("b")[1].textContent === "3" &&
+        moduleRows[0].querySelector("strong").textContent === "19.00" &&
+        moduleRows[1].querySelector("strong").textContent === "—" &&
+        modularReport.querySelector(".report-modular-final strong")
+          .textContent === "—",
+    );
+    check(
+      "KARNAMEH_MODULAR_IS_SINGLE_ANNUAL_COURSE",
+      modularReport.querySelectorAll(".report-modular-course").length === 1 &&
+        !modularReport.querySelector(".report-modular-term"),
+    );
+    const originalPrint = window.print;
+    try {
+      window.print = () => {};
+      document.getElementById("printRoot")?.remove();
+      document
+        .querySelector(
+          '.karnameh-year-document [data-workspace-action="print"]',
+        )
+        .click();
+      await wait(() => document.querySelector("#printRoot .report-module-row"));
+      const printedLesson = [
+        ...document.querySelectorAll("#printRoot [data-report-lesson]"),
+      ].find((cell) => cell.dataset.reportLesson === modular.name);
+      check(
+        "KARNAMEH_MODULAR_PRINT_HAS_SAME_GRADES",
+        printedLesson?.querySelectorAll(".report-module-row").length === 2 &&
+          printedLesson.querySelector(".report-module-row strong")
+            .textContent === "19.00",
+      );
+    } finally {
+      window.print = originalPrint;
+      document.getElementById("printRoot")?.remove();
+    }
     const stageBlocks = [
       ...stageReport.querySelectorAll(".report-lesson-stage"),
     ];
@@ -434,6 +502,24 @@ async function deletionFlow() {
             [...doc.querySelectorAll(".report-mobile-score-heading")].every(
               (heading) => heading.getBoundingClientRect().height > 0,
             ),
+        );
+        const modules = [...doc.querySelectorAll(".report-module-row")];
+        check(
+          "KARNAMEH_MODULAR_ROWS_FIT_" + viewport,
+          modules.length > 0 &&
+            modules.every((row) => {
+              const title = row
+                .querySelector(".report-module-title")
+                .getBoundingClientRect();
+              const scores = row
+                .querySelector(".report-stage-values")
+                .getBoundingClientRect();
+              return (
+                scores.width > 0 &&
+                scores.right <= title.left + 1 &&
+                row.scrollWidth <= row.clientWidth + 1
+              );
+            }),
         );
       } finally {
         frame.remove();

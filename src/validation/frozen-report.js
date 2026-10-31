@@ -142,6 +142,47 @@ globalThis.EduFrozenReportValidator = Object.freeze({
               modules.add(m.id);
             }
           }
+          if (l.policy?.version === 1 && l.policy.method === "modular") {
+            if (
+              !gradePolicy ||
+              l.mode !== "standard" ||
+              !Array.isArray(l.modules) ||
+              !l.modules.length
+            )
+              fail();
+            gradePolicy.validate(l.policy);
+            for (const module of l.modules)
+              if (
+                typeof module.complete !== "boolean" ||
+                (module.complete
+                  ? module.final == null || typeof module.passed !== "boolean"
+                  : module.final != null || module.passed != null) ||
+                (module.passed === true && module.final < l.policy.moduleMin)
+              )
+                fail();
+            // Historical snapshots retain module results, not the raw m/c
+            // inputs. Check their course aggregate with the same domain math;
+            // never invent missing component grades to recalculate a module.
+            const expected = gradePolicy.moduleAggregate(l.modules);
+            if (l.final !== expected.final || l.passed !== expected.passed)
+              fail();
+          }
+        }
+        // Old reports can contain historical averages calculated by a previous
+        // method. Only enforce the current contract for fully policy-based data.
+        if (
+          st.lessons.length &&
+          st.lessons.every(
+            (lesson) =>
+              lesson.policy?.version === 1 &&
+              ["dual", "modular"].includes(lesson.policy.method),
+          )
+        ) {
+          const average = st.lessons.every((lesson) => lesson.final != null)
+            ? st.lessons.reduce((sum, lesson) => sum + lesson.final, 0) /
+              st.lessons.length
+            : null;
+          if (st.average !== average) fail();
         }
       }
     }

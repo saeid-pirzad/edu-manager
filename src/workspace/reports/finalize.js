@@ -45,7 +45,16 @@ function finalReportData() {
                     " / تئوری",
                 );
             }
-          if (result.final === null && result.passed !== false)
+          // The first term freezes progress without ending annual modules.
+          const annualModuleInProgress =
+            l.gradingPolicy?.method === "modular" &&
+            (workspace.termKind || academicTermKind(workspace.term)) ===
+              "first";
+          if (
+            !annualModuleInProgress &&
+            result.final === null &&
+            result.passed !== false
+          )
             missing.push(c.name + " / " + st.name + " / " + l.name);
           return {
             id: l.id,

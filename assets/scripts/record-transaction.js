@@ -16,6 +16,7 @@ globalThis.EduRecordTransaction = Object.freeze({
     keepUndo,
     normalizedName,
     academicTermKind,
+    annualChanged,
   }) {
     // Compare against the request's original catalog, not a live UI object
     // that can change before IndexedDB delivers its callbacks.
@@ -31,6 +32,7 @@ globalThis.EduRecordTransaction = Object.freeze({
       labelConflict = false,
       nextCatalog,
       queueError;
+    const annualUpdates = [];
     const abortQueue = (error) => {
       queueError = error;
       try {
@@ -41,11 +43,40 @@ globalThis.EduRecordTransaction = Object.freeze({
       const catalog = tx.objectStore("catalog"),
         sourceMeta = records.get("meta"),
         meta = sourceMeta ? { settings: { ...sourceMeta.settings } } : null,
+        sourceLayout = sourceMeta?.layout
+          ? JSON.parse(JSON.stringify(sourceMeta.layout))
+          : [],
+        annualModel = globalThis.EduAnnualModules,
+        annualPlans = annualModel
+          ? changed.flatMap(([logical, json]) => {
+              if (!logical.startsWith("class:")) return [];
+              const previous = before.find((row) => row.key === logical)?.value;
+              const current = JSON.parse(json);
+              if (logical !== "class:" + current?.id)
+                throw Error("شناسهٔ کلاس با رکورد ثبت نمره سازگار نیست.");
+              if (!annualModel.hasChanges(previous, current)) return [];
+              const owners = sourceLayout.filter((school) =>
+                school.classes?.includes(current.id),
+              );
+              if (owners.length !== 1)
+                throw Error("مالک کلاس برای ثبت نمرهٔ سالانه مشخص نیست.");
+              return [
+                {
+                  logical,
+                  previous: previous
+                    ? JSON.parse(JSON.stringify(previous))
+                    : null,
+                  current,
+                  schoolId: owners[0].id,
+                },
+              ];
+            })
+          : [],
         labelChanged =
           meta &&
           (meta.settings?.academicYear !== workspace.year ||
             meta.settings?.academicTerm !== workspace.term),
-        labels = labelChanged ? catalog.getAll() : null,
+        labels = labelChanged || annualPlans.length ? catalog.getAll() : null,
         get = catalog.get(workspace.id);
       get.onsuccess = () => {
         try {
@@ -56,7 +87,7 @@ globalThis.EduRecordTransaction = Object.freeze({
             return;
           }
           if (
-            labels &&
+            labelChanged &&
             labels.result.some(
               (row) =>
                 row.id !== workspace.id &&
@@ -88,6 +119,24 @@ globalThis.EduRecordTransaction = Object.freeze({
             revision: live.revision + 1,
             updatedAt: new Date().toISOString(),
           };
+          const annualCompanions = [];
+          if (
+            annualPlans.length &&
+            ["first", "second"].includes(next.termKind)
+          ) {
+            const roles = new Set();
+            for (const period of labels.result) {
+              const candidate = period.id === next.id ? next : period;
+              if (candidate.year !== next.year) continue;
+              const kind =
+                candidate.termKind || academicTermKind(candidate.term);
+              if (kind !== "first" && kind !== "second") continue;
+              if (roles.has(kind))
+                throw Error("نوبت‌های سال برای ثبت نمرهٔ سالانه تکراری‌اند.");
+              roles.add(kind);
+              if (candidate.id !== next.id) annualCompanions.push(candidate);
+            }
+          }
           nextCatalog = next;
           catalog.put(next);
           tx.objectStore("events").add({
@@ -105,6 +154,100 @@ globalThis.EduRecordTransaction = Object.freeze({
               before,
             });
           else tx.objectStore("undo").delete(workspace.id);
+          // These requests stay inside the live IndexedDB callback. Source and
+          // companion grades either all commit, or none of them do.
+          for (const companion of annualCompanions) {
+            const companionMeta = tx
+              .objectStore("records")
+              .get(companion.id + "|meta");
+            companionMeta.onsuccess = () => {
+              try {
+                const metaRow = companionMeta.result,
+                  layout = metaRow?.value?.layout;
+                if (
+                  metaRow?.workspace !== companion.id ||
+                  metaRow?.logical !== "meta" ||
+                  metaRow?.key !== companion.id + "|meta" ||
+                  !Array.isArray(layout)
+                )
+                  throw Error("چیدمان نوبت برای ثبت نمرهٔ سالانه معتبر نیست.");
+                let pending = 0;
+                const companionChanges = [];
+                const finishCompanion = () => {
+                  if (pending || !companionChanges.length) return;
+                  const synchronized = {
+                    ...companion,
+                    revision: companion.revision + 1,
+                    updatedAt: next.updatedAt,
+                  };
+                  catalog.put(synchronized);
+                  tx.objectStore("events").add({
+                    workspace: companion.id,
+                    at: synchronized.updatedAt,
+                    action: "همگام‌سازی نمرهٔ سالانهٔ پودمان",
+                    revision: synchronized.revision,
+                    changes: companionChanges,
+                  });
+                  // An undo prepared before this annual update is now stale.
+                  tx.objectStore("undo").delete(companion.id);
+                  annualUpdates.push({
+                    workspace: companion.id,
+                    revision: synchronized.revision,
+                  });
+                };
+                for (const plan of annualPlans) {
+                  const owners = layout.filter((school) =>
+                    school.classes?.includes(plan.current.id),
+                  );
+                  if (!owners.length) continue;
+                  if (owners.length !== 1)
+                    throw Error("کلاس در چیدمان نوبت تکرار شده است.");
+                  if (owners[0].id !== plan.schoolId) continue;
+                  pending++;
+                  const request = tx
+                    .objectStore("records")
+                    .get(companion.id + "|" + plan.logical);
+                  request.onsuccess = () => {
+                    try {
+                      const row = request.result;
+                      if (
+                        !row ||
+                        row.key !== companion.id + "|" + plan.logical ||
+                        row.workspace !== companion.id ||
+                        row.logical !== plan.logical ||
+                        row.value?.id !== plan.current.id
+                      )
+                        throw Error(
+                          "رکورد کلاس برای ثبت نمرهٔ سالانه معتبر نیست.",
+                        );
+                      const value = annualModel.mirrorClass(
+                        plan.previous,
+                        plan.current,
+                        row.value,
+                      );
+                      if (
+                        value &&
+                        JSON.stringify(value) !== JSON.stringify(row.value)
+                      ) {
+                        tx.objectStore("records").put({ ...row, value });
+                        companionChanges.push({
+                          path: plan.logical + ".annualModules",
+                          before: null,
+                          after: "نمره‌های سالانهٔ پودمان همگام شد",
+                        });
+                      }
+                      pending--;
+                      finishCompanion();
+                    } catch (error) {
+                      abortQueue(error);
+                    }
+                  };
+                }
+              } catch (error) {
+                abortQueue(error);
+              }
+            };
+          }
         } catch (error) {
           abortQueue(error);
         }
@@ -130,6 +273,7 @@ globalThis.EduRecordTransaction = Object.freeze({
       }
       throw queueError || e;
     }
+    if (annualChanged) annualChanged.push(...annualUpdates);
     return nextCatalog;
   },
 });

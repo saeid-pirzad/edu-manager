@@ -337,9 +337,10 @@ function legacy_clickMasterCell(day, period) {
     h += `<h4 style="margin-top:16px">جلسات ثبت‌شده این زنگ (${existing.length}):</h4><div>`;
     existing.slice(0, 15).forEach((s) => {
       const present = Object.values(s.attendance).filter(
-        (x) => x === "present",
+        (x) =>
+          x === "present" || (typeof x === "string" && x.startsWith("late")),
       ).length;
-      const total = Object.keys(s.attendance).length;
+      const total = sessionStudents(cls.classObj, s).length;
       h += `<div class="list-item" data-legacy-click="schedule-timetable:16" data-legacy-click-arg0="${esc(s.id)}">
         <div><strong>${faDate(s.date)}</strong></div>
         <div class="muted" style="font-size:.85em">${present}/${total} حاضر | ${s.scores.length} امتیاز</div></div>`;

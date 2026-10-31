@@ -5903,6 +5903,74 @@
     color: #79522c;
   }
 }
+.karnameh-year-document .report-modular-grades {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.karnameh-year-document :is(.report-modular-term, .report-modular-course) {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #e8e0d3;
+  border-radius: 8px;
+  background: #fffdf9;
+}
+.karnameh-year-document .report-modular-term > h4 {
+  margin: 0;
+  padding: 8px;
+  background: #faf6ee;
+  color: #79522c;
+  font-size: 12px;
+  font-weight: 600;
+  border-bottom: 1px solid #eee7db;
+}
+#app
+  .karnameh-year-document
+  :is(.report-modular-term, .report-modular-course)
+  > .report-mobile-score-heading,
+.karnameh-year-document .report-module-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 2fr);
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  min-width: 0;
+}
+.karnameh-year-document .report-module-row + .report-module-row {
+  border-top: 1px solid #eee7db;
+}
+.karnameh-year-document .report-module-title {
+  color: #65503b;
+  font-size: 11px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.karnameh-year-document .report-modular-empty {
+  margin: 0;
+  padding: 10px;
+  color: #81796e;
+}
+.karnameh-year-document .report-modular-final {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px;
+  border-top: 1px solid #eee7db;
+  font-size: 11px;
+  color: #65503b;
+}
+.karnameh-year-document .report-modular-final strong {
+  font-size: 14px;
+}
+.karnameh-year-document .report-modular-conflict {
+  padding: 10px;
+  color: #a34638;
+  background: #fbece7;
+  border-radius: 8px;
+  font-size: 11px;
+  line-height: 1.8;
+}
 /* A variable lesson count must not turn the year report into a wide canvas. */
 @media screen and (min-width: 701px) {
   #app .karnameh-year-document table.karnameh-many-lessons,
@@ -5976,5 +6044,14 @@
   .karnameh-year-document .report-stage-values span {
     display: inline-block;
     margin-inline-end: 8px;
+  }
+  .karnameh-year-document .karnameh-overview tbody td.report-modular-cell {
+    break-inside: auto;
+  }
+  .karnameh-year-document .report-module-row {
+    break-inside: avoid;
+  }
+  .karnameh-year-document .report-modular-term > h4 {
+    break-after: avoid;
   }
 }

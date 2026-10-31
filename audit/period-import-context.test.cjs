@@ -22,6 +22,10 @@ function fixture() {
       label: "fixture",
     },
     fileMode: false,
+    connection: {},
+    periodLoading: false,
+    resetBusy: false,
+    connectionRetired: false,
     busy: 0,
     writer: Promise.resolve(),
     drafts: new Map(),
@@ -37,10 +41,15 @@ function fixture() {
     flushDrafts: async () => {},
     putBackup: async () => {},
     collectRecords: (x) => x,
-    commitRecords: async (x) => writes.push(x),
+    commitRecords: async (x) => {
+      writes.push(x);
+      c.workspace.revision++;
+      return true;
+    },
     paintStatus() {},
     storeDrafts() {},
     closeModal() {},
+    scheduleSingleFile() {},
     setStatus() {},
     render() {},
     handleError: (e) => errors.push(e),
@@ -173,3 +182,74 @@ test("a period backup cannot overwrite a different academic year or term", async
     assert.equal(writes.length, 0);
   }
 });
+
+test("period replacement joins the writer until the restored data is installed", async () => {
+  const { c } = fixture();
+  let finish, entered;
+  const started = new Promise((resolve) => {
+    entered = resolve;
+  });
+  c.commitRecords = async () => {
+    entered();
+    await new Promise((resolve) => {
+      finish = resolve;
+    });
+    c.workspace.revision++;
+    return true;
+  };
+  const restoring = c.confirmImport();
+  await started;
+  let completed = false;
+  const pendingWrite = c.writer.then(() => {
+    completed = true;
+    assert.deepEqual(c.db, restoredCandidate);
+  });
+  const restoredCandidate = c.pendingImport.candidate;
+  await Promise.resolve();
+  assert.equal(completed, false);
+  finish();
+  await Promise.all([restoring, pendingWrite]);
+  assert.equal(completed, true);
+  assert.equal(c.db.settings.academicTerm, "اول");
+  assert.equal(c.pendingImport, null);
+  assert.equal(c.busy, 0);
+});
+
+for (const changedContext of [
+  "workspace",
+  "connection",
+  "periodLoading",
+  "resetBusy",
+  "connectionRetired",
+  "newer revision",
+]) {
+  test(`committed replacement never clobbers UI or drafts after ${changedContext} changes`, async () => {
+    const { c } = fixture();
+    const destination = { marker: "newer selected data" },
+      destinationState = { view: "destination" },
+      pendingDraft = { marker: "destination draft" };
+    let effects = 0;
+    c.closeModal =
+      c.render =
+      c.setStatus =
+      c.scheduleSingleFile =
+        () => effects++;
+    c.commitRecords = async () => {
+      if (changedContext === "workspace")
+        c.workspace = { ...c.workspace, id: "second" };
+      else if (changedContext === "connection") c.connection = {};
+      else if (changedContext === "newer revision") c.workspace.revision += 2;
+      else c[changedContext] = true;
+      c.db = destination;
+      c.state = destinationState;
+      c.drafts.set("destination", pendingDraft);
+      return true;
+    };
+    await c.confirmImport();
+    assert.equal(c.db, destination);
+    assert.equal(c.state, destinationState);
+    assert.equal(c.drafts.get("destination"), pendingDraft);
+    assert.equal(effects, 0);
+    assert.equal(c.busy, 0);
+  });
+}

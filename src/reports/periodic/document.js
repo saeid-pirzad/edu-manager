@@ -200,7 +200,7 @@ function documentHtml(m) {
     h += studentFollowupHtml(m);
   }
   if (m.technicalGrades?.length) {
-    h += "<section><h3>نمرات فنی به تفکیک نوبت و پودمان</h3>";
+    h += "<section><h3>نمرات فنی و پودمانی</h3>";
     for (const grade of m.technicalGrades) {
       h +=
         "<h4>" +
@@ -210,8 +210,9 @@ function documentHtml(m) {
             grade.className +
             " · " +
             grade.lessonName +
-            " · نوبت " +
-            grade.term,
+            (grade.method === "modular"
+              ? " · سالانه"
+              : " · نوبت " + grade.term),
         ) +
         "</h4><p>" +
         (grade.method === "legacy-unit"

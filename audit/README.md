@@ -10,6 +10,8 @@
 - `workflow-review.cjs`: مرور کامل‌تر و تست ارتقای دو نسخه از طریق extension مشخص runner.
 - `data-store-browser.cjs`: ساخت schema، ترمیم index، حفظ داده و اتمیک‌بودن ذخیره.
 - `pwa-upgrade.cjs`: نصب نسخهٔ قدیمی Git و ارتقا؛ به commit `594217b` نیاز دارد.
+- `period-import-browser.cjs`: بازیابی تک‌نوبت و تعویض هم‌زمان نوبت با تراکنش واقعی IndexedDB؛ در سناریوی سراسری و به‌صورت مستقل قابل اجراست.
+- `annual-modular-browser.cjs`: ادامهٔ نمرات پودمانی در کل سال، ویرایش/حذف واقعی نمره، کارنامهٔ یکپارچه، بازیابی و شروع سال جدید؛ مستقل یا در دروازهٔ انتشار اجرا می‌شود.
 - `application-files.cjs`: فهرست فایل‌های لازم، استخراج‌شده از HTML.
 - `assets-contract.cjs`: تطابق دقیق cache و فایل‌ها و بررسی نحو اسکریپت‌های انتشار.
 - `local-file.cjs`: بازکردن HTML محلی تحت CSP در همان profile موقت و بازگشت به نسخهٔ HTTP.
@@ -26,6 +28,7 @@
 ```text
 npm ci
 npm run check
+npm run check:release
 npm test
 npm run test:unit
 npm run test:integrity
@@ -33,3 +36,8 @@ npm run test:assets
 npm run test:data-contract
 npm run bench
 ```
+
+`npm run check:release` علاوه بر کنترل کامل معمول، سناریوهای حذف نوبت،
+کارنامهٔ چهارمرحله‌ای در عرض‌های مختلف و دفتر نمره در موبایل/تبلت را اجرا
+می‌کند. CI نیز همین دروازهٔ انتشار را اجرا می‌کند. موفقیت آن جای پذیرش روی
+دستگاه فیزیکی یا بررسی محرمانگی فایل‌های منتشرشده را نمی‌گیرد.

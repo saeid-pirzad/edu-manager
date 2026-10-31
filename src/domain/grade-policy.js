@@ -249,12 +249,7 @@
       threshold: p.moduleMin,
     };
   }
-  function lesson(p, pods, sid) {
-    const modules = pods.map((pod) => ({
-      id: pod.id,
-      name: pod.name,
-      ...moduleResult(p, ownScoreRecord(pod.podScores, sid)),
-    }));
+  function moduleAggregate(modules) {
     const present = modules.filter((x) => x.final != null),
       complete = modules.length > 0 && modules.every((x) => x.complete);
     const average = present.length
@@ -262,7 +257,6 @@
       : null;
     const passed = complete ? modules.every((x) => x.passed) : null;
     return {
-      modules,
       complete,
       passed,
       provisionalAverage: average,
@@ -277,6 +271,14 @@
               .map((x) => x.name)
               .join("، "),
     };
+  }
+  function lesson(p, pods, sid) {
+    const modules = pods.map((pod) => ({
+      id: pod.id,
+      name: pod.name,
+      ...moduleResult(p, ownScoreRecord(pod.podScores, sid)),
+    }));
+    return { modules, ...moduleAggregate(modules) };
   }
   function hasGrades(l) {
     return (
@@ -385,6 +387,7 @@
     dual,
     dualSettings,
     moduleResult,
+    moduleAggregate,
     lesson,
     hasGrades,
     freshCopy,

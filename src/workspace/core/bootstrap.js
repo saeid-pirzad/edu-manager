@@ -61,7 +61,11 @@ async function bootstrapV24() {
     workspace =
       periods.find((x) => x.id === preferred) ||
       periods.sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
-    const loaded = await readWorkspace(workspace.id);
+    const annual = globalThis.EduAnnualModules
+      ? await synchronizeAnnualForRead(workspace.id)
+      : null;
+    const loaded = await readWorkspaceSnapshot(workspace.id);
+    workspace = loaded.period;
     db = loaded.data;
     committed = loaded.records;
     storageBlocked = false;
@@ -71,6 +75,13 @@ async function bootstrapV24() {
       rememberPeriod(workspace.id);
     } catch (ignore) {}
     setStatus("اطلاعات ذخیره‌شده خوانده شد.", "saved");
+    for (const change of annual?.changed || [])
+      broadcast({ ...change, annualModular: true });
+    if (annual?.conflicts.length)
+      setStatus(
+        "نمره‌های قدیمی پودمانی تعارض دارند؛ برای حفظ اطلاعات، خودکار جایگزین نشدند.",
+        "error",
+      );
     hydrateReportNotes(workspace);
     await loadDrafts();
     ready = true;

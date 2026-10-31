@@ -481,6 +481,14 @@ function workspaceRecordRequest(store, id) {
   // bounds the entire prefix without a schema upgrade or a full-store scan.
   return store.getAll(IDBKeyRange.bound(id + "|", id + "}", false, true));
 }
+async function synchronizeAnnualForRead(id) {
+  try {
+    return await synchronizeAnnualModularGrades(id);
+  } catch (error) {
+    if (error.code !== "ANNUAL_PERIOD_AMBIGUOUS") throw error;
+    return { changed: [], conflicts: [{ message: error.message }] };
+  }
+}
 async function readWorkspaceSnapshot(id) {
   const tx = connection.transaction(["catalog", "records"], "readonly");
   const done = transactionDone(tx);
@@ -491,6 +499,225 @@ async function readWorkspaceSnapshot(id) {
   ]);
   if (!period) throw Error("دوره موجود نیست.");
   return { period, ...decodeWorkspaceRecords(rows, { workspaceId: id }) };
+}
+// Source: src/workspace/grading/annual-modular.js
+// Reconcile pre-existing annual modules without changing live UI state. The
+// caller reloads affected workspaces and broadcasts revisions after completion.
+async function synchronizeAnnualModularGrades(id) {
+  const database = connection;
+  const assertConnection = () => {
+    if (
+      connection !== database ||
+      (typeof connectionRetired !== "undefined" && connectionRetired)
+    )
+      throw Error("اتصال بانک هنگام همگام‌سازی نمرات سالانه تغییر کرده است.");
+  };
+  const family = (catalog) => {
+    const target = catalog.find((period) => period.id === id);
+    if (!target) throw Error("نوبت برای همگام‌سازی نمرات سالانه موجود نیست.");
+    const kind = target.termKind || academicTermKind(target.term);
+    if (!["first", "second"].includes(kind)) return [];
+    return ["first", "second"].flatMap((role) => {
+      const members = catalog.filter(
+        (period) =>
+          period.year === target.year &&
+          (period.termKind || academicTermKind(period.term)) === role,
+      );
+      if (members.length > 1) {
+        const error = Error(
+          "نوبت‌های سال برای همگام‌سازی نمرات پودمانی تکراری‌اند.",
+        );
+        error.code = "ANNUAL_PERIOD_AMBIGUOUS";
+        throw error;
+      }
+      if (
+        members.some(
+          (period) =>
+            !Number.isSafeInteger(period.revision) || period.revision < 1,
+        )
+      )
+        throw Error("نسخهٔ نوبت برای همگام‌سازی نمرات سالانه معتبر نیست.");
+      return members;
+    });
+  };
+  const signature = (periods) =>
+    JSON.stringify(
+      periods.map((period) => [
+        period.id,
+        period.year,
+        period.termKind || academicTermKind(period.term),
+        period.revision,
+        !!period.closed,
+      ]),
+    );
+  const projection = (classroom) =>
+    JSON.stringify(
+      classroom.lessons
+        .filter(EduAnnualModules.isFormalModular)
+        .map((lesson) => [
+          lesson.id,
+          lesson.poudmans
+            .map((pod) => [
+              pod.id,
+              Object.entries(pod.podScores || {})
+                .map(([sid, score]) => [
+                  sid,
+                  score?.m ?? null,
+                  score?.c ?? null,
+                ])
+                .filter(
+                  ([, mostamar, competency]) =>
+                    mostamar !== null || competency !== null,
+                )
+                .sort(([a], [b]) => a.localeCompare(b)),
+            ])
+            .sort(([a], [b]) => a.localeCompare(b)),
+        ])
+        .sort(([a], [b]) => a.localeCompare(b)),
+    );
+
+  const read = database.transaction(["catalog", "records"], "readonly"),
+    readDone = transactionDone(read);
+  let periods;
+  const pending = new Promise((resolve, reject) => {
+    try {
+      const request = read.objectStore("catalog").getAll();
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        try {
+          assertConnection();
+          periods = family(request.result);
+          // All bounded requests must be queued in this active IDB callback.
+          Promise.all(
+            periods.map((period) =>
+              requestPromise(
+                workspaceRecordRequest(read.objectStore("records"), period.id),
+              ),
+            ),
+          ).then(resolve, reject);
+        } catch (error) {
+          reject(error);
+          read.abort();
+        }
+      };
+    } catch (error) {
+      reject(error);
+      read.abort();
+    }
+  });
+  const [recordSets] = await Promise.all([pending, readDone]);
+  assertConnection();
+  const conflicts = [],
+    changed = [];
+  if (periods.length < 2) return { changed, conflicts };
+  const parts = periods.map((period, index) => ({
+    period,
+    data: decodeWorkspaceRecords(recordSets[index], { workspaceId: period.id })
+      .data,
+    plans: new Map(),
+  }));
+  const classes = new Map();
+  for (const part of parts)
+    for (const [schoolIndex, school] of part.data.schools.entries())
+      for (const [classIndex, classroom] of school.classes.entries()) {
+        const key = JSON.stringify([school.id, classroom.id]);
+        if (!classes.has(key)) classes.set(key, []);
+        classes.get(key).push({ part, schoolIndex, classIndex, classroom });
+      }
+  for (const [key, members] of classes) {
+    if (members.length < 2) continue;
+    try {
+      const plans = [];
+      for (const member of members) {
+        const value = EduAnnualModules.mergeClass(
+          [
+            member.classroom,
+            ...members
+              .filter((other) => other !== member)
+              .map((other) => other.classroom),
+          ],
+          { includeMissingLessons: false },
+        );
+        if (projection(value) === projection(member.classroom)) continue;
+        const candidate = clone(member.part.data);
+        candidate.schools[member.schoolIndex].classes[member.classIndex] =
+          value;
+        validateV24(candidate);
+        plans.push({ member, candidate, value });
+      }
+      // Never accept just one side of a class whose other side conflicts.
+      for (const { member, candidate, value } of plans) {
+        member.part.data = candidate;
+        member.part.plans.set("class:" + value.id, value);
+      }
+    } catch (error) {
+      const [schoolId, classId] = JSON.parse(key);
+      conflicts.push({ schoolId, classId, message: error.message });
+    }
+  }
+  const updates = parts.filter((part) => part.plans.size);
+  if (!updates.length) return { changed, conflicts };
+  assertConnection();
+  const tx = database.transaction(
+      ["catalog", "records", "events", "undo"],
+      "readwrite",
+    ),
+    done = transactionDone(tx);
+  let failure;
+  const abort = (error) => {
+    failure = error;
+    try {
+      tx.abort();
+    } catch {}
+  };
+  try {
+    const request = tx.objectStore("catalog").getAll();
+    request.onsuccess = () => {
+      try {
+        assertConnection();
+        if (signature(family(request.result)) !== signature(periods))
+          throw Error(
+            "نوبت‌ها یا نمرات سالانه در پنجرهٔ دیگری تغییر کرده‌اند؛ دوباره تلاش کنید.",
+          );
+        const at = new Date().toISOString();
+        for (const { period, plans } of updates) {
+          for (const [logical, value] of plans)
+            tx.objectStore("records").put({
+              key: period.id + "|" + logical,
+              workspace: period.id,
+              logical,
+              value,
+            });
+          const revision = period.revision + 1;
+          tx.objectStore("catalog").put({ ...period, revision, updatedAt: at });
+          tx.objectStore("events").add({
+            workspace: period.id,
+            revision,
+            at,
+            action: "تجمیع نمرات سالانهٔ پودمان",
+            changes: [...plans.keys()].map((logical) => ({
+              path: logical + ".annualModules",
+              before: null,
+              after: "نمره‌های سالانهٔ پودمان یکپارچه شد",
+            })),
+          });
+          tx.objectStore("undo").delete(period.id);
+          changed.push({ workspace: period.id, revision });
+        }
+      } catch (error) {
+        abort(error);
+      }
+    };
+  } catch (error) {
+    abort(error);
+  }
+  try {
+    await done;
+  } catch (error) {
+    throw failure || error;
+  }
+  assertConnection();
+  return { changed, conflicts };
 }
 // Source: src/workspace/grading/scope.js
 function deriveDualGrades(lesson) {
@@ -573,6 +800,7 @@ async function commitRecords(
     throw new DOMException("آزمون شکست ذخیره", "QuotaExceededError");
   }
   let nextCatalog;
+  const annualChanged = [];
   try {
     nextCatalog = await EduRecordTransaction.commit({
       connection: sourceConnection,
@@ -586,6 +814,7 @@ async function commitRecords(
       keepUndo,
       normalizedName,
       academicTermKind,
+      annualChanged,
     });
   } catch (error) {
     if (error.code === "WORKSPACE_CONFLICT" && isCurrentCommit())
@@ -597,8 +826,11 @@ async function commitRecords(
     for (const key of removed) sourceCommitted.delete(key);
     workspace = nextCatalog;
   }
-  if (connection === sourceConnection && !resetBusy && !connectionRetired)
+  if (connection === sourceConnection && !resetBusy && !connectionRetired) {
     broadcast({ workspace: nextCatalog.id, revision: nextCatalog.revision });
+    for (const change of annualChanged)
+      broadcast({ ...change, annualModular: true });
+  }
   return true;
 }
 
@@ -873,7 +1105,11 @@ async function bootstrapV24() {
     workspace =
       periods.find((x) => x.id === preferred) ||
       periods.sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
-    const loaded = await readWorkspace(workspace.id);
+    const annual = globalThis.EduAnnualModules
+      ? await synchronizeAnnualForRead(workspace.id)
+      : null;
+    const loaded = await readWorkspaceSnapshot(workspace.id);
+    workspace = loaded.period;
     db = loaded.data;
     committed = loaded.records;
     storageBlocked = false;
@@ -883,6 +1119,13 @@ async function bootstrapV24() {
       rememberPeriod(workspace.id);
     } catch (ignore) {}
     setStatus("اطلاعات ذخیره‌شده خوانده شد.", "saved");
+    for (const change of annual?.changed || [])
+      broadcast({ ...change, annualModular: true });
+    if (annual?.conflicts.length)
+      setStatus(
+        "نمره‌های قدیمی پودمانی تعارض دارند؛ برای حفظ اطلاعات، خودکار جایگزین نشدند.",
+        "error",
+      );
     hydrateReportNotes(workspace);
     await loadDrafts();
     ready = true;
@@ -1548,7 +1791,51 @@ function assessmentResult(lesson, sid, stage = "final") {
     threshold: 14,
   };
 }
+function assertCompatibleTermLessons(reference, candidate) {
+  if (!reference || !candidate) return;
+  const dual = reference.gradeMode === "kardanesh";
+  if (dual !== (candidate.gradeMode === "kardanesh"))
+    throw Error(
+      "شیوهٔ نمره‌دهی درس «" +
+        reference.name +
+        "» در دو نوبت متفاوت است؛ برای حفظ سوابق، درس با شیوهٔ متفاوت باید شناسهٔ مستقل داشته باشد.",
+    );
+  if (
+    (reference.gradingPolicy?.method === "modular") !==
+    (candidate.gradingPolicy?.method === "modular")
+  )
+    throw Error(
+      "شیوهٔ پودمانی و واحدی درس «" +
+        reference.name +
+        "» یکسان نیست؛ سوابق متفاوت قابل ترکیب نیستند.",
+    );
+  if (
+    dual &&
+    (reference.gradingPolicy?.subjectType === "general") !==
+      (candidate.gradingPolicy?.subjectType === "general")
+  )
+    throw Error(
+      "نوع درس «" +
+        reference.name +
+        "» در دو نوبت یکسان نیست؛ گزارش این درس قابل محاسبه نیست.",
+    );
+}
+function assertAnnualLessonCompatibility(parts, schoolId, classId = "") {
+  const lessons = new Map();
+  for (const part of parts)
+    for (const classroom of part.data.schools.find(
+      (school) => school.id === schoolId,
+    )?.classes || []) {
+      if (classId && classroom.id !== classId) continue;
+      for (const lesson of classroom.lessons) {
+        const key = classroom.id + "|" + lesson.id;
+        assertCompatibleTermLessons(lessons.get(key), lesson);
+        lessons.set(key, lesson);
+      }
+    }
+}
 function annualGradeRows(parts, schoolId, classId, studentId = "") {
+  assertAnnualLessonCompatibility(parts, schoolId, classId);
   parts = [...parts].sort(
     (a, b) =>
       (a.period.term === "اول" ? 0 : 1) - (b.period.term === "اول" ? 0 : 1),
@@ -1647,8 +1934,39 @@ function annualGradeRows(parts, schoolId, classId, studentId = "") {
   }
   return rows;
 }
+function annualModularLesson(parts, schoolId, classId, lesson, sid) {
+  const selected = (classroom) => ({
+    ...classroom,
+    students: [{ id: sid }],
+    archivedStudents: [],
+    lessons: classroom.lessons
+      .filter((item) => item.id === lesson.id)
+      .map((item) => ({
+        ...clone(item),
+        poudmans: item.poudmans.map((pod) => ({
+          ...clone(pod),
+          podScores: Object.hasOwn(pod.podScores || {}, sid)
+            ? { [sid]: clone(pod.podScores[sid]) }
+            : {},
+        })),
+      })),
+  });
+  const versions = parts.flatMap((part) => {
+    const classroom = part.data.schools
+      .find((school) => school.id === schoolId)
+      ?.classes.find((item) => item.id === classId);
+    return classroom ? [selected(classroom)] : [];
+  });
+  const base = selected({ id: classId, lessons: [lesson] });
+  return EduAnnualModules.mergeClass([base, ...versions]).lessons.find(
+    (item) => item.id === lesson.id,
+  );
+}
+
 function annualTechnicalRows(parts, schoolId, classId, studentId = "") {
-  const rows = [];
+  assertAnnualLessonCompatibility(parts, schoolId, classId);
+  const rows = [],
+    annual = new Set();
   for (const part of parts)
     for (const c of part.data.schools.find((s) => s.id === schoolId)?.classes ||
       []) {
@@ -1658,7 +1976,14 @@ function annualTechnicalRows(parts, schoolId, classId, studentId = "") {
         for (const lesson of c.lessons.filter(
           (l) => l.gradeMode !== "kardanesh",
         )) {
-          const r = calcV24(c, lesson, st.id, part.data);
+          const formal = lesson.gradingPolicy?.method === "modular";
+          const key = JSON.stringify([c.id, st.id, lesson.id]);
+          if (formal && annual.has(key)) continue;
+          if (formal) annual.add(key);
+          const merged = formal
+            ? annualModularLesson(parts, schoolId, c.id, lesson, st.id)
+            : lesson;
+          const r = calcV24(c, merged, st.id, part.data);
           const legacy = !lesson.gradingPolicy;
           const legacyUnits = legacy
             ? lesson.poudmans.flatMap((pod) =>
@@ -1682,7 +2007,7 @@ function annualTechnicalRows(parts, schoolId, classId, studentId = "") {
             studentName: st.name,
             lessonId: lesson.id,
             lessonName: lesson.name,
-            term: part.period.term,
+            term: formal ? "سالانه" : part.period.term,
             method: legacy ? "legacy-unit" : "modular",
             legacyUnits,
             provisionalAverage: legacy ? (r.final ?? null) : null,
@@ -3390,7 +3715,7 @@ function singleFileFallbackPanel(visible) {
   return (
     '<div id="singleFileFallback"' +
     (visible ? "" : " hidden") +
-    '><p>ذخیره خودکار فایل فعال نیست. فایل خالی پشتیبان قابل بازیابی نیست. می‌توانید مجوز یا محل فایل را عوض کنید، از مرورگر دیگری مانند Chrome استفاده کنید، یا از دکمهٔ دریافت پشتیبان کامل در بالای همین پنجره استفاده کنید. دریافت دستی، ذخیره خودکار را فعال نمی‌کند.</p></div>'
+    "><p>ذخیره خودکار فایل فعال نیست. فایل خالی پشتیبان قابل بازیابی نیست. می‌توانید مجوز یا محل فایل را عوض کنید، از مرورگر دیگری مانند Chrome استفاده کنید، یا از دکمهٔ دریافت پشتیبان کامل در بالای همین پنجره استفاده کنید. دریافت دستی، ذخیره خودکار را فعال نمی‌کند.</p></div>"
   );
 }
 function showSingleFileFallback(visible) {
@@ -3916,6 +4241,9 @@ async function restoreFullBackup() {
     broadcast({ type: "installation-restored" });
     await completeResetCleanup(connection, marker);
     window.EduPeriodicReports?.resetDrafts();
+    const annual = globalThis.EduAnnualModules
+      ? await synchronizeAnnualForRead(source.activeWorkspace)
+      : null;
     const loaded = await readWorkspaceSnapshot(source.activeWorkspace);
     workspace = loaded.period;
     db = loaded.data;
@@ -3953,6 +4281,13 @@ async function restoreFullBackup() {
           : " توضیحات گزارش در بانک محفوظ‌اند؛ ذخیره موقت آن‌ها نیازمند تلاش مجدد است."),
       notesSaved ? "saved" : "pending",
     );
+    for (const change of annual?.changed || [])
+      broadcast({ ...change, annualModular: true });
+    if (annual?.conflicts.length)
+      setStatus(
+        "بازیابی انجام شد؛ ثبت‌های متعارض قدیمی پودمانی حفظ شدند و نیاز به بررسی دارند.",
+        "error",
+      );
     return periods.length;
   } catch (error) {
     if (committedRestore) {
@@ -4118,9 +4453,9 @@ function previewImport(candidate, label) {
           " / " +
           (candidate.settings.academicTerm || "نامشخص"),
       ) +
-      "</p><p>این فایل فقط اطلاعات نوبت " +
+      "</p><p>این فایل اطلاعات نوبت " +
       esc(workspace.year + " / " + workspace.term) +
-      ' را بازمی‌گرداند؛ نوبت جدید ساخته نمی‌شود و سایر نوبت‌ها تغییر نمی‌کنند.</p><button data-workspace-action="export-period">۱. ذخیره پشتیبان اطلاعات فعلی</button><p><label><input id="restoreExternalConfirmed" type="checkbox"> نسخه فعلی را در فایل مستقل ذخیره و بررسی کرده‌ام.</label></p><button data-mutating="1" data-workspace-action="confirm-import">۲. بازیابی اطلاعات همین نوبت</button><p id="operationError" role="alert"></p>',
+      ' را بازمی‌گرداند؛ نوبت جدید ساخته نمی‌شود. نمره‌های پودمانی مشترکِ همین سال نیز به‌روز می‌شوند؛ نمرات نوبتیِ دیگر و سایر سال‌ها تغییر نمی‌کنند.</p><button data-workspace-action="export-period">۱. ذخیره پشتیبان اطلاعات فعلی</button><p><label><input id="restoreExternalConfirmed" type="checkbox"> نسخه فعلی را در فایل مستقل ذخیره و بررسی کرده‌ام.</label></p><button data-mutating="1" data-workspace-action="confirm-import">۲. بازیابی اطلاعات همین نوبت</button><p id="operationError" role="alert"></p>',
   );
   if (opened !== false) pendingImport = preview;
 }
@@ -4283,33 +4618,59 @@ async function confirmImport() {
     check(true);
     busy++;
     paintStatus();
-    try {
-      await commitRecords(collectRecords(candidate), {
-        action: "بازیابی پشتیبان: " + preview.label,
-        replace: true,
-        keepUndo: false,
-      });
-      db = candidate;
-      drafts.clear();
-      storeDrafts();
-      pendingImport = null;
-      isAuthenticated = false;
-      state = {
-        view: "schools",
-        schoolId: null,
-        classId: null,
-        lessonId: null,
-        tab: "students",
-        reportTab: "comprehensive",
-      };
-      closeModal();
-      setStatus("بازیابی تراکنشی انجام شد.", "saved");
-    } catch (error) {
-      handleError(error);
-    } finally {
-      busy--;
-      render();
-    }
+    const sourceConnection = connection;
+    const isCurrentTarget = () =>
+      workspace?.id === context.id &&
+      connection === sourceConnection &&
+      !periodLoading &&
+      !resetBusy &&
+      !connectionRetired;
+    const operation = (async () => {
+      let installed = false;
+      try {
+        const changed = await commitRecords(collectRecords(candidate), {
+          action: "بازیابی پشتیبان: " + preview.label,
+          replace: true,
+          keepUndo: false,
+        });
+        // The write belongs to its source period even if another operation has
+        // since retired the connection or selected a different period.
+        if (
+          !isCurrentTarget() ||
+          workspace.revision !== context.revision + (changed ? 1 : 0)
+        )
+          return true;
+        db = candidate;
+        installed = true;
+        drafts.clear();
+        storeDrafts();
+        pendingImport = null;
+        isAuthenticated = false;
+        state = {
+          view: "schools",
+          schoolId: null,
+          classId: null,
+          lessonId: null,
+          tab: "students",
+          reportTab: "comprehensive",
+        };
+        closeModal();
+        scheduleSingleFile();
+        setStatus("بازیابی تراکنشی انجام شد.", "saved");
+        return true;
+      } catch (error) {
+        if (isCurrentTarget()) handleError(error);
+        throw error;
+      } finally {
+        busy--;
+        if (installed && isCurrentTarget()) render();
+        else paintStatus();
+      }
+    })();
+    // Period switching, backups and subsequent edits must await the complete
+    // restore, including its in-memory update, not just the preceding save.
+    writer = operation;
+    await operation;
   } finally {
     periodImportBusy = false;
   }
@@ -4364,7 +4725,7 @@ async function openUndoModal() {
           (Number.isFinite(date.getTime())
             ? "<p>" + esc(date.toLocaleString("fa-IR")) + "</p>"
             : "") +
-          '</section><p class="undo-preview-hint">فقط آخرین تغییر ثبت‌شده به وضعیت قبل برمی‌گردد؛ سایر نوبت‌ها تغییر نمی‌کنند. این کار، بازیابی فایل پشتیبان نیست.</p><p class="undo-preview-hint">پس از تأیید، امکان لغوِ همین بازگردانی وجود ندارد.</p><p id="operationError" role="alert"></p><div class="full-restore-actions"><button type="button" data-mutating="1" data-workspace-action="confirm-undo">تأیید و برگرداندن تغییر</button><button type="button" class="ghost" data-workspace-action="close">انصراف</button></div>'
+          '</section><p class="undo-preview-hint">فقط آخرین تغییر ثبت‌شده به وضعیت قبل برمی‌گردد. اگر تغییر مربوط به نمرهٔ پودمانی باشد، نمرهٔ مشترکِ همان سال نیز بازمی‌گردد؛ سایر سال‌ها تغییر نمی‌کنند. این کار، بازیابی فایل پشتیبان نیست.</p><p class="undo-preview-hint">پس از تأیید، امکان لغوِ همین بازگردانی وجود ندارد.</p><p id="operationError" role="alert"></p><div class="full-restore-actions"><button type="button" data-mutating="1" data-workspace-action="confirm-undo">تأیید و برگرداندن تغییر</button><button type="button" class="ghost" data-workspace-action="close">انصراف</button></div>'
         : '<p class="undo-preview-empty">در این نوبت، تغییری برای بازگرداندن وجود ندارد.</p><button type="button" class="ghost" data-workspace-action="close">بستن</button>') +
       "</div>",
   );
@@ -4515,7 +4876,7 @@ async function openPeriods() {
     .join("");
   showModal(
     "نوبت‌های تحصیلی و کارنامه نهایی",
-    '<div class="period-hub"><p class="period-intro">هر سال تحصیلی دو نوبت دارد. پس از بستن نوبت اول، نوبت دوم با همان کلاس‌ها و هنرجویان و بدون نمره‌های قبلی شروع می‌شود. پشتیبان‌گیری جدا از این روند است.</p><section class="period-list"><h4>نوبت‌های تحصیلی</h4><table><thead><tr><th>سال / نوبت</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody>' +
+    '<div class="period-hub"><p class="period-intro">هر سال تحصیلی دو نوبت دارد. پس از بستن نوبت اول، کلاس‌ها و هنرجویان در نوبت دوم ادامه پیدا می‌کنند. نمرات عملی و نظری هر نوبت جداست؛ نمرات پودمانی در تمام سال ادامه دارند. پشتیبان‌گیری جدا از این روند است.</p><section class="period-list"><h4>نوبت‌های تحصیلی</h4><table><thead><tr><th>سال / نوبت</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody>' +
       periodRows +
       '</tbody></table></section><section class="period-management"><h4>مدیریت نوبت فعلی</h4><div class="row period-actions"><button data-workspace-action="new-period">شروع سال تحصیلی / نوبت جدید</button>' +
       (workspace.closed
@@ -4818,6 +5179,9 @@ async function switchPeriod(id) {
     await writer.catch(() => {});
     periodLoading = true;
     lockControls();
+    const annual = globalThis.EduAnnualModules
+      ? await synchronizeAnnualForRead(id)
+      : null;
     const loaded = await readWorkspaceSnapshot(id);
     if (!ready || resetBusy || connectionRetired)
       throw Error(
@@ -4845,6 +5209,14 @@ async function switchPeriod(id) {
     closeModal();
     render();
     await recoverDrafts();
+    for (const change of annual?.changed || [])
+      broadcast({ ...change, annualModular: true });
+    if (annual?.changed.length) scheduleSingleFile();
+    if (annual?.conflicts.length)
+      setStatus(
+        "نمره‌های قدیمی پودمانی تعارض دارند؛ هیچ ثبت متعارضی خودکار جایگزین نشد.",
+        "error",
+      );
   } finally {
     periodLoading = false;
     periodSwitchBusy = false;
@@ -4892,7 +5264,7 @@ async function openNewPeriod(firstId = "") {
       (!first ? " selected" : "") +
       ">اول</option><option" +
       (first ? " selected" : "") +
-      '>دوم</option></select></label><p>نوبت دوم فقط پس از بسته‌شدن نوبت اول همان سال شروع می‌شود. کلاس‌ها، هنرجویان و درس‌ها ادامه پیدا می‌کنند؛ نمرات و جلسات هر نوبت جدا می‌مانند.</p><button data-workspace-action="create-period">شروع نوبت</button></div>',
+      '>دوم</option></select></label><p>نوبت دوم فقط پس از بسته‌شدن نوبت اول همان سال شروع می‌شود. کلاس‌ها، هنرجویان، درس‌ها و نمرات پودمانی ادامه پیدا می‌کنند؛ نمرات عملی و نظری و جلسات هر نوبت جدا می‌مانند.</p><button data-workspace-action="create-period">شروع نوبت</button></div>',
   );
 }
 
@@ -4950,6 +5322,7 @@ async function createNewPeriod() {
     for (const school of next.schools)
       for (const c of school.classes) {
         c.archivedStudents = [];
+        const students = new Set(c.students.map((student) => student.id));
         for (const l of c.lessons) {
           l.kardaneshScores = {};
           const info = EduPolicy.identity(l, year);
@@ -4970,7 +5343,16 @@ async function createNewPeriod() {
             }
           }
           if (l.courseInfo || l.gradingPolicy) l.courseInfo = info;
-          for (const p of l.poudmans) p.podScores = {};
+          // Formal modules are annual; legacy unit grades remain term-scoped.
+          for (const p of l.poudmans)
+            p.podScores =
+              first?.year === year && l.gradingPolicy?.method === "modular"
+                ? Object.fromEntries(
+                    Object.entries(p.podScores || {}).filter(([studentId]) =>
+                      students.has(studentId),
+                    ),
+                  )
+                : {};
           for (const p of l.poudmans)
             for (const u of p.units) u.unitScores = {};
         }
@@ -5125,7 +5507,16 @@ function finalReportData() {
                     " / تئوری",
                 );
             }
-          if (result.final === null && result.passed !== false)
+          // The first term freezes progress without ending annual modules.
+          const annualModuleInProgress =
+            l.gradingPolicy?.method === "modular" &&
+            (workspace.termKind || academicTermKind(workspace.term)) ===
+              "first";
+          if (
+            !annualModuleInProgress &&
+            result.final === null &&
+            result.passed !== false
+          )
             missing.push(c.name + " / " + st.name + " / " + l.name);
           return {
             id: l.id,
@@ -5523,15 +5914,7 @@ function assessmentOverviewCell(lesson, sid, parts = null, classId = "") {
               .find((classroom) => classroom.id === classId)
               ?.lessons.find((item) => item.id === lesson.id)
           : lesson;
-        if (
-          source &&
-          (source.gradingPolicy?.subjectType === "general") !== general
-        )
-          throw Error(
-            "نوع درس «" +
-              lesson.name +
-              "» در دو نوبت سازگار نیست؛ تنظیمات درس را بررسی کنید.",
-          );
+        if (source && parts) assertCompatibleTermLessons(lesson, source);
         const result = source
           ? assessmentResult(source, sid, stage)
           : { practical: null, theory: null, final: null, complete: false };
@@ -5559,6 +5942,162 @@ function assessmentOverviewCell(lesson, sid, parts = null, classId = "") {
   );
 }
 
+function karnamehLessons(parts, schoolId, classroom) {
+  const lessons = new Map(
+    classroom.lessons.map((lesson) => [lesson.id, lesson]),
+  );
+  for (const part of parts)
+    for (const lesson of part.data.schools
+      .find((school) => school.id === schoolId)
+      ?.classes.find((item) => item.id === classroom.id)?.lessons || [])
+      if (!lessons.has(lesson.id)) lessons.set(lesson.id, lesson);
+  return [...lessons.values()];
+}
+
+function modularOverviewCell(
+  lesson,
+  sid,
+  parts = null,
+  classId = "",
+  source = db,
+) {
+  if (lesson.gradingPolicy?.method === "modular") {
+    const versions = parts || [{ data: source }];
+    const schoolId = versions
+      .flatMap((part) => part.data.schools || [])
+      .find((school) => school.classes.some((item) => item.id === classId))?.id;
+    let annual;
+    try {
+      annual = parts
+        ? annualModularLesson(parts, schoolId, classId, lesson, sid)
+        : lesson;
+    } catch (error) {
+      return (
+        '<div class="report-modular-conflict" role="alert">' +
+        esc(error.message) +
+        "</div>"
+      );
+    }
+    const result = EduPolicy.lesson(annual.gradingPolicy, annual.poudmans, sid);
+    return (
+      '<div class="report-modular-grades"><section class="report-modular-course"><div class="report-mobile-score-heading" aria-hidden="true"><span>پودمان</span><div><span>مستمر</span><span>شایستگی</span><span>نتیجه</span></div></div>' +
+      annual.poudmans
+        .map((pod) => {
+          const raw = ownScoreRecord(pod.podScores, sid);
+          const grade = result.modules.find((item) => item.id === pod.id);
+          return (
+            '<div class="report-module-row" data-module-id="' +
+            esc(pod.id) +
+            '"><span class="report-module-title">' +
+            esc(pod.name) +
+            '</span><div class="report-stage-values"><span><span class="report-score-label">مستمر</span><b>' +
+            esc(raw.m ?? "—") +
+            '</b></span><span><span class="report-score-label">شایستگی</span><b>' +
+            esc(raw.c ?? "—") +
+            '</b></span><span><span class="report-score-label">نتیجه</span><strong>' +
+            finalText(grade) +
+            "</strong></span></div></div>"
+          );
+        })
+        .join("") +
+      '<div class="report-modular-final"><span>نهایی درس</span><strong>' +
+      finalText(result) +
+      "</strong></div></section></div>"
+    );
+  }
+  const terms = parts ? ["اول", "دوم"] : [""];
+  return (
+    '<div class="report-modular-grades">' +
+    terms
+      .map((term) => {
+        const part = parts?.find((item) => item.period.term === term);
+        const data = parts ? part?.data : source;
+        const classroom = data?.schools
+          ?.flatMap((school) => school.classes)
+          .find((item) => item.id === classId);
+        const currentLesson = parts
+          ? classroom?.lessons.find((item) => item.id === lesson.id)
+          : lesson;
+        const title =
+          '<section class="report-modular-term"><h4>' +
+          esc("نوبت " + (term || workspace.term)) +
+          "</h4>";
+        if (!currentLesson)
+          return (
+            title +
+            '<p class="report-modular-empty" aria-label="درس در این نوبت موجود نیست">—</p></section>'
+          );
+        assertCompatibleTermLessons(lesson, currentLesson);
+        const result = calcV24(
+          classroom || { id: classId },
+          currentLesson,
+          sid,
+          data,
+        );
+        const modular = currentLesson.gradingPolicy?.method === "modular";
+        const rows = modular
+          ? currentLesson.poudmans.map((pod) => {
+              const grade = ownScoreRecord(pod.podScores, sid);
+              return {
+                id: pod.id,
+                name: pod.name,
+                mostamar: grade.m ?? null,
+                second: grade.c ?? null,
+                result: result.modules.find((item) => item.id === pod.id) || {
+                  final: null,
+                },
+              };
+            })
+          : currentLesson.poudmans.flatMap((pod) =>
+              pod.units.map((unit) => {
+                const grade = result.details?.[pod.id]?.[unit.id] || {};
+                return {
+                  id: unit.id,
+                  name: pod.name + " / " + unit.name,
+                  mostamar: grade.m ?? null,
+                  second: grade.p ?? null,
+                  result: { final: grade.final ?? null },
+                };
+              }),
+            );
+        const secondLabel = modular ? "شایستگی" : "پایانی";
+        return (
+          title +
+          '<div class="report-mobile-score-heading" aria-hidden="true"><span>' +
+          (modular ? "پودمان" : "پودمان / واحد") +
+          "</span><div><span>مستمر</span><span>" +
+          secondLabel +
+          "</span><span>نتیجه</span></div></div>" +
+          (rows.length
+            ? rows
+                .map(
+                  (row) =>
+                    '<div class="report-module-row" data-module-id="' +
+                    esc(row.id) +
+                    '"><span class="report-module-title">' +
+                    esc(row.name) +
+                    '</span><div class="report-stage-values"><span><span class="report-score-label">مستمر</span><b>' +
+                    esc(row.mostamar ?? "—") +
+                    '</b></span><span><span class="report-score-label">' +
+                    secondLabel +
+                    "</span><b>" +
+                    esc(row.second ?? "—") +
+                    '</b></span><span><span class="report-score-label">نتیجه</span><strong>' +
+                    finalText(row.result) +
+                    "</strong></span></div></div>",
+                )
+                .join("")
+            : '<p class="report-modular-empty">—</p>') +
+          '<div class="report-modular-final"><span>نهایی درس</span><strong>' +
+          finalText(result) +
+          "</strong></div></section>"
+        );
+      })
+      .join("") +
+    "</div>"
+  );
+}
+
 function overviewV24(c, options = {}) {
   const lessons = c.lessons || [];
   const students = getSortedStudents(
@@ -5578,17 +6117,28 @@ function overviewV24(c, options = {}) {
     '<div class="card report-document grade-report"><header class="karnameh-report-heading"><div><span class="karnameh-report-kind">نمای کلی کلاس</span><h3>کارنامه کلاس ' +
     esc(c.name) +
     "</h3><p>" +
-    esc(workspace.year + " / " + workspace.term) +
+    esc(
+      workspace.year +
+        (lessons.every((lesson) => lesson.gradingPolicy?.method === "modular")
+          ? ""
+          : " / " + workspace.term),
+    ) +
     '</p></div><button class="no-print" data-workspace-action="print">چاپ / PDF</button></header><div class="karnameh-report-meta"><span>' +
     students.length.toLocaleString("fa-IR") +
     " هنرجو</span><span>" +
     lessons.length.toLocaleString("fa-IR") +
     " درس</span><span>" +
     (options.parts
-      ? "۴ مرحلهٔ نمره‌دهی"
-      : workspace.closed
-        ? "نوبت بسته‌شده"
-        : "نمرات ثبت‌شده تا این لحظه") +
+      ? lessons.every((lesson) => lesson.gradeMode === "kardanesh")
+        ? "۴ مرحلهٔ نمره‌دهی"
+        : lessons.every((lesson) => lesson.gradingPolicy?.method === "modular")
+          ? "ارزشیابی پودمانی سالانه"
+          : "کارنامهٔ سال تحصیلی"
+      : lessons.every((lesson) => lesson.gradingPolicy?.method === "modular")
+        ? "ارزشیابی پودمانی سالانه"
+        : workspace.closed
+          ? "نوبت بسته‌شده"
+          : "نمرات ثبت‌شده تا این لحظه") +
     '</span></div><div class="table-scroll"><table class="grade-report-table karnameh-overview' +
     (options.parts && lessons.length > 2 ? " karnameh-many-lessons" : "") +
     '" data-mobile-layout="cards"><thead><tr><th scope="col">دانش‌آموز</th>' +
@@ -5596,7 +6146,6 @@ function overviewV24(c, options = {}) {
     "</tr></thead><tbody>" +
     students
       .map((st) => {
-        const results = lessons.map((l) => calcV24(c, l, st.id));
         return (
           '<tr><td><button type="button" class="karnameh-student-link no-print" data-workspace-action="karnameh-student" data-class="' +
           esc(c.id) +
@@ -5609,24 +6158,25 @@ function overviewV24(c, options = {}) {
           '</button><span class="karnameh-student-print">' +
           esc(st.name) +
           "</span></td>" +
-          results
-            .map((r, i) =>
-              lessons[i].gradeMode === "kardanesh"
+          lessons
+            .map((lesson) =>
+              lesson.gradeMode === "kardanesh"
                 ? '<td data-report-lesson="' +
-                  esc(lessons[i].name) +
+                  esc(lesson.name) +
                   '" class="report-grade-cell report-assessment-cell">' +
-                  assessmentOverviewCell(
-                    lessons[i],
+                  assessmentOverviewCell(lesson, st.id, options.parts, c.id) +
+                  "</td>"
+                : '<td data-report-lesson="' +
+                  esc(lesson.name) +
+                  '" class="report-grade-cell report-assessment-cell report-modular-cell">' +
+                  modularOverviewCell(
+                    lesson,
                     st.id,
                     options.parts,
                     c.id,
+                    options.source || db,
                   ) +
-                  "</td>"
-                : '<td data-report-lesson="' +
-                  esc(lessons[i].name) +
-                  '" class="report-grade-cell"><strong>' +
-                  finalText(r) +
-                  "</strong></td>",
+                  "</td>",
             )
             .join("") +
           "</tr>"
@@ -5664,22 +6214,21 @@ async function renderAcademicKarnameh(out, filter) {
       (item) => item.id === filter.classId,
     );
     if (!classroom) throw Error("کلاس در نوبت فعلی موجود نیست.");
-    const lessons = new Map(
-      classroom.lessons.map((lesson) => [lesson.id, lesson]),
-    );
-    for (const part of snapshot.parts)
-      for (const lesson of part.data.schools
-        .find((item) => item.id === school.id)
-        ?.classes.find((item) => item.id === classroom.id)?.lessons || [])
-        if (lesson.gradeMode === "kardanesh" && !lessons.has(lesson.id))
-          lessons.set(lesson.id, lesson);
-    const merged = { ...classroom, lessons: [...lessons.values()] };
+    assertAnnualLessonCompatibility(snapshot.parts, school.id, classroom.id);
+    const merged = {
+      ...classroom,
+      lessons: karnamehLessons(snapshot.parts, school.id, classroom),
+    };
     const student = filter.studentId
       ? knownStudents(classroom).find((item) => item.id === filter.studentId)
       : null;
     if (filter.studentId && !student)
       throw Error("هنرجو در کلاس انتخاب‌شده موجود نیست.");
-    out.innerHTML = overviewV24(merged, { parts: snapshot.parts, student });
+    out.innerHTML = overviewV24(merged, {
+      parts: snapshot.parts,
+      student,
+      source: active.data,
+    });
     const report = out.querySelector(".report-document");
     if (report) {
       report.classList.add("karnameh-year-document");
@@ -5704,7 +6253,14 @@ async function renderAcademicKarnameh(out, filter) {
         heading.append(actions);
       }
       heading.querySelector("p").textContent =
-        school.name + " · " + workspace.year + " · نوبت اول و دوم";
+        school.name +
+        " · " +
+        workspace.year +
+        (merged.lessons.every(
+          (lesson) => lesson.gradingPolicy?.method === "modular",
+        )
+          ? ""
+          : " · نوبت اول و دوم");
       karnamehSnapshots.set(report, snapshot.context);
     }
   } catch (error) {
@@ -6752,6 +7308,7 @@ async function confirmWipe() {
   if (!confirm("آخرین تأیید: همه اطلاعات این برنامه از این مرورگر حذف شوند؟"))
     return false;
   resetBusy = true;
+  const hadFileTimer = !!singleFileTimer;
   pauseSingleFile();
   const finish = beginRecordEditorSave(form),
     wasBlocked = blocked;
@@ -6833,7 +7390,18 @@ async function confirmWipe() {
     return false;
   } finally {
     resetConnection?.close();
-    if (!committedReset) resetBusy = false;
+    if (!committedReset) {
+      resetBusy = false;
+      if (
+        hadFileTimer &&
+        singleFile &&
+        !singleFileFailure &&
+        ready &&
+        !blocked &&
+        !connectionRetired
+      )
+        startSingleFile();
+    }
     finish();
   }
 }
@@ -8477,7 +9045,9 @@ function installRuntimeAPI() {
   };
 }
 // Source: src/workspace/drafts/review.js
+let discardingDrafts = false;
 async function discardDrafts() {
+  if (discardingDrafts) return;
   if (!drafts.size) return;
   if (
     !confirm(
@@ -8485,19 +9055,51 @@ async function discardDrafts() {
     )
   )
     return;
-  const previous = [...drafts];
-  drafts.clear();
-  clearTimeout(draftTimer);
+  const origin = workspace?.id,
+    sourceRevision = workspace?.revision,
+    sourceConnection = connection,
+    isCurrentTarget = () =>
+      workspace?.id === origin &&
+      workspace?.revision === sourceRevision &&
+      connection === sourceConnection &&
+      !busy &&
+      !flushing &&
+      !periodLoading &&
+      !resetBusy &&
+      !connectionRetired;
+  const ensureCurrent = () => {
+    if (!isCurrentTarget())
+      throw Error(
+        "اطلاعات، نوبت یا وضعیت ثبت تغییر کرده است؛ لغو پیش‌نویس را دوباره بررسی کنید.",
+      );
+  };
+  ensureCurrent();
+  discardingDrafts = true;
   try {
-    await storeDrafts();
-  } catch (error) {
-    for (const [key, value] of previous) drafts.set(key, value);
-    await storeDrafts().catch(() => {});
-    throw error;
+    const previous = [...drafts];
+    drafts.clear();
+    clearTimeout(draftTimer);
+    try {
+      await storeDrafts();
+    } catch (error) {
+      // Never restore source entries into another period or a newer revision.
+      // A newer local edit of the same cell also takes precedence over rollback.
+      if (isCurrentTarget()) {
+        for (const [key, value] of previous)
+          if (!drafts.has(key)) drafts.set(key, value);
+        await storeDrafts().catch(() => {});
+      }
+      throw error;
+    }
+    ensureCurrent();
+    const loaded = await readWorkspace(origin);
+    ensureCurrent();
+    db = loaded.data;
+    setStatus("ویرایش‌های ثبت‌نشده لغو شدند.", "saved");
+    render();
+  } finally {
+    discardingDrafts = false;
   }
-  db = (await readWorkspace(workspace.id)).data;
-  setStatus("ویرایش‌های ثبت‌نشده لغو شدند.", "saved");
-  render();
 }
 
 function reviewDrafts() {

@@ -53,7 +53,51 @@ function assessmentResult(lesson, sid, stage = "final") {
     threshold: 14,
   };
 }
+function assertCompatibleTermLessons(reference, candidate) {
+  if (!reference || !candidate) return;
+  const dual = reference.gradeMode === "kardanesh";
+  if (dual !== (candidate.gradeMode === "kardanesh"))
+    throw Error(
+      "شیوهٔ نمره‌دهی درس «" +
+        reference.name +
+        "» در دو نوبت متفاوت است؛ برای حفظ سوابق، درس با شیوهٔ متفاوت باید شناسهٔ مستقل داشته باشد.",
+    );
+  if (
+    (reference.gradingPolicy?.method === "modular") !==
+    (candidate.gradingPolicy?.method === "modular")
+  )
+    throw Error(
+      "شیوهٔ پودمانی و واحدی درس «" +
+        reference.name +
+        "» یکسان نیست؛ سوابق متفاوت قابل ترکیب نیستند.",
+    );
+  if (
+    dual &&
+    (reference.gradingPolicy?.subjectType === "general") !==
+      (candidate.gradingPolicy?.subjectType === "general")
+  )
+    throw Error(
+      "نوع درس «" +
+        reference.name +
+        "» در دو نوبت یکسان نیست؛ گزارش این درس قابل محاسبه نیست.",
+    );
+}
+function assertAnnualLessonCompatibility(parts, schoolId, classId = "") {
+  const lessons = new Map();
+  for (const part of parts)
+    for (const classroom of part.data.schools.find(
+      (school) => school.id === schoolId,
+    )?.classes || []) {
+      if (classId && classroom.id !== classId) continue;
+      for (const lesson of classroom.lessons) {
+        const key = classroom.id + "|" + lesson.id;
+        assertCompatibleTermLessons(lessons.get(key), lesson);
+        lessons.set(key, lesson);
+      }
+    }
+}
 function annualGradeRows(parts, schoolId, classId, studentId = "") {
+  assertAnnualLessonCompatibility(parts, schoolId, classId);
   parts = [...parts].sort(
     (a, b) =>
       (a.period.term === "اول" ? 0 : 1) - (b.period.term === "اول" ? 0 : 1),
@@ -152,8 +196,39 @@ function annualGradeRows(parts, schoolId, classId, studentId = "") {
   }
   return rows;
 }
+function annualModularLesson(parts, schoolId, classId, lesson, sid) {
+  const selected = (classroom) => ({
+    ...classroom,
+    students: [{ id: sid }],
+    archivedStudents: [],
+    lessons: classroom.lessons
+      .filter((item) => item.id === lesson.id)
+      .map((item) => ({
+        ...clone(item),
+        poudmans: item.poudmans.map((pod) => ({
+          ...clone(pod),
+          podScores: Object.hasOwn(pod.podScores || {}, sid)
+            ? { [sid]: clone(pod.podScores[sid]) }
+            : {},
+        })),
+      })),
+  });
+  const versions = parts.flatMap((part) => {
+    const classroom = part.data.schools
+      .find((school) => school.id === schoolId)
+      ?.classes.find((item) => item.id === classId);
+    return classroom ? [selected(classroom)] : [];
+  });
+  const base = selected({ id: classId, lessons: [lesson] });
+  return EduAnnualModules.mergeClass([base, ...versions]).lessons.find(
+    (item) => item.id === lesson.id,
+  );
+}
+
 function annualTechnicalRows(parts, schoolId, classId, studentId = "") {
-  const rows = [];
+  assertAnnualLessonCompatibility(parts, schoolId, classId);
+  const rows = [],
+    annual = new Set();
   for (const part of parts)
     for (const c of part.data.schools.find((s) => s.id === schoolId)?.classes ||
       []) {
@@ -163,7 +238,14 @@ function annualTechnicalRows(parts, schoolId, classId, studentId = "") {
         for (const lesson of c.lessons.filter(
           (l) => l.gradeMode !== "kardanesh",
         )) {
-          const r = calcV24(c, lesson, st.id, part.data);
+          const formal = lesson.gradingPolicy?.method === "modular";
+          const key = JSON.stringify([c.id, st.id, lesson.id]);
+          if (formal && annual.has(key)) continue;
+          if (formal) annual.add(key);
+          const merged = formal
+            ? annualModularLesson(parts, schoolId, c.id, lesson, st.id)
+            : lesson;
+          const r = calcV24(c, merged, st.id, part.data);
           const legacy = !lesson.gradingPolicy;
           const legacyUnits = legacy
             ? lesson.poudmans.flatMap((pod) =>
@@ -187,7 +269,7 @@ function annualTechnicalRows(parts, schoolId, classId, studentId = "") {
             studentName: st.name,
             lessonId: lesson.id,
             lessonName: lesson.name,
-            term: part.period.term,
+            term: formal ? "سالانه" : part.period.term,
             method: legacy ? "legacy-unit" : "modular",
             legacyUnits,
             provisionalAverage: legacy ? (r.final ?? null) : null,

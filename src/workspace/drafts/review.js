@@ -1,4 +1,6 @@
+let discardingDrafts = false;
 async function discardDrafts() {
+  if (discardingDrafts) return;
   if (!drafts.size) return;
   if (
     !confirm(
@@ -6,19 +8,51 @@ async function discardDrafts() {
     )
   )
     return;
-  const previous = [...drafts];
-  drafts.clear();
-  clearTimeout(draftTimer);
+  const origin = workspace?.id,
+    sourceRevision = workspace?.revision,
+    sourceConnection = connection,
+    isCurrentTarget = () =>
+      workspace?.id === origin &&
+      workspace?.revision === sourceRevision &&
+      connection === sourceConnection &&
+      !busy &&
+      !flushing &&
+      !periodLoading &&
+      !resetBusy &&
+      !connectionRetired;
+  const ensureCurrent = () => {
+    if (!isCurrentTarget())
+      throw Error(
+        "اطلاعات، نوبت یا وضعیت ثبت تغییر کرده است؛ لغو پیش‌نویس را دوباره بررسی کنید.",
+      );
+  };
+  ensureCurrent();
+  discardingDrafts = true;
   try {
-    await storeDrafts();
-  } catch (error) {
-    for (const [key, value] of previous) drafts.set(key, value);
-    await storeDrafts().catch(() => {});
-    throw error;
+    const previous = [...drafts];
+    drafts.clear();
+    clearTimeout(draftTimer);
+    try {
+      await storeDrafts();
+    } catch (error) {
+      // Never restore source entries into another period or a newer revision.
+      // A newer local edit of the same cell also takes precedence over rollback.
+      if (isCurrentTarget()) {
+        for (const [key, value] of previous)
+          if (!drafts.has(key)) drafts.set(key, value);
+        await storeDrafts().catch(() => {});
+      }
+      throw error;
+    }
+    ensureCurrent();
+    const loaded = await readWorkspace(origin);
+    ensureCurrent();
+    db = loaded.data;
+    setStatus("ویرایش‌های ثبت‌نشده لغو شدند.", "saved");
+    render();
+  } finally {
+    discardingDrafts = false;
   }
-  db = (await readWorkspace(workspace.id)).data;
-  setStatus("ویرایش‌های ثبت‌نشده لغو شدند.", "saved");
-  render();
 }
 
 function reviewDrafts() {

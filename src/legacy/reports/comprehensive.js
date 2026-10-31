@@ -215,6 +215,24 @@ function getFilteredSessions() {
       }
       return true;
     })
+    .map((session) => {
+      const studentId = globalFilter.studentId;
+      if (!studentId) return session;
+      // Scope the complete session projection, not just the list of sessions.
+      // The detailed renderer and copied text must not expose other students.
+      const roster =
+        session.roster ||
+        getClassObj(session.schoolId, session.classId)?.students ||
+        [];
+      return {
+        ...session,
+        roster: roster.filter((student) => student.id === studentId),
+        attendance: Object.hasOwn(session.attendance, studentId)
+          ? { [studentId]: session.attendance[studentId] }
+          : {},
+        scores: session.scores.filter((score) => score.studentId === studentId),
+      };
+    })
     .sort((a, b) => {
       if (a.date !== b.date) return b.date.localeCompare(a.date);
       return a.period - b.period;
@@ -295,12 +313,17 @@ function generateGlobalReport() {
             .filter((score) => score.type === "classGrade")
             .map((score) => score.value)
             .join("، ");
+          const activityMarks = myScores
+            .filter((score) => score.type === "activity")
+            .map((score) => score.value)
+            .join("، ");
           h +=
             "<td>" +
             (ms || "—") +
             " / " +
             (ps || "—") +
             (classMarks ? "<br>کلاسی: " + esc(classMarks) : "") +
+            (activityMarks ? "<br>فعالیت: " + esc(activityMarks) : "") +
             "</td>";
         }
         if (globalFilter.showPosNeg) {
@@ -349,10 +372,20 @@ function generateGlobalReport() {
           const classMarks = sess.scores.filter(
             (score) => score.type === "classGrade",
           ).length;
+          const activityMarks = sess.scores.filter(
+            (score) => score.type === "activity",
+          ).length;
           h +=
             "<td>" +
-            (m || pay || classMarks
-              ? "مستمر: " + m + " · پایانی: " + pay + " · کلاسی: " + classMarks
+            (m || pay || classMarks || activityMarks
+              ? "مستمر: " +
+                m +
+                " · پایانی: " +
+                pay +
+                " · کلاسی: " +
+                classMarks +
+                " · فعالیت: " +
+                activityMarks
               : "—") +
             "</td>";
         }
@@ -375,7 +408,7 @@ function generateGlobalReport() {
     let mainHeader = `📊 <b>گزارش جامع عملکرد کلاسی</b><br>`;
     if (globalFilter.date)
       mainHeader += `📅 تاریخ: ${faDate(globalFilter.date)}<br>`;
-    else mainHeader += `📅 تاریخ گزارش: ${faDate(todayISO())}<br>`;
+    else mainHeader += `📅 تاریخ تهیه گزارش: ${faDate(todayISO())}<br>`;
     if (globalFilter.classId) {
       const cls = findClassById(globalFilter.classId);
       mainHeader += `🏫 مدرسه: ${esc(cls.school.name)} | کلاس: ${esc(cls.classObj.name)}<br>`;
@@ -395,7 +428,7 @@ function generateGlobalReport() {
       groupedByPeriod[periodStr].forEach((sess) => {
         const cls = findClassById(sess.classId);
         const lesson = getLessonObj(cls.classObj, sess.lessonId);
-        h += `<div class="session-detail"><b>📚 درس:</b> ${esc(lesson.name)} | <b>👨‍🏫 دبیر:</b> ${esc(lesson.teacher || "---")} | <b>کلاس:</b> ${esc(cls.classObj.name)}<br>`;
+        h += `<div class="session-detail"><b>📅 تاریخ:</b> ${faDate(sess.date)} | <b>📚 درس:</b> ${esc(lesson.name)} | <b>👨‍🏫 دبیر:</b> ${esc(lesson.teacher || "---")} | <b>کلاس:</b> ${esc(cls.classObj.name)}<br>`;
         if (globalFilter.showAttendance) {
           const presentNames = [],
             absentNames = [],
@@ -439,7 +472,8 @@ function generateGlobalReport() {
             (x) =>
               x.type === "mostamar" ||
               x.type === "payani" ||
-              x.type === "classGrade",
+              x.type === "classGrade" ||
+              x.type === "activity",
           );
           if (exams.length)
             h +=
@@ -509,7 +543,7 @@ function copyGlobalReportText(btn) {
   let text = `📊 گزارش جامع عملکرد کلاسی\n`;
   if (globalFilter.date)
     text += `📅 تاریخ گزارش: ${faDate(globalFilter.date)}\n`;
-  else text += `📅 تاریخ گزارش: ${faDate(todayISO())}\n`;
+  else text += `📅 تاریخ تهیه گزارش: ${faDate(todayISO())}\n`;
   if (globalFilter.classId) {
     const cls = findClassById(globalFilter.classId);
     text += `🏫 مدرسه: ${cls.school.name} | کلاس: ${cls.classObj.name}\n`;
@@ -521,7 +555,11 @@ function copyGlobalReportText(btn) {
       const lesson = getLessonObj(cls.classObj, sess.lessonId);
       text += `📅 ${faDate(sess.date)} | کلاس: ${cls.classObj.name} | درس: ${lesson.name} | ${getPeriodName(sess.period)}\n`;
       if (globalFilter.studentId) {
-        const stObj = getStudentObj(cls.classObj, globalFilter.studentId);
+        const stObj = sessionStudent(
+          cls.classObj,
+          sess,
+          globalFilter.studentId,
+        );
         if (globalFilter.showAttendance) {
           const st = sess.attendance[globalFilter.studentId];
           let att = "ثبت نشده";
@@ -551,6 +589,12 @@ function copyGlobalReportText(btn) {
                 .filter((score) => score.type === "classGrade")
                 .map((score) => score.value)
                 .join("، ") +
+              "\n";
+          const activityMarks = my.filter((score) => score.type === "activity");
+          if (activityMarks.length)
+            text +=
+              "   - امتیاز فعالیت: " +
+              activityMarks.map((score) => score.value).join("، ") +
               "\n";
           if (ms || ps)
             text += `   - مستمر: ${ms || "—"} | پایانی: ${ps || "—"}\n`;
@@ -587,10 +631,18 @@ function copyGlobalReportText(btn) {
           const classMarks = sess.scores.filter(
             (score) => score.type === "classGrade",
           );
+          const activityMarks = sess.scores.filter(
+            (score) => score.type === "activity",
+          );
           if (classMarks.length)
             text +=
               "   - نمرات کلاسی: " +
               classMarks.map((score) => score.value).join("، ") +
+              "\n";
+          if (activityMarks.length)
+            text +=
+              "   - امتیاز فعالیت: " +
+              activityMarks.map((score) => score.value).join("، ") +
               "\n";
           if (m || pay) text += `   - 📊 نمرات: مستمر ${m} | پایانی ${pay}\n`;
         }
@@ -620,7 +672,7 @@ function copyGlobalReportText(btn) {
       groupedByPeriod[periodStr].forEach((sess) => {
         const cls = findClassById(sess.classId);
         const lesson = getLessonObj(cls.classObj, sess.lessonId);
-        text += `🔹 درس: ${lesson.name} | دبیر: ${lesson.teacher || "---"} | کلاس: ${cls.classObj.name}\n`;
+        text += `🔹 تاریخ: ${faDate(sess.date)} | درس: ${lesson.name} | دبیر: ${lesson.teacher || "---"} | کلاس: ${cls.classObj.name}\n`;
         if (globalFilter.showAttendance) {
           const presentNames = [],
             absentNames = [],
@@ -660,7 +712,8 @@ function copyGlobalReportText(btn) {
             (x) =>
               x.type === "mostamar" ||
               x.type === "payani" ||
-              x.type === "classGrade",
+              x.type === "classGrade" ||
+              x.type === "activity",
           );
           if (ex.length)
             text +=

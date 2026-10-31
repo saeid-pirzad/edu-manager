@@ -44,7 +44,7 @@ async function openPeriods() {
     .join("");
   showModal(
     "نوبت‌های تحصیلی و کارنامه نهایی",
-    '<div class="period-hub"><p class="period-intro">هر سال تحصیلی دو نوبت دارد. پس از بستن نوبت اول، نوبت دوم با همان کلاس‌ها و هنرجویان و بدون نمره‌های قبلی شروع می‌شود. پشتیبان‌گیری جدا از این روند است.</p><section class="period-list"><h4>نوبت‌های تحصیلی</h4><table><thead><tr><th>سال / نوبت</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody>' +
+    '<div class="period-hub"><p class="period-intro">هر سال تحصیلی دو نوبت دارد. پس از بستن نوبت اول، کلاس‌ها و هنرجویان در نوبت دوم ادامه پیدا می‌کنند. نمرات عملی و نظری هر نوبت جداست؛ نمرات پودمانی در تمام سال ادامه دارند. پشتیبان‌گیری جدا از این روند است.</p><section class="period-list"><h4>نوبت‌های تحصیلی</h4><table><thead><tr><th>سال / نوبت</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody>' +
       periodRows +
       '</tbody></table></section><section class="period-management"><h4>مدیریت نوبت فعلی</h4><div class="row period-actions"><button data-workspace-action="new-period">شروع سال تحصیلی / نوبت جدید</button>' +
       (workspace.closed
@@ -347,6 +347,9 @@ async function switchPeriod(id) {
     await writer.catch(() => {});
     periodLoading = true;
     lockControls();
+    const annual = globalThis.EduAnnualModules
+      ? await synchronizeAnnualForRead(id)
+      : null;
     const loaded = await readWorkspaceSnapshot(id);
     if (!ready || resetBusy || connectionRetired)
       throw Error(
@@ -374,6 +377,14 @@ async function switchPeriod(id) {
     closeModal();
     render();
     await recoverDrafts();
+    for (const change of annual?.changed || [])
+      broadcast({ ...change, annualModular: true });
+    if (annual?.changed.length) scheduleSingleFile();
+    if (annual?.conflicts.length)
+      setStatus(
+        "نمره‌های قدیمی پودمانی تعارض دارند؛ هیچ ثبت متعارضی خودکار جایگزین نشد.",
+        "error",
+      );
   } finally {
     periodLoading = false;
     periodSwitchBusy = false;
@@ -421,7 +432,7 @@ async function openNewPeriod(firstId = "") {
       (!first ? " selected" : "") +
       ">اول</option><option" +
       (first ? " selected" : "") +
-      '>دوم</option></select></label><p>نوبت دوم فقط پس از بسته‌شدن نوبت اول همان سال شروع می‌شود. کلاس‌ها، هنرجویان و درس‌ها ادامه پیدا می‌کنند؛ نمرات و جلسات هر نوبت جدا می‌مانند.</p><button data-workspace-action="create-period">شروع نوبت</button></div>',
+      '>دوم</option></select></label><p>نوبت دوم فقط پس از بسته‌شدن نوبت اول همان سال شروع می‌شود. کلاس‌ها، هنرجویان، درس‌ها و نمرات پودمانی ادامه پیدا می‌کنند؛ نمرات عملی و نظری و جلسات هر نوبت جدا می‌مانند.</p><button data-workspace-action="create-period">شروع نوبت</button></div>',
   );
 }
 
@@ -479,6 +490,7 @@ async function createNewPeriod() {
     for (const school of next.schools)
       for (const c of school.classes) {
         c.archivedStudents = [];
+        const students = new Set(c.students.map((student) => student.id));
         for (const l of c.lessons) {
           l.kardaneshScores = {};
           const info = EduPolicy.identity(l, year);
@@ -499,7 +511,16 @@ async function createNewPeriod() {
             }
           }
           if (l.courseInfo || l.gradingPolicy) l.courseInfo = info;
-          for (const p of l.poudmans) p.podScores = {};
+          // Formal modules are annual; legacy unit grades remain term-scoped.
+          for (const p of l.poudmans)
+            p.podScores =
+              first?.year === year && l.gradingPolicy?.method === "modular"
+                ? Object.fromEntries(
+                    Object.entries(p.podScores || {}).filter(([studentId]) =>
+                      students.has(studentId),
+                    ),
+                  )
+                : {};
           for (const p of l.poudmans)
             for (const u of p.units) u.unitScores = {};
         }

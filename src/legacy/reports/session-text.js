@@ -12,6 +12,7 @@ function generateSessionReportText(session, c, lesson) {
     else if (st === "leave") leave.push(s.name);
     else if (st === "absent") absent.push(s.name);
     else if (st && st.startsWith("late")) {
+      present.push(s.name);
       const mins = st.includes(":") ? st.split(":")[1] : "0";
       late.push(`${s.name} (${mins} دقیقه)`);
     }

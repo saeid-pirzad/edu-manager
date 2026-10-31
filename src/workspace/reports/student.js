@@ -204,15 +204,7 @@ function assessmentOverviewCell(lesson, sid, parts = null, classId = "") {
               .find((classroom) => classroom.id === classId)
               ?.lessons.find((item) => item.id === lesson.id)
           : lesson;
-        if (
-          source &&
-          (source.gradingPolicy?.subjectType === "general") !== general
-        )
-          throw Error(
-            "نوع درس «" +
-              lesson.name +
-              "» در دو نوبت سازگار نیست؛ تنظیمات درس را بررسی کنید.",
-          );
+        if (source && parts) assertCompatibleTermLessons(lesson, source);
         const result = source
           ? assessmentResult(source, sid, stage)
           : { practical: null, theory: null, final: null, complete: false };
@@ -240,6 +232,162 @@ function assessmentOverviewCell(lesson, sid, parts = null, classId = "") {
   );
 }
 
+function karnamehLessons(parts, schoolId, classroom) {
+  const lessons = new Map(
+    classroom.lessons.map((lesson) => [lesson.id, lesson]),
+  );
+  for (const part of parts)
+    for (const lesson of part.data.schools
+      .find((school) => school.id === schoolId)
+      ?.classes.find((item) => item.id === classroom.id)?.lessons || [])
+      if (!lessons.has(lesson.id)) lessons.set(lesson.id, lesson);
+  return [...lessons.values()];
+}
+
+function modularOverviewCell(
+  lesson,
+  sid,
+  parts = null,
+  classId = "",
+  source = db,
+) {
+  if (lesson.gradingPolicy?.method === "modular") {
+    const versions = parts || [{ data: source }];
+    const schoolId = versions
+      .flatMap((part) => part.data.schools || [])
+      .find((school) => school.classes.some((item) => item.id === classId))?.id;
+    let annual;
+    try {
+      annual = parts
+        ? annualModularLesson(parts, schoolId, classId, lesson, sid)
+        : lesson;
+    } catch (error) {
+      return (
+        '<div class="report-modular-conflict" role="alert">' +
+        esc(error.message) +
+        "</div>"
+      );
+    }
+    const result = EduPolicy.lesson(annual.gradingPolicy, annual.poudmans, sid);
+    return (
+      '<div class="report-modular-grades"><section class="report-modular-course"><div class="report-mobile-score-heading" aria-hidden="true"><span>پودمان</span><div><span>مستمر</span><span>شایستگی</span><span>نتیجه</span></div></div>' +
+      annual.poudmans
+        .map((pod) => {
+          const raw = ownScoreRecord(pod.podScores, sid);
+          const grade = result.modules.find((item) => item.id === pod.id);
+          return (
+            '<div class="report-module-row" data-module-id="' +
+            esc(pod.id) +
+            '"><span class="report-module-title">' +
+            esc(pod.name) +
+            '</span><div class="report-stage-values"><span><span class="report-score-label">مستمر</span><b>' +
+            esc(raw.m ?? "—") +
+            '</b></span><span><span class="report-score-label">شایستگی</span><b>' +
+            esc(raw.c ?? "—") +
+            '</b></span><span><span class="report-score-label">نتیجه</span><strong>' +
+            finalText(grade) +
+            "</strong></span></div></div>"
+          );
+        })
+        .join("") +
+      '<div class="report-modular-final"><span>نهایی درس</span><strong>' +
+      finalText(result) +
+      "</strong></div></section></div>"
+    );
+  }
+  const terms = parts ? ["اول", "دوم"] : [""];
+  return (
+    '<div class="report-modular-grades">' +
+    terms
+      .map((term) => {
+        const part = parts?.find((item) => item.period.term === term);
+        const data = parts ? part?.data : source;
+        const classroom = data?.schools
+          ?.flatMap((school) => school.classes)
+          .find((item) => item.id === classId);
+        const currentLesson = parts
+          ? classroom?.lessons.find((item) => item.id === lesson.id)
+          : lesson;
+        const title =
+          '<section class="report-modular-term"><h4>' +
+          esc("نوبت " + (term || workspace.term)) +
+          "</h4>";
+        if (!currentLesson)
+          return (
+            title +
+            '<p class="report-modular-empty" aria-label="درس در این نوبت موجود نیست">—</p></section>'
+          );
+        assertCompatibleTermLessons(lesson, currentLesson);
+        const result = calcV24(
+          classroom || { id: classId },
+          currentLesson,
+          sid,
+          data,
+        );
+        const modular = currentLesson.gradingPolicy?.method === "modular";
+        const rows = modular
+          ? currentLesson.poudmans.map((pod) => {
+              const grade = ownScoreRecord(pod.podScores, sid);
+              return {
+                id: pod.id,
+                name: pod.name,
+                mostamar: grade.m ?? null,
+                second: grade.c ?? null,
+                result: result.modules.find((item) => item.id === pod.id) || {
+                  final: null,
+                },
+              };
+            })
+          : currentLesson.poudmans.flatMap((pod) =>
+              pod.units.map((unit) => {
+                const grade = result.details?.[pod.id]?.[unit.id] || {};
+                return {
+                  id: unit.id,
+                  name: pod.name + " / " + unit.name,
+                  mostamar: grade.m ?? null,
+                  second: grade.p ?? null,
+                  result: { final: grade.final ?? null },
+                };
+              }),
+            );
+        const secondLabel = modular ? "شایستگی" : "پایانی";
+        return (
+          title +
+          '<div class="report-mobile-score-heading" aria-hidden="true"><span>' +
+          (modular ? "پودمان" : "پودمان / واحد") +
+          "</span><div><span>مستمر</span><span>" +
+          secondLabel +
+          "</span><span>نتیجه</span></div></div>" +
+          (rows.length
+            ? rows
+                .map(
+                  (row) =>
+                    '<div class="report-module-row" data-module-id="' +
+                    esc(row.id) +
+                    '"><span class="report-module-title">' +
+                    esc(row.name) +
+                    '</span><div class="report-stage-values"><span><span class="report-score-label">مستمر</span><b>' +
+                    esc(row.mostamar ?? "—") +
+                    '</b></span><span><span class="report-score-label">' +
+                    secondLabel +
+                    "</span><b>" +
+                    esc(row.second ?? "—") +
+                    '</b></span><span><span class="report-score-label">نتیجه</span><strong>' +
+                    finalText(row.result) +
+                    "</strong></span></div></div>",
+                )
+                .join("")
+            : '<p class="report-modular-empty">—</p>') +
+          '<div class="report-modular-final"><span>نهایی درس</span><strong>' +
+          finalText(result) +
+          "</strong></div></section>"
+        );
+      })
+      .join("") +
+    "</div>"
+  );
+}
+
 function overviewV24(c, options = {}) {
   const lessons = c.lessons || [];
   const students = getSortedStudents(
@@ -259,17 +407,28 @@ function overviewV24(c, options = {}) {
     '<div class="card report-document grade-report"><header class="karnameh-report-heading"><div><span class="karnameh-report-kind">نمای کلی کلاس</span><h3>کارنامه کلاس ' +
     esc(c.name) +
     "</h3><p>" +
-    esc(workspace.year + " / " + workspace.term) +
+    esc(
+      workspace.year +
+        (lessons.every((lesson) => lesson.gradingPolicy?.method === "modular")
+          ? ""
+          : " / " + workspace.term),
+    ) +
     '</p></div><button class="no-print" data-workspace-action="print">چاپ / PDF</button></header><div class="karnameh-report-meta"><span>' +
     students.length.toLocaleString("fa-IR") +
     " هنرجو</span><span>" +
     lessons.length.toLocaleString("fa-IR") +
     " درس</span><span>" +
     (options.parts
-      ? "۴ مرحلهٔ نمره‌دهی"
-      : workspace.closed
-        ? "نوبت بسته‌شده"
-        : "نمرات ثبت‌شده تا این لحظه") +
+      ? lessons.every((lesson) => lesson.gradeMode === "kardanesh")
+        ? "۴ مرحلهٔ نمره‌دهی"
+        : lessons.every((lesson) => lesson.gradingPolicy?.method === "modular")
+          ? "ارزشیابی پودمانی سالانه"
+          : "کارنامهٔ سال تحصیلی"
+      : lessons.every((lesson) => lesson.gradingPolicy?.method === "modular")
+        ? "ارزشیابی پودمانی سالانه"
+        : workspace.closed
+          ? "نوبت بسته‌شده"
+          : "نمرات ثبت‌شده تا این لحظه") +
     '</span></div><div class="table-scroll"><table class="grade-report-table karnameh-overview' +
     (options.parts && lessons.length > 2 ? " karnameh-many-lessons" : "") +
     '" data-mobile-layout="cards"><thead><tr><th scope="col">دانش‌آموز</th>' +
@@ -277,7 +436,6 @@ function overviewV24(c, options = {}) {
     "</tr></thead><tbody>" +
     students
       .map((st) => {
-        const results = lessons.map((l) => calcV24(c, l, st.id));
         return (
           '<tr><td><button type="button" class="karnameh-student-link no-print" data-workspace-action="karnameh-student" data-class="' +
           esc(c.id) +
@@ -290,24 +448,25 @@ function overviewV24(c, options = {}) {
           '</button><span class="karnameh-student-print">' +
           esc(st.name) +
           "</span></td>" +
-          results
-            .map((r, i) =>
-              lessons[i].gradeMode === "kardanesh"
+          lessons
+            .map((lesson) =>
+              lesson.gradeMode === "kardanesh"
                 ? '<td data-report-lesson="' +
-                  esc(lessons[i].name) +
+                  esc(lesson.name) +
                   '" class="report-grade-cell report-assessment-cell">' +
-                  assessmentOverviewCell(
-                    lessons[i],
+                  assessmentOverviewCell(lesson, st.id, options.parts, c.id) +
+                  "</td>"
+                : '<td data-report-lesson="' +
+                  esc(lesson.name) +
+                  '" class="report-grade-cell report-assessment-cell report-modular-cell">' +
+                  modularOverviewCell(
+                    lesson,
                     st.id,
                     options.parts,
                     c.id,
+                    options.source || db,
                   ) +
-                  "</td>"
-                : '<td data-report-lesson="' +
-                  esc(lessons[i].name) +
-                  '" class="report-grade-cell"><strong>' +
-                  finalText(r) +
-                  "</strong></td>",
+                  "</td>",
             )
             .join("") +
           "</tr>"
@@ -345,22 +504,21 @@ async function renderAcademicKarnameh(out, filter) {
       (item) => item.id === filter.classId,
     );
     if (!classroom) throw Error("کلاس در نوبت فعلی موجود نیست.");
-    const lessons = new Map(
-      classroom.lessons.map((lesson) => [lesson.id, lesson]),
-    );
-    for (const part of snapshot.parts)
-      for (const lesson of part.data.schools
-        .find((item) => item.id === school.id)
-        ?.classes.find((item) => item.id === classroom.id)?.lessons || [])
-        if (lesson.gradeMode === "kardanesh" && !lessons.has(lesson.id))
-          lessons.set(lesson.id, lesson);
-    const merged = { ...classroom, lessons: [...lessons.values()] };
+    assertAnnualLessonCompatibility(snapshot.parts, school.id, classroom.id);
+    const merged = {
+      ...classroom,
+      lessons: karnamehLessons(snapshot.parts, school.id, classroom),
+    };
     const student = filter.studentId
       ? knownStudents(classroom).find((item) => item.id === filter.studentId)
       : null;
     if (filter.studentId && !student)
       throw Error("هنرجو در کلاس انتخاب‌شده موجود نیست.");
-    out.innerHTML = overviewV24(merged, { parts: snapshot.parts, student });
+    out.innerHTML = overviewV24(merged, {
+      parts: snapshot.parts,
+      student,
+      source: active.data,
+    });
     const report = out.querySelector(".report-document");
     if (report) {
       report.classList.add("karnameh-year-document");
@@ -385,7 +543,14 @@ async function renderAcademicKarnameh(out, filter) {
         heading.append(actions);
       }
       heading.querySelector("p").textContent =
-        school.name + " · " + workspace.year + " · نوبت اول و دوم";
+        school.name +
+        " · " +
+        workspace.year +
+        (merged.lessons.every(
+          (lesson) => lesson.gradingPolicy?.method === "modular",
+        )
+          ? ""
+          : " · نوبت اول و دوم");
       karnamehSnapshots.set(report, snapshot.context);
     }
   } catch (error) {

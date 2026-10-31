@@ -143,9 +143,9 @@ function previewImport(candidate, label) {
           " / " +
           (candidate.settings.academicTerm || "نامشخص"),
       ) +
-      "</p><p>این فایل فقط اطلاعات نوبت " +
+      "</p><p>این فایل اطلاعات نوبت " +
       esc(workspace.year + " / " + workspace.term) +
-      ' را بازمی‌گرداند؛ نوبت جدید ساخته نمی‌شود و سایر نوبت‌ها تغییر نمی‌کنند.</p><button data-workspace-action="export-period">۱. ذخیره پشتیبان اطلاعات فعلی</button><p><label><input id="restoreExternalConfirmed" type="checkbox"> نسخه فعلی را در فایل مستقل ذخیره و بررسی کرده‌ام.</label></p><button data-mutating="1" data-workspace-action="confirm-import">۲. بازیابی اطلاعات همین نوبت</button><p id="operationError" role="alert"></p>',
+      ' را بازمی‌گرداند؛ نوبت جدید ساخته نمی‌شود. نمره‌های پودمانی مشترکِ همین سال نیز به‌روز می‌شوند؛ نمرات نوبتیِ دیگر و سایر سال‌ها تغییر نمی‌کنند.</p><button data-workspace-action="export-period">۱. ذخیره پشتیبان اطلاعات فعلی</button><p><label><input id="restoreExternalConfirmed" type="checkbox"> نسخه فعلی را در فایل مستقل ذخیره و بررسی کرده‌ام.</label></p><button data-mutating="1" data-workspace-action="confirm-import">۲. بازیابی اطلاعات همین نوبت</button><p id="operationError" role="alert"></p>',
   );
   if (opened !== false) pendingImport = preview;
 }
@@ -308,33 +308,59 @@ async function confirmImport() {
     check(true);
     busy++;
     paintStatus();
-    try {
-      await commitRecords(collectRecords(candidate), {
-        action: "بازیابی پشتیبان: " + preview.label,
-        replace: true,
-        keepUndo: false,
-      });
-      db = candidate;
-      drafts.clear();
-      storeDrafts();
-      pendingImport = null;
-      isAuthenticated = false;
-      state = {
-        view: "schools",
-        schoolId: null,
-        classId: null,
-        lessonId: null,
-        tab: "students",
-        reportTab: "comprehensive",
-      };
-      closeModal();
-      setStatus("بازیابی تراکنشی انجام شد.", "saved");
-    } catch (error) {
-      handleError(error);
-    } finally {
-      busy--;
-      render();
-    }
+    const sourceConnection = connection;
+    const isCurrentTarget = () =>
+      workspace?.id === context.id &&
+      connection === sourceConnection &&
+      !periodLoading &&
+      !resetBusy &&
+      !connectionRetired;
+    const operation = (async () => {
+      let installed = false;
+      try {
+        const changed = await commitRecords(collectRecords(candidate), {
+          action: "بازیابی پشتیبان: " + preview.label,
+          replace: true,
+          keepUndo: false,
+        });
+        // The write belongs to its source period even if another operation has
+        // since retired the connection or selected a different period.
+        if (
+          !isCurrentTarget() ||
+          workspace.revision !== context.revision + (changed ? 1 : 0)
+        )
+          return true;
+        db = candidate;
+        installed = true;
+        drafts.clear();
+        storeDrafts();
+        pendingImport = null;
+        isAuthenticated = false;
+        state = {
+          view: "schools",
+          schoolId: null,
+          classId: null,
+          lessonId: null,
+          tab: "students",
+          reportTab: "comprehensive",
+        };
+        closeModal();
+        scheduleSingleFile();
+        setStatus("بازیابی تراکنشی انجام شد.", "saved");
+        return true;
+      } catch (error) {
+        if (isCurrentTarget()) handleError(error);
+        throw error;
+      } finally {
+        busy--;
+        if (installed && isCurrentTarget()) render();
+        else paintStatus();
+      }
+    })();
+    // Period switching, backups and subsequent edits must await the complete
+    // restore, including its in-memory update, not just the preceding save.
+    writer = operation;
+    await operation;
   } finally {
     periodImportBusy = false;
   }
