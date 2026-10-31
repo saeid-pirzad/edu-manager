@@ -136,7 +136,7 @@ function legacy_buildDetailedKarnamehHtml(c, stId) {
   h += `<h4>خلاصه کلی دروس</h4>
     <div style="overflow-x:auto"><table class="karnameh-table"><thead><tr>
       <th>درس</th><th>دبیر</th><th>مستمر / تئوری</th><th>پایانی / عملی</th><th>نهایی</th>
-      <th>➕</th><th>➖</th><th>📝</th><th>حاضر</th><th>غایب</th><th>میانگین کل</th>
+      <th>➕</th><th>➖</th><th>📝</th><th>حاضر</th><th>غایب</th><th>مرخصی</th><th>میانگین کل</th>
     </tr></thead><tbody>`;
   const stats = {};
   let sumFinal = 0,
@@ -153,7 +153,7 @@ function legacy_buildDetailedKarnamehHtml(c, stId) {
       <td>${s.avgP !== null ? s.avgP.toFixed(2) : "—"}</td>
       <td><b>${s.final !== null ? s.final.toFixed(2) : "—"}</b></td>
       <td style="color:#059669">${s.posCount}</td><td style="color:#dc2626">${s.negCount}</td><td>${s.hwCount}</td>
-      <td>${s.att.present}</td><td>${s.att.absent}</td>
+      <td>${s.att.present}</td><td>${s.att.absent}</td><td>${s.att.leave || 0}</td>
       <td style="background:#eef2ff;font-weight:700;color:#4338ca">${s.final !== null ? s.final.toFixed(2) : "—"}</td></tr>`;
   });
   const overallAvg = countFinal > 0 ? (sumFinal / countFinal).toFixed(2) : "—";
@@ -181,7 +181,7 @@ function legacy_buildDetailedKarnamehHtml(c, stId) {
       </div>
       <div style="overflow-x:auto"><table class="karnameh-table"><thead><tr>
         <th>پودمان</th><th>واحد</th><th>مستمر / تئوری</th><th>پایانی / عملی</th>
-        <th>➕</th><th>➖</th><th>📝</th><th>حاضر</th><th>غایب</th>
+        <th>➕</th><th>➖</th><th>📝</th><th>حاضر</th><th>غایب</th><th>مرخصی</th>
         <th>⚙️ اعمال</th><th>نمره واحد</th>
       </tr></thead><tbody>`;
     l.poudmans.forEach((p) => {
@@ -192,7 +192,7 @@ function legacy_buildDetailedKarnamehHtml(c, stId) {
           pos: 0,
           neg: 0,
           hw: 0,
-          att: { present: 0, absent: 0, late: 0 },
+          att: { present: 0, absent: 0, late: 0, leave: 0 },
           final: null,
         };
         const ao = u.applyOptions || {};
@@ -202,7 +202,7 @@ function legacy_buildDetailedKarnamehHtml(c, stId) {
         h += `<td>${esc(u.name)}</td>
           <td>${d.m !== null ? d.m : "—"}</td><td>${d.p !== null ? d.p : "—"}</td>
           <td style="color:#059669">${d.pos || 0}</td><td style="color:#dc2626">${d.neg || 0}</td><td>${d.hw || 0}</td>
-          <td>${d.att ? d.att.present : 0}</td><td>${d.att ? d.att.absent : 0}</td>
+          <td>${d.att ? d.att.present : 0}</td><td>${d.att ? d.att.absent : 0}</td><td>${d.att?.leave || 0}</td>
           <td class="no-print"><div style="display:flex;gap:4px;flex-wrap:wrap">
             <label title="مثبت" style="cursor:pointer"><input type="checkbox" ${ao.pos ? "checked" : ""} data-legacy-change="reports-student:10" data-legacy-change-arg9="${esc(l.id)}" data-legacy-change-arg10="${esc(p.id)}" data-legacy-change-arg11="${esc(u.id)}"></label>
             <label title="منفی" style="cursor:pointer"><input type="checkbox" ${ao.neg ? "checked" : ""} data-legacy-change="reports-student:11" data-legacy-change-arg13="${esc(l.id)}" data-legacy-change-arg14="${esc(p.id)}" data-legacy-change-arg15="${esc(u.id)}"></label>
@@ -245,13 +245,17 @@ function legacy_generateParentReportText(student, c) {
   (c.lessons || []).forEach((lesson) => {
     const stats = calcStudentLesson(c, lesson, student.id);
     if (
-      stats.att.present + stats.att.absent + stats.att.late > 0 ||
+      stats.att.present +
+        stats.att.absent +
+        stats.att.late +
+        (stats.att.leave || 0) >
+        0 ||
       stats.posCount + stats.negCount > 0 ||
       stats.final !== null
     ) {
       hasData = true;
       text += `📚 درس: ${lesson.name} (دبیر: ${lesson.teacher || "---"})\n`;
-      text += `- حضور: حاضر ${stats.att.present} | غایب ${stats.att.absent} | تأخیر ${stats.att.late}\n`;
+      text += `- حضور: حاضر ${stats.att.present} | غایب ${stats.att.absent} | مرخصی ${stats.att.leave || 0} | تأخیر ${stats.att.late}\n`;
       text += `- امتیازات: ➕ ${stats.posCount} | ➖ ${stats.negCount} | 📝 ${stats.hwCount}\n`;
       text += `- نمرات: ${lesson.gradeMode === "kardanesh" ? "تئوری" : "مستمر"} ${stats.avgM !== null ? stats.avgM.toFixed(2) : "---"} | ${lesson.gradeMode === "kardanesh" ? "عملی" : "پایانی"} ${stats.avgP !== null ? stats.avgP.toFixed(2) : "---"}\n`;
       text += `- نمره نهایی: ${stats.final !== null ? stats.final.toFixed(2) : "---"}${lesson.gradeMode === "kardanesh" ? " | " + gradeStatus(stats) : ""}\n--------------------------------\n`;

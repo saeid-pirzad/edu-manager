@@ -79,3 +79,7 @@ EduLegacyEvents.register("sessions-dialog:13", function (event) {
 EduLegacyEvents.register("sessions-dialog:14", function (event) {
   return closeModal();
 });
+
+EduLegacyEvents.register("sessions-dialog:leave", function () {
+  return toggleAtt(this, "leave");
+});

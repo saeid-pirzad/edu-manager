@@ -191,7 +191,7 @@ function legacy_validateDB(d) {
       id(sid);
       if (
         typeof status !== "string" ||
-        !/^(present|absent|late(?::\d{1,3})?)$/.test(status)
+        !/^(present|absent|leave|late(?::\d{1,3})?)$/.test(status)
       )
         fail("وضعیت حضور");
     }

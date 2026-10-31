@@ -34,6 +34,7 @@ function documentHtml(m) {
       ["جلسه ثبت‌شده", m.summary.sessions],
       ["حاضر", m.summary.present],
       ["غایب", m.summary.absent],
+      ["مرخصی", m.summary.leave],
       ["با تأخیر", m.summary.late],
       ["تعیین‌نشده", m.summary.unknown],
     ]
@@ -46,7 +47,7 @@ function documentHtml(m) {
           "</span></div>",
       )
       .join("") +
-    '</section><p class="periodic-method">واحد آمار حضور: نفرـجلسه. نرخ حضور از موارد تعیین‌شده: ' +
+    '</section><p class="periodic-method">واحد آمار حضور: نفرـجلسه. نرخ حضور از موارد تعیین‌شده، به‌جز مرخصی: ' +
     (m.summary.attendanceRate === null
       ? "قابل محاسبه نیست"
       : num(m.summary.attendanceRate) + "٪") +
@@ -63,11 +64,17 @@ function documentHtml(m) {
         : "روز") +
     "</h3>" +
     table(
-      ["تاریخ", "جلسه", "حاضر / غایب / تأخیر", "تعیین‌نشده"],
+      ["تاریخ", "جلسه", "حاضر / غایب / تأخیر / مرخصی", "تعیین‌نشده"],
       displayedDays(m).map((d) => [
         faDate(d.date),
         num(d.sessions),
-        num(d.present) + " / " + num(d.absent) + " / " + num(d.late),
+        num(d.present) +
+          " / " +
+          num(d.absent) +
+          " / " +
+          num(d.late) +
+          " / " +
+          num(d.leave),
         num(d.unknown),
       ]),
     );
@@ -78,14 +85,20 @@ function documentHtml(m) {
         [
           "کلاس / درس",
           "جلسه",
-          "حاضر / غایب / تأخیر",
+          "حاضر / غایب / تأخیر / مرخصی",
           "تعیین‌نشده",
           "ثبت نمره و فعالیت",
         ],
         m.lessons.map((l) => [
           l.className + " / " + l.lessonName,
           num(l.sessions),
-          num(l.present) + " / " + num(l.absent) + " / " + num(l.late),
+          num(l.present) +
+            " / " +
+            num(l.absent) +
+            " / " +
+            num(l.late) +
+            " / " +
+            num(l.leave),
           num(l.unknown),
           num(l.markCount),
         ]),
@@ -98,6 +111,7 @@ function documentHtml(m) {
           "جلسه",
           "حاضر",
           "غایب",
+          "مرخصی",
           "تأخیر",
           "تعیین‌نشده",
         ],
@@ -106,6 +120,7 @@ function documentHtml(m) {
           num(st.sessions),
           num(st.present),
           num(st.absent),
+          num(st.leave),
           num(st.late),
           num(st.unknown),
         ]),
@@ -223,6 +238,8 @@ function documentHtml(m) {
         num(s.counts.present) +
         " · غایب: " +
         num(s.counts.absent) +
+        " · مرخصی: " +
+        num(s.counts.leave) +
         " · تأخیر: " +
         num(s.counts.late) +
         " · تعیین‌نشده: " +

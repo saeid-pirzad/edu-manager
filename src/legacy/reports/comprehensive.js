@@ -267,6 +267,8 @@ function generateGlobalReport() {
           let attText = '<span class="muted">ثبت نشده</span>';
           if (st === "present")
             attText = '<span class="badge present">حاضر</span>';
+          else if (st === "leave")
+            attText = '<span class="badge leave">مرخصی</span>';
           else if (st === "absent")
             attText = '<span class="badge absent">غایب</span>';
           else if (st && st.startsWith("late")) {
@@ -333,10 +335,13 @@ function generateGlobalReport() {
           const a = Object.values(sess.attendance).filter(
             (x) => x === "absent",
           ).length;
+          const leaveCount = Object.values(sess.attendance).filter(
+            (x) => x === "leave",
+          ).length;
           const l = Object.values(sess.attendance).filter(
             (x) => x && x.startsWith("late"),
           ).length;
-          h += `<td>✅${p} ❌${a} ⏰${l}</td>`;
+          h += `<td>✅${p} ❌${a} ⏰${l} · مرخصی ${leaveCount}</td>`;
         }
         if (globalFilter.showScores) {
           const m = sess.scores.filter((x) => x.type === "mostamar").length;
@@ -394,16 +399,20 @@ function generateGlobalReport() {
         if (globalFilter.showAttendance) {
           const presentNames = [],
             absentNames = [],
+            leaveNames = [],
             lateNames = [];
           sessionStudents(cls.classObj, sess).forEach((st) => {
             const status = sess.attendance[st.id];
             if (status === "present") presentNames.push(st.name);
+            else if (status === "leave") leaveNames.push(st.name);
             else if (status === "absent") absentNames.push(st.name);
             else if (status && status.startsWith("late")) {
               const mins = status.includes(":") ? status.split(":")[1] : "";
               lateNames.push(`${st.name} ${mins ? "(" + mins + "د)" : ""}`);
             }
           });
+          if (leaveNames.length)
+            h += `<div class="names-list"><b>مرخصی:</b> ${leaveNames.map(esc).join("، ")}</div>`;
           if (globalFilter.showPresentNames && presentNames.length > 0)
             h += `<div class="names-list"><b class="present">✅ حاضرین (${presentNames.length}):</b> ${presentNames.map(esc).join("، ")}</div>`;
           else if (presentNames.length > 0)
@@ -419,7 +428,8 @@ function generateGlobalReport() {
           if (
             presentNames.length === 0 &&
             absentNames.length === 0 &&
-            lateNames.length === 0
+            lateNames.length === 0 &&
+            leaveNames.length === 0
           )
             h += `<div class="names-list muted">وضعیت حضور ثبت نشده است.</div>`;
         }
@@ -515,6 +525,7 @@ function copyGlobalReportText(btn) {
           const st = sess.attendance[globalFilter.studentId];
           let att = "ثبت نشده";
           if (st === "present") att = "حاضر";
+          else if (st === "leave") att = "مرخصی";
           else if (st === "absent") att = "غایب";
           else if (st && st.startsWith("late"))
             att = `تأخیر (${st.split(":")[1] || 0}د)`;
@@ -561,10 +572,13 @@ function copyGlobalReportText(btn) {
           const a = Object.values(sess.attendance).filter(
             (x) => x === "absent",
           ).length;
+          const leaveCount = Object.values(sess.attendance).filter(
+            (x) => x === "leave",
+          ).length;
           const l = Object.values(sess.attendance).filter(
             (x) => x && x.startsWith("late"),
           ).length;
-          text += `   👥 حضور: حاضر ${p} | غایب ${a} | تأخیر ${l}\n`;
+          text += `   👥 حضور: حاضر ${p} | غایب ${a} | مرخصی ${leaveCount} | تأخیر ${l}\n`;
         }
         if (globalFilter.showScores) {
           const m = sess.scores.filter((x) => x.type === "mostamar").length;
@@ -609,16 +623,20 @@ function copyGlobalReportText(btn) {
         if (globalFilter.showAttendance) {
           const presentNames = [],
             absentNames = [],
+            leaveNames = [],
             lateNames = [];
           sessionStudents(cls.classObj, sess).forEach((st) => {
             const status = sess.attendance[st.id];
             if (status === "present") presentNames.push(st.name);
+            else if (status === "leave") leaveNames.push(st.name);
             else if (status === "absent") absentNames.push(st.name);
             else if (status && status.startsWith("late")) {
               const mins = status.includes(":") ? status.split(":")[1] : "";
               lateNames.push(`${st.name} ${mins ? "(" + mins + "د)" : ""}`);
             }
           });
+          if (leaveNames.length)
+            text += `   مرخصی (${leaveNames.length}): ${leaveNames.join("، ")}\n`;
           if (presentNames.length > 0) {
             if (globalFilter.showPresentNames)
               text += `   ✅ حاضرین (${presentNames.length}): ${presentNames.join("، ")}\n`;

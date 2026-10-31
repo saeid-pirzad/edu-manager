@@ -30,7 +30,7 @@ async function toggleAttendanceV24(button, status) {
     !sessionRoster(cls, session).some((student) => student.id === studentId)
   )
     throw Error("هنرجو در فهرست این جلسه وجود ندارد.");
-  if (!["present", "absent", "late"].includes(status))
+  if (!["present", "absent", "late", "leave"].includes(status))
     throw Error("وضعیت حضور نامعتبر است.");
   const previous = session.attendance[studentId],
     selected =
@@ -52,12 +52,13 @@ async function toggleAttendanceV24(button, status) {
   if (isCurrent() && button.isConnected !== false) {
     const saved = getSessionById(id)?.attendance[studentId];
     for (const control of wrap.querySelectorAll("button")) {
-      const kind = ["present", "absent", "late"].find((name) =>
+      const kind = ["present", "absent", "late", "leave"].find((name) =>
         control.classList.contains(name),
       );
       control.classList.remove("active");
       if (kind === "present") control.textContent = "حاضر";
       if (kind === "absent") control.textContent = "غایب";
+      if (kind === "leave") control.textContent = "مرخصی";
       if (kind === "late") control.textContent = "تأخیر";
       if (
         kind &&
@@ -259,7 +260,7 @@ async function setAllAttendanceV24(statusValue) {
   const isCurrent = preserveSessionAction(currentSessionId);
   if (
     typeof statusValue !== "string" ||
-    !/^(present|absent|late(?::\d{1,3})?)$/.test(statusValue)
+    !/^(present|absent|leave|late(?::\d{1,3})?)$/.test(statusValue)
   )
     throw Error("وضعیت حضور نامعتبر است.");
   const x = getSessionById(currentSessionId),

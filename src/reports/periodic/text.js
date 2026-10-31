@@ -59,12 +59,14 @@ function textReport(m) {
       num(m.summary.present) +
       " | غایب: " +
       num(m.summary.absent) +
+      " | مرخصی: " +
+      num(m.summary.leave) +
       " | تأخیر: " +
       num(m.summary.late) +
       " | تعیین‌نشده: " +
       num(m.summary.unknown) +
       " (نفرـجلسه)",
-    "نرخ حضور از موارد تعیین‌شده: " +
+    "نرخ حضور از موارد تعیین‌شده، به‌جز مرخصی: " +
       (m.summary.attendanceRate === null
         ? "قابل محاسبه نیست"
         : num(m.summary.attendanceRate) + "٪"),
@@ -82,6 +84,8 @@ function textReport(m) {
         num(d.present) +
         "، غایب " +
         num(d.absent) +
+        " | مرخصی: " +
+        num(d.leave) +
         "، تأخیر " +
         num(d.late) +
         "، تعیین‌نشده " +
@@ -100,6 +104,8 @@ function textReport(m) {
           num(l.present) +
           "، غایب " +
           num(l.absent) +
+          " | مرخصی: " +
+          num(l.leave) +
           "، تأخیر " +
           num(l.late) +
           "، تعیین‌نشده " +
@@ -115,6 +121,8 @@ function textReport(m) {
           num(st.present) +
           "، غایب " +
           num(st.absent) +
+          " | مرخصی: " +
+          num(st.leave) +
           "، تأخیر " +
           num(st.late) +
           "، تعیین‌نشده " +

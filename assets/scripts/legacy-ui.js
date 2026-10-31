@@ -1008,6 +1008,8 @@ function generateGlobalReport() {
           let attText = '<span class="muted">ثبت نشده</span>';
           if (st === "present")
             attText = '<span class="badge present">حاضر</span>';
+          else if (st === "leave")
+            attText = '<span class="badge leave">مرخصی</span>';
           else if (st === "absent")
             attText = '<span class="badge absent">غایب</span>';
           else if (st && st.startsWith("late")) {
@@ -1074,10 +1076,13 @@ function generateGlobalReport() {
           const a = Object.values(sess.attendance).filter(
             (x) => x === "absent",
           ).length;
+          const leaveCount = Object.values(sess.attendance).filter(
+            (x) => x === "leave",
+          ).length;
           const l = Object.values(sess.attendance).filter(
             (x) => x && x.startsWith("late"),
           ).length;
-          h += `<td>✅${p} ❌${a} ⏰${l}</td>`;
+          h += `<td>✅${p} ❌${a} ⏰${l} · مرخصی ${leaveCount}</td>`;
         }
         if (globalFilter.showScores) {
           const m = sess.scores.filter((x) => x.type === "mostamar").length;
@@ -1135,16 +1140,20 @@ function generateGlobalReport() {
         if (globalFilter.showAttendance) {
           const presentNames = [],
             absentNames = [],
+            leaveNames = [],
             lateNames = [];
           sessionStudents(cls.classObj, sess).forEach((st) => {
             const status = sess.attendance[st.id];
             if (status === "present") presentNames.push(st.name);
+            else if (status === "leave") leaveNames.push(st.name);
             else if (status === "absent") absentNames.push(st.name);
             else if (status && status.startsWith("late")) {
               const mins = status.includes(":") ? status.split(":")[1] : "";
               lateNames.push(`${st.name} ${mins ? "(" + mins + "د)" : ""}`);
             }
           });
+          if (leaveNames.length)
+            h += `<div class="names-list"><b>مرخصی:</b> ${leaveNames.map(esc).join("، ")}</div>`;
           if (globalFilter.showPresentNames && presentNames.length > 0)
             h += `<div class="names-list"><b class="present">✅ حاضرین (${presentNames.length}):</b> ${presentNames.map(esc).join("، ")}</div>`;
           else if (presentNames.length > 0)
@@ -1160,7 +1169,8 @@ function generateGlobalReport() {
           if (
             presentNames.length === 0 &&
             absentNames.length === 0 &&
-            lateNames.length === 0
+            lateNames.length === 0 &&
+            leaveNames.length === 0
           )
             h += `<div class="names-list muted">وضعیت حضور ثبت نشده است.</div>`;
         }
@@ -1256,6 +1266,7 @@ function copyGlobalReportText(btn) {
           const st = sess.attendance[globalFilter.studentId];
           let att = "ثبت نشده";
           if (st === "present") att = "حاضر";
+          else if (st === "leave") att = "مرخصی";
           else if (st === "absent") att = "غایب";
           else if (st && st.startsWith("late"))
             att = `تأخیر (${st.split(":")[1] || 0}د)`;
@@ -1302,10 +1313,13 @@ function copyGlobalReportText(btn) {
           const a = Object.values(sess.attendance).filter(
             (x) => x === "absent",
           ).length;
+          const leaveCount = Object.values(sess.attendance).filter(
+            (x) => x === "leave",
+          ).length;
           const l = Object.values(sess.attendance).filter(
             (x) => x && x.startsWith("late"),
           ).length;
-          text += `   👥 حضور: حاضر ${p} | غایب ${a} | تأخیر ${l}\n`;
+          text += `   👥 حضور: حاضر ${p} | غایب ${a} | مرخصی ${leaveCount} | تأخیر ${l}\n`;
         }
         if (globalFilter.showScores) {
           const m = sess.scores.filter((x) => x.type === "mostamar").length;
@@ -1350,16 +1364,20 @@ function copyGlobalReportText(btn) {
         if (globalFilter.showAttendance) {
           const presentNames = [],
             absentNames = [],
+            leaveNames = [],
             lateNames = [];
           sessionStudents(cls.classObj, sess).forEach((st) => {
             const status = sess.attendance[st.id];
             if (status === "present") presentNames.push(st.name);
+            else if (status === "leave") leaveNames.push(st.name);
             else if (status === "absent") absentNames.push(st.name);
             else if (status && status.startsWith("late")) {
               const mins = status.includes(":") ? status.split(":")[1] : "";
               lateNames.push(`${st.name} ${mins ? "(" + mins + "د)" : ""}`);
             }
           });
+          if (leaveNames.length)
+            text += `   مرخصی (${leaveNames.length}): ${leaveNames.join("، ")}\n`;
           if (presentNames.length > 0) {
             if (globalFilter.showPresentNames)
               text += `   ✅ حاضرین (${presentNames.length}): ${presentNames.join("، ")}\n`;
@@ -1646,10 +1664,12 @@ function legacy_buildLessonReportHtml(c, lesson) {
     sessions.forEach((sess) => {
       const present = [],
         absent = [],
+        leave = [],
         late = [];
       sessionStudents(c, sess).forEach((s) => {
         const st = sess.attendance[s.id];
         if (st === "present") present.push(s.name);
+        else if (st === "leave") leave.push(s.name);
         else if (st === "absent") absent.push(s.name);
         else if (st && st.startsWith("late")) {
           const mins = st.includes(":") ? st.split(":")[1] : "";
@@ -1670,7 +1690,7 @@ function legacy_buildLessonReportHtml(c, lesson) {
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:.9em;margin-bottom:8px">
         <span>✅ حاضر: <b>${present.length}</b></span><span>❌ غایب: <b>${absent.length}</b></span>
-        <span>⏰ تأخیر: <b>${late.length}</b></span>
+        <span>مرخصی: <b>${leave.length}</b> ${leave.map(esc).join("، ")}</span><span>⏰ تأخیر: <b>${late.length}</b></span>
         <span style="color:#059669">➕ مثبت: <b>${pos.length}</b></span>
         <span style="color:#dc2626">➖ منفی: <b>${neg.length}</b></span>
         <span>📝 تکلیف: <b>${hw.length}</b></span>
@@ -1712,14 +1732,14 @@ function legacy_buildLessonReportHtml(c, lesson) {
     });
   h += `<h4>خلاصه هر دانش‌آموز</h4>
     <table class="karnameh-table"><thead><tr>
-      <th>دانش‌آموز</th><th>حاضر</th><th>غایب</th><th>تأخیر</th>
+      <th>دانش‌آموز</th><th>حاضر</th><th>غایب</th><th>مرخصی</th><th>تأخیر</th>
       <th>➕ مثبت</th><th>➖ منفی</th><th>📝 تکلیف</th><th>مستمر / تئوری</th><th>پایانی / عملی</th><th>نهایی</th>
     </tr></thead><tbody>`;
   const sortedStudents = getSortedStudents(c);
   sortedStudents.forEach((st) => {
     const s = calcStudentLesson(c, lesson, st.id);
     h += `<tr><td>${esc(st.name)}</td>
-      <td>${s.att.present}</td><td>${s.att.absent}</td><td>${s.att.late}</td>
+      <td>${s.att.present}</td><td>${s.att.absent}</td><td>${s.att.leave || 0}</td><td>${s.att.late}</td>
       <td style="color:#059669">${s.posCount}</td><td style="color:#dc2626">${s.negCount}</td><td>${s.hwCount}</td>
       <td>${s.avgM !== null ? s.avgM.toFixed(2) : "—"}</td>
       <td>${s.avgP !== null ? s.avgP.toFixed(2) : "—"}</td>
@@ -1746,7 +1766,7 @@ function copyLessonReportForVicePrincipal(lessonId) {
   text += `================================\n📌 خلاصه وضعیت دانش‌آموزان:\n`;
   getSortedStudents(c).forEach((st) => {
     const s = calcStudentLesson(c, lesson, st.id);
-    text += `- ${st.name}: غایب ${s.att.absent} | ➕ ${s.posCount} | ➖ ${s.negCount} | نهایی: ${s.final !== null ? s.final.toFixed(2) : "---"}\n`;
+    text += `- ${st.name}: غایب ${s.att.absent} | مرخصی ${s.att.leave || 0} | ➕ ${s.posCount} | ➖ ${s.negCount} | نهایی: ${s.final !== null ? s.final.toFixed(2) : "---"}\n`;
   });
   text += `\n✅ تولید شده توسط کلاس‌یار`;
   const dummyBtn = document.createElement("button");
@@ -1916,7 +1936,7 @@ function legacy_buildDetailedKarnamehHtml(c, stId) {
   h += `<h4>خلاصه کلی دروس</h4>
     <div style="overflow-x:auto"><table class="karnameh-table"><thead><tr>
       <th>درس</th><th>دبیر</th><th>مستمر / تئوری</th><th>پایانی / عملی</th><th>نهایی</th>
-      <th>➕</th><th>➖</th><th>📝</th><th>حاضر</th><th>غایب</th><th>میانگین کل</th>
+      <th>➕</th><th>➖</th><th>📝</th><th>حاضر</th><th>غایب</th><th>مرخصی</th><th>میانگین کل</th>
     </tr></thead><tbody>`;
   const stats = {};
   let sumFinal = 0,
@@ -1933,7 +1953,7 @@ function legacy_buildDetailedKarnamehHtml(c, stId) {
       <td>${s.avgP !== null ? s.avgP.toFixed(2) : "—"}</td>
       <td><b>${s.final !== null ? s.final.toFixed(2) : "—"}</b></td>
       <td style="color:#059669">${s.posCount}</td><td style="color:#dc2626">${s.negCount}</td><td>${s.hwCount}</td>
-      <td>${s.att.present}</td><td>${s.att.absent}</td>
+      <td>${s.att.present}</td><td>${s.att.absent}</td><td>${s.att.leave || 0}</td>
       <td style="background:#eef2ff;font-weight:700;color:#4338ca">${s.final !== null ? s.final.toFixed(2) : "—"}</td></tr>`;
   });
   const overallAvg = countFinal > 0 ? (sumFinal / countFinal).toFixed(2) : "—";
@@ -1961,7 +1981,7 @@ function legacy_buildDetailedKarnamehHtml(c, stId) {
       </div>
       <div style="overflow-x:auto"><table class="karnameh-table"><thead><tr>
         <th>پودمان</th><th>واحد</th><th>مستمر / تئوری</th><th>پایانی / عملی</th>
-        <th>➕</th><th>➖</th><th>📝</th><th>حاضر</th><th>غایب</th>
+        <th>➕</th><th>➖</th><th>📝</th><th>حاضر</th><th>غایب</th><th>مرخصی</th>
         <th>⚙️ اعمال</th><th>نمره واحد</th>
       </tr></thead><tbody>`;
     l.poudmans.forEach((p) => {
@@ -1972,7 +1992,7 @@ function legacy_buildDetailedKarnamehHtml(c, stId) {
           pos: 0,
           neg: 0,
           hw: 0,
-          att: { present: 0, absent: 0, late: 0 },
+          att: { present: 0, absent: 0, late: 0, leave: 0 },
           final: null,
         };
         const ao = u.applyOptions || {};
@@ -1982,7 +2002,7 @@ function legacy_buildDetailedKarnamehHtml(c, stId) {
         h += `<td>${esc(u.name)}</td>
           <td>${d.m !== null ? d.m : "—"}</td><td>${d.p !== null ? d.p : "—"}</td>
           <td style="color:#059669">${d.pos || 0}</td><td style="color:#dc2626">${d.neg || 0}</td><td>${d.hw || 0}</td>
-          <td>${d.att ? d.att.present : 0}</td><td>${d.att ? d.att.absent : 0}</td>
+          <td>${d.att ? d.att.present : 0}</td><td>${d.att ? d.att.absent : 0}</td><td>${d.att?.leave || 0}</td>
           <td class="no-print"><div style="display:flex;gap:4px;flex-wrap:wrap">
             <label title="مثبت" style="cursor:pointer"><input type="checkbox" ${ao.pos ? "checked" : ""} data-legacy-change="reports-student:10" data-legacy-change-arg9="${esc(l.id)}" data-legacy-change-arg10="${esc(p.id)}" data-legacy-change-arg11="${esc(u.id)}"></label>
             <label title="منفی" style="cursor:pointer"><input type="checkbox" ${ao.neg ? "checked" : ""} data-legacy-change="reports-student:11" data-legacy-change-arg13="${esc(l.id)}" data-legacy-change-arg14="${esc(p.id)}" data-legacy-change-arg15="${esc(u.id)}"></label>
@@ -2025,13 +2045,17 @@ function legacy_generateParentReportText(student, c) {
   (c.lessons || []).forEach((lesson) => {
     const stats = calcStudentLesson(c, lesson, student.id);
     if (
-      stats.att.present + stats.att.absent + stats.att.late > 0 ||
+      stats.att.present +
+        stats.att.absent +
+        stats.att.late +
+        (stats.att.leave || 0) >
+        0 ||
       stats.posCount + stats.negCount > 0 ||
       stats.final !== null
     ) {
       hasData = true;
       text += `📚 درس: ${lesson.name} (دبیر: ${lesson.teacher || "---"})\n`;
-      text += `- حضور: حاضر ${stats.att.present} | غایب ${stats.att.absent} | تأخیر ${stats.att.late}\n`;
+      text += `- حضور: حاضر ${stats.att.present} | غایب ${stats.att.absent} | مرخصی ${stats.att.leave || 0} | تأخیر ${stats.att.late}\n`;
       text += `- امتیازات: ➕ ${stats.posCount} | ➖ ${stats.negCount} | 📝 ${stats.hwCount}\n`;
       text += `- نمرات: ${lesson.gradeMode === "kardanesh" ? "تئوری" : "مستمر"} ${stats.avgM !== null ? stats.avgM.toFixed(2) : "---"} | ${lesson.gradeMode === "kardanesh" ? "عملی" : "پایانی"} ${stats.avgP !== null ? stats.avgP.toFixed(2) : "---"}\n`;
       text += `- نمره نهایی: ${stats.final !== null ? stats.final.toFixed(2) : "---"}${lesson.gradeMode === "kardanesh" ? " | " + gradeStatus(stats) : ""}\n--------------------------------\n`;
@@ -2360,7 +2384,7 @@ function calcStudentLessonBase(c, lesson, stId, source = db) {
         neg: 0,
         negSum: 0,
         hw: 0,
-        att: { present: 0, absent: 0, late: 0 },
+        att: { present: 0, absent: 0, late: 0, leave: 0 },
         final: null,
       };
     });
@@ -2369,7 +2393,7 @@ function calcStudentLessonBase(c, lesson, stId, source = db) {
   let posCount = 0,
     negCount = 0,
     hwCount = 0;
-  const att = { present: 0, absent: 0, late: 0 };
+  const att = { present: 0, absent: 0, late: 0, leave: 0 };
 
   sess.forEach((s) => {
     const myAtt = s.attendance[stId];
@@ -2383,6 +2407,10 @@ function calcStudentLessonBase(c, lesson, stId, source = db) {
         att.present++;
         if (s.poudmanId && s.unitId && details[s.poudmanId]?.[s.unitId])
           details[s.poudmanId][s.unitId].att.present++;
+      } else if (myAtt === "leave") {
+        att.leave++;
+        if (s.poudmanId && s.unitId && details[s.poudmanId]?.[s.unitId])
+          details[s.poudmanId][s.unitId].att.leave++;
       } else if (myAtt === "absent") {
         att.absent++;
         if (s.poudmanId && s.unitId && details[s.poudmanId]?.[s.unitId])
@@ -2635,7 +2663,7 @@ function dashboardWorkModel(date = todayISO()) {
     const members = session.roster || c.students;
     const unknown = members.filter(
       (student) =>
-        !/^(present|absent|late(?::\d+)?)$/.test(
+        !/^(present|absent|leave|late(?::\d+)?)$/.test(
           session.attendance?.[student.id] || "",
         ),
     ).length;
@@ -3508,9 +3536,10 @@ function renderLessonSessions(c, lesson) {
     h +=
       '<div class="empty"><strong>اولین جلسه را شروع کنید</strong><p>تاریخ و زنگ را در فرم بالا انتخاب کنید؛ سپس حضور و فعالیت کلاس را ثبت کنید.</p></div>';
   for (const session of sessions) {
-    const counts = { present: 0, absent: 0, late: 0 };
+    const counts = { present: 0, absent: 0, late: 0, leave: 0 };
     for (const value of Object.values(session.attendance || {})) {
-      if (value === "present" || value === "absent") counts[value]++;
+      if (value === "present" || value === "absent" || value === "leave")
+        counts[value]++;
       else if (typeof value === "string" && value.startsWith("late"))
         counts.late++;
     }
@@ -3541,7 +3570,7 @@ function renderLessonSessions(c, lesson) {
         esc([pod?.name, unit?.name].filter(Boolean).join(" / ")) +
         "</span>";
     h +=
-      `<span class="session-counts"><span class="session-present"><b>${counts.present.toLocaleString("fa-IR")}</b> حاضر</span><span class="session-absent"><b>${counts.absent.toLocaleString("fa-IR")}</b> غایب</span><span class="session-late"><b>${counts.late.toLocaleString("fa-IR")}</b> تأخیر</span><span class="session-activities"><b>${session.scores.length.toLocaleString("fa-IR")}</b> فعالیت</span></span><span class="session-enter-label">ورود به جلسه <span aria-hidden="true">${EduIcons.html("arrow")}</span></span></button><button type="button" class="session-delete" data-legacy-click="ui-lesson:9" data-legacy-click-arg4="${esc(id)}" aria-label="حذف جلسه ` +
+      `<span class="session-counts"><span class="session-present"><b>${counts.present.toLocaleString("fa-IR")}</b> حاضر</span><span class="session-absent"><b>${counts.absent.toLocaleString("fa-IR")}</b> غایب</span><span class="session-late"><b>${counts.late.toLocaleString("fa-IR")}</b> تأخیر</span><span class="session-leave"><b>${counts.leave.toLocaleString("fa-IR")}</b> مرخصی</span><span class="session-activities"><b>${session.scores.length.toLocaleString("fa-IR")}</b> فعالیت</span></span><span class="session-enter-label">ورود به جلسه <span aria-hidden="true">${EduIcons.html("arrow")}</span></span></button><button type="button" class="session-delete" data-legacy-click="ui-lesson:9" data-legacy-click-arg4="${esc(id)}" aria-label="حذف جلسه ` +
       esc(title) +
       '"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/></svg></button></article>';
   }
@@ -3877,6 +3906,7 @@ EduLegacyEvents.register("grading-lesson-editor:10", function (event) {
 function generateSessionReportText(session, c, lesson) {
   const present = [],
     absent = [],
+    leave = [],
     late = [],
     pos = [],
     neg = [],
@@ -3884,6 +3914,7 @@ function generateSessionReportText(session, c, lesson) {
   sessionStudents(c, session).forEach((s) => {
     const st = session.attendance[s.id];
     if (st === "present") present.push(s.name);
+    else if (st === "leave") leave.push(s.name);
     else if (st === "absent") absent.push(s.name);
     else if (st && st.startsWith("late")) {
       const mins = st.includes(":") ? st.split(":")[1] : "0";
@@ -3906,7 +3937,7 @@ function generateSessionReportText(session, c, lesson) {
   text += `📚 کلاس: ${c.name} | درس: ${lesson.name} | دبیر: ${lesson.teacher || "---"}\n`;
   if (poudman)
     text += `📍 پودمان: ${poudman.name} | ${unit ? unit.name : ""}\n`;
-  text += `\n👥 وضعیت حضور:\n✅ حاضر (${present.length} نفر): ${present.length ? present.join("، ") : "---"}\n❌ غایب (${absent.length} نفر): ${absent.length ? absent.join("، ") : "---"}\n⏰ تأخیر (${late.length} نفر): ${late.length ? late.join("، ") : "---"}\n`;
+  text += `\nمرخصی (${leave.length} نفر): ${leave.length ? leave.join("، ") : "---"}\n👥 وضعیت حضور:\n✅ حاضر (${present.length} نفر): ${present.length ? present.join("، ") : "---"}\n❌ غایب (${absent.length} نفر): ${absent.length ? absent.join("، ") : "---"}\n⏰ تأخیر (${late.length} نفر): ${late.length ? late.join("، ") : "---"}\n`;
   if (pos.length || neg.length || hw.length) {
     text += `\n📝 موارد ثبت شده:\n`;
     if (pos.length) text += `➕ مثبت (${pos.length}): ${pos.join("، ")}\n`;
@@ -4795,6 +4826,7 @@ function openSessionModal(session) {
     const st = session.attendance[s.id] || "";
     const isPresent = st === "present";
     const isAbsent = st === "absent";
+    const isLeave = st === "leave";
     const isLate = st.startsWith("late");
     const lateMins = isLate && st.includes(":") ? Number(st.split(":")[1]) : "";
     h += `<div class="att-row">
@@ -4802,6 +4834,7 @@ function openSessionModal(session) {
       <div class="att-btns" data-sid="${s.id}" role="group" aria-label="وضعیت حضور ${esc(s.name)}">
         <button type="button" class="present ${isPresent ? "active" : ""}" data-legacy-click="sessions-dialog:8">حاضر</button>
         <button type="button" class="late ${isLate ? "active" : ""}" data-legacy-click="sessions-dialog:9">تأخیر ${isLate && lateMins ? `(${lateMins}د)` : ""}</button>
+        <button type="button" class="leave ${isLeave ? "active" : ""}" data-legacy-click="sessions-dialog:leave">مرخصی</button>
         <button type="button" class="absent ${isAbsent ? "active" : ""}" data-legacy-click="sessions-dialog:10">غایب</button>
       </div>
     </div>`;
@@ -5075,6 +5108,10 @@ EduLegacyEvents.register("sessions-dialog:13", function (event) {
 
 EduLegacyEvents.register("sessions-dialog:14", function (event) {
   return closeModal();
+});
+
+EduLegacyEvents.register("sessions-dialog:leave", function () {
+  return toggleAtt(this, "leave");
 });
 // Source: src/legacy/data/backup-import.js
 async function legacy_exportBackup() {
@@ -5405,7 +5442,7 @@ function legacy_validateDB(d) {
       id(sid);
       if (
         typeof status !== "string" ||
-        !/^(present|absent|late(?::\d{1,3})?)$/.test(status)
+        !/^(present|absent|leave|late(?::\d{1,3})?)$/.test(status)
       )
         fail("وضعیت حضور");
     }

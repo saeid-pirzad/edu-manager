@@ -2232,7 +2232,7 @@ async function toggleAttendanceV24(button, status) {
     !sessionRoster(cls, session).some((student) => student.id === studentId)
   )
     throw Error("هنرجو در فهرست این جلسه وجود ندارد.");
-  if (!["present", "absent", "late"].includes(status))
+  if (!["present", "absent", "late", "leave"].includes(status))
     throw Error("وضعیت حضور نامعتبر است.");
   const previous = session.attendance[studentId],
     selected =
@@ -2254,12 +2254,13 @@ async function toggleAttendanceV24(button, status) {
   if (isCurrent() && button.isConnected !== false) {
     const saved = getSessionById(id)?.attendance[studentId];
     for (const control of wrap.querySelectorAll("button")) {
-      const kind = ["present", "absent", "late"].find((name) =>
+      const kind = ["present", "absent", "late", "leave"].find((name) =>
         control.classList.contains(name),
       );
       control.classList.remove("active");
       if (kind === "present") control.textContent = "حاضر";
       if (kind === "absent") control.textContent = "غایب";
+      if (kind === "leave") control.textContent = "مرخصی";
       if (kind === "late") control.textContent = "تأخیر";
       if (
         kind &&
@@ -2461,7 +2462,7 @@ async function setAllAttendanceV24(statusValue) {
   const isCurrent = preserveSessionAction(currentSessionId);
   if (
     typeof statusValue !== "string" ||
-    !/^(present|absent|late(?::\d{1,3})?)$/.test(statusValue)
+    !/^(present|absent|leave|late(?::\d{1,3})?)$/.test(statusValue)
   )
     throw Error("وضعیت حضور نامعتبر است.");
   const x = getSessionById(currentSessionId),
@@ -5145,7 +5146,7 @@ function detailedV24(c, sid) {
     esc(workspace.year + " / " + workspace.term) +
     " | " +
     (workspace.closed ? "دوره بسته" : "گزارش در حال کار") +
-    '</p><button class="no-print" data-workspace-action="print">چاپ / PDF</button><div class="table-scroll"><table><thead><tr><th>درس</th><th>عملی / پایانی</th><th>تئوری / مستمر</th><th>نهایی</th><th>وضعیت</th><th>حاضر / غایب / تأخیر</th></tr></thead><tbody>' +
+    '</p><button class="no-print" data-workspace-action="print">چاپ / PDF</button><div class="table-scroll"><table><thead><tr><th>درس</th><th>عملی / پایانی</th><th>تئوری / مستمر</th><th>نهایی</th><th>وضعیت</th><th>حاضر / غایب / تأخیر / مرخصی</th></tr></thead><tbody>' +
     lessons
       .map((l, i) => {
         const r = stats[i];
@@ -5170,6 +5171,8 @@ function detailedV24(c, sid) {
           r.att.absent +
           " / " +
           r.att.late +
+          " / " +
+          (r.att.leave || 0) +
           "</td></tr>"
         );
       })
@@ -5282,6 +5285,8 @@ function parentReportV24(st, c) {
       r.att.present +
       " | غایب " +
       r.att.absent +
+      " | مرخصی " +
+      (r.att.leave || 0) +
       " | تأخیر " +
       r.att.late +
       "\n";

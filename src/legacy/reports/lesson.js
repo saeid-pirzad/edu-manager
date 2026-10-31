@@ -113,10 +113,12 @@ function legacy_buildLessonReportHtml(c, lesson) {
     sessions.forEach((sess) => {
       const present = [],
         absent = [],
+        leave = [],
         late = [];
       sessionStudents(c, sess).forEach((s) => {
         const st = sess.attendance[s.id];
         if (st === "present") present.push(s.name);
+        else if (st === "leave") leave.push(s.name);
         else if (st === "absent") absent.push(s.name);
         else if (st && st.startsWith("late")) {
           const mins = st.includes(":") ? st.split(":")[1] : "";
@@ -137,7 +139,7 @@ function legacy_buildLessonReportHtml(c, lesson) {
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:.9em;margin-bottom:8px">
         <span>✅ حاضر: <b>${present.length}</b></span><span>❌ غایب: <b>${absent.length}</b></span>
-        <span>⏰ تأخیر: <b>${late.length}</b></span>
+        <span>مرخصی: <b>${leave.length}</b> ${leave.map(esc).join("، ")}</span><span>⏰ تأخیر: <b>${late.length}</b></span>
         <span style="color:#059669">➕ مثبت: <b>${pos.length}</b></span>
         <span style="color:#dc2626">➖ منفی: <b>${neg.length}</b></span>
         <span>📝 تکلیف: <b>${hw.length}</b></span>
@@ -179,14 +181,14 @@ function legacy_buildLessonReportHtml(c, lesson) {
     });
   h += `<h4>خلاصه هر دانش‌آموز</h4>
     <table class="karnameh-table"><thead><tr>
-      <th>دانش‌آموز</th><th>حاضر</th><th>غایب</th><th>تأخیر</th>
+      <th>دانش‌آموز</th><th>حاضر</th><th>غایب</th><th>مرخصی</th><th>تأخیر</th>
       <th>➕ مثبت</th><th>➖ منفی</th><th>📝 تکلیف</th><th>مستمر / تئوری</th><th>پایانی / عملی</th><th>نهایی</th>
     </tr></thead><tbody>`;
   const sortedStudents = getSortedStudents(c);
   sortedStudents.forEach((st) => {
     const s = calcStudentLesson(c, lesson, st.id);
     h += `<tr><td>${esc(st.name)}</td>
-      <td>${s.att.present}</td><td>${s.att.absent}</td><td>${s.att.late}</td>
+      <td>${s.att.present}</td><td>${s.att.absent}</td><td>${s.att.leave || 0}</td><td>${s.att.late}</td>
       <td style="color:#059669">${s.posCount}</td><td style="color:#dc2626">${s.negCount}</td><td>${s.hwCount}</td>
       <td>${s.avgM !== null ? s.avgM.toFixed(2) : "—"}</td>
       <td>${s.avgP !== null ? s.avgP.toFixed(2) : "—"}</td>
@@ -213,7 +215,7 @@ function copyLessonReportForVicePrincipal(lessonId) {
   text += `================================\n📌 خلاصه وضعیت دانش‌آموزان:\n`;
   getSortedStudents(c).forEach((st) => {
     const s = calcStudentLesson(c, lesson, st.id);
-    text += `- ${st.name}: غایب ${s.att.absent} | ➕ ${s.posCount} | ➖ ${s.negCount} | نهایی: ${s.final !== null ? s.final.toFixed(2) : "---"}\n`;
+    text += `- ${st.name}: غایب ${s.att.absent} | مرخصی ${s.att.leave || 0} | ➕ ${s.posCount} | ➖ ${s.negCount} | نهایی: ${s.final !== null ? s.final.toFixed(2) : "---"}\n`;
   });
   text += `\n✅ تولید شده توسط کلاس‌یار`;
   const dummyBtn = document.createElement("button");

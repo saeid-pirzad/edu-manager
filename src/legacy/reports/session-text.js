@@ -1,6 +1,7 @@
 function generateSessionReportText(session, c, lesson) {
   const present = [],
     absent = [],
+    leave = [],
     late = [],
     pos = [],
     neg = [],
@@ -8,6 +9,7 @@ function generateSessionReportText(session, c, lesson) {
   sessionStudents(c, session).forEach((s) => {
     const st = session.attendance[s.id];
     if (st === "present") present.push(s.name);
+    else if (st === "leave") leave.push(s.name);
     else if (st === "absent") absent.push(s.name);
     else if (st && st.startsWith("late")) {
       const mins = st.includes(":") ? st.split(":")[1] : "0";
@@ -30,7 +32,7 @@ function generateSessionReportText(session, c, lesson) {
   text += `📚 کلاس: ${c.name} | درس: ${lesson.name} | دبیر: ${lesson.teacher || "---"}\n`;
   if (poudman)
     text += `📍 پودمان: ${poudman.name} | ${unit ? unit.name : ""}\n`;
-  text += `\n👥 وضعیت حضور:\n✅ حاضر (${present.length} نفر): ${present.length ? present.join("، ") : "---"}\n❌ غایب (${absent.length} نفر): ${absent.length ? absent.join("، ") : "---"}\n⏰ تأخیر (${late.length} نفر): ${late.length ? late.join("، ") : "---"}\n`;
+  text += `\nمرخصی (${leave.length} نفر): ${leave.length ? leave.join("، ") : "---"}\n👥 وضعیت حضور:\n✅ حاضر (${present.length} نفر): ${present.length ? present.join("، ") : "---"}\n❌ غایب (${absent.length} نفر): ${absent.length ? absent.join("، ") : "---"}\n⏰ تأخیر (${late.length} نفر): ${late.length ? late.join("، ") : "---"}\n`;
   if (pos.length || neg.length || hw.length) {
     text += `\n📝 موارد ثبت شده:\n`;
     if (pos.length) text += `➕ مثبت (${pos.length}): ${pos.join("، ")}\n`;

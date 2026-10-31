@@ -127,7 +127,14 @@ for (const status of ["invalid", "late:1000", "late:-1", "late:1.5", null]) {
     assert.equal(f.writes.length, 0);
   });
 }
-for (const status of ["present", "absent", "late", "late:0", "late:999"]) {
+for (const status of [
+  "present",
+  "absent",
+  "leave",
+  "late",
+  "late:0",
+  "late:999",
+]) {
   test(`supported bulk attendance remains valid: ${status}`, async () => {
     const f = fixture();
     await f.c.setAllAttendanceV24(status);

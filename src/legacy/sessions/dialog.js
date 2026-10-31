@@ -67,6 +67,7 @@ function openSessionModal(session) {
     const st = session.attendance[s.id] || "";
     const isPresent = st === "present";
     const isAbsent = st === "absent";
+    const isLeave = st === "leave";
     const isLate = st.startsWith("late");
     const lateMins = isLate && st.includes(":") ? Number(st.split(":")[1]) : "";
     h += `<div class="att-row">
@@ -74,6 +75,7 @@ function openSessionModal(session) {
       <div class="att-btns" data-sid="${s.id}" role="group" aria-label="وضعیت حضور ${esc(s.name)}">
         <button type="button" class="present ${isPresent ? "active" : ""}" data-legacy-click="sessions-dialog:8">حاضر</button>
         <button type="button" class="late ${isLate ? "active" : ""}" data-legacy-click="sessions-dialog:9">تأخیر ${isLate && lateMins ? `(${lateMins}د)` : ""}</button>
+        <button type="button" class="leave ${isLeave ? "active" : ""}" data-legacy-click="sessions-dialog:leave">مرخصی</button>
         <button type="button" class="absent ${isAbsent ? "active" : ""}" data-legacy-click="sessions-dialog:10">غایب</button>
       </div>
     </div>`;

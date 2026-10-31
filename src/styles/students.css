@@ -523,3 +523,11 @@
     display: none;
   }
 }
+
+@media screen {
+  #modal .att-btns .leave.active {
+    background: #ede9fe;
+    color: #5b21b6;
+    border-color: #c4b5fd;
+  }
+}

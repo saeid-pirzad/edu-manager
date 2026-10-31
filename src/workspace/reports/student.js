@@ -257,7 +257,7 @@ function detailedV24(c, sid) {
     esc(workspace.year + " / " + workspace.term) +
     " | " +
     (workspace.closed ? "دوره بسته" : "گزارش در حال کار") +
-    '</p><button class="no-print" data-workspace-action="print">چاپ / PDF</button><div class="table-scroll"><table><thead><tr><th>درس</th><th>عملی / پایانی</th><th>تئوری / مستمر</th><th>نهایی</th><th>وضعیت</th><th>حاضر / غایب / تأخیر</th></tr></thead><tbody>' +
+    '</p><button class="no-print" data-workspace-action="print">چاپ / PDF</button><div class="table-scroll"><table><thead><tr><th>درس</th><th>عملی / پایانی</th><th>تئوری / مستمر</th><th>نهایی</th><th>وضعیت</th><th>حاضر / غایب / تأخیر / مرخصی</th></tr></thead><tbody>' +
     lessons
       .map((l, i) => {
         const r = stats[i];
@@ -282,6 +282,8 @@ function detailedV24(c, sid) {
           r.att.absent +
           " / " +
           r.att.late +
+          " / " +
+          (r.att.leave || 0) +
           "</td></tr>"
         );
       })
@@ -394,6 +396,8 @@ function parentReportV24(st, c) {
       r.att.present +
       " | غایب " +
       r.att.absent +
+      " | مرخصی " +
+      (r.att.leave || 0) +
       " | تأخیر " +
       r.att.late +
       "\n";

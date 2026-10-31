@@ -148,7 +148,7 @@ function dashboardWorkModel(date = todayISO()) {
     const members = session.roster || c.students;
     const unknown = members.filter(
       (student) =>
-        !/^(present|absent|late(?::\d+)?)$/.test(
+        !/^(present|absent|leave|late(?::\d+)?)$/.test(
           session.attendance?.[student.id] || "",
         ),
     ).length;

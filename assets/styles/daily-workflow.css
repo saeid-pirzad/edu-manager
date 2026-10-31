@@ -2586,7 +2586,7 @@ body {
   }
   #modalBody .session-workspace .att-btns {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 6px;
   }
   #modalBody .session-workspace .att-btns button {
@@ -2681,7 +2681,7 @@ body {
     flex: 1;
   }
   #modalBody .session-workspace .att-row {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr);
     gap: 8px;
     padding: 10px;
   }
@@ -2705,21 +2705,20 @@ body {
   }
   #modalBody .session-attendance-list .att-name > span:last-child {
     min-width: 0;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
   #modalBody .session-attendance-list .att-btns {
     padding: 3px;
     gap: 2px;
-    grid-template-columns: auto auto auto;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     align-items: center;
   }
   #modalBody .session-workspace .att-btns button {
     height: 44px;
     min-height: 44px;
-    min-width: 54px;
-    padding: 4px 10px;
+    min-width: 0;
+    padding: 4px;
     font-size: 14px;
     line-height: 1.4;
   }

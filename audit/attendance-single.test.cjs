@@ -12,7 +12,7 @@ function fixture() {
     attendance: {},
     roster: [{ id: "historical" }],
   };
-  const controls = ["present", "absent", "late"].map((kind) => {
+  const controls = ["present", "absent", "late", "leave"].map((kind) => {
     const classes = new Set([kind]);
     return {
       isConnected: true,
@@ -56,6 +56,7 @@ for (const [status, index] of [
   ["present", 0],
   ["absent", 1],
   ["late", 2],
+  ["leave", 3],
 ]) {
   test(`single attendance saves historical roster member and then displays ${status}`, async () => {
     const f = fixture();
@@ -219,4 +220,17 @@ test("concurrent attendance writes rejected after rollback do not leave uncommit
   assert.equal(Object.keys(f.c.db.sessions[0].attendance).length, 0);
   assert.equal(Object.keys(store.durable().sessions[0].attendance).length, 0);
   assert.equal(f.c.busy, 0);
+});
+
+test("leave can replace absence and be cleared without a lateness prompt", async () => {
+  const f = fixture();
+  f.session.attendance.historical = "absent";
+  f.c.prompt = () => {
+    throw Error("Unexpected prompt");
+  };
+  await f.c.toggleAttendanceV24(f.controls[3], "leave");
+  assert.equal(f.session.attendance.historical, "leave");
+  await f.c.toggleAttendanceV24(f.controls[3], "leave");
+  assert.equal(f.session.attendance.historical, undefined);
+  assert.equal(f.controls[3].classList.contains("active"), false);
 });

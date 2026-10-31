@@ -29,6 +29,7 @@ const reportSignature = () =>
 const emptyCounts = () => ({
   present: 0,
   absent: 0,
+  leave: 0,
   late: 0,
   unknown: 0,
   lateMinutes: 0,
@@ -39,6 +40,8 @@ function attendance(value) {
     return { status: "present", label: "حاضر", minutes: null };
   if (value === "absent")
     return { status: "absent", label: "غایب", minutes: null };
+  if (value === "leave")
+    return { status: "leave", label: "مرخصی", minutes: null };
   const match =
     typeof value === "string" ? value.match(/^late(?::(\d+))?$/) : null;
   if (match)

@@ -19,7 +19,7 @@ function calcStudentLessonBase(c, lesson, stId, source = db) {
         neg: 0,
         negSum: 0,
         hw: 0,
-        att: { present: 0, absent: 0, late: 0 },
+        att: { present: 0, absent: 0, late: 0, leave: 0 },
         final: null,
       };
     });
@@ -28,7 +28,7 @@ function calcStudentLessonBase(c, lesson, stId, source = db) {
   let posCount = 0,
     negCount = 0,
     hwCount = 0;
-  const att = { present: 0, absent: 0, late: 0 };
+  const att = { present: 0, absent: 0, late: 0, leave: 0 };
 
   sess.forEach((s) => {
     const myAtt = s.attendance[stId];
@@ -42,6 +42,10 @@ function calcStudentLessonBase(c, lesson, stId, source = db) {
         att.present++;
         if (s.poudmanId && s.unitId && details[s.poudmanId]?.[s.unitId])
           details[s.poudmanId][s.unitId].att.present++;
+      } else if (myAtt === "leave") {
+        att.leave++;
+        if (s.poudmanId && s.unitId && details[s.poudmanId]?.[s.unitId])
+          details[s.poudmanId][s.unitId].att.leave++;
       } else if (myAtt === "absent") {
         att.absent++;
         if (s.poudmanId && s.unitId && details[s.poudmanId]?.[s.unitId])
