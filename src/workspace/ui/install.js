@@ -86,6 +86,13 @@ function installUI() {
     channel.onmessage = (event) => {
       const message = event.data;
       if (singleFileChanged(message)) return;
+      if (
+        message.type === "period-deleted" ||
+        (message.type === "installation-restored" && !fullRestoreBusy)
+      ) {
+        invalidateInstallation();
+        return;
+      }
       if (message.type === "installation-reset" && !resetBusy) {
         invalidateInstallation();
         return;

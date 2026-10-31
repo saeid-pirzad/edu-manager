@@ -1,3 +1,36 @@
+function validateAcademicTransition(rows, year, term) {
+  if (!["اول", "دوم"].includes(term))
+    throw Error("هر سال تحصیلی فقط نوبت اول و دوم دارد.");
+  const kind = academicTermKind(term);
+  const sameYear = rows.filter((row) => row.year === year);
+  if (
+    sameYear.some(
+      (row) => (row.termKind || academicTermKind(row.term)) === kind,
+    )
+  )
+    throw Error("این نوبت از سال تحصیلی قبلاً شروع شده است.");
+  if (kind === "first") {
+    if (
+      sameYear.some(
+        (row) => (row.termKind || academicTermKind(row.term)) === "second",
+      )
+    )
+      throw Error("این سال نوبت دوم دارد؛ نوبت اول تکراری نسازید.");
+    return null;
+  }
+  const first = sameYear.filter(
+    (row) => (row.termKind || academicTermKind(row.term)) === "first",
+  );
+  if (first.length !== 1)
+    throw Error(
+      "برای شروع نوبت دوم، باید یک نوبت اول مشخص در همین سال وجود داشته باشد.",
+    );
+  if (!first[0].closed)
+    throw Error(
+      "ابتدا نوبت اول همین سال را ببندید؛ سپس نوبت دوم را شروع کنید.",
+    );
+  return first[0];
+}
 function remapReportNoteKey(key, target, mapping) {
   const segments = key.split("|");
   segments[0] = target;
@@ -60,12 +93,24 @@ async function installWorkspace(data, details) {
           existing.result.some(
             (row) =>
               row.year === catalog.year &&
-              normalizedName(row.term) === normalizedName(catalog.term),
+              ((catalog.termKind &&
+                (row.termKind || academicTermKind(row.term)) ===
+                  catalog.termKind) ||
+                normalizedName(row.term) === normalizedName(catalog.term)),
           )
         ) {
           duplicate = true;
           tx.abort();
           return;
+        }
+        if (details.requireSequence) {
+          const first = validateAcademicTransition(
+            existing.result,
+            catalog.year,
+            catalog.term,
+          );
+          if (first && first.revision !== details.firstRevision)
+            throw Error("نوبت اول هنگام شروع نوبت دوم تغییر کرده است.");
         }
         store.add(catalog);
         for (const [logical, value] of records)

@@ -174,11 +174,11 @@ function workspaceToolsHtml() {
       "انتخاب و مدیریت سال و نوبت تحصیلی",
     ) +
     button(
-      "history",
-      "clock",
-      "تاریخچه تغییرات",
+      "undo",
+      "undo",
+      "برگرداندن آخرین تغییر",
       "",
-      "مرور تغییرات ثبت‌شده در اطلاعات",
+      "اصلاح آخرین تغییر ثبت‌شده در نوبت فعلی",
     ) +
     '<button type="button" class="ghost workspace-tool-button" data-header-action="settings"><span class="workspace-tool-icon" aria-hidden="true">' +
     EduIcons.html("settings") +

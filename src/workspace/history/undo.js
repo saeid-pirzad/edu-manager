@@ -1,35 +1,3 @@
-async function openHistory(limit = 50) {
-  const ensureCurrent = preserveAsyncTarget();
-  await writer.catch(() => {});
-  ensureCurrent();
-  const origin = workspace.id,
-    sourceConnection = connection,
-    tx = sourceConnection.transaction(["events", "undo"], "readonly"),
-    done = transactionDone(tx);
-  // Convert synchronous request-creation errors to rejections before joining
-  // them with transaction completion, so every pending promise has a handler.
-  const read = async (operation) => requestPromise(operation());
-  let events, undo;
-  try {
-    [events, undo] = await Promise.all([
-      read(() => tx.objectStore("events").index("workspace").getAll(origin)),
-      read(() => tx.objectStore("undo").get(origin)),
-      done,
-    ]);
-  } catch (error) {
-    try {
-      tx.abort();
-    } catch (ignore) {}
-    await done.catch(() => {});
-    throw error;
-  }
-  ensureCurrent();
-  if (connection !== sourceConnection)
-    throw Error("اتصال بانک هنگام خواندن تاریخچه تغییر کرده است.");
-  events.sort((a, b) => b.id - a.id);
-  renderHistory(events, undo, limit);
-}
-
 function validatedUndoCandidate(undo, records, period) {
   return EduUndoValidator.validate(undo, records, period, {
     assertSafeDataTree,
@@ -41,8 +9,65 @@ function validatedUndoCandidate(undo, records, period) {
     decodeWorkspaceRecords,
   });
 }
-let undoBusy = false;
-async function undoLast() {
+let undoBusy = false,
+  pendingUndo = null;
+
+async function openUndoModal() {
+  if (undoBusy) return false;
+  const check = preserveAsyncTarget();
+  await flushDrafts({ strict: true });
+  await writer.catch(() => {});
+  check();
+  assertEntityWritable();
+  const target = { id: workspace.id, revision: workspace.revision, connection };
+  const undo = await readRecord("undo", target.id);
+  check();
+  if (
+    connection !== target.connection ||
+    workspace.revision !== target.revision
+  )
+    throw Error("اطلاعات تغییر کرده است؛ پنجرهٔ بازگردانی را دوباره باز کنید.");
+  const available = undo && undo.revision === target.revision;
+  if (available)
+    validatedUndoCandidate(
+      undo,
+      new Map([...committed].map(([key, value]) => [key, JSON.parse(value)])),
+      workspace,
+    );
+  const date = new Date(undo?.at || "");
+  const opened = showModal(
+    "برگرداندن آخرین تغییر",
+    '<div class="full-restore undo-preview" id="undoPreview"><section class="undo-preview-summary"><span>نوبت فعلی</span><h4>' +
+      esc(workspace.year + " / " + workspace.term) +
+      "</h4></section>" +
+      (available
+        ? '<section class="undo-preview-change"><span>تغییر قابل بازگردانی</span><h4>' +
+          esc(undo.action) +
+          "</h4>" +
+          (Number.isFinite(date.getTime())
+            ? "<p>" + esc(date.toLocaleString("fa-IR")) + "</p>"
+            : "") +
+          '</section><p class="undo-preview-hint">فقط آخرین تغییر ثبت‌شده به وضعیت قبل برمی‌گردد؛ سایر نوبت‌ها تغییر نمی‌کنند. این کار، بازیابی فایل پشتیبان نیست.</p><p class="undo-preview-hint">پس از تأیید، امکان لغوِ همین بازگردانی وجود ندارد.</p><p id="operationError" role="alert"></p><div class="full-restore-actions"><button type="button" data-mutating="1" data-workspace-action="confirm-undo">تأیید و برگرداندن تغییر</button><button type="button" class="ghost" data-workspace-action="close">انصراف</button></div>'
+        : '<p class="undo-preview-empty">در این نوبت، تغییری برای بازگرداندن وجود ندارد.</p><button type="button" class="ghost" data-workspace-action="close">بستن</button>') +
+      "</div>",
+  );
+  if (opened !== false)
+    pendingUndo = available
+      ? { ...target, signature: JSON.stringify(undo) }
+      : null;
+  return opened !== false;
+}
+
+async function confirmUndo() {
+  if (
+    !pendingUndo ||
+    !document.querySelector("#modal:not(.hidden) #undoPreview")
+  )
+    throw Error("پنجرهٔ بازگردانی منقضی شده است؛ دوباره آن را باز کنید.");
+  return undoLast(pendingUndo);
+}
+
+async function undoLast(approval = null) {
   if (undoBusy) return false;
   undoBusy = true;
   busy++;
@@ -54,7 +79,17 @@ async function undoLast() {
     ensureCurrent();
     assertEntityWritable();
     const target = { id: workspace.id, revision: workspace.revision };
-    const operation = performUndo(target);
+    if (
+      approval &&
+      (approval !== pendingUndo ||
+        target.id !== approval.id ||
+        target.revision !== approval.revision ||
+        connection !== approval.connection)
+    )
+      throw Error(
+        "اطلاعات از زمان نمایش تأیید تغییر کرده است؛ پنجرهٔ بازگردانی را دوباره باز کنید.",
+      );
+    const operation = performUndo(target, approval);
     writer = operation;
     return await operation;
   } finally {
@@ -63,7 +98,7 @@ async function undoLast() {
     paintStatus();
   }
 }
-async function performUndo(target) {
+async function performUndo(target, approval = null) {
   const sourceConnection = connection;
   const isCurrentTarget = () =>
     workspace.id === target.id &&
@@ -84,7 +119,17 @@ async function performUndo(target) {
     new Map([...committed].map(([key, value]) => [key, JSON.parse(value)])),
     workspace,
   );
-  if (!confirm("آخرین تغییر «" + undo.action + "» بازگردانده شود؟"))
+  if (
+    approval &&
+    (approval !== pendingUndo ||
+      JSON.stringify(undo) !== approval.signature ||
+      !document.querySelector("#modal:not(.hidden) #undoPreview"))
+  )
+    throw Error("تغییر قابل بازگردانی عوض شده است؛ پنجره را دوباره باز کنید.");
+  if (
+    !approval &&
+    !confirm("آخرین تغییر «" + undo.action + "» بازگردانده شود؟")
+  )
     return false;
   assertEntityWritable();
   if (!isCurrentTarget() || workspace.revision !== target.revision)
@@ -94,6 +139,7 @@ async function performUndo(target) {
     replace: true,
     keepUndo: false,
   });
+  pendingUndo = null;
   if (!isCurrentTarget()) return true;
   const savedRevision = workspace.revision;
   const loaded = await readWorkspace(target.id);

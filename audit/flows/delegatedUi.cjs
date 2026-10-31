@@ -52,7 +52,7 @@ module.exports = async function delegatedUi() {
     "DU04",
     "workspace period command opens the period dialog from the rendered control",
     document.getElementById("modalTitle").textContent ===
-      "دوره‌های تحصیلی و کارنامه نهایی",
+      "نوبت‌های تحصیلی و کارنامه نهایی",
   );
   closeModal();
   showModal(

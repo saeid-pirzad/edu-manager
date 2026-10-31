@@ -64,6 +64,11 @@ globalThis.EduFullBackupValidator = Object.freeze({
         )
           throw Error("نوع نوبت تحصیلی در پشتیبان معتبر نیست.");
         validateReportNotes(period.reportNotesRecovery, period.id);
+        if (
+          period.reportSource != null &&
+          !["primary", "secondary"].includes(period.reportSource)
+        )
+          throw Error("نوع منبع گزارش در پشتیبان معتبر نیست.");
         validateReportNotes(value.reportDrafts?.[period.id], period.id);
         ids.add(period.id);
         const records = recordsByWorkspace.get(period.id) || [];

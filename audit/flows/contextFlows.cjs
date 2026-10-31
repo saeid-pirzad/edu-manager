@@ -91,6 +91,7 @@ async function contextFlows() {
       ),
     );
     EduV24.previewFullBackup(gradeBackup);
+    document.getElementById("fullRestoreConfirmed").checked = true;
     await EduV24.restoreFullBackup();
     record(
       "G16",

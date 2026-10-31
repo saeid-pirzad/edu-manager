@@ -52,7 +52,7 @@ test("bulk grade editor cannot open a different class after waiting for drafts",
   await assert.rejects(context.openBulkV24("lesson"), /دوره یا کلاس/);
   assert.equal(opened, false);
 });
-test("backup dialog cannot combine old rows with a newly selected workspace during storage estimate", async () => {
+test("backup dialog rejects workspace navigation during storage estimate", async () => {
   const context = fixture();
   let opened = false;
   context.writer = Promise.resolve();
@@ -73,6 +73,37 @@ test("backup dialog cannot combine old rows with a newly selected workspace duri
   vm.runInContext(read("backups/period-import.js"), context);
   await assert.rejects(context.openBackups(), /دوره یا کلاس/);
   assert.equal(opened, false);
+});
+
+test("backup dialog offers file workflows without reading or rendering internal snapshots", async () => {
+  const context = fixture();
+  let html;
+  context.writer = Promise.resolve();
+  context.esc = String;
+  context.lastExternalBackupLabel = () => "backup";
+  context.singleFilePanel = () =>
+    '<section class="backup-automatic"></section>';
+  context.navigator = {};
+  context.allFrom = () => {
+    throw Error("Internal backups must not be read");
+  };
+  context.showModal = (title, body) => {
+    html = body;
+  };
+  vm.runInContext(read("backups/period-import.js"), context);
+  await context.openBackups();
+  assert.doesNotMatch(
+    html,
+    /backup-history|download-backup|preview-backup|بازیابی اضطراری/,
+  );
+  for (const action of ["export-full", "prepare-share-backup", "choose-import"])
+    assert.ok(html.includes('data-workspace-action="' + action + '"'));
+  assert.match(html, /backup-automatic/);
+  assert.match(
+    html,
+    /<details class="backup-reset"><summary>پاک‌سازی اطلاعات سیستم/,
+  );
+  assert.match(html, /data-workspace-action="open-wipe"/);
 });
 test("period dialog rejects a switch between catalog and report reads", async () => {
   const context = fixture();

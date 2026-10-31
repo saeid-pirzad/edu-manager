@@ -120,36 +120,3 @@ async function exportFullBackup() {
   );
   return content.stores.catalog.length;
 }
-async function automaticFullBackup() {
-  if (
-    !ready ||
-    periodLoading ||
-    blocked ||
-    automaticBackupBusy ||
-    document.hidden
-  )
-    return;
-  automaticBackupBusy = true;
-  try {
-    const snapshot = await snapshotInstallation();
-    const tx = connection.transaction("backups", "readwrite"),
-      done = transactionDone(tx);
-    tx.objectStore("backups").put({
-      id: "automatic-full",
-      workspace: null,
-      at: snapshot.exportedAt,
-      label: "خودکار کامل — هر ۲۰ دقیقه",
-      full: snapshot,
-    });
-    await done;
-  } catch (error) {
-    if (error.code === "BACKUP_CONTEXT_CHANGED") return;
-    setStatus("پشتیبان خودکار کامل ساخته نشد؛ " + error.message, "error");
-  } finally {
-    automaticBackupBusy = false;
-  }
-}
-function startAutomaticBackups() {
-  if (!automaticBackupTimer)
-    automaticBackupTimer = setInterval(automaticFullBackup, 20 * 60 * 1000);
-}

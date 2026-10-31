@@ -184,12 +184,13 @@ async function refactorFlows() {
     versionOne.version = 1;
     delete versionOne.gradeDrafts;
     EduV24.previewFullBackup(versionOne);
+    document.getElementById("fullRestoreConfirmed").checked = true;
     await EduV24.restoreFullBackup();
     await EduV24.undoLast();
     record(
       "F08",
       "version-one full restore preserves executable undo and record ownership",
-      EduV24.getReportContext().id !== previousWorkspace &&
+      EduV24.getReportContext().id === previousWorkspace &&
         currentClass().name === initialName,
     );
     for (const school of db.schools)
@@ -243,6 +244,7 @@ async function refactorFlows() {
     EduV24.validateFullBackup(versionTwo);
     const source = EduV24.getReportContext().id;
     EduV24.previewFullBackup(versionTwo);
+    document.getElementById("fullRestoreConfirmed").checked = true;
     await EduV24.restoreFullBackup();
     const restored = (await readAll("reports")).find(
       (row) =>
@@ -255,7 +257,7 @@ async function refactorFlows() {
     record(
       "F11",
       "version-two restore preserves closed period and frozen historical snapshot",
-      EduV24.getReportContext().id !== source &&
+      EduV24.getReportContext().id === source &&
         EduV24.getReportContext().closed &&
         JSON.stringify(restored.classes) === JSON.stringify(frozen.classes),
     );

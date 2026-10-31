@@ -24,22 +24,23 @@ function singleFileStatus(message) {
 function singleFilePanel() {
   if (!window.showSaveFilePicker)
     return (
-      "<p>ذخیره خودکار در فایل در این محیط در دسترس نیست. برای فایل خودکار از مرورگر سازگار مانند Chrome استفاده کنید؛ پشتیبان دستی همچنان در دسترس است.</p>" +
-      singleFileFallbackPanel(true)
+      '<section class="backup-automatic"><h3>ذخیره خودکار در یک فایل</h3><p>فایل را یک‌بار انتخاب کنید؛ برنامه هنگام باز بودن، همان فایل را به‌روز می‌کند.</p><p id="singleFileStatus" role="status">ذخیره خودکار در فایل در این محیط در دسترس نیست. این برنامه را در Chrome یا Edge باز کنید؛ پشتیبان دستی همچنان در دسترس است.</p><div class="row"><button data-workspace-action="single-file-choose" disabled>انتخاب فایل و فعال‌سازی</button></div>' +
+      singleFileFallbackPanel(true) +
+      "</section>"
     );
   return (
     '<section class="backup-automatic"><h3>ذخیره خودکار در یک فایل</h3><p>فایل را یک‌بار انتخاب کنید؛ برنامه هنگام باز بودن، همان فایل را به‌روز می‌کند.</p><p id="singleFileStatus" role="status">' +
     esc(singleFileMessage) +
     "</p>" +
     singleFileFallbackPanel(singleFileFailure) +
-    '<div class="row"><button data-workspace-action="single-file-choose">انتخاب فایل و فعال‌سازی</button><button class="ghost" data-workspace-action="single-file-save">ذخیره اکنون / اجازه مجدد</button><button class="ghost" data-workspace-action="single-file-stop">توقف اتصال فایل</button></div><details class="backup-help"><summary>راهنما و محدودیت‌های ذخیره خودکار</summary><p>تغییرات ثبت‌شده پس از حدود ۲ ثانیه و سایر تغییرات هر ۳۰ ثانیه بررسی می‌شوند؛ زمان‌بندی در پس‌زمینه ممکن است به تأخیر بیفتد. قبل از خروج «ذخیره اکنون» را بزنید و تأیید را ببینید. با برنامه بسته یا دستگاه خاموش، نوشتن انجام نمی‌شود.</p><p>فایل را می‌توانید کنار پروژه یا در پوشه دلخواه انتخاب کنید. ساخت فایل یا بازشدن پنجره انتخاب، تأیید ذخیره نیست؛ فعال‌سازی فقط بعد از اولین نوشتن موفق انجام می‌شود. بازیابی با گزینه «بازیابی از فایل» است؛ ویرایش دستی فایل خودکار وارد برنامه نمی‌شود.</p></details></section>'
+    '<div class="row"><button data-workspace-action="single-file-choose">انتخاب فایل و فعال‌سازی</button><button class="ghost" data-workspace-action="single-file-save">ذخیره اکنون / اجازه مجدد</button><button class="ghost" data-workspace-action="single-file-stop">توقف اتصال فایل</button></div></section>'
   );
 }
 function singleFileFallbackPanel(visible) {
   return (
     '<div id="singleFileFallback"' +
     (visible ? "" : " hidden") +
-    '><p>ذخیره خودکار فایل فعال نیست. فایل خالی پشتیبان قابل بازیابی نیست. می‌توانید مجوز یا محل فایل را عوض کنید، از مرورگر دیگری مانند Chrome استفاده کنید، یا پشتیبان کامل را دستی دریافت کنید. دریافت دستی، ذخیره خودکار را فعال نمی‌کند.</p><button class="ghost" data-workspace-action="export-full">دریافت دستی پشتیبان کامل</button></div>'
+    '><p>ذخیره خودکار فایل فعال نیست. فایل خالی پشتیبان قابل بازیابی نیست. می‌توانید مجوز یا محل فایل را عوض کنید، از مرورگر دیگری مانند Chrome استفاده کنید، یا از دکمهٔ دریافت پشتیبان کامل در بالای همین پنجره استفاده کنید. دریافت دستی، ذخیره خودکار را فعال نمی‌کند.</p></div>'
   );
 }
 function showSingleFileFallback(visible) {
@@ -86,6 +87,7 @@ function singleFileChanged(message) {
   return true;
 }
 async function singleFileCurrent(target) {
+  if (fullRestoreBusy) return false;
   if (
     singleFile !== target ||
     !ready ||

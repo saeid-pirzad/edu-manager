@@ -142,9 +142,11 @@ function build(source, options) {
       ...(x.scores || []).map((sc) => sc.studentId),
     ]);
     if (f.audience === "parent" && !ids.has(f.studentId)) continue;
-    if (!Array.isArray(x.roster))
+    if (!Array.isArray(x.roster) || x.rosterInferred)
       warnings.add(
-        "فهرست تاریخی برخی جلسات موجود نیست؛ برای آن جلسات از فهرست فعلی کلاس و سوابق ثبت‌شده استفاده شده است.",
+        x.rosterInferred
+          ? "فهرست تاریخی برخی جلسات موجود نیست؛ برای آن جلسات از فهرست کلاس در همان نوبت و سوابق ثبت‌شده استفاده شده است."
+          : "فهرست تاریخی برخی جلسات موجود نیست؛ برای آن جلسات از فهرست فعلی کلاس و سوابق ثبت‌شده استفاده شده است.",
       );
     const slot = [x.date, x.classId, x.period].join("|");
     if (slots.has(slot))
@@ -239,16 +241,20 @@ function build(source, options) {
       day[key] += sessionCounts[key];
     const pod = lesson?.poudmans?.find((p) => p.id === x.poudmanId),
       unit = pod?.units?.find((u) => u.id === x.unitId);
+    const historical = f.mode === "annual" ? x.annualMetadata : null;
     sessions.push({
       id: x.id,
       date: x.date,
       period: x.period,
       classId: c.id,
-      className: c.name,
-      lessonName: lesson?.name || "درس فاقد تعریف",
-      moduleName: pod?.name || "",
-      unitName: unit?.name || "",
-      teacher: lesson?.teacher || "",
+      className: historical?.className ?? c.name,
+      lessonName: historical?.lessonName ?? lesson?.name ?? "درس فاقد تعریف",
+      moduleName: historical?.moduleName ?? pod?.name ?? "",
+      unitName: historical?.unitName ?? unit?.name ?? "",
+      teacher: historical?.teacher ?? lesson?.teacher ?? "",
+      ...(f.mode === "annual" && x.academicTerm
+        ? { academicTerm: x.academicTerm, sourcePeriodId: x.sourcePeriodId }
+        : {}),
       counts: sessionCounts,
       participants,
       marks,

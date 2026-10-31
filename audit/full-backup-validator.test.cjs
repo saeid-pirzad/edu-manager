@@ -76,6 +76,18 @@ const fixture = () => ({
     reports: [],
   },
 });
+test("full backups validate explicit report-source roles while accepting legacy catalogs", () => {
+  for (const role of [undefined, "primary", "secondary"]) {
+    const value = fixture();
+    if (role) value.stores.catalog[0].reportSource = role;
+    assert.equal(validate(value).length, 1);
+  }
+  for (const role of [true, 1, "backup", {}]) {
+    const value = fixture();
+    value.stores.catalog[0].reportSource = role;
+    assert.throws(() => validate(value), /منبع گزارش/);
+  }
+});
 test("full-backup history accepts valid legacy events without inventing a revision", () => {
   const value = fixture();
   delete value.stores.events[0].revision;

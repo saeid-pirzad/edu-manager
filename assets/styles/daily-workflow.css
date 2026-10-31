@@ -1464,7 +1464,7 @@ body {
     gap: 10px;
   }
   .backup-action-grid > :first-child {
-    grid-column: 1 / -1;
+    grid-column: auto;
     background: var(--touch-teal);
     min-height: 48px;
   }
@@ -3868,18 +3868,6 @@ body {
     font-size: 11px;
     gap: 5px;
   }
-  #modalBody .backup-history table[data-ui-layout="cards"] tbody {
-    gap: 8px;
-  }
-  #modalBody .backup-history table[data-ui-layout="cards"] tbody tr {
-    padding: 12px;
-    border-color: #e5e0d7;
-    border-radius: 10px;
-    box-shadow: none;
-  }
-  #modalBody .backup-history table[data-ui-layout="cards"] td[data-actions] {
-    gap: 6px;
-  }
 }
 
 @media screen {
@@ -3952,10 +3940,83 @@ body {
     padding: 10px 8px;
     font-size: 12px;
   }
+  #modalBody .period-list :is(th, td) {
+    text-align: start;
+    vertical-align: middle;
+  }
+  #modalBody .period-list table:not([data-ui-layout="cards"]) {
+    table-layout: fixed;
+  }
+  #modalBody
+    .period-list
+    table:not([data-ui-layout="cards"])
+    :is(th, td):nth-child(1) {
+    width: 32%;
+  }
+  #modalBody
+    .period-list
+    table:not([data-ui-layout="cards"])
+    :is(th, td):nth-child(2) {
+    width: 18%;
+  }
+  #modalBody .period-row-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+  }
+  #modalBody .period-row-actions > button {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 44px;
+    width: 100%;
+    margin: 0;
+    box-sizing: border-box;
+  }
+  #modalBody .period-row-actions > [data-workspace-action="new-second-period"] {
+    order: 1;
+    grid-column: 1 / -1;
+  }
   #modalBody .period-hub button.ghost {
     background: #faf9f7;
     border: 1px solid #e5e0d7;
     color: #655d52;
+  }
+  #modalBody .period-list button.period-delete-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 8px 12px;
+    margin-inline-start: 0;
+    border: 1px solid #edcfc9;
+    border-radius: 9px;
+    background: #fff5f3;
+    color: #a34638;
+    font-weight: 600;
+    white-space: nowrap;
+    box-shadow: none;
+  }
+  #modalBody .period-delete-button > span:first-child {
+    display: inline-flex;
+    flex: 0 0 auto;
+  }
+  #modalBody .period-delete-button svg {
+    width: 16px;
+    height: 16px;
+  }
+  #modalBody .period-list button.period-delete-button:hover {
+    background: #fce8e3;
+    border-color: #dba99e;
+    color: #893628;
+  }
+  #modalBody .period-list button.period-delete-button:focus-visible {
+    outline: 2px solid #a34638;
+    outline-offset: 3px;
   }
   #modalBody .period-actions {
     display: grid;
@@ -4179,244 +4240,6 @@ body {
   }
   .frozen-student .table-scroll {
     overflow: visible !important;
-  }
-}
-
-@media screen {
-  #modal:has(.history-hub) .modal-dialog {
-    width: min(100%, 680px);
-    max-height: calc(var(--app-viewport, 100dvh) - 48px);
-    border-radius: 18px;
-  }
-  #modal:has(.history-detail) .modal-dialog {
-    width: min(100%, 900px);
-    max-height: calc(var(--app-viewport, 100dvh) - 48px);
-    border-radius: 18px;
-  }
-  #modal:has(.history-hub, .history-detail) .modal-header {
-    padding: 14px 20px;
-    background: #fff;
-  }
-  #modal:has(.history-hub, .history-detail) .modal-header h3 {
-    font-size: 16px;
-  }
-  #modal:has(.history-hub, .history-detail) .modal-body {
-    padding: 18px;
-    background: #f7f6f3;
-  }
-  #modalBody :is(.history-hub, .history-detail) {
-    display: grid;
-    gap: 12px;
-    min-width: 0;
-  }
-  #modalBody :is(.history-hub, .history-detail) button {
-    min-width: 0;
-    min-height: 42px;
-    padding: 9px 12px;
-    margin: 0;
-    border-radius: 9px;
-    font-size: 12px;
-    line-height: 1.8;
-  }
-  #modalBody .history-intro {
-    margin: 0;
-    padding: 14px;
-    border: 1px solid #e8e0d3;
-    border-radius: 12px;
-    background: #faf6ee;
-    color: #81715b;
-    font-size: 12px;
-    line-height: 1.95;
-  }
-  #modalBody .history-hub > [data-workspace-action="undo"] {
-    background: #f5ede0;
-    border: 1px solid #dbcbb3;
-    color: #79522c;
-    text-align: start;
-  }
-  #modalBody .history-list {
-    display: grid;
-    gap: 8px;
-  }
-  #modalBody .history-entry {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 14px;
-    padding: 16px;
-    border: 1px solid #e5e0d7;
-    border-radius: 12px;
-    background: #fff;
-  }
-  #modalBody .history-entry-info {
-    min-width: 0;
-  }
-  #modalBody .history-entry h4 {
-    margin: 0 0 8px;
-    font-size: 13px;
-    line-height: 1.9;
-    overflow-wrap: anywhere;
-  }
-  #modalBody .history-entry-meta {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 6px 10px;
-    color: #81796e;
-    font-size: 11px;
-  }
-  #modalBody .history-count {
-    padding: 3px 8px;
-    border-radius: 20px;
-    background: #f4f1eb;
-    color: #81715b;
-    font-size: 10px;
-    white-space: nowrap;
-  }
-  #modalBody .history-entry > button {
-    background: #faf9f7;
-    border: 1px solid #e5e0d7;
-    color: #655d52;
-  }
-  #modalBody .history-hub > [data-workspace-action="history-more"],
-  #modalBody .history-detail > button {
-    background: #fff;
-    border: 1px solid #e5e0d7;
-    color: #79522c;
-  }
-  #modalBody .history-empty {
-    padding: 28px 16px;
-    border: 1px dashed #ded8ce;
-    border-radius: 12px;
-    background: #fff;
-    color: #81796e;
-    text-align: center;
-    font-size: 12px;
-    line-height: 1.9;
-  }
-  #modalBody .history-detail-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 12px;
-    padding: 16px;
-    border: 1px solid #e5e0d7;
-    border-radius: 12px;
-    background: #fff;
-  }
-  #modalBody .history-detail-heading p {
-    margin: 0;
-    color: #81796e;
-    font-size: 12px;
-    line-height: 1.9;
-  }
-  #modalBody .history-detail-heading button {
-    background: #79522c;
-    border: 1px solid #79522c;
-    color: #fff;
-  }
-  #modalBody .history-diff {
-    border: 1px solid #e5e0d7;
-    border-radius: 12px;
-    background: #fff;
-  }
-  #modalBody .history-diff table {
-    width: 100%;
-    margin: 0;
-    table-layout: fixed;
-  }
-  #modalBody .history-diff th {
-    background: #f5f2ec;
-    color: #726b61;
-    font-size: 12px;
-  }
-  #modalBody .history-diff td {
-    padding: 12px;
-    vertical-align: top;
-    font-size: 12px;
-    overflow-wrap: anywhere;
-  }
-  #modalBody .history-diff pre {
-    min-width: 0;
-    margin: 0;
-    padding: 10px;
-    border-radius: 8px;
-    background: #f7f6f3;
-    color: #655d52;
-    font-family: inherit;
-    font-size: 12px;
-    line-height: 1.9;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-  }
-  #modalBody .history-diff td:last-child pre {
-    background: #edf5ef;
-    color: #35634c;
-  }
-}
-@media screen and (max-width: 700px) {
-  #modal:has(.history-hub, .history-detail) {
-    padding: 10px;
-    align-items: center;
-  }
-  #modal:has(.history-hub, .history-detail) .modal-dialog {
-    max-height: calc(var(--app-viewport, 100dvh) - 20px);
-    border-radius: 16px;
-  }
-  #modal:has(.history-hub, .history-detail) .modal-header {
-    padding: 10px 14px;
-  }
-  #modal:has(.history-hub, .history-detail) .modal-header h3 {
-    font-size: 14px;
-  }
-  #modal:has(.history-hub, .history-detail) .modal-body {
-    padding: 10px;
-  }
-  #modalBody .history-intro {
-    font-size: 11px;
-    padding: 12px;
-  }
-  #modalBody .history-entry {
-    padding: 12px;
-    gap: 10px;
-  }
-  #modalBody .history-entry h4 {
-    font-size: 12px;
-  }
-  #modalBody .history-entry-meta {
-    font-size: 10px;
-    gap: 6px;
-  }
-  #modalBody .history-entry > button {
-    padding: 8px 10px;
-    font-size: 11px;
-  }
-  #modalBody .history-detail-heading {
-    padding: 12px;
-  }
-  #modalBody .history-detail-heading button {
-    width: 100%;
-  }
-  #modalBody .history-diff table[data-ui-layout="cards"] tbody {
-    gap: 8px;
-    padding: 8px;
-  }
-  #modalBody .history-diff table[data-ui-layout="cards"] tbody tr {
-    padding: 12px;
-    border-color: #e5e0d7;
-    border-radius: 10px;
-    box-shadow: none;
-  }
-  #modalBody
-    .history-diff
-    table[data-ui-layout="cards"]
-    td:not([data-identity]) {
-    grid-column: 1 / -1;
-  }
-  #modalBody .history-diff pre {
-    padding: 9px;
-    font-size: 11px;
   }
 }
 
@@ -5547,8 +5370,11 @@ body {
 }
 @media screen {
   #modalBody .backup-action-grid > .backup-share-entry {
-    grid-column: 1 / -1;
+    grid-column: auto;
     min-height: 44px;
+  }
+  #modalBody .backup-action-grid > [data-workspace-action="choose-import"] {
+    grid-column: 1 / -1;
   }
   #modal:has(.backup-share) .modal-dialog {
     width: min(100%, 500px);
@@ -6045,6 +5871,291 @@ body {
   #mobileBar:has(#mobileInstall:not([hidden])):has(#mobileUpdate:not([hidden]))
     #mobileHelp {
     grid-column: 1 / -1;
+  }
+}
+@media screen {
+  #modal:has(.full-restore) .modal-dialog {
+    width: min(100%, 560px);
+  }
+  #modalBody .full-restore {
+    display: grid;
+    gap: 16px;
+    min-width: 0;
+    line-height: 1.9;
+  }
+  #modalBody .full-restore :is(h4, p, dl, dd) {
+    margin: 0;
+  }
+  #modalBody .full-restore :is(h4, dt) {
+    font-weight: 700;
+  }
+  #modalBody .full-restore-file,
+  #modalBody .full-restore-warning {
+    padding: 14px;
+    border: 1px solid #e5e0d7;
+    border-radius: 12px;
+    background: #faf9f7;
+  }
+  #modalBody .full-restore-file dl {
+    display: grid;
+    gap: 10px;
+    margin-top: 12px;
+    font-size: 13px;
+  }
+  #modalBody .full-restore-file dl > div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    gap: 12px;
+    overflow-wrap: anywhere;
+  }
+  #modalBody .full-restore-warning {
+    border-color: #edd2c2;
+    background: #fff6ee;
+    color: #80462b;
+  }
+  #modalBody .full-restore-warning p {
+    margin-top: 8px;
+    font-size: 13px;
+  }
+  #modalBody .full-restore-safety {
+    color: #48675b;
+    font-size: 13px;
+  }
+  #modalBody .full-restore-confirm {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid #e5e0d7;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  #modalBody .full-restore-confirm input {
+    flex: 0 0 auto;
+    width: 20px;
+    height: 20px;
+    margin: 4px 0 0;
+  }
+  #modalBody .full-restore-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 10px;
+  }
+  #modalBody .full-restore-actions button {
+    min-width: 0;
+    min-height: 44px;
+    margin: 0;
+    white-space: normal;
+  }
+  #modalBody .full-restore #operationError {
+    color: #9f3021;
+    overflow-wrap: anywhere;
+  }
+  #modalBody .full-restore #operationError:empty {
+    display: none;
+  }
+}
+@media screen and (max-width: 400px) {
+  #modalBody .full-restore-actions,
+  #modalBody .full-restore-file dl > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  #modalBody .full-restore-file dl > div {
+    gap: 2px;
+  }
+}
+@media screen {
+  #modal:has(.period-delete) .modal-dialog {
+    width: min(100%, 480px);
+  }
+  #modalBody .period-delete {
+    gap: 12px;
+  }
+  #modalBody .period-delete-identity {
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e5e0d7;
+  }
+  #modalBody .period-delete-identity > span {
+    color: #81796e;
+    font-size: 12px;
+  }
+  #modalBody .period-delete-identity h4 {
+    margin-top: 4px;
+    font-size: 17px;
+  }
+  #modalBody .period-delete-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  #modalBody .period-delete-stats > div {
+    display: grid;
+    gap: 2px;
+    padding: 10px 6px;
+    border-radius: 10px;
+    background: #faf6ee;
+    text-align: center;
+  }
+  #modalBody .period-delete-stats strong {
+    color: #79522c;
+    font-size: 20px;
+  }
+  #modalBody .period-delete-stats span {
+    font-size: 12px;
+    color: #655d52;
+  }
+  #modalBody .period-delete-transition {
+    color: #655d52;
+    font-size: 13px;
+  }
+  #modalBody .period-delete-password {
+    display: grid;
+    gap: 6px;
+    font-size: 13px;
+  }
+  #modalBody .period-delete-password input {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    margin: 0;
+  }
+}
+@media screen {
+  #modal:has(#periodLabelEditor) .modal-dialog {
+    width: min(100%, 480px);
+  }
+  #modalBody #periodLabelEditor {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    min-width: 0;
+  }
+  #periodLabelEditor .record-editor-context {
+    padding: 14px 16px;
+    border: 1px solid #e8e0d3;
+    border-radius: 12px;
+    background: #faf6ee;
+  }
+  #periodLabelEditor .record-editor-context > span {
+    color: #81715b;
+    font-size: 12px;
+  }
+  #periodLabelEditor .record-editor-context h4 {
+    margin: 4px 0 6px;
+    color: #79522c;
+    font-size: 17px;
+  }
+  #periodLabelEditor p {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.9;
+    color: #81796e;
+  }
+  #periodLabelEditor .course-field {
+    display: grid;
+    gap: 7px;
+    min-width: 0;
+    margin: 0;
+    color: #655d52;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  #periodLabelEditor .course-field input {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    margin: 0;
+    padding: 10px 12px;
+    border: 1px solid #ded8ce;
+    border-radius: 9px;
+    background: #fff;
+    font-size: 16px;
+  }
+  #periodLabelEditor #editYear {
+    background: #f5f2ec;
+    color: #81796e;
+    direction: ltr;
+    text-align: right;
+  }
+  #periodLabelEditor #editTerm:focus-visible {
+    outline: 2px solid #79522c;
+    outline-offset: 2px;
+  }
+  #periodLabelEditor #periodLabelError {
+    color: #9f3021;
+  }
+  #periodLabelEditor .record-editor-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 8px;
+    padding-top: 14px;
+    margin: 2px 0 0;
+    border-top: 1px solid #eeebe5;
+  }
+  #periodLabelEditor .record-editor-actions button {
+    min-width: 0;
+    min-height: 44px;
+    margin: 0;
+    padding: 10px;
+    border-radius: 9px;
+    font-size: 13px;
+    white-space: normal;
+  }
+  #periodLabelEditor .record-editor-actions button[type="submit"] {
+    background: #79522c;
+    border: 1px solid #79522c;
+    color: #fff;
+  }
+  #periodLabelEditor .record-editor-actions button.ghost {
+    background: #faf9f7;
+    border: 1px solid #e5e0d7;
+    color: #655d52;
+  }
+}
+@media screen {
+  #modal:has(.undo-preview) .modal-dialog {
+    width: min(100%, 460px);
+  }
+  #modalBody .undo-preview-summary {
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eeebe5;
+  }
+  #modalBody
+    .undo-preview
+    :is(.undo-preview-summary, .undo-preview-change)
+    > span {
+    font-size: 12px;
+    color: #81796e;
+  }
+  #modalBody .undo-preview h4 {
+    margin-top: 5px;
+    color: #79522c;
+    font-size: 16px;
+    overflow-wrap: anywhere;
+  }
+  #modalBody .undo-preview-change {
+    padding: 14px;
+    border: 1px solid #e8e0d3;
+    border-radius: 12px;
+    background: #faf6ee;
+  }
+  #modalBody .undo-preview-change p {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #81715b;
+  }
+  #modalBody .undo-preview-hint,
+  #modalBody .undo-preview-empty {
+    color: #655d52;
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  #modalBody .undo-preview .full-restore-actions button:first-child {
+    background: #79522c;
+    border: 1px solid #79522c;
+    color: #fff;
   }
 }
 /* Source: src/styles/workflow/grades.css */

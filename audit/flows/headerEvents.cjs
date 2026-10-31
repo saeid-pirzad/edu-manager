@@ -44,17 +44,15 @@ module.exports = async function headerEvents() {
     await new Promise((resolve) => setTimeout(resolve, 10));
   check(
     "H03b",
-    "standalone backup header opens full export, sharing, restore, file connection, history and reset",
+    "standalone backup header opens file export, sharing, restore and automatic file connection",
     [
       "export-full",
       "prepare-share-backup",
       "choose-import",
-      "export-period",
       "single-file-choose",
-      "open-wipe",
     ].every((action) =>
       document.querySelector('#modal [data-workspace-action="' + action + '"]'),
-    ) && !!document.querySelector("#modal .backup-history"),
+    ) && !document.querySelector("#modal .backup-history"),
   );
   document.querySelector(".backup-reset").open = true;
   document.querySelector('[data-workspace-action="open-wipe"]').click();
@@ -62,7 +60,7 @@ module.exports = async function headerEvents() {
     await new Promise((resolve) => setTimeout(resolve, 10));
   check(
     "H04",
-    "full wipe remains reachable from backup tools and requires explicit confirmation",
+    "full wipe remains separate under backup and restore and requires explicit confirmation",
     !!document.getElementById("wipeEditor") &&
       document.getElementById("wipeText").value === "" &&
       !document.getElementById("wipeBackup").checked,

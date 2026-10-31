@@ -393,9 +393,11 @@ function build(source, options) {
       ...(x.scores || []).map((sc) => sc.studentId),
     ]);
     if (f.audience === "parent" && !ids.has(f.studentId)) continue;
-    if (!Array.isArray(x.roster))
+    if (!Array.isArray(x.roster) || x.rosterInferred)
       warnings.add(
-        "فهرست تاریخی برخی جلسات موجود نیست؛ برای آن جلسات از فهرست فعلی کلاس و سوابق ثبت‌شده استفاده شده است.",
+        x.rosterInferred
+          ? "فهرست تاریخی برخی جلسات موجود نیست؛ برای آن جلسات از فهرست کلاس در همان نوبت و سوابق ثبت‌شده استفاده شده است."
+          : "فهرست تاریخی برخی جلسات موجود نیست؛ برای آن جلسات از فهرست فعلی کلاس و سوابق ثبت‌شده استفاده شده است.",
       );
     const slot = [x.date, x.classId, x.period].join("|");
     if (slots.has(slot))
@@ -490,16 +492,20 @@ function build(source, options) {
       day[key] += sessionCounts[key];
     const pod = lesson?.poudmans?.find((p) => p.id === x.poudmanId),
       unit = pod?.units?.find((u) => u.id === x.unitId);
+    const historical = f.mode === "annual" ? x.annualMetadata : null;
     sessions.push({
       id: x.id,
       date: x.date,
       period: x.period,
       classId: c.id,
-      className: c.name,
-      lessonName: lesson?.name || "درس فاقد تعریف",
-      moduleName: pod?.name || "",
-      unitName: unit?.name || "",
-      teacher: lesson?.teacher || "",
+      className: historical?.className ?? c.name,
+      lessonName: historical?.lessonName ?? lesson?.name ?? "درس فاقد تعریف",
+      moduleName: historical?.moduleName ?? pod?.name ?? "",
+      unitName: historical?.unitName ?? unit?.name ?? "",
+      teacher: historical?.teacher ?? lesson?.teacher ?? "",
+      ...(f.mode === "annual" && x.academicTerm
+        ? { academicTerm: x.academicTerm, sourcePeriodId: x.sourcePeriodId }
+        : {}),
       counts: sessionCounts,
       participants,
       marks,
@@ -667,6 +673,7 @@ function textReport(m) {
     lines.push(
       "",
       faDate(s.date) +
+        (s.academicTerm ? " | نوبت " + s.academicTerm : "") +
         " | زنگ " +
         num(s.period + 1) +
         " | " +
@@ -792,7 +799,7 @@ function textReport(m) {
     }
   }
   if (m.annualGrades) {
-    lines.push("", "نمرات سالانه کاردانش — میانگین برابر چهار مرحله");
+    lines.push("", "نمرات چهار مرحله سال — میانگین برابر چهار مرحله");
     for (const grade of m.annualGrades) {
       lines.push(
         grade.className + " | " + grade.studentName + " | " + grade.lessonName,
@@ -870,6 +877,7 @@ function deputyReport(m) {
       "",
       ...(index > 0 ? ["──────────"] : []),
       "تاریخ: " + faDate(session.date) + " | زنگ " + num(session.period + 1),
+      ...(session.academicTerm ? ["نوبت: " + session.academicTerm] : []),
       "کلاس: " + session.className + " | درس: " + session.lessonName,
       "دبیر: " + (session.teacher || "—"),
       "",
@@ -986,6 +994,7 @@ function sessionDetailsHtml(m, s) {
   let html =
     '<section class="periodic-session"><header class="report-session-heading"><span class="report-session-date"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4M16 3v4M4 11h16"/></svg>' +
     esc(faDate(s.date)) +
+    (s.academicTerm ? " · نوبت " + esc(s.academicTerm) : "") +
     '</span><span class="report-session-period">زنگ ' +
     num(s.period + 1) +
     '</span></header><div class="report-session-identity"><h4>' +
@@ -1170,7 +1179,7 @@ function documentHtml(m) {
   }
   if (m.annualGrades) {
     h +=
-      '<section class="annual-grades"><h3>نمرات چهار مرحله سال</h3><p>درس عمومی در هر مرحله یک نمره دارد؛ در کاردانش هر مرحله عملی ۷۰٪ و تئوری ۳۰٪ است. نمره ثبت‌نشده، صفر نیست.</p><div class="assessment-students">';
+      '<section class="annual-grades"><h3>نمرات چهار مرحله سال</h3><p>هر مرحله طبق تنظیمات همان نوبت محاسبه می‌شود؛ نهایی سالانه میانگین برابر چهار مرحله است. نمره ثبت‌نشده، صفر نیست.</p><div class="assessment-students">';
     for (const grade of m.annualGrades) {
       h +=
         '<article class="assessment-student"><h4>' +
@@ -1356,29 +1365,18 @@ function loadAnnualPeriodChoices() {
     .then((rows) => {
       if (context().id !== expected || filters.mode !== "annual") return;
       annualPeriodList = rows;
-      for (const [field, id] of [
-        ["annualFirstId", "annualFirstPeriod"],
-        ["annualSecondId", "annualSecondPeriod"],
-      ]) {
-        const select = document.getElementById(id);
-        if (!select) continue;
-        select.innerHTML =
-          '<option value="">انتخاب خودکار در صورت نبود ابهام</option>' +
-          annualPeriodOptions(field)
-            .map(
-              (row) =>
-                '<option value="' +
-                esc(row.id) +
-                '"' +
-                (filters[field] === row.id ? " selected" : "") +
-                ">" +
-                esc(row.term) +
-                (row.closed ? " · بسته" : "") +
-                "</option>",
-            )
-            .join("");
-        select.disabled = false;
-      }
+      const status = document.getElementById("annualSourceStatus");
+      if (!status) return;
+      const first = annualPeriodOptions("annualFirstId"),
+        second = annualPeriodOptions("annualSecondId");
+      status.textContent =
+        first.length > 1 || second.length > 1
+          ? "اطلاعات قدیمی این سال چند نسخه از یک نوبت دارد؛ نیازمند بررسی است."
+          : !first.length
+            ? "این سال هنوز نوبت اول ندارد."
+            : !second.length
+              ? "گزارش سالانه پس از شروع نوبت دوم، اطلاعات هر دو نوبت را کنار هم نمایش می‌دهد."
+              : "گزارش سالانه از نوبت اول و دوم همین سال تهیه می‌شود.";
     })
     .catch(error)
     .finally(() => {
@@ -1445,21 +1443,9 @@ function render(mode) {
       .map((c) => option(c.id, c.name, f.classId))
       .join("") +
     "</select></label>";
-  if (mode === "annual") {
-    for (const [field, id, label] of [
-      ["annualFirstId", "annualFirstPeriod", "اطلاعات نوبت اول"],
-      ["annualSecondId", "annualSecondPeriod", "اطلاعات نوبت دوم"],
-    ])
-      h +=
-        `<label>${label}<select id="${id}" data-legacy-change="reports-periodic-render:4" data-legacy-change-arg2="${esc(field)}">` +
-        option("", "انتخاب خودکار در صورت نبود ابهام", f[field]) +
-        annualPeriodOptions(field)
-          .map((row) =>
-            option(row.id, row.term + (row.closed ? " · بسته" : ""), f[field]),
-          )
-          .join("") +
-        "</select></label>";
-  }
+  if (mode === "annual")
+    h +=
+      '<div class="periodic-year-field"><span id="annualSourceStatus">نوبت اول و دوم همین سال به‌صورت خودکار خوانده می‌شوند.</span><button type="button" class="ghost" data-workspace-action="periods">مدیریت نوبت‌های تحصیلی</button></div>';
   if (f.audience === "parent")
     h +=
       `<label>هنرجو<select data-legacy-change="reports-periodic-render:5">` +
@@ -1703,7 +1689,7 @@ async function generate() {
         revision: part.period.revision,
       }));
       model.definitions.push(
-        "کاردانش: هر مرحله عملی ۷۰٪ و تئوری ۳۰٪؛ نهایی سالانه میانگین برابر هر چهار مرحله است. نمره ناقص، صفر محسوب نمی‌شود.",
+        "نمره هر مرحله طبق تنظیمات همان نوبت محاسبه می‌شود؛ نهایی سالانه میانگین برابر هر چهار مرحله است. نمره ناقص، صفر محسوب نمی‌شود.",
       );
       for (const part of snapshot.parts)
         model.definitions.push(

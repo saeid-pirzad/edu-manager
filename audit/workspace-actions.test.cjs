@@ -35,7 +35,7 @@ function fixture() {
     openPeriods: () => calls.push("periods"),
     saveStudent: () => calls.push("student"),
     switchPeriod: (key) => calls.push(key),
-    openHistoryV24: (limit) => calls.push(limit),
+    openUndoModal: () => calls.push("undo"),
     exportFullBackup: async () => {
       throw Error("export rejected");
     },
@@ -78,9 +78,9 @@ test("workspace actions dispatch explicit commands, parameters and private form 
   const f = fixture();
   f.click("periods");
   f.click("switch-period", { key: "workspace-one" });
-  f.click("history-more", { limit: "150" });
+  f.click("undo");
   assert.equal(f.submit("save-student"), true);
-  assert.deepEqual(f.calls, ["periods", "workspace-one", 150, "student"]);
+  assert.deepEqual(f.calls, ["periods", "workspace-one", "undo", "student"]);
 });
 test("workspace dispatch ignores unknown, disabled, inert and outside controls", () => {
   const f = fixture();
@@ -97,7 +97,7 @@ test("workspace dispatch ignores unknown, disabled, inert and outside controls",
 });
 test("workspace dispatch rejects invalid numeric parameters and handles async failures", async () => {
   const f = fixture();
-  f.click("history-more", { limit: "1;alert(1)" });
+  f.click("unfiltered-session", { day: "1;alert(1)", period: "0" });
   f.click("export-full");
   await new Promise(setImmediate);
   assert.equal(f.errors.length, 2);

@@ -72,29 +72,18 @@ function loadAnnualPeriodChoices() {
     .then((rows) => {
       if (context().id !== expected || filters.mode !== "annual") return;
       annualPeriodList = rows;
-      for (const [field, id] of [
-        ["annualFirstId", "annualFirstPeriod"],
-        ["annualSecondId", "annualSecondPeriod"],
-      ]) {
-        const select = document.getElementById(id);
-        if (!select) continue;
-        select.innerHTML =
-          '<option value="">انتخاب خودکار در صورت نبود ابهام</option>' +
-          annualPeriodOptions(field)
-            .map(
-              (row) =>
-                '<option value="' +
-                esc(row.id) +
-                '"' +
-                (filters[field] === row.id ? " selected" : "") +
-                ">" +
-                esc(row.term) +
-                (row.closed ? " · بسته" : "") +
-                "</option>",
-            )
-            .join("");
-        select.disabled = false;
-      }
+      const status = document.getElementById("annualSourceStatus");
+      if (!status) return;
+      const first = annualPeriodOptions("annualFirstId"),
+        second = annualPeriodOptions("annualSecondId");
+      status.textContent =
+        first.length > 1 || second.length > 1
+          ? "اطلاعات قدیمی این سال چند نسخه از یک نوبت دارد؛ نیازمند بررسی است."
+          : !first.length
+            ? "این سال هنوز نوبت اول ندارد."
+            : !second.length
+              ? "گزارش سالانه پس از شروع نوبت دوم، اطلاعات هر دو نوبت را کنار هم نمایش می‌دهد."
+              : "گزارش سالانه از نوبت اول و دوم همین سال تهیه می‌شود.";
     })
     .catch(error)
     .finally(() => {

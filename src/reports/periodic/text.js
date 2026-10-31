@@ -95,6 +95,7 @@ function textReport(m) {
     lines.push(
       "",
       faDate(s.date) +
+        (s.academicTerm ? " | نوبت " + s.academicTerm : "") +
         " | زنگ " +
         num(s.period + 1) +
         " | " +
@@ -220,7 +221,7 @@ function textReport(m) {
     }
   }
   if (m.annualGrades) {
-    lines.push("", "نمرات سالانه کاردانش — میانگین برابر چهار مرحله");
+    lines.push("", "نمرات چهار مرحله سال — میانگین برابر چهار مرحله");
     for (const grade of m.annualGrades) {
       lines.push(
         grade.className + " | " + grade.studentName + " | " + grade.lessonName,
@@ -298,6 +299,7 @@ function deputyReport(m) {
       "",
       ...(index > 0 ? ["──────────"] : []),
       "تاریخ: " + faDate(session.date) + " | زنگ " + num(session.period + 1),
+      ...(session.academicTerm ? ["نوبت: " + session.academicTerm] : []),
       "کلاس: " + session.className + " | درس: " + session.lessonName,
       "دبیر: " + (session.teacher || "—"),
       "",

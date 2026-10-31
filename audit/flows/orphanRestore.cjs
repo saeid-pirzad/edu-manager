@@ -32,6 +32,7 @@ async function orphanRestore() {
     missingAfterRestore = false;
   try {
     EduV24.previewFullBackup(backup);
+    document.getElementById("fullRestoreConfirmed").checked = true;
     await EduV24.restoreFullBackup();
     accepted = true;
     missingAfterRestore = !db.schools.some((s) =>

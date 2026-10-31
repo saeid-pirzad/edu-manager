@@ -2,6 +2,8 @@ function calcV24(c, l, sid, source = db) {
   const r = old.calcStudentLesson(c, l, sid, source);
   if (l.gradingPolicy) {
     const p = l.gradingPolicy;
+    // General lessons ignore legacy practical fields and use one direct grade.
+    if (p.subjectType === "general") r.practical = null;
     if (p.method === "dual")
       Object.assign(r, EduPolicy.dual(p, r.practical, r.theory));
     else
@@ -44,6 +46,10 @@ function assessmentResult(lesson, sid, stage = "final") {
   };
 }
 function annualGradeRows(parts, schoolId, classId, studentId = "") {
+  parts = [...parts].sort(
+    (a, b) =>
+      (a.period.term === "اول" ? 0 : 1) - (b.period.term === "اول" ? 0 : 1),
+  );
   const rows = [],
     identities = new Map();
   for (const part of parts)

@@ -38,38 +38,6 @@ async function putBackup(data, label, workspaceId = workspace?.id) {
   return backup;
 }
 
-async function ensureDailyBackup() {
-  const origin = workspace?.id;
-  const sourceAvailable = () =>
-    !!origin &&
-    ready &&
-    !periodLoading &&
-    !resetBusy &&
-    !connectionRetired &&
-    workspace?.id === origin;
-  if (!sourceAvailable()) return false;
-  try {
-    await writer.catch(() => {});
-    if (!sourceAvailable()) return false;
-    const existing = (await allFrom("backups")).filter(
-      (x) => x.workspace === origin,
-    );
-    if (!sourceAvailable()) return false;
-    if (existing.some((x) => x.at.slice(0, 10) === todayISO())) return false;
-    const snapshot = await readWorkspaceSnapshot(origin);
-    if (!sourceAvailable()) return false;
-    await putBackup(snapshot.data, "خودکار روزانه", origin);
-    return true;
-  } catch (error) {
-    if (sourceAvailable())
-      setStatus(
-        "اطلاعات خوانده شد؛ پشتیبان داخلی ساخته نشد. پشتیبان فایل تهیه کنید.",
-        "error",
-      );
-    return false;
-  }
-}
-
 function lastExternalBackupLabel() {
   let item;
   try {
@@ -104,5 +72,3 @@ const backupStores = [
   "undo",
   "reports",
 ];
-let automaticBackupTimer = null,
-  automaticBackupBusy = false;

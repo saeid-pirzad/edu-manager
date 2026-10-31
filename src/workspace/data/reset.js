@@ -20,8 +20,6 @@ function retireConnection(dbConnection) {
   ready = false;
   blocked = true;
   clearTimeout(draftTimer);
-  clearInterval(automaticBackupTimer);
-  automaticBackupTimer = null;
   setStatus(
     "بانک اطلاعات در پنجره دیگری تغییر می‌کند؛ برای ادامه صفحه را دوباره بارگذاری کنید.",
     "error",
@@ -32,8 +30,6 @@ function forgetInstallation() {
   pauseSingleFile();
   singleFile = null;
   clearTimeout(draftTimer);
-  clearInterval(automaticBackupTimer);
-  automaticBackupTimer = null;
   drafts.clear();
   draftGeneration++;
   writeFailureGeneration++;
@@ -61,7 +57,7 @@ function resetScreen(message) {
 function invalidateInstallation() {
   forgetInstallation();
   resetScreen(
-    "اطلاعات برنامه در پنجره دیگری حذف شده است. برای شروع با اطلاعات خالی، برنامه را دوباره بارگذاری کنید.",
+    "اطلاعات برنامه در پنجره دیگری تغییر کرده است؛ برای خواندن وضعیت فعلی، برنامه را دوباره بارگذاری کنید.",
   );
 }
 async function completeResetCleanup(dbConnection, marker) {

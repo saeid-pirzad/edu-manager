@@ -39,6 +39,7 @@ function fixture() {
     periodLoading: false,
     blocked: false,
     resetBusy: false,
+    fullRestoreBusy: false,
     connectionRetired: false,
     document: { getElementById: () => null },
     window: { showSaveFilePicker: async () => handle },
@@ -159,6 +160,19 @@ test("automatic file sync skips period transitions without failing or disconnect
   assert.equal(await f.context.syncSingleFile(), true);
   assert.equal(f.writes, 2);
 });
+test("automatic file writing pauses during system restoration without disconnecting the chosen file", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  const contents = f.contents,
+    writes = f.writes;
+  f.context.fullRestoreBusy = true;
+  assert.equal(await f.context.syncSingleFile(), false);
+  assert.equal(f.contents, contents);
+  assert.equal(f.writes, writes);
+  assert.ok(f.getStored());
+  f.context.fullRestoreBusy = false;
+  assert.equal(await f.context.syncSingleFile(), true);
+});
 test("a snapshot interrupted by a period switch does not pause or fail automatic file saving", async () => {
   const f = fixture();
   await f.context.chooseSingleFile();
@@ -202,7 +216,10 @@ test("API presence and granted permissions do not activate a rejected first writ
   assert.equal(vm.runInContext("singleFileTimer", f.context), null);
   assert.equal(vm.runInContext("singleFileFailure", f.context), true);
   assert.match(vm.runInContext("singleFileMessage", f.context), /اجازه نوشتن/);
-  assert.match(f.context.singleFilePanel(), /دریافت دستی پشتیبان کامل/);
+  assert.doesNotMatch(
+    f.context.singleFilePanel(),
+    /data-workspace-action="export-full"/,
+  );
   assert.doesNotMatch(
     f.context.singleFilePanel(),
     /id="singleFileFallback" hidden/,
@@ -265,8 +282,20 @@ test("pending initial activation stays paused after reload and can recover with 
 test("missing picker offers a manual backup without pretending automatic support", () => {
   const f = fixture();
   delete f.context.window.showSaveFilePicker;
-  assert.match(f.context.singleFilePanel(), /در دسترس نیست/);
   assert.match(
+    f.context.singleFilePanel(),
+    /<section class="backup-automatic">/,
+  );
+  assert.match(
+    f.context.singleFilePanel(),
+    /<h3>ذخیره خودکار در یک فایل<\/h3>/,
+  );
+  assert.match(
+    f.context.singleFilePanel(),
+    /data-workspace-action="single-file-choose" disabled/,
+  );
+  assert.match(f.context.singleFilePanel(), /در دسترس نیست/);
+  assert.doesNotMatch(
     f.context.singleFilePanel(),
     /data-workspace-action="export-full"/,
   );

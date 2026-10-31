@@ -107,12 +107,9 @@ function selectAnnualPeriods(catalog, periodIds, active) {
     );
     if (candidates.some((rows) => rows.length > 1))
       throw Error(
-        "برای یکی از نوبت‌ها چند دوره وجود دارد؛ نوبت اول و دوم را در فرم گزارش مشخص کنید.",
+        "اطلاعات قدیمی این سال شامل چند نسخه از یک نوبت است؛ پیش از گزارش سالانه، ساختار نوبت‌ها باید بررسی شود.",
       );
-    if (
-      candidates.every((rows) => rows.length === 1) &&
-      candidates.some((rows) => rows[0].id === active.id)
-    )
+    if (candidates.every((rows) => rows.length === 1))
       periods = candidates.map((rows) => rows[0]);
     else if (["اول", "دوم"].includes(active.term))
       periods = ["اول", "دوم"].map((term) =>
@@ -120,7 +117,7 @@ function selectAnnualPeriods(catalog, periodIds, active) {
       );
     else
       throw Error(
-        "برای دوره بازیابی‌شده یا عنوان سفارشی، هر دو نوبت اول و دوم را در فرم گزارش انتخاب کنید؛ انتخاب خودکار مبهم است.",
+        "نوبت اول و دوم این سال مشخص نیست؛ وضعیت نوبت‌ها را در مدیریت نوبت‌های تحصیلی بررسی کنید.",
       );
     if (periods.some((row) => !row))
       throw Error(
@@ -169,6 +166,38 @@ async function readAnnualRecordSets(context, periodIds) {
   assertWorkspaceContext(context);
   return { periods, recordSets };
 }
+function annualSessionCopy(part, session) {
+  const classroom = part.data.schools
+    .find((school) => school.id === session.schoolId)
+    ?.classes.find((item) => item.id === session.classId);
+  const lesson = classroom?.lessons.find(
+    (item) => item.id === session.lessonId,
+  );
+  const module = lesson?.poudmans?.find(
+    (item) => item.id === session.poudmanId,
+  );
+  const unit = module?.units?.find((item) => item.id === session.unitId);
+  return {
+    ...clone(session),
+    id: part.period.id + ":" + session.id,
+    academicTerm: part.period.term,
+    sourcePeriodId: part.period.id,
+    ...(!Array.isArray(session.roster)
+      ? {
+          roster: clone(classroom?.students || []),
+          rosterInferred: true,
+        }
+      : {}),
+    annualMetadata: {
+      className: classroom?.name || "کلاس فاقد تعریف",
+      lessonName: lesson?.name || "درس فاقد تعریف",
+      teacher: lesson?.teacher || "",
+      moduleName: module?.name || "",
+      unitName: unit?.name || "",
+    },
+  };
+}
+
 async function prepareAnnualReportSnapshot(periodIds = {}) {
   assertWorkspaceReadable();
   const origin = workspace.id;
@@ -207,10 +236,8 @@ async function prepareAnnualReportSnapshot(periodIds = {}) {
         );
     }
   }
-  const data = clone(
-    parts.find((part) => part.period.id === workspace.id)?.data ||
-      parts[1].data,
-  );
+  // Annual identity labels consistently use the latest term, not the open tab.
+  const data = clone(parts[1].data);
   data.sessions = [];
   for (const part of parts) {
     for (const school of part.data.schools) {
@@ -239,11 +266,7 @@ async function prepareAnnualReportSnapshot(periodIds = {}) {
       }
     }
     data.sessions.push(
-      ...part.data.sessions.map((session) => ({
-        ...clone(session),
-        id: part.period.id + ":" + session.id,
-        academicTerm: part.period.term,
-      })),
+      ...part.data.sessions.map((session) => annualSessionCopy(part, session)),
     );
   }
   data.settings.academicTerm = "اول و دوم";

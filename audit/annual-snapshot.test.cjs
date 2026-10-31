@@ -98,6 +98,134 @@ function fixture() {
   );
   return { c, catalog, reads, finish, aborted: () => aborted };
 }
+test("annual merge retains term-specific lesson metadata and infers legacy rosters from their own term", async () => {
+  const { c, catalog } = fixture();
+  const makeData = (name, sid, teacher) => ({
+    settings: { academicYear: "1405-1406", password: "" },
+    schools: [
+      {
+        id: "school",
+        name: "school",
+        classes: [
+          {
+            id: "class",
+            name,
+            students: [{ id: sid, name: sid }],
+            archivedStudents: [],
+            lessons: [
+              { id: "lesson", name: name + " lesson", teacher, poudmans: [] },
+            ],
+          },
+        ],
+      },
+    ],
+    sessions: [
+      {
+        id: "same-id",
+        date: "2026-10-31",
+        period: 0,
+        schoolId: "school",
+        classId: "class",
+        lessonId: "lesson",
+        attendance: {},
+        scores: [],
+      },
+    ],
+  });
+  const data = [
+    makeData("first class", "old-student", "first teacher"),
+    makeData("second class", "new-student", "second teacher"),
+  ];
+  const before = JSON.stringify(data);
+  Object.assign(c, {
+    clone: structuredClone,
+    flushDrafts: async () => {},
+    writer: Promise.resolve(),
+    readAnnualRecordSets: async () => ({
+      periods: catalog.slice(0, 2),
+      recordSets: data,
+    }),
+    decodeWorkspaceRecords: (rows) => ({ data: rows }),
+    knownStudents: (cls) => [...cls.students, ...cls.archivedStudents],
+    assertReportSnapshot: async () => true,
+  });
+  const fromFirst = await c.prepareAnnualReportSnapshot();
+  c.workspace = { ...catalog[1] };
+  const fromSecond = await c.prepareAnnualReportSnapshot();
+  assert.equal(JSON.stringify(fromFirst.data), JSON.stringify(fromSecond.data));
+  assert.equal(fromFirst.data.schools[0].classes[0].name, "second class");
+  const [first, second] = fromFirst.data.sessions;
+  assert.equal(first.annualMetadata.teacher, "first teacher");
+  assert.equal(second.annualMetadata.teacher, "second teacher");
+  assert.equal(first.roster[0].id, "old-student");
+  assert.equal(second.roster[0].id, "new-student");
+  assert.equal(first.rosterInferred, true);
+  assert.equal(first.academicTerm, "اول");
+  assert.equal(second.sourcePeriodId, "second");
+  assert.notEqual(first.id, second.id);
+  Object.assign(c, {
+    range: () => ({ start: "2026-10-31", end: "2026-10-31" }),
+    isoDate: (value) => new Date(value),
+    addDays: (value) => value,
+  });
+  vm.runInContext(
+    fs.readFileSync(
+      path.join(__dirname, "../src/reports/periodic/model.js"),
+      "utf8",
+    ),
+    c,
+  );
+  const report = c.build(fromFirst.data, {
+    mode: "annual",
+    date: "2026-10-31",
+    schoolId: "school",
+    audience: "management",
+  });
+  assert.equal(
+    report.summary.unknown,
+    2,
+    "each term has one student, not the merged roster of two students",
+  );
+  assert.equal(report.sessions[0].teacher, "first teacher");
+  assert.equal(report.sessions[1].teacher, "second teacher");
+  assert.equal(report.sessions[0].className, "first class");
+  assert.equal(report.sessions[0].sourcePeriodId, "first");
+  assert.equal(report.sessions[0].academicTerm, "اول");
+  assert.equal(JSON.stringify(data), before);
+});
+test("annual sessions keep an explicitly empty historical roster rather than replacing it with current students", () => {
+  const { c } = fixture();
+  c.clone = structuredClone;
+  const session = {
+    id: "session",
+    schoolId: "school",
+    classId: "class",
+    lessonId: "lesson",
+    roster: [],
+  };
+  const part = {
+    period: { id: "first", term: "اول" },
+    data: {
+      schools: [
+        {
+          id: "school",
+          classes: [
+            {
+              id: "class",
+              name: "class",
+              students: [{ id: "later" }],
+              lessons: [],
+            },
+          ],
+        },
+      ],
+    },
+  };
+  const copy = c.annualSessionCopy(part, session);
+  assert.equal(copy.roster.length, 0);
+  assert.equal(copy.rosterInferred, undefined);
+  assert.notEqual(copy.roster, session.roster);
+});
 test("annual snapshot reads only the two selected periods and waits for its single transaction", async () => {
   const { c, reads, finish } = fixture();
   let settled = false;
@@ -182,7 +310,7 @@ test("ambiguous automatic periods are rejected while explicit restored aliases r
   catalog.push({ ...catalog[0], id: "restored" });
   assert.throws(
     () => c.selectAnnualPeriods(catalog, {}, catalog[0]),
-    /چند دوره/,
+    /چند نسخه/,
   );
   assert.equal(
     c.selectAnnualPeriods(

@@ -40,6 +40,9 @@ function creation() {
         throw Error("context changed");
     },
   });
+  const install = c.installWorkspace;
+  vm.runInContext(read("workspace/periods/install.js"), c);
+  c.installWorkspace = install;
   vm.runInContext(read("workspace/periods/switch-create.js"), c);
   c.switchPeriod = async (id) => switched.push(id);
   return { c, saved, switched, fields };
@@ -100,6 +103,47 @@ test("a completed creation does not navigate away from a newly selected workspac
   await assert.rejects(c.createNewPeriod(), /context changed/);
   assert.equal(switched.length, 0);
 });
+for (const cancelled of [true, false]) {
+  test(
+    cancelled
+      ? "cancelling first-term access never creates a second term"
+      : "switching workspaces during first-term authentication cannot create a second term",
+    async () => {
+      const { c, fields, saved } = creation();
+      fields.periodTerm.value = "دوم";
+      const first = {
+        id: "first",
+        year: "1406-1407",
+        term: "اول",
+        closed: true,
+        revision: 5,
+      };
+      c.allFrom = async () => [first];
+      c.readWorkspaceSnapshot = async () => ({
+        period: first,
+        data: {
+          schools: [],
+          sessions: [],
+          settings: { password: "protected" },
+        },
+      });
+      c.prompt = () => (cancelled ? null : "password");
+      let checks = 0;
+      c.verifyPassword = async () => {
+        checks++;
+        c.workspace.id = "other";
+        return true;
+      };
+      await assert.rejects(
+        c.createNewPeriod(),
+        cancelled ? /تأیید نشد/ : /context changed/,
+      );
+      assert.equal(saved.length, 0);
+      assert.equal(checks, cancelled ? 0 : 1);
+    },
+  );
+}
+
 function reopening({
   missing = false,
   switchBeforeRead = false,

@@ -77,8 +77,6 @@ async function bootstrapV24() {
     render();
     await recoverDrafts();
     if (navigator.storage?.persist) navigator.storage.persist().catch(() => {});
-    await ensureDailyBackup();
-    startAutomaticBackups();
     await restoreSingleFile();
   } catch (error) {
     blocked = true;

@@ -131,31 +131,13 @@ async function seniorReviewFlows() {
     );
     if (pair.some((period) => !period))
       throw Error("Two-term fixture missing.");
-    const pairIds = new Set(pair.map((period) => period.id));
-    for (const [name, rows] of Object.entries(backup.stores))
-      backup.stores[name] =
-        name === "catalog"
-          ? rows.filter((row) => pairIds.has(row.id))
-          : rows.filter((row) => pairIds.has(row.workspace));
     backup.activeWorkspace = pair[1].id;
-    backup.gradeDrafts = backup.gradeDrafts.filter((row) =>
-      pairIds.has(row.workspace),
-    );
-    backup.reportDrafts = Object.fromEntries(
-      Object.entries(backup.reportDrafts).filter(([id]) => pairIds.has(id)),
-    );
-    const beforeIds = new Set(
-      (await EduV24.snapshotInstallation()).stores.catalog.map(
-        (period) => period.id,
-      ),
-    );
     EduV24.previewFullBackup(backup);
+    document.getElementById("fullRestoreConfirmed").checked = true;
     await EduV24.restoreFullBackup();
-    const imported = await EduV24.listAnnualReportPeriods(),
+    const imported = (await EduV24.snapshotInstallation()).stores.catalog,
       second = EduV24.getReportContext().id,
-      first = imported.find(
-        (period) => !beforeIds.has(period.id) && period.termKind === "first",
-      );
+      first = imported.find((period) => period.id === pair[0].id);
     let annualError = "",
       annual;
     const originalPrompt = window.prompt;
@@ -172,7 +154,7 @@ async function seniorReviewFlows() {
     }
     record(
       "R04",
-      "restored academic year can be selected for annual report",
+      "restored academic year retains its original term identities without creating additional terms",
       !annualError &&
         annual.parts[0].period.id === first.id &&
         annual.parts[1].period.id === second,

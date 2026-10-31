@@ -25,7 +25,7 @@ test("workspace tools retain period, history and draft commands without a duplic
     [...html.matchAll(/data-workspace-action="([^"]+)"/g)].map(
       (match) => match[1],
     ),
-    ["periods", "history", "review-drafts", "other-drafts", "discard-drafts"],
+    ["periods", "undo", "review-drafts", "other-drafts", "discard-drafts"],
   );
   assert.doesNotMatch(html, /\son\w+=|<script>/i);
   assert.doesNotMatch(
@@ -33,7 +33,9 @@ test("workspace tools retain period, history and draft commands without a duplic
     /workspace-tool-label|workspace-file-status|<small>/,
   );
   assert.equal((html.match(/<button/g) || []).length, 6);
+  assert.doesNotMatch(html, /data-workspace-action="open-wipe"/);
   assert.doesNotMatch(html, /data-workspace-action="backups"/);
+  assert.doesNotMatch(html, /data-workspace-action="history"|تاریخچه تغییرات/);
   assert.match(html, /data-header-action="settings"/);
   assert.match(html, /ابزارها و تنظیمات/);
 });

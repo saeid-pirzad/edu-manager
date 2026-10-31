@@ -31,6 +31,7 @@ async function malformedFrozenReport() {
     error = "";
   try {
     EduV24.previewFullBackup(backup);
+    document.getElementById("fullRestoreConfirmed").checked = true;
     await EduV24.restoreFullBackup();
     restored = true;
     const id = EduV24.getReportContext().id,

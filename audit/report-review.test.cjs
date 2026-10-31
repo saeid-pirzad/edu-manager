@@ -214,7 +214,7 @@ test("annual snapshots reject ambiguous automatic selection and mismatched expli
     },
   });
   vm.runInContext(source("src/workspace/reports/snapshots.js"), context);
-  await assert.rejects(context.prepareAnnualReportSnapshot(), /چند دوره/);
+  await assert.rejects(context.prepareAnnualReportSnapshot(), /چند نسخه/);
   await assert.rejects(
     context.prepareAnnualReportSnapshot({ first: "second", second: "first" }),
     /مطابقت ندارد/,

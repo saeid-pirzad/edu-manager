@@ -85,6 +85,21 @@ test("annual report uses each term policy and the second term threshold independ
     assert.equal(r.threshold, 14);
   }
 });
+test("annual student, class and lesson labels consistently use the second term regardless of input order", () => {
+  const c = fixture(),
+    first = part(lesson(c), "اول"),
+    second = part(lesson(c), "دوم");
+  const classroom = second.data.schools[0].classes[0];
+  classroom.name = "new class label";
+  classroom.students[0].name = "new student label";
+  classroom.lessons[0].name = "new lesson label";
+  const a = c.annualGradeRows([first, second], "school", "class");
+  const b = c.annualGradeRows([second, first], "school", "class");
+  assert.equal(JSON.stringify(a), JSON.stringify(b));
+  assert.equal(a[0].studentName, "new student label");
+  assert.equal(a[0].className, "new class label");
+  assert.equal(a[0].lessonName, "new lesson label");
+});
 test("annual grading keeps legacy 70/30 results and rejects mixed general/vocational identities", () => {
   const c = fixture(),
     l = lesson(c);
@@ -99,6 +114,42 @@ test("annual grading keeps legacy 70/30 results and rejects mixed general/vocati
       "class",
     ),
   );
+});
+test("annual general grades preserve real zero and never replace a missing stage with zero", () => {
+  const c = fixture(),
+    general = lesson(c);
+  general.gradingPolicy.subjectType = "general";
+  general.kardaneshScores.student = { theory: 0, midtermTheory: 0 };
+  const first = part(general, "اول"),
+    second = part(structuredClone(general), "دوم");
+  const complete = c.annualGradeRows([first, second], "school", "class")[0];
+  assert.equal(complete.final, 0);
+  assert.equal(complete.complete, true);
+  assert.equal(complete.passed, null);
+  delete second.data.schools[0].classes[0].lessons[0].kardaneshScores.student
+    .midtermTheory;
+  const incomplete = c.annualGradeRows([first, second], "school", "class")[0];
+  assert.equal(incomplete.final, null);
+  assert.equal(incomplete.complete, false);
+  assert.equal(incomplete.components[2].theory, null);
+  assert.equal(incomplete.components[0].theory, 0);
+});
+test("legacy practical fields cannot make general final reports disagree with their direct assessment", () => {
+  const c = fixture(),
+    general = lesson(c);
+  general.gradingPolicy.subjectType = "general";
+  general.kardaneshScores.student = {
+    practical: 18,
+    theory: 12,
+    midtermPractical: 18,
+    midtermTheory: 12,
+  };
+  c.old = { calcStudentLesson: () => ({ practical: 18, theory: 12 }) };
+  c.db = {};
+  const result = c.calcV24(classroom(general), general, "student");
+  assert.equal(result.practical, null);
+  assert.equal(result.final, c.assessmentResult(general, "student").final);
+  assert.equal(result.final, 12);
 });
 test("unconfirmed metadata cannot block a complete report after confirmation control was removed", () => {
   const c = fixture(),

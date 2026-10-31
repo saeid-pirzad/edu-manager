@@ -87,10 +87,6 @@ async function openBackups() {
   const ensureCurrent = preserveAsyncTarget();
   await writer.catch(() => {});
   ensureCurrent();
-  const rows = (await allFrom("backups"))
-    .filter((x) => x.workspace === workspace.id || x.workspace === null)
-    .sort((a, b) => b.at.localeCompare(a.at));
-  ensureCurrent();
   let estimate = "";
   if (navigator.storage?.estimate) {
     const e = await navigator.storage.estimate();
@@ -104,70 +100,14 @@ async function openBackups() {
   }
   showModal(
     "پشتیبان و بازیابی",
-    '<div class="backup-hub"><section class="backup-manual"><h4>فایل پشتیبان شما</h4><p>یک نسخه مستقل از اطلاعات بگیرید، برای خودتان بفرستید یا فایل قبلی را بازیابی کنید.</p><div class="backup-action-grid"><button data-workspace-action="export-full">دریافت پشتیبان کامل</button><button class="ghost backup-share-entry" data-workspace-action="prepare-share-backup">اشتراک‌گذاری پشتیبان کامل</button><button class="ghost" data-workspace-action="choose-import">بازیابی از فایل</button><button class="ghost" data-workspace-action="export-period">فقط دوره جاری</button></div><p class="muted">' +
+    '<div class="backup-hub"><section class="backup-manual"><h4>فایل پشتیبان شما</h4><p>پشتیبان کامل، همه اطلاعات سیستم را در یک فایل نگه می‌دارد. ذخیره دستی و خودکار، نوبتی ایجاد یا بسته نمی‌کنند. بازیابی فقط اطلاعات ذخیره‌شده در فایل را برمی‌گرداند.</p><div class="backup-action-grid"><button data-workspace-action="export-full">دریافت پشتیبان کامل</button><button class="ghost backup-share-entry" data-workspace-action="prepare-share-backup">اشتراک‌گذاری پشتیبان کامل</button><button class="ghost" data-workspace-action="choose-import">بازیابی از فایل</button></div><p class="muted">' +
       esc(lastExternalBackupLabel()) +
       "</p></section>" +
       singleFilePanel() +
-      '<details class="backup-history"><summary>نسخه‌های داخلی برنامه (' +
-      rows.length.toLocaleString("fa-IR") +
-      ")</summary><p>این نسخه‌ها داخل همین مرورگرند؛ جای فایل مستقل را نمی‌گیرند.</p><table><thead><tr><th>زمان</th><th>نوع</th><th>عملیات</th></tr></thead><tbody>" +
-      rows
-        .map(
-          (x) =>
-            "<tr><td>" +
-            esc(new Date(x.at).toLocaleString("fa-IR")) +
-            "</td><td>" +
-            esc(x.label) +
-            '</td><td><button class="ghost" data-workspace-action="download-backup" data-key="' +
-            esc(x.id) +
-            '">دریافت فایل</button><button class="ghost" data-workspace-action="preview-backup" data-key="' +
-            esc(x.id) +
-            '">پیش‌نمایش بازیابی</button></td></tr>',
-        )
-        .join("") +
-      '</tbody></table></details><details class="backup-help"><summary>فضای ذخیره‌سازی مرورگر</summary><p>' +
+      '<details class="backup-help"><summary>فضای ذخیره‌سازی مرورگر</summary><p>' +
       esc(estimate) +
-      '</p></details><details class="backup-reset"><summary>پاک‌سازی اطلاعات</summary><p>برای شروع دوباره، می‌توانید اطلاعات همه دوره‌ها را از همین مرورگر پاک کنید. حذف فقط پس از تکمیل تأییدها انجام می‌شود.</p><button type="button" class="danger" data-workspace-action="open-wipe">حذف کامل اطلاعات همه دوره‌ها</button></details></div>',
+      '</p></details><details class="backup-reset"><summary>پاک‌سازی اطلاعات سیستم</summary><p>برای شروع دوباره، همه اطلاعات برنامه در همین مرورگر حذف می‌شود. این کار بازیابی فایل نیست؛ پیش از ادامه پشتیبان کامل دریافت کنید. فایل‌های ذخیره‌شده روی دستگاه حذف نمی‌شوند.</p><button type="button" class="danger" data-workspace-action="open-wipe">بررسی و تأیید پاک‌سازی</button></details></div>',
   );
-}
-
-async function downloadInternalBackup(id) {
-  const ensureCurrent = preserveAsyncTarget();
-  const b = await readRecord("backups", id);
-  ensureCurrent();
-  if (!b) throw Error("پشتیبان موجود نیست.");
-  if (b.workspace !== workspace.id && b.workspace !== null)
-    throw Error("این پشتیبان متعلق به دورهٔ انتخاب‌شده نیست.");
-  if (b.full) {
-    downloadJSON(b.full, "پشتیبان-کامل-" + b.at.slice(0, 10) + ".json");
-    return;
-  }
-  downloadJSON(
-    {
-      version: b.label.includes("انتقال") ? 23 : 24,
-      exportedAt: b.at,
-      db: b.db,
-    },
-    "پشتیبان-" + b.at.slice(0, 10) + ".json",
-  );
-}
-
-async function previewInternalBackup(id) {
-  const ensureCurrent = preserveAsyncTarget();
-  const b = await readRecord("backups", id);
-  ensureCurrent();
-  if (!b) throw Error("پشتیبان موجود نیست.");
-  if (b.workspace !== workspace.id && b.workspace !== null)
-    throw Error("این پشتیبان متعلق به دورهٔ انتخاب‌شده نیست.");
-  if (b?.full) {
-    previewFullBackup(b.full);
-    return;
-  }
-  if (b)
-    previewImport(
-      normalizeDB(b.db, { legacy: b.label.includes("انتقال") }),
-      b.label,
-    );
 }
 
 function previewImport(candidate, label) {
@@ -203,11 +143,9 @@ function previewImport(candidate, label) {
           " / " +
           (candidate.settings.academicTerm || "نامشخص"),
       ) +
-      '</p><label>مقصد <select id="restoreMode"><option value="new" ' +
-      (candidate.settings.academicYear !== workspace.year ? "selected" : "") +
-      '>دوره مستقل جدید</option><option value="current" ' +
-      (candidate.settings.academicYear === workspace.year ? "selected" : "") +
-      '>جایگزینی دوره فعلی</option></select></label><p>در حالت جایگزینی، این کار اطلاعات دوره فعلی را جایگزین می‌کند. دوره‌های دیگر حفظ می‌شوند. پیش از جایگزینی فایل مستقل تهیه کنید.</p><button data-workspace-action="export-period">۱. ذخیره پشتیبان مستقلِ اطلاعات فعلی</button><p><label><input id="restoreExternalConfirmed" type="checkbox"> فایل پشتیبان فعلی را بیرون از برنامه ذخیره و بررسی کرده‌ام.</label></p><button data-mutating="1" data-workspace-action="confirm-import" data-mutating="1">۲. جایگزینی اطلاعات این دوره</button><p id="operationError" role="alert"></p>',
+      "</p><p>این فایل فقط اطلاعات نوبت " +
+      esc(workspace.year + " / " + workspace.term) +
+      ' را بازمی‌گرداند؛ نوبت جدید ساخته نمی‌شود و سایر نوبت‌ها تغییر نمی‌کنند.</p><button data-workspace-action="export-period">۱. ذخیره پشتیبان اطلاعات فعلی</button><p><label><input id="restoreExternalConfirmed" type="checkbox"> نسخه فعلی را در فایل مستقل ذخیره و بررسی کرده‌ام.</label></p><button data-mutating="1" data-workspace-action="confirm-import">۲. بازیابی اطلاعات همین نوبت</button><p id="operationError" role="alert"></p>',
   );
   if (opened !== false) pendingImport = preview;
 }
@@ -323,37 +261,24 @@ async function confirmImport() {
       throw Error("پیش‌نمایش بازیابی منقضی شده است.");
     const preview = pendingImport;
     const context = { id: preview.workspace, revision: preview.revision };
-    const creatingNew = document.getElementById("restoreMode").value === "new";
     const check = (write = false) => {
-      // An independent import never replaces source data. Its own draft flush
-      // may advance the source revision before a failed navigation is retried.
-      assertWorkspaceContext(
-        creatingNew
-          ? { id: context.id, revision: workspace.revision }
-          : context,
-        { write },
-      );
+      assertWorkspaceContext(context, { write });
       if (pendingImport !== preview)
         throw Error("پیش‌نمایش بازیابی تغییر کرده است؛ دوباره بررسی کنید.");
     };
     check();
-    if (creatingNew) {
-      if (!preview.createdWorkspace) {
-        const candidate = normalizeDB(preview.candidate);
-        const created = await installWorkspace(candidate, {
-          year: candidate.settings.academicYear,
-          term: recoveryPeriodTerm(
-            candidate.settings.academicTerm || "بازیابی",
-            uid(),
-          ),
-        });
-        preview.createdWorkspace = created.id;
-      }
-      check();
-      await switchPeriod(preview.createdWorkspace);
-      if (pendingImport === preview) pendingImport = null;
-      return;
-    }
+    const savedKind = academicTermKind(preview.candidate.settings.academicTerm);
+    const targetKind = workspace.termKind || academicTermKind(workspace.term);
+    if (
+      preview.candidate.settings.academicYear !== workspace.year ||
+      (savedKind && targetKind
+        ? savedKind !== targetKind
+        : normalizedName(preview.candidate.settings.academicTerm) !==
+          normalizedName(workspace.term))
+    )
+      throw Error(
+        "این فایل متعلق به نوبت فعلی نیست؛ همان سال و نوبت را باز کنید یا از پشتیبان کامل سیستم استفاده کنید.",
+      );
     if (!document.getElementById("restoreExternalConfirmed").checked) {
       handleError(
         Error("ابتدا نسخه مستقل را ذخیره و وجود فایل را تأیید کنید."),

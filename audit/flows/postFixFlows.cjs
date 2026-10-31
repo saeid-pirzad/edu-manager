@@ -241,6 +241,8 @@ async function postFixFlows() {
     await saveDB();
     const firstId = EduV24.getReportContext().id,
       year = EduV24.test.getState().workspace.year;
+    await EduV24.finalizePeriod();
+    closeModal();
     await EduV24.openNewPeriod();
     document.getElementById("periodYear").value = year;
     document.getElementById("periodTerm").value = "دوم";
@@ -304,18 +306,10 @@ async function postFixFlows() {
     EduPeriodicReports.selectScope("school_a", "class_a");
     render();
     await new Promise((resolve) => setTimeout(resolve, 80));
-    let select = document.getElementById("annualFirstPeriod");
-    select.value = firstId;
-    select.dispatchEvent(new Event("change", { bubbles: true }));
-    await new Promise((resolve) => setTimeout(resolve, 80));
-    select = document.getElementById("annualSecondPeriod");
-    select.value = secondId;
-    select.dispatchEvent(new Event("change", { bubbles: true }));
-    await new Promise((resolve) => setTimeout(resolve, 80));
     const annual = await EduPeriodicReports.generate();
     record(
       "P18",
-      "annual dropdowns generate a report from the selected actual pair",
+      "annual report automatically combines the two terms of its academic year",
       annual?.periods[0].id === firstId &&
         annual.periods[1].id === secondId &&
         annual.annualGrades.find((row) => row.studentId === "student_a")
@@ -324,6 +318,7 @@ async function postFixFlows() {
     const annualNote = "یادداشت جفت نوبت برای بازیابی";
     EduPeriodicReports.note(annualNote);
     await EduV24.switchPeriod(firstId);
+    await EduV24.reopenPeriod();
     closeModal();
     state.schoolId = "school_a";
     state.classId = "class_a";
@@ -374,43 +369,29 @@ async function postFixFlows() {
     input.dispatchEvent(new Event("input", { bubbles: true }));
     await EduV24.flushDrafts({ strict: true });
     closeModal();
-    const ids = new Set([firstId, secondId]);
-    for (const [name, rows] of Object.entries(pendingBackup.stores))
-      pendingBackup.stores[name] =
-        name === "catalog"
-          ? rows.filter((row) => ids.has(row.id))
-          : rows.filter((row) => ids.has(row.workspace));
     pendingBackup.activeWorkspace = firstId;
-    pendingBackup.gradeDrafts = pendingBackup.gradeDrafts.filter((row) =>
-      ids.has(row.workspace),
-    );
-    pendingBackup.reportDrafts = Object.fromEntries(
-      Object.entries(pendingBackup.reportDrafts).filter(([id]) => ids.has(id)),
-    );
-    const priorIds = new Set((await readAll("catalog")).map((row) => row.id));
     EduV24.previewFullBackup(pendingBackup);
+    document.getElementById("fullRestoreConfirmed").checked = true;
     await EduV24.restoreFullBackup();
-    const newFirst = EduV24.getReportContext().id,
-      newSecond = (await EduV24.listAnnualReportPeriods()).find(
-        (row) => !priorIds.has(row.id) && row.termKind === "second",
-      ).id;
+    const newFirst = firstId,
+      newSecond = secondId;
     record(
       "P21",
       "restored invalid draft stays review-only and never becomes a grade",
-      EduV24.test
-        .getState()
-        .drafts.some((item) => item.value === "99" && item.review) &&
+      EduV24.getReportContext().id === newFirst &&
+        EduV24.test
+          .getState()
+          .drafts.some((item) => item.value === "99" && item.review) &&
         db.schools[0].classes[0].lessons[0].kardaneshScores.student_a
           .midtermPractical === 18,
     );
     const notes = EduPeriodicReports.getDrafts(newSecond);
     record(
       "P22",
-      "annual note remaps both selected workspace references during restore",
+      "annual note preserves its original workspace and year scope during restore",
       Object.entries(notes).some(
         ([key, value]) =>
-          key.includes("academic-year:" + newFirst + ":" + newSecond) &&
-          value === annualNote,
+          key.includes("academic-year:auto:auto") && value === annualNote,
       ),
     );
     await EduV24.discardDrafts();
@@ -419,8 +400,6 @@ async function postFixFlows() {
     state.reportTab = "annual";
     EduPeriodicReports.selectScope("school_a", "class_a");
     render();
-    EduPeriodicReports.set("annualFirstId", newFirst);
-    EduPeriodicReports.set("annualSecondId", newSecond);
     await new Promise((resolve) => setTimeout(resolve, 80));
     const restoredAnnual = await EduPeriodicReports.generate();
     record(

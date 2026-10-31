@@ -104,3 +104,64 @@ test("valid undo reloads its source and reports success", async () => {
   assert.equal(f.effects.length, 3);
   assert.equal(f.c.busy, 0);
 });
+
+function previewFixture() {
+  const f = fixture();
+  f.c.esc = String;
+  f.c.document = { querySelector: () => ({}) };
+  f.c.showModal = (title, html) => {
+    f.html = html;
+    return true;
+  };
+  f.c.workspace.year = "1405-1406";
+  f.c.workspace.term = "اول";
+  return f;
+}
+test("undo modal previews the operation without mutating records or opening native confirmation", async () => {
+  const f = previewFixture();
+  f.c.commitRecords = () => {
+    throw Error("must not write before approval");
+  };
+  f.c.confirm = () => {
+    throw Error("must not open native confirmation");
+  };
+  await f.c.openUndoModal();
+  assert.match(f.html, /id="undoPreview"/);
+  assert.match(f.html, /edit/);
+  assert.match(f.html, /data-workspace-action="confirm-undo"/);
+  assert.match(f.html, /data-workspace-action="close"/);
+});
+test("empty undo state does not expose a confirmation action", async () => {
+  const f = previewFixture();
+  f.c.readRecord = async () => null;
+  await f.c.openUndoModal();
+  assert.match(f.html, /تغییری برای بازگرداندن وجود ندارد/);
+  assert.doesNotMatch(f.html, /confirm-undo/);
+  await assert.rejects(f.c.confirmUndo(), /منقضی/);
+});
+test("modal approval restores only the previewed operation without a second browser prompt", async () => {
+  const f = previewFixture();
+  f.c.confirm = () => {
+    throw Error("duplicate browser prompt");
+  };
+  await f.c.openUndoModal();
+  assert.equal(await f.c.confirmUndo(), true);
+  assert.equal(f.c.db.restored, true);
+});
+test("stale or closed undo preview cannot restore a different latest operation", async () => {
+  for (const change of ["revision", "record", "closed"]) {
+    const f = previewFixture();
+    await f.c.openUndoModal();
+    f.c.commitRecords = () => {
+      throw Error("must not write stale approval");
+    };
+    if (change === "revision") f.c.workspace.revision++;
+    if (change === "record")
+      f.c.readRecord = async () => ({
+        revision: 1,
+        action: "different operation",
+      });
+    if (change === "closed") f.c.document.querySelector = () => null;
+    await assert.rejects(f.c.confirmUndo(), /تغییر|منقضی/);
+  }
+});

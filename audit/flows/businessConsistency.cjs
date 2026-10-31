@@ -5,7 +5,7 @@ module.exports = async function businessConsistency() {
   const origin = EduV24.getReportContext().id;
   try {
     closeModal();
-    EduV24.openNewPeriod();
+    await EduV24.openNewPeriod();
     document.getElementById("periodYear").value = "1415-1416";
     document.getElementById("periodTerm").value = "اول";
     await EduV24.createNewPeriod();
@@ -90,26 +90,18 @@ module.exports = async function businessConsistency() {
         lesson.gradingPolicy.confirmed === false,
     );
     const backup = await EduV24.snapshotInstallation();
-    for (const name of Object.keys(backup.stores))
-      backup.stores[name] = backup.stores[name].filter((row) =>
-        name === "catalog"
-          ? row.id === isolated
-          : name === "undo"
-            ? row.id === isolated
-            : row.workspace === isolated,
-      );
-    backup.reportDrafts = { [isolated]: backup.reportDrafts[isolated] || {} };
-    backup.gradeDrafts = backup.gradeDrafts.filter(
-      (row) => row.workspace === isolated,
-    );
     EduV24.validateFullBackup(backup);
     check(
       "BIZ03",
       "custom-policy frozen report survives full-backup validation",
-      backup.stores.reports.length === 1 &&
-        backup.stores.reports[0].classes[0].students[0].lessons[0].final === 12,
+      backup.stores.reports.some(
+        (row) =>
+          row.workspace === isolated &&
+          row.classes[0].students[0].lessons[0].final === 12,
+      ),
     );
     EduV24.previewFullBackup(backup);
+    document.getElementById("fullRestoreConfirmed").checked = true;
     await EduV24.restoreFullBackup();
     const exported = await EduV24.snapshotInstallation();
     const report = exported.stores.reports.find(

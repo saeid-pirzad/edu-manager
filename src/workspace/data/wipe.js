@@ -48,8 +48,6 @@ async function confirmWipe() {
   };
   try {
     clearTimeout(draftTimer);
-    clearInterval(automaticBackupTimer);
-    automaticBackupTimer = null;
     if (flushing) await flushing.catch(() => {});
     if (singleFileWriting) await singleFileWriting.catch(() => {});
     await writer.catch(() => {});
@@ -104,7 +102,6 @@ async function confirmWipe() {
           Error("حذف ثبت نشد؛ اطلاعات قبلی محفوظ است. " + error.message),
           "wipeError",
         );
-        startAutomaticBackups();
       } catch (reopenError) {
         resetScreen(
           "حذف ثبت نشد؛ برای خواندن دوباره اطلاعات، برنامه را بارگذاری کنید. " +

@@ -106,7 +106,6 @@
         "src/workspace/entities/delete.js",
         "src/workspace/core/public-api.js",
         "src/workspace/drafts/review.js",
-        "src/workspace/history/viewer.js",
         "src/workspace/students/archive.js",
         "src/workspace/data/raw-recovery.js",
         "src/workspace/collaboration/session-drafts.js",

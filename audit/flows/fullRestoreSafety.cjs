@@ -46,6 +46,7 @@ module.exports = async function fullRestoreSafety() {
       return Reflect.apply(original, this, args);
     };
     try {
+      document.getElementById("fullRestoreConfirmed").checked = true;
       await EduV24.restoreFullBackup();
     } catch (failure) {
       error = failure.message;
@@ -63,6 +64,7 @@ module.exports = async function fullRestoreSafety() {
     observed: { queuedAttempts: count, error },
   });
   try {
+    document.getElementById("fullRestoreConfirmed").checked = true;
     await EduV24.restoreFullBackup();
     const restored = EduV24.getReportContext().id;
     const backup = await EduV24.snapshotInstallation();
@@ -71,7 +73,7 @@ module.exports = async function fullRestoreSafety() {
       id: "RESTORE02",
       name: "the same accepted preview can be retried successfully after transaction rollback",
       pass:
-        restored !== origin &&
+        restored === origin &&
         backup.stores.catalog.some((row) => row.id === restored),
     });
   } catch (failure) {

@@ -57,21 +57,9 @@ function render(mode) {
       .map((c) => option(c.id, c.name, f.classId))
       .join("") +
     "</select></label>";
-  if (mode === "annual") {
-    for (const [field, id, label] of [
-      ["annualFirstId", "annualFirstPeriod", "اطلاعات نوبت اول"],
-      ["annualSecondId", "annualSecondPeriod", "اطلاعات نوبت دوم"],
-    ])
-      h +=
-        `<label>${label}<select id="${id}" data-legacy-change="reports-periodic-render:4" data-legacy-change-arg2="${esc(field)}">` +
-        option("", "انتخاب خودکار در صورت نبود ابهام", f[field]) +
-        annualPeriodOptions(field)
-          .map((row) =>
-            option(row.id, row.term + (row.closed ? " · بسته" : ""), f[field]),
-          )
-          .join("") +
-        "</select></label>";
-  }
+  if (mode === "annual")
+    h +=
+      '<div class="periodic-year-field"><span id="annualSourceStatus">نوبت اول و دوم همین سال به‌صورت خودکار خوانده می‌شوند.</span><button type="button" class="ghost" data-workspace-action="periods">مدیریت نوبت‌های تحصیلی</button></div>';
   if (f.audience === "parent")
     h +=
       `<label>هنرجو<select data-legacy-change="reports-periodic-render:5">` +

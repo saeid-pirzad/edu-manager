@@ -169,6 +169,7 @@ test("legacy second-term role is inferred before replacing its display label", a
   const result = await pending;
   assert.equal(result.termKind, "second");
   assert.equal(result.term, "نوبت پایانی");
+  assert.equal(result.reportSource, undefined);
 });
 
 test("unknown legacy role is not guessed from a newly assigned first-term label", async () => {

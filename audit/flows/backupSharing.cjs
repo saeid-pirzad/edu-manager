@@ -121,6 +121,7 @@ module.exports = async function backupSharing() {
         input.accept.includes(".txt") &&
           !!document.querySelector("[data-full-restore]"),
       );
+      document.getElementById("fullRestoreConfirmed").checked = true;
       await EduV24.restoreFullBackup();
       const restoredData = structuredClone(db);
       // Restoring beside the source intentionally gives the period a new label.
@@ -128,8 +129,8 @@ module.exports = async function backupSharing() {
         JSON.parse(before).settings.academicTerm;
       record(
         "BKS07",
-        "the exact shared file restores into independent periods with unchanged school, class, grade and attendance data",
-        EduV24.getReportContext().id !== origin &&
+        "the exact shared file restores the same periods with unchanged school, class, grade and attendance data",
+        EduV24.getReportContext().id === origin &&
           JSON.stringify(restoredData) === before,
       );
     } finally {

@@ -22,11 +22,36 @@ module.exports = async function workspaceScale() {
       ["first", "اول"],
       ["second", "دوم"],
     ]) {
-      EduV24.openNewPeriod();
+      await EduV24.openNewPeriod();
       document.getElementById("periodYear").value = "1419-1420";
       document.getElementById("periodTerm").value = term;
       await EduV24.createNewPeriod();
       annualIds[role] = EduV24.getReportContext().id;
+      if (role === "first") {
+        for (const school of db.schools)
+          for (const classroom of school.classes)
+            for (const lesson of classroom.lessons)
+              for (const student of classroom.students) {
+                if (lesson.gradeMode === "kardanesh")
+                  lesson.kardaneshScores[student.id] = {
+                    practical: 18,
+                    theory: 12,
+                    midtermPractical: 18,
+                    midtermTheory: 12,
+                  };
+                else
+                  for (const pod of lesson.poudmans) {
+                    pod.podScores[student.id] = { m: 2, c: 2 };
+                    for (const unit of pod.units)
+                      unit.unitScores[student.id] = { m: 18, p: 18 };
+                  }
+              }
+        await saveDB();
+        await EduV24.finalizePeriod();
+        if (!EduV24.getReportContext().closed)
+          throw Error("Scale fixture first term did not close");
+        closeModal();
+      }
     }
     await EduV24.switchPeriod(origin);
     closeModal();

@@ -281,9 +281,9 @@ async function inspectMobileUx() {
       ),
   );
   add(
-    "backup workflow prioritizes full export and keeps internal history secondary",
+    "backup workflow prioritizes files without internal-history controls",
     full.getBoundingClientRect().height >= 44 &&
-      !document.querySelector(".backup-history").open &&
+      !document.querySelector(".backup-history") &&
       !!document.querySelector(".backup-help"),
   );
   closeModal();

@@ -114,7 +114,46 @@ test("valid installation commits catalog and records without mutating the source
   const before = JSON.stringify(f.data);
   const result = await f.c.installWorkspace(f.data, { term: "دوم" });
   assert.equal(result.termKind, "second");
+  assert.equal(result.reportSource, undefined);
   assert.equal(f.committed.length, 3);
   assert.equal(f.committed[1][1].workspace, result.id);
   assert.equal(JSON.stringify(f.data), before);
+});
+test("legacy metadata no longer creates a special report-source role", async () => {
+  const f = fixture();
+  const result = await f.c.installWorkspace(f.data, {
+    term: "اول — بازیابی test",
+    reportSource: "secondary",
+  });
+  assert.equal(result.reportSource, undefined);
+  assert.equal(result.termKind, "first");
+});
+test("a promoted recovery version blocks creation of a second primary source for the same term", async () => {
+  const f = fixture();
+  f.request.result = [
+    {
+      year: "1405-1406",
+      term: "اول — بازیابی test",
+      termKind: "first",
+      reportSource: "primary",
+    },
+  ];
+  await assert.rejects(f.c.installWorkspace(f.data, {}), /دوره دیگری/);
+  assert.equal(f.committed.length, 0);
+});
+test("second-term installation rechecks first-term closure and revision in its write transaction", async () => {
+  const f = fixture();
+  f.request.result = [
+    { id: "first", year: "1405-1406", term: "اول", closed: true, revision: 2 },
+  ];
+  await assert.rejects(
+    f.c.installWorkspace(f.data, {
+      term: "دوم",
+      requireSequence: true,
+      firstRevision: 1,
+    }),
+    /تغییر/,
+  );
+  assert.equal(f.aborted, 1);
+  assert.equal(f.committed.length, 0);
 });

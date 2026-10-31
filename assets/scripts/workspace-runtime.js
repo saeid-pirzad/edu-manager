@@ -333,8 +333,6 @@ function retireConnection(dbConnection) {
   ready = false;
   blocked = true;
   clearTimeout(draftTimer);
-  clearInterval(automaticBackupTimer);
-  automaticBackupTimer = null;
   setStatus(
     "بانک اطلاعات در پنجره دیگری تغییر می‌کند؛ برای ادامه صفحه را دوباره بارگذاری کنید.",
     "error",
@@ -345,8 +343,6 @@ function forgetInstallation() {
   pauseSingleFile();
   singleFile = null;
   clearTimeout(draftTimer);
-  clearInterval(automaticBackupTimer);
-  automaticBackupTimer = null;
   drafts.clear();
   draftGeneration++;
   writeFailureGeneration++;
@@ -374,7 +370,7 @@ function resetScreen(message) {
 function invalidateInstallation() {
   forgetInstallation();
   resetScreen(
-    "اطلاعات برنامه در پنجره دیگری حذف شده است. برای شروع با اطلاعات خالی، برنامه را دوباره بارگذاری کنید.",
+    "اطلاعات برنامه در پنجره دیگری تغییر کرده است؛ برای خواندن وضعیت فعلی، برنامه را دوباره بارگذاری کنید.",
   );
 }
 async function completeResetCleanup(dbConnection, marker) {
@@ -673,6 +669,39 @@ function saveDBV24(scope = {}) {
   return operation;
 }
 // Source: src/workspace/periods/install.js
+function validateAcademicTransition(rows, year, term) {
+  if (!["اول", "دوم"].includes(term))
+    throw Error("هر سال تحصیلی فقط نوبت اول و دوم دارد.");
+  const kind = academicTermKind(term);
+  const sameYear = rows.filter((row) => row.year === year);
+  if (
+    sameYear.some(
+      (row) => (row.termKind || academicTermKind(row.term)) === kind,
+    )
+  )
+    throw Error("این نوبت از سال تحصیلی قبلاً شروع شده است.");
+  if (kind === "first") {
+    if (
+      sameYear.some(
+        (row) => (row.termKind || academicTermKind(row.term)) === "second",
+      )
+    )
+      throw Error("این سال نوبت دوم دارد؛ نوبت اول تکراری نسازید.");
+    return null;
+  }
+  const first = sameYear.filter(
+    (row) => (row.termKind || academicTermKind(row.term)) === "first",
+  );
+  if (first.length !== 1)
+    throw Error(
+      "برای شروع نوبت دوم، باید یک نوبت اول مشخص در همین سال وجود داشته باشد.",
+    );
+  if (!first[0].closed)
+    throw Error(
+      "ابتدا نوبت اول همین سال را ببندید؛ سپس نوبت دوم را شروع کنید.",
+    );
+  return first[0];
+}
 function remapReportNoteKey(key, target, mapping) {
   const segments = key.split("|");
   segments[0] = target;
@@ -735,12 +764,24 @@ async function installWorkspace(data, details) {
           existing.result.some(
             (row) =>
               row.year === catalog.year &&
-              normalizedName(row.term) === normalizedName(catalog.term),
+              ((catalog.termKind &&
+                (row.termKind || academicTermKind(row.term)) ===
+                  catalog.termKind) ||
+                normalizedName(row.term) === normalizedName(catalog.term)),
           )
         ) {
           duplicate = true;
           tx.abort();
           return;
+        }
+        if (details.requireSequence) {
+          const first = validateAcademicTransition(
+            existing.result,
+            catalog.year,
+            catalog.term,
+          );
+          if (first && first.revision !== details.firstRevision)
+            throw Error("نوبت اول هنگام شروع نوبت دوم تغییر کرده است.");
         }
         store.add(catalog);
         for (const [logical, value] of records)
@@ -848,8 +889,6 @@ async function bootstrapV24() {
     render();
     await recoverDrafts();
     if (navigator.storage?.persist) navigator.storage.persist().catch(() => {});
-    await ensureDailyBackup();
-    startAutomaticBackups();
     await restoreSingleFile();
   } catch (error) {
     blocked = true;
@@ -1458,6 +1497,8 @@ function calcV24(c, l, sid, source = db) {
   const r = old.calcStudentLesson(c, l, sid, source);
   if (l.gradingPolicy) {
     const p = l.gradingPolicy;
+    // General lessons ignore legacy practical fields and use one direct grade.
+    if (p.subjectType === "general") r.practical = null;
     if (p.method === "dual")
       Object.assign(r, EduPolicy.dual(p, r.practical, r.theory));
     else
@@ -1500,6 +1541,10 @@ function assessmentResult(lesson, sid, stage = "final") {
   };
 }
 function annualGradeRows(parts, schoolId, classId, studentId = "") {
+  parts = [...parts].sort(
+    (a, b) =>
+      (a.period.term === "اول" ? 0 : 1) - (b.period.term === "اول" ? 0 : 1),
+  );
   const rows = [],
     identities = new Map();
   for (const part of parts)
@@ -2112,11 +2157,11 @@ function workspaceToolsHtml() {
       "انتخاب و مدیریت سال و نوبت تحصیلی",
     ) +
     button(
-      "history",
-      "clock",
-      "تاریخچه تغییرات",
+      "undo",
+      "undo",
+      "برگرداندن آخرین تغییر",
       "",
-      "مرور تغییرات ثبت‌شده در اطلاعات",
+      "اصلاح آخرین تغییر ثبت‌شده در نوبت فعلی",
     ) +
     '<button type="button" class="ghost workspace-tool-button" data-header-action="settings"><span class="workspace-tool-icon" aria-hidden="true">' +
     EduIcons.html("settings") +
@@ -2885,38 +2930,6 @@ async function putBackup(data, label, workspaceId = workspace?.id) {
   return backup;
 }
 
-async function ensureDailyBackup() {
-  const origin = workspace?.id;
-  const sourceAvailable = () =>
-    !!origin &&
-    ready &&
-    !periodLoading &&
-    !resetBusy &&
-    !connectionRetired &&
-    workspace?.id === origin;
-  if (!sourceAvailable()) return false;
-  try {
-    await writer.catch(() => {});
-    if (!sourceAvailable()) return false;
-    const existing = (await allFrom("backups")).filter(
-      (x) => x.workspace === origin,
-    );
-    if (!sourceAvailable()) return false;
-    if (existing.some((x) => x.at.slice(0, 10) === todayISO())) return false;
-    const snapshot = await readWorkspaceSnapshot(origin);
-    if (!sourceAvailable()) return false;
-    await putBackup(snapshot.data, "خودکار روزانه", origin);
-    return true;
-  } catch (error) {
-    if (sourceAvailable())
-      setStatus(
-        "اطلاعات خوانده شد؛ پشتیبان داخلی ساخته نشد. پشتیبان فایل تهیه کنید.",
-        "error",
-      );
-    return false;
-  }
-}
-
 function lastExternalBackupLabel() {
   let item;
   try {
@@ -2951,8 +2964,6 @@ const backupStores = [
   "undo",
   "reports",
 ];
-let automaticBackupTimer = null,
-  automaticBackupBusy = false;
 // Source: src/workspace/backups/full-export.js
 function portableGradeDrafts(rows, periods) {
   const storedRows = [];
@@ -3076,39 +3087,6 @@ async function exportFullBackup() {
   );
   return content.stores.catalog.length;
 }
-async function automaticFullBackup() {
-  if (
-    !ready ||
-    periodLoading ||
-    blocked ||
-    automaticBackupBusy ||
-    document.hidden
-  )
-    return;
-  automaticBackupBusy = true;
-  try {
-    const snapshot = await snapshotInstallation();
-    const tx = connection.transaction("backups", "readwrite"),
-      done = transactionDone(tx);
-    tx.objectStore("backups").put({
-      id: "automatic-full",
-      workspace: null,
-      at: snapshot.exportedAt,
-      label: "خودکار کامل — هر ۲۰ دقیقه",
-      full: snapshot,
-    });
-    await done;
-  } catch (error) {
-    if (error.code === "BACKUP_CONTEXT_CHANGED") return;
-    setStatus("پشتیبان خودکار کامل ساخته نشد؛ " + error.message, "error");
-  } finally {
-    automaticBackupBusy = false;
-  }
-}
-function startAutomaticBackups() {
-  if (!automaticBackupTimer)
-    automaticBackupTimer = setInterval(automaticFullBackup, 20 * 60 * 1000);
-}
 // Source: src/workspace/backups/sharing.js
 let backupShareSession = null;
 
@@ -3142,7 +3120,7 @@ async function openBackupShare() {
     "ارسال پشتیبان کامل",
     '<section class="backup-share" id="backupSharePanel"><header class="backup-share-heading"><span aria-hidden="true">' +
       EduIcons.html("shield") +
-      "</span><div><h4>همه دوره‌ها، در یک فایل</h4><p>ابتدا فایل آماده می‌شود؛ سپس روش ارسال و گیرنده را خودتان انتخاب می‌کنید.</p></div></header>" +
+      "</span><div><h4>همه اطلاعات سیستم، در یک فایل</h4><p>ابتدا فایل آماده می‌شود؛ سپس روش ارسال و گیرنده را خودتان انتخاب می‌کنید.</p></div></header>" +
       '<div class="backup-share-file" data-backup-share-file hidden></div><p class="backup-share-status" data-backup-share-status role="status" aria-live="polite">در حال آماده‌سازی و بررسی پشتیبان کامل…</p>' +
       '<p class="backup-share-note">این فایل اطلاعات همه دوره‌ها را دارد؛ آن را فقط برای گیرنده مورداعتماد بفرستید.</p>' +
       '<div class="backup-share-actions"><button type="button" data-workspace-action="share-backup-file" disabled hidden>انتخاب برنامه و ارسال فایل</button><button type="button" class="ghost" data-workspace-action="download-share-backup" disabled hidden>دریافت فایل برای ارسال دستی</button><button type="button" class="ghost" data-workspace-action="prepare-share-backup" hidden>آماده‌سازی دوباره</button><button type="button" class="ghost" data-workspace-action="close">بستن</button></div></section>',
@@ -3344,22 +3322,23 @@ function singleFileStatus(message) {
 function singleFilePanel() {
   if (!window.showSaveFilePicker)
     return (
-      "<p>ذخیره خودکار در فایل در این محیط در دسترس نیست. برای فایل خودکار از مرورگر سازگار مانند Chrome استفاده کنید؛ پشتیبان دستی همچنان در دسترس است.</p>" +
-      singleFileFallbackPanel(true)
+      '<section class="backup-automatic"><h3>ذخیره خودکار در یک فایل</h3><p>فایل را یک‌بار انتخاب کنید؛ برنامه هنگام باز بودن، همان فایل را به‌روز می‌کند.</p><p id="singleFileStatus" role="status">ذخیره خودکار در فایل در این محیط در دسترس نیست. این برنامه را در Chrome یا Edge باز کنید؛ پشتیبان دستی همچنان در دسترس است.</p><div class="row"><button data-workspace-action="single-file-choose" disabled>انتخاب فایل و فعال‌سازی</button></div>' +
+      singleFileFallbackPanel(true) +
+      "</section>"
     );
   return (
     '<section class="backup-automatic"><h3>ذخیره خودکار در یک فایل</h3><p>فایل را یک‌بار انتخاب کنید؛ برنامه هنگام باز بودن، همان فایل را به‌روز می‌کند.</p><p id="singleFileStatus" role="status">' +
     esc(singleFileMessage) +
     "</p>" +
     singleFileFallbackPanel(singleFileFailure) +
-    '<div class="row"><button data-workspace-action="single-file-choose">انتخاب فایل و فعال‌سازی</button><button class="ghost" data-workspace-action="single-file-save">ذخیره اکنون / اجازه مجدد</button><button class="ghost" data-workspace-action="single-file-stop">توقف اتصال فایل</button></div><details class="backup-help"><summary>راهنما و محدودیت‌های ذخیره خودکار</summary><p>تغییرات ثبت‌شده پس از حدود ۲ ثانیه و سایر تغییرات هر ۳۰ ثانیه بررسی می‌شوند؛ زمان‌بندی در پس‌زمینه ممکن است به تأخیر بیفتد. قبل از خروج «ذخیره اکنون» را بزنید و تأیید را ببینید. با برنامه بسته یا دستگاه خاموش، نوشتن انجام نمی‌شود.</p><p>فایل را می‌توانید کنار پروژه یا در پوشه دلخواه انتخاب کنید. ساخت فایل یا بازشدن پنجره انتخاب، تأیید ذخیره نیست؛ فعال‌سازی فقط بعد از اولین نوشتن موفق انجام می‌شود. بازیابی با گزینه «بازیابی از فایل» است؛ ویرایش دستی فایل خودکار وارد برنامه نمی‌شود.</p></details></section>'
+    '<div class="row"><button data-workspace-action="single-file-choose">انتخاب فایل و فعال‌سازی</button><button class="ghost" data-workspace-action="single-file-save">ذخیره اکنون / اجازه مجدد</button><button class="ghost" data-workspace-action="single-file-stop">توقف اتصال فایل</button></div></section>'
   );
 }
 function singleFileFallbackPanel(visible) {
   return (
     '<div id="singleFileFallback"' +
     (visible ? "" : " hidden") +
-    '><p>ذخیره خودکار فایل فعال نیست. فایل خالی پشتیبان قابل بازیابی نیست. می‌توانید مجوز یا محل فایل را عوض کنید، از مرورگر دیگری مانند Chrome استفاده کنید، یا پشتیبان کامل را دستی دریافت کنید. دریافت دستی، ذخیره خودکار را فعال نمی‌کند.</p><button class="ghost" data-workspace-action="export-full">دریافت دستی پشتیبان کامل</button></div>'
+    '><p>ذخیره خودکار فایل فعال نیست. فایل خالی پشتیبان قابل بازیابی نیست. می‌توانید مجوز یا محل فایل را عوض کنید، از مرورگر دیگری مانند Chrome استفاده کنید، یا از دکمهٔ دریافت پشتیبان کامل در بالای همین پنجره استفاده کنید. دریافت دستی، ذخیره خودکار را فعال نمی‌کند.</p></div>'
   );
 }
 function showSingleFileFallback(visible) {
@@ -3406,6 +3385,7 @@ function singleFileChanged(message) {
   return true;
 }
 async function singleFileCurrent(target) {
+  if (fullRestoreBusy) return false;
   if (
     singleFile !== target ||
     !ready ||
@@ -3676,124 +3656,148 @@ const validateFullBackup = EduFullBackupValidator.create({
   isSupportedGradeDraft,
 });
 let pendingFullBackup = null,
+  pendingFullBackupSignature = "",
   fullRestoreBusy = false;
 function previewFullBackup(value) {
   if (fullRestoreBusy)
-    throw Error(
-      "بازیابی کامل در حال انجام است؛ تا پایان آن فایل دیگری انتخاب نکنید.",
-    );
+    throw Error("بازیابی کامل در حال انجام است؛ تا پایان آن صبر کنید.");
   const periods = validateFullBackup(value);
+  const date = new Date(value.exportedAt || "");
+  const exportedAt = Number.isFinite(date.getTime())
+    ? date.toLocaleString("fa-IR")
+    : "در فایل ثبت نشده";
   const opened = showModal(
-    "بازیابی پشتیبان کامل",
-    "<p>" +
-      periods.length +
-      " دوره به همراه تاریخچه و گزارش‌های بایگانی‌شده بازیابی می‌شود.</p>" +
-      ((value.gradeDrafts || []).length
-        ? "<p>" +
-          value.gradeDrafts.reduce((n, row) => n + row.entries.length, 0) +
-          " پیش‌نویس نمره هم همراه فایل است؛ پس از بازیابی فقط با بررسی شما اعمال می‌شود.</p>"
-        : "") +
-      "<p>دوره‌های فعلی حفظ می‌شوند؛ نسخه‌های بازیابی‌شده با شناسه مستقل اضافه می‌شوند.</p>" +
-      '<button data-full-restore data-workspace-action="restore-full">افزودن همه دوره‌های بازیابی‌شده</button><p id="courseError" role="alert"></p>',
+    "بازیابی کل اطلاعات سیستم",
+    '<div class="full-restore"><section class="full-restore-file" aria-label="مشخصات پشتیبان"><h4>پشتیبان کامل سیستم</h4><dl><div><dt>زمان تهیه</dt><dd>' +
+      esc(exportedAt) +
+      "</dd></div><div><dt>اطلاعات موجود</dt><dd>" +
+      periods.length.toLocaleString("fa-IR") +
+      ' نوبت، همراه نمرات، جلسات و کارنامه‌ها</dd></div></dl></section><section class="full-restore-warning"><h4>اطلاعات فعلی جایگزین می‌شود</h4><p>کل اطلاعات سیستم به وضعیت این فایل برمی‌گردد؛ اطلاعات فایل با داده‌های فعلی ادغام نمی‌شود.</p><p>نوبت جدید یا تکراری ساخته نمی‌شود و وضعیت باز یا بستهٔ نوبت‌ها مطابق فایل خواهد بود.</p></section><p class="full-restore-safety">پیش از جایگزینی، یک نسخهٔ ایمنی از اطلاعات فعلی داخل برنامه ذخیره می‌شود.</p><label class="full-restore-confirm" for="fullRestoreConfirmed"><input type="checkbox" id="fullRestoreConfirmed"><span>می‌دانم کل اطلاعات فعلی با محتوای این فایل جایگزین می‌شود.</span></label><p id="operationError" role="alert"></p><div class="full-restore-actions"><button type="button" class="danger" data-full-restore data-workspace-action="restore-full">تأیید و بازیابی کل اطلاعات</button><button type="button" class="ghost" data-workspace-action="close">انصراف</button></div></div>',
   );
-  if (opened !== false) pendingFullBackup = value;
+  if (opened !== false) {
+    pendingFullBackup = value;
+    pendingFullBackupSignature = JSON.stringify(value);
+  }
+}
+function restoreCatalogSignature(rows) {
+  return JSON.stringify(
+    rows
+      .map((row) => [row.id, row.revision, row.year, row.term, row.closed])
+      .sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
+  );
+}
+async function snapshotBeforeSystemRestore() {
+  if (ready) return snapshotInstallation();
+  // Recovery must also work when damaged records prevented normal startup.
+  const names = [...backupStores, "drafts"];
+  const tx = connection.transaction(names, "readonly"),
+    done = transactionDone(tx);
+  const values = await Promise.all(
+    names.map((name) => requestPromise(tx.objectStore(name).getAll())),
+  );
+  await done;
+  return {
+    format: "EduManager.RawRecovery",
+    exportedAt: new Date().toISOString(),
+    stores: Object.fromEntries(
+      names.map((name, index) => [name, values[index]]),
+    ),
+  };
 }
 async function restoreFullBackup() {
-  if (fullRestoreBusy)
-    throw Error("بازیابی کامل در حال انجام است؛ تا پایان آن صبر کنید.");
+  if (fullRestoreBusy) throw Error("بازیابی کامل در حال انجام است؛ صبر کنید.");
+  if (!pendingFullBackup)
+    throw Error("ابتدا فایل پشتیبان کامل را انتخاب کنید.");
+  if (!document.getElementById("fullRestoreConfirmed")?.checked)
+    throw Error("ابتدا جایگزینی کل اطلاعات با فایل انتخاب‌شده را تأیید کنید.");
+  if (fileMode)
+    throw Error("بازیابی را در نسخه نصب‌شده یا نشانی HTTPS انجام دهید.");
+  if (ready) assertWorkspaceReadable();
+  else if (!connection || connectionRetired || resetBusy)
+    throw Error("برای اتصال امن به بانک، صفحه را دوباره بارگذاری کنید.");
+  const source = pendingFullBackup,
+    origin = captureWorkspaceContext();
+  if (
+    !confirm(
+      "کل اطلاعات سیستم به وضعیت این فایل برگردد؟ نوبت جدید ساخته نمی‌شود.",
+    )
+  )
+    return false;
   fullRestoreBusy = true;
-  const button = document.querySelector("[data-full-restore]");
-  if (button) setControlLock(button, "button-operation", true);
+  const hadFileTimer = !!singleFileTimer;
+  pauseSingleFile();
+  let committedRestore = false,
+    ownsLoading = false;
+  const check = () => {
+    if (
+      resetBusy ||
+      connectionRetired ||
+      (workspace?.id || "") !== origin.id ||
+      pendingFullBackup !== source ||
+      JSON.stringify(source) !== pendingFullBackupSignature
+    )
+      throw Error(
+        "بانک، نوبت یا فایل انتخاب‌شده تغییر کرده است؛ پیش‌نمایش را دوباره باز کنید.",
+      );
+  };
   try {
-    if (!pendingFullBackup)
-      throw Error("ابتدا فایل پشتیبان کامل را انتخاب کنید.");
-    const source = pendingFullBackup;
-    const origin = workspace?.id;
-    const check = () => {
-      if (
-        resetBusy ||
-        connectionRetired ||
-        periodLoading ||
-        workspace?.id !== origin ||
-        pendingFullBackup !== source
-      )
-        throw Error(
-          "بانک، دوره یا پیش‌نمایش هنگام بازیابی تغییر کرده است؛ دوباره بررسی کنید.",
-        );
-    };
-    check();
-    await flushDrafts({ strict: true });
-    await writer.catch(() => {});
-    check();
+    if (singleFileWriting) await singleFileWriting;
     const periods = validateFullBackup(source);
-    const mapping = new Map(periods.map(({ period }) => [period.id, uid()]));
-    const existing = await allFrom("catalog");
+    const safety = await snapshotBeforeSystemRestore();
+    await draftWriter.catch(() => {});
     check();
-    const occupied = new Set(
-      existing.map((p) => p.year + "|" + normalizedName(p.term)),
+    if (periodLoading || busy)
+      throw Error(
+        "ثبت یا جابه‌جایی اطلاعات در حال انجام است؛ دوباره تلاش کنید.",
+      );
+    periodLoading = true;
+    ownsLoading = true;
+    lockControls();
+    const rows = Object.fromEntries(
+      [...backupStores, "drafts"].map((name) => [name, []]),
     );
-    const rows = Object.fromEntries(backupStores.map((name) => [name, []]));
+    const previous = new Map(safety.stores.catalog.map((row) => [row.id, row]));
     for (const { period, data } of periods) {
-      const id = mapping.get(period.id);
-      let term = period.term;
-      if (occupied.has(period.year + "|" + normalizedName(term)))
-        term = recoveryPeriodTerm(term, id);
-      occupied.add(period.year + "|" + normalizedName(term));
-      data.settings.academicTerm = term;
-      const reportNotes = {
+      const liveRevision = previous.get(period.id)?.revision;
+      const revision =
+        Math.max(
+          period.revision,
+          Number.isSafeInteger(liveRevision) ? liveRevision : 0,
+        ) + 1;
+      if (!Number.isSafeInteger(revision))
+        throw Error("شماره نسخه اطلاعات قابل بازیابی نیست.");
+      const notes = {
         ...validateReportNotes(period.reportNotesRecovery, period.id),
         ...validateReportNotes(source.reportDrafts?.[period.id], period.id),
       };
-      const reportNotesRecovery = Object.fromEntries(
-        Object.entries(reportNotes).map(([key, text]) => [
-          remapReportNoteKey(key, id, mapping),
-          text,
-        ]),
-      );
-      rows.catalog.push({
-        ...period,
-        id,
-        term,
-        termKind: period.termKind || academicTermKind(period.term),
-        reportNotesRecovery,
-      });
+      const restored = { ...period, revision, reportNotesRecovery: notes };
+      delete restored.reportSource;
+      rows.catalog.push(restored);
       for (const [logical, value] of collectRecords(data))
         rows.records.push({
-          key: id + "|" + logical,
-          workspace: id,
+          key: period.id + "|" + logical,
+          workspace: period.id,
           logical,
           value,
         });
     }
     for (const name of ["events", "undo", "reports", "backups"])
-      for (const original of source.stores[name]) {
-        if (name === "backups" && original.full) continue;
-        const row = clone(original);
-        if (row.workspace != null) row.workspace = mapping.get(row.workspace);
-        if (name === "events") delete row.id;
-        else row.id = name === "undo" ? mapping.get(original.id) : uid();
-        if (name === "undo") {
-          const originalPeriod = source.stores.catalog.find(
-            (p) => p.id === original.id,
-          );
-          const importedPeriod = rows.catalog.find((p) => p.id === row.id);
-          for (const before of row.before || [])
-            if (
-              before.key === "meta" &&
-              before.value?.settings?.academicYear === originalPeriod?.year &&
-              before.value.settings.academicTerm === originalPeriod.term
-            )
-              before.value.settings.academicTerm = importedPeriod.term;
-        }
-        rows[name].push(row);
-      }
+      rows[name] = source.stores[name]
+        .filter((row) => name !== "backups" || !row.full)
+        .map((row) => clone(row));
+    // Undo entries from the saved state remain tied to their restored revision.
+    for (const undo of rows.undo) {
+      const restored = rows.catalog.find((row) => row.id === undo.id);
+      const saved = source.stores.catalog.find((row) => row.id === undo.id);
+      if (
+        restored &&
+        undo.revision != null &&
+        undo.revision === saved?.revision
+      )
+        undo.revision = restored.revision;
+    }
     rows.drafts = (source.gradeDrafts || []).map((row) => ({
       ...clone(row),
-      key:
-        "Edu24.drafts." +
-        mapping.get(row.workspace) +
-        row.key.slice(("Edu24.drafts." + row.workspace).length),
-      workspace: mapping.get(row.workspace),
       owner: "imported",
       entries: row.entries.map((item) => ({
         ...clone(item),
@@ -3801,69 +3805,119 @@ async function restoreFullBackup() {
         error: "بازیابی از فایل؛ نیازمند بررسی",
       })),
     }));
-    const restoredStores = [...backupStores, "drafts"];
-    const tx = connection.transaction(restoredStores, "readwrite"),
+    rows.backups.push({
+      id: "before-full-restore-" + uid(),
+      workspace: null,
+      at: new Date().toISOString(),
+      label: "پیش از بازیابی کل سیستم",
+      full: safety,
+    });
+    const marker = {
+      key: RESET_RECORD_KEY,
+      workspace: null,
+      logical: "installation-reset",
+      value: { token: uid(), phase: "cleanup", at: new Date().toISOString() },
+    };
+    rows.records.push(marker);
+    const names = [...backupStores, "drafts"];
+    const tx = connection.transaction(names, "readwrite"),
       done = transactionDone(tx);
-    try {
-      for (const name of restoredStores)
-        for (const row of rows[name]) tx.objectStore(name).add(row);
-    } catch (error) {
-      tx.abort();
-      await done.catch(() => {});
-      throw error;
-    }
-    await done;
-    let reportNotesFailed = false;
-    for (const [oldId, id] of mapping) {
+    let failure;
+    const abort = (error) => {
+      failure = error;
       try {
-        const saved = rows.catalog.find(
-          (period) => period.id === id,
-        ).reportNotesRecovery;
-        if (window.EduPeriodicReports?.restoreDrafts) {
-          if (!window.EduPeriodicReports.restoreDrafts(id, saved))
-            throw Error("ذخیره معمول توضیحات کامل نشد.");
-        } else
-          localStorage.setItem(
-            "EduManager.periodicDrafts." + id,
-            JSON.stringify(saved),
-          );
-      } catch {
-        reportNotesFailed = true;
-        setStatus(
-          "دوره‌ها بازیابی شدند؛ نسخه توضیحات در بانک داخلی محفوظ است. ذخیره توضیحات گزارش را دوباره امتحان کنید.",
-          "error",
-        );
-      }
+        tx.abort();
+      } catch {}
+    };
+    try {
+      const request = tx.objectStore("catalog").getAll();
+      request.onsuccess = () => {
+        try {
+          check();
+          if (
+            restoreCatalogSignature(request.result) !==
+            restoreCatalogSignature(safety.stores.catalog)
+          )
+            throw Error(
+              "اطلاعات سیستم در پنجره دیگری تغییر کرده است؛ پیش از بازیابی دوباره بررسی کنید.",
+            );
+          for (const name of names) tx.objectStore(name).clear();
+          for (const name of names)
+            for (const row of rows[name]) tx.objectStore(name).add(row);
+          // Device file handles are not backup data; keep this device's connection.
+          if (singleFile)
+            tx.objectStore("drafts").put({ key: singleFileKey, ...singleFile });
+        } catch (error) {
+          abort(error);
+        }
+      };
+    } catch (error) {
+      abort(error);
     }
+    try {
+      await done;
+    } catch (error) {
+      throw failure || error;
+    }
+    committedRestore = true;
+    installationToken = marker.value.token;
+    broadcast({ type: "installation-restored" });
+    await completeResetCleanup(connection, marker);
+    window.EduPeriodicReports?.resetDrafts();
+    const loaded = await readWorkspaceSnapshot(source.activeWorkspace);
+    workspace = loaded.period;
+    db = loaded.data;
+    committed = loaded.records;
+    drafts.clear();
+    draftGeneration++;
+    draftRecoveryFailed = false;
+    blocked = false;
+    ready = true;
+    storageBlocked = false;
+    isAuthenticated = false;
+    state = {
+      view: "schools",
+      schoolId: null,
+      classId: null,
+      lessonId: null,
+      tab: "students",
+      reportTab: "comprehensive",
+    };
+    rememberPeriod(workspace.id);
+    await loadDrafts();
     pendingFullBackup = null;
-    if (
-      !resetBusy &&
-      !connectionRetired &&
-      !periodLoading &&
-      workspace?.id === origin
-    )
-      await switchPeriod(mapping.get(source.activeWorkspace));
-    const pendingGrades = (source.gradeDrafts || []).reduce(
-      (n, row) => n + row.entries.length,
-      0,
-    );
+    pendingFullBackupSignature = "";
+    periodLoading = false;
+    ownsLoading = false;
+    let notesSaved = true;
+    for (const period of rows.catalog)
+      if (!hydrateReportNotes(period)) notesSaved = false;
+    closeModal();
+    render();
     setStatus(
-      periods.length +
-        " دوره بازیابی شد." +
-        (pendingGrades
-          ? " " +
-            pendingGrades +
-            " پیش‌نویس نمره از بخش پیش‌نویس نشست‌های دیگر نیازمند بررسی است."
-          : "") +
-        (reportNotesFailed
-          ? " نسخه توضیحات در بانک داخلی محفوظ است؛ ذخیره معمول آن‌ها نیاز به تلاش مجدد دارد."
-          : ""),
-      reportNotesFailed ? "error" : "saved",
+      "کل اطلاعات فایل بازیابی شد؛ هیچ نوبت تکراری ساخته نشد. پشتیبان وضعیت قبلی در برنامه محفوظ است." +
+        (notesSaved
+          ? ""
+          : " توضیحات گزارش در بانک محفوظ‌اند؛ ذخیره موقت آن‌ها نیازمند تلاش مجدد است."),
+      notesSaved ? "saved" : "pending",
     );
     return periods.length;
+  } catch (error) {
+    if (committedRestore) {
+      blocked = true;
+      ready = false;
+      resetScreen(
+        "اطلاعات فایل بازیابی شده است؛ تکمیل بازخوانی نیاز به بارگذاری مجدد دارد. " +
+          error.message,
+      );
+    }
+    throw error;
   } finally {
+    if (ownsLoading) periodLoading = false;
     fullRestoreBusy = false;
-    if (button?.isConnected) setControlLock(button, "button-operation", false);
+    if (hadFileTimer && singleFile && ready && !blocked && !connectionRetired)
+      startSingleFile();
+    lockControls();
   }
 }
 // Source: src/workspace/backups/period-import.js
@@ -3956,10 +4010,6 @@ async function openBackups() {
   const ensureCurrent = preserveAsyncTarget();
   await writer.catch(() => {});
   ensureCurrent();
-  const rows = (await allFrom("backups"))
-    .filter((x) => x.workspace === workspace.id || x.workspace === null)
-    .sort((a, b) => b.at.localeCompare(a.at));
-  ensureCurrent();
   let estimate = "";
   if (navigator.storage?.estimate) {
     const e = await navigator.storage.estimate();
@@ -3973,70 +4023,14 @@ async function openBackups() {
   }
   showModal(
     "پشتیبان و بازیابی",
-    '<div class="backup-hub"><section class="backup-manual"><h4>فایل پشتیبان شما</h4><p>یک نسخه مستقل از اطلاعات بگیرید، برای خودتان بفرستید یا فایل قبلی را بازیابی کنید.</p><div class="backup-action-grid"><button data-workspace-action="export-full">دریافت پشتیبان کامل</button><button class="ghost backup-share-entry" data-workspace-action="prepare-share-backup">اشتراک‌گذاری پشتیبان کامل</button><button class="ghost" data-workspace-action="choose-import">بازیابی از فایل</button><button class="ghost" data-workspace-action="export-period">فقط دوره جاری</button></div><p class="muted">' +
+    '<div class="backup-hub"><section class="backup-manual"><h4>فایل پشتیبان شما</h4><p>پشتیبان کامل، همه اطلاعات سیستم را در یک فایل نگه می‌دارد. ذخیره دستی و خودکار، نوبتی ایجاد یا بسته نمی‌کنند. بازیابی فقط اطلاعات ذخیره‌شده در فایل را برمی‌گرداند.</p><div class="backup-action-grid"><button data-workspace-action="export-full">دریافت پشتیبان کامل</button><button class="ghost backup-share-entry" data-workspace-action="prepare-share-backup">اشتراک‌گذاری پشتیبان کامل</button><button class="ghost" data-workspace-action="choose-import">بازیابی از فایل</button></div><p class="muted">' +
       esc(lastExternalBackupLabel()) +
       "</p></section>" +
       singleFilePanel() +
-      '<details class="backup-history"><summary>نسخه‌های داخلی برنامه (' +
-      rows.length.toLocaleString("fa-IR") +
-      ")</summary><p>این نسخه‌ها داخل همین مرورگرند؛ جای فایل مستقل را نمی‌گیرند.</p><table><thead><tr><th>زمان</th><th>نوع</th><th>عملیات</th></tr></thead><tbody>" +
-      rows
-        .map(
-          (x) =>
-            "<tr><td>" +
-            esc(new Date(x.at).toLocaleString("fa-IR")) +
-            "</td><td>" +
-            esc(x.label) +
-            '</td><td><button class="ghost" data-workspace-action="download-backup" data-key="' +
-            esc(x.id) +
-            '">دریافت فایل</button><button class="ghost" data-workspace-action="preview-backup" data-key="' +
-            esc(x.id) +
-            '">پیش‌نمایش بازیابی</button></td></tr>',
-        )
-        .join("") +
-      '</tbody></table></details><details class="backup-help"><summary>فضای ذخیره‌سازی مرورگر</summary><p>' +
+      '<details class="backup-help"><summary>فضای ذخیره‌سازی مرورگر</summary><p>' +
       esc(estimate) +
-      '</p></details><details class="backup-reset"><summary>پاک‌سازی اطلاعات</summary><p>برای شروع دوباره، می‌توانید اطلاعات همه دوره‌ها را از همین مرورگر پاک کنید. حذف فقط پس از تکمیل تأییدها انجام می‌شود.</p><button type="button" class="danger" data-workspace-action="open-wipe">حذف کامل اطلاعات همه دوره‌ها</button></details></div>',
+      '</p></details><details class="backup-reset"><summary>پاک‌سازی اطلاعات سیستم</summary><p>برای شروع دوباره، همه اطلاعات برنامه در همین مرورگر حذف می‌شود. این کار بازیابی فایل نیست؛ پیش از ادامه پشتیبان کامل دریافت کنید. فایل‌های ذخیره‌شده روی دستگاه حذف نمی‌شوند.</p><button type="button" class="danger" data-workspace-action="open-wipe">بررسی و تأیید پاک‌سازی</button></details></div>',
   );
-}
-
-async function downloadInternalBackup(id) {
-  const ensureCurrent = preserveAsyncTarget();
-  const b = await readRecord("backups", id);
-  ensureCurrent();
-  if (!b) throw Error("پشتیبان موجود نیست.");
-  if (b.workspace !== workspace.id && b.workspace !== null)
-    throw Error("این پشتیبان متعلق به دورهٔ انتخاب‌شده نیست.");
-  if (b.full) {
-    downloadJSON(b.full, "پشتیبان-کامل-" + b.at.slice(0, 10) + ".json");
-    return;
-  }
-  downloadJSON(
-    {
-      version: b.label.includes("انتقال") ? 23 : 24,
-      exportedAt: b.at,
-      db: b.db,
-    },
-    "پشتیبان-" + b.at.slice(0, 10) + ".json",
-  );
-}
-
-async function previewInternalBackup(id) {
-  const ensureCurrent = preserveAsyncTarget();
-  const b = await readRecord("backups", id);
-  ensureCurrent();
-  if (!b) throw Error("پشتیبان موجود نیست.");
-  if (b.workspace !== workspace.id && b.workspace !== null)
-    throw Error("این پشتیبان متعلق به دورهٔ انتخاب‌شده نیست.");
-  if (b?.full) {
-    previewFullBackup(b.full);
-    return;
-  }
-  if (b)
-    previewImport(
-      normalizeDB(b.db, { legacy: b.label.includes("انتقال") }),
-      b.label,
-    );
 }
 
 function previewImport(candidate, label) {
@@ -4072,11 +4066,9 @@ function previewImport(candidate, label) {
           " / " +
           (candidate.settings.academicTerm || "نامشخص"),
       ) +
-      '</p><label>مقصد <select id="restoreMode"><option value="new" ' +
-      (candidate.settings.academicYear !== workspace.year ? "selected" : "") +
-      '>دوره مستقل جدید</option><option value="current" ' +
-      (candidate.settings.academicYear === workspace.year ? "selected" : "") +
-      '>جایگزینی دوره فعلی</option></select></label><p>در حالت جایگزینی، این کار اطلاعات دوره فعلی را جایگزین می‌کند. دوره‌های دیگر حفظ می‌شوند. پیش از جایگزینی فایل مستقل تهیه کنید.</p><button data-workspace-action="export-period">۱. ذخیره پشتیبان مستقلِ اطلاعات فعلی</button><p><label><input id="restoreExternalConfirmed" type="checkbox"> فایل پشتیبان فعلی را بیرون از برنامه ذخیره و بررسی کرده‌ام.</label></p><button data-mutating="1" data-workspace-action="confirm-import" data-mutating="1">۲. جایگزینی اطلاعات این دوره</button><p id="operationError" role="alert"></p>',
+      "</p><p>این فایل فقط اطلاعات نوبت " +
+      esc(workspace.year + " / " + workspace.term) +
+      ' را بازمی‌گرداند؛ نوبت جدید ساخته نمی‌شود و سایر نوبت‌ها تغییر نمی‌کنند.</p><button data-workspace-action="export-period">۱. ذخیره پشتیبان اطلاعات فعلی</button><p><label><input id="restoreExternalConfirmed" type="checkbox"> نسخه فعلی را در فایل مستقل ذخیره و بررسی کرده‌ام.</label></p><button data-mutating="1" data-workspace-action="confirm-import">۲. بازیابی اطلاعات همین نوبت</button><p id="operationError" role="alert"></p>',
   );
   if (opened !== false) pendingImport = preview;
 }
@@ -4192,37 +4184,24 @@ async function confirmImport() {
       throw Error("پیش‌نمایش بازیابی منقضی شده است.");
     const preview = pendingImport;
     const context = { id: preview.workspace, revision: preview.revision };
-    const creatingNew = document.getElementById("restoreMode").value === "new";
     const check = (write = false) => {
-      // An independent import never replaces source data. Its own draft flush
-      // may advance the source revision before a failed navigation is retried.
-      assertWorkspaceContext(
-        creatingNew
-          ? { id: context.id, revision: workspace.revision }
-          : context,
-        { write },
-      );
+      assertWorkspaceContext(context, { write });
       if (pendingImport !== preview)
         throw Error("پیش‌نمایش بازیابی تغییر کرده است؛ دوباره بررسی کنید.");
     };
     check();
-    if (creatingNew) {
-      if (!preview.createdWorkspace) {
-        const candidate = normalizeDB(preview.candidate);
-        const created = await installWorkspace(candidate, {
-          year: candidate.settings.academicYear,
-          term: recoveryPeriodTerm(
-            candidate.settings.academicTerm || "بازیابی",
-            uid(),
-          ),
-        });
-        preview.createdWorkspace = created.id;
-      }
-      check();
-      await switchPeriod(preview.createdWorkspace);
-      if (pendingImport === preview) pendingImport = null;
-      return;
-    }
+    const savedKind = academicTermKind(preview.candidate.settings.academicTerm);
+    const targetKind = workspace.termKind || academicTermKind(workspace.term);
+    if (
+      preview.candidate.settings.academicYear !== workspace.year ||
+      (savedKind && targetKind
+        ? savedKind !== targetKind
+        : normalizedName(preview.candidate.settings.academicTerm) !==
+          normalizedName(workspace.term))
+    )
+      throw Error(
+        "این فایل متعلق به نوبت فعلی نیست؛ همان سال و نوبت را باز کنید یا از پشتیبان کامل سیستم استفاده کنید.",
+      );
     if (!document.getElementById("restoreExternalConfirmed").checked) {
       handleError(
         Error("ابتدا نسخه مستقل را ذخیره و وجود فایل را تأیید کنید."),
@@ -4284,38 +4263,6 @@ async function confirmImport() {
   }
 }
 // Source: src/workspace/history/undo.js
-async function openHistory(limit = 50) {
-  const ensureCurrent = preserveAsyncTarget();
-  await writer.catch(() => {});
-  ensureCurrent();
-  const origin = workspace.id,
-    sourceConnection = connection,
-    tx = sourceConnection.transaction(["events", "undo"], "readonly"),
-    done = transactionDone(tx);
-  // Convert synchronous request-creation errors to rejections before joining
-  // them with transaction completion, so every pending promise has a handler.
-  const read = async (operation) => requestPromise(operation());
-  let events, undo;
-  try {
-    [events, undo] = await Promise.all([
-      read(() => tx.objectStore("events").index("workspace").getAll(origin)),
-      read(() => tx.objectStore("undo").get(origin)),
-      done,
-    ]);
-  } catch (error) {
-    try {
-      tx.abort();
-    } catch (ignore) {}
-    await done.catch(() => {});
-    throw error;
-  }
-  ensureCurrent();
-  if (connection !== sourceConnection)
-    throw Error("اتصال بانک هنگام خواندن تاریخچه تغییر کرده است.");
-  events.sort((a, b) => b.id - a.id);
-  renderHistory(events, undo, limit);
-}
-
 function validatedUndoCandidate(undo, records, period) {
   return EduUndoValidator.validate(undo, records, period, {
     assertSafeDataTree,
@@ -4327,8 +4274,65 @@ function validatedUndoCandidate(undo, records, period) {
     decodeWorkspaceRecords,
   });
 }
-let undoBusy = false;
-async function undoLast() {
+let undoBusy = false,
+  pendingUndo = null;
+
+async function openUndoModal() {
+  if (undoBusy) return false;
+  const check = preserveAsyncTarget();
+  await flushDrafts({ strict: true });
+  await writer.catch(() => {});
+  check();
+  assertEntityWritable();
+  const target = { id: workspace.id, revision: workspace.revision, connection };
+  const undo = await readRecord("undo", target.id);
+  check();
+  if (
+    connection !== target.connection ||
+    workspace.revision !== target.revision
+  )
+    throw Error("اطلاعات تغییر کرده است؛ پنجرهٔ بازگردانی را دوباره باز کنید.");
+  const available = undo && undo.revision === target.revision;
+  if (available)
+    validatedUndoCandidate(
+      undo,
+      new Map([...committed].map(([key, value]) => [key, JSON.parse(value)])),
+      workspace,
+    );
+  const date = new Date(undo?.at || "");
+  const opened = showModal(
+    "برگرداندن آخرین تغییر",
+    '<div class="full-restore undo-preview" id="undoPreview"><section class="undo-preview-summary"><span>نوبت فعلی</span><h4>' +
+      esc(workspace.year + " / " + workspace.term) +
+      "</h4></section>" +
+      (available
+        ? '<section class="undo-preview-change"><span>تغییر قابل بازگردانی</span><h4>' +
+          esc(undo.action) +
+          "</h4>" +
+          (Number.isFinite(date.getTime())
+            ? "<p>" + esc(date.toLocaleString("fa-IR")) + "</p>"
+            : "") +
+          '</section><p class="undo-preview-hint">فقط آخرین تغییر ثبت‌شده به وضعیت قبل برمی‌گردد؛ سایر نوبت‌ها تغییر نمی‌کنند. این کار، بازیابی فایل پشتیبان نیست.</p><p class="undo-preview-hint">پس از تأیید، امکان لغوِ همین بازگردانی وجود ندارد.</p><p id="operationError" role="alert"></p><div class="full-restore-actions"><button type="button" data-mutating="1" data-workspace-action="confirm-undo">تأیید و برگرداندن تغییر</button><button type="button" class="ghost" data-workspace-action="close">انصراف</button></div>'
+        : '<p class="undo-preview-empty">در این نوبت، تغییری برای بازگرداندن وجود ندارد.</p><button type="button" class="ghost" data-workspace-action="close">بستن</button>') +
+      "</div>",
+  );
+  if (opened !== false)
+    pendingUndo = available
+      ? { ...target, signature: JSON.stringify(undo) }
+      : null;
+  return opened !== false;
+}
+
+async function confirmUndo() {
+  if (
+    !pendingUndo ||
+    !document.querySelector("#modal:not(.hidden) #undoPreview")
+  )
+    throw Error("پنجرهٔ بازگردانی منقضی شده است؛ دوباره آن را باز کنید.");
+  return undoLast(pendingUndo);
+}
+
+async function undoLast(approval = null) {
   if (undoBusy) return false;
   undoBusy = true;
   busy++;
@@ -4340,7 +4344,17 @@ async function undoLast() {
     ensureCurrent();
     assertEntityWritable();
     const target = { id: workspace.id, revision: workspace.revision };
-    const operation = performUndo(target);
+    if (
+      approval &&
+      (approval !== pendingUndo ||
+        target.id !== approval.id ||
+        target.revision !== approval.revision ||
+        connection !== approval.connection)
+    )
+      throw Error(
+        "اطلاعات از زمان نمایش تأیید تغییر کرده است؛ پنجرهٔ بازگردانی را دوباره باز کنید.",
+      );
+    const operation = performUndo(target, approval);
     writer = operation;
     return await operation;
   } finally {
@@ -4349,7 +4363,7 @@ async function undoLast() {
     paintStatus();
   }
 }
-async function performUndo(target) {
+async function performUndo(target, approval = null) {
   const sourceConnection = connection;
   const isCurrentTarget = () =>
     workspace.id === target.id &&
@@ -4370,7 +4384,17 @@ async function performUndo(target) {
     new Map([...committed].map(([key, value]) => [key, JSON.parse(value)])),
     workspace,
   );
-  if (!confirm("آخرین تغییر «" + undo.action + "» بازگردانده شود؟"))
+  if (
+    approval &&
+    (approval !== pendingUndo ||
+      JSON.stringify(undo) !== approval.signature ||
+      !document.querySelector("#modal:not(.hidden) #undoPreview"))
+  )
+    throw Error("تغییر قابل بازگردانی عوض شده است؛ پنجره را دوباره باز کنید.");
+  if (
+    !approval &&
+    !confirm("آخرین تغییر «" + undo.action + "» بازگردانده شود؟")
+  )
     return false;
   assertEntityWritable();
   if (!isCurrentTarget() || workspace.revision !== target.revision)
@@ -4380,6 +4404,7 @@ async function performUndo(target) {
     replace: true,
     keepUndo: false,
   });
+  pendingUndo = null;
   if (!isCurrentTarget()) return true;
   const savedRevision = workspace.revision;
   const loaded = await readWorkspace(target.id);
@@ -4404,24 +4429,43 @@ async function openPeriods() {
     (r) => r.workspace === workspace.id,
   );
   ensureCurrent();
-  showModal(
-    "دوره‌های تحصیلی و کارنامه نهایی",
-    '<div class="period-hub"><p class="period-intro">هر دوره، کلاس‌ها، نمرات و جلسات مستقل دارد. بستن دوره فقط پس از تکمیل همه نمرات انجام می‌شود و نسخه ثابت کارنامه نگه داشته می‌شود.</p><section class="period-list"><h4>دوره‌های تحصیلی</h4><table><thead><tr><th>سال / نوبت</th><th>وضعیت</th><th>انتخاب دوره</th></tr></thead><tbody>' +
-      all
-        .map(
-          (w) =>
-            "<tr><td>" +
-            esc(w.year + " / " + w.term) +
-            "</td><td>" +
-            (w.closed ? "بسته" : "باز") +
-            '</td><td><button class="ghost" data-workspace-action="switch-period" data-key="' +
-            esc(w.id) +
-            '">' +
-            (w.id === workspace.id ? "دوره فعلی" : "بازکردن") +
-            "</button></td></tr>",
+  const periodRows = all
+    .map(
+      (w) =>
+        "<tr><td>" +
+        esc(w.year + " / " + w.term) +
+        "</td><td>" +
+        (w.closed ? "بسته" : "در حال کار") +
+        '</td><td><div class="period-row-actions"><button class="ghost" data-workspace-action="switch-period" data-key="' +
+        esc(w.id) +
+        '">' +
+        (w.id === workspace.id ? "نوبت فعلی" : "بازکردن") +
+        "</button>" +
+        ((w.termKind || academicTermKind(w.term)) === "first" &&
+        w.closed &&
+        !all.some(
+          (row) =>
+            row.year === w.year &&
+            (row.termKind || academicTermKind(row.term)) === "second",
         )
-        .join("") +
-      '</tbody></table></section><section class="period-management"><h4>مدیریت دوره فعال</h4><div class="row period-actions"><button data-workspace-action="new-period">دوره جدید با فهرست فعلی و بدون نمره</button>' +
+          ? '<button data-workspace-action="new-second-period" data-key="' +
+            esc(w.id) +
+            '">شروع نوبت دوم</button>'
+          : "") +
+        '<button type="button" class="ghost danger period-delete-button" aria-label="' +
+        esc("حذف نوبت " + w.year + " / " + w.term) +
+        '" data-workspace-action="delete-period" data-key="' +
+        esc(w.id) +
+        '"><span aria-hidden="true">' +
+        EduIcons.html("trash") +
+        "</span><span>حذف نوبت</span></button></div></td></tr>",
+    )
+    .join("");
+  showModal(
+    "نوبت‌های تحصیلی و کارنامه نهایی",
+    '<div class="period-hub"><p class="period-intro">هر سال تحصیلی دو نوبت دارد. پس از بستن نوبت اول، نوبت دوم با همان کلاس‌ها و هنرجویان و بدون نمره‌های قبلی شروع می‌شود. پشتیبان‌گیری جدا از این روند است.</p><section class="period-list"><h4>نوبت‌های تحصیلی</h4><table><thead><tr><th>سال / نوبت</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody>' +
+      periodRows +
+      '</tbody></table></section><section class="period-management"><h4>مدیریت نوبت فعلی</h4><div class="row period-actions"><button data-workspace-action="new-period">شروع سال تحصیلی / نوبت جدید</button>' +
       (workspace.closed
         ? '<button data-workspace-action="reopen-period">بازگشایی با ثبت در تاریخچه</button>'
         : '<button data-workspace-action="finalize-period">بستن دوره و ثبت کارنامه نهایی</button><button class="ghost" data-workspace-action="edit-period-label">اصلاح عنوان دوره</button>') +
@@ -4441,6 +4485,251 @@ async function openPeriods() {
         .join("") +
       '</section><p id="operationError" role="alert"></p></div>',
   );
+}
+
+let pendingPeriodDeletion = null,
+  periodDeletionBusy = false;
+
+function assertPeriodDeletable(rows, id) {
+  const target = rows.find((row) => row.id === id);
+  if (!target)
+    throw Error("این نوبت دیگر وجود ندارد؛ فهرست را دوباره باز کنید.");
+  if (rows.length <= 1)
+    throw Error(
+      "تنها نوبت سیستم قابل حذف نیست. برای شروع دوباره از پاک‌سازی اطلاعات سیستم استفاده کنید.",
+    );
+  if (
+    (target.termKind || academicTermKind(target.term)) === "first" &&
+    rows.some(
+      (row) =>
+        row.year === target.year &&
+        (row.termKind || academicTermKind(row.term)) === "second",
+    )
+  )
+    throw Error(
+      "نوبت اول مبنای نوبت دوم همین سال است. ابتدا نوبت دوم را حذف کنید؛ حذف هر نوبت، گزارش سالانهٔ آن سال را ناقص می‌کند.",
+    );
+  return target;
+}
+
+async function openDeletePeriod(id) {
+  if (periodDeletionBusy) throw Error("حذف نوبت در حال انجام است؛ صبر کنید.");
+  const check = preserveAsyncTarget();
+  await flushDrafts({ strict: true });
+  check();
+  const rows = await allFrom("catalog");
+  check();
+  let target;
+  try {
+    target = assertPeriodDeletable(rows, id, workspace.id);
+  } catch (error) {
+    pendingPeriodDeletion = null;
+    showModal(
+      "حذف نوبت تحصیلی",
+      '<div class="full-restore period-delete"><section class="full-restore-warning"><h4>این نوبت فعلاً قابل حذف نیست</h4><p>' +
+        esc(error.message) +
+        '</p></section><button type="button" class="ghost" data-workspace-action="periods">بازگشت به نوبت‌ها</button></div>',
+    );
+    return;
+  }
+  const snapshot = await readWorkspaceSnapshot(id);
+  check();
+  if (target.revision !== snapshot.period.revision)
+    throw Error("اطلاعات نوبت تغییر کرده است؛ دوباره تلاش کنید.");
+  const data = snapshot.data;
+  const classes = data.schools.flatMap((school) => school.classes);
+  const students = classes.reduce(
+    (sum, classroom) => sum + classroom.students.length,
+    0,
+  );
+  const title = target.year + " / " + target.term;
+  const opened = showModal(
+    "حذف نوبت تحصیلی",
+    '<div class="full-restore period-delete"><section class="period-delete-identity"><span>نوبت انتخاب‌شده برای حذف</span><h4>' +
+      esc(title) +
+      '</h4></section><div class="period-delete-stats"><div><strong>' +
+      classes.length.toLocaleString("fa-IR") +
+      "</strong><span>کلاس</span></div><div><strong>" +
+      students.toLocaleString("fa-IR") +
+      "</strong><span>هنرجو</span></div><div><strong>" +
+      data.sessions.length.toLocaleString("fa-IR") +
+      '</strong><span>جلسه</span></div></div><section class="full-restore-warning"><h4>چه چیزی حذف می‌شود؟</h4><p>اطلاعات این نوبت شامل فهرست‌ها، نمرات، حضور و غیاب، کارنامه‌ها و پیش‌نویس‌ها حذف می‌شود. اطلاعات سایر نوبت‌ها تغییر نمی‌کند.</p><p>گزارش سالانهٔ این سال ممکن است ناقص یا غیرقابل تهیه شود.</p></section>' +
+      (id === workspace.id
+        ? '<p class="period-delete-transition">این نوبت فعال است؛ پس از حذف، برنامه به یکی از نوبت‌های باقی‌مانده می‌رود.</p>'
+        : "") +
+      '<p class="full-restore-safety">پیش از حذف، نسخهٔ ایمنی ذخیره می‌شود. پشتیبان‌های قبلی باقی می‌مانند.</p>' +
+      (data.settings.password
+        ? '<label class="period-delete-password" for="periodDeletionPassword">رمز این نوبت<input type="password" id="periodDeletionPassword" autocomplete="current-password" placeholder="رمز نوبت انتخاب‌شده"></label>'
+        : "") +
+      '<label class="full-restore-confirm"><input type="checkbox" id="periodDeletionConfirmed"><span>حذف نوبت بالا و اطلاعات وابستهٔ آن را تأیید می‌کنم.</span></label><p id="operationError" role="alert"></p><div class="full-restore-actions"><button type="button" class="danger" data-workspace-action="confirm-delete-period">حذف نوبت انتخاب‌شده</button><button type="button" class="ghost" data-workspace-action="periods">انصراف</button></div></div>',
+  );
+  if (opened !== false)
+    pendingPeriodDeletion = {
+      id,
+      revision: target.revision,
+      origin: workspace.id,
+      title,
+    };
+}
+
+async function confirmDeletePeriod() {
+  if (periodDeletionBusy) throw Error("حذف نوبت در حال انجام است؛ صبر کنید.");
+  const preview = pendingPeriodDeletion;
+  if (!preview || !document.getElementById("periodDeletionConfirmed")?.checked)
+    throw Error("ابتدا هشدارها را بخوانید و حذف همین نوبت را تأیید کنید.");
+  let ownsLoading = false,
+    deleted = false;
+  const check = () => {
+    if (!ownsLoading) assertWorkspaceReadable();
+    else if (!ready || blocked || connectionRetired)
+      throw Error("اتصال برنامه تغییر کرده است؛ حذف انجام نشد.");
+    if (
+      fullRestoreBusy ||
+      resetBusy ||
+      (periodLoading && !ownsLoading) ||
+      pendingPeriodDeletion !== preview ||
+      workspace.id !== preview.origin
+    )
+      throw Error(
+        "وضعیت برنامه تغییر کرده است؛ پنجرهٔ حذف را دوباره باز کنید.",
+      );
+  };
+  check();
+  periodDeletionBusy = true;
+  try {
+    const target = await readWorkspaceSnapshot(preview.id);
+    check();
+    if (target.period.revision !== preview.revision)
+      throw Error(
+        "اطلاعات نوبت تغییر کرده است؛ پنجرهٔ حذف را دوباره باز کنید.",
+      );
+    if (target.data.settings.password) {
+      const password = document.getElementById("periodDeletionPassword")?.value;
+      if (!password)
+        throw Error("رمز نوبت انتخاب‌شده را وارد کنید؛ حذف انجام نشده است.");
+      if (!(await verifyPassword(password, target.data.settings.password)))
+        throw Error("رمز نوبت درست نیست؛ حذف انجام نشد.");
+      check();
+    }
+    if (
+      !confirm(
+        "نوبت «" +
+          preview.title +
+          "» و تمام اطلاعات وابستهٔ آن حذف شود؟ اطلاعات سایر نوبت‌ها باقی می‌ماند.",
+      )
+    )
+      return;
+    const safety = await snapshotInstallation();
+    check();
+    const remaining = safety.stores.catalog.filter(
+      (row) => row.id !== preview.id,
+    );
+    const next =
+      remaining.find(
+        (row) =>
+          row.year === target.period.year &&
+          (row.termKind || academicTermKind(row.term)) === "first",
+      ) || remaining[0];
+    if (!next) throw Error("تنها نوبت سیستم قابل حذف نیست.");
+    periodLoading = true;
+    ownsLoading = true;
+    lockControls();
+    const names = [...backupStores, "drafts"];
+    const tx = connection.transaction(names, "readwrite"),
+      done = transactionDone(tx);
+    let failure;
+    const request = tx.objectStore("catalog").getAll();
+    request.onsuccess = () => {
+      try {
+        check();
+        const row = assertPeriodDeletable(
+          request.result,
+          preview.id,
+          workspace.id,
+        );
+        if (
+          row.revision !== preview.revision ||
+          restoreCatalogSignature(request.result) !==
+            restoreCatalogSignature(safety.stores.catalog)
+        )
+          throw Error(
+            "اطلاعات در پنجرهٔ دیگری تغییر کرده است؛ حذف انجام نشد. دوباره تلاش کنید.",
+          );
+        tx.objectStore("backups").put({
+          id: "before-period-delete-" + uid(),
+          workspace: null,
+          at: new Date().toISOString(),
+          label: "پیش از حذف نوبت " + preview.title,
+          full: safety,
+        });
+        tx.objectStore("catalog").delete(preview.id);
+        for (const name of names.filter((name) => name !== "catalog")) {
+          const cursor = tx.objectStore(name).openCursor();
+          cursor.onsuccess = () => {
+            const entry = cursor.result;
+            if (!entry) return;
+            if (entry.value.workspace === preview.id) {
+              if (name === "backups")
+                entry.update({
+                  ...entry.value,
+                  workspace: null,
+                  deletedPeriod: preview.title,
+                });
+              else entry.delete();
+            }
+            entry.continue();
+          };
+        }
+      } catch (error) {
+        failure = error;
+        tx.abort();
+      }
+    };
+    try {
+      await done;
+    } catch (error) {
+      throw failure || error;
+    }
+    pendingPeriodDeletion = null;
+    deleted = true;
+    // Other tabs must not write their now-deleted workspace back into the catalog.
+    broadcast({ type: "period-deleted", workspace: preview.id });
+    try {
+      localStorage.removeItem("EduManager.periodicDrafts." + preview.id);
+      for (const key of Object.keys(localStorage))
+        if (key.startsWith("Edu24.drafts." + preview.id + "."))
+          localStorage.removeItem(key);
+    } catch {}
+    if (workspace.id === preview.id) {
+      clearTimeout(draftTimer);
+      drafts.clear();
+      draftGeneration++;
+      await switchPeriod(next.id);
+    }
+    periodLoading = false;
+    ownsLoading = false;
+    scheduleSingleFile();
+    setStatus(
+      "نوبت " +
+        preview.title +
+        " حذف شد؛ پشتیبان ایمنی در بخش پشتیبان و بازیابی محفوظ است.",
+      "saved",
+    );
+    await openPeriods();
+  } catch (error) {
+    if (deleted && workspace.id === preview.id) {
+      ready = false;
+      blocked = true;
+      resetScreen(
+        "نوبت حذف شد و پشتیبان ایمنی محفوظ است؛ برای ورود به نوبت باقی‌مانده، برنامه را دوباره بارگذاری کنید.",
+      );
+    }
+    throw error;
+  } finally {
+    if (ownsLoading) periodLoading = false;
+    periodDeletionBusy = false;
+    lockControls();
+  }
 }
 
 function hydrateReportNotes(period) {
@@ -4508,12 +4797,47 @@ async function switchPeriod(id) {
   }
 }
 
-function openNewPeriod() {
+async function openNewPeriod(firstId = "") {
+  const expected = captureWorkspaceContext(),
+    rows = await allFrom("catalog");
+  assertWorkspaceContext(expected);
+  const first = firstId
+    ? rows.find((row) => row.id === firstId)
+    : rows.find(
+        (row) =>
+          row.year === workspace.year &&
+          (row.termKind || academicTermKind(row.term)) === "first" &&
+          row.closed &&
+          !rows.some(
+            (other) =>
+              other.year === row.year &&
+              (other.termKind || academicTermKind(other.term)) === "second",
+          ),
+      );
+  if (
+    firstId &&
+    (!first ||
+      !first.closed ||
+      (first.termKind || academicTermKind(first.term)) !== "first")
+  )
+    throw Error("ابتدا نوبت اول را ببندید.");
+  const nextYear =
+    workspace.closed &&
+    (workspace.termKind || academicTermKind(workspace.term)) === "second"
+      ? Number(workspace.year.slice(0, 4)) +
+        1 +
+        "-" +
+        (Number(workspace.year.slice(5)) + 1)
+      : currentYearLabel();
   showModal(
-    "دوره تحصیلی جدید",
+    "شروع نوبت تحصیلی",
     '<div class="period-create"><label>سال تحصیلی <input id="periodYear" value="' +
-      esc(currentYearLabel()) +
-      '"></label><label>نوبت <select id="periodTerm"><option>اول</option><option>دوم</option><option>تابستان</option></select></label><p>فهرست دانش‌آموزان فعال، دروس و تنظیم برنامه کپی می‌شود. نمرات، جلسات و بایگانی دوره قبلی منتقل نمی‌شوند.</p><button data-workspace-action="create-period">ایجاد دوره مستقل</button></div>',
+      esc(first?.year || nextYear) +
+      '"></label><label>نوبت <select id="periodTerm"><option' +
+      (!first ? " selected" : "") +
+      ">اول</option><option" +
+      (first ? " selected" : "") +
+      '>دوم</option></select></label><p>نوبت دوم فقط پس از بسته‌شدن نوبت اول همان سال شروع می‌شود. کلاس‌ها، هنرجویان و درس‌ها ادامه پیدا می‌کنند؛ نمرات و جلسات هر نوبت جدا می‌مانند.</p><button data-workspace-action="create-period">شروع نوبت</button></div>',
   );
 }
 
@@ -4529,7 +4853,7 @@ async function createNewPeriod() {
       );
     const year = asciiDigits(document.getElementById("periodYear").value),
       term = document.getElementById("periodTerm").value;
-    if (!["اول", "دوم", "تابستان"].includes(term))
+    if (!["اول", "دوم"].includes(term))
       throw Error("نوبت انتخاب‌شده معتبر نیست.");
     await flushDrafts({ strict: true });
     await writer.catch(() => {});
@@ -4542,9 +4866,28 @@ async function createNewPeriod() {
       throw Error("سال را مانند 1405-1406 وارد کنید.");
     const existing = await allFrom("catalog");
     assertWorkspaceContext(context);
-    if (existing.some((x) => x.year === year && x.term === term))
-      throw Error("این سال و نوبت قبلاً ساخته شده است.");
-    const next = clone(db);
+    const first = validateAcademicTransition(existing, year, term);
+    let source = db;
+    if (first) {
+      const snapshot = await readWorkspaceSnapshot(first.id);
+      assertWorkspaceContext(context);
+      if (
+        snapshot.period.revision !== first.revision ||
+        !snapshot.period.closed
+      )
+        throw Error("نوبت اول تغییر کرده است؛ فرم را دوباره باز کنید.");
+      if (first.id !== workspace.id && snapshot.data.settings.password) {
+        const supplied = prompt("رمز نوبت اول برای شروع نوبت دوم:");
+        if (
+          supplied === null ||
+          !(await verifyPassword(supplied, snapshot.data.settings.password))
+        )
+          throw Error("دسترسی به نوبت اول تأیید نشد.");
+        assertWorkspaceContext(context);
+      }
+      source = snapshot.data;
+    }
+    const next = clone(source);
     next.sessions = [];
     next.migrationWarnings = [];
     next.settings.academicYear = year;
@@ -4580,6 +4923,8 @@ async function createNewPeriod() {
     const created = await installWorkspace(normalizeDB(next), {
       year,
       term,
+      requireSequence: true,
+      firstRevision: first?.revision,
     });
     assertWorkspaceContext(context);
     await switchPeriod(created.id);
@@ -6148,8 +6493,6 @@ async function confirmWipe() {
   };
   try {
     clearTimeout(draftTimer);
-    clearInterval(automaticBackupTimer);
-    automaticBackupTimer = null;
     if (flushing) await flushing.catch(() => {});
     if (singleFileWriting) await singleFileWriting.catch(() => {});
     await writer.catch(() => {});
@@ -6204,7 +6547,6 @@ async function confirmWipe() {
           Error("حذف ثبت نشد؛ اطلاعات قبلی محفوظ است. " + error.message),
           "wipeError",
         );
-        startAutomaticBackups();
       } catch (reopenError) {
         resetScreen(
           "حذف ثبت نشد؛ برای خواندن دوباره اطلاعات، برنامه را بارگذاری کنید. " +
@@ -6308,6 +6650,13 @@ function installUI() {
     channel.onmessage = (event) => {
       const message = event.data;
       if (singleFileChanged(message)) return;
+      if (
+        message.type === "period-deleted" ||
+        (message.type === "installation-restored" && !fullRestoreBusy)
+      ) {
+        invalidateInstallation();
+        return;
+      }
       if (message.type === "installation-reset" && !resetBusy) {
         invalidateInstallation();
         return;
@@ -6362,27 +6711,12 @@ function installWorkspaceActions() {
     ["assessment-stage", (button) => openAssessmentStage(button)],
     ["switch-period", (button) => switchPeriod(button.dataset.key)],
     ["frozen-report", (button) => showFrozenReport(button.dataset.key)],
-    ["download-backup", (button) => downloadInternalBackup(button.dataset.key)],
-    ["preview-backup", (button) => previewInternalBackup(button.dataset.key)],
     ["adopt-drafts", (button) => adoptDrafts(button.dataset.key)],
     ["approve-drafts", () => approveDrafts()],
     ["archived-report", (button) => showArchivedKarnameh(button.dataset.key)],
     ["edit-student", (button) => openEditStudentModal(button.dataset.key)],
     ["restore-student", (button) => restoreStudent(button.dataset.key)],
     ["copy-membership", () => saveMembership("copy")],
-    ["history-more", (button) => openHistoryV24(integer(button.dataset.limit))],
-    [
-      "history-event",
-      (button) =>
-        showHistoryEvent(
-          integer(button.dataset.key),
-          integer(button.dataset.limit || "100"),
-        ),
-    ],
-    [
-      "download-event",
-      (button) => downloadHistoryEvent(integer(button.dataset.key)),
-    ],
     [
       "unfiltered-session",
       (button) => {
@@ -6394,7 +6728,6 @@ function installWorkspaceActions() {
       },
     ],
     ["periods", () => openPeriods()],
-    ["history", () => openHistoryV24()],
     ["backups", () => openBackups()],
     ["open-wipe", () => wipeAllV24()],
     ["discard-drafts", () => discardDrafts()],
@@ -6405,6 +6738,9 @@ function installWorkspaceActions() {
     ["reopen-period", () => reopenPeriod()],
     ["finalize-period", () => finalizePeriod()],
     ["edit-period-label", () => editPeriodLabel()],
+    ["new-second-period", (button) => openNewPeriod(button.dataset.key)],
+    ["delete-period", (button) => openDeletePeriod(button.dataset.key)],
+    ["confirm-delete-period", () => confirmDeletePeriod()],
     ["export-period", () => exportBackupV24()],
     ["export-full", () => exportFullBackup()],
     ["prepare-share-backup", () => openBackupShare()],
@@ -6415,7 +6751,8 @@ function installWorkspaceActions() {
     ["single-file-stop", () => disableSingleFile()],
     ["restore-full", () => restoreFullBackup()],
     ["confirm-import", () => confirmImport()],
-    ["undo", () => undoLast()],
+    ["undo", () => openUndoModal()],
+    ["confirm-undo", () => confirmUndo()],
     ["raw-recovery", () => rawRecoveryV24()],
     ["choose-import", () => document.getElementById("importFile").click()],
     ["print", (button) => printReport(button)],
@@ -6659,12 +6996,9 @@ function selectAnnualPeriods(catalog, periodIds, active) {
     );
     if (candidates.some((rows) => rows.length > 1))
       throw Error(
-        "برای یکی از نوبت‌ها چند دوره وجود دارد؛ نوبت اول و دوم را در فرم گزارش مشخص کنید.",
+        "اطلاعات قدیمی این سال شامل چند نسخه از یک نوبت است؛ پیش از گزارش سالانه، ساختار نوبت‌ها باید بررسی شود.",
       );
-    if (
-      candidates.every((rows) => rows.length === 1) &&
-      candidates.some((rows) => rows[0].id === active.id)
-    )
+    if (candidates.every((rows) => rows.length === 1))
       periods = candidates.map((rows) => rows[0]);
     else if (["اول", "دوم"].includes(active.term))
       periods = ["اول", "دوم"].map((term) =>
@@ -6672,7 +7006,7 @@ function selectAnnualPeriods(catalog, periodIds, active) {
       );
     else
       throw Error(
-        "برای دوره بازیابی‌شده یا عنوان سفارشی، هر دو نوبت اول و دوم را در فرم گزارش انتخاب کنید؛ انتخاب خودکار مبهم است.",
+        "نوبت اول و دوم این سال مشخص نیست؛ وضعیت نوبت‌ها را در مدیریت نوبت‌های تحصیلی بررسی کنید.",
       );
     if (periods.some((row) => !row))
       throw Error(
@@ -6721,6 +7055,38 @@ async function readAnnualRecordSets(context, periodIds) {
   assertWorkspaceContext(context);
   return { periods, recordSets };
 }
+function annualSessionCopy(part, session) {
+  const classroom = part.data.schools
+    .find((school) => school.id === session.schoolId)
+    ?.classes.find((item) => item.id === session.classId);
+  const lesson = classroom?.lessons.find(
+    (item) => item.id === session.lessonId,
+  );
+  const module = lesson?.poudmans?.find(
+    (item) => item.id === session.poudmanId,
+  );
+  const unit = module?.units?.find((item) => item.id === session.unitId);
+  return {
+    ...clone(session),
+    id: part.period.id + ":" + session.id,
+    academicTerm: part.period.term,
+    sourcePeriodId: part.period.id,
+    ...(!Array.isArray(session.roster)
+      ? {
+          roster: clone(classroom?.students || []),
+          rosterInferred: true,
+        }
+      : {}),
+    annualMetadata: {
+      className: classroom?.name || "کلاس فاقد تعریف",
+      lessonName: lesson?.name || "درس فاقد تعریف",
+      teacher: lesson?.teacher || "",
+      moduleName: module?.name || "",
+      unitName: unit?.name || "",
+    },
+  };
+}
+
 async function prepareAnnualReportSnapshot(periodIds = {}) {
   assertWorkspaceReadable();
   const origin = workspace.id;
@@ -6759,10 +7125,8 @@ async function prepareAnnualReportSnapshot(periodIds = {}) {
         );
     }
   }
-  const data = clone(
-    parts.find((part) => part.period.id === workspace.id)?.data ||
-      parts[1].data,
-  );
+  // Annual identity labels consistently use the latest term, not the open tab.
+  const data = clone(parts[1].data);
   data.sessions = [];
   for (const part of parts) {
     for (const school of part.data.schools) {
@@ -6791,11 +7155,7 @@ async function prepareAnnualReportSnapshot(periodIds = {}) {
       }
     }
     data.sessions.push(
-      ...part.data.sessions.map((session) => ({
-        ...clone(session),
-        id: part.period.id + ":" + session.id,
-        academicTerm: part.period.term,
-      })),
+      ...part.data.sessions.map((session) => annualSessionCopy(part, session)),
     );
   }
   data.settings.academicTerm = "اول و دوم";
@@ -7631,8 +7991,6 @@ function installRuntimeAPI() {
     saveMembership,
     openOtherDrafts,
     adoptDrafts,
-    showHistoryEvent,
-    downloadHistoryEvent,
     discardDrafts,
     reviewDrafts,
     approveDrafts,
@@ -7677,11 +8035,7 @@ function installRuntimeAPI() {
     validateFullBackup,
     previewFullBackup,
     restoreFullBackup,
-    automaticFullBackup,
-    downloadInternalBackup,
-    previewInternalBackup,
     confirmImport,
-    openHistory: openHistoryV24,
     undoLast,
     openPeriods,
     switchPeriod,
@@ -7820,159 +8174,6 @@ async function approveDrafts() {
   await flushDrafts({ strict: true });
   closeModal();
   render();
-}
-// Source: src/workspace/history/viewer.js
-async function showHistoryEvent(id, limit = 100) {
-  const event = await readRecord("events", Number(id));
-  if (!event || event.workspace !== workspace.id)
-    throw Error("رویداد پیدا نشد.");
-  const display = (value) => {
-    const text = JSON.stringify(value);
-    return text && text.length > 1500
-      ? text.slice(0, 1500) + "… (نسخه کامل در فایل جزئیات)"
-      : text;
-  };
-  showModal(
-    event.action,
-    '<div class="history-detail"><header class="history-detail-heading"><p>' +
-      esc(new Date(event.at).toLocaleString("fa-IR")) +
-      " · " +
-      event.changes.length +
-      ' تغییر</p><button class="ghost" data-workspace-action="download-event" data-key="' +
-      esc(event.id) +
-      '">دریافت جزئیات کامل</button></header><div class="table-scroll history-diff"><table><thead><tr><th>بخش</th><th>قبل</th><th>بعد</th></tr></thead><tbody>' +
-      event.changes
-        .slice(0, limit)
-        .map(
-          (change) =>
-            "<tr><td>" +
-            esc(changeLabel(change.path)) +
-            '</td><td><pre dir="auto">' +
-            esc(display(change.before)) +
-            '</pre></td><td><pre dir="auto">' +
-            esc(display(change.after)) +
-            "</pre></td></tr>",
-        )
-        .join("") +
-      "</tbody></table></div>" +
-      (event.changes.length > limit
-        ? '<button data-workspace-action="history-event" data-key="' +
-          esc(event.id) +
-          '" data-limit="' +
-          (limit + 100) +
-          '">نمایش تغییرهای بیشتر</button>'
-        : "") +
-      "</div>",
-  );
-}
-
-async function downloadHistoryEvent(id) {
-  const event = await readRecord("events", Number(id));
-  if (event?.workspace === workspace.id)
-    downloadJSON(event, "تاریخچه-" + event.id + ".json");
-}
-
-function changeLabel(path) {
-  const fields = {
-    midtermPractical: "عملی میان‌ترم",
-    midtermTheory: "تئوری میان‌ترم",
-    practical: "عملی",
-    theory: "تئوری",
-    final: "نهایی",
-    passed: "قبولی",
-    c: "شایستگی",
-    gate: "معیارهای الزامی",
-    gradingPolicy: "قواعد ابلاغیه",
-    podScores: "نمرات پودمان",
-    m: "مستمر",
-    p: "پایانی",
-    name: "نام",
-    code: "کد",
-    date: "تاریخ",
-    period: "زنگ",
-    poudmanId: "پودمان",
-    unitId: "واحد",
-    attendance: "حضور و غیاب",
-    password: "رمز ورود",
-    academicYear: "سال تحصیلی",
-    academicTerm: "نوبت",
-    masterSchedule: "برنامه هفتگی",
-  };
-  const pieces = path.split("."),
-    record = pieces.shift();
-  let label =
-    record === "meta"
-      ? "تنظیمات"
-      : record.startsWith("class:")
-        ? findClass(record.slice(6))?.name || "کلاس حذف‌شده"
-        : record.startsWith("session:")
-          ? "جلسه " +
-            (faDate(getSessionById(record.slice(8))?.date) || "حذف‌شده")
-          : "اطلاعات";
-  let c = record.startsWith("class:")
-    ? findClass(record.slice(6))
-    : findClass(getSessionById(record.slice(8))?.classId);
-  for (let i = 0; i < pieces.length; i++) {
-    const key = pieces[i];
-    if (key === "lessons" && c) {
-      const l = c.lessons[Number(pieces[++i])];
-      if (l) label += " / " + l.name;
-      continue;
-    }
-    if (
-      ["kardaneshScores", "unitScores", "podScores", "attendance"].includes(key)
-    ) {
-      const sid = pieces[++i];
-      label += " / " + (getStudentObj(c, sid)?.name || "دانش‌آموز");
-      continue;
-    }
-    if (fields[key]) label += " / " + fields[key];
-  }
-  return label;
-}
-
-async function openHistoryV24(limit = 50) {
-  return openHistory(limit);
-}
-
-function renderHistory(events, undo, limit) {
-  showModal(
-    "تاریخچه تغییرات",
-    '<div class="history-hub"><p class="history-intro">زمان و مقادیر قبل و بعد هر تغییر ثبت می‌شوند.</p>' +
-      (undo
-        ? '<button data-mutating="1" data-workspace-action="undo">بازگردانی آخرین تغییر: ' +
-          esc(undo.action) +
-          "</button>"
-        : "") +
-      '<div class="history-list">' +
-      (!events.length
-        ? '<div class="history-empty">هنوز تغییری برای این دوره ثبت نشده است.</div>'
-        : "") +
-      events
-        .slice(0, limit)
-        .map(
-          (e) =>
-            '<article class="history-entry"><div class="history-entry-info"><h4>' +
-            esc(e.action) +
-            '</h4><div class="history-entry-meta"><time datetime="' +
-            esc(e.at) +
-            '">' +
-            esc(new Date(e.at).toLocaleString("fa-IR")) +
-            '</time><span class="history-count">' +
-            e.changes.length +
-            ' تغییر</span></div></div><button class="ghost" data-workspace-action="history-event" data-key="' +
-            esc(e.id) +
-            '">جزئیات</button></article>',
-        )
-        .join("") +
-      "</div>" +
-      (events.length > limit
-        ? '<button data-workspace-action="history-more" data-limit="' +
-          (limit + 50) +
-          '">نمایش موارد بیشتر</button>'
-        : "") +
-      "</div>",
-  );
 }
 // Source: src/workspace/students/archive.js
 function buildArchiveV24(c) {

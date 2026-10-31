@@ -25,6 +25,7 @@ async function annualChecks() {
     document.getElementById("periodTerm").value = "اول";
     await EduV24.createNewPeriod();
     const first = EduV24.getReportContext().id;
+    db.schools[0].classes[0].lessons[0].teacher = "دبیر نوبت اول";
     db.sessions = [
       {
         id: "annual_session",
@@ -61,10 +62,44 @@ async function annualChecks() {
       missing = error.message.includes("هر دو");
     }
     record("Y01", "annual report refuses a missing second term", missing);
+    for (const school of db.schools)
+      for (const classroom of school.classes)
+        for (const lesson of classroom.lessons) {
+          for (const student of classroom.students) {
+            if (lesson.gradeMode === "kardanesh")
+              lesson.kardaneshScores[student.id] = {
+                practical: 18,
+                theory: 12,
+                midtermPractical: 18,
+                midtermTheory: 12,
+                ...lesson.kardaneshScores[student.id],
+              };
+            else
+              for (const pod of lesson.poudmans) {
+                pod.podScores[student.id] = {
+                  m: 2,
+                  c: 2,
+                  ...pod.podScores[student.id],
+                };
+                for (const unit of pod.units)
+                  unit.unitScores[student.id] = {
+                    m: 18,
+                    p: 18,
+                    ...unit.unitScores[student.id],
+                  };
+              }
+          }
+        }
+    await saveDB();
+    await EduV24.finalizePeriod();
+    if (!EduV24.getReportContext().closed)
+      throw Error("First term must close before the second starts");
+    closeModal();
     await EduV24.openNewPeriod();
     document.getElementById("periodYear").value = "1407-1408";
     document.getElementById("periodTerm").value = "دوم";
     await EduV24.createNewPeriod();
+    db.schools[0].classes[0].lessons[0].teacher = "دبیر نوبت دوم";
     db.sessions = [
       {
         id: "annual_session",
@@ -106,6 +141,18 @@ async function annualChecks() {
     EduPeriodicReports.selectScope("school_a", "class_a");
     const model = await EduPeriodicReports.generate();
     record(
+      "Y13",
+      "annual sessions retain their own term teacher and source period in screen and text exports",
+      model?.sessions[0].teacher === "دبیر نوبت اول" &&
+        model?.sessions[1].teacher === "دبیر نوبت دوم" &&
+        model.sessions[0].academicTerm === "اول" &&
+        model.sessions[1].academicTerm === "دوم" &&
+        model.sessions[0].sourcePeriodId === first &&
+        EduPeriodicReports.documentHtml(model).includes("نوبت اول") &&
+        EduPeriodicReports.textReport(model).includes("نوبت دوم") &&
+        EduPeriodicReports.deputyReport(model).includes("نوبت: اول"),
+    );
+    record(
       "Y03",
       "annual report combines both terms within academic year",
       model?.summary.sessions === 2 &&
@@ -130,6 +177,12 @@ async function annualChecks() {
     EduPeriodicReports.set("audience", "parent");
     EduPeriodicReports.set("studentId", "student_a");
     const parent = await EduPeriodicReports.generate();
+    record(
+      "Y14",
+      "annual presentation does not misstate all custom policies as fixed 70/30",
+      !EduPeriodicReports.documentHtml(parent).includes("۷۰٪") &&
+        !parent.definitions.some((text) => text.includes("۷۰٪")),
+    );
     record(
       "Y10",
       "annual report preserves technical module grades per term and selected student",
@@ -185,6 +238,8 @@ async function annualChecks() {
     await write(original);
     const second = EduV24.getReportContext().id;
     await EduV24.switchPeriod(first);
+    await EduV24.reopenPeriod();
+    closeModal();
     await openSettingsModal();
     document.getElementById("newPass").value = "annual-access";
     await saveSettings();

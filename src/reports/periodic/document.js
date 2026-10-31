@@ -63,6 +63,7 @@ function sessionDetailsHtml(m, s) {
   let html =
     '<section class="periodic-session"><header class="report-session-heading"><span class="report-session-date"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4M16 3v4M4 11h16"/></svg>' +
     esc(faDate(s.date)) +
+    (s.academicTerm ? " · نوبت " + esc(s.academicTerm) : "") +
     '</span><span class="report-session-period">زنگ ' +
     num(s.period + 1) +
     '</span></header><div class="report-session-identity"><h4>' +
@@ -247,7 +248,7 @@ function documentHtml(m) {
   }
   if (m.annualGrades) {
     h +=
-      '<section class="annual-grades"><h3>نمرات چهار مرحله سال</h3><p>درس عمومی در هر مرحله یک نمره دارد؛ در کاردانش هر مرحله عملی ۷۰٪ و تئوری ۳۰٪ است. نمره ثبت‌نشده، صفر نیست.</p><div class="assessment-students">';
+      '<section class="annual-grades"><h3>نمرات چهار مرحله سال</h3><p>هر مرحله طبق تنظیمات همان نوبت محاسبه می‌شود؛ نهایی سالانه میانگین برابر چهار مرحله است. نمره ثبت‌نشده، صفر نیست.</p><div class="assessment-students">';
     for (const grade of m.annualGrades) {
       h +=
         '<article class="assessment-student"><h4>' +

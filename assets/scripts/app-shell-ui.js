@@ -6,7 +6,6 @@
   function decorateIcons() {
     const actions = {
       periods: "calendar",
-      history: "clock",
       backups: "shield",
       "export-full": "download",
       "open-wipe": "trash",
@@ -21,8 +20,6 @@
       "discard-drafts": "undo",
       "review-drafts": "grades",
       "other-drafts": "users",
-      "download-backup": "download",
-      "preview-backup": "undo",
       "restore-full": "upload",
       "new-period": "add",
       "create-period": "add",

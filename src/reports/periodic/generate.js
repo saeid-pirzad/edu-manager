@@ -152,7 +152,7 @@ async function generate() {
         revision: part.period.revision,
       }));
       model.definitions.push(
-        "کاردانش: هر مرحله عملی ۷۰٪ و تئوری ۳۰٪؛ نهایی سالانه میانگین برابر هر چهار مرحله است. نمره ناقص، صفر محسوب نمی‌شود.",
+        "نمره هر مرحله طبق تنظیمات همان نوبت محاسبه می‌شود؛ نهایی سالانه میانگین برابر هر چهار مرحله است. نمره ناقص، صفر محسوب نمی‌شود.",
       );
       for (const part of snapshot.parts)
         model.definitions.push(
