@@ -169,6 +169,7 @@ function build(source, options) {
       if (!students.has(key))
         students.set(key, {
           studentId: sid,
+          classId: c.id,
           name: st?.name || "هنرجوی فاقد مشخصات",
           code: st?.code || "",
           className: c.name,

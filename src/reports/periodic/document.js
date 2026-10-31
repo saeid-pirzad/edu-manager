@@ -1,3 +1,53 @@
+function studentFollowupHtml(m) {
+  const groups = new Map();
+  for (const student of m.students) {
+    const key = student.classId || student.className;
+    if (!groups.has(key))
+      groups.set(key, { name: student.className, students: [] });
+    groups.get(key).students.push(student);
+  }
+  const metrics = [
+    ["sessions", "جلسه"],
+    ["present", "حاضر"],
+    ["absent", "غایب"],
+    ["leave", "مرخصی"],
+    ["late", "تأخیر"],
+    ["unknown", "تعیین‌نشده"],
+  ];
+  let h =
+    '<section class="report-followup"><header class="report-followup-heading"><h3>پیگیری وضعیت هنرجویان</h3><p>به تفکیک کلاس · آمار حضور در جلسه‌های همین بازه</p></header>';
+  for (const group of groups.values()) {
+    h +=
+      '<section class="report-class-group"><header class="report-class-heading"><span class="report-class-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18v13H3zM8 21h8M12 17v4M7 8h10M7 12h6"/></svg></span><div><h4>' +
+      esc(group.name) +
+      "</h4><p>" +
+      num(group.students.length) +
+      ' هنرجو با سابقهٔ جلسه در این بازه</p></div></header><ol class="report-student-list">';
+    for (const student of group.students) {
+      h +=
+        '<li class="report-student-row"><div class="report-student-identity"><strong><bdi>' +
+        esc(student.name) +
+        "</bdi></strong>" +
+        (student.code
+          ? "<small>کد دانش‌آموزی: <bdi>" + esc(student.code) + "</bdi></small>"
+          : "") +
+        '</div><dl class="report-student-metrics">';
+      for (const [key, label] of metrics)
+        h +=
+          '<div class="report-metric report-metric-' +
+          key +
+          '"><dt>' +
+          label +
+          "</dt><dd>" +
+          num(student[key] ?? 0) +
+          "</dd></div>";
+      h += "</dl></li>";
+    }
+    h += "</ol></section>";
+  }
+  return h + "</section>";
+}
+
 function documentHtml(m) {
   let h =
     '<article class="card report-document periodic-document"><header class="periodic-document-heading"><span>' +
@@ -103,29 +153,7 @@ function documentHtml(m) {
           num(l.markCount),
         ]),
       );
-    h +=
-      "<h3>پیگیری وضعیت هنرجویان</h3>" +
-      table(
-        [
-          m.class ? "هنرجو" : "هنرجو / کلاس",
-          "جلسه",
-          "حاضر",
-          "غایب",
-          "مرخصی",
-          "تأخیر",
-          "تعیین‌نشده",
-        ],
-        m.students.map((st) => [
-          st.name + (m.class ? "" : " / " + st.className),
-          num(st.sessions),
-          num(st.present),
-          num(st.absent),
-          num(st.leave),
-          num(st.late),
-          num(st.unknown),
-        ]),
-        "student-summary",
-      );
+    h += studentFollowupHtml(m);
   }
   if (m.technicalGrades?.length) {
     h += "<section><h3>نمرات فنی به تفکیک نوبت و پودمان</h3>";
