@@ -84,18 +84,9 @@ function toFaNum(num) {
   return String(num).replace(/\d/g, (d) => faDigits[d]);
 }
 // Source: src/legacy/core/state.js
+// Registration order is the roster order, including rows imported from CSV.
 function getSortedStudents(classObj) {
-  if (!classObj || !classObj.students) return [];
-  const collator = new Intl.Collator("fa", { sensitivity: "base" });
-  return [...classObj.students].sort((a, b) => {
-    const aParts = a.name.trim().split(" ");
-    const bParts = b.name.trim().split(" ");
-    const aFamily = aParts.length > 1 ? aParts[aParts.length - 1] : a.name;
-    const bFamily = bParts.length > 1 ? bParts[bParts.length - 1] : b.name;
-    const familyCompare = collator.compare(aFamily, bFamily);
-    if (familyCompare !== 0) return familyCompare;
-    return collator.compare(a.name, b.name);
-  });
+  return [...(classObj?.students || [])];
 }
 
 function makeDefaultPoudmans() {
@@ -3050,8 +3041,16 @@ function filterStudentRoster(control) {
     });
   const cards = [...list.children];
   cards.sort((a, b) => {
-    if (sort === "family")
+    if (sort === "order")
       return Number(a.dataset.order) - Number(b.dataset.order);
+    if (sort === "family") {
+      const family = (name) => name.trim().split(/\s+/).pop();
+      return (
+        collator.compare(family(a.dataset.name), family(b.dataset.name)) ||
+        collator.compare(a.dataset.name, b.dataset.name) ||
+        Number(a.dataset.order) - Number(b.dataset.order)
+      );
+    }
     if (sort === "code") {
       if (!a.dataset.code)
         return b.dataset.code
@@ -3116,7 +3115,7 @@ function renderStudentsTab(c) {
   h +=
     '<div class="roster-toolbar no-print" ' +
     (!students.length ? "hidden" : "") +
-    `><label class="roster-search"><span>جست‌وجو در کلاس</span><input type="search" placeholder="نام یا کد دانش‌آموزی…" data-legacy-input="ui-school-class:19"></label><label class="roster-sort"><span>مرتب‌سازی</span><select data-legacy-change="ui-school-class:20"><option value="family">نام خانوادگی</option><option value="name">نام</option><option value="code">کد دانش‌آموزی</option></select></label></div><p class="roster-results" role="status" aria-live="polite">` +
+    `><label class="roster-search"><span>جست‌وجو در کلاس</span><input type="search" placeholder="نام یا کد دانش‌آموزی…" data-legacy-input="ui-school-class:19"></label><label class="roster-sort"><span>مرتب‌سازی</span><select data-legacy-change="ui-school-class:20"><option value="order">ترتیب ثبت / فایل ورودی</option><option value="family">نام خانوادگی</option><option value="name">نام</option><option value="code">کد دانش‌آموزی</option></select></label></div><p class="roster-results" role="status" aria-live="polite">` +
     students.length.toLocaleString("fa-IR") +
     " نفر از " +
     students.length.toLocaleString("fa-IR") +

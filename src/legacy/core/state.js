@@ -1,15 +1,6 @@
+// Registration order is the roster order, including rows imported from CSV.
 function getSortedStudents(classObj) {
-  if (!classObj || !classObj.students) return [];
-  const collator = new Intl.Collator("fa", { sensitivity: "base" });
-  return [...classObj.students].sort((a, b) => {
-    const aParts = a.name.trim().split(" ");
-    const bParts = b.name.trim().split(" ");
-    const aFamily = aParts.length > 1 ? aParts[aParts.length - 1] : a.name;
-    const bFamily = bParts.length > 1 ? bParts[bParts.length - 1] : b.name;
-    const familyCompare = collator.compare(aFamily, bFamily);
-    if (familyCompare !== 0) return familyCompare;
-    return collator.compare(a.name, b.name);
-  });
+  return [...(classObj?.students || [])];
 }
 
 function makeDefaultPoudmans() {
