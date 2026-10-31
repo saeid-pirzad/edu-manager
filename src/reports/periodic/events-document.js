@@ -10,3 +10,7 @@ EduLegacyEvents.register("reports-periodic-document:1", function (event) {
 EduLegacyEvents.register("reports-periodic-document:2", function (event) {
   return EduPeriodicReports.output("json");
 });
+
+EduLegacyEvents.register("reports-periodic-document:deputy", function () {
+  return EduPeriodicReports.output("deputy");
+});

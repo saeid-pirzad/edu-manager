@@ -34,9 +34,9 @@ async function startSessionFromMasterV24(day, period) {
     const dateInput = document.getElementById("sessNewDate"),
       classInput = document.getElementById("sessNewClass"),
       lessonInput = document.getElementById("sessNewLesson"),
-      date = validateSessionDate(dateInput.value),
-      classId = classInput.value,
-      lessonId = lessonInput.value;
+      date = validateSessionDate(dateInput?.value || ""),
+      classId = classInput?.value || "",
+      lessonId = lessonInput?.value || "";
     const sameSelection = () =>
       isCurrent() &&
       document.getElementById("sessNewDate") === dateInput &&
@@ -57,17 +57,17 @@ async function startSessionFromMasterV24(day, period) {
     )
       throw Error("کلاس و درس مقصد معتبر نیستند.");
     const actualDay = getDayIdxFromDate(date);
-    if (
-      actualDay !== day &&
-      !confirm(
-        `تاریخ ${faDate(date)} روز ${DAYS[actualDay]} است، نه ${DAYS[day]}. ادامه می‌دهید؟`,
-      )
-    )
-      return false;
+    if (actualDay !== day)
+      throw Error(
+        `تاریخ انتخاب‌شده متعلق به ${DAYS[actualDay]} است، اما زنگ را از ${DAYS[day]} انتخاب کرده‌اید؛ تاریخ یا روز برنامه را اصلاح کنید.`,
+      );
     let session = db.sessions.find(
-      (row) =>
-        row.classId === classId && row.date === date && row.period === period,
+      (row) => row.date === date && row.period === period,
     );
+    if (session && session.classId !== classId)
+      throw Error(
+        "تداخل جلسه: در این تاریخ و زنگ، جلسهٔ کلاس دیگری ثبت شده است. ابتدا تاریخ یا شمارهٔ زنگ را اصلاح کنید.",
+      );
     if (!session) {
       session = {
         id: uid(),
@@ -88,8 +88,8 @@ async function startSessionFromMasterV24(day, period) {
         action: "ایجاد جلسه از برنامه",
       });
     } else if (session.lessonId !== lessonId) {
-      alert(
-        "این زنگ برای درس دیگری ثبت شده است؛ برای حفظ سابقه جلسه قبلی باز می‌شود.",
+      throw Error(
+        "تداخل جلسه: این تاریخ و زنگ برای درس دیگری ثبت شده است؛ درس یا زنگ درست را انتخاب کنید.",
       );
     }
     if (sameSelection()) openSessionModal(getSessionById(session.id));

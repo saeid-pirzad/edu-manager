@@ -265,7 +265,7 @@ for (const date of ["2026-02-30", "not-a-date", "2026-13-01"]) {
     assert.equal(f.writes.length, 0);
   });
 }
-test("date conflict opens the existing session without merging or changing either session", async () => {
+test("date conflict is rejected without opening or changing another session", async () => {
   const f = fixture();
   const other = {
     ...f.session,
@@ -274,9 +274,9 @@ test("date conflict opens the existing session without merging or changing eithe
     date: "2026-10-28",
   };
   f.c.db.sessions.push(other);
-  await f.run("date");
+  await assert.rejects(f.run("date"), /تداخل جلسه/);
   assert.equal(f.session.date, "2026-10-27");
-  assert.equal(f.modals[0], other);
+  assert.equal(f.modals.length, 0);
   assert.equal(f.writes.length, 0);
 });
 test("valid date change preserves historical attendance and scores", async () => {
@@ -337,4 +337,54 @@ test("read-only score removal fails before mutating scores", async () => {
   };
   await assert.rejects(f.c.removeSessionScoreV24("session", 0), /closed/);
   assert.equal(f.session.scores.length, 1);
+});
+
+test("session date edit rejects another class collision without changing attendance or grades", async () => {
+  const f = fixture();
+  f.session.attendance.historical = "leave";
+  f.session.scores.push({ value: 18 });
+  f.c.db.sessions.push({
+    id: "occupied",
+    classId: "other-class",
+    date: "2026-10-28",
+    period: 0,
+  });
+  const before = JSON.stringify(f.c.db.sessions);
+  await assert.rejects(f.c.changeSessionDateV24("session"), /تداخل جلسه/);
+  assert.equal(JSON.stringify(f.c.db.sessions), before);
+  assert.equal(f.writes.length, 0);
+});
+test("correcting only the period preserves session identity roster attendance and scores", async () => {
+  const f = fixture();
+  f.session.attendance.historical = "leave";
+  f.session.scores.push({ value: 18 });
+  f.c.asciiDigits = (x) => x;
+  f.c.document.getElementById = (id) =>
+    id === "sessPeriod"
+      ? { type: "number", value: "2" }
+      : { value: f.session.date };
+  await f.c.changeSessionDateV24("session");
+  assert.equal(f.session.period, 1);
+  assert.equal(f.session.id, "session");
+  assert.equal(f.session.attendance.historical, "leave");
+  assert.equal(f.session.scores[0].value, 18);
+  assert.equal(f.session.roster[0].id, "historical");
+  assert.equal(f.writes.length, 1);
+});
+test("period correction rejects a collision even when the date did not change", async () => {
+  const f = fixture();
+  f.c.asciiDigits = (x) => x;
+  f.c.document.getElementById = (id) =>
+    id === "sessPeriod"
+      ? { type: "number", value: "2" }
+      : { value: f.session.date };
+  f.c.db.sessions.push({
+    id: "occupied",
+    classId: "other-class",
+    date: f.session.date,
+    period: 1,
+  });
+  await assert.rejects(f.c.changeSessionDateV24("session"), /تداخل جلسه/);
+  assert.equal(f.session.period, 0);
+  assert.equal(f.writes.length, 0);
 });

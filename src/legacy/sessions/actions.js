@@ -1,4 +1,4 @@
-async function deleteSession(sessId) {
+async function legacy_deleteSession(sessId) {
   if (
     !confirm(
       "آیا از حذف این جلسه مطمئن هستید؟ اطلاعات حضور و نمرات آن پاک خواهد شد.",
@@ -10,7 +10,7 @@ async function deleteSession(sessId) {
   render();
 }
 
-async function deleteAllSessions(classId, lessonId) {
+async function legacy_deleteAllSessions(classId, lessonId) {
   if (
     !confirm(
       "⚠️ هشدار: آیا از حذف تمام جلسات این درس مطمئن هستید؟ تمام حضور و غیاب‌ها و نمرات ثبت شده در این جلسات برای همیشه پاک می‌شوند.",
@@ -24,7 +24,7 @@ async function deleteAllSessions(classId, lessonId) {
   render();
 }
 
-async function addManualSession(e, lessonId) {
+async function legacy_addManualSession(e, lessonId) {
   e.preventDefault();
   const c = getClassObj(state.schoolId, state.classId);
   const date = e.target.date.value;

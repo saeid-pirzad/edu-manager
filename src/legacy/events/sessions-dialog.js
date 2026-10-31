@@ -6,7 +6,9 @@ EduLegacyEvents.register("sessions-dialog:0", function (event) {
 });
 
 EduLegacyEvents.register("sessions-dialog:1", function (event) {
-  return changeSessionDate(this.getAttribute("data-legacy-click-arg3"));
+  return runSessionFormAction(this, () =>
+    changeSessionDate(this.getAttribute("data-legacy-click-arg3")),
+  );
 });
 
 EduLegacyEvents.register("sessions-dialog:2", function (event) {

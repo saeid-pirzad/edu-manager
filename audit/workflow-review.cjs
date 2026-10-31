@@ -37,6 +37,11 @@ if (process.argv.includes("--help")) {
       if (!ready)
         throw Error("Application did not recover before the extended review.");
       cases.push(
+        ...(await evaluate(
+          "(" + require("./flows/sessionAlerts.cjs").toString() + ")()",
+        )),
+      );
+      cases.push(
         ...(await evaluate("(" + seniorReviewFlows.toString() + ")()")),
       );
       cases.push(...(await evaluate("(" + postFixFlows.toString() + ")()")));

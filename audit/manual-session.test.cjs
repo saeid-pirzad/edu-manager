@@ -77,7 +77,7 @@ test("manual session conflict opens existing record without creating a duplicate
     classId: "class",
     date: "2026-10-27",
     period: 0,
-    lessonId: "other",
+    lessonId: "lesson",
   };
   f.c.db.sessions.push(existing);
   assert.equal(await f.c.addManualSessionV24(f.event(), "lesson"), false);
@@ -116,4 +116,80 @@ test("manual session serializes duplicate submissions", async () => {
   release();
   await first;
   assert.equal(f.c.db.sessions.length, 1);
+});
+
+for (const schoolId of ["school", "other-school"])
+  test(
+    "manual creation rejects another class in the same slot: " + schoolId,
+    async () => {
+      const f = fixture();
+      const existing = {
+        id: "occupied",
+        schoolId,
+        classId: "other-class",
+        lessonId: "lesson",
+        date: "2026-10-27",
+        period: 0,
+        attendance: { student: "leave" },
+        scores: [{ value: 18 }],
+      };
+      f.c.db.sessions.push(existing);
+      const before = JSON.stringify(f.c.db.sessions);
+      await assert.rejects(
+        f.c.addManualSessionV24(f.event(), "lesson"),
+        /تداخل جلسه/,
+      );
+      assert.equal(JSON.stringify(f.c.db.sessions), before);
+      assert.equal(f.writes.length, 0);
+      assert.equal(f.modals.length, 0);
+    },
+  );
+
+test("manual session refuses changed date during pending draft flush", async () => {
+  const f = fixture(),
+    event = f.event();
+  f.c.flushDrafts = async () => {
+    event.target.date.value = "2026-10-28";
+  };
+  await assert.rejects(
+    f.c.addManualSessionV24(event, "lesson"),
+    /هنگام ثبت تغییر/,
+  );
+  assert.equal(f.c.db.sessions.length, 0);
+  assert.equal(f.writes.length, 0);
+});
+test("manual session rejects an occupied slot belonging to another lesson", async () => {
+  const f = fixture();
+  f.c.db.sessions.push({
+    id: "occupied",
+    classId: "class",
+    lessonId: "other",
+    date: "2026-10-27",
+    period: 0,
+  });
+  await assert.rejects(
+    f.c.addManualSessionV24(f.event(), "lesson"),
+    /تداخل جلسه/,
+  );
+  assert.equal(f.c.db.sessions.length, 1);
+  assert.equal(f.modals.length, 0);
+  assert.equal(f.writes.length, 0);
+});
+
+test("continuing an existing session never uses a browser confirmation", async () => {
+  const f = fixture();
+  f.c.confirm = () => {
+    throw Error("Native confirm was called");
+  };
+  const existing = {
+    id: "existing",
+    classId: "class",
+    date: "2026-10-27",
+    period: 0,
+    lessonId: "lesson",
+  };
+  f.c.db.sessions.push(existing);
+  await f.c.addManualSessionV24(f.event(), "lesson");
+  assert.equal(f.modals[0], existing);
+  assert.equal(f.writes.length, 0);
 });

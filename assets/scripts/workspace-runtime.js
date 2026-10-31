@@ -2393,21 +2393,31 @@ async function addManualSessionV24(event, lessonId) {
     await writer.catch(() => {});
     assertEntityWritable();
     if (!isCurrent()) throw Error("صفحه یا دوره تغییر کرده است؛ جلسه ثبت نشد.");
+    if (
+      event.target.isConnected === false ||
+      event.target.date.value !== date ||
+      asciiDigits(event.target.period.value) !== text
+    )
+      throw Error(
+        "انتخاب تاریخ یا زنگ هنگام ثبت تغییر کرده است؛ انتخاب جدید را بررسی و دوباره تلاش کنید.",
+      );
     const cls = getClassObj(schoolId, classId);
     if (!cls || !getLessonObj(cls, lessonId))
       throw Error("کلاس یا درس مقصد دیگر وجود ندارد.");
     const existing = db.sessions.find(
-      (session) =>
-        session.classId === classId &&
-        session.date === date &&
-        session.period === period,
+      (session) => session.date === date && session.period === period,
     );
     if (existing) {
-      const message =
-        existing.lessonId === lessonId
-          ? "جلسه همین درس در این تاریخ و زنگ وجود دارد. ادامه داده شود؟"
-          : "این زنگ به درس دیگری تعلق دارد؛ وارد جلسهٔ ثبت‌شده شوید؟";
-      if (confirm(message) && isCurrent()) openSessionModal(existing);
+      if (existing.classId !== classId)
+        throw Error(
+          "تداخل جلسه: در این تاریخ و زنگ، جلسهٔ کلاس دیگری ثبت شده است. ابتدا تاریخ یا شمارهٔ زنگ را اصلاح کنید.",
+        );
+      if (existing.lessonId !== lessonId)
+        throw Error(
+          "تداخل جلسه: این تاریخ و زنگ قبلاً برای درس دیگری ثبت شده است؛ درس یا زنگ درست را انتخاب کنید.",
+        );
+      // Start / continue is already an explicit request to reopen this lesson.
+      if (isCurrent()) openSessionModal(existing);
       return false;
     }
     const session = {
@@ -2437,24 +2447,35 @@ async function changeSessionDateV24(id) {
   const session = getSessionById(id);
   if (!session) throw Error("جلسه دیگر وجود ندارد.");
   const date = validateSessionDate(document.getElementById("sessDate").value);
-  if (date === session.date) return;
+  const periodInput = document.getElementById("sessPeriod");
+  const periodText =
+    periodInput?.type === "number"
+      ? asciiDigits(periodInput.value)
+      : String(session.period + 1);
+  if (
+    !/^\d{1,2}$/.test(periodText) ||
+    Number(periodText) < 1 ||
+    Number(periodText) > 12
+  )
+    throw Error("شماره زنگ باید عدد صحیح یک تا دوازده باشد.");
+  const period = Number(periodText) - 1;
+  if (date === session.date && period === session.period) return;
   const conflict = db.sessions.find(
     (other) =>
-      other.id !== id &&
-      other.classId === session.classId &&
-      other.date === date &&
-      other.period === session.period,
+      other.id !== id && other.date === date && other.period === period,
   );
   if (conflict) {
-    if (
-      confirm("برای این تاریخ و زنگ جلسه‌ای ثبت شده. آن را باز کنیم؟") &&
-      isCurrent()
-    )
-      openSessionModal(conflict);
-    return;
+    if (conflict.classId !== session.classId)
+      throw Error(
+        "تداخل جلسه: این تاریخ و زنگ برای کلاس دیگری ثبت شده است؛ تغییر اعمال نشد.",
+      );
+    throw Error(
+      "تداخل جلسه: این تاریخ و زنگ قبلاً ثبت شده است. تاریخ یا شمارهٔ زنگ دیگری انتخاب کنید؛ اطلاعات جلسه تغییر نکرد.",
+    );
   }
   session.date = date;
-  await saveDBV24({ sessionId: id, action: "تغییر تاریخ جلسه" });
+  session.period = period;
+  await saveDBV24({ sessionId: id, action: "تغییر تاریخ یا زنگ جلسه" });
   if (isCurrent()) openSessionModal(getSessionById(id));
 }
 
@@ -2658,9 +2679,9 @@ async function startSessionFromMasterV24(day, period) {
     const dateInput = document.getElementById("sessNewDate"),
       classInput = document.getElementById("sessNewClass"),
       lessonInput = document.getElementById("sessNewLesson"),
-      date = validateSessionDate(dateInput.value),
-      classId = classInput.value,
-      lessonId = lessonInput.value;
+      date = validateSessionDate(dateInput?.value || ""),
+      classId = classInput?.value || "",
+      lessonId = lessonInput?.value || "";
     const sameSelection = () =>
       isCurrent() &&
       document.getElementById("sessNewDate") === dateInput &&
@@ -2681,17 +2702,17 @@ async function startSessionFromMasterV24(day, period) {
     )
       throw Error("کلاس و درس مقصد معتبر نیستند.");
     const actualDay = getDayIdxFromDate(date);
-    if (
-      actualDay !== day &&
-      !confirm(
-        `تاریخ ${faDate(date)} روز ${DAYS[actualDay]} است، نه ${DAYS[day]}. ادامه می‌دهید؟`,
-      )
-    )
-      return false;
+    if (actualDay !== day)
+      throw Error(
+        `تاریخ انتخاب‌شده متعلق به ${DAYS[actualDay]} است، اما زنگ را از ${DAYS[day]} انتخاب کرده‌اید؛ تاریخ یا روز برنامه را اصلاح کنید.`,
+      );
     let session = db.sessions.find(
-      (row) =>
-        row.classId === classId && row.date === date && row.period === period,
+      (row) => row.date === date && row.period === period,
     );
+    if (session && session.classId !== classId)
+      throw Error(
+        "تداخل جلسه: در این تاریخ و زنگ، جلسهٔ کلاس دیگری ثبت شده است. ابتدا تاریخ یا شمارهٔ زنگ را اصلاح کنید.",
+      );
     if (!session) {
       session = {
         id: uid(),
@@ -2712,8 +2733,8 @@ async function startSessionFromMasterV24(day, period) {
         action: "ایجاد جلسه از برنامه",
       });
     } else if (session.lessonId !== lessonId) {
-      alert(
-        "این زنگ برای درس دیگری ثبت شده است؛ برای حفظ سابقه جلسه قبلی باز می‌شود.",
+      throw Error(
+        "تداخل جلسه: این تاریخ و زنگ برای درس دیگری ثبت شده است؛ درس یا زنگ درست را انتخاب کنید.",
       );
     }
     if (sameSelection()) openSessionModal(getSessionById(session.id));
@@ -2828,7 +2849,16 @@ function handleError(error) {
   setStatus(error.message || String(error), "error");
   const el = document.getElementById("operationError");
   if (el) el.textContent = status.message;
-  else alert(status.message);
+  else {
+    const modal = document.getElementById("modal");
+    const host =
+      modal && !modal.classList.contains("hidden")
+        ? modal.querySelector(".session-start-panel,.session-date-tools")
+        : document.querySelector("#app .session-create");
+    if (host && typeof showSessionFormError === "function")
+      showSessionFormError(host, error);
+    else alert(status.message);
+  }
 }
 
 async function putBackup(data, label, workspaceId = workspace?.id) {

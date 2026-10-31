@@ -40,7 +40,7 @@ function showSuccessCopy(btn) {
 }
 function showTextModal(text) {
   let h = `<p class="muted" style="margin-top:0">مرورگر شما اجازه کپی خودکار را نداد. لطفاً متن زیر را انتخاب کرده و دستی کپی کنید:</p>
-    <textarea class="report-text-area" readonly data-legacy-click="ui-clipboard:0">${text}</textarea>
+    <textarea class="report-text-area" readonly data-legacy-click="ui-clipboard:0">${esc(text)}</textarea>
     <div class="row" style="justify-content:flex-end;margin-top:14px"><button data-legacy-click="ui-clipboard:1">بستن</button></div>`;
   showModal("متن گزارش", h);
 }

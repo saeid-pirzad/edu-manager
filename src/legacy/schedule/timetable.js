@@ -139,7 +139,7 @@ function renderMaster() {
   return h;
 }
 
-async function toggleActiveDay(dayIdx) {
+async function legacy_toggleActiveDay(dayIdx) {
   if (!db.activeDays) db.activeDays = [0, 1, 2, 3, 4, 5];
   const idx = db.activeDays.indexOf(dayIdx);
   if (idx === -1) db.activeDays.push(dayIdx);
@@ -148,7 +148,7 @@ async function toggleActiveDay(dayIdx) {
   await saveDB();
   render();
 }
-async function saveWeekStartDate() {
+async function legacy_saveWeekStartDate() {
   const v = document.getElementById("weekStartInput").value;
   if (!v) return alert("تاریخ را وارد کنید");
   db.settings.weekStartDate = v;
@@ -156,7 +156,7 @@ async function saveWeekStartDate() {
   render();
   alert("✅ تاریخ شروع محاسبه ذخیره شد");
 }
-async function changePeriods(d) {
+async function legacy_changePeriods(d) {
   const next = clamp((db.periods || 6) + d, 1, 12);
   const occupied = Object.entries(db.masterSchedule || {}).filter(
     ([key, value]) => value && Number(key.split("-")[1]) >= next,
@@ -243,7 +243,7 @@ function updateLessonOptions(classSelectId) {
       .join("");
 }
 
-async function saveMasterConfig(day, period) {
+async function legacy_saveMasterConfig(day, period) {
   db.masterSchedule = db.masterSchedule || {};
   const map = {
     all: { c: "cfgAllClass", l: "cfgAllLesson" },
@@ -271,7 +271,7 @@ async function saveMasterConfig(day, period) {
   render();
 }
 
-async function clearMasterConfig(day, period) {
+async function legacy_clearMasterConfig(day, period) {
   if (!confirm("کل تنظیمات این زنگ پاک شوند؟")) return;
   delete db.masterSchedule[`${day}-${period}-all`];
   delete db.masterSchedule[`${day}-${period}-odd`];
@@ -346,7 +346,7 @@ function legacy_clickMasterCell(day, period) {
     });
     h += `</div>`;
   }
-  showModal("ثبت جلسه", h);
+  showModal("ثبت جلسه", '<div class="session-start-panel">' + h + "</div>");
 }
 
 function updateSessionLessonOptions() {
@@ -354,13 +354,16 @@ function updateSessionLessonOptions() {
   const sel = document.getElementById("sessNewLesson");
   if (!sel) return;
   const cls = findClassById(classId);
-  if (!cls) return;
+  if (!cls) {
+    sel.innerHTML = '<option value="">ابتدا کلاس را انتخاب کنید</option>';
+    return;
+  }
   sel.innerHTML = (cls.classObj.lessons || [])
     .map((l) => `<option value="${l.id}">${esc(l.name)}</option>`)
     .join("");
 }
 
-async function startSessionFromMaster(day, period) {
+async function legacy_startSessionFromMaster(day, period) {
   const date = document.getElementById("sessNewDate").value;
   const classId = document.getElementById("sessNewClass").value;
   const lessonId = document.getElementById("sessNewLesson").value;

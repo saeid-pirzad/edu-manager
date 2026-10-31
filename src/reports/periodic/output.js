@@ -14,12 +14,19 @@ async function output(kind) {
         },
       );
     }
-    if (!["txt", "json"].includes(kind)) return false;
+    if (!["txt", "json", "deputy"].includes(kind)) return false;
     await root.EduV24.assertReportSnapshot(prepared.context);
     if (!isPreparedCurrent(prepared))
       throw Error(
         "محدوده یا متن گزارش تغییر کرده است؛ دوباره گزارش را تهیه کنید.",
       );
+    if (kind === "deputy") {
+      copyToClipboard(
+        deputyReport(model),
+        document.querySelector("[data-deputy-copy]"),
+      );
+      return true;
+    }
     const content =
       kind === "json" ? JSON.stringify(model, null, 2) : textReport(model);
     const blob = new Blob([content], {
@@ -68,6 +75,7 @@ root.EduPeriodicReports = {
   range,
   addDays,
   textReport,
+  deputyReport,
   documentHtml,
   note(value) {
     const key = noteKey(filters);

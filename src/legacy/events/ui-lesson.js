@@ -20,7 +20,10 @@ EduLegacyEvents.register("ui-lesson:5", function (event) {
 });
 
 EduLegacyEvents.register("ui-lesson:6", function (event) {
-  return addManualSession(event, this.getAttribute("data-legacy-submit-arg0"));
+  event.preventDefault();
+  return runSessionFormAction(this, () =>
+    addManualSession(event, this.getAttribute("data-legacy-submit-arg0")),
+  );
 });
 
 EduLegacyEvents.register("ui-lesson:7", function (event) {

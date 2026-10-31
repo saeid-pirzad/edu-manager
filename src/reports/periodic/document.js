@@ -27,7 +27,7 @@ function documentHtml(m) {
     "<small>تهیه‌شده در " +
     esc(new Date(m.generatedAt).toLocaleString("fa-IR")) +
     "</small></header>";
-  h += `<div class="periodic-export-actions no-print"><button data-periodic-print data-legacy-click="reports-periodic-document:0">چاپ / PDF</button><button class="ghost" data-legacy-click="reports-periodic-document:1">فایل متن</button><button class="ghost" data-legacy-click="reports-periodic-document:2">فایل JSON</button></div>`;
+  h += `<div class="periodic-export-actions no-print"><button class="success" data-deputy-copy data-legacy-click="reports-periodic-document:deputy">کپی برای معاون</button><button data-periodic-print data-legacy-click="reports-periodic-document:0">چاپ / PDF</button><button class="ghost" data-legacy-click="reports-periodic-document:1">فایل متن</button><button class="ghost" data-legacy-click="reports-periodic-document:2">فایل JSON</button></div>`;
   h +=
     '<section class="periodic-summary">' +
     [

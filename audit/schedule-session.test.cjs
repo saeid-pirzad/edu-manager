@@ -69,10 +69,10 @@ for (const missing of ["class", "lesson"]) {
     assert.equal(f.c.db.sessions.length + f.effects.length, 0);
   });
 }
-test("declined weekday mismatch leaves sessions unchanged", async () => {
+test("weekday mismatch is blocked even when confirmation would be accepted", async () => {
   const f = fixture();
-  f.c.confirm = () => false;
-  assert.equal(await f.c.startSessionFromMasterV24(1, 0), false);
+  f.c.confirm = () => true;
+  await assert.rejects(f.c.startSessionFromMasterV24(1, 0), /تاریخ انتخاب‌شده/);
   assert.equal(f.c.db.sessions.length, 0);
 });
 test("new schedule session snapshots its roster and keeps selected school and lesson", async () => {
@@ -95,11 +95,11 @@ test("existing different-lesson session is preserved rather than overwritten", a
     scores: [{ value: 18 }],
   };
   f.c.db.sessions.push(existing);
-  await f.c.startSessionFromMasterV24(0, 0);
+  await assert.rejects(f.c.startSessionFromMasterV24(0, 0), /تداخل جلسه/);
   assert.equal(f.c.db.sessions.length, 1);
   assert.equal(existing.scores[0].value, 18);
-  assert.equal(f.modals[0], existing);
-  assert.deepEqual(f.effects, ["warning"]);
+  assert.equal(f.modals.length, 0);
+  assert.deepEqual(f.effects, []);
 });
 test("changed selection during draft flush aborts session creation", async () => {
   const f = fixture();
@@ -138,4 +138,19 @@ test("concurrent schedule-session submissions do not create duplicates", async (
   release();
   await first;
   assert.equal(f.c.db.sessions.length, 1);
+});
+
+test("schedule creation rejects another class at the selected date and period", async () => {
+  const f = fixture();
+  f.c.db.sessions.push({
+    id: "occupied",
+    classId: "other-class",
+    lessonId: "lesson",
+    date: "2026-10-24",
+    period: 0,
+  });
+  await assert.rejects(f.c.startSessionFromMasterV24(0, 0), /تداخل جلسه/);
+  assert.equal(f.c.db.sessions.length, 1);
+  assert.equal(f.effects.length, 0);
+  assert.equal(f.modals.length, 0);
 });

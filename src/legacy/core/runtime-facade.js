@@ -320,3 +320,106 @@ function checkPassword(...args) {
     args,
   );
 }
+
+function toggleAtt(...args) {
+  return EduRuntimeAPI.invoke("toggleAtt", legacy_toggleAtt, this, args);
+}
+
+function changeSessionDate(...args) {
+  return EduRuntimeAPI.invoke(
+    "changeSessionDate",
+    legacy_changeSessionDate,
+    this,
+    args,
+  );
+}
+
+function addManualSession(...args) {
+  return EduRuntimeAPI.invoke(
+    "addManualSession",
+    legacy_addManualSession,
+    this,
+    args,
+  );
+}
+
+function deleteSession(...args) {
+  return EduRuntimeAPI.invoke(
+    "deleteSession",
+    legacy_deleteSession,
+    this,
+    args,
+  );
+}
+
+function deleteAllSessions(...args) {
+  return EduRuntimeAPI.invoke(
+    "deleteAllSessions",
+    legacy_deleteAllSessions,
+    this,
+    args,
+  );
+}
+
+function removeSessionScore(...args) {
+  return EduRuntimeAPI.invoke(
+    "removeSessionScore",
+    legacy_removeSessionScore,
+    this,
+    args,
+  );
+}
+
+function toggleActiveDay(...args) {
+  return EduRuntimeAPI.invoke(
+    "toggleActiveDay",
+    legacy_toggleActiveDay,
+    this,
+    args,
+  );
+}
+
+function changePeriods(...args) {
+  return EduRuntimeAPI.invoke(
+    "changePeriods",
+    legacy_changePeriods,
+    this,
+    args,
+  );
+}
+
+function saveWeekStartDate(...args) {
+  return EduRuntimeAPI.invoke(
+    "saveWeekStartDate",
+    legacy_saveWeekStartDate,
+    this,
+    args,
+  );
+}
+
+function saveMasterConfig(...args) {
+  return EduRuntimeAPI.invoke(
+    "saveMasterConfig",
+    legacy_saveMasterConfig,
+    this,
+    args,
+  );
+}
+
+function clearMasterConfig(...args) {
+  return EduRuntimeAPI.invoke(
+    "clearMasterConfig",
+    legacy_clearMasterConfig,
+    this,
+    args,
+  );
+}
+
+function startSessionFromMaster(...args) {
+  return EduRuntimeAPI.invoke(
+    "startSessionFromMaster",
+    legacy_startSessionFromMaster,
+    this,
+    args,
+  );
+}

@@ -1,3 +1,34 @@
+// Keep session validation errors beside the originating form, including on mobile.
+async function runSessionFormAction(control, action) {
+  const host = control.closest(
+    ".session-create,.session-date-tools,.session-start-panel",
+  );
+  if (!host) return action();
+  host.querySelector(".session-validation-alert")?.remove();
+  try {
+    return await action();
+  } catch (error) {
+    return showSessionFormError(host, error);
+  }
+}
+
+function showSessionFormError(host, error) {
+  if (!host.isConnected) return false;
+  if (host.tagName === "DETAILS") host.open = true;
+  host.querySelector(".session-validation-alert")?.remove();
+  const notice = document.createElement("div");
+  notice.className = "session-validation-alert";
+  notice.setAttribute("role", "alert");
+  notice.tabIndex = -1;
+  notice.innerHTML =
+    '<span class="session-validation-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M10.3 3.8a2 2 0 0 1 3.4 0l8 13.7a2 2 0 0 1-1.7 3H4a2 2 0 0 1-1.7-3l8-13.7Z" fill="currentColor" opacity=".16"/><path d="M12 8v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16.5" r="1.1" fill="currentColor"/></svg></span><div class="session-validation-body"><strong>ثبت جلسه نیاز به بررسی دارد</strong><p></p><small>اطلاعات فرم حفظ شده است؛ پس از اصلاح، دوباره ثبت کنید.</small></div>';
+  notice.querySelector("p").textContent = error.message || String(error);
+  host.append(notice);
+  notice.focus({ preventScroll: true });
+  notice.scrollIntoView({ block: "nearest", behavior: "instant" });
+  return false;
+}
+
 function showSessionPanel(panel) {
   if (!["attendance", "activity"].includes(panel)) return;
   const root = document.querySelector("#modalBody .session-workspace");
@@ -32,11 +63,12 @@ function openSessionModal(session) {
   const dIdx = getDayIdxFromDate(session.date);
   const school = getSchool(session.schoolId);
   let h = `<div class="session-workspace"><header class="session-context"><p class="session-context-path">${esc(school?.name || "")} / ${esc(c.name)}</p><h4>${esc(lesson.name)}</h4><p class="session-context-meta">${esc(DAYS[dIdx])} · ${esc(faDate(session.date))} · زنگ ${(session.period + 1).toLocaleString("fa-IR")}</p>${lesson.teacher ? `<p class="session-context-teacher">دبیر: ${esc(lesson.teacher)}</p>` : ""}</header>`;
-  h += `<details class="session-date-tools"><summary>تاریخ جلسه: ${esc(faDate(session.date))}</summary><div class="form-row">
-    <label>📅 تاریخ جلسه:</label>
+  h += `<details class="session-date-tools"><summary>ویرایش تاریخ و زنگ: ${esc(faDate(session.date))}</summary><div class="form-row">
+    <label for="sessDate">تاریخ جلسه:</label>
     <input type="date" id="sessDate" value="${session.date}" data-legacy-change="sessions-dialog:0" style="flex:1">
     <span class="shamsi-display" id="shamsiSessDate">${toShamsi(session.date)}</span>
-    <button class="ghost" data-legacy-click="sessions-dialog:1" data-legacy-click-arg3="${esc(session.id)}" style="font-size:.85em">اعمال تغییر تاریخ</button>
+    <label for="sessPeriod">شماره زنگ</label><input type="number" id="sessPeriod" min="1" max="12" inputmode="numeric" value="${session.period + 1}" style="width:90px">
+    <button class="ghost" data-legacy-click="sessions-dialog:1" data-legacy-click-arg3="${esc(session.id)}" style="font-size:.85em">ذخیره تاریخ و زنگ</button>
   </div></details>`;
   if (lesson.gradeMode !== "kardanesh")
     h += `<div class="form-row session-unit-fields">
@@ -136,7 +168,7 @@ function legacy_setAllAttendance(status) {
   });
 }
 
-async function toggleAtt(btn, status) {
+async function legacy_toggleAtt(btn, status) {
   const wrap = btn.parentElement;
   const was = btn.classList.contains("active");
   const sess = db.sessions.find((s) => s.id === currentSessionId);
@@ -176,7 +208,7 @@ async function toggleAtt(btn, status) {
   await saveDB({ sessionId: sess.id });
 }
 
-async function changeSessionDate(sessionId) {
+async function legacy_changeSessionDate(sessionId) {
   const sess = db.sessions.find((s) => s.id === sessionId);
   if (!sess) return;
   const newDate = document.getElementById("sessDate").value;
@@ -261,7 +293,7 @@ function legacy_addSessionScore(e, sessionId) {
   saveDB();
   openSessionModal(sess);
 }
-async function removeSessionScore(sessionId, idx) {
+async function legacy_removeSessionScore(sessionId, idx) {
   const sess = db.sessions.find((s) => s.id === sessionId);
   if (!sess) return;
   sess.scores.splice(idx, 1);

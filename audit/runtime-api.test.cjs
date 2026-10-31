@@ -71,3 +71,37 @@ test("runtime facade validates implementations and reports unavailable operation
     .invoke("save", undefined, null, [])
     .then((value) => assert.equal(value, 42));
 });
+
+test("every installed public operation routes through the stable runtime facade", () => {
+  const apiSource = fs
+    .readFileSync(
+      path.join(__dirname, "../src/workspace/core/public-api.js"),
+      "utf8",
+    )
+    .split("  window.EduV24")[0];
+  const names = [...apiSource.matchAll(/^ {4}(\w+):/gm)].map((m) => m[1]);
+  const c = vm.createContext({});
+  vm.runInContext(source, c);
+  for (const name of names)
+    c["legacy_" + name] = () => {
+      throw Error("Legacy operation reached: " + name);
+    };
+  vm.runInContext(
+    fs.readFileSync(
+      path.join(__dirname, "../src/legacy/core/runtime-facade.js"),
+      "utf8",
+    ),
+    c,
+  );
+  c.EduRuntimeAPI.install(
+    Object.fromEntries(
+      names.map((name) => [name, (...args) => ({ name, args })]),
+    ),
+  );
+  for (const name of names) {
+    assert.equal(typeof c[name], "function", name);
+    const result = c[name]("argument");
+    assert.equal(result.name, name);
+    assert.equal(result.args[0], "argument");
+  }
+});

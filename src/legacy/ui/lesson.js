@@ -77,7 +77,7 @@ function renderLessonSessions(c, lesson) {
   const lessonId = esc(lesson.id),
     classId = esc(c.id);
   let h =
-    `<section class="card session-create"><h3>شروع جلسه</h3><form class="session-create-form" data-legacy-submit="ui-lesson:6" data-legacy-submit-arg0="${esc(lessonId)}">` +
+    `<section class="card session-create"><h3>شروع جلسه</h3><form class="session-create-form" novalidate data-legacy-submit="ui-lesson:6" data-legacy-submit-arg0="${esc(lessonId)}">` +
     '<label>تاریخ جلسه<input type="date" name="date" required value="' +
     todayISO() +
     '"></label>' +

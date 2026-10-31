@@ -292,3 +292,93 @@ function textReport(m) {
   }
   return lines.join("\n");
 }
+
+// Uses the prepared report scope; never reads unrelated live classes or students.
+function deputyReport(m) {
+  const lines = [
+    "گزارش کلی برای معاون",
+    "مدرسه: " + m.school.name,
+    "بازه: " + faDate(m.start) + " تا " + faDate(m.end),
+    "سال تحصیلی: " + m.academicYear,
+  ];
+  if (m.class) lines.push("کلاس: " + m.class.name);
+  if (m.student) lines.push("هنرجو: " + m.student.name);
+  lines.push(
+    "",
+    "خلاصه (نفرـجلسه): حاضر " +
+      num(m.summary.present) +
+      " | غایب " +
+      num(m.summary.absent) +
+      " | تأخیر " +
+      num(m.summary.late) +
+      " | مرخصی " +
+      num(m.summary.leave) +
+      " | تعیین‌نشده " +
+      num(m.summary.unknown),
+  );
+  const sessions = [...m.sessions].sort(
+    (a, b) => a.date.localeCompare(b.date) || a.period - b.period,
+  );
+  for (const session of sessions) {
+    lines.push(
+      "",
+      "──────────",
+      "تاریخ: " + faDate(session.date) + " | زنگ " + num(session.period + 1),
+      "کلاس: " +
+        session.className +
+        " | درس: " +
+        session.lessonName +
+        " | دبیر: " +
+        (session.teacher || "ثبت نشده"),
+    );
+    if (session.moduleName || session.unitName)
+      lines.push(
+        [session.moduleName, session.unitName].filter(Boolean).join(" / "),
+      );
+    for (const [status, label] of [
+      ["present", "حاضر"],
+      ["absent", "غایب"],
+      ["late", "تأخیر"],
+      ["leave", "مرخصی"],
+      ["unknown", "تعیین‌نشده"],
+    ]) {
+      const students = session.participants.filter(
+        (p) => p.attendance.status === status,
+      );
+      lines.push(
+        label +
+          " (" +
+          num(students.length) +
+          "): " +
+          (students
+            .map(
+              (p) =>
+                p.name +
+                (p.attendance.minutes !== null
+                  ? " (" + num(p.attendance.minutes) + " دقیقه)"
+                  : ""),
+            )
+            .join("، ") || "—"),
+      );
+    }
+    if (session.marks.length) {
+      lines.push("ثبت‌های نمره و فعالیت این جلسه:");
+      for (const mark of session.marks)
+        lines.push(
+          mark.name +
+            " · " +
+            mark.label +
+            (mark.value !== null ? ": " + num(mark.value) : "") +
+            (mark.note ? " · " + mark.note : ""),
+        );
+    }
+  }
+  if (!sessions.length) lines.push("در این بازه جلسه‌ای ثبت نشده است.");
+  lines.push(
+    "",
+    "مرخصی جدا از غیبت است؛ نمرات بالا ثبت‌های جلسه‌اند و نمره نهایی درس نیستند.",
+  );
+  if (m.note) lines.push("توضیحات: " + m.note);
+  if (m.author) lines.push("تنظیم‌کننده: " + m.author);
+  return lines.join("\n");
+}

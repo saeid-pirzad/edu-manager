@@ -86,9 +86,11 @@ EduLegacyEvents.register("schedule-timetable:14", function (event) {
 });
 
 EduLegacyEvents.register("schedule-timetable:15", function (event) {
-  return startSessionFromMaster(
-    JSON.parse(this.getAttribute("data-legacy-click-arg6")),
-    JSON.parse(this.getAttribute("data-legacy-click-arg7")),
+  return runSessionFormAction(this, () =>
+    startSessionFromMaster(
+      JSON.parse(this.getAttribute("data-legacy-click-arg6")),
+      JSON.parse(this.getAttribute("data-legacy-click-arg7")),
+    ),
   );
 });
 

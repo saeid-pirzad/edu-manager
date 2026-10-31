@@ -723,7 +723,7 @@ function showSuccessCopy(btn) {
 }
 function showTextModal(text) {
   let h = `<p class="muted" style="margin-top:0">مرورگر شما اجازه کپی خودکار را نداد. لطفاً متن زیر را انتخاب کرده و دستی کپی کنید:</p>
-    <textarea class="report-text-area" readonly data-legacy-click="ui-clipboard:0">${text}</textarea>
+    <textarea class="report-text-area" readonly data-legacy-click="ui-clipboard:0">${esc(text)}</textarea>
     <div class="row" style="justify-content:flex-end;margin-top:14px"><button data-legacy-click="ui-clipboard:1">بستن</button></div>`;
   showModal("متن گزارش", h);
 }
@@ -3519,7 +3519,7 @@ function renderLessonSessions(c, lesson) {
   const lessonId = esc(lesson.id),
     classId = esc(c.id);
   let h =
-    `<section class="card session-create"><h3>شروع جلسه</h3><form class="session-create-form" data-legacy-submit="ui-lesson:6" data-legacy-submit-arg0="${esc(lessonId)}">` +
+    `<section class="card session-create"><h3>شروع جلسه</h3><form class="session-create-form" novalidate data-legacy-submit="ui-lesson:6" data-legacy-submit-arg0="${esc(lessonId)}">` +
     '<label>تاریخ جلسه<input type="date" name="date" required value="' +
     todayISO() +
     '"></label>' +
@@ -3599,7 +3599,10 @@ EduLegacyEvents.register("ui-lesson:5", function (event) {
 });
 
 EduLegacyEvents.register("ui-lesson:6", function (event) {
-  return addManualSession(event, this.getAttribute("data-legacy-submit-arg0"));
+  event.preventDefault();
+  return runSessionFormAction(this, () =>
+    addManualSession(event, this.getAttribute("data-legacy-submit-arg0")),
+  );
 });
 
 EduLegacyEvents.register("ui-lesson:7", function (event) {
@@ -3617,7 +3620,7 @@ EduLegacyEvents.register("ui-lesson:9", function (event) {
   return deleteSession(this.getAttribute("data-legacy-click-arg4"));
 });
 // Source: src/legacy/sessions/actions.js
-async function deleteSession(sessId) {
+async function legacy_deleteSession(sessId) {
   if (
     !confirm(
       "آیا از حذف این جلسه مطمئن هستید؟ اطلاعات حضور و نمرات آن پاک خواهد شد.",
@@ -3629,7 +3632,7 @@ async function deleteSession(sessId) {
   render();
 }
 
-async function deleteAllSessions(classId, lessonId) {
+async function legacy_deleteAllSessions(classId, lessonId) {
   if (
     !confirm(
       "⚠️ هشدار: آیا از حذف تمام جلسات این درس مطمئن هستید؟ تمام حضور و غیاب‌ها و نمرات ثبت شده در این جلسات برای همیشه پاک می‌شوند.",
@@ -3643,7 +3646,7 @@ async function deleteAllSessions(classId, lessonId) {
   render();
 }
 
-async function addManualSession(e, lessonId) {
+async function legacy_addManualSession(e, lessonId) {
   e.preventDefault();
   const c = getClassObj(state.schoolId, state.classId);
   const date = e.target.date.value;
@@ -4108,7 +4111,7 @@ function renderMaster() {
   return h;
 }
 
-async function toggleActiveDay(dayIdx) {
+async function legacy_toggleActiveDay(dayIdx) {
   if (!db.activeDays) db.activeDays = [0, 1, 2, 3, 4, 5];
   const idx = db.activeDays.indexOf(dayIdx);
   if (idx === -1) db.activeDays.push(dayIdx);
@@ -4117,7 +4120,7 @@ async function toggleActiveDay(dayIdx) {
   await saveDB();
   render();
 }
-async function saveWeekStartDate() {
+async function legacy_saveWeekStartDate() {
   const v = document.getElementById("weekStartInput").value;
   if (!v) return alert("تاریخ را وارد کنید");
   db.settings.weekStartDate = v;
@@ -4125,7 +4128,7 @@ async function saveWeekStartDate() {
   render();
   alert("✅ تاریخ شروع محاسبه ذخیره شد");
 }
-async function changePeriods(d) {
+async function legacy_changePeriods(d) {
   const next = clamp((db.periods || 6) + d, 1, 12);
   const occupied = Object.entries(db.masterSchedule || {}).filter(
     ([key, value]) => value && Number(key.split("-")[1]) >= next,
@@ -4212,7 +4215,7 @@ function updateLessonOptions(classSelectId) {
       .join("");
 }
 
-async function saveMasterConfig(day, period) {
+async function legacy_saveMasterConfig(day, period) {
   db.masterSchedule = db.masterSchedule || {};
   const map = {
     all: { c: "cfgAllClass", l: "cfgAllLesson" },
@@ -4240,7 +4243,7 @@ async function saveMasterConfig(day, period) {
   render();
 }
 
-async function clearMasterConfig(day, period) {
+async function legacy_clearMasterConfig(day, period) {
   if (!confirm("کل تنظیمات این زنگ پاک شوند؟")) return;
   delete db.masterSchedule[`${day}-${period}-all`];
   delete db.masterSchedule[`${day}-${period}-odd`];
@@ -4315,7 +4318,7 @@ function legacy_clickMasterCell(day, period) {
     });
     h += `</div>`;
   }
-  showModal("ثبت جلسه", h);
+  showModal("ثبت جلسه", '<div class="session-start-panel">' + h + "</div>");
 }
 
 function updateSessionLessonOptions() {
@@ -4323,13 +4326,16 @@ function updateSessionLessonOptions() {
   const sel = document.getElementById("sessNewLesson");
   if (!sel) return;
   const cls = findClassById(classId);
-  if (!cls) return;
+  if (!cls) {
+    sel.innerHTML = '<option value="">ابتدا کلاس را انتخاب کنید</option>';
+    return;
+  }
   sel.innerHTML = (cls.classObj.lessons || [])
     .map((l) => `<option value="${l.id}">${esc(l.name)}</option>`)
     .join("");
 }
 
-async function startSessionFromMaster(day, period) {
+async function legacy_startSessionFromMaster(day, period) {
   const date = document.getElementById("sessNewDate").value;
   const classId = document.getElementById("sessNewClass").value;
   const lessonId = document.getElementById("sessNewLesson").value;
@@ -4467,9 +4473,11 @@ EduLegacyEvents.register("schedule-timetable:14", function (event) {
 });
 
 EduLegacyEvents.register("schedule-timetable:15", function (event) {
-  return startSessionFromMaster(
-    JSON.parse(this.getAttribute("data-legacy-click-arg6")),
-    JSON.parse(this.getAttribute("data-legacy-click-arg7")),
+  return runSessionFormAction(this, () =>
+    startSessionFromMaster(
+      JSON.parse(this.getAttribute("data-legacy-click-arg6")),
+      JSON.parse(this.getAttribute("data-legacy-click-arg7")),
+    ),
   );
 });
 
@@ -4757,6 +4765,37 @@ EduLegacyEvents.register("courses-config:2", function (event) {
   return saveLessonConfig(this.getAttribute("data-legacy-click-arg0"));
 });
 // Source: src/legacy/sessions/dialog.js
+// Keep session validation errors beside the originating form, including on mobile.
+async function runSessionFormAction(control, action) {
+  const host = control.closest(
+    ".session-create,.session-date-tools,.session-start-panel",
+  );
+  if (!host) return action();
+  host.querySelector(".session-validation-alert")?.remove();
+  try {
+    return await action();
+  } catch (error) {
+    return showSessionFormError(host, error);
+  }
+}
+
+function showSessionFormError(host, error) {
+  if (!host.isConnected) return false;
+  if (host.tagName === "DETAILS") host.open = true;
+  host.querySelector(".session-validation-alert")?.remove();
+  const notice = document.createElement("div");
+  notice.className = "session-validation-alert";
+  notice.setAttribute("role", "alert");
+  notice.tabIndex = -1;
+  notice.innerHTML =
+    '<span class="session-validation-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M10.3 3.8a2 2 0 0 1 3.4 0l8 13.7a2 2 0 0 1-1.7 3H4a2 2 0 0 1-1.7-3l8-13.7Z" fill="currentColor" opacity=".16"/><path d="M12 8v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16.5" r="1.1" fill="currentColor"/></svg></span><div class="session-validation-body"><strong>ثبت جلسه نیاز به بررسی دارد</strong><p></p><small>اطلاعات فرم حفظ شده است؛ پس از اصلاح، دوباره ثبت کنید.</small></div>';
+  notice.querySelector("p").textContent = error.message || String(error);
+  host.append(notice);
+  notice.focus({ preventScroll: true });
+  notice.scrollIntoView({ block: "nearest", behavior: "instant" });
+  return false;
+}
+
 function showSessionPanel(panel) {
   if (!["attendance", "activity"].includes(panel)) return;
   const root = document.querySelector("#modalBody .session-workspace");
@@ -4791,11 +4830,12 @@ function openSessionModal(session) {
   const dIdx = getDayIdxFromDate(session.date);
   const school = getSchool(session.schoolId);
   let h = `<div class="session-workspace"><header class="session-context"><p class="session-context-path">${esc(school?.name || "")} / ${esc(c.name)}</p><h4>${esc(lesson.name)}</h4><p class="session-context-meta">${esc(DAYS[dIdx])} · ${esc(faDate(session.date))} · زنگ ${(session.period + 1).toLocaleString("fa-IR")}</p>${lesson.teacher ? `<p class="session-context-teacher">دبیر: ${esc(lesson.teacher)}</p>` : ""}</header>`;
-  h += `<details class="session-date-tools"><summary>تاریخ جلسه: ${esc(faDate(session.date))}</summary><div class="form-row">
-    <label>📅 تاریخ جلسه:</label>
+  h += `<details class="session-date-tools"><summary>ویرایش تاریخ و زنگ: ${esc(faDate(session.date))}</summary><div class="form-row">
+    <label for="sessDate">تاریخ جلسه:</label>
     <input type="date" id="sessDate" value="${session.date}" data-legacy-change="sessions-dialog:0" style="flex:1">
     <span class="shamsi-display" id="shamsiSessDate">${toShamsi(session.date)}</span>
-    <button class="ghost" data-legacy-click="sessions-dialog:1" data-legacy-click-arg3="${esc(session.id)}" style="font-size:.85em">اعمال تغییر تاریخ</button>
+    <label for="sessPeriod">شماره زنگ</label><input type="number" id="sessPeriod" min="1" max="12" inputmode="numeric" value="${session.period + 1}" style="width:90px">
+    <button class="ghost" data-legacy-click="sessions-dialog:1" data-legacy-click-arg3="${esc(session.id)}" style="font-size:.85em">ذخیره تاریخ و زنگ</button>
   </div></details>`;
   if (lesson.gradeMode !== "kardanesh")
     h += `<div class="form-row session-unit-fields">
@@ -4895,7 +4935,7 @@ function legacy_setAllAttendance(status) {
   });
 }
 
-async function toggleAtt(btn, status) {
+async function legacy_toggleAtt(btn, status) {
   const wrap = btn.parentElement;
   const was = btn.classList.contains("active");
   const sess = db.sessions.find((s) => s.id === currentSessionId);
@@ -4935,7 +4975,7 @@ async function toggleAtt(btn, status) {
   await saveDB({ sessionId: sess.id });
 }
 
-async function changeSessionDate(sessionId) {
+async function legacy_changeSessionDate(sessionId) {
   const sess = db.sessions.find((s) => s.id === sessionId);
   if (!sess) return;
   const newDate = document.getElementById("sessDate").value;
@@ -5020,7 +5060,7 @@ function legacy_addSessionScore(e, sessionId) {
   saveDB();
   openSessionModal(sess);
 }
-async function removeSessionScore(sessionId, idx) {
+async function legacy_removeSessionScore(sessionId, idx) {
   const sess = db.sessions.find((s) => s.id === sessionId);
   if (!sess) return;
   sess.scores.splice(idx, 1);
@@ -5036,7 +5076,9 @@ EduLegacyEvents.register("sessions-dialog:0", function (event) {
 });
 
 EduLegacyEvents.register("sessions-dialog:1", function (event) {
-  return changeSessionDate(this.getAttribute("data-legacy-click-arg3"));
+  return runSessionFormAction(this, () =>
+    changeSessionDate(this.getAttribute("data-legacy-click-arg3")),
+  );
 });
 
 EduLegacyEvents.register("sessions-dialog:2", function (event) {
@@ -6088,6 +6130,109 @@ function checkPassword(...args) {
   return EduRuntimeAPI.invoke(
     "checkPassword",
     legacy_checkPassword,
+    this,
+    args,
+  );
+}
+
+function toggleAtt(...args) {
+  return EduRuntimeAPI.invoke("toggleAtt", legacy_toggleAtt, this, args);
+}
+
+function changeSessionDate(...args) {
+  return EduRuntimeAPI.invoke(
+    "changeSessionDate",
+    legacy_changeSessionDate,
+    this,
+    args,
+  );
+}
+
+function addManualSession(...args) {
+  return EduRuntimeAPI.invoke(
+    "addManualSession",
+    legacy_addManualSession,
+    this,
+    args,
+  );
+}
+
+function deleteSession(...args) {
+  return EduRuntimeAPI.invoke(
+    "deleteSession",
+    legacy_deleteSession,
+    this,
+    args,
+  );
+}
+
+function deleteAllSessions(...args) {
+  return EduRuntimeAPI.invoke(
+    "deleteAllSessions",
+    legacy_deleteAllSessions,
+    this,
+    args,
+  );
+}
+
+function removeSessionScore(...args) {
+  return EduRuntimeAPI.invoke(
+    "removeSessionScore",
+    legacy_removeSessionScore,
+    this,
+    args,
+  );
+}
+
+function toggleActiveDay(...args) {
+  return EduRuntimeAPI.invoke(
+    "toggleActiveDay",
+    legacy_toggleActiveDay,
+    this,
+    args,
+  );
+}
+
+function changePeriods(...args) {
+  return EduRuntimeAPI.invoke(
+    "changePeriods",
+    legacy_changePeriods,
+    this,
+    args,
+  );
+}
+
+function saveWeekStartDate(...args) {
+  return EduRuntimeAPI.invoke(
+    "saveWeekStartDate",
+    legacy_saveWeekStartDate,
+    this,
+    args,
+  );
+}
+
+function saveMasterConfig(...args) {
+  return EduRuntimeAPI.invoke(
+    "saveMasterConfig",
+    legacy_saveMasterConfig,
+    this,
+    args,
+  );
+}
+
+function clearMasterConfig(...args) {
+  return EduRuntimeAPI.invoke(
+    "clearMasterConfig",
+    legacy_clearMasterConfig,
+    this,
+    args,
+  );
+}
+
+function startSessionFromMaster(...args) {
+  return EduRuntimeAPI.invoke(
+    "startSessionFromMaster",
+    legacy_startSessionFromMaster,
     this,
     args,
   );

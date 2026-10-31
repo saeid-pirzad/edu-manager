@@ -264,23 +264,28 @@ async function seniorReviewFlows() {
       confirmation = message;
       return true;
     };
-    await addManualSession(
-      { preventDefault() {}, target: form },
-      "lesson_modular",
-    );
-    window.confirm = oldConfirm;
+    let conflictError = "";
+    try {
+      await addManualSession(
+        { preventDefault() {}, target: form },
+        "lesson_modular",
+      );
+    } catch (error) {
+      conflictError = error.message;
+    } finally {
+      window.confirm = oldConfirm;
+    }
     record(
       "R07",
       "starting a lesson cannot silently open another lesson's session",
-      currentSessionId !== existing.id ||
-        confirmation.includes(
-          db.schools[0].classes[0].lessons.find((l) => l.id === "lesson_dual")
-            .name,
-        ),
+      conflictError.includes("تداخل جلسه") &&
+        !confirmation &&
+        document.getElementById("modal").classList.contains("hidden"),
       {
         requestedLesson: "lesson_modular",
         openedLesson: getSessionById(currentSessionId)?.lessonId,
         confirmation,
+        conflictError,
       },
     );
     closeModal();

@@ -2,7 +2,16 @@ function handleError(error) {
   setStatus(error.message || String(error), "error");
   const el = document.getElementById("operationError");
   if (el) el.textContent = status.message;
-  else alert(status.message);
+  else {
+    const modal = document.getElementById("modal");
+    const host =
+      modal && !modal.classList.contains("hidden")
+        ? modal.querySelector(".session-start-panel,.session-date-tools")
+        : document.querySelector("#app .session-create");
+    if (host && typeof showSessionFormError === "function")
+      showSessionFormError(host, error);
+    else alert(status.message);
+  }
 }
 
 async function putBackup(data, label, workspaceId = workspace?.id) {
