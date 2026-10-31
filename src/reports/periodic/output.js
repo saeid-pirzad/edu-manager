@@ -21,9 +21,11 @@ async function output(kind) {
         "محدوده یا متن گزارش تغییر کرده است؛ دوباره گزارش را تهیه کنید.",
       );
     if (kind === "deputy") {
+      const text = deputyReport(model);
       copyToClipboard(
-        deputyReport(model),
+        text,
         document.querySelector("[data-deputy-copy]"),
+        deputyReportHTML(text),
       );
       return true;
     }

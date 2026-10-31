@@ -681,7 +681,26 @@ function goCurrentLesson() {
 
 // ==================== سیستم کپی ====================
 // Source: src/legacy/ui/clipboard.js
-function copyToClipboard(text, btn) {
+function copyToClipboard(text, btn, html) {
+  if (
+    html &&
+    window.isSecureContext &&
+    navigator.clipboard?.write &&
+    typeof ClipboardItem === "function"
+  ) {
+    Promise.resolve()
+      .then(() =>
+        navigator.clipboard.write([
+          new ClipboardItem({
+            "text/plain": new Blob([text], { type: "text/plain" }),
+            "text/html": new Blob([html], { type: "text/html" }),
+          }),
+        ]),
+      )
+      .then(() => showSuccessCopy(btn))
+      .catch(() => copyToClipboard(text, btn));
+    return;
+  }
   if (navigator.clipboard && window.isSecureContext) {
     navigator.clipboard
       .writeText(text)

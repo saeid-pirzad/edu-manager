@@ -295,137 +295,89 @@ function textReport(m) {
 
 // Uses the prepared report scope; never reads unrelated live classes or students.
 function deputyReport(m) {
-  const singleDay = m.start === m.end;
+  const sessions = [...m.sessions].sort(
+    (a, b) =>
+      a.date.localeCompare(b.date) ||
+      a.period - b.period ||
+      String(a.className || "").localeCompare(String(b.className || ""), "fa"),
+  );
+  const statuses = [
+    ["present", "حاضر"],
+    ["absent", "غایب"],
+    ["late", "تأخیر"],
+    ["leave", "مرخصی"],
+    ["unknown", "تعیین‌نشده"],
+  ];
+  const colors = {
+    present: "🟢",
+    absent: "🔴",
+    late: "🟠",
+    leave: "🟣",
+    unknown: "⚪",
+  };
+  const groups = sessions.map((session) => {
+    const people = Object.fromEntries(statuses.map(([key]) => [key, []]));
+    for (const person of session.participants) {
+      const status = Object.hasOwn(people, person.attendance.status)
+        ? person.attendance.status
+        : "unknown";
+      people[status].push(person);
+    }
+    return { session, people };
+  });
   const lines = [
-    "📋 گزارش پیگیری معاون",
-    "🏫 " + m.school.name,
-    "📅 " +
-      (singleDay ? faDate(m.start) : faDate(m.start) + " تا " + faDate(m.end)),
+    "📋 گزارش کلی برای معاون",
+    "مدرسه: " + m.school.name,
+    "بازه: " + faDate(m.start) + " تا " + faDate(m.end),
+    "سال تحصیلی: " + (m.academicYear || "—"),
   ];
   if (m.student) lines.push("هنرجو: " + m.student.name);
-  const groups = new Map();
-  for (const session of [...m.sessions].sort(
-    (a, b) => a.date.localeCompare(b.date) || a.period - b.period,
-  )) {
-    const key = session.classId || session.className;
-    if (!groups.has(key))
-      groups.set(key, { name: session.className, sessions: [] });
-    groups.get(key).sessions.push(session);
-  }
-  lines.push(num(m.sessions.length) + " جلسه · " + num(groups.size) + " کلاس");
-  const commonTeacher = m.sessions[0]?.teacher;
-  const sharedTeacher =
-    commonTeacher &&
-    m.sessions.every((session) => session.teacher === commonTeacher);
-  if (sharedTeacher) lines.push("دبیر: " + commonTeacher);
-  const pendingSessions = m.sessions.filter((session) =>
-    session.participants.some((p) => p.attendance.status === "unknown"),
-  ).length;
-  if (pendingSessions)
-    lines.push("⏳ حضور ناتمام: " + num(pendingSessions) + " جلسه");
-  if (m.sessions.length) lines.push("آمار حضور برحسب نفرـجلسه");
-  let classNumber = 0;
-  for (const group of groups.values()) {
-    lines.push("", "━━━━━━━━━━━━", num(++classNumber) + ". 🎓 " + group.name);
-    const counts = { present: 0, absent: 0, late: 0, leave: 0, unknown: 0 };
-    const markCounts = new Map(),
-      teachers = new Set();
-    for (const session of group.sessions) {
-      if (session.teacher) teachers.add(session.teacher);
-      for (const participant of session.participants)
-        counts[participant.attendance.status]++;
-      for (const mark of session.marks) {
-        const label = mark.label || "فعالیت";
-        markCounts.set(label, (markCounts.get(label) || 0) + 1);
-      }
-    }
-    if (teachers.size && !sharedTeacher)
-      lines.push("دبیر: " + [...teachers].join("، "));
+  for (const [index, { session, people }] of groups.entries()) {
     lines.push(
-      num(group.sessions.length) +
-        " جلسه | " +
-        [
-          ["present", "حاضر"],
-          ["absent", "غایب"],
-          ["late", "تأخیر"],
-          ["leave", "مرخصی"],
-        ]
-          .filter(([key]) => counts[key] > 0)
-          .map(([key, label]) => label + " " + num(counts[key]))
-          .join(" · ") +
-        (counts.present + counts.absent + counts.late + counts.leave === 0
-          ? counts.unknown
-            ? "حضور تکمیل نشده"
-            : "بدون رکورد حضور"
-          : ""),
+      "",
+      ...(index > 0 ? ["──────────"] : []),
+      "تاریخ: " + faDate(session.date) + " | زنگ " + num(session.period + 1),
+      "کلاس: " + session.className + " | درس: " + session.lessonName,
+      "دبیر: " + (session.teacher || "—"),
+      "",
+      colors.present + " حاضر: " + num(people.present.length) + " نفر",
     );
-    let needsFollowup = false;
-    let displayedDate = "";
-    for (const session of group.sessions) {
-      const details = [];
-      for (const [status, label] of [
-        ["absent", "🔴 غایب"],
-        ["late", "🟠 تأخیر"],
-        ["leave", "🟣 مرخصی"],
-      ]) {
-        const students = session.participants.filter(
-          (p) => p.attendance.status === status,
-        );
-        if (students.length)
-          details.push(
-            label +
-              " (" +
-              num(students.length) +
-              "): " +
-              students
-                .map(
-                  (p) =>
-                    p.name +
-                    (status === "late" && p.attendance.minutes !== null
-                      ? " (" + num(p.attendance.minutes) + " دقیقه)"
-                      : ""),
-                )
-                .join("، "),
-          );
-      }
-      const unknown = session.participants.filter(
-        (p) => p.attendance.status === "unknown",
-      ).length;
-      if (unknown) details.push("⚪ حضور تکمیل‌نشده: " + num(unknown) + " نفر");
-      if (details.length) {
-        needsFollowup = true;
-        if (!singleDay && displayedDate !== session.date) {
-          lines.push("", "📅 تاریخ: " + faDate(session.date));
-          displayedDate = session.date;
-        }
-        lines.push(
-          "",
-          "زنگ " + num(session.period + 1) + " | " + session.lessonName,
-          ...details,
-        );
-      }
+    for (const [status, label] of statuses.slice(1)) {
+      const names = people[status].map(
+        (person) =>
+          person.name +
+          (status === "late" && person.attendance.minutes != null
+            ? " (" + num(person.attendance.minutes) + " دقیقه)"
+            : ""),
+      );
+      lines.push(
+        colors[status] +
+          " " +
+          label +
+          " (" +
+          num(names.length) +
+          "): " +
+          (names.join("، ") || "—"),
+      );
     }
-    if (!needsFollowup)
-      lines.push(
-        counts.present > 0 &&
-          group.sessions.every((session) => session.participants.length > 0)
-          ? "✅ حضور کامل؛ بدون غیبت، تأخیر یا مرخصی."
-          : "⚪ فهرست حضور بعضی جلسه‌ها خالی است؛ بررسی شود.",
-      );
-    if (markCounts.size)
-      lines.push(
-        "",
-        "📝 ثبت‌های کلاسی: " +
-          [...markCounts]
-            .map(([label, count]) => num(count) + " " + label)
-            .join(" · "),
-      );
+    if (!session.participants.length)
+      lines.push("⚠️ فهرست حضور این جلسه خالی است؛ بررسی شود.");
   }
-  if (!m.sessions.length) lines.push("", "در این بازه جلسه‌ای ثبت نشده است.");
-  if (m.summary.unknown > 0)
-    lines.push("", "⚠️ حضور تکمیل‌نشده به معنی غیبت نیست.");
-  if (m.summary.leave > 0) lines.push("مرخصی جدا از غیبت محاسبه شده است.");
-  if (m.note) lines.push("", "💬 توضیحات: " + m.note);
-  if (m.author) lines.push("", "تنظیم‌کننده: " + m.author);
+  if (!sessions.length) lines.push("", "در این بازه جلسه‌ای ثبت نشده است.");
+  lines.push("", "مرخصی جدا از غیبت است؛ تعیین‌نشده به معنی غیبت نیست.");
+  if (m.note) lines.push("", "توضیحات: " + m.note);
+  if (m.author) lines.push("تنظیم‌کننده: " + m.author);
   return lines.join("\n");
+}
+
+function deputyReportHTML(text) {
+  const lines = text
+    .split("\n")
+    .map((line) =>
+      esc(line).replace(
+        /^((?:🟢|🔴|🟠|🟣|⚪) )(حاضر|غایب|تأخیر|مرخصی|تعیین‌نشده)(?=[: (])/,
+        "$1<strong>$2</strong>",
+      ),
+    );
+  return '<div dir="rtl">' + lines.join("<br>") + "</div>";
 }
