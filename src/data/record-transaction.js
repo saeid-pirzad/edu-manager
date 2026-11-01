@@ -15,7 +15,31 @@ globalThis.EduRecordTransaction = Object.freeze({
     normalizedName,
     academicTermKind,
     annualChanged,
+    decodeRecords,
+    historicalRoster,
+    directorySourceUpdates,
+    directoryRevisions,
   }) {
+    const directoryTransaction = globalThis.EduAcademicDirectoryTransaction;
+    if (directoryTransaction?.hasChanges({ records, changed, removed, before }))
+      return directoryTransaction.commit({
+        connection,
+        workspace,
+        records,
+        changed,
+        removed,
+        before,
+        changes,
+        action,
+        keepUndo,
+        normalizedName,
+        academicTermKind,
+        annualChanged,
+        decodeRecords,
+        historicalRoster,
+        directorySourceUpdates,
+        directoryRevisions,
+      });
     // Compare against the request's original catalog, not a live UI object
     // that can change before IndexedDB delivers its callbacks.
     workspace = { ...workspace };

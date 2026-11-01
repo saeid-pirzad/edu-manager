@@ -13,14 +13,16 @@ function portableGradeDrafts(rows, periods) {
 }
 
 async function snapshotInstallation() {
-  const origin = workspace?.id;
+  const origin = workspace?.id,
+    sourceConnection = connection;
   const check = () => {
     if (
       !ready ||
       periodLoading ||
       resetBusy ||
       connectionRetired ||
-      workspace?.id !== origin
+      workspace?.id !== origin ||
+      connection !== sourceConnection
     )
       throw Object.assign(
         Error(
@@ -70,6 +72,7 @@ async function snapshotInstallation() {
   );
   await done;
   const stores = Object.fromEntries(names.map((name, i) => [name, values[i]]));
+  check();
   // Never embed a full snapshot inside another full snapshot.
   stores.backups = stores.backups.filter((row) => !row.full);
   stores.records = stores.records.filter((row) => row.key !== RESET_RECORD_KEY);
@@ -111,7 +114,7 @@ async function exportFullBackup() {
   const content = await snapshotInstallation();
   downloadJSON(content, "پشتیبان-کامل-" + todayISO() + ".json");
   setStatus(
-    "دانلود پشتیبان همه دوره‌ها درخواست شد" +
+    "دانلود پشتیبان کامل سیستم درخواست شد" +
       (content.gradeDrafts.length
         ? "؛ پیش‌نویس‌های ناتمام هم جداگانه در فایل حفظ شدند"
         : "") +

@@ -4948,6 +4948,21 @@
     border-radius: 12px;
     background: #faf9f7;
   }
+  #modalBody .full-restore-periods {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e5e0d7;
+    font-size: 13px;
+    overflow-wrap: anywhere;
+  }
+  #modalBody .full-restore-periods ul {
+    display: grid;
+    gap: 6px;
+    max-height: 180px;
+    overflow-y: auto;
+    margin: 8px 0 0;
+    padding-inline-start: 22px;
+  }
   #modalBody .full-restore-file dl {
     display: grid;
     gap: 10px;

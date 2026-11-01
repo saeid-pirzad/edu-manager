@@ -1,0 +1,480 @@
+"use strict";
+
+// A directory edit belongs to the academic year. All term records, revision
+// checks and history updates are committed by the same IndexedDB transaction.
+globalThis.EduAcademicDirectoryTransaction = Object.freeze({
+  hasChanges({ records, changed, removed, before }) {
+    const model = globalThis.EduAcademicYearDirectory;
+    if (!model || !records?.has("meta")) return false;
+    if (removed.some((key) => key.startsWith("class:"))) return true;
+    return changed.some(([key, json]) => {
+      const previous = before.find((row) => row.key === key)?.value;
+      const current = JSON.parse(json);
+      return key === "meta"
+        ? model.layoutHasChanges(previous?.layout || [], current.layout || [])
+        : key.startsWith("class:") && model.hasChanges(previous, current);
+    });
+  },
+
+  async commit(options) {
+    const {
+      connection,
+      records,
+      changed,
+      removed,
+      action,
+      keepUndo,
+      normalizedName,
+      academicTermKind,
+      annualChanged,
+      decodeRecords,
+      historicalRoster,
+      directorySourceUpdates,
+    } = options;
+    const workspace = { ...options.workspace },
+      model = globalThis.EduAcademicYearDirectory,
+      annual = globalThis.EduAnnualModules,
+      copy = (value) => structuredClone(value),
+      directoryRevisions =
+        options.directoryRevisions === undefined
+          ? null
+          : copy(options.directoryRevisions),
+      tx = connection.transaction(
+        ["records", "catalog", "events", "undo"],
+        "readwrite",
+      ),
+      done = globalThis.EduDataStoreRuntime.transactionDone(tx);
+    let failure, nextCatalog;
+    const peerUpdates = [],
+      sourceUpdates = [];
+    const abort = (error) => {
+      failure = error;
+      try {
+        tx.abort();
+      } catch {}
+    };
+    const readRows = (id) =>
+      tx
+        .objectStore("records")
+        .getAll(IDBKeyRange.bound(id + "|", id + "}", false, true));
+    const asMap = (rows, id) => {
+      decodeRecords(rows, { workspaceId: id });
+      return new Map(rows.map((row) => [row.logical, copy(row.value)]));
+    };
+    const validate = (map, id) =>
+      decodeRecords(
+        [...map].map(([logical, value]) => ({
+          key: id + "|" + logical,
+          workspace: id,
+          logical,
+          value,
+        })),
+        { workspaceId: id },
+      );
+    const owner = (layout, id) =>
+      layout.find((school) => school.classes.includes(id))?.id;
+    const freeze = (oldMap, nextMap, classId) => {
+      const oldClass = oldMap.get("class:" + classId);
+      if (!oldClass) return;
+      for (const [key, previous] of oldMap) {
+        const current = nextMap.get(key);
+        if (
+          !key.startsWith("session:") ||
+          previous.classId !== classId ||
+          previous.roster ||
+          !current ||
+          current.roster
+        )
+          continue;
+        current.roster = historicalRoster(oldClass, previous);
+      }
+    };
+    try {
+      const request = tx.objectStore("catalog").getAll();
+      request.onsuccess = () => {
+        try {
+          const catalog = request.result,
+            live = catalog.find((row) => row.id === workspace.id);
+          if (!live || live.revision !== workspace.revision) {
+            const error = Error(
+              "اطلاعات در پنجرهٔ دیگری تغییر کرده است؛ صفحه را دوباره بارگذاری کنید.",
+            );
+            error.code = "WORKSPACE_CONFLICT";
+            throw error;
+          }
+          const meta = records.get("meta"),
+            year = meta?.settings?.academicYear ?? live.year,
+            term = meta?.settings?.academicTerm ?? live.term;
+          if (
+            year !== live.year &&
+            catalog.some((row) => row.id !== live.id && row.year === live.year)
+          )
+            throw Error(
+              "سال تحصیلی دارای نوبت مشترک است؛ تغییر سال و فهرست را هم‌زمان انجام ندهید.",
+            );
+          if (
+            catalog.some(
+              (row) =>
+                row.id !== live.id &&
+                row.year === year &&
+                normalizedName(row.term) === normalizedName(term),
+            )
+          )
+            throw Error("عنوان نوبت در این سال تکراری است.");
+          const family = catalog.filter(
+              (row) => row.id === live.id || row.year === year,
+            ),
+            loaded = new Map();
+          if (directoryRevisions !== null) {
+            const valid =
+                Array.isArray(directoryRevisions) &&
+                directoryRevisions.every(
+                  (row) =>
+                    row &&
+                    typeof row.id === "string" &&
+                    row.year === year &&
+                    Number.isSafeInteger(row.revision) &&
+                    row.revision > 0,
+                ),
+              signature = (rows) =>
+                JSON.stringify(
+                  rows
+                    .map((row) => [row.id, row.year, row.revision])
+                    .sort(([a], [b]) => a.localeCompare(b)),
+                );
+            if (!valid || signature(directoryRevisions) !== signature(family)) {
+              const error = Error(
+                "فهرست یکی از نوبت‌های سال پس از تهیهٔ پشتیبان ایمنی تغییر کرده است؛ حذف انجام نشد. صفحه را دوباره بارگذاری کنید.",
+              );
+              error.code = "WORKSPACE_CONFLICT";
+              throw error;
+            }
+          }
+          let pending = family.length;
+          for (const period of family) {
+            const rows = readRows(period.id);
+            rows.onsuccess = () => {
+              try {
+                loaded.set(period.id, asMap(rows.result, period.id));
+                if (--pending) return;
+                apply(family, live, year, term, loaded);
+              } catch (error) {
+                abort(error);
+              }
+            };
+          }
+        } catch (error) {
+          abort(error);
+        }
+      };
+    } catch (error) {
+      abort(error);
+    }
+
+    function apply(family, live, year, term, loaded) {
+      const sourceOld = loaded.get(live.id),
+        sourceNext = new Map(
+          [...sourceOld].map(([key, value]) => [key, copy(value)]),
+        );
+      for (const [key, json] of changed) sourceNext.set(key, JSON.parse(json));
+      for (const key of removed) sourceNext.delete(key);
+      const previousLayout = sourceOld.get("meta").layout,
+        currentLayout = sourceNext.get("meta").layout,
+        layoutChanged = model.layoutHasChanges(previousLayout, currentLayout),
+        classPlans = changed
+          .filter(([key]) => key.startsWith("class:"))
+          .map(([key]) => ({
+            key,
+            previous: sourceOld.get(key),
+            current: sourceNext.get(key),
+          })),
+        directoryPlans = classPlans.filter((plan) =>
+          model.hasChanges(plan.previous, plan.current),
+        ),
+        deletedClasses = removed.filter((key) => key.startsWith("class:")),
+        sharedClassRemoval =
+          deletedClasses.length > 0 &&
+          family.some(
+            (period) =>
+              period.id !== live.id &&
+              deletedClasses.some((key) => loaded.get(period.id).has(key)),
+          );
+      if (
+        annual &&
+        ["first", "second"].includes(
+          live.termKind || academicTermKind(live.term),
+        ) &&
+        classPlans.some((plan) =>
+          annual.hasChanges(plan.previous, plan.current),
+        )
+      ) {
+        const roles = new Set();
+        for (const period of family) {
+          const kind = period.termKind || academicTermKind(period.term);
+          if (!["first", "second"].includes(kind)) continue;
+          if (roles.has(kind))
+            throw Error(
+              "نوبت‌های سال برای ثبت نمرهٔ سالانه تکراری‌اند؛ ابتدا نوبت‌های متعارض را بررسی کنید.",
+            );
+          roles.add(kind);
+        }
+      }
+      for (const plan of directoryPlans)
+        freeze(sourceOld, sourceNext, plan.current.id);
+      // Undo of an addition may remove its identity only while it has no
+      // references in any term. Enrollment with history must be archived.
+      for (const plan of directoryPlans) {
+        const incoming = new Set(
+          [
+            ...(plan.current.students || []),
+            ...(plan.current.archivedStudents || []),
+          ].map((student) => student.id),
+        );
+        const deleted = [
+          ...(plan.previous?.students || []),
+          ...(plan.previous?.archivedStudents || []),
+        ].filter((student) => !incoming.has(student.id));
+        for (const student of deleted)
+          for (const old of loaded.values()) {
+            const classroom = old.get(plan.key);
+            if (!classroom) continue;
+            const inSession = [...old].some(
+              ([key, value]) =>
+                key.startsWith("session:") &&
+                value.classId === classroom.id &&
+                ((value.roster || historicalRoster(classroom, value)).some(
+                  (member) => member.id === student.id,
+                ) ||
+                  Object.hasOwn(value.attendance || {}, student.id) ||
+                  value.scores?.some(
+                    (score) => score.studentId === student.id,
+                  )),
+            );
+            const inGrade = (classroom.lessons || []).some(
+              (lesson) =>
+                Object.hasOwn(lesson.kardaneshScores || {}, student.id) ||
+                (lesson.poudmans || []).some(
+                  (pod) =>
+                    Object.hasOwn(pod.podScores || {}, student.id) ||
+                    (pod.units || []).some((unit) =>
+                      Object.hasOwn(unit.unitScores || {}, student.id),
+                    ),
+                ),
+            );
+            if (inSession || inGrade) {
+              const error = Error(
+                "هنرجوی «" +
+                  student.name +
+                  "» در یکی از نوبت‌ها سابقه دارد؛ به‌جای حذف کامل، او را بایگانی کنید.",
+              );
+              error.code = "ACADEMIC_DIRECTORY_CONFLICT";
+              throw error;
+            }
+          }
+      }
+      const prepared = [{ period: live, old: sourceOld, next: sourceNext }];
+      for (const period of family) {
+        if (period.id === live.id) continue;
+        const old = loaded.get(period.id),
+          next = new Map([...old].map(([key, value]) => [key, copy(value)])),
+          peerMeta = next.get("meta");
+        if (layoutChanged)
+          peerMeta.layout = model.mirrorLayout(
+            previousLayout,
+            currentLayout,
+            peerMeta.layout,
+          );
+        for (const key of deletedClasses) {
+          const classroom = old.get(key);
+          if (!classroom) continue;
+          if (!keepUndo) {
+            const sourceClass = sourceOld.get(key),
+              peerSchedule = Object.values(
+                old.get("meta").masterSchedule || {},
+              ).some((slot) => slot.classId === classroom.id);
+            if (
+              JSON.stringify(classroom.lessons || []) !==
+                JSON.stringify(sourceClass?.lessons || []) ||
+              peerSchedule
+            ) {
+              const error = Error(
+                "کلاس «" +
+                  classroom.name +
+                  "» در نوبت دیگر تعریف درس یا برنامهٔ هفتگی مستقل دارد؛ بازگردانی افزودن کلاس انجام نشد. برای حذف، از مسیر حذف کلاس و پشتیبان کامل استفاده کنید.",
+              );
+              error.code = "ACADEMIC_DIRECTORY_CONFLICT";
+              throw error;
+            }
+          }
+          model.assertClassRemovable(
+            classroom,
+            [...old]
+              .filter(([logical]) => logical.startsWith("session:"))
+              .map(([, value]) => value),
+          );
+          next.delete(key);
+          for (const [slot, value] of Object.entries(
+            peerMeta.masterSchedule || {},
+          ))
+            if (value.classId === classroom.id)
+              delete peerMeta.masterSchedule[slot];
+        }
+        for (const plan of directoryPlans) {
+          const classId = plan.current.id,
+            sourceOwner = owner(currentLayout, classId),
+            targetOwner = owner(peerMeta.layout, classId);
+          if (!sourceOwner || targetOwner !== sourceOwner)
+            throw Error("مالک کلاس در فهرست مشترک سال تحصیلی سازگار نیست.");
+          const target = next.get(plan.key);
+          freeze(old, next, classId);
+          next.set(
+            plan.key,
+            model.mirrorClass(plan.previous, plan.current, target, {
+              allowRemoval: true,
+            }),
+          );
+        }
+        // The existing annual modular rule remains applicable to combined
+        // enrollment and grade edits, without copying term-specific grades.
+        const sourceKind = live.termKind || academicTermKind(live.term),
+          targetKind = period.termKind || academicTermKind(period.term);
+        if (
+          annual &&
+          ["first", "second"].includes(sourceKind) &&
+          ["first", "second"].includes(targetKind)
+        )
+          for (const plan of classPlans) {
+            const target = next.get(plan.key);
+            if (
+              target &&
+              owner(currentLayout, plan.current.id) ===
+                owner(peerMeta.layout, plan.current.id) &&
+              annual.hasChanges(plan.previous, plan.current)
+            ) {
+              const value = annual.mirrorClass(
+                plan.previous,
+                plan.current,
+                target,
+              );
+              if (value) next.set(plan.key, value);
+            }
+          }
+        validate(next, period.id);
+        prepared.push({ period, old, next });
+      }
+      // A successful edit must leave the entire family with one directory.
+      if (prepared.length > 1) {
+        const layout = JSON.stringify(currentLayout);
+        for (const part of prepared) {
+          if (JSON.stringify(part.next.get("meta").layout) !== layout) {
+            const error = Error(
+              "چیدمان مدرسه و کلاس‌ها بین نوبت‌های این سال متفاوت است؛ ابتدا اختلاف فهرست را اصلاح کنید.",
+            );
+            error.code = "ACADEMIC_DIRECTORY_CONFLICT";
+            throw error;
+          }
+          for (const school of currentLayout)
+            for (const id of school.classes) {
+              const source = sourceNext.get("class:" + id),
+                target = part.next.get("class:" + id);
+              if (
+                !source ||
+                !target ||
+                JSON.stringify(model.projection(source)) !==
+                  JSON.stringify(model.projection(target))
+              ) {
+                const error = Error(
+                  "فهرست کلاس «" +
+                    (source?.name || id) +
+                    "» بین نوبت‌های سال متفاوت است؛ ابتدا نام، کد و عضویت هنرجویان را یکسان کنید.",
+                );
+                error.code = "ACADEMIC_DIRECTORY_CONFLICT";
+                throw error;
+              }
+            }
+        }
+      }
+      validate(sourceNext, live.id);
+      const at = new Date().toISOString();
+      for (const part of prepared) {
+        const plan = globalThis.EduRecordCommitPlan.create(
+          part.next,
+          new Map(
+            [...part.old].map(([key, value]) => [key, JSON.stringify(value)]),
+          ),
+          { replace: true },
+        );
+        if (!plan.changed.length && !plan.removed.length) continue;
+        for (const [logical, json] of plan.changed)
+          tx.objectStore("records").put({
+            key: part.period.id + "|" + logical,
+            workspace: part.period.id,
+            logical,
+            value: JSON.parse(json),
+          });
+        for (const logical of plan.removed)
+          tx.objectStore("records").delete(part.period.id + "|" + logical);
+        const isSource = part.period.id === live.id,
+          updated = {
+            ...part.period,
+            ...(isSource
+              ? {
+                  year,
+                  term,
+                  termKind: live.termKind || academicTermKind(live.term),
+                }
+              : {}),
+            revision: part.period.revision + 1,
+            updatedAt: at,
+          };
+        if (!Number.isSafeInteger(updated.revision))
+          throw Error("شمارهٔ نسخهٔ اطلاعات قابل افزایش نیست.");
+        tx.objectStore("catalog").put(updated);
+        tx.objectStore("events").add({
+          workspace: updated.id,
+          revision: updated.revision,
+          at,
+          action: isSource ? action : "همگام‌سازی فهرست مشترک سال تحصیلی",
+          changes: plan.changes,
+        });
+        // A source-only undo cannot reconstruct a removed companion
+        // class's independent courses/schedule. Recovery uses the full
+        // safety backup prepared by the deletion flow.
+        if (isSource && keepUndo && !sharedClassRemoval)
+          tx.objectStore("undo").put({
+            id: updated.id,
+            action,
+            revision: updated.revision,
+            before: plan.before,
+          });
+        else tx.objectStore("undo").delete(updated.id);
+        if (isSource) {
+          nextCatalog = updated;
+          sourceUpdates.push(
+            ...plan.changed.map(([key, json]) => [key, JSON.parse(json)]),
+          );
+        } else
+          peerUpdates.push({
+            workspace: updated.id,
+            revision: updated.revision,
+          });
+      }
+    }
+    try {
+      await done;
+    } catch (error) {
+      throw failure || error;
+    }
+    // Publish only after transaction completion; aborted writes never leak into
+    // the caller's committed snapshot or live session rosters.
+    for (const [key, value] of sourceUpdates) {
+      const index = changed.findIndex(([logical]) => logical === key),
+        entry = [key, JSON.stringify(value)];
+      if (index < 0) changed.push(entry);
+      else changed[index] = entry;
+    }
+    if (directorySourceUpdates) directorySourceUpdates.push(...sourceUpdates);
+    if (annualChanged) annualChanged.push(...peerUpdates);
+    return nextCatalog;
+  },
+});

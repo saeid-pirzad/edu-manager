@@ -134,7 +134,18 @@ test("a replacement preview rejected by the dirty-modal guard does not replace t
 test("full-backup preview also preserves the accepted source when modal replacement is declined", () => {
   let accepted = true;
   const c = vm.createContext({
-    EduFullBackupValidator: { create: () => () => [{}] },
+    EduFullBackupValidator: {
+      create: () => () => [
+        {
+          period: {
+            id: "saved",
+            year: "1405-1406",
+            term: "اول",
+            closed: false,
+          },
+        },
+      ],
+    },
     backupStores: [],
     assertSafeDataTree() {},
     isDataObject() {},

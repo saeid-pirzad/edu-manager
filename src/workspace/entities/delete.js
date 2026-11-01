@@ -66,7 +66,7 @@ function openDeletion(kind, id) {
         ? "این درس همراه با نمرات، جلسات و سوابق حضور و فعالیت آن حذف می‌شود. هنرجویان کلاس حذف نمی‌شوند."
         : "این " +
           label +
-          " و تمام درس‌ها، نمرات و سوابق وابسته به آن حذف می‌شوند.") +
+          " از فهرست مشترک این سال و تمام نوبت‌های آن حذف می‌شود. اگر در نوبت دیگری نمره یا جلسه داشته باشد، حذف انجام نمی‌شود.") +
       '</p><ul class="deletion-impact" aria-label="سوابق مرتبط">' +
       (kind === "school" ? count(target.classes.length, "کلاس") : "") +
       (kind !== "lesson"
@@ -75,7 +75,11 @@ function openDeletion(kind, id) {
         : "") +
       count(sessions, "جلسه") +
       count(slots, "زنگ برنامه هفتگی") +
-      '</ul><p class="deletion-backup-note">پیش از حذف، پشتیبان داخلی ذخیره می‌شود؛ این پشتیبان جای فایل مستقل را نمی‌گیرد.</p>' +
+      '</ul><p class="deletion-backup-note">' +
+      (kind === "lesson"
+        ? "پیش از حذف، پشتیبان داخلی ذخیره می‌شود؛ این پشتیبان جای فایل مستقل را نمی‌گیرد."
+        : "پیش از حذف، پشتیبان کامل سیستم در «پشتیبان و بازیابی» ذخیره می‌شود. بازگردانی حذف مشترک از همین پشتیبان کامل انجام می‌شود؛ گزینهٔ برگرداندن آخرین تغییر برای حذف مشترک فعال نمی‌ماند. پشتیبان داخلی جای فایل مستقل را نمی‌گیرد.") +
+      "</p>" +
       '<label class="deletion-confirm" for="deleteEntityName">برای تأیید، نام ' +
       label +
       ' را بنویسید<input id="deleteEntityName" autocomplete="off" spellcheck="false" maxlength="500" aria-describedby="deleteEntityWarning deleteEntityError"></label>' +
@@ -138,7 +142,44 @@ async function confirmDeletion() {
     await flushDrafts({ strict: true });
     await writer.catch(() => {});
     target = check();
-    await putBackup(db, "پیش از حذف: " + target.item.name, context.workspace);
+    let directoryRevisions;
+    if (context.kind === "lesson") {
+      await putBackup(db, "پیش از حذف: " + target.item.name, context.workspace);
+    } else {
+      const full = await snapshotInstallation();
+      check();
+      directoryRevisions = full.stores.catalog
+        .filter((period) => period.year === workspace.year)
+        .map(({ id, year, revision }) => ({ id, year, revision }));
+      const backupTx = sourceConnection.transaction("backups", "readwrite"),
+        done = transactionDone(backupTx),
+        store = backupTx.objectStore("backups");
+      let backupFailure;
+      const existing = store.getAll();
+      existing.onsuccess = () => {
+        try {
+          const previous = existing.result
+            .filter((row) => row.full)
+            .sort((a, b) => b.at.localeCompare(a.at));
+          for (const row of previous.slice(7)) store.delete(row.id);
+          store.put({
+            id: "before-shared-delete-" + uid(),
+            workspace: null,
+            at: new Date().toISOString(),
+            label: "پیش از حذف: " + target.item.name,
+            full,
+          });
+        } catch (error) {
+          backupFailure = error;
+          backupTx.abort();
+        }
+      };
+      try {
+        await done;
+      } catch (error) {
+        throw backupFailure || error;
+      }
+    }
     target = check();
     const name = target.item.name;
     if (context.kind === "school")
@@ -155,7 +196,10 @@ async function confirmDeletion() {
     Object.keys(db.masterSchedule || {}).forEach((key) => {
       if (target.matches(db.masterSchedule[key])) delete db.masterSchedule[key];
     });
-    await saveDBV24({ action: "حذف " + name + " و سوابق مرتبط" });
+    await saveDBV24({
+      action: "حذف " + name + " و سوابق مرتبط",
+      directoryRevisions,
+    });
     if (
       deletionContext !== context ||
       workspace.id !== context.workspace ||
@@ -183,7 +227,12 @@ async function confirmDeletion() {
     }
     render();
     closeModal();
-    setStatus("حذف انجام شد؛ پشتیبان پیش از حذف ذخیره شده است.", "saved");
+    setStatus(
+      context.kind === "lesson"
+        ? "حذف انجام شد؛ پشتیبان پیش از حذف ذخیره شده است."
+        : "حذف انجام شد؛ پشتیبان کامل پیش از حذف در «پشتیبان و بازیابی» در دسترس است.",
+      "saved",
+    );
   } catch (error) {
     if (!showRecordEditorError(error, "deleteEntityError")) handleError(error);
   } finally {

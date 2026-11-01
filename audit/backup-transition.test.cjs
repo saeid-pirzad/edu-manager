@@ -8,6 +8,7 @@ function fixture() {
   let stores = 0;
   const c = vm.createContext({
     workspace: { id: "source" },
+    connection: {},
     ready: true,
     periodLoading: false,
     resetBusy: false,
@@ -51,5 +52,17 @@ test("backup rechecks transition state after its pending writer finishes", async
   c.periodLoading = true;
   finish();
   await assert.rejects(backup);
+  assert.equal(stores(), 0);
+});
+
+test("snapshot rejects a replaced database connection before writing drafts", async () => {
+  const { c, stores } = fixture();
+  c.flushDrafts = async () => {
+    c.connection = {};
+  };
+  await assert.rejects(
+    c.snapshotInstallation(),
+    (error) => error.code === "BACKUP_NOT_READY",
+  );
   assert.equal(stores(), 0);
 });

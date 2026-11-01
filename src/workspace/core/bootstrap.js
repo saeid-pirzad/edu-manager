@@ -79,7 +79,8 @@ async function bootstrapV24() {
       broadcast({ ...change, annualModular: true });
     if (annual?.conflicts.length)
       setStatus(
-        "نمره‌های قدیمی پودمانی تعارض دارند؛ برای حفظ اطلاعات، خودکار جایگزین نشدند.",
+        "اطلاعات قدیمی این سال نیاز به بررسی دارد: " +
+          annual.conflicts[0].message,
         "error",
       );
     hydrateReportNotes(workspace);

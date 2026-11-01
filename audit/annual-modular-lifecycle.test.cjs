@@ -141,12 +141,14 @@ test("starting the second term carries annual modular grades, including zero, on
   const c = fixture();
   const created = await create(c, "1405-1406", "دوم");
   const cls = created.schools[0].classes[0];
-  assert.equal(cls.archivedStudents.length, 0);
+  assert.equal(cls.archivedStudents.length, 1);
+  assert.equal(cls.archivedStudents[0].id, "archived");
   const module = cls.lessons[0].poudmans[0];
   assert.equal(module.id, "module");
   assert.equal(module.podScores.student.m, 0);
   assert.equal(module.podScores.student.c, 2);
-  assert.deepEqual(Object.keys(module.podScores), ["student"]);
+  assert.deepEqual(Object.keys(module.podScores), ["student", "archived"]);
+  assert.equal(module.podScores.archived.c, 3);
   assert.equal(Object.keys(module.units[0].unitScores).length, 0);
   assert.equal(Object.keys(cls.lessons[1].kardaneshScores).length, 0);
   assert.equal(Object.keys(cls.lessons[2].kardaneshScores).length, 0);

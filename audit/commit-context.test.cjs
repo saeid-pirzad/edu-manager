@@ -15,6 +15,12 @@ function fixture() {
     connectionRetired: false,
     failNextWrite: false,
     normalizedName: String,
+    decodeWorkspaceRecords: () => {
+      throw Error("unexpected decode");
+    },
+    historicalRoster: () => {
+      throw Error("unexpected roster");
+    },
     academicTermKind: () => "first",
     EduRecordCommitPlan: {
       create: () => ({

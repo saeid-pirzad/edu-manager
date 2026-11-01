@@ -55,7 +55,7 @@ async function openEntityEditor(kind, id, schoolId = "") {
       '<input id="entityEditName" name="name" value="' +
       esc(item.name) +
       '" required maxlength="500" autocomplete="off" aria-describedby="entityEditHint entityEditError"></label>' +
-      '<p id="entityEditHint" class="muted">تغییر نام در همین دوره اعمال می‌شود؛ نمرات، جلسات و برنامه هفتگی حفظ می‌شوند. کارنامه‌های نهایی قبلی تغییر نمی‌کنند.</p><p id="entityEditError" role="alert"></p>' +
+      '<p id="entityEditHint" class="muted">تغییر نام در همهٔ نوبت‌های این سال تحصیلی اعمال می‌شود؛ نمرات و جلسات هر نوبت حفظ می‌شوند. کارنامه‌های نهایی قبلی تغییر نمی‌کنند.</p><p id="entityEditError" role="alert"></p>' +
       '<div class="record-editor-actions"><button type="submit" data-mutating="1">ذخیره تغییرات</button><button type="button" class="ghost" data-workspace-action="close">انصراف</button></div></form>',
   );
   if (opened === false) {

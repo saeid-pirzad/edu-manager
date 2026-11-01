@@ -147,7 +147,7 @@ async function editStudentV24(studentId) {
       esc(student.name) +
       '"><label for="editStudentCode">کد هنرجو (اختیاری)</label><input id="editStudentCode" name="code" inputmode="numeric" autocomplete="off" aria-describedby="studentEditError" value="' +
       esc(student.code || "") +
-      '"><p>شناسه، نمرات و نام تاریخی جلسات قبلی حفظ می‌شوند. اصلاح نام موقت بازیابی‌شده، فقط نام‌های نیازمند بررسی همان هنرجو در جلسات این کلاس را نیز اصلاح می‌کند.</p><p id="studentEditError" class="entity-create-error" role="alert"></p><div class="row record-editor-actions"><button type="button" class="ghost" data-workspace-action="close">انصراف</button><button type="submit">ذخیره مشخصات</button></div></form>';
+      '"><p>مشخصات هنرجو در همهٔ نوبت‌های این سال تحصیلی اصلاح می‌شود. شناسه، نمرات و نام تاریخی جلسات قبلی حفظ می‌شوند. اصلاح نام موقت بازیابی‌شده، فقط نام‌های نیازمند بررسی همان هنرجو در جلسات این کلاس را نیز اصلاح می‌کند.</p><p id="studentEditError" class="entity-create-error" role="alert"></p><div class="row record-editor-actions"><button type="button" class="ghost" data-workspace-action="close">انصراف</button><button type="submit">ذخیره مشخصات</button></div></form>';
     if (showModal("ویرایش مشخصات هنرجو", html) !== false) {
       studentEditing = context;
       rememberRecordEditor();

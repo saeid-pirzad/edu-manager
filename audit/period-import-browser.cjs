@@ -26,7 +26,9 @@ async function periodImportRace() {
     db.schools[0].name = "Restore race destination preserved";
     await saveDB();
     await EduV24.switchPeriod(source);
-    await handleImport({
+    // Exercise the retained private compatibility path. Public imports accept
+    // only complete-system backups and are covered by unifiedBackup.
+    await EduV24.test.importLegacyBackup({
       target: {
         files: [
           new File([JSON.stringify(backup)], "synthetic-period.json", {

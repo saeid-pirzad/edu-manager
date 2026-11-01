@@ -44,7 +44,7 @@ async function openPeriods() {
     .join("");
   showModal(
     "نوبت‌های تحصیلی و کارنامه نهایی",
-    '<div class="period-hub"><p class="period-intro">هر سال تحصیلی دو نوبت دارد. پس از بستن نوبت اول، کلاس‌ها و هنرجویان در نوبت دوم ادامه پیدا می‌کنند. نمرات عملی و نظری هر نوبت جداست؛ نمرات پودمانی در تمام سال ادامه دارند. پشتیبان‌گیری جدا از این روند است.</p><section class="period-list"><h4>نوبت‌های تحصیلی</h4><table><thead><tr><th>سال / نوبت</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody>' +
+    '<div class="period-hub"><p class="period-intro">هر سال تحصیلی شامل ترم اول و دوم است. مدرسه‌ها، کلاس‌ها و ثبت‌نام هنرجویان مبنای سال تحصیلی هستند؛ نمرات و حضور‌وغیاب به ترم مربوط ثبت می‌شوند. پشتیبان کل سیستم در یک فایل ذخیره می‌شود.</p><section class="period-list"><h4>سال تحصیلی و ترم‌ها</h4><table><thead><tr><th>سال / نوبت</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody>' +
       periodRows +
       '</tbody></table></section><section class="period-management"><h4>مدیریت نوبت فعلی</h4><div class="row period-actions"><button data-workspace-action="new-period">شروع سال تحصیلی / نوبت جدید</button>' +
       (workspace.closed
@@ -382,7 +382,8 @@ async function switchPeriod(id) {
     if (annual?.changed.length) scheduleSingleFile();
     if (annual?.conflicts.length)
       setStatus(
-        "نمره‌های قدیمی پودمانی تعارض دارند؛ هیچ ثبت متعارضی خودکار جایگزین نشد.",
+        "اطلاعات قدیمی این سال نیاز به بررسی دارد: " +
+          annual.conflicts[0].message,
         "error",
       );
   } finally {
@@ -489,8 +490,12 @@ async function createNewPeriod() {
     next.settings.academicTerm = term;
     for (const school of next.schools)
       for (const c of school.classes) {
-        c.archivedStudents = [];
-        const students = new Set(c.students.map((student) => student.id));
+        if (!first || first.year !== year) c.archivedStudents = [];
+        const students = new Set(
+          [...c.students, ...(c.archivedStudents || [])].map(
+            (student) => student.id,
+          ),
+        );
         for (const l of c.lessons) {
           l.kardaneshScores = {};
           const info = EduPolicy.identity(l, year);

@@ -47,7 +47,7 @@ async function openUndoModal() {
           (Number.isFinite(date.getTime())
             ? "<p>" + esc(date.toLocaleString("fa-IR")) + "</p>"
             : "") +
-          '</section><p class="undo-preview-hint">فقط آخرین تغییر ثبت‌شده به وضعیت قبل برمی‌گردد. اگر تغییر مربوط به نمرهٔ پودمانی باشد، نمرهٔ مشترکِ همان سال نیز بازمی‌گردد؛ سایر سال‌ها تغییر نمی‌کنند. این کار، بازیابی فایل پشتیبان نیست.</p><p class="undo-preview-hint">پس از تأیید، امکان لغوِ همین بازگردانی وجود ندارد.</p><p id="operationError" role="alert"></p><div class="full-restore-actions"><button type="button" data-mutating="1" data-workspace-action="confirm-undo">تأیید و برگرداندن تغییر</button><button type="button" class="ghost" data-workspace-action="close">انصراف</button></div>'
+          '</section><p class="undo-preview-hint">فقط آخرین تغییر ثبت‌شده به وضعیت قبل برمی‌گردد. اگر تغییر مربوط به فهرست سال تحصیلی یا نمرهٔ پودمانی باشد، تغییر مشترکِ همان سال نیز بازمی‌گردد؛ سایر سال‌ها تغییر نمی‌کنند. این کار، بازیابی فایل پشتیبان نیست.</p><p class="undo-preview-hint">پس از تأیید، امکان لغوِ همین بازگردانی وجود ندارد.</p><p id="operationError" role="alert"></p><div class="full-restore-actions"><button type="button" data-mutating="1" data-workspace-action="confirm-undo">تأیید و برگرداندن تغییر</button><button type="button" class="ghost" data-workspace-action="close">انصراف</button></div>'
         : '<p class="undo-preview-empty">در این نوبت، تغییری برای بازگرداندن وجود ندارد.</p><button type="button" class="ghost" data-workspace-action="close">بستن</button>') +
       "</div>",
   );

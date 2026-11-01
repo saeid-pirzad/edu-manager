@@ -42,11 +42,19 @@ function workspaceRecordRequest(store, id) {
   return store.getAll(IDBKeyRange.bound(id + "|", id + "}", false, true));
 }
 async function synchronizeAnnualForRead(id) {
+  const directory = await synchronizeAcademicDirectoryForRead(id);
   try {
-    return await synchronizeAnnualModularGrades(id);
+    const annual = await synchronizeAnnualModularGrades(id);
+    return {
+      changed: [...directory.changed, ...annual.changed],
+      conflicts: [...directory.conflicts, ...annual.conflicts],
+    };
   } catch (error) {
     if (error.code !== "ANNUAL_PERIOD_AMBIGUOUS") throw error;
-    return { changed: [], conflicts: [{ message: error.message }] };
+    return {
+      changed: directory.changed,
+      conflicts: [...directory.conflicts, { message: error.message }],
+    };
   }
 }
 async function readWorkspaceSnapshot(id) {

@@ -53,7 +53,7 @@ function installRuntimeAPI() {
     saveMasterConfig: saveMasterConfigV24,
     clearMasterConfig: clearMasterConfigV24,
     startSessionFromMaster: startSessionFromMasterV24,
-    exportBackup: exportBackupV24,
+    exportBackup: exportFullBackup,
     handleImport: handleImportV24,
     handleExcelImport: csvImportV24,
     downloadExcelTemplate: downloadCSVTemplate,
@@ -175,6 +175,10 @@ function installRuntimeAPI() {
         failNextWrite = true;
       },
       getConnection: () => connection,
+      importLegacyBackup: (event) => {
+        if (!globalThis.__EDU_TEST_MODE__) throw Error("فقط در حالت آزمون");
+        return handleImportV24(event, { replaceSystem: false });
+      },
     },
   };
 }

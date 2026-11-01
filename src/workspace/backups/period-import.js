@@ -100,7 +100,7 @@ async function openBackups() {
   }
   showModal(
     "پشتیبان و بازیابی",
-    '<div class="backup-hub"><section class="backup-manual"><h4>فایل پشتیبان شما</h4><p>پشتیبان کامل، همه اطلاعات سیستم را در یک فایل نگه می‌دارد. ذخیره دستی و خودکار، نوبتی ایجاد یا بسته نمی‌کنند. بازیابی فقط اطلاعات ذخیره‌شده در فایل را برمی‌گرداند.</p><div class="backup-action-grid"><button data-workspace-action="export-full">دریافت پشتیبان کامل</button><button class="ghost backup-share-entry" data-workspace-action="prepare-share-backup">اشتراک‌گذاری پشتیبان کامل</button><button class="ghost" data-workspace-action="choose-import">بازیابی از فایل</button></div><p class="muted">' +
+    '<div class="backup-hub"><section class="backup-manual"><h4>فایل پشتیبان شما</h4><p>یک فایل پشتیبان برای کل سیستم: سال‌های تحصیلی، ترم اول و دوم، مدرسه‌ها، کلاس‌ها، هنرجویان، نمرات و حضور‌وغیاب. برای هر ترم فایل جدا لازم نیست. بازیابی، کل اطلاعات فعلی را با محتوای فایل جایگزین می‌کند.</p><div class="backup-action-grid"><button data-workspace-action="export-full">دریافت پشتیبان کامل</button><button class="ghost backup-share-entry" data-workspace-action="prepare-share-backup">اشتراک‌گذاری پشتیبان کامل</button><button class="ghost" data-workspace-action="choose-import">بازیابی از فایل</button></div><p class="muted">' +
       esc(lastExternalBackupLabel()) +
       "</p></section>" +
       singleFilePanel() +
@@ -151,7 +151,10 @@ function previewImport(candidate, label) {
 }
 
 let backupImportReading = false;
-async function handleImportV24(e) {
+async function handleImportV24(
+  e,
+  { fullSystemOnly = false, replaceSystem = true } = {},
+) {
   const file = e.target.files[0];
   if (!file) return;
   if (backupImportReading) {
@@ -159,20 +162,53 @@ async function handleImportV24(e) {
     handleError(new Error("خواندن فایل پشتیبان در حال انجام است؛ صبر کنید."));
     return;
   }
+  if (replaceSystem && fullRestoreBusy) {
+    e.target.value = "";
+    handleError(
+      Error("بازیابی کل اطلاعات در حال انجام است؛ تا پایان آن صبر کنید."),
+    );
+    return;
+  }
+  if (replaceSystem) {
+    pendingFullBackup = null;
+    pendingFullBackupSignature = "";
+    pendingImport = null;
+  }
   backupImportReading = true;
   const startedReady = ready;
   const origin = workspace?.id;
+  let expectedConnection = connection;
   const ensureDestination = () => {
     if (
       ready !== startedReady ||
       workspace?.id !== origin ||
       resetBusy ||
       periodLoading ||
-      (startedReady && connectionRetired)
+      (startedReady && connectionRetired) ||
+      (replaceSystem && connection !== expectedConnection)
     )
       throw Error(
         "مقصد بازیابی هنگام خواندن فایل تغییر کرد؛ فایل را دوباره انتخاب کنید.",
       );
+  };
+  const previewReplacement = async (value, details) => {
+    if (!ready && (!connection || connectionRetired)) {
+      // Validate before opening even a recovery connection. No catalog or
+      // data writes happen until the complete replacement is confirmed.
+      validateFullBackup(value);
+      const opened = await openDatabase();
+      try {
+        ensureDestination();
+      } catch (error) {
+        opened.close();
+        throw error;
+      }
+      expectedConnection = opened;
+      connection = opened;
+      connectionRetired = false;
+    }
+    ensureDestination();
+    previewFullBackup(value, details);
   };
   try {
     ensureDestination();
@@ -180,10 +216,27 @@ async function handleImportV24(e) {
       throw Error("حداکثر حجم فایل پشتیبان صد مگابایت است.");
     const parsed = JSON.parse(await file.text());
     ensureDestination();
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+      throw Error("ساختار فایل پشتیبان معتبر نیست.");
     if (parsed.format === "EduManager.FullBackup") {
-      previewFullBackup(parsed);
+      if (replaceSystem)
+        await previewReplacement(parsed, { sourceName: file.name });
+      else previewFullBackup(parsed);
       return;
     }
+    if (replaceSystem) {
+      const replacement = legacyBackupReplacement(parsed);
+      await previewReplacement(replacement, {
+        sourceName: file.name,
+        legacy: true,
+      });
+      return;
+    }
+    // Retained only for internal compatibility and its regression tests.
+    if (fullSystemOnly)
+      throw Error(
+        "این فایل پشتیبان کامل سیستم نیست. فایل کامل شامل اطلاعات سال‌های تحصیلی، ترم‌ها، مدرسه‌ها، کلاس‌ها و هنرجویان را انتخاب کنید؛ اطلاعات فعلی تغییر نکرده است.",
+      );
     if (
       parsed.version !== undefined &&
       (!Number.isInteger(parsed.version) ||

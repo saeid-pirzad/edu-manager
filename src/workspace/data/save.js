@@ -5,6 +5,7 @@ async function commitRecords(
     replace = false,
     allowClosed = false,
     keepUndo = true,
+    directoryRevisions,
   } = {},
 ) {
   if (blocked) throw Error("ذخیره مسدود است؛ صفحه را دوباره بارگذاری کنید.");
@@ -32,7 +33,8 @@ async function commitRecords(
     throw new DOMException("آزمون شکست ذخیره", "QuotaExceededError");
   }
   let nextCatalog;
-  const annualChanged = [];
+  const annualChanged = [],
+    directorySourceUpdates = [];
   try {
     nextCatalog = await EduRecordTransaction.commit({
       connection: sourceConnection,
@@ -47,6 +49,10 @@ async function commitRecords(
       normalizedName,
       academicTermKind,
       annualChanged,
+      decodeRecords: decodeWorkspaceRecords,
+      historicalRoster,
+      directorySourceUpdates,
+      directoryRevisions,
     });
   } catch (error) {
     if (error.code === "WORKSPACE_CONFLICT" && isCurrentCommit())
@@ -56,6 +62,12 @@ async function commitRecords(
   if (isCurrentCommit()) {
     for (const [key, json] of changed) sourceCommitted.set(key, json);
     for (const key of removed) sourceCommitted.delete(key);
+    for (const [key, value] of directorySourceUpdates) {
+      if (!key.startsWith("session:")) continue;
+      const session = db.sessions.find((item) => item.id === value.id);
+      if (session && !session.roster && value.roster)
+        session.roster = clone(value.roster);
+    }
     workspace = nextCatalog;
   }
   if (connection === sourceConnection && !resetBusy && !connectionRetired) {

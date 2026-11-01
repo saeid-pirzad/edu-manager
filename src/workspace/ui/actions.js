@@ -38,7 +38,7 @@ function installWorkspaceActions() {
     ["new-second-period", (button) => openNewPeriod(button.dataset.key)],
     ["delete-period", (button) => openDeletePeriod(button.dataset.key)],
     ["confirm-delete-period", () => confirmDeletePeriod()],
-    ["export-period", () => exportBackupV24()],
+    ["export-period", () => exportFullBackup()],
     ["export-full", () => exportFullBackup()],
     ["prepare-share-backup", () => openBackupShare()],
     ["share-backup-file", (button) => sharePreparedBackup(button)],

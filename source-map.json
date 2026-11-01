@@ -67,6 +67,7 @@
         "src/workspace/data/reset.js",
         "src/workspace/data/records.js",
         "src/workspace/grading/annual-modular.js",
+        "src/workspace/periods/shared-directory.js",
         "src/workspace/grading/scope.js",
         "src/workspace/data/save.js",
         "src/workspace/periods/install.js",
@@ -87,6 +88,7 @@
         "src/workspace/backups/sharing.js",
         "src/workspace/backups/single-file.js",
         "src/workspace/backups/full-restore.js",
+        "src/workspace/backups/import-conversion.js",
         "src/workspace/backups/period-import.js",
         "src/workspace/history/undo.js",
         "src/workspace/periods/switch-create.js",
@@ -204,7 +206,11 @@
     {
       "output": "assets/scripts/grade-policy.js",
       "scope": "global",
-      "sources": ["src/domain/grade-policy.js", "src/domain/annual-modules.js"]
+      "sources": [
+        "src/domain/grade-policy.js",
+        "src/domain/annual-modules.js",
+        "src/domain/academic-year-directory.js"
+      ]
     },
     {
       "output": "assets/scripts/history-changes.js",
@@ -252,7 +258,10 @@
     {
       "output": "assets/scripts/record-transaction.js",
       "scope": "global",
-      "sources": ["src/data/record-transaction.js"]
+      "sources": [
+        "src/data/academic-directory-transaction.js",
+        "src/data/record-transaction.js"
+      ]
     },
     {
       "output": "assets/scripts/undo-validator.js",

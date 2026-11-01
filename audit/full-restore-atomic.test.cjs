@@ -86,6 +86,7 @@ function fixture({ syncFailure = false, asyncFailure = false } = {}) {
     installationToken: "",
     drafts: new Map(),
     draftGeneration: 0,
+    writeFailureGeneration: 0,
     rememberPeriod() {},
     hydrateReportNotes() {},
     loadDrafts: async () => {},
@@ -283,4 +284,40 @@ test("a validated full backup can recover failed startup while retaining a raw s
   ).row.full;
   assert.equal(safety.format, "EduManager.RawRecovery");
   assert.equal(safety.stores.records[0].value, "original broken record");
+});
+
+test("legacy replacement preview names the selected file and lists exactly its own term", () => {
+  const { c, source } = fixture();
+  let html;
+  c.showModal = (_title, body) => {
+    html = body;
+    return true;
+  };
+  c.previewFullBackup(source, { sourceName: "مدرسه قدیمی.json", legacy: true });
+  assert.match(html, /نوبت‌های موجود در خود فایل/);
+  assert.match(html, /مدرسه قدیمی.json/);
+  assert.match(html, /1405-1406 \/ اول/);
+  assert.match(html, /تمام سال‌ها و نوبت‌های فعلی حذف می‌شوند/);
+  assert.match(html, /فقط محتوای همین فایل باقی می‌ماند/);
+});
+
+test("successful complete replacement retires a previously rejected write from the old installation", async () => {
+  const f = fixture();
+  const failure = Promise.reject(Error("old installation write failure"));
+  failure.catch(() => {});
+  f.c.writer = failure;
+  f.c.writeFailureGeneration = 7;
+  await f.c.restoreFullBackup();
+  await f.c.writer;
+  assert.notEqual(f.c.writer, failure);
+  assert.equal(f.c.writeFailureGeneration, 8);
+});
+
+test("failed replacement retains the original writer and its generation", async () => {
+  const f = fixture({ asyncFailure: true });
+  const writer = f.c.writer;
+  f.c.writeFailureGeneration = 7;
+  await assert.rejects(f.c.restoreFullBackup());
+  assert.equal(f.c.writer, writer);
+  assert.equal(f.c.writeFailureGeneration, 7);
 });

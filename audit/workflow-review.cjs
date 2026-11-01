@@ -106,6 +106,16 @@ if (process.argv.includes("--help")) {
           "(" + require("./flows/backupSharing.cjs").toString() + ")()",
         )),
       );
+      for (const flow of [
+        "unifiedBackup",
+        "sharedYearDirectory",
+        "importReplacement",
+      ])
+        cases.push(
+          ...(await evaluate(
+            "(" + require("./flows/" + flow + ".cjs").toString() + ")()",
+          )),
+        );
       await require("./academic-backup-lifecycle.cjs")({
         cdp,
         evaluate,

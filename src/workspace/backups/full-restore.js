@@ -13,10 +13,19 @@ const validateFullBackup = EduFullBackupValidator.create({
 let pendingFullBackup = null,
   pendingFullBackupSignature = "",
   fullRestoreBusy = false;
-function previewFullBackup(value) {
+function previewFullBackup(value, { sourceName = "", legacy = false } = {}) {
   if (fullRestoreBusy)
     throw Error("بازیابی کامل در حال انجام است؛ تا پایان آن صبر کنید.");
   const periods = validateFullBackup(value);
+  const roleKey = ({ period }) => {
+    const base = String(period.term).split(" — بازیابی ")[0];
+    const role =
+      period.termKind ||
+      { اول: "first", دوم: "second", تابستان: "summer" }[base] ||
+      base;
+    return JSON.stringify([period.year, role]);
+  };
+  const duplicateTerms = new Set(periods.map(roleKey)).size !== periods.length;
   const date = new Date(value.exportedAt || "");
   const exportedAt = Number.isFinite(date.getTime())
     ? date.toLocaleString("fa-IR")
@@ -27,7 +36,29 @@ function previewFullBackup(value) {
       esc(exportedAt) +
       "</dd></div><div><dt>اطلاعات موجود</dt><dd>" +
       periods.length.toLocaleString("fa-IR") +
-      ' نوبت، همراه نمرات، جلسات و کارنامه‌ها</dd></div></dl></section><section class="full-restore-warning"><h4>اطلاعات فعلی جایگزین می‌شود</h4><p>کل اطلاعات سیستم به وضعیت این فایل برمی‌گردد؛ اطلاعات فایل با داده‌های فعلی ادغام نمی‌شود.</p><p>نوبت جدید یا تکراری ساخته نمی‌شود و وضعیت باز یا بستهٔ نوبت‌ها مطابق فایل خواهد بود.</p></section><p class="full-restore-safety">پیش از جایگزینی، یک نسخهٔ ایمنی از اطلاعات فعلی داخل برنامه ذخیره می‌شود.</p><label class="full-restore-confirm" for="fullRestoreConfirmed"><input type="checkbox" id="fullRestoreConfirmed"><span>می‌دانم کل اطلاعات فعلی با محتوای این فایل جایگزین می‌شود.</span></label><p id="operationError" role="alert"></p><div class="full-restore-actions"><button type="button" class="danger" data-full-restore data-workspace-action="restore-full">تأیید و بازیابی کل اطلاعات</button><button type="button" class="ghost" data-workspace-action="close">انصراف</button></div></div>',
+      " نوبت، همراه نمرات، جلسات و کارنامه‌ها</dd></div>" +
+      (sourceName
+        ? "<div><dt>فایل انتخاب‌شده</dt><dd><bdi>" +
+          esc(sourceName) +
+          "</bdi></dd></div>"
+        : "") +
+      '</dl><div class="full-restore-periods"><strong>نوبت‌های موجود در خود فایل</strong><ul>' +
+      periods
+        .map(
+          ({ period }) =>
+            "<li><bdi>" +
+            esc(period.year + " / " + period.term) +
+            "</bdi></li>",
+        )
+        .join("") +
+      "</ul></div></section>" +
+      (legacy
+        ? '<p class="full-restore-safety">این فایل با قالب قدیمی ذخیره شده و فقط اطلاعات نوبت درج‌شده در بالا را دارد. پس از تأیید، تمام سال‌ها و نوبت‌های فعلی حذف می‌شوند و فقط محتوای همین فایل باقی می‌ماند.</p>'
+        : "") +
+      (duplicateTerms
+        ? '<p class="full-restore-warning" role="status">خود فایل چند ورودی با یک سال و نوبت مشابه دارد. بازیابی، همین ورودی‌های داخل فایل را نگه می‌دارد؛ برنامه آن‌ها را ادغام یا حذف نمی‌کند.</p>'
+        : "") +
+      '<section class="full-restore-warning"><h4>اطلاعات فعلی جایگزین می‌شود</h4><p>کل اطلاعات سیستم به وضعیت این فایل برمی‌گردد؛ اطلاعات فایل با داده‌های فعلی ادغام نمی‌شود.</p><p>نوبت جدید یا تکراری ساخته نمی‌شود و وضعیت باز یا بستهٔ نوبت‌ها مطابق فایل خواهد بود.</p></section><p class="full-restore-safety">پیش از جایگزینی، یک نسخهٔ ایمنی از اطلاعات فعلی داخل برنامه ذخیره می‌شود.</p><label class="full-restore-confirm" for="fullRestoreConfirmed"><input type="checkbox" id="fullRestoreConfirmed"><span>می‌دانم کل اطلاعات فعلی با محتوای این فایل جایگزین می‌شود.</span></label><p id="operationError" role="alert"></p><div class="full-restore-actions"><button type="button" class="danger" data-full-restore data-workspace-action="restore-full">تأیید و بازیابی کل اطلاعات</button><button type="button" class="ghost" data-workspace-action="close">انصراف</button></div></div>',
   );
   if (opened !== false) {
     pendingFullBackup = value;
@@ -226,6 +257,11 @@ async function restoreFullBackup() {
     workspace = loaded.period;
     db = loaded.data;
     committed = loaded.records;
+    // All previous writes were drained before replacement. A restored
+    // installation starts a new write generation, including after a failed
+    // operation in the overwritten installation.
+    writeFailureGeneration++;
+    writer = Promise.resolve();
     drafts.clear();
     draftGeneration++;
     draftRecoveryFailed = false;
@@ -263,7 +299,8 @@ async function restoreFullBackup() {
       broadcast({ ...change, annualModular: true });
     if (annual?.conflicts.length)
       setStatus(
-        "بازیابی انجام شد؛ ثبت‌های متعارض قدیمی پودمانی حفظ شدند و نیاز به بررسی دارند.",
+        "بازیابی انجام شد؛ اختلاف اطلاعات قدیمی حفظ شد: " +
+          annual.conflicts[0].message,
         "error",
       );
     return periods.length;
