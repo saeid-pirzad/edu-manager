@@ -63,7 +63,7 @@ function openDeletion(kind, id) {
       esc(target.item.name) +
       '</bdi></strong></div><p id="deleteEntityWarning" class="deletion-warning">' +
       (kind === "lesson"
-        ? "این درس همراه با نمرات، جلسات و سوابق حضور و فعالیت آن حذف می‌شود. هنرجویان کلاس حذف نمی‌شوند."
+        ? "این درس از تمام نوبت‌های همین سال حذف می‌شود. اگر در هر نوبت نمره یا جلسه داشته باشد، برای حفظ سوابق حذف انجام نمی‌شود. هنرجویان کلاس حفظ می‌شوند."
         : "این " +
           label +
           " از فهرست مشترک این سال و تمام نوبت‌های آن حذف می‌شود. اگر در نوبت دیگری نمره یا جلسه داشته باشد، حذف انجام نمی‌شود.") +
@@ -76,9 +76,7 @@ function openDeletion(kind, id) {
       count(sessions, "جلسه") +
       count(slots, "زنگ برنامه هفتگی") +
       '</ul><p class="deletion-backup-note">' +
-      (kind === "lesson"
-        ? "پیش از حذف، پشتیبان داخلی ذخیره می‌شود؛ این پشتیبان جای فایل مستقل را نمی‌گیرد."
-        : "پیش از حذف، پشتیبان کامل سیستم در «پشتیبان و بازیابی» ذخیره می‌شود. بازگردانی حذف مشترک از همین پشتیبان کامل انجام می‌شود؛ گزینهٔ برگرداندن آخرین تغییر برای حذف مشترک فعال نمی‌ماند. پشتیبان داخلی جای فایل مستقل را نمی‌گیرد.") +
+      "پیش از حذف، پشتیبان کامل سیستم در «پشتیبان و بازیابی» ذخیره می‌شود. برای بازگردانی از همین پشتیبان کامل استفاده کنید؛ پشتیبان داخلی جای فایل مستقل را نمی‌گیرد." +
       "</p>" +
       '<label class="deletion-confirm" for="deleteEntityName">برای تأیید، نام ' +
       label +
@@ -143,9 +141,7 @@ async function confirmDeletion() {
     await writer.catch(() => {});
     target = check();
     let directoryRevisions;
-    if (context.kind === "lesson") {
-      await putBackup(db, "پیش از حذف: " + target.item.name, context.workspace);
-    } else {
+    {
       const full = await snapshotInstallation();
       check();
       directoryRevisions = full.stores.catalog
@@ -228,9 +224,7 @@ async function confirmDeletion() {
     render();
     closeModal();
     setStatus(
-      context.kind === "lesson"
-        ? "حذف انجام شد؛ پشتیبان پیش از حذف ذخیره شده است."
-        : "حذف انجام شد؛ پشتیبان کامل پیش از حذف در «پشتیبان و بازیابی» در دسترس است.",
+      "حذف انجام شد؛ پشتیبان کامل پیش از حذف در «پشتیبان و بازیابی» در دسترس است.",
       "saved",
     );
   } catch (error) {

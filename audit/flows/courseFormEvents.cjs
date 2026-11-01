@@ -336,11 +336,11 @@ module.exports = async function courseFormEvents() {
   const names = document.getElementById("courseNames");
   check(
     "CF29",
-    "existing modular lessons group names into individual expandable modules without rebuild controls",
+    "existing modular lessons expose count controls and group names without rebuild controls",
     names.open &&
       names.querySelectorAll(".course-pod-editor").length === 2 &&
       names.querySelectorAll(".course-pod-editor[open]").length === 1 &&
-      document.getElementById("courseAdvanced").hidden &&
+      !document.getElementById("courseAdvanced").hidden &&
       !document.getElementById("courseModular").hidden &&
       !document.getElementById("course_rebuild"),
   );

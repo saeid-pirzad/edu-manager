@@ -36,7 +36,7 @@ function toggleMethod() {
     general || val("method") !== "dual";
   document.getElementById("courseModular").hidden = val("method") !== "modular";
   document.getElementById("courseAdvanced").hidden =
-    val("method") !== "modular" || !!editing?.seed.poudmans.length;
+    val("method") !== "modular";
   const names = document.getElementById("courseNames");
   if (names) names.hidden = val("method") !== "modular";
 }

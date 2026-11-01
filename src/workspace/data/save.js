@@ -63,6 +63,17 @@ async function commitRecords(
     for (const [key, json] of changed) sourceCommitted.set(key, json);
     for (const key of removed) sourceCommitted.delete(key);
     for (const [key, value] of directorySourceUpdates) {
+      if (key === "meta") {
+        const sent = records.get("meta")?.masterSchedule || {};
+        for (const [slot, previous] of Object.entries(sent))
+          if (
+            !Object.hasOwn(value.masterSchedule || {}, slot) &&
+            JSON.stringify(db.masterSchedule?.[slot]) ===
+              JSON.stringify(previous)
+          )
+            delete db.masterSchedule[slot];
+        continue;
+      }
       if (!key.startsWith("session:")) continue;
       const session = db.sessions.find((item) => item.id === value.id);
       if (session && !session.roster && value.roster)

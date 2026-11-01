@@ -34,6 +34,7 @@ const courseUI = EduCourseUI({
   error: handleError,
   students: getSortedStudents,
   knownStudents,
+  courseHistory: academicCourseHistory,
   calc: calcV24,
   gradeCell,
   finalText,

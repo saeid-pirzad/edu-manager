@@ -142,8 +142,8 @@ async function annualChecks() {
     const model = await EduPeriodicReports.generate();
     record(
       "Y13",
-      "annual sessions retain their own term teacher and source period in screen and text exports",
-      model?.sessions[0].teacher === "دبیر نوبت اول" &&
+      "annual sessions use shared current course teacher while preserving their source term in exports",
+      model?.sessions[0].teacher === "دبیر نوبت دوم" &&
         model?.sessions[1].teacher === "دبیر نوبت دوم" &&
         model.sessions[0].academicTerm === "اول" &&
         model.sessions[1].academicTerm === "دوم" &&
@@ -151,6 +151,24 @@ async function annualChecks() {
         EduPeriodicReports.documentHtml(model).includes("نوبت اول") &&
         EduPeriodicReports.textReport(model).includes("نوبت دوم") &&
         EduPeriodicReports.deputyReport(model).includes("نوبت: اول"),
+    );
+    const installation = await EduV24.snapshotInstallation();
+    record(
+      "Y15",
+      "shared teacher edits preserve the original teacher in the closed term frozen report",
+      installation.stores.reports
+        .filter((report) => report.workspace === first)
+        .some((report) =>
+          report.classes.some((classroom) =>
+            classroom.students.some((student) =>
+              student.lessons.some(
+                (lesson) =>
+                  lesson.id === "lesson_dual" &&
+                  lesson.teacher === "دبیر نوبت اول",
+              ),
+            ),
+          ),
+        ),
     );
     record(
       "Y03",

@@ -242,7 +242,7 @@
       const reference = isFormalModular(second) ? second : first;
       if (first && second) compatible(first, second);
       const target = lessons.get(lid);
-      // Course definitions remain term-scoped; a grade save cannot recreate one.
+      // A grade-only save cannot create a missing yearly course definition.
       if (!target) continue;
       compatible(reference, target);
       const pods = index(target.poudmans);

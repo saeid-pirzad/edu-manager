@@ -732,7 +732,8 @@ async function synchronizeAnnualModularGrades(id) {
 // grade and session records. The caller reloads/broadcasts changed workspaces.
 async function synchronizeAcademicDirectoryForRead(id) {
   const database = connection,
-    model = globalThis.EduAcademicYearDirectory;
+    model = globalThis.EduAcademicYearDirectory,
+    courses = globalThis.EduAcademicYearCourses;
   if (!model) throw Error("مدل فهرست مشترک سال تحصیلی آماده نیست.");
   const assertConnection = () => {
     if (
@@ -817,7 +818,13 @@ async function synchronizeAcademicDirectoryForRead(id) {
         const copies = parts
           .map((part) => part.records.get("class:" + classId))
           .filter(Boolean);
-        classes.set(classId, model.reconcileClass(copies));
+        const directory = model.reconcileClass(copies);
+        classes.set(
+          classId,
+          courses
+            ? courses.reconcileClass([directory, ...copies.slice(1)])
+            : directory,
+        );
       }
     for (const part of parts) {
       const originalMeta = part.records.get("meta"),
@@ -827,9 +834,16 @@ async function synchronizeAcademicDirectoryForRead(id) {
       for (const [classId, common] of classes) {
         const logical = "class:" + classId,
           original = part.records.get(logical),
-          value = original
+          directoryValue = original
             ? model.mirrorClass(original, common, original)
-            : model.skeleton(common);
+            : model.skeleton(common),
+          value = courses
+            ? courses.mirrorClass(original, common, directoryValue, {
+                sessions: [...part.records]
+                  .filter(([key]) => key.startsWith("session:"))
+                  .map(([, value]) => value),
+              })
+            : directoryValue;
         if (JSON.stringify(value) === JSON.stringify(original)) continue;
         part.plans.set(logical, value);
         // Freeze older sessions against their actual pre-change roster. Never
@@ -861,7 +875,12 @@ async function synchronizeAcademicDirectoryForRead(id) {
       );
     }
   } catch (error) {
-    if (error.code !== "ACADEMIC_DIRECTORY_CONFLICT") throw error;
+    if (
+      !["ACADEMIC_DIRECTORY_CONFLICT", "ACADEMIC_COURSE_CONFLICT"].includes(
+        error.code,
+      )
+    )
+      throw error;
     conflicts.push({
       year: periods[0].year,
       message: error.message,
@@ -1048,6 +1067,17 @@ async function commitRecords(
     for (const [key, json] of changed) sourceCommitted.set(key, json);
     for (const key of removed) sourceCommitted.delete(key);
     for (const [key, value] of directorySourceUpdates) {
+      if (key === "meta") {
+        const sent = records.get("meta")?.masterSchedule || {};
+        for (const [slot, previous] of Object.entries(sent))
+          if (
+            !Object.hasOwn(value.masterSchedule || {}, slot) &&
+            JSON.stringify(db.masterSchedule?.[slot]) ===
+              JSON.stringify(previous)
+          )
+            delete db.masterSchedule[slot];
+        continue;
+      }
       if (!key.startsWith("session:")) continue;
       const session = db.sessions.find((item) => item.id === value.id);
       if (session && !session.roster && value.roster)
@@ -2049,6 +2079,79 @@ function assertCompatibleTermLessons(reference, candidate) {
         reference.name +
         "» در دو نوبت یکسان نیست؛ گزارش این درس قابل محاسبه نیست.",
     );
+  if (dual && reference.gradingPolicy?.subjectType !== "general") {
+    const settings = (lesson) =>
+      lesson.gradingPolicy?.method === "dual"
+        ? EduPolicy.dualSettings(lesson.gradingPolicy)
+        : {
+            practicalWeight: 70,
+            theoryMin: 0,
+            practicalMin: 0,
+            passMin: 14,
+          };
+    const first = settings(reference),
+      second = settings(candidate);
+    if (
+      ["practicalWeight", "theoryMin", "practicalMin", "passMin"].some(
+        (field) => first[field] !== second[field],
+      )
+    )
+      throw Error(
+        "قواعد نمره‌دهی درس «" +
+          reference.name +
+          "» در نوبت‌های این سال یکسان نیست؛ پیش از گزارش سالانه تعارض ضرایب و حدنصاب‌ها را اصلاح کنید.",
+      );
+  }
+  if (reference.gradingPolicy?.method === "modular") {
+    if (
+      [
+        "version",
+        "mostamarMax",
+        "competencyFactor",
+        "competencyMin",
+        "moduleMin",
+        "continuousStep",
+      ].some(
+        (field) =>
+          reference.gradingPolicy[field] !== candidate.gradingPolicy[field],
+      )
+    )
+      throw Error(
+        "قواعد نمره‌دهی درس پودمانی «" +
+          reference.name +
+          "» در نوبت‌های این سال یکسان نیست؛ پیش از گزارش سالانه تعارض را اصلاح کنید.",
+      );
+    const structure = (lesson) => {
+      const pods = new Map();
+      for (const pod of lesson.poudmans || []) {
+        const units = new Set((pod.units || []).map((unit) => unit.id));
+        if (pods.has(pod.id) || units.size !== (pod.units || []).length)
+          throw Error(
+            "ساختار پودمان‌ها یا واحدهای درس دارای شناسهٔ تکراری است.",
+          );
+        pods.set(pod.id, units);
+      }
+      return pods;
+    };
+    const first = structure(reference),
+      second = structure(candidate);
+    if (
+      first.size !== second.size ||
+      [...first].some(([id, units]) => {
+        const other = second.get(id);
+        return (
+          !other ||
+          units.size !== other.size ||
+          [...units].some((unitId) => !other.has(unitId))
+        );
+      })
+    )
+      throw Error(
+        "ساختار پودمان‌ها و واحدهای درس «" +
+          reference.name +
+          "» در نوبت‌های این سال یکسان نیست؛ پیش از گزارش سالانه تعارض را اصلاح کنید.",
+      );
+  }
 }
 function assertAnnualLessonCompatibility(parts, schoolId, classId = "") {
   const lessons = new Map();
@@ -5739,24 +5842,28 @@ async function createNewPeriod() {
         );
         for (const l of c.lessons) {
           l.kardaneshScores = {};
-          const info = EduPolicy.identity(l, year);
-          if (l.gradingPolicy) {
-            const changedYear = l.gradingPolicy.year !== year;
-            const changedIdentity = Object.entries(info).some(
-              ([key, value]) => l.gradingPolicy[key] !== value,
-            );
-            Object.assign(l.gradingPolicy, info);
-            if (changedYear || changedIdentity) {
-              l.gradingPolicy.confirmed = false;
-              l.gradingPolicy.revision = 1;
+          // A new term shares the exact annual definition. Descriptive
+          // corrections must not reinitialize a historical grading policy.
+          if (first?.year !== year) {
+            const info = EduPolicy.identity(l, year);
+            if (l.gradingPolicy) {
+              const changedYear = l.gradingPolicy.year !== year;
+              const changedIdentity = Object.entries(info).some(
+                ([key, value]) => l.gradingPolicy[key] !== value,
+              );
+              Object.assign(l.gradingPolicy, info);
+              if (changedYear || changedIdentity) {
+                l.gradingPolicy.confirmed = false;
+                l.gradingPolicy.revision = 1;
+              }
+              if (changedYear) {
+                l.gradingPolicy.circularNumber = "";
+                l.gradingPolicy.circularDate = "";
+                l.gradingPolicy.reference = "";
+              }
             }
-            if (changedYear) {
-              l.gradingPolicy.circularNumber = "";
-              l.gradingPolicy.circularDate = "";
-              l.gradingPolicy.reference = "";
-            }
+            if (l.courseInfo || l.gradingPolicy) l.courseInfo = info;
           }
-          if (l.courseInfo || l.gradingPolicy) l.courseInfo = info;
           // Formal modules are annual; legacy unit grades remain term-scoped.
           for (const p of l.poudmans)
             p.podScores =
@@ -9149,7 +9256,7 @@ function openDeletion(kind, id) {
       esc(target.item.name) +
       '</bdi></strong></div><p id="deleteEntityWarning" class="deletion-warning">' +
       (kind === "lesson"
-        ? "این درس همراه با نمرات، جلسات و سوابق حضور و فعالیت آن حذف می‌شود. هنرجویان کلاس حذف نمی‌شوند."
+        ? "این درس از تمام نوبت‌های همین سال حذف می‌شود. اگر در هر نوبت نمره یا جلسه داشته باشد، برای حفظ سوابق حذف انجام نمی‌شود. هنرجویان کلاس حفظ می‌شوند."
         : "این " +
           label +
           " از فهرست مشترک این سال و تمام نوبت‌های آن حذف می‌شود. اگر در نوبت دیگری نمره یا جلسه داشته باشد، حذف انجام نمی‌شود.") +
@@ -9162,9 +9269,7 @@ function openDeletion(kind, id) {
       count(sessions, "جلسه") +
       count(slots, "زنگ برنامه هفتگی") +
       '</ul><p class="deletion-backup-note">' +
-      (kind === "lesson"
-        ? "پیش از حذف، پشتیبان داخلی ذخیره می‌شود؛ این پشتیبان جای فایل مستقل را نمی‌گیرد."
-        : "پیش از حذف، پشتیبان کامل سیستم در «پشتیبان و بازیابی» ذخیره می‌شود. بازگردانی حذف مشترک از همین پشتیبان کامل انجام می‌شود؛ گزینهٔ برگرداندن آخرین تغییر برای حذف مشترک فعال نمی‌ماند. پشتیبان داخلی جای فایل مستقل را نمی‌گیرد.") +
+      "پیش از حذف، پشتیبان کامل سیستم در «پشتیبان و بازیابی» ذخیره می‌شود. برای بازگردانی از همین پشتیبان کامل استفاده کنید؛ پشتیبان داخلی جای فایل مستقل را نمی‌گیرد." +
       "</p>" +
       '<label class="deletion-confirm" for="deleteEntityName">برای تأیید، نام ' +
       label +
@@ -9229,9 +9334,7 @@ async function confirmDeletion() {
     await writer.catch(() => {});
     target = check();
     let directoryRevisions;
-    if (context.kind === "lesson") {
-      await putBackup(db, "پیش از حذف: " + target.item.name, context.workspace);
-    } else {
+    {
       const full = await snapshotInstallation();
       check();
       directoryRevisions = full.stores.catalog
@@ -9314,9 +9417,7 @@ async function confirmDeletion() {
     render();
     closeModal();
     setStatus(
-      context.kind === "lesson"
-        ? "حذف انجام شد؛ پشتیبان پیش از حذف ذخیره شده است."
-        : "حذف انجام شد؛ پشتیبان کامل پیش از حذف در «پشتیبان و بازیابی» در دسترس است.",
+      "حذف انجام شد؛ پشتیبان کامل پیش از حذف در «پشتیبان و بازیابی» در دسترس است.",
       "saved",
     );
   } catch (error) {
@@ -9894,6 +9995,88 @@ function broadcast(message) {
 function draftBaseKey() {
   return "Edu24.drafts." + workspace.id + "." + tabId;
 }
+// Source: src/workspace/courses/year-history.js
+// Read one consistent academic-year snapshot for course-editor locks.
+// The write transaction repeats the checks against live records.
+async function academicCourseHistory(classId, lessonId) {
+  if (!lessonId) return { hasGrades: false, hasSessions: false };
+  const origin = {
+    id: workspace?.id,
+    revision: workspace?.revision,
+    year: workspace?.year,
+    connection,
+  };
+  const check = () => {
+    if (
+      connection !== origin.connection ||
+      workspace?.id !== origin.id ||
+      workspace?.revision !== origin.revision ||
+      periodLoading ||
+      resetBusy ||
+      connectionRetired
+    )
+      throw Error(
+        "سال یا اطلاعات درس هنگام بررسی سوابق تغییر کرد؛ فرم را دوباره باز کنید.",
+      );
+  };
+  check();
+  const tx = origin.connection.transaction(["catalog", "records"], "readonly"),
+    done = transactionDone(tx);
+  const pending = new Promise((resolve, reject) => {
+    try {
+      const request = tx.objectStore("catalog").getAll();
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        try {
+          check();
+          const periods = request.result.filter(
+            (period) => period.year === origin.year,
+          );
+          Promise.all(
+            periods.map(async (period) => {
+              const rows = await requestPromise(
+                workspaceRecordRequest(tx.objectStore("records"), period.id),
+              );
+              const data = decodeWorkspaceRecords(rows, {
+                  workspaceId: period.id,
+                }).data,
+                classroom = data.schools
+                  .flatMap((school) => school.classes)
+                  .find((item) => item.id === classId),
+                lesson = classroom?.lessons.find(
+                  (item) => item.id === lessonId,
+                ),
+                sessions = data.sessions.filter(
+                  (session) =>
+                    session.classId === classId &&
+                    session.lessonId === lessonId,
+                );
+              return {
+                hasSessions: sessions.length > 0,
+                hasGrades:
+                  !!lesson &&
+                  (EduPolicy.hasGrades(lesson) ||
+                    sessions.some((session) => session.scores.length > 0)),
+              };
+            }),
+          ).then(resolve, reject);
+        } catch (error) {
+          reject(error);
+          tx.abort();
+        }
+      };
+    } catch (error) {
+      reject(error);
+      tx.abort();
+    }
+  });
+  const [parts] = await Promise.all([pending, done]);
+  check();
+  return {
+    hasGrades: parts.some((part) => part.hasGrades),
+    hasSessions: parts.some((part) => part.hasSessions),
+  };
+}
 // Source: src/workspace/courses/rules.js
 function fileModeBanner(app) {
   const warning = document.createElement("div");
@@ -10069,6 +10252,7 @@ const courseUI = EduCourseUI({
   error: handleError,
   students: getSortedStudents,
   knownStudents,
+  courseHistory: academicCourseHistory,
   calc: calcV24,
   gradeCell,
   finalText,

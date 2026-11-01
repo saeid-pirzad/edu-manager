@@ -213,9 +213,23 @@ async function open(lid = "", seed) {
   if (lid && !original && !seed)
     throw Error("این درس دیگر در کلاس وجود ندارد؛ فهرست دروس را تازه کنید.");
   const l = seed || original || newCourseSeed();
+  const context = { ...api.context() },
+    history =
+      original && api.courseHistory
+        ? await api.courseHistory(c.id, original.id)
+        : null;
+  if (
+    requested.workspace !== api.context().id ||
+    requested.classId !== api.state().classId ||
+    context.revision !== api.context().revision
+  )
+    throw Error(
+      "اطلاعات سال تحصیلی هنگام بررسی سوابق تغییر کرد؛ فرم درس را دوباره باز کنید.",
+    );
   const locked =
     !!original &&
-    (P.hasGrades(original) ||
+    (history?.hasGrades ||
+      P.hasGrades(original) ||
       api
         .getDB()
         .sessions.some(
@@ -229,7 +243,7 @@ async function open(lid = "", seed) {
   if (!panel) return false;
   editing = {
     pageState: { ...api.state() },
-    context: api.context(),
+    context: { ...api.context() },
     classId: c.id,
     id: original?.id || null,
     seed: structuredClone(l),
@@ -304,7 +318,7 @@ function courseFormHtml(l, original, locked) {
     ) + "</div>";
   if (locked)
     h +=
-      '<p class="course-lock-note">برای حفظ نمرات قبلی، روش و ساختار نمره‌دهی قابل تغییر نیست.</p>';
+      '<p class="course-lock-note">برای حفظ نمرات این سال تحصیلی، روش و ساختار نمره‌دهی قابل تغییر نیست.</p>';
   if (locked && !l.gradingPolicy)
     h += "<p>محاسبه نمرات با روش قبلی حفظ می‌شود.</p>";
   const dual = P.dualSettings(p);
@@ -378,7 +392,7 @@ function courseFormHtml(l, original, locked) {
   }
   h += "</div></div></fieldset>";
   h +=
-    '<div class="record-editor-context course-editor-status"></div><div class="record-editor-actions create-panel-footer"><button type="submit" data-mutating="1">' +
+    '<div class="record-editor-context course-editor-status"><p class="muted">تعریف درس و قواعد آن در همهٔ نوبت‌های این سال تحصیلی مشترک است.</p></div><div class="record-editor-actions create-panel-footer"><button type="submit" data-mutating="1">' +
     (original ? "ذخیره تغییرات" : "ثبت درس") +
     '</button><button type="button" class="ghost" data-course-cancel>انصراف</button></div></form>';
   return h;
@@ -462,7 +476,7 @@ function toggleMethod() {
     general || val("method") !== "dual";
   document.getElementById("courseModular").hidden = val("method") !== "modular";
   document.getElementById("courseAdvanced").hidden =
-    val("method") !== "modular" || !!editing?.seed.poudmans.length;
+    val("method") !== "modular";
   const names = document.getElementById("courseNames");
   if (names) names.hidden = val("method") !== "modular";
 }
@@ -505,9 +519,23 @@ async function save() {
       editing.context.revision !== api.context().revision
     )
       throw Error("دوره یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.");
-    const c = api.findClass(editing.classId),
+    const editingContext = editing,
+      c = api.findClass(editing.classId),
       original = c?.lessons.find((l) => l.id === editing.id),
-      next = structuredClone(original || editing.seed);
+      history =
+        original && api.courseHistory
+          ? await api.courseHistory(c.id, original.id)
+          : null;
+    if (
+      editing !== editingContext ||
+      editing.context.id !== api.context().id ||
+      editing.context.revision !== api.context().revision ||
+      editing.classId !== api.state().classId
+    )
+      throw Error(
+        "اطلاعات سال تحصیلی هنگام بررسی سوابق تغییر کرد؛ فرم درس را دوباره باز کنید.",
+      );
+    const next = structuredClone(original || editing.seed);
     if (!c || (editing.id && !original))
       throw Error("درس مقصد دیگر وجود ندارد.");
     const name = val("name").trim(),
@@ -547,7 +575,8 @@ async function save() {
       throw Error("سال درس با دوره فعال یکسان نیست.");
     const locked =
       !!original &&
-      (P.hasGrades(original) ||
+      (history?.hasGrades ||
+        P.hasGrades(original) ||
         api
           .getDB()
           .sessions.some(
@@ -630,42 +659,97 @@ async function save() {
           "course_podCount",
         );
       const methodChanged =
-        original &&
-        (original.gradeMode === "kardanesh") !== (p.method === "dual");
-      if (
-        methodChanged &&
-        api.getDB().sessions.some((s) => s.lessonId === next.id)
-      )
+          original &&
+          (original.gradeMode === "kardanesh") !== (p.method === "dual"),
+        hasSessions =
+          history?.hasSessions ||
+          api.getDB().sessions.some((s) => s.lessonId === next.id);
+      if (methodChanged && hasSessions)
         throw Error(
           "درس دارای جلسه است؛ برای تغییر ساختار یک کپی جدید بسازید.",
         );
-      if (p.method === "modular" && !next.poudmans.length)
-        next.poudmans = makePods(count, p.unitCount);
-      else
-        for (const pod of next.poudmans) {
-          const requested = val("unitCount_" + pod.id);
-          if (requested !== undefined) {
-            const count = number("unitCount_" + pod.id);
-            if (!Number.isInteger(count) || count < 1 || count > 10)
-              throw Error("تعداد واحدهای هر پودمان ۱ تا ۱۰ باشد.");
-            if (count !== pod.units.length) {
-              if (api.getDB().sessions.some((s) => s.lessonId === next.id))
-                throw Error(
-                  "برای تغییر تعداد واحدهای درس دارای جلسه، کپی جدید بسازید.",
-                );
-              pod.units = Array.from(
-                { length: count },
-                (_, i) =>
-                  pod.units[i] || {
-                    id: api.uid(),
-                    name: "واحد یادگیری " + (i + 1),
-                    unitScores: {},
-                    applyOptions: {},
-                  },
-              );
-            }
-          }
+      if (p.method === "modular") {
+        const previousUnitCount =
+            original?.gradingPolicy?.unitCount ??
+            editing.seed.gradingPolicy?.unitCount ??
+            P.defaults("modular", api.year()).unitCount,
+          uniformUnitsChanged = p.unitCount !== previousUnitCount,
+          podCountChanged = count !== next.poudmans.length,
+          unitCounts = new Map();
+        for (const pod of next.poudmans.slice(0, count)) {
+          const requested = val("unitCount_" + pod.id),
+            unitCount =
+              requested !== undefined
+                ? number("unitCount_" + pod.id)
+                : uniformUnitsChanged
+                  ? p.unitCount
+                  : pod.units.length;
+          if (!Number.isInteger(unitCount) || unitCount < 1 || unitCount > 10)
+            throw recordFieldError(
+              "تعداد واحدهای هر پودمان باید عدد صحیح بین ۱ تا ۱۰ باشد.",
+              requested !== undefined
+                ? "course_unitCount_" + pod.id
+                : "course_unitCount",
+            );
+          unitCounts.set(pod.id, unitCount);
         }
+        const unitCountChanged = next.poudmans
+          .slice(0, count)
+          .some((pod) => unitCounts.get(pod.id) !== pod.units.length);
+        if (hasSessions && (podCountChanged || unitCountChanged))
+          throw Error(
+            podCountChanged
+              ? "برای تغییر تعداد پودمان‌های درس دارای جلسه، کپی جدید بسازید."
+              : "برای تغییر تعداد واحدهای درس دارای جلسه، کپی جدید بسازید.",
+          );
+        if (methodChanged || !next.poudmans.length)
+          next.poudmans = makePods(count, p.unitCount);
+        else {
+          const uniqueName = (base, used) => {
+              let name = base,
+                suffix = 2;
+              while (used.has(normalizedName(name)))
+                name = base + " (" + suffix++ + ")";
+              used.add(normalizedName(name));
+              return name;
+            },
+            podNames = new Set(
+              next.poudmans
+                .slice(0, count)
+                .map((pod) => normalizedName(pod.name)),
+            ),
+            freshUnit = (index, used) => ({
+              id: api.uid(),
+              name: uniqueName("واحد یادگیری " + (index + 1), used),
+              unitScores: {},
+              applyOptions: {},
+            });
+          next.poudmans = Array.from({ length: count }, (_, index) => {
+            const existing = next.poudmans[index];
+            if (!existing) {
+              const unitNames = new Set();
+              return {
+                id: api.uid(),
+                name: uniqueName("پودمان " + (index + 1), podNames),
+                podScores: {},
+                units: Array.from({ length: p.unitCount }, (_, i) =>
+                  freshUnit(i, unitNames),
+                ),
+              };
+            }
+            const unitNames = new Set(
+              existing.units
+                .slice(0, unitCounts.get(existing.id))
+                .map((unit) => normalizedName(unit.name)),
+            );
+            existing.units = Array.from(
+              { length: unitCounts.get(existing.id) },
+              (_, i) => existing.units[i] || freshUnit(i, unitNames),
+            );
+            return existing;
+          });
+        }
+      } else if (methodChanged) next.poudmans = [];
       next.gradeMode = p.method === "dual" ? "kardanesh" : "standard";
       next.gradingPolicy = p;
     } else {

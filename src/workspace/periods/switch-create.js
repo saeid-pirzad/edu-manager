@@ -498,24 +498,28 @@ async function createNewPeriod() {
         );
         for (const l of c.lessons) {
           l.kardaneshScores = {};
-          const info = EduPolicy.identity(l, year);
-          if (l.gradingPolicy) {
-            const changedYear = l.gradingPolicy.year !== year;
-            const changedIdentity = Object.entries(info).some(
-              ([key, value]) => l.gradingPolicy[key] !== value,
-            );
-            Object.assign(l.gradingPolicy, info);
-            if (changedYear || changedIdentity) {
-              l.gradingPolicy.confirmed = false;
-              l.gradingPolicy.revision = 1;
+          // A new term shares the exact annual definition. Descriptive
+          // corrections must not reinitialize a historical grading policy.
+          if (first?.year !== year) {
+            const info = EduPolicy.identity(l, year);
+            if (l.gradingPolicy) {
+              const changedYear = l.gradingPolicy.year !== year;
+              const changedIdentity = Object.entries(info).some(
+                ([key, value]) => l.gradingPolicy[key] !== value,
+              );
+              Object.assign(l.gradingPolicy, info);
+              if (changedYear || changedIdentity) {
+                l.gradingPolicy.confirmed = false;
+                l.gradingPolicy.revision = 1;
+              }
+              if (changedYear) {
+                l.gradingPolicy.circularNumber = "";
+                l.gradingPolicy.circularDate = "";
+                l.gradingPolicy.reference = "";
+              }
             }
-            if (changedYear) {
-              l.gradingPolicy.circularNumber = "";
-              l.gradingPolicy.circularDate = "";
-              l.gradingPolicy.reference = "";
-            }
+            if (l.courseInfo || l.gradingPolicy) l.courseInfo = info;
           }
-          if (l.courseInfo || l.gradingPolicy) l.courseInfo = info;
           // Formal modules are annual; legacy unit grades remain term-scoped.
           for (const p of l.poudmans)
             p.podScores =

@@ -2,7 +2,8 @@
 // grade and session records. The caller reloads/broadcasts changed workspaces.
 async function synchronizeAcademicDirectoryForRead(id) {
   const database = connection,
-    model = globalThis.EduAcademicYearDirectory;
+    model = globalThis.EduAcademicYearDirectory,
+    courses = globalThis.EduAcademicYearCourses;
   if (!model) throw Error("مدل فهرست مشترک سال تحصیلی آماده نیست.");
   const assertConnection = () => {
     if (
@@ -87,7 +88,13 @@ async function synchronizeAcademicDirectoryForRead(id) {
         const copies = parts
           .map((part) => part.records.get("class:" + classId))
           .filter(Boolean);
-        classes.set(classId, model.reconcileClass(copies));
+        const directory = model.reconcileClass(copies);
+        classes.set(
+          classId,
+          courses
+            ? courses.reconcileClass([directory, ...copies.slice(1)])
+            : directory,
+        );
       }
     for (const part of parts) {
       const originalMeta = part.records.get("meta"),
@@ -97,9 +104,16 @@ async function synchronizeAcademicDirectoryForRead(id) {
       for (const [classId, common] of classes) {
         const logical = "class:" + classId,
           original = part.records.get(logical),
-          value = original
+          directoryValue = original
             ? model.mirrorClass(original, common, original)
-            : model.skeleton(common);
+            : model.skeleton(common),
+          value = courses
+            ? courses.mirrorClass(original, common, directoryValue, {
+                sessions: [...part.records]
+                  .filter(([key]) => key.startsWith("session:"))
+                  .map(([, value]) => value),
+              })
+            : directoryValue;
         if (JSON.stringify(value) === JSON.stringify(original)) continue;
         part.plans.set(logical, value);
         // Freeze older sessions against their actual pre-change roster. Never
@@ -131,7 +145,12 @@ async function synchronizeAcademicDirectoryForRead(id) {
       );
     }
   } catch (error) {
-    if (error.code !== "ACADEMIC_DIRECTORY_CONFLICT") throw error;
+    if (
+      !["ACADEMIC_DIRECTORY_CONFLICT", "ACADEMIC_COURSE_CONFLICT"].includes(
+        error.code,
+      )
+    )
+      throw error;
     conflicts.push({
       year: periods[0].year,
       message: error.message,

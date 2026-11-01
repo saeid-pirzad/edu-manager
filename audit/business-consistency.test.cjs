@@ -70,7 +70,7 @@ test("assessment and annual report honor custom grading weights and thresholds",
   assert.equal(annual.passed, true);
   assert.equal(annual.threshold, 12);
 });
-test("annual report uses each term policy and the second term threshold independent of input order", () => {
+test("annual report refuses conflicting annual course weights and thresholds in either term order", () => {
   const c = fixture(),
     first = lesson(c),
     second = lesson(c);
@@ -80,10 +80,10 @@ test("annual report uses each term policy and the second term threshold independ
     [part(first, "اول"), part(second, "دوم")],
     [part(second, "دوم"), part(first, "اول")],
   ]) {
-    const r = c.annualGradeRows(parts, "school", "class")[0];
-    assert.equal(r.final, 14);
-    assert.equal(r.passed, true);
-    assert.equal(r.threshold, 14);
+    assert.throws(
+      () => c.annualGradeRows(parts, "school", "class"),
+      /قواعد نمره‌دهی.*یکسان نیست/,
+    );
   }
 });
 test("annual student, class and lesson labels consistently use the second term regardless of input order", () => {

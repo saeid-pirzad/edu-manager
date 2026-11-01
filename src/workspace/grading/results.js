@@ -81,6 +81,79 @@ function assertCompatibleTermLessons(reference, candidate) {
         reference.name +
         "» در دو نوبت یکسان نیست؛ گزارش این درس قابل محاسبه نیست.",
     );
+  if (dual && reference.gradingPolicy?.subjectType !== "general") {
+    const settings = (lesson) =>
+      lesson.gradingPolicy?.method === "dual"
+        ? EduPolicy.dualSettings(lesson.gradingPolicy)
+        : {
+            practicalWeight: 70,
+            theoryMin: 0,
+            practicalMin: 0,
+            passMin: 14,
+          };
+    const first = settings(reference),
+      second = settings(candidate);
+    if (
+      ["practicalWeight", "theoryMin", "practicalMin", "passMin"].some(
+        (field) => first[field] !== second[field],
+      )
+    )
+      throw Error(
+        "قواعد نمره‌دهی درس «" +
+          reference.name +
+          "» در نوبت‌های این سال یکسان نیست؛ پیش از گزارش سالانه تعارض ضرایب و حدنصاب‌ها را اصلاح کنید.",
+      );
+  }
+  if (reference.gradingPolicy?.method === "modular") {
+    if (
+      [
+        "version",
+        "mostamarMax",
+        "competencyFactor",
+        "competencyMin",
+        "moduleMin",
+        "continuousStep",
+      ].some(
+        (field) =>
+          reference.gradingPolicy[field] !== candidate.gradingPolicy[field],
+      )
+    )
+      throw Error(
+        "قواعد نمره‌دهی درس پودمانی «" +
+          reference.name +
+          "» در نوبت‌های این سال یکسان نیست؛ پیش از گزارش سالانه تعارض را اصلاح کنید.",
+      );
+    const structure = (lesson) => {
+      const pods = new Map();
+      for (const pod of lesson.poudmans || []) {
+        const units = new Set((pod.units || []).map((unit) => unit.id));
+        if (pods.has(pod.id) || units.size !== (pod.units || []).length)
+          throw Error(
+            "ساختار پودمان‌ها یا واحدهای درس دارای شناسهٔ تکراری است.",
+          );
+        pods.set(pod.id, units);
+      }
+      return pods;
+    };
+    const first = structure(reference),
+      second = structure(candidate);
+    if (
+      first.size !== second.size ||
+      [...first].some(([id, units]) => {
+        const other = second.get(id);
+        return (
+          !other ||
+          units.size !== other.size ||
+          [...units].some((unitId) => !other.has(unitId))
+        );
+      })
+    )
+      throw Error(
+        "ساختار پودمان‌ها و واحدهای درس «" +
+          reference.name +
+          "» در نوبت‌های این سال یکسان نیست؛ پیش از گزارش سالانه تعارض را اصلاح کنید.",
+      );
+  }
 }
 function assertAnnualLessonCompatibility(parts, schoolId, classId = "") {
   const lessons = new Map();

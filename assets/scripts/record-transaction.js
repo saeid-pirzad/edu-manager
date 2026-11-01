@@ -14,7 +14,9 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
       const current = JSON.parse(json);
       return key === "meta"
         ? model.layoutHasChanges(previous?.layout || [], current.layout || [])
-        : key.startsWith("class:") && model.hasChanges(previous, current);
+        : key.startsWith("class:") &&
+            (model.hasChanges(previous, current) ||
+              globalThis.EduAcademicYearCourses?.hasChanges(previous, current));
     });
   },
 
@@ -36,6 +38,7 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
     const workspace = { ...options.workspace },
       model = globalThis.EduAcademicYearDirectory,
       annual = globalThis.EduAnnualModules,
+      courses = globalThis.EduAcademicYearCourses,
       copy = (value) => structuredClone(value),
       directoryRevisions =
         options.directoryRevisions === undefined
@@ -193,6 +196,11 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
         directoryPlans = classPlans.filter((plan) =>
           model.hasChanges(plan.previous, plan.current),
         ),
+        coursePlans = courses
+          ? classPlans.filter((plan) =>
+              courses.hasChanges(plan.previous, plan.current),
+            )
+          : [],
         deletedClasses = removed.filter((key) => key.startsWith("class:")),
         sharedClassRemoval =
           deletedClasses.length > 0 &&
@@ -220,6 +228,56 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
             );
           roles.add(kind);
         }
+      }
+      const sharedCourseRemoval = coursePlans.some((plan) => {
+        const nextIds = new Set(
+            (plan.current.lessons || []).map((lesson) => lesson.id),
+          ),
+          removedIds = (plan.previous?.lessons || [])
+            .filter((lesson) => !nextIds.has(lesson.id))
+            .map((lesson) => lesson.id);
+        return (
+          removedIds.length &&
+          family.some(
+            (period) =>
+              period.id !== live.id &&
+              (loaded.get(period.id).get(plan.key)?.lessons || []).some(
+                (lesson) => removedIds.includes(lesson.id),
+              ),
+          )
+        );
+      });
+      const sessionsFrom = (map) =>
+        [...map]
+          .filter(([key]) => key.startsWith("session:"))
+          .map(([, value]) => value);
+      const pruneLessonSchedule = (map, classId, previous, current) => {
+        const currentIds = new Set(
+            (current?.lessons || []).map((lesson) => lesson.id),
+          ),
+          deleted = new Set(
+            (previous?.lessons || [])
+              .filter((lesson) => !currentIds.has(lesson.id))
+              .map((lesson) => lesson.id),
+          );
+        for (const [slot, value] of Object.entries(
+          map.get("meta").masterSchedule || {},
+        ))
+          if (value.classId === classId && deleted.has(value.lessonId))
+            delete map.get("meta").masterSchedule[slot];
+      };
+      for (const plan of coursePlans) {
+        // Validate the source against its persisted history as well as every
+        // companion; the returned target scores are deliberately ignored here.
+        courses.mirrorClass(plan.previous, plan.current, plan.previous, {
+          sessions: sessionsFrom(sourceOld),
+        });
+        pruneLessonSchedule(
+          sourceNext,
+          plan.current.id,
+          plan.previous,
+          plan.current,
+        );
       }
       for (const plan of directoryPlans)
         freeze(sourceOld, sourceNext, plan.current.id);
@@ -336,6 +394,44 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
             }),
           );
         }
+        for (const plan of coursePlans) {
+          const classId = plan.current.id;
+          if (
+            !owner(currentLayout, classId) ||
+            owner(currentLayout, classId) !== owner(peerMeta.layout, classId)
+          )
+            throw Error(
+              "مالک کلاس برای اشتراک درس‌های سال تحصیلی سازگار نیست.",
+            );
+          const target = next.get(plan.key),
+            value = courses.mirrorClass(plan.previous, plan.current, target, {
+              sessions: sessionsFrom(old),
+            });
+          if (!keepUndo) {
+            const surviving = new Set(
+                (value.lessons || []).map((lesson) => lesson.id),
+              ),
+              removed = new Set(
+                (target?.lessons || [])
+                  .filter((lesson) => !surviving.has(lesson.id))
+                  .map((lesson) => lesson.id),
+              );
+            if (
+              Object.values(old.get("meta").masterSchedule || {}).some(
+                (slot) =>
+                  slot.classId === classId && removed.has(slot.lessonId),
+              )
+            ) {
+              const error = Error(
+                "این درس در نوبت دیگر برنامهٔ هفتگی دارد؛ برای حذف از مسیر حذف درس و پشتیبان کامل استفاده کنید.",
+              );
+              error.code = "ACADEMIC_COURSE_CONFLICT";
+              throw error;
+            }
+          }
+          pruneLessonSchedule(next, classId, target, value);
+          next.set(plan.key, value);
+        }
         // The existing annual modular rule remains applicable to combined
         // enrollment and grade edits, without copying term-specific grades.
         const sourceKind = live.termKind || academicTermKind(live.term),
@@ -396,6 +492,24 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
             }
         }
       }
+      if (courses && coursePlans.length && prepared.length > 1)
+        for (const part of prepared)
+          for (const plan of coursePlans) {
+            const candidate = part.next.get(plan.key);
+            if (
+              !candidate ||
+              JSON.stringify(courses.projection(candidate)) !==
+                JSON.stringify(courses.projection(plan.current))
+            ) {
+              const error = Error(
+                "تعریف درس‌های کلاس «" +
+                  plan.current.name +
+                  "» بین نوبت‌های سال یکسان نیست؛ تغییر ثبت نشد.",
+              );
+              error.code = "ACADEMIC_COURSE_CONFLICT";
+              throw error;
+            }
+          }
       validate(sourceNext, live.id);
       const at = new Date().toISOString();
       for (const part of prepared) {
@@ -442,7 +556,7 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
         // A source-only undo cannot reconstruct a removed companion
         // class's independent courses/schedule. Recovery uses the full
         // safety backup prepared by the deletion flow.
-        if (isSource && keepUndo && !sharedClassRemoval)
+        if (isSource && keepUndo && !sharedClassRemoval && !sharedCourseRemoval)
           tx.objectStore("undo").put({
             id: updated.id,
             action,

@@ -109,6 +109,7 @@ if (process.argv.includes("--help")) {
       for (const flow of [
         "unifiedBackup",
         "sharedYearDirectory",
+        "sharedYearCourses",
         "importReplacement",
       ])
         cases.push(

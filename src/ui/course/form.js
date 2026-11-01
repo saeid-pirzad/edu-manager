@@ -26,9 +26,23 @@ async function open(lid = "", seed) {
   if (lid && !original && !seed)
     throw Error("این درس دیگر در کلاس وجود ندارد؛ فهرست دروس را تازه کنید.");
   const l = seed || original || newCourseSeed();
+  const context = { ...api.context() },
+    history =
+      original && api.courseHistory
+        ? await api.courseHistory(c.id, original.id)
+        : null;
+  if (
+    requested.workspace !== api.context().id ||
+    requested.classId !== api.state().classId ||
+    context.revision !== api.context().revision
+  )
+    throw Error(
+      "اطلاعات سال تحصیلی هنگام بررسی سوابق تغییر کرد؛ فرم درس را دوباره باز کنید.",
+    );
   const locked =
     !!original &&
-    (P.hasGrades(original) ||
+    (history?.hasGrades ||
+      P.hasGrades(original) ||
       api
         .getDB()
         .sessions.some(
@@ -42,7 +56,7 @@ async function open(lid = "", seed) {
   if (!panel) return false;
   editing = {
     pageState: { ...api.state() },
-    context: api.context(),
+    context: { ...api.context() },
     classId: c.id,
     id: original?.id || null,
     seed: structuredClone(l),
@@ -117,7 +131,7 @@ function courseFormHtml(l, original, locked) {
     ) + "</div>";
   if (locked)
     h +=
-      '<p class="course-lock-note">برای حفظ نمرات قبلی، روش و ساختار نمره‌دهی قابل تغییر نیست.</p>';
+      '<p class="course-lock-note">برای حفظ نمرات این سال تحصیلی، روش و ساختار نمره‌دهی قابل تغییر نیست.</p>';
   if (locked && !l.gradingPolicy)
     h += "<p>محاسبه نمرات با روش قبلی حفظ می‌شود.</p>";
   const dual = P.dualSettings(p);
@@ -191,7 +205,7 @@ function courseFormHtml(l, original, locked) {
   }
   h += "</div></div></fieldset>";
   h +=
-    '<div class="record-editor-context course-editor-status"></div><div class="record-editor-actions create-panel-footer"><button type="submit" data-mutating="1">' +
+    '<div class="record-editor-context course-editor-status"><p class="muted">تعریف درس و قواعد آن در همهٔ نوبت‌های این سال تحصیلی مشترک است.</p></div><div class="record-editor-actions create-panel-footer"><button type="submit" data-mutating="1">' +
     (original ? "ذخیره تغییرات" : "ثبت درس") +
     '</button><button type="button" class="ghost" data-course-cancel>انصراف</button></div></form>';
   return h;

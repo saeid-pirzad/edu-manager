@@ -112,6 +112,7 @@
         "src/workspace/students/archive.js",
         "src/workspace/data/raw-recovery.js",
         "src/workspace/collaboration/session-drafts.js",
+        "src/workspace/courses/year-history.js",
         "src/workspace/courses/rules.js",
         "src/workspace/courses/results.js",
         "src/workspace/core/start.js"
@@ -209,7 +210,8 @@
       "sources": [
         "src/domain/grade-policy.js",
         "src/domain/annual-modules.js",
-        "src/domain/academic-year-directory.js"
+        "src/domain/academic-year-directory.js",
+        "src/domain/academic-year-courses.js"
       ]
     },
     {

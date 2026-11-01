@@ -360,7 +360,9 @@ async function inspectMobileUx() {
     !!deletionForm &&
       document.activeElement ===
         deletionForm.querySelector('[data-workspace-action="close"]') &&
-      deletionForm.textContent.includes("هنرجویان کلاس حذف نمی‌شوند") &&
+      deletionForm.textContent.includes("هنرجویان کلاس حفظ می‌شوند") &&
+      deletionForm.textContent.includes("تمام نوبت‌های همین سال") &&
+      deletionForm.textContent.includes("نمره یا جلسه") &&
       deletionForm.querySelector(".deletion-target bdi").textContent ===
         deletionLesson.name,
   );
