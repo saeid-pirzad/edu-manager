@@ -28,22 +28,7 @@ function range(mode, date, academicYear) {
     throw Error("نوع گزارش نامعتبر است.");
   const d = isoDate(date);
   if (mode === "annual") {
-    if (
-      !/^\d{4}-\d{4}$/.test(academicYear || "") ||
-      Number(academicYear.slice(5)) !== Number(academicYear.slice(0, 4)) + 1
-    )
-      throw Error("سال تحصیلی گزارش معتبر نیست.");
-    const iso = (parts) =>
-      parts
-        .map((v, i) => (i ? String(v).padStart(2, "0") : String(v)))
-        .join("-");
-    return {
-      start: iso(jalaliToGregorian(Number(academicYear.slice(0, 4)), 7, 1)),
-      end: addDays(
-        iso(jalaliToGregorian(Number(academicYear.slice(5)), 7, 1)),
-        -1,
-      ),
-    };
+    return EduAcademicYear.range(academicYear);
   }
   if (mode === "monthly") {
     const [jy, jm] = gregorianToJalali(

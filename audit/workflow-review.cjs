@@ -110,6 +110,7 @@ if (process.argv.includes("--help")) {
         "unifiedBackup",
         "sharedYearDirectory",
         "sharedYearCourses",
+        "academicYearSafety",
         "importReplacement",
       ])
         cases.push(

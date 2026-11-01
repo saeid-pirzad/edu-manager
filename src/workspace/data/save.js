@@ -7,6 +7,7 @@ async function commitRecords(
     keepUndo = true,
     directoryRevisions,
   } = {},
+  historicalUndo = null,
 ) {
   if (blocked) throw Error("ذخیره مسدود است؛ صفحه را دوباره بارگذاری کنید.");
   if (workspace.closed && !allowClosed)
@@ -22,12 +23,53 @@ async function commitRecords(
     committed === sourceCommitted &&
     !resetBusy &&
     !connectionRetired;
+  let historicalRecords = null;
+  if (historicalUndo !== null) {
+    if (
+      historicalUndo.id !== sourceWorkspace.id ||
+      historicalUndo.revision !== sourceRevision
+    )
+      throw Error("سابقهٔ بازگردانی با نوبت و نسخهٔ فعلی یکسان نیست.");
+    historicalRecords = validatedUndoCandidate(
+      historicalUndo,
+      new Map(
+        [...sourceCommitted].map(([key, json]) => [key, JSON.parse(json)]),
+      ),
+      sourceWorkspace,
+    );
+    const meta = records.get("meta");
+    if (meta) {
+      const warningState = {
+        settings: meta.settings,
+        migrationWarnings: meta.migrationWarnings,
+        sessions: [...records]
+          .filter(([key]) => key.startsWith("session:"))
+          .map(([, value]) => value),
+      };
+      refreshAcademicYearWarnings(warningState);
+      meta.migrationWarnings = warningState.migrationWarnings;
+    }
+  }
   const { changed, removed, before, changes } = EduRecordCommitPlan.create(
     records,
     committed,
     { replace },
   );
   if (!changed.length && !removed.length) return;
+  // Keep legacy dates readable/editable, but never introduce a new out-of-year
+  // session or move an existing session to a different out-of-year date.
+  const academicYear =
+    records.get("meta")?.settings?.academicYear ?? workspace.year;
+  for (const [key, json] of changed) {
+    if (!key.startsWith("session:")) continue;
+    const current = JSON.parse(json),
+      previous = before.find((row) => row.key === key)?.value;
+    if (
+      (!previous || previous.date !== current.date) &&
+      JSON.stringify(historicalRecords?.get(key)) !== JSON.stringify(current)
+    )
+      EduAcademicYear.assertDate(academicYear, current.date);
+  }
   if (failNextWrite) {
     failNextWrite = false;
     throw new DOMException("آزمون شکست ذخیره", "QuotaExceededError");
@@ -123,6 +165,7 @@ function saveDBV24(scope = {}) {
       if (!isCurrentTarget())
         throw Error("دوره یا اتصال بانک تغییر کرده است؛ این درخواست ثبت نشد.");
       checkScope(scope);
+      refreshAcademicYearWarnings(db);
       await commitRecords(collectRecords(db, scope), {
         ...scope,
         replace: !scope.classId && !scope.sessionId,

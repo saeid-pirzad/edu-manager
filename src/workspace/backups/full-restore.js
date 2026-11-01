@@ -16,6 +16,11 @@ let pendingFullBackup = null,
 function previewFullBackup(value, { sourceName = "", legacy = false } = {}) {
   if (fullRestoreBusy)
     throw Error("بازیابی کامل در حال انجام است؛ تا پایان آن صبر کنید.");
+  const previous = pendingFullBackup,
+    previousSignature = pendingFullBackupSignature;
+  pendingFullBackup = null;
+  pendingFullBackupSignature = "";
+  value = validateFullBackup.normalize(value);
   const periods = validateFullBackup(value);
   const roleKey = ({ period }) => {
     const base = String(period.term).split(" — بازیابی ")[0];
@@ -26,6 +31,14 @@ function previewFullBackup(value, { sourceName = "", legacy = false } = {}) {
     return JSON.stringify([period.year, role]);
   };
   const duplicateTerms = new Set(periods.map(roleKey)).size !== periods.length;
+  const outsideSessions = periods.reduce(
+    (total, { period, data }) =>
+      total +
+      data.sessions.filter(
+        (session) => !EduAcademicYear.contains(period.year, session.date),
+      ).length,
+    0,
+  );
   const date = new Date(value.exportedAt || "");
   const exportedAt = Number.isFinite(date.getTime())
     ? date.toLocaleString("fa-IR")
@@ -55,6 +68,11 @@ function previewFullBackup(value, { sourceName = "", legacy = false } = {}) {
       (legacy
         ? '<p class="full-restore-safety">این فایل با قالب قدیمی ذخیره شده و فقط اطلاعات نوبت درج‌شده در بالا را دارد. پس از تأیید، تمام سال‌ها و نوبت‌های فعلی حذف می‌شوند و فقط محتوای همین فایل باقی می‌ماند.</p>'
         : "") +
+      (outsideSessions
+        ? '<section class="full-restore-warning" role="status"><h4>جلسات قدیمی خارج از سال تحصیلی</h4><p>' +
+          outsideSessions.toLocaleString("fa-IR") +
+          " جلسه خارج از بازهٔ سال خود دارد. این جلسات و سوابقشان حفظ می‌شوند؛ در گزارش سالانهٔ آن سال نمایش داده نمی‌شوند. تاریخ آن‌ها را پس از بازیابی بررسی کنید.</p></section>"
+        : "") +
       (duplicateTerms
         ? '<p class="full-restore-warning" role="status">خود فایل چند ورودی با یک سال و نوبت مشابه دارد. بازیابی، همین ورودی‌های داخل فایل را نگه می‌دارد؛ برنامه آن‌ها را ادغام یا حذف نمی‌کند.</p>'
         : "") +
@@ -63,6 +81,9 @@ function previewFullBackup(value, { sourceName = "", legacy = false } = {}) {
   if (opened !== false) {
     pendingFullBackup = value;
     pendingFullBackupSignature = JSON.stringify(value);
+  } else {
+    pendingFullBackup = previous;
+    pendingFullBackupSignature = previousSignature;
   }
 }
 function restoreCatalogSignature(rows) {

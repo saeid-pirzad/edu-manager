@@ -1,3 +1,27 @@
+function refreshAcademicYearWarnings(d) {
+  const outsideYearWarningPrefix = "جلسات خارج از سال تحصیلی:",
+    warnings = [...(d.migrationWarnings || [])].filter(
+      (warning) =>
+        typeof warning !== "string" ||
+        !warning.startsWith(outsideYearWarningPrefix),
+    ),
+    outsideYearSessions = (d.sessions || []).filter(
+      (session) =>
+        !EduAcademicYear.contains(d.settings.academicYear, session.date),
+    ).length;
+  if (outsideYearSessions)
+    warnings.push(
+      outsideYearWarningPrefix +
+        " " +
+        outsideYearSessions.toLocaleString("fa-IR") +
+        " جلسه خارج از بازهٔ «" +
+        d.settings.academicYear +
+        "» است؛ سوابق قبلی بدون تغییر حفظ شده‌اند.",
+    );
+  d.migrationWarnings = [...new Set(warnings)];
+  return d.migrationWarnings;
+}
+
 function knownStudents(c) {
   return [...c.students, ...(c.archivedStudents || [])];
 }
@@ -13,10 +37,10 @@ function validateV24(d) {
   old.validateDB(d);
   if (
     d.settings?.academicYear !== undefined &&
-    (typeof d.settings.academicYear !== "string" ||
-      d.settings.academicYear.length > 40)
+    EduAcademicYear.normalize(d.settings.academicYear) !==
+      d.settings.academicYear
   )
-    throw Error("سال تحصیلی معتبر نیست.");
+    throw Error("سال تحصیلی باید با قالب یکسان مانند 1405-1406 ذخیره شود.");
   if (
     d.settings?.academicTerm !== undefined &&
     (typeof d.settings.academicTerm !== "string" ||
@@ -73,7 +97,12 @@ function normalizeDB(input, { legacy = false } = {}) {
     throw Error("این بانک متعلق به نسخه جدیدتر برنامه است.");
   const d = clone(input);
   const defaults = v24DefaultDB();
-  d.settings = Object.assign(defaults.settings, d.settings || {});
+  d.settings = Object.assign({}, defaults.settings, d.settings || {});
+  d.settings.academicYear = EduAcademicYear.normalize(
+    d.settings.academicYear === undefined
+      ? defaults.settings.academicYear
+      : d.settings.academicYear,
+  );
   d.masterSchedule = d.masterSchedule || {};
   d.sessions = d.sessions || [];
   d.activeDays = d.activeDays || defaults.activeDays;
@@ -88,6 +117,9 @@ function normalizeDB(input, { legacy = false } = {}) {
         if (st.code) st.code = asciiDigits(st.code);
       const references = new Set();
       for (const l of c.lessons) {
+        for (const metadata of [l.courseInfo, l.gradingPolicy])
+          if (metadata?.year !== undefined)
+            metadata.year = EduAcademicYear.normalize(metadata.year);
         l.gradeMode = l.gradeMode || "standard";
         l.kardaneshScores = l.kardaneshScores || {};
         l.weightMostamar = l.weightMostamar ?? 40;
@@ -146,7 +178,8 @@ function normalizeDB(input, { legacy = false } = {}) {
       }
     }
   d.schemaVersion = 26;
-  d.migrationWarnings = [...new Set(warnings)];
+  d.migrationWarnings = warnings;
+  refreshAcademicYearWarnings(d);
   validateV24(d);
   return d;
 }

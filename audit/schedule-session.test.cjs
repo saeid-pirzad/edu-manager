@@ -20,13 +20,13 @@ function fixture() {
     },
   };
   const c = vm.createContext({
-    workspace: { id: "first" },
+    workspace: { id: "first", year: "1405-1406" },
     connection: {},
     state: { view: "schedule" },
     periodLoading: false,
     resetBusy: false,
     connectionRetired: false,
-    db: { sessions: [] },
+    db: { settings: { academicYear: "1405-1406" }, sessions: [] },
     assertEntityWritable() {},
     document: { getElementById: (id) => controls[id] },
     flushDrafts: async () => {},
@@ -43,6 +43,11 @@ function fixture() {
     openSessionModal: (session) => modals.push(session),
     getSessionById: (id) => c.db.sessions.find((session) => session.id === id),
   });
+  for (const name of ["calendar.js", "academic-year.js"])
+    vm.runInContext(
+      fs.readFileSync(path.join(__dirname, "../src/domain", name), "utf8"),
+      c,
+    );
   for (const name of ["sessions/actions.js", "schedule/actions.js"])
     vm.runInContext(
       fs.readFileSync(path.join(__dirname, "../src/workspace", name), "utf8"),

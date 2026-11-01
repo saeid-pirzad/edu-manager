@@ -64,6 +64,11 @@ function fixture(fail = "") {
     normalizedName: (value) => value.trim().toLowerCase(),
     uid: () => "new-id",
   });
+  for (const name of ["calendar.js", "academic-year.js"])
+    vm.runInContext(
+      fs.readFileSync(path.join(__dirname, "../src/domain", name), "utf8"),
+      c,
+    );
   vm.runInContext(
     fs.readFileSync(
       path.join(__dirname, "../src/workspace/periods/install.js"),

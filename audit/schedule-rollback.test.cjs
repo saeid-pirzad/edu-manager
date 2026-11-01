@@ -26,7 +26,7 @@ function fixture() {
     classObj: { lessons: [{ id: "lesson" }], students: [{ id: "student" }] },
   };
   const c = vm.createContext({
-    workspace: { id: "first", revision: 1 },
+    workspace: { id: "first", year: "1405-1406", revision: 1 },
     connection: {},
     state: { view: "schedule" },
     periodLoading: false,
@@ -46,6 +46,7 @@ function fixture() {
     assertEntityWritable() {},
     paintStatus() {},
     checkScope() {},
+    refreshAcademicYearWarnings() {},
     flushDrafts: async () => {},
     collectRecords: (value) => value,
     scheduleSingleFile() {},
@@ -62,6 +63,11 @@ function fixture() {
     uid: () => "session-id",
     getDayIdxFromDate: () => 0,
   });
+  for (const source of ["domain/calendar.js", "domain/academic-year.js"])
+    vm.runInContext(
+      fs.readFileSync(path.join(__dirname, "../src", source), "utf8"),
+      c,
+    );
   for (const file of [
     "sessions/actions.js",
     "schedule/actions.js",

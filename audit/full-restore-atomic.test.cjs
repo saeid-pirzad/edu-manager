@@ -52,9 +52,16 @@ function fixture({ syncFailure = false, asyncFailure = false } = {}) {
       revision: c.workspace.revision,
     }),
     EduFullBackupValidator: {
-      create: () => () => [
-        { period, data: { settings: { academicTerm: "اول" } } },
-      ],
+      create: () =>
+        Object.assign(
+          () => [
+            {
+              period,
+              data: { settings: { academicTerm: "اول" }, sessions: [] },
+            },
+          ],
+          { normalize: (value) => value },
+        ),
     },
     backupStores: names,
     assertSafeDataTree() {},
@@ -139,6 +146,11 @@ function fixture({ syncFailure = false, asyncFailure = false } = {}) {
       },
     },
   });
+  for (const source of ["domain/calendar.js", "domain/academic-year.js"])
+    vm.runInContext(
+      fs.readFileSync(path.join(__dirname, "../src", source), "utf8"),
+      c,
+    );
   vm.runInContext(
     fs.readFileSync(
       path.join(__dirname, "../src/workspace/backups/full-restore.js"),

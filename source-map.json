@@ -71,6 +71,7 @@
         "src/workspace/grading/scope.js",
         "src/workspace/data/save.js",
         "src/workspace/periods/install.js",
+        "src/workspace/periods/academic-years.js",
         "src/workspace/core/bootstrap.js",
         "src/workspace/ui/save-status.js",
         "src/workspace/drafts/persistence.js",
@@ -126,7 +127,7 @@
     {
       "output": "assets/scripts/calendar-math.js",
       "scope": "global",
-      "sources": ["src/domain/calendar.js"]
+      "sources": ["src/domain/calendar.js", "src/domain/academic-year.js"]
     },
     {
       "output": "assets/scripts/calendar-ui.js",

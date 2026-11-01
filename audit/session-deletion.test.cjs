@@ -116,6 +116,7 @@ test("failed session deletion rolls back through the real save queue and can be 
     busy: 0,
     paintStatus() {},
     checkScope() {},
+    refreshAcademicYearWarnings() {},
     collectRecords: (value) => value,
     setStatus() {},
     scheduleSingleFile() {},

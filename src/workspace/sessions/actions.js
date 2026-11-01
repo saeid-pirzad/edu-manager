@@ -97,6 +97,10 @@ function validateSessionDate(date) {
   return date;
 }
 
+function validateAcademicSessionDate(date) {
+  return EduAcademicYear.assertDate(workspace.year, validateSessionDate(date));
+}
+
 let sessionDeletionBusy = false;
 async function deleteSessionsV24({ id, classId, lessonId }) {
   if (sessionDeletionBusy) return false;
@@ -166,7 +170,7 @@ async function addManualSessionV24(event, lessonId) {
   manualSessionBusy = true;
   try {
     assertEntityWritable();
-    const date = validateSessionDate(event.target.date.value),
+    const date = validateAcademicSessionDate(event.target.date.value),
       text = asciiDigits(event.target.period.value);
     if (!/^\d{1,2}$/.test(text) || Number(text) < 1 || Number(text) > 12)
       throw Error("شماره زنگ باید عدد صحیح یک تا دوازده باشد.");
@@ -258,6 +262,7 @@ async function changeSessionDateV24(id) {
     throw Error("شماره زنگ باید عدد صحیح یک تا دوازده باشد.");
   const period = Number(periodText) - 1;
   if (date === session.date && period === session.period) return;
+  if (date !== session.date) validateAcademicSessionDate(date);
   const conflict = db.sessions.find(
     (other) =>
       other.id !== id && other.date === date && other.period === period,

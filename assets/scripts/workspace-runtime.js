@@ -158,6 +158,30 @@ function finalText(result) {
     : text;
 }
 // Source: src/workspace/validation/database.js
+function refreshAcademicYearWarnings(d) {
+  const outsideYearWarningPrefix = "جلسات خارج از سال تحصیلی:",
+    warnings = [...(d.migrationWarnings || [])].filter(
+      (warning) =>
+        typeof warning !== "string" ||
+        !warning.startsWith(outsideYearWarningPrefix),
+    ),
+    outsideYearSessions = (d.sessions || []).filter(
+      (session) =>
+        !EduAcademicYear.contains(d.settings.academicYear, session.date),
+    ).length;
+  if (outsideYearSessions)
+    warnings.push(
+      outsideYearWarningPrefix +
+        " " +
+        outsideYearSessions.toLocaleString("fa-IR") +
+        " جلسه خارج از بازهٔ «" +
+        d.settings.academicYear +
+        "» است؛ سوابق قبلی بدون تغییر حفظ شده‌اند.",
+    );
+  d.migrationWarnings = [...new Set(warnings)];
+  return d.migrationWarnings;
+}
+
 function knownStudents(c) {
   return [...c.students, ...(c.archivedStudents || [])];
 }
@@ -173,10 +197,10 @@ function validateV24(d) {
   old.validateDB(d);
   if (
     d.settings?.academicYear !== undefined &&
-    (typeof d.settings.academicYear !== "string" ||
-      d.settings.academicYear.length > 40)
+    EduAcademicYear.normalize(d.settings.academicYear) !==
+      d.settings.academicYear
   )
-    throw Error("سال تحصیلی معتبر نیست.");
+    throw Error("سال تحصیلی باید با قالب یکسان مانند 1405-1406 ذخیره شود.");
   if (
     d.settings?.academicTerm !== undefined &&
     (typeof d.settings.academicTerm !== "string" ||
@@ -233,7 +257,12 @@ function normalizeDB(input, { legacy = false } = {}) {
     throw Error("این بانک متعلق به نسخه جدیدتر برنامه است.");
   const d = clone(input);
   const defaults = v24DefaultDB();
-  d.settings = Object.assign(defaults.settings, d.settings || {});
+  d.settings = Object.assign({}, defaults.settings, d.settings || {});
+  d.settings.academicYear = EduAcademicYear.normalize(
+    d.settings.academicYear === undefined
+      ? defaults.settings.academicYear
+      : d.settings.academicYear,
+  );
   d.masterSchedule = d.masterSchedule || {};
   d.sessions = d.sessions || [];
   d.activeDays = d.activeDays || defaults.activeDays;
@@ -248,6 +277,9 @@ function normalizeDB(input, { legacy = false } = {}) {
         if (st.code) st.code = asciiDigits(st.code);
       const references = new Set();
       for (const l of c.lessons) {
+        for (const metadata of [l.courseInfo, l.gradingPolicy])
+          if (metadata?.year !== undefined)
+            metadata.year = EduAcademicYear.normalize(metadata.year);
         l.gradeMode = l.gradeMode || "standard";
         l.kardaneshScores = l.kardaneshScores || {};
         l.weightMostamar = l.weightMostamar ?? 40;
@@ -306,7 +338,8 @@ function normalizeDB(input, { legacy = false } = {}) {
       }
     }
   d.schemaVersion = 26;
-  d.migrationWarnings = [...new Set(warnings)];
+  d.migrationWarnings = warnings;
+  refreshAcademicYearWarnings(d);
   validateV24(d);
   return d;
 }
@@ -1011,6 +1044,7 @@ async function commitRecords(
     keepUndo = true,
     directoryRevisions,
   } = {},
+  historicalUndo = null,
 ) {
   if (blocked) throw Error("ذخیره مسدود است؛ صفحه را دوباره بارگذاری کنید.");
   if (workspace.closed && !allowClosed)
@@ -1026,12 +1060,53 @@ async function commitRecords(
     committed === sourceCommitted &&
     !resetBusy &&
     !connectionRetired;
+  let historicalRecords = null;
+  if (historicalUndo !== null) {
+    if (
+      historicalUndo.id !== sourceWorkspace.id ||
+      historicalUndo.revision !== sourceRevision
+    )
+      throw Error("سابقهٔ بازگردانی با نوبت و نسخهٔ فعلی یکسان نیست.");
+    historicalRecords = validatedUndoCandidate(
+      historicalUndo,
+      new Map(
+        [...sourceCommitted].map(([key, json]) => [key, JSON.parse(json)]),
+      ),
+      sourceWorkspace,
+    );
+    const meta = records.get("meta");
+    if (meta) {
+      const warningState = {
+        settings: meta.settings,
+        migrationWarnings: meta.migrationWarnings,
+        sessions: [...records]
+          .filter(([key]) => key.startsWith("session:"))
+          .map(([, value]) => value),
+      };
+      refreshAcademicYearWarnings(warningState);
+      meta.migrationWarnings = warningState.migrationWarnings;
+    }
+  }
   const { changed, removed, before, changes } = EduRecordCommitPlan.create(
     records,
     committed,
     { replace },
   );
   if (!changed.length && !removed.length) return;
+  // Keep legacy dates readable/editable, but never introduce a new out-of-year
+  // session or move an existing session to a different out-of-year date.
+  const academicYear =
+    records.get("meta")?.settings?.academicYear ?? workspace.year;
+  for (const [key, json] of changed) {
+    if (!key.startsWith("session:")) continue;
+    const current = JSON.parse(json),
+      previous = before.find((row) => row.key === key)?.value;
+    if (
+      (!previous || previous.date !== current.date) &&
+      JSON.stringify(historicalRecords?.get(key)) !== JSON.stringify(current)
+    )
+      EduAcademicYear.assertDate(academicYear, current.date);
+  }
   if (failNextWrite) {
     failNextWrite = false;
     throw new DOMException("آزمون شکست ذخیره", "QuotaExceededError");
@@ -1127,6 +1202,7 @@ function saveDBV24(scope = {}) {
       if (!isCurrentTarget())
         throw Error("دوره یا اتصال بانک تغییر کرده است؛ این درخواست ثبت نشد.");
       checkScope(scope);
+      refreshAcademicYearWarnings(db);
       await commitRecords(collectRecords(db, scope), {
         ...scope,
         replace: !scope.classId && !scope.sessionId,
@@ -1221,7 +1297,7 @@ async function installWorkspace(data, details) {
     now = new Date().toISOString();
   const catalog = {
     id,
-    year: details.year || data.settings.academicYear,
+    year: EduAcademicYear.normalize(details.year ?? data.settings.academicYear),
     term: details.term || data.settings.academicTerm || "نامشخص",
     termKind:
       details.termKind ||
@@ -1300,6 +1376,143 @@ async function installWorkspace(data, details) {
   }
   return catalog;
 }
+// Source: src/workspace/periods/academic-years.js
+// Canonicalize equivalent year labels before grouping terms. The detached
+// snapshot and one guarded write transaction preserve all historical values.
+async function synchronizeAcademicYearsForRead() {
+  const database = connection,
+    names = ["catalog", "records", "reports", "undo", "backups"],
+    assertConnection = () => {
+      if (
+        connection !== database ||
+        (typeof connectionRetired !== "undefined" && connectionRetired)
+      )
+        throw Error("اتصال بانک هنگام اصلاح قالب سال تحصیلی تغییر کرده است.");
+    },
+    keyOf = (name, row) => (name === "records" ? row.key : row.id),
+    signature = (name, rows) =>
+      JSON.stringify(
+        [...rows].sort((a, b) =>
+          String(keyOf(name, a)).localeCompare(String(keyOf(name, b))),
+        ),
+      );
+  assertConnection();
+  const read = database.transaction(names, "readonly"),
+    readDone = transactionDone(read),
+    [values] = await Promise.all([
+      Promise.all(
+        names.map((name) => requestPromise(read.objectStore(name).getAll())),
+      ),
+      readDone,
+    ]);
+  assertConnection();
+  const original = Object.fromEntries(
+      names.map((name, index) => [name, values[index]]),
+    ),
+    normalized = validateFullBackup.normalizeYears({
+      format: "EduManager.FullBackup",
+      stores: original,
+    }).stores,
+    catalog = new Map(original.catalog.map((row) => [row.id, row])),
+    plans = new Map(),
+    affected = new Set();
+  for (const row of normalized.catalog) EduAcademicYear.normalize(row.year);
+  for (const name of names) {
+    const rows = new Map();
+    normalized[name].forEach((row, index) => {
+      if (JSON.stringify(row) === JSON.stringify(original[name][index])) return;
+      rows.set(keyOf(name, row), row);
+      const owner =
+        name === "catalog" || name === "undo" ? row.id : row.workspace;
+      if (catalog.has(owner)) affected.add(owner);
+    });
+    if (rows.size) plans.set(name, rows);
+  }
+  if (!plans.size) return { changed: [] };
+  const at = new Date().toISOString(),
+    changed = [],
+    catalogPlans = plans.get("catalog") || new Map();
+  for (const id of affected) {
+    const period = catalog.get(id),
+      revision = period.revision + 1;
+    if (
+      !Number.isSafeInteger(period.revision) ||
+      period.revision < 1 ||
+      !Number.isSafeInteger(revision)
+    )
+      throw Error("شمارهٔ نسخهٔ سال تحصیلی برای اصلاح قالب معتبر نیست.");
+    const current = normalized.catalog.find((row) => row.id === id);
+    catalogPlans.set(id, { ...current, revision, updatedAt: at });
+    changed.push({ workspace: id, revision });
+    const undo = normalized.undo.find((row) => row.id === id);
+    if (undo && undo.revision === period.revision) {
+      const undoPlans = plans.get("undo") || new Map();
+      undoPlans.set(id, { ...undo, revision });
+      plans.set("undo", undoPlans);
+    }
+  }
+  if (catalogPlans.size) plans.set("catalog", catalogPlans);
+  assertConnection();
+  const checked = [...new Set(["catalog", ...plans.keys()])],
+    tx = database.transaction([...checked, "events"], "readwrite"),
+    done = transactionDone(tx);
+  let failure;
+  const abort = (error) => {
+    failure = error;
+    try {
+      tx.abort();
+    } catch {}
+  };
+  try {
+    let remaining = checked.length;
+    const current = new Map();
+    for (const name of checked) {
+      const request = tx.objectStore(name).getAll();
+      request.onsuccess = () => {
+        try {
+          assertConnection();
+          current.set(name, request.result);
+          if (--remaining) return;
+          for (const store of checked)
+            if (
+              signature(store, current.get(store)) !==
+              signature(store, original[store])
+            )
+              throw Error(
+                "اطلاعات سال تحصیلی در پنجرهٔ دیگری تغییر کرده است؛ دوباره برنامه را باز کنید.",
+              );
+          for (const [store, rows] of plans)
+            for (const row of rows.values()) tx.objectStore(store).put(row);
+          for (const item of changed)
+            tx.objectStore("events").add({
+              workspace: item.workspace,
+              revision: item.revision,
+              at,
+              action: "یکسان‌سازی قالب سال تحصیلی",
+              changes: [
+                {
+                  path: "academicYearFormat",
+                  before: catalog.get(item.workspace).year,
+                  after: catalogPlans.get(item.workspace).year,
+                },
+              ],
+            });
+        } catch (error) {
+          abort(error);
+        }
+      };
+    }
+  } catch (error) {
+    abort(error);
+  }
+  try {
+    await done;
+  } catch (error) {
+    throw failure || error;
+  }
+  assertConnection();
+  return { changed };
+}
 // Source: src/workspace/core/bootstrap.js
 async function bootstrapV24() {
   document.getElementById("app").innerHTML =
@@ -1359,6 +1572,11 @@ async function bootstrapV24() {
         localStorage.removeItem(STORAGE_KEY);
         storageSnapshot = null;
       }
+    }
+    const normalizedYears = await synchronizeAcademicYearsForRead();
+    if (normalizedYears.changed.length) {
+      periods = await allFrom("catalog");
+      for (const change of normalizedYears.changed) broadcast(change);
     }
     const preferred = preferredPeriod();
     workspace =
@@ -3054,6 +3272,10 @@ function validateSessionDate(date) {
   return date;
 }
 
+function validateAcademicSessionDate(date) {
+  return EduAcademicYear.assertDate(workspace.year, validateSessionDate(date));
+}
+
 let sessionDeletionBusy = false;
 async function deleteSessionsV24({ id, classId, lessonId }) {
   if (sessionDeletionBusy) return false;
@@ -3123,7 +3345,7 @@ async function addManualSessionV24(event, lessonId) {
   manualSessionBusy = true;
   try {
     assertEntityWritable();
-    const date = validateSessionDate(event.target.date.value),
+    const date = validateAcademicSessionDate(event.target.date.value),
       text = asciiDigits(event.target.period.value);
     if (!/^\d{1,2}$/.test(text) || Number(text) < 1 || Number(text) > 12)
       throw Error("شماره زنگ باید عدد صحیح یک تا دوازده باشد.");
@@ -3215,6 +3437,7 @@ async function changeSessionDateV24(id) {
     throw Error("شماره زنگ باید عدد صحیح یک تا دوازده باشد.");
   const period = Number(periodText) - 1;
   if (date === session.date && period === session.period) return;
+  if (date !== session.date) validateAcademicSessionDate(date);
   const conflict = db.sessions.find(
     (other) =>
       other.id !== id && other.date === date && other.period === period,
@@ -3434,7 +3657,7 @@ async function startSessionFromMasterV24(day, period) {
     const dateInput = document.getElementById("sessNewDate"),
       classInput = document.getElementById("sessNewClass"),
       lessonInput = document.getElementById("sessNewLesson"),
-      date = validateSessionDate(dateInput?.value || ""),
+      date = validateAcademicSessionDate(dateInput?.value || ""),
       classId = classInput?.value || "",
       lessonId = lessonInput?.value || "";
     const sameSelection = () =>
@@ -4374,6 +4597,11 @@ let pendingFullBackup = null,
 function previewFullBackup(value, { sourceName = "", legacy = false } = {}) {
   if (fullRestoreBusy)
     throw Error("بازیابی کامل در حال انجام است؛ تا پایان آن صبر کنید.");
+  const previous = pendingFullBackup,
+    previousSignature = pendingFullBackupSignature;
+  pendingFullBackup = null;
+  pendingFullBackupSignature = "";
+  value = validateFullBackup.normalize(value);
   const periods = validateFullBackup(value);
   const roleKey = ({ period }) => {
     const base = String(period.term).split(" — بازیابی ")[0];
@@ -4384,6 +4612,14 @@ function previewFullBackup(value, { sourceName = "", legacy = false } = {}) {
     return JSON.stringify([period.year, role]);
   };
   const duplicateTerms = new Set(periods.map(roleKey)).size !== periods.length;
+  const outsideSessions = periods.reduce(
+    (total, { period, data }) =>
+      total +
+      data.sessions.filter(
+        (session) => !EduAcademicYear.contains(period.year, session.date),
+      ).length,
+    0,
+  );
   const date = new Date(value.exportedAt || "");
   const exportedAt = Number.isFinite(date.getTime())
     ? date.toLocaleString("fa-IR")
@@ -4413,6 +4649,11 @@ function previewFullBackup(value, { sourceName = "", legacy = false } = {}) {
       (legacy
         ? '<p class="full-restore-safety">این فایل با قالب قدیمی ذخیره شده و فقط اطلاعات نوبت درج‌شده در بالا را دارد. پس از تأیید، تمام سال‌ها و نوبت‌های فعلی حذف می‌شوند و فقط محتوای همین فایل باقی می‌ماند.</p>'
         : "") +
+      (outsideSessions
+        ? '<section class="full-restore-warning" role="status"><h4>جلسات قدیمی خارج از سال تحصیلی</h4><p>' +
+          outsideSessions.toLocaleString("fa-IR") +
+          " جلسه خارج از بازهٔ سال خود دارد. این جلسات و سوابقشان حفظ می‌شوند؛ در گزارش سالانهٔ آن سال نمایش داده نمی‌شوند. تاریخ آن‌ها را پس از بازیابی بررسی کنید.</p></section>"
+        : "") +
       (duplicateTerms
         ? '<p class="full-restore-warning" role="status">خود فایل چند ورودی با یک سال و نوبت مشابه دارد. بازیابی، همین ورودی‌های داخل فایل را نگه می‌دارد؛ برنامه آن‌ها را ادغام یا حذف نمی‌کند.</p>'
         : "") +
@@ -4421,6 +4662,9 @@ function previewFullBackup(value, { sourceName = "", legacy = false } = {}) {
   if (opened !== false) {
     pendingFullBackup = value;
     pendingFullBackupSignature = JSON.stringify(value);
+  } else {
+    pendingFullBackup = previous;
+    pendingFullBackupSignature = previousSignature;
   }
 }
 function restoreCatalogSignature(rows) {
@@ -4715,10 +4959,14 @@ function legacyBackupReplacement(parsed) {
     throw Error("وضعیت بسته‌بودن اطلاعات فایل معتبر نیست.");
   if (source.settings !== undefined && !isDataObject(source.settings))
     throw Error("تنظیمات فایل پشتیبان معتبر نیست.");
+  const outerYear =
+    period?.year === undefined
+      ? undefined
+      : EduAcademicYear.normalize(period.year);
   const input = clone(source);
   input.settings ||= {};
-  if (input.settings.academicYear === undefined && period?.year !== undefined)
-    input.settings.academicYear = period.year;
+  if (input.settings.academicYear === undefined && outerYear !== undefined)
+    input.settings.academicYear = outerYear;
   if (input.settings.academicTerm === undefined && period?.term !== undefined)
     input.settings.academicTerm = period.term;
   const normalized = normalizeDB(input, {
@@ -5324,11 +5572,15 @@ async function performUndo(target, approval = null) {
   assertEntityWritable();
   if (!isCurrentTarget() || workspace.revision !== target.revision)
     throw Error("دوره یا اطلاعات بازگردانی تغییر کرده است.");
-  await commitRecords(candidate, {
-    action: "بازگردانی: " + undo.action,
-    replace: true,
-    keepUndo: false,
-  });
+  await commitRecords(
+    candidate,
+    {
+      action: "بازگردانی: " + undo.action,
+      replace: true,
+      keepUndo: false,
+    },
+    undo,
+  );
   pendingUndo = null;
   if (!isCurrentTarget()) return true;
   const savedRevision = workspace.revision;
@@ -5791,7 +6043,9 @@ async function createNewPeriod() {
       throw Error(
         "این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.",
       );
-    const year = asciiDigits(document.getElementById("periodYear").value),
+    const year = EduAcademicYear.normalize(
+        document.getElementById("periodYear").value,
+      ),
       term = document.getElementById("periodTerm").value;
     if (!["اول", "دوم"].includes(term))
       throw Error("نوبت انتخاب‌شده معتبر نیست.");
@@ -5799,11 +6053,6 @@ async function createNewPeriod() {
     await writer.catch(() => {});
     ensureCurrent();
     const context = captureWorkspaceContext();
-    if (
-      !/^\d{4}-\d{4}$/.test(year) ||
-      Number(year.slice(5)) - Number(year.slice(0, 4)) !== 1
-    )
-      throw Error("سال را مانند 1405-1406 وارد کنید.");
     const existing = await allFrom("catalog");
     assertWorkspaceContext(context);
     const first = validateAcademicTransition(existing, year, term);

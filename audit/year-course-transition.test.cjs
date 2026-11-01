@@ -155,6 +155,8 @@ function fixture({
     },
   });
   for (const file of [
+    "domain/calendar.js",
+    "domain/academic-year.js",
     "domain/grade-policy.js",
     "domain/academic-year-courses.js",
     "workspace/periods/install.js",

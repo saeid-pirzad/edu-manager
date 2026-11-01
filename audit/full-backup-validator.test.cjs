@@ -4,7 +4,12 @@ const { test } = require("node:test"),
 const fs = require("node:fs"),
   path = require("node:path"),
   vm = require("node:vm");
-const c = vm.createContext({});
+const c = vm.createContext({ structuredClone });
+for (const source of ["domain/calendar.js", "domain/academic-year.js"])
+  vm.runInContext(
+    fs.readFileSync(path.join(__dirname, "../src", source), "utf8"),
+    c,
+  );
 vm.runInContext(
   fs.readFileSync(
     path.join(__dirname, "../src/validation/full-backup.js"),
@@ -126,11 +131,19 @@ test("records are grouped once rather than rescanned for every period", () => {
       workspace: id,
     });
   }
-  value.stores.records = new Proxy(value.stores.records, {
-    get(target, key, receiver) {
-      if (key === "filter") throw Error("full-record rescan");
-      return Reflect.get(target, key, receiver);
-    },
-  });
-  assert.equal(validate(value).length, 101);
+  c.structuredClone = (input) => {
+    const copy = structuredClone(input);
+    copy.stores.records = new Proxy(copy.stores.records, {
+      get(target, key, receiver) {
+        if (key === "filter") throw Error("full-record rescan");
+        return Reflect.get(target, key, receiver);
+      },
+    });
+    return copy;
+  };
+  try {
+    assert.equal(validate(value).length, 101);
+  } finally {
+    c.structuredClone = structuredClone;
+  }
 });

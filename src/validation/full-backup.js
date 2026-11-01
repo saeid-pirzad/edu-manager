@@ -15,7 +15,81 @@ globalThis.EduFullBackupValidator = Object.freeze({
     validatedUndoCandidate,
     isSupportedGradeDraft,
   }) {
-    function validateFullBackup(value) {
+    // Canonicalize only declared year fields on a detached copy. This is also
+    // used by startup migration without rewriting grades or historical events.
+    function normalizeYears(value) {
+      assertSafeDataTree(value);
+      const candidate = structuredClone(value),
+        pending = [{ kind: "installation", value: candidate }],
+        seen = new WeakSet();
+      const yearField = (object, key) => {
+        if (isDataObject(object) && object[key] !== undefined)
+          object[key] = EduAcademicYear.normalize(object[key]);
+      };
+      const lessonYears = (lesson, frozen = false) => {
+        if (!isDataObject(lesson)) return;
+        yearField(lesson.courseInfo, "year");
+        yearField(frozen ? lesson.policy : lesson.gradingPolicy, "year");
+      };
+      const classYears = (classroom) => {
+        if (Array.isArray(classroom?.lessons))
+          for (const lesson of classroom.lessons) lessonYears(lesson);
+      };
+      const recordYears = (logical, record) => {
+        if (logical === "meta") yearField(record?.settings, "academicYear");
+        else if (typeof logical === "string" && logical.startsWith("class:"))
+          classYears(record);
+      };
+      while (pending.length) {
+        const job = pending.pop(),
+          item = job.value;
+        if (!isDataObject(item) || seen.has(item)) continue;
+        seen.add(item);
+        if (job.kind === "database") {
+          yearField(item.settings, "academicYear");
+          if (Array.isArray(item.schools))
+            for (const school of item.schools)
+              if (Array.isArray(school?.classes))
+                for (const classroom of school.classes) classYears(classroom);
+          continue;
+        }
+        if (job.kind === "report") {
+          yearField(item, "year");
+          if (Array.isArray(item.classes))
+            for (const classroom of item.classes)
+              if (Array.isArray(classroom?.students))
+                for (const student of classroom.students)
+                  if (Array.isArray(student?.lessons))
+                    for (const lesson of student.lessons)
+                      lessonYears(lesson, true);
+          continue;
+        }
+        const stores = item.stores;
+        if (!isDataObject(stores)) continue;
+        if (Array.isArray(stores.catalog))
+          for (const period of stores.catalog) yearField(period, "year");
+        if (Array.isArray(stores.records))
+          for (const record of stores.records)
+            recordYears(record?.logical, record?.value);
+        if (Array.isArray(stores.undo))
+          for (const undo of stores.undo)
+            if (Array.isArray(undo?.before))
+              for (const before of undo.before)
+                recordYears(before?.key, before?.value);
+        if (Array.isArray(stores.reports))
+          for (const report of stores.reports)
+            pending.push({ kind: "report", value: report });
+        if (Array.isArray(stores.backups))
+          for (const backup of stores.backups) {
+            if (isDataObject(backup?.db))
+              pending.push({ kind: "database", value: backup.db });
+            if (backup?.full?.format === "EduManager.FullBackup")
+              pending.push({ kind: "installation", value: backup.full });
+          }
+      }
+      return candidate;
+    }
+    function validateCanonicalFullBackup(value) {
       if (
         value?.format !== "EduManager.FullBackup" ||
         ![1, 2].includes(value.version) ||
@@ -164,6 +238,15 @@ globalThis.EduFullBackupValidator = Object.freeze({
       }
       return periods;
     }
-    return validateFullBackup;
+    function validateFullBackup(value) {
+      return validateCanonicalFullBackup(normalizeYears(value));
+    }
+    validateFullBackup.normalizeYears = normalizeYears;
+    validateFullBackup.normalize = (value) => {
+      const candidate = normalizeYears(value);
+      validateCanonicalFullBackup(candidate);
+      return candidate;
+    };
+    return Object.freeze(validateFullBackup);
   },
 });

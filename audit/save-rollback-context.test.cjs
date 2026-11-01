@@ -21,6 +21,7 @@ function fixture() {
     busy: 0,
     paintStatus() {},
     checkScope() {},
+    refreshAcademicYearWarnings() {},
     collectRecords: (value) => value,
     setStatus: (...args) => statuses.push(args),
     render() {},

@@ -447,7 +447,9 @@ async function createNewPeriod() {
       throw Error(
         "این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.",
       );
-    const year = asciiDigits(document.getElementById("periodYear").value),
+    const year = EduAcademicYear.normalize(
+        document.getElementById("periodYear").value,
+      ),
       term = document.getElementById("periodTerm").value;
     if (!["اول", "دوم"].includes(term))
       throw Error("نوبت انتخاب‌شده معتبر نیست.");
@@ -455,11 +457,6 @@ async function createNewPeriod() {
     await writer.catch(() => {});
     ensureCurrent();
     const context = captureWorkspaceContext();
-    if (
-      !/^\d{4}-\d{4}$/.test(year) ||
-      Number(year.slice(5)) - Number(year.slice(0, 4)) !== 1
-    )
-      throw Error("سال را مانند 1405-1406 وارد کنید.");
     const existing = await allFrom("catalog");
     assertWorkspaceContext(context);
     const first = validateAcademicTransition(existing, year, term);

@@ -40,6 +40,8 @@ function creation() {
         throw Error("context changed");
     },
   });
+  for (const source of ["domain/calendar.js", "domain/academic-year.js"])
+    vm.runInContext(read(source), c);
   const install = c.installWorkspace;
   vm.runInContext(read("workspace/periods/install.js"), c);
   c.installWorkspace = install;

@@ -74,3 +74,9 @@ test("calendar agrees with Intl Persian calendar and round-trips every day from 
     assert.deepEqual(toGregorian(...actual), gregorian, date.toISOString());
   }
 });
+
+test("calendar bundle exposes the shared academic-year contract", () => {
+  assert.equal(context.EduAcademicYear.normalize("۱۴۰۵–۱۴۰۶"), "1405-1406");
+  assert.equal(context.EduAcademicYear.range("1405-1406").start, "2026-09-23");
+  assert.equal(context.EduAcademicYear.range("1405-1406").end, "2027-09-22");
+});

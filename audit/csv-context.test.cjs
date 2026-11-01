@@ -192,6 +192,7 @@ for (const mode of ["add", "update"]) {
       busy: 0,
       paintStatus() {},
       checkScope() {},
+      refreshAcademicYearWarnings() {},
       collectRecords: (db) => db,
       scheduleSingleFile() {},
       readWorkspace: async () => ({ data: structuredClone(durable) }),

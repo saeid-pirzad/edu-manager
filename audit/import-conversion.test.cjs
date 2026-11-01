@@ -83,6 +83,8 @@ function fixture() {
     },
   });
   for (const source of [
+    "domain/calendar.js",
+    "domain/academic-year.js",
     "domain/grade-math.js",
     "domain/data-boundary.js",
     "domain/grade-policy.js",

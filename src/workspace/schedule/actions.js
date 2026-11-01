@@ -34,7 +34,7 @@ async function startSessionFromMasterV24(day, period) {
     const dateInput = document.getElementById("sessNewDate"),
       classInput = document.getElementById("sessNewClass"),
       lessonInput = document.getElementById("sessNewLesson"),
-      date = validateSessionDate(dateInput?.value || ""),
+      date = validateAcademicSessionDate(dateInput?.value || ""),
       classId = classInput?.value || "",
       lessonId = lessonInput?.value || "";
     const sameSelection = () =>

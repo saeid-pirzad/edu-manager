@@ -8,6 +8,8 @@ const fs = require("node:fs"),
 function fixture() {
   const c = vm.createContext({ structuredClone });
   for (const file of [
+    "domain/calendar.js",
+    "domain/academic-year.js",
     "domain/grade-math.js",
     "domain/data-boundary.js",
     "domain/grade-policy.js",

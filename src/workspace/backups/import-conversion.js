@@ -32,10 +32,14 @@ function legacyBackupReplacement(parsed) {
     throw Error("وضعیت بسته‌بودن اطلاعات فایل معتبر نیست.");
   if (source.settings !== undefined && !isDataObject(source.settings))
     throw Error("تنظیمات فایل پشتیبان معتبر نیست.");
+  const outerYear =
+    period?.year === undefined
+      ? undefined
+      : EduAcademicYear.normalize(period.year);
   const input = clone(source);
   input.settings ||= {};
-  if (input.settings.academicYear === undefined && period?.year !== undefined)
-    input.settings.academicYear = period.year;
+  if (input.settings.academicYear === undefined && outerYear !== undefined)
+    input.settings.academicYear = outerYear;
   if (input.settings.academicTerm === undefined && period?.term !== undefined)
     input.settings.academicTerm = period.term;
   const normalized = normalizeDB(input, {

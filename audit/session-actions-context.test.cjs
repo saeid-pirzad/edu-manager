@@ -26,10 +26,10 @@ function fixture() {
     ],
   };
   const c = vm.createContext({
-    workspace: { id: "first" },
+    workspace: { id: "first", year: "1405-1406" },
     connection: {},
     currentSessionId: "session",
-    db: { sessions: [session] },
+    db: { settings: { academicYear: "1405-1406" }, sessions: [session] },
     periodLoading: false,
     resetBusy: false,
     connectionRetired: false,
@@ -53,6 +53,11 @@ function fixture() {
     TYPE_LABELS: { classGrade: "class grade" },
     parseGrade: () => ({ ok: true, value: 18 }),
   });
+  for (const name of ["calendar.js", "academic-year.js"])
+    vm.runInContext(
+      fs.readFileSync(path.join(__dirname, "../src/domain", name), "utf8"),
+      c,
+    );
   vm.runInContext(
     fs.readFileSync(
       path.join(__dirname, "../src/workspace/sessions/actions.js"),

@@ -134,11 +134,15 @@ async function performUndo(target, approval = null) {
   assertEntityWritable();
   if (!isCurrentTarget() || workspace.revision !== target.revision)
     throw Error("دوره یا اطلاعات بازگردانی تغییر کرده است.");
-  await commitRecords(candidate, {
-    action: "بازگردانی: " + undo.action,
-    replace: true,
-    keepUndo: false,
-  });
+  await commitRecords(
+    candidate,
+    {
+      action: "بازگردانی: " + undo.action,
+      replace: true,
+      keepUndo: false,
+    },
+    undo,
+  );
   pendingUndo = null;
   if (!isCurrentTarget()) return true;
   const savedRevision = workspace.revision;

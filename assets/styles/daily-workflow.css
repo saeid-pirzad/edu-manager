@@ -823,6 +823,24 @@ body {
     font-size: 13px;
   }
 }
+
+.session-year-warning {
+  padding: 12px 16px;
+  margin-block: 12px;
+  border: 1px solid #e8c882;
+  border-inline-start: 4px solid #ca8a04;
+  border-radius: 14px;
+  color: #713f12;
+  background: #fffbeb;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.session-year-warning strong {
+  display: block;
+}
+.session-year-warning p {
+  margin: 4px 0 0;
+}
 /* Source: src/styles/workflow/identity.css */
 /* Workflow identity: decorative local SVGs and a consistent color hierarchy. */
 .workflow-icon {

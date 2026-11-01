@@ -170,6 +170,7 @@ function useRealSaveQueue(f, failFirst) {
     writer: Promise.resolve(),
     paintStatus() {},
     checkScope() {},
+    refreshAcademicYearWarnings() {},
     collectRecords: (value) => value,
     setStatus() {},
     render() {},

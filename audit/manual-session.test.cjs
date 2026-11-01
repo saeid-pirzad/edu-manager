@@ -9,14 +9,14 @@ function fixture() {
     modals = [];
   const cls = { students: [{ id: "student", name: "Student" }] };
   const c = vm.createContext({
-    workspace: { id: "first" },
+    workspace: { id: "first", year: "1405-1406" },
     connection: {},
     state: { schoolId: "school", classId: "class", lessonId: "lesson" },
     currentSessionId: null,
     periodLoading: false,
     resetBusy: false,
     connectionRetired: false,
-    db: { sessions: [] },
+    db: { settings: { academicYear: "1405-1406" }, sessions: [] },
     assertEntityWritable() {},
     asciiDigits: (value) => value,
     flushDrafts: async () => {},
@@ -30,6 +30,11 @@ function fixture() {
     confirm: () => true,
     openSessionModal: (session) => modals.push(session),
   });
+  for (const name of ["calendar.js", "academic-year.js"])
+    vm.runInContext(
+      fs.readFileSync(path.join(__dirname, "../src/domain", name), "utf8"),
+      c,
+    );
   vm.runInContext(
     fs.readFileSync(
       path.join(__dirname, "../src/workspace/sessions/actions.js"),

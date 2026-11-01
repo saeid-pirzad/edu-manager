@@ -135,16 +135,21 @@ test("full-backup preview also preserves the accepted source when modal replacem
   let accepted = true;
   const c = vm.createContext({
     EduFullBackupValidator: {
-      create: () => () => [
-        {
-          period: {
-            id: "saved",
-            year: "1405-1406",
-            term: "اول",
-            closed: false,
-          },
-        },
-      ],
+      create: () =>
+        Object.assign(
+          () => [
+            {
+              period: {
+                id: "saved",
+                year: "1405-1406",
+                term: "اول",
+                closed: false,
+              },
+              data: { sessions: [] },
+            },
+          ],
+          { normalize: (value) => value },
+        ),
     },
     backupStores: [],
     assertSafeDataTree() {},
@@ -159,6 +164,11 @@ test("full-backup preview also preserves the accepted source when modal replacem
     showModal: () => accepted,
     esc: (value) => String(value),
   });
+  for (const source of ["domain/calendar.js", "domain/academic-year.js"])
+    vm.runInContext(
+      fs.readFileSync(path.join(__dirname, "../src", source), "utf8"),
+      c,
+    );
   vm.runInContext(
     fs.readFileSync(
       path.join(__dirname, "../src/workspace/backups/full-restore.js"),

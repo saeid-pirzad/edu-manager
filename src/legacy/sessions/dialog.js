@@ -63,9 +63,15 @@ function openSessionModal(session) {
   const dIdx = getDayIdxFromDate(session.date);
   const school = getSchool(session.schoolId);
   let h = `<div class="session-workspace"><header class="session-context"><p class="session-context-path">${esc(school?.name || "")} / ${esc(c.name)}</p><h4>${esc(lesson.name)}</h4><p class="session-context-meta">${esc(DAYS[dIdx])} · ${esc(faDate(session.date))} · زنگ ${(session.period + 1).toLocaleString("fa-IR")}</p>${lesson.teacher ? `<p class="session-context-teacher">دبیر: ${esc(lesson.teacher)}</p>` : ""}</header>`;
+  const academicRange = EduAcademicYear.range(db.settings.academicYear);
+  if (!EduAcademicYear.contains(db.settings.academicYear, session.date))
+    h +=
+      '<aside class="session-year-warning" role="status"><strong>جلسهٔ قدیمی خارج از سال تحصیلی</strong><p>سوابق این جلسه حفظ شده‌اند. این تاریخ در گزارش سالانهٔ ' +
+      esc(db.settings.academicYear) +
+      " قرار نمی‌گیرد؛ تاریخ را بررسی و در صورت نیاز اصلاح کنید.</p></aside>";
   h += `<details class="session-date-tools"><summary>ویرایش تاریخ و زنگ: ${esc(faDate(session.date))}</summary><div class="form-row">
     <label for="sessDate">تاریخ جلسه:</label>
-    <input type="date" id="sessDate" value="${session.date}" data-legacy-change="sessions-dialog:0" style="flex:1">
+    <input type="date" id="sessDate" value="${session.date}" min="${academicRange.start}" max="${academicRange.end}" data-legacy-change="sessions-dialog:0" style="flex:1">
     <span class="shamsi-display" id="shamsiSessDate">${toShamsi(session.date)}</span>
     <label for="sessPeriod">شماره زنگ</label><input type="number" id="sessPeriod" min="1" max="12" inputmode="numeric" value="${session.period + 1}" style="width:90px">
     <button class="ghost" data-legacy-click="sessions-dialog:1" data-legacy-click-arg3="${esc(session.id)}" style="font-size:.85em">ذخیره تاریخ و زنگ</button>

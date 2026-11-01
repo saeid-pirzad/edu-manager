@@ -57,6 +57,11 @@ async function bootstrapV24() {
         storageSnapshot = null;
       }
     }
+    const normalizedYears = await synchronizeAcademicYearsForRead();
+    if (normalizedYears.changed.length) {
+      periods = await allFrom("catalog");
+      for (const change of normalizedYears.changed) broadcast(change);
+    }
     const preferred = preferredPeriod();
     workspace =
       periods.find((x) => x.id === preferred) ||

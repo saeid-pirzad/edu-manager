@@ -59,7 +59,7 @@ async function installWorkspace(data, details) {
     now = new Date().toISOString();
   const catalog = {
     id,
-    year: details.year || data.settings.academicYear,
+    year: EduAcademicYear.normalize(details.year ?? data.settings.academicYear),
     term: details.term || data.settings.academicTerm || "نامشخص",
     termKind:
       details.termKind ||
