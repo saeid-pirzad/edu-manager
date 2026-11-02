@@ -49,7 +49,7 @@ function calendarSnapshot() {
 
 // All records and browser contexts belong to data-integrity's synthetic profile.
 // Production code is never patched; both independent installations are restored.
-async function prepareTeacherExchange(changeTeacher) {
+async function prepareTeacherExchange(changeTeacher, capture = false) {
   const cases = [],
     check = (id, name, pass, observed = {}) =>
       cases.push({ id, name, pass: !!pass, observed }),
@@ -62,6 +62,15 @@ async function prepareTeacherExchange(changeTeacher) {
         "Teacher deputy flow timed out: " +
           (document.getElementById("deputyExportError")?.textContent || ""),
       );
+    },
+    pauseForCapture = async (stage) => {
+      if (!capture) return;
+      globalThis.__deputyTeacherCapture = stage;
+      for (let attempt = 0; attempt < 1200; attempt++) {
+        if (globalThis.__deputyTeacherCapture !== stage) return;
+        await new Promise((resolve) => setTimeout(resolve, 25));
+      }
+      throw Error("Teacher export layout capture timed out: " + stage);
     };
   closeModal();
   await EduV24.test.settle();
@@ -95,6 +104,7 @@ async function prepareTeacherExchange(changeTeacher) {
   fixture.gradeDrafts = [];
   fixture.snapshotNotes = [];
   fixture.reportDrafts = {};
+  delete fixture.deputyExportIdentity;
   fixture.stores = {
     records: [],
     catalog: [],
@@ -324,6 +334,23 @@ async function prepareTeacherExchange(changeTeacher) {
       ),
     );
     form.elements.deputySchool.value = ids.school;
+    form.elements.deputyIdentityMode.value = "new";
+    form.elements.deputyIdentityMode.dispatchEvent(
+      new Event("change", { bubbles: true }),
+    );
+    check(
+      "DEPUTY_IDENTITY_GENERATE_NATIVE",
+      "choosing a first send through the actual native change event generates a canonical readonly sender code without persisting or downloading it",
+      /^[A-Z0-9][A-Z0-9_-]{0,63}$/.test(form.elements.deputySenderCode.value) &&
+        form.elements.deputySenderCode.readOnly &&
+        !(await EduV24.snapshotInstallation()).deputyExportIdentity &&
+        downloads.length === 0,
+    );
+    await pauseForCapture("first");
+    form.elements.deputyIdentityMode.value = "existing";
+    form.elements.deputyIdentityMode.dispatchEvent(
+      new Event("change", { bubbles: true }),
+    );
     form.elements.deputySchoolCode.value = "audit-school-۱";
     form.elements.deputySenderName.value = "دبیر آزمایشی معاون";
     form.elements.deputySenderCode.value = "audit-teacher-A";
@@ -398,9 +425,23 @@ async function prepareTeacherExchange(changeTeacher) {
     );
     check(
       "DEPUTY04",
-      "teacher export leaves all persisted teacher records and backup-delivery badges unchanged",
+      "teacher export leaves academic records and backup-delivery badges unchanged while persisting the sender separately",
       signature(await EduV24.snapshotInstallation()) === before &&
         localStorage.getItem("Edu24.fullBackupDelivery") === delivery,
+    );
+    const savedIdentity = (await EduV24.snapshotInstallation())
+      .deputyExportIdentity;
+    check(
+      "DEPUTY_IDENTITY_BACKUP",
+      "the real full backup contains the durable sender and selected-school code instead of an optional browser-only preference",
+      savedIdentity?.sender.code === "AUDIT-TEACHER-A" &&
+        savedIdentity.sender.name === "دبیر آزمایشی معاون" &&
+        savedIdentity.schools.some(
+          (row) =>
+            row.id === ids.school &&
+            row.year === year &&
+            row.code === "AUDIT-SCHOOL-1",
+        ),
     );
     closeModal();
     cases.push(...(await changeTeacher(ids)));
@@ -414,10 +455,17 @@ async function prepareTeacherExchange(changeTeacher) {
       ),
     );
     const nextForm = document.getElementById("deputyExportPanel");
-    nextForm.elements.deputySchool.value = ids.school;
-    nextForm.elements.deputySchoolCode.value = "audit-school-۱";
-    nextForm.elements.deputySenderName.value = "دبیر آزمایشی معاون";
-    nextForm.elements.deputySenderCode.value = "audit-teacher-A";
+    check(
+      "DEPUTY_IDENTITY_REUSE",
+      "the next actual teacher send reuses the saved identity and selected-school code with no identity re-entry",
+      nextForm.elements.deputySchool.value === ids.school &&
+        nextForm.elements.deputySchoolCode.value === "AUDIT-SCHOOL-1" &&
+        nextForm.elements.deputySenderName.value === "دبیر آزمایشی معاون" &&
+        nextForm.elements.deputySenderCode.value === "AUDIT-TEACHER-A" &&
+        !nextForm.querySelector("[data-deputy-export-identity]").open &&
+        !nextForm.elements.deputyRemember,
+    );
+    await pauseForCapture("saved");
     nextForm.elements.deputyConsent.checked = true;
     nextForm.requestSubmit();
     await wait(
@@ -456,6 +504,27 @@ async function prepareTeacherExchange(changeTeacher) {
             term.revision >
             packet.periods.find((old) => old.id === term.id).revision,
         ),
+    );
+    closeModal();
+    const identityBackup = await EduV24.snapshotInstallation(),
+      tokenBeforeRestore = identityBackup.deputyExportIdentity.token;
+    EduV24.previewFullBackup(identityBackup);
+    document.getElementById("fullRestoreConfirmed").checked = true;
+    await EduV24.restoreFullBackup();
+    await EduV24.test.settle();
+    closeModal();
+    const restoredIdentity = (await EduV24.snapshotInstallation())
+      .deputyExportIdentity;
+    await EduV24.openDeputyExport(ids.school);
+    const restoredForm = document.getElementById("deputyExportPanel");
+    check(
+      "DEPUTY_IDENTITY_RESTORE",
+      "a real full-backup restore preserves sender and school codes, rotates the profile guard token and reopens a ready collapsed setup",
+      restoredIdentity.sender.code === "AUDIT-TEACHER-A" &&
+        restoredIdentity.token !== tokenBeforeRestore &&
+        restoredForm.elements.deputySenderCode.value === "AUDIT-TEACHER-A" &&
+        restoredForm.elements.deputySchoolCode.value === "AUDIT-SCHOOL-1" &&
+        !restoredForm.querySelector("[data-deputy-export-identity]").open,
     );
     closeModal();
     return {
@@ -1008,6 +1077,60 @@ async function exerciseDeputyUI(packet, ids, nextPacket) {
   }
 }
 
+function teacherExportModalLayout(stage) {
+  const form = document.getElementById("deputyExportPanel"),
+    details = form.querySelector("[data-deputy-export-identity]"),
+    fields = (
+      stage === "first"
+        ? [
+            "deputySchool",
+            "deputySenderName",
+            "deputySchoolCode",
+            "deputyIdentityMode",
+            "deputyConsent",
+          ]
+        : ["deputySchool", "deputyConsent"]
+    ).map((name) => {
+      const input = form.elements[name],
+        bounds = input.getBoundingClientRect();
+      return {
+        name,
+        visible: !!input.getClientRects().length && bounds.width > 0,
+        labeled: input.labels.length > 0,
+        enabled: !input.disabled,
+        left: bounds.left,
+        right: bounds.right,
+      };
+    }),
+    bounds = form.getBoundingClientRect(),
+    observed = {
+      stage,
+      viewport: { width: innerWidth, height: innerHeight },
+      documentWidth: document.documentElement.scrollWidth,
+      formWidth: form.clientWidth,
+      formContentWidth: form.scrollWidth,
+      detailsOpen: details.open,
+      fields,
+    };
+  return {
+    pass:
+      document.documentElement.scrollWidth <= innerWidth + 1 &&
+      form.scrollWidth <= form.clientWidth + 1 &&
+      bounds.left >= -1 &&
+      bounds.right <= innerWidth + 1 &&
+      details.open === (stage === "first") &&
+      fields.every(
+        (field) =>
+          field.visible &&
+          field.labeled &&
+          field.enabled &&
+          field.left >= -1 &&
+          field.right <= innerWidth + 1,
+      ),
+    observed,
+  };
+}
+
 async function run({ cdp, evaluate, cases, delay }) {
   const fs = require("node:fs"),
     path = require("node:path"),
@@ -1088,13 +1211,93 @@ async function run({ cdp, evaluate, cases, delay }) {
       original: await evaluate("EduV24.snapshotInstallation()"),
       before: null,
     };
-    teacher = await evaluate(
+    const originalViewport = await evaluate(
+        "({width:innerWidth,height:innerHeight,scale:devicePixelRatio,touch:matchMedia('(pointer:coarse)').matches})",
+      ),
+      setTeacherViewport = async ({
+        width,
+        height,
+        scale = 1,
+        touch = false,
+      }) => {
+        await cdp("Emulation.setDeviceMetricsOverride", {
+          width,
+          height,
+          screenWidth: width,
+          screenHeight: height,
+          deviceScaleFactor: scale,
+          mobile: touch,
+        });
+        await cdp("Emulation.setTouchEmulationEnabled", {
+          enabled: touch,
+          maxTouchPoints: touch ? 5 : 1,
+        });
+      };
+    let preparationSettled = false;
+    const preparingTeacher = evaluate(
       "(" +
         prepareTeacherExchange.toString() +
         ")(" +
         require("./flows/deputyTeacherEdits.cjs").toString() +
-        ")",
-    );
+        ",true)",
+    ).finally(() => {
+      preparationSettled = true;
+    });
+    // Keep the original awaited teacher flow intact while capturing its real
+    // first-time and saved-profile states before either explicit preparation.
+    void preparingTeacher.catch(() => {});
+    for (const stage of ["first", "saved"]) {
+      let paused = false;
+      for (let attempt = 0; attempt < 1200; attempt++) {
+        if ((await evaluate("globalThis.__deputyTeacherCapture")) === stage) {
+          paused = true;
+          break;
+        }
+        if (preparationSettled) {
+          await preparingTeacher;
+          throw Error("Teacher flow missed its layout capture: " + stage);
+        }
+        await delay(25);
+      }
+      if (!paused) throw Error("Teacher layout state did not settle: " + stage);
+      try {
+        for (const [width, height, touch] of [
+          [390, 844, true],
+          [1280, 900, false],
+        ]) {
+          await setTeacherViewport({ width, height, touch });
+          await evaluate("document.fonts.ready");
+          await delay(80);
+          const result = await evaluate(
+              "(" +
+                teacherExportModalLayout.toString() +
+                ")(" +
+                JSON.stringify(stage) +
+                ")",
+            ),
+            filename = path.join(
+              artifacts,
+              "teacher-deputy-" + stage + "-" + width + "x" + height + ".png",
+            ),
+            shot = await cdp("Page.captureScreenshot", { format: "png" });
+          fs.writeFileSync(filename, Buffer.from(shot.data, "base64"));
+          record(
+            "DEPUTY_TEACHER_LAYOUT_" + stage + "_" + width,
+            "the actual teacher export " +
+              stage +
+              " setup has labeled accessible controls and no horizontal overflow at " +
+              width +
+              "px",
+            result.pass,
+            { ...result.observed, screenshot: filename },
+          );
+        }
+      } finally {
+        await setTeacherViewport(originalViewport);
+        await evaluate("globalThis.__deputyTeacherCapture=null");
+      }
+    }
+    teacher = await preparingTeacher;
     cases.push(...teacher.cases);
     await cdp("Emulation.setDeviceMetricsOverride", {
       width: 1280,

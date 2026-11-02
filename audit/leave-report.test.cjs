@@ -5,21 +5,15 @@ const { test } = require("node:test"),
   path = require("node:path"),
   vm = require("node:vm");
 test("periodic report treats leave as a separate known status", () => {
-  const text = fs.readFileSync(
-    path.join(__dirname, "../src/reports/periodic/model.js"),
+  const source = fs.readFileSync(
+    path.join(__dirname, "../src/domain/reporting/attendance.js"),
     "utf8",
   );
   const c = vm.createContext({});
-  vm.runInContext(
-    text.slice(
-      text.indexOf("const emptyCounts"),
-      text.indexOf("function build("),
-    ),
-    c,
-  );
-  const counts = vm.runInContext("emptyCounts()", c);
-  const a = c.attendance("leave");
-  c.tally(counts, a);
+  vm.runInContext(source, c);
+  const counts = c.EduReportAttendance.emptyCounts();
+  const a = c.EduReportAttendance.normalize("leave");
+  c.EduReportAttendance.tally(counts, a);
   assert.equal(a.label, "مرخصی");
   assert.equal(counts.leave, 1);
   assert.equal(counts.absent, 0);

@@ -531,17 +531,8 @@
             lesson.gradeMode === "kardanesh" &&
             lesson.gradingPolicy?.subjectType !== "general"
           ) {
-            const rules = (item) =>
-                item.gradingPolicy
-                  ? root.EduPolicy.dualSettings(item.gradingPolicy)
-                  : {
-                      practicalWeight: 70,
-                      theoryMin: 0,
-                      practicalMin: 0,
-                      passMin: 14,
-                    },
-              before = rules(previous),
-              after = rules(lesson);
+            const before = root.EduReportGrades.settings(previous),
+              after = root.EduReportGrades.settings(lesson);
             if (
               ["practicalWeight", "theoryMin", "practicalMin", "passMin"].some(
                 (field) => before[field] !== after[field],
@@ -1038,17 +1029,24 @@
               kind,
             });
             if (kind === "modular") {
-              row.modules = lesson.poudmans.map((pod) => {
-                const grade = pod.podScores[student.id] || {};
+              const { modules, ...result } = root.EduReportGrades.modular(
+                lesson,
+                student.id,
+              );
+              row.modules = modules.map((module) => {
+                const grade = ownScoreRecord(
+                  lesson.poudmans.find((pod) => pod.id === module.id).podScores,
+                  student.id,
+                );
                 return {
-                  id: pod.id,
-                  name: pod.name,
+                  id: module.id,
+                  name: module.name,
                   m: grade.m ?? null,
                   c: grade.c ?? null,
-                  ...root.EduPolicy.moduleResult(policy, grade),
+                  ...module,
                 };
               });
-              row.result = root.EduPolicy.moduleAggregate(row.modules);
+              row.result = result;
             } else if (kind === "legacy") {
               for (const pod of lesson.poudmans)
                 for (const unit of pod.units) {
@@ -1064,27 +1062,22 @@
                   });
                 }
             } else {
-              const scores = lesson.kardaneshScores[student.id] || {};
+              const fallbackPolicy = policy || {
+                ...root.EduPolicy.defaults("dual", packet.academicYear),
+                dualConfigurable: false,
+              };
               for (const stage of ["midterm", "final"]) {
-                const practical =
-                    kind === "general"
-                      ? null
-                      : (scores[
-                          stage === "midterm" ? "midtermPractical" : "practical"
-                        ] ?? null),
-                  theory =
-                    scores[stage === "midterm" ? "midtermTheory" : "theory"] ??
-                    null,
-                  rules = policy || {
-                    ...root.EduPolicy.defaults("dual", packet.academicYear),
-                    dualConfigurable: false,
-                  };
                 row.stages.push({
                   termKind: term.termKind,
                   stage,
-                  practical,
-                  theory,
-                  ...root.EduPolicy.dual(rules, practical, theory),
+                  ...root.EduReportGrades.assessment(
+                    lesson,
+                    student.id,
+                    stage,
+                    {
+                      fallbackPolicy,
+                    },
+                  ),
                 });
               }
             }

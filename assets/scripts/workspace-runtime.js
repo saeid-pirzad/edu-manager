@@ -355,6 +355,7 @@ function ownedDataKey(key) {
   return (
     key.startsWith("Edu24.") ||
     key.startsWith("EduManager.periodicDrafts.") ||
+    key === "EduDeputy.teacherExport.v1" ||
     key === STORAGE_KEY ||
     key === STORAGE_KEY + "_beforeImport"
   );
@@ -2503,7 +2504,7 @@ function calcV24(c, l, sid, source = db) {
     if (p.method === "dual")
       Object.assign(r, EduPolicy.dual(p, r.practical, r.theory));
     else
-      Object.assign(r, EduPolicy.lesson(p, l.poudmans, sid), {
+      Object.assign(r, EduReportGrades.modular(l, sid), {
         avgM: null,
         avgP: null,
       });
@@ -2514,40 +2515,11 @@ function calcV24(c, l, sid, source = db) {
 }
 
 function assessmentWeights(lesson) {
-  const practical =
-    lesson.gradingPolicy?.method === "dual"
-      ? EduPolicy.dualSettings(lesson.gradingPolicy).practicalWeight
-      : 70;
-  return { practical, theory: 100 - practical };
+  return EduReportGrades.weights(lesson);
 }
 
 function assessmentResult(lesson, sid, stage = "final") {
-  if (!["midterm", "final"].includes(stage))
-    throw Error("مرحله ارزشیابی نامعتبر است.");
-  const grade = ownScoreRecord(lesson?.kardaneshScores, sid);
-  const practical =
-    grade[stage === "midterm" ? "midtermPractical" : "practical"] ?? null;
-  const theory =
-    grade[stage === "midterm" ? "midtermTheory" : "theory"] ?? null;
-  if (lesson.gradingPolicy?.subjectType === "general")
-    return {
-      practical: null,
-      theory,
-      ...EduPolicy.dual(lesson.gradingPolicy, null, theory),
-    };
-  if (lesson.gradingPolicy?.method === "dual")
-    return {
-      practical,
-      theory,
-      ...EduPolicy.dual(lesson.gradingPolicy, practical, theory),
-    };
-  return {
-    practical,
-    theory,
-    ...weightedKardanesh(practical, theory),
-    complete: practical !== null && theory !== null,
-    threshold: 14,
-  };
+  return EduReportGrades.assessment(lesson, sid, stage);
 }
 function assertCompatibleTermLessons(reference, candidate) {
   if (!reference || !candidate) return;
@@ -2578,17 +2550,8 @@ function assertCompatibleTermLessons(reference, candidate) {
         "» در دو نوبت یکسان نیست؛ گزارش این درس قابل محاسبه نیست.",
     );
   if (dual && reference.gradingPolicy?.subjectType !== "general") {
-    const settings = (lesson) =>
-      lesson.gradingPolicy?.method === "dual"
-        ? EduPolicy.dualSettings(lesson.gradingPolicy)
-        : {
-            practicalWeight: 70,
-            theoryMin: 0,
-            practicalMin: 0,
-            passMin: 14,
-          };
-    const first = settings(reference),
-      second = settings(candidate);
+    const first = EduReportGrades.settings(reference),
+      second = EduReportGrades.settings(candidate);
     if (
       ["practicalWeight", "theoryMin", "practicalMin", "passMin"].some(
         (field) => first[field] !== second[field],
@@ -2711,10 +2674,7 @@ function annualGradeRows(parts, schoolId, classId, studentId = "") {
         throw Error(
           "نوع درس در دو نوبت یکسان نیست؛ گزارش سالانه این درس قابل محاسبه نیست.",
         );
-      const settings =
-        lesson?.gradingPolicy?.method === "dual"
-          ? EduPolicy.dualSettings(lesson.gradingPolicy)
-          : { practicalWeight: 70, passMin: 14 };
+      const settings = EduReportGrades.settings(lesson || {});
       if (lesson) annualThreshold = settings.passMin;
       for (const stage of ["midterm", "final"]) {
         const r = lesson
@@ -2733,34 +2693,13 @@ function annualGradeRows(parts, schoolId, classId, studentId = "") {
         });
       }
     }
-    const complete = components.every((item) => item.complete);
-    let final = null,
-      passed = null;
-    if (complete) {
-      let total = { n: 0n, d: 1n };
-      for (const item of components) {
-        const p = fraction(identity.general ? 0 : item.practical),
-          t = fraction(item.theory);
-        const weight = fraction(item.practicalWeight);
-        const n = identity.general
-            ? t.n
-            : weight.n * p.n * t.d + (100n * weight.d - weight.n) * t.n * p.d,
-          d = identity.general ? t.d : 100n * weight.d * p.d * t.d;
-        total = reduceGradeFraction(total.n * d + n * total.d, total.d * d);
-      }
-      final = finiteRatio(total.n, total.d * 4n);
-      const minimum = fraction(annualThreshold);
-      passed = identity.general
-        ? null
-        : total.n * minimum.d >= minimum.n * total.d * 4n;
-    }
     rows.push({
       ...identity,
       components,
-      complete,
-      final,
-      passed,
-      threshold: identity.general ? null : annualThreshold,
+      ...EduReportGrades.annual(components, {
+        general: identity.general,
+        threshold: annualThreshold,
+      }),
     });
   }
   return rows;
@@ -5521,7 +5460,8 @@ function portableGradeDrafts(rows, periods) {
 
 async function snapshotInstallation() {
   const origin = workspace?.id,
-    sourceConnection = connection;
+    sourceConnection = connection,
+    sourceInstallation = installationToken;
   const check = () => {
     if (
       !ready ||
@@ -5529,7 +5469,8 @@ async function snapshotInstallation() {
       resetBusy ||
       connectionRetired ||
       workspace?.id !== origin ||
-      connection !== sourceConnection
+      connection !== sourceConnection ||
+      installationToken !== sourceInstallation
     )
       throw Object.assign(
         Error(
@@ -5580,6 +5521,13 @@ async function snapshotInstallation() {
   await done;
   const stores = Object.fromEntries(names.map((name, i) => [name, values[i]]));
   check();
+  if (
+    (stores.records.find((row) => row.key === RESET_RECORD_KEY)?.value?.token ||
+      "") !== sourceInstallation
+  )
+    throw Error(
+      "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ پشتیبان را دوباره تهیه کنید.",
+    );
   // Never embed a full snapshot inside another full snapshot.
   stores.backups = stores.backups.filter((row) => !row.full);
   stores.records = stores.records.filter((row) => row.key !== RESET_RECORD_KEY);
@@ -5595,6 +5543,7 @@ async function snapshotInstallation() {
     ],
     stores.catalog,
   );
+  const deputyExportIdentity = EduDeputyExportIdentity.fromRows(stores.drafts);
   delete stores.drafts;
   const reportDrafts = {};
   for (const period of stores.catalog) {
@@ -5623,6 +5572,7 @@ async function snapshotInstallation() {
     stores,
     reportDrafts,
     gradeDrafts,
+    ...(deputyExportIdentity ? { deputyExportIdentity } : {}),
   };
 }
 async function exportFullBackup() {
@@ -6342,7 +6292,14 @@ function restoreCatalogSignature(rows) {
   );
 }
 async function snapshotBeforeSystemRestore() {
-  if (ready) return snapshotInstallation();
+  if (ready)
+    try {
+      return await snapshotInstallation();
+    } catch (error) {
+      // A damaged sender profile must not prevent recovery of the actual
+      // installation. Keep it verbatim in the raw safety copy instead.
+      if (error.code !== "DEPUTY_IDENTITY_INVALID") throw error;
+    }
   // Recovery must also work when damaged records prevented normal startup.
   const names = [...backupStores, "drafts"];
   const tx = connection.transaction(names, "readonly"),
@@ -6359,6 +6316,28 @@ async function snapshotBeforeSystemRestore() {
     ),
   };
 }
+function restoreIdentityMatches(safety, current) {
+  if (safety.format === "EduManager.RawRecovery") {
+    const original = (safety.stores.drafts || []).find(
+      (row) => row?.key === EduDeputyExportIdentity.key,
+    );
+    const fingerprint = (row) => {
+      try {
+        return JSON.stringify(row ?? null);
+      } catch {
+        throw Error(
+          "مشخصات آسیب‌دیدهٔ فرستنده قابل مقایسهٔ امن نیست؛ بازیابی انجام نشد.",
+        );
+      }
+    };
+    return fingerprint(original) === fingerprint(current);
+  }
+  const original =
+      safety.deputyExportIdentity ||
+      EduDeputyExportIdentity.fromRows(safety.stores.drafts || []),
+    live = current ? EduDeputyExportIdentity.normalize(current.value) : null;
+  return (live?.token || null) === (original?.token || null);
+}
 async function restoreFullBackup() {
   if (fullRestoreBusy) throw Error("بازیابی کامل در حال انجام است؛ صبر کنید.");
   if (!pendingFullBackup)
@@ -6371,7 +6350,9 @@ async function restoreFullBackup() {
   else if (!connection || connectionRetired || resetBusy)
     throw Error("برای اتصال امن به بانک، صفحه را دوباره بارگذاری کنید.");
   const source = pendingFullBackup,
-    origin = captureWorkspaceContext();
+    origin = captureWorkspaceContext(),
+    sourceConnection = connection,
+    sourceInstallation = installationToken;
   if (
     !confirm(
       "کل اطلاعات سیستم به وضعیت این فایل برگردد؟ نوبت جدید ساخته نمی‌شود.",
@@ -6387,6 +6368,8 @@ async function restoreFullBackup() {
     if (
       resetBusy ||
       connectionRetired ||
+      connection !== sourceConnection ||
+      installationToken !== sourceInstallation ||
       (workspace?.id || "") !== origin.id ||
       pendingFullBackup !== source ||
       JSON.stringify(source) !== pendingFullBackupSignature
@@ -6468,6 +6451,13 @@ async function restoreFullBackup() {
         error: "بازیابی از فایل؛ نیازمند بررسی",
       })),
     }));
+    if (source.deputyExportIdentity !== undefined)
+      rows.drafts.push(
+        EduDeputyExportIdentity.row({
+          ...source.deputyExportIdentity,
+          token: uid(),
+        }),
+      );
     rows.backups.push({
       id: "before-full-restore-" + uid(),
       workspace: null,
@@ -6503,10 +6493,22 @@ async function restoreFullBackup() {
       } catch {}
     };
     try {
-      const request = tx.objectStore("catalog").getAll();
-      request.onsuccess = () => {
+      const request = tx.objectStore("catalog").getAll(),
+        epoch = tx.objectStore("records").get(RESET_RECORD_KEY),
+        identity = tx.objectStore("drafts").get(EduDeputyExportIdentity.key);
+      let remaining = 3;
+      const replace = () => {
+        if (--remaining) return;
         try {
           check();
+          if ((epoch.result?.value?.token || "") !== sourceInstallation)
+            throw Error(
+              "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ پیش از بازیابی دوباره بررسی کنید.",
+            );
+          if (!restoreIdentityMatches(safety, identity.result))
+            throw Error(
+              "مشخصات فرستنده در پنجرهٔ دیگری تغییر کرده است؛ پیش از بازیابی دوباره بررسی کنید.",
+            );
           if (
             restoreCatalogSignature(request.result) !==
             restoreCatalogSignature(safety.stores.catalog)
@@ -6534,6 +6536,9 @@ async function restoreFullBackup() {
           abort(error);
         }
       };
+      request.onsuccess = replace;
+      epoch.onsuccess = replace;
+      identity.onsuccess = replace;
     } catch (error) {
       abort(error);
     }
@@ -9421,20 +9426,310 @@ async function copyReportV24(buildText, button) {
     return false;
   }
 }
+// Source: src/workspace/reports/deputy-export-identity.js
+function deputyExportIdentityGuard(sourceConnection, sourceToken, check) {
+  check();
+  if (
+    !ready ||
+    resetBusy ||
+    connectionRetired ||
+    periodLoading ||
+    (typeof fullRestoreBusy !== "undefined" && fullRestoreBusy) ||
+    connection !== sourceConnection ||
+    installationToken !== sourceToken
+  )
+    throw Error(
+      "اطلاعات سیستم تغییر کرده است؛ ارسال به معاون را دوباره باز کنید.",
+    );
+}
+
+async function deputyExportIdentityTransaction({
+  write = false,
+  next = null,
+  expectedToken = null,
+  check = () => {},
+  validateCatalog = null,
+} = {}) {
+  const sourceConnection = connection,
+    sourceToken = installationToken,
+    candidate = write
+      ? EduDeputyExportIdentity.normalize({ ...next, token: "pending" })
+      : null;
+  deputyExportIdentityGuard(sourceConnection, sourceToken, check);
+  const tx = sourceConnection.transaction(
+      ["drafts", "records", ...(validateCatalog ? ["catalog"] : [])],
+      write ? "readwrite" : "readonly",
+    ),
+    done = transactionDone(tx);
+  let failure,
+    result = null,
+    remaining = validateCatalog ? 3 : 2;
+  const abort = (error) => {
+    failure = error;
+    try {
+      tx.abort();
+    } catch {}
+  };
+  try {
+    const stored = tx.objectStore("drafts").get(EduDeputyExportIdentity.key),
+      epoch = tx.objectStore("records").get(RESET_RECORD_KEY),
+      catalog = validateCatalog ? tx.objectStore("catalog").getAll() : null;
+    const complete = () => {
+      if (--remaining) return;
+      try {
+        deputyExportIdentityGuard(sourceConnection, sourceToken, check);
+        if ((epoch.result?.value?.token || "") !== sourceToken)
+          throw Error(
+            "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ صفحه را دوباره بارگذاری کنید.",
+          );
+        if (validateCatalog) validateCatalog(catalog.result);
+        const current = stored.result
+          ? EduDeputyExportIdentity.normalize(stored.result.value)
+          : null;
+        if (write) {
+          if ((current?.token || null) !== expectedToken)
+            throw Error(
+              "مشخصات ارسال در پنجرهٔ دیگری تغییر کرده است؛ فرم ارسال را دوباره باز کنید.",
+            );
+          result = EduDeputyExportIdentity.normalize({
+            ...candidate,
+            token: uid(),
+          });
+          tx.objectStore("drafts").put(EduDeputyExportIdentity.row(result));
+        } else result = current;
+      } catch (error) {
+        abort(error);
+      }
+    };
+    stored.onsuccess = complete;
+    epoch.onsuccess = complete;
+    if (catalog) catalog.onsuccess = complete;
+  } catch (error) {
+    abort(error);
+  }
+  try {
+    await done;
+  } catch (error) {
+    throw failure || error;
+  }
+  deputyExportIdentityGuard(sourceConnection, sourceToken, check);
+  return result;
+}
+
+function readDeputyExportIdentity({
+  check = () => {},
+  validateCatalog = null,
+} = {}) {
+  return deputyExportIdentityTransaction({ check, validateCatalog });
+}
+
+function saveDeputyExportIdentity(
+  next,
+  { expectedToken = null, check = () => {}, validateCatalog = null } = {},
+) {
+  return deputyExportIdentityTransaction({
+    write: true,
+    next,
+    expectedToken,
+    check,
+    validateCatalog,
+  });
+}
+// Source: src/workspace/reports/deputy-export-form.js
+function deputyExportPanelMarkup() {
+  return (
+    '<form id="deputyExportPanel" class="record-editor" data-workspace-submit="prepare-deputy-packet"><div class="record-editor-context"><h4>ارسال اطلاعات به معاون</h4><p>اطلاعات ثبت‌شدهٔ مدرسهٔ انتخابی در ترم اول و دوم همین سال؛ این فایل پشتیبان نیست و محدودیت تاریخ گزارش روی آن اعمال نمی‌شود.</p></div>' +
+    '<fieldset data-deputy-export-fields disabled><label class="course-field">مدرسه<select name="deputySchool" id="deputySchool" required aria-describedby="deputyExportError"><option value="">انتخاب مدرسه</option></select></label>' +
+    '<p class="muted" data-deputy-export-sender></p>' +
+    '<p class="muted" data-deputy-legacy-warning hidden></p>' +
+    '<details class="record-editor-context" data-deputy-export-identity open><summary tabindex="0">مشخصات ارسال · تنظیم یک‌باره</summary>' +
+    '<label class="course-field">نام دبیر<input name="deputySenderName" id="deputySenderName" required maxlength="200" autocomplete="name" aria-describedby="deputyExportError"></label>' +
+    '<label class="course-field">کد مدرسه<input name="deputySchoolCode" id="deputySchoolCode" required maxlength="64" dir="ltr" autocomplete="off" spellcheck="false" aria-describedby="deputyIdentityHint deputyExportError"></label>' +
+    '<p id="deputyIdentityHint" class="muted">کد مدرسه را فقط یک‌بار با معاون هماهنگ کنید؛ همهٔ دبیرهای همین مدرسه باید یک کد مشترک داشته باشند. مشخصات در برنامه و پشتیبان کامل نگهداری می‌شوند و ارسال بعدی نیاز به ورود دوباره ندارد.</p>' +
+    '<label class="course-field" data-deputy-identity-mode>سابقهٔ ارسال<select name="deputyIdentityMode" required><option value="">انتخاب کنید</option><option value="new">اولین ارسال من است</option><option value="existing">قبلاً فایل به معاون داده‌ام</option></select></label>' +
+    '<details data-deputy-identity-advanced><summary tabindex="0">شناسهٔ فرستنده / ادامهٔ فایل‌های قبلی</summary>' +
+    '<p class="muted">برای اولین ارسال، شناسه خودکار ساخته می‌شود. اگر قبلاً فایل فرستاده‌اید، همان کد فرستندهٔ فایل قبلی را وارد کنید تا پروندهٔ جدا ساخته نشود.</p>' +
+    '<label class="course-field">شناسهٔ فرستنده<input name="deputySenderCode" id="deputySenderCode" required maxlength="64" dir="ltr" autocomplete="off" spellcheck="false" aria-describedby="deputyExportError"></label>' +
+    '</details><label data-deputy-change-identity hidden><input type="checkbox" name="deputyChangeIdentity"> اصلاح کدهای ثبت‌شده؛ ممکن است در معاون پروندهٔ جدا ساخته شود.</label></details>' +
+    '<label><input type="checkbox" name="deputyConsent" required> فایل شامل نام هنرجویان، حضور و نمره‌هاست و رمزگذاری نشده؛ آن را فقط برای معاون مورداعتماد می‌فرستم.</label></fieldset>' +
+    '<section class="record-editor-context" data-deputy-export-preview hidden aria-label="پیش‌نمایش اطلاعات فایل"></section><p data-deputy-export-status role="status" aria-live="polite">در حال بررسی اطلاعات ثبت‌شدهٔ سال…</p><p id="deputyExportError" data-deputy-export-error role="alert"></p>' +
+    '<div class="record-editor-actions"><button type="submit" data-deputy-export-prepare disabled>بررسی و آماده‌سازی فایل</button><button type="button" class="success" data-workspace-action="export-deputy-packet" hidden>دریافت فایل معاون</button><button type="button" class="ghost" data-workspace-action="close">بستن</button></div><p class="muted">فایل را دریافت و در پیام‌رسان برای معاون بفرستید؛ دانلود به معنی ارسال آنلاین یا تحویل نیست.</p></form>'
+  );
+}
+
+function deputyExportSuggestedName(parts, schoolId) {
+  const names = new Set();
+  for (const part of parts)
+    for (const school of part.data.schools)
+      if (school.id === schoolId)
+        for (const classroom of school.classes || [])
+          for (const lesson of classroom.lessons || [])
+            if (typeof lesson.teacher === "string" && lesson.teacher.trim())
+              names.add(lesson.teacher.trim());
+  return names.size === 1 ? [...names][0] : "";
+}
+
+function deputyExportSavedSchool(session) {
+  const id = session.panel.querySelector('[name="deputySchool"]').value;
+  return (session.identity?.schools || session.legacy.schools || []).find(
+    (row) => row?.year === session.year && row.id === id,
+  );
+}
+
+function deputyExportIdentityPresentation(session, { resetOpen = false } = {}) {
+  const panel = session.panel,
+    node = (name) => panel.querySelector('[name="' + name + '"]'),
+    knownSender = !!(session.identity || session.legacy.sender?.code),
+    mode = node("deputyIdentityMode"),
+    changing = node("deputyChangeIdentity").checked,
+    savedSchool = deputyExportSavedSchool(session);
+  panel.querySelector("[data-deputy-identity-mode]").hidden = knownSender;
+  mode.required = !knownSender;
+  mode.disabled = knownSender;
+  panel.querySelector("[data-deputy-change-identity]").hidden =
+    !knownSender && !savedSchool;
+  node("deputySenderCode").readOnly =
+    (knownSender && !changing) || (!knownSender && mode.value !== "existing");
+  node("deputySchoolCode").readOnly = !!savedSchool && !changing;
+  const ready =
+    node("deputySenderName").value.trim() &&
+    node("deputySchoolCode").value.trim() &&
+    node("deputySenderCode").value.trim() &&
+    (knownSender || ["new", "existing"].includes(mode.value));
+  if (resetOpen)
+    panel.querySelector("[data-deputy-export-identity]").open = !ready;
+  panel.querySelector("[data-deputy-export-sender]").textContent =
+    (session.identity ? "فرستندهٔ ثبت‌شده: " : "فرستنده: ") +
+    (node("deputySenderName").value.trim() || "هنوز مشخص نشده") +
+    (session.identity ? " · مشخصات برای ارسال‌های بعد محفوظ است." : "");
+  const warning = panel.querySelector("[data-deputy-legacy-warning]");
+  warning.hidden = !session.legacy.warning;
+  warning.textContent = session.legacy.warning
+    ? "بخشی از تنظیمات قدیمی مرورگر ناقص یا متعارض بود. مشخصات معتبر حفظ شده است؛ برای ادامهٔ ارسال‌های قبلی، کد همین مدرسه و فرستنده را از فایل قبلی بررسی کنید."
+    : "";
+}
+
+function fillDeputyExportSchool(session) {
+  const node = (name) => session.panel.querySelector('[name="' + name + '"]');
+  const school = deputyExportSavedSchool(session);
+  node("deputySchoolCode").value =
+    typeof school?.code === "string" ? school.code : "";
+  node("deputyChangeIdentity").checked = false;
+  if (
+    !session.identity &&
+    !session.legacy.sender?.name &&
+    (!node("deputySenderName").value ||
+      node("deputySenderName").value === session.suggestedName)
+  ) {
+    session.suggestedName = deputyExportSuggestedName(
+      session.parts,
+      node("deputySchool").value,
+    );
+    node("deputySenderName").value = session.suggestedName;
+  }
+  deputyExportIdentityPresentation(session, { resetOpen: true });
+}
+
+function initializeDeputyExportIdentity(session) {
+  const node = (name) => session.panel.querySelector('[name="' + name + '"]'),
+    sender = session.identity?.sender || session.legacy.sender;
+  node("deputySenderName").value =
+    typeof sender?.name === "string" ? sender.name : "";
+  node("deputySenderCode").value =
+    typeof sender?.code === "string" ? sender.code : "";
+  node("deputyIdentityMode").value = sender?.code ? "existing" : "";
+  fillDeputyExportSchool(session);
+  node("deputySchool").addEventListener("change", () =>
+    fillDeputyExportSchool(session),
+  );
+  node("deputyIdentityMode").addEventListener("change", () => {
+    if (session.identity || session.legacy.sender?.code) return;
+    if (node("deputyIdentityMode").value === "new") {
+      session.generatedCode ||= "TEACHER-" + uid().toUpperCase();
+      node("deputySenderCode").value = session.generatedCode;
+    } else {
+      node("deputySenderCode").value = "";
+      session.panel.querySelector("[data-deputy-identity-advanced]").open =
+        true;
+    }
+    deputyExportIdentityPresentation(session);
+  });
+  node("deputyChangeIdentity").addEventListener("change", () =>
+    deputyExportIdentityPresentation(session),
+  );
+  session.panel.addEventListener("input", () =>
+    deputyExportIdentityPresentation(session),
+  );
+  session.panel.addEventListener(
+    "invalid",
+    (event) => {
+      let details = event.target.closest?.("details");
+      while (details) {
+        details.open = true;
+        details = details.parentElement?.closest("details");
+      }
+    },
+    true,
+  );
+}
 // Source: src/workspace/reports/deputy-export.js
 // Deputy exchange is a selected-school, whole-year projection, never a backup.
-// Only an explicitly previewed packet can be downloaded; no teacher data is changed.
+// Only an explicitly previewed packet can be downloaded. Educational data is
+// unchanged; the sender's one-time setup is persisted separately and backed up.
 let deputyExportSession = null;
 const deputyExportPreferencesKey = "EduDeputy.teacherExport.v1";
 
 function readDeputyExportPreferences() {
   try {
     const saved = JSON.parse(localStorage.getItem(deputyExportPreferencesKey));
-    return saved && typeof saved === "object" && !Array.isArray(saved)
-      ? saved
-      : {};
+    if (saved == null) return {};
+    if (typeof saved !== "object" || Array.isArray(saved))
+      return { warning: true };
+    const rows = Array.isArray(saved.schools) ? saved.schools : [],
+      valid = new Map(),
+      ids = new Map(),
+      codes = new Map();
+    let warning = saved.schools != null && !Array.isArray(saved.schools);
+    if (rows.length > 10000) warning = true;
+    for (const row of rows.slice(-10000)) {
+      try {
+        const school = EduDeputyExportIdentity.normalize({
+            version: 1,
+            token: "legacy",
+            sender: { name: "legacy", code: "LEGACY" },
+            schools: [{ year: row.year, id: row.id, code: row.code }],
+          }).schools[0],
+          id = JSON.stringify([school.year, school.id]),
+          code = JSON.stringify([school.year, school.code]);
+        if (!ids.has(id)) ids.set(id, new Set());
+        if (!codes.has(code)) codes.set(code, new Set());
+        ids.get(id).add(school.code);
+        codes.get(code).add(school.id);
+        valid.set(
+          JSON.stringify([school.year, school.id, school.code]),
+          school,
+        );
+      } catch {
+        warning = true;
+      }
+    }
+    const schools = [...valid.values()].filter((school) => {
+      const unique =
+        ids.get(JSON.stringify([school.year, school.id])).size === 1 &&
+        codes.get(JSON.stringify([school.year, school.code])).size === 1;
+      if (!unique) warning = true;
+      return unique;
+    });
+    return {
+      sender: {
+        name: typeof saved.sender?.name === "string" ? saved.sender.name : "",
+        code: typeof saved.sender?.code === "string" ? saved.sender.code : "",
+      },
+      schools,
+      warning,
+    };
   } catch {
-    return {};
+    return { warning: true };
   }
 }
 
@@ -9472,6 +9767,102 @@ function checkDeputyExport(session) {
   if (session.context) assertWorkspaceContext(session.context);
 }
 
+async function checkDeputyExportIdentity(session) {
+  const current = await readDeputyExportIdentity({
+    check: () => checkDeputyExport(session),
+    validateCatalog: (catalog) => checkDeputyExportCatalog(session, catalog),
+  });
+  if ((current?.token || null) !== (session.identity?.token || null))
+    throw Error(
+      "مشخصات ارسال در پنجرهٔ دیگری تغییر کرده است؛ ارسال به معاون را دوباره باز کنید.",
+    );
+}
+
+function checkDeputyExportCatalog(session, catalog) {
+  checkDeputyExport(session);
+  assertReportCatalogSnapshot(session.context, catalog);
+  if (busy || drafts.size || assessmentContext.hasDrafts())
+    throw Error(
+      "ثبت یا ویرایش ناتمام وجود دارد؛ فایل را پس از ذخیره دوباره تهیه کنید.",
+    );
+}
+
+function deputyExportPreparationGuard(session, signature) {
+  checkDeputyExport(session);
+  if (
+    signature !== deputyExportSignature(session) ||
+    !session.panel.querySelector('[name="deputyConsent"]').checked
+  )
+    throw Error("مشخصات یا تأیید ارسال تغییر کرد؛ فایل را دوباره آماده کنید.");
+}
+
+async function persistDeputyExportSetup(session, packet, signature) {
+  const known = session.identity?.sender || session.legacy.sender,
+    school = deputyExportSavedSchool(session),
+    priorCode = (value) => {
+      if (typeof value !== "string") return "";
+      try {
+        return EduDeputyExportIdentity.code(value);
+      } catch {
+        return value.trim();
+      }
+    },
+    changedCodes =
+      (known?.code && priorCode(known.code) !== packet.sender.code) ||
+      (school?.code && priorCode(school.code) !== packet.school.code);
+  if (
+    changedCodes &&
+    (!session.panel.querySelector('[name="deputyChangeIdentity"]').checked ||
+      !confirm(
+        "کدهای ارسال تغییر می‌کنند:\nمدرسه: " +
+          (priorCode(school?.code) || "ثبت‌نشده") +
+          " ← " +
+          packet.school.code +
+          "\nفرستنده: " +
+          (priorCode(known?.code) || "ثبت‌نشده") +
+          " ← " +
+          packet.sender.code +
+          "\nاین تغییر ممکن است در کارتابل معاون پروندهٔ تازه بسازد و به‌روزرسانی پروندهٔ قبلی محسوب نشود. تغییر کدها را تأیید می‌کنید؟",
+      ))
+  )
+    throw Error("تغییر کدهای ثبت‌شده تأیید نشد؛ کدهای قبلی را نگه دارید.");
+  const schools = [
+      ...(session.identity?.schools || session.legacy.schools || []),
+    ],
+    schoolIndex = schools.findIndex(
+      (row) => row.year === session.year && row.id === packet.school.id,
+    ),
+    schoolIdentity = {
+      year: session.year,
+      id: packet.school.id,
+      code: packet.school.code,
+    };
+  if (schoolIndex < 0) schools.push(schoolIdentity);
+  else schools[schoolIndex] = schoolIdentity;
+  const candidate = EduDeputyExportIdentity.normalize({
+    version: 1,
+    token: session.identity?.token || "pending",
+    sender: packet.sender,
+    schools,
+  });
+  if (JSON.stringify(candidate) !== JSON.stringify(session.identity)) {
+    session.identity = await saveDeputyExportIdentity(candidate, {
+      expectedToken: session.identity?.token || null,
+      check: () => deputyExportPreparationGuard(session, signature),
+      validateCatalog: (catalog) => checkDeputyExportCatalog(session, catalog),
+    });
+    if (typeof scheduleSingleFile === "function") scheduleSingleFile();
+  }
+  // Durable identity wins from this point. Never re-import stale device-only
+  // defaults after backup restore or when another window changes the profile.
+  session.legacy = {};
+  try {
+    localStorage.removeItem(deputyExportPreferencesKey);
+  } catch {}
+  deputyExportPreparationGuard(session, signature);
+  deputyExportIdentityPresentation(session, { resetOpen: true });
+}
+
 function deputyExportMessage(session, text, { error = false } = {}) {
   if (deputyExportSession !== session || !session.panel.isConnected) return;
   session.panel.querySelector("[data-deputy-export-status]").textContent = error
@@ -9480,6 +9871,8 @@ function deputyExportMessage(session, text, { error = false } = {}) {
   session.panel.querySelector("[data-deputy-export-error]").textContent = error
     ? text
     : "";
+  if (error)
+    session.panel.querySelector("[data-deputy-export-identity]").open = true;
 }
 
 function clearDeputyExportPreview(session) {
@@ -9495,20 +9888,7 @@ function clearDeputyExportPreview(session) {
 async function openDeputyExport(schoolId = "") {
   assertWorkspaceReadable();
   const requestedSchool = schoolId || state.schoolId || "";
-  const opened = showModal(
-    "فایل کارتابل معاون",
-    '<form id="deputyExportPanel" class="record-editor" data-workspace-submit="prepare-deputy-packet"><div class="record-editor-context"><h4>ارسال اطلاعات یک مدرسه</h4><p>این فایل همهٔ اطلاعات ثبت‌شدهٔ مدرسهٔ انتخابی را در ترم اول و دوم همین سال دارد؛ محدودیت تاریخ و کلاس گزارش روی آن اعمال نمی‌شود.</p></div>' +
-      '<p class="muted">معاون فقط اطلاعات را می‌بیند و پیگیری ثبت می‌کند؛ نمی‌تواند حضور یا نمرهٔ دبیر را تغییر دهد. این فایل پشتیبان نیست و دانلود آن به معنی ارسال آنلاین نیست.</p>' +
-      '<fieldset data-deputy-export-fields disabled><label class="course-field">مدرسه<select name="deputySchool" id="deputySchool" required aria-describedby="deputyExportError"><option value="">انتخاب مدرسه</option></select></label>' +
-      '<label class="course-field">کد مشترک مدرسه<input name="deputySchoolCode" id="deputySchoolCode" required maxlength="64" dir="ltr" autocomplete="off" spellcheck="false" aria-describedby="deputyIdentityHint deputyExportError"></label>' +
-      '<label class="course-field">نام دبیر / فرستنده<input name="deputySenderName" id="deputySenderName" required maxlength="200" autocomplete="name" aria-describedby="deputyExportError"></label>' +
-      '<label class="course-field">کد ثابت دبیر / فرستنده<input name="deputySenderCode" id="deputySenderCode" required maxlength="64" dir="ltr" autocomplete="off" spellcheck="false" aria-describedby="deputyIdentityHint deputyExportError"></label>' +
-      '<p id="deputyIdentityHint" class="muted">کد مدرسه را با معاون هماهنگ کنید؛ هر دبیر کد ثابت و متفاوت خودش را داشته باشد. برای ارسال‌های بعد همان کدها را نگه دارید. کد با حرف انگلیسی یا عدد شروع می‌شود؛ خط تیره و زیرخط هم مجازند. فایل امضای دیجیتال ندارد؛ اصالت فرستنده باید جداگانه تأیید شود.</p>' +
-      '<label><input type="checkbox" name="deputyConsent" required> فایل شامل نام هنرجویان، حضور و نمره‌هاست و رمزگذاری نشده؛ آن را فقط به معاون مورداعتماد می‌فرستم.</label>' +
-      '<label><input type="checkbox" name="deputyRemember"> مشخصات فرستنده و کد این مدرسه در همین دستگاه نگه داشته شود.</label></fieldset>' +
-      '<section class="record-editor-context" data-deputy-export-preview hidden aria-label="پیش‌نمایش اطلاعات فایل"></section><p data-deputy-export-status role="status" aria-live="polite">در حال بررسی اطلاعات ثبت‌شدهٔ سال…</p><p id="deputyExportError" data-deputy-export-error role="alert"></p>' +
-      '<div class="record-editor-actions"><button type="submit" data-deputy-export-prepare disabled>بررسی و آماده‌سازی فایل</button><button type="button" class="success" data-workspace-action="export-deputy-packet" hidden>دریافت فایل معاون</button><button type="button" class="ghost" data-workspace-action="close">بستن</button></div><p class="muted">فایل دریافت‌شده را برای معاون مورداعتماد بفرستید؛ معاون آن را در برنامهٔ مستقل خودش، بخش «دریافت اطلاعات»، وارد می‌کند.</p></form>',
-  );
+  const opened = showModal("فایل کارتابل معاون", deputyExportPanelMarkup());
   if (opened === false) return false;
   const session = {
     panel: document.getElementById("deputyExportPanel"),
@@ -9520,6 +9900,10 @@ async function openDeputyExport(schoolId = "") {
     prepared: null,
     preparing: false,
     exporting: false,
+    identity: null,
+    legacy: {},
+    year: workspace.year,
+    suggestedName: "",
   };
   deputyExportSession = session;
   const modal = document.getElementById("modal"),
@@ -9556,25 +9940,17 @@ async function openDeputyExport(schoolId = "") {
             "</option>",
         )
         .join("");
-    select.value = schools.has(requestedSchool) ? requestedSchool : "";
-    const preferences = readDeputyExportPreferences();
-    if (typeof preferences.sender?.name === "string")
-      session.panel.querySelector('[name="deputySenderName"]').value =
-        preferences.sender.name.slice(0, 200);
-    if (typeof preferences.sender?.code === "string")
-      session.panel.querySelector('[name="deputySenderCode"]').value =
-        preferences.sender.code.slice(0, 64);
-    const fillSchoolCode = () => {
-      const saved = Array.isArray(preferences.schools)
-        ? preferences.schools.find(
-            (row) => row?.year === workspace.year && row.id === select.value,
-          )
-        : null;
-      session.panel.querySelector('[name="deputySchoolCode"]').value =
-        typeof saved?.code === "string" ? saved.code.slice(0, 64) : "";
-    };
-    fillSchoolCode();
-    select.addEventListener("change", fillSchoolCode);
+    select.value = schools.has(requestedSchool)
+      ? requestedSchool
+      : schools.size === 1
+        ? [...schools.keys()][0]
+        : "";
+    session.identity = await readDeputyExportIdentity({
+      check: () => checkDeputyExport(session),
+      validateCatalog: (catalog) => checkDeputyExportCatalog(session, catalog),
+    });
+    if (!session.identity) session.legacy = readDeputyExportPreferences();
+    initializeDeputyExportIdentity(session);
     const invalidate = () => {
       if (
         session.prepared &&
@@ -9595,7 +9971,9 @@ async function openDeputyExport(schoolId = "") {
       false;
     deputyExportMessage(
       session,
-      "مدرسه و مشخصات فرستنده را بررسی کنید؛ پیش از دانلود، محدوده و تعداد اطلاعات نشان داده می‌شود.",
+      session.identity
+        ? "مشخصات ارسال آماده است؛ گیرنده را تأیید و فایل را آماده کنید."
+        : "مشخصات ارسال را یک‌بار تأیید کنید؛ برای ارسال‌های بعد در برنامه و پشتیبان محفوظ می‌ماند.",
     );
     return true;
   } catch (error) {
@@ -9618,11 +9996,20 @@ async function prepareDeputyPacket() {
       );
     const fields = deputyExportFields(session),
       signature = deputyExportSignature(session);
+    if (
+      !session.identity &&
+      !session.legacy.sender?.code &&
+      !["new", "existing"].includes(
+        session.panel.querySelector('[name="deputyIdentityMode"]').value,
+      )
+    )
+      throw Error("مشخص کنید این اولین ارسال شماست یا ادامهٔ فایل‌های قبلی.");
     if (!session.panel.querySelector('[name="deputyConsent"]').checked)
       throw Error(
         "پیش از آماده‌سازی، محرمانگی اطلاعات و گیرنده را تأیید کنید.",
       );
     await assertReportSnapshot(session.context);
+    await checkDeputyExportIdentity(session);
     checkDeputyExport(session);
     if (
       signature !== deputyExportSignature(session) ||
@@ -9631,6 +10018,9 @@ async function prepareDeputyPacket() {
       throw Error("مشخصات هنگام آماده‌سازی تغییر کرد؛ دوباره تلاش کنید.");
     const packet = EduDeputyExchange.build({ ...fields, parts: session.parts }),
       counts = EduDeputyExchange.plan(null, packet).counts;
+    await persistDeputyExportSetup(session, packet, signature);
+    await checkDeputyExportIdentity(session);
+    deputyExportPreparationGuard(session, signature);
     session.prepared = { packet, signature };
     const preview = session.panel.querySelector("[data-deputy-export-preview]");
     preview.innerHTML =
@@ -9640,10 +10030,6 @@ async function prepareDeputyPacket() {
       esc(packet.academicYear) +
       "</h4><p>فرستنده: " +
       esc(packet.sender.name) +
-      " · کد دبیر: " +
-      esc(packet.sender.code) +
-      " · کد مدرسه: " +
-      esc(packet.school.code) +
       "</p><p>" +
       [
         ["ترم", counts.periods],
@@ -9695,6 +10081,7 @@ async function exportDeputyPacket() {
     const prepared = session.prepared;
     if (!prepared) throw Error("ابتدا فایل معاون را بررسی و آماده کنید.");
     await assertReportSnapshot(session.context);
+    await checkDeputyExportIdentity(session);
     checkDeputyExport(session);
     if (
       prepared !== session.prepared ||
@@ -9720,38 +10107,9 @@ async function exportDeputyPacket() {
         "Z.json",
       { compact: true },
     );
-    if (session.panel.querySelector('[name="deputyRemember"]').checked) {
-      try {
-        const previous = readDeputyExportPreferences(),
-          schools = (Array.isArray(previous.schools) ? previous.schools : [])
-            .filter(
-              (row) =>
-                row &&
-                typeof row.id === "string" &&
-                typeof row.year === "string" &&
-                typeof row.code === "string" &&
-                !(
-                  row.id === packet.school.id &&
-                  row.year === packet.academicYear
-                ),
-            )
-            .slice(-99);
-        schools.push({
-          year: packet.academicYear,
-          id: packet.school.id,
-          code: packet.school.code,
-        });
-        localStorage.setItem(
-          deputyExportPreferencesKey,
-          JSON.stringify({ sender: packet.sender, schools }),
-        );
-      } catch {
-        // Remembering non-secret form defaults is optional; download still works.
-      }
-    }
     deputyExportMessage(
       session,
-      "دریافت فایل درخواست شد؛ ذخیرهٔ فایل را بررسی کنید و آن را به‌صورت پیوست برای معاون بفرستید. اطلاعات برنامه تغییر نکرد و هیچ ارسال آنلاینی انجام نشد.",
+      "دریافت فایل درخواست شد؛ ذخیرهٔ فایل را بررسی کنید و آن را به‌صورت پیوست برای معاون بفرستید. اطلاعات آموزشی تغییر نکرد و هیچ ارسال آنلاینی انجام نشد.",
     );
     return structuredClone(packet);
   } catch (error) {
@@ -10965,17 +11323,11 @@ function assertLiveWorkspace(live, context) {
     );
   }
 }
-async function assertReportSnapshot(context) {
-  assertWorkspaceContext(context);
-  if (busy || drafts.size || assessmentContext.hasDrafts())
-    throw Error(
-      "ثبت یا ویرایش ناتمام وجود دارد؛ گزارش را پس از ذخیره دوباره تهیه کنید.",
-    );
-  const catalog = context.members ? await allFrom("catalog") : null;
-  const live = catalog
-    ? catalog.find((row) => row.id === context.id)
-    : await readRecord("catalog", context.id);
-  assertLiveWorkspace(live, context);
+function assertReportCatalogSnapshot(context, catalog) {
+  assertLiveWorkspace(
+    catalog.find((row) => row.id === context.id),
+    context,
+  );
   if (
     context.members?.some(
       (member) =>
@@ -11009,6 +11361,17 @@ async function assertReportSnapshot(context) {
     )
       throw Error("نوبت‌های سال تغییر کرده‌اند؛ کارنامه را دوباره تهیه کنید.");
   }
+}
+async function assertReportSnapshot(context) {
+  assertWorkspaceContext(context);
+  if (busy || drafts.size || assessmentContext.hasDrafts())
+    throw Error(
+      "ثبت یا ویرایش ناتمام وجود دارد؛ گزارش را پس از ذخیره دوباره تهیه کنید.",
+    );
+  const catalog = context.members
+    ? await allFrom("catalog")
+    : [await readRecord("catalog", context.id)].filter(Boolean);
+  assertReportCatalogSnapshot(context, catalog);
   if (busy || drafts.size || assessmentContext.hasDrafts())
     throw Error(
       "اطلاعات هنگام آماده‌سازی خروجی تغییر کرد؛ گزارش را دوباره تهیه کنید.",

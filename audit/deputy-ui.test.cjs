@@ -194,6 +194,13 @@ function fixture({
     context,
   );
   vm.runInContext(
+    fs.readFileSync(
+      path.join(__dirname, "../src/domain/reporting/attendance.js"),
+      "utf8",
+    ),
+    context,
+  );
+  vm.runInContext(
     '(function(root){\n"use strict";\n' +
       fragments
         .map((name) =>

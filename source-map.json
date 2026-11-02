@@ -104,6 +104,8 @@
         "src/workspace/reports/student.js",
         "src/workspace/reports/printing.js",
         "src/workspace/reports/copy.js",
+        "src/workspace/reports/deputy-export-identity.js",
+        "src/workspace/reports/deputy-export-form.js",
         "src/workspace/reports/deputy-export.js",
         "src/workspace/students/csv-import.js",
         "src/workspace/students/editor.js",
@@ -225,6 +227,16 @@
       ]
     },
     {
+      "output": "assets/scripts/reporting-core.js",
+      "scope": "global",
+      "sources": [
+        "src/domain/reporting/attendance.js",
+        "src/domain/reporting/date-ranges.js",
+        "src/domain/reporting/periodic-model.js",
+        "src/domain/reporting/academic-results.js"
+      ]
+    },
+    {
       "output": "assets/scripts/history-changes.js",
       "scope": "global",
       "sources": ["src/domain/history-changes.js"]
@@ -329,7 +341,10 @@
     {
       "output": "assets/scripts/deputy-exchange.js",
       "scope": "global",
-      "sources": ["src/domain/deputy-exchange.js"]
+      "sources": [
+        "src/domain/deputy-export-identity.js",
+        "src/domain/deputy-exchange.js"
+      ]
     },
     {
       "output": "assets/scripts/deputy-store.js",

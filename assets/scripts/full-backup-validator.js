@@ -68,6 +68,14 @@ globalThis.EduFullBackupValidator = Object.freeze({
         }
         const stores = item.stores;
         if (!isDataObject(stores)) continue;
+        if (Object.hasOwn(item, "deputyExportIdentity")) {
+          if (!globalThis.EduDeputyExportIdentity)
+            throw Error("خواندن مشخصات فرستندهٔ پشتیبان در دسترس نیست.");
+          item.deputyExportIdentity =
+            globalThis.EduDeputyExportIdentity.normalize(
+              item.deputyExportIdentity,
+            );
+        }
         if (Array.isArray(stores.catalog))
           for (const period of stores.catalog) yearField(period, "year");
         if (Array.isArray(stores.records))

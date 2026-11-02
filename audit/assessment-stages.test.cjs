@@ -203,6 +203,7 @@ test("configured practical and theory weights are shared by both grade stages", 
   });
   vm.runInContext(read("domain/grade-math.js"), context);
   vm.runInContext(read("domain/grade-policy.js"), context);
+  vm.runInContext(read("domain/reporting/academic-results.js"), context);
   vm.runInContext(read("workspace/grading/results.js"), context);
   const lesson = {
     gradingPolicy: {
@@ -241,14 +242,11 @@ test("configured practical and theory weights are shared by both grade stages", 
 test("general assessment keeps the two stages separate and missing grades distinct from zero", () => {
   const context = vm.createContext({
     ownScoreRecord: (records, id) => records?.[id] || {},
-    EduPolicy: {
-      dual: (p, practical, theory) => ({
-        final: theory ?? null,
-        complete: theory != null,
-        passed: null,
-      }),
-    },
   });
+  vm.runInContext(read("domain/data-boundary.js"), context);
+  vm.runInContext(read("domain/grade-math.js"), context);
+  vm.runInContext(read("domain/grade-policy.js"), context);
+  vm.runInContext(read("domain/reporting/academic-results.js"), context);
   vm.runInContext(read("workspace/grading/results.js"), context);
   const lesson = {
     gradingPolicy: { subjectType: "general" },

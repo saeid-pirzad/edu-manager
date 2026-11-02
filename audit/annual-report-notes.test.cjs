@@ -75,6 +75,18 @@ function fixture(saved = new Map()) {
   vm.createContext(c);
   for (const p of [
     "src/domain/calendar.js",
+    "src/domain/academic-year.js",
+    "src/domain/reporting/attendance.js",
+    "src/domain/reporting/date-ranges.js",
+    "src/domain/reporting/periodic-model.js",
+  ])
+    vm.runInContext(fs.readFileSync(p, "utf8"), c, { filename: p });
+  Object.assign(c.root, {
+    EduReportDates: c.EduReportDates,
+    EduReportModel: c.EduReportModel,
+    EduReportAttendance: c.EduReportAttendance,
+  });
+  for (const p of [
     "src/legacy/students/roster.js",
     "src/reports/periodic/date-range.js",
     "src/reports/periodic/notes.js",

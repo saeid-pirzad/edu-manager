@@ -407,11 +407,19 @@ test("recovered-name repair reaches historical placeholders in closed peer terms
     clone(f.value("other-year", "session:recovered-session")),
     otherYear,
   );
-  const report = vm.createContext({
-    range: () => ({ start: "2026-10-31", end: "2026-10-31" }),
-    isoDate: (value) => new Date(value),
-    addDays: (value) => value,
-  });
+  const report = vm.createContext({});
+  for (const file of [
+    "calendar.js",
+    "academic-year.js",
+    "reporting/attendance.js",
+    "reporting/date-ranges.js",
+    "reporting/periodic-model.js",
+  ])
+    vm.runInContext(
+      fs.readFileSync(path.join(__dirname, "../src/domain", file), "utf8"),
+      report,
+    );
+  report.root = report;
   vm.runInContext(
     fs.readFileSync(
       path.join(__dirname, "../src/reports/periodic/model.js"),
@@ -425,7 +433,12 @@ test("recovered-name repair reaches historical placeholders in closed peer terms
       schools: [{ id: "school", name: "مدرسه", classes: [f.value("second")] }],
       sessions: [f.value("second", "session:recovered-session")],
     },
-    { mode: "daily", schoolId: "school", audience: "management" },
+    {
+      mode: "daily",
+      date: "2026-10-31",
+      schoolId: "school",
+      audience: "management",
+    },
   );
   assert.equal(model.sessions[0].participants[0].name, "نام اصلاح‌شده");
 });

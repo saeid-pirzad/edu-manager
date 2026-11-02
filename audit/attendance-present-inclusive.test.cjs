@@ -11,6 +11,22 @@ function fixture(values) {
     faDate: String,
     modeLabel: String,
   });
+  for (const file of [
+    "calendar.js",
+    "academic-year.js",
+    "reporting/attendance.js",
+    "reporting/date-ranges.js",
+    "reporting/periodic-model.js",
+  ])
+    vm.runInContext(
+      fs.readFileSync(path.join(__dirname, "../src/domain", file), "utf8"),
+      context,
+    );
+  Object.assign(context.root, {
+    EduReportDates: context.EduReportDates,
+    EduReportModel: context.EduReportModel,
+    EduReportAttendance: context.EduReportAttendance,
+  });
   for (const name of ["date-range.js", "model.js", "text.js", "document.js"])
     vm.runInContext(
       fs.readFileSync(

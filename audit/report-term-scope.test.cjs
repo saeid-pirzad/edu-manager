@@ -15,6 +15,20 @@ function fixture() {
   for (const file of [
     "domain/calendar.js",
     "domain/academic-year.js",
+    "domain/reporting/attendance.js",
+    "domain/reporting/date-ranges.js",
+    "domain/reporting/periodic-model.js",
+  ])
+    vm.runInContext(
+      fs.readFileSync(path.join(__dirname, "../src", file), "utf8"),
+      c,
+    );
+  Object.assign(c.root, {
+    EduReportDates: c.EduReportDates,
+    EduReportModel: c.EduReportModel,
+    EduReportAttendance: c.EduReportAttendance,
+  });
+  for (const file of [
     "reports/periodic/date-range.js",
     "reports/periodic/model.js",
     "reports/periodic/text.js",

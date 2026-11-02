@@ -88,6 +88,10 @@ function fixture({ syncFailure = false, asyncFailure = false } = {}) {
     setStatus() {},
     resetScreen() {},
     transactionDone: (tx) => tx.done,
+    requestPromise: (request) =>
+      new Promise((resolve) => {
+        request.onsuccess = () => resolve(request.result);
+      }),
     broadcast() {},
     completeResetCleanup: async () => {},
     RESET_RECORD_KEY: "@installation-reset",
@@ -128,8 +132,19 @@ function fixture({ syncFailure = false, asyncFailure = false } = {}) {
             reject(Error("transaction aborted"));
           },
           objectStore: (name) => ({
+            get() {
+              const request = {
+                result: name === "drafts" ? c.liveIdentity : c.liveResetMarker,
+              };
+              queueMicrotask(() => request.onsuccess());
+              return request;
+            },
             getAll() {
-              const request = { result: [current] };
+              const request = {
+                result: structuredClone(
+                  c.rawStores?.[name] || (name === "catalog" ? [current] : []),
+                ),
+              };
               queueMicrotask(() => request.onsuccess());
               return request;
             },
@@ -149,7 +164,11 @@ function fixture({ syncFailure = false, asyncFailure = false } = {}) {
       },
     },
   });
-  for (const source of ["domain/calendar.js", "domain/academic-year.js"])
+  for (const source of [
+    "domain/calendar.js",
+    "domain/academic-year.js",
+    "domain/deputy-export-identity.js",
+  ])
     vm.runInContext(
       fs.readFileSync(path.join(__dirname, "../src", source), "utf8"),
       c,
@@ -466,5 +485,163 @@ test("full restore target read failure does not alter source authentication befo
     c.blocked,
     true,
     "a committed replacement cannot continue using stale source data after a read failure",
+  );
+});
+
+const senderIdentity = (token = "saved-sender") => ({
+  version: 1,
+  token,
+  sender: { code: "TEACHER_1", name: "دبیر نمونه" },
+  schools: [{ year: "1405-1406", id: "school", code: "SCHOOL_1" }],
+});
+
+test("full restore replaces sender identity atomically with a fresh compare-and-swap token", async () => {
+  const f = fixture();
+  f.source.deputyExportIdentity = senderIdentity("incoming-token");
+  f.safety.deputyExportIdentity = senderIdentity("current-token");
+  f.c.liveIdentity = f.c.EduDeputyExportIdentity.row(
+    f.safety.deputyExportIdentity,
+  );
+  f.c.previewFullBackup(f.source);
+  await f.c.restoreFullBackup();
+  const row = f.committed.find(
+    (item) =>
+      item.name === "drafts" &&
+      item.row?.key === f.c.EduDeputyExportIdentity.key,
+  ).row;
+  assert.notEqual(row.value.token, "incoming-token");
+  assert.notEqual(row.value.token, "current-token");
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(row.value.sender)),
+    f.source.deputyExportIdentity.sender,
+  );
+  assert.equal(f.source.deputyExportIdentity.token, "incoming-token");
+});
+
+test("restoring an old backup clears the overwritten sender identity instead of reusing it", async () => {
+  const f = fixture();
+  f.safety.deputyExportIdentity = senderIdentity();
+  f.c.liveIdentity = f.c.EduDeputyExportIdentity.row(
+    f.safety.deputyExportIdentity,
+  );
+  await f.c.restoreFullBackup();
+  assert.ok(f.committed.some((item) => item.name === "drafts" && item.clear));
+  assert.equal(
+    f.committed.some(
+      (item) => item.row?.key === f.c.EduDeputyExportIdentity.key,
+    ),
+    false,
+  );
+});
+
+test("an unseen identity update after the safety snapshot blocks destructive full restore", async () => {
+  const f = fixture();
+  f.safety.deputyExportIdentity = senderIdentity("old-token");
+  f.c.liveIdentity = f.c.EduDeputyExportIdentity.row(
+    senderIdentity("new-token"),
+  );
+  await assert.rejects(f.c.restoreFullBackup(), /مشخصات فرستنده/);
+  assert.equal(f.committed.length, 0);
+});
+
+test("a stale restore window cannot overwrite a newer installation with an unchanged catalog", async () => {
+  const f = fixture();
+  f.c.liveResetMarker = {
+    key: "@installation-reset",
+    value: { token: "another-installation" },
+  };
+  await assert.rejects(f.c.restoreFullBackup(), /جایگزین/);
+  assert.equal(f.committed.length, 0);
+});
+
+test("failed replacement does not partially commit incoming sender metadata", async () => {
+  const f = fixture({ asyncFailure: true });
+  f.source.deputyExportIdentity = senderIdentity();
+  f.c.previewFullBackup(f.source);
+  await assert.rejects(f.c.restoreFullBackup(), /asynchronous write failure/);
+  assert.equal(f.committed.length, 0);
+});
+
+function damagedIdentityFixture() {
+  const f = fixture();
+  f.c.liveIdentity = {
+    key: f.c.EduDeputyExportIdentity.key,
+    value: { version: 99, corrupt: "preserve this exact original row" },
+  };
+  f.c.rawStores = { drafts: [structuredClone(f.c.liveIdentity)] };
+  f.c.snapshotInstallation = async () =>
+    f.c.EduDeputyExportIdentity.normalize(f.c.liveIdentity.value);
+  f.source.deputyExportIdentity = senderIdentity("incoming-valid");
+  f.c.previewFullBackup(f.source);
+  return f;
+}
+
+test("a corrupt durable sender profile does not prevent full recovery and is preserved in raw safety data", async () => {
+  const f = damagedIdentityFixture(),
+    damaged = structuredClone(f.c.liveIdentity);
+  await f.c.restoreFullBackup();
+  const safety = f.committed.find(
+      (item) => item.name === "backups" && item.row?.full,
+    ).row.full,
+    restored = f.committed.find(
+      (item) =>
+        item.name === "drafts" &&
+        item.row?.key === f.c.EduDeputyExportIdentity.key,
+    ).row;
+  assert.equal(safety.format, "EduManager.RawRecovery");
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(safety.stores.drafts[0])),
+    damaged,
+  );
+  assert.equal(restored.value.sender.name, "دبیر نمونه");
+  assert.notEqual(restored.value.token, "incoming-valid");
+});
+
+test("raw safety identity comparison still detects a concurrent change before destructive recovery", async () => {
+  const f = damagedIdentityFixture(),
+    snapshot = f.c.snapshotBeforeSystemRestore;
+  f.c.snapshotBeforeSystemRestore = async () => {
+    const safety = await snapshot();
+    f.c.liveIdentity = {
+      ...f.c.liveIdentity,
+      value: { version: 99, corrupt: "changed in another window" },
+    };
+    return safety;
+  };
+  await assert.rejects(f.c.restoreFullBackup(), /مشخصات فرستنده/);
+  assert.equal(f.committed.length, 0);
+});
+
+test("corrupt current metadata never permits malformed incoming metadata to reach replacement writes", async () => {
+  const f = damagedIdentityFixture();
+  f.source.deputyExportIdentity = { version: 99 };
+  f.c.previewFullBackup(f.source);
+  await assert.rejects(
+    f.c.restoreFullBackup(),
+    (error) => error.code === "DEPUTY_IDENTITY_INVALID",
+  );
+  assert.equal(f.committed.length, 0);
+});
+
+test("unrelated backup errors never trigger the raw-recovery fallback", async () => {
+  const f = fixture();
+  f.c.snapshotInstallation = async () => {
+    throw Error("unrelated storage failure");
+  };
+  await assert.rejects(f.c.restoreFullBackup(), /unrelated storage failure/);
+  assert.equal(f.committed.length, 0);
+});
+
+test("unserializable corrupt identity rows fail clearly rather than bypassing the recovery compare guard", () => {
+  const f = fixture(),
+    row = { key: f.c.EduDeputyExportIdentity.key };
+  row.value = row;
+  assert.throws(
+    () =>
+      f.c.restoreIdentityMatches(
+        { format: "EduManager.RawRecovery", stores: { drafts: [row] } },
+        row,
+      ),
+    /مقایسهٔ امن/,
   );
 });

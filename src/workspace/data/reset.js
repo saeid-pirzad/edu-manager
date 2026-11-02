@@ -9,6 +9,7 @@ function ownedDataKey(key) {
   return (
     key.startsWith("Edu24.") ||
     key.startsWith("EduManager.periodicDrafts.") ||
+    key === "EduDeputy.teacherExport.v1" ||
     key === STORAGE_KEY ||
     key === STORAGE_KEY + "_beforeImport"
   );

@@ -386,8 +386,10 @@ test("a full snapshot retains records, reports, events and drafts from every leg
     window: {
       EduPeriodicReports: { getDrafts: (id) => ({ [id]: "preserved" }) },
     },
+    installationToken: "restore",
   });
   vm.runInContext(source("domain/grade-drafts.js"), c);
+  vm.runInContext(source("domain/deputy-export-identity.js"), c);
   vm.runInContext(source("workspace/backups/full-export.js"), c);
   const snapshot = await c.snapshotInstallation();
   for (const store of ["catalog", "records", "reports", "events"])

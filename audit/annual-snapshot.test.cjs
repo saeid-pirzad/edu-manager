@@ -210,11 +210,18 @@ test("annual merge retains term-specific lesson metadata and infers legacy roste
   assert.equal(first.academicTerm, "اول");
   assert.equal(second.sourcePeriodId, "second");
   assert.notEqual(first.id, second.id);
-  Object.assign(c, {
-    range: () => ({ start: "2026-10-31", end: "2026-10-31" }),
-    isoDate: (value) => new Date(value),
-    addDays: (value) => value,
-  });
+  for (const file of [
+    "calendar.js",
+    "academic-year.js",
+    "reporting/attendance.js",
+    "reporting/date-ranges.js",
+    "reporting/periodic-model.js",
+  ])
+    vm.runInContext(
+      fs.readFileSync(path.join(__dirname, "../src/domain", file), "utf8"),
+      c,
+    );
+  c.root = c;
   vm.runInContext(
     fs.readFileSync(
       path.join(__dirname, "../src/reports/periodic/model.js"),

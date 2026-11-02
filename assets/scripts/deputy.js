@@ -330,14 +330,8 @@ function reportParticipants(session, classInfo) {
 }
 
 function attendance(value) {
-  const match =
-    typeof value === "string" ? value.match(/^late(?::(\d+))?$/) : null;
-  if (match)
-    return { status: "late", minutes: match[1] ? Number(match[1]) : null };
-  return {
-    status: ["present", "absent", "leave"].includes(value) ? value : "unknown",
-    minutes: null,
-  };
+  const { status, minutes } = root.EduReportAttendance.normalize(value);
+  return { status, minutes };
 }
 
 function participants(session, classInfo) {

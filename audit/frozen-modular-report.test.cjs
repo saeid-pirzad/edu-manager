@@ -27,6 +27,7 @@ function fixture() {
     "domain/data-boundary.js",
     "domain/grade-math.js",
     "domain/grade-policy.js",
+    "domain/reporting/academic-results.js",
     "workspace/domain/defaults-numbers.js",
     "legacy/grading/calculation.js",
     "legacy/grading/kardanesh.js",

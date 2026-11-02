@@ -14,7 +14,8 @@ function portableGradeDrafts(rows, periods) {
 
 async function snapshotInstallation() {
   const origin = workspace?.id,
-    sourceConnection = connection;
+    sourceConnection = connection,
+    sourceInstallation = installationToken;
   const check = () => {
     if (
       !ready ||
@@ -22,7 +23,8 @@ async function snapshotInstallation() {
       resetBusy ||
       connectionRetired ||
       workspace?.id !== origin ||
-      connection !== sourceConnection
+      connection !== sourceConnection ||
+      installationToken !== sourceInstallation
     )
       throw Object.assign(
         Error(
@@ -73,6 +75,13 @@ async function snapshotInstallation() {
   await done;
   const stores = Object.fromEntries(names.map((name, i) => [name, values[i]]));
   check();
+  if (
+    (stores.records.find((row) => row.key === RESET_RECORD_KEY)?.value?.token ||
+      "") !== sourceInstallation
+  )
+    throw Error(
+      "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ پشتیبان را دوباره تهیه کنید.",
+    );
   // Never embed a full snapshot inside another full snapshot.
   stores.backups = stores.backups.filter((row) => !row.full);
   stores.records = stores.records.filter((row) => row.key !== RESET_RECORD_KEY);
@@ -88,6 +97,7 @@ async function snapshotInstallation() {
     ],
     stores.catalog,
   );
+  const deputyExportIdentity = EduDeputyExportIdentity.fromRows(stores.drafts);
   delete stores.drafts;
   const reportDrafts = {};
   for (const period of stores.catalog) {
@@ -116,6 +126,7 @@ async function snapshotInstallation() {
     stores,
     reportDrafts,
     gradeDrafts,
+    ...(deputyExportIdentity ? { deputyExportIdentity } : {}),
   };
 }
 async function exportFullBackup() {

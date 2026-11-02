@@ -1,0 +1,97 @@
+(function (root) {
+  "use strict";
+  const key = "EduDeputy.teacherIdentity.v2";
+  function fail(message) {
+    throw Object.assign(Error(message), { code: "DEPUTY_IDENTITY_INVALID" });
+  }
+  function object(value, keys) {
+    if (
+      !value ||
+      typeof value !== "object" ||
+      Array.isArray(value) ||
+      Object.keys(value).some((name) => !keys.includes(name)) ||
+      keys.some((name) => !Object.hasOwn(value, name))
+    )
+      fail("ساختار مشخصات فرستنده معتبر نیست.");
+  }
+  function code(value) {
+    if (typeof value !== "string") fail("کد ثابت مدرسه و دبیر لازم است.");
+    const result = value
+      .trim()
+      .replace(/[۰-۹٠-٩]/g, (digit) =>
+        String(digit.charCodeAt(0) - (digit >= "۰" ? 1776 : 1632)),
+      )
+      .toUpperCase();
+    if (!/^[A-Z0-9][A-Z0-9_-]{0,63}$/.test(result))
+      fail("کد ثابت باید ۱ تا ۶۴ حرف لاتین، عدد، خط تیره یا زیرخط باشد.");
+    return result;
+  }
+  function id(value) {
+    if (
+      typeof value !== "string" ||
+      !/^[A-Za-z0-9_-]{1,120}$/.test(value) ||
+      [
+        "__proto__",
+        "constructor",
+        "prototype",
+        ...Object.getOwnPropertyNames(Object.prototype),
+      ].includes(value)
+    )
+      fail("شناسهٔ مشخصات فرستنده معتبر نیست.");
+    return value;
+  }
+  function normalize(value) {
+    object(value, ["version", "token", "sender", "schools"]);
+    if (value.version !== 1 || !Array.isArray(value.schools))
+      fail("نسخهٔ مشخصات فرستنده معتبر نیست.");
+    if (value.schools.length > 10000)
+      fail("تعداد مدرسه‌های مشخصات فرستنده بیش از حد مجاز است.");
+    object(value.sender, ["code", "name"]);
+    if (
+      typeof value.sender.name !== "string" ||
+      !value.sender.name.trim() ||
+      value.sender.name.length > 200 ||
+      [...value.sender.name].some((character) => {
+        const point = character.charCodeAt(0);
+        return point < 32 || point === 127;
+      })
+    )
+      fail("نام دبیر / فرستنده معتبر نیست.");
+    const identities = new Set(),
+      codes = new Set();
+    const schools = value.schools.map((school) => {
+      object(school, ["year", "id", "code"]);
+      const year = root.EduAcademicYear.normalize(school.year),
+        schoolId = id(school.id),
+        schoolCode = code(school.code),
+        identity = JSON.stringify([year, schoolId]),
+        codeKey = JSON.stringify([year, schoolCode]);
+      if (identities.has(identity) || codes.has(codeKey))
+        fail("کد یا شناسهٔ مدرسه در مشخصات فرستنده تکراری است.");
+      identities.add(identity);
+      codes.add(codeKey);
+      return { year, id: schoolId, code: schoolCode };
+    });
+    return {
+      version: 1,
+      token: id(value.token),
+      sender: { code: code(value.sender.code), name: value.sender.name.trim() },
+      schools,
+    };
+  }
+  function fromRows(rows) {
+    const matches = rows.filter((row) => row?.key === key);
+    if (matches.length > 1) fail("مشخصات فرستنده تکراری است.");
+    return matches.length ? normalize(matches[0].value) : null;
+  }
+  function row(value) {
+    return { key, value: normalize(value) };
+  }
+  root.EduDeputyExportIdentity = Object.freeze({
+    key,
+    code,
+    normalize,
+    fromRows,
+    row,
+  });
+})(globalThis);

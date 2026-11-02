@@ -55,17 +55,11 @@ function assertLiveWorkspace(live, context) {
     );
   }
 }
-async function assertReportSnapshot(context) {
-  assertWorkspaceContext(context);
-  if (busy || drafts.size || assessmentContext.hasDrafts())
-    throw Error(
-      "ثبت یا ویرایش ناتمام وجود دارد؛ گزارش را پس از ذخیره دوباره تهیه کنید.",
-    );
-  const catalog = context.members ? await allFrom("catalog") : null;
-  const live = catalog
-    ? catalog.find((row) => row.id === context.id)
-    : await readRecord("catalog", context.id);
-  assertLiveWorkspace(live, context);
+function assertReportCatalogSnapshot(context, catalog) {
+  assertLiveWorkspace(
+    catalog.find((row) => row.id === context.id),
+    context,
+  );
   if (
     context.members?.some(
       (member) =>
@@ -99,6 +93,17 @@ async function assertReportSnapshot(context) {
     )
       throw Error("نوبت‌های سال تغییر کرده‌اند؛ کارنامه را دوباره تهیه کنید.");
   }
+}
+async function assertReportSnapshot(context) {
+  assertWorkspaceContext(context);
+  if (busy || drafts.size || assessmentContext.hasDrafts())
+    throw Error(
+      "ثبت یا ویرایش ناتمام وجود دارد؛ گزارش را پس از ذخیره دوباره تهیه کنید.",
+    );
+  const catalog = context.members
+    ? await allFrom("catalog")
+    : [await readRecord("catalog", context.id)].filter(Boolean);
+  assertReportCatalogSnapshot(context, catalog);
   if (busy || drafts.size || assessmentContext.hasDrafts())
     throw Error(
       "اطلاعات هنگام آماده‌سازی خروجی تغییر کرد؛ گزارش را دوباره تهیه کنید.",

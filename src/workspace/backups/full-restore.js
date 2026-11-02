@@ -104,7 +104,14 @@ function restoreCatalogSignature(rows) {
   );
 }
 async function snapshotBeforeSystemRestore() {
-  if (ready) return snapshotInstallation();
+  if (ready)
+    try {
+      return await snapshotInstallation();
+    } catch (error) {
+      // A damaged sender profile must not prevent recovery of the actual
+      // installation. Keep it verbatim in the raw safety copy instead.
+      if (error.code !== "DEPUTY_IDENTITY_INVALID") throw error;
+    }
   // Recovery must also work when damaged records prevented normal startup.
   const names = [...backupStores, "drafts"];
   const tx = connection.transaction(names, "readonly"),
@@ -121,6 +128,28 @@ async function snapshotBeforeSystemRestore() {
     ),
   };
 }
+function restoreIdentityMatches(safety, current) {
+  if (safety.format === "EduManager.RawRecovery") {
+    const original = (safety.stores.drafts || []).find(
+      (row) => row?.key === EduDeputyExportIdentity.key,
+    );
+    const fingerprint = (row) => {
+      try {
+        return JSON.stringify(row ?? null);
+      } catch {
+        throw Error(
+          "مشخصات آسیب‌دیدهٔ فرستنده قابل مقایسهٔ امن نیست؛ بازیابی انجام نشد.",
+        );
+      }
+    };
+    return fingerprint(original) === fingerprint(current);
+  }
+  const original =
+      safety.deputyExportIdentity ||
+      EduDeputyExportIdentity.fromRows(safety.stores.drafts || []),
+    live = current ? EduDeputyExportIdentity.normalize(current.value) : null;
+  return (live?.token || null) === (original?.token || null);
+}
 async function restoreFullBackup() {
   if (fullRestoreBusy) throw Error("بازیابی کامل در حال انجام است؛ صبر کنید.");
   if (!pendingFullBackup)
@@ -133,7 +162,9 @@ async function restoreFullBackup() {
   else if (!connection || connectionRetired || resetBusy)
     throw Error("برای اتصال امن به بانک، صفحه را دوباره بارگذاری کنید.");
   const source = pendingFullBackup,
-    origin = captureWorkspaceContext();
+    origin = captureWorkspaceContext(),
+    sourceConnection = connection,
+    sourceInstallation = installationToken;
   if (
     !confirm(
       "کل اطلاعات سیستم به وضعیت این فایل برگردد؟ نوبت جدید ساخته نمی‌شود.",
@@ -149,6 +180,8 @@ async function restoreFullBackup() {
     if (
       resetBusy ||
       connectionRetired ||
+      connection !== sourceConnection ||
+      installationToken !== sourceInstallation ||
       (workspace?.id || "") !== origin.id ||
       pendingFullBackup !== source ||
       JSON.stringify(source) !== pendingFullBackupSignature
@@ -230,6 +263,13 @@ async function restoreFullBackup() {
         error: "بازیابی از فایل؛ نیازمند بررسی",
       })),
     }));
+    if (source.deputyExportIdentity !== undefined)
+      rows.drafts.push(
+        EduDeputyExportIdentity.row({
+          ...source.deputyExportIdentity,
+          token: uid(),
+        }),
+      );
     rows.backups.push({
       id: "before-full-restore-" + uid(),
       workspace: null,
@@ -265,10 +305,22 @@ async function restoreFullBackup() {
       } catch {}
     };
     try {
-      const request = tx.objectStore("catalog").getAll();
-      request.onsuccess = () => {
+      const request = tx.objectStore("catalog").getAll(),
+        epoch = tx.objectStore("records").get(RESET_RECORD_KEY),
+        identity = tx.objectStore("drafts").get(EduDeputyExportIdentity.key);
+      let remaining = 3;
+      const replace = () => {
+        if (--remaining) return;
         try {
           check();
+          if ((epoch.result?.value?.token || "") !== sourceInstallation)
+            throw Error(
+              "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ پیش از بازیابی دوباره بررسی کنید.",
+            );
+          if (!restoreIdentityMatches(safety, identity.result))
+            throw Error(
+              "مشخصات فرستنده در پنجرهٔ دیگری تغییر کرده است؛ پیش از بازیابی دوباره بررسی کنید.",
+            );
           if (
             restoreCatalogSignature(request.result) !==
             restoreCatalogSignature(safety.stores.catalog)
@@ -296,6 +348,9 @@ async function restoreFullBackup() {
           abort(error);
         }
       };
+      request.onsuccess = replace;
+      epoch.onsuccess = replace;
+      identity.onsuccess = replace;
     } catch (error) {
       abort(error);
     }

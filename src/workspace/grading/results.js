@@ -7,7 +7,7 @@ function calcV24(c, l, sid, source = db) {
     if (p.method === "dual")
       Object.assign(r, EduPolicy.dual(p, r.practical, r.theory));
     else
-      Object.assign(r, EduPolicy.lesson(p, l.poudmans, sid), {
+      Object.assign(r, EduReportGrades.modular(l, sid), {
         avgM: null,
         avgP: null,
       });
@@ -18,40 +18,11 @@ function calcV24(c, l, sid, source = db) {
 }
 
 function assessmentWeights(lesson) {
-  const practical =
-    lesson.gradingPolicy?.method === "dual"
-      ? EduPolicy.dualSettings(lesson.gradingPolicy).practicalWeight
-      : 70;
-  return { practical, theory: 100 - practical };
+  return EduReportGrades.weights(lesson);
 }
 
 function assessmentResult(lesson, sid, stage = "final") {
-  if (!["midterm", "final"].includes(stage))
-    throw Error("مرحله ارزشیابی نامعتبر است.");
-  const grade = ownScoreRecord(lesson?.kardaneshScores, sid);
-  const practical =
-    grade[stage === "midterm" ? "midtermPractical" : "practical"] ?? null;
-  const theory =
-    grade[stage === "midterm" ? "midtermTheory" : "theory"] ?? null;
-  if (lesson.gradingPolicy?.subjectType === "general")
-    return {
-      practical: null,
-      theory,
-      ...EduPolicy.dual(lesson.gradingPolicy, null, theory),
-    };
-  if (lesson.gradingPolicy?.method === "dual")
-    return {
-      practical,
-      theory,
-      ...EduPolicy.dual(lesson.gradingPolicy, practical, theory),
-    };
-  return {
-    practical,
-    theory,
-    ...weightedKardanesh(practical, theory),
-    complete: practical !== null && theory !== null,
-    threshold: 14,
-  };
+  return EduReportGrades.assessment(lesson, sid, stage);
 }
 function assertCompatibleTermLessons(reference, candidate) {
   if (!reference || !candidate) return;
@@ -82,17 +53,8 @@ function assertCompatibleTermLessons(reference, candidate) {
         "» در دو نوبت یکسان نیست؛ گزارش این درس قابل محاسبه نیست.",
     );
   if (dual && reference.gradingPolicy?.subjectType !== "general") {
-    const settings = (lesson) =>
-      lesson.gradingPolicy?.method === "dual"
-        ? EduPolicy.dualSettings(lesson.gradingPolicy)
-        : {
-            practicalWeight: 70,
-            theoryMin: 0,
-            practicalMin: 0,
-            passMin: 14,
-          };
-    const first = settings(reference),
-      second = settings(candidate);
+    const first = EduReportGrades.settings(reference),
+      second = EduReportGrades.settings(candidate);
     if (
       ["practicalWeight", "theoryMin", "practicalMin", "passMin"].some(
         (field) => first[field] !== second[field],
@@ -215,10 +177,7 @@ function annualGradeRows(parts, schoolId, classId, studentId = "") {
         throw Error(
           "نوع درس در دو نوبت یکسان نیست؛ گزارش سالانه این درس قابل محاسبه نیست.",
         );
-      const settings =
-        lesson?.gradingPolicy?.method === "dual"
-          ? EduPolicy.dualSettings(lesson.gradingPolicy)
-          : { practicalWeight: 70, passMin: 14 };
+      const settings = EduReportGrades.settings(lesson || {});
       if (lesson) annualThreshold = settings.passMin;
       for (const stage of ["midterm", "final"]) {
         const r = lesson
@@ -237,34 +196,13 @@ function annualGradeRows(parts, schoolId, classId, studentId = "") {
         });
       }
     }
-    const complete = components.every((item) => item.complete);
-    let final = null,
-      passed = null;
-    if (complete) {
-      let total = { n: 0n, d: 1n };
-      for (const item of components) {
-        const p = fraction(identity.general ? 0 : item.practical),
-          t = fraction(item.theory);
-        const weight = fraction(item.practicalWeight);
-        const n = identity.general
-            ? t.n
-            : weight.n * p.n * t.d + (100n * weight.d - weight.n) * t.n * p.d,
-          d = identity.general ? t.d : 100n * weight.d * p.d * t.d;
-        total = reduceGradeFraction(total.n * d + n * total.d, total.d * d);
-      }
-      final = finiteRatio(total.n, total.d * 4n);
-      const minimum = fraction(annualThreshold);
-      passed = identity.general
-        ? null
-        : total.n * minimum.d >= minimum.n * total.d * 4n;
-    }
     rows.push({
       ...identity,
       components,
-      complete,
-      final,
-      passed,
-      threshold: identity.general ? null : annualThreshold,
+      ...EduReportGrades.annual(components, {
+        general: identity.general,
+        threshold: annualThreshold,
+      }),
     });
   }
   return rows;

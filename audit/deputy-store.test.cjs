@@ -155,6 +155,7 @@ function fixture() {
     "domain/data-boundary.js",
     "domain/grade-math.js",
     "domain/grade-policy.js",
+    "domain/reporting/academic-results.js",
     "domain/deputy-exchange.js",
     "deputy/store.js",
   ])

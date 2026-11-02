@@ -81,6 +81,46 @@ const fixture = () => ({
     reports: [],
   },
 });
+
+test("old full backups remain valid without a sender-identity module or field", () => {
+  assert.equal(c.EduDeputyExportIdentity, undefined);
+  assert.equal(validate(fixture()).length, 1);
+});
+
+test("full-backup identity is optional but malformed metadata is never silently dropped", () => {
+  const value = fixture();
+  value.deputyExportIdentity = null;
+  assert.throws(() => validate(value), /مشخصات فرستنده/);
+  vm.runInContext(
+    fs.readFileSync(
+      path.join(__dirname, "../src/domain/deputy-export-identity.js"),
+      "utf8",
+    ),
+    c,
+  );
+  const identity = {
+    version: 1,
+    token: "saved-token",
+    sender: { code: "TEACHER_1", name: "دبیر نمونه" },
+    schools: [{ year: "1405-1406", id: "school", code: "SCHOOL_1" }],
+  };
+  for (const invalid of [
+    null,
+    {},
+    { ...identity, version: 2 },
+    { ...identity, sender: { code: "TEACHER_1", name: "" } },
+  ]) {
+    value.deputyExportIdentity = invalid;
+    assert.throws(() => validate(value));
+  }
+  value.deputyExportIdentity = identity;
+  const normalized = validate.normalize(value);
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(normalized.deputyExportIdentity)),
+    identity,
+  );
+  assert.notEqual(normalized.deputyExportIdentity, identity);
+});
 test("full backups validate explicit report-source roles while accepting legacy catalogs", () => {
   for (const role of [undefined, "primary", "secondary"]) {
     const value = fixture();

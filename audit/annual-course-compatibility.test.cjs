@@ -12,7 +12,10 @@ function load(context, file) {
 }
 function fixture() {
   const context = vm.createContext({ structuredClone });
+  load(context, "src/domain/data-boundary.js");
+  load(context, "src/domain/grade-math.js");
   load(context, "src/domain/grade-policy.js");
+  load(context, "src/domain/reporting/academic-results.js");
   load(context, "src/workspace/grading/results.js");
   return context;
 }

@@ -10,6 +10,7 @@ function fixture() {
     "domain/grade-math.js",
     "domain/data-boundary.js",
     "domain/grade-policy.js",
+    "domain/reporting/academic-results.js",
     "domain/annual-modules.js",
     "workspace/domain/defaults-numbers.js",
     "workspace/grading/results.js",

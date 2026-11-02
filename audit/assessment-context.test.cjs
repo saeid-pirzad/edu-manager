@@ -188,6 +188,7 @@ function fixture({
     "domain/grade-math.js",
     "domain/data-boundary.js",
     "domain/grade-policy.js",
+    "domain/reporting/academic-results.js",
     "domain/grade-drafts.js",
     "domain/history-changes.js",
     "data/commit-plan.js",

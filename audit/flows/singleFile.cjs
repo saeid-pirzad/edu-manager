@@ -53,15 +53,23 @@ module.exports = async function singleFile() {
       observed: {},
     });
     const before = first.exportedAt;
-    click("single-file-save");
-    await waitFor(async () => (await read()).exportedAt !== before);
-    cases.push({
-      id: "SF02",
-      name: "save now overwrites the selected file instead of creating dated downloads",
-      pass: (await read()).format === "EduManager.FullBackup",
-      observed: {},
+    await waitFor(() => {
+      const save = document.querySelector(
+        '[data-workspace-action="single-file-save"]',
+      );
+      return save && !save.matches(":disabled") && !save.closest("[inert]");
     });
+    click("single-file-save");
+    // Reading a File snapshot during the overwrite can fail with
+    // NotReadableError. The durable savedAt is published only after close and
+    // nonempty-file verification; wait for that confirmation before getFile.
     await waitFor(async () => {
+      if (
+        !document
+          .getElementById("singleFileStatus")
+          ?.textContent.startsWith("ذخیره شد:")
+      )
+        return false;
       const connection = EduV24.test.getConnection();
       return new Promise((resolve, reject) => {
         const request = connection
@@ -75,6 +83,15 @@ module.exports = async function singleFile() {
           );
         request.onerror = () => reject(request.error);
       });
+    });
+    const second = await read();
+    cases.push({
+      id: "SF02",
+      name: "save now overwrites the selected file instead of creating dated downloads",
+      pass:
+        second.exportedAt !== before &&
+        second.format === "EduManager.FullBackup",
+      observed: {},
     });
     cases.push({
       id: "SF03",

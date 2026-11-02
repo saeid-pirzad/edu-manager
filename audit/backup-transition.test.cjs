@@ -13,6 +13,7 @@ function fixture() {
     periodLoading: false,
     resetBusy: false,
     connectionRetired: false,
+    installationToken: "",
     flushDrafts: async () => {},
     writer: Promise.resolve(),
     draftWriter: Promise.resolve(),
