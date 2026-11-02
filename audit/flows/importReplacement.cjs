@@ -30,11 +30,13 @@ module.exports = async function importReplacement() {
       const input = document.getElementById("importFile"),
         transfer = new DataTransfer();
       transfer.items.add(
-        new File(
-          [typeof value === "string" ? value : JSON.stringify(value)],
-          name,
-          { type: "application/json" },
-        ),
+        value instanceof File
+          ? value
+          : new File(
+              [typeof value === "string" ? value : JSON.stringify(value)],
+              name,
+              { type: "application/json" },
+            ),
       );
       input.files = transfer.files;
       input.dispatchEvent(new Event("change", { bubbles: true }));
@@ -346,6 +348,70 @@ module.exports = async function importReplacement() {
           })),
         },
       );
+    }
+
+    // Exercise a real File over 100 MiB without inflating the parsed database.
+    // JSON whitespace is valid and still takes the production File.text path.
+    await seed(oldInstallation);
+    const beforeLarge = await EduV24.snapshotInstallation(),
+      padding = new Blob([" ".repeat(1024 * 1024)]),
+      largeFile = new File(
+        [JSON.stringify(fullFile), ...Array(101).fill(padding)],
+        "large-complete-backup.json",
+        { type: "application/json" },
+      ),
+      originalConfirm = window.confirm;
+    let largeReadConsent = 0;
+    try {
+      window.confirm = (message) => {
+        if (message.includes("خواندن و بررسی فایل")) {
+          largeReadConsent++;
+          return false;
+        }
+        return originalConfirm(message);
+      };
+      const declinedPreview = await choose(largeFile, largeFile.name);
+      check(
+        "IMPORT_REPLACE_LARGE_DECLINE",
+        "declining a real oversized backup preserves the complete installation",
+        largeFile.size > 100 * 1024 * 1024 &&
+          largeReadConsent === 1 &&
+          !declinedPreview &&
+          stored(await EduV24.snapshotInstallation()) === stored(beforeLarge),
+      );
+      window.confirm = (message) => {
+        if (message.includes("خواندن و بررسی فایل")) {
+          largeReadConsent++;
+          return true;
+        }
+        return originalConfirm(message);
+      };
+      const largePreview = await choose(largeFile, largeFile.name);
+      check(
+        "IMPORT_REPLACE_LARGE_PREVIEW",
+        "consenting to a real oversized backup only previews it without writes",
+        largePreview &&
+          largeReadConsent === 2 &&
+          stored(await EduV24.snapshotInstallation()) === stored(beforeLarge),
+        { bytes: largeFile.size },
+      );
+      if (largePreview) {
+        await approve();
+        const afterLarge = await EduV24.snapshotInstallation(),
+          restoredLarge = EduV24.validateFullBackup(afterLarge);
+        check(
+          "IMPORT_REPLACE_LARGE_RESTORE",
+          "the validated oversized backup restores only after final replacement approval",
+          afterLarge.stores.catalog.length === 1 &&
+            afterLarge.activeWorkspace === fullFile.activeWorkspace &&
+            restoredLarge.length === 1 &&
+            JSON.stringify(restoredLarge[0].data) ===
+              JSON.stringify(expectedData),
+        );
+      }
+    } finally {
+      window.confirm = originalConfirm;
+      closeModal();
     }
 
     const beforeInvalid = await EduV24.snapshotInstallation();

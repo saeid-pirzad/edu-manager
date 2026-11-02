@@ -63,7 +63,15 @@ function finalReportData() {
             ...(assessments ? { assessments } : {}),
             policy: l.gradingPolicy ? clone(l.gradingPolicy) : null,
             courseInfo: EduPolicy.identity(l, workspace.year),
-            modules: result.modules || null,
+            modules:
+              result.modules?.map((module) => {
+                const pod = l.poudmans.find((item) => item.id === module.id),
+                  inputs = ownScoreRecord(pod?.podScores, st.id);
+                return {
+                  ...clone(module),
+                  inputs: { m: inputs.m ?? null, c: inputs.c ?? null },
+                };
+              }) || null,
             reason: result.reason || "",
             teacher: l.teacher || "",
             practical: result.practical ?? null,
@@ -105,34 +113,40 @@ async function finalizePeriod() {
   await flushDrafts({ strict: true });
   await writer.catch(() => {});
   if (workspace.id !== origin)
-    throw Error("دوره هنگام بستن تغییر کرد؛ دوباره تلاش کنید.");
+    throw Error("نوبت هنگام بستن تغییر کرد؛ دوباره تلاش کنید.");
   const context = captureWorkspaceContext();
   const report = finalReportData();
   if (report.missing.length) {
     handleError(
       Error(
-        "بستن دوره ممکن نیست؛ نمرات ناقص: " +
+        "بستن نوبت ممکن نیست؛ نمرات ناقص: " +
           report.missing.slice(0, 10).join(" | ") +
           (report.missing.length > 10 ? " و موارد دیگر" : ""),
       ),
     );
     return;
   }
+  const term =
+    workspace.termKind === "first"
+      ? "اول"
+      : workspace.termKind === "second"
+        ? "دوم"
+        : workspace.term;
   if (
     !confirm(
-      "دوره " +
+      "نوبت " +
+        term +
+        " سال تحصیلی " +
         workspace.year +
-        " / " +
-        workspace.term +
-        " بسته و کارنامه ثابت ثبت شود؟",
+        " بسته و کارنامه ثابت آن ثبت شود؟",
     )
   )
     return;
-  await putBackup(db, "پیش از بستن دوره");
+  await putBackup(db, "پیش از بستن نوبت");
   assertWorkspaceContext(context, { write: true });
   if (busy || drafts.size)
     throw Error(
-      "ویرایش تازه‌ای هنگام بستن دوره ایجاد شد؛ ابتدا آن را ذخیره و دوباره تلاش کنید.",
+      "ویرایش تازه‌ای هنگام بستن نوبت ایجاد شد؛ ابتدا آن را ذخیره و دوباره تلاش کنید.",
     );
   const at = new Date().toISOString(),
     snapshot = {
@@ -175,7 +189,7 @@ async function finalizePeriod() {
       workspace: context.id,
       at,
       revision: finalizedWorkspace.revision,
-      action: "بستن دوره و ثبت کارنامه ثابت",
+      action: "بستن نوبت و ثبت کارنامه ثابت",
       changes: [],
     });
   };
@@ -200,7 +214,7 @@ async function reopenPeriod() {
   if (!workspace.closed) return;
   if (
     !confirm(
-      "دوره بازگشایی شود؟ کارنامه ثابت قبلی حفظ می‌شود و تغییرات جدید جدا ثبت می‌شوند.",
+      "نوبت جاری بازگشایی شود؟ کارنامه ثابت قبلی حفظ می‌شود و تغییرات جدید جدا ثبت می‌شوند.",
     )
   )
     return;
@@ -230,7 +244,7 @@ async function reopenPeriod() {
       workspace: context.id,
       at: new Date().toISOString(),
       revision: reopenedWorkspace.revision,
-      action: "بازگشایی دوره؛ کارنامه ثابت پیشین محفوظ است",
+      action: "بازگشایی نوبت؛ کارنامه ثابت پیشین محفوظ است",
       changes: [],
     });
   };

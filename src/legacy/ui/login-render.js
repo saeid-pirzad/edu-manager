@@ -15,7 +15,17 @@ function renderLogin() {
 async function legacy_checkPassword(e) {
   e.preventDefault();
   const input = document.getElementById("loginPass"),
-    button = e.target.querySelector("button");
+    button = e.target.querySelector("button"),
+    sourceData = db,
+    sourcePassword = db.settings.password,
+    sourcePeriod = globalThis.EduV24?.getReportContext?.().id,
+    sourceAuthentication = isAuthenticated;
+  const current = () =>
+    db === sourceData &&
+    (!sourcePeriod ||
+      globalThis.EduV24?.getReportContext?.().id === sourcePeriod);
+  let migrationPending = false,
+    migratedPassword;
   if (button) setControlLock(button, "button-operation", true);
   try {
     const password = input.value,
@@ -25,13 +35,40 @@ async function legacy_checkPassword(e) {
       input.value = "";
       return;
     }
-    if (!stored.startsWith("pbkdf2$")) {
-      db.settings.password = await hashPassword(password);
+    if (!current() || db.settings.password !== stored)
+      throw Error("ترم یا رمز ورود تغییر کرده است؛ دوباره وارد شوید.");
+    const closed = globalThis.EduV24?.getReportContext?.().closed;
+    if (!closed && !stored.startsWith("pbkdf2$")) {
+      const hashed = await hashPassword(password);
+      if (!current() || db.settings.password !== stored)
+        throw Error("ترم یا رمز ورود تغییر کرده است؛ دوباره وارد شوید.");
+      // The verified session authorizes only this password migration. Closed
+      // periods stay read-only; migration can wait until a later open login.
+      isAuthenticated = true;
+      migratedPassword = hashed;
+      db.settings.password = hashed;
+      migrationPending = true;
       await saveDB();
+      migrationPending = false;
     }
+    if (!current())
+      throw Error("ترم هنگام ورود تغییر کرده است؛ دوباره وارد شوید.");
     isAuthenticated = true;
     render();
   } catch (err) {
+    if (
+      migrationPending &&
+      (!sourcePeriod ||
+        globalThis.EduV24?.getReportContext?.().id === sourcePeriod)
+    ) {
+      isAuthenticated = sourceAuthentication;
+      if (db === sourceData && db.settings.password === migratedPassword)
+        db.settings.password = sourcePassword;
+      // A failed save may already have re-rendered durable data while the
+      // verified migration session was temporarily authorized. Reapply the
+      // restored login state so protected content cannot remain on screen.
+      render();
+    }
     alert("ورود انجام نشد: " + err.message);
   } finally {
     if (button) setControlLock(button, "button-operation", false);

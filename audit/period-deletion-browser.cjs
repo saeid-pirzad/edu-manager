@@ -28,10 +28,10 @@ async function deletionFlow() {
   const originalConfirm = window.confirm;
   try {
     closeModal();
-    await EduV24.openNewPeriod();
+    await EduV24.test.prepareLegacyPeriodFixture();
     document.getElementById("periodYear").value = "1420-1421";
     document.getElementById("periodTerm").value = "اول";
-    await EduV24.createNewPeriod();
+    await EduV24.test.createLegacyPeriod();
     const active = EduV24.getReportContext().id;
     const school = db.schools[0];
     const sourceClass = school.classes[0];
@@ -525,12 +525,7 @@ async function deletionFlow() {
         frame.remove();
       }
     }
-    await EduV24.openPeriods();
-    document
-      .querySelector(
-        '[data-workspace-action="delete-period"][data-key="' + active + '"]',
-      )
-      .click();
+    await EduV24.test.openLegacyPeriodDeletion(active);
     await wait(() => document.getElementById("periodDeletionConfirmed"));
     check(
       "DELETE_UI_PREVIEW",
@@ -592,13 +587,8 @@ async function deletionFlow() {
 if (require.main === module)
   main({
     stage: "period-deletion",
-    runExtra: async ({ cdp, evaluate, cases }) => {
-      await cdp("Page.reload", { ignoreCache: true });
-      for (let i = 0; i < 150; i++) {
-        if (await evaluate("!!globalThis.EduV24?.getReportContext?.().ready"))
-          break;
-        await new Promise((resolve) => setTimeout(resolve, 100));
-      }
+    runExtra: async ({ cdp, evaluate, cases, delay }) => {
+      await require("./browser-ready.cjs")({ cdp, evaluate, delay });
       await cdp("Emulation.setDeviceMetricsOverride", {
         width: 390,
         height: 900,

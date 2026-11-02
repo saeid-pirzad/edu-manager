@@ -382,7 +382,17 @@ function renderLogin() {
 async function legacy_checkPassword(e) {
   e.preventDefault();
   const input = document.getElementById("loginPass"),
-    button = e.target.querySelector("button");
+    button = e.target.querySelector("button"),
+    sourceData = db,
+    sourcePassword = db.settings.password,
+    sourcePeriod = globalThis.EduV24?.getReportContext?.().id,
+    sourceAuthentication = isAuthenticated;
+  const current = () =>
+    db === sourceData &&
+    (!sourcePeriod ||
+      globalThis.EduV24?.getReportContext?.().id === sourcePeriod);
+  let migrationPending = false,
+    migratedPassword;
   if (button) setControlLock(button, "button-operation", true);
   try {
     const password = input.value,
@@ -392,13 +402,40 @@ async function legacy_checkPassword(e) {
       input.value = "";
       return;
     }
-    if (!stored.startsWith("pbkdf2$")) {
-      db.settings.password = await hashPassword(password);
+    if (!current() || db.settings.password !== stored)
+      throw Error("ترم یا رمز ورود تغییر کرده است؛ دوباره وارد شوید.");
+    const closed = globalThis.EduV24?.getReportContext?.().closed;
+    if (!closed && !stored.startsWith("pbkdf2$")) {
+      const hashed = await hashPassword(password);
+      if (!current() || db.settings.password !== stored)
+        throw Error("ترم یا رمز ورود تغییر کرده است؛ دوباره وارد شوید.");
+      // The verified session authorizes only this password migration. Closed
+      // periods stay read-only; migration can wait until a later open login.
+      isAuthenticated = true;
+      migratedPassword = hashed;
+      db.settings.password = hashed;
+      migrationPending = true;
       await saveDB();
+      migrationPending = false;
     }
+    if (!current())
+      throw Error("ترم هنگام ورود تغییر کرده است؛ دوباره وارد شوید.");
     isAuthenticated = true;
     render();
   } catch (err) {
+    if (
+      migrationPending &&
+      (!sourcePeriod ||
+        globalThis.EduV24?.getReportContext?.().id === sourcePeriod)
+    ) {
+      isAuthenticated = sourceAuthentication;
+      if (db === sourceData && db.settings.password === migratedPassword)
+        db.settings.password = sourcePassword;
+      // A failed save may already have re-rendered durable data while the
+      // verified migration session was temporarily authorized. Reapply the
+      // restored login state so protected content cannot remain on screen.
+      render();
+    }
     alert("ورود انجام نشد: " + err.message);
   } finally {
     if (button) setControlLock(button, "button-operation", false);
@@ -1298,6 +1335,10 @@ function generateGlobalReport() {
 }
 
 function copyGlobalReportText(btn) {
+  return EduV24.copyReport(buildGlobalReportText, btn);
+}
+
+function buildGlobalReportText() {
   const filteredSessions = getFilteredSessions();
   if (filteredSessions.length === 0) return alert("موردی برای گزارش یافت نشد.");
   let text = `📊 گزارش جامع عملکرد کلاسی\n`;
@@ -1529,7 +1570,7 @@ function copyGlobalReportText(btn) {
     });
   }
   text += `\n✅ تولید شده توسط کلاس‌یار`;
-  copyToClipboard(text, btn);
+  return text;
 }
 
 // ==================== زیربخش ۲: گزارش درس ====================
@@ -1824,7 +1865,11 @@ function legacy_buildLessonReportHtml(c, lesson) {
   return h;
 }
 
-function copyLessonReportForVicePrincipal(lessonId) {
+function copyLessonReportForVicePrincipal(lessonId, button) {
+  return EduV24.copyReport(() => buildLessonReportText(lessonId), button);
+}
+
+function buildLessonReportText(lessonId) {
   const cls = findClassById(lessonReportFilter.classId);
   if (!cls) return;
   const c = cls.classObj;
@@ -1844,8 +1889,7 @@ function copyLessonReportForVicePrincipal(lessonId) {
     text += `- ${st.name}: غایب ${s.att.absent} | مرخصی ${s.att.leave || 0} | ➕ ${s.posCount} | ➖ ${s.negCount} | نهایی: ${s.final !== null ? s.final.toFixed(2) : "---"}\n`;
   });
   text += `\n✅ تولید شده توسط کلاس‌یار`;
-  const dummyBtn = document.createElement("button");
-  copyToClipboard(text, dummyBtn);
+  return text;
 }
 
 // ==================== زیربخش ۳: کارنامه ====================
@@ -1866,6 +1910,7 @@ EduLegacyEvents.register("reports-lesson:2", function (event) {
 EduLegacyEvents.register("reports-lesson:3", function (event) {
   return copyLessonReportForVicePrincipal(
     this.getAttribute("data-legacy-click-arg2"),
+    this,
   );
 });
 
@@ -2852,7 +2897,7 @@ function renderDashboardWork() {
     {
       count: model.grading.incomplete,
       label: "نمره ناتمام",
-      detail: "هنرجوـدرس در دوره جاری",
+      detail: "هنرجوـدرس در ترم جاری",
       tone: "indigo",
       action: model.grading.firstIncompleteClassId ? "grades" : "",
       key: model.grading.firstIncompleteClassId,
@@ -2931,7 +2976,7 @@ function renderDashboardWork() {
         (item.session
           ? "مشاهده جلسه"
           : model.closed
-            ? "دوره بسته است"
+            ? "ترم بسته است"
             : "ثبت جلسه") +
         "</button></article>";
   return html + "</section></section>";
@@ -5203,21 +5248,22 @@ EduLegacyEvents.register("sessions-dialog:12", function (event) {
 });
 
 EduLegacyEvents.register("sessions-dialog:13", function (event) {
-  return copyToClipboard(
-    generateSessionReportText(
-      getSessionById(this.getAttribute("data-legacy-click-arg0")),
-      getClassObj(
-        this.getAttribute("data-legacy-click-arg1"),
-        this.getAttribute("data-legacy-click-arg2"),
-      ),
-      getLessonObj(
+  return EduV24.copyReport(
+    () =>
+      generateSessionReportText(
+        getSessionById(this.getAttribute("data-legacy-click-arg0")),
         getClassObj(
-          this.getAttribute("data-legacy-click-arg3"),
-          this.getAttribute("data-legacy-click-arg4"),
+          this.getAttribute("data-legacy-click-arg1"),
+          this.getAttribute("data-legacy-click-arg2"),
         ),
-        this.getAttribute("data-legacy-click-arg5"),
+        getLessonObj(
+          getClassObj(
+            this.getAttribute("data-legacy-click-arg3"),
+            this.getAttribute("data-legacy-click-arg4"),
+          ),
+          this.getAttribute("data-legacy-click-arg5"),
+        ),
       ),
-    ),
     this,
   );
 });
@@ -5631,6 +5677,7 @@ function snapshotRoster(c) {
     id: st.id,
     name: st.name,
     code: st.code || "",
+    ...(st.recovered === true ? { recovered: true } : {}),
   }));
 }
 
@@ -5648,7 +5695,7 @@ function validateReportNotes(value, workspaceId) {
       !key.startsWith(workspaceId + "|") ||
       key.split("|").length !== 7
     )
-      throw Error("توضیحات گزارش با دوره پشتیبان سازگار نیست.");
+      throw Error("توضیحات گزارش با ترم پشتیبان سازگار نیست.");
   return Object.fromEntries(Object.entries(value));
 }
 function historicalRoster(c, session) {
@@ -5874,7 +5921,7 @@ function legacy_buildArchiveHtml(c) {
 
 function showArchivedKarnameh(studentId) {
   const c = getClassObj(state.schoolId, state.classId);
-  if (c) showModal("کارنامه بایگانی", buildDetailedKarnamehHtml(c, studentId));
+  if (c) return EduV24.openKarnamehStudent(c.id, studentId);
 }
 // Source: src/legacy/events/students-archive.js
 // Event handlers extracted from src/legacy/students/archive.js.

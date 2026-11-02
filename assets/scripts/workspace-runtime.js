@@ -67,7 +67,7 @@ function preserveAsyncTarget({ classScoped = false } = {}) {
         (state.schoolId !== schoolId || state.classId !== classId))
     )
       throw Error(
-        "دوره یا کلاس هنگام آماده‌سازی تغییر کرد؛ عملیات را دوباره باز کنید.",
+        "ترم یا کلاس هنگام آماده‌سازی تغییر کرد؛ عملیات را دوباره باز کنید.",
       );
   };
 }
@@ -538,7 +538,7 @@ async function readWorkspaceSnapshot(id) {
     requestPromise(workspaceRecordRequest(tx.objectStore("records"), id)),
     done,
   ]);
-  if (!period) throw Error("دوره موجود نیست.");
+  if (!period) throw Error("ترم موجود نیست.");
   return { period, ...decodeWorkspaceRecords(rows, { workspaceId: id }) };
 }
 // Source: src/workspace/grading/annual-modular.js
@@ -1048,7 +1048,7 @@ async function commitRecords(
 ) {
   if (blocked) throw Error("ذخیره مسدود است؛ صفحه را دوباره بارگذاری کنید.");
   if (workspace.closed && !allowClosed)
-    throw Error("این دوره بسته است؛ ابتدا آن را بازگشایی کنید.");
+    throw Error("این ترم بسته است؛ ابتدا آن را بازگشایی کنید.");
   const sourceWorkspace = workspace,
     sourceRevision = workspace.revision,
     sourceConnection = connection,
@@ -1132,6 +1132,8 @@ async function commitRecords(
       historicalRoster,
       directorySourceUpdates,
       directoryRevisions,
+      recoveredUndo: historicalUndo?.recoveredPeers,
+      restoredSessionRecords: historicalRecords,
     });
   } catch (error) {
     if (error.code === "WORKSPACE_CONFLICT" && isCurrentCommit())
@@ -1171,7 +1173,7 @@ async function commitRecords(
 function saveDBV24(scope = {}) {
   if (periodLoading)
     return Promise.reject(
-      Error("دوره در حال خواندن است؛ پس از پایان جابه‌جایی دوباره تلاش کنید."),
+      Error("ترم در حال خواندن است؛ پس از پایان جابه‌جایی دوباره تلاش کنید."),
     );
   if (resetBusy || connectionRetired)
     return Promise.reject(Error("ثبت هنگام پاک‌سازی یا تغییر بانک متوقف است."));
@@ -1181,6 +1183,8 @@ function saveDBV24(scope = {}) {
         "برای ویرایش، نسخه نصب‌شده برنامه یا نشانی HTTPS آن را باز کنید. حالت فایل فقط برای انتقال سوابق است.",
       ),
     );
+  if (db.settings?.password && !isAuthenticated)
+    return Promise.reject(Error("ابتدا وارد ترم شوید؛ تغییر ثبت نشد."));
   const generation = writeFailureGeneration,
     targetWorkspace = workspace?.id,
     targetConnection = connection;
@@ -1200,7 +1204,9 @@ function saveDBV24(scope = {}) {
           "ثبت قبلی ناموفق بود؛ این درخواست هم ثبت نشده است. تغییر را دوباره اعمال کنید.",
         );
       if (!isCurrentTarget())
-        throw Error("دوره یا اتصال بانک تغییر کرده است؛ این درخواست ثبت نشد.");
+        throw Error("ترم یا اتصال بانک تغییر کرده است؛ این درخواست ثبت نشد.");
+      if (db.settings?.password && !isAuthenticated)
+        throw Error("ابتدا وارد ترم شوید؛ تغییر ثبت نشد.");
       checkScope(scope);
       refreshAcademicYearWarnings(db);
       await commitRecords(collectRecords(db, scope), {
@@ -1294,7 +1300,10 @@ function academicTermKind(term) {
 }
 async function installWorkspace(data, details) {
   const id = details.id || uid(),
-    now = new Date().toISOString();
+    now = new Date().toISOString(),
+    source = details.source
+      ? { id: details.source.id, revision: details.source.revision }
+      : null;
   const catalog = {
     id,
     year: EduAcademicYear.normalize(details.year ?? data.settings.academicYear),
@@ -1327,6 +1336,27 @@ async function installWorkspace(data, details) {
       existing = store.getAll();
     existing.onsuccess = () => {
       try {
+        // The copied roster and course definitions must still belong to the
+        // exact source snapshot. Checking only after insertion is too late.
+        if (source || details.requireSequence) {
+          const liveSource = existing.result.find(
+            (row) => row.id === source?.id,
+          );
+          if (
+            !source ||
+            typeof source.id !== "string" ||
+            !Number.isSafeInteger(source.revision) ||
+            source.revision < 1 ||
+            !liveSource ||
+            liveSource.revision !== source.revision
+          ) {
+            const error = Error(
+              "اطلاعات نوبت مبدأ هنگام ساخت نوبت جدید تغییر کرده است؛ هیچ نوبتی ساخته نشد. فرم را دوباره باز کنید.",
+            );
+            error.code = "WORKSPACE_CONFLICT";
+            throw error;
+          }
+        }
         if (
           existing.result.some(
             (row) =>
@@ -1369,12 +1399,125 @@ async function installWorkspace(data, details) {
     await done;
   } catch (error) {
     if (duplicate)
-      throw Error("دوره دیگری با همین سال و عنوان نوبت وجود دارد.", {
+      throw Error("ترم دیگری با همین سال و عنوان نوبت وجود دارد.", {
         cause: error,
       });
     throw queueError || error;
   }
   return catalog;
+}
+// Source: src/workspace/periods/single-year.js
+// The interface works in one academic year. Older backup content stays stored;
+// choosing a view must never merge, delete, or relabel historical records.
+const ACADEMIC_YEAR_PREFERENCE_KEY = "Edu24.academicYear";
+function preferredAcademicYear() {
+  try {
+    const value = localStorage.getItem(ACADEMIC_YEAR_PREFERENCE_KEY);
+    return value ? EduAcademicYear.normalize(value) : null;
+  } catch {
+    return null;
+  }
+}
+function rememberAcademicYear(year) {
+  const value = EduAcademicYear.normalize(year);
+  try {
+    localStorage.setItem(ACADEMIC_YEAR_PREFERENCE_KEY, value);
+  } catch {
+    // The selected workspace is still usable when browser preferences fail.
+  }
+  return value;
+}
+function selectAcademicWorkspace(rows, { year, preferredId } = {}) {
+  if (!Array.isArray(rows) || !rows.length)
+    throw Error("اطلاعات سال تحصیلی برای بازکردن موجود نیست.");
+  const catalog = rows.map((row) => ({
+      row,
+      year: EduAcademicYear.normalize(row.year),
+      kind: row.termKind || academicTermKind(row.term),
+    })),
+    preferred = catalog.find(({ row }) => row.id === preferredId),
+    anchor = year == null ? null : EduAcademicYear.normalize(year),
+    activeYear = catalog.some((entry) => entry.year === anchor)
+      ? anchor
+      : preferred?.year ||
+        catalog
+          .map((entry) => entry.year)
+          .sort()
+          .at(-1),
+    family = catalog.filter((entry) => entry.year === activeYear);
+  // An explicitly selected legacy record is a recovery view, not a newly
+  // inferred term. Its identity and data remain exactly as saved.
+  if (preferred?.year === activeYear) return preferred.row;
+  const first = family.filter((entry) => entry.kind === "first"),
+    second = family.filter((entry) => entry.kind === "second");
+  if (first.length > 1 || second.length > 1) {
+    const error = Error(
+      "فایل قدیمی چند نسخه از یک نوبت دارد؛ انتخاب خودکار انجام نشد. شناسهٔ اطلاعات فعال باید مشخص باشد؛ هیچ داده‌ای حذف یا ادغام نشده است.",
+    );
+    error.code = "ACADEMIC_TERM_AMBIGUOUS";
+    throw error;
+  }
+  const selected = second[0] || first[0];
+  if (!selected) {
+    const error = Error(
+      "اطلاعات قدیمی نوبت اول یا دوم مشخصی ندارد؛ برای بازیابی، اطلاعات فعال فایل باید صریح باشد. هیچ سابقه‌ای حذف نشده است.",
+    );
+    error.code = "ACADEMIC_TERM_SELECTION_REQUIRED";
+    throw error;
+  }
+  return selected.row;
+}
+function academicWorkspaceRecoveryWarning(row, rows = []) {
+  const kind = row.termKind || academicTermKind(row.term);
+  if (!["first", "second"].includes(kind))
+    return "نمای بازیابی اطلاعات قدیمی باز است؛ عنوان قبلی به نوبت اول یا دوم تبدیل نشده و همهٔ سوابق در پشتیبان کامل محفوظ‌اند.";
+  if (
+    rows.filter(
+      (item) =>
+        item.year === row.year &&
+        (item.termKind || academicTermKind(item.term)) === kind,
+    ).length > 1
+  )
+    return "فایل قدیمی چند نسخه از این نوبت دارد؛ فقط اطلاعات فعالِ صریح باز شده است و هیچ نسخه‌ای خودکار ادغام یا حذف نشده است.";
+  return "";
+}
+function academicBootstrapPreferences(
+  rows,
+  { year, preferredId, resetMarker, initialWorkspaceId } = {},
+) {
+  const representedYear = (value) => {
+    try {
+      const normalized = EduAcademicYear.normalize(value);
+      return rows.some(
+        (row) => EduAcademicYear.normalize(row.year) === normalized,
+      )
+        ? normalized
+        : null;
+    } catch {
+      return null;
+    }
+  };
+  const restored = rows.find(
+      (row) => row.id === resetMarker?.value?.activeWorkspace,
+    ),
+    restoredYear = representedYear(resetMarker?.value?.academicYear),
+    validRestored =
+      restored &&
+      restoredYear &&
+      EduAcademicYear.normalize(restored.year) === restoredYear
+        ? restored
+        : null,
+    anchor = representedYear(year) || (validRestored ? restoredYear : null),
+    inYear = (row) =>
+      row && (!anchor || EduAcademicYear.normalize(row.year) === anchor),
+    preferred = rows.find((row) => row.id === preferredId),
+    initial = rows.find((row) => row.id === initialWorkspaceId),
+    selected =
+      (inYear(preferred) && preferred) ||
+      (inYear(initial) && initial) ||
+      (inYear(validRestored) && validRestored) ||
+      null;
+  return { year: anchor, preferredId: selected?.id };
 }
 // Source: src/workspace/periods/academic-years.js
 // Canonicalize equivalent year labels before grouping terms. The detached
@@ -1534,13 +1677,14 @@ async function bootstrapV24() {
       } catch (error) {
         forgetInstallation();
         resetScreen(
-          "حذف بانک انجام شده است؛ پاک‌سازی حافظه مرورگر هنوز کامل نشده است. برای ادامه، دوباره بارگذاری کنید. " +
+          "اطلاعات بانک آماده است؛ پاک‌سازی حافظه مرورگر هنوز کامل نشده است. برای ادامه، دوباره بارگذاری کنید. " +
             error.message,
         );
         return;
       }
     }
-    let periods = await allFrom("catalog");
+    let periods = await allFrom("catalog"),
+      initialWorkspaceId = null;
     if (!periods.length) {
       const raw = resetMarker ? null : localStorage.getItem(STORAGE_KEY);
       let data;
@@ -1566,6 +1710,7 @@ async function bootstrapV24() {
         if (!created) throw error;
       }
       periods = [created];
+      initialWorkspaceId = created.id;
       const check = await readWorkspace(created.id);
       if (!check.data) throw Error("بازخوانی انتقال تأیید نشد.");
       if (raw) {
@@ -1579,9 +1724,15 @@ async function bootstrapV24() {
       for (const change of normalizedYears.changed) broadcast(change);
     }
     const preferred = preferredPeriod();
-    workspace =
-      periods.find((x) => x.id === preferred) ||
-      periods.sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+    workspace = selectAcademicWorkspace(
+      periods,
+      academicBootstrapPreferences(periods, {
+        year: preferredAcademicYear(),
+        preferredId: preferred,
+        resetMarker,
+        initialWorkspaceId,
+      }),
+    );
     const annual = globalThis.EduAnnualModules
       ? await synchronizeAnnualForRead(workspace.id)
       : null;
@@ -1596,6 +1747,11 @@ async function bootstrapV24() {
       rememberPeriod(workspace.id);
     } catch (ignore) {}
     setStatus("اطلاعات ذخیره‌شده خوانده شد.", "saved");
+    const recoveryWarning = academicWorkspaceRecoveryWarning(
+      workspace,
+      periods,
+    );
+    if (recoveryWarning) setStatus(recoveryWarning, "pending");
     for (const change of annual?.changed || [])
       broadcast({ ...change, annualModular: true });
     if (annual?.conflicts.length)
@@ -1841,6 +1997,7 @@ function contextFromInput(input) {
 
 function gradeInput(input) {
   if (resetBusy || connectionRetired || periodLoading) return;
+  if (db.settings.password && !isAuthenticated) return;
   const item = contextFromInput(input),
     key = inputKey(item),
     parsed = parseDraft(item);
@@ -1868,6 +2025,7 @@ function gradeInput(input) {
 
 function clearGrade(input) {
   if (resetBusy || connectionRetired || periodLoading) return;
+  if (db.settings.password && !isAuthenticated) return;
   const item = contextFromInput(input);
   if (
     !confirm(
@@ -1925,6 +2083,8 @@ async function flushDrafts({ strict = false } = {}) {
     ([, x]) => !x.review && (x.remove || parseDraft(x).ok),
   );
   if (!entries.length) return;
+  if (db.settings.password && !isAuthenticated)
+    throw Error("ابتدا وارد ترم شوید؛ پیش‌نویس‌ها بدون ورود ثبت نمی‌شوند.");
   flushing = (async () => {
     const groups = new Map();
     for (const [key, item] of entries) {
@@ -2611,11 +2771,15 @@ async function openAssessmentStage(button) {
       );
     const target = matches[0];
     if (!target) {
-      throw Error(
-        "نوبت " +
+      await openPeriods({
+        notice:
+          "نوبت " +
           term +
-          " این سال هنوز شروع نشده است. آن را از مدیریت نوبت‌های تحصیلی شروع کنید؛ نوبت جدید از صفحهٔ ثبت نمره ساخته نمی‌شود.",
-      );
+          " هنوز شروع نشده است؛ از همین بخش، نوبت " +
+          term +
+          " این سال تحصیلی را شروع کنید.",
+      });
+      return false;
     }
     const loaded = await readWorkspace(target.id);
     ensureCurrent();
@@ -2635,6 +2799,10 @@ async function openAssessmentStage(button) {
   }
   assessmentSelectedStage = stage;
   state = { ...origin, view: "lesson", tab: "grades" };
+  // Switching periods deliberately clears authentication. Keep the requested
+  // lesson for the next successful login, but never reopen its grade modal
+  // over the destination period's login screen.
+  assertWorkspaceReadable();
   render();
   if (inModal) {
     const c = getClassObj(state.schoolId, state.classId);
@@ -2646,12 +2814,12 @@ function buildAssessmentEditor(c, l) {
   const general = l.gradingPolicy?.subjectType === "general";
   const mid = assessmentSelectedStage === "midterm";
   const stage = assessmentSelectedStage;
-  const stageName = (mid ? "میان‌ترم " : "پایان‌ترم ") + workspace.term;
   const students = getSortedStudents(c);
   const term =
     (workspace.termKind || academicTermKind(workspace.term)) === "second"
       ? "دوم"
       : "اول";
+  const stageName = (mid ? "میان‌ترم نوبت " : "پایان‌ترم نوبت ") + term;
   const weights = assessmentWeights(l);
   let html =
     '<div class="card assessment-editor gradebook" data-assessment-lesson="' +
@@ -2917,6 +3085,7 @@ function syncControlLocks() {
     resetBusy ||
     !ready ||
     periodLoading ||
+    (db.settings.password && !isAuthenticated) ||
     !!workspace?.closed;
   const modalBody = document.getElementById("modalBody");
   const modalWrite =
@@ -2968,7 +3137,7 @@ function syncControlLocks() {
     if (note) {
       note.hidden = !readonly || !!existing;
       note.textContent = workspace?.closed
-        ? "دوره بسته است؛ این فرم فقط خواندنی است. گزارش و پشتیبان همچنان در دسترس‌اند."
+        ? "ترم بسته است؛ این فرم فقط خواندنی است. گزارش و پشتیبان همچنان در دسترس‌اند."
         : "ویرایش فعلاً متوقف است؛ پیام وضعیت ذخیره‌سازی را بررسی کنید.";
     }
   }
@@ -2982,7 +3151,7 @@ function syncControlLocks() {
   if (modalNote) {
     modalNote.hidden = !readonly || !modalWrite;
     modalNote.textContent = workspace?.closed
-      ? "دوره بسته است؛ این تنظیمات فقط نمایش داده می‌شوند."
+      ? "ترم بسته است؛ این تنظیمات فقط نمایش داده می‌شوند."
       : "ویرایش فعلاً متوقف است؛ پیام وضعیت ذخیره‌سازی را بررسی کنید.";
   }
   syncShamsiDisabledInputs();
@@ -3080,16 +3249,16 @@ function workspaceToolsHtml() {
     button(
       "periods",
       "calendar",
-      "دوره‌های تحصیلی",
+      "سال تحصیلی و دو ترم",
       "",
-      "انتخاب و مدیریت سال و نوبت تحصیلی",
+      "ترم اول و دوم همین سال و کارنامه‌های نهایی",
     ) +
     button(
       "undo",
       "undo",
       "برگرداندن آخرین تغییر",
       "",
-      "اصلاح آخرین تغییر ثبت‌شده در نوبت فعلی",
+      "اصلاح آخرین تغییر ثبت‌شده در ترم فعلی",
     ) +
     '<button type="button" class="ghost workspace-tool-button" data-header-action="settings"><span class="workspace-tool-icon" aria-hidden="true">' +
     EduIcons.html("settings") +
@@ -3126,7 +3295,7 @@ function renderV24() {
   panel.className = "workspace-bar workspace-bar-compact no-print";
   panel.innerHTML =
     (workspace.closed
-      ? '<span class="workspace-closed-note">دوره بسته است؛ فقط مشاهده</span>'
+      ? '<span class="workspace-closed-note">ترم بسته است؛ فقط مشاهده</span>'
       : "") +
     '<span id="saveStatus" role="status" aria-live="polite"></span>' +
     workspaceToolsHtml();
@@ -3143,8 +3312,12 @@ function renderV24() {
       esc(
         String(workspace.year).replace(/\d/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[digit]),
       ) +
-      "</bdi></span><span>نوبت: <bdi>" +
-      esc(workspace.term) +
+      "</bdi></span><span>ترم: <bdi>" +
+      esc(
+        { first: "اول", second: "دوم" }[
+          workspace.termKind || academicTermKind(workspace.term)
+        ] || workspace.term,
+      ) +
       "</bdi></span></div>";
     const about = welcome.querySelector(".schools-about");
     if (about) footer.append(about);
@@ -3301,8 +3474,7 @@ async function deleteSessionsV24({ id, classId, lessonId }) {
     await flushDrafts({ strict: true });
     await writer.catch(() => {});
     assertEntityWritable();
-    if (!isCurrent())
-      throw Error("صفحه یا دوره تغییر کرده است؛ حذف انجام نشد.");
+    if (!isCurrent()) throw Error("صفحه یا ترم تغییر کرده است؛ حذف انجام نشد.");
     const matches = id
       ? (session) => session.id === id
       : (session) =>
@@ -3369,7 +3541,7 @@ async function addManualSessionV24(event, lessonId) {
     await flushDrafts({ strict: true });
     await writer.catch(() => {});
     assertEntityWritable();
-    if (!isCurrent()) throw Error("صفحه یا دوره تغییر کرده است؛ جلسه ثبت نشد.");
+    if (!isCurrent()) throw Error("صفحه یا ترم تغییر کرده است؛ جلسه ثبت نشد.");
     if (
       event.target.isConnected === false ||
       event.target.date.value !== date ||
@@ -3863,19 +4035,59 @@ async function putBackup(data, label, workspaceId = workspace?.id) {
   return backup;
 }
 
+const FULL_BACKUP_DELIVERY_KEY = "Edu24.fullBackupDelivery";
+function recordFullBackupDelivery({ kind, exportedAt, name = "" }) {
+  if (
+    !["download-requested", "share-handed-off", "automatic-file"].includes(
+      kind,
+    ) ||
+    !Number.isFinite(Date.parse(exportedAt))
+  )
+    return false;
+  try {
+    localStorage.setItem(
+      FULL_BACKUP_DELIVERY_KEY,
+      JSON.stringify({
+        version: 1,
+        scope: "installation",
+        kind,
+        exportedAt,
+        deliveredAt: new Date().toISOString(),
+        name,
+      }),
+    );
+    if (typeof document !== "undefined") {
+      const label = document.getElementById("lastExternalBackupStatus");
+      if (label) label.textContent = lastExternalBackupLabel();
+    }
+    return true;
+  } catch {
+    // Delivery already happened; unavailable UI metadata must not fail it.
+    return false;
+  }
+}
 function lastExternalBackupLabel() {
   let item;
   try {
-    item = JSON.parse(
-      localStorage.getItem("Edu24.externalBackup." + workspace.id) || "null",
-    );
+    item = JSON.parse(localStorage.getItem(FULL_BACKUP_DELIVERY_KEY) || "null");
   } catch (ignore) {}
-  if (!item) return "هنوز فایل مستقل تأیید نشده";
+  const labels = {
+    "download-requested": "دانلود پشتیبان کامل درخواست شد؛ فایل را بررسی کنید",
+    "share-handed-off":
+      "پشتیبان کامل به اشتراک‌گذاری سپرده شد؛ ارسال نهایی را بررسی کنید",
+    "automatic-file": "نوشتن پشتیبان کامل در فایل خودکار تأیید شد",
+  };
+  if (
+    item?.version !== 1 ||
+    item.scope !== "installation" ||
+    !Object.hasOwn(labels, item.kind) ||
+    !Number.isFinite(Date.parse(item.exportedAt))
+  )
+    return "هنوز دریافت یا ذخیرهٔ پشتیبان کامل ثبت نشده است";
   return (
-    faDate(item.date) +
-    (item.confirmed
-      ? " · ذخیره فایل تأیید شد"
-      : " · دانلود درخواست شده؛ فایل را بررسی کنید")
+    new Date(item.exportedAt).toLocaleString("fa-IR") +
+    " · " +
+    labels[item.kind]
   );
 }
 
@@ -3897,6 +4109,193 @@ const backupStores = [
   "undo",
   "reports",
 ];
+// Source: src/workspace/backups/safety.js
+// One recovery route for the last destructive operation, not a version list.
+// A safety file is historical data; it must never update the current-backup badge.
+function safetyMetadata(row) {
+  return {
+    id: row.id,
+    at: typeof row.at === "string" ? row.at : "",
+    label:
+      typeof row.label === "string" ? row.label.slice(0, 1000) : "عملیات قبلی",
+  };
+}
+function newerSafety(a, b) {
+  const time = (row) => Date.parse(row.at) || 0;
+  return time(b) - time(a) || String(b.id).localeCompare(String(a.id));
+}
+function validatedSafetySnapshot(value) {
+  if (value?.format !== "EduManager.FullBackup")
+    throw Error(
+      "نسخهٔ ایمنی آخرین عملیات پشتیبان کامل قابل بازیابی نیست؛ فایل خام نیازمند بررسی و ترمیم است. اطلاعات فعلی تغییر نکرده است.",
+    );
+  const snapshot = validateFullBackup.normalize(value);
+  // Never recursively copy full safety snapshots into a downloaded/stored one.
+  snapshot.stores.backups = snapshot.stores.backups.filter((row) => !row.full);
+  return snapshot;
+}
+async function readLatestSafetyBackup() {
+  const ensureCurrent = preserveAsyncTarget(),
+    sourceConnection = connection,
+    tx = sourceConnection.transaction("backups", "readonly"),
+    done = transactionDone(tx);
+  const scanned = new Promise((resolve, reject) => {
+    let latest = null;
+    const request = tx.objectStore("backups").openCursor();
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      try {
+        ensureCurrent();
+        if (connection !== sourceConnection)
+          throw Error(
+            "اتصال اطلاعات تغییر کرده است؛ پشتیبان را دوباره باز کنید.",
+          );
+        const cursor = request.result;
+        if (!cursor) return resolve(latest);
+        const row = cursor.value;
+        if (row?.full && isSafeRecordId(row.id)) {
+          const metadata = safetyMetadata(row);
+          if (!latest || newerSafety(metadata, latest) < 0) latest = metadata;
+        }
+        cursor.continue();
+      } catch (error) {
+        reject(error);
+        try {
+          tx.abort();
+        } catch {}
+      }
+    };
+  });
+  const [metadata] = await Promise.all([scanned, done]);
+  ensureCurrent();
+  if (connection !== sourceConnection)
+    throw Error("اتصال اطلاعات تغییر کرده است؛ پشتیبان را دوباره باز کنید.");
+  return metadata;
+}
+async function putSafetySnapshot(
+  value,
+  label,
+  { idPrefix = "before-operation-" } = {},
+) {
+  const ensureCurrent = preserveAsyncTarget(),
+    sourceConnection = connection,
+    full = validatedSafetySnapshot(value),
+    backup = {
+      id: idPrefix + uid(),
+      workspace: null,
+      at: new Date().toISOString(),
+      label,
+      full,
+    };
+  ensureCurrent();
+  const tx = sourceConnection.transaction("backups", "readwrite"),
+    done = transactionDone(tx),
+    store = tx.objectStore("backups");
+  let failure;
+  const request = store.getAll();
+  request.onsuccess = () => {
+    try {
+      ensureCurrent();
+      if (connection !== sourceConnection)
+        throw Error("اتصال اطلاعات تغییر کرده است؛ نسخهٔ ایمنی ثبت نشد.");
+      const previous = request.result
+        .filter((row) => row.full)
+        .sort(newerSafety);
+      for (const row of previous.slice(7)) store.delete(row.id);
+      store.put(backup);
+    } catch (error) {
+      failure = error;
+      try {
+        tx.abort();
+      } catch {}
+    }
+  };
+  try {
+    await done;
+  } catch (error) {
+    throw failure || error;
+  }
+  return backup;
+}
+function safetyBackupPanel(metadata) {
+  if (!metadata) return "";
+  const date = new Date(metadata.at),
+    label = Number.isFinite(date.getTime())
+      ? date.toLocaleString("fa-IR")
+      : "زمان نامشخص";
+  return (
+    '<details class="backup-help" id="lastSafetyBackup"><summary>نسخهٔ ایمنی آخرین عملیات</summary><p><strong>' +
+    esc(metadata.label) +
+    "</strong><br>" +
+    esc(label) +
+    '</p><p>این فایل وضعیت کامل پیش از عملیات بالاست، نه اطلاعات فعلی. برای بازگردانی، فایل را دریافت کنید و از «بازیابی از فایل» و تأیید جایگزینی استفاده کنید. نسخهٔ داخلی جای فایل مستقل شما را نمی‌گیرد.</p><button type="button" class="ghost" data-workspace-action="download-safety" data-key="' +
+    esc(metadata.id) +
+    '" data-safety-workspace="' +
+    esc(workspace.id) +
+    '">دریافت نسخهٔ ایمنی آخرین عملیات</button><p id="safetyBackupStatus" role="status"></p></details>'
+  );
+}
+async function downloadLastSafetyBackup(button) {
+  const ensureCurrent = preserveAsyncTarget(),
+    sourceConnection = connection,
+    id = button?.dataset?.key;
+  const check = () => {
+    ensureCurrent();
+    if (
+      connection !== sourceConnection ||
+      button?.isConnected === false ||
+      button?.dataset?.safetyWorkspace !== workspace.id ||
+      !isSafeRecordId(id)
+    )
+      throw Error(
+        "پنجرهٔ نسخهٔ ایمنی منقضی شده است؛ پشتیبان و بازیابی را دوباره باز کنید.",
+      );
+  };
+  try {
+    check();
+    await writer.catch(() => {});
+    check();
+    const latest = await readLatestSafetyBackup();
+    check();
+    if (!latest || latest.id !== id)
+      throw Error(
+        "نسخهٔ ایمنی آخرین عملیات تغییر کرده است؛ پشتیبان و بازیابی را دوباره باز کنید. فایلی دریافت نشد.",
+      );
+    const saved = await readRecord("backups", id);
+    check();
+    if (!saved?.full || saved.id !== id)
+      throw Error(
+        "نسخهٔ ایمنی انتخاب‌شده دیگر موجود نیست؛ اطلاعات فعلی تغییر نکرده است.",
+      );
+    const snapshot = validatedSafetySnapshot(saved.full),
+      current = await readLatestSafetyBackup();
+    check();
+    if (current?.id !== id)
+      throw Error(
+        "نسخهٔ ایمنی هنگام آماده‌سازی تغییر کرد؛ پشتیبان و بازیابی را دوباره باز کنید.",
+      );
+    downloadJSON(
+      snapshot,
+      "EduManager-safety-" +
+        new Date().toISOString().replace(/[:.]/g, "-") +
+        ".json",
+    );
+    const message =
+      "دانلود نسخهٔ ایمنی «" +
+      latest.label +
+      "» درخواست شد؛ این فایل وضعیت پیش از عملیات است، نه اطلاعات فعلی. فایل را بررسی کنید و برای بازگردانی از «بازیابی از فایل» استفاده کنید.";
+    const statusElement = document.getElementById("safetyBackupStatus");
+    if (statusElement) statusElement.textContent = message;
+    setStatus(message, "saved");
+    return true;
+  } catch (error) {
+    const statusElement = document.getElementById("safetyBackupStatus");
+    if (statusElement)
+      statusElement.textContent =
+        "دریافت نسخهٔ ایمنی انجام نشد: " + error.message;
+    throw error;
+  }
+}
 // Source: src/workspace/backups/full-export.js
 function portableGradeDrafts(rows, periods) {
   const storedRows = [];
@@ -3926,7 +4325,7 @@ async function snapshotInstallation() {
     )
       throw Object.assign(
         Error(
-          "بانک یا دوره هنگام تهیه پشتیبان آماده نیست؛ پس از پایان جابه‌جایی دوباره تلاش کنید.",
+          "بانک یا ترم هنگام تهیه پشتیبان آماده نیست؛ پس از پایان جابه‌جایی دوباره تلاش کنید.",
         ),
         {
           code:
@@ -4013,6 +4412,10 @@ async function snapshotInstallation() {
 async function exportFullBackup() {
   const content = await snapshotInstallation();
   downloadJSON(content, "پشتیبان-کامل-" + todayISO() + ".json");
+  recordFullBackupDelivery({
+    kind: "download-requested",
+    exportedAt: content.exportedAt,
+  });
   setStatus(
     "دانلود پشتیبان کامل سیستم درخواست شد" +
       (content.gradeDrafts.length
@@ -4058,7 +4461,7 @@ async function openBackupShare() {
       EduIcons.html("shield") +
       "</span><div><h4>همه اطلاعات سیستم، در یک فایل</h4><p>ابتدا فایل آماده می‌شود؛ سپس روش ارسال و گیرنده را خودتان انتخاب می‌کنید.</p></div></header>" +
       '<div class="backup-share-file" data-backup-share-file hidden></div><p class="backup-share-status" data-backup-share-status role="status" aria-live="polite">در حال آماده‌سازی و بررسی پشتیبان کامل…</p>' +
-      '<p class="backup-share-note">این فایل اطلاعات کل سیستم و همهٔ سال‌های تحصیلی را دارد؛ آن را فقط برای گیرنده مورداعتماد بفرستید.</p>' +
+      '<p class="backup-share-note">این فایل کل اطلاعات سیستم، هر دو ترم و سوابق قدیمیِ موجود را دارد؛ آن را فقط برای گیرنده مورداعتماد بفرستید.</p>' +
       '<div class="backup-share-actions"><button type="button" data-workspace-action="share-backup-file" disabled hidden>انتخاب برنامه و ارسال فایل</button><button type="button" class="ghost" data-workspace-action="download-share-backup" disabled hidden>دریافت فایل برای ارسال دستی</button><button type="button" class="ghost" data-workspace-action="prepare-share-backup" hidden>آماده‌سازی دوباره</button><button type="button" class="ghost" data-workspace-action="close">بستن</button></div></section>',
   );
   if (opened === false) return false;
@@ -4097,6 +4500,7 @@ async function openBackupShare() {
     const json = JSON.stringify(content, null, 2);
     session.name =
       "KelasYar-Backup-" + content.exportedAt.replace(/[:.]/g, "-") + ".json";
+    session.exportedAt = content.exportedAt;
     session.blob = new Blob([json], { type: "application/json" });
     if (typeof File === "function")
       // Chromium rejects .json attachments on some platforms even when
@@ -4117,7 +4521,7 @@ async function openBackupShare() {
       esc(session.file?.name || session.name) +
       "</strong><span>" +
       content.stores.catalog.length.toLocaleString("fa-IR") +
-      " دوره · " +
+      " پروندهٔ ترم · " +
       Math.max(1, Math.ceil(session.blob.size / 1024)).toLocaleString("fa-IR") +
       " کیلوبایت</span><span>زمان تهیه: " +
       esc(new Date(content.exportedAt).toLocaleString("fa-IR")) +
@@ -4190,6 +4594,11 @@ async function sharePreparedBackup(button) {
       files: [session.file],
       title: "پشتیبان کامل کلاس‌یار",
     });
+    recordFullBackupDelivery({
+      kind: "share-handed-off",
+      exportedAt: session.exportedAt,
+      name: session.file.name,
+    });
     backupShareMessage(
       session,
       "فایل به پنجره اشتراک‌گذاری سپرده شد؛ ارسال نهایی و فایل پیوست را در برنامه مقصد بررسی کنید.",
@@ -4221,6 +4630,11 @@ function downloadPreparedBackup() {
     checkBackupShare(session);
     if (!session.blob) throw Error("ابتدا پشتیبان را دوباره آماده کنید.");
     downloadLocalFile(session.blob, session.name);
+    recordFullBackupDelivery({
+      kind: "download-requested",
+      exportedAt: session.exportedAt,
+      name: session.name,
+    });
     backupShareMessage(
       session,
       "دانلود فایل درخواست شد؛ آن را در ایمیل یا بله، به‌صورت فایل پیوست کنید. ذخیره و ارسال نهایی را بررسی کنید.",
@@ -4396,10 +4810,13 @@ async function restoreSingleFile() {
       "granted"
     ) {
       if (await syncSingleFile()) startSingleFile();
-    } else
+    } else {
+      pauseSingleFile();
+      showSingleFileFallback(true);
       singleFileStatus(
         "مجوز فایل نیاز به تأیید دارد؛ «ذخیره اکنون / اجازه مجدد» را بزنید.",
       );
+    }
   } catch (error) {
     failSingleFile(error);
   }
@@ -4490,6 +4907,7 @@ async function disableSingleFile() {
     if (await persistSingleFile({ target }))
       broadcast({ type: "single-file-changed", connectionId: null });
     if (singleFileWriting) await singleFileWriting;
+    showSingleFileFallback(false);
     singleFileStatus("اتصال متوقف شد؛ فایل موجود حذف نشده است.");
   } catch (error) {
     singleFile = target;
@@ -4546,6 +4964,11 @@ function syncSingleFile() {
       target.size = saved.size;
       target.savedAt = snapshot.exportedAt;
       if (!(await persistSingleFile({ target }))) return false;
+      recordFullBackupDelivery({
+        kind: "automatic-file",
+        exportedAt: snapshot.exportedAt,
+        name: target.handle.name,
+      });
       showSingleFileFallback(false);
       singleFileStatus(
         "ذخیره شد: " +
@@ -4603,15 +5026,22 @@ function previewFullBackup(value, { sourceName = "", legacy = false } = {}) {
   pendingFullBackupSignature = "";
   value = validateFullBackup.normalize(value);
   const periods = validateFullBackup(value);
-  const roleKey = ({ period }) => {
+  const termRole = (period) => {
     const base = String(period.term).split(" — بازیابی ")[0];
-    const role =
+    return (
       period.termKind ||
       { اول: "first", دوم: "second", تابستان: "summer" }[base] ||
-      base;
-    return JSON.stringify([period.year, role]);
+      base
+    );
   };
+  const roleKey = ({ period }) =>
+    JSON.stringify([period.year, termRole(period)]);
   const duplicateTerms = new Set(periods.map(roleKey)).size !== periods.length;
+  const legacyContent =
+    new Set(periods.map(({ period }) => period.year)).size > 1 ||
+    periods.some(
+      ({ period }) => !["first", "second"].includes(termRole(period)),
+    );
   const outsideSessions = periods.reduce(
     (total, { period, data }) =>
       total +
@@ -4656,6 +5086,9 @@ function previewFullBackup(value, { sourceName = "", legacy = false } = {}) {
         : "") +
       (duplicateTerms
         ? '<p class="full-restore-warning" role="status">خود فایل چند ورودی با یک سال و نوبت مشابه دارد. بازیابی، همین ورودی‌های داخل فایل را نگه می‌دارد؛ برنامه آن‌ها را ادغام یا حذف نمی‌کند.</p>'
+        : "") +
+      (legacyContent
+        ? '<p class="full-restore-warning" role="status">این فایل سوابق قدیمی چند سال یا عنوان نوبت قدیمی دارد. همهٔ اطلاعات فایل بدون حذف یا ادغام حفظ می‌شوند؛ رابط برنامه در سالِ اطلاعات فعال داخل همین فایل باز می‌شود. پشتیبان‌گیری مستقل از نوبت اول و دوم است.</p>'
         : "") +
       '<section class="full-restore-warning"><h4>اطلاعات فعلی جایگزین می‌شود</h4><p>کل اطلاعات سیستم به وضعیت این فایل برمی‌گردد؛ اطلاعات فایل با داده‌های فعلی ادغام نمی‌شود.</p><p>نوبت جدید یا تکراری ساخته نمی‌شود و وضعیت باز یا بستهٔ نوبت‌ها مطابق فایل خواهد بود.</p></section><p class="full-restore-safety">پیش از جایگزینی، یک نسخهٔ ایمنی از اطلاعات فعلی داخل برنامه ذخیره می‌شود.</p><label class="full-restore-confirm" for="fullRestoreConfirmed"><input type="checkbox" id="fullRestoreConfirmed"><span>می‌دانم کل اطلاعات فعلی با محتوای این فایل جایگزین می‌شود.</span></label><p id="operationError" role="alert"></p><div class="full-restore-actions"><button type="button" class="danger" data-full-restore data-workspace-action="restore-full">تأیید و بازیابی کل اطلاعات</button><button type="button" class="ghost" data-workspace-action="close">انصراف</button></div></div>',
   );
@@ -4783,6 +5216,14 @@ async function restoreFullBackup() {
         undo.revision === saved?.revision
       )
         undo.revision = restored.revision;
+      for (const peer of undo.recoveredPeers || []) {
+        const restoredPeer = rows.catalog.find((row) => row.id === peer.id),
+          savedPeer = source.stores.catalog.find((row) => row.id === peer.id);
+        // Only a guard that matched the saved snapshot may follow its restored
+        // revision. A stale peer guard must stay stale, never become executable.
+        if (restoredPeer && peer.revision === savedPeer?.revision)
+          peer.revision = restoredPeer.revision;
+      }
     }
     rows.drafts = (source.gradeDrafts || []).map((row) => ({
       ...clone(row),
@@ -4804,7 +5245,17 @@ async function restoreFullBackup() {
       key: RESET_RECORD_KEY,
       workspace: null,
       logical: "installation-reset",
-      value: { token: uid(), phase: "cleanup", at: new Date().toISOString() },
+      value: {
+        token: uid(),
+        phase: "cleanup",
+        at: new Date().toISOString(),
+        // Commit selection with the replacement itself. A crash or failed
+        // preference cleanup must not reopen an unrelated legacy year.
+        academicYear: rows.catalog.find(
+          (period) => period.id === source.activeWorkspace,
+        ).year,
+        activeWorkspace: source.activeWorkspace,
+      },
     };
     rows.records.push(marker);
     const names = [...backupStores, "drafts"];
@@ -4851,6 +5302,11 @@ async function restoreFullBackup() {
     installationToken = marker.value.token;
     broadcast({ type: "installation-restored" });
     await completeResetCleanup(connection, marker);
+    // Reset cleanup removes device preferences. Re-anchor only after it has
+    // finished, using the incoming file rather than the overwritten install.
+    rememberAcademicYear(
+      rows.catalog.find((period) => period.id === source.activeWorkspace).year,
+    );
     window.EduPeriodicReports?.resetDrafts();
     const annual = globalThis.EduAnnualModules
       ? await synchronizeAnnualForRead(source.activeWorkspace)
@@ -4897,6 +5353,11 @@ async function restoreFullBackup() {
           : " توضیحات گزارش در بانک محفوظ‌اند؛ ذخیره موقت آن‌ها نیازمند تلاش مجدد است."),
       notesSaved ? "saved" : "pending",
     );
+    const recoveryWarning = academicWorkspaceRecoveryWarning(
+      workspace,
+      rows.catalog,
+    );
+    if (recoveryWarning) setStatus(recoveryWarning, "pending");
     for (const change of annual?.changed || [])
       broadcast({ ...change, annualModular: true });
     if (annual?.conflicts.length)
@@ -5026,7 +5487,7 @@ async function exportBackupV24() {
       workspace.id !== origin
     )
       throw new Error(
-        "دوره هنگام تهیه پشتیبان تغییر کرده است؛ دوباره تلاش کنید.",
+        "ترم هنگام تهیه پشتیبان تغییر کرده است؛ دوباره تلاش کنید.",
       );
   };
   ensureSource();
@@ -5104,6 +5565,8 @@ async function openBackups() {
   const ensureCurrent = preserveAsyncTarget();
   await writer.catch(() => {});
   ensureCurrent();
+  const safety = await readLatestSafetyBackup();
+  ensureCurrent();
   let estimate = "";
   if (navigator.storage?.estimate) {
     const e = await navigator.storage.estimate();
@@ -5117,10 +5580,11 @@ async function openBackups() {
   }
   showModal(
     "پشتیبان و بازیابی",
-    '<div class="backup-hub"><section class="backup-manual"><h4>فایل پشتیبان شما</h4><p>یک فایل پشتیبان برای کل سیستم: سال‌های تحصیلی، ترم اول و دوم، مدرسه‌ها، کلاس‌ها، هنرجویان، نمرات و حضور‌وغیاب. برای هر ترم فایل جدا لازم نیست. بازیابی، کل اطلاعات فعلی را با محتوای فایل جایگزین می‌کند.</p><div class="backup-action-grid"><button data-workspace-action="export-full">دریافت پشتیبان کامل</button><button class="ghost backup-share-entry" data-workspace-action="prepare-share-backup">اشتراک‌گذاری پشتیبان کامل</button><button class="ghost" data-workspace-action="choose-import">بازیابی از فایل</button></div><p class="muted">' +
+    '<div class="backup-hub"><section class="backup-manual"><h4>فایل پشتیبان شما</h4><p>یک فایل برای کل اطلاعات: سال تحصیلی و هر دو ترم، مدرسه‌ها، کلاس‌ها، هنرجویان، نمرات و حضور‌وغیاب. فایل پشتیبان، ترم تازه‌ای ایجاد نمی‌کند؛ بازیابی فقط کل اطلاعات فعلی را با محتوای فایل جایگزین می‌کند. سوابق قدیمیِ موجود در بانک هم در فایل حفظ می‌شوند.</p><div class="backup-action-grid"><button data-workspace-action="export-full">دریافت پشتیبان کامل</button><button class="ghost backup-share-entry" data-workspace-action="prepare-share-backup">اشتراک‌گذاری پشتیبان کامل</button><button class="ghost" data-workspace-action="choose-import">بازیابی از فایل</button></div><p class="muted" id="lastExternalBackupStatus" role="status">' +
       esc(lastExternalBackupLabel()) +
       "</p></section>" +
       singleFilePanel() +
+      safetyBackupPanel(safety) +
       '<details class="backup-help"><summary>فضای ذخیره‌سازی مرورگر</summary><p>' +
       esc(estimate) +
       '</p></details><details class="backup-reset"><summary>پاک‌سازی اطلاعات سیستم</summary><p>برای شروع دوباره، همه اطلاعات برنامه در همین مرورگر حذف می‌شود. این کار بازیابی فایل نیست؛ پیش از ادامه پشتیبان کامل دریافت کنید. فایل‌های ذخیره‌شده روی دستگاه حذف نمی‌شوند.</p><button type="button" class="danger" data-workspace-action="open-wipe">بررسی و تأیید پاک‌سازی</button></details></div>',
@@ -5229,8 +5693,18 @@ async function handleImportV24(
   };
   try {
     ensureDestination();
-    if (file.size > 100 * 1024 * 1024)
-      throw Error("حداکثر حجم فایل پشتیبان صد مگابایت است.");
+    // Full exports grow with the installation. Do not make our own large
+    // backups unrestorable; ask before allocating memory, without writing data.
+    if (
+      file.size > 100 * 1024 * 1024 &&
+      !confirm(
+        "حجم این فایل پشتیبان حدود " +
+          Math.ceil(file.size / 1048576).toLocaleString("fa-IR") +
+          " مگابایت است. خواندن آن ممکن است زمان‌بر باشد و حافظهٔ زیادی مصرف کند؛ روی دستگاه کم‌حافظه از رایانه استفاده کنید.\nفقط فایل مورداعتماد خودتان را باز کنید. خواندن و بررسی فایل ادامه پیدا کند؟ تا تأیید نهایی بازیابی، اطلاعات فعلی تغییر نمی‌کند.",
+      )
+    )
+      return;
+    ensureDestination();
     const parsed = JSON.parse(await file.text());
     ensureDestination();
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
@@ -5252,7 +5726,7 @@ async function handleImportV24(
     // Retained only for internal compatibility and its regression tests.
     if (fullSystemOnly)
       throw Error(
-        "این فایل پشتیبان کامل سیستم نیست. فایل کامل شامل اطلاعات سال‌های تحصیلی، ترم‌ها، مدرسه‌ها، کلاس‌ها و هنرجویان را انتخاب کنید؛ اطلاعات فعلی تغییر نکرده است.",
+        "این فایل پشتیبان کامل سیستم نیست. فایل کامل شامل اطلاعات سال تحصیلی، هر دو ترم، مدرسه‌ها، کلاس‌ها و هنرجویان را انتخاب کنید؛ اطلاعات فعلی تغییر نکرده است.",
       );
     if (
       parsed.version !== undefined &&
@@ -5357,9 +5831,9 @@ async function confirmImport() {
     }
     if (workspace.closed)
       throw Error(
-        "دوره بسته است؛ برای بازیابی در آن ابتدا دوره را بازگشایی کنید.",
+        "ترم بسته است؛ برای بازیابی در آن ابتدا ترم را بازگشایی کنید.",
       );
-    if (!confirm("اطلاعات این دوره با نسخه پیش‌نمایش جایگزین شود؟")) return;
+    if (!confirm("اطلاعات این ترم با نسخه پیش‌نمایش جایگزین شود؟")) return;
     await flushDrafts({ strict: true });
     await writer.catch(() => {});
     check(true);
@@ -5571,7 +6045,7 @@ async function performUndo(target, approval = null) {
     return false;
   assertEntityWritable();
   if (!isCurrentTarget() || workspace.revision !== target.revision)
-    throw Error("دوره یا اطلاعات بازگردانی تغییر کرده است.");
+    throw Error("ترم یا اطلاعات بازگردانی تغییر کرده است.");
   await commitRecords(
     candidate,
     {
@@ -5594,62 +6068,127 @@ async function performUndo(target, approval = null) {
   return true;
 }
 // Source: src/workspace/periods/switch-create.js
-async function openPeriods() {
-  const ensureCurrent = preserveAsyncTarget();
+async function openPeriods({ notice = "" } = {}) {
+  const ensureCurrent = preserveAsyncTarget(),
+    sourceConnection = connection;
   await flushDrafts({ strict: true });
+  await writer.catch(() => {});
   ensureCurrent();
-  const all = (await allFrom("catalog")).sort((a, b) =>
-    b.createdAt.localeCompare(a.createdAt),
-  );
-  ensureCurrent();
+  if (connection !== sourceConnection)
+    throw Error("اتصال اطلاعات تغییر کرده است؛ ترم‌ها را دوباره باز کنید.");
+  const context = captureWorkspaceContext(),
+    year = workspace.year,
+    all = (await allFrom("catalog")).filter((period) => period.year === year);
+  assertWorkspaceContext(context);
   const reports = (await allFrom("reports")).filter(
     (r) => r.workspace === workspace.id,
   );
-  ensureCurrent();
-  const periodRows = all
-    .map(
-      (w) =>
-        "<tr><td>" +
-        esc(w.year + " / " + w.term) +
-        "</td><td>" +
-        (w.closed ? "بسته" : "در حال کار") +
-        '</td><td><div class="period-row-actions"><button class="ghost" data-workspace-action="switch-period" data-key="' +
-        esc(w.id) +
-        '">' +
-        (w.id === workspace.id ? "نوبت فعلی" : "بازکردن") +
-        "</button>" +
-        ((w.termKind || academicTermKind(w.term)) === "first" &&
-        w.closed &&
-        !all.some(
-          (row) =>
-            row.year === w.year &&
-            (row.termKind || academicTermKind(row.term)) === "second",
-        )
-          ? '<button data-workspace-action="new-second-period" data-key="' +
-            esc(w.id) +
-            '">شروع نوبت دوم</button>'
-          : "") +
-        '<button type="button" class="ghost danger period-delete-button" aria-label="' +
-        esc("حذف نوبت " + w.year + " / " + w.term) +
-        '" data-workspace-action="delete-period" data-key="' +
-        esc(w.id) +
-        '"><span aria-hidden="true">' +
-        EduIcons.html("trash") +
-        "</span><span>حذف نوبت</span></button></div></td></tr>",
-    )
-    .join("");
+  assertWorkspaceContext(context);
+  if (connection !== sourceConnection)
+    throw Error("اتصال اطلاعات تغییر کرده است؛ ترم‌ها را دوباره باز کنید.");
+  const entries = (kind) =>
+      all.filter(
+        (row) => (row.termKind || academicTermKind(row.term)) === kind,
+      ),
+    first = entries("first"),
+    second = entries("second"),
+    ambiguous = first.length > 1 || second.length > 1,
+    unsupported = all.some(
+      (row) =>
+        !["first", "second"].includes(
+          row.termKind || academicTermKind(row.term),
+        ),
+    ),
+    periodRows = [
+      { kind: "first", label: "ترم اول", rows: first },
+      { kind: "second", label: "ترم دوم", rows: second },
+    ]
+      .map(({ kind, label, rows }) => {
+        const period = rows.length === 1 ? rows[0] : null,
+          canStart =
+            kind === "second" &&
+            !second.length &&
+            first.length === 1 &&
+            first[0].closed &&
+            !ambiguous &&
+            !unsupported;
+        return (
+          "<tr><td>" +
+          label +
+          "</td><td>" +
+          (rows.length > 1
+            ? "نیازمند بررسی اطلاعات قبلی"
+            : period
+              ? period.closed
+                ? "بسته"
+                : "در حال کار"
+              : "شروع‌نشده") +
+          '</td><td><div class="period-row-actions">' +
+          (period
+            ? '<button class="ghost" data-workspace-action="switch-period" data-key="' +
+              esc(period.id) +
+              '"' +
+              (period.id === workspace.id
+                ? ' disabled aria-current="true"'
+                : "") +
+              ">" +
+              (period.id === workspace.id ? "ترم فعلی" : "ورود به " + label) +
+              "</button>"
+            : canStart
+              ? '<button data-workspace-action="new-second-period" data-key="' +
+                esc(first[0].id) +
+                '">شروع ترم دوم</button>'
+              : '<span class="muted">' +
+                (kind === "second" &&
+                !second.length &&
+                !ambiguous &&
+                !unsupported
+                  ? "پس از بستن ترم اول"
+                  : "—") +
+                "</span>") +
+          "</div></td></tr>"
+        );
+      })
+      .join("");
+  const activeKind = workspace.termKind || academicTermKind(workspace.term),
+    activeLabel = { first: "ترم اول", second: "ترم دوم" }[activeKind],
+    warning =
+      ambiguous || unsupported
+        ? '<p class="period-intro" role="alert">اطلاعات قدیمی این سال، ترم نامشخص یا ثبت تکراری دارد. هیچ اطلاعاتی حذف نشده است؛ پیش از شروع ترم دوم، اطلاعات معتبر را بازیابی کنید.</p>'
+        : "";
   showModal(
-    "نوبت‌های تحصیلی و کارنامه نهایی",
-    '<div class="period-hub"><p class="period-intro">هر سال تحصیلی شامل ترم اول و دوم است. مدرسه‌ها، کلاس‌ها و ثبت‌نام هنرجویان مبنای سال تحصیلی هستند؛ نمرات و حضور‌وغیاب به ترم مربوط ثبت می‌شوند. پشتیبان کل سیستم در یک فایل ذخیره می‌شود.</p><section class="period-list"><h4>سال تحصیلی و ترم‌ها</h4><table><thead><tr><th>سال / نوبت</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody>' +
+    "سال تحصیلی و دو ترم",
+    '<div class="period-hub"><p class="period-intro">سال تحصیلی: ' +
+      esc(year) +
+      '</p><p class="period-intro">مدرسه‌ها، کلاس‌ها، هنرجویان و درس‌ها در ترم اول و دوم مشترک‌اند؛ نمرات ترمی و جلسات جدا ثبت می‌شوند و نمرات پودمانی در کل سال ادامه دارند.</p>' +
+      (notice
+        ? '<p class="period-intro" role="status">' +
+          esc(String(notice)) +
+          "</p>"
+        : "") +
+      warning +
+      '<section class="period-list"><h4>ترم اول و دوم</h4><table><thead><tr><th>ترم</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody>' +
       periodRows +
-      '</tbody></table></section><section class="period-management"><h4>مدیریت نوبت فعلی</h4><div class="row period-actions"><button data-workspace-action="new-period">شروع سال تحصیلی / نوبت جدید</button>' +
-      (workspace.closed
-        ? '<button data-workspace-action="reopen-period">بازگشایی با ثبت در تاریخچه</button>'
-        : '<button data-workspace-action="finalize-period">بستن دوره و ثبت کارنامه نهایی</button><button class="ghost" data-workspace-action="edit-period-label">اصلاح عنوان دوره</button>') +
-      '</div></section><section class="period-reports"><h4>کارنامه‌های نهایی ثبت‌شده</h4>' +
+      "</tbody></table></section>" +
+      (activeLabel
+        ? '<section class="period-management"><h4>' +
+          activeLabel +
+          '</h4><div class="row period-actions">' +
+          (workspace.closed
+            ? '<button data-workspace-action="reopen-period">بازگشایی ' +
+              activeLabel +
+              "</button>"
+            : '<button data-workspace-action="finalize-period">بستن ' +
+              activeLabel +
+              " و ثبت کارنامه نهایی</button>") +
+          "</div></section>"
+        : "") +
+      '<section class="period-reports"><h4>کارنامه‌های نهایی ' +
+      (activeLabel || "ثبت‌شده") +
+      "</h4>" +
       (reports.length
         ? ""
-        : '<p class="period-intro">هنوز کارنامه نهایی برای این دوره ثبت نشده است.</p>') +
+        : '<p class="period-intro">هنوز کارنامه نهایی برای این ترم ثبت نشده است.</p>') +
       reports
         .map(
           (r) =>
@@ -5847,7 +6386,11 @@ async function confirmDeletePeriod() {
             if (!entry) return;
             if (
               entry.value.workspace === preview.id ||
-              (name === "undo" && entry.value.id === preview.id)
+              (name === "undo" &&
+                (entry.value.id === preview.id ||
+                  entry.value.recoveredPeers?.some(
+                    (peer) => peer.id === preview.id,
+                  )))
             ) {
               if (name === "backups")
                 entry.update({
@@ -5932,7 +6475,7 @@ function hydrateReportNotes(period) {
 let periodSwitchBusy = false;
 async function switchPeriod(id) {
   if (periodSwitchBusy)
-    throw Error("جابه‌جایی دوره در حال انجام است؛ صبر کنید.");
+    throw Error("جابه‌جایی ترم در حال انجام است؛ صبر کنید.");
   periodSwitchBusy = true;
   try {
     if (id === workspace.id) {
@@ -5989,77 +6532,114 @@ async function switchPeriod(id) {
   }
 }
 
+let secondTermDialog = null,
+  secondTermDialogGeneration = 0;
 async function openNewPeriod(firstId = "") {
+  const generation = ++secondTermDialogGeneration,
+    ensureCurrent = preserveAsyncTarget(),
+    sourceConnection = connection;
+  secondTermDialog = null;
+  await flushDrafts({ strict: true });
+  await writer.catch(() => {});
+  ensureCurrent();
   const expected = captureWorkspaceContext(),
     rows = await allFrom("catalog");
   assertWorkspaceContext(expected);
-  const first = firstId
-    ? rows.find((row) => row.id === firstId)
-    : rows.find(
-        (row) =>
-          row.year === workspace.year &&
-          (row.termKind || academicTermKind(row.term)) === "first" &&
-          row.closed &&
-          !rows.some(
-            (other) =>
-              other.year === row.year &&
-              (other.termKind || academicTermKind(other.term)) === "second",
-          ),
-      );
   if (
-    firstId &&
-    (!first ||
-      !first.closed ||
-      (first.termKind || academicTermKind(first.term)) !== "first")
+    connection !== sourceConnection ||
+    generation !== secondTermDialogGeneration
   )
-    throw Error("ابتدا نوبت اول را ببندید.");
-  const nextYear =
-    workspace.closed &&
-    (workspace.termKind || academicTermKind(workspace.term)) === "second"
-      ? Number(workspace.year.slice(0, 4)) +
-        1 +
-        "-" +
-        (Number(workspace.year.slice(5)) + 1)
-      : currentYearLabel();
-  showModal(
-    "شروع نوبت تحصیلی",
-    '<div class="period-create"><label>سال تحصیلی <input id="periodYear" value="' +
-      esc(first?.year || nextYear) +
-      '"></label><label>نوبت <select id="periodTerm"><option' +
-      (!first ? " selected" : "") +
-      ">اول</option><option" +
-      (first ? " selected" : "") +
-      '>دوم</option></select></label><p>نوبت دوم فقط پس از بسته‌شدن نوبت اول همان سال شروع می‌شود. کلاس‌ها، هنرجویان، درس‌ها و نمرات پودمانی ادامه پیدا می‌کنند؛ نمرات عملی و نظری و جلسات هر نوبت جدا می‌مانند.</p><button data-workspace-action="create-period">شروع نوبت</button></div>',
+    throw Error("اطلاعات تغییر کرده است؛ شروع ترم دوم را دوباره باز کنید.");
+  const year = workspace.year,
+    first = validateAcademicTransition(rows, year, "دوم");
+  if (
+    (firstId && first.id !== firstId) ||
+    rows.some(
+      (row) =>
+        row.year === year &&
+        !["first", "second"].includes(
+          row.termKind || academicTermKind(row.term),
+        ),
+    )
+  )
+    throw Error(
+      "ترم اول همین سال به‌طور یکتا مشخص نیست؛ اطلاعات قبلی را بررسی کنید.",
+    );
+  const opened = showModal(
+    "شروع ترم دوم",
+    '<div class="period-create" id="secondTermStart"><div class="record-editor-context"><h4>ترم دوم</h4><p>سال تحصیلی: ' +
+      esc(year) +
+      '</p></div><p>مدرسه‌ها، کلاس‌ها، هنرجویان و درس‌های ترم اول ادامه پیدا می‌کنند. نمرات ترمی و جلسات خالی شروع می‌شوند؛ نمرات پودمانی سال حفظ می‌شوند.</p><div class="row period-actions"><button data-workspace-action="create-period">شروع ترم دوم</button><button class="ghost" data-workspace-action="periods">انصراف</button></div></div>',
   );
+  if (opened !== false)
+    secondTermDialog = {
+      ...expected,
+      year,
+      firstId: first.id,
+      firstRevision: first.revision,
+      connection: sourceConnection,
+      node: document.getElementById("secondTermStart"),
+    };
 }
 
 let newPeriodBusy = false;
-async function createNewPeriod() {
-  if (newPeriodBusy) throw Error("ساخت دوره در حال انجام است؛ صبر کنید.");
+async function createNewPeriod({ fromDialog = false } = {}) {
+  if (newPeriodBusy) throw Error("شروع نوبت در حال انجام است؛ صبر کنید.");
   newPeriodBusy = true;
   try {
-    const ensureCurrent = preserveAsyncTarget();
+    const ensureCurrent = preserveAsyncTarget(),
+      dialog = fromDialog ? secondTermDialog : null,
+      checkDialog = () => {
+        if (!fromDialog) return;
+        if (
+          !dialog ||
+          secondTermDialog !== dialog ||
+          connection !== dialog.connection ||
+          workspace.id !== dialog.id ||
+          workspace.revision !== dialog.revision ||
+          workspace.year !== dialog.year ||
+          !dialog.node ||
+          dialog.node.isConnected === false ||
+          document.getElementById("modal")?.classList.contains("hidden") ||
+          document.getElementById("secondTermStart") !== dialog.node
+        )
+          throw Error(
+            "پنجرهٔ شروع نوبت دوم معتبر نیست؛ آن را دوباره باز کنید.",
+          );
+      };
+    checkDialog();
     if (fileMode)
       throw Error(
         "این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.",
       );
     const year = EduAcademicYear.normalize(
-        document.getElementById("periodYear").value,
+        fromDialog ? dialog.year : document.getElementById("periodYear").value,
       ),
-      term = document.getElementById("periodTerm").value;
+      term = fromDialog ? "دوم" : document.getElementById("periodTerm").value;
     if (!["اول", "دوم"].includes(term))
       throw Error("نوبت انتخاب‌شده معتبر نیست.");
     await flushDrafts({ strict: true });
     await writer.catch(() => {});
     ensureCurrent();
+    checkDialog();
     const context = captureWorkspaceContext();
     const existing = await allFrom("catalog");
     assertWorkspaceContext(context);
+    checkDialog();
     const first = validateAcademicTransition(existing, year, term);
-    let source = db;
+    if (
+      fromDialog &&
+      (first?.id !== dialog.firstId || first?.revision !== dialog.firstRevision)
+    )
+      throw Error(
+        "نوبت اول تغییر کرده است؛ پنجرهٔ شروع نوبت دوم را دوباره باز کنید.",
+      );
+    let source = db,
+      sourcePeriod = { id: context.id, revision: context.revision };
     if (first) {
       const snapshot = await readWorkspaceSnapshot(first.id);
       assertWorkspaceContext(context);
+      checkDialog();
       if (
         snapshot.period.revision !== first.revision ||
         !snapshot.period.closed
@@ -6073,8 +6653,13 @@ async function createNewPeriod() {
         )
           throw Error("دسترسی به نوبت اول تأیید نشد.");
         assertWorkspaceContext(context);
+        checkDialog();
       }
       source = snapshot.data;
+      sourcePeriod = {
+        id: snapshot.period.id,
+        revision: snapshot.period.revision,
+      };
     }
     const next = clone(source);
     next.sessions = [];
@@ -6127,13 +6712,16 @@ async function createNewPeriod() {
             for (const u of p.units) u.unitScores = {};
         }
       }
+    checkDialog();
     const created = await installWorkspace(normalizeDB(next), {
       year,
       term,
       requireSequence: true,
       firstRevision: first?.revision,
+      source: sourcePeriod,
     });
     assertWorkspaceContext(context);
+    if (fromDialog && secondTermDialog === dialog) secondTermDialog = null;
     await switchPeriod(created.id);
   } finally {
     newPeriodBusy = false;
@@ -6295,7 +6883,15 @@ function finalReportData() {
             ...(assessments ? { assessments } : {}),
             policy: l.gradingPolicy ? clone(l.gradingPolicy) : null,
             courseInfo: EduPolicy.identity(l, workspace.year),
-            modules: result.modules || null,
+            modules:
+              result.modules?.map((module) => {
+                const pod = l.poudmans.find((item) => item.id === module.id),
+                  inputs = ownScoreRecord(pod?.podScores, st.id);
+                return {
+                  ...clone(module),
+                  inputs: { m: inputs.m ?? null, c: inputs.c ?? null },
+                };
+              }) || null,
             reason: result.reason || "",
             teacher: l.teacher || "",
             practical: result.practical ?? null,
@@ -6337,34 +6933,40 @@ async function finalizePeriod() {
   await flushDrafts({ strict: true });
   await writer.catch(() => {});
   if (workspace.id !== origin)
-    throw Error("دوره هنگام بستن تغییر کرد؛ دوباره تلاش کنید.");
+    throw Error("نوبت هنگام بستن تغییر کرد؛ دوباره تلاش کنید.");
   const context = captureWorkspaceContext();
   const report = finalReportData();
   if (report.missing.length) {
     handleError(
       Error(
-        "بستن دوره ممکن نیست؛ نمرات ناقص: " +
+        "بستن نوبت ممکن نیست؛ نمرات ناقص: " +
           report.missing.slice(0, 10).join(" | ") +
           (report.missing.length > 10 ? " و موارد دیگر" : ""),
       ),
     );
     return;
   }
+  const term =
+    workspace.termKind === "first"
+      ? "اول"
+      : workspace.termKind === "second"
+        ? "دوم"
+        : workspace.term;
   if (
     !confirm(
-      "دوره " +
+      "نوبت " +
+        term +
+        " سال تحصیلی " +
         workspace.year +
-        " / " +
-        workspace.term +
-        " بسته و کارنامه ثابت ثبت شود؟",
+        " بسته و کارنامه ثابت آن ثبت شود؟",
     )
   )
     return;
-  await putBackup(db, "پیش از بستن دوره");
+  await putBackup(db, "پیش از بستن نوبت");
   assertWorkspaceContext(context, { write: true });
   if (busy || drafts.size)
     throw Error(
-      "ویرایش تازه‌ای هنگام بستن دوره ایجاد شد؛ ابتدا آن را ذخیره و دوباره تلاش کنید.",
+      "ویرایش تازه‌ای هنگام بستن نوبت ایجاد شد؛ ابتدا آن را ذخیره و دوباره تلاش کنید.",
     );
   const at = new Date().toISOString(),
     snapshot = {
@@ -6407,7 +7009,7 @@ async function finalizePeriod() {
       workspace: context.id,
       at,
       revision: finalizedWorkspace.revision,
-      action: "بستن دوره و ثبت کارنامه ثابت",
+      action: "بستن نوبت و ثبت کارنامه ثابت",
       changes: [],
     });
   };
@@ -6432,7 +7034,7 @@ async function reopenPeriod() {
   if (!workspace.closed) return;
   if (
     !confirm(
-      "دوره بازگشایی شود؟ کارنامه ثابت قبلی حفظ می‌شود و تغییرات جدید جدا ثبت می‌شوند.",
+      "نوبت جاری بازگشایی شود؟ کارنامه ثابت قبلی حفظ می‌شود و تغییرات جدید جدا ثبت می‌شوند.",
     )
   )
     return;
@@ -6462,7 +7064,7 @@ async function reopenPeriod() {
       workspace: context.id,
       at: new Date().toISOString(),
       revision: reopenedWorkspace.revision,
-      action: "بازگشایی دوره؛ کارنامه ثابت پیشین محفوظ است",
+      action: "بازگشایی نوبت؛ کارنامه ثابت پیشین محفوظ است",
       changes: [],
     });
   };
@@ -6510,6 +7112,16 @@ function validateFrozenReport(report) {
 }
 
 function frozenLessonRows(lesson) {
+  if (lesson.policy?.method === "modular" && lesson.modules?.length)
+    return (
+      "<tr><td>" +
+      esc(lesson.name) +
+      '</td><td colspan="4">' +
+      modularReportGrades(lesson.modules, lesson) +
+      "</td><td>" +
+      esc(gradeStatus(lesson)) +
+      "</td></tr>"
+    );
   const dual = lesson.mode === "kardanesh";
   const stages = dual ? ["midterm", "final"] : ["final"];
   return stages
@@ -6564,7 +7176,7 @@ async function showFrozenReport(id) {
     throw Error("اتصال بانک هنگام خواندن کارنامه تغییر کرده است.");
   if (!report) throw Error("کارنامه ثابت موجود نیست.");
   if (report.workspace !== origin)
-    throw Error("این کارنامه متعلق به دورهٔ انتخاب‌شده نیست.");
+    throw Error("این کارنامه متعلق به ترم انتخاب‌شده نیست.");
   validateFrozenReport(report);
   showModal(
     "کارنامه نهایی ثابت",
@@ -6724,6 +7336,33 @@ function karnamehLessons(parts, schoolId, classroom) {
   return [...lessons.values()];
 }
 
+// Both live and immutable reports use the same module rows. Older frozen
+// reports have results only: absent component inputs stay absent, never inferred.
+function modularReportGrades(modules, result) {
+  return (
+    '<div class="report-modular-grades"><section class="report-modular-course"><div class="report-mobile-score-heading" aria-hidden="true"><span>پودمان</span><div><span>مستمر</span><span>شایستگی</span><span>نتیجه</span></div></div>' +
+    modules
+      .map(
+        (module) =>
+          '<div class="report-module-row" data-module-id="' +
+          esc(module.id) +
+          '"><span class="report-module-title">' +
+          esc(module.name) +
+          '</span><div class="report-stage-values"><span><span class="report-score-label">مستمر</span><b>' +
+          esc(module.inputs?.m ?? "—") +
+          '</b></span><span><span class="report-score-label">شایستگی</span><b>' +
+          esc(module.inputs?.c ?? "—") +
+          '</b></span><span><span class="report-score-label">نتیجه</span><strong>' +
+          finalText(module) +
+          "</strong></span></div></div>",
+      )
+      .join("") +
+    '<div class="report-modular-final"><span>نهایی درس</span><strong>' +
+    finalText(result) +
+    "</strong></div></section></div>"
+  );
+}
+
 function modularOverviewCell(
   lesson,
   sid,
@@ -6749,30 +7388,15 @@ function modularOverviewCell(
       );
     }
     const result = EduPolicy.lesson(annual.gradingPolicy, annual.poudmans, sid);
-    return (
-      '<div class="report-modular-grades"><section class="report-modular-course"><div class="report-mobile-score-heading" aria-hidden="true"><span>پودمان</span><div><span>مستمر</span><span>شایستگی</span><span>نتیجه</span></div></div>' +
-      annual.poudmans
-        .map((pod) => {
-          const raw = ownScoreRecord(pod.podScores, sid);
-          const grade = result.modules.find((item) => item.id === pod.id);
-          return (
-            '<div class="report-module-row" data-module-id="' +
-            esc(pod.id) +
-            '"><span class="report-module-title">' +
-            esc(pod.name) +
-            '</span><div class="report-stage-values"><span><span class="report-score-label">مستمر</span><b>' +
-            esc(raw.m ?? "—") +
-            '</b></span><span><span class="report-score-label">شایستگی</span><b>' +
-            esc(raw.c ?? "—") +
-            '</b></span><span><span class="report-score-label">نتیجه</span><strong>' +
-            finalText(grade) +
-            "</strong></span></div></div>"
-          );
-        })
-        .join("") +
-      '<div class="report-modular-final"><span>نهایی درس</span><strong>' +
-      finalText(result) +
-      "</strong></div></section></div>"
+    return modularReportGrades(
+      result.modules.map((module) => ({
+        ...module,
+        inputs: ownScoreRecord(
+          annual.poudmans.find((pod) => pod.id === module.id)?.podScores,
+          sid,
+        ),
+      })),
+      result,
     );
   }
   const terms = parts ? ["اول", "دوم"] : [""];
@@ -7117,7 +7741,7 @@ function detailedV24(c, sid) {
     " | " +
     esc(workspace.year + " / " + workspace.term) +
     " | " +
-    (workspace.closed ? "دوره بسته" : "گزارش در حال کار") +
+    (workspace.closed ? "ترم بسته" : "گزارش در حال کار") +
     '</p></div><div class="karnameh-report-actions no-print"><button type="button" class="ghost" data-workspace-action="karnameh-student" data-class="' +
     esc(c.id) +
     '" data-key="">نمای کلی کلاس</button><button data-workspace-action="print">چاپ / PDF</button></div></header><div class="table-scroll"><table class="grade-report-table karnameh-individual"><thead><tr><th>درس</th><th>عملی / پایانی</th><th>تئوری / مستمر</th><th>نتیجه پایان‌ترم / درس</th><th>وضعیت</th><th>حضور و غیاب</th></tr></thead><tbody>' +
@@ -7476,6 +8100,59 @@ async function printReport(button, { context, validate } = {}) {
     return false;
   }
 }
+// Source: src/workspace/reports/copy.js
+// Every legacy report copy uses the same durable snapshot and revision guards
+// as modern exports. Text generation stays synchronous and side-effect free.
+function reportCopyScope() {
+  return JSON.stringify({
+    navigation: state,
+    activity: globalFilter,
+    lesson: lessonReportFilter,
+    student: karnamehFilter,
+    session: currentSessionId,
+  });
+}
+
+async function copyReportV24(buildText, button) {
+  const origin = workspace?.id,
+    sourceConnection = connection,
+    scope = reportCopyScope();
+  const ensureCurrent = () => {
+    if (!fileMode) assertWorkspaceReadable();
+    else if (
+      !ready ||
+      blocked ||
+      periodLoading ||
+      resetBusy ||
+      connectionRetired ||
+      (db.settings.password && !isAuthenticated)
+    )
+      throw Error("اطلاعات برای تهیهٔ گزارش آماده نیست.");
+    if (
+      workspace?.id !== origin ||
+      connection !== sourceConnection ||
+      reportCopyScope() !== scope ||
+      button?.isConnected === false
+    )
+      throw Error(
+        "صفحه یا محدودهٔ گزارش تغییر کرد؛ گزارش را دوباره تهیه کنید.",
+      );
+  };
+  try {
+    ensureCurrent();
+    const snapshot = fileMode ? null : await prepareReportSnapshot();
+    ensureCurrent();
+    const text = buildText();
+    if (typeof text !== "string" || !text.length) return false;
+    if (snapshot) await assertReportSnapshot(snapshot.context);
+    ensureCurrent();
+    copyToClipboard(text, button);
+    return true;
+  } catch (error) {
+    handleError(error);
+    return false;
+  }
+}
 // Source: src/workspace/students/csv-import.js
 function csvPlan(text, c) {
   const rows = parseCSV(text);
@@ -7637,7 +8314,7 @@ async function csvImportV24(e) {
       origin.schoolId !== state.schoolId ||
       origin.classId !== state.classId
     )
-      throw Error("کلاس یا دوره تغییر کرده است؛ فایل را دوباره انتخاب کنید.");
+      throw Error("کلاس یا ترم تغییر کرده است؛ فایل را دوباره انتخاب کنید.");
     origin.revision = workspace.revision;
     if (file.size > 5 * 1024 * 1024)
       throw Error("حداکثر حجم CSV پنج مگابایت است.");
@@ -7654,7 +8331,7 @@ async function csvImportV24(e) {
       origin.revision !== workspace.revision
     )
       throw Error(
-        "کلاس، دوره یا اطلاعات تغییر کرده است؛ فایل را دوباره انتخاب کنید.",
+        "کلاس، ترم یا اطلاعات تغییر کرده است؛ فایل را دوباره انتخاب کنید.",
       );
     const plan = csvPlan(text, getClassObj(origin.schoolId, origin.classId));
     if (!plan.length) throw Error("فایل ردیف قابل ثبت ندارد.");
@@ -7710,7 +8387,7 @@ async function commitCSV() {
         context.classId !== state.classId
       )
         throw Error(
-          "کلاس، دوره یا اطلاعات تغییر کرده است؛ پیش‌نمایش را دوباره بسازید.",
+          "کلاس، ترم یا اطلاعات تغییر کرده است؛ پیش‌نمایش را دوباره بسازید.",
         );
       const c = getClassObj(context.schoolId, context.classId);
       if (!c) throw Error("کلاس دیگر وجود ندارد.");
@@ -7842,7 +8519,8 @@ function applyStudentIdentity(c, student, { name, code }) {
     );
     if (!unresolved)
       db.migrationWarnings = (db.migrationWarnings || []).filter(
-        (message) => !message.includes(student.id),
+        (message) =>
+          !message.startsWith("نام دانش‌آموز " + student.id + " در "),
       );
   }
 }
@@ -7880,7 +8558,7 @@ async function addStudentV24(event) {
     await writer.catch(() => {});
     assertEntityWritable();
     if (!sameTarget())
-      throw Error("کلاس یا دوره تغییر کرده است؛ ثبت انجام نشد.");
+      throw Error("کلاس یا ترم تغییر کرده است؛ ثبت انجام نشد.");
     const c = getClassObj(target.schoolId, target.classId);
     if (!c) throw Error("کلاس مقصد دیگر وجود ندارد.");
     if (code && knownStudents(c).some((st) => st.code === code))
@@ -7934,7 +8612,7 @@ async function editStudentV24(studentId) {
       origin.schoolId !== state.schoolId ||
       origin.classId !== state.classId
     )
-      throw Error("کلاس یا دوره تغییر کرده است؛ ویرایش را دوباره باز کنید.");
+      throw Error("کلاس یا ترم تغییر کرده است؛ ویرایش را دوباره باز کنید.");
     const c = getClassObj(origin.schoolId, origin.classId),
       student = c && getStudentObj(c, studentId);
     if (!student) throw Error("هنرجو دیگر در این کلاس وجود ندارد.");
@@ -7986,7 +8664,7 @@ async function saveStudent(studentId) {
         context.classId !== state.classId
       )
         throw Error(
-          "کلاس، دوره یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.",
+          "کلاس، ترم یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.",
         );
       const c = getClassObj(context.schoolId, context.classId),
         student = c && getStudentObj(c, context.studentId);
@@ -8049,13 +8727,13 @@ async function wipeAllV24() {
   if (fileMode || !ready || connectionRetired)
     return handleError(Error("ابتدا نسخه آماده برنامه را باز کنید."));
   showModal(
-    "حذف کامل اطلاعات همه دوره‌ها",
+    "حذف کامل اطلاعات سیستم",
     '<form class="record-editor wipe-editor" id="wipeEditor" data-workspace-submit="confirm-wipe" aria-describedby="wipeWarning">' +
       '<section class="wipe-warning" id="wipeWarning"><span class="wipe-symbol" aria-hidden="true">' +
       EduIcons.html("trash") +
-      "</span><div><h4>همه دوره‌ها از این مرورگر پاک می‌شوند</h4><p>این عملیات تمام اطلاعات ذخیره‌شده داخل برنامه را حذف می‌کند.</p></div></section>" +
-      '<section class="wipe-scope" aria-label="اطلاعاتی که حذف می‌شوند"><h4>چه چیزهایی حذف می‌شوند؟</h4><ul><li>همه دوره‌ها، مدرسه‌ها، کلاس‌ها و دانش‌آموزان</li><li>نمرات، جلسات و سوابق حضور و غیاب</li><li>پیش‌نویس‌ها، توضیحات گزارش و تاریخچه تغییرات</li><li>کارنامه‌های ثابت و پشتیبان‌های داخلی</li></ul></section>' +
-      '<section class="wipe-backup"><h4>اول یک نسخه مستقل نگه دارید</h4><p>برنامه نصب‌شده و فایل‌های پشتیبان بیرون برنامه باقی می‌مانند. برای نگهداری اطلاعات همه دوره‌ها، پشتیبان کامل را دریافت کنید.</p><button type="button" class="ghost wipe-export" data-workspace-action="export-full">دریافت پشتیبان کامل سیستم</button></section>' +
+      "</span><div><h4>همه اطلاعات از این مرورگر پاک می‌شوند</h4><p>این عملیات تمام اطلاعات ذخیره‌شده داخل برنامه را حذف می‌کند.</p></div></section>" +
+      '<section class="wipe-scope" aria-label="اطلاعاتی که حذف می‌شوند"><h4>چه چیزهایی حذف می‌شوند؟</h4><ul><li>اطلاعات سال تحصیلی و هر دو ترم، مدرسه‌ها، کلاس‌ها و دانش‌آموزان</li><li>نمرات، جلسات و سوابق حضور و غیاب</li><li>پیش‌نویس‌ها، توضیحات گزارش و سوابق قدیمیِ موجود</li><li>کارنامه‌های ثابت و پشتیبان‌های داخلی</li></ul></section>' +
+      '<section class="wipe-backup"><h4>اول یک نسخه مستقل نگه دارید</h4><p>برنامه نصب‌شده و فایل‌های پشتیبان بیرون برنامه باقی می‌مانند. برای نگهداری کل اطلاعات، پشتیبان کامل را دریافت کنید.</p><button type="button" class="ghost wipe-export" data-workspace-action="export-full">دریافت پشتیبان کامل سیستم</button></section>' +
       '<div class="wipe-confirmation"><label for="wipeText">برای تأیید، «حذف» را بنویسید</label><input id="wipeText" autocomplete="off" spellcheck="false" aria-describedby="wipeError" placeholder="حذف"><label class="wipe-backup-check" for="wipeBackup"><input type="checkbox" id="wipeBackup"><span>پشتیبان مستقل موردنیاز را نگه داشته‌ام.</span></label></div>' +
       '<p id="wipeError" class="entity-create-error" role="alert"></p><div class="record-editor-actions wipe-actions"><button type="button" class="ghost" data-workspace-action="close">انصراف</button><button type="submit" class="danger">حذف کامل اطلاعات</button></div></form>',
   );
@@ -8351,19 +9029,16 @@ function installWorkspaceActions() {
     ["discard-drafts", () => discardDrafts()],
     ["review-drafts", () => reviewDrafts()],
     ["other-drafts", () => openOtherDrafts()],
-    ["new-period", () => openNewPeriod()],
-    ["create-period", () => createNewPeriod()],
+    ["create-period", () => createNewPeriod({ fromDialog: true })],
     ["reopen-period", () => reopenPeriod()],
     ["finalize-period", () => finalizePeriod()],
-    ["edit-period-label", () => editPeriodLabel()],
     ["new-second-period", (button) => openNewPeriod(button.dataset.key)],
-    ["delete-period", (button) => openDeletePeriod(button.dataset.key)],
-    ["confirm-delete-period", () => confirmDeletePeriod()],
     ["export-period", () => exportFullBackup()],
     ["export-full", () => exportFullBackup()],
     ["prepare-share-backup", () => openBackupShare()],
     ["share-backup-file", (button) => sharePreparedBackup(button)],
     ["download-share-backup", () => downloadPreparedBackup()],
+    ["download-safety", (button) => downloadLastSafetyBackup(button)],
     ["single-file-choose", () => chooseSingleFile()],
     ["single-file-save", () => resumeSingleFile()],
     ["single-file-stop", () => disableSingleFile()],
@@ -8385,6 +9060,12 @@ function installWorkspaceActions() {
     ["close", () => closeModal()],
     ["reload", () => location.reload()],
   ]);
+  if (globalThis.__EDU_TEST_MODE__) {
+    commands.set("delete-period", (button) =>
+      openDeletePeriod(button.dataset.key),
+    );
+    commands.set("confirm-delete-period", () => confirmDeletePeriod());
+  }
   function integer(value) {
     if (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value)))
       throw Error("پارامتر عملیات نامعتبر است.");
@@ -8456,7 +9137,7 @@ async function createEntityV24(event, kind) {
       target.view !== state.view ||
       (kind === "class" && target.schoolId !== state.schoolId)
     )
-      throw Error("دوره یا صفحه مقصد تغییر کرده است؛ ثبت انجام نشد.");
+      throw Error("ترم یا صفحه مقصد تغییر کرده است؛ ثبت انجام نشد.");
     const school = kind === "class" ? getSchool(target.schoolId) : null;
     if (kind === "class" && !school) throw Error("مدرسه مقصد وجود ندارد.");
     const peers = kind === "school" ? db.schools : school.classes;
@@ -8534,7 +9215,7 @@ function assertWorkspaceReadable() {
       "اطلاعات این پنجره قدیمی است؛ صفحه را دوباره بارگذاری و گزارش یا فرم را دوباره تهیه کنید.",
     );
   if (db.settings.password && !isAuthenticated)
-    throw Error("ابتدا وارد دوره شوید.");
+    throw Error("ابتدا وارد نوبت شوید.");
 }
 function assertWorkspaceContext(context, { write = false } = {}) {
   assertWorkspaceReadable();
@@ -8544,7 +9225,7 @@ function assertWorkspaceContext(context, { write = false } = {}) {
     context.revision !== workspace.revision
   )
     throw Error(
-      "دوره یا اطلاعات تغییر کرده است؛ فرم یا گزارش را دوباره باز کنید.",
+      "نوبت یا اطلاعات تغییر کرده است؛ فرم یا گزارش را دوباره باز کنید.",
     );
   if (write) assertEntityWritable();
 }
@@ -8556,7 +9237,7 @@ function markWorkspaceConflict() {
   }
   if (drafts.size) storeDrafts();
   const message =
-    "داده این دوره در تب دیگری تغییر کرد. پیش‌نویس محفوظ است؛ صفحه را دوباره بارگذاری کنید.";
+    "اطلاعات این نوبت در تب دیگری تغییر کرد. پیش‌نویس محفوظ است؛ صفحه را دوباره بارگذاری کنید.";
   setStatus(message, "error");
   lockControls();
   window.EduPeriodicReports?.invalidate(message);
@@ -8642,19 +9323,23 @@ function selectAnnualPeriods(catalog, periodIds, active) {
       );
     else
       throw Error(
-        "نوبت اول و دوم این سال مشخص نیست؛ وضعیت نوبت‌ها را در مدیریت نوبت‌های تحصیلی بررسی کنید.",
+        "نوبت اول و دوم این سال مشخص نیست؛ بخش «نوبت‌های سال تحصیلی» را بررسی کنید.",
       );
-    if (periods.some((row) => !row))
+    if (periods.some((row) => !row)) {
+      const missing = !periods[0] ? "اول" : "دوم";
       throw Error(
-        "برای گزارش سالانه، هر دو نوبت همین سال تحصیلی باید وجود داشته باشند؛ آن‌ها را انتخاب یا ایجاد کنید.",
+        "نوبت " +
+          missing +
+          " هنوز شروع نشده است؛ گزارش سالانه پس از شروع هر دو نوبت همین سال آماده می‌شود. بخش «نوبت‌های سال تحصیلی» را باز کنید.",
       );
+    }
   }
   // The legacy label fallback must obey the same role checks as an explicit
   // selection. A display label cannot override a saved annual-term role.
   for (let i = 0; i < periods.length; i++) {
     const kind = periods[i].termKind || academicTermKind(periods[i].term);
-    if (kind && kind !== ["first", "second"][i])
-      throw Error("نوع دوره انتخاب‌شده با نوبت اول/دوم مطابقت ندارد.");
+    if (kind !== ["first", "second"][i])
+      throw Error("نوبت انتخاب‌شده با نوبت اول/دوم مطابقت ندارد.");
   }
   return periods;
 }
@@ -8800,7 +9485,7 @@ async function prepareAnnualReportSnapshot(periodIds = {}) {
   await writer.catch(() => {});
   assertWorkspaceReadable();
   if (workspace.id !== origin)
-    throw Error("دوره تغییر کرد؛ گزارش سالانه را دوباره تهیه کنید.");
+    throw Error("نوبت تغییر کرد؛ گزارش سالانه را دوباره تهیه کنید.");
   const context = captureWorkspaceContext();
   const { periods, recordSets } = await readAnnualRecordSets(
     context,
@@ -8810,7 +9495,7 @@ async function prepareAnnualReportSnapshot(periodIds = {}) {
     period: {
       ...period,
       term: index === 0 ? "اول" : "دوم",
-      displayTerm: period.term,
+      displayTerm: index === 0 ? "اول" : "دوم",
     },
     data: decodeWorkspaceRecords(recordSets[index], { workspaceId: period.id })
       .data,
@@ -8884,14 +9569,23 @@ async function listAnnualReportPeriods() {
     context,
   );
   return rows
-    .filter((row) => row.year === workspace.year)
-    .map((row) => ({
-      id: row.id,
-      year: row.year,
-      term: row.term,
-      termKind: row.termKind || academicTermKind(row.term),
-      closed: row.closed,
-    }));
+    .filter(
+      (row) =>
+        row.year === workspace.year &&
+        ["first", "second"].includes(
+          row.termKind || academicTermKind(row.term),
+        ),
+    )
+    .map((row) => {
+      const termKind = row.termKind || academicTermKind(row.term);
+      return {
+        id: row.id,
+        year: row.year,
+        term: termKind === "first" ? "اول" : "دوم",
+        termKind,
+        closed: row.closed,
+      };
+    });
 }
 async function prepareReportSnapshot({ annual = false, periodIds } = {}) {
   if (annual) return prepareAnnualReportSnapshot(periodIds);
@@ -8901,7 +9595,7 @@ async function prepareReportSnapshot({ annual = false, periodIds } = {}) {
   await writer.catch(() => {});
   assertWorkspaceReadable();
   if (workspace.id !== origin)
-    throw Error("دوره هنگام تهیه گزارش تغییر کرد؛ گزارش را دوباره باز کنید.");
+    throw Error("نوبت هنگام تهیه گزارش تغییر کرد؛ گزارش را دوباره باز کنید.");
   const context = captureWorkspaceContext();
   const tx = connection.transaction(["catalog", "records"], "readonly"),
     done = transactionDone(tx);
@@ -8919,6 +9613,11 @@ async function prepareReportSnapshot({ annual = false, periodIds } = {}) {
     rows.filter((row) => row.workspace === context.id),
     { workspaceId: context.id },
   ).data;
+  // A report labels the fixed term role without relabeling stored metadata or
+  // reading another term's data. Legacy titles remain intact in the database.
+  data.settings.academicTerm =
+    { first: "اول", second: "دوم" }[live.termKind] ||
+    data.settings.academicTerm;
   return { context, data };
 }
 // Source: src/workspace/settings/editor.js
@@ -8940,13 +9639,21 @@ async function openSettingsV24() {
       await writer.catch(() => {});
     }
     if (origin !== workspace?.id || connection !== sourceConnection)
-      throw Error("دوره تغییر کرده است؛ تنظیمات را دوباره باز کنید.");
+      throw Error("ترم تغییر کرده است؛ تنظیمات را دوباره باز کنید.");
     const context = captureWorkspaceContext();
     const opened = showModal(
-      "تنظیمات دوره",
+      "تنظیمات ورود",
       '<form id="settingsEditor" class="record-editor settings-editor" novalidate>' +
-        '<div class="record-editor-context settings-context"><span class="settings-eyebrow">دسترسی به دوره</span><h4>رمز ورود</h4><p>' +
-        esc((workspace?.year || "") + " / " + (workspace?.term || "")) +
+        '<div class="record-editor-context settings-context"><span class="settings-eyebrow">دسترسی به اطلاعات</span><h4>رمز ورود</h4><p>' +
+        esc(
+          (workspace?.year || "") +
+            " / " +
+            ({ first: "ترم اول", second: "ترم دوم" }[
+              workspace?.termKind || academicTermKind(workspace?.term || "")
+            ] ||
+              workspace?.term ||
+              ""),
+        ) +
         '</p><span class="settings-password-state' +
         (db.settings.password ? " is-enabled" : "") +
         '">' +
@@ -8954,7 +9661,7 @@ async function openSettingsV24() {
         "</span></div>" +
         '<section class="settings-section" aria-labelledby="settingsPasswordTitle"><h5 id="settingsPasswordTitle">' +
         (db.settings.password ? "تغییر رمز" : "افزودن رمز") +
-        "</h5><p>این رمز فقط برای ورود به همین دوره استفاده می‌شود.</p>" +
+        "</h5><p>این رمز برای ورود به اطلاعات ترم فعلی است؛ رمزهای ثبت‌شدهٔ قبلی بدون تغییر حفظ می‌شوند.</p>" +
         '<label class="course-field" for="newPass">رمز جدید<input type="password" id="newPass" autocomplete="new-password" aria-describedby="settingsHint settingsError" placeholder="رمز جدید را وارد کنید"></label>' +
         '<p id="settingsHint" class="settings-field-hint">اگر این کادر را خالی بگذارید، رمز فعلی تغییر نمی‌کند.</p></section>' +
         '<section class="settings-remove-section" aria-label="حذف رمز"><label class="settings-remove-option"><input type="checkbox" id="removePassword" aria-describedby="settingsRemoveHint"><span>حذف رمز ورود<small id="settingsRemoveHint">برای ورود بدون رمز، این گزینه را انتخاب و کادر رمز جدید را خالی کنید.</small></span></label></section>' +
@@ -8987,9 +9694,15 @@ async function saveSettingsV24() {
   if (!form) return false;
   const context = settingsEditing,
     sourceConnection = connection,
+    sourceData = db,
+    sourcePassword = db.settings.password,
+    sourceAuthentication = isAuthenticated,
     passwordInput = form.querySelector("#newPass");
   const password = passwordInput.value,
     remove = form.querySelector("#removePassword").checked;
+  let passwordWritePending = false,
+    temporaryAuthentication = false,
+    assignedPassword;
   settingsSaving = true;
   const finish = beginRecordEditorSave(form);
   try {
@@ -9020,10 +9733,19 @@ async function saveSettingsV24() {
         : db.settings.password;
     check();
     if (nextPassword !== db.settings.password) {
+      // Adding the first password must not lock out its already-open session
+      // while the guarded write is pending. A failed write restores that state.
+      if (!sourcePassword) {
+        isAuthenticated = true;
+        temporaryAuthentication = true;
+      }
+      assignedPassword = nextPassword;
       db.settings.password = nextPassword;
+      passwordWritePending = true;
       await saveDBV24({
-        action: remove ? "حذف رمز ورود دوره" : "تغییر رمز ورود دوره",
+        action: remove ? "حذف رمز ورود ترم" : "تغییر رمز ورود ترم",
       });
+      passwordWritePending = false;
     }
     if (
       settingsEditing !== context ||
@@ -9042,9 +9764,18 @@ async function saveSettingsV24() {
     rememberRecordEditor();
     settingsEditing = null;
     closeModal();
-    setStatus("تنظیمات این دوره ذخیره شد.", "saved");
+    setStatus("تنظیمات ورود ذخیره شد.", "saved");
     return true;
   } catch (error) {
+    if (
+      passwordWritePending &&
+      workspace.id === context?.id &&
+      connection === sourceConnection
+    ) {
+      if (db === sourceData && db.settings.password === assignedPassword)
+        db.settings.password = sourcePassword;
+      if (temporaryAuthentication) isAuthenticated = sourceAuthentication;
+    }
     if (!showRecordEditorError(error, "settingsError")) handleError(error);
     return false;
   } finally {
@@ -9065,7 +9796,9 @@ function assertEntityWritable() {
     blocked ||
     workspace?.closed
   )
-    throw Error("دوره فعلی قابل ویرایش نیست.");
+    throw Error("ترم فعلی قابل ویرایش نیست.");
+  if (db.settings.password && !isAuthenticated)
+    throw Error("ابتدا وارد ترم شوید.");
 }
 async function openEntityEditor(kind, id, schoolId = "") {
   const requestedWorkspace = workspace?.id;
@@ -9073,7 +9806,7 @@ async function openEntityEditor(kind, id, schoolId = "") {
   await flushDrafts({ strict: true });
   assertEntityWritable();
   if (requestedWorkspace !== workspace.id)
-    throw Error("دوره هنگام باز شدن فرم تغییر کرد؛ دوباره ویرایش را باز کنید.");
+    throw Error("ترم هنگام باز شدن فرم تغییر کرد؛ دوباره ویرایش را باز کنید.");
   if (!["school", "class"].includes(kind))
     throw Error("نوع اطلاعات نامعتبر است.");
   const school = kind === "school" ? getSchool(id) : getSchool(schoolId);
@@ -9150,7 +9883,7 @@ async function saveEntityEditor() {
     await flushDrafts({ strict: true });
     assertEntityWritable();
     if (edit.workspace !== workspace.id || edit.revision !== workspace.revision)
-      throw Error("دوره یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.");
+      throw Error("ترم یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.");
     const school = getSchool(edit.schoolId);
     const item =
       edit.kind === "school"
@@ -9212,7 +9945,7 @@ async function openMembership(action, studentId) {
       origin.schoolId !== state.schoolId ||
       origin.classId !== state.classId
     )
-      throw Error("صفحه یا دوره تغییر کرده است؛ عملیات را دوباره باز کنید.");
+      throw Error("صفحه یا ترم تغییر کرده است؛ عملیات را دوباره باز کنید.");
     const c = getClassObj(origin.schoolId, origin.classId);
     const student = (
       action === "restore" ? c?.archivedStudents : c?.students
@@ -9341,7 +10074,7 @@ async function saveMembership(mode = "") {
         context.workspace !== workspace.id ||
         context.revision !== workspace.revision
       )
-        throw Error("دوره یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.");
+        throw Error("ترم یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.");
       const c = getClassObj(context.schoolId, context.classId);
       const student = (
         context.action === "restore" ? c?.archivedStudents : c?.students
@@ -9518,7 +10251,7 @@ function openDeletion(kind, id) {
       count(sessions, "جلسه") +
       count(slots, "زنگ برنامه هفتگی") +
       '</ul><p class="deletion-backup-note">' +
-      "پیش از حذف، پشتیبان کامل سیستم در «پشتیبان و بازیابی» ذخیره می‌شود. برای بازگردانی از همین پشتیبان کامل استفاده کنید؛ پشتیبان داخلی جای فایل مستقل را نمی‌گیرد." +
+      "پیش از حذف، یک نسخهٔ ایمنی کامل ذخیره می‌شود. در «پشتیبان و بازیابی ← نسخهٔ ایمنی آخرین عملیات» فایل آن را دریافت و برای بازگردانی از «بازیابی از فایل» استفاده کنید. نسخهٔ داخلی جای فایل مستقل شما را نمی‌گیرد." +
       "</p>" +
       '<label class="deletion-confirm" for="deleteEntityName">برای تأیید، نام ' +
       label +
@@ -9561,7 +10294,7 @@ async function confirmDeletion() {
         context.revision !== workspace.revision
       )
         throw Error(
-          "اطلاعات یا دوره تغییر کرده است؛ پنجره حذف را دوباره باز کنید.",
+          "اطلاعات یا ترم تغییر کرده است؛ پنجره حذف را دوباره باز کنید.",
         );
       return deletionTarget(
         context.kind,
@@ -9589,34 +10322,9 @@ async function confirmDeletion() {
       directoryRevisions = full.stores.catalog
         .filter((period) => period.year === workspace.year)
         .map(({ id, year, revision }) => ({ id, year, revision }));
-      const backupTx = sourceConnection.transaction("backups", "readwrite"),
-        done = transactionDone(backupTx),
-        store = backupTx.objectStore("backups");
-      let backupFailure;
-      const existing = store.getAll();
-      existing.onsuccess = () => {
-        try {
-          const previous = existing.result
-            .filter((row) => row.full)
-            .sort((a, b) => b.at.localeCompare(a.at));
-          for (const row of previous.slice(7)) store.delete(row.id);
-          store.put({
-            id: "before-shared-delete-" + uid(),
-            workspace: null,
-            at: new Date().toISOString(),
-            label: "پیش از حذف: " + target.item.name,
-            full,
-          });
-        } catch (error) {
-          backupFailure = error;
-          backupTx.abort();
-        }
-      };
-      try {
-        await done;
-      } catch (error) {
-        throw backupFailure || error;
-      }
+      await putSafetySnapshot(full, "پیش از حذف: " + target.item.name, {
+        idPrefix: "before-shared-delete-",
+      });
     }
     target = check();
     const name = target.item.name;
@@ -9666,7 +10374,7 @@ async function confirmDeletion() {
     render();
     closeModal();
     setStatus(
-      "حذف انجام شد؛ پشتیبان کامل پیش از حذف در «پشتیبان و بازیابی» در دسترس است.",
+      "حذف انجام شد؛ فایل پیش از حذف در «پشتیبان و بازیابی ← نسخهٔ ایمنی آخرین عملیات» قابل دریافت است. برای بازگردانی از «بازیابی از فایل» استفاده کنید.",
       "saved",
     );
   } catch (error) {
@@ -9780,7 +10488,12 @@ function installRuntimeAPI() {
       pendingDrafts: drafts.size,
       closed: !!workspace?.closed,
       year: workspace?.year || "",
-      term: workspace?.term || "",
+      term:
+        { first: "اول", second: "دوم" }[
+          workspace?.termKind || academicTermKind(workspace?.term || "")
+        ] ||
+        workspace?.term ||
+        "",
       ready: ready && !periodLoading,
       blocked,
       retired: connectionRetired,
@@ -9790,6 +10503,7 @@ function installRuntimeAPI() {
     }),
     prepareReportSnapshot,
     renderAcademicKarnameh,
+    openKarnamehStudent,
     listAnnualReportPeriods,
     assessmentResult,
     annualGradeRows,
@@ -9807,6 +10521,7 @@ function installRuntimeAPI() {
     openBackupShare,
     sharePreparedBackup,
     downloadPreparedBackup,
+    downloadLastSafetyBackup,
     snapshotInstallation,
     validateFullBackup,
     previewFullBackup,
@@ -9816,13 +10531,11 @@ function installRuntimeAPI() {
     openPeriods,
     switchPeriod,
     openNewPeriod,
-    createNewPeriod,
-    editPeriodLabel,
-    savePeriodLabel,
     finalizePeriod,
     reopenPeriod,
     showFrozenReport,
     printReport,
+    copyReport: copyReportV24,
     preparePrint,
     commitCSV,
     saveStudent,
@@ -9835,6 +10548,23 @@ function installRuntimeAPI() {
     saveDB: saveDBV24,
     bootstrap: bootstrapV24,
     test: {
+      prepareLegacyPeriodFixture: () => {
+        if (!globalThis.__EDU_TEST_MODE__) throw Error("فقط در حالت آزمون");
+        // Old-format catalogs are synthetic compatibility fixtures, not a
+        // second year-management interface available to application users.
+        return showModal(
+          "Synthetic legacy catalog fixture",
+          '<input id="periodYear"><select id="periodTerm"><option>اول</option><option>دوم</option></select>',
+        );
+      },
+      createLegacyPeriod: () => {
+        if (!globalThis.__EDU_TEST_MODE__) throw Error("فقط در حالت آزمون");
+        return createNewPeriod();
+      },
+      openLegacyPeriodDeletion: (id) => {
+        if (!globalThis.__EDU_TEST_MODE__) throw Error("فقط در حالت آزمون");
+        return openDeletePeriod(id);
+      },
       getState: () => ({
         db,
         ready,
@@ -10054,13 +10784,19 @@ function preferredPeriod() {
   }
 }
 
-function rememberPeriod(id) {
+function rememberPeriod(id, year) {
   try {
     sessionStorage.setItem("Edu24.activePeriod", id);
   } catch (ignore) {}
   try {
     localStorage.setItem("Edu24.activePeriod", id);
   } catch (ignore) {}
+  const selectedYear =
+    year ||
+    (typeof workspace !== "undefined" && workspace?.id === id
+      ? workspace.year
+      : null);
+  if (selectedYear) rememberAcademicYear(selectedYear);
 }
 
 async function claimTab() {
@@ -10361,7 +11097,7 @@ function validateCourse(l, ids, year) {
     EduPolicy.validate(l.gradingPolicy);
     if (l.gradingPolicy.year !== year)
       throw Error(
-        "سال قواعد درس با دوره تحصیلی یکسان نیست؛ برای سال جدید دوره مستقل بسازید.",
+        "سال قواعد درس با سال تحصیلی برنامه یکسان نیست؛ تنظیمات درس را بررسی کنید.",
       );
     const p = l.gradingPolicy;
     if ((l.gradeMode === "kardanesh") !== (p.method === "dual"))

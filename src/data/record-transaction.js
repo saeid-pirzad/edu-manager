@@ -19,6 +19,8 @@ globalThis.EduRecordTransaction = Object.freeze({
     historicalRoster,
     directorySourceUpdates,
     directoryRevisions,
+    recoveredUndo,
+    restoredSessionRecords,
   }) {
     const directoryTransaction = globalThis.EduAcademicDirectoryTransaction;
     if (directoryTransaction?.hasChanges({ records, changed, removed, before }))
@@ -39,6 +41,8 @@ globalThis.EduRecordTransaction = Object.freeze({
         historicalRoster,
         directorySourceUpdates,
         directoryRevisions,
+        recoveredUndo,
+        restoredSessionRecords,
       });
     // Compare against the request's original catalog, not a live UI object
     // that can change before IndexedDB delivers its callbacks.
@@ -63,6 +67,13 @@ globalThis.EduRecordTransaction = Object.freeze({
     };
     try {
       const catalog = tx.objectStore("catalog"),
+        sessionSlots = globalThis.EduSessionSlots,
+        sessionChanges = sessionSlots?.changes({
+          changed,
+          before,
+          removed,
+          restoredRecords: restoredSessionRecords,
+        }),
         sourceMeta = records.get("meta"),
         meta = sourceMeta ? { settings: { ...sourceMeta.settings } } : null,
         sourceLayout = sourceMeta?.layout
@@ -98,7 +109,10 @@ globalThis.EduRecordTransaction = Object.freeze({
           meta &&
           (meta.settings?.academicYear !== workspace.year ||
             meta.settings?.academicTerm !== workspace.term),
-        labels = labelChanged || annualPlans.length ? catalog.getAll() : null,
+        labels =
+          labelChanged || annualPlans.length || sessionChanges?.guarded.length
+            ? catalog.getAll()
+            : null,
         get = catalog.get(workspace.id);
       get.onsuccess = () => {
         try {
@@ -121,6 +135,52 @@ globalThis.EduRecordTransaction = Object.freeze({
             labelConflict = true;
             tx.abort();
             return;
+          }
+          if (sessionChanges?.guarded.length) {
+            const year = meta?.settings?.academicYear ?? live.year,
+              family = labels.result.filter(
+                (row) =>
+                  row.id === live.id ||
+                  (row.year === year &&
+                    ["first", "second"].includes(
+                      row.termKind || academicTermKind(row.term),
+                    )),
+              ),
+              parts = [];
+            let pending = family.length;
+            // Reads share the write transaction's lock with every competing
+            // term save. A peer cannot insert the same slot after this check
+            // but before our write commits; any conflict aborts all stores.
+            for (const period of family) {
+              const request = tx
+                .objectStore("records")
+                .getAll(
+                  IDBKeyRange.bound(
+                    period.id + "|session:",
+                    period.id + "|session;",
+                    false,
+                    true,
+                  ),
+                );
+              request.onsuccess = () => {
+                try {
+                  parts.push({
+                    id: period.id,
+                    records: new Map(
+                      request.result.map((row) => [row.logical, row.value]),
+                    ),
+                  });
+                  if (!--pending)
+                    sessionSlots.assertAvailable(
+                      sessionChanges,
+                      live.id,
+                      parts,
+                    );
+                } catch (error) {
+                  abortQueue(error);
+                }
+              };
+            }
           }
           for (const [logical, json] of changed)
             tx.objectStore("records").put({
@@ -282,7 +342,7 @@ globalThis.EduRecordTransaction = Object.freeze({
     } catch (e) {
       if (labelConflict)
         throw Error(
-          "دوره دیگری با همین سال و عنوان نوبت وجود دارد؛ عنوان متمایز انتخاب کنید.",
+          "ترم دیگری با همین سال و عنوان نوبت وجود دارد؛ عنوان متمایز انتخاب کنید.",
           { cause: e },
         );
       if (conflict) {

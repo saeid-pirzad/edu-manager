@@ -11,7 +11,7 @@ async function commitRecords(
 ) {
   if (blocked) throw Error("ذخیره مسدود است؛ صفحه را دوباره بارگذاری کنید.");
   if (workspace.closed && !allowClosed)
-    throw Error("این دوره بسته است؛ ابتدا آن را بازگشایی کنید.");
+    throw Error("این ترم بسته است؛ ابتدا آن را بازگشایی کنید.");
   const sourceWorkspace = workspace,
     sourceRevision = workspace.revision,
     sourceConnection = connection,
@@ -95,6 +95,8 @@ async function commitRecords(
       historicalRoster,
       directorySourceUpdates,
       directoryRevisions,
+      recoveredUndo: historicalUndo?.recoveredPeers,
+      restoredSessionRecords: historicalRecords,
     });
   } catch (error) {
     if (error.code === "WORKSPACE_CONFLICT" && isCurrentCommit())
@@ -134,7 +136,7 @@ async function commitRecords(
 function saveDBV24(scope = {}) {
   if (periodLoading)
     return Promise.reject(
-      Error("دوره در حال خواندن است؛ پس از پایان جابه‌جایی دوباره تلاش کنید."),
+      Error("ترم در حال خواندن است؛ پس از پایان جابه‌جایی دوباره تلاش کنید."),
     );
   if (resetBusy || connectionRetired)
     return Promise.reject(Error("ثبت هنگام پاک‌سازی یا تغییر بانک متوقف است."));
@@ -144,6 +146,8 @@ function saveDBV24(scope = {}) {
         "برای ویرایش، نسخه نصب‌شده برنامه یا نشانی HTTPS آن را باز کنید. حالت فایل فقط برای انتقال سوابق است.",
       ),
     );
+  if (db.settings?.password && !isAuthenticated)
+    return Promise.reject(Error("ابتدا وارد ترم شوید؛ تغییر ثبت نشد."));
   const generation = writeFailureGeneration,
     targetWorkspace = workspace?.id,
     targetConnection = connection;
@@ -163,7 +167,9 @@ function saveDBV24(scope = {}) {
           "ثبت قبلی ناموفق بود؛ این درخواست هم ثبت نشده است. تغییر را دوباره اعمال کنید.",
         );
       if (!isCurrentTarget())
-        throw Error("دوره یا اتصال بانک تغییر کرده است؛ این درخواست ثبت نشد.");
+        throw Error("ترم یا اتصال بانک تغییر کرده است؛ این درخواست ثبت نشد.");
+      if (db.settings?.password && !isAuthenticated)
+        throw Error("ابتدا وارد ترم شوید؛ تغییر ثبت نشد.");
       checkScope(scope);
       refreshAcademicYearWarnings(db);
       await commitRecords(collectRecords(db, scope), {

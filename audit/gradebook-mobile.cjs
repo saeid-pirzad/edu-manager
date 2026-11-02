@@ -2,10 +2,10 @@
 const { main } = require("./data-integrity.cjs");
 async function gradebookSetup() {
   closeModal();
-  await EduV24.openNewPeriod();
+  await EduV24.test.prepareLegacyPeriodFixture();
   document.getElementById("periodYear").value = "1422-1423";
   document.getElementById("periodTerm").value = "اول";
-  await EduV24.createNewPeriod();
+  await EduV24.test.createLegacyPeriod();
   const school = db.schools[0];
   const classroom = school.classes[0];
   const lesson = classroom.lessons.find(
@@ -102,12 +102,7 @@ if (require.main === module)
   main({
     stage: "gradebook-mobile-layout",
     runExtra: async ({ cdp, evaluate, cases, delay }) => {
-      await cdp("Page.reload", { ignoreCache: true });
-      for (let i = 0; i < 150; i++) {
-        if (await evaluate("!!globalThis.EduV24?.getReportContext?.().ready"))
-          break;
-        await delay(100);
-      }
+      await require("./browser-ready.cjs")({ cdp, evaluate, delay });
       const lessonId = await evaluate("(" + gradebookSetup.toString() + ")()");
       for (const modal of [false, true]) {
         await cdp("Emulation.setTouchEmulationEnabled", { enabled: false });

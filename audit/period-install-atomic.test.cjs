@@ -110,7 +110,7 @@ test("period installation propagates asynchronous transaction failure", async ()
 test("duplicate period aborts before any catalog or record write", async () => {
   const f = fixture();
   f.request.result = [{ year: "1405-1406", term: " اول " }];
-  await assert.rejects(f.c.installWorkspace(f.data, {}), /دوره دیگری/);
+  await assert.rejects(f.c.installWorkspace(f.data, {}), /ترم دیگری/);
   assert.equal(f.aborted, 1);
   assert.equal(f.committed.length, 0);
 });
@@ -143,7 +143,7 @@ test("a promoted recovery version blocks creation of a second primary source for
       reportSource: "primary",
     },
   ];
-  await assert.rejects(f.c.installWorkspace(f.data, {}), /دوره دیگری/);
+  await assert.rejects(f.c.installWorkspace(f.data, {}), /ترم دیگری/);
   assert.equal(f.committed.length, 0);
 });
 test("second-term installation rechecks first-term closure and revision in its write transaction", async () => {
@@ -156,9 +156,53 @@ test("second-term installation rechecks first-term closure and revision in its w
       term: "دوم",
       requireSequence: true,
       firstRevision: 1,
+      source: { id: "first", revision: 2 },
     }),
     /تغییر/,
   );
   assert.equal(f.aborted, 1);
   assert.equal(f.committed.length, 0);
+});
+
+for (const state of ["changed", "deleted", "missing-source"]) {
+  test(`new-year installation aborts before writing when its source is ${state}`, async () => {
+    const f = fixture();
+    f.request.result =
+      state === "deleted"
+        ? []
+        : [{ id: "source", year: "1405-1406", term: "دوم", revision: 2 }];
+    await assert.rejects(
+      f.c.installWorkspace(f.data, {
+        year: "1406-1407",
+        term: "اول",
+        requireSequence: true,
+        ...(state === "missing-source"
+          ? {}
+          : { source: { id: "source", revision: 1 } }),
+      }),
+      (error) =>
+        error.code === "WORKSPACE_CONFLICT" && /مبدأ/.test(error.message),
+    );
+    assert.equal(f.aborted, 1);
+    assert.equal(f.committed.length, 0);
+  });
+}
+test("new-year installation commits only from the exact live source revision", async () => {
+  const f = fixture(),
+    source = { id: "source", revision: 2 };
+  f.request.result = [
+    { ...source, year: "1405-1406", term: "دوم", closed: true },
+  ];
+  const pending = f.c.installWorkspace(f.data, {
+    year: "1406-1407",
+    term: "اول",
+    requireSequence: true,
+    source,
+  });
+  // Later changes to a caller-owned options object cannot change the guard.
+  source.revision = 3;
+  const installed = await pending;
+  assert.equal(installed.year, "1406-1407");
+  assert.equal(f.committed.length, 3);
+  assert.equal(f.aborted, 0);
 });

@@ -9,8 +9,12 @@ const read = (name) =>
 function fixture() {
   const context = vm.createContext({
     workspace: { id: "one", revision: 1 },
+    connection: {},
+    writer: Promise.resolve(),
     state: { schoolId: "school", classId: "class" },
     assertWorkspaceReadable() {},
+    readLatestSafetyBackup: async () => null,
+    safetyBackupPanel: () => "",
   });
   vm.runInContext(read("core/async-target.js"), context);
   return context;
@@ -21,13 +25,13 @@ test("async target tolerates own revision changes but rejects workspace drift", 
   context.workspace.revision++;
   assert.doesNotThrow(check);
   context.workspace = { id: "two", revision: 1 };
-  assert.throws(check, /دوره یا کلاس/);
+  assert.throws(check, /ترم یا کلاس/);
 });
 test("class-scoped async target rejects selection drift and rechecks readability", () => {
   const context = fixture(),
     check = context.preserveAsyncTarget({ classScoped: true });
   context.state.classId = "another";
-  assert.throws(check, /دوره یا کلاس/);
+  assert.throws(check, /ترم یا کلاس/);
   context.state.classId = "class";
   context.assertWorkspaceReadable = () => {
     throw Error("locked");
@@ -49,7 +53,7 @@ test("bulk grade editor cannot open a different class after waiting for drafts",
   context.getLessonObj = (classroom) => classroom.lessons[0];
   context.buildKardaneshEditor = () => "wrong class editor";
   vm.runInContext(read("grading/editors.js"), context);
-  await assert.rejects(context.openBulkV24("lesson"), /دوره یا کلاس/);
+  await assert.rejects(context.openBulkV24("lesson"), /ترم یا کلاس/);
   assert.equal(opened, false);
 });
 test("backup dialog rejects workspace navigation during storage estimate", async () => {
@@ -71,11 +75,11 @@ test("backup dialog rejects workspace navigation during storage estimate", async
     opened = true;
   };
   vm.runInContext(read("backups/period-import.js"), context);
-  await assert.rejects(context.openBackups(), /دوره یا کلاس/);
+  await assert.rejects(context.openBackups(), /ترم یا کلاس/);
   assert.equal(opened, false);
 });
 
-test("backup dialog offers file workflows without reading or rendering internal snapshots", async () => {
+test("backup dialog offers file workflows without introducing internal version management", async () => {
   const context = fixture();
   let html;
   context.writer = Promise.resolve();
@@ -109,6 +113,14 @@ test("period dialog rejects a switch between catalog and report reads", async ()
   const context = fixture();
   let opened = false;
   context.flushDrafts = async () => {};
+  context.captureWorkspaceContext = () => ({ ...context.workspace });
+  context.assertWorkspaceContext = (expected) => {
+    if (
+      context.workspace.id !== expected.id ||
+      context.workspace.revision !== expected.revision
+    )
+      throw Error("ترم یا کلاس هنگام آماده‌سازی تغییر کرد");
+  };
   context.esc = String;
   context.allFrom = async (store) => {
     if (store === "reports") context.workspace = { id: "two" };
@@ -118,6 +130,6 @@ test("period dialog rejects a switch between catalog and report reads", async ()
     opened = true;
   };
   vm.runInContext(read("periods/switch-create.js"), context);
-  await assert.rejects(context.openPeriods(), /دوره یا کلاس/);
+  await assert.rejects(context.openPeriods(), /ترم یا کلاس/);
   assert.equal(opened, false);
 });

@@ -271,7 +271,7 @@ function renderDashboardWork() {
     {
       count: model.grading.incomplete,
       label: "نمره ناتمام",
-      detail: "هنرجوـدرس در دوره جاری",
+      detail: "هنرجوـدرس در ترم جاری",
       tone: "indigo",
       action: model.grading.firstIncompleteClassId ? "grades" : "",
       key: model.grading.firstIncompleteClassId,
@@ -350,7 +350,7 @@ function renderDashboardWork() {
         (item.session
           ? "مشاهده جلسه"
           : model.closed
-            ? "دوره بسته است"
+            ? "ترم بسته است"
             : "ثبت جلسه") +
         "</button></article>";
   return html + "</section></section>";

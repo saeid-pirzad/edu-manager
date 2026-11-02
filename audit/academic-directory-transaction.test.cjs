@@ -47,9 +47,11 @@ function fixture({
   emptyGrades = false,
   legacySession = false,
   failCompanionWrite = false,
+  recoveredStudent = false,
 } = {}) {
   const c = vm.createContext({
     structuredClone,
+    Map,
     IDBKeyRange: { bound: (lower, upper) => ({ lower, upper }) },
   });
   for (const source of [
@@ -61,6 +63,7 @@ function fixture({
     "legacy/students/roster.js",
     "data/academic-directory-transaction.js",
     "data/record-transaction.js",
+    "validation/undo.js",
   ])
     vm.runInContext(
       fs.readFileSync(path.join(__dirname, "../src", source), "utf8"),
@@ -111,6 +114,11 @@ function fixture({
         ...extra,
       },
       cls = classroom({ empty: emptyGrades });
+    if (recoveredStudent)
+      Object.assign(cls.students[0], {
+        name: "دانش‌آموز بازیابی‌شده (a)",
+        recovered: true,
+      });
     stores.catalog.set(id, period);
     stores.undo.set(id, { id, action: "before" });
     const data = {
@@ -130,6 +138,40 @@ function fixture({
             ]
           : [],
     };
+    if (recoveredStudent) {
+      data.migrationWarnings = [
+        "نام دانش‌آموز a در شبکه نیازمند بررسی است.",
+        "نام دانش‌آموز ab در شبکه نیازمند بررسی است.",
+        "هشدار مستقل برای a حفظ شود.",
+      ];
+      data.sessions.push({
+        id: "recovered-session",
+        schoolId: "school",
+        classId: "class",
+        lessonId: "lesson",
+        date: "2026-10-31",
+        period: 0,
+        attendance: { a: "absent", b: "present" },
+        scores: [],
+        roster: [
+          clone(cls.students[0]),
+          { ...clone(cls.students[1]), name: "نام تاریخی واقعی" },
+        ],
+      });
+      data.sessions.push({
+        ...clone(data.sessions[data.sessions.length - 1]),
+        id: "genuine-history",
+        period: 1,
+        roster: [
+          {
+            ...clone(cls.students[0]),
+            name: "نام واقعی قبلی همین هنرجو",
+            recovered: false,
+          },
+        ],
+        attendance: { a: "absent" },
+      });
+    }
     for (const [logical, value] of codec.collectRecords(data))
       stores.records.set(id + "|" + logical, {
         key: id + "|" + logical,
@@ -260,6 +302,215 @@ function fixture({
   const value = (id, logical = "class:class") =>
     stores.records.get(id + "|" + logical)?.value;
   return { c, stores, reads, writes, args, old, current, commit, value };
+}
+
+function repairRecoveredStudent(f) {
+  const session = clone(f.value("first", "session:recovered-session"));
+  f.c.db = {
+    schools: [{ classes: [f.current] }],
+    sessions: [session],
+    migrationWarnings: clone(f.value("first", "meta").migrationWarnings),
+  };
+  f.c.knownStudents = (cls) => [
+    ...cls.students,
+    ...(cls.archivedStudents || []),
+  ];
+  vm.runInContext(
+    fs.readFileSync(
+      path.join(__dirname, "../src/workspace/students/editor.js"),
+      "utf8",
+    ),
+    f.c,
+  );
+  f.c.applyStudentIdentity(f.current, f.current.students[0], {
+    name: "نام اصلاح‌شده",
+    code: "1",
+  });
+  f.args.records.get("meta").migrationWarnings = f.c.db.migrationWarnings;
+  f.args.records.set("session:recovered-session", session);
+  f.args.changed.push(
+    ["meta", JSON.stringify(f.args.records.get("meta"))],
+    ["session:recovered-session", JSON.stringify(session)],
+  );
+}
+
+function undoRecoveredStudent(f, saved = null) {
+  const undo = saved || JSON.parse(JSON.stringify(f.stores.undo.get("first"))),
+    records = new Map(
+      [...f.stores.records.values()]
+        .filter((row) => row.workspace === "first")
+        .map((row) => [row.logical, clone(row.value)]),
+    ),
+    period = clone(f.stores.catalog.get("first")),
+    candidate = f.c.EduUndoValidator.validate(undo, records, period, {
+      assertSafeDataTree() {},
+      isDataObject: (value) =>
+        value !== null && typeof value === "object" && !Array.isArray(value),
+      isSafeRecordId: (value) =>
+        typeof value === "string" && /^[A-Za-z0-9_-]{1,120}$/.test(value),
+      clone,
+      logicalRecordType: (key) => {
+        if (key !== "meta" && !/^(class|session):[A-Za-z0-9_-]+$/.test(key))
+          throw Error("invalid key");
+      },
+      validateLogicalValue: (key, value) => {
+        if (key !== "meta" && key.split(":")[1] !== value?.id)
+          throw Error("invalid record");
+      },
+      decodeWorkspaceRecords: f.args.decodeRecords,
+    }),
+    plan = f.c.EduRecordCommitPlan.create(
+      candidate,
+      new Map([...records].map(([key, value]) => [key, JSON.stringify(value)])),
+      { replace: true },
+    );
+  Object.assign(f.args, plan, {
+    records: candidate,
+    workspace: period,
+    keepUndo: false,
+    recoveredUndo: undo.recoveredPeers,
+    annualChanged: [],
+    directorySourceUpdates: [],
+  });
+  return f.commit();
+}
+
+test("recovered-name repair reaches historical placeholders in closed peer terms and their reports only", async () => {
+  const f = fixture({ recoveredStudent: true }),
+    otherYear = clone(f.value("other-year", "session:recovered-session")),
+    genuineHistory = clone(f.value("second", "session:genuine-history")),
+    grades = ["first", "second"].map((id) =>
+      JSON.stringify(f.value(id).lessons),
+    );
+  repairRecoveredStudent(f);
+  await f.commit();
+  for (const [index, id] of ["first", "second"].entries()) {
+    const student = f.value(id).students[0],
+      session = f.value(id, "session:recovered-session");
+    assert.equal(student.name, "نام اصلاح‌شده");
+    assert.equal(student.recovered, false);
+    assert.equal(session.roster[0].name, "نام اصلاح‌شده");
+    assert.equal(session.roster[0].recovered, false);
+    assert.equal(session.roster[1].name, "نام تاریخی واقعی");
+    assert.equal(JSON.stringify(f.value(id).lessons), grades[index]);
+    assert.deepEqual(plain(f.value(id, "meta").migrationWarnings), [
+      "نام دانش‌آموز ab در شبکه نیازمند بررسی است.",
+      "هشدار مستقل برای a حفظ شود.",
+    ]);
+  }
+  assert.equal(f.stores.catalog.get("second").closed, true);
+  assert.deepEqual(
+    clone(f.value("second", "session:genuine-history")),
+    genuineHistory,
+  );
+  assert.deepEqual(
+    clone(f.value("other-year", "session:recovered-session")),
+    otherYear,
+  );
+  const report = vm.createContext({
+    range: () => ({ start: "2026-10-31", end: "2026-10-31" }),
+    isoDate: (value) => new Date(value),
+    addDays: (value) => value,
+  });
+  vm.runInContext(
+    fs.readFileSync(
+      path.join(__dirname, "../src/reports/periodic/model.js"),
+      "utf8",
+    ),
+    report,
+  );
+  const model = report.build(
+    {
+      settings: f.value("second", "meta").settings,
+      schools: [{ id: "school", name: "مدرسه", classes: [f.value("second")] }],
+      sessions: [f.value("second", "session:recovered-session")],
+    },
+    { mode: "daily", schoolId: "school", audience: "management" },
+  );
+  assert.equal(model.sessions[0].participants[0].name, "نام اصلاح‌شده");
+});
+
+test("a failed shared recovered-name repair preserves every term, placeholder and warning", async () => {
+  const f = fixture({ recoveredStudent: true, failCompanionWrite: true }),
+    before = clone(f.stores);
+  repairRecoveredStudent(f);
+  await assert.rejects(f.commit(), /quota/);
+  assert.deepEqual(clone(f.stores), before);
+  assert.deepEqual(f.args.annualChanged, []);
+  assert.deepEqual(f.args.directorySourceUpdates, []);
+});
+
+test("serialized undo restores shared placeholder rosters and warnings exactly without touching peer grades or settings", async () => {
+  const f = fixture({ recoveredStudent: true });
+  f.value("second", "meta").masterSchedule = {
+    independent: { classId: "class" },
+  };
+  const before = clone(f.stores.records);
+  repairRecoveredStudent(f);
+  await f.commit();
+  const saved = JSON.parse(JSON.stringify(f.stores.undo.get("first")));
+  assert.equal(saved.recoveredPeers[0].id, "second");
+  assert.equal(saved.recoveredPeers[0].revision, 4);
+  assert.equal(saved.recoveredPeers[0].rosters.length, 1);
+  await undoRecoveredStudent(f, saved);
+  assert.deepEqual(clone(f.stores.records), before);
+  assert.equal(f.stores.catalog.get("first").revision, 4);
+  assert.equal(f.stores.catalog.get("second").revision, 5);
+  assert.equal(f.stores.undo.has("first"), false);
+});
+
+test("any newer peer revision blocks recovered-name undo without changing records, events or revisions", async () => {
+  const f = fixture({ recoveredStudent: true });
+  repairRecoveredStudent(f);
+  await f.commit();
+  f.stores.catalog.get("second").revision++;
+  f.value("second", "session:recovered-session").attendance.b = "leave";
+  const before = clone(f.stores);
+  await assert.rejects(
+    () => undoRecoveredStudent(f),
+    (error) => error.code === "WORKSPACE_CONFLICT",
+  );
+  assert.deepEqual(clone(f.stores), before);
+});
+
+for (const historical of ["different-placeholder", "missing-roster"]) {
+  test(`shared recovery undo exactly restores a peer's ${historical}`, async () => {
+    const f = fixture({ recoveredStudent: true }),
+      session = f.value("second", "session:recovered-session");
+    if (historical === "missing-roster") delete session.roster;
+    else session.roster[0].name = "نام موقت بازیابی قدیمی متفاوت";
+    const before = clone(f.stores.records);
+    repairRecoveredStudent(f);
+    await f.commit();
+    await undoRecoveredStudent(f);
+    assert.deepEqual(clone(f.stores.records), before);
+  });
+}
+
+for (const tamper of [
+  "roster-name",
+  "warnings",
+  "foreign-year",
+  "scores",
+  "settings",
+]) {
+  test(`shared recovery undo rejects forged ${tamper} markers without writes`, async () => {
+    const f = fixture({ recoveredStudent: true });
+    repairRecoveredStudent(f);
+    await f.commit();
+    const undo = JSON.parse(JSON.stringify(f.stores.undo.get("first"))),
+      peer = undo.recoveredPeers[0];
+    if (tamper === "roster-name")
+      peer.rosters[0].before[1].name = "forged genuine historical name";
+    if (tamper === "warnings")
+      peer.migrationWarnings.push("unrelated forged warning");
+    if (tamper === "foreign-year") peer.id = "other-year";
+    if (tamper === "scores") peer.rosters[0].scores = [{ value: 0 }];
+    if (tamper === "settings") peer.settings = { password: "changed" };
+    const before = clone(f.stores);
+    await assert.rejects(async () => undoRecoveredStudent(f, undo));
+    assert.deepEqual(clone(f.stores), before);
+  });
 }
 
 test("mixed directory and annual grade edits reject duplicate first-term roles without any partial writes", async () => {

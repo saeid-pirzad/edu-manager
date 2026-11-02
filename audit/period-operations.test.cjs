@@ -95,6 +95,10 @@ test("new period waits for pending writes before capturing its source", async ()
   resolve();
   await first;
   assert.equal(saved[0].data.settings.marker, "durable source");
+  assert.deepEqual(JSON.parse(JSON.stringify(saved[0].details.source)), {
+    id: "source",
+    revision: 2,
+  });
 });
 test("a completed creation does not navigate away from a newly selected workspace", async () => {
   const { c, switched } = creation();

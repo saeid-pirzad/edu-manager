@@ -26,16 +26,7 @@ if (process.argv.includes("--help")) {
   main({
     stage: "4-adversarial-workflow-review",
     async runExtra({ cdp, evaluate, cases, root, ws, delay }) {
-      await cdp("Page.reload");
-      await delay(500);
-      let ready = false;
-      for (let i = 0; i < 150; i++) {
-        ready = await evaluate("!!window.EduV24?.test?.getState().ready");
-        if (ready) break;
-        await delay(100);
-      }
-      if (!ready)
-        throw Error("Application did not recover before the extended review.");
+      await require("./browser-ready.cjs")({ cdp, evaluate, delay });
       cases.push(
         ...(await evaluate(
           "(" + require("./flows/sessionAlerts.cjs").toString() + ")()",
@@ -125,6 +116,49 @@ if (process.argv.includes("--help")) {
       });
       await require("./period-import-browser.cjs")({ cdp, evaluate, cases });
       await require("./annual-modular-browser.cjs")({ cdp, evaluate, cases });
+      await require("./protected-grade-browser.cjs")({
+        cdp,
+        evaluate,
+        cases,
+        delay,
+      });
+      await require("./recovered-name-undo-browser.cjs")({
+        cdp,
+        evaluate,
+        cases,
+        delay,
+      });
+      await require("./flows/singleYear.cjs")({
+        cdp,
+        evaluate,
+        cases,
+        delay,
+      });
+      await require("./frozen-modular-browser.cjs")({
+        cdp,
+        evaluate,
+        cases,
+        delay,
+      });
+      await require("./cross-term-session-browser.cjs")({
+        cdp,
+        evaluate,
+        cases,
+        delay,
+      });
+      await require("./safety-backup-browser.cjs")({
+        cdp,
+        evaluate,
+        cases,
+        delay,
+      });
+      await require("./report-copy-browser.cjs")({
+        cdp,
+        evaluate,
+        cases,
+        delay,
+        ws,
+      });
       cases.push(
         ...(await require("./pwa-upgrade.cjs")({
           cdp,

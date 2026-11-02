@@ -30,11 +30,15 @@ async function openAssessmentStage(button) {
       );
     const target = matches[0];
     if (!target) {
-      throw Error(
-        "نوبت " +
+      await openPeriods({
+        notice:
+          "نوبت " +
           term +
-          " این سال هنوز شروع نشده است. آن را از مدیریت نوبت‌های تحصیلی شروع کنید؛ نوبت جدید از صفحهٔ ثبت نمره ساخته نمی‌شود.",
-      );
+          " هنوز شروع نشده است؛ از همین بخش، نوبت " +
+          term +
+          " این سال تحصیلی را شروع کنید.",
+      });
+      return false;
     }
     const loaded = await readWorkspace(target.id);
     ensureCurrent();
@@ -54,6 +58,10 @@ async function openAssessmentStage(button) {
   }
   assessmentSelectedStage = stage;
   state = { ...origin, view: "lesson", tab: "grades" };
+  // Switching periods deliberately clears authentication. Keep the requested
+  // lesson for the next successful login, but never reopen its grade modal
+  // over the destination period's login screen.
+  assertWorkspaceReadable();
   render();
   if (inModal) {
     const c = getClassObj(state.schoolId, state.classId);
@@ -65,12 +73,12 @@ function buildAssessmentEditor(c, l) {
   const general = l.gradingPolicy?.subjectType === "general";
   const mid = assessmentSelectedStage === "midterm";
   const stage = assessmentSelectedStage;
-  const stageName = (mid ? "میان‌ترم " : "پایان‌ترم ") + workspace.term;
   const students = getSortedStudents(c);
   const term =
     (workspace.termKind || academicTermKind(workspace.term)) === "second"
       ? "دوم"
       : "اول";
+  const stageName = (mid ? "میان‌ترم نوبت " : "پایان‌ترم نوبت ") + term;
   const weights = assessmentWeights(l);
   let html =
     '<div class="card assessment-editor gradebook" data-assessment-lesson="' +

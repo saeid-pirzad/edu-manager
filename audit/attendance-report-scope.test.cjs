@@ -75,6 +75,11 @@ function fixture() {
     todayISO: () => session.date,
     getPeriodName: () => "PERIOD",
     copyToClipboard: (text) => copied.push(text),
+    EduV24: {
+      // Formatting tests use the pure producer. The actual asynchronous
+      // boundary is covered by report-copy-guard.test.cjs and browser tests.
+      copyReport: (produce) => copied.push(produce()),
+    },
     alert(message) {
       throw Error(message);
     },

@@ -78,6 +78,10 @@ async function main({
         "--no-sandbox",
         "--no-proxy-server",
         "--disable-background-networking",
+        // Multi-window tests must not depend on background renderer throttling.
+        "--disable-background-timer-throttling",
+        "--disable-renderer-backgrounding",
+        "--disable-backgrounding-occluded-windows",
         "--disable-extensions",
         "--no-first-run",
         "--remote-debugging-port=0",
@@ -142,22 +146,48 @@ async function main({
     await cdp("Page.enable");
     await cdp("Page.addScriptToEvaluateOnNewDocument", {
       source:
-        "window.__EDU_TEST_MODE__=true;window.confirm=()=>true;window.alert=()=>{};",
+        "window.__EDU_TEST_MODE__=true;window.confirm=()=>true;window.alert=()=>{};" +
+        "window.__eduStartupErrors=[];window.addEventListener('error',e=>window.__eduStartupErrors.push(e.message||e.target?.src||'resource failed'),true);" +
+        "window.addEventListener('unhandledrejection',e=>window.__eduStartupErrors.push(String(e.reason?.stack||e.reason)));",
     });
-    await cdp("Page.navigate", {
+    const navigation = await cdp("Page.navigate", {
       url:
         "http://127.0.0.1:" +
         server.address().port +
         "/edu-manager/EduManager.html",
     });
+    if (navigation.errorText)
+      throw Error(
+        "Isolated application navigation failed: " + navigation.errorText,
+      );
     let ready = false;
     for (let i = 0; i < 150; i++) {
       ready = await evaluate("!!window.EduV24?.test?.getState().ready");
       if (ready) break;
       await delay(100);
     }
-    if (!ready)
-      throw Error("Application did not become ready in the isolated profile.");
+    if (!ready) {
+      const diagnostic = await evaluate(`({
+        url: location.href,
+        title: document.title,
+        readyState: document.readyState,
+        appText: document.getElementById('app')?.textContent?.slice(0, 2000),
+        errors: window.__eduStartupErrors || [],
+        context: window.EduV24?.getReportContext?.()
+      })`);
+      const diagnosticFile = path.join(profile, "startup-failure.json");
+      fs.writeFileSync(
+        diagnosticFile,
+        JSON.stringify(diagnostic, null, 2) + "\n",
+      );
+      throw Error(
+        "Application did not become ready in the isolated profile: " +
+          JSON.stringify(diagnostic) +
+          " (" +
+          diagnosticFile +
+          ")",
+      );
+    }
     const data = await evaluate("(" + matrix.toString() + ")()");
     const grades = await evaluate("(" + assessmentChecks.toString() + ")()");
     const backup = await evaluate("(" + backupMatrix.toString() + ")()");

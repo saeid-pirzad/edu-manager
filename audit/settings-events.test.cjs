@@ -20,7 +20,12 @@ function fixture(opened = true, password = "") {
   };
   const context = vm.createContext({
     db: { settings: { password } },
-    workspace: { id: "one", year: "1405", term: "first" },
+    workspace: {
+      id: "one",
+      year: "1405-1406",
+      term: "عنوان قدیمی",
+      termKind: "first",
+    },
     ready: false,
     connection: {},
     captureWorkspaceContext: () => ({ id: "one" }),
@@ -70,6 +75,8 @@ test("settings shows the current password state without exposing its stored valu
   await enabled.context.openSettingsV24();
   assert.match(enabled.calls[0], /رمز ورود فعال است/);
   assert.match(enabled.calls[0], /تغییر رمز/);
+  assert.match(enabled.calls[0], /ترم اول/);
+  assert.doesNotMatch(enabled.calls[0], /عنوان قدیمی|دوره/);
   assert.doesNotMatch(enabled.calls[0], /private-stored-hash/);
   const disabled = fixture();
   await disabled.context.openSettingsV24();

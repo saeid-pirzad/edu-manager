@@ -259,7 +259,7 @@ test("periodic print returns failure when the print operation is rejected", asyn
   );
   assert.equal(await context.output("print"), false);
 });
-test("annual selectors keep first and second terms separate and retain unclassified restored periods", () => {
+test("annual selectors expose only classified first and second terms", () => {
   const context = vm.createContext({});
   vm.runInContext(source("src/reports/periodic/filters.js"), context);
   vm.runInContext(
@@ -271,14 +271,14 @@ test("annual selectors keep first and second terms separate and retain unclassif
       .annualPeriodOptions("annualFirstId")
       .map((r) => r.id)
       .join(","),
-    "a,restored",
+    "a",
   );
   assert.equal(
     context
       .annualPeriodOptions("annualSecondId")
       .map((r) => r.id)
       .join(","),
-    "b,restored",
+    "b",
   );
 });
 test("annual snapshots reject ambiguous automatic selection and mismatched explicit term roles", async () => {

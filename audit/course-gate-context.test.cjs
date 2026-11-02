@@ -47,7 +47,7 @@ test("gate cannot retarget a different workspace or class while awaiting drafts"
     vm.runInContext(source, context);
     await assert.rejects(
       context.gate("lesson", "pod", "student", "yes"),
-      /دوره یا کلاس/,
+      /ترم یا کلاس/,
     );
     assert.equal(lookedUp, false);
   }

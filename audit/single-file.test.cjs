@@ -11,6 +11,7 @@ function fixture() {
     aborts = 0,
     fail = false;
   let stored = null;
+  const deliveries = [];
   const handle = {
     name: "EduManager-data.json",
     getFile: async () => ({ size: contents.length, lastModified: modified }),
@@ -53,6 +54,7 @@ function fixture() {
     setStatus() {},
     uid: () => "file-" + Math.random(),
     broadcast() {},
+    recordFullBackupDelivery: (value) => deliveries.push(value),
     readRecord: async () => stored && { ...stored },
     transactionDone: (tx) => tx.finished,
     connection: {
@@ -99,6 +101,7 @@ function fixture() {
   return {
     context,
     handle,
+    deliveries,
     get contents() {
       return contents;
     },
@@ -277,6 +280,75 @@ test("pending initial activation stays paused after reload and can recover with 
   assert.equal(await f.context.resumeSingleFile(), true);
   assert.notEqual(vm.runInContext("singleFileTimer", f.context), null);
   assert.equal(vm.runInContext("singleFileFailure", f.context), false);
+});
+
+for (const permission of ["prompt", "denied"]) {
+  test(`restored ${permission} file permission remains visibly paused until an explicit successful save`, async () => {
+    const f = fixture();
+    await f.context.chooseSingleFile();
+    const previous = f.contents,
+      badge = { hidden: true };
+    f.context.document = {
+      getElementById: (id) => (id === "singleFileBadge" ? badge : null),
+      querySelector: () => null,
+    };
+    f.handle.queryPermission = async () => permission;
+    await f.context.restoreSingleFile();
+    assert.equal(vm.runInContext("singleFileTimer", f.context), null);
+    assert.equal(vm.runInContext("singleFileFailure", f.context), true);
+    assert.equal(badge.hidden, false);
+    assert.match(badge.textContent, /مجوز فایل نیاز به تأیید دارد/);
+    assert.equal(f.contents, previous);
+    assert.equal(f.writes, 1);
+    // A later render uses this same persistent flag, so the warning does not
+    // disappear when the user navigates to a different screen.
+    assert.doesNotMatch(
+      f.context.singleFilePanel(),
+      /id="singleFileFallback" hidden/,
+    );
+    assert.equal(await f.context.resumeSingleFile(), true);
+    assert.notEqual(vm.runInContext("singleFileTimer", f.context), null);
+    assert.equal(vm.runInContext("singleFileFailure", f.context), false);
+    assert.equal(badge.hidden, true);
+    assert.equal(f.writes, 2);
+  });
+}
+test("restored granted permission resumes saving and records only confirmed writes", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  assert.equal(f.deliveries.length, 1);
+  assert.equal(f.deliveries[0].kind, "automatic-file");
+  assert.equal(f.deliveries[0].name, f.handle.name);
+  await f.context.restoreSingleFile();
+  assert.equal(f.writes, 2);
+  assert.equal(f.deliveries.length, 2);
+  assert.notEqual(vm.runInContext("singleFileTimer", f.context), null);
+  f.failWrites();
+  assert.equal(await f.context.syncSingleFile(), false);
+  assert.equal(f.deliveries.length, 2);
+});
+test("explicit successful disconnect clears a permission warning without restarting saving or deleting the file", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  const previous = f.contents,
+    badge = { hidden: true };
+  f.context.document = {
+    getElementById: (id) => (id === "singleFileBadge" ? badge : null),
+    querySelector: () => null,
+  };
+  f.handle.queryPermission = async () => "prompt";
+  await f.context.restoreSingleFile();
+  assert.equal(badge.hidden, false);
+  await f.context.disableSingleFile();
+  assert.equal(vm.runInContext("singleFileFailure", f.context), false);
+  assert.equal(badge.hidden, true);
+  assert.equal(vm.runInContext("singleFileTimer", f.context), null);
+  assert.equal(vm.runInContext("singleFile", f.context), null);
+  assert.equal(f.getStored(), null);
+  assert.equal(f.contents, previous);
+  assert.equal(f.writes, 1);
+  assert.match(badge.textContent, /اتصال متوقف شد.*حذف نشده/);
+  assert.doesNotMatch(badge.textContent, /فعال شد/);
 });
 
 test("missing picker offers a manual backup without pretending automatic support", () => {

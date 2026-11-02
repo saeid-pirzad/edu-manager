@@ -14,6 +14,7 @@ EduLegacyEvents.register("reports-lesson:2", function (event) {
 EduLegacyEvents.register("reports-lesson:3", function (event) {
   return copyLessonReportForVicePrincipal(
     this.getAttribute("data-legacy-click-arg2"),
+    this,
   );
 });
 

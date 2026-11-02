@@ -19,6 +19,7 @@ function deferred() {
 function fixture() {
   const shares = [],
     downloads = [],
+    deliveries = [],
     observers = [],
     locks = [];
   let panel;
@@ -99,6 +100,7 @@ function fixture() {
       },
     },
     downloadLocalFile: (blob, name) => downloads.push({ blob, name }),
+    recordFullBackupDelivery: (value) => deliveries.push(value),
     setControlLock: (...args) => locks.push(args),
   });
   vm.runInContext(source, c);
@@ -107,6 +109,7 @@ function fixture() {
     content,
     shares,
     downloads,
+    deliveries,
     observers,
     locks,
     panel: () => panel,
@@ -125,12 +128,16 @@ test("backup preparation shares exact JSON bytes as a Chromium-compatible TXT at
   assert.equal(await f.c.openBackupShare(), true);
   assert.equal(f.shares.length, 0);
   assert.equal(f.downloads.length, 0);
+  assert.equal(f.deliveries.length, 0);
   assert.equal(f.shareButton().hidden, false);
   await f.c.sharePreparedBackup(f.shareButton());
   const file = f.shares[0].files[0];
   assert.equal(file.type, "text/plain");
   assert.match(file.name, /^KelasYar-Backup-.*\.txt$/);
   assert.deepEqual(JSON.parse(await file.text()), f.content);
+  assert.equal(f.deliveries[0].kind, "share-handed-off");
+  assert.equal(f.deliveries[0].exportedAt, f.content.exportedAt);
+  assert.equal(f.deliveries[0].name, file.name);
 });
 test("native share is invoked synchronously within the second click, before any await", async () => {
   const f = fixture();
@@ -162,6 +169,7 @@ test("Chromium permission denial for JSON is avoided even when canShare overrepo
   assert.equal(f.shares[0].type, "text/plain");
   assert.deepEqual(JSON.parse(await f.shares[0].text()), f.content);
   assert.equal(f.c.downloadPreparedBackup(), true);
+  assert.equal(f.deliveries.at(-1).kind, "download-requested");
   assert.match(f.downloads[0].name, /\.json$/);
   assert.equal(await f.downloads[0].blob.text(), await f.shares[0].text());
 });
@@ -203,6 +211,7 @@ test("cancellation neither downloads nor claims successful delivery and permits 
   assert.equal(await f.c.sharePreparedBackup(f.shareButton()), false);
   assert.match(f.status(), /لغو/);
   assert.equal(f.downloads.length, 0);
+  assert.equal(f.deliveries.length, 0);
   f.c.navigator.share = async () => {};
   assert.equal(await f.c.sharePreparedBackup(f.shareButton()), true);
 });
@@ -214,6 +223,7 @@ test("permission and platform errors leave manual download available without aut
   };
   assert.equal(await f.c.sharePreparedBackup(f.shareButton()), false);
   assert.equal(f.downloads.length, 0);
+  assert.equal(f.deliveries.length, 0);
   assert.match(f.status(), /مرورگر اجازه/);
   assert.equal(f.c.downloadPreparedBackup(), true);
 });

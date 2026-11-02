@@ -205,7 +205,7 @@ async function open(lid = "", seed) {
     requested.classId !== api.state().classId
   )
     throw Error(
-      "دوره یا کلاس هنگام باز شدن فرم تغییر کرد؛ دوباره وارد تنظیمات درس شوید.",
+      "ترم یا کلاس هنگام باز شدن فرم تغییر کرد؛ دوباره وارد تنظیمات درس شوید.",
     );
   const c = currentClass();
   if (!c) return;
@@ -412,7 +412,7 @@ function initializeCourseForm(l) {
     const note = document.createElement("p");
     note.className = "course-readonly-note";
     note.textContent = api.context().closed
-      ? "دوره بسته است؛ اطلاعات فقط نمایش داده می‌شوند. ویرایش پس از بازگشایی دوره امکان‌پذیر است."
+      ? "ترم بسته است؛ اطلاعات فقط نمایش داده می‌شوند. ویرایش پس از بازگشایی ترم امکان‌پذیر است."
       : "اطلاعات فعلاً فقط خواندنی‌اند؛ پیام وضعیت ذخیره‌سازی را بررسی و صفحه را بازخوانی کنید.";
     form.querySelector(".record-editor-context").append(note);
   }
@@ -518,7 +518,7 @@ async function save() {
       editing.context.id !== api.context().id ||
       editing.context.revision !== api.context().revision
     )
-      throw Error("دوره یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.");
+      throw Error("ترم یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.");
     const editingContext = editing,
       c = api.findClass(editing.classId),
       original = c?.lessons.find((l) => l.id === editing.id),
@@ -572,7 +572,7 @@ async function save() {
         "course_name",
       );
     if (info.year !== api.year())
-      throw Error("سال درس با دوره فعال یکسان نیست.");
+      throw Error("سال درس با ترم فعال یکسان نیست.");
     const locked =
       !!original &&
       (history?.hasGrades ||
@@ -841,7 +841,7 @@ async function gate(lid, pid, sid, value) {
     requested.classId !== api.state().classId
   )
     throw Error(
-      "دوره یا کلاس هنگام ذخیره معیار تغییر کرد؛ دوباره جدول را باز کنید.",
+      "ترم یا کلاس هنگام ذخیره معیار تغییر کرد؛ دوباره جدول را باز کنید.",
     );
   const c = currentClass(),
     l = c.lessons.find((l) => l.id === lid),

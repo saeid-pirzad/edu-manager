@@ -1,59 +1,124 @@
-async function openPeriods() {
-  const ensureCurrent = preserveAsyncTarget();
+async function openPeriods({ notice = "" } = {}) {
+  const ensureCurrent = preserveAsyncTarget(),
+    sourceConnection = connection;
   await flushDrafts({ strict: true });
+  await writer.catch(() => {});
   ensureCurrent();
-  const all = (await allFrom("catalog")).sort((a, b) =>
-    b.createdAt.localeCompare(a.createdAt),
-  );
-  ensureCurrent();
+  if (connection !== sourceConnection)
+    throw Error("اتصال اطلاعات تغییر کرده است؛ ترم‌ها را دوباره باز کنید.");
+  const context = captureWorkspaceContext(),
+    year = workspace.year,
+    all = (await allFrom("catalog")).filter((period) => period.year === year);
+  assertWorkspaceContext(context);
   const reports = (await allFrom("reports")).filter(
     (r) => r.workspace === workspace.id,
   );
-  ensureCurrent();
-  const periodRows = all
-    .map(
-      (w) =>
-        "<tr><td>" +
-        esc(w.year + " / " + w.term) +
-        "</td><td>" +
-        (w.closed ? "بسته" : "در حال کار") +
-        '</td><td><div class="period-row-actions"><button class="ghost" data-workspace-action="switch-period" data-key="' +
-        esc(w.id) +
-        '">' +
-        (w.id === workspace.id ? "نوبت فعلی" : "بازکردن") +
-        "</button>" +
-        ((w.termKind || academicTermKind(w.term)) === "first" &&
-        w.closed &&
-        !all.some(
-          (row) =>
-            row.year === w.year &&
-            (row.termKind || academicTermKind(row.term)) === "second",
-        )
-          ? '<button data-workspace-action="new-second-period" data-key="' +
-            esc(w.id) +
-            '">شروع نوبت دوم</button>'
-          : "") +
-        '<button type="button" class="ghost danger period-delete-button" aria-label="' +
-        esc("حذف نوبت " + w.year + " / " + w.term) +
-        '" data-workspace-action="delete-period" data-key="' +
-        esc(w.id) +
-        '"><span aria-hidden="true">' +
-        EduIcons.html("trash") +
-        "</span><span>حذف نوبت</span></button></div></td></tr>",
-    )
-    .join("");
+  assertWorkspaceContext(context);
+  if (connection !== sourceConnection)
+    throw Error("اتصال اطلاعات تغییر کرده است؛ ترم‌ها را دوباره باز کنید.");
+  const entries = (kind) =>
+      all.filter(
+        (row) => (row.termKind || academicTermKind(row.term)) === kind,
+      ),
+    first = entries("first"),
+    second = entries("second"),
+    ambiguous = first.length > 1 || second.length > 1,
+    unsupported = all.some(
+      (row) =>
+        !["first", "second"].includes(
+          row.termKind || academicTermKind(row.term),
+        ),
+    ),
+    periodRows = [
+      { kind: "first", label: "ترم اول", rows: first },
+      { kind: "second", label: "ترم دوم", rows: second },
+    ]
+      .map(({ kind, label, rows }) => {
+        const period = rows.length === 1 ? rows[0] : null,
+          canStart =
+            kind === "second" &&
+            !second.length &&
+            first.length === 1 &&
+            first[0].closed &&
+            !ambiguous &&
+            !unsupported;
+        return (
+          "<tr><td>" +
+          label +
+          "</td><td>" +
+          (rows.length > 1
+            ? "نیازمند بررسی اطلاعات قبلی"
+            : period
+              ? period.closed
+                ? "بسته"
+                : "در حال کار"
+              : "شروع‌نشده") +
+          '</td><td><div class="period-row-actions">' +
+          (period
+            ? '<button class="ghost" data-workspace-action="switch-period" data-key="' +
+              esc(period.id) +
+              '"' +
+              (period.id === workspace.id
+                ? ' disabled aria-current="true"'
+                : "") +
+              ">" +
+              (period.id === workspace.id ? "ترم فعلی" : "ورود به " + label) +
+              "</button>"
+            : canStart
+              ? '<button data-workspace-action="new-second-period" data-key="' +
+                esc(first[0].id) +
+                '">شروع ترم دوم</button>'
+              : '<span class="muted">' +
+                (kind === "second" &&
+                !second.length &&
+                !ambiguous &&
+                !unsupported
+                  ? "پس از بستن ترم اول"
+                  : "—") +
+                "</span>") +
+          "</div></td></tr>"
+        );
+      })
+      .join("");
+  const activeKind = workspace.termKind || academicTermKind(workspace.term),
+    activeLabel = { first: "ترم اول", second: "ترم دوم" }[activeKind],
+    warning =
+      ambiguous || unsupported
+        ? '<p class="period-intro" role="alert">اطلاعات قدیمی این سال، ترم نامشخص یا ثبت تکراری دارد. هیچ اطلاعاتی حذف نشده است؛ پیش از شروع ترم دوم، اطلاعات معتبر را بازیابی کنید.</p>'
+        : "";
   showModal(
-    "نوبت‌های تحصیلی و کارنامه نهایی",
-    '<div class="period-hub"><p class="period-intro">هر سال تحصیلی شامل ترم اول و دوم است. مدرسه‌ها، کلاس‌ها و ثبت‌نام هنرجویان مبنای سال تحصیلی هستند؛ نمرات و حضور‌وغیاب به ترم مربوط ثبت می‌شوند. پشتیبان کل سیستم در یک فایل ذخیره می‌شود.</p><section class="period-list"><h4>سال تحصیلی و ترم‌ها</h4><table><thead><tr><th>سال / نوبت</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody>' +
+    "سال تحصیلی و دو ترم",
+    '<div class="period-hub"><p class="period-intro">سال تحصیلی: ' +
+      esc(year) +
+      '</p><p class="period-intro">مدرسه‌ها، کلاس‌ها، هنرجویان و درس‌ها در ترم اول و دوم مشترک‌اند؛ نمرات ترمی و جلسات جدا ثبت می‌شوند و نمرات پودمانی در کل سال ادامه دارند.</p>' +
+      (notice
+        ? '<p class="period-intro" role="status">' +
+          esc(String(notice)) +
+          "</p>"
+        : "") +
+      warning +
+      '<section class="period-list"><h4>ترم اول و دوم</h4><table><thead><tr><th>ترم</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody>' +
       periodRows +
-      '</tbody></table></section><section class="period-management"><h4>مدیریت نوبت فعلی</h4><div class="row period-actions"><button data-workspace-action="new-period">شروع سال تحصیلی / نوبت جدید</button>' +
-      (workspace.closed
-        ? '<button data-workspace-action="reopen-period">بازگشایی با ثبت در تاریخچه</button>'
-        : '<button data-workspace-action="finalize-period">بستن دوره و ثبت کارنامه نهایی</button><button class="ghost" data-workspace-action="edit-period-label">اصلاح عنوان دوره</button>') +
-      '</div></section><section class="period-reports"><h4>کارنامه‌های نهایی ثبت‌شده</h4>' +
+      "</tbody></table></section>" +
+      (activeLabel
+        ? '<section class="period-management"><h4>' +
+          activeLabel +
+          '</h4><div class="row period-actions">' +
+          (workspace.closed
+            ? '<button data-workspace-action="reopen-period">بازگشایی ' +
+              activeLabel +
+              "</button>"
+            : '<button data-workspace-action="finalize-period">بستن ' +
+              activeLabel +
+              " و ثبت کارنامه نهایی</button>") +
+          "</div></section>"
+        : "") +
+      '<section class="period-reports"><h4>کارنامه‌های نهایی ' +
+      (activeLabel || "ثبت‌شده") +
+      "</h4>" +
       (reports.length
         ? ""
-        : '<p class="period-intro">هنوز کارنامه نهایی برای این دوره ثبت نشده است.</p>') +
+        : '<p class="period-intro">هنوز کارنامه نهایی برای این ترم ثبت نشده است.</p>') +
       reports
         .map(
           (r) =>
@@ -251,7 +316,11 @@ async function confirmDeletePeriod() {
             if (!entry) return;
             if (
               entry.value.workspace === preview.id ||
-              (name === "undo" && entry.value.id === preview.id)
+              (name === "undo" &&
+                (entry.value.id === preview.id ||
+                  entry.value.recoveredPeers?.some(
+                    (peer) => peer.id === preview.id,
+                  )))
             ) {
               if (name === "backups")
                 entry.update({
@@ -336,7 +405,7 @@ function hydrateReportNotes(period) {
 let periodSwitchBusy = false;
 async function switchPeriod(id) {
   if (periodSwitchBusy)
-    throw Error("جابه‌جایی دوره در حال انجام است؛ صبر کنید.");
+    throw Error("جابه‌جایی ترم در حال انجام است؛ صبر کنید.");
   periodSwitchBusy = true;
   try {
     if (id === workspace.id) {
@@ -393,77 +462,114 @@ async function switchPeriod(id) {
   }
 }
 
+let secondTermDialog = null,
+  secondTermDialogGeneration = 0;
 async function openNewPeriod(firstId = "") {
+  const generation = ++secondTermDialogGeneration,
+    ensureCurrent = preserveAsyncTarget(),
+    sourceConnection = connection;
+  secondTermDialog = null;
+  await flushDrafts({ strict: true });
+  await writer.catch(() => {});
+  ensureCurrent();
   const expected = captureWorkspaceContext(),
     rows = await allFrom("catalog");
   assertWorkspaceContext(expected);
-  const first = firstId
-    ? rows.find((row) => row.id === firstId)
-    : rows.find(
-        (row) =>
-          row.year === workspace.year &&
-          (row.termKind || academicTermKind(row.term)) === "first" &&
-          row.closed &&
-          !rows.some(
-            (other) =>
-              other.year === row.year &&
-              (other.termKind || academicTermKind(other.term)) === "second",
-          ),
-      );
   if (
-    firstId &&
-    (!first ||
-      !first.closed ||
-      (first.termKind || academicTermKind(first.term)) !== "first")
+    connection !== sourceConnection ||
+    generation !== secondTermDialogGeneration
   )
-    throw Error("ابتدا نوبت اول را ببندید.");
-  const nextYear =
-    workspace.closed &&
-    (workspace.termKind || academicTermKind(workspace.term)) === "second"
-      ? Number(workspace.year.slice(0, 4)) +
-        1 +
-        "-" +
-        (Number(workspace.year.slice(5)) + 1)
-      : currentYearLabel();
-  showModal(
-    "شروع نوبت تحصیلی",
-    '<div class="period-create"><label>سال تحصیلی <input id="periodYear" value="' +
-      esc(first?.year || nextYear) +
-      '"></label><label>نوبت <select id="periodTerm"><option' +
-      (!first ? " selected" : "") +
-      ">اول</option><option" +
-      (first ? " selected" : "") +
-      '>دوم</option></select></label><p>نوبت دوم فقط پس از بسته‌شدن نوبت اول همان سال شروع می‌شود. کلاس‌ها، هنرجویان، درس‌ها و نمرات پودمانی ادامه پیدا می‌کنند؛ نمرات عملی و نظری و جلسات هر نوبت جدا می‌مانند.</p><button data-workspace-action="create-period">شروع نوبت</button></div>',
+    throw Error("اطلاعات تغییر کرده است؛ شروع ترم دوم را دوباره باز کنید.");
+  const year = workspace.year,
+    first = validateAcademicTransition(rows, year, "دوم");
+  if (
+    (firstId && first.id !== firstId) ||
+    rows.some(
+      (row) =>
+        row.year === year &&
+        !["first", "second"].includes(
+          row.termKind || academicTermKind(row.term),
+        ),
+    )
+  )
+    throw Error(
+      "ترم اول همین سال به‌طور یکتا مشخص نیست؛ اطلاعات قبلی را بررسی کنید.",
+    );
+  const opened = showModal(
+    "شروع ترم دوم",
+    '<div class="period-create" id="secondTermStart"><div class="record-editor-context"><h4>ترم دوم</h4><p>سال تحصیلی: ' +
+      esc(year) +
+      '</p></div><p>مدرسه‌ها، کلاس‌ها، هنرجویان و درس‌های ترم اول ادامه پیدا می‌کنند. نمرات ترمی و جلسات خالی شروع می‌شوند؛ نمرات پودمانی سال حفظ می‌شوند.</p><div class="row period-actions"><button data-workspace-action="create-period">شروع ترم دوم</button><button class="ghost" data-workspace-action="periods">انصراف</button></div></div>',
   );
+  if (opened !== false)
+    secondTermDialog = {
+      ...expected,
+      year,
+      firstId: first.id,
+      firstRevision: first.revision,
+      connection: sourceConnection,
+      node: document.getElementById("secondTermStart"),
+    };
 }
 
 let newPeriodBusy = false;
-async function createNewPeriod() {
-  if (newPeriodBusy) throw Error("ساخت دوره در حال انجام است؛ صبر کنید.");
+async function createNewPeriod({ fromDialog = false } = {}) {
+  if (newPeriodBusy) throw Error("شروع نوبت در حال انجام است؛ صبر کنید.");
   newPeriodBusy = true;
   try {
-    const ensureCurrent = preserveAsyncTarget();
+    const ensureCurrent = preserveAsyncTarget(),
+      dialog = fromDialog ? secondTermDialog : null,
+      checkDialog = () => {
+        if (!fromDialog) return;
+        if (
+          !dialog ||
+          secondTermDialog !== dialog ||
+          connection !== dialog.connection ||
+          workspace.id !== dialog.id ||
+          workspace.revision !== dialog.revision ||
+          workspace.year !== dialog.year ||
+          !dialog.node ||
+          dialog.node.isConnected === false ||
+          document.getElementById("modal")?.classList.contains("hidden") ||
+          document.getElementById("secondTermStart") !== dialog.node
+        )
+          throw Error(
+            "پنجرهٔ شروع نوبت دوم معتبر نیست؛ آن را دوباره باز کنید.",
+          );
+      };
+    checkDialog();
     if (fileMode)
       throw Error(
         "این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.",
       );
     const year = EduAcademicYear.normalize(
-        document.getElementById("periodYear").value,
+        fromDialog ? dialog.year : document.getElementById("periodYear").value,
       ),
-      term = document.getElementById("periodTerm").value;
+      term = fromDialog ? "دوم" : document.getElementById("periodTerm").value;
     if (!["اول", "دوم"].includes(term))
       throw Error("نوبت انتخاب‌شده معتبر نیست.");
     await flushDrafts({ strict: true });
     await writer.catch(() => {});
     ensureCurrent();
+    checkDialog();
     const context = captureWorkspaceContext();
     const existing = await allFrom("catalog");
     assertWorkspaceContext(context);
+    checkDialog();
     const first = validateAcademicTransition(existing, year, term);
-    let source = db;
+    if (
+      fromDialog &&
+      (first?.id !== dialog.firstId || first?.revision !== dialog.firstRevision)
+    )
+      throw Error(
+        "نوبت اول تغییر کرده است؛ پنجرهٔ شروع نوبت دوم را دوباره باز کنید.",
+      );
+    let source = db,
+      sourcePeriod = { id: context.id, revision: context.revision };
     if (first) {
       const snapshot = await readWorkspaceSnapshot(first.id);
       assertWorkspaceContext(context);
+      checkDialog();
       if (
         snapshot.period.revision !== first.revision ||
         !snapshot.period.closed
@@ -477,8 +583,13 @@ async function createNewPeriod() {
         )
           throw Error("دسترسی به نوبت اول تأیید نشد.");
         assertWorkspaceContext(context);
+        checkDialog();
       }
       source = snapshot.data;
+      sourcePeriod = {
+        id: snapshot.period.id,
+        revision: snapshot.period.revision,
+      };
     }
     const next = clone(source);
     next.sessions = [];
@@ -531,13 +642,16 @@ async function createNewPeriod() {
             for (const u of p.units) u.unitScores = {};
         }
       }
+    checkDialog();
     const created = await installWorkspace(normalizeDB(next), {
       year,
       term,
       requireSequence: true,
       firstRevision: first?.revision,
+      source: sourcePeriod,
     });
     assertWorkspaceContext(context);
+    if (fromDialog && secondTermDialog === dialog) secondTermDialog = null;
     await switchPeriod(created.id);
   } finally {
     newPeriodBusy = false;

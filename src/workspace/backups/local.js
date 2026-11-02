@@ -38,19 +38,59 @@ async function putBackup(data, label, workspaceId = workspace?.id) {
   return backup;
 }
 
+const FULL_BACKUP_DELIVERY_KEY = "Edu24.fullBackupDelivery";
+function recordFullBackupDelivery({ kind, exportedAt, name = "" }) {
+  if (
+    !["download-requested", "share-handed-off", "automatic-file"].includes(
+      kind,
+    ) ||
+    !Number.isFinite(Date.parse(exportedAt))
+  )
+    return false;
+  try {
+    localStorage.setItem(
+      FULL_BACKUP_DELIVERY_KEY,
+      JSON.stringify({
+        version: 1,
+        scope: "installation",
+        kind,
+        exportedAt,
+        deliveredAt: new Date().toISOString(),
+        name,
+      }),
+    );
+    if (typeof document !== "undefined") {
+      const label = document.getElementById("lastExternalBackupStatus");
+      if (label) label.textContent = lastExternalBackupLabel();
+    }
+    return true;
+  } catch {
+    // Delivery already happened; unavailable UI metadata must not fail it.
+    return false;
+  }
+}
 function lastExternalBackupLabel() {
   let item;
   try {
-    item = JSON.parse(
-      localStorage.getItem("Edu24.externalBackup." + workspace.id) || "null",
-    );
+    item = JSON.parse(localStorage.getItem(FULL_BACKUP_DELIVERY_KEY) || "null");
   } catch (ignore) {}
-  if (!item) return "هنوز فایل مستقل تأیید نشده";
+  const labels = {
+    "download-requested": "دانلود پشتیبان کامل درخواست شد؛ فایل را بررسی کنید",
+    "share-handed-off":
+      "پشتیبان کامل به اشتراک‌گذاری سپرده شد؛ ارسال نهایی را بررسی کنید",
+    "automatic-file": "نوشتن پشتیبان کامل در فایل خودکار تأیید شد",
+  };
+  if (
+    item?.version !== 1 ||
+    item.scope !== "installation" ||
+    !Object.hasOwn(labels, item.kind) ||
+    !Number.isFinite(Date.parse(item.exportedAt))
+  )
+    return "هنوز دریافت یا ذخیرهٔ پشتیبان کامل ثبت نشده است";
   return (
-    faDate(item.date) +
-    (item.confirmed
-      ? " · ذخیره فایل تأیید شد"
-      : " · دانلود درخواست شده؛ فایل را بررسی کنید")
+    new Date(item.exportedAt).toLocaleString("fa-IR") +
+    " · " +
+    labels[item.kind]
   );
 }
 

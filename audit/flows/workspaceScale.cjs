@@ -22,10 +22,10 @@ module.exports = async function workspaceScale() {
       ["first", "اول"],
       ["second", "دوم"],
     ]) {
-      await EduV24.openNewPeriod();
+      await EduV24.test.prepareLegacyPeriodFixture();
       document.getElementById("periodYear").value = "1419-1420";
       document.getElementById("periodTerm").value = term;
-      await EduV24.createNewPeriod();
+      await EduV24.test.createLegacyPeriod();
       annualIds[role] = EduV24.getReportContext().id;
       if (role === "first") {
         for (const school of db.schools)

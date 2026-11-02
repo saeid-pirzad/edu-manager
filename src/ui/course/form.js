@@ -18,7 +18,7 @@ async function open(lid = "", seed) {
     requested.classId !== api.state().classId
   )
     throw Error(
-      "دوره یا کلاس هنگام باز شدن فرم تغییر کرد؛ دوباره وارد تنظیمات درس شوید.",
+      "ترم یا کلاس هنگام باز شدن فرم تغییر کرد؛ دوباره وارد تنظیمات درس شوید.",
     );
   const c = currentClass();
   if (!c) return;
@@ -225,7 +225,7 @@ function initializeCourseForm(l) {
     const note = document.createElement("p");
     note.className = "course-readonly-note";
     note.textContent = api.context().closed
-      ? "دوره بسته است؛ اطلاعات فقط نمایش داده می‌شوند. ویرایش پس از بازگشایی دوره امکان‌پذیر است."
+      ? "ترم بسته است؛ اطلاعات فقط نمایش داده می‌شوند. ویرایش پس از بازگشایی ترم امکان‌پذیر است."
       : "اطلاعات فعلاً فقط خواندنی‌اند؛ پیام وضعیت ذخیره‌سازی را بررسی و صفحه را بازخوانی کنید.";
     form.querySelector(".record-editor-context").append(note);
   }

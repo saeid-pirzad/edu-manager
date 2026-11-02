@@ -266,6 +266,7 @@ function build(source, options) {
     version: 1,
     generatedAt: new Date().toISOString(),
     academicYear: source.settings.academicYear,
+    academicTerm: source.settings.academicTerm || "",
     mode: f.mode,
     audience: f.audience,
     detailLevel:

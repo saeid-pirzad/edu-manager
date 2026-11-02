@@ -133,7 +133,7 @@ async function performUndo(target, approval = null) {
     return false;
   assertEntityWritable();
   if (!isCurrentTarget() || workspace.revision !== target.revision)
-    throw Error("دوره یا اطلاعات بازگردانی تغییر کرده است.");
+    throw Error("ترم یا اطلاعات بازگردانی تغییر کرده است.");
   await commitRecords(
     candidate,
     {

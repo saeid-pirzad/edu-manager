@@ -19,7 +19,7 @@ function assertWorkspaceReadable() {
       "اطلاعات این پنجره قدیمی است؛ صفحه را دوباره بارگذاری و گزارش یا فرم را دوباره تهیه کنید.",
     );
   if (db.settings.password && !isAuthenticated)
-    throw Error("ابتدا وارد دوره شوید.");
+    throw Error("ابتدا وارد نوبت شوید.");
 }
 function assertWorkspaceContext(context, { write = false } = {}) {
   assertWorkspaceReadable();
@@ -29,7 +29,7 @@ function assertWorkspaceContext(context, { write = false } = {}) {
     context.revision !== workspace.revision
   )
     throw Error(
-      "دوره یا اطلاعات تغییر کرده است؛ فرم یا گزارش را دوباره باز کنید.",
+      "نوبت یا اطلاعات تغییر کرده است؛ فرم یا گزارش را دوباره باز کنید.",
     );
   if (write) assertEntityWritable();
 }
@@ -41,7 +41,7 @@ function markWorkspaceConflict() {
   }
   if (drafts.size) storeDrafts();
   const message =
-    "داده این دوره در تب دیگری تغییر کرد. پیش‌نویس محفوظ است؛ صفحه را دوباره بارگذاری کنید.";
+    "اطلاعات این نوبت در تب دیگری تغییر کرد. پیش‌نویس محفوظ است؛ صفحه را دوباره بارگذاری کنید.";
   setStatus(message, "error");
   lockControls();
   window.EduPeriodicReports?.invalidate(message);
@@ -127,19 +127,23 @@ function selectAnnualPeriods(catalog, periodIds, active) {
       );
     else
       throw Error(
-        "نوبت اول و دوم این سال مشخص نیست؛ وضعیت نوبت‌ها را در مدیریت نوبت‌های تحصیلی بررسی کنید.",
+        "نوبت اول و دوم این سال مشخص نیست؛ بخش «نوبت‌های سال تحصیلی» را بررسی کنید.",
       );
-    if (periods.some((row) => !row))
+    if (periods.some((row) => !row)) {
+      const missing = !periods[0] ? "اول" : "دوم";
       throw Error(
-        "برای گزارش سالانه، هر دو نوبت همین سال تحصیلی باید وجود داشته باشند؛ آن‌ها را انتخاب یا ایجاد کنید.",
+        "نوبت " +
+          missing +
+          " هنوز شروع نشده است؛ گزارش سالانه پس از شروع هر دو نوبت همین سال آماده می‌شود. بخش «نوبت‌های سال تحصیلی» را باز کنید.",
       );
+    }
   }
   // The legacy label fallback must obey the same role checks as an explicit
   // selection. A display label cannot override a saved annual-term role.
   for (let i = 0; i < periods.length; i++) {
     const kind = periods[i].termKind || academicTermKind(periods[i].term);
-    if (kind && kind !== ["first", "second"][i])
-      throw Error("نوع دوره انتخاب‌شده با نوبت اول/دوم مطابقت ندارد.");
+    if (kind !== ["first", "second"][i])
+      throw Error("نوبت انتخاب‌شده با نوبت اول/دوم مطابقت ندارد.");
   }
   return periods;
 }
@@ -285,7 +289,7 @@ async function prepareAnnualReportSnapshot(periodIds = {}) {
   await writer.catch(() => {});
   assertWorkspaceReadable();
   if (workspace.id !== origin)
-    throw Error("دوره تغییر کرد؛ گزارش سالانه را دوباره تهیه کنید.");
+    throw Error("نوبت تغییر کرد؛ گزارش سالانه را دوباره تهیه کنید.");
   const context = captureWorkspaceContext();
   const { periods, recordSets } = await readAnnualRecordSets(
     context,
@@ -295,7 +299,7 @@ async function prepareAnnualReportSnapshot(periodIds = {}) {
     period: {
       ...period,
       term: index === 0 ? "اول" : "دوم",
-      displayTerm: period.term,
+      displayTerm: index === 0 ? "اول" : "دوم",
     },
     data: decodeWorkspaceRecords(recordSets[index], { workspaceId: period.id })
       .data,
@@ -369,14 +373,23 @@ async function listAnnualReportPeriods() {
     context,
   );
   return rows
-    .filter((row) => row.year === workspace.year)
-    .map((row) => ({
-      id: row.id,
-      year: row.year,
-      term: row.term,
-      termKind: row.termKind || academicTermKind(row.term),
-      closed: row.closed,
-    }));
+    .filter(
+      (row) =>
+        row.year === workspace.year &&
+        ["first", "second"].includes(
+          row.termKind || academicTermKind(row.term),
+        ),
+    )
+    .map((row) => {
+      const termKind = row.termKind || academicTermKind(row.term);
+      return {
+        id: row.id,
+        year: row.year,
+        term: termKind === "first" ? "اول" : "دوم",
+        termKind,
+        closed: row.closed,
+      };
+    });
 }
 async function prepareReportSnapshot({ annual = false, periodIds } = {}) {
   if (annual) return prepareAnnualReportSnapshot(periodIds);
@@ -386,7 +399,7 @@ async function prepareReportSnapshot({ annual = false, periodIds } = {}) {
   await writer.catch(() => {});
   assertWorkspaceReadable();
   if (workspace.id !== origin)
-    throw Error("دوره هنگام تهیه گزارش تغییر کرد؛ گزارش را دوباره باز کنید.");
+    throw Error("نوبت هنگام تهیه گزارش تغییر کرد؛ گزارش را دوباره باز کنید.");
   const context = captureWorkspaceContext();
   const tx = connection.transaction(["catalog", "records"], "readonly"),
     done = transactionDone(tx);
@@ -404,5 +417,10 @@ async function prepareReportSnapshot({ annual = false, periodIds } = {}) {
     rows.filter((row) => row.workspace === context.id),
     { workspaceId: context.id },
   ).data;
+  // A report labels the fixed term role without relabeling stored metadata or
+  // reading another term's data. Legacy titles remain intact in the database.
+  data.settings.academicTerm =
+    { first: "اول", second: "دوم" }[live.termKind] ||
+    data.settings.academicTerm;
   return { context, data };
 }

@@ -9,7 +9,7 @@ async function exportBackupV24() {
       workspace.id !== origin
     )
       throw new Error(
-        "دوره هنگام تهیه پشتیبان تغییر کرده است؛ دوباره تلاش کنید.",
+        "ترم هنگام تهیه پشتیبان تغییر کرده است؛ دوباره تلاش کنید.",
       );
   };
   ensureSource();
@@ -87,6 +87,8 @@ async function openBackups() {
   const ensureCurrent = preserveAsyncTarget();
   await writer.catch(() => {});
   ensureCurrent();
+  const safety = await readLatestSafetyBackup();
+  ensureCurrent();
   let estimate = "";
   if (navigator.storage?.estimate) {
     const e = await navigator.storage.estimate();
@@ -100,10 +102,11 @@ async function openBackups() {
   }
   showModal(
     "پشتیبان و بازیابی",
-    '<div class="backup-hub"><section class="backup-manual"><h4>فایل پشتیبان شما</h4><p>یک فایل پشتیبان برای کل سیستم: سال‌های تحصیلی، ترم اول و دوم، مدرسه‌ها، کلاس‌ها، هنرجویان، نمرات و حضور‌وغیاب. برای هر ترم فایل جدا لازم نیست. بازیابی، کل اطلاعات فعلی را با محتوای فایل جایگزین می‌کند.</p><div class="backup-action-grid"><button data-workspace-action="export-full">دریافت پشتیبان کامل</button><button class="ghost backup-share-entry" data-workspace-action="prepare-share-backup">اشتراک‌گذاری پشتیبان کامل</button><button class="ghost" data-workspace-action="choose-import">بازیابی از فایل</button></div><p class="muted">' +
+    '<div class="backup-hub"><section class="backup-manual"><h4>فایل پشتیبان شما</h4><p>یک فایل برای کل اطلاعات: سال تحصیلی و هر دو ترم، مدرسه‌ها، کلاس‌ها، هنرجویان، نمرات و حضور‌وغیاب. فایل پشتیبان، ترم تازه‌ای ایجاد نمی‌کند؛ بازیابی فقط کل اطلاعات فعلی را با محتوای فایل جایگزین می‌کند. سوابق قدیمیِ موجود در بانک هم در فایل حفظ می‌شوند.</p><div class="backup-action-grid"><button data-workspace-action="export-full">دریافت پشتیبان کامل</button><button class="ghost backup-share-entry" data-workspace-action="prepare-share-backup">اشتراک‌گذاری پشتیبان کامل</button><button class="ghost" data-workspace-action="choose-import">بازیابی از فایل</button></div><p class="muted" id="lastExternalBackupStatus" role="status">' +
       esc(lastExternalBackupLabel()) +
       "</p></section>" +
       singleFilePanel() +
+      safetyBackupPanel(safety) +
       '<details class="backup-help"><summary>فضای ذخیره‌سازی مرورگر</summary><p>' +
       esc(estimate) +
       '</p></details><details class="backup-reset"><summary>پاک‌سازی اطلاعات سیستم</summary><p>برای شروع دوباره، همه اطلاعات برنامه در همین مرورگر حذف می‌شود. این کار بازیابی فایل نیست؛ پیش از ادامه پشتیبان کامل دریافت کنید. فایل‌های ذخیره‌شده روی دستگاه حذف نمی‌شوند.</p><button type="button" class="danger" data-workspace-action="open-wipe">بررسی و تأیید پاک‌سازی</button></details></div>',
@@ -212,8 +215,18 @@ async function handleImportV24(
   };
   try {
     ensureDestination();
-    if (file.size > 100 * 1024 * 1024)
-      throw Error("حداکثر حجم فایل پشتیبان صد مگابایت است.");
+    // Full exports grow with the installation. Do not make our own large
+    // backups unrestorable; ask before allocating memory, without writing data.
+    if (
+      file.size > 100 * 1024 * 1024 &&
+      !confirm(
+        "حجم این فایل پشتیبان حدود " +
+          Math.ceil(file.size / 1048576).toLocaleString("fa-IR") +
+          " مگابایت است. خواندن آن ممکن است زمان‌بر باشد و حافظهٔ زیادی مصرف کند؛ روی دستگاه کم‌حافظه از رایانه استفاده کنید.\nفقط فایل مورداعتماد خودتان را باز کنید. خواندن و بررسی فایل ادامه پیدا کند؟ تا تأیید نهایی بازیابی، اطلاعات فعلی تغییر نمی‌کند.",
+      )
+    )
+      return;
+    ensureDestination();
     const parsed = JSON.parse(await file.text());
     ensureDestination();
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
@@ -235,7 +248,7 @@ async function handleImportV24(
     // Retained only for internal compatibility and its regression tests.
     if (fullSystemOnly)
       throw Error(
-        "این فایل پشتیبان کامل سیستم نیست. فایل کامل شامل اطلاعات سال‌های تحصیلی، ترم‌ها، مدرسه‌ها، کلاس‌ها و هنرجویان را انتخاب کنید؛ اطلاعات فعلی تغییر نکرده است.",
+        "این فایل پشتیبان کامل سیستم نیست. فایل کامل شامل اطلاعات سال تحصیلی، هر دو ترم، مدرسه‌ها، کلاس‌ها و هنرجویان را انتخاب کنید؛ اطلاعات فعلی تغییر نکرده است.",
       );
     if (
       parsed.version !== undefined &&
@@ -340,9 +353,9 @@ async function confirmImport() {
     }
     if (workspace.closed)
       throw Error(
-        "دوره بسته است؛ برای بازیابی در آن ابتدا دوره را بازگشایی کنید.",
+        "ترم بسته است؛ برای بازیابی در آن ابتدا ترم را بازگشایی کنید.",
       );
-    if (!confirm("اطلاعات این دوره با نسخه پیش‌نمایش جایگزین شود؟")) return;
+    if (!confirm("اطلاعات این ترم با نسخه پیش‌نمایش جایگزین شود؟")) return;
     await flushDrafts({ strict: true });
     await writer.catch(() => {});
     check(true);

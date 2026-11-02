@@ -71,6 +71,7 @@
         "src/workspace/grading/scope.js",
         "src/workspace/data/save.js",
         "src/workspace/periods/install.js",
+        "src/workspace/periods/single-year.js",
         "src/workspace/periods/academic-years.js",
         "src/workspace/core/bootstrap.js",
         "src/workspace/ui/save-status.js",
@@ -85,6 +86,7 @@
         "src/workspace/sessions/actions.js",
         "src/workspace/schedule/actions.js",
         "src/workspace/backups/local.js",
+        "src/workspace/backups/safety.js",
         "src/workspace/backups/full-export.js",
         "src/workspace/backups/sharing.js",
         "src/workspace/backups/single-file.js",
@@ -97,6 +99,7 @@
         "src/workspace/reports/finalize.js",
         "src/workspace/reports/student.js",
         "src/workspace/reports/printing.js",
+        "src/workspace/reports/copy.js",
         "src/workspace/students/csv-import.js",
         "src/workspace/students/editor.js",
         "src/workspace/data/wipe.js",
@@ -262,6 +265,7 @@
       "output": "assets/scripts/record-transaction.js",
       "scope": "global",
       "sources": [
+        "src/domain/session-slots.js",
         "src/data/academic-directory-transaction.js",
         "src/data/record-transaction.js"
       ]

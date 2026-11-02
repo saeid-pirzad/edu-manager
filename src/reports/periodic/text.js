@@ -36,6 +36,7 @@ function textReport(m) {
     "مدرسه: " + m.school.name,
     "بازه: " + faDate(m.start) + " تا " + faDate(m.end),
     "سال تحصیلی: " + m.academicYear,
+    ...(m.academicTerm ? ["ترم: " + m.academicTerm] : []),
   ];
   if (m.audience === "management" && m.detailLevel === "summary")
     lines.push(
@@ -291,6 +292,7 @@ function deputyReport(m) {
     "مدرسه: " + m.school.name,
     "بازه: " + faDate(m.start) + " تا " + faDate(m.end),
     "سال تحصیلی: " + (m.academicYear || "—"),
+    ...(m.academicTerm ? ["ترم: " + m.academicTerm] : []),
   ];
   if (m.student) lines.push("هنرجو: " + m.student.name);
   for (const [index, { session, people }] of groups.entries()) {

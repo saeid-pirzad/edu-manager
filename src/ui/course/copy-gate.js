@@ -53,7 +53,7 @@ async function gate(lid, pid, sid, value) {
     requested.classId !== api.state().classId
   )
     throw Error(
-      "دوره یا کلاس هنگام ذخیره معیار تغییر کرد؛ دوباره جدول را باز کنید.",
+      "ترم یا کلاس هنگام ذخیره معیار تغییر کرد؛ دوباره جدول را باز کنید.",
     );
   const c = currentClass(),
     l = c.lessons.find((l) => l.id === lid),

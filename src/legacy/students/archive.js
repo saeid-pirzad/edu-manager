@@ -41,5 +41,5 @@ function legacy_buildArchiveHtml(c) {
 
 function showArchivedKarnameh(studentId) {
   const c = getClassObj(state.schoolId, state.classId);
-  if (c) showModal("کارنامه بایگانی", buildDetailedKarnamehHtml(c, studentId));
+  if (c) return EduV24.openKarnamehStudent(c.id, studentId);
 }

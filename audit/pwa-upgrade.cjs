@@ -117,13 +117,39 @@ module.exports = async function auditPwaUpgrade({ cdp, debuggerUrl, root }) {
       return result.result.value;
     };
     const until = async (expression, label) => {
+      let lastError = "";
       for (let i = 0; i < 160; i++) {
         try {
           if (await evaluate(expression)) return;
-        } catch {}
+        } catch (error) {
+          lastError = error.message || String(error);
+        }
         await sleep(100);
       }
-      throw Error("Upgrade audit wait failed: " + label);
+      const state = await evaluate(`(() => {
+        const state = {
+          url: location.href,
+          readyState: document.readyState,
+          ready: window.EduV24?.test?.getState().ready,
+          pwa: window.EduPWA?.getStatus(),
+          peerOpened: !!window.__upgradePeer,
+          peerClosed: window.__upgradePeer?.closed
+        };
+        try {
+          if (window.__upgradePeer && !window.__upgradePeer.closed) {
+            state.peerUrl = window.__upgradePeer.location.href;
+            state.peerReadyState = window.__upgradePeer.document.readyState;
+            state.peerControlled = !!window.__upgradePeer.navigator.serviceWorker.controller;
+          }
+        } catch (error) { state.peerError = error.message; }
+        return state;
+      })()`);
+      throw Error(
+        "Upgrade audit wait failed: " +
+          label +
+          " " +
+          JSON.stringify({ state, lastError }),
+      );
     };
     await session("Page.enable");
     await session("Page.addScriptToEvaluateOnNewDocument", {
@@ -203,8 +229,13 @@ module.exports = async function auditPwaUpgrade({ cdp, debuggerUrl, root }) {
       'window.__upgradePeer=window.open(location.href,"upgrade-peer");true',
     );
     await until(
-      '!!(window.__upgradePeer&&!window.__upgradePeer.closed&&window.__upgradePeer.document.readyState==="complete"&&window.__upgradePeer.navigator.serviceWorker.controller)',
-      "second controlled application window",
+      '!!(window.__upgradePeer&&!window.__upgradePeer.closed&&window.__upgradePeer.document.readyState==="complete"&&window.__upgradePeer.location.href===location.href)',
+      "second application window",
+    );
+    // A same-scope window without a controller must also block an update:
+    // the new worker deliberately checks clients with includeUncontrolled.
+    const peerControlled = await evaluate(
+      "!!window.__upgradePeer.navigator.serviceWorker.controller",
     );
     await evaluate(
       'document.getElementById("pwaWelcomeLater")?.click();document.getElementById("mobileUpdate").click();true',
@@ -219,6 +250,7 @@ module.exports = async function auditPwaUpgrade({ cdp, debuggerUrl, root }) {
       await evaluate(
         "db.schemaVersion===25&&window.EduPWA.getStatus().waiting&&!window.__upgradePeer.closed",
       ),
+      { peerControlled },
     );
     await evaluate("window.__upgradePeer.close();true");
     await until("window.__upgradePeer.closed", "second window closed");

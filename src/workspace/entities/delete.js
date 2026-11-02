@@ -76,7 +76,7 @@ function openDeletion(kind, id) {
       count(sessions, "جلسه") +
       count(slots, "زنگ برنامه هفتگی") +
       '</ul><p class="deletion-backup-note">' +
-      "پیش از حذف، پشتیبان کامل سیستم در «پشتیبان و بازیابی» ذخیره می‌شود. برای بازگردانی از همین پشتیبان کامل استفاده کنید؛ پشتیبان داخلی جای فایل مستقل را نمی‌گیرد." +
+      "پیش از حذف، یک نسخهٔ ایمنی کامل ذخیره می‌شود. در «پشتیبان و بازیابی ← نسخهٔ ایمنی آخرین عملیات» فایل آن را دریافت و برای بازگردانی از «بازیابی از فایل» استفاده کنید. نسخهٔ داخلی جای فایل مستقل شما را نمی‌گیرد." +
       "</p>" +
       '<label class="deletion-confirm" for="deleteEntityName">برای تأیید، نام ' +
       label +
@@ -119,7 +119,7 @@ async function confirmDeletion() {
         context.revision !== workspace.revision
       )
         throw Error(
-          "اطلاعات یا دوره تغییر کرده است؛ پنجره حذف را دوباره باز کنید.",
+          "اطلاعات یا ترم تغییر کرده است؛ پنجره حذف را دوباره باز کنید.",
         );
       return deletionTarget(
         context.kind,
@@ -147,34 +147,9 @@ async function confirmDeletion() {
       directoryRevisions = full.stores.catalog
         .filter((period) => period.year === workspace.year)
         .map(({ id, year, revision }) => ({ id, year, revision }));
-      const backupTx = sourceConnection.transaction("backups", "readwrite"),
-        done = transactionDone(backupTx),
-        store = backupTx.objectStore("backups");
-      let backupFailure;
-      const existing = store.getAll();
-      existing.onsuccess = () => {
-        try {
-          const previous = existing.result
-            .filter((row) => row.full)
-            .sort((a, b) => b.at.localeCompare(a.at));
-          for (const row of previous.slice(7)) store.delete(row.id);
-          store.put({
-            id: "before-shared-delete-" + uid(),
-            workspace: null,
-            at: new Date().toISOString(),
-            label: "پیش از حذف: " + target.item.name,
-            full,
-          });
-        } catch (error) {
-          backupFailure = error;
-          backupTx.abort();
-        }
-      };
-      try {
-        await done;
-      } catch (error) {
-        throw backupFailure || error;
-      }
+      await putSafetySnapshot(full, "پیش از حذف: " + target.item.name, {
+        idPrefix: "before-shared-delete-",
+      });
     }
     target = check();
     const name = target.item.name;
@@ -224,7 +199,7 @@ async function confirmDeletion() {
     render();
     closeModal();
     setStatus(
-      "حذف انجام شد؛ پشتیبان کامل پیش از حذف در «پشتیبان و بازیابی» در دسترس است.",
+      "حذف انجام شد؛ فایل پیش از حذف در «پشتیبان و بازیابی ← نسخهٔ ایمنی آخرین عملیات» قابل دریافت است. برای بازگردانی از «بازیابی از فایل» استفاده کنید.",
       "saved",
     );
   } catch (error) {

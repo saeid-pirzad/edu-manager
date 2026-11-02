@@ -59,21 +59,22 @@ EduLegacyEvents.register("sessions-dialog:12", function (event) {
 });
 
 EduLegacyEvents.register("sessions-dialog:13", function (event) {
-  return copyToClipboard(
-    generateSessionReportText(
-      getSessionById(this.getAttribute("data-legacy-click-arg0")),
-      getClassObj(
-        this.getAttribute("data-legacy-click-arg1"),
-        this.getAttribute("data-legacy-click-arg2"),
-      ),
-      getLessonObj(
+  return EduV24.copyReport(
+    () =>
+      generateSessionReportText(
+        getSessionById(this.getAttribute("data-legacy-click-arg0")),
         getClassObj(
-          this.getAttribute("data-legacy-click-arg3"),
-          this.getAttribute("data-legacy-click-arg4"),
+          this.getAttribute("data-legacy-click-arg1"),
+          this.getAttribute("data-legacy-click-arg2"),
         ),
-        this.getAttribute("data-legacy-click-arg5"),
+        getLessonObj(
+          getClassObj(
+            this.getAttribute("data-legacy-click-arg3"),
+            this.getAttribute("data-legacy-click-arg4"),
+          ),
+          this.getAttribute("data-legacy-click-arg5"),
+        ),
       ),
-    ),
     this,
   );
 });

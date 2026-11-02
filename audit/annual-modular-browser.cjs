@@ -70,10 +70,10 @@ async function annualModularFlow() {
     };
   try {
     closeModal();
-    await EduV24.openNewPeriod();
+    await EduV24.test.prepareLegacyPeriodFixture();
     document.getElementById("periodYear").value = year;
     document.getElementById("periodTerm").value = "اول";
-    await EduV24.createNewPeriod();
+    await EduV24.test.createLegacyPeriod();
     const first = EduV24.getReportContext().id,
       policy = (method) => ({
         ...EduPolicy.defaults(method, year),
@@ -177,8 +177,10 @@ async function annualModularFlow() {
       snapshot.stores.reports.filter((row) => row.workspace === first),
     );
     closeModal();
-    await EduV24.openNewPeriod(first);
-    await EduV24.createNewPeriod();
+    await EduV24.test.prepareLegacyPeriodFixture();
+    document.getElementById("periodYear").value = year;
+    document.getElementById("periodTerm").value = "دوم";
+    await EduV24.test.createLegacyPeriod();
     const second = EduV24.getReportContext().id;
     snapshot = await EduV24.snapshotInstallation();
     check(
@@ -405,10 +407,10 @@ async function annualModularFlow() {
         snapshot.stores.catalog.find((row) => row.id === first).closed,
     );
     closeModal();
-    await EduV24.openNewPeriod();
+    await EduV24.test.prepareLegacyPeriodFixture();
     document.getElementById("periodYear").value = nextYear;
     document.getElementById("periodTerm").value = "اول";
-    await EduV24.createNewPeriod();
+    await EduV24.test.createLegacyPeriod();
     const nextFirst = EduV24.getReportContext().id;
     snapshot = await EduV24.snapshotInstallation();
     const nextLesson = sourceLesson(snapshot, nextFirst, ids.modular);

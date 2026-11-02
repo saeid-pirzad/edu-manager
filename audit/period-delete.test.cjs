@@ -197,6 +197,9 @@ for (const failure of [false, true]) {
                   name === "undo" ? { id: "second" } : { workspace: "second" },
                   { workspace: "first" },
                   { workspace: null },
+                  ...(name === "undo"
+                    ? [{ id: "first", recoveredPeers: [{ id: "second" }] }]
+                    : []),
                 ];
                 let index = 0;
                 const next = () => {
@@ -244,7 +247,11 @@ for (const failure of [false, true]) {
       assert.ok(
         queued
           .filter((entry) => entry.owner)
-          .every((entry) => entry.owner === "second"),
+          .every(
+            (entry) =>
+              entry.owner === "second" ||
+              (entry.name === "undo" && entry.owner === "first"),
+          ),
       );
       assert.ok(
         !queued.some((entry) => entry.name === "backups" && entry.owner),
@@ -253,6 +260,12 @@ for (const failure of [false, true]) {
         queued.some(
           (entry) => entry.name === "undo" && entry.owner === "second",
         ),
+      );
+      assert.ok(
+        queued.some(
+          (entry) => entry.name === "undo" && entry.owner === "first",
+        ),
+        "deleting a peer invalidates only the dependent shared-recovery undo",
       );
       assert.ok(
         queued.some(

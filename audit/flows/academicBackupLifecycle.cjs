@@ -6,17 +6,17 @@ module.exports = async function academicBackupLifecycle() {
   const previous = EduV24.getReportContext().id;
   try {
     closeModal();
-    await EduV24.openNewPeriod();
+    await EduV24.test.prepareLegacyPeriodFixture();
     document.getElementById("periodYear").value = "1416-1417";
     document.getElementById("periodTerm").value = "اول";
-    await EduV24.createNewPeriod();
+    await EduV24.test.createLegacyPeriod();
     const first = EduV24.getReportContext().id;
-    await EduV24.openNewPeriod();
+    await EduV24.test.prepareLegacyPeriodFixture();
     document.getElementById("periodYear").value = "1416-1417";
     document.getElementById("periodTerm").value = "دوم";
     let premature = false;
     try {
-      await EduV24.createNewPeriod();
+      await EduV24.test.createLegacyPeriod();
     } catch {
       premature = true;
     }
@@ -76,11 +76,24 @@ module.exports = async function academicBackupLifecycle() {
     await EduV24.openNewPeriod(first);
     check(
       "ACADEMIC03",
-      "the next-term action selects second term of the same year",
-      document.getElementById("periodYear").value === "1416-1417" &&
-        document.getElementById("periodTerm").value === "دوم",
+      "the next-term action fixes the second term and current year without editable year or term fields",
+      document
+        .getElementById("secondTermStart")
+        ?.textContent.includes("1416-1417") &&
+        !document.getElementById("periodYear") &&
+        !document.getElementById("periodTerm"),
     );
-    await EduV24.createNewPeriod();
+    document
+      .querySelector('#secondTermStart [data-workspace-action="create-period"]')
+      .click();
+    for (
+      let attempt = 0;
+      attempt < 200 && EduV24.getReportContext().id === first;
+      attempt++
+    )
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    if (EduV24.getReportContext().id === first)
+      throw Error("The fixed second-term action did not finish");
     const second = EduV24.getReportContext().id,
       secondClass = db.schools[0].classes[0],
       secondLesson = secondClass.lessons[0];
@@ -215,6 +228,47 @@ module.exports = async function academicBackupLifecycle() {
         !document.querySelector(".karnameh-year-document .report-average-cell"),
       { displayed },
     );
+    const originalPrintTest = window.__EDU_PRINT_TEST__;
+    try {
+      window.__EDU_PRINT_TEST__ = true;
+      for (const mode of ["daily", "weekly", "monthly"]) {
+        goReports();
+        setReportTab(mode);
+        EduPeriodicReports.selectScope(school.id, classroom.id);
+        EduPeriodicReports.set("date", "2037-10-24");
+        const model = await EduPeriodicReports.generate();
+        check(
+          "TERM_SCOPE_" + mode,
+          "the selected second term is explicit and first-term sessions are not merged into " +
+            mode +
+            " reports",
+          model?.summary.sessions === 0 &&
+            model.academicTerm === "دوم" &&
+            document
+              .querySelector(".periodic-controls")
+              ?.textContent.includes("فقط ترم دوم") &&
+            EduPeriodicReports.documentHtml(model).includes("ترم دوم") &&
+            EduPeriodicReports.textReport(model).includes("ترم: دوم") &&
+            EduPeriodicReports.deputyReport(model).includes("ترم: دوم") &&
+            JSON.parse(JSON.stringify(model)).academicTerm === "دوم",
+        );
+        const printed = await EduPeriodicReports.output("print");
+        check(
+          "TERM_SCOPE_PRINT_" + mode,
+          "print/PDF retains the explicit selected term for " +
+            mode +
+            " reports",
+          printed &&
+            document
+              .getElementById("printRoot")
+              ?.textContent.includes("ترم دوم"),
+        );
+      }
+    } finally {
+      window.__EDU_PRINT_TEST__ = originalPrintTest;
+      document.getElementById("printRoot")?.remove();
+      document.getElementById("printPageStyle")?.remove();
+    }
   } catch (error) {
     check("ACADEMIC99", "academic-year and backup lifecycle completed", false, {
       error: error.stack || error.message,

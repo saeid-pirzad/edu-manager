@@ -35,6 +35,61 @@ globalThis.EduUndoValidator = Object.freeze({
       !(records instanceof Map)
     )
       throw Error("ساختار یا نسخه بازگردانی معتبر نیست.");
+    if (undo.recoveredPeers !== undefined) {
+      const peers = new Set();
+      if (!Array.isArray(undo.recoveredPeers) || !undo.recoveredPeers.length)
+        throw Error("سابقهٔ اصلاح نام مشترک معتبر نیست.");
+      for (const peer of undo.recoveredPeers) {
+        if (
+          !isDataObject(peer) ||
+          Object.keys(peer).some(
+            (key) =>
+              !["id", "revision", "rosters", "migrationWarnings"].includes(key),
+          ) ||
+          !isSafeRecordId(peer.id) ||
+          peer.id === undo.id ||
+          peers.has(peer.id) ||
+          !Number.isSafeInteger(peer.revision) ||
+          peer.revision < 1 ||
+          !Array.isArray(peer.rosters) ||
+          (peer.migrationWarnings !== undefined &&
+            (!Array.isArray(peer.migrationWarnings) ||
+              peer.migrationWarnings.some(
+                (message) => typeof message !== "string",
+              )))
+        )
+          throw Error("سابقهٔ اصلاح نام مشترک معتبر نیست.");
+        peers.add(peer.id);
+        const sessions = new Set();
+        for (const row of peer.rosters) {
+          if (
+            !isDataObject(row) ||
+            Object.keys(row).some(
+              (key) => !["sessionId", "classId", "before"].includes(key),
+            ) ||
+            !isSafeRecordId(row.sessionId) ||
+            !isSafeRecordId(row.classId) ||
+            sessions.has(row.sessionId) ||
+            (row.before !== null && !Array.isArray(row.before))
+          )
+            throw Error("فهرست تاریخی اصلاح نام مشترک معتبر نیست.");
+          sessions.add(row.sessionId);
+          const students = new Set();
+          for (const member of row.before || []) {
+            if (
+              !isDataObject(member) ||
+              !isSafeRecordId(member.id) ||
+              students.has(member.id) ||
+              typeof member.name !== "string" ||
+              (member.recovered !== undefined &&
+                typeof member.recovered !== "boolean")
+            )
+              throw Error("هویت تاریخی اصلاح نام مشترک معتبر نیست.");
+            students.add(member.id);
+          }
+        }
+      }
+    }
     const keys = new Set(),
       candidate = new Map(
         [...records].map(([key, value]) => [key, clone(value)]),

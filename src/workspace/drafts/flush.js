@@ -21,6 +21,8 @@ async function flushDrafts({ strict = false } = {}) {
     ([, x]) => !x.review && (x.remove || parseDraft(x).ok),
   );
   if (!entries.length) return;
+  if (db.settings.password && !isAuthenticated)
+    throw Error("ابتدا وارد ترم شوید؛ پیش‌نویس‌ها بدون ورود ثبت نمی‌شوند.");
   flushing = (async () => {
     const groups = new Map();
     for (const [key, item] of entries) {

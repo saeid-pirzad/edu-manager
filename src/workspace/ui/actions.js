@@ -30,19 +30,16 @@ function installWorkspaceActions() {
     ["discard-drafts", () => discardDrafts()],
     ["review-drafts", () => reviewDrafts()],
     ["other-drafts", () => openOtherDrafts()],
-    ["new-period", () => openNewPeriod()],
-    ["create-period", () => createNewPeriod()],
+    ["create-period", () => createNewPeriod({ fromDialog: true })],
     ["reopen-period", () => reopenPeriod()],
     ["finalize-period", () => finalizePeriod()],
-    ["edit-period-label", () => editPeriodLabel()],
     ["new-second-period", (button) => openNewPeriod(button.dataset.key)],
-    ["delete-period", (button) => openDeletePeriod(button.dataset.key)],
-    ["confirm-delete-period", () => confirmDeletePeriod()],
     ["export-period", () => exportFullBackup()],
     ["export-full", () => exportFullBackup()],
     ["prepare-share-backup", () => openBackupShare()],
     ["share-backup-file", (button) => sharePreparedBackup(button)],
     ["download-share-backup", () => downloadPreparedBackup()],
+    ["download-safety", (button) => downloadLastSafetyBackup(button)],
     ["single-file-choose", () => chooseSingleFile()],
     ["single-file-save", () => resumeSingleFile()],
     ["single-file-stop", () => disableSingleFile()],
@@ -64,6 +61,12 @@ function installWorkspaceActions() {
     ["close", () => closeModal()],
     ["reload", () => location.reload()],
   ]);
+  if (globalThis.__EDU_TEST_MODE__) {
+    commands.set("delete-period", (button) =>
+      openDeletePeriod(button.dataset.key),
+    );
+    commands.set("confirm-delete-period", () => confirmDeletePeriod());
+  }
   function integer(value) {
     if (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value)))
       throw Error("پارامتر عملیات نامعتبر است.");

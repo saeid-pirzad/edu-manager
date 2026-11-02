@@ -126,8 +126,7 @@ async function deleteSessionsV24({ id, classId, lessonId }) {
     await flushDrafts({ strict: true });
     await writer.catch(() => {});
     assertEntityWritable();
-    if (!isCurrent())
-      throw Error("صفحه یا دوره تغییر کرده است؛ حذف انجام نشد.");
+    if (!isCurrent()) throw Error("صفحه یا ترم تغییر کرده است؛ حذف انجام نشد.");
     const matches = id
       ? (session) => session.id === id
       : (session) =>
@@ -194,7 +193,7 @@ async function addManualSessionV24(event, lessonId) {
     await flushDrafts({ strict: true });
     await writer.catch(() => {});
     assertEntityWritable();
-    if (!isCurrent()) throw Error("صفحه یا دوره تغییر کرده است؛ جلسه ثبت نشد.");
+    if (!isCurrent()) throw Error("صفحه یا ترم تغییر کرده است؛ جلسه ثبت نشد.");
     if (
       event.target.isConnected === false ||
       event.target.date.value !== date ||

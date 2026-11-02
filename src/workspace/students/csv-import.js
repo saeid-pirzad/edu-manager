@@ -158,7 +158,7 @@ async function csvImportV24(e) {
       origin.schoolId !== state.schoolId ||
       origin.classId !== state.classId
     )
-      throw Error("کلاس یا دوره تغییر کرده است؛ فایل را دوباره انتخاب کنید.");
+      throw Error("کلاس یا ترم تغییر کرده است؛ فایل را دوباره انتخاب کنید.");
     origin.revision = workspace.revision;
     if (file.size > 5 * 1024 * 1024)
       throw Error("حداکثر حجم CSV پنج مگابایت است.");
@@ -175,7 +175,7 @@ async function csvImportV24(e) {
       origin.revision !== workspace.revision
     )
       throw Error(
-        "کلاس، دوره یا اطلاعات تغییر کرده است؛ فایل را دوباره انتخاب کنید.",
+        "کلاس، ترم یا اطلاعات تغییر کرده است؛ فایل را دوباره انتخاب کنید.",
       );
     const plan = csvPlan(text, getClassObj(origin.schoolId, origin.classId));
     if (!plan.length) throw Error("فایل ردیف قابل ثبت ندارد.");
@@ -231,7 +231,7 @@ async function commitCSV() {
         context.classId !== state.classId
       )
         throw Error(
-          "کلاس، دوره یا اطلاعات تغییر کرده است؛ پیش‌نمایش را دوباره بسازید.",
+          "کلاس، ترم یا اطلاعات تغییر کرده است؛ پیش‌نمایش را دوباره بسازید.",
         );
       const c = getClassObj(context.schoolId, context.classId);
       if (!c) throw Error("کلاس دیگر وجود ندارد.");

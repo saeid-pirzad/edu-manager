@@ -34,7 +34,8 @@ function applyStudentIdentity(c, student, { name, code }) {
     );
     if (!unresolved)
       db.migrationWarnings = (db.migrationWarnings || []).filter(
-        (message) => !message.includes(student.id),
+        (message) =>
+          !message.startsWith("نام دانش‌آموز " + student.id + " در "),
       );
   }
 }
@@ -72,7 +73,7 @@ async function addStudentV24(event) {
     await writer.catch(() => {});
     assertEntityWritable();
     if (!sameTarget())
-      throw Error("کلاس یا دوره تغییر کرده است؛ ثبت انجام نشد.");
+      throw Error("کلاس یا ترم تغییر کرده است؛ ثبت انجام نشد.");
     const c = getClassObj(target.schoolId, target.classId);
     if (!c) throw Error("کلاس مقصد دیگر وجود ندارد.");
     if (code && knownStudents(c).some((st) => st.code === code))
@@ -126,7 +127,7 @@ async function editStudentV24(studentId) {
       origin.schoolId !== state.schoolId ||
       origin.classId !== state.classId
     )
-      throw Error("کلاس یا دوره تغییر کرده است؛ ویرایش را دوباره باز کنید.");
+      throw Error("کلاس یا ترم تغییر کرده است؛ ویرایش را دوباره باز کنید.");
     const c = getClassObj(origin.schoolId, origin.classId),
       student = c && getStudentObj(c, studentId);
     if (!student) throw Error("هنرجو دیگر در این کلاس وجود ندارد.");
@@ -178,7 +179,7 @@ async function saveStudent(studentId) {
         context.classId !== state.classId
       )
         throw Error(
-          "کلاس، دوره یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.",
+          "کلاس، ترم یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.",
         );
       const c = getClassObj(context.schoolId, context.classId),
         student = c && getStudentObj(c, context.studentId);

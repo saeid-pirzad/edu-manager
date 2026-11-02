@@ -22,15 +22,22 @@ function previewFullBackup(value, { sourceName = "", legacy = false } = {}) {
   pendingFullBackupSignature = "";
   value = validateFullBackup.normalize(value);
   const periods = validateFullBackup(value);
-  const roleKey = ({ period }) => {
+  const termRole = (period) => {
     const base = String(period.term).split(" — بازیابی ")[0];
-    const role =
+    return (
       period.termKind ||
       { اول: "first", دوم: "second", تابستان: "summer" }[base] ||
-      base;
-    return JSON.stringify([period.year, role]);
+      base
+    );
   };
+  const roleKey = ({ period }) =>
+    JSON.stringify([period.year, termRole(period)]);
   const duplicateTerms = new Set(periods.map(roleKey)).size !== periods.length;
+  const legacyContent =
+    new Set(periods.map(({ period }) => period.year)).size > 1 ||
+    periods.some(
+      ({ period }) => !["first", "second"].includes(termRole(period)),
+    );
   const outsideSessions = periods.reduce(
     (total, { period, data }) =>
       total +
@@ -75,6 +82,9 @@ function previewFullBackup(value, { sourceName = "", legacy = false } = {}) {
         : "") +
       (duplicateTerms
         ? '<p class="full-restore-warning" role="status">خود فایل چند ورودی با یک سال و نوبت مشابه دارد. بازیابی، همین ورودی‌های داخل فایل را نگه می‌دارد؛ برنامه آن‌ها را ادغام یا حذف نمی‌کند.</p>'
+        : "") +
+      (legacyContent
+        ? '<p class="full-restore-warning" role="status">این فایل سوابق قدیمی چند سال یا عنوان نوبت قدیمی دارد. همهٔ اطلاعات فایل بدون حذف یا ادغام حفظ می‌شوند؛ رابط برنامه در سالِ اطلاعات فعال داخل همین فایل باز می‌شود. پشتیبان‌گیری مستقل از نوبت اول و دوم است.</p>'
         : "") +
       '<section class="full-restore-warning"><h4>اطلاعات فعلی جایگزین می‌شود</h4><p>کل اطلاعات سیستم به وضعیت این فایل برمی‌گردد؛ اطلاعات فایل با داده‌های فعلی ادغام نمی‌شود.</p><p>نوبت جدید یا تکراری ساخته نمی‌شود و وضعیت باز یا بستهٔ نوبت‌ها مطابق فایل خواهد بود.</p></section><p class="full-restore-safety">پیش از جایگزینی، یک نسخهٔ ایمنی از اطلاعات فعلی داخل برنامه ذخیره می‌شود.</p><label class="full-restore-confirm" for="fullRestoreConfirmed"><input type="checkbox" id="fullRestoreConfirmed"><span>می‌دانم کل اطلاعات فعلی با محتوای این فایل جایگزین می‌شود.</span></label><p id="operationError" role="alert"></p><div class="full-restore-actions"><button type="button" class="danger" data-full-restore data-workspace-action="restore-full">تأیید و بازیابی کل اطلاعات</button><button type="button" class="ghost" data-workspace-action="close">انصراف</button></div></div>',
   );
@@ -202,6 +212,14 @@ async function restoreFullBackup() {
         undo.revision === saved?.revision
       )
         undo.revision = restored.revision;
+      for (const peer of undo.recoveredPeers || []) {
+        const restoredPeer = rows.catalog.find((row) => row.id === peer.id),
+          savedPeer = source.stores.catalog.find((row) => row.id === peer.id);
+        // Only a guard that matched the saved snapshot may follow its restored
+        // revision. A stale peer guard must stay stale, never become executable.
+        if (restoredPeer && peer.revision === savedPeer?.revision)
+          peer.revision = restoredPeer.revision;
+      }
     }
     rows.drafts = (source.gradeDrafts || []).map((row) => ({
       ...clone(row),
@@ -223,7 +241,17 @@ async function restoreFullBackup() {
       key: RESET_RECORD_KEY,
       workspace: null,
       logical: "installation-reset",
-      value: { token: uid(), phase: "cleanup", at: new Date().toISOString() },
+      value: {
+        token: uid(),
+        phase: "cleanup",
+        at: new Date().toISOString(),
+        // Commit selection with the replacement itself. A crash or failed
+        // preference cleanup must not reopen an unrelated legacy year.
+        academicYear: rows.catalog.find(
+          (period) => period.id === source.activeWorkspace,
+        ).year,
+        activeWorkspace: source.activeWorkspace,
+      },
     };
     rows.records.push(marker);
     const names = [...backupStores, "drafts"];
@@ -270,6 +298,11 @@ async function restoreFullBackup() {
     installationToken = marker.value.token;
     broadcast({ type: "installation-restored" });
     await completeResetCleanup(connection, marker);
+    // Reset cleanup removes device preferences. Re-anchor only after it has
+    // finished, using the incoming file rather than the overwritten install.
+    rememberAcademicYear(
+      rows.catalog.find((period) => period.id === source.activeWorkspace).year,
+    );
     window.EduPeriodicReports?.resetDrafts();
     const annual = globalThis.EduAnnualModules
       ? await synchronizeAnnualForRead(source.activeWorkspace)
@@ -316,6 +349,11 @@ async function restoreFullBackup() {
           : " توضیحات گزارش در بانک محفوظ‌اند؛ ذخیره موقت آن‌ها نیازمند تلاش مجدد است."),
       notesSaved ? "saved" : "pending",
     );
+    const recoveryWarning = academicWorkspaceRecoveryWarning(
+      workspace,
+      rows.catalog,
+    );
+    if (recoveryWarning) setStatus(recoveryWarning, "pending");
     for (const change of annual?.changed || [])
       broadcast({ ...change, annualModular: true });
     if (annual?.conflicts.length)

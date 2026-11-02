@@ -1,75 +1,53 @@
 "use strict";
 module.exports = async function periodLabelEvents() {
-  const results = [];
-  const check = (id, name, pass) =>
-    results.push({ id, name, pass: !!pass, observed: {} });
+  const results = [],
+    check = (id, name, pass) =>
+      results.push({ id, name, pass: !!pass, observed: {} });
   closeModal();
   await EduV24.test.settle();
-  const before = EduV24.getReportContext();
-  const term = db.settings.academicTerm;
-  await EduV24.editPeriodLabel();
-  let form = document.getElementById("periodLabelEditor");
+  const before = EduV24.getReportContext(),
+    term = db.settings.academicTerm;
+  await EduV24.openPeriods({ notice: "<fixed-term-notice>" });
+  const hub = document.querySelector(".period-hub"),
+    rows = [...hub.querySelectorAll("tbody tr")];
   check(
     "PL01",
-    "period label editor has no inline handlers and keeps the year read-only",
-    !!form &&
-      form.querySelector("#editYear").readOnly &&
-      ![form, ...form.querySelectorAll("*")].some((element) =>
+    "the academic-year hub always presents exactly the fixed first and second terms",
+    rows.length === 2 &&
+      rows[0].cells[0].textContent === "ترم اول" &&
+      rows[1].cells[0].textContent === "ترم دوم",
+  );
+  check(
+    "PL02",
+    "the hub exposes no independent year, term creation, deletion or custom naming controls",
+    !hub.querySelector(
+      '[data-workspace-action="new-period"], [data-workspace-action="delete-period"], [data-workspace-action="edit-period-label"], #periodYear, #periodTerm, #periodLabelEditor',
+    ) &&
+      ![hub, ...hub.querySelectorAll("*")].some((element) =>
         [...element.attributes].some((attribute) =>
           /^on/i.test(attribute.name),
         ),
       ),
   );
-  form.querySelector("#editTerm").value = "";
-  const invalidSubmit = new Event("submit", {
-    bubbles: true,
-    cancelable: true,
-  });
-  form.dispatchEvent(invalidSubmit);
-  for (
-    let attempt = 0;
-    attempt < 100 && !document.getElementById("periodLabelError").textContent;
-    attempt++
-  )
-    await new Promise((resolve) => setTimeout(resolve, 10));
-  check(
-    "PL02",
-    "period label submit rejects empty text without navigation or data changes",
-    invalidSubmit.defaultPrevented &&
-      !!document.getElementById("periodLabelError").textContent &&
-      db.settings.academicTerm === term &&
-      EduV24.getReportContext().revision === before.revision,
-  );
-  form.querySelector("#editTerm").value = term;
-  const submit = new Event("submit", { bubbles: true, cancelable: true });
-  form.dispatchEvent(submit);
-  for (
-    let attempt = 0;
-    attempt < 200 && document.getElementById("periodLabelEditor");
-    attempt++
-  )
-    await new Promise((resolve) => setTimeout(resolve, 10));
   check(
     "PL03",
-    "period label no-op submit returns to periods without creating a revision",
-    submit.defaultPrevented &&
-      !document.getElementById("periodLabelEditor") &&
+    "opening the fixed-term hub escapes its notice and never changes saved identities or revisions",
+    hub.textContent.includes("<fixed-term-notice>") &&
+      !hub.querySelector("fixed-term-notice") &&
+      db.settings.academicTerm === term &&
       EduV24.getReportContext().revision === before.revision &&
-      db.settings.academicTerm === term,
+      EduV24.getReportContext().id === before.id,
   );
-  results.at(-1).observed = {
-    revisionBefore: before.revision,
-    revisionAfter: EduV24.getReportContext().revision,
-    error: document.getElementById("periodLabelError")?.textContent || "",
-  };
-  await EduV24.editPeriodLabel();
-  form = document.getElementById("periodLabelEditor");
-  form.querySelector("[data-period-label-cancel]").click();
+  closeModal();
+  await EduV24.openPeriods();
   check(
     "PL04",
-    "reopened period label form cancels through its explicit listener",
-    document.getElementById("modal").classList.contains("hidden") &&
-      db.settings.academicTerm === term,
+    "reopening the hub preserves the active term and never reintroduces custom-name editing",
+    document.querySelectorAll(".period-hub tbody tr").length === 2 &&
+      !document.getElementById("periodLabelEditor") &&
+      EduV24.getReportContext().id === before.id &&
+      EduV24.getReportContext().revision === before.revision,
   );
+  closeModal();
   return results;
 };

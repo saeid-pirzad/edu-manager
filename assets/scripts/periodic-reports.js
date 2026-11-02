@@ -502,6 +502,7 @@ function build(source, options) {
     version: 1,
     generatedAt: new Date().toISOString(),
     academicYear: source.settings.academicYear,
+    academicTerm: source.settings.academicTerm || "",
     mode: f.mode,
     audience: f.audience,
     detailLevel:
@@ -599,6 +600,7 @@ function textReport(m) {
     "مدرسه: " + m.school.name,
     "بازه: " + faDate(m.start) + " تا " + faDate(m.end),
     "سال تحصیلی: " + m.academicYear,
+    ...(m.academicTerm ? ["ترم: " + m.academicTerm] : []),
   ];
   if (m.audience === "management" && m.detailLevel === "summary")
     lines.push(
@@ -854,6 +856,7 @@ function deputyReport(m) {
     "مدرسه: " + m.school.name,
     "بازه: " + faDate(m.start) + " تا " + faDate(m.end),
     "سال تحصیلی: " + (m.academicYear || "—"),
+    ...(m.academicTerm ? ["ترم: " + m.academicTerm] : []),
   ];
   if (m.student) lines.push("هنرجو: " + m.student.name);
   for (const [index, { session, people }] of groups.entries()) {
@@ -1073,6 +1076,7 @@ function documentHtml(m) {
     esc(faDate(m.end)) +
     " · سال تحصیلی " +
     esc(m.academicYear) +
+    (m.academicTerm ? " · ترم " + esc(m.academicTerm) : "") +
     "</p>" +
     (m.class ? "<p>کلاس: " + esc(m.class.name) + "</p>" : "") +
     (m.student
@@ -1338,9 +1342,7 @@ let annualPeriodList = [],
   annualLoadingFor = "";
 function annualPeriodOptions(field) {
   const kind = field === "annualFirstId" ? "first" : "second";
-  return annualPeriodList.filter(
-    (row) => !row.termKind || row.termKind === kind,
-  );
+  return annualPeriodList.filter((row) => row.termKind === kind);
 }
 function loadAnnualPeriodChoices() {
   const expected = context().id;
@@ -1398,7 +1400,13 @@ function render(mode) {
   let h =
     '<section class="card periodic-controls no-print"><h3>تهیه گزارش ' +
     modeLabel(mode) +
-    `</h3><p>هفتگی: شنبه تا جمعه. ماهانه: ماه شمسی. سالانه: مهر تا شهریور، نوبت اول و دوم سال تحصیلی فعال. گزارش اولیا فقط اطلاعات هنرجوی انتخاب‌شده را در بر می‌گیرد.</p><div class="periodic-control-grid"><label>مخاطب<select data-legacy-change="reports-periodic-render:0">` +
+    "</h3><p>" +
+    (mode === "annual"
+      ? "گزارش سالانه شامل ترم اول و دوم همین سال تحصیلی است. "
+      : "محدودهٔ این گزارش فقط ترم " +
+        esc(context().term || db.settings.academicTerm || "انتخاب‌شده") +
+        " است؛ اطلاعات ترم دیگر وارد این گزارش نمی‌شود. ") +
+    `هفتگی: شنبه تا جمعه. ماهانه: ماه شمسی. سالانه: مهر تا شهریور. گزارش اولیا فقط اطلاعات هنرجوی انتخاب‌شده را در بر می‌گیرد.</p><div class="periodic-control-grid"><label>مخاطب<select data-legacy-change="reports-periodic-render:0">` +
     option("management", "مدیریت مدرسه", f.audience) +
     option("parent", "اولیای یک هنرجو", f.audience) +
     "</select></label>" +
@@ -1430,7 +1438,7 @@ function render(mode) {
     "</select></label>";
   if (mode === "annual")
     h +=
-      '<div class="periodic-year-field"><span id="annualSourceStatus">نوبت اول و دوم همین سال به‌صورت خودکار خوانده می‌شوند.</span><button type="button" class="ghost" data-workspace-action="periods">مدیریت نوبت‌های تحصیلی</button></div>';
+      '<div class="periodic-year-field"><span id="annualSourceStatus">اطلاعات ترم اول و دوم همین سال به‌صورت خودکار خوانده می‌شوند.</span><button type="button" class="ghost" data-workspace-action="periods">سال تحصیلی و دو ترم</button></div>';
   if (f.audience === "parent")
     h +=
       `<label>هنرجو<select data-legacy-change="reports-periodic-render:5">` +
@@ -1470,7 +1478,7 @@ function render(mode) {
       ? documentHtml(last.model)
       : '<div class="card empty" role="status">' +
         (last
-          ? "اطلاعات یا دوره تغییر کرده است؛ برای نمایش نتیجه معتبر، گزارش را دوباره تهیه کنید."
+          ? "اطلاعات یا ترم تغییر کرده است؛ برای نمایش نتیجه معتبر، گزارش را دوباره تهیه کنید."
           : "محدوده و مخاطب را انتخاب کنید و «تهیه گزارش» را بزنید.") +
         "</div>";
   return h + "</div>";
@@ -1676,12 +1684,8 @@ async function generate() {
       model.definitions.push(
         "نمره هر مرحله طبق تنظیمات همان نوبت محاسبه می‌شود؛ نهایی سالانه میانگین برابر هر چهار مرحله است. نمره ناقص، صفر محسوب نمی‌شود.",
       );
-      for (const part of snapshot.parts)
-        model.definitions.push(
-          "منبع نوبت " + part.period.term + ": " + part.period.displayTerm,
-        );
       model.definitions.push(
-        "گزارش سالانه از مهر تا شهریور و شامل نوبت‌های اول و دوم همین سال تحصیلی است؛ تابستان مستقل است.",
+        "گزارش سالانه از مهر تا شهریور و شامل ترم اول و دوم همین سال تحصیلی است؛ نمرات پودمانی برای کل سال مشترک‌اند.",
       );
       model.definitions.push(
         "کلاس و هنرجو با شناسه مشترک بین نوبت‌ها مرتبط می‌شوند؛ شباهت نام، دلیل ادغام افراد نیست.",

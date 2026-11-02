@@ -44,6 +44,14 @@ module.exports = async function singleFile() {
         !JSON.stringify(first).includes("EduManager.singleFile"),
       observed: {},
     });
+    cases.push({
+      id: "SF01_DELIVERY",
+      name: "the open backup dialog immediately distinguishes a confirmed file write from a download request",
+      pass: document
+        .getElementById("lastExternalBackupStatus")
+        ?.textContent.includes("فایل خودکار تأیید شد"),
+      observed: {},
+    });
     const before = first.exportedAt;
     click("single-file-save");
     await waitFor(async () => (await read()).exportedAt !== before);
@@ -152,6 +160,19 @@ module.exports = async function singleFile() {
           manualDownloads === 0,
         observed: {},
       });
+      closeModal();
+      render();
+      cases.push({
+        id: "SF06_VISIBLE_WARNING",
+        name: "a paused automatic-file warning remains visible outside the closed backup dialog after rendering",
+        pass:
+          !document.getElementById("singleFileBadge")?.hidden &&
+          document
+            .getElementById("singleFileBadge")
+            ?.textContent.includes("اجازه نوشتن"),
+        observed: {},
+      });
+      await EduV24.openBackups();
       document
         .querySelector('.backup-manual [data-workspace-action="export-full"]')
         .click();
@@ -161,7 +182,10 @@ module.exports = async function singleFile() {
         name: "manual fallback remains usable and is only downloaded on explicit click",
         pass:
           manualDownloads === 1 &&
-          !document.getElementById("singleFileFallback").hidden,
+          !document.getElementById("singleFileFallback").hidden &&
+          document
+            .getElementById("lastExternalBackupStatus")
+            ?.textContent.includes("دانلود پشتیبان کامل درخواست شد"),
         observed: {},
       });
     } finally {

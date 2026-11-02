@@ -115,7 +115,7 @@ globalThis.EduFullBackupValidator = Object.freeze({
         periods = [];
       for (const row of value.stores.records) {
         if (!isDataObject(row) || !isSafeRecordId(row.workspace))
-          throw Error("رکورد داده باید متعلق به یک دوره معتبر باشد.");
+          throw Error("رکورد داده باید متعلق به یک ترم معتبر باشد.");
         if (!recordsByWorkspace.has(row.workspace))
           recordsByWorkspace.set(row.workspace, []);
         recordsByWorkspace.get(row.workspace).push(row);
@@ -131,7 +131,7 @@ globalThis.EduFullBackupValidator = Object.freeze({
           typeof period.createdAt !== "string" ||
           !Number.isFinite(Date.parse(period.createdAt))
         )
-          throw Error("شناسنامه دوره در پشتیبان نامعتبر است.");
+          throw Error("شناسنامه ترم در پشتیبان نامعتبر است.");
         if (
           period.termKind != null &&
           !["first", "second", "summer"].includes(period.termKind)
@@ -154,7 +154,7 @@ globalThis.EduFullBackupValidator = Object.freeze({
           logical.size !== records.length ||
           records.some((r) => r.key !== period.id + "|" + r.logical)
         )
-          throw Error("رکوردهای دوره ناقص یا تکراری است.");
+          throw Error("رکوردهای ترم ناقص یا تکراری است.");
         const normalized = decodeWorkspaceRecords(records, {
           workspaceId: period.id,
         }).data;
@@ -166,20 +166,20 @@ globalThis.EduFullBackupValidator = Object.freeze({
           normalized.settings.academicYear !== period.year ||
           normalized.settings.academicTerm !== period.term
         )
-          throw Error("عنوان دوره با اطلاعات پشتیبان سازگار نیست.");
+          throw Error("عنوان ترم با اطلاعات پشتیبان سازگار نیست.");
         periods.push({ period, data: normalized });
       }
       if (Object.keys(value.reportDrafts || {}).some((id) => !ids.has(id)))
-        throw Error("توضیحات گزارش متعلق به دوره ناموجود است.");
+        throw Error("توضیحات گزارش متعلق به ترم ناموجود است.");
       if (!periods.length || !ids.has(value.activeWorkspace))
-        throw Error("دوره فعال پشتیبان موجود نیست.");
+        throw Error("ترم فعال پشتیبان موجود نیست.");
       for (const name of ["records", "events", "undo", "reports", "backups"])
         for (const row of value.stores[name]) {
           if (
             !isDataObject(row) ||
             (row.workspace != null && !ids.has(row.workspace))
           )
-            throw Error("رکورد خارج از دوره‌های پشتیبان است.");
+            throw Error("رکورد خارج از ترم‌های پشتیبان است.");
           if (name === "undo" && !ids.has(row.id))
             throw Error("شناسه بازگردانی نامعتبر است.");
           if (
@@ -201,7 +201,7 @@ globalThis.EduFullBackupValidator = Object.freeze({
             throw Error("ساختار تاریخچه پشتیبان معتبر نیست.");
           if (name === "reports") {
             if (!ids.has(row.workspace))
-              throw Error("کارنامه ثابت متعلق به دوره موجود نیست.");
+              throw Error("کارنامه ثابت متعلق به ترم موجود نیست.");
             validateFrozenReport(row);
           }
           if (name === "backups" && !row.full)
@@ -212,12 +212,26 @@ globalThis.EduFullBackupValidator = Object.freeze({
       const undoIds = new Set();
       for (const undo of value.stores.undo) {
         if (undoIds.has(undo.id))
-          throw Error("رکورد بازگردانی دوره تکراری است.");
+          throw Error("رکورد بازگردانی ترم تکراری است.");
         undoIds.add(undo.id);
         const period = periods.find(
           (item) => item.period.id === undo.id,
         )?.period;
         validatedUndoCandidate(undo, recordSets.get(undo.id), period);
+        for (const peer of undo.recoveredPeers || []) {
+          const target = periods.find(
+            (item) => item.period.id === peer.id,
+          )?.period;
+          if (
+            !target ||
+            target.id === undo.id ||
+            target.year !== period.year ||
+            !Number.isSafeInteger(peer.revision) ||
+            peer.revision < 1 ||
+            peer.revision > target.revision
+          )
+            throw Error("سابقهٔ اصلاح نام در نوبت‌های سال تحصیلی معتبر نیست.");
+        }
       }
       if (value.version === 2 && !Array.isArray(value.gradeDrafts))
         throw Error("بخش پیش‌نویس نمره پشتیبان ناقص است.");

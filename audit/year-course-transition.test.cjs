@@ -199,6 +199,7 @@ test("second term preserves every shared definition when descriptive identity di
     term: secondTerm,
     requireSequence: true,
     firstRevision: 9,
+    source: { id: "first", revision: 9 },
   });
   assert.deepEqual(f.effects.switches, ["created"]);
 });

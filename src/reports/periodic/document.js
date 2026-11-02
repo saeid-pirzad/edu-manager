@@ -158,6 +158,7 @@ function documentHtml(m) {
     esc(faDate(m.end)) +
     " · سال تحصیلی " +
     esc(m.academicYear) +
+    (m.academicTerm ? " · ترم " + esc(m.academicTerm) : "") +
     "</p>" +
     (m.class ? "<p>کلاس: " + esc(m.class.name) + "</p>" : "") +
     (m.student

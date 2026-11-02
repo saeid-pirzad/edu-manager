@@ -18,13 +18,14 @@ async function bootstrapV24() {
       } catch (error) {
         forgetInstallation();
         resetScreen(
-          "حذف بانک انجام شده است؛ پاک‌سازی حافظه مرورگر هنوز کامل نشده است. برای ادامه، دوباره بارگذاری کنید. " +
+          "اطلاعات بانک آماده است؛ پاک‌سازی حافظه مرورگر هنوز کامل نشده است. برای ادامه، دوباره بارگذاری کنید. " +
             error.message,
         );
         return;
       }
     }
-    let periods = await allFrom("catalog");
+    let periods = await allFrom("catalog"),
+      initialWorkspaceId = null;
     if (!periods.length) {
       const raw = resetMarker ? null : localStorage.getItem(STORAGE_KEY);
       let data;
@@ -50,6 +51,7 @@ async function bootstrapV24() {
         if (!created) throw error;
       }
       periods = [created];
+      initialWorkspaceId = created.id;
       const check = await readWorkspace(created.id);
       if (!check.data) throw Error("بازخوانی انتقال تأیید نشد.");
       if (raw) {
@@ -63,9 +65,15 @@ async function bootstrapV24() {
       for (const change of normalizedYears.changed) broadcast(change);
     }
     const preferred = preferredPeriod();
-    workspace =
-      periods.find((x) => x.id === preferred) ||
-      periods.sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+    workspace = selectAcademicWorkspace(
+      periods,
+      academicBootstrapPreferences(periods, {
+        year: preferredAcademicYear(),
+        preferredId: preferred,
+        resetMarker,
+        initialWorkspaceId,
+      }),
+    );
     const annual = globalThis.EduAnnualModules
       ? await synchronizeAnnualForRead(workspace.id)
       : null;
@@ -80,6 +88,11 @@ async function bootstrapV24() {
       rememberPeriod(workspace.id);
     } catch (ignore) {}
     setStatus("اطلاعات ذخیره‌شده خوانده شد.", "saved");
+    const recoveryWarning = academicWorkspaceRecoveryWarning(
+      workspace,
+      periods,
+    );
+    if (recoveryWarning) setStatus(recoveryWarning, "pending");
     for (const change of annual?.changed || [])
       broadcast({ ...change, annualModular: true });
     if (annual?.conflicts.length)

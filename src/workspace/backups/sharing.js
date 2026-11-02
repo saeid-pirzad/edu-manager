@@ -32,7 +32,7 @@ async function openBackupShare() {
       EduIcons.html("shield") +
       "</span><div><h4>همه اطلاعات سیستم، در یک فایل</h4><p>ابتدا فایل آماده می‌شود؛ سپس روش ارسال و گیرنده را خودتان انتخاب می‌کنید.</p></div></header>" +
       '<div class="backup-share-file" data-backup-share-file hidden></div><p class="backup-share-status" data-backup-share-status role="status" aria-live="polite">در حال آماده‌سازی و بررسی پشتیبان کامل…</p>' +
-      '<p class="backup-share-note">این فایل اطلاعات کل سیستم و همهٔ سال‌های تحصیلی را دارد؛ آن را فقط برای گیرنده مورداعتماد بفرستید.</p>' +
+      '<p class="backup-share-note">این فایل کل اطلاعات سیستم، هر دو ترم و سوابق قدیمیِ موجود را دارد؛ آن را فقط برای گیرنده مورداعتماد بفرستید.</p>' +
       '<div class="backup-share-actions"><button type="button" data-workspace-action="share-backup-file" disabled hidden>انتخاب برنامه و ارسال فایل</button><button type="button" class="ghost" data-workspace-action="download-share-backup" disabled hidden>دریافت فایل برای ارسال دستی</button><button type="button" class="ghost" data-workspace-action="prepare-share-backup" hidden>آماده‌سازی دوباره</button><button type="button" class="ghost" data-workspace-action="close">بستن</button></div></section>',
   );
   if (opened === false) return false;
@@ -71,6 +71,7 @@ async function openBackupShare() {
     const json = JSON.stringify(content, null, 2);
     session.name =
       "KelasYar-Backup-" + content.exportedAt.replace(/[:.]/g, "-") + ".json";
+    session.exportedAt = content.exportedAt;
     session.blob = new Blob([json], { type: "application/json" });
     if (typeof File === "function")
       // Chromium rejects .json attachments on some platforms even when
@@ -91,7 +92,7 @@ async function openBackupShare() {
       esc(session.file?.name || session.name) +
       "</strong><span>" +
       content.stores.catalog.length.toLocaleString("fa-IR") +
-      " دوره · " +
+      " پروندهٔ ترم · " +
       Math.max(1, Math.ceil(session.blob.size / 1024)).toLocaleString("fa-IR") +
       " کیلوبایت</span><span>زمان تهیه: " +
       esc(new Date(content.exportedAt).toLocaleString("fa-IR")) +
@@ -164,6 +165,11 @@ async function sharePreparedBackup(button) {
       files: [session.file],
       title: "پشتیبان کامل کلاس‌یار",
     });
+    recordFullBackupDelivery({
+      kind: "share-handed-off",
+      exportedAt: session.exportedAt,
+      name: session.file.name,
+    });
     backupShareMessage(
       session,
       "فایل به پنجره اشتراک‌گذاری سپرده شد؛ ارسال نهایی و فایل پیوست را در برنامه مقصد بررسی کنید.",
@@ -195,6 +201,11 @@ function downloadPreparedBackup() {
     checkBackupShare(session);
     if (!session.blob) throw Error("ابتدا پشتیبان را دوباره آماده کنید.");
     downloadLocalFile(session.blob, session.name);
+    recordFullBackupDelivery({
+      kind: "download-requested",
+      exportedAt: session.exportedAt,
+      name: session.name,
+    });
     backupShareMessage(
       session,
       "دانلود فایل درخواست شد؛ آن را در ایمیل یا بله، به‌صورت فایل پیوست کنید. ذخیره و ارسال نهایی را بررسی کنید.",

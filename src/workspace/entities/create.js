@@ -28,7 +28,7 @@ async function createEntityV24(event, kind) {
       target.view !== state.view ||
       (kind === "class" && target.schoolId !== state.schoolId)
     )
-      throw Error("دوره یا صفحه مقصد تغییر کرده است؛ ثبت انجام نشد.");
+      throw Error("ترم یا صفحه مقصد تغییر کرده است؛ ثبت انجام نشد.");
     const school = kind === "class" ? getSchool(target.schoolId) : null;
     if (kind === "class" && !school) throw Error("مدرسه مقصد وجود ندارد.");
     const peers = kind === "school" ? db.schools : school.classes;

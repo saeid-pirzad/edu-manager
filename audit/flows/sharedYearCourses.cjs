@@ -142,10 +142,10 @@ module.exports = async function sharedYearCourses() {
     },
     createPeriod = async (targetYear, term, first = "") => {
       closeModal();
-      await EduV24.openNewPeriod(first);
+      await EduV24.test.prepareLegacyPeriodFixture();
       document.getElementById("periodYear").value = targetYear;
       document.getElementById("periodTerm").value = term;
-      await EduV24.createNewPeriod();
+      await EduV24.test.createLegacyPeriod();
       return EduV24.getReportContext().id;
     },
     writeFixture = async (records, catalog) => {

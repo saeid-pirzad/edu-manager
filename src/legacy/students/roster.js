@@ -12,6 +12,7 @@ function snapshotRoster(c) {
     id: st.id,
     name: st.name,
     code: st.code || "",
+    ...(st.recovered === true ? { recovered: true } : {}),
   }));
 }
 
@@ -29,7 +30,7 @@ function validateReportNotes(value, workspaceId) {
       !key.startsWith(workspaceId + "|") ||
       key.split("|").length !== 7
     )
-      throw Error("توضیحات گزارش با دوره پشتیبان سازگار نیست.");
+      throw Error("توضیحات گزارش با ترم پشتیبان سازگار نیست.");
   return Object.fromEntries(Object.entries(value));
 }
 function historicalRoster(c, session) {

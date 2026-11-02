@@ -153,7 +153,7 @@ globalThis.EduFrozenReportValidator = Object.freeze({
             )
               fail();
             gradePolicy.validate(l.policy);
-            for (const module of l.modules)
+            for (const module of l.modules) {
               if (
                 typeof module.complete !== "boolean" ||
                 (module.complete
@@ -162,9 +162,35 @@ globalThis.EduFrozenReportValidator = Object.freeze({
                 (module.passed === true && module.final < l.policy.moduleMin)
               )
                 fail();
-            // Historical snapshots retain module results, not the raw m/c
-            // inputs. Check their course aggregate with the same domain math;
-            // never invent missing component grades to recalculate a module.
+              if (module.inputs !== undefined) {
+                const inputs = module.inputs;
+                if (
+                  !isDataObject(inputs) ||
+                  Object.keys(inputs).length !== 2 ||
+                  !Object.hasOwn(inputs, "m") ||
+                  !Object.hasOwn(inputs, "c")
+                )
+                  fail();
+                for (const field of ["m", "c"])
+                  if (
+                    inputs[field] !== null &&
+                    (typeof inputs[field] !== "number" ||
+                      !Number.isFinite(inputs[field]) ||
+                      !gradePolicy.parse(inputs[field], l.policy, field, "pod")
+                        .ok)
+                  )
+                    fail();
+                const expected = gradePolicy.moduleResult(l.policy, inputs);
+                if (
+                  module.final !== expected.final ||
+                  module.complete !== expected.complete ||
+                  module.passed !== expected.passed
+                )
+                  fail();
+              }
+            }
+            // Older snapshots have results only. Validate their aggregate
+            // without inventing raw inputs; new inputs are checked above.
             const expected = gradePolicy.moduleAggregate(l.modules);
             if (l.final !== expected.final || l.passed !== expected.passed)
               fail();

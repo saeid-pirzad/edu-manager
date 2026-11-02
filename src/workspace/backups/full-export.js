@@ -26,7 +26,7 @@ async function snapshotInstallation() {
     )
       throw Object.assign(
         Error(
-          "بانک یا دوره هنگام تهیه پشتیبان آماده نیست؛ پس از پایان جابه‌جایی دوباره تلاش کنید.",
+          "بانک یا ترم هنگام تهیه پشتیبان آماده نیست؛ پس از پایان جابه‌جایی دوباره تلاش کنید.",
         ),
         {
           code:
@@ -113,6 +113,10 @@ async function snapshotInstallation() {
 async function exportFullBackup() {
   const content = await snapshotInstallation();
   downloadJSON(content, "پشتیبان-کامل-" + todayISO() + ".json");
+  recordFullBackupDelivery({
+    kind: "download-requested",
+    exportedAt: content.exportedAt,
+  });
   setStatus(
     "دانلود پشتیبان کامل سیستم درخواست شد" +
       (content.gradeDrafts.length

@@ -120,6 +120,65 @@ test("null imported grade-draft rows produce a controlled validation error", () 
   value.gradeDrafts = [null];
   assert.throws(() => validate(value), /پیش‌نویس/);
 });
+
+function recoveredUndoBackup() {
+  const value = fixture(),
+    peer = {
+      ...value.stores.catalog[0],
+      id: "second",
+      term: "دوم",
+      revision: 2,
+    };
+  value.stores.catalog.push(peer);
+  value.stores.records.push({
+    key: "second|meta",
+    workspace: "second",
+    logical: "meta",
+    value: {
+      layout: [],
+      settings: { academicYear: peer.year, academicTerm: peer.term },
+    },
+  });
+  value.stores.undo.push({
+    id: "first",
+    revision: 1,
+    action: "اصلاح نام بازیابی‌شده",
+    before: [],
+    recoveredPeers: [{ id: "second", revision: 2, rosters: [] }],
+  });
+  return value;
+}
+
+test("full backups preserve same-year recovered-name undo guards without promoting stale revisions", () => {
+  for (const revision of [1, 2]) {
+    const value = recoveredUndoBackup();
+    value.stores.undo[0].recoveredPeers[0].revision = revision;
+    assert.equal(validate(value).length, 2);
+    assert.equal(value.stores.undo[0].recoveredPeers[0].revision, revision);
+  }
+});
+
+test("recovered-name undo cannot reference missing, self, future or different-year periods", () => {
+  for (const variant of [
+    "missing",
+    "self",
+    "future",
+    "other-year",
+    "invalid",
+  ]) {
+    const value = recoveredUndoBackup(),
+      marker = value.stores.undo[0].recoveredPeers[0];
+    if (variant === "missing") marker.id = "missing";
+    if (variant === "self") marker.id = "first";
+    if (variant === "future") marker.revision = 3;
+    if (variant === "invalid") marker.revision = 0;
+    if (variant === "other-year") {
+      value.stores.catalog[1].year = "1406-1407";
+      value.stores.records[1].value.settings.academicYear = "1406-1407";
+    }
+    assert.throws(() => validate(value), /اصلاح نام/);
+  }
+});
 test("records are grouped once rather than rescanned for every period", () => {
   const value = fixture();
   for (let i = 0; i < 100; i++) {

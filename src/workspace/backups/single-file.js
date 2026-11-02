@@ -162,10 +162,13 @@ async function restoreSingleFile() {
       "granted"
     ) {
       if (await syncSingleFile()) startSingleFile();
-    } else
+    } else {
+      pauseSingleFile();
+      showSingleFileFallback(true);
       singleFileStatus(
         "مجوز فایل نیاز به تأیید دارد؛ «ذخیره اکنون / اجازه مجدد» را بزنید.",
       );
+    }
   } catch (error) {
     failSingleFile(error);
   }
@@ -256,6 +259,7 @@ async function disableSingleFile() {
     if (await persistSingleFile({ target }))
       broadcast({ type: "single-file-changed", connectionId: null });
     if (singleFileWriting) await singleFileWriting;
+    showSingleFileFallback(false);
     singleFileStatus("اتصال متوقف شد؛ فایل موجود حذف نشده است.");
   } catch (error) {
     singleFile = target;
@@ -312,6 +316,11 @@ function syncSingleFile() {
       target.size = saved.size;
       target.savedAt = snapshot.exportedAt;
       if (!(await persistSingleFile({ target }))) return false;
+      recordFullBackupDelivery({
+        kind: "automatic-file",
+        exportedAt: snapshot.exportedAt,
+        name: target.handle.name,
+      });
       showSingleFileFallback(false);
       singleFileStatus(
         "ذخیره شد: " +

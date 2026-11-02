@@ -93,6 +93,13 @@ function fixture() {
     },
     beginRecordEditorSave: () => () => {},
     assertEntityWritable() {},
+    preserveAsyncTarget() {
+      const id = c.workspace.id;
+      return () => {
+        if (c.workspace.id !== id) throw Error("workspace changed");
+      };
+    },
+    validateFullBackup: { normalize: structuredClone },
     flushDrafts: async () => {},
     writer: Promise.resolve(),
     putBackup: async () => effects.push("backup"),
@@ -139,6 +146,13 @@ function fixture() {
     },
     context,
   });
+  vm.runInContext(
+    fs.readFileSync(
+      path.join(__dirname, "../src/workspace/backups/safety.js"),
+      "utf8",
+    ),
+    c,
+  );
   vm.runInContext(
     fs.readFileSync(
       path.join(__dirname, "../src/workspace/entities/delete.js"),

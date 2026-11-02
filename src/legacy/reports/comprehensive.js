@@ -538,6 +538,10 @@ function generateGlobalReport() {
 }
 
 function copyGlobalReportText(btn) {
+  return EduV24.copyReport(buildGlobalReportText, btn);
+}
+
+function buildGlobalReportText() {
   const filteredSessions = getFilteredSessions();
   if (filteredSessions.length === 0) return alert("موردی برای گزارش یافت نشد.");
   let text = `📊 گزارش جامع عملکرد کلاسی\n`;
@@ -769,7 +773,7 @@ function copyGlobalReportText(btn) {
     });
   }
   text += `\n✅ تولید شده توسط کلاس‌یار`;
-  copyToClipboard(text, btn);
+  return text;
 }
 
 // ==================== زیربخش ۲: گزارش درس ====================

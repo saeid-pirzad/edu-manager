@@ -54,12 +54,11 @@ function fixture({ syncFailure = false, asyncFailure = false } = {}) {
     EduFullBackupValidator: {
       create: () =>
         Object.assign(
-          () => [
-            {
-              period,
-              data: { settings: { academicTerm: "اول" }, sessions: [] },
-            },
-          ],
+          () =>
+            source.stores.catalog.map((saved) => ({
+              period: saved,
+              data: { settings: { academicTerm: saved.term }, sessions: [] },
+            })),
           { normalize: (value) => value },
         ),
     },
@@ -95,6 +94,8 @@ function fixture({ syncFailure = false, asyncFailure = false } = {}) {
     draftGeneration: 0,
     writeFailureGeneration: 0,
     rememberPeriod() {},
+    rememberAcademicYear() {},
+    academicWorkspaceRecoveryWarning: () => "",
     hydrateReportNotes() {},
     loadDrafts: async () => {},
     closeModal() {},
@@ -202,6 +203,48 @@ test("full restore preserves period identities and closed status and keeps a saf
     committed.some((row) => row.name === "backups" && row.row?.full === safety),
   );
 });
+
+for (const stalePeer of [false, true]) {
+  test(`full restore remaps only snapshot-matching recovered-name undo guards (${stalePeer ? "stale peer" : "current peers"})`, async () => {
+    const f = fixture();
+    f.source.stores.catalog.push({
+      ...f.source.stores.catalog[0],
+      id: "second",
+      term: "دوم",
+      revision: 4,
+    });
+    f.source.stores.undo.push({
+      id: "source",
+      revision: 2,
+      action: "اصلاح نام بازیابی‌شده",
+      before: [],
+      recoveredPeers: [
+        {
+          id: "second",
+          revision: stalePeer ? 3 : 4,
+          rosters: [],
+          migrationWarnings: ["نام دانش‌آموز a در کلاس نیازمند بررسی است."],
+        },
+      ],
+    });
+    f.c.previewFullBackup(f.source);
+    const sourceJson = JSON.stringify(f.source);
+    await f.c.restoreFullBackup();
+    const restoredCatalog = f.committed
+        .filter((row) => row.name === "catalog" && row.row)
+        .map((row) => row.row),
+      restoredUndo = f.committed.find(
+        (row) => row.name === "undo" && row.row,
+      ).row;
+    assert.equal(restoredUndo.revision, 3);
+    assert.equal(
+      restoredCatalog.find((row) => row.id === "second").revision,
+      5,
+    );
+    assert.equal(restoredUndo.recoveredPeers[0].revision, stalePeer ? 3 : 5);
+    assert.equal(JSON.stringify(f.source), sourceJson);
+  });
+}
 test("full restore requires confirmation before taking a snapshot or writing", async () => {
   const { c, committed } = fixture();
   c.document.getElementById = () => ({ checked: false });
@@ -323,6 +366,40 @@ test("successful complete replacement retires a previously rejected write from t
   await f.c.writer;
   assert.notEqual(f.c.writer, failure);
   assert.equal(f.c.writeFailureGeneration, 8);
+});
+
+test("complete replacement anchors the incoming active academic year only after old installation preferences are cleaned", async () => {
+  const f = fixture(),
+    steps = [];
+  f.c.completeResetCleanup = async () => steps.push("cleanup");
+  f.c.rememberAcademicYear = (year) => steps.push("year:" + year);
+  await f.c.restoreFullBackup();
+  assert.deepEqual(steps, ["cleanup", "year:1405-1406"]);
+  assert.equal(f.c.workspace.year, "1405-1406");
+});
+
+test("a failed full replacement never switches the existing installation's academic-year anchor", async () => {
+  const f = fixture({ asyncFailure: true }),
+    anchored = [];
+  f.c.rememberAcademicYear = (year) => anchored.push(year);
+  await assert.rejects(f.c.restoreFullBackup());
+  assert.deepEqual(anchored, []);
+});
+test("a committed restore retains its durable selection when browser preference cleanup fails", async () => {
+  const f = fixture();
+  f.c.completeResetCleanup = async () => {
+    throw Error("preference cleanup failed");
+  };
+  await assert.rejects(f.c.restoreFullBackup(), /preference cleanup failed/);
+  const marker = f.committed.find(
+    (entry) =>
+      entry.name === "records" && entry.row?.key === "@installation-reset",
+  ).row;
+  assert.equal(marker.value.activeWorkspace, "source");
+  assert.equal(marker.value.academicYear, "1405-1406");
+  assert.equal(marker.value.phase, "cleanup");
+  assert.equal(f.c.ready, false);
+  assert.equal(f.c.blocked, true);
 });
 
 test("failed replacement retains the original writer and its generation", async () => {

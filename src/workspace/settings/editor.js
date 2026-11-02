@@ -16,13 +16,21 @@ async function openSettingsV24() {
       await writer.catch(() => {});
     }
     if (origin !== workspace?.id || connection !== sourceConnection)
-      throw Error("دوره تغییر کرده است؛ تنظیمات را دوباره باز کنید.");
+      throw Error("ترم تغییر کرده است؛ تنظیمات را دوباره باز کنید.");
     const context = captureWorkspaceContext();
     const opened = showModal(
-      "تنظیمات دوره",
+      "تنظیمات ورود",
       '<form id="settingsEditor" class="record-editor settings-editor" novalidate>' +
-        '<div class="record-editor-context settings-context"><span class="settings-eyebrow">دسترسی به دوره</span><h4>رمز ورود</h4><p>' +
-        esc((workspace?.year || "") + " / " + (workspace?.term || "")) +
+        '<div class="record-editor-context settings-context"><span class="settings-eyebrow">دسترسی به اطلاعات</span><h4>رمز ورود</h4><p>' +
+        esc(
+          (workspace?.year || "") +
+            " / " +
+            ({ first: "ترم اول", second: "ترم دوم" }[
+              workspace?.termKind || academicTermKind(workspace?.term || "")
+            ] ||
+              workspace?.term ||
+              ""),
+        ) +
         '</p><span class="settings-password-state' +
         (db.settings.password ? " is-enabled" : "") +
         '">' +
@@ -30,7 +38,7 @@ async function openSettingsV24() {
         "</span></div>" +
         '<section class="settings-section" aria-labelledby="settingsPasswordTitle"><h5 id="settingsPasswordTitle">' +
         (db.settings.password ? "تغییر رمز" : "افزودن رمز") +
-        "</h5><p>این رمز فقط برای ورود به همین دوره استفاده می‌شود.</p>" +
+        "</h5><p>این رمز برای ورود به اطلاعات ترم فعلی است؛ رمزهای ثبت‌شدهٔ قبلی بدون تغییر حفظ می‌شوند.</p>" +
         '<label class="course-field" for="newPass">رمز جدید<input type="password" id="newPass" autocomplete="new-password" aria-describedby="settingsHint settingsError" placeholder="رمز جدید را وارد کنید"></label>' +
         '<p id="settingsHint" class="settings-field-hint">اگر این کادر را خالی بگذارید، رمز فعلی تغییر نمی‌کند.</p></section>' +
         '<section class="settings-remove-section" aria-label="حذف رمز"><label class="settings-remove-option"><input type="checkbox" id="removePassword" aria-describedby="settingsRemoveHint"><span>حذف رمز ورود<small id="settingsRemoveHint">برای ورود بدون رمز، این گزینه را انتخاب و کادر رمز جدید را خالی کنید.</small></span></label></section>' +
@@ -63,9 +71,15 @@ async function saveSettingsV24() {
   if (!form) return false;
   const context = settingsEditing,
     sourceConnection = connection,
+    sourceData = db,
+    sourcePassword = db.settings.password,
+    sourceAuthentication = isAuthenticated,
     passwordInput = form.querySelector("#newPass");
   const password = passwordInput.value,
     remove = form.querySelector("#removePassword").checked;
+  let passwordWritePending = false,
+    temporaryAuthentication = false,
+    assignedPassword;
   settingsSaving = true;
   const finish = beginRecordEditorSave(form);
   try {
@@ -96,10 +110,19 @@ async function saveSettingsV24() {
         : db.settings.password;
     check();
     if (nextPassword !== db.settings.password) {
+      // Adding the first password must not lock out its already-open session
+      // while the guarded write is pending. A failed write restores that state.
+      if (!sourcePassword) {
+        isAuthenticated = true;
+        temporaryAuthentication = true;
+      }
+      assignedPassword = nextPassword;
       db.settings.password = nextPassword;
+      passwordWritePending = true;
       await saveDBV24({
-        action: remove ? "حذف رمز ورود دوره" : "تغییر رمز ورود دوره",
+        action: remove ? "حذف رمز ورود ترم" : "تغییر رمز ورود ترم",
       });
+      passwordWritePending = false;
     }
     if (
       settingsEditing !== context ||
@@ -118,9 +141,18 @@ async function saveSettingsV24() {
     rememberRecordEditor();
     settingsEditing = null;
     closeModal();
-    setStatus("تنظیمات این دوره ذخیره شد.", "saved");
+    setStatus("تنظیمات ورود ذخیره شد.", "saved");
     return true;
   } catch (error) {
+    if (
+      passwordWritePending &&
+      workspace.id === context?.id &&
+      connection === sourceConnection
+    ) {
+      if (db === sourceData && db.settings.password === assignedPassword)
+        db.settings.password = sourcePassword;
+      if (temporaryAuthentication) isAuthenticated = sourceAuthentication;
+    }
     if (!showRecordEditorError(error, "settingsError")) handleError(error);
     return false;
   } finally {

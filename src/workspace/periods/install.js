@@ -56,7 +56,10 @@ function academicTermKind(term) {
 }
 async function installWorkspace(data, details) {
   const id = details.id || uid(),
-    now = new Date().toISOString();
+    now = new Date().toISOString(),
+    source = details.source
+      ? { id: details.source.id, revision: details.source.revision }
+      : null;
   const catalog = {
     id,
     year: EduAcademicYear.normalize(details.year ?? data.settings.academicYear),
@@ -89,6 +92,27 @@ async function installWorkspace(data, details) {
       existing = store.getAll();
     existing.onsuccess = () => {
       try {
+        // The copied roster and course definitions must still belong to the
+        // exact source snapshot. Checking only after insertion is too late.
+        if (source || details.requireSequence) {
+          const liveSource = existing.result.find(
+            (row) => row.id === source?.id,
+          );
+          if (
+            !source ||
+            typeof source.id !== "string" ||
+            !Number.isSafeInteger(source.revision) ||
+            source.revision < 1 ||
+            !liveSource ||
+            liveSource.revision !== source.revision
+          ) {
+            const error = Error(
+              "اطلاعات نوبت مبدأ هنگام ساخت نوبت جدید تغییر کرده است؛ هیچ نوبتی ساخته نشد. فرم را دوباره باز کنید.",
+            );
+            error.code = "WORKSPACE_CONFLICT";
+            throw error;
+          }
+        }
         if (
           existing.result.some(
             (row) =>
@@ -131,7 +155,7 @@ async function installWorkspace(data, details) {
     await done;
   } catch (error) {
     if (duplicate)
-      throw Error("دوره دیگری با همین سال و عنوان نوبت وجود دارد.", {
+      throw Error("ترم دیگری با همین سال و عنوان نوبت وجود دارد.", {
         cause: error,
       });
     throw queueError || error;

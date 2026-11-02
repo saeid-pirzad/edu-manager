@@ -68,6 +68,37 @@ test("assessment navigation cannot retarget another class while waiting for draf
   assert.equal(context.workspace.id, "first");
 });
 
+test("switching an assessment modal to a protected term cannot reopen grades before login", async () => {
+  const { context, calls } = fixture();
+  context.isAuthenticated = true;
+  context.db = { settings: { password: "" } };
+  context.assertWorkspaceReadable = () => {
+    if (context.db.settings.password && !context.isAuthenticated)
+      throw Error("login required");
+  };
+  const switchPeriod = context.switchPeriod;
+  context.switchPeriod = async (id) => {
+    await switchPeriod(id);
+    context.db = { settings: { password: "destination-hash" } };
+    context.isAuthenticated = false;
+  };
+  context.showModal = () => calls.push("must not expose grades");
+  await assert.rejects(
+    context.openAssessmentStage({
+      dataset: { term: "دوم", stage: "final" },
+      closest: (selector) => (selector === "#modalBody" ? {} : { dataset: {} }),
+    }),
+    /login required/,
+  );
+  assert.deepEqual(calls, ["flush", "second"]);
+  assert.equal(context.workspace.id, "second");
+  assert.equal(context.isAuthenticated, false);
+  // Successful login can return to the user's requested lesson and stage.
+  assert.equal(context.state.lessonId, "lesson");
+  assert.equal(context.state.tab, "grades");
+  assert.equal(vm.runInContext("assessmentSelectedStage", context), "final");
+});
+
 test("assessment modal keeps its own lesson identity when opened outside the lesson page", async () => {
   const { context } = fixture();
   context.state.lessonId = null;
@@ -92,25 +123,41 @@ test("assessment navigation refuses a target term without the same lesson", asyn
   assert.equal(context.workspace.id, "first");
 });
 
-test("missing or ambiguous destination terms never open academic creation from grade entry", async () => {
-  for (const rows of [
-    [],
-    [
-      { id: "a", year: "1405-1406", termKind: "second" },
-      { id: "b", year: "1405-1406", termKind: "second" },
-    ],
-  ]) {
-    const { context, calls } = fixture();
-    context.allFrom = async () => rows;
-    context.openNewPeriod = () => {
-      throw Error("must not create a period from grades");
-    };
-    await assert.rejects(
-      context.openAssessmentStage({ dataset: { term: "دوم", stage: "final" } }),
-      /مدیریت نوبت/,
-    );
-    assert.deepEqual(calls, ["flush"]);
-  }
+test("an unstarted second term opens the current-year term hub without creating another year", async () => {
+  const { context, calls } = fixture();
+  context.allFrom = async () => [
+    { id: "other-year", year: "1406-1407", termKind: "second" },
+  ];
+  context.openNewPeriod = () => {
+    throw Error("must not create a period from grades");
+  };
+  let notice;
+  context.openPeriods = async (options) => {
+    calls.push("current-year term hub");
+    notice = options.notice;
+  };
+  const result = await context.openAssessmentStage({
+    dataset: { term: "دوم", stage: "final" },
+  });
+  assert.equal(result, false);
+  assert.deepEqual(calls, ["flush", "current-year term hub"]);
+  assert.match(notice, /نوبت دوم هنوز شروع نشده/);
+  assert.match(notice, /همین بخش.*این سال تحصیلی/);
+  assert.equal(context.workspace.id, "first");
+  assert.equal(context.state.lessonId, "lesson");
+});
+
+test("ambiguous legacy destination terms cannot be guessed from grade entry", async () => {
+  const { context, calls } = fixture();
+  context.allFrom = async () => [
+    { id: "a", year: "1405-1406", termKind: "second" },
+    { id: "b", year: "1405-1406", termKind: "second" },
+  ];
+  await assert.rejects(
+    context.openAssessmentStage({ dataset: { term: "دوم", stage: "final" } }),
+    /چند نسخه.*مدیریت نوبت/,
+  );
+  assert.deepEqual(calls, ["flush"]);
 });
 
 test("assessment routing follows term identity even after the visible title is renamed", async () => {
@@ -134,6 +181,24 @@ test("assessment routing follows term identity even after the visible title is r
     dataset: { term: "دوم", stage: "midterm" },
   });
   assert.deepEqual(calls, ["flush", "second", "render"]);
+});
+
+test("gradebook uses only fixed first and second labels even for a renamed legacy term", () => {
+  const { context } = fixture();
+  context.workspace.term = "عنوان قدیمی مستقل";
+  context.workspace.termKind = "second";
+  context.getSortedStudents = () => [];
+  context.assessmentWeights = () => ({ practical: 70, theory: 30 });
+  context.esc = String;
+  const html = context.buildAssessmentEditor({}, { id: "lesson", name: "درس" });
+  const navigation = html.match(
+    /<nav[^>]*assessment-term-navigation[^>]*>(.*?)<\/nav>/s,
+  )[1];
+  assert.equal((navigation.match(/<button/g) || []).length, 2);
+  assert.equal((html.match(/data-term="اول"/g) || []).length, 1);
+  assert.equal((html.match(/data-term="دوم"/g) || []).length, 3);
+  assert.match(html, /aria-label="میان‌ترم نوبت دوم"/);
+  assert.doesNotMatch(html, /عنوان قدیمی مستقل|periodYear|new-period|دوره/);
 });
 
 test("configured practical and theory weights are shared by both grade stages", () => {

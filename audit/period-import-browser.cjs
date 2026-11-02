@@ -10,10 +10,10 @@ async function periodImportRace() {
   try {
     closeModal();
     const create = async (year) => {
-      await EduV24.openNewPeriod();
+      await EduV24.test.prepareLegacyPeriodFixture();
       document.getElementById("periodYear").value = year;
       document.getElementById("periodTerm").value = "اول";
-      await EduV24.createNewPeriod();
+      await EduV24.test.createLegacyPeriod();
       return EduV24.getReportContext().id;
     };
     const source = await create("1420-1421");

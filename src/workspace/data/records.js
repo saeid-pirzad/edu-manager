@@ -65,6 +65,6 @@ async function readWorkspaceSnapshot(id) {
     requestPromise(workspaceRecordRequest(tx.objectStore("records"), id)),
     done,
   ]);
-  if (!period) throw Error("دوره موجود نیست.");
+  if (!period) throw Error("ترم موجود نیست.");
   return { period, ...decodeWorkspaceRecords(rows, { workspaceId: id }) };
 }

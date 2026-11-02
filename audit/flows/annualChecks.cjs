@@ -11,7 +11,7 @@ async function annualChecks() {
       try {
         await EduV24.prepareReportSnapshot({ annual: true });
       } catch (error) {
-        denied = /بازیابی|چند دوره|مبهم/.test(error.message);
+        denied = /بازیابی|چند نسخه|مبهم/.test(error.message);
       }
       record(
         "Y12",
@@ -20,10 +20,10 @@ async function annualChecks() {
       );
     }
     closeModal();
-    await EduV24.openNewPeriod();
+    await EduV24.test.prepareLegacyPeriodFixture();
     document.getElementById("periodYear").value = "1407-1408";
     document.getElementById("periodTerm").value = "اول";
-    await EduV24.createNewPeriod();
+    await EduV24.test.createLegacyPeriod();
     const first = EduV24.getReportContext().id;
     db.schools[0].classes[0].lessons[0].teacher = "دبیر نوبت اول";
     db.sessions = [
@@ -95,10 +95,10 @@ async function annualChecks() {
     if (!EduV24.getReportContext().closed)
       throw Error("First term must close before the second starts");
     closeModal();
-    await EduV24.openNewPeriod();
+    await EduV24.test.prepareLegacyPeriodFixture();
     document.getElementById("periodYear").value = "1407-1408";
     document.getElementById("periodTerm").value = "دوم";
-    await EduV24.createNewPeriod();
+    await EduV24.test.createLegacyPeriod();
     db.schools[0].classes[0].lessons[0].teacher = "دبیر نوبت دوم";
     db.sessions = [
       {

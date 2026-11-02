@@ -30,6 +30,16 @@ function validateFrozenReport(report) {
 }
 
 function frozenLessonRows(lesson) {
+  if (lesson.policy?.method === "modular" && lesson.modules?.length)
+    return (
+      "<tr><td>" +
+      esc(lesson.name) +
+      '</td><td colspan="4">' +
+      modularReportGrades(lesson.modules, lesson) +
+      "</td><td>" +
+      esc(gradeStatus(lesson)) +
+      "</td></tr>"
+    );
   const dual = lesson.mode === "kardanesh";
   const stages = dual ? ["midterm", "final"] : ["final"];
   return stages
@@ -84,7 +94,7 @@ async function showFrozenReport(id) {
     throw Error("اتصال بانک هنگام خواندن کارنامه تغییر کرده است.");
   if (!report) throw Error("کارنامه ثابت موجود نیست.");
   if (report.workspace !== origin)
-    throw Error("این کارنامه متعلق به دورهٔ انتخاب‌شده نیست.");
+    throw Error("این کارنامه متعلق به ترم انتخاب‌شده نیست.");
   validateFrozenReport(report);
   showModal(
     "کارنامه نهایی ثابت",
@@ -244,6 +254,33 @@ function karnamehLessons(parts, schoolId, classroom) {
   return [...lessons.values()];
 }
 
+// Both live and immutable reports use the same module rows. Older frozen
+// reports have results only: absent component inputs stay absent, never inferred.
+function modularReportGrades(modules, result) {
+  return (
+    '<div class="report-modular-grades"><section class="report-modular-course"><div class="report-mobile-score-heading" aria-hidden="true"><span>پودمان</span><div><span>مستمر</span><span>شایستگی</span><span>نتیجه</span></div></div>' +
+    modules
+      .map(
+        (module) =>
+          '<div class="report-module-row" data-module-id="' +
+          esc(module.id) +
+          '"><span class="report-module-title">' +
+          esc(module.name) +
+          '</span><div class="report-stage-values"><span><span class="report-score-label">مستمر</span><b>' +
+          esc(module.inputs?.m ?? "—") +
+          '</b></span><span><span class="report-score-label">شایستگی</span><b>' +
+          esc(module.inputs?.c ?? "—") +
+          '</b></span><span><span class="report-score-label">نتیجه</span><strong>' +
+          finalText(module) +
+          "</strong></span></div></div>",
+      )
+      .join("") +
+    '<div class="report-modular-final"><span>نهایی درس</span><strong>' +
+    finalText(result) +
+    "</strong></div></section></div>"
+  );
+}
+
 function modularOverviewCell(
   lesson,
   sid,
@@ -269,30 +306,15 @@ function modularOverviewCell(
       );
     }
     const result = EduPolicy.lesson(annual.gradingPolicy, annual.poudmans, sid);
-    return (
-      '<div class="report-modular-grades"><section class="report-modular-course"><div class="report-mobile-score-heading" aria-hidden="true"><span>پودمان</span><div><span>مستمر</span><span>شایستگی</span><span>نتیجه</span></div></div>' +
-      annual.poudmans
-        .map((pod) => {
-          const raw = ownScoreRecord(pod.podScores, sid);
-          const grade = result.modules.find((item) => item.id === pod.id);
-          return (
-            '<div class="report-module-row" data-module-id="' +
-            esc(pod.id) +
-            '"><span class="report-module-title">' +
-            esc(pod.name) +
-            '</span><div class="report-stage-values"><span><span class="report-score-label">مستمر</span><b>' +
-            esc(raw.m ?? "—") +
-            '</b></span><span><span class="report-score-label">شایستگی</span><b>' +
-            esc(raw.c ?? "—") +
-            '</b></span><span><span class="report-score-label">نتیجه</span><strong>' +
-            finalText(grade) +
-            "</strong></span></div></div>"
-          );
-        })
-        .join("") +
-      '<div class="report-modular-final"><span>نهایی درس</span><strong>' +
-      finalText(result) +
-      "</strong></div></section></div>"
+    return modularReportGrades(
+      result.modules.map((module) => ({
+        ...module,
+        inputs: ownScoreRecord(
+          annual.poudmans.find((pod) => pod.id === module.id)?.podScores,
+          sid,
+        ),
+      })),
+      result,
     );
   }
   const terms = parts ? ["اول", "دوم"] : [""];
@@ -637,7 +659,7 @@ function detailedV24(c, sid) {
     " | " +
     esc(workspace.year + " / " + workspace.term) +
     " | " +
-    (workspace.closed ? "دوره بسته" : "گزارش در حال کار") +
+    (workspace.closed ? "ترم بسته" : "گزارش در حال کار") +
     '</p></div><div class="karnameh-report-actions no-print"><button type="button" class="ghost" data-workspace-action="karnameh-student" data-class="' +
     esc(c.id) +
     '" data-key="">نمای کلی کلاس</button><button data-workspace-action="print">چاپ / PDF</button></div></header><div class="table-scroll"><table class="grade-report-table karnameh-individual"><thead><tr><th>درس</th><th>عملی / پایانی</th><th>تئوری / مستمر</th><th>نتیجه پایان‌ترم / درس</th><th>وضعیت</th><th>حضور و غیاب</th></tr></thead><tbody>' +

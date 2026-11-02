@@ -101,7 +101,12 @@ function installRuntimeAPI() {
       pendingDrafts: drafts.size,
       closed: !!workspace?.closed,
       year: workspace?.year || "",
-      term: workspace?.term || "",
+      term:
+        { first: "اول", second: "دوم" }[
+          workspace?.termKind || academicTermKind(workspace?.term || "")
+        ] ||
+        workspace?.term ||
+        "",
       ready: ready && !periodLoading,
       blocked,
       retired: connectionRetired,
@@ -111,6 +116,7 @@ function installRuntimeAPI() {
     }),
     prepareReportSnapshot,
     renderAcademicKarnameh,
+    openKarnamehStudent,
     listAnnualReportPeriods,
     assessmentResult,
     annualGradeRows,
@@ -128,6 +134,7 @@ function installRuntimeAPI() {
     openBackupShare,
     sharePreparedBackup,
     downloadPreparedBackup,
+    downloadLastSafetyBackup,
     snapshotInstallation,
     validateFullBackup,
     previewFullBackup,
@@ -137,13 +144,11 @@ function installRuntimeAPI() {
     openPeriods,
     switchPeriod,
     openNewPeriod,
-    createNewPeriod,
-    editPeriodLabel,
-    savePeriodLabel,
     finalizePeriod,
     reopenPeriod,
     showFrozenReport,
     printReport,
+    copyReport: copyReportV24,
     preparePrint,
     commitCSV,
     saveStudent,
@@ -156,6 +161,23 @@ function installRuntimeAPI() {
     saveDB: saveDBV24,
     bootstrap: bootstrapV24,
     test: {
+      prepareLegacyPeriodFixture: () => {
+        if (!globalThis.__EDU_TEST_MODE__) throw Error("فقط در حالت آزمون");
+        // Old-format catalogs are synthetic compatibility fixtures, not a
+        // second year-management interface available to application users.
+        return showModal(
+          "Synthetic legacy catalog fixture",
+          '<input id="periodYear"><select id="periodTerm"><option>اول</option><option>دوم</option></select>',
+        );
+      },
+      createLegacyPeriod: () => {
+        if (!globalThis.__EDU_TEST_MODE__) throw Error("فقط در حالت آزمون");
+        return createNewPeriod();
+      },
+      openLegacyPeriodDeletion: (id) => {
+        if (!globalThis.__EDU_TEST_MODE__) throw Error("فقط در حالت آزمون");
+        return openDeletePeriod(id);
+      },
       getState: () => ({
         db,
         ready,

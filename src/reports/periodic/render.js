@@ -27,7 +27,13 @@ function render(mode) {
   let h =
     '<section class="card periodic-controls no-print"><h3>تهیه گزارش ' +
     modeLabel(mode) +
-    `</h3><p>هفتگی: شنبه تا جمعه. ماهانه: ماه شمسی. سالانه: مهر تا شهریور، نوبت اول و دوم سال تحصیلی فعال. گزارش اولیا فقط اطلاعات هنرجوی انتخاب‌شده را در بر می‌گیرد.</p><div class="periodic-control-grid"><label>مخاطب<select data-legacy-change="reports-periodic-render:0">` +
+    "</h3><p>" +
+    (mode === "annual"
+      ? "گزارش سالانه شامل ترم اول و دوم همین سال تحصیلی است. "
+      : "محدودهٔ این گزارش فقط ترم " +
+        esc(context().term || db.settings.academicTerm || "انتخاب‌شده") +
+        " است؛ اطلاعات ترم دیگر وارد این گزارش نمی‌شود. ") +
+    `هفتگی: شنبه تا جمعه. ماهانه: ماه شمسی. سالانه: مهر تا شهریور. گزارش اولیا فقط اطلاعات هنرجوی انتخاب‌شده را در بر می‌گیرد.</p><div class="periodic-control-grid"><label>مخاطب<select data-legacy-change="reports-periodic-render:0">` +
     option("management", "مدیریت مدرسه", f.audience) +
     option("parent", "اولیای یک هنرجو", f.audience) +
     "</select></label>" +
@@ -59,7 +65,7 @@ function render(mode) {
     "</select></label>";
   if (mode === "annual")
     h +=
-      '<div class="periodic-year-field"><span id="annualSourceStatus">نوبت اول و دوم همین سال به‌صورت خودکار خوانده می‌شوند.</span><button type="button" class="ghost" data-workspace-action="periods">مدیریت نوبت‌های تحصیلی</button></div>';
+      '<div class="periodic-year-field"><span id="annualSourceStatus">اطلاعات ترم اول و دوم همین سال به‌صورت خودکار خوانده می‌شوند.</span><button type="button" class="ghost" data-workspace-action="periods">سال تحصیلی و دو ترم</button></div>';
   if (f.audience === "parent")
     h +=
       `<label>هنرجو<select data-legacy-change="reports-periodic-render:5">` +
@@ -99,7 +105,7 @@ function render(mode) {
       ? documentHtml(last.model)
       : '<div class="card empty" role="status">' +
         (last
-          ? "اطلاعات یا دوره تغییر کرده است؛ برای نمایش نتیجه معتبر، گزارش را دوباره تهیه کنید."
+          ? "اطلاعات یا ترم تغییر کرده است؛ برای نمایش نتیجه معتبر، گزارش را دوباره تهیه کنید."
           : "محدوده و مخاطب را انتخاب کنید و «تهیه گزارش» را بزنید.") +
         "</div>";
   return h + "</div>";

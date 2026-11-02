@@ -6,6 +6,7 @@ function syncControlLocks() {
     resetBusy ||
     !ready ||
     periodLoading ||
+    (db.settings.password && !isAuthenticated) ||
     !!workspace?.closed;
   const modalBody = document.getElementById("modalBody");
   const modalWrite =
@@ -57,7 +58,7 @@ function syncControlLocks() {
     if (note) {
       note.hidden = !readonly || !!existing;
       note.textContent = workspace?.closed
-        ? "دوره بسته است؛ این فرم فقط خواندنی است. گزارش و پشتیبان همچنان در دسترس‌اند."
+        ? "ترم بسته است؛ این فرم فقط خواندنی است. گزارش و پشتیبان همچنان در دسترس‌اند."
         : "ویرایش فعلاً متوقف است؛ پیام وضعیت ذخیره‌سازی را بررسی کنید.";
     }
   }
@@ -71,7 +72,7 @@ function syncControlLocks() {
   if (modalNote) {
     modalNote.hidden = !readonly || !modalWrite;
     modalNote.textContent = workspace?.closed
-      ? "دوره بسته است؛ این تنظیمات فقط نمایش داده می‌شوند."
+      ? "ترم بسته است؛ این تنظیمات فقط نمایش داده می‌شوند."
       : "ویرایش فعلاً متوقف است؛ پیام وضعیت ذخیره‌سازی را بررسی کنید.";
   }
   syncShamsiDisabledInputs();
@@ -169,16 +170,16 @@ function workspaceToolsHtml() {
     button(
       "periods",
       "calendar",
-      "دوره‌های تحصیلی",
+      "سال تحصیلی و دو ترم",
       "",
-      "انتخاب و مدیریت سال و نوبت تحصیلی",
+      "ترم اول و دوم همین سال و کارنامه‌های نهایی",
     ) +
     button(
       "undo",
       "undo",
       "برگرداندن آخرین تغییر",
       "",
-      "اصلاح آخرین تغییر ثبت‌شده در نوبت فعلی",
+      "اصلاح آخرین تغییر ثبت‌شده در ترم فعلی",
     ) +
     '<button type="button" class="ghost workspace-tool-button" data-header-action="settings"><span class="workspace-tool-icon" aria-hidden="true">' +
     EduIcons.html("settings") +
@@ -215,7 +216,7 @@ function renderV24() {
   panel.className = "workspace-bar workspace-bar-compact no-print";
   panel.innerHTML =
     (workspace.closed
-      ? '<span class="workspace-closed-note">دوره بسته است؛ فقط مشاهده</span>'
+      ? '<span class="workspace-closed-note">ترم بسته است؛ فقط مشاهده</span>'
       : "") +
     '<span id="saveStatus" role="status" aria-live="polite"></span>' +
     workspaceToolsHtml();
@@ -232,8 +233,12 @@ function renderV24() {
       esc(
         String(workspace.year).replace(/\d/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[digit]),
       ) +
-      "</bdi></span><span>نوبت: <bdi>" +
-      esc(workspace.term) +
+      "</bdi></span><span>ترم: <bdi>" +
+      esc(
+        { first: "اول", second: "دوم" }[
+          workspace.termKind || academicTermKind(workspace.term)
+        ] || workspace.term,
+      ) +
       "</bdi></span></div>";
     const about = welcome.querySelector(".schools-about");
     if (about) footer.append(about);

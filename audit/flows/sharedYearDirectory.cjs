@@ -99,10 +99,10 @@ module.exports = async function sharedYearDirectory() {
     },
     createPeriod = async (targetYear, term, firstId = "") => {
       closeModal();
-      await EduV24.openNewPeriod(firstId);
+      await EduV24.test.prepareLegacyPeriodFixture();
       document.getElementById("periodYear").value = targetYear;
       document.getElementById("periodTerm").value = term;
-      await EduV24.createNewPeriod();
+      await EduV24.test.createLegacyPeriod();
       return EduV24.getReportContext().id;
     },
     addStudentThroughForm = async (name, code, expectFailure = false) => {

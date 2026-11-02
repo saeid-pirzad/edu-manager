@@ -34,7 +34,7 @@ globalThis.EduWorkspaceRecords = Object.freeze({
         typeof logical === "string" &&
         /^(class|session):([A-Za-z0-9_-]{1,120})$/.exec(logical);
       if (!match || !isSafeRecordId(match[2]))
-        throw Error("نوع یا شناسه رکورد دوره نامعتبر است.");
+        throw Error("نوع یا شناسه رکورد ترم نامعتبر است.");
       return { kind: match[1], id: match[2] };
     }
     function validateLogicalValue(logical, value) {
@@ -48,23 +48,23 @@ globalThis.EduWorkspaceRecords = Object.freeze({
     }
     function decodeWorkspaceRecords(records, { workspaceId } = {}) {
       if (!Array.isArray(records))
-        throw Error("فهرست رکوردهای دوره معتبر نیست.");
+        throw Error("فهرست رکوردهای ترم معتبر نیست.");
       const byKey = new Map();
       for (const row of records) {
         if (!isDataObject(row) || byKey.has(row.logical))
-          throw Error("رکورد دوره ناقص یا تکراری است.");
+          throw Error("رکورد ترم ناقص یا تکراری است.");
         if (
           workspaceId !== undefined &&
           (row.workspace !== workspaceId ||
             row.key !== workspaceId + "|" + row.logical)
         )
-          throw Error("مالک دوره یا کلید رکورد معتبر نیست.");
+          throw Error("مالک ترم یا کلید رکورد معتبر نیست.");
         validateLogicalValue(row.logical, row.value);
         byKey.set(row.logical, row.value);
       }
       const meta = byKey.get("meta");
       if (!meta || !Array.isArray(meta.layout))
-        throw Error("داده یا چیدمان اصلی دوره موجود نیست.");
+        throw Error("داده یا چیدمان اصلی ترم موجود نیست.");
       const value = clone(meta),
         referenced = new Set();
       delete value.layout;
@@ -93,7 +93,7 @@ globalThis.EduWorkspaceRecords = Object.freeze({
       for (const logical of byKey.keys())
         if (logical.startsWith("class:") && !referenced.has(logical.slice(6)))
           throw Error(
-            "یک کلاس در رکوردها وجود دارد اما در چیدمان دوره معرفی نشده است؛ بازیابی متوقف شد.",
+            "یک کلاس در رکوردها وجود دارد اما در چیدمان ترم معرفی نشده است؛ بازیابی متوقف شد.",
           );
       value.sessions = records
         .filter((row) => row.logical.startsWith("session:"))

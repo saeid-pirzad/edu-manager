@@ -121,3 +121,40 @@ test("failed password persistence does not authenticate or clear retryable input
   assert.equal(f.effects.length, 0);
   assert.equal(f.errors.length, 1);
 });
+
+test("adding the first password authorizes its own guarded save without an authentication gap", async () => {
+  const f = fixture();
+  f.c.db.settings.password = "";
+  f.c.saveDBV24 = async () => {
+    assert.equal(f.c.isAuthenticated, true);
+    assert.equal(f.c.db.settings.password, "new-hash");
+    f.c.workspace.revision++;
+  };
+  assert.equal(await f.c.saveSettingsV24(), true);
+  assert.equal(f.c.isAuthenticated, true);
+});
+
+test("failed first-password creation restores the password and session before retry", async () => {
+  const f = fixture();
+  f.c.db.settings.password = "";
+  f.c.saveDBV24 = async () => {
+    assert.equal(f.c.isAuthenticated, true);
+    throw Error("quota");
+  };
+  assert.equal(await f.c.saveSettingsV24(), false);
+  assert.equal(f.c.db.settings.password, "");
+  assert.equal(f.c.isAuthenticated, false);
+  assert.equal(f.input.value, "new-password");
+});
+
+test("stale settings hashing never restores a previous password over a newer value", async () => {
+  const f = fixture();
+  f.c.hashPassword = async () => {
+    f.c.db.settings.password = "replacement-hash";
+    f.c.workspace.revision++;
+    return "new-hash";
+  };
+  assert.equal(await f.c.saveSettingsV24(), false);
+  assert.equal(f.c.db.settings.password, "replacement-hash");
+  assert.equal(f.c.isAuthenticated, false);
+});

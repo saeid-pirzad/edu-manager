@@ -42,6 +42,10 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
         options.directoryRevisions === undefined
           ? null
           : copy(options.directoryRevisions),
+      recoveredUndo =
+        options.recoveredUndo === undefined
+          ? null
+          : copy(options.recoveredUndo),
       tx = connection.transaction(
         ["records", "catalog", "events", "undo"],
         "readwrite",
@@ -90,6 +94,135 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
         )
           continue;
         current.roster = historicalRoster(oldClass, previous);
+      }
+    };
+    const repairRecoveredIdentity = (map, plan) => {
+      const previous = new Map(
+          [
+            ...(plan.previous?.students || []),
+            ...(plan.previous?.archivedStudents || []),
+          ].map((student) => [student.id, student]),
+        ),
+        repaired = [
+          ...(plan.current.students || []),
+          ...(plan.current.archivedStudents || []),
+        ].filter(
+          (student) =>
+            previous.get(student.id)?.recovered &&
+            student.recovered === false &&
+            !student.name.startsWith("دانش‌آموز بازیابی‌شده"),
+        );
+      for (const student of repaired) {
+        // Ordinary historical names stay frozen. Only names explicitly marked
+        // as migration placeholders follow the repaired shared identity.
+        for (const [key, session] of map)
+          if (key.startsWith("session:") && session.classId === plan.current.id)
+            for (const member of session.roster || [])
+              if (member.id === student.id && member.recovered) {
+                member.name = student.name;
+                member.recovered = false;
+              }
+        const unresolved = [...map].some(
+          ([key, classroom]) =>
+            key.startsWith("class:") &&
+            [
+              ...(classroom.students || []),
+              ...(classroom.archivedStudents || []),
+            ].some((member) => member.id === student.id && member.recovered),
+        );
+        const meta = map.get("meta");
+        if (!unresolved && Array.isArray(meta.migrationWarnings))
+          meta.migrationWarnings = meta.migrationWarnings.filter(
+            (message) =>
+              !message.startsWith("نام دانش‌آموز " + student.id + " در "),
+          );
+      }
+    };
+    const restoreRecoveredPeer = (oldMap, nextMap, peer, plans) => {
+      const invalid = () => {
+          const error = Error(
+            "سابقهٔ بازگردانی نام‌های بازیابی‌شده با اطلاعات نوبت‌های سال سازگار نیست؛ تغییری انجام نشد.",
+          );
+          error.code = "ACADEMIC_DIRECTORY_CONFLICT";
+          throw error;
+        },
+        corrections = new Map();
+      for (const plan of plans) {
+        const previous = new Map(
+          [
+            ...(plan.previous?.students || []),
+            ...(plan.previous?.archivedStudents || []),
+          ].map((student) => [student.id, student]),
+        );
+        for (const student of [
+          ...(plan.current.students || []),
+          ...(plan.current.archivedStudents || []),
+        ]) {
+          const corrected = previous.get(student.id);
+          if (
+            student.recovered === true &&
+            corrected?.recovered === false &&
+            student.name.startsWith("دانش‌آموز بازیابی‌شده")
+          )
+            corrections.set(plan.current.id + "|" + student.id, {
+              previous: student,
+              corrected,
+            });
+        }
+      }
+      if (!peer || !Array.isArray(peer.rosters) || !corrections.size) invalid();
+      const correct = (roster, classId) => {
+        const expected = copy(roster);
+        for (const member of expected) {
+          const change = corrections.get(classId + "|" + member.id);
+          if (!change || !member.recovered) continue;
+          member.name = change.corrected.name;
+          member.recovered = false;
+        }
+        return expected;
+      };
+      for (const row of peer.rosters) {
+        const key = "session:" + row.sessionId,
+          original = oldMap.get(key),
+          current = nextMap.get(key),
+          classroom = nextMap.get("class:" + row.classId);
+        if (
+          !original ||
+          !current ||
+          !classroom ||
+          original.classId !== row.classId ||
+          ![...corrections.keys()].some((id) =>
+            id.startsWith(row.classId + "|"),
+          ) ||
+          (row.before !== null && !Array.isArray(row.before))
+        )
+          invalid();
+        const before =
+          row.before === null
+            ? historicalRoster(classroom, original)
+            : row.before;
+        if (
+          JSON.stringify(correct(before, row.classId)) !==
+          JSON.stringify(original.roster)
+        )
+          invalid();
+        if (row.before === null) delete current.roster;
+        else current.roster = copy(row.before);
+      }
+      if (peer.migrationWarnings !== undefined) {
+        const current = oldMap.get("meta").migrationWarnings || [],
+          prefixes = [...corrections.values()].map(
+            (change) => "نام دانش‌آموز " + change.previous.id + " در ",
+          );
+        let position = 0;
+        if (!Array.isArray(peer.migrationWarnings)) invalid();
+        for (const message of peer.migrationWarnings) {
+          if (message === current[position]) position++;
+          else if (!prefixes.some((prefix) => message.startsWith(prefix)))
+            invalid();
+        }
+        if (position !== current.length) invalid();
+        nextMap.get("meta").migrationWarnings = copy(peer.migrationWarnings);
       }
     };
     try {
@@ -175,6 +308,26 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
     }
 
     function apply(family, live, year, term, loaded) {
+      if (recoveredUndo !== null) {
+        const signature = (rows) =>
+          JSON.stringify(
+            rows
+              .map((row) => [row.id, row.revision])
+              .sort(([a], [b]) => a.localeCompare(b)),
+          );
+        if (
+          keepUndo ||
+          !Array.isArray(recoveredUndo) ||
+          signature(recoveredUndo) !==
+            signature(family.filter((period) => period.id !== live.id))
+        ) {
+          const error = Error(
+            "یکی از نوبت‌های سال پس از اصلاح نام تغییر کرده است؛ بازگردانی انجام نشد.",
+          );
+          error.code = "WORKSPACE_CONFLICT";
+          throw error;
+        }
+      }
       const sourceOld = loaded.get(live.id),
         sourceNext = new Map(
           [...sourceOld].map(([key, value]) => [key, copy(value)]),
@@ -207,6 +360,27 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
               period.id !== live.id &&
               deletedClasses.some((key) => loaded.get(period.id).has(key)),
           );
+      const recoveredClasses = new Set(
+        directoryPlans
+          .filter((plan) => {
+            const previous = new Map(
+              [
+                ...(plan.previous?.students || []),
+                ...(plan.previous?.archivedStudents || []),
+              ].map((student) => [student.id, student]),
+            );
+            return [
+              ...(plan.current.students || []),
+              ...(plan.current.archivedStudents || []),
+            ].some(
+              (student) =>
+                previous.get(student.id)?.recovered &&
+                student.recovered === false &&
+                !student.name.startsWith("دانش‌آموز بازیابی‌شده"),
+            );
+          })
+          .map((plan) => plan.current.id),
+      );
       if (
         annual &&
         ["first", "second"].includes(
@@ -277,8 +451,10 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
           plan.current,
         );
       }
-      for (const plan of directoryPlans)
+      for (const plan of directoryPlans) {
         freeze(sourceOld, sourceNext, plan.current.id);
+        repairRecoveredIdentity(sourceNext, plan);
+      }
       // Undo of an addition may remove its identity only while it has no
       // references in any term. Enrollment with history must be archived.
       for (const plan of directoryPlans) {
@@ -391,6 +567,7 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
               allowRemoval: true,
             }),
           );
+          repairRecoveredIdentity(next, plan);
         }
         for (const plan of coursePlans) {
           const classId = plan.current.id;
@@ -455,6 +632,13 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
               if (value) next.set(plan.key, value);
             }
           }
+        if (recoveredUndo !== null)
+          restoreRecoveredPeer(
+            old,
+            next,
+            recoveredUndo.find((peer) => peer.id === period.id),
+            directoryPlans,
+          );
         validate(next, period.id);
         prepared.push({ period, old, next });
       }
@@ -509,15 +693,79 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
             }
           }
       validate(sourceNext, live.id);
-      const at = new Date().toISOString();
-      for (const part of prepared) {
-        const plan = globalThis.EduRecordCommitPlan.create(
+      const sessionSlots = globalThis.EduSessionSlots,
+        sessionChanges = sessionSlots?.changes({
+          changed,
+          before: options.before,
+          removed,
+          restoredRecords: options.restoredSessionRecords,
+        });
+      if (sessionChanges?.guarded.length)
+        sessionSlots.assertAvailable(
+          sessionChanges,
+          live.id,
+          prepared
+            .filter(
+              ({ period }) =>
+                period.id === live.id ||
+                ["first", "second"].includes(
+                  period.termKind || academicTermKind(period.term),
+                ),
+            )
+            .map(({ period, next }) => ({ id: period.id, records: next })),
+        );
+      for (const part of prepared)
+        part.plan = globalThis.EduRecordCommitPlan.create(
           part.next,
           new Map(
             [...part.old].map(([key, value]) => [key, JSON.stringify(value)]),
           ),
           { replace: true },
         );
+      const recoveredPeers =
+        recoveredClasses.size && prepared.length > 1
+          ? prepared
+              .filter((part) => part.period.id !== live.id)
+              .map((part) => {
+                const rosters = [];
+                for (const [key, value] of part.next) {
+                  if (
+                    !key.startsWith("session:") ||
+                    !recoveredClasses.has(value.classId)
+                  )
+                    continue;
+                  const previous = part.old.get(key);
+                  if (
+                    previous &&
+                    JSON.stringify(previous.roster) !==
+                      JSON.stringify(value.roster)
+                  )
+                    rosters.push({
+                      sessionId: value.id,
+                      classId: value.classId,
+                      before: copy(previous.roster ?? null),
+                    });
+                }
+                const previousWarnings = part.old.get("meta").migrationWarnings,
+                  nextWarnings = part.next.get("meta").migrationWarnings;
+                return {
+                  id: part.period.id,
+                  revision:
+                    part.period.revision +
+                    (part.plan.changed.length || part.plan.removed.length
+                      ? 1
+                      : 0),
+                  rosters,
+                  ...(JSON.stringify(previousWarnings) !==
+                  JSON.stringify(nextWarnings)
+                    ? { migrationWarnings: copy(previousWarnings) }
+                    : {}),
+                };
+              })
+          : null;
+      const at = new Date().toISOString();
+      for (const part of prepared) {
+        const plan = part.plan;
         if (!plan.changed.length && !plan.removed.length) continue;
         for (const [logical, json] of plan.changed)
           tx.objectStore("records").put({
@@ -560,6 +808,7 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
             action,
             revision: updated.revision,
             before: plan.before,
+            ...(recoveredPeers ? { recoveredPeers } : {}),
           });
         else tx.objectStore("undo").delete(updated.id);
         if (isSource) {

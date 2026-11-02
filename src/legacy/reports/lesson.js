@@ -199,7 +199,11 @@ function legacy_buildLessonReportHtml(c, lesson) {
   return h;
 }
 
-function copyLessonReportForVicePrincipal(lessonId) {
+function copyLessonReportForVicePrincipal(lessonId, button) {
+  return EduV24.copyReport(() => buildLessonReportText(lessonId), button);
+}
+
+function buildLessonReportText(lessonId) {
   const cls = findClassById(lessonReportFilter.classId);
   if (!cls) return;
   const c = cls.classObj;
@@ -219,8 +223,7 @@ function copyLessonReportForVicePrincipal(lessonId) {
     text += `- ${st.name}: غایب ${s.att.absent} | مرخصی ${s.att.leave || 0} | ➕ ${s.posCount} | ➖ ${s.negCount} | نهایی: ${s.final !== null ? s.final.toFixed(2) : "---"}\n`;
   });
   text += `\n✅ تولید شده توسط کلاس‌یار`;
-  const dummyBtn = document.createElement("button");
-  copyToClipboard(text, dummyBtn);
+  return text;
 }
 
 // ==================== زیربخش ۳: کارنامه ====================

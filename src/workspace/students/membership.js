@@ -19,7 +19,7 @@ async function openMembership(action, studentId) {
       origin.schoolId !== state.schoolId ||
       origin.classId !== state.classId
     )
-      throw Error("صفحه یا دوره تغییر کرده است؛ عملیات را دوباره باز کنید.");
+      throw Error("صفحه یا ترم تغییر کرده است؛ عملیات را دوباره باز کنید.");
     const c = getClassObj(origin.schoolId, origin.classId);
     const student = (
       action === "restore" ? c?.archivedStudents : c?.students
@@ -148,7 +148,7 @@ async function saveMembership(mode = "") {
         context.workspace !== workspace.id ||
         context.revision !== workspace.revision
       )
-        throw Error("دوره یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.");
+        throw Error("ترم یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.");
       const c = getClassObj(context.schoolId, context.classId);
       const student = (
         context.action === "restore" ? c?.archivedStudents : c?.students

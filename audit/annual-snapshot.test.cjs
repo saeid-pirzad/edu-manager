@@ -423,3 +423,91 @@ test("custom titles retain their saved annual order rather than their display la
     ["first", "second"],
   );
 });
+
+test("annual source listing exposes only fixed first and second labels of the current year", async () => {
+  const { c, catalog } = fixture();
+  catalog[0].term = "نام قدیمی نوبت اول";
+  catalog[1].term = "نام قدیمی نوبت دوم";
+  catalog.push(
+    {
+      id: "summer",
+      year: c.workspace.year,
+      term: "تابستان",
+      termKind: "summer",
+    },
+    {
+      id: "unknown",
+      year: c.workspace.year,
+      term: "فایل بازیابی",
+      termKind: null,
+    },
+  );
+  const before = JSON.stringify(catalog);
+  c.allFrom = async () => catalog;
+  const rows = await c.listAnnualReportPeriods();
+  assert.deepEqual(
+    Array.from(rows, (row) => [row.id, row.term, row.termKind]),
+    [
+      ["first", "اول", "first"],
+      ["second", "دوم", "second"],
+    ],
+  );
+  assert.equal(JSON.stringify(catalog), before);
+});
+
+test("explicit annual sources reject unclassified restored records rather than assigning them a term", () => {
+  const { c, catalog } = fixture();
+  catalog[0].term = "نام نامشخص";
+  catalog[0].termKind = null;
+  assert.throws(
+    () =>
+      c.selectAnnualPeriods(
+        catalog,
+        { first: "first", second: "second" },
+        c.workspace,
+      ),
+    /مطابقت ندارد/,
+  );
+});
+
+test("unstarted second-term annual reports direct users to the same-year term hub", () => {
+  const { c, catalog } = fixture();
+  catalog.splice(1, 1);
+  assert.throws(
+    () => c.selectAnnualPeriods(catalog, {}, c.workspace),
+    /نوبت دوم هنوز شروع نشده.*نوبت‌های سال تحصیلی/,
+  );
+});
+
+test("annual snapshot presents fixed term labels without rewriting legacy catalog titles", async () => {
+  const { c, catalog } = fixture();
+  catalog[0].term = "پاییز قدیمی";
+  catalog[1].term = "بهار قدیمی";
+  const before = JSON.stringify(catalog);
+  Object.assign(c, {
+    clone: structuredClone,
+    flushDrafts: async () => {},
+    writer: Promise.resolve(),
+    readAnnualRecordSets: async () => ({
+      periods: catalog.slice(0, 2),
+      recordSets: [[], []],
+    }),
+    decodeWorkspaceRecords: () => ({
+      data: { schools: [], sessions: [], settings: {} },
+    }),
+    assertReportSnapshot: async () => true,
+  });
+  const snapshot = await c.prepareAnnualReportSnapshot();
+  assert.deepEqual(
+    Array.from(snapshot.parts, (part) => [
+      part.period.id,
+      part.period.term,
+      part.period.displayTerm,
+    ]),
+    [
+      ["first", "اول", "اول"],
+      ["second", "دوم", "دوم"],
+    ],
+  );
+  assert.equal(JSON.stringify(catalog), before);
+});

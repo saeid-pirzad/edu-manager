@@ -32,7 +32,7 @@ function validateCourse(l, ids, year) {
     EduPolicy.validate(l.gradingPolicy);
     if (l.gradingPolicy.year !== year)
       throw Error(
-        "سال قواعد درس با دوره تحصیلی یکسان نیست؛ برای سال جدید دوره مستقل بسازید.",
+        "سال قواعد درس با سال تحصیلی برنامه یکسان نیست؛ تنظیمات درس را بررسی کنید.",
       );
     const p = l.gradingPolicy;
     if ((l.gradeMode === "kardanesh") !== (p.method === "dual"))

@@ -5,10 +5,10 @@ module.exports = async function businessConsistency() {
   const origin = EduV24.getReportContext().id;
   try {
     closeModal();
-    await EduV24.openNewPeriod();
+    await EduV24.test.prepareLegacyPeriodFixture();
     document.getElementById("periodYear").value = "1415-1416";
     document.getElementById("periodTerm").value = "اول";
-    await EduV24.createNewPeriod();
+    await EduV24.test.createLegacyPeriod();
     const isolated = EduV24.getReportContext().id;
     const school = db.schools[0],
       classroom = school.classes[0];

@@ -15,6 +15,7 @@ function contextFromInput(input) {
 
 function gradeInput(input) {
   if (resetBusy || connectionRetired || periodLoading) return;
+  if (db.settings.password && !isAuthenticated) return;
   const item = contextFromInput(input),
     key = inputKey(item),
     parsed = parseDraft(item);
@@ -42,6 +43,7 @@ function gradeInput(input) {
 
 function clearGrade(input) {
   if (resetBusy || connectionRetired || periodLoading) return;
+  if (db.settings.password && !isAuthenticated) return;
   const item = contextFromInput(input);
   if (
     !confirm(

@@ -243,10 +243,10 @@ async function postFixFlows() {
       year = EduV24.test.getState().workspace.year;
     await EduV24.finalizePeriod();
     closeModal();
-    await EduV24.openNewPeriod();
+    await EduV24.test.prepareLegacyPeriodFixture();
     document.getElementById("periodYear").value = year;
     document.getElementById("periodTerm").value = "دوم";
-    await EduV24.createNewPeriod();
+    await EduV24.test.createLegacyPeriod();
     const secondId = EduV24.getReportContext().id;
     for (const school of db.schools)
       for (const c of school.classes)

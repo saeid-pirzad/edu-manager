@@ -10,13 +10,19 @@ function preferredPeriod() {
   }
 }
 
-function rememberPeriod(id) {
+function rememberPeriod(id, year) {
   try {
     sessionStorage.setItem("Edu24.activePeriod", id);
   } catch (ignore) {}
   try {
     localStorage.setItem("Edu24.activePeriod", id);
   } catch (ignore) {}
+  const selectedYear =
+    year ||
+    (typeof workspace !== "undefined" && workspace?.id === id
+      ? workspace.year
+      : null);
+  if (selectedYear) rememberAcademicYear(selectedYear);
 }
 
 async function claimTab() {

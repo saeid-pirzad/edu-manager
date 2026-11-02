@@ -13,7 +13,7 @@ function preserveAsyncTarget({ classScoped = false } = {}) {
         (state.schoolId !== schoolId || state.classId !== classId))
     )
       throw Error(
-        "دوره یا کلاس هنگام آماده‌سازی تغییر کرد؛ عملیات را دوباره باز کنید.",
+        "ترم یا کلاس هنگام آماده‌سازی تغییر کرد؛ عملیات را دوباره باز کنید.",
       );
   };
 }

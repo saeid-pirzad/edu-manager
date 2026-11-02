@@ -23,7 +23,7 @@ async function save() {
       editing.context.id !== api.context().id ||
       editing.context.revision !== api.context().revision
     )
-      throw Error("دوره یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.");
+      throw Error("ترم یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.");
     const editingContext = editing,
       c = api.findClass(editing.classId),
       original = c?.lessons.find((l) => l.id === editing.id),
@@ -77,7 +77,7 @@ async function save() {
         "course_name",
       );
     if (info.year !== api.year())
-      throw Error("سال درس با دوره فعال یکسان نیست.");
+      throw Error("سال درس با ترم فعال یکسان نیست.");
     const locked =
       !!original &&
       (history?.hasGrades ||

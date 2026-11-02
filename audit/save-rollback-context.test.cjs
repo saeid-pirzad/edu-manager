@@ -51,6 +51,37 @@ test("failed save reloads durable data only for the original workspace", async (
   assert.equal(f.c.busy, 0);
   assert.equal(f.statuses.length, 1);
 });
+
+test("a protected unauthenticated period cannot queue any data write", async () => {
+  const f = fixture();
+  f.c.db.settings = { password: "protected-hash" };
+  f.c.isAuthenticated = false;
+  let writes = 0;
+  f.c.commitRecords = async () => writes++;
+  await assert.rejects(f.c.saveDBV24(), /وارد ترم/);
+  assert.equal(writes, 0);
+  assert.equal(f.c.busy, 0);
+  assert.equal(f.c.writeFailureGeneration, 0);
+  assert.equal(f.reads.length, 0);
+});
+
+test("queued data writes recheck authentication before touching durable records", async () => {
+  const f = fixture();
+  f.c.db.settings = { password: "protected-hash" };
+  f.c.isAuthenticated = true;
+  let release,
+    writes = 0;
+  f.c.writer = new Promise((resolve) => {
+    release = resolve;
+  });
+  f.c.commitRecords = async () => writes++;
+  const saving = f.c.saveDBV24();
+  f.c.isAuthenticated = false;
+  release();
+  await assert.rejects(saving, /وارد ترم/);
+  assert.equal(writes, 0);
+  assert.equal(f.c.busy, 0);
+});
 test("failed save does not read or alter a newly selected workspace", async () => {
   const f = fixture();
   f.c.commitRecords = async () => {

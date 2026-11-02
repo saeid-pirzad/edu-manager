@@ -10,7 +10,9 @@ function assertEntityWritable() {
     blocked ||
     workspace?.closed
   )
-    throw Error("دوره فعلی قابل ویرایش نیست.");
+    throw Error("ترم فعلی قابل ویرایش نیست.");
+  if (db.settings.password && !isAuthenticated)
+    throw Error("ابتدا وارد ترم شوید.");
 }
 async function openEntityEditor(kind, id, schoolId = "") {
   const requestedWorkspace = workspace?.id;
@@ -18,7 +20,7 @@ async function openEntityEditor(kind, id, schoolId = "") {
   await flushDrafts({ strict: true });
   assertEntityWritable();
   if (requestedWorkspace !== workspace.id)
-    throw Error("دوره هنگام باز شدن فرم تغییر کرد؛ دوباره ویرایش را باز کنید.");
+    throw Error("ترم هنگام باز شدن فرم تغییر کرد؛ دوباره ویرایش را باز کنید.");
   if (!["school", "class"].includes(kind))
     throw Error("نوع اطلاعات نامعتبر است.");
   const school = kind === "school" ? getSchool(id) : getSchool(schoolId);
@@ -95,7 +97,7 @@ async function saveEntityEditor() {
     await flushDrafts({ strict: true });
     assertEntityWritable();
     if (edit.workspace !== workspace.id || edit.revision !== workspace.revision)
-      throw Error("دوره یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.");
+      throw Error("ترم یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.");
     const school = getSchool(edit.schoolId);
     const item =
       edit.kind === "school"
