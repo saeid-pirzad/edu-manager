@@ -27,4 +27,6 @@ for (const name of files.keys()) {
       filename: name,
     });
 }
-console.log(`Asset contract verified for ${files.size - 4} external assets.`);
+console.log(
+  `Asset contract verified for ${[...files.keys()].filter((name) => name.startsWith("assets/")).length} external assets and both application entries.`,
+);

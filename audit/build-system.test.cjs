@@ -15,8 +15,10 @@ test("build detects stale artifacts, regenerates missing output and fingerprints
     "assets",
     "source-map.json",
     "EduManager.html",
+    "Deputy.html",
     "index.html",
     "app.webmanifest",
+    "deputy.webmanifest",
     "service-worker.js",
   ])
     fs.cpSync(path.join(root, name), path.join(temporary, name), {

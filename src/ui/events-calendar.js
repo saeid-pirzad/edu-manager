@@ -1,23 +1,12 @@
-// Event handlers extracted from src/ui/calendar.js.
-EduLegacyEvents.register("ui-calendar:0", function (event) {
+// One popup owns its events in either application, without the teacher registry.
+calPopup.addEventListener("click", function (event) {
+  const button = event.target.closest("[data-calendar-action]");
+  if (!button || !calPopup.contains(button) || button.disabled) return;
   event.stopPropagation();
-  window.calChangeMonth(-1);
-});
-
-EduLegacyEvents.register("ui-calendar:1", function (event) {
-  event.stopPropagation();
-  window.calChangeMonth(1);
-});
-
-EduLegacyEvents.register("ui-calendar:2", function (event) {
-  event.stopPropagation();
-  window.calSelectDay(
-    JSON.parse(this.getAttribute("data-legacy-click-arg5")),
-    this,
-  );
-});
-
-EduLegacyEvents.register("ui-calendar:3", function (event) {
-  event.stopPropagation();
-  closeShamsiCalendar(true);
+  const action = button.dataset.calendarAction;
+  if (action === "prev") window.calChangeMonth(-1);
+  else if (action === "next") window.calChangeMonth(1);
+  else if (action === "select")
+    window.calSelectDay(Number(button.dataset.calendarDay));
+  else if (action === "close") closeShamsiCalendar(true);
 });

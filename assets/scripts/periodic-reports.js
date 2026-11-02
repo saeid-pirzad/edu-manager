@@ -1614,7 +1614,9 @@ function render(mode) {
     noteWarning() +
     `</div><div class="periodic-primary-actions"><button type="button" class="periodic-build" data-legacy-click="reports-periodic-render:9">تهیه گزارش ` +
     modeLabel(mode) +
-    '</button><button type="button" class="success periodic-deputy" data-deputy-copy data-legacy-click="reports-periodic-document:deputy">کپی برای معاون</button></div><p id="periodicError" role="alert"></p></section><div id="periodicReportOutput">';
+    '</button><button type="button" class="success periodic-deputy" data-deputy-copy data-legacy-click="reports-periodic-document:deputy">کپی برای معاون</button><button type="button" class="ghost" data-workspace-action="deputy-export" data-school="' +
+    esc(f.schoolId) +
+    '">فایل کارتابل معاون</button></div><p id="periodicError" role="alert"></p></section><div id="periodicReportOutput">';
   h +=
     last && last.signature === reportSignature()
       ? documentHtml(last.model)

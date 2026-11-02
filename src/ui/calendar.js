@@ -13,6 +13,16 @@ const MONTHS_FA = [
   "اسفند",
 ];
 const WEEKDAYS_FA = ["ش", "ی", "د", "س", "چ", "پ", "ج"];
+// Shared by both entries; the picker must not require the teacher runtime.
+const calendarFaNum = (value) =>
+  String(value).replace(/\d/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[Number(digit)]);
+
+function setShamsiPickerDisabled(control, disabled) {
+  // Preserve the teacher's save/lock coordination when that adapter is present.
+  if (typeof setControlDisabled === "function")
+    setControlDisabled(control, disabled);
+  else control.disabled = Boolean(disabled);
+}
 
 let calTargetInput = null;
 let calViewYear = 1403,
@@ -80,7 +90,10 @@ function syncShamsiDisabledInputs() {
   )) {
     const proxy = input.nextElementSibling;
     if (proxy?.dataset.gregorianTarget)
-      setControlDisabled(proxy, input.matches(":disabled") || input.readOnly);
+      setShamsiPickerDisabled(
+        proxy,
+        input.matches(":disabled") || input.readOnly,
+      );
   }
 }
 
@@ -97,7 +110,7 @@ function initShamsiPickers() {
     shamsiInput.style.display = "";
     shamsiInput.placeholder = "انتخاب تاریخ";
     shamsiInput.readOnly = true;
-    setControlDisabled(
+    setShamsiPickerDisabled(
       shamsiInput,
       input.matches(":disabled") || input.readOnly,
     );
@@ -119,7 +132,7 @@ function initShamsiPickers() {
       const parts = gVal.split("-");
       if (parts.length === 3) {
         const [jy, jm, jd] = gregorianToJalali(+parts[0], +parts[1], +parts[2]);
-        shamsiInput.value = `${toFaNum(jy)}/${toFaNum(String(jm).padStart(2, "0"))}/${toFaNum(String(jd).padStart(2, "0"))}`;
+        shamsiInput.value = `${calendarFaNum(jy)}/${calendarFaNum(String(jm).padStart(2, "0"))}/${calendarFaNum(String(jd).padStart(2, "0"))}`;
         shamsiInput.dataset.jy = jy;
         shamsiInput.dataset.jm = jm;
         shamsiInput.dataset.jd = jd;
@@ -215,9 +228,9 @@ function renderShamsiCalendar(shamsiInput) {
   const firstDay = (new Date(gy, gm - 1, gd).getDay() + 1) % 7;
   let h = "";
   h += `<div class="cal-header">
-    <button data-legacy-click="ui-calendar:0" title="ماه قبل" aria-label="ماه قبل" data-calendar-direction="-1">‹</button>
-    <div class="cal-title">${MONTHS_FA[calViewMonth - 1]} ${toFaNum(calViewYear)}</div>
-    <button data-legacy-click="ui-calendar:1" title="ماه بعد" aria-label="ماه بعد" data-calendar-direction="1">›</button>
+    <button type="button" data-calendar-action="prev" title="ماه قبل" aria-label="ماه قبل" data-calendar-direction="-1">‹</button>
+    <div class="cal-title">${MONTHS_FA[calViewMonth - 1]} ${calendarFaNum(calViewYear)}</div>
+    <button type="button" data-calendar-action="next" title="ماه بعد" aria-label="ماه بعد" data-calendar-direction="1">›</button>
   </div>`;
   h += `<div class="cal-weekdays">`;
   WEEKDAYS_FA.forEach((d) => (h += `<div>${d}</div>`));
@@ -235,11 +248,11 @@ function renderShamsiCalendar(shamsiInput) {
       calSelectedJalali[2] === d
     )
       cls = "selected";
-    h += `<button class="${cls}" aria-label="${toFaNum(d)} ${MONTHS_FA[calViewMonth - 1]} ${toFaNum(calViewYear)}" aria-pressed="${cls === "selected"}" data-legacy-click="ui-calendar:2" data-legacy-click-arg5="${esc(d)}">${toFaNum(d)}</button>`;
+    h += `<button type="button" class="${cls}" aria-label="${calendarFaNum(d)} ${MONTHS_FA[calViewMonth - 1]} ${calendarFaNum(calViewYear)}" aria-pressed="${cls === "selected"}" data-calendar-action="select" data-calendar-day="${d}">${calendarFaNum(d)}</button>`;
   }
   h += `</div>`;
-  h += `<div class="cal-footer">امروز: ${toFaNum(tjy)}/${toFaNum(String(tjm).padStart(2, "0"))}/${toFaNum(String(tjd).padStart(2, "0"))}</div>`;
-  h += `<button type="button" class="ghost calendar-close" data-legacy-click="ui-calendar:3">بستن تقویم</button>`;
+  h += `<div class="cal-footer">امروز: ${calendarFaNum(tjy)}/${calendarFaNum(String(tjm).padStart(2, "0"))}/${calendarFaNum(String(tjd).padStart(2, "0"))}</div>`;
+  h += `<button type="button" class="ghost calendar-close" data-calendar-action="close">بستن تقویم</button>`;
   calPopup.innerHTML = h;
 }
 
@@ -264,7 +277,7 @@ window.calChangeMonth = function (delta) {
 window.calSelectDay = function (d) {
   const [gy, gm, gd] = jalaliToGregorian(calViewYear, calViewMonth, d);
   const gStr = `${gy}-${String(gm).padStart(2, "0")}-${String(gd).padStart(2, "0")}`;
-  const shamsiStr = `${toFaNum(calViewYear)}/${toFaNum(String(calViewMonth).padStart(2, "0"))}/${toFaNum(String(d).padStart(2, "0"))}`;
+  const shamsiStr = `${calendarFaNum(calViewYear)}/${calendarFaNum(String(calViewMonth).padStart(2, "0"))}/${calendarFaNum(String(d).padStart(2, "0"))}`;
   if (calTargetInput) {
     calTargetInput.value = gStr;
     calTargetInput.dataset.jy = calViewYear;

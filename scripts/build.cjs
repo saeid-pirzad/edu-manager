@@ -45,6 +45,7 @@ for (const bundle of layout.bundles) {
     global: ["", ""],
     workspace: ["(function () {\n", "})();\n"],
     periodic: ["(function (root) {\n", "})(globalThis);\n"],
+    deputy: ['(function (root) {\n"use strict";\n', "})(globalThis);\n"],
     course: [
       '(function (root) {\n"use strict";\nroot.EduCourseUI = function (api) {\n',
       "};\n})(globalThis);\n",

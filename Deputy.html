@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="script-src 'self'; object-src 'none'; base-uri 'self'"
+    />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#58595b" />
+    <meta name="application-name" content="کارتابل معاون کلاس‌یار" />
+    <meta
+      name="description"
+      content="دریافت فایل دبیرها، مشاهدهٔ حضور و نمرات و ثبت پیگیری؛ با ذخیرهٔ محلی و مستقل."
+    />
+    <title>کارتابل معاون | کلاس‌یار</title>
+    <link rel="manifest" href="./deputy.webmanifest" />
+    <link rel="stylesheet" href="./assets/styles/app.css" />
+    <link rel="stylesheet" href="./assets/styles/deputy.css" />
+  </head>
+  <body class="ed-deputy-page">
+    <div class="cal-popup" id="calPopup"></div>
+    <a class="skip-link" href="#deputyApp">رفتن به کارتابل</a>
+    <main id="deputyApp" class="deputy-app" tabindex="-1">
+      <p role="status">در حال خواندن اطلاعات کارتابل…</p>
+    </main>
+    <footer class="deputy-offline-note">
+      <p id="deputyOfflineStatus" role="status">در حال بررسی آمادگی آفلاین…</p>
+      <button id="deputyInstall" type="button" hidden>نصب کارتابل معاون</button>
+      <details class="deputy-install-help">
+        <summary>راهنمای نصب نسخهٔ معاون</summary>
+        <p>
+          همین صفحه را از منوی مرورگر با گزینهٔ نصب برنامه یا افزودن به صفحهٔ
+          اصلی نصب کنید. عنوان برنامه باید «کارتابل معاون» باشد. نصب اولیه و
+          دریافت کامل فایل‌های آفلاین به اتصال نیاز دارد؛ داده‌های کارتابل را
+          جداگانه پشتیبان بگیرید.
+        </p>
+      </details>
+    </footer>
+    <script src="./assets/scripts/icons.js"></script>
+    <script src="./assets/scripts/grade-math.js"></script>
+    <script src="./assets/scripts/data-boundary.js"></script>
+    <script src="./assets/scripts/calendar-math.js"></script>
+    <script src="./assets/scripts/calendar-ui.js"></script>
+    <script src="./assets/scripts/grade-policy.js"></script>
+    <script src="./assets/scripts/deputy-exchange.js"></script>
+    <script src="./assets/scripts/deputy-store.js"></script>
+    <script src="./assets/scripts/deputy.js"></script>
+    <script src="./assets/scripts/deputy-pwa.js"></script>
+  </body>
+</html>

@@ -194,6 +194,13 @@ if (process.argv.includes("--help")) {
         cases,
         delay,
       });
+      await require("./deputy-browser.cjs")({
+        cdp,
+        evaluate,
+        cases,
+        root,
+        delay,
+      });
       cases.push(
         ...(await require("./pwa-upgrade.cjs")({
           cdp,

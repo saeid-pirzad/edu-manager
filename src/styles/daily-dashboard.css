@@ -236,16 +236,6 @@ body.modal-open {
 #app > .dashboard-report-links {
   order: 5;
 }
-.calendar-close {
-  width: 100%;
-  min-height: 44px;
-  margin-top: 10px;
-}
-.cal-header button {
-  min-width: 44px;
-  min-height: 44px;
-}
-
 @media print {
   #printRoot .student-summary {
     table-layout: fixed !important;

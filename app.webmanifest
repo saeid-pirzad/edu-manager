@@ -6,7 +6,7 @@
   "lang": "fa",
   "dir": "rtl",
   "start_url": "./EduManager.html",
-  "scope": "./",
+  "scope": "./EduManager.html",
   "display": "standalone",
   "background_color": "#f7f6f4",
   "theme_color": "#58595b",

@@ -104,6 +104,7 @@
         "src/workspace/reports/student.js",
         "src/workspace/reports/printing.js",
         "src/workspace/reports/copy.js",
+        "src/workspace/reports/deputy-export.js",
         "src/workspace/students/csv-import.js",
         "src/workspace/students/editor.js",
         "src/workspace/data/wipe.js",
@@ -326,13 +327,46 @@
       ]
     },
     {
+      "output": "assets/scripts/deputy-exchange.js",
+      "scope": "global",
+      "sources": ["src/domain/deputy-exchange.js"]
+    },
+    {
+      "output": "assets/scripts/deputy-store.js",
+      "scope": "global",
+      "sources": ["src/deputy/store.js"]
+    },
+    {
+      "output": "assets/scripts/deputy.js",
+      "scope": "deputy",
+      "sources": [
+        "src/deputy/ui-state.js",
+        "src/deputy/calendar.js",
+        "src/deputy/render-inbox.js",
+        "src/deputy/render-reports.js",
+        "src/deputy/events.js",
+        "src/deputy/app.js"
+      ]
+    },
+    {
+      "output": "assets/scripts/deputy-pwa.js",
+      "scope": "global",
+      "sources": ["src/deputy/pwa.js"]
+    },
+    {
+      "output": "assets/styles/deputy.css",
+      "scope": "css",
+      "sources": ["src/styles/deputy.css"]
+    },
+    {
+      "output": "assets/scripts/icons.js",
+      "scope": "global",
+      "sources": ["src/core/icons.js"]
+    },
+    {
       "output": "assets/scripts/runtime-api.js",
       "scope": "global",
-      "sources": [
-        "src/core/runtime-api.js",
-        "src/core/icons.js",
-        "src/legacy/core/events.js"
-      ]
+      "sources": ["src/core/runtime-api.js", "src/legacy/core/events.js"]
     }
   ]
 }

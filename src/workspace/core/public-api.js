@@ -204,6 +204,8 @@ function installRuntimeAPI() {
     showFrozenReport,
     printReport,
     copyReport: copyReportV24,
+    openDeputyExport,
+    exportDeputyPacket,
     preparePrint,
     commitCSV,
     saveStudent,

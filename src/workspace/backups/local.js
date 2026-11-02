@@ -94,9 +94,9 @@ function lastExternalBackupLabel() {
   );
 }
 
-function downloadJSON(value, name) {
+function downloadJSON(value, name, { compact = false } = {}) {
   downloadLocalFile(
-    new Blob([JSON.stringify(value, null, 2)], {
+    new Blob([JSON.stringify(value, null, compact ? 0 : 2)], {
       type: "application/json;charset=utf-8",
     }),
     name,

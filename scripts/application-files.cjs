@@ -15,23 +15,35 @@ function applicationFiles(
   root,
   { generated = new Set(), contents = new Map() } = {},
 ) {
-  const html = fs.readFileSync(path.join(root, "EduManager.html"), "utf8");
-  const assets = [
-    ...[
-      ...html.matchAll(/<script\b[^>]*\bsrc=["']\.\/(assets\/[^"'?#]+)["']/g),
-    ].map(([, name]) => name),
-    ...[
-      ...html.matchAll(/<link\b[^>]*\bhref=["']\.\/(assets\/[^"'?#]+)["']/g),
-    ].map(([, name]) => name),
-  ];
+  const entries = ["EduManager.html", "Deputy.html"],
+    assets = [];
+  for (const entry of entries) {
+    const html = fs.readFileSync(path.join(root, entry), "utf8"),
+      references = [
+        ...[
+          ...html.matchAll(
+            /<script\b[^>]*\bsrc=["']\.\/(assets\/[^"'?#]+)["']/g,
+          ),
+        ].map(([, name]) => name),
+        ...[
+          ...html.matchAll(
+            /<link\b[^>]*\bhref=["']\.\/(assets\/[^"'?#]+)["']/g,
+          ),
+        ].map(([, name]) => name),
+      ];
+    if (new Set(references).size !== references.length)
+      throw Error("Duplicate application asset in " + entry);
+    assets.push(...references);
+  }
   if (!assets.length) throw Error("Application has no external assets");
   const files = new Map();
   for (const name of [
-    "EduManager.html",
+    ...entries,
     "index.html",
     "app.webmanifest",
+    "deputy.webmanifest",
     "service-worker.js",
-    ...assets,
+    ...new Set(assets),
   ]) {
     if (name.includes("..") || name.includes("\\") || path.isAbsolute(name))
       throw Error("Unsafe application asset: " + name);
@@ -40,7 +52,7 @@ function applicationFiles(
     if (files.has(name)) throw Error("Duplicate application asset: " + name);
     files.set(name, contentType(name));
   }
-  for (const name of assets) {
+  for (const name of new Set(assets)) {
     if (!/\.(js|css)$/.test(name)) continue;
     const content =
       contents.get(name) ?? fs.readFileSync(path.join(root, name), "utf8");

@@ -3,6 +3,9 @@
   "use strict";
   const paths = Object.freeze({
     add: "M12 5v14M5 12h14",
+    home: "M3 10 12 3l9 7M5 9v12h5v-7h4v7h5V9",
+    refresh:
+      "M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-2l2 2M4 17l2 2a7 7 0 0 0 12-2",
     school: "M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M8 10h1M15 10h1",
     classroom: "M3 4h18v13H3zM8 21h8M12 17v4M7 8h10M7 12h6",
     book: "M12 5C9 3 6 3 3 4v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1Zm0 0v15",
