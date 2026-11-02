@@ -17,7 +17,7 @@ function fixture() {
       dispose: async () => {},
     },
     synchronizeYearNotesScope: async () => {},
-    workspace: { id: "source", revision: 1 },
+    workspace: { id: "source", year: "1405-1406", revision: 1 },
     db: { settings: {}, marker: "source" },
     committed: new Map(),
     periodLoading: false,
@@ -33,7 +33,7 @@ function fixture() {
     readWorkspaceSnapshot: async (id) => {
       reads.push(id);
       return {
-        period: { id, revision: 4 },
+        period: { id, year: "1405-1406", revision: 4 },
         data: { marker: id, settings: {} },
         records: new Map(),
       };
@@ -58,7 +58,7 @@ test("overlapping period switches cannot interleave destination data or drafts",
     return new Promise((resolve) => {
       release = () =>
         resolve({
-          period: { id, revision: 4 },
+          period: { id, year: "1405-1406", revision: 4 },
           data: { marker: id, settings: {} },
           records: new Map(),
         });
@@ -122,7 +122,7 @@ test("retiring the connection during a read prevents installation of the destina
   c.readWorkspaceSnapshot = async (id) => {
     c.connectionRetired = true;
     return {
-      period: { id, revision: 4 },
+      period: { id, year: "1405-1406", revision: 4 },
       data: { marker: id },
       records: new Map(),
     };
@@ -206,7 +206,7 @@ test("protected destination revokes source authentication before awaiting note-s
     entered = resolve;
   });
   c.readWorkspaceSnapshot = async (id) => ({
-    period: { id, revision: 4 },
+    period: { id, year: "1405-1406", revision: 4 },
     data: { marker: id, settings: { password: "destination-hash" } },
     records: new Map(),
   });
@@ -248,4 +248,57 @@ test("failed target read preserves the original source authentication before pub
   assert.equal(c.workspace.id, "source");
   assert.equal(c.db, original);
   assert.equal(c.isAuthenticated, true);
+});
+
+test("another academic year is refused before annual synchronization without changing the active data or authentication", async () => {
+  const { c, reads } = fixture(),
+    before = c.db;
+  let synchronized = 0;
+  c.isAuthenticated = true;
+  c.EduAnnualModules = {};
+  c.synchronizeAnnualForRead = async () => {
+    synchronized++;
+    return { changed: [], conflicts: [] };
+  };
+  c.readWorkspaceSnapshot = async (id) => {
+    reads.push(id);
+    return {
+      period: { id, year: "1404-1405", revision: 4 },
+      data: { settings: {} },
+      records: new Map(),
+    };
+  };
+  for (const forged of [undefined, true, { allowOtherYear: true }, Symbol()])
+    await assert.rejects(
+      c.switchPeriod("historical", forged),
+      /سال تحصیلی فعال/,
+    );
+  assert.equal(c.workspace.id, "source");
+  assert.equal(c.workspace.year, "1405-1406");
+  assert.equal(c.db, before);
+  assert.equal(c.isAuthenticated, true);
+  assert.equal(synchronized, 0);
+  assert.equal(c.periodLoading, false);
+  assert.equal(c.drafts.has("source-draft"), true);
+  assert.equal(reads.length, 4);
+});
+
+test("a target whose year changes during annual synchronization is not published", async () => {
+  const { c } = fixture(),
+    before = c.db;
+  let year = "1405-1406";
+  c.EduAnnualModules = {};
+  c.synchronizeAnnualForRead = async () => {
+    year = "1404-1405";
+    return { changed: [], conflicts: [] };
+  };
+  c.readWorkspaceSnapshot = async (id) => ({
+    period: { id, year, revision: 4 },
+    data: { settings: {} },
+    records: new Map(),
+  });
+  await assert.rejects(c.switchPeriod("changed"), /سال تحصیلی فعال/);
+  assert.equal(c.workspace.id, "source");
+  assert.equal(c.db, before);
+  assert.equal(c.periodLoading, false);
 });

@@ -70,8 +70,9 @@ const filters = {
   detailLevel: "summary",
   author: "",
 };
-// New report notes belong to the authorized academic-year owner. Historical
-// term keys remain intact and are read as aliases until an explicit edit.
+// Annual report notes share their authorized year owner. Date-filtered reports
+// belong only to the selected term; legacy and accidental year-scoped keys stay
+// preserved in backup/recovery data, never reassigned to another term.
 
 // Only notes that have not reached local storage stay in memory.
 const notes = new Map(),
@@ -80,14 +81,17 @@ const notes = new Map(),
 const context = () =>
   root.EduV24?.getReportContext() || { id: "", revision: 0 };
 let noteEditGeneration = 0;
-const noteWorkspaceId = () => context().notesWorkspaceId || context().id;
+const noteWorkspaceId = () =>
+  filters.mode === "annual"
+    ? context().notesWorkspaceId || context().id
+    : context().id;
 const noteYearScopeId = () =>
   context().yearScopeId || context().year || context().id;
 const noteWorkspaceIds = () => [
   ...new Set(
     [
       noteWorkspaceId(),
-      ...(context().notesWorkspaceIds || []),
+      ...(filters.mode === "annual" ? context().notesWorkspaceIds || [] : []),
       context().id,
     ].filter(Boolean),
   ),
@@ -99,7 +103,9 @@ const noteScopeSignature = () =>
     [...noteWorkspaceIds()].sort(),
   ]);
 const notePeriodScope = (scope) =>
-  context().yearScopeId ? "year:" + context().yearScopeId + ";" + scope : scope;
+  filters.mode === "annual" && context().yearScopeId
+    ? "year:" + context().yearScopeId + ";" + scope
+    : scope;
 const scopedNote = (key) => /^year:[^;|]+;/.test(key.split("|")[2] || "");
 const acknowledgementKey = (key) => {
   const parts = key.split("|");
@@ -1539,7 +1545,9 @@ function render(mode) {
     '<section class="card periodic-controls no-print"><h3>تهیه گزارش ' +
     modeLabel(mode) +
     "</h3><p>" +
-    "گزارش از همهٔ جلسات ثبت‌شدهٔ همین سال تحصیلی، در بازهٔ انتخابی تهیه می‌شود. " +
+    (mode === "annual"
+      ? "گزارش سالانه از ترم اول و دوم همین سال تحصیلی تهیه می‌شود. "
+      : "جلسات و فعالیت‌های گزارش فقط از ترم انتخاب‌شده، در بازهٔ انتخابی خوانده می‌شوند. ") +
     `هفتگی: شنبه تا جمعه. ماهانه: ماه شمسی. سالانه: مهر تا شهریور. گزارش اولیا فقط اطلاعات هنرجوی انتخاب‌شده را در بر می‌گیرد.</p><div class="periodic-control-grid"><label>مخاطب<select data-legacy-change="reports-periodic-render:0">` +
     option("management", "مدیریت مدرسه", f.audience) +
     option("parent", "اولیای یک هنرجو", f.audience) +
@@ -1756,61 +1764,87 @@ async function generate() {
     };
     const alert = document.getElementById("periodicError");
     if (alert) alert.textContent = "";
-    const snapshot = await root.EduV24.prepareReportSnapshot({
-      annual: input.mode === "annual",
-      yearWide: true,
-      periodIds: {
-        first: input.annualFirstId,
-        second: input.annualSecondId,
-      },
-    });
+    const annual = input.mode === "annual",
+      annualOptions = {
+        annual: true,
+        yearWide: true,
+        periodIds: {
+          first: input.annualFirstId,
+          second: input.annualSecondId,
+        },
+      };
+    const snapshot = await root.EduV24.prepareReportSnapshot(
+      annual ? annualOptions : { annual: false },
+    );
     refreshPreparedInput();
     const model = build(snapshot.data, input);
-    if (input.mode === "annual" || model.audience === "parent") {
+    let gradeSnapshot = snapshot;
+    if (!annual && model.audience === "parent") {
+      // Parent reports retain their explicitly annual grade section, but that
+      // must not expand the date-filtered attendance/activity source. Keep both
+      // durable snapshots guarded against writes while preparing any output.
+      gradeSnapshot = await root.EduV24.prepareReportSnapshot(annualOptions);
+      if (
+        gradeSnapshot.context.id !== snapshot.context.id ||
+        gradeSnapshot.context.revision !== snapshot.context.revision
+      )
+        throw Error(
+          "اطلاعات هنگام تهیه گزارش تغییر کرد؛ دوباره گزارش را تهیه کنید.",
+        );
+      refreshPreparedInput();
+    }
+    if (annual || model.audience === "parent") {
       model.technicalGrades = root.EduV24.annualTechnicalRows(
-        snapshot.parts,
+        gradeSnapshot.parts,
         input.schoolId,
         input.classId,
         input.audience === "parent" ? input.studentId : "",
       );
       model.annualGrades = root.EduV24.annualGradeRows(
-        snapshot.parts,
+        gradeSnapshot.parts,
         input.schoolId,
         input.classId,
         input.audience === "parent" ? input.studentId : "",
       );
-      model.periods = snapshot.parts.map((part) => ({
+      model.gradePeriods = gradeSnapshot.parts.map((part) => ({
         id: part.period.id,
         term: part.period.term,
         label: part.period.displayTerm || part.period.term,
         revision: part.period.revision,
       }));
-      if (input.mode !== "annual")
+      if (!annual)
         model.definitions.push(
-          "نمرات چهار مرحله و پودمان‌ها، وضعیت فعلی کل سال تحصیلی در زمان تهیه گزارش‌اند؛ بازهٔ انتخابی فقط بر جلسات و فعالیت‌های کلاس اعمال می‌شود.",
+          "جلسات و فعالیت‌های این بازه فقط مربوط به ترم انتخاب‌شده‌اند؛ نمرات چهار مرحله و پودمان‌ها، وضعیت فعلی کل سال تحصیلی در زمان تهیه گزارش‌اند.",
         );
       model.definitions.push(
         "نمره هر مرحله طبق تنظیمات همان نوبت محاسبه می‌شود؛ نهایی سالانه میانگین برابر هر چهار مرحله است. نمره ناقص، صفر محسوب نمی‌شود.",
       );
-      model.definitions.push(
-        "گزارش سالانه از مهر تا شهریور و شامل ترم اول و دوم همین سال تحصیلی است؛ نمرات پودمانی برای کل سال مشترک‌اند.",
-      );
+      if (annual)
+        model.definitions.push(
+          "گزارش سالانه از مهر تا شهریور و شامل ترم اول و دوم همین سال تحصیلی است؛ نمرات پودمانی برای کل سال مشترک‌اند.",
+        );
       model.definitions.push(
         "کلاس و هنرجو با شناسه مشترک بین نوبت‌ها مرتبط می‌شوند؛ شباهت نام، دلیل ادغام افراد نیست.",
       );
     }
-    model.periods = snapshot.parts.map((part) => ({
-      id: part.period.id,
-      term: part.period.term,
-      label: part.period.displayTerm || part.period.term,
-      revision: part.period.revision,
-    }));
+    model.periods = annual
+      ? model.gradePeriods
+      : [
+          {
+            id: snapshot.context.id,
+            term: model.academicTerm,
+            label: model.academicTerm,
+            revision: snapshot.context.revision,
+          },
+        ];
     await root.EduV24.assertReportSnapshot(snapshot.context);
+    if (gradeSnapshot !== snapshot)
+      await root.EduV24.assertReportSnapshot(gradeSnapshot.context);
     refreshPreparedInput();
     model.note = input.note;
     last = {
       signature: reportSignature(),
-      context: snapshot.context,
+      context: gradeSnapshot.context,
       model,
     };
     const out = document.getElementById("periodicReportOutput");

@@ -14,6 +14,7 @@ function creation() {
     periodTerm: { value: "اول" },
   };
   const c = vm.createContext({
+    __EDU_TEST_MODE__: true,
     workspace: { id: "source", revision: 1 },
     db: { schools: [], settings: {}, sessions: [] },
     fileMode: false,
@@ -49,6 +50,17 @@ function creation() {
   c.switchPeriod = async (id) => switched.push(id);
   return { c, saved, switched, fields };
 }
+
+test("legacy year creation refuses production calls before reading a synthetic form or writing data", async () => {
+  const { c, saved, switched } = creation();
+  c.__EDU_TEST_MODE__ = false;
+  c.document.getElementById = () => {
+    throw Error("must not read a legacy form");
+  };
+  await assert.rejects(c.createNewPeriod(), /سال تحصیلی دیگر/);
+  assert.equal(saved.length, 0);
+  assert.equal(switched.length, 0);
+});
 test("new period cannot copy another workspace after a delayed flush", async () => {
   const { c, saved } = creation();
   c.flushDrafts = async () => {

@@ -238,7 +238,9 @@ module.exports = async function sharedYearDirectory() {
         .filter((row) => [first, second].includes(row.id))
         .map((row) => ({ ...row, revision: row.revision + 1 }));
     await writeFixture(legacySessions, legacyPeriods);
-    await EduV24.switchPeriod(second);
+    // Return from the deliberately unrelated-year sentinel fixture. Ordinary
+    // same-year term navigation below continues to use the production facade.
+    await EduV24.test.switchLegacyPeriod(second);
     openClass();
     const baseline = await EduV24.snapshotInstallation(),
       frozen = JSON.stringify(

@@ -125,7 +125,7 @@ module.exports = async function businessConsistency() {
     });
   } finally {
     closeModal();
-    await EduV24.switchPeriod(origin);
+    await EduV24.test.switchLegacyPeriod(origin);
     closeModal();
   }
   return cases;

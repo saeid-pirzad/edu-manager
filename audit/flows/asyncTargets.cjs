@@ -50,7 +50,7 @@ module.exports = async function asyncTargets() {
       await new Promise((resolve) => setTimeout(resolve, 10));
     if (!release)
       throw Error("Backup dialog did not reach the delayed estimate stage");
-    await EduV24.switchPeriod(other.id);
+    await EduV24.test.switchLegacyPeriod(other.id);
     release();
     rejected = false;
     try {
@@ -71,7 +71,7 @@ module.exports = async function asyncTargets() {
     release?.();
     await pending?.catch(() => {});
     if (EduV24.getReportContext().id !== current)
-      await EduV24.switchPeriod(current);
+      await EduV24.test.switchLegacyPeriod(current);
     closeModal();
     goSchools();
   }

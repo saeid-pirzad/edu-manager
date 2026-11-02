@@ -50,14 +50,15 @@ const assessmentContext = (() => {
       connectionRetired
     )
       throw Error(
-        "صفحه یا اطلاعات سال تغییر کرده است؛ مرحلهٔ ارزشیابی را دوباره باز کنید.",
+        "صفحه یا اطلاعات سال تغییر کرده است؛ صفحه را دوباره بارگذاری و پیش‌نویس‌های محفوظ را بررسی کنید.",
       );
-    if (
-      write &&
-      (context.period.closed || context.stale || !context.authenticated)
-    )
+    if (write && context.period.closed)
       throw Error(
         "این مرحلهٔ ارزشیابی فقط قابل مشاهده است؛ ابتدا ترم آن را بازگشایی کنید.",
+      );
+    if (write && (context.stale || !context.authenticated))
+      throw Error(
+        "اطلاعات یا دسترسی این مرحله تغییر کرده است؛ صفحه را دوباره بارگذاری و پیش‌نویس‌های محفوظ را بررسی کنید.",
       );
   }
   function handles(input) {
@@ -89,7 +90,36 @@ const assessmentContext = (() => {
       note.dataset.state = item.error ? "error" : "pending";
     }
     const row = input.closest?.(".assessment-student");
-    if (row) row.dataset.editState = item.error ? "error" : "pending";
+    if (row)
+      row.dataset.editState = [...selected.entries.values()].some(
+        (entry) => entry.sid === input.dataset.student && entry.error,
+      )
+        ? "error"
+        : "pending";
+  }
+  function refreshInput(input) {
+    const context = selected;
+    if (!context || input.dataset.assessmentContext !== context.token) return;
+    const item = context.entries.get(
+      entryKey({ sid: input.dataset.student, field: input.dataset.field }),
+    );
+    input.setAttribute("aria-invalid", item?.error ? "true" : "false");
+    const note = input.parentElement?.querySelector(".grade-note");
+    if (note) {
+      const filled = input.value.trim() !== "";
+      note.textContent = item
+        ? item.error || "در انتظار ذخیره"
+        : filled
+          ? "ذخیره شد"
+          : "";
+      note.dataset.state = item
+        ? item.error
+          ? "error"
+          : "pending"
+        : filled
+          ? "saved"
+          : "idle";
+    }
   }
   function sameInstallation(context) {
     return (
@@ -383,7 +413,8 @@ const assessmentContext = (() => {
     if (!context)
       return gradeCell(classroom, lesson, student, field, { value });
     const item = context.entries.get(entryKey({ sid: student.id, field })),
-      shown = item ? item.value : (value ?? "");
+      shown = item ? item.value : (value ?? ""),
+      locked = readOnly({ dataset: { assessmentContext: context.token } });
     return (
       '<div class="grade-editor"><input type="text" inputmode="decimal" autocomplete="off" dir="ltr" data-grade="1" data-kind="k" data-assessment-context="' +
       esc(context.token) +
@@ -395,6 +426,8 @@ const assessmentContext = (() => {
       esc(student.id) +
       '" data-pod="" data-unit="" data-field="' +
       esc(field) +
+      '" aria-invalid="' +
+      (item?.error ? "true" : "false") +
       '" value="' +
       esc(shown) +
       '" placeholder="—" aria-label="' +
@@ -406,10 +439,18 @@ const assessmentContext = (() => {
             : "تئوری"),
       ) +
       '"' +
-      (context.period.closed ? ' readonly aria-readonly="true"' : "") +
+      (locked ? ' readonly aria-readonly="true"' : "") +
       '><button type="button" class="ghost grade-clear no-print" data-clear-grade aria-label="پاک‌کردن نمره"' +
-      (context.period.closed ? " disabled" : "") +
-      '>×</button><small class="grade-note" aria-live="polite">' +
+      (locked ? " disabled" : "") +
+      '>×</button><small class="grade-note" aria-live="polite" data-state="' +
+      (item
+        ? item.error
+          ? "error"
+          : "pending"
+        : String(shown).trim() !== ""
+          ? "saved"
+          : "idle") +
+      '">' +
       esc(item ? item.error || "در انتظار ذخیره" : "") +
       "</small></div>"
     );
@@ -751,6 +792,7 @@ const assessmentContext = (() => {
     cell,
     input,
     clear,
+    refreshInput,
     flush,
     apply,
     dispose,

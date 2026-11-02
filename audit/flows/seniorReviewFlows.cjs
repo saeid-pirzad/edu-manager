@@ -164,7 +164,7 @@ async function seniorReviewFlows() {
         selected: annual?.parts.map((part) => part.period.id),
       },
     );
-    await EduV24.switchPeriod(priorWorkspace);
+    await EduV24.test.switchLegacyPeriod(priorWorkspace);
     db = cloned();
     for (const school of db.schools)
       for (const c of school.classes)

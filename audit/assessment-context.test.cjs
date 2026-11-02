@@ -97,6 +97,7 @@ function fixture({
     draftWritesPending: 0,
     draftRecoveryFailed: false,
     busy: 0,
+    drafts: new Map(),
     blocked: false,
     ready: true,
     resetBusy: false,
@@ -196,6 +197,8 @@ function fixture({
     "workspace/grading/results.js",
     "workspace/grading/assessment-context.js",
     "workspace/grading/editors.js",
+    "workspace/drafts/persistence.js",
+    "workspace/drafts/inputs.js",
   ])
     vm.runInContext(
       fs.readFileSync(path.join(__dirname, "../src", file), "utf8"),
@@ -354,6 +357,259 @@ function fixture({
     input,
   };
 }
+
+function mountedInputs(f, context, fields) {
+  const rows = new Map(),
+    notes = [],
+    inputs = fields.map(([field, value, studentId = "student"]) => {
+      const note = { textContent: "", dataset: {} },
+        input = f.input(context, field, value),
+        attributes = new Map();
+      if (!rows.has(studentId))
+        rows.set(studentId, {
+          dataset: {},
+          notes: [],
+          querySelector(selector) {
+            return selector === '.grade-note[data-state="error"]'
+              ? this.notes.find((item) => item.dataset.state === "error") ||
+                  null
+              : null;
+          },
+          querySelectorAll() {
+            return this.notes;
+          },
+        });
+      const row = rows.get(studentId);
+      row.notes.push(note);
+      notes.push(note);
+      input.dataset.kind = "k";
+      input.dataset.student = studentId;
+      input.setAttribute = (key, content) => attributes.set(key, content);
+      input.getAttribute = (key) => attributes.get(key) ?? null;
+      input.parentElement.querySelector = () => note;
+      input.closest = () => row;
+      return input;
+    });
+  f.c.document.querySelectorAll = (selector) =>
+    ["[data-grade]", "[data-assessment-context]"].includes(selector)
+      ? inputs
+      : selector === ".gradebook .assessment-student"
+        ? [...rows.values()]
+        : [];
+  return { inputs, notes, row: rows.values().next().value, rows };
+}
+
+test("a mixed assessment commit must not label a remaining invalid grade as saved", async () => {
+  const f = fixture(),
+    selected = await f.context.select("second", "final", f.identity),
+    { inputs, notes, row } = mountedInputs(f, selected, [
+      ["theory", "99"],
+      ["practical", "18"],
+    ]);
+  for (const input of inputs) f.context.input(input);
+  await f.context.flush();
+  assert.equal(f.context.pending, 1);
+  assert.equal(notes[0].dataset.state, "error");
+  assert.match(notes[0].textContent, /صفر و بیست/);
+  assert.equal(inputs[0].getAttribute("aria-invalid"), "true");
+  assert.equal(notes[1].dataset.state, "saved");
+  assert.equal(row.dataset.editState, "error");
+  assert.equal(
+    f.data.get("second").schools[0].classes[0].lessons[0].kardaneshScores
+      .student.theory,
+    10,
+  );
+});
+
+for (const kind of ["first", "second"])
+  for (const stage of ["midterm", "final"])
+    for (const invalid of ["", "99"])
+      test(`${kind} ${stage} preserves ${invalid || "blank"} errors while saving a genuine zero`, async () => {
+        const f = fixture(),
+          context = await f.context.select(kind, stage, f.identity),
+          practical = stage === "midterm" ? "midtermPractical" : "practical",
+          theory = stage === "midterm" ? "midtermTheory" : "theory",
+          { inputs, notes, row } = mountedInputs(f, context, [
+            [theory, invalid],
+            [practical, "0"],
+          ]);
+        for (const input of inputs) f.context.input(input);
+        assert.equal(row.dataset.editState, "error");
+        await f.context.flush();
+        assert.equal(f.context.pending, 1);
+        assert.equal(notes[0].dataset.state, "error");
+        assert.equal(inputs[0].getAttribute("aria-invalid"), "true");
+        assert.equal(notes[1].dataset.state, "saved");
+        assert.equal(inputs[1].getAttribute("aria-invalid"), "false");
+        assert.equal(row.dataset.editState, "error");
+        const grade =
+          f.data.get(kind).schools[0].classes[0].lessons[0].kardaneshScores
+            .student;
+        assert.equal(grade[practical], 0);
+        assert.equal(grade[theory], stage === "final" ? 10 : undefined);
+        assert.match(
+          f.context.cell(
+            context.classroom,
+            context.lesson,
+            context.classroom.students[0],
+            theory,
+          ),
+          /aria-invalid="true"/,
+        );
+      });
+
+test("an assessment value typed during another cell's commit remains pending rather than falsely saved", async () => {
+  const f = fixture(),
+    context = await f.context.select("second", "final", f.identity),
+    { inputs, notes, row } = mountedInputs(f, context, [
+      ["practical", "18"],
+      ["theory", "19"],
+    ]),
+    commit = f.c.EduRecordTransaction.commit;
+  let release, entered;
+  const started = new Promise((resolve) => (entered = resolve)),
+    paused = new Promise((resolve) => (release = resolve));
+  f.c.EduRecordTransaction.commit = async (args) => {
+    entered();
+    await paused;
+    return commit(args);
+  };
+  f.context.input(inputs[0]);
+  const saving = f.context.flush();
+  await started;
+  f.context.input(inputs[1]);
+  release();
+  await saving;
+  assert.equal(f.context.pending, 1);
+  assert.equal(notes[0].dataset.state, "saved");
+  assert.equal(notes[1].dataset.state, "pending");
+  assert.equal(row.dataset.editState, "pending");
+  assert.equal(
+    f.data.get("second").schools[0].classes[0].lessons[0].kardaneshScores
+      .student.theory,
+    10,
+  );
+  await f.context.flush({ strict: true });
+  assert.equal(f.context.pending, 0);
+  assert.equal(notes[1].dataset.state, "saved");
+  assert.equal(row.dataset.editState, "saved");
+  assert.equal(
+    f.data.get("second").schools[0].classes[0].lessons[0].kardaneshScores
+      .student.theory,
+    19,
+  );
+});
+
+test("clearing one assessment cell preserves another cell's error and renders the cleared value as empty", async () => {
+  const f = fixture(),
+    context = await f.context.select("second", "final", f.identity),
+    { inputs, notes, row } = mountedInputs(f, context, [
+      ["theory", "99"],
+      ["practical", "99"],
+    ]);
+  for (const input of inputs) f.context.input(input);
+  f.context.clear(inputs[1]);
+  assert.equal(row.dataset.editState, "error");
+  await f.context.flush();
+  assert.equal(f.context.pending, 1);
+  assert.equal(notes[0].dataset.state, "error");
+  assert.equal(notes[1].dataset.state, "idle");
+  assert.equal(inputs[1].getAttribute("aria-invalid"), "false");
+  assert.equal(inputs[1].value, "");
+  assert.equal(row.dataset.editState, "error");
+  assert.equal(
+    f.data.get("second").schools[0].classes[0].lessons[0].kardaneshScores
+      .student.practical,
+    undefined,
+  );
+});
+
+test("a stale assessment render disables its fields and clear controls without changing the stored grades", async () => {
+  const f = fixture(),
+    context = await f.context.select("second", "final", f.identity),
+    before = JSON.stringify(f.data.get("second"));
+  f.context.workspaceChanged({ workspace: "second", revision: 2 });
+  const html = f.context.cell(
+    context.classroom,
+    context.lesson,
+    context.classroom.students[0],
+    "theory",
+    { value: 10 },
+  );
+  assert.match(html, /readonly aria-readonly="true"/);
+  assert.match(html, /data-clear-grade[^>]+ disabled/);
+  assert.equal(JSON.stringify(f.data.get("second")), before);
+});
+
+test("a stale assessment with a pending draft instructs reload and retains the proposed value for review", async () => {
+  const f = fixture(),
+    context = await f.context.select("second", "final", f.identity),
+    input = f.input(context, "theory", "99");
+  f.context.input(input);
+  f.context.workspaceChanged({ workspace: "second", revision: 2 });
+  assert.equal(f.context.readOnly(input), true);
+  assert.throws(() => f.context.input(input), /صفحه را دوباره بارگذاری/);
+  const classroom = f.c.db.schools[0].classes[0],
+    html = f.c.buildAssessmentEditor(classroom, classroom.lessons[0]);
+  assert.match(html, /صفحه را دوباره بارگذاری/);
+  assert.doesNotMatch(html, /مرحله را دوباره انتخاب کنید/);
+  await f.c.draftWriter;
+  const snapshot = f.context.snapshot();
+  assert.equal(snapshot.entries.length, 1);
+  assert.equal(snapshot.entries[0].value, "99");
+  assert.equal(snapshot.entries[0].review, true);
+  assert.equal(
+    [...f.rows.values()].find((row) => row.entries.length).entries[0].value,
+    "99",
+  );
+  assert.equal(f.effects.writes.length, 0);
+});
+
+test("rerendered assessment notes retain their error state before another field receives input", async () => {
+  const f = fixture(),
+    context = await f.context.select("second", "final", f.identity);
+  f.context.input(f.input(context, "theory", "99"));
+  const html = f.context.cell(
+    context.classroom,
+    context.lesson,
+    context.classroom.students[0],
+    "theory",
+  );
+  assert.match(html, /aria-invalid="true"/);
+  assert.match(html, /class="grade-note"[^>]+data-state="error"/);
+  const { inputs, row } = mountedInputs(f, context, [["practical", "18"]]);
+  f.context.input(inputs[0]);
+  assert.equal(row.dataset.editState, "error");
+});
+
+test("assessment refresh keeps each student's error and saved states separate", async () => {
+  const f = fixture();
+  for (const data of f.data.values())
+    data.schools[0].classes[0].students.push({
+      id: "other-student",
+      name: "Other Student",
+    });
+  const context = await f.context.select("second", "final", f.identity),
+    { inputs, notes, rows } = mountedInputs(f, context, [
+      ["theory", "99"],
+      ["practical", "0"],
+      ["theory", "19", "other-student"],
+      ["practical", "20", "other-student"],
+    ]);
+  for (const input of inputs) f.context.input(input);
+  await f.context.flush();
+  assert.equal(f.context.pending, 1);
+  assert.equal(rows.get("student").dataset.editState, "error");
+  assert.equal(rows.get("other-student").dataset.editState, "saved");
+  assert.equal(notes[0].dataset.state, "error");
+  for (const note of notes.slice(1)) assert.equal(note.dataset.state, "saved");
+  const grades =
+    f.data.get("second").schools[0].classes[0].lessons[0].kardaneshScores;
+  assert.equal(grades.student.theory, 10);
+  assert.equal(grades.student.practical, 0);
+  assert.equal(grades["other-student"].theory, 19);
+  assert.equal(grades["other-student"].practical, 20);
+});
 
 test("selecting any of the four assessments leaves the active year workspace, sessions and application state unchanged", async () => {
   const f = fixture({ second: false }),
@@ -748,7 +1004,7 @@ test("ordinary active-source saves make its selected assessment read-only with a
   f.c.workspace = { ...f.c.workspace, revision: 2 };
   assert.equal(f.context.readOnly(input), true);
   const html = f.c.buildAssessmentEditor(classroom, classroom.lessons[0]);
-  assert.match(html, /مرحله را دوباره انتخاب کنید/);
+  assert.match(html, /صفحه را دوباره بارگذاری/);
   assert.throws(() => f.context.input(input));
   assert.equal(f.context.pending, 0);
   assert.equal(f.effects.writes.length, 0);

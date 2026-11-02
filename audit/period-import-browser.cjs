@@ -25,7 +25,7 @@ async function periodImportRace() {
     const destination = await create("1421-1422");
     db.schools[0].name = "Restore race destination preserved";
     await saveDB();
-    await EduV24.switchPeriod(source);
+    await EduV24.test.switchLegacyPeriod(source);
     // Exercise the retained private compatibility path. Public imports accept
     // only complete-system backups and are covered by unifiedBackup.
     await EduV24.test.importLegacyBackup({
@@ -63,7 +63,7 @@ async function periodImportRace() {
         throw Error("Replacement did not enter the real transaction boundary");
       }),
     ]);
-    const switching = EduV24.switchPeriod(destination);
+    const switching = EduV24.test.switchLegacyPeriod(destination);
     await new Promise((resolve) => setTimeout(resolve, 40));
     check(
       "RESTORERACE01",
@@ -102,7 +102,7 @@ async function periodImportRace() {
     globalThis.EduRecordTransaction = originalTransaction;
     closeModal();
     if (EduV24.getReportContext().id !== previous)
-      await EduV24.switchPeriod(previous);
+      await EduV24.test.switchLegacyPeriod(previous);
   }
   return cases;
 }

@@ -166,8 +166,6 @@ function installRuntimeAPI() {
       authenticated: !db.settings.password || isAuthenticated,
     }),
     openAcademicYear,
-    createAcademicYear,
-    openStoredAcademicYear,
     refreshYearLessonSessions,
     openYearSession,
     prepareForUpdate,
@@ -199,7 +197,7 @@ function installRuntimeAPI() {
     confirmImport,
     undoLast,
     openPeriods,
-    switchPeriod,
+    switchPeriod: (id) => switchPeriod(id),
     openNewPeriod,
     finalizePeriod,
     reopenPeriod,
@@ -230,6 +228,10 @@ function installRuntimeAPI() {
       createLegacyPeriod: () => {
         if (!globalThis.__EDU_TEST_MODE__) throw Error("فقط در حالت آزمون");
         return createNewPeriod();
+      },
+      switchLegacyPeriod: (id) => {
+        if (!globalThis.__EDU_TEST_MODE__) throw Error("فقط در حالت آزمون");
+        return switchPeriod(id, legacyPeriodSwitchToken);
       },
       openLegacyPeriodDeletion: (id) => {
         if (!globalThis.__EDU_TEST_MODE__) throw Error("فقط در حالت آزمون");

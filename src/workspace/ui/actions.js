@@ -32,10 +32,6 @@ function installWorkspaceActions() {
     ],
     ["periods", () => openAcademicYear()],
     ["term-records", () => openPeriods()],
-    [
-      "open-academic-year",
-      (button) => openStoredAcademicYear(button.dataset.key),
-    ],
     ["backups", () => openBackups()],
     ["open-wipe", () => wipeAllV24()],
     ["discard-drafts", () => discardDrafts()],
@@ -84,7 +80,6 @@ function installWorkspaceActions() {
     return Number(value);
   }
   const submissions = new Map([
-    ["create-academic-year", () => createAcademicYear()],
     ["save-membership", () => saveMembership()],
     ["save-student", () => saveStudent()],
     ["save-entity", () => saveEntityEditor()],

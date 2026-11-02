@@ -165,6 +165,12 @@ if (process.argv.includes("--help")) {
         delay,
         ws,
       });
+      await require("./assessment-status-browser.cjs")({
+        cdp,
+        evaluate,
+        cases,
+        delay,
+      });
       cases.push(
         ...(await evaluate(
           "(" + require("./flows/annualActivityView.cjs").toString() + ")()",

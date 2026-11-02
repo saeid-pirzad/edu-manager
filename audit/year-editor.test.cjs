@@ -4,14 +4,10 @@ const { test } = require("node:test"),
   fs = require("node:fs"),
   path = require("node:path"),
   vm = require("node:vm");
+const source = (name) =>
+  fs.readFileSync(path.join(__dirname, "../src", name), "utf8");
 async function fixture() {
-  const effects = [],
-    installs = [],
-    error = { textContent: "" },
-    form = { isConnected: true, querySelector: () => error },
-    input = { value: "1406-1407", form },
-    modal = { classList: { contains: () => false } },
-    rows = [
+  const rows = [
       {
         id: "first",
         year: "1405-1406",
@@ -19,11 +15,17 @@ async function fixture() {
         termKind: "first",
         revision: 1,
       },
+      {
+        id: "historical",
+        year: "1404-1405",
+        term: "اول",
+        termKind: "first",
+        revision: 8,
+      },
     ],
     c = vm.createContext({
       workspace: { ...rows[0] },
       connection: {},
-      db: { schools: [{ id: "existing" }], sessions: [{ id: "history" }] },
       writer: Promise.resolve(),
       assertWorkspaceReadable() {},
       flushDrafts: async () => {},
@@ -43,178 +45,66 @@ async function fixture() {
       esc: String,
       showModal: (_title, html) => {
         c.html = html;
-        return true;
       },
-      document: {
-        getElementById: (id) => (id === "newAcademicYear" ? input : modal),
-      },
-      beginRecordEditorSave: () => {
-        effects.push("begin");
-        let finished = false;
-        return () => {
-          if (finished) return;
-          finished = true;
-          effects.push("finish");
-        };
-      },
-      rememberRecordEditor: (savedForm) => {
-        assert.equal(savedForm, form);
-        effects.push("remember");
-      },
-      v24DefaultDB: () => ({
-        schools: [],
-        sessions: [],
-        masterSchedule: {},
-        settings: { password: "" },
-      }),
-      installWorkspace: async (data, details) => {
-        installs.push({
-          data: structuredClone(data),
-          details: structuredClone(details),
-        });
-        return {
-          id: "created",
-          year: details.year,
-          term: details.term,
-          revision: 1,
-        };
-      },
-      switchPeriod: async (id) => {
-        effects.push("switch:" + id);
-        c.workspace = {
-          id,
-          year: installs.at(-1)?.details.year || "1404-1405",
-          revision: 1,
-        };
-      },
-      setStatus: () => effects.push("status"),
-      scheduleSingleFile: () => effects.push("backup"),
-      handleError: (err) => {
-        error.textContent = err.message;
-      },
-      readRecord: async (_store, id) => rows.find((row) => row.id === id),
-      rememberAcademicYear: (year) => effects.push("remember:" + year),
     });
-  for (const name of [
-    "domain/calendar.js",
-    "domain/academic-year.js",
-    "workspace/periods/year-editor.js",
-  ])
-    vm.runInContext(
-      fs.readFileSync(path.join(__dirname, "../src", name), "utf8"),
-      c,
-    );
+  vm.runInContext(source("workspace/periods/year-editor.js"), c);
   await c.openAcademicYear();
-  return { c, effects, installs, error, form, input, rows };
+  return { c, rows };
 }
-test("year navigation exposes the current year and a separate empty-year creation form", async () => {
-  const f = await fixture();
-  assert.match(f.c.html, /academic-year-hub/);
-  assert.match(f.c.html, /newAcademicYear/);
-  assert.match(f.c.html, /1406-1407/);
-  assert.match(f.c.html, /فهرست خالی/);
-  assert.match(f.c.html, /data-key="first" disabled/);
-});
-test("equivalent Persian year input creates empty records and preserves the previous live data", async () => {
-  const f = await fixture(),
-    before = JSON.stringify(f.c.db);
-  f.input.value = "۱۴۰۶–۱۴۰۷";
-  assert.equal(await f.c.createAcademicYear(), true);
-  assert.equal(f.installs.length, 1);
-  assert.deepEqual(f.installs[0].data.schools, []);
-  assert.deepEqual(f.installs[0].data.sessions, []);
-  assert.deepEqual(f.installs[0].data.masterSchedule, {});
-  assert.equal(f.installs[0].data.settings.academicYear, "1406-1407");
-  assert.equal(f.installs[0].details.newAcademicYear, true);
-  assert.equal(JSON.stringify(f.c.db), before);
-  assert.deepEqual(f.effects, [
-    "begin",
-    "finish",
-    "remember",
-    "switch:created",
-    "status",
-    "backup",
-  ]);
-});
-for (const label of ["1405-1407", "", "not-a-year"])
-  test(
-    "invalid year refuses creation without any write: " + label,
-    async () => {
-      const f = await fixture();
-      f.input.value = label;
-      assert.equal(await f.c.createAcademicYear(), false);
-      assert.equal(f.installs.length, 0);
-      assert.match(f.error.textContent, /سال تحصیلی/);
-      assert.deepEqual(f.effects, ["begin", "finish"]);
-    },
+
+test("year navigation exposes only the existing academic year and retains assessment/frozen-report controls", async () => {
+  const { c } = await fixture();
+  assert.match(c.html, /academic-year-hub/);
+  assert.match(c.html, /1405-1406/);
+  assert.match(
+    c.html,
+    /میان‌ترم اول، پایان‌ترم اول، میان‌ترم دوم و پایان‌ترم دوم/,
   );
-test("a year represented only by its second term still blocks duplicate year creation", async () => {
-  const f = await fixture();
-  f.rows.push({
-    id: "second",
-    year: "1406-1407",
-    term: "دوم",
-    termKind: "second",
-  });
-  assert.equal(await f.c.createAcademicYear(), false);
-  assert.equal(f.installs.length, 0);
-  assert.match(f.error.textContent, /قبلاً/);
+  assert.match(c.html, /data-workspace-action="term-records"/);
+  assert.doesNotMatch(
+    c.html,
+    /newAcademicYear|create-academic-year|open-academic-year|سال‌های ثبت‌شده|ایجاد سال|1404-1405/,
+  );
 });
-test("stale context during grade flush cannot create or switch a year", async () => {
-  const f = await fixture();
-  f.c.flushDrafts = async () => {
-    f.c.workspace = { ...f.c.workspace, id: "changed" };
+
+test("opening the year hub never mutates, deletes or re-anchors historical catalog rows", async () => {
+  const { c, rows } = await fixture(),
+    before = JSON.stringify(rows);
+  await c.openAcademicYear();
+  assert.equal(JSON.stringify(rows), before);
+  assert.equal(c.workspace.id, "first");
+  assert.equal(c.workspace.year, "1405-1406");
+  assert.equal(c.createAcademicYear, undefined);
+  assert.equal(c.openStoredAcademicYear, undefined);
+});
+
+test("a context changed during catalog read cannot display a stale year hub", async () => {
+  const { c, rows } = await fixture();
+  c.html = "unchanged";
+  c.allFrom = async () => {
+    c.workspace = { ...c.workspace, id: "changed" };
+    return rows;
   };
-  assert.equal(await f.c.createAcademicYear(), false);
-  assert.equal(f.installs.length, 0);
-  assert.match(f.error.textContent, /stale/);
+  await assert.rejects(c.openAcademicYear(), /stale context/);
+  assert.equal(c.html, "unchanged");
 });
-test("a detached form during asynchronous preparation cannot install a year", async () => {
-  const f = await fixture();
-  f.c.flushDrafts = async () => {
-    f.form.isConnected = false;
+
+test("a retired database during catalog read cannot display a stale year hub", async () => {
+  const { c, rows } = await fixture();
+  c.html = "unchanged";
+  c.allFrom = async () => {
+    c.connection = {};
+    return rows;
   };
-  assert.equal(await f.c.createAcademicYear(), false);
-  assert.equal(f.installs.length, 0);
-  assert.match(f.error.textContent, /فرم سال/);
-});
-test("rapid repeated submission creates the year once and releases the editor saving guard", async () => {
-  const f = await fixture();
-  let release;
-  f.c.flushDrafts = () =>
-    new Promise((resolve) => {
-      release = resolve;
-    });
-  const first = f.c.createAcademicYear();
-  assert.equal(await f.c.createAcademicYear(), false);
-  release();
-  assert.equal(await first, true);
-  assert.equal(f.installs.length, 1);
-  assert.equal(vm.runInContext("academicYearSaving", f.c), false);
-});
-test("a declined modal replacement keeps the previously accepted editor identity", async () => {
-  const f = await fixture(),
-    accepted = vm.runInContext("academicYearEditing", f.c);
-  f.c.showModal = () => false;
-  await f.c.openAcademicYear();
-  assert.equal(vm.runInContext("academicYearEditing", f.c), accepted);
-});
-test("failed installation preserves the selected year and exposes an inline error", async () => {
-  const f = await fixture();
-  f.c.installWorkspace = async () => {
-    throw Error("atomic duplicate year");
-  };
-  assert.equal(await f.c.createAcademicYear(), false);
-  assert.equal(f.c.workspace.id, "first");
-  assert.equal(f.error.textContent, "atomic duplicate year");
-  assert.deepEqual(f.effects, ["begin", "finish"]);
+  await assert.rejects(c.openAcademicYear(), /اتصال سال تغییر/);
+  assert.equal(c.html, "unchanged");
 });
 
 test("a closed active term offers explicit continuation into the unique open term of the same year", async () => {
-  const f = await fixture();
-  f.c.workspace.closed = true;
-  f.rows[0].closed = true;
-  f.rows.push({
+  const { c, rows } = await fixture();
+  c.workspace.closed = true;
+  rows[0].closed = true;
+  rows.push({
     id: "open-second",
     year: "1405-1406",
     term: "دوم",
@@ -222,22 +112,22 @@ test("a closed active term offers explicit continuation into the unique open ter
     closed: false,
     revision: 1,
   });
-  await f.c.openAcademicYear();
+  await c.openAcademicYear();
   assert.match(
-    f.c.html,
-    /data-key="open-second">ادامهٔ ثبت روزانه در همین سال/,
+    c.html,
+    /data-workspace-action="switch-period" data-key="open-second">ادامهٔ ثبت روزانه در همین سال/,
   );
-  assert.equal(f.c.workspace.id, "first");
-  assert.deepEqual(f.effects, []);
+  assert.equal(c.workspace.id, "first");
 });
 for (const state of ["closed", "ambiguous", "other-year"])
   test(
     "no continuation invents an open term when alternatives are " + state,
     async () => {
-      const f = await fixture();
-      f.c.workspace.closed = true;
-      f.rows[0].closed = true;
-      f.rows.push({
+      const { c, rows } = await fixture();
+      c.workspace.closed = true;
+      rows[0].closed = true;
+      rows[1].closed = true;
+      rows.push({
         id: "second",
         year: state === "other-year" ? "1406-1407" : "1405-1406",
         term: "دوم",
@@ -245,28 +135,31 @@ for (const state of ["closed", "ambiguous", "other-year"])
         closed: state === "closed",
       });
       if (state === "ambiguous")
-        f.rows.push({
+        rows.push({
           id: "duplicate",
           year: "1405-1406",
           term: "دوم",
           termKind: "second",
           closed: false,
         });
-      await f.c.openAcademicYear();
-      assert.doesNotMatch(f.c.html, /ادامهٔ ثبت روزانه در همین سال/);
-      assert.equal(f.c.workspace.id, "first");
+      await c.openAcademicYear();
+      assert.doesNotMatch(c.html, /ادامهٔ ثبت روزانه در همین سال/);
+      assert.equal(c.workspace.id, "first");
     },
   );
 
-test("a successfully installed year releases its editor lock and acknowledges saved input before navigation", async () => {
-  const f = await fixture();
-  f.c.switchPeriod = async () => {
-    assert.deepEqual(f.effects, ["begin", "finish", "remember"]);
-    assert.equal(f.installs.length, 1);
-    assert.equal(vm.runInContext("academicYearSaving", f.c), true);
-    assert.equal(vm.runInContext("academicYearEditing", f.c), null);
-    f.effects.push("switch:created");
-  };
-  assert.equal(await f.c.createAcademicYear(), true);
-  assert.equal(f.effects.filter((entry) => entry === "finish").length, 1);
+test("production action dispatch and facade have no year creation or year selection entry point", () => {
+  for (const name of [
+    "workspace/ui/actions.js",
+    "workspace/core/public-api.js",
+  ])
+    assert.doesNotMatch(
+      source(name),
+      /createAcademicYear|openStoredAcademicYear|create-academic-year|open-academic-year/,
+    );
+  assert.match(
+    source("workspace/core/public-api.js"),
+    /switchPeriod:\s*\(id\) => switchPeriod\(id\)/,
+    "the ordinary facade must not forward a caller-supplied legacy permission",
+  );
 });

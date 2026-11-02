@@ -1561,8 +1561,6 @@ function academicBootstrapPreferences(
   return { year: anchor, preferredId: selected?.id };
 }
 // Source: src/workspace/periods/year-editor.js
-let academicYearEditing = null,
-  academicYearSaving = false;
 async function openAcademicYear() {
   assertWorkspaceReadable();
   await flushDrafts({ strict: true });
@@ -1572,36 +1570,6 @@ async function openAcademicYear() {
     rows = await allFrom("catalog");
   assertWorkspaceContext(origin);
   if (connection !== database) throw Error("اتصال سال تغییر کرده است.");
-  const years = [...new Set(rows.map((row) => row.year))].sort().reverse();
-  const yearButtons = years
-    .map((year) => {
-      const candidates = rows.filter((row) => row.year === year),
-        first = candidates.filter(
-          (row) => (row.termKind || academicTermKind(row.term)) === "first",
-        ),
-        second = candidates.filter(
-          (row) => (row.termKind || academicTermKind(row.term)) === "second",
-        ),
-        selected =
-          year === workspace.year
-            ? workspace
-            : first.length === 1
-              ? first[0]
-              : second.length === 1
-                ? second[0]
-                : null;
-      return (
-        '<button type="button" class="ghost" data-workspace-action="open-academic-year" data-key="' +
-        esc(selected?.id || "") +
-        '"' +
-        (!selected || year === workspace.year ? " disabled" : "") +
-        ">" +
-        esc(year) +
-        (year === workspace.year ? " · سال فعال" : "") +
-        "</button>"
-      );
-    })
-    .join("");
   const openTerms = rows.filter(
     (row) =>
       row.year === workspace.year &&
@@ -1612,101 +1580,19 @@ async function openAcademicYear() {
     workspace.closed &&
     openTerms.length === 1 &&
     openTerms[0].id !== workspace.id
-      ? '<section class="period-management"><h4>ادامهٔ کار در همین سال</h4><p class="period-intro">بخش فعلی برای حفظ کارنامه و نمرات بسته است. برای ثبت حضور و فعالیت‌های جدید، بخش باز همین سال را انتخاب کنید.</p><button type="button" data-workspace-action="open-academic-year" data-key="' +
+      ? '<section class="period-management"><h4>ادامهٔ کار در همین سال</h4><p class="period-intro">بخش فعلی برای حفظ کارنامه و نمرات بسته است. برای ثبت حضور و فعالیت‌های جدید، بخش باز همین سال را انتخاب کنید.</p><button type="button" data-workspace-action="switch-period" data-key="' +
         esc(openTerms[0].id) +
         '">ادامهٔ ثبت روزانه در همین سال</button></section>'
       : "";
-  const nextStart = Number(workspace.year.split("-")[0]) + 1;
-  const opened = showModal(
+  showModal(
     "سال تحصیلی",
     '<div class="period-hub academic-year-hub"><div class="record-editor-context"><span>سال فعال</span><h4><bdi>' +
       esc(workspace.year) +
       "</bdi></h4><p>مدرسه‌ها، کلاس‌ها، هنرجویان، درس‌ها و برنامهٔ هفتگی در تمام سال مشترک‌اند.</p></div>" +
       '<p class="period-intro">میان‌ترم اول، پایان‌ترم اول، میان‌ترم دوم و پایان‌ترم دوم را داخل دفتر نمرهٔ همان درس انتخاب کنید؛ برای ادامهٔ کار نیازی به ساخت یا بستن ترم نیست.</p>' +
       continuation +
-      '<section class="period-management"><h4>سال‌های ثبت‌شده</h4><div class="row period-actions">' +
-      yearButtons +
-      "</div></section>" +
-      '<details class="period-list"><summary>ایجاد سال تحصیلی جدید</summary><form class="record-editor" data-workspace-submit="create-academic-year" novalidate>' +
-      '<label class="course-field">سال تحصیلی<input id="newAcademicYear" name="year" inputmode="numeric" dir="ltr" required value="' +
-      nextStart +
-      "-" +
-      (nextStart + 1) +
-      '" aria-describedby="academicYearHelp academicYearError"></label>' +
-      '<p id="academicYearHelp" class="muted">سال جدید با فهرست خالی شروع می‌شود؛ تمام اطلاعات سال‌های قبلی در برنامه و پشتیبان کامل باقی می‌ماند.</p><p id="academicYearError" role="alert"></p><div class="record-editor-actions"><button type="submit" data-mutating="1">ایجاد سال جدید</button></div></form></details>' +
       '<details class="period-list"><summary>کارنامه‌های ثابت و قفل نمرات نوبت</summary><p class="period-intro">بستن نوبت اختیاری است و برای ثبت کارنامهٔ ثابت و قفل‌کردن نمرات آن به‌کار می‌رود.</p><button type="button" class="ghost" data-workspace-action="term-records">مدیریت کارنامه‌های ثابت</button></details></div>',
   );
-  if (opened !== false)
-    academicYearEditing = {
-      ...origin,
-      connection: database,
-      node: document.getElementById("newAcademicYear"),
-    };
-}
-async function createAcademicYear() {
-  if (academicYearSaving) return false;
-  const editing = academicYearEditing,
-    form = editing?.node?.form;
-  if (
-    !form?.isConnected ||
-    document.getElementById("modal").classList.contains("hidden")
-  )
-    throw Error("فرم سال جدید باز نیست.");
-  academicYearSaving = true;
-  const finish = beginRecordEditorSave(form);
-  try {
-    assertWorkspaceContext(editing);
-    if (connection !== editing.connection) throw Error("اتصال سال تغییر کرد.");
-    const year = EduAcademicYear.normalize(editing.node.value);
-    await flushDrafts({ strict: true });
-    await writer;
-    assertWorkspaceContext(editing);
-    if (
-      academicYearEditing !== editing ||
-      !form.isConnected ||
-      connection !== editing.connection
-    )
-      throw Error("فرم سال تغییر کرد؛ دوباره باز کنید.");
-    const rows = await allFrom("catalog");
-    assertWorkspaceContext(editing);
-    if (rows.some((row) => row.year === year))
-      throw Error(
-        "این سال قبلاً ایجاد شده است؛ آن را از فهرست سال‌ها باز کنید.",
-      );
-    const data = v24DefaultDB();
-    data.settings.academicYear = year;
-    data.settings.academicTerm = "اول";
-    const created = await installWorkspace(data, {
-      year,
-      term: "اول",
-      newAcademicYear: true,
-    });
-    finish();
-    rememberRecordEditor(form);
-    academicYearEditing = null;
-    await switchPeriod(created.id);
-    setStatus(
-      "سال تحصیلی ایجاد شد؛ مدرسه و کلاس‌های این سال را اضافه کنید.",
-      "saved",
-    );
-    scheduleSingleFile();
-    return true;
-  } catch (error) {
-    if (form.isConnected)
-      form.querySelector("#academicYearError").textContent = error.message;
-    else handleError(error);
-    return false;
-  } finally {
-    academicYearSaving = false;
-    finish();
-  }
-}
-async function openStoredAcademicYear(id) {
-  assertWorkspaceReadable();
-  const row = await readRecord("catalog", id);
-  if (!row) throw Error("سال انتخاب‌شده دیگر موجود نیست.");
-  await switchPeriod(id);
-  rememberAcademicYear(row.year);
 }
 // Source: src/workspace/periods/academic-years.js
 // Canonicalize equivalent year labels before grouping terms. The detached
@@ -3113,14 +2999,15 @@ const assessmentContext = (() => {
       connectionRetired
     )
       throw Error(
-        "صفحه یا اطلاعات سال تغییر کرده است؛ مرحلهٔ ارزشیابی را دوباره باز کنید.",
+        "صفحه یا اطلاعات سال تغییر کرده است؛ صفحه را دوباره بارگذاری و پیش‌نویس‌های محفوظ را بررسی کنید.",
       );
-    if (
-      write &&
-      (context.period.closed || context.stale || !context.authenticated)
-    )
+    if (write && context.period.closed)
       throw Error(
         "این مرحلهٔ ارزشیابی فقط قابل مشاهده است؛ ابتدا ترم آن را بازگشایی کنید.",
+      );
+    if (write && (context.stale || !context.authenticated))
+      throw Error(
+        "اطلاعات یا دسترسی این مرحله تغییر کرده است؛ صفحه را دوباره بارگذاری و پیش‌نویس‌های محفوظ را بررسی کنید.",
       );
   }
   function handles(input) {
@@ -3152,7 +3039,36 @@ const assessmentContext = (() => {
       note.dataset.state = item.error ? "error" : "pending";
     }
     const row = input.closest?.(".assessment-student");
-    if (row) row.dataset.editState = item.error ? "error" : "pending";
+    if (row)
+      row.dataset.editState = [...selected.entries.values()].some(
+        (entry) => entry.sid === input.dataset.student && entry.error,
+      )
+        ? "error"
+        : "pending";
+  }
+  function refreshInput(input) {
+    const context = selected;
+    if (!context || input.dataset.assessmentContext !== context.token) return;
+    const item = context.entries.get(
+      entryKey({ sid: input.dataset.student, field: input.dataset.field }),
+    );
+    input.setAttribute("aria-invalid", item?.error ? "true" : "false");
+    const note = input.parentElement?.querySelector(".grade-note");
+    if (note) {
+      const filled = input.value.trim() !== "";
+      note.textContent = item
+        ? item.error || "در انتظار ذخیره"
+        : filled
+          ? "ذخیره شد"
+          : "";
+      note.dataset.state = item
+        ? item.error
+          ? "error"
+          : "pending"
+        : filled
+          ? "saved"
+          : "idle";
+    }
   }
   function sameInstallation(context) {
     return (
@@ -3446,7 +3362,8 @@ const assessmentContext = (() => {
     if (!context)
       return gradeCell(classroom, lesson, student, field, { value });
     const item = context.entries.get(entryKey({ sid: student.id, field })),
-      shown = item ? item.value : (value ?? "");
+      shown = item ? item.value : (value ?? ""),
+      locked = readOnly({ dataset: { assessmentContext: context.token } });
     return (
       '<div class="grade-editor"><input type="text" inputmode="decimal" autocomplete="off" dir="ltr" data-grade="1" data-kind="k" data-assessment-context="' +
       esc(context.token) +
@@ -3458,6 +3375,8 @@ const assessmentContext = (() => {
       esc(student.id) +
       '" data-pod="" data-unit="" data-field="' +
       esc(field) +
+      '" aria-invalid="' +
+      (item?.error ? "true" : "false") +
       '" value="' +
       esc(shown) +
       '" placeholder="—" aria-label="' +
@@ -3469,10 +3388,18 @@ const assessmentContext = (() => {
             : "تئوری"),
       ) +
       '"' +
-      (context.period.closed ? ' readonly aria-readonly="true"' : "") +
+      (locked ? ' readonly aria-readonly="true"' : "") +
       '><button type="button" class="ghost grade-clear no-print" data-clear-grade aria-label="پاک‌کردن نمره"' +
-      (context.period.closed ? " disabled" : "") +
-      '>×</button><small class="grade-note" aria-live="polite">' +
+      (locked ? " disabled" : "") +
+      '>×</button><small class="grade-note" aria-live="polite" data-state="' +
+      (item
+        ? item.error
+          ? "error"
+          : "pending"
+        : String(shown).trim() !== ""
+          ? "saved"
+          : "idle") +
+      '">' +
       esc(item ? item.error || "در انتظار ذخیره" : "") +
       "</small></div>"
     );
@@ -3814,6 +3741,7 @@ const assessmentContext = (() => {
     cell,
     input,
     clear,
+    refreshInput,
     flush,
     apply,
     dispose,
@@ -3908,7 +3836,7 @@ function buildAssessmentEditor(c, l) {
     '</nav><div class="gradebook-simple-search"><input type="search" data-assessment-search="" aria-label="جست‌وجوی دانش‌آموز" placeholder="جست‌وجوی دانش‌آموز…" autocomplete="off"></div>';
   if (context?.stale)
     html +=
-      '<p class="muted" role="status">اطلاعات این مرحله تغییر کرده است؛ مرحله را دوباره انتخاب کنید. پیش‌نویس‌های ذخیره‌نشده محفوظ‌اند.</p>';
+      '<p class="muted" role="status">اطلاعات این مرحله تغییر کرده است؛ صفحه را دوباره بارگذاری و پیش‌نویس‌ها را بررسی کنید. پیش‌نویس‌های ذخیره‌نشده محفوظ‌اند.</p>';
   if (context?.period.closed)
     html +=
       '<p class="muted" role="status">این مرحله بسته است و نمرات آن فقط نمایش داده می‌شوند؛ سایر بخش‌های سال تحصیلی قابل استفاده‌اند.</p>';
@@ -4062,6 +3990,10 @@ function refreshGradeResults() {
         " تکمیل شده";
   }
   document.querySelectorAll("[data-grade]").forEach((input) => {
+    if (assessmentContext.handles(input)) {
+      assessmentContext.refreshInput(input);
+      return;
+    }
     const note = input.parentElement.querySelector(".grade-note"),
       item = drafts.get(inputKey(contextFromInput(input)));
     if (note) {
@@ -7743,7 +7675,10 @@ async function confirmDeletePeriod() {
       clearTimeout(draftTimer);
       drafts.clear();
       draftGeneration++;
-      await switchPeriod(next.id);
+      await switchPeriod(
+        next.id,
+        globalThis.__EDU_TEST_MODE__ ? legacyPeriodSwitchToken : null,
+      );
     }
     periodLoading = false;
     ownsLoading = false;
@@ -7788,8 +7723,9 @@ function hydrateReportNotes(period) {
     );
   return saved !== false;
 }
+const legacyPeriodSwitchToken = Symbol("legacy-period-fixture");
 let periodSwitchBusy = false;
-async function switchPeriod(id) {
+async function switchPeriod(id, permission = null) {
   if (periodSwitchBusy)
     throw Error("جابه‌جایی ترم در حال انجام است؛ صبر کنید.");
   periodSwitchBusy = true;
@@ -7802,10 +7738,20 @@ async function switchPeriod(id) {
     await writer.catch(() => {});
     periodLoading = true;
     lockControls();
+    const year = workspace.year,
+      checkYear = (target) => {
+        if (target.year !== year && permission !== legacyPeriodSwitchToken)
+          throw Error(
+            "این اطلاعات متعلق به سال تحصیلی فعال نیست؛ انتخاب و ایجاد سال‌های دیگر در برنامه وجود ندارد. سوابق قدیمی در پشتیبان کامل محفوظ‌اند.",
+          );
+      };
+    let loaded = await readWorkspaceSnapshot(id);
+    checkYear(loaded.period);
     const annual = globalThis.EduAnnualModules
       ? await synchronizeAnnualForRead(id)
       : null;
-    const loaded = await readWorkspaceSnapshot(id);
+    if (annual) loaded = await readWorkspaceSnapshot(id);
+    checkYear(loaded.period);
     if (!ready || resetBusy || connectionRetired)
       throw Error(
         "بانک هنگام جابه‌جایی تغییر کرد؛ صفحه را دوباره بارگذاری کنید.",
@@ -7904,6 +7850,8 @@ async function openNewPeriod(firstId = "") {
 
 let newPeriodBusy = false;
 async function createNewPeriod({ fromDialog = false } = {}) {
+  if (!fromDialog && !globalThis.__EDU_TEST_MODE__)
+    throw Error("ساخت سال تحصیلی دیگر در برنامه پشتیبانی نمی‌شود.");
   if (newPeriodBusy) throw Error("شروع نوبت در حال انجام است؛ صبر کنید.");
   newPeriodBusy = true;
   try {
@@ -8042,7 +7990,7 @@ async function createNewPeriod({ fromDialog = false } = {}) {
     });
     assertWorkspaceContext(context);
     if (fromDialog && secondTermDialog === dialog) secondTermDialog = null;
-    await switchPeriod(created.id);
+    await switchPeriod(created.id, fromDialog ? null : legacyPeriodSwitchToken);
   } finally {
     newPeriodBusy = false;
   }
@@ -10358,10 +10306,6 @@ function installWorkspaceActions() {
     ],
     ["periods", () => openAcademicYear()],
     ["term-records", () => openPeriods()],
-    [
-      "open-academic-year",
-      (button) => openStoredAcademicYear(button.dataset.key),
-    ],
     ["backups", () => openBackups()],
     ["open-wipe", () => wipeAllV24()],
     ["discard-drafts", () => discardDrafts()],
@@ -10410,7 +10354,6 @@ function installWorkspaceActions() {
     return Number(value);
   }
   const submissions = new Map([
-    ["create-academic-year", () => createAcademicYear()],
     ["save-membership", () => saveMembership()],
     ["save-student", () => saveStudent()],
     ["save-entity", () => saveEntityEditor()],
@@ -12032,8 +11975,6 @@ function installRuntimeAPI() {
       authenticated: !db.settings.password || isAuthenticated,
     }),
     openAcademicYear,
-    createAcademicYear,
-    openStoredAcademicYear,
     refreshYearLessonSessions,
     openYearSession,
     prepareForUpdate,
@@ -12065,7 +12006,7 @@ function installRuntimeAPI() {
     confirmImport,
     undoLast,
     openPeriods,
-    switchPeriod,
+    switchPeriod: (id) => switchPeriod(id),
     openNewPeriod,
     finalizePeriod,
     reopenPeriod,
@@ -12096,6 +12037,10 @@ function installRuntimeAPI() {
       createLegacyPeriod: () => {
         if (!globalThis.__EDU_TEST_MODE__) throw Error("فقط در حالت آزمون");
         return createNewPeriod();
+      },
+      switchLegacyPeriod: (id) => {
+        if (!globalThis.__EDU_TEST_MODE__) throw Error("فقط در حالت آزمون");
+        return switchPeriod(id, legacyPeriodSwitchToken);
       },
       openLegacyPeriodDeletion: (id) => {
         if (!globalThis.__EDU_TEST_MODE__) throw Error("فقط در حالت آزمون");

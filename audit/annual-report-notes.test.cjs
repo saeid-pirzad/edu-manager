@@ -74,6 +74,7 @@ function fixture(saved = new Map()) {
   };
   vm.createContext(c);
   for (const p of [
+    "src/domain/calendar.js",
     "src/legacy/students/roster.js",
     "src/reports/periodic/date-range.js",
     "src/reports/periodic/notes.js",
@@ -87,14 +88,23 @@ function fixture(saved = new Map()) {
     c,
   );
   Object.assign(c.api.filters, {
+    mode: "annual",
     date: "2026-11-02",
     schoolId: "school",
     classId: "class",
   });
   return { c, api: c.api, ctx, storage, reads, writes, elements };
 }
-const legacy = (id, date = "2026-11-02") =>
-  [id, "daily", date, "school", "class", "management", ""].join("|");
+const legacy = (id) =>
+  [
+    id,
+    "annual",
+    "academic-year:auto:auto",
+    "school",
+    "class",
+    "management",
+    "",
+  ].join("|");
 const save = (f, id, values) =>
   f.storage.set("EduManager.periodicDrafts." + id, JSON.stringify(values));
 test("annual notes merge stable-id aliases without writes and keep portable seven-part keys", () => {
@@ -206,3 +216,34 @@ test("report preparation rejects concurrent explicit note edits even when author
   assert.equal(await f.api.generate(), null);
   assert.match(f.api.readNote(f.api.noteKey(f.api.filters)), /new user edit/);
 });
+
+for (const mode of ["daily", "weekly", "monthly"]) {
+  test(`${mode} notes belong only to the selected term and never merge peer/year-scoped text`, () => {
+    const f = fixture();
+    f.api.filters.mode = mode;
+    const firstKey = f.api.noteKey(f.api.filters),
+      peerKey = ["second", ...firstKey.split("|").slice(1)].join("|"),
+      oldYearKey = firstKey.replace(
+        "|" + firstKey.split("|")[2] + "|",
+        "|year:1405-1406;" + firstKey.split("|")[2] + "|",
+      );
+    save(f, "first", {
+      [firstKey]: "first-term only",
+      [oldYearKey]: "ambiguous old year-wide note",
+    });
+    save(f, "second", { [peerKey]: "second-term only" });
+    assert.equal(f.api.readNote(firstKey), "first-term only");
+    assert.equal(f.reads.includes("EduManager.periodicDrafts.second"), false);
+    f.ctx.id = "second";
+    const secondKey = f.api.noteKey(f.api.filters);
+    assert.equal(secondKey, peerKey);
+    assert.equal(f.api.readNote(secondKey), "second-term only");
+    f.api.persistNote(secondKey, "edited second term");
+    assert.equal(f.api.getDrafts("first")[firstKey], "first-term only");
+    assert.equal(
+      f.api.getDrafts("first")[oldYearKey],
+      "ambiguous old year-wide note",
+    );
+    assert.equal(f.api.getDrafts("second")[secondKey], "edited second term");
+  });
+}

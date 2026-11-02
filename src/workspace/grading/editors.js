@@ -78,7 +78,7 @@ function buildAssessmentEditor(c, l) {
     '</nav><div class="gradebook-simple-search"><input type="search" data-assessment-search="" aria-label="جست‌وجوی دانش‌آموز" placeholder="جست‌وجوی دانش‌آموز…" autocomplete="off"></div>';
   if (context?.stale)
     html +=
-      '<p class="muted" role="status">اطلاعات این مرحله تغییر کرده است؛ مرحله را دوباره انتخاب کنید. پیش‌نویس‌های ذخیره‌نشده محفوظ‌اند.</p>';
+      '<p class="muted" role="status">اطلاعات این مرحله تغییر کرده است؛ صفحه را دوباره بارگذاری و پیش‌نویس‌ها را بررسی کنید. پیش‌نویس‌های ذخیره‌نشده محفوظ‌اند.</p>';
   if (context?.period.closed)
     html +=
       '<p class="muted" role="status">این مرحله بسته است و نمرات آن فقط نمایش داده می‌شوند؛ سایر بخش‌های سال تحصیلی قابل استفاده‌اند.</p>';
@@ -232,6 +232,10 @@ function refreshGradeResults() {
         " تکمیل شده";
   }
   document.querySelectorAll("[data-grade]").forEach((input) => {
+    if (assessmentContext.handles(input)) {
+      assessmentContext.refreshInput(input);
+      return;
+    }
     const note = input.parentElement.querySelector(".grade-note"),
       item = drafts.get(inputKey(contextFromInput(input)));
     if (note) {

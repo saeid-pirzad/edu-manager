@@ -49,12 +49,16 @@ module.exports = async function delegatedUi() {
     await new Promise((resolve) => setTimeout(resolve, 10));
   check(
     "DU04",
-    "workspace year command opens the annual hub from the rendered control",
+    "workspace year command opens the single-year hub with assessment controls and no multi-year creation",
     document.getElementById("modalTitle").textContent === "سال تحصیلی" &&
       !!document.querySelector("#modalBody .academic-year-hub") &&
-      !!document.querySelector(
+      !document.querySelector(
         '#modalBody form[data-workspace-submit="create-academic-year"]',
       ) &&
+      !!document.querySelector(
+        '#modalBody [data-workspace-action="term-records"]',
+      ) &&
+      !document.getElementById("newAcademicYear") &&
       !document.getElementById("periodTerm"),
   );
   closeModal();

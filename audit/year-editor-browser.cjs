@@ -11,353 +11,215 @@ async function beforeReload() {
     check = (id, name, pass, observed = {}) =>
       cases.push({ id: "YEAR_EDITOR_" + id, name, pass: !!pass, observed }),
     ids = {
-      old: "year_editor_old_first",
+      first: "year_editor_first",
+      historical: "year_editor_historical",
+      future: "year_editor_future",
       school: "year_editor_school",
       classroom: "year_editor_class",
       lesson: "year_editor_lesson",
       student: "year_editor_student",
     },
-    oldYear = "1461-1462",
-    newYear = "1462-1463",
+    year = "1461-1462",
+    historicalYear = "1460-1461",
     futureYear = "1463-1464",
-    wait = async (predicate) => {
-      for (let n = 0; n < 250; n++) {
-        if (predicate()) return;
-        await new Promise((resolve) => setTimeout(resolve, 20));
-      }
-      throw Error(
-        "Year editor timed out: " +
-          (document.getElementById("academicYearError")?.textContent ||
-            EduV24.test.getState().status?.message ||
-            ""),
-      );
-    },
-    openYear = async () => {
-      closeModal();
-      const button = document.querySelector(
-        '#app [data-workspace-action="periods"]',
-      );
-      for (
-        let parent = button.parentElement;
-        parent;
-        parent = parent.parentElement
-      )
-        if (parent.tagName === "DETAILS") parent.open = true;
-      button.click();
-      await wait(
-        () =>
-          !!document.querySelector("#modal:not(.hidden) .academic-year-hub"),
-      );
-    },
-    submit = async (value) => {
-      const input = document.getElementById("newAcademicYear"),
-        form = input.form;
-      form.closest("details").open = true;
-      input.value = value;
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-      form.requestSubmit();
-      await wait(
-        () =>
-          (!form.isConnected || form.getAttribute("aria-busy") !== "true") &&
-          (!!document.getElementById("academicYearError")?.textContent ||
-            document.getElementById("modal").classList.contains("hidden")),
-      );
-      await EduV24.test.settle();
-    };
-  const original = await EduV24.snapshotInstallation(),
-    fixture = structuredClone(original),
-    data = EduV24.normalizeDB({
-      ...defaultDB(),
-      settings: {
-        ...db.settings,
-        academicYear: oldYear,
-        academicTerm: "اول",
-        password: "",
-      },
-      schools: [
-        {
-          id: ids.school,
-          name: "هنرستان مصنوعی سال تحصیلی",
-          classes: [
-            {
-              id: ids.classroom,
-              name: "یازدهم شبکه مصنوعی",
-              students: [
-                { id: ids.student, name: "هنرجوی مصنوعی سال", code: "1" },
-              ],
-              archivedStudents: [],
-              lessons: [
-                {
-                  id: ids.lesson,
-                  name: "مهارت سالانه مصنوعی",
-                  gradeMode: "kardanesh",
-                  poudmans: [],
-                  gradingPolicy: {
-                    ...EduPolicy.defaults("dual", oldYear),
-                    confirmed: true,
-                    code: "YEAR-EDITOR",
-                  },
-                  kardaneshScores: {
-                    [ids.student]: {
-                      midtermPractical: 16,
-                      midtermTheory: 12,
-                      practical: 18,
-                      theory: 14,
-                    },
-                  },
-                },
-              ],
-            },
-          ],
-        },
-      ],
-      masterSchedule: {},
-      migrationWarnings: [],
-      sessions: [
-        {
-          id: "year_editor_history",
-          schoolId: ids.school,
-          classId: ids.classroom,
-          lessonId: ids.lesson,
-          date: EduAcademicYear.range(oldYear).start,
-          period: 0,
-          poudmanId: null,
-          unitId: null,
-          roster: [{ id: ids.student, name: "هنرجوی مصنوعی سال", code: "1" }],
-          attendance: { [ids.student]: "leave" },
-          scores: [{ studentId: ids.student, type: "classGrade", value: 17 }],
-        },
-      ],
-    }),
-    { schools, sessions, ...meta } = data;
+    original = await EduV24.snapshotInstallation(),
+    fixture = structuredClone(original);
   for (const name of Object.keys(fixture.stores)) fixture.stores[name] = [];
-  fixture.activeWorkspace = ids.old;
+  fixture.activeWorkspace = ids.first;
   fixture.reportDrafts = {};
   fixture.gradeDrafts = [];
   fixture.snapshotNotes = [];
-  meta.layout = schools.map((school) => ({
-    id: school.id,
-    name: school.name,
-    classes: school.classes.map((c) => c.id),
-  }));
-  fixture.stores.catalog.push({
-    id: ids.old,
-    year: oldYear,
-    term: "اول",
-    termKind: "first",
-    closed: false,
-    revision: 1,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  });
-  for (const [logical, value] of [
-    ["meta", meta],
-    ["class:" + ids.classroom, schools[0].classes[0]],
-    ...sessions.map((s) => ["session:" + s.id, s]),
-  ])
-    fixture.stores.records.push({
-      key: ids.old + "|" + logical,
-      workspace: ids.old,
-      logical,
-      value,
+  for (const [id, academicYear] of [
+    [ids.historical, historicalYear],
+    [ids.first, year],
+    [ids.future, futureYear],
+  ]) {
+    const data = EduV24.normalizeDB({
+        ...defaultDB(),
+        settings: {
+          ...db.settings,
+          academicYear,
+          academicTerm: "اول",
+          password: "",
+        },
+        schools: [
+          {
+            id: ids.school,
+            name: "هنرستان مصنوعی سال تحصیلی",
+            classes: [
+              {
+                id: ids.classroom,
+                name: "یازدهم شبکه مصنوعی",
+                students: [
+                  { id: ids.student, name: "هنرجوی مصنوعی سال", code: "1" },
+                ],
+                archivedStudents: [],
+                lessons: [
+                  {
+                    id: ids.lesson,
+                    name: "مهارت سالانه مصنوعی",
+                    gradeMode: "kardanesh",
+                    poudmans: [],
+                    gradingPolicy: {
+                      ...EduPolicy.defaults("dual", academicYear),
+                      confirmed: true,
+                      code: "YEAR-EDITOR",
+                    },
+                    kardaneshScores: {
+                      [ids.student]: {
+                        midtermPractical: 16,
+                        midtermTheory: 12,
+                        practical: 18,
+                        theory: 14,
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+        masterSchedule: {},
+        migrationWarnings: [],
+        sessions: [
+          {
+            id: "year_editor_history",
+            schoolId: ids.school,
+            classId: ids.classroom,
+            lessonId: ids.lesson,
+            date: EduAcademicYear.range(academicYear).start,
+            period: 0,
+            poudmanId: null,
+            unitId: null,
+            roster: [{ id: ids.student, name: "هنرجوی مصنوعی سال", code: "1" }],
+            attendance: { [ids.student]: "leave" },
+            scores: [{ studentId: ids.student, type: "classGrade", value: 17 }],
+          },
+        ],
+      }),
+      { schools, sessions, ...meta } = data;
+    meta.layout = schools.map((school) => ({
+      id: school.id,
+      name: school.name,
+      classes: school.classes.map((c) => c.id),
+    }));
+    fixture.stores.catalog.push({
+      id,
+      year: academicYear,
+      term: "اول",
+      termKind: "first",
+      closed: false,
+      revision: 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
+    for (const [logical, value] of [
+      ["meta", meta],
+      ["class:" + ids.classroom, schools[0].classes[0]],
+      ...sessions.map((s) => ["session:" + s.id, s]),
+    ])
+      fixture.stores.records.push({
+        key: id + "|" + logical,
+        workspace: id,
+        logical,
+        value,
+      });
+  }
   closeModal();
   EduV24.previewFullBackup(fixture);
   document.getElementById("fullRestoreConfirmed").checked = true;
   await EduV24.restoreFullBackup();
   await EduV24.test.settle();
   const before = await EduV24.snapshotInstallation(),
-    oldRecords = JSON.stringify(
-      before.stores.records.filter((row) => row.workspace === ids.old),
-    );
-  await openYear();
+    historicalRecords = JSON.stringify(
+      before.stores.records.filter((row) =>
+        [ids.historical, ids.future].includes(row.workspace),
+      ),
+    ),
+    unchanged = () =>
+      EduV24.snapshotInstallation().then(
+        (file) => JSON.stringify(file.stores) === JSON.stringify(before.stores),
+      );
+  await EduV24.openAcademicYear();
+  const hub = document.querySelector("#modal:not(.hidden) .academic-year-hub");
   check(
     "01",
-    "the actual year navigation opens the year hub and empty-year creation form",
-    document
-      .querySelector(".academic-year-hub")
-      ?.textContent.includes("سال فعال") &&
-      !!document.querySelector(
-        'form[data-workspace-submit="create-academic-year"]',
-      ),
+    "the year hub displays only the restored active year, without create/select-other-year controls",
+    !!hub &&
+      hub.textContent.includes(year) &&
+      !hub.textContent.includes(historicalYear) &&
+      !hub.textContent.includes(futureYear) &&
+      !hub.querySelector('[data-workspace-submit="create-academic-year"]') &&
+      !hub.querySelector('[data-workspace-action="open-academic-year"]') &&
+      typeof EduV24.createAcademicYear === "undefined" &&
+      typeof EduV24.openStoredAcademicYear === "undefined" &&
+      (await unchanged()),
   );
-  await submit("۱۴۶۲–۱۴۶۳");
-  const createdId = EduV24.getReportContext().id,
-    after = await EduV24.snapshotInstallation();
+  let rejected = 0;
+  for (const options of [undefined, { allowOtherYear: true }, true])
+    try {
+      await EduV24.switchPeriod(ids.future, options);
+    } catch (error) {
+      if (/سال تحصیلی فعال/.test(error.message)) rejected++;
+    }
   check(
     "02",
-    "creating a new year starts with an empty school, roster, course, schedule and session directory",
-    EduV24.getReportContext().year === newYear &&
-      createdId !== ids.old &&
-      db.schools.length === 0 &&
-      db.sessions.length === 0 &&
-      Object.keys(db.masterSchedule).length === 0 &&
-      after.stores.records.filter((row) => row.workspace === createdId)
-        .length === 1,
+    "the ordinary public switch rejects another year and ignores forged legacy permissions even in audit mode",
+    rejected === 3 &&
+      EduV24.getReportContext().id === ids.first &&
+      (await unchanged()),
   );
+  const testMode = window.__EDU_TEST_MODE__;
+  let gated = 0;
+  try {
+    window.__EDU_TEST_MODE__ = false;
+    for (const operation of [
+      () => EduV24.test.createLegacyPeriod(),
+      () => EduV24.test.switchLegacyPeriod(ids.future),
+    ])
+      try {
+        await operation();
+      } catch (error) {
+        if (/فقط در حالت آزمون/.test(error.message)) gated++;
+      }
+  } finally {
+    window.__EDU_TEST_MODE__ = testMode;
+  }
   check(
     "03",
-    "new-year creation retains every prior-year class, grade and attendance record exactly",
-    JSON.stringify(
-      after.stores.records.filter((row) => row.workspace === ids.old),
-    ) === oldRecords && after.stores.catalog.some((row) => row.id === ids.old),
-  );
-  await openYear();
-  const beforeDuplicate = JSON.stringify(
-    (await EduV24.snapshotInstallation()).stores,
-  );
-  await submit(newYear);
-  check(
-    "04",
-    "the actual form rejects an existing year without adding or modifying records",
-    /قبلاً/.test(document.getElementById("academicYearError").textContent) &&
-      JSON.stringify((await EduV24.snapshotInstallation()).stores) ===
-        beforeDuplicate,
+    "synthetic legacy creation and navigation remain unavailable outside explicitly enabled test mode",
+    gated === 2 && (await unchanged()),
   );
   closeModal();
-  await openYear();
-  const connection = EduV24.test.getConnection(),
-    other = await new Promise((resolve, reject) => {
-      const request = indexedDB.open(connection.name);
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    }),
-    originalTransaction = connection.transaction;
-  let injected = false,
-    peerDone = Promise.resolve();
-  try {
-    connection.transaction = function (names, mode, ...rest) {
-      if (
-        !injected &&
-        mode === "readwrite" &&
-        Array.isArray(names) &&
-        names.includes("catalog") &&
-        names.includes("records")
-      ) {
-        injected = true;
-        const peerData = EduV24.normalizeDB({
-            ...defaultDB(),
-            settings: {
-              ...db.settings,
-              academicYear: futureYear,
-              academicTerm: "اول",
-              password: "",
-            },
-          }),
-          peerMeta = { ...peerData };
-        delete peerMeta.schools;
-        delete peerMeta.sessions;
-        peerMeta.layout = [];
-        const tx = other.transaction(["catalog", "records"], "readwrite");
-        peerDone = new Promise((resolve, reject) => {
-          tx.oncomplete = resolve;
-          tx.onerror = () => reject(tx.error);
-          tx.onabort = () => reject(tx.error);
-        });
-        tx.objectStore("catalog").put({
-          id: "year_editor_concurrent",
-          year: futureYear,
-          term: "اول",
-          termKind: "first",
-          closed: false,
-          revision: 1,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
-        tx.objectStore("records").put({
-          key: "year_editor_concurrent|meta",
-          workspace: "year_editor_concurrent",
-          logical: "meta",
-          value: peerMeta,
-        });
-      }
-      return originalTransaction.call(this, names, mode, ...rest);
-    };
-    await submit(futureYear);
-    await peerDone;
-  } finally {
-    connection.transaction = originalTransaction;
-    other.close();
-  }
-  const raced = await EduV24.snapshotInstallation();
-  check(
-    "05",
-    "a concurrent real IndexedDB year insertion is rejected atomically after form preflight",
-    injected &&
-      raced.stores.catalog.filter((row) => row.year === futureYear).length ===
-        1 &&
-      raced.stores.catalog.some((row) => row.id === "year_editor_concurrent") &&
-      EduV24.getReportContext().id === createdId &&
-      /پنجره/.test(document.getElementById("academicYearError").textContent),
-  );
-  closeModal();
-  return {
-    cases,
-    info: { ids, oldYear, newYear, futureYear, createdId, oldRecords },
-  };
+  return { cases, info: { ids, year, historicalRecords } };
 }
 async function afterReload(info) {
   const cases = [],
     check = (id, name, pass, observed = {}) =>
       cases.push({ id: "YEAR_EDITOR_" + id, name, pass: !!pass, observed }),
-    { ids, oldYear, newYear, createdId, oldRecords } = info,
+    { ids, year, historicalRecords } = info,
     wait = async (predicate) => {
       for (let n = 0; n < 250; n++) {
         if (predicate()) return;
         await new Promise((resolve) => setTimeout(resolve, 20));
       }
       throw Error(
-        "Year stage editor timed out: " +
+        "Single-year editor timed out: " +
           EduV24.test.getState().status?.message,
       );
     },
-    openYear = async () => {
-      closeModal();
-      const button = document.querySelector(
-        '#app [data-workspace-action="periods"]',
-      );
-      for (
-        let parent = button.parentElement;
-        parent;
-        parent = parent.parentElement
-      )
-        if (parent.tagName === "DETAILS") parent.open = true;
-      button.click();
-      await wait(
-        () =>
-          !!document.querySelector("#modal:not(.hidden) .academic-year-hub"),
-      );
-    };
-  check(
-    "06",
-    "the selected year anchor survives reload even when a newer year was concurrently added",
-    EduV24.getReportContext().year === newYear &&
-      EduV24.getReportContext().id === createdId &&
-      db.schools.length === 0,
-  );
-  await openYear();
-  document
-    .querySelector(
-      '[data-workspace-action="open-academic-year"][data-key="' +
-        ids.old +
-        '"]',
-    )
-    .click();
-  await wait(
-    () =>
-      EduV24.getReportContext().id === ids.old &&
-      EduV24.getReportContext().ready &&
-      document.getElementById("modal").classList.contains("hidden"),
-  );
-  let saved = await EduV24.snapshotInstallation();
-  check(
-    "07",
-    "opening a stored year through its real UI returns the original school and exact historical records",
-    EduV24.getReportContext().year === oldYear &&
-      db.schools[0].id === ids.school &&
+    historical = (snapshot) =>
       JSON.stringify(
-        saved.stores.records.filter((row) => row.workspace === ids.old),
-      ) === oldRecords,
+        snapshot.stores.records.filter((row) =>
+          [ids.historical, ids.future].includes(row.workspace),
+        ),
+      );
+  check(
+    "04",
+    "reload preserves the explicitly restored year rather than choosing a newer unrelated year, retaining historical records",
+    EduV24.getReportContext().year === year &&
+      EduV24.getReportContext().id === ids.first &&
+      historical(await EduV24.snapshotInstallation()) === historicalRecords,
   );
   goSchool(ids.school);
   goClass(ids.classroom);
@@ -380,14 +242,15 @@ async function afterReload(info) {
         '[data-assessment-context][data-field="midtermPractical"]',
       ),
   );
-  saved = await EduV24.snapshotInstallation();
+  let saved = await EduV24.snapshotInstallation();
   const second = saved.stores.catalog.find(
-    (row) => row.year === oldYear && row.termKind === "second",
+    (row) => row.year === year && row.termKind === "second",
   );
   check(
-    "08",
-    "selecting an uncreated second-term assessment creates its storage without switching the global year context",
+    "05",
+    "second-term assessment remains accessible while first term is open, without switching the active context or copying sessions",
     !!second &&
+      !origin.closed &&
       EduV24.getReportContext().id === origin.id &&
       EduV24.getReportContext().year === origin.year &&
       db.sessions.length === 1 &&
@@ -406,27 +269,26 @@ async function afterReload(info) {
   saved = await EduV24.snapshotInstallation();
   const firstClass = saved.stores.records.find(
       (row) =>
-        row.workspace === ids.old && row.logical === "class:" + ids.classroom,
+        row.workspace === ids.first && row.logical === "class:" + ids.classroom,
     ).value,
     secondClass = saved.stores.records.find(
       (row) =>
         row.workspace === second.id && row.logical === "class:" + ids.classroom,
     ).value;
   check(
-    "09",
-    "a grade in the selected assessment persists in its own term without replacing the active context or first-term grade",
+    "06",
+    "selected-stage grades persist only in their own term, preserving the active context, first-term grade and unrelated years",
     EduV24.getReportContext().id === origin.id &&
       firstClass.lessons[0].kardaneshScores[ids.student].midtermPractical ===
         16 &&
       secondClass.lessons[0].kardaneshScores[ids.student].midtermPractical ===
-        19,
+        19 &&
+      historical(saved) === historicalRecords,
   );
   const files = [],
     oldDownload = downloadLocalFile;
   try {
-    downloadLocalFile = (blob) => {
-      files.push(blob);
-    };
+    downloadLocalFile = (blob) => files.push(blob);
     await EduV24.exportFullBackup();
   } finally {
     downloadLocalFile = oldDownload;
@@ -434,36 +296,46 @@ async function afterReload(info) {
   const exported = JSON.parse(await files[0].text()),
     decoded = EduV24.validateFullBackup(exported);
   check(
-    "10",
-    "the actual complete backup retains both old assessment terms and all newly created years",
+    "07",
+    "the actual full backup retains both current-year terms and untouched historical/future legacy records without exposing year management",
     decoded.length === 4 &&
-      decoded.filter((part) => part.period.year === oldYear).length === 2 &&
-      decoded.some(
-        (part) =>
-          part.period.year === newYear && part.data.schools.length === 0,
-      ) &&
-      decoded.some((part) => part.period.id === "year_editor_concurrent") &&
-      exported.stores.records.some(
+      decoded.filter((part) => part.period.year === year).length === 2 &&
+      decoded.some((part) => part.period.id === ids.historical) &&
+      decoded.some((part) => part.period.id === ids.future) &&
+      historical(exported) === historicalRecords,
+  );
+  closeModal();
+  EduV24.previewFullBackup(exported);
+  document.getElementById("fullRestoreConfirmed").checked = true;
+  await EduV24.restoreFullBackup();
+  await EduV24.test.settle();
+  saved = await EduV24.snapshotInstallation();
+  check(
+    "08",
+    "full export/restore preserves the explicit active year, both assessment terms and every unrelated historical record",
+    EduV24.getReportContext().id === ids.first &&
+      EduV24.getReportContext().year === year &&
+      saved.stores.catalog.length === 4 &&
+      historical(saved) === historicalRecords &&
+      saved.stores.records.find(
         (row) =>
-          row.workspace === ids.old &&
-          row.logical === "session:year_editor_history",
-      ),
+          row.workspace === second.id &&
+          row.logical === "class:" + ids.classroom,
+      ).value.lessons[0].kardaneshScores[ids.student].midtermPractical === 19,
   );
   const closed = await EduV24.snapshotInstallation();
-  closed.stores.catalog.find((row) => row.id === ids.old).closed = true;
-  closed.activeWorkspace = ids.old;
+  closed.stores.catalog.find((row) => row.id === ids.first).closed = true;
+  closed.activeWorkspace = ids.first;
   closeModal();
   EduV24.previewFullBackup(closed);
   document.getElementById("fullRestoreConfirmed").checked = true;
   await EduV24.restoreFullBackup();
   await EduV24.test.settle();
-  await openYear();
+  await EduV24.openAcademicYear();
   const continuation = [
-    ...document.querySelectorAll(
-      '[data-workspace-action="open-academic-year"]',
-    ),
+    ...document.querySelectorAll('[data-workspace-action="switch-period"]'),
   ].find((button) => button.textContent.includes("ادامهٔ ثبت روزانه"));
-  const preservedUntilClick = EduV24.getReportContext().id === ids.old;
+  const preservedUntilClick = EduV24.getReportContext().id === ids.first;
   if (continuation) {
     continuation.click();
     await wait(
@@ -473,16 +345,14 @@ async function afterReload(info) {
     );
   }
   check(
-    "11",
-    "closed-term restoration preserves active identity and explicit continuation opens the existing writable term of the same year",
+    "09",
+    "same-year continuation stays usable after closed-term restoration without offering any other academic year",
     preservedUntilClick &&
       !!continuation &&
       EduV24.getReportContext().id === second.id &&
-      EduV24.getReportContext().year === oldYear &&
+      EduV24.getReportContext().year === year &&
       !EduV24.getReportContext().closed &&
-      (await EduV24.snapshotInstallation()).stores.catalog.filter(
-        (row) => row.year === oldYear,
-      ).length === 2,
+      historical(await EduV24.snapshotInstallation()) === historicalRecords,
   );
   return cases;
 }
@@ -507,7 +377,7 @@ async function run(env) {
 module.exports = run;
 if (require.main === module)
   require("./data-integrity.cjs")
-    .main({ stage: "year-editor-ui", runExtra: run })
+    .main({ stage: "single-academic-year-ui", runExtra: run })
     .catch((error) => {
       console.error(error.stack || String(error));
       process.exitCode = 2;

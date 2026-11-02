@@ -118,6 +118,7 @@ function fixture({
   if (inactiveSource)
     active.schools[0].classes[0].lessons[0].name = "Unrelated active course";
   const c = vm.createContext({
+    __EDU_TEST_MODE__: true,
     structuredClone,
     clone,
     fileMode: false,

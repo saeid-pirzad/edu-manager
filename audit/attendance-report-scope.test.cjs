@@ -235,8 +235,10 @@ test("schedule session list includes late students as present and uses the compl
     toShamsi: String,
     showModal: (title, body) => (html = body),
   });
+  vm.runInContext(source("src/core/icons.js"), f.c);
   vm.runInContext(source("src/legacy/schedule/timetable.js"), f.c);
   f.c.legacy_clickMasterCell(0, 0);
+  assert.match(html, /<svg class="ui-icon"/);
   assert.match(html, /2\/4 حاضر/);
   assert.doesNotMatch(html, /1\/3 حاضر/);
 });

@@ -357,7 +357,10 @@ async function confirmDeletePeriod() {
       clearTimeout(draftTimer);
       drafts.clear();
       draftGeneration++;
-      await switchPeriod(next.id);
+      await switchPeriod(
+        next.id,
+        globalThis.__EDU_TEST_MODE__ ? legacyPeriodSwitchToken : null,
+      );
     }
     periodLoading = false;
     ownsLoading = false;
@@ -402,8 +405,9 @@ function hydrateReportNotes(period) {
     );
   return saved !== false;
 }
+const legacyPeriodSwitchToken = Symbol("legacy-period-fixture");
 let periodSwitchBusy = false;
-async function switchPeriod(id) {
+async function switchPeriod(id, permission = null) {
   if (periodSwitchBusy)
     throw Error("جابه‌جایی ترم در حال انجام است؛ صبر کنید.");
   periodSwitchBusy = true;
@@ -416,10 +420,20 @@ async function switchPeriod(id) {
     await writer.catch(() => {});
     periodLoading = true;
     lockControls();
+    const year = workspace.year,
+      checkYear = (target) => {
+        if (target.year !== year && permission !== legacyPeriodSwitchToken)
+          throw Error(
+            "این اطلاعات متعلق به سال تحصیلی فعال نیست؛ انتخاب و ایجاد سال‌های دیگر در برنامه وجود ندارد. سوابق قدیمی در پشتیبان کامل محفوظ‌اند.",
+          );
+      };
+    let loaded = await readWorkspaceSnapshot(id);
+    checkYear(loaded.period);
     const annual = globalThis.EduAnnualModules
       ? await synchronizeAnnualForRead(id)
       : null;
-    const loaded = await readWorkspaceSnapshot(id);
+    if (annual) loaded = await readWorkspaceSnapshot(id);
+    checkYear(loaded.period);
     if (!ready || resetBusy || connectionRetired)
       throw Error(
         "بانک هنگام جابه‌جایی تغییر کرد؛ صفحه را دوباره بارگذاری کنید.",
@@ -518,6 +532,8 @@ async function openNewPeriod(firstId = "") {
 
 let newPeriodBusy = false;
 async function createNewPeriod({ fromDialog = false } = {}) {
+  if (!fromDialog && !globalThis.__EDU_TEST_MODE__)
+    throw Error("ساخت سال تحصیلی دیگر در برنامه پشتیبانی نمی‌شود.");
   if (newPeriodBusy) throw Error("شروع نوبت در حال انجام است؛ صبر کنید.");
   newPeriodBusy = true;
   try {
@@ -656,7 +672,7 @@ async function createNewPeriod({ fromDialog = false } = {}) {
     });
     assertWorkspaceContext(context);
     if (fromDialog && secondTermDialog === dialog) secondTermDialog = null;
-    await switchPeriod(created.id);
+    await switchPeriod(created.id, fromDialog ? null : legacyPeriodSwitchToken);
   } finally {
     newPeriodBusy = false;
   }

@@ -240,7 +240,7 @@ async function contextFlows() {
     const beforeCatalog = JSON.stringify(
       (await rows("records")).filter((x) => x.key === "meta"),
     );
-    await EduV24.switchPeriod(other.id);
+    await EduV24.test.switchLegacyPeriod(other.id);
     window.__releaseHash("must-not-write");
     const switchResult = await switchingSave;
     hashPassword = original;
@@ -255,7 +255,7 @@ async function contextFlows() {
     );
     document.getElementById("newPass").value = "";
     closeModal();
-    await EduV24.switchPeriod(activeId);
+    await EduV24.test.switchLegacyPeriod(activeId);
     const reports = EduPeriodicReports;
     reports.render("daily");
     reports.selectScope("school_a", "class_a");

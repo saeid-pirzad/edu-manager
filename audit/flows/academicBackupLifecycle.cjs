@@ -244,29 +244,29 @@ module.exports = async function academicBackupLifecycle() {
         const model = await EduPeriodicReports.generate();
         check(
           "TERM_SCOPE_" + mode,
-          "all sessions in the selected year remain visible in " +
-            mode +
-            " reports",
-          model?.summary.sessions === 1 &&
-            model.academicTerm === "اول و دوم" &&
+          "only the selected term supplies sessions in " + mode + " reports",
+          model?.summary.sessions === 0 &&
+            model.academicTerm === "دوم" &&
+            model.periods.length === 1 &&
+            model.periods[0].id === second &&
             document
               .querySelector(".periodic-controls")
-              ?.textContent.includes("همهٔ جلسات") &&
-            EduPeriodicReports.documentHtml(model).includes("ترم اول و دوم") &&
-            EduPeriodicReports.textReport(model).includes("ترم: اول و دوم") &&
-            EduPeriodicReports.deputyReport(model).includes("ترم: اول و دوم") &&
-            JSON.parse(JSON.stringify(model)).academicTerm === "اول و دوم",
+              ?.textContent.includes("فقط از ترم انتخاب‌شده") &&
+            EduPeriodicReports.documentHtml(model).includes("ترم دوم") &&
+            EduPeriodicReports.textReport(model).includes("ترم: دوم") &&
+            EduPeriodicReports.deputyReport(model).includes("ترم: دوم") &&
+            JSON.parse(JSON.stringify(model)).academicTerm === "دوم",
         );
         const printed = await EduPeriodicReports.output("print");
         check(
           "TERM_SCOPE_PRINT_" + mode,
-          "print/PDF retains the full academic-year scope for " +
+          "print/PDF retains the selected term even for an empty " +
             mode +
             " reports",
           printed &&
             document
               .getElementById("printRoot")
-              ?.textContent.includes("ترم اول و دوم"),
+              ?.textContent.includes("ترم دوم"),
         );
       }
     } finally {
@@ -280,7 +280,7 @@ module.exports = async function academicBackupLifecycle() {
     });
   } finally {
     closeModal();
-    await EduV24.switchPeriod(previous);
+    await EduV24.test.switchLegacyPeriod(previous);
   }
   return cases;
 };

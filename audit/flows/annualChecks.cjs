@@ -292,7 +292,7 @@ async function annualChecks() {
     });
   } finally {
     closeModal();
-    await EduV24.switchPeriod(previous);
+    await EduV24.test.switchLegacyPeriod(previous);
   }
   return cases;
 }

@@ -290,7 +290,9 @@ module.exports = async function sharedYearCourses() {
     const sentinel = await createPeriod(otherYear, "اول"),
       sentinelSnapshot = await EduV24.snapshotInstallation(),
       untouchedOtherYear = stored(forPeriod(sentinelSnapshot, sentinel));
-    await EduV24.switchPeriod(second);
+    // This is fixture setup across academic years, not application navigation.
+    // Repeated first/second-term checks below retain the production facade.
+    await EduV24.test.switchLegacyPeriod(second);
     const baseline = await EduV24.snapshotInstallation(),
       frozen = JSON.stringify(
         baseline.stores.reports.filter((report) => report.workspace === first),

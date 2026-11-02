@@ -17,8 +17,9 @@ const filters = {
   detailLevel: "summary",
   author: "",
 };
-// New report notes belong to the authorized academic-year owner. Historical
-// term keys remain intact and are read as aliases until an explicit edit.
+// Annual report notes share their authorized year owner. Date-filtered reports
+// belong only to the selected term; legacy and accidental year-scoped keys stay
+// preserved in backup/recovery data, never reassigned to another term.
 
 // Only notes that have not reached local storage stay in memory.
 const notes = new Map(),
@@ -27,14 +28,17 @@ const notes = new Map(),
 const context = () =>
   root.EduV24?.getReportContext() || { id: "", revision: 0 };
 let noteEditGeneration = 0;
-const noteWorkspaceId = () => context().notesWorkspaceId || context().id;
+const noteWorkspaceId = () =>
+  filters.mode === "annual"
+    ? context().notesWorkspaceId || context().id
+    : context().id;
 const noteYearScopeId = () =>
   context().yearScopeId || context().year || context().id;
 const noteWorkspaceIds = () => [
   ...new Set(
     [
       noteWorkspaceId(),
-      ...(context().notesWorkspaceIds || []),
+      ...(filters.mode === "annual" ? context().notesWorkspaceIds || [] : []),
       context().id,
     ].filter(Boolean),
   ),
@@ -46,7 +50,9 @@ const noteScopeSignature = () =>
     [...noteWorkspaceIds()].sort(),
   ]);
 const notePeriodScope = (scope) =>
-  context().yearScopeId ? "year:" + context().yearScopeId + ";" + scope : scope;
+  filters.mode === "annual" && context().yearScopeId
+    ? "year:" + context().yearScopeId + ";" + scope
+    : scope;
 const scopedNote = (key) => /^year:[^;|]+;/.test(key.split("|")[2] || "");
 const acknowledgementKey = (key) => {
   const parts = key.split("|");

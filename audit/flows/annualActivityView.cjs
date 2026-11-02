@@ -63,14 +63,14 @@ module.exports = async function annualActivityView() {
           year,
       );
     },
-    report = async (mode, audience = "management") => {
+    report = async (mode, audience = "management", targetDate = date) => {
       closeModal();
       goReports();
       state.reportTab = mode;
       EduPeriodicReports.selectScope(ids.school, ids.a);
       Object.assign(EduPeriodicReports.filters, {
         mode,
-        date,
+        date: targetDate,
         audience,
         studentId: audience === "parent" ? ids.s1 : "",
         detailLevel: "full",
@@ -320,33 +320,73 @@ module.exports = async function annualActivityView() {
       firstMonth = await report("monthly");
     check(
       "06",
-      "daily reports read the full academic-year history independently of the selected assessment term",
-      secondDaily?.summary.sessions === 2 &&
-        JSON.stringify(secondDaily.summary) ===
-          JSON.stringify(firstDaily.summary),
+      "daily reports read only the selected term, including a genuinely empty second-term day",
+      secondDaily?.summary.sessions === 0 &&
+        secondDaily.academicTerm === "دوم" &&
+        firstDaily?.summary.sessions === 2 &&
+        firstDaily.academicTerm === "اول" &&
+        secondDaily.periods.length === 1 &&
+        secondDaily.periods[0].id === ids.second &&
+        firstDaily.periods[0].id === ids.first,
     );
     check(
       "07",
-      "weekly and monthly reports include both terms without duplicating physical sessions",
-      secondWeek?.summary.sessions === 3 &&
-        secondMonth?.summary.sessions === 3 &&
-        JSON.stringify(secondWeek.summary) ===
-          JSON.stringify(firstWeek.summary) &&
-        JSON.stringify(secondMonth.summary) ===
-          JSON.stringify(firstMonth.summary),
+      "weekly and monthly reports preserve distinct term attendance and activity totals",
+      secondWeek?.summary.sessions === 1 &&
+        secondMonth?.summary.sessions === 1 &&
+        firstWeek?.summary.sessions === 2 &&
+        firstMonth?.summary.sessions === 2 &&
+        secondWeek.summary.recordedMarks === 1 &&
+        firstWeek.summary.recordedMarks === 3,
     );
     await EduV24.switchPeriod(ids.second);
-    const parent = await report("daily", "parent");
+    const parent = await report("daily", "parent", "2026-11-02");
     check(
       "08",
-      "parent report includes the selected student's historic absence and excludes other students",
-      parent?.summary.sessions === 2 &&
-        parent.summary.absent === 1 &&
-        parent.summary.present === 1 &&
+      "parent attendance is current-term/student-only while its clearly labeled annual grades retain both terms",
+      parent?.summary.sessions === 1 &&
+        parent.academicTerm === "دوم" &&
+        parent.summary.absent === 0 &&
+        parent.summary.present === 0 &&
+        parent.summary.late === 1 &&
+        parent.periods.length === 1 &&
+        parent.periods[0].id === ids.second &&
+        parent.gradePeriods.length === 2 &&
+        parent.annualGrades.some(
+          (grade) => grade.complete && grade.components.length === 4,
+        ) &&
+        parent.definitions.some((text) =>
+          text.includes("فقط مربوط به ترم انتخاب‌شده"),
+        ) &&
         parent.sessions.every((s) =>
           s.participants.every((st) => st.studentId === ids.s1),
         ) &&
         !EduPeriodicReports.textReport(parent).includes(students[1].name),
+    );
+    const completeAnnual = await report("annual");
+    check(
+      "14",
+      "annual reporting still combines both original terms and all four grade stages",
+      completeAnnual?.summary.sessions === 3 &&
+        completeAnnual.academicTerm === "اول و دوم" &&
+        completeAnnual.periods.length === 2 &&
+        completeAnnual.annualGrades.some(
+          (grade) => grade.complete && grade.components.length === 4,
+        ),
+    );
+    await report("daily");
+    EduPeriodicReports.note("یادداشت فقط ترم دوم");
+    await EduV24.switchPeriod(ids.first);
+    const firstNote = await report("daily");
+    EduPeriodicReports.note("یادداشت فقط ترم اول");
+    await EduV24.switchPeriod(ids.second);
+    const secondNote = await report("daily");
+    check(
+      "15",
+      "date-filtered report notes stay with their owning term across real switches",
+      !firstNote.note.includes("یادداشت فقط ترم دوم") &&
+        secondNote.note === "یادداشت فقط ترم دوم" &&
+        !secondNote.note.includes("یادداشت فقط ترم اول"),
     );
     const partial = structuredClone(fixture);
     partial.activeWorkspace = ids.first;

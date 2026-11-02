@@ -642,9 +642,11 @@ module.exports = async function annualBackupRoundtrip() {
     await EduV24.flushDrafts({ strict: true });
 
     goReports();
-    setReportTab("daily");
+    setReportTab("annual");
     const noteFilters = {
-      mode: "daily",
+      mode: "annual",
+      annualFirstId: "",
+      annualSecondId: "",
       date: day(year, 5),
       schoolId: "school_a",
       classId: "class_a",
@@ -654,8 +656,8 @@ module.exports = async function annualBackupRoundtrip() {
     Object.assign(EduPeriodicReports.filters, noteFilters);
     const oldNoteKey = [
         firstId,
-        "daily",
-        day(year, 5),
+        "annual",
+        "academic-year:auto:auto",
         "school_a",
         "class_a",
         "management",
@@ -663,21 +665,27 @@ module.exports = async function annualBackupRoundtrip() {
       ].join("|"),
       annualNoteKey = [
         firstId,
-        "daily",
-        "year:" + year + ";" + day(year, 5),
+        "annual",
+        "year:" + year + ";academic-year:auto:auto",
         "school_a",
         "class_a",
         "management",
         "",
-      ].join("|"),
-      oldAlias = EduPeriodicReports.getDrafts(firstId)[oldNoteKey];
+      ].join("|");
+    if (
+      !EduPeriodicReports.restoreDrafts(firstId, {
+        [oldNoteKey]: "یادداشت قدیمی گزارش سالانه",
+      })
+    )
+      throw Error("Legacy annual note fixture did not persist");
+    const oldAlias = EduPeriodicReports.getDrafts(firstId)[oldNoteKey];
     if (!oldAlias) throw Error("Legacy report note fixture is missing");
     if (!EduPeriodicReports.note(""))
       throw Error("Report clear did not persist");
     const clearFile = await EduV24.snapshotInstallation();
     await restore(clearFile);
     goReports();
-    setReportTab("daily");
+    setReportTab("annual");
     Object.assign(EduPeriodicReports.filters, noteFilters);
     const cleared = await EduPeriodicReports.generate(),
       clearDrafts = EduPeriodicReports.getDrafts(firstId);
@@ -699,7 +707,7 @@ module.exports = async function annualBackupRoundtrip() {
     const editFile = await EduV24.snapshotInstallation();
     await restore(editFile);
     goReports();
-    setReportTab("daily");
+    setReportTab("annual");
     Object.assign(EduPeriodicReports.filters, noteFilters);
     const edited = await EduPeriodicReports.generate();
     check(

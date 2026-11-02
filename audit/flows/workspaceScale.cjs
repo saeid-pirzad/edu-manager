@@ -53,7 +53,7 @@ module.exports = async function workspaceScale() {
         closeModal();
       }
     }
-    await EduV24.switchPeriod(origin);
+    await EduV24.test.switchLegacyPeriod(origin);
     closeModal();
     const catalog = await new Promise((resolve, reject) => {
       const request = connection
@@ -92,8 +92,8 @@ module.exports = async function workspaceScale() {
       return request;
     };
     const start = performance.now();
-    await EduV24.switchPeriod(other.id);
-    await EduV24.switchPeriod(origin);
+    await EduV24.test.switchLegacyPeriod(other.id);
+    await EduV24.test.switchLegacyPeriod(origin);
     const snapshot = await EduV24.prepareReportSnapshot();
     const elapsedMs = Math.round(performance.now() - start);
     cases.push({
@@ -114,7 +114,7 @@ module.exports = async function workspaceScale() {
         JSON.stringify(db) === before &&
         JSON.stringify(snapshot.data) === before,
     });
-    await EduV24.switchPeriod(annualIds.second);
+    await EduV24.test.switchLegacyPeriod(annualIds.second);
     const annualStart = queries.length;
     const annual = await EduV24.prepareReportSnapshot({
       annual: true,
@@ -151,7 +151,7 @@ module.exports = async function workspaceScale() {
       await done;
     }
     if (EduV24.getReportContext().id !== origin)
-      await EduV24.switchPeriod(origin);
+      await EduV24.test.switchLegacyPeriod(origin);
     closeModal();
   }
   return cases;
