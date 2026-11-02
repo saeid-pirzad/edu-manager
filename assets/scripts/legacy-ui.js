@@ -833,17 +833,20 @@ function renderReports() {
   h +=
     '<nav class="tabs report-navigation no-print" aria-label="نوع گزارش">' +
     [
-      ["karnameh", "کارنامه نمرات"],
-      ["daily", "روزانه"],
-      ["weekly", "هفتگی"],
-      ["monthly", "ماهانه"],
-      ["annual", "سالانه"],
+      ["karnameh", "کارنامه", "grades"],
+      ["daily", "روزانه", "calendar"],
+      ["weekly", "هفتگی", "calendar-week"],
+      ["monthly", "ماهانه", "calendar-month"],
+      ["annual", "سالانه", "report"],
     ]
       .map(
-        ([key, label]) =>
+        ([key, label, icon]) =>
           `<button type="button" ${tab === key ? 'aria-current="page" ' : ""}class="${tab === key ? "active" : ""}" data-legacy-click="reports-comprehensive:0" data-legacy-click-arg2="${esc(key)}">` +
+          '<span class="report-tab-icon" aria-hidden="true">' +
+          EduIcons.html(icon) +
+          '</span><span class="report-tab-label">' +
           label +
-          "</button>",
+          "</span></button>",
       )
       .join("") +
     "</nav>";
@@ -3634,12 +3637,12 @@ function renderLessonSessions(
   const lessonId = esc(lesson.id),
     classId = esc(c.id);
   let h =
-    `<section class="card session-create"><h3>شروع جلسه</h3><form class="session-create-form" novalidate data-legacy-submit="ui-lesson:6" data-legacy-submit-arg0="${esc(lessonId)}">` +
+    `<section class="card session-create"><header class="session-setup-heading"><span class="session-setup-symbol" aria-hidden="true">${EduIcons.html("calendar")}</span><div><h3>شروع جلسه</h3><p>تاریخ و زنگ را انتخاب کنید؛ سپس حضور و فعالیت کلاس را ثبت کنید.</p></div></header><form class="session-create-form" novalidate data-legacy-submit="ui-lesson:6" data-legacy-submit-arg0="${esc(lessonId)}">` +
     '<label>تاریخ جلسه<input type="date" name="date" required value="' +
     todayISO() +
     '"></label>' +
     '<label>شماره زنگ<input type="number" name="period" min="1" max="12" required value="1" inputmode="numeric"></label>' +
-    '<button type="submit">شروع / ادامه جلسه</button></form></section>';
+    '<button type="submit">شروع یا ادامه جلسه</button></form></section>';
   h +=
     '<section class="card session-directory"><header class="session-list-heading"><div><h3>جلسات درس <span class="lesson-count">' +
     sessions.length.toLocaleString("fa-IR") +
@@ -4406,46 +4409,48 @@ function legacy_clickMasterCell(day, period) {
     })
     .sort((a, b) => b.date.localeCompare(a.date));
 
-  let h = `<div style="background:#f8fafc;padding:12px;border-radius:8px;margin-bottom:14px">
-    <div style="margin-bottom:10px">
-      <strong>${DAYS[day]} — زنگ ${period + 1}</strong>
-    </div>
-
-    <div class="form-row" style="margin-bottom:6px">
-      <label style="min-width:60px">کلاس:</label>
-      <select id="sessNewClass" style="flex:1" data-legacy-change="schedule-timetable:13">
+  let h = `<header class="session-setup-heading">
+    <span class="session-setup-symbol" aria-hidden="true">${EduIcons.html("calendar")}</span>
+    <div><span class="session-setup-eyebrow">برنامه هفتگی</span><h4>${esc(DAYS[day])} · زنگ ${(period + 1).toLocaleString("fa-IR")}</h4><p>کلاس، درس و تاریخ جلسه را بررسی کنید.</p></div>
+  </header>
+  <div class="session-setup-grid">
+    <label class="session-field session-field-wide" for="sessNewClass"><span>کلاس</span>
+      <select id="sessNewClass" data-legacy-change="schedule-timetable:13">
         ${allClasses.map((x) => `<option value="${x.class.id}" ${x.class.id === entry.classId ? "selected" : ""}>${esc(x.school.name)} / ${esc(x.class.name)}</option>`).join("")}
       </select>
-    </div>
-    <div class="form-row" style="margin-bottom:6px">
-      <label style="min-width:60px">درس:</label>
-      <select id="sessNewLesson" style="flex:1">
+    </label>
+    <label class="session-field session-field-wide" for="sessNewLesson"><span>درس</span>
+      <select id="sessNewLesson">
         ${(cls.classObj.lessons || []).map((l) => `<option value="${l.id}" ${l.id === entry.lessonId ? "selected" : ""}>${esc(l.name)}</option>`).join("")}
       </select>
-    </div>
+    </label>
+    <label class="session-field" for="sessNewDate"><span>تاریخ جلسه</span>
+      <input type="date" id="sessNewDate" value="${todayISO()}" data-legacy-change="schedule-timetable:14">
+      <span class="shamsi-display" id="shamsiSessNew">${toShamsi(todayISO())}</span>
+    </label>
   </div>
-
-  <p>📅 تاریخ جلسه را انتخاب کنید:</p>
-  <div class="form-row">
-    <input type="date" id="sessNewDate" value="${todayISO()}" data-legacy-change="schedule-timetable:14" style="flex:1">
-    <span class="shamsi-display" id="shamsiSessNew">${toShamsi(todayISO())}</span>
-    <button data-legacy-click="schedule-timetable:15" data-legacy-click-arg6="${esc(day)}" data-legacy-click-arg7="${esc(period)}">📝 ایجاد / بازکردن</button>
-  </div>
-  <p class="muted" style="font-size:.85em">می‌توانید کلاس و درس را به صورت دستی تغییر دهید. اگر جلسه‌ای با این تاریخ و زنگ وجود داشته باشد باز می‌شود.</p>`;
+  <p class="session-setup-help">در همین تاریخ و زنگ، جلسهٔ ثبت‌شدهٔ همین درس ادامه پیدا می‌کند؛ تداخل با جلسهٔ دیگر اجازهٔ ثبت نمی‌دهد.</p>
+  <div class="session-setup-actions">
+    <button type="button" data-legacy-click="schedule-timetable:15" data-legacy-click-arg6="${esc(day)}" data-legacy-click-arg7="${esc(period)}">${EduIcons.html("arrow")}<span>شروع / ادامه جلسه</span></button>
+  </div>`;
 
   if (existing.length) {
-    h += `<h4 style="margin-top:16px">جلسات ثبت‌شده این زنگ (${existing.length}):</h4><div>`;
+    h += `<section class="session-setup-history"><header><h4>جلسات قبلی این زنگ</h4><span>${existing.length.toLocaleString("fa-IR")} جلسه</span></header><div class="session-setup-recent">`;
     existing.slice(0, 15).forEach((s) => {
       const present = Object.values(s.attendance).filter(
         (x) =>
           x === "present" || (typeof x === "string" && x.startsWith("late")),
       ).length;
       const total = sessionStudents(cls.classObj, s).length;
-      h += `<div class="list-item" data-legacy-click="schedule-timetable:16" data-legacy-click-arg0="${esc(s.id)}">
-        <div><strong>${faDate(s.date)}</strong></div>
-        <div class="muted" style="font-size:.85em">${present}/${total} حاضر | ${s.scores.length} امتیاز</div></div>`;
+      const lessonName = cls.classObj.lessons.find(
+        (l) => l.id === s.lessonId,
+      )?.name;
+      h += `<button type="button" class="session-setup-recent-item" data-legacy-click="schedule-timetable:16" data-legacy-click-arg0="${esc(s.id)}">
+        <span class="session-setup-recent-copy"><strong>${esc(faDate(s.date))}</strong>${lessonName ? `<span>${esc(lessonName)}</span>` : ""}<small>${present}/${total} حاضر · ${s.scores.length} امتیاز</small></span>
+        <span class="session-setup-recent-arrow" aria-hidden="true">${EduIcons.html("arrow")}</span>
+      </button>`;
     });
-    h += `</div>`;
+    h += `</div></section>`;
   }
   showModal("ثبت جلسه", '<div class="session-start-panel">' + h + "</div>");
 }
@@ -4958,34 +4963,35 @@ function openSessionModal(session) {
   }
   const dIdx = getDayIdxFromDate(session.date);
   const school = getSchool(session.schoolId);
-  let h = `<div class="session-workspace"><header class="session-context"><p class="session-context-path">${esc(school?.name || "")} / ${esc(c.name)}</p><h4>${esc(lesson.name)}</h4><p class="session-context-meta">${esc(DAYS[dIdx])} · ${esc(faDate(session.date))} · زنگ ${(session.period + 1).toLocaleString("fa-IR")}</p>${lesson.teacher ? `<p class="session-context-teacher">دبیر: ${esc(lesson.teacher)}</p>` : ""}</header>`;
+  let h = `<div class="session-workspace"><header class="session-context"><span class="session-context-icon" aria-hidden="true">${EduIcons.html("book")}</span><div class="session-context-copy"><p class="session-context-path">${esc(school?.name || "")} / ${esc(c.name)}</p><h4>${esc(lesson.name)}</h4><p class="session-context-meta">${esc(DAYS[dIdx])} · ${esc(faDate(session.date))} · زنگ ${(session.period + 1).toLocaleString("fa-IR")}</p>${lesson.teacher ? `<p class="session-context-teacher">دبیر: ${esc(lesson.teacher)}</p>` : ""}</div></header>`;
   const academicRange = EduAcademicYear.range(db.settings.academicYear);
   if (!EduAcademicYear.contains(db.settings.academicYear, session.date))
     h +=
       '<aside class="session-year-warning" role="status"><strong>جلسهٔ قدیمی خارج از سال تحصیلی</strong><p>سوابق این جلسه حفظ شده‌اند. این تاریخ در گزارش سالانهٔ ' +
       esc(db.settings.academicYear) +
       " قرار نمی‌گیرد؛ تاریخ را بررسی و در صورت نیاز اصلاح کنید.</p></aside>";
-  h += `<details class="session-date-tools"><summary>ویرایش تاریخ و زنگ: ${esc(faDate(session.date))}</summary><div class="form-row">
-    <label for="sessDate">تاریخ جلسه:</label>
-    <input type="date" id="sessDate" value="${session.date}" min="${academicRange.start}" max="${academicRange.end}" data-legacy-change="sessions-dialog:0" style="flex:1">
-    <span class="shamsi-display" id="shamsiSessDate">${toShamsi(session.date)}</span>
-    <label for="sessPeriod">شماره زنگ</label><input type="number" id="sessPeriod" min="1" max="12" inputmode="numeric" value="${session.period + 1}" style="width:90px">
-    <button class="ghost" data-legacy-click="sessions-dialog:1" data-legacy-click-arg3="${esc(session.id)}" style="font-size:.85em">ذخیره تاریخ و زنگ</button>
+  h += `<details class="session-date-tools"><summary>${EduIcons.html("edit")}<span>ویرایش تاریخ و زنگ</span></summary><div class="form-row session-date-grid">
+    <label class="session-field"><span>تاریخ جلسه</span>
+      <input type="date" id="sessDate" value="${session.date}" min="${academicRange.start}" max="${academicRange.end}" data-legacy-change="sessions-dialog:0">
+      <span class="shamsi-display" id="shamsiSessDate">${toShamsi(session.date)}</span>
+    </label>
+    <label class="session-field"><span>شماره زنگ</span><input type="number" id="sessPeriod" min="1" max="12" inputmode="numeric" value="${session.period + 1}"></label>
+    <button type="button" class="ghost" data-legacy-click="sessions-dialog:1" data-legacy-click-arg3="${esc(session.id)}">ذخیره تغییرات</button>
   </div></details>`;
   if (lesson.gradeMode !== "kardanesh")
     h += `<div class="form-row session-unit-fields">
-    <label for="sessPoudman">پودمان</label>
+    <label class="session-field"><span>پودمان</span>
     <select id="sessPoudman" data-legacy-change="sessions-dialog:2">
       <option value="">— انتخاب —</option>
       ${lesson.poudmans.map((p) => `<option value="${p.id}" ${p.id === session.poudmanId ? "selected" : ""}>${esc(p.name)}</option>`).join("")}
-    </select>
-    <label for="sessUnit">واحد یادگیری</label>
+    </select></label>
+    <label class="session-field"><span>واحد یادگیری</span>
     <select id="sessUnit" data-legacy-change="sessions-dialog:3">
       <option value="">— انتخاب —</option>
       ${(lesson.poudmans.find((p) => p.id === session.poudmanId)?.units || []).map((u) => `<option value="${u.id}" ${u.id === session.unitId ? "selected" : ""}>${esc(u.name)}</option>`).join("")}
-    </select>
+    </select></label>
   </div>`;
-  h += `<div class="session-mode-picker"><button type="button" aria-pressed="true" data-session-tab="attendance" data-legacy-click="sessions-dialog:4">حضور و غیاب</button><button type="button" aria-pressed="false" data-session-tab="activity" data-legacy-click="sessions-dialog:5">نمره و فعالیت</button></div><section data-session-panel="attendance"><div class="session-attendance-heading">
+  h += `<div class="session-mode-picker"><button type="button" aria-pressed="true" data-session-tab="attendance" data-legacy-click="sessions-dialog:4">${EduIcons.html("attendance")}<span>حضور و غیاب</span></button><button type="button" aria-pressed="false" data-session-tab="activity" data-legacy-click="sessions-dialog:5">${EduIcons.html("grades")}<span>نمره و فعالیت</span></button></div><section data-session-panel="attendance"><div class="session-attendance-heading">
     <div><h4>حضور و غیاب</h4><p>وضعیت هر دانش‌آموز را انتخاب کنید.</p></div>
     <div class="session-attendance-bulk">
       <button type="button" class="success" data-legacy-click="sessions-dialog:6">همه حاضر</button>
@@ -5007,43 +5013,43 @@ function openSessionModal(session) {
     h += `<div class="att-row">
       <div class="att-name" title="${esc(s.name)}"><span class="attendance-number" aria-hidden="true">${(i + 1).toLocaleString("fa-IR")}</span><span>${esc(s.name)}</span></div>
       <div class="att-btns" data-sid="${s.id}" role="group" aria-label="وضعیت حضور ${esc(s.name)}">
-        <button type="button" class="present ${isPresent ? "active" : ""}" data-legacy-click="sessions-dialog:8">حاضر</button>
-        <button type="button" class="late ${isLate ? "active" : ""}" data-legacy-click="sessions-dialog:9">تأخیر ${isLate && lateMins ? `(${lateMins}د)` : ""}</button>
-        <button type="button" class="leave ${isLeave ? "active" : ""}" data-legacy-click="sessions-dialog:leave">مرخصی</button>
-        <button type="button" class="absent ${isAbsent ? "active" : ""}" data-legacy-click="sessions-dialog:10">غایب</button>
+        <button type="button" aria-pressed="${isPresent}" class="present ${isPresent ? "active" : ""}" data-legacy-click="sessions-dialog:8">حاضر</button>
+        <button type="button" aria-pressed="${isLate}" class="late ${isLate ? "active" : ""}" data-legacy-click="sessions-dialog:9">تأخیر ${isLate && lateMins ? `(${lateMins}د)` : ""}</button>
+        <button type="button" aria-pressed="${isLeave}" class="leave ${isLeave ? "active" : ""}" data-legacy-click="sessions-dialog:leave">مرخصی</button>
+        <button type="button" aria-pressed="${isAbsent}" class="absent ${isAbsent ? "active" : ""}" data-legacy-click="sessions-dialog:10">غایب</button>
       </div>
     </div>`;
   });
-  h += `</div></section><section data-session-panel="activity" hidden><h4>ثبت نمره کلاسی، مثبت، منفی یا تکلیف</h4><p class="muted">نمرات رسمی عملی، تئوری یا پودمان در بخش نمرات درس ثبت می‌شوند.</p>
+  h += `</div></section><section data-session-panel="activity" hidden><h4>ثبت فعالیت کلاس</h4><p class="muted">نمرات رسمی عملی، تئوری یا پودمان در بخش نمرات درس ثبت می‌شوند.</p>
     <form data-legacy-submit="sessions-dialog:11" data-legacy-submit-arg0="${esc(session.id)}" class="row session-entry-form">
-      <select name="studentId" aria-label="دانش‌آموز" required style="flex:1"><option value="">دانش‌آموز</option>
+      <label class="session-field session-field-wide"><span>هنرجو</span><select name="studentId" aria-label="دانش‌آموز" required><option value="">دانش‌آموز</option>
       ${getSortedStudents({ students: sessionStudents(c, session) })
         .map((s) => `<option value="${s.id}">${esc(s.name)}</option>`)
-        .join("")}</select>
-      <select name="type" aria-label="نوع فعالیت" required>
+        .join("")}</select></label>
+      <label class="session-field"><span>نوع فعالیت</span><select name="type" aria-label="نوع فعالیت" required>
         ${!lesson.gradingPolicy && lesson.gradeMode !== "kardanesh" ? `<option value="mostamar">مستمر</option><option value="payani">پایانی</option>` : ""}
         <option value="classGrade">نمره کلاسی (۰ تا ۲۰)</option><option value="activity">امتیاز فعالیت</option><option value="positive">مثبت</option><option value="negative">منفی</option>
         <option value="homework">تکلیف</option>
-      </select>
-      <input name="value" aria-label="مقدار" type="text" inputmode="decimal" placeholder="مقدار" required style="width:80px">
-      <input name="note" aria-label="توضیح فعالیت" placeholder="توضیح (اختیاری)" style="flex:1">
+      </select></label>
+      <label class="session-field"><span>نمره یا مقدار</span><input name="value" aria-label="مقدار" type="text" inputmode="decimal" placeholder="مثلاً ۱۸ یا ۱" required></label>
+      <label class="session-field session-field-wide"><span>توضیح <small>(اختیاری)</small></span><input name="note" aria-label="توضیح فعالیت" placeholder="موضوع تمرین یا توضیح فعالیت"></label>
       <button type="submit">ثبت فعالیت</button>
-    </form><div>`;
+    </form><div class="session-activity-records"><h4>فعالیت‌های ثبت‌شده</h4>`;
   if (!session.scores.length) h += `<div class="empty">امتیازی ثبت نشده</div>`;
   else {
-    h += `<table class="karnameh-table"><thead><tr><th>دانش‌آموز</th><th>نوع</th><th>مقدار</th><th>توضیح</th><th></th></tr></thead><tbody>`;
+    h += `<table class="karnameh-table session-score-table"><thead><tr><th>دانش‌آموز</th><th>نوع</th><th>مقدار</th><th>توضیح</th><th>عملیات</th></tr></thead><tbody>`;
     session.scores.forEach((sc, idx) => {
       const st = sessionStudent(c, session, sc.studentId);
       h += `<tr><td>${esc(st ? st.name : "—")}</td>
         <td><span class="badge ${sc.type}">${TYPE_LABELS[sc.type]}</span></td>
         <td>${sc.value}</td><td>${esc(sc.note || "")}</td>
-        <td><button type="button" class="danger" data-legacy-click="sessions-dialog:12" data-legacy-click-arg5="${esc(session.id)}" data-legacy-click-arg6="${esc(idx)}">×</button></td></tr>`;
+        <td><button type="button" class="danger" aria-label="حذف فعالیت ${esc(st?.name || "هنرجو")}" data-legacy-click="sessions-dialog:12" data-legacy-click-arg5="${esc(session.id)}" data-legacy-click-arg6="${esc(idx)}">×</button></td></tr>`;
     });
     h += `</tbody></table>`;
   }
   h += `</div></section><div class="session-workspace-footer">
-    <button type="button" class="success" data-legacy-click="sessions-dialog:13" data-legacy-click-arg0="${esc(session.id)}" data-legacy-click-arg1="${esc(session.schoolId)}" data-legacy-click-arg2="${esc(session.classId)}" data-legacy-click-arg3="${esc(session.schoolId)}" data-legacy-click-arg4="${esc(session.classId)}" data-legacy-click-arg5="${esc(session.lessonId)}">📋 کپی متن برای معاون</button>
-    <button type="button" data-legacy-click="sessions-dialog:14">بستن</button></div></div>`;
+    <button type="button" class="success" data-legacy-click="sessions-dialog:13" data-legacy-click-arg0="${esc(session.id)}" data-legacy-click-arg1="${esc(session.schoolId)}" data-legacy-click-arg2="${esc(session.classId)}" data-legacy-click-arg3="${esc(session.schoolId)}" data-legacy-click-arg4="${esc(session.classId)}" data-legacy-click-arg5="${esc(session.lessonId)}">کپی برای معاون</button>
+    <button type="button" class="ghost" data-legacy-click="sessions-dialog:14">بستن</button></div></div>`;
   showModal("ثبت اطلاعات جلسه", h);
   if (selectedPanel) showSessionPanel(selectedPanel);
 }

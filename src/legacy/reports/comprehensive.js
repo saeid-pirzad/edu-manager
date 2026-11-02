@@ -36,17 +36,20 @@ function renderReports() {
   h +=
     '<nav class="tabs report-navigation no-print" aria-label="نوع گزارش">' +
     [
-      ["karnameh", "کارنامه نمرات"],
-      ["daily", "روزانه"],
-      ["weekly", "هفتگی"],
-      ["monthly", "ماهانه"],
-      ["annual", "سالانه"],
+      ["karnameh", "کارنامه", "grades"],
+      ["daily", "روزانه", "calendar"],
+      ["weekly", "هفتگی", "calendar-week"],
+      ["monthly", "ماهانه", "calendar-month"],
+      ["annual", "سالانه", "report"],
     ]
       .map(
-        ([key, label]) =>
+        ([key, label, icon]) =>
           `<button type="button" ${tab === key ? 'aria-current="page" ' : ""}class="${tab === key ? "active" : ""}" data-legacy-click="reports-comprehensive:0" data-legacy-click-arg2="${esc(key)}">` +
+          '<span class="report-tab-icon" aria-hidden="true">' +
+          EduIcons.html(icon) +
+          '</span><span class="report-tab-label">' +
           label +
-          "</button>",
+          "</span></button>",
       )
       .join("") +
     "</nav>";

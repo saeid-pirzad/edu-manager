@@ -1513,112 +1513,307 @@
   }
 }
 @media screen {
-  #modal:has(.session-workspace) .modal-dialog {
+  .session-setup-heading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .session-setup-symbol,
+  .session-context-icon {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    border-radius: 13px;
+    background: #fff3db;
+    color: #855b19;
+  }
+  .session-setup-heading :is(h3, h4) {
+    margin: 0;
+    color: var(--workflow-ink);
+    font-size: 17px;
+    line-height: 1.8;
+  }
+  .session-setup-heading p,
+  .session-setup-help {
+    margin: 4px 0 0;
+    color: var(--workflow-muted);
+    font-size: 12px;
+    line-height: 1.9;
+  }
+  .session-setup-eyebrow {
+    color: #855b19;
+    font-size: 11px;
+  }
+  #app .session-create {
+    padding: 20px;
+    border-radius: 17px;
+    box-shadow: none;
+  }
+  #app .session-create-form {
+    grid-template-columns: minmax(0, 1fr) 110px auto;
+    gap: 12px;
+  }
+  #modal:has(.session-workspace, .session-start-panel) .modal-dialog {
     width: 100%;
-    max-width: 780px;
+    max-width: 820px;
     border-radius: 20px;
   }
-  #modal:has(.session-workspace) .modal-header {
-    flex-shrink: 0;
-    background: #fff;
-    padding: 14px 20px;
+  #modal:has(.session-workspace, .session-start-panel) .modal-dialog:focus {
+    outline: none;
   }
-  #modal:has(.session-workspace) .modal-body {
+  #modal:has(.session-start-panel) .modal-dialog {
+    max-width: 560px;
+  }
+  #modal:has(.session-workspace, .session-start-panel) .modal-header {
+    flex-shrink: 0;
+    padding: 14px 20px;
+    background: #fff;
+  }
+  #modal:has(.session-workspace, .session-start-panel) .modal-body {
     min-height: 0;
     padding: 20px;
     background: #fff;
   }
-  #modalBody .session-workspace {
+  #modalBody :is(.session-workspace, .session-start-panel) {
     min-width: 0;
     color: var(--workflow-ink);
   }
-  .session-context {
-    padding: 16px;
+  #modalBody .session-field {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 7px;
+    min-width: 0;
+    margin: 0;
+    color: #6e665c;
+    font-size: 12px;
+    line-height: 1.8;
+  }
+  #modalBody .session-field > span > small {
+    color: #81796e;
+    font-size: inherit;
+    font-weight: 400;
+  }
+  #modalBody .session-field :is(input, select) {
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    margin: 0;
+    border-radius: 11px;
+    background-color: #fff;
+    font-size: 14px;
+  }
+  #modalBody :is(.session-date-grid, .session-setup-grid) .shamsi-display {
+    display: none;
+  }
+  #modalBody .session-setup-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+  #modalBody .session-setup-help {
+    margin-block: 14px;
+    padding-inline-start: 12px;
+    border-inline-start: 2px solid #e2d4bd;
+  }
+  #modalBody .session-setup-actions > button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 48px;
+    margin: 0;
+    border-radius: 12px;
+  }
+  .session-setup-history {
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid var(--workflow-line);
+  }
+  .session-setup-history > header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .session-setup-history h4 {
+    margin: 0;
+    font-size: 14px;
+  }
+  .session-setup-history > header > span {
+    color: var(--workflow-muted);
+    font-size: 12px;
+  }
+  .session-setup-recent {
+    display: grid;
+    gap: 8px;
+  }
+  #modalBody .session-setup-recent-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 12px;
     border: 1px solid var(--workflow-line);
-    border-radius: 14px;
-    background: #f7f6f4;
+    border-radius: 12px;
+    background: #faf9f7;
+    color: var(--workflow-ink);
+    text-align: start;
+    box-shadow: none;
+  }
+  .session-setup-recent-copy {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-size: 13px;
+  }
+  .session-setup-recent-copy small {
+    color: var(--workflow-muted);
+    font-size: 11px;
+  }
+  .session-setup-recent-arrow {
+    display: inline-flex;
+    flex-shrink: 0;
+    color: #8a6736;
+  }
+  .session-context {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 0 0 16px;
+    border: 0;
+    border-bottom: 1px solid var(--workflow-line);
+    border-radius: 0;
+    background: transparent;
+  }
+  .session-context-copy {
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
   .session-context p {
     margin: 0;
-    line-height: 1.9;
+    line-height: 1.8;
   }
-  .session-context-path {
+  .session-context-path,
+  .session-context-teacher {
     color: var(--workflow-muted);
     font-size: 12px;
   }
   .session-context h4 {
-    margin: 6px 0;
+    margin: 4px 0 6px;
     font-size: 18px;
-    overflow-wrap: anywhere;
+    line-height: 1.7;
   }
   .session-context-meta {
-    font-size: 13px;
     color: #79522c;
-  }
-  .session-context-teacher {
-    font-size: 12px;
-    color: var(--workflow-muted);
+    font-size: 13px;
   }
   #modalBody .session-date-tools {
-    margin-top: 12px;
-    border: 1px solid var(--workflow-line);
-    border-radius: 10px;
+    margin-top: 8px;
+    border: 0;
+    border-bottom: 1px solid var(--workflow-line);
+    border-radius: 0;
   }
   #modalBody .session-date-tools > summary {
-    padding: 12px;
-    color: var(--workflow-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 8px 0;
+    color: #79522c;
+    font-size: 12px;
+    list-style: none;
   }
-  #modalBody .session-date-tools > .form-row {
-    padding: 0 12px 12px;
+  .session-date-tools > summary::-webkit-details-marker {
+    display: none;
+  }
+  .session-date-tools > summary::after {
+    content: "+";
+    margin-inline-start: auto;
+    font-size: 20px;
+  }
+  .session-date-tools[open] > summary::after {
+    content: "−";
+  }
+  #modalBody .session-date-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 100px auto;
+    align-items: end;
+    gap: 12px;
     margin: 0;
-    gap: 10px;
+    padding: 8px 0 16px;
+  }
+  #modalBody .session-date-grid > button {
+    min-height: 46px;
+    margin: 0;
   }
   #modalBody .session-unit-fields {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr);
-    align-items: center;
-    gap: 10px;
-    margin: 14px 0;
-    font-size: 13px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin: 16px 0;
   }
   #modalBody .session-mode-picker {
     position: sticky;
     top: -20px;
     z-index: 5;
-    padding: 6px;
-    gap: 6px;
-    border-radius: 12px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+    margin: 16px 0 20px;
+    padding: 5px;
+    border-radius: 13px;
     background: #eeece9;
-    margin: 16px 0;
   }
   #modalBody .session-mode-picker button {
-    border: 1px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-width: 0;
+    min-height: 46px;
+    margin: 0;
+    padding: 8px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: #6e665c;
     font-size: 14px;
     font-weight: 600;
-    background: transparent;
-    color: var(--workflow-muted);
   }
   #modalBody .session-mode-picker [aria-pressed="true"] {
-    background: #fff;
-    color: var(--workflow-accent);
-    box-shadow: 0 2px 5px #2d34400c;
-    border-color: var(--workflow-line);
+    background: #8b2635;
+    color: #fff;
+    box-shadow: 0 2px 6px #8b26351a;
   }
   .session-attendance-heading {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
     gap: 12px;
-    margin-bottom: 14px;
+    margin-bottom: 8px;
   }
-  .session-attendance-heading h4 {
+  .session-attendance-heading h4,
+  #modalBody [data-session-panel="activity"] > h4,
+  .session-activity-records > h4 {
     margin: 0;
     font-size: 15px;
   }
-  .session-attendance-heading p {
-    margin: 4px 0 0;
-    font-size: 12px;
+  .session-attendance-heading p,
+  #modalBody [data-session-panel="activity"] > p {
+    margin: 5px 0 0;
     color: var(--workflow-muted);
+    font-size: 12px;
+    line-height: 1.9;
   }
   .session-attendance-bulk {
     display: flex;
@@ -1627,9 +1822,11 @@
   }
   #modalBody .session-attendance-bulk button {
     min-height: 44px;
+    margin: 0;
     padding: 8px 12px;
-    font-size: 12px;
+    border: 1px solid transparent;
     border-radius: 10px;
+    font-size: 12px;
   }
   #modalBody .session-attendance-bulk .success {
     background: #eaf5ef;
@@ -1639,63 +1836,26 @@
     background: #fff0ed;
     color: #9f3021;
   }
+  #modalBody .session-attendance-list {
+    display: grid;
+    gap: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
   #modalBody .session-workspace .att-row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    gap: 16px;
-    padding: 16px;
-    border: 1px solid var(--workflow-line);
-    border-radius: 14px;
-    background: #fff;
-    box-shadow: 0 2px 6px #2d344003;
-  }
-  #modalBody .session-attendance-list {
-    display: grid;
     gap: 12px;
-    padding: 12px;
-    border: 1px solid #eeece9;
-    border-radius: 16px;
-    background: #f7f6f4;
-  }
-  #modalBody .session-attendance-list .att-row:focus-within {
-    border-color: #b9b6b1;
-    box-shadow: 0 0 0 2px #58595b0a;
-  }
-  #modalBody .session-attendance-list .att-name > span:last-child {
-    line-height: 1.9;
-    font-weight: 600;
-  }
-  #modalBody .session-attendance-list .attendance-number {
-    width: 30px;
-    height: 30px;
-    flex-basis: 30px;
-    border-radius: 12px;
-    font-size: 15px;
-  }
-  #modalBody .session-attendance-list .att-btns {
-    padding: 4px;
-    gap: 4px;
-    border-radius: 12px;
-    background: #f4f3f1;
-  }
-  #modalBody .session-attendance-list .att-btns button {
+    margin: 0;
+    padding: 14px 0;
+    border: 0;
+    border-bottom: 1px solid #eeece9;
+    border-radius: 0;
     background: transparent;
-    border-color: transparent;
-    border-radius: 9px;
-    line-height: 1.8;
-  }
-  #modalBody .session-attendance-list .att-btns button:not(.active):hover {
-    background: #fff;
-    border-color: var(--workflow-line);
-  }
-  #modalBody .session-attendance-list .att-btns button.active {
-    font-weight: 600;
-    box-shadow: 0 2px 4px #2d34400a;
-  }
-  #modalBody .session-attendance-list .att-btns button:focus-visible {
-    outline: 2px solid var(--workflow-accent);
-    outline-offset: 1px;
+    box-shadow: none;
   }
   #modalBody .session-workspace .att-name {
     display: flex;
@@ -1703,166 +1863,228 @@
     gap: 10px;
     min-width: 0;
     font-size: 14px;
+  }
+  #modalBody .session-attendance-list .att-name > span:last-child {
+    min-width: 0;
+    font-weight: 600;
+    line-height: 1.9;
+    white-space: normal;
     overflow-wrap: anywhere;
   }
   .attendance-number {
     display: grid;
     place-items: center;
-    width: 32px;
-    height: 32px;
-    flex: 0 0 32px;
-    border: 1px solid #e8d7c1;
+    width: 30px;
+    height: 30px;
+    flex: 0 0 30px;
+    border: 0;
     border-radius: 10px;
-    background: #fff8ed;
+    background: #f2ece3;
     color: #79522c;
-    font-size: 13px;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
   }
   #modalBody .session-workspace .att-btns {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 6px;
+    gap: 4px;
+    min-width: 0;
+    padding: 3px;
+    border-radius: 11px;
+    background: #f4f3f1;
   }
   #modalBody .session-workspace .att-btns button {
-    min-width: 76px;
-    height: 44px;
+    min-width: 64px;
     min-height: 44px;
-    padding: 6px 18px;
-    border: 1px solid var(--workflow-line);
-    background: #faf9f7;
-    color: var(--workflow-muted);
-    font-size: 15px;
+    height: auto;
+    margin: 0;
+    padding: 6px 8px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: #6e665c;
+    font-size: 13px;
+    line-height: 1.6;
     white-space: nowrap;
   }
   #modalBody .session-workspace .att-btns .present.active {
-    background: #eaf5ef;
-    color: #14634c;
-    border-color: #83b5a3;
+    background: #e0f2e9;
+    color: #115b43;
+    border-color: #91bca8;
   }
   #modalBody .session-workspace .att-btns .absent.active {
-    background: #fff0ed;
+    background: #ffebe7;
     color: #9f3021;
-    border-color: #dc9b92;
+    border-color: #dfa297;
   }
   #modalBody .session-workspace .att-btns .late.active {
-    background: #fff4d9;
-    color: #875800;
+    background: #fff2ce;
+    color: #805300;
     border-color: #d9bd78;
   }
-  #modalBody .session-entry-form {
-    padding: 16px;
-    background: #f7f6f4;
-    border: 1px solid var(--workflow-line);
-    border-radius: 12px;
+  #modalBody .session-workspace .att-btns .leave.active {
+    background: #ebe7fa;
+    color: #61438b;
+    border-color: #b6a4d6;
   }
-  #modalBody .session-entry-form :is(input, select) {
-    border-radius: 10px;
+  #modalBody .session-workspace .att-btns .active {
+    font-weight: 600;
+    box-shadow: 0 1px 3px #2d34400a;
+  }
+  #modalBody .session-workspace button:focus-visible {
+    outline: 2px solid #a66e0b;
+    outline-offset: 2px;
+  }
+  #modalBody .session-entry-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    gap: 14px;
+    margin: 16px 0 22px;
+    padding: 16px;
+    border: 1px solid var(--workflow-line);
+    border-radius: 14px;
+    background: #faf9f7;
+  }
+  #modalBody .session-entry-form > :is(.session-field-wide, button) {
+    grid-column: 1 / -1;
+  }
+  #modalBody .session-entry-form > button {
+    min-height: 46px;
+    margin: 0;
+    border-radius: 11px;
+  }
+  .session-activity-records > h4 {
+    margin-bottom: 12px;
+  }
+  #modalBody .session-score-table {
+    width: 100%;
+    table-layout: fixed;
+  }
+  #modalBody .session-score-table :is(th, td) {
+    padding: 10px;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+  #modalBody .session-score-table button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  #modalBody .session-workspace-footer {
+    position: sticky;
+    bottom: -20px;
+    z-index: 4;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    margin-top: 12px;
+    padding: 12px 0;
+    border-top: 1px solid var(--workflow-line);
     background: #fff;
   }
-  #modalBody [data-session-panel="activity"] > h4 {
-    margin: 0 0 8px;
-    font-size: 15px;
-  }
-  #modalBody [data-session-panel="activity"] > p {
-    font-size: 12px;
-    line-height: 1.9;
-  }
-  .session-workspace-footer {
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-    padding-top: 16px;
-    margin-top: 16px;
-    border-top: 1px solid var(--workflow-line);
-  }
   #modalBody .session-workspace-footer button {
+    min-width: 0;
     min-height: 46px;
-    border-radius: 10px;
+    margin: 0;
+    padding-inline: 16px;
+    border-radius: 11px;
     font-size: 13px;
   }
   #modalBody .session-workspace-footer .success {
-    background: #f4f3f1;
-    color: #454649;
+    border: 1px solid #cde3db;
+    background: #edf6f2;
+    color: #14634c;
   }
 }
 @media screen and (max-width: 700px) {
-  #modal:has(.session-workspace) {
-    padding: 10px;
+  #app .session-create {
+    padding: 16px;
+  }
+  #app .session-create-form {
+    grid-template-columns: minmax(0, 1fr) 90px;
+    gap: 10px;
+  }
+  #modal:has(.session-workspace, .session-start-panel) {
+    padding: 8px;
     align-items: center;
   }
-  #modal:has(.session-workspace) .modal-dialog {
-    max-height: calc(var(--app-viewport, 100dvh) - 20px);
-    border-radius: 16px;
+  #modal:has(.session-workspace, .session-start-panel) .modal-dialog {
+    max-height: calc(var(--app-viewport, 100dvh) - 16px);
+    border-radius: 17px;
   }
-  #modal:has(.session-workspace) .modal-header {
+  #modal:has(.session-workspace, .session-start-panel) .modal-header {
     padding: 10px 14px;
   }
-  #modal:has(.session-workspace) .modal-body {
+  #modal:has(.session-workspace, .session-start-panel) .modal-body {
     padding: 14px;
+  }
+  .session-context {
+    gap: 10px;
+    padding-bottom: 12px;
+  }
+  .session-context-icon {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+    border-radius: 11px;
+  }
+  .session-context h4 {
+    font-size: 16px;
   }
   #modalBody .session-mode-picker {
     top: -14px;
+    margin-block: 14px 18px;
   }
-  #modalBody .session-unit-fields {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 8px;
+  #modalBody .session-mode-picker button {
+    font-size: 13px;
+  }
+  #modalBody .session-field :is(input, select) {
+    font-size: 16px;
+  }
+  #modalBody .session-date-grid {
+    grid-template-columns: minmax(0, 1fr) 90px;
+    gap: 10px;
+  }
+  #modalBody .session-date-grid > button {
+    grid-column: 1 / -1;
   }
   .session-attendance-heading {
     align-items: stretch;
     flex-direction: column;
+    gap: 10px;
   }
   .session-attendance-bulk > button {
     flex: 1;
   }
   #modalBody .session-workspace .att-row {
     grid-template-columns: minmax(0, 1fr);
-    gap: 8px;
-    padding: 10px;
-  }
-  #modalBody .session-attendance-list {
-    padding: 8px;
     gap: 10px;
-  }
-  #modalBody .session-attendance-list .att-btns {
-    padding: 4px;
-  }
-  #modalBody .session-workspace .att-name {
-    gap: 6px;
-    font-size: 12px;
-  }
-  #modalBody .session-attendance-list .attendance-number {
-    width: 26px;
-    height: 26px;
-    flex-basis: 26px;
-    font-size: 12px;
-    border-radius: 8px;
-  }
-  #modalBody .session-attendance-list .att-name > span:last-child {
-    min-width: 0;
-    white-space: normal;
-    overflow-wrap: anywhere;
-  }
-  #modalBody .session-attendance-list .att-btns {
-    padding: 3px;
-    gap: 2px;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    align-items: center;
+    padding: 14px 0;
   }
   #modalBody .session-workspace .att-btns button {
-    height: 44px;
-    min-height: 44px;
     min-width: 0;
-    padding: 4px;
-    font-size: 14px;
-    line-height: 1.4;
+    padding: 6px 2px;
+    font-size: 13px;
+    white-space: normal;
+  }
+  #modalBody .session-entry-form {
+    padding: 12px;
+    gap: 12px 10px;
   }
   #modalBody .session-workspace-footer {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    bottom: -14px;
   }
   #modalBody .session-workspace-footer button {
-    min-width: 0;
-    white-space: normal;
     padding-inline: 12px;
+  }
+}
+@media screen and (max-width: 480px) {
+  #modalBody .session-entry-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media screen and (max-width: 360px) {
+  #modalBody .session-unit-fields {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 @media screen and (min-width: 1101px) {
@@ -2408,35 +2630,70 @@
     font-size: 11px;
   }
   #app .report-navigation {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 5px;
-    padding: 0;
-    margin-bottom: 18px;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+    width: 100%;
+    min-width: 0;
+    margin: 0 0 18px;
+    padding: 6px;
     border: 0;
-    border-bottom: 1px solid #e7e3dc;
-    border-radius: 0;
-    background: transparent;
-    overflow-x: auto;
+    border-radius: 17px;
+    background: #eeebe6;
+    overflow: visible;
   }
   #app .report-navigation > button {
-    min-height: 42px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-width: 0;
+    min-height: 72px;
     margin: 0;
-    padding: 8px 16px;
+    padding: 9px 3px;
     border: 1px solid transparent;
-    border-radius: 9px;
+    border-radius: 12px;
     background: transparent;
-    color: #726b61;
+    color: #675f56;
     font-size: 12px;
+    font-weight: 600;
+    line-height: 1.7;
     box-shadow: none;
     white-space: nowrap;
+    transition:
+      background-color 160ms ease,
+      color 160ms ease,
+      box-shadow 160ms ease;
   }
-  #app .report-navigation > button.active {
-    background: transparent;
-    border-color: transparent;
-    color: #79522c;
-    font-weight: 600;
-    box-shadow: inset 0 -2px #79522c;
+  #app .report-tab-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    flex: 0 0 24px;
+    pointer-events: none;
+  }
+  #app .report-tab-icon .ui-icon {
+    width: 21px;
+    height: 21px;
+    margin: 0;
+  }
+  #app .report-tab-label {
+    min-width: 0;
+    pointer-events: none;
+  }
+  #app .report-navigation > button.active,
+  #app .report-navigation > button[aria-current="page"] {
+    border-color: #8b2635;
+    background: #8b2635;
+    color: #fff;
+    box-shadow: 0 3px 8px #8b263526;
+  }
+  #app .report-navigation > button:focus-visible {
+    outline: 2px solid #a66e0b;
+    outline-offset: 2px;
   }
   #app .report-extra {
     margin: 0 0 16px;
@@ -2577,6 +2834,34 @@
     line-height: 1.9;
   }
 }
+@media screen and (min-width: 640px) {
+  #app .report-navigation {
+    gap: 6px;
+    padding: 7px;
+  }
+  #app .report-navigation > button {
+    flex-direction: row;
+    gap: 8px;
+    min-height: 54px;
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+}
+@media screen and (hover: hover) {
+  #app .report-navigation > button:not([aria-current="page"]):hover {
+    background: #fffaf4;
+    color: #70451f;
+  }
+  #app .report-navigation > button[aria-current="page"]:hover {
+    background: #77202e;
+    color: #fff;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #app .report-navigation > button {
+    transition: none;
+  }
+}
 @media screen and (max-width: 700px) {
   #app > .periodic-controls,
   #app > .report-extra {
@@ -2597,11 +2882,6 @@
     padding: 4px 0;
     text-align: center;
     font-size: 10px;
-  }
-  #app .report-navigation > button {
-    flex: 0 0 auto;
-    padding: 8px 12px;
-    font-size: 12px;
   }
   #app
     :is(

@@ -306,46 +306,48 @@ function legacy_clickMasterCell(day, period) {
     })
     .sort((a, b) => b.date.localeCompare(a.date));
 
-  let h = `<div style="background:#f8fafc;padding:12px;border-radius:8px;margin-bottom:14px">
-    <div style="margin-bottom:10px">
-      <strong>${DAYS[day]} — زنگ ${period + 1}</strong>
-    </div>
-
-    <div class="form-row" style="margin-bottom:6px">
-      <label style="min-width:60px">کلاس:</label>
-      <select id="sessNewClass" style="flex:1" data-legacy-change="schedule-timetable:13">
+  let h = `<header class="session-setup-heading">
+    <span class="session-setup-symbol" aria-hidden="true">${EduIcons.html("calendar")}</span>
+    <div><span class="session-setup-eyebrow">برنامه هفتگی</span><h4>${esc(DAYS[day])} · زنگ ${(period + 1).toLocaleString("fa-IR")}</h4><p>کلاس، درس و تاریخ جلسه را بررسی کنید.</p></div>
+  </header>
+  <div class="session-setup-grid">
+    <label class="session-field session-field-wide" for="sessNewClass"><span>کلاس</span>
+      <select id="sessNewClass" data-legacy-change="schedule-timetable:13">
         ${allClasses.map((x) => `<option value="${x.class.id}" ${x.class.id === entry.classId ? "selected" : ""}>${esc(x.school.name)} / ${esc(x.class.name)}</option>`).join("")}
       </select>
-    </div>
-    <div class="form-row" style="margin-bottom:6px">
-      <label style="min-width:60px">درس:</label>
-      <select id="sessNewLesson" style="flex:1">
+    </label>
+    <label class="session-field session-field-wide" for="sessNewLesson"><span>درس</span>
+      <select id="sessNewLesson">
         ${(cls.classObj.lessons || []).map((l) => `<option value="${l.id}" ${l.id === entry.lessonId ? "selected" : ""}>${esc(l.name)}</option>`).join("")}
       </select>
-    </div>
+    </label>
+    <label class="session-field" for="sessNewDate"><span>تاریخ جلسه</span>
+      <input type="date" id="sessNewDate" value="${todayISO()}" data-legacy-change="schedule-timetable:14">
+      <span class="shamsi-display" id="shamsiSessNew">${toShamsi(todayISO())}</span>
+    </label>
   </div>
-
-  <p>📅 تاریخ جلسه را انتخاب کنید:</p>
-  <div class="form-row">
-    <input type="date" id="sessNewDate" value="${todayISO()}" data-legacy-change="schedule-timetable:14" style="flex:1">
-    <span class="shamsi-display" id="shamsiSessNew">${toShamsi(todayISO())}</span>
-    <button data-legacy-click="schedule-timetable:15" data-legacy-click-arg6="${esc(day)}" data-legacy-click-arg7="${esc(period)}">📝 ایجاد / بازکردن</button>
-  </div>
-  <p class="muted" style="font-size:.85em">می‌توانید کلاس و درس را به صورت دستی تغییر دهید. اگر جلسه‌ای با این تاریخ و زنگ وجود داشته باشد باز می‌شود.</p>`;
+  <p class="session-setup-help">در همین تاریخ و زنگ، جلسهٔ ثبت‌شدهٔ همین درس ادامه پیدا می‌کند؛ تداخل با جلسهٔ دیگر اجازهٔ ثبت نمی‌دهد.</p>
+  <div class="session-setup-actions">
+    <button type="button" data-legacy-click="schedule-timetable:15" data-legacy-click-arg6="${esc(day)}" data-legacy-click-arg7="${esc(period)}">${EduIcons.html("arrow")}<span>شروع / ادامه جلسه</span></button>
+  </div>`;
 
   if (existing.length) {
-    h += `<h4 style="margin-top:16px">جلسات ثبت‌شده این زنگ (${existing.length}):</h4><div>`;
+    h += `<section class="session-setup-history"><header><h4>جلسات قبلی این زنگ</h4><span>${existing.length.toLocaleString("fa-IR")} جلسه</span></header><div class="session-setup-recent">`;
     existing.slice(0, 15).forEach((s) => {
       const present = Object.values(s.attendance).filter(
         (x) =>
           x === "present" || (typeof x === "string" && x.startsWith("late")),
       ).length;
       const total = sessionStudents(cls.classObj, s).length;
-      h += `<div class="list-item" data-legacy-click="schedule-timetable:16" data-legacy-click-arg0="${esc(s.id)}">
-        <div><strong>${faDate(s.date)}</strong></div>
-        <div class="muted" style="font-size:.85em">${present}/${total} حاضر | ${s.scores.length} امتیاز</div></div>`;
+      const lessonName = cls.classObj.lessons.find(
+        (l) => l.id === s.lessonId,
+      )?.name;
+      h += `<button type="button" class="session-setup-recent-item" data-legacy-click="schedule-timetable:16" data-legacy-click-arg0="${esc(s.id)}">
+        <span class="session-setup-recent-copy"><strong>${esc(faDate(s.date))}</strong>${lessonName ? `<span>${esc(lessonName)}</span>` : ""}<small>${present}/${total} حاضر · ${s.scores.length} امتیاز</small></span>
+        <span class="session-setup-recent-arrow" aria-hidden="true">${EduIcons.html("arrow")}</span>
+      </button>`;
     });
-    h += `</div>`;
+    h += `</div></section>`;
   }
   showModal("ثبت جلسه", '<div class="session-start-panel">' + h + "</div>");
 }

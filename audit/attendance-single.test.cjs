@@ -13,10 +13,13 @@ function fixture() {
     roster: [{ id: "historical" }],
   };
   const controls = ["present", "absent", "late", "leave"].map((kind) => {
-    const classes = new Set([kind]);
+    const classes = new Set([kind]),
+      attributes = new Map([["aria-pressed", "false"]]);
     return {
       isConnected: true,
       textContent: kind,
+      setAttribute: (name, value) => attributes.set(name, value),
+      getAttribute: (name) => attributes.get(name),
       classList: {
         contains: (name) => classes.has(name),
         add: (name) => classes.add(name),
@@ -67,6 +70,8 @@ for (const [status, index] of [
       status === "late" ? "late:10" : status,
     );
     assert.equal(f.controls[index].classList.contains("active"), true);
+    for (const [i, control] of f.controls.entries())
+      assert.equal(control.getAttribute("aria-pressed"), String(i === index));
   });
 }
 test("cancelled lateness does not alter attendance or controls", async () => {
@@ -234,4 +239,9 @@ test("leave can replace absence and be cleared without a lateness prompt", async
   await f.c.toggleAttendanceV24(f.controls[3], "leave");
   assert.equal(f.session.attendance.historical, undefined);
   assert.equal(f.controls[3].classList.contains("active"), false);
+  assert.ok(
+    f.controls.every(
+      (control) => control.getAttribute("aria-pressed") === "false",
+    ),
+  );
 });

@@ -4490,6 +4490,7 @@ async function toggleAttendanceV24(button, status) {
         control.classList.contains(name),
       );
       control.classList.remove("active");
+      control.setAttribute("aria-pressed", "false");
       if (kind === "present") control.textContent = "حاضر";
       if (kind === "absent") control.textContent = "غایب";
       if (kind === "leave") control.textContent = "مرخصی";
@@ -4499,6 +4500,7 @@ async function toggleAttendanceV24(button, status) {
         (kind === "late" ? saved?.startsWith("late") : saved === kind)
       ) {
         control.classList.add("active");
+        control.setAttribute("aria-pressed", "true");
         if (kind === "late" && saved.includes(":"))
           control.textContent = "تأخیر (" + Number(saved.split(":")[1]) + "د)";
       }

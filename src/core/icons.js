@@ -10,6 +10,9 @@
       "M15 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0M5 21v-3a7 7 0 0 1 14 0v3M18 4a3 3 0 0 1 0 6M21 20v-3a5 5 0 0 0-2-4",
     report: "M4 3v18h17M8 17v-5M13 17V8M18 17V5",
     calendar: "M4 5h16v16H4zM8 3v4M16 3v4M4 10h16M8 14h2M14 14h2",
+    "calendar-week": "M4 5h16v16H4zM8 3v4M16 3v4M4 10h16M8 14h8M8 17h5",
+    "calendar-month":
+      "M4 5h16v16H4zM8 3v4M16 3v4M4 10h16M8 14h.01M12 14h.01M16 14h.01M8 17h.01M12 17h.01M16 17h.01",
     save: "M5 3h12l4 4v14H3V3h2ZM7 3v6h10V3M7 21v-8h10v8",
     download: "M12 3v12M7 10l5 5 5-5M4 16v5h16v-5",
     upload: "M12 16V3M7 8l5-5 5 5M4 16v5h16v-5",

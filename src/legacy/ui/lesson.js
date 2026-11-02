@@ -81,12 +81,12 @@ function renderLessonSessions(
   const lessonId = esc(lesson.id),
     classId = esc(c.id);
   let h =
-    `<section class="card session-create"><h3>شروع جلسه</h3><form class="session-create-form" novalidate data-legacy-submit="ui-lesson:6" data-legacy-submit-arg0="${esc(lessonId)}">` +
+    `<section class="card session-create"><header class="session-setup-heading"><span class="session-setup-symbol" aria-hidden="true">${EduIcons.html("calendar")}</span><div><h3>شروع جلسه</h3><p>تاریخ و زنگ را انتخاب کنید؛ سپس حضور و فعالیت کلاس را ثبت کنید.</p></div></header><form class="session-create-form" novalidate data-legacy-submit="ui-lesson:6" data-legacy-submit-arg0="${esc(lessonId)}">` +
     '<label>تاریخ جلسه<input type="date" name="date" required value="' +
     todayISO() +
     '"></label>' +
     '<label>شماره زنگ<input type="number" name="period" min="1" max="12" required value="1" inputmode="numeric"></label>' +
-    '<button type="submit">شروع / ادامه جلسه</button></form></section>';
+    '<button type="submit">شروع یا ادامه جلسه</button></form></section>';
   h +=
     '<section class="card session-directory"><header class="session-list-heading"><div><h3>جلسات درس <span class="lesson-count">' +
     sessions.length.toLocaleString("fa-IR") +
