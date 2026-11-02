@@ -4402,11 +4402,11 @@ function renderV24() {
     welcome.append(footer);
   }
   if (window.showSaveFilePicker) {
-    const fileStatus = document.createElement("small");
+    const fileStatus = document.createElement("div");
     fileStatus.id = "singleFileBadge";
-    fileStatus.setAttribute("role", "status");
+    fileStatus.className = "single-file-notice";
     fileStatus.hidden = !singleFileFailure;
-    fileStatus.textContent = singleFileMessage;
+    fileStatus.innerHTML = singleFileNoticeHtml();
     // Connection details live in backups; only failures need a page notice.
     panel.append(fileStatus);
   }
@@ -5938,15 +5938,31 @@ let singleFile = null,
   singleFileDebounce = null,
   singleFileWriting = null,
   singleFileFailure = false,
+  singleFilePermissionNeeded = false,
   singleFileMessage = "ذخیره خودکار در فایل هنوز فعال نیست.";
 
-function singleFileStatus(message) {
+function singleFileNoticeHtml(message = singleFileMessage) {
+  const canRequest =
+    singleFilePermissionNeeded &&
+    window.showSaveFilePicker &&
+    typeof singleFile?.handle?.requestPermission === "function";
+  return (
+    '<span class="single-file-message" role="status">' +
+    esc(message) +
+    "</span>" +
+    (canRequest
+      ? '<button type="button" class="single-file-permission-action" data-workspace-action="single-file-save">اجازه مجدد</button>'
+      : "")
+  );
+}
+function singleFileStatus(message, { permission = false } = {}) {
   singleFileMessage = message;
+  singleFilePermissionNeeded = permission;
   const element = document.getElementById("singleFileStatus");
-  if (element) element.textContent = message;
+  if (element) element.innerHTML = singleFileNoticeHtml();
   const badge = document.getElementById("singleFileBadge");
   if (badge) {
-    badge.textContent = message;
+    badge.innerHTML = singleFileNoticeHtml();
     badge.hidden = !singleFileFailure;
     const panel = document.querySelector("#app .workspace-bar");
     const destination = panel;
@@ -5962,9 +5978,9 @@ function singleFilePanel() {
       "</section>"
     );
   return (
-    '<section class="backup-automatic"><h3>ذخیره خودکار در یک فایل</h3><p>فایل را یک‌بار انتخاب کنید؛ برنامه هنگام باز بودن، همان فایل را به‌روز می‌کند.</p><p id="singleFileStatus" role="status">' +
-    esc(singleFileMessage) +
-    "</p>" +
+    '<section class="backup-automatic"><h3>ذخیره خودکار در یک فایل</h3><p>فایل را یک‌بار انتخاب کنید؛ برنامه هنگام باز بودن، همان فایل را به‌روز می‌کند.</p><div id="singleFileStatus" class="single-file-notice">' +
+    singleFileNoticeHtml() +
+    "</div>" +
     singleFileFallbackPanel(singleFileFailure) +
     '<div class="row"><button data-workspace-action="single-file-choose">انتخاب فایل و فعال‌سازی</button><button class="ghost" data-workspace-action="single-file-save">ذخیره اکنون / اجازه مجدد</button><button class="ghost" data-workspace-action="single-file-stop">توقف اتصال فایل</button></div></section>'
   );
@@ -6059,7 +6075,7 @@ function failSingleFile(error) {
     (denied
       ? "ذخیره خودکار متوقف است؛ مرورگر یا سیستم اجازه نوشتن فایل را نداد. از اجازه مجدد، انتخاب محل دیگر یا پشتیبان دستی استفاده کنید. جزئیات: "
       : "فایل خودکار به‌روز نشد: ") + (error?.message || String(error));
-  singleFileStatus(message);
+  singleFileStatus(message, { permission: denied });
   setStatus(message, "error");
   return false;
 }
@@ -6098,9 +6114,7 @@ async function restoreSingleFile() {
     } else {
       pauseSingleFile();
       showSingleFileFallback(true);
-      singleFileStatus(
-        "مجوز فایل نیاز به تأیید دارد؛ «ذخیره اکنون / اجازه مجدد» را بزنید.",
-      );
+      singleFileStatus("مجوز فایل نیاز به تأیید دارد.", { permission: true });
     }
   } catch (error) {
     failSingleFile(error);
@@ -6169,7 +6183,9 @@ async function resumeSingleFile() {
     ) {
       pauseSingleFile();
       showSingleFileFallback(true);
-      singleFileStatus("اجازه نوشتن داده نشد؛ فایل به‌روز نشده است.");
+      singleFileStatus("اجازه نوشتن داده نشد؛ فایل به‌روز نشده است.", {
+        permission: true,
+      });
       return false;
     }
     if (!(await singleFileCurrent(target))) return false;

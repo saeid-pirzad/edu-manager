@@ -136,8 +136,7 @@ module.exports = async function singleFile() {
     let manualDownloads = 0;
     try {
       prototype.createWritable = async function (...args) {
-        if (this.name === failedHandle.name)
-          throw new DOMException("platform denied write", "NotAllowedError");
+        if (this.name === failedHandle.name) throw Error("synthetic disk full");
         return originalCreate.apply(this, args);
       };
       downloadLocalFile = () => {
@@ -148,16 +147,17 @@ module.exports = async function singleFile() {
       await waitFor(() =>
         document
           .getElementById("singleFileStatus")
-          ?.textContent.includes("اجازه نوشتن"),
+          ?.textContent.includes("synthetic disk full"),
       );
       const fallback = document.getElementById("singleFileFallback");
       cases.push({
         id: "SF06",
-        name: "platform-denied first write shows manual fallback and never reports an empty file as saved",
+        name: "disk failure shows manual fallback without claiming an empty file was saved or requesting permission",
         pass:
           !fallback.hidden &&
           (await failedHandle.getFile()).size === 0 &&
-          manualDownloads === 0,
+          manualDownloads === 0 &&
+          !document.querySelector(".single-file-permission-action"),
         observed: {},
       });
       closeModal();
@@ -169,7 +169,7 @@ module.exports = async function singleFile() {
           !document.getElementById("singleFileBadge")?.hidden &&
           document
             .getElementById("singleFileBadge")
-            ?.textContent.includes("اجازه نوشتن"),
+            ?.textContent.includes("synthetic disk full"),
         observed: {},
       });
       await EduV24.openBackups();
@@ -206,6 +206,135 @@ module.exports = async function singleFile() {
         (await failedHandle.getFile()).size > 0,
       observed: {},
     });
+    const originalPermission = prototype.requestPermission;
+    let permissionCalls = 0,
+      permissionResult = "denied";
+    const beforePermission = await (await failedHandle.getFile()).text();
+    try {
+      prototype.createWritable = async function (...args) {
+        if (this.name === failedHandle.name)
+          throw new DOMException(
+            "synthetic permission revoked",
+            "NotAllowedError",
+          );
+        return originalCreate.apply(this, args);
+      };
+      click("single-file-save");
+      await waitFor(() =>
+        document
+          .getElementById("singleFileStatus")
+          ?.querySelector(".single-file-permission-action"),
+      );
+      const badge = document.getElementById("singleFileBadge"),
+        modalStatus = document.getElementById("singleFileStatus");
+      cases.push({
+        id: "SF09_INLINE_PERMISSION",
+        name: "permission warning offers one explicit action beside each live status, outside the live region",
+        pass: [badge, modalStatus].every((notice) => {
+          const message = notice.querySelector('[role="status"]'),
+            action = notice.querySelector(".single-file-permission-action");
+          return (
+            message &&
+            action &&
+            action.parentElement === message.parentElement &&
+            !message.contains(action) &&
+            action.type === "button" &&
+            action.textContent.trim() === "اجازه مجدد" &&
+            notice.querySelectorAll(".single-file-permission-action").length ===
+              1
+          );
+        }),
+        observed: {},
+      });
+      closeModal();
+      render();
+      const visibleBadge = document.getElementById("singleFileBadge"),
+        action = visibleBadge?.querySelector(".single-file-permission-action"),
+        rect = action?.getBoundingClientRect(),
+        badgeRect = visibleBadge?.getBoundingClientRect();
+      cases.push({
+        id: "SF10_PERMISSION_LAYOUT_" + innerWidth,
+        name: "permission action stays visible after navigation and fits the mobile viewport with a touch-sized target",
+        pass:
+          !!action &&
+          !visibleBadge.hidden &&
+          rect.width >= 44 &&
+          rect.height >= 44 &&
+          rect.left >= 0 &&
+          rect.right <= innerWidth + 1 &&
+          badgeRect.left >= 0 &&
+          badgeRect.right <= innerWidth + 1 &&
+          document.documentElement.scrollWidth <= innerWidth + 1,
+        observed: {
+          width: innerWidth,
+          actionWidth: rect?.width,
+          actionHeight: rect?.height,
+        },
+      });
+      if (window.__eduPermissionActionCaptureEnabled) {
+        window.__eduPermissionActionCaptureReady = { width: innerWidth };
+        await new Promise((resolve) => {
+          window.__eduPermissionActionRelease = resolve;
+        });
+        delete window.__eduPermissionActionCaptureReady;
+        delete window.__eduPermissionActionRelease;
+      }
+      prototype.requestPermission = function (...args) {
+        if (this.name === failedHandle.name) {
+          permissionCalls++;
+          return Promise.resolve(permissionResult);
+        }
+        return originalPermission.apply(this, args);
+      };
+      action.click();
+      const requestedInClick = permissionCalls === 1;
+      await waitFor(() =>
+        document
+          .getElementById("singleFileBadge")
+          ?.textContent.includes("اجازه نوشتن داده نشد"),
+      );
+      cases.push({
+        id: "SF11_PERMISSION_DENIED",
+        name: "the visible action requests permission during its click and denial preserves the file and recovery action",
+        pass:
+          requestedInClick &&
+          permissionCalls === 1 &&
+          !document.getElementById("singleFileBadge").hidden &&
+          !!document.querySelector(
+            "#singleFileBadge .single-file-permission-action",
+          ) &&
+          (await (await failedHandle.getFile()).text()) === beforePermission,
+        observed: { permissionCalls, requestedInClick },
+      });
+      permissionResult = "granted";
+      prototype.createWritable = originalCreate;
+      document
+        .querySelector("#singleFileBadge .single-file-permission-action")
+        .click();
+      await waitFor(() =>
+        document
+          .getElementById("singleFileBadge")
+          ?.textContent.startsWith("ذخیره شد:"),
+      );
+      await EduV24.openBackups();
+      cases.push({
+        id: "SF12_PERMISSION_RECOVERED",
+        name: "inline permission grant confirms a real complete-file write and removes actions from both notices",
+        pass:
+          permissionCalls === 2 &&
+          document.getElementById("singleFileBadge").hidden &&
+          !document.querySelector(".single-file-permission-action") &&
+          document.getElementById("singleFileFallback").hidden &&
+          JSON.parse(await (await failedHandle.getFile()).text()).format ===
+            "EduManager.FullBackup",
+        observed: { permissionCalls },
+      });
+    } finally {
+      prototype.createWritable = originalCreate;
+      prototype.requestPermission = originalPermission;
+      delete window.__eduPermissionActionCaptureReady;
+      delete window.__eduPermissionActionRelease;
+    }
     click("single-file-stop");
     await waitFor(() =>
       document

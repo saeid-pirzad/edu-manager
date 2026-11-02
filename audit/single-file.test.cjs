@@ -50,7 +50,12 @@ function fixture() {
     setTimeout: () => 1,
     clearTimeout() {},
     confirm: () => true,
-    esc: String,
+    esc: (value) =>
+      String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;"),
     setStatus() {},
     validateFullBackup() {},
     uid: () => "file-" + Math.random(),
@@ -146,7 +151,7 @@ test("file warning stays visible on failure and hides after recovery without ret
   f.context.showSingleFileFallback(true);
   f.context.singleFileStatus("write failed");
   assert.equal(badge.parentElement, panel);
-  assert.equal(badge.textContent, "write failed");
+  assert.match(badge.innerHTML, /write failed<\/span>/);
   assert.equal(badge.hidden, false);
   f.context.showSingleFileFallback(false);
   f.context.singleFileStatus("saved");
@@ -298,7 +303,7 @@ for (const permission of ["prompt", "denied"]) {
     assert.equal(vm.runInContext("singleFileTimer", f.context), null);
     assert.equal(vm.runInContext("singleFileFailure", f.context), true);
     assert.equal(badge.hidden, false);
-    assert.match(badge.textContent, /مجوز فایل نیاز به تأیید دارد/);
+    assert.match(badge.innerHTML, /مجوز فایل نیاز به تأیید دارد/);
     assert.equal(f.contents, previous);
     assert.equal(f.writes, 1);
     // A later render uses this same persistent flag, so the warning does not
@@ -348,8 +353,8 @@ test("explicit successful disconnect clears a permission warning without restart
   assert.equal(f.getStored(), null);
   assert.equal(f.contents, previous);
   assert.equal(f.writes, 1);
-  assert.match(badge.textContent, /اتصال متوقف شد.*حذف نشده/);
-  assert.doesNotMatch(badge.textContent, /فعال شد/);
+  assert.match(badge.innerHTML, /اتصال متوقف شد.*حذف نشده/);
+  assert.doesNotMatch(badge.innerHTML, /فعال شد/);
 });
 
 test("missing picker offers a manual backup without pretending automatic support", () => {
@@ -596,4 +601,161 @@ test("an unrestorable full snapshot never opens a stream or overwrites the last 
     vm.runInContext("singleFileMessage", f.context),
     /damaged historical report/,
   );
+});
+
+test("permission notices escape their message and keep the command outside the live status", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  f.handle.queryPermission = async () => "prompt";
+  await f.context.restoreSingleFile();
+  const html = f.context.singleFileNoticeHtml('<img src=x onerror="unsafe">');
+  assert.match(html, /class="single-file-message" role="status"/);
+  assert.match(html, /&lt;img src=x onerror=&quot;unsafe&quot;&gt;/);
+  assert.doesNotMatch(html, /<img/);
+  assert.match(
+    html,
+    /<[/]span><button[^>]*type="button"[^>]*class="single-file-permission-action"[^>]*data-workspace-action="single-file-save"[^>]*>اجازه مجدد<[/]button>/,
+  );
+  assert.equal(
+    (html.match(/data-workspace-action="single-file-save"/g) || []).length,
+    1,
+  );
+  assert.match(
+    f.context.singleFilePanel(),
+    /id="singleFileStatus"[^>]*>[\s\S]*class="single-file-permission-action"/,
+  );
+});
+
+test("inline permission command requires a real connection, permission support and an explicit permission warning", async () => {
+  const f = fixture();
+  f.context.singleFileStatus("Needs permission", { permission: true });
+  assert.doesNotMatch(f.context.singleFileNoticeHtml(), /<button/);
+  await f.context.chooseSingleFile();
+  f.context.singleFileStatus("Ordinary progress");
+  assert.doesNotMatch(f.context.singleFileNoticeHtml(), /<button/);
+  f.context.singleFileStatus("Needs permission", { permission: true });
+  assert.match(
+    f.context.singleFileNoticeHtml(),
+    /data-workspace-action="single-file-save"/,
+  );
+  const requestPermission = f.handle.requestPermission;
+  delete f.handle.requestPermission;
+  assert.doesNotMatch(f.context.singleFileNoticeHtml(), /<button/);
+  f.handle.requestPermission = requestPermission;
+  delete f.context.window.showSaveFilePicker;
+  assert.doesNotMatch(f.context.singleFileNoticeHtml(), /<button/);
+  assert.doesNotMatch(
+    f.context.singleFilePanel(),
+    /single-file-permission-action/,
+  );
+});
+
+test("permission retry requests browser permission synchronously before awaiting storage", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  let requested = false;
+  f.handle.requestPermission = () => {
+    requested = true;
+    return Promise.resolve("granted");
+  };
+  const current = f.context.singleFileCurrent;
+  f.context.singleFileCurrent = (...args) => {
+    assert.equal(requested, true);
+    return current(...args);
+  };
+  const retry = f.context.resumeSingleFile();
+  assert.equal(
+    requested,
+    true,
+    "permission request must occur in the caller's click gesture",
+  );
+  assert.equal(await retry, true);
+});
+
+test("denied inline retry preserves the last healthy file and a successful retry clears both notices", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  const before = f.contents;
+  const badge = {},
+    status = {};
+  f.context.document = {
+    getElementById: (id) =>
+      id === "singleFileBadge"
+        ? badge
+        : id === "singleFileStatus"
+          ? status
+          : null,
+    querySelector: () => null,
+  };
+  f.handle.queryPermission = async () => "prompt";
+  await f.context.restoreSingleFile();
+  assert.match(badge.innerHTML, /single-file-permission-action/);
+  assert.match(status.innerHTML, /single-file-permission-action/);
+  f.handle.requestPermission = async () => "denied";
+  assert.equal(await f.context.resumeSingleFile(), false);
+  assert.equal(f.contents, before);
+  assert.equal(f.writes, 1);
+  assert.match(badge.innerHTML, /single-file-permission-action/);
+  assert.match(status.innerHTML, /single-file-permission-action/);
+  assert.equal(badge.hidden, false);
+  f.handle.requestPermission = async () => "granted";
+  assert.equal(await f.context.resumeSingleFile(), true);
+  assert.equal(f.writes, 2);
+  assert.equal(badge.hidden, true);
+  assert.doesNotMatch(badge.innerHTML, /single-file-permission-action/);
+  assert.doesNotMatch(status.innerHTML, /single-file-permission-action/);
+});
+
+for (const errorName of ["NotAllowedError", "SecurityError"]) {
+  test(
+    errorName + " write failure offers an inline permission retry",
+    async () => {
+      const f = fixture();
+      f.handle.createWritable = async () => {
+        throw Object.assign(Error("permission needed"), { name: errorName });
+      };
+      assert.equal(await f.context.chooseSingleFile(), false);
+      assert.match(
+        f.context.singleFileNoticeHtml(),
+        /single-file-permission-action/,
+      );
+      assert.match(f.context.singleFileNoticeHtml(), /اجازه مجدد/);
+      assert.equal(f.contents, "");
+    },
+  );
+}
+
+test("disk failures do not present a misleading permission action", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  f.failWrites();
+  assert.equal(await f.context.syncSingleFile(), false);
+  assert.match(f.context.singleFileNoticeHtml(), /disk full/);
+  assert.doesNotMatch(
+    f.context.singleFileNoticeHtml(),
+    /single-file-permission-action/,
+  );
+});
+
+test("disconnect and replacement in another tab remove a stale permission action", async () => {
+  for (const disconnect of [true, false]) {
+    const f = fixture();
+    await f.context.chooseSingleFile();
+    f.handle.queryPermission = async () => "prompt";
+    await f.context.restoreSingleFile();
+    assert.match(
+      f.context.singleFileNoticeHtml(),
+      /single-file-permission-action/,
+    );
+    if (disconnect) await f.context.disableSingleFile();
+    else
+      f.context.singleFileChanged({
+        type: "single-file-changed",
+        connectionId: "other-tab",
+      });
+    assert.doesNotMatch(
+      f.context.singleFileNoticeHtml(),
+      /single-file-permission-action/,
+    );
+  }
 });

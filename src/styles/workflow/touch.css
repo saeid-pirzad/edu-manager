@@ -163,6 +163,40 @@
     line-height: 1.9;
     overflow-wrap: anywhere;
   }
+  #app .workspace-bar > #singleFileBadge:not([hidden]),
+  #modalBody #singleFileStatus.single-file-notice {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .single-file-message {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    line-height: 1.9;
+  }
+  #app #singleFileBadge > .single-file-permission-action,
+  #modalBody #singleFileStatus > .single-file-permission-action {
+    flex-shrink: 0;
+    min-width: 0;
+    min-height: 44px;
+    margin: 0;
+    padding: 8px 12px;
+    border: 1px solid #dec69b;
+    border-radius: 10px;
+    background: #fff1d6;
+    color: #795018;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.7;
+    white-space: nowrap;
+    box-shadow: none;
+  }
+  #app #singleFileBadge > .single-file-permission-action:focus-visible,
+  #modalBody #singleFileStatus > .single-file-permission-action:focus-visible {
+    outline: 2px solid #a66e0b;
+    outline-offset: 2px;
+  }
   .workspace-tool-actions {
     box-shadow: 0 8px 24px #25335c0a;
   }

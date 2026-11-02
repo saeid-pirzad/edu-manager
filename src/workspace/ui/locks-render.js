@@ -259,11 +259,11 @@ function renderV24() {
     welcome.append(footer);
   }
   if (window.showSaveFilePicker) {
-    const fileStatus = document.createElement("small");
+    const fileStatus = document.createElement("div");
     fileStatus.id = "singleFileBadge";
-    fileStatus.setAttribute("role", "status");
+    fileStatus.className = "single-file-notice";
     fileStatus.hidden = !singleFileFailure;
-    fileStatus.textContent = singleFileMessage;
+    fileStatus.innerHTML = singleFileNoticeHtml();
     // Connection details live in backups; only failures need a page notice.
     panel.append(fileStatus);
   }
