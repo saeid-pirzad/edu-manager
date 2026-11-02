@@ -55,7 +55,7 @@ async function generate() {
   let input, signature, preparedNoteScope, preparedNoteVersion;
   const buttons = [
     ...document.querySelectorAll(
-      ".periodic-build,.periodic-export-actions button",
+      ".periodic-build,[data-deputy-copy],.periodic-export-actions button",
     ),
   ];
   buttons.forEach((b) => (b.disabled = true));
@@ -158,7 +158,9 @@ async function generate() {
   } finally {
     busy = false;
     document
-      .querySelectorAll(".periodic-build,.periodic-export-actions button")
+      .querySelectorAll(
+        ".periodic-build,[data-deputy-copy],.periodic-export-actions button",
+      )
       .forEach((b) => (b.disabled = false));
   }
 }

@@ -93,9 +93,9 @@ function render(mode) {
     esc(readNote(noteKey(f))) +
     '</textarea></label><div id="periodicNoteStatus">' +
     noteWarning() +
-    `</div><button class="periodic-build" data-legacy-click="reports-periodic-render:9">تهیه گزارش ` +
+    `</div><div class="periodic-primary-actions"><button type="button" class="periodic-build" data-legacy-click="reports-periodic-render:9">تهیه گزارش ` +
     modeLabel(mode) +
-    '</button><p id="periodicError" role="alert"></p></section><div id="periodicReportOutput">';
+    '</button><button type="button" class="success periodic-deputy" data-deputy-copy data-legacy-click="reports-periodic-document:deputy">کپی برای معاون</button></div><p id="periodicError" role="alert"></p></section><div id="periodicReportOutput">';
   h +=
     last && last.signature === reportSignature()
       ? documentHtml(last.model)

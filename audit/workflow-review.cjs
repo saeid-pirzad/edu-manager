@@ -175,6 +175,13 @@ if (process.argv.includes("--help")) {
           "(" + require("./flows/annualBackupRoundtrip.cjs").toString() + ")()",
         )),
       );
+      await require("./report-export-layout.cjs")({ cdp, evaluate, cases });
+      await require("./deputy-report-action.cjs")({
+        cdp,
+        evaluate,
+        cases,
+        delay,
+      });
       await require("./report-surface-layout.cjs")({
         cdp,
         evaluate,

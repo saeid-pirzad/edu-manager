@@ -1227,7 +1227,7 @@ function documentHtml(m) {
     "<small>تهیه‌شده در " +
     esc(new Date(m.generatedAt).toLocaleString("fa-IR")) +
     "</small></header>";
-  h += `<div class="periodic-export-actions no-print"><button class="success" data-deputy-copy data-legacy-click="reports-periodic-document:deputy">کپی برای معاون</button><button data-periodic-print data-legacy-click="reports-periodic-document:0">چاپ / PDF</button><button class="ghost" data-legacy-click="reports-periodic-document:1">فایل متن</button><button class="ghost" data-legacy-click="reports-periodic-document:2">فایل JSON</button></div>`;
+  h += `<div class="periodic-export-actions no-print"><button data-periodic-print data-legacy-click="reports-periodic-document:0">چاپ / PDF</button><button class="ghost" data-legacy-click="reports-periodic-document:1">فایل متن</button><button class="ghost" data-legacy-click="reports-periodic-document:2">فایل JSON</button></div>`;
   h +=
     '<section class="periodic-summary" aria-label="خلاصه آمار گزارش">' +
     [
@@ -1604,9 +1604,9 @@ function render(mode) {
     esc(readNote(noteKey(f))) +
     '</textarea></label><div id="periodicNoteStatus">' +
     noteWarning() +
-    `</div><button class="periodic-build" data-legacy-click="reports-periodic-render:9">تهیه گزارش ` +
+    `</div><div class="periodic-primary-actions"><button type="button" class="periodic-build" data-legacy-click="reports-periodic-render:9">تهیه گزارش ` +
     modeLabel(mode) +
-    '</button><p id="periodicError" role="alert"></p></section><div id="periodicReportOutput">';
+    '</button><button type="button" class="success periodic-deputy" data-deputy-copy data-legacy-click="reports-periodic-document:deputy">کپی برای معاون</button></div><p id="periodicError" role="alert"></p></section><div id="periodicReportOutput">';
   h +=
     last && last.signature === reportSignature()
       ? documentHtml(last.model)
@@ -1719,7 +1719,7 @@ async function generate() {
   let input, signature, preparedNoteScope, preparedNoteVersion;
   const buttons = [
     ...document.querySelectorAll(
-      ".periodic-build,.periodic-export-actions button",
+      ".periodic-build,[data-deputy-copy],.periodic-export-actions button",
     ),
   ];
   buttons.forEach((b) => (b.disabled = true));
@@ -1822,7 +1822,9 @@ async function generate() {
   } finally {
     busy = false;
     document
-      .querySelectorAll(".periodic-build,.periodic-export-actions button")
+      .querySelectorAll(
+        ".periodic-build,[data-deputy-copy],.periodic-export-actions button",
+      )
       .forEach((b) => (b.disabled = false));
   }
 }
