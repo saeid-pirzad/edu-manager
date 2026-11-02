@@ -1,6 +1,7 @@
 async function flushDrafts({ strict = false } = {}) {
   if (resetBusy || connectionRetired)
     throw Error("ثبت هنگام پاک‌سازی یا تغییر بانک متوقف است.");
+  await assessmentContext.flush({ strict });
   clearTimeout(draftTimer);
   if (flushing) {
     await flushing;

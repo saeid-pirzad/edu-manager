@@ -78,6 +78,23 @@ async function synchronizeAcademicDirectoryForRead(id) {
       plans: new Map(),
     };
   });
+  if (
+    model.scheduleHasChanges &&
+    parts
+      .slice(1)
+      .some((part) =>
+        model.scheduleHasChanges(
+          parts[0].records.get("meta"),
+          part.records.get("meta"),
+        ),
+      )
+  )
+    conflicts.push({
+      year: periods[0].year,
+      code: "ACADEMIC_SCHEDULE_CONFLICT",
+      message:
+        "برنامهٔ هفتگی قدیمی نوبت‌های این سال متفاوت است؛ سوابق حفظ شدند. در برنامهٔ هفتگی، برنامهٔ درست را بررسی و یکسان‌سازی سال را تأیید کنید.",
+    });
   try {
     const layout = model.reconcileLayouts(
         parts.map((part) => part.records.get("meta").layout),

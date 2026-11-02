@@ -55,6 +55,7 @@ function gradeCell(
 }
 function applyDrafts() {
   document.querySelectorAll("[data-grade]").forEach((input) => {
+    if (assessmentContext.handles(input)) return;
     const item = drafts.get(inputKey(contextFromInput(input)));
     if (item) {
       input.value = item.value;
@@ -73,4 +74,5 @@ function applyDrafts() {
           : "pending";
     }
   });
+  assessmentContext.apply();
 }

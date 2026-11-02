@@ -111,8 +111,8 @@ async function safetyBackupFlow() {
           migrationWarnings: [],
         }),
         { schools, sessions, ...meta } = data;
-      // The peer's independent timetable must be recoverable too.
-      meta.masterSchedule[index ? "0-1-all" : "0-0-all"] = {
+      // The common annual timetable must be included in both term records.
+      meta.masterSchedule["0-0-all"] = {
         schoolId: ids.school,
         classId: ids.classroom,
         lessonId: ids.lesson,
@@ -198,7 +198,7 @@ async function safetyBackupFlow() {
     EduV24.validateFullBackup(exported);
     check(
       "SAFETY_FILE03",
-      "the actual safety download is a validated ordinary full JSON backup containing both deleted classes and their independent timetables",
+      "the actual safety download is a validated ordinary full JSON backup containing both deleted classes and their common annual timetable",
       downloads[0].name.startsWith("EduManager-safety-") &&
         [ids.first, ids.second].every(
           (period) =>

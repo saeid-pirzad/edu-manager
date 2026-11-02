@@ -60,6 +60,7 @@ function bootstrapFixture(rows, marker = null) {
     RESET_RECORD_KEY: "@installation-reset",
     RESET_EPOCH_KEY: "reset",
     allFrom: async () => rows,
+    synchronizeYearNotesScope: async () => {},
     synchronizeAcademicYearsForRead: async () => ({ changed: [] }),
     readWorkspaceSnapshot: async (id) => ({
       period: rows.find((row) => row.id === id),

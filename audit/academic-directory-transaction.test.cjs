@@ -760,3 +760,222 @@ test("undo of a shared class addition without independent peer edits remains sup
   assert.equal(f.value("second"), undefined);
   assert.equal(f.stores.undo.has("first"), false);
 });
+
+function annualScheduleFixture(options = {}) {
+  const f = fixture({ recoveredStudent: true, ...options });
+  for (const id of ["first", "second", "other-year"]) {
+    const meta = f.value(id, "meta");
+    meta.masterSchedule = {
+      "0-0-all": { schoolId: "school", classId: "class", lessonId: "lesson" },
+    };
+    meta.activeDays = [0, 1, 2, 3, 4, 5];
+    meta.periods = 6;
+    meta.settings.weekStartDate = "2026-09-19";
+    meta.settings.password = id + "-private-password";
+  }
+  const previous = clone(f.value("first", "meta"));
+  f.args.records.set("meta", clone(previous));
+  f.args.changed = [["meta", JSON.stringify(previous)]];
+  f.args.before = [{ key: "meta", value: clone(previous) }];
+  f.args.action = "ویرایش برنامهٔ هفتگی سال";
+  return { ...f, previous };
+}
+for (const [field, update] of [
+  [
+    "masterSchedule",
+    (meta) => {
+      meta.masterSchedule["1-1-all"] = {
+        schoolId: "school",
+        classId: "class",
+        lessonId: "lesson",
+      };
+    },
+  ],
+  [
+    "activeDays",
+    (meta) => {
+      meta.activeDays = [0, 2, 4];
+    },
+  ],
+  [
+    "periods",
+    (meta) => {
+      meta.periods = 7;
+    },
+  ],
+  [
+    "weekStartDate",
+    (meta) => {
+      meta.settings.weekStartDate = "2026-09-26";
+    },
+  ],
+])
+  test(
+    "annual schedule shares " +
+      field +
+      " atomically without copying term settings, grades or historical sessions",
+    async () => {
+      const f = annualScheduleFixture(),
+        before = clone(f.stores.records);
+      update(f.args.records.get("meta"));
+      f.args.changed[0][1] = JSON.stringify(f.args.records.get("meta"));
+      assert.equal(
+        f.c.EduAcademicDirectoryTransaction.hasChanges(f.args),
+        true,
+      );
+      await f.commit();
+      assert.deepEqual(
+        plain(
+          f.c.EduAcademicYearDirectory.scheduleProjection(
+            f.value("first", "meta"),
+          ),
+        ),
+        plain(
+          f.c.EduAcademicYearDirectory.scheduleProjection(
+            f.value("second", "meta"),
+          ),
+        ),
+      );
+      for (const id of ["first", "second"]) {
+        assert.deepEqual(f.value(id), before.get(id + "|class:class").value);
+        assert.deepEqual(
+          f.value(id, "session:recovered-session"),
+          before.get(id + "|session:recovered-session").value,
+        );
+        assert.deepEqual(
+          f.value(id, "session:genuine-history"),
+          before.get(id + "|session:genuine-history").value,
+        );
+        assert.equal(
+          f.value(id, "meta").settings.password,
+          id + "-private-password",
+        );
+      }
+      assert.equal(f.value("second", "meta").settings.academicTerm, "دوم");
+      assert.equal(f.stores.catalog.get("second").closed, true);
+      assert.deepEqual(
+        f.value("other-year", "meta"),
+        before.get("other-year|meta").value,
+      );
+      assert.equal(f.stores.catalog.get("first").revision, 3);
+      assert.equal(f.stores.catalog.get("second").revision, 4);
+    },
+  );
+
+test("private term settings do not accidentally become a shared schedule edit", () => {
+  const f = annualScheduleFixture();
+  f.args.records.get("meta").settings.password = "updated";
+  f.args.changed = [["meta", JSON.stringify(f.args.records.get("meta"))]];
+  assert.equal(f.c.EduAcademicDirectoryTransaction.hasChanges(f.args), false);
+});
+
+for (const field of ["same-field", "unrelated-field"])
+  test(
+    "legacy independent schedule conflict blocks a partial annual edit: " +
+      field,
+    async () => {
+      const f = annualScheduleFixture();
+      if (field === "same-field") f.value("second", "meta").activeDays = [1, 3];
+      else
+        f.value("second", "meta").masterSchedule["4-4-all"] = {
+          schoolId: "school",
+          classId: "class",
+          lessonId: "lesson",
+        };
+      f.args.records.get("meta").activeDays = [0, 2, 4];
+      const before = clone(f.stores);
+      await assert.rejects(
+        f.commit(),
+        (error) => error.code === "ACADEMIC_SCHEDULE_CONFLICT",
+      );
+      assert.deepEqual(clone(f.stores), before);
+    },
+  );
+
+test("explicit selected-schedule resolution replaces only the four annual schedule fields and publishes the source revision", async () => {
+  const f = annualScheduleFixture();
+  f.value("second", "meta").activeDays = [1, 3];
+  f.value("second", "meta").periods = 9;
+  f.value("second", "meta").settings.weekStartDate = "2026-09-26";
+  f.value("second", "meta").masterSchedule["4-4-all"] = {
+    schoolId: "school",
+    classId: "class",
+    lessonId: "lesson",
+  };
+  const before = clone(f.stores.records);
+  f.args.changed = [];
+  f.args.before = [];
+  f.args.scheduleResolution = true;
+  f.args.directoryRevisions = [...f.stores.catalog.values()]
+    .filter((row) => row.year === f.args.workspace.year)
+    .map(({ id, year, revision }) => ({ id, year, revision }));
+  assert.equal(f.c.EduAcademicDirectoryTransaction.hasChanges(f.args), true);
+  await f.commit();
+  assert.deepEqual(
+    plain(
+      f.c.EduAcademicYearDirectory.scheduleProjection(
+        f.value("second", "meta"),
+      ),
+    ),
+    plain(f.c.EduAcademicYearDirectory.scheduleProjection(f.previous)),
+  );
+  assert.equal(f.stores.catalog.get("first").revision, 3);
+  assert.equal(f.stores.catalog.get("second").revision, 4);
+  assert.equal(
+    f.value("second", "meta").settings.password,
+    "second-private-password",
+  );
+  assert.deepEqual(f.value("second"), before.get("second|class:class").value);
+  assert.deepEqual(
+    f.value("second", "session:recovered-session"),
+    before.get("second|session:recovered-session").value,
+  );
+});
+
+for (const mode of ["missing-guard", "stale-guard", "peer-put-failure"])
+  test(
+    "selected-schedule resolution preserves all stores when " + mode,
+    async () => {
+      const f = annualScheduleFixture({
+        failCompanionWrite: mode === "peer-put-failure",
+      });
+      f.value("second", "meta").activeDays = [1, 3];
+      f.args.changed = [];
+      f.args.before = [];
+      f.args.scheduleResolution = true;
+      if (mode !== "missing-guard")
+        f.args.directoryRevisions = [...f.stores.catalog.values()]
+          .filter((row) => row.year === f.args.workspace.year)
+          .map(({ id, year, revision }) => ({ id, year, revision }));
+      if (mode === "stale-guard")
+        f.args.directoryRevisions.find((row) => row.id === "second").revision--;
+      const before = clone(f.stores);
+      await assert.rejects(f.commit());
+      assert.deepEqual(clone(f.stores), before);
+      assert.deepEqual(f.args.annualChanged, []);
+    },
+  );
+
+test("normal annual schedule edits roll back source and peer together when peer storage fails", async () => {
+  const f = annualScheduleFixture({ failCompanionWrite: true }),
+    before = clone(f.stores);
+  f.args.records.get("meta").periods = 7;
+  await assert.rejects(f.commit(), /quota/);
+  assert.deepEqual(clone(f.stores), before);
+  assert.deepEqual(f.args.directorySourceUpdates, []);
+});
+
+test("undo of a shared annual schedule edit restores both programs while preserving all term histories", async () => {
+  const f = annualScheduleFixture(),
+    before = clone(f.stores.records);
+  f.args.records.get("meta").periods = 7;
+  await f.commit();
+  const current = clone(f.value("first", "meta"));
+  f.args.workspace = clone(f.stores.catalog.get("first"));
+  f.args.records.set("meta", clone(f.previous));
+  f.args.changed = [["meta", JSON.stringify(f.previous)]];
+  f.args.before = [{ key: "meta", value: current }];
+  f.args.keepUndo = false;
+  await f.commit();
+  assert.deepEqual(f.stores.records, before);
+});

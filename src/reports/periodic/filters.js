@@ -20,12 +20,12 @@ function selectScope(schoolId = "", classId = "") {
     audience: "management",
     date: localToday(),
   });
-  filterWorkspace = context().id;
+  filterWorkspace = noteYearScopeId();
   last = null;
 }
 function initialize(mode) {
   filters.mode = mode;
-  const workspaceId = context().id;
+  const workspaceId = noteYearScopeId();
   if (filterWorkspace && filterWorkspace !== workspaceId) {
     Object.assign(filters, {
       schoolId: "",
@@ -63,12 +63,12 @@ function annualPeriodOptions(field) {
   return annualPeriodList.filter((row) => row.termKind === kind);
 }
 function loadAnnualPeriodChoices() {
-  const expected = context().id;
+  const expected = noteYearScopeId();
   if (annualLoadingFor === expected) return;
   annualLoadingFor = expected;
   root.EduV24.listAnnualReportPeriods()
     .then((rows) => {
-      if (context().id !== expected || filters.mode !== "annual") return;
+      if (noteYearScopeId() !== expected || filters.mode !== "annual") return;
       annualPeriodList = rows;
       const status = document.getElementById("annualSourceStatus");
       if (!status) return;
@@ -80,7 +80,7 @@ function loadAnnualPeriodChoices() {
           : !first.length
             ? "این سال هنوز نوبت اول ندارد."
             : !second.length
-              ? "گزارش سالانه پس از شروع نوبت دوم، اطلاعات هر دو نوبت را کنار هم نمایش می‌دهد."
+              ? "ترم دوم هنوز نمره ندارد؛ گزارش سال تحصیلی با داده‌های موجود تهیه می‌شود."
               : "گزارش سالانه از نوبت اول و دوم همین سال تهیه می‌شود.";
     })
     .catch(error)

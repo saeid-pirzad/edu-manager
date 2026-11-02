@@ -81,6 +81,7 @@ async function bootstrapV24() {
     workspace = loaded.period;
     db = loaded.data;
     committed = loaded.records;
+    await synchronizeYearNotesScope();
     storageBlocked = false;
     storageProblem = "";
 

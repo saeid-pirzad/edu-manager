@@ -52,7 +52,7 @@ function isPreparedCurrent(prepared) {
 async function generate() {
   if (busy) return null;
   busy = true;
-  let input, signature;
+  let input, signature, preparedNoteScope, preparedNoteVersion;
   const buttons = [
     ...document.querySelectorAll(
       ".periodic-build,.periodic-export-actions button",
@@ -61,78 +61,48 @@ async function generate() {
   buttons.forEach((b) => (b.disabled = true));
   try {
     input = inputSnapshot();
-    if (noteReadErrors.has(context().id) && !notes.has(noteKey(filters)))
+    if (noteReadErrors.has(noteWorkspaceId()) && !notes.has(noteKey(filters)))
       throw Error(
         "توضیحات ذخیره‌شده این گزارش قابل خواندن نیست؛ پیش از تهیه گزارش آن را بررسی کنید.",
       );
-    signature = JSON.stringify(input);
+    const inputSettings = (value) =>
+      JSON.stringify(
+        Object.fromEntries(
+          Object.entries(value).filter(([key]) => key !== "note"),
+        ),
+      );
+    signature = inputSettings(input);
+    preparedNoteScope = noteScopeSignature();
+    preparedNoteVersion = noteEditGeneration;
+    const refreshPreparedInput = () => {
+      const current = inputSnapshot(),
+        scope = noteScopeSignature();
+      if (
+        signature !== inputSettings(current) ||
+        preparedNoteVersion !== noteEditGeneration ||
+        (scope === preparedNoteScope && current.note !== input.note)
+      )
+        throw Error("تنظیمات گزارش تغییر کرده است؛ دوباره گزارش را تهیه کنید.");
+      if (noteReadErrors.has(noteWorkspaceId()) && !notes.has(noteKey(filters)))
+        throw Error(
+          "توضیحات ذخیره‌شده این گزارش قابل خواندن نیست؛ پیش از تهیه گزارش آن را بررسی کنید.",
+        );
+      input.note = current.note;
+      preparedNoteScope = scope;
+    };
     const alert = document.getElementById("periodicError");
     if (alert) alert.textContent = "";
     const snapshot = await root.EduV24.prepareReportSnapshot({
       annual: input.mode === "annual",
+      yearWide: true,
       periodIds: {
         first: input.annualFirstId,
         second: input.annualSecondId,
       },
     });
-    if (signature !== JSON.stringify(inputSnapshot()))
-      throw Error("تنظیمات گزارش تغییر کرده است؛ دوباره گزارش را تهیه کنید.");
+    refreshPreparedInput();
     const model = build(snapshot.data, input);
-    if (model.audience === "parent" && input.mode !== "annual") {
-      const c = snapshot.data.schools
-        .find((s) => s.id === input.schoolId)
-        .classes.find((c) => c.id === input.classId);
-      for (const l of c.lessons || []) {
-        try {
-          const r = calcStudentLesson(c, l, input.studentId, snapshot.data);
-          model.currentGrades.push({
-            lessonName: l.name,
-            method:
-              l.gradingPolicy?.method ||
-              (l.gradeMode === "kardanesh" ? "dual" : "modular"),
-            practical: r.practical ?? null,
-            theory: r.theory ?? null,
-            final:
-              typeof r.final === "number" && Number.isFinite(r.final)
-                ? root.EduV24.finalText(r)
-                : "—",
-            status:
-              r.reason ||
-              (r.final === null || r.final === undefined
-                ? "ناقص"
-                : gradeStatus(r)),
-            modules: (r.modules || []).map((m) => {
-              const g = ownScoreRecord(
-                l.poudmans.find((p) => p.id === m.id)?.podScores,
-                input.studentId,
-              );
-              return {
-                name: m.name,
-                continuous: g.m ?? null,
-                competency: g.c ?? null,
-                final: m.final,
-                passed: m.passed,
-                complete: m.complete,
-                reason: m.reason || "",
-              };
-            }),
-            policy: l.gradingPolicy
-              ? l.gradingPolicy.confirmed
-                ? "تأییدشده توسط کاربر"
-                : "پیش‌نویس تأییدنشده"
-              : "قواعد ثبت‌شده درس",
-          });
-        } catch {
-          model.currentGrades.push({
-            lessonName: l.name,
-            final: "—",
-            status: "نیازمند بررسی",
-            policy: "محاسبه در دسترس نیست",
-          });
-        }
-      }
-    }
-    if (input.mode === "annual") {
+    if (input.mode === "annual" || model.audience === "parent") {
       model.technicalGrades = root.EduV24.annualTechnicalRows(
         snapshot.parts,
         input.schoolId,
@@ -151,6 +121,10 @@ async function generate() {
         label: part.period.displayTerm || part.period.term,
         revision: part.period.revision,
       }));
+      if (input.mode !== "annual")
+        model.definitions.push(
+          "نمرات چهار مرحله و پودمان‌ها، وضعیت فعلی کل سال تحصیلی در زمان تهیه گزارش‌اند؛ بازهٔ انتخابی فقط بر جلسات و فعالیت‌های کلاس اعمال می‌شود.",
+        );
       model.definitions.push(
         "نمره هر مرحله طبق تنظیمات همان نوبت محاسبه می‌شود؛ نهایی سالانه میانگین برابر هر چهار مرحله است. نمره ناقص، صفر محسوب نمی‌شود.",
       );
@@ -161,9 +135,15 @@ async function generate() {
         "کلاس و هنرجو با شناسه مشترک بین نوبت‌ها مرتبط می‌شوند؛ شباهت نام، دلیل ادغام افراد نیست.",
       );
     }
+    model.periods = snapshot.parts.map((part) => ({
+      id: part.period.id,
+      term: part.period.term,
+      label: part.period.displayTerm || part.period.term,
+      revision: part.period.revision,
+    }));
     await root.EduV24.assertReportSnapshot(snapshot.context);
-    if (signature !== JSON.stringify(inputSnapshot()))
-      throw Error("تنظیمات گزارش تغییر کرده است؛ دوباره گزارش را تهیه کنید.");
+    refreshPreparedInput();
+    model.note = input.note;
     last = {
       signature: reportSignature(),
       context: snapshot.context,

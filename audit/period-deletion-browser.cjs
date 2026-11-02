@@ -85,16 +85,29 @@ async function deletionFlow() {
         '#modalBody [data-assessment-final="' + student.id + '"]',
       ).textContent === "14.00",
     );
+    const stages = [
+      ...document.querySelectorAll(
+        '#modalBody .assessment-term-navigation [data-workspace-action="assessment-stage"]',
+      ),
+    ];
     check(
-      "DUAL_NAVIGATION_SEPARATE",
-      !!document.querySelector("#modalBody .assessment-term-navigation") &&
-        document.querySelectorAll(
-          "#modalBody .assessment-stage-navigation button",
-        ).length === 2,
+      "DUAL_FOUR_STAGE_NAVIGATION",
+      JSON.stringify(
+        stages.map((button) => [button.dataset.term, button.dataset.stage]),
+      ) ===
+        JSON.stringify([
+          ["اول", "midterm"],
+          ["اول", "final"],
+          ["دوم", "midterm"],
+          ["دوم", "final"],
+        ]) &&
+        stages.filter(
+          (button) => button.getAttribute("aria-pressed") === "true",
+        ).length === 1,
     );
     document
       .querySelector(
-        '#modalBody .assessment-stage-navigation [data-stage="final"]',
+        '#modalBody [data-workspace-action="assessment-stage"][data-term="اول"][data-stage="final"]',
       )
       .click();
     await wait(() =>

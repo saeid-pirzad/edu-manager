@@ -424,13 +424,17 @@ async function switchPeriod(id) {
       throw Error(
         "بانک هنگام جابه‌جایی تغییر کرد؛ صفحه را دوباره بارگذاری کنید.",
       );
+    await assessmentContext.dispose({ abandon: true });
+    // Authentication belongs to the installed workspace, never its predecessor.
+    // Revoke it synchronously before publishing protected destination data.
+    isAuthenticated = false;
     workspace = loaded.period;
     db = loaded.data;
     committed = loaded.records;
+    await synchronizeYearNotesScope();
     blocked = false;
     storageBlocked = false;
     drafts.clear();
-    isAuthenticated = false;
     state = {
       view: "schools",
       schoolId: null,

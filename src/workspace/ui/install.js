@@ -14,6 +14,7 @@ function installUI() {
     if (
       busy ||
       drafts.size ||
+      assessmentContext.hasDrafts() ||
       draftRecoveryFailed ||
       draftWritesPending ||
       hasRecordEditorChanges() ||
@@ -26,7 +27,10 @@ function installUI() {
     }
   });
   window.addEventListener("pagehide", () => {
-    if (ready) storeDrafts();
+    if (ready) {
+      storeDrafts();
+      assessmentContext.persist().catch(() => {});
+    }
     tabClaimed = false;
     channel?.close();
   });
@@ -52,7 +56,7 @@ function installUI() {
     if (overlay.classList.contains("hidden")) return;
     if (event.key === "Escape") {
       event.preventDefault();
-      if (drafts.size) {
+      if (drafts.size || assessmentContext.hasDrafts()) {
         flushDrafts({ strict: true })
           .then(() => closeModal())
           .catch(handleError);
@@ -99,6 +103,9 @@ function installUI() {
       }
       if (tabMessage(message)) return;
       window.EduPeriodicReports?.workspaceChanged?.(message);
+      assessmentContext.workspaceChanged(message);
+      invalidateYearNotesScope(message);
+      void synchronizeYearNotesScope().catch(() => {});
       if (
         workspace &&
         message.workspace === workspace.id &&

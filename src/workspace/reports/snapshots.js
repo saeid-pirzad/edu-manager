@@ -57,7 +57,7 @@ function assertLiveWorkspace(live, context) {
 }
 async function assertReportSnapshot(context) {
   assertWorkspaceContext(context);
-  if (busy || drafts.size)
+  if (busy || drafts.size || assessmentContext.hasDrafts())
     throw Error(
       "ثبت یا ویرایش ناتمام وجود دارد؛ گزارش را پس از ذخیره دوباره تهیه کنید.",
     );
@@ -77,6 +77,18 @@ async function assertReportSnapshot(context) {
     throw Error(
       "اطلاعات یکی از نوبت‌های گزارش سالانه تغییر کرده است؛ گزارش را دوباره تهیه کنید.",
     );
+  if (context.yearScope) {
+    const periods = selectYearActivityPeriods(catalog, {}, workspace);
+    if (
+      periods.length !== context.members.length ||
+      periods.some(
+        (period) => !context.members.some((member) => member.id === period.id),
+      )
+    )
+      throw Error(
+        "ساختار سال تحصیلی تغییر کرده است؛ گزارش را دوباره تهیه کنید.",
+      );
+  }
   if (context.karnamehYear) {
     const periods = selectKarnamehPeriods(catalog, {}, workspace);
     if (
@@ -87,7 +99,7 @@ async function assertReportSnapshot(context) {
     )
       throw Error("نوبت‌های سال تغییر کرده‌اند؛ کارنامه را دوباره تهیه کنید.");
   }
-  if (busy || drafts.size)
+  if (busy || drafts.size || assessmentContext.hasDrafts())
     throw Error(
       "اطلاعات هنگام آماده‌سازی خروجی تغییر کرد؛ گزارش را دوباره تهیه کنید.",
     );
@@ -184,6 +196,17 @@ async function readAnnualRecordSets(
   assertWorkspaceContext(context);
   return { periods, recordSets };
 }
+function selectYearActivityPeriods(catalog, unused, active) {
+  const kind = active.termKind || academicTermKind(active.term);
+  if (!["first", "second"].includes(kind)) {
+    const period = catalog.find(
+      (row) => row.id === active.id && row.year === active.year,
+    );
+    if (!period) throw Error("اطلاعات سال تحصیلی برای گزارش موجود نیست.");
+    return [period];
+  }
+  return selectKarnamehPeriods(catalog, unused, active);
+}
 function selectKarnamehPeriods(catalog, unused, active) {
   const groups = ["first", "second"].map((kind) =>
     catalog.filter(
@@ -266,6 +289,7 @@ function annualSessionCopy(part, session) {
     id: part.period.id + ":" + session.id,
     academicTerm: part.period.term,
     sourcePeriodId: part.period.id,
+    sourceSessionId: session.id,
     ...(!Array.isArray(session.roster)
       ? {
           roster: clone(classroom?.students || []),
@@ -282,7 +306,10 @@ function annualSessionCopy(part, session) {
   };
 }
 
-async function prepareAnnualReportSnapshot(periodIds = {}) {
+async function prepareAnnualReportSnapshot(
+  periodIds = {},
+  { partial = false, interactive = true } = {},
+) {
   assertWorkspaceReadable();
   const origin = workspace.id;
   await flushDrafts({ strict: true });
@@ -294,19 +321,34 @@ async function prepareAnnualReportSnapshot(periodIds = {}) {
   const { periods, recordSets } = await readAnnualRecordSets(
     context,
     periodIds,
+    partial ? selectYearActivityPeriods : selectAnnualPeriods,
   );
   const parts = periods.map((period, index) => ({
     period: {
       ...period,
-      term: index === 0 ? "اول" : "دوم",
-      displayTerm: index === 0 ? "اول" : "دوم",
+      term:
+        { first: "اول", second: "دوم" }[
+          period.termKind || academicTermKind(period.term)
+        ] || period.term,
+      displayTerm:
+        { first: "اول", second: "دوم" }[
+          period.termKind || academicTermKind(period.term)
+        ] || period.term,
     },
     data: decodeWorkspaceRecords(recordSets[index], { workspaceId: period.id })
       .data,
   }));
   for (const part of parts) {
     const password = part.data.settings.password;
-    if (password && part.period.id !== workspace.id) {
+    if (
+      password &&
+      part.period.id !== workspace.id &&
+      !(isAuthenticated && password === db.settings.password)
+    ) {
+      if (!interactive)
+        throw Error(
+          "سوابق بخشی از سال با رمز دیگری محافظت شده‌اند؛ برای مشاهدهٔ همهٔ جلسات، دسترسی آن بخش را تأیید کنید.",
+        );
       const supplied = prompt(
         "برای افزودن نوبت " +
           part.period.term +
@@ -320,8 +362,10 @@ async function prepareAnnualReportSnapshot(periodIds = {}) {
         );
     }
   }
+  for (const part of parts) permitYearNoteAccess(part.period, part.data);
+  await synchronizeYearNotesScope();
   // Annual identity labels consistently use the latest term, not the open tab.
-  const data = clone(parts[1].data);
+  const data = clone(parts.at(-1).data);
   data.sessions = [];
   for (const part of parts) {
     for (const school of part.data.schools) {
@@ -353,9 +397,11 @@ async function prepareAnnualReportSnapshot(periodIds = {}) {
       ...part.data.sessions.map((session) => annualSessionCopy(part, session)),
     );
   }
-  data.settings.academicTerm = "اول و دوم";
+  data.settings.academicTerm =
+    parts.length > 1 ? "اول و دوم" : parts[0].period.term;
   const guarded = {
     ...context,
+    ...(partial ? { yearScope: workspace.year } : {}),
     members: periods.map((row) => ({
       id: row.id,
       revision: row.revision,
@@ -391,7 +437,13 @@ async function listAnnualReportPeriods() {
       };
     });
 }
-async function prepareReportSnapshot({ annual = false, periodIds } = {}) {
+async function prepareReportSnapshot({
+  annual = false,
+  yearWide = false,
+  periodIds,
+} = {}) {
+  if (yearWide)
+    return prepareAnnualReportSnapshot(periodIds, { partial: true });
   if (annual) return prepareAnnualReportSnapshot(periodIds);
   assertWorkspaceReadable();
   const origin = workspace.id;
@@ -411,7 +463,7 @@ async function prepareReportSnapshot({ annual = false, periodIds } = {}) {
   ]);
   await done;
   assertLiveWorkspace(live, context);
-  if (busy || drafts.size)
+  if (busy || drafts.size || assessmentContext.hasDrafts())
     throw Error("ویرایش تازه‌ای ثبت شده است؛ گزارش را دوباره تهیه کنید.");
   const data = decodeWorkspaceRecords(
     rows.filter((row) => row.workspace === context.id),

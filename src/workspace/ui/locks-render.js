@@ -1,13 +1,13 @@
 function syncControlLocks() {
-  const readonly =
+  const baseReadonly =
     fileMode ||
     blocked ||
     connectionRetired ||
     resetBusy ||
     !ready ||
     periodLoading ||
-    (db.settings.password && !isAuthenticated) ||
-    !!workspace?.closed;
+    (db.settings.password && !isAuthenticated);
+  const readonly = baseReadonly || !!workspace?.closed;
   const modalBody = document.getElementById("modalBody");
   const modalWrite =
     modalBody &&
@@ -34,7 +34,15 @@ function syncControlLocks() {
       (modalWrite && field && modalBody.contains(control));
     if (mutation && control.dataset.gregorianTarget === undefined)
       control.dataset.mutating = "1";
-    setControlLock(control, "workspace-readonly", mutation && readonly);
+    const assessmentInput = assessmentContext.handles(control)
+      ? control
+      : control.matches(".grade-clear")
+        ? control.parentElement?.querySelector("[data-assessment-context]")
+        : null;
+    const controlReadonly = assessmentInput
+      ? baseReadonly || assessmentContext.readOnly(assessmentInput)
+      : readonly;
+    setControlLock(control, "workspace-readonly", mutation && controlReadonly);
     setControlLock(
       control,
       "workspace-saving",
@@ -62,15 +70,27 @@ function syncControlLocks() {
         : "ویرایش فعلاً متوقف است؛ پیام وضعیت ذخیره‌سازی را بررسی کنید.";
     }
   }
+  const assessmentOnly =
+    !!modalBody?.querySelector("[data-assessment-context]") &&
+    ![...modalBody.querySelectorAll("[data-mutating]")].some(
+      (element) =>
+        !element.matches("[data-grade],.grade-clear") &&
+        element.tagName !== "FORM",
+    );
+  const modalReadonly = assessmentOnly
+    ? [...modalBody.querySelectorAll("[data-assessment-context]")].every(
+        (input) => assessmentContext.readOnly(input),
+      )
+    : readonly;
   let modalNote = modalBody?.querySelector(".standalone-lock-note");
-  if (readonly && modalWrite && !modalNote) {
+  if (modalReadonly && modalWrite && !modalNote) {
     modalNote = document.createElement("p");
     modalNote.className = "control-lock-note standalone-lock-note";
     modalNote.setAttribute("role", "status");
     modalBody.prepend(modalNote);
   }
   if (modalNote) {
-    modalNote.hidden = !readonly || !modalWrite;
+    modalNote.hidden = !modalReadonly || !modalWrite;
     modalNote.textContent = workspace?.closed
       ? "ترم بسته است؛ این تنظیمات فقط نمایش داده می‌شوند."
       : "ویرایش فعلاً متوقف است؛ پیام وضعیت ذخیره‌سازی را بررسی کنید.";
@@ -170,9 +190,9 @@ function workspaceToolsHtml() {
     button(
       "periods",
       "calendar",
-      "سال تحصیلی و دو ترم",
+      "سال تحصیلی",
       "",
-      "ترم اول و دوم همین سال و کارنامه‌های نهایی",
+      "سال فعال، چهار مرحلهٔ ارزشیابی و کارنامه‌های نهایی",
     ) +
     button(
       "undo",
@@ -233,13 +253,7 @@ function renderV24() {
       esc(
         String(workspace.year).replace(/\d/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[digit]),
       ) +
-      "</bdi></span><span>ترم: <bdi>" +
-      esc(
-        { first: "اول", second: "دوم" }[
-          workspace.termKind || academicTermKind(workspace.term)
-        ] || workspace.term,
-      ) +
-      "</bdi></span></div>";
+      "</bdi></span><span>دو نوبت · چهار مرحلهٔ ارزشیابی</span></div>";
     const about = welcome.querySelector(".schools-about");
     if (about) footer.append(about);
     welcome.append(footer);
@@ -260,9 +274,17 @@ function renderV24() {
       "سوابق منتقل‌شده نیازمند بررسی: " + db.migrationWarnings.join(" | ");
     app.append(info);
   }
+  if (state.view === "master") {
+    const tools = document.createElement("details");
+    tools.className = "card no-print";
+    tools.innerHTML =
+      '<summary>بررسی اختلاف برنامهٔ قدیمی</summary><p class="muted">اگر برنامه‌های ترم‌های فایل قدیمی متفاوت‌اند، پس از بررسی، برنامهٔ نمایش‌داده‌شده را برای کل همین سال انتخاب کنید. پیش از جایگزینی نسخهٔ ایمنی کامل ذخیره می‌شود.</p><button type="button" class="ghost" data-mutating="1" data-workspace-action="apply-academic-schedule">یکسان‌سازی برنامهٔ سال تحصیلی</button>';
+    app.append(tools);
+  }
   if (fileMode) fileModeBanner(app);
   courseUI.activateCreate();
   applyDrafts();
   lockControls();
   paintStatus();
+  void refreshYearLessonSessions();
 }

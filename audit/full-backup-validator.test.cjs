@@ -206,3 +206,96 @@ test("records are grouped once rather than rescanned for every period", () => {
     c.structuredClone = structuredClone;
   }
 });
+
+for (const name of ["events", "reports", "backups"])
+  test(
+    "full-backup preview rejects duplicate explicit " +
+      name +
+      " keys before restore",
+    () => {
+      const value = fixture();
+      const row =
+        name === "events"
+          ? { ...value.stores.events[0], id: 1 }
+          : name === "reports"
+            ? { id: "duplicate", workspace: "first" }
+            : { id: "duplicate", workspace: "first", db: {} };
+      value.stores[name] = [row, structuredClone(row)];
+      assert.throws(
+        () => validate(value),
+        (error) =>
+          error.message.includes(name) && error.message.includes("تکراری"),
+      );
+    },
+  );
+
+test("full-backup history permits legacy missing IDs and keeps numeric and string keys distinct", () => {
+  const value = fixture(),
+    event = value.stores.events[0];
+  value.stores.events = [
+    structuredClone(event),
+    structuredClone(event),
+    { ...structuredClone(event), id: 1 },
+    { ...structuredClone(event), id: "1" },
+    { ...structuredClone(event), id: 0 },
+    { ...structuredClone(event), id: ["legacy", 1] },
+  ];
+  assert.equal(validate(value).length, 1);
+});
+
+for (const [first, second] of [
+  [-0, 0],
+  [
+    ["legacy", 1],
+    ["legacy", 1],
+  ],
+])
+  test(
+    "full-backup history detects equivalent IndexedDB keys: " +
+      JSON.stringify(first),
+    () => {
+      const value = fixture(),
+        event = value.stores.events[0];
+      value.stores.events = [
+        { ...event, id: first },
+        { ...event, id: second },
+      ];
+      assert.throws(() => validate(value), /events.*تکراری/);
+    },
+  );
+
+for (const name of ["events", "backups"])
+  test("full-backup preview refuses invalid " + name + " store keys", () => {
+    for (const key of [
+      null,
+      true,
+      {},
+      [],
+      [null],
+      [undefined],
+      NaN,
+      Infinity,
+    ]) {
+      if (Array.isArray(key) && key.length === 0) continue; // Empty arrays are valid IndexedDB keys.
+      const value = fixture(),
+        row =
+          name === "events"
+            ? { ...value.stores.events[0], id: key }
+            : { id: key, workspace: "first", db: {} };
+      value.stores[name] = [row];
+      assert.throws(
+        () => validate(value),
+        (error) =>
+          error.message.includes(name) && error.message.includes("نامعتبر"),
+      );
+    }
+  });
+
+test("ordinary backups require a usable key and preserve valid numeric legacy keys", () => {
+  const invalid = fixture();
+  invalid.stores.backups = [{ workspace: "first", db: {} }];
+  assert.throws(() => validate(invalid), /backups.*نامعتبر/);
+  const value = fixture();
+  value.stores.backups = [{ id: 4, workspace: "first", db: {} }];
+  assert.equal(validate(value).length, 1);
+});

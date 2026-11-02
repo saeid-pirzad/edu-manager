@@ -259,15 +259,57 @@ test("competing first/second writers cannot both claim an initially empty physic
   );
   assert.equal(f.stores.events.size, 1);
 });
-test("other academic years and different classes in the peer term do not block a new slot", async () => {
+test("other academic years do not block a new slot", async () => {
   const f = fixture({
-    first: [session("a", { classId: "another-class" })],
+    first: [],
     extra: [
       { id: "old", year: "1404-1405", sessions: [session("old-session")] },
     ],
   });
   await f.commit("second", session("b"));
   assert.ok(f.stores.records.has("second|session:b"));
+});
+test("different-class and different-school peer collisions roll back every store", async () => {
+  for (const extra of [
+    { classId: "another-class" },
+    { classId: "another-class", schoolId: "another-school" },
+  ]) {
+    const f = fixture({ first: [session("a", extra)] }),
+      before = JSON.stringify(
+        Object.entries(f.stores).map(([name, rows]) => [name, [...rows]]),
+      );
+    await assert.rejects(
+      f.commit("second", session("b")),
+      (error) => error.code === "ACADEMIC_SESSION_SLOT_CONFLICT",
+    );
+    assert.equal(
+      JSON.stringify(
+        Object.entries(f.stores).map(([name, rows]) => [name, [...rows]]),
+      ),
+      before,
+    );
+  }
+});
+test("competing terms with different classes still commit only one teacher date/bell", async () => {
+  const f = fixture(),
+    results = await Promise.allSettled([
+      f.commit("first", session("a")),
+      f.commit(
+        "second",
+        session("b", { classId: "another-class", schoolId: "another-school" }),
+      ),
+    ]);
+  assert.equal(results.filter((row) => row.status === "fulfilled").length, 1);
+  assert.equal(
+    results.find((row) => row.status === "rejected").reason.code,
+    "ACADEMIC_SESSION_SLOT_CONFLICT",
+  );
+  assert.equal(
+    [...f.stores.records.values()].filter((row) =>
+      row.logical.startsWith("session:"),
+    ).length,
+    1,
+  );
 });
 test("legacy duplicate slots allow attendance updates and exact historical undo", async () => {
   const a = session("a"),

@@ -47,13 +47,9 @@ globalThis.EduSessionSlots = Object.freeze({
             (part.id === workspaceId && key === logical)
           )
             continue;
-          if (
-            session.classId === value.classId &&
-            session.date === value.date &&
-            session.period === value.period
-          ) {
+          if (session.date === value.date && session.period === value.period) {
             const error = Error(
-              "تداخل جلسه: برای همین کلاس، تاریخ و زنگ قبلاً جلسه ثبت شده است؛ ترم و جلسهٔ قبلی را بررسی یا تاریخ و زنگ را اصلاح کنید. هیچ تغییری ذخیره نشد.",
+              "تداخل جلسه: در این تاریخ و زنگ، جلسهٔ دیگری در همین سال تحصیلی ثبت شده است؛ کلاس، ترم و جلسهٔ قبلی را بررسی یا تاریخ و زنگ را اصلاح کنید. هیچ تغییری ذخیره نشد.",
             );
             error.code = "ACADEMIC_SESSION_SLOT_CONFLICT";
             throw error;

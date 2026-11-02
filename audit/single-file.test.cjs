@@ -52,6 +52,7 @@ function fixture() {
     confirm: () => true,
     esc: String,
     setStatus() {},
+    validateFullBackup() {},
     uid: () => "file-" + Math.random(),
     broadcast() {},
     recordFullBackupDelivery: (value) => deliveries.push(value),
@@ -568,4 +569,31 @@ test("permission denial pauses automatic saving without claiming success", async
   assert.equal(vm.runInContext("singleFileTimer", f.context), null);
   assert.match(vm.runInContext("singleFileMessage", f.context), /اجازه/);
   assert.equal(f.writes, 1);
+});
+
+test("an unrestorable full snapshot never opens a stream or overwrites the last confirmed automatic backup", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  const before = f.contents,
+    writes = f.writes,
+    deliveries = f.deliveries.length;
+  let opened = 0;
+  f.handle.createWritable = async () => {
+    opened++;
+    throw Error("must not open");
+  };
+  f.context.validateFullBackup = () => {
+    throw Error("damaged historical report");
+  };
+  assert.equal(await f.context.syncSingleFile(), false);
+  assert.equal(opened, 0);
+  assert.equal(f.contents, before);
+  assert.equal(f.writes, writes);
+  assert.equal(f.deliveries.length, deliveries);
+  assert.equal(vm.runInContext("singleFileTimer", f.context), null);
+  assert.equal(vm.runInContext("singleFileFailure", f.context), true);
+  assert.match(
+    vm.runInContext("singleFileMessage", f.context),
+    /damaged historical report/,
+  );
 });

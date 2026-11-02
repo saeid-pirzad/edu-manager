@@ -32,7 +32,8 @@ function fixture() {
     document: {
       addEventListener: (type, handler) => listeners.set(type, handler),
     },
-    openPeriods: () => calls.push("periods"),
+    openAcademicYear: () => calls.push("periods"),
+    openPeriods: () => calls.push("term-records"),
     saveStudent: () => calls.push("student"),
     switchPeriod: (key) => calls.push(key),
     openUndoModal: () => calls.push("undo"),

@@ -47,6 +47,7 @@ module.exports = async function gradeEvents() {
     input.getAttribute("aria-invalid") === "false" &&
       pod.podScores[sid]?.m === 3,
   );
+  await EduV24.test.settle();
   const originalConfirm = window.confirm;
   try {
     window.confirm = () => true;
@@ -60,6 +61,7 @@ module.exports = async function gradeEvents() {
     attempt++
   )
     await new Promise((resolve) => setTimeout(resolve, 10));
+  await EduV24.test.settle();
   check(
     "GE04",
     "delegated clear button removes only the paired grade after confirmation",

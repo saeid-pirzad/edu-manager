@@ -3,6 +3,7 @@
   let registration,
     installEvent,
     pendingUpdate = false,
+    preparingUpdate = false,
     offlineReady = false;
   let updateMessage = "",
     updateTimer;
@@ -186,9 +187,41 @@
     worker.postMessage({ type: "OFFLINE_STATUS" }, [channel.port2]);
   }
 
+  let updateLock = null;
+  function lockUpdateSurface(focus) {
+    updateLock = {
+      focus,
+      surfaces: ["app", "modal", "uiBottomNav"]
+        .map((id) => document.getElementById(id))
+        .filter(Boolean)
+        .map((element) => ({ element, inert: element.inert })),
+      controls: ["mobileHelp", "mobileInstall"]
+        .map((id) => document.getElementById(id))
+        .filter(Boolean)
+        .map((element) => ({ element, disabled: element.disabled })),
+    };
+    for (const { element } of updateLock.surfaces) element.inert = true;
+    for (const { element } of updateLock.controls) element.disabled = true;
+  }
+  function unlockUpdateSurface() {
+    if (!updateLock) return;
+    const previous = updateLock;
+    updateLock = null;
+    for (const { element, inert } of previous.surfaces) element.inert = inert;
+    for (const { element, disabled } of previous.controls)
+      element.disabled = disabled;
+    if (
+      previous.focus?.isConnected !== false &&
+      !previous.focus?.closest?.("[inert]")
+    )
+      previous.focus?.focus?.({ preventScroll: true });
+  }
+
   async function update() {
-    if (pendingUpdate) return;
-    const button = document.getElementById("mobileUpdate");
+    if (pendingUpdate || preparingUpdate) return;
+    preparingUpdate = true;
+    const button = document.getElementById("mobileUpdate"),
+      previousFocus = document.activeElement;
     try {
       if (!registration?.waiting) {
         await registration?.update();
@@ -202,7 +235,12 @@
       button.disabled = true;
       updateMessage = "در حال ذخیره ویرایش‌ها پیش از به‌روزرسانی…";
       paint();
-      await window.EduV24?.flushDrafts({ strict: true });
+      const prepare = window.EduV24?.prepareForUpdate;
+      if (typeof prepare !== "function")
+        throw Error(
+          "برنامه برای ذخیرهٔ امن پیش از به‌روزرسانی آماده نیست؛ پس از آماده‌شدن دوباره تلاش کنید.",
+        );
+      await prepare();
       if (
         !confirm(
           "ویرایش‌های این پنجره ذخیره شدند. نسخه جدید در همین پنجره باز شود؟",
@@ -213,12 +251,17 @@
         paint();
         return;
       }
+      // Confirmation may schedule another mutation. Drain the installation
+      // again before asking the worker to replace this execution context.
+      await prepare();
+      lockUpdateSurface(previousFocus);
       pendingUpdate = true;
       updateMessage = "در حال اعمال نسخه جدید…";
       paint();
       updateTimer = setTimeout(() => {
         pendingUpdate = false;
         button.disabled = false;
+        unlockUpdateSurface();
         updateMessage =
           "اعمال نسخه کامل نشد؛ برنامه را با اینترنت دوباره باز کنید و تلاش کنید.";
         paint();
@@ -228,8 +271,11 @@
       clearTimeout(updateTimer);
       pendingUpdate = false;
       button.disabled = false;
+      unlockUpdateSurface();
       updateMessage = e.message || "ابتدا ویرایش‌های ذخیره‌نشده را بررسی کنید.";
       paint();
+    } finally {
+      preparingUpdate = false;
     }
   }
 
@@ -273,6 +319,7 @@
         clearTimeout(updateTimer);
         pendingUpdate = false;
         document.getElementById("mobileUpdate").disabled = false;
+        unlockUpdateSurface();
         updateMessage = "به‌روزرسانی متوقف شد: برنامه در پنجره دیگری باز است.";
         paint();
         if (window.showModal)

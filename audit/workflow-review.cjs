@@ -26,6 +26,12 @@ if (process.argv.includes("--help")) {
   main({
     stage: "4-adversarial-workflow-review",
     async runExtra({ cdp, evaluate, cases, root, ws, delay }) {
+      const evaluateFlow = evaluate;
+      evaluate = async (expression) => {
+        const label = expression.match(/^\((?:async )?function ([\w]+)/)?.[1];
+        if (label) console.log("Review flow: " + label);
+        return evaluateFlow(expression);
+      };
       await require("./browser-ready.cjs")({ cdp, evaluate, delay });
       cases.push(
         ...(await evaluate(
@@ -158,6 +164,22 @@ if (process.argv.includes("--help")) {
         cases,
         delay,
         ws,
+      });
+      cases.push(
+        ...(await evaluate(
+          "(" + require("./flows/annualActivityView.cjs").toString() + ")()",
+        )),
+      );
+      cases.push(
+        ...(await evaluate(
+          "(" + require("./flows/annualBackupRoundtrip.cjs").toString() + ")()",
+        )),
+      );
+      await require("./report-surface-layout.cjs")({
+        cdp,
+        evaluate,
+        cases,
+        delay,
       });
       cases.push(
         ...(await require("./pwa-upgrade.cjs")({

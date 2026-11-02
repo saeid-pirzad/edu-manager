@@ -88,12 +88,17 @@ module.exports = async function academicBackupLifecycle() {
       .click();
     for (
       let attempt = 0;
-      attempt < 200 && EduV24.getReportContext().id === first;
+      attempt < 200 &&
+      (EduV24.getReportContext().id === first ||
+        !EduV24.getReportContext().ready);
       attempt++
     )
       await new Promise((resolve) => setTimeout(resolve, 10));
-    if (EduV24.getReportContext().id === first)
-      throw Error("The fixed second-term action did not finish");
+    if (
+      EduV24.getReportContext().id === first ||
+      !EduV24.getReportContext().ready
+    )
+      throw Error("The fixed second-term action did not finish loading");
     const second = EduV24.getReportContext().id,
       secondClass = db.schools[0].classes[0],
       secondLesson = secondClass.lessons[0];
@@ -239,29 +244,29 @@ module.exports = async function academicBackupLifecycle() {
         const model = await EduPeriodicReports.generate();
         check(
           "TERM_SCOPE_" + mode,
-          "the selected second term is explicit and first-term sessions are not merged into " +
+          "all sessions in the selected year remain visible in " +
             mode +
             " reports",
-          model?.summary.sessions === 0 &&
-            model.academicTerm === "دوم" &&
+          model?.summary.sessions === 1 &&
+            model.academicTerm === "اول و دوم" &&
             document
               .querySelector(".periodic-controls")
-              ?.textContent.includes("فقط ترم دوم") &&
-            EduPeriodicReports.documentHtml(model).includes("ترم دوم") &&
-            EduPeriodicReports.textReport(model).includes("ترم: دوم") &&
-            EduPeriodicReports.deputyReport(model).includes("ترم: دوم") &&
-            JSON.parse(JSON.stringify(model)).academicTerm === "دوم",
+              ?.textContent.includes("همهٔ جلسات") &&
+            EduPeriodicReports.documentHtml(model).includes("ترم اول و دوم") &&
+            EduPeriodicReports.textReport(model).includes("ترم: اول و دوم") &&
+            EduPeriodicReports.deputyReport(model).includes("ترم: اول و دوم") &&
+            JSON.parse(JSON.stringify(model)).academicTerm === "اول و دوم",
         );
         const printed = await EduPeriodicReports.output("print");
         check(
           "TERM_SCOPE_PRINT_" + mode,
-          "print/PDF retains the explicit selected term for " +
+          "print/PDF retains the full academic-year scope for " +
             mode +
             " reports",
           printed &&
             document
               .getElementById("printRoot")
-              ?.textContent.includes("ترم دوم"),
+              ?.textContent.includes("ترم اول و دوم"),
         );
       }
     } finally {

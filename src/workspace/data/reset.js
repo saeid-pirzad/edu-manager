@@ -30,6 +30,7 @@ function forgetInstallation() {
   pauseSingleFile();
   singleFile = null;
   clearTimeout(draftTimer);
+  assessmentContext.dispose({ abandon: true });
   drafts.clear();
   draftGeneration++;
   writeFailureGeneration++;

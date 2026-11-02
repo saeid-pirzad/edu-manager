@@ -27,15 +27,16 @@
   border-bottom: 1px dotted #b7bfce;
 }
 .periodic-footer .report-basis {
-  border: 1px solid #e7e8f0;
-  border-radius: 11px;
-  background: #fafafe;
+  border: 0;
+  border-top: 1px solid #e7e8f0;
+  border-radius: 0;
+  background: transparent;
 }
 .report-basis > summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 14px;
+  padding: 12px 0;
   cursor: pointer;
   list-style: none;
   color: #59617b;
@@ -53,7 +54,7 @@
   transform: rotate(180deg);
 }
 .periodic-footer .report-basis ul {
-  margin: 0 14px 14px;
+  margin: 0 0 14px;
 }
 
 .periodic-session .report-session-heading {
@@ -163,16 +164,19 @@
   margin: 0;
 }
 .report-session-students > li {
-  padding: 12px;
-  border: 1px solid #edf0f6;
-  border-radius: 10px;
-  background: #fff;
+  padding: 12px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   break-inside: avoid;
 }
 .report-session-students {
   display: grid;
-  gap: 8px;
+  gap: 0;
   margin-top: 14px;
+}
+.report-session-students > li + li {
+  border-top: 1px solid #edf0f6;
 }
 .report-session-student-heading {
   display: flex;
@@ -194,9 +198,10 @@
   margin-top: 10px;
 }
 .report-session-scores li {
-  padding: 9px 11px;
-  border-radius: 9px;
-  background: #f8f9fc;
+  padding: 8px 10px;
+  border-inline-start: 2px solid #e7e3dc;
+  border-radius: 0;
+  background: transparent;
   font-size: 0.76rem;
   overflow-wrap: anywhere;
 }
@@ -302,9 +307,11 @@
   .periodic-summary {
     display: grid;
     grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 6px;
+    gap: 8px;
     max-width: 100%;
-    padding: 5px 2px 10px;
+    margin-block: 18px;
+    border-block: 1px solid #e7e3dc;
+    padding: 12px 0;
   }
   .periodic-summary > div {
     display: flex;
@@ -312,10 +319,10 @@
     flex-direction: column;
     align-items: center;
     gap: 4px;
-    padding: 11px 4px;
-    border: 1px solid var(--summary-border, #e1e5f0);
-    border-radius: 14px;
-    background: var(--summary-bg, #f3f5fb);
+    padding: 8px 4px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     color: var(--summary-ink, #475569);
   }
   .periodic-summary [data-summary-status="sessions"] {
@@ -350,7 +357,7 @@
     color: inherit;
   }
   .periodic-summary span {
-    font-size: 0.69rem;
+    font-size: 0.75rem;
     color: inherit;
     display: inline-flex;
     align-items: center;
@@ -378,13 +385,13 @@
     margin-top: 24px;
   }
   .periodic-session {
-    padding: 16px 18px;
-    margin-block: 16px;
-    border: 1px solid #e5e4f0;
-    border-inline-start: 3px solid #b9a9db;
-    border-radius: 15px;
-    background: linear-gradient(135deg, #faf9fd 0%, #fff 55%);
-    box-shadow: 0 3px 12px #29375004;
+    padding: 20px 0;
+    margin-block: 20px;
+    border: 0;
+    border-top: 1px solid #e5e4f0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
   }
   .periodic-session h4 {
     font-size: 0.85rem;
@@ -404,8 +411,9 @@
     line-height: 2;
   }
   .periodic-warnings {
-    border: 1px solid #f2dfbc;
-    border-radius: 12px;
+    border: 0;
+    border-inline-start: 3px solid #e5bd75;
+    border-radius: 0;
     background: #fffaf0;
     padding: 14px;
     font-size: 0.75rem;
@@ -453,26 +461,26 @@
       font-size: 0.94rem;
     }
     .periodic-summary {
-      gap: 3px;
-      padding-inline: 0;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px 6px;
+      padding-block: 12px;
     }
     .periodic-summary > div {
-      padding: 8px 2px;
-      border-radius: 9px;
+      padding: 6px 2px;
     }
     .periodic-summary strong {
-      font-size: clamp(0.88rem, 3.5vw, 1.15rem);
+      font-size: 1.25rem;
     }
     .periodic-summary span {
-      font-size: clamp(0.55rem, 1.8vw, 0.66rem);
+      font-size: 0.75rem;
       display: block;
-      min-height: 3.2em;
+      min-height: 0;
     }
     .periodic-summary span::before {
       display: none;
     }
     .periodic-session {
-      padding: 12px;
+      padding-block: 18px;
     }
     .periodic-export-actions {
       display: grid;
@@ -602,18 +610,18 @@
   margin: 5px 0 16px;
 }
 .report-class-group {
-  border: 1px solid #dfe5ef;
-  border-radius: 17px;
-  margin-block: 16px;
-  overflow: hidden;
-  background: #fff;
+  border: 0;
+  border-radius: 0;
+  margin-block: 20px;
+  min-width: 0;
+  background: transparent;
 }
 .report-class-heading {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px;
-  background: #f6f7fd;
+  padding: 12px 0;
+  background: transparent;
   border-bottom: 1px solid #e5e9f3;
 }
 .report-class-heading > div {
@@ -654,7 +662,7 @@
   grid-template-columns: minmax(140px, 1fr) minmax(0, 2fr);
   gap: 16px;
   align-items: center;
-  padding: 14px 16px;
+  padding: 16px 0;
 }
 .report-student-row + .report-student-row {
   border-top: 1px solid #edf0f5;
@@ -688,8 +696,8 @@
   align-items: center;
   gap: 4px;
   padding: 7px 3px;
-  border-radius: 9px;
-  background: #f5f7fa;
+  border-radius: 0;
+  background: transparent;
   color: #526176;
 }
 .report-metric dt {
@@ -720,23 +728,24 @@
 }
 @media screen and (max-width: 700px) {
   .report-class-heading {
-    padding: 13px;
+    padding: 12px 0;
     gap: 10px;
   }
   .report-student-list {
-    padding: 10px;
-    background: #f8f9fc;
+    padding: 0;
+    background: transparent;
   }
   .report-student-row {
     grid-template-columns: minmax(0, 1fr);
     gap: 10px;
-    padding: 13px;
-    background: #fff;
-    border: 1px solid #e5e9f0;
-    border-radius: 12px;
+    padding: 16px 0;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
   }
   .report-student-row + .report-student-row {
-    margin-top: 9px;
+    margin-top: 0;
+    border-top: 1px solid #edf0f5;
   }
   .report-student-metrics {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -745,7 +754,7 @@
   .report-metric {
     flex-direction: row;
     justify-content: space-between;
-    padding: 7px 9px;
+    padding: 7px 0;
   }
   .report-metric dt {
     font-size: 10px;

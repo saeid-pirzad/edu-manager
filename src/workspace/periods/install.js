@@ -92,6 +92,13 @@ async function installWorkspace(data, details) {
       existing = store.getAll();
     existing.onsuccess = () => {
       try {
+        if (
+          details.newAcademicYear &&
+          existing.result.some((row) => row.year === catalog.year)
+        )
+          throw Error(
+            "این سال در پنجرهٔ دیگری ایجاد شده است؛ فهرست سال‌ها را بازخوانی کنید.",
+          );
         // The copied roster and course definitions must still belong to the
         // exact source snapshot. Checking only after insertion is too late.
         if (source || details.requireSequence) {
@@ -126,6 +133,20 @@ async function installWorkspace(data, details) {
           duplicate = true;
           tx.abort();
           return;
+        }
+        if (details.assessmentSource) {
+          const source = existing.result.find(
+            (row) => row.id === details.assessmentSource.id,
+          );
+          if (
+            !source ||
+            source.year !== catalog.year ||
+            source.revision !== details.assessmentSource.revision ||
+            source.year !== details.assessmentSource.year
+          )
+            throw Error(
+              "اطلاعات سال هنگام آماده‌سازی مرحله تغییر کرد؛ مرحلهٔ جدید ساخته نشد.",
+            );
         }
         if (details.requireSequence) {
           const first = validateAcademicTransition(

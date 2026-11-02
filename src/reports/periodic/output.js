@@ -92,6 +92,7 @@ root.EduPeriodicReports = {
     filters.author = String(value).slice(0, 200);
   },
   retryNotes,
+  hasPendingNotes: () => notes.size > 0,
   getDrafts,
   restoreDrafts,
   resetDrafts,

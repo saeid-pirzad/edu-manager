@@ -284,6 +284,7 @@ function syncSingleFile() {
     try {
       if (!(await singleFileCurrent(target))) return false;
       const snapshot = await snapshotInstallation();
+      validateFullBackup(snapshot);
       const json = JSON.stringify(snapshot, null, 2);
       if (
         !ready ||

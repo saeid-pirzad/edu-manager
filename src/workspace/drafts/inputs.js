@@ -14,6 +14,7 @@ function contextFromInput(input) {
 }
 
 function gradeInput(input) {
+  if (assessmentContext.handles(input)) return assessmentContext.input(input);
   if (resetBusy || connectionRetired || periodLoading) return;
   if (db.settings.password && !isAuthenticated) return;
   const item = contextFromInput(input),
@@ -42,6 +43,7 @@ function gradeInput(input) {
 }
 
 function clearGrade(input) {
+  if (assessmentContext.handles(input)) return assessmentContext.clear(input);
   if (resetBusy || connectionRetired || periodLoading) return;
   if (db.settings.password && !isAuthenticated) return;
   const item = contextFromInput(input);

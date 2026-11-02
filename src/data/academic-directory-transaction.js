@@ -3,15 +3,25 @@
 // A directory edit belongs to the academic year. All term records, revision
 // checks and history updates are committed by the same IndexedDB transaction.
 globalThis.EduAcademicDirectoryTransaction = Object.freeze({
-  hasChanges({ records, changed, removed, before }) {
+  hasChanges({
+    records,
+    changed,
+    removed,
+    before,
+    scheduleResolution = false,
+  }) {
     const model = globalThis.EduAcademicYearDirectory;
     if (!model || !records?.has("meta")) return false;
-    if (removed.some((key) => key.startsWith("class:"))) return true;
+    if (scheduleResolution || removed.some((key) => key.startsWith("class:")))
+      return true;
     return changed.some(([key, json]) => {
       const previous = before.find((row) => row.key === key)?.value;
       const current = JSON.parse(json);
       return key === "meta"
-        ? model.layoutHasChanges(previous?.layout || [], current.layout || [])
+        ? model.layoutHasChanges(
+            previous?.layout || [],
+            current.layout || [],
+          ) || !!model.scheduleHasChanges?.(previous, current)
         : key.startsWith("class:") &&
             (model.hasChanges(previous, current) ||
               globalThis.EduAcademicYearCourses?.hasChanges(previous, current));
@@ -280,7 +290,7 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
                 );
             if (!valid || signature(directoryRevisions) !== signature(family)) {
               const error = Error(
-                "فهرست یکی از نوبت‌های سال پس از تهیهٔ پشتیبان ایمنی تغییر کرده است؛ حذف انجام نشد. صفحه را دوباره بارگذاری کنید.",
+                "فهرست یکی از نوبت‌های سال پس از تهیهٔ پشتیبان ایمنی تغییر کرده است؛ عملیات انجام نشد. صفحه را دوباره بارگذاری کنید.",
               );
               error.code = "WORKSPACE_CONFLICT";
               throw error;
@@ -308,6 +318,11 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
     }
 
     function apply(family, live, year, term, loaded) {
+      nextCatalog = live;
+      if (options.scheduleResolution && directoryRevisions === null)
+        throw Error(
+          "برای یکسان‌سازی برنامهٔ سال، ابتدا پشتیبان کامل و نسخهٔ نوبت‌ها را بررسی کنید.",
+        );
       if (recoveredUndo !== null) {
         const signature = (rows) =>
           JSON.stringify(
@@ -337,6 +352,12 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
       const previousLayout = sourceOld.get("meta").layout,
         currentLayout = sourceNext.get("meta").layout,
         layoutChanged = model.layoutHasChanges(previousLayout, currentLayout),
+        scheduleChanged =
+          !!options.scheduleResolution ||
+          !!model.scheduleHasChanges?.(
+            sourceOld.get("meta"),
+            sourceNext.get("meta"),
+          ),
         classPlans = changed
           .filter(([key]) => key.startsWith("class:"))
           .map(([key]) => ({
@@ -512,6 +533,16 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
         const old = loaded.get(period.id),
           next = new Map([...old].map(([key, value]) => [key, copy(value)])),
           peerMeta = next.get("meta");
+        if (scheduleChanged)
+          Object.assign(
+            peerMeta,
+            model.mirrorSchedule(
+              sourceOld.get("meta"),
+              sourceNext.get("meta"),
+              peerMeta,
+              { replace: !!options.scheduleResolution },
+            ),
+          );
         if (layoutChanged)
           peerMeta.layout = model.mirrorLayout(
             previousLayout,
@@ -692,6 +723,20 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
               throw error;
             }
           }
+      if (scheduleChanged)
+        for (const part of prepared)
+          if (
+            model.scheduleHasChanges(
+              sourceNext.get("meta"),
+              part.next.get("meta"),
+            )
+          ) {
+            const error = Error(
+              "برنامهٔ هفتگی نوبت‌های سال متفاوت است؛ برای انتخاب صریح برنامهٔ درست از «یکسان‌سازی برنامهٔ سال تحصیلی» استفاده کنید.",
+            );
+            error.code = "ACADEMIC_SCHEDULE_CONFLICT";
+            throw error;
+          }
       validate(sourceNext, live.id);
       const sessionSlots = globalThis.EduSessionSlots,
         sessionChanges = sessionSlots?.changes({
@@ -763,10 +808,21 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
                 };
               })
           : null;
-      const at = new Date().toISOString();
+      const at = new Date().toISOString(),
+        resolutionChanged =
+          !!options.scheduleResolution &&
+          prepared.some(
+            (part) => part.plan.changed.length || part.plan.removed.length,
+          );
       for (const part of prepared) {
-        const plan = part.plan;
-        if (!plan.changed.length && !plan.removed.length) continue;
+        const plan = part.plan,
+          isSource = part.period.id === live.id;
+        if (
+          !plan.changed.length &&
+          !plan.removed.length &&
+          !(isSource && resolutionChanged)
+        )
+          continue;
         for (const [logical, json] of plan.changed)
           tx.objectStore("records").put({
             key: part.period.id + "|" + logical,
@@ -776,19 +832,18 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
           });
         for (const logical of plan.removed)
           tx.objectStore("records").delete(part.period.id + "|" + logical);
-        const isSource = part.period.id === live.id,
-          updated = {
-            ...part.period,
-            ...(isSource
-              ? {
-                  year,
-                  term,
-                  termKind: live.termKind || academicTermKind(live.term),
-                }
-              : {}),
-            revision: part.period.revision + 1,
-            updatedAt: at,
-          };
+        const updated = {
+          ...part.period,
+          ...(isSource
+            ? {
+                year,
+                term,
+                termKind: live.termKind || academicTermKind(live.term),
+              }
+            : {}),
+          revision: part.period.revision + 1,
+          updatedAt: at,
+        };
         if (!Number.isSafeInteger(updated.revision))
           throw Error("شمارهٔ نسخهٔ اطلاعات قابل افزایش نیست.");
         tx.objectStore("catalog").put(updated);
@@ -796,7 +851,11 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
           workspace: updated.id,
           revision: updated.revision,
           at,
-          action: isSource ? action : "همگام‌سازی فهرست مشترک سال تحصیلی",
+          action: isSource
+            ? action
+            : scheduleChanged
+              ? "همگام‌سازی برنامهٔ هفتگی سال تحصیلی"
+              : "همگام‌سازی فهرست مشترک سال تحصیلی",
           changes: plan.changes,
         });
         // A source-only undo cannot reconstruct a removed companion

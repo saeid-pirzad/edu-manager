@@ -376,6 +376,7 @@ function forgetInstallation() {
   pauseSingleFile();
   singleFile = null;
   clearTimeout(draftTimer);
+  assessmentContext.dispose({ abandon: true });
   drafts.clear();
   draftGeneration++;
   writeFailureGeneration++;
@@ -841,6 +842,23 @@ async function synchronizeAcademicDirectoryForRead(id) {
       plans: new Map(),
     };
   });
+  if (
+    model.scheduleHasChanges &&
+    parts
+      .slice(1)
+      .some((part) =>
+        model.scheduleHasChanges(
+          parts[0].records.get("meta"),
+          part.records.get("meta"),
+        ),
+      )
+  )
+    conflicts.push({
+      year: periods[0].year,
+      code: "ACADEMIC_SCHEDULE_CONFLICT",
+      message:
+        "برنامهٔ هفتگی قدیمی نوبت‌های این سال متفاوت است؛ سوابق حفظ شدند. در برنامهٔ هفتگی، برنامهٔ درست را بررسی و یکسان‌سازی سال را تأیید کنید.",
+    });
   try {
     const layout = model.reconcileLayouts(
         parts.map((part) => part.records.get("meta").layout),
@@ -1043,6 +1061,7 @@ async function commitRecords(
     allowClosed = false,
     keepUndo = true,
     directoryRevisions,
+    scheduleResolution = false,
   } = {},
   historicalUndo = null,
 ) {
@@ -1092,7 +1111,7 @@ async function commitRecords(
     committed,
     { replace },
   );
-  if (!changed.length && !removed.length) return;
+  if (!changed.length && !removed.length && !scheduleResolution) return;
   // Keep legacy dates readable/editable, but never introduce a new out-of-year
   // session or move an existing session to a different out-of-year date.
   const academicYear =
@@ -1132,6 +1151,7 @@ async function commitRecords(
       historicalRoster,
       directorySourceUpdates,
       directoryRevisions,
+      scheduleResolution,
       recoveredUndo: historicalUndo?.recoveredPeers,
       restoredSessionRecords: historicalRecords,
     });
@@ -1336,6 +1356,13 @@ async function installWorkspace(data, details) {
       existing = store.getAll();
     existing.onsuccess = () => {
       try {
+        if (
+          details.newAcademicYear &&
+          existing.result.some((row) => row.year === catalog.year)
+        )
+          throw Error(
+            "این سال در پنجرهٔ دیگری ایجاد شده است؛ فهرست سال‌ها را بازخوانی کنید.",
+          );
         // The copied roster and course definitions must still belong to the
         // exact source snapshot. Checking only after insertion is too late.
         if (source || details.requireSequence) {
@@ -1370,6 +1397,20 @@ async function installWorkspace(data, details) {
           duplicate = true;
           tx.abort();
           return;
+        }
+        if (details.assessmentSource) {
+          const source = existing.result.find(
+            (row) => row.id === details.assessmentSource.id,
+          );
+          if (
+            !source ||
+            source.year !== catalog.year ||
+            source.revision !== details.assessmentSource.revision ||
+            source.year !== details.assessmentSource.year
+          )
+            throw Error(
+              "اطلاعات سال هنگام آماده‌سازی مرحله تغییر کرد؛ مرحلهٔ جدید ساخته نشد.",
+            );
         }
         if (details.requireSequence) {
           const first = validateAcademicTransition(
@@ -1519,6 +1560,154 @@ function academicBootstrapPreferences(
       null;
   return { year: anchor, preferredId: selected?.id };
 }
+// Source: src/workspace/periods/year-editor.js
+let academicYearEditing = null,
+  academicYearSaving = false;
+async function openAcademicYear() {
+  assertWorkspaceReadable();
+  await flushDrafts({ strict: true });
+  await writer;
+  const origin = captureWorkspaceContext(),
+    database = connection,
+    rows = await allFrom("catalog");
+  assertWorkspaceContext(origin);
+  if (connection !== database) throw Error("اتصال سال تغییر کرده است.");
+  const years = [...new Set(rows.map((row) => row.year))].sort().reverse();
+  const yearButtons = years
+    .map((year) => {
+      const candidates = rows.filter((row) => row.year === year),
+        first = candidates.filter(
+          (row) => (row.termKind || academicTermKind(row.term)) === "first",
+        ),
+        second = candidates.filter(
+          (row) => (row.termKind || academicTermKind(row.term)) === "second",
+        ),
+        selected =
+          year === workspace.year
+            ? workspace
+            : first.length === 1
+              ? first[0]
+              : second.length === 1
+                ? second[0]
+                : null;
+      return (
+        '<button type="button" class="ghost" data-workspace-action="open-academic-year" data-key="' +
+        esc(selected?.id || "") +
+        '"' +
+        (!selected || year === workspace.year ? " disabled" : "") +
+        ">" +
+        esc(year) +
+        (year === workspace.year ? " · سال فعال" : "") +
+        "</button>"
+      );
+    })
+    .join("");
+  const openTerms = rows.filter(
+    (row) =>
+      row.year === workspace.year &&
+      !row.closed &&
+      ["first", "second"].includes(row.termKind || academicTermKind(row.term)),
+  );
+  const continuation =
+    workspace.closed &&
+    openTerms.length === 1 &&
+    openTerms[0].id !== workspace.id
+      ? '<section class="period-management"><h4>ادامهٔ کار در همین سال</h4><p class="period-intro">بخش فعلی برای حفظ کارنامه و نمرات بسته است. برای ثبت حضور و فعالیت‌های جدید، بخش باز همین سال را انتخاب کنید.</p><button type="button" data-workspace-action="open-academic-year" data-key="' +
+        esc(openTerms[0].id) +
+        '">ادامهٔ ثبت روزانه در همین سال</button></section>'
+      : "";
+  const nextStart = Number(workspace.year.split("-")[0]) + 1;
+  const opened = showModal(
+    "سال تحصیلی",
+    '<div class="period-hub academic-year-hub"><div class="record-editor-context"><span>سال فعال</span><h4><bdi>' +
+      esc(workspace.year) +
+      "</bdi></h4><p>مدرسه‌ها، کلاس‌ها، هنرجویان، درس‌ها و برنامهٔ هفتگی در تمام سال مشترک‌اند.</p></div>" +
+      '<p class="period-intro">میان‌ترم اول، پایان‌ترم اول، میان‌ترم دوم و پایان‌ترم دوم را داخل دفتر نمرهٔ همان درس انتخاب کنید؛ برای ادامهٔ کار نیازی به ساخت یا بستن ترم نیست.</p>' +
+      continuation +
+      '<section class="period-management"><h4>سال‌های ثبت‌شده</h4><div class="row period-actions">' +
+      yearButtons +
+      "</div></section>" +
+      '<details class="period-list"><summary>ایجاد سال تحصیلی جدید</summary><form class="record-editor" data-workspace-submit="create-academic-year" novalidate>' +
+      '<label class="course-field">سال تحصیلی<input id="newAcademicYear" name="year" inputmode="numeric" dir="ltr" required value="' +
+      nextStart +
+      "-" +
+      (nextStart + 1) +
+      '" aria-describedby="academicYearHelp academicYearError"></label>' +
+      '<p id="academicYearHelp" class="muted">سال جدید با فهرست خالی شروع می‌شود؛ تمام اطلاعات سال‌های قبلی در برنامه و پشتیبان کامل باقی می‌ماند.</p><p id="academicYearError" role="alert"></p><div class="record-editor-actions"><button type="submit" data-mutating="1">ایجاد سال جدید</button></div></form></details>' +
+      '<details class="period-list"><summary>کارنامه‌های ثابت و قفل نمرات نوبت</summary><p class="period-intro">بستن نوبت اختیاری است و برای ثبت کارنامهٔ ثابت و قفل‌کردن نمرات آن به‌کار می‌رود.</p><button type="button" class="ghost" data-workspace-action="term-records">مدیریت کارنامه‌های ثابت</button></details></div>',
+  );
+  if (opened !== false)
+    academicYearEditing = {
+      ...origin,
+      connection: database,
+      node: document.getElementById("newAcademicYear"),
+    };
+}
+async function createAcademicYear() {
+  if (academicYearSaving) return false;
+  const editing = academicYearEditing,
+    form = editing?.node?.form;
+  if (
+    !form?.isConnected ||
+    document.getElementById("modal").classList.contains("hidden")
+  )
+    throw Error("فرم سال جدید باز نیست.");
+  academicYearSaving = true;
+  const finish = beginRecordEditorSave(form);
+  try {
+    assertWorkspaceContext(editing);
+    if (connection !== editing.connection) throw Error("اتصال سال تغییر کرد.");
+    const year = EduAcademicYear.normalize(editing.node.value);
+    await flushDrafts({ strict: true });
+    await writer;
+    assertWorkspaceContext(editing);
+    if (
+      academicYearEditing !== editing ||
+      !form.isConnected ||
+      connection !== editing.connection
+    )
+      throw Error("فرم سال تغییر کرد؛ دوباره باز کنید.");
+    const rows = await allFrom("catalog");
+    assertWorkspaceContext(editing);
+    if (rows.some((row) => row.year === year))
+      throw Error(
+        "این سال قبلاً ایجاد شده است؛ آن را از فهرست سال‌ها باز کنید.",
+      );
+    const data = v24DefaultDB();
+    data.settings.academicYear = year;
+    data.settings.academicTerm = "اول";
+    const created = await installWorkspace(data, {
+      year,
+      term: "اول",
+      newAcademicYear: true,
+    });
+    finish();
+    rememberRecordEditor(form);
+    academicYearEditing = null;
+    await switchPeriod(created.id);
+    setStatus(
+      "سال تحصیلی ایجاد شد؛ مدرسه و کلاس‌های این سال را اضافه کنید.",
+      "saved",
+    );
+    scheduleSingleFile();
+    return true;
+  } catch (error) {
+    if (form.isConnected)
+      form.querySelector("#academicYearError").textContent = error.message;
+    else handleError(error);
+    return false;
+  } finally {
+    academicYearSaving = false;
+    finish();
+  }
+}
+async function openStoredAcademicYear(id) {
+  assertWorkspaceReadable();
+  const row = await readRecord("catalog", id);
+  if (!row) throw Error("سال انتخاب‌شده دیگر موجود نیست.");
+  await switchPeriod(id);
+  rememberAcademicYear(row.year);
+}
 // Source: src/workspace/periods/academic-years.js
 // Canonicalize equivalent year labels before grouping terms. The detached
 // snapshot and one guarded write transaction preserve all historical values.
@@ -1572,6 +1761,26 @@ async function synchronizeAcademicYearsForRead() {
     if (rows.size) plans.set(name, rows);
   }
   if (!plans.size) return { changed: [] };
+  // Recovered-name undo guards are revision references too. A guard-only
+  // correction belongs to its owner, even when that owner was already canonical.
+  let expanded = true;
+  while (expanded) {
+    expanded = false;
+    for (const undo of normalized.undo)
+      if (
+        catalog.has(undo.id) &&
+        !affected.has(undo.id) &&
+        Array.isArray(undo.recoveredPeers) &&
+        undo.recoveredPeers.some(
+          (peer) =>
+            affected.has(peer.id) &&
+            peer.revision === catalog.get(peer.id)?.revision,
+        )
+      ) {
+        affected.add(undo.id);
+        expanded = true;
+      }
+  }
   const at = new Date().toISOString(),
     changed = [],
     catalogPlans = plans.get("catalog") || new Map();
@@ -1587,10 +1796,29 @@ async function synchronizeAcademicYearsForRead() {
     const current = normalized.catalog.find((row) => row.id === id);
     catalogPlans.set(id, { ...current, revision, updatedAt: at });
     changed.push({ workspace: id, revision });
-    const undo = normalized.undo.find((row) => row.id === id);
-    if (undo && undo.revision === period.revision) {
+  }
+  for (const undo of normalized.undo) {
+    let updated = false;
+    const old = catalog.get(undo.id),
+      next = catalogPlans.get(undo.id);
+    if (next && undo.revision === old.revision) {
+      undo.revision = next.revision;
+      updated = true;
+    }
+    for (const peer of Array.isArray(undo.recoveredPeers)
+      ? undo.recoveredPeers
+      : []) {
+      const oldPeer = catalog.get(peer.id),
+        nextPeer = catalogPlans.get(peer.id);
+      // A stale peer reference must never become executable after migration.
+      if (nextPeer && peer.revision === oldPeer.revision) {
+        peer.revision = nextPeer.revision;
+        updated = true;
+      }
+    }
+    if (updated) {
       const undoPlans = plans.get("undo") || new Map();
-      undoPlans.set(id, { ...undo, revision });
+      undoPlans.set(undo.id, undo);
       plans.set("undo", undoPlans);
     }
   }
@@ -1740,6 +1968,7 @@ async function bootstrapV24() {
     workspace = loaded.period;
     db = loaded.data;
     committed = loaded.records;
+    await synchronizeYearNotesScope();
     storageBlocked = false;
     storageProblem = "";
 
@@ -1996,6 +2225,7 @@ function contextFromInput(input) {
 }
 
 function gradeInput(input) {
+  if (assessmentContext.handles(input)) return assessmentContext.input(input);
   if (resetBusy || connectionRetired || periodLoading) return;
   if (db.settings.password && !isAuthenticated) return;
   const item = contextFromInput(input),
@@ -2024,6 +2254,7 @@ function gradeInput(input) {
 }
 
 function clearGrade(input) {
+  if (assessmentContext.handles(input)) return assessmentContext.clear(input);
   if (resetBusy || connectionRetired || periodLoading) return;
   if (db.settings.password && !isAuthenticated) return;
   const item = contextFromInput(input);
@@ -2063,6 +2294,7 @@ function findClass(id) {
 async function flushDrafts({ strict = false } = {}) {
   if (resetBusy || connectionRetired)
     throw Error("ثبت هنگام پاک‌سازی یا تغییر بانک متوقف است.");
+  await assessmentContext.flush({ strict });
   clearTimeout(draftTimer);
   if (flushing) {
     await flushing;
@@ -2266,6 +2498,7 @@ function gradeCell(
 }
 function applyDrafts() {
   document.querySelectorAll("[data-grade]").forEach((input) => {
+    if (assessmentContext.handles(input)) return;
     const item = drafts.get(inputKey(contextFromInput(input)));
     if (item) {
       input.value = item.value;
@@ -2284,6 +2517,7 @@ function applyDrafts() {
           : "pending";
     }
   });
+  assessmentContext.apply();
 }
 // Source: src/workspace/grading/events.js
 function filterAssessmentRows(root) {
@@ -2738,85 +2972,908 @@ function annualTechnicalRows(parts, schoolId, classId, studentId = "") {
     }
   return rows;
 }
+// Source: src/workspace/grading/assessment-term.js
+// Missing assessment stages extend the current year without changing the open
+// workspace or closing another stage. Existing catalog identities stay intact.
+const assessmentTermRequests = new Map();
+async function ensureAcademicAssessmentTerm(kind) {
+  if (!["first", "second"].includes(kind))
+    throw Error("مرحلهٔ سال تحصیلی معتبر نیست.");
+  assertWorkspaceReadable();
+  const year = workspace.year,
+    key = year + "|" + kind;
+  if (assessmentTermRequests.has(key)) return assessmentTermRequests.get(key);
+  const operation = (async () => {
+    const origin = captureWorkspaceContext(),
+      database = connection;
+    await writer.catch(() => {});
+    assertWorkspaceContext(origin);
+    const rows = await allFrom("catalog");
+    assertWorkspaceContext(origin);
+    if (connection !== database)
+      throw Error("اتصال سال تحصیلی تغییر کرده است.");
+    const matches = rows.filter(
+      (row) =>
+        row.year === year &&
+        (row.termKind || academicTermKind(row.term)) === kind,
+    );
+    if (matches.length > 1)
+      throw Error(
+        "اطلاعات قدیمی این سال چند نسخه از مرحلهٔ انتخاب‌شده دارد؛ ابتدا فایل معتبر را بازیابی کنید.",
+      );
+    if (matches.length) return matches[0];
+    const family = rows.filter((row) => row.year === year);
+    if (
+      !["first", "second"].includes(
+        workspace.termKind || academicTermKind(workspace.term),
+      ) ||
+      family.some(
+        (row) =>
+          !["first", "second"].includes(
+            row.termKind || academicTermKind(row.term),
+          ),
+      )
+    )
+      throw Error(
+        "ترم اطلاعات قدیمی این سال مشخص نیست؛ پیش از ایجاد مرحله، فایل معتبر را بازیابی کنید.",
+      );
+    const source = await readWorkspaceSnapshot(origin.id);
+    assertWorkspaceContext(origin);
+    if (
+      source.period.revision !== origin.revision ||
+      source.period.year !== year ||
+      connection !== database
+    )
+      throw Error(
+        "اطلاعات سال هنگام آماده‌سازی مرحله تغییر کرد؛ دوباره انتخاب کنید.",
+      );
+    const data = clone(source.data);
+    data.sessions = [];
+    data.migrationWarnings = [];
+    data.settings.academicTerm = kind === "first" ? "اول" : "دوم";
+    for (const school of data.schools)
+      for (const classroom of school.classes)
+        for (const lesson of classroom.lessons) {
+          lesson.kardaneshScores = {};
+          for (const pod of lesson.poudmans || []) {
+            if (lesson.gradingPolicy?.method !== "modular") pod.podScores = {};
+            for (const unit of pod.units || []) unit.unitScores = {};
+          }
+        }
+    const created = await installWorkspace(normalizeDB(data), {
+      year,
+      term: data.settings.academicTerm,
+      assessmentSource: { id: origin.id, revision: origin.revision, year },
+    });
+    broadcast({
+      workspace: created.id,
+      revision: created.revision,
+      annualAssessment: true,
+    });
+    return created;
+  })();
+  assessmentTermRequests.set(key, operation);
+  try {
+    return await operation;
+  } finally {
+    if (assessmentTermRequests.get(key) === operation)
+      assessmentTermRequests.delete(key);
+  }
+}
+// Source: src/workspace/grading/assessment-context.js
+// A selected assessment is an editing context inside the current academic
+// year. Its storage term never becomes the application's active workspace.
+const assessmentContext = (() => {
+  let selected = null,
+    selectionGeneration = 0,
+    flushingAssessment = null;
+  const fields = new Set([
+    "practical",
+    "theory",
+    "midtermPractical",
+    "midtermTheory",
+  ]);
+  const scopeSuffix = (context) =>
+    "-assessment-" +
+    context.classroom.id.length +
+    "_" +
+    context.classroom.id +
+    "-" +
+    context.lesson.id.length +
+    "_" +
+    context.lesson.id +
+    "-" +
+    context.stage;
+  const stageField = (context, field) =>
+    fields.has(field) &&
+    field.startsWith("midterm") === (context.stage === "midterm") &&
+    !(
+      context.lesson.gradingPolicy?.subjectType === "general" &&
+      ["practical", "midtermPractical"].includes(field)
+    );
+  const owner = (context) => context.owner;
+  const storageKey = (context) =>
+    "Edu24.drafts." + context.period.id + "." + owner(context);
+  const entryKey = (item) => item.sid + "|" + item.field;
+  const getClass = (data, schoolId, classId) =>
+    data.schools
+      .find((school) => school.id === schoolId)
+      ?.classes.find((classroom) => classroom.id === classId);
+  function check(context, { write = false } = {}) {
+    assertWorkspaceReadable();
+    if (
+      selected !== context ||
+      connection !== context.connection ||
+      workspace.id !== context.origin.id ||
+      workspace.year !== context.origin.year ||
+      (workspace.id === context.period.id &&
+        workspace.revision !== context.origin.revision) ||
+      periodLoading ||
+      resetBusy ||
+      connectionRetired
+    )
+      throw Error(
+        "صفحه یا اطلاعات سال تغییر کرده است؛ مرحلهٔ ارزشیابی را دوباره باز کنید.",
+      );
+    if (
+      write &&
+      (context.period.closed || context.stale || !context.authenticated)
+    )
+      throw Error(
+        "این مرحلهٔ ارزشیابی فقط قابل مشاهده است؛ ابتدا ترم آن را بازگشایی کنید.",
+      );
+  }
+  function handles(input) {
+    return !!input?.dataset?.assessmentContext;
+  }
+  function inputContext(input) {
+    const context = selected;
+    if (!context || input.dataset.assessmentContext !== context.token)
+      throw Error(
+        "کادر نمره به مرحلهٔ فعلی تعلق ندارد؛ مرحله را دوباره باز کنید.",
+      );
+    check(context, { write: true });
+    if (
+      input.dataset.class !== context.classroom.id ||
+      input.dataset.lesson !== context.lesson.id ||
+      !context.classroom.students.some(
+        (student) => student.id === input.dataset.student,
+      ) ||
+      !stageField(context, input.dataset.field)
+    )
+      throw Error("دانش‌آموز، درس یا نوع نمرهٔ این مرحله معتبر نیست.");
+    return context;
+  }
+  function showInputState(input, item) {
+    input.setAttribute("aria-invalid", item.error ? "true" : "false");
+    const note = input.parentElement?.querySelector(".grade-note");
+    if (note) {
+      note.textContent = item.error || "در انتظار ذخیره";
+      note.dataset.state = item.error ? "error" : "pending";
+    }
+    const row = input.closest?.(".assessment-student");
+    if (row) row.dataset.editState = item.error ? "error" : "pending";
+  }
+  function sameInstallation(context) {
+    return (
+      !context.abandoned &&
+      !resetBusy &&
+      !connectionRetired &&
+      connection === context.connection &&
+      (typeof installationToken === "undefined" ? "" : installationToken) ===
+        context.installation
+    );
+  }
+  function persist(context) {
+    if (!sameInstallation(context)) return Promise.resolve();
+    const entry = {
+      key: storageKey(context),
+      workspace: context.period.id,
+      owner: owner(context),
+      generation: ++context.generation,
+      entries: clone([...context.entries.values()]),
+      updatedAt: new Date().toISOString(),
+    };
+    let localFailure = false;
+    try {
+      localStorage.setItem(entry.key, JSON.stringify(entry));
+    } catch {
+      localFailure = true;
+    }
+    const targetConnection = context.connection;
+    draftWritesPending++;
+    const operation = draftWriter
+      .catch(() => {})
+      .then(async () => {
+        if (!sameInstallation(context) || connection !== targetConnection)
+          return;
+        const tx = targetConnection.transaction("drafts", "readwrite"),
+          done = transactionDone(tx),
+          store = tx.objectStore("drafts"),
+          request = store.get(entry.key);
+        request.onsuccess = () => {
+          if (!request.result || request.result.generation <= entry.generation)
+            store.put(entry);
+        };
+        await done;
+        context.persistenceError = "";
+        if (localFailure && entry.entries.length)
+          setStatus("پیش‌نویس این مرحله در بانک داخلی محفوظ است.", "pending");
+      })
+      .catch((error) => {
+        context.persistenceError = error.message;
+        draftRecoveryFailed = true;
+        setStatus(
+          "پیش‌نویس مرحله هنوز پایدار نشده است: " + error.message,
+          "error",
+        );
+        throw error;
+      })
+      .finally(() => {
+        draftWritesPending--;
+      });
+    draftWriter = operation;
+    operation.catch(() => {});
+    return operation;
+  }
+  async function recover(context) {
+    const prefix = "Edu24.drafts." + context.period.id + ".",
+      rows = new Map(),
+      add = (row) => {
+        if (
+          !row?.key?.startsWith(prefix) ||
+          !row.key.split(".")[3]?.includes("-assessment") ||
+          !Array.isArray(row.entries) ||
+          !Number.isSafeInteger(row.generation)
+        )
+          return;
+        const previous = rows.get(row.key);
+        if (
+          !previous ||
+          previous.generation < row.generation ||
+          (previous.generation === row.generation &&
+            previous.updatedAt < row.updatedAt)
+        )
+          rows.set(row.key, row);
+      };
+    try {
+      for (const key of Object.keys(localStorage))
+        if (key.startsWith(prefix)) {
+          try {
+            add(JSON.parse(localStorage.getItem(key)));
+          } catch {}
+        }
+    } catch {}
+    const tx = context.connection.transaction("drafts", "readonly"),
+      done = transactionDone(tx),
+      saved = await requestPromise(
+        tx.objectStore("drafts").index("workspace").getAll(context.period.id),
+      );
+    await done;
+    check(context);
+    for (const row of saved) add(row);
+    const candidates = [...rows.values()].sort(
+      (a, b) =>
+        b.generation - a.generation ||
+        String(b.updatedAt).localeCompare(String(a.updatedAt)),
+    );
+    context.generation = Math.max(
+      0,
+      ...candidates.map((row) => row.generation),
+    );
+    const suffix = scopeSuffix(context),
+      relevant = candidates.filter(
+        (row) =>
+          row.key.endsWith(suffix) ||
+          row.entries.some(
+            (item) =>
+              item?.classId === context.classroom.id &&
+              item?.lid === context.lesson.id &&
+              stageField(context, item?.field),
+          ),
+      ),
+      empty = relevant
+        .filter((row) => !row.entries.length)
+        .sort(
+          (a, b) =>
+            String(b.updatedAt).localeCompare(String(a.updatedAt)) ||
+            b.generation - a.generation,
+        )[0],
+      latest = new Map();
+    for (const row of relevant) {
+      if (
+        empty &&
+        String(row.updatedAt) <= String(empty.updatedAt) &&
+        row.generation <= empty.generation
+      )
+        continue;
+      for (const original of row.entries) {
+        if (
+          !isSupportedGradeDraft(original) ||
+          original.kind !== "k" ||
+          original.classId !== context.classroom.id ||
+          original.lid !== context.lesson.id ||
+          !stageField(context, original.field) ||
+          !context.classroom.students.some(
+            (student) => student.id === original.sid,
+          )
+        )
+          continue;
+        const key = entryKey(original),
+          previous = latest.get(key);
+        if (
+          !previous ||
+          String(row.updatedAt) > String(previous.row.updatedAt) ||
+          (row.updatedAt === previous.row.updatedAt &&
+            row.generation > previous.row.generation)
+        )
+          latest.set(key, { row, original });
+      }
+    }
+    for (const { original } of latest.values()) {
+      const item = clone(original);
+      if (item.baseRevision !== context.period.revision || item.review) {
+        item.review = true;
+        item.error =
+          "دادهٔ این مرحله تغییر کرده است؛ مقدار را بررسی و دوباره وارد کنید.";
+      }
+      context.entries.set(entryKey(item), item);
+    }
+  }
+  async function select(kind, stage, identity) {
+    if (
+      !["first", "second"].includes(kind) ||
+      !["midterm", "final"].includes(stage)
+    )
+      throw Error("مرحلهٔ ارزشیابی معتبر نیست.");
+    await flush({ strict: true });
+    assertWorkspaceReadable();
+    const generation = ++selectionGeneration,
+      origin = {
+        id: workspace.id,
+        revision: workspace.revision,
+        year: workspace.year,
+      },
+      targetConnection = connection,
+      assertOrigin = () => {
+        if (
+          generation !== selectionGeneration ||
+          connection !== targetConnection ||
+          workspace.id !== origin.id ||
+          workspace.year !== origin.year ||
+          workspace.revision !== origin.revision ||
+          periodLoading ||
+          resetBusy ||
+          connectionRetired
+        )
+          throw Error(
+            "صفحه یا سال هنگام انتخاب مرحله تغییر کرد؛ دوباره تلاش کنید.",
+          );
+      };
+    const period = await ensureAcademicAssessmentTerm(kind);
+    assertOrigin();
+    if (
+      !period ||
+      period.year !== origin.year ||
+      (period.termKind || academicTermKind(period.term)) !== kind
+    )
+      throw Error("نوبت ارزشیابی متعلق به سال فعال نیست.");
+    const snapshot = await readWorkspaceSnapshot(period.id);
+    assertOrigin();
+    if (snapshot.period.revision !== period.revision)
+      throw Error(
+        "اطلاعات مرحله تغییر کرده است؛ انتخاب آن را دوباره انجام دهید.",
+      );
+    const classroom = getClass(
+        snapshot.data,
+        identity.schoolId,
+        identity.classId,
+      ),
+      lesson = classroom?.lessons.find((item) => item.id === identity.lessonId);
+    if (!lesson || lesson.gradeMode !== "kardanesh")
+      throw Error("درس نظری و عملی در مرحلهٔ انتخاب‌شده وجود ندارد.");
+    const password = snapshot.data.settings.password;
+    if (password && period.id !== workspace.id) {
+      const supplied = prompt(
+        "برای ورود به نمرات نوبت " +
+          (kind === "first" ? "اول" : "دوم") +
+          "، رمز همان نوبت را وارد کنید:",
+      );
+      if (supplied === null || !(await verifyPassword(supplied, password)))
+        throw Error("دسترسی به نمرات این نوبت تأیید نشد.");
+      assertOrigin();
+    }
+    const context = {
+      token: uid(),
+      origin,
+      connection: targetConnection,
+      period: clone(snapshot.period),
+      data: snapshot.data,
+      classroom,
+      lesson,
+      schoolId: identity.schoolId,
+      stage,
+      password,
+      authenticated: true,
+      entries: new Map(),
+      generation: 0,
+      owner: documentToken + scopeSuffix({ classroom, lesson, stage }),
+      installation:
+        typeof installationToken === "undefined" ? "" : installationToken,
+      timer: null,
+      persistenceError: "",
+    };
+    selected = context;
+    try {
+      await recover(context);
+      check(context);
+    } catch (error) {
+      if (selected === context) {
+        context.abandoned = true;
+        selected = null;
+      }
+      throw error;
+    }
+    if (context.entries.size)
+      setStatus(
+        "ورودی‌های ذخیره‌نشدهٔ این مرحله بازیابی شدند؛ پیام کادرها را بررسی کنید.",
+        "pending",
+      );
+    return context;
+  }
+  function resolve(classroom, lesson) {
+    const context = selected;
+    if (
+      !context ||
+      context.origin.id !== workspace.id ||
+      context.origin.year !== workspace.year ||
+      context.classroom.id !== classroom?.id ||
+      context.lesson.id !== lesson?.id
+    )
+      return null;
+    if (
+      workspace.id === context.period.id &&
+      workspace.revision !== context.origin.revision
+    )
+      workspaceChanged({
+        workspace: context.period.id,
+        revision: workspace.revision,
+      });
+    return context;
+  }
+  function cell(classroom, lesson, student, field, { value = null } = {}) {
+    const context = resolve(classroom, lesson);
+    if (!context)
+      return gradeCell(classroom, lesson, student, field, { value });
+    const item = context.entries.get(entryKey({ sid: student.id, field })),
+      shown = item ? item.value : (value ?? "");
+    return (
+      '<div class="grade-editor"><input type="text" inputmode="decimal" autocomplete="off" dir="ltr" data-grade="1" data-kind="k" data-assessment-context="' +
+      esc(context.token) +
+      '" data-class="' +
+      esc(classroom.id) +
+      '" data-lesson="' +
+      esc(lesson.id) +
+      '" data-student="' +
+      esc(student.id) +
+      '" data-pod="" data-unit="" data-field="' +
+      esc(field) +
+      '" value="' +
+      esc(shown) +
+      '" placeholder="—" aria-label="' +
+      esc(
+        student.name +
+          " " +
+          (field === "practical" || field === "midtermPractical"
+            ? "عملی"
+            : "تئوری"),
+      ) +
+      '"' +
+      (context.period.closed ? ' readonly aria-readonly="true"' : "") +
+      '><button type="button" class="ghost grade-clear no-print" data-clear-grade aria-label="پاک‌کردن نمره"' +
+      (context.period.closed ? " disabled" : "") +
+      '>×</button><small class="grade-note" aria-live="polite">' +
+      esc(item ? item.error || "در انتظار ذخیره" : "") +
+      "</small></div>"
+    );
+  }
+  function input(input) {
+    const context = inputContext(input),
+      item = {
+        kind: "k",
+        baseRevision: context.period.revision,
+        classId: context.classroom.id,
+        lid: context.lesson.id,
+        sid: input.dataset.student,
+        pid: "",
+        uid: "",
+        field: input.dataset.field,
+        value: input.value,
+        at: new Date().toISOString(),
+      },
+      parsed = parseGrade(item.value);
+    item.error = parsed.ok ? "" : parsed.message;
+    context.entries.set(entryKey(item), item);
+    showInputState(input, item);
+    persist(context);
+    clearTimeout(context.timer);
+    if (parsed.ok)
+      context.timer = setTimeout(() => flush().catch(() => {}), 180);
+    setStatus(
+      parsed.ok ? "نمرهٔ این مرحله در انتظار ذخیره است." : parsed.message,
+      parsed.ok ? "pending" : "error",
+    );
+  }
+  function clear(input) {
+    const context = inputContext(input);
+    if (!confirm("نمرهٔ همین مرحله پاک شود؟ این تغییر در تاریخچه ثبت می‌شود."))
+      return;
+    const item = {
+      kind: "k",
+      baseRevision: context.period.revision,
+      classId: context.classroom.id,
+      lid: context.lesson.id,
+      sid: input.dataset.student,
+      pid: "",
+      uid: "",
+      field: input.dataset.field,
+      value: "",
+      remove: true,
+      error: "",
+      at: new Date().toISOString(),
+    };
+    context.entries.set(entryKey(item), item);
+    input.value = "";
+    showInputState(input, item);
+    persist(context);
+    flush().catch(() => {});
+  }
+  async function commit(context, entries) {
+    check(context, { write: true });
+    const snapshot = await readWorkspaceSnapshot(context.period.id);
+    check(context, { write: true });
+    if (
+      snapshot.period.revision !== context.period.revision ||
+      snapshot.period.closed ||
+      snapshot.data.settings.password !== context.password
+    ) {
+      const error = Error(
+        "نمرات یا دسترسی این مرحله در پنجرهٔ دیگری تغییر کرد؛ پیش‌نویس محفوظ است.",
+      );
+      error.code = "WORKSPACE_CONFLICT";
+      throw error;
+    }
+    const classroom = getClass(
+        snapshot.data,
+        context.schoolId,
+        context.classroom.id,
+      ),
+      lesson = classroom?.lessons.find((item) => item.id === context.lesson.id);
+    if (!lesson || lesson.gradeMode !== "kardanesh")
+      throw Error("درس مرحله دیگر وجود ندارد.");
+    for (const [, item] of entries) {
+      if (
+        !classroom.students.some((student) => student.id === item.sid) ||
+        !stageField(context, item.field)
+      )
+        throw Error("هنرجو یا نوع نمرهٔ مرحله تغییر کرده است.");
+      const grades = lesson.kardaneshScores || (lesson.kardaneshScores = {}),
+        target = writableScoreRecord(grades, item.sid);
+      grades[item.sid] = target;
+      if (item.remove) delete target[item.field];
+      else {
+        const result = parseGrade(item.value);
+        if (!result.ok) throw Error(result.message);
+        target[item.field] = result.value;
+      }
+    }
+    deriveClass(classroom);
+    validateV24({
+      ...snapshot.data,
+      schools: [
+        {
+          id: context.schoolId,
+          name: snapshot.data.schools.find(
+            (school) => school.id === context.schoolId,
+          ).name,
+          classes: [classroom],
+        },
+      ],
+      masterSchedule: {},
+      sessions: [],
+    });
+    const records = collectRecords(snapshot.data, { classId: classroom.id }),
+      plan = EduRecordCommitPlan.create(records, snapshot.records),
+      annualChanged = [],
+      directorySourceUpdates = [];
+    if (!plan.changed.length && !plan.removed.length) return snapshot;
+    const next = await EduRecordTransaction.commit({
+      connection: context.connection,
+      workspace: snapshot.period,
+      records,
+      ...plan,
+      action:
+        "ثبت نمرهٔ " +
+        (context.stage === "midterm" ? "میان‌ترم " : "پایان‌ترم ") +
+        ((snapshot.period.termKind ||
+          academicTermKind(snapshot.period.term)) === "first"
+          ? "اول"
+          : "دوم"),
+      keepUndo: true,
+      normalizedName,
+      academicTermKind,
+      annualChanged,
+      decodeRecords: decodeWorkspaceRecords,
+      historicalRoster,
+      directorySourceUpdates,
+    });
+    const active =
+      connection === context.connection &&
+      workspace.id === snapshot.period.id &&
+      workspace.revision === snapshot.period.revision &&
+      !resetBusy &&
+      !connectionRetired;
+    if (active) {
+      const liveClass = getClass(db, context.schoolId, classroom.id);
+      for (const updated of classroom.lessons) {
+        const liveLesson = liveClass?.lessons.find(
+          (item) => item.id === updated.id,
+        );
+        if (liveLesson)
+          liveLesson.kardaneshScores = clone(updated.kardaneshScores);
+      }
+      for (const [key, json] of plan.changed) committed.set(key, json);
+      for (const key of plan.removed) committed.delete(key);
+      workspace = next;
+      context.origin.revision = next.revision;
+    }
+    for (const [key, json] of plan.changed) snapshot.records.set(key, json);
+    snapshot.period = next;
+    context.period = clone(next);
+    if (connection === context.connection && !resetBusy && !connectionRetired) {
+      broadcast({ workspace: next.id, revision: next.revision });
+      for (const change of annualChanged)
+        broadcast({ ...change, annualModular: true });
+      scheduleSingleFile();
+    }
+    return snapshot;
+  }
+  async function flush({ strict = false } = {}) {
+    if (flushingAssessment) {
+      await flushingAssessment;
+      if (strict && selected?.entries.size)
+        throw Error("ورودی ذخیره‌نشدهٔ مرحله را بررسی کنید.");
+      return;
+    }
+    const context = selected;
+    if (!context || !context.entries.size) return;
+    clearTimeout(context.timer);
+    if (
+      strict &&
+      [...context.entries.values()].some(
+        (item) => item.review || (!item.remove && !parseGrade(item.value).ok),
+      )
+    )
+      throw Error(
+        "ابتدا پیش‌نویس نامعتبر یا نیازمند بررسی این مرحله را اصلاح کنید.",
+      );
+    const entries = [...context.entries].filter(
+      ([, item]) => !item.review && (item.remove || parseGrade(item.value).ok),
+    );
+    if (!entries.length) return;
+    check(context, { write: true });
+    busy++;
+    paintStatus();
+    const operation = writer
+      .catch(() => {})
+      .then(() => commit(context, entries));
+    writer = operation;
+    flushingAssessment = operation
+      .then(async (snapshot) => {
+        context.period = clone(snapshot.period);
+        context.data = snapshot.data;
+        context.classroom = getClass(
+          snapshot.data,
+          context.schoolId,
+          context.classroom.id,
+        );
+        context.lesson = context.classroom.lessons.find(
+          (item) => item.id === context.lesson.id,
+        );
+        for (const [key, item] of entries)
+          if (context.entries.get(key) === item) context.entries.delete(key);
+        for (const item of context.entries.values())
+          item.baseRevision = context.period.revision;
+        await persist(context);
+        if (selected === context) {
+          setStatus(
+            context.entries.size
+              ? "برخی ورودی‌های مرحله هنوز کامل نیستند."
+              : "نمرات این مرحله ذخیره شدند.",
+            context.entries.size ? "pending" : "saved",
+          );
+          refreshGradeResults();
+        }
+      })
+      .catch(async (error) => {
+        for (const [, item] of entries) {
+          item.error = "ذخیره نشد: " + error.message;
+          if (error.code === "WORKSPACE_CONFLICT") item.review = true;
+        }
+        await persist(context).catch(() => {});
+        if (selected === context) {
+          setStatus(
+            "نمرات این مرحله ذخیره نشدند؛ پیش‌نویس محفوظ است. " + error.message,
+            "error",
+          );
+          apply();
+        }
+        throw error;
+      })
+      .finally(() => {
+        busy--;
+        paintStatus();
+        flushingAssessment = null;
+      });
+    await flushingAssessment;
+    if (strict && context.entries.size)
+      throw Error("ورودی ذخیره‌نشدهٔ مرحله را بررسی کنید.");
+    if (
+      [...context.entries.values()].some(
+        (item) => !item.review && (item.remove || parseGrade(item.value).ok),
+      )
+    )
+      context.timer = setTimeout(() => flush().catch(() => {}), 180);
+  }
+  function apply() {
+    const context = selected;
+    if (!context) return;
+    for (const input of document.querySelectorAll(
+      "[data-assessment-context]",
+    )) {
+      if (input.dataset.assessmentContext !== context.token) continue;
+      const item = context.entries.get(
+        entryKey({ sid: input.dataset.student, field: input.dataset.field }),
+      );
+      if (item) {
+        input.value = item.value;
+        showInputState(input, item);
+      }
+    }
+  }
+  async function dispose({ discard = false, abandon = false } = {}) {
+    if (!selected) return;
+    if (abandon) {
+      selected.abandoned = true;
+      clearTimeout(selected.timer);
+      selected = null;
+      selectionGeneration++;
+      return;
+    }
+    if (!discard) await flush({ strict: true });
+    const context = selected;
+    clearTimeout(context.timer);
+    if (discard) {
+      context.entries.clear();
+      await persist(context);
+    }
+    selected = null;
+    selectionGeneration++;
+  }
+  function readOnly(input) {
+    const context = selected;
+    return (
+      !context ||
+      input?.dataset?.assessmentContext !== context.token ||
+      context.period.closed ||
+      (workspace.id === context.period.id &&
+        workspace.revision !== context.origin.revision) ||
+      context.stale ||
+      !context.authenticated ||
+      blocked ||
+      resetBusy ||
+      connectionRetired ||
+      periodLoading
+    );
+  }
+  function workspaceChanged(message) {
+    const context = selected;
+    if (
+      !context ||
+      (message?.workspace && message.workspace !== context.period.id) ||
+      (message?.revision && message.revision <= context.period.revision)
+    )
+      return;
+    context.stale = true;
+    context.authenticated = false;
+    for (const item of context.entries.values()) {
+      item.review = true;
+      item.error =
+        typeof message === "string"
+          ? message
+          : "اطلاعات این مرحله در پنجرهٔ دیگری تغییر کرده است؛ پیش‌نویس نیازمند بررسی است.";
+    }
+    if (context.entries.size) persist(context);
+    apply();
+  }
+  function snapshot() {
+    if (!selected?.entries.size) return null;
+    return clone({
+      key: storageKey(selected),
+      workspace: selected.period.id,
+      owner: owner(selected),
+      generation: selected.generation,
+      entries: [...selected.entries.values()],
+      updatedAt: new Date().toISOString(),
+    });
+  }
+  return Object.freeze({
+    handles,
+    select,
+    resolve,
+    cell,
+    input,
+    clear,
+    flush,
+    apply,
+    dispose,
+    readOnly,
+    workspaceChanged,
+    snapshot,
+    persist: () => (selected ? persist(selected) : Promise.resolve()),
+    hasDrafts: () => !!selected?.entries.size,
+    get pending() {
+      return selected?.entries.size || 0;
+    },
+  });
+})();
 // Source: src/workspace/grading/editors.js
 function buildKardaneshEditor(c, l) {
   return buildAssessmentEditor(c, l);
 }
 let assessmentSelectedStage = "midterm";
 async function openAssessmentStage(button) {
-  const inModal = !!button.closest?.("#modalBody");
-  const term = button.dataset.term;
-  const stage = button.dataset.stage;
+  const inModal = !!button.closest?.("#modalBody"),
+    term = button.dataset.term,
+    stage = button.dataset.stage;
   if (!["اول", "دوم"].includes(term) || !["midterm", "final"].includes(stage))
     throw Error("مرحله ارزشیابی نامعتبر است.");
-  const ensureCurrent = preserveAsyncTarget({ classScoped: true });
-  const origin = { ...state };
-  const editor = button.closest?.(".assessment-editor")?.dataset;
+  const ensureCurrent = preserveAsyncTarget({ classScoped: true }),
+    origin = { ...state },
+    editor = button.closest?.(".assessment-editor")?.dataset;
   if (editor?.assessmentLesson) origin.lessonId = editor.assessmentLesson;
   await flushDrafts({ strict: true });
   ensureCurrent();
-  const currentKind = workspace.termKind || academicTermKind(workspace.term);
-  const requestedKind = academicTermKind(term);
-  if (requestedKind !== currentKind) {
-    const periods = await allFrom("catalog");
-    ensureCurrent();
-    const matches = periods.filter(
-      (p) =>
-        p.year === workspace.year &&
-        (p.termKind || academicTermKind(p.term)) === requestedKind,
-    );
-    if (matches.length > 1)
-      throw Error(
-        "برای این سال چند نسخه از نوبت مقصد وجود دارد؛ ابتدا مدیریت نوبت‌ها را بررسی کنید.",
-      );
-    const target = matches[0];
-    if (!target) {
-      await openPeriods({
-        notice:
-          "نوبت " +
-          term +
-          " هنوز شروع نشده است؛ از همین بخش، نوبت " +
-          term +
-          " این سال تحصیلی را شروع کنید.",
-      });
-      return false;
-    }
-    const loaded = await readWorkspace(target.id);
-    ensureCurrent();
-    const targetLesson = loaded.data.schools
-      .find((s) => s.id === origin.schoolId)
-      ?.classes.find((c) => c.id === origin.classId)
-      ?.lessons.find((l) => l.id === origin.lessonId);
-    if (!targetLesson)
-      throw Error(
-        "این درس در نوبت مقصد وجود ندارد؛ ابتدا فهرست دروس آن نوبت را بررسی کنید.",
-      );
-    await switchPeriod(target.id);
-    if (workspace.id !== target.id)
-      throw Error(
-        "نوبت فعال تغییر کرده است؛ صفحهٔ ثبت نمره را دوباره باز کنید.",
-      );
-  }
+  await assessmentContext.select(academicTermKind(term), stage, {
+    schoolId: origin.schoolId,
+    classId: origin.classId,
+    lessonId: origin.lessonId,
+  });
+  ensureCurrent();
   assessmentSelectedStage = stage;
   state = { ...origin, view: "lesson", tab: "grades" };
-  // Switching periods deliberately clears authentication. Keep the requested
-  // lesson for the next successful login, but never reopen its grade modal
-  // over the destination period's login screen.
-  assertWorkspaceReadable();
   render();
   if (inModal) {
-    const c = getClassObj(state.schoolId, state.classId);
-    const l = getLessonObj(c, state.lessonId);
-    if (c && l) showModal("ثبت نمرات", buildAssessmentEditor(c, l));
+    const classroom = getClassObj(state.schoolId, state.classId),
+      lesson = getLessonObj(classroom, state.lessonId);
+    if (classroom && lesson)
+      showModal("ثبت نمرات", buildAssessmentEditor(classroom, lesson));
   }
 }
+
 function buildAssessmentEditor(c, l) {
+  const context = assessmentContext.resolve(c, l);
+  if (context) {
+    c = context.classroom;
+    l = context.lesson;
+  }
+  const period = context?.period || workspace;
   const general = l.gradingPolicy?.subjectType === "general";
-  const mid = assessmentSelectedStage === "midterm";
-  const stage = assessmentSelectedStage;
+  const stage = context?.stage || assessmentSelectedStage;
+  const mid = stage === "midterm";
   const students = getSortedStudents(c);
   const term =
-    (workspace.termKind || academicTermKind(workspace.term)) === "second"
+    (period.termKind || academicTermKind(period.term)) === "second"
       ? "دوم"
       : "اول";
   const stageName = (mid ? "میان‌ترم نوبت " : "پایان‌ترم نوبت ") + term;
@@ -2831,32 +3888,30 @@ function buildAssessmentEditor(c, l) {
     '</p></div><span class="gradebook-class-count">' +
     students.length.toLocaleString("fa-IR") +
     ' دانش‌آموز</span></header><nav class="assessment-navigation assessment-term-navigation" aria-label="انتخاب نوبت تحصیلی">';
-  for (const item of ["اول", "دوم"])
+  for (const item of [
+    { term: "اول", stage: "midterm", label: "میان‌ترم اول" },
+    { term: "اول", stage: "final", label: "پایان‌ترم اول" },
+    { term: "دوم", stage: "midterm", label: "میان‌ترم دوم" },
+    { term: "دوم", stage: "final", label: "پایان‌ترم دوم" },
+  ])
     html +=
       '<button type="button" data-workspace-action="assessment-stage" data-term="' +
-      item +
+      item.term +
       '" data-stage="' +
-      stage +
+      item.stage +
       '" aria-pressed="' +
-      (term === item) +
-      '">نوبت ' +
-      item +
-      "</button>";
-  html +=
-    '</nav><nav class="assessment-navigation assessment-stage-navigation" aria-label="مرحله نمره‌دهی نوبت فعال">';
-  for (const item of ["midterm", "final"])
-    html +=
-      '<button type="button" data-workspace-action="assessment-stage" data-term="' +
-      term +
-      '" data-stage="' +
-      item +
-      '" aria-pressed="' +
-      (stage === item) +
+      (term === item.term && stage === item.stage) +
       '">' +
-      (item === "midterm" ? "میان‌ترم" : "پایان‌ترم") +
+      item.label +
       "</button>";
   html +=
     '</nav><div class="gradebook-simple-search"><input type="search" data-assessment-search="" aria-label="جست‌وجوی دانش‌آموز" placeholder="جست‌وجوی دانش‌آموز…" autocomplete="off"></div>';
+  if (context?.stale)
+    html +=
+      '<p class="muted" role="status">اطلاعات این مرحله تغییر کرده است؛ مرحله را دوباره انتخاب کنید. پیش‌نویس‌های ذخیره‌نشده محفوظ‌اند.</p>';
+  if (context?.period.closed)
+    html +=
+      '<p class="muted" role="status">این مرحله بسته است و نمرات آن فقط نمایش داده می‌شوند؛ سایر بخش‌های سال تحصیلی قابل استفاده‌اند.</p>';
   html +=
     '<section class="assessment-stage" aria-label="' +
     esc(stageName) +
@@ -2885,9 +3940,15 @@ function buildAssessmentEditor(c, l) {
         : '<label><span class="assessment-field-heading"><span>عملی<small class="assessment-field-range">از ۲۰</small></span><small class="assessment-field-weight"><bdi>' +
           weights.practical.toLocaleString("fa-IR") +
           "٪</bdi></small></span>" +
-          gradeCell(c, l, st, mid ? "midtermPractical" : "practical", {
-            value: r.practical,
-          }) +
+          assessmentContext.cell(
+            c,
+            l,
+            st,
+            mid ? "midtermPractical" : "practical",
+            {
+              value: r.practical,
+            },
+          ) +
           "</label>") +
       '<label><span class="assessment-field-heading"><span>' +
       (general ? "نمره" : "تئوری") +
@@ -2898,7 +3959,7 @@ function buildAssessmentEditor(c, l) {
           weights.theory.toLocaleString("fa-IR") +
           "٪</bdi></small>") +
       "</span>" +
-      gradeCell(c, l, st, mid ? "midtermTheory" : "theory", {
+      assessmentContext.cell(c, l, st, mid ? "midtermTheory" : "theory", {
         value: r.theory,
       }) +
       '</label></div><div class="gradebook-result"><span>' +
@@ -2959,8 +4020,11 @@ function refreshGradeResults() {
     const c = findClass(source?.class),
       l = getLessonObj(c, source?.lesson);
     if (!l) continue;
+    const context = source?.assessmentContext
+      ? assessmentContext.resolve(c, l)
+      : null;
     const result = assessmentResult(
-      l,
+      context?.lesson || l,
       el.dataset.assessmentFinal,
       el.dataset.stage,
     );
@@ -3078,15 +4142,15 @@ async function openBulkV24(lid) {
 }
 // Source: src/workspace/ui/locks-render.js
 function syncControlLocks() {
-  const readonly =
+  const baseReadonly =
     fileMode ||
     blocked ||
     connectionRetired ||
     resetBusy ||
     !ready ||
     periodLoading ||
-    (db.settings.password && !isAuthenticated) ||
-    !!workspace?.closed;
+    (db.settings.password && !isAuthenticated);
+  const readonly = baseReadonly || !!workspace?.closed;
   const modalBody = document.getElementById("modalBody");
   const modalWrite =
     modalBody &&
@@ -3113,7 +4177,15 @@ function syncControlLocks() {
       (modalWrite && field && modalBody.contains(control));
     if (mutation && control.dataset.gregorianTarget === undefined)
       control.dataset.mutating = "1";
-    setControlLock(control, "workspace-readonly", mutation && readonly);
+    const assessmentInput = assessmentContext.handles(control)
+      ? control
+      : control.matches(".grade-clear")
+        ? control.parentElement?.querySelector("[data-assessment-context]")
+        : null;
+    const controlReadonly = assessmentInput
+      ? baseReadonly || assessmentContext.readOnly(assessmentInput)
+      : readonly;
+    setControlLock(control, "workspace-readonly", mutation && controlReadonly);
     setControlLock(
       control,
       "workspace-saving",
@@ -3141,15 +4213,27 @@ function syncControlLocks() {
         : "ویرایش فعلاً متوقف است؛ پیام وضعیت ذخیره‌سازی را بررسی کنید.";
     }
   }
+  const assessmentOnly =
+    !!modalBody?.querySelector("[data-assessment-context]") &&
+    ![...modalBody.querySelectorAll("[data-mutating]")].some(
+      (element) =>
+        !element.matches("[data-grade],.grade-clear") &&
+        element.tagName !== "FORM",
+    );
+  const modalReadonly = assessmentOnly
+    ? [...modalBody.querySelectorAll("[data-assessment-context]")].every(
+        (input) => assessmentContext.readOnly(input),
+      )
+    : readonly;
   let modalNote = modalBody?.querySelector(".standalone-lock-note");
-  if (readonly && modalWrite && !modalNote) {
+  if (modalReadonly && modalWrite && !modalNote) {
     modalNote = document.createElement("p");
     modalNote.className = "control-lock-note standalone-lock-note";
     modalNote.setAttribute("role", "status");
     modalBody.prepend(modalNote);
   }
   if (modalNote) {
-    modalNote.hidden = !readonly || !modalWrite;
+    modalNote.hidden = !modalReadonly || !modalWrite;
     modalNote.textContent = workspace?.closed
       ? "ترم بسته است؛ این تنظیمات فقط نمایش داده می‌شوند."
       : "ویرایش فعلاً متوقف است؛ پیام وضعیت ذخیره‌سازی را بررسی کنید.";
@@ -3249,9 +4333,9 @@ function workspaceToolsHtml() {
     button(
       "periods",
       "calendar",
-      "سال تحصیلی و دو ترم",
+      "سال تحصیلی",
       "",
-      "ترم اول و دوم همین سال و کارنامه‌های نهایی",
+      "سال فعال، چهار مرحلهٔ ارزشیابی و کارنامه‌های نهایی",
     ) +
     button(
       "undo",
@@ -3312,13 +4396,7 @@ function renderV24() {
       esc(
         String(workspace.year).replace(/\d/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[digit]),
       ) +
-      "</bdi></span><span>ترم: <bdi>" +
-      esc(
-        { first: "اول", second: "دوم" }[
-          workspace.termKind || academicTermKind(workspace.term)
-        ] || workspace.term,
-      ) +
-      "</bdi></span></div>";
+      "</bdi></span><span>دو نوبت · چهار مرحلهٔ ارزشیابی</span></div>";
     const about = welcome.querySelector(".schools-about");
     if (about) footer.append(about);
     welcome.append(footer);
@@ -3339,11 +4417,19 @@ function renderV24() {
       "سوابق منتقل‌شده نیازمند بررسی: " + db.migrationWarnings.join(" | ");
     app.append(info);
   }
+  if (state.view === "master") {
+    const tools = document.createElement("details");
+    tools.className = "card no-print";
+    tools.innerHTML =
+      '<summary>بررسی اختلاف برنامهٔ قدیمی</summary><p class="muted">اگر برنامه‌های ترم‌های فایل قدیمی متفاوت‌اند، پس از بررسی، برنامهٔ نمایش‌داده‌شده را برای کل همین سال انتخاب کنید. پیش از جایگزینی نسخهٔ ایمنی کامل ذخیره می‌شود.</p><button type="button" class="ghost" data-mutating="1" data-workspace-action="apply-academic-schedule">یکسان‌سازی برنامهٔ سال تحصیلی</button>';
+    app.append(tools);
+  }
   if (fileMode) fileModeBanner(app);
   courseUI.activateCreate();
   applyDrafts();
   lockControls();
   paintStatus();
+  void refreshYearLessonSessions();
 }
 // Source: src/workspace/sessions/actions.js
 function sessionRoster(c, x) {
@@ -3792,6 +4878,133 @@ function clickMasterV24(day, period) {
     }
   }
 }
+// Source: src/workspace/sessions/year-view.js
+// Read a year projection for display only. Stored session identities and their
+// owning records never move when another assessment stage is selected.
+let yearSessionRenderGeneration = 0;
+async function refreshYearLessonSessions({ interactive = false } = {}) {
+  const generation = ++yearSessionRenderGeneration;
+  if (
+    state.view !== "lesson" ||
+    state.tab !== "sessions" ||
+    !ready ||
+    periodLoading ||
+    blocked ||
+    resetBusy ||
+    connectionRetired ||
+    (db.settings.password && !isAuthenticated)
+  )
+    return;
+  const directory = document.querySelector("#app .session-directory");
+  if (!directory) return;
+  const identity = {
+    workspaceId: workspace.id,
+    schoolId: state.schoolId,
+    classId: state.classId,
+    lessonId: state.lessonId,
+  };
+  const current = () =>
+    generation === yearSessionRenderGeneration &&
+    directory.isConnected &&
+    workspace.id === identity.workspaceId &&
+    state.view === "lesson" &&
+    state.tab === "sessions" &&
+    state.schoolId === identity.schoolId &&
+    state.classId === identity.classId &&
+    state.lessonId === identity.lessonId;
+  try {
+    const snapshot = await prepareAnnualReportSnapshot(
+      {},
+      { partial: true, interactive },
+    );
+    if (!current()) return;
+    const classroom = snapshot.data.schools
+        .find((school) => school.id === identity.schoolId)
+        ?.classes.find((item) => item.id === identity.classId),
+      lesson = classroom?.lessons.find((item) => item.id === identity.lessonId);
+    if (!lesson) throw Error("تعریف درس در اطلاعات سال در دسترس نیست.");
+    const fragment = document.createElement("div");
+    fragment.innerHTML = renderLessonSessions(classroom, lesson, {
+      sourceSessions: snapshot.data.sessions,
+      annual: true,
+    });
+    const annualDirectory = fragment.querySelector(".session-directory");
+    annualDirectory.dataset.yearScope = workspace.year;
+    directory.replaceWith(annualDirectory);
+    EduLegacyEvents.prepare?.(annualDirectory);
+    lockControls();
+  } catch (error) {
+    if (!current()) return;
+    let notice = directory.querySelector(".year-session-notice");
+    if (!notice) {
+      notice = document.createElement("div");
+      notice.className = "year-session-notice control-lock-note";
+      notice.setAttribute("role", "status");
+      const text = document.createElement("p"),
+        button = document.createElement("button");
+      button.type = "button";
+      button.className = "ghost";
+      button.dataset.workspaceAction = "year-sessions";
+      button.textContent = "بازخوانی همهٔ جلسات سال";
+      notice.append(text, button);
+      directory.querySelector(".session-list-heading").after(notice);
+    }
+    notice.querySelector("p").textContent = error.message;
+  }
+}
+async function openYearSession(periodId, sessionId) {
+  assertWorkspaceReadable();
+  const origin = captureWorkspaceContext(),
+    originConnection = connection,
+    year = workspace.year;
+  await flushDrafts({ strict: true });
+  await writer;
+  if (workspace.id !== origin.id || connection !== originConnection)
+    throw Error("صفحه هنگام بازکردن جلسه تغییر کرد.");
+  const target = await readWorkspaceSnapshot(periodId);
+  if (
+    workspace.id !== origin.id ||
+    connection !== originConnection ||
+    target.period.year !== year
+  )
+    throw Error("جلسه متعلق به سال فعال نیست.");
+  const password = target.data.settings.password;
+  let authenticated =
+    !password || (isAuthenticated && password === db.settings.password);
+  if (!authenticated) {
+    const supplied = prompt("رمز دسترسی به سوابق این بخش از سال:");
+    authenticated =
+      supplied !== null && (await verifyPassword(supplied, password));
+    if (!authenticated) throw Error("دسترسی به سوابق جلسه تأیید نشد.");
+  }
+  if (workspace.id !== origin.id || connection !== originConnection)
+    throw Error("صفحه هنگام بررسی دسترسی تغییر کرد.");
+  const session = target.data.sessions.find((item) => item.id === sessionId);
+  if (!session)
+    throw Error("این جلسه دیگر موجود نیست؛ فهرست را دوباره بخوانید.");
+  if (periodId !== workspace.id) await switchPeriod(periodId);
+  if (
+    workspace.id !== periodId ||
+    workspace.year !== year ||
+    connection !== originConnection ||
+    db.settings.password !== password
+  )
+    throw Error("اطلاعات یا دسترسی جلسه تغییر کرد؛ دوباره وارد شوید.");
+  isAuthenticated = authenticated;
+  state = {
+    ...state,
+    view: "lesson",
+    schoolId: session.schoolId,
+    classId: session.classId,
+    lessonId: session.lessonId,
+    tab: "sessions",
+  };
+  render();
+  const live = db.sessions.find((item) => item.id === sessionId);
+  if (!live)
+    throw Error("جلسه هنگام بازخوانی تغییر کرد؛ فهرست را دوباره باز کنید.");
+  openSessionModal(live);
+}
 // Source: src/workspace/schedule/actions.js
 function preserveScheduleAction() {
   assertEntityWritable();
@@ -3993,6 +5206,67 @@ async function changePeriodsV24(delta) {
   await saveDBV24({ action: "تغییر تعداد زنگ‌های برنامه" });
   if (isCurrent()) render();
   return true;
+}
+
+let academicScheduleApplying = false;
+async function applyAcademicScheduleV24() {
+  if (academicScheduleApplying) return false;
+  academicScheduleApplying = true;
+  try {
+    assertEntityWritable();
+    const isCurrent = preserveScheduleAction();
+    await flushDrafts({ strict: true });
+    await writer.catch(() => {});
+    if (!isCurrent())
+      throw Error("صفحه یا سال تغییر کرده است؛ برنامه را دوباره بررسی کنید.");
+    const full = await snapshotInstallation();
+    if (!isCurrent())
+      throw Error("صفحه یا سال هنگام تهیه پشتیبان تغییر کرده است.");
+    const parts = validateFullBackup(full).filter(
+        ({ period }) => period.year === workspace.year,
+      ),
+      current = parts.find(({ period }) => period.id === workspace.id),
+      model = globalThis.EduAcademicYearDirectory;
+    if (!current || !model)
+      throw Error("اطلاعات برنامهٔ سال تحصیلی آماده نیست.");
+    if (
+      parts.every(({ data }) => !model.scheduleHasChanges(current.data, data))
+    ) {
+      setStatus("برنامهٔ هفتگی همهٔ نوبت‌های این سال یکسان است.", "saved");
+      return false;
+    }
+    if (
+      !confirm(
+        "برنامهٔ نمایش‌داده‌شده، روزهای فعال، تعداد زنگ‌ها و مبنای هفته برای همهٔ نوبت‌های همین سال اعمال شود؟ برنامه‌های قدیمی متفاوت جایگزین می‌شوند؛ نمرات، جلسات و کارنامه‌ها حفظ می‌شوند. پیش از تغییر پشتیبان کامل ایمنی ذخیره می‌شود.",
+      )
+    )
+      return false;
+    await putSafetySnapshot(full, "پیش از یکسان‌سازی برنامهٔ سال تحصیلی", {
+      idPrefix: "before-year-schedule-",
+    });
+    if (!isCurrent())
+      throw Error("صفحه یا سال پس از تهیه نسخهٔ ایمنی تغییر کرده است.");
+    await saveDBV24({
+      action: "یکسان‌سازی صریح برنامهٔ هفتگی سال تحصیلی",
+      scheduleResolution: true,
+      keepUndo: false,
+      directoryRevisions: parts.map(({ period }) => ({
+        id: period.id,
+        year: period.year,
+        revision: period.revision,
+      })),
+    });
+    if (isCurrent()) {
+      render();
+      setStatus(
+        "برنامهٔ هفتگی سال یکسان شد؛ نسخهٔ ایمنی کامل در پشتیبان و بازیابی محفوظ است.",
+        "saved",
+      );
+    }
+    return true;
+  } finally {
+    academicScheduleApplying = false;
+  }
 }
 // Source: src/workspace/backups/local.js
 function handleError(error) {
@@ -4375,8 +5649,16 @@ async function snapshotInstallation() {
   // Never embed a full snapshot inside another full snapshot.
   stores.backups = stores.backups.filter((row) => !row.full);
   stores.records = stores.records.filter((row) => row.key !== RESET_RECORD_KEY);
+  const assessmentDraft =
+    typeof assessmentContext !== "undefined"
+      ? assessmentContext.snapshot()
+      : null;
   const gradeDrafts = portableGradeDrafts(
-    [...stores.drafts, currentDrafts],
+    [
+      ...stores.drafts,
+      currentDrafts,
+      ...(assessmentDraft ? [assessmentDraft] : []),
+    ],
     stores.catalog,
   );
   delete stores.drafts;
@@ -4411,6 +5693,7 @@ async function snapshotInstallation() {
 }
 async function exportFullBackup() {
   const content = await snapshotInstallation();
+  validateFullBackup(content);
   downloadJSON(content, "پشتیبان-کامل-" + todayISO() + ".json");
   recordFullBackupDelivery({
     kind: "download-requested",
@@ -4932,6 +6215,7 @@ function syncSingleFile() {
     try {
       if (!(await singleFileCurrent(target))) return false;
       const snapshot = await snapshotInstallation();
+      validateFullBackup(snapshot);
       const json = JSON.stringify(snapshot, null, 2);
       if (
         !ready ||
@@ -5281,8 +6565,18 @@ async function restoreFullBackup() {
               "اطلاعات سیستم در پنجره دیگری تغییر کرده است؛ پیش از بازیابی دوباره بررسی کنید.",
             );
           for (const name of names) tx.objectStore(name).clear();
-          for (const name of names)
-            for (const row of rows[name]) tx.objectStore(name).add(row);
+          for (const name of names) {
+            // Preserve explicit legacy history IDs before the auto-increment
+            // generator assigns IDs to history rows saved without a key.
+            const values =
+              name === "events"
+                ? [
+                    ...rows[name].filter((row) => row.id !== undefined),
+                    ...rows[name].filter((row) => row.id === undefined),
+                  ]
+                : rows[name];
+            for (const row of values) tx.objectStore(name).add(row);
+          }
           // Device file handles are not backup data; keep this device's connection.
           if (singleFile)
             tx.objectStore("drafts").put({ key: singleFileKey, ...singleFile });
@@ -5298,6 +6592,7 @@ async function restoreFullBackup() {
     } catch (error) {
       throw failure || error;
     }
+    assessmentContext.dispose({ abandon: true });
     committedRestore = true;
     installationToken = marker.value.token;
     broadcast({ type: "installation-restored" });
@@ -5312,9 +6607,13 @@ async function restoreFullBackup() {
       ? await synchronizeAnnualForRead(source.activeWorkspace)
       : null;
     const loaded = await readWorkspaceSnapshot(source.activeWorkspace);
+    // Authentication belongs to the installed workspace, never its predecessor.
+    // Revoke it synchronously before publishing protected destination data.
+    isAuthenticated = false;
     workspace = loaded.period;
     db = loaded.data;
     committed = loaded.records;
+    await synchronizeYearNotesScope();
     // All previous writes were drained before replacement. A restored
     // installation starts a new write generation, including after a failed
     // operation in the overwritten installation.
@@ -5326,7 +6625,6 @@ async function restoreFullBackup() {
     blocked = false;
     ready = true;
     storageBlocked = false;
-    isAuthenticated = false;
     state = {
       view: "schools",
       schoolId: null,
@@ -6494,13 +7792,17 @@ async function switchPeriod(id) {
       throw Error(
         "بانک هنگام جابه‌جایی تغییر کرد؛ صفحه را دوباره بارگذاری کنید.",
       );
+    await assessmentContext.dispose({ abandon: true });
+    // Authentication belongs to the installed workspace, never its predecessor.
+    // Revoke it synchronously before publishing protected destination data.
+    isAuthenticated = false;
     workspace = loaded.period;
     db = loaded.data;
     committed = loaded.records;
+    await synchronizeYearNotesScope();
     blocked = false;
     storageBlocked = false;
     drafts.clear();
-    isAuthenticated = false;
     state = {
       view: "schools",
       schoolId: null,
@@ -8870,6 +10172,7 @@ function installUI() {
     if (
       busy ||
       drafts.size ||
+      assessmentContext.hasDrafts() ||
       draftRecoveryFailed ||
       draftWritesPending ||
       hasRecordEditorChanges() ||
@@ -8882,7 +10185,10 @@ function installUI() {
     }
   });
   window.addEventListener("pagehide", () => {
-    if (ready) storeDrafts();
+    if (ready) {
+      storeDrafts();
+      assessmentContext.persist().catch(() => {});
+    }
     tabClaimed = false;
     channel?.close();
   });
@@ -8908,7 +10214,7 @@ function installUI() {
     if (overlay.classList.contains("hidden")) return;
     if (event.key === "Escape") {
       event.preventDefault();
-      if (drafts.size) {
+      if (drafts.size || assessmentContext.hasDrafts()) {
         flushDrafts({ strict: true })
           .then(() => closeModal())
           .catch(handleError);
@@ -8955,6 +10261,9 @@ function installUI() {
       }
       if (tabMessage(message)) return;
       window.EduPeriodicReports?.workspaceChanged?.(message);
+      assessmentContext.workspaceChanged(message);
+      invalidateYearNotesScope(message);
+      void synchronizeYearNotesScope().catch(() => {});
       if (
         workspace &&
         message.workspace === workspace.id &&
@@ -9000,6 +10309,12 @@ async function loginV24(e) {
 // Explicit command dispatch: tokens are data, never code or global function names.
 function installWorkspaceActions() {
   const commands = new Map([
+    ["year-sessions", () => refreshYearLessonSessions({ interactive: true })],
+    [
+      "year-session",
+      (button) => openYearSession(button.dataset.workspace, button.dataset.key),
+    ],
+    ["apply-academic-schedule", () => applyAcademicScheduleV24()],
     ["assessment-stage", (button) => openAssessmentStage(button)],
     [
       "karnameh-student",
@@ -9023,7 +10338,12 @@ function installWorkspaceActions() {
         return clickMasterCell(day, period);
       },
     ],
-    ["periods", () => openPeriods()],
+    ["periods", () => openAcademicYear()],
+    ["term-records", () => openPeriods()],
+    [
+      "open-academic-year",
+      (button) => openStoredAcademicYear(button.dataset.key),
+    ],
     ["backups", () => openBackups()],
     ["open-wipe", () => wipeAllV24()],
     ["discard-drafts", () => discardDrafts()],
@@ -9072,6 +10392,7 @@ function installWorkspaceActions() {
     return Number(value);
   }
   const submissions = new Map([
+    ["create-academic-year", () => createAcademicYear()],
     ["save-membership", () => saveMembership()],
     ["save-student", () => saveStudent()],
     ["save-entity", () => saveEntityEditor()],
@@ -9193,6 +10514,94 @@ async function createEntityV24(event, kind) {
     finishSave();
   }
 }
+// Source: src/workspace/reports/year-notes-scope.js
+// Notes share the year while protected legacy terms retain their access checks.
+let academicYearNotesScope = { year: "", periods: [] };
+const verifiedYearNoteAccess = new Set();
+const noteAccessKey = (id, password) =>
+  JSON.stringify([installationToken, id, password]);
+function permitYearNoteAccess(period, data) {
+  verifiedYearNoteAccess.add(noteAccessKey(period.id, data.settings.password));
+}
+function academicYearNotesContext() {
+  const periods =
+      academicYearNotesScope.year === workspace?.year
+        ? academicYearNotesScope.periods
+        : [],
+    authorized = periods.filter(
+      (period) =>
+        (period.id === workspace?.id ||
+          ["first", "second"].includes(period.kind)) &&
+        (period.id === workspace?.id ||
+          period.password === "" ||
+          (isAuthenticated && period.password === db.settings.password) ||
+          verifiedYearNoteAccess.has(
+            noteAccessKey(period.id, period.password),
+          )),
+    ),
+    owner =
+      authorized.find((period) => period.kind === "first") ||
+      authorized.find((period) => period.id === workspace?.id),
+    ids = authorized.map((period) => period.id);
+  if (workspace?.id && !ids.includes(workspace.id)) ids.push(workspace.id);
+  return {
+    notesWorkspaceId: owner?.id || workspace?.id || "",
+    notesWorkspaceIds: ids,
+    yearScopeId: workspace?.year || "",
+  };
+}
+async function synchronizeYearNotesScope() {
+  if (!connection || !workspace || resetBusy || connectionRetired) return;
+  const origin = { connection, id: workspace.id, year: workspace.year },
+    tx = connection.transaction(["catalog", "records"], "readonly"),
+    done = transactionDone(tx);
+  const pending = new Promise((resolve, reject) => {
+    const request = tx.objectStore("catalog").getAll();
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const periods = request.result.filter(
+          (row) =>
+            row.year === origin.year &&
+            (row.id === origin.id ||
+              ["first", "second"].includes(
+                row.termKind || academicTermKind(row.term),
+              )),
+        ),
+        metas = periods.map((period) =>
+          requestPromise(tx.objectStore("records").get(period.id + "|meta")),
+        );
+      Promise.all(metas).then(
+        (rows) =>
+          resolve(
+            periods.map((period, index) => ({
+              id: period.id,
+              revision: period.revision,
+              kind: period.termKind || academicTermKind(period.term),
+              password: rows[index]?.value?.settings?.password ?? null,
+            })),
+          ),
+        reject,
+      );
+    };
+  });
+  const [periods] = await Promise.all([pending, done]);
+  if (
+    connection === origin.connection &&
+    workspace?.id === origin.id &&
+    workspace.year === origin.year &&
+    !resetBusy &&
+    !connectionRetired
+  )
+    academicYearNotesScope = { year: origin.year, periods };
+}
+function invalidateYearNotesScope(message) {
+  if (!message?.workspace) return;
+  academicYearNotesScope.periods = academicYearNotesScope.periods.filter(
+    (period) =>
+      period.id !== message.workspace ||
+      (message.revision && period.revision >= message.revision),
+  );
+}
 // Source: src/workspace/reports/snapshots.js
 function captureWorkspaceContext() {
   return Object.freeze({
@@ -9253,7 +10662,7 @@ function assertLiveWorkspace(live, context) {
 }
 async function assertReportSnapshot(context) {
   assertWorkspaceContext(context);
-  if (busy || drafts.size)
+  if (busy || drafts.size || assessmentContext.hasDrafts())
     throw Error(
       "ثبت یا ویرایش ناتمام وجود دارد؛ گزارش را پس از ذخیره دوباره تهیه کنید.",
     );
@@ -9273,6 +10682,18 @@ async function assertReportSnapshot(context) {
     throw Error(
       "اطلاعات یکی از نوبت‌های گزارش سالانه تغییر کرده است؛ گزارش را دوباره تهیه کنید.",
     );
+  if (context.yearScope) {
+    const periods = selectYearActivityPeriods(catalog, {}, workspace);
+    if (
+      periods.length !== context.members.length ||
+      periods.some(
+        (period) => !context.members.some((member) => member.id === period.id),
+      )
+    )
+      throw Error(
+        "ساختار سال تحصیلی تغییر کرده است؛ گزارش را دوباره تهیه کنید.",
+      );
+  }
   if (context.karnamehYear) {
     const periods = selectKarnamehPeriods(catalog, {}, workspace);
     if (
@@ -9283,7 +10704,7 @@ async function assertReportSnapshot(context) {
     )
       throw Error("نوبت‌های سال تغییر کرده‌اند؛ کارنامه را دوباره تهیه کنید.");
   }
-  if (busy || drafts.size)
+  if (busy || drafts.size || assessmentContext.hasDrafts())
     throw Error(
       "اطلاعات هنگام آماده‌سازی خروجی تغییر کرد؛ گزارش را دوباره تهیه کنید.",
     );
@@ -9380,6 +10801,17 @@ async function readAnnualRecordSets(
   assertWorkspaceContext(context);
   return { periods, recordSets };
 }
+function selectYearActivityPeriods(catalog, unused, active) {
+  const kind = active.termKind || academicTermKind(active.term);
+  if (!["first", "second"].includes(kind)) {
+    const period = catalog.find(
+      (row) => row.id === active.id && row.year === active.year,
+    );
+    if (!period) throw Error("اطلاعات سال تحصیلی برای گزارش موجود نیست.");
+    return [period];
+  }
+  return selectKarnamehPeriods(catalog, unused, active);
+}
 function selectKarnamehPeriods(catalog, unused, active) {
   const groups = ["first", "second"].map((kind) =>
     catalog.filter(
@@ -9462,6 +10894,7 @@ function annualSessionCopy(part, session) {
     id: part.period.id + ":" + session.id,
     academicTerm: part.period.term,
     sourcePeriodId: part.period.id,
+    sourceSessionId: session.id,
     ...(!Array.isArray(session.roster)
       ? {
           roster: clone(classroom?.students || []),
@@ -9478,7 +10911,10 @@ function annualSessionCopy(part, session) {
   };
 }
 
-async function prepareAnnualReportSnapshot(periodIds = {}) {
+async function prepareAnnualReportSnapshot(
+  periodIds = {},
+  { partial = false, interactive = true } = {},
+) {
   assertWorkspaceReadable();
   const origin = workspace.id;
   await flushDrafts({ strict: true });
@@ -9490,19 +10926,34 @@ async function prepareAnnualReportSnapshot(periodIds = {}) {
   const { periods, recordSets } = await readAnnualRecordSets(
     context,
     periodIds,
+    partial ? selectYearActivityPeriods : selectAnnualPeriods,
   );
   const parts = periods.map((period, index) => ({
     period: {
       ...period,
-      term: index === 0 ? "اول" : "دوم",
-      displayTerm: index === 0 ? "اول" : "دوم",
+      term:
+        { first: "اول", second: "دوم" }[
+          period.termKind || academicTermKind(period.term)
+        ] || period.term,
+      displayTerm:
+        { first: "اول", second: "دوم" }[
+          period.termKind || academicTermKind(period.term)
+        ] || period.term,
     },
     data: decodeWorkspaceRecords(recordSets[index], { workspaceId: period.id })
       .data,
   }));
   for (const part of parts) {
     const password = part.data.settings.password;
-    if (password && part.period.id !== workspace.id) {
+    if (
+      password &&
+      part.period.id !== workspace.id &&
+      !(isAuthenticated && password === db.settings.password)
+    ) {
+      if (!interactive)
+        throw Error(
+          "سوابق بخشی از سال با رمز دیگری محافظت شده‌اند؛ برای مشاهدهٔ همهٔ جلسات، دسترسی آن بخش را تأیید کنید.",
+        );
       const supplied = prompt(
         "برای افزودن نوبت " +
           part.period.term +
@@ -9516,8 +10967,10 @@ async function prepareAnnualReportSnapshot(periodIds = {}) {
         );
     }
   }
+  for (const part of parts) permitYearNoteAccess(part.period, part.data);
+  await synchronizeYearNotesScope();
   // Annual identity labels consistently use the latest term, not the open tab.
-  const data = clone(parts[1].data);
+  const data = clone(parts.at(-1).data);
   data.sessions = [];
   for (const part of parts) {
     for (const school of part.data.schools) {
@@ -9549,9 +11002,11 @@ async function prepareAnnualReportSnapshot(periodIds = {}) {
       ...part.data.sessions.map((session) => annualSessionCopy(part, session)),
     );
   }
-  data.settings.academicTerm = "اول و دوم";
+  data.settings.academicTerm =
+    parts.length > 1 ? "اول و دوم" : parts[0].period.term;
   const guarded = {
     ...context,
+    ...(partial ? { yearScope: workspace.year } : {}),
     members: periods.map((row) => ({
       id: row.id,
       revision: row.revision,
@@ -9587,7 +11042,13 @@ async function listAnnualReportPeriods() {
       };
     });
 }
-async function prepareReportSnapshot({ annual = false, periodIds } = {}) {
+async function prepareReportSnapshot({
+  annual = false,
+  yearWide = false,
+  periodIds,
+} = {}) {
+  if (yearWide)
+    return prepareAnnualReportSnapshot(periodIds, { partial: true });
   if (annual) return prepareAnnualReportSnapshot(periodIds);
   assertWorkspaceReadable();
   const origin = workspace.id;
@@ -9607,7 +11068,7 @@ async function prepareReportSnapshot({ annual = false, periodIds } = {}) {
   ]);
   await done;
   assertLiveWorkspace(live, context);
-  if (busy || drafts.size)
+  if (busy || drafts.size || assessmentContext.hasDrafts())
     throw Error("ویرایش تازه‌ای ثبت شده است؛ گزارش را دوباره تهیه کنید.");
   const data = decodeWorkspaceRecords(
     rows.filter((row) => row.workspace === context.id),
@@ -10385,6 +11846,56 @@ async function confirmDeletion() {
   }
 }
 // Source: src/workspace/core/public-api.js
+async function prepareForUpdate() {
+  assertWorkspaceReadable();
+  const origin = { id: workspace.id, connection };
+  const check = () => {
+    assertWorkspaceReadable();
+    if (workspace.id !== origin.id || connection !== origin.connection)
+      throw Error(
+        "اطلاعات هنگام آماده‌سازی به‌روزرسانی تغییر کرد؛ دوباره تلاش کنید.",
+      );
+  };
+  for (;;) {
+    check();
+    await flushDrafts({ strict: true });
+    const periodic = window.EduPeriodicReports;
+    if (periodic?.hasPendingNotes?.()) {
+      await periodic.retryNotes?.();
+      check();
+      if (periodic.hasPendingNotes())
+        throw Error(
+          "توضیحات گزارش هنوز ذخیره نشده است؛ پیش از به‌روزرسانی ذخیرهٔ آن را دوباره امتحان کنید.",
+        );
+    }
+    const saves = writer,
+      pendingDrafts = draftWriter,
+      fileWrite = singleFileWriting;
+    await saves;
+    await pendingDrafts;
+    if (fileWrite) await fileWrite;
+    check();
+    if (
+      saves !== writer ||
+      pendingDrafts !== draftWriter ||
+      fileWrite !== singleFileWriting
+    )
+      continue;
+    if (window.EduPeriodicReports?.hasPendingNotes?.()) continue;
+    if (
+      busy ||
+      drafts.size ||
+      assessmentContext.hasDrafts() ||
+      draftWritesPending ||
+      draftRecoveryFailed ||
+      hasRecordEditorChanges()
+    )
+      throw Error(
+        "ویرایش ذخیره‌نشده وجود دارد؛ پیش از به‌روزرسانی آن را ذخیره یا لغو کنید.",
+      );
+    return true;
+  }
+}
 function installRuntimeAPI() {
   EduRuntimeAPI.install({
     openSettingsModal: openSettingsV24,
@@ -10483,9 +11994,10 @@ function installRuntimeAPI() {
     weightedKardanesh,
     finalText,
     getReportContext: () => ({
+      ...academicYearNotesContext(),
       id: workspace?.id || "",
       revision: workspace?.revision || 0,
-      pendingDrafts: drafts.size,
+      pendingDrafts: drafts.size + assessmentContext.pending,
       closed: !!workspace?.closed,
       year: workspace?.year || "",
       term:
@@ -10501,6 +12013,12 @@ function installRuntimeAPI() {
       saving: busy,
       authenticated: !db.settings.password || isAuthenticated,
     }),
+    openAcademicYear,
+    createAcademicYear,
+    openStoredAcademicYear,
+    refreshYearLessonSessions,
+    openYearSession,
+    prepareForUpdate,
     prepareReportSnapshot,
     renderAcademicKarnameh,
     openKarnamehStudent,
@@ -10595,7 +12113,7 @@ function installRuntimeAPI() {
 let discardingDrafts = false;
 async function discardDrafts() {
   if (discardingDrafts) return;
-  if (!drafts.size) return;
+  if (!drafts.size && !assessmentContext.hasDrafts()) return;
   if (
     !confirm(
       "ویرایش‌های ثبت‌نشده کنار گذاشته شوند؟ داده‌های ذخیره‌شده تغییر نمی‌کنند.",
@@ -10638,6 +12156,8 @@ async function discardDrafts() {
       }
       throw error;
     }
+    ensureCurrent();
+    await assessmentContext.dispose({ discard: true });
     ensureCurrent();
     const loaded = await readWorkspace(origin);
     ensureCurrent();
@@ -10744,30 +12264,88 @@ function buildArchiveV24(c) {
 }
 // Source: src/workspace/data/raw-recovery.js
 async function rawRecoveryV24() {
-  const legacy = localStorage.getItem(STORAGE_KEY);
-  if (legacy !== null) {
+  let legacy = null;
+  const notes = [];
+  try {
+    legacy = localStorage.getItem(STORAGE_KEY);
+  } catch {
+    notes.push("خواندن حافظهٔ نسخهٔ قدیمی در دسترس نبود.");
+  }
+  if (!connection) {
+    if (legacy === null)
+      throw Error(
+        "بانک محلی در دسترس نیست؛ فایل پشتیبان مستقل را بازیابی کنید.",
+      );
     downloadLocalFile(
       new Blob([legacy], { type: "application/json" }),
       "school-legacy-raw-recovery.json",
     );
     return;
   }
-  if (!connection)
-    throw Error("بانک محلی در دسترس نیست؛ فایل پشتیبان مستقل را بازیابی کنید.");
-  const catalog = await allFrom("catalog"),
-    records = await allFrom("records");
+  const sourceConnection = connection,
+    check = () => {
+      if (connection !== sourceConnection || connectionRetired || resetBusy)
+        throw Error(
+          "اتصال بانک هنگام تهیهٔ نسخهٔ خام تغییر کرد؛ فایلی دریافت نشد.",
+        );
+    };
+  check();
+  const names = EduDataStoreSchema.stores.map((store) => store.name),
+    tx = sourceConnection.transaction(names, "readonly"),
+    done = transactionDone(tx),
+    [values] = await Promise.all([
+      Promise.all(
+        names.map((name) => requestPromise(tx.objectStore(name).getAll())),
+      ),
+      done,
+    ]);
+  check();
+  const stores = Object.fromEntries(
+      names.map((name, index) => [name, values[index]]),
+    ),
+    pending = [stores],
+    seen = new WeakSet();
+  // File connections are device configuration, including those in old raw safety copies.
+  while (pending.length) {
+    const current = pending.pop();
+    if (!current || typeof current !== "object" || seen.has(current)) continue;
+    seen.add(current);
+    if (Array.isArray(current.drafts))
+      current.drafts = current.drafts.filter(
+        (row) => row?.key !== "EduManager.singleFile",
+      );
+    for (const row of Array.isArray(current.backups) ? current.backups : [])
+      if (row?.full?.stores) pending.push(row.full.stores);
+  }
+  const localRecovery = {};
+  try {
+    for (const key of Object.keys(localStorage))
+      if (
+        key.startsWith("Edu24.drafts.") ||
+        key.startsWith("EduManager.periodicDrafts.")
+      )
+        localRecovery[key] = localStorage.getItem(key);
+  } catch {
+    notes.push("خواندن همهٔ پیش‌نویس‌های حافظهٔ مرورگر کامل نشد.");
+  }
+  check();
   downloadJSON(
     {
+      format: "EduManager.RawRecovery",
       version: 24,
       recoveryDump: true,
       exportedAt: new Date().toISOString(),
-      catalog,
-      records,
+      catalog: stores.catalog,
+      records: stores.records,
+      stores,
+      ...(legacy !== null ? { legacyRaw: legacy } : {}),
+      localRecovery,
+      recoveryNotes: notes,
     },
     "school-indexeddb-raw-recovery.json",
   );
   setStatus(
-    "نسخه خام برای بررسی و ترمیم دریافت شد؛ این فایل پشتیبان معمولی قابل ورود مستقیم نیست.",
+    "نسخهٔ خامِ همهٔ اطلاعات برای بررسی و ترمیم دریافت شد؛ این فایل پشتیبان معمولی قابل ورود مستقیم نیست.",
     "saved",
   );
 }

@@ -20,6 +20,7 @@ function fixture() {
     }),
     todayISO: () => "2026-11-02",
     setStatus() {},
+    validateFullBackup() {},
   });
   for (const name of ["local.js", "full-export.js"])
     vm.runInContext(
@@ -120,4 +121,16 @@ test("invalid delivery metadata is ignored without displaying an invented succes
     }),
     false,
   );
+});
+
+test("an unrestorable snapshot is refused before downloading or recording a successful backup delivery", async () => {
+  const f = fixture();
+  const before = f.c.lastExternalBackupLabel();
+  f.c.validateFullBackup = () => {
+    throw Error("damaged historical report");
+  };
+  await assert.rejects(f.c.exportFullBackup(), /damaged historical report/);
+  assert.equal(f.downloads.length, 0);
+  assert.equal(f.storage.size, 0);
+  assert.equal(f.c.lastExternalBackupLabel(), before);
 });

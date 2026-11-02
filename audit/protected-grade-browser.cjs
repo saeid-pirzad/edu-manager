@@ -7,6 +7,7 @@ async function protectedGradeAccess() {
     check = (id, name, pass, observed = {}) =>
       cases.push({ id, name, pass: !!pass, observed }),
     previous = EduV24.getReportContext().id,
+    originalPrompt = window.prompt,
     year = "1438-1439",
     password = "protected-grade-destination",
     wait = async (predicate) => {
@@ -80,96 +81,155 @@ async function protectedGradeAccess() {
     render();
     await openBulkScoreModal(lesson.id);
     const staleInput = document
-      .querySelector("#modalBody [data-grade]")
-      .cloneNode(true);
-    document
-      .querySelector('#modalBody .assessment-term-navigation [data-term="دوم"]')
-      .click();
-    await wait(
-      () =>
-        EduV24.getReportContext().id === second &&
-        !!document.getElementById("loginPass"),
-    );
-    // The async command must finish before checking that no new modal appears.
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    const locked = EduV24.getReportContext();
+        .querySelector("#modalBody [data-grade]")
+        .cloneNode(true),
+      sourceBefore = JSON.stringify(db),
+      sourceState = JSON.stringify(state),
+      sourceContext = EduV24.getReportContext(),
+      readClass = (id) =>
+        new Promise((resolve, reject) => {
+          const request = EduV24.test
+            .getConnection()
+            .transaction("records")
+            .objectStore("records")
+            .get(id + "|class:" + classroom.id);
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        }),
+      targetBefore = JSON.stringify(await readClass(second));
+    let prompts = 0;
+    const select = async (answer, { rejected = false } = {}) => {
+      const panel = document.getElementById("modalBody"),
+        status = document.createElement("p"),
+        before = prompts;
+      status.id = "operationError";
+      panel.append(status);
+      window.prompt = () => {
+        prompts++;
+        return answer;
+      };
+      const button = panel.querySelector(
+        '.assessment-term-navigation [data-term="دوم"][data-stage="midterm"]',
+      );
+      if (!button || button.disabled)
+        throw Error("Second assessment action unavailable");
+      button.click();
+      await wait(() => prompts > before);
+      if (rejected) await wait(() => status.textContent.length > 0);
+      else
+        await wait(
+          () =>
+            document.querySelector(
+              '#modalBody [data-term="دوم"][data-stage="midterm"][aria-pressed="true"]',
+            ) && document.querySelector("#modalBody [data-assessment-context]"),
+        );
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      status.remove();
+    };
+    await select("incorrect-password", { rejected: true });
     check(
       "AUTH01",
-      "cross-term grade modal stops at the protected destination login",
-      !locked.authenticated &&
-        document.getElementById("modal").classList.contains("hidden") &&
-        !document.querySelector("#modal:not(.hidden) [data-grade]"),
-      { authenticated: locked.authenticated },
+      "incorrect foreign assessment password preserves active authentication and source context",
+      EduV24.getReportContext().id === first &&
+        EduV24.getReportContext().authenticated ===
+          sourceContext.authenticated &&
+        JSON.stringify(db) === sourceBefore &&
+        JSON.stringify(state) === sourceState &&
+        !document.querySelector("#modalBody [data-assessment-context]"),
     );
-    staleInput.value = "9";
-    EduV24.gradeInput(staleInput);
+    await select(null, { rejected: true });
     check(
       "AUTH02",
-      "stale grade inputs cannot create drafts in the locked destination",
-      EduV24.getReportContext().pendingDrafts === 0,
+      "cancelled assessment authentication reveals no target grades or target changes",
+      EduV24.getReportContext().id === first &&
+        JSON.stringify(db) === sourceBefore &&
+        JSON.stringify(await readClass(second)) === targetBefore &&
+        !document.querySelector("#modalBody [data-assessment-context]"),
     );
-    let denied = false;
+    staleInput.dataset.assessmentContext = "unverified-target";
+    staleInput.value = "9";
+    let staleDenied = false;
     try {
-      await EduV24.saveDB({ action: "Must reject locked write" });
+      EduV24.gradeInput(staleInput);
+      await EduV24.flushDrafts({ strict: true });
     } catch {
-      denied = true;
+      staleDenied = true;
     }
-    check("AUTH03", "data writes require destination authentication", denied);
-    document.getElementById("loginPass").value = "incorrect-password";
-    await checkPassword({
-      preventDefault() {},
-      target: document.getElementById("loginForm"),
-    });
+    check(
+      "AUTH03",
+      "unverified target-context inputs cannot bypass foreign assessment authorization",
+      staleDenied &&
+        EduV24.getReportContext().pendingDrafts === 0 &&
+        JSON.stringify(await readClass(second)) === targetBefore,
+    );
+    await select(password);
+    const input = document.querySelector(
+      '#modalBody [data-assessment-context][data-student="' +
+        student.id +
+        '"][data-field="midtermTheory"]',
+    );
     check(
       "AUTH04",
-      "incorrect destination password cannot reveal the requested gradebook",
-      !EduV24.getReportContext().authenticated &&
-        !!document.getElementById("loginPass") &&
-        !document.querySelector("#app [data-grade]"),
-    );
-    document.getElementById("loginPass").value = password;
-    await checkPassword({
-      preventDefault() {},
-      target: document.getElementById("loginForm"),
-    });
-    await wait(() => document.querySelector("#lessonGradesArea [data-grade]"));
-    const input = document.querySelector(
-      '#lessonGradesArea [data-student="' +
-        student.id +
-        '"][data-field$="Theory"],#lessonGradesArea [data-student="' +
-        student.id +
-        '"][data-field="theory"]',
-    );
-    check(
-      "AUTH05",
-      "successful login restores the selected lesson with untouched destination grades",
-      EduV24.getReportContext().authenticated && input?.value === "11",
-      { value: input?.value },
+      "verified target opens directly without global switch or login and retains target grade",
+      EduV24.getReportContext().id === first &&
+        EduV24.getReportContext().authenticated ===
+          sourceContext.authenticated &&
+        !document.getElementById("loginPass") &&
+        input?.value === "11" &&
+        JSON.stringify(db) === sourceBefore,
+      { value: input?.value, active: EduV24.getReportContext().id },
     );
     input.value = "9";
     input.dispatchEvent(new Event("input", { bubbles: true }));
     await EduV24.flushDrafts({ strict: true });
-    const stored = await new Promise((resolve, reject) => {
-      const request = EduV24.test
-        .getConnection()
-        .transaction("records")
-        .objectStore("records")
-        .get(second + "|class:" + classroom.id);
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
+    let stored = await readClass(second);
+    check(
+      "AUTH05",
+      "verified foreign grade edit changes only target term while annual source remains active",
+      stored.value.lessons[0].kardaneshScores[student.id].midtermTheory === 9 &&
+        JSON.stringify(db) === sourceBefore &&
+        EduV24.getReportContext().id === first,
+    );
+    EduV24.clearGrade(input);
+    await EduV24.flushDrafts({ strict: true });
+    stored = await readClass(second);
     check(
       "AUTH06",
-      "authenticated grade editing still persists the intended destination value",
-      stored.value.lessons[0].kardaneshScores[student.id][
-        input.dataset.field
-      ] === 9,
+      "clear action removes only the selected target-stage field",
+      stored.value.lessons[0].kardaneshScores[student.id].midtermTheory ==
+        null &&
+        stored.value.lessons[0].kardaneshScores[student.id].theory === 11 &&
+        JSON.stringify(db) === sourceBefore &&
+        EduV24.getReportContext().id === first,
+    );
+    closeModal();
+    window.prompt = () => "incorrect-password";
+    let snapshotDenied = false;
+    try {
+      await EduV24.prepareReportSnapshot({ yearWide: true });
+    } catch {
+      snapshotDenied = true;
+    }
+    check(
+      "AUTH07",
+      "annual snapshot independently rejects an unverified protected peer",
+      snapshotDenied && EduV24.getReportContext().id === first,
+    );
+    window.prompt = () => password;
+    const snapshot = await EduV24.prepareReportSnapshot({ yearWide: true });
+    check(
+      "AUTH08",
+      "verified annual snapshot includes protected target without changing source authentication",
+      snapshot.parts.some((part) => part.period.id === second) &&
+        EduV24.getReportContext().id === first &&
+        EduV24.getReportContext().authenticated === sourceContext.authenticated,
     );
   } catch (error) {
     check("AUTH99", "protected grade access flow completed", false, {
       error: error.stack || error.message,
     });
   } finally {
+    window.prompt = originalPrompt;
     closeModal();
     await EduV24.switchPeriod(previous);
   }

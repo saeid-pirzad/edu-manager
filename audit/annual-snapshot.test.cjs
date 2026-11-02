@@ -38,6 +38,7 @@ function fixture() {
     fail = reject;
   });
   const c = vm.createContext({
+    assessmentContext: { hasDrafts: () => false, dispose: async () => {} },
     workspace: { ...catalog[0] },
     db: { settings: {} },
     ready: true,
@@ -47,6 +48,8 @@ function fixture() {
     connectionRetired: false,
     blocked: false,
     drafts: new Map(),
+    permitYearNoteAccess() {},
+    synchronizeYearNotesScope: async () => {},
     setStatus() {},
     lockControls() {},
     window: { EduPeriodicReports: { invalidate() {} } },

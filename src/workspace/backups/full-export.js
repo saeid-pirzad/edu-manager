@@ -76,8 +76,16 @@ async function snapshotInstallation() {
   // Never embed a full snapshot inside another full snapshot.
   stores.backups = stores.backups.filter((row) => !row.full);
   stores.records = stores.records.filter((row) => row.key !== RESET_RECORD_KEY);
+  const assessmentDraft =
+    typeof assessmentContext !== "undefined"
+      ? assessmentContext.snapshot()
+      : null;
   const gradeDrafts = portableGradeDrafts(
-    [...stores.drafts, currentDrafts],
+    [
+      ...stores.drafts,
+      currentDrafts,
+      ...(assessmentDraft ? [assessmentDraft] : []),
+    ],
     stores.catalog,
   );
   delete stores.drafts;
@@ -112,6 +120,7 @@ async function snapshotInstallation() {
 }
 async function exportFullBackup() {
   const content = await snapshotInstallation();
+  validateFullBackup(content);
   downloadJSON(content, "پشتیبان-کامل-" + todayISO() + ".json");
   recordFullBackupDelivery({
     kind: "download-requested",

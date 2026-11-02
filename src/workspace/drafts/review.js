@@ -1,7 +1,7 @@
 let discardingDrafts = false;
 async function discardDrafts() {
   if (discardingDrafts) return;
-  if (!drafts.size) return;
+  if (!drafts.size && !assessmentContext.hasDrafts()) return;
   if (
     !confirm(
       "ویرایش‌های ثبت‌نشده کنار گذاشته شوند؟ داده‌های ذخیره‌شده تغییر نمی‌کنند.",
@@ -44,6 +44,8 @@ async function discardDrafts() {
       }
       throw error;
     }
+    ensureCurrent();
+    await assessmentContext.dispose({ discard: true });
     ensureCurrent();
     const loaded = await readWorkspace(origin);
     ensureCurrent();

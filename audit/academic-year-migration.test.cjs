@@ -536,3 +536,91 @@ test("year migration propagates snapshot read errors and preserves every row", a
   assert.deepEqual(f.state, before);
   assert.equal(f.writes.length, 0);
 });
+
+test("year migration rebases current recovered-name peer guards and preserves their historical payload", async () => {
+  const f = fixture(),
+    undo = f.state.undo.get("first");
+  undo.recoveredPeers = [
+    {
+      id: "second",
+      revision: 7,
+      rosters: [
+        {
+          sessionId: "old_session",
+          classId: "class",
+          before: [{ id: "student", name: "نام پیشین", recovered: true }],
+        },
+      ],
+      migrationWarnings: ["هشدار قدیمی"],
+    },
+  ];
+  const payload = clone(undo.recoveredPeers[0]);
+  await f.run();
+  const saved = f.state.undo.get("first"),
+    guard = saved.recoveredPeers[0];
+  assert.equal(saved.revision, f.state.catalog.get("first").revision);
+  assert.equal(guard.revision, f.state.catalog.get("second").revision);
+  assert.deepEqual({ ...guard, revision: payload.revision }, payload);
+  const before = clone(f.state),
+    writes = f.writes.length;
+  assert.deepEqual(plain(await f.run()), { changed: [] });
+  assert.deepEqual(f.state, before);
+  assert.equal(f.writes.length, writes);
+});
+
+test("a peer-only year correction also publishes and rebases the canonical undo owner", async () => {
+  const f = fixture({ canonical: true });
+  f.state.catalog.get("second").year = "۱۴۰۵–۱۴۰۶";
+  f.state.undo.get("first").recoveredPeers = [
+    { id: "second", revision: 7, rosters: [] },
+  ];
+  const result = await f.run(),
+    revisions = new Map(
+      result.changed.map((row) => [row.workspace, row.revision]),
+    );
+  assert.equal(revisions.get("first"), 5);
+  assert.equal(revisions.get("second"), 8);
+  assert.equal(f.state.undo.get("first").revision, 5);
+  assert.equal(f.state.undo.get("first").recoveredPeers[0].revision, 8);
+  assert.equal(f.state.events.size, 3, "both changed owners must be announced");
+});
+
+test("year correction never promotes a stale recovered-name peer guard", async () => {
+  const f = fixture({ canonical: true });
+  f.state.catalog.get("second").year = "۱۴۰۵–۱۴۰۶";
+  f.state.undo.get("first").recoveredPeers = [
+    { id: "second", revision: 6, rosters: [] },
+  ];
+  const before = clone(f.state.undo.get("first")),
+    result = await f.run();
+  assert.deepEqual(plain(result.changed), [
+    { workspace: "second", revision: 8 },
+  ]);
+  assert.deepEqual(f.state.undo.get("first"), before);
+  assert.equal(f.state.catalog.get("first").revision, 4);
+});
+
+test("rebasing a current peer guard does not make an already stale source undo executable", async () => {
+  const f = fixture({ canonical: true });
+  f.state.catalog.get("second").year = "۱۴۰۵–۱۴۰۶";
+  f.state.undo.get("first").revision = 3;
+  f.state.undo.get("first").recoveredPeers = [
+    { id: "second", revision: 7, rosters: [] },
+  ];
+  await f.run();
+  assert.equal(f.state.undo.get("first").revision, 3);
+  assert.equal(f.state.catalog.get("first").revision, 5);
+  assert.equal(f.state.undo.get("first").recoveredPeers[0].revision, 8);
+});
+
+test("a failed migration keeps recovered-name undo guards and catalog revisions together", async () => {
+  const f = fixture({ canonical: true });
+  f.state.catalog.get("second").year = "۱۴۰۵–۱۴۰۶";
+  f.state.undo.get("first").recoveredPeers = [
+    { id: "second", revision: 7, rosters: [] },
+  ];
+  f.hooks.failAdd = true;
+  const before = clone(f.state);
+  await assert.rejects(f.run(), /event add failed/);
+  assert.deepEqual(f.state, before);
+});

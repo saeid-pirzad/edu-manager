@@ -19,11 +19,20 @@ globalThis.EduRecordTransaction = Object.freeze({
     historicalRoster,
     directorySourceUpdates,
     directoryRevisions,
+    scheduleResolution,
     recoveredUndo,
     restoredSessionRecords,
   }) {
     const directoryTransaction = globalThis.EduAcademicDirectoryTransaction;
-    if (directoryTransaction?.hasChanges({ records, changed, removed, before }))
+    if (
+      directoryTransaction?.hasChanges({
+        records,
+        changed,
+        removed,
+        before,
+        scheduleResolution,
+      })
+    )
       return directoryTransaction.commit({
         connection,
         workspace,
@@ -41,6 +50,7 @@ globalThis.EduRecordTransaction = Object.freeze({
         historicalRoster,
         directorySourceUpdates,
         directoryRevisions,
+        scheduleResolution,
         recoveredUndo,
         restoredSessionRecords,
       });

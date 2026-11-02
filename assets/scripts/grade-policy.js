@@ -1192,7 +1192,60 @@
     ).map((id) => schools.get(id));
   }
 
+  function scheduleProjection(meta = {}) {
+    meta ||= {};
+    const canonical = (value) =>
+      Array.isArray(value)
+        ? value.map(canonical)
+        : object(value)
+          ? Object.fromEntries(
+              Object.keys(value)
+                .sort()
+                .map((key) => [key, canonical(value[key])]),
+            )
+          : value;
+    return {
+      masterSchedule: canonical(meta.masterSchedule || {}),
+      activeDays: [...(meta.activeDays || [0, 1, 2, 3, 4, 5])].sort(
+        (a, b) => a - b,
+      ),
+      periods: meta.periods ?? 6,
+      weekStartDate: meta.settings?.weekStartDate ?? "",
+    };
+  }
+  function scheduleHasChanges(previous, current) {
+    return !same(scheduleProjection(previous), scheduleProjection(current));
+  }
+  function mirrorSchedule(previous, current, target, { replace = false } = {}) {
+    const before = scheduleProjection(previous),
+      after = scheduleProjection(current),
+      existing = scheduleProjection(target),
+      result = copy(target);
+    for (const field of Object.keys(after)) {
+      if (!replace && same(before[field], after[field])) continue;
+      if (
+        !replace &&
+        !same(existing[field], before[field]) &&
+        !same(existing[field], after[field])
+      ) {
+        const error = Error(
+          "برنامهٔ هفتگی قدیمی در نوبت‌های سال متفاوت است؛ برنامهٔ درست را بررسی و «یکسان‌سازی برنامهٔ سال تحصیلی» را تأیید کنید.",
+        );
+        error.code = "ACADEMIC_SCHEDULE_CONFLICT";
+        throw error;
+      }
+      if (field === "weekStartDate") {
+        result.settings ||= {};
+        result.settings.weekStartDate = after[field];
+      } else result[field] = copy(after[field]);
+    }
+    return result;
+  }
+
   root.EduAcademicYearDirectory = Object.freeze({
+    scheduleProjection,
+    scheduleHasChanges,
+    mirrorSchedule,
     hasChanges,
     projection,
     mirrorClass,

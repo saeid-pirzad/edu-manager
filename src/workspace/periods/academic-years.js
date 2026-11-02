@@ -50,6 +50,26 @@ async function synchronizeAcademicYearsForRead() {
     if (rows.size) plans.set(name, rows);
   }
   if (!plans.size) return { changed: [] };
+  // Recovered-name undo guards are revision references too. A guard-only
+  // correction belongs to its owner, even when that owner was already canonical.
+  let expanded = true;
+  while (expanded) {
+    expanded = false;
+    for (const undo of normalized.undo)
+      if (
+        catalog.has(undo.id) &&
+        !affected.has(undo.id) &&
+        Array.isArray(undo.recoveredPeers) &&
+        undo.recoveredPeers.some(
+          (peer) =>
+            affected.has(peer.id) &&
+            peer.revision === catalog.get(peer.id)?.revision,
+        )
+      ) {
+        affected.add(undo.id);
+        expanded = true;
+      }
+  }
   const at = new Date().toISOString(),
     changed = [],
     catalogPlans = plans.get("catalog") || new Map();
@@ -65,10 +85,29 @@ async function synchronizeAcademicYearsForRead() {
     const current = normalized.catalog.find((row) => row.id === id);
     catalogPlans.set(id, { ...current, revision, updatedAt: at });
     changed.push({ workspace: id, revision });
-    const undo = normalized.undo.find((row) => row.id === id);
-    if (undo && undo.revision === period.revision) {
+  }
+  for (const undo of normalized.undo) {
+    let updated = false;
+    const old = catalog.get(undo.id),
+      next = catalogPlans.get(undo.id);
+    if (next && undo.revision === old.revision) {
+      undo.revision = next.revision;
+      updated = true;
+    }
+    for (const peer of Array.isArray(undo.recoveredPeers)
+      ? undo.recoveredPeers
+      : []) {
+      const oldPeer = catalog.get(peer.id),
+        nextPeer = catalogPlans.get(peer.id);
+      // A stale peer reference must never become executable after migration.
+      if (nextPeer && peer.revision === oldPeer.revision) {
+        peer.revision = nextPeer.revision;
+        updated = true;
+      }
+    }
+    if (updated) {
       const undoPlans = plans.get("undo") || new Map();
-      undoPlans.set(id, { ...undo, revision });
+      undoPlans.set(undo.id, undo);
       plans.set("undo", undoPlans);
     }
   }

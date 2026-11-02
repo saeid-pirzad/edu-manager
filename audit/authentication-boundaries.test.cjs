@@ -12,6 +12,7 @@ const load = (context, file) =>
 
 test("locked grade inputs and explicit clear cannot create or alter drafts", () => {
   const context = vm.createContext({
+    assessmentContext: { handles: () => false, flush: async () => {} },
     resetBusy: false,
     connectionRetired: false,
     periodLoading: false,
@@ -30,6 +31,7 @@ test("locked valid drafts remain recoverable and cannot mutate score records", a
   const item = { classId: "class", value: "18" },
     drafts = new Map([["grade", item]]),
     context = vm.createContext({
+      assessmentContext: { handles: () => false, flush: async () => {} },
       resetBusy: false,
       connectionRetired: false,
       draftTimer: null,

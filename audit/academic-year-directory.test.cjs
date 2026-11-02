@@ -703,3 +703,50 @@ test("verified history-free undo may physically remove a shared new identity", (
   );
   assert.deepEqual(plain(value.lessons), old.lessons);
 });
+
+test("legacy schedule differences are reported without selecting or overwriting either term", async () => {
+  const f = synchronizationFixture(),
+    first = f.data(),
+    second = f.data();
+  first.masterSchedule = {
+    "0-0-all": { schoolId: "school", classId: "class", lessonId: "lesson" },
+  };
+  second.masterSchedule = {
+    "1-1-all": { schoolId: "school", classId: "class", lessonId: "lesson" },
+  };
+  f.save("first", first);
+  f.save("second", second);
+  const before = clone(f.state);
+  const result = await f.c.synchronizeAcademicDirectoryForRead("first");
+  assert.equal(result.changed.length, 0);
+  assert.equal(result.conflicts.length, 1);
+  assert.equal(result.conflicts[0].code, "ACADEMIC_SCHEDULE_CONFLICT");
+  assert.deepEqual(clone(f.state), before);
+  assert.equal(
+    f.transactions.some((tx) => tx.mode === "readwrite"),
+    false,
+  );
+});
+test("schedule equivalence ignores object property and active-day display order", () => {
+  const first = {
+      masterSchedule: {
+        "0-0-all": { schoolId: "school", classId: "class", lessonId: "lesson" },
+      },
+      activeDays: [0, 2, 4],
+      periods: 6,
+      settings: { weekStartDate: "2026-09-19" },
+    },
+    second = {
+      masterSchedule: {
+        "0-0-all": { lessonId: "lesson", classId: "class", schoolId: "school" },
+      },
+      activeDays: [4, 0, 2],
+      periods: 6,
+      settings: { weekStartDate: "2026-09-19", password: "private" },
+    };
+  assert.equal(directory.scheduleHasChanges(first, second), false);
+  assert.deepEqual(
+    plain(directory.mirrorSchedule(first, second, second)),
+    second,
+  );
+});

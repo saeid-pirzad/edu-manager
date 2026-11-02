@@ -385,14 +385,22 @@ async function postFixFlows() {
         db.schools[0].classes[0].lessons[0].kardaneshScores.student_a
           .midtermPractical === 18,
     );
-    const notes = EduPeriodicReports.getDrafts(newSecond);
+    const notes = EduPeriodicReports.getDrafts(newFirst),
+      annualNoteKey = [
+        newFirst,
+        "annual",
+        "year:" + year + ";academic-year:auto:auto",
+        "school_a",
+        "class_a",
+        "management",
+        "",
+      ].join("|");
     record(
       "P22",
-      "annual note preserves its original workspace and year scope during restore",
-      Object.entries(notes).some(
-        ([key, value]) =>
-          key.includes("academic-year:auto:auto") && value === annualNote,
-      ),
+      "annual note restores to the shared academic-year owner with its year-scoped key",
+      notes[annualNoteKey] === annualNote &&
+        annualNoteKey.split("|").length === 7 &&
+        EduV24.getReportContext().notesWorkspaceId === newFirst,
     );
     await EduV24.discardDrafts();
     await EduV24.switchPeriod(newSecond);

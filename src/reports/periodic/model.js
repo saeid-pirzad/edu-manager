@@ -2,18 +2,20 @@ let last = null,
   busy = false;
 const noteKey = (f) =>
   [
-    context().id,
+    noteWorkspaceId(),
     f.mode,
-    f.mode === "weekly"
-      ? "week:" + range("weekly", f.date).start
-      : f.mode === "monthly"
-        ? "month:" + range("monthly", f.date).start
-        : f.mode === "annual"
-          ? "academic-year:" +
-            (f.annualFirstId || "auto") +
-            ":" +
-            (f.annualSecondId || "auto")
-          : f.date,
+    notePeriodScope(
+      f.mode === "weekly"
+        ? "week:" + range("weekly", f.date).start
+        : f.mode === "monthly"
+          ? "month:" + range("monthly", f.date).start
+          : f.mode === "annual"
+            ? "academic-year:" +
+              (f.annualFirstId || "auto") +
+              ":" +
+              (f.annualSecondId || "auto")
+            : f.date,
+    ),
     f.schoolId,
     f.classId,
     f.audience,
@@ -148,7 +150,7 @@ function build(source, options) {
           ? "فهرست تاریخی برخی جلسات موجود نیست؛ برای آن جلسات از فهرست کلاس در همان نوبت و سوابق ثبت‌شده استفاده شده است."
           : "فهرست تاریخی برخی جلسات موجود نیست؛ برای آن جلسات از فهرست فعلی کلاس و سوابق ثبت‌شده استفاده شده است.",
       );
-    const slot = [x.date, x.classId, x.period].join("|");
+    const slot = [x.date, x.period].join("|");
     if (slots.has(slot))
       warnings.add(
         "برای برخی زنگ‌ها بیش از یک جلسه ثبت شده است؛ شمار جلسات را بررسی کنید.",
@@ -241,7 +243,7 @@ function build(source, options) {
       day[key] += sessionCounts[key];
     const pod = lesson?.poudmans?.find((p) => p.id === x.poudmanId),
       unit = pod?.units?.find((u) => u.id === x.unitId);
-    const historical = f.mode === "annual" ? x.annualMetadata : null;
+    const historical = x.annualMetadata || null;
     sessions.push({
       id: x.id,
       date: x.date,

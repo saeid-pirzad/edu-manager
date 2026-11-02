@@ -9,6 +9,7 @@ function fixture() {
   const effects = [],
     draft = { value: "18", classId: "source-class" };
   const c = vm.createContext({
+    assessmentContext: { hasDrafts: () => false, dispose: async () => {} },
     workspace: { id: "first", revision: 1 },
     connection: {},
     busy: 0,

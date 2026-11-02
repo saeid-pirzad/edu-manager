@@ -173,6 +173,27 @@ globalThis.EduFullBackupValidator = Object.freeze({
         throw Error("توضیحات گزارش متعلق به ترم ناموجود است.");
       if (!periods.length || !ids.has(value.activeWorkspace))
         throw Error("ترم فعال پشتیبان موجود نیست.");
+      // JSON can represent string, numeric and array IndexedDB keys. Keep
+      // their types distinct, and reject collisions before any restore prompt.
+      const keyToken = (key) => {
+        if (
+          typeof key === "string" ||
+          (typeof key === "number" && Number.isFinite(key))
+        )
+          return JSON.stringify([typeof key, key]);
+        if (!Array.isArray(key)) return null;
+        const parts = [];
+        for (let index = 0; index < key.length; index++) {
+          if (!Object.hasOwn(key, index)) return null;
+          const part = keyToken(key[index]);
+          if (part === null) return null;
+          parts.push(part);
+        }
+        return JSON.stringify(["array", parts]);
+      };
+      const rowKeys = new Map(
+        ["events", "reports", "backups"].map((name) => [name, new Set()]),
+      );
       for (const name of ["records", "events", "undo", "reports", "backups"])
         for (const row of value.stores[name]) {
           if (
@@ -180,6 +201,20 @@ globalThis.EduFullBackupValidator = Object.freeze({
             (row.workspace != null && !ids.has(row.workspace))
           )
             throw Error("رکورد خارج از ترم‌های پشتیبان است.");
+          if (
+            rowKeys.has(name) &&
+            !(name === "events" && row.id === undefined)
+          ) {
+            const token = keyToken(row.id),
+              keys = rowKeys.get(name);
+            if (token === null || keys.has(token))
+              throw Error(
+                "شناسهٔ رکورد در بخش " +
+                  name +
+                  " نامعتبر یا تکراری است؛ بازیابی انجام نشد.",
+              );
+            keys.add(token);
+          }
           if (name === "undo" && !ids.has(row.id))
             throw Error("شناسه بازگردانی نامعتبر است.");
           if (

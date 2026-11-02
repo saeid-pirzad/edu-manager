@@ -277,13 +277,21 @@ async function contextFlows() {
     const parent = await reports.generate();
     record(
       "C19",
-      "parent report includes current student grades",
-      parent?.audience === "parent" && parent.currentGrades.length === 2,
+      "parent report includes the selected student annual exam stages and technical results",
+      parent?.audience === "parent" &&
+        new Set(
+          [...parent.annualGrades, ...parent.technicalGrades].map(
+            (grade) => grade.lessonId,
+          ),
+        ).size === 2 &&
+        [...parent.annualGrades, ...parent.technicalGrades].every(
+          (grade) => grade.studentId === "student_a",
+        ),
     );
     const prepare = EduV24.prepareReportSnapshot;
     let release;
-    EduV24.prepareReportSnapshot = async () => {
-      const data = await prepare();
+    EduV24.prepareReportSnapshot = async (options) => {
+      const data = await prepare(options);
       await new Promise((resolve) => (release = resolve));
       return data;
     };

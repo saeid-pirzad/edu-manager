@@ -487,19 +487,14 @@ module.exports = async function sharedYearCourses() {
       classId: ids.classroom,
       lessonId: unused,
     };
-    await saveDB({ action: "برنامه درس بدون سابقه" });
-    snapshot = await EduV24.snapshotInstallation();
-    const peerMeta = structuredClone(metaRow(snapshot, first)),
-      schedulePeer = {
-        ...snapshot.stores.catalog.find((period) => period.id === first),
-      };
-    peerMeta.value.masterSchedule["0-1-all"] = {
+    // A year's timetable is common to its terms; create both references through
+    // the real annual writer rather than manufacturing a conflicting peer.
+    db.masterSchedule["0-1-all"] = {
       schoolId: ids.school,
       classId: ids.classroom,
       lessonId: unused,
     };
-    schedulePeer.revision++;
-    await writeFixture([peerMeta], [schedulePeer]);
+    await saveDB({ action: "برنامه درس بدون سابقه" });
     await removeCourse(unused);
     snapshot = await EduV24.snapshotInstallation();
     check(

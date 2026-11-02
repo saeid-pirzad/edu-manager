@@ -31,6 +31,8 @@ function fixture({ syncFailure = false, asyncFailure = false } = {}) {
   source.stores.catalog = [period];
   const safety = { stores: { catalog: [current] }, format: "safety-snapshot" };
   const c = vm.createContext({
+    assessmentContext: { hasDrafts: () => false, dispose: async () => {} },
+    synchronizeYearNotesScope: async () => {},
     workspace: { ...current },
     resetBusy: false,
     fileMode: false,
@@ -409,4 +411,60 @@ test("failed replacement retains the original writer and its generation", async 
   await assert.rejects(f.c.restoreFullBackup());
   assert.equal(f.c.writer, writer);
   assert.equal(f.c.writeFailureGeneration, 7);
+});
+
+test("full restore revokes prior authentication before awaiting published target note metadata", async () => {
+  const { c } = fixture();
+  c.isAuthenticated = true;
+  let entered, release;
+  const reading = new Promise((resolve) => {
+    entered = resolve;
+  });
+  c.readWorkspaceSnapshot = async () => ({
+    period: { id: "source", revision: 3, year: "1405-1406" },
+    data: { settings: { password: "restored-protected-hash" } },
+    records: new Map(),
+  });
+  c.synchronizeYearNotesScope = () => {
+    entered();
+    return new Promise((resolve) => {
+      release = resolve;
+    });
+  };
+  const restoring = c.restoreFullBackup();
+  await reading;
+  assert.equal(c.workspace.id, "source");
+  assert.equal(c.db.settings.password, "restored-protected-hash");
+  assert.equal(
+    c.isAuthenticated,
+    false,
+    "restored target must never inherit the replaced installation authorization",
+  );
+  const exposed = [];
+  c.render = () => exposed.push(c.isAuthenticated);
+  c.render();
+  assert.deepEqual(exposed, [false]);
+  release();
+  await restoring;
+  assert.equal(c.isAuthenticated, false);
+  assert.equal(exposed.at(-1), false);
+});
+
+test("full restore target read failure does not alter source authentication before publication", async () => {
+  const { c } = fixture(),
+    original = { settings: { password: "source-hash" } };
+  c.db = original;
+  c.isAuthenticated = true;
+  c.readWorkspaceSnapshot = async () => {
+    throw Error("restored target read failure");
+  };
+  await assert.rejects(c.restoreFullBackup(), /restored target read failure/);
+  assert.equal(c.workspace.id, "original");
+  assert.equal(c.db, original);
+  assert.equal(c.isAuthenticated, true);
+  assert.equal(
+    c.blocked,
+    true,
+    "a committed replacement cannot continue using stale source data after a read failure",
+  );
 });

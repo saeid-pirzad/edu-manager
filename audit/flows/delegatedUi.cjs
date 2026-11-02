@@ -43,15 +43,19 @@ module.exports = async function delegatedUi() {
   document.querySelector('[data-workspace-action="periods"]').click();
   for (
     let attempt = 0;
-    attempt < 100 &&
-    document.getElementById("modal").classList.contains("hidden");
+    attempt < 100 && !document.querySelector("#modalBody .academic-year-hub");
     attempt++
   )
     await new Promise((resolve) => setTimeout(resolve, 10));
   check(
     "DU04",
-    "workspace period command opens the period dialog from the rendered control",
-    document.getElementById("modalTitle").textContent === "سال تحصیلی و دو ترم",
+    "workspace year command opens the annual hub from the rendered control",
+    document.getElementById("modalTitle").textContent === "سال تحصیلی" &&
+      !!document.querySelector("#modalBody .academic-year-hub") &&
+      !!document.querySelector(
+        '#modalBody form[data-workspace-submit="create-academic-year"]',
+      ) &&
+      !document.getElementById("periodTerm"),
   );
   closeModal();
   showModal(

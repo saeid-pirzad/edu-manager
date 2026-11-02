@@ -3362,14 +3362,14 @@ body {
     border-radius: 20px;
   }
   #app .report-scope-summary {
-    gap: 8px;
+    gap: 16px;
     padding-bottom: 16px;
   }
   #app .report-scope-summary > span {
-    padding: 7px 12px;
-    border: 1px solid #e7e3dc;
-    border-radius: 10px;
-    background: #fff;
+    padding: 4px 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     color: #81796e;
     font-size: 11px;
   }
@@ -3377,11 +3377,12 @@ body {
     display: flex;
     flex-wrap: nowrap;
     gap: 5px;
-    padding: 5px;
-    margin-bottom: 14px;
-    border: 1px solid #e7e3dc;
-    border-radius: 13px;
-    background: #efede8;
+    padding: 0;
+    margin-bottom: 18px;
+    border: 0;
+    border-bottom: 1px solid #e7e3dc;
+    border-radius: 0;
+    background: transparent;
     overflow-x: auto;
   }
   #app .report-navigation > button {
@@ -3397,11 +3398,11 @@ body {
     white-space: nowrap;
   }
   #app .report-navigation > button.active {
-    background: #fff;
-    border-color: #e2d9cd;
+    background: transparent;
+    border-color: transparent;
     color: #79522c;
     font-weight: 600;
-    box-shadow: 0 2px 5px #392b1208;
+    box-shadow: inset 0 -2px #79522c;
   }
   #app .report-extra {
     margin: 0 0 16px;
@@ -3485,10 +3486,11 @@ body {
   }
   #app .grade-report-section {
     margin-top: 18px;
-    padding: 16px;
-    border: 1px solid #e7e3dc;
-    border-radius: 12px;
-    background: #faf9f7;
+    padding: 16px 0;
+    border: 0;
+    border-top: 1px solid #e7e3dc;
+    border-radius: 0;
+    background: transparent;
     box-shadow: none;
   }
   #app .grade-report-section > h3 {
@@ -3525,13 +3527,6 @@ body {
     color: #79522c;
     border-radius: 20px;
   }
-  #app .periodic-summary > div {
-    background: var(--summary-bg, #f3f5fb);
-    border-color: var(--summary-border, #e1e5f0);
-  }
-  #app .periodic-summary strong {
-    color: inherit;
-  }
   #app .report-empty {
     padding: 24px 18px;
     border: 1px dashed #ded8ce;
@@ -3565,7 +3560,7 @@ body {
   }
   #app .report-scope-summary > span {
     flex: 1;
-    padding: 7px 6px;
+    padding: 4px 0;
     text-align: center;
     font-size: 10px;
   }
@@ -3603,7 +3598,7 @@ body {
     font-size: 17px;
   }
   #app .grade-report-section {
-    padding: 10px;
+    padding: 16px 0;
   }
   #app .periodic-export-actions {
     display: grid;
@@ -6807,10 +6802,10 @@ body {
   #app .karnameh-year-document .report-assessment-stages {
     grid-template-columns: minmax(0, 1fr);
     gap: 0;
-    border: 1px solid #e8e0d3;
-    border-radius: 8px;
-    overflow: hidden;
-    background: #fffdf9;
+    border: 0;
+    border-radius: 0;
+    min-width: 0;
+    background: transparent;
   }
   #app .karnameh-year-document .report-mobile-score-heading,
   #app .karnameh-year-document .report-assessment-stages .report-lesson-stage {
@@ -6891,10 +6886,9 @@ body {
 }
 .karnameh-year-document :is(.report-modular-term, .report-modular-course) {
   min-width: 0;
-  overflow: hidden;
-  border: 1px solid #e8e0d3;
-  border-radius: 8px;
-  background: #fffdf9;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 .karnameh-year-document .report-modular-term > h4 {
   margin: 0;

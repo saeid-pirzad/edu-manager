@@ -1,55 +1,64 @@
 "use strict";
-const { test } = require("node:test");
-const assert = require("node:assert/strict");
-const fs = require("node:fs");
-const path = require("node:path");
-const vm = require("node:vm");
+const { test } = require("node:test"),
+  assert = require("node:assert/strict"),
+  fs = require("node:fs"),
+  path = require("node:path"),
+  vm = require("node:vm");
 const read = (file) =>
   fs.readFileSync(path.join(__dirname, "../src", file), "utf8");
-
 function fixture() {
-  const calls = [];
-  const context = vm.createContext({
-    workspace: { id: "first", year: "1405-1406", term: "اول" },
-    state: {
-      view: "lesson",
-      schoolId: "school",
-      classId: "class",
-      lessonId: "lesson",
-      tab: "grades",
-    },
-    assertWorkspaceReadable() {},
-    academicTermKind: (term) => ({ اول: "first", دوم: "second" })[term] || null,
-    flushDrafts: async () => calls.push("flush"),
-    allFrom: async () => [{ id: "second", year: "1405-1406", term: "دوم" }],
-    readWorkspace: async () => ({
-      data: {
-        schools: [
-          {
-            id: "school",
-            classes: [{ id: "class", lessons: [{ id: "lesson" }] }],
-          },
-        ],
+  const calls = [],
+    selections = [],
+    context = vm.createContext({
+      workspace: { id: "first", year: "1405-1406", term: "اول", revision: 1 },
+      state: {
+        view: "lesson",
+        schoolId: "school",
+        classId: "class",
+        lessonId: "lesson",
+        tab: "grades",
       },
-    }),
-    switchPeriod: async (id) => {
-      calls.push(id);
-      context.workspace = { id, year: "1405-1406", term: "دوم" };
-      context.state = { view: "schools" };
-    },
-    render: () => calls.push("render"),
-  });
+      assertWorkspaceReadable() {},
+      academicTermKind: (term) =>
+        ({ اول: "first", دوم: "second" })[term] || null,
+      flushDrafts: async ({ strict }) => {
+        assert.equal(strict, true);
+        calls.push("flush");
+      },
+      render: () => calls.push("render"),
+      switchPeriod() {
+        throw Error("stage selection must never switch the global workspace");
+      },
+      assessmentContext: {
+        async select(kind, stage, identity) {
+          calls.push("select:" + kind + ":" + stage);
+          selections.push(
+            JSON.parse(JSON.stringify({ kind, stage, identity })),
+          );
+          if (context.selectionFailure) throw context.selectionFailure;
+          return { period: { id: kind }, stage };
+        },
+        resolve: () => null,
+      },
+    });
   vm.runInContext(read("workspace/core/async-target.js"), context);
   vm.runInContext(read("workspace/grading/editors.js"), context);
-  return { context, calls };
+  return { context, calls, selections };
 }
 
-test("assessment navigation flushes first, switches the correct term and restores lesson selection", async () => {
-  const { context, calls } = fixture();
+test("assessment navigation flushes first, selects the requested stage and preserves the active year workspace", async () => {
+  const { context, calls, selections } = fixture(),
+    workspace = context.workspace;
   await context.openAssessmentStage({
     dataset: { term: "دوم", stage: "final" },
   });
-  assert.deepEqual(calls, ["flush", "second", "render"]);
+  assert.deepEqual(calls, ["flush", "select:second:final", "render"]);
+  assert.equal(context.workspace, workspace);
+  assert.deepEqual(selections[0], {
+    kind: "second",
+    stage: "final",
+    identity: { schoolId: "school", classId: "class", lessonId: "lesson" },
+  });
   assert.equal(context.state.lessonId, "lesson");
   assert.equal(context.state.classId, "class");
   assert.equal(context.state.tab, "grades");
@@ -68,20 +77,12 @@ test("assessment navigation cannot retarget another class while waiting for draf
   assert.equal(context.workspace.id, "first");
 });
 
-test("switching an assessment modal to a protected term cannot reopen grades before login", async () => {
-  const { context, calls } = fixture();
+test("a protected target-stage authorization failure cannot expose its modal or replace the active authentication", async () => {
+  const { context, calls } = fixture(),
+    workspace = context.workspace;
   context.isAuthenticated = true;
-  context.db = { settings: { password: "" } };
-  context.assertWorkspaceReadable = () => {
-    if (context.db.settings.password && !context.isAuthenticated)
-      throw Error("login required");
-  };
-  const switchPeriod = context.switchPeriod;
-  context.switchPeriod = async (id) => {
-    await switchPeriod(id);
-    context.db = { settings: { password: "destination-hash" } };
-    context.isAuthenticated = false;
-  };
+  context.db = { settings: { password: "source-hash" } };
+  context.selectionFailure = Error("login required");
   context.showModal = () => calls.push("must not expose grades");
   await assert.rejects(
     context.openAssessmentStage({
@@ -90,17 +91,17 @@ test("switching an assessment modal to a protected term cannot reopen grades bef
     }),
     /login required/,
   );
-  assert.deepEqual(calls, ["flush", "second"]);
-  assert.equal(context.workspace.id, "second");
-  assert.equal(context.isAuthenticated, false);
-  // Successful login can return to the user's requested lesson and stage.
+  assert.deepEqual(calls, ["flush", "select:second:final"]);
+  assert.equal(context.workspace, workspace);
+  assert.equal(context.isAuthenticated, true);
+  assert.equal(context.db.settings.password, "source-hash");
   assert.equal(context.state.lessonId, "lesson");
   assert.equal(context.state.tab, "grades");
-  assert.equal(vm.runInContext("assessmentSelectedStage", context), "final");
+  assert.equal(vm.runInContext("assessmentSelectedStage", context), "midterm");
 });
 
 test("assessment modal keeps its own lesson identity when opened outside the lesson page", async () => {
-  const { context } = fixture();
+  const { context, selections } = fixture();
   context.state.lessonId = null;
   await context.openAssessmentStage({
     dataset: { term: "دوم", stage: "final" },
@@ -110,93 +111,87 @@ test("assessment modal keeps its own lesson identity when opened outside the les
         : null,
   });
   assert.equal(context.state.lessonId, "lesson");
-  assert.equal(context.workspace.id, "second");
+  assert.equal(context.workspace.id, "first");
+  assert.equal(selections[0].identity.lessonId, "lesson");
 });
 
-test("assessment navigation refuses a target term without the same lesson", async () => {
+test("assessment navigation preserves the source when the target context rejects a missing lesson", async () => {
   const { context, calls } = fixture();
-  context.readWorkspace = async () => ({ data: { schools: [] } });
+  context.selectionFailure = Error("target lesson missing");
   await assert.rejects(
     context.openAssessmentStage({ dataset: { term: "دوم", stage: "midterm" } }),
+    /target lesson missing/,
   );
-  assert.deepEqual(calls, ["flush"]);
+  assert.deepEqual(calls, ["flush", "select:second:midterm"]);
   assert.equal(context.workspace.id, "first");
 });
 
-test("an unstarted second term opens the current-year term hub without creating another year", async () => {
-  const { context, calls } = fixture();
-  context.allFrom = async () => [
-    { id: "other-year", year: "1406-1407", termKind: "second" },
-  ];
-  context.openNewPeriod = () => {
-    throw Error("must not create a period from grades");
+test("an unstarted second assessment is delegated to the annual context without opening a separate term workflow", async () => {
+  const { context, calls, selections } = fixture();
+  context.openNewPeriod = context.openPeriods = () => {
+    throw Error("must not navigate to a term hub from grade entry");
   };
-  let notice;
-  context.openPeriods = async (options) => {
-    calls.push("current-year term hub");
-    notice = options.notice;
-  };
-  const result = await context.openAssessmentStage({
+  await context.openAssessmentStage({
     dataset: { term: "دوم", stage: "final" },
   });
-  assert.equal(result, false);
-  assert.deepEqual(calls, ["flush", "current-year term hub"]);
-  assert.match(notice, /نوبت دوم هنوز شروع نشده/);
-  assert.match(notice, /همین بخش.*این سال تحصیلی/);
+  assert.deepEqual(calls, ["flush", "select:second:final", "render"]);
+  assert.equal(selections[0].kind, "second");
   assert.equal(context.workspace.id, "first");
-  assert.equal(context.state.lessonId, "lesson");
+  assert.equal(context.workspace.year, "1405-1406");
 });
 
-test("ambiguous legacy destination terms cannot be guessed from grade entry", async () => {
+test("ambiguous legacy destination errors are preserved without guessing a stage or switching the active workspace", async () => {
   const { context, calls } = fixture();
-  context.allFrom = async () => [
-    { id: "a", year: "1405-1406", termKind: "second" },
-    { id: "b", year: "1405-1406", termKind: "second" },
-  ];
+  context.selectionFailure = Error(
+    "چند نسخه از نوبت مقصد وجود دارد؛ مدیریت نوبت‌ها را بررسی کنید.",
+  );
   await assert.rejects(
     context.openAssessmentStage({ dataset: { term: "دوم", stage: "final" } }),
     /چند نسخه.*مدیریت نوبت/,
   );
-  assert.deepEqual(calls, ["flush"]);
+  assert.deepEqual(calls, ["flush", "select:second:final"]);
+  assert.equal(context.workspace.id, "first");
 });
 
-test("assessment routing follows term identity even after the visible title is renamed", async () => {
-  const { context, calls } = fixture();
+test("assessment routing follows fixed term roles even after a visible legacy title was renamed", async () => {
+  const { context, calls, selections } = fixture();
   context.workspace.term = "نیمسال پاییز";
   context.workspace.termKind = "first";
-  context.allFrom = async () => [
-    {
-      id: "second",
-      year: "1405-1406",
-      term: "نیمسال بهار",
-      termKind: "second",
-    },
-  ];
   await context.openAssessmentStage({
     dataset: { term: "اول", stage: "final" },
   });
-  assert.deepEqual(calls, ["flush", "render"]);
-  calls.length = 0;
   await context.openAssessmentStage({
     dataset: { term: "دوم", stage: "midterm" },
   });
-  assert.deepEqual(calls, ["flush", "second", "render"]);
+  assert.deepEqual(calls, [
+    "flush",
+    "select:first:final",
+    "render",
+    "flush",
+    "select:second:midterm",
+    "render",
+  ]);
+  assert.deepEqual(
+    selections.map((selection) => selection.kind),
+    ["first", "second"],
+  );
+  assert.equal(context.workspace.id, "first");
 });
 
-test("gradebook uses only fixed first and second labels even for a renamed legacy term", () => {
+test("gradebook offers exactly four fixed stage labels for a renamed legacy term", () => {
   const { context } = fixture();
   context.workspace.term = "عنوان قدیمی مستقل";
   context.workspace.termKind = "second";
   context.getSortedStudents = () => [];
   context.assessmentWeights = () => ({ practical: 70, theory: 30 });
   context.esc = String;
-  const html = context.buildAssessmentEditor({}, { id: "lesson", name: "درس" });
-  const navigation = html.match(
-    /<nav[^>]*assessment-term-navigation[^>]*>(.*?)<\/nav>/s,
-  )[1];
-  assert.equal((navigation.match(/<button/g) || []).length, 2);
-  assert.equal((html.match(/data-term="اول"/g) || []).length, 1);
-  assert.equal((html.match(/data-term="دوم"/g) || []).length, 3);
+  const html = context.buildAssessmentEditor({}, { id: "lesson", name: "درس" }),
+    navigation = html.match(
+      /<nav[^>]*assessment-term-navigation[^>]*>(.*?)<\/nav>/s,
+    )[1];
+  assert.equal((navigation.match(/<button/g) || []).length, 4);
+  assert.equal((html.match(/data-term="اول"/g) || []).length, 2);
+  assert.equal((html.match(/data-term="دوم"/g) || []).length, 2);
   assert.match(html, /aria-label="میان‌ترم نوبت دوم"/);
   assert.doesNotMatch(html, /عنوان قدیمی مستقل|periodYear|new-period|دوره/);
 });

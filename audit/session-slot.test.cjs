@@ -48,7 +48,6 @@ test("the same class/date/bell is unique across terms regardless of lesson or se
     );
 });
 for (const [key, value] of [
-  ["classId", "another-class"],
   ["date", "2026-10-28"],
   ["period", 1],
 ])
@@ -58,6 +57,24 @@ for (const [key, value] of [
       part("second", []),
     ]);
   });
+test("another class or school cannot claim the teacher's date and bell in a peer term", () => {
+  for (const peer of [
+    meeting({ id: "older", classId: "another-class" }),
+    meeting({
+      id: "older",
+      classId: "another-class",
+      schoolId: "another-school",
+    }),
+  ])
+    assert.throws(
+      () =>
+        model.assertAvailable(change(meeting()), "second", [
+          part("first", [peer]),
+          part("second", []),
+        ]),
+      conflict,
+    );
+});
 test("a date or bell correction into a peer slot is rejected", () => {
   for (const previous of [
     meeting({ date: "2026-10-28" }),

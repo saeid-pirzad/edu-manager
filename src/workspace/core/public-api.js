@@ -1,3 +1,53 @@
+async function prepareForUpdate() {
+  assertWorkspaceReadable();
+  const origin = { id: workspace.id, connection };
+  const check = () => {
+    assertWorkspaceReadable();
+    if (workspace.id !== origin.id || connection !== origin.connection)
+      throw Error(
+        "اطلاعات هنگام آماده‌سازی به‌روزرسانی تغییر کرد؛ دوباره تلاش کنید.",
+      );
+  };
+  for (;;) {
+    check();
+    await flushDrafts({ strict: true });
+    const periodic = window.EduPeriodicReports;
+    if (periodic?.hasPendingNotes?.()) {
+      await periodic.retryNotes?.();
+      check();
+      if (periodic.hasPendingNotes())
+        throw Error(
+          "توضیحات گزارش هنوز ذخیره نشده است؛ پیش از به‌روزرسانی ذخیرهٔ آن را دوباره امتحان کنید.",
+        );
+    }
+    const saves = writer,
+      pendingDrafts = draftWriter,
+      fileWrite = singleFileWriting;
+    await saves;
+    await pendingDrafts;
+    if (fileWrite) await fileWrite;
+    check();
+    if (
+      saves !== writer ||
+      pendingDrafts !== draftWriter ||
+      fileWrite !== singleFileWriting
+    )
+      continue;
+    if (window.EduPeriodicReports?.hasPendingNotes?.()) continue;
+    if (
+      busy ||
+      drafts.size ||
+      assessmentContext.hasDrafts() ||
+      draftWritesPending ||
+      draftRecoveryFailed ||
+      hasRecordEditorChanges()
+    )
+      throw Error(
+        "ویرایش ذخیره‌نشده وجود دارد؛ پیش از به‌روزرسانی آن را ذخیره یا لغو کنید.",
+      );
+    return true;
+  }
+}
 function installRuntimeAPI() {
   EduRuntimeAPI.install({
     openSettingsModal: openSettingsV24,
@@ -96,9 +146,10 @@ function installRuntimeAPI() {
     weightedKardanesh,
     finalText,
     getReportContext: () => ({
+      ...academicYearNotesContext(),
       id: workspace?.id || "",
       revision: workspace?.revision || 0,
-      pendingDrafts: drafts.size,
+      pendingDrafts: drafts.size + assessmentContext.pending,
       closed: !!workspace?.closed,
       year: workspace?.year || "",
       term:
@@ -114,6 +165,12 @@ function installRuntimeAPI() {
       saving: busy,
       authenticated: !db.settings.password || isAuthenticated,
     }),
+    openAcademicYear,
+    createAcademicYear,
+    openStoredAcademicYear,
+    refreshYearLessonSessions,
+    openYearSession,
+    prepareForUpdate,
     prepareReportSnapshot,
     renderAcademicKarnameh,
     openKarnamehStudent,

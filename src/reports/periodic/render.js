@@ -28,11 +28,7 @@ function render(mode) {
     '<section class="card periodic-controls no-print"><h3>تهیه گزارش ' +
     modeLabel(mode) +
     "</h3><p>" +
-    (mode === "annual"
-      ? "گزارش سالانه شامل ترم اول و دوم همین سال تحصیلی است. "
-      : "محدودهٔ این گزارش فقط ترم " +
-        esc(context().term || db.settings.academicTerm || "انتخاب‌شده") +
-        " است؛ اطلاعات ترم دیگر وارد این گزارش نمی‌شود. ") +
+    "گزارش از همهٔ جلسات ثبت‌شدهٔ همین سال تحصیلی، در بازهٔ انتخابی تهیه می‌شود. " +
     `هفتگی: شنبه تا جمعه. ماهانه: ماه شمسی. سالانه: مهر تا شهریور. گزارش اولیا فقط اطلاعات هنرجوی انتخاب‌شده را در بر می‌گیرد.</p><div class="periodic-control-grid"><label>مخاطب<select data-legacy-change="reports-periodic-render:0">` +
     option("management", "مدیریت مدرسه", f.audience) +
     option("parent", "اولیای یک هنرجو", f.audience) +

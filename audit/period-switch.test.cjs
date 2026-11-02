@@ -11,6 +11,12 @@ function fixture() {
     locks = [],
     recovered = [];
   const c = vm.createContext({
+    assessmentContext: {
+      hasDrafts: () => false,
+      handles: () => false,
+      dispose: async () => {},
+    },
+    synchronizeYearNotesScope: async () => {},
     workspace: { id: "source", revision: 1 },
     db: { settings: {}, marker: "source" },
     committed: new Map(),
@@ -133,6 +139,12 @@ test("snapshot loads catalog and bounded records in one transaction and waits fo
   });
   const calls = [];
   const c = vm.createContext({
+    assessmentContext: {
+      hasDrafts: () => false,
+      handles: () => false,
+      dispose: async () => {},
+    },
+    synchronizeYearNotesScope: async () => {},
     clone: structuredClone,
     normalizeDB() {},
     isDataObject() {},
@@ -183,4 +195,57 @@ test("snapshot loads catalog and bounded records in one transaction and waits fo
   ]);
   assert.equal(result.period.revision, 5);
   assert.equal(result.data.workspace, "target");
+});
+
+test("protected destination revokes source authentication before awaiting note-scope metadata", async () => {
+  const { c } = fixture();
+  c.isAuthenticated = true;
+  c.db.settings.password = "source-hash";
+  let entered, release;
+  const reading = new Promise((resolve) => {
+    entered = resolve;
+  });
+  c.readWorkspaceSnapshot = async (id) => ({
+    period: { id, revision: 4 },
+    data: { marker: id, settings: { password: "destination-hash" } },
+    records: new Map(),
+  });
+  c.synchronizeYearNotesScope = () => {
+    entered();
+    return new Promise((resolve) => {
+      release = resolve;
+    });
+  };
+  const switching = c.switchPeriod("destination");
+  await reading;
+  assert.equal(c.workspace.id, "destination");
+  assert.equal(c.db.settings.password, "destination-hash");
+  assert.equal(
+    c.isAuthenticated,
+    false,
+    "published target must never inherit source authorization",
+  );
+  assert.equal(c.periodLoading, true);
+  const exposed = [];
+  c.render = () => exposed.push(c.isAuthenticated);
+  c.render();
+  assert.deepEqual(exposed, [false]);
+  release();
+  await switching;
+  assert.equal(c.isAuthenticated, false);
+  assert.equal(exposed.at(-1), false);
+});
+
+test("failed target read preserves the original source authentication before publication", async () => {
+  const { c } = fixture(),
+    original = c.db;
+  c.isAuthenticated = true;
+  c.db.settings.password = "source-hash";
+  c.readWorkspaceSnapshot = async () => {
+    throw Error("target read failure");
+  };
+  await assert.rejects(c.switchPeriod("destination"), /target read failure/);
+  assert.equal(c.workspace.id, "source");
+  assert.equal(c.db, original);
+  assert.equal(c.isAuthenticated, true);
 });

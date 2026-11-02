@@ -1,6 +1,12 @@
 // Explicit command dispatch: tokens are data, never code or global function names.
 function installWorkspaceActions() {
   const commands = new Map([
+    ["year-sessions", () => refreshYearLessonSessions({ interactive: true })],
+    [
+      "year-session",
+      (button) => openYearSession(button.dataset.workspace, button.dataset.key),
+    ],
+    ["apply-academic-schedule", () => applyAcademicScheduleV24()],
     ["assessment-stage", (button) => openAssessmentStage(button)],
     [
       "karnameh-student",
@@ -24,7 +30,12 @@ function installWorkspaceActions() {
         return clickMasterCell(day, period);
       },
     ],
-    ["periods", () => openPeriods()],
+    ["periods", () => openAcademicYear()],
+    ["term-records", () => openPeriods()],
+    [
+      "open-academic-year",
+      (button) => openStoredAcademicYear(button.dataset.key),
+    ],
     ["backups", () => openBackups()],
     ["open-wipe", () => wipeAllV24()],
     ["discard-drafts", () => discardDrafts()],
@@ -73,6 +84,7 @@ function installWorkspaceActions() {
     return Number(value);
   }
   const submissions = new Map([
+    ["create-academic-year", () => createAcademicYear()],
     ["save-membership", () => saveMembership()],
     ["save-student", () => saveStudent()],
     ["save-entity", () => saveEntityEditor()],

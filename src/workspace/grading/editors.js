@@ -3,79 +3,47 @@ function buildKardaneshEditor(c, l) {
 }
 let assessmentSelectedStage = "midterm";
 async function openAssessmentStage(button) {
-  const inModal = !!button.closest?.("#modalBody");
-  const term = button.dataset.term;
-  const stage = button.dataset.stage;
+  const inModal = !!button.closest?.("#modalBody"),
+    term = button.dataset.term,
+    stage = button.dataset.stage;
   if (!["اول", "دوم"].includes(term) || !["midterm", "final"].includes(stage))
     throw Error("مرحله ارزشیابی نامعتبر است.");
-  const ensureCurrent = preserveAsyncTarget({ classScoped: true });
-  const origin = { ...state };
-  const editor = button.closest?.(".assessment-editor")?.dataset;
+  const ensureCurrent = preserveAsyncTarget({ classScoped: true }),
+    origin = { ...state },
+    editor = button.closest?.(".assessment-editor")?.dataset;
   if (editor?.assessmentLesson) origin.lessonId = editor.assessmentLesson;
   await flushDrafts({ strict: true });
   ensureCurrent();
-  const currentKind = workspace.termKind || academicTermKind(workspace.term);
-  const requestedKind = academicTermKind(term);
-  if (requestedKind !== currentKind) {
-    const periods = await allFrom("catalog");
-    ensureCurrent();
-    const matches = periods.filter(
-      (p) =>
-        p.year === workspace.year &&
-        (p.termKind || academicTermKind(p.term)) === requestedKind,
-    );
-    if (matches.length > 1)
-      throw Error(
-        "برای این سال چند نسخه از نوبت مقصد وجود دارد؛ ابتدا مدیریت نوبت‌ها را بررسی کنید.",
-      );
-    const target = matches[0];
-    if (!target) {
-      await openPeriods({
-        notice:
-          "نوبت " +
-          term +
-          " هنوز شروع نشده است؛ از همین بخش، نوبت " +
-          term +
-          " این سال تحصیلی را شروع کنید.",
-      });
-      return false;
-    }
-    const loaded = await readWorkspace(target.id);
-    ensureCurrent();
-    const targetLesson = loaded.data.schools
-      .find((s) => s.id === origin.schoolId)
-      ?.classes.find((c) => c.id === origin.classId)
-      ?.lessons.find((l) => l.id === origin.lessonId);
-    if (!targetLesson)
-      throw Error(
-        "این درس در نوبت مقصد وجود ندارد؛ ابتدا فهرست دروس آن نوبت را بررسی کنید.",
-      );
-    await switchPeriod(target.id);
-    if (workspace.id !== target.id)
-      throw Error(
-        "نوبت فعال تغییر کرده است؛ صفحهٔ ثبت نمره را دوباره باز کنید.",
-      );
-  }
+  await assessmentContext.select(academicTermKind(term), stage, {
+    schoolId: origin.schoolId,
+    classId: origin.classId,
+    lessonId: origin.lessonId,
+  });
+  ensureCurrent();
   assessmentSelectedStage = stage;
   state = { ...origin, view: "lesson", tab: "grades" };
-  // Switching periods deliberately clears authentication. Keep the requested
-  // lesson for the next successful login, but never reopen its grade modal
-  // over the destination period's login screen.
-  assertWorkspaceReadable();
   render();
   if (inModal) {
-    const c = getClassObj(state.schoolId, state.classId);
-    const l = getLessonObj(c, state.lessonId);
-    if (c && l) showModal("ثبت نمرات", buildAssessmentEditor(c, l));
+    const classroom = getClassObj(state.schoolId, state.classId),
+      lesson = getLessonObj(classroom, state.lessonId);
+    if (classroom && lesson)
+      showModal("ثبت نمرات", buildAssessmentEditor(classroom, lesson));
   }
 }
+
 function buildAssessmentEditor(c, l) {
+  const context = assessmentContext.resolve(c, l);
+  if (context) {
+    c = context.classroom;
+    l = context.lesson;
+  }
+  const period = context?.period || workspace;
   const general = l.gradingPolicy?.subjectType === "general";
-  const mid = assessmentSelectedStage === "midterm";
-  const stage = assessmentSelectedStage;
+  const stage = context?.stage || assessmentSelectedStage;
+  const mid = stage === "midterm";
   const students = getSortedStudents(c);
   const term =
-    (workspace.termKind || academicTermKind(workspace.term)) === "second"
+    (period.termKind || academicTermKind(period.term)) === "second"
       ? "دوم"
       : "اول";
   const stageName = (mid ? "میان‌ترم نوبت " : "پایان‌ترم نوبت ") + term;
@@ -90,32 +58,30 @@ function buildAssessmentEditor(c, l) {
     '</p></div><span class="gradebook-class-count">' +
     students.length.toLocaleString("fa-IR") +
     ' دانش‌آموز</span></header><nav class="assessment-navigation assessment-term-navigation" aria-label="انتخاب نوبت تحصیلی">';
-  for (const item of ["اول", "دوم"])
+  for (const item of [
+    { term: "اول", stage: "midterm", label: "میان‌ترم اول" },
+    { term: "اول", stage: "final", label: "پایان‌ترم اول" },
+    { term: "دوم", stage: "midterm", label: "میان‌ترم دوم" },
+    { term: "دوم", stage: "final", label: "پایان‌ترم دوم" },
+  ])
     html +=
       '<button type="button" data-workspace-action="assessment-stage" data-term="' +
-      item +
+      item.term +
       '" data-stage="' +
-      stage +
+      item.stage +
       '" aria-pressed="' +
-      (term === item) +
-      '">نوبت ' +
-      item +
-      "</button>";
-  html +=
-    '</nav><nav class="assessment-navigation assessment-stage-navigation" aria-label="مرحله نمره‌دهی نوبت فعال">';
-  for (const item of ["midterm", "final"])
-    html +=
-      '<button type="button" data-workspace-action="assessment-stage" data-term="' +
-      term +
-      '" data-stage="' +
-      item +
-      '" aria-pressed="' +
-      (stage === item) +
+      (term === item.term && stage === item.stage) +
       '">' +
-      (item === "midterm" ? "میان‌ترم" : "پایان‌ترم") +
+      item.label +
       "</button>";
   html +=
     '</nav><div class="gradebook-simple-search"><input type="search" data-assessment-search="" aria-label="جست‌وجوی دانش‌آموز" placeholder="جست‌وجوی دانش‌آموز…" autocomplete="off"></div>';
+  if (context?.stale)
+    html +=
+      '<p class="muted" role="status">اطلاعات این مرحله تغییر کرده است؛ مرحله را دوباره انتخاب کنید. پیش‌نویس‌های ذخیره‌نشده محفوظ‌اند.</p>';
+  if (context?.period.closed)
+    html +=
+      '<p class="muted" role="status">این مرحله بسته است و نمرات آن فقط نمایش داده می‌شوند؛ سایر بخش‌های سال تحصیلی قابل استفاده‌اند.</p>';
   html +=
     '<section class="assessment-stage" aria-label="' +
     esc(stageName) +
@@ -144,9 +110,15 @@ function buildAssessmentEditor(c, l) {
         : '<label><span class="assessment-field-heading"><span>عملی<small class="assessment-field-range">از ۲۰</small></span><small class="assessment-field-weight"><bdi>' +
           weights.practical.toLocaleString("fa-IR") +
           "٪</bdi></small></span>" +
-          gradeCell(c, l, st, mid ? "midtermPractical" : "practical", {
-            value: r.practical,
-          }) +
+          assessmentContext.cell(
+            c,
+            l,
+            st,
+            mid ? "midtermPractical" : "practical",
+            {
+              value: r.practical,
+            },
+          ) +
           "</label>") +
       '<label><span class="assessment-field-heading"><span>' +
       (general ? "نمره" : "تئوری") +
@@ -157,7 +129,7 @@ function buildAssessmentEditor(c, l) {
           weights.theory.toLocaleString("fa-IR") +
           "٪</bdi></small>") +
       "</span>" +
-      gradeCell(c, l, st, mid ? "midtermTheory" : "theory", {
+      assessmentContext.cell(c, l, st, mid ? "midtermTheory" : "theory", {
         value: r.theory,
       }) +
       '</label></div><div class="gradebook-result"><span>' +
@@ -218,8 +190,11 @@ function refreshGradeResults() {
     const c = findClass(source?.class),
       l = getLessonObj(c, source?.lesson);
     if (!l) continue;
+    const context = source?.assessmentContext
+      ? assessmentContext.resolve(c, l)
+      : null;
     const result = assessmentResult(
-      l,
+      context?.lesson || l,
       el.dataset.assessmentFinal,
       el.dataset.stage,
     );

@@ -277,8 +277,18 @@ async function restoreFullBackup() {
               "اطلاعات سیستم در پنجره دیگری تغییر کرده است؛ پیش از بازیابی دوباره بررسی کنید.",
             );
           for (const name of names) tx.objectStore(name).clear();
-          for (const name of names)
-            for (const row of rows[name]) tx.objectStore(name).add(row);
+          for (const name of names) {
+            // Preserve explicit legacy history IDs before the auto-increment
+            // generator assigns IDs to history rows saved without a key.
+            const values =
+              name === "events"
+                ? [
+                    ...rows[name].filter((row) => row.id !== undefined),
+                    ...rows[name].filter((row) => row.id === undefined),
+                  ]
+                : rows[name];
+            for (const row of values) tx.objectStore(name).add(row);
+          }
           // Device file handles are not backup data; keep this device's connection.
           if (singleFile)
             tx.objectStore("drafts").put({ key: singleFileKey, ...singleFile });
@@ -294,6 +304,7 @@ async function restoreFullBackup() {
     } catch (error) {
       throw failure || error;
     }
+    assessmentContext.dispose({ abandon: true });
     committedRestore = true;
     installationToken = marker.value.token;
     broadcast({ type: "installation-restored" });
@@ -308,9 +319,13 @@ async function restoreFullBackup() {
       ? await synchronizeAnnualForRead(source.activeWorkspace)
       : null;
     const loaded = await readWorkspaceSnapshot(source.activeWorkspace);
+    // Authentication belongs to the installed workspace, never its predecessor.
+    // Revoke it synchronously before publishing protected destination data.
+    isAuthenticated = false;
     workspace = loaded.period;
     db = loaded.data;
     committed = loaded.records;
+    await synchronizeYearNotesScope();
     // All previous writes were drained before replacement. A restored
     // installation starts a new write generation, including after a failed
     // operation in the overwritten installation.
@@ -322,7 +337,6 @@ async function restoreFullBackup() {
     blocked = false;
     ready = true;
     storageBlocked = false;
-    isAuthenticated = false;
     state = {
       view: "schools",
       schoolId: null,
