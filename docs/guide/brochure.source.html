@@ -1,0 +1,1488 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>کلاس‌یار — راهنمای کاربردی و آموزشی</title>
+    <link rel="stylesheet" href="../../src/styles/fonts.css" data-guide-fonts />
+    <style>
+      :root {
+        --ink: #292b30;
+        --muted: #66676f;
+        --paper: #fffefa;
+        --warm: #f5f2ec;
+        --line: #e6e1d8;
+        --red: #bb1d32;
+        --red-soft: #fbecef;
+        --gold: #f2b735;
+        --green: #24694e;
+        --green-soft: #eaf4ee;
+        --orange: #96541a;
+        --orange-soft: #fff2df;
+        --purple: #6e438f;
+        --purple-soft: #f1eaf7;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 24px;
+        background: #ddd9d2;
+        color: var(--ink);
+        font-family: "IRANSans", Tahoma, sans-serif;
+        font-size: 12px;
+        line-height: 1.95;
+      }
+      svg {
+        display: block;
+      }
+      h1,
+      h2,
+      h3,
+      p,
+      ol,
+      ul {
+        margin: 0;
+      }
+      h1,
+      h2,
+      h3 {
+        line-height: 1.65;
+      }
+      h1 {
+        font-size: 42px;
+        font-weight: 700;
+        letter-spacing: -1.5px;
+      }
+      h2 {
+        font-size: 30px;
+        font-weight: 700;
+        letter-spacing: -0.9px;
+      }
+      h3 {
+        font-size: 15px;
+        font-weight: 700;
+      }
+      strong {
+        font-weight: 700;
+      }
+      a {
+        color: inherit;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 4px;
+      }
+      bdi {
+        unicode-bidi: isolate;
+      }
+      .page {
+        width: 210mm;
+        height: 297mm;
+        margin: 0 auto 24px;
+        padding: 11mm 14mm 10mm;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 6mm;
+        background: var(--paper);
+        box-shadow: 0 12px 45px #24221f20;
+        break-after: page;
+        isolation: isolate;
+      }
+      .page:last-of-type {
+        break-after: auto;
+      }
+      .page::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        right: 0;
+        left: 0;
+        height: 5px;
+        background: linear-gradient(
+          to left,
+          var(--red) 0 68%,
+          var(--gold) 68% 100%
+        );
+      }
+      .masthead,
+      .brand,
+      .page-label,
+      .page-footer,
+      .section-label,
+      .step-heading,
+      .status-heading,
+      .card-heading,
+      .tip-heading {
+        display: flex;
+        align-items: center;
+      }
+      .masthead {
+        justify-content: space-between;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 13px;
+      }
+      .brand {
+        gap: 11px;
+      }
+      .brand strong {
+        font-size: 24px;
+        letter-spacing: -0.8px;
+      }
+      .brand-mark {
+        width: 39px;
+        height: 39px;
+        padding: 9px;
+        color: white;
+        background: var(--red);
+        border-radius: 13px 13px 4px 13px;
+      }
+      .brand-mark svg {
+        width: 100%;
+        height: 100%;
+      }
+      .brand small {
+        display: block;
+        color: var(--muted);
+        font-size: 9px;
+      }
+      .page-label {
+        gap: 8px;
+        color: var(--muted);
+        font-size: 10px;
+      }
+      .page-label b {
+        color: var(--red);
+        font-size: 19px;
+        line-height: 1;
+      }
+      .section-label {
+        gap: 8px;
+        color: var(--red);
+        font-size: 10px;
+        font-weight: 700;
+      }
+      .section-label::before {
+        content: "";
+        width: 19px;
+        height: 3px;
+        border-radius: 4px;
+        background: var(--gold);
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .lead {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 2;
+      }
+      .hero {
+        display: grid;
+        grid-template-columns: 1.22fr 0.78fr;
+        align-items: center;
+        gap: 20px;
+      }
+      .hero h1 em {
+        font-style: normal;
+        color: var(--red);
+      }
+      .hero .section-label {
+        margin-bottom: 7px;
+      }
+      .hero .lead {
+        margin-top: 10px;
+      }
+      .hero-art {
+        position: relative;
+        background: var(--warm);
+        border-radius: 26px 26px 7px 26px;
+        padding: 22px 15px;
+      }
+      .hero-art svg {
+        width: 100%;
+        height: 172px;
+      }
+      .hero-art p {
+        text-align: center;
+        font-size: 10px;
+        color: var(--muted);
+        margin-top: 8px;
+      }
+      .pill-row {
+        display: flex;
+        gap: 7px;
+        flex-wrap: wrap;
+      }
+      .pill {
+        border: 1px solid var(--line);
+        background: white;
+        padding: 3px 10px;
+        border-radius: 40px;
+        font-size: 10px;
+      }
+      .pill.primary {
+        background: var(--red-soft);
+        color: var(--red);
+        border-color: transparent;
+      }
+      .route {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0;
+        padding: 15px 12px;
+        background: var(--ink);
+        color: white;
+        border-radius: 14px;
+      }
+      .route > div {
+        text-align: center;
+        position: relative;
+      }
+      .route > div:not(:last-child)::after {
+        content: "←";
+        position: absolute;
+        left: -7px;
+        top: 4px;
+        color: var(--gold);
+        font-size: 18px;
+      }
+      .route span {
+        display: block;
+        color: #dedbd4;
+        font-size: 9px;
+      }
+      .route strong {
+        font-size: 13px;
+      }
+      .section-title {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 11px;
+      }
+      .section-title small {
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 400;
+      }
+      .steps {
+        display: grid;
+        gap: 12px;
+      }
+      .step {
+        display: grid;
+        grid-template-columns: 31px 1fr;
+        gap: 11px;
+      }
+      .step-num {
+        width: 30px;
+        height: 30px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--red-soft);
+        color: var(--red);
+        font-weight: 700;
+        font-size: 13px;
+      }
+      .step-heading {
+        gap: 8px;
+      }
+      .step p {
+        color: var(--muted);
+        margin-top: 2px;
+        font-size: 11px;
+      }
+      .step p strong {
+        color: var(--ink);
+        font-weight: 500;
+      }
+      .steps.compact {
+        gap: 10px;
+      }
+      .steps.compact .step {
+        grid-template-columns: 26px 1fr;
+        gap: 9px;
+      }
+      .steps.compact .step-num {
+        width: 25px;
+        height: 25px;
+        font-size: 11px;
+      }
+      .steps.compact h3 {
+        font-size: 12px;
+      }
+      .steps.compact p {
+        font-size: 10.5px;
+      }
+      .tip {
+        padding: 12px 15px;
+        background: var(--warm);
+        border-radius: 12px;
+      }
+      .tip p {
+        color: var(--muted);
+        font-size: 10.5px;
+        margin-top: 3px;
+      }
+      .tip-heading {
+        gap: 8px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .tip-heading i {
+        font-style: normal;
+        width: 20px;
+        height: 20px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--gold);
+        color: var(--ink);
+        font-size: 12px;
+      }
+      .tip.safety {
+        background: var(--red-soft);
+        border-inline-start: 3px solid var(--red);
+      }
+      .tip.safety .tip-heading {
+        color: var(--red);
+      }
+      .tip.safety p {
+        color: #74434c;
+      }
+      .page-footer {
+        justify-content: space-between;
+        border-top: 1px solid var(--line);
+        padding-top: 10px;
+        margin-top: auto;
+        font-size: 9px;
+        color: var(--muted);
+        gap: 10px;
+      }
+      .page-footer .folio {
+        color: var(--red);
+        font-size: 14px;
+        font-weight: 700;
+      }
+      .page-footer a {
+        text-decoration: none;
+        font-size: 8px;
+      }
+      .title-block h2 {
+        margin-top: 5px;
+      }
+      .title-block .lead {
+        margin-top: 5px;
+      }
+      .columns {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 17px;
+      }
+      .columns.wide-right {
+        grid-template-columns: 1.1fr 0.9fr;
+      }
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 15px;
+      }
+      .panel p {
+        margin-top: 5px;
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .card-heading {
+        gap: 9px;
+        margin-bottom: 8px;
+      }
+      .icon {
+        display: inline-flex;
+        flex: 0 0 auto;
+        width: 29px;
+        height: 29px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 9px;
+        background: var(--red-soft);
+        color: var(--red);
+      }
+      .icon svg {
+        width: 17px;
+        height: 17px;
+      }
+      .checklist {
+        list-style: none;
+        padding: 0;
+      }
+      .checklist li {
+        position: relative;
+        padding-inline-start: 17px;
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 6px;
+      }
+      .checklist li::before {
+        content: "✓";
+        position: absolute;
+        right: 0;
+        color: var(--green);
+        font-weight: 700;
+      }
+      .checklist strong {
+        color: var(--ink);
+      }
+      .statuses {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 9px;
+        margin-top: 13px;
+      }
+      .status {
+        border-radius: 11px;
+        padding: 11px 13px;
+      }
+      .status-heading {
+        gap: 7px;
+        font-size: 13px;
+        font-weight: 700;
+      }
+      .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: currentColor;
+        display: inline-block;
+      }
+      .status p {
+        font-size: 10.5px;
+        margin-top: 3px;
+        line-height: 1.9;
+        color: inherit;
+      }
+      .status.present {
+        color: var(--green);
+        background: var(--green-soft);
+      }
+      .status.absent {
+        color: var(--red);
+        background: var(--red-soft);
+      }
+      .status.late {
+        color: var(--orange);
+        background: var(--orange-soft);
+      }
+      .status.leave {
+        color: var(--purple);
+        background: var(--purple-soft);
+      }
+      .small-line {
+        font-size: 10.5px;
+        color: var(--muted);
+        margin-top: 8px;
+      }
+      .activity-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 10px 0 6px;
+      }
+      .activity-tags span {
+        padding: 3px 9px;
+        border-radius: 7px;
+        background: var(--warm);
+        font-size: 10px;
+      }
+      .ribbon {
+        display: flex;
+        align-items: flex-start;
+        gap: 13px;
+        background: var(--ink);
+        color: white;
+        border-radius: 13px;
+        padding: 14px 17px;
+      }
+      .ribbon .icon {
+        color: var(--gold);
+        background: #ffffff16;
+      }
+      .ribbon p {
+        font-size: 10.5px;
+        color: #e6e1d8;
+        margin-top: 3px;
+      }
+      .term-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 11px;
+        margin-top: 11px;
+      }
+      .term-card {
+        background: var(--warm);
+        border-radius: 12px;
+        padding: 10px 13px;
+      }
+      .term-card > strong {
+        font-size: 12px;
+      }
+      .stage-row {
+        display: flex;
+        gap: 6px;
+        margin-top: 7px;
+      }
+      .stage-row span {
+        background: white;
+        border-radius: 6px;
+        padding: 5px 7px;
+        text-align: center;
+        flex: 1;
+        font-size: 10px;
+      }
+      .formula {
+        direction: rtl;
+        text-align: center;
+        background: var(--ink);
+        color: white;
+        border-radius: 12px;
+        padding: 13px;
+        margin-top: 11px;
+      }
+      .formula .values {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 9px;
+        font-size: 18px;
+        font-weight: 700;
+      }
+      .formula .values em {
+        font-style: normal;
+        color: var(--gold);
+      }
+      .formula p {
+        color: #e4e0d8;
+        font-size: 10px;
+        margin-top: 4px;
+      }
+      .report-rows {
+        margin-top: 11px;
+      }
+      .report-row {
+        display: grid;
+        grid-template-columns: 111px 1fr;
+        gap: 11px;
+        padding: 9px 0;
+        border-top: 1px solid var(--line);
+        font-size: 11px;
+      }
+      .report-row strong {
+        color: var(--red);
+      }
+      .report-row span {
+        color: var(--muted);
+      }
+      .outputs {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+      }
+      .outputs span {
+        background: var(--red-soft);
+        color: var(--red);
+        border-radius: 6px;
+        padding: 3px 8px;
+        font-size: 10px;
+      }
+      .number-caption {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 9px;
+      }
+      .number-caption b {
+        background: var(--red);
+        color: white;
+        border-radius: 9px;
+        width: 29px;
+        height: 29px;
+        display: grid;
+        place-items: center;
+        font-size: 12px;
+      }
+      .backup-steps {
+        padding: 0 19px 0 0;
+        margin-top: 5px;
+        color: var(--muted);
+        font-size: 10.5px;
+      }
+      .backup-steps li {
+        padding-inline-start: 3px;
+        margin-top: 5px;
+      }
+      .backup-steps li::marker {
+        color: var(--red);
+        font-weight: 700;
+      }
+      .backup-steps strong {
+        color: var(--ink);
+        font-weight: 500;
+      }
+      .restore {
+        background: var(--warm);
+        border-radius: 14px;
+        padding: 14px 17px;
+      }
+      .restore h3 {
+        margin-bottom: 8px;
+      }
+      .restore-flow {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 11px;
+      }
+      .restore-flow div {
+        font-size: 10px;
+      }
+      .restore-flow b {
+        display: block;
+        color: var(--red);
+        font-size: 17px;
+        margin-bottom: 2px;
+      }
+      .restore-flow strong {
+        display: block;
+        font-size: 11px;
+      }
+      .restore-flow p {
+        color: var(--muted);
+        margin-top: 4px;
+      }
+      .fine {
+        color: var(--muted);
+        font-size: 9.5px;
+      }
+      .quick-note {
+        padding-top: 9px;
+        border-top: 1px solid var(--line);
+        font-size: 10px;
+        color: var(--muted);
+        margin-top: 9px;
+      }
+      .compact-page {
+        gap: 4mm;
+      }
+      .grade-page {
+        gap: 4.5mm;
+      }
+      .compact-page .panel {
+        padding: 12px;
+      }
+      .compact-page .title-block h2 {
+        font-size: 28px;
+        line-height: 1.5;
+      }
+      .compact-page .title-block .lead {
+        font-size: 12px;
+      }
+      .compact-page .status {
+        padding: 9px 12px;
+      }
+      .compact-page .restore,
+      .compact-page .ribbon {
+        padding: 12px 15px;
+      }
+      .compact-page .checklist li {
+        font-size: 10.5px;
+        margin-top: 4px;
+      }
+      @page {
+        size: A4;
+        margin: 0;
+      }
+      @media print {
+        html,
+        body {
+          margin: 0;
+          padding: 0;
+          background: white;
+        }
+        body {
+          print-color-adjust: exact;
+          -webkit-print-color-adjust: exact;
+        }
+        .page {
+          margin: 0;
+          box-shadow: none;
+        }
+        a {
+          text-decoration: none;
+        }
+      }
+      @media screen and (max-width: 820px) {
+        body {
+          padding: 12px;
+        }
+        .page {
+          width: 100%;
+          height: auto;
+          min-height: 0;
+          padding: 27px 24px 22px;
+          gap: 23px;
+        }
+        .page-footer {
+          margin-top: 12px;
+        }
+        h1 {
+          font-size: clamp(29px, 6vw, 42px);
+        }
+        h2 {
+          font-size: clamp(24px, 5vw, 30px);
+        }
+      }
+      @media screen and (max-width: 550px) {
+        .hero,
+        .columns,
+        .columns.wide-right {
+          grid-template-columns: 1fr;
+        }
+        .hero-art {
+          display: none;
+        }
+        .brand strong {
+          font-size: 21px;
+        }
+        .page-label {
+          font-size: 9px;
+        }
+        .page {
+          padding: 24px 19px;
+        }
+        .route {
+          padding: 13px 5px;
+        }
+        .route strong {
+          font-size: 11px;
+        }
+        .route span {
+          font-size: 8px;
+        }
+        .route > div:not(:last-child)::after {
+          left: -5px;
+          font-size: 14px;
+        }
+        .term-grid {
+          gap: 7px;
+        }
+        .term-card {
+          padding: 10px 8px;
+        }
+        .stage-row {
+          flex-direction: column;
+        }
+        .restore-flow {
+          grid-template-columns: 1fr 1fr;
+        }
+        .page-footer a {
+          font-size: 7px;
+          overflow-wrap: anywhere;
+        }
+        .report-row {
+          grid-template-columns: 90px 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" aria-hidden="true" style="position: absolute">
+      <defs>
+        <symbol id="book" viewBox="0 0 24 24">
+          <path
+            d="M12 5C9 3 6 3 3 4v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1Zm0 0v15"
+          />
+        </symbol>
+        <symbol id="calendar" viewBox="0 0 24 24">
+          <path d="M4 5h16v16H4zM8 3v4M16 3v4M4 10h16M8 14h2M14 14h2M8 17h2" />
+        </symbol>
+        <symbol id="check" viewBox="0 0 24 24">
+          <path d="M20 11v8H4V4h11M8 10l4 4 8-10" />
+        </symbol>
+        <symbol id="shield" viewBox="0 0 24 24">
+          <path d="m12 3-8 3v6c0 5 8 9 8 9s8-4 8-9V6l-8-3ZM8 12l3 3 5-6" />
+        </symbol>
+        <symbol id="report" viewBox="0 0 24 24">
+          <path d="M4 3v18h17M8 17v-5M13 17V8M18 17V5" />
+        </symbol>
+      </defs>
+    </svg>
+
+    <section class="page" aria-label="صفحه اول: شروع کار">
+      <header class="masthead">
+        <div class="brand">
+          <span class="brand-mark"
+            ><svg
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <use href="#book" /></svg
+          ></span>
+          <div><strong>کلاس‌یار</strong><small>همراه روزمرهٔ دبیر</small></div>
+        </div>
+        <div class="page-label">راهنمای کاربردی <b>۰۱</b></div>
+      </header>
+      <div class="hero">
+        <div>
+          <div class="section-label">از اولین کلاس تا آخرین کارنامه</div>
+          <h1>کلاس را<br /><em>ساده‌تر</em> اداره کن.</h1>
+          <p class="lead">
+            ثبت هنرجو، حضور، فعالیت و نمره؛<br />تا گزارش و کارنامه، در یک مسیر
+            روشن.
+          </p>
+        </div>
+        <div class="hero-art">
+          <svg viewBox="0 0 200 184" fill="none" aria-hidden="true">
+            <circle cx="105" cy="91" r="78" fill="#eee7db" />
+            <circle cx="164" cy="26" r="12" fill="#f2b735" />
+            <rect
+              x="21"
+              y="28"
+              width="146"
+              height="115"
+              rx="13"
+              fill="#fffefa"
+              stroke="#dbd3c6"
+            />
+            <path
+              d="M21 41a13 13 0 0 1 13-13h120a13 13 0 0 1 13 13v16H21Z"
+              fill="#bb1d32"
+            />
+            <circle cx="35" cy="42" r="3" fill="#ffffffbb" />
+            <circle cx="46" cy="42" r="3" fill="#ffffff77" />
+            <path
+              d="M128 41h25"
+              stroke="white"
+              stroke-width="3"
+              stroke-linecap="round"
+            />
+            <rect x="35" y="70" width="47" height="54" rx="7" fill="#f5f2ec" />
+            <path
+              d="m45 95 8 8 17-20"
+              stroke="#24694e"
+              stroke-width="4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M97 77h53M97 92h41M97 107h49M97 121h33"
+              stroke="#d6d0c5"
+              stroke-width="4"
+              stroke-linecap="round"
+            />
+            <rect
+              x="111"
+              y="107"
+              width="70"
+              height="48"
+              rx="10"
+              fill="#292b30"
+            />
+            <path
+              d="M126 140v-9M139 140v-15M152 140v-23M165 140v-17"
+              stroke="#f2b735"
+              stroke-width="6"
+              stroke-linecap="round"
+            />
+            <circle cx="32" cy="151" r="15" fill="#24694e" />
+            <path
+              d="m25 151 5 5 10-11"
+              stroke="white"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <p>اطلاعات محلی · بدون نیاز به سرور</p>
+        </div>
+      </div>
+      <div class="pill-row">
+        <span class="pill primary">یک سال تحصیلی</span
+        ><span class="pill">دو ترم اول و دوم</span
+        ><span class="pill">مناسب موبایل و تبلت</span
+        ><span class="pill">قابل استفادهٔ آفلاین</span>
+      </div>
+      <div class="route" aria-label="مسیر اصلی استفاده">
+        <div><strong>خانه</strong><span>فهرست مدرسه‌ها</span></div>
+        <div><strong>مدرسه</strong><span>کلاس‌های همان مدرسه</span></div>
+        <div><strong>کلاس</strong><span>دروس و دانش‌آموزان</span></div>
+        <div><strong>درس</strong><span>جلسه و نمره</span></div>
+      </div>
+      <div>
+        <div class="section-title">
+          <h3>شروع در پنج گام</h3>
+          <small>فقط یک بار آماده‌سازی کن</small>
+        </div>
+        <div class="steps">
+          <div class="step">
+            <span class="step-num">۱</span>
+            <div>
+              <h3>مدرسه را ثبت کن</h3>
+              <p>
+                در «خانه»، <strong>مدرسه جدید</strong> را باز کن؛ نام را بنویس و
+                <strong>ثبت مدرسه</strong> را بزن.
+              </p>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-num">۲</span>
+            <div>
+              <h3>کلاس بساز</h3>
+              <p>
+                وارد مدرسه شو؛ از <strong>کلاس جدید</strong>، نام کلاس را وارد و
+                آن را ثبت کن.
+              </p>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-num">۳</span>
+            <div>
+              <h3>هنرجویان را اضافه کن</h3>
+              <p>
+                در کلاس، تب <strong>دانش‌آموزان</strong> ←
+                <strong>هنرجوی جدید</strong>؛ نام کامل را ثبت کن. کد دانش‌آموزی
+                اختیاری است.
+              </p>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-num">۴</span>
+            <div>
+              <h3>درس و روش نمره‌دهی را مشخص کن</h3>
+              <p>
+                تب <strong>دروس</strong> ← <strong>درس جدید</strong>؛ نام، زنگ
+                در هفته و روش ارزشیابی را بررسی کن و <strong>ثبت درس</strong> را
+                بزن.
+              </p>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-num">۵</span>
+            <div>
+              <h3>اولین جلسه را شروع کن</h3>
+              <p>
+                وارد درس شو؛ در <strong>جلسات و حضور‌وغیاب</strong>، تاریخ و زنگ
+                را انتخاب و <strong>شروع یا ادامه جلسه</strong> را بزن.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <aside class="tip">
+        <div class="tip-heading"><i>+</i>فهرست طولانی داری؟ CSV وارد کن</div>
+        <p>
+          <strong>افزودن گروهی از فایل CSV</strong> ← دریافت قالب CSV ← تکمیل
+          نام‌ها و کدها ← ذخیره با قالب <bdi dir="ltr">CSV UTF-8</bdi> ← انتخاب
+          و بررسی فایل ← تأیید پیش‌نمایش.
+        </p>
+      </aside>
+      <footer class="page-footer">
+        <span>شروع کار · آماده‌سازی مدرسه و کلاس</span
+        ><a href="https://saeid-pirzad.github.io/edu-manager/EduManager.html"
+          ><bdi dir="ltr">saeid-pirzad.github.io/edu-manager</bdi></a
+        ><span class="folio">۱ از ۴</span>
+      </footer>
+    </section>
+
+    <section class="page compact-page" aria-label="صفحه دوم: اداره جلسه">
+      <header class="masthead">
+        <div class="brand">
+          <span class="brand-mark"
+            ><svg
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <use href="#book" /></svg
+          ></span>
+          <div><strong>کلاس‌یار</strong><small>همراه روزمرهٔ دبیر</small></div>
+        </div>
+        <div class="page-label">ادارهٔ کلاس <b>۰۲</b></div>
+      </header>
+      <div class="title-block">
+        <div class="section-label">روال هر روز</div>
+        <h2>هر جلسه، یک مسیر روشن</h2>
+        <p class="lead">
+          تاریخ و زنگ را بررسی کن، حضور را مشخص کن و فعالیت‌ها را در همان جلسه
+          ثبت کن.
+        </p>
+      </div>
+      <div class="columns wide-right">
+        <section class="panel">
+          <div class="card-heading">
+            <span class="icon"
+              ><svg
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <use href="#calendar" /></svg
+            ></span>
+            <h3>برنامهٔ هفتگی، راه سریع ورود</h3>
+          </div>
+          <div class="steps compact">
+            <div class="step">
+              <span class="step-num">۱</span>
+              <div>
+                <h3>«برنامه هفتگی» را باز کن</h3>
+                <p>
+                  روز و زنگ موردنظر را انتخاب و
+                  <strong>+ تنظیم برنامه</strong> را بزن.
+                </p>
+              </div>
+            </div>
+            <div class="step">
+              <span class="step-num">۲</span>
+              <div>
+                <h3>کلاس و درس را تعیین کن</h3>
+                <p>
+                  اطلاعات را بررسی و <strong>ذخیره برنامه</strong> را انتخاب کن.
+                </p>
+              </div>
+            </div>
+            <div class="step">
+              <span class="step-num">۳</span>
+              <div>
+                <h3>جلسه را باز کن</h3>
+                <p>
+                  برای کلاس برنامه‌ریزی‌شده، از
+                  <strong>بازکردن جلسه</strong> استفاده کن.
+                </p>
+              </div>
+            </div>
+          </div>
+          <p class="quick-note">
+            روزهای کاری، تعداد زنگ‌ها و مبنای هفته در «تنظیمات برنامه» هستند؛
+            برنامهٔ متفاوت فرد و زوج اختیاری است.
+          </p>
+        </section>
+        <section class="panel">
+          <div class="card-heading">
+            <span class="icon"
+              ><svg
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <use href="#check" /></svg
+            ></span>
+            <h3>ورود مستقیم از درس</h3>
+          </div>
+          <ol class="backup-steps">
+            <li>مدرسه و کلاس را باز کن و وارد درس شو.</li>
+            <li><strong>جلسات و حضور‌وغیاب</strong> را انتخاب کن.</li>
+            <li>تاریخ و شمارهٔ زنگ را بررسی کن.</li>
+            <li><strong>شروع یا ادامه جلسه</strong> را بزن.</li>
+          </ol>
+          <p class="quick-note">
+            قبل از ساخت جلسهٔ تازه، فهرست جلسات قبلی را ببین. برای همان کلاس و
+            همان زنگ، جلسهٔ تکراری نساز.
+          </p>
+        </section>
+      </div>
+      <section>
+        <div class="section-title">
+          <h3>حضور را دقیق، نه حدسی ثبت کن</h3>
+          <small>هر هنرجو یک وضعیت</small>
+        </div>
+        <p class="muted">
+          اگر بیشتر کلاس حاضر است، ابتدا <strong>همه حاضر</strong> را بزن؛ بعد
+          غایبان، تأخیرها و مرخصی‌ها را اصلاح کن.
+        </p>
+        <div class="statuses">
+          <div class="status present">
+            <div class="status-heading"><span class="dot"></span>حاضر</div>
+            <p>حضور هنرجو در جلسه ثبت شده است.</p>
+          </div>
+          <div class="status absent">
+            <div class="status-heading"><span class="dot"></span>غایب</div>
+            <p>هنرجو در این جلسه حضور نداشته است.</p>
+          </div>
+          <div class="status late">
+            <div class="status-heading"><span class="dot"></span>تأخیر</div>
+            <p>دقیقهٔ تأخیر را ثبت کن؛ تأخیر جزو حضور است.</p>
+          </div>
+          <div class="status leave">
+            <div class="status-heading"><span class="dot"></span>مرخصی</div>
+            <p>مرخصی مستقل است و غیبت حساب نمی‌شود.</p>
+          </div>
+        </div>
+        <p class="small-line">
+          <strong>تعیین‌نشده</strong> یعنی هنوز وضعیت وارد نشده؛ به معنی غیبت
+          نیست. تأخیر را دوباره به تعداد کل حاضران اضافه نکن.
+        </p>
+      </section>
+      <section class="panel">
+        <div class="card-heading">
+          <span class="icon"
+            ><svg
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <use href="#book" /></svg
+          ></span>
+          <h3>فعالیت‌های جلسه را جدا ثبت کن</h3>
+        </div>
+        <p>
+          در تب <strong>نمره و فعالیت</strong> همان جلسه، هنرجو و نوع ثبت را
+          مشخص کن و مقدار یا توضیح لازم را وارد کن.
+        </p>
+        <div class="activity-tags">
+          <span>تکلیف</span><span>نمرهٔ کلاسی</span><span>مثبت / منفی</span
+          ><span>فعالیت</span>
+        </div>
+        <p>
+          این ثبت‌ها مربوط به جلسه‌اند و خودکار جای نمرهٔ رسمی میان‌ترم یا
+          پایان‌ترم را نمی‌گیرند.
+        </p>
+      </section>
+      <aside class="ribbon">
+        <span class="icon"
+          ><svg
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <use href="#shield" /></svg
+        ></span>
+        <div>
+          <h3>پایان جلسه، وضعیت ذخیره را ببین</h3>
+          <p>
+            پیام خطا یا «در انتظار ذخیره» را نادیده نگیر. ورودی نامعتبر را اصلاح
+            کن و قبل از خروج، پشتیبان فایل را هم به‌روز نگه دار.
+          </p>
+        </div>
+      </aside>
+      <footer class="page-footer">
+        <span>ثبت روزانه · حضور، تکلیف و فعالیت</span
+        ><span>جلسهٔ بدون ثبت، غیبت یا نمرهٔ صفر نیست.</span
+        ><span class="folio">۲ از ۴</span>
+      </footer>
+    </section>
+
+    <section class="page grade-page" aria-label="صفحه سوم: نمرات و گزارش‌ها">
+      <header class="masthead">
+        <div class="brand">
+          <span class="brand-mark"
+            ><svg
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <use href="#book" /></svg
+          ></span>
+          <div><strong>کلاس‌یار</strong><small>همراه روزمرهٔ دبیر</small></div>
+        </div>
+        <div class="page-label">ارزشیابی و خروجی <b>۰۳</b></div>
+      </header>
+      <div class="title-block">
+        <div class="section-label">از نمرهٔ خام تا نتیجه</div>
+        <h2>نمره را درست وارد کن؛<br />کارنامه را روشن بخوان.</h2>
+        <p class="lead">
+          در تب «نمرات» همان درس، مرحلهٔ ارزشیابی را انتخاب کن؛ لازم نیست کلاس و
+          هنرجو را برای ترم دوم دوباره بسازی.
+        </p>
+      </div>
+      <section>
+        <div class="section-title">
+          <h3>چهار مرحله برای درس عمومی و نظری‌ـ‌عملی</h3>
+          <small>انتخاب مرحله، کلاس را عوض نمی‌کند</small>
+        </div>
+        <div class="term-grid">
+          <div class="term-card">
+            <strong>ترم اول</strong>
+            <div class="stage-row">
+              <span>میان‌ترم اول</span><span>پایان‌ترم اول</span>
+            </div>
+          </div>
+          <div class="term-card">
+            <strong>ترم دوم</strong>
+            <div class="stage-row">
+              <span>میان‌ترم دوم</span><span>پایان‌ترم دوم</span>
+            </div>
+          </div>
+        </div>
+      </section>
+      <div class="columns">
+        <section class="panel">
+          <h3>نظری و عملی</h3>
+          <p>
+            در هر مرحله، <strong>عملی</strong> و <strong>تئوری</strong> را از
+            صفر تا ۲۰ وارد کن. نتیجه با سهم‌های تعیین‌شدهٔ همان درس محاسبه
+            می‌شود.
+          </p>
+          <div class="formula">
+            <div class="values">
+              <span>عملی <em>۷۰٪</em></span
+              ><span>+</span><span>تئوری <em>۳۰٪</em></span>
+            </div>
+            <p>وزن‌های پیش‌فرض؛ تنظیم معتبر درس ملاک است.</p>
+          </div>
+          <p class="small-line">
+            مثال: عملی ۱۸ و تئوری ۱۶، با وزن پیش‌فرض → نتیجه
+            <strong>۱۷٫۴</strong> از ۲۰.
+          </p>
+        </section>
+        <section class="panel">
+          <h3>عمومی و پودمانی را اشتباه نگیر</h3>
+          <ul class="checklist">
+            <li><strong>عمومی:</strong> هر مرحله یک نمره از ۲۰ دارد.</li>
+            <li>
+              <strong>پودمانی:</strong> مستمر و شایستگیِ هر پودمان را ثبت کن؛
+              نمرات در طول سال ادامه دارند.
+            </li>
+            <li>
+              <strong>پودمانی سالانه است؛</strong> با شروع ترم دوم، از نو ساخته
+              نمی‌شود و چهارمرحله‌ای نیست.
+            </li>
+          </ul>
+        </section>
+      </div>
+      <aside class="tip">
+        <div class="tip-heading"><i>!</i>سه قاعدهٔ کوچک، سه خطای کمتر</div>
+        <p>
+          <strong>صفر یک نمرهٔ معتبر است؛ خالی، صفر نیست.</strong> وضعیت زیر هر
+          کادر را کنترل کن. برای حذف نمره از دکمهٔ × و تأیید حذف استفاده کن.
+          سهم‌ها و ساختار درس را پیش از ثبت نمره بررسی کن؛ تغییرات مؤثر بعداً
+          محدود می‌شوند.
+        </p>
+      </aside>
+      <section>
+        <div class="card-heading">
+          <span class="icon"
+            ><svg
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <use href="#report" /></svg
+          ></span>
+          <h3>از «گزارش‌ها»، خروجی مناسب بگیر</h3>
+        </div>
+        <p class="muted">
+          نوع گزارش، مخاطب، تاریخ، مدرسه و کلاس را مشخص کن؛ سپس
+          <strong>تهیه گزارش</strong> را بزن. برای یک هنرجو، مخاطب
+          <strong>اولیای یک هنرجو</strong> را انتخاب کن.
+        </p>
+        <div class="report-rows">
+          <div class="report-row">
+            <strong>روز / هفته / ماه</strong
+            ><span
+              >جلسات و فعالیت‌های <strong>ترم انتخاب‌شده</strong>، در بازهٔ
+              تعیین‌شده؛ نام ترم و تاریخ را پیش از ارسال ببین.</span
+            >
+          </div>
+          <div class="report-row">
+            <strong>سالانه / کارنامه</strong
+            ><span
+              >کارنامه هر دو ترم را پوشش می‌دهد. در درس عمومی و نظری‌ـ‌عملی،
+              نهایی سال فقط با تکمیل چهار مرحله و میانگین برابر نتایج آن‌ها
+              محاسبه می‌شود؛ نمرهٔ ناقص، صفر نیست. پودمانی سالانه و مستقل از این
+              چهار مرحله است.</span
+            >
+          </div>
+        </div>
+        <div class="outputs">
+          <span>چاپ / PDF</span><span>فایل متن</span><span>فایل JSON گزارش</span
+          ><span>کپی برای معاون</span>
+        </div>
+        <p class="small-line">
+          در گزارش اولیا، بخش کارنامه آخرین وضعیت نمرات
+          <strong>کل سال</strong> است؛ بازهٔ روز/هفته/ماه فقط جلسات و فعالیت ترم
+          انتخاب‌شده را محدود می‌کند.
+        </p>
+      </section>
+      <footer class="page-footer">
+        <span>نمره و گزارش · مطابق تنظیمات همان درس</span
+        ><span>قواعد پیش‌فرض، جای آیین‌نامهٔ رسمی نیستند.</span
+        ><span class="folio">۳ از ۴</span>
+      </footer>
+    </section>
+
+    <section
+      class="page compact-page"
+      aria-label="صفحه چهارم: پشتیبان و بازیابی"
+    >
+      <header class="masthead">
+        <div class="brand">
+          <span class="brand-mark"
+            ><svg
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <use href="#book" /></svg
+          ></span>
+          <div><strong>کلاس‌یار</strong><small>همراه روزمرهٔ دبیر</small></div>
+        </div>
+        <div class="page-label">حفظ اطلاعات <b>۰۴</b></div>
+      </header>
+      <div class="title-block">
+        <div class="section-label">مهم‌ترین عادت کاری</div>
+        <h2>اطلاعاتت را<br />قابل بازیابی نگه دار.</h2>
+        <p class="lead">
+          ذخیرهٔ داخل مرورگر برای کار روزمره است؛ برای بازیابی بعد از پاک‌شدن
+          مرورگر، به فایل پشتیبان مستقل نیاز داری.
+        </p>
+      </div>
+      <div class="columns">
+        <section class="panel">
+          <div class="number-caption">
+            <b>۱</b>
+            <h3>پشتیبان کامل دستی</h3>
+          </div>
+          <ol class="backup-steps">
+            <li><strong>پشتیبان و بازیابی</strong> را باز کن.</li>
+            <li><strong>دریافت پشتیبان کامل</strong> را بزن.</li>
+            <li>فایل JSON را در یک محل امن نگه دار.</li>
+          </ol>
+          <p class="quick-note">
+            برای خرابی خود دستگاه، یک نسخه در محل امن دیگری هم نگه دار. فایل
+            پشتیبان را در مخزن عمومی یا گروه عمومی ارسال نکن.
+          </p>
+        </section>
+        <section class="panel">
+          <div class="number-caption">
+            <b>۲</b>
+            <h3>خودکار در یک فایل</h3>
+          </div>
+          <ol class="backup-steps">
+            <li><strong>انتخاب فایل و فعال‌سازی</strong> را بزن.</li>
+            <li>فایل مقصد را انتخاب و مجوز نوشتن بده.</li>
+            <li>
+              پیام اولین ذخیرهٔ موفق را ببین؛ انتخاب فایل به‌تنهایی کافی نیست.
+            </li>
+            <li>
+              پایان کار، <strong>ذخیره اکنون / اجازه مجدد</strong> را بزن و
+              نتیجه را بررسی کن.
+            </li>
+          </ol>
+        </section>
+      </div>
+      <aside class="tip safety">
+        <div class="tip-heading">دو اشتباه مهم را انجام نده</div>
+        <p>
+          <strong>فایل JSON گزارش، پشتیبان کامل سیستم نیست.</strong> برای
+          بازیابی هم «انتخاب فایل و فعال‌سازی» را نزن؛ آن گزینه برای نوشتن
+          اطلاعات فعلی روی فایل مقصد است و می‌تواند محتوای فایل انتخابی را
+          جایگزین کند.
+        </p>
+      </aside>
+      <section class="restore">
+        <h3>بازیابی از فایل، در چهار گام</h3>
+        <div class="restore-flow">
+          <div>
+            <b>۱</b><strong>فایل را انتخاب کن</strong>
+            <p>پشتیبان و بازیابی ← بازیابی از فایل.</p>
+          </div>
+          <div>
+            <b>۲</b><strong>مشخصات را ببین</strong>
+            <p>نام فایل، زمان تهیه و اطلاعات موجود را بررسی کن.</p>
+          </div>
+          <div>
+            <b>۳</b><strong>جایگزینی را تأیید کن</strong>
+            <p>
+              ابتدا از وضعیت فعلی پشتیبان بگیر؛ سپس تأیید آگاهانه را علامت بزن.
+            </p>
+          </div>
+          <div>
+            <b>۴</b><strong>بازیابی را انجام بده</strong>
+            <p>«تأیید و بازیابی کل اطلاعات» را بزن و منتظر نتیجه بمان.</p>
+          </div>
+        </div>
+      </section>
+      <aside class="ribbon">
+        <span class="icon"
+          ><svg
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <use href="#shield" /></svg
+        ></span>
+        <div>
+          <h3>بازیابی، ادغام نیست.</h3>
+          <p>
+            کل اطلاعات فعلی با محتوای پشتیبان جایگزین می‌شود؛ حتی اگر فایل قدیمی
+            فقط بخشی از اطلاعات را داشته باشد. فایل درست را پیش از تأیید بررسی
+            کن.
+          </p>
+        </div>
+      </aside>
+      <section>
+        <h3>نصب، آفلاین و محدودیت‌ها</h3>
+        <ul class="checklist">
+          <li>
+            بار اول برنامه را آنلاین باز کن؛ پس از آماده‌شدن فایل‌های آفلاین، از
+            گزینهٔ نصب مرورگر استفاده کن و اجرای آفلاین را امتحان کن.
+          </li>
+          <li>
+            اطلاعات روی <strong>همین دستگاه و مرورگر</strong> است؛ بین دستگاه‌ها
+            خودکار همگام نمی‌شود. انتقال با پشتیبان کامل و بازیابی انجام می‌شود.
+          </li>
+          <li>
+            ذخیرهٔ خودکار فایل فقط با برنامهٔ باز انجام می‌شود؛ با برنامهٔ بسته
+            یا دستگاه خاموش، فایل به‌روز نمی‌شود.
+          </li>
+          <li>
+            اگر ذخیرهٔ خودکار در محیطت در دسترس نبود یا خطا داد، پشتیبان کامل
+            دستی بگیر. فایل خالی قابل بازیابی نیست.
+          </li>
+        </ul>
+        <p class="quick-note">
+          <strong>حریم خصوصی:</strong> رمز ورود، فایل JSON را رمزگذاری نمی‌کند؛
+          آن را فقط با افراد مجاز به اشتراک بگذار.
+        </p>
+      </section>
+      <footer class="page-footer">
+        <span>راهنمای آموزشی · آبان ۱۴۰۵ · منطبق با کد بررسی‌شده</span
+        ><span>پشتیبان مستقل، همراه همیشگی اطلاعاتت.</span
+        ><span class="folio">۴ از ۴</span>
+      </footer>
+    </section>
+  </body>
+</html>
