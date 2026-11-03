@@ -98,7 +98,7 @@ test("late attendance belongs to displayed present totals without changing raw r
   assert.equal(model.summary.late, 1);
   assert.equal(model.summary.attendanceRate, 66.7);
   const html = latin(context.documentHtml(model));
-  assert.match(html, /data-summary-status="present"><strong>2<\/strong>/);
+  assert.doesNotMatch(html, /periodic-summary|data-summary-status/);
   assert.match(html, /<dt>حاضر<\/dt><dd>2<\/dd>/);
   const lateStudent = context.studentFollowupHtml({
     students: model.students.filter((st) => st.studentId === "s1"),

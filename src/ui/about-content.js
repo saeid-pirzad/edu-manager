@@ -18,28 +18,3 @@ window.EduAbout = Object.freeze({
     );
   },
 });
-
-document.addEventListener("click", (event) => {
-  const dialog = document.getElementById("deputyAboutDialog");
-  const control = event.target.closest?.("[data-about-action]");
-  if (!dialog?.open || !control || !dialog.contains(control)) return;
-  if (control.dataset.aboutAction === "close") dialog.close();
-  if (control.dataset.aboutAction === "offline") {
-    dialog.close();
-    document.getElementById("deputyHelp")?.click();
-  }
-});
-document
-  .getElementById("deputyAboutDialog")
-  ?.addEventListener("click", (event) => {
-    const dialog = event.currentTarget;
-    const rect = dialog.getBoundingClientRect();
-    if (
-      event.target === dialog &&
-      (event.clientX < rect.left ||
-        event.clientX > rect.right ||
-        event.clientY < rect.top ||
-        event.clientY > rect.bottom)
-    )
-      dialog.close();
-  });

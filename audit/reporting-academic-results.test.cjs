@@ -384,6 +384,10 @@ test("annual modular teacher traversal still merges terms once with archived stu
   assert.equal(rows.length, 2);
   assert.equal(rows[0].term, "سالانه");
   assert.equal(rows[0].final, 12);
+  assert.equal(rows[0].modules[0].continuous, 2);
+  assert.equal(rows[0].modules[0].competency, 2);
+  assert.equal(rows[0].units[0].mostamar, 0);
+  assert.equal(rows[0].units[0].payani, 20);
   assert.equal(rows[1].complete, false);
   assert.equal(rows[1].final, null);
   assert.deepEqual(versions, before);

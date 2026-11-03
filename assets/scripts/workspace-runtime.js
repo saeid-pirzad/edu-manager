@@ -2650,6 +2650,7 @@ function annualGradeRows(parts, schoolId, classId, studentId = "") {
             className: c.name,
             studentId: st.id,
             studentName: st.name,
+            studentCode: String(st.code ?? ""),
             lessonId: lesson.id,
             lessonName: lesson.name,
             general: lesson.gradingPolicy?.subjectType === "general",
@@ -2775,17 +2776,38 @@ function annualTechnicalRows(parts, schoolId, classId, studentId = "") {
             className: c.name,
             studentId: st.id,
             studentName: st.name,
+            studentCode: String(st.code ?? ""),
             lessonId: lesson.id,
             lessonName: lesson.name,
             term: formal ? "سالانه" : part.period.term,
             method: legacy ? "legacy-unit" : "modular",
             legacyUnits,
+            units: formal
+              ? merged.poudmans.flatMap((pod) =>
+                  pod.units.map((unit) => ({
+                    moduleName: pod.name,
+                    unitName: unit.name,
+                    mostamar: ownScoreRecord(unit.unitScores, st.id).m ?? null,
+                    payani: ownScoreRecord(unit.unitScores, st.id).p ?? null,
+                  })),
+                )
+              : [],
             provisionalAverage: legacy ? (r.final ?? null) : null,
             final: legacy && !complete ? null : (r.final ?? null),
             complete,
             passed: legacy ? null : (r.passed ?? null),
             modules: (r.modules || []).map((m) => ({
               name: m.name,
+              continuous:
+                ownScoreRecord(
+                  merged.poudmans.find((p) => p.id === m.id)?.podScores,
+                  st.id,
+                ).m ?? null,
+              competency:
+                ownScoreRecord(
+                  merged.poudmans.find((p) => p.id === m.id)?.podScores,
+                  st.id,
+                ).c ?? null,
               final: m.final ?? null,
               complete: m.complete,
               passed: m.passed,
@@ -9273,8 +9295,6 @@ function preservePeriodicAppearance(source, copy) {
       "important",
     );
   });
-  // Print the same disclosure state the user sees, not a second expanded footer.
-  copy.querySelector(".report-basis")?.classList.remove("no-print");
   copy.style.setProperty("break-inside", "auto", "important");
 }
 
@@ -9303,6 +9323,17 @@ function preparePrint(button) {
     source.matches(".periodic-document") ||
     !!source.querySelector(".periodic-document");
   if (periodic) preservePeriodicAppearance(source, copy);
+  // Attendance follow-up is a screen disclosure, never a print content filter.
+  copy
+    .querySelectorAll(
+      "details.report-class-group, details.report-session-disclosure",
+    )
+    .forEach((section) => {
+      section.open = true;
+      section
+        .querySelector(".report-class-body, .report-session-body")
+        ?.style.setProperty("display", "block", "important");
+    });
   copy
     .querySelectorAll("button,.no-print,form,script,select")
     .forEach((x) => x.remove());
@@ -9424,700 +9455,6 @@ async function copyReportV24(buildText, button) {
   } catch (error) {
     handleError(error);
     return false;
-  }
-}
-// Source: src/workspace/reports/deputy-export-identity.js
-function deputyExportIdentityGuard(sourceConnection, sourceToken, check) {
-  check();
-  if (
-    !ready ||
-    resetBusy ||
-    connectionRetired ||
-    periodLoading ||
-    (typeof fullRestoreBusy !== "undefined" && fullRestoreBusy) ||
-    connection !== sourceConnection ||
-    installationToken !== sourceToken
-  )
-    throw Error(
-      "اطلاعات سیستم تغییر کرده است؛ ارسال به معاون را دوباره باز کنید.",
-    );
-}
-
-async function deputyExportIdentityTransaction({
-  write = false,
-  next = null,
-  expectedToken = null,
-  check = () => {},
-  validateCatalog = null,
-} = {}) {
-  const sourceConnection = connection,
-    sourceToken = installationToken,
-    candidate = write
-      ? EduDeputyExportIdentity.normalize({ ...next, token: "pending" })
-      : null;
-  deputyExportIdentityGuard(sourceConnection, sourceToken, check);
-  const tx = sourceConnection.transaction(
-      ["drafts", "records", ...(validateCatalog ? ["catalog"] : [])],
-      write ? "readwrite" : "readonly",
-    ),
-    done = transactionDone(tx);
-  let failure,
-    result = null,
-    remaining = validateCatalog ? 3 : 2;
-  const abort = (error) => {
-    failure = error;
-    try {
-      tx.abort();
-    } catch {}
-  };
-  try {
-    const stored = tx.objectStore("drafts").get(EduDeputyExportIdentity.key),
-      epoch = tx.objectStore("records").get(RESET_RECORD_KEY),
-      catalog = validateCatalog ? tx.objectStore("catalog").getAll() : null;
-    const complete = () => {
-      if (--remaining) return;
-      try {
-        deputyExportIdentityGuard(sourceConnection, sourceToken, check);
-        if ((epoch.result?.value?.token || "") !== sourceToken)
-          throw Error(
-            "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ صفحه را دوباره بارگذاری کنید.",
-          );
-        if (validateCatalog) validateCatalog(catalog.result);
-        const current = stored.result
-          ? EduDeputyExportIdentity.normalize(stored.result.value)
-          : null;
-        if (write) {
-          if ((current?.token || null) !== expectedToken)
-            throw Error(
-              "مشخصات ارسال در پنجرهٔ دیگری تغییر کرده است؛ فرم ارسال را دوباره باز کنید.",
-            );
-          result = EduDeputyExportIdentity.normalize({
-            ...candidate,
-            token: uid(),
-          });
-          tx.objectStore("drafts").put(EduDeputyExportIdentity.row(result));
-        } else result = current;
-      } catch (error) {
-        abort(error);
-      }
-    };
-    stored.onsuccess = complete;
-    epoch.onsuccess = complete;
-    if (catalog) catalog.onsuccess = complete;
-  } catch (error) {
-    abort(error);
-  }
-  try {
-    await done;
-  } catch (error) {
-    throw failure || error;
-  }
-  deputyExportIdentityGuard(sourceConnection, sourceToken, check);
-  return result;
-}
-
-function readDeputyExportIdentity({
-  check = () => {},
-  validateCatalog = null,
-} = {}) {
-  return deputyExportIdentityTransaction({ check, validateCatalog });
-}
-
-function saveDeputyExportIdentity(
-  next,
-  { expectedToken = null, check = () => {}, validateCatalog = null } = {},
-) {
-  return deputyExportIdentityTransaction({
-    write: true,
-    next,
-    expectedToken,
-    check,
-    validateCatalog,
-  });
-}
-// Source: src/workspace/reports/deputy-export-form.js
-function deputyExportPanelMarkup() {
-  return (
-    '<form id="deputyExportPanel" class="record-editor" data-workspace-submit="prepare-deputy-packet"><div class="record-editor-context"><h4>ارسال اطلاعات به معاون</h4><p>اطلاعات ثبت‌شدهٔ مدرسهٔ انتخابی در ترم اول و دوم همین سال؛ این فایل پشتیبان نیست و محدودیت تاریخ گزارش روی آن اعمال نمی‌شود.</p></div>' +
-    '<fieldset data-deputy-export-fields disabled><label class="course-field">مدرسه<select name="deputySchool" id="deputySchool" required aria-describedby="deputyExportError"><option value="">انتخاب مدرسه</option></select></label>' +
-    '<p class="muted" data-deputy-export-sender></p>' +
-    '<p class="muted" data-deputy-legacy-warning hidden></p>' +
-    '<details class="record-editor-context" data-deputy-export-identity open><summary tabindex="0">مشخصات ارسال · تنظیم یک‌باره</summary>' +
-    '<label class="course-field">نام دبیر<input name="deputySenderName" id="deputySenderName" required maxlength="200" autocomplete="name" aria-describedby="deputyExportError"></label>' +
-    '<label class="course-field">کد مدرسه<input name="deputySchoolCode" id="deputySchoolCode" required maxlength="64" dir="ltr" autocomplete="off" spellcheck="false" aria-describedby="deputyIdentityHint deputyExportError"></label>' +
-    '<p id="deputyIdentityHint" class="muted">کد مدرسه را فقط یک‌بار با معاون هماهنگ کنید؛ همهٔ دبیرهای همین مدرسه باید یک کد مشترک داشته باشند. مشخصات در برنامه و پشتیبان کامل نگهداری می‌شوند و ارسال بعدی نیاز به ورود دوباره ندارد.</p>' +
-    '<label class="course-field" data-deputy-identity-mode>سابقهٔ ارسال<select name="deputyIdentityMode" required><option value="">انتخاب کنید</option><option value="new">اولین ارسال من است</option><option value="existing">قبلاً فایل به معاون داده‌ام</option></select></label>' +
-    '<details data-deputy-identity-advanced><summary tabindex="0">شناسهٔ فرستنده / ادامهٔ فایل‌های قبلی</summary>' +
-    '<p class="muted">برای اولین ارسال، شناسه خودکار ساخته می‌شود. اگر قبلاً فایل فرستاده‌اید، همان کد فرستندهٔ فایل قبلی را وارد کنید تا پروندهٔ جدا ساخته نشود.</p>' +
-    '<label class="course-field">شناسهٔ فرستنده<input name="deputySenderCode" id="deputySenderCode" required maxlength="64" dir="ltr" autocomplete="off" spellcheck="false" aria-describedby="deputyExportError"></label>' +
-    '</details><label data-deputy-change-identity hidden><input type="checkbox" name="deputyChangeIdentity"> اصلاح کدهای ثبت‌شده؛ ممکن است در معاون پروندهٔ جدا ساخته شود.</label></details>' +
-    '<label><input type="checkbox" name="deputyConsent" required> فایل شامل نام هنرجویان، حضور و نمره‌هاست و رمزگذاری نشده؛ آن را فقط برای معاون مورداعتماد می‌فرستم.</label></fieldset>' +
-    '<section class="record-editor-context" data-deputy-export-preview hidden aria-label="پیش‌نمایش اطلاعات فایل"></section><p data-deputy-export-status role="status" aria-live="polite">در حال بررسی اطلاعات ثبت‌شدهٔ سال…</p><p id="deputyExportError" data-deputy-export-error role="alert"></p>' +
-    '<div class="record-editor-actions"><button type="submit" data-deputy-export-prepare disabled>بررسی و آماده‌سازی فایل</button><button type="button" class="success" data-workspace-action="export-deputy-packet" hidden>دریافت فایل معاون</button><button type="button" class="ghost" data-workspace-action="close">بستن</button></div><p class="muted">فایل را دریافت و در پیام‌رسان برای معاون بفرستید؛ دانلود به معنی ارسال آنلاین یا تحویل نیست.</p></form>'
-  );
-}
-
-function deputyExportSuggestedName(parts, schoolId) {
-  const names = new Set();
-  for (const part of parts)
-    for (const school of part.data.schools)
-      if (school.id === schoolId)
-        for (const classroom of school.classes || [])
-          for (const lesson of classroom.lessons || [])
-            if (typeof lesson.teacher === "string" && lesson.teacher.trim())
-              names.add(lesson.teacher.trim());
-  return names.size === 1 ? [...names][0] : "";
-}
-
-function deputyExportSavedSchool(session) {
-  const id = session.panel.querySelector('[name="deputySchool"]').value;
-  return (session.identity?.schools || session.legacy.schools || []).find(
-    (row) => row?.year === session.year && row.id === id,
-  );
-}
-
-function deputyExportIdentityPresentation(session, { resetOpen = false } = {}) {
-  const panel = session.panel,
-    node = (name) => panel.querySelector('[name="' + name + '"]'),
-    knownSender = !!(session.identity || session.legacy.sender?.code),
-    mode = node("deputyIdentityMode"),
-    changing = node("deputyChangeIdentity").checked,
-    savedSchool = deputyExportSavedSchool(session);
-  panel.querySelector("[data-deputy-identity-mode]").hidden = knownSender;
-  mode.required = !knownSender;
-  mode.disabled = knownSender;
-  panel.querySelector("[data-deputy-change-identity]").hidden =
-    !knownSender && !savedSchool;
-  node("deputySenderCode").readOnly =
-    (knownSender && !changing) || (!knownSender && mode.value !== "existing");
-  node("deputySchoolCode").readOnly = !!savedSchool && !changing;
-  const ready =
-    node("deputySenderName").value.trim() &&
-    node("deputySchoolCode").value.trim() &&
-    node("deputySenderCode").value.trim() &&
-    (knownSender || ["new", "existing"].includes(mode.value));
-  if (resetOpen)
-    panel.querySelector("[data-deputy-export-identity]").open = !ready;
-  panel.querySelector("[data-deputy-export-sender]").textContent =
-    (session.identity ? "فرستندهٔ ثبت‌شده: " : "فرستنده: ") +
-    (node("deputySenderName").value.trim() || "هنوز مشخص نشده") +
-    (session.identity ? " · مشخصات برای ارسال‌های بعد محفوظ است." : "");
-  const warning = panel.querySelector("[data-deputy-legacy-warning]");
-  warning.hidden = !session.legacy.warning;
-  warning.textContent = session.legacy.warning
-    ? "بخشی از تنظیمات قدیمی مرورگر ناقص یا متعارض بود. مشخصات معتبر حفظ شده است؛ برای ادامهٔ ارسال‌های قبلی، کد همین مدرسه و فرستنده را از فایل قبلی بررسی کنید."
-    : "";
-}
-
-function fillDeputyExportSchool(session) {
-  const node = (name) => session.panel.querySelector('[name="' + name + '"]');
-  const school = deputyExportSavedSchool(session);
-  node("deputySchoolCode").value =
-    typeof school?.code === "string" ? school.code : "";
-  node("deputyChangeIdentity").checked = false;
-  if (
-    !session.identity &&
-    !session.legacy.sender?.name &&
-    (!node("deputySenderName").value ||
-      node("deputySenderName").value === session.suggestedName)
-  ) {
-    session.suggestedName = deputyExportSuggestedName(
-      session.parts,
-      node("deputySchool").value,
-    );
-    node("deputySenderName").value = session.suggestedName;
-  }
-  deputyExportIdentityPresentation(session, { resetOpen: true });
-}
-
-function initializeDeputyExportIdentity(session) {
-  const node = (name) => session.panel.querySelector('[name="' + name + '"]'),
-    sender = session.identity?.sender || session.legacy.sender;
-  node("deputySenderName").value =
-    typeof sender?.name === "string" ? sender.name : "";
-  node("deputySenderCode").value =
-    typeof sender?.code === "string" ? sender.code : "";
-  node("deputyIdentityMode").value = sender?.code ? "existing" : "";
-  fillDeputyExportSchool(session);
-  node("deputySchool").addEventListener("change", () =>
-    fillDeputyExportSchool(session),
-  );
-  node("deputyIdentityMode").addEventListener("change", () => {
-    if (session.identity || session.legacy.sender?.code) return;
-    if (node("deputyIdentityMode").value === "new") {
-      session.generatedCode ||= "TEACHER-" + uid().toUpperCase();
-      node("deputySenderCode").value = session.generatedCode;
-    } else {
-      node("deputySenderCode").value = "";
-      session.panel.querySelector("[data-deputy-identity-advanced]").open =
-        true;
-    }
-    deputyExportIdentityPresentation(session);
-  });
-  node("deputyChangeIdentity").addEventListener("change", () =>
-    deputyExportIdentityPresentation(session),
-  );
-  session.panel.addEventListener("input", () =>
-    deputyExportIdentityPresentation(session),
-  );
-  session.panel.addEventListener(
-    "invalid",
-    (event) => {
-      let details = event.target.closest?.("details");
-      while (details) {
-        details.open = true;
-        details = details.parentElement?.closest("details");
-      }
-    },
-    true,
-  );
-}
-// Source: src/workspace/reports/deputy-export.js
-// Deputy exchange is a selected-school, whole-year projection, never a backup.
-// Only an explicitly previewed packet can be downloaded. Educational data is
-// unchanged; the sender's one-time setup is persisted separately and backed up.
-let deputyExportSession = null;
-const deputyExportPreferencesKey = "EduDeputy.teacherExport.v1";
-
-function readDeputyExportPreferences() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(deputyExportPreferencesKey));
-    if (saved == null) return {};
-    if (typeof saved !== "object" || Array.isArray(saved))
-      return { warning: true };
-    const rows = Array.isArray(saved.schools) ? saved.schools : [],
-      valid = new Map(),
-      ids = new Map(),
-      codes = new Map();
-    let warning = saved.schools != null && !Array.isArray(saved.schools);
-    if (rows.length > 10000) warning = true;
-    for (const row of rows.slice(-10000)) {
-      try {
-        const school = EduDeputyExportIdentity.normalize({
-            version: 1,
-            token: "legacy",
-            sender: { name: "legacy", code: "LEGACY" },
-            schools: [{ year: row.year, id: row.id, code: row.code }],
-          }).schools[0],
-          id = JSON.stringify([school.year, school.id]),
-          code = JSON.stringify([school.year, school.code]);
-        if (!ids.has(id)) ids.set(id, new Set());
-        if (!codes.has(code)) codes.set(code, new Set());
-        ids.get(id).add(school.code);
-        codes.get(code).add(school.id);
-        valid.set(
-          JSON.stringify([school.year, school.id, school.code]),
-          school,
-        );
-      } catch {
-        warning = true;
-      }
-    }
-    const schools = [...valid.values()].filter((school) => {
-      const unique =
-        ids.get(JSON.stringify([school.year, school.id])).size === 1 &&
-        codes.get(JSON.stringify([school.year, school.code])).size === 1;
-      if (!unique) warning = true;
-      return unique;
-    });
-    return {
-      sender: {
-        name: typeof saved.sender?.name === "string" ? saved.sender.name : "",
-        code: typeof saved.sender?.code === "string" ? saved.sender.code : "",
-      },
-      schools,
-      warning,
-    };
-  } catch {
-    return { warning: true };
-  }
-}
-
-function deputyExportFields(session) {
-  const value = (name) =>
-    session.panel.querySelector('[name="' + name + '"]').value;
-  return {
-    schoolId: value("deputySchool"),
-    schoolCode: value("deputySchoolCode"),
-    sender: {
-      code: value("deputySenderCode"),
-      name: value("deputySenderName"),
-    },
-  };
-}
-
-function deputyExportSignature(session) {
-  return JSON.stringify(deputyExportFields(session));
-}
-
-function checkDeputyExport(session) {
-  assertWorkspaceReadable();
-  if (
-    !session ||
-    deputyExportSession !== session ||
-    !session.panel.isConnected ||
-    document.getElementById("modal").classList.contains("hidden") ||
-    workspace.id !== session.workspace ||
-    connection !== session.connection ||
-    reportCopyScope() !== session.scope
-  )
-    throw Error(
-      "صفحه یا پنجرهٔ ارسال تغییر کرده است؛ فایل معاون را دوباره آماده کنید.",
-    );
-  if (session.context) assertWorkspaceContext(session.context);
-}
-
-async function checkDeputyExportIdentity(session) {
-  const current = await readDeputyExportIdentity({
-    check: () => checkDeputyExport(session),
-    validateCatalog: (catalog) => checkDeputyExportCatalog(session, catalog),
-  });
-  if ((current?.token || null) !== (session.identity?.token || null))
-    throw Error(
-      "مشخصات ارسال در پنجرهٔ دیگری تغییر کرده است؛ ارسال به معاون را دوباره باز کنید.",
-    );
-}
-
-function checkDeputyExportCatalog(session, catalog) {
-  checkDeputyExport(session);
-  assertReportCatalogSnapshot(session.context, catalog);
-  if (busy || drafts.size || assessmentContext.hasDrafts())
-    throw Error(
-      "ثبت یا ویرایش ناتمام وجود دارد؛ فایل را پس از ذخیره دوباره تهیه کنید.",
-    );
-}
-
-function deputyExportPreparationGuard(session, signature) {
-  checkDeputyExport(session);
-  if (
-    signature !== deputyExportSignature(session) ||
-    !session.panel.querySelector('[name="deputyConsent"]').checked
-  )
-    throw Error("مشخصات یا تأیید ارسال تغییر کرد؛ فایل را دوباره آماده کنید.");
-}
-
-async function persistDeputyExportSetup(session, packet, signature) {
-  const known = session.identity?.sender || session.legacy.sender,
-    school = deputyExportSavedSchool(session),
-    priorCode = (value) => {
-      if (typeof value !== "string") return "";
-      try {
-        return EduDeputyExportIdentity.code(value);
-      } catch {
-        return value.trim();
-      }
-    },
-    changedCodes =
-      (known?.code && priorCode(known.code) !== packet.sender.code) ||
-      (school?.code && priorCode(school.code) !== packet.school.code);
-  if (
-    changedCodes &&
-    (!session.panel.querySelector('[name="deputyChangeIdentity"]').checked ||
-      !confirm(
-        "کدهای ارسال تغییر می‌کنند:\nمدرسه: " +
-          (priorCode(school?.code) || "ثبت‌نشده") +
-          " ← " +
-          packet.school.code +
-          "\nفرستنده: " +
-          (priorCode(known?.code) || "ثبت‌نشده") +
-          " ← " +
-          packet.sender.code +
-          "\nاین تغییر ممکن است در کارتابل معاون پروندهٔ تازه بسازد و به‌روزرسانی پروندهٔ قبلی محسوب نشود. تغییر کدها را تأیید می‌کنید؟",
-      ))
-  )
-    throw Error("تغییر کدهای ثبت‌شده تأیید نشد؛ کدهای قبلی را نگه دارید.");
-  const schools = [
-      ...(session.identity?.schools || session.legacy.schools || []),
-    ],
-    schoolIndex = schools.findIndex(
-      (row) => row.year === session.year && row.id === packet.school.id,
-    ),
-    schoolIdentity = {
-      year: session.year,
-      id: packet.school.id,
-      code: packet.school.code,
-    };
-  if (schoolIndex < 0) schools.push(schoolIdentity);
-  else schools[schoolIndex] = schoolIdentity;
-  const candidate = EduDeputyExportIdentity.normalize({
-    version: 1,
-    token: session.identity?.token || "pending",
-    sender: packet.sender,
-    schools,
-  });
-  if (JSON.stringify(candidate) !== JSON.stringify(session.identity)) {
-    session.identity = await saveDeputyExportIdentity(candidate, {
-      expectedToken: session.identity?.token || null,
-      check: () => deputyExportPreparationGuard(session, signature),
-      validateCatalog: (catalog) => checkDeputyExportCatalog(session, catalog),
-    });
-    if (typeof scheduleSingleFile === "function") scheduleSingleFile();
-  }
-  // Durable identity wins from this point. Never re-import stale device-only
-  // defaults after backup restore or when another window changes the profile.
-  session.legacy = {};
-  try {
-    localStorage.removeItem(deputyExportPreferencesKey);
-  } catch {}
-  deputyExportPreparationGuard(session, signature);
-  deputyExportIdentityPresentation(session, { resetOpen: true });
-}
-
-function deputyExportMessage(session, text, { error = false } = {}) {
-  if (deputyExportSession !== session || !session.panel.isConnected) return;
-  session.panel.querySelector("[data-deputy-export-status]").textContent = error
-    ? ""
-    : text;
-  session.panel.querySelector("[data-deputy-export-error]").textContent = error
-    ? text
-    : "";
-  if (error)
-    session.panel.querySelector("[data-deputy-export-identity]").open = true;
-}
-
-function clearDeputyExportPreview(session) {
-  session.prepared = null;
-  const preview = session.panel.querySelector("[data-deputy-export-preview]");
-  preview.hidden = true;
-  preview.textContent = "";
-  session.panel.querySelector(
-    '[data-workspace-action="export-deputy-packet"]',
-  ).hidden = true;
-}
-
-async function openDeputyExport(schoolId = "") {
-  assertWorkspaceReadable();
-  const requestedSchool = schoolId || state.schoolId || "";
-  const opened = showModal("فایل کارتابل معاون", deputyExportPanelMarkup());
-  if (opened === false) return false;
-  const session = {
-    panel: document.getElementById("deputyExportPanel"),
-    workspace: workspace.id,
-    connection,
-    scope: reportCopyScope(),
-    context: null,
-    parts: null,
-    prepared: null,
-    preparing: false,
-    exporting: false,
-    identity: null,
-    legacy: {},
-    year: workspace.year,
-    suggestedName: "",
-  };
-  deputyExportSession = session;
-  const modal = document.getElementById("modal"),
-    observer = new MutationObserver(() => {
-      if (!session.panel.isConnected || modal.classList.contains("hidden")) {
-        session.parts = null;
-        session.prepared = null;
-        if (deputyExportSession === session) deputyExportSession = null;
-        observer.disconnect();
-      }
-    });
-  observer.observe(modal, { attributes: true, attributeFilter: ["class"] });
-  observer.observe(document.getElementById("modalBody"), { childList: true });
-  try {
-    const snapshot = await prepareReportSnapshot({ yearWide: true });
-    checkDeputyExport(session);
-    session.context = snapshot.context;
-    session.parts = snapshot.parts;
-    await assertReportSnapshot(session.context);
-    checkDeputyExport(session);
-    const schools = new Map();
-    for (const part of session.parts)
-      for (const school of part.data.schools) schools.set(school.id, school);
-    const select = session.panel.querySelector('[name="deputySchool"]');
-    select.innerHTML =
-      '<option value="">انتخاب مدرسه</option>' +
-      [...schools.values()]
-        .map(
-          (school) =>
-            '<option value="' +
-            esc(school.id) +
-            '">' +
-            esc(school.name) +
-            "</option>",
-        )
-        .join("");
-    select.value = schools.has(requestedSchool)
-      ? requestedSchool
-      : schools.size === 1
-        ? [...schools.keys()][0]
-        : "";
-    session.identity = await readDeputyExportIdentity({
-      check: () => checkDeputyExport(session),
-      validateCatalog: (catalog) => checkDeputyExportCatalog(session, catalog),
-    });
-    if (!session.identity) session.legacy = readDeputyExportPreferences();
-    initializeDeputyExportIdentity(session);
-    const invalidate = () => {
-      if (
-        session.prepared &&
-        (deputyExportSignature(session) !== session.prepared.signature ||
-          !session.panel.querySelector('[name="deputyConsent"]').checked)
-      ) {
-        clearDeputyExportPreview(session);
-        deputyExportMessage(
-          session,
-          "مشخصات تغییر کرد؛ فایل را دوباره بررسی و آماده کنید.",
-        );
-      }
-    };
-    session.panel.addEventListener("input", invalidate);
-    session.panel.addEventListener("change", invalidate);
-    session.panel.querySelector("[data-deputy-export-fields]").disabled = false;
-    session.panel.querySelector("[data-deputy-export-prepare]").disabled =
-      false;
-    deputyExportMessage(
-      session,
-      session.identity
-        ? "مشخصات ارسال آماده است؛ گیرنده را تأیید و فایل را آماده کنید."
-        : "مشخصات ارسال را یک‌بار تأیید کنید؛ برای ارسال‌های بعد در برنامه و پشتیبان محفوظ می‌ماند.",
-    );
-    return true;
-  } catch (error) {
-    deputyExportMessage(session, error.message, { error: true });
-    return false;
-  }
-}
-
-async function prepareDeputyPacket() {
-  const session = deputyExportSession;
-  if (!session || session.preparing || session.exporting) return false;
-  session.preparing = true;
-  const finish = beginRecordEditorSave(session.panel);
-  try {
-    checkDeputyExport(session);
-    clearDeputyExportPreview(session);
-    if (!session.context || !session.parts)
-      throw Error(
-        "اطلاعات سال هنوز آماده نیست؛ پنجرهٔ ارسال را دوباره باز کنید.",
-      );
-    const fields = deputyExportFields(session),
-      signature = deputyExportSignature(session);
-    if (
-      !session.identity &&
-      !session.legacy.sender?.code &&
-      !["new", "existing"].includes(
-        session.panel.querySelector('[name="deputyIdentityMode"]').value,
-      )
-    )
-      throw Error("مشخص کنید این اولین ارسال شماست یا ادامهٔ فایل‌های قبلی.");
-    if (!session.panel.querySelector('[name="deputyConsent"]').checked)
-      throw Error(
-        "پیش از آماده‌سازی، محرمانگی اطلاعات و گیرنده را تأیید کنید.",
-      );
-    await assertReportSnapshot(session.context);
-    await checkDeputyExportIdentity(session);
-    checkDeputyExport(session);
-    if (
-      signature !== deputyExportSignature(session) ||
-      !session.panel.querySelector('[name="deputyConsent"]').checked
-    )
-      throw Error("مشخصات هنگام آماده‌سازی تغییر کرد؛ دوباره تلاش کنید.");
-    const packet = EduDeputyExchange.build({ ...fields, parts: session.parts }),
-      counts = EduDeputyExchange.plan(null, packet).counts;
-    await persistDeputyExportSetup(session, packet, signature);
-    await checkDeputyExportIdentity(session);
-    deputyExportPreparationGuard(session, signature);
-    session.prepared = { packet, signature };
-    const preview = session.panel.querySelector("[data-deputy-export-preview]");
-    preview.innerHTML =
-      "<h4>" +
-      esc(packet.school.name) +
-      " · " +
-      esc(packet.academicYear) +
-      "</h4><p>فرستنده: " +
-      esc(packet.sender.name) +
-      "</p><p>" +
-      [
-        ["ترم", counts.periods],
-        ["کلاس", counts.classes],
-        ["هنرجو در کلاس", counts.students],
-        ["درس", counts.lessons],
-        ["جلسه", counts.sessions],
-        ["فعالیت", counts.activities],
-      ]
-        .map(([label, count]) => count.toLocaleString("fa-IR") + " " + label)
-        .join(" · ") +
-      "</p><p>فقط همین مدرسه و ترم‌های شروع‌شدهٔ همین سال؛ شامل هنرجویان بایگانی‌شده، نمره‌های ثبت‌شده و جلسات داخل بازهٔ همین سال تحصیلی. جلسات خارج از این سال، رمزها، تنظیمات، پیش‌نویس‌ها، پشتیبان‌ها و مدارس دیگر در فایل نیستند.</p>" +
-      "<details><summary>نسخهٔ اطلاعات ارسالی</summary><p>" +
-      packet.periods
-        .map(
-          (period) =>
-            (period.termKind === "first" ? "ترم اول" : "ترم دوم") +
-            " · نسخهٔ " +
-            period.revision.toLocaleString("fa-IR"),
-        )
-        .join(" | ") +
-      "</p><p>برای به‌روزرسانی همان پرونده، کد مدرسه و کد دبیر را ثابت نگه دارید. معاون نسخهٔ اطلاعات را بررسی می‌کند؛ نام فایل یا زمان دانلود به‌تنهایی نشانهٔ جدیدبودن نیست.</p></details>";
-    preview.hidden = false;
-    session.panel.querySelector(
-      '[data-workspace-action="export-deputy-packet"]',
-    ).hidden = false;
-    deputyExportMessage(
-      session,
-      "فایل بررسی شد؛ اگر محدوده و فرستنده درست است، «دریافت فایل معاون» را بزنید.",
-    );
-    return structuredClone(packet);
-  } catch (error) {
-    clearDeputyExportPreview(session);
-    deputyExportMessage(session, error.message, { error: true });
-    return false;
-  } finally {
-    session.preparing = false;
-    finish();
-  }
-}
-
-async function exportDeputyPacket() {
-  const session = deputyExportSession;
-  if (!session || session.preparing || session.exporting) return false;
-  session.exporting = true;
-  const finish = beginRecordEditorSave(session.panel);
-  try {
-    checkDeputyExport(session);
-    const prepared = session.prepared;
-    if (!prepared) throw Error("ابتدا فایل معاون را بررسی و آماده کنید.");
-    await assertReportSnapshot(session.context);
-    await checkDeputyExportIdentity(session);
-    checkDeputyExport(session);
-    if (
-      prepared !== session.prepared ||
-      prepared.signature !== deputyExportSignature(session) ||
-      !session.panel.querySelector('[name="deputyConsent"]').checked
-    )
-      throw Error(
-        "مشخصات یا تأیید ارسال تغییر کرده؛ فایل را دوباره آماده کنید.",
-      );
-    const packet = EduDeputyExchange.validate(prepared.packet);
-    checkDeputyExport(session);
-    // The final context/selection checks are immediately before download.
-    downloadJSON(
-      packet,
-      "edu-deputy-" +
-        packet.school.code +
-        "-" +
-        packet.sender.code +
-        "-" +
-        packet.academicYear +
-        "-" +
-        packet.exportedAt.slice(0, 19).replace(/\D/g, "") +
-        "Z.json",
-      { compact: true },
-    );
-    deputyExportMessage(
-      session,
-      "دریافت فایل درخواست شد؛ ذخیرهٔ فایل را بررسی کنید و آن را به‌صورت پیوست برای معاون بفرستید. اطلاعات آموزشی تغییر نکرد و هیچ ارسال آنلاینی انجام نشد.",
-    );
-    return structuredClone(packet);
-  } catch (error) {
-    deputyExportMessage(session, error.message, { error: true });
-    return false;
-  } finally {
-    session.exporting = false;
-    finish();
   }
 }
 // Source: src/workspace/students/csv-import.js
@@ -11006,8 +10343,6 @@ function installWorkspaceActions() {
     ["periods", () => openAcademicYear()],
     ["term-records", () => openPeriods()],
     ["backups", () => openBackups()],
-    ["deputy-export", (button) => openDeputyExport(button.dataset.school)],
-    ["export-deputy-packet", () => exportDeputyPacket()],
     ["open-wipe", () => wipeAllV24()],
     ["discard-drafts", () => discardDrafts()],
     ["review-drafts", () => reviewDrafts()],
@@ -11055,7 +10390,6 @@ function installWorkspaceActions() {
     return Number(value);
   }
   const submissions = new Map([
-    ["prepare-deputy-packet", () => prepareDeputyPacket()],
     ["save-membership", () => saveMembership()],
     ["save-student", () => saveStudent()],
     ["save-entity", () => saveEntityEditor()],
@@ -12720,8 +12054,6 @@ function installRuntimeAPI() {
     showFrozenReport,
     printReport,
     copyReport: copyReportV24,
-    openDeputyExport,
-    exportDeputyPacket,
     preparePrint,
     commitCSV,
     saveStudent,

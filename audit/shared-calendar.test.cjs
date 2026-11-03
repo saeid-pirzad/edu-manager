@@ -43,8 +43,8 @@ function calendarFixture(extra = {}) {
   return { context, popup, handlers };
 }
 
-test("both applications load one identical calendar bundle and a persistent popup outside their render roots", () => {
-  for (const entry of ["EduManager.html", "Deputy.html"]) {
+test("application loads its calendar bundle and a persistent popup outside their render roots", () => {
+  for (const entry of ["EduManager.html"]) {
     const html = source(entry);
     assert.equal(
       [...html.matchAll(/src="\.\/assets\/scripts\/calendar-ui\.js"/g)].length,
@@ -57,10 +57,6 @@ test("both applications load one identical calendar bundle and a persistent popu
         html.indexOf("scripts/calendar-ui.js"),
     );
   }
-  assert.doesNotMatch(
-    source("Deputy.html"),
-    /scripts\/(?:runtime-api|legacy-ui|workspace-runtime)\.js/,
-  );
 });
 
 test("shared calendar renders standalone without teacher formatting, event registry or database globals", () => {

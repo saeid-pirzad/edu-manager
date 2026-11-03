@@ -7,8 +7,8 @@
     "build": "node scripts/build.cjs",
     "build:check": "node scripts/build.cjs --check",
     "lint": "npm run build:check && node scripts/lint.cjs",
-    "format": "prettier --write src scripts audit EduManager.html Deputy.html index.html app.webmanifest deputy.webmanifest source-map.json package.json README.md AUDIT.md docs/ARCHITECTURE.md docs/REFACTOR-RESULT.md docs/AUDIT-2026-10-25.md docs/BUSINESS-RULES.md docs/DEPUTY-REPORTING-PLAN.md docs/RELEASE-AUDIT-2026-11-01.md docs/AUDIT-2026-11-02.md .github/workflows/ci.yml",
-    "format:check": "prettier --check src scripts audit EduManager.html Deputy.html index.html app.webmanifest deputy.webmanifest source-map.json package.json README.md AUDIT.md docs/ARCHITECTURE.md docs/REFACTOR-RESULT.md docs/AUDIT-2026-10-25.md docs/BUSINESS-RULES.md docs/DEPUTY-REPORTING-PLAN.md docs/RELEASE-AUDIT-2026-11-01.md docs/AUDIT-2026-11-02.md .github/workflows/ci.yml",
+    "format": "prettier --write src scripts audit EduManager.html index.html app.webmanifest source-map.json package.json README.md AUDIT.md docs/ARCHITECTURE.md docs/REFACTOR-RESULT.md docs/AUDIT-2026-10-25.md docs/BUSINESS-RULES.md docs/RELEASE-AUDIT-2026-11-01.md docs/AUDIT-2026-11-02.md .github/workflows/ci.yml",
+    "format:check": "prettier --check src scripts audit EduManager.html index.html app.webmanifest source-map.json package.json README.md AUDIT.md docs/ARCHITECTURE.md docs/REFACTOR-RESULT.md docs/AUDIT-2026-10-25.md docs/BUSINESS-RULES.md docs/RELEASE-AUDIT-2026-11-01.md docs/AUDIT-2026-11-02.md .github/workflows/ci.yml",
     "check": "npm run format:check && npm run lint && npm test",
     "check:release": "npm run check && node audit/period-deletion-browser.cjs && node audit/gradebook-mobile.cjs && node audit/year-editor-browser.cjs",
     "bench": "npm run build:check && node scripts/benchmark.cjs",
@@ -18,9 +18,7 @@
     "test:assets": "node audit/assets-contract.cjs",
     "test:data-contract": "node audit/data-store-contract.cjs",
     "test:integrity": "node audit/data-integrity.cjs",
-    "test:deputy": "npm run build:check && node audit/deputy-browser.cjs",
-    "audit": "npm test",
-    "build:deputy": "npm run build && node scripts/deploy-deputy.cjs"
+    "audit": "npm test"
   },
   "engines": {
     "node": ">=22.13.0"

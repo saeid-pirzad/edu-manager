@@ -15,14 +15,18 @@ function studentFollowupHtml(m) {
     ["unknown", "تعیین‌نشده"],
   ];
   let h =
-    '<section class="report-followup"><header class="report-followup-heading"><h3>پیگیری وضعیت هنرجویان</h3><p>به تفکیک کلاس · آمار حضور در جلسه‌های همین بازه</p></header>';
+    '<section class="report-followup"><header class="report-followup-heading"><h3>پیگیری وضعیت هنرجویان</h3><p>' +
+    num(m.students.length) +
+    " هنرجو · " +
+    num(groups.size) +
+    " کلاس · برای نمایش فهرست، نام کلاس را بزنید.</p></header>";
   for (const group of groups.values()) {
     h +=
-      '<section class="report-class-group"><header class="report-class-heading"><span class="report-class-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18v13H3zM8 21h8M12 17v4M7 8h10M7 12h6"/></svg></span><div><h4>' +
+      '<details class="report-class-group"><summary class="report-class-heading report-class-toggle"><span class="report-class-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18v13H3zM8 21h8M12 17v4M7 8h10M7 12h6"/></svg></span><div><h4>' +
       esc(group.name) +
       "</h4><p>" +
       num(group.students.length) +
-      ' هنرجو با سابقهٔ جلسه در این بازه</p></div></header><ol class="report-student-list">';
+      ' هنرجو با سابقهٔ جلسه در این بازه</p></div><svg class="report-class-chevron no-print" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary><div class="report-class-body"><ol class="report-student-list">';
     for (const student of group.students) {
       h +=
         '<li class="report-student-row"><div class="report-student-identity"><strong><bdi>' +
@@ -37,7 +41,9 @@ function studentFollowupHtml(m) {
           '<div class="report-metric report-metric-' +
           key +
           '"><dt>' +
-          label +
+          (key === "unknown"
+            ? '<span class="report-metric-long">تعیین‌نشده</span><span class="report-metric-short" title="تعیین‌نشده">نامشخص</span>'
+            : label) +
           "</dt><dd>" +
           num(
             key === "present"
@@ -47,9 +53,26 @@ function studentFollowupHtml(m) {
           "</dd></div>";
       h += "</dl></li>";
     }
-    h += "</ol></section>";
+    h += "</ol></div></details>";
   }
   return h + "</section>";
+}
+
+function sessionDisclosureHtml(m, sessions) {
+  if (!sessions.length) return "";
+  const ordered = [...sessions].sort(
+    (a, b) =>
+      a.date.localeCompare(b.date) ||
+      a.period - b.period ||
+      String(a.id || "").localeCompare(String(b.id || "")),
+  );
+  return (
+    '<details class="report-session-disclosure"><summary class="report-session-toggle"><span class="report-session-toggle-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4M16 3v4M4 11h16M8 15h3M8 18h6"/></svg></span><span class="report-session-toggle-label"><strong>جزئیات جلسات و ثبت‌ها</strong><small>' +
+    num(sessions.length) +
+    ' جلسه · به ترتیب تاریخ و زنگ</small></span><svg class="report-session-chevron no-print" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary><div class="report-session-body">' +
+    ordered.map((s) => sessionDetailsHtml(m, s)).join("") +
+    "</div></details>"
+  );
 }
 
 function sessionDetailsHtml(m, s) {
@@ -141,65 +164,88 @@ function sessionDetailsHtml(m, s) {
   return html + "</section>";
 }
 
-function documentHtml(m) {
-  let h =
-    '<article class="card report-document periodic-document"><header class="periodic-document-heading"><span>' +
-    (m.audience === "parent"
-      ? "ویژه اولیا — اطلاعات یک هنرجو"
-      : "ویژه مدیریت مدرسه — " +
-        (m.detailLevel === "summary" ? "خلاصه مدیریتی" : "جزئیات کامل")) +
-    "</span><h2>" +
-    ("گزارش " + modeLabel(m.mode)) +
+function periodicReportHeadingHtml(m) {
+  const persianDigits = (value) =>
+    String(value).replace(/[0-9]/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[Number(digit)]);
+  const audience = m.audience === "parent" ? "ویژه اولیا" : "مدیریت مدرسه";
+  const detail =
+    m.audience === "parent"
+      ? "گزارش یک هنرجو"
+      : m.detailLevel === "summary"
+        ? "خلاصه مدیریتی"
+        : "جزئیات کامل";
+  const rangeText =
+    m.start === m.end
+      ? faDate(m.start)
+      : faDate(m.start) + " تا " + faDate(m.end);
+  const preparedDate = new Intl.DateTimeFormat("fa-IR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: "Asia/Tehran",
+  }).format(new Date(m.generatedAt));
+  const preparedTime = new Intl.DateTimeFormat("fa-IR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+    timeZone: "Asia/Tehran",
+  }).format(new Date(m.generatedAt));
+  return (
+    '<header class="periodic-document-heading" data-report-audience="' +
+    esc(m.audience) +
+    '"><div class="report-heading-tags"><span class="report-audience-tag">' +
+    audience +
+    '</span><span class="report-detail-tag">' +
+    detail +
+    '</span></div><div class="report-heading-identity"><span class="report-heading-symbol" aria-hidden="true"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M8 13h8M8 17h5"/></svg></span><div><h2>گزارش ' +
+    esc(modeLabel(m.mode)) +
     "</h2><h3>" +
     esc(m.school.name) +
-    "</h3><p>" +
-    esc(faDate(m.start)) +
-    " تا " +
-    esc(faDate(m.end)) +
-    " · سال تحصیلی " +
-    esc(m.academicYear) +
-    (m.academicTerm ? " · ترم " + esc(m.academicTerm) : "") +
-    "</p>" +
-    (m.class ? "<p>کلاس: " + esc(m.class.name) + "</p>" : "") +
-    (m.student
-      ? "<p><strong>هنرجو: " +
-        esc(m.student.name) +
-        "</strong> · کد: " +
-        esc(m.student.code || "ثبت نشده") +
-        "</p>"
+    '</h3></div></div><div class="report-heading-date"><svg width="20" height="20" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4M16 3v4M4 11h16"/></svg><span><small>' +
+    (m.start === m.end ? "تاریخ گزارش" : "بازه گزارش") +
+    "</small><strong><bdi>" +
+    esc(rangeText) +
+    '</bdi></strong></span></div><div class="report-heading-context"><span aria-label="سال تحصیلی"><bdi>' +
+    esc(persianDigits(m.academicYear)) +
+    "</bdi></span>" +
+    (m.academicTerm
+      ? "<span>" + esc("ترم " + m.academicTerm) + "</span>"
       : "") +
-    "<small>تهیه‌شده در " +
-    esc(new Date(m.generatedAt).toLocaleString("fa-IR")) +
-    "</small></header>";
-  h += `<div class="periodic-export-actions no-print"><button data-periodic-print data-legacy-click="reports-periodic-document:0">چاپ / PDF</button><button class="ghost" data-legacy-click="reports-periodic-document:1">فایل متن</button><button class="ghost" data-legacy-click="reports-periodic-document:2">فایل JSON</button></div>`;
-  h +=
-    '<section class="periodic-summary" aria-label="خلاصه آمار گزارش">' +
-    [
-      ["جلسه ثبت‌شده", m.summary.sessions, "sessions"],
-      ["حاضر", (m.summary.present || 0) + (m.summary.late || 0), "present"],
-      ["غایب", m.summary.absent, "absent"],
-      ["مرخصی", m.summary.leave, "leave"],
-      ["با تأخیر", m.summary.late, "late"],
-      ["تعیین‌نشده", m.summary.unknown, "unknown"],
-    ]
-      .map(
-        ([label, n, status]) =>
-          '<div data-summary-status="' +
-          status +
-          '"><strong>' +
-          num(n) +
-          "</strong><span>" +
-          label +
-          "</span></div>",
-      )
-      .join("") +
-    "</section>";
+    "</div>" +
+    (m.class
+      ? '<p class="report-heading-scope">کلاس: <bdi>' +
+        esc(m.class.name) +
+        "</bdi></p>"
+      : "") +
+    (m.student
+      ? '<p class="report-heading-scope">هنرجو: <strong><bdi>' +
+        esc(m.student.name) +
+        "</bdi></strong> · کد: <bdi>" +
+        esc(m.student.code || "ثبت نشده") +
+        "</bdi></p>"
+      : "") +
+    '<p class="report-heading-prepared">تهیه: <time datetime="' +
+    esc(m.generatedAt) +
+    '">' +
+    esc(preparedDate) +
+    " · " +
+    esc(preparedTime) +
+    "</time></p></header>"
+  );
+}
+
+function documentHtml(m) {
+  let h =
+    '<article class="card report-document periodic-document">' +
+    periodicReportHeadingHtml(m);
+  h += `<div class="periodic-export-actions no-print" aria-label="دریافت گزارش"><button type="button" data-periodic-print data-legacy-click="reports-periodic-document:0"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 17H4V9h16v8h-2"/><path d="M6 14h12v7H6zM17 12h.01"/></svg><span>چاپ / PDF</span></button><button type="button" class="ghost" data-periodic-excel data-legacy-click="reports-periodic-document:xlsx" title="فایل اکسل با برگه‌های جدا؛ مطابق محدوده همین گزارش"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 12l5 6m0-6-5 6M16 12h1m-1 3h1m-1 3h1"/></svg><span>دریافت اکسل</span></button><button class="ghost" data-legacy-click="reports-periodic-document:1"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H5v18h14V8zM14 3v5h5M8 12h8M8 16h6"/></svg><span>فایل متن</span></button><button class="ghost" data-legacy-click="reports-periodic-document:2"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4H6v5l-2 3 2 3v5h2M16 4h2v5l2 3-2 3v5h-2M10 9h.01M10 15h.01M14 9l-2 6"/></svg><span>فایل JSON</span></button></div><p id="periodicExportStatus" class="muted no-print" role="status" aria-live="polite"></p>`;
   if (!m.sessions.length)
     h +=
       '<div class="empty">در این بازه و محدوده، جلسه مرتبطی ثبت نشده است.</div>';
   if (m.audience === "management" && m.sessions.length) {
     h += studentFollowupHtml(m);
   }
+  h += sessionDisclosureHtml(m, m.sessions);
   if (m.technicalGrades?.length) {
     h += "<section><h3>نمرات فنی و پودمانی</h3>";
     for (const grade of m.technicalGrades) {
@@ -288,8 +334,6 @@ function documentHtml(m) {
     }
     h += "</div></section>";
   }
-  h += "<h3>جزئیات جلسات و ثبت‌ها</h3>";
-  for (const s of m.sessions) h += sessionDetailsHtml(m, s);
   if (m.currentGrades.length)
     h +=
       '<h3>آخرین وضعیت تجمعی نمرات درس‌ها</h3><p class="periodic-method">این بخش وضعیت فعلی درس است، محدود به بازه گزارش نیست و ممکن است نمرات خارج از این بازه را شامل شود.</p>' +
@@ -329,18 +373,6 @@ function documentHtml(m) {
       '<aside class="periodic-warnings"><strong>موارد نیازمند بررسی</strong><ul>' +
       m.warnings.map((w) => "<li>" + esc(w) + "</li>").join("") +
       "</ul></aside>";
-  const definitions = m.definitions
-    .map((d) => "<li>" + esc(d) + "</li>")
-    .join("");
-  h +=
-    '<footer class="periodic-footer"><details class="report-basis no-print"><summary>مبنای گزارش<span aria-hidden="true">⌄</span></summary><ul>' +
-    definitions +
-    '</ul></details><div class="report-basis-print"><h4>مبنای گزارش</h4><ul>' +
-    definitions +
-    '</ul></div><div class="report-signoff"><div><span>تنظیم‌کننده</span>' +
-    (m.author
-      ? "<strong>" + esc(m.author) + "</strong>"
-      : '<span class="report-signoff-line" aria-label="محل نام تنظیم‌کننده"></span>') +
-    '</div><div><span>امضا</span><span class="report-signoff-line" aria-label="محل امضا"></span></div></div></footer></article>';
+  h += "</article>";
   return h;
 }

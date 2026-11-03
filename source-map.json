@@ -104,9 +104,6 @@
         "src/workspace/reports/student.js",
         "src/workspace/reports/printing.js",
         "src/workspace/reports/copy.js",
-        "src/workspace/reports/deputy-export-identity.js",
-        "src/workspace/reports/deputy-export-form.js",
-        "src/workspace/reports/deputy-export.js",
         "src/workspace/students/csv-import.js",
         "src/workspace/students/editor.js",
         "src/workspace/data/wipe.js",
@@ -261,6 +258,8 @@
         "src/reports/periodic/render.js",
         "src/reports/periodic/events-render.js",
         "src/reports/periodic/generate.js",
+        "src/reports/periodic/xlsx-workbook.js",
+        "src/reports/periodic/excel.js",
         "src/reports/periodic/output.js"
       ]
     },
@@ -353,33 +352,6 @@
       ]
     },
     {
-      "output": "assets/scripts/deputy-store.js",
-      "scope": "global",
-      "sources": ["src/deputy/store.js"]
-    },
-    {
-      "output": "assets/scripts/deputy.js",
-      "scope": "deputy",
-      "sources": [
-        "src/deputy/ui-state.js",
-        "src/deputy/calendar.js",
-        "src/deputy/render-inbox.js",
-        "src/deputy/render-reports.js",
-        "src/deputy/events.js",
-        "src/deputy/app.js"
-      ]
-    },
-    {
-      "output": "assets/scripts/deputy-pwa.js",
-      "scope": "global",
-      "sources": ["src/deputy/pwa.js"]
-    },
-    {
-      "output": "assets/styles/deputy.css",
-      "scope": "css",
-      "sources": ["src/styles/deputy.css", "src/styles/deputy-shell.css"]
-    },
-    {
       "output": "assets/scripts/icons.js",
       "scope": "global",
       "sources": ["src/core/icons.js"]
@@ -393,11 +365,6 @@
       "output": "assets/scripts/about-content.js",
       "scope": "global",
       "sources": ["src/ui/about-content.js"]
-    },
-    {
-      "output": "assets/scripts/deputy-auto-backup.js",
-      "scope": "global",
-      "sources": ["src/deputy/automatic-backup.js"]
     },
     {
       "output": "assets/scripts/offline-help.js",

@@ -554,7 +554,6 @@ test("both application shells load the actual shared reporting bundle after poli
       "EduManager.html",
       ["deputy-exchange.js", "workspace-runtime.js", "periodic-reports.js"],
     ],
-    ["Deputy.html", ["deputy-exchange.js", "deputy.js"]],
   ]) {
     const html = fs.readFileSync(path.join(__dirname, "..", file), "utf8"),
       scripts = [...html.matchAll(/<script\b[^>]*\bsrc="([^"]+)"/g)].map(

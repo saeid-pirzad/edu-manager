@@ -14,7 +14,7 @@ async function output(kind) {
         },
       );
     }
-    if (!["txt", "json", "deputy"].includes(kind)) return false;
+    if (!["txt", "json", "deputy", "xlsx"].includes(kind)) return false;
     await root.EduV24.assertReportSnapshot(prepared.context);
     if (!isPreparedCurrent(prepared))
       throw Error(
@@ -27,6 +27,17 @@ async function output(kind) {
         document.querySelector("[data-deputy-copy]"),
         deputyReportHTML(text),
       );
+      return true;
+    }
+    if (kind === "xlsx") {
+      const blob = xlsxWorkbook(excelReportSheets(model));
+      if (!isPreparedCurrent(prepared))
+        throw Error("محدوده گزارش تغییر کرده است؛ دوباره تلاش کنید.");
+      downloadLocalFile(blob, excelReportFilename(model));
+      const status = document.getElementById("periodicExportStatus");
+      if (status)
+        status.textContent =
+          "فایل اکسل آماده شد و برای دریافت به مرورگر تحویل داده شد.";
       return true;
     }
     const content =

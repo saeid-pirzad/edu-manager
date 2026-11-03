@@ -153,6 +153,7 @@ function annualGradeRows(parts, schoolId, classId, studentId = "") {
             className: c.name,
             studentId: st.id,
             studentName: st.name,
+            studentCode: String(st.code ?? ""),
             lessonId: lesson.id,
             lessonName: lesson.name,
             general: lesson.gradingPolicy?.subjectType === "general",
@@ -278,17 +279,38 @@ function annualTechnicalRows(parts, schoolId, classId, studentId = "") {
             className: c.name,
             studentId: st.id,
             studentName: st.name,
+            studentCode: String(st.code ?? ""),
             lessonId: lesson.id,
             lessonName: lesson.name,
             term: formal ? "سالانه" : part.period.term,
             method: legacy ? "legacy-unit" : "modular",
             legacyUnits,
+            units: formal
+              ? merged.poudmans.flatMap((pod) =>
+                  pod.units.map((unit) => ({
+                    moduleName: pod.name,
+                    unitName: unit.name,
+                    mostamar: ownScoreRecord(unit.unitScores, st.id).m ?? null,
+                    payani: ownScoreRecord(unit.unitScores, st.id).p ?? null,
+                  })),
+                )
+              : [],
             provisionalAverage: legacy ? (r.final ?? null) : null,
             final: legacy && !complete ? null : (r.final ?? null),
             complete,
             passed: legacy ? null : (r.passed ?? null),
             modules: (r.modules || []).map((m) => ({
               name: m.name,
+              continuous:
+                ownScoreRecord(
+                  merged.poudmans.find((p) => p.id === m.id)?.podScores,
+                  st.id,
+                ).m ?? null,
+              competency:
+                ownScoreRecord(
+                  merged.poudmans.find((p) => p.id === m.id)?.podScores,
+                  st.id,
+                ).c ?? null,
               final: m.final ?? null,
               complete: m.complete,
               passed: m.passed,

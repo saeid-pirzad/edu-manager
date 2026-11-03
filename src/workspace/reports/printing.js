@@ -96,8 +96,6 @@ function preservePeriodicAppearance(source, copy) {
       "important",
     );
   });
-  // Print the same disclosure state the user sees, not a second expanded footer.
-  copy.querySelector(".report-basis")?.classList.remove("no-print");
   copy.style.setProperty("break-inside", "auto", "important");
 }
 
@@ -126,6 +124,17 @@ function preparePrint(button) {
     source.matches(".periodic-document") ||
     !!source.querySelector(".periodic-document");
   if (periodic) preservePeriodicAppearance(source, copy);
+  // Attendance follow-up is a screen disclosure, never a print content filter.
+  copy
+    .querySelectorAll(
+      "details.report-class-group, details.report-session-disclosure",
+    )
+    .forEach((section) => {
+      section.open = true;
+      section
+        .querySelector(".report-class-body, .report-session-body")
+        ?.style.setProperty("display", "block", "important");
+    });
   copy
     .querySelectorAll("button,.no-print,form,script,select")
     .forEach((x) => x.remove());

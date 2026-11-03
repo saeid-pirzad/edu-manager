@@ -14,3 +14,7 @@ EduLegacyEvents.register("reports-periodic-document:2", function (event) {
 EduLegacyEvents.register("reports-periodic-document:deputy", function () {
   return EduPeriodicReports.output("deputy");
 });
+
+EduLegacyEvents.register("reports-periodic-document:xlsx", function () {
+  return EduPeriodicReports.output("xlsx");
+});

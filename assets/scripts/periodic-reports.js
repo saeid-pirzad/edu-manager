@@ -745,14 +745,18 @@ function studentFollowupHtml(m) {
     ["unknown", "تعیین‌نشده"],
   ];
   let h =
-    '<section class="report-followup"><header class="report-followup-heading"><h3>پیگیری وضعیت هنرجویان</h3><p>به تفکیک کلاس · آمار حضور در جلسه‌های همین بازه</p></header>';
+    '<section class="report-followup"><header class="report-followup-heading"><h3>پیگیری وضعیت هنرجویان</h3><p>' +
+    num(m.students.length) +
+    " هنرجو · " +
+    num(groups.size) +
+    " کلاس · برای نمایش فهرست، نام کلاس را بزنید.</p></header>";
   for (const group of groups.values()) {
     h +=
-      '<section class="report-class-group"><header class="report-class-heading"><span class="report-class-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18v13H3zM8 21h8M12 17v4M7 8h10M7 12h6"/></svg></span><div><h4>' +
+      '<details class="report-class-group"><summary class="report-class-heading report-class-toggle"><span class="report-class-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18v13H3zM8 21h8M12 17v4M7 8h10M7 12h6"/></svg></span><div><h4>' +
       esc(group.name) +
       "</h4><p>" +
       num(group.students.length) +
-      ' هنرجو با سابقهٔ جلسه در این بازه</p></div></header><ol class="report-student-list">';
+      ' هنرجو با سابقهٔ جلسه در این بازه</p></div><svg class="report-class-chevron no-print" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary><div class="report-class-body"><ol class="report-student-list">';
     for (const student of group.students) {
       h +=
         '<li class="report-student-row"><div class="report-student-identity"><strong><bdi>' +
@@ -767,7 +771,9 @@ function studentFollowupHtml(m) {
           '<div class="report-metric report-metric-' +
           key +
           '"><dt>' +
-          label +
+          (key === "unknown"
+            ? '<span class="report-metric-long">تعیین‌نشده</span><span class="report-metric-short" title="تعیین‌نشده">نامشخص</span>'
+            : label) +
           "</dt><dd>" +
           num(
             key === "present"
@@ -777,9 +783,26 @@ function studentFollowupHtml(m) {
           "</dd></div>";
       h += "</dl></li>";
     }
-    h += "</ol></section>";
+    h += "</ol></div></details>";
   }
   return h + "</section>";
+}
+
+function sessionDisclosureHtml(m, sessions) {
+  if (!sessions.length) return "";
+  const ordered = [...sessions].sort(
+    (a, b) =>
+      a.date.localeCompare(b.date) ||
+      a.period - b.period ||
+      String(a.id || "").localeCompare(String(b.id || "")),
+  );
+  return (
+    '<details class="report-session-disclosure"><summary class="report-session-toggle"><span class="report-session-toggle-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4M16 3v4M4 11h16M8 15h3M8 18h6"/></svg></span><span class="report-session-toggle-label"><strong>جزئیات جلسات و ثبت‌ها</strong><small>' +
+    num(sessions.length) +
+    ' جلسه · به ترتیب تاریخ و زنگ</small></span><svg class="report-session-chevron no-print" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary><div class="report-session-body">' +
+    ordered.map((s) => sessionDetailsHtml(m, s)).join("") +
+    "</div></details>"
+  );
 }
 
 function sessionDetailsHtml(m, s) {
@@ -871,65 +894,88 @@ function sessionDetailsHtml(m, s) {
   return html + "</section>";
 }
 
-function documentHtml(m) {
-  let h =
-    '<article class="card report-document periodic-document"><header class="periodic-document-heading"><span>' +
-    (m.audience === "parent"
-      ? "ویژه اولیا — اطلاعات یک هنرجو"
-      : "ویژه مدیریت مدرسه — " +
-        (m.detailLevel === "summary" ? "خلاصه مدیریتی" : "جزئیات کامل")) +
-    "</span><h2>" +
-    ("گزارش " + modeLabel(m.mode)) +
+function periodicReportHeadingHtml(m) {
+  const persianDigits = (value) =>
+    String(value).replace(/[0-9]/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[Number(digit)]);
+  const audience = m.audience === "parent" ? "ویژه اولیا" : "مدیریت مدرسه";
+  const detail =
+    m.audience === "parent"
+      ? "گزارش یک هنرجو"
+      : m.detailLevel === "summary"
+        ? "خلاصه مدیریتی"
+        : "جزئیات کامل";
+  const rangeText =
+    m.start === m.end
+      ? faDate(m.start)
+      : faDate(m.start) + " تا " + faDate(m.end);
+  const preparedDate = new Intl.DateTimeFormat("fa-IR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: "Asia/Tehran",
+  }).format(new Date(m.generatedAt));
+  const preparedTime = new Intl.DateTimeFormat("fa-IR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+    timeZone: "Asia/Tehran",
+  }).format(new Date(m.generatedAt));
+  return (
+    '<header class="periodic-document-heading" data-report-audience="' +
+    esc(m.audience) +
+    '"><div class="report-heading-tags"><span class="report-audience-tag">' +
+    audience +
+    '</span><span class="report-detail-tag">' +
+    detail +
+    '</span></div><div class="report-heading-identity"><span class="report-heading-symbol" aria-hidden="true"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M8 13h8M8 17h5"/></svg></span><div><h2>گزارش ' +
+    esc(modeLabel(m.mode)) +
     "</h2><h3>" +
     esc(m.school.name) +
-    "</h3><p>" +
-    esc(faDate(m.start)) +
-    " تا " +
-    esc(faDate(m.end)) +
-    " · سال تحصیلی " +
-    esc(m.academicYear) +
-    (m.academicTerm ? " · ترم " + esc(m.academicTerm) : "") +
-    "</p>" +
-    (m.class ? "<p>کلاس: " + esc(m.class.name) + "</p>" : "") +
-    (m.student
-      ? "<p><strong>هنرجو: " +
-        esc(m.student.name) +
-        "</strong> · کد: " +
-        esc(m.student.code || "ثبت نشده") +
-        "</p>"
+    '</h3></div></div><div class="report-heading-date"><svg width="20" height="20" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4M16 3v4M4 11h16"/></svg><span><small>' +
+    (m.start === m.end ? "تاریخ گزارش" : "بازه گزارش") +
+    "</small><strong><bdi>" +
+    esc(rangeText) +
+    '</bdi></strong></span></div><div class="report-heading-context"><span aria-label="سال تحصیلی"><bdi>' +
+    esc(persianDigits(m.academicYear)) +
+    "</bdi></span>" +
+    (m.academicTerm
+      ? "<span>" + esc("ترم " + m.academicTerm) + "</span>"
       : "") +
-    "<small>تهیه‌شده در " +
-    esc(new Date(m.generatedAt).toLocaleString("fa-IR")) +
-    "</small></header>";
-  h += `<div class="periodic-export-actions no-print"><button data-periodic-print data-legacy-click="reports-periodic-document:0">چاپ / PDF</button><button class="ghost" data-legacy-click="reports-periodic-document:1">فایل متن</button><button class="ghost" data-legacy-click="reports-periodic-document:2">فایل JSON</button></div>`;
-  h +=
-    '<section class="periodic-summary" aria-label="خلاصه آمار گزارش">' +
-    [
-      ["جلسه ثبت‌شده", m.summary.sessions, "sessions"],
-      ["حاضر", (m.summary.present || 0) + (m.summary.late || 0), "present"],
-      ["غایب", m.summary.absent, "absent"],
-      ["مرخصی", m.summary.leave, "leave"],
-      ["با تأخیر", m.summary.late, "late"],
-      ["تعیین‌نشده", m.summary.unknown, "unknown"],
-    ]
-      .map(
-        ([label, n, status]) =>
-          '<div data-summary-status="' +
-          status +
-          '"><strong>' +
-          num(n) +
-          "</strong><span>" +
-          label +
-          "</span></div>",
-      )
-      .join("") +
-    "</section>";
+    "</div>" +
+    (m.class
+      ? '<p class="report-heading-scope">کلاس: <bdi>' +
+        esc(m.class.name) +
+        "</bdi></p>"
+      : "") +
+    (m.student
+      ? '<p class="report-heading-scope">هنرجو: <strong><bdi>' +
+        esc(m.student.name) +
+        "</bdi></strong> · کد: <bdi>" +
+        esc(m.student.code || "ثبت نشده") +
+        "</bdi></p>"
+      : "") +
+    '<p class="report-heading-prepared">تهیه: <time datetime="' +
+    esc(m.generatedAt) +
+    '">' +
+    esc(preparedDate) +
+    " · " +
+    esc(preparedTime) +
+    "</time></p></header>"
+  );
+}
+
+function documentHtml(m) {
+  let h =
+    '<article class="card report-document periodic-document">' +
+    periodicReportHeadingHtml(m);
+  h += `<div class="periodic-export-actions no-print" aria-label="دریافت گزارش"><button type="button" data-periodic-print data-legacy-click="reports-periodic-document:0"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 17H4V9h16v8h-2"/><path d="M6 14h12v7H6zM17 12h.01"/></svg><span>چاپ / PDF</span></button><button type="button" class="ghost" data-periodic-excel data-legacy-click="reports-periodic-document:xlsx" title="فایل اکسل با برگه‌های جدا؛ مطابق محدوده همین گزارش"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 12l5 6m0-6-5 6M16 12h1m-1 3h1m-1 3h1"/></svg><span>دریافت اکسل</span></button><button class="ghost" data-legacy-click="reports-periodic-document:1"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H5v18h14V8zM14 3v5h5M8 12h8M8 16h6"/></svg><span>فایل متن</span></button><button class="ghost" data-legacy-click="reports-periodic-document:2"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4H6v5l-2 3 2 3v5h2M16 4h2v5l2 3-2 3v5h-2M10 9h.01M10 15h.01M14 9l-2 6"/></svg><span>فایل JSON</span></button></div><p id="periodicExportStatus" class="muted no-print" role="status" aria-live="polite"></p>`;
   if (!m.sessions.length)
     h +=
       '<div class="empty">در این بازه و محدوده، جلسه مرتبطی ثبت نشده است.</div>';
   if (m.audience === "management" && m.sessions.length) {
     h += studentFollowupHtml(m);
   }
+  h += sessionDisclosureHtml(m, m.sessions);
   if (m.technicalGrades?.length) {
     h += "<section><h3>نمرات فنی و پودمانی</h3>";
     for (const grade of m.technicalGrades) {
@@ -1018,8 +1064,6 @@ function documentHtml(m) {
     }
     h += "</div></section>";
   }
-  h += "<h3>جزئیات جلسات و ثبت‌ها</h3>";
-  for (const s of m.sessions) h += sessionDetailsHtml(m, s);
   if (m.currentGrades.length)
     h +=
       '<h3>آخرین وضعیت تجمعی نمرات درس‌ها</h3><p class="periodic-method">این بخش وضعیت فعلی درس است، محدود به بازه گزارش نیست و ممکن است نمرات خارج از این بازه را شامل شود.</p>' +
@@ -1059,19 +1103,7 @@ function documentHtml(m) {
       '<aside class="periodic-warnings"><strong>موارد نیازمند بررسی</strong><ul>' +
       m.warnings.map((w) => "<li>" + esc(w) + "</li>").join("") +
       "</ul></aside>";
-  const definitions = m.definitions
-    .map((d) => "<li>" + esc(d) + "</li>")
-    .join("");
-  h +=
-    '<footer class="periodic-footer"><details class="report-basis no-print"><summary>مبنای گزارش<span aria-hidden="true">⌄</span></summary><ul>' +
-    definitions +
-    '</ul></details><div class="report-basis-print"><h4>مبنای گزارش</h4><ul>' +
-    definitions +
-    '</ul></div><div class="report-signoff"><div><span>تنظیم‌کننده</span>' +
-    (m.author
-      ? "<strong>" + esc(m.author) + "</strong>"
-      : '<span class="report-signoff-line" aria-label="محل نام تنظیم‌کننده"></span>') +
-    '</div><div><span>امضا</span><span class="report-signoff-line" aria-label="محل امضا"></span></div></div></footer></article>';
+  h += "</article>";
   return h;
 }
 // Source: src/reports/periodic/events-document.js
@@ -1090,6 +1122,10 @@ EduLegacyEvents.register("reports-periodic-document:2", function (event) {
 
 EduLegacyEvents.register("reports-periodic-document:deputy", function () {
   return EduPeriodicReports.output("deputy");
+});
+
+EduLegacyEvents.register("reports-periodic-document:xlsx", function () {
+  return EduPeriodicReports.output("xlsx");
 });
 // Source: src/reports/periodic/filters.js
 let filterWorkspace = "";
@@ -1272,7 +1308,7 @@ function render(mode) {
       (f.detailLevel === "full" ? "selected" : "") +
       ">جزئیات کامل حضور هر جلسه</option></select></label>";
   h +=
-    '<label>نام تنظیم‌کننده (اختیاری)<input value="' +
+    '<label>نام دبیر / تنظیم‌کننده (اختیاری)<input value="' +
     esc(f.author) +
     `" maxlength="200" data-legacy-input="reports-periodic-render:7"></label></div><label class="periodic-note-field">توضیحات این گزارش (اختیاری)<textarea rows="3" maxlength="` +
     Math.max(10000, readNote(noteKey(f)).length) +
@@ -1282,9 +1318,7 @@ function render(mode) {
     noteWarning() +
     `</div><div class="periodic-primary-actions"><button type="button" class="periodic-build" data-legacy-click="reports-periodic-render:9">تهیه گزارش ` +
     modeLabel(mode) +
-    '</button><button type="button" class="success periodic-deputy" data-deputy-copy data-legacy-click="reports-periodic-document:deputy">کپی برای معاون</button><button type="button" class="ghost" data-workspace-action="deputy-export" data-school="' +
-    esc(f.schoolId) +
-    '">فایل کارتابل معاون</button></div><p id="periodicError" role="alert"></p></section><div id="periodicReportOutput">';
+    '</button><button type="button" class="success periodic-deputy" data-deputy-copy data-legacy-click="reports-periodic-document:deputy">کپی برای معاون</button></div><p id="periodicError" role="alert"></p></section><div id="periodicReportOutput">';
   h +=
     last && last.signature === reportSignature()
       ? documentHtml(last.model)
@@ -1532,6 +1566,834 @@ async function generate() {
       .forEach((b) => (b.disabled = false));
   }
 }
+// Source: src/reports/periodic/xlsx-workbook.js
+// Minimal SpreadsheetML/ZIP writer: local only, no formulas, macros or external links.
+// Package structure: https://learn.microsoft.com/office/open-xml/spreadsheet/structure-of-a-spreadsheetml-document
+function xlsxWorkbook(sheets) {
+  const encoder = new TextEncoder();
+  const xml = (value) =>
+    String(value)
+      .replace(/_x[0-9a-f]{4}_/gi, (text) => "_x005F_" + text.slice(1))
+      .replace(
+        // eslint-disable-next-line no-control-regex -- XML 1.0 forbids these code points.
+        /[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffe\uffff]/g,
+        (text) => "_x" + text.charCodeAt(0).toString(16).padStart(4, "0") + "_",
+      )
+      .replace(
+        /[&<>"']/g,
+        (text) =>
+          ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&apos;",
+          })[text],
+      );
+  const declaration = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+  const ns = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
+  const rel =
+    "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+  const column = (index) => {
+    let result = "";
+    for (let n = index + 1; n; n = Math.floor((n - 1) / 26))
+      result = String.fromCharCode(65 + ((n - 1) % 26)) + result;
+    return result;
+  };
+  const entries = [];
+  const add = (name, content) =>
+    entries.push([encoder.encode(name), encoder.encode(declaration + content)]);
+  if (!sheets.length || sheets.length > 100)
+    throw Error("تعداد برگه‌های اکسل معتبر نیست.");
+  const names = new Set();
+  for (const [index, sheet] of sheets.entries()) {
+    if (
+      !sheet.name ||
+      sheet.name.length > 31 ||
+      /[\\/?*[\]:]/.test(sheet.name) ||
+      names.has(sheet.name.toLowerCase()) ||
+      /^\x27|\x27$/.test(sheet.name)
+    )
+      throw Error("نام برگهٔ اکسل معتبر نیست.");
+    names.add(sheet.name.toLowerCase());
+    const banner = sheet.banner || [];
+    const headerRow = banner.length ? banner.length + 1 : 1;
+    const rowOffset = headerRow - 1;
+    if (!sheet.rows.length || sheet.rows.length + rowOffset > 1048576)
+      throw Error(
+        "تعداد ردیف‌ها بیش از ظرفیت اکسل است؛ محدوده گزارش را کوچک‌تر کنید.",
+      );
+    const width = Math.max(...sheet.rows.slice(0, 1).map((row) => row.length));
+    if (!width || width > 16384) throw Error("تعداد ستون‌های اکسل معتبر نیست.");
+    const range = "A1:" + column(width - 1) + (sheet.rows.length + rowOffset);
+    const rows = sheet.rows
+      .map((row, ri) => {
+        if (row.length > width)
+          throw Error("ستون‌های گزارش با عنوان‌ها یکسان نیستند.");
+        return (
+          '<row r="' +
+          (ri + 1 + rowOffset) +
+          '"' +
+          (ri === 0 ? ' ht="30" customHeight="1"' : "") +
+          ">" +
+          row
+            .map((value, ci) => {
+              if (value == null || value === "") return "";
+              const ref = column(ci) + (ri + 1 + rowOffset);
+              let style = ri === 0 ? 1 : ri % 2 ? 0 : 2;
+              if (ri && typeof value === "number") style = ri % 2 ? 3 : 4;
+              if (ri && String(sheet.rows[0][ci]).startsWith("وضعیت")) {
+                if (["قبول", "تکمیل", "حاضر"].includes(value)) style = 5;
+                else if (value === "غایب") style = 7;
+                else if (value) style = 6;
+              }
+              if (typeof value === "number") {
+                if (!Number.isFinite(value))
+                  throw Error("مقدار عددی گزارش معتبر نیست.");
+                return (
+                  '<c r="' +
+                  ref +
+                  '" s="' +
+                  style +
+                  '"><v>' +
+                  value +
+                  "</v></c>"
+                );
+              }
+              const text = String(value);
+              if (text.length > 32767)
+                throw Error(
+                  "متن یک سلول بیش از ظرفیت اکسل است؛ از خروجی متن یا JSON استفاده کنید.",
+                );
+              return (
+                '<c r="' +
+                ref +
+                '" s="' +
+                style +
+                '" t="inlineStr"><is><t xml:space="preserve">' +
+                xml(text) +
+                "</t></is></c>"
+              );
+            })
+            .join("") +
+          "</row>"
+        );
+      })
+      .join("");
+    const columnWidths = sheet.rows[0].map((header, ci) => {
+      if (sheet.widths?.[ci]) return sheet.widths[ci];
+      let longest = String(header).length;
+      for (const row of sheet.rows.slice(1, 201))
+        longest = Math.max(longest, String(row[ci] ?? "").length);
+      return Math.min(45, Math.max(14, Math.ceil(longest * 1.15) + 3));
+    });
+    const columns = sheet.rows[0]
+      .map(
+        (_, i) =>
+          '<col min="' +
+          (i + 1) +
+          '" max="' +
+          (i + 1) +
+          '" width="' +
+          columnWidths[i] +
+          '" customWidth="1"/>',
+      )
+      .join("");
+    const bannerRows = banner
+      .map((text, i) => {
+        if (String(text).length > 32767)
+          throw Error("سربرگ گزارش بیش از ظرفیت اکسل است.");
+        return (
+          '<row r="' +
+          (i + 1) +
+          '" ht="' +
+          (i === 0
+            ? 30
+            : Math.min(
+                409,
+                Math.max(
+                  26,
+                  Math.ceil(
+                    String(text).length /
+                      Math.max(
+                        18,
+                        columnWidths.reduce((sum, value) => sum + value, 0) *
+                          0.8,
+                      ),
+                  ) *
+                    18 +
+                    10,
+                ),
+              )) +
+          '" customHeight="1"><c r="A' +
+          (i + 1) +
+          '" s="' +
+          (i === 0 ? 8 : 9) +
+          '" t="inlineStr"><is><t xml:space="preserve">' +
+          xml(text) +
+          "</t></is></c></row>"
+        );
+      })
+      .join("");
+    add(
+      "xl/worksheets/sheet" + (index + 1) + ".xml",
+      '<worksheet xmlns="' +
+        ns +
+        '"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><dimension ref="' +
+        range +
+        '"/><sheetViews><sheetView rightToLeft="1" showGridLines="0" workbookViewId="0"><pane ySplit="' +
+        headerRow +
+        '" topLeftCell="A' +
+        (headerRow + 1) +
+        '" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft" activeCell="A' +
+        (headerRow + 1) +
+        '" sqref="A' +
+        (headerRow + 1) +
+        '"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="24"/><cols>' +
+        columns +
+        "</cols><sheetData>" +
+        bannerRows +
+        rows +
+        "</sheetData>" +
+        (sheet.filter === false
+          ? ""
+          : '<autoFilter ref="A' +
+            headerRow +
+            ":" +
+            column(width - 1) +
+            (sheet.rows.length + rowOffset) +
+            '"/>') +
+        (banner.length && width > 1
+          ? '<mergeCells count="' +
+            banner.length +
+            '">' +
+            banner
+              .map(
+                (_, i) =>
+                  '<mergeCell ref="A' +
+                  (i + 1) +
+                  ":" +
+                  column(width - 1) +
+                  (i + 1) +
+                  '"/>',
+              )
+              .join("") +
+            "</mergeCells>"
+          : "") +
+        '<pageMargins left="0.3" right="0.3" top="0.5" bottom="0.5" header="0.2" footer="0.2"/><pageSetup paperSize="9" orientation="' +
+        (width > 7 ? "landscape" : "portrait") +
+        '" fitToWidth="1" fitToHeight="0"/><headerFooter><oddHeader>&amp;R&amp;A&amp;Lکلاس‌یار</oddHeader><oddFooter>&amp;Cصفحه &amp;P از &amp;N</oddFooter></headerFooter></worksheet>',
+    );
+  }
+  add(
+    "xl/workbook.xml",
+    '<workbook xmlns="' +
+      ns +
+      '" xmlns:r="' +
+      rel +
+      '"><bookViews><workbookView/></bookViews><sheets>' +
+      sheets
+        .map(
+          (sheet, i) =>
+            '<sheet name="' +
+            xml(sheet.name) +
+            '" sheetId="' +
+            (i + 1) +
+            '" r:id="rId' +
+            (i + 1) +
+            '"/>',
+        )
+        .join("") +
+      "</sheets><definedNames>" +
+      sheets
+        .map(
+          (sheet, i) =>
+            '<definedName name="_xlnm.Print_Titles" localSheetId="' +
+            i +
+            '">' +
+            xml(
+              "'" +
+                sheet.name.replace(/'/g, "''") +
+                "'!$1:$" +
+                (sheet.banner?.length ? sheet.banner.length + 1 : 1),
+            ) +
+            "</definedName>",
+        )
+        .join("") +
+      "</definedNames></workbook>",
+  );
+  add(
+    "xl/_rels/workbook.xml.rels",
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      sheets
+        .map(
+          (_, i) =>
+            '<Relationship Id="rId' +
+            (i + 1) +
+            '" Type="' +
+            rel +
+            '/worksheet" Target="worksheets/sheet' +
+            (i + 1) +
+            '.xml"/>',
+        )
+        .join("") +
+      '<Relationship Id="rIdStyles" Type="' +
+      rel +
+      '/styles" Target="styles.xml"/></Relationships>',
+  );
+  add(
+    "_rels/.rels",
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="' +
+      rel +
+      '/officeDocument" Target="xl/workbook.xml"/></Relationships>',
+  );
+  add(
+    "[Content_Types].xml",
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+      sheets
+        .map(
+          (_, i) =>
+            '<Override PartName="/xl/worksheets/sheet' +
+            (i + 1) +
+            '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>',
+        )
+        .join("") +
+      "</Types>",
+  );
+  add(
+    "xl/styles.xml",
+    '<styleSheet xmlns="' +
+      ns +
+      '"><numFmts count="1"><numFmt numFmtId="164" formatCode="0.##"/></numFmts><fonts count="4"><font><sz val="11"/><color rgb="FF25344A"/><name val="Tahoma"/></font><font><b/><sz val="12"/><color rgb="FFFFFFFF"/><name val="Tahoma"/></font><font><b/><sz val="14"/><color rgb="FFFFFFFF"/><name val="Tahoma"/></font><font><sz val="11"/><color rgb="FF475569"/><name val="Tahoma"/></font></fonts><fills count="8"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>' +
+      ["FF244B73", "FFF0F5FA", "FFE4F4EA", "FFFFF3D6", "FFFCE8E6", "FFEAF0F8"]
+        .map(
+          (color) =>
+            '<fill><patternFill patternType="solid"><fgColor rgb="' +
+            color +
+            '"/><bgColor indexed="64"/></patternFill></fill>',
+        )
+        .join("") +
+      '</fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="10">' +
+      [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+        .map(
+          (i) =>
+            '<xf numFmtId="' +
+            (i === 3 || i === 4 ? 164 : 0) +
+            '" fontId="' +
+            (i === 8 ? 2 : i === 9 ? 3 : i === 1 ? 1 : 0) +
+            '" fillId="' +
+            [0, 2, 3, 0, 3, 4, 5, 6, 2, 7][i] +
+            '" borderId="0" xfId="0" applyAlignment="1" applyFill="1" applyNumberFormat="1"><alignment horizontal="' +
+            (i === 3 || i === 4 ? "center" : "right") +
+            '" vertical="center" wrapText="1" readingOrder="2"/></xf>',
+        )
+        .join("") +
+      '</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>',
+  );
+  const table = Uint32Array.from({ length: 256 }, (_, n) => {
+    for (let i = 0; i < 8; i++) n = n & 1 ? 0xedb88320 ^ (n >>> 1) : n >>> 1;
+    return n >>> 0;
+  });
+  const crc = (bytes) => {
+    let value = 0xffffffff;
+    for (const byte of bytes)
+      value = table[(value ^ byte) & 255] ^ (value >>> 8);
+    return (value ^ 0xffffffff) >>> 0;
+  };
+  const chunks = [],
+    directory = [];
+  let offset = 0,
+    directorySize = 0;
+  for (const [name, bytes] of entries) {
+    if (offset + bytes.length > 128 * 1024 * 1024)
+      throw Error("حجم اکسل زیاد است؛ محدوده گزارش را کوچک‌تر کنید.");
+    const checksum = crc(bytes);
+    const header = new Uint8Array(30),
+      h = new DataView(header.buffer);
+    h.setUint32(0, 0x04034b50, true);
+    h.setUint16(4, 20, true);
+    h.setUint16(6, 0x800, true);
+    h.setUint16(12, 33, true);
+    h.setUint32(14, checksum, true);
+    h.setUint32(18, bytes.length, true);
+    h.setUint32(22, bytes.length, true);
+    h.setUint16(26, name.length, true);
+    chunks.push(header, name, bytes);
+    const central = new Uint8Array(46),
+      c = new DataView(central.buffer);
+    c.setUint32(0, 0x02014b50, true);
+    c.setUint16(4, 20, true);
+    c.setUint16(6, 20, true);
+    c.setUint16(8, 0x800, true);
+    c.setUint16(14, 33, true);
+    c.setUint32(16, checksum, true);
+    c.setUint32(20, bytes.length, true);
+    c.setUint32(24, bytes.length, true);
+    c.setUint16(28, name.length, true);
+    c.setUint32(42, offset, true);
+    directory.push(central, name);
+    directorySize += central.length + name.length;
+    offset += header.length + name.length + bytes.length;
+  }
+  const end = new Uint8Array(22),
+    e = new DataView(end.buffer);
+  e.setUint32(0, 0x06054b50, true);
+  e.setUint16(8, entries.length, true);
+  e.setUint16(10, entries.length, true);
+  e.setUint32(12, directorySize, true);
+  e.setUint32(16, offset, true);
+  return new Blob([...chunks, ...directory, end], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+}
+// Source: src/reports/periodic/excel.js
+function excelReportSheets(m) {
+  const sheets = [];
+  const sheet = (name, headers, rows, widths) =>
+    sheets.push({ name, rows: [headers, ...rows], widths });
+  const counts = (row) => [
+    row.sessions,
+    (row.present || 0) + (row.late || 0),
+    row.absent,
+    row.leave,
+    row.late,
+    row.unknown,
+  ];
+  const countHeaders = [
+    "جلسه",
+    "حاضر با احتساب تأخیر",
+    "غایب",
+    "مرخصی",
+    "تأخیر (زیرمجموعه حاضر)",
+    "تعیین‌نشده",
+  ];
+  const result = (grade) =>
+    !grade.complete
+      ? "ناقص"
+      : grade.passed == null
+        ? "تکمیل"
+        : grade.passed
+          ? "قبول"
+          : "نیازمند جبران";
+  const safe = (grade) => (grade.complete ? grade.final : null);
+  const date = (value) =>
+    new Intl.DateTimeFormat("fa-IR", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      timeZone: "UTC",
+    }).format(new Date(value + "T12:00:00Z"));
+  const weekday = (value) =>
+    new Intl.DateTimeFormat("fa-IR", {
+      weekday: "long",
+      timeZone: "UTC",
+    }).format(new Date(value + "T12:00:00Z"));
+  const preparedAt = new Intl.DateTimeFormat("fa-IR", {
+    dateStyle: "short",
+    timeStyle: "short",
+    timeZone: "Asia/Tehran",
+  }).format(new Date(m.generatedAt));
+  const metadata = [
+    [
+      "نوع گزارش",
+      {
+        daily: "روزانه",
+        weekly: "هفتگی",
+        monthly: "ماهانه",
+        annual: "سال تحصیلی",
+      }[m.mode],
+    ],
+    [
+      "مخاطب",
+      m.audience === "parent"
+        ? "اولیا — فقط هنرجوی انتخاب‌شده"
+        : "مدیریت مدرسه",
+    ],
+    [
+      "وضعیت داده",
+      m.summary.sessions
+        ? "جلسات و ثبت‌های همین محدوده در شیت‌های داده آمده‌اند."
+        : m.annualGrades?.length || m.technicalGrades?.length
+          ? "جلسه‌ای در این محدوده ثبت نشده است؛ نمرات موجود در شیت‌های امتحان آمده‌اند."
+          : "هیچ جلسه یا نمره‌ای برای این محدوده در گزارش موجود نیست؛ تاریخ، مدرسه و کلاس انتخاب‌شده را بررسی کنید.",
+    ],
+    ["مدرسه", m.school.name],
+    ["کلاس", m.class?.name || "همه کلاس‌ها"],
+    ["هنرجو", m.student?.name || "همه هنرجویان محدوده"],
+    ["کد هنرجو", m.student?.code == null ? "" : String(m.student.code)],
+    ["سال تحصیلی", m.academicYear],
+    ["ترم", m.academicTerm || "هر دو ترم"],
+    ["از تاریخ", date(m.start)],
+    ["تا تاریخ", date(m.end)],
+    ["زمان تهیه (شمسی)", preparedAt],
+    ["تنظیم‌کننده", m.author],
+    ["توضیحات", m.note],
+    ...countHeaders.map((header, i) => [header, counts(m.summary)[i]]),
+    ["تعداد هنرجویان با سابقه جلسه", m.summary.students],
+    ["نرخ حضور (درصد)", m.summary.attendanceRate],
+    ["ثبت‌های فعالیت", m.summary.recordedMarks],
+    [
+      "نمرات واحد کار",
+      "نمرات واحدهای کار جزئیات آموزشی‌اند؛ برای پودمان رسمی، نتیجه از مستمر و شایستگی پودمان محاسبه می‌شود. سلول نمره ترکیبی واحد کار در روش رسمی خالی است.",
+    ],
+    ...(m.definitions || []).map((text) => ["مبنای گزارش", text]),
+    ...(m.warnings || []).map((text) => ["نیازمند بررسی", text]),
+    [
+      "راهنما",
+      "سلول خالی یعنی ثبت‌نشده یا نامرتبط؛ صفر عدد واقعی است. این فایل گزارش است و برای بازیابی سیستم نیست.",
+    ],
+  ];
+  sheet("خلاصه", ["عنوان", "مقدار"], metadata, [38, 95]);
+  sheets[0].filter = false;
+  sheet(
+    "آمار روزها",
+    ["تاریخ شمسی", "روز هفته", ...countHeaders, "ثبت فعالیت"],
+    m.days
+      .filter((d) => d.sessions > 0)
+      .map((d) => [date(d.date), weekday(d.date), ...counts(d), d.markCount]),
+  );
+  sheet(
+    "آمار هنرجویان",
+    ["کلاس", "کد دانش‌آموزی", "هنرجو", ...countHeaders, "ثبت فعالیت"],
+    m.students.map((s) => [
+      s.className,
+      String(s.code ?? ""),
+      s.name,
+      ...counts(s),
+      s.markCount,
+    ]),
+  );
+  sheet(
+    "آمار درس‌ها",
+    ["کلاس", "درس", ...countHeaders, "ثبت فعالیت"],
+    m.lessons.map((l) => [
+      l.className,
+      l.lessonName,
+      ...counts(l),
+      l.markCount,
+    ]),
+  );
+  const attendance = [],
+    activities = [],
+    sessions = [];
+  for (const s of m.sessions) {
+    const prefix = [
+      date(s.date),
+      weekday(s.date),
+      s.academicTerm || m.academicTerm || "",
+      s.period + 1,
+      s.className,
+      s.lessonName,
+      s.teacher,
+      s.moduleName || "",
+      s.unitName || "",
+    ];
+    sessions.push([
+      ...prefix,
+      ...counts({ ...s.counts, sessions: 1 }).slice(1),
+      s.marks.length,
+    ]);
+    for (const p of s.participants) {
+      // Defense in depth: never include another pupil in a parent workbook.
+      if (m.audience === "parent" && p.studentId !== m.student?.id) continue;
+      attendance.push([
+        ...prefix,
+        String(p.code ?? ""),
+        p.name,
+        p.attendance.label,
+        p.attendance.minutes,
+      ]);
+      for (const score of p.scores)
+        activities.push([
+          ...prefix,
+          String(p.code ?? ""),
+          p.name,
+          score.label,
+          score.value,
+          score.note,
+        ]);
+    }
+  }
+  const contextHeaders = [
+    "تاریخ شمسی",
+    "روز هفته",
+    "ترم",
+    "زنگ",
+    "کلاس",
+    "درس",
+    "دبیر",
+    "پودمان",
+    "واحد کار",
+  ];
+  sheet(
+    "جلسات",
+    [...contextHeaders, ...countHeaders.slice(1), "ثبت فعالیت"],
+    sessions,
+  );
+  sheet(
+    "حضور و غیاب",
+    [...contextHeaders, "کد دانش‌آموزی", "هنرجو", "وضعیت", "دقیقه تأخیر"],
+    attendance,
+  );
+  sheet(
+    "فعالیت‌ها",
+    [
+      ...contextHeaders,
+      "کد دانش‌آموزی",
+      "هنرجو",
+      "نوع فعالیت",
+      "نمره یا امتیاز",
+      "یادداشت",
+    ],
+    activities,
+  );
+  const eligible = (rows) =>
+    (rows || []).filter(
+      (g) => m.audience !== "parent" || g.studentId === m.student?.id,
+    );
+  if (m.annualGrades) {
+    const rows = [],
+      annual = [];
+    for (const g of eligible(m.annualGrades)) {
+      const identity = [
+        g.className,
+        String(g.studentCode ?? ""),
+        g.studentName,
+        g.lessonName,
+        g.general ? "عمومی" : "کاردانش",
+      ];
+      for (const c of g.components)
+        rows.push([
+          ...identity,
+          c.term,
+          c.stage === "midterm" ? "میان‌ترم" : "پایان‌ترم",
+          c.practical,
+          c.theory,
+          g.general ? null : c.practicalWeight,
+          g.general ? null : 100 - c.practicalWeight,
+          safe(c),
+          result(c),
+        ]);
+      annual.push([...identity, ...g.components.map(safe), safe(g), result(g)]);
+    }
+    const identityHeaders = [
+      "کلاس",
+      "کد دانش‌آموزی",
+      "هنرجو",
+      "درس",
+      "نوع درس",
+    ];
+    sheet(
+      "امتحانات چهار مرحله",
+      [
+        ...identityHeaders,
+        "ترم",
+        "مرحله",
+        "عملی",
+        "نظری",
+        "وزن عملی (%)",
+        "وزن نظری (%)",
+        "نمره مرحله",
+        "وضعیت",
+      ],
+      rows,
+    );
+    sheet(
+      "نتیجه سالانه",
+      [
+        ...identityHeaders,
+        "میان‌ترم اول",
+        "پایان‌ترم اول",
+        "میان‌ترم دوم",
+        "پایان‌ترم دوم",
+        "میانگین چهار مرحله",
+        "وضعیت",
+      ],
+      annual,
+    );
+  }
+  if (m.technicalGrades?.length) {
+    const totals = [],
+      modules = [],
+      units = [];
+    for (const g of eligible(m.technicalGrades)) {
+      const identity = [
+        g.className,
+        String(g.studentCode ?? ""),
+        g.studentName,
+        g.lessonName,
+        g.term,
+        g.method === "legacy-unit"
+          ? "روش قدیمی واحد کار؛ غیررسمی"
+          : "پودمانی سالانه",
+      ];
+      totals.push([...identity, safe(g), result(g), g.provisionalAverage]);
+      for (const p of g.modules || [])
+        modules.push([
+          ...identity,
+          p.name,
+          safe(p),
+          result(p),
+          p.reason,
+          p.continuous,
+          p.competency,
+        ]);
+      for (const u of g.units || [])
+        units.push([
+          ...identity,
+          u.moduleName,
+          u.unitName,
+          u.mostamar,
+          u.payani,
+          null,
+        ]);
+      for (const u of g.legacyUnits || [])
+        units.push([
+          ...identity,
+          u.moduleName,
+          u.unitName,
+          u.mostamar,
+          u.payani,
+          u.final,
+        ]);
+    }
+    const headers = ["کلاس", "کد دانش‌آموزی", "هنرجو", "درس", "نوبت", "روش"];
+    sheet(
+      "نتیجه فنی",
+      [...headers, "نمره درس", "وضعیت", "میانگین موقت روش قدیمی"],
+      totals,
+    );
+    sheet(
+      "پودمان‌ها",
+      [
+        ...headers,
+        "پودمان",
+        "نمره",
+        "وضعیت",
+        "توضیح",
+        "مستمر پودمان",
+        "شایستگی",
+      ],
+      modules,
+    );
+    if (units.length)
+      sheet(
+        "واحدهای کار",
+        [...headers, "پودمان", "واحد کار", "مستمر", "پایانی", "نمره ترکیبی"],
+        units,
+      );
+  }
+  const reportTitle = {
+    daily: "روزانه",
+    weekly: "هفتگی",
+    monthly: "ماهانه",
+    annual: "سال تحصیلی",
+  }[m.mode];
+  const schoolScope =
+    "فیلتر محدوده — مدرسه: " +
+    m.school.name +
+    "  |  کلاس: " +
+    (m.class?.name || "همه کلاس‌ها") +
+    (m.student
+      ? "  |  هنرجو: " +
+        m.student.name +
+        " · کد " +
+        (m.student.code || "ثبت‌نشده")
+      : "");
+  const dateScope =
+    "فیلتر زمانی — بازه: " +
+    date(m.start) +
+    " تا " +
+    date(m.end) +
+    "  |  سال تحصیلی: " +
+    m.academicYear +
+    "  |  ترم: " +
+    (m.academicTerm || "اول و دوم");
+  const audience =
+    m.audience === "parent" ? "ویژه اولیا؛ یک هنرجو" : "مدیریت مدرسه";
+  for (const item of sheets)
+    item.banner = [
+      "گزارش " + reportTitle + "  |  " + item.name,
+      schoolScope + "  |  " + audience,
+      dateScope + "  |  دبیر: " + excelTeacherName(m),
+    ];
+  const priority = [
+    "حضور و غیاب",
+    "فعالیت‌ها",
+    "نتیجه سالانه",
+    "امتحانات چهار مرحله",
+    "نتیجه فنی",
+    "پودمان‌ها",
+    "واحدهای کار",
+    "آمار هنرجویان",
+    "آمار درس‌ها",
+    "جلسات",
+    "آمار روزها",
+    "خلاصه",
+  ];
+  return sheets
+    .filter((s) => s.name === "خلاصه" || s.rows.length > 1)
+    .sort((a, b) => priority.indexOf(a.name) - priority.indexOf(b.name));
+}
+
+function excelTeacherName(m) {
+  const specified = String(m.author || "").trim();
+  if (specified) return specified;
+  const teachers = [
+    ...new Set(
+      (m.sessions || [])
+        .map((s) => String(s.teacher || "").trim())
+        .filter(Boolean),
+    ),
+  ];
+  return teachers.length === 1
+    ? teachers[0]
+    : teachers.length
+      ? "چند دبیر"
+      : "نام دبیر ثبت نشده";
+}
+
+function excelReportFilename(m) {
+  const teacher = Array.from(excelTeacherName(m), (c) =>
+    c.charCodeAt(0) < 32 || '\\/:*?"<>|'.includes(c) ? "-" : c,
+  )
+    .join("")
+    .slice(0, 70)
+    .replace(/[. ]+$/g, "");
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("fa-IR-u-nu-latn", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23",
+      timeZone: "Asia/Tehran",
+    })
+      .formatToParts(new Date(m.generatedAt))
+      .map((p) => [p.type, p.value]),
+  );
+  const stamp =
+    parts.year +
+    "-" +
+    parts.month +
+    "-" +
+    parts.day +
+    "_" +
+    parts.hour +
+    "-" +
+    parts.minute +
+    "-" +
+    parts.second;
+  const type = {
+    daily: "روزانه",
+    weekly: "هفتگی",
+    monthly: "ماهانه",
+    annual: "سالانه",
+  }[m.mode];
+  return teacher + "_" + stamp + "_گزارش-" + type + ".xlsx";
+}
 // Source: src/reports/periodic/output.js
 async function output(kind) {
   const model = await generate();
@@ -1549,7 +2411,7 @@ async function output(kind) {
         },
       );
     }
-    if (!["txt", "json", "deputy"].includes(kind)) return false;
+    if (!["txt", "json", "deputy", "xlsx"].includes(kind)) return false;
     await root.EduV24.assertReportSnapshot(prepared.context);
     if (!isPreparedCurrent(prepared))
       throw Error(
@@ -1562,6 +2424,17 @@ async function output(kind) {
         document.querySelector("[data-deputy-copy]"),
         deputyReportHTML(text),
       );
+      return true;
+    }
+    if (kind === "xlsx") {
+      const blob = xlsxWorkbook(excelReportSheets(model));
+      if (!isPreparedCurrent(prepared))
+        throw Error("محدوده گزارش تغییر کرده است؛ دوباره تلاش کنید.");
+      downloadLocalFile(blob, excelReportFilename(model));
+      const status = document.getElementById("periodicExportStatus");
+      if (status)
+        status.textContent =
+          "فایل اکسل آماده شد و برای دریافت به مرورگر تحویل داده شد.";
       return true;
     }
     const content =

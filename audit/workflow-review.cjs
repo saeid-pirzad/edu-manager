@@ -181,6 +181,12 @@ if (process.argv.includes("--help")) {
           "(" + require("./flows/annualBackupRoundtrip.cjs").toString() + ")()",
         )),
       );
+      await require("./report-excel-browser.cjs")({
+        cdp,
+        evaluate,
+        cases,
+        delay,
+      });
       await require("./report-export-layout.cjs")({ cdp, evaluate, cases });
       await require("./deputy-report-action.cjs")({
         cdp,
@@ -192,13 +198,6 @@ if (process.argv.includes("--help")) {
         cdp,
         evaluate,
         cases,
-        delay,
-      });
-      await require("./deputy-browser.cjs")({
-        cdp,
-        evaluate,
-        cases,
-        root,
         delay,
       });
       cases.push(

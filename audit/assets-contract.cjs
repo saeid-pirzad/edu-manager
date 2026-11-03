@@ -28,43 +28,35 @@ for (const name of files.keys()) {
     });
 }
 
-// Installed identities must stay stable while each role owns a disjoint URL range.
+const manifest = JSON.parse(
+  fs.readFileSync(path.join(root, "app.webmanifest"), "utf8"),
+);
 const base = new URL("https://example.test/edu-manager/");
-const roleManifests = ["app.webmanifest", "deputy.webmanifest"].map((name) => {
-  const data = JSON.parse(fs.readFileSync(path.join(root, name), "utf8"));
-  const url = new URL(name, base);
-  return {
-    id: new URL(data.id, url),
-    start: new URL(data.start_url, url),
-    scope: new URL(data.scope, url),
-  };
-});
+assert.equal(new URL(manifest.id, base).href, base.href);
 assert.equal(
-  roleManifests[0].id.href,
-  new URL("./", base).href,
-  "Keep existing teacher installation identity",
+  new URL(manifest.start_url, base).pathname,
+  "/edu-manager/EduManager.html",
 );
-assert.equal(
-  roleManifests[1].id.href,
-  new URL("./deputy", base).href,
-  "Keep existing deputy installation identity",
+assert.ok(
+  new URL(manifest.start_url, base).href.startsWith(
+    new URL(manifest.scope, base).href,
+  ),
 );
-for (const [index, manifest] of roleManifests.entries()) {
-  assert.equal(manifest.scope.origin, base.origin);
-  assert.ok(
-    manifest.start.href.startsWith(manifest.scope.href),
-    "Start must stay inside its role scope",
-  );
-  assert.ok(
-    !roleManifests[1 - index].start.href.startsWith(manifest.scope.href),
-    "An installed role must never capture the other role",
-  );
-  assert.notEqual(
-    manifest.scope.pathname,
-    base.pathname,
-    "Root scope captures both installed roles",
-  );
-}
-console.log(
-  `Asset contract verified for ${[...files.keys()].filter((name) => name.startsWith("assets/")).length} external assets and both application entries.`,
+assert.ok(
+  ![...files.keys()].some((name) =>
+    /Deputy.html|deputy.webmanifest|deputy-(?:store|auto-backup|pwa)\.js|\/deputy\.(?:js|css)/.test(
+      name,
+    ),
+  ),
 );
+assert.ok(!fs.existsSync(path.join(root, "Deputy.html")));
+assert.match(
+  fs.readFileSync(path.join(root, "src/reports/periodic/render.js"), "utf8"),
+  /data-deputy-copy/,
+);
+assert.doesNotMatch(
+  fs.readFileSync(path.join(root, "src/reports/periodic/render.js"), "utf8"),
+  /data-workspace-action="deputy-export"/,
+);
+assert.doesNotMatch(worker, /deputyNavigation|new URL\("Deputy.html"/);
+console.log("Teacher-only application and offline asset contract verified.");
