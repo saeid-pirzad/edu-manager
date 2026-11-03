@@ -9761,7 +9761,7 @@ function reportCopyScope() {
   });
 }
 
-async function copyReportV24(buildText, button) {
+async function copyReportV24(buildText, button, formatHTML) {
   const origin = workspace?.id,
     sourceConnection = connection,
     scope = reportCopyScope();
@@ -9790,11 +9790,12 @@ async function copyReportV24(buildText, button) {
     ensureCurrent();
     const snapshot = fileMode ? null : await prepareReportSnapshot();
     ensureCurrent();
-    const text = buildText();
+    const text = buildText(snapshot?.data || db);
     if (typeof text !== "string" || !text.length) return false;
+    const html = formatHTML ? formatHTML(text) : undefined;
     if (snapshot) await assertReportSnapshot(snapshot.context);
     ensureCurrent();
-    copyToClipboard(text, button);
+    copyToClipboard(text, button, html);
     return true;
   } catch (error) {
     handleError(error);

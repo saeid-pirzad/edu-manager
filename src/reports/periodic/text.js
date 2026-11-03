@@ -340,6 +340,37 @@ function deputyReport(m) {
   return lines.join("\n");
 }
 
+// Reuse the deputy format while keeping a session copy independent of report filters.
+function sessionDeputyReport(source, sessionId) {
+  const session = source.sessions.find((item) => item.id === sessionId);
+  if (!session) throw Error("جلسه دیگر وجود ندارد؛ دوباره آن را باز کنید.");
+  const school = source.schools.find((item) => item.id === session.schoolId),
+    classroom = school?.classes.find((item) => item.id === session.classId);
+  if (
+    !classroom ||
+    !classroom.lessons.some((item) => item.id === session.lessonId)
+  )
+    throw Error(
+      "مدرسه، کلاس یا درس جلسه دیگر موجود نیست؛ اطلاعات را دوباره بخوانید.",
+    );
+  const model = build(
+    {
+      ...source,
+      schools: [{ ...school, classes: [classroom] }],
+      sessions: [session],
+    },
+    {
+      mode: "daily",
+      date: session.date,
+      schoolId: school.id,
+      classId: classroom.id,
+      audience: "management",
+      detailLevel: "summary",
+    },
+  );
+  return deputyReport(model);
+}
+
 function deputyReportHTML(text) {
   const lines = text
     .split("\n")

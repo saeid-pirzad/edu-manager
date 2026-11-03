@@ -81,6 +81,21 @@ async function reportCopyFlow() {
     document.getElementById("periodYear").value = year;
     document.getElementById("periodTerm").value = "اول";
     await EduV24.test.createLegacyPeriod();
+    const pupils = [
+      { id: ids.student, name: "COPY_GUARD_STUDENT", code: "001" },
+      {
+        id: ids.student + "_present",
+        name: "COPY_GUARD_PRESENT_PRIVATE",
+        code: "002",
+      },
+      { id: ids.student + "_late", name: "COPY_GUARD_LATE", code: "003" },
+      {
+        id: ids.student + "_leave",
+        name: "COPY_GUARD_LEAVE <em>ESCAPE</em>",
+        code: "004",
+      },
+      { id: ids.student + "_unknown", name: "COPY_GUARD_UNKNOWN", code: "005" },
+    ];
     db = EduV24.normalizeDB({
       ...defaultDB(),
       settings: {
@@ -97,13 +112,7 @@ async function reportCopyFlow() {
             {
               id: ids.classroom,
               name: "COPY_GUARD_CLASS",
-              students: [
-                {
-                  id: ids.student,
-                  name: "COPY_GUARD_STUDENT",
-                  code: "001",
-                },
-              ],
+              students: pupils.map((student) => ({ ...student })),
               archivedStudents: [],
               lessons: [
                 {
@@ -143,14 +152,13 @@ async function reportCopyFlow() {
           period: 0,
           poudmanId: ids.module,
           unitId: ids.unit,
-          roster: [
-            {
-              id: ids.student,
-              name: "COPY_GUARD_STUDENT",
-              code: "001",
-            },
-          ],
-          attendance: { [ids.student]: "absent" },
+          roster: pupils.map((student) => ({ ...student })),
+          attendance: {
+            [ids.student]: "absent",
+            [ids.student + "_present"]: "present",
+            [ids.student + "_late"]: "late:10",
+            [ids.student + "_leave"]: "leave",
+          },
           scores: [
             {
               studentId: ids.student,
@@ -164,6 +172,12 @@ async function reportCopyFlow() {
       masterSchedule: {},
       migrationWarnings: [],
     });
+    db.sessions.push({
+      ...structuredClone(db.sessions[0]),
+      id: ids.session + "_unrelated",
+      period: 1,
+      scores: [],
+    });
     await saveDB({ action: "Synthetic two-window report-copy fixture" });
     window.__eduCopyGuardCalls = [];
     window.__eduCopyGuardResults = [];
@@ -173,9 +187,10 @@ async function reportCopyFlow() {
         window.__eduCopyGuardResults.push(result);
         return result;
       });
-    copyToClipboard = (text, button) => {
+    copyToClipboard = (text, button, html) => {
       window.__eduCopyGuardCalls.push({
         text,
+        html: html || "",
         route: button?.getAttribute("data-legacy-click"),
       });
     };
@@ -199,6 +214,75 @@ async function reportCopyFlow() {
       );
     }
 
+    const sessionDelivery = window.__eduCopyGuardCalls.at(-1),
+      deputyText = sessionDelivery?.text || "",
+      deputyHTML = sessionDelivery?.html || "",
+      rich = document.createElement("div");
+    rich.innerHTML = deputyHTML;
+    check(
+      "COPY_FORMAT01",
+      "the session button delivers the shared deputy attendance format without present names or academic activities",
+      deputyText.startsWith("📋 گزارش کلی برای معاون\n") &&
+        deputyText.includes("مدرسه: COPY_GUARD_SCHOOL") &&
+        deputyText.includes("سال تحصیلی: " + year) &&
+        deputyText.includes("ترم: اول") &&
+        deputyText.includes("🟢 حاضر: ۲ نفر") &&
+        deputyText.includes("🔴 غایب (۱): COPY_GUARD_STUDENT") &&
+        deputyText.includes("🟠 تأخیر (۱): COPY_GUARD_LATE (۱۰ دقیقه)") &&
+        deputyText.includes("🟣 مرخصی (۱): COPY_GUARD_LEAVE <em>ESCAPE</em>") &&
+        deputyText.includes("⚪ تعیین‌نشده (۱): COPY_GUARD_UNKNOWN") &&
+        deputyText.includes("تعیین‌نشده به معنی غیبت نیست") &&
+        !deputyText.includes("COPY_GUARD_PRESENT_PRIVATE") &&
+        !deputyText.includes("COPY_GUARD_ACTIVITY") &&
+        !deputyText.includes("نمره کلاسی") &&
+        (deputyText.match(/تاریخ:/g) || []).length === 1,
+      { route: sessionDelivery?.route, text: deputyText },
+    );
+    const boldLabels = [...rich.querySelectorAll("strong")].map(
+      (node) => node.textContent,
+    );
+    check(
+      "COPY_FORMAT02",
+      "the session button supplies rich RTL attendance labels and escapes names for the clipboard",
+      !!rich.querySelector('div[dir="rtl"]') &&
+        ["حاضر", "غایب", "تأخیر", "مرخصی", "تعیین‌نشده"].every((label) =>
+          boldLabels.includes(label),
+        ) &&
+        deputyHTML.includes("&lt;em&gt;ESCAPE&lt;/em&gt;") &&
+        !rich.querySelector("em") &&
+        !deputyHTML.includes("COPY_GUARD_ACTIVITY") &&
+        rich.textContent === deputyText.replace(/\n/g, ""),
+      { hasHTML: !!deputyHTML, boldLabels },
+    );
+    const reportFilters = { ...EduPeriodicReports.filters };
+    try {
+      Object.assign(EduPeriodicReports.filters, {
+        mode: "annual",
+        schoolId: "UNRELATED_SCHOOL",
+        classId: "UNRELATED_CLASS",
+        studentId: "UNRELATED_STUDENT",
+        audience: "parent",
+        date: "2027-01-01",
+      });
+      const selectedFilters = JSON.stringify(EduPeriodicReports.filters),
+        before = window.__eduCopyGuardCalls.length,
+        result = await copy(sessionButton()),
+        isolated = window.__eduCopyGuardCalls.at(-1);
+      check(
+        "COPY_FORMAT03",
+        "session deputy copy ignores unrelated report filters and excludes the other stored session",
+        result === true &&
+          window.__eduCopyGuardCalls.length === before + 1 &&
+          isolated.text === deputyText &&
+          isolated.html === deputyHTML &&
+          JSON.stringify(EduPeriodicReports.filters) === selectedFilters &&
+          (isolated.text.match(/تاریخ:/g) || []).length === 1 &&
+          !isolated.text.includes("UNRELATED_"),
+        { result, route: isolated?.route },
+      );
+    } finally {
+      Object.assign(EduPeriodicReports.filters, reportFilters);
+    }
     // Keep only synthetic fixture helpers for the second phase. The Node
     // wrapper creates a genuine peer target without depending on popup policy.
     window.__eduCopyGuard = {

@@ -133,3 +133,59 @@ test("local read-only mode can copy authenticated data without writing drafts", 
   assert.equal(await f.c.copyReportV24(() => "hidden report", {}), false);
   assert.deepEqual(f.copied, ["local report"]);
 });
+
+test("formatted copy reads the captured durable data and delivers both formats after validation", async () => {
+  const f = fixture(),
+    data = { name: "DURABLE" };
+  f.c.db.name = "LIVE_UNCOMMITTED";
+  f.c.prepareReportSnapshot = async () => ({
+    context: { id: "term", revision: 1 },
+    data,
+  });
+  const sent = [];
+  f.c.copyToClipboard = (...args) => sent.push(args);
+  const button = {};
+  assert.equal(
+    await f.c.copyReportV24(
+      (source) => source.name,
+      button,
+      (text) => '<div dir="rtl">' + text + "</div>",
+    ),
+    true,
+  );
+  assert.deepEqual(sent, [["DURABLE", button, '<div dir="rtl">DURABLE</div>']]);
+  assert.deepEqual(f.calls, ["validate"]);
+});
+test("a revision change during HTML formatting stops both clipboard formats", async () => {
+  const f = fixture();
+  assert.equal(
+    await f.c.copyReportV24(
+      () => "plain",
+      {},
+      () => {
+        f.c.workspace.revision++;
+        return "<b>obsolete</b>";
+      },
+    ),
+    false,
+  );
+  assert.deepEqual(f.copied, []);
+  assert.equal(f.errors.length, 1);
+});
+test("local read-only formatted copy uses authenticated local data without saving", async () => {
+  const f = fixture(),
+    sent = [];
+  f.c.fileMode = true;
+  f.c.db.name = "LOCAL";
+  f.c.copyToClipboard = (text, button, html) => sent.push({ text, html });
+  assert.equal(
+    await f.c.copyReportV24(
+      (source) => source.name,
+      {},
+      (text) => "<b>" + text + "</b>",
+    ),
+    true,
+  );
+  assert.deepEqual(f.calls, []);
+  assert.deepEqual(sent, [{ text: "LOCAL", html: "<b>LOCAL</b>" }]);
+});

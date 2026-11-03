@@ -5281,22 +5281,13 @@ EduLegacyEvents.register("sessions-dialog:12", function (event) {
 
 EduLegacyEvents.register("sessions-dialog:13", function (event) {
   return EduV24.copyReport(
-    () =>
-      generateSessionReportText(
-        getSessionById(this.getAttribute("data-legacy-click-arg0")),
-        getClassObj(
-          this.getAttribute("data-legacy-click-arg1"),
-          this.getAttribute("data-legacy-click-arg2"),
-        ),
-        getLessonObj(
-          getClassObj(
-            this.getAttribute("data-legacy-click-arg3"),
-            this.getAttribute("data-legacy-click-arg4"),
-          ),
-          this.getAttribute("data-legacy-click-arg5"),
-        ),
+    (source) =>
+      EduPeriodicReports.sessionDeputyReport(
+        source,
+        this.getAttribute("data-legacy-click-arg0"),
       ),
     this,
+    (text) => EduPeriodicReports.deputyReportHTML(text),
   );
 });
 

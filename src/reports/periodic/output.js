@@ -89,6 +89,8 @@ root.EduPeriodicReports = {
   addDays,
   textReport,
   deputyReport,
+  sessionDeputyReport,
+  deputyReportHTML,
   documentHtml,
   note(value) {
     const key = noteKey(filters);
