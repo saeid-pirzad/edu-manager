@@ -19,7 +19,8 @@
     "test:data-contract": "node audit/data-store-contract.cjs",
     "test:integrity": "node audit/data-integrity.cjs",
     "test:deputy": "npm run build:check && node audit/deputy-browser.cjs",
-    "audit": "npm test"
+    "audit": "npm test",
+    "build:deputy": "npm run build && node scripts/deploy-deputy.cjs"
   },
   "engines": {
     "node": ">=22.13.0"

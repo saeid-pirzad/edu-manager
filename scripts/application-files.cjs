@@ -13,9 +13,16 @@ function contentType(name) {
 
 function applicationFiles(
   root,
-  { generated = new Set(), contents = new Map() } = {},
+  { generated = new Set(), contents = new Map(), role = "combined" } = {},
 ) {
-  const entries = ["EduManager.html", "Deputy.html"],
+  if (!["combined", "teacher", "deputy"].includes(role))
+    throw Error("Unknown deployment role");
+  const entries =
+      role === "deputy"
+        ? ["Deputy.html"]
+        : role === "teacher"
+          ? ["EduManager.html"]
+          : ["EduManager.html", "Deputy.html"],
     assets = [];
   for (const entry of entries) {
     const html = fs.readFileSync(path.join(root, entry), "utf8"),
@@ -40,8 +47,11 @@ function applicationFiles(
   for (const name of [
     ...entries,
     "index.html",
-    "app.webmanifest",
-    "deputy.webmanifest",
+    ...(role === "deputy"
+      ? ["deputy.webmanifest"]
+      : role === "teacher"
+        ? ["app.webmanifest"]
+        : ["app.webmanifest", "deputy.webmanifest"]),
     "service-worker.js",
     ...new Set(assets),
   ]) {
