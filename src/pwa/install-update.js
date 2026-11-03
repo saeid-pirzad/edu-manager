@@ -340,8 +340,8 @@
         paint();
         if (window.showModal)
           showModal(
-            "برای به‌روزرسانی، پنجره‌های دیگر را ببندید",
-            "<p>این برنامه هم‌زمان در بیش از یک تب یا پنجره باز است. پنجره نصب‌شده روی گوشی هم محسوب می‌شود.</p><p>ویرایش‌ها را ذخیره کنید؛ همه پنجره‌های دیگر این برنامه را ببندید، فقط همین پنجره را نگه دارید و دوباره «نسخه جدید آماده است» را بزنید.</p><p>حذف برنامه یا پاک‌کردن اطلاعات مرورگر لازم نیست.</p>",
+            "به‌روزرسانی برنامه",
+            '<div class="update-notice"><div class="update-notice-heading"><span class="update-notice-symbol" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="3" y="8" width="13" height="13" rx="2"/><path d="M8 8V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-3M3 12h13"/></svg></span><div><h4>پنجره‌های دیگر کلاس‌یار را ببندید</h4><p>برای نصب نسخهٔ جدید، فقط همین پنجره را باز نگه دارید.</p></div></div><ol class="update-notice-steps"><li><span aria-hidden="true">۱</span><p>ویرایش‌های پنجره‌های دیگر را ذخیره کنید.</p></li><li><span aria-hidden="true">۲</span><p>تب‌ها و پنجره‌های دیگر کلاس‌یار را ببندید؛ نسخهٔ نصب‌شده هم حساب می‌شود.</p></li><li><span aria-hidden="true">۳</span><p>به همین پنجره برگردید و «نسخه جدید آماده است» را بزنید.</p></li></ol><p class="update-notice-note"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z"/><path d="m8 12 3 3 5-6"/></svg><span>نیازی به حذف برنامه یا پاک‌کردن اطلاعات مرورگر نیست.</span></p><div class="update-notice-actions"><button type="button" data-workspace-action="close"><span class="control-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="m5 12 4 4L19 6"/></svg></span><span>متوجه شدم</span></button></div></div>',
           );
       }
     });
