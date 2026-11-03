@@ -16,6 +16,7 @@ function fixture() {
         closed: false,
       },
       fileMode: false,
+      connection: {},
       writer: Promise.resolve(),
       assertWorkspaceReadable() {},
       assertEntityWritable() {},

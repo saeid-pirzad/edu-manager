@@ -91,7 +91,9 @@ function storeDrafts() {
   } catch {
     localFailure = true;
   }
-  const targetConnection = connection;
+  const targetConnection = connection,
+    sourceInstallation =
+      typeof installationToken === "undefined" ? "" : installationToken;
   draftWritesPending++;
   const operation = draftWriter
     .catch(() => {})
@@ -101,26 +103,63 @@ function storeDrafts() {
         throw Error("ذخیره پایدار پیش‌نویس در دسترس نیست.");
       let tx;
       try {
-        tx = targetConnection.transaction("drafts", "readwrite", {
+        tx = targetConnection.transaction(["records", "drafts"], "readwrite", {
           durability: "strict",
         });
       } catch (error) {
         if (!(error instanceof TypeError)) throw error;
-        tx = targetConnection.transaction("drafts", "readwrite");
+        tx = targetConnection.transaction(["records", "drafts"], "readwrite");
       }
       const done = transactionDone(tx),
         store = tx.objectStore("drafts"),
-        request = store.get(key);
-      request.onsuccess = () => {
-        if (!request.result || request.result.generation <= entry.generation)
-          store.put(entry);
+        request = store.get(key),
+        epoch = tx
+          .objectStore("records")
+          .get(
+            typeof RESET_RECORD_KEY === "undefined"
+              ? "@installation-reset"
+              : RESET_RECORD_KEY,
+          );
+      let remaining = 2,
+        failure;
+      const persist = () => {
+        if (--remaining) return;
+        try {
+          if ((epoch.result?.value?.token || "") !== sourceInstallation) {
+            const error = Error(
+              "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ پیش‌نویس قدیمی ثبت نشد.",
+            );
+            error.code = "INSTALLATION_CHANGED";
+            throw error;
+          }
+          if (!request.result || request.result.generation <= entry.generation)
+            store.put(entry);
+        } catch (error) {
+          failure = error;
+          try {
+            tx.abort();
+          } catch {}
+        }
       };
-      await done;
+      request.onsuccess = persist;
+      epoch.onsuccess = persist;
+      try {
+        await done;
+      } catch (error) {
+        throw failure || error;
+      }
       draftRecoveryFailed = false;
       if (localFailure && entry.entries.length)
         setStatus("پیش‌نویس پایدار محفوظ است؛ در انتظار ثبت نمره.", "pending");
     })
     .catch((error) => {
+      if (error.code === "INSTALLATION_CHANGED")
+        try {
+          // An old tab may receive the reset notification after this transaction.
+          // Remove only our exact stale local copy; never a newer local edit.
+          if (localStorage.getItem(key) === JSON.stringify(entry))
+            localStorage.removeItem(key);
+        } catch {}
       draftRecoveryFailed = true;
       setStatus(
         "ذخیره پایدار پیش‌نویس انجام نشد؛ تا ثبت موفق نمره صفحه را نبندید. " +
@@ -138,6 +177,9 @@ function storeDrafts() {
 }
 
 async function loadDrafts() {
+  const sourceConnection = connection,
+    sourceInstallation =
+      typeof installationToken === "undefined" ? "" : installationToken;
   drafts.clear();
   try {
     const base = draftBaseKey();
@@ -166,21 +208,76 @@ async function loadDrafts() {
       drafts.set(inputKey(item), item);
     }
     await storeDrafts();
-    for (const old of records)
-      if (old.generation < draftGeneration - 1) {
-        try {
-          localStorage.removeItem(old.key);
-        } catch {}
-        const tx = connection.transaction("drafts", "readwrite"),
-          done = transactionDone(tx);
-        tx.objectStore("drafts").delete(old.key);
-        await done;
-      }
+    await pruneGradeDrafts(
+      records.filter((row) => row.generation < draftGeneration - 1),
+      sourceConnection,
+      sourceInstallation,
+    );
   } catch (error) {
     draftRecoveryFailed = true;
     setStatus(
       "پیش‌نویس قبلی خوانده نشد؛ داده اصلی محفوظ است. " + error.message,
       "error",
     );
+  }
+}
+
+async function pruneGradeDrafts(rows, sourceConnection, sourceInstallation) {
+  if (!rows.length) return;
+  const tx = sourceConnection.transaction(["records", "drafts"], "readwrite"),
+    done = transactionDone(tx),
+    store = tx.objectStore("drafts"),
+    epoch = tx
+      .objectStore("records")
+      .get(
+        typeof RESET_RECORD_KEY === "undefined"
+          ? "@installation-reset"
+          : RESET_RECORD_KEY,
+      );
+  let failure;
+  const abort = (error) => {
+    failure = error;
+    try {
+      tx.abort();
+    } catch {}
+  };
+  epoch.onsuccess = () => {
+    try {
+      if ((epoch.result?.value?.token || "") !== sourceInstallation) {
+        const error = Error(
+          "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ پیش‌نویس‌های بازیابی‌شده پاک نشدند.",
+        );
+        error.code = "INSTALLATION_CHANGED";
+        throw error;
+      }
+      for (const row of rows) {
+        const same = (raw) =>
+          !!raw &&
+          (Array.isArray(raw) ? 0 : Number(raw.generation || 0)) ===
+            row.generation &&
+          (raw.updatedAt || "") === row.updatedAt &&
+          JSON.stringify(Array.isArray(raw) ? raw : raw.entries || []) ===
+            JSON.stringify(row.entries);
+        const request = store.get(row.key);
+        request.onsuccess = () => {
+          try {
+            if (same(request.result)) store.delete(row.key);
+            try {
+              if (same(JSON.parse(localStorage.getItem(row.key) || "null")))
+                localStorage.removeItem(row.key);
+            } catch {}
+          } catch (error) {
+            abort(error);
+          }
+        };
+      }
+    } catch (error) {
+      abort(error);
+    }
+  };
+  try {
+    await done;
+  } catch (error) {
+    throw failure || error;
   }
 }

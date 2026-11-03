@@ -14,6 +14,12 @@ function fixture({
   const periods = new Map(),
     data = new Map(),
     rows = new Map(),
+    markers = new Map([
+      [
+        "@installation-reset",
+        { key: "@installation-reset", value: { token: "installation-a" } },
+      ],
+    ]),
     local = new Map(),
     effects = {
       writes: [],
@@ -46,7 +52,12 @@ function fixture({
   );
   const connection = {
     transaction(name, mode) {
-      assert.equal(name, "drafts");
+      assert.ok(
+        name === "drafts" ||
+          (Array.isArray(name) &&
+            name.includes("drafts") &&
+            name.includes("records")),
+      );
       let resolve, reject;
       const tx = {
         done: new Promise((yes, no) => {
@@ -69,8 +80,9 @@ function fixture({
         });
         return req;
       };
-      tx.objectStore = () => ({
-        get: (key) => request(rows.get(key)),
+      tx.abort = () => reject(Error("transaction aborted"));
+      tx.objectStore = (store) => ({
+        get: (key) => request((store === "records" ? markers : rows).get(key)),
         put: (row) => {
           assert.equal(mode, "readwrite");
           rows.set(row.key, clone(row));
@@ -351,6 +363,7 @@ function fixture({
     periods,
     data,
     rows,
+    markers,
     local,
     effects,
     timers,
@@ -1010,4 +1023,76 @@ test("ordinary active-source saves make its selected assessment read-only with a
   assert.equal(f.context.pending, 0);
   assert.equal(f.effects.writes.length, 0);
   assert.equal(JSON.stringify(f.c.db), before);
+});
+
+test("a delayed assessment draft cannot recreate rows after another tab replaces the installation before its notification arrives", async () => {
+  const f = fixture(),
+    ctx = await f.context.select("second", "final", f.identity);
+  let resume;
+  f.c.draftWriter = new Promise((resolve) => {
+    resume = resolve;
+  });
+  f.context.input(f.input(ctx, "theory", "99"));
+  f.markers.set("@installation-reset", {
+    key: "@installation-reset",
+    value: { token: "installation-b" },
+  });
+  assert.equal(
+    f.c.installationToken,
+    "installation-a",
+    "the old tab has not received the replacement event",
+  );
+  resume();
+  await assert.rejects(
+    f.c.draftWriter,
+    (error) => error.code === "INSTALLATION_CHANGED",
+  );
+  assert.equal(f.effects.drafts.length, 0);
+  assert.equal(f.rows.size, 0);
+  assert.equal(
+    f.local.size,
+    0,
+    "the obsolete local copy cannot resurface after reload",
+  );
+  assert.equal(
+    f.context.pending,
+    1,
+    "the rejected input remains available in memory",
+  );
+});
+
+test("a rejected old-installation assessment persist preserves a different replacement local draft at the same key", async () => {
+  const f = fixture(),
+    ctx = await f.context.select("second", "final", f.identity);
+  let resume;
+  f.c.draftWriter = new Promise((resolve) => {
+    resume = resolve;
+  });
+  f.context.input(f.input(ctx, "theory", "99"));
+  const key = [...f.local.keys()][0],
+    replacement = JSON.stringify({ entries: [{ value: "restored draft" }] });
+  f.local.set(key, replacement);
+  f.markers.set("@installation-reset", {
+    key: "@installation-reset",
+    value: { token: "installation-b" },
+  });
+  resume();
+  await assert.rejects(
+    f.c.draftWriter,
+    (error) => error.code === "INSTALLATION_CHANGED",
+  );
+  assert.equal(f.local.get(key), replacement);
+  assert.equal(f.effects.drafts.length, 0);
+});
+
+test("assessment drafts remain writable for an installation created before reset markers existed", async () => {
+  const f = fixture();
+  f.c.installationToken = "";
+  f.markers.clear();
+  const ctx = await f.context.select("second", "final", f.identity);
+  f.context.input(f.input(ctx, "theory", "99"));
+  await f.c.draftWriter;
+  assert.equal(f.effects.drafts.length, 1);
+  assert.equal(f.rows.size, 1);
+  assert.equal(f.local.size, 1);
 });

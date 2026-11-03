@@ -25,6 +25,10 @@ async function fixture() {
       inert: false,
       textContent: "",
       title: "",
+      label: { textContent: "" },
+      querySelector(selector) {
+        return selector === "span" ? this.label : null;
+      },
       setAttribute(name, value) {
         this[name] = value;
       },
@@ -244,7 +248,7 @@ test("an app without the safe persistence barrier never activates an update", as
   assert.equal(f.elements.get("mobileUpdate").disabled, false);
 });
 
-for (const ending of ["blocked", "timeout", "postFailure"])
+for (const ending of ["blocked", "postFailure"])
   test(
     "update surfaces lock until activation and restore exact state/focus after " +
       ending,
@@ -274,12 +278,7 @@ for (const ending of ["blocked", "timeout", "postFailure"])
         assert.equal(modal.inert, true);
         assert.equal(nav.inert, true);
         assert.equal(install.disabled, true);
-        if (ending === "blocked")
-          f.handlers.get("message")({ data: { type: "UPDATE_BLOCKED" } });
-        else
-          [...f.timers.values()]
-            .find((timer) => timer.delay === 15000)
-            .callback();
+        f.handlers.get("message")({ data: { type: "UPDATE_BLOCKED" } });
       }
       assert.equal(app.inert, true);
       assert.equal(modal.inert, false);
@@ -380,4 +379,34 @@ test("a report note queued while an ordinary writer drains is rechecked before c
   assert.deepEqual(f.effects, []);
   assert.equal(unsaved, true);
   assert.equal(f.elements.get("mobileUpdate").disabled, false);
+});
+
+test("slow activation keeps editing locked and a late controller replacement reloads once", async () => {
+  const f = await fixture();
+  await f.update();
+  [...f.timers.values()].find((timer) => timer.delay === 15000).callback();
+  assert.equal(f.c.document.getElementById("app").inert, true);
+  assert.equal(f.c.document.getElementById("modal").inert, true);
+  assert.equal(f.elements.get("mobileUpdate").disabled, false);
+  assert.equal(
+    f.elements.get("mobileUpdate").label.textContent,
+    "بازکردن دوباره برنامه",
+  );
+  f.registration.waiting = null;
+  f.handlers.get("online")();
+  assert.equal(f.elements.get("mobileUpdate").hidden, false);
+  f.handlers.get("controllerchange")();
+  f.handlers.get("controllerchange")();
+  assert.deepEqual(f.effects, ["confirm", "APPLY_UPDATE", "reload"]);
+});
+
+test("an activation that never finishes has an explicit saved-state reopen action", async () => {
+  const f = await fixture();
+  await f.update();
+  [...f.timers.values()].find((timer) => timer.delay === 15000).callback();
+  await f.update();
+  await f.update();
+  assert.equal(f.c.document.getElementById("app").inert, true);
+  assert.equal(f.prepares(), 2);
+  assert.deepEqual(f.effects, ["confirm", "APPLY_UPDATE", "reload"]);
 });

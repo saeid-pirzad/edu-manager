@@ -183,6 +183,7 @@ function reopening({
     writer: Promise.resolve(),
     busy: 0,
     drafts: new Map(),
+    assessmentContext: { hasDrafts: () => false },
     flushDrafts: async () => {},
     assertEntityWritable() {},
     putBackup: async () => {},

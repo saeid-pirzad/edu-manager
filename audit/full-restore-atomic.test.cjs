@@ -80,7 +80,10 @@ function fixture({ syncFailure = false, asyncFailure = false } = {}) {
     confirm: () => true,
     writer: Promise.resolve(),
     draftWriter: Promise.resolve(),
-    snapshotInstallation: async () => safety,
+    snapshotInstallation: async ({ onDurableDrafts } = {}) => {
+      onDurableDrafts?.(structuredClone(c.rawStores?.drafts || []));
+      return safety;
+    },
     uid: () => "new_" + ++sequence,
     collectRecords: (data) => new Map([["meta", data]]),
     clone: structuredClone,
@@ -278,9 +281,12 @@ test("full restore requires confirmation before taking a snapshot or writing", a
 test("active full-restore preview cannot be replaced", async () => {
   const { c, source, safety } = fixture();
   let release;
-  c.snapshotInstallation = () =>
+  c.snapshotInstallation = ({ onDurableDrafts } = {}) =>
     new Promise((resolve) => {
-      release = () => resolve(safety);
+      release = () => {
+        onDurableDrafts?.([]);
+        resolve(safety);
+      };
     });
   const pending = c.restoreFullBackup();
   assert.throws(() => c.previewFullBackup({}), /در حال انجام/);
@@ -643,5 +649,149 @@ test("unserializable corrupt identity rows fail clearly rather than bypassing th
         row,
       ),
     /مقایسهٔ امن/,
+  );
+});
+
+test("a grade draft saved in another tab after the safety snapshot blocks destructive replacement", async () => {
+  const f = fixture(),
+    snapshot = f.c.snapshotBeforeSystemRestore;
+  f.c.snapshotBeforeSystemRestore = async () => {
+    const safety = await snapshot();
+    f.c.rawStores = {
+      drafts: [
+        {
+          key: "Edu24.drafts.original.peer.document",
+          workspace: "original",
+          generation: 1,
+          entries: [{ kind: "k", value: "18" }],
+          updatedAt: "2026-11-03T10:00:00Z",
+        },
+      ],
+    };
+    return safety;
+  };
+  await assert.rejects(f.c.restoreFullBackup(), /پیش‌نویس/);
+  assert.equal(f.committed.length, 0);
+});
+
+for (const change of ["edited", "removed", "discarded"]) {
+  test(
+    "replacement preserves a concurrent " +
+      change +
+      " draft operation by refusing an obsolete safety snapshot",
+    async () => {
+      const f = fixture(),
+        snapshot = f.c.snapshotBeforeSystemRestore;
+      const row = {
+        key: "Edu24.drafts.original.peer.document",
+        workspace: "original",
+        generation: 1,
+        entries: [{ kind: "k", value: "18" }],
+        updatedAt: "2026-11-03T10:00:00Z",
+      };
+      f.c.rawStores = { drafts: [structuredClone(row)] };
+      f.c.snapshotBeforeSystemRestore = async () => {
+        const safety = await snapshot();
+        f.c.rawStores.drafts =
+          change === "removed"
+            ? []
+            : [
+                {
+                  ...row,
+                  entries:
+                    change === "discarded" ? [] : [{ kind: "k", value: "19" }],
+                },
+              ];
+        return safety;
+      };
+      await assert.rejects(f.c.restoreFullBackup(), /پیش‌نویس/);
+      assert.equal(f.committed.length, 0);
+    },
+  );
+}
+
+test("restore draft guard ignores device file configuration and stable draft ordering", () => {
+  const f = fixture(),
+    a = { key: "Edu24.drafts.original.a", entries: [] },
+    b = { key: "Edu24.drafts.original.b", entries: [] };
+  assert.equal(
+    f.c.restoreDraftSignature([a, b]),
+    f.c.restoreDraftSignature([
+      { key: "EduManager.singleFile", handle: {} },
+      b,
+      a,
+    ]),
+  );
+});
+
+test("replacement waits for the automatic file lock through an outstanding stream close", async () => {
+  const f = fixture();
+  let release;
+  f.c.navigator = {
+    locks: {
+      request(name, run) {
+        assert.equal(name, "EduManager.singleFile");
+        return new Promise((resolve, reject) => {
+          release = () => run().then(resolve, reject);
+        });
+      },
+    },
+  };
+  const restore = f.c.restoreFullBackup();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(
+    typeof release,
+    "function",
+    "must use the same cross-tab lock as file streams",
+  );
+  assert.equal(
+    f.committed.length,
+    0,
+    "the database remains unchanged while an older stream can still close",
+  );
+  release();
+  await restore;
+  assert.ok(f.committed.length > 0);
+});
+
+test("failed automatic-file locking never partially replaces the installation", async () => {
+  const f = fixture();
+  f.c.navigator = {
+    locks: {
+      request() {
+        throw Error("file lock unavailable");
+      },
+    },
+  };
+  await assert.rejects(f.c.restoreFullBackup(), /file lock unavailable/);
+  assert.equal(f.committed.length, 0);
+});
+
+test("replacement preserves the latest durable file handle and rotates its connection identity", async () => {
+  const f = fixture();
+  f.c.singleFile = {
+    connectionId: "obsolete-tab-connection",
+    handle: { name: "old.json" },
+  };
+  const current = {
+    key: "file",
+    connectionId: "live-connection",
+    handle: { name: "current.json" },
+    modified: 2,
+    size: 5,
+    savedAt: "2026-11-03T10:00:00Z",
+  };
+  f.c.rawStores = { drafts: [current] };
+  await f.c.restoreFullBackup();
+  const saved = f.committed.find(
+    (row) => row.name === "drafts" && row.row?.key === "file",
+  ).row;
+  assert.equal(saved.handle.name, "current.json");
+  assert.notEqual(saved.connectionId, current.connectionId);
+  assert.equal(f.c.singleFile, saved);
+  assert.equal(
+    current.connectionId,
+    "live-connection",
+    "the source snapshot must not be mutated",
   );
 });

@@ -26,6 +26,7 @@ function fixture() {
       fs.readFileSync(path.join(__dirname, "../src", file), "utf8"),
       c,
     );
+  c.assessmentContext = { hasDrafts: () => false };
   c.workspace = {
     id: "first",
     year: "1405-1406",

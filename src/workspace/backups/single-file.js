@@ -69,26 +69,64 @@ async function persistSingleFile({
   target = singleFile,
 } = {}) {
   if (!ready || resetBusy || connectionRetired) return false;
-  const tx = connection.transaction("drafts", "readwrite"),
-    done = transactionDone(tx);
-  const store = tx.objectStore("drafts");
-  let changed = false;
-  const request = store.get(singleFileKey);
-  request.onsuccess = () => {
-    // A stale tab must never recreate a disconnected/replaced configuration.
-    if (
-      !replace &&
-      (!request.result ||
-        (request.result.connectionId || "") !== (target?.connectionId || ""))
-    )
-      return;
-    if (singleFile === target && target)
-      store.put({ key: singleFileKey, ...target });
-    else if (!singleFile) store.delete(singleFileKey);
-    else return;
-    changed = true;
+  const sourceConnection = connection,
+    sourceInstallation =
+      typeof installationToken === "undefined" ? "" : installationToken,
+    tx = sourceConnection.transaction(["records", "drafts"], "readwrite"),
+    done = transactionDone(tx),
+    store = tx.objectStore("drafts"),
+    request = store.get(singleFileKey),
+    epoch = tx
+      .objectStore("records")
+      .get(
+        typeof RESET_RECORD_KEY === "undefined"
+          ? "@installation-reset"
+          : RESET_RECORD_KEY,
+      );
+  let changed = false,
+    remaining = 2,
+    failure;
+  const persist = () => {
+    if (--remaining) return;
+    try {
+      if (
+        (epoch.result?.value?.token || "") !== sourceInstallation ||
+        connection !== sourceConnection ||
+        connectionRetired ||
+        resetBusy
+      ) {
+        const error = Error(
+          "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ اتصال فایل قدیمی تغییر نکرد.",
+        );
+        error.code = "INSTALLATION_CHANGED";
+        throw error;
+      }
+      // A stale tab must never recreate a disconnected/replaced configuration.
+      if (
+        !replace &&
+        (!request.result ||
+          (request.result.connectionId || "") !== (target?.connectionId || ""))
+      )
+        return;
+      if (singleFile === target && target)
+        store.put({ key: singleFileKey, ...target });
+      else if (!singleFile) store.delete(singleFileKey);
+      else return;
+      changed = true;
+    } catch (error) {
+      failure = error;
+      try {
+        tx.abort();
+      } catch {}
+    }
   };
-  await done;
+  request.onsuccess = persist;
+  epoch.onsuccess = persist;
+  try {
+    await done;
+  } catch (error) {
+    throw failure || error;
+  }
   return changed;
 }
 function singleFileChanged(message) {
@@ -113,7 +151,22 @@ async function singleFileCurrent(target) {
     connectionRetired
   )
     return false;
-  const stored = await readRecord("drafts", singleFileKey);
+  const expectedInstallation =
+    typeof installationToken === "undefined" ? "" : installationToken;
+  const stored = await readRecord("drafts", singleFileKey),
+    marker = await readRecord(
+      "records",
+      typeof RESET_RECORD_KEY === "undefined"
+        ? "@installation-reset"
+        : RESET_RECORD_KEY,
+    );
+  if ((marker?.value?.token || "") !== expectedInstallation) {
+    const error = Error(
+      "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ فایل قدیمی نوشته نشد. صفحه را دوباره بارگذاری کنید.",
+    );
+    error.code = "INSTALLATION_CHANGED";
+    throw error;
+  }
   if (!stored || (stored.connectionId || "") !== (target.connectionId || "")) {
     if (singleFile === target) {
       pauseSingleFile();

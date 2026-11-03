@@ -5,7 +5,7 @@ function renderLogin() {
       <h2>🔒 ورود به سامانه</h2>
       <p class="muted">لطفاً رمز عبور خود را وارد کنید</p>
       <form id="loginForm">
-        <input type="password" id="loginPass" placeholder="****" required autofocus>
+        <input type="password" id="loginPass" aria-label="رمز عبور" autocomplete="current-password" placeholder="****" required autofocus>
         <button type="submit">ورود</button>
       </form>
     </div>

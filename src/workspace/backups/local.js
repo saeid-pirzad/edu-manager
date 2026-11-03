@@ -15,29 +15,80 @@ function handleError(error) {
 }
 
 async function putBackup(data, label, workspaceId = workspace?.id) {
-  const backup = {
-    id: uid(),
-    workspace: workspaceId,
-    at: new Date().toISOString(),
-    label,
-    db: clone(data),
+  const sourceConnection = connection,
+    sourceInstallation =
+      typeof installationToken === "undefined" ? "" : installationToken,
+    backup = {
+      id: uid(),
+      workspace: workspaceId,
+      at: new Date().toISOString(),
+      label,
+      db: clone(data),
+    },
+    tx = sourceConnection.transaction(
+      ["records", "catalog", "backups"],
+      "readwrite",
+    ),
+    done = transactionDone(tx),
+    store = tx.objectStore("backups"),
+    current = store.getAll(),
+    epoch = tx
+      .objectStore("records")
+      .get(
+        typeof RESET_RECORD_KEY === "undefined"
+          ? "@installation-reset"
+          : RESET_RECORD_KEY,
+      ),
+    owner =
+      workspaceId == null ? null : tx.objectStore("catalog").get(workspaceId);
+  let remaining = owner ? 3 : 2,
+    failure;
+  const save = () => {
+    if (--remaining) return;
+    try {
+      if (
+        (epoch.result?.value?.token || "") !== sourceInstallation ||
+        connection !== sourceConnection ||
+        connectionRetired ||
+        resetBusy
+      ) {
+        const error = Error(
+          "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ پشتیبان قدیمی ثبت نشد.",
+        );
+        error.code = "INSTALLATION_CHANGED";
+        throw error;
+      }
+      if (owner && owner.result?.id !== workspaceId)
+        throw Error("نوبت این پشتیبان دیگر موجود نیست؛ پشتیبان قدیمی ثبت نشد.");
+      const all = current.result
+        .filter(
+          (row) =>
+            row.id !== backup.id &&
+            !row.full &&
+            row.workspace === workspaceId &&
+            !String(row.label ?? "").includes("انتقال"),
+        )
+        .sort((a, b) => String(b.at ?? "").localeCompare(String(a.at ?? "")));
+      store.put(backup);
+      const retained = String(label ?? "").includes("انتقال") ? 8 : 7;
+      for (const row of all.slice(retained)) store.delete(row.id);
+    } catch (error) {
+      failure = error;
+      try {
+        tx.abort();
+      } catch {}
+    }
   };
-  const tx = connection.transaction("backups", "readwrite"),
-    done = transactionDone(tx);
-  tx.objectStore("backups").put(backup);
-  await done;
-  const all = (await allFrom("backups"))
-    .filter((x) => x.workspace === workspaceId && !x.label.includes("انتقال"))
-    .sort((a, b) => b.at.localeCompare(a.at));
-  if (all.length > 8) {
-    const cleanup = connection.transaction("backups", "readwrite"),
-      finished = transactionDone(cleanup);
-    all.slice(8).forEach((x) => cleanup.objectStore("backups").delete(x.id));
-    await finished;
+  current.onsuccess = save;
+  epoch.onsuccess = save;
+  if (owner) owner.onsuccess = save;
+  try {
+    await done;
+  } catch (error) {
+    throw failure || error;
   }
   return backup;
 }
-
 const FULL_BACKUP_DELIVERY_KEY = "Edu24.fullBackupDelivery";
 function recordFullBackupDelivery({ kind, exportedAt, name = "" }) {
   if (

@@ -133,3 +133,95 @@ test("calendar disabled-state coordination retains teacher locks and has a stand
   );
   assert.equal(standalone.context.control.disabled, false);
 });
+
+function selectableCalendar(changes = {}) {
+  const f = calendarFixture();
+  const events = [];
+  const proxy = {
+    dataset: { gregorianTarget: "true" },
+    setAttribute() {},
+  };
+  const input = {
+    value: "2026-10-31",
+    dataset: {},
+    nextSibling: proxy,
+    nextElementSibling: proxy,
+    isConnected: true,
+    readOnly: false,
+    min: "2026-10-31",
+    max: "2026-11-02",
+    matches: () => false,
+    closest: () => null,
+    dispatchEvent: (event) => events.push(event.type),
+    ...changes,
+  };
+  f.context.nativeDate = input;
+  vm.runInContext(
+    "calViewYear=1405;calViewMonth=8;calTargetInput=nativeDate;",
+    f.context,
+  );
+  f.popup.classList.add("open");
+  return { ...f, input, proxy, events };
+}
+test("calendar disables dates outside the native field bounds, including both boundary days", () => {
+  const f = selectableCalendar();
+  vm.runInContext("renderShamsiCalendar();", f.context);
+  const button = (day) =>
+    f.popup.innerHTML.match(
+      new RegExp('<button[^>]*data-calendar-day="' + day + '"[^>]*>'),
+    )?.[0];
+  assert.match(button(8), /\sdisabled(?:\s|>)/);
+  assert.doesNotMatch(button(9), /\sdisabled(?:\s|>)/);
+  assert.doesNotMatch(button(11), /\sdisabled(?:\s|>)/);
+  assert.match(button(12), /\sdisabled(?:\s|>)/);
+});
+for (const day of [8, 12]) {
+  test(
+    "calendar refuses out-of-range selection without dispatching or changing dates: " +
+      day,
+    () => {
+      const f = selectableCalendar();
+      f.context.calSelectDay(day);
+      assert.equal(f.input.value, "2026-10-31");
+      assert.equal(f.proxy.value, undefined);
+      assert.deepEqual(f.events, []);
+    },
+  );
+}
+for (const [name, change] of [
+  ["detached", { isConnected: false }],
+  ["disabled", { matches: () => true }],
+  ["readonly", { readOnly: true }],
+  ["inert", { closest: () => ({ inert: true }) }],
+]) {
+  test(
+    "calendar cannot change a field made " + name + " after the popup opens",
+    () => {
+      const f = selectableCalendar(change);
+      f.context.calSelectDay(10);
+      assert.equal(f.input.value, "2026-10-31");
+      assert.deepEqual(f.events, []);
+      assert.equal(f.popup.classList.contains("open"), false);
+    },
+  );
+}
+test("calendar applies inclusive range endpoints and keeps both events on the originating input", () => {
+  for (const [day, iso] of [
+    [9, "2026-10-31"],
+    [11, "2026-11-02"],
+  ]) {
+    const f = selectableCalendar();
+    const otherEvents = [];
+    f.context.otherInput = {
+      dispatchEvent: (event) => otherEvents.push(event.type),
+    };
+    f.input.dispatchEvent = (event) => {
+      f.events.push(event.type);
+      vm.runInContext("calTargetInput=otherInput;", f.context);
+    };
+    f.context.calSelectDay(day);
+    assert.equal(f.input.value, iso);
+    assert.deepEqual(f.events, ["input", "change"]);
+    assert.deepEqual(otherEvents, []);
+  }
+});

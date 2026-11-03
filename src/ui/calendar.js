@@ -205,6 +205,24 @@ function initShamsiPickers() {
   });
 }
 
+function calendarISODate(gy, gm, gd) {
+  return (
+    String(gy).padStart(4, "0") +
+    "-" +
+    String(gm).padStart(2, "0") +
+    "-" +
+    String(gd).padStart(2, "0")
+  );
+}
+function calendarDateWithinBounds(input, isoDate) {
+  const valid = (bound) =>
+    typeof bound === "string" && /^\d{4}-\d{2}-\d{2}$/.test(bound);
+  return (
+    (!valid(input?.min) || isoDate >= input.min) &&
+    (!valid(input?.max) || isoDate <= input.max)
+  );
+}
+
 function renderShamsiCalendar(shamsiInput) {
   const t = new Date();
   const [tjy, tjm, tjd] = gregorianToJalali(
@@ -248,7 +266,11 @@ function renderShamsiCalendar(shamsiInput) {
       calSelectedJalali[2] === d
     )
       cls = "selected";
-    h += `<button type="button" class="${cls}" aria-label="${calendarFaNum(d)} ${MONTHS_FA[calViewMonth - 1]} ${calendarFaNum(calViewYear)}" aria-pressed="${cls === "selected"}" data-calendar-action="select" data-calendar-day="${d}">${calendarFaNum(d)}</button>`;
+    const nativeDate = calendarISODate(
+      ...jalaliToGregorian(calViewYear, calViewMonth, d),
+    );
+    const disabled = !calendarDateWithinBounds(calTargetInput, nativeDate);
+    h += `<button type="button" ${disabled ? 'disabled title="خارج از بازهٔ مجاز"' : ""} class="${cls}" aria-label="${calendarFaNum(d)} ${MONTHS_FA[calViewMonth - 1]} ${calendarFaNum(calViewYear)}" aria-pressed="${cls === "selected"}" data-calendar-action="select" data-calendar-day="${d}">${calendarFaNum(d)}</button>`;
   }
   h += `</div>`;
   h += `<div class="cal-footer">امروز: ${calendarFaNum(tjy)}/${calendarFaNum(String(tjm).padStart(2, "0"))}/${calendarFaNum(String(tjd).padStart(2, "0"))}</div>`;
@@ -275,27 +297,51 @@ window.calChangeMonth = function (delta) {
 };
 
 window.calSelectDay = function (d) {
+  const input = calTargetInput;
+  if (
+    !calPopup.classList.contains("open") ||
+    !input ||
+    input.isConnected === false ||
+    input.matches?.(":disabled") ||
+    input.readOnly ||
+    input.closest?.("[inert]")
+  ) {
+    closeShamsiCalendar(true);
+    return false;
+  }
+  if (!Number.isInteger(d) || d < 1 || d > 31) return false;
   const [gy, gm, gd] = jalaliToGregorian(calViewYear, calViewMonth, d);
-  const gStr = `${gy}-${String(gm).padStart(2, "0")}-${String(gd).padStart(2, "0")}`;
-  const shamsiStr = `${calendarFaNum(calViewYear)}/${calendarFaNum(String(calViewMonth).padStart(2, "0"))}/${calendarFaNum(String(d).padStart(2, "0"))}`;
-  if (calTargetInput) {
-    calTargetInput.value = gStr;
-    calTargetInput.dataset.jy = calViewYear;
-    calTargetInput.dataset.jm = calViewMonth;
-    calTargetInput.dataset.jd = d;
-    const next = calTargetInput.nextSibling;
-    if (next && next.dataset && next.dataset.gregorianTarget) {
-      next.value = shamsiStr;
-      next.dataset.jy = calViewYear;
-      next.dataset.jm = calViewMonth;
-      next.dataset.jd = d;
-    }
+  const actual = gregorianToJalali(gy, gm, gd);
+  if (
+    actual[0] !== calViewYear ||
+    actual[1] !== calViewMonth ||
+    actual[2] !== d
+  )
+    return false;
+  const gStr = calendarISODate(gy, gm, gd);
+  if (!calendarDateWithinBounds(input, gStr)) return false;
+  const shamsiStr =
+    calendarFaNum(calViewYear) +
+    "/" +
+    calendarFaNum(String(calViewMonth).padStart(2, "0")) +
+    "/" +
+    calendarFaNum(String(d).padStart(2, "0"));
+  input.value = gStr;
+  input.dataset.jy = calViewYear;
+  input.dataset.jm = calViewMonth;
+  input.dataset.jd = d;
+  const next = input.nextElementSibling;
+  if (next?.dataset.gregorianTarget) {
+    next.value = shamsiStr;
+    next.dataset.jy = calViewYear;
+    next.dataset.jm = calViewMonth;
+    next.dataset.jd = d;
   }
   closeShamsiCalendar(true);
-  if (calTargetInput) {
-    calTargetInput.dispatchEvent(new Event("input", { bubbles: true }));
-    calTargetInput.dispatchEvent(new Event("change", { bubbles: true }));
-  }
+  // Both events belong to this input even if a listener opens another picker.
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+  return true;
 };
 
 document.addEventListener("click", function (e) {

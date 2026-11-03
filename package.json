@@ -18,7 +18,8 @@
     "test:assets": "node audit/assets-contract.cjs",
     "test:data-contract": "node audit/data-store-contract.cjs",
     "test:integrity": "node audit/data-integrity.cjs",
-    "audit": "npm test"
+    "audit": "npm test",
+    "release:package": "node scripts/package-release.cjs"
   },
   "engines": {
     "node": ">=22.13.0"

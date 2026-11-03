@@ -63,31 +63,47 @@ function invalidateInstallation() {
   );
 }
 async function completeResetCleanup(dbConnection, marker) {
-  for (const key of Object.keys(localStorage))
-    if (ownedDataKey(key)) localStorage.removeItem(key);
-  localStorage.setItem(RESET_EPOCH_KEY, marker.value.token);
-  for (const key of Object.keys(sessionStorage))
-    if (key.startsWith("Edu24.")) sessionStorage.removeItem(key);
-  if (
-    localStorage.getItem(RESET_EPOCH_KEY) !== marker.value.token ||
-    Object.keys(localStorage).some(ownedDataKey)
-  )
-    throw Error("پاک‌سازی حافظه مرورگر کامل نشده است.");
   const tx = dbConnection.transaction("records", "readwrite"),
-    done = transactionDone(tx);
-  const store = tx.objectStore("records"),
+    done = transactionDone(tx),
+    store = tx.objectStore("records"),
     request = store.get(RESET_RECORD_KEY);
+  let failure;
   request.onsuccess = () => {
-    if (request.result?.value?.token !== marker.value.token) {
-      tx.abort();
-      return;
+    try {
+      if (request.result?.value?.token !== marker.value.token) {
+        const error = Error(
+          "اطلاعات سیستم دوباره جایگزین شده است؛ پاک‌سازی قدیمی اجرا نشد.",
+        );
+        error.code = "INSTALLATION_CHANGED";
+        throw error;
+      }
+      // Another tab may already have completed this same marker and begun new work.
+      if (request.result.value.phase === "complete") return;
+      // Keep the durable installation lock while removing its browser preferences.
+      // An obsolete cleanup must never erase the newer installation's local drafts.
+      for (const key of Object.keys(localStorage))
+        if (ownedDataKey(key)) localStorage.removeItem(key);
+      localStorage.setItem(RESET_EPOCH_KEY, marker.value.token);
+      for (const key of Object.keys(sessionStorage))
+        if (key.startsWith("Edu24.")) sessionStorage.removeItem(key);
+      if (
+        localStorage.getItem(RESET_EPOCH_KEY) !== marker.value.token ||
+        Object.keys(localStorage).some(ownedDataKey)
+      )
+        throw Error("پاک‌سازی حافظه مرورگر کامل نشده است.");
+      store.put({ ...marker, value: { ...marker.value, phase: "complete" } });
+    } catch (error) {
+      failure = error;
+      try {
+        tx.abort();
+      } catch {}
     }
-    store.put({
-      ...marker,
-      value: { ...marker.value, phase: "complete" },
-    });
   };
-  await done;
+  try {
+    await done;
+  } catch (error) {
+    throw failure || error;
+  }
 }
 function resetDatabase(version, marker) {
   return new Promise((resolve, reject) => {

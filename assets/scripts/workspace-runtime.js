@@ -409,31 +409,47 @@ function invalidateInstallation() {
   );
 }
 async function completeResetCleanup(dbConnection, marker) {
-  for (const key of Object.keys(localStorage))
-    if (ownedDataKey(key)) localStorage.removeItem(key);
-  localStorage.setItem(RESET_EPOCH_KEY, marker.value.token);
-  for (const key of Object.keys(sessionStorage))
-    if (key.startsWith("Edu24.")) sessionStorage.removeItem(key);
-  if (
-    localStorage.getItem(RESET_EPOCH_KEY) !== marker.value.token ||
-    Object.keys(localStorage).some(ownedDataKey)
-  )
-    throw Error("پاک‌سازی حافظه مرورگر کامل نشده است.");
   const tx = dbConnection.transaction("records", "readwrite"),
-    done = transactionDone(tx);
-  const store = tx.objectStore("records"),
+    done = transactionDone(tx),
+    store = tx.objectStore("records"),
     request = store.get(RESET_RECORD_KEY);
+  let failure;
   request.onsuccess = () => {
-    if (request.result?.value?.token !== marker.value.token) {
-      tx.abort();
-      return;
+    try {
+      if (request.result?.value?.token !== marker.value.token) {
+        const error = Error(
+          "اطلاعات سیستم دوباره جایگزین شده است؛ پاک‌سازی قدیمی اجرا نشد.",
+        );
+        error.code = "INSTALLATION_CHANGED";
+        throw error;
+      }
+      // Another tab may already have completed this same marker and begun new work.
+      if (request.result.value.phase === "complete") return;
+      // Keep the durable installation lock while removing its browser preferences.
+      // An obsolete cleanup must never erase the newer installation's local drafts.
+      for (const key of Object.keys(localStorage))
+        if (ownedDataKey(key)) localStorage.removeItem(key);
+      localStorage.setItem(RESET_EPOCH_KEY, marker.value.token);
+      for (const key of Object.keys(sessionStorage))
+        if (key.startsWith("Edu24.")) sessionStorage.removeItem(key);
+      if (
+        localStorage.getItem(RESET_EPOCH_KEY) !== marker.value.token ||
+        Object.keys(localStorage).some(ownedDataKey)
+      )
+        throw Error("پاک‌سازی حافظه مرورگر کامل نشده است.");
+      store.put({ ...marker, value: { ...marker.value, phase: "complete" } });
+    } catch (error) {
+      failure = error;
+      try {
+        tx.abort();
+      } catch {}
     }
-    store.put({
-      ...marker,
-      value: { ...marker.value, phase: "complete" },
-    });
   };
-  await done;
+  try {
+    await done;
+  } catch (error) {
+    throw failure || error;
+  }
 }
 function resetDatabase(version, marker) {
   return new Promise((resolve, reject) => {
@@ -2002,7 +2018,9 @@ function storeDrafts() {
   } catch {
     localFailure = true;
   }
-  const targetConnection = connection;
+  const targetConnection = connection,
+    sourceInstallation =
+      typeof installationToken === "undefined" ? "" : installationToken;
   draftWritesPending++;
   const operation = draftWriter
     .catch(() => {})
@@ -2012,26 +2030,63 @@ function storeDrafts() {
         throw Error("ذخیره پایدار پیش‌نویس در دسترس نیست.");
       let tx;
       try {
-        tx = targetConnection.transaction("drafts", "readwrite", {
+        tx = targetConnection.transaction(["records", "drafts"], "readwrite", {
           durability: "strict",
         });
       } catch (error) {
         if (!(error instanceof TypeError)) throw error;
-        tx = targetConnection.transaction("drafts", "readwrite");
+        tx = targetConnection.transaction(["records", "drafts"], "readwrite");
       }
       const done = transactionDone(tx),
         store = tx.objectStore("drafts"),
-        request = store.get(key);
-      request.onsuccess = () => {
-        if (!request.result || request.result.generation <= entry.generation)
-          store.put(entry);
+        request = store.get(key),
+        epoch = tx
+          .objectStore("records")
+          .get(
+            typeof RESET_RECORD_KEY === "undefined"
+              ? "@installation-reset"
+              : RESET_RECORD_KEY,
+          );
+      let remaining = 2,
+        failure;
+      const persist = () => {
+        if (--remaining) return;
+        try {
+          if ((epoch.result?.value?.token || "") !== sourceInstallation) {
+            const error = Error(
+              "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ پیش‌نویس قدیمی ثبت نشد.",
+            );
+            error.code = "INSTALLATION_CHANGED";
+            throw error;
+          }
+          if (!request.result || request.result.generation <= entry.generation)
+            store.put(entry);
+        } catch (error) {
+          failure = error;
+          try {
+            tx.abort();
+          } catch {}
+        }
       };
-      await done;
+      request.onsuccess = persist;
+      epoch.onsuccess = persist;
+      try {
+        await done;
+      } catch (error) {
+        throw failure || error;
+      }
       draftRecoveryFailed = false;
       if (localFailure && entry.entries.length)
         setStatus("پیش‌نویس پایدار محفوظ است؛ در انتظار ثبت نمره.", "pending");
     })
     .catch((error) => {
+      if (error.code === "INSTALLATION_CHANGED")
+        try {
+          // An old tab may receive the reset notification after this transaction.
+          // Remove only our exact stale local copy; never a newer local edit.
+          if (localStorage.getItem(key) === JSON.stringify(entry))
+            localStorage.removeItem(key);
+        } catch {}
       draftRecoveryFailed = true;
       setStatus(
         "ذخیره پایدار پیش‌نویس انجام نشد؛ تا ثبت موفق نمره صفحه را نبندید. " +
@@ -2049,6 +2104,9 @@ function storeDrafts() {
 }
 
 async function loadDrafts() {
+  const sourceConnection = connection,
+    sourceInstallation =
+      typeof installationToken === "undefined" ? "" : installationToken;
   drafts.clear();
   try {
     const base = draftBaseKey();
@@ -2077,22 +2135,77 @@ async function loadDrafts() {
       drafts.set(inputKey(item), item);
     }
     await storeDrafts();
-    for (const old of records)
-      if (old.generation < draftGeneration - 1) {
-        try {
-          localStorage.removeItem(old.key);
-        } catch {}
-        const tx = connection.transaction("drafts", "readwrite"),
-          done = transactionDone(tx);
-        tx.objectStore("drafts").delete(old.key);
-        await done;
-      }
+    await pruneGradeDrafts(
+      records.filter((row) => row.generation < draftGeneration - 1),
+      sourceConnection,
+      sourceInstallation,
+    );
   } catch (error) {
     draftRecoveryFailed = true;
     setStatus(
       "پیش‌نویس قبلی خوانده نشد؛ داده اصلی محفوظ است. " + error.message,
       "error",
     );
+  }
+}
+
+async function pruneGradeDrafts(rows, sourceConnection, sourceInstallation) {
+  if (!rows.length) return;
+  const tx = sourceConnection.transaction(["records", "drafts"], "readwrite"),
+    done = transactionDone(tx),
+    store = tx.objectStore("drafts"),
+    epoch = tx
+      .objectStore("records")
+      .get(
+        typeof RESET_RECORD_KEY === "undefined"
+          ? "@installation-reset"
+          : RESET_RECORD_KEY,
+      );
+  let failure;
+  const abort = (error) => {
+    failure = error;
+    try {
+      tx.abort();
+    } catch {}
+  };
+  epoch.onsuccess = () => {
+    try {
+      if ((epoch.result?.value?.token || "") !== sourceInstallation) {
+        const error = Error(
+          "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ پیش‌نویس‌های بازیابی‌شده پاک نشدند.",
+        );
+        error.code = "INSTALLATION_CHANGED";
+        throw error;
+      }
+      for (const row of rows) {
+        const same = (raw) =>
+          !!raw &&
+          (Array.isArray(raw) ? 0 : Number(raw.generation || 0)) ===
+            row.generation &&
+          (raw.updatedAt || "") === row.updatedAt &&
+          JSON.stringify(Array.isArray(raw) ? raw : raw.entries || []) ===
+            JSON.stringify(row.entries);
+        const request = store.get(row.key);
+        request.onsuccess = () => {
+          try {
+            if (same(request.result)) store.delete(row.key);
+            try {
+              if (same(JSON.parse(localStorage.getItem(row.key) || "null")))
+                localStorage.removeItem(row.key);
+            } catch {}
+          } catch (error) {
+            abort(error);
+          }
+        };
+      }
+    } catch (error) {
+      abort(error);
+    }
+  };
+  try {
+    await done;
+  } catch (error) {
+    throw failure || error;
   }
 }
 // Source: src/workspace/drafts/inputs.js
@@ -3064,15 +3177,54 @@ const assessmentContext = (() => {
       .then(async () => {
         if (!sameInstallation(context) || connection !== targetConnection)
           return;
-        const tx = targetConnection.transaction("drafts", "readwrite"),
+        const tx = targetConnection.transaction(
+            ["records", "drafts"],
+            "readwrite",
+          ),
           done = transactionDone(tx),
           store = tx.objectStore("drafts"),
-          request = store.get(entry.key);
-        request.onsuccess = () => {
-          if (!request.result || request.result.generation <= entry.generation)
-            store.put(entry);
+          epoch = tx
+            .objectStore("records")
+            .get(
+              typeof RESET_RECORD_KEY === "undefined"
+                ? "@installation-reset"
+                : RESET_RECORD_KEY,
+            );
+        let persistenceFailure;
+        epoch.onsuccess = () => {
+          if (
+            (epoch.result?.value?.token || "") !== context.installation ||
+            !sameInstallation(context)
+          ) {
+            persistenceFailure = Object.assign(
+              Error(
+                "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ پیش‌نویس قدیمی ثبت نشد.",
+              ),
+              { code: "INSTALLATION_CHANGED" },
+            );
+            // A replacement may reuse period IDs and revisions. Do not let
+            // this tab's rejected local draft reappear after the next reload.
+            try {
+              if (localStorage.getItem(entry.key) === JSON.stringify(entry))
+                localStorage.removeItem(entry.key);
+            } catch {}
+            tx.abort();
+            return;
+          }
+          const request = store.get(entry.key);
+          request.onsuccess = () => {
+            if (
+              !request.result ||
+              request.result.generation <= entry.generation
+            )
+              store.put(entry);
+          };
         };
-        await done;
+        try {
+          await done;
+        } catch (error) {
+          throw persistenceFailure || error;
+        }
         context.persistenceError = "";
         if (localFailure && entry.entries.length)
           setStatus("پیش‌نویس این مرحله در بانک داخلی محفوظ است.", "pending");
@@ -5181,29 +5333,80 @@ function handleError(error) {
 }
 
 async function putBackup(data, label, workspaceId = workspace?.id) {
-  const backup = {
-    id: uid(),
-    workspace: workspaceId,
-    at: new Date().toISOString(),
-    label,
-    db: clone(data),
+  const sourceConnection = connection,
+    sourceInstallation =
+      typeof installationToken === "undefined" ? "" : installationToken,
+    backup = {
+      id: uid(),
+      workspace: workspaceId,
+      at: new Date().toISOString(),
+      label,
+      db: clone(data),
+    },
+    tx = sourceConnection.transaction(
+      ["records", "catalog", "backups"],
+      "readwrite",
+    ),
+    done = transactionDone(tx),
+    store = tx.objectStore("backups"),
+    current = store.getAll(),
+    epoch = tx
+      .objectStore("records")
+      .get(
+        typeof RESET_RECORD_KEY === "undefined"
+          ? "@installation-reset"
+          : RESET_RECORD_KEY,
+      ),
+    owner =
+      workspaceId == null ? null : tx.objectStore("catalog").get(workspaceId);
+  let remaining = owner ? 3 : 2,
+    failure;
+  const save = () => {
+    if (--remaining) return;
+    try {
+      if (
+        (epoch.result?.value?.token || "") !== sourceInstallation ||
+        connection !== sourceConnection ||
+        connectionRetired ||
+        resetBusy
+      ) {
+        const error = Error(
+          "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ پشتیبان قدیمی ثبت نشد.",
+        );
+        error.code = "INSTALLATION_CHANGED";
+        throw error;
+      }
+      if (owner && owner.result?.id !== workspaceId)
+        throw Error("نوبت این پشتیبان دیگر موجود نیست؛ پشتیبان قدیمی ثبت نشد.");
+      const all = current.result
+        .filter(
+          (row) =>
+            row.id !== backup.id &&
+            !row.full &&
+            row.workspace === workspaceId &&
+            !String(row.label ?? "").includes("انتقال"),
+        )
+        .sort((a, b) => String(b.at ?? "").localeCompare(String(a.at ?? "")));
+      store.put(backup);
+      const retained = String(label ?? "").includes("انتقال") ? 8 : 7;
+      for (const row of all.slice(retained)) store.delete(row.id);
+    } catch (error) {
+      failure = error;
+      try {
+        tx.abort();
+      } catch {}
+    }
   };
-  const tx = connection.transaction("backups", "readwrite"),
-    done = transactionDone(tx);
-  tx.objectStore("backups").put(backup);
-  await done;
-  const all = (await allFrom("backups"))
-    .filter((x) => x.workspace === workspaceId && !x.label.includes("انتقال"))
-    .sort((a, b) => b.at.localeCompare(a.at));
-  if (all.length > 8) {
-    const cleanup = connection.transaction("backups", "readwrite"),
-      finished = transactionDone(cleanup);
-    all.slice(8).forEach((x) => cleanup.objectStore("backups").delete(x.id));
-    await finished;
+  current.onsuccess = save;
+  epoch.onsuccess = save;
+  if (owner) owner.onsuccess = save;
+  try {
+    await done;
+  } catch (error) {
+    throw failure || error;
   }
   return backup;
 }
-
 const FULL_BACKUP_DELIVERY_KEY = "Edu24.fullBackupDelivery";
 function recordFullBackupDelivery({ kind, exportedAt, name = "" }) {
   if (
@@ -5348,6 +5551,8 @@ async function putSafetySnapshot(
 ) {
   const ensureCurrent = preserveAsyncTarget(),
     sourceConnection = connection,
+    sourceInstallation =
+      typeof installationToken === "undefined" ? "" : installationToken,
     full = validatedSafetySnapshot(value),
     backup = {
       id: idPrefix + uid(),
@@ -5357,16 +5562,32 @@ async function putSafetySnapshot(
       full,
     };
   ensureCurrent();
-  const tx = sourceConnection.transaction("backups", "readwrite"),
+  const tx = sourceConnection.transaction(["records", "backups"], "readwrite"),
     done = transactionDone(tx),
     store = tx.objectStore("backups");
   let failure;
-  const request = store.getAll();
-  request.onsuccess = () => {
+  const request = store.getAll(),
+    epoch = tx
+      .objectStore("records")
+      .get(
+        typeof RESET_RECORD_KEY === "undefined"
+          ? "@installation-reset"
+          : RESET_RECORD_KEY,
+      );
+  let remaining = 2;
+  const save = () => {
+    if (--remaining) return;
     try {
       ensureCurrent();
       if (connection !== sourceConnection)
         throw Error("اتصال اطلاعات تغییر کرده است؛ نسخهٔ ایمنی ثبت نشد.");
+      if ((epoch.result?.value?.token || "") !== sourceInstallation) {
+        const error = Error(
+          "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ نسخهٔ ایمنی قدیمی ثبت نشد.",
+        );
+        error.code = "INSTALLATION_CHANGED";
+        throw error;
+      }
       const previous = request.result
         .filter((row) => row.full)
         .sort(newerSafety);
@@ -5379,6 +5600,8 @@ async function putSafetySnapshot(
       } catch {}
     }
   };
+  request.onsuccess = save;
+  epoch.onsuccess = save;
   try {
     await done;
   } catch (error) {
@@ -5480,7 +5703,7 @@ function portableGradeDrafts(rows, periods) {
   return EduGradeDrafts.portableGradeDrafts(rows, periods, storedRows);
 }
 
-async function snapshotInstallation() {
+async function snapshotInstallation({ onDurableDrafts } = {}) {
   const origin = workspace?.id,
     sourceConnection = connection,
     sourceInstallation = installationToken;
@@ -5550,6 +5773,9 @@ async function snapshotInstallation() {
     throw Error(
       "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ پشتیبان را دوباره تهیه کنید.",
     );
+  // Restore compares the same durable draft rows inside its replacement lock.
+  // The observer is internal metadata and is never serialized into a backup.
+  onDurableDrafts?.(stores.drafts);
   // Never embed a full snapshot inside another full snapshot.
   stores.backups = stores.backups.filter((row) => !row.full);
   stores.records = stores.records.filter((row) => row.key !== RESET_RECORD_KEY);
@@ -5906,26 +6132,64 @@ async function persistSingleFile({
   target = singleFile,
 } = {}) {
   if (!ready || resetBusy || connectionRetired) return false;
-  const tx = connection.transaction("drafts", "readwrite"),
-    done = transactionDone(tx);
-  const store = tx.objectStore("drafts");
-  let changed = false;
-  const request = store.get(singleFileKey);
-  request.onsuccess = () => {
-    // A stale tab must never recreate a disconnected/replaced configuration.
-    if (
-      !replace &&
-      (!request.result ||
-        (request.result.connectionId || "") !== (target?.connectionId || ""))
-    )
-      return;
-    if (singleFile === target && target)
-      store.put({ key: singleFileKey, ...target });
-    else if (!singleFile) store.delete(singleFileKey);
-    else return;
-    changed = true;
+  const sourceConnection = connection,
+    sourceInstallation =
+      typeof installationToken === "undefined" ? "" : installationToken,
+    tx = sourceConnection.transaction(["records", "drafts"], "readwrite"),
+    done = transactionDone(tx),
+    store = tx.objectStore("drafts"),
+    request = store.get(singleFileKey),
+    epoch = tx
+      .objectStore("records")
+      .get(
+        typeof RESET_RECORD_KEY === "undefined"
+          ? "@installation-reset"
+          : RESET_RECORD_KEY,
+      );
+  let changed = false,
+    remaining = 2,
+    failure;
+  const persist = () => {
+    if (--remaining) return;
+    try {
+      if (
+        (epoch.result?.value?.token || "") !== sourceInstallation ||
+        connection !== sourceConnection ||
+        connectionRetired ||
+        resetBusy
+      ) {
+        const error = Error(
+          "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ اتصال فایل قدیمی تغییر نکرد.",
+        );
+        error.code = "INSTALLATION_CHANGED";
+        throw error;
+      }
+      // A stale tab must never recreate a disconnected/replaced configuration.
+      if (
+        !replace &&
+        (!request.result ||
+          (request.result.connectionId || "") !== (target?.connectionId || ""))
+      )
+        return;
+      if (singleFile === target && target)
+        store.put({ key: singleFileKey, ...target });
+      else if (!singleFile) store.delete(singleFileKey);
+      else return;
+      changed = true;
+    } catch (error) {
+      failure = error;
+      try {
+        tx.abort();
+      } catch {}
+    }
   };
-  await done;
+  request.onsuccess = persist;
+  epoch.onsuccess = persist;
+  try {
+    await done;
+  } catch (error) {
+    throw failure || error;
+  }
   return changed;
 }
 function singleFileChanged(message) {
@@ -5950,7 +6214,22 @@ async function singleFileCurrent(target) {
     connectionRetired
   )
     return false;
-  const stored = await readRecord("drafts", singleFileKey);
+  const expectedInstallation =
+    typeof installationToken === "undefined" ? "" : installationToken;
+  const stored = await readRecord("drafts", singleFileKey),
+    marker = await readRecord(
+      "records",
+      typeof RESET_RECORD_KEY === "undefined"
+        ? "@installation-reset"
+        : RESET_RECORD_KEY,
+    );
+  if ((marker?.value?.token || "") !== expectedInstallation) {
+    const error = Error(
+      "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ فایل قدیمی نوشته نشد. صفحه را دوباره بارگذاری کنید.",
+    );
+    error.code = "INSTALLATION_CHANGED";
+    throw error;
+  }
   if (!stored || (stored.connectionId || "") !== (target.connectionId || "")) {
     if (singleFile === target) {
       pauseSingleFile();
@@ -6313,10 +6592,27 @@ function restoreCatalogSignature(rows) {
       .sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
   );
 }
+function restoreDraftSignature(rows) {
+  return JSON.stringify(
+    rows
+      .filter(
+        (row) =>
+          typeof row?.key === "string" && row.key.startsWith("Edu24.drafts."),
+      )
+      .map((row) => [row.key, JSON.stringify(row)])
+      .sort(([a], [b]) => a.localeCompare(b)),
+  );
+}
 async function snapshotBeforeSystemRestore() {
+  let draftSignature;
   if (ready)
     try {
-      return await snapshotInstallation();
+      const safety = await snapshotInstallation({
+        onDurableDrafts: (rows) => {
+          draftSignature = restoreDraftSignature(rows);
+        },
+      });
+      return { safety, draftSignature };
     } catch (error) {
       // A damaged sender profile must not prevent recovery of the actual
       // installation. Keep it verbatim in the raw safety copy instead.
@@ -6330,12 +6626,16 @@ async function snapshotBeforeSystemRestore() {
     names.map((name) => requestPromise(tx.objectStore(name).getAll())),
   );
   await done;
+  const stores = Object.fromEntries(
+    names.map((name, index) => [name, values[index]]),
+  );
   return {
-    format: "EduManager.RawRecovery",
-    exportedAt: new Date().toISOString(),
-    stores: Object.fromEntries(
-      names.map((name, index) => [name, values[index]]),
-    ),
+    safety: {
+      format: "EduManager.RawRecovery",
+      exportedAt: new Date().toISOString(),
+      stores,
+    },
+    draftSignature: restoreDraftSignature(stores.drafts),
   };
 }
 function restoreIdentityMatches(safety, current) {
@@ -6403,7 +6703,7 @@ async function restoreFullBackup() {
   try {
     if (singleFileWriting) await singleFileWriting;
     const periods = validateFullBackup(source);
-    const safety = await snapshotBeforeSystemRestore();
+    const { safety, draftSignature } = await snapshotBeforeSystemRestore();
     await draftWriter.catch(() => {});
     check();
     if (periodLoading || busy)
@@ -6505,70 +6805,97 @@ async function restoreFullBackup() {
     };
     rows.records.push(marker);
     const names = [...backupStores, "drafts"];
-    const tx = connection.transaction(names, "readwrite"),
-      done = transactionDone(tx);
-    let failure;
-    const abort = (error) => {
-      failure = error;
-      try {
-        tx.abort();
-      } catch {}
-    };
-    try {
-      const request = tx.objectStore("catalog").getAll(),
-        epoch = tx.objectStore("records").get(RESET_RECORD_KEY),
-        identity = tx.objectStore("drafts").get(EduDeputyExportIdentity.key);
-      let remaining = 3;
-      const replace = () => {
-        if (--remaining) return;
+    let restoredSingleFile = null;
+    const replaceInstallation = async () => {
+      check();
+      const tx = connection.transaction(names, "readwrite"),
+        done = transactionDone(tx);
+      let failure;
+      const abort = (error) => {
+        failure = error;
         try {
-          check();
-          if ((epoch.result?.value?.token || "") !== sourceInstallation)
-            throw Error(
-              "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ پیش از بازیابی دوباره بررسی کنید.",
-            );
-          if (!restoreIdentityMatches(safety, identity.result))
-            throw Error(
-              "مشخصات فرستنده در پنجرهٔ دیگری تغییر کرده است؛ پیش از بازیابی دوباره بررسی کنید.",
-            );
-          if (
-            restoreCatalogSignature(request.result) !==
-            restoreCatalogSignature(safety.stores.catalog)
-          )
-            throw Error(
-              "اطلاعات سیستم در پنجره دیگری تغییر کرده است؛ پیش از بازیابی دوباره بررسی کنید.",
-            );
-          for (const name of names) tx.objectStore(name).clear();
-          for (const name of names) {
-            // Preserve explicit legacy history IDs before the auto-increment
-            // generator assigns IDs to history rows saved without a key.
-            const values =
-              name === "events"
-                ? [
-                    ...rows[name].filter((row) => row.id !== undefined),
-                    ...rows[name].filter((row) => row.id === undefined),
-                  ]
-                : rows[name];
-            for (const row of values) tx.objectStore(name).add(row);
-          }
-          // Device file handles are not backup data; keep this device's connection.
-          if (singleFile)
-            tx.objectStore("drafts").put({ key: singleFileKey, ...singleFile });
-        } catch (error) {
-          abort(error);
-        }
+          tx.abort();
+        } catch {}
       };
-      request.onsuccess = replace;
-      epoch.onsuccess = replace;
-      identity.onsuccess = replace;
-    } catch (error) {
-      abort(error);
-    }
-    try {
-      await done;
-    } catch (error) {
-      throw failure || error;
-    }
+      try {
+        const request = tx.objectStore("catalog").getAll(),
+          epoch = tx.objectStore("records").get(RESET_RECORD_KEY),
+          identity = tx.objectStore("drafts").get(EduDeputyExportIdentity.key),
+          durableDrafts = tx.objectStore("drafts").getAll();
+        let remaining = 4;
+        const replace = () => {
+          if (--remaining) return;
+          try {
+            check();
+            if ((epoch.result?.value?.token || "") !== sourceInstallation)
+              throw Error(
+                "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ پیش از بازیابی دوباره بررسی کنید.",
+              );
+            if (!restoreIdentityMatches(safety, identity.result))
+              throw Error(
+                "مشخصات فرستنده در پنجرهٔ دیگری تغییر کرده است؛ پیش از بازیابی دوباره بررسی کنید.",
+              );
+            if (
+              draftSignature === undefined ||
+              restoreDraftSignature(durableDrafts.result) !== draftSignature
+            )
+              throw Error(
+                "پیش‌نویس نمرات در پنجرهٔ دیگری تغییر کرده است؛ برای حفظ آن‌ها بازیابی انجام نشد. دوباره پشتیبان را بررسی کنید.",
+              );
+            if (
+              restoreCatalogSignature(request.result) !==
+              restoreCatalogSignature(safety.stores.catalog)
+            )
+              throw Error(
+                "اطلاعات سیستم در پنجره دیگری تغییر کرده است؛ پیش از بازیابی دوباره بررسی کنید.",
+              );
+            for (const name of names) tx.objectStore(name).clear();
+            for (const name of names) {
+              // Preserve explicit legacy history IDs before the auto-increment
+              // generator assigns IDs to history rows saved without a key.
+              const values =
+                name === "events"
+                  ? [
+                      ...rows[name].filter((row) => row.id !== undefined),
+                      ...rows[name].filter((row) => row.id === undefined),
+                    ]
+                  : rows[name];
+              for (const row of values) tx.objectStore(name).add(row);
+            }
+            // Preserve the live device connection, including a change from another tab.
+            // Rotate its identity so old versions cannot publish an obsolete snapshot.
+            const currentFile = durableDrafts.result.find(
+              (row) => row.key === singleFileKey,
+            );
+            restoredSingleFile = currentFile
+              ? { ...currentFile, connectionId: uid() }
+              : null;
+            if (restoredSingleFile)
+              tx.objectStore("drafts").put(restoredSingleFile);
+          } catch (error) {
+            abort(error);
+          }
+        };
+        request.onsuccess = replace;
+        epoch.onsuccess = replace;
+        identity.onsuccess = replace;
+        durableDrafts.onsuccess = replace;
+      } catch (error) {
+        abort(error);
+      }
+      try {
+        await done;
+      } catch (error) {
+        throw failure || error;
+      }
+    };
+    // Automatic file writers already hold this origin lock through stream.close().
+    // Wait for that publication before replacing the installation and its handle ID.
+    const fileLocks = globalThis.navigator?.locks;
+    if (fileLocks)
+      await fileLocks.request("EduManager.singleFile", replaceInstallation);
+    else await replaceInstallation();
+    singleFile = restoredSingleFile;
     assessmentContext.dispose({ abandon: true });
     committedRestore = true;
     installationToken = marker.value.token;
@@ -8220,15 +8547,16 @@ function finalReportData() {
 async function finalizePeriod() {
   assertWorkspaceReadable();
   assertEntityWritable();
-  const origin = workspace.id;
+  const origin = workspace.id,
+    database = connection;
   if (fileMode)
     throw Error(
       "این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.",
     );
   await flushDrafts({ strict: true });
   await writer.catch(() => {});
-  if (workspace.id !== origin)
-    throw Error("نوبت هنگام بستن تغییر کرد؛ دوباره تلاش کنید.");
+  if (workspace.id !== origin || connection !== database)
+    throw Error("نوبت یا اتصال بانک هنگام بستن تغییر کرد؛ دوباره تلاش کنید.");
   const context = captureWorkspaceContext();
   const report = finalReportData();
   if (report.missing.length) {
@@ -8258,11 +8586,16 @@ async function finalizePeriod() {
   )
     return;
   await putBackup(db, "پیش از بستن نوبت");
-  assertWorkspaceContext(context, { write: true });
-  if (busy || drafts.size)
-    throw Error(
-      "ویرایش تازه‌ای هنگام بستن نوبت ایجاد شد؛ ابتدا آن را ذخیره و دوباره تلاش کنید.",
-    );
+  const assertFinalizationCurrent = () => {
+    assertWorkspaceContext(context, { write: true });
+    if (connection !== database)
+      throw Error("اتصال بانک هنگام بستن نوبت تغییر کرد؛ دوباره تلاش کنید.");
+    if (busy || drafts.size || assessmentContext.hasDrafts())
+      throw Error(
+        "ویرایش تازه‌ای هنگام بستن نوبت ایجاد شد؛ ابتدا آن را ذخیره و دوباره تلاش کنید.",
+      );
+  };
+  assertFinalizationCurrent();
   const at = new Date().toISOString(),
     snapshot = {
       id: uid(),
@@ -8274,41 +8607,52 @@ async function finalizePeriod() {
     };
   validateFrozenReport(snapshot);
   let finalizedWorkspace;
-  const tx = connection.transaction(
+  let finalizationError;
+  const tx = database.transaction(
       ["catalog", "reports", "events", "undo"],
       "readwrite",
     ),
     done = transactionDone(tx);
   const request = tx.objectStore("catalog").get(context.id);
   request.onsuccess = () => {
-    if (
-      !request.result ||
-      request.result.closed ||
-      request.result.revision !== context.revision ||
-      workspace.id !== context.id ||
-      workspace.revision !== context.revision
-    ) {
+    try {
+      assertFinalizationCurrent();
+      if (
+        !request.result ||
+        request.result.closed ||
+        request.result.revision !== context.revision ||
+        workspace.id !== context.id ||
+        workspace.revision !== context.revision
+      ) {
+        tx.abort();
+        return;
+      }
+      finalizedWorkspace = {
+        ...request.result,
+        closed: true,
+        closedAt: at,
+        revision: request.result.revision + 1,
+      };
+      tx.objectStore("catalog").put(finalizedWorkspace);
+      tx.objectStore("reports").put(snapshot);
+      tx.objectStore("undo").delete(context.id);
+      tx.objectStore("events").add({
+        workspace: context.id,
+        at,
+        revision: finalizedWorkspace.revision,
+        action: "بستن نوبت و ثبت کارنامه ثابت",
+        changes: [],
+      });
+    } catch (error) {
+      finalizationError = error;
       tx.abort();
-      return;
     }
-    finalizedWorkspace = {
-      ...request.result,
-      closed: true,
-      closedAt: at,
-      revision: request.result.revision + 1,
-    };
-    tx.objectStore("catalog").put(finalizedWorkspace);
-    tx.objectStore("reports").put(snapshot);
-    tx.objectStore("undo").delete(context.id);
-    tx.objectStore("events").add({
-      workspace: context.id,
-      at,
-      revision: finalizedWorkspace.revision,
-      action: "بستن نوبت و ثبت کارنامه ثابت",
-      changes: [],
-    });
   };
-  await done;
+  try {
+    await done;
+  } catch (error) {
+    throw finalizationError || error;
+  }
   broadcast({
     workspace: context.id,
     revision: finalizedWorkspace.revision,
@@ -12467,6 +12811,8 @@ async function consumeDraftSource(
   ensureCurrent,
 ) {
   ensureCurrent();
+  const sourceInstallation =
+    typeof installationToken === "undefined" ? "" : installationToken;
   const same = (raw) => {
     if (!raw) return true;
     const entries = Array.isArray(raw) ? raw : raw.entries || [];
@@ -12488,14 +12834,45 @@ async function consumeDraftSource(
     entries: [],
     updatedAt,
   };
-  const tx = sourceConnection.transaction("drafts", "readwrite"),
+  const tx = sourceConnection.transaction(["records", "drafts"], "readwrite"),
     done = transactionDone(tx);
   const store = tx.objectStore("drafts"),
-    request = store.get(record.key);
-  request.onsuccess = () => {
-    if (same(request.result)) store.put(tombstone);
+    request = store.get(record.key),
+    epoch = tx
+      .objectStore("records")
+      .get(
+        typeof RESET_RECORD_KEY === "undefined"
+          ? "@installation-reset"
+          : RESET_RECORD_KEY,
+      );
+  let remaining = 2,
+    failure;
+  const consume = () => {
+    if (--remaining) return;
+    try {
+      ensureCurrent();
+      if ((epoch.result?.value?.token || "") !== sourceInstallation) {
+        const error = Error(
+          "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ پیش‌نویس قدیمی تغییر نکرد.",
+        );
+        error.code = "INSTALLATION_CHANGED";
+        throw error;
+      }
+      if (same(request.result)) store.put(tombstone);
+    } catch (error) {
+      failure = error;
+      try {
+        tx.abort();
+      } catch {}
+    }
   };
-  await done;
+  request.onsuccess = consume;
+  epoch.onsuccess = consume;
+  try {
+    await done;
+  } catch (error) {
+    throw failure || error;
+  }
   ensureCurrent();
   try {
     const raw = JSON.parse(localStorage.getItem(record.key) || "null");

@@ -64,7 +64,13 @@ module.exports = async function delegatedUi() {
   closeModal();
   showModal(
     "Calendar delegation",
-    '<input id="delegatedDate" type="date" value="' + todayISO() + '">',
+    '<input id="delegatedDate" type="date" value="' +
+      todayISO() +
+      '" min="' +
+      todayISO() +
+      '" max="' +
+      todayISO() +
+      '">',
   );
   initShamsiPickers();
   document.getElementById("delegatedDate").nextElementSibling.click();
@@ -75,6 +81,30 @@ module.exports = async function delegatedUi() {
     "delegated calendar month navigation remains open and changes month under CSP",
     calPopup.classList.contains("open") &&
       [calViewYear, calViewMonth].join("-") !== before,
+  );
+  check(
+    "DU05-RANGE",
+    "native date bounds disable every date in the next month of the actual popup",
+    document.querySelectorAll("#calPopup .cal-days button:not(:disabled)")
+      .length === 0,
+  );
+  document.querySelector('#calPopup [data-calendar-direction="-1"]').click();
+  const dateField = document.getElementById("delegatedDate");
+  const selectedDate = dateField.value;
+  let dateEvents = 0;
+  dateField.addEventListener("change", () => dateEvents++);
+  const allowedDates = document.querySelectorAll(
+    "#calPopup .cal-days button:not(:disabled)",
+  );
+  dateField.readOnly = true;
+  allowedDates[0]?.click();
+  check(
+    "DU05-LOCK",
+    "the actual popup ignores a field made readonly after opening, without dispatching a date change",
+    allowedDates.length === 1 &&
+      dateField.value === selectedDate &&
+      dateEvents === 0 &&
+      !calPopup.classList.contains("open"),
   );
   document.querySelector("#calPopup .calendar-close").click();
   check(

@@ -4,7 +4,9 @@
     installEvent,
     pendingUpdate = false,
     preparingUpdate = false,
-    offlineReady = false;
+    offlineReady = false,
+    updateRecovery = false,
+    reloadRequested = false;
   let updateMessage = "",
     updateTimer;
   function text(message) {
@@ -34,7 +36,13 @@
       !installEvent ||
       matchMedia("(display-mode: standalone)").matches ||
       !!navigator.standalone;
-    document.getElementById("mobileUpdate").hidden = !registration?.waiting;
+    const updateButton = document.getElementById("mobileUpdate");
+    updateButton.hidden = !registration?.waiting && !pendingUpdate;
+    const updateLabel = updateButton.querySelector?.("span");
+    if (updateLabel)
+      updateLabel.textContent = updateRecovery
+        ? "بازکردن دوباره برنامه"
+        : "نسخه جدید آماده است";
   }
 
   const installNoticeKey = "edu-manager:pwa-notice:v1";
@@ -212,7 +220,17 @@
       previous.focus?.focus?.({ preventScroll: true });
   }
 
+  function reloadUpdatedApp() {
+    if (reloadRequested) return;
+    reloadRequested = true;
+    location.reload();
+  }
+
   async function update() {
+    if (updateRecovery) {
+      reloadUpdatedApp();
+      return;
+    }
     if (pendingUpdate || preparingUpdate) return;
     preparingUpdate = true;
     const button = document.getElementById("mobileUpdate"),
@@ -254,17 +272,19 @@
       updateMessage = "در حال اعمال نسخه جدید…";
       paint();
       updateTimer = setTimeout(() => {
-        pendingUpdate = false;
+        // skipWaiting cannot be canceled. Keep editors locked until a new
+        // execution context opens, even when slow activation exceeds the watchdog.
+        updateRecovery = true;
         button.disabled = false;
-        unlockUpdateSurface();
         updateMessage =
-          "اعمال نسخه کامل نشد؛ برنامه را با اینترنت دوباره باز کنید و تلاش کنید.";
+          "اعمال نسخه بیشتر از معمول طول کشیده؛ ویرایش‌ها ذخیره شده‌اند. «بازکردن دوباره برنامه» را بزنید.";
         paint();
       }, 15000);
       registration.waiting.postMessage({ type: "APPLY_UPDATE" });
     } catch (e) {
       clearTimeout(updateTimer);
       pendingUpdate = false;
+      updateRecovery = false;
       button.disabled = false;
       unlockUpdateSurface();
       updateMessage = e.message || "ابتدا ویرایش‌های ذخیره‌نشده را بررسی کنید.";
@@ -306,13 +326,14 @@
     navigator.serviceWorker.addEventListener("controllerchange", () => {
       if (pendingUpdate) {
         clearTimeout(updateTimer);
-        location.reload();
+        reloadUpdatedApp();
       } else status();
     });
     navigator.serviceWorker.addEventListener("message", (e) => {
       if (e.data?.type === "UPDATE_BLOCKED") {
         clearTimeout(updateTimer);
         pendingUpdate = false;
+        updateRecovery = false;
         document.getElementById("mobileUpdate").disabled = false;
         unlockUpdateSurface();
         updateMessage = "به‌روزرسانی متوقف شد: برنامه در پنجره دیگری باز است.";

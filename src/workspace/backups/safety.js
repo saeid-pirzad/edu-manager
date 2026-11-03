@@ -67,6 +67,8 @@ async function putSafetySnapshot(
 ) {
   const ensureCurrent = preserveAsyncTarget(),
     sourceConnection = connection,
+    sourceInstallation =
+      typeof installationToken === "undefined" ? "" : installationToken,
     full = validatedSafetySnapshot(value),
     backup = {
       id: idPrefix + uid(),
@@ -76,16 +78,32 @@ async function putSafetySnapshot(
       full,
     };
   ensureCurrent();
-  const tx = sourceConnection.transaction("backups", "readwrite"),
+  const tx = sourceConnection.transaction(["records", "backups"], "readwrite"),
     done = transactionDone(tx),
     store = tx.objectStore("backups");
   let failure;
-  const request = store.getAll();
-  request.onsuccess = () => {
+  const request = store.getAll(),
+    epoch = tx
+      .objectStore("records")
+      .get(
+        typeof RESET_RECORD_KEY === "undefined"
+          ? "@installation-reset"
+          : RESET_RECORD_KEY,
+      );
+  let remaining = 2;
+  const save = () => {
+    if (--remaining) return;
     try {
       ensureCurrent();
       if (connection !== sourceConnection)
         throw Error("اتصال اطلاعات تغییر کرده است؛ نسخهٔ ایمنی ثبت نشد.");
+      if ((epoch.result?.value?.token || "") !== sourceInstallation) {
+        const error = Error(
+          "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ نسخهٔ ایمنی قدیمی ثبت نشد.",
+        );
+        error.code = "INSTALLATION_CHANGED";
+        throw error;
+      }
       const previous = request.result
         .filter((row) => row.full)
         .sort(newerSafety);
@@ -98,6 +116,8 @@ async function putSafetySnapshot(
       } catch {}
     }
   };
+  request.onsuccess = save;
+  epoch.onsuccess = save;
   try {
     await done;
   } catch (error) {

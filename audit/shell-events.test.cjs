@@ -76,4 +76,10 @@ test("login rendering reconnects the submit handler after replacing its markup",
     assert.equal(listener, handler);
   }
   assert.doesNotMatch(app.innerHTML, /onsubmit\s*=/i);
+  const passwordField = app.innerHTML.match(
+    /<input\b[^>]*id="loginPass"[^>]*>/,
+  )?.[0];
+  assert.ok(passwordField);
+  assert.match(passwordField, /aria-label="رمز عبور"/);
+  assert.match(passwordField, /autocomplete="current-password"/);
 });

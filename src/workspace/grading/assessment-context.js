@@ -154,15 +154,54 @@ const assessmentContext = (() => {
       .then(async () => {
         if (!sameInstallation(context) || connection !== targetConnection)
           return;
-        const tx = targetConnection.transaction("drafts", "readwrite"),
+        const tx = targetConnection.transaction(
+            ["records", "drafts"],
+            "readwrite",
+          ),
           done = transactionDone(tx),
           store = tx.objectStore("drafts"),
-          request = store.get(entry.key);
-        request.onsuccess = () => {
-          if (!request.result || request.result.generation <= entry.generation)
-            store.put(entry);
+          epoch = tx
+            .objectStore("records")
+            .get(
+              typeof RESET_RECORD_KEY === "undefined"
+                ? "@installation-reset"
+                : RESET_RECORD_KEY,
+            );
+        let persistenceFailure;
+        epoch.onsuccess = () => {
+          if (
+            (epoch.result?.value?.token || "") !== context.installation ||
+            !sameInstallation(context)
+          ) {
+            persistenceFailure = Object.assign(
+              Error(
+                "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ پیش‌نویس قدیمی ثبت نشد.",
+              ),
+              { code: "INSTALLATION_CHANGED" },
+            );
+            // A replacement may reuse period IDs and revisions. Do not let
+            // this tab's rejected local draft reappear after the next reload.
+            try {
+              if (localStorage.getItem(entry.key) === JSON.stringify(entry))
+                localStorage.removeItem(entry.key);
+            } catch {}
+            tx.abort();
+            return;
+          }
+          const request = store.get(entry.key);
+          request.onsuccess = () => {
+            if (
+              !request.result ||
+              request.result.generation <= entry.generation
+            )
+              store.put(entry);
+          };
         };
-        await done;
+        try {
+          await done;
+        } catch (error) {
+          throw persistenceFailure || error;
+        }
         context.persistenceError = "";
         if (localFailure && entry.entries.length)
           setStatus("پیش‌نویس این مرحله در بانک داخلی محفوظ است.", "pending");

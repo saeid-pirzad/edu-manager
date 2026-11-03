@@ -105,15 +105,16 @@ function finalReportData() {
 async function finalizePeriod() {
   assertWorkspaceReadable();
   assertEntityWritable();
-  const origin = workspace.id;
+  const origin = workspace.id,
+    database = connection;
   if (fileMode)
     throw Error(
       "این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.",
     );
   await flushDrafts({ strict: true });
   await writer.catch(() => {});
-  if (workspace.id !== origin)
-    throw Error("نوبت هنگام بستن تغییر کرد؛ دوباره تلاش کنید.");
+  if (workspace.id !== origin || connection !== database)
+    throw Error("نوبت یا اتصال بانک هنگام بستن تغییر کرد؛ دوباره تلاش کنید.");
   const context = captureWorkspaceContext();
   const report = finalReportData();
   if (report.missing.length) {
@@ -143,11 +144,16 @@ async function finalizePeriod() {
   )
     return;
   await putBackup(db, "پیش از بستن نوبت");
-  assertWorkspaceContext(context, { write: true });
-  if (busy || drafts.size)
-    throw Error(
-      "ویرایش تازه‌ای هنگام بستن نوبت ایجاد شد؛ ابتدا آن را ذخیره و دوباره تلاش کنید.",
-    );
+  const assertFinalizationCurrent = () => {
+    assertWorkspaceContext(context, { write: true });
+    if (connection !== database)
+      throw Error("اتصال بانک هنگام بستن نوبت تغییر کرد؛ دوباره تلاش کنید.");
+    if (busy || drafts.size || assessmentContext.hasDrafts())
+      throw Error(
+        "ویرایش تازه‌ای هنگام بستن نوبت ایجاد شد؛ ابتدا آن را ذخیره و دوباره تلاش کنید.",
+      );
+  };
+  assertFinalizationCurrent();
   const at = new Date().toISOString(),
     snapshot = {
       id: uid(),
@@ -159,41 +165,52 @@ async function finalizePeriod() {
     };
   validateFrozenReport(snapshot);
   let finalizedWorkspace;
-  const tx = connection.transaction(
+  let finalizationError;
+  const tx = database.transaction(
       ["catalog", "reports", "events", "undo"],
       "readwrite",
     ),
     done = transactionDone(tx);
   const request = tx.objectStore("catalog").get(context.id);
   request.onsuccess = () => {
-    if (
-      !request.result ||
-      request.result.closed ||
-      request.result.revision !== context.revision ||
-      workspace.id !== context.id ||
-      workspace.revision !== context.revision
-    ) {
+    try {
+      assertFinalizationCurrent();
+      if (
+        !request.result ||
+        request.result.closed ||
+        request.result.revision !== context.revision ||
+        workspace.id !== context.id ||
+        workspace.revision !== context.revision
+      ) {
+        tx.abort();
+        return;
+      }
+      finalizedWorkspace = {
+        ...request.result,
+        closed: true,
+        closedAt: at,
+        revision: request.result.revision + 1,
+      };
+      tx.objectStore("catalog").put(finalizedWorkspace);
+      tx.objectStore("reports").put(snapshot);
+      tx.objectStore("undo").delete(context.id);
+      tx.objectStore("events").add({
+        workspace: context.id,
+        at,
+        revision: finalizedWorkspace.revision,
+        action: "بستن نوبت و ثبت کارنامه ثابت",
+        changes: [],
+      });
+    } catch (error) {
+      finalizationError = error;
       tx.abort();
-      return;
     }
-    finalizedWorkspace = {
-      ...request.result,
-      closed: true,
-      closedAt: at,
-      revision: request.result.revision + 1,
-    };
-    tx.objectStore("catalog").put(finalizedWorkspace);
-    tx.objectStore("reports").put(snapshot);
-    tx.objectStore("undo").delete(context.id);
-    tx.objectStore("events").add({
-      workspace: context.id,
-      at,
-      revision: finalizedWorkspace.revision,
-      action: "بستن نوبت و ثبت کارنامه ثابت",
-      changes: [],
-    });
   };
-  await done;
+  try {
+    await done;
+  } catch (error) {
+    throw finalizationError || error;
+  }
   broadcast({
     workspace: context.id,
     revision: finalizedWorkspace.revision,

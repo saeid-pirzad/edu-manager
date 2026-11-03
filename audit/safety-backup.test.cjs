@@ -97,13 +97,22 @@ function fixture(initial = [backup()]) {
             }
             resolve();
           };
-        tx.objectStore = () => ({
+        tx.objectStore = (storeName) => ({
+          get() {
+            const request = {};
+            queueMicrotask(() => {
+              if (aborted) return;
+              request.result =
+                storeName === "records" ? c.resetMarker : undefined;
+              request.onsuccess?.();
+            });
+            return request;
+          },
           getAll() {
             const request = {};
             queueMicrotask(() => {
               request.result = [...staged.values()];
               request.onsuccess();
-              finish();
             });
             return request;
           },
@@ -136,6 +145,7 @@ function fixture(initial = [backup()]) {
             return request;
           },
         });
+        setImmediate(finish);
         return tx;
       },
     },

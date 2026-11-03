@@ -103,10 +103,27 @@ function restoreCatalogSignature(rows) {
       .sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
   );
 }
+function restoreDraftSignature(rows) {
+  return JSON.stringify(
+    rows
+      .filter(
+        (row) =>
+          typeof row?.key === "string" && row.key.startsWith("Edu24.drafts."),
+      )
+      .map((row) => [row.key, JSON.stringify(row)])
+      .sort(([a], [b]) => a.localeCompare(b)),
+  );
+}
 async function snapshotBeforeSystemRestore() {
+  let draftSignature;
   if (ready)
     try {
-      return await snapshotInstallation();
+      const safety = await snapshotInstallation({
+        onDurableDrafts: (rows) => {
+          draftSignature = restoreDraftSignature(rows);
+        },
+      });
+      return { safety, draftSignature };
     } catch (error) {
       // A damaged sender profile must not prevent recovery of the actual
       // installation. Keep it verbatim in the raw safety copy instead.
@@ -120,12 +137,16 @@ async function snapshotBeforeSystemRestore() {
     names.map((name) => requestPromise(tx.objectStore(name).getAll())),
   );
   await done;
+  const stores = Object.fromEntries(
+    names.map((name, index) => [name, values[index]]),
+  );
   return {
-    format: "EduManager.RawRecovery",
-    exportedAt: new Date().toISOString(),
-    stores: Object.fromEntries(
-      names.map((name, index) => [name, values[index]]),
-    ),
+    safety: {
+      format: "EduManager.RawRecovery",
+      exportedAt: new Date().toISOString(),
+      stores,
+    },
+    draftSignature: restoreDraftSignature(stores.drafts),
   };
 }
 function restoreIdentityMatches(safety, current) {
@@ -193,7 +214,7 @@ async function restoreFullBackup() {
   try {
     if (singleFileWriting) await singleFileWriting;
     const periods = validateFullBackup(source);
-    const safety = await snapshotBeforeSystemRestore();
+    const { safety, draftSignature } = await snapshotBeforeSystemRestore();
     await draftWriter.catch(() => {});
     check();
     if (periodLoading || busy)
@@ -295,70 +316,97 @@ async function restoreFullBackup() {
     };
     rows.records.push(marker);
     const names = [...backupStores, "drafts"];
-    const tx = connection.transaction(names, "readwrite"),
-      done = transactionDone(tx);
-    let failure;
-    const abort = (error) => {
-      failure = error;
-      try {
-        tx.abort();
-      } catch {}
-    };
-    try {
-      const request = tx.objectStore("catalog").getAll(),
-        epoch = tx.objectStore("records").get(RESET_RECORD_KEY),
-        identity = tx.objectStore("drafts").get(EduDeputyExportIdentity.key);
-      let remaining = 3;
-      const replace = () => {
-        if (--remaining) return;
+    let restoredSingleFile = null;
+    const replaceInstallation = async () => {
+      check();
+      const tx = connection.transaction(names, "readwrite"),
+        done = transactionDone(tx);
+      let failure;
+      const abort = (error) => {
+        failure = error;
         try {
-          check();
-          if ((epoch.result?.value?.token || "") !== sourceInstallation)
-            throw Error(
-              "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ پیش از بازیابی دوباره بررسی کنید.",
-            );
-          if (!restoreIdentityMatches(safety, identity.result))
-            throw Error(
-              "مشخصات فرستنده در پنجرهٔ دیگری تغییر کرده است؛ پیش از بازیابی دوباره بررسی کنید.",
-            );
-          if (
-            restoreCatalogSignature(request.result) !==
-            restoreCatalogSignature(safety.stores.catalog)
-          )
-            throw Error(
-              "اطلاعات سیستم در پنجره دیگری تغییر کرده است؛ پیش از بازیابی دوباره بررسی کنید.",
-            );
-          for (const name of names) tx.objectStore(name).clear();
-          for (const name of names) {
-            // Preserve explicit legacy history IDs before the auto-increment
-            // generator assigns IDs to history rows saved without a key.
-            const values =
-              name === "events"
-                ? [
-                    ...rows[name].filter((row) => row.id !== undefined),
-                    ...rows[name].filter((row) => row.id === undefined),
-                  ]
-                : rows[name];
-            for (const row of values) tx.objectStore(name).add(row);
-          }
-          // Device file handles are not backup data; keep this device's connection.
-          if (singleFile)
-            tx.objectStore("drafts").put({ key: singleFileKey, ...singleFile });
-        } catch (error) {
-          abort(error);
-        }
+          tx.abort();
+        } catch {}
       };
-      request.onsuccess = replace;
-      epoch.onsuccess = replace;
-      identity.onsuccess = replace;
-    } catch (error) {
-      abort(error);
-    }
-    try {
-      await done;
-    } catch (error) {
-      throw failure || error;
-    }
+      try {
+        const request = tx.objectStore("catalog").getAll(),
+          epoch = tx.objectStore("records").get(RESET_RECORD_KEY),
+          identity = tx.objectStore("drafts").get(EduDeputyExportIdentity.key),
+          durableDrafts = tx.objectStore("drafts").getAll();
+        let remaining = 4;
+        const replace = () => {
+          if (--remaining) return;
+          try {
+            check();
+            if ((epoch.result?.value?.token || "") !== sourceInstallation)
+              throw Error(
+                "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ پیش از بازیابی دوباره بررسی کنید.",
+              );
+            if (!restoreIdentityMatches(safety, identity.result))
+              throw Error(
+                "مشخصات فرستنده در پنجرهٔ دیگری تغییر کرده است؛ پیش از بازیابی دوباره بررسی کنید.",
+              );
+            if (
+              draftSignature === undefined ||
+              restoreDraftSignature(durableDrafts.result) !== draftSignature
+            )
+              throw Error(
+                "پیش‌نویس نمرات در پنجرهٔ دیگری تغییر کرده است؛ برای حفظ آن‌ها بازیابی انجام نشد. دوباره پشتیبان را بررسی کنید.",
+              );
+            if (
+              restoreCatalogSignature(request.result) !==
+              restoreCatalogSignature(safety.stores.catalog)
+            )
+              throw Error(
+                "اطلاعات سیستم در پنجره دیگری تغییر کرده است؛ پیش از بازیابی دوباره بررسی کنید.",
+              );
+            for (const name of names) tx.objectStore(name).clear();
+            for (const name of names) {
+              // Preserve explicit legacy history IDs before the auto-increment
+              // generator assigns IDs to history rows saved without a key.
+              const values =
+                name === "events"
+                  ? [
+                      ...rows[name].filter((row) => row.id !== undefined),
+                      ...rows[name].filter((row) => row.id === undefined),
+                    ]
+                  : rows[name];
+              for (const row of values) tx.objectStore(name).add(row);
+            }
+            // Preserve the live device connection, including a change from another tab.
+            // Rotate its identity so old versions cannot publish an obsolete snapshot.
+            const currentFile = durableDrafts.result.find(
+              (row) => row.key === singleFileKey,
+            );
+            restoredSingleFile = currentFile
+              ? { ...currentFile, connectionId: uid() }
+              : null;
+            if (restoredSingleFile)
+              tx.objectStore("drafts").put(restoredSingleFile);
+          } catch (error) {
+            abort(error);
+          }
+        };
+        request.onsuccess = replace;
+        epoch.onsuccess = replace;
+        identity.onsuccess = replace;
+        durableDrafts.onsuccess = replace;
+      } catch (error) {
+        abort(error);
+      }
+      try {
+        await done;
+      } catch (error) {
+        throw failure || error;
+      }
+    };
+    // Automatic file writers already hold this origin lock through stream.close().
+    // Wait for that publication before replacing the installation and its handle ID.
+    const fileLocks = globalThis.navigator?.locks;
+    if (fileLocks)
+      await fileLocks.request("EduManager.singleFile", replaceInstallation);
+    else await replaceInstallation();
+    singleFile = restoredSingleFile;
     assessmentContext.dispose({ abandon: true });
     committedRestore = true;
     installationToken = marker.value.token;

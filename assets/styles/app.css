@@ -954,6 +954,11 @@ th {
   min-width: 44px;
   min-height: 44px;
 }
+
+.cal-days button:disabled:not(.empty) {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
 /* Source: src/styles/responsive.css */
 /* Responsive base */
 

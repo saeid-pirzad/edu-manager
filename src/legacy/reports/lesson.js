@@ -99,7 +99,12 @@ function renderLessonReportTab() {
 function legacy_buildLessonReportHtml(c, lesson) {
   const sessions = db.sessions
     .filter((x) => x.classId === c.id && x.lessonId === lesson.id)
-    .sort((a, b) => a.date.localeCompare(b.date));
+    .sort(
+      (a, b) =>
+        a.date.localeCompare(b.date) ||
+        a.period - b.period ||
+        a.id.localeCompare(b.id),
+    );
   let h = `<div class="card"><h3>📊 گزارش درس ${esc(lesson.name)}${lesson.teacher ? ` — ${esc(lesson.teacher)}` : ""}</h3>
     <div class="row no-print" style="justify-content:flex-end;margin-bottom:14px">
       <button class="success" data-legacy-click="reports-lesson:3" data-legacy-click-arg2="${esc(lesson.id)}">📋 کپی متن برای معاون</button>
@@ -211,7 +216,12 @@ function buildLessonReportText(lessonId) {
   if (!c || !lesson) return;
   const sessions = db.sessions
     .filter((x) => x.classId === c.id && x.lessonId === lesson.id)
-    .sort((a, b) => a.date.localeCompare(b.date));
+    .sort(
+      (a, b) =>
+        a.date.localeCompare(b.date) ||
+        a.period - b.period ||
+        a.id.localeCompare(b.id),
+    );
   let text = `📊 گزارش درس: ${lesson.name} (کلاس ${c.name})\n👨‍🏫 دبیر: ${lesson.teacher || "---"}\n================================\n\n`;
   if (!sessions.length) text += `هنوز جلسه‌ای ثبت نشده است.\n`;
   sessions.forEach((sess) => {

@@ -65,17 +65,28 @@ function fixture() {
     transactionDone: (tx) => tx.finished,
     connection: {
       transaction: () => {
-        let finish;
-        const finished = new Promise((resolve) => {
+        let finish, fail;
+        const finished = new Promise((resolve, reject) => {
           finish = resolve;
+          fail = reject;
         });
         return {
           finished,
-          objectStore: () => ({
+          abort() {
+            fail(Error("aborted"));
+          },
+          objectStore: (storeName) => ({
             get: () => {
               const request = {};
               queueMicrotask(() => {
-                request.result = stored && { ...stored };
+                request.result =
+                  storeName === "records"
+                    ? {
+                        value: {
+                          token: context.durableInstallationToken || "",
+                        },
+                      }
+                    : stored && { ...stored };
                 request.onsuccess();
                 finish();
               });
@@ -759,3 +770,42 @@ test("disconnect and replacement in another tab remove a stale permission action
     );
   }
 });
+
+for (const duringStream of [false, true]) {
+  test(
+    "automatic backup refuses old-installation snapshots " +
+      (duringStream ? "before stream close" : "before stream open"),
+    async () => {
+      const f = fixture();
+      let epoch = "old";
+      f.context.installationToken = "old";
+      f.context.durableInstallationToken = "old";
+      f.context.RESET_RECORD_KEY = "@installation-reset";
+      f.context.readRecord = async (store) =>
+        store === "records" ? { value: { token: epoch } } : f.getStored();
+      await f.context.chooseSingleFile();
+      const before = f.contents,
+        writes = f.writes;
+      if (duringStream) {
+        const create = f.handle.createWritable;
+        f.handle.createWritable = async () => {
+          const stream = await create(),
+            write = stream.write;
+          stream.write = async (json) => {
+            await write(json);
+            epoch = "new";
+            f.context.durableInstallationToken = "new";
+          };
+          return stream;
+        };
+      } else {
+        epoch = "new";
+        f.context.durableInstallationToken = "new";
+      }
+      assert.equal(await f.context.syncSingleFile(), false);
+      assert.equal(f.writes, writes);
+      assert.equal(f.contents, before);
+      assert.equal(f.aborts, duringStream ? 1 : 0);
+    },
+  );
+}

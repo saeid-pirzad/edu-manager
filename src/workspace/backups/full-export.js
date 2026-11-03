@@ -12,7 +12,7 @@ function portableGradeDrafts(rows, periods) {
   return EduGradeDrafts.portableGradeDrafts(rows, periods, storedRows);
 }
 
-async function snapshotInstallation() {
+async function snapshotInstallation({ onDurableDrafts } = {}) {
   const origin = workspace?.id,
     sourceConnection = connection,
     sourceInstallation = installationToken;
@@ -82,6 +82,9 @@ async function snapshotInstallation() {
     throw Error(
       "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ پشتیبان را دوباره تهیه کنید.",
     );
+  // Restore compares the same durable draft rows inside its replacement lock.
+  // The observer is internal metadata and is never serialized into a backup.
+  onDurableDrafts?.(stores.drafts);
   // Never embed a full snapshot inside another full snapshot.
   stores.backups = stores.backups.filter((row) => !row.full);
   stores.records = stores.records.filter((row) => row.key !== RESET_RECORD_KEY);

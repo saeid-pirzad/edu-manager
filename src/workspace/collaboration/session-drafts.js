@@ -111,6 +111,8 @@ async function consumeDraftSource(
   ensureCurrent,
 ) {
   ensureCurrent();
+  const sourceInstallation =
+    typeof installationToken === "undefined" ? "" : installationToken;
   const same = (raw) => {
     if (!raw) return true;
     const entries = Array.isArray(raw) ? raw : raw.entries || [];
@@ -132,14 +134,45 @@ async function consumeDraftSource(
     entries: [],
     updatedAt,
   };
-  const tx = sourceConnection.transaction("drafts", "readwrite"),
+  const tx = sourceConnection.transaction(["records", "drafts"], "readwrite"),
     done = transactionDone(tx);
   const store = tx.objectStore("drafts"),
-    request = store.get(record.key);
-  request.onsuccess = () => {
-    if (same(request.result)) store.put(tombstone);
+    request = store.get(record.key),
+    epoch = tx
+      .objectStore("records")
+      .get(
+        typeof RESET_RECORD_KEY === "undefined"
+          ? "@installation-reset"
+          : RESET_RECORD_KEY,
+      );
+  let remaining = 2,
+    failure;
+  const consume = () => {
+    if (--remaining) return;
+    try {
+      ensureCurrent();
+      if ((epoch.result?.value?.token || "") !== sourceInstallation) {
+        const error = Error(
+          "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ پیش‌نویس قدیمی تغییر نکرد.",
+        );
+        error.code = "INSTALLATION_CHANGED";
+        throw error;
+      }
+      if (same(request.result)) store.put(tombstone);
+    } catch (error) {
+      failure = error;
+      try {
+        tx.abort();
+      } catch {}
+    }
   };
-  await done;
+  request.onsuccess = consume;
+  epoch.onsuccess = consume;
+  try {
+    await done;
+  } catch (error) {
+    throw failure || error;
+  }
   ensureCurrent();
   try {
     const raw = JSON.parse(localStorage.getItem(record.key) || "null");

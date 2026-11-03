@@ -20,11 +20,15 @@ function fixture() {
   };
   const c = vm.createContext({
     workspace: { id: "first", revision: 1, year: "1405-1406" },
+    installationToken: "test-installation",
+    RESET_RECORD_KEY: "@installation-reset",
     connection: {
       transaction(name, mode) {
-        assert.equal(name, "backups");
+        const storeNames = Array.from(name);
+        assert.deepEqual(storeNames, ["records", "backups"]);
         assert.equal(mode, "readwrite");
-        const staged = structuredClone(backups);
+        const staged = structuredClone(backups),
+          reads = new Set();
         let resolve,
           reject,
           aborted = false,
@@ -39,7 +43,29 @@ function fixture() {
             reject(Error("backup transaction aborted"));
           },
           objectStore(storeName) {
-            assert.equal(storeName, "backups");
+            assert.ok(
+              storeNames.includes(storeName),
+              "the object store belongs to the shared transaction",
+            );
+            if (storeName === "records")
+              return {
+                get(key) {
+                  assert.equal(key, c.RESET_RECORD_KEY);
+                  const request = {};
+                  queueMicrotask(() => {
+                    if (aborted) return;
+                    request.result = structuredClone(
+                      hooks.marker ?? {
+                        key,
+                        value: { token: c.installationToken },
+                      },
+                    );
+                    reads.add("records");
+                    request.onsuccess();
+                  });
+                  return request;
+                },
+              };
             return {
               getAll() {
                 const request = {};
@@ -48,17 +74,17 @@ function fixture() {
                   request.result = [...staged.values()].map((value) =>
                     structuredClone(value),
                   );
+                  reads.add("backups");
                   request.onsuccess();
-                  if (aborted) return;
-                  backups.clear();
-                  for (const [id, value] of staged) backups.set(id, value);
-                  backupJournal.push("complete");
-                  if (written) effects.push("backup");
-                  resolve();
                 });
                 return request;
               },
               put(value) {
+                assert.deepEqual(
+                  [...reads].sort(),
+                  ["backups", "records"],
+                  "both snapshot and installation marker are read before any backup write",
+                );
                 assert.equal(
                   effects.includes("backup"),
                   false,
@@ -75,6 +101,14 @@ function fixture() {
             };
           },
         };
+        setImmediate(() => {
+          if (aborted) return;
+          backups.clear();
+          for (const [id, value] of staged) backups.set(id, value);
+          backupJournal.push("complete");
+          if (written) effects.push("backup");
+          resolve();
+        });
         return tx;
       },
     },
@@ -255,4 +289,18 @@ test("failed full-backup transaction never acknowledges backup or deletes school
   assert.equal(f.effects.length, 0);
   assert.equal(f.savedScopes.length, 0);
   assert.equal(f.errors[0].message, "quota");
+});
+
+test("a durable installation mismatch prevents the real safety helper from acknowledging backup or deleting data", async () => {
+  const f = fixture();
+  f.hooks.marker = {
+    key: f.c.RESET_RECORD_KEY,
+    value: { token: "replacement-installation" },
+  };
+  await f.c.confirmDeletion();
+  assert.equal(f.c.db.schools.length, 1);
+  assert.equal(f.backups.size, 0);
+  assert.equal(f.effects.length, 0);
+  assert.equal(f.savedScopes.length, 0);
+  assert.equal(f.errors[0].code, "INSTALLATION_CHANGED");
 });
