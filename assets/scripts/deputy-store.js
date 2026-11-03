@@ -628,7 +628,32 @@
         },
       );
     }
+
+    const automaticBackupConfig = () =>
+      run([META_STORE], "readonly", ({ store, request, result }) => {
+        request(store(META_STORE).get("automaticFile"), (row) =>
+          result(row?.config || null),
+        );
+      });
+    const setAutomaticBackupConfig = (config, expectedId) =>
+      run([META_STORE], "readwrite", ({ store, request, result }) => {
+        request(store(META_STORE).get("automaticFile"), (row) => {
+          if (
+            expectedId !== undefined &&
+            (row?.config?.connectionId || null) !== expectedId
+          ) {
+            result(false);
+            return;
+          }
+          if (config) store(META_STORE).put({ id: "automaticFile", config });
+          else store(META_STORE).delete("automaticFile");
+          result(true);
+        });
+      });
+
     return Object.freeze({
+      automaticBackupConfig,
+      setAutomaticBackupConfig,
       list,
       preview,
       commit,

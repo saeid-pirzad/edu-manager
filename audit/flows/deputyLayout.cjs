@@ -77,10 +77,19 @@ module.exports = async function deputyLayout({
     expectedTab =
       view === "calendar"
         ? "reports"
-        : ["reports", "followups"].includes(view)
+        : ["files", "reports", "followups"].includes(view)
           ? view
           : "receive";
+  if (document.getElementById("deputyBackupDialog")?.open)
+    document.querySelector('[data-deputy-action="close-backups"]').click();
+  await wait(() =>
+    [
+      ...document.querySelectorAll('[data-deputy-tab="' + expectedTab + '"]'),
+    ].some(visible),
+  );
   tab(expectedTab);
+  if (["backup", "restore-preview"].includes(view))
+    document.querySelector('[data-deputy-action="open-backups"]').click();
   await wait(() => !EduDeputyUI.status().busy);
   for (const details of document.querySelectorAll(
     ".ed-sources details,.ed-sources.ed-disclosure",
@@ -115,7 +124,8 @@ module.exports = async function deputyLayout({
       store.close();
     }
   } else if (view === "backup") {
-    document.querySelector(".ed-help").open = true;
+    if (!document.getElementById("deputyBackupDialog").open)
+      throw Error("Backup modal did not open");
   }
   await new Promise((resolve) =>
     requestAnimationFrame(() => requestAnimationFrame(resolve)),
@@ -185,7 +195,7 @@ module.exports = async function deputyLayout({
       " uses the same mobile/coarse-tablet navigation breakpoint as the teacher surface",
     visible(bottom) === shouldUseBottom &&
       visible(desktop) === !shouldUseBottom &&
-      navButtons.length === 3 &&
+      navButtons.length === 4 &&
       !overlaps &&
       navButtons.filter((node) => node.getAttribute("aria-current") === "page")
         .length === 1 &&
@@ -291,6 +301,24 @@ module.exports = async function deputyLayout({
         hit: hit?.tagName,
       },
     );
+  } else if (document.getElementById("deputyBackupDialog")?.open) {
+    const dialog = document.getElementById("deputyBackupDialog");
+    const last = [...dialog.querySelectorAll("button:not(:disabled)")].at(-1);
+    last.scrollIntoView({ block: "nearest", behavior: "instant" });
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    const rect = last.getBoundingClientRect();
+    const hit = document.elementFromPoint(
+      (rect.left + rect.right) / 2,
+      (rect.top + rect.bottom) / 2,
+    );
+    check(
+      "occlusion",
+      "backup modal actions scroll into view and receive clicks above the page navigation",
+      rect.top >= 0 &&
+        rect.bottom <= innerHeight &&
+        (hit === last || last.contains(hit)),
+      { bottom: rect.bottom, hit: hit?.tagName },
+    );
   } else {
     window.scrollTo({
       top: document.scrollingElement.scrollHeight,
@@ -322,7 +350,11 @@ module.exports = async function deputyLayout({
       "#deputyApp input:not([type=file]):not([type=checkbox]),#deputyApp textarea,#deputyApp select",
     ),
   ].find((node) => visible(node) && !node.disabled);
-  if (focus && view !== "calendar") {
+  if (
+    focus &&
+    view !== "calendar" &&
+    !document.getElementById("deputyBackupDialog")?.open
+  ) {
     focus.focus();
     focus.scrollIntoView({
       block: "center",

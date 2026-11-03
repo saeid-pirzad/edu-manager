@@ -142,12 +142,7 @@
   function help() {
     const installed =
       matchMedia("(display-mode: standalone)").matches || navigator.standalone;
-    const html =
-      '<div class="offline-help"><section class="offline-help-section"><h4>نصب روی دستگاه</h4><p>' +
-      (installed
-        ? "برنامه از آیکن نصب‌شده اجرا شده است."
-        : "در اندروید و رایانه از گزینه «نصب برنامه» مرورگر استفاده کنید. در آیفون و آیپد از اشتراک‌گذاری و «افزودن به صفحه اصلی» استفاده کنید.") +
-      '</p></section><section class="offline-help-section"><h4>استفاده بدون اینترنت</h4><p>دریافت اولیه و به‌روزرسانی به اینترنت نیاز دارد. بعد از نمایش <strong class="offline-ready-label">آماده اجرای آفلاین</strong>، برنامه بدون اینترنت باز می‌شود. یک بار از آیکن نصب‌شده باز کنید و آماده‌بودن را بررسی کنید.</p></section><section class="offline-help-section offline-help-storage"><h4>نگهداری و انتقال اطلاعات</h4><p>اطلاعات هر دستگاه و مرورگر جداست. برای انتقال اطلاعات، از داده‌ها «پشتیبان» بگیرید و فایل را در دستگاه دیگر بازیابی کنید. پاک‌کردن داده‌های مرورگر یا حذف برنامه ممکن است اطلاعات این دستگاه را پاک کند؛ فایل مستقل را نگه دارید.</p><p class="offline-help-note">این برنامه همگام‌سازی خودکار بین دستگاه‌ها ندارد.</p></section></div>';
+    const html = window.EduOfflineHelp.html(installed);
     if (window.showModal) showModal("نصب و استفاده آفلاین", html);
     else
       alert(

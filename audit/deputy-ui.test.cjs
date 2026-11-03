@@ -80,6 +80,15 @@ function fixture({
   };
   nodes.set("deputyApp", host);
   nodes.set("deputyMessage", { textContent: "" });
+  nodes.set("deputyBackupDialog", {
+    open: false,
+    showModal() {
+      this.open = true;
+    },
+    close() {
+      this.open = false;
+    },
+  });
   const plan = {
     status: "new",
     counts: { classes: 1, students: 1, lessons: 1, sessions: 1 },
@@ -151,6 +160,7 @@ function fixture({
         },
       },
       getElementById: (id) => nodes.get(id) || null,
+      querySelector: () => null,
       addEventListener() {},
     },
     addEventListener: (name, handler) => {
@@ -263,13 +273,13 @@ const row = (value = packet()) => ({
   receivedAt: "2026-11-02T09:00:00.000Z",
 });
 
-test("deputy startup is idempotent and has only receive/report/followup tabs", async () => {
+test("deputy startup is idempotent and has receive/files/report/followup tabs", async () => {
   const f = fixture();
   await f.context.EduDeputyUI.start();
   await f.context.EduDeputyUI.start();
   assert.equal(f.calls.open, 1);
   assert.equal(f.context.EduDeputyUI.status().ready, true);
-  for (const name of ["receive", "reports", "followups"])
+  for (const name of ["receive", "files", "reports", "followups"])
     assert.ok(f.host.innerHTML.includes('data-deputy-tab="' + name + '"'));
 });
 
@@ -298,7 +308,7 @@ test("deputy uses shared trusted SVG branding and equivalent desktop/mobile navi
   await f.context.EduDeputyUI.start();
   for (const nav of ["deputyDesktopNav", "deputyBottomNav"]) {
     assert.match(f.host.innerHTML, new RegExp('id="' + nav + '"'));
-    for (const tab of ["receive", "reports", "followups"])
+    for (const tab of ["receive", "files", "reports", "followups"])
       assert.match(
         f.host.innerHTML,
         new RegExp(
@@ -356,10 +366,13 @@ test("virtual keyboard hiding is scoped to deputy body and restores navigation a
   assert.equal(f.bodyClasses.has("ed-keyboard-open"), false);
 });
 
-test("source facet and backup disclosure choices survive report rerenders", async () => {
+test("source facet survives rerenders and backup opens separately without changing the active section", async () => {
   const f = fixture({ rows: [row()] });
   await f.context.EduDeputyUI.start();
-  f.handlers.toggle({ target: { id: "deputyBackupPanel", open: true } });
+  await f.click("open-backups");
+  assert.equal(f.nodes.get("deputyBackupDialog").open, true);
+  await f.click("close-backups");
+  assert.equal(f.nodes.get("deputyBackupDialog").open, false);
   await f.tab("reports");
   f.handlers.toggle({ target: { id: "deputySourceOptions", open: true } });
   await f.change("deputyTerm", "first");
@@ -368,10 +381,9 @@ test("source facet and backup disclosure choices survive report rerenders", asyn
     /id="deputySourceOptions" class="ed-source-options" open/,
   );
   await f.tab("receive");
-  assert.match(
-    f.host.innerHTML,
-    /id="deputyBackupPanel" class="ed-panel ed-help" open/,
-  );
+  await f.click("open-backups");
+  assert.equal(f.context.EduDeputyUI.status().tab, "receive");
+  assert.equal(f.nodes.get("deputyBackupDialog").open, true);
 });
 
 test("file preview distinguishes changed observations and raw grade components from memberships", async () => {
@@ -464,6 +476,7 @@ test("names and notes are HTML escaped without modifying source packet", async (
   const before = JSON.stringify(source);
   const f = fixture({ rows: [row(source)] });
   await f.context.EduDeputyUI.start();
+  await f.tab("files");
   assert.doesNotMatch(f.host.innerHTML, /<img src=x/);
   assert.match(f.host.innerHTML, /&lt;img/);
   assert.equal(JSON.stringify(source), before);
@@ -679,6 +692,7 @@ test("identical sender names remain visibly distinguishable by early stable code
     rows: [row(first), { ...row(second), key: "stream-b" }],
   });
   await f.context.EduDeputyUI.start();
+  await f.tab("files");
   assert.match(f.host.innerHTML, /کد دبیر: <bdi dir="ltr">TEACHER-A<\/bdi>/);
   assert.match(f.host.innerHTML, /کد دبیر: <bdi dir="ltr">TEACHER-B<\/bdi>/);
   assert.match(f.host.innerHTML, /کد مدرسه: <bdi dir="ltr">school<\/bdi>/);
@@ -1058,4 +1072,44 @@ test("shared native date change preserves read-only proxy and updates only outpu
   assert.equal(fromProxy.value, "");
   assert.equal(Object.hasOwn(fromProxy.dataset, "jy"), false);
   assert.equal(f.host.innerHTML, rootHTML);
+});
+
+test("home contains receipt only, files are separate, and backup is a modal from every section", async () => {
+  const f = fixture({ rows: [row(packet())] });
+  await f.context.EduDeputyUI.start();
+  assert.doesNotMatch(
+    f.host.innerHTML,
+    /deputyHomeButton|ed-overview-card|ed-inbox-card/,
+  );
+  assert.match(f.host.innerHTML, /id="deputyImportFile"/);
+  await f.tab("files");
+  assert.match(f.host.innerHTML, /ed-inbox-card/);
+  assert.doesNotMatch(f.host.innerHTML, /id="deputyImportFile"/);
+  await f.tab("reports");
+  await f.click("open-backups");
+  assert.equal(f.context.EduDeputyUI.status().tab, "reports");
+  assert.equal(f.nodes.get("deputyBackupDialog").open, true);
+  await f.click("close-backups");
+  assert.equal(f.nodes.get("deputyBackupDialog").open, false);
+  assert.equal(f.calls.restore, 0);
+});
+
+test("deputy update preparation rejects unconfirmed import and unsaved followup work", async () => {
+  const f = fixture({ rows: [row(packet())] });
+  await f.context.EduDeputyUI.start();
+  assert.equal(await f.context.EduDeputyUI.prepareForUpdate(), true);
+  await f.file("deputyImportFile", packet());
+  await assert.rejects(
+    () => f.context.EduDeputyUI.prepareForUpdate(),
+    /بازبینی/,
+  );
+  await f.click("cancel-preview");
+  await f.tab("followups");
+  f.handlers.input({ target: { id: "deputyNoteText", value: "unsaved note" } });
+  await assert.rejects(
+    () => f.context.EduDeputyUI.prepareForUpdate(),
+    /یادداشت/,
+  );
+  assert.equal(f.calls.commit, 0);
+  assert.equal(f.calls.restore, 0);
 });

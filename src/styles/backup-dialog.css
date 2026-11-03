@@ -1,0 +1,381 @@
+@media screen {
+  :is(
+    :is(#modal:has(.backup-hub), #deputyBackupDialog) .modal-dialog,
+    #deputyBackupDialog
+  ) {
+    width: min(100%, 640px);
+    max-height: calc(var(--app-viewport, 100dvh) - 48px);
+    border-radius: 18px;
+  }
+  :is(#modal:has(.backup-hub), #deputyBackupDialog) .modal-header {
+    padding: 14px 20px;
+    background: #fff;
+  }
+  :is(#modal:has(.backup-hub), #deputyBackupDialog) .modal-header h3 {
+    font-size: 17px;
+  }
+  :is(#modal:has(.backup-hub), #deputyBackupDialog) .modal-body {
+    padding: 18px;
+    background: #f7f6f3;
+  }
+  :is(#modalBody, #deputyBackupBody) .backup-hub {
+    display: grid;
+    gap: 12px;
+    min-width: 0;
+  }
+  :is(#modalBody, #deputyBackupBody) .backup-hub > :is(section, details) {
+    min-width: 0;
+    padding: 18px;
+    border: 1px solid #e5e0d7;
+    border-radius: 13px;
+    background: #fff;
+  }
+  :is(#modalBody, #deputyBackupBody) .backup-hub :is(h3, h4) {
+    margin: 0 0 7px;
+    color: #363735;
+    font-size: 15px;
+    line-height: 1.8;
+  }
+  :is(#modalBody, #deputyBackupBody) .backup-hub p {
+    margin: 0 0 14px;
+    color: #81796e;
+    font-size: 12px;
+    line-height: 1.95;
+  }
+  :is(#modalBody, #deputyBackupBody) .backup-hub button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-width: 0;
+    min-height: 44px;
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 9px;
+    font-size: 12px;
+    line-height: 1.7;
+    white-space: normal;
+  }
+  :is(#modalBody, #deputyBackupBody) .backup-action-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  :is(#modalBody, #deputyBackupBody) .backup-action-grid > button:first-child {
+    min-height: 46px;
+    background: #79522c;
+    color: #fff;
+    border: 1px solid #79522c;
+  }
+  :is(#modalBody, #deputyBackupBody) .backup-hub button.ghost {
+    border: 1px solid #e5e0d7;
+    background: #faf9f7;
+    color: #655d52;
+  }
+  :is(#modalBody, #deputyBackupBody) .backup-manual > p:last-child {
+    margin: 12px 0 0;
+    padding-top: 12px;
+    border-top: 1px solid #eeebe5;
+    font-size: 11px;
+  }
+  :is(#modalBody, #deputyBackupBody) .backup-automatic > .row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin: 0;
+  }
+  :is(#modalBody, #deputyBackupBody)
+    .backup-automatic
+    > .row
+    > button:first-child {
+    background: #f5efe5;
+    color: #79522c;
+    border: 1px solid #dbcbb3;
+  }
+  :is(#modalBody, #deputyBackupBody)
+    .backup-automatic
+    > .row
+    > button:last-child {
+    color: #9f5548;
+    background: #fffaf8;
+    border-color: #eddcd5;
+  }
+  :is(#modalBody, #deputyBackupBody) .backup-hub #singleFileStatus {
+    padding: 10px 12px;
+    border: 1px solid #e8e0d3;
+    border-radius: 9px;
+    background: #faf6ee;
+    color: #795f3c;
+    font-size: 11px;
+  }
+  :is(#modalBody, #deputyBackupBody) .backup-automatic > .backup-help {
+    margin-top: 14px;
+    padding-top: 6px;
+    border-top: 1px solid #eeebe5;
+  }
+  :is(#modalBody, #deputyBackupBody) .backup-hub details > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 40px;
+    padding: 4px 0;
+    list-style: none;
+    color: #655d52;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  :is(#modalBody, #deputyBackupBody)
+    .backup-hub
+    details
+    > summary::-webkit-details-marker {
+    display: none;
+  }
+  :is(#modalBody, #deputyBackupBody) .backup-hub details > summary::after {
+    content: "+";
+    display: grid;
+    place-items: center;
+    flex: 0 0 24px;
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
+    background: #f4f1eb;
+    color: #79522c;
+    font-size: 17px;
+    font-weight: 400;
+  }
+  :is(#modalBody, #deputyBackupBody) .backup-hub details[open] > summary {
+    margin-bottom: 10px;
+  }
+  :is(#modalBody, #deputyBackupBody)
+    .backup-hub
+    details[open]
+    > summary::after {
+    content: "-";
+  }
+  :is(#modalBody, #deputyBackupBody) .backup-hub > details {
+    padding-block: 10px;
+  }
+  :is(#modalBody, #deputyBackupBody) .backup-help > p:last-child {
+    margin-bottom: 0;
+  }
+  :is(#modalBody, #deputyBackupBody) .backup-hub > p {
+    margin: 0;
+    padding: 14px;
+    border: 1px solid #e8e0d3;
+    border-radius: 12px;
+    background: #faf6ee;
+  }
+  :is(#modalBody, #deputyBackupBody)
+    .backup-hub
+    #singleFileFallback:not([hidden]) {
+    margin-bottom: 14px;
+    padding: 12px;
+    border: 1px solid #ead4b6;
+    border-radius: 10px;
+    background: #fff9ef;
+  }
+  :is(#modalBody, #deputyBackupBody) .backup-hub #singleFileFallback p {
+    margin-bottom: 10px;
+    font-size: 11px;
+  }
+  :is(#modalBody, #deputyBackupBody) .backup-history table {
+    width: 100%;
+    margin: 0;
+    font-size: 12px;
+  }
+  :is(#modalBody, #deputyBackupBody) .backup-history th {
+    background: #f5f2ec;
+    color: #726b61;
+    font-size: 11px;
+  }
+  :is(#modalBody, #deputyBackupBody) .backup-history td {
+    font-size: 11px;
+    padding: 10px 8px;
+  }
+  :is(#modalBody, #deputyBackupBody) .backup-history td:last-child button {
+    margin: 3px;
+    padding: 7px 9px;
+    font-size: 11px;
+    min-height: 38px;
+  }
+  :is(#modalBody, #deputyBackupBody)
+    .backup-hub
+    :is(button, summary):focus-visible {
+    outline: 2px solid #a88a63;
+    outline-offset: 2px;
+  }
+}
+@media screen and (max-width: 700px) {
+  :is(#modal:has(.backup-hub), #deputyBackupDialog) {
+    padding: 10px;
+    align-items: center;
+  }
+  :is(
+    :is(#modal:has(.backup-hub), #deputyBackupDialog) .modal-dialog,
+    #deputyBackupDialog
+  ) {
+    max-height: calc(var(--app-viewport, 100dvh) - 20px);
+    border-radius: 16px;
+  }
+  :is(#modal:has(.backup-hub), #deputyBackupDialog) .modal-header {
+    padding: 10px 14px;
+  }
+  :is(#modal:has(.backup-hub), #deputyBackupDialog) .modal-header h3 {
+    font-size: 15px;
+  }
+  :is(#modal:has(.backup-hub), #deputyBackupDialog) .modal-body {
+    padding: 10px;
+  }
+  :is(#modalBody, #deputyBackupBody) .backup-hub {
+    gap: 10px;
+  }
+  :is(#modalBody, #deputyBackupBody) .backup-hub > :is(section, details) {
+    padding: 14px 12px;
+    border-radius: 11px;
+  }
+  :is(#modalBody, #deputyBackupBody) .backup-hub > details {
+    padding-block: 8px;
+  }
+  :is(#modalBody, #deputyBackupBody) .backup-hub :is(h3, h4) {
+    font-size: 14px;
+  }
+  :is(#modalBody, #deputyBackupBody) .backup-hub p {
+    font-size: 11px;
+    margin-bottom: 12px;
+  }
+  :is(#modalBody, #deputyBackupBody) .backup-hub button {
+    padding: 9px 7px;
+    font-size: 11px;
+    gap: 5px;
+  }
+}
+
+@media screen {
+  #deputyBackupDialog {
+    padding: 0;
+    border: 1px solid var(--workflow-line);
+    background: #fff;
+    color: var(--workflow-ink);
+    box-shadow: 0 24px 80px #17233733;
+    overflow: hidden;
+    width: min(640px, calc(100vw - 40px));
+  }
+  #deputyBackupDialog:not([open]) {
+    display: none;
+  }
+  #deputyBackupDialog[open] {
+    display: flex;
+    flex-direction: column;
+  }
+  #deputyBackupDialog::backdrop {
+    background: #0008;
+  }
+  #deputyBackupDialog .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--workflow-line);
+  }
+  #deputyBackupDialog .modal-header h3 {
+    margin: 0;
+    line-height: 1.8;
+  }
+  #deputyBackupDialog .ed-backup-close {
+    min-height: 44px;
+    margin: 0;
+    border: 0;
+    background: #eaeef6;
+    color: #364665;
+    border-radius: 12px;
+    padding: 8px;
+  }
+  #deputyBackupDialog .ed-backup-close .ed-icon {
+    width: 20px;
+    height: 20px;
+  }
+  #deputyBackupBody {
+    overflow: auto;
+    min-height: 0;
+    overscroll-behavior: contain;
+  }
+  #deputyBackupBody .backup-action-grid {
+    display: grid;
+  }
+  #deputyBackupBody .ed-status {
+    margin: 0 0 12px;
+    font-size: 12px;
+    line-height: 1.9;
+  }
+  #deputyBackupBody input[type="file"][hidden] {
+    display: none;
+  }
+  #deputyBackupBody .ed-workspace {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+  }
+  #deputyBackupBody .ed-checkbox {
+    font-size: 12px;
+    line-height: 2;
+  }
+  #deputyBackupBody .ed-danger {
+    background: #b62f40;
+    color: white;
+  }
+  #deputyBackupDialog button:disabled {
+    opacity: 0.5;
+    cursor: wait;
+  }
+}
+@media screen and (max-width: 700px) {
+  #deputyBackupDialog {
+    width: calc(100vw - 20px);
+  }
+}
+@media print {
+  #deputyBackupDialog {
+    display: none !important;
+  }
+}
+
+@media screen {
+  #deputyBackupBody .backup-automatic > .row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  #deputyBackupBody .backup-automatic > .row > button:first-child {
+    grid-column: 1/-1;
+  }
+  #deputyBackupBody .ed-automatic-status {
+    padding: 12px;
+    border: 1px solid #e8e0d3;
+    border-radius: 9px;
+    background: #faf6ee;
+    color: #795f3c;
+    overflow-wrap: anywhere;
+  }
+  #deputyBackupBody .backup-automatic .ed-automatic-help {
+    margin: 14px 0 0;
+    font-size: 10px;
+  }
+  .ed-deputy-page .ed-automatic-warning {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .ed-deputy-page .ed-automatic-warning > span {
+    flex: 1 1 240px;
+    font-size: 12px;
+    line-height: 1.9;
+  }
+  .ed-deputy-page .ed-automatic-warning button {
+    margin: 0;
+    min-height: 44px;
+  }
+}

@@ -303,6 +303,7 @@
       "scope": "css",
       "sources": [
         "src/styles/fonts.css",
+        "src/styles/product-tokens.css",
         "src/styles/base.css",
         "src/styles/calendar.css",
         "src/styles/responsive.css",
@@ -324,7 +325,12 @@
         "src/styles/dashboard-metrics.css",
         "src/styles/select-controls.css",
         "src/styles/periodic-reports.css",
-        "src/styles/daily-dashboard.css"
+        "src/styles/daily-dashboard.css",
+        "src/styles/welcome-banner.css",
+        "src/styles/about-dialog.css",
+        "src/styles/backup-dialog.css",
+        "src/styles/service-bar.css",
+        "src/styles/offline-help.css"
       ]
     },
     {
@@ -371,7 +377,7 @@
     {
       "output": "assets/styles/deputy.css",
       "scope": "css",
-      "sources": ["src/styles/deputy.css"]
+      "sources": ["src/styles/deputy.css", "src/styles/deputy-shell.css"]
     },
     {
       "output": "assets/scripts/icons.js",
@@ -382,6 +388,21 @@
       "output": "assets/scripts/runtime-api.js",
       "scope": "global",
       "sources": ["src/core/runtime-api.js", "src/legacy/core/events.js"]
+    },
+    {
+      "output": "assets/scripts/about-content.js",
+      "scope": "global",
+      "sources": ["src/ui/about-content.js"]
+    },
+    {
+      "output": "assets/scripts/deputy-auto-backup.js",
+      "scope": "global",
+      "sources": ["src/deputy/automatic-backup.js"]
+    },
+    {
+      "output": "assets/scripts/offline-help.js",
+      "scope": "global",
+      "sources": ["src/pwa/offline-help.js"]
     }
   ]
 }

@@ -68,6 +68,10 @@ function indexedDBFixture() {
             operation.request.result =
               operation.value[keyPaths.get(operation.name)];
             break;
+          case "delete":
+            if (tx.mode !== "readwrite") throw Error("Readonly transaction");
+            data.delete(operation.key);
+            break;
           case "clear":
             if (tx.mode !== "readwrite") throw Error("Readonly transaction");
             data.clear();
@@ -118,6 +122,7 @@ function indexedDBFixture() {
           return {
             get: (key) => operation("get", key),
             getAll: () => operation("getAll"),
+            delete: (key) => operation("delete", key),
             put: (value) => operation("put", undefined, value),
             clear: () => operation("clear"),
           };
@@ -812,4 +817,37 @@ test("deputy identity guard does not merge or relabel a genuinely different sour
   independent.periods[0].id = "independent_first";
   assert.equal((await importPacket(store, independent)).status, "new");
   assert.equal((await store.list()).length, 2);
+});
+
+test("automatic file connection is device metadata, excluded from backup and academic revision", async () => {
+  const env = fixture(),
+    store = await env.api.open();
+  await importPacket(store, env.packet());
+  const before = await store.backup();
+  const config = {
+    connectionId: "first",
+    handle: { name: "local-only-marker.json" },
+    savedAt: "",
+    size: 0,
+    modified: 1,
+  };
+  assert.equal(await store.setAutomaticBackupConfig(config), true);
+  assert.equal((await store.automaticBackupConfig()).connectionId, "first");
+  const after = await store.backup();
+  assert.equal(after.revision, before.revision);
+  assert.equal(JSON.stringify(after).includes("local-only-marker"), false);
+  assert.equal(
+    await store.setAutomaticBackupConfig(
+      { ...config, connectionId: "second" },
+      "wrong",
+    ),
+    false,
+  );
+  assert.equal(await store.setAutomaticBackupConfig(null, "wrong"), false);
+  assert.equal((await store.automaticBackupConfig()).connectionId, "first");
+  await store.restore(before, after.revision);
+  assert.equal((await store.automaticBackupConfig()).connectionId, "first");
+  assert.equal(await store.setAutomaticBackupConfig(null, "first"), true);
+  assert.equal(await store.automaticBackupConfig(), null);
+  store.close();
 });

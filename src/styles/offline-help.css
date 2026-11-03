@@ -1,0 +1,253 @@
+@media screen {
+  :is(
+    :is(#modal:has(.offline-help), #deputyInstallDialog) .modal-dialog,
+    #deputyInstallDialog
+  ) {
+    width: min(100%, 600px);
+    max-height: calc(var(--app-viewport, 100dvh) - 48px);
+    border-radius: 18px;
+  }
+  :is(#modal:has(.offline-help), #deputyInstallDialog) .modal-header {
+    padding: 14px 20px;
+    background: #fff;
+  }
+  :is(#modal:has(.offline-help), #deputyInstallDialog) .modal-header h3 {
+    font-size: 16px;
+  }
+  :is(#modal:has(.offline-help), #deputyInstallDialog) .modal-body {
+    padding: 18px;
+    background: #f7f6f3;
+  }
+  :is(#modalBody, #deputyInstallBody) .offline-help {
+    display: grid;
+    gap: 12px;
+    counter-reset: offline-step;
+    min-width: 0;
+  }
+  :is(#modalBody, #deputyInstallBody) .offline-help-section {
+    padding: 18px;
+    border: 1px solid #e5e0d7;
+    border-radius: 13px;
+    background: #fff;
+    counter-increment: offline-step;
+  }
+  :is(#modalBody, #deputyInstallBody) .offline-help-section h4 {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin: 0 0 12px;
+    color: #363735;
+    font-size: 14px;
+    line-height: 1.8;
+  }
+  :is(#modalBody, #deputyInstallBody) .offline-help-section h4::before {
+    content: counter(offline-step);
+    display: grid;
+    place-items: center;
+    flex: 0 0 26px;
+    width: 26px;
+    height: 26px;
+    border: 1px solid #e5d5bd;
+    border-radius: 8px;
+    background: #f7efe2;
+    color: #79522c;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  :is(#modalBody, #deputyInstallBody) .offline-help-section p {
+    margin: 0;
+    color: #81796e;
+    font-size: 12px;
+    line-height: 2.05;
+  }
+  :is(#modalBody, #deputyInstallBody) .offline-ready-label {
+    padding: 2px 5px;
+    border-radius: 5px;
+    background: #edf5ef;
+    color: #35634c;
+    font-size: inherit;
+    font-weight: 500;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+  :is(#modalBody, #deputyInstallBody) .offline-help-storage {
+    border-color: #e8dcc9;
+    background: #fffcf6;
+  }
+  :is(#modalBody, #deputyInstallBody) .offline-help-section .offline-help-note {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e9e0d3;
+    font-size: 11px;
+    color: #795f3c;
+  }
+}
+@media screen and (max-width: 700px) {
+  #modal:has(.offline-help) {
+    padding: 10px;
+    align-items: center;
+  }
+  :is(
+    :is(#modal:has(.offline-help), #deputyInstallDialog) .modal-dialog,
+    #deputyInstallDialog
+  ) {
+    max-height: calc(var(--app-viewport, 100dvh) - 20px);
+    border-radius: 16px;
+  }
+  :is(#modal:has(.offline-help), #deputyInstallDialog) .modal-header {
+    padding: 10px 14px;
+  }
+  :is(#modal:has(.offline-help), #deputyInstallDialog) .modal-header h3 {
+    font-size: 14px;
+  }
+  :is(#modal:has(.offline-help), #deputyInstallDialog) .modal-body {
+    padding: 10px;
+  }
+  :is(#modalBody, #deputyInstallBody) .offline-help {
+    gap: 10px;
+  }
+  :is(#modalBody, #deputyInstallBody) .offline-help-section {
+    padding: 14px 12px;
+    border-radius: 11px;
+  }
+  :is(#modalBody, #deputyInstallBody) .offline-help-section h4 {
+    gap: 8px;
+    font-size: 13px;
+  }
+  :is(#modalBody, #deputyInstallBody) .offline-help-section p {
+    font-size: 11px;
+  }
+}
+
+@media screen {
+  #deputyInstallDialog {
+    padding: 0;
+    margin: auto;
+    border: 1px solid var(--workflow-line);
+    background: #fff;
+    color: var(--workflow-ink);
+    box-shadow: 0 24px 80px #17233733;
+    overflow: hidden;
+    font: inherit;
+  }
+  #deputyInstallDialog:not([open]) {
+    display: none;
+  }
+  #deputyInstallDialog[open] {
+    display: flex;
+    flex-direction: column;
+  }
+  #deputyInstallDialog::backdrop {
+    background: #0008;
+  }
+  :is(#modal:has(.offline-help), #deputyInstallDialog) .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--workflow-line);
+  }
+  :is(#modal:has(.offline-help), #deputyInstallDialog) .modal-header h3 {
+    margin: 0;
+    line-height: 1.8;
+  }
+  :is(#modal:has(.offline-help), #deputyInstallDialog) .modal-header button {
+    display: grid;
+    place-items: center;
+    flex: 0 0 44px;
+    width: 44px;
+    min-height: 44px;
+    height: 44px;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    border-radius: 12px;
+    background: #eaeef6;
+    color: #364665;
+    font-size: 24px;
+    cursor: pointer;
+  }
+  :is(#modalBody:has(.offline-help), #deputyInstallBody) {
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    font-size: 16px;
+    line-height: 1.8;
+  }
+  #deputyInstallDialog {
+    width: min(600px, calc(100vw - 40px));
+  }
+  #deputyHelpClose:focus-visible {
+    outline: 2px solid var(--workflow-accent);
+    outline-offset: 2px;
+  }
+}
+@media screen and (max-width: 700px) {
+  #deputyInstallDialog {
+    width: calc(100vw - 20px);
+  }
+}
+@media print {
+  #deputyInstallDialog {
+    display: none !important;
+  }
+}
+
+@media screen {
+  body:has(#deputyInstallDialog[open]) {
+    overflow: hidden;
+  }
+  #deputyInstallDialog {
+    max-width: none;
+    min-height: auto;
+    padding: 0;
+    font-size: 16px;
+    line-height: 1.8;
+    box-shadow: 0 24px 80px #18233d33;
+  }
+  #deputyInstallDialog .modal-body {
+    flex: 1 1 auto;
+  }
+}
+@media screen and (min-width: 701px) and (max-width: 1000px) and (pointer: coarse) {
+  #deputyInstallDialog {
+    margin-block-start: auto;
+    margin-block-end: 0;
+  }
+}
+
+@media screen {
+  body
+    :is(#modal:has(.offline-help) .modal-dialog, #deputyInstallDialog[open]) {
+    min-height: 0;
+  }
+  body #deputyInstallDialog.offline-help-dialog[open] {
+    padding: 0;
+    width: min(600px, calc(100vw - 40px));
+    box-sizing: border-box;
+  }
+}
+@media screen and (max-width: 700px) {
+  body #deputyInstallDialog.offline-help-dialog[open] {
+    width: calc(100vw - 20px);
+  }
+}
+
+@media screen {
+  :is(#modalBody, #deputyInstallBody) .offline-help-section h4::before {
+    box-sizing: content-box;
+  }
+}
+
+@media screen {
+  #deputyInstallDialog::backdrop {
+    background: rgba(15, 23, 42, 0.5);
+  }
+  :is(#modal:has(.offline-help), #deputyInstallDialog)
+    .modal-header
+    button:focus-visible {
+    outline: 3px solid #b77708;
+    outline-offset: 3px;
+  }
+}

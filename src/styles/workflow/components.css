@@ -1,10 +1,12 @@
 /* Shared visual language for the everyday workflow. */
-:root {
-  --workflow-ink: #172b4d;
-  --workflow-muted: #526580;
-  --workflow-line: #dce5ef;
-  --workflow-accent: #4f46c8;
-  --workflow-soft: #efedff;
+@media print {
+  :root {
+    --workflow-ink: #172b4d;
+    --workflow-muted: #526580;
+    --workflow-line: #dce5ef;
+    --workflow-accent: #4f46c8;
+    --workflow-soft: #efedff;
+  }
 }
 body {
   background: var(--brand-canvas, #f4f7fb);

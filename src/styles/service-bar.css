@@ -1,0 +1,271 @@
+@media screen {
+  body :is(#mobileBar, #deputyOfflineBar) {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 16px;
+    min-height: 48px;
+    padding: 7px max(20px, calc((100% - 1064px) / 2));
+    border-bottom: 1px solid #e4ded4;
+    background: #f0ede7;
+    color: #726b61;
+  }
+  body :is(#mobileBar, #deputyOfflineBar) > strong {
+    display: none;
+  }
+  body
+    :is(#mobileBar, #deputyOfflineBar)
+    :is(#mobileStatus, #deputyOfflineStatus) {
+    display: block;
+    flex: 1 1 0;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #726b61;
+    font-size: 11px;
+    line-height: 1.8;
+    overflow-wrap: anywhere;
+    direction: rtl;
+    text-align: start;
+  }
+  :is(#mobileStatus, #deputyOfflineStatus)::before {
+    content: "";
+    display: inline-block;
+    margin-inline-end: 8px;
+    vertical-align: middle;
+    width: 7px;
+    height: 7px;
+    flex: 0 0 7px;
+    border-radius: 50%;
+    background: #bb8a3d;
+    box-shadow: 0 0 0 3px #bb8a3d12;
+  }
+  body
+    :is(#mobileBar, #deputyOfflineBar)[data-offline-ready="true"]
+    :is(#mobileStatus, #deputyOfflineStatus)::before {
+    background: #418368;
+    box-shadow: 0 0 0 3px #41836812;
+  }
+  body
+    :is(#mobileBar, #deputyOfflineBar)[data-update-error="true"]
+    :is(#mobileStatus, #deputyOfflineStatus)::before {
+    background: #b95145;
+    box-shadow: 0 0 0 3px #b9514512;
+  }
+  body :is(#mobileBar, #deputyOfflineBar) .app-service-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 0 0 auto;
+    gap: 6px;
+    min-width: 0;
+  }
+  body :is(#mobileBar, #deputyOfflineBar) button:not([hidden]) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 36px;
+    min-width: 0;
+    margin: 0;
+    padding: 7px 11px;
+    border: 1px solid #ddd3c5;
+    border-radius: 9px;
+    background: #fffaf4;
+    color: #79522c;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.7;
+    box-shadow: none;
+  }
+  body :is(#mobileBar, #deputyOfflineBar) button svg {
+    display: block;
+    flex: 0 0 16px;
+    width: 16px;
+    height: 16px;
+  }
+  body :is(#mobileBar, #deputyOfflineBar) :is(#mobileUpdate, #deputyUpdate) {
+    background: #79522c;
+    color: #fff;
+    border-color: #79522c;
+  }
+  body :is(#mobileBar, #deputyOfflineBar) :is(#mobileHelp, #deputyHelp) {
+    background: transparent;
+    color: #726b61;
+    border-color: transparent;
+  }
+  body :is(#mobileBar, #deputyOfflineBar) button:focus-visible {
+    outline: 2px solid #b77c4a;
+    outline-offset: 2px;
+  }
+  body :is(#mobileBar, #deputyOfflineBar) button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+  }
+}
+@media screen and (hover: hover) {
+  body :is(#mobileBar, #deputyOfflineBar) button:not(:disabled):hover {
+    background: #eee3d4;
+    border-color: #cdb897;
+    color: #684423;
+  }
+  body
+    :is(#mobileBar, #deputyOfflineBar)
+    :is(#mobileUpdate, #deputyUpdate):not(:disabled):hover {
+    background: #684423;
+    border-color: #684423;
+    color: #fff;
+  }
+  body :is(#mobileBar, #deputyOfflineBar) :is(#mobileHelp, #deputyHelp):hover {
+    background: #e6e0d6;
+    border-color: #ded5c7;
+  }
+}
+@media screen and (max-width: 700px) {
+  body :is(#mobileBar, #deputyOfflineBar) {
+    gap: 8px;
+    min-height: 46px;
+    padding: 8px 14px;
+  }
+  body
+    :is(#mobileBar, #deputyOfflineBar)
+    :is(#mobileStatus, #deputyOfflineStatus) {
+    flex: 1 1 auto;
+    gap: 7px;
+    font-size: 10px;
+    line-height: 1.9;
+  }
+  body :is(#mobileBar, #deputyOfflineBar) button:not([hidden]) {
+    min-height: 36px;
+    padding: 6px 8px;
+    font-size: 10px;
+    gap: 5px;
+  }
+  body
+    :is(#mobileBar, #deputyOfflineBar):has(
+      :is(#mobileInstall, #deputyInstall):not([hidden]),
+      :is(#mobileUpdate, #deputyUpdate):not([hidden])
+    ) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  body
+    :is(#mobileBar, #deputyOfflineBar):has(
+      :is(#mobileInstall, #deputyInstall):not([hidden]),
+      :is(#mobileUpdate, #deputyUpdate):not([hidden])
+    )
+    .app-service-actions {
+    width: 100%;
+  }
+  body
+    :is(#mobileBar, #deputyOfflineBar):has(
+      :is(#mobileInstall, #deputyInstall):not([hidden]),
+      :is(#mobileUpdate, #deputyUpdate):not([hidden])
+    )
+    button:not([hidden]) {
+    flex: 1 1 0;
+  }
+}
+
+@media screen and (max-width: 700px),
+  screen and (max-width: 1000px) and (pointer: coarse) {
+  body :is(#mobileBar, #deputyOfflineBar),
+  body
+    :is(#mobileBar, #deputyOfflineBar):has(
+      :is(#mobileInstall, #deputyInstall):not([hidden]),
+      :is(#mobileUpdate, #deputyUpdate):not([hidden])
+    ) {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 5px;
+    padding: 5px 8px;
+    min-height: 40px;
+  }
+  body
+    :is(#mobileBar, #deputyOfflineBar)
+    :is(#mobileStatus, #deputyOfflineStatus) {
+    display: block;
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    font-size: 10px;
+    line-height: 1.9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  body
+    :is(#mobileBar, #deputyOfflineBar)
+    :is(#mobileStatus, #deputyOfflineStatus)::before {
+    display: none;
+  }
+  body :is(#mobileBar, #deputyOfflineBar) .app-service-actions {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    width: auto !important;
+    gap: 4px;
+  }
+  body
+    :is(#mobileBar, #deputyOfflineBar)
+    .app-service-actions
+    > button:not([hidden]) {
+    flex: 0 0 auto !important;
+    width: auto;
+    min-height: 32px;
+    padding: 5px 6px;
+    box-sizing: border-box;
+    font-size: 10px;
+    white-space: nowrap;
+    line-height: 1.7;
+  }
+  body :is(#mobileBar, #deputyOfflineBar) button[hidden] {
+    display: none !important;
+  }
+  body :is(#mobileBar, #deputyOfflineBar) .app-service-actions button svg {
+    display: none;
+  }
+  body
+    :is(#mobileBar, #deputyOfflineBar):not(
+      :has(
+        :is(#mobileInstall, #deputyInstall):not([hidden]),
+        :is(#mobileUpdate, #deputyUpdate):not([hidden])
+      )
+    )
+    .app-service-actions {
+    justify-self: end;
+    width: auto;
+  }
+  body
+    :is(#mobileBar, #deputyOfflineBar):has(
+      :is(#mobileInstall, #deputyInstall):not([hidden])
+    ):has(:is(#mobileUpdate, #deputyUpdate):not([hidden]))
+    :is(#mobileHelp, #deputyHelp) {
+    grid-column: 1 / -1;
+  }
+}
+
+@media screen {
+  body
+    :is(#mobileBar, #deputyOfflineBar)
+    :is(#mobileStatus, #deputyOfflineStatus) {
+    margin: 0;
+  }
+  body :is(#mobileBar, #deputyOfflineBar) button[hidden] {
+    display: none !important;
+  }
+  body :is(#mobileBar, #deputyOfflineBar) button {
+    cursor: pointer;
+    font-family: inherit;
+  }
+}
+
+@media screen {
+  body :is(#mobileBar, #deputyOfflineBar) {
+    font-size: 11px;
+    line-height: 1.8;
+    border-color: #e4ded4;
+  }
+}

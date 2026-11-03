@@ -1,0 +1,278 @@
+@media screen {
+  #modal:has(.about-app) .modal-dialog {
+    width: min(100%, 540px);
+  }
+  :is(#modalBody, #deputyAboutBody) .about-app {
+    display: grid;
+    gap: 18px;
+    color: var(--workflow-ink);
+  }
+  :is(#modalBody, #deputyAboutBody) .about-app p {
+    margin: 0;
+    color: var(--workflow-muted);
+    font-size: 12px;
+    line-height: 2;
+  }
+  .about-hero {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    border: 1px solid #f4d7bd;
+    border-radius: 16px;
+    background: linear-gradient(125deg, #fff6e4, #fff0ec);
+  }
+  .about-mark {
+    display: grid;
+    place-items: center;
+    flex: 0 0 56px;
+    height: 56px;
+    color: #fff;
+    background: var(--workflow-accent);
+    border-radius: 16px;
+    box-shadow: 0 6px 16px #c0141b20;
+  }
+  .about-mark svg {
+    width: 30px;
+    height: 30px;
+  }
+  .about-eyebrow {
+    font-size: 11px;
+    color: #8a6454;
+  }
+  :is(#modalBody, #deputyAboutBody) .about-hero h4 {
+    margin: 3px 0 5px;
+    font-size: 27px;
+    line-height: 1.5;
+    color: #9d2426;
+  }
+  .about-features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .about-features span {
+    padding: 5px 9px;
+    border: 1px solid var(--workflow-line);
+    border-radius: 20px;
+    background: #faf9f7;
+    color: #71665a;
+    font-size: 10px;
+  }
+  .about-section {
+    padding-top: 16px;
+    border-top: 1px solid var(--workflow-line);
+    min-width: 0;
+  }
+  :is(#modalBody, #deputyAboutBody) .about-section h4 {
+    margin: 0 0 7px;
+    font-size: 14px;
+    line-height: 1.8;
+  }
+  .about-project-link {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    margin-top: 12px;
+    padding: 8px 12px;
+    border: 1px solid #f3cdcf;
+    border-radius: 10px;
+    background: var(--workflow-soft);
+    color: var(--workflow-accent);
+    text-decoration: none;
+    font-size: 13px;
+  }
+  .about-project-link:hover {
+    background: #fbe4e4;
+  }
+  .about-contact-list {
+    display: grid;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .about-contact-link {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 5px 12px;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid var(--workflow-line);
+    border-radius: 10px;
+    background: #faf9f7;
+    color: var(--workflow-ink);
+    font-size: 12px;
+    text-decoration: none;
+  }
+  .about-contact-link > span {
+    color: var(--workflow-muted);
+    font-size: 11px;
+  }
+  .about-contact-link bdi {
+    overflow-wrap: anywhere;
+    min-width: 0;
+  }
+  .about-contact-link:hover {
+    background: var(--workflow-soft);
+    border-color: #f3cdcf;
+  }
+  .about-contact-link:focus-visible {
+    outline: 2px solid var(--workflow-accent);
+    outline-offset: 3px;
+  }
+  .about-signature .about-role {
+    display: grid;
+    gap: 3px;
+    margin: 3px 0;
+  }
+  .about-project-link:focus-visible {
+    outline: 2px solid var(--workflow-accent);
+    outline-offset: 3px;
+  }
+  .about-signature {
+    display: grid;
+    gap: 5px;
+    text-align: center;
+    padding: 18px;
+    border-radius: 14px;
+    background: #f7f6f3;
+  }
+  .about-signature > span {
+    font-size: 11px;
+    color: var(--workflow-muted);
+  }
+  .about-signature > strong {
+    font-size: 20px;
+    color: #76542f;
+  }
+  .about-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  :is(#modalBody, #deputyAboutBody) .about-actions button {
+    min-height: 44px;
+    margin: 0;
+    font-size: 12px;
+    white-space: normal;
+  }
+  .about-actions > button:first-child {
+    flex: 1;
+  }
+}
+@media screen and (max-width: 400px) {
+  .about-hero {
+    gap: 10px;
+    padding: 14px;
+  }
+  .about-mark {
+    flex-basis: 42px;
+    height: 42px;
+    border-radius: 12px;
+  }
+  :is(#modalBody, #deputyAboutBody) .about-hero h4 {
+    font-size: 23px;
+  }
+}
+
+@media screen {
+  #modal:has(.about-app) .modal-dialog,
+  #deputyAboutDialog {
+    width: min(540px, calc(100vw - 32px));
+    max-width: none;
+    max-height: calc(100dvh - 32px);
+    padding: 0;
+    border: 1px solid var(--workflow-line);
+    border-radius: 18px;
+    background: #fff;
+    color: var(--workflow-ink);
+    box-shadow: 0 24px 80px #17233733;
+    overflow: hidden;
+  }
+  #deputyAboutDialog[open] {
+    display: flex;
+    flex-direction: column;
+  }
+  #deputyAboutDialog::backdrop {
+    background: #0008;
+  }
+  :is(#modal:has(.about-app), #deputyAboutDialog) .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    padding: 12px 18px;
+    gap: 12px;
+    background: #faf9f7;
+    border-bottom: 1px solid var(--workflow-line);
+  }
+  :is(#modal:has(.about-app), #deputyAboutDialog) .modal-header h3 {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.8;
+    overflow-wrap: anywhere;
+  }
+  :is(#modal:has(.about-app), #deputyAboutDialog) .modal-header button {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 12px;
+    background: #eaeef6;
+    color: #364665;
+    font-size: 24px;
+    cursor: pointer;
+  }
+  :is(#modalBody:has(.about-app), #deputyAboutBody) {
+    padding: 20px;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  :is(#modalBody, #deputyAboutBody) .about-actions button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 14px;
+    border: 1px solid var(--workflow-line);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--workflow-ink);
+    font-family: inherit;
+    font-weight: 500;
+    line-height: 1.8;
+    cursor: pointer;
+  }
+  :is(#modalBody, #deputyAboutBody) .about-actions button:hover {
+    background: var(--workflow-soft);
+  }
+  #deputyAboutDialog button:focus-visible {
+    outline: 2px solid var(--workflow-accent);
+    outline-offset: 2px;
+  }
+}
+
+@media screen {
+  :is(#modalBody, #deputyAboutBody) .about-app {
+    font-size: 16px;
+    line-height: 1.8;
+  }
+  :is(#modalBody, #deputyAboutBody) .about-app .about-actions button.ghost {
+    background: #f4f3f1;
+    color: #454649;
+  }
+  :is(#modalBody, #deputyAboutBody)
+    .about-app
+    .about-actions
+    button.ghost:hover {
+    background: #eae8e4;
+  }
+}

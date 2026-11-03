@@ -164,13 +164,58 @@ function previewPanel() {
 }
 
 function receive() {
+  const reviewing = Boolean(state.preview);
+  const step = (number, title, description, active) =>
+    '<li class="' +
+    (active ? "is-current" : "") +
+    '"><span class="ed-receive-step-number" aria-hidden="true">' +
+    number +
+    "</span><div><strong>" +
+    title +
+    "</strong><p>" +
+    description +
+    "</p></div></li>";
   return (
-    '<section class="ed-panel ed-receive-intro"><div class="ed-intro-heading">' +
+    dashboardOverview() +
+    '<section class="ed-panel ed-receive-intro" aria-labelledby="deputyReceiveTitle"><header class="ed-receive-header"><div class="ed-intro-heading">' +
     icon("upload", "ed-intro-symbol") +
-    '<div><span class="ed-eyebrow">همگام‌سازی با فایل</span><h2>دریافت اطلاعات دبیر</h2></div></div><p>فایل «ارسال به معاون» را انتخاب کنید و پس از بازبینی تأیید کنید؛ فایل جدید همان پرونده را به‌روز می‌کند و پیگیری‌ها باقی می‌مانند.</p><div class="ed-actions">' +
-    action("choose-import", "انتخاب فایل دبیر") +
-    '<input type="file" id="deputyImportFile" accept=".json,application/json" hidden></div><p class="ed-hint">فایل پشتیبان کامل دبیر و خروجی متنی گزارش، فایل تبادل معاون نیستند.</p></section>' +
-    previewPanel() +
+    '<div><span class="ed-eyebrow">ارتباط دبیر و معاون</span><h2 id="deputyReceiveTitle">دریافت اطلاعات دبیر</h2></div></div><span class="ed-receive-private">' +
+    icon("shield") +
+    "<span>بدون نیاز به اینترنت</span></span></header>" +
+    '<div class="ed-receive-layout"><div class="ed-receive-guide"><p class="ed-receive-lead">اطلاعات کلاس‌ها، هنرجویان و سوابق آموزشی را یک‌جا دریافت کنید.</p>' +
+    '<ol class="ed-receive-steps" aria-label="مراحل دریافت اطلاعات">' +
+    step(
+      "۱",
+      "انتخاب فایل",
+      "خروجی «ارسال به معاون» را از دبیر بگیرید.",
+      !reviewing,
+    ) +
+    step(
+      "۲",
+      "بازبینی اطلاعات",
+      "مدرسه، نام دبیر و تغییرات را بررسی کنید.",
+      reviewing,
+    ) +
+    step("۳", "تأیید دریافت", "اطلاعات پس از تأیید شما ثبت می‌شوند.", false) +
+    '</ol></div><div class="ed-receive-upload"><button type="button" class="ed-receive-file" data-deputy-action="choose-import" aria-describedby="deputyReceiveFileHint">' +
+    icon("folder", "ed-receive-file-symbol") +
+    "<strong>" +
+    (reviewing ? "انتخاب فایل دیگر" : "انتخاب فایل دبیر") +
+    '</strong><span>فایل خروجی «ارسال به معاون»</span><span class="ed-receive-file-cta">' +
+    icon("upload") +
+    "<span>" +
+    (reviewing ? "تغییر فایل انتخاب‌شده" : "انتخاب از دستگاه") +
+    '</span></span><span class="ed-receive-file-type"><bdi dir="ltr">JSON</bdi> · حداکثر ۳۲ مگابایت</span></button>' +
+    '<input type="file" id="deputyImportFile" accept=".json,application/json" hidden><p id="deputyReceiveFileHint" class="ed-receive-file-hint">فایل پشتیبان کامل دبیر و گزارش متنی، در این بخش قابل دریافت نیستند.</p></div></div>' +
+    '<footer class="ed-receive-assurance">' +
+    icon("check") +
+    "<p>نسخهٔ جدید، همان پرونده را به‌روز می‌کند؛ یادداشت‌های پیگیری شما حفظ می‌شوند.</p></footer></section>" +
+    previewPanel()
+  );
+}
+
+function receivedFiles() {
+  return (
     '<section class="ed-panel"><div class="ed-section-heading"><h2>پرونده‌های دریافت‌شده</h2><span class="ed-badge">' +
     fa(state.rows.length) +
     " پرونده</span></div>" +
@@ -219,35 +264,30 @@ function receive() {
           "هنوز اطلاعاتی دریافت نشده",
           "پس از دریافت فایل دبیر، پروندهٔ او اینجا نمایش داده می‌شود.",
         )) +
-    "</section>" +
-    backupPanel()
+    "</section>"
   );
 }
 
 function backupPanel() {
   return (
-    '<details id="deputyBackupPanel" class="ed-panel ed-help" ' +
-    (state.backupOpen || state.restore ? "open" : "") +
-    "><summary>" +
-    icon("shield") +
-    "<span>پشتیبان و نگهداری کارتابل</span>" +
-    icon("arrow", "ed-disclosure-icon") +
-    '</summary><p>اطلاعات فقط در مرورگر همین دستگاه ذخیره می‌شود؛ با پاک‌کردن دادهٔ مرورگر ممکن است کارتابل از بین برود. پشتیبان کارتابل شامل پرونده‌های دریافتی و یادداشت‌های معاون است.</p><div class="ed-actions ed-backup-actions">' +
-    action("backup", "دریافت پشتیبان کارتابل", "", "ed-secondary") +
-    action("choose-restore", "بازیابی پشتیبان کارتابل", "", "ed-secondary") +
-    '<input type="file" id="deputyRestoreFile" accept=".json,application/json" hidden></div>' +
+    '<div class="backup-hub"><section class="backup-manual"><h4>فایل پشتیبان شما</h4><p>یک فایل برای کل کارتابل: تمام پرونده‌های دریافت‌شده، سال‌ها و هر دو ترم موجود در آن‌ها، گزارش‌های آموزشی و یادداشت‌های پیگیری. بازیابی، همهٔ اطلاعات فعلی کارتابل را با محتوای فایل جایگزین می‌کند.</p><div class="backup-action-grid">' +
+    action("backup", "دریافت پشتیبان کامل") +
+    action("choose-restore", "بازیابی از فایل", "", "ghost") +
+    '<input type="file" id="deputyRestoreFile" accept=".json,application/json" hidden></div><p>برای انتقال یا نگهداری اطلاعات، فایل را خارج از مرورگر و در محل امن ذخیره کنید.</p></section>' +
+    automaticBackupPanel() +
     (state.safetyInfo
-      ? '<p class="ed-hint">نسخهٔ ایمنی پیش از آخرین بازیابی · ' +
+      ? '<section class="backup-safety"><h4>نسخهٔ ایمنی آخرین بازیابی</h4><p class="ed-hint">نسخهٔ ایمنی پیش از آخرین بازیابی · ' +
         esc(date(state.safetyInfo.exportedAt)) +
         "؛ برای نگهداری خارج از مرورگر، فایل آن را دریافت کنید.</p>" +
         action(
           "safety-backup",
           "دریافت نسخهٔ ایمنی آخرین بازیابی",
           "",
-          "ed-secondary",
-        )
+          "ghost",
+        ) +
+        "</section>"
       : "") +
-    '<p class="ed-hint">فایل‌ها JSON خوانا و بدون امضای دیجیتال هستند؛ هویت فرستنده را از مسیر مورد اعتماد تأیید کنید. بانک معاون مستقل است، اما جداسازی آن به معنی ورود امن یا رمزگذاری نیست. بازیابی پشتیبان کارتابل با دریافت فایل دبیر متفاوت است.</p></details>' +
+    '<details class="backup-help"><summary>دربارهٔ نگهداری اطلاعات</summary><p class="ed-hint">فایل‌ها JSON خوانا و بدون امضای دیجیتال هستند؛ هویت فرستنده را از مسیر مورد اعتماد تأیید کنید. بانک معاون مستقل است، اما جداسازی آن به معنی ورود امن یا رمزگذاری نیست. بازیابی پشتیبان کارتابل با دریافت فایل دبیر متفاوت است.</p></details>' +
     (state.restore
       ? '<section class="ed-panel ed-preview" id="deputyRestorePreview" tabindex="-1"><h2>بازبینی بازیابی کارتابل</h2><p>پشتیبان انتخاب‌شده: ' +
         fa(state.restore.value.streams.length) +
@@ -262,7 +302,8 @@ function backupPanel() {
         ) +
         action("cancel-restore", "انصراف", "", "ed-secondary") +
         "</div></section>"
-      : "")
+      : "") +
+    "</div>"
   );
 }
 
@@ -406,4 +447,69 @@ function followups() {
     "</section>" +
     followupForm()
   );
+}
+
+function automaticBackupPanel() {
+  const info = automaticBackup?.status() || {
+    supported: false,
+    connected: false,
+    busy: false,
+    message: "ذخیرهٔ خودکار در این محیط در دسترس نیست؛ پشتیبان دستی بگیرید.",
+  };
+  return (
+    '<section class="backup-automatic" id="deputyAutomaticBackup"><h3>ذخیره خودکار در یک فایل</h3><p>فایل را یک‌بار انتخاب کنید؛ هنگام باز بودن برنامه، هر ۲۰ دقیقه همان فایل با پشتیبان کامل همهٔ پرونده‌ها و پیگیری‌ها به‌روز می‌شود. هنگام بسته بودن برنامه یا تعلیق آن توسط دستگاه، ذخیره انجام نمی‌شود؛ پس از بازگشت بررسی می‌شود.</p><p id="deputyAutomaticStatus" class="ed-automatic-status" role="status" aria-live="polite">' +
+    esc(info.message) +
+    '</p><div class="row">' +
+    action(
+      "auto-choose",
+      "انتخاب فایل و فعال‌سازی",
+      !info.supported || info.busy ? "disabled" : "",
+    ) +
+    action(
+      "auto-save",
+      "ذخیره اکنون / اجازه مجدد",
+      !info.supported || !info.connected || info.busy ? "disabled" : "",
+      "ghost",
+    ) +
+    action(
+      "auto-stop",
+      "توقف اتصال فایل",
+      !info.connected || info.busy ? "disabled" : "",
+      "ghost",
+    ) +
+    '</div><p class="ed-automatic-help">در مرورگرهای فاقد مجوز نوشتن فایل، پشتیبان کامل را دستی دریافت کنید. فایل خالی، پشتیبان معتبر نیست.</p></section>'
+  );
+}
+function automaticBackupNotice() {
+  const info = automaticBackup?.status();
+  return info?.error
+    ? '<div class="ed-warning ed-automatic-warning"><span>' +
+        esc(info.message) +
+        "</span>" +
+        action(
+          "open-backups",
+          info.permission ? "اجازه مجدد / تنظیم پشتیبان" : "بررسی پشتیبان",
+          "",
+          "ed-secondary",
+        ) +
+        "</div>"
+    : "";
+}
+function updateAutomaticBackupUI() {
+  const info = automaticBackup?.status();
+  if (!info) return;
+  const status = document.getElementById("deputyAutomaticStatus");
+  if (status) status.textContent = info.message;
+  for (const [name, disabled] of [
+    ["auto-choose", !info.supported || info.busy],
+    ["auto-save", !info.supported || !info.connected || info.busy],
+    ["auto-stop", !info.connected || info.busy],
+  ]) {
+    const button = document.querySelector(
+      '[data-deputy-action="' + name + '"]',
+    );
+    if (button) button.disabled = disabled;
+  }
+  const notice = document.getElementById("deputyAutomaticNotice");
+  if (notice) notice.innerHTML = automaticBackupNotice();
 }

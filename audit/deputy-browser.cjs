@@ -571,7 +571,12 @@ async function exerciseDeputyUI(packet, ids, nextPacket) {
       input.dispatchEvent(new Event("change", { bubbles: true }));
     },
     file = async (value, inputId = "deputyImportFile", raw = false) => {
-      tab("receive");
+      if (inputId === "deputyRestoreFile") await click("open-backups");
+      else {
+        if (document.getElementById("deputyBackupDialog")?.open)
+          await click("close-backups");
+        tab("receive");
+      }
       const transfer = new DataTransfer();
       transfer.items.add(
         new File(
@@ -614,8 +619,8 @@ async function exerciseDeputyUI(packet, ids, nextPacket) {
             );
           else originalClick.call(this);
         };
-        const panel = document.querySelector(".ed-help");
-        if (panel) panel.open = true;
+        if (!document.getElementById("deputyBackupDialog")?.open)
+          await click("open-backups");
         await click(action);
         await wait(() => downloads.length === 1);
         return downloads[0];
@@ -951,6 +956,8 @@ async function exerciseDeputyUI(packet, ids, nextPacket) {
           2 &&
         exportedBackup.value.followups[0].id === note.id,
     );
+    if (document.getElementById("deputyBackupDialog")?.open)
+      await click("close-backups");
     tab("followups");
     await click("toggle-note");
     check(
@@ -1335,6 +1342,10 @@ async function run({ cdp, evaluate, cases, delay }) {
     );
     cases.push(...deputy.cases);
     if (!deputy.expected) return;
+    await evaluate(
+      'if(document.getElementById("deputyBackupDialog")?.open)document.querySelector(\'[data-deputy-action="close-backups"]\').click()',
+    );
+    await require("./deputy-auto-browser.cjs")({ cdp, evaluate, cases, delay });
     await require("./deputy-student-browser.cjs")({
       cdp,
       evaluate,
@@ -1378,6 +1389,7 @@ async function run({ cdp, evaluate, cases, delay }) {
       });
       for (const view of [
         "receive",
+        "files",
         "reports",
         "calendar",
         "followups",

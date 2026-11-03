@@ -45,6 +45,7 @@ const state = {
   noteEditorOpen: false,
 };
 let store = null;
+let automaticBackup = null;
 let host = null;
 let started = false;
 const esc = (value) =>
@@ -94,6 +95,11 @@ const icon = (name, style = "") =>
   "</span>";
 const actionIcons = Object.freeze({
   refresh: "refresh",
+  "open-backups": "shield",
+  "close-backups": "close",
+  "auto-choose": "folder",
+  "auto-save": "save",
+  "auto-stop": "close",
   "choose-import": "upload",
   "confirm-import": "check",
   "cancel-preview": "close",

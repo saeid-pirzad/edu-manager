@@ -1,0 +1,330 @@
+"use strict";
+(function (root) {
+  const INTERVAL = 20 * 60 * 1000,
+    LOCK = "EduManager.singleFile";
+  function create({ store, onChange = () => {}, canWrite = () => true }) {
+    let target = null,
+      timer = null,
+      pending = Promise.resolve(),
+      disposed = false;
+    const supported =
+      typeof root.showSaveFilePicker === "function" && !!root.navigator?.locks;
+    let view = {
+      supported,
+      connected: false,
+      active: false,
+      busy: false,
+      permission: false,
+      error: false,
+      savedAt: "",
+      name: "",
+      message: supported
+        ? "ذخیره خودکار در فایل هنوز فعال نیست."
+        : "نوشتن خودکار در فایل در این مرورگر در دسترس نیست؛ از پشتیبان دستی استفاده کنید.",
+    };
+    const emit = (values) => {
+      view = { ...view, ...values };
+      if (!disposed) onChange();
+    };
+    const pause = () => {
+      if (timer !== null) root.clearInterval(timer);
+      timer = null;
+    };
+    const status = () => Object.freeze({ ...view });
+    const fail = (error) => {
+      pause();
+      emit({
+        active: false,
+        error: true,
+        busy: false,
+        permission: ["NotAllowedError", "SecurityError"].includes(error?.name),
+        message: "فایل خودکار به‌روز نشد؛ " + (error?.message || String(error)),
+      });
+      return false;
+    };
+    const enqueue = (task) => {
+      const job = pending.then(() =>
+        root.navigator.locks.request(LOCK, () => (disposed ? false : task())),
+      );
+      pending = job.catch(() => {});
+      return job;
+    };
+    async function current(item) {
+      const saved = await store.automaticBackupConfig();
+      if (
+        disposed ||
+        target !== item ||
+        saved?.connectionId !== item?.connectionId
+      ) {
+        pause();
+        target = null;
+        emit({
+          connected: false,
+          active: false,
+          permission: false,
+          message:
+            "اتصال فایل در پنجرهٔ دیگری تغییر کرده است؛ برای ادامه دوباره فایل را انتخاب کنید.",
+        });
+        return false;
+      }
+      // Another tab may have completed a write on this same connection.
+      Object.assign(item, saved);
+      return true;
+    }
+    function schedule() {
+      pause();
+      if (disposed) return;
+      emit({ active: true, error: false, permission: false });
+      timer = root.setInterval(() => {
+        void saveDue();
+      }, 30000);
+    }
+    async function write(item) {
+      let stream;
+      try {
+        if (!canWrite() || !(await current(item))) return false;
+        if (
+          (await item.handle.queryPermission({ mode: "readwrite" })) !==
+          "granted"
+        ) {
+          pause();
+          emit({
+            active: false,
+            permission: true,
+            error: true,
+            message:
+              "مجوز فایل نیاز به تأیید دارد؛ «ذخیره اکنون / اجازه مجدد» را بزنید.",
+          });
+          return false;
+        }
+        emit({ busy: true, message: "در حال ذخیرهٔ پشتیبان کامل کارتابل…" });
+        const snapshot = await store.backup();
+        root.EduDeputyStore.validateBackup(snapshot);
+        const json = JSON.stringify(snapshot);
+        if (new Blob([json]).size > root.EduDeputyStore.maxBackupBytes)
+          throw Error("حجم پشتیبان از سقف قابل‌بازیابی بیشتر است.");
+        const file = await item.handle.getFile();
+        if (file.lastModified !== item.modified || file.size !== item.size)
+          throw Error(
+            "فایل خارج از این اتصال تغییر کرده است؛ برای جلوگیری از بازنویسی، دوباره فایل را انتخاب کنید.",
+          );
+        if (!canWrite() || !(await current(item))) return false;
+        stream = await item.handle.createWritable();
+        await stream.write(json);
+        if (disposed || !canWrite() || !(await current(item))) {
+          await stream.abort();
+          stream = null;
+          return false;
+        }
+        await stream.close();
+        stream = null;
+        const saved = await item.handle.getFile();
+        if (!saved.size)
+          throw Error("فایل پس از ذخیره خالی است؛ پشتیبان دستی بگیرید.");
+        item = {
+          ...item,
+          modified: saved.lastModified,
+          size: saved.size,
+          savedAt: snapshot.exportedAt,
+        };
+        if (!(await store.setAutomaticBackupConfig(item, target.connectionId)))
+          throw Error("اتصال فایل تغییر کرده است؛ ذخیرهٔ خودکار متوقف شد.");
+        target = item;
+        emit({
+          connected: true,
+          name: item.handle.name,
+          savedAt: item.savedAt,
+          error: false,
+          permission: false,
+          message:
+            "ذخیره شد: " +
+            item.handle.name +
+            " — " +
+            new Date(item.savedAt).toLocaleString("fa-IR"),
+        });
+        return true;
+      } catch (error) {
+        if (stream) await stream.abort().catch(() => {});
+        return fail(error);
+      } finally {
+        emit({ busy: false });
+      }
+    }
+    async function saveDue() {
+      if (disposed || !target || view.busy || !canWrite()) return false;
+      return enqueue(async () => {
+        const item = target;
+        if (!item || !(await current(item))) return false;
+        const elapsed = Date.now() - Date.parse(item.savedAt || 0);
+        if (elapsed >= 0 && elapsed < INTERVAL) return true;
+        const ok = await write(item);
+        if (ok) schedule();
+        return ok;
+      }).catch(fail);
+    }
+    async function init() {
+      if (!supported) return;
+      try {
+        target = await store.automaticBackupConfig();
+        if (!target) return;
+        emit({
+          connected: true,
+          name: target.handle.name,
+          savedAt: target.savedAt,
+        });
+        if (!target.savedAt) {
+          emit({
+            error: true,
+            message:
+              "اولین ذخیره تأیید نشده است؛ «ذخیره اکنون / اجازه مجدد» را بزنید.",
+          });
+          return;
+        }
+        if (
+          (await target.handle.queryPermission({ mode: "readwrite" })) !==
+          "granted"
+        ) {
+          emit({
+            permission: true,
+            error: true,
+            message:
+              "مجوز فایل نیاز به تأیید دارد؛ «ذخیره اکنون / اجازه مجدد» را بزنید.",
+          });
+          return;
+        }
+        emit({
+          message:
+            "ذخیرهٔ خودکار فعال است؛ آخرین ذخیره: " +
+            new Date(target.savedAt).toLocaleString("fa-IR"),
+        });
+        schedule();
+        await saveDue();
+      } catch (error) {
+        fail(error);
+      }
+    }
+    async function choose() {
+      if (!supported || view.busy || disposed) return false;
+      emit({ busy: true });
+      try {
+        // Call from the original user gesture, before any storage awaits.
+        const handle = await root.showSaveFilePicker({
+          suggestedName: "kelas-yar-deputy-backup.json",
+          excludeAcceptAllOption: true,
+          types: [
+            {
+              description: "پشتیبان کامل کارتابل معاون",
+              accept: { "application/json": [".json"] },
+            },
+          ],
+        });
+        if (!/\.json$/i.test(handle.name))
+          throw Error("فقط فایل JSON انتخاب کنید.");
+        const file = await handle.getFile();
+        if (
+          file.size &&
+          !root.confirm(
+            "محتوای فایل انتخابی با پشتیبان کامل فعلی معاون جایگزین شود؟ برای بازیابی فایل، انصراف دهید و «بازیابی از فایل» را بزنید.",
+          )
+        )
+          return false;
+        return await enqueue(async () => {
+          pause();
+          const item = {
+            connectionId: root.crypto.randomUUID(),
+            handle,
+            modified: file.lastModified,
+            size: file.size,
+            savedAt: "",
+          };
+          await store.setAutomaticBackupConfig(item);
+          target = item;
+          emit({ connected: true, name: handle.name, savedAt: "" });
+          const ok = await write(item);
+          if (ok) schedule();
+          return ok;
+        });
+      } catch (error) {
+        if (error?.name === "AbortError") return false;
+        return fail(error);
+      } finally {
+        emit({ busy: false });
+      }
+    }
+    async function save() {
+      if (!supported || !target || view.busy || disposed) return false;
+      const item = target;
+      emit({ busy: true });
+      try {
+        // Explicit permission prompts must stay in the click gesture.
+        if (
+          (await item.handle.requestPermission({ mode: "readwrite" })) !==
+          "granted"
+        ) {
+          pause();
+          emit({
+            active: false,
+            error: true,
+            permission: true,
+            message: "اجازهٔ نوشتن داده نشد؛ فایل به‌روز نشده است.",
+          });
+          return false;
+        }
+        return await enqueue(async () => {
+          const ok = await write(item);
+          if (ok) schedule();
+          return ok;
+        });
+      } catch (error) {
+        return fail(error);
+      } finally {
+        emit({ busy: false });
+      }
+    }
+    async function stop() {
+      if (!supported || view.busy || disposed) return false;
+      pause();
+      emit({ busy: true });
+      try {
+        return await enqueue(async () => {
+          const changed = await store.setAutomaticBackupConfig(
+            null,
+            target?.connectionId || null,
+          );
+          target = null;
+          emit({
+            connected: false,
+            active: false,
+            error: false,
+            permission: false,
+            name: "",
+            savedAt: "",
+            message: changed
+              ? "اتصال متوقف شد؛ فایل موجود حذف نشده است."
+              : "اتصال فایل در پنجرهٔ دیگری تغییر کرده است.",
+          });
+          return changed;
+        });
+      } catch (error) {
+        return fail(error);
+      } finally {
+        emit({ busy: false });
+      }
+    }
+    async function dispose() {
+      disposed = true;
+      pause();
+      await pending;
+    }
+    return Object.freeze({
+      init,
+      choose,
+      save,
+      stop,
+      saveDue,
+      status,
+      dispose,
+    });
+  }
+  root.EduDeputyAutoBackup = Object.freeze({ create, interval: INTERVAL });
+})(globalThis);

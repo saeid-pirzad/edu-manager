@@ -5,12 +5,38 @@ async function click(event) {
   if (!target || !host.contains(target) || state.busy || target.disabled)
     return;
   if (target.dataset.deputyTab) {
+    if (
+      !["receive", "files", "reports", "followups"].includes(
+        target.dataset.deputyTab,
+      )
+    )
+      return;
     state.tab = target.dataset.deputyTab;
     render(target.id || "");
     return;
   }
   const name = target.dataset.deputyAction;
-  if (name === "calendar-clear") {
+  if (["auto-choose", "auto-save", "auto-stop"].includes(name)) {
+    if (!automaticBackup) return;
+    await automaticBackup[
+      { "auto-choose": "choose", "auto-save": "save", "auto-stop": "stop" }[
+        name
+      ]
+    ]();
+  } else if (name === "about") {
+    const dialog = document.getElementById("deputyAboutDialog");
+    if (dialog && !dialog.open) {
+      document.getElementById("deputyAboutBody").innerHTML =
+        root.EduAbout.html();
+      dialog.showModal();
+      document.getElementById("deputyAboutBody").scrollTop = 0;
+    }
+  } else if (name === "open-backups") {
+    state.backupOpen = true;
+    render();
+  } else if (name === "close-backups") {
+    closeBackups();
+  } else if (name === "calendar-clear") {
     if (!["from", "to"].includes(target.dataset.field)) return;
     root.closeShamsiCalendar(false);
     setReportDate(target.dataset.field, "");

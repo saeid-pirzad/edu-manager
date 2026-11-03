@@ -9,7 +9,7 @@
   background: var(--brand-canvas, #f7f6f4);
   color: var(--ed-ink);
   direction: rtl;
-  font-family: "IRANSans", Tahoma, sans-serif;
+  font-family: "IRANSans", Tahoma, Arial, sans-serif;
   font-size: 14px;
   line-height: 1.8;
 }
@@ -19,7 +19,7 @@
   box-sizing: border-box;
 }
 .ed-deputy-page .deputy-app {
-  max-width: 1240px;
+  max-width: 1120px;
   margin-inline: auto;
   padding: 16px;
   overflow-wrap: anywhere;

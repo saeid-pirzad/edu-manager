@@ -1,0 +1,22 @@
+/* Shared visual identity for teacher and deputy applications. */
+@media screen {
+  :root {
+    /* Reactium reference: Mellat red / orange / warm charcoal. */
+    --brand-red: #ed1c24;
+    --brand-orange: #fcaf17;
+    --brand-charcoal: #58595b;
+    --brand-canvas: #f7f6f4;
+    --brand-hover: #921019;
+    --workflow-accent: #c0141b;
+    --workflow-soft: #fef0f0;
+    --workflow-ink: #2d3440;
+    --workflow-muted: #636466;
+    --workflow-line: #e4e2df;
+    --ui-primary: var(--workflow-accent);
+    --ui-ink: var(--workflow-ink);
+    --ui-muted: var(--workflow-muted);
+    --ui-line: var(--workflow-line);
+    --touch-teal: #0d7166;
+    --touch-amber: #875800;
+  }
+}

@@ -1,0 +1,203 @@
+/* One welcome banner design for both applications. */
+@media screen {
+  :is(#app, #deputyApp) .workflow-welcome.schools-welcome {
+    display: grid;
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    grid-template-columns: 68px minmax(0, 1fr);
+    align-items: center;
+    gap: 22px;
+    min-height: 174px;
+    margin-block: 10px 24px;
+    padding: 32px;
+    border: 1px solid #f1d3c1;
+    border-radius: 22px;
+    background:
+      radial-gradient(ellipse at 12% 0%, #ffd69d85, transparent 50%),
+      linear-gradient(110deg, #fff3d9, #ffe6df 55%, #fff4ed);
+    box-shadow: 0 8px 24px #ba603510;
+  }
+  :is(#app, #deputyApp) .workflow-welcome.schools-welcome::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset-inline-end: -45px;
+    top: -90px;
+    width: 250px;
+    height: 250px;
+    border: 34px solid #ffffff50;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  :is(#app, #deputyApp) .workflow-welcome.schools-welcome::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset-inline-end: 110px;
+    bottom: -115px;
+    width: 190px;
+    height: 190px;
+    border: 1px solid #d9795533;
+    border-radius: 38px;
+    background: #ffffff25;
+    transform: rotate(32deg);
+    pointer-events: none;
+  }
+  :is(#app, #deputyApp) .schools-welcome-icon {
+    display: grid;
+    place-items: center;
+    position: relative;
+    width: 68px;
+    height: 68px;
+    border: 1px solid #ffffff80;
+    border-radius: 20px;
+    background: linear-gradient(145deg, #e66b51, #be2938);
+    color: #fffaf4;
+    box-shadow:
+      0 8px 18px #b9343526,
+      inset 0 1px 0 #ffffff40;
+    transform: rotate(-6deg);
+  }
+  :is(#app, #deputyApp) .schools-welcome-icon svg {
+    display: block;
+    width: 34px;
+    height: 34px;
+  }
+  :is(#app, #deputyApp) .schools-welcome-copy {
+    position: relative;
+    display: grid;
+    gap: 10px;
+    min-width: 0;
+  }
+  :is(#app, #deputyApp) .workflow-welcome.schools-welcome .schools-about {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: end;
+    width: auto;
+    min-height: 44px;
+    margin: 0;
+    padding: 8px 14px;
+    gap: 8px;
+    border: 1px solid #e5bca5;
+    border-radius: 12px;
+    background: #fffaf3;
+    color: #8b3934;
+    box-shadow: 0 3px 10px #a6522910;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.8;
+    white-space: nowrap;
+  }
+  :is(#app, #deputyApp) .workflow-welcome.schools-welcome .schools-about svg {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+  }
+  :is(#app, #deputyApp) .workflow-welcome.schools-welcome .schools-about:hover {
+    background: #fff;
+    border-color: #bf7760;
+    color: #9d2426;
+  }
+  :is(#app, #deputyApp)
+    .workflow-welcome.schools-welcome
+    .schools-about:focus-visible {
+    outline: 2px solid #a83e36;
+    outline-offset: 3px;
+  }
+  :is(#app, #deputyApp) .workflow-welcome.schools-welcome h2 {
+    margin: 0;
+    color: #8b2731;
+    font-size: 30px;
+    line-height: 1.6;
+  }
+  :is(#app, #deputyApp) .workflow-welcome.schools-welcome p {
+    max-width: 580px;
+    margin: 0;
+    color: #805c51;
+    font-size: 13px;
+    line-height: 1.95;
+  }
+}
+@media screen and (max-width: 700px) {
+  :is(#app, #deputyApp) .workflow-welcome.schools-welcome {
+    grid-template-columns: 48px minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+    min-height: 158px;
+    padding: 26px 16px;
+    border-radius: 18px;
+    margin-block: 8px 20px;
+  }
+  :is(#app, #deputyApp) .schools-welcome-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 15px;
+    margin: 0;
+  }
+  :is(#app, #deputyApp) .workflow-welcome.schools-welcome::before {
+    width: 170px;
+    height: 170px;
+    border-width: 24px;
+    top: -95px;
+    inset-inline-end: -65px;
+  }
+  :is(#app, #deputyApp) .workflow-welcome.schools-welcome::after {
+    width: 130px;
+    height: 130px;
+    inset-inline-end: 35px;
+    bottom: -100px;
+  }
+  :is(#app, #deputyApp) .schools-welcome-icon svg {
+    width: 23px;
+    height: 23px;
+  }
+  :is(#app, #deputyApp) .schools-welcome-copy {
+    gap: 5px;
+  }
+  :is(#app, #deputyApp) .workflow-welcome.schools-welcome h2 {
+    font-size: 22px;
+  }
+  :is(#app, #deputyApp) .workflow-welcome.schools-welcome p {
+    font-size: 12px;
+  }
+}
+
+@media screen {
+  :is(#app, #deputyApp) .schools-welcome-footer {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 16px;
+    min-width: 0;
+  }
+  :is(#app, #deputyApp) .schools-period-context {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    color: #805c51;
+    font-size: 11px;
+    line-height: 1.9;
+  }
+  :is(#app, #deputyApp) .schools-period-context > span {
+    white-space: nowrap;
+  }
+  :is(#app, #deputyApp) .schools-period-context bdi {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  :is(#app, #deputyApp) .schools-welcome-footer .schools-about {
+    margin-inline-start: auto;
+  }
+}
+
+:is(#app, #deputyApp) .workflow-welcome.schools-welcome .schools-about {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
