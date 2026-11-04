@@ -99,6 +99,39 @@ function preservePeriodicAppearance(source, copy) {
   copy.style.setProperty("break-inside", "auto", "important");
 }
 
+function prepareKarnamehPrint(copy) {
+  const originalHeader = copy.querySelector(".karnameh-report-heading");
+  if (!originalHeader) return;
+  const name = originalHeader.querySelector("h3")?.textContent || "",
+    code = copy.dataset.karnamehCode || "—",
+    archived = !!copy.querySelector(".karnameh-archived-tag"),
+    context = [
+      ["مدرسه", copy.dataset.karnamehSchool],
+      ["کلاس", copy.dataset.karnamehClass],
+      ["سال تحصیلی", copy.dataset.karnamehYear],
+    ],
+    header = document.createElement("header");
+  header.className = "karnameh-print-header";
+  header.innerHTML =
+    '<div class="karnameh-print-identity"><span class="karnameh-print-kind">کارنامهٔ تحصیلی</span><h2>' +
+    esc(name) +
+    "</h2><p>کد هنرجو: <bdi>" +
+    esc(code) +
+    "</bdi>" +
+    (archived ? ' <span class="karnameh-print-archive">بایگانی</span>' : "") +
+    '</p></div><dl class="karnameh-print-context">' +
+    context
+      .filter(([, value]) => value)
+      .map(
+        ([label, value]) =>
+          "<div><dt>" + esc(label) + "</dt><dd>" + esc(value) + "</dd></div>",
+      )
+      .join("") +
+    "</dl>";
+  originalHeader.replaceWith(header);
+  copy.querySelector(".karnameh-student-meta")?.remove();
+}
+
 function preparePrint(button) {
   printAuthorization = null;
   document.getElementById("printRoot")?.remove();
@@ -123,7 +156,9 @@ function preparePrint(button) {
   const periodic =
     source.matches(".periodic-document") ||
     !!source.querySelector(".periodic-document");
+  const karnameh = source.matches(".karnameh-student-sheet");
   if (periodic) preservePeriodicAppearance(source, copy);
+  if (karnameh) prepareKarnamehPrint(copy);
   // Attendance follow-up is a screen disclosure, never a print content filter.
   copy
     .querySelectorAll(
@@ -156,13 +191,15 @@ function preparePrint(button) {
   });
   const root = document.createElement("div");
   root.id = "printRoot";
-  root.innerHTML = periodic
-    ? ""
-    : "<header><h1>گزارش مدرسه</h1><p>" +
-      esc(workspace.year + " / " + workspace.term) +
-      " · " +
-      esc(new Date().toLocaleString("fa-IR")) +
-      "</p></header>";
+  if (karnameh) root.className = "karnameh-print-root";
+  root.innerHTML =
+    periodic || karnameh
+      ? ""
+      : "<header><h1>گزارش مدرسه</h1><p>" +
+        esc(workspace.year + " / " + workspace.term) +
+        " · " +
+        esc(new Date().toLocaleString("fa-IR")) +
+        "</p></header>";
   root.append(copy);
   document.body.append(root);
   const columns = Math.max(
@@ -188,6 +225,7 @@ function preparePrint(button) {
 async function printReport(button, { context, validate } = {}) {
   try {
     const expected = context || captureWorkspaceContext();
+    await document.fonts?.ready;
     await flushDrafts({ strict: true });
     await writer.catch(() => {});
     if (!fileMode) await assertReportSnapshot(expected);

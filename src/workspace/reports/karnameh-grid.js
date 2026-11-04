@@ -387,6 +387,18 @@ function individualKarnameh(c, options = {}) {
   return (
     '<article class="card report-document grade-report karnameh-student-sheet" data-student-id="' +
     esc(student.id) +
+    '" data-karnameh-school="' +
+    esc(options.schoolName || "") +
+    '" data-karnameh-class="' +
+    esc(c.name || "") +
+    '" data-karnameh-year="' +
+    esc(karnamehSheetNumber(workspace.year || "")) +
+    '" data-karnameh-code="' +
+    esc(
+      student.code == null || student.code === ""
+        ? "—"
+        : karnamehSheetNumber(student.code),
+    ) +
     '"><header class="karnameh-report-heading"><div><span class="karnameh-report-kind">کارنامهٔ فردی سال تحصیلی</span><h3>' +
     esc(student.name) +
     "</h3><p>" +
