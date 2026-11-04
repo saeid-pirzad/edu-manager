@@ -1266,7 +1266,7 @@ async function commitRecords(
   return true;
 }
 
-function saveDBV24(scope = {}) {
+function saveDBV24(scope = {}, { feedbackScope = captureSaveFeedback() } = {}) {
   if (periodLoading)
     return Promise.reject(
       Error("ترم در حال خواندن است؛ پس از پایان جابه‌جایی دوباره تلاش کنید."),
@@ -1295,7 +1295,7 @@ function saveDBV24(scope = {}) {
     !resetBusy &&
     !connectionRetired;
   busy++;
-  paintStatus();
+  paintStatus(feedbackScope);
   const operation = writer
     .catch(() => {})
     .then(async () => {
@@ -1317,7 +1317,7 @@ function saveDBV24(scope = {}) {
       if (!isCurrentTarget()) return;
       storageBlocked = false;
       storageProblem = "";
-      setStatus("تغییرات ذخیره شد.", "saved");
+      setStatus("تغییرات ذخیره شد.", "saved", feedbackScope);
       scheduleSingleFile();
     })
     .catch(async (error) => {
@@ -1330,7 +1330,7 @@ function saveDBV24(scope = {}) {
       // Invalidate every request queued against the in-memory data that was rolled back.
       writeFailureGeneration++;
       if (isCurrentTarget()) {
-        setStatus("تغییر ذخیره نشد: " + error.message, "error");
+        setStatus("تغییر ذخیره نشد: " + error.message, "error", feedbackScope);
         render();
       }
       throw error;
@@ -1974,18 +1974,82 @@ async function bootstrapV24() {
   }
 }
 // Source: src/workspace/ui/save-status.js
-function setStatus(message, type = "saved") {
-  status = { message, type };
+// Feedback stays with the editor that started the write, including after a re-render.
+let pendingModalSaveScope = null;
+function modalSaveFeedbackTarget() {
+  const body = document.querySelector?.("#modal:not(.hidden) #modalBody");
+  if (!body) return null;
+  const session = body.querySelector(".session-workspace");
+  const input = body.querySelector("[data-grade]");
+  if (!session && !input) return null;
+  const scope = [
+    typeof installationToken === "undefined" ? "" : installationToken,
+    typeof workspace === "undefined" ? "" : workspace?.id,
+  ];
+  if (session)
+    scope.push(
+      "session",
+      session.dataset.sessionId ||
+        (typeof currentSessionId === "undefined" ? "" : currentSessionId),
+    );
+  else
+    scope.push(
+      "grades",
+      input.dataset.assessmentContext || "",
+      input.dataset.class,
+      input.dataset.lesson,
+    );
+  return {
+    scope: JSON.stringify(scope),
+    host: session || input.closest(".gradebook") || body,
+  };
+}
+function captureSaveFeedback() {
+  return modalSaveFeedbackTarget()?.scope || null;
+}
+function paintModalSaveFeedback() {
+  const target = modalSaveFeedbackTarget();
+  if (!target) return;
+  let notice = target.host.querySelector("[data-modal-save-feedback]");
+  const pending = busy > 0 && pendingModalSaveScope === target.scope;
+  const matching = status.feedbackScope === target.scope;
+  if (!notice && !pending && !matching) return;
+  if (!notice) {
+    notice = document.createElement("p");
+    notice.dataset.modalSaveFeedback = "";
+    notice.setAttribute("role", "status");
+    notice.setAttribute("aria-live", "polite");
+    const heading = target.host.querySelector(
+      ".session-context,.gradebook-heading",
+    );
+    if (heading) heading.after(notice);
+    else target.host.prepend(notice);
+  }
+  notice.classList.add("modal-save-feedback", "no-print");
+  notice.setAttribute("aria-atomic", "true");
+  notice.textContent = pending
+    ? "در حال ذخیره…"
+    : matching
+      ? status.message
+      : "";
+  notice.dataset.state = pending ? "pending" : matching ? status.type : "idle";
+  notice.hidden = !notice.textContent;
+}
+function setStatus(message, type = "saved", feedbackScope = null) {
+  status = { message, type, feedbackScope };
   paintStatus();
 }
 
-function paintStatus() {
+function paintStatus(feedbackScope) {
+  if (arguments.length) pendingModalSaveScope = feedbackScope;
   const el = document.getElementById("saveStatus");
   if (el) {
     el.textContent = busy ? "در حال ذخیره…" : status.message;
     el.dataset.state = busy ? "pending" : status.type;
     el.hidden = !busy && (status.type === "saved" || !status.message);
   }
+  paintModalSaveFeedback();
+  if (!busy) pendingModalSaveScope = null;
   syncControlLocks();
 }
 // Source: src/workspace/drafts/persistence.js
@@ -2342,6 +2406,7 @@ function gradeInput(input) {
   setStatus(
     parsed.ok ? "ویرایش در انتظار ذخیره است." : parsed.message,
     parsed.ok ? "pending" : "error",
+    captureSaveFeedback(),
   );
   clearTimeout(draftTimer);
   if (parsed.ok)
@@ -2387,6 +2452,7 @@ function findClass(id) {
 }
 // Source: src/workspace/drafts/flush.js
 async function flushDrafts({ strict = false } = {}) {
+  const feedbackScope = captureSaveFeedback();
   if (resetBusy || connectionRetired)
     throw Error("ثبت هنگام پاک‌سازی یا تغییر بانک متوقف است.");
   await assessmentContext.flush({ strict });
@@ -2475,16 +2541,21 @@ async function flushDrafts({ strict = false } = {}) {
           target[item.field] = parsed.value;
         }
       }
-      await saveDBV24({ classId, action: "ثبت نمره (" + c.name + ")" });
+      await saveDBV24(
+        { classId, action: "ثبت نمره (" + c.name + ")" },
+        { feedbackScope },
+      );
       for (const [key, item] of items)
         if (drafts.get(key) === item) drafts.delete(key);
       await storeDrafts();
     }
-    if (!drafts.size) setStatus("همه نمرات ذخیره شدند.", "saved");
+    if (!drafts.size)
+      setStatus("همه نمرات ذخیره شدند.", "saved", feedbackScope);
     else
       setStatus(
         "برخی ورودی‌ها هنوز ذخیره نشده‌اند؛ پیام کنار کادر را بررسی کنید.",
         "error",
+        feedbackScope,
       );
     refreshGradeResults();
     if (
@@ -2508,6 +2579,7 @@ async function flushDrafts({ strict = false } = {}) {
       setStatus(
         "نمرات ذخیره نشدند؛ پیش‌نویس محفوظ است. " + error.message,
         "error",
+        feedbackScope,
       );
       render();
       throw error;
@@ -2570,6 +2642,8 @@ function gradeCell(
     esc(unitId) +
     '" data-field="' +
     esc(field) +
+    '" aria-invalid="' +
+    (draft?.error ? "true" : "false") +
     '" value="' +
     esc(shown) +
     '" placeholder="—" aria-label="' +
@@ -2586,7 +2660,15 @@ function gradeCell(
                 ? "مستمر"
                 : "پایانی"),
     ) +
-    '"><button type="button" class="ghost grade-clear no-print" data-clear-grade aria-label="پاک‌کردن نمره" title="پاک‌کردن نمره">×</button><small class="grade-note" aria-live="polite">' +
+    '"><button type="button" class="ghost grade-clear no-print" data-clear-grade aria-label="پاک‌کردن نمره" title="پاک‌کردن نمره">×</button><small class="grade-note" aria-live="polite" data-state="' +
+    (draft
+      ? draft.error
+        ? "error"
+        : "pending"
+      : String(shown).trim() !== ""
+        ? "saved"
+        : "idle") +
+    '">' +
     esc(draft ? draft.error || "در انتظار ذخیره" : "") +
     "</small></div>"
   );
@@ -3693,6 +3775,7 @@ const assessmentContext = (() => {
     setStatus(
       parsed.ok ? "نمرهٔ این مرحله در انتظار ذخیره است." : parsed.message,
       parsed.ok ? "pending" : "error",
+      captureSaveFeedback(),
     );
   }
   function clear(input) {
@@ -3839,6 +3922,7 @@ const assessmentContext = (() => {
     return snapshot;
   }
   async function flush({ strict = false } = {}) {
+    const feedbackScope = captureSaveFeedback();
     if (flushingAssessment) {
       await flushingAssessment;
       if (strict && selected?.entries.size)
@@ -3863,7 +3947,7 @@ const assessmentContext = (() => {
     if (!entries.length) return;
     check(context, { write: true });
     busy++;
-    paintStatus();
+    paintStatus(feedbackScope);
     const operation = writer
       .catch(() => {})
       .then(() => commit(context, entries));
@@ -3891,6 +3975,7 @@ const assessmentContext = (() => {
               ? "برخی ورودی‌های مرحله هنوز کامل نیستند."
               : "نمرات این مرحله ذخیره شدند.",
             context.entries.size ? "pending" : "saved",
+            feedbackScope,
           );
           refreshGradeResults();
         }
@@ -3908,6 +3993,7 @@ const assessmentContext = (() => {
           setStatus(
             "نمرات این مرحله ذخیره نشدند؛ پیش‌نویس محفوظ است. " + error.message,
             "error",
+            feedbackScope,
           );
           apply();
         }
@@ -4272,6 +4358,7 @@ function refreshGradeResults() {
     }
     const note = input.parentElement.querySelector(".grade-note"),
       item = drafts.get(inputKey(contextFromInput(input)));
+    input.setAttribute("aria-invalid", item?.error ? "true" : "false");
     if (note) {
       const filled = input.value.trim() !== "";
       note.textContent = item
@@ -4647,9 +4734,15 @@ function sessionRoster(c, x) {
 function preserveSessionAction(id) {
   assertEntityWritable();
   const origin = workspace.id,
+    sourceData = db,
+    sourceInstallation =
+      typeof installationToken === "undefined" ? "" : installationToken,
     sourceConnection = connection;
   return () =>
+    db === sourceData &&
     workspace.id === origin &&
+    (typeof installationToken === "undefined" ? "" : installationToken) ===
+      sourceInstallation &&
     connection === sourceConnection &&
     currentSessionId === id &&
     !periodLoading &&
@@ -4714,6 +4807,8 @@ async function toggleAttendanceV24(button, status) {
       }
     }
   }
+  if (isCurrent() && typeof refreshSessionAttendanceProgress === "function")
+    refreshSessionAttendanceProgress();
   return true;
 }
 
@@ -4930,7 +5025,7 @@ async function changeSessionDateV24(id) {
   if (isCurrent()) openSessionModal(getSessionById(id));
 }
 
-async function setAllAttendanceV24(statusValue) {
+async function setAllAttendanceV24(statusValue, { onlyUnset = false } = {}) {
   const isCurrent = preserveSessionAction(currentSessionId);
   if (
     typeof statusValue !== "string" ||
@@ -4940,7 +5035,17 @@ async function setAllAttendanceV24(statusValue) {
   const x = getSessionById(currentSessionId),
     c = findClass(x?.classId);
   if (!x || !c) return;
-  for (const st of sessionRoster(c, x)) x.attendance[st.id] = statusValue;
+  let changed = false;
+  for (const st of sessionRoster(c, x)) {
+    if (
+      (onlyUnset && x.attendance[st.id]) ||
+      x.attendance[st.id] === statusValue
+    )
+      continue;
+    x.attendance[st.id] = statusValue;
+    changed = true;
+  }
+  if (!changed) return false;
   await saveDBV24({ sessionId: x.id, action: "حضور و غیاب گروهی" });
   if (isCurrent()) openSessionModal(getSessionById(x.id));
 }
@@ -5007,65 +5112,89 @@ function updateSessionUnitsV24() {
           )
           .join("")
       : "");
-  if (!pid) saveSessionUnitV24().catch(handleError);
+  return !pid ? saveSessionUnitV24() : undefined;
 }
 
+const sessionScoreForms = new WeakSet();
 async function addSessionScoreV24(e, id) {
   e.preventDefault();
-  const isCurrent = preserveSessionAction(id);
-  const x = getSessionById(id);
-  if (!x) throw Error("جلسه دیگر وجود ندارد.");
-  const c = findClass(x.classId);
-  if (!c) throw Error("کلاس جلسه دیگر وجود ندارد.");
-  const l = getLessonObj(c, x.lessonId);
-  if (!l) throw Error("درس جلسه دیگر وجود ندارد.");
-  const f = e.target,
-    type = f.type.value,
-    sid = f.studentId.value;
-  const note = f.note.value.trim();
-  if (note.length > 10000)
-    throw Error("توضیح امتیاز باید حداکثر ۱۰۰۰۰ نویسه باشد.");
-  if (
-    !Object.hasOwn(TYPE_LABELS, type) ||
-    !sessionRoster(c, x).some((st) => st.id === sid)
-  )
-    throw Error("دانش‌آموز یا نوع امتیاز نامعتبر است.");
-  let value;
-  if (type === "classGrade") {
-    const parsed = parseGrade(f.value.value);
-    if (!parsed.ok) throw Error(parsed.message);
-    value = parsed.value;
-  } else if (["mostamar", "payani"].includes(type)) {
-    if (l.gradingPolicy || l.gradeMode === "kardanesh")
-      throw Error("نمرات رسمی را در بخش نمرات درس ثبت کنید.");
-    if (!x.poudmanId || !x.unitId)
-      throw Error("ابتدا پودمان و واحد را مشخص کنید.");
-    const parsed = parseGrade(f.value.value);
-    if (!parsed.ok) throw Error(parsed.message);
-    value = parsed.value;
-    x.scores = x.scores.filter(
-      (sc) => sc.studentId !== sid || sc.type !== type,
+  const f = e.target;
+  if (sessionScoreForms.has(f)) return false;
+  sessionScoreForms.add(f);
+  try {
+    const isCurrent = preserveSessionAction(id);
+    const x = getSessionById(id);
+    if (!x) throw Error("جلسه دیگر وجود ندارد.");
+    const c = findClass(x.classId);
+    if (!c) throw Error("کلاس جلسه دیگر وجود ندارد.");
+    const l = getLessonObj(c, x.lessonId);
+    if (!l) throw Error("درس جلسه دیگر وجود ندارد.");
+    if (f.isConnected === false || currentSessionId !== id)
+      throw Error(
+        "فرم فعالیت مربوط به جلسهٔ فعلی نیست؛ جلسه را دوباره باز کنید.",
+      );
+    const submitted = Object.fromEntries(
+      ["studentId", "type", "value", "note"].map((name) => [
+        name,
+        f[name].value,
+      ]),
     );
-  } else {
-    const text = asciiDigits(f.value.value);
-    if (!/^\d+(?:\.\d{1,6})?$/.test(text))
-      throw Error("مقدار امتیاز عددی و نامنفی باشد.");
-    value = Number(text);
-    if (!Number.isFinite(value) || value > 1000)
-      throw Error("امتیاز باید صفر تا هزار باشد.");
+    const type = f.type.value,
+      sid = f.studentId.value;
+    const note = f.note.value.trim();
+    if (note.length > 10000)
+      throw Error("توضیح امتیاز باید حداکثر ۱۰۰۰۰ نویسه باشد.");
+    if (
+      !Object.hasOwn(TYPE_LABELS, type) ||
+      !sessionRoster(c, x).some((st) => st.id === sid)
+    )
+      throw Error("دانش‌آموز یا نوع امتیاز نامعتبر است.");
+    let value;
+    if (type === "classGrade") {
+      const parsed = parseGrade(f.value.value);
+      if (!parsed.ok) throw Error(parsed.message);
+      value = parsed.value;
+    } else if (["mostamar", "payani"].includes(type)) {
+      if (l.gradingPolicy || l.gradeMode === "kardanesh")
+        throw Error("نمرات رسمی را در بخش نمرات درس ثبت کنید.");
+      if (!x.poudmanId || !x.unitId)
+        throw Error("ابتدا پودمان و واحد را مشخص کنید.");
+      const parsed = parseGrade(f.value.value);
+      if (!parsed.ok) throw Error(parsed.message);
+      value = parsed.value;
+      x.scores = x.scores.filter(
+        (sc) => sc.studentId !== sid || sc.type !== type,
+      );
+    } else {
+      const text = asciiDigits(f.value.value);
+      if (!/^\d+(?:\.\d{1,6})?$/.test(text))
+        throw Error("مقدار امتیاز عددی و نامنفی باشد.");
+      value = Number(text);
+      if (!Number.isFinite(value) || value > 1000)
+        throw Error("امتیاز باید صفر تا هزار باشد.");
+    }
+    x.scores.push({
+      studentId: sid,
+      type,
+      value,
+      note,
+      recordedAt: new Date().toISOString(),
+    });
+    await saveDBV24({
+      sessionId: id,
+      action: "ثبت یا اصلاح " + TYPE_LABELS[type],
+    });
+    if (isCurrent())
+      openSessionModal(getSessionById(id), {
+        activitySaved: {
+          submitted,
+          advance: !!e.submitter?.hasAttribute("data-session-next"),
+        },
+      });
+    return true;
+  } finally {
+    sessionScoreForms.delete(f);
   }
-  x.scores.push({
-    studentId: sid,
-    type,
-    value,
-    note,
-    recordedAt: new Date().toISOString(),
-  });
-  await saveDBV24({
-    sessionId: id,
-    action: "ثبت یا اصلاح " + TYPE_LABELS[type],
-  });
-  if (isCurrent()) openSessionModal(getSessionById(id));
 }
 
 function clickMasterV24(day, period) {
@@ -5224,11 +5353,17 @@ async function openYearSession(periodId, sessionId) {
 function preserveScheduleAction() {
   assertEntityWritable();
   const origin = workspace.id,
+    sourceData = db,
     sourceConnection = connection,
+    sourceInstallation =
+      typeof installationToken === "undefined" ? "" : installationToken,
     view = state.view;
   return () =>
     workspace.id === origin &&
+    db === sourceData &&
     connection === sourceConnection &&
+    (typeof installationToken === "undefined" ? "" : installationToken) ===
+      sourceInstallation &&
     state.view === view &&
     !periodLoading &&
     !resetBusy &&
@@ -5248,82 +5383,112 @@ function validateScheduleSlot(day, period) {
 }
 
 let scheduleSessionBusy = false;
+async function openScheduledSessionV24(selection, isCurrent) {
+  const { day, period, classId, lessonId, schoolId } = selection;
+  validateScheduleSlot(day, period);
+  const date = validateAcademicSessionDate(selection.date);
+  await flushDrafts({ strict: true });
+  await writer.catch(() => {});
+  assertEntityWritable();
+  if (!isCurrent())
+    throw Error("صفحه یا انتخاب جلسه تغییر کرده است؛ دوباره تلاش کنید.");
+  const target = classId && findClassById(classId);
+  if (
+    !target ||
+    (schoolId && target.school.id !== schoolId) ||
+    !target.classObj.lessons.some((lesson) => lesson.id === lessonId)
+  )
+    throw Error("کلاس و درس مقصد معتبر نیستند.");
+  const actualDay = getDayIdxFromDate(date);
+  if (actualDay !== day)
+    throw Error(
+      `تاریخ انتخاب‌شده متعلق به ${DAYS[actualDay]} است، اما زنگ را از ${DAYS[day]} انتخاب کرده‌اید؛ تاریخ یا روز برنامه را اصلاح کنید.`,
+    );
+  let session = db.sessions.find(
+    (row) => row.date === date && row.period === period,
+  );
+  if (session && session.classId !== classId)
+    throw Error(
+      "تداخل جلسه: در این تاریخ و زنگ، جلسهٔ کلاس دیگری ثبت شده است. ابتدا تاریخ یا شمارهٔ زنگ را اصلاح کنید.",
+    );
+  if (!session) {
+    validateSessionSchedule({
+      schoolId: target.school.id,
+      classId,
+      lessonId,
+      date,
+      period,
+    });
+    session = {
+      id: uid(),
+      schoolId: target.school.id,
+      classId,
+      lessonId,
+      date,
+      period,
+      poudmanId: null,
+      unitId: null,
+      attendance: {},
+      scores: [],
+      roster: snapshotRoster(target.classObj),
+    };
+    db.sessions.push(session);
+    await saveDBV24({ sessionId: session.id, action: "ایجاد جلسه از برنامه" });
+  } else if (session.lessonId !== lessonId)
+    throw Error(
+      "تداخل جلسه: این تاریخ و زنگ برای درس دیگری ثبت شده است؛ درس یا زنگ درست را انتخاب کنید.",
+    );
+  if (isCurrent()) openSessionModal(getSessionById(session.id));
+  return true;
+}
 async function startSessionFromMasterV24(day, period) {
   if (scheduleSessionBusy) return false;
   scheduleSessionBusy = true;
   try {
-    const isCurrent = preserveScheduleAction();
-    validateScheduleSlot(day, period);
-    const dateInput = document.getElementById("sessNewDate"),
+    const isCurrent = preserveScheduleAction(),
+      dateInput = document.getElementById("sessNewDate"),
       classInput = document.getElementById("sessNewClass"),
       lessonInput = document.getElementById("sessNewLesson"),
-      date = validateAcademicSessionDate(dateInput?.value || ""),
-      classId = classInput?.value || "",
-      lessonId = lessonInput?.value || "";
-    const sameSelection = () =>
-      isCurrent() &&
-      document.getElementById("sessNewDate") === dateInput &&
-      document.getElementById("sessNewClass") === classInput &&
-      document.getElementById("sessNewLesson") === lessonInput &&
-      dateInput.value === date &&
-      classInput.value === classId &&
-      lessonInput.value === lessonId;
-    await flushDrafts({ strict: true });
-    await writer.catch(() => {});
-    assertEntityWritable();
-    if (!sameSelection())
-      throw Error("صفحه یا انتخاب جلسه تغییر کرده است؛ دوباره تلاش کنید.");
-    const target = classId && findClassById(classId);
+      selection = {
+        day,
+        period,
+        date: dateInput?.value || "",
+        classId: classInput?.value || "",
+        lessonId: lessonInput?.value || "",
+      };
+    return await openScheduledSessionV24(
+      selection,
+      () =>
+        isCurrent() &&
+        document.getElementById("sessNewDate") === dateInput &&
+        document.getElementById("sessNewClass") === classInput &&
+        document.getElementById("sessNewLesson") === lessonInput &&
+        dateInput.value === selection.date &&
+        classInput.value === selection.classId &&
+        lessonInput.value === selection.lessonId,
+    );
+  } finally {
+    scheduleSessionBusy = false;
+  }
+}
+async function startTodaySessionV24(selection) {
+  if (scheduleSessionBusy) return false;
+  scheduleSessionBusy = true;
+  try {
+    const isCurrent = preserveScheduleAction(),
+      request = { ...selection };
     if (
-      !target ||
-      !target.classObj.lessons.some((lesson) => lesson.id === lessonId)
+      ![request.schoolId, request.classId, request.lessonId].every(
+        (id) => typeof id === "string" && id.length > 0,
+      )
     )
       throw Error("کلاس و درس مقصد معتبر نیستند.");
-    const actualDay = getDayIdxFromDate(date);
-    if (actualDay !== day)
-      throw Error(
-        `تاریخ انتخاب‌شده متعلق به ${DAYS[actualDay]} است، اما زنگ را از ${DAYS[day]} انتخاب کرده‌اید؛ تاریخ یا روز برنامه را اصلاح کنید.`,
-      );
-    let session = db.sessions.find(
-      (row) => row.date === date && row.period === period,
+    if (request.date !== todayISO())
+      throw Error("تاریخ روز تغییر کرده است؛ برنامه امروز را دوباره باز کنید.");
+    return await openScheduledSessionV24(
+      request,
+      () => isCurrent() && request.date === todayISO(),
     );
-    if (session && session.classId !== classId)
-      throw Error(
-        "تداخل جلسه: در این تاریخ و زنگ، جلسهٔ کلاس دیگری ثبت شده است. ابتدا تاریخ یا شمارهٔ زنگ را اصلاح کنید.",
-      );
-    if (!session) {
-      validateSessionSchedule({
-        schoolId: target.school.id,
-        classId,
-        lessonId,
-        date,
-        period,
-      });
-      session = {
-        id: uid(),
-        schoolId: target.school.id,
-        classId,
-        lessonId,
-        date,
-        period,
-        poudmanId: null,
-        unitId: null,
-        attendance: {},
-        scores: [],
-        roster: snapshotRoster(target.classObj),
-      };
-      db.sessions.push(session);
-      await saveDBV24({
-        sessionId: session.id,
-        action: "ایجاد جلسه از برنامه",
-      });
-    } else if (session.lessonId !== lessonId) {
-      throw Error(
-        "تداخل جلسه: این تاریخ و زنگ برای درس دیگری ثبت شده است؛ درس یا زنگ درست را انتخاب کنید.",
-      );
-    }
-    if (sameSelection()) openSessionModal(getSessionById(session.id));
-    return true;
   } finally {
     scheduleSessionBusy = false;
   }
@@ -5492,7 +5657,20 @@ async function applyAcademicScheduleV24() {
 }
 // Source: src/workspace/backups/local.js
 function handleError(error) {
-  setStatus(error.message || String(error), "error");
+  const message = error?.message || String(error);
+  const feedbackScope = captureSaveFeedback();
+  if (feedbackScope) {
+    // Keep the persistence layer's explanation beside the editor that failed.
+    const detailed =
+      status.type === "error" &&
+      status.feedbackScope === feedbackScope &&
+      status.message.length > message.length &&
+      status.message.endsWith(message);
+    if (detailed) paintStatus();
+    else setStatus(message, "error", feedbackScope);
+    return;
+  }
+  setStatus(message, "error");
   const el = document.getElementById("operationError");
   if (el) el.textContent = status.message;
   else {
@@ -11721,6 +11899,7 @@ function showModalV24(title, html) {
   setTimeout(() => {
     applyDrafts();
     lockControls();
+    paintStatus();
     if (!document.getElementById("modal").classList.contains("hidden"))
       (
         modalFocusableElements().find((element) =>
@@ -13448,6 +13627,7 @@ function installRuntimeAPI() {
       saving: busy,
       authenticated: !db.settings.password || isAuthenticated,
     }),
+    startTodaySession: startTodaySessionV24,
     openAcademicYear,
     refreshYearLessonSessions,
     openYearSession,

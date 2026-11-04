@@ -250,3 +250,70 @@ test("grade cell template escapes identifiers and contains no executable handler
   assert.match(html, /data-class="class&quot;"/);
   assert.match(html, /data-clear-grade/);
 });
+
+test("rendered generic grade cells expose restored invalid and pending drafts before typing", () => {
+  const drafts = new Map();
+  const context = vm.createContext({
+    drafts,
+    inputKey: () => "key",
+    esc: String,
+  });
+  vm.runInContext(
+    fs.readFileSync(path.join(root, "src/workspace/grading/cells.js"), "utf8"),
+    context,
+  );
+  const render = () =>
+    context.gradeCell(
+      { id: "class" },
+      { id: "lesson" },
+      { id: "student", name: "Student" },
+      "m",
+    );
+  drafts.set("key", { value: "99", error: "invalid restored draft" });
+  assert.match(render(), /aria-invalid="true"/);
+  assert.match(
+    render(),
+    /class="grade-note"[^>]*data-state="error"[^>]*>invalid restored draft/,
+  );
+  drafts.set("key", { value: "0", error: "" });
+  assert.match(render(), /aria-invalid="false"/);
+  assert.match(render(), /class="grade-note"[^>]*data-state="pending"/);
+});
+test("generic grade refresh updates accessibility when a save failure is resolved", () => {
+  const drafts = new Map([["key", { value: "12", error: "failed save" }]]);
+  const note = { dataset: {} };
+  const attributes = {};
+  const input = {
+    value: "12",
+    parentElement: { querySelector: () => note },
+    setAttribute: (key, value) => {
+      attributes[key] = value;
+    },
+  };
+  const context = vm.createContext({
+    drafts,
+    inputKey: () => "key",
+    contextFromInput: () => ({}),
+    assessmentContext: { handles: () => false },
+    refreshPolicyResults() {},
+    document: {
+      querySelectorAll: (selector) =>
+        selector === "[data-grade]" ? [input] : [],
+    },
+  });
+  vm.runInContext(
+    fs.readFileSync(
+      path.join(root, "src/workspace/grading/editors.js"),
+      "utf8",
+    ),
+    context,
+  );
+  context.refreshGradeResults();
+  assert.equal(attributes["aria-invalid"], "true");
+  assert.equal(note.textContent, "failed save");
+  assert.equal(note.dataset.state, "error");
+  drafts.delete("key");
+  context.refreshGradeResults();
+  assert.equal(attributes["aria-invalid"], "false");
+  assert.equal(note.dataset.state, "saved");
+});

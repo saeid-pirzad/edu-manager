@@ -121,6 +121,7 @@ function showModalV24(title, html) {
   setTimeout(() => {
     applyDrafts();
     lockControls();
+    paintStatus();
     if (!document.getElementById("modal").classList.contains("hidden"))
       (
         modalFocusableElements().find((element) =>

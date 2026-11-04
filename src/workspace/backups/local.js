@@ -1,5 +1,18 @@
 function handleError(error) {
-  setStatus(error.message || String(error), "error");
+  const message = error?.message || String(error);
+  const feedbackScope = captureSaveFeedback();
+  if (feedbackScope) {
+    // Keep the persistence layer's explanation beside the editor that failed.
+    const detailed =
+      status.type === "error" &&
+      status.feedbackScope === feedbackScope &&
+      status.message.length > message.length &&
+      status.message.endsWith(message);
+    if (detailed) paintStatus();
+    else setStatus(message, "error", feedbackScope);
+    return;
+  }
+  setStatus(message, "error");
   const el = document.getElementById("operationError");
   if (el) el.textContent = status.message;
   else {

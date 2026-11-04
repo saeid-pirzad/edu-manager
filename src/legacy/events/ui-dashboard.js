@@ -50,3 +50,16 @@ EduLegacyEvents.register("ui-dashboard:4", function (event) {
     this.getAttribute("data-legacy-click-arg17"),
   );
 });
+
+EduLegacyEvents.register("today-agenda", function () {
+  if (this.dataset.session) return dashboardOpenSession(this.dataset.session);
+  const selection = {
+    date: this.dataset.date,
+    day: Number(this.dataset.day),
+    period: Number(this.dataset.period),
+    schoolId: this.dataset.school,
+    classId: this.dataset.class,
+    lessonId: this.dataset.lesson,
+  };
+  return runSessionFormAction(this, () => EduV24.startTodaySession(selection));
+});

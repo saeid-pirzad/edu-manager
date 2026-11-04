@@ -5,9 +5,15 @@ function sessionRoster(c, x) {
 function preserveSessionAction(id) {
   assertEntityWritable();
   const origin = workspace.id,
+    sourceData = db,
+    sourceInstallation =
+      typeof installationToken === "undefined" ? "" : installationToken,
     sourceConnection = connection;
   return () =>
+    db === sourceData &&
     workspace.id === origin &&
+    (typeof installationToken === "undefined" ? "" : installationToken) ===
+      sourceInstallation &&
     connection === sourceConnection &&
     currentSessionId === id &&
     !periodLoading &&
@@ -72,6 +78,8 @@ async function toggleAttendanceV24(button, status) {
       }
     }
   }
+  if (isCurrent() && typeof refreshSessionAttendanceProgress === "function")
+    refreshSessionAttendanceProgress();
   return true;
 }
 
@@ -288,7 +296,7 @@ async function changeSessionDateV24(id) {
   if (isCurrent()) openSessionModal(getSessionById(id));
 }
 
-async function setAllAttendanceV24(statusValue) {
+async function setAllAttendanceV24(statusValue, { onlyUnset = false } = {}) {
   const isCurrent = preserveSessionAction(currentSessionId);
   if (
     typeof statusValue !== "string" ||
@@ -298,7 +306,17 @@ async function setAllAttendanceV24(statusValue) {
   const x = getSessionById(currentSessionId),
     c = findClass(x?.classId);
   if (!x || !c) return;
-  for (const st of sessionRoster(c, x)) x.attendance[st.id] = statusValue;
+  let changed = false;
+  for (const st of sessionRoster(c, x)) {
+    if (
+      (onlyUnset && x.attendance[st.id]) ||
+      x.attendance[st.id] === statusValue
+    )
+      continue;
+    x.attendance[st.id] = statusValue;
+    changed = true;
+  }
+  if (!changed) return false;
   await saveDBV24({ sessionId: x.id, action: "حضور و غیاب گروهی" });
   if (isCurrent()) openSessionModal(getSessionById(x.id));
 }
@@ -365,65 +383,89 @@ function updateSessionUnitsV24() {
           )
           .join("")
       : "");
-  if (!pid) saveSessionUnitV24().catch(handleError);
+  return !pid ? saveSessionUnitV24() : undefined;
 }
 
+const sessionScoreForms = new WeakSet();
 async function addSessionScoreV24(e, id) {
   e.preventDefault();
-  const isCurrent = preserveSessionAction(id);
-  const x = getSessionById(id);
-  if (!x) throw Error("جلسه دیگر وجود ندارد.");
-  const c = findClass(x.classId);
-  if (!c) throw Error("کلاس جلسه دیگر وجود ندارد.");
-  const l = getLessonObj(c, x.lessonId);
-  if (!l) throw Error("درس جلسه دیگر وجود ندارد.");
-  const f = e.target,
-    type = f.type.value,
-    sid = f.studentId.value;
-  const note = f.note.value.trim();
-  if (note.length > 10000)
-    throw Error("توضیح امتیاز باید حداکثر ۱۰۰۰۰ نویسه باشد.");
-  if (
-    !Object.hasOwn(TYPE_LABELS, type) ||
-    !sessionRoster(c, x).some((st) => st.id === sid)
-  )
-    throw Error("دانش‌آموز یا نوع امتیاز نامعتبر است.");
-  let value;
-  if (type === "classGrade") {
-    const parsed = parseGrade(f.value.value);
-    if (!parsed.ok) throw Error(parsed.message);
-    value = parsed.value;
-  } else if (["mostamar", "payani"].includes(type)) {
-    if (l.gradingPolicy || l.gradeMode === "kardanesh")
-      throw Error("نمرات رسمی را در بخش نمرات درس ثبت کنید.");
-    if (!x.poudmanId || !x.unitId)
-      throw Error("ابتدا پودمان و واحد را مشخص کنید.");
-    const parsed = parseGrade(f.value.value);
-    if (!parsed.ok) throw Error(parsed.message);
-    value = parsed.value;
-    x.scores = x.scores.filter(
-      (sc) => sc.studentId !== sid || sc.type !== type,
+  const f = e.target;
+  if (sessionScoreForms.has(f)) return false;
+  sessionScoreForms.add(f);
+  try {
+    const isCurrent = preserveSessionAction(id);
+    const x = getSessionById(id);
+    if (!x) throw Error("جلسه دیگر وجود ندارد.");
+    const c = findClass(x.classId);
+    if (!c) throw Error("کلاس جلسه دیگر وجود ندارد.");
+    const l = getLessonObj(c, x.lessonId);
+    if (!l) throw Error("درس جلسه دیگر وجود ندارد.");
+    if (f.isConnected === false || currentSessionId !== id)
+      throw Error(
+        "فرم فعالیت مربوط به جلسهٔ فعلی نیست؛ جلسه را دوباره باز کنید.",
+      );
+    const submitted = Object.fromEntries(
+      ["studentId", "type", "value", "note"].map((name) => [
+        name,
+        f[name].value,
+      ]),
     );
-  } else {
-    const text = asciiDigits(f.value.value);
-    if (!/^\d+(?:\.\d{1,6})?$/.test(text))
-      throw Error("مقدار امتیاز عددی و نامنفی باشد.");
-    value = Number(text);
-    if (!Number.isFinite(value) || value > 1000)
-      throw Error("امتیاز باید صفر تا هزار باشد.");
+    const type = f.type.value,
+      sid = f.studentId.value;
+    const note = f.note.value.trim();
+    if (note.length > 10000)
+      throw Error("توضیح امتیاز باید حداکثر ۱۰۰۰۰ نویسه باشد.");
+    if (
+      !Object.hasOwn(TYPE_LABELS, type) ||
+      !sessionRoster(c, x).some((st) => st.id === sid)
+    )
+      throw Error("دانش‌آموز یا نوع امتیاز نامعتبر است.");
+    let value;
+    if (type === "classGrade") {
+      const parsed = parseGrade(f.value.value);
+      if (!parsed.ok) throw Error(parsed.message);
+      value = parsed.value;
+    } else if (["mostamar", "payani"].includes(type)) {
+      if (l.gradingPolicy || l.gradeMode === "kardanesh")
+        throw Error("نمرات رسمی را در بخش نمرات درس ثبت کنید.");
+      if (!x.poudmanId || !x.unitId)
+        throw Error("ابتدا پودمان و واحد را مشخص کنید.");
+      const parsed = parseGrade(f.value.value);
+      if (!parsed.ok) throw Error(parsed.message);
+      value = parsed.value;
+      x.scores = x.scores.filter(
+        (sc) => sc.studentId !== sid || sc.type !== type,
+      );
+    } else {
+      const text = asciiDigits(f.value.value);
+      if (!/^\d+(?:\.\d{1,6})?$/.test(text))
+        throw Error("مقدار امتیاز عددی و نامنفی باشد.");
+      value = Number(text);
+      if (!Number.isFinite(value) || value > 1000)
+        throw Error("امتیاز باید صفر تا هزار باشد.");
+    }
+    x.scores.push({
+      studentId: sid,
+      type,
+      value,
+      note,
+      recordedAt: new Date().toISOString(),
+    });
+    await saveDBV24({
+      sessionId: id,
+      action: "ثبت یا اصلاح " + TYPE_LABELS[type],
+    });
+    if (isCurrent())
+      openSessionModal(getSessionById(id), {
+        activitySaved: {
+          submitted,
+          advance: !!e.submitter?.hasAttribute("data-session-next"),
+        },
+      });
+    return true;
+  } finally {
+    sessionScoreForms.delete(f);
   }
-  x.scores.push({
-    studentId: sid,
-    type,
-    value,
-    note,
-    recordedAt: new Date().toISOString(),
-  });
-  await saveDBV24({
-    sessionId: id,
-    action: "ثبت یا اصلاح " + TYPE_LABELS[type],
-  });
-  if (isCurrent()) openSessionModal(getSessionById(id));
 }
 
 function clickMasterV24(day, period) {

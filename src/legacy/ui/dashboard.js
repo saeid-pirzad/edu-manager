@@ -355,3 +355,119 @@ function renderDashboardWork() {
         "</button></article>";
   return html + "</section></section>";
 }
+
+// The home shortcut reads only today's schedule; no grade calculations run here.
+function renderTodayAgenda() {
+  if (!db.schools.some((school) => school.classes.length)) return "";
+  const date = todayISO(),
+    day = getDayIdxFromDate(date),
+    scope = globalThis.EduV24?.getReportContext?.(),
+    year = scope?.year || db.settings.academicYear,
+    inYear = EduAcademicYear.contains(year, date),
+    closed = !!scope?.closed,
+    planned = [];
+  if (inYear && (db.activeDays ?? [0, 1, 2, 3, 4, 5]).includes(day))
+    for (let period = 0; period < (db.periods ?? 6); period++) {
+      const entry = getMasterEntry(day, period, date);
+      if (!entry) continue;
+      const school = db.schools.find((item) => item.id === entry.schoolId),
+        classroom = school?.classes.find((item) => item.id === entry.classId),
+        lesson = classroom?.lessons.find((item) => item.id === entry.lessonId);
+      if (!lesson) continue;
+      const session = db.sessions.find(
+        (item) =>
+          item.schoolId === school.id &&
+          item.classId === classroom.id &&
+          item.lessonId === lesson.id &&
+          item.date === date &&
+          item.period === period,
+      );
+      planned.push({ period, school, classroom, lesson, session });
+    }
+  let html =
+    '<section class="card today-agenda no-print" aria-labelledby="todayAgendaTitle">' +
+    '<header class="today-agenda-heading"><span class="today-agenda-icon" aria-hidden="true">' +
+    EduIcons.html("calendar") +
+    '</span><div><h2 id="todayAgendaTitle">برنامه امروز</h2><p>' +
+    esc(faDate(date)) +
+    '</p></div><button type="button" class="ghost" data-legacy-click="ui-dashboard:3">' +
+    EduIcons.html("calendar-week") +
+    "<span>برنامه هفتگی</span></button></header>";
+  if (!planned.length)
+    return (
+      html +
+      '<p class="today-agenda-empty">' +
+      (inYear
+        ? "برای امروز برنامه‌ای ثبت نشده است."
+        : "امروز خارج از سال تحصیلی فعال است؛ برای ثبت سوابق، وارد درس شوید.") +
+      "</p></section>"
+    );
+  html += '<div class="today-agenda-list">';
+  for (const { period, school, classroom, lesson, session } of planned) {
+    const unknown = session
+      ? (session.roster || classroom.students).filter(
+          (student) =>
+            !/^(present|absent|leave|late(?::\d+)?)$/.test(
+              session.attendance?.[student.id] || "",
+            ),
+        ).length
+      : 0;
+    const label = session
+      ? "ادامه جلسه"
+      : closed
+        ? "ترم بسته است"
+        : "شروع جلسه";
+    html +=
+      '<article class="today-agenda-row"><span class="today-agenda-period">' +
+      esc(getPeriodName(period)) +
+      '</span><div class="today-agenda-copy"><h3>' +
+      esc(lesson.name) +
+      "</h3><p>" +
+      esc(school.name + " · " + classroom.name) +
+      "</p>" +
+      (session
+        ? '<span class="today-agenda-status' +
+          (unknown ? " is-pending" : "") +
+          '">' +
+          (unknown
+            ? unknown.toLocaleString("fa-IR") + " حضور تعیین‌نشده"
+            : "حضوروغیاب کامل") +
+          "</span>"
+        : "") +
+      '</div><button type="button" class="today-agenda-action' +
+      (session ? " ghost" : "") +
+      '" data-legacy-click="today-agenda" data-session="' +
+      esc(session?.id || "") +
+      '" data-school="' +
+      esc(school.id) +
+      '" data-class="' +
+      esc(classroom.id) +
+      '" data-lesson="' +
+      esc(lesson.id) +
+      '" data-date="' +
+      esc(date) +
+      '" data-day="' +
+      day +
+      '" data-period="' +
+      period +
+      '"' +
+      (!session ? ' data-mutating="1"' : "") +
+      (closed && !session ? " disabled" : "") +
+      ' aria-label="' +
+      esc(
+        label +
+          " " +
+          lesson.name +
+          " · " +
+          classroom.name +
+          " · " +
+          getPeriodName(period),
+      ) +
+      '"><span>' +
+      label +
+      "</span>" +
+      EduIcons.html("arrow") +
+      "</button></article>";
+  }
+  return html + "</div></section>";
+}

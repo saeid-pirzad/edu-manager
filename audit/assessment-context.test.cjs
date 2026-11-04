@@ -97,6 +97,7 @@ function fixture({
     },
   };
   const c = vm.createContext({
+    captureSaveFeedback: () => null,
     structuredClone,
     Map,
     clone,

@@ -1,11 +1,17 @@
 function preserveScheduleAction() {
   assertEntityWritable();
   const origin = workspace.id,
+    sourceData = db,
     sourceConnection = connection,
+    sourceInstallation =
+      typeof installationToken === "undefined" ? "" : installationToken,
     view = state.view;
   return () =>
     workspace.id === origin &&
+    db === sourceData &&
     connection === sourceConnection &&
+    (typeof installationToken === "undefined" ? "" : installationToken) ===
+      sourceInstallation &&
     state.view === view &&
     !periodLoading &&
     !resetBusy &&
@@ -25,82 +31,112 @@ function validateScheduleSlot(day, period) {
 }
 
 let scheduleSessionBusy = false;
+async function openScheduledSessionV24(selection, isCurrent) {
+  const { day, period, classId, lessonId, schoolId } = selection;
+  validateScheduleSlot(day, period);
+  const date = validateAcademicSessionDate(selection.date);
+  await flushDrafts({ strict: true });
+  await writer.catch(() => {});
+  assertEntityWritable();
+  if (!isCurrent())
+    throw Error("صفحه یا انتخاب جلسه تغییر کرده است؛ دوباره تلاش کنید.");
+  const target = classId && findClassById(classId);
+  if (
+    !target ||
+    (schoolId && target.school.id !== schoolId) ||
+    !target.classObj.lessons.some((lesson) => lesson.id === lessonId)
+  )
+    throw Error("کلاس و درس مقصد معتبر نیستند.");
+  const actualDay = getDayIdxFromDate(date);
+  if (actualDay !== day)
+    throw Error(
+      `تاریخ انتخاب‌شده متعلق به ${DAYS[actualDay]} است، اما زنگ را از ${DAYS[day]} انتخاب کرده‌اید؛ تاریخ یا روز برنامه را اصلاح کنید.`,
+    );
+  let session = db.sessions.find(
+    (row) => row.date === date && row.period === period,
+  );
+  if (session && session.classId !== classId)
+    throw Error(
+      "تداخل جلسه: در این تاریخ و زنگ، جلسهٔ کلاس دیگری ثبت شده است. ابتدا تاریخ یا شمارهٔ زنگ را اصلاح کنید.",
+    );
+  if (!session) {
+    validateSessionSchedule({
+      schoolId: target.school.id,
+      classId,
+      lessonId,
+      date,
+      period,
+    });
+    session = {
+      id: uid(),
+      schoolId: target.school.id,
+      classId,
+      lessonId,
+      date,
+      period,
+      poudmanId: null,
+      unitId: null,
+      attendance: {},
+      scores: [],
+      roster: snapshotRoster(target.classObj),
+    };
+    db.sessions.push(session);
+    await saveDBV24({ sessionId: session.id, action: "ایجاد جلسه از برنامه" });
+  } else if (session.lessonId !== lessonId)
+    throw Error(
+      "تداخل جلسه: این تاریخ و زنگ برای درس دیگری ثبت شده است؛ درس یا زنگ درست را انتخاب کنید.",
+    );
+  if (isCurrent()) openSessionModal(getSessionById(session.id));
+  return true;
+}
 async function startSessionFromMasterV24(day, period) {
   if (scheduleSessionBusy) return false;
   scheduleSessionBusy = true;
   try {
-    const isCurrent = preserveScheduleAction();
-    validateScheduleSlot(day, period);
-    const dateInput = document.getElementById("sessNewDate"),
+    const isCurrent = preserveScheduleAction(),
+      dateInput = document.getElementById("sessNewDate"),
       classInput = document.getElementById("sessNewClass"),
       lessonInput = document.getElementById("sessNewLesson"),
-      date = validateAcademicSessionDate(dateInput?.value || ""),
-      classId = classInput?.value || "",
-      lessonId = lessonInput?.value || "";
-    const sameSelection = () =>
-      isCurrent() &&
-      document.getElementById("sessNewDate") === dateInput &&
-      document.getElementById("sessNewClass") === classInput &&
-      document.getElementById("sessNewLesson") === lessonInput &&
-      dateInput.value === date &&
-      classInput.value === classId &&
-      lessonInput.value === lessonId;
-    await flushDrafts({ strict: true });
-    await writer.catch(() => {});
-    assertEntityWritable();
-    if (!sameSelection())
-      throw Error("صفحه یا انتخاب جلسه تغییر کرده است؛ دوباره تلاش کنید.");
-    const target = classId && findClassById(classId);
+      selection = {
+        day,
+        period,
+        date: dateInput?.value || "",
+        classId: classInput?.value || "",
+        lessonId: lessonInput?.value || "",
+      };
+    return await openScheduledSessionV24(
+      selection,
+      () =>
+        isCurrent() &&
+        document.getElementById("sessNewDate") === dateInput &&
+        document.getElementById("sessNewClass") === classInput &&
+        document.getElementById("sessNewLesson") === lessonInput &&
+        dateInput.value === selection.date &&
+        classInput.value === selection.classId &&
+        lessonInput.value === selection.lessonId,
+    );
+  } finally {
+    scheduleSessionBusy = false;
+  }
+}
+async function startTodaySessionV24(selection) {
+  if (scheduleSessionBusy) return false;
+  scheduleSessionBusy = true;
+  try {
+    const isCurrent = preserveScheduleAction(),
+      request = { ...selection };
     if (
-      !target ||
-      !target.classObj.lessons.some((lesson) => lesson.id === lessonId)
+      ![request.schoolId, request.classId, request.lessonId].every(
+        (id) => typeof id === "string" && id.length > 0,
+      )
     )
       throw Error("کلاس و درس مقصد معتبر نیستند.");
-    const actualDay = getDayIdxFromDate(date);
-    if (actualDay !== day)
-      throw Error(
-        `تاریخ انتخاب‌شده متعلق به ${DAYS[actualDay]} است، اما زنگ را از ${DAYS[day]} انتخاب کرده‌اید؛ تاریخ یا روز برنامه را اصلاح کنید.`,
-      );
-    let session = db.sessions.find(
-      (row) => row.date === date && row.period === period,
+    if (request.date !== todayISO())
+      throw Error("تاریخ روز تغییر کرده است؛ برنامه امروز را دوباره باز کنید.");
+    return await openScheduledSessionV24(
+      request,
+      () => isCurrent() && request.date === todayISO(),
     );
-    if (session && session.classId !== classId)
-      throw Error(
-        "تداخل جلسه: در این تاریخ و زنگ، جلسهٔ کلاس دیگری ثبت شده است. ابتدا تاریخ یا شمارهٔ زنگ را اصلاح کنید.",
-      );
-    if (!session) {
-      validateSessionSchedule({
-        schoolId: target.school.id,
-        classId,
-        lessonId,
-        date,
-        period,
-      });
-      session = {
-        id: uid(),
-        schoolId: target.school.id,
-        classId,
-        lessonId,
-        date,
-        period,
-        poudmanId: null,
-        unitId: null,
-        attendance: {},
-        scores: [],
-        roster: snapshotRoster(target.classObj),
-      };
-      db.sessions.push(session);
-      await saveDBV24({
-        sessionId: session.id,
-        action: "ایجاد جلسه از برنامه",
-      });
-    } else if (session.lessonId !== lessonId) {
-      throw Error(
-        "تداخل جلسه: این تاریخ و زنگ برای درس دیگری ثبت شده است؛ درس یا زنگ درست را انتخاب کنید.",
-      );
-    }
-    if (sameSelection()) openSessionModal(getSessionById(session.id));
-    return true;
   } finally {
     scheduleSessionBusy = false;
   }

@@ -165,6 +165,7 @@ function installRuntimeAPI() {
       saving: busy,
       authenticated: !db.settings.password || isAuthenticated,
     }),
+    startTodaySession: startTodaySessionV24,
     openAcademicYear,
     refreshYearLessonSessions,
     openYearSession,

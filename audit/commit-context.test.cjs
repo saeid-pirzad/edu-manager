@@ -7,6 +7,7 @@ const fs = require("node:fs"),
 function fixture() {
   const messages = [];
   const c = vm.createContext({
+    captureSaveFeedback: () => null,
     blocked: false,
     workspace: { id: "first", revision: 1 },
     connection: {},

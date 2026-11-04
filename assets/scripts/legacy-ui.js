@@ -3022,6 +3022,122 @@ function renderDashboardWork() {
         "</button></article>";
   return html + "</section></section>";
 }
+
+// The home shortcut reads only today's schedule; no grade calculations run here.
+function renderTodayAgenda() {
+  if (!db.schools.some((school) => school.classes.length)) return "";
+  const date = todayISO(),
+    day = getDayIdxFromDate(date),
+    scope = globalThis.EduV24?.getReportContext?.(),
+    year = scope?.year || db.settings.academicYear,
+    inYear = EduAcademicYear.contains(year, date),
+    closed = !!scope?.closed,
+    planned = [];
+  if (inYear && (db.activeDays ?? [0, 1, 2, 3, 4, 5]).includes(day))
+    for (let period = 0; period < (db.periods ?? 6); period++) {
+      const entry = getMasterEntry(day, period, date);
+      if (!entry) continue;
+      const school = db.schools.find((item) => item.id === entry.schoolId),
+        classroom = school?.classes.find((item) => item.id === entry.classId),
+        lesson = classroom?.lessons.find((item) => item.id === entry.lessonId);
+      if (!lesson) continue;
+      const session = db.sessions.find(
+        (item) =>
+          item.schoolId === school.id &&
+          item.classId === classroom.id &&
+          item.lessonId === lesson.id &&
+          item.date === date &&
+          item.period === period,
+      );
+      planned.push({ period, school, classroom, lesson, session });
+    }
+  let html =
+    '<section class="card today-agenda no-print" aria-labelledby="todayAgendaTitle">' +
+    '<header class="today-agenda-heading"><span class="today-agenda-icon" aria-hidden="true">' +
+    EduIcons.html("calendar") +
+    '</span><div><h2 id="todayAgendaTitle">برنامه امروز</h2><p>' +
+    esc(faDate(date)) +
+    '</p></div><button type="button" class="ghost" data-legacy-click="ui-dashboard:3">' +
+    EduIcons.html("calendar-week") +
+    "<span>برنامه هفتگی</span></button></header>";
+  if (!planned.length)
+    return (
+      html +
+      '<p class="today-agenda-empty">' +
+      (inYear
+        ? "برای امروز برنامه‌ای ثبت نشده است."
+        : "امروز خارج از سال تحصیلی فعال است؛ برای ثبت سوابق، وارد درس شوید.") +
+      "</p></section>"
+    );
+  html += '<div class="today-agenda-list">';
+  for (const { period, school, classroom, lesson, session } of planned) {
+    const unknown = session
+      ? (session.roster || classroom.students).filter(
+          (student) =>
+            !/^(present|absent|leave|late(?::\d+)?)$/.test(
+              session.attendance?.[student.id] || "",
+            ),
+        ).length
+      : 0;
+    const label = session
+      ? "ادامه جلسه"
+      : closed
+        ? "ترم بسته است"
+        : "شروع جلسه";
+    html +=
+      '<article class="today-agenda-row"><span class="today-agenda-period">' +
+      esc(getPeriodName(period)) +
+      '</span><div class="today-agenda-copy"><h3>' +
+      esc(lesson.name) +
+      "</h3><p>" +
+      esc(school.name + " · " + classroom.name) +
+      "</p>" +
+      (session
+        ? '<span class="today-agenda-status' +
+          (unknown ? " is-pending" : "") +
+          '">' +
+          (unknown
+            ? unknown.toLocaleString("fa-IR") + " حضور تعیین‌نشده"
+            : "حضوروغیاب کامل") +
+          "</span>"
+        : "") +
+      '</div><button type="button" class="today-agenda-action' +
+      (session ? " ghost" : "") +
+      '" data-legacy-click="today-agenda" data-session="' +
+      esc(session?.id || "") +
+      '" data-school="' +
+      esc(school.id) +
+      '" data-class="' +
+      esc(classroom.id) +
+      '" data-lesson="' +
+      esc(lesson.id) +
+      '" data-date="' +
+      esc(date) +
+      '" data-day="' +
+      day +
+      '" data-period="' +
+      period +
+      '"' +
+      (!session ? ' data-mutating="1"' : "") +
+      (closed && !session ? " disabled" : "") +
+      ' aria-label="' +
+      esc(
+        label +
+          " " +
+          lesson.name +
+          " · " +
+          classroom.name +
+          " · " +
+          getPeriodName(period),
+      ) +
+      '"><span>' +
+      label +
+      "</span>" +
+      EduIcons.html("arrow") +
+      "</button></article>";
+  }
+  return html + "</div></section>";
+}
 // Source: src/legacy/events/ui-dashboard.js
 // Event handlers extracted from src/legacy/ui/dashboard.js.
 EduLegacyEvents.register("dashboard-open", function () {
@@ -3074,6 +3190,19 @@ EduLegacyEvents.register("ui-dashboard:4", function (event) {
     this.getAttribute("data-legacy-click-arg16"),
     this.getAttribute("data-legacy-click-arg17"),
   );
+});
+
+EduLegacyEvents.register("today-agenda", function () {
+  if (this.dataset.session) return dashboardOpenSession(this.dataset.session);
+  const selection = {
+    date: this.dataset.date,
+    day: Number(this.dataset.day),
+    period: Number(this.dataset.period),
+    schoolId: this.dataset.school,
+    classId: this.dataset.class,
+    lessonId: this.dataset.lesson,
+  };
+  return runSessionFormAction(this, () => EduV24.startTodaySession(selection));
 });
 // Source: src/legacy/ui/school-class.js
 // Stable identity colors do not change when the roster is filtered or sorted.
@@ -3139,6 +3268,7 @@ function renderSchools() {
   let h =
     headerHtml() +
     `<section class="workflow-welcome schools-welcome no-print"><span class="schools-welcome-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M8 9h1M15 9h1M8 12h1M15 12h1"/></svg></span><div class="schools-welcome-copy"><h2>مدرسه‌های من</h2><p>مدرسه‌ها را اضافه، ویرایش یا حذف کنید؛ برای مدیریت کلاس‌ها وارد مدرسه شوید.</p></div><button type="button" class="schools-about" data-about-action="open"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></svg><span>درباره و ارتباط</span></button></section>`;
+  h += renderTodayAgenda();
   h += dashboardDirectory(db.schools, "schools");
   h += renderEntityQuickCreate("school", !db.schools.length);
   return h;
@@ -5031,7 +5161,7 @@ EduLegacyEvents.register("courses-config:2", function (event) {
 // Keep session validation errors beside the originating form, including on mobile.
 async function runSessionFormAction(control, action) {
   const host = control.closest(
-    ".session-create,.session-date-tools,.session-start-panel",
+    ".session-create,.session-date-tools,.session-start-panel,.today-agenda-row",
   );
   if (!host) return action();
   host.querySelector(".session-validation-alert")?.remove();
@@ -5059,6 +5189,23 @@ function showSessionFormError(host, error) {
   return false;
 }
 
+// A rejected write belongs to the form that started it.
+async function runSessionEditorAction(control, action) {
+  const root = control.closest(".session-workspace");
+  const id = currentSessionId;
+  try {
+    return await action();
+  } catch (error) {
+    if (
+      root?.isConnected &&
+      root.dataset.sessionId === id &&
+      currentSessionId === id
+    )
+      EduV24.course.error(error);
+    return false;
+  }
+}
+
 function showSessionPanel(panel) {
   if (!["attendance", "activity"].includes(panel)) return;
   const root = document.querySelector("#modalBody .session-workspace");
@@ -5071,7 +5218,61 @@ function showSessionPanel(panel) {
       String(button.dataset.sessionTab === panel),
     );
 }
-function openSessionModal(session) {
+function sessionAttendanceProgress(session, classroom) {
+  const roster = sessionStudents(classroom, session);
+  const unset = roster.filter(
+    (student) => !session.attendance[student.id],
+  ).length;
+  return { total: roster.length, unset };
+}
+function refreshSessionAttendanceProgress() {
+  const root = document.querySelector("#modalBody .session-workspace");
+  if (!root || root.dataset.sessionId !== currentSessionId) return;
+  const session = getSessionById(currentSessionId);
+  const classroom = session && getClassObj(session.schoolId, session.classId);
+  if (!session || !classroom) return;
+  const progress = sessionAttendanceProgress(session, classroom);
+  const label = root.querySelector("[data-session-attendance-progress]");
+  if (label)
+    label.textContent =
+      (progress.total - progress.unset).toLocaleString("fa-IR") +
+      " از " +
+      progress.total.toLocaleString("fa-IR") +
+      " نفر ثبت شده · تعیین‌نشده: " +
+      progress.unset.toLocaleString("fa-IR");
+  const fill = root.querySelector('[data-legacy-click="sessions-dialog:6"]');
+  if (fill) setControlLock(fill, "attendance-complete", progress.unset === 0);
+}
+function refreshSessionActivityInput(form) {
+  if (!form?.isConnected) return;
+  const type = form.elements.type.value;
+  const value = form.elements.value;
+  const count = ["positive", "negative"].includes(type);
+  if (count && value.value === "") value.value = "1";
+  value.placeholder = ["classGrade", "mostamar", "payani"].includes(type)
+    ? "۰ تا ۲۰"
+    : "۰ تا ۱۰۰۰";
+  const students = form.elements.studentId;
+  const next = form.querySelector("[data-session-next]");
+  if (next)
+    setControlLock(
+      next,
+      "student-last",
+      students.selectedIndex < 1 ||
+        students.selectedIndex >= students.options.length - 1,
+    );
+}
+function captureSessionActivityForm() {
+  const form = document.querySelector("#modalBody .session-entry-form");
+  if (!form) return null;
+  return Object.fromEntries(
+    ["studentId", "type", "value", "note"].map((name) => [
+      name,
+      form.elements[name].value,
+    ]),
+  );
+}
+function openSessionModal(session, { activitySaved = null } = {}) {
   const selectedPanel =
     !document.getElementById("modal").classList.contains("hidden") &&
     currentSessionId === session.id
@@ -5079,6 +5280,10 @@ function openSessionModal(session) {
           "#modalBody [data-session-tab][aria-pressed=true]",
         )?.dataset.sessionTab
       : null;
+  const entry = selectedPanel ? captureSessionActivityForm() : null;
+  const scroll = selectedPanel
+    ? document.getElementById("modalBody").scrollTop
+    : 0;
   currentSessionId = session.id;
   const c = getClassObj(session.schoolId, session.classId);
   if (!c) {
@@ -5092,7 +5297,9 @@ function openSessionModal(session) {
   }
   const dIdx = getDayIdxFromDate(session.date);
   const school = getSchool(session.schoolId);
-  let h = `<div class="session-workspace"><header class="session-context"><span class="session-context-icon" aria-hidden="true">${EduIcons.html("book")}</span><div class="session-context-copy"><p class="session-context-path">${esc(school?.name || "")} / ${esc(c.name)}</p><h4>${esc(lesson.name)}</h4><p class="session-context-meta">${esc(DAYS[dIdx])} · ${esc(faDate(session.date))} · زنگ ${(session.period + 1).toLocaleString("fa-IR")}</p>${lesson.teacher ? `<p class="session-context-teacher">دبیر: ${esc(lesson.teacher)}</p>` : ""}</div></header>`;
+  let h = `<div class="session-workspace" data-session-id="${esc(session.id)}"><header class="session-context"><span class="session-context-icon" aria-hidden="true">${EduIcons.html("book")}</span><div class="session-context-copy"><p class="session-context-path">${esc(school?.name || "")} / ${esc(c.name)}</p><h4>${esc(lesson.name)}</h4><p class="session-context-meta">${esc(DAYS[dIdx])} · ${esc(faDate(session.date))} · زنگ ${(session.period + 1).toLocaleString("fa-IR")}</p>${lesson.teacher ? `<p class="session-context-teacher">دبیر: ${esc(lesson.teacher)}</p>` : ""}</div></header>`;
+  h +=
+    '<div data-modal-save-feedback role="status" aria-live="polite" hidden></div>';
   const academicRange = EduAcademicYear.range(db.settings.academicYear);
   if (!EduAcademicYear.contains(db.settings.academicYear, session.date))
     h +=
@@ -5126,10 +5333,13 @@ function openSessionModal(session) {
     </select></label>
   </div>`;
   h += `<div class="session-mode-picker"><button type="button" aria-pressed="true" data-session-tab="attendance" data-legacy-click="sessions-dialog:4">${EduIcons.html("attendance")}<span>حضور و غیاب</span></button><button type="button" aria-pressed="false" data-session-tab="activity" data-legacy-click="sessions-dialog:5">${EduIcons.html("grades")}<span>نمره و فعالیت</span></button></div><section data-session-panel="attendance"><div class="session-attendance-heading">
-    <div><h4>حضور و غیاب</h4><p>وضعیت هر دانش‌آموز را انتخاب کنید.</p></div>
+    <div><h4>حضور و غیاب</h4><p data-session-attendance-progress role="status"></p></div>
     <div class="session-attendance-bulk">
-      <button type="button" class="success" data-legacy-click="sessions-dialog:6">همه حاضر</button>
-      <button type="button" class="danger" data-legacy-click="sessions-dialog:7">همه غایب</button>
+      <button type="button" class="success" data-mutating="1" data-legacy-click="sessions-dialog:6">باقی‌مانده‌ها حاضر</button>
+      <details class="session-attendance-options"><summary>تغییر همه</summary><div>
+        <button type="button" class="ghost" data-mutating="1" data-legacy-click="sessions-dialog:all-present">همه حاضر</button>
+        <button type="button" class="danger" data-mutating="1" data-legacy-click="sessions-dialog:7">همه غایب</button>
+      </div></details>
     </div>
   </div><div class="session-attendance-list">`;
   const sortedStudents = getSortedStudents({
@@ -5155,19 +5365,19 @@ function openSessionModal(session) {
     </div>`;
   });
   h += `</div></section><section data-session-panel="activity" hidden><h4>ثبت فعالیت کلاس</h4><p class="muted">نمرات رسمی عملی، تئوری یا پودمان در بخش نمرات درس ثبت می‌شوند.</p>
-    <form data-legacy-submit="sessions-dialog:11" data-legacy-submit-arg0="${esc(session.id)}" class="row session-entry-form">
-      <label class="session-field session-field-wide"><span>هنرجو</span><select name="studentId" aria-label="دانش‌آموز" required><option value="">دانش‌آموز</option>
+    <form data-legacy-submit="sessions-dialog:11" data-legacy-submit-arg0="${esc(session.id)}" class="row session-entry-form" data-mutating="1">
+      <label class="session-field session-field-wide"><span>هنرجو</span><select name="studentId" data-legacy-change="sessions-dialog:entry-change" aria-label="دانش‌آموز" required><option value="">دانش‌آموز</option>
       ${getSortedStudents({ students: sessionStudents(c, session) })
         .map((s) => `<option value="${s.id}">${esc(s.name)}</option>`)
         .join("")}</select></label>
-      <label class="session-field"><span>نوع فعالیت</span><select name="type" aria-label="نوع فعالیت" required>
+      <label class="session-field"><span>نوع فعالیت</span><select name="type" data-legacy-change="sessions-dialog:entry-change" aria-label="نوع فعالیت" required>
         ${!lesson.gradingPolicy && lesson.gradeMode !== "kardanesh" ? `<option value="mostamar">مستمر</option><option value="payani">پایانی</option>` : ""}
         <option value="classGrade">نمره کلاسی (۰ تا ۲۰)</option><option value="activity">امتیاز فعالیت</option><option value="positive">مثبت</option><option value="negative">منفی</option>
         <option value="homework">تکلیف</option>
       </select></label>
       <label class="session-field"><span>نمره یا مقدار</span><input name="value" aria-label="مقدار" type="text" inputmode="decimal" placeholder="مثلاً ۱۸ یا ۱" required></label>
       <label class="session-field session-field-wide"><span>توضیح <small>(اختیاری)</small></span><input name="note" aria-label="توضیح فعالیت" placeholder="موضوع تمرین یا توضیح فعالیت"></label>
-      <button type="submit">ثبت فعالیت</button>
+      <div class="session-entry-actions"><button type="submit">ثبت فعالیت</button><button type="submit" class="ghost" data-session-next>ثبت و نفر بعد</button></div>
     </form><div class="session-activity-records"><h4>فعالیت‌های ثبت‌شده</h4>`;
   if (!session.scores.length) h += `<div class="empty">امتیازی ثبت نشده</div>`;
   else {
@@ -5184,8 +5394,40 @@ function openSessionModal(session) {
   h += `</div></section><div class="session-workspace-footer">
     <button type="button" class="success" data-legacy-click="sessions-dialog:13" data-legacy-click-arg0="${esc(session.id)}" data-legacy-click-arg1="${esc(session.schoolId)}" data-legacy-click-arg2="${esc(session.classId)}" data-legacy-click-arg3="${esc(session.schoolId)}" data-legacy-click-arg4="${esc(session.classId)}" data-legacy-click-arg5="${esc(session.lessonId)}">کپی برای معاون</button>
     <button type="button" class="ghost" data-legacy-click="sessions-dialog:14">بستن</button></div></div>`;
-  showModal("ثبت اطلاعات جلسه", h);
+  if (showModal("ثبت اطلاعات جلسه", h) === false) return false;
   if (selectedPanel) showSessionPanel(selectedPanel);
+  const form = document.querySelector("#modalBody .session-entry-form");
+  let saved = false;
+  if (entry) {
+    for (const [name, value] of Object.entries(entry))
+      form.elements[name].value = value;
+    saved =
+      activitySaved &&
+      Object.keys(entry).every(
+        (name) => entry[name] === activitySaved.submitted[name],
+      );
+    if (saved) {
+      form.elements.value.value = "";
+      form.elements.note.value = "";
+      if (activitySaved.advance) {
+        const select = form.elements.studentId;
+        select.value = select.options[select.selectedIndex + 1]?.value || "";
+      }
+    }
+  }
+  refreshSessionActivityInput(form);
+  refreshSessionAttendanceProgress();
+  if (selectedPanel) document.getElementById("modalBody").scrollTop = scroll;
+  if (saved && selectedPanel === "activity")
+    setTimeout(() => {
+      if (
+        form.isConnected &&
+        currentSessionId === session.id &&
+        !form.elements.value.disabled &&
+        !document.getElementById("modal").classList.contains("hidden")
+      )
+        form.elements.value.focus({ preventScroll: true });
+    }, 0);
 }
 
 function getSessionById(id) {
@@ -5356,11 +5598,11 @@ EduLegacyEvents.register("sessions-dialog:1", function (event) {
 });
 
 EduLegacyEvents.register("sessions-dialog:2", function (event) {
-  return updateSessionUnits();
+  return runSessionEditorAction(this, () => updateSessionUnits());
 });
 
 EduLegacyEvents.register("sessions-dialog:3", function (event) {
-  return saveSessionUnit();
+  return runSessionEditorAction(this, () => saveSessionUnit());
 });
 
 EduLegacyEvents.register("sessions-dialog:4", function (event) {
@@ -5372,33 +5614,39 @@ EduLegacyEvents.register("sessions-dialog:5", function (event) {
 });
 
 EduLegacyEvents.register("sessions-dialog:6", function (event) {
-  return setAllAttendance("present");
+  return runSessionEditorAction(this, () =>
+    setAllAttendance("present", { onlyUnset: true }),
+  );
 });
 
 EduLegacyEvents.register("sessions-dialog:7", function (event) {
-  return setAllAttendance("absent");
+  return runSessionEditorAction(this, () => setAllAttendance("absent"));
 });
 
 EduLegacyEvents.register("sessions-dialog:8", function (event) {
-  return toggleAtt(this, "present");
+  return runSessionEditorAction(this, () => toggleAtt(this, "present"));
 });
 
 EduLegacyEvents.register("sessions-dialog:9", function (event) {
-  return toggleAtt(this, "late");
+  return runSessionEditorAction(this, () => toggleAtt(this, "late"));
 });
 
 EduLegacyEvents.register("sessions-dialog:10", function (event) {
-  return toggleAtt(this, "absent");
+  return runSessionEditorAction(this, () => toggleAtt(this, "absent"));
 });
 
 EduLegacyEvents.register("sessions-dialog:11", function (event) {
-  return addSessionScore(event, this.getAttribute("data-legacy-submit-arg0"));
+  return runSessionEditorAction(this, () =>
+    addSessionScore(event, this.getAttribute("data-legacy-submit-arg0")),
+  );
 });
 
 EduLegacyEvents.register("sessions-dialog:12", function (event) {
-  return removeSessionScore(
-    this.getAttribute("data-legacy-click-arg5"),
-    JSON.parse(this.getAttribute("data-legacy-click-arg6")),
+  return runSessionEditorAction(this, () =>
+    removeSessionScore(
+      this.getAttribute("data-legacy-click-arg5"),
+      JSON.parse(this.getAttribute("data-legacy-click-arg6")),
+    ),
   );
 });
 
@@ -5419,7 +5667,14 @@ EduLegacyEvents.register("sessions-dialog:14", function (event) {
 });
 
 EduLegacyEvents.register("sessions-dialog:leave", function () {
-  return toggleAtt(this, "leave");
+  return runSessionEditorAction(this, () => toggleAtt(this, "leave"));
+});
+
+EduLegacyEvents.register("sessions-dialog:all-present", function () {
+  return runSessionEditorAction(this, () => setAllAttendance("present"));
+});
+EduLegacyEvents.register("sessions-dialog:entry-change", function () {
+  return refreshSessionActivityInput(this.form);
 });
 // Source: src/legacy/data/backup-import.js
 async function legacy_exportBackup() {

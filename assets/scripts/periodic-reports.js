@@ -424,7 +424,10 @@ function textReport(m) {
       "هنرجو: " + m.student.name + " | کد: " + (m.student.code || "ثبت نشده"),
     );
   lines.push(
-    "زمان تهیه: " + new Date(m.generatedAt).toLocaleString("fa-IR"),
+    "زمان تهیه: " +
+      new Date(m.generatedAt).toLocaleString("fa-IR", {
+        timeZone: "Asia/Tehran",
+      }),
     "",
     "خلاصه",
     "جلسات ثبت‌شده: " + num(m.summary.sessions),
@@ -545,14 +548,7 @@ function textReport(m) {
   }
   if (m.note) lines.push("", "توضیحات تنظیم‌کننده", m.note);
   if (m.warnings.length) lines.push("", "موارد نیازمند بررسی", ...m.warnings);
-  lines.push(
-    "",
-    "توضیح روش گزارش",
-    ...m.definitions,
-    "",
-    "تنظیم‌کننده: " + (m.author || "........................"),
-    "امضا: ........................",
-  );
+  lines.push("", "توضیح روش گزارش", ...m.definitions);
   if (m.technicalGrades?.length) {
     lines.push("", "نمرات فنی و پودمانی");
     for (const grade of m.technicalGrades) {
@@ -628,6 +624,7 @@ function textReport(m) {
       );
     }
   }
+  if (m.author?.trim()) lines.push("", "تنظیم‌کننده: " + m.author.trim());
   return lines.join("\n");
 }
 

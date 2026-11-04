@@ -2939,10 +2939,22 @@ body {
     border-radius: 14px;
     background: #faf9f7;
   }
-  #modalBody .session-entry-form > :is(.session-field-wide, button) {
+  #modalBody
+    .session-entry-form
+    > :is(.session-field-wide, .session-entry-actions) {
     grid-column: 1 / -1;
   }
-  #modalBody .session-entry-form > button {
+  #modalBody .session-entry-actions {
+    display: flex;
+    gap: 8px;
+    min-width: 0;
+  }
+  #modalBody .session-entry-actions > button {
+    flex: 1;
+    min-width: 0;
+    padding-inline: 8px;
+    font-size: 12px;
+    white-space: nowrap;
     min-height: 46px;
     margin: 0;
     border-radius: 11px;
@@ -6439,6 +6451,59 @@ body {
     font-size: 16px;
   }
 }
+
+@media screen {
+  #modalBody .session-attendance-options {
+    min-width: 104px;
+    flex-shrink: 0;
+    border: 1px solid var(--workflow-line);
+    border-radius: 10px;
+    background: #faf9f7;
+    overflow: hidden;
+  }
+  #modalBody .session-attendance-options > summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    box-sizing: border-box;
+    padding: 8px 12px;
+    margin: 0;
+    color: var(--workflow-muted);
+    font-size: 12px;
+    cursor: pointer;
+    list-style: none;
+  }
+  #modalBody .session-attendance-options > summary::-webkit-details-marker {
+    display: none;
+  }
+  #modalBody .session-attendance-options > summary::after {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: translateY(-2px) rotate(45deg);
+  }
+  #modalBody .session-attendance-options[open] > summary::after {
+    transform: translateY(2px) rotate(225deg);
+  }
+  #modalBody .session-attendance-options > summary:focus-visible {
+    outline: 2px solid #a66e0b;
+    outline-offset: -3px;
+  }
+  #modalBody .session-attendance-options > div {
+    display: grid;
+    gap: 6px;
+    padding: 0 6px 6px;
+  }
+  #modalBody .session-attendance-options button {
+    width: 100%;
+    min-width: 0;
+    padding-inline: 8px;
+  }
+}
 /* Source: src/styles/workflow/grades.css */
 /* Flat gradebook rows on desktop; a single student per card on mobile. */
 @media screen {
@@ -7882,6 +7947,45 @@ body {
     :is(#lessonGradesArea, #modalBody) .assessment-editor .assessment-students {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+  }
+}
+
+@media screen {
+  #modalBody .modal-save-feedback {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 0 0 14px;
+    padding: 9px 12px;
+    border: 1px solid #cce4da;
+    border-radius: 11px;
+    background: #f1f9f5;
+    color: #205b45;
+    font-size: 0.78rem;
+    line-height: 1.75;
+    overflow-wrap: anywhere;
+  }
+  #modalBody .modal-save-feedback[hidden] {
+    display: none;
+  }
+  #modalBody .modal-save-feedback::before {
+    content: "";
+    flex: 0 0 8px;
+    width: 8px;
+    height: 8px;
+    margin-top: 0.5em;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  #modalBody .modal-save-feedback[data-state="pending"] {
+    border-color: #ecd9ab;
+    background: #fff9ec;
+    color: #79520c;
+  }
+  #modalBody .modal-save-feedback[data-state="error"] {
+    border-color: #ecc8ce;
+    background: #fff3f4;
+    color: #9b293e;
   }
 }
 /* Source: src/styles/karnameh-grid.css */

@@ -96,6 +96,7 @@ test("lesson and student create panels have one submit and a non-action heading"
 test("all directory renderers place their list before creation even when empty", () => {
   context.headerHtml = () => "";
   context.breadcrumbHtml = () => "";
+  context.renderTodayAgenda = () => "";
   context.dashboardDirectory = () =>
     '<section class="dashboard-directory"></section>';
   context.db = { schools: [] };

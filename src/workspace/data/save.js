@@ -150,7 +150,7 @@ async function commitRecords(
   return true;
 }
 
-function saveDBV24(scope = {}) {
+function saveDBV24(scope = {}, { feedbackScope = captureSaveFeedback() } = {}) {
   if (periodLoading)
     return Promise.reject(
       Error("ترم در حال خواندن است؛ پس از پایان جابه‌جایی دوباره تلاش کنید."),
@@ -179,7 +179,7 @@ function saveDBV24(scope = {}) {
     !resetBusy &&
     !connectionRetired;
   busy++;
-  paintStatus();
+  paintStatus(feedbackScope);
   const operation = writer
     .catch(() => {})
     .then(async () => {
@@ -201,7 +201,7 @@ function saveDBV24(scope = {}) {
       if (!isCurrentTarget()) return;
       storageBlocked = false;
       storageProblem = "";
-      setStatus("تغییرات ذخیره شد.", "saved");
+      setStatus("تغییرات ذخیره شد.", "saved", feedbackScope);
       scheduleSingleFile();
     })
     .catch(async (error) => {
@@ -214,7 +214,7 @@ function saveDBV24(scope = {}) {
       // Invalidate every request queued against the in-memory data that was rolled back.
       writeFailureGeneration++;
       if (isCurrentTarget()) {
-        setStatus("تغییر ذخیره نشد: " + error.message, "error");
+        setStatus("تغییر ذخیره نشد: " + error.message, "error", feedbackScope);
         render();
       }
       throw error;

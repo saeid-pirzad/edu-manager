@@ -9,6 +9,7 @@ function fixture() {
     statuses = [];
   const failure = Error("disk error");
   const c = vm.createContext({
+    captureSaveFeedback: () => null,
     workspace: { id: "first" },
     connection: {},
     db: { unsaved: true },
@@ -215,4 +216,38 @@ test("normal queued saves pass the original installation explicitly to the atomi
   };
   await f.c.saveDBV24();
   assert.equal(options.expectedInstallation, "epoch-a");
+});
+
+for (const fails of [false, true]) {
+  test(
+    "save feedback retains the original editor scope across an async " +
+      (fails ? "failure" : "success"),
+    async () => {
+      const f = fixture();
+      let scope = "session-a",
+        release;
+      f.c.captureSaveFeedback = () => scope;
+      f.c.writer = new Promise((resolve) => {
+        release = resolve;
+      });
+      f.c.commitRecords = async () => {
+        if (fails) throw f.failure;
+      };
+      const pending = f.c.saveDBV24();
+      scope = "session-b";
+      release();
+      if (fails) await assert.rejects(pending);
+      else await pending;
+      assert.equal(f.statuses.length, 1);
+      assert.equal(f.statuses[0][2], "session-a");
+    },
+  );
+}
+
+test("an already captured grade scope is not recaptured after an awaited draft flush", async () => {
+  const f = fixture();
+  f.c.captureSaveFeedback = () => "unrelated-editor";
+  f.c.commitRecords = async () => {};
+  await f.c.saveDBV24({}, { feedbackScope: "original-grade-editor" });
+  assert.equal(f.statuses[0][2], "original-grade-editor");
 });

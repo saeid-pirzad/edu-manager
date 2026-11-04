@@ -11,11 +11,11 @@ EduLegacyEvents.register("sessions-dialog:1", function (event) {
 });
 
 EduLegacyEvents.register("sessions-dialog:2", function (event) {
-  return updateSessionUnits();
+  return runSessionEditorAction(this, () => updateSessionUnits());
 });
 
 EduLegacyEvents.register("sessions-dialog:3", function (event) {
-  return saveSessionUnit();
+  return runSessionEditorAction(this, () => saveSessionUnit());
 });
 
 EduLegacyEvents.register("sessions-dialog:4", function (event) {
@@ -27,33 +27,39 @@ EduLegacyEvents.register("sessions-dialog:5", function (event) {
 });
 
 EduLegacyEvents.register("sessions-dialog:6", function (event) {
-  return setAllAttendance("present");
+  return runSessionEditorAction(this, () =>
+    setAllAttendance("present", { onlyUnset: true }),
+  );
 });
 
 EduLegacyEvents.register("sessions-dialog:7", function (event) {
-  return setAllAttendance("absent");
+  return runSessionEditorAction(this, () => setAllAttendance("absent"));
 });
 
 EduLegacyEvents.register("sessions-dialog:8", function (event) {
-  return toggleAtt(this, "present");
+  return runSessionEditorAction(this, () => toggleAtt(this, "present"));
 });
 
 EduLegacyEvents.register("sessions-dialog:9", function (event) {
-  return toggleAtt(this, "late");
+  return runSessionEditorAction(this, () => toggleAtt(this, "late"));
 });
 
 EduLegacyEvents.register("sessions-dialog:10", function (event) {
-  return toggleAtt(this, "absent");
+  return runSessionEditorAction(this, () => toggleAtt(this, "absent"));
 });
 
 EduLegacyEvents.register("sessions-dialog:11", function (event) {
-  return addSessionScore(event, this.getAttribute("data-legacy-submit-arg0"));
+  return runSessionEditorAction(this, () =>
+    addSessionScore(event, this.getAttribute("data-legacy-submit-arg0")),
+  );
 });
 
 EduLegacyEvents.register("sessions-dialog:12", function (event) {
-  return removeSessionScore(
-    this.getAttribute("data-legacy-click-arg5"),
-    JSON.parse(this.getAttribute("data-legacy-click-arg6")),
+  return runSessionEditorAction(this, () =>
+    removeSessionScore(
+      this.getAttribute("data-legacy-click-arg5"),
+      JSON.parse(this.getAttribute("data-legacy-click-arg6")),
+    ),
   );
 });
 
@@ -74,5 +80,12 @@ EduLegacyEvents.register("sessions-dialog:14", function (event) {
 });
 
 EduLegacyEvents.register("sessions-dialog:leave", function () {
-  return toggleAtt(this, "leave");
+  return runSessionEditorAction(this, () => toggleAtt(this, "leave"));
+});
+
+EduLegacyEvents.register("sessions-dialog:all-present", function () {
+  return runSessionEditorAction(this, () => setAllAttendance("present"));
+});
+EduLegacyEvents.register("sessions-dialog:entry-change", function () {
+  return refreshSessionActivityInput(this.form);
 });

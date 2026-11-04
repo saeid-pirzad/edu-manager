@@ -238,6 +238,7 @@ function refreshGradeResults() {
     }
     const note = input.parentElement.querySelector(".grade-note"),
       item = drafts.get(inputKey(contextFromInput(input)));
+    input.setAttribute("aria-invalid", item?.error ? "true" : "false");
     if (note) {
       const filled = input.value.trim() !== "";
       note.textContent = item

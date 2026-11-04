@@ -12,6 +12,7 @@ const load = (context, file) =>
 
 test("locked grade inputs and explicit clear cannot create or alter drafts", () => {
   const context = vm.createContext({
+    captureSaveFeedback: () => null,
     assessmentContext: { handles: () => false, flush: async () => {} },
     resetBusy: false,
     connectionRetired: false,
@@ -31,6 +32,7 @@ test("locked valid drafts remain recoverable and cannot mutate score records", a
   const item = { classId: "class", value: "18" },
     drafts = new Map([["grade", item]]),
     context = vm.createContext({
+      captureSaveFeedback: () => null,
       assessmentContext: { handles: () => false, flush: async () => {} },
       resetBusy: false,
       connectionRetired: false,
@@ -53,6 +55,7 @@ test("locked valid drafts remain recoverable and cannot mutate score records", a
 
 test("entity write authorization rejects locked sessions and permits verified ones", () => {
   const context = vm.createContext({
+    captureSaveFeedback: () => null,
     fileMode: false,
     ready: true,
     periodLoading: false,
@@ -75,6 +78,7 @@ function loginFixture({ password = "legacy-hash", closed = false } = {}) {
   const effects = [],
     input = { value: "verified-password" },
     context = vm.createContext({
+      captureSaveFeedback: () => null,
       db: { settings: { password } },
       isAuthenticated: false,
       periodId: "source",

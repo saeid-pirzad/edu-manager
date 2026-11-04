@@ -32,6 +32,8 @@ function gradeCell(
     esc(unitId) +
     '" data-field="' +
     esc(field) +
+    '" aria-invalid="' +
+    (draft?.error ? "true" : "false") +
     '" value="' +
     esc(shown) +
     '" placeholder="—" aria-label="' +
@@ -48,7 +50,15 @@ function gradeCell(
                 ? "مستمر"
                 : "پایانی"),
     ) +
-    '"><button type="button" class="ghost grade-clear no-print" data-clear-grade aria-label="پاک‌کردن نمره" title="پاک‌کردن نمره">×</button><small class="grade-note" aria-live="polite">' +
+    '"><button type="button" class="ghost grade-clear no-print" data-clear-grade aria-label="پاک‌کردن نمره" title="پاک‌کردن نمره">×</button><small class="grade-note" aria-live="polite" data-state="' +
+    (draft
+      ? draft.error
+        ? "error"
+        : "pending"
+      : String(shown).trim() !== ""
+        ? "saved"
+        : "idle") +
+    '">' +
     esc(draft ? draft.error || "در انتظار ذخیره" : "") +
     "</small></div>"
   );

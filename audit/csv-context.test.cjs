@@ -17,6 +17,7 @@ function fixture() {
     plan: [{ row: 2, name: "Student", code: "1", existingId: null }],
   };
   const c = vm.createContext({
+    captureSaveFeedback: () => null,
     workspace: { id: "first", revision: 1 },
     connection: {},
     state: { schoolId: "school", classId: "class" },

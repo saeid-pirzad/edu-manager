@@ -35,6 +35,7 @@ function fixture({ existingDate = null } = {}) {
     broadcasts = [],
     durable = new Map(),
     c = vm.createContext({
+      captureSaveFeedback: () => null,
       structuredClone,
       Map,
       DOMException,

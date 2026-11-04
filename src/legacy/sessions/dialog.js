@@ -1,7 +1,7 @@
 // Keep session validation errors beside the originating form, including on mobile.
 async function runSessionFormAction(control, action) {
   const host = control.closest(
-    ".session-create,.session-date-tools,.session-start-panel",
+    ".session-create,.session-date-tools,.session-start-panel,.today-agenda-row",
   );
   if (!host) return action();
   host.querySelector(".session-validation-alert")?.remove();
@@ -29,6 +29,23 @@ function showSessionFormError(host, error) {
   return false;
 }
 
+// A rejected write belongs to the form that started it.
+async function runSessionEditorAction(control, action) {
+  const root = control.closest(".session-workspace");
+  const id = currentSessionId;
+  try {
+    return await action();
+  } catch (error) {
+    if (
+      root?.isConnected &&
+      root.dataset.sessionId === id &&
+      currentSessionId === id
+    )
+      EduV24.course.error(error);
+    return false;
+  }
+}
+
 function showSessionPanel(panel) {
   if (!["attendance", "activity"].includes(panel)) return;
   const root = document.querySelector("#modalBody .session-workspace");
@@ -41,7 +58,61 @@ function showSessionPanel(panel) {
       String(button.dataset.sessionTab === panel),
     );
 }
-function openSessionModal(session) {
+function sessionAttendanceProgress(session, classroom) {
+  const roster = sessionStudents(classroom, session);
+  const unset = roster.filter(
+    (student) => !session.attendance[student.id],
+  ).length;
+  return { total: roster.length, unset };
+}
+function refreshSessionAttendanceProgress() {
+  const root = document.querySelector("#modalBody .session-workspace");
+  if (!root || root.dataset.sessionId !== currentSessionId) return;
+  const session = getSessionById(currentSessionId);
+  const classroom = session && getClassObj(session.schoolId, session.classId);
+  if (!session || !classroom) return;
+  const progress = sessionAttendanceProgress(session, classroom);
+  const label = root.querySelector("[data-session-attendance-progress]");
+  if (label)
+    label.textContent =
+      (progress.total - progress.unset).toLocaleString("fa-IR") +
+      " از " +
+      progress.total.toLocaleString("fa-IR") +
+      " نفر ثبت شده · تعیین‌نشده: " +
+      progress.unset.toLocaleString("fa-IR");
+  const fill = root.querySelector('[data-legacy-click="sessions-dialog:6"]');
+  if (fill) setControlLock(fill, "attendance-complete", progress.unset === 0);
+}
+function refreshSessionActivityInput(form) {
+  if (!form?.isConnected) return;
+  const type = form.elements.type.value;
+  const value = form.elements.value;
+  const count = ["positive", "negative"].includes(type);
+  if (count && value.value === "") value.value = "1";
+  value.placeholder = ["classGrade", "mostamar", "payani"].includes(type)
+    ? "۰ تا ۲۰"
+    : "۰ تا ۱۰۰۰";
+  const students = form.elements.studentId;
+  const next = form.querySelector("[data-session-next]");
+  if (next)
+    setControlLock(
+      next,
+      "student-last",
+      students.selectedIndex < 1 ||
+        students.selectedIndex >= students.options.length - 1,
+    );
+}
+function captureSessionActivityForm() {
+  const form = document.querySelector("#modalBody .session-entry-form");
+  if (!form) return null;
+  return Object.fromEntries(
+    ["studentId", "type", "value", "note"].map((name) => [
+      name,
+      form.elements[name].value,
+    ]),
+  );
+}
+function openSessionModal(session, { activitySaved = null } = {}) {
   const selectedPanel =
     !document.getElementById("modal").classList.contains("hidden") &&
     currentSessionId === session.id
@@ -49,6 +120,10 @@ function openSessionModal(session) {
           "#modalBody [data-session-tab][aria-pressed=true]",
         )?.dataset.sessionTab
       : null;
+  const entry = selectedPanel ? captureSessionActivityForm() : null;
+  const scroll = selectedPanel
+    ? document.getElementById("modalBody").scrollTop
+    : 0;
   currentSessionId = session.id;
   const c = getClassObj(session.schoolId, session.classId);
   if (!c) {
@@ -62,7 +137,9 @@ function openSessionModal(session) {
   }
   const dIdx = getDayIdxFromDate(session.date);
   const school = getSchool(session.schoolId);
-  let h = `<div class="session-workspace"><header class="session-context"><span class="session-context-icon" aria-hidden="true">${EduIcons.html("book")}</span><div class="session-context-copy"><p class="session-context-path">${esc(school?.name || "")} / ${esc(c.name)}</p><h4>${esc(lesson.name)}</h4><p class="session-context-meta">${esc(DAYS[dIdx])} · ${esc(faDate(session.date))} · زنگ ${(session.period + 1).toLocaleString("fa-IR")}</p>${lesson.teacher ? `<p class="session-context-teacher">دبیر: ${esc(lesson.teacher)}</p>` : ""}</div></header>`;
+  let h = `<div class="session-workspace" data-session-id="${esc(session.id)}"><header class="session-context"><span class="session-context-icon" aria-hidden="true">${EduIcons.html("book")}</span><div class="session-context-copy"><p class="session-context-path">${esc(school?.name || "")} / ${esc(c.name)}</p><h4>${esc(lesson.name)}</h4><p class="session-context-meta">${esc(DAYS[dIdx])} · ${esc(faDate(session.date))} · زنگ ${(session.period + 1).toLocaleString("fa-IR")}</p>${lesson.teacher ? `<p class="session-context-teacher">دبیر: ${esc(lesson.teacher)}</p>` : ""}</div></header>`;
+  h +=
+    '<div data-modal-save-feedback role="status" aria-live="polite" hidden></div>';
   const academicRange = EduAcademicYear.range(db.settings.academicYear);
   if (!EduAcademicYear.contains(db.settings.academicYear, session.date))
     h +=
@@ -96,10 +173,13 @@ function openSessionModal(session) {
     </select></label>
   </div>`;
   h += `<div class="session-mode-picker"><button type="button" aria-pressed="true" data-session-tab="attendance" data-legacy-click="sessions-dialog:4">${EduIcons.html("attendance")}<span>حضور و غیاب</span></button><button type="button" aria-pressed="false" data-session-tab="activity" data-legacy-click="sessions-dialog:5">${EduIcons.html("grades")}<span>نمره و فعالیت</span></button></div><section data-session-panel="attendance"><div class="session-attendance-heading">
-    <div><h4>حضور و غیاب</h4><p>وضعیت هر دانش‌آموز را انتخاب کنید.</p></div>
+    <div><h4>حضور و غیاب</h4><p data-session-attendance-progress role="status"></p></div>
     <div class="session-attendance-bulk">
-      <button type="button" class="success" data-legacy-click="sessions-dialog:6">همه حاضر</button>
-      <button type="button" class="danger" data-legacy-click="sessions-dialog:7">همه غایب</button>
+      <button type="button" class="success" data-mutating="1" data-legacy-click="sessions-dialog:6">باقی‌مانده‌ها حاضر</button>
+      <details class="session-attendance-options"><summary>تغییر همه</summary><div>
+        <button type="button" class="ghost" data-mutating="1" data-legacy-click="sessions-dialog:all-present">همه حاضر</button>
+        <button type="button" class="danger" data-mutating="1" data-legacy-click="sessions-dialog:7">همه غایب</button>
+      </div></details>
     </div>
   </div><div class="session-attendance-list">`;
   const sortedStudents = getSortedStudents({
@@ -125,19 +205,19 @@ function openSessionModal(session) {
     </div>`;
   });
   h += `</div></section><section data-session-panel="activity" hidden><h4>ثبت فعالیت کلاس</h4><p class="muted">نمرات رسمی عملی، تئوری یا پودمان در بخش نمرات درس ثبت می‌شوند.</p>
-    <form data-legacy-submit="sessions-dialog:11" data-legacy-submit-arg0="${esc(session.id)}" class="row session-entry-form">
-      <label class="session-field session-field-wide"><span>هنرجو</span><select name="studentId" aria-label="دانش‌آموز" required><option value="">دانش‌آموز</option>
+    <form data-legacy-submit="sessions-dialog:11" data-legacy-submit-arg0="${esc(session.id)}" class="row session-entry-form" data-mutating="1">
+      <label class="session-field session-field-wide"><span>هنرجو</span><select name="studentId" data-legacy-change="sessions-dialog:entry-change" aria-label="دانش‌آموز" required><option value="">دانش‌آموز</option>
       ${getSortedStudents({ students: sessionStudents(c, session) })
         .map((s) => `<option value="${s.id}">${esc(s.name)}</option>`)
         .join("")}</select></label>
-      <label class="session-field"><span>نوع فعالیت</span><select name="type" aria-label="نوع فعالیت" required>
+      <label class="session-field"><span>نوع فعالیت</span><select name="type" data-legacy-change="sessions-dialog:entry-change" aria-label="نوع فعالیت" required>
         ${!lesson.gradingPolicy && lesson.gradeMode !== "kardanesh" ? `<option value="mostamar">مستمر</option><option value="payani">پایانی</option>` : ""}
         <option value="classGrade">نمره کلاسی (۰ تا ۲۰)</option><option value="activity">امتیاز فعالیت</option><option value="positive">مثبت</option><option value="negative">منفی</option>
         <option value="homework">تکلیف</option>
       </select></label>
       <label class="session-field"><span>نمره یا مقدار</span><input name="value" aria-label="مقدار" type="text" inputmode="decimal" placeholder="مثلاً ۱۸ یا ۱" required></label>
       <label class="session-field session-field-wide"><span>توضیح <small>(اختیاری)</small></span><input name="note" aria-label="توضیح فعالیت" placeholder="موضوع تمرین یا توضیح فعالیت"></label>
-      <button type="submit">ثبت فعالیت</button>
+      <div class="session-entry-actions"><button type="submit">ثبت فعالیت</button><button type="submit" class="ghost" data-session-next>ثبت و نفر بعد</button></div>
     </form><div class="session-activity-records"><h4>فعالیت‌های ثبت‌شده</h4>`;
   if (!session.scores.length) h += `<div class="empty">امتیازی ثبت نشده</div>`;
   else {
@@ -154,8 +234,40 @@ function openSessionModal(session) {
   h += `</div></section><div class="session-workspace-footer">
     <button type="button" class="success" data-legacy-click="sessions-dialog:13" data-legacy-click-arg0="${esc(session.id)}" data-legacy-click-arg1="${esc(session.schoolId)}" data-legacy-click-arg2="${esc(session.classId)}" data-legacy-click-arg3="${esc(session.schoolId)}" data-legacy-click-arg4="${esc(session.classId)}" data-legacy-click-arg5="${esc(session.lessonId)}">کپی برای معاون</button>
     <button type="button" class="ghost" data-legacy-click="sessions-dialog:14">بستن</button></div></div>`;
-  showModal("ثبت اطلاعات جلسه", h);
+  if (showModal("ثبت اطلاعات جلسه", h) === false) return false;
   if (selectedPanel) showSessionPanel(selectedPanel);
+  const form = document.querySelector("#modalBody .session-entry-form");
+  let saved = false;
+  if (entry) {
+    for (const [name, value] of Object.entries(entry))
+      form.elements[name].value = value;
+    saved =
+      activitySaved &&
+      Object.keys(entry).every(
+        (name) => entry[name] === activitySaved.submitted[name],
+      );
+    if (saved) {
+      form.elements.value.value = "";
+      form.elements.note.value = "";
+      if (activitySaved.advance) {
+        const select = form.elements.studentId;
+        select.value = select.options[select.selectedIndex + 1]?.value || "";
+      }
+    }
+  }
+  refreshSessionActivityInput(form);
+  refreshSessionAttendanceProgress();
+  if (selectedPanel) document.getElementById("modalBody").scrollTop = scroll;
+  if (saved && selectedPanel === "activity")
+    setTimeout(() => {
+      if (
+        form.isConnected &&
+        currentSessionId === session.id &&
+        !form.elements.value.disabled &&
+        !document.getElementById("modal").classList.contains("hidden")
+      )
+        form.elements.value.focus({ preventScroll: true });
+    }, 0);
 }
 
 function getSessionById(id) {

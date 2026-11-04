@@ -575,6 +575,7 @@ const assessmentContext = (() => {
     setStatus(
       parsed.ok ? "نمرهٔ این مرحله در انتظار ذخیره است." : parsed.message,
       parsed.ok ? "pending" : "error",
+      captureSaveFeedback(),
     );
   }
   function clear(input) {
@@ -721,6 +722,7 @@ const assessmentContext = (() => {
     return snapshot;
   }
   async function flush({ strict = false } = {}) {
+    const feedbackScope = captureSaveFeedback();
     if (flushingAssessment) {
       await flushingAssessment;
       if (strict && selected?.entries.size)
@@ -745,7 +747,7 @@ const assessmentContext = (() => {
     if (!entries.length) return;
     check(context, { write: true });
     busy++;
-    paintStatus();
+    paintStatus(feedbackScope);
     const operation = writer
       .catch(() => {})
       .then(() => commit(context, entries));
@@ -773,6 +775,7 @@ const assessmentContext = (() => {
               ? "برخی ورودی‌های مرحله هنوز کامل نیستند."
               : "نمرات این مرحله ذخیره شدند.",
             context.entries.size ? "pending" : "saved",
+            feedbackScope,
           );
           refreshGradeResults();
         }
@@ -790,6 +793,7 @@ const assessmentContext = (() => {
           setStatus(
             "نمرات این مرحله ذخیره نشدند؛ پیش‌نویس محفوظ است. " + error.message,
             "error",
+            feedbackScope,
           );
           apply();
         }

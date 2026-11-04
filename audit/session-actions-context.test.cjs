@@ -410,3 +410,174 @@ test("period correction rejects a collision even when the date did not change", 
   assert.equal(f.session.period, 0);
   assert.equal(f.writes.length, 0);
 });
+
+test("fill-unset attendance preserves recorded exceptions and changes only missing frozen-roster members", async () => {
+  const f = fixture();
+  f.session.roster = [
+    "historical",
+    "absent",
+    "leave",
+    "late",
+    "present",
+    "missing",
+  ].map((id) => ({ id, name: id }));
+  f.session.attendance = {
+    absent: "absent",
+    leave: "leave",
+    late: "late:17",
+    present: "present",
+    outsider: "leave",
+  };
+  await f.c.setAllAttendanceV24("present", { onlyUnset: true });
+  assert.deepEqual(f.session.attendance, {
+    absent: "absent",
+    leave: "leave",
+    late: "late:17",
+    present: "present",
+    outsider: "leave",
+    historical: "present",
+    missing: "present",
+  });
+  assert.equal(f.session.attendance.current, undefined);
+  assert.equal(f.writes.length, 1);
+  assert.equal(f.writes[0].sessionId, "session");
+  assert.equal(f.modals.length, 1);
+  const before = JSON.stringify(f.session);
+  assert.equal(
+    await f.c.setAllAttendanceV24("present", { onlyUnset: true }),
+    false,
+  );
+  assert.equal(JSON.stringify(f.session), before);
+  assert.equal(f.writes.length, 1);
+  assert.equal(f.modals.length, 1);
+});
+
+test("explicit bulk overwrite remains available and a repeated identical overwrite is a no-op", async () => {
+  const f = fixture();
+  f.session.roster = ["historical", "leave", "late"].map((id) => ({ id }));
+  f.session.attendance = {
+    historical: "absent",
+    leave: "leave",
+    late: "late:0",
+    outsider: "absent",
+  };
+  await f.c.setAllAttendanceV24("present");
+  assert.deepEqual(f.session.attendance, {
+    historical: "present",
+    leave: "present",
+    late: "present",
+    outsider: "absent",
+  });
+  assert.equal(f.writes.length, 1);
+  assert.equal(f.modals.length, 1);
+  assert.equal(await f.c.setAllAttendanceV24("present"), false);
+  assert.equal(f.writes.length, 1);
+  assert.equal(f.modals.length, 1);
+});
+
+test("rapid submissions of the same score form while a save is pending add one activity", async () => {
+  const f = fixture(),
+    event = f.scoreEvent();
+  event.target.isConnected = true;
+  let release;
+  f.c.saveDBV24 = (scope) => {
+    f.writes.push(scope);
+    return new Promise((resolve) => {
+      release = resolve;
+    });
+  };
+  const first = f.c.addSessionScoreV24(event, "session");
+  assert.equal(f.session.scores.length, 1);
+  assert.equal(await f.c.addSessionScoreV24(event, "session"), false);
+  assert.equal(f.session.scores.length, 1);
+  assert.equal(f.writes.length, 1);
+  assert.equal(f.modals.length, 0);
+  release();
+  assert.equal(await first, true);
+  assert.equal(f.modals.length, 1);
+});
+
+for (const stale of ["disconnected", "different-session"]) {
+  test(
+    "score submission rejects a " + stale + " form before mutation",
+    async () => {
+      const f = fixture(),
+        event = f.scoreEvent();
+      if (stale === "disconnected") event.target.isConnected = false;
+      else f.c.currentSessionId = "other-session";
+      const before = JSON.stringify(f.session);
+      await assert.rejects(f.c.addSessionScoreV24(event, "session"));
+      assert.equal(JSON.stringify(f.session), before);
+      assert.equal(f.writes.length, 0);
+      assert.equal(f.modals.length, 0);
+    },
+  );
+}
+
+test("a rejected disconnected score form does not leave its submission gate locked", async () => {
+  const f = fixture(),
+    event = f.scoreEvent();
+  event.target.isConnected = false;
+  await assert.rejects(f.c.addSessionScoreV24(event, "session"));
+  event.target.isConnected = true;
+  assert.equal(await f.c.addSessionScoreV24(event, "session"), true);
+  assert.equal(f.session.scores.length, 1);
+  assert.equal(f.writes.length, 1);
+});
+
+for (const action of ["attendance", "unit", "score", "date", "score-removal"]) {
+  for (const change of ["same-id-database", "installation-epoch"]) {
+    test(
+      "late " + action + " completion cannot reopen after a replaced " + change,
+      async () => {
+        const f = fixture(),
+          originalData = f.c.db,
+          originalWorkspace = f.c.workspace;
+        f.c.installationToken = "original-epoch";
+        f.c.saveDBV24 = async (scope) => {
+          f.writes.push(scope);
+          if (change === "same-id-database") f.c.db = { ...f.c.db };
+          else f.c.installationToken = "restored-epoch";
+        };
+        if (action === "score-removal") {
+          f.session.scores.push({ value: 18 });
+          await f.c.removeSessionScoreV24("session", 0);
+        } else await f.run(action);
+        assert.equal(f.writes.length, 1);
+        assert.equal(f.c.workspace.id, "first");
+        assert.equal(f.c.workspace, originalWorkspace);
+        if (change === "same-id-database") {
+          assert.notEqual(f.c.db, originalData);
+          assert.equal(f.c.installationToken, "original-epoch");
+        } else {
+          assert.equal(f.c.db, originalData);
+          assert.equal(f.c.installationToken, "restored-epoch");
+        }
+        assert.equal(f.modals.length, 0);
+      },
+    );
+  }
+}
+
+for (const action of ["attendance", "unit", "score", "date", "score-removal"]) {
+  test(
+    "a successful " +
+      action +
+      " save still reopens after the normal catalog object replacement",
+    async () => {
+      const f = fixture(),
+        original = f.c.workspace;
+      f.c.saveDBV24 = async (scope) => {
+        f.writes.push(scope);
+        f.c.workspace = { ...f.c.workspace, revision: 1 };
+      };
+      if (action === "score-removal") {
+        f.session.scores.push({ value: 18 });
+        await f.c.removeSessionScoreV24("session", 0);
+      } else await f.run(action);
+      assert.notEqual(f.c.workspace, original);
+      assert.equal(f.writes.length, 1);
+      assert.equal(f.modals.length, 1);
+    },
+  );
+}

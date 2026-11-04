@@ -33,7 +33,9 @@ function fixture() {
   };
   for (const control of controls) control.parentElement = wrap;
   const c = vm.createContext({
+    captureSaveFeedback: () => null,
     workspace: { id: "first" },
+    db: { sessions: [session] },
     connection: {},
     currentSessionId: "session",
     periodLoading: false,

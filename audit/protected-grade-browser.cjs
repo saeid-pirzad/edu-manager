@@ -100,10 +100,9 @@ async function protectedGradeAccess() {
     let prompts = 0;
     const select = async (answer, { rejected = false } = {}) => {
       const panel = document.getElementById("modalBody"),
-        status = document.createElement("p"),
         before = prompts;
-      status.id = "operationError";
-      panel.append(status);
+      // Each attempt must produce its own visible error in the real editor.
+      panel.querySelector("[data-modal-save-feedback]")?.remove();
       window.prompt = () => {
         prompts++;
         return answer;
@@ -115,7 +114,17 @@ async function protectedGradeAccess() {
         throw Error("Second assessment action unavailable");
       button.click();
       await wait(() => prompts > before);
-      if (rejected) await wait(() => status.textContent.length > 0);
+      if (rejected)
+        await wait(() => {
+          const notice = panel.querySelector(
+            "[data-modal-save-feedback][data-state=error]",
+          );
+          return (
+            notice &&
+            !notice.hidden &&
+            notice.textContent.includes("دسترسی به نمرات این نوبت تأیید نشد.")
+          );
+        });
       else
         await wait(
           () =>
@@ -124,7 +133,6 @@ async function protectedGradeAccess() {
             ) && document.querySelector("#modalBody [data-assessment-context]"),
         );
       await new Promise((resolve) => setTimeout(resolve, 50));
-      status.remove();
     };
     await select("incorrect-password", { rejected: true });
     check(

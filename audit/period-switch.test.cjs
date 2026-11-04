@@ -11,6 +11,7 @@ function fixture() {
     locks = [],
     recovered = [];
   const c = vm.createContext({
+    captureSaveFeedback: () => null,
     assessmentContext: {
       hasDrafts: () => false,
       handles: () => false,
@@ -139,6 +140,7 @@ test("snapshot loads catalog and bounded records in one transaction and waits fo
   });
   const calls = [];
   const c = vm.createContext({
+    captureSaveFeedback: () => null,
     assessmentContext: {
       hasDrafts: () => false,
       handles: () => false,

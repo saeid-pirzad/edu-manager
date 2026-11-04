@@ -1,4 +1,5 @@
 async function flushDrafts({ strict = false } = {}) {
+  const feedbackScope = captureSaveFeedback();
   if (resetBusy || connectionRetired)
     throw Error("ثبت هنگام پاک‌سازی یا تغییر بانک متوقف است.");
   await assessmentContext.flush({ strict });
@@ -87,16 +88,21 @@ async function flushDrafts({ strict = false } = {}) {
           target[item.field] = parsed.value;
         }
       }
-      await saveDBV24({ classId, action: "ثبت نمره (" + c.name + ")" });
+      await saveDBV24(
+        { classId, action: "ثبت نمره (" + c.name + ")" },
+        { feedbackScope },
+      );
       for (const [key, item] of items)
         if (drafts.get(key) === item) drafts.delete(key);
       await storeDrafts();
     }
-    if (!drafts.size) setStatus("همه نمرات ذخیره شدند.", "saved");
+    if (!drafts.size)
+      setStatus("همه نمرات ذخیره شدند.", "saved", feedbackScope);
     else
       setStatus(
         "برخی ورودی‌ها هنوز ذخیره نشده‌اند؛ پیام کنار کادر را بررسی کنید.",
         "error",
+        feedbackScope,
       );
     refreshGradeResults();
     if (
@@ -120,6 +126,7 @@ async function flushDrafts({ strict = false } = {}) {
       setStatus(
         "نمرات ذخیره نشدند؛ پیش‌نویس محفوظ است. " + error.message,
         "error",
+        feedbackScope,
       );
       render();
       throw error;

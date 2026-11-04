@@ -26,6 +26,7 @@ function fixture(sessionSchedule = false) {
     classObj: { lessons: [{ id: "lesson" }], students: [{ id: "student" }] },
   };
   const c = vm.createContext({
+    captureSaveFeedback: () => null,
     workspace: { id: "first", year: "1405-1406", revision: 1 },
     connection: {},
     state: { view: "schedule" },

@@ -193,6 +193,12 @@ if (process.argv.includes("--help")) {
         cases,
         delay,
       });
+      await require("./daily-session-browser.cjs").run({
+        cdp,
+        evaluate,
+        cases,
+        delay,
+      });
       await require("./report-export-layout.cjs")({ cdp, evaluate, cases });
       await require("./deputy-report-action.cjs")({
         cdp,

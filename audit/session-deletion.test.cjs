@@ -7,6 +7,7 @@ const fs = require("node:fs"),
 function fixture() {
   const effects = [];
   const c = vm.createContext({
+    captureSaveFeedback: () => null,
     workspace: { id: "first" },
     connection: {},
     state: { schoolId: "school", classId: "class", lessonId: "lesson" },

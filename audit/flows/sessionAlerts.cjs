@@ -80,15 +80,38 @@ module.exports = async function sessionAlerts() {
         error: document.querySelector(".session-validation-alert")?.textContent,
       },
     });
-    EduV24.course.error(Error("تداخل جلسه آزمایشی"));
+    const dateTools = document.querySelector("#modalBody .session-date-tools");
+    dateTools.open = false;
+    const message = "تداخل جلسه آزمایشی";
+    EduV24.course.error(Error(message));
     await pause();
+    const feedback = document.querySelector(
+      "#modalBody [data-modal-save-feedback]",
+    );
     cases.push({
       id: "REAL-ALERT-FALLBACK",
-      name: "Generic session error also uses custom inline renderer",
+      name: "Generic session failure stays in scoped feedback without opening date controls",
       pass:
-        !!document.querySelector("#modalBody .session-validation-alert") &&
+        !!feedback &&
+        !feedback.hidden &&
+        feedback.getClientRects().length > 0 &&
+        feedback.dataset.state === "error" &&
+        feedback.textContent === message &&
+        feedback.getAttribute("role") === "status" &&
+        feedback.getAttribute("aria-live") === "polite" &&
+        !dateTools.open &&
+        !dateTools.querySelector(".session-validation-alert") &&
         native.length === 0,
-      observed: { native: [...native] },
+      observed: {
+        native: [...native],
+        feedback: feedback?.textContent,
+        state: feedback?.dataset.state,
+        visible:
+          !!feedback &&
+          !feedback.hidden &&
+          feedback.getClientRects().length > 0,
+        dateToolsOpen: dateTools.open,
+      },
     });
   } finally {
     db.sessions = oldSessions;

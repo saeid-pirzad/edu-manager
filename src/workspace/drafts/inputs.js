@@ -36,6 +36,7 @@ function gradeInput(input) {
   setStatus(
     parsed.ok ? "ویرایش در انتظار ذخیره است." : parsed.message,
     parsed.ok ? "pending" : "error",
+    captureSaveFeedback(),
   );
   clearTimeout(draftTimer);
   if (parsed.ok)

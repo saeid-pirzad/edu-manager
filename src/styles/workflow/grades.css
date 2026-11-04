@@ -1442,3 +1442,42 @@
     }
   }
 }
+
+@media screen {
+  #modalBody .modal-save-feedback {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 0 0 14px;
+    padding: 9px 12px;
+    border: 1px solid #cce4da;
+    border-radius: 11px;
+    background: #f1f9f5;
+    color: #205b45;
+    font-size: 0.78rem;
+    line-height: 1.75;
+    overflow-wrap: anywhere;
+  }
+  #modalBody .modal-save-feedback[hidden] {
+    display: none;
+  }
+  #modalBody .modal-save-feedback::before {
+    content: "";
+    flex: 0 0 8px;
+    width: 8px;
+    height: 8px;
+    margin-top: 0.5em;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  #modalBody .modal-save-feedback[data-state="pending"] {
+    border-color: #ecd9ab;
+    background: #fff9ec;
+    color: #79520c;
+  }
+  #modalBody .modal-save-feedback[data-state="error"] {
+    border-color: #ecc8ce;
+    background: #fff3f4;
+    color: #9b293e;
+  }
+}
