@@ -147,6 +147,7 @@ globalThis.EduRecordTransaction = Object.freeze({
             return;
           }
           if (sessionChanges?.guarded.length) {
+            sessionSlots.assertScheduled(sessionChanges, sourceMeta);
             const year = meta?.settings?.academicYear ?? live.year,
               family = labels.result.filter(
                 (row) =>

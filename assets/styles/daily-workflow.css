@@ -6406,6 +6406,28 @@ body {
     break-after: avoid;
   }
 }
+
+@media screen {
+  #app .session-create-form select {
+    min-width: 0;
+    width: 100%;
+    min-height: 46px;
+    font-size: 14px;
+  }
+  #app .session-create .session-schedule-hint,
+  #modalBody .session-date-tools .session-schedule-hint {
+    margin: 12px 0 0;
+    color: var(--workflow-muted);
+    font-size: 12px;
+    line-height: 1.9;
+    overflow-wrap: anywhere;
+  }
+}
+@media screen and (max-width: 700px) {
+  #app .session-create-form select {
+    font-size: 16px;
+  }
+}
 /* Source: src/styles/workflow/grades.css */
 /* Flat gradebook rows on desktop; a single student per card on mobile. */
 @media screen {

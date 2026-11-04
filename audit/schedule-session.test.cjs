@@ -15,6 +15,7 @@ function fixture() {
   const target = {
     school: { id: "school" },
     classObj: {
+      id: "class",
       lessons: [{ id: "lesson" }],
       students: [{ id: "student", name: "Original" }],
     },
@@ -26,13 +27,23 @@ function fixture() {
     periodLoading: false,
     resetBusy: false,
     connectionRetired: false,
-    db: { settings: { academicYear: "1405-1406" }, sessions: [] },
+    db: {
+      settings: { academicYear: "1405-1406", weekStartDate: "2026-10-24" },
+      schools: [{ id: "school", classes: [target.classObj] }],
+      sessions: [],
+      periods: 6,
+      activeDays: [0, 1, 2, 3, 4, 5],
+      masterSchedule: {
+        "0-0-all": { schoolId: "school", classId: "class", lessonId: "lesson" },
+      },
+    },
     assertEntityWritable() {},
     document: { getElementById: (id) => controls[id] },
     flushDrafts: async () => {},
     writer: Promise.resolve(),
     findClassById: () => target,
-    getDayIdxFromDate: () => 0,
+    getDayIdxFromDate: (date) =>
+      (new Date(date + "T00:00:00Z").getUTCDay() + 1) % 7,
     DAYS: ["Saturday", "Sunday"],
     faDate: (date) => date,
     confirm: () => true,
@@ -43,7 +54,7 @@ function fixture() {
     openSessionModal: (session) => modals.push(session),
     getSessionById: (id) => c.db.sessions.find((session) => session.id === id),
   });
-  for (const name of ["calendar.js", "academic-year.js"])
+  for (const name of ["calendar.js", "academic-year.js", "session-slots.js"])
     vm.runInContext(
       fs.readFileSync(path.join(__dirname, "../src/domain", name), "utf8"),
       c,

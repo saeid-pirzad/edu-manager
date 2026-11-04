@@ -197,6 +197,7 @@ function orchestrationFixture(mode = "daily", audience = "management") {
     "notes.js",
     "filters.js",
     "render.js",
+    "excel-sharing.js",
     "generate.js",
     "output.js",
   ])

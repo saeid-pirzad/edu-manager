@@ -229,14 +229,37 @@ async function recoveredNameUndoFlow() {
       fixture.reportDrafts[period] = {};
     }
     await restore(fixture);
+    // This is a newly recorded meeting, so prepare its actual weekly slot
+    // through the same shared-year save used by the timetable editor.
+    const meetingDate = EduAcademicYear.range(year).start,
+      meetingDay = getDayIdxFromDate(meetingDate);
+    db.activeDays = [...new Set([...(db.activeDays || []), meetingDay])].sort(
+      (a, b) => a - b,
+    );
+    db.periods = Math.max(db.periods || 6, 3);
+    db.settings.weekStartDate = meetingDate;
+    db.masterSchedule[meetingDay + "-2-all"] = {
+      schoolId: ids.school,
+      classId: ids.classroom,
+      lessonId: ids.lesson,
+    };
+    await saveDB({ action: "Synthetic recovered-name meeting schedule" });
+    await EduV24.test.settle();
     closeModal();
     goSchool(ids.school);
     goClass(ids.classroom);
     goLesson(ids.lesson);
     setTab("sessions");
     const createForm = document.querySelector(".session-create-form");
-    createForm.elements.date.value = EduAcademicYear.range(year).start;
+    createForm.elements.date.value = meetingDate;
+    createForm.elements.date.dispatchEvent(
+      new Event("change", { bubbles: true }),
+    );
     createForm.elements.period.value = "3";
+    if (createForm.elements.period.value !== "3")
+      throw Error(
+        "The recovered-name fixture did not offer its configured bell",
+      );
     await addManualSession(
       { preventDefault() {}, target: createForm },
       ids.lesson,

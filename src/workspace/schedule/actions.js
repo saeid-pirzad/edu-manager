@@ -69,6 +69,13 @@ async function startSessionFromMasterV24(day, period) {
         "تداخل جلسه: در این تاریخ و زنگ، جلسهٔ کلاس دیگری ثبت شده است. ابتدا تاریخ یا شمارهٔ زنگ را اصلاح کنید.",
       );
     if (!session) {
+      validateSessionSchedule({
+        schoolId: target.school.id,
+        classId,
+        lessonId,
+        date,
+        period,
+      });
       session = {
         id: uid(),
         schoolId: target.school.id,

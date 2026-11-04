@@ -33,11 +33,37 @@ async function crossTermSessionFlow() {
       goLesson(ids.lesson);
       setTab("sessions");
     },
+    configureSchedule = async () => {
+      // Honest schedule setup must use the shared-year persistence path;
+      // duplicate-slot checks below still have to reach atomic persistence.
+      for (const offset of [0, 1, 2]) {
+        const meetingDate = new Date(
+            new Date(date + "T12:00:00Z").getTime() + offset * 86400000,
+          )
+            .toISOString()
+            .slice(0, 10),
+          day = getDayIdxFromDate(meetingDate);
+        db.activeDays = [...new Set([...(db.activeDays || []), day])].sort(
+          (a, b) => a - b,
+        );
+        db.masterSchedule[day + "-0-all"] = {
+          schoolId: ids.school,
+          classId: ids.classroom,
+          lessonId: ids.lesson,
+        };
+      }
+      db.settings.weekStartDate = date;
+      await saveDB({ action: "Synthetic cross-term meeting schedule" });
+      await EduV24.test.settle();
+    },
     create = async (targetDate) => {
       lessonPage();
       const form = document.querySelector(".session-create-form");
       form.elements.date.value = targetDate;
+      form.elements.date.dispatchEvent(new Event("change", { bubbles: true }));
       form.elements.period.value = "1";
+      if (form.elements.period.value !== "1")
+        throw Error("The cross-term fixture did not offer its configured bell");
       return addManualSession(
         { preventDefault() {}, target: form },
         ids.lesson,
@@ -142,6 +168,7 @@ async function crossTermSessionFlow() {
         });
     }
     await restore(fixture);
+    await configureSchedule();
     let error = "";
     try {
       await create(date);
@@ -168,6 +195,9 @@ async function crossTermSessionFlow() {
     goMaster(ids.classroom);
     clickMasterCell(day, 0);
     document.getElementById("sessNewDate").value = date;
+    document
+      .getElementById("sessNewDate")
+      .dispatchEvent(new Event("change", { bubbles: true }));
     error = "";
     try {
       await startSessionFromMaster(day, 0);
@@ -186,6 +216,10 @@ async function crossTermSessionFlow() {
     await create(tomorrow);
     const currentId = db.sessions[0].id;
     document.getElementById("sessDate").value = date;
+    document
+      .getElementById("sessDate")
+      .dispatchEvent(new Event("change", { bubbles: true }));
+    document.getElementById("sessPeriod").value = "1";
     error = "";
     try {
       await changeSessionDate(currentId);
@@ -221,7 +255,14 @@ async function crossTermSessionFlow() {
       sessions(saved, ids.second)[0].value.attendance[ids.student] ===
         "present" && sessions(saved, ids.first).length === 1,
     );
+    closeModal();
+    await configureSchedule();
+    openSessionModal(getSessionById(meeting.id));
     document.getElementById("sessDate").value = tomorrow;
+    document
+      .getElementById("sessDate")
+      .dispatchEvent(new Event("change", { bubbles: true }));
+    document.getElementById("sessPeriod").value = "1";
     await changeSessionDate(meeting.id);
     closeModal();
     await EduV24.undoLast();

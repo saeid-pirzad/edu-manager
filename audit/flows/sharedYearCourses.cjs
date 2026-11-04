@@ -162,6 +162,20 @@ module.exports = async function sharedYearCourses() {
       for (const row of catalog) tx.objectStore("catalog").put(row);
       await done;
     };
+  const scheduleFixtureSession = (meeting) => {
+    const day = (new Date(meeting.date + "T00:00:00Z").getUTCDay() + 1) % 7;
+    db.periods = Math.max(db.periods || 6, meeting.period + 1);
+    db.activeDays = [
+      ...new Set([...(db.activeDays || [0, 1, 2, 3, 4, 5]), day]),
+    ].sort((a, b) => a - b);
+    for (const parity of ["odd", "even"])
+      delete db.masterSchedule[day + "-" + meeting.period + "-" + parity];
+    db.masterSchedule[day + "-" + meeting.period + "-all"] = {
+      schoolId: meeting.schoolId,
+      classId: meeting.classId,
+      lessonId: meeting.lessonId,
+    };
+  };
   let original = null,
     originalPut = null;
   try {
@@ -257,6 +271,7 @@ module.exports = async function sharedYearCourses() {
         year,
         db.schools[0].classes[0],
       );
+    for (const meeting of db.sessions) scheduleFixtureSession(meeting);
     await saveDB({ action: "ساخت داده آزمایشی دروس سالانه" });
     await EduV24.finalizePeriod();
     if (!EduV24.getReportContext().closed)
@@ -286,6 +301,7 @@ module.exports = async function sharedYearCourses() {
         scores: [],
       },
     ];
+    for (const meeting of db.sessions) scheduleFixtureSession(meeting);
     await saveDB({ action: "ثبت نمرات مستقل نوبت دوم" });
     const sentinel = await createPeriod(otherYear, "اول"),
       sentinelSnapshot = await EduV24.snapshotInstallation(),

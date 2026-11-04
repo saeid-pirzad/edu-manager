@@ -745,7 +745,8 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
           removed,
           restoredRecords: options.restoredSessionRecords,
         });
-      if (sessionChanges?.guarded.length)
+      if (sessionChanges?.guarded.length) {
+        sessionSlots.assertScheduled(sessionChanges, sourceNext.get("meta"));
         sessionSlots.assertAvailable(
           sessionChanges,
           live.id,
@@ -759,6 +760,7 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
             )
             .map(({ period, next }) => ({ id: period.id, records: next })),
         );
+      }
       for (const part of prepared)
         part.plan = globalThis.EduRecordCommitPlan.create(
           part.next,

@@ -418,11 +418,28 @@ module.exports = async function annualActivityView() {
     );
     await restore(fixture);
     closeModal();
+    // This requested class is on the current timetable; a historical meeting in
+    // the other term still owns the teacher's same date and bell.
+    const conflictDay = (new Date(date + "T00:00:00Z").getUTCDay() + 1) % 7;
+    db.activeDays = [
+      ...new Set([...(db.activeDays || [0, 1, 2, 3, 4, 5]), conflictDay]),
+    ].sort((a, b) => a - b);
+    db.masterSchedule[conflictDay + "-0-all"] = {
+      schoolId: ids.school,
+      classId: ids.b,
+      lessonId: ids.otherLesson,
+    };
+    await saveDB({
+      action: "برنامه مصنوعی برای آزمون تداخل جلسه با نوبت دیگر",
+    });
     goSchool(ids.school);
     goClass(ids.b);
     goLesson(ids.otherLesson);
     const creation = document.querySelector(".session-create-form");
     creation.elements.date.value = date;
+    creation.elements.date.dispatchEvent(
+      new Event("change", { bubbles: true }),
+    );
     creation.elements.period.value = "1";
     const beforeConflict = store(await EduV24.snapshotInstallation());
     let conflict = "";

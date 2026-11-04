@@ -99,6 +99,10 @@ function validateSessionDate(date) {
   return date;
 }
 
+function validateSessionSchedule(session) {
+  EduSessionSlots.assertScheduled({ guarded: [{ value: session }] }, db);
+}
+
 function validateAcademicSessionDate(date) {
   return EduAcademicYear.assertDate(workspace.year, validateSessionDate(date));
 }
@@ -223,6 +227,7 @@ async function addManualSessionV24(event, lessonId) {
       if (isCurrent()) openSessionModal(existing);
       return false;
     }
+    validateSessionSchedule({ schoolId, classId, lessonId, date, period });
     const session = {
       id: uid(),
       schoolId,
@@ -251,10 +256,9 @@ async function changeSessionDateV24(id) {
   if (!session) throw Error("جلسه دیگر وجود ندارد.");
   const date = validateSessionDate(document.getElementById("sessDate").value);
   const periodInput = document.getElementById("sessPeriod");
-  const periodText =
-    periodInput?.type === "number"
-      ? asciiDigits(periodInput.value)
-      : String(session.period + 1);
+  const periodText = ["number", "select-one"].includes(periodInput?.type)
+    ? asciiDigits(periodInput.value)
+    : String(session.period + 1);
   if (
     !/^\d{1,2}$/.test(periodText) ||
     Number(periodText) < 1 ||
@@ -277,6 +281,7 @@ async function changeSessionDateV24(id) {
       "تداخل جلسه: این تاریخ و زنگ قبلاً ثبت شده است. تاریخ یا شمارهٔ زنگ دیگری انتخاب کنید؛ اطلاعات جلسه تغییر نکرد.",
     );
   }
+  validateSessionSchedule({ ...session, date, period });
   session.date = date;
   session.period = period;
   await saveDBV24({ sessionId: id, action: "تغییر تاریخ یا زنگ جلسه" });

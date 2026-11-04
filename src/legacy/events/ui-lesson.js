@@ -40,3 +40,7 @@ EduLegacyEvents.register("ui-lesson:8", function (event) {
 EduLegacyEvents.register("ui-lesson:9", function (event) {
   return deleteSession(this.getAttribute("data-legacy-click-arg4"));
 });
+
+EduLegacyEvents.register("ui-lesson:session-date", function () {
+  return refreshLessonSessionSchedule(this.form);
+});

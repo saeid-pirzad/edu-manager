@@ -61,6 +61,7 @@ module.exports = async function sessionAlerts() {
     await pause();
     form = document.querySelector(".session-create-form");
     form.elements.date.value = date;
+    form.elements.date.dispatchEvent(new Event("change", { bubbles: true }));
     form.elements.period.value = "1";
     form.dispatchEvent(
       new Event("submit", { bubbles: true, cancelable: true }),

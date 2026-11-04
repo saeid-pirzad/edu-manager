@@ -1,8 +1,7 @@
 // Event handlers extracted from src/legacy/sessions/dialog.js.
 EduLegacyEvents.register("sessions-dialog:0", function (event) {
-  return (document.getElementById("shamsiSessDate").textContent = toShamsi(
-    this.value,
-  ));
+  document.getElementById("shamsiSessDate").textContent = toShamsi(this.value);
+  refreshSessionDateSchedule();
 });
 
 EduLegacyEvents.register("sessions-dialog:1", function (event) {

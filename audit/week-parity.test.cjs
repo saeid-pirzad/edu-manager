@@ -10,6 +10,13 @@ function fixture() {
   });
   vm.runInContext(
     fs.readFileSync(
+      path.join(__dirname, "../src/domain/session-slots.js"),
+      "utf8",
+    ),
+    c,
+  );
+  vm.runInContext(
+    fs.readFileSync(
       path.join(__dirname, "../src/legacy/data/selectors.js"),
       "utf8",
     ),

@@ -5,6 +5,25 @@ async function annualChecks() {
     record = (id, name, pass, extra = {}) =>
       cases.push({ id, name, pass: !!pass, ...extra });
   const previous = EduV24.getReportContext().id;
+  const seedAnnualSchedule = async () => {
+    const days = new Set(db.activeDays || [0, 1, 2, 3, 4, 5]);
+    db.periods = Math.max(db.periods || 6, 1);
+    db.settings.weekStartDate = "2028-10-21";
+    for (const date of ["2028-10-25", "2029-03-25"]) {
+      const day = (new Date(date + "T00:00:00Z").getUTCDay() + 1) % 7;
+      days.add(day);
+      for (const parity of ["odd", "even"])
+        delete db.masterSchedule[day + "-0-" + parity];
+      db.masterSchedule[day + "-0-all"] = {
+        schoolId: "school_a",
+        classId: "class_a",
+        lessonId: "lesson_dual",
+      };
+    }
+    db.activeDays = [...days].sort((a, b) => a - b);
+    // The real save shares this timetable across both terms before adding meetings.
+    await saveDB({ action: "برنامهٔ هفتگی ساختگی برای آزمون گزارش سالانه" });
+  };
   try {
     if (!["اول", "دوم"].includes(EduV24.test.getState().workspace.term)) {
       let denied = false;
@@ -25,6 +44,7 @@ async function annualChecks() {
     document.getElementById("periodTerm").value = "اول";
     await EduV24.test.createLegacyPeriod();
     const first = EduV24.getReportContext().id;
+    await seedAnnualSchedule();
     db.schools[0].classes[0].lessons[0].teacher = "دبیر نوبت اول";
     db.sessions = [
       {
@@ -99,6 +119,7 @@ async function annualChecks() {
     document.getElementById("periodYear").value = "1407-1408";
     document.getElementById("periodTerm").value = "دوم";
     await EduV24.test.createLegacyPeriod();
+    await seedAnnualSchedule();
     db.schools[0].classes[0].lessons[0].teacher = "دبیر نوبت دوم";
     db.sessions = [
       {

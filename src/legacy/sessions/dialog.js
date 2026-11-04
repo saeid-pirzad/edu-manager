@@ -69,14 +69,19 @@ function openSessionModal(session) {
       '<aside class="session-year-warning" role="status"><strong>جلسهٔ قدیمی خارج از سال تحصیلی</strong><p>سوابق این جلسه حفظ شده‌اند. این تاریخ در گزارش سالانهٔ ' +
       esc(db.settings.academicYear) +
       " قرار نمی‌گیرد؛ تاریخ را بررسی و در صورت نیاز اصلاح کنید.</p></aside>";
+  const sessionSelection = sessionScheduleSelection(
+    session,
+    String(session.period + 1),
+    [session],
+  );
   h += `<details class="session-date-tools"><summary>${EduIcons.html("edit")}<span>ویرایش تاریخ و زنگ</span></summary><div class="form-row session-date-grid">
     <label class="session-field"><span>تاریخ جلسه</span>
       <input type="date" id="sessDate" value="${session.date}" min="${academicRange.start}" max="${academicRange.end}" data-legacy-change="sessions-dialog:0">
       <span class="shamsi-display" id="shamsiSessDate">${toShamsi(session.date)}</span>
     </label>
-    <label class="session-field"><span>شماره زنگ</span><input type="number" id="sessPeriod" min="1" max="12" inputmode="numeric" value="${session.period + 1}"></label>
+    <label class="session-field"><span>زنگ طبق برنامه</span><select id="sessPeriod">${sessionSelection.options}</select></label>
     <button type="button" class="ghost" data-legacy-click="sessions-dialog:1" data-legacy-click-arg3="${esc(session.id)}">ذخیره تغییرات</button>
-  </div></details>`;
+  </div><p class="session-schedule-hint" id="sessScheduleStatus" role="status">${esc(sessionSelection.summary)}</p></details>`;
   if (lesson.gradeMode !== "kardanesh")
     h += `<div class="form-row session-unit-fields">
     <label class="session-field"><span>پودمان</span>

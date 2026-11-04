@@ -239,7 +239,18 @@ async function seniorReviewFlows() {
     const form = document.querySelector(".session-create-form");
     const existing = db.sessions.find((x) => x.lessonId === "lesson_dual");
     form.elements.date.value = existing.date;
-    form.elements.period.value = String(existing.period + 1);
+    form.elements.date.dispatchEvent(new Event("change", { bubbles: true }));
+    const occupiedBell = String(existing.period + 1);
+    // Exercise the business guard even when a crafted select injects another lesson's bell.
+    if (
+      ![...form.elements.period.options].some(
+        (option) => option.value === occupiedBell,
+      )
+    )
+      form.elements.period.add(
+        new Option("زنگ دستکاری‌شده برای آزمون تداخل", occupiedBell),
+      );
+    form.elements.period.value = occupiedBell;
     const oldConfirm = window.confirm;
     let confirmation = "";
     window.confirm = (message) => {

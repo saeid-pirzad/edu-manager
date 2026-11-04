@@ -9262,6 +9262,7 @@ body.modal-open {
   :is(#modalBody, #deputyBackupBody)
     .backup-hub
     #singleFileFallback:not([hidden]) {
+    margin-top: 12px;
     margin-bottom: 14px;
     padding: 12px;
     border: 1px solid #ead4b6;

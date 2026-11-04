@@ -82,6 +82,7 @@ module.exports = async function academicYearSafety() {
       openLesson();
       const form = document.querySelector(".session-create-form");
       form.elements.date.value = date;
+      form.elements.date.dispatchEvent(new Event("change", { bubbles: true }));
       form.elements.period.value = String(period);
       // Dispatch submit as well as the real listener so a malicious or stale
       // control cannot rely only on a browser min/max constraint.
@@ -131,7 +132,16 @@ module.exports = async function academicYearSafety() {
     const data = EduV24.normalizeDB({
         schemaVersion: 26,
         settings: { academicYear: year, academicTerm: "اول", password: "" },
-        masterSchedule: {},
+        masterSchedule: Object.fromEntries(
+          [0, 1, 3].map((period) => [
+            "4-" + period + "-all",
+            {
+              schoolId: ids.school,
+              classId: ids.classroom,
+              lessonId: ids.lesson,
+            },
+          ]),
+        ),
         activeDays: [0, 1, 2, 3, 4, 5, 6],
         periods: 6,
         sessions: [],

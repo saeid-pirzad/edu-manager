@@ -4,6 +4,20 @@ module.exports = async function academicBackupLifecycle() {
     check = (id, name, pass, observed = {}) =>
       cases.push({ id, name, pass: !!pass, observed });
   const previous = EduV24.getReportContext().id;
+  const scheduleFixtureSession = (meeting) => {
+    const day = (new Date(meeting.date + "T00:00:00Z").getUTCDay() + 1) % 7;
+    db.periods = Math.max(db.periods || 6, meeting.period + 1);
+    db.activeDays = [
+      ...new Set([...(db.activeDays || [0, 1, 2, 3, 4, 5]), day]),
+    ].sort((a, b) => a - b);
+    for (const parity of ["odd", "even"])
+      delete db.masterSchedule[day + "-" + meeting.period + "-" + parity];
+    db.masterSchedule[day + "-" + meeting.period + "-all"] = {
+      schoolId: meeting.schoolId,
+      classId: meeting.classId,
+      lessonId: meeting.lessonId,
+    };
+  };
   try {
     closeModal();
     await EduV24.test.prepareLegacyPeriodFixture();
@@ -63,6 +77,7 @@ module.exports = async function academicBackupLifecycle() {
       scores: [],
     });
     db.sessions = [session("academic-first", "2037-10-24", "present")];
+    scheduleFixtureSession(db.sessions[0]);
     await saveDB();
     const firstGrade = EduV24.assessmentResult(lesson, student.id).final;
     await EduV24.finalizePeriod();
@@ -119,6 +134,7 @@ module.exports = async function academicBackupLifecycle() {
       theory: 20,
     };
     db.sessions = [session("academic-second", "2038-03-25", "late:10")];
+    scheduleFixtureSession(db.sessions[0]);
     await saveDB();
     const before = await EduV24.snapshotInstallation();
     const again = await EduV24.snapshotInstallation();

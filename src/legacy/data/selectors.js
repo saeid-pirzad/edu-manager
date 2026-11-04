@@ -34,18 +34,10 @@ function getSaturdayOf(dateStr) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 function getWeekParity(dateStr) {
-  const start = getSaturdayOf(db.settings.weekStartDate || todayISO());
-  const target = getSaturdayOf(dateStr || todayISO());
-  const weeks = Math.round(
-    (new Date(target + "T00:00:00") - new Date(start + "T00:00:00")) /
-      (7 * 24 * 60 * 60 * 1000),
-  );
-  return weeks % 2 === 0 ? "odd" : "even";
+  return EduSessionSlots.weekParity(db, dateStr || todayISO());
 }
 function getMasterEntry(day, period, dateStr) {
-  const parity = getWeekParity(dateStr);
-  const m = db.masterSchedule || {};
-  return m[`${day}-${period}-${parity}`] || m[`${day}-${period}-all`] || null;
+  return EduSessionSlots.entry(db, day, period, dateStr || todayISO());
 }
 function getBothEntries(day, period) {
   const m = db.masterSchedule || {};

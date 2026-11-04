@@ -9,6 +9,7 @@ function fixture() {
     writes = [];
   const session = {
     id: "session",
+    schoolId: "school",
     classId: "class",
     lessonId: "lesson",
     poudmanId: null,
@@ -19,17 +20,33 @@ function fixture() {
     scores: [],
     roster: [{ id: "historical", name: "Historical" }],
   };
-  const cls = { students: [{ id: "current", name: "New student" }] };
+  const cls = {
+    id: "class",
+    students: [{ id: "current", name: "New student" }],
+  };
   const lesson = {
+    id: "lesson",
     poudmans: [
       { id: "pod", name: "Pod", units: [{ id: "unit", name: "Unit" }] },
     ],
   };
+  cls.lessons = [lesson];
   const c = vm.createContext({
     workspace: { id: "first", year: "1405-1406" },
     connection: {},
     currentSessionId: "session",
-    db: { settings: { academicYear: "1405-1406" }, sessions: [session] },
+    db: {
+      settings: { academicYear: "1405-1406", weekStartDate: "2026-10-24" },
+      schools: [{ id: "school", classes: [cls] }],
+      sessions: [session],
+      periods: 6,
+      activeDays: [0, 1, 2, 3, 4, 5],
+      masterSchedule: {
+        "3-0-all": { schoolId: "school", classId: "class", lessonId: "lesson" },
+        "3-1-all": { schoolId: "school", classId: "class", lessonId: "lesson" },
+        "4-0-all": { schoolId: "school", classId: "class", lessonId: "lesson" },
+      },
+    },
     periodLoading: false,
     resetBusy: false,
     connectionRetired: false,
@@ -53,7 +70,7 @@ function fixture() {
     TYPE_LABELS: { classGrade: "class grade" },
     parseGrade: () => ({ ok: true, value: 18 }),
   });
-  for (const name of ["calendar.js", "academic-year.js"])
+  for (const name of ["calendar.js", "academic-year.js", "session-slots.js"])
     vm.runInContext(
       fs.readFileSync(path.join(__dirname, "../src/domain", name), "utf8"),
       c,

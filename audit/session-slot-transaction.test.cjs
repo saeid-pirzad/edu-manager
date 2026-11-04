@@ -26,6 +26,7 @@ function fixture({
   extra = [],
   directory = false,
   annual = false,
+  schedules = {},
 } = {}) {
   const c = vm.createContext({
       structuredClone,
@@ -135,7 +136,15 @@ function fixture({
       name: "CLASS",
       students: [],
       archivedStudents: [],
-      lessons: [],
+      lessons: [
+        {
+          id: "lesson",
+          name: "LESSON",
+          gradeMode: "kardanesh",
+          kardaneshScores: {},
+          poudmans: [],
+        },
+      ],
     },
     install = (id, kind, year, sessions) => {
       const period = {
@@ -147,7 +156,27 @@ function fixture({
           closed: false,
         },
         meta = {
-          settings: { academicYear: year, academicTerm: period.term },
+          settings: {
+            academicYear: year,
+            academicTerm: period.term,
+            weekStartDate: "2026-10-24",
+          },
+          activeDays: [0, 1, 2, 3, 4, 5],
+          periods: 6,
+          masterSchedule: copy(
+            schedules[id] || {
+              "3-0-all": {
+                schoolId: "school",
+                classId: "classroom",
+                lessonId: "lesson",
+              },
+              "3-1-all": {
+                schoolId: "school",
+                classId: "classroom",
+                lessonId: "lesson",
+              },
+            },
+          ),
           layout: [{ id: "school", name: "SCHOOL", classes: [classroom.id] }],
         };
       stores.catalog.set(id, period);
@@ -189,7 +218,12 @@ function fixture({
   const commit = (
     id,
     current,
-    { previous = null, restore = null, classEdit = false } = {},
+    {
+      previous = null,
+      restore = null,
+      classEdit = false,
+      metaEdit = null,
+    } = {},
   ) => {
     const period = copy(stores.catalog.get(id)),
       records = new Map([
@@ -197,6 +231,12 @@ function fixture({
       ]),
       changed = [["session:" + current.id, JSON.stringify(current)]],
       before = [{ key: "session:" + current.id, value: previous }];
+    if (metaEdit) {
+      const originalMeta = copy(records.get("meta"));
+      Object.assign(records.get("meta"), copy(metaEdit));
+      changed.push(["meta", JSON.stringify(records.get("meta"))]);
+      before.push({ key: "meta", value: originalMeta });
+    }
     if (classEdit) {
       records.set("class:classroom", { ...copy(classroom), name: "EDITED" });
       changed.push([
@@ -291,7 +331,17 @@ test("different-class and different-school peer collisions roll back every store
   }
 });
 test("competing terms with different classes still commit only one teacher date/bell", async () => {
-  const f = fixture(),
+  const f = fixture({
+      schedules: {
+        second: {
+          "3-0-all": {
+            schoolId: "another-school",
+            classId: "another-class",
+            lessonId: "lesson",
+          },
+        },
+      },
+    }),
     results = await Promise.allSettled([
       f.commit("first", session("a")),
       f.commit(
@@ -358,4 +408,164 @@ test("a combined annual-module grade commit cannot bypass the physical slot guar
   );
   assert.equal(JSON.stringify([...f.stores.records]), before);
   assert.equal(f.stores.events.size, 0);
+});
+
+const storeSnapshot = (f) =>
+    JSON.stringify(
+      Object.entries(f.stores).map(([name, rows]) => [name, [...rows]]),
+    ),
+  scheduleFailure = (error) => error.code === "SESSION_OUTSIDE_SCHEDULE";
+
+for (const directory of [false, true]) {
+  const pathName = directory ? "shared-directory" : "normal-record";
+  test(
+    pathName +
+      " direct session save rejects an unscheduled date and rolls back every store",
+    async () => {
+      const f = fixture({ directory }),
+        before = storeSnapshot(f);
+      await assert.rejects(
+        f.commit("second", session("new", { date: "2026-10-28" }), {
+          classEdit: directory,
+        }),
+        scheduleFailure,
+      );
+      assert.equal(storeSnapshot(f), before);
+    },
+  );
+
+  test(
+    pathName +
+      " session date correction cannot move history outside its schedule",
+    async () => {
+      const previous = session("existing", {
+        attendance: { student: "leave" },
+        scores: [{ studentId: "student", type: "classGrade", value: 18 }],
+      });
+      const f = fixture({ directory, second: [previous] }),
+        before = storeSnapshot(f);
+      await assert.rejects(
+        f.commit(
+          "second",
+          { ...previous, date: "2026-10-28" },
+          { previous, classEdit: directory },
+        ),
+        scheduleFailure,
+      );
+      assert.equal(storeSnapshot(f), before);
+    },
+  );
+
+  test(
+    pathName +
+      " retargeting the same physical session revalidates school and lesson ownership",
+    async () => {
+      for (const extra of [
+        { schoolId: "other-school" },
+        { lessonId: "other-lesson" },
+      ]) {
+        const previous = session("existing"),
+          f = fixture({ directory, second: [previous] });
+        const before = storeSnapshot(f);
+        await assert.rejects(
+          f.commit(
+            "second",
+            { ...previous, ...extra },
+            { previous, classEdit: directory },
+          ),
+          scheduleFailure,
+        );
+        assert.equal(storeSnapshot(f), before);
+      }
+    },
+  );
+
+  test(
+    pathName +
+      " existing unscheduled attendance remains editable without reassigning its slot",
+    async () => {
+      const previous = session("historical", { date: "2026-10-28" }),
+        f = fixture({ directory, second: [previous] });
+      await f.commit(
+        "second",
+        { ...previous, attendance: { student: "present" } },
+        { previous, classEdit: directory },
+      );
+      const saved = f.stores.records.get("second|session:historical").value;
+      assert.equal(saved.date, "2026-10-28");
+      assert.equal(saved.attendance.student, "present");
+    },
+  );
+
+  test(
+    pathName +
+      " exact validated undo restores unscheduled history while forged undo remains guarded",
+    async () => {
+      const historical = session("historical", { date: "2026-10-28" }),
+        previous = session("historical");
+      const f = fixture({ directory, second: [previous] });
+      await f.commit("second", historical, {
+        previous,
+        classEdit: directory,
+        restore: new Map([["session:historical", historical]]),
+      });
+      assert.equal(
+        f.stores.records.get("second|session:historical").value.date,
+        "2026-10-28",
+      );
+      const forged = fixture({ directory, second: [previous] }),
+        before = storeSnapshot(forged);
+      await assert.rejects(
+        forged.commit("second", historical, {
+          previous,
+          classEdit: directory,
+          restore: new Map([["session:historical", previous]]),
+        }),
+        scheduleFailure,
+      );
+      assert.equal(storeSnapshot(forged), before);
+    },
+  );
+}
+
+test("a combined schedule and session write validates against the new effective schedule atomically", async () => {
+  const f = fixture({ directory: true }),
+    schedule = {
+      "4-0-all": {
+        schoolId: "school",
+        classId: "classroom",
+        lessonId: "lesson",
+      },
+    };
+  await f.commit("second", session("new", { date: "2026-10-28" }), {
+    metaEdit: { masterSchedule: schedule },
+  });
+  assert.equal(
+    f.stores.records.get("second|session:new").value.date,
+    "2026-10-28",
+  );
+  for (const id of ["first", "second"])
+    assert.deepEqual(
+      f.stores.records.get(id + "|meta").value.masterSchedule,
+      schedule,
+    );
+});
+
+test("a combined schedule change cannot authorize a session using only the old schedule", async () => {
+  const f = fixture({ directory: true }),
+    before = storeSnapshot(f),
+    schedule = {
+      "4-0-all": {
+        schoolId: "school",
+        classId: "classroom",
+        lessonId: "lesson",
+      },
+    };
+  await assert.rejects(
+    f.commit("second", session("new"), {
+      metaEdit: { masterSchedule: schedule },
+    }),
+    scheduleFailure,
+  );
+  assert.equal(storeSnapshot(f), before);
 });

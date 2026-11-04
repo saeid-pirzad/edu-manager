@@ -280,18 +280,10 @@ function getSaturdayOf(dateStr) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 function getWeekParity(dateStr) {
-  const start = getSaturdayOf(db.settings.weekStartDate || todayISO());
-  const target = getSaturdayOf(dateStr || todayISO());
-  const weeks = Math.round(
-    (new Date(target + "T00:00:00") - new Date(start + "T00:00:00")) /
-      (7 * 24 * 60 * 60 * 1000),
-  );
-  return weeks % 2 === 0 ? "odd" : "even";
+  return EduSessionSlots.weekParity(db, dateStr || todayISO());
 }
 function getMasterEntry(day, period, dateStr) {
-  const parity = getWeekParity(dateStr);
-  const m = db.masterSchedule || {};
-  return m[`${day}-${period}-${parity}`] || m[`${day}-${period}-all`] || null;
+  return EduSessionSlots.entry(db, day, period, dateStr || todayISO());
 }
 function getBothEntries(day, period) {
   const m = db.masterSchedule || {};
@@ -3564,6 +3556,78 @@ EduLegacyEvents.register("students-editor:1", function (event) {
   return saveEditStudent(this.getAttribute("data-legacy-click-arg1"));
 });
 // Source: src/legacy/ui/lesson.js
+function sessionScheduleSelection(target, selected = "", existing = []) {
+  const allowed = EduSessionSlots.matchingPeriods(db, target);
+  const periods = new Set(allowed);
+  for (const session of existing)
+    if (
+      session.schoolId === target.schoolId &&
+      session.classId === target.classId &&
+      session.lessonId === target.lessonId &&
+      session.date === target.date
+    )
+      periods.add(session.period);
+  const options = [...periods]
+    .sort((a, b) => a - b)
+    .map(
+      (period) =>
+        '<option value="' +
+        (period + 1) +
+        '"' +
+        (String(period + 1) === String(selected) ? " selected" : "") +
+        ">زنگ " +
+        (period + 1).toLocaleString("fa-IR") +
+        (allowed.includes(period) ? "" : " · ثبت‌شده") +
+        "</option>",
+    )
+    .join("");
+  const day = getDayIdxFromDate(target.date);
+  const summary = !Number.isInteger(day)
+    ? "تاریخ جلسه را انتخاب کنید."
+    : allowed.length
+      ? DAYS[day] +
+        " · زنگ‌های این درس: " +
+        allowed.map((p) => (p + 1).toLocaleString("fa-IR")).join("، ")
+      : DAYS[day] + " · این درس در این روز و هفته، زنگی در برنامه ندارد.";
+  return {
+    options: options || '<option value="">زنگی تعریف نشده</option>',
+    summary,
+  };
+}
+
+function refreshLessonSessionSchedule(form) {
+  if (!form?.isConnected) return;
+  const target = {
+    schoolId: form.dataset.sessionSchool,
+    classId: form.dataset.sessionClass,
+    lessonId: form.dataset.sessionLesson,
+    date: form.elements.date.value,
+  };
+  const selection = sessionScheduleSelection(
+    target,
+    form.elements.period.value,
+    db.sessions,
+  );
+  form.elements.period.innerHTML = selection.options;
+  form
+    .closest(".session-create")
+    .querySelector("[data-session-schedule-status]").textContent =
+    selection.summary;
+}
+
+function refreshSessionDateSchedule() {
+  const session = getSessionById(currentSessionId);
+  const date = document.getElementById("sessDate");
+  const period = document.getElementById("sessPeriod");
+  if (!session || !date || !period) return;
+  const selection = sessionScheduleSelection(
+    { ...session, date: date.value },
+    period.value,
+    [session],
+  );
+  period.innerHTML = selection.options;
+  document.getElementById("sessScheduleStatus").textContent = selection.summary;
+}
 function renderLesson() {
   const c = getClassObj(state.schoolId, state.classId);
   if (!c) {
@@ -3645,14 +3709,27 @@ function renderLessonSessions(
     .filter((s) => s.classId === c.id && s.lessonId === lesson.id)
     .sort((a, b) => b.date.localeCompare(a.date) || b.period - a.period);
   const lessonId = esc(lesson.id),
-    classId = esc(c.id);
+    classId = esc(c.id),
+    schoolId =
+      db.schools.find((school) => school.classes.some((cls) => cls.id === c.id))
+        ?.id || "",
+    date = todayISO(),
+    selection = sessionScheduleSelection(
+      { schoolId, classId: c.id, lessonId: lesson.id, date },
+      "",
+      sourceSessions,
+    );
   let h =
-    `<section class="card session-create"><header class="session-setup-heading"><span class="session-setup-symbol" aria-hidden="true">${EduIcons.html("calendar")}</span><div><h3>شروع جلسه</h3><p>تاریخ و زنگ را انتخاب کنید؛ سپس حضور و فعالیت کلاس را ثبت کنید.</p></div></header><form class="session-create-form" novalidate data-legacy-submit="ui-lesson:6" data-legacy-submit-arg0="${esc(lessonId)}">` +
-    '<label>تاریخ جلسه<input type="date" name="date" required value="' +
-    todayISO() +
+    `<section class="card session-create"><header class="session-setup-heading"><span class="session-setup-symbol" aria-hidden="true">${EduIcons.html("calendar")}</span><div><h3>شروع جلسه</h3><p>جلسهٔ جدید فقط در روز و زنگِ همین درس در برنامهٔ هفتگی ثبت می‌شود.</p></div></header><form class="session-create-form" novalidate data-session-school="${esc(schoolId)}" data-session-class="${classId}" data-session-lesson="${lessonId}" data-legacy-submit="ui-lesson:6" data-legacy-submit-arg0="${lessonId}">` +
+    '<label>تاریخ جلسه<input type="date" name="date" required data-legacy-change="ui-lesson:session-date" value="' +
+    date +
     '"></label>' +
-    '<label>شماره زنگ<input type="number" name="period" min="1" max="12" required value="1" inputmode="numeric"></label>' +
-    '<button type="submit">شروع یا ادامه جلسه</button></form></section>';
+    '<label>زنگ طبق برنامه<select name="period" required>' +
+    selection.options +
+    "</select></label>" +
+    '<button type="submit">شروع یا ادامه جلسه</button></form><p class="session-schedule-hint" data-session-schedule-status role="status">' +
+    esc(selection.summary) +
+    "</p></section>";
   h +=
     '<section class="card session-directory"><header class="session-list-heading"><div><h3>جلسات درس <span class="lesson-count">' +
     sessions.length.toLocaleString("fa-IR") +
@@ -3758,6 +3835,10 @@ EduLegacyEvents.register("ui-lesson:8", function (event) {
 
 EduLegacyEvents.register("ui-lesson:9", function (event) {
   return deleteSession(this.getAttribute("data-legacy-click-arg4"));
+});
+
+EduLegacyEvents.register("ui-lesson:session-date", function () {
+  return refreshLessonSessionSchedule(this.form);
 });
 // Source: src/legacy/sessions/actions.js
 async function legacy_deleteSession(sessId) {
@@ -4980,14 +5061,19 @@ function openSessionModal(session) {
       '<aside class="session-year-warning" role="status"><strong>جلسهٔ قدیمی خارج از سال تحصیلی</strong><p>سوابق این جلسه حفظ شده‌اند. این تاریخ در گزارش سالانهٔ ' +
       esc(db.settings.academicYear) +
       " قرار نمی‌گیرد؛ تاریخ را بررسی و در صورت نیاز اصلاح کنید.</p></aside>";
+  const sessionSelection = sessionScheduleSelection(
+    session,
+    String(session.period + 1),
+    [session],
+  );
   h += `<details class="session-date-tools"><summary>${EduIcons.html("edit")}<span>ویرایش تاریخ و زنگ</span></summary><div class="form-row session-date-grid">
     <label class="session-field"><span>تاریخ جلسه</span>
       <input type="date" id="sessDate" value="${session.date}" min="${academicRange.start}" max="${academicRange.end}" data-legacy-change="sessions-dialog:0">
       <span class="shamsi-display" id="shamsiSessDate">${toShamsi(session.date)}</span>
     </label>
-    <label class="session-field"><span>شماره زنگ</span><input type="number" id="sessPeriod" min="1" max="12" inputmode="numeric" value="${session.period + 1}"></label>
+    <label class="session-field"><span>زنگ طبق برنامه</span><select id="sessPeriod">${sessionSelection.options}</select></label>
     <button type="button" class="ghost" data-legacy-click="sessions-dialog:1" data-legacy-click-arg3="${esc(session.id)}">ذخیره تغییرات</button>
-  </div></details>`;
+  </div><p class="session-schedule-hint" id="sessScheduleStatus" role="status">${esc(sessionSelection.summary)}</p></details>`;
   if (lesson.gradeMode !== "kardanesh")
     h += `<div class="form-row session-unit-fields">
     <label class="session-field"><span>پودمان</span>
@@ -5221,9 +5307,8 @@ async function legacy_removeSessionScore(sessionId, idx) {
 // Source: src/legacy/events/sessions-dialog.js
 // Event handlers extracted from src/legacy/sessions/dialog.js.
 EduLegacyEvents.register("sessions-dialog:0", function (event) {
-  return (document.getElementById("shamsiSessDate").textContent = toShamsi(
-    this.value,
-  ));
+  document.getElementById("shamsiSessDate").textContent = toShamsi(this.value);
+  refreshSessionDateSchedule();
 });
 
 EduLegacyEvents.register("sessions-dialog:1", function (event) {

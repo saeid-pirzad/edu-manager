@@ -178,6 +178,16 @@ async function reportCopyFlow() {
       period: 1,
       scores: [],
     });
+    const scheduledDay = getDayIdxFromDate(db.sessions[0].date);
+    db.activeDays = [
+      ...new Set([...(db.activeDays || [0, 1, 2, 3, 4, 5]), scheduledDay]),
+    ];
+    for (const period of [0, 1])
+      db.masterSchedule[scheduledDay + "-" + period + "-all"] = {
+        schoolId: ids.school,
+        classId: ids.classroom,
+        lessonId: ids.lesson,
+      };
     await saveDB({ action: "Synthetic two-window report-copy fixture" });
     window.__eduCopyGuardCalls = [];
     window.__eduCopyGuardResults = [];

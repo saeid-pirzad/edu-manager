@@ -7,7 +7,11 @@ const fs = require("node:fs"),
 function fixture() {
   const writes = [],
     modals = [];
-  const cls = { students: [{ id: "student", name: "Student" }] };
+  const cls = {
+    id: "class",
+    lessons: [{ id: "lesson" }],
+    students: [{ id: "student", name: "Student" }],
+  };
   const c = vm.createContext({
     workspace: { id: "first", year: "1405-1406" },
     connection: {},
@@ -16,7 +20,21 @@ function fixture() {
     periodLoading: false,
     resetBusy: false,
     connectionRetired: false,
-    db: { settings: { academicYear: "1405-1406" }, sessions: [] },
+    db: {
+      settings: { academicYear: "1405-1406", weekStartDate: "2026-10-24" },
+      schools: [{ id: "school", classes: [cls] }],
+      sessions: [],
+      periods: 12,
+      activeDays: [0, 1, 2, 3, 4, 5],
+      masterSchedule: {
+        "3-0-all": { schoolId: "school", classId: "class", lessonId: "lesson" },
+        "3-11-all": {
+          schoolId: "school",
+          classId: "class",
+          lessonId: "lesson",
+        },
+      },
+    },
     assertEntityWritable() {},
     asciiDigits: (value) => value,
     flushDrafts: async () => {},
@@ -30,7 +48,7 @@ function fixture() {
     confirm: () => true,
     openSessionModal: (session) => modals.push(session),
   });
-  for (const name of ["calendar.js", "academic-year.js"])
+  for (const name of ["calendar.js", "academic-year.js", "session-slots.js"])
     vm.runInContext(
       fs.readFileSync(path.join(__dirname, "../src/domain", name), "utf8"),
       c,

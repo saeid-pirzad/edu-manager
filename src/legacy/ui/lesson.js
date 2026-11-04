@@ -1,3 +1,75 @@
+function sessionScheduleSelection(target, selected = "", existing = []) {
+  const allowed = EduSessionSlots.matchingPeriods(db, target);
+  const periods = new Set(allowed);
+  for (const session of existing)
+    if (
+      session.schoolId === target.schoolId &&
+      session.classId === target.classId &&
+      session.lessonId === target.lessonId &&
+      session.date === target.date
+    )
+      periods.add(session.period);
+  const options = [...periods]
+    .sort((a, b) => a - b)
+    .map(
+      (period) =>
+        '<option value="' +
+        (period + 1) +
+        '"' +
+        (String(period + 1) === String(selected) ? " selected" : "") +
+        ">زنگ " +
+        (period + 1).toLocaleString("fa-IR") +
+        (allowed.includes(period) ? "" : " · ثبت‌شده") +
+        "</option>",
+    )
+    .join("");
+  const day = getDayIdxFromDate(target.date);
+  const summary = !Number.isInteger(day)
+    ? "تاریخ جلسه را انتخاب کنید."
+    : allowed.length
+      ? DAYS[day] +
+        " · زنگ‌های این درس: " +
+        allowed.map((p) => (p + 1).toLocaleString("fa-IR")).join("، ")
+      : DAYS[day] + " · این درس در این روز و هفته، زنگی در برنامه ندارد.";
+  return {
+    options: options || '<option value="">زنگی تعریف نشده</option>',
+    summary,
+  };
+}
+
+function refreshLessonSessionSchedule(form) {
+  if (!form?.isConnected) return;
+  const target = {
+    schoolId: form.dataset.sessionSchool,
+    classId: form.dataset.sessionClass,
+    lessonId: form.dataset.sessionLesson,
+    date: form.elements.date.value,
+  };
+  const selection = sessionScheduleSelection(
+    target,
+    form.elements.period.value,
+    db.sessions,
+  );
+  form.elements.period.innerHTML = selection.options;
+  form
+    .closest(".session-create")
+    .querySelector("[data-session-schedule-status]").textContent =
+    selection.summary;
+}
+
+function refreshSessionDateSchedule() {
+  const session = getSessionById(currentSessionId);
+  const date = document.getElementById("sessDate");
+  const period = document.getElementById("sessPeriod");
+  if (!session || !date || !period) return;
+  const selection = sessionScheduleSelection(
+    { ...session, date: date.value },
+    period.value,
+    [session],
+  );
+  period.innerHTML = selection.options;
+  document.getElementById("sessScheduleStatus").textContent = selection.summary;
+}
 function renderLesson() {
   const c = getClassObj(state.schoolId, state.classId);
   if (!c) {
@@ -79,14 +151,27 @@ function renderLessonSessions(
     .filter((s) => s.classId === c.id && s.lessonId === lesson.id)
     .sort((a, b) => b.date.localeCompare(a.date) || b.period - a.period);
   const lessonId = esc(lesson.id),
-    classId = esc(c.id);
+    classId = esc(c.id),
+    schoolId =
+      db.schools.find((school) => school.classes.some((cls) => cls.id === c.id))
+        ?.id || "",
+    date = todayISO(),
+    selection = sessionScheduleSelection(
+      { schoolId, classId: c.id, lessonId: lesson.id, date },
+      "",
+      sourceSessions,
+    );
   let h =
-    `<section class="card session-create"><header class="session-setup-heading"><span class="session-setup-symbol" aria-hidden="true">${EduIcons.html("calendar")}</span><div><h3>شروع جلسه</h3><p>تاریخ و زنگ را انتخاب کنید؛ سپس حضور و فعالیت کلاس را ثبت کنید.</p></div></header><form class="session-create-form" novalidate data-legacy-submit="ui-lesson:6" data-legacy-submit-arg0="${esc(lessonId)}">` +
-    '<label>تاریخ جلسه<input type="date" name="date" required value="' +
-    todayISO() +
+    `<section class="card session-create"><header class="session-setup-heading"><span class="session-setup-symbol" aria-hidden="true">${EduIcons.html("calendar")}</span><div><h3>شروع جلسه</h3><p>جلسهٔ جدید فقط در روز و زنگِ همین درس در برنامهٔ هفتگی ثبت می‌شود.</p></div></header><form class="session-create-form" novalidate data-session-school="${esc(schoolId)}" data-session-class="${classId}" data-session-lesson="${lessonId}" data-legacy-submit="ui-lesson:6" data-legacy-submit-arg0="${lessonId}">` +
+    '<label>تاریخ جلسه<input type="date" name="date" required data-legacy-change="ui-lesson:session-date" value="' +
+    date +
     '"></label>' +
-    '<label>شماره زنگ<input type="number" name="period" min="1" max="12" required value="1" inputmode="numeric"></label>' +
-    '<button type="submit">شروع یا ادامه جلسه</button></form></section>';
+    '<label>زنگ طبق برنامه<select name="period" required>' +
+    selection.options +
+    "</select></label>" +
+    '<button type="submit">شروع یا ادامه جلسه</button></form><p class="session-schedule-hint" data-session-schedule-status role="status">' +
+    esc(selection.summary) +
+    "</p></section>";
   h +=
     '<section class="card session-directory"><header class="session-list-heading"><div><h3>جلسات درس <span class="lesson-count">' +
     sessions.length.toLocaleString("fa-IR") +

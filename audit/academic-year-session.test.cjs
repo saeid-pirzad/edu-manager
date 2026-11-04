@@ -32,7 +32,25 @@ function fixture() {
         lessonId: "lesson",
         view: "schedule",
       },
-      db: { settings: { academicYear: "1405-1406" }, sessions: [] },
+      db: {
+        settings: { academicYear: "1405-1406", weekStartDate: "2026-09-19" },
+        schools: [{ id: "school", classes: [cls] }],
+        sessions: [],
+        periods: 6,
+        activeDays: [0, 1, 2, 3, 4, 5],
+        masterSchedule: {
+          "0-0-all": {
+            schoolId: "school",
+            classId: "class",
+            lessonId: "lesson",
+          },
+          "4-0-all": {
+            schoolId: "school",
+            classId: "class",
+            lessonId: "lesson",
+          },
+        },
+      },
       currentSessionId: null,
       periodLoading: false,
       resetBusy: false,
@@ -46,7 +64,8 @@ function fixture() {
       findClass: () => cls,
       findClassById: () => ({ school: { id: "school" }, classObj: cls }),
       document: { getElementById: (id) => controls[id] },
-      getDayIdxFromDate: () => 0,
+      getDayIdxFromDate: (date) =>
+        (new Date(date + "T00:00:00Z").getUTCDay() + 1) % 7,
       DAYS: ["Saturday"],
       uid: () => "new-session",
       snapshotRoster: (value) => structuredClone(value.students),
@@ -58,6 +77,7 @@ function fixture() {
   for (const source of [
     "domain/calendar.js",
     "domain/academic-year.js",
+    "domain/session-slots.js",
     "workspace/domain/defaults-numbers.js",
     "workspace/sessions/actions.js",
     "workspace/schedule/actions.js",
@@ -107,6 +127,7 @@ for (const date of ["2026-09-22", "2027-09-23"]) {
       const f = fixture(),
         session = {
           id: "existing",
+          schoolId: "school",
           classId: "class",
           lessonId: "lesson",
           date: "2026-10-24",
@@ -142,6 +163,7 @@ test("historical out-of-year attendance can be corrected without rewriting its d
   const f = fixture(),
     session = {
       id: "historical",
+      schoolId: "school",
       classId: "class",
       lessonId: "lesson",
       date: "2026-09-22",
@@ -161,6 +183,7 @@ test("legacy out-of-year session can move into the valid range with its history 
   const f = fixture(),
     session = {
       id: "historical",
+      schoolId: "school",
       classId: "class",
       lessonId: "lesson",
       date: "2026-09-22",
@@ -202,3 +225,17 @@ test("the default academic-year label stays stable through Nowruz and changes at
     assert.equal(c.currentYearLabel(), expected, iso);
   }
 });
+
+for (const date of ["2026-09-23", "2027-09-22"])
+  test(
+    "scheduled creation accepts a programmed bell at the inclusive academic-year boundary: " +
+      date,
+    async () => {
+      const f = fixture();
+      f.controls.sessNewDate.value = date;
+      assert.equal(await f.c.startSessionFromMasterV24(4, 0), true);
+      assert.equal(f.c.db.sessions[0].date, date);
+      assert.equal(f.c.db.sessions[0].period, 0);
+      assert.equal(f.writes.length, 1);
+    },
+  );

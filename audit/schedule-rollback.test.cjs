@@ -4,7 +4,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs"),
   path = require("node:path"),
   vm = require("node:vm");
-function fixture() {
+function fixture(sessionSchedule = false) {
   const effects = [];
   const values = {
     cfgAllClass: "class",
@@ -37,7 +37,11 @@ function fixture() {
       settings: { weekStartDate: "2026-10-24" },
       activeDays: [0, 1],
       periods: 6,
-      masterSchedule: { "0-0-all": { classId: "old" } },
+      masterSchedule: {
+        "0-0-all": sessionSchedule
+          ? { schoolId: "school", classId: "class", lessonId: "lesson" }
+          : { classId: "old" },
+      },
       sessions: [],
     },
     writer: Promise.resolve(),
@@ -63,7 +67,11 @@ function fixture() {
     uid: () => "session-id",
     getDayIdxFromDate: () => 0,
   });
-  for (const source of ["domain/calendar.js", "domain/academic-year.js"])
+  for (const source of [
+    "domain/calendar.js",
+    "domain/academic-year.js",
+    "domain/session-slots.js",
+  ])
     vm.runInContext(
       fs.readFileSync(path.join(__dirname, "../src", source), "utf8"),
       c,
@@ -96,7 +104,7 @@ for (const operation of [
   "session",
 ]) {
   test(`schedule ${operation} restores durable data on failure and retries without partial writes`, async () => {
-    const f = fixture();
+    const f = fixture(operation === "session");
     const run = () => {
       if (operation === "save-slot") return f.c.saveMasterConfigV24(0, 0);
       if (operation === "clear-slot") return f.c.clearMasterConfigV24(0, 0);

@@ -155,3 +155,19 @@ test("the guard never mutates caller snapshots and its error discloses no peer n
   );
   assert.equal(JSON.stringify(parts.map((p) => [...p.records])), before);
 });
+
+test("retargeting a lesson or school is guarded even when its physical date and bell are unchanged", () => {
+  const previous = meeting({ schoolId: "school" });
+  for (const extra of [
+    { schoolId: "other-school" },
+    { lessonId: "other-lesson" },
+  ]) {
+    const current = { ...previous, ...extra };
+    assert.equal(change(current, previous).guarded.length, 1);
+    assert.equal(
+      change(current, previous, new Map([["session:meeting", current]])).guarded
+        .length,
+      0,
+    );
+  }
+});
