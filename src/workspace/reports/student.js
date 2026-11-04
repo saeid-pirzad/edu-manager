@@ -501,6 +501,22 @@ function overviewV24(c, options = {}) {
 
 const karnamehSnapshots = new WeakMap();
 let karnamehRenderGeneration = 0;
+function printCurrentKarnameh(button) {
+  const report = button.closest(".karnameh-year-document");
+  if (!report) return printReport(button);
+  const selection = JSON.stringify(karnamehFilter);
+  return printReport(button, {
+    context: karnamehSnapshots.get(report),
+    validate: () =>
+      button.isConnected &&
+      report.isConnected &&
+      document.getElementById("karnamehTabOutput")?.contains(report) &&
+      state.view === "reports" &&
+      state.reportTab === "karnameh" &&
+      JSON.stringify(karnamehFilter) === selection,
+  });
+}
+
 async function renderAcademicKarnameh(out, filter) {
   const generation = ++karnamehRenderGeneration;
   const origin = captureWorkspaceContext();
@@ -536,43 +552,17 @@ async function renderAcademicKarnameh(out, filter) {
       : null;
     if (filter.studentId && !student)
       throw Error("هنرجو در کلاس انتخاب‌شده موجود نیست.");
-    out.innerHTML = overviewV24(merged, {
+    const options = {
       parts: snapshot.parts,
       student,
       source: active.data,
-    });
+      schoolId: school.id,
+    };
+    options.schoolName = school.name;
+    out.innerHTML = individualKarnameh(merged, options);
     const report = out.querySelector(".report-document");
     if (report) {
       report.classList.add("karnameh-year-document");
-      const heading = report.querySelector(".karnameh-report-heading");
-      heading.querySelector("h3").textContent = student
-        ? "کارنامه " + student.name
-        : "کارنامه کلاس " + classroom.name;
-      if (student) {
-        const title = document.createElement("h2");
-        title.textContent = heading.querySelector("h3").textContent;
-        heading.querySelector("h3").replaceWith(title);
-        const actions = document.createElement("div");
-        actions.className = "karnameh-report-actions no-print";
-        const back = document.createElement("button");
-        back.type = "button";
-        back.className = "ghost";
-        back.dataset.workspaceAction = "karnameh-student";
-        back.dataset.class = classroom.id;
-        back.dataset.key = "";
-        back.textContent = "نمای کلی کلاس";
-        actions.append(back, heading.querySelector("button"));
-        heading.append(actions);
-      }
-      heading.querySelector("p").textContent =
-        school.name +
-        " · " +
-        workspace.year +
-        (merged.lessons.every(
-          (lesson) => lesson.gradingPolicy?.method === "modular",
-        )
-          ? ""
-          : " · نوبت اول و دوم");
       karnamehSnapshots.set(report, snapshot.context);
     }
   } catch (error) {

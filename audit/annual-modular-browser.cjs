@@ -323,42 +323,64 @@ async function annualModularFlow() {
     updateKarnamehFilter("schoolId", ids.school);
     updateKarnamehFilter("classId", ids.classroom);
     updateKarnamehFilter("studentId", ids.student);
+    const courseSelector =
+      '.karnameh-year-document .karnameh-modular-table [data-karnameh-lesson="' +
+      ids.modular +
+      '"]';
     await wait(
       () =>
-        document.querySelectorAll(".karnameh-year-document .report-module-row")
-          .length === 2,
+        document.querySelector(".karnameh-year-document")?.dataset.studentId ===
+          ids.student && !!document.querySelector(courseSelector),
     );
-    const course = document.querySelector(
-        ".karnameh-year-document .report-modular-course",
-      ),
-      rows = [...course.querySelectorAll(".report-module-row")],
-      values = rows.map((row) =>
-        [...row.querySelectorAll("b,strong")].map((value) => value.textContent),
+    const course = document.querySelector(courseSelector),
+      cells = [...course.querySelectorAll("td[data-karnameh-field]")],
+      grade = (node) => {
+        const value = node.textContent
+          .trim()
+          .replace(/[۰-۹]/g, (digit) => String(digit.charCodeAt(0) - 1776));
+        return /^\d+(?:\.\d+)?$/.test(value) ? Number(value) : NaN;
+      },
+      values = cells
+        .filter((cell) => cell.dataset.karnamehField !== "annual")
+        .map((cell) => grade(cell.querySelector(".karnameh-sheet-value"))),
+      fields = cells.map((cell) => cell.dataset.karnamehField),
+      moduleNames = [...course.querySelectorAll(".karnameh-module-name")].map(
+        (node) => node.textContent.trim(),
       );
     check(
       "ANNUAL_MODULE07",
-      "karnameh renders each annual module once without first-term/second-term subdivisions",
+      "karnameh renders each annual module once in a single lesson row without first-term/second-term subdivisions",
       document.querySelectorAll(
-        ".karnameh-year-document .report-modular-course",
+        ".karnameh-year-document .karnameh-modular-table [data-karnameh-lesson-row]",
       ).length === 1 &&
-        rows.length === 2 &&
+        cells.length === 7 &&
+        JSON.stringify(fields) ===
+          JSON.stringify([
+            "continuous",
+            "competency",
+            "module-result",
+            "continuous",
+            "competency",
+            "module-result",
+            "annual",
+          ]) &&
+        JSON.stringify(moduleNames) ===
+          JSON.stringify(["پودمان طراحی", "پودمان اجرا"]) &&
         !course.querySelector(".report-modular-term") &&
         !/نوبت|میان‌ترم|پایان‌ترم/.test(course.textContent) &&
-        JSON.stringify(values) ===
-          JSON.stringify([
-            ["0", "3", "15.00"],
-            ["4", "2", "14.00"],
-          ]),
-      { values },
+        JSON.stringify(values) === JSON.stringify([0, 3, 15, 4, 2, 14]),
+      { values, fields, moduleNames },
     );
+    const annualValue = course.querySelector(
+        '[data-karnameh-field="annual"] .karnameh-sheet-value',
+      ),
+      final = grade(annualValue);
     check(
       "ANNUAL_MODULE08",
       "annual modular aggregate is calculated once from the whole year's two modules",
-      course.querySelector(".report-modular-final strong").textContent ===
-        "14.50",
-      {
-        final: course.querySelector(".report-modular-final strong").textContent,
-      },
+      course.querySelectorAll('[data-karnameh-field="annual"]').length === 1 &&
+        final === 14.5,
+      { final, displayed: annualValue.textContent },
     );
     const backup = await EduV24.snapshotInstallation(),
       catalogIds = backup.stores.catalog

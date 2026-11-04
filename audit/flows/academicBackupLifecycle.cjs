@@ -228,16 +228,20 @@ module.exports = async function academicBackupLifecycle() {
       let attempt = 0;
       attempt < 200 &&
       document.querySelectorAll(
-        ".karnameh-year-document .report-assessment-stages .report-stage-values strong",
+        '.karnameh-year-document .karnameh-assessment-table [data-karnameh-field="result"] .karnameh-sheet-value',
       ).length !== 4;
       attempt++
     )
       await new Promise((resolve) => setTimeout(resolve, 25));
     const displayed = [
       ...document.querySelectorAll(
-        ".karnameh-year-document .report-assessment-stages .report-stage-values strong",
+        '.karnameh-year-document .karnameh-assessment-table [data-karnameh-field="result"] .karnameh-sheet-value',
       ),
-    ].map((element) => element.textContent);
+    ].map((element) =>
+      element.textContent.replace(/[۰-۹]/g, (digit) =>
+        String(digit.charCodeAt(0) - 1776),
+      ),
+    );
     check(
       "ACADEMIC10",
       "karnameh displays distinct weighted grades from both original terms without an overall-average column",
@@ -246,6 +250,8 @@ module.exports = async function academicBackupLifecycle() {
         displayed[1] === firstGrade.toFixed(2) &&
         displayed[2] === "20.00" &&
         displayed[3] === "20.00" &&
+        document.querySelector(".karnameh-student-sheet")?.dataset.studentId ===
+          student.id &&
         !document.querySelector(".karnameh-year-document .report-average-cell"),
       { displayed },
     );

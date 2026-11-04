@@ -75,7 +75,7 @@ test("stale class or foreign student filters cannot survive a school change", ()
   c.karnamehFilter.classId = "class-b";
   c.karnamehFilter.studentId = "active-a";
   c.renderKarnamehTabHtml();
-  assert.equal(c.karnamehFilter.studentId, "");
+  assert.equal(c.karnamehFilter.studentId, "active-b");
 });
 test("switching class clears the previously selected individual report", () => {
   const c = fixture({ classId: "class-a", studentId: "active-a" });
@@ -83,4 +83,19 @@ test("switching class clears the previously selected individual report", () => {
   assert.equal(c.karnamehFilter.studentId, "");
   c.updateKarnamehFilter("schoolId", "school-a");
   assert.equal(c.karnamehFilter.classId, "");
+});
+
+test("selecting a class automatically opens its first active student", () => {
+  const c = fixture({ classId: "class-a" });
+  const html = c.renderKarnamehTabHtml();
+  assert.equal(c.karnamehFilter.studentId, "active-a");
+  assert.match(html, /value="active-a" selected/);
+});
+
+test("a class with only archived students does not automatically open an archived sheet", () => {
+  const c = fixture({ classId: "class-a" });
+  c.db.schools[0].classes[0].students = [];
+  const html = c.renderKarnamehTabHtml();
+  assert.equal(c.karnamehFilter.studentId, "");
+  assert.match(html, /Archived A/);
 });

@@ -56,15 +56,7 @@ function installWorkspaceActions() {
     ["confirm-undo", () => confirmUndo()],
     ["raw-recovery", () => rawRecoveryV24()],
     ["choose-import", () => document.getElementById("importFile").click()],
-    [
-      "print",
-      (button) =>
-        printReport(button, {
-          context: karnamehSnapshots.get(
-            button.closest(".karnameh-year-document"),
-          ),
-        }),
-    ],
+    ["print", (button) => printCurrentKarnameh(button)],
     ["close", () => closeModal()],
     ["reload", () => location.reload()],
   ]);

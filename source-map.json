@@ -101,6 +101,7 @@
         "src/workspace/periods/switch-create.js",
         "src/workspace/periods/labels.js",
         "src/workspace/reports/finalize.js",
+        "src/workspace/reports/karnameh-grid.js",
         "src/workspace/reports/student.js",
         "src/workspace/reports/printing.js",
         "src/workspace/reports/copy.js",
@@ -341,7 +342,8 @@
         "src/styles/workflow/components.css",
         "src/styles/workflow/identity.css",
         "src/styles/workflow/touch.css",
-        "src/styles/workflow/grades.css"
+        "src/styles/workflow/grades.css",
+        "src/styles/karnameh-grid.css"
       ]
     },
     {

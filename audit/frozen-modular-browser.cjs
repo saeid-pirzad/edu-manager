@@ -256,28 +256,40 @@ async function frozenModularReports() {
       document.querySelector("#karnamehTabOutput .karnameh-year-document"),
     );
     const archiveReport = document.getElementById("karnamehTabOutput"),
+      archiveSheet = archiveReport.querySelector(".karnameh-student-sheet"),
       stageResults = [
-        ...archiveReport.querySelectorAll(".report-lesson-stage strong"),
-      ].map((cell) => cell.textContent),
-      archiveRows = moduleRows(archiveReport);
+        ...archiveReport.querySelectorAll(
+          '.karnameh-assessment-table [data-karnameh-field="result"] .karnameh-sheet-value',
+        ),
+      ].map((cell) =>
+        Number(
+          cell.textContent
+            .replace(/[۰-۹]/g, (digit) => String(digit.charCodeAt(0) - 1776))
+            .trim(),
+        ),
+      ),
+      archiveModuleCells = [
+        ...archiveReport.querySelectorAll(
+          '.karnameh-modular-table :is([data-karnameh-field="continuous"], [data-karnameh-field="competency"], [data-karnameh-field="module-result"]) .karnameh-sheet-value',
+        ),
+      ].map((cell) => cell.textContent.trim());
     check(
       "FROZEN07",
       "actual archive button opens the common year-wide report with both stages of both terms",
       state.view === "reports" &&
         state.reportTab === "karnameh" &&
         document.getElementById("modal").classList.contains("hidden") &&
-        JSON.stringify(stageResults) ===
-          JSON.stringify(["10.00", "12.00", "18.00", "20.00"]),
+        JSON.stringify(stageResults) === JSON.stringify([10, 12, 18, 20]),
       { stageResults },
     );
     check(
       "FROZEN08",
       "archive report does not expose another student's annual module grades",
-      archiveRows.length === 4 &&
-        archiveRows.every(
-          (row) =>
-            row.inputs.every((value) => value === "—") && row.final === "—",
-        ),
+      archiveSheet?.dataset.studentId === archived.id &&
+        archiveModuleCells.length === 12 &&
+        archiveModuleCells.every((value) => value === "—") &&
+        !archiveSheet.textContent.includes(student.name),
+      { studentId: archiveSheet?.dataset.studentId, archiveModuleCells },
     );
     snapshot = await EduV24.snapshotInstallation();
     snapshot.stores.records.find(
@@ -317,11 +329,17 @@ async function frozenModularReports() {
       "archive year-wide report remains available after correct other-term authentication",
       [
         ...document.querySelectorAll(
-          "#karnamehTabOutput .report-lesson-stage strong",
+          '#karnamehTabOutput .karnameh-assessment-table [data-karnameh-field="result"] .karnameh-sheet-value',
         ),
       ]
-        .map((cell) => cell.textContent)
-        .join(",") === "10.00,12.00,18.00,20.00",
+        .map((cell) =>
+          Number(
+            cell.textContent
+              .replace(/[۰-۹]/g, (digit) => String(digit.charCodeAt(0) - 1776))
+              .trim(),
+          ),
+        )
+        .join(",") === "10,12,18,20",
     );
   } catch (error) {
     check(

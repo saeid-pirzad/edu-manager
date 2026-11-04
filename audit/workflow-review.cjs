@@ -206,6 +206,12 @@ if (process.argv.includes("--help")) {
         cases,
         delay,
       });
+      await require("./karnameh-grid-browser.cjs")({
+        cdp,
+        evaluate,
+        cases,
+        delay,
+      });
       cases.push(
         ...(await require("./pwa-upgrade.cjs")({
           cdp,
