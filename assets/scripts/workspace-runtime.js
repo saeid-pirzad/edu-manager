@@ -8777,18 +8777,12 @@ function createKarnamehStudentNavigation(c, student) {
 function karnamehSheetCell(
   value,
   label,
-  { result = null, annual = false, field = "", note = "" } = {},
+  { result = null, field = "", note = "" } = {},
 ) {
   const complete = result ? result.complete === true : Number.isFinite(value);
   const hasGrade = complete && Number.isFinite(result ? result.final : value);
   const failed = complete && result?.passed === false;
-  const tone = !complete
-    ? "pending"
-    : failed
-      ? "remedial"
-      : annual && result?.passed === true
-        ? "passed"
-        : "complete";
+  const tone = !complete ? "pending" : failed ? "remedial" : "complete";
   const status = !complete
     ? "تکمیل نشده"
     : failed
@@ -8804,9 +8798,7 @@ function karnamehSheetCell(
       ? "جبران"
       : "—";
   return (
-    '<td class="karnameh-sheet-score' +
-    (annual ? " karnameh-sheet-annual" : "") +
-    '" data-karnameh-field="' +
+    '<td class="karnameh-sheet-score" data-karnameh-field="' +
     esc(field) +
     '" data-grade-complete="' +
     complete +
@@ -8822,11 +8814,7 @@ function karnamehSheetCell(
     esc(label + "؛ " + status + (hasGrade ? "؛ " + display : "")) +
     '">' +
     esc(display) +
-    "</span>" +
-    (annual
-      ? '<small class="karnameh-result-status">' + esc(status) + "</small>"
-      : "") +
-    "</td>"
+    "</span></td>"
   );
 }
 function karnamehLessonName(lesson, index, note = "") {
@@ -8839,13 +8827,11 @@ function karnamehLessonName(lesson, index, note = "") {
     "</span></th>"
   );
 }
-function karnamehSheetSection(title, note, table) {
+function karnamehSheetSection(title, table) {
   return (
-    '<section class="karnameh-subject-section"><header><h4>' +
+    '<section class="karnameh-subject-section"><header class="karnameh-subject-header"><h4>' +
     esc(title) +
-    "</h4><small>" +
-    esc(note) +
-    '</small></header><div class="table-scroll karnameh-sheet-scroll" tabindex="0" role="region" aria-label="' +
+    '</h4></header><div class="table-scroll karnameh-sheet-scroll" tabindex="0" role="region" aria-label="' +
     esc(title + "؛ برای دیدن تمام نمرات جدول را به طرفین حرکت دهید") +
     '">' +
     table +
@@ -8906,7 +8892,7 @@ function individualKarnameh(c, options = {}) {
             "</span></th>",
         )
         .join("") +
-      '<th scope="col" rowspan="2" class="karnameh-sheet-annual">نتیجهٔ سالانه</th></tr><tr>' +
+      "</tr><tr>" +
       stages
         .map(() =>
           fields
@@ -8965,11 +8951,6 @@ function individualKarnameh(c, options = {}) {
                   .join("");
               })
               .join("") +
-            karnamehSheetCell(null, lesson.name + " · نتیجهٔ سالانه", {
-              result: row || { complete: false },
-              annual: true,
-              field: "annual",
-            }) +
             "</tr>"
           );
         })
@@ -8987,15 +8968,10 @@ function individualKarnameh(c, options = {}) {
   if (vocational.length)
     body += karnamehSheetSection(
       "دروس کاردانش",
-      "هر مرحله: عملی، نظری و نتیجهٔ وزنی · نتیجهٔ سالانه: میانگین برابر چهار مرحلهٔ کامل",
       assessmentTable(vocational, false),
     );
   if (general.length)
-    body += karnamehSheetSection(
-      "دروس عمومی",
-      "نمرهٔ مستقیم هر مرحله از ۲۰ · نتیجهٔ سالانه پس از تکمیل هر چهار مرحله",
-      assessmentTable(general, true),
-    );
+    body += karnamehSheetSection("دروس عمومی", assessmentTable(general, true));
   const modular = lessons.filter(
     (lesson) =>
       lesson.gradeMode !== "kardanesh" &&
@@ -9014,7 +8990,7 @@ function individualKarnameh(c, options = {}) {
           karnamehSheetNumber(index + 1) +
           "</span></th>",
       ).join("") +
-      '<th scope="col" rowspan="2" class="karnameh-sheet-annual">نتیجهٔ سالانه</th></tr><tr>' +
+      "</tr><tr>" +
       Array.from(
         { length: count },
         () =>
@@ -9037,7 +9013,7 @@ function individualKarnameh(c, options = {}) {
             '" data-karnameh-lesson-row="' +
             esc(lesson.id) +
             '" data-grade-mode="modular">' +
-            karnamehLessonName(lesson, index, "ارزشیابی پودمانی سالانه") +
+            karnamehLessonName(lesson, index, "ارزشیابی پودمانی") +
             Array.from({ length: count }, (_, position) => {
               const pod = lesson.poudmans[position];
               if (!pod)
@@ -9066,21 +9042,12 @@ function individualKarnameh(c, options = {}) {
                 })
               );
             }).join("") +
-            karnamehSheetCell(null, lesson.name + " · نتیجهٔ سالانه", {
-              result,
-              annual: true,
-              field: "annual",
-            }) +
             "</tr>"
           );
         })
         .join("") +
       "</tbody></table>";
-    body += karnamehSheetSection(
-      "دروس فنی پودمانی",
-      "نمرات پودمان‌ها سالانه‌اند؛ نتیجهٔ درس به تکمیل و قبولی همهٔ پودمان‌ها وابسته است.",
-      table,
-    );
+    body += karnamehSheetSection("دروس فنی پودمانی", table);
   }
   const legacy = lessons.filter(
     (lesson) =>
@@ -9147,11 +9114,7 @@ function individualKarnameh(c, options = {}) {
         )
         .join("") +
       "</tbody></table>";
-    body += karnamehSheetSection(
-      "سوابق نمرات واحدی",
-      "نتیجهٔ هر نوبت و نمرات واقعی واحدها؛ بدون ساخت نمرهٔ سالانهٔ حدسی",
-      table,
-    );
+    body += karnamehSheetSection("سوابق نمرات واحدی", table);
   }
   const archived = !c.students.some((item) => item.id === student.id);
   return (
@@ -9177,11 +9140,223 @@ function individualKarnameh(c, options = {}) {
     "</div>" +
     createKarnamehStudentNavigation(c, student) +
     (body
-      ? '<p class="karnameh-sheet-hint no-print">برای دیدن همهٔ ستون‌های نمره، جدول را به طرفین حرکت دهید.</p>' +
-        body
+      ? body
       : '<div class="report-empty" role="status">هنوز درسی در این کلاس تعریف نشده است.</div>') +
     '<p class="karnameh-sheet-note">«—» نمرهٔ ثبت‌نشده یا نتیجهٔ تکمیل‌نشده است؛ صفر، نمرهٔ ثبت‌شده است. نمرات جلسه و فعالیت از امتحان رسمی جدا هستند.</p></article>'
   );
+}
+
+// Compact screens select one grade group; every original cell remains printable.
+const karnamehStageControllers = new WeakMap();
+let karnamehStageSelection = {
+  scope: "",
+  assessment: "first-midterm",
+  modular: "module-0",
+  legacy: "first-term",
+};
+
+function karnamehStagePreference(schoolId, classId) {
+  const scope = JSON.stringify([
+    workspace.id,
+    workspace.year,
+    schoolId,
+    classId,
+  ]);
+  if (karnamehStageSelection.scope !== scope)
+    karnamehStageSelection = {
+      scope,
+      assessment: "first-midterm",
+      modular: "module-0",
+      legacy: "first-term",
+    };
+  return karnamehStageSelection;
+}
+function karnamehTableStageGroups(table) {
+  if (
+    table.classList.contains("karnameh-assessment-table") ||
+    table.classList.contains("karnameh-general-table")
+  ) {
+    const width = table.classList.contains("karnameh-general-table") ? 1 : 3;
+    return [
+      { key: "first-midterm", label: "میان‌ترم اول", width },
+      { key: "first-final", label: "پایان‌ترم اول", width },
+      { key: "second-midterm", label: "میان‌ترم دوم", width },
+      { key: "second-final", label: "پایان‌ترم دوم", width },
+    ];
+  }
+  if (table.classList.contains("karnameh-modular-table")) {
+    const count = Math.max(0, table.tHead.rows[0].cells.length - 1);
+    return Array.from({ length: count }, (_, index) => ({
+      key: "module-" + index,
+      label: "پودمان " + karnamehSheetNumber(index + 1),
+      width: 3,
+    }));
+  }
+  if (table.classList.contains("karnameh-legacy-table"))
+    return [
+      { key: "first-term", label: "نوبت اول", width: 1 },
+      { key: "second-term", label: "نوبت دوم", width: 1 },
+    ];
+  return [];
+}
+function karnamehTableStageOptions(table) {
+  return karnamehTableStageGroups(table);
+}
+function applyKarnamehStage(report, kind, selected) {
+  for (const section of report.querySelectorAll(".karnameh-subject-section")) {
+    if (section.dataset.karnamehGroupSet !== kind) continue;
+    const buttons = [...section.querySelectorAll("[data-karnameh-stage]")],
+      selectedButton =
+        buttons.find((button) => button.dataset.karnamehStage === selected) ||
+        buttons.find(
+          (button) =>
+            button.dataset.karnamehStage ===
+            section.dataset.karnamehActiveGroup,
+        ) ||
+        buttons[0];
+    if (!selectedButton) continue;
+    const activeStage = selectedButton.dataset.karnamehStage;
+    section.dataset.karnamehActiveGroup = activeStage;
+    section.querySelector("table").dataset.karnamehActiveGroup = activeStage;
+    for (const cell of section.querySelectorAll("[data-karnameh-group]"))
+      cell.toggleAttribute(
+        "data-karnameh-group-active",
+        cell.dataset.karnamehGroup === activeStage,
+      );
+    for (const button of buttons) {
+      const active = button.dataset.karnamehStage === activeStage;
+      button.setAttribute("aria-pressed", String(active));
+      const options = button.parentElement;
+      if (active && options && options.scrollWidth > options.clientWidth) {
+        const frame = options.getBoundingClientRect(),
+          bounds = button.getBoundingClientRect();
+        if (bounds.left < frame.left + 4)
+          options.scrollLeft += bounds.left - frame.left - 4;
+        else if (bounds.right > frame.right - 4)
+          options.scrollLeft += bounds.right - frame.right + 4;
+      }
+    }
+    const scroll = section.querySelector(".karnameh-sheet-scroll");
+    if (scroll) scroll.scrollLeft = 0;
+  }
+}
+function initKarnamehStageControls(report, { schoolId, classId }) {
+  const preference = karnamehStagePreference(schoolId, classId);
+  for (const section of report.querySelectorAll(".karnameh-subject-section")) {
+    const table = section.querySelector("table.karnameh-sheet-table");
+    if (!table) continue;
+    const groups = karnamehTableStageGroups(table),
+      options = karnamehTableStageOptions(table);
+    if (!options.length) continue;
+    const kind = table.classList.contains("karnameh-modular-table")
+      ? "modular"
+      : table.classList.contains("karnameh-legacy-table")
+        ? "legacy"
+        : "assessment";
+    section.dataset.karnamehGroupSet = kind;
+    const selected = options.some((group) => group.key === preference[kind])
+      ? preference[kind]
+      : options[0].key;
+    preference[kind] = selected;
+    const headers = [...table.tHead.rows[0].cells].slice(1);
+    headers.forEach((cell, index) => {
+      cell.dataset.karnamehGroup = groups[index].key;
+    });
+    const subGroups = groups.flatMap((group, index) =>
+      headers[index].rowSpan === 1 ? Array(group.width).fill(group.key) : [],
+    );
+    [...(table.tHead.rows[1]?.cells || [])].forEach((cell, index) => {
+      cell.dataset.karnamehGroup = subGroups[index];
+    });
+    const columns = groups.flatMap((group) =>
+      Array(group.width).fill(group.key),
+    );
+    for (const body of table.tBodies)
+      for (const row of body.rows) {
+        let position = 0;
+        for (const cell of [...row.cells].slice(1)) {
+          cell.dataset.karnamehGroup = columns[position];
+          position += cell.colSpan;
+        }
+      }
+    if (!section.querySelector(".karnameh-stage-switcher")) {
+      const controls =
+        '<div class="karnameh-stage-switcher no-print"><div class="karnameh-stage-options" role="group" aria-label="' +
+        (kind === "modular" ? "انتخاب پودمان" : "انتخاب مرحلهٔ کارنامه") +
+        '">' +
+        options
+          .map(
+            (group) =>
+              '<button type="button" data-workspace-action="karnameh-stage" data-karnameh-stage="' +
+              group.key +
+              '" aria-pressed="' +
+              (group.key === selected) +
+              '">' +
+              esc(group.label) +
+              "</button>",
+          )
+          .join("") +
+        "</div></div>";
+      section
+        .querySelector(".karnameh-subject-header")
+        .insertAdjacentHTML("beforeend", controls);
+    }
+    applyKarnamehStage(report, kind, selected);
+  }
+  karnamehStageControllers.set(report, {
+    scope: preference.scope,
+    workspaceId: workspace.id,
+    schoolId,
+    classId,
+    studentId: report.dataset.studentId,
+    requests: {},
+  });
+  report.dataset.karnamehCompactReady = "true";
+}
+async function selectKarnamehStage(button) {
+  const report = button.closest(".karnameh-student-sheet");
+  const controller = karnamehStageControllers.get(report);
+  const section = button.closest(".karnameh-subject-section");
+  const kind = section?.dataset.karnamehGroupSet;
+  const selected = button.dataset.karnamehStage;
+  const current = () =>
+    !!controller &&
+    !!section &&
+    report.isConnected &&
+    button.isConnected &&
+    report.contains(section) &&
+    document.getElementById("karnamehTabOutput")?.contains(report) &&
+    workspace.id === controller.workspaceId &&
+    state.view === "reports" &&
+    state.reportTab === "karnameh" &&
+    karnamehFilter.classId === controller.classId &&
+    karnamehFilter.studentId === controller.studentId &&
+    (!karnamehFilter.schoolId ||
+      karnamehFilter.schoolId === controller.schoolId) &&
+    karnamehStageSelection.scope === controller.scope;
+  if (
+    !current() ||
+    !["assessment", "modular", "legacy"].includes(kind) ||
+    button.disabled
+  )
+    return;
+  const options = karnamehTableStageOptions(section.querySelector("table"));
+  if (!options.some((group) => group.key === selected)) return;
+  const request = (controller.requests[kind] =
+    (controller.requests[kind] || 0) + 1);
+  // A click on the current group also cancels a slower request for another group.
+  if (section.dataset.karnamehActiveGroup === selected) return;
+  const context = karnamehSnapshots.get(report);
+  if (!context) return;
+  try {
+    await assertReportSnapshot(context);
+  } catch (error) {
+    if (current() && controller.requests[kind] === request) throw error;
+    return;
+  }
+  if (!current() || controller.requests[kind] !== request) return;
+  karnamehStageSelection[kind] = selected;
+  applyKarnamehStage(report, kind, selected);
 }
 // Source: src/workspace/reports/student.js
 function openKarnamehStudent(classId, studentId = "") {
@@ -9750,6 +9925,10 @@ async function renderAcademicKarnameh(out, filter) {
     if (report) {
       report.classList.add("karnameh-year-document");
       karnamehSnapshots.set(report, snapshot.context);
+      initKarnamehStageControls(report, {
+        schoolId: school.id,
+        classId: classroom.id,
+      });
     }
   } catch (error) {
     if (current())
@@ -11118,6 +11297,7 @@ function installWorkspaceActions() {
     ],
     ["apply-academic-schedule", () => applyAcademicScheduleV24()],
     ["assessment-stage", (button) => openAssessmentStage(button)],
+    ["karnameh-stage", (button) => selectKarnamehStage(button)],
     [
       "karnameh-student",
       (button) => openKarnamehStudent(button.dataset.class, button.dataset.key),

@@ -254,7 +254,7 @@ test("individual sheet contains lesson rows for exactly the selected pupil", () 
   assert.equal((header.match(/scope="colgroup"/g) || []).length, 4);
 });
 
-test("Kardanesh shows all four raw practical/theory pairs, exact stage results, and equal-weight annual result", () => {
+test("Kardanesh shows all four raw practical/theory pairs, exact stage results, without an annual score column", () => {
   const f = fixture(),
     row = lessonRow(
       sheet(f),
@@ -274,18 +274,28 @@ test("Kardanesh shows all four raw practical/theory pairs, exact stage results, 
     "20",
     "20",
     "20",
-    "12.3",
   ]);
+  assert.equal(
+    f.c.annualGradeRows(f.parts, "school", f.classroom.id, "student_0")[0]
+      .final,
+    12.3,
+  );
 });
 
-test("general subject shows only its four theory scores and annual result without invented practical values", () => {
+test("general subject shows only its four theory scores without invented practical or annual values", () => {
   const f = fixture(),
     row = lessonRow(sheet(f), "karnameh-general-table", "عمومی");
-  assert.deepEqual(cells(row), ["0", "10", "20", "12", "10.5"]);
+  assert.deepEqual(cells(row), ["0", "10", "20", "12"]);
   assert.doesNotMatch(row.html, /data-grade-tone="remedial"/);
+  assert.equal(
+    f.c
+      .annualGradeRows(f.parts, "school", f.classroom.id, "student_0")
+      .find((row) => row.lessonId === "general").final,
+    10.5,
+  );
 });
 
-test("zero remains recorded while incomplete stage and annual results stay missing", () => {
+test("zero remains recorded while incomplete stage results stay missing", () => {
   const f = fixture(),
     first = lessonRow(
       sheet(f),
@@ -300,8 +310,13 @@ test("zero remains recorded while incomplete stage and annual results stay missi
     general = lessonRow(sheet(f, 1), "karnameh-general-table", "عمومی");
   assert.deepEqual(cells(first).slice(0, 3), ["0", "0", "0"]);
   assert.deepEqual(cells(missing).slice(0, 3), ["0", "—", "—"]);
-  assert.equal(cells(missing).at(-1), "—");
-  assert.deepEqual(cells(general).slice(-2), ["—", "—"]);
+  assert.equal(
+    f.c
+      .annualGradeRows(f.parts, "school", f.classroom.id, "student_1")
+      .find((row) => row.lessonId === "dual").complete,
+    false,
+  );
+  assert.deepEqual(cells(general), ["0", "10", "20", "—"]);
 });
 
 test("assessment identity mapping is independent from the shared DTO row order", () => {
@@ -331,7 +346,7 @@ test("individual grade builders request the selected pupil rather than the full 
     assert.equal(studentId, "student_2", name + " must use pupil scope");
 });
 
-test("a missing second term cannot produce an annual or fabricated stage result", () => {
+test("a missing second term cannot produce fabricated stage results", () => {
   const f = fixture();
   f.options.parts = [f.parts[0]];
   const row = lessonRow(
@@ -352,11 +367,10 @@ test("a missing second term cannot produce an annual or fabricated stage result"
     "—",
     "—",
     "—",
-    "—",
   ]);
 });
 
-test("annual pass classification uses raw values rather than averaging rounded display grades", () => {
+test("stage results preserve exact subthreshold classification while shared annual calculation remains unchanged", () => {
   const f = fixture();
   for (const cls of classes(f))
     cls.lessons[0].kardaneshScores.student_0 = {
@@ -383,10 +397,10 @@ test("annual pass classification uses raw values rather than averaging rounded d
   assert.doesNotMatch(cells(row).at(-1), /^14\.00$/);
 });
 
-test("formal modules expose continuous, competency, result, and the official annual result", () => {
+test("formal modules expose continuous, competency, and result without an annual score column", () => {
   const f = fixture(),
     row = lessonRow(sheet(f), "karnameh-modular-table", "پودمانی");
-  assert.deepEqual(cells(row), ["5", "3", "20", "20"]);
+  assert.deepEqual(cells(row), ["5", "3", "20"]);
   assert.ok(row.html.includes(esc("پودمان <یک>")));
 });
 
@@ -411,7 +425,13 @@ test("module IDs preserve raw-score mapping across reordered terms and duplicate
     if (!index) lesson.poudmans.reverse();
   }
   const row = lessonRow(sheet(f), "karnameh-modular-table", "پودمانی");
-  assert.deepEqual(cells(row), ["5", "3", "20", "3", "2", "13", "16.5"]);
+  assert.deepEqual(cells(row), ["5", "3", "20", "3", "2", "13"]);
+  assert.equal(
+    f.c
+      .annualTechnicalRows(f.parts, "school", f.classroom.id, "student_0")
+      .find((row) => row.lessonId === "modular").final,
+    16.5,
+  );
 });
 
 test("variable module counts keep a lesson row aligned without creating grades for absent modules", () => {
@@ -434,23 +454,28 @@ test("variable module counts keep a lesson row aligned without creating grades f
     cells(single).filter(
       (value) => value !== "—" && value !== "" && value !== "ندارد",
     ),
-    ["5", "3", "20", "20"],
+    ["5", "3", "20"],
   );
-  assert.deepEqual(cells(double), ["5", "3", "20", "5", "3", "20", "20"]);
+  assert.deepEqual(cells(double), ["5", "3", "20", "5", "3", "20"]);
 });
 
 test("incomplete formal competency is missing while completed failed modules remain remedial", () => {
   const f = fixture(),
     incomplete = lessonRow(sheet(f, 1), "karnameh-modular-table", "پودمانی");
-  assert.deepEqual(cells(incomplete), ["5", "—", "—", "—"]);
+  assert.deepEqual(cells(incomplete), ["5", "—", "—"]);
   for (const cls of classes(f))
     cls.lessons[2].poudmans[0].podScores.student_0 = { m: 5, c: 1 };
   const failed = lessonRow(sheet(f), "karnameh-modular-table", "پودمانی");
   assert.deepEqual(cells(failed).slice(0, 3), ["5", "1", "10"]);
-  assert.equal(cells(failed).at(-1), "جبران");
+  assert.equal(cells(failed).at(-1), "10");
   assert.match(failed.html, /data-grade-complete="true"/);
   assert.match(failed.html, /data-grade-tone="remedial"/);
-  assert.doesNotMatch(cells(failed).at(-1), /تکمیل نشده|10\.00/);
+  const official = f.c
+    .annualTechnicalRows(f.parts, "school", f.classroom.id, "student_0")
+    .find((row) => row.lessonId === "modular");
+  assert.equal(official.complete, true);
+  assert.equal(official.passed, false);
+  assert.equal(official.final, null);
 });
 
 test("nonformal unit lessons preserve separate term results rather than inventing an annual average", () => {
@@ -576,7 +601,20 @@ test("an explicitly selected archived pupil keeps their complete grades and arch
     "karnameh-assessment-table",
     f.classroom.lessons[0].name,
   );
-  assert.equal(cells(row).at(-1), "12.3");
+  assert.deepEqual(cells(row), [
+    "0",
+    "0",
+    "0",
+    "18",
+    "12",
+    "16.2",
+    "10",
+    "20",
+    "13",
+    "20",
+    "20",
+    "20",
+  ]);
   assert.ok(html.includes(esc(student.name)));
   for (const active of f.classroom.students)
     assert.ok(
@@ -603,7 +641,7 @@ test("formal module zero continuous score remains recorded and contributes to th
   for (const cls of classes(f))
     cls.lessons[2].poudmans[0].podScores.student_0 = { m: 0, c: 3 };
   const row = lessonRow(sheet(f), "karnameh-modular-table", "پودمانی");
-  assert.deepEqual(cells(row), ["0", "3", "15", "15"]);
+  assert.deepEqual(cells(row), ["0", "3", "15"]);
 });
 
 test("nonformal partial units preserve raw zero without inventing a complete term result", () => {
@@ -614,4 +652,750 @@ test("nonformal partial units preserve raw zero without inventing a complete ter
   assert.deepEqual(cells(row), ["—", "10"]);
   assert.match(text(row.html), /مستمر 0 · پایانی — · نتیجه —/);
   assert.match(text(row.html), /مستمر 10 · پایانی 10 · نتیجه 10/);
+});
+
+function stageTableFixture(html, className) {
+  const content = table(html, className),
+    head = content.match(/<thead\b[^>]*>([\s\S]*?)<\/thead>/)?.[1] || "";
+  return {
+    classList: {
+      contains: (name) => name === className || name === "karnameh-sheet-table",
+    },
+    tHead: {
+      rows: [...head.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/g)].map((match) => ({
+        cells: [...match[1].matchAll(/<th\b([^>]*)>([\s\S]*?)<\/th>/g)].map(
+          (cell) => ({
+            colSpan: Number(cell[1].match(/\bcolspan="(\d+)"/)?.[1] || 1),
+            rowSpan: Number(cell[1].match(/\browspan="(\d+)"/)?.[1] || 1),
+            textContent: text(cell[2]),
+          }),
+        ),
+      })),
+    },
+  };
+}
+
+test("stage metadata matches the actual four-stage assessment and general headers without changing grades", () => {
+  const f = fixture(),
+    html = sheet(f),
+    keys = ["first-midterm", "first-final", "second-midterm", "second-final"];
+  for (const [className, width] of [
+    ["karnameh-assessment-table", 3],
+    ["karnameh-general-table", 1],
+  ]) {
+    const groups = plain(
+      f.c.karnamehTableStageGroups(stageTableFixture(html, className)),
+    );
+    assert.deepEqual(
+      groups.map((group) => group.key),
+      keys,
+    );
+    assert.deepEqual(
+      groups.map((group) => group.width),
+      [width, width, width, width],
+    );
+    assert.ok(
+      groups.every(
+        (group) => typeof group.label === "string" && group.label.trim(),
+      ),
+    );
+    const lesson =
+      className === "karnameh-assessment-table"
+        ? f.classroom.lessons[0].name
+        : "عمومی";
+    const row = lessonRow(html, className, lesson);
+    assert.equal(cells(row).length, width * 4);
+    assert.doesNotMatch(row.html, /\bhidden(?:\s|=|>)/);
+  }
+  assert.equal(sheet(f), html);
+});
+
+test("stage metadata derives positional module groups from actual table headers and keeps legacy term columns separate", () => {
+  const f = fixture();
+  for (const cls of classes(f)) {
+    const lesson = cls.lessons[2];
+    lesson.poudmans.push({
+      ...structuredClone(lesson.poudmans[0]),
+      id: "module_other",
+      name: "پودمان دیگر",
+    });
+  }
+  const html = sheet(f),
+    groups = plain(
+      f.c.karnamehTableStageGroups(
+        stageTableFixture(html, "karnameh-modular-table"),
+      ),
+    );
+  assert.deepEqual(
+    groups.map((group) => group.key),
+    ["module-0", "module-1"],
+  );
+  assert.deepEqual(
+    groups.map((group) => group.width),
+    [3, 3],
+  );
+  const row = lessonRow(html, "karnameh-modular-table", "پودمانی");
+  assert.deepEqual(cells(row), ["5", "3", "20", "5", "3", "20"]);
+  assert.ok(row.html.includes(esc("پودمان <یک>")));
+  assert.ok(row.html.includes("پودمان دیگر"));
+  assert.doesNotMatch(row.html, /\bhidden(?:\s|=|>)/);
+  const legacy = plain(
+    f.c.karnamehTableStageGroups(
+      stageTableFixture(html, "karnameh-legacy-table"),
+    ),
+  );
+  assert.equal(legacy.length, 2);
+  assert.deepEqual(
+    legacy.map((group) => group.width),
+    [1, 1],
+  );
+  assert.equal(new Set(legacy.map((group) => group.key)).size, 2);
+  assert.ok(legacy.every((group) => group.key !== "annual"));
+});
+
+function stageControllerFixture() {
+  const f = fixture(),
+    { c } = f;
+  for (const cls of classes(f))
+    cls.lessons[2].poudmans.push({
+      ...structuredClone(cls.lessons[2].poudmans[0]),
+      id: "extra_module",
+      name: "پودمان دوم",
+    });
+  c.state = { view: "reports", reportTab: "karnameh" };
+  c.karnamehFilter = {
+    schoolId: "school",
+    classId: f.classroom.id,
+    studentId: "student_0",
+  };
+  c.localStorage = {
+    setItem: () => {
+      throw Error("stage selection must not write storage");
+    },
+  };
+  c.saveDB = () => {
+    throw Error("stage selection must not write marks");
+  };
+  c.commitRecordChanges = c.saveDB;
+  let currentReport,
+    validations = 0;
+  const context = {
+    id: c.workspace.id,
+    revision: 1,
+    karnamehYear: c.workspace.year,
+  };
+  c.assertReportSnapshot = async (value) => {
+    assert.equal(value, context);
+    validations++;
+  };
+  c.document = {
+    getElementById: (id) =>
+      id === "karnamehTabOutput"
+        ? { contains: (report) => report === currentReport }
+        : null,
+  };
+  const snapshots = vm.runInContext("karnamehSnapshots", c);
+  function element({
+    attributes = "",
+    html = "",
+    colSpan = 1,
+    rowSpan = 1,
+  } = {}) {
+    const data = {},
+      attrs = new Map();
+    for (const match of attributes.matchAll(/([\w-]+)="([^"]*)"/g)) {
+      attrs.set(match[1], match[2]);
+      if (match[1].startsWith("data-"))
+        data[
+          match[1]
+            .slice(5)
+            .replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())
+        ] = match[2];
+    }
+    const node = {
+      dataset: data,
+      attributes: attrs,
+      colSpan,
+      rowSpan,
+      isConnected: true,
+      disabled: false,
+      innerHTML: html,
+      textContent: text(html),
+      setAttribute(name, value) {
+        attrs.set(name, String(value));
+      },
+      getAttribute(name) {
+        return attrs.get(name) ?? null;
+      },
+      toggleAttribute(name, enabled) {
+        if (enabled) attrs.set(name, "");
+        else attrs.delete(name);
+      },
+    };
+    Object.defineProperty(node, "hidden", {
+      get: () => false,
+      set: () => {
+        throw Error("stage controls must not mutate hidden properties");
+      },
+    });
+    return node;
+  }
+  const mount = (studentIndex = 0) => {
+    const html = sheet(f, studentIndex),
+      report = {
+        dataset: { studentId: "student_" + studentIndex },
+        isConnected: true,
+      },
+      sections = [];
+    c.karnamehFilter.studentId = report.dataset.studentId;
+    for (const className of [
+      "karnameh-assessment-table",
+      "karnameh-general-table",
+      "karnameh-modular-table",
+      "karnameh-legacy-table",
+    ]) {
+      const content = table(html, className),
+        parsed = stageTableFixture(html, className),
+        header = content.match(/<thead\b[^>]*>([\s\S]*?)<\/thead>/)?.[1] || "",
+        body = content.match(/<tbody\b[^>]*>([\s\S]*?)<\/tbody>/)?.[1] || "",
+        parseRows = (markup) =>
+          [...markup.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/g)].map((row) => ({
+            cells: [
+              ...row[1].matchAll(/<t[hd]\b([^>]*)>([\s\S]*?)<\/t[hd]>/g),
+            ].map((match) =>
+              element({
+                attributes: match[1],
+                html: match[2],
+                colSpan: Number(match[1].match(/\bcolspan="(\d+)"/)?.[1] || 1),
+                rowSpan: Number(match[1].match(/\browspan="(\d+)"/)?.[1] || 1),
+              }),
+            ),
+          })),
+        node = {
+          classList: parsed.classList,
+          dataset: {},
+          tHead: { rows: parseRows(header) },
+          tBodies: [{ rows: parseRows(body) }],
+        },
+        allCells = [...node.tHead.rows, ...node.tBodies[0].rows].flatMap(
+          (row) => row.cells,
+        ),
+        section = {
+          dataset: {},
+          table: node,
+          buttons: [],
+          allCells,
+          scroll: { scrollLeft: 85 },
+          header: {},
+        };
+      section.header.insertAdjacentHTML = (position, controls) => {
+        assert.equal(position, "beforeend");
+        section.buttons = [
+          ...controls.matchAll(/<button\b([^>]*)>([\s\S]*?)<\/button>/g),
+        ].map((match) => {
+          const button = element({ attributes: match[1], html: match[2] });
+          button.closest = (selector) =>
+            selector === ".karnameh-student-sheet"
+              ? report
+              : selector === ".karnameh-subject-section"
+                ? section
+                : null;
+          return button;
+        });
+      };
+      section.querySelector = (selector) => {
+        if (selector === "table" || selector === "table.karnameh-sheet-table")
+          return node;
+        if (selector === ".karnameh-sheet-scroll") return section.scroll;
+        if (selector === ".karnameh-subject-header") return section.header;
+        if (selector === ".karnameh-stage-switcher")
+          return section.buttons.length ? {} : null;
+        return null;
+      };
+      section.querySelectorAll = (selector) =>
+        selector === "[data-karnameh-group]"
+          ? allCells.filter((cell) => cell.dataset.karnamehGroup !== undefined)
+          : selector === "[data-karnameh-stage]"
+            ? section.buttons
+            : [];
+      sections.push(section);
+    }
+    report.querySelectorAll = (selector) =>
+      selector === ".karnameh-subject-section" ? sections : [];
+    report.contains = (section) => sections.includes(section);
+    snapshots.set(report, context);
+    currentReport = report;
+    c.initKarnamehStageControls(report, {
+      schoolId: "school",
+      classId: f.classroom.id,
+    });
+    const find = (kind, index = 0) =>
+      sections.filter((section) => section.dataset.karnamehGroupSet === kind)[
+        index
+      ];
+    return {
+      report,
+      sections,
+      find,
+      button: (kind, stage, index = 0) =>
+        find(kind, index).buttons.find(
+          (button) => button.dataset.karnamehStage === stage,
+        ),
+      grades: () =>
+        sections.flatMap((section) =>
+          section.allCells.map((cell) => ({
+            html: cell.innerHTML,
+            text: cell.textContent,
+            hidden: cell.hidden,
+          })),
+        ),
+      active: (kind) =>
+        sections
+          .filter((section) => section.dataset.karnamehGroupSet === kind)
+          .map((section) => section.dataset.karnamehActiveGroup),
+    };
+  };
+  return {
+    ...f,
+    mount,
+    context,
+    validations: () => validations,
+    replaceOutput: () => {
+      currentReport = null;
+    },
+  };
+}
+
+function stageDeferred() {
+  let resolve;
+  const promise = new Promise((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
+test("runtime stage decoration groups every original header and grade cell without any annual cells", () => {
+  const f = stageControllerFixture(),
+    view = f.mount();
+  for (const [kind, expected] of [
+    ["assessment", ["first-midterm", "first-midterm"]],
+    ["modular", ["module-0"]],
+    ["legacy", ["first-term"]],
+  ])
+    assert.deepEqual(view.active(kind), expected);
+  for (const section of view.sections) {
+    assert.ok(
+      section.allCells.slice(1).some((cell) => cell.dataset.karnamehGroup),
+    );
+    assert.ok(
+      section.buttons.every((button) =>
+        ["true", "false"].includes(button.getAttribute("aria-pressed")),
+      ),
+    );
+    for (const cell of section.allCells.filter(
+      (cell) => cell.dataset.karnamehGroup,
+    ))
+      assert.equal(
+        cell.attributes.has("data-karnameh-group-active"),
+        cell.dataset.karnamehGroup === section.dataset.karnamehActiveGroup,
+      );
+    assert.equal(section.scroll.scrollLeft, 0);
+  }
+  assert.equal(view.report.dataset.karnamehCompactReady, "true");
+  assert.equal(f.validations(), 0);
+});
+
+test("stage round trips synchronize Kardanesh/general while preserving every grade and all hidden properties", async () => {
+  const f = stageControllerFixture(),
+    view = f.mount(),
+    before = view.grades(),
+    raw = JSON.stringify(f.parts);
+  for (const stage of ["second-final", "first-final", "first-midterm"]) {
+    await f.c.selectKarnamehStage(view.button("assessment", stage));
+    const expected = [stage, stage];
+    assert.deepEqual(view.active("assessment"), expected);
+    assert.deepEqual(view.active("modular"), ["module-0"]);
+    for (const [index, section] of view.sections
+      .filter((item) => item.dataset.karnamehGroupSet === "assessment")
+      .entries()) {
+      assert.equal(section.table.dataset.karnamehActiveGroup, expected[index]);
+      assert.equal(
+        section.buttons.filter(
+          (button) => button.getAttribute("aria-pressed") === "true",
+        ).length,
+        1,
+      );
+      assert.equal(
+        section.buttons.find(
+          (button) => button.getAttribute("aria-pressed") === "true",
+        ).dataset.karnamehStage,
+        expected[index],
+      );
+    }
+  }
+  assert.deepEqual(view.grades(), before);
+  assert.equal(JSON.stringify(f.parts), raw);
+  assert.equal(f.validations(), 3);
+});
+
+test("module and legacy stage selections remain independent from assessment selection", async () => {
+  const f = stageControllerFixture(),
+    view = f.mount(),
+    before = view.grades();
+  await f.c.selectKarnamehStage(view.button("assessment", "second-midterm", 1));
+  await f.c.selectKarnamehStage(view.button("modular", "module-1"));
+  await f.c.selectKarnamehStage(view.button("legacy", "second-term"));
+  assert.deepEqual(view.active("assessment"), [
+    "second-midterm",
+    "second-midterm",
+  ]);
+  assert.deepEqual(view.active("modular"), ["module-1"]);
+  assert.deepEqual(view.active("legacy"), ["second-term"]);
+  await f.c.selectKarnamehStage(view.button("modular", "module-1"));
+  assert.deepEqual(view.active("assessment"), [
+    "second-midterm",
+    "second-midterm",
+  ]);
+  assert.deepEqual(view.active("modular"), ["module-1"]);
+  assert.deepEqual(view.grades(), before);
+});
+
+test("forged stage names, negative/overflow module indices and disabled controls cannot access a snapshot or change selection", async () => {
+  const f = stageControllerFixture(),
+    view = f.mount(),
+    before = view.grades(),
+    original = view.button("modular", "module-1");
+  for (const selected of [
+    "module--1",
+    "module-2",
+    "module-999999",
+    "annual",
+    "first-final",
+    "__proto__",
+    "",
+  ]) {
+    const forged = { ...original, dataset: { karnamehStage: selected } };
+    await f.c.selectKarnamehStage(forged);
+  }
+  const general = view.button("assessment", "first-midterm", 1);
+  await f.c.selectKarnamehStage({
+    ...general,
+    dataset: { karnamehStage: "annual" },
+  });
+  const disabled = view.button("assessment", "second-final");
+  disabled.disabled = true;
+  await f.c.selectKarnamehStage(disabled);
+  assert.deepEqual(view.active("assessment"), [
+    "first-midterm",
+    "first-midterm",
+  ]);
+  assert.deepEqual(view.active("modular"), ["module-0"]);
+  assert.deepEqual(view.grades(), before);
+  assert.equal(f.validations(), 0);
+});
+
+test("a missing or rejected durable report context cannot apply a different stage", async () => {
+  const f = stageControllerFixture(),
+    view = f.mount(),
+    snapshots = vm.runInContext("karnamehSnapshots", f.c);
+  snapshots.delete(view.report);
+  await f.c.selectKarnamehStage(view.button("assessment", "second-final"));
+  assert.equal(f.validations(), 0);
+  assert.deepEqual(view.active("assessment"), [
+    "first-midterm",
+    "first-midterm",
+  ]);
+  snapshots.set(view.report, f.context);
+  f.c.assertReportSnapshot = async () => {
+    throw Error("changed other term");
+  };
+  await assert.rejects(
+    f.c.selectKarnamehStage(view.button("assessment", "second-final")),
+    /changed other term/,
+  );
+  assert.deepEqual(view.active("assessment"), [
+    "first-midterm",
+    "first-midterm",
+  ]);
+});
+
+for (const [reason, change] of [
+  [
+    "school",
+    (f) => {
+      f.c.karnamehFilter.schoolId = "other-school";
+    },
+  ],
+  [
+    "class",
+    (f) => {
+      f.c.karnamehFilter.classId = "other-class";
+    },
+  ],
+  [
+    "pupil",
+    (f) => {
+      f.c.karnamehFilter.studentId = "student_1";
+    },
+  ],
+  [
+    "workspace",
+    (f) => {
+      f.c.workspace.id = "another-term";
+    },
+  ],
+  ["report", (f) => f.replaceOutput()],
+  [
+    "navigation",
+    (f) => {
+      f.c.state.view = "schools";
+    },
+  ],
+  [
+    "report tab",
+    (f) => {
+      f.c.state.reportTab = "daily";
+    },
+  ],
+  [
+    "preference scope",
+    (f) => f.c.karnamehStagePreference("other-school", "other-class"),
+  ],
+  [
+    "button removal",
+    (_f, view, button) => {
+      button.isConnected = false;
+    },
+  ],
+  [
+    "report removal",
+    (_f, view) => {
+      view.report.isConnected = false;
+    },
+  ],
+])
+  test(
+    "a validated stage cannot apply after " +
+      reason +
+      " changes during its await",
+    async () => {
+      const f = stageControllerFixture(),
+        view = f.mount(),
+        waiting = stageDeferred(),
+        entered = stageDeferred(),
+        button = view.button("assessment", "second-final");
+      f.c.assertReportSnapshot = async () => {
+        entered.resolve();
+        await waiting.promise;
+      };
+      const operation = f.c.selectKarnamehStage(button);
+      await entered.promise;
+      change(f, view, button);
+      waiting.resolve();
+      await operation;
+      assert.deepEqual(view.active("assessment"), [
+        "first-midterm",
+        "first-midterm",
+      ]);
+    },
+  );
+
+test("an obsolete failed snapshot is discarded quietly after student selection changes", async () => {
+  const f = stageControllerFixture(),
+    view = f.mount(),
+    waiting = stageDeferred(),
+    entered = stageDeferred();
+  f.c.assertReportSnapshot = async () => {
+    entered.resolve();
+    await waiting.promise;
+    throw Error("obsolete report");
+  };
+  const operation = f.c.selectKarnamehStage(
+    view.button("assessment", "second-final"),
+  );
+  await entered.promise;
+  f.c.karnamehFilter.studentId = "student_1";
+  waiting.resolve();
+  await operation;
+  assert.deepEqual(view.active("assessment"), [
+    "first-midterm",
+    "first-midterm",
+  ]);
+});
+
+test("a slower earlier stage request cannot overwrite a later validated selection", async () => {
+  const f = stageControllerFixture(),
+    view = f.mount(),
+    waiting = stageDeferred(),
+    entered = stageDeferred();
+  let calls = 0;
+  f.c.assertReportSnapshot = async () => {
+    if (++calls === 1) {
+      entered.resolve();
+      await waiting.promise;
+    }
+  };
+  const earlier = f.c.selectKarnamehStage(
+    view.button("assessment", "first-final"),
+  );
+  await entered.promise;
+  await f.c.selectKarnamehStage(view.button("assessment", "second-final"));
+  waiting.resolve();
+  await earlier;
+  assert.deepEqual(view.active("assessment"), ["second-final", "second-final"]);
+});
+
+test("clicking the already active stage cancels a pending request for another stage", async () => {
+  const f = stageControllerFixture(),
+    view = f.mount(),
+    waiting = stageDeferred(),
+    entered = stageDeferred();
+  f.c.assertReportSnapshot = async () => {
+    entered.resolve();
+    await waiting.promise;
+  };
+  const pending = f.c.selectKarnamehStage(view.button("modular", "module-1"));
+  await entered.promise;
+  await f.c.selectKarnamehStage(view.button("modular", "module-0"));
+  waiting.resolve();
+  await pending;
+  assert.deepEqual(view.active("modular"), ["module-0"]);
+});
+
+test("concurrent requests in separate stage families can both apply without cancelling one another", async () => {
+  const f = stageControllerFixture(),
+    view = f.mount(),
+    waiting = stageDeferred(),
+    entered = stageDeferred();
+  let calls = 0;
+  f.c.assertReportSnapshot = async () => {
+    if (++calls === 1) {
+      entered.resolve();
+      await waiting.promise;
+    }
+  };
+  const first = f.c.selectKarnamehStage(
+    view.button("assessment", "second-final"),
+  );
+  await entered.promise;
+  await f.c.selectKarnamehStage(view.button("modular", "module-1"));
+  waiting.resolve();
+  await first;
+  assert.deepEqual(view.active("assessment"), ["second-final", "second-final"]);
+  assert.deepEqual(view.active("modular"), ["module-1"]);
+});
+
+test("stage choices survive pupil navigation but reset when academic workspace/year/school/class scope changes", async () => {
+  const f = stageControllerFixture(),
+    first = f.mount();
+  await f.c.selectKarnamehStage(first.button("assessment", "second-final"));
+  await f.c.selectKarnamehStage(first.button("modular", "module-1"));
+  const next = f.mount(1);
+  assert.deepEqual(next.active("assessment"), ["second-final", "second-final"]);
+  assert.deepEqual(next.active("modular"), ["module-1"]);
+  for (const [key, value, schoolId, classId] of [
+    ["id", "another-term", "school", f.classroom.id],
+    ["year", "1406-1407", "school", f.classroom.id],
+    ["year", "1406-1407", "another-school", f.classroom.id],
+    ["year", "1406-1407", "another-school", "another-class"],
+  ]) {
+    f.c.workspace[key] = value;
+    const preference = f.c.karnamehStagePreference(schoolId, classId);
+    assert.equal(preference.assessment, "first-midterm");
+    assert.equal(preference.modular, "module-0");
+    assert.equal(preference.legacy, "first-term");
+    preference.assessment = "second-final";
+    preference.modular = "module-1";
+  }
+});
+
+test("every Karnameh table physically omits annual headers, cells, groups and options", () => {
+  const f = fixture(),
+    html = sheet(f),
+    keys = ["first-midterm", "first-final", "second-midterm", "second-final"];
+  for (const [className, expected, columnCount] of [
+    ["karnameh-assessment-table", keys, 13],
+    ["karnameh-general-table", keys, 5],
+    ["karnameh-modular-table", ["module-0"], 4],
+    ["karnameh-legacy-table", ["first-term", "second-term"], 3],
+  ]) {
+    const content = table(html, className),
+      node = stageTableFixture(html, className),
+      groups = plain(f.c.karnamehTableStageGroups(node)),
+      options = plain(f.c.karnamehTableStageOptions(node));
+    assert.deepEqual(
+      groups.map((group) => group.key),
+      expected,
+    );
+    assert.deepEqual(options, groups);
+    assert.equal(
+      node.tHead.rows[0].cells.reduce((sum, cell) => sum + cell.colSpan, 0),
+      columnCount,
+    );
+    assert.doesNotMatch(
+      content,
+      /\bdata-karnameh-(?:field|group|stage)="annual"|karnameh-(?:sheet|grid)-annual|نتیجهٔ سالانه/,
+    );
+    for (const row of tableRows(content))
+      assert.doesNotMatch(row.html, /\bdata-karnameh-field="annual"/);
+  }
+  assert.equal(sheet(f), html);
+});
+
+test("obsolete annual preferences fall back to valid stages and forged annual controls cannot alter grades or selection", async () => {
+  const f = stageControllerFixture(),
+    raw = JSON.stringify(f.parts),
+    preference = f.c.karnamehStagePreference("school", f.classroom.id);
+  preference.assessment = "annual";
+  preference.modular = "annual";
+  preference.legacy = "annual";
+  const view = f.mount(),
+    before = view.grades();
+  assert.deepEqual(view.active("assessment"), [
+    "first-midterm",
+    "first-midterm",
+  ]);
+  assert.deepEqual(view.active("modular"), ["module-0"]);
+  assert.deepEqual(view.active("legacy"), ["first-term"]);
+  assert.equal(preference.assessment, "first-midterm");
+  assert.equal(preference.modular, "module-0");
+  assert.equal(preference.legacy, "first-term");
+  for (const section of view.sections) {
+    assert.ok(
+      !section.allCells.some((cell) => cell.dataset.karnamehGroup === "annual"),
+    );
+    assert.ok(
+      !section.buttons.some(
+        (button) => button.dataset.karnamehStage === "annual",
+      ),
+    );
+    assert.equal(
+      section.buttons.filter(
+        (button) => button.getAttribute("aria-pressed") === "true",
+      ).length,
+      1,
+    );
+    assert.ok(
+      section.allCells.some((cell) =>
+        cell.attributes.has("data-karnameh-group-active"),
+      ),
+    );
+    const original = section.buttons[0];
+    await f.c.selectKarnamehStage({
+      ...original,
+      dataset: { karnamehStage: "annual" },
+    });
+  }
+  assert.equal(f.validations(), 0);
+  assert.deepEqual(view.grades(), before);
+  assert.equal(JSON.stringify(f.parts), raw);
+  await f.c.selectKarnamehStage(view.button("assessment", "second-final"));
+  assert.deepEqual(view.active("assessment"), ["second-final", "second-final"]);
+  assert.deepEqual(view.grades(), before);
+  assert.equal(
+    view
+      .find("modular")
+      .table.tHead.rows[0].cells.reduce((sum, cell) => sum + cell.colSpan, 0),
+    7,
+  );
 });

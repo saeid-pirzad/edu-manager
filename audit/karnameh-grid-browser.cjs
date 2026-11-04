@@ -249,6 +249,18 @@ function sheetState() {
     selected: select.value,
     selection: karnamehFilter.studentId,
     renderedStudent: report.dataset.studentId,
+    activeGroups: [
+      ...report.querySelectorAll("table.karnameh-sheet-table"),
+    ].map((table) => table.dataset.karnamehActiveGroup),
+    activeOptionsVisible: [
+      ...report.querySelectorAll(".karnameh-stage-options [aria-pressed=true]"),
+    ]
+      .filter((button) => button.getBoundingClientRect().height > 0)
+      .every((button) => {
+        const bar = button.parentElement.getBoundingClientRect(),
+          rect = button.getBoundingClientRect();
+        return rect.left >= bar.left - 1 && rect.right <= bar.right + 1;
+      }),
     options: [...select.options]
       .filter((option) => option.value)
       .map((option) => option.value),
@@ -330,19 +342,114 @@ async function lastBoundary() {
       document.getElementById("karnamehStudent").value === "grid_student_23",
   };
 }
+async function optionBarMetrics(options) {
+  const buttons = [...options.querySelectorAll("button")].filter(
+    (button) => button.getBoundingClientRect().height > 0,
+  );
+  if (!buttons.length)
+    return {
+      buttons: 0,
+      rows: 0,
+      equalWidths: true,
+      textFits: true,
+      lastReachable: true,
+      contained: true,
+      touchTargets: true,
+      width: 0,
+    };
+  const original = options.scrollLeft,
+    widths = buttons.map((button) => button.getBoundingClientRect().width),
+    topRows = new Set(
+      buttons.map((button) => Math.round(button.getBoundingClientRect().top)),
+    ),
+    bounds = () => {
+      const rect = options.getBoundingClientRect();
+      return {
+        left: rect.left + options.clientLeft,
+        right: rect.left + options.clientLeft + options.clientWidth,
+      };
+    },
+    inside = (button) => {
+      const rect = button.getBoundingClientRect(),
+        bar = bounds();
+      return rect.left >= bar.left - 1 && rect.right <= bar.right + 1;
+    },
+    last = buttons.at(-1),
+    initiallyVisible = inside(last);
+  const textFits = buttons.every((button) => {
+    const range = document.createRange();
+    range.selectNodeContents(button);
+    const lines = [...range.getClientRects()].filter((rect) => rect.width > 0),
+      rect = button.getBoundingClientRect(),
+      style = getComputedStyle(button),
+      left =
+        rect.left +
+        parseFloat(style.borderLeftWidth) +
+        parseFloat(style.paddingLeft),
+      right =
+        rect.right -
+        parseFloat(style.borderRightWidth) -
+        parseFloat(style.paddingRight);
+    return (
+      new Set(lines.map((line) => Math.round(line.top))).size === 1 &&
+      lines.every((line) => line.left >= left - 1 && line.right <= right + 1)
+    );
+  });
+  try {
+    options.scrollLeft = -(options.scrollWidth - options.clientWidth);
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    if (!inside(last)) {
+      options.scrollLeft = options.scrollWidth - options.clientWidth;
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+    }
+    const lastReachable =
+      inside(last) &&
+      (initiallyVisible || Math.abs(options.scrollLeft - original) > 0);
+    const rect = options.getBoundingClientRect(),
+      parent = options.closest("header").getBoundingClientRect();
+    return {
+      buttons: buttons.length,
+      rows: topRows.size,
+      equalWidths: Math.max(...widths) - Math.min(...widths) <= 1,
+      minimumWidth: Math.min(...widths),
+      maximumWidth: Math.max(...widths),
+      textFits,
+      lastReachable,
+      contained: rect.left >= parent.left - 1 && rect.right <= parent.right + 1,
+      touchTargets: buttons.every(
+        (button) => button.getBoundingClientRect().height >= 34,
+      ),
+      width: options.clientWidth,
+      contentWidth: options.scrollWidth,
+    };
+  } finally {
+    options.scrollLeft = original;
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+  }
+}
+async function rerenderSheet() {
+  render();
+  await renderKarnamehTabReports();
+  await new Promise((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(resolve)),
+  );
+}
+
 async function geometry() {
   await new Promise((resolve) =>
     requestAnimationFrame(() => requestAnimationFrame(resolve)),
   );
   const report = document.querySelector(".karnameh-student-sheet"),
+    compact = matchMedia("(max-width:1024px)").matches,
     tables = [];
   for (const table of report.querySelectorAll("table.karnameh-sheet-table")) {
     const scroll = table.closest(".table-scroll"),
-      row = table.querySelector("tbody tr"),
+      rows = [...table.querySelectorAll("tbody tr")],
+      row = rows[0],
       first = row.firstElementChild,
       original = scroll.scrollLeft,
-      before = first.getBoundingClientRect().right;
-    const overflows = scroll.scrollWidth > scroll.clientWidth + 1;
+      before = first.getBoundingClientRect().right,
+      overflows = scroll.scrollWidth > scroll.clientWidth + 1;
     if (overflows) {
       scroll.scrollLeft = -Math.min(
         240,
@@ -355,7 +462,17 @@ async function geometry() {
         );
       await new Promise((resolve) => requestAnimationFrame(resolve));
     }
-    const moved = scroll.scrollLeft !== original;
+    const visible = (element) => getComputedStyle(element).display !== "none",
+      stageControls = table
+        .closest(".karnameh-subject-section")
+        .querySelector(".karnameh-stage-switcher"),
+      sectionHeader = table
+        .closest(".karnameh-subject-section")
+        .querySelector(":scope > header"),
+      sectionTitle = sectionHeader.querySelector("h4");
+    const optionMetrics = await globalThis.__karnamehOptionMetrics(
+      stageControls.querySelector(".karnameh-stage-options"),
+    );
     tables.push({
       kind: table.classList.contains("karnameh-assessment-table")
         ? "assessment"
@@ -368,16 +485,37 @@ async function geometry() {
         getComputedStyle(table).display === "table" &&
         getComputedStyle(row).display === "table-row" &&
         getComputedStyle(first).display === "table-cell",
-      scrollable: !overflows || moved,
-      sticky:
-        getComputedStyle(first).position === "sticky" &&
-        Math.abs(before - first.getBoundingClientRect().right) < 1,
-      readable: [...row.children].every(
-        (cell) => parseFloat(getComputedStyle(cell).fontSize) >= 11,
+      horizontalMode: compact
+        ? !overflows
+        : !overflows || scroll.scrollLeft !== original,
+      stableLesson:
+        compact ||
+        (getComputedStyle(first).position === "sticky" &&
+          Math.abs(before - first.getBoundingClientRect().right) < 1),
+      readable: [...row.children]
+        .filter(visible)
+        .every((cell) => parseFloat(getComputedStyle(cell).fontSize) >= 11),
+      rowWidths: rows.map((item) => item.children.length),
+      visibleWidths: rows.map(
+        (item) => [...item.children].filter(visible).length,
       ),
-      rowWidths: [...table.querySelectorAll("tbody tr")].map(
-        (item) => item.children.length,
-      ),
+      sectionTitleInsideBox:
+        !!sectionTitle && sectionHeader.contains(stageControls),
+      sectionTitleVisible:
+        !!sectionTitle &&
+        visible(sectionTitle) &&
+        sectionTitle.getBoundingClientRect().height > 0,
+      headerDescriptionRemoved: !sectionHeader.querySelector("p,small"),
+      stageControlsVisible: !!stageControls && visible(stageControls),
+      stageButtonRows: optionMetrics.rows,
+      optionMetrics,
+      noTechnicalAnnualOption:
+        !table.classList.contains("karnameh-modular-table") ||
+        !stageControls.querySelector('[data-karnameh-stage="annual"]'),
+      moduleOptionsFit:
+        !table.classList.contains("karnameh-modular-table") ||
+        !compact ||
+        optionMetrics.contentWidth <= optionMetrics.width + 1,
       wrapperWidth: scroll.clientWidth,
       tableWidth: scroll.scrollWidth,
       lessonWidth: first.getBoundingClientRect().width,
@@ -385,22 +523,139 @@ async function geometry() {
     scroll.scrollLeft = original;
   }
   return {
+    compact,
     pageFits:
       document.documentElement.scrollWidth <=
       document.documentElement.clientWidth + 1,
     reportFits: report.scrollWidth <= report.clientWidth + 1,
+    noAnnualUI: !report.querySelector(
+      "[data-karnameh-field=annual],[data-karnameh-group=annual],[data-karnameh-stage=annual],.karnameh-sheet-annual",
+    ),
+    guidanceRemoved:
+      !report.textContent.includes("مرحله یا پودمان را انتخاب کنید") &&
+      !report.textContent.includes("هر مرحله:") &&
+      !report.textContent.includes("نمرات پودمان‌ها سالانه‌اند"),
     tables,
     touchControls: [
-      ...report.querySelectorAll(".karnameh-student-pagination button"),
-    ].every((control) => control.getBoundingClientRect().height >= 44),
+      ...report.querySelectorAll(
+        ".karnameh-student-pagination button,.karnameh-stage-options button",
+      ),
+    ]
+      .filter(
+        (control) =>
+          getComputedStyle(control).display !== "none" &&
+          control.getBoundingClientRect().height > 0,
+      )
+      .every(
+        (control) =>
+          control.getBoundingClientRect().height >=
+          (control.closest(".karnameh-stage-options") ? 34 : 44),
+      ),
   };
 }
+async function fiveModuleOptions() {
+  const section = document
+      .querySelector(".karnameh-modular-table")
+      .closest(".karnameh-subject-section"),
+    clone = section.querySelector(":scope > header").cloneNode(true),
+    options = clone.querySelector(".karnameh-stage-options"),
+    template = options.querySelector("button").cloneNode(true);
+  options.replaceChildren();
+  for (let index = 0; index < 5; index++) {
+    const button = template.cloneNode(true);
+    button.textContent =
+      "پودمان " +
+      String(index + 1).replace(/[0-9]/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[digit]);
+    button.dataset.karnamehStage = "module-" + index;
+    button.setAttribute("aria-pressed", String(index === 0));
+    options.append(button);
+  }
+  section.querySelector(".karnameh-sheet-scroll").before(clone);
+  try {
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    return await globalThis.__karnamehOptionMetrics(options);
+  } finally {
+    clone.remove();
+  }
+}
+async function chooseStage(kind, group) {
+  const report = document.querySelector(".karnameh-student-sheet"),
+    table = report.querySelector(".karnameh-" + kind + "-table"),
+    section = table.closest(".karnameh-subject-section"),
+    button = section.querySelector(
+      '[data-workspace-action="karnameh-stage"][data-karnameh-stage="' +
+        group +
+        '"]',
+    ),
+    student = report.dataset.studentId;
+  if (!button) throw Error("Missing stage control " + kind + ":" + group);
+  button.focus({ preventScroll: true });
+  button.click();
+  for (let attempt = 0; attempt < 150; attempt++) {
+    if (
+      button.getAttribute("aria-pressed") === "true" &&
+      table.dataset.karnamehActiveGroup === group
+    ) {
+      await new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      );
+      const visible = (cell) => getComputedStyle(cell).display !== "none";
+      const number = (cell) => {
+        const text = cell
+          .querySelector(".karnameh-sheet-value")
+          .textContent.trim()
+          .replace(/[۰-۹]/g, (digit) => String(digit.charCodeAt(0) - 1776));
+        return text === "—" || text === "جبران" ? null : Number(text);
+      };
+      return {
+        sameReport:
+          report === document.querySelector(".karnameh-student-sheet"),
+        sameStudent:
+          report.dataset.studentId === student &&
+          karnamehFilter.studentId === student,
+        focusPreserved: document.activeElement === button,
+        activeVisible: (() => {
+          const bar = button.parentElement.getBoundingClientRect(),
+            rect = button.getBoundingClientRect();
+          return rect.left >= bar.left - 1 && rect.right <= bar.right + 1;
+        })(),
+        onlyOnePressed:
+          section.querySelectorAll(
+            '.karnameh-stage-options [aria-pressed="true"]',
+          ).length === 1,
+        group,
+        values: [...table.querySelectorAll("tbody tr")].map((row) =>
+          [...row.querySelectorAll("td")].filter(visible).map(number),
+        ),
+        visibleWidths: [...table.querySelectorAll("tbody tr")].map(
+          (row) => [...row.children].filter(visible).length,
+        ),
+        noHorizontal:
+          table.closest(".table-scroll").scrollWidth <=
+          table.closest(".table-scroll").clientWidth + 1,
+        allGroupsInDOM: [
+          ...new Set(
+            [...table.querySelectorAll("[data-karnameh-group]")].map(
+              (cell) => cell.dataset.karnamehGroup,
+            ),
+          ),
+        ],
+        noHiddenAttributes: !table.querySelector(
+          "[data-karnameh-group][hidden]",
+        ),
+      };
+    }
+    await new Promise((resolve) => setTimeout(resolve, 15));
+  }
+  throw Error("Stage control did not settle to " + kind + ":" + group);
+}
+
 async function printCheck() {
   const report = document.querySelector(".karnameh-student-sheet"),
     sentinel = document.createElement("tr");
   sentinel.hidden = true;
   sentinel.dataset.auditHiddenRow = "true";
-  sentinel.innerHTML = '<td colspan="14">این ردیف پنهان نباید چاپ شود</td>';
+  sentinel.innerHTML = '<td colspan="13">این ردیف پنهان نباید چاپ شود</td>';
   report.querySelector(".karnameh-assessment-table tbody").append(sentinel);
   globalThis.__EDU_PRINT_TEST__ = true;
   report.querySelector('[data-workspace-action="print"]').click();
@@ -444,6 +699,37 @@ function printGeometry() {
   const root = document.getElementById("printRoot"),
     tables = [...root.querySelectorAll("table.karnameh-sheet-table")];
   return {
+    allThirteenAssessmentColumns: [
+      ...root.querySelectorAll(
+        ".karnameh-assessment-table tbody tr:not([data-audit-hidden-row])",
+      ),
+    ].every(
+      (row) =>
+        [...row.children].filter(
+          (cell) => getComputedStyle(cell).display !== "none",
+        ).length === 13,
+    ),
+    allSevenModularColumns: [
+      ...root.querySelectorAll(".karnameh-modular-table tbody tr"),
+    ].every(
+      (row) =>
+        [...row.children].filter(
+          (cell) => getComputedStyle(cell).display !== "none",
+        ).length === 7,
+    ),
+    stageControlsRemoved: !root.querySelector(".karnameh-stage-switcher"),
+    noAnnualUI: !root.querySelector(
+      "[data-karnameh-field=annual],[data-karnameh-group=annual],[data-karnameh-stage=annual],.karnameh-sheet-annual",
+    ),
+    sectionTitlesPrinted:
+      [...root.querySelectorAll(".karnameh-subject-section > header h4")]
+        .map((title) => title.textContent.trim())
+        .join("|") === "دروس کاردانش|دروس فنی پودمانی" &&
+      [...root.querySelectorAll(".karnameh-subject-section > header h4")].every(
+        (title) =>
+          getComputedStyle(title).display !== "none" &&
+          title.getBoundingClientRect().height > 0,
+      ),
     twoNativeTables:
       tables.length === 2 &&
       tables.every((table) => getComputedStyle(table).display === "table"),
@@ -481,6 +767,22 @@ async function stalePrintCheck() {
       tx.onabort = () => reject(tx.error);
     });
   await write({ ...original, revision: original.revision + 1 });
+  const sourceReport = document.querySelector(".karnameh-student-sheet"),
+    table = sourceReport.querySelector(".karnameh-assessment-table"),
+    groupBefore = table.dataset.karnamehActiveGroup,
+    nextGroup =
+      groupBefore === "first-midterm" ? "first-final" : "first-midterm";
+  sourceReport
+    .querySelector(
+      '[data-workspace-action="karnameh-stage"][data-karnameh-stage="' +
+        nextGroup +
+        '"]',
+    )
+    .click();
+  await new Promise((resolve) => setTimeout(resolve, 120));
+  const staleStageRejected =
+    table.dataset.karnamehActiveGroup === groupBefore &&
+    document.querySelector(".karnameh-student-sheet") === sourceReport;
   document
     .querySelector('.karnameh-student-sheet [data-workspace-action="print"]')
     .click();
@@ -491,6 +793,7 @@ async function stalePrintCheck() {
   await write(original);
   return {
     otherTermChangeRejected: rejected,
+    staleStageRejected,
     selectionUnchanged: karnamehFilter.studentId === "grid_student_12",
   };
 }
@@ -517,8 +820,8 @@ async function run(env) {
       const layout = await cdp("Page.getLayoutMetrics");
       params.captureBeyondViewport = true;
       params.clip = {
-        x: 0,
-        y: 0,
+        x: layout.cssContentSize.x || 0,
+        y: layout.cssContentSize.y || 0,
         width: layout.cssContentSize.width,
         height: Math.min(layout.cssContentSize.height, 6000),
         scale: 1,
@@ -529,6 +832,9 @@ async function run(env) {
     return screenshot;
   };
   await require("./browser-ready.cjs")(env);
+  await evaluate(
+    "globalThis.__karnamehOptionMetrics=(" + optionBarMetrics.toString() + ")",
+  );
   try {
     const fixture = await call(setup);
     let current = await call(sheetState);
@@ -567,8 +873,8 @@ async function run(env) {
         current.assessment[1].lesson ===
           "ویرایش تصویر و نرم‌افزارهای کاربردی" &&
         current.modular[0].lesson === "نصب و راه‌اندازی شبکه‌های رایانه‌ای" &&
-        current.assessment.every((row) => row.cells.length === 13) &&
-        current.modular[0].cells.length === 7,
+        current.assessment.every((row) => row.cells.length === 12) &&
+        current.modular[0].cells.length === 6,
       { assessment: current.assessment, modular: current.modular },
     );
     check(
@@ -584,26 +890,34 @@ async function run(env) {
     );
     check(
       "RAW_GRADES",
-      "The full student table retains practical/theory values and four equally weighted stage results",
+      "The full student table retains practical/theory values and four independent weighted stage results",
       same(
         numbers(current.assessment[0]),
-        [10, 20, 13, 18, 14, 16.8, 18, 16, 17.4, 20, 18, 19.4, 16.65],
+        [10, 20, 13, 18, 14, 16.8, 18, 16, 17.4, 20, 18, 19.4],
       ) &&
         same(
           numbers(current.assessment[1]),
-          [17, 13, 15.8, 17, 13, 15.8, 19, 18, 18.7, 19, 18, 18.7, 17.25],
+          [17, 13, 15.8, 17, 13, 15.8, 19, 18, 18.7, 19, 18, 18.7],
         ),
       current.assessment,
     );
     check(
       "MODULE_IDENTITY",
-      "Module raw and annual results remain aligned by identity across reversed term order",
+      "Module raw inputs and results remain aligned by identity across reversed term order",
       current.modular[0].cells[0].note === "پودمان اول شبکه" &&
         current.modular[0].cells[3].note === "پودمان دوم شبکه" &&
-        same(numbers(current.modular[0]), [2, 2, 12, 4, 3, 19, 15.5]),
+        same(numbers(current.modular[0]), [2, 2, 12, 4, 3, 19]),
       current.modular,
     );
-    for (const width of [320, 390, 768, 1280]) {
+    await cdp("Emulation.setDeviceMetricsOverride", {
+      width: 390,
+      height: 1000,
+      deviceScaleFactor: 1,
+      mobile: true,
+    });
+    await call(chooseStage, "assessment", "first-midterm");
+    await call(chooseStage, "modular", "module-0");
+    for (const width of [320, 390, 768, 1024, 1280]) {
       await cdp("Emulation.setDeviceMetricsOverride", {
         width,
         height: 1000,
@@ -613,6 +927,23 @@ async function run(env) {
       await evaluate(
         "document.querySelector('.karnameh-student-sheet').scrollIntoView({block:'start'});window.scrollBy(0,-90)",
       );
+      if (width <= 1024) {
+        const extra = await call(fiveModuleOptions);
+        check(
+          "FIVE_MODULE_OPTIONS_" + width,
+          "Five equal module choices fit one row without annual or scrolling at " +
+            width,
+          extra.buttons === 5 &&
+            extra.contentWidth <= extra.width + 1 &&
+            extra.rows === 1 &&
+            extra.equalWidths &&
+            extra.textFits &&
+            extra.lastReachable &&
+            extra.contained &&
+            extra.touchTargets,
+          extra,
+        );
+      }
       const measured = await call(geometry),
         screenshot = await shot("student-sheet-" + width);
       check(
@@ -621,21 +952,121 @@ async function run(env) {
           width,
         measured.pageFits &&
           measured.reportFits &&
+          measured.guidanceRemoved &&
+          measured.noAnnualUI &&
           measured.touchControls &&
           measured.tables.length === 2 &&
           measured.tables.every(
             (table) =>
               table.contained &&
               table.native &&
-              table.scrollable &&
-              table.sticky &&
-              table.readable,
+              table.horizontalMode &&
+              table.stableLesson &&
+              table.readable &&
+              table.sectionTitleInsideBox &&
+              table.sectionTitleVisible &&
+              table.headerDescriptionRemoved,
           ) &&
-          same(measured.tables[0].rowWidths, [14, 14]) &&
-          same(measured.tables[1].rowWidths, [8]),
+          same(measured.tables[0].rowWidths, [13, 13]) &&
+          same(measured.tables[1].rowWidths, [7]) &&
+          same(
+            measured.tables[0].visibleWidths,
+            width <= 1024 ? [4, 4] : [13, 13],
+          ) &&
+          same(measured.tables[1].visibleWidths, width <= 1024 ? [4] : [7]) &&
+          measured.tables.every(
+            (table) =>
+              table.stageControlsVisible === width <= 1024 &&
+              (width <= 1024
+                ? table.stageButtonRows === 1 &&
+                  table.optionMetrics.equalWidths &&
+                  table.optionMetrics.textFits &&
+                  table.optionMetrics.lastReachable &&
+                  table.optionMetrics.contained &&
+                  table.noTechnicalAnnualOption &&
+                  table.moduleOptionsFit
+                : table.stageButtonRows === 0),
+          ),
         { ...measured, screenshot },
       );
     }
+
+    await cdp("Emulation.setDeviceMetricsOverride", {
+      width: 390,
+      height: 1000,
+      deviceScaleFactor: 1,
+      mobile: true,
+    });
+    const assessmentStages = [
+      [
+        "first-midterm",
+        [
+          [10, 20, 13],
+          [17, 13, 15.8],
+        ],
+      ],
+      [
+        "first-final",
+        [
+          [18, 14, 16.8],
+          [17, 13, 15.8],
+        ],
+      ],
+      [
+        "second-midterm",
+        [
+          [18, 16, 17.4],
+          [19, 18, 18.7],
+        ],
+      ],
+      [
+        "second-final",
+        [
+          [20, 18, 19.4],
+          [19, 18, 18.7],
+        ],
+      ],
+    ];
+    for (const [key, expected] of assessmentStages) {
+      const view = await call(chooseStage, "assessment", key);
+      check(
+        "STAGE_" + key,
+        "Selected assessment stage shows only its exact raw scores: " + key,
+        view.sameReport &&
+          view.sameStudent &&
+          view.onlyOnePressed &&
+          view.focusPreserved &&
+          view.activeVisible &&
+          view.noHiddenAttributes &&
+          view.noHorizontal &&
+          same(view.values, expected) &&
+          view.allGroupsInDOM.length === 4 &&
+          view.visibleWidths.every((size) => size === 4),
+        view,
+      );
+    }
+    for (const [key, expected] of [
+      ["module-0", [[2, 2, 12]]],
+      ["module-1", [[4, 3, 19]]],
+    ]) {
+      const view = await call(chooseStage, "modular", key);
+      check(
+        "MODULE_" + key,
+        "Selected module preserves its three raw grades: " + key,
+        view.sameReport &&
+          view.sameStudent &&
+          view.onlyOnePressed &&
+          view.focusPreserved &&
+          view.activeVisible &&
+          view.noHiddenAttributes &&
+          view.noHorizontal &&
+          same(view.values, expected) &&
+          view.allGroupsInDOM.length === 2 &&
+          view.visibleWidths.every((size) => size === 4),
+        view,
+      );
+    }
+
     await call(selectStudent, "next", 2);
     current = await call(sheetState);
     check(
@@ -647,6 +1078,20 @@ async function run(env) {
         current.singleStudent,
       current,
     );
+    const changedStudentVisible =
+      current.activeOptionsVisible &&
+      same(current.activeGroups, ["second-final", "module-1"]);
+    await call(rerenderSheet);
+    current = await call(sheetState);
+    check(
+      "ACTIVE_OPTION_RESTORE",
+      "The selected stage remains visible after changing student and rendering again",
+      changedStudentVisible &&
+        current.activeOptionsVisible &&
+        same(current.activeGroups, ["second-final", "module-1"]) &&
+        current.selected === "grid_student_2",
+      current,
+    );
     await call(selectStudent, "previous", 1);
     current = await call(sheetState);
     check(
@@ -654,7 +1099,7 @@ async function run(env) {
       "Previous returns to the first student without a class-wide ledger",
       current.selected === "grid_student_1" &&
         current.previousDisabled &&
-        numbers(current.assessment[0])[12] === 16.65 &&
+        numbers(current.assessment[0])[11] === 19.4 &&
         current.singleStudent,
       current,
     );
@@ -662,12 +1107,11 @@ async function run(env) {
     current = await call(sheetState);
     check(
       "MISSING",
-      "Missing input remains missing in its stage and annual result",
+      "Missing input remains missing in its own stage result",
       numbers(current.assessment[0])[6] === 18 &&
         numbers(current.assessment[0])[7] === null &&
         numbers(current.assessment[0])[8] === null &&
-        numbers(current.assessment[0])[12] === null &&
-        same(numbers(current.modular[0]), [2, 2, 12, null, null, null, null]),
+        same(numbers(current.modular[0]), [2, 2, 12, null, null, null]),
       current,
     );
     await call(selectStudent, "next", 4);
@@ -675,7 +1119,7 @@ async function run(env) {
     check(
       "ZERO",
       "Recorded zero grades stay numeric zero instead of becoming missing",
-      numbers(current.assessment[0]).length === 13 &&
+      numbers(current.assessment[0]).length === 12 &&
         numbers(current.assessment[0]).every((value) => value === 0),
       current.assessment[0],
     );
@@ -713,7 +1157,7 @@ async function run(env) {
         current.renderedStudent === "grid_student_12" &&
         current.title === fixture.students[11].name &&
         current.singleStudent &&
-        numbers(current.assessment[0])[12] === 16.65,
+        numbers(current.assessment[0])[11] === 19.4,
       current,
     );
     await cdp("Emulation.setDeviceMetricsOverride", {
@@ -722,6 +1166,8 @@ async function run(env) {
       deviceScaleFactor: 1,
       mobile: true,
     });
+    await call(chooseStage, "assessment", "first-midterm");
+    await call(chooseStage, "modular", "module-0");
     await call(geometry);
     const detailsShot = await shot("student-12-full-390", true);
     check(
@@ -730,6 +1176,24 @@ async function run(env) {
       true,
       { screenshot: detailsShot },
     );
+
+    const printStage = await call(chooseStage, "assessment", "second-midterm"),
+      printModule = await call(chooseStage, "modular", "module-1");
+    check(
+      "PRINT_STAGE_SELECTION",
+      "Printing starts from a compact noninitial stage and the second module",
+      printStage.sameReport &&
+        printStage.sameStudent &&
+        same(printStage.values, [
+          [18, 16, 17.4],
+          [19, 18, 18.7],
+        ]) &&
+        printModule.sameReport &&
+        printModule.sameStudent &&
+        same(printModule.values, [[4, 3, 19]]),
+      { assessment: printStage, modular: printModule },
+    );
+
     const printed = await call(printCheck);
     check(
       "PRINT_ONE",
@@ -776,6 +1240,15 @@ async function run(env) {
       },
     );
     await cdp("Emulation.setEmulatedMedia", { media: "" });
+    await cdp("Emulation.setDeviceMetricsOverride", {
+      width: 390,
+      height: 1000,
+      deviceScaleFactor: 1,
+      mobile: true,
+    });
+    await evaluate(
+      "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))",
+    );
     const stale = await call(stalePrintCheck);
     check(
       "PRINT_CONTEXT",
@@ -793,7 +1266,7 @@ async function run(env) {
     await cdp("Emulation.setEmulatedMedia", { media: "" });
     await cdp("Emulation.clearDeviceMetricsOverride");
     await evaluate(
-      "document.getElementById('printRoot')?.remove();document.getElementById('printPageStyle')?.remove();delete globalThis.__EDU_PRINT_TEST__;globalThis.__karnamehGridCleanup?.()",
+      "document.getElementById('printRoot')?.remove();document.getElementById('printPageStyle')?.remove();delete globalThis.__EDU_PRINT_TEST__;delete globalThis.__karnamehOptionMetrics;globalThis.__karnamehGridCleanup?.()",
     );
   }
 }

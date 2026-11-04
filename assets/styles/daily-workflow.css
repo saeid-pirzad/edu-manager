@@ -7984,17 +7984,14 @@ body {
     gap: 5px 12px;
     margin-bottom: 10px;
     min-width: 0;
+    padding: 6px 8px;
+    border-radius: 8px;
+    background: #f4f1eb;
   }
   #app .karnameh-student-sheet .karnameh-subject-section h4 {
     margin: 0;
     color: #5b4933;
     font-size: 14px;
-    line-height: 1.9;
-    overflow-wrap: anywhere;
-  }
-  .karnameh-subject-section > header small {
-    color: #706b64;
-    font-size: 11px;
     line-height: 1.9;
     overflow-wrap: anywhere;
   }
@@ -8019,13 +8016,6 @@ body {
   }
   .karnameh-sheet-scroll > .table-pan-hint {
     display: none;
-  }
-  #app .karnameh-student-sheet .karnameh-sheet-hint {
-    margin: 0 0 12px;
-    color: #706b64;
-    font-size: 11px;
-    line-height: 1.9;
-    overflow-wrap: anywhere;
   }
   #app .karnameh-student-sheet table.karnameh-sheet-table {
     display: table;
@@ -8140,21 +8130,6 @@ body {
     font-size: 10px;
     font-weight: 400;
     line-height: 1.8;
-  }
-  #app .karnameh-student-sheet .karnameh-sheet-table .karnameh-sheet-annual {
-    min-width: 72px;
-    border-inline-start: 1px solid #d7e3db;
-    background: #f6faf7;
-  }
-  #app
-    .karnameh-student-sheet
-    .karnameh-sheet-table
-    thead
-    .karnameh-sheet-annual {
-    background: #eaf3ed !important;
-    color: #35634c;
-    font-weight: 600;
-    white-space: normal;
   }
   #app
     .karnameh-student-sheet
@@ -8377,6 +8352,233 @@ body {
     font-size: 11px;
   }
 }
+/* Phones and tablets show one stage without changing the complete print table. */
+@media screen {
+  .karnameh-stage-switcher {
+    display: none;
+  }
+}
+@media screen and (max-width: 1024px) {
+  #app .karnameh-student-sheet .karnameh-report-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  #app .karnameh-student-sheet .karnameh-report-heading h3 {
+    font-size: 17px;
+    line-height: 1.8;
+  }
+  #app .karnameh-student-sheet .karnameh-report-heading p {
+    font-size: 11px;
+  }
+  .karnameh-student-sheet .karnameh-report-actions {
+    display: flex;
+    align-self: start;
+  }
+  #app .karnameh-student-sheet .karnameh-report-actions button {
+    width: auto;
+    min-width: 0;
+    min-height: 44px;
+    padding: 7px 9px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .karnameh-student-meta {
+    margin-bottom: 12px;
+  }
+  .karnameh-student-pagination {
+    margin-bottom: 16px;
+    padding-block: 10px;
+  }
+  .karnameh-subject-section {
+    margin-top: 18px;
+  }
+  .karnameh-subject-section > .karnameh-subject-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+    margin-bottom: 8px;
+    padding: 5px;
+  }
+  #app .karnameh-student-sheet .karnameh-subject-header h4 {
+    padding-inline: 3px;
+    font-size: 11.5px;
+    line-height: 1.7;
+  }
+  .karnameh-stage-switcher {
+    display: block;
+    min-width: 0;
+    margin: -4px;
+  }
+  .karnameh-stage-options {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    padding: 4px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-padding-inline: 4px;
+    scrollbar-width: thin;
+  }
+  #app .karnameh-student-sheet .karnameh-stage-options button {
+    display: inline-flex;
+    flex: 1 0 80px;
+    align-items: center;
+    justify-content: center;
+    width: 0;
+    min-width: 80px;
+    max-width: none;
+    min-height: 34px;
+    margin: 0;
+    padding: 4px 7px;
+    border: 1px solid #e4ddd2;
+    border-radius: 6px;
+    background: #fff;
+    color: #655d52;
+    font-size: 10.5px;
+    font-weight: 500;
+    line-height: 1.6;
+    white-space: nowrap;
+    box-shadow: none;
+  }
+  .karnameh-subject-section[data-karnameh-group-set="modular"]
+    .karnameh-stage-options {
+    gap: 2px;
+  }
+  #app
+    .karnameh-student-sheet
+    .karnameh-subject-section[data-karnameh-group-set="modular"]
+    .karnameh-stage-options
+    button {
+    flex-basis: 48px;
+    min-width: 48px;
+    padding-inline: 2px;
+  }
+  #app
+    .karnameh-student-sheet
+    .karnameh-stage-options
+    button[aria-pressed="true"] {
+    border-color: #79522c;
+    background: #79522c;
+    color: #fff;
+    font-weight: 600;
+  }
+  #app .karnameh-student-sheet .karnameh-stage-options button:focus-visible {
+    outline: 2px solid #a87008;
+    outline-offset: 2px;
+  }
+  #app
+    .karnameh-student-sheet
+    .karnameh-sheet-table
+    [data-karnameh-group]:not([data-karnameh-group-active]) {
+    display: none !important;
+  }
+  #app
+    .karnameh-student-sheet
+    .karnameh-sheet-table
+    thead
+    tr:nth-child(2):not(:has([data-karnameh-group-active])) {
+    display: none !important;
+  }
+  #app
+    .karnameh-student-sheet
+    table.karnameh-sheet-table:has([data-karnameh-group]) {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    table-layout: fixed;
+  }
+  #app
+    .karnameh-student-sheet
+    .karnameh-sheet-table:has([data-karnameh-group])
+    :is(th, td) {
+    width: auto;
+    min-width: 0 !important;
+    max-width: none !important;
+    padding: 9px 4px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  #app
+    .karnameh-student-sheet
+    .karnameh-sheet-table:has([data-karnameh-group])
+    .karnameh-lesson-name {
+    position: static !important;
+    width: 38% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    padding: 10px 7px;
+    box-shadow: none;
+    font-size: 12px;
+  }
+  .karnameh-sheet-table:has([data-karnameh-group]) .karnameh-lesson-index {
+    display: none;
+  }
+  .karnameh-sheet-table:has([data-karnameh-group]) .karnameh-lesson-title {
+    display: block;
+    width: auto;
+  }
+  #app
+    .karnameh-student-sheet
+    .karnameh-sheet-table:has([data-karnameh-group])
+    .karnameh-lesson-name
+    small {
+    font-size: 10px;
+  }
+  #app
+    .karnameh-student-sheet
+    .karnameh-sheet-table:has([data-karnameh-group])
+    th.karnameh-stage-group {
+    padding: 9px 5px;
+    text-align: center;
+    font-size: 12px;
+  }
+  .karnameh-sheet-table:has([data-karnameh-group])
+    .karnameh-stage-group
+    > span {
+    position: static;
+    display: block;
+    width: auto;
+    max-width: none;
+    overflow: visible;
+    -webkit-line-clamp: unset;
+    text-align: center;
+  }
+  .karnameh-sheet-table:has([data-karnameh-group]) .karnameh-sheet-value {
+    min-width: 0;
+    max-width: 100%;
+    padding: 3px 4px;
+    font-size: 13px;
+  }
+  .karnameh-sheet-table:has([data-karnameh-group])
+    .karnameh-sheet-score
+    > small {
+    max-width: 100%;
+  }
+  #app
+    .karnameh-student-sheet
+    .karnameh-sheet-table:has([data-karnameh-group])
+    thead {
+    position: static;
+  }
+  #app .karnameh-student-sheet .karnameh-general-table .karnameh-sheet-score,
+  #app
+    .karnameh-student-sheet
+    [data-karnameh-group-set="legacy"]
+    .karnameh-legacy-cell {
+    width: 62%;
+    min-width: 0 !important;
+    max-width: none !important;
+    white-space: normal;
+  }
+  [data-karnameh-group-set="legacy"] .karnameh-unit-list {
+    gap: 5px;
+    margin-top: 6px;
+  }
+}
 @media print {
   #printRoot .karnameh-student-sheet {
     display: block !important;
@@ -8384,7 +8586,7 @@ body {
     border: 0 !important;
     box-shadow: none !important;
   }
-  #printRoot .karnameh-sheet-hint,
+  #printRoot .karnameh-stage-switcher,
   #printRoot .karnameh-student-pagination,
   #printRoot .karnameh-sheet-table caption.sr-only {
     display: none !important;
@@ -8410,7 +8612,6 @@ body {
     margin: 0 0 3pt !important;
     font-size: 10pt !important;
   }
-  #printRoot .karnameh-subject-section > header small,
   #printRoot .karnameh-sheet-note {
     font-size: 7.5pt !important;
     line-height: 1.7 !important;

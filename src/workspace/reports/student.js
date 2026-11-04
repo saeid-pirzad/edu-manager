@@ -564,6 +564,10 @@ async function renderAcademicKarnameh(out, filter) {
     if (report) {
       report.classList.add("karnameh-year-document");
       karnamehSnapshots.set(report, snapshot.context);
+      initKarnamehStageControls(report, {
+        schoolId: school.id,
+        classId: classroom.id,
+      });
     }
   } catch (error) {
     if (current())

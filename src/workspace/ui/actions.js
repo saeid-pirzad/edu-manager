@@ -8,6 +8,7 @@ function installWorkspaceActions() {
     ],
     ["apply-academic-schedule", () => applyAcademicScheduleV24()],
     ["assessment-stage", (button) => openAssessmentStage(button)],
+    ["karnameh-stage", (button) => selectKarnamehStage(button)],
     [
       "karnameh-student",
       (button) => openKarnamehStudent(button.dataset.class, button.dataset.key),
