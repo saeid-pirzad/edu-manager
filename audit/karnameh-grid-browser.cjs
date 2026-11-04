@@ -749,6 +749,159 @@ function printGeometry() {
     ),
   };
 }
+function printDesign() {
+  const root = document.getElementById("printRoot"),
+    table = root.querySelector("table.karnameh-sheet-table"),
+    values = [...root.querySelectorAll(".karnameh-sheet-value")],
+    lessonCells = [...root.querySelectorAll("tbody .karnameh-lesson-name")],
+    scoreCells = [...root.querySelectorAll("td[data-karnameh-field]")],
+    fonts = values.map(
+      (value) => parseFloat(getComputedStyle(value).fontSize) * 0.75,
+    ),
+    widths = lessonCells.map(
+      (cell) => cell.getBoundingClientRect().width * 0.75,
+    );
+  const valueFits = (value) => {
+    const range = document.createRange();
+    range.selectNodeContents(value);
+    const cell = value.closest("td"),
+      box = cell.getBoundingClientRect(),
+      style = getComputedStyle(cell),
+      left = box.left + parseFloat(style.borderLeftWidth),
+      right = box.right - parseFloat(style.borderRightWidth);
+    return [...range.getClientRects()].every(
+      (rect) => rect.left >= left - 1 && rect.right <= right + 1,
+    );
+  };
+  const minimumFont = Math.min(...fonts),
+    minimumLessonWidth = Math.min(...widths),
+    headingSpace =
+      table.getBoundingClientRect().top - root.getBoundingClientRect().top,
+    longValues = values.filter((value) =>
+      value.textContent.includes("کمتر از"),
+    );
+  return {
+    singleHeader:
+      root.querySelectorAll(".karnameh-print-header").length === 1 &&
+      !root.querySelector(
+        ":scope > header,.karnameh-report-heading,.karnameh-student-meta,h1",
+      ),
+    completeIdentity:
+      root.querySelectorAll(".karnameh-print-context dd").length === 3 &&
+      !!root.querySelector(".karnameh-print-header h2") &&
+      root.querySelector(".karnameh-print-header").textContent.includes("۱۲"),
+    readableScores: minimumFont >= 9,
+    sufficientLessonWidth: minimumLessonWidth >= 125,
+    compactHeader: headingSpace <= 220,
+    centeredScores: scoreCells.every(
+      (cell) => getComputedStyle(cell).textAlign === "center",
+    ),
+    separatedHeaders: [...root.querySelectorAll("thead th")].every(
+      (cell) => parseFloat(getComputedStyle(cell).borderBottomWidth) > 0,
+    ),
+    repeatedHeaders: [...root.querySelectorAll("thead")].every(
+      (head) =>
+        getComputedStyle(head).display === "table-header-group" &&
+        getComputedStyle(head).breakInside === "avoid",
+    ),
+    rowsStayTogether: [
+      ...root.querySelectorAll("tbody tr:not([data-audit-hidden-row])"),
+    ].every((row) => getComputedStyle(row).breakInside === "avoid"),
+    valueTextFits: values.every(valueFits),
+    whitePaper:
+      getComputedStyle(document.body).backgroundColor === "rgb(255, 255, 255)",
+    minimumScorePoints: minimumFont,
+    minimumLessonPoints: minimumLessonWidth,
+    headerSpacePixels: headingSpace,
+    longValueCount: longValues.length,
+    longValueText: longValues[0]?.textContent.trim() || "",
+  };
+}
+async function preparePdfVariant(kind) {
+  const ids = globalThis.__karnamehGridIds;
+  globalThis.__karnamehPdfBase ||= await EduV24.snapshotInstallation();
+  const fixture = structuredClone(globalThis.__karnamehPdfBase);
+  for (const record of fixture.stores.records.filter(
+    (record) => record.logical === "class:" + ids.classroom,
+  )) {
+    const dual = record.value.lessons.find(
+        (lesson) => lesson.gradeMode === "kardanesh",
+      ),
+      modular = record.value.lessons.find(
+        (lesson) => lesson.gradingPolicy?.method === "modular",
+      );
+    if (kind === "modular") record.value.lessons = [modular];
+    else if (kind === "general") {
+      const lesson = structuredClone(dual);
+      lesson.id = "grid_pdf_general";
+      lesson.name = "درس عمومی نمونه برای بررسی خوانایی کارنامه";
+      lesson.gradingPolicy = {
+        ...lesson.gradingPolicy,
+        subjectType: "general",
+        code: "PDF-GENERAL",
+      };
+      record.value.lessons = [lesson];
+    } else {
+      record.value.lessons = [
+        ...Array.from({ length: 20 }, (_, index) => {
+          const lesson = structuredClone(dual);
+          lesson.id = "grid_pdf_stress_" + index;
+          lesson.name =
+            "درس آزمایشی طراحی و آماده‌سازی محتوای آموزشی شماره " + (index + 1);
+          lesson.gradingPolicy.code = "PDF-STRESS-" + index;
+          lesson.kardaneshScores.grid_student_12 = {
+            midtermPractical: 13.999,
+            midtermTheory: 13.999,
+            practical: 13.999,
+            theory: 13.999,
+          };
+          return lesson;
+        }),
+        modular,
+      ];
+    }
+  }
+  closeModal();
+  EduV24.previewFullBackup(fixture);
+  document.getElementById("fullRestoreConfirmed").checked = true;
+  await EduV24.restoreFullBackup();
+  await EduV24.test.settle();
+  closeModal();
+  goReports();
+  state.reportTab = "karnameh";
+  karnamehFilter = {
+    schoolId: ids.school,
+    classId: ids.classroom,
+    studentId: "grid_student_12",
+  };
+  render();
+  await renderKarnamehTabReports();
+  for (
+    let attempt = 0;
+    attempt < 150 && !document.querySelector(".karnameh-student-sheet");
+    attempt++
+  )
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  const report = document.querySelector(".karnameh-student-sheet");
+  globalThis.__EDU_PRINT_TEST__ = true;
+  report.querySelector('[data-workspace-action="print"]').click();
+  for (
+    let attempt = 0;
+    attempt < 150 &&
+    !document.querySelector("#printRoot .karnameh-student-sheet");
+    attempt++
+  )
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  if (!document.querySelector("#printRoot .karnameh-student-sheet"))
+    throw Error("PDF variant did not prepare: " + kind);
+  return {
+    kind,
+    lessons: document.querySelectorAll("#printRoot tbody tr").length,
+    student: document.querySelector("#printRoot .karnameh-student-sheet")
+      .dataset.studentId,
+  };
+}
+
 async function stalePrintCheck() {
   document.getElementById("printRoot")?.remove();
   const connection = EduV24.test.getConnection(),
@@ -1256,6 +1409,103 @@ async function run(env) {
       Object.values(stale).every(Boolean),
       stale,
     );
+
+    for (const kind of ["modular", "general", "stress"]) {
+      await call(preparePdfVariant, kind);
+      await cdp("Emulation.setDeviceMetricsOverride", {
+        width: kind === "stress" ? 1123 : 794,
+        height: kind === "stress" ? 794 : 1123,
+        deviceScaleFactor: 1,
+        mobile: false,
+      });
+      await cdp("Emulation.setEmulatedMedia", { media: "print" });
+      await evaluate(
+        "new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))",
+      );
+      const design = await call(printDesign);
+      const designKeys = [
+        "singleHeader",
+        "completeIdentity",
+        "readableScores",
+        "sufficientLessonWidth",
+        "compactHeader",
+        "centeredScores",
+        "separatedHeaders",
+        "repeatedHeaders",
+        "rowsStayTogether",
+        "valueTextFits",
+        "whitePaper",
+      ];
+      check(
+        "PRINT_DESIGN_" + kind,
+        "Real " +
+          kind +
+          " PDF layout keeps typography, identity and cell boundaries readable",
+        designKeys.every((key) => design[key]) &&
+          (kind !== "stress" || design.longValueCount >= 80),
+        design,
+      );
+      const output = await cdp("Page.printToPDF", {
+          preferCSSPageSize: true,
+          printBackground: true,
+        }),
+        filename = path.join(previews, "print-" + kind + ".pdf"),
+        bytes = Buffer.from(output.data, "base64");
+      fs.writeFileSync(filename, bytes);
+      const pages = (bytes.toString("latin1").match(/\/Type\s*\/Page\b/g) || [])
+        .length;
+      check(
+        "PRINT_PAGES_" + kind,
+        "Real " + kind + " report uses the expected paper and pagination",
+        kind === "stress" ? pages >= 2 && pages <= 5 : pages === 1,
+        { path: filename, pages },
+      );
+      if (process.platform === "win32") {
+        const raster = require("./pdf-raster.cjs").rasterizePdf(
+          filename,
+          path.join(previews, "raster-" + kind),
+        );
+        const safeMargins = raster.pages.every(
+          (page) =>
+            page.ink.inkPixels > 1000 &&
+            ["leftMargin", "rightMargin", "topMargin", "bottomMargin"].every(
+              (key) => page.ink[key] >= 20,
+            ),
+        );
+        const landscape =
+          raster.pages[0].widthPoints > raster.pages[0].heightPoints;
+        check(
+          "PRINT_RASTER_" + kind,
+          "Native PDF raster preserves full page margins and paper orientation",
+          safeMargins && landscape === (kind === "stress"),
+          raster,
+        );
+        if (kind === "stress") {
+          const headers = raster.pages.slice(1).map((page) => {
+            const rules = page.ink.horizontalRules.filter(
+              (value, index, all) => index === 0 || value > all[index - 1] + 2,
+            );
+            return {
+              file: page.file,
+              rules: rules.slice(0, 4),
+              twoHeaderRows:
+                rules.length >= 3 &&
+                rules[1] - rules[0] >= 30 &&
+                rules[1] - rules[0] <= 90 &&
+                rules[2] - rules[1] >= 30 &&
+                rules[2] - rules[1] <= 90,
+            };
+          });
+          check(
+            "PRINT_REPEATED_HEADERS",
+            "The native raster repeats the two-tier table header on continuation pages",
+            headers.every((page) => page.twoHeaderRows),
+            headers,
+          );
+        }
+      }
+      await cdp("Emulation.setEmulatedMedia", { media: "" });
+    }
     check(
       "PREVIEWS",
       "Actual student-sheet browser previews were captured",
@@ -1266,7 +1516,7 @@ async function run(env) {
     await cdp("Emulation.setEmulatedMedia", { media: "" });
     await cdp("Emulation.clearDeviceMetricsOverride");
     await evaluate(
-      "document.getElementById('printRoot')?.remove();document.getElementById('printPageStyle')?.remove();delete globalThis.__EDU_PRINT_TEST__;delete globalThis.__karnamehOptionMetrics;globalThis.__karnamehGridCleanup?.()",
+      "document.getElementById('printRoot')?.remove();document.getElementById('printPageStyle')?.remove();delete globalThis.__EDU_PRINT_TEST__;delete globalThis.__karnamehOptionMetrics;delete globalThis.__karnamehPdfBase;globalThis.__karnamehGridCleanup?.()",
     );
   }
 }

@@ -7,8 +7,8 @@
       backups: "shield",
       "export-full": "download",
       "open-wipe": "trash",
-      "prepare-share-backup": "upload",
-      "share-backup-file": "upload",
+      "prepare-share-backup": "share",
+      "share-backup-file": "share",
       "download-share-backup": "download",
       "download-safety": "download",
       "export-period": "download",
@@ -27,37 +27,201 @@
       print: "print",
       close: "close",
     };
+    const ids = {
+      mobileInstall: "download",
+      mobileUpdate: "refresh",
+      mobileHelp: "book",
+      modalClose: "close",
+      pwaWelcomeInstall: "download",
+      pwaWelcomeLater: "close",
+    };
+    const legacyActions = {
+      "week-configure": "add",
+      "ui-school-class:10": "book",
+      "ui-school-class:11": "users",
+      "ui-lesson:4": "attendance",
+      "ui-lesson:5": "grades",
+      "ui-school-class:17": "download",
+      "ui-school-class:18": "upload",
+      "ui-login-render:0": "download",
+      "sessions-dialog:6": "check",
+      "sessions-dialog:7": "close",
+      "sessions-dialog:13": "copy",
+      "sessions-dialog:14": "close",
+      "reports-periodic-document:deputy": "copy",
+      "reports-periodic-document:xlsx": "download",
+      "reports-periodic-document:xlsx-share": "share",
+      "reports-periodic-document:share-file": "share",
+      "reports-periodic-document:download-file": "download",
+      "reports-periodic-document:1": "download",
+      "reports-periodic-document:2": "download",
+    };
     const labels = [
-      [/^افزودن|^\+ افزودن/, "add"],
-      [/^ذخیره|^ثبت/, "save"],
+      [/^افزودن|^افزایش|^ایجاد|^ساخت|^\+/, "add"],
+      [/^کاهش/, "minus"],
+      [/^ذخیره|^ثبت|^اعمال|^تأیید|^تایید/, "save"],
       [/^ویرایش/, "edit"],
-      [/^حذف/, "trash"],
-      [/^انصراف/, "close"],
-      [/برنامه هفتگی|^برنامه کلاس/, "calendar"],
+      [/^حذف|^پاک.?کردن/, "trash"],
+      [/^انصراف|^بستن|^لغو/, "close"],
+      [/^چاپ/, "print"],
+      [/^دریافت|^دانلود/, "download"],
+      [/^انتخاب.*فایل|^بارگذاری|^بازیابی/, "upload"],
+      [/^کپی|^رونوشت/, "copy"],
+      [/اشتراک.?گذاری|^ارسال|پیام.?رسان/, "share"],
+      [/برنامه هفتگی|^برنامه کلاس|^تنظیم.*برنامه|^تنظیم زنگ/, "calendar"],
       [/گزارش|کارنامه/, "report"],
-      [/^ورود به مدرسه|^مدیریت کلاس/, "arrow"],
+      [/^ورود به مدرسه|^مدیریت کلاس|^بازگشت|^شروع|^ادامه/, "arrow"],
       [/^پشتیبان/, "shield"],
       [/نمرات|نمره و فعالیت/, "grades"],
       [/حضور و غیاب/, "attendance"],
       [/^دانش‌آموزان|^هنرجویان/, "users"],
       [/^دروس$/, "book"],
-      [/^ابزارها/, "settings"],
+      [/^ابزارها|^تنظیمات/, "settings"],
     ];
+    const tones = {
+      add: "create",
+      minus: "danger",
+      refresh: "navigate",
+      book: "settings",
+      calendar: "settings",
+      save: "save",
+      check: "save",
+      download: "download",
+      upload: "upload",
+      folder: "upload",
+      edit: "edit",
+      trash: "danger",
+      close: "neutral",
+      copy: "copy",
+      share: "share",
+      print: "print",
+      report: "report",
+      shield: "save",
+      settings: "settings",
+      disconnect: "neutral",
+      undo: "neutral",
+      arrow: "navigate",
+    };
+    const rich =
+      "#uiBottomNav,.report-navigation,.workspace-tool-button,.entity-menu-panel,.lesson-more-menu,.student-more-menu,.data-menu,.dashboard-report-links";
+    const choices =
+      ".tabs,.report-navigation,.assessment-navigation,.session-mode-picker,.week-day-picker,.karnameh-stage-options,.competency-choices,.att-btns,.cal-days";
+    const prefix = /^(?:📚|👥|📝|📅|💾|📥|📤|➕|✅|❌)\s*/u;
+    const glyphs = {
+      "+": ["add", "افزودن"],
+      "＋": ["add", "افزودن"],
+      "−": ["minus", "کاهش"],
+      "-": ["minus", "کاهش"],
+      "×": ["close", "بستن"],
+      "✕": ["close", "بستن"],
+      "↓": ["download", "دریافت فایل"],
+      "↑": ["upload", "بارگذاری فایل"],
+      "‹": ["chevron-left", "ماه قبل"],
+      "›": ["chevron-right", "ماه بعد"],
+    };
     for (const control of document.querySelectorAll(
-      "#app button,#modalBody button,.entity-quick-create > summary,.workspace-tools > summary",
+      "button,.entity-quick-create > summary,.workspace-tools > summary",
     )) {
-      if (control.querySelector("svg,.control-icon")) continue;
-      const label = control.textContent.trim();
-      if (!label || /^(?:×|✕|[۰-۹0-9]+)$/.test(label)) continue;
-      const name =
-        actions[control.dataset.workspaceAction] ||
-        labels.find(([pattern]) => pattern.test(label))?.[1];
-      if (!name) continue;
-      const icon = document.createElement("span");
-      icon.className = "control-icon";
-      icon.setAttribute("aria-hidden", "true");
-      icon.innerHTML = EduIcons.html(name);
-      control.prepend(icon);
+      if (control.closest("#printRoot") || control.dataset.copyState === "done")
+        continue;
+      const button = control.tagName === "BUTTON",
+        label = control.textContent.trim(),
+        cleanLabel = (
+          label ||
+          control.getAttribute("aria-label") ||
+          control.title ||
+          ""
+        ).replace(prefix, ""),
+        glyph = Object.hasOwn(glyphs, label) ? glyphs[label] : null,
+        choice = !!control.closest(choices),
+        isRich =
+          !!control.closest(rich) ||
+          control.matches(
+            ".session-open,.session-setup-recent-item,.entity-enter,.lesson-enter,.header-home",
+          ),
+        name =
+          glyph?.[0] ||
+          (Object.hasOwn(ids, control.id) ? ids[control.id] : null) ||
+          (Object.hasOwn(actions, control.dataset.workspaceAction)
+            ? actions[control.dataset.workspaceAction]
+            : null) ||
+          (Object.hasOwn(legacyActions, control.dataset.legacyClick)
+            ? legacyActions[control.dataset.legacyClick]
+            : null) ||
+          labels.find(([pattern]) => pattern.test(cleanLabel))?.[1];
+      if (button) {
+        control.classList.add("ui-button");
+        control.classList.toggle("ui-button-flat", !isRich);
+        control.classList.toggle(
+          "ui-button-compact",
+          control.matches(".grade-clear"),
+        );
+        if (!isRich && !choice)
+          control.classList.toggle(
+            "ui-button-icon-only",
+            !!glyph || (!label && !!control.querySelector("svg")),
+          );
+      }
+      if (glyph && button) {
+        if (!control.hasAttribute("aria-label"))
+          control.setAttribute(
+            "aria-label",
+            control.title ||
+              (control.classList.contains("danger") ? "حذف" : glyph[1]),
+          );
+        control.classList.add("ui-button-icon-only");
+        control.replaceChildren();
+      }
+      if (
+        name &&
+        !control.querySelector("svg,.control-icon") &&
+        !control.closest(
+          ".cal-days,.karnameh-stage-options,.competency-choices,.att-btns",
+        )
+      ) {
+        const icon = document.createElement("span");
+        icon.className = "control-icon";
+        icon.setAttribute("aria-hidden", "true");
+        icon.innerHTML = EduIcons.html(name);
+        if (prefix.test(label)) {
+          const first = [...control.childNodes].find(
+            (node) => node.nodeType === 3,
+          );
+          if (first) first.textContent = first.textContent.replace(prefix, "");
+        }
+        control.prepend(icon);
+      }
+      if (!button || isRich || choice || control.matches(".header-action"))
+        continue;
+      const tone = control.classList.contains("danger")
+        ? "danger"
+        : control.classList.contains("success")
+          ? "save"
+          : control.hasAttribute("data-periodic-excel")
+            ? "excel"
+            : control.hasAttribute("data-periodic-excel-share")
+              ? "share"
+              : control.matches(".grade-clear")
+                ? "danger"
+                : tones[name];
+      if (tone) {
+        control.dataset.uiTone = tone;
+        control.dataset.uiVariant =
+          control.classList.contains("ghost") ||
+          control.classList.contains("danger") ||
+          control.classList.contains("ui-button-icon-only") ||
+          tone === "neutral"
+            ? "soft"
+            : "solid";
+      }
+      // A real label box makes wrapped text and the icon one centered flex group.
+      for (const node of [...control.childNodes]) {
+        if (node.nodeType !== 3 || !node.textContent.trim()) continue;
+        const span = document.createElement("span");
+        span.className = "ui-button-label";
+        node.replaceWith(span);
+        span.append(node);
+      }
     }
   }
 
@@ -483,8 +647,16 @@
   const designRoots = [];
   const designObserver = new MutationObserver(schedule);
   function observeDesignRoots() {
-    for (const root of designRoots)
-      designObserver.observe(root, { childList: true, subtree: true });
+    // PWA surfaces can be created after the application has rendered.
+    const roots = new Set([
+      ...designRoots.filter((root) => root.isConnected),
+      document.getElementById("mobileBar"),
+      document.getElementById("pwaWelcome"),
+    ]);
+    for (const root of roots)
+      if (root)
+        designObserver.observe(root, { childList: true, subtree: true });
+    designObserver.observe(document.body, { childList: true });
   }
   function enhance() {
     designObserver.disconnect();
@@ -654,7 +826,8 @@
   function start() {
     for (const el of [
       document.getElementById("app"),
-      document.getElementById("modalBody"),
+      document.getElementById("modal"),
+      document.getElementById("calPopup"),
     ])
       if (el) designRoots.push(el);
     enhance();

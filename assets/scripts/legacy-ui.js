@@ -763,11 +763,45 @@ function fallbackCopyTextToClipboard(text, btn) {
   }
   document.body.removeChild(textArea);
 }
+const copyFeedbackStates = new WeakMap();
+
 function showSuccessCopy(btn) {
   if (!btn) return;
-  const old = btn.textContent;
-  btn.textContent = "✅ کپی شد!";
-  setTimeout(() => (btn.textContent = old), 2000);
+  let state = copyFeedbackStates.get(btn);
+  if (!state) {
+    state = { nodes: [...btn.childNodes], timer: null, generation: 0 };
+    const feedback = document.createElement("span"),
+      label = document.createElement("span"),
+      check = globalThis.EduIcons?.html?.("check") || "";
+    feedback.className = "control-copy-feedback";
+    feedback.setAttribute("role", "status");
+    feedback.setAttribute("aria-live", "polite");
+    if (check) {
+      const icon = document.createElement("span");
+      icon.className = "control-icon";
+      icon.setAttribute("aria-hidden", "true");
+      icon.innerHTML = check;
+      feedback.append(icon);
+    }
+    label.className = "ui-button-label";
+    label.textContent = "کپی شد";
+    feedback.append(label);
+    copyFeedbackStates.set(btn, state);
+    btn.dataset.copyState = "done";
+    btn.replaceChildren(feedback);
+  }
+  clearTimeout(state.timer);
+  const generation = ++state.generation;
+  state.timer = setTimeout(() => {
+    if (
+      copyFeedbackStates.get(btn) !== state ||
+      state.generation !== generation
+    )
+      return;
+    btn.replaceChildren(...state.nodes);
+    delete btn.dataset.copyState;
+    copyFeedbackStates.delete(btn);
+  }, 2000);
 }
 function showTextModal(text) {
   let h = `<p class="muted" style="margin-top:0">مرورگر شما اجازه کپی خودکار را نداد. لطفاً متن زیر را انتخاب کرده و دستی کپی کنید:</p>
@@ -4257,7 +4291,9 @@ function renderMaster() {
         day +
         '" data-period="' +
         p +
-        '">+ تنظیم برنامه</button>';
+        '">' +
+        EduIcons.html("add") +
+        "<span>تنظیم برنامه</span></button>";
     }
     return s + "</div></article>";
   };

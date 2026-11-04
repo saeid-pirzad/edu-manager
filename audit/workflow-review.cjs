@@ -212,6 +212,12 @@ if (process.argv.includes("--help")) {
         cases,
         delay,
       });
+      await require("./button-controls-browser.cjs").run({
+        cdp,
+        evaluate,
+        cases,
+        delay,
+      });
       cases.push(
         ...(await require("./pwa-upgrade.cjs")({
           cdp,

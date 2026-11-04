@@ -100,12 +100,27 @@ async function inspectMobileUx() {
     width: document.documentElement.scrollWidth,
   });
   document.querySelector(".entity-quick-create").open = true;
+  const schoolSave = document.querySelector(
+      '.entity-quick-create button[type="submit"]',
+    ),
+    brandEntry = document.querySelector(".dashboard-entity .entity-enter"),
+    palette = {
+      background: getComputedStyle(document.body).backgroundColor,
+      navigation: getComputedStyle(brandEntry).color,
+      saveRole: schoolSave.dataset.uiTone,
+      saveVariant: schoolSave.dataset.uiVariant,
+      saveFill: getComputedStyle(schoolSave).backgroundColor,
+      saveText: getComputedStyle(schoolSave).color,
+    };
   add(
-    "Reactium palette uses warm background and red primary actions",
-    getComputedStyle(document.body).backgroundColor === "rgb(247, 246, 244)" &&
-      getComputedStyle(
-        document.querySelector('.entity-quick-create button[type="submit"]'),
-      ).backgroundColor === "rgb(192, 20, 27)",
+    "warm palette retains red brand navigation and a distinct green save action",
+    palette.background === "rgb(247, 246, 244)" &&
+      palette.navigation === "rgb(192, 20, 27)" &&
+      palette.saveRole === "save" &&
+      palette.saveVariant === "solid" &&
+      palette.saveFill === "rgb(25, 119, 92)" &&
+      palette.saveText === "rgb(255, 255, 255)",
+    palette,
   );
   add(
     "icons decorate controls without hiding readable labels",

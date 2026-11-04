@@ -61,7 +61,9 @@ function renderMaster() {
         day +
         '" data-period="' +
         p +
-        '">+ تنظیم برنامه</button>';
+        '">' +
+        EduIcons.html("add") +
+        "<span>تنظیم برنامه</span></button>";
     }
     return s + "</div></article>";
   };

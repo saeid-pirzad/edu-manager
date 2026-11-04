@@ -343,7 +343,9 @@
         "src/styles/workflow/identity.css",
         "src/styles/workflow/touch.css",
         "src/styles/workflow/grades.css",
-        "src/styles/karnameh-grid.css"
+        "src/styles/karnameh-grid.css",
+        "src/styles/buttons.css",
+        "src/styles/surfaces.css"
       ]
     },
     {

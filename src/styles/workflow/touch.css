@@ -271,16 +271,27 @@
     margin: 0;
   }
   .create-panel-toggle {
-    width: 10px;
-    height: 10px;
-    flex: 0 0 10px;
-    margin-inline: 8px 4px;
-    border-right: 2px solid #636466;
-    border-bottom: 2px solid #636466;
-    transform: rotate(45deg);
+    display: block;
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
+    border: 1px solid #d3dfef;
+    border-radius: 8px;
+    color: #3267a2;
+    background-color: #edf4ff;
+    background-image:
+      linear-gradient(currentColor, currentColor),
+      linear-gradient(currentColor, currentColor);
+    background-position: center;
+    background-size:
+      12px 2px,
+      2px 12px;
+    background-repeat: no-repeat;
   }
   .create-panel[open] .create-panel-toggle {
-    transform: rotate(225deg);
+    background-size:
+      12px 2px,
+      0 0;
   }
   #app .create-panel > form {
     display: grid;

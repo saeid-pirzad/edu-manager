@@ -5,6 +5,12 @@
   "use strict";
   const paths = Object.freeze({
     add: "M12 5v14M5 12h14",
+    minus: "M5 12h14",
+    copy: "M8 3h13v14H8V3ZM4 7H3v14h13v-1",
+    share:
+      "M21 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM9 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM21 19a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM8.6 10.5l6.8-4M8.6 13.5l6.8 4",
+    "chevron-left": "m15 5-7 7 7 7",
+    "chevron-right": "m9 5 7 7-7 7",
     home: "M3 10 12 3l9 7M5 9v12h5v-7h4v7h5V9",
     refresh:
       "M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-2l2 2M4 17l2 2a7 7 0 0 0 12-2",
