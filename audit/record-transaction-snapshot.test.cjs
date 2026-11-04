@@ -20,6 +20,7 @@ function fixture(liveRevision = 1) {
       term: "اول",
     },
   };
+  const epoch = { result: undefined };
   const tx = {
     abort() {
       reject(Error("aborted"));
@@ -28,7 +29,7 @@ function fixture(liveRevision = 1) {
       return {
         get(id) {
           reads.push(id);
-          return request;
+          return name === "records" ? epoch : request;
         },
         getAll() {
           return { result: [] };
@@ -93,6 +94,7 @@ function fixture(liveRevision = 1) {
     writes,
     reads,
     finish() {
+      epoch.onsuccess();
       request.onsuccess();
       resolve();
     },
@@ -138,7 +140,7 @@ test("unchanged transaction advances its original catalog revision", async () =>
   const pending = f.c.EduRecordTransaction.commit(f.args);
   f.finish();
   assert.equal((await pending).revision, 2);
-  assert.deepEqual(f.reads, ["first"]);
+  assert.deepEqual(f.reads, ["@installation-reset", "first"]);
 });
 
 for (const [kind, original, renamed] of [

@@ -285,6 +285,9 @@ globalThis.EduFullBackupValidator = Object.freeze({
           !ids.has(row.workspace) ||
           typeof row.key !== "string" ||
           !row.key.startsWith("Edu24.drafts." + row.workspace + ".") ||
+          !/^Edu24\.drafts\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*$/.test(
+            row.key,
+          ) ||
           draftKeys.has(row.key) ||
           !Number.isSafeInteger(row.generation) ||
           row.generation < 0 ||
@@ -297,15 +300,17 @@ globalThis.EduFullBackupValidator = Object.freeze({
       }
       return periods;
     }
+    function prepare(value) {
+      const candidate = normalizeYears(value);
+      const periods = validateCanonicalFullBackup(candidate);
+      return { value: candidate, periods };
+    }
     function validateFullBackup(value) {
-      return validateCanonicalFullBackup(normalizeYears(value));
+      return prepare(value).periods;
     }
     validateFullBackup.normalizeYears = normalizeYears;
-    validateFullBackup.normalize = (value) => {
-      const candidate = normalizeYears(value);
-      validateCanonicalFullBackup(candidate);
-      return candidate;
-    };
+    validateFullBackup.prepare = prepare;
+    validateFullBackup.normalize = (value) => prepare(value).value;
     return Object.freeze(validateFullBackup);
   },
 });

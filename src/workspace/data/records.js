@@ -22,6 +22,7 @@ const {
   logicalRecordType,
   validateLogicalValue,
   decodeWorkspaceRecords,
+  decodeAssessmentRecords,
 } = EduWorkspaceRecords.create({
   clone,
   normalizeDB,
@@ -67,4 +68,35 @@ async function readWorkspaceSnapshot(id) {
   ]);
   if (!period) throw Error("ترم موجود نیست.");
   return { period, ...decodeWorkspaceRecords(rows, { workspaceId: id }) };
+}
+
+// The catalog, installation and selected class are read under one snapshot.
+// Sessions and other classes are not needed to edit a Kardanesh assessment.
+async function readAssessmentSnapshot(id, identity, expectedInstallation) {
+  const tx = connection.transaction(["catalog", "records"], "readonly"),
+    done = transactionDone(tx),
+    store = tx.objectStore("records"),
+    [period, epoch, meta, classroom] = await Promise.all([
+      requestPromise(tx.objectStore("catalog").get(id)),
+      requestPromise(store.get("@installation-reset")),
+      requestPromise(store.get(id + "|meta")),
+      requestPromise(store.get(id + "|class:" + identity.classId)),
+      done,
+    ]);
+  if ((epoch?.value?.token || "") !== expectedInstallation)
+    throw Object.assign(
+      Error(
+        "اطلاعات در پنجرهٔ دیگری جایگزین شده است؛ صفحه را دوباره باز کنید.",
+      ),
+      { code: "INSTALLATION_CHANGED" },
+    );
+  if (!period || period.id !== id) throw Error("نوبت این مرحله موجود نیست.");
+  return {
+    period,
+    ...decodeAssessmentRecords([meta, classroom], {
+      workspaceId: id,
+      schoolId: identity.schoolId,
+      classId: identity.classId,
+    }),
+  };
 }

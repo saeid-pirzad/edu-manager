@@ -14,15 +14,24 @@ let undoBusy = false,
 
 async function openUndoModal() {
   if (undoBusy) return false;
+  const installation =
+    typeof installationToken === "undefined" ? "" : installationToken;
   const check = preserveAsyncTarget();
   await flushDrafts({ strict: true });
   await writer.catch(() => {});
   check();
   assertEntityWritable();
-  const target = { id: workspace.id, revision: workspace.revision, connection };
+  const target = {
+    id: workspace.id,
+    revision: workspace.revision,
+    connection,
+    installation,
+  };
   const undo = await readRecord("undo", target.id);
   check();
   if (
+    (typeof installationToken === "undefined" ? "" : installationToken) !==
+      target.installation ||
     connection !== target.connection ||
     workspace.revision !== target.revision
   )
@@ -69,6 +78,8 @@ async function confirmUndo() {
 
 async function undoLast(approval = null) {
   if (undoBusy) return false;
+  const installation =
+    typeof installationToken === "undefined" ? "" : installationToken;
   undoBusy = true;
   busy++;
   paintStatus();
@@ -78,10 +89,15 @@ async function undoLast(approval = null) {
     await writer.catch(() => {});
     ensureCurrent();
     assertEntityWritable();
-    const target = { id: workspace.id, revision: workspace.revision };
+    const target = {
+      id: workspace.id,
+      revision: workspace.revision,
+      installation,
+    };
     if (
       approval &&
       (approval !== pendingUndo ||
+        target.installation !== approval.installation ||
         target.id !== approval.id ||
         target.revision !== approval.revision ||
         connection !== approval.connection)
@@ -99,8 +115,13 @@ async function undoLast(approval = null) {
   }
 }
 async function performUndo(target, approval = null) {
+  const expectedInstallation =
+    target.installation ??
+    (typeof installationToken === "undefined" ? "" : installationToken);
   const sourceConnection = connection;
   const isCurrentTarget = () =>
+    (typeof installationToken === "undefined" ? "" : installationToken) ===
+      expectedInstallation &&
     workspace.id === target.id &&
     connection === sourceConnection &&
     !periodLoading &&
@@ -137,6 +158,7 @@ async function performUndo(target, approval = null) {
   await commitRecords(
     candidate,
     {
+      expectedInstallation,
       action: "بازگردانی: " + undo.action,
       replace: true,
       keepUndo: false,

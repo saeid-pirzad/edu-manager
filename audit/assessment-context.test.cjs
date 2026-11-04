@@ -320,8 +320,42 @@ function fixture({
       ),
     };
   };
+  c.readAssessmentSnapshot = async (id, identity, expectedInstallation) => {
+    if (
+      (markers.get("@installation-reset")?.value?.token || "") !==
+      expectedInstallation
+    )
+      throw Object.assign(Error("installation changed"), {
+        code: "INSTALLATION_CHANGED",
+      });
+    const snapshot = await c.readWorkspaceSnapshot(id);
+    const allRows = [...snapshot.records].map(([logical, json]) => ({
+      key: id + "|" + logical,
+      workspace: id,
+      logical,
+      value: JSON.parse(json),
+    }));
+    return {
+      period: snapshot.period,
+      ...codec.decodeAssessmentRecords(
+        allRows.filter(
+          (row) =>
+            row.logical === "meta" ||
+            row.logical === "class:" + identity.classId,
+        ),
+        { workspaceId: id, ...identity },
+      ),
+    };
+  };
   c.EduRecordTransaction = {
     async commit(args) {
+      if (
+        (markers.get("@installation-reset")?.value?.token || "") !==
+        args.expectedInstallation
+      )
+        throw Object.assign(Error("installation changed"), {
+          code: "INSTALLATION_CHANGED",
+        });
       const live = periods.get(args.workspace.id);
       if (live.revision !== args.workspace.revision) {
         const error = Error("conflict");
@@ -1095,4 +1129,301 @@ test("assessment drafts remain writable for an installation created before reset
   assert.equal(f.effects.drafts.length, 1);
   assert.equal(f.rows.size, 1);
   assert.equal(f.local.size, 1);
+});
+
+for (const replaceBeforeCommit of [false, true]) {
+  test(
+    "assessment grade commit uses the real atomic installation guard" +
+      (replaceBeforeCommit
+        ? " despite identical restored revision and suppressed notifications"
+        : " with the matching selected installation"),
+    async () => {
+      const f = fixture(),
+        ctx = await f.context.select("second", "final", f.identity),
+        base = f.c.connection.transaction.bind(f.c.connection),
+        writes = [];
+      const stores = {
+        records: new Map(),
+        catalog: new Map([...f.periods].map(([id, row]) => [id, clone(row)])),
+        events: new Map(),
+        undo: new Map(),
+      };
+      for (const [id, data] of f.data)
+        for (const [logical, value] of f.c.collectRecords(data))
+          stores.records.set(id + "|" + logical, {
+            key: id + "|" + logical,
+            workspace: id,
+            logical,
+            value: clone(value),
+          });
+      stores.records.set(
+        "@installation-reset",
+        clone(f.markers.get("@installation-reset")),
+      );
+      f.c.EduDataStoreRuntime = { transactionDone: (tx) => tx.done };
+      f.c.connection.transaction = (names, mode) => {
+        if (!Array.isArray(names) || !names.includes("catalog"))
+          return base(names, mode);
+        assert.deepEqual(Array.from(names), [
+          "records",
+          "catalog",
+          "events",
+          "undo",
+        ]);
+        assert.equal(mode, "readwrite");
+        if (replaceBeforeCommit) {
+          stores.records.get("@installation-reset").value.token =
+            "installation-b";
+          f.markers.get("@installation-reset").value.token = "installation-b";
+        }
+        const staged = clone(stores);
+        let resolve,
+          reject,
+          pending = 0,
+          aborted = false;
+        const tx = {
+          done: new Promise((yes, no) => {
+            resolve = yes;
+            reject = no;
+          }),
+          abort() {
+            aborted = true;
+            reject(Error("aborted"));
+          },
+          objectStore(name) {
+            assert.ok(names.includes(name));
+            return {
+              get(key) {
+                const request = {};
+                pending++;
+                queueMicrotask(() => {
+                  if (aborted) return;
+                  request.result = clone(staged[name].get(key));
+                  request.onsuccess?.();
+                  if (!--pending && !aborted) {
+                    for (const [n, rows] of Object.entries(staged))
+                      stores[n] = rows;
+                    resolve();
+                  }
+                });
+                return request;
+              },
+              put(row) {
+                writes.push([name, clone(row)]);
+                staged[name].set(
+                  name === "records" ? row.key : row.id,
+                  clone(row),
+                );
+              },
+              add(row) {
+                writes.push([name, clone(row)]);
+                staged[name].set("event", clone(row));
+              },
+              delete(key) {
+                writes.push([name, key]);
+                staged[name].delete(key);
+              },
+            };
+          },
+        };
+        return tx;
+      };
+      vm.runInContext(
+        fs.readFileSync(
+          path.join(__dirname, "../src/data/record-transaction.js"),
+          "utf8",
+        ),
+        f.c,
+      );
+      f.context.input(f.input(ctx, "theory", "17"));
+      await f.c.draftWriter;
+      const operation = f.context.flush({ strict: true });
+      if (replaceBeforeCommit) {
+        await assert.rejects(
+          operation,
+          (error) => error.code === "INSTALLATION_CHANGED",
+        );
+        assert.equal(writes.length, 0);
+        assert.equal(stores.catalog.get("second").revision, 1);
+        assert.equal(
+          stores.records.get("second|class:classroom").value.lessons[0]
+            .kardaneshScores.student.theory,
+          10,
+        );
+        assert.equal(f.c.installationToken, "installation-a");
+        assert.equal(ctx.entries.values().next().value.review, true);
+      } else {
+        await operation;
+        assert.equal(stores.catalog.get("second").revision, 2);
+        assert.equal(
+          stores.records.get("second|class:classroom").value.lessons[0]
+            .kardaneshScores.student.theory,
+          17,
+        );
+      }
+    },
+  );
+}
+test("assessment selection captures installation before an awaited stage lookup", async () => {
+  const f = fixture(),
+    ensure = f.c.ensureAcademicAssessmentTerm;
+  f.c.ensureAcademicAssessmentTerm = async (kind) => {
+    const period = await ensure(kind);
+    f.c.installationToken = "installation-b";
+    return period;
+  };
+  await assert.rejects(f.context.select("second", "final", f.identity));
+  assert.equal(f.effects.writes.length, 0);
+  assert.equal(f.context.pending, 0);
+});
+test("a selected assessment never refreshes its expected epoch from newer global state", async () => {
+  const f = fixture(),
+    ctx = await f.context.select("second", "final", f.identity);
+  f.context.input(f.input(ctx, "theory", "17"));
+  await f.c.draftWriter;
+  f.c.installationToken = "installation-b";
+  f.markers.get("@installation-reset").value.token = "installation-b";
+  await assert.rejects(
+    f.context.flush({ strict: true }),
+    (error) => error.code === "INSTALLATION_CHANGED",
+  );
+  assert.equal(f.effects.writes.length, 0);
+  assert.equal(ctx.installation, "installation-a");
+});
+test("assessment commits preserve all unrelated class and schedule metadata from targeted snapshots", async () => {
+  const f = fixture(),
+    target = f.data.get("second");
+  target.schools.push({
+    id: "other-school",
+    name: "Other",
+    classes: [{ id: "other-class", students: [], lessons: [] }],
+  });
+  target.masterSchedule = {
+    "day0-0-all": {
+      schoolId: "other-school",
+      classId: "other-class",
+      lessonId: "other-course",
+    },
+  };
+  const ctx = await f.context.select("second", "final", f.identity),
+    commit = f.c.EduRecordTransaction.commit;
+  f.c.EduRecordTransaction.commit = async (args) => {
+    assert.deepEqual(plain(args.records.get("meta").layout), [
+      { id: "school", name: "School", classes: ["classroom"] },
+      { id: "other-school", name: "Other", classes: ["other-class"] },
+    ]);
+    assert.deepEqual(
+      plain(args.records.get("meta").masterSchedule),
+      target.masterSchedule,
+    );
+    assert.equal(
+      args.changed.some(([key]) => key === "meta"),
+      false,
+    );
+    assert.equal(args.expectedInstallation, "installation-a");
+    return commit(args);
+  };
+  f.context.input(f.input(ctx, "theory", "17"));
+  await f.context.flush({ strict: true });
+  assert.equal(target.schools[1].classes[0].id, "other-class");
+});
+for (const invalid of [
+  "unknown-kind",
+  "malformed-entries",
+  "malformed-generation",
+]) {
+  test(
+    "assessment recovery rejects " +
+      invalid +
+      " in the newest saved row instead of resurrecting the older local grade",
+    async () => {
+      const f = fixture(),
+        key = "Edu24.drafts.second.owner-assessment-classroom-lesson",
+        old = {
+          key,
+          workspace: "second",
+          generation: 1,
+          updatedAt: "2026-11-02T00:00:00Z",
+          entries: [
+            {
+              kind: "k",
+              classId: "classroom",
+              lid: "lesson",
+              sid: "student",
+              field: "theory",
+              value: "15",
+              baseRevision: 1,
+            },
+          ],
+        },
+        newer = clone(old);
+      newer.generation = 2;
+      newer.updatedAt = "2026-11-02T01:00:00Z";
+      if (invalid === "unknown-kind") newer.entries[0].kind = "future";
+      if (invalid === "malformed-entries") newer.entries = {};
+      if (invalid === "malformed-generation") newer.generation = -1;
+      f.local.set(key, JSON.stringify(old));
+      f.rows.set(key, newer);
+      await assert.rejects(
+        f.context.select("second", "final", f.identity),
+        (error) => error.code === "GRADE_DRAFT_INVALID",
+      );
+      assert.equal(f.effects.writes.length, 0);
+      assert.equal(f.context.pending, 0);
+      assert.equal(f.rows.get(key), newer);
+    },
+  );
+}
+test("assessment recovery preserves a long invalid newest value for review without older grade resurrection", async () => {
+  const f = fixture(),
+    key = "Edu24.drafts.second.owner-assessment-classroom-lesson",
+    old = {
+      key,
+      workspace: "second",
+      generation: 1,
+      updatedAt: "2026-11-02T00:00:00Z",
+      entries: [
+        {
+          kind: "k",
+          classId: "classroom",
+          lid: "lesson",
+          sid: "student",
+          field: "theory",
+          value: "15",
+          baseRevision: 1,
+        },
+      ],
+    },
+    newer = clone(old);
+  newer.generation = 2;
+  newer.updatedAt = "2026-11-02T01:00:00Z";
+  newer.entries[0].value = "9".repeat(101);
+  f.local.set(key, JSON.stringify(old));
+  f.rows.set(key, newer);
+  const ctx = await f.context.select("second", "final", f.identity);
+  assert.equal(ctx.entries.get("student|theory").value, "9".repeat(101));
+  await assert.rejects(f.context.flush({ strict: true }));
+  assert.equal(f.effects.writes.length, 0);
+});
+
+test("assessment recovery selects the newest row before validating superseded malformed local entries", async () => {
+  const f = fixture(),
+    key = "Edu24.drafts.second.owner-assessment-classroom-lesson",
+    old = {
+      key,
+      workspace: "second",
+      generation: 1,
+      updatedAt: "2026-11-02T00:00:00Z",
+      entries: {},
+    },
+    newer = {
+      ...old,
+      generation: 2,
+      updatedAt: "2026-11-02T01:00:00Z",
+      entries: [],
+    };
+  f.local.set(key, JSON.stringify(old));
+  f.rows.set(key, newer);
+  await f.context.select("second", "final", f.identity);
+  assert.equal(f.context.pending, 0);
 });

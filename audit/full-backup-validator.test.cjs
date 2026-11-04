@@ -5,7 +5,11 @@ const fs = require("node:fs"),
   path = require("node:path"),
   vm = require("node:vm");
 const c = vm.createContext({ structuredClone });
-for (const source of ["domain/calendar.js", "domain/academic-year.js"])
+for (const source of [
+  "domain/calendar.js",
+  "domain/academic-year.js",
+  "domain/grade-drafts.js",
+])
   vm.runInContext(
     fs.readFileSync(path.join(__dirname, "../src", source), "utf8"),
     c,
@@ -17,7 +21,7 @@ vm.runInContext(
   ),
   c,
 );
-const validate = c.EduFullBackupValidator.create({
+const dependencies = {
   backupStores: ["catalog", "records", "events", "backups", "undo", "reports"],
   assertSafeDataTree() {},
   isDataObject: (x) => !!x && typeof x === "object" && !Array.isArray(x),
@@ -31,8 +35,9 @@ const validate = c.EduFullBackupValidator.create({
   validateFrozenReport() {},
   normalizeDB() {},
   validatedUndoCandidate() {},
-  isSupportedGradeDraft: () => true,
-});
+  isSupportedGradeDraft: c.EduGradeDrafts.isSupportedGradeDraft,
+};
+const validate = c.EduFullBackupValidator.create(dependencies);
 const fixture = () => ({
   format: "EduManager.FullBackup",
   version: 2,
@@ -338,4 +343,76 @@ test("ordinary backups require a usable key and preserve valid numeric legacy ke
   const value = fixture();
   value.stores.backups = [{ id: 4, workspace: "first", db: {} }];
   assert.equal(validate(value).length, 1);
+});
+
+test("prepare returns a detached normalized backup and decoded periods from one validation pass", () => {
+  const input = fixture(),
+    label = "۱۴۰۵–۱۴۰۶";
+  input.stores.catalog[0].year = label;
+  input.stores.records[0].value.settings.academicYear = label;
+  let decodes = 0;
+  const single = c.EduFullBackupValidator.create({
+    ...dependencies,
+    decodeWorkspaceRecords(rows, options) {
+      decodes++;
+      return dependencies.decodeWorkspaceRecords(rows, options);
+    },
+  });
+  const prepared = single.prepare(input);
+  assert.equal(decodes, 1);
+  assert.notEqual(prepared.value, input);
+  assert.notEqual(prepared.value.stores.catalog, input.stores.catalog);
+  assert.equal(input.stores.catalog[0].year, label);
+  assert.equal(prepared.value.stores.catalog[0].year, "1405-1406");
+  assert.equal(prepared.periods.length, 1);
+  assert.equal(prepared.periods[0].data.settings.academicYear, "1405-1406");
+});
+
+test("prepare never trusts previously validated mutable input or normalized output", () => {
+  const input = fixture(),
+    prepared = validate.prepare(input);
+  input.stores.events[0].changes = null;
+  assert.throws(() => validate.prepare(input), /تاریخچه/);
+  prepared.value.stores.catalog[0].revision = -1;
+  assert.throws(() => validate.prepare(prepared.value), /شناسنامه/);
+});
+
+test("a JSON backup round-trip retains long invalid raw drafts and requires supported entry kinds", () => {
+  const input = fixture(),
+    long = "۹".repeat(101);
+  input.gradeDrafts = [
+    {
+      key: "Edu24.drafts.first.tab.document",
+      workspace: "first",
+      generation: 3,
+      updatedAt: "2026-11-04T00:00:00Z",
+      entries: [
+        { kind: "k", value: "17", review: true },
+        { kind: "k", value: long },
+      ],
+    },
+  ];
+  const parsed = JSON.parse(JSON.stringify(input)),
+    prepared = validate.prepare(parsed);
+  assert.deepEqual(
+    prepared.value.gradeDrafts[0].entries.map((entry) => entry.value),
+    ["17", long],
+  );
+  assert.equal(prepared.value.gradeDrafts[0].entries[0].review, true);
+  parsed.gradeDrafts[0].entries[1].kind = "unsupported";
+  assert.throws(() => validate.prepare(parsed), /پیش‌نویس/);
+});
+
+test("full backup rejects malformed draft key suffixes instead of accepting content the exporter would omit", () => {
+  for (const key of [
+    "Edu24.drafts.first.tab..document",
+    "Edu24.drafts.first.tab!",
+    "Edu24.drafts.first.",
+  ]) {
+    const input = fixture();
+    input.gradeDrafts = [
+      { key, workspace: "first", generation: 1, entries: [], updatedAt: "" },
+    ];
+    assert.throws(() => validate.prepare(input), /پیش‌نویس/);
+  }
 });

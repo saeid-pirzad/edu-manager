@@ -107,7 +107,56 @@ globalThis.EduWorkspaceRecords = Object.freeze({
         ),
       };
     }
+    // Grade editors need one class, but must retain the complete durable meta
+    // when writing it back. Decode a detached projection; never rebuild meta
+    // from the projection's deliberately smaller school directory.
+    function decodeAssessmentRecords(rows, { workspaceId, schoolId, classId }) {
+      if (
+        !isSafeRecordId(schoolId) ||
+        !isSafeRecordId(classId) ||
+        !Array.isArray(rows) ||
+        rows.length !== 2
+      )
+        throw Error("شناسهٔ مدرسه یا کلاس مرحله معتبر نیست.");
+      const metaRow = rows.find((row) => row?.logical === "meta"),
+        classRow = rows.find((row) => row?.logical === "class:" + classId);
+      if (!metaRow || !classRow || !Array.isArray(metaRow.value?.layout))
+        throw Error("اطلاعات اصلی یا کلاس این مرحله موجود نیست.");
+      const schools = new Set(),
+        classes = new Set();
+      let owner;
+      for (const school of metaRow.value.layout) {
+        if (
+          !isDataObject(school) ||
+          !isSafeRecordId(school.id) ||
+          schools.has(school.id) ||
+          !Array.isArray(school.classes)
+        )
+          throw Error("چیدمان مدرسهٔ مرحله معتبر نیست.");
+        schools.add(school.id);
+        for (const id of school.classes) {
+          if (!isSafeRecordId(id) || classes.has(id))
+            throw Error("چیدمان کلاس‌های مرحله معتبر نیست.");
+          classes.add(id);
+          if (id === classId) owner = school;
+        }
+      }
+      if (!owner || owner.id !== schoolId)
+        throw Error("مالک مدرسهٔ این کلاس تغییر کرده است.");
+      const projectedMeta = clone(metaRow.value);
+      projectedMeta.layout = [{ ...owner, classes: [classId] }];
+      // Weekly entries for omitted classes cannot be validated against this
+      // projection; the original schedule remains in the untouched meta record.
+      projectedMeta.masterSchedule = {};
+      const decoded = decodeWorkspaceRecords(
+        [{ ...metaRow, value: projectedMeta }, classRow],
+        { workspaceId },
+      );
+      decoded.records.set("meta", JSON.stringify(metaRow.value));
+      return decoded;
+    }
     return Object.freeze({
+      decodeAssessmentRecords,
       metaValue,
       collectRecords,
       logicalRecordType,

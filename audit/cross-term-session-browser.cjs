@@ -285,6 +285,15 @@ async function crossTermSessionFlow() {
         .toISOString()
         .slice(0, 10),
       beforeRace = await EduV24.snapshotInstallation(),
+      expectedInstallation = await new Promise((resolve, reject) => {
+        const request = EduV24.test
+          .getConnection()
+          .transaction("records", "readonly")
+          .objectStore("records")
+          .get("@installation-reset");
+        request.onsuccess = () => resolve(request.result?.value?.token || "");
+        request.onerror = () => reject(request.error);
+      }),
       commit = (periodId, sessionId) => {
         const period = beforeRace.stores.catalog.find(
             (row) => row.id === periodId,
@@ -296,6 +305,7 @@ async function crossTermSessionFlow() {
           ),
           current = makeSession(sessionId, raceDate);
         return EduRecordTransaction.commit({
+          expectedInstallation,
           connection: EduV24.test.getConnection(),
           workspace: period,
           records,

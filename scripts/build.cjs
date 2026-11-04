@@ -87,14 +87,30 @@ for (const name of sourceFiles("src")) {
   if (!used.has(name)) throw Error("Unmapped source file: " + name);
 }
 
-// Cache version is a fingerprint of the entire deployable shell, not just HTML.
+// Only execution dependencies are mandatory offline assets. Source maps remain
+// available in development/release packages without delaying offline readiness.
 const { applicationFiles } = require("./application-files.cjs");
 const catalog = applicationFiles(root, {
   generated: new Set(outputs.keys()),
   contents: outputs,
+  includeSourceMaps: false,
 });
 const cached = [...catalog.keys()].filter(
   (name) => name !== "service-worker.js",
+);
+function assetText(name) {
+  return (
+    outputs.get(name) ?? fs.readFileSync(path.join(root, name), "utf8")
+  ).replace(/\r\n/g, "\n");
+}
+const integrity = Object.fromEntries(
+  cached.map((name) => [
+    name,
+    [
+      crypto.createHash("sha256").update(assetText(name)).digest("hex"),
+      catalog.get(name).split(";")[0],
+    ],
+  ]),
 );
 // Normalize text before hashing so Git's LF checkout policy does not change a
 // release. Hash worker logic with its generated fields replaced to avoid a cycle.
@@ -103,22 +119,24 @@ let worker = fs
   .replace(/\r\n/g, "\n");
 if (
   !/const VERSION = "[^"]+";/.test(worker) ||
-  !/const FILES\s*=\s*\[[\s\S]*?\];/.test(worker)
+  !/const FILES\s*=\s*\[[\s\S]*?\];/.test(worker) ||
+  !/const INTEGRITY\s*=\s*\{[\s\S]*?\};/.test(worker)
 )
-  throw Error("Service worker is missing generated VERSION or FILES fields");
+  throw Error(
+    "Service worker is missing generated VERSION, FILES or INTEGRITY fields",
+  );
 const fileDeclaration =
   "const FILES = " + JSON.stringify(cached, null, 2) + ";";
+const integrityDeclaration =
+  "const INTEGRITY = " + JSON.stringify(integrity, null, 2) + ";";
 const workerTemplate = worker
   .replace(/const VERSION = "[^"]+";/, 'const VERSION = "__BUILD_VERSION__";')
-  .replace(/const FILES\s*=\s*\[[\s\S]*?\];/, fileDeclaration);
+  .replace(/const FILES\s*=\s*\[[\s\S]*?\];/, fileDeclaration)
+  .replace(/const INTEGRITY\s*=\s*\{[\s\S]*?\};/, integrityDeclaration);
 const hash = crypto.createHash("sha256");
 for (const name of [...cached].sort()) {
   hash.update(name + "\0");
-  hash.update(
-    outputs.has(name)
-      ? outputs.get(name)
-      : fs.readFileSync(path.join(root, name), "utf8").replace(/\r\n/g, "\n"),
-  );
+  hash.update(assetText(name));
 }
 hash.update("service-worker.js\0").update(workerTemplate);
 worker = workerTemplate.replace(

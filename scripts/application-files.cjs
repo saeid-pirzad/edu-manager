@@ -13,7 +13,11 @@ function contentType(name) {
 
 function applicationFiles(
   root,
-  { generated = new Set(), contents = new Map() } = {},
+  {
+    generated = new Set(),
+    contents = new Map(),
+    includeSourceMaps = true,
+  } = {},
 ) {
   const entries = ["EduManager.html"],
     assets = [];
@@ -51,22 +55,23 @@ function applicationFiles(
     if (files.has(name)) throw Error("Duplicate application asset: " + name);
     files.set(name, contentType(name));
   }
-  for (const name of new Set(assets)) {
-    if (!/\.(js|css)$/.test(name)) continue;
-    const content =
-      contents.get(name) ?? fs.readFileSync(path.join(root, name), "utf8");
-    const reference = content.match(
-      /[#@] sourceMappingURL=([A-Za-z0-9_.-]+\.map)/,
-    );
-    if (!reference) continue;
-    const mapName = path.posix.join(path.posix.dirname(name), reference[1]);
-    if (
-      !generated.has(mapName) &&
-      !fs.statSync(path.join(root, mapName)).isFile()
-    )
-      throw Error("Missing source map: " + mapName);
-    files.set(mapName, contentType(mapName));
-  }
+  if (includeSourceMaps)
+    for (const name of new Set(assets)) {
+      if (!/\.(js|css)$/.test(name)) continue;
+      const content =
+        contents.get(name) ?? fs.readFileSync(path.join(root, name), "utf8");
+      const reference = content.match(
+        /[#@] sourceMappingURL=([A-Za-z0-9_.-]+\.map)/,
+      );
+      if (!reference) continue;
+      const mapName = path.posix.join(path.posix.dirname(name), reference[1]);
+      if (
+        !generated.has(mapName) &&
+        !fs.statSync(path.join(root, mapName)).isFile()
+      )
+        throw Error("Missing source map: " + mapName);
+      files.set(mapName, contentType(mapName));
+    }
   return files;
 }
 

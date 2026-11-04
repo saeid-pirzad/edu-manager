@@ -13,9 +13,10 @@ const deferred = () => {
     return { promise, resolve, reject };
   },
   tick = () => new Promise((resolve) => setImmediate(resolve));
-async function fixture() {
+async function fixture({ protocol = "https:" } = {}) {
   const handlers = new Map(),
     timers = new Map(),
+    channels = [],
     elements = new Map(),
     effects = [],
     element = () => ({
@@ -52,8 +53,21 @@ async function fixture() {
       flushDrafts: async () => {},
       assessmentContext: { hasDrafts: () => false },
       hasRecordEditorChanges: () => false,
-      location: { protocol: "https:", reload: () => effects.push("reload") },
+      location: { protocol, reload: () => effects.push("reload") },
       isSecureContext: true,
+      MessageChannel: class {
+        constructor() {
+          this.port1 = {
+            onmessage: null,
+            closed: false,
+            close() {
+              this.closed = true;
+            },
+          };
+          this.port2 = { receiver: this.port1 };
+          channels.push(this);
+        }
+      },
       matchMedia: () => ({ matches: false }),
       localStorage: { getItem: () => "seen" },
       navigator: {
@@ -111,6 +125,7 @@ async function fixture() {
   return {
     c,
     effects,
+    channels,
     elements,
     registration,
     handlers,
@@ -409,4 +424,58 @@ test("an activation that never finishes has an explicit saved-state reopen actio
   assert.equal(f.c.document.getElementById("app").inert, true);
   assert.equal(f.prepares(), 2);
   assert.deepEqual(f.effects, ["confirm", "APPLY_UPDATE", "reload"]);
+});
+
+test("reconnecting retries cache readiness once and ignores stale worker/request completions", async () => {
+  const f = await fixture(),
+    requests = [];
+  const worker = (name) => ({
+    state: "activated",
+    postMessage(message, ports) {
+      requests.push({ name, message, receiver: ports[0].receiver });
+    },
+  });
+  const first = worker("first"),
+    next = worker("next");
+  f.c.navigator.serviceWorker.controller = first;
+  f.registration.active = first;
+  f.c.navigator.onLine = false;
+  f.handlers.get("offline")();
+  assert.equal(requests.length, 0);
+  f.c.navigator.onLine = true;
+  f.handlers.get("online")();
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].message.type, "OFFLINE_STATUS");
+  f.c.navigator.serviceWorker.controller = next;
+  requests[0].receiver.onmessage({ data: { ready: true } });
+  assert.equal(requests[0].receiver.closed, true);
+  assert.equal(
+    f.c.EduPWA.getStatus().offlineReady,
+    false,
+    "retired controller cannot claim readiness",
+  );
+  f.handlers.get("online")();
+  f.handlers.get("online")();
+  assert.equal(requests.length, 3);
+  assert.deepEqual(
+    requests.map((request) => request.name),
+    ["first", "next", "next"],
+  );
+  requests[1].receiver.onmessage({ data: { ready: true } });
+  assert.equal(
+    f.c.EduPWA.getStatus().offlineReady,
+    false,
+    "older completion cannot replace the current status request",
+  );
+  requests[2].receiver.onmessage({ data: { ready: true } });
+  assert.equal(f.c.EduPWA.getStatus().offlineReady, true);
+  assert.equal(f.elements.get("mobileBar").dataset.offlineReady, "true");
+});
+
+test("reconnecting a direct file without a registration never probes unavailable service-worker APIs", async () => {
+  const f = await fixture({ protocol: "file:" });
+  delete f.c.navigator.serviceWorker;
+  f.handlers.get("online")();
+  assert.equal(f.channels.length, 0);
+  assert.equal(f.c.EduPWA.getStatus().offlineReady, false);
 });

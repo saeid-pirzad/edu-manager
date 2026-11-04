@@ -68,7 +68,7 @@ async function openBackupShare() {
       throw Error(
         "داده‌ها هنگام تهیه فایل تغییر کردند؛ پشتیبان را دوباره آماده کنید.",
       );
-    const json = JSON.stringify(content, null, 2);
+    const json = JSON.stringify(content);
     session.name =
       "KelasYar-Backup-" + content.exportedAt.replace(/[:.]/g, "-") + ".json";
     session.exportedAt = content.exportedAt;

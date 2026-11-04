@@ -4,6 +4,7 @@
 globalThis.EduRecordTransaction = Object.freeze({
   async commit({
     connection,
+    expectedInstallation = "",
     workspace,
     records,
     changed,
@@ -35,6 +36,7 @@ globalThis.EduRecordTransaction = Object.freeze({
     )
       return directoryTransaction.commit({
         connection,
+        expectedInstallation,
         workspace,
         records,
         changed,
@@ -76,6 +78,20 @@ globalThis.EduRecordTransaction = Object.freeze({
       } catch (ignore) {}
     };
     try {
+      // Queue this read first: IndexedDB delivers requests in transaction order.
+      // No source, mirrored grade, history or undo write may precede it.
+      const epoch = tx.objectStore("records").get("@installation-reset");
+      epoch.onsuccess = () => {
+        if ((epoch.result?.value?.token || "") !== expectedInstallation)
+          abortQueue(
+            Object.assign(
+              Error(
+                "اطلاعات در پنجرهٔ دیگری جایگزین شده است؛ صفحه را دوباره باز کنید.",
+              ),
+              { code: "INSTALLATION_CHANGED" },
+            ),
+          );
+      };
       const catalog = tx.objectStore("catalog"),
         sessionSlots = globalThis.EduSessionSlots,
         sessionChanges = sessionSlots?.changes({
@@ -125,6 +141,7 @@ globalThis.EduRecordTransaction = Object.freeze({
             : null,
         get = catalog.get(workspace.id);
       get.onsuccess = () => {
+        if (queueError) return;
         try {
           const live = get.result;
           if (!live || live.revision !== workspace.revision) {

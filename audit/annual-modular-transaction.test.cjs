@@ -85,6 +85,11 @@ function fixture(options = {}) {
     events: new Map(),
     undo: new Map([["second", { id: "second", action: "Old undo" }]]),
   };
+  if (options.installation !== undefined && options.installation !== null)
+    stores.records.set("@installation-reset", {
+      key: "@installation-reset",
+      value: { token: options.installation },
+    });
   let complete, fail;
   const done = new Promise((resolve, reject) => {
     complete = resolve;
@@ -355,7 +360,10 @@ test("ordinary class edits avoid catalog scans and companion record reads", asyn
   value.name = "Renamed class";
   f.args.changed = [["class:class", JSON.stringify(value)]];
   await f.c.EduRecordTransaction.commit(f.args);
-  assert.deepEqual(f.reads, [["catalog", "get", "first"]]);
+  assert.deepEqual(f.reads, [
+    ["records", "get", "@installation-reset"],
+    ["catalog", "get", "first"],
+  ]);
   assert.equal(f.stores.catalog.get("second").revision, 7);
 });
 
@@ -474,7 +482,10 @@ test("new empty classes remain creatable without an annual baseline", async () =
   f.args.changed = [["class:class", JSON.stringify(value)]];
   await f.c.EduRecordTransaction.commit(f.args);
   assert.equal(f.stores.catalog.get("first").revision, 2);
-  assert.deepEqual(f.reads, [["catalog", "get", "first"]]);
+  assert.deepEqual(f.reads, [
+    ["records", "get", "@installation-reset"],
+    ["catalog", "get", "first"],
+  ]);
 });
 
 test("new classes with matching annual identity can initialize their existing companion's empty scores", async () => {
@@ -553,4 +564,38 @@ test("a lesson absent from the companion term is not recreated by grade synchron
   );
   assert.equal(f.stores.catalog.get("second").revision, 7);
   assert.deepEqual(f.args.annualChanged, []);
+});
+
+for (const [expected, durable] of [
+  ["old-installation", "replacement-installation"],
+  ["", "replacement-installation"],
+  ["old-installation", null],
+]) {
+  test(
+    "ordinary transaction rejects installation ABA before any source, annual peer, history or undo write: " +
+      JSON.stringify([expected, durable]),
+    async () => {
+      const f = fixture({ installation: durable });
+      f.args.expectedInstallation = expected;
+      const before = structuredClone(f.stores);
+      await assert.rejects(
+        f.c.EduRecordTransaction.commit(f.args),
+        (error) => error.code === "INSTALLATION_CHANGED",
+      );
+      assert.deepEqual(f.stores, before);
+      assert.equal(f.writes.length, 0);
+    },
+  );
+}
+
+test("matching nonempty installation permits atomic annual grade save", async () => {
+  const f = fixture({ installation: "current-installation" });
+  f.args.expectedInstallation = "current-installation";
+  await f.c.EduRecordTransaction.commit(f.args);
+  assert.equal(f.stores.catalog.get("first").revision, 2);
+  assert.equal(
+    f.stores.records.get("second|class:class").value.lessons[0].poudmans[0]
+      .podScores.student.c,
+    3,
+  );
 });

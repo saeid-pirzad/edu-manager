@@ -165,3 +165,42 @@ test("stale or closed undo preview cannot restore a different latest operation",
     await assert.rejects(f.c.confirmUndo(), /تغییر|منقضی/);
   }
 });
+
+test("undo intent retains its original installation across awaited draft flushes even when period and revision repeat", async () => {
+  const f = fixture();
+  f.c.installationToken = "epoch-a";
+  let writes = 0;
+  f.c.flushDrafts = async () => {
+    f.c.installationToken = "epoch-b";
+  };
+  f.c.commitRecords = async () => {
+    writes++;
+  };
+  await assert.rejects(f.c.undoLast());
+  assert.equal(writes, 0);
+  assert.equal(f.reads.length, 0);
+});
+test("undo approval from another installation cannot be reused for an identical restored operation", async () => {
+  const f = previewFixture();
+  f.c.installationToken = "epoch-a";
+  await f.c.openUndoModal();
+  f.c.installationToken = "epoch-b";
+  let writes = 0;
+  f.c.commitRecords = async () => {
+    writes++;
+  };
+  await assert.rejects(f.c.confirmUndo());
+  assert.equal(writes, 0);
+});
+test("normal undo passes its preview installation to atomic persistence", async () => {
+  const f = previewFixture();
+  f.c.installationToken = "epoch-a";
+  let options;
+  f.c.commitRecords = async (_records, value) => {
+    options = value;
+    f.c.workspace.revision = 2;
+  };
+  await f.c.openUndoModal();
+  await f.c.confirmUndo();
+  assert.equal(options.expectedInstallation, "epoch-a");
+});

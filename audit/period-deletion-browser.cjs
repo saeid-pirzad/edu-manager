@@ -10,7 +10,9 @@ async function deletionFlow() {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
     throw Error(
-      "Deletion UI timeout: " +
+      "Deletion UI timeout after " +
+        (cases.at(-1)?.id || "setup") +
+        ": " +
         (document.getElementById("operationError")?.textContent || ""),
     );
   };
@@ -276,40 +278,122 @@ async function deletionFlow() {
         .getElementById("karnamehTabOutput")
         .textContent.includes(sourceClass.name),
     );
-    await wait(() =>
-      document.querySelector('.karnameh-overview[data-ui-layout="cards"]'),
-    );
+    const reportSelector = "#karnamehTabOutput .karnameh-student-sheet";
+    await wait(() => document.querySelector(reportSelector));
+    const firstStudentId = getSortedStudents(reportClass)[0]?.id;
+    const selectedSheet = () => document.querySelector(reportSelector);
     check(
-      "KARNAMEH_WIDE_TABLE_MOBILE_CARDS",
-      document.querySelector(".karnameh-overview thead tr").cells.length > 6,
+      "KARNAMEH_INDIVIDUAL_DEFAULT",
+      firstStudentId &&
+        selectedSheet().dataset.studentId === firstStudentId &&
+        karnamehFilter.studentId === firstStudentId &&
+        document.querySelectorAll(reportSelector).length === 1 &&
+        !document.querySelector(".karnameh-overview"),
+    );
+    const tableRows = [
+      ...selectedSheet().querySelectorAll("[data-karnameh-lesson-row]"),
+    ];
+    const modularLessons = reportClass.lessons.filter(
+      (lesson) =>
+        lesson.gradeMode !== "kardanesh" &&
+        lesson.gradingPolicy?.method === "modular",
+    );
+    const moduleColumns = Math.max(
+      0,
+      ...modularLessons.map((lesson) => lesson.poudmans.length),
+    );
+    const expectedModularCells = (lesson) =>
+      1 + lesson.poudmans.length * 3 + moduleColumns - lesson.poudmans.length;
+    const sameFields = (row, lesson) =>
+      JSON.stringify(
+        [...row.querySelectorAll("[data-karnameh-field]")].map(
+          (cell) => cell.dataset.karnamehField,
+        ),
+      ) ===
+      JSON.stringify(
+        Array.from({ length: lesson.poudmans.length }, () => [
+          "continuous",
+          "competency",
+          "module-result",
+        ]).flat(),
+      );
+    check(
+      "KARNAMEH_MANY_LESSONS_SINGLE_ROWS",
+      tableRows.length === reportClass.lessons.length &&
+        new Set(tableRows.map((row) => row.dataset.karnamehLessonRow)).size ===
+          reportClass.lessons.length &&
+        tableRows.every((row) =>
+          reportClass.lessons.some(
+            (lesson) => lesson.id === row.dataset.karnamehLessonRow,
+          ),
+        ) &&
+        tableRows
+          .filter((row) => row.dataset.gradeMode === "kardanesh")
+          .every((row) => row.cells.length === 13) &&
+        tableRows
+          .filter((row) => row.dataset.gradeMode === "modular")
+          .every((row) => {
+            const lesson = modularLessons.find(
+              (item) => item.id === row.dataset.karnamehLessonRow,
+            );
+            return (
+              lesson &&
+              row.cells.length === expectedModularCells(lesson) &&
+              [...row.cells].reduce(
+                (total, cell) => total + cell.colSpan,
+                0,
+              ) ===
+                1 + moduleColumns * 3 &&
+              row.querySelectorAll(".karnameh-module-na").length ===
+                moduleColumns - lesson.poudmans.length &&
+              [...row.querySelectorAll(".karnameh-module-na")].every(
+                (cell) =>
+                  cell.colSpan === 3 &&
+                  cell.textContent.trim() === "ندارد" &&
+                  !cell.querySelector(".karnameh-sheet-value"),
+              ) &&
+              sameFields(row, lesson)
+            );
+          }),
+      tableRows.map((row) => ({
+        id: row.dataset.karnamehLessonRow,
+        cells: row.cells.length,
+      })),
     );
     const overviewOutput = document.getElementById("karnamehTabOutput");
     check(
       "KARNAMEH_MANY_LESSONS_NO_OVERFLOW",
       overviewOutput.scrollWidth <= overviewOutput.clientWidth + 1,
     );
-    const directButton = document.querySelector(
-      '.karnameh-overview [data-workspace-action="karnameh-student"]',
+    const navigation = selectedSheet().querySelector(
+      ".karnameh-student-pagination",
     );
-    if (directButton) {
-      const chosenId = directButton.dataset.key;
-      directButton.click();
-      await wait(() => document.querySelector(".karnameh-year-document h2"));
-      check(
-        "KARNAMEH_DIRECT_STUDENT_NAVIGATION",
-        karnamehFilter.studentId === chosenId,
-      );
-      document
-        .querySelector(
-          '.karnameh-report-actions [data-workspace-action="karnameh-student"]',
-        )
-        .click();
-      await wait(() => document.querySelector(".karnameh-overview"));
-      check(
-        "KARNAMEH_RETURN_TO_SAME_CLASS",
-        karnamehFilter.classId === sourceClass.id && !karnamehFilter.studentId,
-      );
-    }
+    const directButton = [...navigation.querySelectorAll("button")].find(
+      (button) => !button.disabled,
+    );
+    if (!directButton)
+      throw Error("Student navigation fixture requires at least two students");
+    const chosenId = directButton.dataset.key;
+    const returnDirection =
+      directButton.dataset.karnamehNav === "next" ? "previous" : "next";
+    directButton.click();
+    await wait(() => selectedSheet()?.dataset.studentId === chosenId);
+    check(
+      "KARNAMEH_DIRECT_STUDENT_NAVIGATION",
+      karnamehFilter.studentId === chosenId &&
+        document.getElementById("karnamehStudent").value === chosenId &&
+        document.querySelectorAll(reportSelector).length === 1,
+    );
+    selectedSheet()
+      .querySelector('[data-karnameh-nav="' + returnDirection + '"]')
+      .click();
+    await wait(() => selectedSheet()?.dataset.studentId === firstStudentId);
+    check(
+      "KARNAMEH_RETURN_TO_SAME_CLASS",
+      karnamehFilter.classId === sourceClass.id &&
+        karnamehFilter.studentId === firstStudentId &&
+        document.querySelectorAll(reportSelector).length === 1,
+    );
     const filters = document.querySelector(".karnameh-controls");
     check(
       "KARNAMEH_FILTER_NO_OVERFLOW",
@@ -321,154 +405,149 @@ async function deletionFlow() {
     check(
       "KARNAMEH_CLASS_SCOPED",
       optionIds.every((id) =>
-        [...sourceClass.students, ...sourceClass.archivedStudents].some(
+        [...reportClass.students, ...reportClass.archivedStudents].some(
           (item) => item.id === id,
         ),
       ) && new Set(optionIds).size === optionIds.length,
     );
     updateKarnamehFilter("studentId", student.id);
-    await wait(() => document.querySelector("#karnamehTabOutput h2"));
+    await wait(() => selectedSheet()?.dataset.studentId === student.id);
+    const report = selectedSheet();
     check(
       "KARNAMEH_ARCHIVED_REPORT",
-      document
-        .querySelector("#karnamehTabOutput h2")
-        .textContent.includes(student.name),
+      report.querySelector("h3").textContent.trim() === student.name &&
+        report.querySelector(".karnameh-archived-tag")?.textContent ===
+          "بایگانی" &&
+        reportClass.archivedStudents.some((item) => item.id === student.id),
     );
-    const gradeTable = document.querySelector(".karnameh-year-document table");
-    const lessonIndex = [...gradeTable.tHead.rows[0].cells].findIndex(
-      (cell) => cell.textContent === vocational.name,
+    const numeric = (text) => {
+      const normalized = text
+        .trim()
+        .replace(/[۰-۹]/g, (digit) => String(digit.charCodeAt(0) - 1776))
+        .replace(/[٠-٩]/g, (digit) => String(digit.charCodeAt(0) - 1632))
+        .replace(/٫/g, ".");
+      return /^-?\d+(?:\.\d+)?$/.test(normalized) ? Number(normalized) : null;
+    };
+    const values = (row) =>
+      [...row.querySelectorAll(".karnameh-sheet-value")].map((cell) =>
+        numeric(cell.textContent),
+      );
+    const same = (left, right) =>
+      JSON.stringify(left) === JSON.stringify(right);
+    const stageReport = report.querySelector(
+      '[data-karnameh-lesson="' + vocational.id + '"]',
     );
-    const stageReport = gradeTable.tBodies[0].rows[0].cells[lessonIndex];
-    const modularIndex = [...gradeTable.tHead.rows[0].cells].findIndex(
-      (cell) => cell.textContent === modular.name,
+    const modularReport = report.querySelector(
+      '[data-karnameh-lesson="' + modular.id + '"]',
     );
-    const modularReport = gradeTable.tBodies[0].rows[0].cells[modularIndex];
-    const moduleRows = [
-      ...modularReport.querySelectorAll(".report-module-row"),
-    ];
     check(
       "KARNAMEH_PARTIAL_MODULAR_GRADES_VISIBLE",
-      moduleRows.length === 2 &&
-        moduleRows[0].querySelectorAll("b")[0].textContent === "4" &&
-        moduleRows[0].querySelectorAll("b")[1].textContent === "3" &&
-        moduleRows[0].querySelector("strong").textContent === "19.00" &&
-        moduleRows[1].querySelector("strong").textContent === "—" &&
-        modularReport.querySelector(".report-modular-final strong")
-          .textContent === "—",
+      same(values(modularReport), [4, 3, 19, null, null, null]) &&
+        modularReport.querySelector(".karnameh-module-name")?.textContent ===
+          modular.poudmans[0].name &&
+        [
+          ...modularReport.querySelectorAll(
+            '[data-karnameh-field="module-result"]',
+          ),
+        ]
+          .map((cell) => cell.dataset.gradeComplete)
+          .join(",") === "true,false",
+      values(modularReport),
     );
     check(
       "KARNAMEH_MODULAR_IS_SINGLE_ANNUAL_COURSE",
-      modularReport.querySelectorAll(".report-modular-course").length === 1 &&
-        !modularReport.querySelector(".report-modular-term"),
+      report.querySelectorAll('[data-karnameh-lesson="' + modular.id + '"]')
+        .length === 1 &&
+        report.querySelectorAll(
+          '.karnameh-modular-table thead [scope="colgroup"]',
+        ).length === 2 &&
+        !report.querySelector(".report-modular-term"),
     );
-    const originalPrint = window.print;
+    const originalPrintTest = globalThis.__EDU_PRINT_TEST__;
     try {
-      window.print = () => {};
+      globalThis.__EDU_PRINT_TEST__ = true;
       document.getElementById("printRoot")?.remove();
-      document
-        .querySelector(
-          '.karnameh-year-document [data-workspace-action="print"]',
-        )
-        .click();
-      await wait(() => document.querySelector("#printRoot .report-module-row"));
-      const printedLesson = [
-        ...document.querySelectorAll("#printRoot [data-report-lesson]"),
-      ].find((cell) => cell.dataset.reportLesson === modular.name);
+      report.querySelector('[data-workspace-action="print"]').click();
+      await wait(() =>
+        document.querySelector("#printRoot .karnameh-modular-table"),
+      );
+      const printed = document.querySelector(
+        "#printRoot .karnameh-student-sheet",
+      );
+      const printedLesson = printed?.querySelector(
+        '[data-karnameh-lesson="' + modular.id + '"]',
+      );
+      const printedAssessment = printed?.querySelector(
+        '[data-karnameh-lesson="' + vocational.id + '"]',
+      );
       check(
         "KARNAMEH_MODULAR_PRINT_HAS_SAME_GRADES",
-        printedLesson?.querySelectorAll(".report-module-row").length === 2 &&
-          printedLesson.querySelector(".report-module-row strong")
-            .textContent === "19.00",
+        printed?.dataset.studentId === student.id &&
+          document.querySelectorAll("#printRoot .karnameh-student-sheet")
+            .length === 1 &&
+          printedLesson &&
+          same(values(printedLesson), [4, 3, 19, null, null, null]) &&
+          printedAssessment &&
+          same(values(printedAssessment), values(stageReport)) &&
+          !printed.querySelector("button,select,.karnameh-student-pagination"),
       );
     } finally {
-      window.print = originalPrint;
+      if (originalPrintTest === undefined) delete globalThis.__EDU_PRINT_TEST__;
+      else globalThis.__EDU_PRINT_TEST__ = originalPrintTest;
       document.getElementById("printRoot")?.remove();
+      document.getElementById("printPageStyle")?.remove();
     }
-    const stageBlocks = [
-      ...stageReport.querySelectorAll(".report-lesson-stage"),
-    ];
     check(
       "DUAL_REPORT_COMPONENTS_MATCH_INPUT",
-      stageBlocks[1].querySelectorAll(".report-stage-values b")[0]
-        .textContent === "19" &&
-        stageBlocks[1].querySelectorAll(".report-stage-values b")[1]
-          .textContent === "12" &&
-        stageBlocks[1].querySelector(".report-stage-values strong")
-          .textContent === "16.20",
+      same(values(stageReport).slice(3, 6), [19, 12, 16.2]),
+      values(stageReport),
     );
     check(
       "DUAL_REPORT_STAGES_MATCH",
-      stageReport.textContent.includes("14.00") &&
-        stageReport.textContent.includes("16.20"),
+      same(values(stageReport).slice(0, 6), [10, 20, 14, 19, 12, 16.2]),
+      values(stageReport),
     );
     check(
       "KARNAMEH_FOUR_STAGES_NO_FABRICATED_SECOND",
-      stageBlocks.length === 4 &&
-        stageBlocks
-          .slice(2)
-          .every(
-            (block) =>
-              block.querySelector(".report-stage-values strong").textContent ===
-              "—",
-          ),
+      values(stageReport).length === 12 &&
+        values(stageReport)
+          .slice(6)
+          .every((value) => value === null),
     );
     check(
       "KARNAMEH_NO_OVERALL_AVERAGE_COLUMN",
-      ![...gradeTable.tHead.rows[0].cells].some((cell) =>
-        cell.textContent.includes("وضعیت تکمیل"),
-      ),
+      !report.querySelector(
+        '[data-karnameh-group="annual"],[data-karnameh-stage="annual"],[data-karnameh-field="annual"]',
+      ) &&
+        ![...report.querySelectorAll("thead th")].some((cell) =>
+          /سالانه|وضعیت تکمیل/.test(cell.textContent),
+        ),
     );
+    const gradeTable = stageReport.closest("table");
+    const stageHeaders = [
+      ...gradeTable.tHead.rows[0].querySelectorAll('[scope="colgroup"]'),
+    ];
     check(
-      "KARNAMEH_MOBILE_STAGE_TITLES_SEPARATE_FROM_SCORES",
-      stageBlocks.every((block) => {
-        const title = block.querySelector(".report-stage-title");
-        const scores = block.querySelector(".report-stage-values");
-        const heading = title?.getBoundingClientRect();
-        const values = scores?.getBoundingClientRect();
-        return (
-          heading &&
-          values &&
-          heading.width > 0 &&
-          (heading.bottom <= values.top + 1 ||
-            values.right <= heading.left + 1) &&
-          title.scrollWidth <= title.clientWidth + 1
-        );
-      }),
-      stageBlocks.map((block) => {
-        const title = block.querySelector(".report-stage-title");
-        const scores = block.querySelector(".report-stage-values");
-        const rect = (element) => {
-          const r = element.getBoundingClientRect();
-          return { top: r.top, bottom: r.bottom, width: r.width };
-        };
-        return {
-          title: rect(title),
-          scores: rect(scores),
-          scroll: title.scrollWidth,
-          client: title.clientWidth,
-          columns: getComputedStyle(block).gridTemplateColumns,
-        };
-      }),
-    );
-    await wait(() =>
-      document.querySelector(
-        "#karnamehTabOutput .grade-report-table[data-ui-layout]",
-      ),
+      "KARNAMEH_STAGE_HEADERS_SEPARATE_FROM_SCORES",
+      gradeTable.tHead.rows.length === 2 &&
+        same(
+          stageHeaders.map((cell) => cell.textContent.trim()),
+          ["میان‌ترم اول", "پایان‌ترم اول", "میان‌ترم دوم", "پایان‌ترم دوم"],
+        ) &&
+        stageHeaders.every((cell) => cell.colSpan === 3) &&
+        gradeTable.tHead.rows[1].cells.length === 12,
     );
     check(
       "KARNAMEH_NO_GRADE_STATUS_EXPLANATIONS",
-      !document.querySelector("#karnamehTabOutput .report-grade-status"),
+      !report.querySelector(".report-grade-status"),
     );
     check(
       "KARNAMEH_STAGE_COMPONENT_LABELS",
-      stageBlocks.every(
-        (block) =>
-          block
-            .querySelector(".report-stage-values")
-            .textContent.includes("عملی") &&
-          block
-            .querySelector(".report-stage-values")
-            .textContent.includes("نظری"),
+      same(
+        [...gradeTable.tHead.rows[1].cells].map((cell) =>
+          cell.textContent.trim(),
+        ),
+        Array.from({ length: 4 }, () => ["عملی", "نظری", "نتیجه"]).flat(),
       ),
     );
     const reportOutput = document.getElementById("karnamehTabOutput");
@@ -479,7 +558,10 @@ async function deletionFlow() {
     const before = (await read("catalog")).map((row) => row.id);
     for (const viewport of [320, 768, 1024, 1366, 1920]) {
       const frame = document.createElement("iframe");
-      frame.style.cssText = `position:fixed;top:0;left:0;width:${viewport}px;height:900px;visibility:hidden;border:0`;
+      frame.style.cssText =
+        "position:fixed;top:0;left:0;width:" +
+        viewport +
+        "px;height:900px;visibility:hidden;border:0";
       const loaded = new Promise((resolve) => {
         frame.onload = resolve;
       });
@@ -495,44 +577,99 @@ async function deletionFlow() {
       try {
         await loaded;
         const doc = frame.contentDocument;
-        const blocks = [...doc.querySelectorAll(".report-lesson-stage")];
+        await doc.fonts.ready;
+        await new Promise((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve)),
+        );
+        const geometry = (selector) =>
+          [...doc.querySelectorAll(selector + " tbody tr")].map((row) => {
+            const table = row.closest("table"),
+              scroll = table.closest(".karnameh-sheet-scroll"),
+              outer = scroll.getBoundingClientRect(),
+              sheet = row
+                .closest(".karnameh-student-sheet")
+                .getBoundingClientRect(),
+              visible = [...row.cells].filter(
+                (cell) =>
+                  frame.contentWindow.getComputedStyle(cell).display !== "none",
+              );
+            const lesson = modularLessons.find(
+                (item) => item.id === row.dataset.karnamehLessonRow,
+              ),
+              selectedModule = Number(
+                (table.dataset.karnamehActiveGroup || "").replace(
+                  "module-",
+                  "",
+                ),
+              );
+            return {
+              lessonId: row.dataset.karnamehLessonRow,
+              all: row.cells.length,
+              expectedAll: lesson ? expectedModularCells(lesson) : 13,
+              logicalColumns: [...row.cells].reduce(
+                (total, cell) => total + cell.colSpan,
+                0,
+              ),
+              visible: visible.length,
+              expectedVisible: lesson
+                ? viewport <= 1024
+                  ? selectedModule < lesson.poudmans.length
+                    ? 4
+                    : 2
+                  : expectedModularCells(lesson)
+                : viewport <= 1024
+                  ? 4
+                  : 13,
+              visibleGroups: [
+                ...new Set(
+                  visible.slice(1).map((cell) => cell.dataset.karnamehGroup),
+                ),
+              ],
+              activeGroup: table.dataset.karnamehActiveGroup,
+              native:
+                frame.contentWindow.getComputedStyle(table).display === "table",
+              fits: scroll.scrollWidth <= scroll.clientWidth + 1,
+              contained:
+                outer.left >= sheet.left - 1 && outer.right <= sheet.right + 1,
+              readable: visible.every(
+                (cell) => cell.getBoundingClientRect().width > 20,
+              ),
+            };
+          });
+        const compact = viewport <= 1024;
+        const assessment = geometry(".karnameh-assessment-table");
         check(
           "KARNAMEH_COMPACT_ROWS_" + viewport,
-          blocks.length > 0 &&
-            blocks.every((block) => {
-              const title = block
-                .querySelector(".report-stage-title")
-                .getBoundingClientRect();
-              const values = block
-                .querySelector(".report-stage-values")
-                .getBoundingClientRect();
-              return (
-                values.right <= title.left + 1 &&
-                values.width > 0 &&
-                block.scrollWidth <= block.clientWidth + 1
-              );
-            }) &&
-            [...doc.querySelectorAll(".report-mobile-score-heading")].every(
-              (heading) => heading.getBoundingClientRect().height > 0,
+          assessment.length > 0 &&
+            assessment.every(
+              (row) =>
+                row.native &&
+                row.contained &&
+                row.readable &&
+                row.all === 13 &&
+                row.visible === (compact ? 4 : 13) &&
+                (!compact || row.fits),
             ),
+          assessment,
         );
-        const modules = [...doc.querySelectorAll(".report-module-row")];
+        const modules = geometry(".karnameh-modular-table");
         check(
           "KARNAMEH_MODULAR_ROWS_FIT_" + viewport,
-          modules.length > 0 &&
-            modules.every((row) => {
-              const title = row
-                .querySelector(".report-module-title")
-                .getBoundingClientRect();
-              const scores = row
-                .querySelector(".report-stage-values")
-                .getBoundingClientRect();
-              return (
-                scores.width > 0 &&
-                scores.right <= title.left + 1 &&
-                row.scrollWidth <= row.clientWidth + 1
-              );
-            }),
+          modules.length === modularLessons.length &&
+            new Set(modules.map((row) => row.lessonId)).size ===
+              modularLessons.length &&
+            modules.every(
+              (row) =>
+                row.native &&
+                row.contained &&
+                row.readable &&
+                row.all === row.expectedAll &&
+                row.logicalColumns === 1 + moduleColumns * 3 &&
+                row.visible === row.expectedVisible &&
+                (!compact ||
+                  (row.fits && same(row.visibleGroups, [row.activeGroup]))),
+            ),
+          modules,
         );
       } finally {
         frame.remove();

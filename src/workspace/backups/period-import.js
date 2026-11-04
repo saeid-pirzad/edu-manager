@@ -119,6 +119,8 @@ function previewImport(candidate, label) {
     label,
     workspace: workspace?.id,
     revision: workspace?.revision,
+    installation:
+      typeof installationToken === "undefined" ? "" : installationToken,
   };
   const classes = candidate.schools.flatMap((s) => s.classes),
     students = classes.reduce((n, c) => n + c.students.length, 0);
@@ -325,9 +327,20 @@ async function confirmImport() {
       );
     if (!pendingImport || pendingImport.workspace !== workspace.id)
       throw Error("پیش‌نمایش بازیابی منقضی شده است.");
-    const preview = pendingImport;
+    const preview = pendingImport,
+      expectedInstallation = preview.installation ?? "";
     const context = { id: preview.workspace, revision: preview.revision };
     const check = (write = false) => {
+      if (
+        (typeof installationToken === "undefined" ? "" : installationToken) !==
+        expectedInstallation
+      )
+        throw Object.assign(
+          Error(
+            "اطلاعات جایگزین شده است؛ پیش‌نمایش پشتیبان را دوباره باز کنید.",
+          ),
+          { code: "INSTALLATION_CHANGED" },
+        );
       assertWorkspaceContext(context, { write });
       if (pendingImport !== preview)
         throw Error("پیش‌نمایش بازیابی تغییر کرده است؛ دوباره بررسی کنید.");
@@ -385,6 +398,7 @@ async function confirmImport() {
       let installed = false;
       try {
         const changed = await commitRecords(collectRecords(candidate), {
+          expectedInstallation,
           action: "بازیابی پشتیبان: " + preview.label,
           replace: true,
           keepUndo: false,

@@ -199,6 +199,7 @@ function jalaliToGregorian(jy, jm, jd) {
     normalize,
     range,
     contains,
+    validDate,
     assertDate,
     current,
   });

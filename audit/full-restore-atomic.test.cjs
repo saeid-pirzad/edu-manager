@@ -61,7 +61,16 @@ function fixture({ syncFailure = false, asyncFailure = false } = {}) {
               period: saved,
               data: { settings: { academicTerm: saved.term }, sessions: [] },
             })),
-          { normalize: (value) => value },
+          {
+            normalize: (value) => value,
+            prepare: (value) => ({
+              value,
+              periods: source.stores.catalog.map((saved) => ({
+                period: saved,
+                data: { settings: { academicTerm: saved.term }, sessions: [] },
+              })),
+            }),
+          },
         ),
     },
     backupStores: names,
@@ -794,4 +803,62 @@ test("replacement preserves the latest durable file handle and rotates its conne
     "live-connection",
     "the source snapshot must not be mutated",
   );
+});
+
+test("full replacement preserves both a reviewed grade and long invalid raw input from a portable JSON backup", async () => {
+  const f = fixture(),
+    long = "۹".repeat(101);
+  vm.runInContext(
+    fs.readFileSync(
+      path.join(__dirname, "../src/domain/grade-drafts.js"),
+      "utf8",
+    ),
+    f.c,
+  );
+  const exported = f.c.EduGradeDrafts.portableGradeDrafts(
+    [
+      {
+        key: "Edu24.drafts.source.tab.document",
+        workspace: "source",
+        generation: 3,
+        updatedAt: "2026-11-04T00:00:00Z",
+        entries: [
+          {
+            kind: "k",
+            classId: "class",
+            lid: "lesson",
+            sid: "student1",
+            field: "practical",
+            value: "17",
+            review: true,
+          },
+          {
+            kind: "k",
+            classId: "class",
+            lid: "lesson",
+            sid: "student2",
+            field: "theory",
+            value: long,
+          },
+        ],
+      },
+    ],
+    f.source.stores.catalog,
+  );
+  f.source.gradeDrafts = JSON.parse(JSON.stringify(exported));
+  const incoming = JSON.parse(JSON.stringify(f.source));
+  f.c.previewFullBackup(incoming);
+  await f.c.restoreFullBackup();
+  const restored = f.committed.find(
+    (row) =>
+      row.name === "drafts" && row.row?.key === incoming.gradeDrafts[0].key,
+  )?.row;
+  assert.ok(restored);
+  assert.deepEqual(
+    restored.entries.map((entry) => entry.value),
+    ["17", long],
+  );
+  assert.equal(restored.owner, "imported");
+  assert.ok(restored.entries.every((entry) => entry.review === true));
+  assert.equal(f.source.gradeDrafts[0].entries[1].value, long);
 });

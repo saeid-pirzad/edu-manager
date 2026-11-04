@@ -186,3 +186,33 @@ test("valid queued save retains success notification and mirror scheduling", asy
   assert.equal(f.c.storageBlocked, false);
   assert.equal(f.c.busy, 0);
 });
+
+test("queued saves retain the installation captured at invocation and reject local replacement without rollback into the newer installation", async () => {
+  const f = fixture();
+  f.c.installationToken = "epoch-a";
+  let release,
+    writes = 0;
+  f.c.writer = new Promise((resolve) => {
+    release = resolve;
+  });
+  f.c.commitRecords = async () => {
+    writes++;
+  };
+  const operation = f.c.saveDBV24();
+  f.c.installationToken = "epoch-b";
+  release();
+  await assert.rejects(operation);
+  assert.equal(writes, 0);
+  assert.equal(f.reads.length, 0);
+  assert.equal(f.c.db.unsaved, true);
+});
+test("normal queued saves pass the original installation explicitly to the atomic boundary", async () => {
+  const f = fixture();
+  f.c.installationToken = "epoch-a";
+  let options;
+  f.c.commitRecords = async (_records, value) => {
+    options = value;
+  };
+  await f.c.saveDBV24();
+  assert.equal(options.expectedInstallation, "epoch-a");
+});

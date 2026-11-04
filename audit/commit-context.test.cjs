@@ -119,3 +119,34 @@ test("conflict still blocks its active source", async () => {
   await assert.rejects(f.c.commitRecords(new Map()));
   assert.equal(f.c.blocked, true);
 });
+
+test("commitRecords passes a frozen expected installation and blocks an active installation conflict", async () => {
+  const f = fixture();
+  f.c.installationToken = "epoch-a";
+  let expected;
+  f.c.EduRecordTransaction.commit = async (args) => {
+    expected = args.expectedInstallation;
+    throw Object.assign(Error("replacement"), { code: "INSTALLATION_CHANGED" });
+  };
+  await assert.rejects(
+    f.c.commitRecords(new Map()),
+    (error) => error.code === "INSTALLATION_CHANGED",
+  );
+  assert.equal(expected, "epoch-a");
+  assert.equal(f.c.blocked, true);
+});
+test("an explicit older intent epoch is never silently refreshed at commitRecords invocation", async () => {
+  const f = fixture();
+  f.c.installationToken = "epoch-b";
+  let expected;
+  f.c.EduRecordTransaction.commit = async (args) => {
+    expected = args.expectedInstallation;
+    throw Object.assign(Error("replacement"), { code: "INSTALLATION_CHANGED" });
+  };
+  await assert.rejects(
+    f.c.commitRecords(new Map(), { expectedInstallation: "epoch-a" }),
+    (error) => error.code === "INSTALLATION_CHANGED",
+  );
+  assert.equal(expected, "epoch-a");
+  assert.equal(f.c.blocked, false);
+});

@@ -5,9 +5,15 @@ function refreshAcademicYearWarnings(d) {
         typeof warning !== "string" ||
         !warning.startsWith(outsideYearWarningPrefix),
     ),
-    outsideYearSessions = (d.sessions || []).filter(
+    sessions = d.sessions || [],
+    yearRange = sessions.length
+      ? EduAcademicYear.range(d.settings.academicYear)
+      : null,
+    outsideYearSessions = sessions.filter(
       (session) =>
-        !EduAcademicYear.contains(d.settings.academicYear, session.date),
+        !EduAcademicYear.validDate(session.date) ||
+        session.date < yearRange.start ||
+        session.date > yearRange.end,
     ).length;
   if (outsideYearSessions)
     warnings.push(
@@ -47,13 +53,14 @@ function validateV24(d) {
       d.settings.academicTerm.length > 60)
   )
     throw Error("نوبت تحصیلی معتبر نیست.");
-  const classes = new Map();
+  const classStudentIds = new Map();
   for (const s of d.schools)
     for (const c of s.classes) {
-      classes.set(c.id, c);
-      const ids = new Set(knownStudents(c).map((st) => st.id)),
+      const students = knownStudents(c),
+        ids = new Set(students.map((st) => st.id)),
         codes = new Set();
-      for (const st of knownStudents(c)) {
+      classStudentIds.set(c.id, ids);
+      for (const st of students) {
         if (st.code !== undefined && typeof st.code !== "string")
           throw Error("کد دانش‌آموز نامعتبر است.");
         if (st.code) {
@@ -75,8 +82,7 @@ function validateV24(d) {
       }
     }
   for (const x of d.sessions) {
-    const c = classes.get(x.classId),
-      known = new Set(knownStudents(c).map((st) => st.id));
+    const known = classStudentIds.get(x.classId);
     const roster = x.roster || [];
     for (const st of roster)
       if (!known.has(st.id)) throw Error("عضو جلسه در سوابق کلاس وجود ندارد.");
@@ -107,7 +113,13 @@ function normalizeDB(input, { legacy = false } = {}) {
   d.sessions = d.sessions || [];
   d.activeDays = d.activeDays || defaults.activeDays;
   d.periods = d.periods ?? 6;
-  const warnings = [...(d.migrationWarnings || [])];
+  const warnings = [...(d.migrationWarnings || [])],
+    sessionsByClass = new Map();
+  for (const session of d.sessions) {
+    if (!sessionsByClass.has(session.classId))
+      sessionsByClass.set(session.classId, []);
+    sessionsByClass.get(session.classId).push(session);
+  }
   for (const school of d.schools || [])
     for (const c of school.classes || []) {
       c.archivedStudents = c.archivedStudents || [];
@@ -142,7 +154,7 @@ function normalizeDB(input, { legacy = false } = {}) {
           }
         deriveDualGrades(l);
       }
-      for (const x of d.sessions.filter((x) => x.classId === c.id)) {
+      for (const x of sessionsByClass.get(c.id) || []) {
         for (const st of x.roster || []) references.add(st.id);
         for (const id of Object.keys(x.attendance || {})) references.add(id);
         for (const sc of x.scores || []) references.add(sc.studentId);
@@ -161,7 +173,7 @@ function normalizeDB(input, { legacy = false } = {}) {
               "نام دانش‌آموز " + id + " در " + c.name + " نیازمند بررسی است.",
             );
           }
-      for (const x of d.sessions.filter((x) => x.classId === c.id)) {
+      for (const x of sessionsByClass.get(c.id) || []) {
         if (!x.roster) {
           x.roster = historicalRoster(c, x);
         } else if (legacy) {

@@ -39,6 +39,16 @@ const assessmentContext = (() => {
   function check(context, { write = false } = {}) {
     assertWorkspaceReadable();
     if (
+      (typeof installationToken === "undefined" ? "" : installationToken) !==
+      context.installation
+    )
+      throw Object.assign(
+        Error(
+          "اطلاعات در پنجرهٔ دیگری جایگزین شده است؛ صفحه را دوباره باز کنید.",
+        ),
+        { code: "INSTALLATION_CHANGED" },
+      );
+    if (
       selected !== context ||
       connection !== context.connection ||
       workspace.id !== context.origin.id ||
@@ -225,14 +235,28 @@ const assessmentContext = (() => {
   async function recover(context) {
     const prefix = "Edu24.drafts." + context.period.id + ".",
       rows = new Map(),
-      add = (row) => {
+      add = (row, expectedKey) => {
+        if (expectedKey && row?.key !== expectedKey)
+          throw Object.assign(
+            Error("کلید پیش‌نویس مرحله معتبر نیست؛ نسخهٔ خام را بررسی کنید."),
+            { code: "GRADE_DRAFT_INVALID" },
+          );
         if (
           !row?.key?.startsWith(prefix) ||
-          !row.key.split(".")[3]?.includes("-assessment") ||
-          !Array.isArray(row.entries) ||
-          !Number.isSafeInteger(row.generation)
+          !row.key.split(".")[3]?.includes("-assessment")
         )
           return;
+        if (
+          !Number.isSafeInteger(row.generation) ||
+          row.generation < 0 ||
+          typeof row.updatedAt !== "string"
+        )
+          throw Object.assign(
+            Error(
+              "مشخصات پیش‌نویس مرحله معتبر نیست؛ فایل پشتیبان محفوظ را بررسی کنید.",
+            ),
+            { code: "GRADE_DRAFT_INVALID" },
+          );
         const previous = rows.get(row.key);
         if (
           !previous ||
@@ -242,14 +266,35 @@ const assessmentContext = (() => {
         )
           rows.set(row.key, row);
       };
+    let localKeys = [];
     try {
-      for (const key of Object.keys(localStorage))
-        if (key.startsWith(prefix)) {
-          try {
-            add(JSON.parse(localStorage.getItem(key)));
-          } catch {}
-        }
+      localKeys = Object.keys(localStorage);
     } catch {}
+    for (const key of localKeys) {
+      if (
+        !key.startsWith(prefix) ||
+        !key.split(".")[3]?.includes("-assessment")
+      )
+        continue;
+      let json;
+      try {
+        json = localStorage.getItem(key);
+      } catch {
+        continue;
+      }
+      let row;
+      try {
+        row = JSON.parse(json);
+      } catch {
+        throw Object.assign(
+          Error(
+            "متن پیش‌نویس مرحله معتبر نیست؛ فایل پشتیبان محفوظ را بررسی کنید.",
+          ),
+          { code: "GRADE_DRAFT_INVALID" },
+        );
+      }
+      add(row, key);
+    }
     const tx = context.connection.transaction("drafts", "readonly"),
       done = transactionDone(tx),
       saved = await requestPromise(
@@ -263,6 +308,9 @@ const assessmentContext = (() => {
         b.generation - a.generation ||
         String(b.updatedAt).localeCompare(String(a.updatedAt)),
     );
+    for (const row of candidates)
+      if (!Array.isArray(row.entries))
+        EduGradeDrafts.assertEntries(row.entries);
     context.generation = Math.max(
       0,
       ...candidates.map((row) => row.generation),
@@ -293,9 +341,9 @@ const assessmentContext = (() => {
         row.generation <= empty.generation
       )
         continue;
+      EduGradeDrafts.assertEntries(row.entries);
       for (const original of row.entries) {
         if (
-          !isSupportedGradeDraft(original) ||
           original.kind !== "k" ||
           original.classId !== context.classroom.id ||
           original.lid !== context.lesson.id ||
@@ -332,6 +380,8 @@ const assessmentContext = (() => {
       !["midterm", "final"].includes(stage)
     )
       throw Error("مرحلهٔ ارزشیابی معتبر نیست.");
+    const expectedInstallation =
+      typeof installationToken === "undefined" ? "" : installationToken;
     await flush({ strict: true });
     assertWorkspaceReadable();
     const generation = ++selectionGeneration,
@@ -343,6 +393,9 @@ const assessmentContext = (() => {
       targetConnection = connection,
       assertOrigin = () => {
         if (
+          (typeof installationToken === "undefined"
+            ? ""
+            : installationToken) !== expectedInstallation ||
           generation !== selectionGeneration ||
           connection !== targetConnection ||
           workspace.id !== origin.id ||
@@ -364,7 +417,11 @@ const assessmentContext = (() => {
       (period.termKind || academicTermKind(period.term)) !== kind
     )
       throw Error("نوبت ارزشیابی متعلق به سال فعال نیست.");
-    const snapshot = await readWorkspaceSnapshot(period.id);
+    const snapshot = await readAssessmentSnapshot(
+      period.id,
+      identity,
+      expectedInstallation,
+    );
     assertOrigin();
     if (snapshot.period.revision !== period.revision)
       throw Error(
@@ -404,8 +461,7 @@ const assessmentContext = (() => {
       entries: new Map(),
       generation: 0,
       owner: documentToken + scopeSuffix({ classroom, lesson, stage }),
-      installation:
-        typeof installationToken === "undefined" ? "" : installationToken,
+      installation: expectedInstallation,
       timer: null,
       persistenceError: "",
     };
@@ -547,7 +603,11 @@ const assessmentContext = (() => {
   }
   async function commit(context, entries) {
     check(context, { write: true });
-    const snapshot = await readWorkspaceSnapshot(context.period.id);
+    const snapshot = await readAssessmentSnapshot(
+      context.period.id,
+      { schoolId: context.schoolId, classId: context.classroom.id },
+      context.installation,
+    );
     check(context, { write: true });
     if (
       snapshot.period.revision !== context.period.revision ||
@@ -599,13 +659,17 @@ const assessmentContext = (() => {
       masterSchedule: {},
       sessions: [],
     });
-    const records = collectRecords(snapshot.data, { classId: classroom.id }),
+    const records = new Map([
+        ["meta", JSON.parse(snapshot.records.get("meta"))],
+        ["class:" + classroom.id, clone(classroom)],
+      ]),
       plan = EduRecordCommitPlan.create(records, snapshot.records),
       annualChanged = [],
       directorySourceUpdates = [];
     if (!plan.changed.length && !plan.removed.length) return snapshot;
     const next = await EduRecordTransaction.commit({
       connection: context.connection,
+      expectedInstallation: context.installation,
       workspace: snapshot.period,
       records,
       ...plan,
@@ -625,6 +689,7 @@ const assessmentContext = (() => {
       directorySourceUpdates,
     });
     const active =
+      sameInstallation(context) &&
       connection === context.connection &&
       workspace.id === snapshot.period.id &&
       workspace.revision === snapshot.period.revision &&
@@ -647,7 +712,7 @@ const assessmentContext = (() => {
     for (const [key, json] of plan.changed) snapshot.records.set(key, json);
     snapshot.period = next;
     context.period = clone(next);
-    if (connection === context.connection && !resetBusy && !connectionRetired) {
+    if (sameInstallation(context)) {
       broadcast({ workspace: next.id, revision: next.revision });
       for (const change of annualChanged)
         broadcast({ ...change, annualModular: true });
@@ -715,7 +780,10 @@ const assessmentContext = (() => {
       .catch(async (error) => {
         for (const [, item] of entries) {
           item.error = "ذخیره نشد: " + error.message;
-          if (error.code === "WORKSPACE_CONFLICT") item.review = true;
+          if (
+            ["WORKSPACE_CONFLICT", "INSTALLATION_CHANGED"].includes(error.code)
+          )
+            item.review = true;
         }
         await persist(context).catch(() => {});
         if (selected === context) {

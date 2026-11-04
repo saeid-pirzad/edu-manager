@@ -1,5 +1,9 @@
 // A device-only handle: drafts is structured-clone storage, excluded from JSON backups.
 const singleFileKey = "EduManager.singleFile";
+const SINGLE_FILE_POLL_MS = 30000,
+  SINGLE_FILE_DEBOUNCE_MS = 2000;
+let singleFileSavedSource = null,
+  singleFileReschedule = false;
 let singleFile = null,
   singleFileTimer = null,
   singleFileDebounce = null,
@@ -206,13 +210,22 @@ function pauseSingleFile() {
 }
 function startSingleFile() {
   pauseSingleFile();
-  singleFileTimer = setInterval(() => void syncSingleFile(), 30000);
+  singleFileTimer = setInterval(
+    () => void syncSingleFile({ force: false }),
+    SINGLE_FILE_POLL_MS,
+  );
 }
 function scheduleSingleFile() {
-  // Snapshotting may itself flush drafts: never recursively schedule that flush.
-  if (!singleFileTimer || singleFileWriting) return;
+  if (!singleFileTimer) return;
+  if (singleFileWriting) {
+    singleFileReschedule = true;
+    return;
+  }
   clearTimeout(singleFileDebounce);
-  singleFileDebounce = setTimeout(() => void syncSingleFile(), 2000);
+  singleFileDebounce = setTimeout(
+    () => void syncSingleFile({ force: false }),
+    SINGLE_FILE_DEBOUNCE_MS,
+  );
 }
 async function restoreSingleFile() {
   try {
@@ -335,7 +348,7 @@ async function disableSingleFile() {
     return failSingleFile(error);
   }
 }
-function syncSingleFile() {
+function syncSingleFile({ force = true } = {}) {
   if (singleFileWriting) return singleFileWriting;
   if (
     !singleFile ||
@@ -347,14 +360,36 @@ function syncSingleFile() {
   )
     return Promise.resolve(false);
   const target = singleFile;
-  singleFileStatus("در حال ذخیره فایل: " + target.handle.name);
   const write = async () => {
     let stream;
     try {
       if (!(await singleFileCurrent(target))) return false;
-      const snapshot = await snapshotInstallation();
+      if (!force) {
+        const signature = await readBackupSourceSignature();
+        if (
+          singleFileSavedSource?.target === target &&
+          singleFileSavedSource.signature === signature
+        ) {
+          const current = await target.handle.getFile();
+          if (
+            current.lastModified !== target.modified ||
+            current.size !== target.size
+          )
+            throw Error(
+              "فایل بیرون از برنامه تغییر کرده است؛ برای ادامه، فایل را دوباره انتخاب کنید.",
+            );
+          return singleFileCurrent(target);
+        }
+      }
+      singleFileStatus("در حال ذخیره فایل: " + target.handle.name);
+      let snapshotSignature = null;
+      const snapshot = await snapshotInstallation({
+        onSourceSignature: (signature) => {
+          snapshotSignature = signature;
+        },
+      });
       validateFullBackup(snapshot);
-      const json = JSON.stringify(snapshot, null, 2);
+      const json = JSON.stringify(snapshot);
       if (
         !ready ||
         blocked ||
@@ -386,6 +421,10 @@ function syncSingleFile() {
       target.size = saved.size;
       target.savedAt = snapshot.exportedAt;
       if (!(await persistSingleFile({ target }))) return false;
+      singleFileSavedSource =
+        snapshotSignature === null
+          ? null
+          : { target, signature: snapshotSignature };
       recordFullBackupDelivery({
         kind: "automatic-file",
         exportedAt: snapshot.exportedAt,
@@ -420,6 +459,10 @@ function syncSingleFile() {
     .catch(failSingleFile)
     .finally(() => {
       singleFileWriting = null;
+      if (singleFileReschedule) {
+        singleFileReschedule = false;
+        scheduleSingleFile();
+      }
     });
   return singleFileWriting;
 }

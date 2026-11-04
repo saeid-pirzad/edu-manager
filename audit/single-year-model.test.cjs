@@ -377,6 +377,24 @@ test("a full snapshot retains records, reports, events and drafts from every leg
       transaction: () => ({
         objectStore: (name) => ({
           getAll: () => structuredClone(stores[name]),
+          openCursor() {
+            const request = {};
+            let index = 0;
+            const dispatch = () =>
+              queueMicrotask(() => {
+                const value = stores[name][index++];
+                request.result = value
+                  ? {
+                      value: structuredClone(value),
+                      primaryKey: value.id,
+                      continue: dispatch,
+                    }
+                  : null;
+                request.onsuccess?.();
+              });
+            dispatch();
+            return request;
+          },
         }),
       }),
     },

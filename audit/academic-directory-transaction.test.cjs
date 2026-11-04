@@ -200,25 +200,28 @@ function fixture({
         resolve = yes;
         reject = no;
       });
-      const queue = (name, range) => {
-        if (name === "records")
+      const queue = (name, range, key) => {
+        if (name === "records" && key === undefined)
           assert.ok(
             range?.lower && range?.upper,
             "record reads must use a bounded workspace prefix",
           );
-        reads.push({ name, range });
+        reads.push({ name, range, ...(key === undefined ? {} : { key }) });
         const request = {};
         pending++;
         queueMicrotask(() => {
           if (aborted) return;
           try {
-            request.result = [...staged[name].values()]
-              .filter(
-                (value) =>
-                  !range ||
-                  (value.key >= range.lower && value.key < range.upper),
-              )
-              .map((value) => clone(value));
+            request.result =
+              key !== undefined
+                ? clone(staged[name].get(key))
+                : [...staged[name].values()]
+                    .filter(
+                      (value) =>
+                        !range ||
+                        (value.key >= range.lower && value.key < range.upper),
+                    )
+                    .map((value) => clone(value));
             request.onsuccess?.();
           } catch (error) {
             aborted = true;
@@ -245,6 +248,7 @@ function fixture({
           assert.ok(names.includes(name));
           return {
             getAll: (range) => queue(name, range),
+            get: (key) => queue(name, undefined, key),
             put(value) {
               if (
                 failCompanionWrite &&
@@ -629,7 +633,12 @@ test("shared directory commit isolates other years and checks the source revisio
     (error) => error.code === "WORKSPACE_CONFLICT",
   );
   assert.deepEqual(clone(stale.stores.records), records);
-  assert.equal(stale.reads.filter((read) => read.name === "records").length, 0);
+  assert.equal(
+    stale.reads.filter(
+      (read) => read.name === "records" && read.key !== "@installation-reset",
+    ).length,
+    0,
+  );
 });
 
 function prepareClassDeletion(f, { school = false } = {}) {
@@ -721,7 +730,12 @@ test("shared deletion checks every term revision against the exact full safety s
       /پشتیبان ایمنی/.test(error.message),
   );
   assert.deepEqual(clone(f.stores), before);
-  assert.equal(f.reads.filter((row) => row.name === "records").length, 0);
+  assert.equal(
+    f.reads.filter(
+      (row) => row.name === "records" && row.key !== "@installation-reset",
+    ).length,
+    0,
+  );
   assert.deepEqual(f.args.directorySourceUpdates, []);
 });
 test("shared deletion rejects a term added since the full safety snapshot", async () => {
@@ -991,4 +1005,45 @@ test("undo of a shared annual schedule edit restores both programs while preserv
   f.args.keepUndo = false;
   await f.commit();
   assert.deepEqual(f.stores.records, before);
+});
+
+for (const [expected, durable] of [
+  ["old-installation", "replacement-installation"],
+  ["", "replacement-installation"],
+  ["old-installation", null],
+]) {
+  test(
+    "shared directory rejects installation ABA before any term mirror or history write: " +
+      JSON.stringify([expected, durable]),
+    async () => {
+      const f = fixture();
+      f.args.expectedInstallation = expected;
+      f.current.name = "Updated shared name";
+      if (durable !== null)
+        f.stores.records.set("@installation-reset", {
+          key: "@installation-reset",
+          value: { token: durable },
+        });
+      const before = clone(f.stores);
+      await assert.rejects(
+        f.commit(),
+        (error) => error.code === "INSTALLATION_CHANGED",
+      );
+      assert.deepEqual(clone(f.stores), before);
+      assert.equal(f.writes.length, 0);
+    },
+  );
+}
+
+test("matching nonempty installation permits directory mirrors in the same atomic save", async () => {
+  const f = fixture();
+  f.args.expectedInstallation = "current-installation";
+  f.stores.records.set("@installation-reset", {
+    key: "@installation-reset",
+    value: { token: "current-installation" },
+  });
+  f.current.name = "Updated shared name";
+  await f.commit();
+  assert.equal(f.value("first").name, "Updated shared name");
+  assert.equal(f.value("second").name, "Updated shared name");
 });

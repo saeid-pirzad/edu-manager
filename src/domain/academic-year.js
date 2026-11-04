@@ -124,6 +124,7 @@
     normalize,
     range,
     contains,
+    validDate,
     assertDate,
     current,
   });

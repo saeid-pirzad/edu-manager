@@ -248,6 +248,30 @@
       }
       if (!selected) throw Error("هنرجو در کلاس انتخاب‌شده پیدا نشد.");
     }
+    // These indexes live only for this projection; source objects remain mutable.
+    const classIndex = new Map();
+    for (const classroom of classes) {
+      if (classIndex.has(classroom.id)) continue;
+      const known = new Map(),
+        first = new Map(),
+        lessonIndex = new Map();
+      for (const student of [
+        ...(classroom.students || []),
+        ...(classroom.archivedStudents || []),
+      ]) {
+        known.set(student.id, student);
+        if (!first.has(student.id)) first.set(student.id, student);
+      }
+      for (const lesson of classroom.lessons || [])
+        if (!lessonIndex.has(lesson.id)) lessonIndex.set(lesson.id, lesson);
+      classIndex.set(classroom.id, { classroom, known, first, lessonIndex });
+    }
+    const relevantSessions = source.sessions.filter(
+      (session) =>
+        session.schoolId === school.id &&
+        classIndex.has(session.classId) &&
+        !(session.date < dates.start || session.date > dates.end),
+    );
     const warnings = new Set(),
       seen = new Set(),
       slots = new Set(),
@@ -256,49 +280,40 @@
       byDate = new Map(),
       sessions = [];
     const total = emptyCounts();
-    for (const x of [...source.sessions].sort(
+    for (const x of relevantSessions.sort(
       (a, b) =>
         a.date.localeCompare(b.date) ||
         a.period - b.period ||
         a.id.localeCompare(b.id),
     )) {
-      if (
-        x.schoolId !== school.id ||
-        !classes.some((c) => c.id === x.classId) ||
-        x.date < dates.start ||
-        x.date > dates.end
-      )
-        continue;
       if (seen.has(x.id)) {
         warnings.add("یک شناسه جلسه تکراری فقط یک بار شمارش شد.");
         continue;
       }
       seen.add(x.id);
-      const c = classes.find((c) => c.id === x.classId),
-        lesson = (c.lessons || []).find((l) => l.id === x.lessonId);
-      const known = new Map(
-        [
-          ...(c.students || []),
-          ...(c.archivedStudents || []),
-          ...(x.roster || []).map((st) => ({
-            ...[...(c.students || []), ...(c.archivedStudents || [])].find(
-              (current) => current.id === st.id,
-            ),
-            ...st,
-            code:
-              st.code ||
-              [...(c.students || []), ...(c.archivedStudents || [])].find(
-                (current) => current.id === st.id,
-              )?.code ||
-              "",
-          })),
-        ].map((st) => [st.id, st]),
-      );
+      const info = classIndex.get(x.classId),
+        c = info.classroom,
+        lesson = info.lessonIndex.get(x.lessonId),
+        historicalStudents = new Map(),
+        scoreBuckets = new Map();
+      for (const student of x.roster || []) {
+        const current = info.first.get(student.id);
+        historicalStudents.set(student.id, {
+          ...current,
+          ...student,
+          code: student.code || current?.code || "",
+        });
+      }
+      for (const score of x.scores || []) {
+        const id = score.studentId;
+        if (!scoreBuckets.has(id)) scoreBuckets.set(id, []);
+        scoreBuckets.get(id).push(score);
+      }
       const roster = Array.isArray(x.roster) ? x.roster : c.students || [];
       const ids = new Set([
         ...roster.map((st) => st.id),
         ...Object.keys(x.attendance || {}),
-        ...(x.scores || []).map((sc) => sc.studentId),
+        ...scoreBuckets.keys(),
       ]);
       if (f.audience === "parent" && !ids.has(f.studentId)) continue;
       if (!Array.isArray(x.roster) || x.rosterInferred)
@@ -329,7 +344,7 @@
         marks = [];
       for (const sid of ids) {
         if (f.audience === "parent" && sid !== f.studentId) continue;
-        const st = known.get(sid),
+        const st = historicalStudents.get(sid) || info.known.get(sid),
           a = attendance(x.attendance?.[sid]);
         tally(total, a);
         tally(sessionCounts, a);
@@ -348,7 +363,7 @@
         const row = students.get(key);
         row.sessions++;
         tally(row, a);
-        const own = (x.scores || []).filter((sc) => sc.studentId === sid);
+        const own = scoreBuckets.get(sid) || [];
         row.markCount += own.length;
         const scores = own.map((sc) => ({
           type: sc.type,

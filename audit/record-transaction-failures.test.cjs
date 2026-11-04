@@ -31,14 +31,20 @@ function fixture(stage) {
       return {
         get() {
           check("get");
+          const current = name === "records" ? { result: undefined } : request;
           queueMicrotask(() => {
-            request.onsuccess();
-            if (!aborts) {
-              committed.push(...pending);
-              resolve();
+            if (aborts) return;
+            current.onsuccess();
+            if (!aborts && name === "catalog") {
+              queueMicrotask(() => {
+                if (!aborts) {
+                  committed.push(...pending);
+                  resolve();
+                }
+              });
             }
           });
-          return request;
+          return current;
         },
         getAll() {
           check("getAll");

@@ -57,7 +57,20 @@ function tabMessage(message) {
 }
 
 async function openOtherDrafts() {
-  const ensureCurrent = preserveAsyncTarget();
+  const target = preserveAsyncTarget(),
+    installation =
+      typeof installationToken === "undefined" ? "" : installationToken,
+    ensureCurrent = () => {
+      target();
+      if (
+        (typeof installationToken === "undefined" ? "" : installationToken) !==
+        installation
+      )
+        throw Object.assign(
+          Error("اطلاعات جایگزین شده است؛ دریافت پیش‌نویس را دوباره باز کنید."),
+          { code: "INSTALLATION_CHANGED" },
+        );
+    };
   const prefix = "Edu24.drafts." + workspace.id + ".",
     byTab = new Map();
   const rows = await persistedGradeDrafts(prefix);
@@ -80,7 +93,9 @@ async function openOtherDrafts() {
     )
       byTab.set(otherTab, entry);
   }
-  const entries = [...byTab.values()].filter((x) => x.items.length);
+  const entries = [...byTab.values()].filter(
+    (entry) => EduGradeDrafts.assertEntries(entry.items).length,
+  );
   showModal(
     "پیش‌نویس نشست‌های دیگر",
     '<div class="other-drafts"><header class="other-drafts-heading"><span>' +
@@ -188,8 +203,21 @@ async function adoptDrafts(key) {
     const target = preserveAsyncTarget(),
       origin = workspace.id,
       sourceConnection = connection,
+      sourceInstallation =
+        typeof installationToken === "undefined" ? "" : installationToken,
       ensureCurrent = () => {
         target();
+        if (
+          (typeof installationToken === "undefined"
+            ? ""
+            : installationToken) !== sourceInstallation
+        )
+          throw Object.assign(
+            Error(
+              "اطلاعات جایگزین شده است؛ دریافت پیش‌نویس را دوباره باز کنید.",
+            ),
+            { code: "INSTALLATION_CHANGED" },
+          );
         if (connection !== sourceConnection)
           throw Error(
             "اتصال بانک تغییر کرده است؛ دریافت را دوباره انجام دهید.",
@@ -203,10 +231,7 @@ async function adoptDrafts(key) {
     );
     ensureCurrent();
     if (!record) throw Error("پیش‌نویس پیدا نشد.");
-    const items = record.entries;
-    if (!Array.isArray(items)) throw Error("پیش‌نویس نامعتبر است.");
-    if (items.some((item) => !isSupportedGradeDraft(item)))
-      throw Error("ورودی نامعتبر است؛ هیچ پیش‌نویسی دریافت نشد.");
+    const items = EduGradeDrafts.assertEntries(record.entries);
     // Reject the whole import before mutating anything. Both candidates remain
     // recoverable until the user saves or discards the existing local edits.
     if (items.some((item) => drafts.has(inputKey(item))))

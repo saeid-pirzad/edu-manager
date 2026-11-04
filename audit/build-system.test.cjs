@@ -104,6 +104,55 @@ test("build detects stale artifacts, regenerates missing output and fingerprints
     fs.readFileSync(path.join(temporary, "service-worker.js"), "utf8"),
     updatedWorker,
   );
+  const fileNames = JSON.parse(
+    updatedWorker.match(/const FILES\s*=\s*(\[[\s\S]*?\]);/)[1],
+  );
+  assert.ok(!fileNames.some((name) => name.endsWith(".map")));
+  assert.ok(!fileNames.some((name) => name.includes("deputy-exchange-legacy")));
+  const integrity = JSON.parse(
+    updatedWorker.match(/const INTEGRITY\s*=\s*(\{[\s\S]*?\});/)[1],
+  );
+  assert.deepEqual(Object.keys(integrity).sort(), [...fileNames].sort());
+  const crypto = require("node:crypto");
+  for (const name of fileNames) {
+    const text = fs
+      .readFileSync(path.join(temporary, name), "utf8")
+      .replace(/\r\n/g, "\n");
+    assert.equal(
+      integrity[name][0],
+      crypto.createHash("sha256").update(text).digest("hex"),
+      name,
+    );
+  }
+  fs.appendFileSync(
+    path.join(temporary, "assets/scripts/grade-math.js.map"),
+    "\n",
+  );
+  assert.notEqual(
+    run("--check").status,
+    0,
+    "debug artifacts are still checked",
+  );
+  assert.equal(run().status, 0);
+  assert.equal(
+    fs.readFileSync(path.join(temporary, "service-worker.js"), "utf8"),
+    updatedWorker,
+  );
+  fs.appendFileSync(
+    path.join(temporary, "src/domain/deputy-exchange.js"),
+    "\n// legacy-only change\n",
+  );
+  assert.notEqual(
+    run("--check").status,
+    0,
+    "build-only compatibility code remains checked",
+  );
+  assert.equal(run().status, 0);
+  assert.equal(
+    fs.readFileSync(path.join(temporary, "service-worker.js"), "utf8"),
+    updatedWorker,
+    "unused compatibility code must not invalidate the runtime cache",
+  );
   fs.writeFileSync(
     path.join(temporary, "src/unmapped.js"),
     "// not listed in source-map.json\n",

@@ -165,9 +165,15 @@ function refreshAcademicYearWarnings(d) {
         typeof warning !== "string" ||
         !warning.startsWith(outsideYearWarningPrefix),
     ),
-    outsideYearSessions = (d.sessions || []).filter(
+    sessions = d.sessions || [],
+    yearRange = sessions.length
+      ? EduAcademicYear.range(d.settings.academicYear)
+      : null,
+    outsideYearSessions = sessions.filter(
       (session) =>
-        !EduAcademicYear.contains(d.settings.academicYear, session.date),
+        !EduAcademicYear.validDate(session.date) ||
+        session.date < yearRange.start ||
+        session.date > yearRange.end,
     ).length;
   if (outsideYearSessions)
     warnings.push(
@@ -207,13 +213,14 @@ function validateV24(d) {
       d.settings.academicTerm.length > 60)
   )
     throw Error("نوبت تحصیلی معتبر نیست.");
-  const classes = new Map();
+  const classStudentIds = new Map();
   for (const s of d.schools)
     for (const c of s.classes) {
-      classes.set(c.id, c);
-      const ids = new Set(knownStudents(c).map((st) => st.id)),
+      const students = knownStudents(c),
+        ids = new Set(students.map((st) => st.id)),
         codes = new Set();
-      for (const st of knownStudents(c)) {
+      classStudentIds.set(c.id, ids);
+      for (const st of students) {
         if (st.code !== undefined && typeof st.code !== "string")
           throw Error("کد دانش‌آموز نامعتبر است.");
         if (st.code) {
@@ -235,8 +242,7 @@ function validateV24(d) {
       }
     }
   for (const x of d.sessions) {
-    const c = classes.get(x.classId),
-      known = new Set(knownStudents(c).map((st) => st.id));
+    const known = classStudentIds.get(x.classId);
     const roster = x.roster || [];
     for (const st of roster)
       if (!known.has(st.id)) throw Error("عضو جلسه در سوابق کلاس وجود ندارد.");
@@ -267,7 +273,13 @@ function normalizeDB(input, { legacy = false } = {}) {
   d.sessions = d.sessions || [];
   d.activeDays = d.activeDays || defaults.activeDays;
   d.periods = d.periods ?? 6;
-  const warnings = [...(d.migrationWarnings || [])];
+  const warnings = [...(d.migrationWarnings || [])],
+    sessionsByClass = new Map();
+  for (const session of d.sessions) {
+    if (!sessionsByClass.has(session.classId))
+      sessionsByClass.set(session.classId, []);
+    sessionsByClass.get(session.classId).push(session);
+  }
   for (const school of d.schools || [])
     for (const c of school.classes || []) {
       c.archivedStudents = c.archivedStudents || [];
@@ -302,7 +314,7 @@ function normalizeDB(input, { legacy = false } = {}) {
           }
         deriveDualGrades(l);
       }
-      for (const x of d.sessions.filter((x) => x.classId === c.id)) {
+      for (const x of sessionsByClass.get(c.id) || []) {
         for (const st of x.roster || []) references.add(st.id);
         for (const id of Object.keys(x.attendance || {})) references.add(id);
         for (const sc of x.scores || []) references.add(sc.studentId);
@@ -321,7 +333,7 @@ function normalizeDB(input, { legacy = false } = {}) {
               "نام دانش‌آموز " + id + " در " + c.name + " نیازمند بررسی است.",
             );
           }
-      for (const x of d.sessions.filter((x) => x.classId === c.id)) {
+      for (const x of sessionsByClass.get(c.id) || []) {
         if (!x.roster) {
           x.roster = historicalRoster(c, x);
         } else if (legacy) {
@@ -513,6 +525,7 @@ const {
   logicalRecordType,
   validateLogicalValue,
   decodeWorkspaceRecords,
+  decodeAssessmentRecords,
 } = EduWorkspaceRecords.create({
   clone,
   normalizeDB,
@@ -558,6 +571,37 @@ async function readWorkspaceSnapshot(id) {
   ]);
   if (!period) throw Error("ترم موجود نیست.");
   return { period, ...decodeWorkspaceRecords(rows, { workspaceId: id }) };
+}
+
+// The catalog, installation and selected class are read under one snapshot.
+// Sessions and other classes are not needed to edit a Kardanesh assessment.
+async function readAssessmentSnapshot(id, identity, expectedInstallation) {
+  const tx = connection.transaction(["catalog", "records"], "readonly"),
+    done = transactionDone(tx),
+    store = tx.objectStore("records"),
+    [period, epoch, meta, classroom] = await Promise.all([
+      requestPromise(tx.objectStore("catalog").get(id)),
+      requestPromise(store.get("@installation-reset")),
+      requestPromise(store.get(id + "|meta")),
+      requestPromise(store.get(id + "|class:" + identity.classId)),
+      done,
+    ]);
+  if ((epoch?.value?.token || "") !== expectedInstallation)
+    throw Object.assign(
+      Error(
+        "اطلاعات در پنجرهٔ دیگری جایگزین شده است؛ صفحه را دوباره باز کنید.",
+      ),
+      { code: "INSTALLATION_CHANGED" },
+    );
+  if (!period || period.id !== id) throw Error("نوبت این مرحله موجود نیست.");
+  return {
+    period,
+    ...decodeAssessmentRecords([meta, classroom], {
+      workspaceId: id,
+      schoolId: identity.schoolId,
+      classId: identity.classId,
+    }),
+  };
 }
 // Source: src/workspace/grading/annual-modular.js
 // Reconcile pre-existing annual modules without changing live UI state. The
@@ -1079,6 +1123,9 @@ async function commitRecords(
     keepUndo = true,
     directoryRevisions,
     scheduleResolution = false,
+    expectedInstallation = typeof installationToken === "undefined"
+      ? ""
+      : installationToken,
   } = {},
   historicalUndo = null,
 ) {
@@ -1090,6 +1137,8 @@ async function commitRecords(
     sourceConnection = connection,
     sourceCommitted = committed;
   const isCurrentCommit = () =>
+    (typeof installationToken === "undefined" ? "" : installationToken) ===
+      expectedInstallation &&
     workspace === sourceWorkspace &&
     workspace.revision === sourceRevision &&
     connection === sourceConnection &&
@@ -1153,6 +1202,7 @@ async function commitRecords(
   try {
     nextCatalog = await EduRecordTransaction.commit({
       connection: sourceConnection,
+      expectedInstallation,
       workspace: sourceWorkspace,
       records,
       changed,
@@ -1173,7 +1223,10 @@ async function commitRecords(
       restoredSessionRecords: historicalRecords,
     });
   } catch (error) {
-    if (error.code === "WORKSPACE_CONFLICT" && isCurrentCommit())
+    if (
+      ["WORKSPACE_CONFLICT", "INSTALLATION_CHANGED"].includes(error.code) &&
+      isCurrentCommit()
+    )
       blocked = true;
     throw error;
   }
@@ -1199,7 +1252,13 @@ async function commitRecords(
     }
     workspace = nextCatalog;
   }
-  if (connection === sourceConnection && !resetBusy && !connectionRetired) {
+  if (
+    (typeof installationToken === "undefined" ? "" : installationToken) ===
+      expectedInstallation &&
+    connection === sourceConnection &&
+    !resetBusy &&
+    !connectionRetired
+  ) {
     broadcast({ workspace: nextCatalog.id, revision: nextCatalog.revision });
     for (const change of annualChanged)
       broadcast({ ...change, annualModular: true });
@@ -1224,8 +1283,12 @@ function saveDBV24(scope = {}) {
     return Promise.reject(Error("ابتدا وارد ترم شوید؛ تغییر ثبت نشد."));
   const generation = writeFailureGeneration,
     targetWorkspace = workspace?.id,
-    targetConnection = connection;
+    targetConnection = connection,
+    expectedInstallation =
+      typeof installationToken === "undefined" ? "" : installationToken;
   const isCurrentTarget = () =>
+    (typeof installationToken === "undefined" ? "" : installationToken) ===
+      expectedInstallation &&
     workspace?.id === targetWorkspace &&
     connection === targetConnection &&
     !periodLoading &&
@@ -1248,6 +1311,7 @@ function saveDBV24(scope = {}) {
       refreshAcademicYearWarnings(db);
       await commitRecords(collectRecords(db, scope), {
         ...scope,
+        expectedInstallation,
         replace: !scope.classId && !scope.sessionId,
       });
       if (!isCurrentTarget()) return;
@@ -1950,16 +2014,21 @@ async function persistedGradeDrafts(prefix) {
   const add = (key, raw) => {
     const entry = {
       key,
-      entries: Array.isArray(raw) ? raw : raw?.entries || [],
+      entries: Array.isArray(raw) ? raw : raw?.entries,
       generation: Array.isArray(raw) ? 0 : Number(raw?.generation || 0),
-      updatedAt: raw?.updatedAt || "",
+      updatedAt: Array.isArray(raw) ? "" : (raw?.updatedAt ?? ""),
     };
     if (
-      !Array.isArray(entry.entries) ||
       !Number.isSafeInteger(entry.generation) ||
-      entry.generation < 0
+      entry.generation < 0 ||
+      typeof entry.updatedAt !== "string"
     )
-      throw Error("ساختار پیش‌نویس معتبر نیست.");
+      throw Object.assign(
+        Error(
+          "نسخه یا زمان پیش‌نویس معتبر نیست؛ نسخهٔ خام را برای بررسی دریافت کنید.",
+        ),
+        { code: "GRADE_DRAFT_INVALID" },
+      );
     const previous = records.get(key);
     if (
       !previous ||
@@ -1969,27 +2038,52 @@ async function persistedGradeDrafts(prefix) {
     )
       records.set(key, entry);
   };
-  let unreadable = false;
+  let unreadable = false,
+    unavailable = false;
   try {
-    for (const key of Object.keys(localStorage).filter((key) =>
-      key.startsWith(prefix),
-    ))
+    for (const key of Object.keys(localStorage).filter(
+      (key) =>
+        key === prefix ||
+        key.startsWith(prefix + ".") ||
+        (prefix.endsWith(".") && key.startsWith(prefix)),
+    )) {
+      let raw;
       try {
-        add(key, JSON.parse(localStorage.getItem(key)));
+        raw = localStorage.getItem(key);
+      } catch {
+        unavailable = true;
+        continue;
+      }
+      try {
+        add(key, JSON.parse(raw));
       } catch {
         unreadable = true;
       }
+    }
   } catch {
-    unreadable = true;
+    unavailable = true;
   }
   if (connection?.objectStoreNames.contains("drafts")) {
     const tx = connection.transaction("drafts", "readonly");
     const rows = await requestPromise(
       tx.objectStore("drafts").index("workspace").getAll(workspace.id),
     );
-    for (const row of rows) if (row.key.startsWith(prefix)) add(row.key, row);
+    for (const row of rows)
+      if (
+        row.key === prefix ||
+        row.key.startsWith(prefix + ".") ||
+        (prefix.endsWith(".") && row.key.startsWith(prefix))
+      )
+        add(row.key, row);
   }
-  if (unreadable && !records.size)
+  if (unreadable)
+    throw Object.assign(
+      Error(
+        "خواندن یکی از پیش‌نویس‌های قبلی انجام نشد؛ نسخهٔ قدیمی جایگزین آن نشد. نسخهٔ خام را برای بررسی دریافت کنید.",
+      ),
+      { code: "GRADE_DRAFT_INVALID" },
+    );
+  if (unavailable && !records.size)
     throw Error("خواندن پیش‌نویس‌های قبلی انجام نشد.");
   return [...records.values()];
 }
@@ -2118,9 +2212,10 @@ async function loadDrafts() {
         b.generation - a.generation || b.updatedAt.localeCompare(a.updatedAt),
     );
     const saved = records[0];
+    // Validate only the selected generation; an older row must never replace it.
+    EduGradeDrafts.assertEntries(saved ? saved.entries : []);
     draftGeneration = (saved?.generation || 0) + 1;
     for (const original of saved?.entries || []) {
-      if (!isSupportedGradeDraft(original)) continue;
       const stale =
         !Number.isInteger(original.baseRevision) ||
         original.baseRevision !== workspace.revision;
@@ -3062,6 +3157,16 @@ const assessmentContext = (() => {
   function check(context, { write = false } = {}) {
     assertWorkspaceReadable();
     if (
+      (typeof installationToken === "undefined" ? "" : installationToken) !==
+      context.installation
+    )
+      throw Object.assign(
+        Error(
+          "اطلاعات در پنجرهٔ دیگری جایگزین شده است؛ صفحه را دوباره باز کنید.",
+        ),
+        { code: "INSTALLATION_CHANGED" },
+      );
+    if (
       selected !== context ||
       connection !== context.connection ||
       workspace.id !== context.origin.id ||
@@ -3248,14 +3353,28 @@ const assessmentContext = (() => {
   async function recover(context) {
     const prefix = "Edu24.drafts." + context.period.id + ".",
       rows = new Map(),
-      add = (row) => {
+      add = (row, expectedKey) => {
+        if (expectedKey && row?.key !== expectedKey)
+          throw Object.assign(
+            Error("کلید پیش‌نویس مرحله معتبر نیست؛ نسخهٔ خام را بررسی کنید."),
+            { code: "GRADE_DRAFT_INVALID" },
+          );
         if (
           !row?.key?.startsWith(prefix) ||
-          !row.key.split(".")[3]?.includes("-assessment") ||
-          !Array.isArray(row.entries) ||
-          !Number.isSafeInteger(row.generation)
+          !row.key.split(".")[3]?.includes("-assessment")
         )
           return;
+        if (
+          !Number.isSafeInteger(row.generation) ||
+          row.generation < 0 ||
+          typeof row.updatedAt !== "string"
+        )
+          throw Object.assign(
+            Error(
+              "مشخصات پیش‌نویس مرحله معتبر نیست؛ فایل پشتیبان محفوظ را بررسی کنید.",
+            ),
+            { code: "GRADE_DRAFT_INVALID" },
+          );
         const previous = rows.get(row.key);
         if (
           !previous ||
@@ -3265,14 +3384,35 @@ const assessmentContext = (() => {
         )
           rows.set(row.key, row);
       };
+    let localKeys = [];
     try {
-      for (const key of Object.keys(localStorage))
-        if (key.startsWith(prefix)) {
-          try {
-            add(JSON.parse(localStorage.getItem(key)));
-          } catch {}
-        }
+      localKeys = Object.keys(localStorage);
     } catch {}
+    for (const key of localKeys) {
+      if (
+        !key.startsWith(prefix) ||
+        !key.split(".")[3]?.includes("-assessment")
+      )
+        continue;
+      let json;
+      try {
+        json = localStorage.getItem(key);
+      } catch {
+        continue;
+      }
+      let row;
+      try {
+        row = JSON.parse(json);
+      } catch {
+        throw Object.assign(
+          Error(
+            "متن پیش‌نویس مرحله معتبر نیست؛ فایل پشتیبان محفوظ را بررسی کنید.",
+          ),
+          { code: "GRADE_DRAFT_INVALID" },
+        );
+      }
+      add(row, key);
+    }
     const tx = context.connection.transaction("drafts", "readonly"),
       done = transactionDone(tx),
       saved = await requestPromise(
@@ -3286,6 +3426,9 @@ const assessmentContext = (() => {
         b.generation - a.generation ||
         String(b.updatedAt).localeCompare(String(a.updatedAt)),
     );
+    for (const row of candidates)
+      if (!Array.isArray(row.entries))
+        EduGradeDrafts.assertEntries(row.entries);
     context.generation = Math.max(
       0,
       ...candidates.map((row) => row.generation),
@@ -3316,9 +3459,9 @@ const assessmentContext = (() => {
         row.generation <= empty.generation
       )
         continue;
+      EduGradeDrafts.assertEntries(row.entries);
       for (const original of row.entries) {
         if (
-          !isSupportedGradeDraft(original) ||
           original.kind !== "k" ||
           original.classId !== context.classroom.id ||
           original.lid !== context.lesson.id ||
@@ -3355,6 +3498,8 @@ const assessmentContext = (() => {
       !["midterm", "final"].includes(stage)
     )
       throw Error("مرحلهٔ ارزشیابی معتبر نیست.");
+    const expectedInstallation =
+      typeof installationToken === "undefined" ? "" : installationToken;
     await flush({ strict: true });
     assertWorkspaceReadable();
     const generation = ++selectionGeneration,
@@ -3366,6 +3511,9 @@ const assessmentContext = (() => {
       targetConnection = connection,
       assertOrigin = () => {
         if (
+          (typeof installationToken === "undefined"
+            ? ""
+            : installationToken) !== expectedInstallation ||
           generation !== selectionGeneration ||
           connection !== targetConnection ||
           workspace.id !== origin.id ||
@@ -3387,7 +3535,11 @@ const assessmentContext = (() => {
       (period.termKind || academicTermKind(period.term)) !== kind
     )
       throw Error("نوبت ارزشیابی متعلق به سال فعال نیست.");
-    const snapshot = await readWorkspaceSnapshot(period.id);
+    const snapshot = await readAssessmentSnapshot(
+      period.id,
+      identity,
+      expectedInstallation,
+    );
     assertOrigin();
     if (snapshot.period.revision !== period.revision)
       throw Error(
@@ -3427,8 +3579,7 @@ const assessmentContext = (() => {
       entries: new Map(),
       generation: 0,
       owner: documentToken + scopeSuffix({ classroom, lesson, stage }),
-      installation:
-        typeof installationToken === "undefined" ? "" : installationToken,
+      installation: expectedInstallation,
       timer: null,
       persistenceError: "",
     };
@@ -3570,7 +3721,11 @@ const assessmentContext = (() => {
   }
   async function commit(context, entries) {
     check(context, { write: true });
-    const snapshot = await readWorkspaceSnapshot(context.period.id);
+    const snapshot = await readAssessmentSnapshot(
+      context.period.id,
+      { schoolId: context.schoolId, classId: context.classroom.id },
+      context.installation,
+    );
     check(context, { write: true });
     if (
       snapshot.period.revision !== context.period.revision ||
@@ -3622,13 +3777,17 @@ const assessmentContext = (() => {
       masterSchedule: {},
       sessions: [],
     });
-    const records = collectRecords(snapshot.data, { classId: classroom.id }),
+    const records = new Map([
+        ["meta", JSON.parse(snapshot.records.get("meta"))],
+        ["class:" + classroom.id, clone(classroom)],
+      ]),
       plan = EduRecordCommitPlan.create(records, snapshot.records),
       annualChanged = [],
       directorySourceUpdates = [];
     if (!plan.changed.length && !plan.removed.length) return snapshot;
     const next = await EduRecordTransaction.commit({
       connection: context.connection,
+      expectedInstallation: context.installation,
       workspace: snapshot.period,
       records,
       ...plan,
@@ -3648,6 +3807,7 @@ const assessmentContext = (() => {
       directorySourceUpdates,
     });
     const active =
+      sameInstallation(context) &&
       connection === context.connection &&
       workspace.id === snapshot.period.id &&
       workspace.revision === snapshot.period.revision &&
@@ -3670,7 +3830,7 @@ const assessmentContext = (() => {
     for (const [key, json] of plan.changed) snapshot.records.set(key, json);
     snapshot.period = next;
     context.period = clone(next);
-    if (connection === context.connection && !resetBusy && !connectionRetired) {
+    if (sameInstallation(context)) {
       broadcast({ workspace: next.id, revision: next.revision });
       for (const change of annualChanged)
         broadcast({ ...change, annualModular: true });
@@ -3738,7 +3898,10 @@ const assessmentContext = (() => {
       .catch(async (error) => {
         for (const [, item] of entries) {
           item.error = "ذخیره نشد: " + error.message;
-          if (error.code === "WORKSPACE_CONFLICT") item.review = true;
+          if (
+            ["WORKSPACE_CONFLICT", "INSTALLATION_CHANGED"].includes(error.code)
+          )
+            item.review = true;
         }
         await persist(context).catch(() => {});
         if (selected === context) {
@@ -5475,7 +5638,7 @@ function lastExternalBackupLabel() {
   );
 }
 
-function downloadJSON(value, name, { compact = false } = {}) {
+function downloadJSON(value, name, { compact = true } = {}) {
   downloadLocalFile(
     new Blob([JSON.stringify(value, null, compact ? 0 : 2)], {
       type: "application/json;charset=utf-8",
@@ -5701,21 +5864,192 @@ async function downloadLastSafetyBackup(button) {
   }
 }
 // Source: src/workspace/backups/full-export.js
-function portableGradeDrafts(rows, periods) {
-  const storedRows = [];
+// Portable drafts are never silently replaced by an older readable row.
+function portableGradeDrafts(rows, periods, snapshotNotes = []) {
+  const storedRows = [],
+    ids = new Set(periods.map((period) => period.id));
+  let keys;
   try {
-    for (const key of Object.keys(localStorage).filter((key) =>
-      key.startsWith("Edu24.drafts."),
-    )) {
-      try {
-        storedRows.push({ key, value: JSON.parse(localStorage.getItem(key)) });
-      } catch {}
+    keys = Object.keys(localStorage);
+  } catch (error) {
+    snapshotNotes.push(
+      "خواندن پیش‌نویس‌های محلی ممکن نشد؛ نسخه بانک و حافظه حفظ شد.",
+    );
+    keys = [];
+  }
+  for (const key of keys) {
+    const match = /^Edu24\.drafts\.([A-Za-z0-9_-]+)\.([A-Za-z0-9_-]+)/.exec(
+      key,
+    );
+    if (!match || !ids.has(match[1])) continue;
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw !== null) storedRows.push({ key, value: JSON.parse(raw) });
+    } catch (error) {
+      throw Object.assign(
+        Error(
+          "یک پیش‌نویس نمره قابل خواندن نیست؛ پشتیبان کامل ساخته نشد. پیش‌نویس‌ها را بررسی کنید یا نسخه خام بگیرید.",
+        ),
+        { code: "BACKUP_DRAFT_UNREADABLE", cause: error },
+      );
     }
-  } catch {}
+  }
   return EduGradeDrafts.portableGradeDrafts(rows, periods, storedRows);
 }
+function currentBackupDrafts() {
+  return {
+    key: draftStorageKey(),
+    workspace: workspace.id,
+    owner: documentToken,
+    generation: draftGeneration,
+    entries: clone([...drafts.values()]),
+    updatedAt: new Date().toISOString(),
+  };
+}
+function backupReportDrafts(catalog) {
+  const output = {};
+  for (const period of catalog) {
+    if (window.EduPeriodicReports?.getDrafts) {
+      output[period.id] = window.EduPeriodicReports.getDrafts(
+        period.id,
+        period.reportNotesRecovery,
+      );
+    } else {
+      const raw = localStorage.getItem(
+        "EduManager.periodicDrafts." + period.id,
+      );
+      output[period.id] = raw === null ? {} : JSON.parse(raw);
+    }
+  }
+  return output;
+}
+function backupExtraData(
+  stores,
+  snapshotNotes = [],
+  currentDrafts = currentBackupDrafts(),
+) {
+  const assessmentDraft =
+    typeof assessmentContext !== "undefined"
+      ? assessmentContext.snapshot()
+      : null;
+  return {
+    gradeDrafts: portableGradeDrafts(
+      [
+        ...stores.drafts,
+        currentDrafts,
+        ...(assessmentDraft ? [assessmentDraft] : []),
+      ],
+      stores.catalog,
+      snapshotNotes,
+    ),
+    reportDrafts: backupReportDrafts(stores.catalog),
+    deputyExportIdentity: EduDeputyExportIdentity.fromRows(stores.drafts),
+  };
+}
+// Catalog revisions cover mutable records; the other portable stores have immutable IDs.
+// Draft timestamps and the mirror's own handle metadata are deliberately not content changes.
+function backupSourceSignature({
+  catalog,
+  keys,
+  gradeDrafts,
+  reportDrafts,
+  deputyExportIdentity,
+  activeWorkspace,
+  installation,
+}) {
+  return JSON.stringify({
+    installation,
+    activeWorkspace,
+    catalog,
+    keys: Object.fromEntries(
+      ["backups", "events", "reports", "undo"].map((name) => [
+        name,
+        [...keys[name]].sort(),
+      ]),
+    ),
+    gradeDrafts: gradeDrafts
+      .map(({ key, workspace, generation, entries }) => ({
+        key,
+        workspace,
+        generation,
+        entries,
+      }))
+      .sort((a, b) => a.key.localeCompare(b.key)),
+    reportDrafts,
+    deputyExportIdentity: deputyExportIdentity || null,
+  });
+}
+function scanPortableBackups(store) {
+  return new Promise((resolve, reject) => {
+    const rows = [],
+      keys = [],
+      request = store.openCursor();
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const cursor = request.result;
+      if (!cursor) return resolve({ rows, keys });
+      keys.push(cursor.primaryKey);
+      const row = cursor.value;
+      if (!row.full) rows.push(row);
+      cursor.continue();
+    };
+  });
+}
+async function readBackupSourceSignature() {
+  const origin = workspace?.id,
+    sourceConnection = connection,
+    installation = installationToken;
+  if (!ready || periodLoading || resetBusy || connectionRetired)
+    throw Object.assign(Error("Backup source is changing"), {
+      code: "BACKUP_CONTEXT_CHANGED",
+    });
+  const tx = sourceConnection.transaction(
+      [...backupStores, "drafts"],
+      "readonly",
+    ),
+    done = transactionDone(tx);
+  const requests = [
+    requestPromise(tx.objectStore("catalog").getAll()),
+    requestPromise(tx.objectStore("drafts").getAll()),
+    requestPromise(tx.objectStore("records").get(RESET_RECORD_KEY)),
+    ...["backups", "events", "reports", "undo"].map((name) =>
+      requestPromise(tx.objectStore(name).getAllKeys()),
+    ),
+  ];
+  const [catalog, durableDrafts, marker, backups, events, reports, undo] =
+    await Promise.all(requests);
+  await done;
+  if (
+    workspace?.id !== origin ||
+    connection !== sourceConnection ||
+    installationToken !== installation ||
+    periodLoading ||
+    resetBusy ||
+    connectionRetired
+  )
+    throw Object.assign(Error("Backup source changed"), {
+      code: "BACKUP_CONTEXT_CHANGED",
+    });
+  if ((marker?.value?.token || "") !== installation)
+    throw Object.assign(
+      Error(
+        "اطلاعات برنامه در پنجره دیگری جایگزین شده است؛ صفحه را بازخوانی کنید.",
+      ),
+      { code: "INSTALLATION_CHANGED" },
+    );
+  return backupSourceSignature({
+    catalog,
+    keys: { backups, events, reports, undo },
+    ...backupExtraData({ catalog, drafts: durableDrafts }),
+    activeWorkspace: origin,
+    installation,
+  });
+}
 
-async function snapshotInstallation({ onDurableDrafts } = {}) {
+async function snapshotInstallation({
+  onDurableDrafts,
+  onSourceSignature,
+} = {}) {
   const origin = workspace?.id,
     sourceConnection = connection,
     sourceInstallation = installationToken;
@@ -5761,22 +6095,25 @@ async function snapshotInstallation({ onDurableDrafts } = {}) {
   await draftWriter.catch(() => {});
   check();
   const activeWorkspace = workspace.id;
-  const currentDrafts = {
-    key: draftStorageKey(),
-    workspace: activeWorkspace,
-    owner: documentToken,
-    generation: draftGeneration,
-    entries: clone([...drafts.values()]),
-    updatedAt: new Date().toISOString(),
-  };
+  const currentDrafts = currentBackupDrafts();
   const names = [...backupStores, "drafts"];
   const tx = connection.transaction(names, "readonly"),
     done = transactionDone(tx);
   const values = await Promise.all(
-    names.map((name) => requestPromise(tx.objectStore(name).getAll())),
+    names.map((name) =>
+      name === "backups"
+        ? scanPortableBackups(tx.objectStore(name))
+        : requestPromise(tx.objectStore(name).getAll()),
+    ),
   );
   await done;
-  const stores = Object.fromEntries(names.map((name, i) => [name, values[i]]));
+  const backupRows = values[names.indexOf("backups")];
+  const stores = Object.fromEntries(
+    names.map((name, i) => [
+      name,
+      name === "backups" ? backupRows.rows : values[i],
+    ]),
+  );
   check();
   if (
     (stores.records.find((row) => row.key === RESET_RECORD_KEY)?.value?.token ||
@@ -5791,37 +6128,31 @@ async function snapshotInstallation({ onDurableDrafts } = {}) {
   // Never embed a full snapshot inside another full snapshot.
   stores.backups = stores.backups.filter((row) => !row.full);
   stores.records = stores.records.filter((row) => row.key !== RESET_RECORD_KEY);
-  const assessmentDraft =
-    typeof assessmentContext !== "undefined"
-      ? assessmentContext.snapshot()
-      : null;
-  const gradeDrafts = portableGradeDrafts(
-    [
-      ...stores.drafts,
-      currentDrafts,
-      ...(assessmentDraft ? [assessmentDraft] : []),
-    ],
-    stores.catalog,
+  const { gradeDrafts, reportDrafts, deputyExportIdentity } = backupExtraData(
+    stores,
+    snapshotNotes,
+    currentDrafts,
   );
-  const deputyExportIdentity = EduDeputyExportIdentity.fromRows(stores.drafts);
+  onSourceSignature?.(
+    backupSourceSignature({
+      catalog: stores.catalog,
+      keys: {
+        backups: backupRows.keys,
+        ...Object.fromEntries(
+          ["events", "reports", "undo"].map((name) => [
+            name,
+            stores[name].map((row) => row.id),
+          ]),
+        ),
+      },
+      gradeDrafts,
+      reportDrafts,
+      deputyExportIdentity,
+      activeWorkspace,
+      installation: sourceInstallation,
+    }),
+  );
   delete stores.drafts;
-  const reportDrafts = {};
-  for (const period of stores.catalog) {
-    if (window.EduPeriodicReports?.getDrafts) {
-      reportDrafts[period.id] = window.EduPeriodicReports.getDrafts(
-        period.id,
-        period.reportNotesRecovery,
-      );
-      continue;
-    }
-    try {
-      reportDrafts[period.id] = JSON.parse(
-        localStorage.getItem("EduManager.periodicDrafts." + period.id) || "{}",
-      );
-    } catch {
-      reportDrafts[period.id] = {};
-    }
-  }
   return {
     format: "EduManager.FullBackup",
     version: 2,
@@ -5924,7 +6255,7 @@ async function openBackupShare() {
       throw Error(
         "داده‌ها هنگام تهیه فایل تغییر کردند؛ پشتیبان را دوباره آماده کنید.",
       );
-    const json = JSON.stringify(content, null, 2);
+    const json = JSON.stringify(content);
     session.name =
       "KelasYar-Backup-" + content.exportedAt.replace(/[:.]/g, "-") + ".json";
     session.exportedAt = content.exportedAt;
@@ -6075,6 +6406,10 @@ function downloadPreparedBackup() {
 // Source: src/workspace/backups/single-file.js
 // A device-only handle: drafts is structured-clone storage, excluded from JSON backups.
 const singleFileKey = "EduManager.singleFile";
+const SINGLE_FILE_POLL_MS = 30000,
+  SINGLE_FILE_DEBOUNCE_MS = 2000;
+let singleFileSavedSource = null,
+  singleFileReschedule = false;
 let singleFile = null,
   singleFileTimer = null,
   singleFileDebounce = null,
@@ -6281,13 +6616,22 @@ function pauseSingleFile() {
 }
 function startSingleFile() {
   pauseSingleFile();
-  singleFileTimer = setInterval(() => void syncSingleFile(), 30000);
+  singleFileTimer = setInterval(
+    () => void syncSingleFile({ force: false }),
+    SINGLE_FILE_POLL_MS,
+  );
 }
 function scheduleSingleFile() {
-  // Snapshotting may itself flush drafts: never recursively schedule that flush.
-  if (!singleFileTimer || singleFileWriting) return;
+  if (!singleFileTimer) return;
+  if (singleFileWriting) {
+    singleFileReschedule = true;
+    return;
+  }
   clearTimeout(singleFileDebounce);
-  singleFileDebounce = setTimeout(() => void syncSingleFile(), 2000);
+  singleFileDebounce = setTimeout(
+    () => void syncSingleFile({ force: false }),
+    SINGLE_FILE_DEBOUNCE_MS,
+  );
 }
 async function restoreSingleFile() {
   try {
@@ -6410,7 +6754,7 @@ async function disableSingleFile() {
     return failSingleFile(error);
   }
 }
-function syncSingleFile() {
+function syncSingleFile({ force = true } = {}) {
   if (singleFileWriting) return singleFileWriting;
   if (
     !singleFile ||
@@ -6422,14 +6766,36 @@ function syncSingleFile() {
   )
     return Promise.resolve(false);
   const target = singleFile;
-  singleFileStatus("در حال ذخیره فایل: " + target.handle.name);
   const write = async () => {
     let stream;
     try {
       if (!(await singleFileCurrent(target))) return false;
-      const snapshot = await snapshotInstallation();
+      if (!force) {
+        const signature = await readBackupSourceSignature();
+        if (
+          singleFileSavedSource?.target === target &&
+          singleFileSavedSource.signature === signature
+        ) {
+          const current = await target.handle.getFile();
+          if (
+            current.lastModified !== target.modified ||
+            current.size !== target.size
+          )
+            throw Error(
+              "فایل بیرون از برنامه تغییر کرده است؛ برای ادامه، فایل را دوباره انتخاب کنید.",
+            );
+          return singleFileCurrent(target);
+        }
+      }
+      singleFileStatus("در حال ذخیره فایل: " + target.handle.name);
+      let snapshotSignature = null;
+      const snapshot = await snapshotInstallation({
+        onSourceSignature: (signature) => {
+          snapshotSignature = signature;
+        },
+      });
       validateFullBackup(snapshot);
-      const json = JSON.stringify(snapshot, null, 2);
+      const json = JSON.stringify(snapshot);
       if (
         !ready ||
         blocked ||
@@ -6461,6 +6827,10 @@ function syncSingleFile() {
       target.size = saved.size;
       target.savedAt = snapshot.exportedAt;
       if (!(await persistSingleFile({ target }))) return false;
+      singleFileSavedSource =
+        snapshotSignature === null
+          ? null
+          : { target, signature: snapshotSignature };
       recordFullBackupDelivery({
         kind: "automatic-file",
         exportedAt: snapshot.exportedAt,
@@ -6495,6 +6865,10 @@ function syncSingleFile() {
     .catch(failSingleFile)
     .finally(() => {
       singleFileWriting = null;
+      if (singleFileReschedule) {
+        singleFileReschedule = false;
+        scheduleSingleFile();
+      }
     });
   return singleFileWriting;
 }
@@ -6521,8 +6895,9 @@ function previewFullBackup(value, { sourceName = "", legacy = false } = {}) {
     previousSignature = pendingFullBackupSignature;
   pendingFullBackup = null;
   pendingFullBackupSignature = "";
-  value = validateFullBackup.normalize(value);
-  const periods = validateFullBackup(value);
+  const prepared = validateFullBackup.prepare(value);
+  value = prepared.value;
+  const periods = prepared.periods;
   const termRole = (period) => {
     const base = String(period.term).split(" — بازیابی ")[0];
     return (
@@ -7211,6 +7586,8 @@ function previewImport(candidate, label) {
     label,
     workspace: workspace?.id,
     revision: workspace?.revision,
+    installation:
+      typeof installationToken === "undefined" ? "" : installationToken,
   };
   const classes = candidate.schools.flatMap((s) => s.classes),
     students = classes.reduce((n, c) => n + c.students.length, 0);
@@ -7417,9 +7794,20 @@ async function confirmImport() {
       );
     if (!pendingImport || pendingImport.workspace !== workspace.id)
       throw Error("پیش‌نمایش بازیابی منقضی شده است.");
-    const preview = pendingImport;
+    const preview = pendingImport,
+      expectedInstallation = preview.installation ?? "";
     const context = { id: preview.workspace, revision: preview.revision };
     const check = (write = false) => {
+      if (
+        (typeof installationToken === "undefined" ? "" : installationToken) !==
+        expectedInstallation
+      )
+        throw Object.assign(
+          Error(
+            "اطلاعات جایگزین شده است؛ پیش‌نمایش پشتیبان را دوباره باز کنید.",
+          ),
+          { code: "INSTALLATION_CHANGED" },
+        );
       assertWorkspaceContext(context, { write });
       if (pendingImport !== preview)
         throw Error("پیش‌نمایش بازیابی تغییر کرده است؛ دوباره بررسی کنید.");
@@ -7477,6 +7865,7 @@ async function confirmImport() {
       let installed = false;
       try {
         const changed = await commitRecords(collectRecords(candidate), {
+          expectedInstallation,
           action: "بازیابی پشتیبان: " + preview.label,
           replace: true,
           keepUndo: false,
@@ -7540,15 +7929,24 @@ let undoBusy = false,
 
 async function openUndoModal() {
   if (undoBusy) return false;
+  const installation =
+    typeof installationToken === "undefined" ? "" : installationToken;
   const check = preserveAsyncTarget();
   await flushDrafts({ strict: true });
   await writer.catch(() => {});
   check();
   assertEntityWritable();
-  const target = { id: workspace.id, revision: workspace.revision, connection };
+  const target = {
+    id: workspace.id,
+    revision: workspace.revision,
+    connection,
+    installation,
+  };
   const undo = await readRecord("undo", target.id);
   check();
   if (
+    (typeof installationToken === "undefined" ? "" : installationToken) !==
+      target.installation ||
     connection !== target.connection ||
     workspace.revision !== target.revision
   )
@@ -7595,6 +7993,8 @@ async function confirmUndo() {
 
 async function undoLast(approval = null) {
   if (undoBusy) return false;
+  const installation =
+    typeof installationToken === "undefined" ? "" : installationToken;
   undoBusy = true;
   busy++;
   paintStatus();
@@ -7604,10 +8004,15 @@ async function undoLast(approval = null) {
     await writer.catch(() => {});
     ensureCurrent();
     assertEntityWritable();
-    const target = { id: workspace.id, revision: workspace.revision };
+    const target = {
+      id: workspace.id,
+      revision: workspace.revision,
+      installation,
+    };
     if (
       approval &&
       (approval !== pendingUndo ||
+        target.installation !== approval.installation ||
         target.id !== approval.id ||
         target.revision !== approval.revision ||
         connection !== approval.connection)
@@ -7625,8 +8030,13 @@ async function undoLast(approval = null) {
   }
 }
 async function performUndo(target, approval = null) {
+  const expectedInstallation =
+    target.installation ??
+    (typeof installationToken === "undefined" ? "" : installationToken);
   const sourceConnection = connection;
   const isCurrentTarget = () =>
+    (typeof installationToken === "undefined" ? "" : installationToken) ===
+      expectedInstallation &&
     workspace.id === target.id &&
     connection === sourceConnection &&
     !periodLoading &&
@@ -7663,6 +8073,7 @@ async function performUndo(target, approval = null) {
   await commitRecords(
     candidate,
     {
+      expectedInstallation,
       action: "بازگردانی: " + undo.action,
       replace: true,
       keepUndo: false,
@@ -13435,7 +13846,20 @@ function tabMessage(message) {
 }
 
 async function openOtherDrafts() {
-  const ensureCurrent = preserveAsyncTarget();
+  const target = preserveAsyncTarget(),
+    installation =
+      typeof installationToken === "undefined" ? "" : installationToken,
+    ensureCurrent = () => {
+      target();
+      if (
+        (typeof installationToken === "undefined" ? "" : installationToken) !==
+        installation
+      )
+        throw Object.assign(
+          Error("اطلاعات جایگزین شده است؛ دریافت پیش‌نویس را دوباره باز کنید."),
+          { code: "INSTALLATION_CHANGED" },
+        );
+    };
   const prefix = "Edu24.drafts." + workspace.id + ".",
     byTab = new Map();
   const rows = await persistedGradeDrafts(prefix);
@@ -13458,7 +13882,9 @@ async function openOtherDrafts() {
     )
       byTab.set(otherTab, entry);
   }
-  const entries = [...byTab.values()].filter((x) => x.items.length);
+  const entries = [...byTab.values()].filter(
+    (entry) => EduGradeDrafts.assertEntries(entry.items).length,
+  );
   showModal(
     "پیش‌نویس نشست‌های دیگر",
     '<div class="other-drafts"><header class="other-drafts-heading"><span>' +
@@ -13566,8 +13992,21 @@ async function adoptDrafts(key) {
     const target = preserveAsyncTarget(),
       origin = workspace.id,
       sourceConnection = connection,
+      sourceInstallation =
+        typeof installationToken === "undefined" ? "" : installationToken,
       ensureCurrent = () => {
         target();
+        if (
+          (typeof installationToken === "undefined"
+            ? ""
+            : installationToken) !== sourceInstallation
+        )
+          throw Object.assign(
+            Error(
+              "اطلاعات جایگزین شده است؛ دریافت پیش‌نویس را دوباره باز کنید.",
+            ),
+            { code: "INSTALLATION_CHANGED" },
+          );
         if (connection !== sourceConnection)
           throw Error(
             "اتصال بانک تغییر کرده است؛ دریافت را دوباره انجام دهید.",
@@ -13581,10 +14020,7 @@ async function adoptDrafts(key) {
     );
     ensureCurrent();
     if (!record) throw Error("پیش‌نویس پیدا نشد.");
-    const items = record.entries;
-    if (!Array.isArray(items)) throw Error("پیش‌نویس نامعتبر است.");
-    if (items.some((item) => !isSupportedGradeDraft(item)))
-      throw Error("ورودی نامعتبر است؛ هیچ پیش‌نویسی دریافت نشد.");
+    const items = EduGradeDrafts.assertEntries(record.entries);
     // Reject the whole import before mutating anything. Both candidates remain
     // recoverable until the user saves or discards the existing local edits.
     if (items.some((item) => drafts.has(inputKey(item))))

@@ -2,38 +2,63 @@
 // Source: src/domain/grade-drafts.js
 "use strict";
 
-// Pure draft selection; newer empty entries prevent old drafts resurfacing.
+// Select the newest generation before interpreting its content. Empty newest
+// rows are tombstones; unsupported content must never revive an older value.
 globalThis.EduGradeDrafts = (() => {
+  function invalidDraft(message) {
+    return Object.assign(
+      Error(
+        message +
+          " برای حفظ ورودی‌ها، پیش‌نویس را اصلاح کنید یا نسخهٔ خام را برای بررسی دریافت کنید.",
+      ),
+      { code: "GRADE_DRAFT_INVALID" },
+    );
+  }
   function isSupportedGradeDraft(item) {
     return (
-      !!item &&
+      item !== null &&
+      typeof item === "object" &&
+      !Array.isArray(item) &&
       ["k", "u", "pod"].includes(item.kind) &&
-      typeof item.value === "string" &&
-      item.value.length <= 100
+      typeof item.value === "string"
     );
+  }
+  function assertEntries(entries) {
+    if (!Array.isArray(entries))
+      throw invalidDraft("فهرست ورودی‌های پیش‌نویس نمره معتبر نیست.");
+    if (!entries.every(isSupportedGradeDraft))
+      throw invalidDraft(
+        "نوع یا مقدار یکی از ورودی‌های پیش‌نویس نمره پشتیبانی نمی‌شود؛ هیچ ورودی کنار گذاشته نشد.",
+      );
+    return entries;
   }
   function portableGradeDrafts(rows, periods, storedRows = []) {
     const ids = new Set(periods.map((p) => p.id)),
       byKey = new Map();
     const add = (key, raw) => {
+      if (typeof key !== "string") return;
+      const parts = key.split(".");
+      if (parts[0] !== "Edu24" || parts[1] !== "drafts" || !ids.has(parts[2]))
+        return;
       const match = key.match(
-        /^Edu24\.drafts\.([A-Za-z0-9_-]+)\.([A-Za-z0-9_-]+)/,
+        /^Edu24\.drafts\.([A-Za-z0-9_-]+)\.([A-Za-z0-9_-]+)(?:\.[A-Za-z0-9_-]+)*$/,
       );
-      if (!match || !ids.has(match[1])) return;
+      if (!match) throw invalidDraft("کلید پیش‌نویس نمره معتبر نیست.");
+      if (!Array.isArray(raw) && (!raw || typeof raw !== "object"))
+        throw invalidDraft("ساختار پیش‌نویس نمره معتبر نیست.");
       const row = {
         key,
         workspace: match[1],
-        generation: Array.isArray(raw) ? 0 : Number(raw?.generation || 0),
-        entries: Array.isArray(raw) ? raw : raw?.entries || [],
-        updatedAt: raw?.updatedAt || "",
+        generation: Array.isArray(raw) ? 0 : Number(raw.generation ?? 0),
+        entries: Array.isArray(raw) ? raw : raw.entries,
+        updatedAt: Array.isArray(raw) ? "" : (raw.updatedAt ?? ""),
       };
       if (
-        !Array.isArray(row.entries) ||
-        !row.entries.every(isSupportedGradeDraft) ||
         !Number.isSafeInteger(row.generation) ||
-        row.generation < 0
+        row.generation < 0 ||
+        typeof row.updatedAt !== "string"
       )
-        return;
+        throw invalidDraft("نسخه یا زمان پیش‌نویس نمره معتبر نیست.");
       const old = byKey.get(key);
       if (
         !old ||
@@ -42,8 +67,8 @@ globalThis.EduGradeDrafts = (() => {
       )
         byKey.set(key, row);
     };
-    for (const row of rows) add(row.key, row);
-    for (const row of storedRows) add(row.key, row.value);
+    for (const row of rows) add(row?.key, row);
+    for (const row of storedRows) add(row?.key, row?.value);
     const byTab = new Map();
     for (const row of byKey.values()) {
       const tab = row.key.split(".").slice(0, 4).join("."),
@@ -55,8 +80,14 @@ globalThis.EduGradeDrafts = (() => {
       )
         byTab.set(tab, row);
     }
-    return [...byTab.values()].filter((row) => row.entries.length);
+    const selected = [...byTab.values()];
+    for (const row of selected) assertEntries(row.entries);
+    return selected.filter((row) => row.entries.length);
   }
-  return Object.freeze({ isSupportedGradeDraft, portableGradeDrafts });
+  return Object.freeze({
+    isSupportedGradeDraft,
+    assertEntries,
+    portableGradeDrafts,
+  });
 })();
 //# sourceMappingURL=grade-drafts.js.map

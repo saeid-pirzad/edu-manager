@@ -273,3 +273,95 @@ test("service worker blocks updates with another app window and permits retry af
   await request();
   assert.equal(activations, 1);
 });
+
+for (const malformed of [false, true]) {
+  test(
+    "other-session draft list rejects the newest " +
+      (malformed ? "malformed" : "unknown-kind") +
+      " winner instead of hiding it or reviving older input",
+    async () => {
+      const f = draftsFixture(),
+        old = {
+          key: "Edu24.drafts.A.other.old",
+          entries: [f.item],
+          generation: 1,
+          updatedAt: "2026-11-03T00:00:00Z",
+        },
+        newer = {
+          key: "Edu24.drafts.A.other.new",
+          entries: malformed ? {} : [{ ...f.item, kind: "future" }],
+          generation: 2,
+          updatedAt: "2026-11-03T01:00:00Z",
+        };
+      f.c.persistedGradeDrafts = async () => [old, newer];
+      await assert.rejects(
+        f.c.openOtherDrafts(),
+        (error) => error.code === "GRADE_DRAFT_INVALID",
+      );
+      assert.equal(f.modals.length, 0);
+      assert.equal(f.writes.length, 0);
+    },
+  );
+}
+test("newest empty other-session row suppresses older unsupported input before content validation", async () => {
+  const f = draftsFixture();
+  f.c.persistedGradeDrafts = async () => [
+    {
+      key: "Edu24.drafts.A.other.old",
+      entries: [{ ...f.item, kind: "future" }],
+      generation: 1,
+      updatedAt: "2026-11-03T00:00:00Z",
+    },
+    {
+      key: "Edu24.drafts.A.other.new",
+      entries: [],
+      generation: 2,
+      updatedAt: "2026-11-03T01:00:00Z",
+    },
+  ];
+  await f.c.openOtherDrafts();
+  assert.equal(f.modals.length, 1);
+});
+test("draft adoption rejects unknown kinds before any local mutation or source consumption", async () => {
+  const f = draftsFixture();
+  f.c.persistedGradeDrafts = async () => [
+    { key: f.key, entries: [{ ...f.item, kind: "future" }] },
+  ];
+  await assert.rejects(
+    f.c.adoptDrafts(f.key),
+    (error) => error.code === "GRADE_DRAFT_INVALID",
+  );
+  assert.equal(f.c.drafts.size, 0);
+  assert.equal(f.writes.length, 0);
+  assert.equal(f.consumed(), 0);
+});
+test("draft adoption preserves long invalid strings as review input without truncation", async () => {
+  const f = draftsFixture(),
+    value = "9".repeat(101);
+  f.c.persistedGradeDrafts = async () => [
+    { key: f.key, entries: [{ ...f.item, value }] },
+  ];
+  await f.c.adoptDrafts(f.key);
+  assert.equal([...f.c.drafts.values()][0].value, value);
+  assert.equal([...f.c.drafts.values()][0].review, true);
+  assert.equal(f.consumed(), 1);
+});
+for (const operation of ["adoptDrafts", "openOtherDrafts"]) {
+  test(
+    operation + " captures installation before awaiting another session rows",
+    async () => {
+      const f = draftsFixture();
+      f.c.installationToken = "epoch-a";
+      const pending = f.c[operation](f.key);
+      f.c.installationToken = "epoch-b";
+      f.gate.resolve();
+      await assert.rejects(
+        pending,
+        (error) => error.code === "INSTALLATION_CHANGED",
+      );
+      assert.equal(f.c.drafts.size, 0);
+      assert.equal(f.writes.length, 0);
+      assert.equal(f.modals.length, 0);
+    },
+  );
+}

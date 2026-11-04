@@ -10,7 +10,13 @@ function fixture() {
     writes = 0,
     aborts = 0,
     fail = false;
-  let stored = null;
+  let stored = null,
+    snapshots = 0,
+    sourceReads = 0,
+    pollCallback = null,
+    pollDelay = null,
+    debounceCallback = null,
+    debounceDelay = null;
   const deliveries = [];
   const handle = {
     name: "EduManager-data.json",
@@ -45,10 +51,22 @@ function fixture() {
     document: { getElementById: () => null },
     window: { showSaveFilePicker: async () => handle },
     navigator: {},
-    setInterval: () => 1,
-    clearInterval() {},
-    setTimeout: () => 1,
-    clearTimeout() {},
+    setInterval(callback, delay) {
+      pollCallback = callback;
+      pollDelay = delay;
+      return 1;
+    },
+    clearInterval() {
+      pollCallback = null;
+    },
+    setTimeout(callback, delay) {
+      debounceCallback = callback;
+      debounceDelay = delay;
+      return 1;
+    },
+    clearTimeout() {
+      debounceCallback = null;
+    },
     confirm: () => true,
     esc: (value) =>
       String(value)
@@ -102,11 +120,21 @@ function fixture() {
         };
       },
     },
-    snapshotInstallation: async () => ({
-      format: "EduManager.FullBackup",
-      exportedAt: new Date().toISOString(),
-      stores: { records: [{ value: 1 }] },
-    }),
+    sourceValue: 1,
+    readBackupSourceSignature: async () => {
+      sourceReads++;
+      return "source:" + context.sourceValue;
+    },
+    snapshotInstallation: async ({ onSourceSignature } = {}) => {
+      snapshots++;
+      const value = context.sourceValue;
+      onSourceSignature?.("source:" + value);
+      return {
+        format: "EduManager.FullBackup",
+        exportedAt: new Date().toISOString(),
+        stores: { records: [{ value }] },
+      };
+    },
   });
   vm.runInContext(
     fs.readFileSync(
@@ -127,6 +155,30 @@ function fixture() {
     },
     get aborts() {
       return aborts;
+    },
+    get snapshots() {
+      return snapshots;
+    },
+    get sourceReads() {
+      return sourceReads;
+    },
+    get pollDelay() {
+      return pollDelay;
+    },
+    get debounceDelay() {
+      return debounceDelay;
+    },
+    async tick() {
+      assert.equal(typeof pollCallback, "function");
+      pollCallback();
+      await vm.runInContext("singleFileWriting", context);
+    },
+    async runDebounce() {
+      assert.equal(typeof debounceCallback, "function");
+      const callback = debounceCallback;
+      debounceCallback = null;
+      callback();
+      await vm.runInContext("singleFileWriting", context);
     },
     externalEdit() {
       contents = "external";
@@ -809,3 +861,154 @@ for (const duringStream of [false, true]) {
     },
   );
 }
+
+test("three unchanged automatic poll ticks perform only source checks and no full snapshots or writes", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  const initial = f.contents,
+    delivered = f.deliveries.length;
+  for (let tick = 0; tick < 3; tick++) await f.tick();
+  assert.equal(f.snapshots, 1);
+  assert.equal(f.sourceReads, 3);
+  assert.equal(f.writes, 1);
+  assert.equal(f.contents, initial);
+  assert.equal(f.deliveries.length, delivered);
+  assert.equal(f.pollDelay, 30000);
+});
+
+test("manual save and explicit permission retry still force a full confirmed write when data is unchanged", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  await f.tick();
+  assert.equal(f.snapshots, 1);
+  assert.equal(await f.context.syncSingleFile(), true);
+  assert.equal(await f.context.resumeSingleFile(), true);
+  assert.equal(f.snapshots, 3);
+  assert.equal(f.writes, 3);
+  assert.equal(f.deliveries.length, 3);
+});
+
+test("a changed source causes exactly one new compact automatic snapshot and subsequent idle ticks skip it", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  f.context.sourceValue = 2;
+  await f.tick();
+  assert.equal(JSON.parse(f.contents).stores.records[0].value, 2);
+  assert.equal(f.writes, 2);
+  assert.equal(f.snapshots, 2);
+  assert.equal(f.contents, JSON.stringify(JSON.parse(f.contents)));
+  await f.tick();
+  assert.equal(f.snapshots, 2);
+  assert.equal(f.writes, 2);
+});
+
+test("a source mutation during the stream is not marked clean and schedules a catch-up snapshot", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  f.context.sourceValue = 2;
+  const create = f.handle.createWritable;
+  let mutate = true;
+  f.handle.createWritable = async () => {
+    const stream = await create(),
+      write = stream.write;
+    stream.write = async (value) => {
+      await write(value);
+      if (mutate) {
+        mutate = false;
+        f.context.sourceValue = 3;
+        f.context.scheduleSingleFile();
+      }
+    };
+    return stream;
+  };
+  await f.tick();
+  assert.equal(JSON.parse(f.contents).stores.records[0].value, 2);
+  assert.equal(
+    vm.runInContext("singleFileSavedSource.signature", f.context),
+    "source:2",
+  );
+  assert.equal(f.debounceDelay, 2000);
+  await f.runDebounce();
+  assert.equal(JSON.parse(f.contents).stores.records[0].value, 3);
+  assert.equal(f.snapshots, 3);
+  assert.equal(f.writes, 3);
+  await f.tick();
+  assert.equal(f.snapshots, 3);
+});
+
+test("an edit arriving after capture but before snapshot return is detected on the next automatic tick", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  f.context.sourceValue = 2;
+  const snapshot = f.context.snapshotInstallation;
+  f.context.snapshotInstallation = async (options) => {
+    const captured = await snapshot(options);
+    f.context.sourceValue = 3;
+    return captured;
+  };
+  await f.tick();
+  assert.equal(JSON.parse(f.contents).stores.records[0].value, 2);
+  assert.equal(
+    vm.runInContext("singleFileSavedSource.signature", f.context),
+    "source:2",
+  );
+  f.context.snapshotInstallation = snapshot;
+  await f.tick();
+  assert.equal(JSON.parse(f.contents).stores.records[0].value, 3);
+  assert.equal(f.writes, 3);
+});
+
+test("external file edits are rejected even when the automatic source fingerprint is otherwise unchanged", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  f.externalEdit();
+  await f.tick();
+  assert.equal(f.contents, "external");
+  assert.equal(f.writes, 1);
+  assert.equal(f.snapshots, 1);
+  assert.equal(vm.runInContext("singleFileFailure", f.context), true);
+  assert.match(vm.runInContext("singleFileMessage", f.context), /بیرون/);
+});
+
+for (const code of ["GRADE_DRAFT_INVALID", "BACKUP_DRAFT_UNREADABLE"]) {
+  test(
+    "the automatic clean check never hides " +
+      code +
+      " behind an unchanged signature",
+    async () => {
+      const f = fixture();
+      await f.context.chooseSingleFile();
+      const initial = f.contents;
+      f.context.readBackupSourceSignature = async () => {
+        throw Object.assign(Error("Synthetic invalid draft"), { code });
+      };
+      await f.tick();
+      assert.equal(f.snapshots, 1);
+      assert.equal(f.writes, 1);
+      assert.equal(f.contents, initial);
+      assert.equal(vm.runInContext("singleFileFailure", f.context), true);
+      assert.match(
+        vm.runInContext("singleFileMessage", f.context),
+        /Synthetic invalid draft/,
+      );
+    },
+  );
+}
+
+test("automatic idle checks still reject a replaced installation before reading or writing the source", async () => {
+  const f = fixture();
+  let epoch = "old";
+  f.context.installationToken = "old";
+  f.context.durableInstallationToken = "old";
+  f.context.readRecord = async (store) =>
+    store === "records" ? { value: { token: epoch } } : f.getStored();
+  await f.context.chooseSingleFile();
+  const initial = f.contents;
+  epoch = "replacement";
+  await f.tick();
+  assert.equal(f.contents, initial);
+  assert.equal(f.sourceReads, 0);
+  assert.equal(f.snapshots, 1);
+  assert.equal(f.writes, 1);
+  assert.match(vm.runInContext("singleFileMessage", f.context), /جایگزین/);
+});

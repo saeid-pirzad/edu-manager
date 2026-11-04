@@ -148,7 +148,23 @@ test("full-backup preview also preserves the accepted source when modal replacem
               data: { sessions: [] },
             },
           ],
-          { normalize: (value) => value },
+          {
+            normalize: (value) => value,
+            prepare: (value) => ({
+              value,
+              periods: [
+                {
+                  period: {
+                    id: "saved",
+                    year: "1405-1406",
+                    term: "\u0627\u0648\u0644",
+                    closed: false,
+                  },
+                  data: { sessions: [] },
+                },
+              ],
+            }),
+          },
         ),
     },
     backupStores: [],
@@ -274,3 +290,40 @@ for (const changedContext of [
     assert.equal(c.busy, 0);
   });
 }
+
+test("import preview cannot be reused after replacement even if period and revision are identical", async () => {
+  const f = fixture();
+  f.c.installationToken = "epoch-b";
+  f.c.pendingImport.installation = "epoch-a";
+  await assert.rejects(
+    f.c.confirmImport(),
+    (error) => error.code === "INSTALLATION_CHANGED",
+  );
+  assert.equal(f.writes.length, 0);
+});
+test("import intent rechecks its frozen installation after awaited safety backup", async () => {
+  const f = fixture();
+  f.c.installationToken = "epoch-a";
+  f.c.pendingImport.installation = "epoch-a";
+  f.c.putBackup = async () => {
+    f.c.installationToken = "epoch-b";
+  };
+  await assert.rejects(
+    f.c.confirmImport(),
+    (error) => error.code === "INSTALLATION_CHANGED",
+  );
+  assert.equal(f.writes.length, 0);
+});
+test("normal import passes the preview installation explicitly to atomic persistence", async () => {
+  const f = fixture();
+  f.c.installationToken = "epoch-a";
+  f.c.pendingImport.installation = "epoch-a";
+  let options;
+  f.c.commitRecords = async (_records, value) => {
+    options = value;
+    f.c.workspace.revision++;
+    return true;
+  };
+  await f.c.confirmImport();
+  assert.equal(options.expectedInstallation, "epoch-a");
+});

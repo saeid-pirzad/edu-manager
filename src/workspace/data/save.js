@@ -7,6 +7,9 @@ async function commitRecords(
     keepUndo = true,
     directoryRevisions,
     scheduleResolution = false,
+    expectedInstallation = typeof installationToken === "undefined"
+      ? ""
+      : installationToken,
   } = {},
   historicalUndo = null,
 ) {
@@ -18,6 +21,8 @@ async function commitRecords(
     sourceConnection = connection,
     sourceCommitted = committed;
   const isCurrentCommit = () =>
+    (typeof installationToken === "undefined" ? "" : installationToken) ===
+      expectedInstallation &&
     workspace === sourceWorkspace &&
     workspace.revision === sourceRevision &&
     connection === sourceConnection &&
@@ -81,6 +86,7 @@ async function commitRecords(
   try {
     nextCatalog = await EduRecordTransaction.commit({
       connection: sourceConnection,
+      expectedInstallation,
       workspace: sourceWorkspace,
       records,
       changed,
@@ -101,7 +107,10 @@ async function commitRecords(
       restoredSessionRecords: historicalRecords,
     });
   } catch (error) {
-    if (error.code === "WORKSPACE_CONFLICT" && isCurrentCommit())
+    if (
+      ["WORKSPACE_CONFLICT", "INSTALLATION_CHANGED"].includes(error.code) &&
+      isCurrentCommit()
+    )
       blocked = true;
     throw error;
   }
@@ -127,7 +136,13 @@ async function commitRecords(
     }
     workspace = nextCatalog;
   }
-  if (connection === sourceConnection && !resetBusy && !connectionRetired) {
+  if (
+    (typeof installationToken === "undefined" ? "" : installationToken) ===
+      expectedInstallation &&
+    connection === sourceConnection &&
+    !resetBusy &&
+    !connectionRetired
+  ) {
     broadcast({ workspace: nextCatalog.id, revision: nextCatalog.revision });
     for (const change of annualChanged)
       broadcast({ ...change, annualModular: true });
@@ -152,8 +167,12 @@ function saveDBV24(scope = {}) {
     return Promise.reject(Error("ابتدا وارد ترم شوید؛ تغییر ثبت نشد."));
   const generation = writeFailureGeneration,
     targetWorkspace = workspace?.id,
-    targetConnection = connection;
+    targetConnection = connection,
+    expectedInstallation =
+      typeof installationToken === "undefined" ? "" : installationToken;
   const isCurrentTarget = () =>
+    (typeof installationToken === "undefined" ? "" : installationToken) ===
+      expectedInstallation &&
     workspace?.id === targetWorkspace &&
     connection === targetConnection &&
     !periodLoading &&
@@ -176,6 +195,7 @@ function saveDBV24(scope = {}) {
       refreshAcademicYearWarnings(db);
       await commitRecords(collectRecords(db, scope), {
         ...scope,
+        expectedInstallation,
         replace: !scope.classId && !scope.sessionId,
       });
       if (!isCurrentTarget()) return;

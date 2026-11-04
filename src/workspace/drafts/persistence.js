@@ -23,16 +23,21 @@ async function persistedGradeDrafts(prefix) {
   const add = (key, raw) => {
     const entry = {
       key,
-      entries: Array.isArray(raw) ? raw : raw?.entries || [],
+      entries: Array.isArray(raw) ? raw : raw?.entries,
       generation: Array.isArray(raw) ? 0 : Number(raw?.generation || 0),
-      updatedAt: raw?.updatedAt || "",
+      updatedAt: Array.isArray(raw) ? "" : (raw?.updatedAt ?? ""),
     };
     if (
-      !Array.isArray(entry.entries) ||
       !Number.isSafeInteger(entry.generation) ||
-      entry.generation < 0
+      entry.generation < 0 ||
+      typeof entry.updatedAt !== "string"
     )
-      throw Error("ساختار پیش‌نویس معتبر نیست.");
+      throw Object.assign(
+        Error(
+          "نسخه یا زمان پیش‌نویس معتبر نیست؛ نسخهٔ خام را برای بررسی دریافت کنید.",
+        ),
+        { code: "GRADE_DRAFT_INVALID" },
+      );
     const previous = records.get(key);
     if (
       !previous ||
@@ -42,27 +47,52 @@ async function persistedGradeDrafts(prefix) {
     )
       records.set(key, entry);
   };
-  let unreadable = false;
+  let unreadable = false,
+    unavailable = false;
   try {
-    for (const key of Object.keys(localStorage).filter((key) =>
-      key.startsWith(prefix),
-    ))
+    for (const key of Object.keys(localStorage).filter(
+      (key) =>
+        key === prefix ||
+        key.startsWith(prefix + ".") ||
+        (prefix.endsWith(".") && key.startsWith(prefix)),
+    )) {
+      let raw;
       try {
-        add(key, JSON.parse(localStorage.getItem(key)));
+        raw = localStorage.getItem(key);
+      } catch {
+        unavailable = true;
+        continue;
+      }
+      try {
+        add(key, JSON.parse(raw));
       } catch {
         unreadable = true;
       }
+    }
   } catch {
-    unreadable = true;
+    unavailable = true;
   }
   if (connection?.objectStoreNames.contains("drafts")) {
     const tx = connection.transaction("drafts", "readonly");
     const rows = await requestPromise(
       tx.objectStore("drafts").index("workspace").getAll(workspace.id),
     );
-    for (const row of rows) if (row.key.startsWith(prefix)) add(row.key, row);
+    for (const row of rows)
+      if (
+        row.key === prefix ||
+        row.key.startsWith(prefix + ".") ||
+        (prefix.endsWith(".") && row.key.startsWith(prefix))
+      )
+        add(row.key, row);
   }
-  if (unreadable && !records.size)
+  if (unreadable)
+    throw Object.assign(
+      Error(
+        "خواندن یکی از پیش‌نویس‌های قبلی انجام نشد؛ نسخهٔ قدیمی جایگزین آن نشد. نسخهٔ خام را برای بررسی دریافت کنید.",
+      ),
+      { code: "GRADE_DRAFT_INVALID" },
+    );
+  if (unavailable && !records.size)
     throw Error("خواندن پیش‌نویس‌های قبلی انجام نشد.");
   return [...records.values()];
 }
@@ -191,9 +221,10 @@ async function loadDrafts() {
         b.generation - a.generation || b.updatedAt.localeCompare(a.updatedAt),
     );
     const saved = records[0];
+    // Validate only the selected generation; an older row must never replace it.
+    EduGradeDrafts.assertEntries(saved ? saved.entries : []);
     draftGeneration = (saved?.generation || 0) + 1;
     for (const original of saved?.entries || []) {
-      if (!isSupportedGradeDraft(original)) continue;
       const stale =
         !Number.isInteger(original.baseRevision) ||
         original.baseRevision !== workspace.revision;

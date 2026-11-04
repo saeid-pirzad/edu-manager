@@ -31,6 +31,7 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
   async commit(options) {
     const {
       connection,
+      expectedInstallation = "",
       records,
       changed,
       removed,
@@ -236,8 +237,21 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
       }
     };
     try {
+      const epoch = tx.objectStore("records").get("@installation-reset");
+      epoch.onsuccess = () => {
+        if ((epoch.result?.value?.token || "") !== expectedInstallation)
+          abort(
+            Object.assign(
+              Error(
+                "اطلاعات در پنجرهٔ دیگری جایگزین شده است؛ صفحه را دوباره باز کنید.",
+              ),
+              { code: "INSTALLATION_CHANGED" },
+            ),
+          );
+      };
       const request = tx.objectStore("catalog").getAll();
       request.onsuccess = () => {
+        if (failure) return;
         try {
           const catalog = request.result,
             live = catalog.find((row) => row.id === workspace.id);

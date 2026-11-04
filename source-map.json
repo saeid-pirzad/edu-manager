@@ -351,10 +351,12 @@
     {
       "output": "assets/scripts/deputy-exchange.js",
       "scope": "global",
-      "sources": [
-        "src/domain/deputy-export-identity.js",
-        "src/domain/deputy-exchange.js"
-      ]
+      "sources": ["src/domain/deputy-export-identity.js"]
+    },
+    {
+      "output": "assets/scripts/deputy-exchange-legacy.js",
+      "scope": "global",
+      "sources": ["src/domain/deputy-exchange.js"]
     },
     {
       "output": "assets/scripts/icons.js",

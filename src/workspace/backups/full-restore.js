@@ -20,8 +20,9 @@ function previewFullBackup(value, { sourceName = "", legacy = false } = {}) {
     previousSignature = pendingFullBackupSignature;
   pendingFullBackup = null;
   pendingFullBackupSignature = "";
-  value = validateFullBackup.normalize(value);
-  const periods = validateFullBackup(value);
+  const prepared = validateFullBackup.prepare(value);
+  value = prepared.value;
+  const periods = prepared.periods;
   const termRole = (period) => {
     const base = String(period.term).split(" — بازیابی ")[0];
     return (

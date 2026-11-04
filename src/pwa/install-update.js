@@ -306,7 +306,10 @@
     closeInstallNotice();
     paint();
   });
-  window.addEventListener("online", paint);
+  window.addEventListener("online", () => {
+    paint();
+    if (registration) status();
+  });
   window.addEventListener("offline", paint);
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible" && navigator.onLine)
