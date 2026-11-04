@@ -40,6 +40,10 @@ function fixture(filter = {}) {
     render() {},
   });
   vm.runInContext(
+    fs.readFileSync(path.join(__dirname, "../src/core/icons.js"), "utf8"),
+    c,
+  );
+  vm.runInContext(
     fs.readFileSync(
       path.join(__dirname, "../src/legacy/reports/student.js"),
       "utf8",

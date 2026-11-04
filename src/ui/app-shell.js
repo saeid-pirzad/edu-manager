@@ -140,6 +140,7 @@
             ".session-open,.session-setup-recent-item,.entity-enter,.lesson-enter,.header-home",
           ),
         name =
+          (control.matches(".grade-clear") ? "eraser" : null) ||
           glyph?.[0] ||
           (Object.hasOwn(ids, control.id) ? ids[control.id] : null) ||
           (Object.hasOwn(actions, control.dataset.workspaceAction)

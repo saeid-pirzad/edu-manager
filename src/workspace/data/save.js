@@ -6,7 +6,6 @@ async function commitRecords(
     allowClosed = false,
     keepUndo = true,
     directoryRevisions,
-    scheduleResolution = false,
     expectedInstallation = typeof installationToken === "undefined"
       ? ""
       : installationToken,
@@ -61,7 +60,7 @@ async function commitRecords(
     committed,
     { replace },
   );
-  if (!changed.length && !removed.length && !scheduleResolution) return;
+  if (!changed.length && !removed.length) return;
   // Keep legacy dates readable/editable, but never introduce a new out-of-year
   // session or move an existing session to a different out-of-year date.
   const academicYear =
@@ -102,7 +101,6 @@ async function commitRecords(
       historicalRoster,
       directorySourceUpdates,
       directoryRevisions,
-      scheduleResolution,
       recoveredUndo: historicalUndo?.recoveredPeers,
       restoredSessionRecords: historicalRecords,
     });

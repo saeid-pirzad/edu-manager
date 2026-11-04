@@ -47,6 +47,7 @@ async function fixture() {
         c.html = html;
       },
     });
+  vm.runInContext(source("core/icons.js"), c);
   vm.runInContext(source("workspace/periods/year-editor.js"), c);
   await c.openAcademicYear();
   return { c, rows };

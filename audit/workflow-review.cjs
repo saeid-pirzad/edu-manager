@@ -212,6 +212,12 @@ if (process.argv.includes("--help")) {
         cases,
         delay,
       });
+      await require("./karnameh-excel-browser.cjs")({
+        cdp,
+        evaluate,
+        cases,
+        delay,
+      });
       await require("./karnameh-grid-browser.cjs")({
         cdp,
         evaluate,

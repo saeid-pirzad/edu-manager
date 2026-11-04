@@ -258,6 +258,10 @@ async function adoptDrafts(key) {
 
 function broadcast(message) {
   try {
+    if (typeof invalidateKarnamehExcelShare === "function")
+      invalidateKarnamehExcelShare(message);
+  } catch (ignore) {}
+  try {
     if (channel) channel.postMessage(message);
   } catch (ignore) {}
 }

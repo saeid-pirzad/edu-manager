@@ -102,6 +102,8 @@ function installUI() {
         return;
       }
       if (tabMessage(message)) return;
+      if (typeof invalidateKarnamehExcelShare === "function")
+        invalidateKarnamehExcelShare(message);
       window.EduPeriodicReports?.workspaceChanged?.(message);
       assessmentContext.workspaceChanged(message);
       invalidateYearNotesScope(message);

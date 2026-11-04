@@ -85,7 +85,13 @@ test("workspace actions dispatch explicit commands, parameters and private form 
 });
 test("workspace dispatch ignores unknown, disabled, inert and outside controls", () => {
   const f = fixture();
-  for (const action of ["constructor", "toString", "eval", "openPeriods()"])
+  for (const action of [
+    "constructor",
+    "toString",
+    "eval",
+    "openPeriods()",
+    "apply-academic-schedule",
+  ])
     f.click(action);
   for (const options of [
     { disabled: true },
@@ -95,6 +101,7 @@ test("workspace dispatch ignores unknown, disabled, inert and outside controls",
     f.click("periods", {}, options);
   assert.equal(f.submit("unknown"), true);
   assert.deepEqual(f.calls, []);
+  assert.deepEqual(f.errors, []);
 });
 test("workspace dispatch rejects invalid numeric parameters and handles async failures", async () => {
   const f = fixture();

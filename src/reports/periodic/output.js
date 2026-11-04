@@ -87,6 +87,9 @@ root.EduPeriodicReports = {
   },
   generate,
   output,
+  createWorkbook(sheets) {
+    return xlsxWorkbook(sheets);
+  },
   sharePreparedExcel,
   downloadPreparedExcel,
   build,

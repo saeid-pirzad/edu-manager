@@ -540,20 +540,19 @@
   function scheduleHasChanges(previous, current) {
     return !same(scheduleProjection(previous), scheduleProjection(current));
   }
-  function mirrorSchedule(previous, current, target, { replace = false } = {}) {
+  function mirrorSchedule(previous, current, target) {
     const before = scheduleProjection(previous),
       after = scheduleProjection(current),
       existing = scheduleProjection(target),
       result = copy(target);
     for (const field of Object.keys(after)) {
-      if (!replace && same(before[field], after[field])) continue;
+      if (same(before[field], after[field])) continue;
       if (
-        !replace &&
         !same(existing[field], before[field]) &&
         !same(existing[field], after[field])
       ) {
         const error = Error(
-          "برنامهٔ هفتگی قدیمی در نوبت‌های سال متفاوت است؛ برنامهٔ درست را بررسی و «یکسان‌سازی برنامهٔ سال تحصیلی» را تأیید کنید.",
+          "برنامهٔ هفتگی نوبت‌های این سال متفاوت است؛ برای جلوگیری از جایگزینی ناخواسته، تغییر ثبت نشد و برنامه‌های قبلی حفظ شدند.",
         );
         error.code = "ACADEMIC_SCHEDULE_CONFLICT";
         throw error;

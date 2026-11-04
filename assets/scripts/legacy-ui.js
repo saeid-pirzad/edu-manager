@@ -2002,7 +2002,7 @@ function renderKarnamehTabHtml() {
     <label for="karnamehSchool">مدرسه<select id="karnamehSchool" data-legacy-change="reports-student:0"><option value="">همه مدارس</option>${db.schools.map((school) => `<option value="${esc(school.id)}" ${karnamehFilter.schoolId === school.id ? "selected" : ""}>${esc(school.name)}</option>`).join("")}</select></label>
     <label for="karnamehClass">کلاس<select id="karnamehClass" data-legacy-change="reports-student:1" ${classes.length ? "" : "disabled"}><option value="">${classes.length ? "کلاس را انتخاب کنید" : "هنوز کلاسی ثبت نشده"}</option>${groups}</select></label>
     <label for="karnamehStudent">نمایش کارنامه<select id="karnamehStudent" data-legacy-change="reports-student:2" ${selected ? "" : "disabled"}><option value="">${selected ? "هنرجو را انتخاب کنید" : "ابتدا کلاس را انتخاب کنید"}</option>${students.map((student) => `<option value="${esc(student.id)}" ${karnamehFilter.studentId === student.id ? "selected" : ""}>${esc(student.name)}${selected.class.students.some((item) => item.id === student.id) ? "" : " — بایگانی"}</option>`).join("")}</select></label>
-    </div></section><div id="karnamehTabOutput" aria-live="polite"></div>`;
+    </div><div class="karnameh-export-actions"><button type="button" data-workspace-action="karnameh-excel" ${selected && students.length ? "" : "disabled"}>${EduIcons.html("download")}<span>خروجی اکسل نمرات</span></button></div></section><div id="karnamehTabOutput" aria-live="polite"></div>`;
 }
 function updateKarnamehFilter(key, val) {
   karnamehFilter[key] = val;
@@ -4471,33 +4471,39 @@ function renderMaster() {
       (e) => e && (!state.masterFilter || e.classId === state.masterFilter),
     ).length;
     h +=
-      '</nav><div class="week-day-heading"><h3>' +
+      '</nav><header class="week-day-heading"><div class="week-day-identity"><span class="week-day-symbol no-print" aria-hidden="true">' +
+      EduIcons.html("calendar-week") +
+      "</span><h3>" +
       esc(DAYS[selected]) +
-      "</h3><span>" +
+      '</h3></div><dl class="week-day-stats" aria-label="خلاصهٔ زنگ‌های روز"><div class="week-day-stat is-scheduled"><dt>دارای برنامه</dt><dd>' +
       number(count) +
-      " زنگ دارای برنامه · " +
+      '</dd></div><div class="week-day-stat"><dt>کل زنگ‌ها</dt><dd>' +
       number(periods) +
-      ' زنگ</span></div><div class="week-slot-list">';
+      '</dd></div></dl></header><div class="week-slot-list">';
     for (let p = 0; p < periods; p++) h += slot(selected, p);
     h += "</div></section>";
   }
   h +=
     '<details class="card week-settings no-print" ' +
     (state.masterSettingsOpen ? "open" : "") +
-    ' data-legacy-toggle="week-settings-toggle"><summary>تنظیمات روزها و زنگ‌ها</summary><section><h4>روزهای کاری</h4><p>روزهای تدریس خود را مشخص کنید.</p><div class="week-working-days">';
+    ' data-legacy-toggle="week-settings-toggle"><summary><span class="week-settings-heading"><span class="week-settings-symbol" aria-hidden="true">' +
+    EduIcons.html("settings") +
+    '</span><span class="week-settings-title"><strong>تنظیمات روزها و زنگ‌ها</strong><small>روزهای تدریس، تعداد زنگ‌ها و مبنای هفته</small></span></span></summary><div class="week-settings-body"><section class="week-settings-days"><h4><span class="week-setting-icon" aria-hidden="true">' +
+    EduIcons.html("calendar-week") +
+    '</span>روزهای کاری</h4><p>روزهای تدریس خود را مشخص کنید.</p><div class="week-working-days">';
   for (const [i, day] of DAYS.entries())
     h +=
       `<label><input type="checkbox" ${days.includes(i) ? "checked" : ""} data-legacy-change="schedule-timetable:5" data-legacy-change-arg1="${esc(i)}"><span>` +
       esc(day) +
       "</span></label>";
   h +=
-    `</div></section><section><h4>تعداد زنگ‌های روزانه</h4><div class="week-period-controls"><button class="ghost" data-legacy-click="schedule-timetable:6" aria-label="کاهش تعداد زنگ"><svg class="week-step-icon" width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 10h12"/></svg></button><strong>` +
+    `</div></section><section class="week-settings-periods"><h4><span class="week-setting-icon" aria-hidden="true">${EduIcons.html("clock")}</span>تعداد زنگ‌های روزانه</h4><p>تعداد زنگ‌های هر روز را مشخص کنید.</p><div class="week-period-controls"><button class="ghost" data-legacy-click="schedule-timetable:6" aria-label="کاهش تعداد زنگ"><svg class="week-step-icon" width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 10h12"/></svg></button><strong>` +
     number(periods) +
-    ` زنگ</strong><button class="ghost" data-legacy-click="schedule-timetable:7" aria-label="افزایش تعداد زنگ"><svg class="week-step-icon" width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 10h12"/><path d="M10 4v12"/></svg></button></div><p class="week-save-hint">تغییر روزها و تعداد زنگ‌ها خودکار ذخیره می‌شود.</p></section><section><h4>مبنای هفته‌های فرد و زوج</h4><p>تاریخ شنبه‌ای را انتخاب کنید که مبنای محاسبه هفته‌ها باشد.</p><div class="week-start-date"><label>تاریخ شروع<input type="date" id="weekStartInput" data-mutating="1" value="` +
+    ` زنگ</strong><button class="ghost" data-legacy-click="schedule-timetable:7" aria-label="افزایش تعداد زنگ"><svg class="week-step-icon" width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 10h12"/><path d="M10 4v12"/></svg></button></div><p class="week-save-hint">تغییر روزها و تعداد زنگ‌ها خودکار ذخیره می‌شود.</p></section><section class="week-settings-origin"><h4><span class="week-setting-icon" aria-hidden="true">${EduIcons.html("calendar")}</span>مبنای هفته‌های فرد و زوج</h4><p>تاریخ شنبه‌ای را انتخاب کنید که مبنای محاسبه هفته‌ها باشد.</p><div class="week-start-date"><label>تاریخ شروع<input type="date" id="weekStartInput" data-mutating="1" value="` +
     esc(db.settings.weekStartDate || date) +
     `" data-legacy-change="schedule-timetable:8"></label><span class="shamsi-display" id="shamsiWeekStart">` +
     esc(toShamsi(db.settings.weekStartDate || date)) +
-    `</span><button data-legacy-click="schedule-timetable:9">ذخیره تاریخ مبنا</button></div></section></details>`;
+    `</span><button data-legacy-click="schedule-timetable:9">ذخیره تاریخ مبنا</button></div></section></div></details>`;
   return h;
 }
 

@@ -274,13 +274,6 @@ function renderV24() {
       "سوابق منتقل‌شده نیازمند بررسی: " + db.migrationWarnings.join(" | ");
     app.append(info);
   }
-  if (state.view === "master") {
-    const tools = document.createElement("details");
-    tools.className = "card no-print";
-    tools.innerHTML =
-      '<summary>بررسی اختلاف برنامهٔ قدیمی</summary><p class="muted">اگر برنامه‌های ترم‌های فایل قدیمی متفاوت‌اند، پس از بررسی، برنامهٔ نمایش‌داده‌شده را برای کل همین سال انتخاب کنید. پیش از جایگزینی نسخهٔ ایمنی کامل ذخیره می‌شود.</p><button type="button" class="ghost" data-mutating="1" data-workspace-action="apply-academic-schedule">یکسان‌سازی برنامهٔ سال تحصیلی</button>';
-    app.append(tools);
-  }
   if (fileMode) fileModeBanner(app);
   courseUI.activateCreate();
   applyDrafts();

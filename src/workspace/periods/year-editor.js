@@ -28,6 +28,10 @@ async function openAcademicYear() {
       "</bdi></h4><p>مدرسه‌ها، کلاس‌ها، هنرجویان، درس‌ها و برنامهٔ هفتگی در تمام سال مشترک‌اند.</p></div>" +
       '<p class="period-intro">میان‌ترم اول، پایان‌ترم اول، میان‌ترم دوم و پایان‌ترم دوم را داخل دفتر نمرهٔ همان درس انتخاب کنید؛ برای ادامهٔ کار نیازی به ساخت یا بستن ترم نیست.</p>' +
       continuation +
-      '<details class="period-list"><summary>کارنامه‌های ثابت و قفل نمرات نوبت</summary><p class="period-intro">بستن نوبت اختیاری است و برای ثبت کارنامهٔ ثابت و قفل‌کردن نمرات آن به‌کار می‌رود.</p><button type="button" class="ghost" data-workspace-action="term-records">مدیریت کارنامه‌های ثابت</button></details></div>',
+      '<details class="period-list academic-records"><summary><span class="academic-records-icon" aria-hidden="true">' +
+      EduIcons.html("shield") +
+      '</span><span class="academic-records-copy"><strong>کارنامه‌های ثابت</strong><span>قفل نمرات نوبت</span></span><span class="academic-records-chevron" aria-hidden="true">' +
+      EduIcons.html("chevron-left") +
+      '</span></summary><div class="academic-records-body"><p>بستن نوبت اختیاری است و برای ثبت کارنامهٔ ثابت و قفل‌کردن نمرات آن به‌کار می‌رود.</p><button type="button" class="ghost" data-workspace-action="term-records">مدیریت کارنامه‌های ثابت</button></div></details></div>',
   );
 }

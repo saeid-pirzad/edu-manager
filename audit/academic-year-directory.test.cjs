@@ -750,3 +750,32 @@ test("schedule equivalence ignores object property and active-day display order"
     second,
   );
 });
+
+test("retired schedule replacement option cannot overwrite divergent term fields", () => {
+  const previous = {
+      masterSchedule: {},
+      activeDays: [0, 1, 2, 3, 4, 5],
+      periods: 6,
+      settings: { weekStartDate: "2026-09-19" },
+    },
+    current = { ...clone(previous), activeDays: [0, 2, 4] },
+    target = {
+      ...clone(previous),
+      activeDays: [1, 3],
+      settings: { ...previous.settings, password: "private" },
+    },
+    before = clone({ previous, current, target });
+  assert.throws(
+    () =>
+      directory.mirrorSchedule(previous, current, target, { replace: true }),
+    (error) => error.code === "ACADEMIC_SCHEDULE_CONFLICT",
+  );
+  assert.deepEqual({ previous, current, target }, before);
+  assert.deepEqual(
+    plain(
+      directory.mirrorSchedule(previous, previous, target, { replace: true }),
+    ),
+    target,
+  );
+  assert.deepEqual({ previous, current, target }, before);
+});

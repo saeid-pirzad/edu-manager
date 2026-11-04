@@ -43,7 +43,7 @@ function renderKarnamehTabHtml() {
     <label for="karnamehSchool">مدرسه<select id="karnamehSchool" data-legacy-change="reports-student:0"><option value="">همه مدارس</option>${db.schools.map((school) => `<option value="${esc(school.id)}" ${karnamehFilter.schoolId === school.id ? "selected" : ""}>${esc(school.name)}</option>`).join("")}</select></label>
     <label for="karnamehClass">کلاس<select id="karnamehClass" data-legacy-change="reports-student:1" ${classes.length ? "" : "disabled"}><option value="">${classes.length ? "کلاس را انتخاب کنید" : "هنوز کلاسی ثبت نشده"}</option>${groups}</select></label>
     <label for="karnamehStudent">نمایش کارنامه<select id="karnamehStudent" data-legacy-change="reports-student:2" ${selected ? "" : "disabled"}><option value="">${selected ? "هنرجو را انتخاب کنید" : "ابتدا کلاس را انتخاب کنید"}</option>${students.map((student) => `<option value="${esc(student.id)}" ${karnamehFilter.studentId === student.id ? "selected" : ""}>${esc(student.name)}${selected.class.students.some((item) => item.id === student.id) ? "" : " — بایگانی"}</option>`).join("")}</select></label>
-    </div></section><div id="karnamehTabOutput" aria-live="polite"></div>`;
+    </div><div class="karnameh-export-actions"><button type="button" data-workspace-action="karnameh-excel" ${selected && students.length ? "" : "disabled"}>${EduIcons.html("download")}<span>خروجی اکسل نمرات</span></button></div></section><div id="karnamehTabOutput" aria-live="polite"></div>`;
 }
 function updateKarnamehFilter(key, val) {
   karnamehFilter[key] = val;

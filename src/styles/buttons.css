@@ -153,6 +153,50 @@
     height: 16px;
     flex-basis: 16px;
   }
+  /* Grade erasers have their own size and a quiet, separated action area. */
+  :is(#app, #modal) .grade-editor button.grade-clear.ui-button {
+    --button-ink: #8c8173;
+    --button-soft: transparent;
+    --button-line: transparent;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--grade-clear-size, 32px);
+    min-width: 0;
+    height: var(--grade-clear-height, 44px);
+    min-height: var(--grade-clear-height, 44px) !important;
+    flex: 0 0 var(--grade-clear-size, 32px);
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    line-height: 0;
+  }
+  :is(#app, #modal) .grade-editor button.grade-clear.ui-button::before {
+    content: "";
+    position: absolute;
+    inset-inline-start: 0;
+    top: 50%;
+    width: 1px;
+    height: 16px;
+    background: #e8e2d8;
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+  :is(#app, #modal) .grade-editor button.grade-clear.ui-button .control-icon,
+  :is(#app, #modal) .grade-editor button.grade-clear.ui-button svg {
+    width: var(--grade-clear-icon, 16px);
+    height: var(--grade-clear-icon, 16px);
+    flex: 0 0 var(--grade-clear-icon, 16px);
+  }
+  :is(#app, #modal)
+    .grade-editor
+    button.grade-clear.ui-button:not(:disabled):is(:hover, :focus-visible) {
+    --button-ink: #ad3342;
+    --button-soft: #fff0f2;
+  }
   :is(#app, #modal, #calPopup, #mobileBar, #pwaWelcome)
     button.ui-button-flat:focus-visible {
     outline: 2px solid var(--button-ink, #79522c);

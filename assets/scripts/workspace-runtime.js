@@ -918,7 +918,7 @@ async function synchronizeAcademicDirectoryForRead(id) {
       year: periods[0].year,
       code: "ACADEMIC_SCHEDULE_CONFLICT",
       message:
-        "برنامهٔ هفتگی قدیمی نوبت‌های این سال متفاوت است؛ سوابق حفظ شدند. در برنامهٔ هفتگی، برنامهٔ درست را بررسی و یکسان‌سازی سال را تأیید کنید.",
+        "برنامهٔ هفتگی نوبت‌های این سال متفاوت است؛ سوابق حفظ شدند و تغییر ناسازگار برنامه ثبت نخواهد شد.",
     });
   try {
     const layout = model.reconcileLayouts(
@@ -1122,7 +1122,6 @@ async function commitRecords(
     allowClosed = false,
     keepUndo = true,
     directoryRevisions,
-    scheduleResolution = false,
     expectedInstallation = typeof installationToken === "undefined"
       ? ""
       : installationToken,
@@ -1177,7 +1176,7 @@ async function commitRecords(
     committed,
     { replace },
   );
-  if (!changed.length && !removed.length && !scheduleResolution) return;
+  if (!changed.length && !removed.length) return;
   // Keep legacy dates readable/editable, but never introduce a new out-of-year
   // session or move an existing session to a different out-of-year date.
   const academicYear =
@@ -1218,7 +1217,6 @@ async function commitRecords(
       historicalRoster,
       directorySourceUpdates,
       directoryRevisions,
-      scheduleResolution,
       recoveredUndo: historicalUndo?.recoveredPeers,
       restoredSessionRecords: historicalRecords,
     });
@@ -1672,7 +1670,11 @@ async function openAcademicYear() {
       "</bdi></h4><p>مدرسه‌ها، کلاس‌ها، هنرجویان، درس‌ها و برنامهٔ هفتگی در تمام سال مشترک‌اند.</p></div>" +
       '<p class="period-intro">میان‌ترم اول، پایان‌ترم اول، میان‌ترم دوم و پایان‌ترم دوم را داخل دفتر نمرهٔ همان درس انتخاب کنید؛ برای ادامهٔ کار نیازی به ساخت یا بستن ترم نیست.</p>' +
       continuation +
-      '<details class="period-list"><summary>کارنامه‌های ثابت و قفل نمرات نوبت</summary><p class="period-intro">بستن نوبت اختیاری است و برای ثبت کارنامهٔ ثابت و قفل‌کردن نمرات آن به‌کار می‌رود.</p><button type="button" class="ghost" data-workspace-action="term-records">مدیریت کارنامه‌های ثابت</button></details></div>',
+      '<details class="period-list academic-records"><summary><span class="academic-records-icon" aria-hidden="true">' +
+      EduIcons.html("shield") +
+      '</span><span class="academic-records-copy"><strong>کارنامه‌های ثابت</strong><span>قفل نمرات نوبت</span></span><span class="academic-records-chevron" aria-hidden="true">' +
+      EduIcons.html("chevron-left") +
+      '</span></summary><div class="academic-records-body"><p>بستن نوبت اختیاری است و برای ثبت کارنامهٔ ثابت و قفل‌کردن نمرات آن به‌کار می‌رود.</p><button type="button" class="ghost" data-workspace-action="term-records">مدیریت کارنامه‌های ثابت</button></div></details></div>',
   );
 }
 // Source: src/workspace/periods/academic-years.js
@@ -4712,13 +4714,6 @@ function renderV24() {
       "سوابق منتقل‌شده نیازمند بررسی: " + db.migrationWarnings.join(" | ");
     app.append(info);
   }
-  if (state.view === "master") {
-    const tools = document.createElement("details");
-    tools.className = "card no-print";
-    tools.innerHTML =
-      '<summary>بررسی اختلاف برنامهٔ قدیمی</summary><p class="muted">اگر برنامه‌های ترم‌های فایل قدیمی متفاوت‌اند، پس از بررسی، برنامهٔ نمایش‌داده‌شده را برای کل همین سال انتخاب کنید. پیش از جایگزینی نسخهٔ ایمنی کامل ذخیره می‌شود.</p><button type="button" class="ghost" data-mutating="1" data-workspace-action="apply-academic-schedule">یکسان‌سازی برنامهٔ سال تحصیلی</button>';
-    app.append(tools);
-  }
   if (fileMode) fileModeBanner(app);
   courseUI.activateCreate();
   applyDrafts();
@@ -5593,67 +5588,6 @@ async function changePeriodsV24(delta) {
   await saveDBV24({ action: "تغییر تعداد زنگ‌های برنامه" });
   if (isCurrent()) render();
   return true;
-}
-
-let academicScheduleApplying = false;
-async function applyAcademicScheduleV24() {
-  if (academicScheduleApplying) return false;
-  academicScheduleApplying = true;
-  try {
-    assertEntityWritable();
-    const isCurrent = preserveScheduleAction();
-    await flushDrafts({ strict: true });
-    await writer.catch(() => {});
-    if (!isCurrent())
-      throw Error("صفحه یا سال تغییر کرده است؛ برنامه را دوباره بررسی کنید.");
-    const full = await snapshotInstallation();
-    if (!isCurrent())
-      throw Error("صفحه یا سال هنگام تهیه پشتیبان تغییر کرده است.");
-    const parts = validateFullBackup(full).filter(
-        ({ period }) => period.year === workspace.year,
-      ),
-      current = parts.find(({ period }) => period.id === workspace.id),
-      model = globalThis.EduAcademicYearDirectory;
-    if (!current || !model)
-      throw Error("اطلاعات برنامهٔ سال تحصیلی آماده نیست.");
-    if (
-      parts.every(({ data }) => !model.scheduleHasChanges(current.data, data))
-    ) {
-      setStatus("برنامهٔ هفتگی همهٔ نوبت‌های این سال یکسان است.", "saved");
-      return false;
-    }
-    if (
-      !confirm(
-        "برنامهٔ نمایش‌داده‌شده، روزهای فعال، تعداد زنگ‌ها و مبنای هفته برای همهٔ نوبت‌های همین سال اعمال شود؟ برنامه‌های قدیمی متفاوت جایگزین می‌شوند؛ نمرات، جلسات و کارنامه‌ها حفظ می‌شوند. پیش از تغییر پشتیبان کامل ایمنی ذخیره می‌شود.",
-      )
-    )
-      return false;
-    await putSafetySnapshot(full, "پیش از یکسان‌سازی برنامهٔ سال تحصیلی", {
-      idPrefix: "before-year-schedule-",
-    });
-    if (!isCurrent())
-      throw Error("صفحه یا سال پس از تهیه نسخهٔ ایمنی تغییر کرده است.");
-    await saveDBV24({
-      action: "یکسان‌سازی صریح برنامهٔ هفتگی سال تحصیلی",
-      scheduleResolution: true,
-      keepUndo: false,
-      directoryRevisions: parts.map(({ period }) => ({
-        id: period.id,
-        year: period.year,
-        revision: period.revision,
-      })),
-    });
-    if (isCurrent()) {
-      render();
-      setStatus(
-        "برنامهٔ هفتگی سال یکسان شد؛ نسخهٔ ایمنی کامل در پشتیبان و بازیابی محفوظ است.",
-        "saved",
-      );
-    }
-    return true;
-  } finally {
-    academicScheduleApplying = false;
-  }
 }
 // Source: src/workspace/backups/local.js
 function handleError(error) {
@@ -10775,6 +10709,884 @@ function parentReportV24(st, c) {
     (mean.average === null ? "—" : mean.average.toFixed(2))
   );
 }
+// Source: src/workspace/reports/karnameh-excel-data.js
+// Pure class/student grade export. The report domain owns every calculation.
+function karnamehExcelSheets({
+  parts = [],
+  schoolId,
+  classroom,
+  studentId = "",
+  year,
+  generatedAt,
+} = {}) {
+  if (!year || !schoolId || !classroom?.id)
+    throw Error("برای دریافت اکسل، سال تحصیلی، مدرسه و کلاس را انتخاب کنید.");
+  const scoped = parts.filter(
+    (part) =>
+      part.period?.year === year && ["اول", "دوم"].includes(part.period.term),
+  );
+  if (new Set(scoped.map((part) => part.period.term)).size !== scoped.length)
+    throw Error("اطلاعات نوبت‌های سال تکراری است؛ کارنامه را دوباره باز کنید.");
+  const locate = (part) =>
+      part.data.schools.find((school) => school.id === schoolId),
+    school = scoped
+      .map(locate)
+      .find((item) => item?.classes.some((c) => c.id === classroom.id));
+  if (!school) throw Error("کلاس در مدرسه و سال تحصیلی انتخاب‌شده موجود نیست.");
+  const prepared = new Date(generatedAt);
+  if (!Number.isFinite(prepared.getTime()))
+    throw Error("زمان تهیهٔ اکسل معتبر نیست.");
+  const students = karnamehReportStudents(classroom).filter(
+    (student) => !studentId || student.id === studentId,
+  );
+  if (studentId && !students.length)
+    throw Error("هنرجو در کلاس انتخاب‌شده موجود نیست.");
+  assertAnnualLessonCompatibility(scoped, schoolId, classroom.id);
+  const lessons = karnamehLessons(scoped, schoolId, classroom),
+    teachers = [
+      ...new Set(
+        lessons
+          .map((lesson) => String(lesson.teacher || "").trim())
+          .filter(Boolean),
+      ),
+    ],
+    active = new Set(classroom.students.map((student) => student.id)),
+    member = (student) => (active.has(student.id) ? "فعال" : "بایگانی"),
+    finite = (value) =>
+      typeof value === "number" && Number.isFinite(value) ? value : null,
+    result = (value) => {
+      if (value?.complete !== true || finite(value.final) === null) return null;
+      // Normal grades stay numeric. Preserve the shared report's explicit text
+      // only when two-decimal Excel formatting would disguise a failed threshold.
+      const display = finalText(value);
+      return display === value.final.toFixed(2) ? value.final : display;
+    },
+    status = (value) =>
+      value?.complete !== true
+        ? "ناقص"
+        : value.passed === false
+          ? "نیازمند جبران"
+          : value.passed === true
+            ? "قبول"
+            : "تکمیل",
+    identity = (student, lesson) => [
+      String(student.code ?? ""),
+      student.name,
+      member(student),
+      lesson.name,
+      String(lesson.teacher || ""),
+    ],
+    preparedAt = new Intl.DateTimeFormat("fa-IR", {
+      calendar: "persian",
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone: "Asia/Tehran",
+    }).format(prepared),
+    scope = studentId
+      ? "هنرجو: " + students[0].name + " · کد " + String(students[0].code ?? "")
+      : "تمام هنرجویان کلاس؛ فعال و بایگانی",
+    banner = [
+      "کارنامهٔ نمرات · " + classroom.name,
+      "مدرسه: " + school.name + " | سال تحصیلی: " + year,
+      "محدوده: " + scope,
+      "تهیه‌شده در " +
+        preparedAt +
+        " | دبیر: " +
+        (teachers.join("، ") || "ثبت‌نشده"),
+    ],
+    sheets = [],
+    sheet = (name, headers, rows, widths) => {
+      sheets.push({
+        name,
+        rows: [headers, ...rows],
+        widths,
+        banner: [...banner],
+      });
+    };
+  sheet(
+    "مشخصات و راهنما",
+    ["عنوان", "مقدار"],
+    [
+      [
+        "نوع گزارش",
+        "کارنامهٔ نمرات سال تحصیلی؛ چهار مرحلهٔ امتحان و نمرات پودمان",
+      ],
+      ["مدرسه", school.name],
+      ["کلاس", classroom.name],
+      ["سال تحصیلی", String(year)],
+      ["محدوده", scope],
+      ["تعداد هنرجویان انتخاب‌شده", students.length],
+      [
+        "نوبت اول",
+        scoped.some((part) => part.period.term === "اول")
+          ? "موجود"
+          : "موجود نیست؛ نمرات این نوبت خالی‌اند",
+      ],
+      [
+        "نوبت دوم",
+        scoped.some((part) => part.period.term === "دوم")
+          ? "موجود"
+          : "موجود نیست؛ نمرات این نوبت خالی‌اند",
+      ],
+      ["دبیر", teachers.join("، ") || "ثبت‌نشده"],
+      ["زمان تهیه (شمسی)", preparedAt],
+      [
+        "ترتیب هنرجویان",
+        "ترتیب ثبت در کلاس؛ پس از هنرجویان فعال، سوابق بایگانی با وضعیت مشخص آمده‌اند.",
+      ],
+      [
+        "نمرات کاردانش",
+        "هر مرحله مستقل از عملی و نظری با ضرایب همان درس محاسبه می‌شود؛ نمرهٔ سالانه در این خروجی وجود ندارد.",
+      ],
+      [
+        "نمرات عمومی",
+        "چهار نمرهٔ مستقیم؛ نمرهٔ عملی یا میانگین ساختگی اضافه نشده است.",
+      ],
+      [
+        "نمرات پودمانی",
+        "نمرهٔ رسمی هر پودمان از مستمر و شایستگی همان پودمان محاسبه می‌شود؛ نوبت‌ها نمرهٔ مستقل برای یک پودمان رسمی ندارند.",
+      ],
+      [
+        "جزئیات واحد کار",
+        "واحدهای پودمانی فقط ورودی‌های گروهی ثبت‌شدهٔ هر نوبت را نشان می‌دهند و نمرهٔ ترکیبی ندارند؛ سوابق واحدی قدیمی از همان محاسبهٔ کارنامه، شامل اولویت ثبت گروهی بر جلسه، خوانده می‌شوند.",
+      ],
+      [
+        "راهنما",
+        "سلول خالی یعنی ثبت‌نشده، ناقص یا نامرتبط؛ صفر نمرهٔ واقعی است. این فایل گزارش است و برای بازیابی سیستم نیست.",
+      ],
+    ],
+    [34, 100],
+  );
+  sheets[0].filter = false;
+  const headers = ["کد هنرجو", "هنرجو", "وضعیت عضویت", "درس", "دبیر"],
+    widths = [17, 27, 17, 35, 24],
+    stages = [
+      { term: "اول", stage: "midterm", label: "میان‌ترم اول" },
+      { term: "اول", stage: "final", label: "پایان‌ترم اول" },
+      { term: "دوم", stage: "midterm", label: "میان‌ترم دوم" },
+      { term: "دوم", stage: "final", label: "پایان‌ترم دوم" },
+    ],
+    academic = new Map(
+      annualGradeRows(scoped, schoolId, classroom.id, studentId).map((row) => [
+        JSON.stringify([row.studentId, row.lessonId]),
+        row,
+      ]),
+    ),
+    vocational = [],
+    general = [],
+    modular = [],
+    units = [],
+    legacy = [];
+  const legacyIds = new Set(
+      lessons
+        .filter(
+          (lesson) =>
+            lesson.gradeMode !== "kardanesh" &&
+            lesson.gradingPolicy?.method !== "modular",
+        )
+        .map((lesson) => lesson.id),
+    ),
+    legacyRows = legacyIds.size
+      ? annualTechnicalRows(scoped, schoolId, classroom.id, studentId).filter(
+          (row) => legacyIds.has(row.lessonId),
+        )
+      : [];
+  for (const student of students) {
+    for (const lesson of lessons) {
+      const prefix = identity(student, lesson);
+      if (lesson.gradeMode === "kardanesh") {
+        const row = academic.get(JSON.stringify([student.id, lesson.id])),
+          isGeneral = lesson.gradingPolicy?.subjectType === "general",
+          components = stages.flatMap((stage) => {
+            const value = row?.components.find(
+              (item) => item.term === stage.term && item.stage === stage.stage,
+            );
+            return isGeneral
+              ? [finite(value?.theory)]
+              : [
+                  finite(value?.practical),
+                  finite(value?.theory),
+                  result(value),
+                ];
+          });
+        if (isGeneral) general.push([...prefix, ...components]);
+        else {
+          const weights = assessmentWeights(lesson);
+          vocational.push([
+            ...prefix,
+            weights.practical,
+            weights.theory,
+            ...components,
+          ]);
+        }
+      } else if (lesson.gradingPolicy?.method === "modular") {
+        const merged = annualModularLesson(
+            scoped,
+            schoolId,
+            classroom.id,
+            lesson,
+            student.id,
+          ),
+          grade = EduReportGrades.modular(merged, student.id);
+        for (const pod of lesson.poudmans) {
+          const raw = ownScoreRecord(
+              merged.poudmans.find((item) => item.id === pod.id)?.podScores,
+              student.id,
+            ),
+            value = grade.modules.find((item) => item.id === pod.id);
+          modular.push([
+            ...prefix,
+            pod.name,
+            finite(raw.m),
+            finite(raw.c),
+            result(value),
+            status(value),
+          ]);
+        }
+        for (const term of ["اول", "دوم"]) {
+          const part = scoped.find((item) => item.period.term === term),
+            course =
+              part &&
+              locate(part)
+                ?.classes.find((item) => item.id === classroom.id)
+                ?.lessons.find((item) => item.id === lesson.id);
+          for (const pod of course?.poudmans || [])
+            for (const unit of pod.units || []) {
+              const raw = ownScoreRecord(unit.unitScores, student.id),
+                m = finite(raw.m),
+                p = finite(raw.p);
+              if (m !== null || p !== null)
+                units.push([...prefix, term, pod.name, unit.name, m, p]);
+            }
+        }
+      } else {
+        for (const term of ["اول", "دوم"]) {
+          const row = legacyRows.find(
+            (item) =>
+              item.studentId === student.id &&
+              item.lessonId === lesson.id &&
+              item.term === term,
+          );
+          if (row)
+            for (const unit of row.legacyUnits?.length
+              ? row.legacyUnits
+              : [null])
+              legacy.push([
+                ...prefix,
+                term,
+                unit?.moduleName || "",
+                unit?.unitName || "",
+                finite(unit?.mostamar),
+                finite(unit?.payani),
+                finite(unit?.final),
+                result(row),
+                status(row),
+              ]);
+        }
+      }
+    }
+  }
+  if (vocational.length)
+    sheet(
+      "کاردانش",
+      [
+        ...headers,
+        "سهم عملی (%)",
+        "سهم نظری (%)",
+        ...stages.flatMap((stage) => [
+          stage.label + " · عملی",
+          stage.label + " · نظری",
+          stage.label + " · نتیجه",
+        ]),
+      ],
+      vocational,
+      [...widths, 17, 17, ...Array(12).fill(22)],
+    );
+  if (general.length)
+    sheet(
+      "عمومی",
+      [...headers, ...stages.map((stage) => stage.label + " · نمره")],
+      general,
+      [...widths, ...Array(4).fill(24)],
+    );
+  if (modular.length)
+    sheet(
+      "پودمانی",
+      [
+        ...headers,
+        "پودمان",
+        "مستمر پودمان",
+        "شایستگی",
+        "نتیجه پودمان",
+        "وضعیت پودمان",
+      ],
+      modular,
+      [...widths, 32, 19, 16, 19, 23],
+    );
+  if (units.length)
+    sheet(
+      "جزئیات واحد کار",
+      [...headers, "نوبت", "پودمان", "واحد کار", "مستمر واحد", "پایانی واحد"],
+      units,
+      [...widths, 14, 28, 30, 19, 19],
+    );
+  if (legacy.length)
+    sheet(
+      "سوابق واحدی",
+      [
+        ...headers,
+        "نوبت",
+        "پودمان",
+        "واحد کار",
+        "مستمر",
+        "پایانی",
+        "نتیجه واحد",
+        "نتیجه درس در نوبت",
+        "وضعیت درس در نوبت",
+      ],
+      legacy,
+      [...widths, 14, 28, 30, 18, 18, 20, 23, 23],
+    );
+  return [...sheets.slice(1), sheets[0]];
+}
+// Source: src/workspace/reports/karnameh-excel.js
+// Excel is prepared from a fresh annual snapshot, independently of the visible stage.
+let karnamehExcelDialog = null;
+
+function karnamehExcelFilename({ classroom, studentId, year, generatedAt }) {
+  const clean = (value) =>
+    Array.from(String(value || ""), (character) =>
+      character.charCodeAt(0) < 32 ||
+      character.charCodeAt(0) === 127 ||
+      '\\/:*?"<>|'.includes(character)
+        ? "-"
+        : character,
+    )
+      .join("")
+      .trim()
+      .slice(0, 55)
+      .replace(/[. ]+$/g, "") || "نمرات";
+  const teachers = [
+    ...new Set(
+      classroom.lessons
+        .map((lesson) => String(lesson.teacher || "").trim())
+        .filter(Boolean),
+    ),
+  ];
+  const teacher =
+    teachers.length === 1 ? teachers[0] : teachers.length ? "چند دبیر" : "دبیر";
+  const student = studentId
+    ? karnamehReportStudents(classroom).find((item) => item.id === studentId)
+    : null;
+  if (studentId && !student)
+    throw Error("هنرجوی انتخاب‌شده در کلاس موجود نیست.");
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("fa-IR-u-nu-latn", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23",
+      timeZone: "Asia/Tehran",
+    })
+      .formatToParts(new Date(generatedAt))
+      .map((part) => [part.type, part.value]),
+  );
+  const stamp =
+    parts.year +
+    "-" +
+    parts.month +
+    "-" +
+    parts.day +
+    "_" +
+    parts.hour +
+    "-" +
+    parts.minute +
+    "-" +
+    parts.second;
+  return (
+    clean(teacher) +
+    "_" +
+    stamp +
+    "_نمرات-" +
+    (student ? clean(student.name) : "کل-کلاس-" + clean(classroom.name)) +
+    "_" +
+    clean(year) +
+    ".xlsx"
+  );
+}
+
+function assertKarnamehExcelDialog(session) {
+  assertWorkspaceReadable();
+  if (
+    !session ||
+    karnamehExcelDialog !== session ||
+    connection !== session.connection ||
+    installationToken !== session.installation ||
+    workspace.id !== session.workspaceId ||
+    workspace.year !== session.year ||
+    state.view !== "reports" ||
+    state.reportTab !== "karnameh" ||
+    JSON.stringify(karnamehFilter) !== session.selection ||
+    !session.entry.isConnected ||
+    !session.panel?.isConnected ||
+    document.getElementById("karnamehExcelPanel") !== session.panel ||
+    document.getElementById("modal").classList.contains("hidden")
+  )
+    throw Error(
+      "کارنامه یا اطلاعات برنامه تغییر کرده است؛ پنجرهٔ اکسل را دوباره باز کنید.",
+    );
+}
+
+function openKarnamehExcel(button) {
+  assertWorkspaceReadable();
+  const found = findClassById(karnamehFilter.classId);
+  if (
+    !button?.isConnected ||
+    state.view !== "reports" ||
+    state.reportTab !== "karnameh" ||
+    !found ||
+    (karnamehFilter.schoolId && found.school.id !== karnamehFilter.schoolId)
+  )
+    throw Error("ابتدا مدرسه و کلاس کارنامه را انتخاب کنید.");
+  const students = karnamehReportStudents(found.classObj);
+  if (!students.length) throw Error("در کلاس انتخاب‌شده هنرجویی وجود ندارد.");
+  const student = students.find((item) => item.id === karnamehFilter.studentId);
+  if (karnamehFilter.studentId && !student)
+    throw Error("هنرجوی انتخاب‌شده در کلاس موجود نیست.");
+  const session = {
+    connection,
+    installation: installationToken,
+    workspaceId: workspace.id,
+    year: workspace.year,
+    selection: JSON.stringify(karnamehFilter),
+    schoolId: found.school.id,
+    classId: found.classObj.id,
+    studentId: student?.id || "",
+    entry: button,
+    panel: null,
+    working: false,
+    delivery: "download",
+    prepared: null,
+  };
+  const choice = (scope, title, detail, icon, disabled = false) =>
+    '<button type="button" class="ghost" data-workspace-action="karnameh-excel-download" data-scope="' +
+    scope +
+    '"' +
+    (disabled ? " disabled" : "") +
+    '><span class="karnameh-excel-choice-icon" aria-hidden="true">' +
+    EduIcons.html(icon) +
+    '</span><span class="karnameh-excel-choice-copy"><strong>' +
+    esc(title) +
+    "</strong><small>" +
+    esc(detail) +
+    '</small></span><span class="karnameh-excel-choice-end" aria-hidden="true">' +
+    EduIcons.html("download") +
+    "</span></button>";
+  const opened = showModal(
+    "خروجی اکسل نمرات",
+    '<section class="karnameh-excel-dialog" id="karnamehExcelPanel"><div class="karnameh-excel-heading"><span class="karnameh-excel-choice-icon" aria-hidden="true">' +
+      EduIcons.html("grades") +
+      "</span><div><h4>نمرات سال تحصیلی</h4><p>" +
+      esc(
+        [found.school.name, found.classObj.name, workspace.year].join(" · "),
+      ) +
+      '</p></div></div><p class="karnameh-excel-description">همهٔ مراحل و پودمان‌های همین سال در فایل قرار می‌گیرند؛ نمرهٔ ثبت‌نشده خالی می‌ماند.</p><div class="karnameh-excel-delivery" aria-label="روش دریافت اکسل"><button type="button" class="ghost" data-workspace-action="karnameh-excel-mode" data-delivery="download" aria-pressed="true">دریافت فایل</button><button type="button" class="ghost" data-workspace-action="karnameh-excel-mode" data-delivery="share" aria-pressed="false">ارسال در پیام‌رسان</button></div><div class="karnameh-excel-choices">' +
+      choice(
+        "student",
+        "اکسل هنرجوی انتخاب‌شده",
+        student?.name || "ابتدا یک هنرجو انتخاب کنید.",
+        "grades",
+        !student,
+      ) +
+      choice(
+        "class",
+        "اکسل نمرات کل کلاس",
+        karnamehSheetNumber(students.length) + " هنرجو · فعال و بایگانی",
+        "users",
+      ) +
+      '</div><p data-karnameh-excel-status role="status" aria-live="polite"></p><section class="karnameh-excel-ready" data-karnameh-excel-ready hidden><strong data-karnameh-excel-file dir="auto"></strong><span data-karnameh-excel-file-size></span><div class="karnameh-excel-ready-actions"><button type="button" data-workspace-action="karnameh-excel-send" hidden disabled>' +
+      EduIcons.html("share") +
+      '<span>انتخاب پیام‌رسان و ارسال</span></button><button type="button" class="ghost" data-workspace-action="karnameh-excel-save" disabled>' +
+      EduIcons.html("download") +
+      "<span>دریافت فایل برای پیوست</span></button></div></section></section>",
+  );
+  if (opened === false) return false;
+  session.panel = document.getElementById("karnamehExcelPanel");
+  clearPreparedKarnamehExcel(karnamehExcelDialog);
+  karnamehExcelDialog = session;
+  if (typeof MutationObserver === "function") {
+    const modal = document.getElementById("modal");
+    const observer = new MutationObserver(() => {
+      if (!session.panel.isConnected || modal.classList.contains("hidden")) {
+        clearPreparedKarnamehExcel(session);
+        if (karnamehExcelDialog === session) karnamehExcelDialog = null;
+        observer.disconnect();
+      }
+    });
+    observer.observe(modal, { attributes: true, attributeFilter: ["class"] });
+    observer.observe(document.getElementById("modalBody"), { childList: true });
+  }
+  return true;
+}
+
+async function downloadKarnamehExcel(button) {
+  const session = karnamehExcelDialog;
+  if (!session || session.working) return false;
+  const status = session.panel.querySelector("[data-karnameh-excel-status]");
+  let unlock = () => {};
+  try {
+    assertKarnamehExcelDialog(session);
+    const scope = button.dataset.scope;
+    if (
+      !button.isConnected ||
+      button.closest("#karnamehExcelPanel") !== session.panel ||
+      !["student", "class"].includes(scope) ||
+      (scope === "student" && !session.studentId) ||
+      button.disabled
+    )
+      throw Error(
+        "محدودهٔ خروجی معتبر نیست؛ کلاس یا هنرجو را دوباره انتخاب کنید.",
+      );
+    clearPreparedKarnamehExcel(session);
+    unlock = lockKarnamehExcel(session);
+    status.dataset.state = "working";
+    status.textContent = "در حال آماده‌سازی اکسل نمرات…";
+    const snapshot = await prepareKarnamehSnapshot();
+    assertKarnamehExcelDialog(session);
+    const active = snapshot.parts.find(
+      (part) => part.period.id === session.workspaceId,
+    );
+    const school = active?.data.schools.find(
+      (item) => item.id === session.schoolId,
+    );
+    const classroom = school?.classes.find(
+      (item) => item.id === session.classId,
+    );
+    if (!classroom)
+      throw Error("کلاس انتخاب‌شده در اطلاعات سال تحصیلی موجود نیست.");
+    assertAnnualLessonCompatibility(snapshot.parts, school.id, classroom.id);
+    const merged = {
+      ...classroom,
+      lessons: karnamehLessons(snapshot.parts, school.id, classroom),
+    };
+    if (!merged.lessons.length)
+      throw Error("هنوز درسی برای خروجی نمرات این کلاس تعریف نشده است.");
+    const studentId = scope === "student" ? session.studentId : "";
+    const generatedAt = new Date().toISOString();
+    const sheets = karnamehExcelSheets({
+      parts: snapshot.parts,
+      schoolId: school.id,
+      classroom: merged,
+      studentId,
+      year: session.year,
+      generatedAt,
+    });
+    const blob = window.EduPeriodicReports.createWorkbook(sheets);
+    const name = karnamehExcelFilename({
+      classroom: merged,
+      studentId,
+      year: session.year,
+      generatedAt,
+    });
+    await assertReportSnapshot(snapshot.context);
+    assertKarnamehExcelDialog(session);
+    if (session.delivery === "share") {
+      showPreparedKarnamehExcel(session, {
+        context: snapshot.context,
+        blob,
+        name,
+      });
+    } else {
+      downloadLocalFile(blob, name);
+      status.dataset.state = "saved";
+      status.textContent =
+        scope === "student"
+          ? "فایل اکسل نمرات هنرجوی انتخاب‌شده برای دریافت به مرورگر تحویل داده شد."
+          : "فایل اکسل نمرات کل کلاس برای دریافت به مرورگر تحویل داده شد.";
+    }
+    return true;
+  } catch (error) {
+    if (karnamehExcelDialog === session && session.panel.isConnected) {
+      status.dataset.state = "error";
+      status.textContent = error.message || String(error);
+    }
+    return false;
+  } finally {
+    unlock();
+  }
+}
+
+function karnamehExcelMessage(session, message, state = "ready") {
+  if (karnamehExcelDialog !== session || !session.panel.isConnected) return;
+  const status = session.panel.querySelector("[data-karnameh-excel-status]");
+  status.textContent = message;
+  status.dataset.state = state;
+}
+
+function clearPreparedKarnamehExcel(session, message = "") {
+  if (!session) return;
+  if (session.prepared) {
+    session.prepared.invalid = true;
+    session.prepared.file = null;
+    session.prepared.blob = null;
+    session.prepared = null;
+  }
+  if (!session.panel?.isConnected) return;
+  const ready = session.panel.querySelector("[data-karnameh-excel-ready]");
+  if (ready) ready.hidden = true;
+  for (const action of ["karnameh-excel-send", "karnameh-excel-save"]) {
+    const button = session.panel.querySelector(
+      '[data-workspace-action="' + action + '"]',
+    );
+    if (button) button.disabled = true;
+  }
+  if (message) karnamehExcelMessage(session, message, "error");
+}
+
+function invalidateKarnamehExcelShare(message) {
+  const session = karnamehExcelDialog;
+  const prepared = session?.prepared;
+  if (!prepared || !message?.workspace) return;
+  const member = prepared.context.members?.find(
+    (item) => item.id === message.workspace,
+  );
+  if (
+    message.type === "period-deleted" ||
+    (Number.isSafeInteger(message.revision) &&
+      message.revision > 0 &&
+      (!member || message.revision > member.revision))
+  )
+    clearPreparedKarnamehExcel(
+      session,
+      "اطلاعات نمرات تغییر کرده است؛ کلاس یا هنرجو را بزنید تا فایل تازه آماده شود.",
+    );
+}
+
+function lockKarnamehExcel(session) {
+  const buttons = [
+    ...session.panel.querySelectorAll("button[data-scope]"),
+    ...session.panel.querySelectorAll("button[data-delivery]"),
+    session.panel.querySelector(
+      '[data-workspace-action="karnameh-excel-send"]',
+    ),
+    session.panel.querySelector(
+      '[data-workspace-action="karnameh-excel-save"]',
+    ),
+  ].filter(Boolean);
+  const disabled = buttons.map((button) => button.disabled);
+  session.working = true;
+  session.panel.setAttribute("aria-busy", "true");
+  buttons.forEach((button) => {
+    button.disabled = true;
+  });
+  return () => {
+    session.working = false;
+    session.panel.removeAttribute("aria-busy");
+    buttons.forEach((button, index) => {
+      button.disabled = disabled[index];
+    });
+    const ready = !!session.prepared && !session.prepared.invalid;
+    for (const action of ["karnameh-excel-send", "karnameh-excel-save"]) {
+      const button = session.panel.querySelector(
+        '[data-workspace-action="' + action + '"]',
+      );
+      if (button) button.disabled = !ready;
+    }
+  };
+}
+
+function setKarnamehExcelDelivery(button) {
+  const session = karnamehExcelDialog;
+  if (!session || session.working) return false;
+  assertKarnamehExcelDialog(session);
+  const delivery = button.dataset.delivery;
+  if (
+    !button.isConnected ||
+    button.closest("#karnamehExcelPanel") !== session.panel ||
+    !["download", "share"].includes(delivery)
+  )
+    return false;
+  clearPreparedKarnamehExcel(session);
+  session.delivery = delivery;
+  for (const option of session.panel.querySelectorAll("button[data-delivery]"))
+    option.setAttribute(
+      "aria-pressed",
+      String(option.dataset.delivery === delivery),
+    );
+  for (const choice of session.panel.querySelectorAll("button[data-scope]")) {
+    const icon = choice.querySelector(".karnameh-excel-choice-end");
+    if (icon)
+      icon.innerHTML = EduIcons.html(
+        delivery === "share" ? "share" : "download",
+      );
+  }
+  karnamehExcelMessage(
+    session,
+    delivery === "share"
+      ? "هنرجو یا کل کلاس را انتخاب کنید؛ پس از آماده‌شدن فایل، پیام‌رسان را انتخاب می‌کنید."
+      : "هنرجو یا کل کلاس را انتخاب کنید تا فایل اکسل دریافت شود.",
+  );
+  return true;
+}
+
+function canShareKarnamehExcel(file) {
+  try {
+    return !!(
+      globalThis.isSecureContext &&
+      file &&
+      typeof navigator.share === "function" &&
+      typeof navigator.canShare === "function" &&
+      navigator.canShare({ files: [file] })
+    );
+  } catch {
+    return false;
+  }
+}
+
+function assertPreparedKarnamehExcel(session, prepared) {
+  assertKarnamehExcelDialog(session);
+  if (
+    !prepared ||
+    session.prepared !== prepared ||
+    prepared.invalid ||
+    !prepared.blob
+  )
+    throw Error("فایل آماده نیست؛ کلاس یا هنرجو را دوباره انتخاب کنید.");
+  assertWorkspaceContext(prepared.context);
+  if (
+    busy ||
+    drafts.size ||
+    assessmentContext.hasDrafts() ||
+    draftWritesPending ||
+    draftRecoveryFailed
+  )
+    throw Error(
+      "ویرایش یا ذخیرهٔ ناتمام وجود دارد؛ پس از ثبت، اکسل را دوباره آماده کنید.",
+    );
+}
+
+function showPreparedKarnamehExcel(session, prepared) {
+  let file = null;
+  try {
+    if (typeof File === "function")
+      file = new File([prepared.blob], prepared.name, {
+        type: prepared.blob.type,
+      });
+  } catch {
+    /* The original XLSX blob remains available for manual attachment. */
+  }
+  prepared.file = file;
+  prepared.invalid = false;
+  session.prepared = prepared;
+  const supported = canShareKarnamehExcel(file);
+  const ready = session.panel.querySelector("[data-karnameh-excel-ready]");
+  session.panel.querySelector("[data-karnameh-excel-file]").textContent =
+    prepared.name;
+  session.panel.querySelector("[data-karnameh-excel-file-size]").textContent =
+    "XLSX · " +
+    karnamehSheetNumber(Math.max(1, Math.ceil(prepared.blob.size / 1024))) +
+    " کیلوبایت";
+  const share = session.panel.querySelector(
+    '[data-workspace-action="karnameh-excel-send"]',
+  );
+  share.hidden = !supported;
+  ready.hidden = false;
+  karnamehExcelMessage(
+    session,
+    supported
+      ? "فایل آماده است؛ «انتخاب پیام‌رسان و ارسال» را بزنید و شاد یا برنامهٔ دلخواه را انتخاب کنید. برنامه‌های نمایش‌داده‌شده به دستگاه شما بستگی دارند."
+      : "ارسال مستقیم فایل در این مرورگر در دسترس نیست. اکسل را دریافت کنید و در شاد یا پیام‌رسان، پیوست ← فایل را بزنید.",
+  );
+  ready.scrollIntoView?.({ block: "nearest" });
+}
+
+async function shareKarnamehExcel(button) {
+  const session = karnamehExcelDialog;
+  if (!session || session.working) return false;
+  const prepared = session.prepared;
+  let unlock = () => {};
+  try {
+    assertPreparedKarnamehExcel(session, prepared);
+    if (
+      !button.isConnected ||
+      button.disabled ||
+      button.closest("#karnamehExcelPanel") !== session.panel
+    )
+      return false;
+    if (!canShareKarnamehExcel(prepared.file)) {
+      button.hidden = true;
+      karnamehExcelMessage(
+        session,
+        "ارسال مستقیم این فایل پشتیبانی نمی‌شود؛ اکسل را دریافت و در پیام‌رسان پیوست کنید.",
+      );
+      return false;
+    }
+    unlock = lockKarnamehExcel(session);
+    // Native sharing must run in this trusted click, before any asynchronous read.
+    await navigator.share({
+      files: [prepared.file],
+      title: "اکسل نمرات کلاس‌یار",
+    });
+    if (session.prepared === prepared && !prepared.invalid)
+      karnamehExcelMessage(
+        session,
+        "فایل به پنجرهٔ اشتراک‌گذاری سپرده شد؛ ارسال نهایی را در پیام‌رسان بررسی کنید.",
+        "saved",
+      );
+    return true;
+  } catch (error) {
+    if (session.prepared !== prepared || prepared?.invalid) return false;
+    if (!session.working) {
+      clearPreparedKarnamehExcel(session, error.message || String(error));
+    } else {
+      karnamehExcelMessage(
+        session,
+        error.name === "AbortError"
+          ? "ارسال لغو شد؛ فایل آماده است و می‌توانید دوباره تلاش کنید."
+          : "ارسال مستقیم انجام نشد؛ اکسل را دریافت و به‌صورت فایل در پیام‌رسان پیوست کنید.",
+        error.name === "AbortError" ? "ready" : "error",
+      );
+    }
+    return false;
+  } finally {
+    unlock();
+  }
+}
+
+async function downloadPreparedKarnamehExcel(button) {
+  const session = karnamehExcelDialog;
+  if (!session || session.working) return false;
+  const prepared = session.prepared;
+  let unlock = () => {};
+  try {
+    assertPreparedKarnamehExcel(session, prepared);
+    if (
+      !button.isConnected ||
+      button.disabled ||
+      button.closest("#karnamehExcelPanel") !== session.panel
+    )
+      return false;
+    unlock = lockKarnamehExcel(session);
+    await assertReportSnapshot(prepared.context);
+    assertPreparedKarnamehExcel(session, prepared);
+    downloadLocalFile(prepared.blob, prepared.name);
+    karnamehExcelMessage(
+      session,
+      "اکسل برای دریافت به مرورگر تحویل داده شد؛ در پیام‌رسان، پیوست ← فایل را انتخاب کنید.",
+      "saved",
+    );
+    return true;
+  } catch (error) {
+    if (session.prepared === prepared && !prepared?.invalid)
+      clearPreparedKarnamehExcel(session, error.message || String(error));
+    return false;
+  } finally {
+    unlock();
+  }
+}
 // Source: src/workspace/reports/printing.js
 let printAuthorization = null;
 
@@ -11880,6 +12692,8 @@ function installUI() {
         return;
       }
       if (tabMessage(message)) return;
+      if (typeof invalidateKarnamehExcelShare === "function")
+        invalidateKarnamehExcelShare(message);
       window.EduPeriodicReports?.workspaceChanged?.(message);
       assessmentContext.workspaceChanged(message);
       invalidateYearNotesScope(message);
@@ -11935,9 +12749,13 @@ function installWorkspaceActions() {
       "year-session",
       (button) => openYearSession(button.dataset.workspace, button.dataset.key),
     ],
-    ["apply-academic-schedule", () => applyAcademicScheduleV24()],
     ["assessment-stage", (button) => openAssessmentStage(button)],
     ["karnameh-stage", (button) => selectKarnamehStage(button)],
+    ["karnameh-excel", (button) => openKarnamehExcel(button)],
+    ["karnameh-excel-download", (button) => downloadKarnamehExcel(button)],
+    ["karnameh-excel-mode", (button) => setKarnamehExcelDelivery(button)],
+    ["karnameh-excel-send", (button) => shareKarnamehExcel(button)],
+    ["karnameh-excel-save", (button) => downloadPreparedKarnamehExcel(button)],
     [
       "karnameh-student",
       (button) => openKarnamehStudent(button.dataset.class, button.dataset.key),
@@ -14226,6 +15044,10 @@ async function adoptDrafts(key) {
 }
 
 function broadcast(message) {
+  try {
+    if (typeof invalidateKarnamehExcelShare === "function")
+      invalidateKarnamehExcelShare(message);
+  } catch (ignore) {}
   try {
     if (channel) channel.postMessage(message);
   } catch (ignore) {}

@@ -20,7 +20,6 @@ globalThis.EduRecordTransaction = Object.freeze({
     historicalRoster,
     directorySourceUpdates,
     directoryRevisions,
-    scheduleResolution,
     recoveredUndo,
     restoredSessionRecords,
   }) {
@@ -31,7 +30,6 @@ globalThis.EduRecordTransaction = Object.freeze({
         changed,
         removed,
         before,
-        scheduleResolution,
       })
     )
       return directoryTransaction.commit({
@@ -52,7 +50,6 @@ globalThis.EduRecordTransaction = Object.freeze({
         historicalRoster,
         directorySourceUpdates,
         directoryRevisions,
-        scheduleResolution,
         recoveredUndo,
         restoredSessionRecords,
       });

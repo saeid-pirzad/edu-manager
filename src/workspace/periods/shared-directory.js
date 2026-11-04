@@ -93,7 +93,7 @@ async function synchronizeAcademicDirectoryForRead(id) {
       year: periods[0].year,
       code: "ACADEMIC_SCHEDULE_CONFLICT",
       message:
-        "برنامهٔ هفتگی قدیمی نوبت‌های این سال متفاوت است؛ سوابق حفظ شدند. در برنامهٔ هفتگی، برنامهٔ درست را بررسی و یکسان‌سازی سال را تأیید کنید.",
+        "برنامهٔ هفتگی نوبت‌های این سال متفاوت است؛ سوابق حفظ شدند و تغییر ناسازگار برنامه ثبت نخواهد شد.",
     });
   try {
     const layout = model.reconcileLayouts(

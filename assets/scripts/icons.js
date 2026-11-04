@@ -33,6 +33,7 @@
     undo: "M8 4 3 9l5 5M3 9h11a7 7 0 0 1 7 7v4",
     edit: "m15 4 5 5M4 20l5-1L21 7l-5-5L4 14v6Z",
     trash: "M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7",
+    eraser: "m16 3 5 5-11 11H6l-4-4L14 3h2ZM8 9l7 7M10 19h11",
     close: "M6 6l12 12M18 6 6 18",
     check: "m5 12 4 4L19 6",
     print: "M7 8V3h10v5M7 17H3V8h18v9h-4M7 14h10v7H7v-7ZM17 11h1",

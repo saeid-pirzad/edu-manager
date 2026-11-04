@@ -333,11 +333,13 @@
     white-space: nowrap;
   }
   :is(#lessonGradesArea, #modalBody) .assessment-editor .grade-editor {
-    grid-template-columns: minmax(0, 1fr) 44px;
+    --grade-clear-size: 44px;
+    --grade-clear-height: 44px;
+    grid-template-columns: minmax(0, 1fr) var(--grade-clear-size);
   }
   :is(#lessonGradesArea, #modalBody) .assessment-editor input[data-grade] {
     padding-inline: 8px;
-    padding-left: 42px;
+    padding-left: calc(var(--grade-clear-size, 44px) + 8px);
     margin: 0;
   }
   :is(#lessonGradesArea, #modalBody)
@@ -352,8 +354,10 @@
     justify-self: center;
   }
   :is(#lessonGradesArea, #modalBody) .grade-editor {
+    --grade-clear-size: 32px;
+    --grade-clear-height: 44px;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 32px;
+    grid-template-columns: minmax(0, 1fr) var(--grade-clear-size);
     gap: 0;
     width: 100%;
     min-width: 0;
@@ -366,7 +370,8 @@
     max-width: 100%;
     min-width: 0;
     min-height: 48px;
-    padding: 8px 8px 8px 32px;
+    padding: 8px;
+    padding-left: calc(var(--grade-clear-size, 32px) + 8px);
     border: 1px solid #d7d2ca;
     border-radius: 9px;
     background: #fff;
@@ -873,7 +878,8 @@
   :is(#lessonGradesArea, #modalBody) .module-simple input[data-grade] {
     min-height: 32px;
     height: 32px;
-    padding: 2px 4px 2px 20px;
+    padding: 2px 4px;
+    padding-left: calc(var(--grade-clear-size, 28px) + 4px);
     border: 1px solid #d9d5ce;
     background: #faf9f7;
     color: #303438;
@@ -917,23 +923,11 @@
     background: #f2dfbf;
     color: #303438;
   }
-  :is(#lessonGradesArea, #modalBody) .module-simple .grade-editor .grade-clear {
-    width: 20px;
-    min-height: 28px;
-    font-size: 14px;
-    color: #a19a90;
-    border-radius: 5px;
-    line-height: 1;
-  }
-  :is(#lessonGradesArea, #modalBody)
-    .module-simple
-    .grade-editor
-    .grade-clear:hover {
-    color: #9f3021;
-    background: #fbe9e5;
-  }
   :is(#lessonGradesArea, #modalBody) .module-simple .grade-editor {
-    grid-template-columns: minmax(0, 1fr) 20px;
+    --grade-clear-size: 28px;
+    --grade-clear-height: 32px;
+    --grade-clear-icon: 14px;
+    grid-template-columns: minmax(0, 1fr) var(--grade-clear-size);
   }
 }
 @media screen and (max-width: 600px) {
@@ -1479,5 +1473,33 @@
     border-color: #ecc8ce;
     background: #fff3f4;
     color: #9b293e;
+  }
+}
+
+/* Give fractional module scores and the eraser separate space on phones. */
+@media screen and (max-width: 700px) {
+  :is(#lessonGradesArea, #modalBody) .module-simple .assessment-student {
+    grid-template-columns: minmax(0, 1fr) 54px;
+    grid-template-areas: "student result" "inputs inputs";
+    gap: 8px;
+  }
+  :is(#lessonGradesArea, #modalBody) .module-simple .gradebook-student {
+    grid-area: student;
+    align-self: center;
+    padding-top: 0;
+  }
+  :is(#lessonGradesArea, #modalBody) .module-simple .assessment-inputs {
+    grid-area: inputs;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-self: stretch;
+    max-width: none;
+    gap: 8px;
+  }
+  :is(#lessonGradesArea, #modalBody) .module-simple .grade-editor {
+    max-width: 80px;
+    justify-self: center;
+  }
+  :is(#lessonGradesArea, #modalBody) .module-simple .gradebook-result {
+    grid-area: result;
   }
 }

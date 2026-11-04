@@ -991,3 +991,211 @@
     line-height: 1.7 !important;
   }
 }
+
+/* Excel controls sit outside the unchanged report document. */
+@media screen {
+  .karnameh-export-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 12px;
+  }
+  #app .karnameh-export-actions > button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 44px;
+    margin: 0;
+    padding: 9px 14px;
+    border: 1px solid #cce4d6;
+    border-radius: 9px;
+    background: #edf8f3;
+    color: #176344;
+    font-size: 12px;
+  }
+  #modal:has(.karnameh-excel-dialog) .modal-dialog {
+    width: min(100%, 520px);
+  }
+  .karnameh-excel-heading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .karnameh-excel-heading h4 {
+    margin: 0;
+    font-size: 15px;
+    color: #433d35;
+  }
+  .karnameh-excel-heading p,
+  .karnameh-excel-description {
+    margin: 6px 0 0;
+    font-size: 12px;
+    line-height: 1.9;
+    color: #726b61;
+    overflow-wrap: anywhere;
+  }
+  .karnameh-excel-description {
+    margin-block: 16px;
+  }
+  .karnameh-excel-choices {
+    display: grid;
+    gap: 10px;
+  }
+  #modalBody .karnameh-excel-choices > button {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+    min-height: 68px;
+    margin: 0;
+    padding: 12px;
+    border: 1px solid #e2ddd4;
+    border-radius: 12px;
+    background: #fff;
+    color: #433d35;
+    text-align: start;
+  }
+  .karnameh-excel-choice-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #edf8f3;
+    color: #176344;
+  }
+  .karnameh-excel-choice-copy {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .karnameh-excel-choice-copy strong,
+  .karnameh-excel-choice-copy small {
+    display: block;
+    line-height: 1.8;
+  }
+  .karnameh-excel-choice-copy strong {
+    font-size: 13px;
+  }
+  .karnameh-excel-choice-copy small {
+    margin-top: 3px;
+    color: #726b61;
+    font-size: 11px;
+  }
+  [data-karnameh-excel-status]:empty {
+    display: none;
+  }
+  [data-karnameh-excel-status] {
+    margin: 14px 0 0;
+    padding: 10px 12px;
+    border-radius: 9px;
+    background: #f5f4f1;
+    color: #655e54;
+    font-size: 12px;
+    line-height: 1.9;
+  }
+  [data-karnameh-excel-status][data-state="saved"] {
+    background: #edf8f3;
+    color: #176344;
+  }
+  [data-karnameh-excel-status][data-state="error"] {
+    background: #fff0ef;
+    color: #ac3f3a;
+  }
+}
+
+@media screen {
+  .karnameh-excel-delivery {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    margin-bottom: 12px;
+    padding: 4px;
+    border: 1px solid #e5e0d7;
+    border-radius: 11px;
+    background: #f4f2ed;
+  }
+  #modalBody .karnameh-excel-delivery > button {
+    position: relative;
+    min-width: 0;
+    min-height: 42px;
+    margin: 0;
+    padding: 8px 5px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: #726b61;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  #modalBody .karnameh-excel-delivery > button[aria-pressed="true"] {
+    border-color: #d4e4da;
+    background: #fff;
+    color: #176344;
+    box-shadow: 0 1px 3px #264e3510;
+    font-weight: 600;
+  }
+  .karnameh-excel-delivery > button[aria-pressed="true"]::after {
+    content: "";
+    position: absolute;
+    inset-inline: 12px;
+    bottom: 3px;
+    height: 2px;
+    border-radius: 2px;
+    background: currentColor;
+  }
+  .karnameh-excel-choice-end {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 20px;
+  }
+  .karnameh-excel-ready {
+    display: grid;
+    gap: 7px;
+    min-width: 0;
+    margin-top: 14px;
+    padding: 14px;
+    border: 1px solid #d4e4da;
+    border-radius: 12px;
+    background: #f5faf7;
+  }
+  .karnameh-excel-ready[hidden] {
+    display: none;
+  }
+  [data-karnameh-excel-file] {
+    min-width: 0;
+    color: #335847;
+    font-size: 11px;
+    line-height: 1.9;
+    overflow-wrap: anywhere;
+  }
+  [data-karnameh-excel-file-size] {
+    color: #687b69;
+    font-size: 11px;
+  }
+  .karnameh-excel-ready-actions {
+    display: grid;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  #modalBody .karnameh-excel-ready-actions > button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    margin: 0;
+    padding: 9px;
+    border-radius: 9px;
+    font-size: 12px;
+  }
+  #modalBody .karnameh-excel-ready-actions > button[hidden] {
+    display: none;
+  }
+}

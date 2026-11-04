@@ -3452,6 +3452,32 @@ body {
     list-style: none;
     font-size: 13px;
   }
+  #app .week-settings-heading {
+    gap: 8px;
+  }
+  #app .week-settings-symbol {
+    flex-basis: 30px;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+  }
+  #app .week-settings-symbol .ui-icon {
+    width: 17px;
+    height: 17px;
+  }
+  #app .week-settings-title strong {
+    font-size: 13px;
+  }
+  #app .week-settings-title small {
+    display: none;
+  }
+  #app .week-settings-body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    margin-top: 10px;
+    padding-top: 0;
+    border: 0;
+  }
   #app .week-settings > summary::-webkit-details-marker {
     display: none;
   }
@@ -3472,8 +3498,8 @@ body {
   #app .week-settings[open] > summary::after {
     content: "\2212";
   }
-  #app .week-settings > section {
-    margin: 10px 0 0;
+  #app .week-settings-body > section {
+    margin: 0;
     padding: 14px 12px;
     border: 1px solid #e7e3dc;
     border-radius: 12px;
@@ -4027,6 +4053,154 @@ body {
     font-size: 12px;
     line-height: 1.95;
   }
+}
+
+/* One disclosure surface for the optional year-end record controls. */
+@media screen {
+  #modalBody .academic-year-hub .academic-records {
+    min-width: 0;
+    margin: 0;
+    border: 1px solid var(--workflow-line);
+    border-radius: 14px;
+    background: #fff;
+  }
+  #modalBody .academic-records > summary {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr) 28px;
+    align-items: center;
+    gap: 12px;
+    min-height: 72px;
+    box-sizing: border-box;
+    padding: 12px 14px;
+    border-radius: 13px;
+    color: var(--workflow-ink);
+    cursor: pointer;
+    list-style: none;
+    text-align: start;
+  }
+  #modalBody .academic-records > summary::-webkit-details-marker {
+    display: none;
+  }
+  #modalBody .academic-records > summary::marker {
+    content: "";
+  }
+  #modalBody .academic-records > summary:focus-visible {
+    outline: 2px solid var(--workflow-accent);
+    outline-offset: -3px;
+  }
+  .academic-records-icon,
+  .academic-records-chevron {
+    display: grid;
+    place-items: center;
+  }
+  .academic-records-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+    color: var(--workflow-accent);
+    background: var(--workflow-soft);
+  }
+  .academic-records-icon .ui-icon {
+    width: 21px;
+    height: 21px;
+  }
+  .academic-records-copy {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .academic-records-copy strong {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.8;
+  }
+  .academic-records-copy > span {
+    color: var(--workflow-muted);
+    font-size: 12px;
+    line-height: 1.7;
+  }
+  .academic-records-chevron {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    color: #75685a;
+    background: #f6f3ee;
+  }
+  .academic-records-chevron .ui-icon {
+    width: 18px;
+    height: 18px;
+    transition: transform 160ms ease;
+  }
+  #modalBody .academic-records[open] {
+    border-color: var(--surface-open-line, #cfb48d);
+  }
+  #modalBody .academic-records[open] > summary {
+    background: #fff9f4;
+    border-end-start-radius: 0;
+    border-end-end-radius: 0;
+  }
+  .academic-records[open] .academic-records-chevron .ui-icon {
+    transform: rotate(-90deg);
+  }
+  #modalBody .academic-records-body {
+    display: grid;
+    gap: 12px;
+    min-width: 0;
+    padding: 14px;
+    border-top: 1px solid var(--workflow-line);
+  }
+  #modalBody .academic-records-body > p {
+    margin: 0;
+    padding: 0;
+    color: var(--workflow-muted);
+    font-size: 12px;
+    line-height: 1.95;
+    overflow-wrap: anywhere;
+  }
+  #modalBody .academic-records-body > button {
+    justify-self: start;
+    min-height: 44px;
+    max-width: 100%;
+    font-size: 12px;
+  }
+}
+@media screen and (hover: hover) and (pointer: fine) {
+  #modalBody .academic-records:not([open]) > summary:hover {
+    background: #faf7f3;
+  }
+}
+@media screen and (max-width: 480px) {
+  #modalBody .academic-records > summary {
+    grid-template-columns: 32px minmax(0, 1fr) 24px;
+    gap: 10px;
+    padding: 10px 12px;
+    min-height: 68px;
+  }
+  .academic-records-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+  }
+  .academic-records-chevron {
+    width: 24px;
+    height: 24px;
+  }
+  #modalBody .academic-records-body {
+    padding: 12px;
+  }
+  #modalBody .academic-records-body > button {
+    width: 100%;
+    justify-self: stretch;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .academic-records-chevron .ui-icon {
+    transition: none;
+  }
+}
+
+@media screen {
   #modalBody .period-list table {
     width: 100%;
     margin: 0;
@@ -6840,11 +7014,13 @@ body {
     white-space: nowrap;
   }
   :is(#lessonGradesArea, #modalBody) .assessment-editor .grade-editor {
-    grid-template-columns: minmax(0, 1fr) 44px;
+    --grade-clear-size: 44px;
+    --grade-clear-height: 44px;
+    grid-template-columns: minmax(0, 1fr) var(--grade-clear-size);
   }
   :is(#lessonGradesArea, #modalBody) .assessment-editor input[data-grade] {
     padding-inline: 8px;
-    padding-left: 42px;
+    padding-left: calc(var(--grade-clear-size, 44px) + 8px);
     margin: 0;
   }
   :is(#lessonGradesArea, #modalBody)
@@ -6859,8 +7035,10 @@ body {
     justify-self: center;
   }
   :is(#lessonGradesArea, #modalBody) .grade-editor {
+    --grade-clear-size: 32px;
+    --grade-clear-height: 44px;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 32px;
+    grid-template-columns: minmax(0, 1fr) var(--grade-clear-size);
     gap: 0;
     width: 100%;
     min-width: 0;
@@ -6873,7 +7051,8 @@ body {
     max-width: 100%;
     min-width: 0;
     min-height: 48px;
-    padding: 8px 8px 8px 32px;
+    padding: 8px;
+    padding-left: calc(var(--grade-clear-size, 32px) + 8px);
     border: 1px solid #d7d2ca;
     border-radius: 9px;
     background: #fff;
@@ -7380,7 +7559,8 @@ body {
   :is(#lessonGradesArea, #modalBody) .module-simple input[data-grade] {
     min-height: 32px;
     height: 32px;
-    padding: 2px 4px 2px 20px;
+    padding: 2px 4px;
+    padding-left: calc(var(--grade-clear-size, 28px) + 4px);
     border: 1px solid #d9d5ce;
     background: #faf9f7;
     color: #303438;
@@ -7424,23 +7604,11 @@ body {
     background: #f2dfbf;
     color: #303438;
   }
-  :is(#lessonGradesArea, #modalBody) .module-simple .grade-editor .grade-clear {
-    width: 20px;
-    min-height: 28px;
-    font-size: 14px;
-    color: #a19a90;
-    border-radius: 5px;
-    line-height: 1;
-  }
-  :is(#lessonGradesArea, #modalBody)
-    .module-simple
-    .grade-editor
-    .grade-clear:hover {
-    color: #9f3021;
-    background: #fbe9e5;
-  }
   :is(#lessonGradesArea, #modalBody) .module-simple .grade-editor {
-    grid-template-columns: minmax(0, 1fr) 20px;
+    --grade-clear-size: 28px;
+    --grade-clear-height: 32px;
+    --grade-clear-icon: 14px;
+    grid-template-columns: minmax(0, 1fr) var(--grade-clear-size);
   }
 }
 @media screen and (max-width: 600px) {
@@ -7986,6 +8154,34 @@ body {
     border-color: #ecc8ce;
     background: #fff3f4;
     color: #9b293e;
+  }
+}
+
+/* Give fractional module scores and the eraser separate space on phones. */
+@media screen and (max-width: 700px) {
+  :is(#lessonGradesArea, #modalBody) .module-simple .assessment-student {
+    grid-template-columns: minmax(0, 1fr) 54px;
+    grid-template-areas: "student result" "inputs inputs";
+    gap: 8px;
+  }
+  :is(#lessonGradesArea, #modalBody) .module-simple .gradebook-student {
+    grid-area: student;
+    align-self: center;
+    padding-top: 0;
+  }
+  :is(#lessonGradesArea, #modalBody) .module-simple .assessment-inputs {
+    grid-area: inputs;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-self: stretch;
+    max-width: none;
+    gap: 8px;
+  }
+  :is(#lessonGradesArea, #modalBody) .module-simple .grade-editor {
+    max-width: 80px;
+    justify-self: center;
+  }
+  :is(#lessonGradesArea, #modalBody) .module-simple .gradebook-result {
+    grid-area: result;
   }
 }
 /* Source: src/styles/karnameh-grid.css */
@@ -8982,6 +9178,214 @@ body {
     line-height: 1.7 !important;
   }
 }
+
+/* Excel controls sit outside the unchanged report document. */
+@media screen {
+  .karnameh-export-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 12px;
+  }
+  #app .karnameh-export-actions > button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 44px;
+    margin: 0;
+    padding: 9px 14px;
+    border: 1px solid #cce4d6;
+    border-radius: 9px;
+    background: #edf8f3;
+    color: #176344;
+    font-size: 12px;
+  }
+  #modal:has(.karnameh-excel-dialog) .modal-dialog {
+    width: min(100%, 520px);
+  }
+  .karnameh-excel-heading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .karnameh-excel-heading h4 {
+    margin: 0;
+    font-size: 15px;
+    color: #433d35;
+  }
+  .karnameh-excel-heading p,
+  .karnameh-excel-description {
+    margin: 6px 0 0;
+    font-size: 12px;
+    line-height: 1.9;
+    color: #726b61;
+    overflow-wrap: anywhere;
+  }
+  .karnameh-excel-description {
+    margin-block: 16px;
+  }
+  .karnameh-excel-choices {
+    display: grid;
+    gap: 10px;
+  }
+  #modalBody .karnameh-excel-choices > button {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+    min-height: 68px;
+    margin: 0;
+    padding: 12px;
+    border: 1px solid #e2ddd4;
+    border-radius: 12px;
+    background: #fff;
+    color: #433d35;
+    text-align: start;
+  }
+  .karnameh-excel-choice-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #edf8f3;
+    color: #176344;
+  }
+  .karnameh-excel-choice-copy {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .karnameh-excel-choice-copy strong,
+  .karnameh-excel-choice-copy small {
+    display: block;
+    line-height: 1.8;
+  }
+  .karnameh-excel-choice-copy strong {
+    font-size: 13px;
+  }
+  .karnameh-excel-choice-copy small {
+    margin-top: 3px;
+    color: #726b61;
+    font-size: 11px;
+  }
+  [data-karnameh-excel-status]:empty {
+    display: none;
+  }
+  [data-karnameh-excel-status] {
+    margin: 14px 0 0;
+    padding: 10px 12px;
+    border-radius: 9px;
+    background: #f5f4f1;
+    color: #655e54;
+    font-size: 12px;
+    line-height: 1.9;
+  }
+  [data-karnameh-excel-status][data-state="saved"] {
+    background: #edf8f3;
+    color: #176344;
+  }
+  [data-karnameh-excel-status][data-state="error"] {
+    background: #fff0ef;
+    color: #ac3f3a;
+  }
+}
+
+@media screen {
+  .karnameh-excel-delivery {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    margin-bottom: 12px;
+    padding: 4px;
+    border: 1px solid #e5e0d7;
+    border-radius: 11px;
+    background: #f4f2ed;
+  }
+  #modalBody .karnameh-excel-delivery > button {
+    position: relative;
+    min-width: 0;
+    min-height: 42px;
+    margin: 0;
+    padding: 8px 5px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: #726b61;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  #modalBody .karnameh-excel-delivery > button[aria-pressed="true"] {
+    border-color: #d4e4da;
+    background: #fff;
+    color: #176344;
+    box-shadow: 0 1px 3px #264e3510;
+    font-weight: 600;
+  }
+  .karnameh-excel-delivery > button[aria-pressed="true"]::after {
+    content: "";
+    position: absolute;
+    inset-inline: 12px;
+    bottom: 3px;
+    height: 2px;
+    border-radius: 2px;
+    background: currentColor;
+  }
+  .karnameh-excel-choice-end {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 20px;
+  }
+  .karnameh-excel-ready {
+    display: grid;
+    gap: 7px;
+    min-width: 0;
+    margin-top: 14px;
+    padding: 14px;
+    border: 1px solid #d4e4da;
+    border-radius: 12px;
+    background: #f5faf7;
+  }
+  .karnameh-excel-ready[hidden] {
+    display: none;
+  }
+  [data-karnameh-excel-file] {
+    min-width: 0;
+    color: #335847;
+    font-size: 11px;
+    line-height: 1.9;
+    overflow-wrap: anywhere;
+  }
+  [data-karnameh-excel-file-size] {
+    color: #687b69;
+    font-size: 11px;
+  }
+  .karnameh-excel-ready-actions {
+    display: grid;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  #modalBody .karnameh-excel-ready-actions > button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    margin: 0;
+    padding: 9px;
+    border-radius: 9px;
+    font-size: 12px;
+  }
+  #modalBody .karnameh-excel-ready-actions > button[hidden] {
+    display: none;
+  }
+}
 /* Source: src/styles/buttons.css */
 /* Shared button geometry. Navigation cards and selection controls keep their layouts. */
 @media screen {
@@ -9137,6 +9541,50 @@ body {
     width: 16px;
     height: 16px;
     flex-basis: 16px;
+  }
+  /* Grade erasers have their own size and a quiet, separated action area. */
+  :is(#app, #modal) .grade-editor button.grade-clear.ui-button {
+    --button-ink: #8c8173;
+    --button-soft: transparent;
+    --button-line: transparent;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--grade-clear-size, 32px);
+    min-width: 0;
+    height: var(--grade-clear-height, 44px);
+    min-height: var(--grade-clear-height, 44px) !important;
+    flex: 0 0 var(--grade-clear-size, 32px);
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    line-height: 0;
+  }
+  :is(#app, #modal) .grade-editor button.grade-clear.ui-button::before {
+    content: "";
+    position: absolute;
+    inset-inline-start: 0;
+    top: 50%;
+    width: 1px;
+    height: 16px;
+    background: #e8e2d8;
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+  :is(#app, #modal) .grade-editor button.grade-clear.ui-button .control-icon,
+  :is(#app, #modal) .grade-editor button.grade-clear.ui-button svg {
+    width: var(--grade-clear-icon, 16px);
+    height: var(--grade-clear-icon, 16px);
+    flex: 0 0 var(--grade-clear-icon, 16px);
+  }
+  :is(#app, #modal)
+    .grade-editor
+    button.grade-clear.ui-button:not(:disabled):is(:hover, :focus-visible) {
+    --button-ink: #ad3342;
+    --button-soft: #fff0f2;
   }
   :is(#app, #modal, #calPopup, #mobileBar, #pwaWelcome)
     button.ui-button-flat:focus-visible {

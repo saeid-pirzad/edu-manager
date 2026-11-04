@@ -103,6 +103,8 @@
         "src/workspace/reports/finalize.js",
         "src/workspace/reports/karnameh-grid.js",
         "src/workspace/reports/student.js",
+        "src/workspace/reports/karnameh-excel-data.js",
+        "src/workspace/reports/karnameh-excel.js",
         "src/workspace/reports/printing.js",
         "src/workspace/reports/copy.js",
         "src/workspace/students/csv-import.js",

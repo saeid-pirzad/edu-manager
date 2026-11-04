@@ -532,37 +532,26 @@ module.exports = async function annualBackupRoundtrip() {
     closeModal();
     state.view = "master";
     render();
-    click("apply-academic-schedule");
-    await wait(async () => {
-      const current = await EduV24.snapshotInstallation();
-      return (
-        JSON.stringify(schedule(current, firstId)) ===
-        JSON.stringify(schedule(current, second.period.id))
-      );
-    });
-    const resolved = await EduV24.snapshotInstallation();
-    const backupRequest = connection
-      .transaction("backups")
-      .objectStore("backups")
-      .getAll();
-    const safety = await new Promise((resolve, reject) => {
-      backupRequest.onsuccess = () => resolve(backupRequest.result);
-      backupRequest.onerror = () => reject(backupRequest.error);
-    });
+    const afterScheduleView = await EduV24.snapshotInstallation();
     check(
       "ANNUAL_SCHEDULE04",
-      "Explicit annual schedule resolution retains the complete differing previous state in a safety backup",
-      histories(resolved) === histories(conflicted) &&
-        JSON.stringify(dataOf(resolved, archiveId)) ===
-          JSON.stringify(dataOf(conflicted, archiveId)) &&
-        safety.some(
-          (row) =>
-            row.full &&
-            row.label === "پیش از یکسان‌سازی برنامهٔ سال تحصیلی" &&
-            JSON.stringify(schedule(row.full, second.period.id).activeDays) ===
-              JSON.stringify([1, 3]),
-        ),
+      "Removed legacy schedule overwrite controls stay absent and merely viewing the timetable preserves every conflicting record",
+      !document.querySelector(
+        '[data-workspace-action="apply-academic-schedule"]',
+      ) &&
+        ![...document.querySelectorAll("#app details > summary")].some(
+          (summary) =>
+            summary.textContent.includes("بررسی اختلاف برنامهٔ قدیمی"),
+        ) &&
+        JSON.stringify(afterScheduleView.stores) ===
+          JSON.stringify(conflicted.stores) &&
+        JSON.stringify(
+          schedule(afterScheduleView, second.period.id).activeDays,
+        ) === JSON.stringify([1, 3]),
     );
+    // Restore the earlier uniform synthetic fixture so the remaining backup,
+    // pending-grade and report-note checks run without the deliberate conflict.
+    await restore(beforeFailure);
     goSchool("school_a");
     goClass("class_a");
     goLesson("lesson_dual");

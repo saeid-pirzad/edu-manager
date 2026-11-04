@@ -215,17 +215,10 @@
 // A directory edit belongs to the academic year. All term records, revision
 // checks and history updates are committed by the same IndexedDB transaction.
 globalThis.EduAcademicDirectoryTransaction = Object.freeze({
-  hasChanges({
-    records,
-    changed,
-    removed,
-    before,
-    scheduleResolution = false,
-  }) {
+  hasChanges({ records, changed, removed, before }) {
     const model = globalThis.EduAcademicYearDirectory;
     if (!model || !records?.has("meta")) return false;
-    if (scheduleResolution || removed.some((key) => key.startsWith("class:")))
-      return true;
+    if (removed.some((key) => key.startsWith("class:"))) return true;
     return changed.some(([key, json]) => {
       const previous = before.find((row) => row.key === key)?.value;
       const current = JSON.parse(json);
@@ -545,10 +538,6 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
 
     function apply(family, live, year, term, loaded) {
       nextCatalog = live;
-      if (options.scheduleResolution && directoryRevisions === null)
-        throw Error(
-          "برای یکسان‌سازی برنامهٔ سال، ابتدا پشتیبان کامل و نسخهٔ نوبت‌ها را بررسی کنید.",
-        );
       if (recoveredUndo !== null) {
         const signature = (rows) =>
           JSON.stringify(
@@ -578,12 +567,10 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
       const previousLayout = sourceOld.get("meta").layout,
         currentLayout = sourceNext.get("meta").layout,
         layoutChanged = model.layoutHasChanges(previousLayout, currentLayout),
-        scheduleChanged =
-          !!options.scheduleResolution ||
-          !!model.scheduleHasChanges?.(
-            sourceOld.get("meta"),
-            sourceNext.get("meta"),
-          ),
+        scheduleChanged = !!model.scheduleHasChanges?.(
+          sourceOld.get("meta"),
+          sourceNext.get("meta"),
+        ),
         classPlans = changed
           .filter(([key]) => key.startsWith("class:"))
           .map(([key]) => ({
@@ -766,7 +753,6 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
               sourceOld.get("meta"),
               sourceNext.get("meta"),
               peerMeta,
-              { replace: !!options.scheduleResolution },
             ),
           );
         if (layoutChanged)
@@ -958,7 +944,7 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
             )
           ) {
             const error = Error(
-              "برنامهٔ هفتگی نوبت‌های سال متفاوت است؛ برای انتخاب صریح برنامهٔ درست از «یکسان‌سازی برنامهٔ سال تحصیلی» استفاده کنید.",
+              "برنامهٔ هفتگی نوبت‌های این سال متفاوت است؛ برای جلوگیری از جایگزینی ناخواسته، تغییر ثبت نشد و برنامه‌های قبلی حفظ شدند.",
             );
             error.code = "ACADEMIC_SCHEDULE_CONFLICT";
             throw error;
@@ -1036,21 +1022,11 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
                 };
               })
           : null;
-      const at = new Date().toISOString(),
-        resolutionChanged =
-          !!options.scheduleResolution &&
-          prepared.some(
-            (part) => part.plan.changed.length || part.plan.removed.length,
-          );
+      const at = new Date().toISOString();
       for (const part of prepared) {
         const plan = part.plan,
           isSource = part.period.id === live.id;
-        if (
-          !plan.changed.length &&
-          !plan.removed.length &&
-          !(isSource && resolutionChanged)
-        )
-          continue;
+        if (!plan.changed.length && !plan.removed.length) continue;
         for (const [logical, json] of plan.changed)
           tx.objectStore("records").put({
             key: part.period.id + "|" + logical,
@@ -1151,7 +1127,6 @@ globalThis.EduRecordTransaction = Object.freeze({
     historicalRoster,
     directorySourceUpdates,
     directoryRevisions,
-    scheduleResolution,
     recoveredUndo,
     restoredSessionRecords,
   }) {
@@ -1162,7 +1137,6 @@ globalThis.EduRecordTransaction = Object.freeze({
         changed,
         removed,
         before,
-        scheduleResolution,
       })
     )
       return directoryTransaction.commit({
@@ -1183,7 +1157,6 @@ globalThis.EduRecordTransaction = Object.freeze({
         historicalRoster,
         directorySourceUpdates,
         directoryRevisions,
-        scheduleResolution,
         recoveredUndo,
         restoredSessionRecords,
       });

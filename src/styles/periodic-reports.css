@@ -877,7 +877,31 @@ details.report-class-group:not([open]) > .report-class-body {
 
 @media screen and (max-width: 600px) {
   .report-session-counts {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+    padding-top: 10px;
+  }
+  .report-session-counts .report-metric {
+    justify-content: center;
+    gap: 2px;
+    min-height: 46px;
+    padding: 6px 2px;
+    border-radius: 7px;
+  }
+  .report-session-counts dt {
+    justify-content: center;
+    gap: 0;
+    font-size: clamp(9px, 2.6vw, 10px);
+    line-height: 1.5;
+    white-space: nowrap;
+    overflow-wrap: normal;
+  }
+  .report-session-counts dt::before {
+    display: none;
+  }
+  .report-session-counts dd {
+    font-size: 15px;
+    line-height: 1.3;
   }
   .periodic-session .report-session-heading {
     align-items: flex-start;

@@ -919,56 +919,27 @@ for (const field of ["same-field", "unrelated-field"])
     },
   );
 
-test("explicit selected-schedule resolution replaces only the four annual schedule fields and publishes the source revision", async () => {
+test("retired schedule-resolution flag cannot turn unchanged data into an annual edit", () => {
   const f = annualScheduleFixture();
   f.value("second", "meta").activeDays = [1, 3];
-  f.value("second", "meta").periods = 9;
-  f.value("second", "meta").settings.weekStartDate = "2026-09-26";
-  f.value("second", "meta").masterSchedule["4-4-all"] = {
-    schoolId: "school",
-    classId: "class",
-    lessonId: "lesson",
-  };
-  const before = clone(f.stores.records);
   f.args.changed = [];
   f.args.before = [];
   f.args.scheduleResolution = true;
-  f.args.directoryRevisions = [...f.stores.catalog.values()]
-    .filter((row) => row.year === f.args.workspace.year)
-    .map(({ id, year, revision }) => ({ id, year, revision }));
-  assert.equal(f.c.EduAcademicDirectoryTransaction.hasChanges(f.args), true);
-  await f.commit();
-  assert.deepEqual(
-    plain(
-      f.c.EduAcademicYearDirectory.scheduleProjection(
-        f.value("second", "meta"),
-      ),
-    ),
-    plain(f.c.EduAcademicYearDirectory.scheduleProjection(f.previous)),
-  );
-  assert.equal(f.stores.catalog.get("first").revision, 3);
-  assert.equal(f.stores.catalog.get("second").revision, 4);
-  assert.equal(
-    f.value("second", "meta").settings.password,
-    "second-private-password",
-  );
-  assert.deepEqual(f.value("second"), before.get("second|class:class").value);
-  assert.deepEqual(
-    f.value("second", "session:recovered-session"),
-    before.get("second|session:recovered-session").value,
-  );
+  const before = clone(f.stores);
+  assert.equal(f.c.EduAcademicDirectoryTransaction.hasChanges(f.args), false);
+  assert.deepEqual(clone(f.stores), before);
+  assert.deepEqual(f.writes, []);
 });
 
-for (const mode of ["missing-guard", "stale-guard", "peer-put-failure"])
+for (const mode of ["missing-guard", "matching-guard", "stale-guard"])
   test(
-    "selected-schedule resolution preserves all stores when " + mode,
+    "retired schedule-resolution flag cannot bypass a conflicting annual edit: " +
+      mode,
     async () => {
-      const f = annualScheduleFixture({
-        failCompanionWrite: mode === "peer-put-failure",
-      });
+      const f = annualScheduleFixture();
       f.value("second", "meta").activeDays = [1, 3];
-      f.args.changed = [];
-      f.args.before = [];
+      f.args.records.get("meta").activeDays = [0, 2, 4];
+      f.args.changed[0][1] = JSON.stringify(f.args.records.get("meta"));
       f.args.scheduleResolution = true;
       if (mode !== "missing-guard")
         f.args.directoryRevisions = [...f.stores.catalog.values()]
@@ -977,9 +948,22 @@ for (const mode of ["missing-guard", "stale-guard", "peer-put-failure"])
       if (mode === "stale-guard")
         f.args.directoryRevisions.find((row) => row.id === "second").revision--;
       const before = clone(f.stores);
-      await assert.rejects(f.commit());
+      assert.equal(
+        f.c.EduAcademicDirectoryTransaction.hasChanges(f.args),
+        true,
+      );
+      await assert.rejects(
+        f.commit(),
+        (error) =>
+          error.code ===
+          (mode === "stale-guard"
+            ? "WORKSPACE_CONFLICT"
+            : "ACADEMIC_SCHEDULE_CONFLICT"),
+      );
       assert.deepEqual(clone(f.stores), before);
+      assert.deepEqual(f.writes, []);
       assert.deepEqual(f.args.annualChanged, []);
+      assert.deepEqual(f.args.directorySourceUpdates, []);
     },
   );
 
