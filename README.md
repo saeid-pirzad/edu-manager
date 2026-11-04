@@ -70,6 +70,16 @@ npm run dev برای توسعه، برنامه را روی http://127.0.0.1:4173
 تکرار بازیابی و بازکردن آفلاین را با ۱۰۰ هنرجو و ۵۱۲ جلسهٔ مصنوعی بررسی می‌کند.
 این آزمون در `npm run check:release` و CI نیز با پروفایل موقت جداگانه اجرا می‌شود.
 
+### انتشار کنترل‌شده در GitHub Pages
+
+گردش‌کار [.github/workflows/ci.yml](.github/workflows/ci.yml) با نام «Verify and deploy EduManager»، ابتدا روی Windows تمام بررسی‌های `npm run check:release` و سپس بسته‌بندی را اجرا می‌کند. فقط پس از موفقیت هر دو مرحله، محتوای `dist` به‌عنوان بستهٔ Pages ارسال می‌شود؛ job جداگانهٔ `deploy` به موفقیت `verify` وابسته است.
+
+انتشار فقط برای مخزن `saeid-pirzad/edu-manager` و شاخهٔ `master` فعال است. Pull Requestها و شاخه‌های دیگر بررسی می‌شوند و اجازهٔ ارسال یا انتشار بسته ندارند. دسترسی نوشتن Pages و توکن OIDC فقط به job انتشار داده می‌شود. اجرای درحال‌انجام master برای انتشار جدید لغو نمی‌شود.
+
+تنظیم یک‌بارهٔ مخزن در GitHub: **Settings → Pages → Build and deployment → Source → GitHub Actions**. این گزینه باید پیش از اولین Push گردش‌کار جدید فعال باشد تا انتشار قدیمی از ریشهٔ master ادامه پیدا نکند. ساختار، مجوزها و محیط `github-pages` مطابق [راهنمای رسمی GitHub](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages) است؛ توکن شخصی در فایل گردش‌کار قرار نمی‌گیرد.
+
+پس از Push روی master، در تب **Actions** وضعیت `verify` و سپس `deploy` را دنبال کنید. شکست آزمون یا بسته‌بندی، انتشار همان اجرا را متوقف می‌کند. نشانی برنامه همان **https://saeid-pirzad.github.io/edu-manager/** است؛ نام پوشهٔ `dist` وارد نشانی عمومی نمی‌شود و هویت نصب فعلی PWA حفظ می‌شود.
+
 ## ساختار و مرجع
 
 - [معماری و روابط](docs/ARCHITECTURE.md)

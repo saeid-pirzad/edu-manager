@@ -1,7 +1,11 @@
-name: Verify EduManager
+name: Verify and deploy EduManager
 on: [push, pull_request, workflow_dispatch]
 permissions:
   contents: read
+# Keep a running master release intact; newer PR checks may replace older ones.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 jobs:
   verify:
     runs-on: windows-latest
@@ -10,9 +14,36 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+          cache: npm
       - run: npm ci
       - run: npm run check:release
       - run: npm run release:package
+      # Upload only the checked package, never the repository root.
+      - uses: actions/upload-pages-artifact@v4
+        if: github.repository == 'saeid-pirzad/edu-manager' && github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+        with:
+          name: github-pages
+          path: dist
+          retention-days: 1
+  deploy:
+    needs: verify
+    if: github.repository == 'saeid-pirzad/edu-manager' && github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
+      - uses: actions/deploy-pages@v5
+        id: deployment
+        with:
+          artifact_name: github-pages

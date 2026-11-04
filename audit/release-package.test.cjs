@@ -4,6 +4,8 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
+const vm = require("node:vm");
+const { applicationFiles } = require("../scripts/application-files.cjs");
 const { packageRelease } = require("../scripts/package-release.cjs");
 
 function fixture(t) {
@@ -142,4 +144,84 @@ test("release rejects a nested destination junction before writing any allowed f
     fs.readFileSync(path.join(root, "dist/index.html"), "utf8"),
     "old version",
   );
+});
+
+test("a missing required source asset leaves the existing release unchanged", (t) => {
+  const { root, write } = fixture(t);
+  const previous = packageRelease(root);
+  const snapshot = new Map(
+    previous.files.map((name) => [
+      name,
+      fs.readFileSync(path.join(previous.output, name)),
+    ]),
+  );
+  write("index.html", "new entry must not be copied after preflight fails");
+  write(
+    "assets/scripts/app.js",
+    "newApp();\n//# sourceMappingURL=app.js.map\n",
+  );
+  fs.unlinkSync(path.join(root, "assets/scripts/app.js.map"));
+  assert.throws(() => packageRelease(root), /ENOENT|Missing source map/);
+  for (const [name, bytes] of snapshot)
+    assert.deepEqual(
+      fs.readFileSync(path.join(previous.output, name)),
+      bytes,
+      "preflight failure must preserve " + name,
+    );
+});
+
+test("the complete packaged PWA keeps its existing project-root identity and every offline URL", (t) => {
+  const { root, write } = fixture(t);
+  const project = path.resolve(__dirname, "..");
+  const expected = [...applicationFiles(project).keys()].sort();
+  for (const name of expected)
+    write(name, fs.readFileSync(path.join(project, name)));
+  const packaged = packageRelease(root);
+  assert.deepEqual(packaged.files.sort(), expected);
+  const base = new URL("https://saeid-pirzad.github.io/edu-manager/");
+  const manifest = JSON.parse(
+    fs.readFileSync(path.join(packaged.output, "app.webmanifest"), "utf8"),
+  );
+  assert.equal(
+    new URL(manifest.id, base).href,
+    base.href,
+    "the installed application identity must not change to /dist/",
+  );
+  const entry = new URL(manifest.start_url, base);
+  assert.equal(entry.href, new URL("EduManager.html", base).href);
+  assert.ok(entry.href.startsWith(new URL(manifest.scope, base).href));
+  assert.match(
+    fs.readFileSync(path.join(packaged.output, "index.html"), "utf8"),
+    /url=\.\/EduManager\.html/,
+  );
+  const workerUrl = new URL("service-worker.js", base);
+  const worker = fs.readFileSync(
+    path.join(packaged.output, "service-worker.js"),
+    "utf8",
+  );
+  const baseExpression = worker.match(/const BASE = ([^;]+);/);
+  assert.ok(baseExpression, "the worker must resolve its own hosting base");
+  const workerBase = vm.runInNewContext(baseExpression[1], {
+    URL,
+    self: { location: { href: workerUrl.href } },
+  });
+  assert.equal(workerBase.href, base.href);
+  const cacheDeclaration = worker.match(/const FILES\s*=\s*(\[[\s\S]*?\]);/);
+  assert.ok(cacheDeclaration);
+  const cached = Array.from(vm.runInNewContext(cacheDeclaration[1]));
+  for (const name of cached) {
+    assert.ok(
+      packaged.files.includes(name),
+      "offline dependency must exist in the artifact: " + name,
+    );
+    const url = new URL(name, workerBase);
+    assert.equal(url.origin, base.origin);
+    assert.ok(
+      url.pathname.startsWith(base.pathname),
+      "an offline URL must stay inside the current project path",
+    );
+    assert.equal(url.pathname.includes("/dist/"), false);
+  }
+  for (const directory of ["docs", "src", ".git", "audit", "scripts"])
+    assert.equal(fs.existsSync(path.join(packaged.output, directory)), false);
 });
