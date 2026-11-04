@@ -23,7 +23,7 @@ function job(source, name) {
   return match[1];
 }
 function steps(source) {
-  return source.match(/^      - [\s\S]*?(?=^      - |$(?![\s\S]))/gm) || [];
+  return source.match(/^ {6}- [\s\S]*?(?=^ {6}- |$(?![\s\S]))/gm) || [];
 }
 function actionStep(source, action) {
   const match = steps(source).find((step) => step.includes("uses: " + action));
@@ -72,6 +72,7 @@ test("Pages uploads exactly the packaged application only after installation, re
   const verify = job(source, "verify");
   assert.match(verify, /runs-on:\s*windows-latest/);
   const install = verify.indexOf("- run: npm ci");
+  assert.match(verify, /^\s+- run: npm ci --no-audit --no-fund\s*$/m);
   const check = verify.indexOf("- run: npm run check:release");
   const pack = verify.indexOf("- run: npm run release:package");
   const upload = verify.indexOf("uses: actions/upload-pages-artifact@v4");

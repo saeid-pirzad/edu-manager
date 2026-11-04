@@ -19,7 +19,7 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-      - run: npm ci
+      - run: npm ci --no-audit --no-fund
       - run: npm run check:release
       - run: npm run release:package
       # Upload only the checked package, never the repository root.
