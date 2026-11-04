@@ -37,6 +37,7 @@ function error(e) {
 function invalidate(
   message = "اطلاعات گزارش تغییر کرده است؛ دوباره گزارش را تهیه کنید.",
 ) {
+  invalidateExcelShare(message);
   last = null;
   const out = document.getElementById("periodicReportOutput");
   if (out)

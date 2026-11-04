@@ -74,3 +74,6 @@ npm run bench
 - finalize-write-boundary.test.cjs: نمرهٔ تازه و تغییر اتصال هنگام بستن نوبت.
 - service-worker-cache.test.cjs و pwa-update-safety.test.cjs: cache ناقص، فعال‌شدن دیرهنگام، قفل و راه بازکردن دوباره.
 - release-package.test.cjs: فهرست دقیق و بایت‌های بسته، خارج‌ماندن فایل شخصی، امتناع از حذف فایل نامنتظره و رد symlink/junction مبدأ و مقصد.
+
+- report-excel-sharing.test.cjs: فایل XLSX بدون تغییر پسوند، حفظ مجوز کلیک، لغو و مسیر دریافت، اعتبار محدوده و اطلاعات، و جلوگیری از تداخل عملیات ارسال و دریافت.
+- report-excel-sharing-browser.cjs: دکمه‌های واقعی، محتوای XLSX با خوانندهٔ مستقل، جایگزین دریافت و نمای موبایل؛ اشتراک بومی شبیه‌سازی می‌شود و ارسال واقعی در پیام‌رسان آزموده نمی‌شود. در report-excel-browser نیز اجرا می‌شود.

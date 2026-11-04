@@ -92,6 +92,7 @@ function fixture(saved = new Map()) {
     "src/reports/periodic/notes.js",
     "src/reports/periodic/model.js",
     "src/reports/periodic/filters.js",
+    "src/reports/periodic/excel-sharing.js",
     "src/reports/periodic/generate.js",
   ])
     vm.runInContext(fs.readFileSync(p, "utf8"), c, { filename: p });

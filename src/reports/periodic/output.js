@@ -14,7 +14,8 @@ async function output(kind) {
         },
       );
     }
-    if (!["txt", "json", "deputy", "xlsx"].includes(kind)) return false;
+    if (!["txt", "json", "deputy", "xlsx", "xlsx-share"].includes(kind))
+      return false;
     await root.EduV24.assertReportSnapshot(prepared.context);
     if (!isPreparedCurrent(prepared))
       throw Error(
@@ -29,11 +30,13 @@ async function output(kind) {
       );
       return true;
     }
-    if (kind === "xlsx") {
+    if (kind === "xlsx" || kind === "xlsx-share") {
       const blob = xlsxWorkbook(excelReportSheets(model));
       if (!isPreparedCurrent(prepared))
         throw Error("محدوده گزارش تغییر کرده است؛ دوباره تلاش کنید.");
-      downloadLocalFile(blob, excelReportFilename(model));
+      const name = excelReportFilename(model);
+      if (kind === "xlsx-share") return openExcelShare(prepared, blob, name);
+      downloadLocalFile(blob, name);
       const status = document.getElementById("periodicExportStatus");
       if (status)
         status.textContent =
@@ -84,6 +87,8 @@ root.EduPeriodicReports = {
   },
   generate,
   output,
+  sharePreparedExcel,
+  downloadPreparedExcel,
   build,
   range,
   addDays,

@@ -49,12 +49,12 @@ module.exports = async ({ cdp, evaluate, cases }) => {
       cases.push({
         id: "export-row-" + width,
         name:
-          "Persistent deputy action and four responsive report exports at " +
+          "Persistent deputy action and five responsive report exports at " +
           width,
         pass:
           (width <= 1000 || observed.sameRow) &&
           observed.persistentCopy &&
-          observed.exportCount === 4 &&
+          observed.exportCount === 5 &&
           observed.separateCopy &&
           observed.noClipping,
         observed,

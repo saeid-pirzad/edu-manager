@@ -18,3 +18,18 @@ EduLegacyEvents.register("reports-periodic-document:deputy", function () {
 EduLegacyEvents.register("reports-periodic-document:xlsx", function () {
   return EduPeriodicReports.output("xlsx");
 });
+
+EduLegacyEvents.register("reports-periodic-document:xlsx-share", function () {
+  return EduPeriodicReports.output("xlsx-share");
+});
+
+EduLegacyEvents.register("reports-periodic-document:share-file", function () {
+  return EduPeriodicReports.sharePreparedExcel(this);
+});
+
+EduLegacyEvents.register(
+  "reports-periodic-document:download-file",
+  function () {
+    return EduPeriodicReports.downloadPreparedExcel();
+  },
+);

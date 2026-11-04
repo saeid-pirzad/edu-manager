@@ -7227,6 +7227,152 @@ details.report-class-group:not([open]) > .report-class-body {
     color: #94a3b8;
   }
 }
+
+/* File sharing keeps the generated workbook local until the user chooses a destination. */
+@media screen {
+  #app .periodic-document .periodic-export-actions {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  #app
+    .periodic-document
+    .periodic-export-actions
+    > button[data-periodic-excel-share] {
+    background: #eef3fb;
+    border-color: #d2dff2;
+    color: #365b92;
+  }
+  #modal:has(.report-excel-share) .modal-dialog {
+    width: min(100%, 500px);
+    max-height: calc(var(--app-viewport, 100dvh) - 32px);
+    border-radius: 18px;
+  }
+  #modal:has(.report-excel-share) .modal-header {
+    padding: 14px 18px;
+    background: #faf9f7;
+  }
+  #modal:has(.report-excel-share) .modal-header h3 {
+    min-width: 0;
+    font-size: 16px;
+    overflow-wrap: anywhere;
+  }
+  #modal:has(.report-excel-share) .modal-body {
+    min-height: 0;
+    padding: 18px;
+    overflow: auto;
+    background: #fff;
+  }
+  #modalBody .report-excel-share {
+    display: grid;
+    gap: 16px;
+    min-width: 0;
+    color: var(--workflow-ink);
+  }
+  .report-share-heading {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .report-share-heading > span {
+    display: grid;
+    place-items: center;
+    flex: 0 0 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: #edf7f1;
+    color: #246c4f;
+  }
+  .report-share-heading > div {
+    min-width: 0;
+  }
+  #modalBody .report-excel-share h4 {
+    margin: 0 0 5px;
+    font-size: 15px;
+    line-height: 1.8;
+  }
+  #modalBody .report-excel-share p {
+    margin: 0;
+    color: var(--workflow-muted);
+    font-size: 12px;
+    line-height: 1.95;
+    overflow-wrap: anywhere;
+  }
+  .report-share-file {
+    display: grid;
+    gap: 8px;
+    min-width: 0;
+    padding: 14px;
+    background: #f7f6f3;
+    border: 1px solid var(--workflow-line);
+    border-radius: 12px;
+    color: var(--workflow-muted);
+    font-size: 12px;
+    line-height: 1.9;
+    overflow-wrap: anywhere;
+  }
+  .report-share-file strong {
+    color: var(--workflow-ink);
+    font-weight: 500;
+  }
+  #modalBody .report-excel-share [data-state="error"] {
+    color: #ac2632;
+  }
+  .report-share-actions {
+    display: grid;
+    gap: 8px;
+  }
+  #modalBody .report-share-actions button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 0;
+    min-height: 46px;
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.8;
+    white-space: normal;
+  }
+  #modalBody .report-share-actions button[hidden] {
+    display: none;
+  }
+  #modalBody .report-share-actions button:focus-visible {
+    outline: 2px solid var(--workflow-accent);
+    outline-offset: 3px;
+  }
+}
+@media screen and (max-width: 700px),
+  screen and (max-width: 1000px) and (pointer: coarse) {
+  #app .periodic-document .periodic-export-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  #app
+    .periodic-document
+    .periodic-export-actions
+    > button[data-periodic-print] {
+    grid-column: 1 / -1;
+  }
+}
+@media screen and (max-width: 700px) {
+  #modal:has(.report-excel-share) {
+    padding: 12px;
+    align-items: center;
+  }
+  #modal:has(.report-excel-share) .modal-dialog {
+    max-height: calc(var(--app-viewport, 100dvh) - 24px);
+    border-radius: 16px;
+  }
+  #modal:has(.report-excel-share) .modal-header {
+    padding: 10px 14px;
+  }
+  #modal:has(.report-excel-share) .modal-header h3 {
+    font-size: 14px;
+  }
+  #modal:has(.report-excel-share) .modal-body {
+    padding: 16px;
+  }
+}
 /* Source: src/styles/daily-dashboard.css */
 /* Daily work dashboard: content order follows the daily workflow. */
 .dashboard-work {

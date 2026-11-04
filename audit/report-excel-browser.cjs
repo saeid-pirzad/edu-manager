@@ -105,6 +105,14 @@ async function run({ cdp, evaluate, cases, delay }) {
         ),
       },
     });
+    await require("./report-excel-sharing-browser.cjs")({
+      cdp,
+      evaluate,
+      cases,
+      delay,
+      directory,
+      setup,
+    });
   } finally {
     await cdp("Network.emulateNetworkConditions", {
       offline: false,

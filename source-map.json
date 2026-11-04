@@ -260,6 +260,7 @@
         "src/reports/periodic/generate.js",
         "src/reports/periodic/xlsx-workbook.js",
         "src/reports/periodic/excel.js",
+        "src/reports/periodic/excel-sharing.js",
         "src/reports/periodic/output.js"
       ]
     },
