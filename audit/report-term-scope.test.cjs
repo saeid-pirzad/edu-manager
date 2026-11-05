@@ -205,6 +205,7 @@ function orchestrationFixture(mode = "daily", audience = "management") {
     async assertReportSnapshot(value) {
       assertions.push(value);
     },
+    periodicKarnamehHtml: () => "",
     annualGradeRows: (values) => {
       assert.equal(values, parts);
       return [];

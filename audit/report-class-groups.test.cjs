@@ -114,7 +114,8 @@ test("standalone session disclosure retains all class labels and sorts dates and
     assert.equal((html.match(new RegExp(id, "g")) || []).length, 1);
   assert.ok(html.indexOf("A_EARLY") < html.indexOf("B_ONLY"));
   assert.ok(html.indexOf("B_ONLY") < html.indexOf("A_LATER"));
-  assert.equal((html.match(/class="periodic-session"/g) || []).length, 4);
+  assert.equal((html.match(/class="periodic-session\b/g) || []).length, 4);
+  assert.equal((html.match(/class="report-session-day"/g) || []).length, 2);
   assert.doesNotMatch(html, /<details[^>]*\bopen\b/);
   assert.equal(JSON.stringify(m), before);
 });

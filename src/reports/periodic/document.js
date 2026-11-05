@@ -66,16 +66,36 @@ function sessionDisclosureHtml(m, sessions) {
       a.period - b.period ||
       String(a.id || "").localeCompare(String(b.id || "")),
   );
+  const days = new Map();
+  for (const session of ordered) {
+    if (!days.has(session.date)) days.set(session.date, []);
+    days.get(session.date).push(session);
+  }
+  let body = "";
+  for (const [date, items] of days) {
+    body +=
+      '<section class="report-session-day"><header class="report-session-day-heading"><h4><time datetime="' +
+      esc(date) +
+      '">' +
+      esc(faDate(date)) +
+      "</time></h4><span>" +
+      num(items.length) +
+      " جلسه</span></header>" +
+      items.map((s) => sessionDetailsHtml(m, s, { grouped: true })).join("") +
+      "</section>";
+  }
   return (
-    '<details class="report-session-disclosure"><summary class="report-session-toggle"><span class="report-session-toggle-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4M16 3v4M4 11h16M8 15h3M8 18h6"/></svg></span><span class="report-session-toggle-label"><strong>جزئیات جلسات و ثبت‌ها</strong><small>' +
+    '<details class="report-session-disclosure"' +
+    (m.audience === "parent" ? " open" : "") +
+    '><summary class="report-session-toggle"><span class="report-session-toggle-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4M16 3v4M4 11h16M8 15h3M8 18h6"/></svg></span><span class="report-session-toggle-label"><strong>جزئیات جلسات و ثبت‌ها</strong><small>' +
     num(sessions.length) +
-    ' جلسه · به ترتیب تاریخ و زنگ</small></span><svg class="report-session-chevron no-print" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary><div class="report-session-body">' +
-    ordered.map((s) => sessionDetailsHtml(m, s)).join("") +
+    ' جلسه</small></span><svg class="report-session-chevron no-print" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary><div class="report-session-body">' +
+    body +
     "</div></details>"
   );
 }
 
-function sessionDetailsHtml(m, s) {
+function sessionDetailsHtml(m, s, { grouped = false } = {}) {
   const statuses = [
     ["present", "حاضر"],
     ["absent", "غایب"],
@@ -83,17 +103,34 @@ function sessionDetailsHtml(m, s) {
     ["late", "تأخیر"],
     ["unknown", "تعیین‌نشده"],
   ];
-  let html =
-    '<section class="periodic-session"><header class="report-session-heading"><span class="report-session-date"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4M16 3v4M4 11h16"/></svg>' +
-    esc(faDate(s.date)) +
-    (s.academicTerm ? " · نوبت " + esc(s.academicTerm) : "") +
-    '</span><span class="report-session-period">زنگ ' +
-    num(s.period + 1) +
-    '</span></header><div class="report-session-identity"><h4>' +
-    esc(s.className) +
-    '</h4><div class="report-session-lesson"><strong>' +
-    esc(s.lessonName) +
-    "</strong>" +
+  let html = grouped
+    ? '<details class="periodic-session report-session-compact"><summary class="report-session-heading report-session-item-toggle"><span class="report-session-period">زنگ ' +
+      num(s.period + 1) +
+      '</span><span class="report-session-item-title"><strong>' +
+      esc(s.className) +
+      "</strong><small>" +
+      esc(s.lessonName) +
+      '</small></span><span class="report-session-item-date">' +
+      esc(faDate(s.date)) +
+      (s.academicTerm ? " · نوبت " + esc(s.academicTerm) : "") +
+      '</span><svg class="report-session-item-chevron no-print" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 9 6 6 6-6"/></svg></summary><div class="report-session-content"><div class="report-session-identity">'
+    : '<section class="periodic-session' +
+      (grouped ? " report-session-compact" : "") +
+      '"><header class="report-session-heading">' +
+      (grouped
+        ? '<span class="report-session-class">' + esc(s.className) + "</span>"
+        : '<span class="report-session-date"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4M16 3v4M4 11h16"/></svg>' +
+          esc(faDate(s.date)) +
+          (s.academicTerm ? " · نوبت " + esc(s.academicTerm) : "") +
+          "</span>") +
+      '<span class="report-session-period">زنگ ' +
+      num(s.period + 1) +
+      '</span></header><div class="report-session-identity"><h4>' +
+      esc(s.className) +
+      "</h4>";
+  html +=
+    '<div class="report-session-lesson">' +
+    (grouped ? "" : "<strong>" + esc(s.lessonName) + "</strong>") +
     (s.moduleName
       ? "<small>" +
         esc(s.moduleName) +
@@ -128,40 +165,50 @@ function sessionDetailsHtml(m, s) {
   }
   const participants = reportParticipants(m, s);
   if (participants.length) {
-    html += '<ol class="report-session-students">';
+    html +=
+      '<div class="report-session-table-wrap"><table class="report-session-table" data-mobile-layout="compact"><caption>حضور و فعالیت‌های ثبت‌شدهٔ هنرجویان</caption><colgroup><col class="report-session-name-col"><col class="report-session-status-col"><col></colgroup><thead><tr><th scope="col">هنرجو</th><th scope="col">حضور</th><th scope="col">نمره، امتیاز و تکلیف</th></tr></thead><tbody>';
     for (const p of participants) {
       const status = statuses.some(([key]) => key === p.attendance.status)
         ? p.attendance.status
         : "unknown";
       html +=
-        '<li><div class="report-session-student-heading"><strong>' +
+        '<tr><th scope="row" class="report-session-student-heading"><bdi>' +
         esc(p.name) +
-        '</strong><span class="report-session-attendance report-metric report-metric-' +
+        '</bdi></th><td><span class="report-session-attendance report-metric report-metric-' +
         status +
         '">' +
         esc(p.attendance.label) +
         (p.attendance.minutes == null
           ? ""
           : " · " + num(p.attendance.minutes) + " دقیقه") +
-        "</span></div>";
+        "</span></td><td>";
       if (p.scores.length) {
         html += '<ul class="report-session-scores">';
         for (const score of p.scores)
           html +=
-            "<li><span>" +
+            '<li data-score-kind="' +
+            (["positive", "negative", "homework"].includes(score.type)
+              ? score.type
+              : "grade") +
+            '"><span>' +
             esc(score.label) +
             "</span><strong>" +
             esc(score.value ?? "—") +
             "</strong>" +
-            (score.note ? "<p>" + esc(score.note) + "</p>" : "") +
+            (score.note
+              ? '<span class="report-session-score-note">' +
+                (m.audience === "parent" ? "توضیح / تذکر: " : "") +
+                esc(score.note) +
+                "</span>"
+              : "") +
             "</li>";
         html += "</ul>";
-      }
-      html += "</li>";
+      } else html += '<span class="report-session-no-score">—</span>';
+      html += "</td></tr>";
     }
-    html += "</ol>";
+    html += "</tbody></table></div>";
   }
-  return html + "</section>";
+  return html + (grouped ? "</div></details>" : "</section>");
 }
 
 function periodicReportHeadingHtml(m) {
@@ -170,7 +217,7 @@ function periodicReportHeadingHtml(m) {
   const audience = m.audience === "parent" ? "ویژه اولیا" : "مدیریت مدرسه";
   const detail =
     m.audience === "parent"
-      ? "گزارش یک هنرجو"
+      ? "گزارش کامل عملکرد هنرجو"
       : m.detailLevel === "summary"
         ? "خلاصه مدیریتی"
         : "جزئیات کامل";
@@ -234,7 +281,7 @@ function periodicReportHeadingHtml(m) {
   );
 }
 
-function documentHtml(m) {
+function documentHtml(m, gradeHtml = "") {
   let h =
     '<article class="card report-document periodic-document">' +
     periodicReportHeadingHtml(m);
@@ -245,8 +292,28 @@ function documentHtml(m) {
   if (m.audience === "management" && m.sessions.length) {
     h += studentFollowupHtml(m);
   }
+  if (m.audience === "parent") {
+    h +=
+      '<section class="report-parent-performance"><h3>جمع‌بندی عملکرد هنرجو در بازهٔ گزارش</h3><p class="periodic-method">آمار حضور بر مبنای جلسه است. تعداد ثبت‌ها، مجموع امتیاز یا نمره نیست؛ جزئیات هر ثبت در ادامه آمده است.</p><table class="report-session-table" data-mobile-layout="compact"><caption>جمع‌بندی عملکرد هنرجو</caption><thead><tr><th scope="col">موضوع</th><th scope="col">وضعیت ثبت</th></tr></thead><tbody>';
+    for (const [label, value] of parentPerformanceRows(m))
+      h +=
+        '<tr><th scope="row">' +
+        esc(label) +
+        "</th><td>" +
+        esc(value) +
+        "</td></tr>";
+    h += "</tbody></table></section>";
+    if (m.annualGrades?.length || m.technicalGrades?.length)
+      h +=
+        '<p class="periodic-method">حضور و فعالیت‌ها فقط مربوط به بازه و ترم گزارش‌اند؛ بخش نمرات سال، وضعیت فعلی نمرات همین هنرجو در کل سال تحصیلی را نشان می‌دهد.</p>';
+  }
   h += sessionDisclosureHtml(m, m.sessions);
-  if (m.technicalGrades?.length) {
+  if (gradeHtml)
+    h +=
+      '<section class="periodic-karnameh"><h3>کارنامهٔ نمرات</h3>' +
+      gradeHtml +
+      "</section>";
+  if (!gradeHtml && m.technicalGrades?.length) {
     h += "<section><h3>نمرات فنی و پودمانی</h3>";
     for (const grade of m.technicalGrades) {
       h +=
@@ -294,7 +361,7 @@ function documentHtml(m) {
     }
     h += "</section>";
   }
-  if (m.annualGrades) {
+  if (!gradeHtml && m.annualGrades) {
     h +=
       '<section class="annual-grades"><h3>نمرات چهار مرحله سال</h3><p>هر مرحله طبق تنظیمات همان نوبت محاسبه می‌شود؛ نهایی سالانه میانگین برابر چهار مرحله است. نمره ثبت‌نشده، صفر نیست.</p><div class="assessment-students">';
     for (const grade of m.annualGrades) {

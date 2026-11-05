@@ -27,6 +27,43 @@ function reportParticipants(model, session) {
     ? session.participants.filter((participant) => participant.scores.length)
     : session.participants;
 }
+function parentPerformanceRows(m) {
+  const scores = m.sessions.flatMap((session) =>
+    reportParticipants(m, session).flatMap((p) => p.scores),
+  );
+  const groups = [
+    ["نمره‌های ثبت‌شده", ["mostamar", "payani", "classGrade"]],
+    ["امتیاز مثبت", ["positive"]],
+    ["امتیاز منفی", ["negative"]],
+    ["تکلیف", ["homework"]],
+    ["فعالیت کلاسی", ["activity"]],
+  ];
+  const known = new Set(groups.flatMap(([, types]) => types));
+  return [
+    ["جلسات ثبت‌شده", num(m.summary.sessions)],
+    [
+      "حاضر (شامل تأخیر)",
+      num((m.summary.present || 0) + (m.summary.late || 0)),
+    ],
+    ["غایب", num(m.summary.absent)],
+    ["مرخصی", num(m.summary.leave)],
+    ["با تأخیر (زیرمجموعهٔ حاضر)", num(m.summary.late)],
+    ["حضور تعیین‌نشده", num(m.summary.unknown)],
+    ...groups.map(([label, types]) => [
+      label,
+      num(scores.filter((score) => types.includes(score.type)).length) + " ثبت",
+    ]),
+    [
+      "سایر ثبت‌ها",
+      num(scores.filter((score) => !known.has(score.type)).length) + " ثبت",
+    ],
+    [
+      "توضیحات همراه ثبت‌ها",
+      num(scores.filter((score) => String(score.note || "").trim()).length) +
+        " مورد",
+    ],
+  ];
+}
 function textReport(m) {
   const lines = [
     "گزارش " +
@@ -75,6 +112,14 @@ function textReport(m) {
   );
   if (!m.sessions.length)
     lines.push("در این بازه و محدوده، جلسه مرتبطی ثبت نشده است.");
+  if (m.audience === "parent") {
+    lines.push("", "جمع‌بندی عملکرد هنرجو در بازهٔ گزارش");
+    for (const [label, value] of parentPerformanceRows(m))
+      lines.push(label + ": " + value);
+    lines.push(
+      "تعداد ثبت‌ها، مجموع امتیاز یا نمره نیست؛ جزئیات و توضیحات هر ثبت در ادامه آمده است.",
+    );
+  }
   if (m.audience === "management") {
     lines.push("", "وضعیت هنرجویان");
     for (const st of m.students)

@@ -405,7 +405,11 @@ function individualKarnameh(c, options = {}) {
     esc(
       [options.schoolName, c.name, workspace.year].filter(Boolean).join(" · "),
     ) +
-    '</p></div><div class="karnameh-report-actions no-print"><button type="button" data-workspace-action="print">چاپ / PDF</button></div></header>' +
+    "</p></div>" +
+    (options.embedded
+      ? ""
+      : '<div class="karnameh-report-actions no-print"><button type="button" data-workspace-action="print">چاپ / PDF</button></div>') +
+    "</header>" +
     '<div class="karnameh-student-meta"><span>کد هنرجو: <strong>' +
     esc(
       student.code == null || student.code === ""
@@ -417,7 +421,7 @@ function individualKarnameh(c, options = {}) {
     " درس</span>" +
     (archived ? '<span class="karnameh-archived-tag">بایگانی</span>' : "") +
     "</div>" +
-    createKarnamehStudentNavigation(c, student) +
+    (options.embedded ? "" : createKarnamehStudentNavigation(c, student)) +
     (body
       ? body
       : '<div class="report-empty" role="status">هنوز درسی در این کلاس تعریف نشده است.</div>') +
@@ -519,8 +523,13 @@ function applyKarnamehStage(report, kind, selected) {
     if (scroll) scroll.scrollLeft = 0;
   }
 }
-function initKarnamehStageControls(report, { schoolId, classId }) {
-  const preference = karnamehStagePreference(schoolId, classId);
+function initKarnamehStageControls(
+  report,
+  { schoolId, classId, validate = null },
+) {
+  const preference = validate
+    ? { assessment: "first-midterm", modular: "module-0", legacy: "first-term" }
+    : karnamehStagePreference(schoolId, classId);
   for (const section of report.querySelectorAll(".karnameh-subject-section")) {
     const table = section.querySelector("table.karnameh-sheet-table");
     if (!table) continue;
@@ -583,6 +592,7 @@ function initKarnamehStageControls(report, { schoolId, classId }) {
     applyKarnamehStage(report, kind, selected);
   }
   karnamehStageControllers.set(report, {
+    validate,
     scope: preference.scope,
     workspaceId: workspace.id,
     schoolId,
@@ -604,15 +614,17 @@ async function selectKarnamehStage(button) {
     report.isConnected &&
     button.isConnected &&
     report.contains(section) &&
-    document.getElementById("karnamehTabOutput")?.contains(report) &&
-    workspace.id === controller.workspaceId &&
-    state.view === "reports" &&
-    state.reportTab === "karnameh" &&
-    karnamehFilter.classId === controller.classId &&
-    karnamehFilter.studentId === controller.studentId &&
-    (!karnamehFilter.schoolId ||
-      karnamehFilter.schoolId === controller.schoolId) &&
-    karnamehStageSelection.scope === controller.scope;
+    (controller.validate
+      ? controller.validate()
+      : document.getElementById("karnamehTabOutput")?.contains(report) &&
+        workspace.id === controller.workspaceId &&
+        state.view === "reports" &&
+        state.reportTab === "karnameh" &&
+        karnamehFilter.classId === controller.classId &&
+        karnamehFilter.studentId === controller.studentId &&
+        (!karnamehFilter.schoolId ||
+          karnamehFilter.schoolId === controller.schoolId) &&
+        karnamehStageSelection.scope === controller.scope);
   if (
     !current() ||
     !["assessment", "modular", "legacy"].includes(kind) ||
@@ -634,6 +646,6 @@ async function selectKarnamehStage(button) {
     return;
   }
   if (!current() || controller.requests[kind] !== request) return;
-  karnamehStageSelection[kind] = selected;
+  if (!controller.validate) karnamehStageSelection[kind] = selected;
   applyKarnamehStage(report, kind, selected);
 }

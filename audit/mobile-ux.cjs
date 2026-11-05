@@ -720,9 +720,9 @@ async function inspectMobileUx() {
       !!controls && !controls.querySelector("label label"),
     );
     add(
-      mode + " report preserves one date picker",
+      mode + " report exposes the appropriate date controls",
       controls.querySelectorAll('[data-gregorian-target="true"]').length ===
-        (mode === "annual" ? 0 : 1),
+        (mode === "weekly" ? 2 : mode === "annual" ? 0 : 1),
     );
   }
   setReportTab("daily");

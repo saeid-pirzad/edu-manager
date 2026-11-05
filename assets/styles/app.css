@@ -7183,64 +7183,83 @@ summary {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
-.report-session-students,
+.report-session-table-wrap {
+  margin-top: 12px;
+  min-width: 0;
+}
+.periodic-document .report-session-table {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 0.76rem;
+}
+.report-session-table caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.report-session-name-col {
+  width: 30%;
+}
+.report-session-status-col {
+  width: 56px;
+}
+.periodic-document .report-session-table :is(th, td) {
+  padding: 7px 8px;
+  text-align: start;
+  vertical-align: top;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--theme-line-soft);
+  line-height: 1.8;
+}
+.periodic-document .report-session-table tbody th {
+  font-weight: 600;
+  color: var(--theme-ink);
+  background: transparent;
+}
+.report-session-table tbody tr:nth-child(even) {
+  background: var(--theme-surface-muted);
+}
+.report-session-table tr {
+  break-inside: avoid;
+}
+.report-session-table thead {
+  display: table-header-group;
+}
 .report-session-scores {
   list-style: none;
   padding: 0;
   margin: 0;
 }
-.report-session-students > li {
-  padding: 12px 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  break-inside: avoid;
-}
-.report-session-students {
-  display: grid;
-  gap: 0;
-  margin-top: 14px;
-}
-.report-session-students > li + li {
-  border-top: 1px solid var(--theme-line-soft);
-}
-.report-session-student-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-  font-size: 0.82rem;
-  overflow-wrap: anywhere;
-}
-.report-session-student-heading .report-session-attendance {
+.report-session-table .report-session-attendance {
   display: inline-flex;
   max-width: 100%;
   border-radius: 8px;
   overflow-wrap: anywhere;
-  padding: 4px 8px;
-  font-size: 0.72rem;
+  padding: 2px 5px;
+  font-size: 0.7rem;
 }
 .report-session-scores {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
-  gap: 7px;
-  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
 }
 .report-session-scores li {
-  padding: 8px 10px;
-  border-inline-start: 2px solid var(--theme-line);
-  border-radius: 0;
-  background: transparent;
-  font-size: 0.76rem;
+  min-width: 0;
+  max-width: 100%;
+  font-size: inherit;
   overflow-wrap: anywhere;
 }
 .report-session-scores strong {
-  margin-inline-start: 10px;
+  margin-inline-start: 5px;
   color: var(--theme-primary);
 }
-.report-session-scores p {
-  margin: 5px 0 0;
+.report-session-score-note {
+  margin-inline-start: 5px;
   white-space: pre-wrap;
   color: var(--theme-muted);
 }
@@ -8002,29 +8021,29 @@ details.report-class-group:not([open]) > .report-class-body {
   .report-session-date svg {
     flex-shrink: 0;
   }
-  .report-session-student-heading {
-    flex-direction: column;
-    align-items: flex-start;
+  .periodic-document .report-session-table :is(th, td) {
+    padding: 6px 5px;
+    font-size: 0.68rem;
   }
-  .report-session-student-heading > strong {
-    max-width: 100%;
+  .report-session-table .report-session-attendance {
+    font-size: inherit;
   }
 }
 
 .report-session-disclosure {
-  margin-top: 20px;
-  padding-top: 16px;
+  margin-top: 12px;
+  padding-top: 8px;
   border-top: 1px solid var(--theme-line);
   min-width: 0;
 }
 .report-session-toggle {
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 64px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: var(--theme-surface-muted);
+  gap: 8px;
+  min-height: 44px;
+  padding: 4px 2px;
+  border-radius: 6px;
+  background: transparent;
   color: var(--theme-muted);
   cursor: pointer;
   list-style: none;
@@ -8040,12 +8059,15 @@ details.report-class-group:not([open]) > .report-class-body {
   display: flex;
   flex: 1;
   min-width: 0;
-  flex-direction: column;
-  gap: 5px;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
   overflow-wrap: anywhere;
 }
 .report-session-toggle-label strong {
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--theme-ink);
 }
 .report-session-toggle-label small {
   font-size: 11px;
@@ -8055,22 +8077,51 @@ details.report-class-group:not([open]) > .report-class-body {
 .report-session-toggle-icon {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 24px;
+  height: 24px;
   flex-shrink: 0;
-  background: var(--theme-primary-soft);
+  background: transparent;
   color: var(--theme-primary);
 }
 .report-session-toggle-icon svg {
-  width: 21px;
-  height: 21px;
+  width: 18px;
+  height: 18px;
 }
 .report-session-chevron {
-  width: 19px;
-  height: 19px;
+  width: 16px;
+  height: 16px;
   flex-shrink: 0;
   transition: transform 160ms ease;
+}
+@media screen {
+  .report-session-disclosure {
+    padding-top: 0;
+    border-top: 0;
+  }
+  .report-session-toggle {
+    min-height: 52px;
+    padding: 8px 10px;
+    border: 1px solid var(--theme-secondary-line);
+    background: var(--theme-secondary-soft);
+    border-radius: 10px;
+  }
+  .report-session-toggle-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: var(--theme-surface);
+  }
+  .report-session-toggle-label small {
+    padding: 2px 7px;
+    border: 1px solid var(--theme-secondary-line);
+    border-radius: 6px;
+    background: var(--theme-surface);
+    color: var(--theme-secondary);
+    font-weight: 600;
+  }
+  .report-session-toggle:hover {
+    border-color: var(--theme-highlight);
+  }
 }
 .report-session-disclosure[open]
   > .report-session-toggle
@@ -8084,18 +8135,272 @@ details.report-class-group:not([open]) > .report-class-body {
   border-top: 0;
   margin-top: 0;
 }
+.report-session-day {
+  min-width: 0;
+  margin-top: 12px;
+}
+.report-session-day-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 1px solid var(--theme-secondary-line);
+  border-inline-start: 3px solid var(--theme-highlight);
+  background: var(--theme-secondary-soft);
+  border-radius: 6px;
+  break-after: avoid;
+}
+.report-session-day-heading h4 {
+  margin: 0;
+  font-size: 12px;
+  color: var(--theme-ink);
+}
+.report-session-day-heading > span,
+.report-session-term {
+  font-size: 11px;
+  color: var(--theme-muted);
+}
+.report-session-day .report-session-compact {
+  margin-top: 14px;
+  padding: 10px 0 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--theme-surface);
+  box-shadow: none;
+}
+.report-session-day .report-session-compact + .report-session-compact {
+  margin-top: 24px;
+  padding-top: 14px;
+  border-top: 1px solid var(--theme-secondary-line);
+}
+.report-session-day > .report-session-compact:nth-child(2) {
+  margin-top: 8px;
+}
+.report-session-compact .report-session-heading {
+  min-height: 38px;
+  padding: 6px 10px;
+  background: #e9edf2;
+  border: 0;
+  border-inline-start: 3px solid var(--theme-nav);
+  border-radius: 6px;
+  break-after: avoid;
+}
+.periodic-session .report-session-item-toggle {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto 16px;
+  gap: 5px 10px;
+  min-height: 44px;
+  cursor: pointer;
+  list-style: none;
+}
+.report-session-item-toggle::-webkit-details-marker {
+  display: none;
+}
+.report-session-item-toggle:focus-visible {
+  outline: 2px solid var(--theme-primary);
+  outline-offset: 3px;
+}
+.report-session-item-title {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.report-session-item-title strong {
+  color: var(--theme-ink);
+  font-size: 12px;
+}
+.report-session-item-title small,
+.report-session-item-date {
+  color: var(--theme-muted);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.report-session-item-chevron {
+  width: 16px;
+  height: 16px;
+}
+.report-session-compact[open] > summary .report-session-item-chevron {
+  transform: rotate(180deg);
+}
+.report-session-compact:not([open]) > .report-session-content {
+  display: none;
+}
+.report-session-content .report-session-lesson:empty {
+  display: none;
+}
+@media screen and (max-width: 600px) {
+  .periodic-session .report-session-item-toggle {
+    grid-template-columns: auto minmax(0, 1fr) 16px;
+  }
+  .report-session-item-date {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .report-session-item-chevron {
+    grid-column: 3;
+    grid-row: 1 / 3;
+  }
+}
+.report-session-compact .report-session-table-wrap {
+  margin-top: 8px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.periodic-session .report-session-table tbody tr:nth-child(odd) {
+  background: var(--theme-surface);
+}
+.periodic-session .report-session-table tbody tr:nth-child(even) {
+  background: #f0f1f4;
+}
+.periodic-session .report-session-table :is(th, td) {
+  border: 1px solid #c7cbd3;
+}
+.periodic-session .report-session-table {
+  border: 1px solid #c7cbd3;
+  border-spacing: 0;
+}
+.periodic-session .report-session-table thead th {
+  border-color: #8b8b95;
+}
+.periodic-session .report-session-table tr > :nth-child(2) {
+  padding-inline: 3px;
+  text-align: center;
+  vertical-align: top;
+}
+.periodic-session .report-session-table tbody tr:last-child > :is(th, td) {
+  border-bottom: 1px solid #c7cbd3;
+}
+.periodic-session .report-session-attendance {
+  justify-content: center;
+  padding-inline: 3px;
+}
+.periodic-session .report-session-scores {
+  gap: 5px;
+}
+.periodic-session .report-session-scores li {
+  flex: 1 1 140px;
+  padding: 2px 6px;
+  border: 1px solid var(--theme-line);
+  border-radius: 5px;
+  background: var(--theme-surface);
+}
+.periodic-session .report-session-scores li > span:first-child {
+  font-weight: 600;
+}
+.periodic-session .report-session-score-note {
+  display: block;
+  margin: 2px 0 0;
+}
+.periodic-session .report-session-scores [data-score-kind="positive"] {
+  border-color: var(--status-success-line);
+  background: var(--status-success-soft);
+}
+.periodic-session .report-session-scores [data-score-kind="negative"] {
+  border-color: var(--status-danger-line);
+  background: var(--status-danger-soft);
+}
+.report-session-class {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--theme-ink);
+}
+.report-session-compact .report-session-period {
+  padding: 3px 7px;
+  font-size: 11px;
+  background: var(--theme-nav);
+  color: var(--theme-nav-ink);
+}
+.report-session-compact .report-session-identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  padding: 5px 0 8px;
+}
+.report-session-compact .report-session-lesson {
+  flex: 1 1 180px;
+  font-size: 12px;
+}
+.report-session-compact .report-session-teacher {
+  margin: 0;
+  font-size: 11px;
+}
+.report-session-scores [data-score-kind="positive"] strong {
+  color: var(--status-success);
+}
+.report-session-scores [data-score-kind="negative"] strong {
+  color: var(--status-danger);
+}
+.report-session-scores [data-score-kind="grade"] strong,
+.report-session-scores [data-score-kind="homework"] strong {
+  color: var(--theme-ink);
+}
+@media print {
+  #printRoot .report-session-disclosure,
+  #printRoot .report-session-day,
+  #printRoot .periodic-session,
+  #printRoot .report-session-content {
+    display: block !important;
+    break-inside: auto !important;
+    overflow: visible !important;
+  }
+  #printRoot .periodic-session .report-session-item-toggle {
+    display: grid !important;
+    grid-template-columns: max-content minmax(0, 1fr) max-content !important;
+    gap: 4px 10px !important;
+    min-height: 0;
+    break-inside: avoid;
+    break-after: avoid;
+  }
+  #printRoot .report-session-item-date {
+    grid-column: 3 !important;
+    grid-row: 1 !important;
+    white-space: nowrap;
+  }
+  #printRoot .report-session-period {
+    white-space: nowrap;
+  }
+  #printRoot .report-session-table-wrap {
+    display: block !important;
+    overflow: visible !important;
+    border-radius: 0;
+    break-inside: auto !important;
+  }
+  #printRoot .report-session-table {
+    display: table !important;
+    table-layout: fixed;
+  }
+  #printRoot .report-session-table caption {
+    display: none !important;
+  }
+  #printRoot .report-session-table thead {
+    display: table-header-group !important;
+    break-inside: avoid;
+    break-after: avoid;
+  }
+  #printRoot .report-session-table tbody {
+    display: table-row-group !important;
+  }
+  #printRoot .report-session-table tr {
+    display: table-row !important;
+    break-inside: avoid !important;
+  }
+  #printRoot .report-session-table :is(th, td) {
+    display: table-cell !important;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .report-session-chevron {
     transition: none;
   }
 }
 @media screen and (max-width: 400px) {
-  .report-session-toggle {
-    padding: 12px 10px;
-    gap: 8px;
-  }
   .report-session-toggle-label strong {
-    font-size: 13px;
+    font-size: 12px;
   }
 }
 

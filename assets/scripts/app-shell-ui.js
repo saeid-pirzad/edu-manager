@@ -333,6 +333,7 @@
       const labels = headers.map((c) => c.textContent.trim());
       const bodyRows = [...table.tBodies].flatMap((b) => [...b.rows]);
       const simple =
+        !["matrix", "compact"].includes(table.dataset.mobileLayout) &&
         !table.classList.contains("week-table") &&
         head.rows.length === 1 &&
         (headers.length <= 6 || table.dataset.mobileLayout === "cards") &&
@@ -356,7 +357,11 @@
           const label = labels[i] || "عملیات";
           if (simple && cell.dataset.label !== label)
             cell.dataset.label = label;
-          if (i === identity && !cell.hasAttribute("data-identity"))
+          if (
+            i === identity &&
+            table.dataset.mobileLayout !== "compact" &&
+            !cell.hasAttribute("data-identity")
+          )
             cell.setAttribute("data-identity", "");
           const actions =
             simple &&
@@ -387,7 +392,7 @@
           }
         }
       }
-      if (!simple) {
+      if (!simple && table.dataset.mobileLayout !== "compact") {
         const index = headers.indexOf(headers[identity]);
         const th = headers[index];
         if (th && !th.hasAttribute("data-identity"))
@@ -636,7 +641,10 @@
       for (const table of document.querySelectorAll(
         "#app table,#modalBody table",
       )) {
-        if (!table.dataset.responsiveSized) {
+        if (
+          !table.dataset.responsiveSized &&
+          table.dataset.mobileLayout !== "compact"
+        ) {
           const columns = Math.max(
             1,
             ...[...table.rows]
@@ -661,7 +669,11 @@
       for (const table of document.querySelectorAll(
         "#app table,#modalBody table",
       )) {
-        if (table.closest(".responsive-scroll,.table-scroll")) continue;
+        if (
+          table.dataset.mobileLayout === "compact" ||
+          table.closest(".responsive-scroll,.table-scroll")
+        )
+          continue;
         const wrap = document.createElement("div");
         wrap.className = "responsive-scroll";
         wrap.tabIndex = 0;

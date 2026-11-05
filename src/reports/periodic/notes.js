@@ -10,6 +10,8 @@ const filters = {
   annualFirstId: "",
   annualSecondId: "",
   date: localToday(),
+  startDate: "",
+  endDate: "",
   schoolId: "",
   classId: "",
   studentId: "",
@@ -78,7 +80,8 @@ function yearNoteSources(key) {
         found.push({ key: previous, id, text: saved[previous] });
         continue;
       }
-      if (legacy[1] !== "weekly" || !legacy[2].startsWith("week:")) continue;
+      if (legacy[1] !== "weekly" || !/^week:\d{4}-\d{2}-\d{2}$/.test(legacy[2]))
+        continue;
       const start = legacy[2].slice(5),
         end = addDays(start, 6);
       for (const [oldKey, text] of Object.entries(saved)) {
@@ -174,7 +177,8 @@ function readLegacyNote(key) {
     const saved = getDrafts(id);
     if (Object.prototype.hasOwnProperty.call(saved, key)) return saved[key];
     const parts = key.split("|");
-    if (parts[1] !== "weekly" || !parts[2].startsWith("week:")) return "";
+    if (parts[1] !== "weekly" || !/^week:\d{4}-\d{2}-\d{2}$/.test(parts[2]))
+      return "";
     const start = parts[2].slice(5),
       end = addDays(start, 6);
     const matches = Object.entries(saved)

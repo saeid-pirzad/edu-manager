@@ -500,6 +500,53 @@ function overviewV24(c, options = {}) {
 }
 
 const karnamehSnapshots = new WeakMap();
+function periodicKarnamehHtml(
+  parts,
+  { schoolId, classId = "", student = null },
+) {
+  const classes = new Map();
+  const ordered = [...parts].sort(
+    (a, b) =>
+      (a.period.id === workspace.id ? 1 : 0) -
+      (b.period.id === workspace.id ? 1 : 0),
+  );
+  for (const part of ordered)
+    for (const c of part.data.schools.find((s) => s.id === schoolId)?.classes ||
+      [])
+      if (!classId || c.id === classId) classes.set(c.id, c);
+  let html = "";
+  for (const c of classes.values()) {
+    assertAnnualLessonCompatibility(parts, schoolId, c.id);
+    const merged = { ...c, lessons: karnamehLessons(parts, schoolId, c) };
+    const people = new Map();
+    for (const part of ordered) {
+      const version = part.data.schools
+        .find((s) => s.id === schoolId)
+        ?.classes.find((item) => item.id === c.id);
+      if (version)
+        for (const person of knownStudents(version))
+          people.set(person.id, person);
+    }
+    const selected = student ? [student] : [...people.values()];
+    const school = ordered.at(-1)?.data.schools.find((s) => s.id === schoolId);
+    for (const person of selected)
+      html += individualKarnameh(merged, {
+        parts,
+        student: person,
+        schoolId,
+        schoolName: school?.name || "",
+        embedded: true,
+      });
+  }
+  return html;
+}
+function initPeriodicKarnameh(out, context, validate) {
+  if (!out?.isConnected || !validate()) return;
+  for (const report of out.querySelectorAll(".karnameh-student-sheet")) {
+    karnamehSnapshots.set(report, context);
+    initKarnamehStageControls(report, { schoolId: "", classId: "", validate });
+  }
+}
 let karnamehRenderGeneration = 0;
 function printCurrentKarnameh(button) {
   const report = button.closest(".karnameh-year-document");

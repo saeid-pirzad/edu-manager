@@ -68,6 +68,7 @@ function fixture(saved = new Map()) {
       },
       async assertReportSnapshot() {},
       annualGradeRows: () => [],
+      periodicKarnamehHtml: () => "",
       annualTechnicalRows: () => [],
       listAnnualReportPeriods: async () => [],
     },
@@ -120,6 +121,31 @@ const legacy = (id) =>
   ].join("|");
 const save = (f, id, values) =>
   f.storage.set("EduManager.periodicDrafts." + id, JSON.stringify(values));
+test("custom weekly note ranges stay independent and do not trigger legacy date recovery errors", async () => {
+  const f = fixture();
+  Object.assign(f.api.filters, {
+    mode: "weekly",
+    date: "2026-11-01",
+    startDate: "2026-11-01",
+    endDate: "2026-11-03",
+  });
+  const first = f.api.noteKey(f.api.filters);
+  assert.match(first, /week:2026-11-01:to:2026-11-03/);
+  assert.equal(f.api.readNote(first), "");
+  assert.equal(f.api.persistNote(first, "exact interval"), true);
+  f.api.filters.endDate = "2026-11-04";
+  const second = f.api.noteKey(f.api.filters);
+  assert.notEqual(second, first);
+  assert.equal(f.api.readNote(second), "");
+  assert.equal(f.api.readNote(first), "exact interval");
+  assert.ok(await f.api.generate());
+  Object.assign(f.api.filters, {
+    startDate: "2026-10-31",
+    endDate: "2026-11-06",
+  });
+  assert.ok(f.api.noteKey(f.api.filters).includes("week:2026-10-31|"));
+});
+
 test("annual notes merge stable-id aliases without writes and keep portable seven-part keys", () => {
   const f = fixture();
   save(f, "first", { [legacy("first")]: "first note" });

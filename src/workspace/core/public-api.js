@@ -174,6 +174,8 @@ function installRuntimeAPI() {
     prepareForUpdate,
     prepareReportSnapshot,
     renderAcademicKarnameh,
+    periodicKarnamehHtml,
+    initPeriodicKarnameh,
     openKarnamehStudent,
     listAnnualReportPeriods,
     assessmentResult,

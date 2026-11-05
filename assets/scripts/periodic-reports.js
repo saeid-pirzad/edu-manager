@@ -24,6 +24,8 @@ const filters = {
   annualFirstId: "",
   annualSecondId: "",
   date: localToday(),
+  startDate: "",
+  endDate: "",
   schoolId: "",
   classId: "",
   studentId: "",
@@ -92,7 +94,8 @@ function yearNoteSources(key) {
         found.push({ key: previous, id, text: saved[previous] });
         continue;
       }
-      if (legacy[1] !== "weekly" || !legacy[2].startsWith("week:")) continue;
+      if (legacy[1] !== "weekly" || !/^week:\d{4}-\d{2}-\d{2}$/.test(legacy[2]))
+        continue;
       const start = legacy[2].slice(5),
         end = addDays(start, 6);
       for (const [oldKey, text] of Object.entries(saved)) {
@@ -188,7 +191,8 @@ function readLegacyNote(key) {
     const saved = getDrafts(id);
     if (Object.prototype.hasOwnProperty.call(saved, key)) return saved[key];
     const parts = key.split("|");
-    if (parts[1] !== "weekly" || !parts[2].startsWith("week:")) return "";
+    if (parts[1] !== "weekly" || !/^week:\d{4}-\d{2}-\d{2}$/.test(parts[2]))
+      return "";
     const start = parts[2].slice(5),
       end = addDays(start, 6);
     const matches = Object.entries(saved)
@@ -339,13 +343,24 @@ EduLegacyEvents.register("reports-periodic-notes:0", function (event) {
 // Source: src/reports/periodic/model.js
 let last = null,
   busy = false;
+function weeklyNoteRange(f) {
+  const dates = range("weekly", f.date, undefined, f),
+    canonical = range("weekly", dates.start);
+  return (
+    "week:" +
+    dates.start +
+    (dates.start === canonical.start && dates.end === canonical.end
+      ? ""
+      : ":to:" + dates.end)
+  );
+}
 const noteKey = (f) =>
   [
     noteWorkspaceId(),
     f.mode,
     notePeriodScope(
       f.mode === "weekly"
-        ? "week:" + range("weekly", f.date).start
+        ? weeklyNoteRange(f)
         : f.mode === "monthly"
           ? "month:" + range("monthly", f.date).start
           : f.mode === "annual"
@@ -403,6 +418,43 @@ function reportParticipants(model, session) {
     ? session.participants.filter((participant) => participant.scores.length)
     : session.participants;
 }
+function parentPerformanceRows(m) {
+  const scores = m.sessions.flatMap((session) =>
+    reportParticipants(m, session).flatMap((p) => p.scores),
+  );
+  const groups = [
+    ["نمره‌های ثبت‌شده", ["mostamar", "payani", "classGrade"]],
+    ["امتیاز مثبت", ["positive"]],
+    ["امتیاز منفی", ["negative"]],
+    ["تکلیف", ["homework"]],
+    ["فعالیت کلاسی", ["activity"]],
+  ];
+  const known = new Set(groups.flatMap(([, types]) => types));
+  return [
+    ["جلسات ثبت‌شده", num(m.summary.sessions)],
+    [
+      "حاضر (شامل تأخیر)",
+      num((m.summary.present || 0) + (m.summary.late || 0)),
+    ],
+    ["غایب", num(m.summary.absent)],
+    ["مرخصی", num(m.summary.leave)],
+    ["با تأخیر (زیرمجموعهٔ حاضر)", num(m.summary.late)],
+    ["حضور تعیین‌نشده", num(m.summary.unknown)],
+    ...groups.map(([label, types]) => [
+      label,
+      num(scores.filter((score) => types.includes(score.type)).length) + " ثبت",
+    ]),
+    [
+      "سایر ثبت‌ها",
+      num(scores.filter((score) => !known.has(score.type)).length) + " ثبت",
+    ],
+    [
+      "توضیحات همراه ثبت‌ها",
+      num(scores.filter((score) => String(score.note || "").trim()).length) +
+        " مورد",
+    ],
+  ];
+}
 function textReport(m) {
   const lines = [
     "گزارش " +
@@ -451,6 +503,14 @@ function textReport(m) {
   );
   if (!m.sessions.length)
     lines.push("در این بازه و محدوده، جلسه مرتبطی ثبت نشده است.");
+  if (m.audience === "parent") {
+    lines.push("", "جمع‌بندی عملکرد هنرجو در بازهٔ گزارش");
+    for (const [label, value] of parentPerformanceRows(m))
+      lines.push(label + ": " + value);
+    lines.push(
+      "تعداد ثبت‌ها، مجموع امتیاز یا نمره نیست؛ جزئیات و توضیحات هر ثبت در ادامه آمده است.",
+    );
+  }
   if (m.audience === "management") {
     lines.push("", "وضعیت هنرجویان");
     for (const st of m.students)
@@ -824,16 +884,36 @@ function sessionDisclosureHtml(m, sessions) {
       a.period - b.period ||
       String(a.id || "").localeCompare(String(b.id || "")),
   );
+  const days = new Map();
+  for (const session of ordered) {
+    if (!days.has(session.date)) days.set(session.date, []);
+    days.get(session.date).push(session);
+  }
+  let body = "";
+  for (const [date, items] of days) {
+    body +=
+      '<section class="report-session-day"><header class="report-session-day-heading"><h4><time datetime="' +
+      esc(date) +
+      '">' +
+      esc(faDate(date)) +
+      "</time></h4><span>" +
+      num(items.length) +
+      " جلسه</span></header>" +
+      items.map((s) => sessionDetailsHtml(m, s, { grouped: true })).join("") +
+      "</section>";
+  }
   return (
-    '<details class="report-session-disclosure"><summary class="report-session-toggle"><span class="report-session-toggle-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4M16 3v4M4 11h16M8 15h3M8 18h6"/></svg></span><span class="report-session-toggle-label"><strong>جزئیات جلسات و ثبت‌ها</strong><small>' +
+    '<details class="report-session-disclosure"' +
+    (m.audience === "parent" ? " open" : "") +
+    '><summary class="report-session-toggle"><span class="report-session-toggle-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4M16 3v4M4 11h16M8 15h3M8 18h6"/></svg></span><span class="report-session-toggle-label"><strong>جزئیات جلسات و ثبت‌ها</strong><small>' +
     num(sessions.length) +
-    ' جلسه · به ترتیب تاریخ و زنگ</small></span><svg class="report-session-chevron no-print" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary><div class="report-session-body">' +
-    ordered.map((s) => sessionDetailsHtml(m, s)).join("") +
+    ' جلسه</small></span><svg class="report-session-chevron no-print" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary><div class="report-session-body">' +
+    body +
     "</div></details>"
   );
 }
 
-function sessionDetailsHtml(m, s) {
+function sessionDetailsHtml(m, s, { grouped = false } = {}) {
   const statuses = [
     ["present", "حاضر"],
     ["absent", "غایب"],
@@ -841,17 +921,34 @@ function sessionDetailsHtml(m, s) {
     ["late", "تأخیر"],
     ["unknown", "تعیین‌نشده"],
   ];
-  let html =
-    '<section class="periodic-session"><header class="report-session-heading"><span class="report-session-date"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4M16 3v4M4 11h16"/></svg>' +
-    esc(faDate(s.date)) +
-    (s.academicTerm ? " · نوبت " + esc(s.academicTerm) : "") +
-    '</span><span class="report-session-period">زنگ ' +
-    num(s.period + 1) +
-    '</span></header><div class="report-session-identity"><h4>' +
-    esc(s.className) +
-    '</h4><div class="report-session-lesson"><strong>' +
-    esc(s.lessonName) +
-    "</strong>" +
+  let html = grouped
+    ? '<details class="periodic-session report-session-compact"><summary class="report-session-heading report-session-item-toggle"><span class="report-session-period">زنگ ' +
+      num(s.period + 1) +
+      '</span><span class="report-session-item-title"><strong>' +
+      esc(s.className) +
+      "</strong><small>" +
+      esc(s.lessonName) +
+      '</small></span><span class="report-session-item-date">' +
+      esc(faDate(s.date)) +
+      (s.academicTerm ? " · نوبت " + esc(s.academicTerm) : "") +
+      '</span><svg class="report-session-item-chevron no-print" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 9 6 6 6-6"/></svg></summary><div class="report-session-content"><div class="report-session-identity">'
+    : '<section class="periodic-session' +
+      (grouped ? " report-session-compact" : "") +
+      '"><header class="report-session-heading">' +
+      (grouped
+        ? '<span class="report-session-class">' + esc(s.className) + "</span>"
+        : '<span class="report-session-date"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4M16 3v4M4 11h16"/></svg>' +
+          esc(faDate(s.date)) +
+          (s.academicTerm ? " · نوبت " + esc(s.academicTerm) : "") +
+          "</span>") +
+      '<span class="report-session-period">زنگ ' +
+      num(s.period + 1) +
+      '</span></header><div class="report-session-identity"><h4>' +
+      esc(s.className) +
+      "</h4>";
+  html +=
+    '<div class="report-session-lesson">' +
+    (grouped ? "" : "<strong>" + esc(s.lessonName) + "</strong>") +
     (s.moduleName
       ? "<small>" +
         esc(s.moduleName) +
@@ -886,40 +983,50 @@ function sessionDetailsHtml(m, s) {
   }
   const participants = reportParticipants(m, s);
   if (participants.length) {
-    html += '<ol class="report-session-students">';
+    html +=
+      '<div class="report-session-table-wrap"><table class="report-session-table" data-mobile-layout="compact"><caption>حضور و فعالیت‌های ثبت‌شدهٔ هنرجویان</caption><colgroup><col class="report-session-name-col"><col class="report-session-status-col"><col></colgroup><thead><tr><th scope="col">هنرجو</th><th scope="col">حضور</th><th scope="col">نمره، امتیاز و تکلیف</th></tr></thead><tbody>';
     for (const p of participants) {
       const status = statuses.some(([key]) => key === p.attendance.status)
         ? p.attendance.status
         : "unknown";
       html +=
-        '<li><div class="report-session-student-heading"><strong>' +
+        '<tr><th scope="row" class="report-session-student-heading"><bdi>' +
         esc(p.name) +
-        '</strong><span class="report-session-attendance report-metric report-metric-' +
+        '</bdi></th><td><span class="report-session-attendance report-metric report-metric-' +
         status +
         '">' +
         esc(p.attendance.label) +
         (p.attendance.minutes == null
           ? ""
           : " · " + num(p.attendance.minutes) + " دقیقه") +
-        "</span></div>";
+        "</span></td><td>";
       if (p.scores.length) {
         html += '<ul class="report-session-scores">';
         for (const score of p.scores)
           html +=
-            "<li><span>" +
+            '<li data-score-kind="' +
+            (["positive", "negative", "homework"].includes(score.type)
+              ? score.type
+              : "grade") +
+            '"><span>' +
             esc(score.label) +
             "</span><strong>" +
             esc(score.value ?? "—") +
             "</strong>" +
-            (score.note ? "<p>" + esc(score.note) + "</p>" : "") +
+            (score.note
+              ? '<span class="report-session-score-note">' +
+                (m.audience === "parent" ? "توضیح / تذکر: " : "") +
+                esc(score.note) +
+                "</span>"
+              : "") +
             "</li>";
         html += "</ul>";
-      }
-      html += "</li>";
+      } else html += '<span class="report-session-no-score">—</span>';
+      html += "</td></tr>";
     }
-    html += "</ol>";
+    html += "</tbody></table></div>";
   }
-  return html + "</section>";
+  return html + (grouped ? "</div></details>" : "</section>");
 }
 
 function periodicReportHeadingHtml(m) {
@@ -928,7 +1035,7 @@ function periodicReportHeadingHtml(m) {
   const audience = m.audience === "parent" ? "ویژه اولیا" : "مدیریت مدرسه";
   const detail =
     m.audience === "parent"
-      ? "گزارش یک هنرجو"
+      ? "گزارش کامل عملکرد هنرجو"
       : m.detailLevel === "summary"
         ? "خلاصه مدیریتی"
         : "جزئیات کامل";
@@ -992,7 +1099,7 @@ function periodicReportHeadingHtml(m) {
   );
 }
 
-function documentHtml(m) {
+function documentHtml(m, gradeHtml = "") {
   let h =
     '<article class="card report-document periodic-document">' +
     periodicReportHeadingHtml(m);
@@ -1003,8 +1110,28 @@ function documentHtml(m) {
   if (m.audience === "management" && m.sessions.length) {
     h += studentFollowupHtml(m);
   }
+  if (m.audience === "parent") {
+    h +=
+      '<section class="report-parent-performance"><h3>جمع‌بندی عملکرد هنرجو در بازهٔ گزارش</h3><p class="periodic-method">آمار حضور بر مبنای جلسه است. تعداد ثبت‌ها، مجموع امتیاز یا نمره نیست؛ جزئیات هر ثبت در ادامه آمده است.</p><table class="report-session-table" data-mobile-layout="compact"><caption>جمع‌بندی عملکرد هنرجو</caption><thead><tr><th scope="col">موضوع</th><th scope="col">وضعیت ثبت</th></tr></thead><tbody>';
+    for (const [label, value] of parentPerformanceRows(m))
+      h +=
+        '<tr><th scope="row">' +
+        esc(label) +
+        "</th><td>" +
+        esc(value) +
+        "</td></tr>";
+    h += "</tbody></table></section>";
+    if (m.annualGrades?.length || m.technicalGrades?.length)
+      h +=
+        '<p class="periodic-method">حضور و فعالیت‌ها فقط مربوط به بازه و ترم گزارش‌اند؛ بخش نمرات سال، وضعیت فعلی نمرات همین هنرجو در کل سال تحصیلی را نشان می‌دهد.</p>';
+  }
   h += sessionDisclosureHtml(m, m.sessions);
-  if (m.technicalGrades?.length) {
+  if (gradeHtml)
+    h +=
+      '<section class="periodic-karnameh"><h3>کارنامهٔ نمرات</h3>' +
+      gradeHtml +
+      "</section>";
+  if (!gradeHtml && m.technicalGrades?.length) {
     h += "<section><h3>نمرات فنی و پودمانی</h3>";
     for (const grade of m.technicalGrades) {
       h +=
@@ -1052,7 +1179,7 @@ function documentHtml(m) {
     }
     h += "</section>";
   }
-  if (m.annualGrades) {
+  if (!gradeHtml && m.annualGrades) {
     h +=
       '<section class="annual-grades"><h3>نمرات چهار مرحله سال</h3><p>هر مرحله طبق تنظیمات همان نوبت محاسبه می‌شود؛ نهایی سالانه میانگین برابر چهار مرحله است. نمره ثبت‌نشده، صفر نیست.</p><div class="assessment-students">';
     for (const grade of m.annualGrades) {
@@ -1192,6 +1319,8 @@ function selectScope(schoolId = "", classId = "") {
     studentId: "",
     audience: "management",
     date: localToday(),
+    startDate: "",
+    endDate: "",
   });
   filterWorkspace = noteYearScopeId();
   last = null;
@@ -1206,6 +1335,8 @@ function initialize(mode) {
       studentId: "",
       audience: "management",
       date: localToday(),
+      startDate: "",
+      endDate: "",
       annualFirstId: "",
       annualSecondId: "",
     });
@@ -1213,6 +1344,11 @@ function initialize(mode) {
     last = null;
   }
   filterWorkspace = workspaceId;
+  if (mode === "weekly" && (!filters.startDate || !filters.endDate)) {
+    const dates = range("weekly", filters.date);
+    filters.startDate = dates.start;
+    filters.endDate = dates.end;
+  }
   if (!db.schools.some((s) => s.id === filters.schoolId)) {
     filters.schoolId = db.schools.some((s) => s.id === globalFilter.schoolId)
       ? globalFilter.schoolId
@@ -1296,7 +1432,7 @@ function render(mode) {
     (mode === "annual"
       ? "گزارش سالانه از ترم اول و دوم همین سال تحصیلی تهیه می‌شود. "
       : "جلسات و فعالیت‌های گزارش فقط از ترم انتخاب‌شده، در بازهٔ انتخابی خوانده می‌شوند. ") +
-    `هفتگی: شنبه تا جمعه. ماهانه: ماه شمسی. سالانه: مهر تا شهریور. گزارش اولیا فقط اطلاعات هنرجوی انتخاب‌شده را در بر می‌گیرد.</p><div class="periodic-control-grid"><label>مخاطب<select data-legacy-change="reports-periodic-render:0">` +
+    `گزارش اولیا فقط اطلاعات هنرجوی انتخاب‌شده را در بر می‌گیرد.</p><div class="periodic-control-grid"><label>مخاطب<select data-legacy-change="reports-periodic-render:0">` +
     option("management", "مدیریت مدرسه", f.audience) +
     option("parent", "اولیای یک هنرجو", f.audience) +
     "</select></label>" +
@@ -1304,15 +1440,19 @@ function render(mode) {
       ? '<div class="periodic-year-field"><span>سال تحصیلی</span><strong>' +
         esc(db.settings.academicYear) +
         "</strong></div>"
-      : "<label>" +
-        (mode === "weekly"
-          ? "یک تاریخ از هفته"
-          : mode === "monthly"
-            ? "یک تاریخ از ماه شمسی"
-            : "تاریخ گزارش") +
-        '<input type="date" value="' +
-        esc(f.date) +
-        '" data-legacy-change="reports-periodic-render:1"></label>') +
+      : mode === "weekly"
+        ? '<label>از تاریخ<input type="date" value="' +
+          esc(f.startDate) +
+          '" data-legacy-change="reports-periodic-render:4" data-legacy-change-arg2="startDate"></label><label>تا تاریخ<input type="date" min="' +
+          esc(f.startDate) +
+          '" value="' +
+          esc(f.endDate) +
+          '" data-legacy-change="reports-periodic-render:4" data-legacy-change-arg2="endDate"></label>'
+        : "<label>" +
+          (mode === "monthly" ? "یک تاریخ از ماه گزارش" : "تاریخ گزارش") +
+          '<input type="date" value="' +
+          esc(f.date) +
+          '" data-legacy-change="reports-periodic-render:1"></label>') +
     `<label>مدرسه<select data-legacy-change="reports-periodic-render:2">` +
     option("", "انتخاب مدرسه", f.schoolId) +
     db.schools.map((s) => option(s.id, s.name, f.schoolId)).join("") +
@@ -1366,12 +1506,16 @@ function render(mode) {
     (busy || !prepared ? " disabled" : "") +
     ' data-legacy-click="reports-periodic-document:deputy">کپی برای معاون</button></div><p id="periodicError" role="alert"></p></section><div id="periodicReportOutput">';
   h += prepared
-    ? documentHtml(last.model)
+    ? documentHtml(last.model, last.gradeHtml)
     : '<div class="card empty" role="status">' +
       (last
         ? "اطلاعات یا ترم تغییر کرده است؛ برای نمایش نتیجه معتبر، گزارش را دوباره تهیه کنید."
         : "محدوده و مخاطب را انتخاب کنید و «تهیه گزارش» را بزنید.") +
       "</div>";
+  if (prepared && last.gradeHtml) {
+    const preparedReport = last;
+    setTimeout(() => initializeReportKarnameh(preparedReport), 0);
+  }
   return h + "</div>";
 }
 // Source: src/reports/periodic/events-render.js
@@ -1424,6 +1568,8 @@ function set(key, value) {
     ![
       "audience",
       "date",
+      "startDate",
+      "endDate",
       "schoolId",
       "classId",
       "studentId",
@@ -1434,7 +1580,7 @@ function set(key, value) {
   )
     return;
   if (key === "detailLevel" && !["summary", "full"].includes(value)) return;
-  if (key === "date") {
+  if (["date", "startDate", "endDate"].includes(key)) {
     try {
       isoDate(value);
     } catch (e) {
@@ -1442,7 +1588,21 @@ function set(key, value) {
       return;
     }
   }
+  if (key === "endDate" && filters.startDate && value < filters.startDate) {
+    error(Error("تاریخ پایان نباید قبل از تاریخ شروع باشد."));
+    return;
+  }
   filters[key] = value;
+  if (key === "date" && filters.mode === "weekly") {
+    const dates = range("weekly", value);
+    filters.startDate = dates.start;
+    filters.endDate = dates.end;
+  }
+  if (key === "startDate") {
+    filters.date = value;
+    if (!filters.endDate || filters.endDate < value)
+      filters.endDate = addDays(value, 6);
+  }
   if (key === "schoolId") {
     filters.classId = "";
     filters.studentId = "";
@@ -1597,13 +1757,25 @@ async function generate() {
       await root.EduV24.assertReportSnapshot(gradeSnapshot.context);
     refreshPreparedInput();
     model.note = input.note;
+    const gradeHtml =
+      annual || model.audience === "parent"
+        ? root.EduV24.periodicKarnamehHtml(gradeSnapshot.parts, {
+            schoolId: input.schoolId,
+            classId: input.classId,
+            student: model.audience === "parent" ? model.student : null,
+          })
+        : "";
     last = {
       signature: reportSignature(),
       context: gradeSnapshot.context,
       model,
+      gradeHtml,
     };
     const out = document.getElementById("periodicReportOutput");
-    if (out) out.innerHTML = documentHtml(model);
+    if (out) {
+      out.innerHTML = documentHtml(model, gradeHtml);
+      initializeReportKarnameh(last);
+    }
     return model;
   } catch (e) {
     invalidate(e.message || String(e));
@@ -1612,6 +1784,14 @@ async function generate() {
     busy = false;
     syncReportActions();
   }
+}
+function initializeReportKarnameh(prepared) {
+  if (!prepared?.gradeHtml) return;
+  root.EduV24.initPeriodicKarnameh(
+    document.getElementById("periodicReportOutput"),
+    prepared.context,
+    () => isPreparedCurrent(prepared),
+  );
 }
 // Source: src/reports/periodic/xlsx-workbook.js
 // Minimal SpreadsheetML/ZIP writer: local only, no formulas, macros or external links.

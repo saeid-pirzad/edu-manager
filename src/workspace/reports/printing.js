@@ -66,6 +66,10 @@ function preservePeriodicAppearance(source, copy) {
   const originals = [source, ...source.querySelectorAll("*")];
   const clones = [copy, ...copy.querySelectorAll("*")];
   originals.forEach((original, index) => {
+    // Embedded grade sheets use the same print rules as the standalone karnameh;
+    // copying screen-hidden stage styles would omit the other exam stages.
+    if (original.closest(".karnameh-student-sheet,.report-session-disclosure"))
+      return;
     const target = clones[index],
       style = getComputedStyle(original);
     for (const property of properties)
@@ -97,6 +101,9 @@ function preservePeriodicAppearance(source, copy) {
     );
   });
   copy.style.setProperty("break-inside", "auto", "important");
+  copy.style.setProperty("margin", "0", "important");
+  copy.style.setProperty("padding", "0", "important");
+  copy.style.setProperty("border", "0", "important");
 }
 
 function prepareKarnamehPrint(copy) {
@@ -162,13 +169,31 @@ function preparePrint(button) {
   // Attendance follow-up is a screen disclosure, never a print content filter.
   copy
     .querySelectorAll(
-      "details.report-class-group, details.report-session-disclosure",
+      "details.report-class-group, details.report-session-disclosure, details.report-session-compact",
     )
     .forEach((section) => {
       section.open = true;
       section
-        .querySelector(".report-class-body, .report-session-body")
+        .querySelector(
+          ".report-class-body, .report-session-body, .report-session-content",
+        )
         ?.style.setProperty("display", "block", "important");
+      // Native details content can fragment as an atomic box in PDF output.
+      // Use normal document flow in the print copy, never in the live report.
+      const expanded = document.createElement("section");
+      for (const attr of [...section.attributes])
+        expanded.setAttribute(attr.name, attr.value);
+      expanded.dataset.printExpanded = "true";
+      expanded.append(...section.childNodes);
+      const summary = expanded.querySelector(":scope > summary");
+      if (summary) {
+        const heading = document.createElement("header");
+        for (const attr of [...summary.attributes])
+          heading.setAttribute(attr.name, attr.value);
+        heading.append(...summary.childNodes);
+        summary.replaceWith(heading);
+      }
+      section.replaceWith(expanded);
     });
   copy
     .querySelectorAll("button,.no-print,form,script,select")

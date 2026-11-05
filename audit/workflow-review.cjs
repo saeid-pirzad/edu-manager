@@ -206,6 +206,25 @@ if (process.argv.includes("--help")) {
         cases,
         delay,
       });
+      await require("./report-session-layout.cjs")({ cdp, evaluate, cases });
+      await require("./session-pdf-browser.cjs")({
+        cdp,
+        evaluate,
+        cases,
+        delay,
+      });
+      await require("./parent-performance-browser.cjs")({
+        cdp,
+        evaluate,
+        cases,
+        delay,
+      });
+      await require("./report-range-controls.cjs")({
+        cdp,
+        evaluate,
+        cases,
+        delay,
+      });
       await require("./karnameh-excel-browser.cjs")({
         cdp,
         evaluate,

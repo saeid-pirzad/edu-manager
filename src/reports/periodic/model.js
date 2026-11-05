@@ -1,12 +1,23 @@
 let last = null,
   busy = false;
+function weeklyNoteRange(f) {
+  const dates = range("weekly", f.date, undefined, f),
+    canonical = range("weekly", dates.start);
+  return (
+    "week:" +
+    dates.start +
+    (dates.start === canonical.start && dates.end === canonical.end
+      ? ""
+      : ":to:" + dates.end)
+  );
+}
 const noteKey = (f) =>
   [
     noteWorkspaceId(),
     f.mode,
     notePeriodScope(
       f.mode === "weekly"
-        ? "week:" + range("weekly", f.date).start
+        ? weeklyNoteRange(f)
         : f.mode === "monthly"
           ? "month:" + range("monthly", f.date).start
           : f.mode === "annual"

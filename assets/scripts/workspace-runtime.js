@@ -9535,7 +9535,11 @@ function individualKarnameh(c, options = {}) {
     esc(
       [options.schoolName, c.name, workspace.year].filter(Boolean).join(" · "),
     ) +
-    '</p></div><div class="karnameh-report-actions no-print"><button type="button" data-workspace-action="print">چاپ / PDF</button></div></header>' +
+    "</p></div>" +
+    (options.embedded
+      ? ""
+      : '<div class="karnameh-report-actions no-print"><button type="button" data-workspace-action="print">چاپ / PDF</button></div>') +
+    "</header>" +
     '<div class="karnameh-student-meta"><span>کد هنرجو: <strong>' +
     esc(
       student.code == null || student.code === ""
@@ -9547,7 +9551,7 @@ function individualKarnameh(c, options = {}) {
     " درس</span>" +
     (archived ? '<span class="karnameh-archived-tag">بایگانی</span>' : "") +
     "</div>" +
-    createKarnamehStudentNavigation(c, student) +
+    (options.embedded ? "" : createKarnamehStudentNavigation(c, student)) +
     (body
       ? body
       : '<div class="report-empty" role="status">هنوز درسی در این کلاس تعریف نشده است.</div>') +
@@ -9649,8 +9653,13 @@ function applyKarnamehStage(report, kind, selected) {
     if (scroll) scroll.scrollLeft = 0;
   }
 }
-function initKarnamehStageControls(report, { schoolId, classId }) {
-  const preference = karnamehStagePreference(schoolId, classId);
+function initKarnamehStageControls(
+  report,
+  { schoolId, classId, validate = null },
+) {
+  const preference = validate
+    ? { assessment: "first-midterm", modular: "module-0", legacy: "first-term" }
+    : karnamehStagePreference(schoolId, classId);
   for (const section of report.querySelectorAll(".karnameh-subject-section")) {
     const table = section.querySelector("table.karnameh-sheet-table");
     if (!table) continue;
@@ -9713,6 +9722,7 @@ function initKarnamehStageControls(report, { schoolId, classId }) {
     applyKarnamehStage(report, kind, selected);
   }
   karnamehStageControllers.set(report, {
+    validate,
     scope: preference.scope,
     workspaceId: workspace.id,
     schoolId,
@@ -9734,15 +9744,17 @@ async function selectKarnamehStage(button) {
     report.isConnected &&
     button.isConnected &&
     report.contains(section) &&
-    document.getElementById("karnamehTabOutput")?.contains(report) &&
-    workspace.id === controller.workspaceId &&
-    state.view === "reports" &&
-    state.reportTab === "karnameh" &&
-    karnamehFilter.classId === controller.classId &&
-    karnamehFilter.studentId === controller.studentId &&
-    (!karnamehFilter.schoolId ||
-      karnamehFilter.schoolId === controller.schoolId) &&
-    karnamehStageSelection.scope === controller.scope;
+    (controller.validate
+      ? controller.validate()
+      : document.getElementById("karnamehTabOutput")?.contains(report) &&
+        workspace.id === controller.workspaceId &&
+        state.view === "reports" &&
+        state.reportTab === "karnameh" &&
+        karnamehFilter.classId === controller.classId &&
+        karnamehFilter.studentId === controller.studentId &&
+        (!karnamehFilter.schoolId ||
+          karnamehFilter.schoolId === controller.schoolId) &&
+        karnamehStageSelection.scope === controller.scope);
   if (
     !current() ||
     !["assessment", "modular", "legacy"].includes(kind) ||
@@ -9764,7 +9776,7 @@ async function selectKarnamehStage(button) {
     return;
   }
   if (!current() || controller.requests[kind] !== request) return;
-  karnamehStageSelection[kind] = selected;
+  if (!controller.validate) karnamehStageSelection[kind] = selected;
   applyKarnamehStage(report, kind, selected);
 }
 // Source: src/workspace/reports/student.js
@@ -10270,6 +10282,53 @@ function overviewV24(c, options = {}) {
 }
 
 const karnamehSnapshots = new WeakMap();
+function periodicKarnamehHtml(
+  parts,
+  { schoolId, classId = "", student = null },
+) {
+  const classes = new Map();
+  const ordered = [...parts].sort(
+    (a, b) =>
+      (a.period.id === workspace.id ? 1 : 0) -
+      (b.period.id === workspace.id ? 1 : 0),
+  );
+  for (const part of ordered)
+    for (const c of part.data.schools.find((s) => s.id === schoolId)?.classes ||
+      [])
+      if (!classId || c.id === classId) classes.set(c.id, c);
+  let html = "";
+  for (const c of classes.values()) {
+    assertAnnualLessonCompatibility(parts, schoolId, c.id);
+    const merged = { ...c, lessons: karnamehLessons(parts, schoolId, c) };
+    const people = new Map();
+    for (const part of ordered) {
+      const version = part.data.schools
+        .find((s) => s.id === schoolId)
+        ?.classes.find((item) => item.id === c.id);
+      if (version)
+        for (const person of knownStudents(version))
+          people.set(person.id, person);
+    }
+    const selected = student ? [student] : [...people.values()];
+    const school = ordered.at(-1)?.data.schools.find((s) => s.id === schoolId);
+    for (const person of selected)
+      html += individualKarnameh(merged, {
+        parts,
+        student: person,
+        schoolId,
+        schoolName: school?.name || "",
+        embedded: true,
+      });
+  }
+  return html;
+}
+function initPeriodicKarnameh(out, context, validate) {
+  if (!out?.isConnected || !validate()) return;
+  for (const report of out.querySelectorAll(".karnameh-student-sheet")) {
+    karnamehSnapshots.set(report, context);
+    initKarnamehStageControls(report, { schoolId: "", classId: "", validate });
+  }
+}
 let karnamehRenderGeneration = 0;
 function printCurrentKarnameh(button) {
   const report = button.closest(".karnameh-year-document");
@@ -11530,6 +11589,10 @@ function preservePeriodicAppearance(source, copy) {
   const originals = [source, ...source.querySelectorAll("*")];
   const clones = [copy, ...copy.querySelectorAll("*")];
   originals.forEach((original, index) => {
+    // Embedded grade sheets use the same print rules as the standalone karnameh;
+    // copying screen-hidden stage styles would omit the other exam stages.
+    if (original.closest(".karnameh-student-sheet,.report-session-disclosure"))
+      return;
     const target = clones[index],
       style = getComputedStyle(original);
     for (const property of properties)
@@ -11561,6 +11624,9 @@ function preservePeriodicAppearance(source, copy) {
     );
   });
   copy.style.setProperty("break-inside", "auto", "important");
+  copy.style.setProperty("margin", "0", "important");
+  copy.style.setProperty("padding", "0", "important");
+  copy.style.setProperty("border", "0", "important");
 }
 
 function prepareKarnamehPrint(copy) {
@@ -11626,13 +11692,31 @@ function preparePrint(button) {
   // Attendance follow-up is a screen disclosure, never a print content filter.
   copy
     .querySelectorAll(
-      "details.report-class-group, details.report-session-disclosure",
+      "details.report-class-group, details.report-session-disclosure, details.report-session-compact",
     )
     .forEach((section) => {
       section.open = true;
       section
-        .querySelector(".report-class-body, .report-session-body")
+        .querySelector(
+          ".report-class-body, .report-session-body, .report-session-content",
+        )
         ?.style.setProperty("display", "block", "important");
+      // Native details content can fragment as an atomic box in PDF output.
+      // Use normal document flow in the print copy, never in the live report.
+      const expanded = document.createElement("section");
+      for (const attr of [...section.attributes])
+        expanded.setAttribute(attr.name, attr.value);
+      expanded.dataset.printExpanded = "true";
+      expanded.append(...section.childNodes);
+      const summary = expanded.querySelector(":scope > summary");
+      if (summary) {
+        const heading = document.createElement("header");
+        for (const attr of [...summary.attributes])
+          heading.setAttribute(attr.name, attr.value);
+        heading.append(...summary.childNodes);
+        summary.replaceWith(heading);
+      }
+      section.replaceWith(expanded);
     });
   copy
     .querySelectorAll("button,.no-print,form,script,select")
@@ -14341,6 +14425,8 @@ function installRuntimeAPI() {
     prepareForUpdate,
     prepareReportSnapshot,
     renderAcademicKarnameh,
+    periodicKarnamehHtml,
+    initPeriodicKarnameh,
     openKarnamehStudent,
     listAnnualReportPeriods,
     assessmentResult,

@@ -386,6 +386,32 @@ test("historical annual session metadata remains separate from current class and
   assert.equal(session.sourcePeriodId, "first");
 });
 
+test("custom weekly ranges include exactly their endpoints without shifting to Saturday", () => {
+  const c = fixture(),
+    source = sourceFixture();
+  const input = options({
+    mode: "weekly",
+    date: "2026-11-01",
+    startDate: "2026-11-01",
+    endDate: "2026-11-01",
+  });
+  const result = build(c, source, input);
+  assert.equal(result.start, input.startDate);
+  assert.equal(result.end, input.endDate);
+  assert.ok(
+    result.sessions.every((session) => session.date === input.startDate),
+  );
+  assert.equal(result.days.length, 1);
+  assert.throws(
+    () => build(c, source, { ...input, endDate: "2026-10-31" }),
+    /پایان/,
+  );
+  assert.throws(
+    () => build(c, source, { ...input, endDate: "2026-02-30" }),
+    /تاریخ/,
+  );
+});
+
 test("shared date ranges retain Saturday-Friday weeks, actual Jalali leap months and academic-year boundaries", () => {
   const { EduReportDates: dates } = fixture();
   assert.deepEqual(plain(dates.range("weekly", "2026-11-01")), {

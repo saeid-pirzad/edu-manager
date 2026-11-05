@@ -3,6 +3,8 @@ function set(key, value) {
     ![
       "audience",
       "date",
+      "startDate",
+      "endDate",
       "schoolId",
       "classId",
       "studentId",
@@ -13,7 +15,7 @@ function set(key, value) {
   )
     return;
   if (key === "detailLevel" && !["summary", "full"].includes(value)) return;
-  if (key === "date") {
+  if (["date", "startDate", "endDate"].includes(key)) {
     try {
       isoDate(value);
     } catch (e) {
@@ -21,7 +23,21 @@ function set(key, value) {
       return;
     }
   }
+  if (key === "endDate" && filters.startDate && value < filters.startDate) {
+    error(Error("تاریخ پایان نباید قبل از تاریخ شروع باشد."));
+    return;
+  }
   filters[key] = value;
+  if (key === "date" && filters.mode === "weekly") {
+    const dates = range("weekly", value);
+    filters.startDate = dates.start;
+    filters.endDate = dates.end;
+  }
+  if (key === "startDate") {
+    filters.date = value;
+    if (!filters.endDate || filters.endDate < value)
+      filters.endDate = addDays(value, 6);
+  }
   if (key === "schoolId") {
     filters.classId = "";
     filters.studentId = "";
@@ -176,13 +192,25 @@ async function generate() {
       await root.EduV24.assertReportSnapshot(gradeSnapshot.context);
     refreshPreparedInput();
     model.note = input.note;
+    const gradeHtml =
+      annual || model.audience === "parent"
+        ? root.EduV24.periodicKarnamehHtml(gradeSnapshot.parts, {
+            schoolId: input.schoolId,
+            classId: input.classId,
+            student: model.audience === "parent" ? model.student : null,
+          })
+        : "";
     last = {
       signature: reportSignature(),
       context: gradeSnapshot.context,
       model,
+      gradeHtml,
     };
     const out = document.getElementById("periodicReportOutput");
-    if (out) out.innerHTML = documentHtml(model);
+    if (out) {
+      out.innerHTML = documentHtml(model, gradeHtml);
+      initializeReportKarnameh(last);
+    }
     return model;
   } catch (e) {
     invalidate(e.message || String(e));
@@ -191,4 +219,12 @@ async function generate() {
     busy = false;
     syncReportActions();
   }
+}
+function initializeReportKarnameh(prepared) {
+  if (!prepared?.gradeHtml) return;
+  root.EduV24.initPeriodicKarnameh(
+    document.getElementById("periodicReportOutput"),
+    prepared.context,
+    () => isPreparedCurrent(prepared),
+  );
 }

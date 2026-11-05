@@ -3745,8 +3745,7 @@ EduLegacyEvents.register("students-editor:1", function (event) {
 function sessionCalendarDateAllowed(input, date) {
   if (!EduAcademicYear.contains(db.settings.academicYear, date)) return false;
   let target,
-    period = null,
-    day = null;
+    period = null;
   const mode = input.dataset.sessionCalendar;
   if (mode === "lesson") {
     const form = input.closest(".session-create-form");
@@ -3773,7 +3772,7 @@ function sessionCalendarDateAllowed(input, date) {
     if (!school || !lessonId) return false;
     target = { schoolId: school.id, classId, lessonId, date };
     period = Number(root.dataset.sessionPeriod);
-    day = Number(root.dataset.sessionDay);
+    const day = Number(root.dataset.sessionDay);
     if (getDayIdxFromDate(date) !== day) return false;
   } else return false;
   const periods = EduSessionSlots.matchingPeriods(db, target);

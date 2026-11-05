@@ -267,7 +267,7 @@ async function run(env) {
         before = field.value;
       forbidden.click();
       result.blocked =
-        calSelectDay(Number(forbidden.dataset.calendarDay)) === false &&
+        window.calSelectDay(Number(forbidden.dataset.calendarDay)) === false &&
         field.value === before;
       days.find((item) => item.date === "2026-11-03").button.click();
       result.selected =

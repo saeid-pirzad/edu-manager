@@ -32,7 +32,7 @@ function render(mode) {
     (mode === "annual"
       ? "گزارش سالانه از ترم اول و دوم همین سال تحصیلی تهیه می‌شود. "
       : "جلسات و فعالیت‌های گزارش فقط از ترم انتخاب‌شده، در بازهٔ انتخابی خوانده می‌شوند. ") +
-    `هفتگی: شنبه تا جمعه. ماهانه: ماه شمسی. سالانه: مهر تا شهریور. گزارش اولیا فقط اطلاعات هنرجوی انتخاب‌شده را در بر می‌گیرد.</p><div class="periodic-control-grid"><label>مخاطب<select data-legacy-change="reports-periodic-render:0">` +
+    `گزارش اولیا فقط اطلاعات هنرجوی انتخاب‌شده را در بر می‌گیرد.</p><div class="periodic-control-grid"><label>مخاطب<select data-legacy-change="reports-periodic-render:0">` +
     option("management", "مدیریت مدرسه", f.audience) +
     option("parent", "اولیای یک هنرجو", f.audience) +
     "</select></label>" +
@@ -40,15 +40,19 @@ function render(mode) {
       ? '<div class="periodic-year-field"><span>سال تحصیلی</span><strong>' +
         esc(db.settings.academicYear) +
         "</strong></div>"
-      : "<label>" +
-        (mode === "weekly"
-          ? "یک تاریخ از هفته"
-          : mode === "monthly"
-            ? "یک تاریخ از ماه شمسی"
-            : "تاریخ گزارش") +
-        '<input type="date" value="' +
-        esc(f.date) +
-        '" data-legacy-change="reports-periodic-render:1"></label>') +
+      : mode === "weekly"
+        ? '<label>از تاریخ<input type="date" value="' +
+          esc(f.startDate) +
+          '" data-legacy-change="reports-periodic-render:4" data-legacy-change-arg2="startDate"></label><label>تا تاریخ<input type="date" min="' +
+          esc(f.startDate) +
+          '" value="' +
+          esc(f.endDate) +
+          '" data-legacy-change="reports-periodic-render:4" data-legacy-change-arg2="endDate"></label>'
+        : "<label>" +
+          (mode === "monthly" ? "یک تاریخ از ماه گزارش" : "تاریخ گزارش") +
+          '<input type="date" value="' +
+          esc(f.date) +
+          '" data-legacy-change="reports-periodic-render:1"></label>') +
     `<label>مدرسه<select data-legacy-change="reports-periodic-render:2">` +
     option("", "انتخاب مدرسه", f.schoolId) +
     db.schools.map((s) => option(s.id, s.name, f.schoolId)).join("") +
@@ -102,11 +106,15 @@ function render(mode) {
     (busy || !prepared ? " disabled" : "") +
     ' data-legacy-click="reports-periodic-document:deputy">کپی برای معاون</button></div><p id="periodicError" role="alert"></p></section><div id="periodicReportOutput">';
   h += prepared
-    ? documentHtml(last.model)
+    ? documentHtml(last.model, last.gradeHtml)
     : '<div class="card empty" role="status">' +
       (last
         ? "اطلاعات یا ترم تغییر کرده است؛ برای نمایش نتیجه معتبر، گزارش را دوباره تهیه کنید."
         : "محدوده و مخاطب را انتخاب کنید و «تهیه گزارش» را بزنید.") +
       "</div>";
+  if (prepared && last.gradeHtml) {
+    const preparedReport = last;
+    setTimeout(() => initializeReportKarnameh(preparedReport), 0);
+  }
   return h + "</div>";
 }

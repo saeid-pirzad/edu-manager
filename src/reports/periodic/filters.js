@@ -19,6 +19,8 @@ function selectScope(schoolId = "", classId = "") {
     studentId: "",
     audience: "management",
     date: localToday(),
+    startDate: "",
+    endDate: "",
   });
   filterWorkspace = noteYearScopeId();
   last = null;
@@ -33,6 +35,8 @@ function initialize(mode) {
       studentId: "",
       audience: "management",
       date: localToday(),
+      startDate: "",
+      endDate: "",
       annualFirstId: "",
       annualSecondId: "",
     });
@@ -40,6 +44,11 @@ function initialize(mode) {
     last = null;
   }
   filterWorkspace = workspaceId;
+  if (mode === "weekly" && (!filters.startDate || !filters.endDate)) {
+    const dates = range("weekly", filters.date);
+    filters.startDate = dates.start;
+    filters.endDate = dates.end;
+  }
   if (!db.schools.some((s) => s.id === filters.schoolId)) {
     filters.schoolId = db.schools.some((s) => s.id === globalFilter.schoolId)
       ? globalFilter.schoolId

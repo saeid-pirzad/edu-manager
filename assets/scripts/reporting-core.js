@@ -166,10 +166,17 @@
     d.setUTCDate(d.getUTCDate() + n);
     return d.toISOString().slice(0, 10);
   }
-  function range(mode, date, academicYear) {
+  function range(mode, date, academicYear, selection = {}) {
     if (!["daily", "weekly", "monthly", "annual"].includes(mode))
       throw Error("نوع گزارش نامعتبر است.");
     const d = isoDate(date);
+    if (mode === "weekly" && (selection.startDate || selection.endDate)) {
+      isoDate(selection.startDate);
+      isoDate(selection.endDate);
+      if (selection.endDate < selection.startDate)
+        throw Error("تاریخ پایان نباید قبل از تاریخ شروع باشد.");
+      return { start: selection.startDate, end: selection.endDate };
+    }
     if (mode === "annual") {
       return root.EduAcademicYear.range(academicYear);
     }
@@ -220,7 +227,7 @@
     if (!["class", "teacher"].includes(collisionScope))
       throw Error("محدودهٔ بررسی تداخل جلسه معتبر نیست.");
     const f = { ...options },
-      dates = range(f.mode, f.date, source.settings.academicYear),
+      dates = range(f.mode, f.date, source.settings.academicYear, f),
       school = source.schools.find((s) => s.id === f.schoolId);
     if (!school) throw Error("مدرسه گزارش را انتخاب کنید.");
     if (!["management", "parent"].includes(f.audience))

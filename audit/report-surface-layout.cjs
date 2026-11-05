@@ -361,17 +361,24 @@ function followupDisclosureCheck() {
     document.querySelector("[data-periodic-print]"),
   );
   printable.style.setProperty("display", "block", "important");
-  const printed = [...printable.querySelectorAll("details.report-class-group")];
+  const printed = [
+    ...printable.querySelectorAll(
+      '.report-class-group[data-print-expanded="true"]',
+    ),
+  ];
   const nestedPrintComplete =
-    [...printable.querySelectorAll("details.report-session-disclosure")].every(
-      (g) => g.open,
+    printable.querySelectorAll(
+      '.report-session-disclosure[data-print-expanded="true"]',
+    ).length === 1 &&
+    !printable.querySelector(
+      "details.report-session-disclosure,details.periodic-session",
     ) &&
     [...printable.querySelectorAll(".periodic-session")].every(
       (n) => n.getClientRects().length > 0,
     );
   const printComplete =
     printed.length === groups.length &&
-    printed.every((g) => g.open) &&
+    printed.every((g) => g.hasAttribute("open")) &&
     printable.querySelectorAll(".report-followup .report-student-row")
       .length === totalRows &&
     [
