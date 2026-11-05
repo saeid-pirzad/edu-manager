@@ -36,27 +36,44 @@ function approvedButtonColors(button) {
     return button.color === rgb("#16664e") && button.background === rgb("#fff");
   if (button.colorRole === "attendance-absent")
     return button.color === rgb("#9f2635") && button.background === rgb("#fff");
-  const family = {
-    create: "primary",
-    save: "primary",
-    download: "neutral",
-    print: "neutral",
-    navigate: "neutral",
-    neutral: "neutral",
-    excel: "excel",
-    upload: "info",
-    share: "info",
-    copy: "info",
-    edit: "secondary",
-    settings: "secondary",
-    report: "secondary",
-    danger: "danger",
-  }[button.tone];
+  const family =
+    { "backup-primary": "primary", "backup-secondary": "secondary" }[
+      button.colorRole
+    ] ||
+    {
+      create: "primary",
+      save: "primary",
+      download: "neutral",
+      print: "neutral",
+      navigate: "neutral",
+      neutral: "neutral",
+      excel: "excel",
+      upload: "info",
+      share: "info",
+      copy: "info",
+      edit: "secondary",
+      settings: "secondary",
+      report: "secondary",
+      danger: "danger",
+    }[button.tone];
   const expected = roles[family]?.[button.variant];
   return (
     !!expected &&
     button.color === rgb(expected[0]) &&
     button.background === rgb(expected[1])
+  );
+}
+
+// Screen-reader labels are retained in the DOM but their clipped ink is not
+// part of the visually centered button group. Never ignore ordinary text.
+function isClippedAccessibleLabel(style, box) {
+  return (
+    ["absolute", "fixed"].includes(style.position) &&
+    box.width <= 1 &&
+    box.height <= 1 &&
+    (["hidden", "clip"].includes(style.overflow) ||
+      style.clipPath === "inset(50%)" ||
+      String(style.clip || "").replace(/\s/g, "") === "rect(0px,0px,0px,0px)")
   );
 }
 
@@ -298,7 +315,7 @@ async function show(view) {
     requestAnimationFrame(() => requestAnimationFrame(resolve)),
   );
 }
-function measure() {
+function measure(isClippedAccessibleLabel) {
   const visible = (element) => {
     const box = element.getBoundingClientRect(),
       style = getComputedStyle(element);
@@ -310,11 +327,14 @@ function measure() {
       element.closest("[hidden]")
     )
       return false;
-    for (
-      let parent = element.parentElement;
-      parent;
-      parent = parent.parentElement
-    ) {
+    for (let parent = element; parent; parent = parent.parentElement) {
+      if (
+        isClippedAccessibleLabel(
+          getComputedStyle(parent),
+          parent.getBoundingClientRect(),
+        )
+      )
+        return false;
       if (
         parent.tagName === "DETAILS" &&
         !parent.open &&
@@ -438,7 +458,15 @@ function measure() {
             ? "attendance-present"
             : button.matches(".session-attendance-bulk .danger")
               ? "attendance-absent"
-              : "action",
+              : button.matches(
+                    '#modalBody .backup-hub button:is([data-workspace-action="export-full"],[data-workspace-action="single-file-choose"],[data-workspace-action="choose-import"])',
+                  )
+                ? "backup-primary"
+                : button.matches(
+                      '#modalBody .backup-hub button:is([data-workspace-action="prepare-share-backup"],[data-workspace-action="single-file-save"])',
+                    )
+                  ? "backup-secondary"
+                  : "action",
         needsIcon: button.matches(
           ".tabs button,.csv-import-actions button,.week-add,.periodic-export-actions button,.session-workspace-footer button,.backup-action-grid button,.backup-automatic button,.modal-header button",
         ),
@@ -565,7 +593,13 @@ async function run(env) {
           buttons: 0,
         });
         await delay(220);
-        const result = await evaluate("(" + measure.toString() + ")()");
+        const result = await evaluate(
+          "(" +
+            measure.toString() +
+            ")(" +
+            isClippedAccessibleLabel.toString() +
+            ")",
+        );
         observations.push({ width, view, ...result });
         if (view === "session" && !process.env.EDU_BUTTON_AUDIT_BASELINE) {
           const states = await evaluate("(" + stateChecks.toString() + ")()");
@@ -712,7 +746,7 @@ async function run(env) {
   );
   console.log("Button audit artifacts: " + output);
 }
-module.exports = { run };
+module.exports = { run, approvedButtonColors, isClippedAccessibleLabel };
 if (require.main === module)
   require("./data-integrity.cjs").main({
     stage: "button-controls",
