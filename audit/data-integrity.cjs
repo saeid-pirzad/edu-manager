@@ -329,6 +329,14 @@ async function main({
     const resultFile = path.join(profile, "data-integrity-results.json");
     fs.writeFileSync(resultFile, JSON.stringify(result, null, 2) + "\n");
     console.log(JSON.stringify({ ...result, resultFile }, null, 2));
+    console.log("AUDIT FINAL SUMMARY (failed checks only):");
+    console.log(
+      JSON.stringify(
+        require("./result-summary.cjs").summarizeResult(result, resultFile),
+        null,
+        2,
+      ),
+    );
     if (result.failed) process.exitCode = 1;
   } finally {
     if (cdp && ws?.readyState === WebSocket.OPEN) {
