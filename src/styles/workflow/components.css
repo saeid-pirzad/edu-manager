@@ -1,13 +1,4 @@
 /* Shared visual language for the everyday workflow. */
-@media print {
-  :root {
-    --workflow-ink: #172b4d;
-    --workflow-muted: #526580;
-    --workflow-line: #dce5ef;
-    --workflow-accent: #4f46c8;
-    --workflow-soft: #efedff;
-  }
-}
 body {
   background: var(--brand-canvas, #f4f7fb);
   color: var(--workflow-ink);
@@ -295,8 +286,8 @@ body {
   min-height: 44px;
   padding: 8px;
   background: transparent;
-  border: 1px solid #f0d9dc;
-  color: #b42335;
+  border: 1px solid var(--status-danger-line, #f0d9dc);
+  color: var(--status-danger, #b42335);
 }
 .assessment-student {
   background: var(--theme-surface, #fff);
@@ -334,19 +325,19 @@ body {
   border-radius: 10px;
 }
 .session-workspace .att-btns .present.active {
-  background: #dcfce7;
-  color: #166534;
-  border-color: #86efac;
+  background: var(--status-success-soft, #dcfce7);
+  color: var(--status-success, #166534);
+  border-color: var(--status-success-line, #86efac);
 }
 .session-workspace .att-btns .absent.active {
-  background: #fee2e2;
-  color: #991b1b;
-  border-color: #fca5a5;
+  background: var(--status-danger-soft, #fee2e2);
+  color: var(--status-danger, #991b1b);
+  border-color: var(--status-danger-line, #fca5a5);
 }
 .session-workspace .att-btns .late.active {
-  background: #fef3c7;
-  color: #92400e;
-  border-color: #fcd34d;
+  background: var(--status-warning-soft, #fef3c7);
+  color: var(--status-warning, #92400e);
+  border-color: var(--status-warning-line, #fcd34d);
 }
 @media (hover: hover) {
   .dashboard-entity:hover,
@@ -487,12 +478,16 @@ body {
   gap: 14px;
   padding: 18px;
   margin-block: 16px 6px;
-  border: 1px solid #f0d8cc;
+  border: 1px solid var(--status-warning-line, #f0d8cc);
   border-radius: 18px;
-  background: linear-gradient(125deg, #fff 55%, #fff6ee);
-  color: #423b38;
+  background: linear-gradient(
+    125deg,
+    var(--theme-surface, #fff) 55%,
+    var(--status-warning-soft, #fff6ee)
+  );
+  color: var(--theme-ink, #423b38);
   box-shadow:
-    0 6px 20px #8a4b2410,
+    var(--theme-shadow-sm, 0 6px 20px #8a4b2410),
     inset 0 1px 0 #fff;
   text-align: start;
   overflow-wrap: anywhere;
@@ -503,8 +498,8 @@ body {
   width: 44px;
   height: 44px;
   border-radius: 15px;
-  color: #b94c23;
-  background: linear-gradient(145deg, #fff0dc, #ffe0c6);
+  color: var(--status-warning, #b94c23);
+  background: var(--status-warning-soft, #fff0dc);
   box-shadow: inset 0 1px 0 #ffffffb3;
 }
 .session-validation-symbol svg {
@@ -516,27 +511,27 @@ body {
 }
 .session-validation-alert .session-validation-body strong {
   display: block;
-  color: #933d20;
+  color: var(--status-warning, #933d20);
   font-size: 14px;
   font-weight: 750;
   line-height: 1.9;
 }
 .session-validation-alert .session-validation-body p {
   margin: 7px 0 12px;
-  color: #514743;
+  color: var(--theme-ink, #514743);
   font-size: 13px;
   line-height: 2;
 }
 .session-validation-alert .session-validation-body small {
   display: block;
-  border-top: 1px solid #f2e5dd;
+  border-top: 1px solid var(--status-warning-line, #f2e5dd);
   padding-top: 10px;
-  color: #786b63;
+  color: var(--theme-muted, #786b63);
   font-size: 12px;
   line-height: 1.9;
 }
 .session-validation-alert:focus-visible {
-  outline: 2px solid #c7794e;
+  outline: 2px solid var(--theme-focus, #c7794e);
   outline-offset: 3px;
 }
 @media (max-width: 700px) {
@@ -563,11 +558,11 @@ body {
 .session-year-warning {
   padding: 12px 16px;
   margin-block: 12px;
-  border: 1px solid #e8c882;
-  border-inline-start: 4px solid #ca8a04;
+  border: 1px solid var(--status-warning-line, #e8c882);
+  border-inline-start: 4px solid var(--status-warning-fill, #ca8a04);
   border-radius: 14px;
-  color: #713f12;
-  background: #fffbeb;
+  color: var(--status-warning, #713f12);
+  background: var(--status-warning-soft, #fffbeb);
   line-height: 1.8;
   overflow-wrap: anywhere;
 }

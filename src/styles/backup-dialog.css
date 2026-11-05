@@ -1,4 +1,48 @@
 @media screen {
+  /* Backup actions share the red/amber product palette, not generic upload blue. */
+  #modal:has(.backup-hub) .modal-header {
+    --form-cream: var(--theme-secondary-soft);
+  }
+  #modalBody
+    .backup-hub
+    button:is(
+      [data-workspace-action="export-full"],
+      [data-workspace-action="single-file-choose"],
+      [data-workspace-action="choose-import"]
+    ) {
+    --button-ink: var(--theme-primary);
+    --button-fill: var(--theme-primary);
+    --button-soft: var(--theme-primary-soft);
+    --button-line: var(--theme-primary-line);
+    --button-hover: var(--theme-primary-hover);
+  }
+  #modalBody
+    .backup-hub
+    button:is(
+      [data-workspace-action="prepare-share-backup"],
+      [data-workspace-action="single-file-save"]
+    ) {
+    --button-ink: var(--theme-secondary);
+    --button-fill: var(--theme-secondary);
+    --button-soft: var(--theme-secondary-soft);
+    --button-line: var(--theme-secondary-line);
+    --button-hover: var(--theme-secondary-hover);
+  }
+  #modalBody .backup-hub > details {
+    --form-cream: var(--theme-secondary-soft);
+    border-color: var(--theme-secondary-line);
+  }
+  #modalBody .backup-hub > .backup-reset {
+    --form-cream: var(--status-danger-soft);
+    border-color: var(--status-danger-line);
+  }
+  #modalBody .backup-reset > summary {
+    color: var(--status-danger);
+  }
+  #modalBody .backup-reset > summary::after {
+    background: var(--status-danger-soft);
+    color: var(--status-danger);
+  }
   :is(
     :is(#modal:has(.backup-hub), #deputyBackupDialog) .modal-dialog,
     #deputyBackupDialog
@@ -94,16 +138,16 @@
     .backup-automatic
     > .row
     > button:last-child {
-    color: #9f5548;
-    background: #fffaf8;
-    border-color: #eddcd5;
+    color: var(--status-danger);
+    background: var(--status-danger-soft);
+    border-color: var(--status-danger-line);
   }
   :is(#modalBody, #deputyBackupBody) .backup-hub #singleFileStatus {
     padding: 10px 12px;
-    border: 1px solid #e8e0d3;
+    border: 1px solid var(--theme-line);
     border-radius: 9px;
-    background: #faf6ee;
-    color: #795f3c;
+    background: var(--theme-surface-subtle);
+    color: var(--theme-muted);
     font-size: 11px;
   }
   :is(#modalBody, #deputyBackupBody) .backup-automatic > .backup-help {
@@ -161,9 +205,9 @@
   :is(#modalBody, #deputyBackupBody) .backup-hub > p {
     margin: 0;
     padding: 14px;
-    border: 1px solid #e8e0d3;
+    border: 1px solid var(--theme-line);
     border-radius: 12px;
-    background: #faf6ee;
+    background: var(--theme-surface-subtle);
   }
   :is(#modalBody, #deputyBackupBody)
     .backup-hub
@@ -171,9 +215,9 @@
     margin-top: 12px;
     margin-bottom: 14px;
     padding: 12px;
-    border: 1px solid #ead4b6;
+    border: 1px solid var(--status-warning-line);
     border-radius: 10px;
-    background: #fff9ef;
+    background: var(--status-warning-soft);
   }
   :is(#modalBody, #deputyBackupBody) .backup-hub #singleFileFallback p {
     margin-bottom: 10px;
@@ -257,7 +301,7 @@
     border: 1px solid var(--workflow-line);
     background: var(--theme-surface);
     color: var(--workflow-ink);
-    box-shadow: 0 24px 80px #17233733;
+    box-shadow: var(--theme-shadow-lg);
     overflow: hidden;
     width: min(640px, calc(100vw - 40px));
   }
@@ -269,7 +313,7 @@
     flex-direction: column;
   }
   #deputyBackupDialog::backdrop {
-    background: #0008;
+    background: var(--theme-overlay, #2d344080);
   }
   #deputyBackupDialog .modal-header {
     display: flex;
@@ -323,7 +367,7 @@
     line-height: 2;
   }
   #deputyBackupBody .ed-danger {
-    background: #b62f40;
+    background: var(--status-danger-fill);
     color: white;
   }
   #deputyBackupDialog button:disabled {
@@ -352,10 +396,10 @@
   }
   #deputyBackupBody .ed-automatic-status {
     padding: 12px;
-    border: 1px solid #e8e0d3;
+    border: 1px solid var(--theme-line);
     border-radius: 9px;
-    background: #faf6ee;
-    color: #795f3c;
+    background: var(--theme-surface-subtle);
+    color: var(--theme-muted);
     overflow-wrap: anywhere;
   }
   #deputyBackupBody .backup-automatic .ed-automatic-help {

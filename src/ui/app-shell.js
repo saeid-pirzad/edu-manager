@@ -414,7 +414,7 @@
       if (title && !title.dataset.branded) {
         title.dataset.branded = "1";
         title.innerHTML =
-          '<span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5C9 3 6 3 3 4v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1Zm0 0v15"/></svg></span><span>کلاس‌یار<small>دفتر همراه هنرآموز</small></span>';
+          '<span class="brand-mark app-brand-mark" aria-hidden="true"><img class="app-logo" src="./assets/logo3.png" width="500" height="500" alt="" decoding="async"></span><span>کلاس‌یار<small>دفتر همراه هنرآموز</small></span>';
       }
     }
     const crumb = app?.querySelector(".breadcrumb");

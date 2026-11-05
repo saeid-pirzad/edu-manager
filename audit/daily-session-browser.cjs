@@ -1,4 +1,7 @@
 "use strict";
+const fs = require("node:fs"),
+  path = require("node:path"),
+  os = require("node:os");
 
 // Real delegated daily-session controls and IndexedDB in the isolated runner.
 // The original synthetic installation is restored after this flow.
@@ -257,6 +260,28 @@ async function dailyFlow() {
       initialProgress.textContent.includes("۸"),
     { text: initialProgress?.textContent },
   );
+  const beforeSearch = JSON.stringify(getSessionById(ids.session));
+  let search = document.querySelector(".session-attendance-search input");
+  search.value = "no matching student";
+  search.dispatchEvent(new Event("input", { bubbles: true }));
+  check(
+    "SEARCH_EMPTY",
+    "Attendance search shows an empty state without changing session data",
+    [...document.querySelectorAll(".att-row")].every((row) => row.hidden) &&
+      !document.querySelector(".session-attendance-no-results").hidden &&
+      JSON.stringify(getSessionById(ids.session)) === beforeSearch,
+  );
+  search.value = "Synthetic daily student 12";
+  search.dispatchEvent(new Event("input", { bubbles: true }));
+  openSessionModal(getSessionById(ids.session));
+  check(
+    "SEARCH_RETAINED",
+    "Attendance search survives editor refresh and reveals only the matching student",
+    document.querySelector(".session-attendance-search input").value ===
+      "Synthetic daily student 12" &&
+      [...document.querySelectorAll(".att-row")].filter((row) => !row.hidden)
+        .length === 1,
+  );
   document.querySelector('[data-legacy-click="sessions-dialog:6"]').click();
   await wait(
     async () =>
@@ -266,6 +291,20 @@ async function dailyFlow() {
   );
   await settle();
   const attendance = (await stored()).attendance;
+  const meter = document.querySelector("[data-session-attendance-meter]");
+  check(
+    "METER_COMPLETE",
+    "Progress reflects the full roster even while attendance search is active",
+    meter.max === 12 && meter.value === 12,
+  );
+  search = document.querySelector(".session-attendance-search input");
+  search.value = "";
+  search.dispatchEvent(new Event("input", { bubbles: true }));
+  check(
+    "SEARCH_RESET",
+    "Clearing attendance search restores the full roster",
+    [...document.querySelectorAll(".att-row")].every((row) => !row.hidden),
+  );
   const progress = document.querySelector("[data-session-attendance-progress]");
   check(
     "ONLY_UNSET",
@@ -589,10 +628,23 @@ function measure(panel) {
     touchTargets: boxes.every((box) => box.height >= 43.9 && box.width >= 43.9),
     correctPanel: !root.querySelector('[data-session-panel="' + panel + '"]')
       .hidden,
+    activityFormSurface:
+      getComputedStyle(root.querySelector(".session-entry-form"))
+        .backgroundColor === "rgb(255, 255, 255)" &&
+      getComputedStyle(root.querySelector(".session-entry-form"))
+        .borderTopColor === "rgb(228, 228, 231)",
+    activeStatusesReadable: [
+      ...root.querySelectorAll(".att-btns button.active"),
+    ].every(
+      (button) =>
+        getComputedStyle(button).color === "rgb(255, 255, 255)" &&
+        button.getAttribute("aria-pressed") === "true",
+    ),
   };
 }
 async function run(env) {
   const { cdp, evaluate, cases, delay } = env;
+  const previews = fs.mkdtempSync(path.join(os.tmpdir(), "edu-session-ux-"));
   const page = (fn, value = null) =>
     evaluate("(" + fn.toString() + ")(" + JSON.stringify(value) + ")");
   await require("./browser-ready.cjs")(env);
@@ -605,7 +657,7 @@ async function run(env) {
       mobile: true,
     });
     cases.push(...(await page(dailyFlow)));
-    for (const width of [320, 390, 768, 1280]) {
+    for (const width of [320, 390, 768, 1024, 1280]) {
       await cdp("Emulation.setDeviceMetricsOverride", {
         width,
         height: 850,
@@ -614,6 +666,15 @@ async function run(env) {
       });
       for (const panel of ["attendance", "activity"]) {
         const observed = await page(measure, panel);
+        await evaluate("document.getElementById('modalBody').scrollTop=0");
+        await delay(80);
+        const screenshot = await cdp("Page.captureScreenshot", {
+          format: "png",
+        });
+        fs.writeFileSync(
+          path.join(previews, width + "-" + panel + ".png"),
+          Buffer.from(screenshot.data, "base64"),
+        );
         cases.push({
           id: "DAILY_UX_LAYOUT_" + panel.toUpperCase() + "_" + width,
           name:
@@ -626,6 +687,8 @@ async function run(env) {
             observed.noModalOverflow &&
             observed.noEditorOverflow &&
             observed.touchTargets &&
+            observed.activityFormSurface &&
+            observed.activeStatusesReadable &&
             observed.correctPanel,
           observed,
         });
@@ -679,6 +742,7 @@ async function run(env) {
       observed: { error: error.stack || error.message },
     });
   } finally {
+    console.log("Session UI previews: " + previews);
     await cdp("Emulation.setDeviceMetricsOverride", {
       width: 1280,
       height: 800,

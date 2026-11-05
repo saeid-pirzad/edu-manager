@@ -1,56 +1,103 @@
-/* Screen color roles: warm ivory, muted mocha, espresso and bronze. */
-@media screen {
-  :root {
-    --theme-primary: #7a6857;
-    --theme-primary-hover: #625243;
-    --theme-primary-soft: #f3ede6;
-    --theme-primary-line: #d9cbbd;
-    --theme-primary-shadow: #7a685718;
-    --theme-secondary: #8a5c25;
-    --theme-secondary-hover: #6d471c;
-    --theme-secondary-soft: #fff3dd;
-    --theme-secondary-line: #e8d2aa;
-    --theme-highlight: #d0a04a;
-    --theme-canvas: #faf6f0;
-    --theme-surface: #fffdf9;
-    --theme-surface-subtle: #fcf9f4;
-    --theme-surface-muted: #f2ebe3;
-    --theme-ink: #3e3029;
-    --theme-muted: #75665b;
-    --theme-line: #e5d9cc;
-    --theme-line-soft: #eee5da;
-    --theme-focus: #7a6857;
-    --theme-focus-soft: #7a68571f;
-    --theme-field: #fffdf9;
-    --form-milk: #fffefd;
-    --form-cream: #f5eee4;
-    --surface-paper: #fff;
-    --surface-milk: var(--theme-surface);
-    --surface-cream: var(--form-cream);
-    --field-focus-line: #a77a53;
-    --field-focus-ring: #b68a601f;
-    --field-error-line: #b62f40;
-    --field-error-ring: #b62f401a;
+/* Reactium light palette: graphite navigation, red actions and amber accents.
+   Reference: global.css, AntdProvider.tsx and form-theme.ts in Reactium.
+   The reference hover red is used for small white labels (6.26:1 contrast);
+   its exact brand red remains available for decoration and selection strokes. */
+:root {
+  color-scheme: light;
+  --theme-brand: #ed1c24;
+  --theme-primary: #c0141b;
+  --theme-primary-hover: #921019;
+  --theme-primary-soft: #fef0f0;
+  --theme-primary-line: #fbd0d1;
+  --theme-primary-shadow: #ed1c2418;
+  --theme-secondary: #7c5105;
+  --theme-secondary-hover: #694200;
+  --theme-secondary-soft: #fffaed;
+  --theme-secondary-line: #f2d39a;
+  --theme-highlight: #fcaf17;
+  --theme-canvas: #f7f6f4;
+  --theme-surface: #fff;
+  --theme-surface-subtle: #fafafa;
+  --theme-surface-muted: #f4f4f5;
+  --theme-ink: #2d3440;
+  --theme-muted: #5a6179;
+  --theme-line: #e4e4e7;
+  --theme-line-soft: #ededf0;
+  --theme-field: #f4f4f5;
+  --theme-field-line: #8b8b95;
+  --theme-placeholder: #666b78;
+  --theme-disabled: #ececee;
+  --theme-disabled-ink: #777b86;
+  --theme-focus: #c0141b;
+  --theme-focus-soft: #ed1c2424;
+  --theme-nav: #58595b;
+  --theme-nav-hover: #6a6b6e;
+  --theme-nav-surface: #4f5053;
+  --theme-nav-ink: #fff;
+  --theme-nav-muted: #ececec;
+  --theme-nav-line: #ffffff26;
+  --theme-overlay: #2d344080;
+  --theme-shadow-sm: 0 1px 3px #2d344008;
+  --theme-shadow-md: 0 1px 2px #2d344008, 0 6px 18px #2d344008;
+  --theme-shadow-lg: 0 2px 8px #2d34400d, 0 24px 70px #2d34402e;
 
-    /* Compatibility aliases keep existing components on the same warm roles. */
-    --theme-teal: var(--theme-secondary);
-    --theme-teal-soft: var(--theme-secondary-soft);
-    --theme-teal-line: var(--theme-secondary-line);
-    --brand-red: var(--theme-primary);
-    --brand-orange: var(--theme-highlight);
-    --brand-charcoal: var(--theme-ink);
-    --brand-canvas: var(--theme-canvas);
-    --brand-hover: var(--theme-primary-hover);
-    --workflow-accent: var(--theme-primary);
-    --workflow-soft: var(--theme-primary-soft);
-    --workflow-ink: var(--theme-ink);
-    --workflow-muted: var(--theme-muted);
-    --workflow-line: var(--theme-line);
-    --ui-primary: var(--theme-primary);
-    --ui-ink: var(--theme-ink);
-    --ui-muted: var(--theme-muted);
-    --ui-line: var(--theme-line);
-    --touch-teal: #0d7166;
-    --touch-amber: #875800;
-  }
+  /* Status colors are semantic: brand red must not turn all states red. */
+  --status-success: #16664e;
+  --status-success-fill: #19775c;
+  --status-success-hover: #125d47;
+  --status-success-soft: #eaf6f0;
+  --status-success-line: #bfded0;
+  --status-info: #1d4f91;
+  --status-info-fill: #1d5fb8;
+  --status-info-hover: #174d94;
+  --status-info-soft: #edf4ff;
+  --status-info-line: #c4d8f3;
+  --status-warning: #7c5105;
+  --status-warning-fill: #fcaf17;
+  --status-warning-hover: #e59b0b;
+  --status-warning-soft: #fffaed;
+  --status-warning-line: #f2d39a;
+  --status-danger: #9f2635;
+  --status-danger-fill: #b42335;
+  --status-danger-hover: #921b2b;
+  --status-danger-soft: #fff0f2;
+  --status-danger-line: #efc7ce;
+  --status-leave: #6a4296;
+  --status-leave-fill: #7546a8;
+  --status-leave-hover: #5d3788;
+  --status-leave-soft: #f3edf9;
+  --status-leave-line: #d9c8ec;
+  --status-unknown: #565d6c;
+  --status-unknown-soft: #f1f2f4;
+  --status-unknown-line: #d4d4d8;
+
+  /* Compatibility roles point to the same palette, not independent themes. */
+  --theme-teal: var(--theme-secondary);
+  --theme-teal-soft: var(--theme-secondary-soft);
+  --theme-teal-line: var(--theme-secondary-line);
+  --brand-red: var(--theme-primary);
+  --brand-orange: var(--theme-highlight);
+  --brand-charcoal: var(--theme-nav);
+  --brand-canvas: var(--theme-canvas);
+  --brand-hover: var(--theme-primary-hover);
+  --workflow-accent: var(--theme-primary);
+  --workflow-soft: var(--theme-primary-soft);
+  --workflow-ink: var(--theme-ink);
+  --workflow-muted: var(--theme-muted);
+  --workflow-line: var(--theme-line);
+  --ui-primary: var(--theme-primary);
+  --ui-ink: var(--theme-ink);
+  --ui-muted: var(--theme-muted);
+  --ui-line: var(--theme-line);
+  --surface-paper: var(--theme-surface);
+  --surface-milk: var(--theme-surface-subtle);
+  --surface-cream: var(--theme-surface-muted);
+  --form-milk: var(--theme-field);
+  --form-cream: var(--theme-surface-muted);
+  --field-focus-line: var(--theme-focus);
+  --field-focus-ring: var(--theme-focus-soft);
+  --field-error-line: var(--status-danger-fill);
+  --field-error-ring: #b423351a;
+  --touch-teal: var(--status-success);
+  --touch-amber: var(--status-warning);
 }

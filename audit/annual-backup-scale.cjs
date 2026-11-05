@@ -293,6 +293,49 @@ async function run({ cdp, evaluate, cases, delay }) {
     },
     check = (id, name, pass, observed = {}) =>
       cases.push({ id: "ANNUAL_SCALE_" + id, name, pass: !!pass, observed });
+  const connectionProbe = () =>
+    evaluate(`(async () => {
+    const observed = { online:navigator.onLine, documentTimeOrigin:performance.timeOrigin, controlled:!!navigator.serviceWorker.controller, fetchBlocked:false };
+    // This is neither an application asset nor a navigation. The worker does
+    // not serve it, and a fresh URL plus no-store excludes any cached success.
+    const url=new URL('__annual_backup_offline_probe__',location.href);
+    url.searchParams.set('nonce',crypto.randomUUID());
+    try {
+      const response=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(3000)});
+      observed.fetchStatus=response.status;
+    } catch(error) {
+      observed.fetchError=error.name;
+      observed.fetchBlocked=error.name==='TypeError';
+    }
+    return observed;
+  })()`);
+  const waitOffline = async () => {
+    for (let attempt = 0; attempt < 100; attempt++) {
+      if (await evaluate("navigator.onLine === false")) return true;
+      await delay(50);
+    }
+    return false;
+  };
+  const overrideNetworkState = (offline) =>
+    cdp("Network.overrideNetworkState", {
+      offline,
+      latency: 0,
+      downloadThroughput: offline ? 0 : -1,
+      uploadThroughput: offline ? 0 : -1,
+    });
+  const enterOffline = async () => {
+    await cdp("Network.emulateNetworkConditions", {
+      offline: true,
+      latency: 0,
+      downloadThroughput: 0,
+      uploadThroughput: 0,
+    });
+    // Request blocking and the renderer's native connection state are separate
+    // CDP controls. Do not replace navigator.onLine with a JavaScript stub.
+    await overrideNetworkState(true);
+    await waitOffline();
+    return connectionProbe();
+  };
   await cdp("Browser.setDownloadBehavior", {
     behavior: "allow",
     downloadPath: directory,
@@ -336,12 +379,23 @@ async function run({ cdp, evaluate, cases, delay }) {
       setup.counts,
     );
     await cdp("Network.enable");
-    await cdp("Network.emulateNetworkConditions", {
-      offline: true,
-      latency: 0,
-      downloadThroughput: 0,
-      uploadThroughput: 0,
-    });
+    metrics.onlineControl = await connectionProbe();
+    check(
+      "ONLINE_NETWORK_CONTROL",
+      "The uncached same-origin probe reaches the live server before offline emulation",
+      metrics.onlineControl.online &&
+        metrics.onlineControl.fetchStatus === 404 &&
+        !metrics.onlineControl.fetchBlocked,
+      metrics.onlineControl,
+    );
+    metrics.offlineExport = await enterOffline();
+    check(
+      "OFFLINE_EXPORT_NETWORK",
+      "The actual file export starts with navigator offline and uncached network requests blocked",
+      metrics.offlineExport.online === false &&
+        metrics.offlineExport.fetchBlocked,
+      metrics.offlineExport,
+    );
     const exportStart = performance.now();
     await evaluate("EduV24.exportFullBackup()");
     let file;
@@ -481,9 +535,18 @@ async function run({ cdp, evaluate, cases, delay }) {
         repeated.installationToken !== restored.installationToken,
       { first: restored.revisions, repeated: repeated.revisions },
     );
+    metrics.beforeOfflineReload = await enterOffline();
     const reloadStart = performance.now();
-    await cdp("Page.reload", { ignoreCache: true });
+    // reloadReady marks the old document and starts exactly one navigation.
+    // An additional Page.reload races that navigation and its CDP context.
     await require("./browser-ready.cjs")({ cdp, evaluate, delay });
+    // Edge can reset the new renderer's navigator state while network requests
+    // remain blocked. Prove that real isolation survived before refreshing the
+    // native state override for this fresh document.
+    metrics.freshDocumentBeforeStateOverride = await connectionProbe();
+    await overrideNetworkState(true);
+    await waitOffline();
+    metrics.afterOfflineReload = await connectionProbe();
     metrics.offlineReloadMs = performance.now() - reloadStart;
     await evaluate("(" + installScaleTools.toString() + ")()");
     const afterReload = await evaluate(
@@ -502,8 +565,21 @@ async function run({ cdp, evaluate, cases, delay }) {
           JSON.stringify(repeated.revisions) &&
         afterReload.identityToken === repeated.identityToken &&
         afterReload.installationToken === repeated.installationToken &&
-        (await evaluate("!navigator.onLine")),
-      afterReload,
+        metrics.beforeOfflineReload.online === false &&
+        metrics.beforeOfflineReload.fetchBlocked &&
+        metrics.freshDocumentBeforeStateOverride.fetchBlocked &&
+        metrics.afterOfflineReload.online === false &&
+        metrics.afterOfflineReload.fetchBlocked &&
+        metrics.afterOfflineReload.controlled &&
+        metrics.beforeOfflineReload.documentTimeOrigin !==
+          metrics.afterOfflineReload.documentTimeOrigin,
+      {
+        ...afterReload,
+        beforeConnection: metrics.beforeOfflineReload,
+        freshConnectionBeforeStateOverride:
+          metrics.freshDocumentBeforeStateOverride,
+        afterConnection: metrics.afterOfflineReload,
+      },
     );
   } finally {
     fs.writeFileSync(
@@ -519,6 +595,7 @@ async function run({ cdp, evaluate, cases, delay }) {
       downloadThroughput: -1,
       uploadThroughput: -1,
     });
+    await overrideNetworkState(false);
     await cdp("Browser.setDownloadBehavior", { behavior: "default" });
   }
 }

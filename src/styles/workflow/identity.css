@@ -28,23 +28,23 @@
   gap: 8px;
 }
 .dashboard-directory .dashboard-section-heading {
-  border-bottom: 1px solid var(--theme-line-soft, #edf0f7);
+  border-bottom: 1px solid var(--theme-line-soft, #ededf0);
   padding-bottom: 14px;
   margin-bottom: 16px;
 }
 .dashboard-entity {
-  border-inline-start: 4px solid var(--brand-red, #8276df);
-  box-shadow: 0 4px 16px #4a302508;
+  border-inline-start: 4px solid var(--brand-red, #ed1c24);
+  box-shadow: 0 4px 16px #2d344008;
 }
 .dashboard-entity-info p {
   line-height: 1.9;
   color: var(--workflow-muted);
 }
 #app .dashboard-entity-actions > button:first-child {
-  box-shadow: 0 4px 10px #7a685715;
+  box-shadow: 0 4px 10px #ed1c2415;
 }
 #app .dashboard-entity-actions > button.ghost {
-  background: var(--theme-surface-subtle, #faf9f7);
+  background: var(--theme-surface-subtle, #fafafa);
 }
 #app .lesson-count {
   background: var(--workflow-soft);
@@ -54,30 +54,32 @@
 }
 #app .topbar {
   border-bottom: 1px solid var(--workflow-line);
-  box-shadow: 0 5px 18px #4a302505;
+  background: var(--theme-nav, #58595b);
+  color: var(--theme-nav-ink, #fff);
+  box-shadow: var(--theme-shadow-sm, 0 2px 8px #2d34400d);
 }
 #app .header-brand h1 {
-  color: var(--workflow-ink);
+  color: var(--theme-nav-ink, #fff);
 }
 #app .header-action.is-active {
-  background: var(--workflow-soft);
-  color: var(--workflow-accent);
-  border-color: var(--theme-primary-line, #fbd0d1);
+  background: var(--theme-primary, #c0141b);
+  color: var(--theme-nav-ink, #fff);
+  border-color: var(--theme-primary, #c0141b);
 }
 #app .tabs > button.active,
 #app .tabs > button[aria-current="page"] {
   color: var(--workflow-accent);
-  box-shadow: 0 2px 8px #7a685712;
+  box-shadow: 0 2px 8px #ed1c2412;
 }
 #app .student-avatar {
   background: var(--theme-teal-soft, #fffaed);
   color: var(--theme-teal, #7c5105);
 }
 #app .lesson-item {
-  border-inline-start: 3px solid var(--brand-orange, #8276df);
+  border-inline-start: 3px solid var(--brand-orange, #fcaf17);
 }
 #app .session-card {
-  border-inline-start: 3px solid #35a391;
+  border-inline-start: 3px solid var(--status-success-fill, #19775c);
 }
 #app .assessment-stage > summary {
   background: var(--theme-teal-soft, #fffaed);
@@ -85,12 +87,112 @@
   color: var(--theme-teal, #7c5105);
 }
 #uiBottomNav button[aria-current="page"] {
-  background: var(--workflow-soft);
-  color: var(--workflow-accent);
+  background: var(--theme-primary, #c0141b);
+  color: var(--theme-nav-ink, #fff);
   border-radius: 14px;
 }
 #uiBottomNav button[aria-current="page"] svg {
   stroke-width: 2.2;
+}
+/* Charcoal navigation chrome is independent of white content cards. */
+@media screen {
+  :is(#app, #deputyApp) .topbar {
+    background: var(--theme-nav, #58595b);
+    color: var(--theme-nav-ink, #fff);
+  }
+  :is(#app, #deputyApp) .topbar .header-brand h1,
+  :is(#app, #deputyApp) .topbar .header-brand h1 small {
+    color: var(--theme-nav-ink, #fff);
+  }
+  :is(#app, #deputyApp) .topbar .header-actions {
+    background: var(--theme-nav, #58595b);
+    border-color: var(--theme-nav-line, #ffffff26);
+  }
+  :is(#app, #deputyApp) .topbar .header-action,
+  :is(#app, #deputyApp) .topbar .navigation-menu > summary {
+    background: transparent;
+    color: var(--theme-nav-ink, #fff);
+    border-color: var(--theme-nav-line, #ffffff26);
+    box-shadow: none;
+  }
+  :is(#app, #deputyApp) .topbar .header-action > svg,
+  :is(#app, #deputyApp) .topbar .navigation-menu > summary > svg {
+    color: var(--theme-highlight, #fcaf17);
+  }
+  :is(#app, #deputyApp) .topbar .header-action:hover,
+  :is(#app, #deputyApp) .topbar .navigation-menu > summary:hover,
+  :is(#app, #deputyApp) .topbar .navigation-menu[open] > summary {
+    background: var(--theme-nav-hover, #6a6b6e);
+    color: var(--theme-nav-ink, #fff);
+  }
+  :is(#app, #deputyApp) .topbar .header-action.is-active,
+  :is(#app, #deputyApp) .topbar .header-action[aria-expanded="true"] {
+    background: var(--theme-primary, #c0141b);
+    border-color: var(--theme-primary, #c0141b);
+    color: var(--theme-nav-ink, #fff);
+  }
+  :is(#app, #deputyApp) .topbar .header-action.is-active > svg,
+  :is(#app, #deputyApp) .topbar .header-action[aria-expanded="true"] > svg {
+    color: var(--theme-nav-ink, #fff);
+  }
+  :is(#app, #deputyApp) .topbar .header-action:focus-visible,
+  :is(#app, #deputyApp) .topbar .navigation-menu > summary:focus-visible {
+    outline-color: var(--theme-highlight, #fcaf17);
+  }
+  :is(#app, #deputyApp) .topbar .header-dropdown .data-menu {
+    background: var(--theme-nav-surface, #4f5053);
+    border-color: var(--theme-nav-line, #ffffff26);
+  }
+  :is(#app, #deputyApp) .topbar .header-dropdown .data-menu button {
+    background: transparent;
+    color: var(--theme-nav-ink, #fff);
+  }
+  :is(#app, #deputyApp) .topbar .header-dropdown .data-menu button svg {
+    color: var(--theme-highlight, #fcaf17);
+  }
+  :is(#app, #deputyApp) .topbar .header-dropdown .data-menu button:hover {
+    background: var(--theme-nav-hover, #6a6b6e);
+    color: var(--theme-nav-ink, #fff);
+  }
+  :is(#app, #deputyApp) .topbar .header-dropdown .data-menu button.danger-item,
+  :is(#app, #deputyApp)
+    .topbar
+    .header-dropdown
+    .data-menu
+    button.danger-item
+    svg {
+    color: #ffc3c9;
+  }
+  :is(#app, #deputyApp)
+    .topbar
+    .header-dropdown
+    .data-menu
+    button.danger-item:hover {
+    background: #75444a;
+  }
+  #uiBottomNav {
+    background: var(--theme-nav, #58595b);
+    border-color: var(--theme-nav-line, #ffffff26);
+    box-shadow: 0 -4px 20px #2d344018;
+  }
+  #uiBottomNav button {
+    background: transparent;
+    color: var(--theme-nav-ink, #fff);
+  }
+  #uiBottomNav button svg {
+    color: var(--theme-highlight, #fcaf17);
+  }
+  #uiBottomNav button[aria-current="page"] {
+    background: var(--theme-primary, #c0141b);
+    color: var(--theme-nav-ink, #fff);
+  }
+  #uiBottomNav button[aria-current="page"] svg {
+    color: var(--theme-nav-ink, #fff);
+  }
+  #uiBottomNav button:focus-visible,
+  #app > .tabs.classroom-tabs > .classroom-tab:focus-visible {
+    outline-color: var(--theme-highlight, #fcaf17);
+  }
 }
 @media (hover: hover) {
   #app .dashboard-entity-actions > button:first-child:hover,

@@ -363,6 +363,7 @@ function renderLogin() {
   const app = document.getElementById("app");
   app.innerHTML = `
     <div class="login-box">
+      <div class="login-brand"><span class="app-brand-mark" aria-hidden="true"><img class="app-logo" src="./assets/logo3.png" width="500" height="500" alt="" decoding="async"></span><strong>کلاس‌یار</strong></div>
       <h2>🔒 ورود به سامانه</h2>
       <p class="muted">لطفاً رمز عبور خود را وارد کنید</p>
       <form id="loginForm">
@@ -451,7 +452,7 @@ function legacy_render() {
   else if (state.view === "reports") h = renderReports();
   app.innerHTML =
     (storageBlocked
-      ? `<div class="card" role="alert" style="border:2px solid #dc2626">${esc(storageProblem)} <button data-legacy-click="ui-login-render:0">دریافت نسخه خام</button></div>`
+      ? `<div class="card" role="alert" style="border:2px solid var(--status-danger, #9f2635)">${esc(storageProblem)} <button data-legacy-click="ui-login-render:0">دریافت نسخه خام</button></div>`
       : "") + h;
 
   initShamsiPickers();
@@ -827,37 +828,9 @@ function renderReports() {
   const tab = state.reportTab || "comprehensive";
   const periodic = ["daily", "weekly", "monthly", "annual"].includes(tab);
   const periodicContent = periodic ? EduPeriodicReports.render(tab) : "";
-  const filter = periodic
-    ? EduPeriodicReports.filters
-    : tab === "comprehensive"
-      ? globalFilter
-      : tab === "lessonReport"
-        ? lessonReportFilter
-        : karnamehFilter;
-  const schools = db.schools.filter(
-      (s) => !filter.schoolId || s.id === filter.schoolId,
-    ),
-    classes = schools
-      .flatMap((s) => s.classes)
-      .filter((c) => !filter.classId || c.id === filter.classId);
-  const scope =
-    (filter.schoolId ? schools[0]?.name : "همه مدارس") || "مدرسه انتخاب‌شده";
   let h =
     headerHtml() +
-    '<header class="report-page-heading"><p>تصویر روشن از عملکرد کلاس‌ها</p><h2>گزارش‌ها و کارنامه‌ها</h2><span>' +
-    esc(scope) +
-    (filter.classId ? " · " + esc(classes[0]?.name || "کلاس انتخاب‌شده") : "") +
-    "</span></header>";
-  h +=
-    '<section class="report-scope-summary no-print"><span><strong>' +
-    classes.length.toLocaleString("fa-IR") +
-    "</strong> کلاس</span><span><strong>" +
-    classes.reduce((n, c) => n + c.students.length, 0).toLocaleString("fa-IR") +
-    "</strong> هنرجو</span><span><strong>" +
-    classes
-      .reduce((n, c) => n + (c.lessons || []).length, 0)
-      .toLocaleString("fa-IR") +
-    "</strong> درس در محدوده</span></section>";
+    '<header class="report-page-heading"><h2>گزارش‌ها و کارنامه‌ها</h2></header>';
   h +=
     '<nav class="tabs report-navigation no-print" aria-label="نوع گزارش">' +
     [
@@ -957,23 +930,23 @@ function renderComprehensiveTab() {
       </select>
     </div>
     <div class="filter-box">
-      <div style="font-size:.9em;font-weight:600;color:#475569;margin-bottom:8px">حالت نمایش گزارش:</div>
+      <div style="font-size:.9em;font-weight:600;color:var(--theme-muted, #5a6179);margin-bottom:8px">حالت نمایش گزارش:</div>
       <div class="row" style="margin-bottom:12px">
         <label><input type="radio" name="reportMode" value="summary" ${globalFilter.reportMode === "summary" ? "checked" : ""} data-legacy-change="reports-comprehensive:10"> خلاصه (جدولی)</label>
         <label><input type="radio" name="reportMode" value="detailed" ${globalFilter.reportMode === "detailed" ? "checked" : ""} data-legacy-change="reports-comprehensive:11"> گزارش کامل</label>
       </div>
-      <div style="font-size:.9em;font-weight:600;color:#475569;margin-bottom:8px">اطلاعات موجود در گزارش:</div>
+      <div style="font-size:.9em;font-weight:600;color:var(--theme-muted, #5a6179);margin-bottom:8px">اطلاعات موجود در گزارش:</div>
       <div class="row" style="margin-bottom:8px">
         <label><input type="checkbox" ${globalFilter.showAttendance ? "checked" : ""} data-legacy-change="reports-comprehensive:12"> حضور و غیاب</label>
         <label><input type="checkbox" ${globalFilter.showScores ? "checked" : ""} data-legacy-change="reports-comprehensive:13"> نمرات</label>
         <label><input type="checkbox" ${globalFilter.showPosNeg ? "checked" : ""} data-legacy-change="reports-comprehensive:14"> مثبت / منفی</label>
         <label><input type="checkbox" ${globalFilter.showHomework ? "checked" : ""} data-legacy-change="reports-comprehensive:15"> تکالیف</label>
       </div>
-      <div style="font-size:.9em;font-weight:600;color:#475569;margin-bottom:8px">نمایش اسامی (برای حضور و غیاب):</div>
+      <div style="font-size:.9em;font-weight:600;color:var(--theme-muted, #5a6179);margin-bottom:8px">نمایش اسامی (برای حضور و غیاب):</div>
       <div class="row" style="margin-bottom:0">
-        <label style="color:#059669"><input type="checkbox" ${globalFilter.showPresentNames ? "checked" : ""} data-legacy-change="reports-comprehensive:16"> نام حاضرین</label>
-        <label style="color:#dc2626"><input type="checkbox" ${globalFilter.showAbsentNames ? "checked" : ""} data-legacy-change="reports-comprehensive:17"> نام غایبین</label>
-        <label style="color:#d97706"><input type="checkbox" ${globalFilter.showLateNames ? "checked" : ""} data-legacy-change="reports-comprehensive:18"> نام تأخیری‌ها</label>
+        <label style="color:var(--status-success, #16664e)"><input type="checkbox" ${globalFilter.showPresentNames ? "checked" : ""} data-legacy-change="reports-comprehensive:16"> نام حاضرین</label>
+        <label style="color:var(--status-danger, #9f2635)"><input type="checkbox" ${globalFilter.showAbsentNames ? "checked" : ""} data-legacy-change="reports-comprehensive:17"> نام غایبین</label>
+        <label style="color:var(--status-warning, #7c5105)"><input type="checkbox" ${globalFilter.showLateNames ? "checked" : ""} data-legacy-change="reports-comprehensive:18"> نام تأخیری‌ها</label>
         <button class="ghost" data-legacy-click="reports-comprehensive:19" style="margin-right:auto;font-size:.85em;padding:4px 10px">♻️ ریست فیلترها</button>
       </div>
     </div>
@@ -1220,8 +1193,8 @@ function generateGlobalReport() {
         if (globalFilter.showPosNeg) {
           const pos = sess.scores.filter((x) => x.type === "positive").length;
           const neg = sess.scores.filter((x) => x.type === "negative").length;
-          h += `<td style="color:#059669;font-weight:600">${pos}</td>`;
-          h += `<td style="color:#dc2626;font-weight:600">${neg}</td>`;
+          h += `<td style="color:var(--status-success, #16664e);font-weight:600">${pos}</td>`;
+          h += `<td style="color:var(--status-danger, #9f2635);font-weight:600">${neg}</td>`;
         }
         if (globalFilter.showHomework) {
           const hw = sess.scores.filter((x) => x.type === "homework").length;
@@ -1305,7 +1278,7 @@ function generateGlobalReport() {
           );
           if (exams.length)
             h +=
-              `<div class="names-list" style="color:#3730a3;margin-top:8px">📊 نمرات: ` +
+              `<div class="names-list" style="color:var(--status-info, #1d4f91);margin-top:8px">📊 نمرات: ` +
               exams
                 .map((x) => {
                   const st = sessionStudent(cls.classObj, sess, x.studentId);
@@ -1320,7 +1293,7 @@ function generateGlobalReport() {
           const neg = sess.scores.filter((x) => x.type === "negative");
           if (pos.length)
             h +=
-              `<div class="names-list" style="color:#059669;margin-top:4px">➕ مثبت (${pos.length}): ` +
+              `<div class="names-list" style="color:var(--status-success, #16664e);margin-top:4px">➕ مثبت (${pos.length}): ` +
               pos
                 .map((x) => {
                   const st = sessionStudent(cls.classObj, sess, x.studentId);
@@ -1331,7 +1304,7 @@ function generateGlobalReport() {
               `</div>`;
           if (neg.length)
             h +=
-              `<div class="names-list" style="color:#dc2626;margin-top:4px">➖ منفی (${neg.length}): ` +
+              `<div class="names-list" style="color:var(--status-danger, #9f2635);margin-top:4px">➖ منفی (${neg.length}): ` +
               neg
                 .map((x) => {
                   const st = sessionStudent(cls.classObj, sess, x.studentId);
@@ -1345,7 +1318,7 @@ function generateGlobalReport() {
           const hw = sess.scores.filter((x) => x.type === "homework");
           if (hw.length)
             h +=
-              `<div class="names-list" style="color:#3730a3;margin-top:4px">📝 تکالیف (${hw.length}): ` +
+              `<div class="names-list" style="color:var(--status-info, #1d4f91);margin-top:4px">📝 تکالیف (${hw.length}): ` +
               hw
                 .map((x) => {
                   const st = sessionStudent(cls.classObj, sess, x.studentId);
@@ -1355,7 +1328,7 @@ function generateGlobalReport() {
                 .join("، ") +
               `</div>`;
         }
-        h += `</div><hr style="border:0;border-top:1px dashed #e2e8f0;margin:10px 0">`;
+        h += `</div><hr style="border:0;border-top:1px dashed var(--theme-line, #e4e4e7);margin:10px 0">`;
       });
       h += `</div>`;
     });
@@ -1835,7 +1808,7 @@ function legacy_buildLessonReportHtml(c, lesson) {
       const unit = poudman
         ? poudman.units.find((u) => u.id === sess.unitId)
         : null;
-      h += `<div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin:10px 0">
+      h += `<div style="border:1px solid var(--theme-line, #e4e4e7);border-radius:8px;padding:12px;margin:10px 0">
       <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
         <strong>${faDate(sess.date)} — زنگ ${sess.period + 1}</strong>
         <span class="muted">${lesson.gradeMode === "kardanesh" ? "کاردانش: تئوری و عملی" : (poudman ? esc(poudman.name) : "—") + " / " + (unit ? esc(unit.name) : "—")}</span>
@@ -1843,16 +1816,16 @@ function legacy_buildLessonReportHtml(c, lesson) {
       <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:.9em;margin-bottom:8px">
         <span>✅ حاضر: <b>${present.length}</b></span><span>❌ غایب: <b>${absent.length}</b></span>
         <span>مرخصی: <b>${leave.length}</b> ${leave.map(esc).join("، ")}</span><span>⏰ تأخیر: <b>${late.length}</b></span>
-        <span style="color:#059669">➕ مثبت: <b>${pos.length}</b></span>
-        <span style="color:#dc2626">➖ منفی: <b>${neg.length}</b></span>
+        <span style="color:var(--status-success, #16664e)">➕ مثبت: <b>${pos.length}</b></span>
+        <span style="color:var(--status-danger, #9f2635)">➖ منفی: <b>${neg.length}</b></span>
         <span>📝 تکلیف: <b>${hw.length}</b></span>
       </div>
-      ${absent.length ? `<div style="font-size:.85em;color:#dc2626">غایبین: ${absent.map(esc).join("، ")}</div>` : ""}
-      ${late.length ? `<div style="font-size:.85em;color:#d97706">تأخیر: ${late.map(esc).join("، ")}</div>` : ""}
-      ${present.length ? `<div style="font-size:.85em;color:#059669;margin-top:4px">حاضرین: ${present.map(esc).join("، ")}</div>` : ""}
+      ${absent.length ? `<div style="font-size:.85em;color:var(--status-danger, #9f2635)">غایبین: ${absent.map(esc).join("، ")}</div>` : ""}
+      ${late.length ? `<div style="font-size:.85em;color:var(--status-warning, #7c5105)">تأخیر: ${late.map(esc).join("، ")}</div>` : ""}
+      ${present.length ? `<div style="font-size:.85em;color:var(--status-success, #16664e);margin-top:4px">حاضرین: ${present.map(esc).join("، ")}</div>` : ""}
       ${
         pos.length
-          ? `<div style="font-size:.85em;color:#059669;margin-top:4px">➕ مثبت: ${pos
+          ? `<div style="font-size:.85em;color:var(--status-success, #16664e);margin-top:4px">➕ مثبت: ${pos
               .map((x) => {
                 const s = sessionStudent(c, sess, x.studentId);
                 return esc(s ? s.name : "") + `(${esc(x.value)})`;
@@ -1862,7 +1835,7 @@ function legacy_buildLessonReportHtml(c, lesson) {
       }
       ${
         neg.length
-          ? `<div style="font-size:.85em;color:#dc2626;margin-top:4px">➖ منفی: ${neg
+          ? `<div style="font-size:.85em;color:var(--status-danger, #9f2635);margin-top:4px">➖ منفی: ${neg
               .map((x) => {
                 const s = sessionStudent(c, sess, x.studentId);
                 return esc(s ? s.name : "") + `(${esc(x.value)})`;
@@ -1872,7 +1845,7 @@ function legacy_buildLessonReportHtml(c, lesson) {
       }
       ${
         hw.length
-          ? `<div style="font-size:.85em;color:#3730a3;margin-top:4px">📝 تکالیف: ${hw
+          ? `<div style="font-size:.85em;color:var(--status-info, #1d4f91);margin-top:4px">📝 تکالیف: ${hw
               .map((x) => {
                 const s = sessionStudent(c, sess, x.studentId);
                 return esc(s ? s.name : "");
@@ -1892,7 +1865,7 @@ function legacy_buildLessonReportHtml(c, lesson) {
     const s = calcStudentLesson(c, lesson, st.id);
     h += `<tr><td>${esc(st.name)}</td>
       <td>${(s.att.present || 0) + (s.att.late || 0)}</td><td>${s.att.absent}</td><td>${s.att.leave || 0}</td><td>${s.att.late}</td>
-      <td style="color:#059669">${s.posCount}</td><td style="color:#dc2626">${s.negCount}</td><td>${s.hwCount}</td>
+      <td style="color:var(--status-success, #16664e)">${s.posCount}</td><td style="color:var(--status-danger, #9f2635)">${s.negCount}</td><td>${s.hwCount}</td>
       <td>${s.avgM !== null ? s.avgM.toFixed(2) : "—"}</td>
       <td>${s.avgP !== null ? s.avgP.toFixed(2) : "—"}</td>
       <td><b>${s.final !== null ? s.final.toFixed(2) : "—"}</b></td></tr>`;
@@ -3246,15 +3219,15 @@ function renderEntityQuickCreate(kind, empty) {
   const label = school ? "مدرسه" : "کلاس";
   const token = school ? "1" : "5";
   return (
-    '<details class="card quick-create entity-quick-create create-panel no-print"' +
+    '<details class="card quick-create entity-quick-create create-panel no-print' +
+    (school ? " school-create" : " class-create") +
+    '"' +
     (empty ? " open" : "") +
     ">" +
     createPanelHeading(
       school ? "school" : "classroom",
       label + " جدید",
-      school
-        ? "نام مدرسه؛ کلاس‌ها در مرحله بعد"
-        : "نام کلاس؛ هنرجویان و درس‌ها در مرحله بعد",
+      school ? "" : "نام کلاس؛ هنرجویان و درس‌ها در مرحله بعد",
     ) +
     '<form data-legacy-submit="ui-school-class:' +
     token +
@@ -3268,7 +3241,9 @@ function renderEntityQuickCreate(kind, empty) {
     (school ? "مثلاً هنرستان دانش" : "مثلاً دهم شبکه") +
     '" aria-describedby="' +
     kind +
-    'CreateError" required maxlength="500"></label><div class="create-panel-footer"><button type="submit" data-mutating="1">ثبت ' +
+    'CreateError" required maxlength="500"' +
+    (school ? ' enterkeyhint="done"' : "") +
+    '></label><div class="create-panel-footer"><button type="submit" data-mutating="1">ثبت ' +
     label +
     '</button></div><p id="' +
     kind +
@@ -3302,9 +3277,11 @@ function renderSchool() {
   return h;
 }
 
-function classroomTabsHtml(label, items) {
+function classroomTabsHtml(label, items, compact = false) {
   return (
-    '<div class="tabs classroom-tabs" role="group" aria-label="' +
+    '<div class="tabs classroom-tabs' +
+    (compact ? " classroom-tabs-compact" : "") +
+    '" role="group" aria-label="' +
     esc(label) +
     '">' +
     items
@@ -3331,20 +3308,24 @@ function renderClass() {
     { label: c.name },
     { label: state.tab === "students" ? "دانش‌آموزان" : "درس‌ها" },
   ]);
-  h += classroomTabsHtml("بخش‌های کلاس", [
-    {
-      tab: "lessons",
-      action: "ui-school-class:10",
-      icon: "book",
-      title: "دروس",
-    },
-    {
-      tab: "students",
-      action: "ui-school-class:11",
-      icon: "users",
-      title: "دانش‌آموزان",
-    },
-  ]);
+  h += classroomTabsHtml(
+    "بخش‌های کلاس",
+    [
+      {
+        tab: "lessons",
+        action: "ui-school-class:10",
+        icon: "book",
+        title: "دروس",
+      },
+      {
+        tab: "students",
+        action: "ui-school-class:11",
+        icon: "users",
+        title: "دانش‌آموزان",
+      },
+    ],
+    true,
+  );
   if (state.tab === "lessons") h += renderLessonsTab(c);
   else h += renderStudentsTab(c);
   return h;
@@ -3852,16 +3833,20 @@ function renderLesson() {
     { label: c.name, action: "ui-lesson:2" },
     { label: lesson.name },
   ]);
-  h += classroomTabsHtml("بخش‌های درس", [
-    {
-      tab: "sessions",
-      action: "ui-lesson:4",
-      icon: "attendance",
-      title: "جلسات",
-      detail: "و حضور و غیاب",
-    },
-    { tab: "grades", action: "ui-lesson:5", icon: "grades", title: "نمرات" },
-  ]);
+  h += classroomTabsHtml(
+    "بخش‌های درس",
+    [
+      {
+        tab: "sessions",
+        action: "ui-lesson:4",
+        icon: "attendance",
+        title: "جلسات",
+        detail: "و حضور و غیاب",
+      },
+      { tab: "grades", action: "ui-lesson:5", icon: "grades", title: "نمرات" },
+    ],
+    true,
+  );
   if (state.tab === "sessions") h += renderLessonSessions(c, lesson);
   else h += `<div id="lessonGradesArea"></div>`;
   return h;
@@ -3880,16 +3865,16 @@ function legacy_renderLessonStudents(c, lesson) {
       <th rowspan="2">#</th><th rowspan="2">نام</th>`;
     lesson.poudmans.forEach((p) => {
       p.units.forEach((u) => {
-        h += `<th colspan="5" style="text-align:center;border-right:2px solid #cbd5e1">${esc(p.name)} / ${esc(u.name)}</th>`;
+        h += `<th colspan="5" style="text-align:center;border-right:2px solid var(--theme-line, #e4e4e7)">${esc(p.name)} / ${esc(u.name)}</th>`;
       });
     });
-    h += `<th colspan="2" style="background:#eef2ff;color:#4338ca;text-align:center">کل درس</th></tr><tr>`;
+    h += `<th colspan="2" style="background:var(--theme-primary-soft, #fef0f0);color:var(--theme-primary-hover, #921019);text-align:center">کل درس</th></tr><tr>`;
     lesson.poudmans.forEach((p) => {
       p.units.forEach((u) => {
-        h += `<th style="font-size:.75em;color:#059669">➕ مثبت</th><th style="font-size:.75em;color:#dc2626">➖ منفی</th><th style="font-size:.75em">📝 تکلیف</th><th style="font-size:.75em;color:#059669">✅ حاضر</th><th style="font-size:.75em;color:#d97706">⏰ تأخیر</th>`;
+        h += `<th style="font-size:.75em;color:var(--status-success, #16664e)">➕ مثبت</th><th style="font-size:.75em;color:var(--status-danger, #9f2635)">➖ منفی</th><th style="font-size:.75em">📝 تکلیف</th><th style="font-size:.75em;color:var(--status-success, #16664e)">✅ حاضر</th><th style="font-size:.75em;color:var(--status-warning, #7c5105)">⏰ تأخیر</th>`;
       });
     });
-    h += `<th style="font-size:.75em;color:#059669;background:#eef2ff">➕ مثبت</th><th style="font-size:.75em;color:#dc2626;background:#eef2ff">➖ منفی</th>`;
+    h += `<th style="font-size:.75em;color:var(--status-success, #16664e);background:var(--theme-primary-soft, #fef0f0)">➕ مثبت</th><th style="font-size:.75em;color:var(--status-danger, #9f2635);background:var(--theme-primary-soft, #fef0f0)">➖ منفی</th>`;
     h += `</tr></thead><tbody>`;
 
     sortedStudents.forEach((s, i) => {
@@ -3898,10 +3883,10 @@ function legacy_renderLessonStudents(c, lesson) {
       lesson.poudmans.forEach((p) => {
         p.units.forEach((u) => {
           const d = stats.details[p.id][u.id];
-          h += `<td style="color:#059669;text-align:center">${d.pos || 0}</td><td style="color:#dc2626;text-align:center">${d.neg || 0}</td><td style="text-align:center">${d.hw || 0}</td><td style="color:#059669;text-align:center">${d.att.present || 0}</td><td style="color:#d97706;text-align:center">${d.att.late || 0}</td>`;
+          h += `<td style="color:var(--status-success, #16664e);text-align:center">${d.pos || 0}</td><td style="color:var(--status-danger, #9f2635);text-align:center">${d.neg || 0}</td><td style="text-align:center">${d.hw || 0}</td><td style="color:var(--status-success, #16664e);text-align:center">${d.att.present || 0}</td><td style="color:var(--status-warning, #7c5105);text-align:center">${d.att.late || 0}</td>`;
         });
       });
-      h += `<td style="color:#059669;text-align:center;background:#eef2ff;font-weight:bold">${stats.posCount}</td><td style="color:#dc2626;text-align:center;background:#eef2ff;font-weight:bold">${stats.negCount}</td>`;
+      h += `<td style="color:var(--status-success, #16664e);text-align:center;background:var(--theme-primary-soft, #fef0f0);font-weight:bold">${stats.posCount}</td><td style="color:var(--status-danger, #9f2635);text-align:center;background:var(--theme-primary-soft, #fef0f0);font-weight:bold">${stats.negCount}</td>`;
       h += `</tr>`;
     });
     h += `</tbody></table>`;
@@ -4159,7 +4144,7 @@ function legacy_buildLessonGradesHtml(c, lesson) {
     </div>
     <p class="muted" style="font-size:.85em">نمره واحد = میانگین وزنی مستمر و پایانی با امتیازات انتخاب‌شده (صفر تا ۲۰). آخرین نمره تاریخ‌دار ملاک است؛ ثبت گروهی اولویت دارد. نهایی درس پس از تکمیل همه واحدها صادر می‌شود.</p>
     <div class="filter-units-box no-print">
-      <div style="font-weight:700;color:#3730a3;font-size:.9em">⚙️ اعمال در نمره هر واحد (اعمال روی همه واحدها):</div>
+      <div style="font-weight:700;color:var(--status-info, #1d4f91);font-size:.9em">⚙️ اعمال در نمره هر واحد (اعمال روی همه واحدها):</div>
       <div class="chips">
         <label><input type="checkbox" ${allPos ? "checked" : ""} data-legacy-change="grading-lesson-editor:1" data-legacy-change-arg3="${esc(lesson.id)}"> ➕ مثبت‌ها</label>
         <label><input type="checkbox" ${allNeg ? "checked" : ""} data-legacy-change="grading-lesson-editor:2" data-legacy-change-arg5="${esc(lesson.id)}"> ➖ منفی‌ها</label>
@@ -4173,14 +4158,14 @@ function legacy_buildLessonGradesHtml(c, lesson) {
 
   lesson.poudmans.forEach((p) => {
     p.units.forEach((u) => {
-      h += `<th colspan="3" style="text-align:center;border-right:2px solid #e2e8f0">${esc(p.name)} / ${esc(u.name)}</th>`;
+      h += `<th colspan="3" style="text-align:center;border-right:2px solid var(--theme-line, #e4e4e7)">${esc(p.name)} / ${esc(u.name)}</th>`;
     });
   });
-  h += `<th rowspan="2" style="background:#eef2ff;color:#4338ca">نهایی درس</th></tr><tr>`;
+  h += `<th rowspan="2" style="background:var(--theme-primary-soft, #fef0f0);color:var(--theme-primary-hover, #921019)">نهایی درس</th></tr><tr>`;
 
   lesson.poudmans.forEach((p) => {
     p.units.forEach((u) => {
-      h += `<th style="font-size:.75em;text-align:center">مستمر</th><th style="font-size:.75em;text-align:center">پایانی</th><th style="font-size:.75em;text-align:center;background:#f0fdf4;color:#166534">واحد</th>`;
+      h += `<th style="font-size:.75em;text-align:center">مستمر</th><th style="font-size:.75em;text-align:center">پایانی</th><th style="font-size:.75em;text-align:center;background:var(--status-success-soft, #eaf6f0);color:var(--status-success, #16664e)">واحد</th>`;
     });
   });
   h += `</tr></thead><tbody>`;
@@ -4194,10 +4179,10 @@ function legacy_buildLessonGradesHtml(c, lesson) {
         const d = stats.details[p.id][u.id];
         h += `<td style="text-align:center">${d.m !== null ? d.m : "—"}</td>`;
         h += `<td style="text-align:center">${d.p !== null ? d.p : "—"}</td>`;
-        h += `<td style="text-align:center;background:#f0fdf4;font-weight:600;color:#166534">${d.final !== null ? d.final.toFixed(2) : "—"}</td>`;
+        h += `<td style="text-align:center;background:var(--status-success-soft, #eaf6f0);font-weight:600;color:var(--status-success, #16664e)">${d.final !== null ? d.final.toFixed(2) : "—"}</td>`;
       });
     });
-    h += `<td style="background:#eef2ff;font-weight:700;color:#4338ca;text-align:center">${stats.final !== null ? stats.final.toFixed(2) : "—"}</td></tr>`;
+    h += `<td style="background:var(--theme-primary-soft, #fef0f0);font-weight:700;color:var(--theme-primary-hover, #921019);text-align:center">${stats.final !== null ? stats.final.toFixed(2) : "—"}</td></tr>`;
   });
   h += `</tbody></table></div></div>`;
 
@@ -5270,6 +5255,27 @@ function showSessionPanel(panel) {
       String(button.dataset.sessionTab === panel),
     );
 }
+function filterSessionAttendance(input) {
+  const root = input.closest(".session-workspace");
+  if (!root) return;
+  const normalize = (value) =>
+    String(value)
+      .normalize("NFKC")
+      .replace(/ي/g, "ی")
+      .replace(/ك/g, "ک")
+      .replace(/[\u200c\u200d]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLocaleLowerCase("fa");
+  const query = normalize(input.value);
+  let visible = 0;
+  for (const row of root.querySelectorAll(".att-row")) {
+    row.hidden = !normalize(row.dataset.search).includes(query);
+    if (!row.hidden) visible++;
+  }
+  const empty = root.querySelector(".session-attendance-no-results");
+  if (empty) empty.hidden = !query || visible > 0;
+}
 function sessionAttendanceProgress(session, classroom) {
   const roster = sessionStudents(classroom, session);
   const unset = roster.filter(
@@ -5293,6 +5299,11 @@ function refreshSessionAttendanceProgress() {
       " نفر ثبت شده · تعیین‌نشده: " +
       progress.unset.toLocaleString("fa-IR");
   const fill = root.querySelector('[data-legacy-click="sessions-dialog:6"]');
+  const meter = root.querySelector("[data-session-attendance-meter]");
+  if (meter) {
+    meter.max = Math.max(progress.total, 1);
+    meter.value = progress.total - progress.unset;
+  }
   if (fill) setControlLock(fill, "attendance-complete", progress.unset === 0);
 }
 function refreshSessionActivityInput(form) {
@@ -5333,6 +5344,10 @@ function openSessionModal(session, { activitySaved = null } = {}) {
         )?.dataset.sessionTab
       : null;
   const entry = selectedPanel ? captureSessionActivityForm() : null;
+  const attendanceQuery = selectedPanel
+    ? document.querySelector("#modalBody .session-attendance-search input")
+        ?.value || ""
+    : "";
   const scroll = selectedPanel
     ? document.getElementById("modalBody").scrollTop
     : 0;
@@ -5385,13 +5400,13 @@ function openSessionModal(session, { activitySaved = null } = {}) {
     </select></label>
   </div>`;
   h += `<div class="session-mode-picker"><button type="button" aria-pressed="true" data-session-tab="attendance" data-legacy-click="sessions-dialog:4">${EduIcons.html("attendance")}<span>حضور و غیاب</span></button><button type="button" aria-pressed="false" data-session-tab="activity" data-legacy-click="sessions-dialog:5">${EduIcons.html("grades")}<span>نمره و فعالیت</span></button></div><section data-session-panel="attendance"><div class="session-attendance-heading">
-    <div><h4>حضور و غیاب</h4><p data-session-attendance-progress role="status"></p></div>
+    <div><h4>حضور و غیاب</h4><p data-session-attendance-progress role="status"></p><progress data-session-attendance-meter aria-label="تکمیل ثبت حضور و غیاب" max="1" value="0"></progress></div>
     <div class="session-attendance-bulk" role="group" aria-label="ثبت گروهی حضور و غیاب">
       <button type="button" class="success" data-mutating="1" data-legacy-click="sessions-dialog:6" aria-label="ثبت حاضر برای هنرجویان تعیین‌نشده" title="فقط وضعیت‌های تعیین‌نشده حاضر می‌شوند؛ ثبت‌های قبلی حفظ می‌شوند.">باقی‌ها حاضر</button>
       <button type="button" class="ghost" data-mutating="1" data-legacy-click="sessions-dialog:all-present">همه حاضر</button>
       <button type="button" class="danger" data-mutating="1" data-legacy-click="sessions-dialog:7">همه غایب</button>
     </div>
-  </div><div class="session-attendance-list">`;
+  </div><label class="session-attendance-search"><span>جست‌وجوی هنرجو</span><input type="search" placeholder="نام یا کد دانش‌آموزی…" value="${esc(attendanceQuery)}" data-legacy-input="sessions-dialog:attendance-search"></label><p class="session-attendance-no-results" role="status" hidden>هنرجویی پیدا نشد.</p><div class="session-attendance-list">`;
   const sortedStudents = getSortedStudents({
     students: sessionStudents(c, session),
   });
@@ -5404,7 +5419,7 @@ function openSessionModal(session, { activitySaved = null } = {}) {
     const isLeave = st === "leave";
     const isLate = st.startsWith("late");
     const lateMins = isLate && st.includes(":") ? Number(st.split(":")[1]) : "";
-    h += `<div class="att-row">
+    h += `<div class="att-row" data-search="${esc(s.name + " " + (s.code || ""))}">
       <div class="att-name" title="${esc(s.name)}"><span class="attendance-number" aria-hidden="true">${(i + 1).toLocaleString("fa-IR")}</span><span>${esc(s.name)}</span></div>
       <div class="att-btns" data-sid="${s.id}" role="group" aria-label="وضعیت حضور ${esc(s.name)}">
         <button type="button" aria-pressed="${isPresent}" class="present ${isPresent ? "active" : ""}" data-legacy-click="sessions-dialog:8">حاضر</button>
@@ -5467,6 +5482,9 @@ function openSessionModal(session, { activitySaved = null } = {}) {
   }
   refreshSessionActivityInput(form);
   refreshSessionAttendanceProgress();
+  filterSessionAttendance(
+    document.querySelector("#modalBody .session-attendance-search input"),
+  );
   if (selectedPanel) document.getElementById("modalBody").scrollTop = scroll;
   if (saved && selectedPanel === "activity")
     setTimeout(() => {
@@ -5636,6 +5654,9 @@ async function legacy_removeSessionScore(sessionId, idx) {
 }
 // Source: src/legacy/events/sessions-dialog.js
 // Event handlers extracted from src/legacy/sessions/dialog.js.
+EduLegacyEvents.register("sessions-dialog:attendance-search", function () {
+  return filterSessionAttendance(this);
+});
 EduLegacyEvents.register("sessions-dialog:0", function (event) {
   document.getElementById("shamsiSessDate").textContent = toShamsi(this.value);
   refreshSessionDateSchedule();

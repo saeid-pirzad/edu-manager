@@ -8,7 +8,15 @@ function contentType(name) {
   if (name.endsWith(".css")) return "text/css; charset=utf-8";
   if (name.endsWith(".map")) return "application/json; charset=utf-8";
   if (name.endsWith(".webmanifest")) return "application/manifest+json";
+  if (name.endsWith(".png")) return "image/png";
   throw Error("Unsupported application asset: " + name);
+}
+
+function assetBytes(name, content) {
+  const bytes = Buffer.isBuffer(content) ? content : Buffer.from(content);
+  return contentType(name) === "image/png"
+    ? bytes
+    : Buffer.from(bytes.toString("utf8").replace(/\r\n/g, "\n"));
 }
 
 function applicationFiles(
@@ -34,10 +42,31 @@ function applicationFiles(
             /<link\b[^>]*\bhref=["']\.\/(assets\/[^"'?#]+)["']/g,
           ),
         ].map(([, name]) => name),
+        ...[
+          ...html.matchAll(/<img\b[^>]*\bsrc=["']\.\/(assets\/[^"'?#]+)["']/g),
+        ].map(([, name]) => name),
       ];
-    if (new Set(references).size !== references.length)
+    const executionReferences = references.filter(
+      (name) => !name.endsWith(".png"),
+    );
+    if (new Set(executionReferences).size !== executionReferences.length)
       throw Error("Duplicate application asset in " + entry);
     assets.push(...references);
+  }
+  const manifest = JSON.parse(
+    fs.readFileSync(path.join(root, "app.webmanifest"), "utf8"),
+  );
+  if (manifest.icons !== undefined && !Array.isArray(manifest.icons))
+    throw Error("Invalid application manifest icons");
+  for (const icon of manifest.icons || []) {
+    if (typeof icon?.src !== "string")
+      throw Error("Invalid application manifest icon");
+    // Older installations may keep embedded PNG icons; new external icons
+    // must stay inside the same explicit local application asset allowlist.
+    if (/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(icon.src)) continue;
+    const reference = /^\.\/(assets\/[A-Za-z0-9_./-]+\.png)$/.exec(icon.src);
+    if (!reference) throw Error("Unsupported application manifest icon");
+    assets.push(reference[1]);
   }
   if (!assets.length) throw Error("Application has no external assets");
   const files = new Map();
@@ -75,4 +104,4 @@ function applicationFiles(
   return files;
 }
 
-module.exports = { applicationFiles, contentType };
+module.exports = { applicationFiles, contentType, assetBytes };

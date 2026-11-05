@@ -25,6 +25,14 @@ function fixture(options = {}) {
       ["assets/scripts/second.js", '"use strict";\nglobalThis.second = 2;\n'],
       ["assets/scripts/identity.js", "globalThis.identity = {};\n"],
       ["assets/styles/app.css", "body { color: black; }\n"],
+      ...(options.binary
+        ? [
+            [
+              "assets/logo.png",
+              Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 255, 0]),
+            ],
+          ]
+        : []),
     ]);
   const integrity = Object.fromEntries(
     [...files].map(([name, body]) => [
@@ -294,6 +302,76 @@ test("standard JavaScript MIME aliases and equivalent CRLF text remain installab
   });
   await f.activate();
   assert.equal((await f.status()).ready, true);
+});
+
+test("binary PNG dependencies install byte-for-byte and remain available offline", async () => {
+  const f = fixture({ binary: true });
+  await f.activate();
+  const response = await f.request("assets/logo.png");
+  assert.equal(response.headers.get("Content-Type"), "image/png");
+  assert.deepEqual(
+    Buffer.from(await response.arrayBuffer()),
+    f.files.get("assets/logo.png"),
+  );
+  assert.deepEqual(f.network, []);
+  assert.equal((await f.status()).ready, true);
+});
+
+test("PNG text decoding or newline rewriting cannot pass binary integrity", async () => {
+  for (const corrupt of [
+    (bytes) => Buffer.from(bytes.toString("utf8")),
+    (bytes) =>
+      Buffer.from(bytes.toString("latin1").replace(/\r\n/g, "\n"), "latin1"),
+  ]) {
+    const f = fixture({
+      binary: true,
+      rewrite: (response, name) =>
+        name === "assets/logo.png"
+          ? new Response(corrupt(f.files.get(name)), {
+              headers: { "Content-Type": "image/png" },
+            })
+          : response,
+    });
+    await assert.rejects(f.dispatch("install"), /does not match this release/);
+    assert.equal(f.stores.has(f.constants.CACHE), false);
+    assert.equal(f.stores.has(f.constants.STAGING), false);
+    assert.equal(f.stores.has(f.constants.PREFIX + "old-release"), true);
+  }
+});
+
+test("HTML returned for a PNG URL cannot become an offline icon", async () => {
+  const f = fixture({
+    binary: true,
+    rewrite: (response, name) =>
+      name === "assets/logo.png"
+        ? new Response("<!doctype html><title>Missing image</title>", {
+            headers: { "Content-Type": "text/html" },
+          })
+        : response,
+  });
+  await assert.rejects(f.dispatch("install"), /content type/);
+  assert.equal(f.stores.has(f.constants.STAGING), false);
+  assert.equal(f.stores.has(f.constants.PREFIX + "old-release"), true);
+});
+
+test("an evicted binary icon repairs only from its exact release bytes", async () => {
+  const f = fixture({ binary: true });
+  await f.activate();
+  const icon = new URL("assets/logo.png", f.constants.APP).href;
+  const active = f.stores.get(f.constants.CACHE);
+  active.delete(icon);
+  const response = await f.request("assets/logo.png");
+  assert.deepEqual(
+    Buffer.from(await response.arrayBuffer()),
+    f.files.get("assets/logo.png"),
+  );
+  assert.equal(active.has(icon), true);
+  f.options.failure = "assets/logo.png";
+  const offline = await f.request("assets/logo.png");
+  assert.deepEqual(
+    Buffer.from(await offline.arrayBuffer()),
+    f.files.get("assets/logo.png"),
+  );
 });
 
 test("downloads overlap within a bounded four-request pool", async () => {

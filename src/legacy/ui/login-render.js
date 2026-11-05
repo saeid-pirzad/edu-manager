@@ -2,6 +2,7 @@ function renderLogin() {
   const app = document.getElementById("app");
   app.innerHTML = `
     <div class="login-box">
+      <div class="login-brand"><span class="app-brand-mark" aria-hidden="true"><img class="app-logo" src="./assets/logo3.png" width="500" height="500" alt="" decoding="async"></span><strong>کلاس‌یار</strong></div>
       <h2>🔒 ورود به سامانه</h2>
       <p class="muted">لطفاً رمز عبور خود را وارد کنید</p>
       <form id="loginForm">
@@ -90,7 +91,7 @@ function legacy_render() {
   else if (state.view === "reports") h = renderReports();
   app.innerHTML =
     (storageBlocked
-      ? `<div class="card" role="alert" style="border:2px solid #dc2626">${esc(storageProblem)} <button data-legacy-click="ui-login-render:0">دریافت نسخه خام</button></div>`
+      ? `<div class="card" role="alert" style="border:2px solid var(--status-danger, #9f2635)">${esc(storageProblem)} <button data-legacy-click="ui-login-render:0">دریافت نسخه خام</button></div>`
       : "") + h;
 
   initShamsiPickers();

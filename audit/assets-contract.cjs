@@ -4,7 +4,7 @@ const path = require("node:path");
 const vm = require("node:vm");
 const assert = require("node:assert/strict");
 const crypto = require("node:crypto");
-const { applicationFiles } = require("./application-files.cjs");
+const { applicationFiles, assetBytes } = require("./application-files.cjs");
 
 const root = path.resolve(__dirname, "..");
 const files = applicationFiles(root);
@@ -36,12 +36,10 @@ assert.ok(integrityDeclaration, "Service worker integrity metadata is missing");
 const integrity = JSON.parse(integrityDeclaration[1]);
 assert.deepEqual(Object.keys(integrity).sort(), [...cached].sort());
 for (const name of cached) {
-  const text = fs
-    .readFileSync(path.join(root, name), "utf8")
-    .replace(/\r\n/g, "\n");
+  const bytes = assetBytes(name, fs.readFileSync(path.join(root, name)));
   assert.equal(
     integrity[name][0],
-    crypto.createHash("sha256").update(text).digest("hex"),
+    crypto.createHash("sha256").update(bytes).digest("hex"),
     "Wrong runtime fingerprint: " + name,
   );
   assert.equal(

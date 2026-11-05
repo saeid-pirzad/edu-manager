@@ -2,6 +2,64 @@
 const fs = require("node:fs"),
   path = require("node:path"),
   os = require("node:os");
+
+function approvedButtonColors(button) {
+  const rgb = (hex) => {
+    const value =
+      hex.length === 4
+        ? [...hex.slice(1)].map((part) => part + part).join("")
+        : hex.slice(1);
+    return (
+      "rgb(" +
+      value
+        .match(/../g)
+        .map((part) => parseInt(part, 16))
+        .join(", ") +
+      ")"
+    );
+  };
+  const roles = {
+    primary: { solid: ["#fff", "#c0141b"], soft: ["#c0141b", "#fef0f0"] },
+    neutral: { solid: ["#fff", "#58595b"], soft: ["#2d3440", "#f4f4f5"] },
+    excel: { solid: ["#fff", "#19775c"], soft: ["#16664e", "#eaf6f0"] },
+    info: { solid: ["#fff", "#1d5fb8"], soft: ["#1d4f91", "#edf4ff"] },
+    secondary: { solid: ["#fff", "#7c5105"], soft: ["#7c5105", "#fffaed"] },
+    danger: { solid: ["#fff", "#b42335"], soft: ["#9f2635", "#fff0f2"] },
+  };
+  if (!["solid", "soft"].includes(button.variant)) return false;
+  if (button.colorRole === "grade-clear")
+    return (
+      button.color === rgb("#5a6179") &&
+      button.background === "rgba(0, 0, 0, 0)"
+    );
+  if (button.colorRole === "attendance-present")
+    return button.color === rgb("#16664e") && button.background === rgb("#fff");
+  if (button.colorRole === "attendance-absent")
+    return button.color === rgb("#9f2635") && button.background === rgb("#fff");
+  const family = {
+    create: "primary",
+    save: "primary",
+    download: "neutral",
+    print: "neutral",
+    navigate: "neutral",
+    neutral: "neutral",
+    excel: "excel",
+    upload: "info",
+    share: "info",
+    copy: "info",
+    edit: "secondary",
+    settings: "secondary",
+    report: "secondary",
+    danger: "danger",
+  }[button.tone];
+  const expected = roles[family]?.[button.variant];
+  return (
+    !!expected &&
+    button.color === rgb(expected[0]) &&
+    button.background === rgb(expected[1])
+  );
+}
+
 async function setup() {
   const original = await EduV24.snapshotInstallation(),
     year = "1405-1406",
@@ -295,7 +353,17 @@ function measure() {
         rects.push(...range.getClientRects());
       }
       const icons = [...button.querySelectorAll("svg")].filter(visible);
-      rects.push(...icons.map((icon) => icon.getBoundingClientRect()));
+      // A tab icon occupies its complete flex item, not only the smaller SVG
+      // painted inside it. Otherwise the existing 32px/19px icon geometry
+      // invents a 3.25px center offset despite a correctly centered group.
+      rects.push(
+        ...icons.map((icon) => {
+          const wrapper = icon.closest(".control-icon,.classroom-tab-icon");
+          return (
+            wrapper && button.contains(wrapper) ? wrapper : icon
+          ).getBoundingClientRect();
+        }),
+      );
       // Wrapped labels are flex items: their allocated box, not the varying ink
       // width of each Persian line, belongs in the centered content group.
       rects.push(
@@ -364,6 +432,13 @@ function measure() {
           })(),
         tone: button.dataset.uiTone || "",
         variant: button.dataset.uiVariant || "",
+        colorRole: button.matches(".grade-clear")
+          ? "grade-clear"
+          : button.matches(".session-attendance-bulk .success")
+            ? "attendance-present"
+            : button.matches(".session-attendance-bulk .danger")
+              ? "attendance-absent"
+              : "action",
         needsIcon: button.matches(
           ".tabs button,.csv-import-actions button,.week-add,.periodic-export-actions button,.session-workspace-footer button,.backup-action-grid button,.backup-automatic button,.modal-header button",
         ),
@@ -480,6 +555,15 @@ async function run(env) {
         await evaluate(
           "(" + show.toString() + ")(" + JSON.stringify(view) + ")",
         );
+        // Earlier interaction flows may leave the real pointer over a newly
+        // rendered action. This contract measures normal color roles; hover
+        // is exercised explicitly by theme-browser rather than accidentally.
+        await cdp("Input.dispatchMouseEvent", {
+          type: "mouseMoved",
+          x: 0,
+          y: 0,
+          buttons: 0,
+        });
         await delay(220);
         const result = await evaluate("(" + measure.toString() + ")()");
         observations.push({ width, view, ...result });
@@ -584,29 +668,15 @@ async function run(env) {
               (button) => button.height < 43.5 || button.width < 43.5,
             ),
           );
-          const chromatic = (color) => {
-            const rgb =
-              color
-                .match(/[\d.]+/g)
-                ?.slice(0, 3)
-                .map(Number) || [];
-            return (
-              rgb.length === 3 && Math.max(...rgb) - Math.min(...rgb) >= 12
-            );
-          };
           const toned = result.buttons.filter((button) => button.tone);
           record(
             "COLOR",
-            toned.length > 0 &&
-              toned.every(
-                (button) =>
-                  ["solid", "soft"].includes(button.variant) &&
-                  (chromatic(button.color) || chromatic(button.background)),
-              ),
+            toned.length > 0 && toned.every(approvedButtonColors),
             toned.map((button) => ({
               label: button.label,
               tone: button.tone,
               variant: button.variant,
+              role: button.colorRole,
               color: button.color,
               background: button.background,
             })),

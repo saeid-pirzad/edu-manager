@@ -5,6 +5,7 @@ const fs = require("node:fs"),
   os = require("node:os"),
   path = require("node:path");
 const { spawnSync } = require("node:child_process");
+const { assetBytes } = require("../scripts/application-files.cjs");
 
 test("build detects stale artifacts, regenerates missing output and fingerprints source changes", (t) => {
   const root = path.resolve(__dirname, "..");
@@ -115,12 +116,10 @@ test("build detects stale artifacts, regenerates missing output and fingerprints
   assert.deepEqual(Object.keys(integrity).sort(), [...fileNames].sort());
   const crypto = require("node:crypto");
   for (const name of fileNames) {
-    const text = fs
-      .readFileSync(path.join(temporary, name), "utf8")
-      .replace(/\r\n/g, "\n");
+    const bytes = assetBytes(name, fs.readFileSync(path.join(temporary, name)));
     assert.equal(
       integrity[name][0],
-      crypto.createHash("sha256").update(text).digest("hex"),
+      crypto.createHash("sha256").update(bytes).digest("hex"),
       name,
     );
   }
@@ -152,6 +151,32 @@ test("build detects stale artifacts, regenerates missing output and fingerprints
     fs.readFileSync(path.join(temporary, "service-worker.js"), "utf8"),
     updatedWorker,
     "unused compatibility code must not invalidate the runtime cache",
+  );
+  const image = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 255, 0]);
+  const imagePath = path.join(temporary, "assets/binary-icon.png");
+  fs.writeFileSync(imagePath, image);
+  fs.appendFileSync(htmlPath, '<img src="./assets/binary-icon.png">');
+  assert.equal(run().status, 0);
+  const imageWorker = fs.readFileSync(
+    path.join(temporary, "service-worker.js"),
+    "utf8",
+  );
+  const imageIntegrity = JSON.parse(
+    imageWorker.match(/const INTEGRITY\s*=\s*(\{[\s\S]*?\});/)[1],
+  );
+  assert.deepEqual(imageIntegrity["assets/binary-icon.png"], [
+    crypto.createHash("sha256").update(image).digest("hex"),
+    "image/png",
+  ]);
+  assert.notEqual(imageWorker, updatedWorker);
+  image[image.length - 1] = 1;
+  fs.writeFileSync(imagePath, image);
+  assert.notEqual(run("--check").status, 0);
+  assert.equal(run().status, 0);
+  assert.notEqual(
+    fs.readFileSync(path.join(temporary, "service-worker.js"), "utf8"),
+    imageWorker,
+    "even a one-byte icon change must invalidate the offline release",
   );
   fs.writeFileSync(
     path.join(temporary, "src/unmapped.js"),

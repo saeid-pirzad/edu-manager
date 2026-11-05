@@ -58,6 +58,27 @@ function showSessionPanel(panel) {
       String(button.dataset.sessionTab === panel),
     );
 }
+function filterSessionAttendance(input) {
+  const root = input.closest(".session-workspace");
+  if (!root) return;
+  const normalize = (value) =>
+    String(value)
+      .normalize("NFKC")
+      .replace(/ي/g, "ی")
+      .replace(/ك/g, "ک")
+      .replace(/[\u200c\u200d]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLocaleLowerCase("fa");
+  const query = normalize(input.value);
+  let visible = 0;
+  for (const row of root.querySelectorAll(".att-row")) {
+    row.hidden = !normalize(row.dataset.search).includes(query);
+    if (!row.hidden) visible++;
+  }
+  const empty = root.querySelector(".session-attendance-no-results");
+  if (empty) empty.hidden = !query || visible > 0;
+}
 function sessionAttendanceProgress(session, classroom) {
   const roster = sessionStudents(classroom, session);
   const unset = roster.filter(
@@ -81,6 +102,11 @@ function refreshSessionAttendanceProgress() {
       " نفر ثبت شده · تعیین‌نشده: " +
       progress.unset.toLocaleString("fa-IR");
   const fill = root.querySelector('[data-legacy-click="sessions-dialog:6"]');
+  const meter = root.querySelector("[data-session-attendance-meter]");
+  if (meter) {
+    meter.max = Math.max(progress.total, 1);
+    meter.value = progress.total - progress.unset;
+  }
   if (fill) setControlLock(fill, "attendance-complete", progress.unset === 0);
 }
 function refreshSessionActivityInput(form) {
@@ -121,6 +147,10 @@ function openSessionModal(session, { activitySaved = null } = {}) {
         )?.dataset.sessionTab
       : null;
   const entry = selectedPanel ? captureSessionActivityForm() : null;
+  const attendanceQuery = selectedPanel
+    ? document.querySelector("#modalBody .session-attendance-search input")
+        ?.value || ""
+    : "";
   const scroll = selectedPanel
     ? document.getElementById("modalBody").scrollTop
     : 0;
@@ -173,13 +203,13 @@ function openSessionModal(session, { activitySaved = null } = {}) {
     </select></label>
   </div>`;
   h += `<div class="session-mode-picker"><button type="button" aria-pressed="true" data-session-tab="attendance" data-legacy-click="sessions-dialog:4">${EduIcons.html("attendance")}<span>حضور و غیاب</span></button><button type="button" aria-pressed="false" data-session-tab="activity" data-legacy-click="sessions-dialog:5">${EduIcons.html("grades")}<span>نمره و فعالیت</span></button></div><section data-session-panel="attendance"><div class="session-attendance-heading">
-    <div><h4>حضور و غیاب</h4><p data-session-attendance-progress role="status"></p></div>
+    <div><h4>حضور و غیاب</h4><p data-session-attendance-progress role="status"></p><progress data-session-attendance-meter aria-label="تکمیل ثبت حضور و غیاب" max="1" value="0"></progress></div>
     <div class="session-attendance-bulk" role="group" aria-label="ثبت گروهی حضور و غیاب">
       <button type="button" class="success" data-mutating="1" data-legacy-click="sessions-dialog:6" aria-label="ثبت حاضر برای هنرجویان تعیین‌نشده" title="فقط وضعیت‌های تعیین‌نشده حاضر می‌شوند؛ ثبت‌های قبلی حفظ می‌شوند.">باقی‌ها حاضر</button>
       <button type="button" class="ghost" data-mutating="1" data-legacy-click="sessions-dialog:all-present">همه حاضر</button>
       <button type="button" class="danger" data-mutating="1" data-legacy-click="sessions-dialog:7">همه غایب</button>
     </div>
-  </div><div class="session-attendance-list">`;
+  </div><label class="session-attendance-search"><span>جست‌وجوی هنرجو</span><input type="search" placeholder="نام یا کد دانش‌آموزی…" value="${esc(attendanceQuery)}" data-legacy-input="sessions-dialog:attendance-search"></label><p class="session-attendance-no-results" role="status" hidden>هنرجویی پیدا نشد.</p><div class="session-attendance-list">`;
   const sortedStudents = getSortedStudents({
     students: sessionStudents(c, session),
   });
@@ -192,7 +222,7 @@ function openSessionModal(session, { activitySaved = null } = {}) {
     const isLeave = st === "leave";
     const isLate = st.startsWith("late");
     const lateMins = isLate && st.includes(":") ? Number(st.split(":")[1]) : "";
-    h += `<div class="att-row">
+    h += `<div class="att-row" data-search="${esc(s.name + " " + (s.code || ""))}">
       <div class="att-name" title="${esc(s.name)}"><span class="attendance-number" aria-hidden="true">${(i + 1).toLocaleString("fa-IR")}</span><span>${esc(s.name)}</span></div>
       <div class="att-btns" data-sid="${s.id}" role="group" aria-label="وضعیت حضور ${esc(s.name)}">
         <button type="button" aria-pressed="${isPresent}" class="present ${isPresent ? "active" : ""}" data-legacy-click="sessions-dialog:8">حاضر</button>
@@ -255,6 +285,9 @@ function openSessionModal(session, { activitySaved = null } = {}) {
   }
   refreshSessionActivityInput(form);
   refreshSessionAttendanceProgress();
+  filterSessionAttendance(
+    document.querySelector("#modalBody .session-attendance-search input"),
+  );
   if (selectedPanel) document.getElementById("modalBody").scrollTop = scroll;
   if (saved && selectedPanel === "activity")
     setTimeout(() => {

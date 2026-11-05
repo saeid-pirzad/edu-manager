@@ -56,6 +56,21 @@ test("progressive create forms preserve explicit action tokens, stable fields an
   }
 });
 
+test("school creation has a scoped compact panel and a single plain heading without changing classroom creation", () => {
+  const school = context.renderEntityQuickCreate("school", false),
+    classroom = context.renderEntityQuickCreate("class", false);
+  assert.match(school, /class="[^"]*\bschool-create\b[^"]*"/);
+  assert.doesNotMatch(classroom, /\bschool-create\b/);
+  assert.match(classroom, /class="[^"]*\bclass-create\b[^"]*"/);
+  assert.doesNotMatch(school, /\bclass-create\b/);
+  assert.doesNotMatch(
+    school.match(/<summary>[\s\S]*?<\/summary>/)[0],
+    /<small>/,
+  );
+  assert.match(classroom, /نام کلاس؛ هنرجویان و درس‌ها در مرحله بعد/);
+  assert.match(school, /required maxlength="500" enterkeyhint="done"/);
+});
+
 test("lesson and student create panels have one submit and a non-action heading", () => {
   context.esc = String;
   context.EduV24 = {
@@ -117,4 +132,58 @@ test("all directory renderers place their list before creation even when empty",
     assert.ok(html.indexOf(marker) >= 0);
     assert.ok(html.indexOf(marker) < html.indexOf('<details class="card'));
   }
+});
+
+test("compact class tabs preserve labels, actions and selection with an optional modifier", () => {
+  context.esc = String;
+  context.state = { tab: "lessons" };
+  const items = [
+    {
+      tab: "lessons",
+      action: "ui-school-class:10",
+      icon: "book",
+      title: "دروس",
+    },
+    {
+      tab: "students",
+      action: "ui-school-class:11",
+      icon: "users",
+      title: "دانش‌آموزان",
+    },
+  ];
+  const compact = context.classroomTabsHtml("بخش‌های کلاس", items, true),
+    original = context.classroomTabsHtml("بخش‌های درس", items);
+  assert.match(compact, /classroom-tabs-compact/);
+  assert.doesNotMatch(original, /classroom-tabs-compact/);
+  assert.equal((compact.match(/<button/g) || []).length, 2);
+  assert.equal((compact.match(/aria-pressed="true"/g) || []).length, 1);
+  for (const item of items) {
+    assert.ok(compact.includes(item.title));
+    assert.ok(compact.includes('data-legacy-click="' + item.action + '"'));
+  }
+});
+
+test("compact lesson tabs retain attendance detail and original actions", () => {
+  context.esc = String;
+  context.state = { tab: "sessions" };
+  const html = context.classroomTabsHtml(
+    "بخش‌های درس",
+    [
+      {
+        tab: "sessions",
+        action: "ui-lesson:4",
+        icon: "attendance",
+        title: "جلسات",
+        detail: "و حضور و غیاب",
+      },
+      { tab: "grades", action: "ui-lesson:5", icon: "grades", title: "نمرات" },
+    ],
+    true,
+  );
+  assert.match(html, /classroom-tabs-compact/);
+  assert.ok(html.includes("و حضور و غیاب"));
+  assert.ok(html.includes('data-legacy-click="ui-lesson:4"'));
+  assert.ok(html.includes('data-legacy-click="ui-lesson:5"'));
+  assert.equal((html.match(/aria-pressed="true"/g) || []).length, 1);
+  assert.equal((html.match(/<button/g) || []).length, 2);
 });

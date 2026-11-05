@@ -1,12 +1,16 @@
 /* A quiet border hierarchy for screen surfaces; printed documents keep their own rules. */
 @media screen {
+  :is(input, textarea)::placeholder {
+    color: var(--theme-placeholder);
+    opacity: 1;
+  }
   :root {
-    --surface-line: var(--theme-line, #dedbd5);
-    --surface-inner-line: var(--theme-line-soft, #e9e5df);
-    --surface-hover-line: var(--theme-primary-line, #c7b8a3);
-    --surface-open-line: var(--theme-primary-line, #cfb48d);
-    --surface-shadow: 0 1px 2px #4a302508, 0 6px 18px #4a302506;
-    --surface-inner-shadow: 0 1px 3px #4a302504;
+    --surface-line: var(--theme-line);
+    --surface-inner-line: var(--theme-line-soft);
+    --surface-hover-line: var(--theme-primary-line);
+    --surface-open-line: var(--theme-primary-line);
+    --surface-shadow: var(--theme-shadow-md);
+    --surface-inner-shadow: var(--theme-shadow-sm);
   }
 
   /* Only existing frames receive a stroke; borderless mobile lists stay borderless. */
@@ -49,7 +53,11 @@
   #app .create-panel,
   #app .week-settings {
     border-color: var(--surface-line);
-    background-image: linear-gradient(135deg, #ffffff00 60%, #f3ede666);
+    background-image: linear-gradient(
+      135deg,
+      transparent 60%,
+      var(--theme-surface-muted)
+    );
   }
   #app .create-panel > summary {
     border-radius: inherit;
@@ -58,7 +66,7 @@
   #app .week-settings[open] {
     border-color: var(--surface-open-line);
     box-shadow:
-      0 0 0 2px #7a685712,
+      0 0 0 2px var(--theme-focus-soft),
       var(--surface-shadow);
   }
   #app .create-panel[open] > summary {
@@ -79,9 +87,7 @@
 
   #modal .modal-dialog {
     border-color: var(--theme-line, #d9d3c9);
-    box-shadow:
-      0 2px 8px #4a30250d,
-      0 24px 70px #4a30252e;
+    box-shadow: var(--theme-shadow-lg);
   }
   #modal .modal-header {
     border-bottom-color: var(--surface-inner-line);
@@ -117,14 +123,14 @@
   #app :is(.dashboard-entity, .lesson-item, .student-profile):focus-within {
     border-color: var(--surface-hover-line);
     border-inline-start-color: var(--surface-hover-line);
-    box-shadow: 0 0 0 2px #7a685716;
+    box-shadow: 0 0 0 2px var(--theme-focus-soft);
   }
 }
 @media screen and (hover: hover) and (pointer: fine) {
   #app :is(.dashboard-entity, .lesson-item, .student-profile):hover {
     border-color: var(--surface-hover-line);
     border-inline-start-color: var(--surface-hover-line);
-    box-shadow: 0 3px 12px #4a30250a;
+    box-shadow: var(--theme-shadow-md);
   }
   #app .create-panel:not([open]):hover,
   #modalBody .backup-hub > details:not([open]):hover {
@@ -159,16 +165,14 @@
   }
 }
 
-/* The dashboard hierarchy carries through workspaces: white, milk, cream. */
+/* Neutral paper surfaces carry the same hierarchy through each workspace. */
 @media screen {
   #app
     :is(
       .class-directory,
       .class-lessons,
       .session-directory,
-      .week-agenda,
       .week-desktop,
-      .week-settings,
       .periodic-controls,
       .report-filter-card,
       .karnameh-controls
@@ -211,14 +215,34 @@
       var(--surface-paper)
     );
   }
-  #app .week-settings {
-    background-image: none;
+  #app > details.week-settings,
+  #app > details.week-settings[open] {
+    padding: 0;
+    border: 1px solid var(--theme-line);
+    border-radius: 16px;
+    background: transparent;
+    box-shadow: none;
+  }
+  #app > .week-settings > summary {
+    min-height: 64px;
+    padding: 12px 16px;
+    border-radius: 15px;
+  }
+  #app > .week-settings[open] > summary {
+    border-end-start-radius: 0;
+    border-end-end-radius: 0;
+  }
+  #app .week-settings > .week-settings-body {
+    margin: 0;
+    padding: 12px;
+    border-top: 1px solid var(--theme-line);
+    border-end-start-radius: 15px;
+    border-end-end-radius: 15px;
   }
   #app .week-settings-body > section,
   #app :is(.periodic-control-grid, .report-filter-grid, .karnameh-filter-grid) {
     background-color: var(--surface-milk);
   }
-  #app :is(.week-day-heading, .week-day-picker, .report-navigation),
   #app .gradebook .assessment-navigation {
     background-color: var(--surface-cream);
   }
@@ -232,7 +256,8 @@
     :is(input, select, textarea):not(:disabled):not([readonly]):not(
       [aria-invalid="true"]
     ) {
-    background-color: var(--form-milk);
+    background-color: var(--theme-field);
+    border-color: var(--theme-field-line);
   }
 }
 @media screen and (min-width: 701px) {
@@ -248,14 +273,8 @@
   }
 }
 
-/* Form surfaces: milk-white work areas separated by soft cream headings. */
+/* White form work areas remain distinct from quiet neutral headings. */
 @media screen {
-  #modal,
-  #app :is(.create-panel, .week-settings, .report-filter-card) {
-    --theme-surface: var(--form-milk);
-    --theme-surface-subtle: var(--form-cream);
-    --theme-field: var(--form-milk);
-  }
   #modal .modal-dialog,
   #modal .modal-body {
     background: var(--surface-paper) !important;
@@ -264,7 +283,7 @@
     background: var(--form-cream) !important;
   }
   #app .create-panel {
-    background: var(--form-milk);
+    background: var(--theme-surface);
     background-image: none;
   }
   #app .create-panel > summary {
@@ -273,10 +292,9 @@
   #app .create-panel > form,
   #app .create-panel #courseEditor,
   #modalBody > form {
-    background: var(--form-milk);
+    background: var(--theme-surface);
   }
   #modalBody :is(.record-editor-context, .settings-context, .week-config-intro),
-  #modalBody .session-entry-form,
   #modalBody .backup-hub > details,
   #modalBody .course-policy-section > summary,
   #app .course-policy-section > summary,
@@ -286,12 +304,12 @@
   #modalBody .backup-hub > section,
   #modalBody .week-config-section,
   #modalBody #courseEditor {
-    background-color: var(--form-milk);
+    background-color: var(--theme-surface);
   }
   #modalBody .session-workspace .att-btns {
-    background: var(--form-milk);
+    background: var(--theme-surface);
   }
-  :is(#app form, #app .week-settings, #modalBody)
+  :is(#app, #modalBody, #calPopup, #pwaWelcome)
     :is(
       input:not(
           [type="checkbox"],
@@ -305,9 +323,17 @@
           [type="reset"]
         ):not(:disabled):not([readonly]):not([aria-invalid="true"]),
       select:not(:disabled):not([aria-invalid="true"]),
-      textarea:not(:disabled):not([readonly]):not([aria-invalid="true"])
+      textarea:not(:disabled):not([readonly]):not([aria-invalid="true"]),
+      input[data-gregorian-target]:not(:disabled):not([aria-invalid="true"])
     ) {
-    background-color: var(--form-milk);
+    background-color: var(--theme-field);
+    border-color: var(--theme-field-line);
+  }
+  :is(#app, #modalBody, #pwaWelcome)
+    :is(input, textarea)[readonly]:not([data-gregorian-target]) {
+    background-color: var(--theme-surface-subtle);
+    border-color: var(--theme-line);
+    color: var(--theme-muted);
   }
 }
 

@@ -11,7 +11,7 @@
   margin: 0;
 }
 .workflow-welcome p {
-  color: var(--muted, #64748b);
+  color: var(--muted, #5a6179);
   line-height: 1.9;
 }
 .workflow-welcome button {
@@ -38,7 +38,7 @@
   flex-wrap: wrap;
   gap: 8px;
   padding: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-line, #e4e4e7);
   border-radius: 14px;
   background: var(--card, #fff);
 }
@@ -151,9 +151,9 @@
   min-height: 46px;
 }
 .session-mode-picker [aria-pressed="false"] {
-  background: #f1f5f9;
-  color: #334155;
-  border: 1px solid #e2e8f0;
+  background: var(--theme-surface-muted, #f4f4f5);
+  color: var(--theme-ink, #2d3440);
+  border: 1px solid var(--theme-line, #e4e4e7);
 }
 .session-workspace [hidden] {
   display: none !important;
@@ -211,7 +211,7 @@
 }
 .assessment-stage {
   margin-block: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-line, #e4e4e7);
   border-radius: 14px;
 }
 .assessment-stage > summary {
@@ -229,7 +229,7 @@
 .assessment-student {
   min-width: 0;
   padding: 14px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-line, #e4e4e7);
   border-radius: 12px;
 }
 .assessment-student h4 {
@@ -259,21 +259,12 @@
 }
 .annual-grade-components span {
   padding: 8px;
-  background: #f8fafc;
+  background: var(--theme-surface-subtle, #fafafa);
   border-radius: 8px;
   font-size: 12px;
 }
 /* Source: src/styles/workflow/components.css */
 /* Shared visual language for the everyday workflow. */
-@media print {
-  :root {
-    --workflow-ink: #172b4d;
-    --workflow-muted: #526580;
-    --workflow-line: #dce5ef;
-    --workflow-accent: #4f46c8;
-    --workflow-soft: #efedff;
-  }
-}
 body {
   background: var(--brand-canvas, #f4f7fb);
   color: var(--workflow-ink);
@@ -561,8 +552,8 @@ body {
   min-height: 44px;
   padding: 8px;
   background: transparent;
-  border: 1px solid #f0d9dc;
-  color: #b42335;
+  border: 1px solid var(--status-danger-line, #f0d9dc);
+  color: var(--status-danger, #b42335);
 }
 .assessment-student {
   background: var(--theme-surface, #fff);
@@ -600,19 +591,19 @@ body {
   border-radius: 10px;
 }
 .session-workspace .att-btns .present.active {
-  background: #dcfce7;
-  color: #166534;
-  border-color: #86efac;
+  background: var(--status-success-soft, #dcfce7);
+  color: var(--status-success, #166534);
+  border-color: var(--status-success-line, #86efac);
 }
 .session-workspace .att-btns .absent.active {
-  background: #fee2e2;
-  color: #991b1b;
-  border-color: #fca5a5;
+  background: var(--status-danger-soft, #fee2e2);
+  color: var(--status-danger, #991b1b);
+  border-color: var(--status-danger-line, #fca5a5);
 }
 .session-workspace .att-btns .late.active {
-  background: #fef3c7;
-  color: #92400e;
-  border-color: #fcd34d;
+  background: var(--status-warning-soft, #fef3c7);
+  color: var(--status-warning, #92400e);
+  border-color: var(--status-warning-line, #fcd34d);
 }
 @media (hover: hover) {
   .dashboard-entity:hover,
@@ -753,12 +744,16 @@ body {
   gap: 14px;
   padding: 18px;
   margin-block: 16px 6px;
-  border: 1px solid #f0d8cc;
+  border: 1px solid var(--status-warning-line, #f0d8cc);
   border-radius: 18px;
-  background: linear-gradient(125deg, #fff 55%, #fff6ee);
-  color: #423b38;
+  background: linear-gradient(
+    125deg,
+    var(--theme-surface, #fff) 55%,
+    var(--status-warning-soft, #fff6ee)
+  );
+  color: var(--theme-ink, #423b38);
   box-shadow:
-    0 6px 20px #8a4b2410,
+    var(--theme-shadow-sm, 0 6px 20px #8a4b2410),
     inset 0 1px 0 #fff;
   text-align: start;
   overflow-wrap: anywhere;
@@ -769,8 +764,8 @@ body {
   width: 44px;
   height: 44px;
   border-radius: 15px;
-  color: #b94c23;
-  background: linear-gradient(145deg, #fff0dc, #ffe0c6);
+  color: var(--status-warning, #b94c23);
+  background: var(--status-warning-soft, #fff0dc);
   box-shadow: inset 0 1px 0 #ffffffb3;
 }
 .session-validation-symbol svg {
@@ -782,27 +777,27 @@ body {
 }
 .session-validation-alert .session-validation-body strong {
   display: block;
-  color: #933d20;
+  color: var(--status-warning, #933d20);
   font-size: 14px;
   font-weight: 750;
   line-height: 1.9;
 }
 .session-validation-alert .session-validation-body p {
   margin: 7px 0 12px;
-  color: #514743;
+  color: var(--theme-ink, #514743);
   font-size: 13px;
   line-height: 2;
 }
 .session-validation-alert .session-validation-body small {
   display: block;
-  border-top: 1px solid #f2e5dd;
+  border-top: 1px solid var(--status-warning-line, #f2e5dd);
   padding-top: 10px;
-  color: #786b63;
+  color: var(--theme-muted, #786b63);
   font-size: 12px;
   line-height: 1.9;
 }
 .session-validation-alert:focus-visible {
-  outline: 2px solid #c7794e;
+  outline: 2px solid var(--theme-focus, #c7794e);
   outline-offset: 3px;
 }
 @media (max-width: 700px) {
@@ -829,11 +824,11 @@ body {
 .session-year-warning {
   padding: 12px 16px;
   margin-block: 12px;
-  border: 1px solid #e8c882;
-  border-inline-start: 4px solid #ca8a04;
+  border: 1px solid var(--status-warning-line, #e8c882);
+  border-inline-start: 4px solid var(--status-warning-fill, #ca8a04);
   border-radius: 14px;
-  color: #713f12;
-  background: #fffbeb;
+  color: var(--status-warning, #713f12);
+  background: var(--status-warning-soft, #fffbeb);
   line-height: 1.8;
   overflow-wrap: anywhere;
 }
@@ -874,23 +869,23 @@ body {
   gap: 8px;
 }
 .dashboard-directory .dashboard-section-heading {
-  border-bottom: 1px solid var(--theme-line-soft, #edf0f7);
+  border-bottom: 1px solid var(--theme-line-soft, #ededf0);
   padding-bottom: 14px;
   margin-bottom: 16px;
 }
 .dashboard-entity {
-  border-inline-start: 4px solid var(--brand-red, #8276df);
-  box-shadow: 0 4px 16px #4a302508;
+  border-inline-start: 4px solid var(--brand-red, #ed1c24);
+  box-shadow: 0 4px 16px #2d344008;
 }
 .dashboard-entity-info p {
   line-height: 1.9;
   color: var(--workflow-muted);
 }
 #app .dashboard-entity-actions > button:first-child {
-  box-shadow: 0 4px 10px #7a685715;
+  box-shadow: 0 4px 10px #ed1c2415;
 }
 #app .dashboard-entity-actions > button.ghost {
-  background: var(--theme-surface-subtle, #faf9f7);
+  background: var(--theme-surface-subtle, #fafafa);
 }
 #app .lesson-count {
   background: var(--workflow-soft);
@@ -900,30 +895,32 @@ body {
 }
 #app .topbar {
   border-bottom: 1px solid var(--workflow-line);
-  box-shadow: 0 5px 18px #4a302505;
+  background: var(--theme-nav, #58595b);
+  color: var(--theme-nav-ink, #fff);
+  box-shadow: var(--theme-shadow-sm, 0 2px 8px #2d34400d);
 }
 #app .header-brand h1 {
-  color: var(--workflow-ink);
+  color: var(--theme-nav-ink, #fff);
 }
 #app .header-action.is-active {
-  background: var(--workflow-soft);
-  color: var(--workflow-accent);
-  border-color: var(--theme-primary-line, #fbd0d1);
+  background: var(--theme-primary, #c0141b);
+  color: var(--theme-nav-ink, #fff);
+  border-color: var(--theme-primary, #c0141b);
 }
 #app .tabs > button.active,
 #app .tabs > button[aria-current="page"] {
   color: var(--workflow-accent);
-  box-shadow: 0 2px 8px #7a685712;
+  box-shadow: 0 2px 8px #ed1c2412;
 }
 #app .student-avatar {
   background: var(--theme-teal-soft, #fffaed);
   color: var(--theme-teal, #7c5105);
 }
 #app .lesson-item {
-  border-inline-start: 3px solid var(--brand-orange, #8276df);
+  border-inline-start: 3px solid var(--brand-orange, #fcaf17);
 }
 #app .session-card {
-  border-inline-start: 3px solid #35a391;
+  border-inline-start: 3px solid var(--status-success-fill, #19775c);
 }
 #app .assessment-stage > summary {
   background: var(--theme-teal-soft, #fffaed);
@@ -931,12 +928,112 @@ body {
   color: var(--theme-teal, #7c5105);
 }
 #uiBottomNav button[aria-current="page"] {
-  background: var(--workflow-soft);
-  color: var(--workflow-accent);
+  background: var(--theme-primary, #c0141b);
+  color: var(--theme-nav-ink, #fff);
   border-radius: 14px;
 }
 #uiBottomNav button[aria-current="page"] svg {
   stroke-width: 2.2;
+}
+/* Charcoal navigation chrome is independent of white content cards. */
+@media screen {
+  :is(#app, #deputyApp) .topbar {
+    background: var(--theme-nav, #58595b);
+    color: var(--theme-nav-ink, #fff);
+  }
+  :is(#app, #deputyApp) .topbar .header-brand h1,
+  :is(#app, #deputyApp) .topbar .header-brand h1 small {
+    color: var(--theme-nav-ink, #fff);
+  }
+  :is(#app, #deputyApp) .topbar .header-actions {
+    background: var(--theme-nav, #58595b);
+    border-color: var(--theme-nav-line, #ffffff26);
+  }
+  :is(#app, #deputyApp) .topbar .header-action,
+  :is(#app, #deputyApp) .topbar .navigation-menu > summary {
+    background: transparent;
+    color: var(--theme-nav-ink, #fff);
+    border-color: var(--theme-nav-line, #ffffff26);
+    box-shadow: none;
+  }
+  :is(#app, #deputyApp) .topbar .header-action > svg,
+  :is(#app, #deputyApp) .topbar .navigation-menu > summary > svg {
+    color: var(--theme-highlight, #fcaf17);
+  }
+  :is(#app, #deputyApp) .topbar .header-action:hover,
+  :is(#app, #deputyApp) .topbar .navigation-menu > summary:hover,
+  :is(#app, #deputyApp) .topbar .navigation-menu[open] > summary {
+    background: var(--theme-nav-hover, #6a6b6e);
+    color: var(--theme-nav-ink, #fff);
+  }
+  :is(#app, #deputyApp) .topbar .header-action.is-active,
+  :is(#app, #deputyApp) .topbar .header-action[aria-expanded="true"] {
+    background: var(--theme-primary, #c0141b);
+    border-color: var(--theme-primary, #c0141b);
+    color: var(--theme-nav-ink, #fff);
+  }
+  :is(#app, #deputyApp) .topbar .header-action.is-active > svg,
+  :is(#app, #deputyApp) .topbar .header-action[aria-expanded="true"] > svg {
+    color: var(--theme-nav-ink, #fff);
+  }
+  :is(#app, #deputyApp) .topbar .header-action:focus-visible,
+  :is(#app, #deputyApp) .topbar .navigation-menu > summary:focus-visible {
+    outline-color: var(--theme-highlight, #fcaf17);
+  }
+  :is(#app, #deputyApp) .topbar .header-dropdown .data-menu {
+    background: var(--theme-nav-surface, #4f5053);
+    border-color: var(--theme-nav-line, #ffffff26);
+  }
+  :is(#app, #deputyApp) .topbar .header-dropdown .data-menu button {
+    background: transparent;
+    color: var(--theme-nav-ink, #fff);
+  }
+  :is(#app, #deputyApp) .topbar .header-dropdown .data-menu button svg {
+    color: var(--theme-highlight, #fcaf17);
+  }
+  :is(#app, #deputyApp) .topbar .header-dropdown .data-menu button:hover {
+    background: var(--theme-nav-hover, #6a6b6e);
+    color: var(--theme-nav-ink, #fff);
+  }
+  :is(#app, #deputyApp) .topbar .header-dropdown .data-menu button.danger-item,
+  :is(#app, #deputyApp)
+    .topbar
+    .header-dropdown
+    .data-menu
+    button.danger-item
+    svg {
+    color: #ffc3c9;
+  }
+  :is(#app, #deputyApp)
+    .topbar
+    .header-dropdown
+    .data-menu
+    button.danger-item:hover {
+    background: #75444a;
+  }
+  #uiBottomNav {
+    background: var(--theme-nav, #58595b);
+    border-color: var(--theme-nav-line, #ffffff26);
+    box-shadow: 0 -4px 20px #2d344018;
+  }
+  #uiBottomNav button {
+    background: transparent;
+    color: var(--theme-nav-ink, #fff);
+  }
+  #uiBottomNav button svg {
+    color: var(--theme-highlight, #fcaf17);
+  }
+  #uiBottomNav button[aria-current="page"] {
+    background: var(--theme-primary, #c0141b);
+    color: var(--theme-nav-ink, #fff);
+  }
+  #uiBottomNav button[aria-current="page"] svg {
+    color: var(--theme-nav-ink, #fff);
+  }
+  #uiBottomNav button:focus-visible,
+  #app > .tabs.classroom-tabs > .classroom-tab:focus-visible {
+    outline-color: var(--theme-highlight, #fcaf17);
+  }
 }
 @media (hover: hover) {
   #app .dashboard-entity-actions > button:first-child:hover,
@@ -973,7 +1070,7 @@ body {
     background: var(--brand-canvas);
   }
   #app .topbar {
-    background: var(--brand-canvas);
+    background: var(--theme-nav);
   }
   .control-icon {
     display: inline-flex;
@@ -992,24 +1089,24 @@ body {
     box-shadow: 0 3px 0 var(--brand-orange);
   }
   #app .header-brand > .header-home.is-active {
-    background: var(--workflow-soft);
-    border-color: var(--theme-primary-line, #fbd0d1);
-    color: var(--workflow-accent);
+    background: var(--theme-primary);
+    border-color: var(--theme-primary);
+    color: var(--theme-nav-ink);
   }
   #app .tabs {
-    background: var(--theme-surface-muted, #eeece9);
+    background: var(--theme-nav);
   }
   #app button.ghost,
   #modalBody button.ghost {
-    background: var(--theme-surface-muted, #f4f3f1);
-    color: var(--theme-ink, #454649);
+    background: var(--theme-surface-muted);
+    color: var(--theme-ink);
     border-color: var(--workflow-line);
   }
   #app .tabs > button.active,
   #app .tabs > button[aria-current="page"] {
-    background: #fff;
-    color: var(--workflow-accent);
-    box-shadow: inset 0 -3px var(--brand-red);
+    background: var(--theme-primary);
+    color: var(--theme-nav-ink);
+    box-shadow: inset 0 -3px var(--theme-highlight);
   }
   #app :is(input, select, textarea):focus,
   #modalBody :is(input, select, textarea):focus {
@@ -1040,7 +1137,7 @@ body {
   }
   #app .breadcrumb li + li::before {
     content: "/";
-    color: var(--theme-muted, #8d8d8d);
+    color: var(--theme-muted);
     flex-shrink: 0;
   }
   #app .breadcrumb :is(a, span) {
@@ -1059,31 +1156,31 @@ body {
   }
   #app button.master-btn,
   #app button.report-btn {
-    background: var(--theme-primary-soft, #fffaed);
-    color: var(--theme-primary-hover, #7c5105);
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary-hover);
   }
   #app .session-mode-picker [aria-pressed="false"] {
-    background: var(--theme-surface-muted, #f4f3f1);
-    color: var(--theme-ink, #454649);
+    background: var(--theme-surface-muted);
+    color: var(--theme-ink);
   }
   #mobileBar {
-    background: var(--theme-primary-soft, #fff9ea);
+    background: var(--theme-primary-soft);
     border-color: var(--brand-orange);
-    color: var(--theme-primary-hover, #7c5105);
+    color: var(--theme-primary-hover);
   }
   #mobileBar button:not(.ghost) {
     background: var(--workflow-accent);
   }
   #uiBottomNav button[aria-current="page"] {
-    background: var(--workflow-soft);
-    color: var(--workflow-accent);
+    background: var(--theme-primary);
+    color: var(--theme-nav-ink);
   }
   #app .workspace-bar {
     margin-bottom: 10px;
     font-size: 12px;
   }
   #app .workspace-bar > strong {
-    color: #526078;
+    color: var(--theme-muted);
     font-weight: 500;
     line-height: 1.8;
   }
@@ -1096,17 +1193,17 @@ body {
     overflow-wrap: anywhere;
   }
   #app #saveStatus[data-state="saved"] {
-    background: #e7f5ef;
-    color: #14634c;
+    background: var(--status-success-soft);
+    color: var(--status-success);
   }
   #app #saveStatus[data-state="pending"] {
-    background: #fff3d6;
-    color: #765000;
+    background: var(--status-warning-soft);
+    color: var(--status-warning);
   }
   #app #saveStatus[data-state="error"],
   #app .workspace-bar > #singleFileBadge {
-    background: #fff0ed;
-    color: #9f3021;
+    background: var(--status-danger-soft);
+    color: var(--status-danger);
     padding: 10px 12px;
     border-radius: 10px;
     grid-column: 1 / -1;
@@ -1132,10 +1229,10 @@ body {
     min-height: 44px;
     margin: 0;
     padding: 8px 12px;
-    border: 1px solid #dec69b;
+    border: 1px solid var(--status-warning-line);
     border-radius: 10px;
-    background: #fff1d6;
-    color: #795018;
+    background: var(--status-warning-soft);
+    color: var(--status-warning);
     font-size: 12px;
     font-weight: 600;
     line-height: 1.7;
@@ -1144,11 +1241,11 @@ body {
   }
   #app #singleFileBadge > .single-file-permission-action:focus-visible,
   #modalBody #singleFileStatus > .single-file-permission-action:focus-visible {
-    outline: 2px solid #a66e0b;
+    outline: 2px solid var(--status-warning);
     outline-offset: 2px;
   }
   .workspace-tool-actions {
-    box-shadow: 0 8px 24px #25335c0a;
+    box-shadow: 0 8px 24px #2d34400a;
   }
   .entity-quick-create > summary {
     cursor: pointer;
@@ -1183,12 +1280,12 @@ body {
     padding: 0;
     border: 1px solid var(--workflow-line);
     border-radius: 16px;
-    background: #fff;
+    background: var(--theme-surface);
     box-shadow: none;
   }
   #app .create-panel[open] {
-    border-color: #dcc4aa;
-    box-shadow: 0 4px 18px #4a302507;
+    border-color: var(--theme-primary-line);
+    box-shadow: 0 4px 18px #2d344007;
   }
   #app .create-panel > summary {
     display: flex;
@@ -1217,8 +1314,8 @@ body {
     height: 42px;
     flex: 0 0 42px;
     border-radius: 12px;
-    color: var(--theme-primary-hover, #7c5105);
-    background: #fff6df;
+    color: var(--theme-primary-hover);
+    background: var(--status-warning-soft);
   }
   .create-panel-title {
     display: grid;
@@ -1244,10 +1341,10 @@ body {
     width: 28px;
     height: 28px;
     flex: 0 0 28px;
-    border: 1px solid #d3dfef;
+    border: 1px solid var(--status-info-line);
     border-radius: 8px;
-    color: var(--theme-primary, #3267a2);
-    background-color: var(--theme-primary-soft, #edf4ff);
+    color: var(--theme-primary);
+    background-color: var(--theme-primary-soft);
     background-image:
       linear-gradient(currentColor, currentColor),
       linear-gradient(currentColor, currentColor);
@@ -1275,13 +1372,13 @@ body {
     display: grid;
     gap: 7px;
     font-size: 14px;
-    color: var(--theme-ink, #454649);
+    color: var(--theme-ink);
     min-width: 0;
   }
   #app .create-panel form :is(input, select) {
     width: 100%;
     min-height: 48px;
-    background: var(--theme-surface-subtle, #faf9f7);
+    background: var(--theme-surface-subtle);
     border-radius: 10px;
   }
   #app .create-panel-footer,
@@ -1311,27 +1408,27 @@ body {
     border-inline-start: 1px solid var(--workflow-line);
     border-radius: 16px;
     padding: 16px;
-    box-shadow: 0 3px 12px #4a302505;
+    box-shadow: 0 3px 12px #2d344005;
   }
   #app .dashboard-entity-symbol,
   #app .lesson-symbol,
   #app .student-avatar {
-    background: var(--theme-surface-muted, #f5f1eb);
-    color: var(--theme-primary, #66503c);
+    background: var(--theme-surface-muted);
+    color: var(--theme-primary);
     border-radius: 12px;
   }
   #app .dashboard-entity-actions > button:first-child,
   #app button.lesson-enter,
   #app button.student-report {
     background: var(--brand-charcoal);
-    color: #fff;
+    color: var(--theme-surface);
     box-shadow: none;
   }
   #app .dashboard-entity-info,
   #app .lesson-identity,
   #app .student-profile-main {
     padding-bottom: 12px;
-    border-bottom: 1px solid var(--theme-surface-muted, #eeece9);
+    border-bottom: 1px solid var(--theme-surface-muted);
   }
   #app .dashboard-entity-info h4,
   #app .lesson-identity h4,
@@ -1368,7 +1465,7 @@ body {
     line-height: 1.8;
     background: var(--workflow-soft);
     color: var(--workflow-accent);
-    border: 1px solid var(--theme-primary-line, #f3cdcf);
+    border: 1px solid var(--theme-primary-line);
     border-radius: 12px;
     white-space: normal;
     text-align: start;
@@ -1387,9 +1484,9 @@ body {
     min-height: 48px;
     padding: 10px 12px;
     border-radius: 12px;
-    background: #fff;
+    background: var(--theme-surface);
     border: 1px solid var(--workflow-line);
-    color: var(--theme-ink, #454649);
+    color: var(--theme-ink);
     font-size: 13px;
     line-height: 1.8;
     list-style: none;
@@ -1402,8 +1499,8 @@ body {
     white-space: nowrap;
   }
   #app :is(.dashboard-entity-more, .lesson-more) > summary:hover {
-    background: var(--theme-surface-muted, #f4f3f1);
-    border-color: var(--theme-primary-line, #b9b6b1);
+    background: var(--theme-surface-muted);
+    border-color: var(--theme-primary-line);
   }
   #app :is(.dashboard-entity-more, .lesson-more) > summary:focus-visible {
     outline: 2px solid var(--workflow-accent);
@@ -1419,8 +1516,8 @@ body {
     z-index: 40;
   }
   #app .dashboard-entity-more[open] > summary {
-    background: var(--theme-surface-muted, #f4f3f1);
-    border-color: var(--theme-primary-line, #b9b6b1);
+    background: var(--theme-surface-muted);
+    border-color: var(--theme-primary-line);
     color: var(--workflow-ink);
   }
   /* Float above the trigger without resizing the card or its action row. */
@@ -1438,7 +1535,7 @@ body {
     padding: 6px;
     border-radius: 12px;
     border-color: var(--workflow-line);
-    background: #fff;
+    background: var(--theme-surface);
     box-shadow: 0 8px 28px #2d344024;
   }
   #app .entity-menu-panel > button {
@@ -1457,16 +1554,16 @@ body {
     border-color: transparent;
   }
   #app .entity-menu-panel > button.ghost:hover {
-    background: var(--theme-surface-muted, #f4f3f1);
+    background: var(--theme-surface-muted);
   }
   #app .entity-menu-panel > button.danger {
     background: transparent;
-    color: #9f3021;
+    color: var(--status-danger);
     border: 1px solid transparent;
     border-top-color: var(--workflow-line);
   }
   #app .entity-menu-panel > button.danger:hover {
-    background: #fff0ed;
+    background: var(--status-danger-soft);
   }
   #app .student-profile-actions {
     grid-template-columns: minmax(0, 1fr) auto;
@@ -1485,6 +1582,131 @@ body {
     #app .create-panel-footer > button {
       width: auto;
       min-width: 160px;
+    }
+  }
+  /* Rounded child backgrounds must stay inside their creation frames. */
+  #app
+    > details:is(
+      .class-create,
+      .lesson-create,
+      .student-add,
+      .student-import
+    ).create-panel,
+  #app
+    > details:is(
+      .class-create,
+      .lesson-create,
+      .student-add,
+      .student-import
+    ).create-panel[open] {
+    border: 1px solid var(--theme-line);
+    border-radius: 16px;
+    box-shadow: none;
+  }
+  #app
+    :is(
+      .class-create,
+      .lesson-create,
+      .student-add,
+      .student-import
+    ).create-panel
+    > summary {
+    border-radius: 15px;
+  }
+  #app
+    :is(
+      .class-create,
+      .lesson-create,
+      .student-add,
+      .student-import
+    ).create-panel[open]
+    > summary {
+    border-end-start-radius: 0;
+    border-end-end-radius: 0;
+  }
+  #app :is(.class-create, .lesson-create, .student-add).create-panel > form,
+  #app .student-import.create-panel > .csv-import-body {
+    border-end-start-radius: 15px;
+    border-end-end-radius: 15px;
+  }
+  /* Match the school directory width while keeping creation controls compact. */
+  #app > details.school-create.create-panel {
+    inline-size: 100%;
+    max-inline-size: none;
+    align-self: stretch;
+    border-color: var(--theme-line);
+    box-shadow: none;
+  }
+  #app > details.school-create.create-panel[open] {
+    border-color: var(--theme-line);
+    box-shadow: none;
+  }
+  #app .school-create.create-panel > summary {
+    min-height: 64px;
+    padding: 12px 16px;
+    gap: 10px;
+    border-radius: 15px;
+    background: var(--theme-surface);
+  }
+  #app .school-create.create-panel[open] > summary {
+    border-end-start-radius: 0;
+    border-end-end-radius: 0;
+  }
+  #app .school-create.create-panel > summary:focus-visible {
+    outline: 2px solid var(--theme-focus);
+    outline-offset: 3px;
+  }
+  #app .school-create .create-panel-symbol {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
+  }
+  #app .school-create .create-panel-toggle {
+    border: 0;
+    background-color: var(--theme-surface-muted);
+  }
+  #app .school-create[open] .create-panel-toggle {
+    background-color: var(--theme-primary-soft);
+  }
+  #app .school-create.create-panel > form {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding: 16px;
+    align-items: end;
+    border-end-start-radius: 15px;
+    border-end-end-radius: 15px;
+  }
+  #app .school-create .entity-create-field {
+    grid-column: auto;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  #app .school-create form input {
+    min-height: 48px;
+    font-size: 16px;
+  }
+  #app .school-create .create-panel-footer {
+    grid-column: auto;
+    padding: 0;
+  }
+  #app .school-create.create-panel .create-panel-footer > button {
+    width: 100%;
+    min-width: 0;
+    min-height: 48px !important;
+    white-space: nowrap;
+  }
+  #app .school-create .entity-create-error {
+    grid-column: 1 / -1;
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.8;
+  }
+  @media (min-width: 640px) {
+    #app .school-create.create-panel > form {
+      grid-template-columns: minmax(0, 1fr) 144px;
     }
   }
   .backup-hub {
@@ -1537,23 +1759,23 @@ body {
     font-weight: 600;
   }
   #app .workflow-welcome {
-    border: 1px solid var(--theme-line, #efded2);
+    border: 1px solid var(--theme-line);
     border-radius: 20px;
     background: linear-gradient(
       120deg,
-      var(--theme-primary-soft, #fffaed),
-      var(--theme-primary-soft, #fef0f0)
+      var(--theme-primary-soft),
+      var(--theme-primary-soft)
     );
     padding: 22px;
     margin-block: 10px 20px;
     gap: 10px;
   }
   #app .workflow-welcome h2 {
-    color: var(--theme-ink, #640b11);
+    color: var(--theme-ink);
     font-size: clamp(21px, 3vw, 27px);
   }
   #app .workflow-welcome p {
-    color: var(--theme-muted, #636466);
+    color: var(--theme-muted);
     font-size: 14px;
   }
   #app .workflow-welcome button {
@@ -1563,28 +1785,28 @@ body {
     gap: 10px;
   }
   .dashboard-entity:nth-child(3n + 2) {
-    border-inline-start-color: #29a496;
+    border-inline-start-color: var(--status-success-fill);
   }
   .dashboard-entity:nth-child(3n + 2) .dashboard-entity-symbol {
-    background: #e6f6f1;
+    background: var(--status-success-soft);
     color: var(--touch-teal);
   }
   .dashboard-entity:nth-child(3n) {
-    border-inline-start-color: #dbab49;
+    border-inline-start-color: var(--status-warning-fill);
   }
   .dashboard-entity:nth-child(3n) .dashboard-entity-symbol {
-    background: var(--theme-primary-soft, #fff4d9);
+    background: var(--theme-primary-soft);
     color: var(--touch-amber);
   }
   #app button.success,
   #modal button.success {
     background: var(--touch-teal);
-    color: #fff;
+    color: var(--theme-surface);
   }
   #app button.danger,
   #modal button.danger {
-    background: #b62f40;
-    color: #fff;
+    background: var(--status-danger-fill);
+    color: var(--theme-surface);
   }
   #app .tabs > button {
     font-weight: 600;
@@ -1594,7 +1816,7 @@ body {
     overflow: hidden;
   }
   #modal .modal-header {
-    background: var(--theme-surface-subtle, #faf9f7);
+    background: var(--theme-surface-subtle);
     border-bottom: 1px solid var(--workflow-line);
     padding: 12px 18px;
     gap: 12px;
@@ -1609,15 +1831,15 @@ body {
     width: 44px;
     min-height: 44px;
     border-radius: 12px;
-    background: #eaeef6;
-    color: #364665;
+    background: var(--theme-line-soft);
+    color: var(--theme-ink);
   }
   #modal .modal-body {
     overscroll-behavior: contain;
     scroll-padding-block: 16px 100px;
   }
   #modalBody .record-editor-context {
-    background: var(--theme-primary-soft, #fffaed);
+    background: var(--theme-primary-soft);
     border-inline-start: 3px solid var(--brand-orange);
     border-radius: 12px;
     padding: 14px;
@@ -1625,28 +1847,28 @@ body {
   #modalBody .record-editor > label {
     font-size: 14px;
     font-weight: 600;
-    color: #334360;
+    color: var(--theme-ink);
     line-height: 1.8;
   }
   #modalBody .record-editor-actions {
     position: sticky;
     bottom: -1px;
     z-index: 4;
-    background: #fff;
+    background: var(--theme-surface);
     border-top: 1px solid var(--workflow-line);
     padding: 12px 0 max(12px, env(safe-area-inset-bottom));
     margin-bottom: 0;
-    box-shadow: 0 -8px 14px #26365c05;
+    box-shadow: 0 -8px 14px #2d344005;
   }
   #modalBody :is(input, select, textarea)[aria-invalid="true"] {
-    border: 2px solid #b62f40;
-    background: #fff6f5;
+    border: 2px solid var(--status-danger-fill);
+    background: var(--status-danger-soft);
   }
   #modalBody .entity-create-error:not(:empty) {
     border-radius: 10px;
     padding: 10px 12px;
-    background: #fff0ed;
-    color: #9f3021;
+    background: var(--status-danger-soft);
+    color: var(--status-danger);
   }
   #uiBottomNav {
     padding-bottom: max(8px, env(safe-area-inset-bottom));
@@ -1754,7 +1976,7 @@ body {
   #modal:has(:is([data-workspace-submit="save-entity"], #studentEditor))
     .modal-header {
     padding: 16px 20px;
-    background: #fff;
+    background: var(--theme-surface);
   }
   #modal:has(:is([data-workspace-submit="save-entity"], #studentEditor))
     .modal-body {
@@ -1769,7 +1991,7 @@ body {
     :is([data-workspace-submit="save-entity"], #studentEditor)
     .record-editor-context {
     padding: 14px 16px;
-    background: var(--theme-canvas, #f7f6f4);
+    background: var(--theme-canvas);
     border: 1px solid var(--workflow-line);
     border-radius: 12px;
   }
@@ -1904,7 +2126,7 @@ body {
     font-size: 13px;
   }
   #app .lesson-policy {
-    background: var(--theme-canvas, #f7f6f4);
+    background: var(--theme-canvas);
     border-color: var(--workflow-line);
     color: var(--workflow-muted);
     padding: 12px 14px;
@@ -1933,7 +2155,7 @@ body {
     border-radius: 12px;
     background: var(--workflow-soft);
     color: var(--workflow-accent);
-    border: 1px solid var(--theme-primary-line, #f3cdcf);
+    border: 1px solid var(--theme-primary-line);
     font-size: 14px;
     white-space: normal;
     text-align: start;
@@ -1945,15 +2167,15 @@ body {
     min-width: 92px;
     min-height: 48px;
     padding: 10px 12px;
-    background: #fff;
-    color: var(--theme-ink, #454649);
+    background: var(--theme-surface);
+    color: var(--theme-ink);
     border-color: var(--workflow-line);
     font-size: 13px;
   }
   #app :is(.lesson-more, .student-more) > summary:hover,
   #app :is(.lesson-more, .student-more)[open] > summary {
-    background: var(--theme-surface-muted, #f4f3f1);
-    border-color: var(--theme-primary-line, #b9b6b1);
+    background: var(--theme-surface-muted);
+    border-color: var(--theme-primary-line);
   }
   #app :is(.lesson-more, .student-more) > summary:focus-visible {
     outline: 2px solid var(--workflow-accent);
@@ -1981,17 +2203,17 @@ body {
     border-radius: 10px;
     background: transparent;
     border: 1px solid transparent;
-    color: var(--theme-ink, #454649);
+    color: var(--theme-ink);
   }
   #app :is(.lesson-more-menu, .student-more-menu) button:hover {
-    background: var(--theme-surface-muted, #f4f3f1);
+    background: var(--theme-surface-muted);
   }
   #app :is(.lesson-more-menu, .student-more-menu) button.danger {
-    color: #9f3021;
+    color: var(--status-danger);
     border-top-color: var(--workflow-line);
   }
   #app :is(.lesson-more-menu, .student-more-menu) button.danger:hover {
-    background: #fff0ed;
+    background: var(--status-danger-soft);
   }
   #modal:has(#courseError) .modal-dialog {
     width: 100%;
@@ -1999,13 +2221,13 @@ body {
     border-radius: 20px;
   }
   #modal:has(#courseError) .modal-header {
-    background: #fff;
+    background: var(--theme-surface);
   }
   #modal:has(#courseError) .modal-body {
     min-height: 0;
   }
   #modalBody:has(#courseError) .record-editor-context {
-    background: #f7f6f4;
+    background: var(--theme-surface-muted);
     border: 1px solid var(--workflow-line);
     border-radius: 12px;
   }
@@ -2070,7 +2292,7 @@ body {
     border-radius: 12px;
     background: var(--workflow-soft);
     color: var(--workflow-accent);
-    border: 1px solid var(--theme-primary-line, #f3cdcf);
+    border: 1px solid var(--theme-primary-line);
   }
   #app .student-profile-info p {
     font-size: 13px;
@@ -2080,10 +2302,10 @@ body {
     width: 46px;
     height: 46px;
     border-radius: 14px;
-    background: linear-gradient(145deg, #fff8ed, #f5e9d9);
-    color: var(--theme-primary, #79522c);
-    border: 1px solid var(--theme-primary-line, #e8d7c1);
-    box-shadow: inset 0 1px 0 #ffffff;
+    background: var(--status-warning-soft);
+    color: var(--status-warning);
+    border: 1px solid var(--status-warning-line);
+    box-shadow: inset 0 1px 0 var(--theme-surface);
     font-size: 18px;
     font-weight: 600;
     line-height: 1;
@@ -2171,7 +2393,7 @@ body {
   }
   #app .student-import {
     padding: 16px;
-    background: var(--theme-surface-subtle, #faf9f7);
+    background: var(--theme-surface-subtle);
     box-shadow: none;
   }
   #app .student-import > summary {
@@ -2203,21 +2425,21 @@ body {
     padding: 16px;
     margin-bottom: 18px;
     gap: 14px;
-    background: #fff;
+    background: var(--theme-surface);
     border: 1px solid var(--workflow-line);
     border-radius: 16px;
   }
   #app .roster-toolbar .roster-search input {
     min-height: 48px;
     padding-inline: 40px 12px;
-    background-color: var(--theme-surface-subtle, #faf9f7);
+    background-color: var(--theme-surface-subtle);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23636466' stroke-width='1.7' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='m16 16 5 5'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 12px center;
     font-size: 16px;
   }
   #app .roster-toolbar .roster-sort select {
-    background-color: var(--theme-surface-subtle, #faf9f7);
+    background-color: var(--theme-surface-subtle);
     padding: 10px 12px;
     font-size: 16px;
   }
@@ -2500,20 +2722,20 @@ body {
     font-weight: 600;
   }
   #app .session-counts .session-present {
-    background: #eaf5ef;
-    color: #14634c;
+    background: var(--status-success-soft);
+    color: var(--status-success);
   }
   #app .session-counts .session-absent {
-    background: #fff0ed;
-    color: #9f3021;
+    background: var(--status-danger-soft);
+    color: var(--status-danger);
   }
   #app .session-counts .session-late {
-    background: #fff4d9;
-    color: #875800;
+    background: var(--status-warning-soft);
+    color: var(--status-warning);
   }
   #app .session-counts .session-leave {
-    background: #f1ecf8;
-    color: #70469a;
+    background: var(--status-leave-soft);
+    color: var(--status-leave);
   }
   #app .session-counts .session-activities {
     background: var(--theme-surface-muted);
@@ -2560,9 +2782,9 @@ body {
     box-shadow: none;
   }
   #app .session-card > .session-delete:hover {
-    background: #fff0ed;
-    border-color: #f0d2cb;
-    color: #9f3021;
+    background: var(--status-danger-soft);
+    border-color: var(--status-danger-line);
+    color: var(--status-danger);
   }
 }
 @media screen and (min-width: 701px) {
@@ -2869,8 +3091,8 @@ body {
     height: 44px;
     flex: 0 0 44px;
     border-radius: 13px;
-    background: #fff3db;
-    color: var(--theme-primary-hover, #855b19);
+    background: var(--status-warning-soft);
+    color: var(--theme-primary-hover);
   }
   .session-setup-heading :is(h3, h4) {
     margin: 0;
@@ -2886,7 +3108,7 @@ body {
     line-height: 1.9;
   }
   .session-setup-eyebrow {
-    color: var(--theme-primary-hover, #855b19);
+    color: var(--theme-primary-hover);
     font-size: 11px;
   }
   #app .session-create {
@@ -2930,12 +3152,12 @@ body {
     gap: 7px;
     min-width: 0;
     margin: 0;
-    color: var(--theme-ink, #6e665c);
+    color: var(--theme-ink);
     font-size: 12px;
     line-height: 1.8;
   }
   #modalBody .session-field > span > small {
-    color: var(--theme-muted, #81796e);
+    color: var(--theme-muted);
     font-size: inherit;
     font-weight: 400;
   }
@@ -2945,7 +3167,7 @@ body {
     min-height: 46px;
     margin: 0;
     border-radius: 11px;
-    background-color: #fff;
+    background-color: var(--theme-surface);
     font-size: 14px;
   }
   #modalBody :is(.session-date-grid, .session-setup-grid) .shamsi-display {
@@ -2959,7 +3181,7 @@ body {
   #modalBody .session-setup-help {
     margin-block: 14px;
     padding-inline-start: 12px;
-    border-inline-start: 2px solid var(--theme-line, #e2d4bd);
+    border-inline-start: 2px solid var(--theme-line);
   }
   #modalBody .session-setup-actions > button {
     display: flex;
@@ -3006,7 +3228,7 @@ body {
     padding: 12px;
     border: 1px solid var(--workflow-line);
     border-radius: 12px;
-    background: var(--theme-surface-subtle, #faf9f7);
+    background: var(--theme-surface-subtle);
     color: var(--workflow-ink);
     text-align: start;
     box-shadow: none;
@@ -3025,7 +3247,7 @@ body {
   .session-setup-recent-arrow {
     display: inline-flex;
     flex-shrink: 0;
-    color: var(--theme-primary, #8a6736);
+    color: var(--theme-primary);
   }
   .session-context {
     display: flex;
@@ -3060,7 +3282,7 @@ body {
     line-height: 1.7;
   }
   .session-context-meta {
-    color: var(--theme-primary, #79522c);
+    color: var(--theme-primary);
     font-size: 13px;
   }
   #modalBody .session-date-tools {
@@ -3075,7 +3297,7 @@ body {
     gap: 8px;
     min-height: 44px;
     padding: 8px 0;
-    color: var(--theme-primary, #79522c);
+    color: var(--theme-primary);
     font-size: 12px;
     list-style: none;
   }
@@ -3211,14 +3433,14 @@ body {
     .session-workspace
     .session-attendance-bulk
     button:is(.success, [data-legacy-click="sessions-dialog:all-present"]) {
-    --button-ink: #28624d;
-    --button-line: #c7d9ce;
-    --button-hover: #f2f8f4;
+    --button-ink: var(--status-success);
+    --button-line: var(--status-success-line);
+    --button-hover: var(--status-success-soft);
   }
   #modalBody .session-workspace .session-attendance-bulk button.danger {
-    --button-ink: #9b4d45;
-    --button-line: #e6c6bf;
-    --button-hover: #fff6f4;
+    --button-ink: var(--status-danger);
+    --button-line: var(--status-danger-line);
+    --button-hover: var(--status-danger-soft);
   }
   #modalBody
     .session-workspace
@@ -3309,24 +3531,24 @@ body {
     font-variant-numeric: tabular-nums;
   }
   #modalBody .session-workspace .att-btns .present.active {
-    background: #f2f8f4;
-    color: #28624d;
-    border-color: #c7d9ce;
+    background: var(--status-success-soft);
+    color: var(--status-success);
+    border-color: var(--status-success-line);
   }
   #modalBody .session-workspace .att-btns .absent.active {
-    background: #fff6f4;
-    color: #9b4d45;
-    border-color: #e6c6bf;
+    background: var(--status-danger-soft);
+    color: var(--status-danger);
+    border-color: var(--status-danger-line);
   }
   #modalBody .session-workspace .att-btns .late.active {
-    background: #fffaef;
-    color: #80632a;
-    border-color: #e7d8b4;
+    background: var(--status-warning-soft);
+    color: var(--status-warning);
+    border-color: var(--status-warning-line);
   }
   #modalBody .session-workspace .att-btns .leave.active {
-    background: #f8f5fc;
-    color: #755f91;
-    border-color: #d8cde6;
+    background: var(--status-leave-soft);
+    color: var(--status-leave);
+    border-color: var(--status-leave-line);
   }
   #modalBody .session-workspace .att-btns button:not(.active):hover {
     background: var(--theme-surface-subtle);
@@ -3337,7 +3559,7 @@ body {
     box-shadow: inset 0 -2px 0 currentColor;
   }
   #modalBody .session-workspace button:focus-visible {
-    outline: 2px solid var(--theme-focus, #a66e0b);
+    outline: 2px solid var(--theme-focus);
     outline-offset: 2px;
   }
   #modalBody .session-entry-form {
@@ -3407,9 +3629,9 @@ body {
     font-size: 13px;
   }
   #modalBody .session-workspace-footer .success {
-    border: 1px solid #cde3db;
-    background: #edf6f2;
-    color: #14634c;
+    border: 1px solid var(--status-success-line);
+    background: var(--status-success-soft);
+    color: var(--status-success);
   }
 }
 @media screen and (max-width: 700px) {
@@ -3506,31 +3728,228 @@ body {
     grid-template-columns: minmax(0, 1fr);
   }
 }
-@media screen and (min-width: 1101px) {
-  #app .student-roster {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 12px;
-    padding: 0 20px 20px;
+/* The daily session editor prioritizes scanning names and selecting a clear status. */
+@media screen {
+  #modalBody .session-workspace .session-context {
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid var(--theme-line);
+    border-radius: 12px;
+    background: var(--theme-surface-subtle);
   }
-  #app .student-profile {
+  #modalBody .session-workspace .session-context h4 {
+    margin: 2px 0 4px;
+    font-size: 16px;
+  }
+  #modalBody .session-workspace .session-context-meta {
+    font-size: 12px;
+  }
+  #modalBody .session-workspace .session-date-tools {
+    margin-top: 4px;
+  }
+  #modalBody .session-workspace .session-mode-picker {
+    gap: 3px;
+    margin-block: 12px;
+    padding: 3px;
+    border: 1px solid var(--theme-secondary-line);
+    border-radius: 12px;
+    background: var(--theme-secondary-soft);
+    box-shadow: none;
+  }
+  #modalBody .session-workspace .session-mode-picker > button {
+    min-height: 44px;
+    border: 0;
+    border-radius: 8px;
+    color: var(--theme-ink);
+    font-size: 12px;
+    font-weight: 500;
+  }
+  #modalBody .session-workspace .session-mode-picker > [aria-pressed="true"] {
+    background: var(--theme-primary);
+    color: var(--theme-surface);
+    box-shadow: none;
+  }
+  #modalBody .session-workspace [data-session-attendance-meter] {
+    display: block;
+    width: 100%;
+    height: 5px;
+    margin-top: 8px;
+    border: 0;
+    border-radius: 4px;
+    overflow: hidden;
+    appearance: none;
+    background: var(--theme-line-soft);
+    accent-color: var(--status-success-fill);
+  }
+  #modalBody .session-workspace progress::-webkit-progress-bar {
+    background: var(--theme-line-soft);
+  }
+  #modalBody .session-workspace progress::-webkit-progress-value {
+    background: var(--status-success-fill);
+  }
+  #modalBody .session-workspace progress::-moz-progress-bar {
+    background: var(--status-success-fill);
+  }
+  #modalBody .session-attendance-search {
+    display: grid;
+    gap: 5px;
+    margin: 12px 0;
+    color: var(--theme-muted);
+    font-size: 12px;
+  }
+  #modalBody .session-attendance-search input {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    margin: 0;
+    border-radius: 10px;
+    font-size: 16px;
+  }
+  #modalBody .session-workspace .session-attendance-list {
+    gap: 8px;
+  }
+  #modalBody .session-workspace .att-row {
+    padding: 10px;
+    border: 1px solid var(--theme-line);
+    border-radius: 12px;
+    background: var(--theme-surface-subtle);
+  }
+  #modalBody .session-workspace .att-row[hidden],
+  #modalBody .session-attendance-no-results[hidden] {
+    display: none !important;
+  }
+  #modalBody .session-workspace .att-name {
+    gap: 8px;
+    font-size: 13px;
+  }
+  #modalBody .session-workspace .att-btns {
+    padding: 0;
+    gap: 4px;
+    box-shadow: none;
+  }
+  #modalBody .session-workspace .att-btns .present {
+    color: var(--status-success);
+  }
+  #modalBody .session-workspace .att-btns .absent {
+    color: var(--status-danger);
+  }
+  #modalBody .session-workspace .att-btns .late {
+    color: var(--theme-secondary);
+  }
+  #modalBody .session-workspace .att-btns .leave {
+    color: var(--status-leave);
+  }
+  #modalBody .session-workspace .att-btns .present.active {
+    background: var(--status-success-fill);
+  }
+  #modalBody .session-workspace .att-btns .absent.active {
+    background: var(--status-danger-fill);
+  }
+  #modalBody .session-workspace .att-btns .late.active {
+    background: var(--theme-secondary);
+  }
+  #modalBody .session-workspace .att-btns .leave.active {
+    background: var(--status-leave-fill);
+  }
+  #modalBody
+    .session-workspace
+    .att-btns
+    :is(.present, .absent, .late, .leave).active {
+    color: var(--theme-surface);
+    border-color: transparent;
+    box-shadow: none;
+  }
+  #modalBody .session-workspace .session-entry-form {
+    margin-block: 12px 20px;
+    border-color: var(--theme-line);
+    border-radius: 12px;
+    background: var(--theme-surface);
+  }
+  #modalBody
+    .session-workspace
+    .session-entry-form
+    .session-field
+    :is(input, select) {
+    min-height: 48px;
+    font-size: 16px;
+  }
+}
+/* Keep student records as compact directory rows, not oversized profile cards. */
+@media screen {
+  #app .student-directory .student-roster {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  #app .student-directory .student-profile {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: 0;
-    padding: 22px;
+    align-items: center;
+    gap: 10px;
+    padding: 14px;
+    border-radius: 14px;
+    box-shadow: var(--surface-inner-shadow);
   }
-  #app .student-profile-main {
-    padding-bottom: 18px;
-  }
-  #app .student-profile-actions {
-    margin: 0;
-    padding: 18px 0 0;
+  #app .student-directory .student-profile-main {
+    gap: 10px;
+    padding: 0;
     border: 0;
   }
-  #app .student-profile-info h4 {
-    font-size: 17px;
+  #app .student-directory .student-profile-actions {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    border: 0;
   }
-  #app .student-profile-actions > button {
-    min-width: 150px;
+  #app .student-directory .student-profile-info h4 {
+    margin: 0 0 3px;
+    font-size: 14px;
+    line-height: 1.8;
+  }
+  #app .student-directory .student-profile-info p {
+    font-size: 11px;
+    line-height: 1.9;
+  }
+  #app .student-directory .student-avatar.student-avatar-icon {
+    flex: 0 0 40px;
+    width: 40px;
+    height: 44px;
+    border-radius: 11px;
+  }
+  #app .student-directory .student-avatar-icon svg {
+    width: 30px;
+    height: 30px;
+  }
+  #app .student-directory .student-profile-actions > button,
+  #app .student-directory .student-more > summary {
+    box-sizing: border-box;
+    min-width: 0;
+    min-height: 44px;
+    height: 44px;
+    margin: 0;
+    padding: 8px 10px;
+    border-radius: 9px;
+    font-size: 11px;
+    line-height: 1.8;
+    white-space: nowrap;
+  }
+  #app .student-directory .student-more {
+    grid-column: auto;
+    margin: 0;
+  }
+  #app .student-directory .student-more > summary {
+    width: 68px;
+  }
+}
+@media screen and (min-width: 701px) {
+  #app .student-directory .student-roster {
+    padding: 0 18px 18px;
+  }
+  #app .student-directory .student-profile {
+    grid-template-columns: minmax(0, 1fr) minmax(220px, auto);
+    gap: 18px;
+    padding: 16px;
   }
 }
 @media screen and (min-width: 1101px) {
@@ -3681,9 +4100,9 @@ body {
   #modalBody .settings-context {
     position: relative;
     padding: 18px;
-    border: 1px solid var(--theme-line, #e7e3dc);
+    border: 1px solid var(--theme-line);
     border-radius: 14px;
-    background: var(--theme-surface-subtle, #f7f6f3);
+    background: var(--theme-surface-subtle);
   }
   #modalBody .settings-context h4 {
     margin: 6px 0;
@@ -3691,12 +4110,12 @@ body {
   }
   #modalBody .settings-context p {
     margin: 0;
-    color: var(--theme-muted, #76716a);
+    color: var(--theme-muted);
     font-size: 12px;
   }
   .settings-eyebrow {
     font-size: 11px;
-    color: var(--theme-muted, #76716a);
+    color: var(--theme-muted);
   }
   .settings-password-state {
     display: inline-flex;
@@ -3705,8 +4124,8 @@ body {
     margin-top: 14px;
     padding: 5px 10px;
     border-radius: 20px;
-    background: var(--theme-surface-muted, #eae8e3);
-    color: var(--theme-muted, #615d55);
+    background: var(--theme-surface-muted);
+    color: var(--theme-muted);
     font-size: 11px;
   }
   .settings-password-state::before {
@@ -3717,8 +4136,8 @@ body {
     background: currentColor;
   }
   .settings-password-state.is-enabled {
-    background: #e5f1e9;
-    color: #23644d;
+    background: var(--status-success-soft);
+    color: var(--status-success);
   }
   #modalBody .settings-section {
     padding: 0;
@@ -3733,7 +4152,7 @@ body {
     margin: 0 0 16px;
     font-size: 12px;
     line-height: 1.9;
-    color: var(--theme-muted, #76716a);
+    color: var(--theme-muted);
   }
   #modalBody .settings-section .course-field {
     gap: 8px;
@@ -3744,7 +4163,7 @@ body {
     min-height: 44px;
     border-radius: 10px;
     font-size: 14px;
-    background: #fff;
+    background: var(--theme-surface);
   }
   #modalBody .settings-section .settings-field-hint {
     margin: 8px 0 0;
@@ -3752,9 +4171,9 @@ body {
   }
   .settings-remove-section {
     padding: 14px;
-    border: 1px solid var(--theme-line, #e7e3dc);
+    border: 1px solid var(--theme-line);
     border-radius: 12px;
-    background: var(--theme-surface-subtle, #faf9f7);
+    background: var(--theme-surface-subtle);
   }
   #modalBody .settings-remove-option {
     display: flex;
@@ -3770,12 +4189,12 @@ body {
     min-height: 18px;
     margin: 3px 0 0;
     flex: 0 0 18px;
-    accent-color: var(--theme-primary, #79522c);
+    accent-color: var(--theme-primary);
   }
   .settings-remove-option small {
     display: block;
     margin-top: 5px;
-    color: var(--theme-muted, #76716a);
+    color: var(--theme-muted);
     font-size: 11px;
     line-height: 1.9;
     font-weight: 400;
@@ -3784,13 +4203,13 @@ body {
     margin: 0;
     font-size: 11px;
     line-height: 1.9;
-    color: var(--theme-muted, #76716a);
+    color: var(--theme-muted);
   }
   #modalBody .settings-editor .record-editor-actions {
     display: flex;
     gap: 8px;
     padding-top: 16px;
-    border-top: 1px solid var(--theme-surface-muted, #eeece9);
+    border-top: 1px solid var(--theme-surface-muted);
   }
   #modalBody .settings-editor .record-editor-actions button {
     flex: 0 0 auto;
@@ -3803,8 +4222,8 @@ body {
   }
   #modalBody .settings-editor .record-editor-actions button[type="submit"] {
     flex: 1;
-    background: var(--theme-primary, #79522c);
-    color: #fff;
+    background: var(--theme-primary);
+    color: var(--theme-surface);
   }
 }
 @media screen and (max-width: 600px) {
@@ -3825,7 +4244,7 @@ body {
   #app .week-settings {
     padding: 12px;
     border-radius: 14px;
-    background: var(--theme-surface-subtle, #f7f6f3);
+    background: var(--theme-surface-subtle);
   }
   #app .week-settings > summary {
     display: flex;
@@ -3873,10 +4292,10 @@ body {
     width: 26px;
     height: 26px;
     flex: 0 0 26px;
-    border: 1px solid var(--theme-line, #e4ddd3);
+    border: 1px solid var(--theme-line);
     border-radius: 8px;
-    background: #fff;
-    color: var(--theme-primary, #79522c);
+    background: var(--theme-surface);
+    color: var(--theme-primary);
     font-size: 18px;
     font-weight: 400;
   }
@@ -3886,9 +4305,9 @@ body {
   #app .week-settings-body > section {
     margin: 0;
     padding: 14px 12px;
-    border: 1px solid var(--theme-line, #e7e3dc);
+    border: 1px solid var(--theme-line);
     border-radius: 12px;
-    background: #fff;
+    background: var(--theme-surface);
   }
   #app .week-settings h4 {
     margin: 0 0 6px;
@@ -3896,7 +4315,7 @@ body {
   }
   #app .week-settings section > p {
     font-size: 11px;
-    color: var(--theme-muted, #81796e);
+    color: var(--theme-muted);
     line-height: 1.9;
     margin: 0 0 12px;
   }
@@ -3973,14 +4392,14 @@ body {
     min-height: 44px;
     margin: 0;
     padding: 8px 10px;
-    border: 1px solid var(--theme-line, #ded8ce);
+    border: 1px solid var(--theme-line);
     border-radius: 9px;
-    background: var(--theme-surface-subtle, #faf9f7);
+    background: var(--theme-surface-subtle);
     font-size: 16px;
   }
   #app .week-start-date .shamsi-display {
     font-size: 11px;
-    color: var(--theme-muted, #81796e);
+    color: var(--theme-muted);
     margin: 0;
   }
   #app .week-start-date > button {
@@ -4024,39 +4443,24 @@ body {
 
 @media screen {
   #app .report-page-heading {
-    margin-block: 8px 18px;
+    margin-block: 8px 12px;
   }
-  #app .report-page-heading > p {
-    color: var(--theme-muted, #81796e);
-  }
-  #app .report-page-heading > span {
-    background: var(--theme-primary-soft, #f2eadf);
-    color: var(--theme-primary, #79522c);
-    border-radius: 20px;
-  }
-  #app .report-scope-summary {
-    gap: 16px;
-    padding-bottom: 16px;
-  }
-  #app .report-scope-summary > span {
-    padding: 4px 0;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    color: var(--theme-muted, #81796e);
-    font-size: 11px;
+  #app .report-page-heading h2 {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.8;
   }
   #app .report-navigation {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 4px;
+    gap: 3px;
     width: 100%;
     min-width: 0;
     margin: 0 0 18px;
-    padding: 6px;
-    border: 0;
-    border-radius: 17px;
-    background: var(--theme-surface-muted, #eeebe6);
+    padding: 3px;
+    border: 1px solid var(--theme-secondary-line);
+    border-radius: 12px;
+    background: var(--theme-secondary-soft);
     overflow: visible;
   }
   #app .report-navigation > button {
@@ -4064,18 +4468,18 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 5px;
+    gap: 2px;
     min-width: 0;
-    min-height: 72px;
+    min-height: 54px;
     margin: 0;
-    padding: 9px 3px;
-    border: 1px solid transparent;
-    border-radius: 12px;
+    padding: 6px 2px;
+    border: 0;
+    border-radius: 8px;
     background: transparent;
-    color: var(--theme-muted, #675f56);
+    color: var(--theme-ink);
     font-size: 12px;
-    font-weight: 600;
-    line-height: 1.7;
+    font-weight: 500;
+    line-height: 1.5;
     box-shadow: none;
     white-space: nowrap;
     transition:
@@ -4084,17 +4488,19 @@ body {
       box-shadow 160ms ease;
   }
   #app .report-tab-icon {
+    color: var(--theme-secondary);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
-    flex: 0 0 24px;
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
     pointer-events: none;
   }
   #app .report-tab-icon .ui-icon {
-    width: 21px;
-    height: 21px;
+    width: 18px;
+    height: 18px;
+    flex-basis: 18px;
     margin: 0;
   }
   #app .report-tab-label {
@@ -4103,13 +4509,16 @@ body {
   }
   #app .report-navigation > button.active,
   #app .report-navigation > button[aria-current="page"] {
-    border-color: var(--theme-primary, #8b2635);
-    background: var(--theme-primary, #8b2635);
-    color: #fff;
-    box-shadow: 0 3px 8px #7a685726;
+    border-color: var(--theme-primary);
+    background: var(--theme-primary);
+    color: var(--theme-surface);
+    box-shadow: none;
+  }
+  #app .report-navigation > button[aria-current="page"] .report-tab-icon {
+    color: inherit;
   }
   #app .report-navigation > button:focus-visible {
-    outline: 2px solid var(--theme-focus, #a66e0b);
+    outline: 2px solid var(--theme-focus);
     outline-offset: 2px;
   }
   #app .report-extra {
@@ -4117,13 +4526,13 @@ body {
   }
   #app .report-extra > summary {
     min-height: 36px;
-    color: var(--theme-muted, #81796e);
+    color: var(--theme-muted);
     font-size: 11px;
     cursor: pointer;
   }
   #app :is(.periodic-controls, .report-filter-card) {
     padding: 20px;
-    border: 1px solid var(--theme-line, #e7e3dc);
+    border: 1px solid var(--theme-line);
     border-radius: 15px;
     box-shadow: none;
   }
@@ -4143,19 +4552,19 @@ body {
     width: 100%;
     min-width: 0;
     min-height: 44px;
-    border: 1px solid var(--theme-line, #ded8ce);
+    border: 1px solid var(--theme-line);
     border-radius: 9px;
-    background: var(--theme-surface-subtle, #faf9f7);
+    background: var(--theme-surface-subtle);
     font-size: 14px;
   }
   #app :is(.periodic-control-grid, .report-filter-field, .periodic-note-field) {
-    color: var(--theme-muted, #726b61);
+    color: var(--theme-muted);
     font-size: 12px;
   }
   #app .periodic-note-field textarea {
-    border: 1px solid var(--theme-line, #ded8ce);
+    border: 1px solid var(--theme-line);
     border-radius: 10px;
-    background: var(--theme-surface-subtle, #faf9f7);
+    background: var(--theme-surface-subtle);
     padding: 10px;
     font-size: 14px;
     resize: vertical;
@@ -4164,13 +4573,13 @@ body {
     min-height: 44px;
     padding-inline: 20px;
     border-radius: 10px;
-    background: var(--theme-primary, #79522c);
-    color: #fff;
+    background: var(--theme-primary);
+    color: var(--theme-surface);
     font-size: 13px;
   }
   #app :is(.grade-report, .periodic-document) {
     padding: 22px;
-    border: 1px solid var(--theme-line, #e7e3dc);
+    border: 1px solid var(--theme-line);
     border-radius: 15px;
     box-shadow: none;
   }
@@ -4182,21 +4591,21 @@ body {
     margin: 8px 0 16px;
     font-size: 12px;
     line-height: 1.9;
-    color: var(--theme-muted, #81796e);
+    color: var(--theme-muted);
   }
   #app .grade-report > button {
     min-height: 42px;
     margin-bottom: 16px;
     border-radius: 9px;
     font-size: 12px;
-    background: var(--theme-primary, #79522c);
-    color: #fff;
+    background: var(--theme-primary);
+    color: var(--theme-surface);
   }
   #app .grade-report-section {
     margin-top: 18px;
     padding: 16px 0;
     border: 0;
-    border-top: 1px solid var(--theme-line, #e7e3dc);
+    border-top: 1px solid var(--theme-line);
     border-radius: 0;
     background: transparent;
     box-shadow: none;
@@ -4207,20 +4616,20 @@ body {
   }
   #app .report-term-label {
     margin: 0 0 14px;
-    color: var(--theme-muted, #81796e);
+    color: var(--theme-muted);
     font-size: 11px;
   }
   #app .grade-report .table-scroll {
-    border: 1px solid var(--theme-line, #e7e3dc);
+    border: 1px solid var(--theme-line);
     border-radius: 10px;
-    background: #fff;
+    background: var(--theme-surface);
   }
   #app .grade-report table {
     margin: 0;
   }
   #app .grade-report th {
-    background: var(--theme-surface-muted, #f2efe8);
-    color: var(--theme-ink, #655d52);
+    background: var(--theme-surface-muted);
+    color: var(--theme-ink);
     font-size: 11px;
   }
   #app .grade-report td {
@@ -4228,50 +4637,45 @@ body {
     font-size: 12px;
   }
   #app .periodic-document-heading {
-    border-color: var(--theme-line, #e7e3dc);
+    border-color: var(--theme-line);
   }
   #app .periodic-document-heading > span {
-    background: var(--theme-primary-soft, #f2eadf);
-    color: var(--theme-primary, #79522c);
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
     border-radius: 20px;
   }
   #app .report-empty {
     padding: 24px 18px;
-    border: 1px dashed var(--theme-line, #ded8ce);
+    border: 1px dashed var(--theme-line);
     border-radius: 14px;
-    background: var(--theme-surface-subtle, #faf9f7);
+    background: var(--theme-surface-subtle);
     text-align: center;
   }
   #app .report-empty h3 {
     font-size: 15px;
   }
   #app .report-empty p {
-    color: var(--theme-muted, #81796e);
+    color: var(--theme-muted);
     font-size: 12px;
     line-height: 1.9;
   }
 }
 @media screen and (min-width: 640px) {
-  #app .report-navigation {
-    gap: 6px;
-    padding: 7px;
-  }
   #app .report-navigation > button {
     flex-direction: row;
-    gap: 8px;
-    min-height: 54px;
-    padding: 10px 12px;
-    font-size: 14px;
+    gap: 6px;
+    min-height: 44px;
+    padding: 6px 10px;
   }
 }
 @media screen and (hover: hover) {
   #app .report-navigation > button:not([aria-current="page"]):hover {
-    background: #fffaf4;
-    color: var(--theme-primary-hover, #70451f);
+    background: var(--theme-surface);
+    color: var(--theme-primary-hover);
   }
   #app .report-navigation > button[aria-current="page"]:hover {
-    background: var(--theme-primary-hover, #77202e);
-    color: #fff;
+    background: var(--theme-primary-hover);
+    color: var(--theme-surface);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -4287,18 +4691,6 @@ body {
   #app > #periodicReportOutput,
   #app > #lessonReportTabOutput {
     order: 6;
-  }
-  #app .report-page-heading h2 {
-    font-size: 21px;
-  }
-  #app .report-scope-summary {
-    gap: 6px;
-  }
-  #app .report-scope-summary > span {
-    flex: 1;
-    padding: 4px 0;
-    text-align: center;
-    font-size: 10px;
   }
   #app
     :is(
@@ -4364,7 +4756,7 @@ body {
     justify-content: flex-end;
     gap: 7px;
     min-width: 0;
-    color: var(--theme-muted, #726b61);
+    color: var(--theme-muted);
     font-size: 12px;
   }
   .periodic-year-field strong {
@@ -4372,10 +4764,10 @@ body {
     align-items: center;
     min-height: 44px;
     padding: 10px 12px;
-    border: 1px solid var(--theme-line, #e7e3dc);
+    border: 1px solid var(--theme-line);
     border-radius: 9px;
-    background: var(--theme-surface-muted, #f2efe8);
-    color: var(--theme-ink, #655d52);
+    background: var(--theme-surface-muted);
+    color: var(--theme-ink);
     font-size: 14px;
     font-weight: 500;
   }
@@ -4394,14 +4786,14 @@ body {
   }
   #modal:has(.period-hub, .period-create, .frozen-report) .modal-header {
     padding: 14px 20px;
-    background: #fff;
+    background: var(--theme-surface);
   }
   #modal:has(.period-hub, .period-create, .frozen-report) .modal-header h3 {
     font-size: 16px;
   }
   #modal:has(.period-hub, .period-create, .frozen-report) .modal-body {
     padding: 18px;
-    background: var(--theme-surface-subtle, #f7f6f3);
+    background: var(--theme-surface-subtle);
   }
   #modalBody :is(.period-hub, .frozen-report) {
     display: grid;
@@ -4420,9 +4812,9 @@ body {
   #modalBody .period-hub > section {
     min-width: 0;
     padding: 16px;
-    border: 1px solid var(--theme-line, #e5e0d7);
+    border: 1px solid var(--theme-line);
     border-radius: 13px;
-    background: #fff;
+    background: var(--theme-surface);
   }
   #modalBody .period-hub h4 {
     margin: 0 0 12px;
@@ -4431,10 +4823,10 @@ body {
   #modalBody .period-intro {
     margin: 0;
     padding: 14px 16px;
-    border: 1px solid var(--theme-line, #e8e0d3);
+    border: 1px solid var(--theme-line);
     border-radius: 12px;
-    background: var(--theme-primary-soft, #faf6ee);
-    color: var(--theme-muted, #81715b);
+    background: var(--theme-primary-soft);
+    color: var(--theme-muted);
     font-size: 12px;
     line-height: 1.95;
   }
@@ -4447,7 +4839,7 @@ body {
     margin: 0;
     border: 1px solid var(--workflow-line);
     border-radius: 14px;
-    background: #fff;
+    background: var(--theme-surface);
   }
   #modalBody .academic-records > summary {
     display: grid;
@@ -4509,8 +4901,8 @@ body {
     width: 28px;
     height: 28px;
     border-radius: 8px;
-    color: var(--theme-muted, #75685a);
-    background: var(--theme-surface-muted, #f6f3ee);
+    color: var(--theme-muted);
+    background: var(--theme-surface-muted);
   }
   .academic-records-chevron .ui-icon {
     width: 18px;
@@ -4518,10 +4910,10 @@ body {
     transition: transform 160ms ease;
   }
   #modalBody .academic-records[open] {
-    border-color: var(--surface-open-line, var(--theme-primary-line, #cfb48d));
+    border-color: var(--surface-open-line, var(--theme-primary-line));
   }
   #modalBody .academic-records[open] > summary {
-    background: #fff9f4;
+    background: var(--theme-surface-subtle);
     border-end-start-radius: 0;
     border-end-end-radius: 0;
   }
@@ -4552,7 +4944,7 @@ body {
 }
 @media screen and (hover: hover) and (pointer: fine) {
   #modalBody .academic-records:not([open]) > summary:hover {
-    background: #faf7f3;
+    background: var(--theme-surface-subtle);
   }
 }
 @media screen and (max-width: 480px) {
@@ -4591,8 +4983,8 @@ body {
     margin: 0;
   }
   #modalBody .period-list th {
-    background: var(--theme-surface-muted, #f5f2ec);
-    color: var(--theme-muted, #726b61);
+    background: var(--theme-surface-muted);
+    color: var(--theme-muted);
     font-size: 11px;
   }
   #modalBody .period-list td {
@@ -4640,9 +5032,9 @@ body {
     grid-column: 1 / -1;
   }
   #modalBody .period-hub button.ghost {
-    background: var(--theme-surface-subtle, #faf9f7);
-    border: 1px solid var(--theme-line, #e5e0d7);
-    color: var(--theme-ink, #655d52);
+    background: var(--theme-surface-subtle);
+    border: 1px solid var(--theme-line);
+    color: var(--theme-ink);
   }
   #modalBody .period-list button.period-delete-button {
     display: inline-flex;
@@ -4652,10 +5044,10 @@ body {
     min-height: 44px;
     padding: 8px 12px;
     margin-inline-start: 0;
-    border: 1px solid #edcfc9;
+    border: 1px solid var(--status-danger-line);
     border-radius: 9px;
-    background: #fff5f3;
-    color: #a34638;
+    background: var(--status-danger-soft);
+    color: var(--status-danger);
     font-weight: 600;
     white-space: nowrap;
     box-shadow: none;
@@ -4669,12 +5061,12 @@ body {
     height: 16px;
   }
   #modalBody .period-list button.period-delete-button:hover {
-    background: #fce8e3;
-    border-color: #dba99e;
-    color: #893628;
+    background: var(--status-danger-soft);
+    border-color: var(--status-danger-line);
+    color: var(--status-danger);
   }
   #modalBody .period-list button.period-delete-button:focus-visible {
-    outline: 2px solid #a34638;
+    outline: 2px solid var(--status-danger);
     outline-offset: 3px;
   }
   #modalBody .period-actions {
@@ -4685,8 +5077,8 @@ body {
   }
   #modalBody .period-actions > button:first-child {
     grid-column: 1 / -1;
-    background: var(--theme-primary, #79522c);
-    color: #fff;
+    background: var(--theme-primary);
+    color: var(--theme-surface);
   }
   #modalBody
     .period-actions
@@ -4694,9 +5086,9 @@ body {
       [data-workspace-action="finalize-period"],
       [data-workspace-action="reopen-period"]
     ) {
-    background: var(--theme-primary-soft, #faf4e9);
-    border: 1px solid var(--theme-line, #e1cba7);
-    color: var(--theme-primary, #79522c);
+    background: var(--theme-primary-soft);
+    border: 1px solid var(--theme-line);
+    color: var(--theme-primary);
   }
   #modalBody .period-report-row {
     display: flex;
@@ -4706,14 +5098,14 @@ body {
     gap: 12px;
     margin: 0;
     padding: 12px 0;
-    border-top: 1px solid var(--theme-surface-muted, #eeebe5);
+    border-top: 1px solid var(--theme-surface-muted);
   }
   #modalBody .period-report-row span {
     flex: 1;
     min-width: 0;
     font-size: 12px;
     line-height: 1.9;
-    color: var(--theme-muted, #81796e);
+    color: var(--theme-muted);
   }
   #modalBody .period-report-row button {
     flex: 0 0 auto;
@@ -4722,42 +5114,42 @@ body {
     display: grid;
     gap: 16px;
     padding: 18px;
-    border: 1px solid var(--theme-line, #e5e0d7);
+    border: 1px solid var(--theme-line);
     border-radius: 13px;
-    background: #fff;
+    background: var(--theme-surface);
   }
   #modalBody .period-create label {
     display: grid;
     gap: 7px;
     margin: 0;
     font-size: 12px;
-    color: var(--theme-muted, #726b61);
+    color: var(--theme-muted);
   }
   #modalBody .period-create :is(input, select) {
     width: 100%;
     min-width: 0;
     min-height: 44px;
     margin: 0;
-    border: 1px solid var(--theme-line, #ded8ce);
+    border: 1px solid var(--theme-line);
     border-radius: 9px;
-    background: var(--theme-surface-subtle, #faf9f7);
+    background: var(--theme-surface-subtle);
     font-size: 16px;
   }
   #modalBody .period-create p {
     margin: 0;
-    color: var(--theme-muted, #81796e);
+    color: var(--theme-muted);
     font-size: 12px;
     line-height: 1.95;
   }
   #modalBody .period-create > button {
-    background: var(--theme-primary, #79522c);
-    color: #fff;
+    background: var(--theme-primary);
+    color: var(--theme-surface);
   }
   #modalBody .frozen-report-heading {
     padding: 18px;
-    border: 1px solid var(--theme-line, #e5e0d7);
+    border: 1px solid var(--theme-line);
     border-radius: 13px;
-    background: #fff;
+    background: var(--theme-surface);
   }
   #modalBody .frozen-report-heading h2 {
     margin: 0 0 8px;
@@ -4765,13 +5157,13 @@ body {
   }
   #modalBody .frozen-report-heading p {
     margin: 0 0 14px;
-    color: var(--theme-muted, #81796e);
+    color: var(--theme-muted);
     font-size: 12px;
     line-height: 1.9;
   }
   #modalBody .frozen-report-heading > button {
-    background: var(--theme-primary, #79522c);
-    color: #fff;
+    background: var(--theme-primary);
+    color: var(--theme-surface);
   }
   #modalBody .frozen-class {
     min-width: 0;
@@ -4785,16 +5177,16 @@ body {
     min-width: 0;
     padding: 16px;
     margin-bottom: 12px;
-    border: 1px solid var(--theme-line, #e5e0d7);
+    border: 1px solid var(--theme-line);
     border-radius: 13px;
-    background: #fff;
+    background: var(--theme-surface);
   }
   #modalBody .frozen-student > h4 {
     margin: 0 0 14px;
     font-size: 15px;
   }
   #modalBody .frozen-student .table-scroll {
-    border: 1px solid var(--theme-line, #e7e3dc);
+    border: 1px solid var(--theme-line);
     border-radius: 10px;
   }
   #modalBody .frozen-student table {
@@ -4802,8 +5194,8 @@ body {
     margin: 0;
   }
   #modalBody .frozen-student th {
-    background: var(--theme-surface-muted, #f5f2ec);
-    color: var(--theme-muted, #726b61);
+    background: var(--theme-surface-muted);
+    color: var(--theme-muted);
     font-size: 11px;
   }
   #modalBody .frozen-student td {
@@ -4813,17 +5205,17 @@ body {
   #modalBody .frozen-student td small {
     display: block;
     margin-top: 4px;
-    color: var(--theme-muted, #81796e);
+    color: var(--theme-muted);
     font-size: 10px;
   }
   #modalBody .frozen-average {
     display: inline-block;
     margin: 14px 0 0;
     padding: 8px 12px;
-    border: 1px solid #dfd4c3;
+    border: 1px solid var(--status-warning-line);
     border-radius: 9px;
-    background: var(--theme-primary-soft, #f7f1e7);
-    color: var(--theme-primary, #79522c);
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
     font-size: 13px;
     font-weight: 600;
   }
@@ -4860,7 +5252,7 @@ body {
   }
   #modalBody .period-list table[data-ui-layout="cards"] tbody tr {
     padding: 12px;
-    border-color: var(--theme-line, #e5e0d7);
+    border-color: var(--theme-line);
     border-radius: 10px;
     box-shadow: none;
   }
@@ -4884,7 +5276,7 @@ body {
   }
   #modalBody .frozen-student table[data-ui-layout="cards"] tbody tr {
     padding: 12px;
-    border-color: var(--theme-line, #e5e0d7);
+    border-color: var(--theme-line);
     border-radius: 10px;
     box-shadow: none;
   }
@@ -4910,14 +5302,14 @@ body {
   }
   #modal:has(.draft-review) .modal-header {
     padding: 14px 20px;
-    background: #fff;
+    background: var(--theme-surface);
   }
   #modal:has(.draft-review) .modal-header h3 {
     font-size: 16px;
   }
   #modal:has(.draft-review) .modal-body {
     padding: 18px;
-    background: #f7f6f3;
+    background: var(--theme-surface-muted);
   }
   #modalBody .draft-review {
     display: grid;
@@ -4926,29 +5318,29 @@ body {
   }
   #modalBody .draft-review-heading {
     padding: 16px;
-    border: 1px solid #e4d7c4;
+    border: 1px solid var(--status-warning-line);
     border-radius: 12px;
-    background: #faf6ee;
+    background: var(--theme-surface-subtle);
   }
   #modalBody .draft-review-count {
     display: inline-block;
     padding: 4px 9px;
     border-radius: 20px;
-    background: #efe4d1;
-    color: #79522c;
+    background: var(--status-warning-line);
+    color: var(--theme-primary);
     font-size: 11px;
     font-weight: 600;
   }
   #modalBody .draft-review-heading p {
     margin: 10px 0 0;
-    color: #81715b;
+    color: var(--theme-muted);
     font-size: 12px;
     line-height: 1.95;
   }
   #modalBody .draft-review-table {
-    border: 1px solid #e5e0d7;
+    border: 1px solid var(--theme-line);
     border-radius: 12px;
-    background: #fff;
+    background: var(--theme-surface);
   }
   #modalBody .draft-review-table table {
     width: 100%;
@@ -4957,8 +5349,8 @@ body {
   }
   #modalBody .draft-review-table th {
     padding: 12px;
-    background: #f5f2ec;
-    color: #726b61;
+    background: var(--theme-surface-muted);
+    color: var(--theme-muted);
     font-size: 12px;
   }
   #modalBody .draft-review-table th:first-child {
@@ -4983,24 +5375,24 @@ body {
     min-width: 52px;
     min-height: 36px;
     padding: 4px 10px;
-    border: 1px solid #e6e0d7;
+    border: 1px solid var(--theme-line);
     border-radius: 8px;
-    background: #f5f3ef;
-    color: #655d52;
+    background: var(--theme-surface-muted);
+    color: var(--theme-muted);
     font-size: 15px;
     font-weight: 600;
   }
   #modalBody .draft-review-proposed strong {
-    border-color: #cfdfd3;
-    background: #edf5ef;
-    color: #35634c;
+    border-color: var(--status-success-line);
+    background: var(--status-success-soft);
+    color: var(--status-success);
   }
   #modalBody .draft-review-actions {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 8px;
     padding-top: 14px;
-    border-top: 1px solid #e5e0d7;
+    border-top: 1px solid var(--theme-line);
   }
   #modalBody .draft-review-actions button {
     min-width: 0;
@@ -5013,14 +5405,14 @@ body {
     white-space: normal;
   }
   #modalBody .draft-review-actions > button:first-child {
-    background: #79522c;
-    border: 1px solid #79522c;
-    color: #fff;
+    background: var(--theme-primary);
+    border: 1px solid var(--theme-primary);
+    color: var(--theme-surface);
   }
   #modalBody .draft-review-actions > button.ghost {
-    background: #fffaf8;
-    border: 1px solid #eddcd5;
-    color: #9f5548;
+    background: var(--theme-surface-subtle);
+    border: 1px solid var(--status-danger-line);
+    color: var(--status-danger);
   }
 }
 @media screen and (max-width: 700px) {
@@ -5054,7 +5446,7 @@ body {
   #modalBody .draft-review-table table[data-ui-layout="cards"] tbody tr {
     padding: 12px;
     gap: 10px;
-    border-color: #e5e0d7;
+    border-color: var(--theme-line);
     border-radius: 10px;
     box-shadow: none;
   }
@@ -5087,14 +5479,14 @@ body {
   }
   #modal:has(.other-drafts) .modal-header {
     padding: 14px 20px;
-    background: #fff;
+    background: var(--theme-surface);
   }
   #modal:has(.other-drafts) .modal-header h3 {
     font-size: 16px;
   }
   #modal:has(.other-drafts) .modal-body {
     padding: 18px;
-    background: var(--theme-surface-subtle, #f7f6f3);
+    background: var(--theme-surface-subtle);
   }
   #modalBody .other-drafts {
     display: grid;
@@ -5103,22 +5495,22 @@ body {
   }
   #modalBody .other-drafts-heading {
     padding: 16px;
-    border: 1px solid var(--theme-line, #e8e0d3);
+    border: 1px solid var(--theme-line);
     border-radius: 12px;
-    background: var(--theme-primary-soft, #faf6ee);
+    background: var(--theme-primary-soft);
   }
   #modalBody .other-drafts-heading > span {
     display: inline-block;
     padding: 4px 9px;
     border-radius: 20px;
-    background: #efe4d1;
-    color: var(--theme-primary, #79522c);
+    background: var(--status-warning-line);
+    color: var(--theme-primary);
     font-size: 11px;
     font-weight: 600;
   }
   #modalBody .other-drafts-heading p {
     margin: 10px 0 0;
-    color: var(--theme-muted, #81715b);
+    color: var(--theme-muted);
     font-size: 12px;
     line-height: 1.95;
   }
@@ -5132,9 +5524,9 @@ body {
     align-items: center;
     gap: 16px;
     padding: 16px;
-    border: 1px solid var(--theme-line, #e5e0d7);
+    border: 1px solid var(--theme-line);
     border-radius: 12px;
-    background: #fff;
+    background: var(--theme-surface);
   }
   #modalBody .other-draft-info {
     display: grid;
@@ -5147,7 +5539,7 @@ body {
     line-height: 1.8;
   }
   #modalBody .other-draft-time {
-    color: var(--theme-muted, #81796e);
+    color: var(--theme-muted);
     font-size: 11px;
     line-height: 1.8;
     overflow-wrap: anywhere;
@@ -5158,20 +5550,20 @@ body {
     min-height: 42px;
     margin: 0;
     padding: 9px 12px;
-    border: 1px solid #dbcbb3;
+    border: 1px solid var(--theme-line);
     border-radius: 9px;
-    background: var(--theme-surface-muted, #f5efe5);
-    color: var(--theme-primary, #79522c);
+    background: var(--theme-surface-muted);
+    color: var(--theme-primary);
     font-size: 12px;
     line-height: 1.8;
     white-space: nowrap;
   }
   #modalBody .other-drafts-empty {
     padding: 30px 16px;
-    border: 1px dashed var(--theme-line, #ded8ce);
+    border: 1px dashed var(--theme-line);
     border-radius: 12px;
-    background: #fff;
-    color: var(--theme-muted, #81796e);
+    background: var(--theme-surface);
+    color: var(--theme-muted);
     text-align: center;
     font-size: 12px;
     line-height: 1.9;
@@ -5213,10 +5605,18 @@ body {
 }
 
 @media screen {
+  #app .topbar .header-action,
+  #app .topbar .workspace-tools > summary {
+    min-height: 44px;
+  }
+  #app .topbar .workspace-tools > summary {
+    padding-block: 8px;
+    line-height: 1.5;
+  }
   #app .topbar .header-action {
     background: transparent;
     border-color: transparent;
-    color: var(--theme-muted, #655d58);
+    color: var(--theme-nav-ink);
     box-shadow: none;
     transition:
       background-color 0.15s,
@@ -5230,31 +5630,31 @@ body {
       [aria-current="page"],
       [aria-expanded="true"]
     ) {
-    background: var(--theme-primary-soft, #fff0ed);
-    border-color: var(--theme-primary-line, #efc9c2);
-    color: var(--theme-primary, #b52531);
+    background: var(--theme-primary);
+    border-color: var(--theme-primary);
+    color: var(--theme-nav-ink);
     box-shadow: none;
   }
   #app .topbar .header-action[aria-expanded="true"] .header-caret {
     color: currentColor;
   }
   #app .topbar .header-action:active {
-    background: var(--theme-primary-line, #f9d9d3);
-    border-color: var(--theme-primary-line, #e7b9b0);
-    color: var(--theme-primary-hover, #9b1f2a);
+    background: var(--theme-primary-hover);
+    border-color: var(--theme-primary-hover);
+    color: var(--theme-nav-ink);
     box-shadow: none;
     transform: none;
   }
   #app .topbar .header-action:focus-visible {
-    outline: 2px solid var(--theme-focus, #b77c4a);
+    outline: 2px solid var(--theme-highlight);
     outline-offset: 3px;
   }
 }
 @media screen and (hover: hover) {
   #app .topbar .header-action:hover {
-    background: var(--theme-primary-soft, #f7eae3);
-    border-color: var(--theme-primary-line, #e7d1c5);
-    color: var(--theme-primary-hover, #9b2932);
+    background: var(--theme-nav-hover);
+    border-color: var(--theme-nav-line);
+    color: var(--theme-nav-ink);
     box-shadow: none;
   }
   #app
@@ -5264,9 +5664,9 @@ body {
       [aria-current="page"],
       [aria-expanded="true"]
     ):hover {
-    background: var(--theme-primary-line, #fde2dd);
-    border-color: var(--theme-primary-line, #e7b9b0);
-    color: var(--theme-primary-hover, #9b1f2a);
+    background: var(--theme-primary-hover);
+    border-color: var(--theme-primary-hover);
+    color: var(--theme-nav-ink);
   }
 }
 
@@ -5325,7 +5725,7 @@ body {
     align-items: flex-start;
     gap: 12px;
     padding: 16px;
-    border: 1px solid #f3cdcf;
+    border: 1px solid var(--status-danger-line);
     border-radius: 14px;
     background: var(--workflow-soft);
   }
@@ -5338,7 +5738,7 @@ body {
     flex: 0 0 36px;
     height: 36px;
     border-radius: 10px;
-    background: #fff;
+    background: var(--theme-surface);
     color: var(--workflow-accent);
   }
   .wipe-symbol svg {
@@ -5356,7 +5756,7 @@ body {
     padding: 16px;
     border: 1px solid var(--workflow-line);
     border-radius: 14px;
-    background: #faf9f7;
+    background: var(--theme-surface-subtle);
   }
   #modalBody .wipe-export {
     width: 100%;
@@ -5418,7 +5818,7 @@ body {
   }
   #modalBody .wipe-actions .danger {
     background: var(--workflow-accent);
-    color: #fff;
+    color: var(--theme-surface);
     border-color: var(--workflow-accent);
   }
   #modalBody .wipe-actions .danger:hover {
@@ -5445,12 +5845,12 @@ body {
     align-items: flex-start;
     gap: 12px;
     padding: 16px;
-    border: 1px solid var(--theme-line, #efded2);
+    border: 1px solid var(--theme-line);
     border-radius: 14px;
     background: linear-gradient(
       120deg,
-      var(--theme-primary-soft, #fffaed),
-      var(--theme-primary-soft, #fff1eb)
+      var(--theme-primary-soft),
+      var(--theme-primary-soft)
     );
   }
   .backup-share-heading > span {
@@ -5459,8 +5859,8 @@ body {
     flex: 0 0 38px;
     height: 38px;
     border-radius: 11px;
-    background: #fff;
-    color: var(--theme-primary, #79522c);
+    background: var(--theme-surface);
+    color: var(--theme-primary);
   }
   #modalBody .backup-share h4 {
     margin: 0 0 6px;
@@ -5476,7 +5876,7 @@ body {
     display: grid;
     gap: 8px;
     padding: 14px;
-    background: var(--theme-surface-subtle, #f7f6f3);
+    background: var(--theme-surface-subtle);
     border: 1px solid var(--workflow-line);
     border-radius: 12px;
     min-width: 0;
@@ -5489,13 +5889,13 @@ body {
     color: var(--workflow-ink);
   }
   #modalBody .backup-share-status[data-state="error"] {
-    color: #ac2632;
+    color: var(--status-danger);
   }
   #modalBody .backup-share .backup-share-note {
     padding: 10px 12px;
-    border-inline-start: 3px solid #d6b68d;
+    border-inline-start: 3px solid var(--theme-primary-line);
     border-radius: 6px;
-    background: #fcf8f1;
+    background: var(--theme-surface-subtle);
     font-size: 11px;
   }
   .backup-share-actions {
@@ -5519,14 +5919,14 @@ body {
     width: 100%;
     min-height: 44px;
     margin-top: 12px;
-    border: 1px solid #efc8cb;
-    background: #fff2f2;
-    color: #ac2632;
+    border: 1px solid var(--status-danger-line);
+    background: var(--status-danger-soft);
+    color: var(--status-danger);
     white-space: normal;
   }
   #modalBody .backup-reset > button:hover {
-    background: #ffe5e5;
-    border-color: #d99b9f;
+    background: var(--status-danger-line);
+    border-color: var(--status-danger-line);
   }
 }
 @media screen and (max-width: 700px),
@@ -5543,10 +5943,10 @@ body {
     width: min(360px, calc(100vw - 32px));
     padding: 12px;
     gap: 12px;
-    border: 1px solid var(--theme-line, #e7e1dc);
+    border: 1px solid var(--theme-line);
     border-radius: 16px;
-    background: #fff;
-    box-shadow: 0 16px 40px #4a302524;
+    background: var(--theme-surface);
+    box-shadow: 0 16px 40px #2d344024;
     box-sizing: border-box;
     overscroll-behavior: contain;
   }
@@ -5563,20 +5963,20 @@ body {
     margin: 0;
     border: 1px solid transparent;
     border-radius: 12px;
-    background: #fff;
-    color: var(--theme-ink, #393737);
+    background: var(--theme-surface);
+    color: var(--theme-ink);
     line-height: 1.7;
     text-align: start;
     white-space: normal;
     box-shadow: none;
   }
   #app .header-actions .workspace-tool-actions .workspace-tool-button:hover {
-    background: #fcf3ef;
-    border-color: var(--theme-primary-line, #f0ddd3);
+    background: var(--theme-surface-muted);
+    border-color: var(--theme-primary-line);
   }
   #app .header-actions .workspace-tool-button:focus-visible,
   #app .header-actions .workspace-tools summary:focus-visible {
-    outline: 2px solid var(--theme-focus, #b94735);
+    outline: 2px solid var(--theme-focus);
     outline-offset: 2px;
   }
   #app .header-actions .workspace-tool-icon {
@@ -5585,12 +5985,12 @@ body {
     flex: 0 0 36px;
     height: 36px;
     border-radius: 11px;
-    background: var(--theme-primary-soft, #f7eee7);
-    color: var(--theme-primary, #8b5137);
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
   }
   #app .header-actions .workspace-tool-icon svg {
-    width: 20px;
-    height: 20px;
+    width: var(--header-icon-size);
+    height: var(--header-icon-size);
   }
   #app .header-actions .workspace-tool-copy {
     display: grid;
@@ -5602,7 +6002,7 @@ body {
   #app .header-actions .workspace-tool-description {
     font-size: 11px;
     font-weight: 400;
-    color: var(--theme-muted, #73706d);
+    color: var(--theme-muted);
     overflow-wrap: anywhere;
   }
   #app .header-actions .workspace-period-context {
@@ -5610,14 +6010,14 @@ body {
     flex-wrap: wrap;
     gap: 6px;
     padding: 10px 4px 0;
-    border-top: 1px solid #eee9e4;
+    border-top: 1px solid var(--theme-line-soft);
     font-size: 11px;
   }
   #app .header-actions .workspace-period-context > span {
     padding: 4px 8px;
     border-radius: 6px;
-    background: var(--theme-surface-muted, #f6f4f1);
-    color: var(--theme-muted, #68615b);
+    background: var(--theme-surface-muted);
+    color: var(--theme-muted);
   }
 }
 @media screen and (max-width: 700px),
@@ -5653,20 +6053,20 @@ body {
     margin: 0;
     padding: 7px 9px;
     box-sizing: border-box;
-    border: 1px solid #eee5df;
+    border: 1px solid var(--theme-line-soft);
     border-radius: 11px;
-    background: #fff;
-    color: var(--theme-ink, #554b46);
+    background: var(--theme-surface);
+    color: var(--theme-ink);
     font-size: 12px;
     line-height: 1.7;
     text-align: start;
     white-space: nowrap;
   }
-  #app .navigation-menu .header-actions > .header-action > svg,
+  #app .navigation-menu .header-actions > .header-action svg:not(.header-caret),
   #app .navigation-menu .workspace-tools-symbol svg {
-    flex: 0 0 18px;
-    width: 18px;
-    height: 18px;
+    flex: 0 0 var(--header-icon-size);
+    width: var(--header-icon-size);
+    height: var(--header-icon-size);
   }
   #app .navigation-menu .header-actions > .header-action > span {
     min-width: 0;
@@ -5674,9 +6074,9 @@ body {
   }
   #app .navigation-menu .header-actions > .header-action:is(:hover, .is-active),
   #app .navigation-menu .header-actions > .workspace-tools[open] > summary {
-    border-color: #edc9c6;
-    background: #fff1ef;
-    color: var(--theme-primary, #b52d35);
+    border-color: var(--status-danger-line);
+    background: var(--status-danger-soft);
+    color: var(--theme-primary);
   }
   #app .navigation-menu .workspace-tool-description {
     display: none;
@@ -5728,7 +6128,7 @@ body {
     display: block;
     padding: 10px !important;
     border-radius: 16px;
-    background: #fff;
+    background: var(--theme-surface);
   }
   #app .navigation-menu .header-actions > .workspace-tools > summary {
     display: none;
@@ -5751,8 +6151,8 @@ body {
   }
   #app .navigation-menu .workspace-tool-group .workspace-tool-button {
     min-height: 46px;
-    background: #faf8f5;
-    border-color: #eee8e1;
+    background: var(--theme-surface-subtle);
+    border-color: var(--theme-line-soft);
   }
 }
 @media screen {
@@ -5774,14 +6174,14 @@ body {
   #modalBody .full-restore-file,
   #modalBody .full-restore-warning {
     padding: 14px;
-    border: 1px solid #e5e0d7;
+    border: 1px solid var(--theme-line);
     border-radius: 12px;
-    background: #faf9f7;
+    background: var(--theme-surface-subtle);
   }
   #modalBody .full-restore-periods {
     margin-top: 12px;
     padding-top: 12px;
-    border-top: 1px solid var(--theme-line, #e5e0d7);
+    border-top: 1px solid var(--theme-line);
     font-size: 13px;
     overflow-wrap: anywhere;
   }
@@ -5806,16 +6206,16 @@ body {
     overflow-wrap: anywhere;
   }
   #modalBody .full-restore-warning {
-    border-color: #edd2c2;
-    background: #fff6ee;
-    color: #80462b;
+    border-color: var(--status-warning-line);
+    background: var(--status-warning-soft);
+    color: var(--status-danger);
   }
   #modalBody .full-restore-warning p {
     margin-top: 8px;
     font-size: 13px;
   }
   #modalBody .full-restore-safety {
-    color: #48675b;
+    color: var(--status-success);
     font-size: 13px;
   }
   #modalBody .full-restore-confirm {
@@ -5823,7 +6223,7 @@ body {
     align-items: flex-start;
     gap: 10px;
     padding: 12px;
-    border: 1px solid var(--theme-line, #e5e0d7);
+    border: 1px solid var(--theme-line);
     border-radius: 10px;
     cursor: pointer;
   }
@@ -5845,7 +6245,7 @@ body {
     white-space: normal;
   }
   #modalBody .full-restore #operationError {
-    color: #9f3021;
+    color: var(--status-danger);
     overflow-wrap: anywhere;
   }
   #modalBody .full-restore #operationError:empty {
@@ -5870,10 +6270,10 @@ body {
   }
   #modalBody .period-delete-identity {
     padding-bottom: 12px;
-    border-bottom: 1px solid #e5e0d7;
+    border-bottom: 1px solid var(--theme-line);
   }
   #modalBody .period-delete-identity > span {
-    color: #81796e;
+    color: var(--theme-muted);
     font-size: 12px;
   }
   #modalBody .period-delete-identity h4 {
@@ -5890,19 +6290,19 @@ body {
     gap: 2px;
     padding: 10px 6px;
     border-radius: 10px;
-    background: #faf6ee;
+    background: var(--theme-surface-subtle);
     text-align: center;
   }
   #modalBody .period-delete-stats strong {
-    color: #79522c;
+    color: var(--theme-primary);
     font-size: 20px;
   }
   #modalBody .period-delete-stats span {
     font-size: 12px;
-    color: #655d52;
+    color: var(--theme-muted);
   }
   #modalBody .period-delete-transition {
-    color: #655d52;
+    color: var(--theme-muted);
     font-size: 13px;
   }
   #modalBody .period-delete-password {
@@ -5930,31 +6330,31 @@ body {
   }
   #periodLabelEditor .record-editor-context {
     padding: 14px 16px;
-    border: 1px solid var(--theme-line, #e8e0d3);
+    border: 1px solid var(--theme-line);
     border-radius: 12px;
-    background: var(--theme-primary-soft, #faf6ee);
+    background: var(--theme-primary-soft);
   }
   #periodLabelEditor .record-editor-context > span {
-    color: var(--theme-muted, #81715b);
+    color: var(--theme-muted);
     font-size: 12px;
   }
   #periodLabelEditor .record-editor-context h4 {
     margin: 4px 0 6px;
-    color: var(--theme-primary, #79522c);
+    color: var(--theme-primary);
     font-size: 17px;
   }
   #periodLabelEditor p {
     margin: 0;
     font-size: 12px;
     line-height: 1.9;
-    color: var(--theme-muted, #81796e);
+    color: var(--theme-muted);
   }
   #periodLabelEditor .course-field {
     display: grid;
     gap: 7px;
     min-width: 0;
     margin: 0;
-    color: var(--theme-ink, #655d52);
+    color: var(--theme-ink);
     font-size: 13px;
     font-weight: 600;
   }
@@ -5965,23 +6365,23 @@ body {
     min-height: 46px;
     margin: 0;
     padding: 10px 12px;
-    border: 1px solid var(--theme-line, #ded8ce);
+    border: 1px solid var(--theme-line);
     border-radius: 9px;
-    background: #fff;
+    background: var(--theme-surface);
     font-size: 16px;
   }
   #periodLabelEditor #editYear {
-    background: var(--theme-surface-muted, #f5f2ec);
-    color: var(--theme-muted, #81796e);
+    background: var(--theme-surface-muted);
+    color: var(--theme-muted);
     direction: ltr;
     text-align: right;
   }
   #periodLabelEditor #editTerm:focus-visible {
-    outline: 2px solid var(--theme-primary, #79522c);
+    outline: 2px solid var(--theme-primary);
     outline-offset: 2px;
   }
   #periodLabelEditor #periodLabelError {
-    color: #9f3021;
+    color: var(--status-danger);
   }
   #periodLabelEditor .record-editor-actions {
     display: grid;
@@ -5989,7 +6389,7 @@ body {
     gap: 8px;
     padding-top: 14px;
     margin: 2px 0 0;
-    border-top: 1px solid var(--theme-surface-muted, #eeebe5);
+    border-top: 1px solid var(--theme-surface-muted);
   }
   #periodLabelEditor .record-editor-actions button {
     min-width: 0;
@@ -6001,14 +6401,14 @@ body {
     white-space: normal;
   }
   #periodLabelEditor .record-editor-actions button[type="submit"] {
-    background: var(--theme-primary, #79522c);
-    border: 1px solid var(--theme-primary, #79522c);
-    color: #fff;
+    background: var(--theme-primary);
+    border: 1px solid var(--theme-primary);
+    color: var(--theme-surface);
   }
   #periodLabelEditor .record-editor-actions button.ghost {
-    background: var(--theme-surface-subtle, #faf9f7);
-    border: 1px solid var(--theme-line, #e5e0d7);
-    color: var(--theme-ink, #655d52);
+    background: var(--theme-surface-subtle);
+    border: 1px solid var(--theme-line);
+    color: var(--theme-ink);
   }
 }
 @media screen {
@@ -6017,42 +6417,42 @@ body {
   }
   #modalBody .undo-preview-summary {
     padding-bottom: 12px;
-    border-bottom: 1px solid #eeebe5;
+    border-bottom: 1px solid var(--theme-surface-muted);
   }
   #modalBody
     .undo-preview
     :is(.undo-preview-summary, .undo-preview-change)
     > span {
     font-size: 12px;
-    color: #81796e;
+    color: var(--theme-muted);
   }
   #modalBody .undo-preview h4 {
     margin-top: 5px;
-    color: #79522c;
+    color: var(--theme-primary);
     font-size: 16px;
     overflow-wrap: anywhere;
   }
   #modalBody .undo-preview-change {
     padding: 14px;
-    border: 1px solid #e8e0d3;
+    border: 1px solid var(--theme-line);
     border-radius: 12px;
-    background: #faf6ee;
+    background: var(--theme-surface-subtle);
   }
   #modalBody .undo-preview-change p {
     margin-top: 8px;
     font-size: 12px;
-    color: #81715b;
+    color: var(--theme-muted);
   }
   #modalBody .undo-preview-hint,
   #modalBody .undo-preview-empty {
-    color: #655d52;
+    color: var(--theme-muted);
     font-size: 13px;
     line-height: 1.9;
   }
   #modalBody .undo-preview .full-restore-actions button:first-child {
-    background: #79522c;
-    border: 1px solid #79522c;
-    color: #fff;
+    background: var(--theme-primary);
+    border: 1px solid var(--theme-primary);
+    color: var(--theme-surface);
   }
 }
 @media screen {
@@ -6067,12 +6467,12 @@ body {
   }
   .membership-editor .record-editor-context {
     padding: 14px;
-    border: 1px solid var(--theme-line, #e8e0d3);
+    border: 1px solid var(--theme-line);
     border-radius: 12px;
-    background: var(--theme-primary-soft, #faf6ee);
+    background: var(--theme-primary-soft);
   }
   .membership-editor .record-editor-context h4 {
-    color: var(--theme-primary, #79522c);
+    color: var(--theme-primary);
   }
   .membership-editor .membership-destination {
     display: grid;
@@ -6088,9 +6488,9 @@ body {
     min-height: 46px;
     margin: 0;
     font-size: 16px;
-    border: 1px solid var(--theme-line, #ded8ce);
+    border: 1px solid var(--theme-line);
     border-radius: 9px;
-    background: #fff;
+    background: var(--theme-surface);
   }
   .membership-editor .membership-mode {
     display: grid;
@@ -6112,17 +6512,17 @@ body {
     min-width: 0;
     padding: 12px;
     margin: 0;
-    border: 1px solid var(--theme-line, #e5e0d7);
+    border: 1px solid var(--theme-line);
     border-radius: 10px;
-    background: var(--theme-surface-subtle, #faf9f7);
+    background: var(--theme-surface-subtle);
     cursor: pointer;
   }
   .membership-mode label:has(input:checked) {
-    border-color: var(--theme-primary-line, #c6ac85);
-    background: var(--theme-primary-soft, #faf4e9);
+    border-color: var(--theme-primary-line);
+    background: var(--theme-primary-soft);
   }
   .membership-mode label:focus-within {
-    outline: 2px solid var(--theme-primary, #79522c);
+    outline: 2px solid var(--theme-primary);
     outline-offset: 2px;
   }
   .membership-editor .membership-mode input {
@@ -6130,7 +6530,7 @@ body {
     height: 20px;
     flex: 0 0 auto;
     margin: 3px 0 0;
-    accent-color: var(--theme-primary, #79522c);
+    accent-color: var(--theme-primary);
   }
   .membership-mode label > span {
     display: grid;
@@ -6139,16 +6539,16 @@ body {
   }
   .membership-mode strong {
     font-size: 13px;
-    color: var(--theme-ink, #65503b);
+    color: var(--theme-ink);
   }
   .membership-mode small {
     font-size: 12px;
-    color: var(--theme-muted, #81796e);
+    color: var(--theme-muted);
     line-height: 1.8;
   }
   .membership-editor :is(.membership-note, .membership-empty) {
     margin: 0;
-    color: var(--theme-muted, #81715b);
+    color: var(--theme-muted);
     font-size: 12px;
     line-height: 1.9;
   }
@@ -6159,7 +6559,7 @@ body {
     gap: 8px;
     margin: 0;
     padding: 12px 0 0;
-    border-top: 1px solid var(--theme-surface-muted, #eeebe5);
+    border-top: 1px solid var(--theme-surface-muted);
   }
   .membership-editor .record-editor-actions button {
     min-width: 0;
@@ -6170,9 +6570,9 @@ body {
     font-size: 13px;
   }
   .membership-editor .record-editor-actions button[type="submit"] {
-    background: var(--theme-primary, #79522c);
-    color: #fff;
-    border: 1px solid var(--theme-primary, #79522c);
+    background: var(--theme-primary);
+    color: var(--theme-surface);
+    border: 1px solid var(--theme-primary);
   }
   .membership-editor .record-editor-actions > button:only-child {
     grid-column: 1 / -1;
@@ -6181,18 +6581,18 @@ body {
 @media screen {
   #app .karnameh-controls {
     padding: 18px;
-    border: 1px solid var(--theme-line, #e5e0d7);
+    border: 1px solid var(--theme-line);
     border-radius: 13px;
-    background: #fff;
+    background: var(--theme-surface);
   }
   .karnameh-controls h3 {
     margin: 0;
     font-size: 17px;
-    color: var(--theme-ink, #65503b);
+    color: var(--theme-ink);
   }
   .karnameh-controls header p {
     margin: 6px 0 16px;
-    color: var(--theme-muted, #81796e);
+    color: var(--theme-muted);
     font-size: 12px;
   }
   .karnameh-filter-grid {
@@ -6206,7 +6606,7 @@ body {
     min-width: 0;
     margin: 0;
     font-size: 13px;
-    color: var(--theme-ink, #655d52);
+    color: var(--theme-ink);
   }
   .karnameh-filter-grid select {
     box-sizing: border-box;
@@ -6215,9 +6615,9 @@ body {
     min-height: 46px;
     margin: 0;
     font-size: 16px;
-    border: 1px solid var(--theme-line, #ded8ce);
+    border: 1px solid var(--theme-line);
     border-radius: 9px;
-    background: var(--theme-surface-subtle, #faf9f7);
+    background: var(--theme-surface-subtle);
   }
   .karnameh-filter-grid select:disabled {
     opacity: 0.6;
@@ -6240,12 +6640,12 @@ body {
   }
   .karnameh-report-heading p {
     margin: 0;
-    color: var(--theme-muted, #81796e);
+    color: var(--theme-muted);
     font-size: 12px;
     line-height: 1.9;
   }
   .karnameh-report-kind {
-    color: var(--theme-primary, #79522c);
+    color: var(--theme-primary);
     font-size: 12px;
   }
   .karnameh-report-heading button {
@@ -6253,8 +6653,8 @@ body {
     min-height: 44px;
     margin: 0;
     border-radius: 9px;
-    background: var(--theme-primary, #79522c);
-    color: #fff;
+    background: var(--theme-primary);
+    color: var(--theme-surface);
   }
   .karnameh-report-meta {
     display: flex;
@@ -6265,8 +6665,8 @@ body {
   .karnameh-report-meta span {
     padding: 5px 10px;
     border-radius: 8px;
-    background: var(--theme-primary-soft, #faf6ee);
-    color: var(--theme-primary, #79522c);
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
     font-size: 12px;
   }
 }
@@ -6292,7 +6692,7 @@ body {
 @media screen {
   #app .grade-report .table-scroll {
     margin-block: 14px;
-    border-color: var(--theme-line, #e5e0d7);
+    border-color: var(--theme-line);
     border-radius: 12px;
   }
   #app .grade-report .grade-report-table {
@@ -6308,22 +6708,22 @@ body {
   }
   #app .grade-report .grade-report-table th {
     padding: 12px;
-    background: var(--theme-surface-muted, #f5f0e7);
-    color: var(--theme-ink, #73583b);
-    border-bottom: 1px solid #ded4c4;
+    background: var(--theme-surface-muted);
+    color: var(--theme-ink);
+    border-bottom: 1px solid var(--theme-line);
     font-size: 12px;
     font-weight: 700;
   }
   #app .grade-report .grade-report-table td {
     padding: 14px 12px;
-    border-bottom: 1px solid var(--theme-line-soft, #eee9e1);
+    border-bottom: 1px solid var(--theme-line-soft);
     font-size: 13px;
   }
   #app .grade-report .grade-report-table tbody tr:nth-child(even) td {
-    background: #fcfaf6;
+    background: var(--theme-surface-subtle);
   }
   #app .grade-report .grade-report-table tbody tr:hover td {
-    background: var(--theme-primary-soft, #faf4e9);
+    background: var(--theme-primary-soft);
   }
   #app .grade-report .grade-report-table :is(th, td):first-child {
     text-align: start;
@@ -6340,13 +6740,13 @@ body {
   .report-final-cell > strong {
     display: block;
     font-size: 16px;
-    color: var(--theme-ink, #493c2d);
+    color: var(--theme-ink);
     font-variant-numeric: tabular-nums;
   }
   .report-average-cell small {
     display: block;
     margin-top: 6px;
-    color: var(--theme-muted, #81796e);
+    color: var(--theme-muted);
     font-size: 11px;
     line-height: 1.8;
   }
@@ -6363,20 +6763,20 @@ body {
     overflow-wrap: anywhere;
   }
   .report-grade-status.is-passed {
-    color: #2d6650;
-    background: #eaf4ed;
+    color: var(--status-success);
+    background: var(--status-success-soft);
   }
   .report-grade-status.is-remedial {
-    color: #a34638;
-    background: #fbece7;
+    color: var(--status-danger);
+    background: var(--status-danger-soft);
   }
   .report-grade-status.is-pending {
-    color: #8a6529;
-    background: #fff3d9;
+    color: var(--status-warning);
+    background: var(--status-warning-soft);
   }
   .report-grade-status.is-complete {
-    color: #655d52;
-    background: #f2eee6;
+    color: var(--theme-muted);
+    background: var(--theme-surface-muted);
   }
   .report-attendance-counts {
     display: grid;
@@ -6393,20 +6793,20 @@ body {
     border-radius: 6px;
   }
   .report-attendance-counts .is-present {
-    color: #2d6650;
-    background: #eaf4ed;
+    color: var(--status-success);
+    background: var(--status-success-soft);
   }
   .report-attendance-counts .is-absent {
-    color: #a34638;
-    background: #fbece7;
+    color: var(--status-danger);
+    background: var(--status-danger-soft);
   }
   .report-attendance-counts .is-late {
-    color: #8a6529;
-    background: #fff3d9;
+    color: var(--status-warning);
+    background: var(--status-warning-soft);
   }
   .report-attendance-counts .is-leave {
-    color: #77598b;
-    background: #f2ecf7;
+    color: var(--status-leave);
+    background: var(--status-leave-soft);
   }
 }
 @media screen and (max-width: 700px),
@@ -6414,7 +6814,7 @@ body {
   #app .grade-report table.grade-report-table[data-ui-layout="cards"] tbody tr {
     padding: 14px;
     gap: 12px;
-    border-color: var(--theme-line, #e5e0d7);
+    border-color: var(--theme-line);
     border-radius: 12px;
     box-shadow: none;
   }
@@ -6422,12 +6822,12 @@ body {
     .grade-report
     .grade-report-table[data-ui-layout="cards"]
     td[data-identity] {
-    color: var(--theme-ink, #65503b);
+    color: var(--theme-ink);
     font-size: 14px;
-    border-bottom-color: var(--theme-line-soft, #eee9e1) !important;
+    border-bottom-color: var(--theme-line-soft) !important;
   }
   #app .grade-report .grade-report-table[data-ui-layout="cards"] td::before {
-    color: var(--theme-muted, #81796e);
+    color: var(--theme-muted);
     font-size: 11px;
   }
   #app
@@ -6462,7 +6862,7 @@ body {
 @media screen {
   .gradebook .assessment-term-navigation {
     margin-bottom: 8px;
-    background: var(--theme-primary-soft, #faf6ee);
+    background: var(--theme-primary-soft);
   }
   .gradebook .assessment-stage-navigation {
     margin-bottom: 18px;
@@ -6470,10 +6870,10 @@ body {
   .grade-report-table .report-lesson-stage + .report-lesson-stage {
     padding-top: 8px;
     margin-top: 8px;
-    border-top: 1px solid var(--theme-line-soft, #e9e1d5);
+    border-top: 1px solid var(--theme-line-soft);
   }
   .report-lesson-stage > span {
-    color: var(--theme-muted, #81715b);
+    color: var(--theme-muted);
     font-size: 11px;
   }
   .report-stage-values {
@@ -6483,11 +6883,11 @@ body {
     flex-wrap: wrap;
     margin-top: 5px;
     font-size: 11px;
-    color: var(--theme-muted, #81796e);
+    color: var(--theme-muted);
   }
   .report-stage-values b,
   .report-stage-values strong {
-    color: var(--theme-ink, #493c2d);
+    color: var(--theme-ink);
     font-variant-numeric: tabular-nums;
   }
   .report-stage-values strong {
@@ -6508,10 +6908,10 @@ body {
     max-width: 100%;
     margin: 0;
     padding: 5px 8px;
-    border: 1px solid var(--theme-line, #e8e0d3);
+    border: 1px solid var(--theme-line);
     border-radius: 8px;
-    background: var(--theme-primary-soft, #faf6ee);
-    color: var(--theme-primary, #79522c);
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
     font: inherit;
     font-weight: 600;
     text-align: start;
@@ -6519,11 +6919,11 @@ body {
     overflow-wrap: anywhere;
   }
   #app .grade-report .karnameh-student-link:hover {
-    background: var(--theme-primary-soft, #f3e8d7);
-    border-color: var(--theme-primary-line, #c6ac85);
+    background: var(--theme-primary-soft);
+    border-color: var(--theme-primary-line);
   }
   .karnameh-student-link:focus-visible {
-    outline: 2px solid var(--theme-primary, #79522c);
+    outline: 2px solid var(--theme-primary);
     outline-offset: 2px;
   }
   .karnameh-report-actions {
@@ -6532,9 +6932,9 @@ body {
     flex-wrap: wrap;
   }
   .karnameh-report-heading .karnameh-report-actions .ghost {
-    background: var(--theme-surface-subtle, #faf9f7);
-    border: 1px solid var(--theme-line, #e5e0d7);
-    color: var(--theme-ink, #655d52);
+    background: var(--theme-surface-subtle);
+    border: 1px solid var(--theme-line);
+    color: var(--theme-ink);
   }
 }
 @media screen and (max-width: 600px) {
@@ -6592,13 +6992,13 @@ body {
     gap: 5px;
     padding: 8px;
     margin: 0;
-    border: 1px solid var(--theme-line, #e8e0d3);
+    border: 1px solid var(--theme-line);
     border-radius: 8px;
-    background: var(--theme-surface-subtle, #fffdf9);
+    background: var(--theme-surface-subtle);
     min-width: 0;
   }
   .karnameh-year-document .report-lesson-stage > span {
-    color: var(--theme-primary, #79522c);
+    color: var(--theme-primary);
     font-weight: 600;
   }
   .karnameh-year-document .report-stage-values {
@@ -6658,7 +7058,7 @@ body {
     min-width: 0;
     margin: 0;
     padding-block-end: 6px;
-    border-bottom: 1px solid var(--theme-line-soft, #eee7db);
+    border-bottom: 1px solid var(--theme-line-soft);
     font-size: 12px;
     line-height: 1.8;
     text-align: start;
@@ -6689,8 +7089,8 @@ body {
     background: transparent;
   }
   #app .karnameh-year-document .report-mobile-score-heading {
-    background: var(--theme-surface-muted, #f5efe5);
-    color: var(--theme-primary, #79522c);
+    background: var(--theme-surface-muted);
+    color: var(--theme-primary);
     font-size: 11px;
     font-weight: 600;
   }
@@ -6701,7 +7101,7 @@ body {
     text-align: center;
   }
   #app .karnameh-year-document .report-lesson-stage + .report-lesson-stage {
-    border-top: 1px solid var(--theme-line-soft, #eee7db);
+    border-top: 1px solid var(--theme-line-soft);
   }
   #app .karnameh-year-document .report-lesson-stage > .report-stage-title {
     display: block;
@@ -6745,7 +7145,7 @@ body {
     font-size: 13px;
     font-weight: 700;
     margin-block: 8px;
-    color: var(--theme-primary, #79522c);
+    color: var(--theme-primary);
   }
 }
 .karnameh-year-document .report-modular-grades {
@@ -6762,11 +7162,11 @@ body {
 .karnameh-year-document .report-modular-term > h4 {
   margin: 0;
   padding: 8px;
-  background: var(--theme-primary-soft, #faf6ee);
-  color: var(--theme-primary, #79522c);
+  background: var(--theme-primary-soft);
+  color: var(--theme-primary);
   font-size: 12px;
   font-weight: 600;
-  border-bottom: 1px solid var(--theme-line-soft, #eee7db);
+  border-bottom: 1px solid var(--theme-line-soft);
 }
 #app
   .karnameh-year-document
@@ -6781,10 +7181,10 @@ body {
   min-width: 0;
 }
 .karnameh-year-document .report-module-row + .report-module-row {
-  border-top: 1px solid var(--theme-line-soft, #eee7db);
+  border-top: 1px solid var(--theme-line-soft);
 }
 .karnameh-year-document .report-module-title {
-  color: var(--theme-ink, #65503b);
+  color: var(--theme-ink);
   font-size: 11px;
   line-height: 1.8;
   overflow-wrap: anywhere;
@@ -6792,7 +7192,7 @@ body {
 .karnameh-year-document .report-modular-empty {
   margin: 0;
   padding: 10px;
-  color: var(--theme-muted, #81796e);
+  color: var(--theme-muted);
 }
 .karnameh-year-document .report-modular-final {
   display: flex;
@@ -6800,17 +7200,17 @@ body {
   justify-content: space-between;
   gap: 8px;
   padding: 8px;
-  border-top: 1px solid var(--theme-line-soft, #eee7db);
+  border-top: 1px solid var(--theme-line-soft);
   font-size: 11px;
-  color: var(--theme-ink, #65503b);
+  color: var(--theme-ink);
 }
 .karnameh-year-document .report-modular-final strong {
   font-size: 14px;
 }
 .karnameh-year-document .report-modular-conflict {
   padding: 10px;
-  color: #a34638;
-  background: #fbece7;
+  color: var(--status-danger);
+  background: var(--status-danger-soft);
   border-radius: 8px;
   font-size: 11px;
   line-height: 1.8;
@@ -6832,7 +7232,7 @@ body {
     gap: 12px;
     margin-block: 12px;
     padding: 12px;
-    border: 1px solid var(--theme-line, #e8e0d3);
+    border: 1px solid var(--theme-line);
     border-radius: 10px;
   }
   #app .karnameh-year-document .karnameh-many-lessons tbody td {
@@ -6851,7 +7251,7 @@ body {
     content: attr(data-report-lesson);
     display: block;
     margin-block-end: 8px;
-    color: var(--theme-primary, #79522c);
+    color: var(--theme-primary);
     font-weight: 600;
   }
 }
@@ -6932,7 +7332,7 @@ body {
     padding: 24px;
     border: 1px solid var(--workflow-line);
     border-radius: 18px;
-    background: #fff;
+    background: var(--theme-surface);
   }
   .gradebook-heading {
     display: flex;
@@ -6940,7 +7340,7 @@ body {
     gap: 10px;
     margin: 0 0 12px;
     padding-bottom: 12px;
-    border-bottom: 1px solid var(--theme-line, #ebe5dc);
+    border-bottom: 1px solid var(--theme-line);
   }
   .gradebook-heading-icon {
     display: grid;
@@ -6949,8 +7349,8 @@ body {
     width: 34px;
     height: 34px;
     border-radius: 10px;
-    background: var(--theme-primary-soft, #fff3de);
-    color: var(--theme-primary, #87591f);
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
   }
   .gradebook-heading-icon > svg {
     display: block;
@@ -6982,7 +7382,7 @@ body {
     gap: 5px 8px;
     font-size: 11px;
     line-height: 1.7;
-    color: var(--theme-muted, #796c5c);
+    color: var(--theme-muted);
   }
   .gradebook-method {
     overflow-wrap: anywhere;
@@ -6994,8 +7394,8 @@ body {
     flex-shrink: 0;
     padding: 2px 7px;
     border-radius: 6px;
-    background: var(--theme-surface-muted, #f3eee7);
-    color: var(--theme-ink, #645744);
+    background: var(--theme-surface-muted);
+    color: var(--theme-ink);
     font-size: 11px;
     font-variant-numeric: tabular-nums;
   }
@@ -7009,9 +7409,9 @@ body {
     gap: 4px;
     padding: 5px;
     margin-bottom: 12px;
-    border: 1px solid var(--theme-line, #e6ded5);
+    border: 1px solid var(--theme-line);
     border-radius: 12px;
-    background: var(--theme-surface-muted, #f1efec);
+    background: var(--theme-surface-muted);
   }
   :is(#lessonGradesArea, #modalBody) .gradebook .assessment-navigation button {
     min-width: 0;
@@ -7020,7 +7420,7 @@ body {
     border: 1px solid transparent;
     border-radius: 9px;
     background: transparent;
-    color: var(--theme-muted, #636466);
+    color: var(--theme-muted);
     font-size: 13px;
     font-weight: 500;
     line-height: 1.8;
@@ -7033,7 +7433,7 @@ body {
     background: var(--workflow-accent);
     border-color: var(--workflow-accent);
     color: #fff;
-    box-shadow: 0 2px 5px var(--theme-primary-shadow, #92101920);
+    box-shadow: 0 2px 5px var(--theme-primary-shadow);
     font-weight: 600;
   }
   .gradebook-toolbar {
@@ -7066,9 +7466,9 @@ body {
     min-width: 0;
     min-height: 46px;
     padding: 10px 12px;
-    border: 1px solid var(--theme-line, #dcd8d2);
+    border: 1px solid var(--theme-field-line);
     border-radius: 10px;
-    background: var(--theme-surface-subtle, #faf9f7);
+    background: var(--theme-field);
     font-size: 14px;
   }
   .gradebook-simple-search {
@@ -7079,9 +7479,9 @@ body {
     min-width: 0;
     min-height: 46px;
     padding: 10px 12px;
-    border: 1px solid var(--theme-line, #dcd8d2);
+    border: 1px solid var(--theme-field-line);
     border-radius: 10px;
-    background: var(--theme-surface-subtle, #faf9f7);
+    background: var(--theme-field);
     font-size: 16px;
   }
   .gradebook-help {
@@ -7099,7 +7499,7 @@ body {
     margin: 0;
     padding: 12px 14px;
     border-radius: 10px;
-    background: var(--theme-surface-muted, #f7f6f4);
+    background: var(--theme-surface-muted);
     color: var(--workflow-muted);
     font-size: 12px;
     line-height: 2;
@@ -7140,44 +7540,44 @@ body {
     height: 5px;
     border: 0;
     border-radius: 8px;
-    background: var(--theme-line-soft, #eeece9);
+    background: var(--theme-line-soft);
     overflow: hidden;
-    accent-color: #398271;
+    accent-color: var(--status-success);
   }
   .gradebook-progress progress::-webkit-progress-bar {
-    background: var(--theme-line-soft, #eeece9);
+    background: var(--theme-line-soft);
   }
   .gradebook-progress progress::-webkit-progress-value {
-    background: #398271;
+    background: var(--status-success);
     border-radius: 8px;
   }
   .gradebook-progress progress::-moz-progress-bar {
-    background: #398271;
+    background: var(--status-success);
     border-radius: 8px;
   }
   .gradebook .assessment-student:focus-within .gradebook-number {
-    background: var(--theme-primary-soft, #fff1d0);
-    color: var(--theme-primary, #79522c);
-    box-shadow: 0 0 0 2px var(--theme-focus-soft, #fcaf1733);
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
+    box-shadow: 0 0 0 2px var(--theme-focus-soft);
   }
   .gradebook [data-result-state="passed"] [data-assessment-status],
   .gradebook [data-result-state="complete"] [data-assessment-status] {
-    color: #14634c;
+    color: var(--status-success);
   }
   .gradebook [data-result-state="review"] [data-assessment-status] {
-    color: #9f3021;
+    color: var(--status-danger);
   }
   .gradebook [data-result-state="incomplete"] [data-assessment-final] {
-    color: #9a958e;
+    color: var(--theme-muted);
   }
   .gradebook .grade-note[data-state="saved"] {
-    color: #398271;
+    color: var(--status-success);
   }
   .gradebook .grade-note[data-state="pending"] {
-    color: #875800;
+    color: var(--status-warning);
   }
   .gradebook .grade-note[data-state="error"] {
-    color: #b62f40;
+    color: var(--status-danger-fill);
   }
   :is(#lessonGradesArea, #modalBody) .gradebook .assessment-stage {
     margin: 0;
@@ -7202,7 +7602,7 @@ body {
     padding: 18px 4px;
     min-width: 0;
     border: 0;
-    border-bottom: 1px solid var(--theme-line-soft, #eeece9);
+    border-bottom: 1px solid var(--theme-line-soft);
     border-radius: 0;
     background: transparent;
   }
@@ -7223,8 +7623,8 @@ body {
     height: 34px;
     flex: 0 0 34px;
     border-radius: 10px;
-    background: var(--theme-surface-muted, #f4f1ec);
-    color: var(--theme-primary, #79522c);
+    background: var(--theme-surface-muted);
+    color: var(--theme-primary);
     font-size: 13px;
     font-variant-numeric: tabular-nums;
   }
@@ -7262,11 +7662,11 @@ body {
     align-items: center;
     gap: 4px;
     font-size: 12px;
-    color: var(--theme-ink, #454649);
+    color: var(--theme-ink);
   }
   .gradebook .assessment-inputs small {
     font-size: 10px;
-    color: var(--theme-muted, #8a8680);
+    color: var(--theme-muted);
     font-weight: 400;
   }
   .assessment-editor .assessment-inputs .assessment-field-heading {
@@ -7290,8 +7690,8 @@ body {
     flex: 0 0 auto;
     padding: 3px 6px;
     border-radius: 6px;
-    background: var(--theme-primary-soft, #faf0df);
-    color: var(--theme-primary, #79522c);
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
     font-size: 11px;
     font-weight: 600;
     line-height: 1.5;
@@ -7337,10 +7737,10 @@ body {
     min-height: 48px;
     padding: 8px;
     padding-left: calc(var(--grade-clear-size, 32px) + 8px);
-    border: 1px solid var(--theme-line, #d7d2ca);
+    border: 1px solid var(--theme-field-line);
     border-radius: 9px;
-    background: #fff;
-    color: var(--theme-ink, #2d3440);
+    background: var(--theme-field);
+    color: var(--theme-ink);
     font-size: 20px;
     font-weight: 500;
     text-align: center;
@@ -7359,13 +7759,13 @@ body {
     border: 0;
     border-radius: 8px;
     background: transparent;
-    color: var(--theme-muted, #8a8680);
+    color: var(--theme-muted);
     font-size: 18px;
     line-height: 1;
   }
   :is(#lessonGradesArea, #modalBody) .grade-editor .grade-clear:hover {
-    background: #fff0ed;
-    color: #9f3021;
+    background: var(--status-danger-soft);
+    color: var(--status-danger);
   }
   :is(#lessonGradesArea, #modalBody) .grade-note {
     grid-column: 1 / -1;
@@ -7377,13 +7777,13 @@ body {
     overflow-wrap: anywhere;
   }
   :is(#lessonGradesArea, #modalBody) input[data-grade]:focus {
-    outline: 2px solid var(--theme-focus-soft, #fcaf1755);
+    outline: 2px solid var(--theme-focus-soft);
     outline-offset: 2px;
-    border-color: var(--theme-focus, #a87008);
+    border-color: var(--theme-focus);
   }
   :is(#lessonGradesArea, #modalBody) input[data-grade][aria-invalid="true"] {
-    border: 2px solid #b62f40;
-    background: #fff5f3;
+    border: 2px solid var(--status-danger-fill);
+    background: var(--status-danger-soft);
   }
   .gradebook-result {
     display: grid;
@@ -7394,13 +7794,13 @@ body {
   }
   .gradebook-result > span:first-child {
     font-size: 11px;
-    color: var(--theme-muted, #8a8680);
+    color: var(--theme-muted);
   }
   .gradebook-result [data-assessment-final] {
     font-size: 22px;
     font-weight: 600;
     line-height: 1.4;
-    color: var(--theme-ink, #2d3440);
+    color: var(--theme-ink);
     font-variant-numeric: tabular-nums;
   }
   .gradebook-result [data-assessment-status] {
@@ -7417,7 +7817,7 @@ body {
   #lessonGradesArea .grade-help {
     margin: 0 0 16px;
     padding: 12px 14px;
-    background: var(--theme-surface-subtle, #faf9f7);
+    background: var(--theme-surface-subtle);
     border: 1px solid var(--workflow-line);
     border-radius: 10px;
     font-size: 12px;
@@ -7437,7 +7837,7 @@ body {
     padding: 14px;
     margin-block: 16px;
     border-radius: 10px;
-    background: var(--theme-surface-muted, #f7f6f4);
+    background: var(--theme-surface-muted);
   }
   .grades-intro > span {
     font-size: 14px;
@@ -7451,17 +7851,17 @@ body {
   }
   #lessonGradesArea .course-warning {
     padding: 14px;
-    border: 1px solid #e3cc9e;
+    border: 1px solid var(--status-warning-line);
     border-radius: 10px;
-    background: #fff8e8;
-    color: #7c5105;
+    background: var(--status-warning-soft);
+    color: var(--status-warning);
     font-size: 12px;
     line-height: 1.9;
   }
   #lessonGradesArea .course-grades > h4 {
     margin: 24px 0 10px;
     padding-inline-start: 12px;
-    border-inline-start: 3px solid var(--theme-primary-line, #fcaf17);
+    border-inline-start: 3px solid var(--theme-primary-line);
     font-size: 16px;
   }
   #lessonGradesArea .table-scroll {
@@ -7476,8 +7876,8 @@ body {
   }
   #lessonGradesArea th {
     padding: 14px 12px;
-    background: var(--theme-surface-muted, #f4f3f1);
-    color: var(--theme-ink, #454649);
+    background: var(--theme-surface-muted);
+    color: var(--theme-ink);
     font-size: 12px;
     line-height: 1.8;
   }
@@ -7487,7 +7887,7 @@ body {
     line-height: 1.9;
   }
   #lessonGradesArea tbody tr:focus-within {
-    background: var(--theme-primary-soft, #fffbf2);
+    background: var(--theme-primary-soft);
   }
   #lessonGradesArea :is([data-pod-final], [data-kfinal], [data-course-final]) {
     font-size: 18px;
@@ -7545,7 +7945,7 @@ body {
     padding: 16px;
     border: 1px solid var(--workflow-line);
     border-radius: 12px;
-    background: #fff;
+    background: var(--theme-surface);
   }
   .gradebook .assessment-inputs {
     gap: 12px;
@@ -7557,7 +7957,7 @@ body {
     grid-column: 1;
     justify-content: start;
     padding-top: 12px;
-    border-top: 1px solid var(--theme-line-soft, #eeece9);
+    border-top: 1px solid var(--theme-line-soft);
   }
   .gradebook-result [data-assessment-status] {
     margin-inline-start: auto;
@@ -7574,12 +7974,12 @@ body {
     grid-template-columns: minmax(0, 0.75fr) minmax(145px, 1.25fr);
   }
   .modular-gradebook .assessment-student:focus-within {
-    background: var(--theme-surface-subtle, #fffdf8);
-    box-shadow: inset -3px 0 0 var(--theme-primary-line, #e8d7c1);
+    background: var(--theme-surface-subtle);
+    box-shadow: inset -3px 0 0 var(--theme-primary-line);
   }
   .modular-gradebook .assessment-student[data-edit-state="error"] {
-    background: #fff9f7;
-    box-shadow: inset -3px 0 0 #b62f40;
+    background: var(--status-danger-soft);
+    box-shadow: inset -3px 0 0 var(--status-danger-fill);
   }
   .gradebook
     .assessment-student[data-edit-state="pending"]
@@ -7592,9 +7992,9 @@ body {
     opacity: 0.45;
   }
   :is(#lessonGradesArea, #modalBody) .competency-choices button:focus-visible {
-    outline: 2px solid var(--theme-focus, #a87008);
+    outline: 2px solid var(--theme-focus);
     outline-offset: 1px;
-    background: var(--theme-primary-soft, #fff8e8);
+    background: var(--theme-primary-soft);
   }
   :is(#lessonGradesArea, #modalBody) .competency-editor > input[data-grade] {
     display: none;
@@ -7606,9 +8006,9 @@ body {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 4px;
     padding: 4px;
-    border: 1px solid var(--theme-line, #d7d2ca);
+    border: 1px solid var(--theme-line);
     border-radius: 9px;
-    background: var(--theme-surface-muted, #f7f6f4);
+    background: var(--theme-surface-muted);
   }
   :is(#lessonGradesArea, #modalBody) .competency-choices button {
     min-width: 0;
@@ -7617,27 +8017,27 @@ body {
     border: 1px solid transparent;
     border-radius: 6px;
     background: transparent;
-    color: var(--theme-muted, #636466);
+    color: var(--theme-muted);
     font-size: 17px;
     font-weight: 500;
   }
   :is(#lessonGradesArea, #modalBody)
     .competency-choices
     button[aria-pressed="true"] {
-    background: #fff;
-    border-color: var(--theme-primary-line, #c4b9a8);
-    color: var(--theme-primary, #79522c);
-    box-shadow: 0 1px 3px var(--theme-primary-shadow, #2d344010);
+    background: var(--theme-primary-soft);
+    border-color: var(--theme-primary-line);
+    color: var(--theme-primary);
+    box-shadow: 0 1px 3px var(--theme-primary-shadow);
     font-weight: 700;
   }
   .gradebook [data-result-state="passed"] [data-pod-status] {
-    color: #14634c;
+    color: var(--status-success);
   }
   .gradebook [data-result-state="review"] [data-pod-status] {
-    color: #9f3021;
+    color: var(--status-danger);
   }
   .gradebook [data-result-state="incomplete"] [data-pod-final] {
-    color: #9a958e;
+    color: var(--theme-muted);
   }
   .module-toolbar .gradebook-search {
     width: 100%;
@@ -7656,9 +8056,9 @@ body {
     min-width: 0;
     min-height: 48px;
     padding: 10px 12px;
-    border: 1px solid var(--theme-line, #d7d2ca);
+    border: 1px solid var(--theme-field-line);
     border-radius: 10px;
-    background: var(--theme-surface-subtle, #faf9f7);
+    background: var(--theme-field);
     font-size: 14px;
     color: var(--workflow-ink);
   }
@@ -7678,7 +8078,7 @@ body {
   .module-units p {
     margin: 0;
     padding: 12px;
-    background: var(--theme-surface-muted, #f7f6f4);
+    background: var(--theme-surface-muted);
     border-radius: 8px;
     line-height: 1.9;
   }
@@ -7686,7 +8086,7 @@ body {
     margin: 12px 0;
     font-size: 12px;
     line-height: 1.9;
-    color: #875800;
+    color: var(--status-warning);
   }
   .modular-gradebook .gradebook-result [data-pod-final] {
     font-size: 22px;
@@ -7744,7 +8144,7 @@ body {
     display: grid;
     gap: 8px;
     padding-top: 12px;
-    border-top: 1px solid var(--theme-line-soft, #eeece9);
+    border-top: 1px solid var(--theme-line-soft);
   }
   .module-gate select {
     width: 100%;
@@ -7772,7 +8172,7 @@ body {
     font-size: 18px;
   }
   .module-draft {
-    color: #875800;
+    color: var(--status-warning);
     font-size: 11px;
   }
   .module-simple .module-toolbar {
@@ -7783,9 +8183,9 @@ body {
     min-width: 0;
     min-height: 46px;
     padding: 10px 12px;
-    border: 1px solid var(--workflow-line);
+    border: 1px solid var(--theme-field-line);
     border-radius: 9px;
-    background: #fff;
+    background: var(--theme-field);
     font-size: 14px;
   }
   .module-simple .assessment-inputs {
@@ -7829,14 +8229,14 @@ body {
     height: 32px;
     padding: 2px 4px;
     padding-left: calc(var(--grade-clear-size, 28px) + 4px);
-    border: 1px solid var(--theme-line, #d9d5ce);
-    background: var(--theme-surface-subtle, #faf9f7);
-    color: var(--theme-ink, #303438);
+    border: 1px solid var(--theme-field-line);
+    background: var(--theme-field);
+    color: var(--theme-ink);
     font-size: 16px;
     font-weight: 600;
     line-height: 24px;
     border-radius: 8px;
-    caret-color: var(--theme-primary, #79522c);
+    caret-color: var(--theme-primary);
     transition:
       border-color 0.15s,
       background-color 0.15s,
@@ -7845,32 +8245,32 @@ body {
   :is(#lessonGradesArea, #modalBody)
     .module-simple
     input[data-grade]::placeholder {
-    color: var(--theme-muted, #b3ada4);
+    color: var(--theme-muted);
     font-weight: 400;
   }
   :is(#lessonGradesArea, #modalBody)
     .module-simple
     input[data-grade]:hover:not(:disabled) {
-    border-color: var(--theme-line, #b8b0a4);
+    border-color: var(--theme-muted);
   }
   :is(#lessonGradesArea, #modalBody) .module-simple input[data-grade]:focus {
-    border-color: var(--theme-focus, #a88a63);
-    background: #fff;
+    border-color: var(--theme-focus);
+    background: var(--theme-surface);
     outline: none;
-    box-shadow: 0 0 0 3px var(--theme-focus-soft, #d9bd952b);
+    box-shadow: 0 0 0 3px var(--theme-focus-soft);
   }
   :is(#lessonGradesArea, #modalBody)
     .module-simple
     input[data-grade][aria-invalid="true"] {
-    border: 1px solid #b62f40;
-    background: #fff6f4;
-    box-shadow: 0 0 0 2px #b62f4012;
+    border: 1px solid var(--status-danger-fill);
+    background: var(--status-danger-soft);
+    box-shadow: 0 0 0 2px var(--field-error-ring);
   }
   :is(#lessonGradesArea, #modalBody)
     .module-simple
     input[data-grade]::selection {
-    background: var(--theme-primary-soft, #f2dfbf);
-    color: var(--theme-ink, #303438);
+    background: var(--theme-primary-soft);
+    color: var(--theme-ink);
   }
   :is(#lessonGradesArea, #modalBody) .module-simple .grade-editor {
     --grade-clear-size: 28px;
@@ -7956,40 +8356,40 @@ body {
     .assessment-student[data-result-state="passed"]
     .gradebook-result
     [data-pod-final] {
-    color: #14634c;
+    color: var(--status-success);
   }
   .module-simple
     .assessment-student[data-result-state="review"]
     .gradebook-result
     [data-pod-final] {
-    color: #b62f40;
+    color: var(--status-danger-fill);
   }
   .module-simple
     .assessment-student[data-result-state="incomplete"]
     .gradebook-result
     [data-pod-final] {
-    color: #9a958e;
+    color: var(--theme-muted);
   }
 }
 @media screen {
   :is(#lessonGradesArea, #modalBody) .module-simple .assessment-students {
     gap: 12px;
     padding: 12px;
-    border: 1px solid var(--theme-line-soft, #eeece9);
+    border: 1px solid var(--theme-line-soft);
     border-radius: 16px;
-    background: var(--theme-surface-muted, #f7f6f4);
+    background: var(--theme-surface-muted);
   }
   :is(#lessonGradesArea, #modalBody) .module-simple .assessment-student {
     padding: 16px;
     border: 1px solid var(--workflow-line);
     border-radius: 14px;
-    background: #fff;
-    box-shadow: 0 2px 6px var(--theme-primary-shadow, #2d344003);
+    background: var(--theme-surface);
+    box-shadow: 0 2px 6px var(--theme-primary-shadow);
   }
   .module-simple .assessment-student:focus-within {
-    border-color: var(--theme-line, #b9b6b1);
-    background: #fff;
-    box-shadow: 0 0 0 2px var(--theme-primary-shadow, #58595b0a);
+    border-color: var(--theme-line);
+    background: var(--theme-surface);
+    box-shadow: 0 0 0 2px var(--theme-primary-shadow);
   }
 }
 @media screen and (max-width: 600px) {
@@ -8124,9 +8524,9 @@ body {
     grid-template-areas: "student" "inputs" "result";
     gap: 8px 10px;
     padding: 10px;
-    border: 1px solid var(--theme-line, #e5e0d7);
+    border: 1px solid var(--theme-line);
     border-radius: 10px;
-    background: #fff;
+    background: var(--theme-surface);
     box-shadow: none;
   }
   .assessment-editor .gradebook-student {
@@ -8184,7 +8584,7 @@ body {
     gap: 4px 8px;
     margin-top: 6px;
     padding: 10px 0 0;
-    border-top: 1px solid var(--theme-line-soft, #eee9e1);
+    border-top: 1px solid var(--theme-line-soft);
     max-width: none;
     text-align: start;
   }
@@ -8264,7 +8664,7 @@ body {
     justify-self: end;
     margin-top: 6px;
     padding: 10px 0 0;
-    border-top: 1px solid var(--theme-line-soft, #eee9e1);
+    border-top: 1px solid var(--theme-line-soft);
     text-align: start;
   }
   .assessment-editor .gradebook-result > span:first-child {
@@ -8304,7 +8704,7 @@ body {
       padding: 0;
       padding-inline-start: 18px;
       border-top: 0;
-      border-inline-start: 1px solid var(--theme-line-soft, #eee9e1);
+      border-inline-start: 1px solid var(--theme-line-soft);
     }
     .assessment-editor .gradebook-result [data-assessment-status] {
       max-width: none;
@@ -8326,9 +8726,9 @@ body {
     grid-template-areas: "student" "inputs" "result";
     gap: 10px;
     padding: 12px;
-    border: 1px solid var(--theme-line, #e5e0d7);
+    border: 1px solid var(--theme-line);
     border-radius: 10px;
-    background: #fff;
+    background: var(--theme-surface);
   }
   .assessment-editor .gradebook-number {
     width: 26px;
@@ -8370,7 +8770,7 @@ body {
     gap: 6px 10px;
     margin-top: 6px;
     padding: 10px 0 0;
-    border-top: 1px solid var(--theme-line-soft, #eee9e1);
+    border-top: 1px solid var(--theme-line-soft);
     border-inline-start: 0;
   }
   .assessment-editor .gradebook-result > span:first-child {
@@ -8397,10 +8797,10 @@ body {
     gap: 8px;
     margin: 0 0 14px;
     padding: 9px 12px;
-    border: 1px solid #cce4da;
+    border: 1px solid var(--status-success-line);
     border-radius: 11px;
-    background: #f1f9f5;
-    color: #205b45;
+    background: var(--status-success-soft);
+    color: var(--status-success);
     font-size: 0.78rem;
     line-height: 1.75;
     overflow-wrap: anywhere;
@@ -8418,14 +8818,14 @@ body {
     background: currentColor;
   }
   #modalBody .modal-save-feedback[data-state="pending"] {
-    border-color: #ecd9ab;
-    background: #fff9ec;
-    color: #79520c;
+    border-color: var(--status-warning-line);
+    background: var(--status-warning-soft);
+    color: var(--status-warning);
   }
   #modalBody .modal-save-feedback[data-state="error"] {
-    border-color: #ecc8ce;
-    background: #fff3f4;
-    color: #9b293e;
+    border-color: var(--status-danger-line);
+    background: var(--status-danger-soft);
+    color: var(--status-danger);
   }
 }
 
@@ -8463,9 +8863,9 @@ body {
     --karnameh-lesson-width: 130px;
     min-width: 0;
     padding: 18px;
-    border-color: var(--theme-line, #e5e0d7);
+    border-color: var(--theme-line);
     border-radius: 16px;
-    background: #fff;
+    background: var(--theme-surface);
   }
   #app .karnameh-student-sheet .karnameh-report-heading {
     align-items: flex-start;
@@ -8479,7 +8879,7 @@ body {
   }
   #app .karnameh-student-sheet .karnameh-report-heading p {
     margin: 0;
-    color: var(--theme-muted, #706b64);
+    color: var(--theme-muted);
     font-size: 12px;
     line-height: 1.95;
     overflow-wrap: anywhere;
@@ -8499,8 +8899,8 @@ body {
     max-width: 100%;
     padding: 4px 8px;
     border-radius: 7px;
-    background: var(--theme-surface-muted, #f5f2ec);
-    color: var(--theme-muted, #706354);
+    background: var(--theme-surface-muted);
+    color: var(--theme-muted);
     font-size: 11px;
     line-height: 1.8;
     overflow-wrap: anywhere;
@@ -8513,8 +8913,8 @@ body {
     gap: 10px;
     margin-bottom: 22px;
     padding: 12px 0;
-    border-top: 1px solid var(--theme-line-soft, #eee9e1);
-    border-bottom: 1px solid var(--theme-line-soft, #eee9e1);
+    border-top: 1px solid var(--theme-line-soft);
+    border-bottom: 1px solid var(--theme-line-soft);
   }
   #app .karnameh-student-sheet .karnameh-student-pagination button {
     display: inline-flex;
@@ -8525,10 +8925,10 @@ body {
     min-height: 44px;
     margin: 0;
     padding: 8px 12px;
-    border: 1px solid var(--theme-line, #e5e0d7);
+    border: 1px solid var(--theme-line);
     border-radius: 10px;
-    background: #fff;
-    color: var(--theme-muted, #655d52);
+    background: var(--theme-surface);
+    color: var(--theme-muted);
     font-size: 12px;
     font-weight: 500;
     line-height: 1.7;
@@ -8536,9 +8936,9 @@ body {
     box-shadow: none;
   }
   #app .karnameh-student-sheet .karnameh-student-pagination button:disabled {
-    border-color: var(--theme-line-soft, #eee9e1);
-    background: var(--theme-surface-subtle, #f7f6f3);
-    color: var(--theme-muted, #9a9389);
+    border-color: var(--theme-line-soft);
+    background: var(--theme-surface-subtle);
+    color: var(--theme-muted);
     opacity: 1;
     cursor: not-allowed;
   }
@@ -8549,7 +8949,7 @@ body {
   }
   .karnameh-student-position {
     min-width: 0;
-    color: var(--theme-muted, #706b64);
+    color: var(--theme-muted);
     font-size: 12px;
     line-height: 1.9;
     text-align: center;
@@ -8569,11 +8969,11 @@ body {
     min-width: 0;
     padding: 6px 8px;
     border-radius: 8px;
-    background: var(--theme-surface-muted, #f4f1eb);
+    background: var(--theme-surface-muted);
   }
   #app .karnameh-student-sheet .karnameh-subject-section h4 {
     margin: 0;
-    color: var(--theme-primary-hover, #5b4933);
+    color: var(--theme-primary-hover);
     font-size: 14px;
     line-height: 1.9;
     overflow-wrap: anywhere;
@@ -8585,17 +8985,16 @@ body {
     margin: 0;
     overflow: auto;
     overscroll-behavior-x: contain;
-    border: 1px solid var(--theme-line, #e5e0d7);
+    border: 1px solid var(--theme-line);
     border-radius: 11px;
-    background: #fff;
+    background: var(--theme-surface);
     scrollbar-width: thin;
-    scrollbar-color: var(--theme-line, #c9c0b4)
-      var(--theme-surface-muted, #f5f2ec);
+    scrollbar-color: var(--theme-line) var(--theme-surface-muted);
     scroll-padding-inline-start: var(--karnameh-lesson-width);
     -webkit-overflow-scrolling: touch;
   }
   #app .karnameh-student-sheet .karnameh-sheet-scroll:focus-visible {
-    outline: 2px solid var(--theme-focus, #a87008);
+    outline: 2px solid var(--theme-focus);
     outline-offset: 3px;
   }
   .karnameh-sheet-scroll > .table-pan-hint {
@@ -8632,10 +9031,10 @@ body {
     min-width: 64px;
     padding: 10px 7px;
     border: 0;
-    border-bottom: 1px solid var(--theme-line-soft, #eee9e1);
-    border-inline-end: 1px solid var(--theme-line-soft, #f1ede7);
-    background: #fff;
-    color: var(--theme-ink, #454649);
+    border-bottom: 1px solid var(--theme-line-soft);
+    border-inline-end: 1px solid var(--theme-line-soft);
+    background: var(--theme-surface);
+    color: var(--theme-ink);
     font-size: 12px;
     line-height: 1.8;
     text-align: center;
@@ -8643,14 +9042,14 @@ body {
     white-space: nowrap;
   }
   #app .karnameh-student-sheet .karnameh-sheet-table thead th {
-    background: var(--theme-surface-muted, #f6f2eb) !important;
-    color: var(--theme-primary, #765531);
+    background: var(--theme-nav) !important;
+    color: var(--theme-nav-ink);
     font-size: 11px;
     font-weight: 600;
   }
   #app .karnameh-student-sheet .karnameh-sheet-table th.karnameh-stage-group {
     padding-block: 11px;
-    border-bottom-color: var(--theme-line, #e2d9cc);
+    border-bottom-color: var(--theme-line);
     white-space: normal;
     overflow-wrap: anywhere;
   }
@@ -8660,7 +9059,7 @@ body {
     line-height: 1.8;
   }
   #app .karnameh-student-sheet .karnameh-sheet-table thead tr + tr th {
-    background: var(--theme-surface-subtle, #faf8f4) !important;
+    background: var(--theme-nav-surface) !important;
     font-size: 10px;
     font-weight: 500;
   }
@@ -8673,16 +9072,16 @@ body {
     min-width: var(--karnameh-lesson-width) !important;
     max-width: var(--karnameh-lesson-width) !important;
     padding: 11px 10px;
-    border-inline-end: 1px solid var(--theme-line, #ded7cd);
-    background: #fff !important;
-    color: var(--theme-ink, #514435);
+    border-inline-end: 1px solid var(--theme-line);
+    background: var(--theme-surface) !important;
+    color: var(--theme-ink);
     font-size: 12px;
     font-weight: 600;
     line-height: 1.9;
     text-align: start;
     white-space: normal;
     overflow-wrap: anywhere;
-    box-shadow: -4px 0 7px var(--theme-primary-shadow, #3d302c08);
+    box-shadow: -4px 0 7px var(--theme-primary-shadow);
   }
   #app
     .karnameh-student-sheet
@@ -8690,7 +9089,8 @@ body {
     thead
     .karnameh-lesson-name {
     z-index: 5;
-    background: var(--theme-surface-muted, #eee8de) !important;
+    background: var(--theme-nav) !important;
+    color: var(--theme-nav-ink);
   }
   .karnameh-lesson-index {
     display: inline-flex;
@@ -8700,8 +9100,8 @@ body {
     min-height: 22px;
     margin-inline-end: 5px;
     border-radius: 5px;
-    background: var(--theme-surface-muted, #f3eee6);
-    color: var(--theme-muted, #756b5d);
+    background: var(--theme-surface-muted);
+    color: var(--theme-muted);
     font-size: 10px;
     font-weight: 400;
     font-variant-numeric: tabular-nums;
@@ -8710,7 +9110,7 @@ body {
   #app .karnameh-student-sheet .karnameh-lesson-name small {
     display: block;
     margin-top: 4px;
-    color: var(--theme-muted, #706b64);
+    color: var(--theme-muted);
     font-size: 10px;
     font-weight: 400;
     line-height: 1.8;
@@ -8721,7 +9121,7 @@ body {
     tbody
     tr:nth-child(even)
     > :is(th, td) {
-    background-color: var(--theme-surface-subtle, #fcfbf8);
+    background-color: var(--theme-surface-subtle);
   }
   #app
     .karnameh-student-sheet
@@ -8729,7 +9129,7 @@ body {
     tbody
     tr:nth-child(even)
     > .karnameh-lesson-name {
-    background: var(--theme-surface-subtle, #fcfbf8) !important;
+    background: var(--theme-surface-subtle) !important;
   }
   #app
     .karnameh-student-sheet
@@ -8747,35 +9147,35 @@ body {
     min-height: 30px;
     padding: 3px 5px;
     border-radius: 6px;
-    background: var(--theme-surface-muted, #f3f1ed);
-    color: var(--theme-ink, #554e44);
+    background: var(--theme-surface-muted);
+    color: var(--theme-ink);
     font-size: 13px;
     font-weight: 600;
     line-height: 1.6;
   }
   .karnameh-sheet-value[data-grade-tone="passed"] {
-    background: #eaf4ed;
-    color: #256447;
+    background: var(--status-success-soft);
+    color: var(--status-success);
   }
   .karnameh-sheet-value[data-grade-tone="remedial"] {
-    background: #fceee9;
-    color: #a13d31;
+    background: var(--status-danger-soft);
+    color: var(--status-danger);
   }
   .karnameh-sheet-value[data-grade-tone="pending"] {
     background: transparent;
-    color: #756b5d;
+    color: var(--theme-muted);
     font-weight: 400;
   }
   .karnameh-sheet-value[data-grade-tone="complete"] {
-    background: #eef1f6;
-    color: #52627e;
+    background: var(--status-unknown-soft);
+    color: var(--status-unknown);
   }
   .karnameh-sheet-score > small {
     display: block;
     width: 100%;
     max-width: 120px;
     margin: 4px auto 0;
-    color: var(--theme-muted, #706b64);
+    color: var(--theme-muted);
     font-size: 10px;
     line-height: 1.8;
     white-space: normal;
@@ -8785,7 +9185,7 @@ body {
   .karnameh-subject-section > small {
     display: block;
     margin: 10px 0 0;
-    color: var(--theme-muted, #706b64);
+    color: var(--theme-muted);
     font-size: 11px;
     line-height: 1.9;
     overflow-wrap: anywhere;
@@ -8807,7 +9207,7 @@ body {
   }
   .karnameh-legacy-result {
     display: block;
-    color: var(--theme-ink, #514435);
+    color: var(--theme-ink);
     font-size: 12px;
     font-weight: 600;
     line-height: 1.9;
@@ -8825,18 +9225,18 @@ body {
     gap: 2px;
     min-width: 0;
     padding-top: 6px;
-    border-top: 1px solid var(--theme-line-soft, #eee9e1);
+    border-top: 1px solid var(--theme-line-soft);
     line-height: 1.8;
     white-space: normal;
     overflow-wrap: anywhere;
   }
   .karnameh-unit-list strong {
-    color: var(--theme-ink, #514435);
+    color: var(--theme-ink);
     font-size: 11px;
     font-weight: 500;
   }
   .karnameh-unit-list li > span {
-    color: var(--theme-muted, #706b64);
+    color: var(--theme-muted);
     font-size: 10px;
     font-variant-numeric: tabular-nums;
   }
@@ -8844,7 +9244,7 @@ body {
     .karnameh-student-sheet
     .karnameh-student-pagination
     button:focus-visible {
-    outline: 2px solid var(--theme-focus, #a87008);
+    outline: 2px solid var(--theme-focus);
     outline-offset: 2px;
   }
 }
@@ -8855,15 +9255,15 @@ body {
     tbody
     tr:hover
     > :is(th, td) {
-    background: var(--theme-primary-soft, #fff8ed) !important;
+    background: var(--theme-primary-soft) !important;
   }
   #app
     .karnameh-student-sheet
     .karnameh-student-pagination
     button:not(:disabled):hover {
-    border-color: var(--theme-primary-line, #ccb99f);
-    background: var(--theme-primary-soft, #f8f3ec);
-    color: var(--theme-primary, #79522c);
+    border-color: var(--theme-primary-line);
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
   }
 }
 @media screen and (max-width: 700px) {
@@ -9018,10 +9418,10 @@ body {
     min-height: 34px;
     margin: 0;
     padding: 4px 7px;
-    border: 1px solid var(--theme-line, #e4ddd2);
+    border: 1px solid var(--theme-line);
     border-radius: 6px;
-    background: #fff;
-    color: var(--theme-muted, #655d52);
+    background: var(--theme-surface);
+    color: var(--theme-muted);
     font-size: 10.5px;
     font-weight: 500;
     line-height: 1.6;
@@ -9059,13 +9459,13 @@ body {
     .karnameh-student-sheet
     .karnameh-stage-options
     button[aria-pressed="true"] {
-    border-color: var(--theme-primary, #79522c);
-    background: var(--theme-primary, #79522c);
+    border-color: var(--theme-primary);
+    background: var(--theme-primary);
     color: #fff;
     font-weight: 600;
   }
   #app .karnameh-student-sheet .karnameh-stage-options button:focus-visible {
-    outline: 2px solid var(--theme-focus, #a87008);
+    outline: 2px solid var(--theme-focus);
     outline-offset: 2px;
   }
   #app
@@ -9184,15 +9584,15 @@ body {
     height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
-    background: #fff !important;
+    background: var(--theme-surface) !important;
   }
   body > #printRoot.karnameh-print-root {
     width: auto !important;
     min-width: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
-    background: #fff !important;
-    color: #28241f !important;
+    background: var(--theme-surface) !important;
+    color: var(--theme-ink) !important;
     font-family: IRANSans, Tahoma, sans-serif !important;
     font-size: 10pt !important;
     line-height: 1.65 !important;
@@ -9207,7 +9607,7 @@ body {
     padding: 0 !important;
     border: 0 !important;
     border-radius: 0 !important;
-    background: #fff !important;
+    background: var(--theme-surface) !important;
     box-shadow: none !important;
     direction: rtl;
   }
@@ -9225,18 +9625,18 @@ body {
     margin: 0 0 5mm !important;
     padding: 0 0 4mm !important;
     border: 0;
-    border-bottom: 1.5pt solid #79522c;
+    border-bottom: 1.5pt solid var(--theme-primary);
     break-inside: avoid !important;
     break-after: avoid !important;
   }
   #printRoot .karnameh-print-kind {
-    color: #79522c;
+    color: var(--theme-primary);
     font-size: 10pt;
     font-weight: 500;
   }
   #printRoot .karnameh-print-identity h2 {
     margin: 1mm 0 !important;
-    color: #28241f;
+    color: var(--theme-ink);
     font-size: 18pt !important;
     font-weight: 700;
     line-height: 1.5 !important;
@@ -9244,7 +9644,7 @@ body {
   }
   #printRoot .karnameh-print-identity p {
     margin: 0 !important;
-    color: #665f56;
+    color: var(--theme-muted);
     font-size: 9.5pt;
   }
   #printRoot .karnameh-print-archive {
@@ -9264,13 +9664,13 @@ body {
     gap: 2mm;
   }
   #printRoot .karnameh-print-context dt {
-    color: #756b5f;
+    color: var(--theme-muted);
     font-weight: 400;
   }
   #printRoot .karnameh-print-context dd {
     min-width: 0;
     margin: 0 !important;
-    color: #28241f;
+    color: var(--theme-ink);
     font-weight: 600;
     overflow-wrap: break-word !important;
   }
@@ -9283,14 +9683,14 @@ body {
     display: block !important;
     margin: 0 0 2mm !important;
     padding: 1.5mm 3mm !important;
-    border-inline-start: 2pt solid #a38b6b;
-    background: #f3f0e9 !important;
+    border-inline-start: 2pt solid var(--theme-brand);
+    background: var(--theme-surface-muted) !important;
     break-inside: avoid !important;
     break-after: avoid !important;
   }
   #printRoot .karnameh-subject-section h4 {
     margin: 0 !important;
-    color: #5e452a;
+    color: var(--theme-ink);
     font-size: 11pt !important;
     font-weight: 600;
     line-height: 1.7;
@@ -9306,7 +9706,7 @@ body {
     contain: none !important;
     border: 0 !important;
     border-radius: 0 !important;
-    background: #fff;
+    background: var(--theme-surface);
   }
   #printRoot table.karnameh-sheet-table {
     display: table !important;
@@ -9340,9 +9740,9 @@ body {
     min-width: 0 !important;
     max-width: none !important;
     padding: 2.1mm 1.1mm !important;
-    border: 0.5pt solid #d4cec3 !important;
-    color: #28241f;
-    background: #fff;
+    border: 0.5pt solid var(--theme-line) !important;
+    color: var(--theme-ink);
+    background: var(--theme-surface);
     font-size: 9.5pt !important;
     line-height: 1.65 !important;
     text-align: center !important;
@@ -9354,25 +9754,25 @@ body {
   }
   #printRoot .karnameh-sheet-table thead th {
     padding-block: 1.8mm !important;
-    color: #55422c !important;
-    background: #eee8dc !important;
+    color: var(--theme-nav-ink) !important;
+    background: var(--theme-nav) !important;
     font-weight: 600;
   }
   #printRoot .karnameh-sheet-table thead tr + tr th {
-    background: #f6f3ed !important;
+    background: var(--theme-nav-surface) !important;
     font-size: 9pt !important;
   }
   #printRoot .karnameh-sheet-table .karnameh-stage-group,
   #printRoot .karnameh-sheet-table [data-karnameh-field="result"],
   #printRoot .karnameh-sheet-table [data-karnameh-field="module-result"] {
-    border-inline-end: 1pt solid #b8ab97 !important;
+    border-inline-end: 1pt solid var(--theme-line) !important;
   }
   #printRoot .karnameh-sheet-table [data-karnameh-field="result"],
   #printRoot .karnameh-sheet-table [data-karnameh-field="module-result"] {
-    background: #faf8f3 !important;
+    background: var(--theme-surface-subtle) !important;
   }
   #printRoot .karnameh-sheet-table tbody tr:nth-child(even) > :is(th, td) {
-    background-color: #fcfbf8;
+    background-color: var(--theme-surface-subtle);
   }
   #printRoot .karnameh-sheet-table [hidden] {
     display: none !important;
@@ -9380,7 +9780,7 @@ body {
   #printRoot .karnameh-sheet-table .karnameh-lesson-name {
     width: 52mm !important;
     padding-inline: 3mm !important;
-    border-inline-end: 1pt solid #b8ab97 !important;
+    border-inline-end: 1pt solid var(--theme-line) !important;
     text-align: start !important;
     font-weight: 600;
   }
@@ -9392,7 +9792,7 @@ body {
   #printRoot .karnameh-lesson-name small {
     display: block !important;
     margin-top: 1mm;
-    color: #756b5f;
+    color: var(--theme-muted);
     font-size: 8pt !important;
     font-weight: 400;
   }
@@ -9403,7 +9803,7 @@ body {
   #printRoot .karnameh-module-name {
     display: block !important;
     margin: 0 0 1mm;
-    color: #756b5f;
+    color: var(--theme-muted);
     font-size: 8pt !important;
     line-height: 1.5;
   }
@@ -9416,7 +9816,7 @@ body {
     border: 0 !important;
     border-radius: 0 !important;
     background: transparent !important;
-    color: #28241f;
+    color: var(--theme-ink);
     font-size: 10pt !important;
     font-weight: 500;
     line-height: 1.65 !important;
@@ -9429,10 +9829,10 @@ body {
     font-weight: 700;
   }
   #printRoot .karnameh-sheet-value[data-grade-tone="pending"] {
-    color: #81786c;
+    color: var(--theme-muted);
   }
   #printRoot .karnameh-sheet-value[data-grade-tone="remedial"] {
-    color: #943d31;
+    color: var(--status-danger);
   }
   #printRoot .karnameh-legacy-cell {
     text-align: start !important;
@@ -9459,8 +9859,8 @@ body {
   #printRoot .karnameh-sheet-note {
     margin: 2mm 0 0 !important;
     padding-top: 2mm;
-    border-top: 0.5pt solid #ddd6ca;
-    color: #756b5f;
+    border-top: 0.5pt solid var(--theme-line);
+    color: var(--theme-muted);
     font-size: 8.5pt !important;
     line-height: 1.7 !important;
   }
@@ -9481,10 +9881,10 @@ body {
     min-height: 44px;
     margin: 0;
     padding: 9px 14px;
-    border: 1px solid var(--theme-teal-line, #cce4d6);
+    border: 1px solid var(--status-success-line);
     border-radius: 9px;
-    background: var(--theme-teal-soft, #edf8f3);
-    color: var(--theme-teal, #176344);
+    background: var(--status-success-soft);
+    color: var(--status-success);
     font-size: 12px;
   }
   #modal:has(.karnameh-excel-dialog) .modal-dialog {
@@ -9498,14 +9898,14 @@ body {
   .karnameh-excel-heading h4 {
     margin: 0;
     font-size: 15px;
-    color: var(--theme-ink, #433d35);
+    color: var(--theme-ink);
   }
   .karnameh-excel-heading p,
   .karnameh-excel-description {
     margin: 6px 0 0;
     font-size: 12px;
     line-height: 1.9;
-    color: var(--theme-muted, #726b61);
+    color: var(--theme-muted);
     overflow-wrap: anywhere;
   }
   .karnameh-excel-description {
@@ -9525,10 +9925,10 @@ body {
     min-height: 68px;
     margin: 0;
     padding: 12px;
-    border: 1px solid var(--theme-line, #e2ddd4);
+    border: 1px solid var(--theme-line);
     border-radius: 12px;
-    background: #fff;
-    color: var(--theme-ink, #433d35);
+    background: var(--theme-surface);
+    color: var(--theme-ink);
     text-align: start;
   }
   .karnameh-excel-choice-icon {
@@ -9538,8 +9938,8 @@ body {
     width: 36px;
     height: 36px;
     border-radius: 10px;
-    background: var(--theme-teal-soft, #edf8f3);
-    color: var(--theme-teal, #176344);
+    background: var(--status-success-soft);
+    color: var(--status-success);
   }
   .karnameh-excel-choice-copy {
     flex: 1;
@@ -9556,7 +9956,7 @@ body {
   }
   .karnameh-excel-choice-copy small {
     margin-top: 3px;
-    color: var(--theme-muted, #726b61);
+    color: var(--theme-muted);
     font-size: 11px;
   }
   [data-karnameh-excel-status]:empty {
@@ -9566,18 +9966,18 @@ body {
     margin: 14px 0 0;
     padding: 10px 12px;
     border-radius: 9px;
-    background: var(--theme-surface-muted, #f5f4f1);
-    color: var(--theme-muted, #655e54);
+    background: var(--theme-surface-muted);
+    color: var(--theme-muted);
     font-size: 12px;
     line-height: 1.9;
   }
   [data-karnameh-excel-status][data-state="saved"] {
-    background: #edf8f3;
-    color: #176344;
+    background: var(--status-success-soft);
+    color: var(--status-success);
   }
   [data-karnameh-excel-status][data-state="error"] {
-    background: #fff0ef;
-    color: #ac3f3a;
+    background: var(--status-danger-soft);
+    color: var(--status-danger);
   }
 }
 
@@ -9588,9 +9988,9 @@ body {
     gap: 4px;
     margin-bottom: 12px;
     padding: 4px;
-    border: 1px solid var(--theme-line, #e5e0d7);
+    border: 1px solid var(--theme-line);
     border-radius: 11px;
-    background: var(--theme-surface-muted, #f4f2ed);
+    background: var(--theme-surface-muted);
   }
   #modalBody .karnameh-excel-delivery > button {
     position: relative;
@@ -9601,15 +10001,15 @@ body {
     border: 1px solid transparent;
     border-radius: 8px;
     background: transparent;
-    color: var(--theme-muted, #726b61);
+    color: var(--theme-muted);
     font-size: 12px;
     white-space: nowrap;
   }
   #modalBody .karnameh-excel-delivery > button[aria-pressed="true"] {
-    border-color: var(--theme-teal-line, #d4e4da);
-    background: #fff;
-    color: var(--theme-teal, #176344);
-    box-shadow: 0 1px 3px var(--theme-primary-shadow, #264e3510);
+    border-color: var(--status-success-line);
+    background: var(--status-success-soft);
+    color: var(--status-success);
+    box-shadow: 0 1px 3px var(--theme-primary-shadow);
     font-weight: 600;
   }
   .karnameh-excel-delivery > button[aria-pressed="true"]::after {
@@ -9633,22 +10033,22 @@ body {
     min-width: 0;
     margin-top: 14px;
     padding: 14px;
-    border: 1px solid var(--theme-teal-line, #d4e4da);
+    border: 1px solid var(--status-success-line);
     border-radius: 12px;
-    background: var(--theme-teal-soft, #f5faf7);
+    background: var(--status-success-soft);
   }
   .karnameh-excel-ready[hidden] {
     display: none;
   }
   [data-karnameh-excel-file] {
     min-width: 0;
-    color: var(--theme-teal, #335847);
+    color: var(--status-success);
     font-size: 11px;
     line-height: 1.9;
     overflow-wrap: anywhere;
   }
   [data-karnameh-excel-file-size] {
-    color: var(--theme-muted, #687b69);
+    color: var(--theme-muted);
     font-size: 11px;
   }
   .karnameh-excel-ready-actions {
@@ -9724,13 +10124,13 @@ body {
     button.ui-button-flat[data-ui-tone] {
     min-height: 44px !important;
     padding: 8px 12px;
-    border: 1px solid var(--button-line, #e5d9cc);
+    border: 1px solid var(--button-line, var(--theme-line));
     border-radius: 10px;
     font-weight: 500;
     line-height: 1.7;
-    background: var(--button-soft, #f2ebe3) !important;
-    color: var(--button-ink, #6b5c50) !important;
-    border-color: var(--button-line, #e5d9cc) !important;
+    background: var(--button-soft, var(--theme-surface-muted)) !important;
+    color: var(--button-ink, var(--theme-ink)) !important;
+    border-color: var(--button-line, var(--theme-line)) !important;
     box-shadow: none;
     transition:
       background-color 150ms,
@@ -9746,29 +10146,29 @@ body {
     --button-line: var(--theme-primary-line);
   }
   [data-ui-tone="excel"] {
-    --button-ink: #16664e;
-    --button-fill: #19775c;
-    --button-hover: #125d47;
-    --button-soft: #eaf6f0;
-    --button-line: #bfded0;
+    --button-ink: var(--status-success);
+    --button-fill: var(--status-success-fill);
+    --button-hover: var(--status-success-hover);
+    --button-soft: var(--status-success-soft);
+    --button-line: var(--status-success-line);
   }
   [data-ui-tone="download"],
   [data-ui-tone="print"],
   [data-ui-tone="navigate"] {
-    --button-ink: var(--theme-primary);
-    --button-fill: var(--theme-primary);
-    --button-hover: var(--theme-primary-hover);
-    --button-soft: var(--theme-primary-soft);
-    --button-line: var(--theme-primary-line);
+    --button-ink: var(--theme-ink);
+    --button-fill: var(--theme-nav);
+    --button-hover: var(--theme-nav-surface);
+    --button-soft: var(--theme-surface-muted);
+    --button-line: var(--theme-line);
   }
   [data-ui-tone="upload"],
   [data-ui-tone="share"],
   [data-ui-tone="copy"] {
-    --button-ink: #80465c;
-    --button-fill: #8b4a60;
-    --button-hover: #6c354a;
-    --button-soft: #f8edf1;
-    --button-line: #e7cbd5;
+    --button-ink: var(--status-info);
+    --button-fill: var(--status-info-fill);
+    --button-hover: var(--status-info-hover);
+    --button-soft: var(--status-info-soft);
+    --button-line: var(--status-info-line);
   }
   [data-ui-tone="edit"],
   [data-ui-tone="settings"],
@@ -9780,16 +10180,16 @@ body {
     --button-line: var(--theme-teal-line);
   }
   [data-ui-tone="danger"] {
-    --button-ink: #ad3342;
-    --button-fill: #b62f40;
-    --button-hover: #942537;
-    --button-soft: #fff0f2;
-    --button-line: #efc7ce;
+    --button-ink: var(--status-danger);
+    --button-fill: var(--status-danger-fill);
+    --button-hover: var(--status-danger-hover);
+    --button-soft: var(--status-danger-soft);
+    --button-line: var(--status-danger-line);
   }
   [data-ui-tone="neutral"] {
-    --button-ink: #6b5c50;
-    --button-fill: var(--theme-muted);
-    --button-hover: #584a40;
+    --button-ink: var(--theme-ink);
+    --button-fill: var(--theme-nav);
+    --button-hover: var(--theme-nav-surface);
     --button-soft: var(--theme-surface-muted);
     --button-line: var(--theme-line);
   }
@@ -9837,7 +10237,7 @@ body {
   }
   /* Grade erasers have their own size and a quiet, separated action area. */
   :is(#app, #modal) .grade-editor button.grade-clear.ui-button {
-    --button-ink: #958476;
+    --button-ink: var(--theme-muted);
     --button-soft: transparent;
     --button-line: transparent;
     position: relative;
@@ -9876,8 +10276,8 @@ body {
   :is(#app, #modal)
     .grade-editor
     button.grade-clear.ui-button:not(:disabled):is(:hover, :focus-visible) {
-    --button-ink: #ad3342;
-    --button-soft: #fff0f2;
+    --button-ink: var(--status-danger);
+    --button-soft: var(--status-danger-soft);
   }
   :is(#app, #modal, #calPopup, #mobileBar, #pwaWelcome)
     button.ui-button-flat:focus-visible {
@@ -9898,9 +10298,9 @@ body {
     gap: 6px;
   }
   :is(#app, #modal) button[data-copy-state="done"] {
-    color: #16664e !important;
-    background: #eaf6f0 !important;
-    border-color: #bfded0 !important;
+    color: var(--status-success) !important;
+    background: var(--status-success-soft) !important;
+    border-color: var(--status-success-line) !important;
   }
   /* Geometric +/− marks stay centered independently of the text font. */
   :is(#app, #modalBody)
@@ -9978,21 +10378,25 @@ body {
   :is(#app, #modal, #pwaWelcome) button.ui-button-flat[data-copy-state="done"],
   :is(#app, #modal, #pwaWelcome)
     button.ui-button-flat[data-ui-tone][data-ui-variant][data-copy-state="done"] {
-    color: #16664e !important;
-    background: #eaf6f0 !important;
-    border-color: #bfded0 !important;
+    color: var(--status-success) !important;
+    background: var(--status-success-soft) !important;
+    border-color: var(--status-success-line) !important;
   }
 }
 /* Source: src/styles/surfaces.css */
 /* A quiet border hierarchy for screen surfaces; printed documents keep their own rules. */
 @media screen {
+  :is(input, textarea)::placeholder {
+    color: var(--theme-placeholder);
+    opacity: 1;
+  }
   :root {
-    --surface-line: var(--theme-line, #dedbd5);
-    --surface-inner-line: var(--theme-line-soft, #e9e5df);
-    --surface-hover-line: var(--theme-primary-line, #c7b8a3);
-    --surface-open-line: var(--theme-primary-line, #cfb48d);
-    --surface-shadow: 0 1px 2px #4a302508, 0 6px 18px #4a302506;
-    --surface-inner-shadow: 0 1px 3px #4a302504;
+    --surface-line: var(--theme-line);
+    --surface-inner-line: var(--theme-line-soft);
+    --surface-hover-line: var(--theme-primary-line);
+    --surface-open-line: var(--theme-primary-line);
+    --surface-shadow: var(--theme-shadow-md);
+    --surface-inner-shadow: var(--theme-shadow-sm);
   }
 
   /* Only existing frames receive a stroke; borderless mobile lists stay borderless. */
@@ -10035,7 +10439,11 @@ body {
   #app .create-panel,
   #app .week-settings {
     border-color: var(--surface-line);
-    background-image: linear-gradient(135deg, #ffffff00 60%, #f3ede666);
+    background-image: linear-gradient(
+      135deg,
+      transparent 60%,
+      var(--theme-surface-muted)
+    );
   }
   #app .create-panel > summary {
     border-radius: inherit;
@@ -10044,7 +10452,7 @@ body {
   #app .week-settings[open] {
     border-color: var(--surface-open-line);
     box-shadow:
-      0 0 0 2px #7a685712,
+      0 0 0 2px var(--theme-focus-soft),
       var(--surface-shadow);
   }
   #app .create-panel[open] > summary {
@@ -10065,9 +10473,7 @@ body {
 
   #modal .modal-dialog {
     border-color: var(--theme-line, #d9d3c9);
-    box-shadow:
-      0 2px 8px #4a30250d,
-      0 24px 70px #4a30252e;
+    box-shadow: var(--theme-shadow-lg);
   }
   #modal .modal-header {
     border-bottom-color: var(--surface-inner-line);
@@ -10103,14 +10509,14 @@ body {
   #app :is(.dashboard-entity, .lesson-item, .student-profile):focus-within {
     border-color: var(--surface-hover-line);
     border-inline-start-color: var(--surface-hover-line);
-    box-shadow: 0 0 0 2px #7a685716;
+    box-shadow: 0 0 0 2px var(--theme-focus-soft);
   }
 }
 @media screen and (hover: hover) and (pointer: fine) {
   #app :is(.dashboard-entity, .lesson-item, .student-profile):hover {
     border-color: var(--surface-hover-line);
     border-inline-start-color: var(--surface-hover-line);
-    box-shadow: 0 3px 12px #4a30250a;
+    box-shadow: var(--theme-shadow-md);
   }
   #app .create-panel:not([open]):hover,
   #modalBody .backup-hub > details:not([open]):hover {
@@ -10145,16 +10551,14 @@ body {
   }
 }
 
-/* The dashboard hierarchy carries through workspaces: white, milk, cream. */
+/* Neutral paper surfaces carry the same hierarchy through each workspace. */
 @media screen {
   #app
     :is(
       .class-directory,
       .class-lessons,
       .session-directory,
-      .week-agenda,
       .week-desktop,
-      .week-settings,
       .periodic-controls,
       .report-filter-card,
       .karnameh-controls
@@ -10197,14 +10601,34 @@ body {
       var(--surface-paper)
     );
   }
-  #app .week-settings {
-    background-image: none;
+  #app > details.week-settings,
+  #app > details.week-settings[open] {
+    padding: 0;
+    border: 1px solid var(--theme-line);
+    border-radius: 16px;
+    background: transparent;
+    box-shadow: none;
+  }
+  #app > .week-settings > summary {
+    min-height: 64px;
+    padding: 12px 16px;
+    border-radius: 15px;
+  }
+  #app > .week-settings[open] > summary {
+    border-end-start-radius: 0;
+    border-end-end-radius: 0;
+  }
+  #app .week-settings > .week-settings-body {
+    margin: 0;
+    padding: 12px;
+    border-top: 1px solid var(--theme-line);
+    border-end-start-radius: 15px;
+    border-end-end-radius: 15px;
   }
   #app .week-settings-body > section,
   #app :is(.periodic-control-grid, .report-filter-grid, .karnameh-filter-grid) {
     background-color: var(--surface-milk);
   }
-  #app :is(.week-day-heading, .week-day-picker, .report-navigation),
   #app .gradebook .assessment-navigation {
     background-color: var(--surface-cream);
   }
@@ -10218,7 +10642,8 @@ body {
     :is(input, select, textarea):not(:disabled):not([readonly]):not(
       [aria-invalid="true"]
     ) {
-    background-color: var(--form-milk);
+    background-color: var(--theme-field);
+    border-color: var(--theme-field-line);
   }
 }
 @media screen and (min-width: 701px) {
@@ -10234,14 +10659,8 @@ body {
   }
 }
 
-/* Form surfaces: milk-white work areas separated by soft cream headings. */
+/* White form work areas remain distinct from quiet neutral headings. */
 @media screen {
-  #modal,
-  #app :is(.create-panel, .week-settings, .report-filter-card) {
-    --theme-surface: var(--form-milk);
-    --theme-surface-subtle: var(--form-cream);
-    --theme-field: var(--form-milk);
-  }
   #modal .modal-dialog,
   #modal .modal-body {
     background: var(--surface-paper) !important;
@@ -10250,7 +10669,7 @@ body {
     background: var(--form-cream) !important;
   }
   #app .create-panel {
-    background: var(--form-milk);
+    background: var(--theme-surface);
     background-image: none;
   }
   #app .create-panel > summary {
@@ -10259,10 +10678,9 @@ body {
   #app .create-panel > form,
   #app .create-panel #courseEditor,
   #modalBody > form {
-    background: var(--form-milk);
+    background: var(--theme-surface);
   }
   #modalBody :is(.record-editor-context, .settings-context, .week-config-intro),
-  #modalBody .session-entry-form,
   #modalBody .backup-hub > details,
   #modalBody .course-policy-section > summary,
   #app .course-policy-section > summary,
@@ -10272,12 +10690,12 @@ body {
   #modalBody .backup-hub > section,
   #modalBody .week-config-section,
   #modalBody #courseEditor {
-    background-color: var(--form-milk);
+    background-color: var(--theme-surface);
   }
   #modalBody .session-workspace .att-btns {
-    background: var(--form-milk);
+    background: var(--theme-surface);
   }
-  :is(#app form, #app .week-settings, #modalBody)
+  :is(#app, #modalBody, #calPopup, #pwaWelcome)
     :is(
       input:not(
           [type="checkbox"],
@@ -10291,9 +10709,17 @@ body {
           [type="reset"]
         ):not(:disabled):not([readonly]):not([aria-invalid="true"]),
       select:not(:disabled):not([aria-invalid="true"]),
-      textarea:not(:disabled):not([readonly]):not([aria-invalid="true"])
+      textarea:not(:disabled):not([readonly]):not([aria-invalid="true"]),
+      input[data-gregorian-target]:not(:disabled):not([aria-invalid="true"])
     ) {
-    background-color: var(--form-milk);
+    background-color: var(--theme-field);
+    border-color: var(--theme-field-line);
+  }
+  :is(#app, #modalBody, #pwaWelcome)
+    :is(input, textarea)[readonly]:not([data-gregorian-target]) {
+    background-color: var(--theme-surface-subtle);
+    border-color: var(--theme-line);
+    color: var(--theme-muted);
   }
 }
 

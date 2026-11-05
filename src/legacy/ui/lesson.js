@@ -90,16 +90,20 @@ function renderLesson() {
     { label: c.name, action: "ui-lesson:2" },
     { label: lesson.name },
   ]);
-  h += classroomTabsHtml("بخش‌های درس", [
-    {
-      tab: "sessions",
-      action: "ui-lesson:4",
-      icon: "attendance",
-      title: "جلسات",
-      detail: "و حضور و غیاب",
-    },
-    { tab: "grades", action: "ui-lesson:5", icon: "grades", title: "نمرات" },
-  ]);
+  h += classroomTabsHtml(
+    "بخش‌های درس",
+    [
+      {
+        tab: "sessions",
+        action: "ui-lesson:4",
+        icon: "attendance",
+        title: "جلسات",
+        detail: "و حضور و غیاب",
+      },
+      { tab: "grades", action: "ui-lesson:5", icon: "grades", title: "نمرات" },
+    ],
+    true,
+  );
   if (state.tab === "sessions") h += renderLessonSessions(c, lesson);
   else h += `<div id="lessonGradesArea"></div>`;
   return h;
@@ -118,16 +122,16 @@ function legacy_renderLessonStudents(c, lesson) {
       <th rowspan="2">#</th><th rowspan="2">نام</th>`;
     lesson.poudmans.forEach((p) => {
       p.units.forEach((u) => {
-        h += `<th colspan="5" style="text-align:center;border-right:2px solid #cbd5e1">${esc(p.name)} / ${esc(u.name)}</th>`;
+        h += `<th colspan="5" style="text-align:center;border-right:2px solid var(--theme-line, #e4e4e7)">${esc(p.name)} / ${esc(u.name)}</th>`;
       });
     });
-    h += `<th colspan="2" style="background:#eef2ff;color:#4338ca;text-align:center">کل درس</th></tr><tr>`;
+    h += `<th colspan="2" style="background:var(--theme-primary-soft, #fef0f0);color:var(--theme-primary-hover, #921019);text-align:center">کل درس</th></tr><tr>`;
     lesson.poudmans.forEach((p) => {
       p.units.forEach((u) => {
-        h += `<th style="font-size:.75em;color:#059669">➕ مثبت</th><th style="font-size:.75em;color:#dc2626">➖ منفی</th><th style="font-size:.75em">📝 تکلیف</th><th style="font-size:.75em;color:#059669">✅ حاضر</th><th style="font-size:.75em;color:#d97706">⏰ تأخیر</th>`;
+        h += `<th style="font-size:.75em;color:var(--status-success, #16664e)">➕ مثبت</th><th style="font-size:.75em;color:var(--status-danger, #9f2635)">➖ منفی</th><th style="font-size:.75em">📝 تکلیف</th><th style="font-size:.75em;color:var(--status-success, #16664e)">✅ حاضر</th><th style="font-size:.75em;color:var(--status-warning, #7c5105)">⏰ تأخیر</th>`;
       });
     });
-    h += `<th style="font-size:.75em;color:#059669;background:#eef2ff">➕ مثبت</th><th style="font-size:.75em;color:#dc2626;background:#eef2ff">➖ منفی</th>`;
+    h += `<th style="font-size:.75em;color:var(--status-success, #16664e);background:var(--theme-primary-soft, #fef0f0)">➕ مثبت</th><th style="font-size:.75em;color:var(--status-danger, #9f2635);background:var(--theme-primary-soft, #fef0f0)">➖ منفی</th>`;
     h += `</tr></thead><tbody>`;
 
     sortedStudents.forEach((s, i) => {
@@ -136,10 +140,10 @@ function legacy_renderLessonStudents(c, lesson) {
       lesson.poudmans.forEach((p) => {
         p.units.forEach((u) => {
           const d = stats.details[p.id][u.id];
-          h += `<td style="color:#059669;text-align:center">${d.pos || 0}</td><td style="color:#dc2626;text-align:center">${d.neg || 0}</td><td style="text-align:center">${d.hw || 0}</td><td style="color:#059669;text-align:center">${d.att.present || 0}</td><td style="color:#d97706;text-align:center">${d.att.late || 0}</td>`;
+          h += `<td style="color:var(--status-success, #16664e);text-align:center">${d.pos || 0}</td><td style="color:var(--status-danger, #9f2635);text-align:center">${d.neg || 0}</td><td style="text-align:center">${d.hw || 0}</td><td style="color:var(--status-success, #16664e);text-align:center">${d.att.present || 0}</td><td style="color:var(--status-warning, #7c5105);text-align:center">${d.att.late || 0}</td>`;
         });
       });
-      h += `<td style="color:#059669;text-align:center;background:#eef2ff;font-weight:bold">${stats.posCount}</td><td style="color:#dc2626;text-align:center;background:#eef2ff;font-weight:bold">${stats.negCount}</td>`;
+      h += `<td style="color:var(--status-success, #16664e);text-align:center;background:var(--theme-primary-soft, #fef0f0);font-weight:bold">${stats.posCount}</td><td style="color:var(--status-danger, #9f2635);text-align:center;background:var(--theme-primary-soft, #fef0f0);font-weight:bold">${stats.negCount}</td>`;
       h += `</tr>`;
     });
     h += `</tbody></table>`;

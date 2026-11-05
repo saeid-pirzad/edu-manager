@@ -48,13 +48,13 @@
     button.ui-button-flat[data-ui-tone] {
     min-height: 44px !important;
     padding: 8px 12px;
-    border: 1px solid var(--button-line, #e5d9cc);
+    border: 1px solid var(--button-line, var(--theme-line));
     border-radius: 10px;
     font-weight: 500;
     line-height: 1.7;
-    background: var(--button-soft, #f2ebe3) !important;
-    color: var(--button-ink, #6b5c50) !important;
-    border-color: var(--button-line, #e5d9cc) !important;
+    background: var(--button-soft, var(--theme-surface-muted)) !important;
+    color: var(--button-ink, var(--theme-ink)) !important;
+    border-color: var(--button-line, var(--theme-line)) !important;
     box-shadow: none;
     transition:
       background-color 150ms,
@@ -70,29 +70,29 @@
     --button-line: var(--theme-primary-line);
   }
   [data-ui-tone="excel"] {
-    --button-ink: #16664e;
-    --button-fill: #19775c;
-    --button-hover: #125d47;
-    --button-soft: #eaf6f0;
-    --button-line: #bfded0;
+    --button-ink: var(--status-success);
+    --button-fill: var(--status-success-fill);
+    --button-hover: var(--status-success-hover);
+    --button-soft: var(--status-success-soft);
+    --button-line: var(--status-success-line);
   }
   [data-ui-tone="download"],
   [data-ui-tone="print"],
   [data-ui-tone="navigate"] {
-    --button-ink: var(--theme-primary);
-    --button-fill: var(--theme-primary);
-    --button-hover: var(--theme-primary-hover);
-    --button-soft: var(--theme-primary-soft);
-    --button-line: var(--theme-primary-line);
+    --button-ink: var(--theme-ink);
+    --button-fill: var(--theme-nav);
+    --button-hover: var(--theme-nav-surface);
+    --button-soft: var(--theme-surface-muted);
+    --button-line: var(--theme-line);
   }
   [data-ui-tone="upload"],
   [data-ui-tone="share"],
   [data-ui-tone="copy"] {
-    --button-ink: #80465c;
-    --button-fill: #8b4a60;
-    --button-hover: #6c354a;
-    --button-soft: #f8edf1;
-    --button-line: #e7cbd5;
+    --button-ink: var(--status-info);
+    --button-fill: var(--status-info-fill);
+    --button-hover: var(--status-info-hover);
+    --button-soft: var(--status-info-soft);
+    --button-line: var(--status-info-line);
   }
   [data-ui-tone="edit"],
   [data-ui-tone="settings"],
@@ -104,16 +104,16 @@
     --button-line: var(--theme-teal-line);
   }
   [data-ui-tone="danger"] {
-    --button-ink: #ad3342;
-    --button-fill: #b62f40;
-    --button-hover: #942537;
-    --button-soft: #fff0f2;
-    --button-line: #efc7ce;
+    --button-ink: var(--status-danger);
+    --button-fill: var(--status-danger-fill);
+    --button-hover: var(--status-danger-hover);
+    --button-soft: var(--status-danger-soft);
+    --button-line: var(--status-danger-line);
   }
   [data-ui-tone="neutral"] {
-    --button-ink: #6b5c50;
-    --button-fill: var(--theme-muted);
-    --button-hover: #584a40;
+    --button-ink: var(--theme-ink);
+    --button-fill: var(--theme-nav);
+    --button-hover: var(--theme-nav-surface);
     --button-soft: var(--theme-surface-muted);
     --button-line: var(--theme-line);
   }
@@ -161,7 +161,7 @@
   }
   /* Grade erasers have their own size and a quiet, separated action area. */
   :is(#app, #modal) .grade-editor button.grade-clear.ui-button {
-    --button-ink: #958476;
+    --button-ink: var(--theme-muted);
     --button-soft: transparent;
     --button-line: transparent;
     position: relative;
@@ -200,8 +200,8 @@
   :is(#app, #modal)
     .grade-editor
     button.grade-clear.ui-button:not(:disabled):is(:hover, :focus-visible) {
-    --button-ink: #ad3342;
-    --button-soft: #fff0f2;
+    --button-ink: var(--status-danger);
+    --button-soft: var(--status-danger-soft);
   }
   :is(#app, #modal, #calPopup, #mobileBar, #pwaWelcome)
     button.ui-button-flat:focus-visible {
@@ -222,9 +222,9 @@
     gap: 6px;
   }
   :is(#app, #modal) button[data-copy-state="done"] {
-    color: #16664e !important;
-    background: #eaf6f0 !important;
-    border-color: #bfded0 !important;
+    color: var(--status-success) !important;
+    background: var(--status-success-soft) !important;
+    border-color: var(--status-success-line) !important;
   }
   /* Geometric +/− marks stay centered independently of the text font. */
   :is(#app, #modalBody)
@@ -302,8 +302,8 @@
   :is(#app, #modal, #pwaWelcome) button.ui-button-flat[data-copy-state="done"],
   :is(#app, #modal, #pwaWelcome)
     button.ui-button-flat[data-ui-tone][data-ui-variant][data-copy-state="done"] {
-    color: #16664e !important;
-    background: #eaf6f0 !important;
-    border-color: #bfded0 !important;
+    color: var(--status-success) !important;
+    background: var(--status-success-soft) !important;
+    border-color: var(--status-success-line) !important;
   }
 }

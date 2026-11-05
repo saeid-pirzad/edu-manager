@@ -3,7 +3,7 @@ const { test } = require("node:test"),
   assert = require("node:assert/strict"),
   reloadReady = require("./browser-ready.cjs");
 
-function fixture(states) {
+function fixture(states, { ignoreCache = true } = {}) {
   const calls = [],
     delays = [];
   let marked = false;
@@ -23,7 +23,7 @@ function fixture(states) {
     cdp: async (method, options) => {
       assert.equal(marked, true);
       assert.equal(method, "Page.reload");
-      assert.equal(options.ignoreCache, true);
+      assert.equal(options.ignoreCache, ignoreCache);
     },
     delay: async (milliseconds) => delays.push(milliseconds),
   };
@@ -56,4 +56,11 @@ test("browser reload fails explicitly when no fresh ready document arrives", asy
     /fresh, ready application context/,
   );
   assert.equal(f.calls.length, 4);
+});
+
+test("normal reload preserves the fresh-context guard without bypassing the service worker", async () => {
+  const f = fixture([false, true], { ignoreCache: false });
+  await reloadReady(f.tools, { ignoreCache: false });
+  assert.equal(f.calls.length, 3);
+  assert.deepEqual(f.delays, [100]);
 });

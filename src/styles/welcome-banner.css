@@ -14,14 +14,14 @@
     border: 1px solid var(--theme-primary-line);
     border-radius: 22px;
     background:
-      radial-gradient(ellipse at 12% 0%, #efd7b085, transparent 50%),
+      radial-gradient(ellipse at 12% 0%, #fcaf1720, transparent 50%),
       linear-gradient(
         110deg,
         var(--theme-primary-soft),
         var(--theme-teal-soft) 55%,
         var(--theme-canvas)
       );
-    box-shadow: 0 8px 24px #7a685710;
+    box-shadow: 0 8px 24px #2d344010;
   }
   :is(#app, #deputyApp) .workflow-welcome.schools-welcome::before {
     content: "";
@@ -43,7 +43,7 @@
     bottom: -115px;
     width: 190px;
     height: 190px;
-    border: 1px solid #7a685733;
+    border: 1px solid #58595b33;
     border-radius: 38px;
     background: #ffffff25;
     transform: rotate(32deg);
@@ -64,7 +64,7 @@
     );
     color: var(--theme-surface-subtle);
     box-shadow:
-      0 8px 18px #7a685726,
+      0 8px 18px #ed1c2426,
       inset 0 1px 0 #ffffff40;
     transform: rotate(-6deg);
   }
@@ -92,7 +92,7 @@
     border-radius: 12px;
     background: var(--theme-surface-subtle);
     color: var(--theme-primary);
-    box-shadow: 0 3px 10px #7a685710;
+    box-shadow: 0 3px 10px #2d344010;
     font-size: 12px;
     font-weight: 500;
     line-height: 1.8;

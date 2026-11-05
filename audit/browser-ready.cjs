@@ -4,10 +4,10 @@
 // completed. Mark that context before navigation and wait for a fresh one.
 module.exports = async function reloadReady(
   { cdp, evaluate, delay },
-  { attempts = 150 } = {},
+  { attempts = 150, ignoreCache = true } = {},
 ) {
   await evaluate("globalThis.__eduAuditBeforeReload = true");
-  await cdp("Page.reload", { ignoreCache: true });
+  await cdp("Page.reload", { ignoreCache });
   for (let attempt = 0; attempt < attempts; attempt++) {
     try {
       if (

@@ -9,7 +9,7 @@
   margin: 0;
 }
 .workflow-welcome p {
-  color: var(--muted, #64748b);
+  color: var(--muted, #5a6179);
   line-height: 1.9;
 }
 .workflow-welcome button {
@@ -36,7 +36,7 @@
   flex-wrap: wrap;
   gap: 8px;
   padding: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-line, #e4e4e7);
   border-radius: 14px;
   background: var(--card, #fff);
 }
@@ -149,9 +149,9 @@
   min-height: 46px;
 }
 .session-mode-picker [aria-pressed="false"] {
-  background: #f1f5f9;
-  color: #334155;
-  border: 1px solid #e2e8f0;
+  background: var(--theme-surface-muted, #f4f4f5);
+  color: var(--theme-ink, #2d3440);
+  border: 1px solid var(--theme-line, #e4e4e7);
 }
 .session-workspace [hidden] {
   display: none !important;
@@ -209,7 +209,7 @@
 }
 .assessment-stage {
   margin-block: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-line, #e4e4e7);
   border-radius: 14px;
 }
 .assessment-stage > summary {
@@ -227,7 +227,7 @@
 .assessment-student {
   min-width: 0;
   padding: 14px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-line, #e4e4e7);
   border-radius: 12px;
 }
 .assessment-student h4 {
@@ -257,7 +257,7 @@
 }
 .annual-grade-components span {
   padding: 8px;
-  background: #f8fafc;
+  background: var(--theme-surface-subtle, #fafafa);
   border-radius: 8px;
   font-size: 12px;
 }

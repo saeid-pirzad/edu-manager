@@ -1,6 +1,51 @@
 /* experiencePolish */
 
 @media screen {
+  .app-brand-mark {
+    display: grid;
+    place-items: center;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--theme-surface);
+    border-radius: 12px;
+  }
+  .app-brand-mark > .app-logo {
+    display: block;
+    min-width: 0;
+    min-height: 0;
+    width: 120%;
+    height: 120%;
+    max-width: none;
+    object-fit: contain;
+  }
+  #app .topbar .brand-mark.app-brand-mark {
+    width: var(--header-logo-size);
+    height: var(--header-logo-size);
+    background: transparent;
+    box-shadow: none;
+  }
+  .about-mark.app-brand-mark {
+    background: var(--theme-surface);
+    box-shadow: none;
+  }
+  :is(.login-brand, .pwa-install-brand) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 14px;
+    color: var(--theme-ink);
+  }
+  :is(.login-brand, .pwa-install-brand) > .app-brand-mark {
+    flex: 0 0 56px;
+    width: 56px;
+    height: 56px;
+  }
+  :is(.login-brand, .pwa-install-brand) > strong {
+    font-size: 20px;
+    font-weight: 700;
+  }
   .topbar h1 {
     display: flex;
     align-items: center;
@@ -22,10 +67,10 @@
     flex-shrink: 0;
     width: 42px;
     height: 42px;
-    background: var(--theme-primary, #4f46e5);
-    color: #fff;
+    background: var(--theme-primary);
+    color: var(--theme-surface);
     border-radius: 13px;
-    box-shadow: 0 4px 10px #7a68571a;
+    box-shadow: 0 4px 10px #ed1c241a;
   }
   .brand-mark svg {
     width: 24px;
@@ -61,7 +106,7 @@
     font-size: 0.67rem;
   }
   .workspace-tools[open] {
-    border-top: 1px solid var(--theme-line-soft, #edf1f7);
+    border-top: 1px solid var(--theme-line-soft);
     padding-top: 5px;
   }
   .workspace-tools .tool-actions button {
@@ -121,8 +166,8 @@
     width: 30px;
     height: 30px;
     border-radius: 9px;
-    background: var(--theme-primary-soft, #eef2ff);
-    color: var(--theme-primary, #4f46e5);
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
     font-size: 22px;
     font-weight: 400;
   }
@@ -130,7 +175,7 @@
     content: "−";
   }
   .quick-create[open] > form {
-    border-top: 1px solid var(--theme-line-soft, #edf1f7);
+    border-top: 1px solid var(--theme-line-soft);
     padding-top: 16px;
     margin-top: 12px;
   }
@@ -139,7 +184,7 @@
   }
   .list-search input {
     width: 100%;
-    background: var(--theme-surface-subtle, #f8faff) !important;
+    background: var(--theme-surface-subtle) !important;
     min-height: 44px;
   }
   .search-feedback {
@@ -160,12 +205,12 @@
   }
   .list-item > button.danger {
     background: transparent;
-    border: 1px solid #fee2e2;
+    border: 1px solid var(--status-danger-soft);
     flex-shrink: 0;
     font-size: 0.7rem;
   }
   .list-item[role="link"] {
-    border-inline-start: 3px solid var(--theme-primary-line, #e0e7ff);
+    border-inline-start: 3px solid var(--theme-primary-line);
   }
   .card > h3 {
     line-height: 1.8;
@@ -186,13 +231,13 @@
     min-width: 40px;
     min-height: 40px;
     border-radius: 12px;
-    background: var(--theme-line-soft, #edf1f7);
+    background: var(--theme-line-soft);
     color: var(--theme-muted);
   }
   #modalBody > h4 {
     font-size: 0.92rem;
     padding-bottom: 10px;
-    border-bottom: 1px solid var(--theme-line-soft, #edf1f7);
+    border-bottom: 1px solid var(--theme-line-soft);
   }
   #modalBody > p {
     font-size: 0.82rem;
@@ -211,8 +256,8 @@
   }
   .shamsi-display {
     font-size: 0.75rem;
-    color: var(--theme-primary, #4f46e5);
-    background: var(--theme-primary-soft, #eef2ff);
+    color: var(--theme-primary);
+    background: var(--theme-primary-soft);
     border-radius: 8px;
     padding: 5px 10px;
   }
@@ -307,7 +352,7 @@
   }
   @media (min-width: 701px) {
     .topbar {
-      border-bottom: 1px solid var(--theme-line, #e5eaf3);
+      border-bottom: 1px solid var(--theme-line);
       margin-bottom: 14px !important;
     }
     .view-heading h2 {

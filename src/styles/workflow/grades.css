@@ -8,7 +8,7 @@
     padding: 24px;
     border: 1px solid var(--workflow-line);
     border-radius: 18px;
-    background: #fff;
+    background: var(--theme-surface);
   }
   .gradebook-heading {
     display: flex;
@@ -16,7 +16,7 @@
     gap: 10px;
     margin: 0 0 12px;
     padding-bottom: 12px;
-    border-bottom: 1px solid var(--theme-line, #ebe5dc);
+    border-bottom: 1px solid var(--theme-line);
   }
   .gradebook-heading-icon {
     display: grid;
@@ -25,8 +25,8 @@
     width: 34px;
     height: 34px;
     border-radius: 10px;
-    background: var(--theme-primary-soft, #fff3de);
-    color: var(--theme-primary, #87591f);
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
   }
   .gradebook-heading-icon > svg {
     display: block;
@@ -58,7 +58,7 @@
     gap: 5px 8px;
     font-size: 11px;
     line-height: 1.7;
-    color: var(--theme-muted, #796c5c);
+    color: var(--theme-muted);
   }
   .gradebook-method {
     overflow-wrap: anywhere;
@@ -70,8 +70,8 @@
     flex-shrink: 0;
     padding: 2px 7px;
     border-radius: 6px;
-    background: var(--theme-surface-muted, #f3eee7);
-    color: var(--theme-ink, #645744);
+    background: var(--theme-surface-muted);
+    color: var(--theme-ink);
     font-size: 11px;
     font-variant-numeric: tabular-nums;
   }
@@ -85,9 +85,9 @@
     gap: 4px;
     padding: 5px;
     margin-bottom: 12px;
-    border: 1px solid var(--theme-line, #e6ded5);
+    border: 1px solid var(--theme-line);
     border-radius: 12px;
-    background: var(--theme-surface-muted, #f1efec);
+    background: var(--theme-surface-muted);
   }
   :is(#lessonGradesArea, #modalBody) .gradebook .assessment-navigation button {
     min-width: 0;
@@ -96,7 +96,7 @@
     border: 1px solid transparent;
     border-radius: 9px;
     background: transparent;
-    color: var(--theme-muted, #636466);
+    color: var(--theme-muted);
     font-size: 13px;
     font-weight: 500;
     line-height: 1.8;
@@ -109,7 +109,7 @@
     background: var(--workflow-accent);
     border-color: var(--workflow-accent);
     color: #fff;
-    box-shadow: 0 2px 5px var(--theme-primary-shadow, #92101920);
+    box-shadow: 0 2px 5px var(--theme-primary-shadow);
     font-weight: 600;
   }
   .gradebook-toolbar {
@@ -142,9 +142,9 @@
     min-width: 0;
     min-height: 46px;
     padding: 10px 12px;
-    border: 1px solid var(--theme-line, #dcd8d2);
+    border: 1px solid var(--theme-field-line);
     border-radius: 10px;
-    background: var(--theme-surface-subtle, #faf9f7);
+    background: var(--theme-field);
     font-size: 14px;
   }
   .gradebook-simple-search {
@@ -155,9 +155,9 @@
     min-width: 0;
     min-height: 46px;
     padding: 10px 12px;
-    border: 1px solid var(--theme-line, #dcd8d2);
+    border: 1px solid var(--theme-field-line);
     border-radius: 10px;
-    background: var(--theme-surface-subtle, #faf9f7);
+    background: var(--theme-field);
     font-size: 16px;
   }
   .gradebook-help {
@@ -175,7 +175,7 @@
     margin: 0;
     padding: 12px 14px;
     border-radius: 10px;
-    background: var(--theme-surface-muted, #f7f6f4);
+    background: var(--theme-surface-muted);
     color: var(--workflow-muted);
     font-size: 12px;
     line-height: 2;
@@ -216,44 +216,44 @@
     height: 5px;
     border: 0;
     border-radius: 8px;
-    background: var(--theme-line-soft, #eeece9);
+    background: var(--theme-line-soft);
     overflow: hidden;
-    accent-color: #398271;
+    accent-color: var(--status-success);
   }
   .gradebook-progress progress::-webkit-progress-bar {
-    background: var(--theme-line-soft, #eeece9);
+    background: var(--theme-line-soft);
   }
   .gradebook-progress progress::-webkit-progress-value {
-    background: #398271;
+    background: var(--status-success);
     border-radius: 8px;
   }
   .gradebook-progress progress::-moz-progress-bar {
-    background: #398271;
+    background: var(--status-success);
     border-radius: 8px;
   }
   .gradebook .assessment-student:focus-within .gradebook-number {
-    background: var(--theme-primary-soft, #fff1d0);
-    color: var(--theme-primary, #79522c);
-    box-shadow: 0 0 0 2px var(--theme-focus-soft, #fcaf1733);
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
+    box-shadow: 0 0 0 2px var(--theme-focus-soft);
   }
   .gradebook [data-result-state="passed"] [data-assessment-status],
   .gradebook [data-result-state="complete"] [data-assessment-status] {
-    color: #14634c;
+    color: var(--status-success);
   }
   .gradebook [data-result-state="review"] [data-assessment-status] {
-    color: #9f3021;
+    color: var(--status-danger);
   }
   .gradebook [data-result-state="incomplete"] [data-assessment-final] {
-    color: #9a958e;
+    color: var(--theme-muted);
   }
   .gradebook .grade-note[data-state="saved"] {
-    color: #398271;
+    color: var(--status-success);
   }
   .gradebook .grade-note[data-state="pending"] {
-    color: #875800;
+    color: var(--status-warning);
   }
   .gradebook .grade-note[data-state="error"] {
-    color: #b62f40;
+    color: var(--status-danger-fill);
   }
   :is(#lessonGradesArea, #modalBody) .gradebook .assessment-stage {
     margin: 0;
@@ -278,7 +278,7 @@
     padding: 18px 4px;
     min-width: 0;
     border: 0;
-    border-bottom: 1px solid var(--theme-line-soft, #eeece9);
+    border-bottom: 1px solid var(--theme-line-soft);
     border-radius: 0;
     background: transparent;
   }
@@ -299,8 +299,8 @@
     height: 34px;
     flex: 0 0 34px;
     border-radius: 10px;
-    background: var(--theme-surface-muted, #f4f1ec);
-    color: var(--theme-primary, #79522c);
+    background: var(--theme-surface-muted);
+    color: var(--theme-primary);
     font-size: 13px;
     font-variant-numeric: tabular-nums;
   }
@@ -338,11 +338,11 @@
     align-items: center;
     gap: 4px;
     font-size: 12px;
-    color: var(--theme-ink, #454649);
+    color: var(--theme-ink);
   }
   .gradebook .assessment-inputs small {
     font-size: 10px;
-    color: var(--theme-muted, #8a8680);
+    color: var(--theme-muted);
     font-weight: 400;
   }
   .assessment-editor .assessment-inputs .assessment-field-heading {
@@ -366,8 +366,8 @@
     flex: 0 0 auto;
     padding: 3px 6px;
     border-radius: 6px;
-    background: var(--theme-primary-soft, #faf0df);
-    color: var(--theme-primary, #79522c);
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
     font-size: 11px;
     font-weight: 600;
     line-height: 1.5;
@@ -413,10 +413,10 @@
     min-height: 48px;
     padding: 8px;
     padding-left: calc(var(--grade-clear-size, 32px) + 8px);
-    border: 1px solid var(--theme-line, #d7d2ca);
+    border: 1px solid var(--theme-field-line);
     border-radius: 9px;
-    background: #fff;
-    color: var(--theme-ink, #2d3440);
+    background: var(--theme-field);
+    color: var(--theme-ink);
     font-size: 20px;
     font-weight: 500;
     text-align: center;
@@ -435,13 +435,13 @@
     border: 0;
     border-radius: 8px;
     background: transparent;
-    color: var(--theme-muted, #8a8680);
+    color: var(--theme-muted);
     font-size: 18px;
     line-height: 1;
   }
   :is(#lessonGradesArea, #modalBody) .grade-editor .grade-clear:hover {
-    background: #fff0ed;
-    color: #9f3021;
+    background: var(--status-danger-soft);
+    color: var(--status-danger);
   }
   :is(#lessonGradesArea, #modalBody) .grade-note {
     grid-column: 1 / -1;
@@ -453,13 +453,13 @@
     overflow-wrap: anywhere;
   }
   :is(#lessonGradesArea, #modalBody) input[data-grade]:focus {
-    outline: 2px solid var(--theme-focus-soft, #fcaf1755);
+    outline: 2px solid var(--theme-focus-soft);
     outline-offset: 2px;
-    border-color: var(--theme-focus, #a87008);
+    border-color: var(--theme-focus);
   }
   :is(#lessonGradesArea, #modalBody) input[data-grade][aria-invalid="true"] {
-    border: 2px solid #b62f40;
-    background: #fff5f3;
+    border: 2px solid var(--status-danger-fill);
+    background: var(--status-danger-soft);
   }
   .gradebook-result {
     display: grid;
@@ -470,13 +470,13 @@
   }
   .gradebook-result > span:first-child {
     font-size: 11px;
-    color: var(--theme-muted, #8a8680);
+    color: var(--theme-muted);
   }
   .gradebook-result [data-assessment-final] {
     font-size: 22px;
     font-weight: 600;
     line-height: 1.4;
-    color: var(--theme-ink, #2d3440);
+    color: var(--theme-ink);
     font-variant-numeric: tabular-nums;
   }
   .gradebook-result [data-assessment-status] {
@@ -493,7 +493,7 @@
   #lessonGradesArea .grade-help {
     margin: 0 0 16px;
     padding: 12px 14px;
-    background: var(--theme-surface-subtle, #faf9f7);
+    background: var(--theme-surface-subtle);
     border: 1px solid var(--workflow-line);
     border-radius: 10px;
     font-size: 12px;
@@ -513,7 +513,7 @@
     padding: 14px;
     margin-block: 16px;
     border-radius: 10px;
-    background: var(--theme-surface-muted, #f7f6f4);
+    background: var(--theme-surface-muted);
   }
   .grades-intro > span {
     font-size: 14px;
@@ -527,17 +527,17 @@
   }
   #lessonGradesArea .course-warning {
     padding: 14px;
-    border: 1px solid #e3cc9e;
+    border: 1px solid var(--status-warning-line);
     border-radius: 10px;
-    background: #fff8e8;
-    color: #7c5105;
+    background: var(--status-warning-soft);
+    color: var(--status-warning);
     font-size: 12px;
     line-height: 1.9;
   }
   #lessonGradesArea .course-grades > h4 {
     margin: 24px 0 10px;
     padding-inline-start: 12px;
-    border-inline-start: 3px solid var(--theme-primary-line, #fcaf17);
+    border-inline-start: 3px solid var(--theme-primary-line);
     font-size: 16px;
   }
   #lessonGradesArea .table-scroll {
@@ -552,8 +552,8 @@
   }
   #lessonGradesArea th {
     padding: 14px 12px;
-    background: var(--theme-surface-muted, #f4f3f1);
-    color: var(--theme-ink, #454649);
+    background: var(--theme-surface-muted);
+    color: var(--theme-ink);
     font-size: 12px;
     line-height: 1.8;
   }
@@ -563,7 +563,7 @@
     line-height: 1.9;
   }
   #lessonGradesArea tbody tr:focus-within {
-    background: var(--theme-primary-soft, #fffbf2);
+    background: var(--theme-primary-soft);
   }
   #lessonGradesArea :is([data-pod-final], [data-kfinal], [data-course-final]) {
     font-size: 18px;
@@ -621,7 +621,7 @@
     padding: 16px;
     border: 1px solid var(--workflow-line);
     border-radius: 12px;
-    background: #fff;
+    background: var(--theme-surface);
   }
   .gradebook .assessment-inputs {
     gap: 12px;
@@ -633,7 +633,7 @@
     grid-column: 1;
     justify-content: start;
     padding-top: 12px;
-    border-top: 1px solid var(--theme-line-soft, #eeece9);
+    border-top: 1px solid var(--theme-line-soft);
   }
   .gradebook-result [data-assessment-status] {
     margin-inline-start: auto;
@@ -650,12 +650,12 @@
     grid-template-columns: minmax(0, 0.75fr) minmax(145px, 1.25fr);
   }
   .modular-gradebook .assessment-student:focus-within {
-    background: var(--theme-surface-subtle, #fffdf8);
-    box-shadow: inset -3px 0 0 var(--theme-primary-line, #e8d7c1);
+    background: var(--theme-surface-subtle);
+    box-shadow: inset -3px 0 0 var(--theme-primary-line);
   }
   .modular-gradebook .assessment-student[data-edit-state="error"] {
-    background: #fff9f7;
-    box-shadow: inset -3px 0 0 #b62f40;
+    background: var(--status-danger-soft);
+    box-shadow: inset -3px 0 0 var(--status-danger-fill);
   }
   .gradebook
     .assessment-student[data-edit-state="pending"]
@@ -668,9 +668,9 @@
     opacity: 0.45;
   }
   :is(#lessonGradesArea, #modalBody) .competency-choices button:focus-visible {
-    outline: 2px solid var(--theme-focus, #a87008);
+    outline: 2px solid var(--theme-focus);
     outline-offset: 1px;
-    background: var(--theme-primary-soft, #fff8e8);
+    background: var(--theme-primary-soft);
   }
   :is(#lessonGradesArea, #modalBody) .competency-editor > input[data-grade] {
     display: none;
@@ -682,9 +682,9 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 4px;
     padding: 4px;
-    border: 1px solid var(--theme-line, #d7d2ca);
+    border: 1px solid var(--theme-line);
     border-radius: 9px;
-    background: var(--theme-surface-muted, #f7f6f4);
+    background: var(--theme-surface-muted);
   }
   :is(#lessonGradesArea, #modalBody) .competency-choices button {
     min-width: 0;
@@ -693,27 +693,27 @@
     border: 1px solid transparent;
     border-radius: 6px;
     background: transparent;
-    color: var(--theme-muted, #636466);
+    color: var(--theme-muted);
     font-size: 17px;
     font-weight: 500;
   }
   :is(#lessonGradesArea, #modalBody)
     .competency-choices
     button[aria-pressed="true"] {
-    background: #fff;
-    border-color: var(--theme-primary-line, #c4b9a8);
-    color: var(--theme-primary, #79522c);
-    box-shadow: 0 1px 3px var(--theme-primary-shadow, #2d344010);
+    background: var(--theme-primary-soft);
+    border-color: var(--theme-primary-line);
+    color: var(--theme-primary);
+    box-shadow: 0 1px 3px var(--theme-primary-shadow);
     font-weight: 700;
   }
   .gradebook [data-result-state="passed"] [data-pod-status] {
-    color: #14634c;
+    color: var(--status-success);
   }
   .gradebook [data-result-state="review"] [data-pod-status] {
-    color: #9f3021;
+    color: var(--status-danger);
   }
   .gradebook [data-result-state="incomplete"] [data-pod-final] {
-    color: #9a958e;
+    color: var(--theme-muted);
   }
   .module-toolbar .gradebook-search {
     width: 100%;
@@ -732,9 +732,9 @@
     min-width: 0;
     min-height: 48px;
     padding: 10px 12px;
-    border: 1px solid var(--theme-line, #d7d2ca);
+    border: 1px solid var(--theme-field-line);
     border-radius: 10px;
-    background: var(--theme-surface-subtle, #faf9f7);
+    background: var(--theme-field);
     font-size: 14px;
     color: var(--workflow-ink);
   }
@@ -754,7 +754,7 @@
   .module-units p {
     margin: 0;
     padding: 12px;
-    background: var(--theme-surface-muted, #f7f6f4);
+    background: var(--theme-surface-muted);
     border-radius: 8px;
     line-height: 1.9;
   }
@@ -762,7 +762,7 @@
     margin: 12px 0;
     font-size: 12px;
     line-height: 1.9;
-    color: #875800;
+    color: var(--status-warning);
   }
   .modular-gradebook .gradebook-result [data-pod-final] {
     font-size: 22px;
@@ -820,7 +820,7 @@
     display: grid;
     gap: 8px;
     padding-top: 12px;
-    border-top: 1px solid var(--theme-line-soft, #eeece9);
+    border-top: 1px solid var(--theme-line-soft);
   }
   .module-gate select {
     width: 100%;
@@ -848,7 +848,7 @@
     font-size: 18px;
   }
   .module-draft {
-    color: #875800;
+    color: var(--status-warning);
     font-size: 11px;
   }
   .module-simple .module-toolbar {
@@ -859,9 +859,9 @@
     min-width: 0;
     min-height: 46px;
     padding: 10px 12px;
-    border: 1px solid var(--workflow-line);
+    border: 1px solid var(--theme-field-line);
     border-radius: 9px;
-    background: #fff;
+    background: var(--theme-field);
     font-size: 14px;
   }
   .module-simple .assessment-inputs {
@@ -905,14 +905,14 @@
     height: 32px;
     padding: 2px 4px;
     padding-left: calc(var(--grade-clear-size, 28px) + 4px);
-    border: 1px solid var(--theme-line, #d9d5ce);
-    background: var(--theme-surface-subtle, #faf9f7);
-    color: var(--theme-ink, #303438);
+    border: 1px solid var(--theme-field-line);
+    background: var(--theme-field);
+    color: var(--theme-ink);
     font-size: 16px;
     font-weight: 600;
     line-height: 24px;
     border-radius: 8px;
-    caret-color: var(--theme-primary, #79522c);
+    caret-color: var(--theme-primary);
     transition:
       border-color 0.15s,
       background-color 0.15s,
@@ -921,32 +921,32 @@
   :is(#lessonGradesArea, #modalBody)
     .module-simple
     input[data-grade]::placeholder {
-    color: var(--theme-muted, #b3ada4);
+    color: var(--theme-muted);
     font-weight: 400;
   }
   :is(#lessonGradesArea, #modalBody)
     .module-simple
     input[data-grade]:hover:not(:disabled) {
-    border-color: var(--theme-line, #b8b0a4);
+    border-color: var(--theme-muted);
   }
   :is(#lessonGradesArea, #modalBody) .module-simple input[data-grade]:focus {
-    border-color: var(--theme-focus, #a88a63);
-    background: #fff;
+    border-color: var(--theme-focus);
+    background: var(--theme-surface);
     outline: none;
-    box-shadow: 0 0 0 3px var(--theme-focus-soft, #d9bd952b);
+    box-shadow: 0 0 0 3px var(--theme-focus-soft);
   }
   :is(#lessonGradesArea, #modalBody)
     .module-simple
     input[data-grade][aria-invalid="true"] {
-    border: 1px solid #b62f40;
-    background: #fff6f4;
-    box-shadow: 0 0 0 2px #b62f4012;
+    border: 1px solid var(--status-danger-fill);
+    background: var(--status-danger-soft);
+    box-shadow: 0 0 0 2px var(--field-error-ring);
   }
   :is(#lessonGradesArea, #modalBody)
     .module-simple
     input[data-grade]::selection {
-    background: var(--theme-primary-soft, #f2dfbf);
-    color: var(--theme-ink, #303438);
+    background: var(--theme-primary-soft);
+    color: var(--theme-ink);
   }
   :is(#lessonGradesArea, #modalBody) .module-simple .grade-editor {
     --grade-clear-size: 28px;
@@ -1032,40 +1032,40 @@
     .assessment-student[data-result-state="passed"]
     .gradebook-result
     [data-pod-final] {
-    color: #14634c;
+    color: var(--status-success);
   }
   .module-simple
     .assessment-student[data-result-state="review"]
     .gradebook-result
     [data-pod-final] {
-    color: #b62f40;
+    color: var(--status-danger-fill);
   }
   .module-simple
     .assessment-student[data-result-state="incomplete"]
     .gradebook-result
     [data-pod-final] {
-    color: #9a958e;
+    color: var(--theme-muted);
   }
 }
 @media screen {
   :is(#lessonGradesArea, #modalBody) .module-simple .assessment-students {
     gap: 12px;
     padding: 12px;
-    border: 1px solid var(--theme-line-soft, #eeece9);
+    border: 1px solid var(--theme-line-soft);
     border-radius: 16px;
-    background: var(--theme-surface-muted, #f7f6f4);
+    background: var(--theme-surface-muted);
   }
   :is(#lessonGradesArea, #modalBody) .module-simple .assessment-student {
     padding: 16px;
     border: 1px solid var(--workflow-line);
     border-radius: 14px;
-    background: #fff;
-    box-shadow: 0 2px 6px var(--theme-primary-shadow, #2d344003);
+    background: var(--theme-surface);
+    box-shadow: 0 2px 6px var(--theme-primary-shadow);
   }
   .module-simple .assessment-student:focus-within {
-    border-color: var(--theme-line, #b9b6b1);
-    background: #fff;
-    box-shadow: 0 0 0 2px var(--theme-primary-shadow, #58595b0a);
+    border-color: var(--theme-line);
+    background: var(--theme-surface);
+    box-shadow: 0 0 0 2px var(--theme-primary-shadow);
   }
 }
 @media screen and (max-width: 600px) {
@@ -1200,9 +1200,9 @@
     grid-template-areas: "student" "inputs" "result";
     gap: 8px 10px;
     padding: 10px;
-    border: 1px solid var(--theme-line, #e5e0d7);
+    border: 1px solid var(--theme-line);
     border-radius: 10px;
-    background: #fff;
+    background: var(--theme-surface);
     box-shadow: none;
   }
   .assessment-editor .gradebook-student {
@@ -1260,7 +1260,7 @@
     gap: 4px 8px;
     margin-top: 6px;
     padding: 10px 0 0;
-    border-top: 1px solid var(--theme-line-soft, #eee9e1);
+    border-top: 1px solid var(--theme-line-soft);
     max-width: none;
     text-align: start;
   }
@@ -1340,7 +1340,7 @@
     justify-self: end;
     margin-top: 6px;
     padding: 10px 0 0;
-    border-top: 1px solid var(--theme-line-soft, #eee9e1);
+    border-top: 1px solid var(--theme-line-soft);
     text-align: start;
   }
   .assessment-editor .gradebook-result > span:first-child {
@@ -1380,7 +1380,7 @@
       padding: 0;
       padding-inline-start: 18px;
       border-top: 0;
-      border-inline-start: 1px solid var(--theme-line-soft, #eee9e1);
+      border-inline-start: 1px solid var(--theme-line-soft);
     }
     .assessment-editor .gradebook-result [data-assessment-status] {
       max-width: none;
@@ -1402,9 +1402,9 @@
     grid-template-areas: "student" "inputs" "result";
     gap: 10px;
     padding: 12px;
-    border: 1px solid var(--theme-line, #e5e0d7);
+    border: 1px solid var(--theme-line);
     border-radius: 10px;
-    background: #fff;
+    background: var(--theme-surface);
   }
   .assessment-editor .gradebook-number {
     width: 26px;
@@ -1446,7 +1446,7 @@
     gap: 6px 10px;
     margin-top: 6px;
     padding: 10px 0 0;
-    border-top: 1px solid var(--theme-line-soft, #eee9e1);
+    border-top: 1px solid var(--theme-line-soft);
     border-inline-start: 0;
   }
   .assessment-editor .gradebook-result > span:first-child {
@@ -1473,10 +1473,10 @@
     gap: 8px;
     margin: 0 0 14px;
     padding: 9px 12px;
-    border: 1px solid #cce4da;
+    border: 1px solid var(--status-success-line);
     border-radius: 11px;
-    background: #f1f9f5;
-    color: #205b45;
+    background: var(--status-success-soft);
+    color: var(--status-success);
     font-size: 0.78rem;
     line-height: 1.75;
     overflow-wrap: anywhere;
@@ -1494,14 +1494,14 @@
     background: currentColor;
   }
   #modalBody .modal-save-feedback[data-state="pending"] {
-    border-color: #ecd9ab;
-    background: #fff9ec;
-    color: #79520c;
+    border-color: var(--status-warning-line);
+    background: var(--status-warning-soft);
+    color: var(--status-warning);
   }
   #modalBody .modal-save-feedback[data-state="error"] {
-    border-color: #ecc8ce;
-    background: #fff3f4;
-    color: #9b293e;
+    border-color: var(--status-danger-line);
+    background: var(--status-danger-soft);
+    color: var(--status-danger);
   }
 }
 

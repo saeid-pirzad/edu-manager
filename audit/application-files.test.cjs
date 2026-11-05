@@ -5,7 +5,11 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const vm = require("node:vm");
-const { applicationFiles } = require("../scripts/application-files.cjs");
+const {
+  applicationFiles,
+  contentType,
+  assetBytes,
+} = require("../scripts/application-files.cjs");
 
 function fixture(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "edu-asset-catalog-"));
@@ -54,6 +58,112 @@ test("unavailable developer maps do not prevent runtime asset discovery", (t) =>
     true,
   );
   assert.throws(() => applicationFiles(root), /ENOENT|Missing source map/);
+});
+
+test("one local PNG may serve manifest, favicon, touch icon and repeated images without duplicate cache entries", (t) => {
+  const root = fixture(t);
+  fs.appendFileSync(
+    path.join(root, "EduManager.html"),
+    '<link rel="icon" href="./assets/logo.png"><link rel="apple-touch-icon" href="./assets/logo.png"><img src="./assets/logo.png"><img src="./assets/logo.png">',
+  );
+  fs.writeFileSync(
+    path.join(root, "app.webmanifest"),
+    JSON.stringify({
+      icons: [
+        { src: "./assets/logo.png", sizes: "192x192" },
+        { src: "./assets/logo.png", sizes: "512x512" },
+      ],
+    }),
+  );
+  const bytes = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 255, 0]);
+  fs.writeFileSync(path.join(root, "assets/logo.png"), bytes);
+  for (const includeSourceMaps of [true, false]) {
+    const catalog = applicationFiles(root, { includeSourceMaps });
+    assert.equal(catalog.get("assets/logo.png"), "image/png");
+    assert.equal(
+      [...catalog.keys()].filter((name) => name === "assets/logo.png").length,
+      1,
+    );
+  }
+});
+
+test("a manifest-only local icon becomes a required offline dependency", (t) => {
+  const root = fixture(t);
+  fs.writeFileSync(
+    path.join(root, "app.webmanifest"),
+    JSON.stringify({ icons: [{ src: "./assets/manifest-icon.png" }] }),
+  );
+  assert.throws(
+    () => applicationFiles(root),
+    /ENOENT|Missing application asset/,
+  );
+  fs.writeFileSync(path.join(root, "assets/manifest-icon.png"), "PNG fixture");
+  assert.equal(
+    applicationFiles(root, { includeSourceMaps: false }).get(
+      "assets/manifest-icon.png",
+    ),
+    "image/png",
+  );
+});
+
+test("manifest image discovery cannot widen the release allowlist to remote, traversal or data files", (t) => {
+  const root = fixture(t);
+  for (const src of [
+    "https://another.test/logo.png",
+    "//another.test/logo.png",
+    "../logo.png",
+    "./assets/../private.png",
+    "./assets/%2e%2e/private.png",
+    "./docs/School-doc/private.png",
+    "./assets/backup.json",
+    "data:text/html;base64,PHNjcmlwdD4=",
+  ]) {
+    fs.writeFileSync(
+      path.join(root, "app.webmanifest"),
+      JSON.stringify({ icons: [{ src }] }),
+    );
+    assert.throws(
+      () => applicationFiles(root),
+      /Unsupported application manifest icon|Unsafe application asset/,
+      src,
+    );
+  }
+});
+
+test("embedded legacy PNG icons remain supported without becoming filesystem assets", (t) => {
+  const root = fixture(t);
+  fs.writeFileSync(
+    path.join(root, "app.webmanifest"),
+    JSON.stringify({ icons: [{ src: "data:image/png;base64,iVBORw0KGgo=" }] }),
+  );
+  assert.equal(
+    [...applicationFiles(root).keys()].some((name) => name.startsWith("data:")),
+    false,
+  );
+});
+
+test("duplicate script execution is still rejected when image references are deduplicated", (t) => {
+  const root = fixture(t);
+  fs.appendFileSync(
+    path.join(root, "EduManager.html"),
+    '<script src="./assets/scripts/app.js"></script>',
+  );
+  assert.throws(() => applicationFiles(root), /Duplicate application asset/);
+});
+
+test("binary fingerprints preserve invalid UTF-8 and embedded CRLF while text stays checkout-independent", () => {
+  const bytes = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 255, 0]);
+  assert.equal(contentType("assets/logo.png"), "image/png");
+  assert.deepEqual(assetBytes("assets/logo.png", bytes), bytes);
+  assert.notDeepEqual(
+    assetBytes("assets/logo.png", bytes),
+    Buffer.from(bytes.toString("utf8").replace(/\r\n/g, "\n")),
+  );
+  assert.deepEqual(
+    assetBytes("EduManager.html", Buffer.from("one\r\ntwo\r\n")),
+    assetBytes("EduManager.html", "one\ntwo\n"),
+  );
+  assert.throws(() => contentType("assets/backup.json"), /Unsupported/);
 });
 
 test("startup keeps backup identity behavior without loading the unused exchange implementation", () => {

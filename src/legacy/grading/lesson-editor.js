@@ -32,7 +32,7 @@ function legacy_buildLessonGradesHtml(c, lesson) {
     </div>
     <p class="muted" style="font-size:.85em">نمره واحد = میانگین وزنی مستمر و پایانی با امتیازات انتخاب‌شده (صفر تا ۲۰). آخرین نمره تاریخ‌دار ملاک است؛ ثبت گروهی اولویت دارد. نهایی درس پس از تکمیل همه واحدها صادر می‌شود.</p>
     <div class="filter-units-box no-print">
-      <div style="font-weight:700;color:#3730a3;font-size:.9em">⚙️ اعمال در نمره هر واحد (اعمال روی همه واحدها):</div>
+      <div style="font-weight:700;color:var(--status-info, #1d4f91);font-size:.9em">⚙️ اعمال در نمره هر واحد (اعمال روی همه واحدها):</div>
       <div class="chips">
         <label><input type="checkbox" ${allPos ? "checked" : ""} data-legacy-change="grading-lesson-editor:1" data-legacy-change-arg3="${esc(lesson.id)}"> ➕ مثبت‌ها</label>
         <label><input type="checkbox" ${allNeg ? "checked" : ""} data-legacy-change="grading-lesson-editor:2" data-legacy-change-arg5="${esc(lesson.id)}"> ➖ منفی‌ها</label>
@@ -46,14 +46,14 @@ function legacy_buildLessonGradesHtml(c, lesson) {
 
   lesson.poudmans.forEach((p) => {
     p.units.forEach((u) => {
-      h += `<th colspan="3" style="text-align:center;border-right:2px solid #e2e8f0">${esc(p.name)} / ${esc(u.name)}</th>`;
+      h += `<th colspan="3" style="text-align:center;border-right:2px solid var(--theme-line, #e4e4e7)">${esc(p.name)} / ${esc(u.name)}</th>`;
     });
   });
-  h += `<th rowspan="2" style="background:#eef2ff;color:#4338ca">نهایی درس</th></tr><tr>`;
+  h += `<th rowspan="2" style="background:var(--theme-primary-soft, #fef0f0);color:var(--theme-primary-hover, #921019)">نهایی درس</th></tr><tr>`;
 
   lesson.poudmans.forEach((p) => {
     p.units.forEach((u) => {
-      h += `<th style="font-size:.75em;text-align:center">مستمر</th><th style="font-size:.75em;text-align:center">پایانی</th><th style="font-size:.75em;text-align:center;background:#f0fdf4;color:#166534">واحد</th>`;
+      h += `<th style="font-size:.75em;text-align:center">مستمر</th><th style="font-size:.75em;text-align:center">پایانی</th><th style="font-size:.75em;text-align:center;background:var(--status-success-soft, #eaf6f0);color:var(--status-success, #16664e)">واحد</th>`;
     });
   });
   h += `</tr></thead><tbody>`;
@@ -67,10 +67,10 @@ function legacy_buildLessonGradesHtml(c, lesson) {
         const d = stats.details[p.id][u.id];
         h += `<td style="text-align:center">${d.m !== null ? d.m : "—"}</td>`;
         h += `<td style="text-align:center">${d.p !== null ? d.p : "—"}</td>`;
-        h += `<td style="text-align:center;background:#f0fdf4;font-weight:600;color:#166534">${d.final !== null ? d.final.toFixed(2) : "—"}</td>`;
+        h += `<td style="text-align:center;background:var(--status-success-soft, #eaf6f0);font-weight:600;color:var(--status-success, #16664e)">${d.final !== null ? d.final.toFixed(2) : "—"}</td>`;
       });
     });
-    h += `<td style="background:#eef2ff;font-weight:700;color:#4338ca;text-align:center">${stats.final !== null ? stats.final.toFixed(2) : "—"}</td></tr>`;
+    h += `<td style="background:var(--theme-primary-soft, #fef0f0);font-weight:700;color:var(--theme-primary-hover, #921019);text-align:center">${stats.final !== null ? stats.final.toFixed(2) : "—"}</td></tr>`;
   });
   h += `</tbody></table></div></div>`;
 

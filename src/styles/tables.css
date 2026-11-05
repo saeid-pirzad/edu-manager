@@ -11,6 +11,7 @@
     font-weight: 500;
     line-height: 1.8;
     background: var(--theme-surface-muted);
+    color: var(--theme-ink);
     border-bottom: 1px solid var(--theme-line);
     vertical-align: middle;
   }
@@ -54,7 +55,7 @@
   .att-row {
     border: 1px solid var(--theme-line, #e5eaf3);
     border-radius: 14px;
-    background: #fff;
+    background: var(--theme-surface);
     padding: 14px;
     margin-block: 10px;
     gap: 10px;
@@ -96,15 +97,15 @@
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 12px;
-      background: #fff;
+      background: var(--theme-surface);
       border: 1px solid var(--theme-line);
       border-radius: 16px;
       padding: 16px;
       min-width: 0;
-      box-shadow: 0 3px 12px #4a302504;
+      box-shadow: var(--theme-shadow-sm);
     }
     table[data-ui-layout="cards"] tbody tr:hover {
-      background: #fff;
+      background: var(--theme-surface);
     }
     table[data-ui-layout="cards"] tbody td {
       display: block;
@@ -177,7 +178,7 @@
       max-width: 180px !important;
       z-index: 2;
       background: var(--theme-surface-subtle, #f8faff) !important;
-      box-shadow: -3px 0 5px #4a302508;
+      box-shadow: -3px 0 5px #2d344008;
     }
     table[data-ui-layout="matrix"] thead [data-identity] {
       z-index: 3;

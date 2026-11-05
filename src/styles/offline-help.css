@@ -63,23 +63,23 @@
   :is(#modalBody, #deputyInstallBody) .offline-ready-label {
     padding: 2px 5px;
     border-radius: 5px;
-    background: #edf5ef;
-    color: #35634c;
+    background: var(--status-success-soft);
+    color: var(--status-success);
     font-size: inherit;
     font-weight: 500;
     box-decoration-break: clone;
     -webkit-box-decoration-break: clone;
   }
   :is(#modalBody, #deputyInstallBody) .offline-help-storage {
-    border-color: #e8dcc9;
-    background: #fffcf6;
+    border-color: var(--status-warning-line);
+    background: var(--status-warning-soft);
   }
   :is(#modalBody, #deputyInstallBody) .offline-help-section .offline-help-note {
     margin-top: 12px;
     padding-top: 12px;
-    border-top: 1px solid #e9e0d3;
+    border-top: 1px solid var(--status-warning-line);
     font-size: 11px;
-    color: #795f3c;
+    color: var(--status-warning);
   }
 }
 @media screen and (max-width: 700px) {
@@ -126,7 +126,7 @@
     border: 1px solid var(--workflow-line);
     background: var(--theme-surface);
     color: var(--workflow-ink);
-    box-shadow: 0 24px 80px #17233733;
+    box-shadow: var(--theme-shadow-lg);
     overflow: hidden;
     font: inherit;
   }
@@ -138,7 +138,7 @@
     flex-direction: column;
   }
   #deputyInstallDialog::backdrop {
-    background: #0008;
+    background: var(--theme-overlay, #2d344080);
   }
   :is(#modal:has(.offline-help), #deputyInstallDialog) .modal-header {
     display: flex;
@@ -204,7 +204,7 @@
     padding: 0;
     font-size: 16px;
     line-height: 1.8;
-    box-shadow: 0 24px 80px #18233d33;
+    box-shadow: var(--theme-shadow-lg);
   }
   #deputyInstallDialog .modal-body {
     flex: 1 1 auto;
@@ -242,7 +242,7 @@
 
 @media screen {
   #deputyInstallDialog::backdrop {
-    background: rgba(15, 23, 42, 0.5);
+    background: var(--theme-overlay, rgba(45, 52, 64, 0.5));
   }
   :is(#modal:has(.offline-help), #deputyInstallDialog)
     .modal-header
@@ -294,8 +294,8 @@
     flex: 0 0 44px;
     height: 44px;
     border-radius: 12px;
-    background: #fbf0da;
-    color: #8b6227;
+    background: var(--theme-secondary-soft);
+    color: var(--theme-secondary);
   }
   #modalBody .update-notice-heading h4 {
     margin: 0 0 5px;
@@ -345,8 +345,8 @@
     gap: 8px;
     padding: 11px 12px;
     border-radius: 10px;
-    background: #edf6f2;
-    color: #35634c;
+    background: var(--status-success-soft);
+    color: var(--status-success);
     font-size: 12px;
   }
   .update-notice-note svg {

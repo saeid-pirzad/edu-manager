@@ -193,7 +193,7 @@
     border-radius: 18px;
     background: var(--theme-surface);
     color: var(--workflow-ink);
-    box-shadow: 0 24px 80px #17233733;
+    box-shadow: var(--theme-shadow-lg);
     overflow: hidden;
   }
   #deputyAboutDialog[open] {
@@ -201,7 +201,7 @@
     flex-direction: column;
   }
   #deputyAboutDialog::backdrop {
-    background: #0008;
+    background: var(--theme-overlay, #2d344080);
   }
   :is(#modal:has(.about-app), #deputyAboutDialog) .modal-header {
     display: flex;

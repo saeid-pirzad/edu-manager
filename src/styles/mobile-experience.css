@@ -3,7 +3,7 @@
 @media screen and (max-width: 700px),
   screen and (max-width: 1000px) and (pointer: coarse) {
   body {
-    background: #f7f8fc;
+    background: var(--theme-canvas, #f7f6f4);
   }
   input:not([type="checkbox"]):not([type="radio"]),
   select,
@@ -69,9 +69,9 @@
     top: 0;
     z-index: 75;
     display: block !important;
-    padding: 9px 0 !important;
+    padding: 10px 12px !important;
     margin: 0 !important;
-    background: #f7f8fc;
+    background: var(--theme-canvas, #f7f6f4);
     border: 0;
   }
   .topbar .header-brand {
@@ -108,8 +108,8 @@
   }
   .topbar .navigation-menu > summary {
     position: absolute;
-    left: 0;
-    top: 9px;
+    left: 12px;
+    top: 10px;
     display: grid;
     place-items: center;
     width: 42px;
@@ -117,7 +117,7 @@
     height: 42px;
     padding: 0;
     background: #fff;
-    border: 1px solid #e6eaf2;
+    border: 1px solid var(--theme-line, #e4e4e7);
     border-radius: 12px;
     font-size: 0;
   }
@@ -125,7 +125,7 @@
     content: "≡";
     font-size: 28px;
     line-height: 1;
-    color: var(--theme-muted, #43516b);
+    color: var(--theme-muted, #5a6179);
     font-weight: 400;
   }
   .topbar .navigation-menu[open] > summary::after {
@@ -134,8 +134,8 @@
   }
   .topbar .navigation-menu[open] .header-actions {
     position: absolute;
-    inset-inline: 0;
-    top: 60px;
+    inset-inline: 12px;
+    top: calc(100% + 6px);
     margin: 0;
     padding: 12px !important;
     max-height: calc(var(--app-viewport, 100dvh) - 148px);
@@ -143,17 +143,17 @@
     overscroll-behavior: contain;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    width: 100%;
+    width: calc(100% - 24px);
     background: #fff;
-    border: 1px solid var(--theme-line, #e4e9f2);
+    border: 0;
     border-radius: 18px;
-    box-shadow: 0 18px 48px #22335b26;
+    box-shadow: 0 18px 48px #2d344026;
   }
   .topbar .header-actions > .header-action:last-child {
     grid-column: auto;
     background: #fff;
     justify-content: flex-start;
-    border: 1px solid var(--theme-line, #e5eaf3);
+    border: 1px solid var(--theme-line, #e4e4e7);
   }
   .workspace-bar {
     display: flex;
@@ -163,7 +163,7 @@
     padding: 4px 0 10px !important;
     margin: 0 0 12px !important;
     border: 0;
-    border-bottom: 1px solid var(--theme-line, #e4e9f2);
+    border-bottom: 1px solid var(--theme-line, #e4e4e7);
     border-radius: 0 !important;
     background: transparent !important;
     box-shadow: none;
@@ -176,7 +176,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 52%;
-    color: var(--theme-muted, #64748b);
+    color: var(--theme-muted, #5a6179);
     font-weight: 400;
   }
   .workspace-bar > #saveStatus {
@@ -203,7 +203,7 @@
     min-height: 36px;
     display: flex;
     align-items: center;
-    color: var(--theme-muted, #64748b);
+    color: var(--theme-muted, #5a6179);
     list-style: none;
   }
   .workspace-tools summary::-webkit-details-marker {
@@ -255,7 +255,7 @@
   }
   .ui-hero {
     background: none;
-    color: var(--theme-ink, #18233d);
+    color: var(--theme-ink, #2d3440);
     box-shadow: none;
     padding: 8px 0 16px;
     margin: 0;
@@ -266,7 +266,7 @@
     display: none;
   }
   .ui-hero h2 {
-    color: var(--theme-ink, #18233d);
+    color: var(--theme-ink, #2d3440);
     font-size: 1.22rem;
     line-height: 1.8;
     margin: 0;
@@ -276,14 +276,14 @@
     gap: 8px;
   }
   .ui-stat {
-    border: 1px solid #e6eaf2;
+    border: 1px solid var(--theme-line, #e4e4e7);
     padding: 10px 12px;
   }
   .ui-stat strong {
     font-size: 1.22rem;
   }
   .card {
-    border: 1px solid #e6eaf2;
+    border: 1px solid var(--theme-line, #e4e4e7);
     border-radius: 18px;
     box-shadow: none;
     margin-bottom: 14px;
@@ -398,15 +398,15 @@
   }
   .grade-help {
     margin: 0 0 12px;
-    border: 1px solid var(--theme-line, #e5eaf3);
+    border: 1px solid var(--theme-line, #e4e4e7);
     border-radius: 10px;
-    background: var(--theme-surface-subtle, #f8faff);
+    background: var(--theme-surface-subtle, #fafafa);
   }
   .grade-help summary {
     cursor: pointer;
     min-height: 40px;
     padding: 9px 12px;
-    color: var(--theme-muted, #52617b);
+    color: var(--theme-muted, #5a6179);
     font-size: 0.7rem;
   }
   .grade-help p {
@@ -428,7 +428,7 @@
     td
     input:not([type="checkbox"]):not([type="radio"]) {
     min-height: 48px;
-    background: var(--theme-surface-subtle, #f8faff);
+    background: var(--theme-surface-subtle, #fafafa);
     font-size: 1.05rem !important;
     font-weight: 500;
   }
@@ -436,7 +436,7 @@
     display: grid;
     z-index: 80;
     padding-top: 6px;
-    box-shadow: 0 -4px 24px #24315b06;
+    box-shadow: 0 -4px 24px #2d344006;
     background: #fff;
   }
   #uiBottomNav button {

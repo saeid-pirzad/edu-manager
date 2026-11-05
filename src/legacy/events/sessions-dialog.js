@@ -1,4 +1,7 @@
 // Event handlers extracted from src/legacy/sessions/dialog.js.
+EduLegacyEvents.register("sessions-dialog:attendance-search", function () {
+  return filterSessionAttendance(this);
+});
 EduLegacyEvents.register("sessions-dialog:0", function (event) {
   document.getElementById("shamsiSessDate").textContent = toShamsi(this.value);
   refreshSessionDateSchedule();

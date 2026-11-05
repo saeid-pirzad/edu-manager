@@ -15,10 +15,10 @@
     min-height: 44px;
     padding: 0 !important;
     justify-content: center;
-    border: 1px solid var(--theme-line);
+    border: 1px solid var(--theme-nav-line, #ffffff26);
     border-radius: 12px;
-    background: var(--theme-surface);
-    color: var(--theme-muted);
+    background: var(--theme-nav, #58595b);
+    color: var(--theme-nav-ink, #fff);
     box-shadow: none;
   }
   .topbar .header-brand > .header-home > span {
@@ -34,8 +34,8 @@
     height: 21px;
   }
   .topbar .header-brand > .header-home.is-active {
-    color: var(--theme-primary);
-    background: var(--theme-primary-soft);
-    border-color: var(--theme-primary-line);
+    color: var(--theme-nav-ink, #fff);
+    background: var(--theme-primary);
+    border-color: var(--theme-nav-line, #ffffff26);
   }
 }

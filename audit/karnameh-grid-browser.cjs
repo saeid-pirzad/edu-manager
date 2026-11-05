@@ -2,6 +2,7 @@
 const fs = require("node:fs"),
   path = require("node:path"),
   os = require("node:os");
+const { detectRepeatedTableHeaders } = require("./report-header-raster.cjs");
 
 async function setup() {
   const original = await EduV24.snapshotInstallation(),
@@ -1481,21 +1482,10 @@ async function run(env) {
           raster,
         );
         if (kind === "stress") {
-          const headers = raster.pages.slice(1).map((page) => {
-            const rules = page.ink.horizontalRules.filter(
-              (value, index, all) => index === 0 || value > all[index - 1] + 2,
-            );
-            return {
-              file: page.file,
-              rules: rules.slice(0, 4),
-              twoHeaderRows:
-                rules.length >= 3 &&
-                rules[1] - rules[0] >= 30 &&
-                rules[1] - rules[0] <= 90 &&
-                rules[2] - rules[1] >= 30 &&
-                rules[2] - rules[1] <= 90,
-            };
-          });
+          const headers = raster.pages.slice(1).map((page) => ({
+            file: page.file,
+            ...detectRepeatedTableHeaders(page.ink),
+          }));
           check(
             "PRINT_REPEATED_HEADERS",
             "The native raster repeats the two-tier table header on continuation pages",

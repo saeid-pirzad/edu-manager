@@ -4,9 +4,7 @@
 window.EduAbout = Object.freeze({
   html() {
     return (
-      '<div class="about-app"><header class="about-hero"><span class="about-mark" aria-hidden="true">' +
-      EduIcons.html("book") +
-      '</span><div><span class="about-eyebrow">دفتر همراه هنرآموز</span><h4>کلاس‌یار</h4><p>از اولین کلاس تا آخرین کارنامه، کنار شما.</p></div></header>' +
+      '<div class="about-app"><header class="about-hero"><span class="about-mark app-brand-mark" aria-hidden="true"><img class="app-logo" src="./assets/logo3.png" width="500" height="500" alt="" decoding="async"></span><div><span class="about-eyebrow">دفتر همراه هنرآموز</span><h4>کلاس‌یار</h4><p>از اولین کلاس تا آخرین کارنامه، کنار شما.</p></div></header>' +
       '<p class="about-description">مدیریت مدرسه‌ها و کلاس‌ها، حضور و غیاب، ثبت نمرات، برنامه هفتگی و تهیه گزارش؛ در یک فضای ساده و یکپارچه.</p>' +
       '<div class="about-features" aria-label="ویژگی‌های برنامه"><span>قابل استفاده آفلاین</span><span>نگهداری محلی اطلاعات</span><span>پشتیبان مستقل</span></div>' +
       '<section class="about-section"><h4>اطلاعات شما کجا نگهداری می‌شود؟</h4><p>اطلاعات در همین مرورگر و روی همین دستگاه ذخیره می‌شود. همگام‌سازی خودکار بین دستگاه‌ها وجود ندارد؛ برای نگهداری یا انتقال اطلاعات، پشتیبان کامل بگیرید.</p></section>' +

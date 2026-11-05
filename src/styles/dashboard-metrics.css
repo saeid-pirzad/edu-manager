@@ -5,9 +5,9 @@
     gap: 14px;
   }
   .dashboard-metrics .ui-stat {
-    --metric-ink: var(--theme-primary, #4f46e5);
-    --metric-tint: var(--theme-primary-soft, #eef2ff);
-    --metric-border: var(--theme-primary-line, #e0e7ff);
+    --metric-ink: var(--theme-primary);
+    --metric-tint: var(--theme-primary-soft);
+    --metric-border: var(--theme-primary-line);
     display: grid;
     grid-template-columns: 38px minmax(0, 1fr);
     grid-template-areas: "icon value" "label label";
@@ -16,19 +16,23 @@
     border: 1px solid var(--metric-border);
     border-radius: 18px;
     padding: 18px;
-    background: linear-gradient(135deg, #fff 40%, var(--metric-tint));
-    box-shadow: 0 4px 14px var(--theme-primary-shadow, #26366a04);
+    background: linear-gradient(
+      135deg,
+      var(--theme-surface) 40%,
+      var(--metric-tint)
+    );
+    box-shadow: 0 4px 14px var(--theme-primary-shadow);
     min-width: 0;
   }
   .dashboard-metrics .metric-class {
-    --metric-ink: var(--theme-teal, #0f766e);
-    --metric-tint: var(--theme-teal-soft, #e8f6f1);
-    --metric-border: var(--theme-teal-line, #d6eae2);
+    --metric-ink: var(--theme-teal);
+    --metric-tint: var(--theme-teal-soft);
+    --metric-border: var(--theme-teal-line);
   }
   .dashboard-metrics .metric-student {
-    --metric-ink: var(--theme-primary-hover, #a16207);
-    --metric-tint: var(--theme-surface-muted, #fff7e6);
-    --metric-border: var(--theme-line, #f2e5c8);
+    --metric-ink: var(--theme-primary-hover);
+    --metric-tint: var(--theme-surface-muted);
+    --metric-border: var(--theme-line);
   }
   .dashboard-metrics .metric-icon {
     grid-area: icon;
@@ -58,7 +62,7 @@
   }
   .dashboard-metrics .metric-label {
     grid-area: label;
-    color: var(--theme-muted, #52617b);
+    color: var(--theme-muted);
     font-size: 0.8rem;
     font-weight: 500;
     line-height: 1.6;

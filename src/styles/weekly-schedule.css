@@ -2,16 +2,16 @@
 
 @media screen {
   :root {
-    --week-class-color-0: var(--theme-primary, #7a6857);
-    --week-class-color-1: var(--theme-secondary, #8a5c25);
-    --week-class-color-2: #7c394d;
-    --week-class-color-3: #b8633c;
-    --week-class-color-4: #755846;
-    --week-class-color-5: #a96862;
-    --week-class-color-6: #aa7c35;
-    --week-class-color-7: #80576b;
-    --week-class-color-8: #827140;
-    --week-class-color-9: #bd7b51;
+    --week-class-color-0: var(--theme-primary, #c0141b);
+    --week-class-color-1: var(--theme-secondary, #7c5105);
+    --week-class-color-2: var(--status-info-fill, #1d5fb8);
+    --week-class-color-3: var(--status-success-fill, #19775c);
+    --week-class-color-4: var(--status-leave-fill, #7546a8);
+    --week-class-color-5: #455568;
+    --week-class-color-6: var(--status-danger, #9f2635);
+    --week-class-color-7: #0b6974;
+    --week-class-color-8: #5d5f23;
+    --week-class-color-9: #3c4c85;
   }
   #app > :is(.week-overview, .week-agenda, .week-settings),
   .week-agenda > :is(.week-day-picker, .week-day-heading, .week-slot-list) {
@@ -27,11 +27,11 @@
     gap: 24px;
     margin-block: 12px 0;
     padding: 18px 20px;
-    border: 1px solid var(--theme-line, #e6e0d7);
+    border: 1px solid var(--theme-line, #e4e4e7);
     border-radius: 16px;
     background: linear-gradient(
       120deg,
-      var(--theme-surface-subtle, #fffdf9),
+      var(--theme-surface-subtle, #fafafa),
       #fff
     );
     box-shadow: none;
@@ -49,7 +49,7 @@
   }
   #app .week-overview-title h2 {
     margin: 0;
-    color: var(--theme-ink, #433d35);
+    color: var(--theme-ink, #2d3440);
     font-size: 18px;
     line-height: 1.6;
     white-space: nowrap;
@@ -61,8 +61,8 @@
     width: 38px;
     height: 38px;
     border-radius: 11px;
-    background: var(--theme-primary-soft, #f8efdf);
-    color: var(--theme-primary, #80551e);
+    background: var(--theme-primary-soft, #fef0f0);
+    color: var(--theme-primary, #c0141b);
   }
   .week-overview-symbol .ui-icon {
     width: 20px;
@@ -74,18 +74,18 @@
     flex: 0 0 auto;
     min-height: 26px;
     padding: 4px 9px;
-    border: 1px solid var(--theme-primary-line, #eddfc9);
+    border: 1px solid var(--theme-primary-line, #fbd0d1);
     border-radius: 8px;
-    background: var(--theme-primary-soft, #faf3e8);
-    color: var(--theme-primary, #80551e);
+    background: var(--theme-primary-soft, #fef0f0);
+    color: var(--theme-primary, #c0141b);
     font-size: 11px;
     line-height: 1.5;
     white-space: nowrap;
   }
   .week-parity.even {
-    border-color: var(--theme-teal-line, #cfe5dd);
-    background: var(--theme-teal-soft, #edf7f2);
-    color: var(--theme-teal, #28644c);
+    border-color: var(--theme-teal-line, #f2d39a);
+    background: var(--theme-teal-soft, #fffaed);
+    color: var(--theme-teal, #7c5105);
   }
   .week-overview-details {
     display: flex;
@@ -93,7 +93,7 @@
     flex-wrap: wrap;
     gap: 8px 16px;
     min-width: 0;
-    color: var(--theme-muted, #81796e);
+    color: var(--theme-muted, #5a6179);
   }
   .week-overview-date {
     display: inline-flex;
@@ -107,7 +107,7 @@
     width: 14px;
     height: 14px;
     flex: 0 0 14px;
-    color: var(--theme-muted, #9a8e7a);
+    color: var(--theme-muted, #5a6179);
   }
   .week-overview-date time {
     direction: ltr;
@@ -123,7 +123,7 @@
     white-space: nowrap;
   }
   .week-overview-count strong {
-    color: var(--theme-primary, #77532e);
+    color: var(--theme-primary, #c0141b);
     font-size: 16px;
     line-height: 1.4;
     font-variant-numeric: tabular-nums;
@@ -134,7 +134,7 @@
     min-width: 0;
     max-width: 100%;
     margin: 0;
-    color: var(--theme-muted, #81796e);
+    color: var(--theme-muted, #5a6179);
     font-size: 11px;
   }
   .week-filter select {
@@ -142,7 +142,7 @@
     min-width: 0;
     min-height: 44px;
     border-radius: 10px;
-    background: #fff;
+    background: var(--theme-field, #f4f4f5);
     font-size: 13px;
   }
   .week-agenda {
@@ -156,7 +156,7 @@
   }
   .week-desktop > header p {
     font-size: 0.74rem;
-    color: var(--theme-muted, #64748b);
+    color: var(--theme-muted, #5a6179);
     margin: 0 0 14px;
   }
   .week-table {
@@ -177,11 +177,11 @@
     font-size: 0.8rem;
     padding: 16px !important;
     white-space: nowrap;
-    background: var(--theme-surface-subtle, #f8faff) !important;
+    background: var(--theme-surface-subtle, #fafafa) !important;
   }
   .week-day-cell small {
     display: block;
-    color: var(--theme-primary, #4f46e5);
+    color: var(--theme-primary, #c0141b);
     font-size: 0.68rem;
     margin-top: 5px;
   }
@@ -189,17 +189,17 @@
     display: flex;
     gap: 12px;
     min-width: 0;
-    border: 1px solid var(--theme-line, #e5eaf3);
+    border: 1px solid var(--theme-line, #e4e4e7);
     border-radius: 16px;
     background: #fff;
     padding: 16px;
   }
   .week-slot.is-empty {
-    background: var(--theme-surface-subtle, #fafbff);
+    background: var(--theme-surface-subtle, #fafafa);
     border-style: dashed;
   }
   .week-slot.is-other {
-    background: var(--theme-surface-subtle, #f8fafc);
+    background: var(--theme-surface-subtle, #fafafa);
   }
   .week-slot-content {
     flex: 1;
@@ -213,14 +213,14 @@
   }
   .week-slot p {
     font-size: 0.72rem;
-    color: var(--theme-muted, #64748b);
+    color: var(--theme-muted, #5a6179);
     margin: 0 0 12px;
     line-height: 1.8;
   }
   .week-slot.is-empty h4,
   .week-slot.is-other h4 {
     font-size: 0.82rem;
-    color: var(--theme-muted, #52617b);
+    color: var(--theme-muted, #5a6179);
     margin-top: 0;
   }
   .week-class-label {
@@ -229,7 +229,7 @@
     gap: 6px;
     flex-wrap: wrap;
     font-size: 0.72rem;
-    color: var(--theme-primary, #4f46e5);
+    color: var(--theme-primary, #c0141b);
   }
   .week-color {
     width: 7px;
@@ -239,7 +239,7 @@
   }
   .week-school {
     font-size: 0.64rem;
-    color: var(--theme-muted, #64748b);
+    color: var(--theme-muted, #5a6179);
   }
   .week-slot-actions {
     display: flex;
@@ -273,10 +273,10 @@
     cursor: pointer;
     font-size: 0.85rem;
     font-weight: 500;
-    color: var(--theme-primary, #4338ca);
+    color: var(--theme-primary, #c0141b);
   }
   .week-settings section {
-    border-top: 1px solid var(--theme-line-soft, #edf1f7);
+    border-top: 1px solid var(--theme-line-soft, #ededf0);
     padding-top: 16px;
     margin-top: 12px;
   }
@@ -286,7 +286,7 @@
   }
   .week-settings section > p {
     font-size: 0.74rem;
-    color: var(--theme-muted, #64748b);
+    color: var(--theme-muted, #5a6179);
     line-height: 1.9;
     margin: 0 0 12px;
   }
@@ -301,18 +301,18 @@
     gap: 6px;
     min-height: 44px;
     padding: 8px 12px;
-    border: 1px solid var(--theme-line, #e5eaf3);
+    border: 1px solid var(--theme-line, #e4e4e7);
     border-radius: 12px;
     font-size: 0.75rem;
-    background: var(--theme-surface-subtle, #f8faff);
+    background: var(--theme-surface-subtle, #fafafa);
   }
   .week-working-days label:has(input:checked) {
-    background: var(--theme-primary-soft, #eef2ff);
-    border-color: var(--theme-primary-line, #c7d2fe);
-    color: var(--theme-primary, #4338ca);
+    background: var(--theme-primary-soft, #fef0f0);
+    border-color: var(--theme-primary-line, #fbd0d1);
+    color: var(--theme-primary, #c0141b);
   }
   .week-working-days input {
-    accent-color: var(--theme-primary, #4f46e5);
+    accent-color: var(--theme-primary, #c0141b);
   }
   .week-period-controls {
     display: flex;
@@ -366,19 +366,19 @@
       flex-shrink: 0;
       font-size: 0.74rem;
       padding: 8px 12px;
-      border: 1px solid var(--theme-line, #e5eaf3);
+      border: 1px solid var(--theme-line, #e4e4e7);
       border-radius: 13px;
       background: white;
-      color: var(--theme-muted, #64748b);
+      color: var(--theme-muted, #5a6179);
     }
     .week-day-picker button small {
       font-size: 0.6rem;
     }
     .week-day-picker button[aria-pressed="true"] {
-      background: var(--theme-primary, #4f46e5);
-      border-color: var(--theme-primary, #4f46e5);
+      background: var(--theme-primary, #c0141b);
+      border-color: var(--theme-primary, #c0141b);
       color: white;
-      box-shadow: 0 3px 10px var(--theme-primary-shadow, #4f46e51a);
+      box-shadow: 0 3px 10px var(--theme-primary-shadow, #ed1c2418);
     }
     .week-slot-list {
       display: grid;
@@ -398,12 +398,12 @@
     }
     .week-period span {
       font-size: 0.62rem;
-      color: var(--theme-muted, #64748b);
+      color: var(--theme-muted, #5a6179);
     }
     .week-period strong {
       font-size: 1.25rem;
       font-weight: 500;
-      color: var(--theme-primary, #4f46e5);
+      color: var(--theme-primary, #c0141b);
     }
     .week-slot-actions button {
       flex: 1;
@@ -414,7 +414,7 @@
       width: 100%;
       font-size: 0.73rem;
       min-height: 42px;
-      background: var(--theme-surface-muted, #f0f3fb);
+      background: var(--theme-surface-muted, #f4f4f5);
     }
     .week-slot.is-empty p {
       margin-bottom: 10px;
@@ -480,9 +480,9 @@
     gap: 6px;
     overflow-x: auto;
     padding: 6px;
-    border: 1px solid var(--theme-line, #e7e3dc);
+    border: 1px solid var(--theme-line, #e4e4e7);
     border-radius: 14px;
-    background: var(--theme-surface-muted, #f2f0ec);
+    background: var(--theme-surface-muted, #f4f4f5);
     overscroll-behavior-x: contain;
   }
   .week-day-picker button {
@@ -498,7 +498,7 @@
     border: 1px solid transparent;
     border-radius: 10px;
     background: transparent;
-    color: var(--theme-muted, #726b61);
+    color: var(--theme-muted, #5a6179);
     font-size: 13px;
     box-shadow: none;
   }
@@ -507,9 +507,9 @@
   }
   .week-day-picker button[aria-pressed="true"] {
     background: #fff;
-    border-color: var(--theme-primary-line, #e2d9cd);
-    color: var(--theme-primary, #79522c);
-    box-shadow: 0 2px 6px var(--theme-primary-shadow, #392b1210);
+    border-color: var(--theme-primary-line, #fbd0d1);
+    color: var(--theme-primary, #c0141b);
+    box-shadow: 0 2px 6px var(--theme-primary-shadow, #ed1c2418);
     font-weight: 600;
   }
   .week-day-heading {
@@ -521,7 +521,7 @@
     min-width: 0;
     margin: 12px 0 10px;
     padding: 12px 14px;
-    border: 1px solid var(--theme-line, #e7e1d8);
+    border: 1px solid var(--theme-line, #e4e4e7);
     border-radius: 14px;
     background: #fff;
   }
@@ -538,8 +538,8 @@
     width: 36px;
     height: 36px;
     border-radius: 11px;
-    background: var(--theme-primary-soft, #f8efdf);
-    color: var(--theme-primary, #79522c);
+    background: var(--theme-primary-soft, #fef0f0);
+    color: var(--theme-primary, #c0141b);
   }
   .week-day-symbol .ui-icon {
     width: 19px;
@@ -547,7 +547,7 @@
   }
   .week-day-heading h3 {
     margin: 0;
-    color: var(--theme-ink, #433d35);
+    color: var(--theme-ink, #2d3440);
     font-size: 15px;
     font-weight: 700;
     line-height: 1.7;
@@ -568,13 +568,13 @@
     gap: 7px;
     padding: 7px 10px;
     border-radius: 9px;
-    background: var(--theme-surface-muted, #f5f4f1);
-    color: var(--theme-muted, #655e54);
+    background: var(--theme-surface-muted, #f4f4f5);
+    color: var(--theme-muted, #5a6179);
     white-space: nowrap;
   }
   .week-day-stat.is-scheduled {
-    background: var(--theme-teal-soft, #edf6f1);
-    color: var(--theme-teal, #28644c);
+    background: var(--theme-teal-soft, #fffaed);
+    color: var(--theme-teal, #7c5105);
   }
   .week-day-stat dt {
     font-size: 11px;
@@ -602,7 +602,7 @@
     align-items: center;
     gap: 16px;
     padding: 16px;
-    border: 1px solid var(--theme-line, #e6e0d7);
+    border: 1px solid var(--theme-line, #e4e4e7);
     border-radius: 12px;
     background: #fff;
   }
@@ -616,15 +616,15 @@
     min-height: 52px;
     padding: 0;
     border-radius: 10px;
-    background: var(--theme-primary-soft, #f7f1e7);
+    background: var(--theme-primary-soft, #fef0f0);
   }
   .week-period span {
     font-size: 10px;
-    color: var(--theme-primary, #97836a);
+    color: var(--theme-primary, #c0141b);
   }
   .week-period strong {
     font-size: 22px;
-    color: var(--theme-primary, #79522c);
+    color: var(--theme-primary, #c0141b);
     font-weight: 600;
   }
   .week-slot-list .week-slot.is-filled .week-slot-content {
@@ -638,12 +638,12 @@
     grid-column: 1;
   }
   .week-class-label {
-    color: var(--theme-primary, #79522c);
+    color: var(--theme-primary, #c0141b);
     font-size: 12px;
   }
   .week-school,
   .week-slot p {
-    color: var(--theme-muted, #81796e);
+    color: var(--theme-muted, #5a6179);
   }
   .week-slot-list .week-slot h4 {
     margin: 5px 0 3px;
@@ -664,13 +664,13 @@
     font-size: 12px;
   }
   .week-slot-actions button:first-child {
-    background: var(--theme-primary, #79522c);
+    background: var(--theme-primary, #c0141b);
     color: #fff;
   }
   .week-slot-actions button.ghost {
-    background: var(--theme-surface-subtle, #f7f6f3);
-    color: var(--theme-muted, #655d52);
-    border: 1px solid var(--theme-line, #e6e0d7);
+    background: var(--theme-surface-subtle, #fafafa);
+    color: var(--theme-muted, #5a6179);
+    border: 1px solid var(--theme-line, #e4e4e7);
   }
   .week-slot-list .week-slot.is-empty .week-slot-content,
   .week-slot-list .week-slot.is-other .week-slot-content {
@@ -683,18 +683,18 @@
     grid-column: 2;
     grid-row: 1 / 3;
     width: auto;
-    background: var(--theme-surface-muted, #f5f2ec);
-    color: var(--theme-primary, #79522c);
-    border: 1px solid var(--theme-line, #e6e0d7);
+    background: var(--theme-surface-muted, #f4f4f5);
+    color: var(--theme-primary, #c0141b);
+    border: 1px solid var(--theme-line, #e4e4e7);
   }
   .week-slot-list .week-slot.is-empty {
     border-style: dashed;
-    background: var(--theme-surface-subtle, #fdfcfb);
+    background: var(--theme-surface-subtle, #fafafa);
   }
   .week-desktop {
     display: block;
     padding: 16px;
-    border: 1px solid var(--theme-line, #e6e0d7);
+    border: 1px solid var(--theme-line, #e4e4e7);
     border-radius: 14px;
     box-shadow: none;
   }
@@ -703,11 +703,11 @@
     padding: 6px 0;
     font-size: 13px;
     font-weight: 600;
-    color: var(--theme-muted, #655d52);
+    color: var(--theme-muted, #5a6179);
   }
   .week-desktop > header p {
     margin-top: 14px;
-    color: var(--theme-muted, #81796e);
+    color: var(--theme-muted, #5a6179);
   }
   .week-table th {
     min-width: 165px;
@@ -722,19 +722,19 @@
   }
   .week-table .week-slot {
     min-height: 150px;
-    background: var(--theme-surface-subtle, #faf9f7);
+    background: var(--theme-surface-subtle, #fafafa);
   }
   .week-table .week-day-cell {
-    background: var(--theme-surface-subtle, #f7f3ec) !important;
+    background: var(--theme-surface-subtle, #fafafa) !important;
   }
   .week-day-cell small {
-    color: var(--theme-primary, #79522c);
+    color: var(--theme-primary, #c0141b);
   }
   .week-settings {
     padding: 16px 18px;
-    border: 1px solid var(--theme-line, #e6e0d7);
+    border: 1px solid var(--theme-line, #e4e4e7);
     border-radius: 16px;
-    background: var(--theme-surface-subtle, #faf9f6);
+    background: var(--theme-surface-subtle, #fafafa);
     box-shadow: none;
   }
   .week-settings > summary {
@@ -745,7 +745,7 @@
     min-height: 58px;
     list-style: none;
     padding: 4px 0;
-    color: var(--theme-muted, #655d52);
+    color: var(--theme-muted, #5a6179);
     cursor: pointer;
   }
   .week-settings > summary::-webkit-details-marker {
@@ -755,7 +755,7 @@
     content: "";
   }
   .week-settings > summary:focus-visible {
-    outline: 2px solid var(--theme-focus, #a88a63);
+    outline: 2px solid var(--theme-focus, #c0141b);
     outline-offset: 4px;
     border-radius: 10px;
   }
@@ -771,10 +771,10 @@
     flex: 0 0 40px;
     width: 40px;
     height: 40px;
-    border: 1px solid var(--theme-primary-line, #ead9bd);
+    border: 1px solid var(--theme-primary-line, #fbd0d1);
     border-radius: 12px;
-    background: var(--theme-primary-soft, #f7efdf);
-    color: var(--theme-primary, #79522c);
+    background: var(--theme-primary-soft, #fef0f0);
+    color: var(--theme-primary, #c0141b);
   }
   .week-settings-symbol .ui-icon {
     width: 21px;
@@ -791,7 +791,7 @@
     line-height: 1.8;
   }
   .week-settings-title small {
-    color: var(--theme-muted, #81796e);
+    color: var(--theme-muted, #5a6179);
     font-size: 11px;
     font-weight: 400;
     line-height: 1.7;
@@ -802,7 +802,7 @@
     gap: 12px;
     margin-top: 14px;
     padding-top: 16px;
-    border-top: 1px solid var(--theme-line, #e7e1d7);
+    border-top: 1px solid var(--theme-line, #e4e4e7);
   }
   .week-settings:not([open]) > .week-settings-body {
     display: none;
@@ -811,7 +811,7 @@
     min-width: 0;
     margin: 0;
     padding: 18px;
-    border: 1px solid var(--theme-line, #e7e1d7);
+    border: 1px solid var(--theme-line, #e4e4e7);
     border-radius: 12px;
     background: #fff;
   }
@@ -825,12 +825,12 @@
     margin: 0 0 8px;
     font-size: 13px;
     line-height: 1.8;
-    color: var(--theme-ink, #514536);
+    color: var(--theme-ink, #2d3440);
   }
   .week-setting-icon {
     display: inline-flex;
     flex: 0 0 18px;
-    color: var(--theme-primary, #9a7443);
+    color: var(--theme-primary, #c0141b);
   }
   .week-setting-icon .ui-icon {
     width: 18px;
@@ -839,7 +839,7 @@
   }
   .week-settings section > p {
     margin: 0 0 14px;
-    color: var(--theme-muted, #81796e);
+    color: var(--theme-muted, #5a6179);
     font-size: 11px;
     line-height: 1.9;
   }
@@ -854,29 +854,29 @@
     min-height: 46px;
     margin: 0;
     padding: 9px 8px;
-    border: 1px solid var(--theme-line, #e7e3dc);
+    border: 1px solid var(--theme-line, #e4e4e7);
     border-radius: 10px;
-    background: var(--theme-surface-subtle, #faf9f7);
-    color: var(--theme-muted, #726b61);
+    background: var(--theme-surface-subtle, #fafafa);
+    color: var(--theme-muted, #5a6179);
     font-size: 12px;
     white-space: nowrap;
     cursor: pointer;
   }
   .week-working-days label:has(input:checked) {
-    background: var(--theme-primary-soft, #f7efdf);
-    border-color: var(--theme-primary-line, #cfb893);
-    color: var(--theme-primary, #79522c);
+    background: var(--theme-primary-soft, #fef0f0);
+    border-color: var(--theme-primary-line, #fbd0d1);
+    color: var(--theme-primary, #c0141b);
     font-weight: 600;
   }
   .week-working-days label:has(input:focus-visible) {
-    outline: 2px solid var(--theme-focus, #a88a63);
+    outline: 2px solid var(--theme-focus, #c0141b);
     outline-offset: 2px;
   }
   .week-working-days label:has(input:disabled) {
     cursor: default;
   }
   .week-working-days input {
-    accent-color: var(--theme-primary, #79522c);
+    accent-color: var(--theme-primary, #c0141b);
     flex: 0 0 16px;
     width: 16px;
     height: 16px;
@@ -891,9 +891,9 @@
     gap: 10px;
     margin-top: 8px;
     padding: 6px;
-    border: 1px solid var(--theme-line, #e6e0d7);
+    border: 1px solid var(--theme-line, #e4e4e7);
     border-radius: 12px;
-    background: var(--theme-surface-subtle, #faf9f7);
+    background: var(--theme-surface-subtle, #fafafa);
   }
   .week-period-controls button {
     width: 44px;
@@ -901,20 +901,20 @@
     min-width: 0;
     min-height: 44px;
     margin: 0;
-    border: 1px solid var(--theme-line, #e6e0d7);
+    border: 1px solid var(--theme-line, #e4e4e7);
     border-radius: 9px;
     background: #fff;
   }
   .week-period-controls strong {
     text-align: center;
-    color: var(--theme-primary, #79522c);
+    color: var(--theme-primary, #c0141b);
     font-size: 18px;
     font-variant-numeric: tabular-nums;
   }
   .week-settings section > .week-save-hint {
     margin: 12px 0 0;
     font-size: 10px;
-    color: var(--theme-muted, #687b69);
+    color: var(--theme-muted, #5a6179);
   }
   .week-start-date {
     display: grid;
@@ -930,7 +930,7 @@
     gap: 7px;
     margin: 0;
     font-size: 11px;
-    color: var(--theme-muted, #726b61);
+    color: var(--theme-muted, #5a6179);
   }
   .week-start-date input {
     width: 100%;
@@ -938,9 +938,9 @@
     min-height: 44px;
     margin: 0;
     padding: 8px 10px;
-    border: 1px solid var(--theme-line, #ded8ce);
+    border: 1px solid var(--theme-line, #e4e4e7);
     border-radius: 9px;
-    background: var(--theme-surface-subtle, #faf9f7);
+    background: var(--theme-surface-subtle, #fafafa);
     font-size: 16px;
   }
   .week-start-date .shamsi-display {
@@ -948,7 +948,7 @@
     margin: 0;
     font-size: 11px;
     line-height: 1.8;
-    color: var(--theme-muted, #81796e);
+    color: var(--theme-muted, #5a6179);
   }
   .week-start-date > button {
     grid-column: 2;
@@ -958,14 +958,14 @@
     margin: 0;
     padding: 9px 12px;
     border-radius: 9px;
-    background: var(--theme-primary, #79522c);
+    background: var(--theme-primary, #c0141b);
     color: #fff;
     font-size: 11px;
     white-space: nowrap;
   }
   .week-day-picker button:focus-visible,
   .week-desktop > summary:focus-visible {
-    outline: 2px solid var(--theme-focus, #a88a63);
+    outline: 2px solid var(--theme-focus, #c0141b);
     outline-offset: 2px;
   }
 }
@@ -1069,7 +1069,7 @@
     border-radius: 14px;
   }
   #app .week-slot-list .week-slot.is-filled {
-    border-inline-start: 3px solid var(--theme-primary-line, #d2b184);
+    border-inline-start: 3px solid var(--theme-primary-line, #fbd0d1);
   }
   #app .week-slot-list .week-period {
     grid-column: 1;
@@ -1082,11 +1082,11 @@
     min-height: 36px;
     padding: 5px;
     border-radius: 9px;
-    background: var(--theme-primary-soft, #f8f0e3);
+    background: var(--theme-primary-soft, #fef0f0);
   }
   #app .week-slot-list .week-period span {
     font-size: 9px;
-    color: var(--theme-primary, #8b7253);
+    color: var(--theme-primary, #c0141b);
   }
   #app .week-slot-list .week-period strong {
     font-size: 16px;
@@ -1102,7 +1102,7 @@
     align-self: center;
     min-width: 0;
     margin: 0;
-    color: var(--theme-ink, #433d35);
+    color: var(--theme-ink, #2d3440);
     font-size: 13px;
     line-height: 1.9;
   }
@@ -1120,7 +1120,7 @@
   }
   #app .week-slot-list .week-school {
     font-size: 10px;
-    color: var(--theme-muted, #8a8175);
+    color: var(--theme-muted, #5a6179);
   }
   #app .week-slot-list .week-slot p {
     grid-column: 1 / -1;
@@ -1139,7 +1139,7 @@
     gap: 8px;
     margin: 3px 0 0;
     padding-top: 10px;
-    border-top: 1px solid var(--theme-line-soft, #eee9e1);
+    border-top: 1px solid var(--theme-line-soft, #ededf0);
   }
   #app .week-slot-list .week-slot-actions > button {
     min-width: 0;
@@ -1160,10 +1160,10 @@
   }
   #app .week-slot-list :is(.is-empty, .is-other) .week-period {
     grid-row: 1 / 3;
-    background: var(--theme-surface-muted, #f2f0ec);
+    background: var(--theme-surface-muted, #f4f4f5);
   }
   #app .week-slot-list :is(.is-empty, .is-other) h4 {
-    color: var(--theme-muted, #72695c);
+    color: var(--theme-muted, #5a6179);
     font-size: 12px;
   }
   #app .week-slot-list :is(.is-empty, .is-other) p {
@@ -1186,6 +1186,122 @@
   }
   .week-settings {
     padding: 14px;
+  }
+}
+/* Match report navigation while allowing long weekday names on narrow screens. */
+@media screen {
+  #app .week-day-picker {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 3px;
+    padding: 3px;
+    border: 1px solid var(--theme-secondary-line);
+    border-radius: 12px;
+    background: var(--theme-secondary-soft);
+    overflow: visible;
+  }
+  #app .week-day-picker > button,
+  #app .week-day-picker > button.ui-button-flat:not([hidden]) {
+    flex: 1 1 0;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    min-height: 54px;
+    margin: 0;
+    padding: 6px 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--theme-ink);
+    font-size: clamp(10px, 2.8vw, 12px);
+    font-weight: 500;
+    line-height: 1.5;
+    white-space: nowrap;
+    box-shadow: none;
+  }
+  #app .week-day-picker > button[aria-pressed="true"],
+  #app .week-day-picker > button.ui-button-flat[aria-pressed="true"] {
+    background: var(--theme-primary);
+    color: var(--theme-surface);
+    box-shadow: none;
+  }
+  #app .week-day-picker > button small {
+    color: inherit;
+    font-size: 10px;
+    line-height: 1.5;
+  }
+}
+@media screen and (max-width: 639px) {
+  #app .week-day-picker {
+    gap: 1px;
+    padding: 2px;
+  }
+  #app .week-day-picker > button small {
+    font-size: 9px;
+  }
+}
+@media screen and (max-width: 360px) {
+  #app .week-day-picker:has(> button:nth-child(7)) > button {
+    font-size: 9.5px;
+  }
+}
+@media screen and (min-width: 640px) {
+  #app .week-day-picker > button,
+  #app .week-day-picker > button.ui-button-flat:not([hidden]) {
+    flex: 1 1 0;
+    flex-direction: row;
+    min-width: 0;
+    min-height: 44px;
+    gap: 4px;
+    padding: 6px 4px;
+  }
+}
+@media screen and (hover: hover) {
+  #app .week-day-picker > button:not([aria-pressed="true"]):hover,
+  #app
+    .week-day-picker
+    > button.ui-button-flat:not([aria-pressed="true"]):hover {
+    background: var(--theme-surface);
+    color: var(--theme-primary-hover);
+  }
+  #app .week-day-picker > button[aria-pressed="true"]:hover,
+  #app .week-day-picker > button.ui-button-flat[aria-pressed="true"]:hover {
+    background: var(--theme-primary-hover);
+  }
+}
+/* A lightweight day caption, not another card between navigation and lessons. */
+@media screen {
+  #app .week-day-heading {
+    gap: 6px 12px;
+    margin: 12px 0 8px;
+    padding: 0 2px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  #app .week-day-heading .week-day-symbol {
+    display: none;
+  }
+  #app .week-day-heading h3 {
+    font-size: 13px;
+    font-weight: 500;
+  }
+  #app .week-day-heading .week-day-stats {
+    gap: 12px;
+  }
+  #app .week-day-heading .week-day-stat {
+    gap: 4px;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--theme-muted);
+  }
+  #app .week-day-heading .week-day-stat dt,
+  #app .week-day-heading .week-day-stat dd {
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.8;
   }
 }
 @media print {

@@ -98,6 +98,28 @@ test("plain existing release output can be refreshed deterministically", (t) => 
     /updated/,
   );
 });
+
+test("release copies referenced binary branding bytes without including unreferenced images or private data", (t) => {
+  const { root, write } = fixture(t);
+  const bytes = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 255, 0]);
+  write("assets/icons/install.png", bytes);
+  write("assets/not-referenced.png", "not part of the application");
+  write(
+    "app.webmanifest",
+    JSON.stringify({ icons: [{ src: "./assets/icons/install.png" }] }),
+  );
+  const result = packageRelease(root);
+  assert.ok(result.files.includes("assets/icons/install.png"));
+  assert.deepEqual(
+    fs.readFileSync(path.join(result.output, "assets/icons/install.png")),
+    bytes,
+  );
+  assert.equal(
+    result.files.some((name) => name.includes("not-referenced")),
+    false,
+  );
+  assert.equal(fs.existsSync(path.join(result.output, "docs")), false);
+});
 test("release rejects symbolic destination directories instead of copying outside dist", (t) => {
   const { root } = fixture(t);
   const outside = path.join(root, "not-release");

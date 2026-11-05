@@ -4,8 +4,8 @@
   body select:not([multiple]):not([size]) {
     -webkit-appearance: none;
     appearance: none;
-    background-color: var(--theme-surface);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='m6 8 4 4 4-4' stroke='%2375665b' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+    background-color: var(--theme-field);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='m6 8 4 4 4-4' stroke='%235a6179' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
     background-repeat: no-repeat !important;
     background-position: left 12px center !important;
     background-size: 18px 18px !important;
@@ -14,7 +14,7 @@
     min-height: 46px;
     max-width: 100%;
     min-width: 0;
-    border: 1px solid var(--theme-line);
+    border: 1px solid var(--theme-field-line);
     border-radius: 12px;
     color: var(--theme-ink);
     font-family: IRANSans, Tahoma, sans-serif;
@@ -25,15 +25,15 @@
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
-    box-shadow: 0 1px 2px #4a302503;
+    box-shadow: var(--theme-shadow-sm);
     transition:
       border-color 0.16s,
       box-shadow 0.16s,
       background-color 0.16s;
   }
   body select:not([multiple]):not([size]):hover:not(:disabled) {
-    border-color: var(--theme-primary-line);
-    background-color: var(--theme-surface-subtle);
+    border-color: var(--theme-primary);
+    background-color: var(--theme-field);
   }
   body select:not([multiple]):not([size]):focus {
     outline: none;
@@ -53,8 +53,8 @@
     color: var(--theme-muted);
   }
   body select:not([multiple]):not([size])[aria-invalid="true"] {
-    border-color: #dc2626;
-    box-shadow: 0 0 0 3px #dc262615;
+    border-color: var(--field-error-line);
+    box-shadow: 0 0 0 3px var(--field-error-ring);
   }
   body select:not([multiple]):not([size]) option {
     background: var(--theme-surface);

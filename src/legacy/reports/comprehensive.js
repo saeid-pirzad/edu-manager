@@ -2,37 +2,9 @@ function renderReports() {
   const tab = state.reportTab || "comprehensive";
   const periodic = ["daily", "weekly", "monthly", "annual"].includes(tab);
   const periodicContent = periodic ? EduPeriodicReports.render(tab) : "";
-  const filter = periodic
-    ? EduPeriodicReports.filters
-    : tab === "comprehensive"
-      ? globalFilter
-      : tab === "lessonReport"
-        ? lessonReportFilter
-        : karnamehFilter;
-  const schools = db.schools.filter(
-      (s) => !filter.schoolId || s.id === filter.schoolId,
-    ),
-    classes = schools
-      .flatMap((s) => s.classes)
-      .filter((c) => !filter.classId || c.id === filter.classId);
-  const scope =
-    (filter.schoolId ? schools[0]?.name : "همه مدارس") || "مدرسه انتخاب‌شده";
   let h =
     headerHtml() +
-    '<header class="report-page-heading"><p>تصویر روشن از عملکرد کلاس‌ها</p><h2>گزارش‌ها و کارنامه‌ها</h2><span>' +
-    esc(scope) +
-    (filter.classId ? " · " + esc(classes[0]?.name || "کلاس انتخاب‌شده") : "") +
-    "</span></header>";
-  h +=
-    '<section class="report-scope-summary no-print"><span><strong>' +
-    classes.length.toLocaleString("fa-IR") +
-    "</strong> کلاس</span><span><strong>" +
-    classes.reduce((n, c) => n + c.students.length, 0).toLocaleString("fa-IR") +
-    "</strong> هنرجو</span><span><strong>" +
-    classes
-      .reduce((n, c) => n + (c.lessons || []).length, 0)
-      .toLocaleString("fa-IR") +
-    "</strong> درس در محدوده</span></section>";
+    '<header class="report-page-heading"><h2>گزارش‌ها و کارنامه‌ها</h2></header>';
   h +=
     '<nav class="tabs report-navigation no-print" aria-label="نوع گزارش">' +
     [
@@ -132,23 +104,23 @@ function renderComprehensiveTab() {
       </select>
     </div>
     <div class="filter-box">
-      <div style="font-size:.9em;font-weight:600;color:#475569;margin-bottom:8px">حالت نمایش گزارش:</div>
+      <div style="font-size:.9em;font-weight:600;color:var(--theme-muted, #5a6179);margin-bottom:8px">حالت نمایش گزارش:</div>
       <div class="row" style="margin-bottom:12px">
         <label><input type="radio" name="reportMode" value="summary" ${globalFilter.reportMode === "summary" ? "checked" : ""} data-legacy-change="reports-comprehensive:10"> خلاصه (جدولی)</label>
         <label><input type="radio" name="reportMode" value="detailed" ${globalFilter.reportMode === "detailed" ? "checked" : ""} data-legacy-change="reports-comprehensive:11"> گزارش کامل</label>
       </div>
-      <div style="font-size:.9em;font-weight:600;color:#475569;margin-bottom:8px">اطلاعات موجود در گزارش:</div>
+      <div style="font-size:.9em;font-weight:600;color:var(--theme-muted, #5a6179);margin-bottom:8px">اطلاعات موجود در گزارش:</div>
       <div class="row" style="margin-bottom:8px">
         <label><input type="checkbox" ${globalFilter.showAttendance ? "checked" : ""} data-legacy-change="reports-comprehensive:12"> حضور و غیاب</label>
         <label><input type="checkbox" ${globalFilter.showScores ? "checked" : ""} data-legacy-change="reports-comprehensive:13"> نمرات</label>
         <label><input type="checkbox" ${globalFilter.showPosNeg ? "checked" : ""} data-legacy-change="reports-comprehensive:14"> مثبت / منفی</label>
         <label><input type="checkbox" ${globalFilter.showHomework ? "checked" : ""} data-legacy-change="reports-comprehensive:15"> تکالیف</label>
       </div>
-      <div style="font-size:.9em;font-weight:600;color:#475569;margin-bottom:8px">نمایش اسامی (برای حضور و غیاب):</div>
+      <div style="font-size:.9em;font-weight:600;color:var(--theme-muted, #5a6179);margin-bottom:8px">نمایش اسامی (برای حضور و غیاب):</div>
       <div class="row" style="margin-bottom:0">
-        <label style="color:#059669"><input type="checkbox" ${globalFilter.showPresentNames ? "checked" : ""} data-legacy-change="reports-comprehensive:16"> نام حاضرین</label>
-        <label style="color:#dc2626"><input type="checkbox" ${globalFilter.showAbsentNames ? "checked" : ""} data-legacy-change="reports-comprehensive:17"> نام غایبین</label>
-        <label style="color:#d97706"><input type="checkbox" ${globalFilter.showLateNames ? "checked" : ""} data-legacy-change="reports-comprehensive:18"> نام تأخیری‌ها</label>
+        <label style="color:var(--status-success, #16664e)"><input type="checkbox" ${globalFilter.showPresentNames ? "checked" : ""} data-legacy-change="reports-comprehensive:16"> نام حاضرین</label>
+        <label style="color:var(--status-danger, #9f2635)"><input type="checkbox" ${globalFilter.showAbsentNames ? "checked" : ""} data-legacy-change="reports-comprehensive:17"> نام غایبین</label>
+        <label style="color:var(--status-warning, #7c5105)"><input type="checkbox" ${globalFilter.showLateNames ? "checked" : ""} data-legacy-change="reports-comprehensive:18"> نام تأخیری‌ها</label>
         <button class="ghost" data-legacy-click="reports-comprehensive:19" style="margin-right:auto;font-size:.85em;padding:4px 10px">♻️ ریست فیلترها</button>
       </div>
     </div>
@@ -395,8 +367,8 @@ function generateGlobalReport() {
         if (globalFilter.showPosNeg) {
           const pos = sess.scores.filter((x) => x.type === "positive").length;
           const neg = sess.scores.filter((x) => x.type === "negative").length;
-          h += `<td style="color:#059669;font-weight:600">${pos}</td>`;
-          h += `<td style="color:#dc2626;font-weight:600">${neg}</td>`;
+          h += `<td style="color:var(--status-success, #16664e);font-weight:600">${pos}</td>`;
+          h += `<td style="color:var(--status-danger, #9f2635);font-weight:600">${neg}</td>`;
         }
         if (globalFilter.showHomework) {
           const hw = sess.scores.filter((x) => x.type === "homework").length;
@@ -480,7 +452,7 @@ function generateGlobalReport() {
           );
           if (exams.length)
             h +=
-              `<div class="names-list" style="color:#3730a3;margin-top:8px">📊 نمرات: ` +
+              `<div class="names-list" style="color:var(--status-info, #1d4f91);margin-top:8px">📊 نمرات: ` +
               exams
                 .map((x) => {
                   const st = sessionStudent(cls.classObj, sess, x.studentId);
@@ -495,7 +467,7 @@ function generateGlobalReport() {
           const neg = sess.scores.filter((x) => x.type === "negative");
           if (pos.length)
             h +=
-              `<div class="names-list" style="color:#059669;margin-top:4px">➕ مثبت (${pos.length}): ` +
+              `<div class="names-list" style="color:var(--status-success, #16664e);margin-top:4px">➕ مثبت (${pos.length}): ` +
               pos
                 .map((x) => {
                   const st = sessionStudent(cls.classObj, sess, x.studentId);
@@ -506,7 +478,7 @@ function generateGlobalReport() {
               `</div>`;
           if (neg.length)
             h +=
-              `<div class="names-list" style="color:#dc2626;margin-top:4px">➖ منفی (${neg.length}): ` +
+              `<div class="names-list" style="color:var(--status-danger, #9f2635);margin-top:4px">➖ منفی (${neg.length}): ` +
               neg
                 .map((x) => {
                   const st = sessionStudent(cls.classObj, sess, x.studentId);
@@ -520,7 +492,7 @@ function generateGlobalReport() {
           const hw = sess.scores.filter((x) => x.type === "homework");
           if (hw.length)
             h +=
-              `<div class="names-list" style="color:#3730a3;margin-top:4px">📝 تکالیف (${hw.length}): ` +
+              `<div class="names-list" style="color:var(--status-info, #1d4f91);margin-top:4px">📝 تکالیف (${hw.length}): ` +
               hw
                 .map((x) => {
                   const st = sessionStudent(cls.classObj, sess, x.studentId);
@@ -530,7 +502,7 @@ function generateGlobalReport() {
                 .join("، ") +
               `</div>`;
         }
-        h += `</div><hr style="border:0;border-top:1px dashed #e2e8f0;margin:10px 0">`;
+        h += `</div><hr style="border:0;border-top:1px dashed var(--theme-line, #e4e4e7);margin:10px 0">`;
       });
       h += `</div>`;
     });

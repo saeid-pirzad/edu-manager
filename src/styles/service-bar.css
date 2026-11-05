@@ -38,20 +38,20 @@
     height: 7px;
     flex: 0 0 7px;
     border-radius: 50%;
-    background: #bb8a3d;
-    box-shadow: 0 0 0 3px #bb8a3d12;
+    background: var(--status-warning-fill, #fcaf17);
+    box-shadow: 0 0 0 3px #fcaf171f;
   }
   body
     :is(#mobileBar, #deputyOfflineBar)[data-offline-ready="true"]
     :is(#mobileStatus, #deputyOfflineStatus)::before {
-    background: #418368;
-    box-shadow: 0 0 0 3px #41836812;
+    background: var(--status-success-fill, #19775c);
+    box-shadow: 0 0 0 3px #19775c1f;
   }
   body
     :is(#mobileBar, #deputyOfflineBar)[data-update-error="true"]
     :is(#mobileStatus, #deputyOfflineStatus)::before {
-    background: #b95145;
-    box-shadow: 0 0 0 3px #b9514512;
+    background: var(--status-danger-fill, #b42335);
+    box-shadow: 0 0 0 3px #b423351f;
   }
   body :is(#mobileBar, #deputyOfflineBar) .app-service-actions {
     display: flex;

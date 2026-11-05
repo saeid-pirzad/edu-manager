@@ -16,11 +16,11 @@
 }
 .dashboard-work-heading p {
   margin: 0;
-  color: var(--theme-muted, #64748b);
+  color: var(--theme-muted);
   font-size: 0.8rem;
 }
 .dashboard-work-heading .eyebrow {
-  color: var(--theme-primary, #4f46e5);
+  color: var(--theme-primary);
   font-weight: 700;
 }
 .dashboard-tasks {
@@ -30,10 +30,10 @@
 }
 .dashboard-task {
   min-width: 0;
-  border: 1px solid var(--theme-line, #e2e8f0);
+  border: 1px solid var(--theme-line);
   border-radius: 18px;
   padding: 18px;
-  background: #fff;
+  background: var(--theme-surface);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -48,7 +48,7 @@
   margin: 10px 0 5px;
 }
 .dashboard-task p {
-  color: var(--theme-muted, #64748b);
+  color: var(--theme-muted);
   font-size: 0.75rem;
   margin: 0 0 12px;
 }
@@ -58,33 +58,33 @@
 }
 .dashboard-task-clear {
   font-size: 0.75rem;
-  color: var(--theme-muted, #475569);
+  color: var(--theme-muted);
   padding-block: 10px;
 }
 .task-amber > strong {
-  color: #a16207;
+  color: var(--status-warning);
 }
 .task-indigo > strong {
-  color: var(--theme-primary, #4338ca);
+  color: var(--theme-primary);
 }
 .task-rose > strong {
-  color: #be123c;
+  color: var(--status-danger);
 }
 .dashboard-work-notice {
-  border-inline-start: 3px solid #d97706;
+  border-inline-start: 3px solid var(--status-warning-fill);
   padding: 10px 12px;
-  background: #fffbeb;
+  background: var(--status-warning-soft);
   border-radius: 8px;
   font-size: 0.8rem;
-  color: #854d0e;
+  color: var(--status-warning);
   line-height: 1.9;
 }
 .dashboard-agenda {
   margin-top: 14px;
   padding: 18px;
-  border: 1px solid var(--theme-line, #e2e8f0);
+  border: 1px solid var(--theme-line);
   border-radius: 18px;
-  background: #fff;
+  background: var(--theme-surface);
   min-width: 0;
 }
 .dashboard-agenda > h3 {
@@ -96,7 +96,7 @@
   align-items: center;
   gap: 12px;
   padding-block: 12px;
-  border-bottom: 1px solid var(--theme-line-soft, #edf1f7);
+  border-bottom: 1px solid var(--theme-line-soft);
 }
 .dashboard-agenda-row:last-child {
   border-bottom: 0;
@@ -113,7 +113,7 @@
 }
 .dashboard-agenda-row p {
   margin: 0;
-  color: var(--theme-muted, #64748b);
+  color: var(--theme-muted);
   font-size: 0.75rem;
 }
 .dashboard-agenda-row button {
@@ -123,8 +123,8 @@
 .dashboard-period {
   border-radius: 10px;
   padding: 8px;
-  background: var(--theme-primary-soft, #eef2ff);
-  color: var(--theme-primary, #4338ca);
+  background: var(--theme-primary-soft);
+  color: var(--theme-primary);
   font-size: 0.75rem;
   white-space: nowrap;
 }
@@ -135,7 +135,7 @@ body.modal-open {
   overscroll-behavior: contain;
 }
 :where(button, a, summary, input, select, textarea, [tabindex]):focus-visible {
-  outline: 3px solid var(--theme-primary, #4f46e5);
+  outline: 3px solid var(--theme-primary);
   outline-offset: 3px;
 }
 @media (max-width: 700px) {
@@ -221,7 +221,7 @@ body.modal-open {
   z-index: 20000;
   padding: 12px 18px;
   border-radius: 10px;
-  background: var(--theme-primary-hover, #312e81);
+  background: var(--theme-primary-hover);
   color: white;
   transform: translateY(-200%);
 }
@@ -258,19 +258,19 @@ body.modal-open {
 .record-editor-context .record-editor-state {
   margin-top: 10px;
   font-size: 0.75rem;
-  color: var(--theme-muted, #64748b);
+  color: var(--theme-muted);
 }
 .record-editor-state[data-state="changed"] {
-  color: #92400e;
+  color: var(--status-warning);
 }
 .record-editor-state[data-state="pending"] {
-  color: #4338ca;
+  color: var(--theme-primary-hover);
 }
 .record-editor-review {
-  border: 1px solid var(--theme-line, #dce3f3);
+  border: 1px solid var(--theme-line);
   border-radius: 14px;
   padding: 12px;
-  background: var(--theme-surface-subtle, #fafbff);
+  background: var(--theme-surface-subtle);
 }
 .record-editor-review[hidden] {
   display: none;
@@ -290,7 +290,7 @@ body.modal-open {
   gap: 4px;
   padding: 10px;
   border-radius: 10px;
-  background: #fff;
+  background: var(--theme-surface);
   overflow-wrap: anywhere;
 }
 .record-change-row strong {
@@ -298,11 +298,11 @@ body.modal-open {
 }
 .record-change-row span {
   font-size: 0.78rem;
-  color: var(--theme-muted, #64748b);
+  color: var(--theme-muted);
   white-space: pre-wrap;
 }
 .record-change-row span:last-child {
-  color: #166534;
+  color: var(--status-success);
 }
 .student-add-form .entity-create-error {
   grid-column: 1 / -1;
@@ -310,7 +310,7 @@ body.modal-open {
 .control-lock-note {
   grid-column: 1 / -1;
   flex: 1 0 100%;
-  color: #92400e;
+  color: var(--status-warning);
   font-size: 0.8rem;
   margin: 0;
   overflow-wrap: anywhere;
@@ -321,31 +321,31 @@ body.modal-open {
 .entity-create-error {
   flex: 1 0 100%;
   margin: 0;
-  color: #b91c1c;
+  color: var(--status-danger);
   overflow-wrap: anywhere;
 }
 .entity-create-error:empty {
   display: none;
 }
 [data-entity-create] [aria-invalid="true"] {
-  border-color: #e11d48;
+  border-color: var(--status-danger);
 }
 .record-editor {
   display: grid;
   gap: 16px;
 }
 .record-editor [aria-invalid="true"] {
-  border-color: #e11d48;
-  background: #fff7f8;
+  border-color: var(--status-danger);
+  background: var(--status-danger-soft);
 }
 .record-editor-context {
   padding: 16px;
-  border: 1px solid var(--theme-primary-line, #e0e7ff);
+  border: 1px solid var(--theme-primary-line);
   border-radius: 16px;
-  background: var(--theme-surface-subtle, #f8faff);
+  background: var(--theme-surface-subtle);
 }
 .record-editor-context span {
-  color: var(--theme-muted, #64748b);
+  color: var(--theme-muted);
   font-size: 0.78rem;
 }
 .record-editor-context h4 {
@@ -355,7 +355,7 @@ body.modal-open {
 }
 .record-editor-context p {
   margin: 0;
-  color: var(--theme-muted, #52617b);
+  color: var(--theme-muted);
   font-size: 0.83rem;
 }
 .record-editor-actions {
@@ -364,9 +364,9 @@ body.modal-open {
   position: sticky;
   bottom: -20px;
   z-index: 2;
-  background: #fff;
+  background: var(--theme-surface);
   padding: 14px 0;
-  border-top: 1px solid var(--theme-line, #e5eaf3);
+  border-top: 1px solid var(--theme-line);
 }
 .record-editor-actions button {
   min-height: 44px;
@@ -375,7 +375,7 @@ body.modal-open {
   min-width: 0;
   margin: 16px 0;
   padding: 16px;
-  border: 1px solid var(--border, var(--theme-line, #ddd));
+  border: 1px solid var(--border, var(--theme-line));
   border-radius: 16px;
 }
 @media screen {
@@ -387,9 +387,9 @@ body.modal-open {
     margin: 0;
   }
   #app .header-actions > .header-home.is-active {
-    color: var(--theme-primary, #c0141b);
-    background: var(--theme-primary-soft, #fef0f0);
-    border-color: var(--theme-primary-line, #f3cdcf);
+    color: var(--theme-primary);
+    background: var(--theme-primary-soft);
+    border-color: var(--theme-primary-line);
   }
   #app .workspace-bar.workspace-bar-compact {
     display: flex !important;
@@ -427,8 +427,8 @@ body.modal-open {
     margin-inline-end: auto;
     padding: 6px 10px;
     border-radius: 8px;
-    background: #fff8e6;
-    color: #9a6700;
+    background: var(--status-warning-soft);
+    color: var(--status-warning);
     font-size: 12px;
   }
   #app .workspace-period-context {
@@ -436,7 +436,7 @@ body.modal-open {
     flex-wrap: wrap;
     gap: 6px 16px;
     padding: 8px 2px;
-    color: var(--theme-muted, #706b64);
+    color: var(--theme-muted);
     font-size: 12px;
     line-height: 1.9;
   }
@@ -447,12 +447,12 @@ body.modal-open {
     gap: 4px;
     padding: 5px 10px;
     border-radius: 8px;
-    background: var(--theme-primary-soft, #fff1f1);
-    color: var(--theme-primary, #a61b24);
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
   }
   #app .workspace-period-context > span + span {
-    background: var(--theme-teal-soft, #fff5db);
-    color: var(--theme-teal, #805600);
+    background: var(--theme-teal-soft);
+    color: var(--theme-teal);
   }
   #app .workspace-period-context bdi {
     font-weight: 600;
@@ -464,10 +464,10 @@ body.modal-open {
     gap: 8px;
     min-height: 44px;
     padding: 8px 12px;
-    border: 1px solid var(--theme-line, #e5e2dd);
+    border: 1px solid var(--theme-line);
     border-radius: 10px;
-    background: var(--theme-surface-subtle, #faf9f7);
-    color: var(--theme-muted, #58595b);
+    background: var(--theme-surface-subtle);
+    color: var(--theme-muted);
     list-style: none;
   }
   #app .workspace-tools {
@@ -490,10 +490,10 @@ body.modal-open {
     max-height: 65dvh;
     overflow-y: auto;
     z-index: 50;
-    background: #fff;
-    border: 1px solid var(--theme-line, #e5e2dd);
+    background: var(--theme-surface);
+    border: 1px solid var(--theme-line);
     border-radius: 12px;
-    box-shadow: 0 12px 32px var(--theme-primary-shadow, #302c2426);
+    box-shadow: 0 12px 32px var(--theme-primary-shadow);
   }
   #app .header-actions .workspace-tool-group {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -522,11 +522,11 @@ body.modal-open {
       line-height: 1.5;
       border-radius: 8px;
     }
-    #app .header-actions .header-action > svg,
+    #app .header-actions .header-action svg:not(.header-caret),
     #app .header-actions .workspace-tool-icon svg,
     #app .header-actions .workspace-tools-symbol svg {
-      width: 16px;
-      height: 16px;
+      width: var(--header-icon-size);
+      height: var(--header-icon-size);
     }
     #app .header-actions .workspace-tool-icon {
       flex-basis: 16px;
@@ -587,9 +587,9 @@ body.modal-open {
     transform: rotate(45deg);
   }
   #app .workspace-tools[open] > summary {
-    background: var(--theme-primary-soft, #fef0f0);
-    border-color: var(--theme-primary-line, #f3cdcf);
-    color: var(--theme-primary, #c0141b);
+    background: var(--theme-primary-soft);
+    border-color: var(--theme-primary-line);
+    color: var(--theme-primary);
   }
   .workspace-tools[open] > summary .workspace-tools-chevron {
     transform: rotate(225deg);
@@ -600,7 +600,7 @@ body.modal-open {
     gap: 8px;
     padding: 8px;
     margin-top: 8px;
-    border-color: var(--theme-line, #e5e2dd);
+    border-color: var(--theme-line);
     box-shadow: none;
   }
   #app .workspace-tools:not([open]) > .workspace-tool-actions {
@@ -623,28 +623,28 @@ body.modal-open {
     font-weight: 500;
     text-align: start;
     white-space: normal;
-    border: 1px solid var(--theme-line, #e5e2dd);
+    border: 1px solid var(--theme-line);
     border-radius: 8px;
-    background: #fff;
-    color: var(--theme-ink, #454649);
+    background: var(--theme-surface);
+    color: var(--theme-ink);
   }
   .workspace-tool-icon {
     display: inline-flex;
     flex: 0 0 22px;
-    color: var(--theme-primary, #79522c);
+    color: var(--theme-primary);
   }
   #app .workspace-tool-actions .workspace-tool-primary {
-    border-color: var(--theme-primary-line, #f3cdcf);
-    background: var(--theme-primary-soft, #fef0f0);
-    color: var(--theme-primary, #c0141b);
+    border-color: var(--theme-primary-line);
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
   }
   #app .workspace-tool-actions > #singleFileBadge {
     display: block;
     margin: 0;
     padding: 9px 12px;
     border-radius: 8px;
-    background: #fff5db;
-    color: #805600;
+    background: var(--status-warning-soft);
+    color: var(--status-warning);
     font-size: 12px;
     overflow-wrap: anywhere;
     line-height: 1.9;
@@ -684,7 +684,7 @@ body.modal-open {
   #modalBody .deletion-editor {
     display: grid;
     gap: 16px;
-    color: var(--theme-ink, #454649);
+    color: var(--theme-ink);
   }
   #modalBody .deletion-editor p {
     margin: 0;
@@ -703,8 +703,8 @@ body.modal-open {
     flex: 0 0 44px;
     height: 44px;
     border-radius: 12px;
-    color: #b4232a;
-    background: #fef0f0;
+    color: var(--status-danger-fill);
+    background: var(--theme-primary-soft);
   }
   .deletion-symbol svg {
     width: 24px;
@@ -727,7 +727,7 @@ body.modal-open {
     gap: 4px;
     padding: 12px;
     border-radius: 12px;
-    background: var(--theme-surface-muted, #f7f6f4);
+    background: var(--theme-surface-muted);
   }
   .deletion-impact strong {
     font-size: 20px;
@@ -735,7 +735,7 @@ body.modal-open {
   .deletion-impact span,
   .deletion-backup-note {
     font-size: 12px;
-    color: var(--theme-muted, #706b64);
+    color: var(--theme-muted);
   }
   #modalBody .deletion-confirm {
     display: grid;
@@ -763,9 +763,9 @@ body.modal-open {
     white-space: normal;
   }
   #modalBody .deletion-editor button.danger {
-    color: #fff;
-    background: #b4232a;
-    border-color: #b4232a;
+    color: var(--theme-surface);
+    background: var(--status-danger-fill);
+    border-color: var(--status-danger-fill);
   }
 }
 @media screen and (max-width: 599px) {
@@ -795,7 +795,7 @@ body.modal-open {
     flex-direction: column;
     align-items: stretch;
     gap: 18px;
-    color: var(--theme-ink, #454649);
+    color: var(--theme-ink);
   }
   :is(#modalBody, #app) #courseEditor .course-grid {
     margin: 0;
@@ -816,9 +816,9 @@ body.modal-open {
   #app #courseEditor .course-pod-editor {
     min-width: 0;
     padding: 0 12px;
-    border: 1px solid var(--theme-line, #e5e2dd);
+    border: 1px solid var(--theme-line);
     border-radius: 12px;
-    background: var(--theme-surface-subtle, #faf9f7);
+    background: var(--theme-surface-subtle);
   }
   #app #courseEditor .course-pod-editor > summary {
     display: flex;
@@ -836,7 +836,7 @@ body.modal-open {
   }
   #app #courseEditor .course-pod-editor > summary::before {
     content: "+";
-    color: var(--theme-primary, #c0141b);
+    color: var(--theme-primary);
   }
   #app #courseEditor .course-pod-editor[open] > summary::before {
     content: "−";
@@ -851,8 +851,8 @@ body.modal-open {
     grid-column: 1 / -1;
   }
   :is(#modalBody, #app) #courseEditor input[readonly] {
-    background: var(--theme-surface-muted, #f7f6f4);
-    color: var(--theme-muted, #706b64);
+    background: var(--theme-surface-muted);
+    color: var(--theme-muted);
   }
   :is(#modalBody, #app) #courseEditor .course-basic-fields > label:first-child {
     grid-column: 1 / -1;
@@ -867,8 +867,8 @@ body.modal-open {
     order: 2;
     margin: 0;
     padding: 14px;
-    border-color: var(--theme-line, #e5e2dd);
-    background: var(--theme-surface-subtle, #faf9f7);
+    border-color: var(--theme-line);
+    background: var(--theme-surface-subtle);
     border-radius: 14px;
   }
   :is(#modalBody, #app) #courseEditor .course-field {
@@ -885,40 +885,40 @@ body.modal-open {
   :is(#modalBody, #app) #courseEditor :is(input:not([type="hidden"]), select) {
     min-height: 48px;
     padding: 10px 12px;
-    border: 1px solid var(--theme-line, #d8d5cf);
+    border: 1px solid var(--theme-field-line);
     border-radius: 10px;
-    background: #fff;
-    color: var(--theme-ink, #303135);
+    background: var(--theme-field);
+    color: var(--theme-ink);
     font-size: 16px;
     font-weight: 400;
   }
   :is(#modalBody, #app) #courseEditor :is(input, select):disabled {
-    background: var(--theme-surface-muted, #efeeeb);
-    color: var(--theme-muted, #696863);
+    background: var(--theme-surface-muted);
+    color: var(--theme-muted);
     opacity: 1;
   }
   :is(#modalBody, #app) #courseEditor :is(input, select):focus-visible {
-    outline: 2px solid var(--theme-primary, #c0141b);
+    outline: 2px solid var(--theme-primary);
     outline-offset: 2px;
-    border-color: var(--theme-primary, #c0141b);
+    border-color: var(--theme-primary);
   }
   :is(#modalBody, #app) #courseEditor [aria-invalid="true"] {
-    border: 2px solid #b62f40;
-    background: #fff6f5;
+    border: 2px solid var(--status-danger-fill);
+    background: var(--status-danger-soft);
   }
   :is(#modalBody, #app) #courseEditor .course-policy-hint {
     margin: 12px 0 0;
     padding: 0;
     background: none;
-    color: var(--theme-muted, #706b64);
+    color: var(--theme-muted);
     font-size: 12px;
     line-height: 1.9;
   }
   :is(#modalBody, #app) #courseEditor .course-policy-section {
     padding: 0 12px;
-    border-color: var(--theme-line, #e5e2dd);
+    border-color: var(--theme-line);
     border-radius: 12px;
-    background: #fff;
+    background: var(--theme-surface);
   }
   :is(#modalBody, #app) #courseEditor .course-policy-section[open] {
     padding-bottom: 14px;
@@ -926,7 +926,7 @@ body.modal-open {
   :is(#modalBody, #app) #courseEditor .course-policy-section > summary {
     min-height: 50px;
     font-size: 13px;
-    color: var(--theme-muted, #58595b);
+    color: var(--theme-muted);
     flex-wrap: wrap;
   }
   :is(#modalBody, #app) #courseEditor #courseNames {
@@ -946,8 +946,8 @@ body.modal-open {
   :is(#modalBody, #app) #courseEditor .course-lock-note {
     margin: 12px 0 0;
     padding-inline-start: 10px;
-    border-inline-start: 3px solid #fcaf17;
-    color: #706b64;
+    border-inline-start: 3px solid var(--status-warning-fill);
+    color: var(--theme-muted);
     font-size: 12px;
     line-height: 1.9;
   }
@@ -961,7 +961,7 @@ body.modal-open {
     gap: 10px;
     margin: 0;
     padding-top: 12px;
-    border-color: var(--theme-line, #e5e2dd);
+    border-color: var(--theme-line);
   }
   :is(#modalBody, #app) #courseEditor .record-editor-actions button {
     min-height: 48px;
@@ -1090,7 +1090,7 @@ body.modal-open {
   line-height: 1.8;
 }
 .course-simple-editor .course-policy-section > summary::before {
-  color: var(--workflow-accent, var(--theme-primary, #c0141b));
+  color: var(--workflow-accent, var(--theme-primary));
 }
 .course-main-policy > legend {
   padding: 0 8px;
@@ -1100,7 +1100,7 @@ body.modal-open {
   margin: 12px 0;
   padding: 12px;
   border-radius: 12px;
-  background: var(--workflow-accent-soft, var(--theme-primary-soft, #fef0f0));
+  background: var(--workflow-accent-soft, var(--theme-primary-soft));
   line-height: 1.9;
 }
 .course-simple-editor .course-policy-section > summary {
@@ -1108,7 +1108,7 @@ body.modal-open {
   align-content: center;
 }
 .course-policy-section {
-  border: 1px solid var(--theme-line, #e5eaf3);
+  border: 1px solid var(--theme-line);
   border-radius: 14px;
   padding: 12px;
 }
@@ -1136,7 +1136,7 @@ body.modal-open {
 }
 .course-policy-section > summary::before {
   content: "+";
-  color: var(--theme-primary, #4f46e5);
+  color: var(--theme-primary);
   font-size: 1.25rem;
 }
 .course-policy-section[open] > summary::before {
@@ -1152,11 +1152,11 @@ body.modal-open {
   margin: 0;
   padding: 10px;
   border-radius: 10px;
-  background: #fff1f2;
-  color: #b91c1c;
+  background: var(--status-danger-soft);
+  color: var(--status-danger);
 }
 #periodLabelError {
-  color: #b91c1c;
+  color: var(--status-danger);
   margin: 0;
 }
 #periodLabelError:empty {
@@ -1196,8 +1196,8 @@ body.modal-open {
     flex: 0 0 38px;
     height: 38px;
     border-radius: 11px;
-    color: var(--workflow-accent, var(--theme-primary, #c0141b));
-    background: var(--workflow-accent-soft, var(--theme-primary-soft, #fef0f0));
+    color: var(--workflow-accent, var(--theme-primary));
+    background: var(--workflow-accent-soft, var(--theme-primary-soft));
   }
   .today-agenda-heading > div {
     flex: 1;
@@ -1210,7 +1210,7 @@ body.modal-open {
   .today-agenda-heading p {
     margin: 3px 0 0;
     font-size: 12px;
-    color: var(--workflow-muted, var(--theme-muted, #706b64));
+    color: var(--workflow-muted, var(--theme-muted));
   }
   #app .today-agenda-heading > button {
     min-height: 44px;
@@ -1224,7 +1224,7 @@ body.modal-open {
     align-items: center;
     gap: 10px;
     padding-block: 12px;
-    border-top: 1px solid var(--theme-line-soft, #ece9e4);
+    border-top: 1px solid var(--theme-line-soft);
   }
   .today-agenda-list {
     margin-top: 12px;
@@ -1241,8 +1241,8 @@ body.modal-open {
     padding: 4px 7px;
     box-sizing: border-box;
     border-radius: 9px;
-    background: var(--theme-primary-soft, #f3f0eb);
-    color: var(--theme-muted, #66553e);
+    background: var(--theme-primary-soft);
+    color: var(--theme-muted);
     font-size: 12px;
     white-space: nowrap;
   }
@@ -1257,18 +1257,18 @@ body.modal-open {
   }
   .today-agenda-copy p {
     margin: 2px 0 0;
-    color: var(--workflow-muted, var(--theme-muted, #706b64));
+    color: var(--workflow-muted, var(--theme-muted));
     font-size: 12px;
     line-height: 1.7;
   }
   .today-agenda-status {
     display: inline-block;
     margin-top: 4px;
-    color: #187454;
+    color: var(--status-success);
     font-size: 11px;
   }
   .today-agenda-status.is-pending {
-    color: #93600b;
+    color: var(--status-warning);
   }
   #app .today-agenda-action {
     min-height: 44px;
@@ -1283,7 +1283,7 @@ body.modal-open {
   }
   .today-agenda-empty {
     margin: 14px 0 0;
-    color: var(--workflow-muted, var(--theme-muted, #706b64));
+    color: var(--workflow-muted, var(--theme-muted));
     font-size: 12px;
     line-height: 1.9;
   }

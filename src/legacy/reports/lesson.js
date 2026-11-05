@@ -138,7 +138,7 @@ function legacy_buildLessonReportHtml(c, lesson) {
       const unit = poudman
         ? poudman.units.find((u) => u.id === sess.unitId)
         : null;
-      h += `<div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin:10px 0">
+      h += `<div style="border:1px solid var(--theme-line, #e4e4e7);border-radius:8px;padding:12px;margin:10px 0">
       <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
         <strong>${faDate(sess.date)} — زنگ ${sess.period + 1}</strong>
         <span class="muted">${lesson.gradeMode === "kardanesh" ? "کاردانش: تئوری و عملی" : (poudman ? esc(poudman.name) : "—") + " / " + (unit ? esc(unit.name) : "—")}</span>
@@ -146,16 +146,16 @@ function legacy_buildLessonReportHtml(c, lesson) {
       <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:.9em;margin-bottom:8px">
         <span>✅ حاضر: <b>${present.length}</b></span><span>❌ غایب: <b>${absent.length}</b></span>
         <span>مرخصی: <b>${leave.length}</b> ${leave.map(esc).join("، ")}</span><span>⏰ تأخیر: <b>${late.length}</b></span>
-        <span style="color:#059669">➕ مثبت: <b>${pos.length}</b></span>
-        <span style="color:#dc2626">➖ منفی: <b>${neg.length}</b></span>
+        <span style="color:var(--status-success, #16664e)">➕ مثبت: <b>${pos.length}</b></span>
+        <span style="color:var(--status-danger, #9f2635)">➖ منفی: <b>${neg.length}</b></span>
         <span>📝 تکلیف: <b>${hw.length}</b></span>
       </div>
-      ${absent.length ? `<div style="font-size:.85em;color:#dc2626">غایبین: ${absent.map(esc).join("، ")}</div>` : ""}
-      ${late.length ? `<div style="font-size:.85em;color:#d97706">تأخیر: ${late.map(esc).join("، ")}</div>` : ""}
-      ${present.length ? `<div style="font-size:.85em;color:#059669;margin-top:4px">حاضرین: ${present.map(esc).join("، ")}</div>` : ""}
+      ${absent.length ? `<div style="font-size:.85em;color:var(--status-danger, #9f2635)">غایبین: ${absent.map(esc).join("، ")}</div>` : ""}
+      ${late.length ? `<div style="font-size:.85em;color:var(--status-warning, #7c5105)">تأخیر: ${late.map(esc).join("، ")}</div>` : ""}
+      ${present.length ? `<div style="font-size:.85em;color:var(--status-success, #16664e);margin-top:4px">حاضرین: ${present.map(esc).join("، ")}</div>` : ""}
       ${
         pos.length
-          ? `<div style="font-size:.85em;color:#059669;margin-top:4px">➕ مثبت: ${pos
+          ? `<div style="font-size:.85em;color:var(--status-success, #16664e);margin-top:4px">➕ مثبت: ${pos
               .map((x) => {
                 const s = sessionStudent(c, sess, x.studentId);
                 return esc(s ? s.name : "") + `(${esc(x.value)})`;
@@ -165,7 +165,7 @@ function legacy_buildLessonReportHtml(c, lesson) {
       }
       ${
         neg.length
-          ? `<div style="font-size:.85em;color:#dc2626;margin-top:4px">➖ منفی: ${neg
+          ? `<div style="font-size:.85em;color:var(--status-danger, #9f2635);margin-top:4px">➖ منفی: ${neg
               .map((x) => {
                 const s = sessionStudent(c, sess, x.studentId);
                 return esc(s ? s.name : "") + `(${esc(x.value)})`;
@@ -175,7 +175,7 @@ function legacy_buildLessonReportHtml(c, lesson) {
       }
       ${
         hw.length
-          ? `<div style="font-size:.85em;color:#3730a3;margin-top:4px">📝 تکالیف: ${hw
+          ? `<div style="font-size:.85em;color:var(--status-info, #1d4f91);margin-top:4px">📝 تکالیف: ${hw
               .map((x) => {
                 const s = sessionStudent(c, sess, x.studentId);
                 return esc(s ? s.name : "");
@@ -195,7 +195,7 @@ function legacy_buildLessonReportHtml(c, lesson) {
     const s = calcStudentLesson(c, lesson, st.id);
     h += `<tr><td>${esc(st.name)}</td>
       <td>${(s.att.present || 0) + (s.att.late || 0)}</td><td>${s.att.absent}</td><td>${s.att.leave || 0}</td><td>${s.att.late}</td>
-      <td style="color:#059669">${s.posCount}</td><td style="color:#dc2626">${s.negCount}</td><td>${s.hwCount}</td>
+      <td style="color:var(--status-success, #16664e)">${s.posCount}</td><td style="color:var(--status-danger, #9f2635)">${s.negCount}</td><td>${s.hwCount}</td>
       <td>${s.avgM !== null ? s.avgM.toFixed(2) : "—"}</td>
       <td>${s.avgP !== null ? s.avgP.toFixed(2) : "—"}</td>
       <td><b>${s.final !== null ? s.final.toFixed(2) : "—"}</b></td></tr>`;

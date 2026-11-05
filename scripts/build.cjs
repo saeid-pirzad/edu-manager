@@ -89,7 +89,7 @@ for (const name of sourceFiles("src")) {
 
 // Only execution dependencies are mandatory offline assets. Source maps remain
 // available in development/release packages without delaying offline readiness.
-const { applicationFiles } = require("./application-files.cjs");
+const { applicationFiles, assetBytes } = require("./application-files.cjs");
 const catalog = applicationFiles(root, {
   generated: new Set(outputs.keys()),
   contents: outputs,
@@ -98,16 +98,17 @@ const catalog = applicationFiles(root, {
 const cached = [...catalog.keys()].filter(
   (name) => name !== "service-worker.js",
 );
-function assetText(name) {
-  return (
-    outputs.get(name) ?? fs.readFileSync(path.join(root, name), "utf8")
-  ).replace(/\r\n/g, "\n");
+function assetContent(name) {
+  return assetBytes(
+    name,
+    outputs.get(name) ?? fs.readFileSync(path.join(root, name)),
+  );
 }
 const integrity = Object.fromEntries(
   cached.map((name) => [
     name,
     [
-      crypto.createHash("sha256").update(assetText(name)).digest("hex"),
+      crypto.createHash("sha256").update(assetContent(name)).digest("hex"),
       catalog.get(name).split(";")[0],
     ],
   ]),
@@ -136,7 +137,7 @@ const workerTemplate = worker
 const hash = crypto.createHash("sha256");
 for (const name of [...cached].sort()) {
   hash.update(name + "\0");
-  hash.update(assetText(name));
+  hash.update(assetContent(name));
 }
 hash.update("service-worker.js\0").update(workerTemplate);
 worker = workerTemplate.replace(

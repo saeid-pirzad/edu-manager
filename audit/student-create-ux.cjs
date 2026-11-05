@@ -65,7 +65,7 @@ async function inspectStudentCreate() {
         form.querySelector(".student-field-heading").scrollWidth <=
           form.querySelector(".student-field-heading").clientWidth + 1 &&
         getComputedStyle(form.querySelector(".student-field-optional"))
-          .color === "rgb(154, 103, 0)",
+          .color === "rgb(124, 81, 5)",
     },
   ];
 }

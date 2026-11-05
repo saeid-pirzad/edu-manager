@@ -28,15 +28,15 @@ function renderEntityQuickCreate(kind, empty) {
   const label = school ? "مدرسه" : "کلاس";
   const token = school ? "1" : "5";
   return (
-    '<details class="card quick-create entity-quick-create create-panel no-print"' +
+    '<details class="card quick-create entity-quick-create create-panel no-print' +
+    (school ? " school-create" : " class-create") +
+    '"' +
     (empty ? " open" : "") +
     ">" +
     createPanelHeading(
       school ? "school" : "classroom",
       label + " جدید",
-      school
-        ? "نام مدرسه؛ کلاس‌ها در مرحله بعد"
-        : "نام کلاس؛ هنرجویان و درس‌ها در مرحله بعد",
+      school ? "" : "نام کلاس؛ هنرجویان و درس‌ها در مرحله بعد",
     ) +
     '<form data-legacy-submit="ui-school-class:' +
     token +
@@ -50,7 +50,9 @@ function renderEntityQuickCreate(kind, empty) {
     (school ? "مثلاً هنرستان دانش" : "مثلاً دهم شبکه") +
     '" aria-describedby="' +
     kind +
-    'CreateError" required maxlength="500"></label><div class="create-panel-footer"><button type="submit" data-mutating="1">ثبت ' +
+    'CreateError" required maxlength="500"' +
+    (school ? ' enterkeyhint="done"' : "") +
+    '></label><div class="create-panel-footer"><button type="submit" data-mutating="1">ثبت ' +
     label +
     '</button></div><p id="' +
     kind +
@@ -84,9 +86,11 @@ function renderSchool() {
   return h;
 }
 
-function classroomTabsHtml(label, items) {
+function classroomTabsHtml(label, items, compact = false) {
   return (
-    '<div class="tabs classroom-tabs" role="group" aria-label="' +
+    '<div class="tabs classroom-tabs' +
+    (compact ? " classroom-tabs-compact" : "") +
+    '" role="group" aria-label="' +
     esc(label) +
     '">' +
     items
@@ -113,20 +117,24 @@ function renderClass() {
     { label: c.name },
     { label: state.tab === "students" ? "دانش‌آموزان" : "درس‌ها" },
   ]);
-  h += classroomTabsHtml("بخش‌های کلاس", [
-    {
-      tab: "lessons",
-      action: "ui-school-class:10",
-      icon: "book",
-      title: "دروس",
-    },
-    {
-      tab: "students",
-      action: "ui-school-class:11",
-      icon: "users",
-      title: "دانش‌آموزان",
-    },
-  ]);
+  h += classroomTabsHtml(
+    "بخش‌های کلاس",
+    [
+      {
+        tab: "lessons",
+        action: "ui-school-class:10",
+        icon: "book",
+        title: "دروس",
+      },
+      {
+        tab: "students",
+        action: "ui-school-class:11",
+        icon: "users",
+        title: "دانش‌آموزان",
+      },
+    ],
+    true,
+  );
   if (state.tab === "lessons") h += renderLessonsTab(c);
   else h += renderStudentsTab(c);
   return h;

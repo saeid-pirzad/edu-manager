@@ -30,13 +30,14 @@ module.exports = async function auditPwaUpgrade({ cdp, debuggerUrl, root }) {
     ]),
   );
   const newFiles = new Map(
-    names.map((name) => [name, fs.readFileSync(path.join(root, name), "utf8")]),
+    names.map((name) => [name, fs.readFileSync(path.join(root, name))]),
   );
   const oldVersion = oldFiles
       .get("service-worker.js")
       .match(/const VERSION = "([^"]+)"/)[1],
     newVersion = newFiles
       .get("service-worker.js")
+      .toString("utf8")
       .match(/const VERSION = "([^"]+)"/)[1];
   if (oldVersion === newVersion)
     throw Error("Upgrade audit requires distinct release identifiers.");

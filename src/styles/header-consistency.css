@@ -20,10 +20,10 @@
     height: 44px;
     min-height: 44px;
     padding: 0 !important;
-    border: 1px solid var(--theme-line);
+    border: 1px solid var(--theme-nav-line, #ffffff26);
     border-radius: 12px;
-    background: var(--theme-surface);
-    color: var(--theme-muted);
+    background: var(--theme-nav, #58595b);
+    color: var(--theme-nav-ink, #fff);
   }
   .topbar .header-brand > .header-home > svg {
     width: 21px;
@@ -38,9 +38,9 @@
     white-space: nowrap;
   }
   .topbar .header-brand > .header-home.is-active {
-    background: var(--theme-primary-soft);
-    color: var(--theme-primary);
-    border-color: var(--theme-primary-line);
+    background: var(--theme-primary);
+    color: var(--theme-nav-ink, #fff);
+    border-color: var(--theme-nav-line, #ffffff26);
   }
   #uiBottomNav {
     direction: rtl;
@@ -53,11 +53,11 @@
   }
   @media (min-width: 701px) and (max-width: 1000px) and (pointer: fine) {
     .topbar .header-brand {
-      width: 100%;
-      justify-content: space-between;
+      width: auto;
+      justify-content: flex-start;
     }
     .topbar .header-brand h1 {
-      flex: 1;
+      flex: 0 1 auto;
     }
     .topbar .header-brand > .header-home {
       position: static;
