@@ -152,12 +152,6 @@ if (process.argv.includes("--help")) {
         cases,
         delay,
       });
-      await require("./safety-backup-browser.cjs")({
-        cdp,
-        evaluate,
-        cases,
-        delay,
-      });
       await require("./report-copy-browser.cjs")({
         cdp,
         evaluate,

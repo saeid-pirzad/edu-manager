@@ -23,11 +23,6 @@ EduLegacyEvents.register("schedule-timetable:1", function (event) {
   );
 });
 
-EduLegacyEvents.register("schedule-timetable:2", function (event) {
-  document.querySelector(".week-settings").open = true;
-  document.querySelector(".week-settings").scrollIntoView({ block: "start" });
-});
-
 EduLegacyEvents.register("schedule-timetable:3", function (event) {
   state.masterFilter = this.value || null;
   render();

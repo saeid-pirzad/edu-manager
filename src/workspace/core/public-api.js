@@ -190,7 +190,6 @@ function installRuntimeAPI() {
     openBackupShare,
     sharePreparedBackup,
     downloadPreparedBackup,
-    downloadLastSafetyBackup,
     snapshotInstallation,
     validateFullBackup,
     previewFullBackup,

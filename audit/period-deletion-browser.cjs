@@ -684,6 +684,7 @@ async function deletionFlow() {
     );
     const width = document.querySelector(".period-delete");
     check("DELETE_UI_NO_OVERFLOW", width.scrollWidth <= width.clientWidth + 1);
+    const previousBackups = await read("backups");
     document.getElementById("periodDeletionConfirmed").checked = true;
     window.confirm = () => true;
     document
@@ -709,12 +710,9 @@ async function deletionFlow() {
           .every((id) => after.some((row) => row.id === id)),
     );
     check(
-      "DELETE_SAFETY_PRESENT",
-      (await read("backups")).some(
-        (row) =>
-          row.id.startsWith("before-period-delete-") &&
-          row.full.stores.catalog.some((period) => period.id === active),
-      ),
+      "DELETE_NO_OPERATION_BACKUP",
+      JSON.stringify((await read("backups")).map((row) => row.id).sort()) ===
+        JSON.stringify(previousBackups.map((row) => row.id).sort()),
     );
     check(
       "DELETE_NO_ORPHAN_RECORDS",

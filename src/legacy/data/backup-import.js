@@ -43,15 +43,7 @@ function legacy_handleImport(e) {
       )
         throw Error("نسخه پشتیبان پشتیبانی نمی‌شود.");
       const candidate = prepareDB(parsed.db || parsed);
-      if (
-        !confirm(
-          "پشتیبان معتبر جایگزین شود؟ نسخه قبلی برای بازیابی نگه داشته می‌شود.",
-        )
-      )
-        return;
-      const old = localStorage.getItem(STORAGE_KEY);
-      if (old !== null)
-        localStorage.setItem(STORAGE_KEY + "_beforeImport", old);
+      if (!confirm("پشتیبان معتبر جایگزین تمام اطلاعات فعلی شود؟")) return;
       const raw = JSON.stringify(candidate);
       localStorage.setItem(STORAGE_KEY, raw);
       db = candidate;

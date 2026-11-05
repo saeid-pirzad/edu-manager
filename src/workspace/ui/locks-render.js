@@ -204,19 +204,22 @@ function workspaceToolsHtml() {
     '<button type="button" class="ghost workspace-tool-button" data-header-action="settings"><span class="workspace-tool-icon" aria-hidden="true">' +
     EduIcons.html("settings") +
     '</span><span class="workspace-tool-copy"><span>تنظیمات برنامه</span><span class="workspace-tool-description">شخصی‌سازی و تنظیم گزینه‌های برنامه</span></span></button>' +
-    '</div><details class="workspace-draft-tools"><summary><span class="workspace-draft-symbol" aria-hidden="true">' +
-    EduIcons.html("undo") +
-    '</span><span>بازیابی پیش‌نویس‌ها</span><span class="workspace-draft-chevron" aria-hidden="true"></span></summary><div class="workspace-draft-actions">' +
-    button("review-drafts", "grades", "بررسی تعارض نمره‌ها") +
-    button("other-drafts", "undo", "بازیابی ورودی‌های قبلی") +
-    button(
-      "discard-drafts",
-      "trash",
-      "لغو پیش‌نویس نمره‌ها",
-      "workspace-tool-caution",
-    ) +
-    "</div></details></div></details>"
+    "</div></div></details>"
   );
+}
+function draftReviewActionHtml() {
+  if (
+    !ready ||
+    fileMode ||
+    blocked ||
+    resetBusy ||
+    connectionRetired ||
+    periodLoading ||
+    (db.settings.password && !isAuthenticated) ||
+    ![...drafts.values()].some((item) => item.review)
+  )
+    return "";
+  return '<button type="button" class="ghost" data-workspace-action="review-drafts">بررسی نمرات ثبت‌نشده</button>';
 }
 function renderV24() {
   if (!ready) return;
@@ -239,7 +242,8 @@ function renderV24() {
       ? '<span class="workspace-closed-note">ترم بسته است؛ فقط مشاهده</span>'
       : "") +
     '<span id="saveStatus" role="status" aria-live="polite"></span>' +
-    workspaceToolsHtml();
+    workspaceToolsHtml() +
+    draftReviewActionHtml();
   app.prepend(panel);
   const tools = panel.querySelector(".workspace-tools");
   const settings = app.querySelector('.topbar [data-header-action="settings"]');

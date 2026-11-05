@@ -620,39 +620,11 @@ module.exports = async function sharedYearDirectory() {
             lessonRows[index],
         ),
     );
-    const safetyRequest = EduV24.test
-        .getConnection()
-        .transaction("backups")
-        .objectStore("backups")
-        .getAll(),
-      safetyBackups = await new Promise((resolve, reject) => {
-        safetyRequest.onsuccess = () => resolve(safetyRequest.result);
-        safetyRequest.onerror = () => reject(safetyRequest.error);
-      }),
-      deletionSafety = safetyBackups.find(
-        (backup) =>
-          backup.full &&
-          backup.label === "پیش از حذف: " + peerEmptyClass.value.name &&
-          stored(backup.full) === stored(beforeSuccessfulDelete),
-      );
-    let safetyValid = false;
-    if (deletionSafety)
-      safetyValid =
-        EduV24.validateFullBackup(deletionSafety.full).length ===
-        beforeSuccessfulDelete.stores.catalog.length;
     check(
       "SHARED_YEAR18",
-      "shared-class deletion keeps a validated complete safety file including companion-only course definitions",
-      safetyValid &&
-        JSON.stringify(
-          deletionSafety.full.stores.records.find(
-            (row) =>
-              row.workspace === first &&
-              row.logical === "class:" + emptyClassId,
-          )?.value,
-        ) === JSON.stringify(peerEmptyClass.value) &&
-        deletionSafety.full.stores.catalog.find((row) => row.id === first)
-          .closed,
+      "shared-class deletion creates no full operation safety copy or extra backup row",
+      JSON.stringify(snapshot.stores.backups) ===
+        JSON.stringify(beforeSuccessfulDelete.stores.backups),
     );
     closeModal();
     const beforeDeleteUndo = await EduV24.snapshotInstallation();
@@ -665,7 +637,7 @@ module.exports = async function sharedYearDirectory() {
     snapshot = await EduV24.snapshotInstallation();
     check(
       "SHARED_YEAR19",
-      "shared-class deletion disables single-term undo and leaves full safety restore as the recovery path",
+      "shared-class deletion disables partial undo and preserves the ordinary full-file restore path",
       deleteUndoRejected &&
         !snapshot.stores.undo.some((row) => [first, second].includes(row.id)) &&
         stored(snapshot) === stored(beforeDeleteUndo),

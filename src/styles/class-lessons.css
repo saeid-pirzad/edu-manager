@@ -359,3 +359,140 @@
     display: none;
   }
 }
+
+/* The same navigation for the class directory and the lesson workspace. */
+@media screen {
+  #app > .tabs.classroom-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    gap: 6px;
+    margin: 0 0 18px;
+    padding: 6px;
+    border: 1px solid #e5dcd6;
+    border-radius: 18px;
+    background: #f1ede8;
+    box-shadow:
+      inset 0 1px 0 #fff,
+      0 3px 12px #49312406;
+    overflow: visible;
+  }
+  #app > .tabs.classroom-tabs > .classroom-tab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    flex: none;
+    min-width: 0;
+    min-height: 56px;
+    gap: 9px;
+    margin: 0;
+    padding: 9px 14px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    background: transparent;
+    color: #655b55;
+    box-shadow: none;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.7;
+    white-space: normal;
+    text-align: center;
+    transition:
+      background-color 150ms,
+      border-color 150ms,
+      box-shadow 150ms;
+  }
+  #app > .tabs.classroom-tabs .classroom-tab-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 32px;
+    width: 32px;
+    height: 32px;
+    border: 1px solid #e8d9cd;
+    border-radius: 10px;
+    background: #fffaf5;
+    color: #9a5037;
+    line-height: 0;
+    pointer-events: none;
+  }
+  #app > .tabs.classroom-tabs .classroom-tab-icon > svg {
+    display: block;
+    width: 19px;
+    height: 19px;
+    margin: 0;
+  }
+  #app > .tabs.classroom-tabs .classroom-tab-label {
+    min-width: 0;
+    pointer-events: none;
+  }
+  #app > .tabs.classroom-tabs .classroom-tab-detail {
+    white-space: nowrap;
+  }
+  #app > .tabs.classroom-tabs > .classroom-tab.active {
+    border-color: #a61922;
+    background: linear-gradient(
+      115deg,
+      var(--workflow-accent),
+      var(--brand-hover)
+    );
+    color: #fff;
+    box-shadow:
+      0 3px 8px #92101924,
+      inset 0 1px 0 #ffffff20;
+  }
+  #app > .tabs.classroom-tabs > .classroom-tab.active .classroom-tab-icon {
+    border-color: #ffffff30;
+    background: #ffffff16;
+    color: #fff;
+  }
+  #app > .tabs.classroom-tabs > .classroom-tab:focus-visible {
+    outline: 2px solid #875800;
+    outline-offset: 2px;
+  }
+}
+@media screen and (hover: hover) {
+  #app > .tabs.classroom-tabs > .classroom-tab:not(.active):hover {
+    border-color: #dfd0c5;
+    background: #fffcf8;
+    color: #803b31;
+  }
+  #app > .tabs.classroom-tabs > .classroom-tab.active:hover {
+    box-shadow:
+      0 4px 12px #92101935,
+      inset 0 1px 0 #ffffff25;
+  }
+}
+@media screen and (max-width: 480px) {
+  #app > .tabs.classroom-tabs {
+    gap: 5px;
+    margin-bottom: 14px;
+    padding: 5px;
+    border-radius: 16px;
+  }
+  #app > .tabs.classroom-tabs > .classroom-tab {
+    gap: 6px;
+    min-height: 56px;
+    padding: 7px 6px;
+    border-radius: 11px;
+    font-size: 12px;
+  }
+  #app > .tabs.classroom-tabs .classroom-tab-icon {
+    flex-basis: 28px;
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
+  }
+  #app > .tabs.classroom-tabs .classroom-tab-icon > svg {
+    width: 18px;
+    height: 18px;
+  }
+  #app > .tabs.classroom-tabs .classroom-tab-detail {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.6;
+  }
+}

@@ -4,168 +4,115 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs"),
   path = require("node:path"),
   vm = require("node:vm");
-function fixture() {
+function fixture(kind = "school") {
   const effects = [],
     errors = [],
-    backups = new Map(),
     savedScopes = [],
-    backupJournal = [],
-    hooks = { failBackupPut: false };
-  const context = {
-    kind: "school",
-    id: "school",
-    schoolId: "school",
-    workspace: "first",
-    revision: 1,
-  };
+    transactions = [],
+    copyCalls = [],
+    hooks = {};
+  const catalog = [
+      { id: "first", year: "1405-1406", term: "اول", revision: 1 },
+      { id: "second", year: "1405-1406", term: "دوم", revision: 2 },
+      { id: "another-year", year: "1406-1407", term: "اول", revision: 3 },
+    ],
+    context = {
+      kind,
+      id: kind,
+      schoolId: "school",
+      classId: "class",
+      workspace: "first",
+      revision: 1,
+    },
+    forbidCopy = (name) => () => {
+      copyCalls.push(name);
+      throw Error("Deletion must not create an internal safety copy: " + name);
+    };
   const c = vm.createContext({
     workspace: { id: "first", revision: 1, year: "1405-1406" },
     installationToken: "test-installation",
     RESET_RECORD_KEY: "@installation-reset",
     connection: {
-      transaction(name, mode) {
-        const storeNames = Array.from(name);
-        assert.deepEqual(storeNames, ["records", "backups"]);
-        assert.equal(mode, "readwrite");
-        const staged = structuredClone(backups),
-          reads = new Set();
-        let resolve,
-          reject,
-          aborted = false,
-          written = false;
+      transaction(names, mode) {
+        const storeNames = Array.from(names);
+        transactions.push({ names: storeNames, mode });
+        assert.deepEqual(storeNames, ["catalog", "records"]);
+        assert.equal(mode, "readonly");
+        let resolve;
         const tx = {
-          done: new Promise((yes, no) => {
+          done: new Promise((yes) => {
             resolve = yes;
-            reject = no;
           }),
-          abort() {
-            aborted = true;
-            reject(Error("backup transaction aborted"));
-          },
           objectStore(storeName) {
-            assert.ok(
-              storeNames.includes(storeName),
-              "the object store belongs to the shared transaction",
-            );
-            if (storeName === "records")
-              return {
-                get(key) {
-                  assert.equal(key, c.RESET_RECORD_KEY);
-                  const request = {};
-                  queueMicrotask(() => {
-                    if (aborted) return;
-                    request.result = structuredClone(
-                      hooks.marker ?? {
-                        key,
-                        value: { token: c.installationToken },
-                      },
-                    );
-                    reads.add("records");
-                    request.onsuccess();
-                  });
-                  return request;
-                },
-              };
+            assert.ok(storeNames.includes(storeName));
+            const request = (result) => {
+              const value = {};
+              queueMicrotask(() => {
+                value.result = structuredClone(result());
+                value.onsuccess();
+              });
+              return value;
+            };
+            if (storeName === "catalog")
+              return { getAll: () => request(() => catalog) };
             return {
-              getAll() {
-                const request = {};
-                queueMicrotask(() => {
-                  if (aborted) return;
-                  request.result = [...staged.values()].map((value) =>
-                    structuredClone(value),
-                  );
-                  reads.add("backups");
-                  request.onsuccess();
-                });
-                return request;
-              },
-              put(value) {
-                assert.deepEqual(
-                  [...reads].sort(),
-                  ["backups", "records"],
-                  "both snapshot and installation marker are read before any backup write",
+              get(key) {
+                assert.equal(key, c.RESET_RECORD_KEY);
+                return request(
+                  () =>
+                    hooks.marker ?? {
+                      key,
+                      value: { token: "test-installation" },
+                    },
                 );
-                assert.equal(
-                  effects.includes("backup"),
-                  false,
-                  "backup is acknowledged only after transaction completion",
-                );
-                if (hooks.failBackupPut) throw Error("quota");
-                backupJournal.push("put");
-                staged.set(value.id, structuredClone(value));
-                written = true;
-              },
-              delete(id) {
-                staged.delete(id);
               },
             };
           },
         };
-        setImmediate(() => {
-          if (aborted) return;
-          backups.clear();
-          for (const [id, value] of staged) backups.set(id, value);
-          backupJournal.push("complete");
-          if (written) effects.push("backup");
-          resolve();
-        });
+        setImmediate(resolve);
         return tx;
       },
     },
+    requestPromise: (request) =>
+      new Promise((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      }),
+    transactionDone: (tx) => tx.done,
     periodLoading: false,
     resetBusy: false,
     connectionRetired: false,
     state: { view: "school", schoolId: "school", classId: "class" },
     db: {
-      schools: [{ id: "school", name: "School", classes: [] }],
+      schools: [
+        {
+          id: "school",
+          name: "School",
+          classes: [
+            {
+              id: "class",
+              name: "Class",
+              students: [],
+              archivedStudents: [],
+              lessons: [{ id: "lesson", name: "Lesson" }],
+            },
+          ],
+        },
+      ],
       sessions: [],
       masterSchedule: {},
     },
     document: {
       querySelector: () => ({ form: {} }),
-      getElementById: () => ({ value: "School" }),
+      getElementById: () => ({ value: kind[0].toUpperCase() + kind.slice(1) }),
     },
     beginRecordEditorSave: () => () => {},
     assertEntityWritable() {},
-    preserveAsyncTarget() {
-      const id = c.workspace.id;
-      return () => {
-        if (c.workspace.id !== id) throw Error("workspace changed");
-      };
-    },
-    validateFullBackup: { normalize: structuredClone },
     flushDrafts: async () => {},
     writer: Promise.resolve(),
-    putBackup: async () => effects.push("backup"),
-    transactionDone: (tx) => tx.done,
-    uid: () => "test-backup",
-    snapshotInstallation: async () => ({
-      format: "EduManager.FullBackup",
-      version: 2,
-      schemaVersion: 26,
-      activeWorkspace: "first",
-      stores: {
-        catalog: [
-          { id: "first", year: "1405-1406", term: "اول", revision: 1 },
-          { id: "second", year: "1405-1406", term: "دوم", revision: 2 },
-          { id: "another-year", year: "1406-1407", term: "اول", revision: 3 },
-        ],
-        records: [
-          {
-            key: "second|class:peer",
-            workspace: "second",
-            logical: "class:peer",
-            value: { id: "peer", name: "Peer course definitions preserved" },
-          },
-        ],
-        events: [],
-        undo: [],
-        reports: [],
-        backups: [],
-      },
-      reportDrafts: {},
-      gradeDrafts: [],
-    }),
+    putBackup: forbidCopy("putBackup"),
+    putSafetySnapshot: forbidCopy("putSafetySnapshot"),
+    snapshotInstallation: forbidCopy("snapshotInstallation"),
     saveDBV24: async (scope) => {
       savedScopes.push(structuredClone(scope));
       effects.push("save");
@@ -182,13 +129,6 @@ function fixture() {
   });
   vm.runInContext(
     fs.readFileSync(
-      path.join(__dirname, "../src/workspace/backups/safety.js"),
-      "utf8",
-    ),
-    c,
-  );
-  vm.runInContext(
-    fs.readFileSync(
       path.join(__dirname, "../src/workspace/entities/delete.js"),
       "utf8",
     ),
@@ -200,31 +140,38 @@ function fixture() {
     c,
     effects,
     errors,
-    backups,
     savedScopes,
-    backupJournal,
+    transactions,
+    copyCalls,
+    catalog,
     hooks,
     pending: () => vm.runInContext("deletionContext", c),
   };
 }
-for (const kind of ["workspace", "connection", "preview"]) {
-  test(`deletion stops before mutation if ${kind} changes during backup`, async () => {
-    const f = fixture();
+for (const kind of ["workspace", "connection", "preview", "installation"]) {
+  test(`deletion stops before mutation if ${kind} changes during catalog read`, async () => {
+    const f = fixture(),
+      before = structuredClone(f.c.db),
+      read = f.c.readDeletionCatalog;
     let injected = false;
-    f.c.snapshotInstallation = async () => {
+    f.c.readDeletionCatalog = async (...args) => {
+      const catalog = await read(...args);
       injected = true;
       if (kind === "workspace") f.c.workspace.id = "second";
       else if (kind === "connection") f.c.connection = {};
+      else if (kind === "installation") f.c.installationToken = "replacement";
       else vm.runInContext("deletionContext = { ...context }", f.c);
+      return catalog;
     };
     await f.c.confirmDeletion();
     assert.equal(injected, true);
-    assert.equal(f.c.db.schools.length, 1);
+    assert.deepEqual(structuredClone(f.c.db), before);
     assert.equal(f.effects.length, 0);
     assert.equal(f.errors.length, 1);
+    assert.deepEqual(f.copyCalls, []);
   });
 }
-for (const kind of ["workspace", "connection", "preview"]) {
+for (const kind of ["workspace", "connection", "preview", "installation"]) {
   test(`late deletion completion preserves a changed ${kind} view`, async () => {
     const f = fixture();
     let injected = false;
@@ -232,74 +179,90 @@ for (const kind of ["workspace", "connection", "preview"]) {
       injected = true;
       if (kind === "workspace") f.c.workspace.id = "second";
       else if (kind === "connection") f.c.connection = {};
+      else if (kind === "installation") f.c.installationToken = "replacement";
       else vm.runInContext("deletionContext = { ...context }", f.c);
     };
     await f.c.confirmDeletion();
     assert.equal(injected, true);
-    assert.deepEqual(f.effects, ["backup"]);
+    assert.deepEqual(f.effects, []);
     assert.equal(f.c.state.view, "school");
     assert.equal(f.c.state.schoolId, "school");
     assert.notEqual(f.pending(), null);
+    assert.deepEqual(f.copyCalls, []);
   });
 }
-test("valid deletion saves backup first, persists removal and then updates its view", async () => {
+
+test("valid deletion persists removal and then updates its view without a safety copy", async () => {
   const f = fixture();
   await f.c.confirmDeletion();
-  assert.deepEqual(f.effects, ["backup", "save", "render", "close", "status"]);
+  assert.deepEqual(f.effects, ["save", "render", "close", "status"]);
   assert.equal(f.c.db.schools.length, 0);
   assert.equal(f.c.state.view, "schools");
   assert.equal(f.pending(), null);
   assert.equal(f.errors.length, 0);
+  assert.deepEqual(f.copyCalls, []);
 });
-test("failed pre-deletion backup prevents deletion", async () => {
-  const f = fixture();
-  f.c.snapshotInstallation = async () => {
-    throw Error("quota");
+
+test("failed catalog read prevents deletion", async () => {
+  const f = fixture(),
+    before = structuredClone(f.c.db);
+  f.c.readDeletionCatalog = async () => {
+    throw Error("catalog read failed");
   };
   await f.c.confirmDeletion();
-  assert.equal(f.c.db.schools.length, 1);
+  assert.deepEqual(structuredClone(f.c.db), before);
   assert.equal(f.effects.length, 0);
-  assert.equal(f.errors.length, 1);
+  assert.equal(f.errors[0].message, "catalog read failed");
+  assert.deepEqual(f.copyCalls, []);
 });
 
-test("shared deletion stores the full snapshot and threads every same-year revision after durable backup", async () => {
+for (const kind of ["school", "class", "lesson"]) {
+  test(`shared ${kind} deletion reads only catalog and installation guards and threads every same-year revision`, async () => {
+    const f = fixture(kind),
+      originalCatalog = structuredClone(f.catalog);
+    await f.c.confirmDeletion();
+    assert.equal(f.errors.length, 0);
+    assert.deepEqual(f.copyCalls, []);
+    assert.deepEqual(f.transactions, [
+      { names: ["catalog", "records"], mode: "readonly" },
+    ]);
+    assert.deepEqual(f.savedScopes[0].directoryRevisions, [
+      { id: "first", year: "1405-1406", revision: 1 },
+      { id: "second", year: "1405-1406", revision: 2 },
+    ]);
+    assert.deepEqual(f.catalog, originalCatalog);
+    assert.deepEqual(f.effects, ["save", "render", "close", "status"]);
+    if (kind === "school") assert.equal(f.c.db.schools.length, 0);
+    else if (kind === "class")
+      assert.equal(f.c.db.schools[0].classes.length, 0);
+    else assert.equal(f.c.db.schools[0].classes[0].lessons.length, 0);
+  });
+}
+
+test("failed deletion save keeps its editor and view pending", async () => {
   const f = fixture();
+  f.c.saveDBV24 = async () => {
+    throw Error("write failed");
+  };
   await f.c.confirmDeletion();
-  const backup = [...f.backups.values()][0];
-  assert.equal(backup.workspace, null);
-  assert.equal(backup.full.format, "EduManager.FullBackup");
-  assert.equal(backup.full.stores.catalog.length, 3);
-  assert.equal(
-    backup.full.stores.records[0].value.name,
-    "Peer course definitions preserved",
-  );
-  assert.deepEqual(f.backupJournal, ["put", "complete"]);
-  assert.deepEqual(f.savedScopes[0].directoryRevisions, [
-    { id: "first", year: "1405-1406", revision: 1 },
-    { id: "second", year: "1405-1406", revision: 2 },
-  ]);
-  assert.deepEqual(f.effects, ["backup", "save", "render", "close", "status"]);
-});
-test("failed full-backup transaction never acknowledges backup or deletes school data", async () => {
-  const f = fixture();
-  f.hooks.failBackupPut = true;
-  await f.c.confirmDeletion();
-  assert.equal(f.c.db.schools.length, 1);
-  assert.equal(f.backups.size, 0);
+  assert.equal(f.c.state.view, "school");
+  assert.equal(f.c.state.schoolId, "school");
+  assert.notEqual(f.pending(), null);
   assert.equal(f.effects.length, 0);
-  assert.equal(f.savedScopes.length, 0);
-  assert.equal(f.errors[0].message, "quota");
+  assert.equal(f.errors[0].message, "write failed");
+  assert.deepEqual(f.copyCalls, []);
 });
 
-test("a durable installation mismatch prevents the real safety helper from acknowledging backup or deleting data", async () => {
-  const f = fixture();
+test("a durable installation mismatch prevents deletion without creating a safety copy", async () => {
+  const f = fixture(),
+    before = structuredClone(f.c.db);
   f.hooks.marker = {
     key: f.c.RESET_RECORD_KEY,
     value: { token: "replacement-installation" },
   };
   await f.c.confirmDeletion();
-  assert.equal(f.c.db.schools.length, 1);
-  assert.equal(f.backups.size, 0);
+  assert.deepEqual(structuredClone(f.c.db), before);
+  assert.deepEqual(f.copyCalls, []);
   assert.equal(f.effects.length, 0);
   assert.equal(f.savedScopes.length, 0);
   assert.equal(f.errors[0].code, "INSTALLATION_CHANGED");

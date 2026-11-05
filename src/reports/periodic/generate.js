@@ -43,6 +43,7 @@ function invalidate(
   if (out)
     out.innerHTML =
       '<div class="card empty" role="status">' + esc(message) + "</div>";
+  syncReportActions();
   error(Error(message));
 }
 function isPreparedCurrent(prepared) {
@@ -50,16 +51,20 @@ function isPreparedCurrent(prepared) {
     !!prepared && last === prepared && prepared.signature === reportSignature()
   );
 }
+function syncReportActions() {
+  document
+    .querySelectorAll(".periodic-build,.periodic-export-actions button")
+    .forEach((button) => (button.disabled = busy));
+  const copyDisabled = busy || !isPreparedCurrent(last);
+  document
+    .querySelectorAll("[data-deputy-copy]")
+    .forEach((button) => (button.disabled = copyDisabled));
+}
 async function generate() {
   if (busy) return null;
   busy = true;
   let input, signature, preparedNoteScope, preparedNoteVersion;
-  const buttons = [
-    ...document.querySelectorAll(
-      ".periodic-build,[data-deputy-copy],.periodic-export-actions button",
-    ),
-  ];
-  buttons.forEach((b) => (b.disabled = true));
+  syncReportActions();
   try {
     input = inputSnapshot();
     if (noteReadErrors.has(noteWorkspaceId()) && !notes.has(noteKey(filters)))
@@ -184,10 +189,6 @@ async function generate() {
     return null;
   } finally {
     busy = false;
-    document
-      .querySelectorAll(
-        ".periodic-build,[data-deputy-copy],.periodic-export-actions button",
-      )
-      .forEach((b) => (b.disabled = false));
+    syncReportActions();
   }
 }

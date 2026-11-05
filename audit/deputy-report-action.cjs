@@ -9,6 +9,8 @@ async function setup() {
   const original = await EduV24.snapshotInstallation(),
     clipboard = copyToClipboard,
     output = EduPeriodicReports.output,
+    generate = EduPeriodicReports.generate,
+    prepareSnapshot = EduV24.prepareReportSnapshot,
     year = "1405-1406",
     workspace = "deputy_action_first",
     ids = {
@@ -154,7 +156,13 @@ async function setup() {
       value,
     });
   await restore(fixture);
-  globalThis.__deputyAction = { ids, copied: [], results: [] };
+  globalThis.__deputyAction = {
+    ids,
+    copied: [],
+    results: [],
+    generated: [],
+    preparations: 0,
+  };
   copyToClipboard = (text, button, html) => {
     globalThis.__deputyAction.copied.push({
       text,
@@ -167,9 +175,26 @@ async function setup() {
       globalThis.__deputyAction.results.push(result);
       return result;
     });
+  EduPeriodicReports.generate = (...args) =>
+    Promise.resolve(generate(...args)).then((result) => {
+      globalThis.__deputyAction.generated.push(!!result);
+      return result;
+    });
+  EduV24.prepareReportSnapshot = async (...args) => {
+    const test = globalThis.__deputyAction;
+    test.preparations++;
+    if (test.holdPreparation)
+      await new Promise((resolve) => {
+        test.releasePreparation = resolve;
+      });
+    if (test.failPreparation) throw Error("Synthetic preparation failure");
+    return prepareSnapshot(...args);
+  };
   globalThis.__deputyAction.cleanup = async () => {
     copyToClipboard = clipboard;
     EduPeriodicReports.output = output;
+    EduPeriodicReports.generate = generate;
+    EduV24.prepareReportSnapshot = prepareSnapshot;
     await restore(original);
   };
 }
@@ -205,13 +230,54 @@ function measure() {
     noButtonClipping: !!button && button.scrollWidth <= button.clientWidth + 1,
   };
 }
+async function prepareReport() {
+  const test = globalThis.__deputyAction,
+    before = test.generated.length,
+    button = document.querySelector(".periodic-build");
+  if (!button || button.disabled)
+    throw Error("Prepare report action unavailable");
+  button.click();
+  const disabledWhilePreparing =
+    document.querySelector("[data-deputy-copy]").disabled;
+  for (let i = 0; i < 200 && test.generated.length === before; i++)
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  if (test.generated.length === before)
+    throw Error("Actual report preparation did not settle");
+  return {
+    result: test.generated.at(-1),
+    disabledWhilePreparing,
+    after: measure(),
+  };
+}
+async function pendingFailure() {
+  const test = globalThis.__deputyAction,
+    before = test.generated.length;
+  test.holdPreparation = true;
+  document.querySelector(".periodic-build").click();
+  const pending = measure(),
+    buildDisabled = document.querySelector(".periodic-build").disabled;
+  test.failPreparation = true;
+  test.holdPreparation = false;
+  test.releasePreparation();
+  for (let i = 0; i < 200 && test.generated.length === before; i++)
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  if (test.generated.length === before)
+    throw Error("Failed preparation did not settle");
+  test.failPreparation = false;
+  return {
+    pending,
+    buildDisabled,
+    failed: !test.generated.at(-1),
+    after: measure(),
+  };
+}
 async function clickCopy() {
   const test = globalThis.__deputyAction,
     before = test.results.length,
+    preparedCalls = test.preparations,
     button = document.querySelector("[data-deputy-copy]");
   if (!button || button.disabled) throw Error("Deputy copy action unavailable");
   button.click();
-  const disabledWhilePreparing = button.disabled;
   for (let i = 0; i < 200 && test.results.length === before; i++)
     await new Promise((resolve) => setTimeout(resolve, 25));
   if (test.results.length === before)
@@ -219,7 +285,7 @@ async function clickCopy() {
   return {
     result: test.results.at(-1),
     delivery: test.copied.at(-1),
-    disabledWhilePreparing,
+    preparedAgain: test.preparations !== preparedCalls,
     after: measure(),
   };
 }
@@ -263,14 +329,14 @@ async function run(env) {
         );
         check(
           "deputy-action-visible-" + width + "-" + mode,
-          "One persistent usable deputy action before generating " +
+          "One persistent disabled deputy action before preparing " +
             mode +
             " at " +
             width,
           observed.count === 1 &&
             observed.visible &&
             observed.persistent &&
-            observed.enabled &&
+            !observed.enabled &&
             observed.noPageOverflow &&
             observed.noButtonClipping,
           observed,
@@ -288,13 +354,32 @@ async function run(env) {
       }
     }
     await evaluate("(" + show.toString() + ")('daily')");
+    const pending = await evaluate("(" + pendingFailure.toString() + ")()");
+    check(
+      "deputy-action-pending-failure",
+      "Pending and failed explicit preparation leave deputy copy disabled",
+      !pending.pending.enabled &&
+        pending.buildDisabled &&
+        pending.failed &&
+        !pending.after.enabled,
+      pending,
+    );
+    const prepared = await evaluate("(" + prepareReport.toString() + ")()");
+    check(
+      "deputy-action-prepared",
+      "The actual Prepare report button enables deputy copy only after data is ready",
+      prepared.result &&
+        prepared.disabledWhilePreparing &&
+        prepared.after.enabled,
+      prepared,
+    );
     const copied = await evaluate("(" + clickCopy.toString() + ")()"),
       text = copied.delivery?.text || "";
     check(
       "deputy-action-copy",
-      "Actual persistent deputy button builds a current compact report with rich copy and no present names or grades",
+      "Actual deputy button copies the prepared compact report without rebuilding or exposing present names or grades",
       copied.result &&
-        copied.disabledWhilePreparing &&
+        !copied.preparedAgain &&
         copied.after.count === 1 &&
         text.includes("deputy_class_a_PRIVATE_absent") &&
         text.includes("deputy_class_b_PRIVATE_leave") &&
@@ -305,19 +390,48 @@ async function run(env) {
         copied.delivery.html?.includes("<strong>مرخصی</strong>"),
       copied,
     );
+    for (const [field, value] of [
+      ["7", "CHANGED_AUTHOR"],
+      ["8", "CHANGED_NOTE"],
+    ]) {
+      const changed = await evaluate(
+        "(() => { const input = document.querySelector('[data-legacy-input=\"reports-periodic-render:" +
+          field +
+          "\"]'); input.value = " +
+          JSON.stringify(value) +
+          "; input.dispatchEvent(new Event('input',{bubbles:true})); return measure(); })()",
+      );
+      check(
+        "deputy-action-edit-" + field,
+        "Editing report author or note disables the old prepared deputy copy",
+        changed.visible && !changed.enabled,
+        changed,
+      );
+      const rebuilt = await evaluate("(" + prepareReport.toString() + ")()");
+      if (!rebuilt.result)
+        throw Error("Edited report could not be prepared again");
+    }
     const invalidated = await evaluate(
       "(() => { EduPeriodicReports.invalidate('Synthetic stale report'); return measure(); })()",
     );
     check(
       "deputy-action-invalidated",
-      "Invalidating the report leaves the deputy action visible and usable",
+      "Invalidating the report keeps deputy copy visible and disabled until explicit preparation",
       invalidated.count === 1 &&
         invalidated.visible &&
-        invalidated.enabled &&
+        !invalidated.enabled &&
         invalidated.persistent,
       invalidated,
     );
     await evaluate("EduPeriodicReports.set('date','2026-11-03')");
+    const changedFilter = await evaluate("measure()");
+    check(
+      "deputy-action-filter-disabled",
+      "Changing report filters disables the prepared copy",
+      !changedFilter.enabled,
+      changedFilter,
+    );
+    await evaluate("(" + prepareReport.toString() + ")()");
     const changedDate = await evaluate("(" + clickCopy.toString() + ")()"),
       changedDatePass = await evaluate(
         "(() => { const text = __deputyAction.copied.at(-1).text; return text.includes(faDate('2026-11-03')) && !text.includes(faDate('2026-11-02')) && !text.includes('deputy_class_b_PRIVATE_'); })()",
@@ -331,6 +445,7 @@ async function run(env) {
     await evaluate(
       "EduPeriodicReports.set('date','2026-11-02');EduPeriodicReports.set('classId',__deputyAction.ids.a)",
     );
+    await evaluate("(" + prepareReport.toString() + ")()");
     const changedClass = await evaluate("(" + clickCopy.toString() + ")()"),
       classText = changedClass.delivery?.text || "";
     check(
@@ -344,6 +459,7 @@ async function run(env) {
     await evaluate(
       "EduPeriodicReports.set('audience','parent');EduPeriodicReports.set('studentId',__deputyAction.ids.a+'_absent')",
     );
+    await evaluate("(" + prepareReport.toString() + ")()");
     const parent = await evaluate("(" + clickCopy.toString() + ")()"),
       parentText = parent.delivery?.text || "";
     check(

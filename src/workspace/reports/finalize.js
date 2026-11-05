@@ -106,7 +106,17 @@ async function finalizePeriod() {
   assertWorkspaceReadable();
   assertEntityWritable();
   const origin = workspace.id,
-    database = connection;
+    database = connection,
+    sourceInstallation = installationToken;
+  const assertInstallation = (token) => {
+    if (token !== sourceInstallation)
+      throw Object.assign(
+        Error("نوبت یا اتصال بانک هنگام بستن تغییر کرد؛ دوباره تلاش کنید."),
+        {
+          code: "INSTALLATION_CHANGED",
+        },
+      );
+  };
   if (fileMode)
     throw Error(
       "این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.",
@@ -115,6 +125,7 @@ async function finalizePeriod() {
   await writer.catch(() => {});
   if (workspace.id !== origin || connection !== database)
     throw Error("نوبت یا اتصال بانک هنگام بستن تغییر کرد؛ دوباره تلاش کنید.");
+  assertInstallation(installationToken);
   const context = captureWorkspaceContext();
   const report = finalReportData();
   if (report.missing.length) {
@@ -143,9 +154,9 @@ async function finalizePeriod() {
     )
   )
     return;
-  await putBackup(db, "پیش از بستن نوبت");
   const assertFinalizationCurrent = () => {
     assertWorkspaceContext(context, { write: true });
+    assertInstallation(installationToken);
     if (connection !== database)
       throw Error("اتصال بانک هنگام بستن نوبت تغییر کرد؛ دوباره تلاش کنید.");
     if (busy || drafts.size || assessmentContext.hasDrafts())
@@ -167,14 +178,18 @@ async function finalizePeriod() {
   let finalizedWorkspace;
   let finalizationError;
   const tx = database.transaction(
-      ["catalog", "reports", "events", "undo"],
+      ["catalog", "records", "reports", "events", "undo"],
       "readwrite",
     ),
     done = transactionDone(tx);
-  const request = tx.objectStore("catalog").get(context.id);
-  request.onsuccess = () => {
+  const request = tx.objectStore("catalog").get(context.id),
+    epoch = tx.objectStore("records").get(RESET_RECORD_KEY);
+  let remaining = 2;
+  const finalize = () => {
+    if (--remaining) return;
     try {
       assertFinalizationCurrent();
+      assertInstallation(epoch.result?.value?.token || "");
       if (
         !request.result ||
         request.result.closed ||
@@ -206,11 +221,14 @@ async function finalizePeriod() {
       tx.abort();
     }
   };
+  request.onsuccess = finalize;
+  epoch.onsuccess = finalize;
   try {
     await done;
   } catch (error) {
     throw finalizationError || error;
   }
+  if (installationToken !== sourceInstallation) return;
   broadcast({
     workspace: context.id,
     revision: finalizedWorkspace.revision,

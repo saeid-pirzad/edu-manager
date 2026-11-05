@@ -1266,6 +1266,7 @@ function render(mode) {
   initialize(mode);
   if (mode === "annual") setTimeout(loadAnnualPeriodChoices, 0);
   const f = filters,
+    prepared = last && last.signature === reportSignature(),
     school = db.schools.find((s) => s.id === f.schoolId),
     c = school?.classes.find((c) => c.id === f.classId);
   const people = new Map(
@@ -1359,17 +1360,18 @@ function render(mode) {
     esc(readNote(noteKey(f))) +
     '</textarea></label><div id="periodicNoteStatus">' +
     noteWarning() +
-    `</div><div class="periodic-primary-actions"><button type="button" class="periodic-build" data-legacy-click="reports-periodic-render:9">تهیه گزارش ` +
+    `</div><div class="periodic-primary-actions"><button type="button" class="periodic-build" ${busy ? "disabled" : ""} data-legacy-click="reports-periodic-render:9">تهیه گزارش ` +
     modeLabel(mode) +
-    '</button><button type="button" class="success periodic-deputy" data-deputy-copy data-legacy-click="reports-periodic-document:deputy">کپی برای معاون</button></div><p id="periodicError" role="alert"></p></section><div id="periodicReportOutput">';
-  h +=
-    last && last.signature === reportSignature()
-      ? documentHtml(last.model)
-      : '<div class="card empty" role="status">' +
-        (last
-          ? "اطلاعات یا ترم تغییر کرده است؛ برای نمایش نتیجه معتبر، گزارش را دوباره تهیه کنید."
-          : "محدوده و مخاطب را انتخاب کنید و «تهیه گزارش» را بزنید.") +
-        "</div>";
+    '</button><button type="button" class="success periodic-deputy" data-deputy-copy' +
+    (busy || !prepared ? " disabled" : "") +
+    ' data-legacy-click="reports-periodic-document:deputy">کپی برای معاون</button></div><p id="periodicError" role="alert"></p></section><div id="periodicReportOutput">';
+  h += prepared
+    ? documentHtml(last.model)
+    : '<div class="card empty" role="status">' +
+      (last
+        ? "اطلاعات یا ترم تغییر کرده است؛ برای نمایش نتیجه معتبر، گزارش را دوباره تهیه کنید."
+        : "محدوده و مخاطب را انتخاب کنید و «تهیه گزارش» را بزنید.") +
+      "</div>";
   return h + "</div>";
 }
 // Source: src/reports/periodic/events-render.js
@@ -1462,6 +1464,7 @@ function invalidate(
   if (out)
     out.innerHTML =
       '<div class="card empty" role="status">' + esc(message) + "</div>";
+  syncReportActions();
   error(Error(message));
 }
 function isPreparedCurrent(prepared) {
@@ -1469,16 +1472,20 @@ function isPreparedCurrent(prepared) {
     !!prepared && last === prepared && prepared.signature === reportSignature()
   );
 }
+function syncReportActions() {
+  document
+    .querySelectorAll(".periodic-build,.periodic-export-actions button")
+    .forEach((button) => (button.disabled = busy));
+  const copyDisabled = busy || !isPreparedCurrent(last);
+  document
+    .querySelectorAll("[data-deputy-copy]")
+    .forEach((button) => (button.disabled = copyDisabled));
+}
 async function generate() {
   if (busy) return null;
   busy = true;
   let input, signature, preparedNoteScope, preparedNoteVersion;
-  const buttons = [
-    ...document.querySelectorAll(
-      ".periodic-build,[data-deputy-copy],.periodic-export-actions button",
-    ),
-  ];
-  buttons.forEach((b) => (b.disabled = true));
+  syncReportActions();
   try {
     input = inputSnapshot();
     if (noteReadErrors.has(noteWorkspaceId()) && !notes.has(noteKey(filters)))
@@ -1603,11 +1610,7 @@ async function generate() {
     return null;
   } finally {
     busy = false;
-    document
-      .querySelectorAll(
-        ".periodic-build,[data-deputy-copy],.periodic-export-actions button",
-      )
-      .forEach((b) => (b.disabled = false));
+    syncReportActions();
   }
 }
 // Source: src/reports/periodic/xlsx-workbook.js
@@ -2658,7 +2661,17 @@ async function downloadPreparedExcel() {
 }
 // Source: src/reports/periodic/output.js
 async function output(kind) {
-  const model = await generate();
+  let model;
+  if (kind === "deputy") {
+    if (busy || !isPreparedCurrent(last)) {
+      syncReportActions();
+      error(
+        Error("ابتدا «تهیه گزارش» را بزنید و تا آماده‌شدن گزارش منتظر بمانید."),
+      );
+      return false;
+    }
+    model = last.model;
+  } else model = await generate();
   if (!model) return false;
   const prepared = last;
   try {
@@ -2723,7 +2736,9 @@ async function output(kind) {
     );
     return true;
   } catch (e) {
-    invalidate(e.message || String(e));
+    if (kind !== "deputy" || last === prepared)
+      invalidate(e.message || String(e));
+    else error(e);
     return false;
   }
 }
@@ -2766,10 +2781,14 @@ root.EduPeriodicReports = {
       String(value).slice(0, Math.max(10000, readNote(key).length)),
     );
     paintNoteState();
+    last = null;
+    syncReportActions();
     return saved;
   },
   author(value) {
     filters.author = String(value).slice(0, 200);
+    last = null;
+    syncReportActions();
   },
   retryNotes,
   hasPendingNotes: () => notes.size > 0,

@@ -10,6 +10,7 @@ let singleFile = null,
   singleFileWriting = null,
   singleFileFailure = false,
   singleFilePermissionNeeded = false,
+  singleFileNoticeSaved = false,
   singleFileMessage = "ذخیره خودکار در فایل هنوز فعال نیست.";
 
 function singleFileNoticeHtml(message = singleFileMessage) {
@@ -26,11 +27,15 @@ function singleFileNoticeHtml(message = singleFileMessage) {
       : "")
   );
 }
-function singleFileStatus(message, { permission = false } = {}) {
+function singleFileStatus(message, { permission = false, saved = false } = {}) {
   singleFileMessage = message;
   singleFilePermissionNeeded = permission;
+  singleFileNoticeSaved = saved;
   const element = document.getElementById("singleFileStatus");
-  if (element) element.innerHTML = singleFileNoticeHtml();
+  if (element) {
+    element.innerHTML = singleFileNoticeHtml();
+    element.hidden = saved;
+  }
   const badge = document.getElementById("singleFileBadge");
   if (badge) {
     badge.innerHTML = singleFileNoticeHtml();
@@ -49,7 +54,9 @@ function singleFilePanel() {
       "</section>"
     );
   return (
-    '<section class="backup-automatic"><h3>ذخیره خودکار در یک فایل</h3><p>فایل را یک‌بار انتخاب کنید؛ برنامه هنگام باز بودن، همان فایل را به‌روز می‌کند.</p><div id="singleFileStatus" class="single-file-notice">' +
+    '<section class="backup-automatic"><h3>ذخیره خودکار در یک فایل</h3><p>فایل را یک‌بار انتخاب کنید؛ برنامه هنگام باز بودن، همان فایل را به‌روز می‌کند.</p><div id="singleFileStatus" class="single-file-notice"' +
+    (singleFileNoticeSaved ? " hidden" : "") +
+    ">" +
     singleFileNoticeHtml() +
     "</div>" +
     singleFileFallbackPanel(singleFileFailure) +
@@ -436,6 +443,7 @@ function syncSingleFile({ force = true } = {}) {
           target.handle.name +
           " — " +
           new Date(target.savedAt).toLocaleString("fa-IR"),
+        { saved: true },
       );
       return true;
     } catch (error) {

@@ -29,7 +29,6 @@ function fixture({ syncFailure = false, asyncFailure = false } = {}) {
     stores: Object.fromEntries(names.map((name) => [name, []])),
   };
   source.stores.catalog = [period];
-  const safety = { stores: { catalog: [current] }, format: "safety-snapshot" };
   const c = vm.createContext({
     assessmentContext: { hasDrafts: () => false, dispose: async () => {} },
     synchronizeYearNotesScope: async () => {},
@@ -89,9 +88,10 @@ function fixture({ syncFailure = false, asyncFailure = false } = {}) {
     confirm: () => true,
     writer: Promise.resolve(),
     draftWriter: Promise.resolve(),
-    snapshotInstallation: async ({ onDurableDrafts } = {}) => {
-      onDurableDrafts?.(structuredClone(c.rawStores?.drafts || []));
-      return safety;
+    flushDrafts: async () => {},
+    storeDrafts: async () => {},
+    snapshotInstallation: async () => {
+      throw Error("Restore must not construct an operation backup");
     },
     uid: () => "new_" + ++sequence,
     collectRecords: (data) => new Map([["meta", data]]),
@@ -124,7 +124,7 @@ function fixture({ syncFailure = false, asyncFailure = false } = {}) {
       records: new Map(),
     }),
     connection: {
-      transaction: () => {
+      transaction: (_names, mode) => {
         const queued = [];
         let resolve, reject;
         const done = new Promise((yes, no) => {
@@ -133,7 +133,8 @@ function fixture({ syncFailure = false, asyncFailure = false } = {}) {
         });
         setImmediate(() => {
           if (aborted) return;
-          if (asyncFailure) return reject(Error("asynchronous write failure"));
+          if (asyncFailure && mode === "readwrite")
+            return reject(Error("asynchronous write failure"));
           committed.push(...queued);
           resolve();
         });
@@ -154,7 +155,12 @@ function fixture({ syncFailure = false, asyncFailure = false } = {}) {
             getAll() {
               const request = {
                 result: structuredClone(
-                  c.rawStores?.[name] || (name === "catalog" ? [current] : []),
+                  c.rawStores?.[name] ||
+                    (name === "catalog"
+                      ? [current]
+                      : name === "drafts" && c.liveIdentity
+                        ? [c.liveIdentity]
+                        : []),
                 ),
               };
               queueMicrotask(() => request.onsuccess());
@@ -193,7 +199,7 @@ function fixture({ syncFailure = false, asyncFailure = false } = {}) {
     c,
   );
   c.previewFullBackup(source);
-  return { c, source, safety, committed, aborted: () => aborted };
+  return { c, source, committed, aborted: () => aborted };
 }
 test("full restore preview isolates its layout and exposes inline errors and cancellation", () => {
   const { c, source } = fixture();
@@ -208,6 +214,7 @@ test("full restore preview isolates its layout and exposes inline errors and can
   assert.match(html, /id="operationError" role="alert"/);
   assert.match(html, /for="fullRestoreConfirmed"/);
   assert.match(html, /data-workspace-action="close"/);
+  assert.doesNotMatch(html, /نسخهٔ ایمنی/);
   assert.match(html, /ادغام نمی‌شود/);
   assert.doesNotMatch(html, /courseError|در فایل ثبت نشده/);
 });
@@ -224,17 +231,38 @@ test("asynchronous transaction failure preserves the current workspace", async (
   assert.equal(committed.length, 0);
   assert.equal(c.workspace.id, "original");
 });
-test("full restore preserves period identities and closed status and keeps a safety snapshot", async () => {
-  const { c, committed, safety } = fixture();
+test("full restore preserves period identities and closed status without creating an operation backup", async () => {
+  const { c, committed } = fixture();
   assert.equal(await c.restoreFullBackup(), 1);
   const periods = committed.filter((row) => row.name === "catalog" && row.row);
   assert.equal(periods.length, 1);
   assert.equal(periods[0].row.id, "source");
   assert.equal(periods[0].row.closed, true);
   assert.equal(c.workspace.id, "source");
-  assert.ok(
-    committed.some((row) => row.name === "backups" && row.row?.full === safety),
+  assert.equal(
+    committed.some((row) => row.name === "backups" && row.row),
+    false,
   );
+});
+
+test("full restore retains ordinary backups from the file and keeps accepting historical full-copy rows", async () => {
+  const f = fixture(),
+    ordinary = { id: "ordinary-migration", workspace: "source", db: {} };
+  f.source.stores.backups = [
+    ordinary,
+    {
+      id: "old-operation",
+      workspace: null,
+      full: { format: "EduManager.RawRecovery" },
+    },
+  ];
+  f.c.previewFullBackup(f.source);
+  await f.c.restoreFullBackup();
+  const written = f.committed
+    .filter((row) => row.name === "backups" && row.row)
+    .map((row) => row.row);
+  assert.deepEqual(written, [ordinary]);
+  assert.equal(f.source.stores.backups.length, 2);
 });
 
 for (const stalePeer of [false, true]) {
@@ -278,25 +306,25 @@ for (const stalePeer of [false, true]) {
     assert.equal(JSON.stringify(f.source), sourceJson);
   });
 }
-test("full restore requires confirmation before taking a snapshot or writing", async () => {
+test("full restore requires confirmation before reading replacement guards or writing", async () => {
   const { c, committed } = fixture();
   c.document.getElementById = () => ({ checked: false });
-  c.snapshotInstallation = async () => {
-    throw Error("must not snapshot");
+  c.readSystemRestoreGuard = async () => {
+    throw Error("must not read replacement guards");
   };
   await assert.rejects(c.restoreFullBackup(), /تأیید/);
   assert.equal(committed.length, 0);
 });
 test("active full-restore preview cannot be replaced", async () => {
-  const { c, source, safety } = fixture();
+  const { c, source } = fixture();
   let release;
-  c.snapshotInstallation = ({ onDurableDrafts } = {}) =>
-    new Promise((resolve) => {
-      release = () => {
-        onDurableDrafts?.([]);
-        resolve(safety);
-      };
+  const readGuard = c.readSystemRestoreGuard;
+  c.readSystemRestoreGuard = async (...args) => {
+    await new Promise((resolve) => {
+      release = resolve;
     });
+    return readGuard(...args);
+  };
   const pending = c.restoreFullBackup();
   assert.throws(() => c.previewFullBackup({}), /در حال انجام/);
   assert.equal(vm.runInContext("pendingFullBackup", c), source);
@@ -304,10 +332,12 @@ test("active full-restore preview cannot be replaced", async () => {
   await pending;
 });
 test("workspace switch before restore prevents replacement writes", async () => {
-  const { c, safety, committed } = fixture();
-  c.snapshotInstallation = async () => {
+  const { c, committed } = fixture(),
+    readGuard = c.readSystemRestoreGuard;
+  c.readSystemRestoreGuard = async (...args) => {
+    const guard = await readGuard(...args);
     c.workspace.id = "other";
-    return safety;
+    return guard;
   };
   await assert.rejects(c.restoreFullBackup(), /تغییر/);
   assert.equal(committed.length, 0);
@@ -322,7 +352,7 @@ test("cleanup failure after commit blocks writes rather than displaying stale da
   assert.equal(c.blocked, true);
   assert.equal(c.ready, false);
 });
-test("a validated full backup can recover failed startup while retaining a raw safety copy", async () => {
+test("a validated full backup can recover failed startup without constructing or storing a raw operation backup", async () => {
   const { c, committed } = fixture();
   c.ready = false;
   c.blocked = true;
@@ -370,11 +400,10 @@ test("a validated full backup can recover failed startup while retaining a raw s
   await c.restoreFullBackup();
   assert.equal(c.ready, true);
   assert.equal(c.blocked, false);
-  const safety = committed.find(
-    (row) => row.name === "backups" && row.row?.full,
-  ).row.full;
-  assert.equal(safety.format, "EduManager.RawRecovery");
-  assert.equal(safety.stores.records[0].value, "original broken record");
+  assert.equal(
+    committed.some((row) => row.name === "backups" && row.row),
+    false,
+  );
 });
 
 test("legacy replacement preview names the selected file and lists exactly its own term", () => {
@@ -402,6 +431,23 @@ test("successful complete replacement retires a previously rejected write from t
   await f.c.writer;
   assert.notEqual(f.c.writer, failure);
   assert.equal(f.c.writeFailureGeneration, 8);
+});
+
+test("failed current draft persistence does not prevent a confirmed recovery", async () => {
+  const f = fixture();
+  f.c.flushDrafts = async () => {
+    throw Error("damaged current grade write");
+  };
+  f.c.storeDrafts = async () => {
+    throw Error("damaged current draft write");
+  };
+  await f.c.restoreFullBackup();
+  assert.equal(f.c.workspace.id, "source");
+  assert.equal(f.c.ready, true);
+  assert.equal(
+    f.committed.some((row) => row.name === "backups" && row.row),
+    false,
+  );
 });
 
 test("complete replacement anchors the incoming active academic year only after old installation preferences are cleaned", async () => {
@@ -513,9 +559,8 @@ const senderIdentity = (token = "saved-sender") => ({
 test("full restore replaces sender identity atomically with a fresh compare-and-swap token", async () => {
   const f = fixture();
   f.source.deputyExportIdentity = senderIdentity("incoming-token");
-  f.safety.deputyExportIdentity = senderIdentity("current-token");
   f.c.liveIdentity = f.c.EduDeputyExportIdentity.row(
-    f.safety.deputyExportIdentity,
+    senderIdentity("current-token"),
   );
   f.c.previewFullBackup(f.source);
   await f.c.restoreFullBackup();
@@ -535,10 +580,7 @@ test("full restore replaces sender identity atomically with a fresh compare-and-
 
 test("restoring an old backup clears the overwritten sender identity instead of reusing it", async () => {
   const f = fixture();
-  f.safety.deputyExportIdentity = senderIdentity();
-  f.c.liveIdentity = f.c.EduDeputyExportIdentity.row(
-    f.safety.deputyExportIdentity,
-  );
+  f.c.liveIdentity = f.c.EduDeputyExportIdentity.row(senderIdentity());
   await f.c.restoreFullBackup();
   assert.ok(f.committed.some((item) => item.name === "drafts" && item.clear));
   assert.equal(
@@ -549,12 +591,19 @@ test("restoring an old backup clears the overwritten sender identity instead of 
   );
 });
 
-test("an unseen identity update after the safety snapshot blocks destructive full restore", async () => {
-  const f = fixture();
-  f.safety.deputyExportIdentity = senderIdentity("old-token");
+test("an unseen identity update after reading replacement guards blocks destructive full restore", async () => {
+  const f = fixture(),
+    readGuard = f.c.readSystemRestoreGuard;
   f.c.liveIdentity = f.c.EduDeputyExportIdentity.row(
-    senderIdentity("new-token"),
+    senderIdentity("old-token"),
   );
+  f.c.readSystemRestoreGuard = async (...args) => {
+    const guard = await readGuard(...args);
+    f.c.liveIdentity = f.c.EduDeputyExportIdentity.row(
+      senderIdentity("new-token"),
+    );
+    return guard;
+  };
   await assert.rejects(f.c.restoreFullBackup(), /مشخصات فرستنده/);
   assert.equal(f.committed.length, 0);
 });
@@ -584,44 +633,37 @@ function damagedIdentityFixture() {
     value: { version: 99, corrupt: "preserve this exact original row" },
   };
   f.c.rawStores = { drafts: [structuredClone(f.c.liveIdentity)] };
-  f.c.snapshotInstallation = async () =>
-    f.c.EduDeputyExportIdentity.normalize(f.c.liveIdentity.value);
   f.source.deputyExportIdentity = senderIdentity("incoming-valid");
   f.c.previewFullBackup(f.source);
   return f;
 }
 
-test("a corrupt durable sender profile does not prevent full recovery and is preserved in raw safety data", async () => {
-  const f = damagedIdentityFixture(),
-    damaged = structuredClone(f.c.liveIdentity);
+test("a corrupt durable sender profile does not prevent full recovery or create a raw operation backup", async () => {
+  const f = damagedIdentityFixture();
   await f.c.restoreFullBackup();
-  const safety = f.committed.find(
-      (item) => item.name === "backups" && item.row?.full,
-    ).row.full,
-    restored = f.committed.find(
-      (item) =>
-        item.name === "drafts" &&
-        item.row?.key === f.c.EduDeputyExportIdentity.key,
-    ).row;
-  assert.equal(safety.format, "EduManager.RawRecovery");
-  assert.deepEqual(
-    JSON.parse(JSON.stringify(safety.stores.drafts[0])),
-    damaged,
+  const restored = f.committed.find(
+    (item) =>
+      item.name === "drafts" &&
+      item.row?.key === f.c.EduDeputyExportIdentity.key,
+  ).row;
+  assert.equal(
+    f.committed.some((item) => item.name === "backups" && item.row),
+    false,
   );
   assert.equal(restored.value.sender.name, "دبیر نمونه");
   assert.notEqual(restored.value.token, "incoming-valid");
 });
 
-test("raw safety identity comparison still detects a concurrent change before destructive recovery", async () => {
+test("a corrupt identity guard still detects a concurrent change before destructive recovery", async () => {
   const f = damagedIdentityFixture(),
-    snapshot = f.c.snapshotBeforeSystemRestore;
-  f.c.snapshotBeforeSystemRestore = async () => {
-    const safety = await snapshot();
+    readGuard = f.c.readSystemRestoreGuard;
+  f.c.readSystemRestoreGuard = async (...args) => {
+    const guard = await readGuard(...args);
     f.c.liveIdentity = {
       ...f.c.liveIdentity,
       value: { version: 99, corrupt: "changed in another window" },
     };
-    return safety;
+    return guard;
   };
   await assert.rejects(f.c.restoreFullBackup(), /مشخصات فرستنده/);
   assert.equal(f.committed.length, 0);
@@ -638,10 +680,12 @@ test("corrupt current metadata never permits malformed incoming metadata to reac
   assert.equal(f.committed.length, 0);
 });
 
-test("unrelated backup errors never trigger the raw-recovery fallback", async () => {
-  const f = fixture();
-  f.c.snapshotInstallation = async () => {
-    throw Error("unrelated storage failure");
+test("failed replacement guard reads never proceed to destructive writes", async () => {
+  const f = fixture(),
+    transaction = f.c.connection.transaction;
+  f.c.connection.transaction = (names, mode) => {
+    if (mode === "readonly") throw Error("unrelated storage failure");
+    return transaction(names, mode);
   };
   await assert.rejects(f.c.restoreFullBackup(), /unrelated storage failure/);
   assert.equal(f.committed.length, 0);
@@ -651,21 +695,14 @@ test("unserializable corrupt identity rows fail clearly rather than bypassing th
   const f = fixture(),
     row = { key: f.c.EduDeputyExportIdentity.key };
   row.value = row;
-  assert.throws(
-    () =>
-      f.c.restoreIdentityMatches(
-        { format: "EduManager.RawRecovery", stores: { drafts: [row] } },
-        row,
-      ),
-    /مقایسهٔ امن/,
-  );
+  assert.throws(() => f.c.restoreIdentityMatches(row, row), /مقایسهٔ امن/);
 });
 
-test("a grade draft saved in another tab after the safety snapshot blocks destructive replacement", async () => {
+test("a grade draft saved in another tab after reading replacement guards blocks destructive replacement", async () => {
   const f = fixture(),
-    snapshot = f.c.snapshotBeforeSystemRestore;
-  f.c.snapshotBeforeSystemRestore = async () => {
-    const safety = await snapshot();
+    readGuard = f.c.readSystemRestoreGuard;
+  f.c.readSystemRestoreGuard = async (...args) => {
+    const guard = await readGuard(...args);
     f.c.rawStores = {
       drafts: [
         {
@@ -677,7 +714,7 @@ test("a grade draft saved in another tab after the safety snapshot blocks destru
         },
       ],
     };
-    return safety;
+    return guard;
   };
   await assert.rejects(f.c.restoreFullBackup(), /پیش‌نویس/);
   assert.equal(f.committed.length, 0);
@@ -687,10 +724,10 @@ for (const change of ["edited", "removed", "discarded"]) {
   test(
     "replacement preserves a concurrent " +
       change +
-      " draft operation by refusing an obsolete safety snapshot",
+      " draft operation by refusing obsolete replacement guards",
     async () => {
       const f = fixture(),
-        snapshot = f.c.snapshotBeforeSystemRestore;
+        readGuard = f.c.readSystemRestoreGuard;
       const row = {
         key: "Edu24.drafts.original.peer.document",
         workspace: "original",
@@ -699,8 +736,8 @@ for (const change of ["edited", "removed", "discarded"]) {
         updatedAt: "2026-11-03T10:00:00Z",
       };
       f.c.rawStores = { drafts: [structuredClone(row)] };
-      f.c.snapshotBeforeSystemRestore = async () => {
-        const safety = await snapshot();
+      f.c.readSystemRestoreGuard = async (...args) => {
+        const guard = await readGuard(...args);
         f.c.rawStores.drafts =
           change === "removed"
             ? []
@@ -711,7 +748,7 @@ for (const change of ["edited", "removed", "discarded"]) {
                     change === "discarded" ? [] : [{ kind: "k", value: "19" }],
                 },
               ];
-        return safety;
+        return guard;
       };
       await assert.rejects(f.c.restoreFullBackup(), /پیش‌نویس/);
       assert.equal(f.committed.length, 0);
@@ -735,19 +772,23 @@ test("restore draft guard ignores device file configuration and stable draft ord
 
 test("replacement waits for the automatic file lock through an outstanding stream close", async () => {
   const f = fixture();
-  let release;
+  let release, entered;
+  const locked = new Promise((resolve) => {
+    entered = resolve;
+  });
   f.c.navigator = {
     locks: {
       request(name, run) {
         assert.equal(name, "EduManager.singleFile");
         return new Promise((resolve, reject) => {
           release = () => run().then(resolve, reject);
+          entered();
         });
       },
     },
   };
   const restore = f.c.restoreFullBackup();
-  await new Promise((resolve) => setImmediate(resolve));
+  await locked;
   assert.equal(
     typeof release,
     "function",

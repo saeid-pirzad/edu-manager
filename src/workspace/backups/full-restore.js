@@ -87,7 +87,7 @@ function previewFullBackup(value, { sourceName = "", legacy = false } = {}) {
       (legacyContent
         ? '<p class="full-restore-warning" role="status">این فایل سوابق قدیمی چند سال یا عنوان نوبت قدیمی دارد. همهٔ اطلاعات فایل بدون حذف یا ادغام حفظ می‌شوند؛ رابط برنامه در سالِ اطلاعات فعال داخل همین فایل باز می‌شود. پشتیبان‌گیری مستقل از نوبت اول و دوم است.</p>'
         : "") +
-      '<section class="full-restore-warning"><h4>اطلاعات فعلی جایگزین می‌شود</h4><p>کل اطلاعات سیستم به وضعیت این فایل برمی‌گردد؛ اطلاعات فایل با داده‌های فعلی ادغام نمی‌شود.</p><p>نوبت جدید یا تکراری ساخته نمی‌شود و وضعیت باز یا بستهٔ نوبت‌ها مطابق فایل خواهد بود.</p></section><p class="full-restore-safety">پیش از جایگزینی، یک نسخهٔ ایمنی از اطلاعات فعلی داخل برنامه ذخیره می‌شود.</p><label class="full-restore-confirm" for="fullRestoreConfirmed"><input type="checkbox" id="fullRestoreConfirmed"><span>می‌دانم کل اطلاعات فعلی با محتوای این فایل جایگزین می‌شود.</span></label><p id="operationError" role="alert"></p><div class="full-restore-actions"><button type="button" class="danger" data-full-restore data-workspace-action="restore-full">تأیید و بازیابی کل اطلاعات</button><button type="button" class="ghost" data-workspace-action="close">انصراف</button></div></div>',
+      '<section class="full-restore-warning"><h4>اطلاعات فعلی جایگزین می‌شود</h4><p>کل اطلاعات سیستم به وضعیت این فایل برمی‌گردد؛ اطلاعات فایل با داده‌های فعلی ادغام نمی‌شود.</p><p>نوبت جدید یا تکراری ساخته نمی‌شود و وضعیت باز یا بستهٔ نوبت‌ها مطابق فایل خواهد بود.</p></section><label class="full-restore-confirm" for="fullRestoreConfirmed"><input type="checkbox" id="fullRestoreConfirmed"><span>می‌دانم کل اطلاعات فعلی با محتوای این فایل جایگزین می‌شود.</span></label><p id="operationError" role="alert"></p><div class="full-restore-actions"><button type="button" class="danger" data-full-restore data-workspace-action="restore-full">تأیید و بازیابی کل اطلاعات</button><button type="button" class="ghost" data-workspace-action="close">انصراف</button></div></div>',
   );
   if (opened !== false) {
     pendingFullBackup = value;
@@ -115,46 +115,43 @@ function restoreDraftSignature(rows) {
       .sort(([a], [b]) => a.localeCompare(b)),
   );
 }
-async function snapshotBeforeSystemRestore() {
-  let draftSignature;
-  if (ready)
-    try {
-      const safety = await snapshotInstallation({
-        onDurableDrafts: (rows) => {
-          draftSignature = restoreDraftSignature(rows);
-        },
-      });
-      return { safety, draftSignature };
-    } catch (error) {
-      // A damaged sender profile must not prevent recovery of the actual
-      // installation. Keep it verbatim in the raw safety copy instead.
-      if (error.code !== "DEPUTY_IDENTITY_INVALID") throw error;
-    }
-  // Recovery must also work when damaged records prevented normal startup.
-  const names = [...backupStores, "drafts"];
+async function readSystemRestoreGuard(check = () => {}) {
+  if (ready) {
+    await flushDrafts().catch(() => {});
+    await writer.catch(() => {});
+    check();
+    await storeDrafts().catch(() => {});
+  }
+  await draftWriter.catch(() => {});
+  check();
+  // Read only the revision and draft guards needed for replacement. Damaged
+  // records must not prevent recovery, and no operation backup is constructed.
+  const names = ["catalog", "drafts"];
   const tx = connection.transaction(names, "readonly"),
     done = transactionDone(tx);
-  const values = await Promise.all(
-    names.map((name) => requestPromise(tx.objectStore(name).getAll())),
-  );
-  await done;
+  const values = await Promise.all([
+    ...names.map((name) => requestPromise(tx.objectStore(name).getAll())),
+    done,
+  ]);
   const stores = Object.fromEntries(
     names.map((name, index) => [name, values[index]]),
   );
   return {
-    safety: {
-      format: "EduManager.RawRecovery",
-      exportedAt: new Date().toISOString(),
-      stores,
-    },
+    catalog: stores.catalog,
+    identity: stores.drafts.find(
+      (row) => row?.key === EduDeputyExportIdentity.key,
+    ),
     draftSignature: restoreDraftSignature(stores.drafts),
   };
 }
-function restoreIdentityMatches(safety, current) {
-  if (safety.format === "EduManager.RawRecovery") {
-    const original = (safety.stores.drafts || []).find(
-      (row) => row?.key === EduDeputyExportIdentity.key,
-    );
+function restoreIdentityMatches(original, current) {
+  let expected;
+  try {
+    expected = original
+      ? EduDeputyExportIdentity.normalize(original.value)
+      : null;
+  } catch (error) {
+    if (error.code !== "DEPUTY_IDENTITY_INVALID") throw error;
     const fingerprint = (row) => {
       try {
         return JSON.stringify(row ?? null);
@@ -166,11 +163,10 @@ function restoreIdentityMatches(safety, current) {
     };
     return fingerprint(original) === fingerprint(current);
   }
-  const original =
-      safety.deputyExportIdentity ||
-      EduDeputyExportIdentity.fromRows(safety.stores.drafts || []),
-    live = current ? EduDeputyExportIdentity.normalize(current.value) : null;
-  return (live?.token || null) === (original?.token || null);
+  const live = current
+    ? EduDeputyExportIdentity.normalize(current.value)
+    : null;
+  return (live?.token || null) === (expected?.token || null);
 }
 async function restoreFullBackup() {
   if (fullRestoreBusy) throw Error("بازیابی کامل در حال انجام است؛ صبر کنید.");
@@ -215,7 +211,7 @@ async function restoreFullBackup() {
   try {
     if (singleFileWriting) await singleFileWriting;
     const periods = validateFullBackup(source);
-    const { safety, draftSignature } = await snapshotBeforeSystemRestore();
+    const guard = await readSystemRestoreGuard(check);
     await draftWriter.catch(() => {});
     check();
     if (periodLoading || busy)
@@ -228,7 +224,7 @@ async function restoreFullBackup() {
     const rows = Object.fromEntries(
       [...backupStores, "drafts"].map((name) => [name, []]),
     );
-    const previous = new Map(safety.stores.catalog.map((row) => [row.id, row]));
+    const previous = new Map(guard.catalog.map((row) => [row.id, row]));
     for (const { period, data } of periods) {
       const liveRevision = previous.get(period.id)?.revision;
       const revision =
@@ -292,13 +288,6 @@ async function restoreFullBackup() {
           token: uid(),
         }),
       );
-    rows.backups.push({
-      id: "before-full-restore-" + uid(),
-      workspace: null,
-      at: new Date().toISOString(),
-      label: "پیش از بازیابی کل سیستم",
-      full: safety,
-    });
     const marker = {
       key: RESET_RECORD_KEY,
       workspace: null,
@@ -343,20 +332,20 @@ async function restoreFullBackup() {
               throw Error(
                 "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ پیش از بازیابی دوباره بررسی کنید.",
               );
-            if (!restoreIdentityMatches(safety, identity.result))
+            if (!restoreIdentityMatches(guard.identity, identity.result))
               throw Error(
                 "مشخصات فرستنده در پنجرهٔ دیگری تغییر کرده است؛ پیش از بازیابی دوباره بررسی کنید.",
               );
             if (
-              draftSignature === undefined ||
-              restoreDraftSignature(durableDrafts.result) !== draftSignature
+              restoreDraftSignature(durableDrafts.result) !==
+              guard.draftSignature
             )
               throw Error(
                 "پیش‌نویس نمرات در پنجرهٔ دیگری تغییر کرده است؛ برای حفظ آن‌ها بازیابی انجام نشد. دوباره پشتیبان را بررسی کنید.",
               );
             if (
               restoreCatalogSignature(request.result) !==
-              restoreCatalogSignature(safety.stores.catalog)
+              restoreCatalogSignature(guard.catalog)
             )
               throw Error(
                 "اطلاعات سیستم در پنجره دیگری تغییر کرده است؛ پیش از بازیابی دوباره بررسی کنید.",
@@ -461,7 +450,7 @@ async function restoreFullBackup() {
     closeModal();
     render();
     setStatus(
-      "کل اطلاعات فایل بازیابی شد؛ هیچ نوبت تکراری ساخته نشد. پشتیبان وضعیت قبلی در برنامه محفوظ است." +
+      "کل اطلاعات فایل بازیابی شد؛ هیچ نوبت تکراری ساخته نشد." +
         (notesSaved
           ? ""
           : " توضیحات گزارش در بانک محفوظ‌اند؛ ذخیره موقت آن‌ها نیازمند تلاش مجدد است."),

@@ -68,17 +68,22 @@ function renderMaster() {
     return s + "</div></article>";
   };
   let h = headerHtml();
-  h += `<header class="week-heading"><h2>برنامه هفتگی</h2><button type="button" class="ghost no-print" data-legacy-click="schedule-timetable:2">تنظیمات برنامه</button></header>`;
   h +=
-    '<section class="card week-overview"><div class="week-overview-info"><span class="week-parity ' +
+    '<section class="card week-overview" aria-labelledby="weekOverviewTitle"><div class="week-overview-info"><header class="week-overview-title"><span class="week-overview-symbol no-print" aria-hidden="true">' +
+    EduIcons.html("calendar-week") +
+    '</span><h2 id="weekOverviewTitle">برنامه هفتگی</h2><span class="week-parity ' +
     parity +
     '">هفته ' +
     (parity === "odd" ? "فرد" : "زوج") +
-    "</span><strong>از " +
+    '</span></header><div class="week-overview-details"><span class="week-overview-date">' +
+    EduIcons.html("calendar") +
+    '<span>از <time datetime="' +
+    esc(getSaturdayOf(date)) +
+    '">' +
     esc(faDate(getSaturdayOf(date))) +
-    "</strong><span>" +
+    '</time></span></span><span class="week-overview-count"><strong>' +
     number(weekly) +
-    ` زنگ برنامه‌ریزی‌شده</span></div><label class="week-filter no-print">نمایش برنامه کلاس<select data-legacy-change="schedule-timetable:3"><option value="">همه کلاس‌ها</option>`;
+    '</strong><span>زنگ برنامه‌ریزی‌شده</span></span></div></div><label class="week-filter no-print">نمایش برنامه کلاس<select data-legacy-change="schedule-timetable:3"><option value="">همه کلاس‌ها</option>';
   for (const school of db.schools)
     for (const c of school.classes)
       h +=

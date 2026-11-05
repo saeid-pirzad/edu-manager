@@ -76,9 +76,11 @@ async function inspectWorkspaceTools() {
       tools.querySelectorAll('[data-header-action="settings"]').length === 1,
   );
   add(
-    "tools expand directly in compact navigation with advanced drafts collapsed",
+    "tools expand directly in compact navigation without draft recovery controls",
     tools.open === !desktop &&
-      !tools.querySelector(".workspace-draft-tools").open &&
+      !tools.querySelector(
+        ".workspace-draft-tools,.workspace-draft-actions,.workspace-tool-caution",
+      ) &&
       getComputedStyle(summary, "::after").content === "none" &&
       !tools.querySelector(".workspace-file-status,.workspace-tool-label"),
   );
@@ -113,13 +115,16 @@ async function inspectWorkspaceTools() {
   );
   const actions = [...tools.querySelectorAll("button")];
   add(
-    "backup has its own header entry while technical draft commands stay inside tools",
+    "backup keeps its header entry and tools contain only the three routine actions",
     !tools.querySelector('[data-workspace-action="backups"]') &&
       !!document.querySelector(
         '.header-actions > [data-workspace-action="backups"]',
       ) &&
       actions.filter((button) => button.getClientRects().length).length === 3 &&
-      tools.querySelectorAll(".workspace-draft-tools button").length === 3,
+      actions.length === 3 &&
+      !tools.querySelector(
+        '[data-workspace-action="review-drafts"],[data-workspace-action="other-drafts"],[data-workspace-action="discard-drafts"]',
+      ),
   );
   const fits = () =>
     document.documentElement.scrollWidth <= innerWidth + 1 &&
@@ -171,12 +176,6 @@ async function inspectWorkspaceTools() {
           .getClientRects().length,
     );
   }
-  tools.querySelector(".workspace-draft-tools > summary").click();
-  await pause();
-  add(
-    "advanced commands expand without closing the parent or overflowing",
-    tools.open && tools.querySelector(".workspace-draft-tools").open && fits(),
-  );
   document.querySelector(".workflow-welcome h2").click();
   add(
     "outside click closes workspace tools without changing data",

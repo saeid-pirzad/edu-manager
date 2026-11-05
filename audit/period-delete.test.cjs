@@ -20,6 +20,9 @@ function fixture() {
   const effects = [];
   const c = vm.createContext({
     workspace: { id: "first" },
+    connection: {},
+    installationToken: "",
+    RESET_RECORD_KEY: "@installation-reset",
     fullRestoreBusy: false,
     resetBusy: false,
     periodLoading: false,
@@ -27,6 +30,7 @@ function fixture() {
     blocked: false,
     connectionRetired: false,
     flushDrafts: async () => {},
+    writer: Promise.resolve(),
     lockControls() {},
     drafts: new Map(),
     draftTimer: null,
@@ -36,7 +40,7 @@ function fixture() {
     academicTermKind: () => "",
     esc: String,
     preserveAsyncTarget: () => () => {},
-    allFrom: async () => rows,
+    allFrom: async () => structuredClone(rows),
     readWorkspaceSnapshot: async (id) => ({
       period: rows.find((r) => r.id === id),
       data: { schools: [], sessions: [], settings: {} },
@@ -47,9 +51,9 @@ function fixture() {
     },
     document: { getElementById: () => ({ checked: true }) },
     confirm: () => true,
-    snapshotInstallation: async () => ({
-      stores: { catalog: structuredClone(rows) },
-    }),
+    snapshotInstallation: async () => {
+      throw Error("Deletion must not construct an operation backup");
+    },
     backupStores: [
       "catalog",
       "records",
@@ -59,7 +63,6 @@ function fixture() {
       "backups",
     ],
     restoreCatalogSignature: (value) => JSON.stringify(value),
-    uid: () => "safety",
     transactionDone: (tx) => tx.done,
     broadcast: (message) => effects.push(message),
     localStorage: { removeItem() {} },
@@ -105,26 +108,21 @@ test("deletion preview names the scope and warns about annual reporting with exp
   assert.match(effects[0], /گزارش سالانه/);
   assert.match(effects[0], /id="periodDeletionConfirmed"/);
   assert.match(effects[0], /اطلاعات سایر نوبت‌ها تغییر نمی‌کند/);
+  assert.doesNotMatch(effects[0], /نسخهٔ ایمنی/);
 });
-test("unchecked confirmation or changed workspace prevents deletion before snapshot", async () => {
+test("unchecked confirmation or changed workspace prevents deletion", async () => {
   const { c } = fixture();
   await c.openDeletePeriod("second");
-  c.snapshotInstallation = () => {
-    throw Error("must not snapshot");
-  };
   c.document.getElementById = () => ({ checked: false });
   await assert.rejects(c.confirmDeletePeriod(), /ابتدا هشدارها/);
   c.document.getElementById = () => ({ checked: true });
   c.workspace.id = "other";
   await assert.rejects(c.confirmDeletePeriod(), /وضعیت برنامه تغییر/);
 });
-test("deletion cancellation preserves data and does not take a snapshot", async () => {
+test("deletion cancellation preserves data without writing", async () => {
   const { c } = fixture();
   await c.openDeletePeriod("second");
   c.confirm = () => false;
-  c.snapshotInstallation = () => {
-    throw Error("must not snapshot");
-  };
   await c.confirmDeletePeriod();
 });
 
@@ -136,16 +134,13 @@ test("blocked deletion explains the reason inside the modal instead of throwing"
   assert.doesNotMatch(effects[0], /confirm-delete-period/);
 });
 
-test("password-protected deletion requires its own inline password before snapshot", async () => {
+test("password-protected deletion requires its own inline password before writing", async () => {
   const { c, rows } = fixture();
   c.readWorkspaceSnapshot = async (id) => ({
     period: rows.find((row) => row.id === id),
     data: { schools: [], sessions: [], settings: { password: "protected" } },
   });
   await c.openDeletePeriod("second");
-  c.snapshotInstallation = () => {
-    throw Error("must not snapshot");
-  };
   c.document.getElementById = (id) =>
     id === "periodDeletionConfirmed" ? { checked: true } : { value: "" };
   await assert.rejects(
@@ -157,13 +152,26 @@ test("password-protected deletion requires its own inline password before snapsh
   c.verifyPassword = async () => false;
   await assert.rejects(c.confirmDeletePeriod(), /رمز نوبت درست نیست/);
 });
-for (const failure of [false, true]) {
-  test(`period deletion transaction ${failure ? "aborts on concurrent changes" : "saves safety and deletes only owned records"}`, async () => {
+for (const change of [
+  "none",
+  "catalog",
+  "stale epoch",
+  "epoch after catalog",
+]) {
+  const failure = change !== "none";
+  test(`period deletion transaction ${failure ? "aborts on " + change : "deletes only owned records without creating an operation backup"}`, async () => {
     const { c, rows, effects } = fixture();
+    c.installationToken = "original-installation";
     await c.openDeletePeriod("second");
     const queued = [];
+    let durableToken =
+        change === "stale epoch" ? "new-installation" : c.installationToken,
+      mutationsBeforeEpoch,
+      cursorsBeforeEpoch,
+      openedCursors = 0;
     c.connection = {
       transaction(names) {
+        assert.ok(names.includes("catalog") && names.includes("records"));
         let resolve, reject;
         const done = new Promise((yes, no) => {
           resolve = yes;
@@ -176,11 +184,25 @@ for (const failure of [false, true]) {
           },
           objectStore(name) {
             return {
+              get(key) {
+                assert.equal(name, "records");
+                assert.equal(key, c.RESET_RECORD_KEY);
+                const request = {};
+                queueMicrotask(() => {
+                  mutationsBeforeEpoch = queued.length;
+                  cursorsBeforeEpoch = openedCursors;
+                  request.result = { value: { token: durableToken } };
+                  request.onsuccess();
+                });
+                return request;
+              },
               getAll() {
                 const request = { result: structuredClone(rows) };
-                if (failure) request.result[1].revision++;
+                if (change === "catalog") request.result[1].revision++;
                 queueMicrotask(() => {
                   request.onsuccess();
+                  if (change === "epoch after catalog")
+                    durableToken = "new-installation";
                   setImmediate(resolve);
                 });
                 return request;
@@ -192,6 +214,7 @@ for (const failure of [false, true]) {
                 queued.push({ name, id });
               },
               openCursor() {
+                openedCursors++;
                 const request = {};
                 const entries = [
                   name === "undo" ? { id: "second" } : { workspace: "second" },
@@ -233,12 +256,25 @@ for (const failure of [false, true]) {
       },
     };
     if (failure) {
-      await assert.rejects(c.confirmDeletePeriod(), /پنجرهٔ دیگری/);
+      await assert.rejects(
+        c.confirmDeletePeriod(),
+        change === "catalog"
+          ? /پنجرهٔ دیگری/
+          : (error) => error.code === "INSTALLATION_CHANGED",
+      );
       assert.equal(queued.length, 0);
+      assert.equal(openedCursors, 0);
+      assert.equal(c.installationToken, "original-installation");
+      assert.equal(
+        effects.some((entry) => entry.type === "period-deleted"),
+        false,
+      );
     } else {
       await c.confirmDeletePeriod();
-      assert.equal(queued[0].name, "backups");
-      assert.ok(queued[0].value.full);
+      assert.equal(
+        queued.some((entry) => entry.value),
+        false,
+      );
       assert.ok(
         queued.some(
           (entry) => entry.name === "catalog" && entry.id === "second",
@@ -275,5 +311,7 @@ for (const failure of [false, true]) {
       );
       assert.ok(effects.some((entry) => entry.type === "period-deleted"));
     }
+    assert.equal(mutationsBeforeEpoch, 0);
+    assert.equal(cursorsBeforeEpoch, 0);
   });
 }

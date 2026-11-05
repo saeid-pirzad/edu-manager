@@ -25,6 +25,23 @@ function deletionTarget(kind, id, schoolId, classId) {
         : x.lessonId === id;
   return { school, cls, item, matches, classes, lessons };
 }
+async function readDeletionCatalog(sourceConnection, expectedInstallation) {
+  const tx = sourceConnection.transaction(["catalog", "records"], "readonly"),
+    done = transactionDone(tx);
+  const [catalog, marker] = await Promise.all([
+    requestPromise(tx.objectStore("catalog").getAll()),
+    requestPromise(tx.objectStore("records").get(RESET_RECORD_KEY)),
+    done,
+  ]);
+  if ((marker?.value?.token || "") !== expectedInstallation) {
+    const error = Error(
+      "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ حذف انجام نشد.",
+    );
+    error.code = "INSTALLATION_CHANGED";
+    throw error;
+  }
+  return catalog;
+}
 function openDeletion(kind, id) {
   try {
     assertEntityWritable();
@@ -76,7 +93,7 @@ function openDeletion(kind, id) {
       count(sessions, "جلسه") +
       count(slots, "زنگ برنامه هفتگی") +
       '</ul><p class="deletion-backup-note">' +
-      "پیش از حذف، یک نسخهٔ ایمنی کامل ذخیره می‌شود. در «پشتیبان و بازیابی ← نسخهٔ ایمنی آخرین عملیات» فایل آن را دریافت و برای بازگردانی از «بازیابی از فایل» استفاده کنید. نسخهٔ داخلی جای فایل مستقل شما را نمی‌گیرد." +
+      "بازگردانی اطلاعات حذف‌شده فقط با فایل پشتیبان کاملِ پیش از حذف ممکن است." +
       "</p>" +
       '<label class="deletion-confirm" for="deleteEntityName">برای تأیید، نام ' +
       label +
@@ -108,13 +125,15 @@ async function confirmDeletion() {
   const finish = beginRecordEditorSave(form);
   try {
     const context = deletionContext;
-    const sourceConnection = connection;
+    const sourceConnection = connection,
+      sourceInstallation = installationToken;
     const check = () => {
       assertEntityWritable();
       if (
         !context ||
         deletionContext !== context ||
         connection !== sourceConnection ||
+        installationToken !== sourceInstallation ||
         context.workspace !== workspace.id ||
         context.revision !== workspace.revision
       )
@@ -140,17 +159,14 @@ async function confirmDeletion() {
     await flushDrafts({ strict: true });
     await writer.catch(() => {});
     target = check();
-    let directoryRevisions;
-    {
-      const full = await snapshotInstallation();
-      check();
-      directoryRevisions = full.stores.catalog
-        .filter((period) => period.year === workspace.year)
-        .map(({ id, year, revision }) => ({ id, year, revision }));
-      await putSafetySnapshot(full, "پیش از حذف: " + target.item.name, {
-        idPrefix: "before-shared-delete-",
-      });
-    }
+    const catalog = await readDeletionCatalog(
+      sourceConnection,
+      sourceInstallation,
+    );
+    check();
+    const directoryRevisions = catalog
+      .filter((period) => period.year === workspace.year)
+      .map(({ id, year, revision }) => ({ id, year, revision }));
     target = check();
     const name = target.item.name;
     if (context.kind === "school")
@@ -175,6 +191,7 @@ async function confirmDeletion() {
       deletionContext !== context ||
       workspace.id !== context.workspace ||
       connection !== sourceConnection ||
+      installationToken !== sourceInstallation ||
       periodLoading ||
       resetBusy ||
       connectionRetired
@@ -198,10 +215,7 @@ async function confirmDeletion() {
     }
     render();
     closeModal();
-    setStatus(
-      "حذف انجام شد؛ فایل پیش از حذف در «پشتیبان و بازیابی ← نسخهٔ ایمنی آخرین عملیات» قابل دریافت است. برای بازگردانی از «بازیابی از فایل» استفاده کنید.",
-      "saved",
-    );
+    setStatus("حذف انجام شد.", "saved");
   } catch (error) {
     if (!showRecordEditorError(error, "deleteEntityError")) handleError(error);
   } finally {

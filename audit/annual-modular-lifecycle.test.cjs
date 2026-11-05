@@ -185,6 +185,8 @@ function finalization(c, termKind = "first") {
   c.workspace.termKind = termKind;
   c.workspace.term = termKind === "first" ? "اول" : "دوم";
   c.fileMode = false;
+  c.installationToken = "fixture-installation";
+  c.RESET_RECORD_KEY = "@installation-reset";
   c.busy = 0;
   c.drafts = new Map();
   c.assertWorkspaceReadable = () => {};
@@ -202,7 +204,8 @@ function finalization(c, termKind = "first") {
   const rows = [],
     errors = [];
   c.handleError = (error) => errors.push(error);
-  let complete;
+  let complete,
+    completedReads = 0;
   c.transactionDone = () =>
     new Promise((resolve) => {
       complete = resolve;
@@ -214,10 +217,15 @@ function finalization(c, termKind = "first") {
       },
       objectStore: (store) => ({
         get: () => {
-          const request = { result: { ...c.workspace } };
+          const request = {
+            result:
+              store === "records"
+                ? { value: { token: c.installationToken } }
+                : { ...c.workspace },
+          };
           queueMicrotask(() => {
             request.onsuccess();
-            complete();
+            if (++completedReads === 2) complete();
           });
           return request;
         },

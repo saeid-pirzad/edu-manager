@@ -2,6 +2,7 @@ function render(mode) {
   initialize(mode);
   if (mode === "annual") setTimeout(loadAnnualPeriodChoices, 0);
   const f = filters,
+    prepared = last && last.signature === reportSignature(),
     school = db.schools.find((s) => s.id === f.schoolId),
     c = school?.classes.find((c) => c.id === f.classId);
   const people = new Map(
@@ -95,16 +96,17 @@ function render(mode) {
     esc(readNote(noteKey(f))) +
     '</textarea></label><div id="periodicNoteStatus">' +
     noteWarning() +
-    `</div><div class="periodic-primary-actions"><button type="button" class="periodic-build" data-legacy-click="reports-periodic-render:9">تهیه گزارش ` +
+    `</div><div class="periodic-primary-actions"><button type="button" class="periodic-build" ${busy ? "disabled" : ""} data-legacy-click="reports-periodic-render:9">تهیه گزارش ` +
     modeLabel(mode) +
-    '</button><button type="button" class="success periodic-deputy" data-deputy-copy data-legacy-click="reports-periodic-document:deputy">کپی برای معاون</button></div><p id="periodicError" role="alert"></p></section><div id="periodicReportOutput">';
-  h +=
-    last && last.signature === reportSignature()
-      ? documentHtml(last.model)
-      : '<div class="card empty" role="status">' +
-        (last
-          ? "اطلاعات یا ترم تغییر کرده است؛ برای نمایش نتیجه معتبر، گزارش را دوباره تهیه کنید."
-          : "محدوده و مخاطب را انتخاب کنید و «تهیه گزارش» را بزنید.") +
-        "</div>";
+    '</button><button type="button" class="success periodic-deputy" data-deputy-copy' +
+    (busy || !prepared ? " disabled" : "") +
+    ' data-legacy-click="reports-periodic-document:deputy">کپی برای معاون</button></div><p id="periodicError" role="alert"></p></section><div id="periodicReportOutput">';
+  h += prepared
+    ? documentHtml(last.model)
+    : '<div class="card empty" role="status">' +
+      (last
+        ? "اطلاعات یا ترم تغییر کرده است؛ برای نمایش نتیجه معتبر، گزارش را دوباره تهیه کنید."
+        : "محدوده و مخاطب را انتخاب کنید و «تهیه گزارش» را بزنید.") +
+      "</div>";
   return h + "</div>";
 }

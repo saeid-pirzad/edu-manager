@@ -51,13 +51,13 @@ function buildAssessmentEditor(c, l) {
   let html =
     '<div class="card assessment-editor gradebook" data-assessment-lesson="' +
     esc(l.id) +
-    '"><header class="gradebook-heading"><div><span class="gradebook-eyebrow">دفتر نمره</span><h3>' +
+    '"><header class="gradebook-heading"><span class="gradebook-heading-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M6 3h12v18H6V3ZM9 7h6M9 11h6M9 15h2m2 2 2 2 4-4"/></svg></span><div class="gradebook-heading-content"><h3>' +
     esc(l.name) +
-    "</h3><p>" +
-    (general ? "درس عمومی · یک نمره از ۲۰" : "کاردانش · عملی و تئوری") +
-    '</p></div><span class="gradebook-class-count">' +
+    '</h3><div class="gradebook-meta"><span class="gradebook-method">' +
+    (general ? "عمومی · یک نمره از ۲۰" : "کاردانش · عملی و تئوری") +
+    '</span><span class="gradebook-class-count"><bdi>' +
     students.length.toLocaleString("fa-IR") +
-    ' دانش‌آموز</span></header><nav class="assessment-navigation assessment-term-navigation" aria-label="انتخاب نوبت تحصیلی">';
+    '</bdi> هنرجو</span></div></div></header><nav class="assessment-navigation assessment-term-navigation" aria-label="انتخاب مرحلهٔ نمره‌دهی">';
   for (const item of [
     { term: "اول", stage: "midterm", label: "میان‌ترم اول" },
     { term: "اول", stage: "final", label: "پایان‌ترم اول" },

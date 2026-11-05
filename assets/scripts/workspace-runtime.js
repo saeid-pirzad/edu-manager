@@ -2598,7 +2598,7 @@ async function recoverDrafts() {
   if (!drafts.size) return;
   if ([...drafts.values()].some((x) => x.review)) {
     setStatus(
-      "پیش‌نویس تعارض خودکار اعمال نشد؛ دکمه بررسی پیش‌نویس را بزنید.",
+      "نمرات ثبت‌نشده با اطلاعات جدید اختلاف دارند؛ «بررسی نمرات ثبت‌نشده» را بزنید.",
       "error",
     );
     applyDrafts();
@@ -4173,13 +4173,13 @@ function buildAssessmentEditor(c, l) {
   let html =
     '<div class="card assessment-editor gradebook" data-assessment-lesson="' +
     esc(l.id) +
-    '"><header class="gradebook-heading"><div><span class="gradebook-eyebrow">دفتر نمره</span><h3>' +
+    '"><header class="gradebook-heading"><span class="gradebook-heading-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M6 3h12v18H6V3ZM9 7h6M9 11h6M9 15h2m2 2 2 2 4-4"/></svg></span><div class="gradebook-heading-content"><h3>' +
     esc(l.name) +
-    "</h3><p>" +
-    (general ? "درس عمومی · یک نمره از ۲۰" : "کاردانش · عملی و تئوری") +
-    '</p></div><span class="gradebook-class-count">' +
+    '</h3><div class="gradebook-meta"><span class="gradebook-method">' +
+    (general ? "عمومی · یک نمره از ۲۰" : "کاردانش · عملی و تئوری") +
+    '</span><span class="gradebook-class-count"><bdi>' +
     students.length.toLocaleString("fa-IR") +
-    ' دانش‌آموز</span></header><nav class="assessment-navigation assessment-term-navigation" aria-label="انتخاب نوبت تحصیلی">';
+    '</bdi> هنرجو</span></div></div></header><nav class="assessment-navigation assessment-term-navigation" aria-label="انتخاب مرحلهٔ نمره‌دهی">';
   for (const item of [
     { term: "اول", stage: "midterm", label: "میان‌ترم اول" },
     { term: "اول", stage: "final", label: "پایان‌ترم اول" },
@@ -4644,19 +4644,22 @@ function workspaceToolsHtml() {
     '<button type="button" class="ghost workspace-tool-button" data-header-action="settings"><span class="workspace-tool-icon" aria-hidden="true">' +
     EduIcons.html("settings") +
     '</span><span class="workspace-tool-copy"><span>تنظیمات برنامه</span><span class="workspace-tool-description">شخصی‌سازی و تنظیم گزینه‌های برنامه</span></span></button>' +
-    '</div><details class="workspace-draft-tools"><summary><span class="workspace-draft-symbol" aria-hidden="true">' +
-    EduIcons.html("undo") +
-    '</span><span>بازیابی پیش‌نویس‌ها</span><span class="workspace-draft-chevron" aria-hidden="true"></span></summary><div class="workspace-draft-actions">' +
-    button("review-drafts", "grades", "بررسی تعارض نمره‌ها") +
-    button("other-drafts", "undo", "بازیابی ورودی‌های قبلی") +
-    button(
-      "discard-drafts",
-      "trash",
-      "لغو پیش‌نویس نمره‌ها",
-      "workspace-tool-caution",
-    ) +
-    "</div></details></div></details>"
+    "</div></div></details>"
   );
+}
+function draftReviewActionHtml() {
+  if (
+    !ready ||
+    fileMode ||
+    blocked ||
+    resetBusy ||
+    connectionRetired ||
+    periodLoading ||
+    (db.settings.password && !isAuthenticated) ||
+    ![...drafts.values()].some((item) => item.review)
+  )
+    return "";
+  return '<button type="button" class="ghost" data-workspace-action="review-drafts">بررسی نمرات ثبت‌نشده</button>';
 }
 function renderV24() {
   if (!ready) return;
@@ -4679,7 +4682,8 @@ function renderV24() {
       ? '<span class="workspace-closed-note">ترم بسته است؛ فقط مشاهده</span>'
       : "") +
     '<span id="saveStatus" role="status" aria-live="polite"></span>' +
-    workspaceToolsHtml();
+    workspaceToolsHtml() +
+    draftReviewActionHtml();
   app.prepend(panel);
   const tools = panel.querySelector(".workspace-tools");
   const settings = app.querySelector('.topbar [data-header-action="settings"]');
@@ -5768,213 +5772,6 @@ const backupStores = [
   "undo",
   "reports",
 ];
-// Source: src/workspace/backups/safety.js
-// One recovery route for the last destructive operation, not a version list.
-// A safety file is historical data; it must never update the current-backup badge.
-function safetyMetadata(row) {
-  return {
-    id: row.id,
-    at: typeof row.at === "string" ? row.at : "",
-    label:
-      typeof row.label === "string" ? row.label.slice(0, 1000) : "عملیات قبلی",
-  };
-}
-function newerSafety(a, b) {
-  const time = (row) => Date.parse(row.at) || 0;
-  return time(b) - time(a) || String(b.id).localeCompare(String(a.id));
-}
-function validatedSafetySnapshot(value) {
-  if (value?.format !== "EduManager.FullBackup")
-    throw Error(
-      "نسخهٔ ایمنی آخرین عملیات پشتیبان کامل قابل بازیابی نیست؛ فایل خام نیازمند بررسی و ترمیم است. اطلاعات فعلی تغییر نکرده است.",
-    );
-  const snapshot = validateFullBackup.normalize(value);
-  // Never recursively copy full safety snapshots into a downloaded/stored one.
-  snapshot.stores.backups = snapshot.stores.backups.filter((row) => !row.full);
-  return snapshot;
-}
-async function readLatestSafetyBackup() {
-  const ensureCurrent = preserveAsyncTarget(),
-    sourceConnection = connection,
-    tx = sourceConnection.transaction("backups", "readonly"),
-    done = transactionDone(tx);
-  const scanned = new Promise((resolve, reject) => {
-    let latest = null;
-    const request = tx.objectStore("backups").openCursor();
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => {
-      try {
-        ensureCurrent();
-        if (connection !== sourceConnection)
-          throw Error(
-            "اتصال اطلاعات تغییر کرده است؛ پشتیبان را دوباره باز کنید.",
-          );
-        const cursor = request.result;
-        if (!cursor) return resolve(latest);
-        const row = cursor.value;
-        if (row?.full && isSafeRecordId(row.id)) {
-          const metadata = safetyMetadata(row);
-          if (!latest || newerSafety(metadata, latest) < 0) latest = metadata;
-        }
-        cursor.continue();
-      } catch (error) {
-        reject(error);
-        try {
-          tx.abort();
-        } catch {}
-      }
-    };
-  });
-  const [metadata] = await Promise.all([scanned, done]);
-  ensureCurrent();
-  if (connection !== sourceConnection)
-    throw Error("اتصال اطلاعات تغییر کرده است؛ پشتیبان را دوباره باز کنید.");
-  return metadata;
-}
-async function putSafetySnapshot(
-  value,
-  label,
-  { idPrefix = "before-operation-" } = {},
-) {
-  const ensureCurrent = preserveAsyncTarget(),
-    sourceConnection = connection,
-    sourceInstallation =
-      typeof installationToken === "undefined" ? "" : installationToken,
-    full = validatedSafetySnapshot(value),
-    backup = {
-      id: idPrefix + uid(),
-      workspace: null,
-      at: new Date().toISOString(),
-      label,
-      full,
-    };
-  ensureCurrent();
-  const tx = sourceConnection.transaction(["records", "backups"], "readwrite"),
-    done = transactionDone(tx),
-    store = tx.objectStore("backups");
-  let failure;
-  const request = store.getAll(),
-    epoch = tx
-      .objectStore("records")
-      .get(
-        typeof RESET_RECORD_KEY === "undefined"
-          ? "@installation-reset"
-          : RESET_RECORD_KEY,
-      );
-  let remaining = 2;
-  const save = () => {
-    if (--remaining) return;
-    try {
-      ensureCurrent();
-      if (connection !== sourceConnection)
-        throw Error("اتصال اطلاعات تغییر کرده است؛ نسخهٔ ایمنی ثبت نشد.");
-      if ((epoch.result?.value?.token || "") !== sourceInstallation) {
-        const error = Error(
-          "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ نسخهٔ ایمنی قدیمی ثبت نشد.",
-        );
-        error.code = "INSTALLATION_CHANGED";
-        throw error;
-      }
-      const previous = request.result
-        .filter((row) => row.full)
-        .sort(newerSafety);
-      for (const row of previous.slice(7)) store.delete(row.id);
-      store.put(backup);
-    } catch (error) {
-      failure = error;
-      try {
-        tx.abort();
-      } catch {}
-    }
-  };
-  request.onsuccess = save;
-  epoch.onsuccess = save;
-  try {
-    await done;
-  } catch (error) {
-    throw failure || error;
-  }
-  return backup;
-}
-function safetyBackupPanel(metadata) {
-  if (!metadata) return "";
-  const date = new Date(metadata.at),
-    label = Number.isFinite(date.getTime())
-      ? date.toLocaleString("fa-IR")
-      : "زمان نامشخص";
-  return (
-    '<details class="backup-help" id="lastSafetyBackup"><summary>نسخهٔ ایمنی آخرین عملیات</summary><p><strong>' +
-    esc(metadata.label) +
-    "</strong><br>" +
-    esc(label) +
-    '</p><p>این فایل وضعیت کامل پیش از عملیات بالاست، نه اطلاعات فعلی. برای بازگردانی، فایل را دریافت کنید و از «بازیابی از فایل» و تأیید جایگزینی استفاده کنید. نسخهٔ داخلی جای فایل مستقل شما را نمی‌گیرد.</p><button type="button" class="ghost" data-workspace-action="download-safety" data-key="' +
-    esc(metadata.id) +
-    '" data-safety-workspace="' +
-    esc(workspace.id) +
-    '">دریافت نسخهٔ ایمنی آخرین عملیات</button><p id="safetyBackupStatus" role="status"></p></details>'
-  );
-}
-async function downloadLastSafetyBackup(button) {
-  const ensureCurrent = preserveAsyncTarget(),
-    sourceConnection = connection,
-    id = button?.dataset?.key;
-  const check = () => {
-    ensureCurrent();
-    if (
-      connection !== sourceConnection ||
-      button?.isConnected === false ||
-      button?.dataset?.safetyWorkspace !== workspace.id ||
-      !isSafeRecordId(id)
-    )
-      throw Error(
-        "پنجرهٔ نسخهٔ ایمنی منقضی شده است؛ پشتیبان و بازیابی را دوباره باز کنید.",
-      );
-  };
-  try {
-    check();
-    await writer.catch(() => {});
-    check();
-    const latest = await readLatestSafetyBackup();
-    check();
-    if (!latest || latest.id !== id)
-      throw Error(
-        "نسخهٔ ایمنی آخرین عملیات تغییر کرده است؛ پشتیبان و بازیابی را دوباره باز کنید. فایلی دریافت نشد.",
-      );
-    const saved = await readRecord("backups", id);
-    check();
-    if (!saved?.full || saved.id !== id)
-      throw Error(
-        "نسخهٔ ایمنی انتخاب‌شده دیگر موجود نیست؛ اطلاعات فعلی تغییر نکرده است.",
-      );
-    const snapshot = validatedSafetySnapshot(saved.full),
-      current = await readLatestSafetyBackup();
-    check();
-    if (current?.id !== id)
-      throw Error(
-        "نسخهٔ ایمنی هنگام آماده‌سازی تغییر کرد؛ پشتیبان و بازیابی را دوباره باز کنید.",
-      );
-    downloadJSON(
-      snapshot,
-      "EduManager-safety-" +
-        new Date().toISOString().replace(/[:.]/g, "-") +
-        ".json",
-    );
-    const message =
-      "دانلود نسخهٔ ایمنی «" +
-      latest.label +
-      "» درخواست شد؛ این فایل وضعیت پیش از عملیات است، نه اطلاعات فعلی. فایل را بررسی کنید و برای بازگردانی از «بازیابی از فایل» استفاده کنید.";
-    const statusElement = document.getElementById("safetyBackupStatus");
-    if (statusElement) statusElement.textContent = message;
-    setStatus(message, "saved");
-    return true;
-  } catch (error) {
-    const statusElement = document.getElementById("safetyBackupStatus");
-    if (statusElement)
-      statusElement.textContent =
-        "دریافت نسخهٔ ایمنی انجام نشد: " + error.message;
-    throw error;
-  }
-}
 // Source: src/workspace/backups/full-export.js
 // Portable drafts are never silently replaced by an older readable row.
 function portableGradeDrafts(rows, periods, snapshotNotes = []) {
@@ -6528,6 +6325,7 @@ let singleFile = null,
   singleFileWriting = null,
   singleFileFailure = false,
   singleFilePermissionNeeded = false,
+  singleFileNoticeSaved = false,
   singleFileMessage = "ذخیره خودکار در فایل هنوز فعال نیست.";
 
 function singleFileNoticeHtml(message = singleFileMessage) {
@@ -6544,11 +6342,15 @@ function singleFileNoticeHtml(message = singleFileMessage) {
       : "")
   );
 }
-function singleFileStatus(message, { permission = false } = {}) {
+function singleFileStatus(message, { permission = false, saved = false } = {}) {
   singleFileMessage = message;
   singleFilePermissionNeeded = permission;
+  singleFileNoticeSaved = saved;
   const element = document.getElementById("singleFileStatus");
-  if (element) element.innerHTML = singleFileNoticeHtml();
+  if (element) {
+    element.innerHTML = singleFileNoticeHtml();
+    element.hidden = saved;
+  }
   const badge = document.getElementById("singleFileBadge");
   if (badge) {
     badge.innerHTML = singleFileNoticeHtml();
@@ -6567,7 +6369,9 @@ function singleFilePanel() {
       "</section>"
     );
   return (
-    '<section class="backup-automatic"><h3>ذخیره خودکار در یک فایل</h3><p>فایل را یک‌بار انتخاب کنید؛ برنامه هنگام باز بودن، همان فایل را به‌روز می‌کند.</p><div id="singleFileStatus" class="single-file-notice">' +
+    '<section class="backup-automatic"><h3>ذخیره خودکار در یک فایل</h3><p>فایل را یک‌بار انتخاب کنید؛ برنامه هنگام باز بودن، همان فایل را به‌روز می‌کند.</p><div id="singleFileStatus" class="single-file-notice"' +
+    (singleFileNoticeSaved ? " hidden" : "") +
+    ">" +
     singleFileNoticeHtml() +
     "</div>" +
     singleFileFallbackPanel(singleFileFailure) +
@@ -6954,6 +6758,7 @@ function syncSingleFile({ force = true } = {}) {
           target.handle.name +
           " — " +
           new Date(target.savedAt).toLocaleString("fa-IR"),
+        { saved: true },
       );
       return true;
     } catch (error) {
@@ -7074,7 +6879,7 @@ function previewFullBackup(value, { sourceName = "", legacy = false } = {}) {
       (legacyContent
         ? '<p class="full-restore-warning" role="status">این فایل سوابق قدیمی چند سال یا عنوان نوبت قدیمی دارد. همهٔ اطلاعات فایل بدون حذف یا ادغام حفظ می‌شوند؛ رابط برنامه در سالِ اطلاعات فعال داخل همین فایل باز می‌شود. پشتیبان‌گیری مستقل از نوبت اول و دوم است.</p>'
         : "") +
-      '<section class="full-restore-warning"><h4>اطلاعات فعلی جایگزین می‌شود</h4><p>کل اطلاعات سیستم به وضعیت این فایل برمی‌گردد؛ اطلاعات فایل با داده‌های فعلی ادغام نمی‌شود.</p><p>نوبت جدید یا تکراری ساخته نمی‌شود و وضعیت باز یا بستهٔ نوبت‌ها مطابق فایل خواهد بود.</p></section><p class="full-restore-safety">پیش از جایگزینی، یک نسخهٔ ایمنی از اطلاعات فعلی داخل برنامه ذخیره می‌شود.</p><label class="full-restore-confirm" for="fullRestoreConfirmed"><input type="checkbox" id="fullRestoreConfirmed"><span>می‌دانم کل اطلاعات فعلی با محتوای این فایل جایگزین می‌شود.</span></label><p id="operationError" role="alert"></p><div class="full-restore-actions"><button type="button" class="danger" data-full-restore data-workspace-action="restore-full">تأیید و بازیابی کل اطلاعات</button><button type="button" class="ghost" data-workspace-action="close">انصراف</button></div></div>',
+      '<section class="full-restore-warning"><h4>اطلاعات فعلی جایگزین می‌شود</h4><p>کل اطلاعات سیستم به وضعیت این فایل برمی‌گردد؛ اطلاعات فایل با داده‌های فعلی ادغام نمی‌شود.</p><p>نوبت جدید یا تکراری ساخته نمی‌شود و وضعیت باز یا بستهٔ نوبت‌ها مطابق فایل خواهد بود.</p></section><label class="full-restore-confirm" for="fullRestoreConfirmed"><input type="checkbox" id="fullRestoreConfirmed"><span>می‌دانم کل اطلاعات فعلی با محتوای این فایل جایگزین می‌شود.</span></label><p id="operationError" role="alert"></p><div class="full-restore-actions"><button type="button" class="danger" data-full-restore data-workspace-action="restore-full">تأیید و بازیابی کل اطلاعات</button><button type="button" class="ghost" data-workspace-action="close">انصراف</button></div></div>',
   );
   if (opened !== false) {
     pendingFullBackup = value;
@@ -7102,46 +6907,43 @@ function restoreDraftSignature(rows) {
       .sort(([a], [b]) => a.localeCompare(b)),
   );
 }
-async function snapshotBeforeSystemRestore() {
-  let draftSignature;
-  if (ready)
-    try {
-      const safety = await snapshotInstallation({
-        onDurableDrafts: (rows) => {
-          draftSignature = restoreDraftSignature(rows);
-        },
-      });
-      return { safety, draftSignature };
-    } catch (error) {
-      // A damaged sender profile must not prevent recovery of the actual
-      // installation. Keep it verbatim in the raw safety copy instead.
-      if (error.code !== "DEPUTY_IDENTITY_INVALID") throw error;
-    }
-  // Recovery must also work when damaged records prevented normal startup.
-  const names = [...backupStores, "drafts"];
+async function readSystemRestoreGuard(check = () => {}) {
+  if (ready) {
+    await flushDrafts().catch(() => {});
+    await writer.catch(() => {});
+    check();
+    await storeDrafts().catch(() => {});
+  }
+  await draftWriter.catch(() => {});
+  check();
+  // Read only the revision and draft guards needed for replacement. Damaged
+  // records must not prevent recovery, and no operation backup is constructed.
+  const names = ["catalog", "drafts"];
   const tx = connection.transaction(names, "readonly"),
     done = transactionDone(tx);
-  const values = await Promise.all(
-    names.map((name) => requestPromise(tx.objectStore(name).getAll())),
-  );
-  await done;
+  const values = await Promise.all([
+    ...names.map((name) => requestPromise(tx.objectStore(name).getAll())),
+    done,
+  ]);
   const stores = Object.fromEntries(
     names.map((name, index) => [name, values[index]]),
   );
   return {
-    safety: {
-      format: "EduManager.RawRecovery",
-      exportedAt: new Date().toISOString(),
-      stores,
-    },
+    catalog: stores.catalog,
+    identity: stores.drafts.find(
+      (row) => row?.key === EduDeputyExportIdentity.key,
+    ),
     draftSignature: restoreDraftSignature(stores.drafts),
   };
 }
-function restoreIdentityMatches(safety, current) {
-  if (safety.format === "EduManager.RawRecovery") {
-    const original = (safety.stores.drafts || []).find(
-      (row) => row?.key === EduDeputyExportIdentity.key,
-    );
+function restoreIdentityMatches(original, current) {
+  let expected;
+  try {
+    expected = original
+      ? EduDeputyExportIdentity.normalize(original.value)
+      : null;
+  } catch (error) {
+    if (error.code !== "DEPUTY_IDENTITY_INVALID") throw error;
     const fingerprint = (row) => {
       try {
         return JSON.stringify(row ?? null);
@@ -7153,11 +6955,10 @@ function restoreIdentityMatches(safety, current) {
     };
     return fingerprint(original) === fingerprint(current);
   }
-  const original =
-      safety.deputyExportIdentity ||
-      EduDeputyExportIdentity.fromRows(safety.stores.drafts || []),
-    live = current ? EduDeputyExportIdentity.normalize(current.value) : null;
-  return (live?.token || null) === (original?.token || null);
+  const live = current
+    ? EduDeputyExportIdentity.normalize(current.value)
+    : null;
+  return (live?.token || null) === (expected?.token || null);
 }
 async function restoreFullBackup() {
   if (fullRestoreBusy) throw Error("بازیابی کامل در حال انجام است؛ صبر کنید.");
@@ -7202,7 +7003,7 @@ async function restoreFullBackup() {
   try {
     if (singleFileWriting) await singleFileWriting;
     const periods = validateFullBackup(source);
-    const { safety, draftSignature } = await snapshotBeforeSystemRestore();
+    const guard = await readSystemRestoreGuard(check);
     await draftWriter.catch(() => {});
     check();
     if (periodLoading || busy)
@@ -7215,7 +7016,7 @@ async function restoreFullBackup() {
     const rows = Object.fromEntries(
       [...backupStores, "drafts"].map((name) => [name, []]),
     );
-    const previous = new Map(safety.stores.catalog.map((row) => [row.id, row]));
+    const previous = new Map(guard.catalog.map((row) => [row.id, row]));
     for (const { period, data } of periods) {
       const liveRevision = previous.get(period.id)?.revision;
       const revision =
@@ -7279,13 +7080,6 @@ async function restoreFullBackup() {
           token: uid(),
         }),
       );
-    rows.backups.push({
-      id: "before-full-restore-" + uid(),
-      workspace: null,
-      at: new Date().toISOString(),
-      label: "پیش از بازیابی کل سیستم",
-      full: safety,
-    });
     const marker = {
       key: RESET_RECORD_KEY,
       workspace: null,
@@ -7330,20 +7124,20 @@ async function restoreFullBackup() {
               throw Error(
                 "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ پیش از بازیابی دوباره بررسی کنید.",
               );
-            if (!restoreIdentityMatches(safety, identity.result))
+            if (!restoreIdentityMatches(guard.identity, identity.result))
               throw Error(
                 "مشخصات فرستنده در پنجرهٔ دیگری تغییر کرده است؛ پیش از بازیابی دوباره بررسی کنید.",
               );
             if (
-              draftSignature === undefined ||
-              restoreDraftSignature(durableDrafts.result) !== draftSignature
+              restoreDraftSignature(durableDrafts.result) !==
+              guard.draftSignature
             )
               throw Error(
                 "پیش‌نویس نمرات در پنجرهٔ دیگری تغییر کرده است؛ برای حفظ آن‌ها بازیابی انجام نشد. دوباره پشتیبان را بررسی کنید.",
               );
             if (
               restoreCatalogSignature(request.result) !==
-              restoreCatalogSignature(safety.stores.catalog)
+              restoreCatalogSignature(guard.catalog)
             )
               throw Error(
                 "اطلاعات سیستم در پنجره دیگری تغییر کرده است؛ پیش از بازیابی دوباره بررسی کنید.",
@@ -7448,7 +7242,7 @@ async function restoreFullBackup() {
     closeModal();
     render();
     setStatus(
-      "کل اطلاعات فایل بازیابی شد؛ هیچ نوبت تکراری ساخته نشد. پشتیبان وضعیت قبلی در برنامه محفوظ است." +
+      "کل اطلاعات فایل بازیابی شد؛ هیچ نوبت تکراری ساخته نشد." +
         (notesSaved
           ? ""
           : " توضیحات گزارش در بانک محفوظ‌اند؛ ذخیره موقت آن‌ها نیازمند تلاش مجدد است."),
@@ -7666,8 +7460,6 @@ async function openBackups() {
   const ensureCurrent = preserveAsyncTarget();
   await writer.catch(() => {});
   ensureCurrent();
-  const safety = await readLatestSafetyBackup();
-  ensureCurrent();
   let estimate = "";
   if (navigator.storage?.estimate) {
     const e = await navigator.storage.estimate();
@@ -7685,7 +7477,6 @@ async function openBackups() {
       esc(lastExternalBackupLabel()) +
       "</p></section>" +
       singleFilePanel() +
-      safetyBackupPanel(safety) +
       '<details class="backup-help"><summary>فضای ذخیره‌سازی مرورگر</summary><p>' +
       esc(estimate) +
       '</p></details><details class="backup-reset"><summary>پاک‌سازی اطلاعات سیستم</summary><p>برای شروع دوباره، همه اطلاعات برنامه در همین مرورگر حذف می‌شود. این کار بازیابی فایل نیست؛ پیش از ادامه پشتیبان کامل دریافت کنید. فایل‌های ذخیره‌شده روی دستگاه حذف نمی‌شوند.</p><button type="button" class="danger" data-workspace-action="open-wipe">بررسی و تأیید پاک‌سازی</button></details></div>',
@@ -7955,14 +7746,6 @@ async function confirmImport() {
     candidate.settings.academicYear = workspace.year;
     candidate.settings.academicTerm = workspace.term;
     validateV24(candidate);
-    try {
-      await putBackup(db, "پیش از بازیابی");
-    } catch (error) {
-      setStatus(
-        "پشتیبان داخلی جا نشد؛ نسخه مستقلِ تأییدشده مسیر بازیابی است.",
-        "pending",
-      );
-    }
     check(true);
     busy++;
     paintStatus();
@@ -8410,7 +8193,7 @@ async function openDeletePeriod(id) {
       (id === workspace.id
         ? '<p class="period-delete-transition">این نوبت فعال است؛ پس از حذف، برنامه به یکی از نوبت‌های باقی‌مانده می‌رود.</p>'
         : "") +
-      '<p class="full-restore-safety">پیش از حذف، نسخهٔ ایمنی ذخیره می‌شود. پشتیبان‌های قبلی باقی می‌مانند.</p>' +
+      '<p class="full-restore-safety">پشتیبان‌های قبلی باقی می‌مانند.</p>' +
       (data.settings.password
         ? '<label class="period-delete-password" for="periodDeletionPassword">رمز این نوبت<input type="password" id="periodDeletionPassword" autocomplete="current-password" placeholder="رمز نوبت انتخاب‌شده"></label>'
         : "") +
@@ -8432,6 +8215,8 @@ async function confirmDeletePeriod() {
     throw Error("ابتدا هشدارها را بخوانید و حذف همین نوبت را تأیید کنید.");
   let ownsLoading = false,
     deleted = false;
+  const sourceConnection = connection,
+    sourceInstallation = installationToken;
   const check = () => {
     if (!ownsLoading) assertWorkspaceReadable();
     else if (!ready || blocked || connectionRetired)
@@ -8439,6 +8224,8 @@ async function confirmDeletePeriod() {
     if (
       fullRestoreBusy ||
       resetBusy ||
+      connection !== sourceConnection ||
+      installationToken !== sourceInstallation ||
       (periodLoading && !ownsLoading) ||
       pendingPeriodDeletion !== preview ||
       workspace.id !== preview.origin
@@ -8472,11 +8259,12 @@ async function confirmDeletePeriod() {
       )
     )
       return;
-    const safety = await snapshotInstallation();
+    await flushDrafts({ strict: true });
+    await writer.catch(() => {});
     check();
-    const remaining = safety.stores.catalog.filter(
-      (row) => row.id !== preview.id,
-    );
+    const catalog = await allFrom("catalog");
+    check();
+    const remaining = catalog.filter((row) => row.id !== preview.id);
     const next =
       remaining.find(
         (row) =>
@@ -8491,10 +8279,20 @@ async function confirmDeletePeriod() {
     const tx = connection.transaction(names, "readwrite"),
       done = transactionDone(tx);
     let failure;
-    const request = tx.objectStore("catalog").getAll();
-    request.onsuccess = () => {
+    const request = tx.objectStore("catalog").getAll(),
+      epoch = tx.objectStore("records").get(RESET_RECORD_KEY);
+    let pending = 2;
+    const remove = () => {
+      if (--pending) return;
       try {
         check();
+        if ((epoch.result?.value?.token || "") !== sourceInstallation) {
+          const error = Error(
+            "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ حذف انجام نشد. نوبت‌ها را دوباره باز کنید.",
+          );
+          error.code = "INSTALLATION_CHANGED";
+          throw error;
+        }
         const row = assertPeriodDeletable(
           request.result,
           preview.id,
@@ -8503,18 +8301,11 @@ async function confirmDeletePeriod() {
         if (
           row.revision !== preview.revision ||
           restoreCatalogSignature(request.result) !==
-            restoreCatalogSignature(safety.stores.catalog)
+            restoreCatalogSignature(catalog)
         )
           throw Error(
             "اطلاعات در پنجرهٔ دیگری تغییر کرده است؛ حذف انجام نشد. دوباره تلاش کنید.",
           );
-        tx.objectStore("backups").put({
-          id: "before-period-delete-" + uid(),
-          workspace: null,
-          at: new Date().toISOString(),
-          label: "پیش از حذف نوبت " + preview.title,
-          full: safety,
-        });
         tx.objectStore("catalog").delete(preview.id);
         for (const name of names.filter((name) => name !== "catalog")) {
           const cursor = tx.objectStore(name).openCursor();
@@ -8545,6 +8336,8 @@ async function confirmDeletePeriod() {
         tx.abort();
       }
     };
+    request.onsuccess = remove;
+    epoch.onsuccess = remove;
     try {
       await done;
     } catch (error) {
@@ -8572,19 +8365,14 @@ async function confirmDeletePeriod() {
     periodLoading = false;
     ownsLoading = false;
     scheduleSingleFile();
-    setStatus(
-      "نوبت " +
-        preview.title +
-        " حذف شد؛ پشتیبان ایمنی در بخش پشتیبان و بازیابی محفوظ است.",
-      "saved",
-    );
+    setStatus("نوبت " + preview.title + " حذف شد.", "saved");
     await openPeriods();
   } catch (error) {
     if (deleted && workspace.id === preview.id) {
       ready = false;
       blocked = true;
       resetScreen(
-        "نوبت حذف شد و پشتیبان ایمنی محفوظ است؛ برای ورود به نوبت باقی‌مانده، برنامه را دوباره بارگذاری کنید.",
+        "نوبت حذف شد؛ برای ورود به نوبت باقی‌مانده، برنامه را دوباره بارگذاری کنید.",
       );
     }
     throw error;
@@ -9083,7 +8871,17 @@ async function finalizePeriod() {
   assertWorkspaceReadable();
   assertEntityWritable();
   const origin = workspace.id,
-    database = connection;
+    database = connection,
+    sourceInstallation = installationToken;
+  const assertInstallation = (token) => {
+    if (token !== sourceInstallation)
+      throw Object.assign(
+        Error("نوبت یا اتصال بانک هنگام بستن تغییر کرد؛ دوباره تلاش کنید."),
+        {
+          code: "INSTALLATION_CHANGED",
+        },
+      );
+  };
   if (fileMode)
     throw Error(
       "این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.",
@@ -9092,6 +8890,7 @@ async function finalizePeriod() {
   await writer.catch(() => {});
   if (workspace.id !== origin || connection !== database)
     throw Error("نوبت یا اتصال بانک هنگام بستن تغییر کرد؛ دوباره تلاش کنید.");
+  assertInstallation(installationToken);
   const context = captureWorkspaceContext();
   const report = finalReportData();
   if (report.missing.length) {
@@ -9120,9 +8919,9 @@ async function finalizePeriod() {
     )
   )
     return;
-  await putBackup(db, "پیش از بستن نوبت");
   const assertFinalizationCurrent = () => {
     assertWorkspaceContext(context, { write: true });
+    assertInstallation(installationToken);
     if (connection !== database)
       throw Error("اتصال بانک هنگام بستن نوبت تغییر کرد؛ دوباره تلاش کنید.");
     if (busy || drafts.size || assessmentContext.hasDrafts())
@@ -9144,14 +8943,18 @@ async function finalizePeriod() {
   let finalizedWorkspace;
   let finalizationError;
   const tx = database.transaction(
-      ["catalog", "reports", "events", "undo"],
+      ["catalog", "records", "reports", "events", "undo"],
       "readwrite",
     ),
     done = transactionDone(tx);
-  const request = tx.objectStore("catalog").get(context.id);
-  request.onsuccess = () => {
+  const request = tx.objectStore("catalog").get(context.id),
+    epoch = tx.objectStore("records").get(RESET_RECORD_KEY);
+  let remaining = 2;
+  const finalize = () => {
+    if (--remaining) return;
     try {
       assertFinalizationCurrent();
+      assertInstallation(epoch.result?.value?.token || "");
       if (
         !request.result ||
         request.result.closed ||
@@ -9183,11 +8986,14 @@ async function finalizePeriod() {
       tx.abort();
     }
   };
+  request.onsuccess = finalize;
+  epoch.onsuccess = finalize;
   try {
     await done;
   } catch (error) {
     throw finalizationError || error;
   }
+  if (installationToken !== sourceInstallation) return;
   broadcast({
     workspace: context.id,
     revision: finalizedWorkspace.revision,
@@ -12794,7 +12600,6 @@ function installWorkspaceActions() {
     ["prepare-share-backup", () => openBackupShare()],
     ["share-backup-file", (button) => sharePreparedBackup(button)],
     ["download-share-backup", () => downloadPreparedBackup()],
-    ["download-safety", (button) => downloadLastSafetyBackup(button)],
     ["single-file-choose", () => chooseSingleFile()],
     ["single-file-save", () => resumeSingleFile()],
     ["single-file-stop", () => disableSingleFile()],
@@ -14093,6 +13898,23 @@ function deletionTarget(kind, id, schoolId, classId) {
         : x.lessonId === id;
   return { school, cls, item, matches, classes, lessons };
 }
+async function readDeletionCatalog(sourceConnection, expectedInstallation) {
+  const tx = sourceConnection.transaction(["catalog", "records"], "readonly"),
+    done = transactionDone(tx);
+  const [catalog, marker] = await Promise.all([
+    requestPromise(tx.objectStore("catalog").getAll()),
+    requestPromise(tx.objectStore("records").get(RESET_RECORD_KEY)),
+    done,
+  ]);
+  if ((marker?.value?.token || "") !== expectedInstallation) {
+    const error = Error(
+      "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ حذف انجام نشد.",
+    );
+    error.code = "INSTALLATION_CHANGED";
+    throw error;
+  }
+  return catalog;
+}
 function openDeletion(kind, id) {
   try {
     assertEntityWritable();
@@ -14144,7 +13966,7 @@ function openDeletion(kind, id) {
       count(sessions, "جلسه") +
       count(slots, "زنگ برنامه هفتگی") +
       '</ul><p class="deletion-backup-note">' +
-      "پیش از حذف، یک نسخهٔ ایمنی کامل ذخیره می‌شود. در «پشتیبان و بازیابی ← نسخهٔ ایمنی آخرین عملیات» فایل آن را دریافت و برای بازگردانی از «بازیابی از فایل» استفاده کنید. نسخهٔ داخلی جای فایل مستقل شما را نمی‌گیرد." +
+      "بازگردانی اطلاعات حذف‌شده فقط با فایل پشتیبان کاملِ پیش از حذف ممکن است." +
       "</p>" +
       '<label class="deletion-confirm" for="deleteEntityName">برای تأیید، نام ' +
       label +
@@ -14176,13 +13998,15 @@ async function confirmDeletion() {
   const finish = beginRecordEditorSave(form);
   try {
     const context = deletionContext;
-    const sourceConnection = connection;
+    const sourceConnection = connection,
+      sourceInstallation = installationToken;
     const check = () => {
       assertEntityWritable();
       if (
         !context ||
         deletionContext !== context ||
         connection !== sourceConnection ||
+        installationToken !== sourceInstallation ||
         context.workspace !== workspace.id ||
         context.revision !== workspace.revision
       )
@@ -14208,17 +14032,14 @@ async function confirmDeletion() {
     await flushDrafts({ strict: true });
     await writer.catch(() => {});
     target = check();
-    let directoryRevisions;
-    {
-      const full = await snapshotInstallation();
-      check();
-      directoryRevisions = full.stores.catalog
-        .filter((period) => period.year === workspace.year)
-        .map(({ id, year, revision }) => ({ id, year, revision }));
-      await putSafetySnapshot(full, "پیش از حذف: " + target.item.name, {
-        idPrefix: "before-shared-delete-",
-      });
-    }
+    const catalog = await readDeletionCatalog(
+      sourceConnection,
+      sourceInstallation,
+    );
+    check();
+    const directoryRevisions = catalog
+      .filter((period) => period.year === workspace.year)
+      .map(({ id, year, revision }) => ({ id, year, revision }));
     target = check();
     const name = target.item.name;
     if (context.kind === "school")
@@ -14243,6 +14064,7 @@ async function confirmDeletion() {
       deletionContext !== context ||
       workspace.id !== context.workspace ||
       connection !== sourceConnection ||
+      installationToken !== sourceInstallation ||
       periodLoading ||
       resetBusy ||
       connectionRetired
@@ -14266,10 +14088,7 @@ async function confirmDeletion() {
     }
     render();
     closeModal();
-    setStatus(
-      "حذف انجام شد؛ فایل پیش از حذف در «پشتیبان و بازیابی ← نسخهٔ ایمنی آخرین عملیات» قابل دریافت است. برای بازگردانی از «بازیابی از فایل» استفاده کنید.",
-      "saved",
-    );
+    setStatus("حذف انجام شد.", "saved");
   } catch (error) {
     if (!showRecordEditorError(error, "deleteEntityError")) handleError(error);
   } finally {
@@ -14470,7 +14289,6 @@ function installRuntimeAPI() {
     openBackupShare,
     sharePreparedBackup,
     downloadPreparedBackup,
-    downloadLastSafetyBackup,
     snapshotInstallation,
     validateFullBackup,
     previewFullBackup,

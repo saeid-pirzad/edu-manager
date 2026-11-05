@@ -172,7 +172,9 @@ function reopening({
   const puts = [],
     events = [],
     messages = [];
-  let resolve, reject;
+  let resolve,
+    reject,
+    completedReads = 0;
   const done = new Promise((res, rej) => {
     resolve = res;
     reject = rej;
@@ -180,6 +182,8 @@ function reopening({
   const c = vm.createContext({
     workspace: { id: "source", revision: 3, closed: !closing },
     db: {},
+    installationToken: "fixture-installation",
+    RESET_RECORD_KEY: "@installation-reset",
     writer: Promise.resolve(),
     busy: 0,
     drafts: new Map(),
@@ -209,17 +213,22 @@ function reopening({
             : {
                 get: () => {
                   const request = {
-                    result: missing
-                      ? undefined
-                      : { id: "source", revision: 3, closed: !closing },
+                    result:
+                      name === "records"
+                        ? { value: { token: c.installationToken } }
+                        : missing
+                          ? undefined
+                          : { id: "source", revision: 3, closed: !closing },
                   };
                   queueMicrotask(() => {
                     if (switchBeforeRead)
                       c.workspace = { id: "other", revision: 3 };
                     request.onsuccess();
-                    if (switchAfterWrite)
-                      c.workspace = { id: "other", revision: 8 };
-                    resolve();
+                    if (++completedReads === (closing ? 2 : 1)) {
+                      if (switchAfterWrite)
+                        c.workspace = { id: "other", revision: 8 };
+                      resolve();
+                    }
                   });
                   return request;
                 },

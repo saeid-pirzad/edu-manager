@@ -221,17 +221,15 @@ module.exports = async function importReplacement() {
           .transaction("backups")
           .objectStore("backups")
           .getAll(),
-        safetyBackups = await new Promise((resolve, reject) => {
+        backups = await new Promise((resolve, reject) => {
           request.onsuccess = () => resolve(request.result);
           request.onerror = () => reject(request.error);
         });
       check(
         prefix + "06",
         format +
-          " replacement retains a complete safety copy of all overwritten terms",
-        safetyBackups.some(
-          (backup) => backup.full && stored(backup.full) === stored(before),
-        ),
+          " replacement creates no operation backup of overwritten terms",
+        !backups.some((backup) => backup.full),
       );
       await choose(file, "restore-" + format + ".json");
       await approve();

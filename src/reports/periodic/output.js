@@ -1,5 +1,15 @@
 async function output(kind) {
-  const model = await generate();
+  let model;
+  if (kind === "deputy") {
+    if (busy || !isPreparedCurrent(last)) {
+      syncReportActions();
+      error(
+        Error("ابتدا «تهیه گزارش» را بزنید و تا آماده‌شدن گزارش منتظر بمانید."),
+      );
+      return false;
+    }
+    model = last.model;
+  } else model = await generate();
   if (!model) return false;
   const prepared = last;
   try {
@@ -64,7 +74,9 @@ async function output(kind) {
     );
     return true;
   } catch (e) {
-    invalidate(e.message || String(e));
+    if (kind !== "deputy" || last === prepared)
+      invalidate(e.message || String(e));
+    else error(e);
     return false;
   }
 }
@@ -107,10 +119,14 @@ root.EduPeriodicReports = {
       String(value).slice(0, Math.max(10000, readNote(key).length)),
     );
     paintNoteState();
+    last = null;
+    syncReportActions();
     return saved;
   },
   author(value) {
     filters.author = String(value).slice(0, 200);
+    last = null;
+    syncReportActions();
   },
   retryNotes,
   hasPendingNotes: () => notes.size > 0,

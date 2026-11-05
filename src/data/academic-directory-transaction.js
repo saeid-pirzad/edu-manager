@@ -297,7 +297,7 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
                 );
             if (!valid || signature(directoryRevisions) !== signature(family)) {
               const error = Error(
-                "فهرست یکی از نوبت‌های سال پس از تهیهٔ پشتیبان ایمنی تغییر کرده است؛ عملیات انجام نشد. صفحه را دوباره بارگذاری کنید.",
+                "فهرست یکی از نوبت‌های سال پس از بررسی اولیه تغییر کرده است؛ عملیات انجام نشد. صفحه را دوباره بارگذاری کنید.",
               );
               error.code = "WORKSPACE_CONFLICT";
               throw error;
@@ -851,8 +851,8 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
           changes: plan.changes,
         });
         // A source-only undo cannot reconstruct a removed companion
-        // class's independent courses/schedule. Recovery uses the full
-        // safety backup prepared by the deletion flow.
+        // class's independent courses/schedule. Recovery requires a full
+        // backup file supplied by the user.
         if (isSource && keepUndo && !sharedClassRemoval && !sharedCourseRemoval)
           tx.objectStore("undo").put({
             id: updated.id,

@@ -90,7 +90,6 @@
         "src/workspace/sessions/year-view.js",
         "src/workspace/schedule/actions.js",
         "src/workspace/backups/local.js",
-        "src/workspace/backups/safety.js",
         "src/workspace/backups/full-export.js",
         "src/workspace/backups/sharing.js",
         "src/workspace/backups/single-file.js",

@@ -726,8 +726,7 @@ test("shared deletion checks every term revision against the exact full safety s
   await assert.rejects(
     f.commit(),
     (error) =>
-      error.code === "WORKSPACE_CONFLICT" &&
-      /پشتیبان ایمنی/.test(error.message),
+      error.code === "WORKSPACE_CONFLICT" && /بررسی اولیه/.test(error.message),
   );
   assert.deepEqual(clone(f.stores), before);
   assert.equal(

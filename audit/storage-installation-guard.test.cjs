@@ -152,25 +152,6 @@ test("a deleted workspace cannot receive an orphan backup even when the installa
   );
   assert.equal(f.stores.backups.size, 0);
 });
-test("stale safety insertion cannot prune the current installation's historical backups", async () => {
-  const f = fixture();
-  f.load("backups/safety.js");
-  for (let i = 0; i < 9; i++)
-    f.stores.backups.set("safety-" + i, {
-      id: "safety-" + i,
-      at: "2026-11-03T10:00:00Z",
-      full: { format: "EduManager.FullBackup", stores: { backups: [] } },
-    });
-  const before = JSON.stringify([...f.stores.backups]);
-  await assert.rejects(
-    f.c.putSafetySnapshot(
-      { format: "EduManager.FullBackup", stores: { backups: [] } },
-      "before deletion",
-    ),
-    (error) => error.code === "INSTALLATION_CHANGED",
-  );
-  assert.equal(JSON.stringify([...f.stores.backups]), before);
-});
 test("stale file picker cannot replace the restored installation's file connection", async () => {
   const f = fixture();
   f.load("backups/single-file.js");

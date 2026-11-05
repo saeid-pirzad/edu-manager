@@ -498,9 +498,6 @@ body.modal-open {
   #app .header-actions .workspace-tool-group {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  #app .header-actions .workspace-draft-actions {
-    grid-template-columns: minmax(0, 1fr);
-  }
   @media (max-width: 700px), (max-width: 1000px) and (pointer: coarse) {
     #app .navigation-menu[open] .header-actions {
       display: grid;
@@ -566,11 +563,6 @@ body.modal-open {
     #app .header-actions .workspace-period-context > span {
       padding: 2px 5px;
     }
-    #app .header-actions .workspace-draft-tools > summary {
-      min-height: 40px;
-      padding: 5px 8px;
-      font-size: 12px;
-    }
     #app .header-actions .workspace-tool-actions > #singleFileBadge {
       padding: 5px 8px;
       font-size: 11px;
@@ -611,12 +603,10 @@ body.modal-open {
     border-color: #e5e2dd;
     box-shadow: none;
   }
-  #app .workspace-tools:not([open]) > .workspace-tool-actions,
-  #app .workspace-draft-tools:not([open]) > :not(summary) {
+  #app .workspace-tools:not([open]) > .workspace-tool-actions {
     display: none;
   }
-  #app .workspace-tool-group,
-  #app .workspace-draft-actions {
+  #app .workspace-tool-group {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
@@ -647,54 +637,6 @@ body.modal-open {
     border-color: #f3cdcf;
     background: #fef0f0;
     color: #c0141b;
-  }
-  #app .workspace-tool-actions .workspace-tool-caution {
-    border-color: #ead9b3;
-    background: #fffaf0;
-  }
-  #app .workspace-draft-tools {
-    padding: 0;
-    border: 0;
-    border-radius: 10px;
-    background: #f7f6f4;
-  }
-  #app .workspace-draft-tools > summary {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-height: 44px;
-    padding: 10px 12px;
-    box-sizing: border-box;
-    border: 0;
-    border-radius: 10px;
-    box-shadow: none;
-    background: transparent;
-    list-style: none;
-    font-size: 13px;
-    color: #58595b;
-  }
-  #app .workspace-draft-tools > summary::-webkit-details-marker {
-    display: none;
-  }
-  #app .workspace-draft-tools > summary:hover {
-    background: #efede9;
-  }
-  #app .workspace-draft-tools > summary::after {
-    content: "";
-    display: block;
-    flex: 0 0 6px;
-    width: 6px;
-    height: 6px;
-    border-inline-end: 1.5px solid currentColor;
-    border-bottom: 1.5px solid currentColor;
-    transform: rotate(45deg);
-    margin-inline-start: auto;
-  }
-  #app .workspace-draft-tools[open] > summary::after {
-    transform: rotate(225deg);
-  }
-  #app .workspace-draft-tools[open] > .workspace-draft-actions {
-    padding: 0 8px 8px;
   }
   #app .workspace-tool-actions > #singleFileBadge {
     display: block;
@@ -827,8 +769,7 @@ body.modal-open {
   }
 }
 @media screen and (max-width: 599px) {
-  #app .workspace-tool-group,
-  #app .workspace-draft-actions {
+  #app .workspace-tool-group {
     grid-template-columns: minmax(0, 1fr);
   }
 }

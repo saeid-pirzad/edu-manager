@@ -15,6 +15,7 @@ function fixture() {
         revision: 1,
         closed: false,
       },
+      installationToken: "fixture-installation",
       fileMode: false,
       connection: {},
       writer: Promise.resolve(),

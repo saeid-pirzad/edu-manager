@@ -12,7 +12,6 @@
       "prepare-share-backup": "share",
       "share-backup-file": "share",
       "download-share-backup": "download",
-      "download-safety": "download",
       "export-period": "download",
       "choose-import": "upload",
       "single-file-choose": "folder",
@@ -435,41 +434,6 @@
               link.click();
             }
           });
-        }
-      }
-      if (
-        !app.querySelector(".view-heading") &&
-        ["school", "class", "lesson"].includes(state.view)
-      ) {
-        const school = db.schools.find((s) => s.id === state.schoolId),
-          c = school?.classes.find((c) => c.id === state.classId),
-          l = c?.lessons.find((l) => l.id === state.lessonId);
-        const title =
-          state.view === "lesson"
-            ? l?.name
-            : state.view === "class"
-              ? state.tab === "students"
-                ? "دانش‌آموزان"
-                : "درس‌ها"
-              : "کلاس‌ها";
-        const note =
-          state.view === "lesson"
-            ? "نمرات و جلسات این درس"
-            : state.view === "class"
-              ? (c?.students.length || 0).toLocaleString("fa-IR") +
-                " هنرجو · " +
-                (c?.lessons.length || 0).toLocaleString("fa-IR") +
-                " درس"
-              : "کلاس‌ها و هنرجویان مدرسه";
-        if (title) {
-          const heading = document.createElement("header");
-          heading.className = "view-heading no-print";
-          const h = document.createElement("h2"),
-            p = document.createElement("p");
-          h.textContent = title;
-          p.textContent = note;
-          heading.append(h, p);
-          crumb.after(heading);
         }
       }
     }

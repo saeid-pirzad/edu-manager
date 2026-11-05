@@ -5,10 +5,16 @@ const { test } = require("node:test"),
   path = require("node:path"),
   vm = require("node:vm");
 function fixture(phase, mutation) {
-  const writes = [];
+  const writes = [],
+    backupWrites = [],
+    reads = [],
+    messages = [],
+    hooks = { durableInstallation: "source-installation" };
   let pending = false,
     complete,
-    fail;
+    fail,
+    completedReads = 0,
+    aborted = false;
   const c = vm.createContext({
     workspace: {
       id: "first",
@@ -18,8 +24,12 @@ function fixture(phase, mutation) {
       closed: false,
     },
     db: {},
+    installationToken: "source-installation",
+    RESET_RECORD_KEY: "@installation-reset",
     fileMode: false,
-    writer: Promise.resolve(),
+    writer: Promise.resolve().then(() => {
+      if (phase === "writer") mutate();
+    }),
     busy: 0,
     drafts: new Map(),
     assessmentContext: { hasDrafts: () => pending },
@@ -31,7 +41,7 @@ function fixture(phase, mutation) {
     confirm: () => true,
     uid: () => "frozen",
     validateFrozenReport() {},
-    broadcast() {},
+    broadcast: (message) => messages.push(message),
     openPeriods: async () => {},
     render() {},
     transactionDone: () =>
@@ -39,13 +49,12 @@ function fixture(phase, mutation) {
         complete = resolve;
         fail = reject;
       }),
-    putBackup: async () => {
-      if (phase === "backup") mutate();
-    },
+    putBackup: async () => backupWrites.push("operation backup"),
   });
   function mutate() {
     if (mutation === "assessment") pending = true;
     else if (mutation === "draft") c.drafts.set("new-grade", {});
+    else if (mutation === "installation") c.installationToken = "replacement";
     else if (mutation === "connection")
       c.connection = {
         transaction() {
@@ -54,21 +63,58 @@ function fixture(phase, mutation) {
       };
   }
   c.connection = {
-    transaction() {
+    transaction(names, mode) {
+      assert.deepEqual(Array.from(names), [
+        "catalog",
+        "records",
+        "reports",
+        "events",
+        "undo",
+      ]);
+      assert.equal(mode, "readwrite");
+      const write = (name, row) => {
+        assert.deepEqual(
+          [...reads].sort(),
+          ["catalog", "records"],
+          "catalog and installation are read before any write",
+        );
+        writes.push({ name, row });
+      };
       return {
-        abort: () => fail(Error("transaction aborted")),
+        abort() {
+          aborted = true;
+          fail(Error("transaction aborted"));
+        },
         objectStore: (name) => ({
-          get: () => {
-            const request = { result: { ...c.workspace } };
+          get(key) {
+            assert.equal(
+              key,
+              name === "records" ? c.RESET_RECORD_KEY : "first",
+            );
+            const request = {
+              result:
+                name === "records"
+                  ? { value: { token: hooks.durableInstallation } }
+                  : { ...c.workspace },
+            };
             queueMicrotask(() => {
-              if (phase === "catalog") mutate();
+              if (aborted) return;
+              if (
+                (phase === "catalog" && name === "catalog") ||
+                (phase === "epoch" && name === "records")
+              )
+                mutate();
+              reads.push(name);
               request.onsuccess();
-              complete();
+              if (++completedReads === 2 && !aborted) {
+                hooks.afterCommit?.();
+                complete();
+              }
             });
             return request;
           },
-          put: (row) => writes.push({ name, row }),
-          add: (row) => writes.push({ name, row }),
+          put: (row) => write(name, row),
+          add: (row) => write(name, row),
           delete() {},
         }),
       };
@@ -82,14 +128,17 @@ function fixture(phase, mutation) {
     c,
   );
   c.finalReportData = () => ({ classes: [], missing: [] });
-  return { c, writes };
+  return { c, writes, backupWrites, hooks, messages };
 }
 for (const [phase, mutation] of [
-  ["backup", "assessment"],
+  ["writer", "assessment"],
   ["catalog", "assessment"],
   ["catalog", "draft"],
-  ["backup", "connection"],
+  ["writer", "connection"],
   ["catalog", "connection"],
+  ["writer", "installation"],
+  ["catalog", "installation"],
+  ["epoch", "installation"],
 ]) {
   test(
     "finalization refuses " +
@@ -98,10 +147,64 @@ for (const [phase, mutation] of [
       phase +
       " without closing or freezing stale data",
     async () => {
-      const { c, writes } = fixture(phase, mutation);
+      const { c, writes, backupWrites } = fixture(phase, mutation);
       await assert.rejects(c.finalizePeriod());
       assert.equal(c.workspace.closed, false);
       assert.equal(writes.length, 0);
+      assert.deepEqual(backupWrites, []);
     },
   );
 }
+
+test("finalization stores its fixed report and guards without an operation backup", async () => {
+  const { c, writes, backupWrites } = fixture();
+  await c.finalizePeriod();
+  assert.equal(c.workspace.closed, true);
+  assert.equal(c.workspace.revision, 2);
+  assert.deepEqual(
+    writes.map(({ name }) => name),
+    ["catalog", "reports", "events"],
+  );
+  assert.deepEqual(backupWrites, []);
+});
+
+test("finalization rejects a stale durable installation before any report or catalog write", async () => {
+  const { c, writes, backupWrites, hooks, messages } = fixture();
+  hooks.durableInstallation = "replacement";
+  await assert.rejects(
+    c.finalizePeriod(),
+    (error) => error.code === "INSTALLATION_CHANGED",
+  );
+  assert.equal(c.workspace.closed, false);
+  assert.equal(c.workspace.revision, 1);
+  assert.deepEqual(writes, []);
+  assert.deepEqual(backupWrites, []);
+  assert.deepEqual(messages, []);
+});
+
+test("a completed finalization cannot publish or replace the view of a newer installation", async () => {
+  const { c, hooks, messages, backupWrites } = fixture();
+  const destination = {
+    id: "first",
+    revision: 1,
+    closed: false,
+    marker: "new installation",
+  };
+  hooks.afterCommit = () => {
+    c.installationToken = "replacement";
+    c.workspace = destination;
+  };
+  await c.finalizePeriod();
+  assert.equal(c.workspace, destination);
+  assert.deepEqual(messages, []);
+  assert.deepEqual(backupWrites, []);
+});
+
+test("legacy installation without a durable marker can still finalize without an operation backup", async () => {
+  const { c, hooks, backupWrites } = fixture();
+  c.installationToken = "";
+  hooks.durableInstallation = undefined;
+  await c.finalizePeriod();
+  assert.equal(c.workspace.closed, true);
+  assert.deepEqual(backupWrites, []);
+});

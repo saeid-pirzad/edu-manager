@@ -13,8 +13,6 @@ function fixture() {
     writer: Promise.resolve(),
     state: { schoolId: "school", classId: "class" },
     assertWorkspaceReadable() {},
-    readLatestSafetyBackup: async () => null,
-    safetyBackupPanel: () => "",
   });
   vm.runInContext(read("core/async-target.js"), context);
   return context;
@@ -98,7 +96,7 @@ test("backup dialog offers file workflows without introducing internal version m
   await context.openBackups();
   assert.doesNotMatch(
     html,
-    /backup-history|download-backup|preview-backup|بازیابی اضطراری/,
+    /backup-history|download-backup|preview-backup|lastSafetyBackup|download-safety|safetyBackupStatus|بازیابی اضطراری/,
   );
   for (const action of ["export-full", "prepare-share-backup", "choose-import"])
     assert.ok(html.includes('data-workspace-action="' + action + '"'));

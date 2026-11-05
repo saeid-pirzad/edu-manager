@@ -203,7 +203,7 @@ async function openDeletePeriod(id) {
       (id === workspace.id
         ? '<p class="period-delete-transition">این نوبت فعال است؛ پس از حذف، برنامه به یکی از نوبت‌های باقی‌مانده می‌رود.</p>'
         : "") +
-      '<p class="full-restore-safety">پیش از حذف، نسخهٔ ایمنی ذخیره می‌شود. پشتیبان‌های قبلی باقی می‌مانند.</p>' +
+      '<p class="full-restore-safety">پشتیبان‌های قبلی باقی می‌مانند.</p>' +
       (data.settings.password
         ? '<label class="period-delete-password" for="periodDeletionPassword">رمز این نوبت<input type="password" id="periodDeletionPassword" autocomplete="current-password" placeholder="رمز نوبت انتخاب‌شده"></label>'
         : "") +
@@ -225,6 +225,8 @@ async function confirmDeletePeriod() {
     throw Error("ابتدا هشدارها را بخوانید و حذف همین نوبت را تأیید کنید.");
   let ownsLoading = false,
     deleted = false;
+  const sourceConnection = connection,
+    sourceInstallation = installationToken;
   const check = () => {
     if (!ownsLoading) assertWorkspaceReadable();
     else if (!ready || blocked || connectionRetired)
@@ -232,6 +234,8 @@ async function confirmDeletePeriod() {
     if (
       fullRestoreBusy ||
       resetBusy ||
+      connection !== sourceConnection ||
+      installationToken !== sourceInstallation ||
       (periodLoading && !ownsLoading) ||
       pendingPeriodDeletion !== preview ||
       workspace.id !== preview.origin
@@ -265,11 +269,12 @@ async function confirmDeletePeriod() {
       )
     )
       return;
-    const safety = await snapshotInstallation();
+    await flushDrafts({ strict: true });
+    await writer.catch(() => {});
     check();
-    const remaining = safety.stores.catalog.filter(
-      (row) => row.id !== preview.id,
-    );
+    const catalog = await allFrom("catalog");
+    check();
+    const remaining = catalog.filter((row) => row.id !== preview.id);
     const next =
       remaining.find(
         (row) =>
@@ -284,10 +289,20 @@ async function confirmDeletePeriod() {
     const tx = connection.transaction(names, "readwrite"),
       done = transactionDone(tx);
     let failure;
-    const request = tx.objectStore("catalog").getAll();
-    request.onsuccess = () => {
+    const request = tx.objectStore("catalog").getAll(),
+      epoch = tx.objectStore("records").get(RESET_RECORD_KEY);
+    let pending = 2;
+    const remove = () => {
+      if (--pending) return;
       try {
         check();
+        if ((epoch.result?.value?.token || "") !== sourceInstallation) {
+          const error = Error(
+            "اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ حذف انجام نشد. نوبت‌ها را دوباره باز کنید.",
+          );
+          error.code = "INSTALLATION_CHANGED";
+          throw error;
+        }
         const row = assertPeriodDeletable(
           request.result,
           preview.id,
@@ -296,18 +311,11 @@ async function confirmDeletePeriod() {
         if (
           row.revision !== preview.revision ||
           restoreCatalogSignature(request.result) !==
-            restoreCatalogSignature(safety.stores.catalog)
+            restoreCatalogSignature(catalog)
         )
           throw Error(
             "اطلاعات در پنجرهٔ دیگری تغییر کرده است؛ حذف انجام نشد. دوباره تلاش کنید.",
           );
-        tx.objectStore("backups").put({
-          id: "before-period-delete-" + uid(),
-          workspace: null,
-          at: new Date().toISOString(),
-          label: "پیش از حذف نوبت " + preview.title,
-          full: safety,
-        });
         tx.objectStore("catalog").delete(preview.id);
         for (const name of names.filter((name) => name !== "catalog")) {
           const cursor = tx.objectStore(name).openCursor();
@@ -338,6 +346,8 @@ async function confirmDeletePeriod() {
         tx.abort();
       }
     };
+    request.onsuccess = remove;
+    epoch.onsuccess = remove;
     try {
       await done;
     } catch (error) {
@@ -365,19 +375,14 @@ async function confirmDeletePeriod() {
     periodLoading = false;
     ownsLoading = false;
     scheduleSingleFile();
-    setStatus(
-      "نوبت " +
-        preview.title +
-        " حذف شد؛ پشتیبان ایمنی در بخش پشتیبان و بازیابی محفوظ است.",
-      "saved",
-    );
+    setStatus("نوبت " + preview.title + " حذف شد.", "saved");
     await openPeriods();
   } catch (error) {
     if (deleted && workspace.id === preview.id) {
       ready = false;
       blocked = true;
       resetScreen(
-        "نوبت حذف شد و پشتیبان ایمنی محفوظ است؛ برای ورود به نوبت باقی‌مانده، برنامه را دوباره بارگذاری کنید.",
+        "نوبت حذف شد؛ برای ورود به نوبت باقی‌مانده، برنامه را دوباره بارگذاری کنید.",
       );
     }
     throw error;

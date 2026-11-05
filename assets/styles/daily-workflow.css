@@ -3408,34 +3408,6 @@ body {
   }
 }
 
-@media screen and (max-width: 1000px) {
-  #app > .week-heading {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-  }
-  #app > .week-heading > h2 {
-    flex: 1 1 auto;
-    min-width: 0;
-    margin: 0;
-    font-size: clamp(18px, 5vw, 22px);
-    line-height: 1.5;
-    white-space: nowrap;
-  }
-  #app > .week-heading > button {
-    flex: 0 0 auto;
-    width: auto;
-    min-width: 0;
-    margin: 0;
-    padding: 8px 10px;
-    font-size: 11px;
-    white-space: nowrap;
-  }
-}
-
 @media screen and (max-width: 700px) {
   #app .week-settings {
     padding: 12px;
@@ -3447,7 +3419,7 @@ body {
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    min-height: 42px;
+    min-height: 44px;
     padding: 4px 2px;
     list-style: none;
     font-size: 13px;
@@ -5161,8 +5133,7 @@ body {
     box-sizing: border-box;
     overscroll-behavior: contain;
   }
-  #app .header-actions .workspace-tool-group,
-  #app .header-actions .workspace-draft-actions {
+  #app .header-actions .workspace-tool-group {
     grid-template-columns: minmax(0, 1fr);
     gap: 6px;
   }
@@ -5230,32 +5201,6 @@ body {
     border-radius: 6px;
     background: #f6f4f1;
     color: #68615b;
-  }
-  #app .header-actions .workspace-draft-tools {
-    background: #f7f6f4;
-    border: 1px solid #eee9e4;
-    border-radius: 12px;
-  }
-  #app .header-actions .workspace-draft-tools > summary {
-    min-height: 46px;
-    padding: 10px 12px;
-    font-size: 12px;
-  }
-  #app .header-actions .workspace-draft-actions .workspace-tool-button {
-    min-height: 46px;
-    padding: 8px;
-  }
-  #app .header-actions .workspace-draft-actions .workspace-tool-icon {
-    flex-basis: 28px;
-    height: 28px;
-    background: transparent;
-  }
-  #app .header-actions .workspace-tool-actions .workspace-tool-caution {
-    color: #9d3b32;
-    background: #fff5f2;
-  }
-  #app .header-actions .workspace-tool-caution .workspace-tool-icon {
-    color: inherit;
   }
 }
 @media screen and (max-width: 700px),
@@ -5335,72 +5280,6 @@ body {
   #app .navigation-menu .workspace-tools > .workspace-tool-actions {
     padding: 6px;
     gap: 6px;
-  }
-}
-@media screen {
-  #app .header-actions .workspace-draft-tools {
-    overflow: hidden;
-    background: #faf8f5;
-    border-color: #e9e1d8;
-  }
-  #app .header-actions .workspace-draft-tools > summary {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 44px;
-    padding: 8px 10px;
-    margin: 0;
-    font-weight: 500;
-    line-height: 1.7;
-    color: #655244;
-    cursor: pointer;
-  }
-  #app .header-actions .workspace-draft-tools > summary::after {
-    content: none;
-  }
-  #app .workspace-draft-symbol {
-    display: flex;
-    flex: 0 0 18px;
-    color: #8b5137;
-  }
-  #app .workspace-draft-symbol svg {
-    width: 18px;
-    height: 18px;
-  }
-  #app .workspace-draft-chevron {
-    flex: 0 0 6px;
-    width: 6px;
-    height: 6px;
-    margin-inline-start: auto;
-    border-inline-end: 1.5px solid currentColor;
-    border-bottom: 1.5px solid currentColor;
-    transform: rotate(45deg);
-  }
-  #app .workspace-draft-tools[open] .workspace-draft-chevron {
-    transform: rotate(225deg);
-  }
-  #app .header-actions .workspace-draft-tools[open] > summary {
-    background: #f2ece5;
-    border-radius: 0;
-  }
-  #app .header-actions .workspace-draft-tools[open] > .workspace-draft-actions {
-    padding: 6px;
-    gap: 4px;
-    border-top: 1px solid #e9e1d8;
-  }
-  #app .header-actions .workspace-draft-actions .workspace-tool-button {
-    min-height: 44px;
-    padding: 6px 8px;
-    gap: 8px;
-    border-radius: 8px;
-  }
-  #app .header-actions .workspace-draft-actions .workspace-tool-copy {
-    font-size: 12px;
-    font-weight: 500;
-  }
-  #app .header-actions .workspace-draft-actions .workspace-tool-caution {
-    margin-top: 4px;
-    border-color: #efd9d2;
   }
 }
 @media screen and (max-width: 700px),
@@ -6693,46 +6572,87 @@ body {
   }
   .gradebook-heading {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    gap: 16px;
-    margin-bottom: 22px;
+    gap: 10px;
+    margin: 0 0 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #ebe5dc;
   }
-  .gradebook-eyebrow {
-    font-size: 12px;
-    color: var(--workflow-muted);
+  .gradebook-heading-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: #fff3de;
+    color: #87591f;
+  }
+  .gradebook-heading-icon > svg {
+    display: block;
+    width: 21px;
+    height: 21px;
+  }
+  .gradebook-heading-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    flex: 1;
+    min-width: 0;
+    gap: 5px 14px;
   }
   .gradebook-heading h3 {
-    margin: 6px 0;
-    font-size: 22px;
+    min-width: 0;
+    margin: 0;
+    color: var(--workflow-ink);
+    font-size: 15px;
     line-height: 1.7;
     overflow-wrap: anywhere;
   }
-  .gradebook-heading p {
-    margin: 0;
-    font-size: 13px;
-    color: var(--workflow-muted);
+  .gradebook-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    min-width: 0;
+    gap: 5px 8px;
+    font-size: 11px;
+    line-height: 1.7;
+    color: #796c5c;
+  }
+  .gradebook-method {
+    overflow-wrap: anywhere;
   }
   .gradebook-class-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     flex-shrink: 0;
-    padding: 6px 10px;
-    border-radius: 8px;
-    background: #f4f3f1;
-    font-size: 12px;
-    color: var(--workflow-muted);
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: #f3eee7;
+    color: #645744;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+  }
+  .gradebook-class-count bdi {
+    font-weight: 600;
   }
   .gradebook .assessment-navigation {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    min-width: 0;
     gap: 4px;
     padding: 5px;
-    margin-bottom: 24px;
+    margin-bottom: 12px;
+    border: 1px solid #e6ded5;
     border-radius: 12px;
     background: #f1efec;
   }
   :is(#lessonGradesArea, #modalBody) .gradebook .assessment-navigation button {
+    min-width: 0;
     min-height: 46px;
-    padding: 10px 8px;
+    padding: 8px 4px;
     border: 1px solid transparent;
     border-radius: 9px;
     background: transparent;
@@ -6746,10 +6666,10 @@ body {
     .gradebook
     .assessment-navigation
     button[aria-pressed="true"] {
-    background: #fff;
-    border-color: #ddd9d3;
-    color: #921019;
-    box-shadow: 0 2px 5px #2d34400a;
+    background: var(--workflow-accent);
+    border-color: var(--workflow-accent);
+    color: #fff;
+    box-shadow: 0 2px 5px #92101920;
     font-weight: 600;
   }
   .gradebook-toolbar {
@@ -7237,24 +7157,8 @@ body {
     padding: 16px;
     border-radius: 16px;
   }
-  .gradebook-heading {
-    margin-bottom: 18px;
-    gap: 10px;
-    align-items: start;
-  }
-  .gradebook-heading h3 {
-    font-size: 18px;
-  }
-  .gradebook-heading p {
-    font-size: 12px;
-  }
-  .gradebook-class-count {
-    font-size: 10px;
-    padding: 5px 7px;
-  }
   .gradebook .assessment-navigation {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    margin-bottom: 20px;
+    margin-bottom: 12px;
   }
   .gradebook-toolbar {
     display: grid;
@@ -7805,21 +7709,24 @@ body {
   .assessment-editor .gradebook-heading {
     gap: 8px;
     margin-bottom: 10px;
+    padding-bottom: 10px;
   }
-  .assessment-editor .gradebook-eyebrow {
-    display: none;
+  .assessment-editor .gradebook-heading-content {
+    display: grid;
+    justify-content: stretch;
+    gap: 3px;
   }
   .assessment-editor .gradebook-heading h3 {
-    margin: 0 0 3px;
-    font-size: 16px;
-    line-height: 1.6;
+    font-size: 14px;
+    line-height: 1.7;
   }
-  .assessment-editor .gradebook-heading p {
-    font-size: 11px;
+  .assessment-editor .gradebook-meta {
+    gap: 4px 7px;
+    font-size: 10.5px;
   }
   .assessment-editor .gradebook-class-count {
-    padding: 4px 6px;
-    font-size: 10px;
+    padding: 1px 6px;
+    font-size: 10.5px;
   }
   .assessment-editor .assessment-navigation {
     padding: 3px;
@@ -7831,9 +7738,10 @@ body {
     .assessment-navigation
     button {
     min-height: 44px;
-    padding: 6px;
+    padding: 4px 2px;
     border-radius: 7px;
-    font-size: 12px;
+    font-size: 11px;
+    line-height: 1.6;
   }
   .assessment-editor .gradebook-simple-search {
     margin: 10px 0;
@@ -8754,6 +8662,20 @@ body {
     line-height: 1.6;
     white-space: nowrap;
     box-shadow: none;
+  }
+  .karnameh-subject-section[data-karnameh-group-set="assessment"]
+    .karnameh-stage-options {
+    gap: 2px;
+  }
+  #app
+    .karnameh-student-sheet
+    .karnameh-subject-section[data-karnameh-group-set="assessment"]
+    .karnameh-stage-options
+    button {
+    flex: 1 1 0;
+    min-width: 0;
+    padding-inline: 2px;
+    font-size: 10px;
   }
   .karnameh-subject-section[data-karnameh-group-set="modular"]
     .karnameh-stage-options {

@@ -84,6 +84,21 @@ function renderSchool() {
   return h;
 }
 
+function classroomTabsHtml(label, items) {
+  return (
+    '<div class="tabs classroom-tabs" role="group" aria-label="' +
+    esc(label) +
+    '">' +
+    items
+      .map(({ tab, action, icon, title, detail = "" }) => {
+        const active = state.tab === tab;
+        return `<button type="button" class="classroom-tab${active ? " active" : ""}" aria-pressed="${active}" data-legacy-click="${esc(action)}"><span class="classroom-tab-icon" aria-hidden="true">${EduIcons.html(icon)}</span><span class="classroom-tab-label">${esc(title)}${detail ? `<span class="classroom-tab-detail"> ${esc(detail)}</span>` : ""}</span></button>`;
+      })
+      .join("") +
+    "</div>"
+  );
+}
+
 function renderClass() {
   const c = getClassObj(state.schoolId, state.classId);
   if (!c) {
@@ -98,10 +113,20 @@ function renderClass() {
     { label: c.name },
     { label: state.tab === "students" ? "دانش‌آموزان" : "درس‌ها" },
   ]);
-  h += `<div class="tabs">
-    <button class="${state.tab === "lessons" ? "active" : ""}" data-legacy-click="ui-school-class:10">📚 دروس</button>
-    <button class="${state.tab === "students" ? "active" : ""}" data-legacy-click="ui-school-class:11">👥 دانش‌آموزان</button>
-  </div>`;
+  h += classroomTabsHtml("بخش‌های کلاس", [
+    {
+      tab: "lessons",
+      action: "ui-school-class:10",
+      icon: "book",
+      title: "دروس",
+    },
+    {
+      tab: "students",
+      action: "ui-school-class:11",
+      icon: "users",
+      title: "دانش‌آموزان",
+    },
+  ]);
   if (state.tab === "lessons") h += renderLessonsTab(c);
   else h += renderStudentsTab(c);
   return h;

@@ -115,11 +115,11 @@ module.exports = async function unifiedBackup() {
     );
     record(
       "UNIFIED03",
-      "Old events reports undo and ordinary internal backups do not survive replacement",
+      "Old events reports undo and ordinary internal backups are replaced without creating an operation backup",
       result.stores.events.length === 0 &&
         result.stores.reports.length === 0 &&
         result.stores.undo.length === 0 &&
-        result.stores.backups.every((b) => !!b.full),
+        result.stores.backups.length === 0,
     );
     await restore(fixture);
     result = await EduV24.snapshotInstallation();

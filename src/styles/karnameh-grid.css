@@ -568,6 +568,20 @@
     white-space: nowrap;
     box-shadow: none;
   }
+  .karnameh-subject-section[data-karnameh-group-set="assessment"]
+    .karnameh-stage-options {
+    gap: 2px;
+  }
+  #app
+    .karnameh-student-sheet
+    .karnameh-subject-section[data-karnameh-group-set="assessment"]
+    .karnameh-stage-options
+    button {
+    flex: 1 1 0;
+    min-width: 0;
+    padding-inline: 2px;
+    font-size: 10px;
+  }
   .karnameh-subject-section[data-karnameh-group-set="modular"]
     .karnameh-stage-options {
     gap: 2px;

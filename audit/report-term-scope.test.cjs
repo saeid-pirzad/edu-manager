@@ -95,6 +95,11 @@ function orchestrationFixture(mode = "daily", audience = "management") {
     downloads = [],
     copies = [],
     prints = [],
+    buttons = {
+      build: { disabled: false },
+      deputy: { disabled: true },
+      export: { disabled: false },
+    },
     context = {
       id: "second",
       revision: 2,
@@ -139,14 +144,26 @@ function orchestrationFixture(mode = "daily", audience = "management") {
   ];
   c.db = data;
   c.Blob = Blob;
+  c.setTimeout = () => {};
   c.globalFilter = {};
   c.localStorage = {
     getItem: (key) => storage.get(key) || null,
     setItem: (key, value) => storage.set(key, value),
   };
   c.document = {
-    querySelectorAll: () => [],
-    querySelector: () => elements.get("periodicReportOutput"),
+    querySelectorAll(selector) {
+      return [
+        ...(selector.includes(".periodic-build") ? [buttons.build] : []),
+        ...(selector.includes("[data-deputy-copy]") ? [buttons.deputy] : []),
+        ...(selector.includes(".periodic-export-actions")
+          ? [buttons.export]
+          : []),
+      ];
+    },
+    querySelector: (selector) =>
+      selector === "[data-deputy-copy]"
+        ? buttons.deputy
+        : elements.get("periodicReportOutput"),
     getElementById(id) {
       if (!elements.has(id))
         elements.set(id, { innerHTML: "", textContent: "" });
@@ -155,7 +172,23 @@ function orchestrationFixture(mode = "daily", audience = "management") {
   };
   c.downloadLocalFile = (blob, name) => downloads.push({ blob, name });
   c.copyToClipboard = (text, button, html) => copies.push({ text, html });
-  c.root.render = () => {};
+  const renderControls = () => {
+    const html = c.root.EduPeriodicReports.render(
+      c.root.EduPeriodicReports.filters.mode,
+    );
+    for (const [name, marker] of [
+      ["build", "periodic-build"],
+      ["deputy", "data-deputy-copy"],
+    ]) {
+      const tag = html.match(
+        new RegExp("<button\\b[^>]*" + marker + "[^>]*>"),
+      )?.[0];
+      assert.ok(tag, marker);
+      buttons[name].disabled = /\sdisabled(?:[=\s>])/.test(tag);
+    }
+    return html;
+  };
+  c.root.render = renderControls;
   c.root.addEventListener = () => {};
   c.root.EduV24 = {
     getReportContext: () => context,
@@ -229,6 +262,8 @@ function orchestrationFixture(mode = "daily", audience = "management") {
     copies,
     prints,
     elements,
+    buttons,
+    renderControls,
   };
 }
 
@@ -372,4 +407,119 @@ test("annual orchestration remains year-wide and supports a year with only the f
     assert.equal(model.periods.length, partial ? 1 : 2);
     assert.equal(model.academicTerm, partial ? "اول" : "اول و دوم");
   }
+});
+
+test("periodic deputy copy is disabled until explicit preparation and never prepares on demand", async () => {
+  const f = orchestrationFixture();
+  f.renderControls();
+  assert.equal(f.buttons.build.disabled, false);
+  assert.equal(f.buttons.deputy.disabled, true);
+  assert.equal(await f.api.output("deputy"), false);
+  assert.deepEqual(f.calls, []);
+  assert.deepEqual(f.copies, []);
+  assert.ok(f.elements.get("periodicError").textContent);
+  const model = await f.api.generate();
+  assert.ok(model);
+  assert.equal(f.buttons.deputy.disabled, false);
+  const preparedCalls = f.calls.length;
+  f.c.root.EduV24.prepareReportSnapshot = async () => {
+    throw Error("Copy must not prepare a report");
+  };
+  assert.equal(await f.api.output("deputy"), true);
+  assert.equal(f.calls.length, preparedCalls);
+  assert.equal(f.copies.length, 1);
+  assert.equal(f.api.getLast(), model);
+});
+
+test("pending and failed preparation never enable periodic deputy copy", async () => {
+  const f = orchestrationFixture();
+  assert.ok(await f.api.generate());
+  assert.equal(f.buttons.deputy.disabled, false);
+  let release;
+  f.c.root.EduV24.prepareReportSnapshot = () =>
+    new Promise((resolve, reject) => {
+      release = () => reject(Error("Synthetic preparation failure"));
+    });
+  const preparing = f.api.generate();
+  f.renderControls();
+  assert.equal(f.buttons.build.disabled, true);
+  assert.equal(f.buttons.deputy.disabled, true);
+  assert.equal(await f.api.output("deputy"), false);
+  assert.deepEqual(f.copies, []);
+  release();
+  assert.equal(await preparing, null);
+  assert.equal(f.buttons.build.disabled, false);
+  assert.equal(f.buttons.deputy.disabled, true);
+  assert.equal(f.api.getLast(), null);
+});
+
+for (const [name, change] of [
+  ["filter", (f) => f.api.set("date", "2026-11-01")],
+  ["author", (f) => f.api.author("Changed author")],
+  ["note", (f) => f.api.note("Changed report note")],
+  [
+    "active context",
+    (f) => {
+      f.context.revision++;
+      f.renderControls();
+    },
+  ],
+  [
+    "annual member",
+    (f) => f.api.workspaceChanged({ workspace: "first", revision: 2 }),
+  ],
+]) {
+  test(
+    "periodic deputy copy is disabled after its " + name + " becomes stale",
+    async () => {
+      const f = orchestrationFixture(
+        name === "annual member" ? "annual" : "daily",
+      );
+      assert.ok(await f.api.generate());
+      assert.equal(f.buttons.deputy.disabled, false);
+      const preparedCalls = f.calls.length;
+      change(f);
+      assert.equal(f.buttons.deputy.disabled, true);
+      assert.equal(await f.api.output("deputy"), false);
+      assert.equal(f.calls.length, preparedCalls);
+      assert.deepEqual(f.copies, []);
+    },
+  );
+}
+
+test("periodic deputy copy rechecks its prepared identity after durable validation", async () => {
+  const f = orchestrationFixture();
+  assert.ok(await f.api.generate());
+  let release;
+  f.c.root.EduV24.assertReportSnapshot = () =>
+    new Promise((resolve) => {
+      release = resolve;
+    });
+  const copying = f.api.output("deputy");
+  f.api.set("date", "2026-11-01");
+  release();
+  assert.equal(await copying, false);
+  assert.equal(f.buttons.deputy.disabled, true);
+  assert.deepEqual(f.copies, []);
+  assert.equal(f.calls.length, 1);
+});
+
+test("an old pending deputy copy failure preserves a newer explicitly prepared report", async () => {
+  const f = orchestrationFixture();
+  assert.ok(await f.api.generate());
+  let rejectOld;
+  f.c.root.EduV24.assertReportSnapshot = () =>
+    new Promise((_resolve, reject) => {
+      rejectOld = reject;
+    });
+  const copying = f.api.output("deputy");
+  f.c.root.EduV24.assertReportSnapshot = async () => {};
+  f.api.author("Newer author");
+  const current = await f.api.generate();
+  assert.ok(current);
+  rejectOld(Error("Old report validation failed"));
+  assert.equal(await copying, false);
+  assert.equal(f.api.getLast(), current);
+  assert.equal(f.buttons.deputy.disabled, false);
+  assert.deepEqual(f.copies, []);
 });

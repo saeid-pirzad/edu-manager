@@ -90,10 +90,16 @@ function renderLesson() {
     { label: c.name, action: "ui-lesson:2" },
     { label: lesson.name },
   ]);
-  h += `<div class="tabs">
-    <button class="${state.tab === "sessions" ? "active" : ""}" data-legacy-click="ui-lesson:4">📅 جلسات و حضور‌وغیاب</button>
-    <button class="${state.tab === "grades" ? "active" : ""}" data-legacy-click="ui-lesson:5">📝 نمرات</button>
-  </div>`;
+  h += classroomTabsHtml("بخش‌های درس", [
+    {
+      tab: "sessions",
+      action: "ui-lesson:4",
+      icon: "attendance",
+      title: "جلسات",
+      detail: "و حضور و غیاب",
+    },
+    { tab: "grades", action: "ui-lesson:5", icon: "grades", title: "نمرات" },
+  ]);
   if (state.tab === "sessions") h += renderLessonSessions(c, lesson);
   else h += `<div id="lessonGradesArea"></div>`;
   return h;

@@ -87,8 +87,6 @@ async function openBackups() {
   const ensureCurrent = preserveAsyncTarget();
   await writer.catch(() => {});
   ensureCurrent();
-  const safety = await readLatestSafetyBackup();
-  ensureCurrent();
   let estimate = "";
   if (navigator.storage?.estimate) {
     const e = await navigator.storage.estimate();
@@ -106,7 +104,6 @@ async function openBackups() {
       esc(lastExternalBackupLabel()) +
       "</p></section>" +
       singleFilePanel() +
-      safetyBackupPanel(safety) +
       '<details class="backup-help"><summary>فضای ذخیره‌سازی مرورگر</summary><p>' +
       esc(estimate) +
       '</p></details><details class="backup-reset"><summary>پاک‌سازی اطلاعات سیستم</summary><p>برای شروع دوباره، همه اطلاعات برنامه در همین مرورگر حذف می‌شود. این کار بازیابی فایل نیست؛ پیش از ادامه پشتیبان کامل دریافت کنید. فایل‌های ذخیره‌شده روی دستگاه حذف نمی‌شوند.</p><button type="button" class="danger" data-workspace-action="open-wipe">بررسی و تأیید پاک‌سازی</button></details></div>',
@@ -376,14 +373,6 @@ async function confirmImport() {
     candidate.settings.academicYear = workspace.year;
     candidate.settings.academicTerm = workspace.term;
     validateV24(candidate);
-    try {
-      await putBackup(db, "پیش از بازیابی");
-    } catch (error) {
-      setStatus(
-        "پشتیبان داخلی جا نشد؛ نسخه مستقلِ تأییدشده مسیر بازیابی است.",
-        "pending",
-      );
-    }
     check(true);
     busy++;
     paintStatus();

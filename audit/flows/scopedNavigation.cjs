@@ -26,8 +26,8 @@ module.exports = async function scopedNavigation() {
   await pause();
   add(
     "CRUMB01",
-    "class directory title is classes, not the school name, with no parent-school edit control",
-    document.querySelector(".view-heading h2")?.textContent === "کلاس‌ها" &&
+    "class directory omits the redundant heading while retaining its classes breadcrumb and no parent-school edit control",
+    !document.querySelector("#app > .view-heading") &&
       !document.querySelector('[data-legacy-click="ui-school-class:4"]') &&
       document.querySelector('.breadcrumb [aria-current="page"]')
         ?.textContent === "کلاس‌ها",
@@ -44,8 +44,8 @@ module.exports = async function scopedNavigation() {
   await pause();
   add(
     "CRUMB02",
-    "lesson directory title is lessons, not the parent class, and parent editing is absent",
-    document.querySelector(".view-heading h2")?.textContent === "درس‌ها" &&
+    "lesson directory omits the redundant heading while retaining its lessons breadcrumb and no parent-class edit control",
+    !document.querySelector("#app > .view-heading") &&
       !document.querySelector(".entity-context-edit") &&
       document.querySelector('.breadcrumb [aria-current="page"]')
         ?.textContent === "درس‌ها",

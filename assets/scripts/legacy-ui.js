@@ -3291,6 +3291,21 @@ function renderSchool() {
   return h;
 }
 
+function classroomTabsHtml(label, items) {
+  return (
+    '<div class="tabs classroom-tabs" role="group" aria-label="' +
+    esc(label) +
+    '">' +
+    items
+      .map(({ tab, action, icon, title, detail = "" }) => {
+        const active = state.tab === tab;
+        return `<button type="button" class="classroom-tab${active ? " active" : ""}" aria-pressed="${active}" data-legacy-click="${esc(action)}"><span class="classroom-tab-icon" aria-hidden="true">${EduIcons.html(icon)}</span><span class="classroom-tab-label">${esc(title)}${detail ? `<span class="classroom-tab-detail"> ${esc(detail)}</span>` : ""}</span></button>`;
+      })
+      .join("") +
+    "</div>"
+  );
+}
+
 function renderClass() {
   const c = getClassObj(state.schoolId, state.classId);
   if (!c) {
@@ -3305,10 +3320,20 @@ function renderClass() {
     { label: c.name },
     { label: state.tab === "students" ? "دانش‌آموزان" : "درس‌ها" },
   ]);
-  h += `<div class="tabs">
-    <button class="${state.tab === "lessons" ? "active" : ""}" data-legacy-click="ui-school-class:10">📚 دروس</button>
-    <button class="${state.tab === "students" ? "active" : ""}" data-legacy-click="ui-school-class:11">👥 دانش‌آموزان</button>
-  </div>`;
+  h += classroomTabsHtml("بخش‌های کلاس", [
+    {
+      tab: "lessons",
+      action: "ui-school-class:10",
+      icon: "book",
+      title: "دروس",
+    },
+    {
+      tab: "students",
+      action: "ui-school-class:11",
+      icon: "users",
+      title: "دانش‌آموزان",
+    },
+  ]);
   if (state.tab === "lessons") h += renderLessonsTab(c);
   else h += renderStudentsTab(c);
   return h;
@@ -3814,10 +3839,16 @@ function renderLesson() {
     { label: c.name, action: "ui-lesson:2" },
     { label: lesson.name },
   ]);
-  h += `<div class="tabs">
-    <button class="${state.tab === "sessions" ? "active" : ""}" data-legacy-click="ui-lesson:4">📅 جلسات و حضور‌وغیاب</button>
-    <button class="${state.tab === "grades" ? "active" : ""}" data-legacy-click="ui-lesson:5">📝 نمرات</button>
-  </div>`;
+  h += classroomTabsHtml("بخش‌های درس", [
+    {
+      tab: "sessions",
+      action: "ui-lesson:4",
+      icon: "attendance",
+      title: "جلسات",
+      detail: "و حضور و غیاب",
+    },
+    { tab: "grades", action: "ui-lesson:5", icon: "grades", title: "نمرات" },
+  ]);
   if (state.tab === "sessions") h += renderLessonSessions(c, lesson);
   else h += `<div id="lessonGradesArea"></div>`;
   return h;
@@ -4428,17 +4459,22 @@ function renderMaster() {
     return s + "</div></article>";
   };
   let h = headerHtml();
-  h += `<header class="week-heading"><h2>برنامه هفتگی</h2><button type="button" class="ghost no-print" data-legacy-click="schedule-timetable:2">تنظیمات برنامه</button></header>`;
   h +=
-    '<section class="card week-overview"><div class="week-overview-info"><span class="week-parity ' +
+    '<section class="card week-overview" aria-labelledby="weekOverviewTitle"><div class="week-overview-info"><header class="week-overview-title"><span class="week-overview-symbol no-print" aria-hidden="true">' +
+    EduIcons.html("calendar-week") +
+    '</span><h2 id="weekOverviewTitle">برنامه هفتگی</h2><span class="week-parity ' +
     parity +
     '">هفته ' +
     (parity === "odd" ? "فرد" : "زوج") +
-    "</span><strong>از " +
+    '</span></header><div class="week-overview-details"><span class="week-overview-date">' +
+    EduIcons.html("calendar") +
+    '<span>از <time datetime="' +
+    esc(getSaturdayOf(date)) +
+    '">' +
     esc(faDate(getSaturdayOf(date))) +
-    "</strong><span>" +
+    '</time></span></span><span class="week-overview-count"><strong>' +
     number(weekly) +
-    ` زنگ برنامه‌ریزی‌شده</span></div><label class="week-filter no-print">نمایش برنامه کلاس<select data-legacy-change="schedule-timetable:3"><option value="">همه کلاس‌ها</option>`;
+    '</strong><span>زنگ برنامه‌ریزی‌شده</span></span></div></div><label class="week-filter no-print">نمایش برنامه کلاس<select data-legacy-change="schedule-timetable:3"><option value="">همه کلاس‌ها</option>';
   for (const school of db.schools)
     for (const c of school.classes)
       h +=
@@ -4807,11 +4843,6 @@ EduLegacyEvents.register("schedule-timetable:1", function (event) {
     JSON.parse(this.getAttribute("data-legacy-click-arg0")),
     JSON.parse(this.getAttribute("data-legacy-click-arg1")),
   );
-});
-
-EduLegacyEvents.register("schedule-timetable:2", function (event) {
-  document.querySelector(".week-settings").open = true;
-  document.querySelector(".week-settings").scrollIntoView({ block: "start" });
 });
 
 EduLegacyEvents.register("schedule-timetable:3", function (event) {
@@ -5728,15 +5759,7 @@ function legacy_handleImport(e) {
       )
         throw Error("نسخه پشتیبان پشتیبانی نمی‌شود.");
       const candidate = prepareDB(parsed.db || parsed);
-      if (
-        !confirm(
-          "پشتیبان معتبر جایگزین شود؟ نسخه قبلی برای بازیابی نگه داشته می‌شود.",
-        )
-      )
-        return;
-      const old = localStorage.getItem(STORAGE_KEY);
-      if (old !== null)
-        localStorage.setItem(STORAGE_KEY + "_beforeImport", old);
+      if (!confirm("پشتیبان معتبر جایگزین تمام اطلاعات فعلی شود؟")) return;
       const raw = JSON.stringify(candidate);
       localStorage.setItem(STORAGE_KEY, raw);
       db = candidate;

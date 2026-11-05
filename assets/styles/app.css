@@ -2193,6 +2193,143 @@ summary {
     display: none;
   }
 }
+
+/* The same navigation for the class directory and the lesson workspace. */
+@media screen {
+  #app > .tabs.classroom-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    gap: 6px;
+    margin: 0 0 18px;
+    padding: 6px;
+    border: 1px solid #e5dcd6;
+    border-radius: 18px;
+    background: #f1ede8;
+    box-shadow:
+      inset 0 1px 0 #fff,
+      0 3px 12px #49312406;
+    overflow: visible;
+  }
+  #app > .tabs.classroom-tabs > .classroom-tab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    flex: none;
+    min-width: 0;
+    min-height: 56px;
+    gap: 9px;
+    margin: 0;
+    padding: 9px 14px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    background: transparent;
+    color: #655b55;
+    box-shadow: none;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.7;
+    white-space: normal;
+    text-align: center;
+    transition:
+      background-color 150ms,
+      border-color 150ms,
+      box-shadow 150ms;
+  }
+  #app > .tabs.classroom-tabs .classroom-tab-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 32px;
+    width: 32px;
+    height: 32px;
+    border: 1px solid #e8d9cd;
+    border-radius: 10px;
+    background: #fffaf5;
+    color: #9a5037;
+    line-height: 0;
+    pointer-events: none;
+  }
+  #app > .tabs.classroom-tabs .classroom-tab-icon > svg {
+    display: block;
+    width: 19px;
+    height: 19px;
+    margin: 0;
+  }
+  #app > .tabs.classroom-tabs .classroom-tab-label {
+    min-width: 0;
+    pointer-events: none;
+  }
+  #app > .tabs.classroom-tabs .classroom-tab-detail {
+    white-space: nowrap;
+  }
+  #app > .tabs.classroom-tabs > .classroom-tab.active {
+    border-color: #a61922;
+    background: linear-gradient(
+      115deg,
+      var(--workflow-accent),
+      var(--brand-hover)
+    );
+    color: #fff;
+    box-shadow:
+      0 3px 8px #92101924,
+      inset 0 1px 0 #ffffff20;
+  }
+  #app > .tabs.classroom-tabs > .classroom-tab.active .classroom-tab-icon {
+    border-color: #ffffff30;
+    background: #ffffff16;
+    color: #fff;
+  }
+  #app > .tabs.classroom-tabs > .classroom-tab:focus-visible {
+    outline: 2px solid #875800;
+    outline-offset: 2px;
+  }
+}
+@media screen and (hover: hover) {
+  #app > .tabs.classroom-tabs > .classroom-tab:not(.active):hover {
+    border-color: #dfd0c5;
+    background: #fffcf8;
+    color: #803b31;
+  }
+  #app > .tabs.classroom-tabs > .classroom-tab.active:hover {
+    box-shadow:
+      0 4px 12px #92101935,
+      inset 0 1px 0 #ffffff25;
+  }
+}
+@media screen and (max-width: 480px) {
+  #app > .tabs.classroom-tabs {
+    gap: 5px;
+    margin-bottom: 14px;
+    padding: 5px;
+    border-radius: 16px;
+  }
+  #app > .tabs.classroom-tabs > .classroom-tab {
+    gap: 6px;
+    min-height: 56px;
+    padding: 7px 6px;
+    border-radius: 11px;
+    font-size: 12px;
+  }
+  #app > .tabs.classroom-tabs .classroom-tab-icon {
+    flex-basis: 28px;
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
+  }
+  #app > .tabs.classroom-tabs .classroom-tab-icon > svg {
+    width: 18px;
+    height: 18px;
+  }
+  #app > .tabs.classroom-tabs .classroom-tab-detail {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.6;
+  }
+}
 /* Source: src/styles/tables.css */
 /* allTablesDesign */
 
@@ -4442,75 +4579,133 @@ summary {
 /* weeklyScheduleDesign */
 
 @media screen {
-  #app > :is(.week-heading, .week-overview, .week-agenda, .week-settings),
+  #app > :is(.week-overview, .week-agenda, .week-settings),
   .week-agenda > :is(.week-day-picker, .week-day-heading, .week-slot-list) {
     inline-size: 100%;
     min-inline-size: 0;
     max-inline-size: 100%;
     margin-inline: 0;
   }
-  .week-heading {
-    display: flex;
+  #app > .week-overview {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin: 6px 0 18px;
-  }
-  .week-heading p {
-    font-size: 0.72rem;
-    color: #64748b;
-    margin: 0 0 4px;
-  }
-  .week-heading h2 {
-    font-size: 1.5rem;
-    margin: 0;
-    letter-spacing: -0.5px;
-  }
-  .week-heading button {
-    font-size: 0.75rem;
-  }
-  .week-overview {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
+    gap: 24px;
+    margin-block: 12px 0;
+    padding: 18px 20px;
+    border: 1px solid #e6e0d7;
+    border-radius: 16px;
+    background: linear-gradient(120deg, #fffdf9, #fff);
+    box-shadow: none;
   }
   .week-overview-info {
+    display: grid;
+    gap: 10px;
+    min-width: 0;
+  }
+  .week-overview-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  #app .week-overview-title h2 {
+    margin: 0;
+    color: #433d35;
+    font-size: 18px;
+    line-height: 1.6;
+    white-space: nowrap;
+  }
+  .week-overview-symbol {
+    display: grid;
+    place-items: center;
+    flex: 0 0 38px;
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    background: #f8efdf;
+    color: #80551e;
+  }
+  .week-overview-symbol .ui-icon {
+    width: 20px;
+    height: 20px;
+  }
+  .week-parity {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    min-height: 26px;
+    padding: 4px 9px;
+    border: 1px solid #eddfc9;
+    border-radius: 8px;
+    background: #faf3e8;
+    color: #80551e;
+    font-size: 11px;
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+  .week-parity.even {
+    border-color: #cfe5dd;
+    background: #edf7f2;
+    color: #28644c;
+  }
+  .week-overview-details {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 8px 16px;
+    min-width: 0;
+    color: #81796e;
   }
-  .week-overview-info strong {
-    font-size: 0.86rem;
+  .week-overview-date {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    line-height: 1.9;
+    white-space: nowrap;
   }
-  .week-overview-info > span:last-child {
-    font-size: 0.73rem;
-    color: #64748b;
+  .week-overview-date .ui-icon {
+    width: 14px;
+    height: 14px;
+    flex: 0 0 14px;
+    color: #9a8e7a;
   }
-  .week-parity {
-    font-size: 0.72rem;
-    padding: 5px 12px;
-    border-radius: 9px;
-    background: #eef2ff;
-    color: #4338ca;
+  .week-overview-date time {
+    direction: ltr;
+    unicode-bidi: isolate;
+    font-variant-numeric: tabular-nums;
   }
-  .week-parity.even {
-    background: #e6f5ef;
-    color: #0f766e;
+  .week-overview-count {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 5px;
+    font-size: 11px;
+    line-height: 1.9;
+    white-space: nowrap;
+  }
+  .week-overview-count strong {
+    color: #77532e;
+    font-size: 16px;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
   }
   .week-filter {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    font-size: 0.7rem;
-    color: #64748b;
-    min-width: 240px;
+    display: grid;
+    gap: 7px;
+    min-width: 0;
     max-width: 100%;
+    margin: 0;
+    color: #81796e;
+    font-size: 11px;
   }
   .week-filter select {
     width: 100%;
     min-width: 0;
+    min-height: 44px;
+    border-radius: 10px;
+    background: #fff;
+    font-size: 13px;
   }
   .week-agenda {
     display: none;
@@ -4708,40 +4903,6 @@ summary {
     min-width: 0;
   }
   @media (max-width: 700px), (max-width: 1000px) and (pointer: coarse) {
-    .week-heading {
-      margin: 2px 0 14px;
-    }
-    .week-heading h2 {
-      font-size: 1.2rem;
-    }
-    .week-heading button {
-      font-size: 0.67rem;
-      min-height: 40px;
-      padding: 8px 10px;
-    }
-    .week-overview {
-      flex-direction: column;
-      align-items: stretch;
-      padding: 14px;
-      gap: 14px;
-    }
-    .week-overview-info {
-      gap: 8px;
-    }
-    .week-overview-info strong {
-      font-size: 0.76rem;
-    }
-    .week-overview-info > span:last-child {
-      flex-basis: 100%;
-      font-size: 0.69rem;
-    }
-    .week-filter {
-      min-width: 0;
-      font-size: 0.7rem;
-    }
-    .week-filter select {
-      font-size: 0.85rem !important;
-    }
     .week-desktop {
       display: none;
     }
@@ -4833,8 +4994,7 @@ summary {
   }
 }
 @media print {
-  .week-settings,
-  .week-heading > button {
+  .week-settings {
     display: none !important;
   }
   .week-agenda {
@@ -4873,37 +5033,6 @@ summary {
 }
 
 @media screen {
-  .week-heading {
-    margin: 6px 0 20px;
-  }
-  .week-heading p,
-  .week-overview-info > span:last-child,
-  .week-filter {
-    color: #81796e;
-  }
-  .week-heading button {
-    min-height: 42px;
-    border: 1px solid #e6e0d7;
-    border-radius: 10px;
-    background: #fff;
-  }
-  .week-overview {
-    padding: 18px;
-    border: 1px solid #e6e0d7;
-    border-radius: 16px;
-    box-shadow: none;
-  }
-  .week-parity {
-    background: #f4eadb;
-    color: #79522c;
-    border-radius: 20px;
-  }
-  .week-filter select {
-    min-height: 42px;
-    border-radius: 10px;
-    background: #faf9f7;
-    font-size: 13px;
-  }
   .week-agenda {
     display: block;
     margin-block: 20px;
@@ -5418,21 +5547,32 @@ summary {
   }
 }
 @media screen and (max-width: 700px) {
-  .week-heading h2 {
-    font-size: 20px;
-  }
-  .week-heading button {
-    padding: 8px 10px;
-    font-size: 11px;
-  }
-  .week-overview {
-    flex-direction: column;
-    align-items: stretch;
+  #app > .week-overview {
+    grid-template-columns: minmax(0, 1fr);
     gap: 14px;
     padding: 14px;
   }
-  .week-filter {
-    min-width: 0;
+  .week-overview-title {
+    gap: 8px;
+  }
+  #app .week-overview-title h2 {
+    font-size: 16px;
+  }
+  .week-overview-symbol {
+    flex-basis: 32px;
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+  }
+  .week-overview-symbol .ui-icon {
+    width: 18px;
+    height: 18px;
+  }
+  .week-overview-title .week-parity {
+    margin-inline-start: auto;
+  }
+  .week-overview-details {
+    gap: 6px 12px;
   }
   .week-filter select {
     font-size: 16px !important;
@@ -8220,9 +8360,6 @@ body.modal-open {
   #app .header-actions .workspace-tool-group {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  #app .header-actions .workspace-draft-actions {
-    grid-template-columns: minmax(0, 1fr);
-  }
   @media (max-width: 700px), (max-width: 1000px) and (pointer: coarse) {
     #app .navigation-menu[open] .header-actions {
       display: grid;
@@ -8288,11 +8425,6 @@ body.modal-open {
     #app .header-actions .workspace-period-context > span {
       padding: 2px 5px;
     }
-    #app .header-actions .workspace-draft-tools > summary {
-      min-height: 40px;
-      padding: 5px 8px;
-      font-size: 12px;
-    }
     #app .header-actions .workspace-tool-actions > #singleFileBadge {
       padding: 5px 8px;
       font-size: 11px;
@@ -8333,12 +8465,10 @@ body.modal-open {
     border-color: #e5e2dd;
     box-shadow: none;
   }
-  #app .workspace-tools:not([open]) > .workspace-tool-actions,
-  #app .workspace-draft-tools:not([open]) > :not(summary) {
+  #app .workspace-tools:not([open]) > .workspace-tool-actions {
     display: none;
   }
-  #app .workspace-tool-group,
-  #app .workspace-draft-actions {
+  #app .workspace-tool-group {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
@@ -8369,54 +8499,6 @@ body.modal-open {
     border-color: #f3cdcf;
     background: #fef0f0;
     color: #c0141b;
-  }
-  #app .workspace-tool-actions .workspace-tool-caution {
-    border-color: #ead9b3;
-    background: #fffaf0;
-  }
-  #app .workspace-draft-tools {
-    padding: 0;
-    border: 0;
-    border-radius: 10px;
-    background: #f7f6f4;
-  }
-  #app .workspace-draft-tools > summary {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-height: 44px;
-    padding: 10px 12px;
-    box-sizing: border-box;
-    border: 0;
-    border-radius: 10px;
-    box-shadow: none;
-    background: transparent;
-    list-style: none;
-    font-size: 13px;
-    color: #58595b;
-  }
-  #app .workspace-draft-tools > summary::-webkit-details-marker {
-    display: none;
-  }
-  #app .workspace-draft-tools > summary:hover {
-    background: #efede9;
-  }
-  #app .workspace-draft-tools > summary::after {
-    content: "";
-    display: block;
-    flex: 0 0 6px;
-    width: 6px;
-    height: 6px;
-    border-inline-end: 1.5px solid currentColor;
-    border-bottom: 1.5px solid currentColor;
-    transform: rotate(45deg);
-    margin-inline-start: auto;
-  }
-  #app .workspace-draft-tools[open] > summary::after {
-    transform: rotate(225deg);
-  }
-  #app .workspace-draft-tools[open] > .workspace-draft-actions {
-    padding: 0 8px 8px;
   }
   #app .workspace-tool-actions > #singleFileBadge {
     display: block;
@@ -8549,8 +8631,7 @@ body.modal-open {
   }
 }
 @media screen and (max-width: 599px) {
-  #app .workspace-tool-group,
-  #app .workspace-draft-actions {
+  #app .workspace-tool-group {
     grid-template-columns: minmax(0, 1fr);
   }
 }

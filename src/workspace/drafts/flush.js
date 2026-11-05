@@ -143,7 +143,7 @@ async function recoverDrafts() {
   if (!drafts.size) return;
   if ([...drafts.values()].some((x) => x.review)) {
     setStatus(
-      "پیش‌نویس تعارض خودکار اعمال نشد؛ دکمه بررسی پیش‌نویس را بزنید.",
+      "نمرات ثبت‌نشده با اطلاعات جدید اختلاف دارند؛ «بررسی نمرات ثبت‌نشده» را بزنید.",
       "error",
     );
     applyDrafts();

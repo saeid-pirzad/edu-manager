@@ -67,8 +67,11 @@ for (const stale of [false, true])
         invalid = [];
       let current = true;
       const c = vm.createContext({
-        generate: async () => ({}),
-        last: { context: {} },
+        generate: async () => {
+          throw Error("Deputy copy must not generate");
+        },
+        busy: false,
+        last: { context: {}, model: {} },
         isPreparedCurrent: () => current,
         root: {
           EduV24: {
@@ -82,6 +85,8 @@ for (const stale of [false, true])
         deputyReportHTML: () => '<div dir="rtl">REPORT</div>',
         copyToClipboard: (text) => copied.push(text),
         invalidate: (m) => invalid.push(m),
+        error: (e) => invalid.push(e.message),
+        syncReportActions() {},
       });
       vm.runInContext(
         read("output.js").split("root.EduPeriodicReports =")[0],

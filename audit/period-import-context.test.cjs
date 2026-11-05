@@ -6,7 +6,8 @@ const fs = require("node:fs"),
   vm = require("node:vm");
 function fixture() {
   const writes = [],
-    errors = [];
+    errors = [],
+    backupWrites = [];
   const candidate = {
     schools: [],
     sessions: [],
@@ -39,7 +40,7 @@ function fixture() {
     normalizedName: String,
     validateV24: () => true,
     flushDrafts: async () => {},
-    putBackup: async () => {},
+    putBackup: async () => backupWrites.push("operation backup"),
     collectRecords: (x) => x,
     commitRecords: async (x) => {
       writes.push(x);
@@ -69,7 +70,7 @@ function fixture() {
     ),
     c,
   );
-  return { c, writes, errors };
+  return { c, writes, errors, backupWrites };
 }
 test("replacement import aborts before writing if workspace changes during draft flush", async () => {
   const { c, writes } = fixture();
@@ -87,25 +88,31 @@ test("replacement still rejects a preview whose source revision has advanced", a
   assert.equal(writes.length, 0);
 });
 
-test("replacement import aborts if revision changes while pre-restore backup is being written", async () => {
-  const { c, writes } = fixture();
-  c.putBackup = async () => {
-    c.workspace.revision++;
-  };
-  await assert.rejects(c.confirmImport(), /stale/);
+test("replacement import aborts if revision changes while waiting for pending writes", async () => {
+  const { c, writes, backupWrites } = fixture();
+  let finish;
+  c.writer = new Promise((resolve) => {
+    finish = resolve;
+  });
+  const importing = c.confirmImport();
+  await Promise.resolve();
+  c.workspace.revision++;
+  finish();
+  await assert.rejects(importing, /stale/);
   assert.equal(writes.length, 0);
+  assert.deepEqual(backupWrites, []);
 });
-test("replacement validates the target-year candidate before making a backup or writing", async () => {
-  const { c, writes } = fixture();
-  let backups = 0;
-  c.putBackup = async () => backups++;
+
+test("replacement validates the target-year candidate before writing", async () => {
+  const { c, writes, backupWrites } = fixture();
   c.validateV24 = () => {
     throw Error("policy year mismatch");
   };
   await assert.rejects(c.confirmImport(), /policy year/);
-  assert.equal(backups, 0);
+  assert.deepEqual(backupWrites, []);
   assert.equal(writes.length, 0);
 });
+
 test("concurrent replacement cannot commit the same preview twice", async () => {
   const { c, writes } = fixture();
   let unblock;
@@ -301,20 +308,27 @@ test("import preview cannot be reused after replacement even if period and revis
   );
   assert.equal(f.writes.length, 0);
 });
-test("import intent rechecks its frozen installation after awaited safety backup", async () => {
+test("import intent rechecks its frozen installation after pending writes settle", async () => {
   const f = fixture();
   f.c.installationToken = "epoch-a";
   f.c.pendingImport.installation = "epoch-a";
-  f.c.putBackup = async () => {
-    f.c.installationToken = "epoch-b";
-  };
+  let finish;
+  f.c.writer = new Promise((resolve) => {
+    finish = resolve;
+  });
+  const importing = f.c.confirmImport();
+  await Promise.resolve();
+  f.c.installationToken = "epoch-b";
+  finish();
   await assert.rejects(
-    f.c.confirmImport(),
+    importing,
     (error) => error.code === "INSTALLATION_CHANGED",
   );
   assert.equal(f.writes.length, 0);
+  assert.deepEqual(f.backupWrites, []);
 });
-test("normal import passes the preview installation explicitly to atomic persistence", async () => {
+
+test("normal import passes the preview installation to atomic persistence without an operation backup", async () => {
   const f = fixture();
   f.c.installationToken = "epoch-a";
   f.c.pendingImport.installation = "epoch-a";
@@ -326,4 +340,245 @@ test("normal import passes the preview installation explicitly to atomic persist
   };
   await f.c.confirmImport();
   assert.equal(options.expectedInstallation, "epoch-a");
+  assert.deepEqual(f.backupWrites, []);
+});
+
+function legacyImportFixture({ accepted = true } = {}) {
+  const storageKey = "EduManagerLegacyFixture",
+    historicalKey = storageKey + "_beforeImport",
+    baseline = {
+      schools: [{ id: "old_school", name: "مدرسه قبلی", classes: [] }],
+      sessions: [],
+      settings: { academicYear: "1405-1406" },
+    },
+    replacement = {
+      schools: [{ id: "new_school", name: "مدرسه بازیابی‌شده", classes: [] }],
+      sessions: [],
+      settings: { academicYear: "1405-1406" },
+    },
+    original = JSON.stringify(baseline),
+    historical = "historical pre-import data retained until an explicit reset",
+    stored = new Map([
+      [storageKey, original],
+      [historicalKey, historical],
+    ]),
+    writes = [],
+    removes = [],
+    alerts = [],
+    confirmations = [],
+    reads = [];
+  let renders = 0,
+    filterResets = 0,
+    fileReads = 0;
+  const c = vm.createContext({
+    STORAGE_KEY: storageKey,
+    db: structuredClone(baseline),
+    storageSnapshot: original,
+    storageBlocked: true,
+    storageProblem: "previous failure",
+    isAuthenticated: true,
+    state: { view: "class", schoolId: "old_school" },
+    lessonReportFilter: { schoolId: "old_school" },
+    karnamehFilter: { schoolId: "old_school" },
+    localStorage: {
+      getItem(key) {
+        reads.push(key);
+        return stored.get(key) ?? null;
+      },
+      setItem(key, value) {
+        writes.push([key, value]);
+        stored.set(key, value);
+      },
+      removeItem(key) {
+        removes.push(key);
+        stored.delete(key);
+      },
+    },
+    confirm(message) {
+      confirmations.push(message);
+      return accepted;
+    },
+    alert(message) {
+      alerts.push(message);
+    },
+    legacy_defaultDB: () => ({
+      schools: [],
+      sessions: [],
+      masterSchedule: {},
+      settings: { academicYear: "1405-1406" },
+    }),
+    legacy_render() {
+      renders++;
+    },
+    resetGlobalFilters() {
+      filterResets++;
+    },
+    FileReader: class {
+      readAsText(file, encoding) {
+        fileReads++;
+        assert.equal(encoding, "UTF-8");
+        this.onload({ target: { result: file.content } });
+      }
+    },
+  });
+  for (const name of [
+    "core/runtime-api.js",
+    "domain/data-boundary.js",
+    "legacy/validation/database.js",
+    "legacy/data/legacy-storage.js",
+    "legacy/data/backup-import.js",
+    "legacy/core/runtime-facade.js",
+  ])
+    vm.runInContext(
+      fs.readFileSync(path.join(__dirname, "../src", name), "utf8"),
+      c,
+      { filename: name },
+    );
+  const input = (value = { version: 23, db: replacement }) => ({
+    value: "selected.json",
+    files: [
+      {
+        size: 2048,
+        content: typeof value === "string" ? value : JSON.stringify(value),
+      },
+    ],
+  });
+  return {
+    c,
+    stored,
+    storageKey,
+    historicalKey,
+    historical,
+    baseline,
+    replacement,
+    original,
+    writes,
+    removes,
+    alerts,
+    confirmations,
+    reads,
+    input,
+    counters: () => ({ renders, filterResets, fileReads }),
+  };
+}
+
+test("legacy facade fallback validates then replaces the current data without creating an operation copy", () => {
+  const f = legacyImportFixture(),
+    input = f.input();
+  f.c.handleImport({ target: input });
+  assert.equal(f.confirmations.length, 1);
+  assert.match(f.confirmations[0], /جایگزین تمام اطلاعات فعلی/);
+  assert.doesNotMatch(f.confirmations[0], /نسخه قبلی|نگه داشته/);
+  assert.deepEqual(
+    f.writes.map(([key]) => key),
+    [f.storageKey],
+  );
+  const restored = JSON.parse(f.stored.get(f.storageKey));
+  assert.deepEqual(restored.schools, f.replacement.schools);
+  assert.equal(
+    restored.schemaVersion,
+    23,
+    "the real legacy validator/normalizer prepared the candidate",
+  );
+  assert.equal(JSON.stringify(f.c.db), f.stored.get(f.storageKey));
+  assert.equal(f.c.storageSnapshot, f.stored.get(f.storageKey));
+  assert.equal(f.c.storageBlocked, false);
+  assert.equal(f.c.storageProblem, "");
+  assert.equal(f.c.isAuthenticated, false);
+  assert.equal(f.c.state.view, "schools");
+  assert.equal(input.value, "");
+  assert.deepEqual(f.counters(), { renders: 1, filterResets: 1, fileReads: 1 });
+  assert.equal(
+    f.stored.get(f.historicalKey),
+    f.historical,
+    "old historical recovery keys are not proactively purged or replaced",
+  );
+  assert.deepEqual(f.removes, []);
+  assert.deepEqual(f.reads, []);
+});
+
+test("canceled legacy fallback import leaves current and historical data untouched", () => {
+  const f = legacyImportFixture({ accepted: false }),
+    input = f.input(),
+    originalDB = f.c.db;
+  f.c.handleImport({ target: input });
+  assert.equal(f.confirmations.length, 1);
+  assert.deepEqual(f.writes, []);
+  assert.deepEqual(f.removes, []);
+  assert.equal(f.c.db, originalDB);
+  assert.equal(f.stored.get(f.storageKey), f.original);
+  assert.equal(f.stored.get(f.historicalKey), f.historical);
+  assert.equal(input.value, "");
+  assert.equal(f.counters().renders, 0);
+  assert.deepEqual(f.alerts, []);
+});
+
+for (const [label, value] of [
+  ["malformed JSON", "{broken"],
+  ["unsupported version", { version: 24, db: { schools: [], sessions: [] } }],
+  [
+    "invalid database",
+    { version: 23, db: { schools: "not-an-array", sessions: [] } },
+  ],
+])
+  test(
+    "invalid legacy fallback import makes no writes before confirmation: " +
+      label,
+    () => {
+      const f = legacyImportFixture(),
+        input = f.input(value),
+        originalDB = f.c.db;
+      f.c.handleImport({ target: input });
+      assert.deepEqual(f.writes, []);
+      assert.deepEqual(f.removes, []);
+      assert.deepEqual(f.confirmations, []);
+      assert.equal(f.c.db, originalDB);
+      assert.equal(f.stored.get(f.storageKey), f.original);
+      assert.equal(f.stored.get(f.historicalKey), f.historical);
+      assert.equal(input.value, "");
+      assert.equal(f.alerts.length, 1);
+      assert.match(f.alerts[0], /بازیابی انجام نشد/);
+    },
+  );
+
+test("oversized legacy fallback import is rejected before reading, confirmation or storage changes", () => {
+  const f = legacyImportFixture(),
+    input = f.input();
+  input.files[0].size = 20 * 1024 * 1024 + 1;
+  f.c.handleImport({ target: input });
+  assert.equal(f.counters().fileReads, 0);
+  assert.deepEqual(f.confirmations, []);
+  assert.deepEqual(f.writes, []);
+  assert.deepEqual(f.removes, []);
+  assert.equal(input.value, "");
+  assert.equal(f.alerts.length, 1);
+});
+
+test("installed current import handler bypasses the real legacy fallback", () => {
+  const f = legacyImportFixture(),
+    input = f.input(),
+    event = { target: input };
+  let received;
+  f.c.EduRuntimeAPI.install({
+    handleImport: (value) => {
+      received = value;
+      return "current implementation";
+    },
+  });
+  assert.equal(f.c.handleImport(event), "current implementation");
+  assert.equal(received, event);
+  assert.equal(f.counters().fileReads, 0);
+  assert.deepEqual(f.confirmations, []);
+  assert.deepEqual(f.writes, []);
+});
+
+test("explicit legacy reset still removes the historical before-import key", () => {
+  const f = legacyImportFixture();
+  f.c.legacy_wipeAllData();
+  assert.equal(f.confirmations.length, 2);
+  assert.deepEqual(f.writes, []);
+  assert.deepEqual(f.removes, [f.storageKey, f.historicalKey]);
+  assert.equal(f.stored.has(f.historicalKey), false);
+  assert.equal(f.c.db.schools.length, 0);
+  assert.equal(f.c.storageSnapshot, null);
 });

@@ -51,7 +51,6 @@ function installWorkspaceActions() {
     ["prepare-share-backup", () => openBackupShare()],
     ["share-backup-file", (button) => sharePreparedBackup(button)],
     ["download-share-backup", () => downloadPreparedBackup()],
-    ["download-safety", (button) => downloadLastSafetyBackup(button)],
     ["single-file-choose", () => chooseSingleFile()],
     ["single-file-save", () => resumeSingleFile()],
     ["single-file-stop", () => disableSingleFile()],

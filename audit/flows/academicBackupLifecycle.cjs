@@ -183,13 +183,8 @@ module.exports = async function academicBackupLifecycle() {
     });
     check(
       "ACADEMIC07",
-      "pre-restore safety backup preserves data being replaced",
-      backups.some(
-        (row) =>
-          row.full &&
-          row.label === "پیش از بازیابی کل سیستم" &&
-          JSON.stringify(row.full).includes("تغییر پس از پشتیبان چرخه سال"),
-      ),
+      "system restore creates no operation backup of the replaced data",
+      !backups.some((row) => row.full),
     );
     await confirmRestore();
     const repeated = await EduV24.snapshotInstallation();
