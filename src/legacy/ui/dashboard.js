@@ -82,7 +82,16 @@ function dashboardDirectory(items, kind, schoolId = "") {
   const isSchool = kind === "schools",
     name = isSchool ? "مدرسه‌ها" : "کلاس‌ها";
   let h =
-    '<section class="card dashboard-directory"><header class="dashboard-section-heading"><div><h3>' +
+    '<section class="card dashboard-directory' +
+    (isSchool ? "" : " class-directory") +
+    '"><header class="dashboard-section-heading' +
+    (isSchool ? "" : " directory-heading") +
+    '"><div><h3>' +
+    (isSchool
+      ? ""
+      : '<span class="directory-symbol" aria-hidden="true">' +
+        workflowIcon("classroom") +
+        "</span>") +
     name +
     ' <span class="lesson-count">' +
     items.length.toLocaleString("fa-IR") +

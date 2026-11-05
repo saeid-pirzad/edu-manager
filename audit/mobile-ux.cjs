@@ -113,12 +113,12 @@ async function inspectMobileUx() {
       saveText: getComputedStyle(schoolSave).color,
     };
   add(
-    "warm palette retains red brand navigation and a distinct green save action",
-    palette.background === "rgb(247, 246, 244)" &&
-      palette.navigation === "rgb(192, 20, 27)" &&
+    "warm ivory palette uses the primary color for navigation and saving",
+    palette.background === "rgb(250, 246, 240)" &&
+      palette.navigation === "rgb(122, 104, 87)" &&
       palette.saveRole === "save" &&
       palette.saveVariant === "solid" &&
-      palette.saveFill === "rgb(25, 119, 92)" &&
+      palette.saveFill === "rgb(122, 104, 87)" &&
       palette.saveText === "rgb(255, 255, 255)",
     palette,
   );
@@ -141,8 +141,8 @@ async function inspectMobileUx() {
   const enter = document.querySelector(".dashboard-entity .entity-enter");
   add(
     "school entry has one arrow, a clear destination label and a touch target",
-    getComputedStyle(enter).backgroundColor === "rgb(254, 240, 240)" &&
-      getComputedStyle(enter).color === "rgb(192, 20, 27)" &&
+    getComputedStyle(enter).backgroundColor === "rgb(243, 237, 230)" &&
+      getComputedStyle(enter).color === "rgb(122, 104, 87)" &&
       enter.textContent.trim() === "کلاس‌های مدرسه" &&
       enter.querySelectorAll("svg").length === 1 &&
       enter.getBoundingClientRect().height >= 44,

@@ -10,8 +10,8 @@
   table[data-ui-layout] thead th {
     font-weight: 500;
     line-height: 1.8;
-    background: #f3f6fc;
-    border-bottom: 1px solid #e2e8f0;
+    background: var(--theme-surface-muted);
+    border-bottom: 1px solid var(--theme-line);
     vertical-align: middle;
   }
   table[data-ui-layout] td {
@@ -29,7 +29,7 @@
     text-align: center;
   }
   table[data-ui-layout] td input:focus {
-    box-shadow: 0 0 0 3px #6366f119;
+    box-shadow: 0 0 0 3px var(--theme-focus-soft);
   }
   table[data-ui-layout] td button {
     margin: 3px;
@@ -38,7 +38,7 @@
   }
   table[data-ui-layout] td[data-identity] {
     font-weight: 500;
-    color: #26334c;
+    color: var(--theme-ink);
   }
   .table-pan-hint {
     position: sticky;
@@ -47,12 +47,12 @@
     width: 100%;
     padding: 9px 12px;
     font-size: 0.7rem;
-    color: #64748b;
-    background: #f8faff;
-    border-bottom: 1px solid #e5eaf3;
+    color: var(--theme-muted);
+    background: var(--theme-surface-subtle, #f8faff);
+    border-bottom: 1px solid var(--theme-line, #e5eaf3);
   }
   .att-row {
-    border: 1px solid #e5eaf3;
+    border: 1px solid var(--theme-line, #e5eaf3);
     border-radius: 14px;
     background: #fff;
     padding: 14px;
@@ -97,11 +97,11 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 12px;
       background: #fff;
-      border: 1px solid #e2e8f0;
+      border: 1px solid var(--theme-line);
       border-radius: 16px;
       padding: 16px;
       min-width: 0;
-      box-shadow: 0 3px 12px #23345a04;
+      box-shadow: 0 3px 12px #4a302504;
     }
     table[data-ui-layout="cards"] tbody tr:hover {
       background: #fff;
@@ -122,7 +122,7 @@
       content: attr(data-label);
       display: block;
       font-size: 0.68rem;
-      color: #64748b;
+      color: var(--theme-muted);
       font-weight: 400;
       margin-bottom: 5px;
       line-height: 1.7;
@@ -131,11 +131,11 @@
       grid-column: 1/-1;
       font-size: 0.93rem;
       padding-bottom: 10px !important;
-      border-bottom: 1px solid #edf1f7 !important;
+      border-bottom: 1px solid var(--theme-line-soft, #edf1f7) !important;
     }
     table[data-ui-layout="cards"] tbody td[data-actions] {
       grid-column: 1/-1;
-      border-top: 1px solid #edf1f7 !important;
+      border-top: 1px solid var(--theme-line-soft, #edf1f7) !important;
       padding-top: 10px !important;
       display: flex;
       flex-wrap: wrap;
@@ -176,12 +176,12 @@
       min-width: 128px !important;
       max-width: 180px !important;
       z-index: 2;
-      background: #f8faff !important;
-      box-shadow: -3px 0 5px #26334c08;
+      background: var(--theme-surface-subtle, #f8faff) !important;
+      box-shadow: -3px 0 5px #4a302508;
     }
     table[data-ui-layout="matrix"] thead [data-identity] {
       z-index: 3;
-      background: #eef2fa !important;
+      background: var(--theme-surface-muted) !important;
     }
     .att-row {
       align-items: flex-start;

@@ -14,15 +14,15 @@
     text-align: start;
     min-width: 0;
     min-height: 92px;
-    border: 1px solid #e4e9f3;
+    border: 1px solid var(--theme-line, #e4e9f3);
     background: #fff;
-    color: #26334c;
+    color: var(--theme-ink, #26334c);
     border-radius: 18px;
     padding: 18px;
   }
   .dashboard-report-links > button:hover {
-    background: #f8faff;
-    border-color: #c7d2fe;
+    background: var(--theme-surface-subtle, #f8faff);
+    border-color: var(--theme-primary-line, #c7d2fe);
   }
   .dashboard-report-links > button > span:nth-child(2) {
     flex: 1;
@@ -34,7 +34,7 @@
   }
   .dashboard-report-links small {
     display: block;
-    color: #64748b;
+    color: var(--theme-muted, #64748b);
     font-weight: 400;
     font-size: 0.7rem;
     margin-top: 4px;
@@ -46,13 +46,13 @@
     height: 42px;
     flex: none;
     border-radius: 13px;
-    background: #eef2ff;
-    color: #4f46e5;
+    background: var(--theme-primary-soft, #eef2ff);
+    color: var(--theme-primary, #4f46e5);
     font-size: 24px;
   }
   .dashboard-shortcut-symbol.teal {
-    background: #e6f6f1;
-    color: #0f766e;
+    background: var(--theme-teal-soft, #e6f6f1);
+    color: var(--theme-teal, #0f766e);
   }
   .dashboard-directory {
     padding: 0;
@@ -68,7 +68,7 @@
   }
   .dashboard-section-heading p {
     font-size: 0.73rem;
-    color: #64748b;
+    color: var(--theme-muted, #64748b);
     margin: 6px 0 0;
   }
   .dashboard-entities {
@@ -79,7 +79,7 @@
   }
   .dashboard-entity {
     min-width: 0;
-    border: 1px solid #e5eaf3;
+    border: 1px solid var(--theme-line, #e5eaf3);
     border-radius: 16px;
     padding: 16px;
     background: #fff;
@@ -105,7 +105,7 @@
   }
   .dashboard-entity-info p {
     font-size: 0.72rem;
-    color: #64748b;
+    color: var(--theme-muted, #64748b);
     margin: 0;
   }
   .dashboard-entity-symbol {
@@ -114,8 +114,8 @@
     width: 44px;
     height: 44px;
     border-radius: 13px;
-    background: #eef2ff;
-    color: #4f46e5;
+    background: var(--theme-primary-soft, #eef2ff);
+    color: var(--theme-primary, #4f46e5);
     font-weight: 500;
     flex: none;
   }
@@ -123,7 +123,7 @@
     display: grid;
     grid-template-columns: 1.2fr 1fr auto;
     gap: 6px;
-    border-top: 1px solid #edf1f7;
+    border-top: 1px solid var(--theme-line-soft, #edf1f7);
     padding-top: 12px;
     margin-top: 16px;
   }
@@ -143,8 +143,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid #e5eaf3;
-    color: #64748b;
+    border: 1px solid var(--theme-line, #e5eaf3);
+    color: var(--theme-muted, #64748b);
   }
   .dashboard-entity-more summary::-webkit-details-marker {
     display: none;
@@ -157,9 +157,9 @@
     min-width: 150px;
     padding: 8px;
     background: #fff;
-    border: 1px solid #e5eaf3;
+    border: 1px solid var(--theme-line, #e5eaf3);
     border-radius: 12px;
-    box-shadow: 0 12px 32px #23345a15;
+    box-shadow: 0 12px 32px var(--theme-primary-shadow, #23345a15);
   }
   .dashboard-entity-more button {
     width: 100%;
@@ -170,7 +170,7 @@
     flex-direction: column;
     gap: 6px;
     padding: 0 18px 14px;
-    color: #64748b;
+    color: var(--theme-muted, #64748b);
     font-size: 0.73rem;
   }
   .dashboard-search input {
@@ -179,7 +179,7 @@
   }
   .dashboard-search-result {
     font-size: 0.7rem;
-    color: #64748b;
+    color: var(--theme-muted, #64748b);
     margin: 0 18px 14px;
   }
   .school-overview {
@@ -187,8 +187,8 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    border: 1px solid #e3e8f5;
-    background: #f1f4ff;
+    border: 1px solid var(--theme-line, #e3e8f5);
+    background: var(--theme-primary-soft, #f1f4ff);
     border-radius: 16px;
     padding: 16px 18px;
     margin-bottom: 18px;
@@ -196,7 +196,7 @@
   .school-overview > div {
     display: flex;
     gap: 14px;
-    color: #52617b;
+    color: var(--theme-muted, #52617b);
     font-size: 0.8rem;
   }
   .school-overview button {
@@ -215,7 +215,7 @@
     margin: 6px 0 16px;
   }
   .report-page-heading > p {
-    color: #64748b;
+    color: var(--theme-muted, #64748b);
     font-size: 0.72rem;
     margin: 0 0 4px;
   }
@@ -226,8 +226,8 @@
   }
   .report-page-heading > span {
     display: inline-block;
-    background: #eef2ff;
-    color: #4338ca;
+    background: var(--theme-primary-soft, #eef2ff);
+    color: var(--theme-primary, #4338ca);
     border-radius: 8px;
     padding: 4px 10px;
     font-size: 0.72rem;
@@ -239,11 +239,11 @@
     flex-wrap: wrap;
     gap: 18px;
     padding: 0 0 18px;
-    color: #64748b;
+    color: var(--theme-muted, #64748b);
     font-size: 0.76rem;
   }
   .report-scope-summary strong {
-    color: #26334c;
+    color: var(--theme-ink, #26334c);
     font-size: 1rem;
     margin-inline-end: 3px;
   }
@@ -255,7 +255,7 @@
   }
   .report-filter-card > p {
     font-size: 0.75rem !important;
-    color: #64748b;
+    color: var(--theme-muted, #64748b);
   }
   .report-filter-grid {
     display: grid !important;
@@ -269,7 +269,7 @@
     gap: 7px;
     min-width: 0;
     font-size: 0.73rem;
-    color: #52617b;
+    color: var(--theme-muted, #52617b);
   }
   .report-filter-field select,
   .report-filter-field input {
@@ -279,7 +279,7 @@
   .report-options {
     padding: 0 !important;
     border: 0;
-    border-top: 1px solid #e5eaf3;
+    border-top: 1px solid var(--theme-line, #e5eaf3);
     border-radius: 0;
     background: transparent;
     margin-top: 18px;
@@ -288,7 +288,7 @@
     min-height: 44px;
     cursor: pointer;
     padding: 12px 0;
-    color: #4338ca;
+    color: var(--theme-primary, #4338ca);
     font-size: 0.76rem;
   }
   .report-options[open] {
@@ -305,12 +305,12 @@
     font-size: 0.74rem;
   }
   .report-options label:has(input:checked) {
-    background: #eef2ff;
-    border-color: #c7d2fe;
-    color: #4338ca;
+    background: var(--theme-primary-soft, #eef2ff);
+    border-color: var(--theme-primary-line, #c7d2fe);
+    color: var(--theme-primary, #4338ca);
   }
   .report-options input {
-    accent-color: #4f46e5;
+    accent-color: var(--theme-primary, #4f46e5);
   }
   #globalReportOutput > .card,
   #lessonReportOutput > .card,
@@ -318,7 +318,7 @@
     border-radius: 18px;
   }
   .report-document {
-    border: 1px solid #e5eaf3;
+    border: 1px solid var(--theme-line, #e5eaf3);
     border-radius: 16px;
     padding: 18px;
     background: #fff;

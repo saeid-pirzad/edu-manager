@@ -9,14 +9,14 @@
   }
   :is(#modal:has(.backup-hub), #deputyBackupDialog) .modal-header {
     padding: 14px 20px;
-    background: #fff;
+    background: var(--theme-surface);
   }
   :is(#modal:has(.backup-hub), #deputyBackupDialog) .modal-header h3 {
     font-size: 17px;
   }
   :is(#modal:has(.backup-hub), #deputyBackupDialog) .modal-body {
     padding: 18px;
-    background: #f7f6f3;
+    background: var(--theme-canvas);
   }
   :is(#modalBody, #deputyBackupBody) .backup-hub {
     display: grid;
@@ -26,19 +26,19 @@
   :is(#modalBody, #deputyBackupBody) .backup-hub > :is(section, details) {
     min-width: 0;
     padding: 18px;
-    border: 1px solid #e5e0d7;
+    border: 1px solid var(--theme-line);
     border-radius: 13px;
-    background: #fff;
+    background: var(--theme-surface);
   }
   :is(#modalBody, #deputyBackupBody) .backup-hub :is(h3, h4) {
     margin: 0 0 7px;
-    color: #363735;
+    color: var(--theme-ink);
     font-size: 15px;
     line-height: 1.8;
   }
   :is(#modalBody, #deputyBackupBody) .backup-hub p {
     margin: 0 0 14px;
-    color: #81796e;
+    color: var(--theme-muted);
     font-size: 12px;
     line-height: 1.95;
   }
@@ -62,19 +62,19 @@
   }
   :is(#modalBody, #deputyBackupBody) .backup-action-grid > button:first-child {
     min-height: 46px;
-    background: #79522c;
-    color: #fff;
-    border: 1px solid #79522c;
+    background: var(--theme-primary);
+    color: var(--theme-surface);
+    border: 1px solid var(--theme-primary);
   }
   :is(#modalBody, #deputyBackupBody) .backup-hub button.ghost {
-    border: 1px solid #e5e0d7;
-    background: #faf9f7;
-    color: #655d52;
+    border: 1px solid var(--theme-line);
+    background: var(--theme-surface-subtle);
+    color: var(--theme-muted);
   }
   :is(#modalBody, #deputyBackupBody) .backup-manual > p:last-child {
     margin: 12px 0 0;
     padding-top: 12px;
-    border-top: 1px solid #eeebe5;
+    border-top: 1px solid var(--theme-line-soft);
     font-size: 11px;
   }
   :is(#modalBody, #deputyBackupBody) .backup-automatic > .row {
@@ -86,9 +86,9 @@
     .backup-automatic
     > .row
     > button:first-child {
-    background: #f5efe5;
-    color: #79522c;
-    border: 1px solid #dbcbb3;
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
+    border: 1px solid var(--theme-primary-line);
   }
   :is(#modalBody, #deputyBackupBody)
     .backup-automatic
@@ -109,7 +109,7 @@
   :is(#modalBody, #deputyBackupBody) .backup-automatic > .backup-help {
     margin-top: 14px;
     padding-top: 6px;
-    border-top: 1px solid #eeebe5;
+    border-top: 1px solid var(--theme-line-soft);
   }
   :is(#modalBody, #deputyBackupBody) .backup-hub details > summary {
     display: flex;
@@ -119,7 +119,7 @@
     min-height: 40px;
     padding: 4px 0;
     list-style: none;
-    color: #655d52;
+    color: var(--theme-muted);
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
@@ -138,8 +138,8 @@
     width: 24px;
     height: 24px;
     border-radius: 7px;
-    background: #f4f1eb;
-    color: #79522c;
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
     font-size: 17px;
     font-weight: 400;
   }
@@ -185,8 +185,8 @@
     font-size: 12px;
   }
   :is(#modalBody, #deputyBackupBody) .backup-history th {
-    background: #f5f2ec;
-    color: #726b61;
+    background: var(--theme-surface-muted);
+    color: var(--theme-muted);
     font-size: 11px;
   }
   :is(#modalBody, #deputyBackupBody) .backup-history td {
@@ -202,7 +202,7 @@
   :is(#modalBody, #deputyBackupBody)
     .backup-hub
     :is(button, summary):focus-visible {
-    outline: 2px solid #a88a63;
+    outline: 2px solid var(--theme-focus);
     outline-offset: 2px;
   }
 }
@@ -255,7 +255,7 @@
   #deputyBackupDialog {
     padding: 0;
     border: 1px solid var(--workflow-line);
-    background: #fff;
+    background: var(--theme-surface);
     color: var(--workflow-ink);
     box-shadow: 0 24px 80px #17233733;
     overflow: hidden;
@@ -287,8 +287,8 @@
     min-height: 44px;
     margin: 0;
     border: 0;
-    background: #eaeef6;
-    color: #364665;
+    background: var(--theme-surface-muted);
+    color: var(--theme-ink);
     border-radius: 12px;
     padding: 8px;
   }

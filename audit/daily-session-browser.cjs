@@ -290,13 +290,22 @@ async function dailyFlow() {
       status: document.querySelector("[data-modal-save-feedback]")?.textContent,
     },
   );
-  const bulk = document.querySelector(".session-attendance-bulk details");
+  const bulk = document.querySelector(".session-attendance-bulk");
+  const bulkActions = [
+    ...(bulk?.querySelectorAll(":scope > button") || []),
+  ].map((button) => button.dataset.legacyClick);
   check(
     "EXPLICIT_BULK",
-    "Overwrite-all controls remain in an explicit secondary disclosure",
-    !!bulk &&
-      !!bulk.querySelector('[data-legacy-click="sessions-dialog:7"]') &&
-      bulk.querySelectorAll("button").length >= 2,
+    "Three direct bulk controls keep distinct remaining-only and overwrite-all actions",
+    bulk?.getAttribute("role") === "group" &&
+      !bulk.querySelector("details") &&
+      JSON.stringify(bulkActions) ===
+        JSON.stringify([
+          "sessions-dialog:6",
+          "sessions-dialog:all-present",
+          "sessions-dialog:7",
+        ]),
+    { actions: bulkActions },
   );
   showSessionPanel("activity");
   let form = setForm({

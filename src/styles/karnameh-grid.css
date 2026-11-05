@@ -4,7 +4,7 @@
     --karnameh-lesson-width: 130px;
     min-width: 0;
     padding: 18px;
-    border-color: #e5e0d7;
+    border-color: var(--theme-line, #e5e0d7);
     border-radius: 16px;
     background: #fff;
   }
@@ -20,7 +20,7 @@
   }
   #app .karnameh-student-sheet .karnameh-report-heading p {
     margin: 0;
-    color: #706b64;
+    color: var(--theme-muted, #706b64);
     font-size: 12px;
     line-height: 1.95;
     overflow-wrap: anywhere;
@@ -40,8 +40,8 @@
     max-width: 100%;
     padding: 4px 8px;
     border-radius: 7px;
-    background: #f5f2ec;
-    color: #706354;
+    background: var(--theme-surface-muted, #f5f2ec);
+    color: var(--theme-muted, #706354);
     font-size: 11px;
     line-height: 1.8;
     overflow-wrap: anywhere;
@@ -54,8 +54,8 @@
     gap: 10px;
     margin-bottom: 22px;
     padding: 12px 0;
-    border-top: 1px solid #eee9e1;
-    border-bottom: 1px solid #eee9e1;
+    border-top: 1px solid var(--theme-line-soft, #eee9e1);
+    border-bottom: 1px solid var(--theme-line-soft, #eee9e1);
   }
   #app .karnameh-student-sheet .karnameh-student-pagination button {
     display: inline-flex;
@@ -66,10 +66,10 @@
     min-height: 44px;
     margin: 0;
     padding: 8px 12px;
-    border: 1px solid #e5e0d7;
+    border: 1px solid var(--theme-line, #e5e0d7);
     border-radius: 10px;
     background: #fff;
-    color: #655d52;
+    color: var(--theme-muted, #655d52);
     font-size: 12px;
     font-weight: 500;
     line-height: 1.7;
@@ -77,9 +77,9 @@
     box-shadow: none;
   }
   #app .karnameh-student-sheet .karnameh-student-pagination button:disabled {
-    border-color: #eee9e1;
-    background: #f7f6f3;
-    color: #9a9389;
+    border-color: var(--theme-line-soft, #eee9e1);
+    background: var(--theme-surface-subtle, #f7f6f3);
+    color: var(--theme-muted, #9a9389);
     opacity: 1;
     cursor: not-allowed;
   }
@@ -90,7 +90,7 @@
   }
   .karnameh-student-position {
     min-width: 0;
-    color: #706b64;
+    color: var(--theme-muted, #706b64);
     font-size: 12px;
     line-height: 1.9;
     text-align: center;
@@ -110,11 +110,11 @@
     min-width: 0;
     padding: 6px 8px;
     border-radius: 8px;
-    background: #f4f1eb;
+    background: var(--theme-surface-muted, #f4f1eb);
   }
   #app .karnameh-student-sheet .karnameh-subject-section h4 {
     margin: 0;
-    color: #5b4933;
+    color: var(--theme-primary-hover, #5b4933);
     font-size: 14px;
     line-height: 1.9;
     overflow-wrap: anywhere;
@@ -126,16 +126,17 @@
     margin: 0;
     overflow: auto;
     overscroll-behavior-x: contain;
-    border: 1px solid #e5e0d7;
+    border: 1px solid var(--theme-line, #e5e0d7);
     border-radius: 11px;
     background: #fff;
     scrollbar-width: thin;
-    scrollbar-color: #c9c0b4 #f5f2ec;
+    scrollbar-color: var(--theme-line, #c9c0b4)
+      var(--theme-surface-muted, #f5f2ec);
     scroll-padding-inline-start: var(--karnameh-lesson-width);
     -webkit-overflow-scrolling: touch;
   }
   #app .karnameh-student-sheet .karnameh-sheet-scroll:focus-visible {
-    outline: 2px solid #a87008;
+    outline: 2px solid var(--theme-focus, #a87008);
     outline-offset: 3px;
   }
   .karnameh-sheet-scroll > .table-pan-hint {
@@ -172,10 +173,10 @@
     min-width: 64px;
     padding: 10px 7px;
     border: 0;
-    border-bottom: 1px solid #eee9e1;
-    border-inline-end: 1px solid #f1ede7;
+    border-bottom: 1px solid var(--theme-line-soft, #eee9e1);
+    border-inline-end: 1px solid var(--theme-line-soft, #f1ede7);
     background: #fff;
-    color: #454649;
+    color: var(--theme-ink, #454649);
     font-size: 12px;
     line-height: 1.8;
     text-align: center;
@@ -183,14 +184,14 @@
     white-space: nowrap;
   }
   #app .karnameh-student-sheet .karnameh-sheet-table thead th {
-    background: #f6f2eb !important;
-    color: #765531;
+    background: var(--theme-surface-muted, #f6f2eb) !important;
+    color: var(--theme-primary, #765531);
     font-size: 11px;
     font-weight: 600;
   }
   #app .karnameh-student-sheet .karnameh-sheet-table th.karnameh-stage-group {
     padding-block: 11px;
-    border-bottom-color: #e2d9cc;
+    border-bottom-color: var(--theme-line, #e2d9cc);
     white-space: normal;
     overflow-wrap: anywhere;
   }
@@ -200,7 +201,7 @@
     line-height: 1.8;
   }
   #app .karnameh-student-sheet .karnameh-sheet-table thead tr + tr th {
-    background: #faf8f4 !important;
+    background: var(--theme-surface-subtle, #faf8f4) !important;
     font-size: 10px;
     font-weight: 500;
   }
@@ -213,16 +214,16 @@
     min-width: var(--karnameh-lesson-width) !important;
     max-width: var(--karnameh-lesson-width) !important;
     padding: 11px 10px;
-    border-inline-end: 1px solid #ded7cd;
+    border-inline-end: 1px solid var(--theme-line, #ded7cd);
     background: #fff !important;
-    color: #514435;
+    color: var(--theme-ink, #514435);
     font-size: 12px;
     font-weight: 600;
     line-height: 1.9;
     text-align: start;
     white-space: normal;
     overflow-wrap: anywhere;
-    box-shadow: -4px 0 7px #3d302c08;
+    box-shadow: -4px 0 7px var(--theme-primary-shadow, #3d302c08);
   }
   #app
     .karnameh-student-sheet
@@ -230,7 +231,7 @@
     thead
     .karnameh-lesson-name {
     z-index: 5;
-    background: #eee8de !important;
+    background: var(--theme-surface-muted, #eee8de) !important;
   }
   .karnameh-lesson-index {
     display: inline-flex;
@@ -240,8 +241,8 @@
     min-height: 22px;
     margin-inline-end: 5px;
     border-radius: 5px;
-    background: #f3eee6;
-    color: #756b5d;
+    background: var(--theme-surface-muted, #f3eee6);
+    color: var(--theme-muted, #756b5d);
     font-size: 10px;
     font-weight: 400;
     font-variant-numeric: tabular-nums;
@@ -250,7 +251,7 @@
   #app .karnameh-student-sheet .karnameh-lesson-name small {
     display: block;
     margin-top: 4px;
-    color: #706b64;
+    color: var(--theme-muted, #706b64);
     font-size: 10px;
     font-weight: 400;
     line-height: 1.8;
@@ -261,7 +262,7 @@
     tbody
     tr:nth-child(even)
     > :is(th, td) {
-    background-color: #fcfbf8;
+    background-color: var(--theme-surface-subtle, #fcfbf8);
   }
   #app
     .karnameh-student-sheet
@@ -269,7 +270,7 @@
     tbody
     tr:nth-child(even)
     > .karnameh-lesson-name {
-    background: #fcfbf8 !important;
+    background: var(--theme-surface-subtle, #fcfbf8) !important;
   }
   #app
     .karnameh-student-sheet
@@ -287,8 +288,8 @@
     min-height: 30px;
     padding: 3px 5px;
     border-radius: 6px;
-    background: #f3f1ed;
-    color: #554e44;
+    background: var(--theme-surface-muted, #f3f1ed);
+    color: var(--theme-ink, #554e44);
     font-size: 13px;
     font-weight: 600;
     line-height: 1.6;
@@ -315,7 +316,7 @@
     width: 100%;
     max-width: 120px;
     margin: 4px auto 0;
-    color: #706b64;
+    color: var(--theme-muted, #706b64);
     font-size: 10px;
     line-height: 1.8;
     white-space: normal;
@@ -325,7 +326,7 @@
   .karnameh-subject-section > small {
     display: block;
     margin: 10px 0 0;
-    color: #706b64;
+    color: var(--theme-muted, #706b64);
     font-size: 11px;
     line-height: 1.9;
     overflow-wrap: anywhere;
@@ -347,7 +348,7 @@
   }
   .karnameh-legacy-result {
     display: block;
-    color: #514435;
+    color: var(--theme-ink, #514435);
     font-size: 12px;
     font-weight: 600;
     line-height: 1.9;
@@ -365,18 +366,18 @@
     gap: 2px;
     min-width: 0;
     padding-top: 6px;
-    border-top: 1px solid #eee9e1;
+    border-top: 1px solid var(--theme-line-soft, #eee9e1);
     line-height: 1.8;
     white-space: normal;
     overflow-wrap: anywhere;
   }
   .karnameh-unit-list strong {
-    color: #514435;
+    color: var(--theme-ink, #514435);
     font-size: 11px;
     font-weight: 500;
   }
   .karnameh-unit-list li > span {
-    color: #706b64;
+    color: var(--theme-muted, #706b64);
     font-size: 10px;
     font-variant-numeric: tabular-nums;
   }
@@ -384,7 +385,7 @@
     .karnameh-student-sheet
     .karnameh-student-pagination
     button:focus-visible {
-    outline: 2px solid #a87008;
+    outline: 2px solid var(--theme-focus, #a87008);
     outline-offset: 2px;
   }
 }
@@ -395,15 +396,15 @@
     tbody
     tr:hover
     > :is(th, td) {
-    background: #fff8ed !important;
+    background: var(--theme-primary-soft, #fff8ed) !important;
   }
   #app
     .karnameh-student-sheet
     .karnameh-student-pagination
     button:not(:disabled):hover {
-    border-color: #ccb99f;
-    background: #f8f3ec;
-    color: #79522c;
+    border-color: var(--theme-primary-line, #ccb99f);
+    background: var(--theme-primary-soft, #f8f3ec);
+    color: var(--theme-primary, #79522c);
   }
 }
 @media screen and (max-width: 700px) {
@@ -558,10 +559,10 @@
     min-height: 34px;
     margin: 0;
     padding: 4px 7px;
-    border: 1px solid #e4ddd2;
+    border: 1px solid var(--theme-line, #e4ddd2);
     border-radius: 6px;
     background: #fff;
-    color: #655d52;
+    color: var(--theme-muted, #655d52);
     font-size: 10.5px;
     font-weight: 500;
     line-height: 1.6;
@@ -599,13 +600,13 @@
     .karnameh-student-sheet
     .karnameh-stage-options
     button[aria-pressed="true"] {
-    border-color: #79522c;
-    background: #79522c;
+    border-color: var(--theme-primary, #79522c);
+    background: var(--theme-primary, #79522c);
     color: #fff;
     font-weight: 600;
   }
   #app .karnameh-student-sheet .karnameh-stage-options button:focus-visible {
-    outline: 2px solid #a87008;
+    outline: 2px solid var(--theme-focus, #a87008);
     outline-offset: 2px;
   }
   #app
@@ -1021,10 +1022,10 @@
     min-height: 44px;
     margin: 0;
     padding: 9px 14px;
-    border: 1px solid #cce4d6;
+    border: 1px solid var(--theme-teal-line, #cce4d6);
     border-radius: 9px;
-    background: #edf8f3;
-    color: #176344;
+    background: var(--theme-teal-soft, #edf8f3);
+    color: var(--theme-teal, #176344);
     font-size: 12px;
   }
   #modal:has(.karnameh-excel-dialog) .modal-dialog {
@@ -1038,14 +1039,14 @@
   .karnameh-excel-heading h4 {
     margin: 0;
     font-size: 15px;
-    color: #433d35;
+    color: var(--theme-ink, #433d35);
   }
   .karnameh-excel-heading p,
   .karnameh-excel-description {
     margin: 6px 0 0;
     font-size: 12px;
     line-height: 1.9;
-    color: #726b61;
+    color: var(--theme-muted, #726b61);
     overflow-wrap: anywhere;
   }
   .karnameh-excel-description {
@@ -1065,10 +1066,10 @@
     min-height: 68px;
     margin: 0;
     padding: 12px;
-    border: 1px solid #e2ddd4;
+    border: 1px solid var(--theme-line, #e2ddd4);
     border-radius: 12px;
     background: #fff;
-    color: #433d35;
+    color: var(--theme-ink, #433d35);
     text-align: start;
   }
   .karnameh-excel-choice-icon {
@@ -1078,8 +1079,8 @@
     width: 36px;
     height: 36px;
     border-radius: 10px;
-    background: #edf8f3;
-    color: #176344;
+    background: var(--theme-teal-soft, #edf8f3);
+    color: var(--theme-teal, #176344);
   }
   .karnameh-excel-choice-copy {
     flex: 1;
@@ -1096,7 +1097,7 @@
   }
   .karnameh-excel-choice-copy small {
     margin-top: 3px;
-    color: #726b61;
+    color: var(--theme-muted, #726b61);
     font-size: 11px;
   }
   [data-karnameh-excel-status]:empty {
@@ -1106,8 +1107,8 @@
     margin: 14px 0 0;
     padding: 10px 12px;
     border-radius: 9px;
-    background: #f5f4f1;
-    color: #655e54;
+    background: var(--theme-surface-muted, #f5f4f1);
+    color: var(--theme-muted, #655e54);
     font-size: 12px;
     line-height: 1.9;
   }
@@ -1128,9 +1129,9 @@
     gap: 4px;
     margin-bottom: 12px;
     padding: 4px;
-    border: 1px solid #e5e0d7;
+    border: 1px solid var(--theme-line, #e5e0d7);
     border-radius: 11px;
-    background: #f4f2ed;
+    background: var(--theme-surface-muted, #f4f2ed);
   }
   #modalBody .karnameh-excel-delivery > button {
     position: relative;
@@ -1141,15 +1142,15 @@
     border: 1px solid transparent;
     border-radius: 8px;
     background: transparent;
-    color: #726b61;
+    color: var(--theme-muted, #726b61);
     font-size: 12px;
     white-space: nowrap;
   }
   #modalBody .karnameh-excel-delivery > button[aria-pressed="true"] {
-    border-color: #d4e4da;
+    border-color: var(--theme-teal-line, #d4e4da);
     background: #fff;
-    color: #176344;
-    box-shadow: 0 1px 3px #264e3510;
+    color: var(--theme-teal, #176344);
+    box-shadow: 0 1px 3px var(--theme-primary-shadow, #264e3510);
     font-weight: 600;
   }
   .karnameh-excel-delivery > button[aria-pressed="true"]::after {
@@ -1173,22 +1174,22 @@
     min-width: 0;
     margin-top: 14px;
     padding: 14px;
-    border: 1px solid #d4e4da;
+    border: 1px solid var(--theme-teal-line, #d4e4da);
     border-radius: 12px;
-    background: #f5faf7;
+    background: var(--theme-teal-soft, #f5faf7);
   }
   .karnameh-excel-ready[hidden] {
     display: none;
   }
   [data-karnameh-excel-file] {
     min-width: 0;
-    color: #335847;
+    color: var(--theme-teal, #335847);
     font-size: 11px;
     line-height: 1.9;
     overflow-wrap: anywhere;
   }
   [data-karnameh-excel-file-size] {
-    color: #687b69;
+    color: var(--theme-muted, #687b69);
     font-size: 11px;
   }
   .karnameh-excel-ready-actions {

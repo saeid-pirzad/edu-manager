@@ -23,7 +23,7 @@ module.exports = async ({ cdp, evaluate, cases }) => {
       const source = document.createElement('article');
       source.id = 'auditPrintSource';
       source.className = 'report-document periodic-document card';
-      source.innerHTML = '<header class="periodic-document-heading"><h2>گزارش روزانه</h2><h3>هنرستان حافظ</h3></header><button data-audit-print>چاپ</button><section class="periodic-summary"><div data-summary-status="present"><strong>۱۸</strong><span>حاضر</span></div><div data-summary-status="absent"><strong>۵</strong><span>غایب</span></div></section><section class="periodic-session"><header class="report-session-heading"><span class="report-session-date">۱۴۰۵/۸/۹</span><span class="report-session-period">زنگ ۱</span></header><div class="report-session-identity"><h4>یازدهم تصویرسازی</h4><div class="report-session-lesson"><strong>رایانه کار پیشرفته</strong></div><p class="report-session-teacher">دبیر: پیرزاد</p></div></section><footer class="periodic-footer"><details class="report-basis no-print"><summary>مبنای گزارش</summary><ul><li>توضیح مبنا</li></ul></details><div class="report-basis-print">نسخه تکراری مبنا</div></footer>';
+      source.innerHTML = '<header class="periodic-document-heading"><h2>گزارش روزانه</h2><h3>هنرستان حافظ</h3></header><button data-audit-print>چاپ</button><section class="periodic-summary"><div data-summary-status="present"><strong>۱۸</strong><span>حاضر</span></div><div data-summary-status="absent"><strong>۵</strong><span>غایب</span></div></section><section class="periodic-session"><header class="report-session-heading"><span class="report-session-date">۱۴۰۵/۸/۹</span><span class="report-session-period">زنگ ۱</span></header><div class="report-session-identity"><h4>یازدهم تصویرسازی</h4><div class="report-session-lesson"><strong>رایانه کار پیشرفته</strong></div><p class="report-session-teacher">دبیر: پیرزاد</p></div></section>';
       document.querySelector('#app').append(source);
       const selectors = ['.periodic-summary > div', '.periodic-summary strong', '.periodic-session', '.report-session-period', '.periodic-document-heading h2'];
       return selectors.map(selector => {
@@ -48,21 +48,21 @@ module.exports = async ({ cdp, evaluate, cases }) => {
         extraHeader: !!root.querySelector(':scope > header'),
         buttons: root.querySelectorAll('button').length,
         basis: !!root.querySelector('.report-basis'),
-        duplicateHidden: getComputedStyle(root.querySelector('.report-basis-print')).display === 'none',
+        legacyBasis: !!root.querySelector('.report-basis-print'),
         colorAdjust: getComputedStyle(root.querySelector('.periodic-session')).printColorAdjust
       };
     })()`);
     cases.push({
       id: "print-appearance",
-      name: "PDF preserves report colors, typography, cards and footer without duplicate content",
+      name: "PDF preserves report colors, typography and cards without extra controls or obsolete report footers",
       pass:
         JSON.stringify(before) === JSON.stringify(after.styles) &&
         !after.extraHeader &&
         !after.buttons &&
-        after.basis &&
-        after.duplicateHidden &&
+        !after.basis &&
+        !after.legacyBasis &&
         after.colorAdjust === "exact",
-      observed: after,
+      observed: { before, after },
     });
     const shot = await cdp("Page.captureScreenshot", { format: "png" });
     fs.writeFileSync(

@@ -272,7 +272,9 @@ function getClassColor(cId) {
   const all = [];
   db.schools.forEach((s) => s.classes.forEach((c) => all.push(c.id)));
   const idx = all.indexOf(cId);
-  return idx >= 0 ? COLORS[idx % COLORS.length] : "#64748b";
+  if (idx < 0) return "var(--theme-muted, #64748b)";
+  const colorIndex = idx % COLORS.length;
+  return `var(--week-class-color-${colorIndex}, ${COLORS[colorIndex]})`;
 }
 function getSaturdayOf(dateStr) {
   const d = new Date(dateStr + "T00:00:00");
@@ -2749,7 +2751,16 @@ function dashboardDirectory(items, kind, schoolId = "") {
   const isSchool = kind === "schools",
     name = isSchool ? "مدرسه‌ها" : "کلاس‌ها";
   let h =
-    '<section class="card dashboard-directory"><header class="dashboard-section-heading"><div><h3>' +
+    '<section class="card dashboard-directory' +
+    (isSchool ? "" : " class-directory") +
+    '"><header class="dashboard-section-heading' +
+    (isSchool ? "" : " directory-heading") +
+    '"><div><h3>' +
+    (isSchool
+      ? ""
+      : '<span class="directory-symbol" aria-hidden="true">' +
+        workflowIcon("classroom") +
+        "</span>") +
     name +
     ' <span class="lesson-count">' +
     items.length.toLocaleString("fa-IR") +
@@ -3349,7 +3360,9 @@ function renderLessonsTab(c) {
     EduV24.course.renderCreate() +
     "</details>";
   let h =
-    '<section class="card class-lessons"><header class="lesson-list-heading"><div><h3>دروس کلاس <span class="lesson-count">' +
+    '<section class="card class-lessons"><header class="lesson-list-heading directory-heading"><div><h3><span class="directory-symbol" aria-hidden="true">' +
+    EduIcons.html("book") +
+    '</span>دروس کلاس <span class="lesson-count">' +
     lessons.length.toLocaleString("fa-IR") +
     '</span></h3><p>تعریف و ویرایش درس‌ها؛ برای کلاس‌داری وارد درس شوید.</p></div></header><div class="lesson-items">';
   if (!lessons.length)
@@ -3928,7 +3941,9 @@ function renderLessonSessions(
     esc(selection.summary) +
     "</p></section>";
   h +=
-    '<section class="card session-directory"><header class="session-list-heading"><div><h3>جلسات درس <span class="lesson-count">' +
+    '<section class="card session-directory"><header class="session-list-heading directory-heading"><div><h3><span class="session-directory-symbol directory-symbol" aria-hidden="true">' +
+    EduIcons.html("calendar") +
+    '</span>جلسات درس <span class="lesson-count">' +
     sessions.length.toLocaleString("fa-IR") +
     "</span></h3><p>" +
     (annual
@@ -3966,13 +3981,13 @@ function renderLessonSessions(
       EduIcons.html("calendar") +
       '</span><span class="session-date"><strong>' +
       esc(faDate(session.date)) +
-      '</strong><span class="session-period">زنگ ' +
+      '</strong><span class="session-date-meta"><span class="session-period">زنگ ' +
       (session.period + 1).toLocaleString("fa-IR") +
-      "</span></span>" +
+      "</span>" +
       (session.date === todayISO()
         ? '<span class="session-today">امروز</span>'
         : "") +
-      "</span>";
+      "</span></span></span>";
     if (pod || unit)
       h +=
         '<span class="session-unit">' +
@@ -5371,12 +5386,10 @@ function openSessionModal(session, { activitySaved = null } = {}) {
   </div>`;
   h += `<div class="session-mode-picker"><button type="button" aria-pressed="true" data-session-tab="attendance" data-legacy-click="sessions-dialog:4">${EduIcons.html("attendance")}<span>حضور و غیاب</span></button><button type="button" aria-pressed="false" data-session-tab="activity" data-legacy-click="sessions-dialog:5">${EduIcons.html("grades")}<span>نمره و فعالیت</span></button></div><section data-session-panel="attendance"><div class="session-attendance-heading">
     <div><h4>حضور و غیاب</h4><p data-session-attendance-progress role="status"></p></div>
-    <div class="session-attendance-bulk">
-      <button type="button" class="success" data-mutating="1" data-legacy-click="sessions-dialog:6">باقی‌مانده‌ها حاضر</button>
-      <details class="session-attendance-options"><summary>تغییر همه</summary><div>
-        <button type="button" class="ghost" data-mutating="1" data-legacy-click="sessions-dialog:all-present">همه حاضر</button>
-        <button type="button" class="danger" data-mutating="1" data-legacy-click="sessions-dialog:7">همه غایب</button>
-      </div></details>
+    <div class="session-attendance-bulk" role="group" aria-label="ثبت گروهی حضور و غیاب">
+      <button type="button" class="success" data-mutating="1" data-legacy-click="sessions-dialog:6" aria-label="ثبت حاضر برای هنرجویان تعیین‌نشده" title="فقط وضعیت‌های تعیین‌نشده حاضر می‌شوند؛ ثبت‌های قبلی حفظ می‌شوند.">باقی‌ها حاضر</button>
+      <button type="button" class="ghost" data-mutating="1" data-legacy-click="sessions-dialog:all-present">همه حاضر</button>
+      <button type="button" class="danger" data-mutating="1" data-legacy-click="sessions-dialog:7">همه غایب</button>
     </div>
   </div><div class="session-attendance-list">`;
   const sortedStudents = getSortedStudents({

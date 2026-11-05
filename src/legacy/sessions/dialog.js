@@ -174,12 +174,10 @@ function openSessionModal(session, { activitySaved = null } = {}) {
   </div>`;
   h += `<div class="session-mode-picker"><button type="button" aria-pressed="true" data-session-tab="attendance" data-legacy-click="sessions-dialog:4">${EduIcons.html("attendance")}<span>حضور و غیاب</span></button><button type="button" aria-pressed="false" data-session-tab="activity" data-legacy-click="sessions-dialog:5">${EduIcons.html("grades")}<span>نمره و فعالیت</span></button></div><section data-session-panel="attendance"><div class="session-attendance-heading">
     <div><h4>حضور و غیاب</h4><p data-session-attendance-progress role="status"></p></div>
-    <div class="session-attendance-bulk">
-      <button type="button" class="success" data-mutating="1" data-legacy-click="sessions-dialog:6">باقی‌مانده‌ها حاضر</button>
-      <details class="session-attendance-options"><summary>تغییر همه</summary><div>
-        <button type="button" class="ghost" data-mutating="1" data-legacy-click="sessions-dialog:all-present">همه حاضر</button>
-        <button type="button" class="danger" data-mutating="1" data-legacy-click="sessions-dialog:7">همه غایب</button>
-      </div></details>
+    <div class="session-attendance-bulk" role="group" aria-label="ثبت گروهی حضور و غیاب">
+      <button type="button" class="success" data-mutating="1" data-legacy-click="sessions-dialog:6" aria-label="ثبت حاضر برای هنرجویان تعیین‌نشده" title="فقط وضعیت‌های تعیین‌نشده حاضر می‌شوند؛ ثبت‌های قبلی حفظ می‌شوند.">باقی‌ها حاضر</button>
+      <button type="button" class="ghost" data-mutating="1" data-legacy-click="sessions-dialog:all-present">همه حاضر</button>
+      <button type="button" class="danger" data-mutating="1" data-legacy-click="sessions-dialog:7">همه غایب</button>
     </div>
   </div><div class="session-attendance-list">`;
   const sortedStudents = getSortedStudents({

@@ -18,7 +18,7 @@ body {
 }
 #app .card {
   border: 1px solid var(--workflow-line);
-  box-shadow: 0 3px 16px #172b4d04;
+  box-shadow: 0 3px 16px var(--theme-primary-shadow, #172b4d04);
   border-radius: 18px;
 }
 #app :is(h2, h3, h4) {
@@ -30,18 +30,18 @@ body {
   border-color: var(--workflow-line);
   border-radius: 12px;
 }
-#app :is(button, summary, input, select, textarea):focus-visible,
-#modal :is(button, summary, input, select, textarea):focus-visible {
-  outline: 3px solid #b77708;
+#app :is(button, summary):focus-visible,
+#modal :is(button, summary):focus-visible {
+  outline: 3px solid var(--theme-focus, #b77708);
   outline-offset: 3px;
 }
 #app button {
   border-radius: 12px;
 }
 #app button.ghost {
-  color: #3d5274;
+  color: var(--theme-ink, #3d5274);
   border: 1px solid var(--workflow-line);
-  background: #fff;
+  background: var(--theme-surface, #fff);
 }
 #app .breadcrumb {
   line-height: 2;
@@ -82,7 +82,7 @@ body {
   gap: 12px;
 }
 .dashboard-entity {
-  background: #fff;
+  background: var(--theme-surface, #fff);
   border: 1px solid var(--workflow-line);
   border-radius: 16px;
   padding: 18px;
@@ -113,7 +113,7 @@ body {
 .lesson-more > summary {
   border: 1px solid var(--workflow-line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--theme-surface, #fff);
   min-height: 44px;
 }
 .workspace-bar {
@@ -133,7 +133,7 @@ body {
   font-size: 12px;
 }
 #app .tabs {
-  background: #eaf0f8;
+  background: var(--theme-surface-muted, #eaf0f8);
   border: 0;
   border-radius: 14px;
   padding: 5px;
@@ -143,15 +143,15 @@ body {
   min-height: 44px;
   border-radius: 10px;
   background: transparent;
-  color: #526580;
+  color: var(--theme-muted, #526580);
   border: 0;
   box-shadow: none;
 }
 #app .tabs > button.active,
 #app .tabs > button[aria-current="page"] {
-  background: #fff;
-  color: #234bbd;
-  box-shadow: 0 2px 7px #172b4d0b;
+  background: var(--theme-surface, #fff);
+  color: var(--theme-primary, #234bbd);
+  box-shadow: 0 2px 7px var(--theme-primary-shadow, #172b4d0b);
 }
 .student-profile {
   border: 1px solid var(--workflow-line);
@@ -173,11 +173,11 @@ body {
 }
 .student-row-number {
   font-variant-numeric: tabular-nums;
-  color: #60738c;
+  color: var(--theme-muted, #60738c);
 }
 .roster-toolbar {
   padding: 12px;
-  background: #f5f8fc;
+  background: var(--theme-surface-subtle, #f5f8fc);
   border-radius: 14px;
   gap: 12px;
 }
@@ -243,10 +243,10 @@ body {
   top: 100%;
   z-index: 5;
   padding: 10px;
-  background: #fff;
+  background: var(--theme-surface, #fff);
   border: 1px solid var(--workflow-line);
   border-radius: 12px;
-  box-shadow: 0 8px 24px #172b4d12;
+  box-shadow: 0 8px 24px var(--theme-primary-shadow, #172b4d12);
   min-width: 180px;
 }
 .session-card {
@@ -284,8 +284,8 @@ body {
   gap: 6px;
 }
 .session-counts > span {
-  background: #f0f4f9;
-  color: #475b76;
+  background: var(--theme-surface-muted, #f0f4f9);
+  color: var(--theme-muted, #475b76);
   border-radius: 8px;
   padding: 4px 8px;
   font-size: 11px;
@@ -299,12 +299,12 @@ body {
   color: #b42335;
 }
 .assessment-student {
-  background: #fff;
+  background: var(--theme-surface, #fff);
   border-color: var(--workflow-line);
 }
 .assessment-student > p {
   padding-top: 12px;
-  border-top: 1px solid #edf1f6;
+  border-top: 1px solid var(--theme-line-soft, #edf1f6);
   display: flex;
   flex-wrap: wrap;
   gap: 7px;
@@ -328,7 +328,7 @@ body {
   border-radius: 12px;
 }
 .session-workspace .att-row {
-  border-bottom: 1px solid #edf1f6;
+  border-bottom: 1px solid var(--theme-line-soft, #edf1f6);
 }
 .session-workspace .att-btns button {
   border-radius: 10px;
@@ -353,10 +353,10 @@ body {
   .lesson-item:hover,
   .student-profile:hover,
   .session-card:hover {
-    border-color: #b7c8e6;
+    border-color: var(--theme-primary-line, #b7c8e6);
   }
   #app button.session-open:hover {
-    background: #f5f8ff;
+    background: var(--theme-primary-soft, #f5f8ff);
   }
 }
 @media (max-width: 700px) {
@@ -468,7 +468,7 @@ body {
     font-size: 14px;
   }
   #uiBottomNav {
-    box-shadow: 0 -4px 20px #172b4d09;
+    box-shadow: 0 -4px 20px var(--theme-primary-shadow, #172b4d09);
   }
 }
 @media (prefers-reduced-motion: reduce) {

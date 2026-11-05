@@ -26,7 +26,9 @@ function getClassColor(cId) {
   const all = [];
   db.schools.forEach((s) => s.classes.forEach((c) => all.push(c.id)));
   const idx = all.indexOf(cId);
-  return idx >= 0 ? COLORS[idx % COLORS.length] : "#64748b";
+  if (idx < 0) return "var(--theme-muted, #64748b)";
+  const colorIndex = idx % COLORS.length;
+  return `var(--week-class-color-${colorIndex}, ${COLORS[colorIndex]})`;
 }
 function getSaturdayOf(dateStr) {
   const d = new Date(dateStr + "T00:00:00");

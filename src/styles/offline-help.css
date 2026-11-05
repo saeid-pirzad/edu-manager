@@ -9,14 +9,14 @@
   }
   :is(#modal:has(.offline-help), #deputyInstallDialog) .modal-header {
     padding: 14px 20px;
-    background: #fff;
+    background: var(--theme-surface);
   }
   :is(#modal:has(.offline-help), #deputyInstallDialog) .modal-header h3 {
     font-size: 16px;
   }
   :is(#modal:has(.offline-help), #deputyInstallDialog) .modal-body {
     padding: 18px;
-    background: #f7f6f3;
+    background: var(--theme-canvas);
   }
   :is(#modalBody, #deputyInstallBody) .offline-help {
     display: grid;
@@ -26,9 +26,9 @@
   }
   :is(#modalBody, #deputyInstallBody) .offline-help-section {
     padding: 18px;
-    border: 1px solid #e5e0d7;
+    border: 1px solid var(--theme-line);
     border-radius: 13px;
-    background: #fff;
+    background: var(--theme-surface);
     counter-increment: offline-step;
   }
   :is(#modalBody, #deputyInstallBody) .offline-help-section h4 {
@@ -36,7 +36,7 @@
     align-items: center;
     gap: 9px;
     margin: 0 0 12px;
-    color: #363735;
+    color: var(--theme-ink);
     font-size: 14px;
     line-height: 1.8;
   }
@@ -47,16 +47,16 @@
     flex: 0 0 26px;
     width: 26px;
     height: 26px;
-    border: 1px solid #e5d5bd;
+    border: 1px solid var(--theme-primary-line);
     border-radius: 8px;
-    background: #f7efe2;
-    color: #79522c;
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
     font-size: 12px;
     font-weight: 500;
   }
   :is(#modalBody, #deputyInstallBody) .offline-help-section p {
     margin: 0;
-    color: #81796e;
+    color: var(--theme-muted);
     font-size: 12px;
     line-height: 2.05;
   }
@@ -124,7 +124,7 @@
     padding: 0;
     margin: auto;
     border: 1px solid var(--workflow-line);
-    background: #fff;
+    background: var(--theme-surface);
     color: var(--workflow-ink);
     box-shadow: 0 24px 80px #17233733;
     overflow: hidden;
@@ -163,8 +163,8 @@
     margin: 0;
     border: 0;
     border-radius: 12px;
-    background: #eaeef6;
-    color: #364665;
+    background: var(--theme-surface-muted);
+    color: var(--theme-ink);
     font-size: 24px;
     cursor: pointer;
   }
@@ -247,7 +247,7 @@
   :is(#modal:has(.offline-help), #deputyInstallDialog)
     .modal-header
     button:focus-visible {
-    outline: 3px solid #b77708;
+    outline: 3px solid var(--theme-focus);
     outline-offset: 3px;
   }
 }
@@ -261,7 +261,7 @@
   }
   #modal:has(.update-notice) .modal-header {
     padding: 14px 18px;
-    background: #faf9f7;
+    background: var(--theme-surface-subtle);
     border-bottom: 1px solid var(--workflow-line);
   }
   #modal:has(.update-notice) .modal-header h3 {
@@ -274,7 +274,7 @@
     min-height: 0;
     padding: 20px;
     overflow: auto;
-    background: #fff;
+    background: var(--theme-surface);
   }
   #modalBody .update-notice {
     min-width: 0;
@@ -331,13 +331,13 @@
     flex: 0 0 26px;
     height: 26px;
     border-radius: 8px;
-    background: #f4efe7;
-    color: #79522c;
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
     font-size: 12px;
     font-weight: 500;
   }
   .update-notice-steps p {
-    color: #665f55;
+    color: var(--theme-muted);
   }
   #modalBody .update-notice-note {
     display: flex;
@@ -370,11 +370,11 @@
     border: 0;
     border-radius: 10px;
     background: var(--workflow-accent);
-    color: #fff;
+    color: var(--theme-surface);
     font-size: 13px;
   }
   #modalBody .update-notice-actions button:hover {
-    background: #aa1117;
+    background: var(--theme-primary-hover);
   }
   #modalBody .update-notice-actions button:focus-visible {
     outline: 2px solid var(--workflow-accent);

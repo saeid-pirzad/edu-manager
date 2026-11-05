@@ -142,7 +142,9 @@ function renderLessonsTab(c) {
     EduV24.course.renderCreate() +
     "</details>";
   let h =
-    '<section class="card class-lessons"><header class="lesson-list-heading"><div><h3>دروس کلاس <span class="lesson-count">' +
+    '<section class="card class-lessons"><header class="lesson-list-heading directory-heading"><div><h3><span class="directory-symbol" aria-hidden="true">' +
+    EduIcons.html("book") +
+    '</span>دروس کلاس <span class="lesson-count">' +
     lessons.length.toLocaleString("fa-IR") +
     '</span></h3><p>تعریف و ویرایش درس‌ها؛ برای کلاس‌داری وارد درس شوید.</p></div></header><div class="lesson-items">';
   if (!lessons.length)

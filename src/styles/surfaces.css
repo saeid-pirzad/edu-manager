@@ -1,12 +1,12 @@
 /* A quiet border hierarchy for screen surfaces; printed documents keep their own rules. */
 @media screen {
   :root {
-    --surface-line: #dedbd5;
-    --surface-inner-line: #e9e5df;
-    --surface-hover-line: #c7b8a3;
-    --surface-open-line: #cfb48d;
-    --surface-shadow: 0 1px 2px #3c332508, 0 6px 18px #3c332506;
-    --surface-inner-shadow: 0 1px 3px #3c332504;
+    --surface-line: var(--theme-line, #dedbd5);
+    --surface-inner-line: var(--theme-line-soft, #e9e5df);
+    --surface-hover-line: var(--theme-primary-line, #c7b8a3);
+    --surface-open-line: var(--theme-primary-line, #cfb48d);
+    --surface-shadow: 0 1px 2px #4a302508, 0 6px 18px #4a302506;
+    --surface-inner-shadow: 0 1px 3px #4a302504;
   }
 
   /* Only existing frames receive a stroke; borderless mobile lists stay borderless. */
@@ -37,7 +37,7 @@
     box-shadow: var(--surface-inner-shadow);
   }
   #app .week-slot.is-empty {
-    border-color: #ded5c7;
+    border-color: var(--theme-line, #ded5c7);
   }
   #app .week-slot-list {
     border-color: transparent;
@@ -49,7 +49,7 @@
   #app .create-panel,
   #app .week-settings {
     border-color: var(--surface-line);
-    background-image: linear-gradient(135deg, #ffffff00 60%, #f5efe633);
+    background-image: linear-gradient(135deg, #ffffff00 60%, #f3ede666);
   }
   #app .create-panel > summary {
     border-radius: inherit;
@@ -58,7 +58,7 @@
   #app .week-settings[open] {
     border-color: var(--surface-open-line);
     box-shadow:
-      0 0 0 2px #cfb48d12,
+      0 0 0 2px #7a685712,
       var(--surface-shadow);
   }
   #app .create-panel[open] > summary {
@@ -78,10 +78,10 @@
   }
 
   #modal .modal-dialog {
-    border-color: #d9d3c9;
+    border-color: var(--theme-line, #d9d3c9);
     box-shadow:
-      0 2px 8px #30291f0d,
-      0 24px 70px #30291f2e;
+      0 2px 8px #4a30250d,
+      0 24px 70px #4a30252e;
   }
   #modal .modal-header {
     border-bottom-color: var(--surface-inner-line);
@@ -117,14 +117,14 @@
   #app :is(.dashboard-entity, .lesson-item, .student-profile):focus-within {
     border-color: var(--surface-hover-line);
     border-inline-start-color: var(--surface-hover-line);
-    box-shadow: 0 0 0 2px #cfb48d16;
+    box-shadow: 0 0 0 2px #7a685716;
   }
 }
 @media screen and (hover: hover) and (pointer: fine) {
   #app :is(.dashboard-entity, .lesson-item, .student-profile):hover {
     border-color: var(--surface-hover-line);
     border-inline-start-color: var(--surface-hover-line);
-    box-shadow: 0 3px 12px #3c33250a;
+    box-shadow: 0 3px 12px #4a30250a;
   }
   #app .create-panel:not([open]):hover,
   #modalBody .backup-hub > details:not([open]):hover {
@@ -156,5 +156,221 @@
   #modalBody .backup-hub > :is(section, details) {
     border-color: CanvasText;
     box-shadow: none;
+  }
+}
+
+/* The dashboard hierarchy carries through workspaces: white, milk, cream. */
+@media screen {
+  #app
+    :is(
+      .class-directory,
+      .class-lessons,
+      .session-directory,
+      .week-agenda,
+      .week-desktop,
+      .week-settings,
+      .periodic-controls,
+      .report-filter-card,
+      .karnameh-controls
+    ),
+  #app #lessonGradesArea > .gradebook,
+  #modalBody .gradebook {
+    background-color: var(--surface-paper);
+  }
+  #app
+    :is(.class-directory, .class-lessons, .session-directory)
+    > .directory-heading {
+    background: linear-gradient(
+      115deg,
+      var(--surface-milk),
+      var(--surface-cream)
+    );
+  }
+  #app .class-directory .dashboard-entity,
+  #app .class-lessons .lesson-item,
+  #app .session-card:not(.is-today),
+  #app .student-directory .student-profile,
+  #app .week-slot.is-filled:not(.is-other):not(.is-today),
+  #app
+    .gradebook
+    .assessment-student:not([data-edit-state="error"]):not(
+      [data-edit-state="pending"]
+    ):not(:focus-within) {
+    background-color: var(--surface-milk);
+  }
+  #app .student-directory .roster-toolbar {
+    background-color: var(--surface-paper);
+  }
+  #app #periodicReportOutput > .card.empty[role="status"] {
+    background-color: var(--surface-milk);
+  }
+  #app .week-overview {
+    background: linear-gradient(
+      120deg,
+      var(--surface-milk),
+      var(--surface-paper)
+    );
+  }
+  #app .week-settings {
+    background-image: none;
+  }
+  #app .week-settings-body > section,
+  #app :is(.periodic-control-grid, .report-filter-grid, .karnameh-filter-grid) {
+    background-color: var(--surface-milk);
+  }
+  #app :is(.week-day-heading, .week-day-picker, .report-navigation),
+  #app .gradebook .assessment-navigation {
+    background-color: var(--surface-cream);
+  }
+  #app
+    :is(.roster-toolbar, .gradebook-simple-search)
+    :is(input, select):not(:disabled):not([readonly]):not(
+      [aria-invalid="true"]
+    ),
+  #app
+    :is(.periodic-controls, .report-filter-card, .karnameh-controls)
+    :is(input, select, textarea):not(:disabled):not([readonly]):not(
+      [aria-invalid="true"]
+    ) {
+    background-color: var(--form-milk);
+  }
+}
+@media screen and (min-width: 701px) {
+  #app .student-directory {
+    background-color: var(--surface-paper);
+  }
+  #app .student-directory > .roster-heading {
+    background: linear-gradient(
+      115deg,
+      var(--surface-milk),
+      var(--surface-cream)
+    );
+  }
+}
+
+/* Form surfaces: milk-white work areas separated by soft cream headings. */
+@media screen {
+  #modal,
+  #app :is(.create-panel, .week-settings, .report-filter-card) {
+    --theme-surface: var(--form-milk);
+    --theme-surface-subtle: var(--form-cream);
+    --theme-field: var(--form-milk);
+  }
+  #modal .modal-dialog,
+  #modal .modal-body {
+    background: var(--surface-paper) !important;
+  }
+  #modal .modal-header {
+    background: var(--form-cream) !important;
+  }
+  #app .create-panel {
+    background: var(--form-milk);
+    background-image: none;
+  }
+  #app .create-panel > summary {
+    background: var(--form-cream);
+  }
+  #app .create-panel > form,
+  #app .create-panel #courseEditor,
+  #modalBody > form {
+    background: var(--form-milk);
+  }
+  #modalBody :is(.record-editor-context, .settings-context, .week-config-intro),
+  #modalBody .session-entry-form,
+  #modalBody .backup-hub > details,
+  #modalBody .course-policy-section > summary,
+  #app .course-policy-section > summary,
+  #app .week-settings > summary {
+    background-color: var(--form-cream) !important;
+  }
+  #modalBody .backup-hub > section,
+  #modalBody .week-config-section,
+  #modalBody #courseEditor {
+    background-color: var(--form-milk);
+  }
+  #modalBody .session-workspace .att-btns {
+    background: var(--form-milk);
+  }
+  :is(#app form, #app .week-settings, #modalBody)
+    :is(
+      input:not(
+          [type="checkbox"],
+          [type="radio"],
+          [type="range"],
+          [type="hidden"],
+          [type="file"],
+          [type="color"],
+          [type="button"],
+          [type="submit"],
+          [type="reset"]
+        ):not(:disabled):not([readonly]):not([aria-invalid="true"]),
+      select:not(:disabled):not([aria-invalid="true"]),
+      textarea:not(:disabled):not([readonly]):not([aria-invalid="true"])
+    ) {
+    background-color: var(--form-milk);
+  }
+}
+
+/* One quiet focus treatment for editable fields throughout the application. */
+@media screen {
+  :is(#app, #modalBody, #calPopup, #pwaWelcome)
+    :is(
+      input:not(
+        [type="checkbox"],
+        [type="radio"],
+        [type="range"],
+        [type="hidden"]
+      ),
+      select,
+      textarea
+    ):focus {
+    outline: none !important;
+    outline-offset: 0;
+    border-color: var(--field-focus-line) !important;
+    box-shadow: 0 0 0 3px var(--field-focus-ring) !important;
+  }
+  :is(#app, #modalBody, #calPopup, #pwaWelcome)
+    :is(
+      input:not(
+        [type="checkbox"],
+        [type="radio"],
+        [type="range"],
+        [type="hidden"]
+      ),
+      select,
+      textarea
+    )[aria-invalid="true"] {
+    border-color: var(--field-error-line) !important;
+  }
+  :is(#app, #modalBody, #calPopup, #pwaWelcome)
+    :is(
+      input:not(
+        [type="checkbox"],
+        [type="radio"],
+        [type="range"],
+        [type="hidden"]
+      ),
+      select,
+      textarea
+    )[aria-invalid="true"]:focus {
+    box-shadow: 0 0 0 3px var(--field-error-ring) !important;
+  }
+  :is(#app, #modalBody)
+    :is(
+      input[type="checkbox"],
+      input[type="radio"],
+      input[type="range"]
+    ):focus-visible {
+    outline: 2px solid var(--field-focus-line);
+    outline-offset: 2px;
+  }
+}
+@media screen and (forced-colors: active) {
+  :is(#app, #modalBody, #calPopup, #pwaWelcome)
+    :is(input, select, textarea):focus {
+    outline: 2px solid Highlight !important;
+    outline-offset: 2px;
+    border-color: Highlight !important;
+    box-shadow: none !important;
   }
 }

@@ -6,9 +6,9 @@
     gap: 16px;
     min-height: 48px;
     padding: 7px max(20px, calc((100% - 1064px) / 2));
-    border-bottom: 1px solid #e4ded4;
-    background: #f0ede7;
-    color: #726b61;
+    border-bottom: 1px solid var(--theme-line);
+    background: var(--theme-surface-muted);
+    color: var(--theme-muted);
   }
   body :is(#mobileBar, #deputyOfflineBar) > strong {
     display: none;
@@ -22,7 +22,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: #726b61;
+    color: var(--theme-muted);
     font-size: 11px;
     line-height: 1.8;
     overflow-wrap: anywhere;
@@ -70,10 +70,10 @@
     min-width: 0;
     margin: 0;
     padding: 7px 11px;
-    border: 1px solid #ddd3c5;
+    border: 1px solid var(--theme-line);
     border-radius: 9px;
-    background: #fffaf4;
-    color: #79522c;
+    background: var(--theme-surface-subtle);
+    color: var(--theme-primary);
     font-size: 11px;
     font-weight: 500;
     line-height: 1.7;
@@ -86,17 +86,17 @@
     height: 16px;
   }
   body :is(#mobileBar, #deputyOfflineBar) :is(#mobileUpdate, #deputyUpdate) {
-    background: #79522c;
-    color: #fff;
-    border-color: #79522c;
+    background: var(--theme-primary);
+    color: var(--theme-surface);
+    border-color: var(--theme-primary);
   }
   body :is(#mobileBar, #deputyOfflineBar) :is(#mobileHelp, #deputyHelp) {
     background: transparent;
-    color: #726b61;
+    color: var(--theme-muted);
     border-color: transparent;
   }
   body :is(#mobileBar, #deputyOfflineBar) button:focus-visible {
-    outline: 2px solid #b77c4a;
+    outline: 2px solid var(--theme-focus);
     outline-offset: 2px;
   }
   body :is(#mobileBar, #deputyOfflineBar) button:disabled {
@@ -106,20 +106,20 @@
 }
 @media screen and (hover: hover) {
   body :is(#mobileBar, #deputyOfflineBar) button:not(:disabled):hover {
-    background: #eee3d4;
-    border-color: #cdb897;
-    color: #684423;
+    background: var(--theme-primary-soft);
+    border-color: var(--theme-primary-line);
+    color: var(--theme-primary-hover);
   }
   body
     :is(#mobileBar, #deputyOfflineBar)
     :is(#mobileUpdate, #deputyUpdate):not(:disabled):hover {
-    background: #684423;
-    border-color: #684423;
-    color: #fff;
+    background: var(--theme-primary-hover);
+    border-color: var(--theme-primary-hover);
+    color: var(--theme-surface);
   }
   body :is(#mobileBar, #deputyOfflineBar) :is(#mobileHelp, #deputyHelp):hover {
-    background: #e6e0d6;
-    border-color: #ded5c7;
+    background: var(--theme-surface-muted);
+    border-color: var(--theme-line);
   }
 }
 @media screen and (max-width: 700px) {
@@ -266,6 +266,6 @@
   body :is(#mobileBar, #deputyOfflineBar) {
     font-size: 11px;
     line-height: 1.8;
-    border-color: #e4ded4;
+    border-color: var(--theme-line);
   }
 }

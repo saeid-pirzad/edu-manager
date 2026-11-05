@@ -2,24 +2,24 @@
 
 @media screen {
   .week-config-intro {
-    background: #f3f5ff;
+    background: var(--theme-primary-soft, #f3f5ff);
     border-radius: 14px;
     padding: 14px;
     margin-bottom: 16px;
   }
   .week-config-intro strong {
     font-size: 0.86rem;
-    color: #4338ca;
+    color: var(--theme-primary, #4338ca);
   }
   .week-config-intro p,
   .week-config-note {
     font-size: 0.74rem;
     line-height: 1.9;
-    color: #64748b;
+    color: var(--theme-muted, #64748b);
     margin: 6px 0 0;
   }
   .week-config-section {
-    border: 1px solid #e5eaf3;
+    border: 1px solid var(--theme-line, #e5eaf3);
     border-radius: 14px;
     padding: 16px;
     margin-block: 12px;
@@ -31,7 +31,7 @@
   .week-config-section label {
     display: block;
     font-size: 0.74rem;
-    color: #64748b;
+    color: var(--theme-muted, #64748b);
     margin: 12px 0 6px;
   }
   .week-config-section select {
@@ -43,9 +43,9 @@
     min-height: 44px;
     padding: 10px 12px;
     border-radius: 12px;
-    background: #f7f9fd;
+    background: var(--theme-surface-subtle, #f7f9fd);
     font-size: 0.76rem;
-    color: #4338ca;
+    color: var(--theme-primary, #4338ca);
   }
   .week-config-actions {
     display: flex;
@@ -79,18 +79,18 @@
     width: min(100%, 540px);
   }
   .week-config-intro {
-    background: #f7f3ec;
-    border: 1px solid #e7dfd2;
+    background: var(--theme-surface-subtle, #f7f3ec);
+    border: 1px solid var(--theme-line, #e7dfd2);
     border-radius: 12px;
     padding: 16px;
   }
   .week-config-intro strong {
-    color: #79522c;
+    color: var(--theme-primary, #79522c);
     font-size: 15px;
   }
   .week-config-intro p,
   .week-config-note {
-    color: #81796e;
+    color: var(--theme-muted, #81796e);
     font-size: 11px;
   }
   .week-config-section {
@@ -98,7 +98,7 @@
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 8px 12px;
     padding: 16px;
-    border-color: #e7e3dc;
+    border-color: var(--theme-line, #e7e3dc);
     border-radius: 12px;
   }
   .week-config-section h4 {
@@ -109,7 +109,7 @@
   .week-config-section label {
     margin: 0;
     font-size: 11px;
-    color: #81796e;
+    color: var(--theme-muted, #81796e);
   }
   .week-config-section label:first-of-type {
     grid-column: 1;
@@ -123,26 +123,26 @@
     grid-row: 3;
     min-height: 44px;
     border-radius: 9px;
-    background: #faf9f7;
+    background: var(--theme-surface-subtle, #faf9f7);
     font-size: 13px;
   }
   .week-config-exceptions > summary {
-    color: #79522c;
-    background: #f7f5f0;
-    border: 1px solid #e7e3dc;
+    color: var(--theme-primary, #79522c);
+    background: var(--theme-surface-subtle, #f7f5f0);
+    border: 1px solid var(--theme-line, #e7e3dc);
     border-radius: 10px;
     font-size: 12px;
   }
   .week-config-actions {
     padding-top: 14px;
-    border-top: 1px solid #e7e3dc;
+    border-top: 1px solid var(--theme-line, #e7e3dc);
   }
   .week-config-actions > button {
     min-width: 0;
     border-radius: 9px;
   }
   .week-config-actions > button:first-child {
-    background: #79522c;
+    background: var(--theme-primary, #79522c);
     color: #fff;
   }
   .week-config-actions > .danger {
@@ -175,7 +175,7 @@
 @media screen {
   #modalBody .week-config-note {
     margin: 12px 0 0;
-    color: #81796e;
+    color: var(--theme-muted, #81796e);
     font-size: 11px;
     line-height: 1.9;
   }

@@ -16,11 +16,11 @@
 }
 .dashboard-work-heading p {
   margin: 0;
-  color: #64748b;
+  color: var(--theme-muted, #64748b);
   font-size: 0.8rem;
 }
 .dashboard-work-heading .eyebrow {
-  color: #4f46e5;
+  color: var(--theme-primary, #4f46e5);
   font-weight: 700;
 }
 .dashboard-tasks {
@@ -30,7 +30,7 @@
 }
 .dashboard-task {
   min-width: 0;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-line, #e2e8f0);
   border-radius: 18px;
   padding: 18px;
   background: #fff;
@@ -48,7 +48,7 @@
   margin: 10px 0 5px;
 }
 .dashboard-task p {
-  color: #64748b;
+  color: var(--theme-muted, #64748b);
   font-size: 0.75rem;
   margin: 0 0 12px;
 }
@@ -58,14 +58,14 @@
 }
 .dashboard-task-clear {
   font-size: 0.75rem;
-  color: #475569;
+  color: var(--theme-muted, #475569);
   padding-block: 10px;
 }
 .task-amber > strong {
   color: #a16207;
 }
 .task-indigo > strong {
-  color: #4338ca;
+  color: var(--theme-primary, #4338ca);
 }
 .task-rose > strong {
   color: #be123c;
@@ -82,7 +82,7 @@
 .dashboard-agenda {
   margin-top: 14px;
   padding: 18px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-line, #e2e8f0);
   border-radius: 18px;
   background: #fff;
   min-width: 0;
@@ -96,7 +96,7 @@
   align-items: center;
   gap: 12px;
   padding-block: 12px;
-  border-bottom: 1px solid #edf1f7;
+  border-bottom: 1px solid var(--theme-line-soft, #edf1f7);
 }
 .dashboard-agenda-row:last-child {
   border-bottom: 0;
@@ -113,7 +113,7 @@
 }
 .dashboard-agenda-row p {
   margin: 0;
-  color: #64748b;
+  color: var(--theme-muted, #64748b);
   font-size: 0.75rem;
 }
 .dashboard-agenda-row button {
@@ -123,8 +123,8 @@
 .dashboard-period {
   border-radius: 10px;
   padding: 8px;
-  background: #eef2ff;
-  color: #4338ca;
+  background: var(--theme-primary-soft, #eef2ff);
+  color: var(--theme-primary, #4338ca);
   font-size: 0.75rem;
   white-space: nowrap;
 }
@@ -135,7 +135,7 @@ body.modal-open {
   overscroll-behavior: contain;
 }
 :where(button, a, summary, input, select, textarea, [tabindex]):focus-visible {
-  outline: 3px solid #4f46e5;
+  outline: 3px solid var(--theme-primary, #4f46e5);
   outline-offset: 3px;
 }
 @media (max-width: 700px) {
@@ -221,7 +221,7 @@ body.modal-open {
   z-index: 20000;
   padding: 12px 18px;
   border-radius: 10px;
-  background: #312e81;
+  background: var(--theme-primary-hover, #312e81);
   color: white;
   transform: translateY(-200%);
 }
@@ -258,7 +258,7 @@ body.modal-open {
 .record-editor-context .record-editor-state {
   margin-top: 10px;
   font-size: 0.75rem;
-  color: #64748b;
+  color: var(--theme-muted, #64748b);
 }
 .record-editor-state[data-state="changed"] {
   color: #92400e;
@@ -267,10 +267,10 @@ body.modal-open {
   color: #4338ca;
 }
 .record-editor-review {
-  border: 1px solid #dce3f3;
+  border: 1px solid var(--theme-line, #dce3f3);
   border-radius: 14px;
   padding: 12px;
-  background: #fafbff;
+  background: var(--theme-surface-subtle, #fafbff);
 }
 .record-editor-review[hidden] {
   display: none;
@@ -298,7 +298,7 @@ body.modal-open {
 }
 .record-change-row span {
   font-size: 0.78rem;
-  color: #64748b;
+  color: var(--theme-muted, #64748b);
   white-space: pre-wrap;
 }
 .record-change-row span:last-child {
@@ -340,12 +340,12 @@ body.modal-open {
 }
 .record-editor-context {
   padding: 16px;
-  border: 1px solid #e0e7ff;
+  border: 1px solid var(--theme-primary-line, #e0e7ff);
   border-radius: 16px;
-  background: #f8faff;
+  background: var(--theme-surface-subtle, #f8faff);
 }
 .record-editor-context span {
-  color: #64748b;
+  color: var(--theme-muted, #64748b);
   font-size: 0.78rem;
 }
 .record-editor-context h4 {
@@ -355,7 +355,7 @@ body.modal-open {
 }
 .record-editor-context p {
   margin: 0;
-  color: #52617b;
+  color: var(--theme-muted, #52617b);
   font-size: 0.83rem;
 }
 .record-editor-actions {
@@ -366,7 +366,7 @@ body.modal-open {
   z-index: 2;
   background: #fff;
   padding: 14px 0;
-  border-top: 1px solid #e5eaf3;
+  border-top: 1px solid var(--theme-line, #e5eaf3);
 }
 .record-editor-actions button {
   min-height: 44px;
@@ -375,7 +375,7 @@ body.modal-open {
   min-width: 0;
   margin: 16px 0;
   padding: 16px;
-  border: 1px solid var(--border, #ddd);
+  border: 1px solid var(--border, var(--theme-line, #ddd));
   border-radius: 16px;
 }
 @media screen {
@@ -387,9 +387,9 @@ body.modal-open {
     margin: 0;
   }
   #app .header-actions > .header-home.is-active {
-    color: #c0141b;
-    background: #fef0f0;
-    border-color: #f3cdcf;
+    color: var(--theme-primary, #c0141b);
+    background: var(--theme-primary-soft, #fef0f0);
+    border-color: var(--theme-primary-line, #f3cdcf);
   }
   #app .workspace-bar.workspace-bar-compact {
     display: flex !important;
@@ -436,7 +436,7 @@ body.modal-open {
     flex-wrap: wrap;
     gap: 6px 16px;
     padding: 8px 2px;
-    color: #706b64;
+    color: var(--theme-muted, #706b64);
     font-size: 12px;
     line-height: 1.9;
   }
@@ -447,12 +447,12 @@ body.modal-open {
     gap: 4px;
     padding: 5px 10px;
     border-radius: 8px;
-    background: #fff1f1;
-    color: #a61b24;
+    background: var(--theme-primary-soft, #fff1f1);
+    color: var(--theme-primary, #a61b24);
   }
   #app .workspace-period-context > span + span {
-    background: #fff5db;
-    color: #805600;
+    background: var(--theme-teal-soft, #fff5db);
+    color: var(--theme-teal, #805600);
   }
   #app .workspace-period-context bdi {
     font-weight: 600;
@@ -464,10 +464,10 @@ body.modal-open {
     gap: 8px;
     min-height: 44px;
     padding: 8px 12px;
-    border: 1px solid #e5e2dd;
+    border: 1px solid var(--theme-line, #e5e2dd);
     border-radius: 10px;
-    background: #faf9f7;
-    color: #58595b;
+    background: var(--theme-surface-subtle, #faf9f7);
+    color: var(--theme-muted, #58595b);
     list-style: none;
   }
   #app .workspace-tools {
@@ -491,9 +491,9 @@ body.modal-open {
     overflow-y: auto;
     z-index: 50;
     background: #fff;
-    border: 1px solid #e5e2dd;
+    border: 1px solid var(--theme-line, #e5e2dd);
     border-radius: 12px;
-    box-shadow: 0 12px 32px #302c2426;
+    box-shadow: 0 12px 32px var(--theme-primary-shadow, #302c2426);
   }
   #app .header-actions .workspace-tool-group {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -587,9 +587,9 @@ body.modal-open {
     transform: rotate(45deg);
   }
   #app .workspace-tools[open] > summary {
-    background: #fef0f0;
-    border-color: #f3cdcf;
-    color: #c0141b;
+    background: var(--theme-primary-soft, #fef0f0);
+    border-color: var(--theme-primary-line, #f3cdcf);
+    color: var(--theme-primary, #c0141b);
   }
   .workspace-tools[open] > summary .workspace-tools-chevron {
     transform: rotate(225deg);
@@ -600,7 +600,7 @@ body.modal-open {
     gap: 8px;
     padding: 8px;
     margin-top: 8px;
-    border-color: #e5e2dd;
+    border-color: var(--theme-line, #e5e2dd);
     box-shadow: none;
   }
   #app .workspace-tools:not([open]) > .workspace-tool-actions {
@@ -623,20 +623,20 @@ body.modal-open {
     font-weight: 500;
     text-align: start;
     white-space: normal;
-    border: 1px solid #e5e2dd;
+    border: 1px solid var(--theme-line, #e5e2dd);
     border-radius: 8px;
     background: #fff;
-    color: #454649;
+    color: var(--theme-ink, #454649);
   }
   .workspace-tool-icon {
     display: inline-flex;
     flex: 0 0 22px;
-    color: #79522c;
+    color: var(--theme-primary, #79522c);
   }
   #app .workspace-tool-actions .workspace-tool-primary {
-    border-color: #f3cdcf;
-    background: #fef0f0;
-    color: #c0141b;
+    border-color: var(--theme-primary-line, #f3cdcf);
+    background: var(--theme-primary-soft, #fef0f0);
+    color: var(--theme-primary, #c0141b);
   }
   #app .workspace-tool-actions > #singleFileBadge {
     display: block;
@@ -684,7 +684,7 @@ body.modal-open {
   #modalBody .deletion-editor {
     display: grid;
     gap: 16px;
-    color: #454649;
+    color: var(--theme-ink, #454649);
   }
   #modalBody .deletion-editor p {
     margin: 0;
@@ -727,7 +727,7 @@ body.modal-open {
     gap: 4px;
     padding: 12px;
     border-radius: 12px;
-    background: #f7f6f4;
+    background: var(--theme-surface-muted, #f7f6f4);
   }
   .deletion-impact strong {
     font-size: 20px;
@@ -735,7 +735,7 @@ body.modal-open {
   .deletion-impact span,
   .deletion-backup-note {
     font-size: 12px;
-    color: #706b64;
+    color: var(--theme-muted, #706b64);
   }
   #modalBody .deletion-confirm {
     display: grid;
@@ -795,7 +795,7 @@ body.modal-open {
     flex-direction: column;
     align-items: stretch;
     gap: 18px;
-    color: #454649;
+    color: var(--theme-ink, #454649);
   }
   :is(#modalBody, #app) #courseEditor .course-grid {
     margin: 0;
@@ -816,9 +816,9 @@ body.modal-open {
   #app #courseEditor .course-pod-editor {
     min-width: 0;
     padding: 0 12px;
-    border: 1px solid #e5e2dd;
+    border: 1px solid var(--theme-line, #e5e2dd);
     border-radius: 12px;
-    background: #faf9f7;
+    background: var(--theme-surface-subtle, #faf9f7);
   }
   #app #courseEditor .course-pod-editor > summary {
     display: flex;
@@ -836,7 +836,7 @@ body.modal-open {
   }
   #app #courseEditor .course-pod-editor > summary::before {
     content: "+";
-    color: #c0141b;
+    color: var(--theme-primary, #c0141b);
   }
   #app #courseEditor .course-pod-editor[open] > summary::before {
     content: "−";
@@ -851,8 +851,8 @@ body.modal-open {
     grid-column: 1 / -1;
   }
   :is(#modalBody, #app) #courseEditor input[readonly] {
-    background: #f7f6f4;
-    color: #706b64;
+    background: var(--theme-surface-muted, #f7f6f4);
+    color: var(--theme-muted, #706b64);
   }
   :is(#modalBody, #app) #courseEditor .course-basic-fields > label:first-child {
     grid-column: 1 / -1;
@@ -867,8 +867,8 @@ body.modal-open {
     order: 2;
     margin: 0;
     padding: 14px;
-    border-color: #e5e2dd;
-    background: #faf9f7;
+    border-color: var(--theme-line, #e5e2dd);
+    background: var(--theme-surface-subtle, #faf9f7);
     border-radius: 14px;
   }
   :is(#modalBody, #app) #courseEditor .course-field {
@@ -885,22 +885,22 @@ body.modal-open {
   :is(#modalBody, #app) #courseEditor :is(input:not([type="hidden"]), select) {
     min-height: 48px;
     padding: 10px 12px;
-    border: 1px solid #d8d5cf;
+    border: 1px solid var(--theme-line, #d8d5cf);
     border-radius: 10px;
     background: #fff;
-    color: #303135;
+    color: var(--theme-ink, #303135);
     font-size: 16px;
     font-weight: 400;
   }
   :is(#modalBody, #app) #courseEditor :is(input, select):disabled {
-    background: #efeeeb;
-    color: #696863;
+    background: var(--theme-surface-muted, #efeeeb);
+    color: var(--theme-muted, #696863);
     opacity: 1;
   }
   :is(#modalBody, #app) #courseEditor :is(input, select):focus-visible {
-    outline: 2px solid #c0141b;
+    outline: 2px solid var(--theme-primary, #c0141b);
     outline-offset: 2px;
-    border-color: #c0141b;
+    border-color: var(--theme-primary, #c0141b);
   }
   :is(#modalBody, #app) #courseEditor [aria-invalid="true"] {
     border: 2px solid #b62f40;
@@ -910,13 +910,13 @@ body.modal-open {
     margin: 12px 0 0;
     padding: 0;
     background: none;
-    color: #706b64;
+    color: var(--theme-muted, #706b64);
     font-size: 12px;
     line-height: 1.9;
   }
   :is(#modalBody, #app) #courseEditor .course-policy-section {
     padding: 0 12px;
-    border-color: #e5e2dd;
+    border-color: var(--theme-line, #e5e2dd);
     border-radius: 12px;
     background: #fff;
   }
@@ -926,7 +926,7 @@ body.modal-open {
   :is(#modalBody, #app) #courseEditor .course-policy-section > summary {
     min-height: 50px;
     font-size: 13px;
-    color: #58595b;
+    color: var(--theme-muted, #58595b);
     flex-wrap: wrap;
   }
   :is(#modalBody, #app) #courseEditor #courseNames {
@@ -961,7 +961,7 @@ body.modal-open {
     gap: 10px;
     margin: 0;
     padding-top: 12px;
-    border-color: #e5e2dd;
+    border-color: var(--theme-line, #e5e2dd);
   }
   :is(#modalBody, #app) #courseEditor .record-editor-actions button {
     min-height: 48px;
@@ -1090,7 +1090,7 @@ body.modal-open {
   line-height: 1.8;
 }
 .course-simple-editor .course-policy-section > summary::before {
-  color: var(--workflow-accent, #c0141b);
+  color: var(--workflow-accent, var(--theme-primary, #c0141b));
 }
 .course-main-policy > legend {
   padding: 0 8px;
@@ -1100,7 +1100,7 @@ body.modal-open {
   margin: 12px 0;
   padding: 12px;
   border-radius: 12px;
-  background: var(--workflow-accent-soft, #fef0f0);
+  background: var(--workflow-accent-soft, var(--theme-primary-soft, #fef0f0));
   line-height: 1.9;
 }
 .course-simple-editor .course-policy-section > summary {
@@ -1108,7 +1108,7 @@ body.modal-open {
   align-content: center;
 }
 .course-policy-section {
-  border: 1px solid #e5eaf3;
+  border: 1px solid var(--theme-line, #e5eaf3);
   border-radius: 14px;
   padding: 12px;
 }
@@ -1136,7 +1136,7 @@ body.modal-open {
 }
 .course-policy-section > summary::before {
   content: "+";
-  color: #4f46e5;
+  color: var(--theme-primary, #4f46e5);
   font-size: 1.25rem;
 }
 .course-policy-section[open] > summary::before {
@@ -1196,8 +1196,8 @@ body.modal-open {
     flex: 0 0 38px;
     height: 38px;
     border-radius: 11px;
-    color: var(--workflow-accent, #c0141b);
-    background: var(--workflow-accent-soft, #fef0f0);
+    color: var(--workflow-accent, var(--theme-primary, #c0141b));
+    background: var(--workflow-accent-soft, var(--theme-primary-soft, #fef0f0));
   }
   .today-agenda-heading > div {
     flex: 1;
@@ -1210,7 +1210,7 @@ body.modal-open {
   .today-agenda-heading p {
     margin: 3px 0 0;
     font-size: 12px;
-    color: var(--workflow-muted, #706b64);
+    color: var(--workflow-muted, var(--theme-muted, #706b64));
   }
   #app .today-agenda-heading > button {
     min-height: 44px;
@@ -1224,7 +1224,7 @@ body.modal-open {
     align-items: center;
     gap: 10px;
     padding-block: 12px;
-    border-top: 1px solid #ece9e4;
+    border-top: 1px solid var(--theme-line-soft, #ece9e4);
   }
   .today-agenda-list {
     margin-top: 12px;
@@ -1241,8 +1241,8 @@ body.modal-open {
     padding: 4px 7px;
     box-sizing: border-box;
     border-radius: 9px;
-    background: #f3f0eb;
-    color: #66553e;
+    background: var(--theme-primary-soft, #f3f0eb);
+    color: var(--theme-muted, #66553e);
     font-size: 12px;
     white-space: nowrap;
   }
@@ -1257,7 +1257,7 @@ body.modal-open {
   }
   .today-agenda-copy p {
     margin: 2px 0 0;
-    color: var(--workflow-muted, #706b64);
+    color: var(--workflow-muted, var(--theme-muted, #706b64));
     font-size: 12px;
     line-height: 1.7;
   }
@@ -1283,7 +1283,7 @@ body.modal-open {
   }
   .today-agenda-empty {
     margin: 14px 0 0;
-    color: var(--workflow-muted, #706b64);
+    color: var(--workflow-muted, var(--theme-muted, #706b64));
     font-size: 12px;
     line-height: 1.9;
   }

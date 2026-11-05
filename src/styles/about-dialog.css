@@ -18,19 +18,23 @@
     align-items: center;
     gap: 16px;
     padding: 20px;
-    border: 1px solid #f4d7bd;
+    border: 1px solid var(--theme-primary-line);
     border-radius: 16px;
-    background: linear-gradient(125deg, #fff6e4, #fff0ec);
+    background: linear-gradient(
+      125deg,
+      var(--theme-primary-soft),
+      var(--theme-teal-soft)
+    );
   }
   .about-mark {
     display: grid;
     place-items: center;
     flex: 0 0 56px;
     height: 56px;
-    color: #fff;
+    color: var(--theme-surface);
     background: var(--workflow-accent);
     border-radius: 16px;
-    box-shadow: 0 6px 16px #c0141b20;
+    box-shadow: 0 6px 16px var(--theme-primary-shadow);
   }
   .about-mark svg {
     width: 30px;
@@ -38,13 +42,13 @@
   }
   .about-eyebrow {
     font-size: 11px;
-    color: #8a6454;
+    color: var(--theme-muted);
   }
   :is(#modalBody, #deputyAboutBody) .about-hero h4 {
     margin: 3px 0 5px;
     font-size: 27px;
     line-height: 1.5;
-    color: #9d2426;
+    color: var(--theme-primary-hover);
   }
   .about-features {
     display: flex;
@@ -55,8 +59,8 @@
     padding: 5px 9px;
     border: 1px solid var(--workflow-line);
     border-radius: 20px;
-    background: #faf9f7;
-    color: #71665a;
+    background: var(--theme-surface-subtle);
+    color: var(--theme-muted);
     font-size: 10px;
   }
   .about-section {
@@ -77,7 +81,7 @@
     min-height: 44px;
     margin-top: 12px;
     padding: 8px 12px;
-    border: 1px solid #f3cdcf;
+    border: 1px solid var(--theme-primary-line);
     border-radius: 10px;
     background: var(--workflow-soft);
     color: var(--workflow-accent);
@@ -85,7 +89,7 @@
     font-size: 13px;
   }
   .about-project-link:hover {
-    background: #fbe4e4;
+    background: var(--theme-primary-line);
   }
   .about-contact-list {
     display: grid;
@@ -102,7 +106,7 @@
     padding: 10px 12px;
     border: 1px solid var(--workflow-line);
     border-radius: 10px;
-    background: #faf9f7;
+    background: var(--theme-surface-subtle);
     color: var(--workflow-ink);
     font-size: 12px;
     text-decoration: none;
@@ -117,7 +121,7 @@
   }
   .about-contact-link:hover {
     background: var(--workflow-soft);
-    border-color: #f3cdcf;
+    border-color: var(--theme-primary-line);
   }
   .about-contact-link:focus-visible {
     outline: 2px solid var(--workflow-accent);
@@ -138,7 +142,7 @@
     text-align: center;
     padding: 18px;
     border-radius: 14px;
-    background: #f7f6f3;
+    background: var(--theme-canvas);
   }
   .about-signature > span {
     font-size: 11px;
@@ -146,7 +150,7 @@
   }
   .about-signature > strong {
     font-size: 20px;
-    color: #76542f;
+    color: var(--theme-primary-hover);
   }
   .about-actions {
     display: flex;
@@ -187,7 +191,7 @@
     padding: 0;
     border: 1px solid var(--workflow-line);
     border-radius: 18px;
-    background: #fff;
+    background: var(--theme-surface);
     color: var(--workflow-ink);
     box-shadow: 0 24px 80px #17233733;
     overflow: hidden;
@@ -206,7 +210,7 @@
     flex-shrink: 0;
     padding: 12px 18px;
     gap: 12px;
-    background: #faf9f7;
+    background: var(--theme-surface-subtle);
     border-bottom: 1px solid var(--workflow-line);
   }
   :is(#modal:has(.about-app), #deputyAboutDialog) .modal-header h3 {
@@ -226,8 +230,8 @@
     padding: 0;
     border: 0;
     border-radius: 12px;
-    background: #eaeef6;
-    color: #364665;
+    background: var(--theme-surface-muted);
+    color: var(--theme-ink);
     font-size: 24px;
     cursor: pointer;
   }
@@ -244,7 +248,7 @@
     padding: 10px 14px;
     border: 1px solid var(--workflow-line);
     border-radius: 10px;
-    background: #fff;
+    background: var(--theme-surface);
     color: var(--workflow-ink);
     font-family: inherit;
     font-weight: 500;
@@ -266,13 +270,13 @@
     line-height: 1.8;
   }
   :is(#modalBody, #deputyAboutBody) .about-app .about-actions button.ghost {
-    background: #f4f3f1;
-    color: #454649;
+    background: var(--theme-surface-muted);
+    color: var(--theme-ink);
   }
   :is(#modalBody, #deputyAboutBody)
     .about-app
     .about-actions
     button.ghost:hover {
-    background: #eae8e4;
+    background: var(--theme-surface-muted);
   }
 }

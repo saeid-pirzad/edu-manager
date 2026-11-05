@@ -48,13 +48,13 @@
     button.ui-button-flat[data-ui-tone] {
     min-height: 44px !important;
     padding: 8px 12px;
-    border: 1px solid var(--button-line, #dce0e6);
+    border: 1px solid var(--button-line, #e5d9cc);
     border-radius: 10px;
     font-weight: 500;
     line-height: 1.7;
-    background: var(--button-soft, #f3f4f6) !important;
-    color: var(--button-ink, #596270) !important;
-    border-color: var(--button-line, #dce0e6) !important;
+    background: var(--button-soft, #f2ebe3) !important;
+    color: var(--button-ink, #6b5c50) !important;
+    border-color: var(--button-line, #e5d9cc) !important;
     box-shadow: none;
     transition:
       background-color 150ms,
@@ -62,7 +62,13 @@
       box-shadow 150ms;
   }
   [data-ui-tone="create"],
-  [data-ui-tone="save"],
+  [data-ui-tone="save"] {
+    --button-ink: var(--theme-primary);
+    --button-fill: var(--theme-primary);
+    --button-hover: var(--theme-primary-hover);
+    --button-soft: var(--theme-primary-soft);
+    --button-line: var(--theme-primary-line);
+  }
   [data-ui-tone="excel"] {
     --button-ink: #16664e;
     --button-fill: #19775c;
@@ -73,29 +79,29 @@
   [data-ui-tone="download"],
   [data-ui-tone="print"],
   [data-ui-tone="navigate"] {
-    --button-ink: #285c96;
-    --button-fill: #3267a2;
-    --button-hover: #265180;
-    --button-soft: #edf4ff;
-    --button-line: #c6d9f1;
+    --button-ink: var(--theme-primary);
+    --button-fill: var(--theme-primary);
+    --button-hover: var(--theme-primary-hover);
+    --button-soft: var(--theme-primary-soft);
+    --button-line: var(--theme-primary-line);
   }
   [data-ui-tone="upload"],
   [data-ui-tone="share"],
   [data-ui-tone="copy"] {
-    --button-ink: #65509b;
-    --button-fill: #7056a3;
-    --button-hover: #584180;
-    --button-soft: #f3effb;
-    --button-line: #d9ceee;
+    --button-ink: #80465c;
+    --button-fill: #8b4a60;
+    --button-hover: #6c354a;
+    --button-soft: #f8edf1;
+    --button-line: #e7cbd5;
   }
   [data-ui-tone="edit"],
   [data-ui-tone="settings"],
   [data-ui-tone="report"] {
-    --button-ink: #80551e;
-    --button-fill: #8b6029;
-    --button-hover: #6d491e;
-    --button-soft: #fff5e6;
-    --button-line: #ead7b7;
+    --button-ink: var(--theme-teal);
+    --button-fill: var(--theme-teal);
+    --button-hover: var(--theme-secondary-hover);
+    --button-soft: var(--theme-teal-soft);
+    --button-line: var(--theme-teal-line);
   }
   [data-ui-tone="danger"] {
     --button-ink: #ad3342;
@@ -105,11 +111,11 @@
     --button-line: #efc7ce;
   }
   [data-ui-tone="neutral"] {
-    --button-ink: #596270;
-    --button-fill: #626c79;
-    --button-hover: #4c5561;
-    --button-soft: #f3f4f6;
-    --button-line: #dce0e6;
+    --button-ink: #6b5c50;
+    --button-fill: var(--theme-muted);
+    --button-hover: #584a40;
+    --button-soft: var(--theme-surface-muted);
+    --button-line: var(--theme-line);
   }
   :is(#app, #modal, #calPopup, #mobileBar, #pwaWelcome)
     button.ui-button-flat[data-ui-variant="solid"] {
@@ -155,7 +161,7 @@
   }
   /* Grade erasers have their own size and a quiet, separated action area. */
   :is(#app, #modal) .grade-editor button.grade-clear.ui-button {
-    --button-ink: #8c8173;
+    --button-ink: #958476;
     --button-soft: transparent;
     --button-line: transparent;
     position: relative;
@@ -181,7 +187,7 @@
     top: 50%;
     width: 1px;
     height: 16px;
-    background: #e8e2d8;
+    background: var(--theme-line);
     transform: translateY(-50%);
     pointer-events: none;
   }
@@ -199,7 +205,7 @@
   }
   :is(#app, #modal, #calPopup, #mobileBar, #pwaWelcome)
     button.ui-button-flat:focus-visible {
-    outline: 2px solid var(--button-ink, #79522c);
+    outline: 2px solid var(--button-ink, var(--theme-focus));
     outline-offset: 3px;
   }
   :is(#app, #modal, #calPopup, #mobileBar, #pwaWelcome)
@@ -236,10 +242,10 @@
     width: 28px;
     height: 28px;
     padding: 0;
-    border: 1px solid #d3dfef;
+    border: 1px solid var(--theme-primary-line);
     border-radius: 8px;
-    color: #3267a2;
-    background-color: #edf4ff;
+    color: var(--theme-primary);
+    background-color: var(--theme-primary-soft);
     background-image:
       linear-gradient(currentColor, currentColor),
       linear-gradient(currentColor, currentColor);

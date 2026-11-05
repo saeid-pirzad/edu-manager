@@ -8,7 +8,7 @@
 }
 .periodic-session .report-session-identity h4 {
   margin: 0 0 4px;
-  color: #293750;
+  color: var(--theme-ink, #293750);
   font-size: 0.95rem;
   overflow-wrap: anywhere;
 }
@@ -16,13 +16,13 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  color: #64748b;
+  color: var(--theme-muted, #64748b);
   font-size: 0.75rem;
 }
 .report-session-date svg {
   width: 17px;
   height: 17px;
-  color: #8978b4;
+  color: var(--theme-primary, #8978b4);
 }
 .report-session-identity {
   padding: 15px 0;
@@ -30,8 +30,8 @@
 .report-session-period {
   flex-shrink: 0;
   padding: 5px 11px;
-  background: #eeebfa;
-  color: #65509b;
+  background: var(--theme-primary-soft, #eeebfa);
+  color: var(--theme-primary, #65509b);
   border-radius: 9px;
   font-size: 0.78rem;
   font-weight: 700;
@@ -43,7 +43,7 @@
   gap: 5px 16px;
   margin: 0;
   font-size: 0.82rem;
-  color: #52617b;
+  color: var(--theme-muted, #52617b);
   overflow-wrap: anywhere;
 }
 .report-session-lesson small {
@@ -51,19 +51,19 @@
 }
 .report-session-teacher {
   margin: 9px 0 0;
-  color: #7c8596;
+  color: var(--theme-muted, #7c8596);
   font-size: 0.72rem;
 }
 .report-session-teacher b {
   font-weight: 500;
-  color: #52617b;
+  color: var(--theme-muted, #52617b);
 }
 .report-session-counts {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 6px;
   margin: 0;
-  border-top: 1px solid #eeedf4;
+  border-top: 1px solid var(--theme-line-soft, #eeedf4);
   padding-top: 12px;
 }
 .report-session-counts .report-metric {
@@ -117,7 +117,7 @@
   margin-top: 14px;
 }
 .report-session-students > li + li {
-  border-top: 1px solid #edf0f6;
+  border-top: 1px solid var(--theme-line-soft, #edf0f6);
 }
 .report-session-student-heading {
   display: flex;
@@ -144,7 +144,7 @@
 }
 .report-session-scores li {
   padding: 8px 10px;
-  border-inline-start: 2px solid #e7e3dc;
+  border-inline-start: 2px solid var(--theme-line, #e7e3dc);
   border-radius: 0;
   background: transparent;
   font-size: 0.76rem;
@@ -152,12 +152,12 @@
 }
 .report-session-scores strong {
   margin-inline-start: 10px;
-  color: #51418b;
+  color: var(--theme-primary, #51418b);
 }
 .report-session-scores p {
   margin: 5px 0 0;
   white-space: pre-wrap;
-  color: #64748b;
+  color: var(--theme-muted, #64748b);
 }
 
 @media screen {
@@ -170,7 +170,7 @@
     white-space: nowrap;
   }
   .periodic-controls > p {
-    color: #64748b;
+    color: var(--theme-muted, #64748b);
     font-size: 0.75rem;
     line-height: 1.9;
   }
@@ -186,7 +186,7 @@
     gap: 7px;
     min-width: 0;
     font-size: 0.74rem;
-    color: #52617b;
+    color: var(--theme-muted, #52617b);
   }
   .periodic-control-grid input,
   .periodic-control-grid select,
@@ -216,7 +216,7 @@
     margin-bottom: 14px;
     border-radius: 0;
     background: transparent;
-    color: #263853;
+    color: var(--theme-ink, #263853);
     min-width: 0;
   }
   .report-heading-tags {
@@ -235,11 +235,11 @@
   }
   .report-audience-tag {
     background: transparent;
-    color: #365b92;
+    color: var(--theme-primary, #365b92);
   }
   .report-detail-tag {
     background: transparent;
-    color: #675787;
+    color: var(--theme-primary, #675787);
   }
   .report-heading-identity {
     display: flex;
@@ -259,8 +259,8 @@
     width: 46px;
     height: 46px;
     flex-shrink: 0;
-    background: #e7eefb;
-    color: #496b9f;
+    background: var(--theme-primary-soft, #e7eefb);
+    color: var(--theme-primary, #496b9f);
     border-radius: 12px;
   }
   .report-heading-symbol svg {
@@ -278,7 +278,7 @@
     font-weight: 500;
     line-height: 1.9;
     margin: 0;
-    color: #536680;
+    color: var(--theme-muted, #536680);
     overflow-wrap: anywhere;
   }
   .report-heading-date {
@@ -292,7 +292,7 @@
   .report-heading-date > svg {
     width: 16px;
     height: 16px;
-    color: #6b81a4;
+    color: var(--theme-primary, #6b81a4);
     flex-shrink: 0;
   }
   .report-heading-date > span {
@@ -304,12 +304,12 @@
   .report-heading-date small {
     display: none;
     font-size: 11px;
-    color: #64748b;
+    color: var(--theme-muted, #64748b);
   }
   .report-heading-date strong {
     font-size: 13px;
     line-height: 1.9;
-    color: #344e74;
+    color: var(--theme-muted, #344e74);
     overflow-wrap: anywhere;
   }
   .report-heading-context {
@@ -323,20 +323,20 @@
     padding: 0;
     border-radius: 0;
     background: transparent;
-    color: #54677f;
+    color: var(--theme-muted, #54677f);
     font-size: 11px;
     line-height: 1.8;
   }
   .report-heading-scope {
     font-size: 12px;
-    color: #4e617a;
+    color: var(--theme-muted, #4e617a);
     line-height: 1.9;
     margin: 10px 0 0;
     overflow-wrap: anywhere;
   }
   .report-heading-prepared {
     margin: 6px 0 0;
-    color: #64748b;
+    color: var(--theme-muted, #64748b);
     font-size: 11px;
     line-height: 1.9;
     overflow-wrap: anywhere;
@@ -358,9 +358,9 @@
     margin: 0;
     padding: 10px;
     border-radius: 10px;
-    border: 1px solid #dce4ef;
+    border: 1px solid var(--theme-line, #dce4ef);
     background: #fff;
-    color: #50647e;
+    color: var(--theme-muted, #50647e);
     font-size: 12px;
     font-weight: 500;
     line-height: 1.6;
@@ -370,17 +370,17 @@
     .periodic-document
     .periodic-export-actions
     > button[data-periodic-print] {
-    border-color: #365b92;
-    background: #365b92;
+    border-color: var(--theme-primary, #365b92);
+    background: var(--theme-primary, #365b92);
     color: #fff;
   }
   #app
     .periodic-document
     .periodic-export-actions
     > button[data-periodic-excel] {
-    background: #edf7f1;
-    border-color: #cce4d6;
-    color: #246c4f;
+    background: var(--theme-teal-soft, #edf7f1);
+    border-color: var(--theme-teal-line, #cce4d6);
+    color: var(--theme-teal, #246c4f);
   }
   #app
     .periodic-document
@@ -389,7 +389,7 @@
     filter: brightness(0.96);
   }
   #app .periodic-document .periodic-export-actions > button:focus-visible {
-    outline: 2px solid #536fba;
+    outline: 2px solid var(--theme-primary, #536fba);
     outline-offset: 3px;
   }
   .periodic-export-actions svg {
@@ -416,7 +416,7 @@
   .periodic-method {
     font-size: 0.72rem;
     line-height: 1.9;
-    color: #64748b;
+    color: var(--theme-muted, #64748b);
     padding: 10px 0;
   }
   .periodic-document > h3 {
@@ -427,7 +427,7 @@
     padding: 20px 0;
     margin-block: 20px;
     border: 0;
-    border-top: 1px solid #e5e4f0;
+    border-top: 1px solid var(--theme-line, #e5e4f0);
     border-radius: 0;
     background: transparent;
     box-shadow: none;
@@ -438,7 +438,7 @@
   }
   .periodic-session > p {
     font-size: 0.74rem;
-    color: #64748b;
+    color: var(--theme-muted, #64748b);
   }
   .periodic-document td {
     white-space: pre-wrap;
@@ -589,7 +589,7 @@
   margin: 6px 0 16px;
   font-size: 12px;
   line-height: 1.9;
-  color: #68768a;
+  color: var(--theme-muted, #68768a);
 }
 details.report-class-group:not([open]) > .report-class-body {
   display: none;
@@ -601,13 +601,13 @@ details.report-class-group:not([open]) > .report-class-body {
   cursor: pointer;
   border: 0;
   border-radius: 12px;
-  background: #f2f5fb;
+  background: var(--theme-surface-muted, #f2f5fb);
 }
 .report-class-toggle::-webkit-details-marker {
   display: none;
 }
 .report-class-toggle:focus-visible {
-  outline: 2px solid #536fba;
+  outline: 2px solid var(--theme-primary, #536fba);
   outline-offset: 3px;
 }
 .report-class-toggle > div {
@@ -617,7 +617,7 @@ details.report-class-group:not([open]) > .report-class-body {
   width: 20px;
   height: 20px;
   flex-shrink: 0;
-  color: #53678d;
+  color: var(--theme-muted, #53678d);
   transition: transform 160ms ease;
 }
 .report-class-group[open] > .report-class-toggle .report-class-chevron {
@@ -641,21 +641,21 @@ details.report-class-group:not([open]) > .report-class-body {
   gap: 12px;
   padding: 12px 0;
   background: transparent;
-  border-bottom: 1px solid #e5e9f3;
+  border-bottom: 1px solid var(--theme-line, #e5e9f3);
 }
 .report-class-heading > div {
   min-width: 0;
 }
 .report-class-heading h4 {
   margin: 0;
-  color: #343d6d;
+  color: var(--theme-primary-hover, #343d6d);
   font-size: 15px;
   overflow-wrap: anywhere;
 }
 .report-class-heading p {
   margin: 4px 0 0;
   font-size: 11px;
-  color: #62718a;
+  color: var(--theme-muted, #62718a);
   line-height: 1.8;
 }
 .report-class-icon {
@@ -664,8 +664,8 @@ details.report-class-group:not([open]) > .report-class-body {
   display: grid;
   place-items: center;
   border-radius: 12px;
-  color: #5951a3;
-  background: #eae7fa;
+  color: var(--theme-primary, #5951a3);
+  background: var(--theme-primary-soft, #eae7fa);
 }
 .report-class-icon svg {
   width: 24px;
@@ -684,7 +684,7 @@ details.report-class-group:not([open]) > .report-class-body {
   padding: 16px 0;
 }
 .report-student-row + .report-student-row {
-  border-top: 1px solid #edf0f5;
+  border-top: 1px solid var(--theme-line-soft, #edf0f5);
 }
 .report-student-identity {
   min-width: 0;
@@ -694,13 +694,13 @@ details.report-class-group:not([open]) > .report-class-body {
   display: block;
   font-size: 13px;
   line-height: 1.9;
-  color: #25364f;
+  color: var(--theme-ink, #25364f);
 }
 .report-student-identity small {
   display: block;
   margin-top: 3px;
   font-size: 11px;
-  color: #6c798c;
+  color: var(--theme-muted, #6c798c);
 }
 .report-student-metrics {
   display: grid;
@@ -717,7 +717,7 @@ details.report-class-group:not([open]) > .report-class-body {
   padding: 7px 3px;
   border-radius: 0;
   background: transparent;
-  color: #526176;
+  color: var(--theme-muted, #526176);
 }
 .report-metric dt {
   font-size: 10px;
@@ -730,8 +730,8 @@ details.report-class-group:not([open]) > .report-class-body {
   font-variant-numeric: tabular-nums;
 }
 .report-metric-sessions {
-  background: #edf3ff;
-  color: #315dab;
+  background: var(--theme-primary-soft, #edf3ff);
+  color: var(--theme-primary, #315dab);
 }
 .report-metric-unknown {
   background: #eef2f7;
@@ -772,7 +772,7 @@ details.report-class-group:not([open]) > .report-class-body {
   }
   .report-student-row + .report-student-row {
     margin-top: 0;
-    border-top: 1px solid #edf0f5;
+    border-top: 1px solid var(--theme-line-soft, #edf0f5);
   }
   .report-student-metrics {
     grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -795,8 +795,8 @@ details.report-class-group:not([open]) > .report-class-body {
     padding: 3px 7px;
     margin: 0;
     border-radius: 6px;
-    background: #f2f5fb;
-    color: #62718a;
+    background: var(--theme-surface-muted, #f2f5fb);
+    color: var(--theme-muted, #62718a);
     font-size: 11px;
     line-height: 1.8;
     max-width: 100%;
@@ -925,7 +925,7 @@ details.report-class-group:not([open]) > .report-class-body {
 .report-session-disclosure {
   margin-top: 20px;
   padding-top: 16px;
-  border-top: 1px solid #e0e6ef;
+  border-top: 1px solid var(--theme-line, #e0e6ef);
   min-width: 0;
 }
 .report-session-toggle {
@@ -935,8 +935,8 @@ details.report-class-group:not([open]) > .report-class-body {
   min-height: 64px;
   padding: 12px 14px;
   border-radius: 12px;
-  background: #f6f7fb;
-  color: #334660;
+  background: var(--theme-surface-muted, #f6f7fb);
+  color: var(--theme-muted, #334660);
   cursor: pointer;
   list-style: none;
 }
@@ -944,7 +944,7 @@ details.report-class-group:not([open]) > .report-class-body {
   display: none;
 }
 .report-session-toggle:focus-visible {
-  outline: 2px solid #536fba;
+  outline: 2px solid var(--theme-primary, #536fba);
   outline-offset: 3px;
 }
 .report-session-toggle-label {
@@ -960,7 +960,7 @@ details.report-class-group:not([open]) > .report-class-body {
 }
 .report-session-toggle-label small {
   font-size: 11px;
-  color: #6b778d;
+  color: var(--theme-muted, #6b778d);
   line-height: 1.8;
 }
 .report-session-toggle-icon {
@@ -970,8 +970,8 @@ details.report-class-group:not([open]) > .report-class-body {
   height: 36px;
   border-radius: 10px;
   flex-shrink: 0;
-  background: #e8edf7;
-  color: #536f9b;
+  background: var(--theme-primary-soft, #e8edf7);
+  color: var(--theme-primary, #536f9b);
 }
 .report-session-toggle-icon svg {
   width: 21px;
@@ -1030,7 +1030,7 @@ details.report-class-group:not([open]) > .report-class-body {
   .report-heading-context > span + span::before {
     content: "·";
     margin-inline-end: 6px;
-    color: #94a3b8;
+    color: var(--theme-muted, #94a3b8);
   }
 }
 
@@ -1043,9 +1043,9 @@ details.report-class-group:not([open]) > .report-class-body {
     .periodic-document
     .periodic-export-actions
     > button[data-periodic-excel-share] {
-    background: #eef3fb;
-    border-color: #d2dff2;
-    color: #365b92;
+    background: var(--theme-primary-soft, #eef3fb);
+    border-color: var(--theme-primary-line, #d2dff2);
+    color: var(--theme-primary, #365b92);
   }
   #modal:has(.report-excel-share) .modal-dialog {
     width: min(100%, 500px);
@@ -1054,7 +1054,7 @@ details.report-class-group:not([open]) > .report-class-body {
   }
   #modal:has(.report-excel-share) .modal-header {
     padding: 14px 18px;
-    background: #faf9f7;
+    background: var(--theme-surface-subtle, #faf9f7);
   }
   #modal:has(.report-excel-share) .modal-header h3 {
     min-width: 0;
@@ -1084,8 +1084,8 @@ details.report-class-group:not([open]) > .report-class-body {
     flex: 0 0 44px;
     height: 44px;
     border-radius: 12px;
-    background: #edf7f1;
-    color: #246c4f;
+    background: var(--theme-teal-soft, #edf7f1);
+    color: var(--theme-teal, #246c4f);
   }
   .report-share-heading > div {
     min-width: 0;
@@ -1107,7 +1107,7 @@ details.report-class-group:not([open]) > .report-class-body {
     gap: 8px;
     min-width: 0;
     padding: 14px;
-    background: #f7f6f3;
+    background: var(--theme-surface-subtle, #f7f6f3);
     border: 1px solid var(--workflow-line);
     border-radius: 12px;
     color: var(--workflow-muted);

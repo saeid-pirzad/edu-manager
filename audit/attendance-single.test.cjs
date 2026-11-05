@@ -97,6 +97,26 @@ for (const answer of ["-1", "1.5", "1000"]) {
     assert.equal(Object.keys(f.session.attendance).length + f.writes.length, 0);
   });
 }
+for (const minutes of [0, 999]) {
+  test(`lateness boundary ${minutes} keeps the stored raw value, visible duration and toggle semantics`, async () => {
+    const f = fixture();
+    f.c.prompt = () => String(minutes);
+    await f.c.toggleAttendanceV24(f.controls[2], "late");
+    assert.equal(f.session.attendance.historical, "late:" + minutes);
+    assert.equal(f.controls[2].textContent, "تأخیر (" + minutes + "د)");
+    assert.equal(f.controls[2].getAttribute("aria-pressed"), "true");
+    assert.equal(f.writes.length, 1);
+    assert.equal(f.writes[0].sessionId, "session");
+    f.c.prompt = () => {
+      throw Error("An already selected delay must clear without prompting");
+    };
+    await f.c.toggleAttendanceV24(f.controls[2], "late");
+    assert.equal(f.session.attendance.historical, undefined);
+    assert.equal(f.controls[2].textContent, "تأخیر");
+    assert.equal(f.controls[2].getAttribute("aria-pressed"), "false");
+    assert.equal(f.writes.length, 2);
+  });
+}
 test("Persian lateness digits are normalized", async () => {
   const f = fixture();
   f.c.prompt = () => "۲۰";

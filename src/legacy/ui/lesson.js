@@ -179,7 +179,9 @@ function renderLessonSessions(
     esc(selection.summary) +
     "</p></section>";
   h +=
-    '<section class="card session-directory"><header class="session-list-heading"><div><h3>جلسات درس <span class="lesson-count">' +
+    '<section class="card session-directory"><header class="session-list-heading directory-heading"><div><h3><span class="session-directory-symbol directory-symbol" aria-hidden="true">' +
+    EduIcons.html("calendar") +
+    '</span>جلسات درس <span class="lesson-count">' +
     sessions.length.toLocaleString("fa-IR") +
     "</span></h3><p>" +
     (annual
@@ -217,13 +219,13 @@ function renderLessonSessions(
       EduIcons.html("calendar") +
       '</span><span class="session-date"><strong>' +
       esc(faDate(session.date)) +
-      '</strong><span class="session-period">زنگ ' +
+      '</strong><span class="session-date-meta"><span class="session-period">زنگ ' +
       (session.period + 1).toLocaleString("fa-IR") +
-      "</span></span>" +
+      "</span>" +
       (session.date === todayISO()
         ? '<span class="session-today">امروز</span>'
         : "") +
-      "</span>";
+      "</span></span></span>";
     if (pod || unit)
       h +=
         '<span class="session-unit">' +
