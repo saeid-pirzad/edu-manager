@@ -927,32 +927,43 @@ th {
   z-index: 10000;
   background: var(--theme-surface, #fff);
   border: 1px solid var(--theme-line, #e4e4e7);
-  border-radius: 12px;
+  border-radius: 16px;
   box-shadow: var(--theme-shadow-lg, 0 10px 30px rgba(0, 0, 0, 0.15));
-  padding: 14px;
-  width: 300px;
+  box-sizing: border-box;
+  padding: 12px;
+  width: min(336px, calc(100vw - 24px));
+  max-height: calc(var(--app-viewport, 100dvh) - 24px);
+  overflow-y: auto;
   display: none;
   user-select: none;
   font-family: "IRANSans", Tahoma, sans-serif;
-  font-size: 1rem;
+  font-size: 14px;
   direction: rtl;
 }
 .cal-popup.open {
   display: block;
 }
-.cal-header {
-  display: flex;
-  justify-content: space-between;
+#calPopup .cal-header {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
   align-items: center;
   margin-bottom: 10px;
   gap: 6px;
+  padding: 3px;
+  border: 1px solid var(--theme-secondary-line);
+  border-radius: 12px;
+  background: var(--theme-secondary-soft);
 }
-.cal-header button {
-  background: var(--theme-primary, #c0141b);
-  color: #fff;
+#calPopup .cal-header button {
+  display: grid;
+  place-items: center;
+  background: var(--theme-surface, #fff);
+  color: var(--theme-primary, #c0141b);
   border: 0;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  box-shadow: none;
   border-radius: 8px;
   cursor: pointer;
   font-size: 1.3em;
@@ -961,11 +972,15 @@ th {
   padding: 0;
   flex-shrink: 0;
 }
-.cal-header button:hover {
-  background: var(--theme-primary-hover, #921019);
+#calPopup .cal-header button:hover {
+  background: var(--theme-primary-soft, #fef0f0);
+}
+#calPopup .cal-header button svg {
+  width: 20px;
+  height: 20px;
 }
 .cal-title {
-  font-weight: 700;
+  font-weight: 600;
   color: var(--theme-ink, #2d3440);
   font-size: 1em;
   text-align: center;
@@ -974,8 +989,8 @@ th {
 }
 .cal-weekdays {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
   margin-bottom: 6px;
 }
 .cal-weekdays div {
@@ -988,31 +1003,48 @@ th {
 }
 .cal-days {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
 }
-.cal-days button {
+#calPopup .cal-days button {
   background: transparent;
   border: 0;
-  padding: 8px 0;
-  border-radius: 6px;
+  min-width: 0;
+  min-height: 44px;
+  margin: 0;
+  padding: 6px 0;
+  border-radius: 9px;
   cursor: pointer;
   font-family: "IRANSans", Tahoma, sans-serif;
   font-size: 0.9em;
   color: var(--theme-ink, #2d3440);
   transition: 0.15s;
+  font-variant-numeric: tabular-nums;
 }
-.cal-days button:hover {
+#calPopup
+  .cal-days[data-session-calendar]
+  button:not(:disabled):not(.selected) {
+  background: var(--status-success-soft, #eaf6f0);
+  color: var(--status-success, #16664e);
+  box-shadow: inset 0 0 0 1px var(--status-success-line, #bfded0);
+  font-weight: 600;
+}
+#calPopup
+  .cal-days[data-session-calendar]
+  button:not(:disabled):not(.selected):hover {
+  background: var(--status-success-line, #bfded0);
+}
+#calPopup .cal-days button:not(:disabled):not(.selected):hover {
   background: var(--theme-primary-soft, #fef0f0);
   color: var(--theme-primary, #c0141b);
 }
-.cal-days button.today {
+#calPopup .cal-days button.today {
   background: var(--theme-secondary-soft, #fffaed);
   color: var(--theme-secondary, #7c5105);
   box-shadow: inset 0 0 0 1px var(--theme-secondary-line, #f2d39a);
   font-weight: 700;
 }
-.cal-days button.selected {
+#calPopup .cal-days button.selected {
   background: var(--theme-primary, #c0141b);
   color: #fff;
   box-shadow: inset 0 0 0 1px var(--theme-primary, #c0141b);
@@ -1028,6 +1060,15 @@ th {
   font-size: 0.85em;
   color: var(--theme-muted, #5a6179);
   font-family: "IRANSans", Tahoma, sans-serif;
+  padding-top: 10px;
+  border-top: 1px solid var(--theme-line-soft);
+}
+.cal-policy-note {
+  margin-top: 8px;
+  color: var(--theme-muted);
+  font-size: 10px;
+  line-height: 1.8;
+  text-align: center;
 }
 .calendar-close {
   width: 100%;
@@ -1042,6 +1083,23 @@ th {
 .cal-days button:disabled:not(.empty) {
   opacity: 0.35;
   cursor: not-allowed;
+}
+#calPopup button:focus-visible {
+  outline: 2px solid var(--theme-focus);
+  outline-offset: 2px;
+}
+.cal-weekdays div:last-child {
+  color: var(--status-danger);
+}
+@media (prefers-reduced-motion: reduce) {
+  #calPopup .cal-days button {
+    transition: none;
+  }
+}
+@media print {
+  #calPopup {
+    display: none !important;
+  }
 }
 /* Source: src/styles/responsive.css */
 /* Responsive base */

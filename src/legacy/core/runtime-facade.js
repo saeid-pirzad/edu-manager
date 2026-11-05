@@ -141,6 +141,17 @@ function setAllAttendance(...args) {
     args,
   );
 }
+function previousSessionAttendance(...args) {
+  return EduRuntimeAPI.invoke(
+    "previousSessionAttendance",
+    undefined,
+    this,
+    args,
+  );
+}
+function copyPreviousAttendance(...args) {
+  return EduRuntimeAPI.invoke("copyPreviousAttendance", undefined, this, args);
+}
 
 function saveSessionUnit(...args) {
   return EduRuntimeAPI.invoke(

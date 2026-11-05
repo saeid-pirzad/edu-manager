@@ -601,6 +601,103 @@ async function dailyFlow() {
     denied && db.sessions.length === before,
   );
   openSessionModal(getSessionById(ids.session));
+  check(
+    "REUSE_FIRST_BELL",
+    "First bell has no previous-attendance action",
+    !document.querySelector(
+      '[data-legacy-click="sessions-dialog:reuse-previous"]',
+    ),
+  );
+  const sourceBeforeReuse = JSON.stringify(await stored());
+  openSessionModal(getSessionById(audit.startedSessionId));
+  const reuse = document.querySelector(
+    '[data-legacy-click="sessions-dialog:reuse-previous"]',
+  );
+  check(
+    "REUSE_AVAILABLE",
+    "Next bell offers the same-class same-day attendance shortcut",
+    !!reuse && reuse.textContent.includes("۱"),
+  );
+  document
+    .querySelector('.att-btns[data-sid="' + ids.students[0] + '"] .present')
+    .click();
+  await wait(
+    async () =>
+      (await stored(audit.startedSessionId)).attendance[ids.students[0]] ===
+        "present" && EduV24.test.getState().busy === 0,
+    "Could not set the next-bell exception",
+  );
+  document
+    .querySelector('[data-legacy-click="sessions-dialog:reuse-previous"]')
+    .click();
+  await wait(
+    async () =>
+      Object.keys((await stored(audit.startedSessionId)).attendance).length ===
+        12 && EduV24.test.getState().busy === 0,
+    "Previous attendance did not persist in the next bell",
+  );
+  const reused = await stored(audit.startedSessionId);
+  check(
+    "REUSE_DURABLE",
+    "Reuse persists only unset statuses, keeps current exceptions and does not carry lateness minutes or scores",
+    reused.attendance[ids.students[0]] === "present" &&
+      reused.attendance[ids.students[1]] === "leave" &&
+      reused.attendance[ids.students[2]] === "present" &&
+      reused.scores.length === 0 &&
+      JSON.stringify(await stored()) === sourceBeforeReuse,
+  );
+  check(
+    "REUSE_COMPLETE",
+    "Shortcut becomes disabled when all next-bell statuses are recorded",
+    document.querySelector(
+      '[data-legacy-click="sessions-dialog:reuse-previous"]',
+    ).disabled,
+  );
+  document
+    .querySelector('.att-btns[data-sid="' + ids.students[3] + '"] .present')
+    .click();
+  await wait(
+    async () =>
+      !(await stored(audit.startedSessionId)).attendance[ids.students[3]] &&
+      EduV24.test.getState().busy === 0,
+    "Could not prepare the failed-reuse scenario",
+  );
+  EduV24.test.failNextWrite();
+  document
+    .querySelector('[data-legacy-click="sessions-dialog:reuse-previous"]')
+    .click();
+  await wait(
+    () =>
+      EduV24.test.getState().busy === 0 &&
+      !!document.querySelector(
+        '[data-modal-save-feedback][data-state="error"]:not([hidden])',
+      ),
+    "Failed attendance reuse did not show a local save error",
+  );
+  check(
+    "REUSE_FAILURE",
+    "Failed reuse does not persist a partial attendance change or alter its source",
+    !(await stored(audit.startedSessionId)).attendance[ids.students[3]] &&
+      !getSessionById(audit.startedSessionId).attendance[ids.students[3]] &&
+      JSON.stringify(await stored()) === sourceBeforeReuse,
+  );
+  openSessionModal(getSessionById(audit.startedSessionId));
+  document
+    .querySelector('[data-legacy-click="sessions-dialog:reuse-previous"]')
+    .click();
+  await wait(
+    async () =>
+      (await stored(audit.startedSessionId)).attendance[ids.students[3]] ===
+        "present" && EduV24.test.getState().busy === 0,
+    "Attendance reuse could not retry after a failed write",
+  );
+  check(
+    "REUSE_RETRY",
+    "Reusing previous attendance can safely retry after a failed write",
+    (await stored(audit.startedSessionId)).attendance[ids.students[3]] ===
+      "present",
+  );
+  openSessionModal(getSessionById(ids.session));
   return audit.cases;
 }
 function measure(panel) {
@@ -693,6 +790,30 @@ async function run(env) {
           observed,
         });
       }
+      await page(() =>
+        openSessionModal(
+          getSessionById(globalThis.__dailySessionAudit.startedSessionId),
+        ),
+      );
+      const reuseLayout = await page(measure, "attendance");
+      cases.push({
+        id: "DAILY_UX_REUSE_LAYOUT_" + width,
+        name: "Next-bell attendance shortcut fits at " + width,
+        pass:
+          reuseLayout.noModalOverflow &&
+          reuseLayout.noEditorOverflow &&
+          reuseLayout.touchTargets,
+        observed: reuseLayout,
+      });
+      await evaluate("document.getElementById('modalBody').scrollTop=0");
+      await delay(80);
+      const reuseScreenshot = await cdp("Page.captureScreenshot", {
+        format: "png",
+      });
+      fs.writeFileSync(
+        path.join(previews, width + "-reuse-attendance.png"),
+        Buffer.from(reuseScreenshot.data, "base64"),
+      );
       await page(() => {
         closeModal();
         goSchools();
@@ -723,11 +844,60 @@ async function run(env) {
           observed.rows === 2,
         observed,
       });
-      await page(() =>
-        openSessionModal(
-          getSessionById(globalThis.__dailySessionAudit.ids.session),
-        ),
+      await page(() => {
+        goMaster();
+        clickMasterCell(globalThis.__dailySessionAudit.day, 0);
+      });
+      await delay(80);
+      const historyLayout = await page(() => {
+        const section = document.querySelector(".session-setup-history"),
+          rows = [...section.querySelectorAll(".session-setup-recent-item")];
+        return {
+          count: rows.length,
+          fits:
+            document.getElementById("modalBody").scrollWidth <=
+            document.getElementById("modalBody").clientWidth + 1,
+          compact: rows.every(
+            (row) =>
+              row.getBoundingClientRect().height >= 44 &&
+              row.getBoundingClientRect().height <= 80 &&
+              row.scrollWidth <= row.clientWidth + 1 &&
+              getComputedStyle(row.querySelector("strong")).fontSize ===
+                "12px" &&
+              getComputedStyle(row.querySelector("small")).fontSize === "10px",
+          ),
+        };
+      });
+      cases.push({
+        id: "DAILY_UX_HISTORY_" + width,
+        name: "Previous bell sessions use compact readable rows at " + width,
+        pass:
+          historyLayout.count > 0 &&
+          historyLayout.fits &&
+          historyLayout.compact,
+        observed: historyLayout,
+      });
+      const historyImage = await cdp("Page.captureScreenshot", {
+        format: "png",
+      });
+      fs.writeFileSync(
+        path.join(previews, width + "-history.png"),
+        Buffer.from(historyImage.data, "base64"),
       );
+      await page(() =>
+        document.querySelector(".session-setup-recent-item").click(),
+      );
+      await delay(80);
+      const historyOpened = await page(
+        () =>
+          currentSessionId === globalThis.__dailySessionAudit.ids.session &&
+          !!document.querySelector(".session-workspace"),
+      );
+      cases.push({
+        id: "DAILY_UX_HISTORY_OPEN_" + width,
+        name: "Compact history row opens its original session at " + width,
+        pass: historyOpened,
+      });
     }
   } catch (error) {
     const partial = await page(

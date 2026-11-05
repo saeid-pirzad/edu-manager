@@ -1,4 +1,9 @@
 // Event handlers extracted from src/legacy/sessions/dialog.js.
+EduLegacyEvents.register("sessions-dialog:reuse-previous", function () {
+  return runSessionEditorAction(this, () =>
+    copyPreviousAttendance(this.getAttribute("data-session-target")),
+  );
+});
 EduLegacyEvents.register("sessions-dialog:attendance-search", function () {
   return filterSessionAttendance(this);
 });

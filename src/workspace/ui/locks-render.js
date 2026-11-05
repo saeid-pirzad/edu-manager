@@ -123,6 +123,7 @@ const mutatingNames = [
   "changePeriods",
   "saveWeekStartDate",
   "setAllAttendance",
+  "copyPreviousAttendance",
   "toggleAtt",
   "changeSessionDate",
   "updateSessionUnits",

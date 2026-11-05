@@ -223,6 +223,57 @@ async function run(env) {
   };
 
   let configured = false;
+  const inspectSessionCalendar = (selector) =>
+    page((selector) => {
+      const field = document.querySelector(selector);
+      field.nextElementSibling.click();
+      calViewYear = 1405;
+      calViewMonth = 8;
+      renderShamsiCalendar();
+      const popup = document.getElementById("calPopup");
+      const days = [
+        ...popup.querySelectorAll('[data-calendar-action="select"]'),
+      ].map((button) => ({
+        button,
+        date: calendarISODate(
+          ...jalaliToGregorian(
+            calViewYear,
+            calViewMonth,
+            Number(button.dataset.calendarDay),
+          ),
+        ),
+      }));
+      const disabled = (date) =>
+        days.find((item) => item.date === date).button.disabled;
+      const result = {
+        availableColored: days
+          .filter(
+            (item) =>
+              !item.button.disabled &&
+              !item.button.classList.contains("selected"),
+          )
+          .every(
+            (item) =>
+              getComputedStyle(item.button).backgroundColor ===
+                "rgb(234, 246, 240)" &&
+              getComputedStyle(item.button).color === "rgb(22, 102, 78)",
+          ),
+        scheduled: !disabled("2026-11-03"),
+        wrongDay: disabled("2026-11-04"),
+        wrongParity: disabled("2026-11-10"),
+        nextOdd: !disabled("2026-11-17"),
+      };
+      const forbidden = days.find((item) => item.date === "2026-11-04").button,
+        before = field.value;
+      forbidden.click();
+      result.blocked =
+        calSelectDay(Number(forbidden.dataset.calendarDay)) === false &&
+        field.value === before;
+      days.find((item) => item.date === "2026-11-03").button.click();
+      result.selected =
+        field.value === "2026-11-03" && !popup.classList.contains("open");
+      return result;
+    }, selector);
   try {
     await require("./browser-ready.cjs")(env);
     await evaluate(
@@ -305,6 +356,64 @@ async function run(env) {
         audit.confirmations.length = 0;
       }
     });
+    await navigate("a");
+    const calendarCreation = await inspectSessionCalendar(
+      '.session-create-form input[type="date"]',
+    );
+    check(
+      "SCHEDULE_CALENDAR_CREATE",
+      "Session creation calendar disables wrong weekdays and parity and blocks injected selections",
+      Object.values(calendarCreation).every(Boolean),
+      calendarCreation,
+    );
+    await page(() =>
+      document
+        .querySelector(".session-create-form [data-gregorian-target]")
+        .click(),
+    );
+    await delay(100);
+    const calendarImage = await cdp("Page.captureScreenshot", {
+      format: "png",
+      captureBeyondViewport: false,
+    });
+    fs.writeFileSync(
+      path.join(directory, "calendar-create.png"),
+      Buffer.from(calendarImage.data, "base64"),
+    );
+    await page(() => closeShamsiCalendar());
+    await openEditor(
+      await page(() => window.__sessionScheduleAudit.historicalId),
+    );
+    const calendarEdit = await inspectSessionCalendar("#sessDate");
+    check(
+      "SCHEDULE_CALENDAR_EDIT",
+      "Session editor calendar uses the same schedule policy",
+      Object.values(calendarEdit).every(Boolean),
+      calendarEdit,
+    );
+    await page(() => {
+      closeModal();
+      goReports();
+      setReportTab("daily");
+      document
+        .querySelector(".periodic-controls [data-gregorian-target]")
+        .click();
+      calViewYear = 1405;
+      calViewMonth = 8;
+      renderShamsiCalendar();
+    });
+    const reportCalendarFree = await page(
+      () =>
+        !document.querySelector(
+          "#calPopup .cal-days button:disabled:not(.empty)",
+        ),
+    );
+    check(
+      "SCHEDULE_CALENDAR_REPORT_FREE",
+      "Report calendar remains unrestricted by the weekly teaching plan",
+      reportCalendarFree,
+    );
+    await page(() => closeShamsiCalendar());
     await denyCreate(
       "SCHEDULE_WRONG_WEEKDAY",
       "A Wednesday cannot create Tuesday's lesson even with an injected bell",
@@ -448,6 +557,13 @@ async function run(env) {
             );
           }),
         "The real timetable start modal did not appear",
+      );
+      const calendarMaster = await inspectSessionCalendar("#sessNewDate");
+      check(
+        "SCHEDULE_CALENDAR_MASTER_" + reason,
+        "Timetable date calendar honors the selected class, lesson, weekday and bell",
+        Object.values(calendarMaster).every(Boolean),
+        calendarMaster,
       );
       await page((changed) => {
         const ids = window.__reportSurfaceIds,

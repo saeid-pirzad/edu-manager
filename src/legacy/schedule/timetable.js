@@ -335,7 +335,7 @@ function legacy_clickMasterCell(day, period) {
       </select>
     </label>
     <label class="session-field" for="sessNewDate"><span>تاریخ جلسه</span>
-      <input type="date" id="sessNewDate" value="${todayISO()}" data-legacy-change="schedule-timetable:14">
+      <input type="date" id="sessNewDate" data-session-calendar="master" value="${todayISO()}" data-legacy-change="schedule-timetable:14">
       <span class="shamsi-display" id="shamsiSessNew">${toShamsi(todayISO())}</span>
     </label>
   </div>
@@ -362,7 +362,12 @@ function legacy_clickMasterCell(day, period) {
     });
     h += `</div></section>`;
   }
-  showModal("ثبت جلسه", '<div class="session-start-panel">' + h + "</div>");
+  showModal(
+    "ثبت جلسه",
+    `<div class="session-start-panel" data-session-day="${esc(day)}" data-session-period="${esc(period)}">` +
+      h +
+      "</div>",
+  );
 }
 
 function updateSessionLessonOptions() {

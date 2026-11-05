@@ -221,7 +221,10 @@ function calendarDateWithinBounds(input, isoDate) {
     typeof bound === "string" && /^\d{4}-\d{2}-\d{2}$/.test(bound);
   return (
     (!valid(input?.min) || isoDate >= input.min) &&
-    (!valid(input?.max) || isoDate <= input.max)
+    (!valid(input?.max) || isoDate <= input.max) &&
+    (!input?.dataset?.sessionCalendar ||
+      (typeof window.sessionCalendarDateAllowed === "function" &&
+        window.sessionCalendarDateAllowed(input, isoDate)))
   );
 }
 
@@ -248,14 +251,14 @@ function renderShamsiCalendar(shamsiInput) {
   const firstDay = (new Date(gy, gm - 1, gd).getDay() + 1) % 7;
   let h = "";
   h += `<div class="cal-header">
-    <button type="button" data-calendar-action="prev" title="ماه قبل" aria-label="ماه قبل" data-calendar-direction="-1">‹</button>
-    <div class="cal-title">${MONTHS_FA[calViewMonth - 1]} ${calendarFaNum(calViewYear)}</div>
-    <button type="button" data-calendar-action="next" title="ماه بعد" aria-label="ماه بعد" data-calendar-direction="1">›</button>
+    <button type="button" data-calendar-action="prev" title="ماه قبل" aria-label="ماه قبل" data-calendar-direction="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9 6 6 6-6 6"/></svg></button>
+    <div class="cal-title" aria-live="polite" aria-atomic="true">${MONTHS_FA[calViewMonth - 1]} ${calendarFaNum(calViewYear)}</div>
+    <button type="button" data-calendar-action="next" title="ماه بعد" aria-label="ماه بعد" data-calendar-direction="1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m15 6-6 6 6 6"/></svg></button>
   </div>`;
   h += `<div class="cal-weekdays">`;
   WEEKDAYS_FA.forEach((d) => (h += `<div>${d}</div>`));
   h += `</div>`;
-  h += `<div class="cal-days">`;
+  h += `<div class="cal-days"${calTargetInput?.dataset?.sessionCalendar ? ' data-session-calendar="1"' : ""}>`;
   for (let i = 0; i < firstDay; i++)
     h += `<button class="empty" disabled tabindex="-1" aria-hidden="true"></button>`;
   for (let d = 1; d <= daysCount; d++) {
@@ -272,9 +275,12 @@ function renderShamsiCalendar(shamsiInput) {
       ...jalaliToGregorian(calViewYear, calViewMonth, d),
     );
     const disabled = !calendarDateWithinBounds(calTargetInput, nativeDate);
-    h += `<button type="button" ${disabled ? 'disabled title="خارج از بازهٔ مجاز"' : ""} class="${cls}" aria-label="${calendarFaNum(d)} ${MONTHS_FA[calViewMonth - 1]} ${calendarFaNum(calViewYear)}" aria-pressed="${cls === "selected"}" data-calendar-action="select" data-calendar-day="${d}">${calendarFaNum(d)}</button>`;
+    h += `<button type="button" ${disabled ? `disabled title="${calTargetInput?.dataset?.sessionCalendar ? "خارج از برنامهٔ این کلاس و درس یا بازهٔ مجاز" : "خارج از بازهٔ مجاز"}"` : ""} class="${cls}" aria-label="${calendarFaNum(d)} ${MONTHS_FA[calViewMonth - 1]} ${calendarFaNum(calViewYear)}" aria-pressed="${cls === "selected"}" data-calendar-action="select" data-calendar-day="${d}">${calendarFaNum(d)}</button>`;
   }
   h += `</div>`;
+  if (calTargetInput?.dataset?.sessionCalendar)
+    h +=
+      '<div class="cal-policy-note">روزهای برنامهٔ این کلاس و درس یا جلسات ثبت‌شده فعال‌اند.</div>';
   h += `<div class="cal-footer">امروز: ${calendarFaNum(tjy)}/${calendarFaNum(String(tjm).padStart(2, "0"))}/${calendarFaNum(String(tjd).padStart(2, "0"))}</div>`;
   h += `<button type="button" class="ghost calendar-close" data-calendar-action="close">بستن تقویم</button>`;
   calPopup.innerHTML = h;

@@ -2129,8 +2129,8 @@
     border-radius: 12px;
   }
   .session-setup-history {
-    margin-top: 22px;
-    padding-top: 18px;
+    margin-top: 12px;
+    padding-top: 10px;
     border-top: 1px solid var(--workflow-line);
   }
   .session-setup-history > header {
@@ -2138,31 +2138,32 @@
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
   }
   .session-setup-history h4 {
     margin: 0;
-    font-size: 14px;
+    font-size: 13px;
   }
   .session-setup-history > header > span {
     color: var(--workflow-muted);
-    font-size: 12px;
+    font-size: 11px;
   }
   .session-setup-recent {
     display: grid;
-    gap: 8px;
+    gap: 6px;
   }
   #modalBody .session-setup-recent-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 8px;
     width: 100%;
     min-width: 0;
     margin: 0;
-    padding: 12px;
+    min-height: 44px;
+    padding: 7px 10px;
     border: 1px solid var(--workflow-line);
-    border-radius: 12px;
+    border-radius: 10px;
     background: var(--theme-surface-subtle);
     color: var(--workflow-ink);
     text-align: start;
@@ -2170,19 +2171,33 @@
   }
   .session-setup-recent-copy {
     display: grid;
-    gap: 3px;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: baseline;
+    gap: 2px 8px;
     min-width: 0;
     overflow-wrap: anywhere;
-    font-size: 13px;
+    font-size: 11px;
+    line-height: 1.7;
+  }
+  .session-setup-recent-copy strong {
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
   }
   .session-setup-recent-copy small {
+    grid-column: 1 / -1;
     color: var(--workflow-muted);
-    font-size: 11px;
+    font-size: 10px;
   }
   .session-setup-recent-arrow {
     display: inline-flex;
     flex-shrink: 0;
     color: var(--theme-primary);
+  }
+  #modalBody .session-setup-recent-arrow svg {
+    width: 18px;
+    height: 18px;
+    flex-basis: 18px;
   }
   .session-context {
     display: flex;
@@ -2731,6 +2746,23 @@
     margin: 12px 0;
     color: var(--theme-muted);
     font-size: 12px;
+  }
+  #modalBody .session-attendance-reuse {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    margin-block: 12px;
+  }
+  #modalBody .session-attendance-reuse button {
+    min-height: 44px;
+    margin: 0;
+    font-size: 12px;
+  }
+  #modalBody .session-attendance-reuse small {
+    color: var(--theme-muted);
+    font-size: 11px;
+    line-height: 1.8;
   }
   #modalBody .session-attendance-search input {
     width: 100%;

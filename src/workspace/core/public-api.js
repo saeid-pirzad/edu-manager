@@ -87,6 +87,8 @@ function installRuntimeAPI() {
     buildKardaneshSummaryHtml: buildKardaneshSummary,
     openBulkScoreModal: openBulkV24,
     setAllAttendance: setAllAttendanceV24,
+    previousSessionAttendance: previousSessionAttendanceV24,
+    copyPreviousAttendance: copyPreviousAttendanceV24,
     toggleAtt: toggleAttendanceV24,
     changeSessionDate: changeSessionDateV24,
     addManualSession: addManualSessionV24,

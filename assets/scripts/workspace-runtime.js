@@ -4563,6 +4563,7 @@ const mutatingNames = [
   "changePeriods",
   "saveWeekStartDate",
   "setAllAttendance",
+  "copyPreviousAttendance",
   "toggleAtt",
   "changeSessionDate",
   "updateSessionUnits",
@@ -5022,6 +5023,73 @@ async function changeSessionDateV24(id) {
   session.period = period;
   await saveDBV24({ sessionId: id, action: "تغییر تاریخ یا زنگ جلسه" });
   if (isCurrent()) openSessionModal(getSessionById(id));
+}
+
+function previousSessionAttendanceV24(session) {
+  const classroom = session && findClass(session.classId);
+  if (!classroom) return null;
+  const targetIds = new Set(
+    sessionRoster(classroom, session).map((student) => student.id),
+  );
+  return (
+    db.sessions
+      .filter(
+        (candidate) =>
+          candidate.id !== session.id &&
+          candidate.schoolId === session.schoolId &&
+          candidate.classId === session.classId &&
+          candidate.date === session.date &&
+          candidate.period < session.period &&
+          sessionRoster(classroom, candidate).some(
+            (student) =>
+              targetIds.has(student.id) &&
+              /^(present|absent|leave|late(?::\d{1,3})?)$/.test(
+                candidate.attendance?.[student.id] || "",
+              ),
+          ),
+      )
+      .sort((a, b) => b.period - a.period)[0] || null
+  );
+}
+
+async function copyPreviousAttendanceV24(targetId) {
+  const id = currentSessionId,
+    isCurrent = preserveSessionAction(id);
+  if (targetId !== id)
+    throw Error("این دکمه مربوط به جلسهٔ قبلی است؛ جلسه را دوباره باز کنید.");
+  const session = getSessionById(id),
+    source = previousSessionAttendanceV24(session);
+  if (!source)
+    throw Error(
+      "حضور ثبت‌شده‌ای از زنگ قبلی همین کلاس در همین روز وجود ندارد.",
+    );
+  const classroom = findClass(session.classId),
+    sourceIds = new Set(
+      sessionRoster(classroom, source).map((student) => student.id),
+    );
+  const updates = [];
+  for (const student of sessionRoster(classroom, session)) {
+    const value = source.attendance[student.id];
+    if (
+      session.attendance[student.id] ||
+      !sourceIds.has(student.id) ||
+      !/^(present|absent|leave|late(?::\d{1,3})?)$/.test(value || "")
+    )
+      continue;
+    updates.push([student.id, value.startsWith("late") ? "present" : value]);
+  }
+  if (!updates.length) return false;
+  assertEntityWritable();
+  if (!isCurrent() || getSessionById(id) !== session)
+    throw Error("جلسه یا اتصال بانک تغییر کرده است؛ حضور منتقل نشد.");
+  for (const [studentId, value] of updates)
+    session.attendance[studentId] = value;
+  await saveDBV24({
+    sessionId: id,
+    action: "تکمیل حضور از زنگ قبلی همین کلاس و روز",
+  });
+  if (isCurrent()) openSessionModal(getSessionById(id));
+  return true;
 }
 
 async function setAllAttendanceV24(statusValue, { onlyUnset = false } = {}) {
@@ -14186,6 +14254,8 @@ function installRuntimeAPI() {
     buildKardaneshSummaryHtml: buildKardaneshSummary,
     openBulkScoreModal: openBulkV24,
     setAllAttendance: setAllAttendanceV24,
+    previousSessionAttendance: previousSessionAttendanceV24,
+    copyPreviousAttendance: copyPreviousAttendanceV24,
     toggleAtt: toggleAttendanceV24,
     changeSessionDate: changeSessionDateV24,
     addManualSession: addManualSessionV24,

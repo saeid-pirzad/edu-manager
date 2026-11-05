@@ -3741,6 +3741,58 @@ EduLegacyEvents.register("students-editor:1", function (event) {
   return saveEditStudent(this.getAttribute("data-legacy-click-arg1"));
 });
 // Source: src/legacy/ui/lesson.js
+// Opt-in date policy for session fields only; reports and week origins stay free.
+function sessionCalendarDateAllowed(input, date) {
+  if (!EduAcademicYear.contains(db.settings.academicYear, date)) return false;
+  let target,
+    period = null,
+    day = null;
+  const mode = input.dataset.sessionCalendar;
+  if (mode === "lesson") {
+    const form = input.closest(".session-create-form");
+    if (!form) return false;
+    target = {
+      schoolId: form.dataset.sessionSchool,
+      classId: form.dataset.sessionClass,
+      lessonId: form.dataset.sessionLesson,
+      date,
+    };
+  } else if (mode === "edit") {
+    const session = getSessionById(input.dataset.sessionId);
+    if (!session || input.dataset.sessionId !== currentSessionId) return false;
+    if (date === session.date) return true;
+    target = { ...session, date };
+  } else if (mode === "master") {
+    const root = input.closest(".session-start-panel");
+    if (!root) return false;
+    const classId = root.querySelector("#sessNewClass")?.value,
+      lessonId = root.querySelector("#sessNewLesson")?.value,
+      school = db.schools.find((item) =>
+        item.classes.some((cls) => cls.id === classId),
+      );
+    if (!school || !lessonId) return false;
+    target = { schoolId: school.id, classId, lessonId, date };
+    period = Number(root.dataset.sessionPeriod);
+    day = Number(root.dataset.sessionDay);
+    if (getDayIdxFromDate(date) !== day) return false;
+  } else return false;
+  const periods = EduSessionSlots.matchingPeriods(db, target);
+  if (period === null ? periods.length > 0 : periods.includes(period))
+    return true;
+  // Continuing a stored session must remain possible after its schedule changes.
+  return (
+    mode !== "edit" &&
+    db.sessions.some(
+      (session) =>
+        session.schoolId === target.schoolId &&
+        session.classId === target.classId &&
+        session.lessonId === target.lessonId &&
+        session.date === date &&
+        (period === null || session.period === period),
+    )
+  );
+}
+
 function sessionScheduleSelection(target, selected = "", existing = []) {
   const allowed = EduSessionSlots.matchingPeriods(db, target);
   const periods = new Set(allowed);
@@ -3916,7 +3968,7 @@ function renderLessonSessions(
     );
   let h =
     `<section class="card session-create"><header class="session-setup-heading"><span class="session-setup-symbol" aria-hidden="true">${EduIcons.html("calendar")}</span><div><h3>شروع جلسه</h3><p>جلسهٔ جدید فقط در روز و زنگِ همین درس در برنامهٔ هفتگی ثبت می‌شود.</p></div></header><form class="session-create-form" novalidate data-session-school="${esc(schoolId)}" data-session-class="${classId}" data-session-lesson="${lessonId}" data-legacy-submit="ui-lesson:6" data-legacy-submit-arg0="${lessonId}">` +
-    '<label>تاریخ جلسه<input type="date" name="date" required data-legacy-change="ui-lesson:session-date" value="' +
+    '<label>تاریخ جلسه<input type="date" name="date" required data-session-calendar="lesson" data-legacy-change="ui-lesson:session-date" value="' +
     date +
     '"></label>' +
     '<label>زنگ طبق برنامه<select name="period" required>' +
@@ -4726,7 +4778,7 @@ function legacy_clickMasterCell(day, period) {
       </select>
     </label>
     <label class="session-field" for="sessNewDate"><span>تاریخ جلسه</span>
-      <input type="date" id="sessNewDate" value="${todayISO()}" data-legacy-change="schedule-timetable:14">
+      <input type="date" id="sessNewDate" data-session-calendar="master" value="${todayISO()}" data-legacy-change="schedule-timetable:14">
       <span class="shamsi-display" id="shamsiSessNew">${toShamsi(todayISO())}</span>
     </label>
   </div>
@@ -4753,7 +4805,12 @@ function legacy_clickMasterCell(day, period) {
     });
     h += `</div></section>`;
   }
-  showModal("ثبت جلسه", '<div class="session-start-panel">' + h + "</div>");
+  showModal(
+    "ثبت جلسه",
+    `<div class="session-start-panel" data-session-day="${esc(day)}" data-session-period="${esc(period)}">` +
+      h +
+      "</div>",
+  );
 }
 
 function updateSessionLessonOptions() {
@@ -5305,6 +5362,10 @@ function refreshSessionAttendanceProgress() {
     meter.value = progress.total - progress.unset;
   }
   if (fill) setControlLock(fill, "attendance-complete", progress.unset === 0);
+  const reuse = root.querySelector(
+    '[data-legacy-click="sessions-dialog:reuse-previous"]',
+  );
+  if (reuse) setControlLock(reuse, "attendance-complete", progress.unset === 0);
 }
 function refreshSessionActivityInput(form) {
   if (!form?.isConnected) return;
@@ -5363,6 +5424,10 @@ function openSessionModal(session, { activitySaved = null } = {}) {
     return;
   }
   const dIdx = getDayIdxFromDate(session.date);
+  const previousAttendance =
+    typeof previousSessionAttendance === "function"
+      ? previousSessionAttendance(session)
+      : null;
   const school = getSchool(session.schoolId);
   let h = `<div class="session-workspace" data-session-id="${esc(session.id)}"><header class="session-context"><span class="session-context-icon" aria-hidden="true">${EduIcons.html("book")}</span><div class="session-context-copy"><p class="session-context-path">${esc(school?.name || "")} / ${esc(c.name)}</p><h4>${esc(lesson.name)}</h4><p class="session-context-meta">${esc(DAYS[dIdx])} · ${esc(faDate(session.date))} · زنگ ${(session.period + 1).toLocaleString("fa-IR")}</p>${lesson.teacher ? `<p class="session-context-teacher">دبیر: ${esc(lesson.teacher)}</p>` : ""}</div></header>`;
   h +=
@@ -5380,7 +5445,7 @@ function openSessionModal(session, { activitySaved = null } = {}) {
   );
   h += `<details class="session-date-tools"><summary>${EduIcons.html("edit")}<span>ویرایش تاریخ و زنگ</span></summary><div class="form-row session-date-grid">
     <label class="session-field"><span>تاریخ جلسه</span>
-      <input type="date" id="sessDate" value="${session.date}" min="${academicRange.start}" max="${academicRange.end}" data-legacy-change="sessions-dialog:0">
+      <input type="date" id="sessDate" data-session-calendar="edit" data-session-id="${esc(session.id)}" value="${session.date}" min="${academicRange.start}" max="${academicRange.end}" data-legacy-change="sessions-dialog:0">
       <span class="shamsi-display" id="shamsiSessDate">${toShamsi(session.date)}</span>
     </label>
     <label class="session-field"><span>زنگ طبق برنامه</span><select id="sessPeriod">${sessionSelection.options}</select></label>
@@ -5406,7 +5471,7 @@ function openSessionModal(session, { activitySaved = null } = {}) {
       <button type="button" class="ghost" data-mutating="1" data-legacy-click="sessions-dialog:all-present">همه حاضر</button>
       <button type="button" class="danger" data-mutating="1" data-legacy-click="sessions-dialog:7">همه غایب</button>
     </div>
-  </div><label class="session-attendance-search"><span>جست‌وجوی هنرجو</span><input type="search" placeholder="نام یا کد دانش‌آموزی…" value="${esc(attendanceQuery)}" data-legacy-input="sessions-dialog:attendance-search"></label><p class="session-attendance-no-results" role="status" hidden>هنرجویی پیدا نشد.</p><div class="session-attendance-list">`;
+  </div>${previousAttendance ? `<div class="session-attendance-reuse"><button type="button" class="ghost" data-mutating="1" data-legacy-click="sessions-dialog:reuse-previous" data-session-target="${esc(session.id)}">${EduIcons.html("copy")}از زنگ ${(previousAttendance.period + 1).toLocaleString("fa-IR")} بگیر</button><small>فقط تعیین‌نشده‌ها؛ تأخیر قبلی «حاضر» می‌شود.</small></div>` : ""}<label class="session-attendance-search"><span>جست‌وجوی هنرجو</span><input type="search" placeholder="نام یا کد دانش‌آموزی…" value="${esc(attendanceQuery)}" data-legacy-input="sessions-dialog:attendance-search"></label><p class="session-attendance-no-results" role="status" hidden>هنرجویی پیدا نشد.</p><div class="session-attendance-list">`;
   const sortedStudents = getSortedStudents({
     students: sessionStudents(c, session),
   });
@@ -5654,6 +5719,11 @@ async function legacy_removeSessionScore(sessionId, idx) {
 }
 // Source: src/legacy/events/sessions-dialog.js
 // Event handlers extracted from src/legacy/sessions/dialog.js.
+EduLegacyEvents.register("sessions-dialog:reuse-previous", function () {
+  return runSessionEditorAction(this, () =>
+    copyPreviousAttendance(this.getAttribute("data-session-target")),
+  );
+});
 EduLegacyEvents.register("sessions-dialog:attendance-search", function () {
   return filterSessionAttendance(this);
 });
@@ -6539,6 +6609,17 @@ function setAllAttendance(...args) {
     this,
     args,
   );
+}
+function previousSessionAttendance(...args) {
+  return EduRuntimeAPI.invoke(
+    "previousSessionAttendance",
+    undefined,
+    this,
+    args,
+  );
+}
+function copyPreviousAttendance(...args) {
+  return EduRuntimeAPI.invoke("copyPreviousAttendance", undefined, this, args);
 }
 
 function saveSessionUnit(...args) {

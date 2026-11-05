@@ -725,6 +725,56 @@ async function inspectMobileUx() {
         (mode === "annual" ? 0 : 1),
     );
   }
+  setReportTab("daily");
+  await pause();
+  document.querySelector(".periodic-controls [data-gregorian-target]").click();
+  await pause();
+  const calendar = document.getElementById("calPopup"),
+    calendarRect = calendar.getBoundingClientRect(),
+    prev = calendar.querySelector('[data-calendar-action="prev"]'),
+    next = calendar.querySelector('[data-calendar-action="next"]');
+  add(
+    "calendar uses explicit RTL arrows and fits the viewport with readable touch rows",
+    calendar.classList.contains("open") &&
+      calendarRect.left >= 0 &&
+      calendarRect.right <= innerWidth &&
+      calendarRect.top >= 0 &&
+      calendarRect.bottom <= innerHeight &&
+      calendar.scrollWidth <= calendar.clientWidth + 1 &&
+      prev.getBoundingClientRect().left > next.getBoundingClientRect().left &&
+      prev.querySelector("path").getAttribute("d") === "m9 6 6 6-6 6" &&
+      next.querySelector("path").getAttribute("d") === "m15 6-6 6 6 6" &&
+      [
+        ...calendar.querySelectorAll(
+          ".cal-days button:not(.empty),.cal-header button",
+        ),
+      ].every((button) => button.getBoundingClientRect().height >= 44),
+  );
+  const originalCalendarYear = calViewYear,
+    originalCalendarMonth = calViewMonth;
+  calViewMonth = 12;
+  renderShamsiCalendar();
+  calendar.querySelector('[data-calendar-action="next"]').click();
+  await pause();
+  add(
+    "calendar next and previous keep year boundaries correct",
+    calViewYear === originalCalendarYear + 1 && calViewMonth === 1,
+  );
+  calendar.querySelector('[data-calendar-action="prev"]').click();
+  await pause();
+  add(
+    "calendar previous reverses the year transition",
+    calViewYear === originalCalendarYear && calViewMonth === 12,
+  );
+  calViewYear = originalCalendarYear;
+  calViewMonth = originalCalendarMonth;
+  renderShamsiCalendar();
+  calendar.querySelector('[data-calendar-action="close"]').click();
+  await pause();
+  add(
+    "restyled calendar closes through its original delegated action",
+    !calendar.classList.contains("open"),
+  );
   await openSettingsModal();
   await pause();
   const modal = document.querySelector(".modal-dialog"),
@@ -969,6 +1019,10 @@ module.exports = async function mobileUx({ cdp, evaluate, cases, delay }) {
       ],
       ["settings", "openSettingsModal()"],
       ["report-tabs", "goReports();setReportTab('daily');scrollTo(0,0)"],
+      [
+        "calendar",
+        "goReports();setReportTab('daily');document.querySelector('.periodic-controls [data-gregorian-target]').click()",
+      ],
       ["weekly-agenda", "goMaster();scrollTo(0,0)"],
       [
         "weekly-settings",

@@ -75,7 +75,36 @@ test("shared calendar renders standalone without teacher formatting, event regis
     30,
   );
   assert.match(popup.innerHTML, /بستن تقویم/);
+  assert.match(
+    popup.innerHTML,
+    /data-calendar-action="prev"[^>]*data-calendar-direction="-1">[\s\S]*?<path d="m9 6 6 6-6 6"/,
+  );
+  assert.match(
+    popup.innerHTML,
+    /data-calendar-action="next"[^>]*data-calendar-direction="1">[\s\S]*?<path d="m15 6-6 6 6 6"/,
+  );
   assert.doesNotMatch(popup.innerHTML, /data-legacy-/);
+});
+test("calendar session policy is opt-in, fails closed and is rechecked at selection time", () => {
+  const { context: c, popup } = calendarFixture();
+  const field = {
+    value: "unchanged",
+    dataset: { sessionCalendar: "lesson" },
+    isConnected: true,
+    dispatchEvent: () => {
+      throw Error("disabled date dispatched an event");
+    },
+  };
+  assert.equal(c.calendarDateWithinBounds(field, "2026-10-31"), false);
+  c.sessionCalendarDateAllowed = () => false;
+  assert.equal(c.calendarDateWithinBounds({ dataset: {} }, "2026-10-31"), true);
+  c.field = field;
+  popup.classList.add("open");
+  vm.runInContext("calTargetInput=field;calViewYear=1405;calViewMonth=8;", c);
+  assert.equal(c.calSelectDay(9), false);
+  assert.equal(field.value, "unchanged");
+  c.sessionCalendarDateAllowed = () => true;
+  assert.equal(c.calendarDateWithinBounds(field, "2026-10-31"), true);
 });
 
 test("one shared popup handler changes a month exactly once and selects an ISO date with native events", () => {

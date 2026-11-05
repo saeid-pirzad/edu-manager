@@ -1,3 +1,55 @@
+// Opt-in date policy for session fields only; reports and week origins stay free.
+function sessionCalendarDateAllowed(input, date) {
+  if (!EduAcademicYear.contains(db.settings.academicYear, date)) return false;
+  let target,
+    period = null,
+    day = null;
+  const mode = input.dataset.sessionCalendar;
+  if (mode === "lesson") {
+    const form = input.closest(".session-create-form");
+    if (!form) return false;
+    target = {
+      schoolId: form.dataset.sessionSchool,
+      classId: form.dataset.sessionClass,
+      lessonId: form.dataset.sessionLesson,
+      date,
+    };
+  } else if (mode === "edit") {
+    const session = getSessionById(input.dataset.sessionId);
+    if (!session || input.dataset.sessionId !== currentSessionId) return false;
+    if (date === session.date) return true;
+    target = { ...session, date };
+  } else if (mode === "master") {
+    const root = input.closest(".session-start-panel");
+    if (!root) return false;
+    const classId = root.querySelector("#sessNewClass")?.value,
+      lessonId = root.querySelector("#sessNewLesson")?.value,
+      school = db.schools.find((item) =>
+        item.classes.some((cls) => cls.id === classId),
+      );
+    if (!school || !lessonId) return false;
+    target = { schoolId: school.id, classId, lessonId, date };
+    period = Number(root.dataset.sessionPeriod);
+    day = Number(root.dataset.sessionDay);
+    if (getDayIdxFromDate(date) !== day) return false;
+  } else return false;
+  const periods = EduSessionSlots.matchingPeriods(db, target);
+  if (period === null ? periods.length > 0 : periods.includes(period))
+    return true;
+  // Continuing a stored session must remain possible after its schedule changes.
+  return (
+    mode !== "edit" &&
+    db.sessions.some(
+      (session) =>
+        session.schoolId === target.schoolId &&
+        session.classId === target.classId &&
+        session.lessonId === target.lessonId &&
+        session.date === date &&
+        (period === null || session.period === period),
+    )
+  );
+}
+
 function sessionScheduleSelection(target, selected = "", existing = []) {
   const allowed = EduSessionSlots.matchingPeriods(db, target);
   const periods = new Set(allowed);
@@ -173,7 +225,7 @@ function renderLessonSessions(
     );
   let h =
     `<section class="card session-create"><header class="session-setup-heading"><span class="session-setup-symbol" aria-hidden="true">${EduIcons.html("calendar")}</span><div><h3>شروع جلسه</h3><p>جلسهٔ جدید فقط در روز و زنگِ همین درس در برنامهٔ هفتگی ثبت می‌شود.</p></div></header><form class="session-create-form" novalidate data-session-school="${esc(schoolId)}" data-session-class="${classId}" data-session-lesson="${lessonId}" data-legacy-submit="ui-lesson:6" data-legacy-submit-arg0="${lessonId}">` +
-    '<label>تاریخ جلسه<input type="date" name="date" required data-legacy-change="ui-lesson:session-date" value="' +
+    '<label>تاریخ جلسه<input type="date" name="date" required data-session-calendar="lesson" data-legacy-change="ui-lesson:session-date" value="' +
     date +
     '"></label>' +
     '<label>زنگ طبق برنامه<select name="period" required>' +
