@@ -7,7 +7,9 @@ function detectRepeatedTableHeaders(ink) {
   const bands = [];
   for (const row of ink.horizontalRules) {
     const previous = bands.at(-1);
-    if (previous && row <= previous.end + 2) previous.end = row;
+    // A single missing scanline can be the real border between two header
+    // rows at CI display scaling. Never bridge it into one solid band.
+    if (previous && row <= previous.end + 1) previous.end = row;
     else bands.push({ start: row, end: row });
   }
   const height = (band) => band.end - band.start + 1;

@@ -26,6 +26,19 @@ test("two light header rows still require their three thin rules", () => {
   assert.deepEqual(observed.rules, [86, 154, 222]);
 });
 
+test("CI-scale raster preserves a one-pixel separator between filled header rows", () => {
+  // Actual native raster at 1684px: the separator occupies scanline 122.
+  const observed = inspect([...band(69, 121), ...band(123, 172)], 69);
+  assert.equal(observed.twoHeaderRows, true);
+  assert.equal(observed.method, "filled");
+  assert.deepEqual(observed.headerBands, [
+    { start: 69, end: 121 },
+    { start: 123, end: 172 },
+  ]);
+  // Without that separator, a single solid block is not proof of two rows.
+  assert.equal(inspect(band(69, 172), 69).twoHeaderRows, false);
+});
+
 test("a single filled header row cannot satisfy the two-row assertion", () => {
   assert.equal(inspect(band(86, 151)).twoHeaderRows, false);
   assert.equal(inspect(band(86, 215)).twoHeaderRows, false);

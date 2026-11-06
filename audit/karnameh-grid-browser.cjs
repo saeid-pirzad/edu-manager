@@ -1492,6 +1492,24 @@ async function run(env) {
             headers.every((page) => page.twoHeaderRows),
             headers,
           );
+          // Windows display scaling affects the native PDF raster dimensions.
+          // Exercise the smaller scale too: its row separator is only 1px.
+          const smallerRaster = require("./pdf-raster.cjs").rasterizePdf(
+            filename,
+            path.join(previews, "raster-stress-small"),
+            1347,
+          );
+          const smallerHeaders = smallerRaster.pages.slice(1).map((page) => ({
+            file: page.file,
+            ...detectRepeatedTableHeaders(page.ink),
+          }));
+          check(
+            "PRINT_REPEATED_HEADERS_SMALL_RASTER",
+            "Continuation headers retain both rows at smaller native raster scale",
+            smallerHeaders.length > 0 &&
+              smallerHeaders.every((page) => page.twoHeaderRows),
+            smallerHeaders,
+          );
         }
       }
       await cdp("Emulation.setEmulatedMedia", { media: "" });
