@@ -106,8 +106,43 @@ function fixture(sessionSchedule = false) {
     durable = structuredClone(c.db);
     c.workspace.revision++;
   };
-  return { c, effects, durable: () => durable };
+  return {
+    c,
+    effects,
+    target,
+    controls,
+    durable: () => durable,
+    attempts: () => attempts,
+  };
 }
+for (const operation of ["save-slot", "session"])
+  test(`schedule ${operation} roster preflight does not enter the writer or alter durable data`, async () => {
+    const f = fixture(operation === "session"),
+      before = JSON.stringify(f.c.db);
+    f.target.classObj.students = [];
+    const run = () =>
+      operation === "save-slot"
+        ? f.c.saveMasterConfigV24(0, 0)
+        : f.c.startSessionFromMasterV24(0, 0);
+    await assert.rejects(run(), /ابتدا هنرجویان/);
+    assert.equal(JSON.stringify(f.c.db), before);
+    assert.equal(JSON.stringify(f.durable()), before);
+    assert.equal(f.attempts(), 0);
+    assert.equal(f.effects.length, 0);
+    assert.equal(f.c.busy, 0);
+    // Once students are registered, retain the existing atomic rollback and
+    // retry path rather than consuming or bypassing its first write failure.
+    f.target.classObj.students = [{ id: "student" }];
+    await assert.rejects(run(), /injected quota/);
+    assert.equal(f.attempts(), 1);
+    assert.equal(JSON.stringify(f.c.db), before);
+    assert.equal(JSON.stringify(f.durable()), before);
+    await run();
+    assert.equal(f.attempts(), 2);
+    assert.equal(JSON.stringify(f.c.db), JSON.stringify(f.durable()));
+    assert.notEqual(JSON.stringify(f.durable()), before);
+    assert.equal(f.c.busy, 0);
+  });
 for (const operation of [
   "save-slot",
   "clear-slot",

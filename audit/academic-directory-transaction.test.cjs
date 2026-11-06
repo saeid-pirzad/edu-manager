@@ -55,6 +55,7 @@ function fixture({
     IDBKeyRange: { bound: (lower, upper) => ({ lower, upper }) },
   });
   for (const source of [
+    "domain/revision.js",
     "domain/academic-year-directory.js",
     "domain/annual-modules.js",
     "domain/history-changes.js",
@@ -337,6 +338,33 @@ function repairRecoveredStudent(f) {
     ["session:recovered-session", JSON.stringify(session)],
   );
 }
+
+for (const exhausted of ["first", "second"])
+  test(`shared-directory edit preflights exhausted ${exhausted} revision without any writes`, async () => {
+    const f = fixture();
+    f.stores.catalog.get(exhausted).revision = Number.MAX_SAFE_INTEGER;
+    f.args.workspace = clone(f.stores.catalog.get("first"));
+    f.current.students.push({ id: "c", name: "هنرجوی آزمایشی سوم", code: "3" });
+    const before = clone(f.stores);
+    await assert.rejects(f.commit(), { code: "REVISION_LIMIT_REACHED" });
+    assert.deepEqual(clone(f.stores), before);
+    assert.deepEqual(f.writes, []);
+    assert.deepEqual(f.args.annualChanged, []);
+    assert.deepEqual(f.args.directorySourceUpdates, []);
+  });
+
+test("shared-directory changes may reach the final safe revision in both terms atomically", async () => {
+  const f = fixture();
+  for (const id of ["first", "second"])
+    f.stores.catalog.get(id).revision = Number.MAX_SAFE_INTEGER - 1;
+  f.args.workspace = clone(f.stores.catalog.get("first"));
+  f.current.students.push({ id: "c", name: "هنرجوی آزمایشی سوم", code: "3" });
+  await f.commit();
+  for (const id of ["first", "second"]) {
+    assert.equal(f.stores.catalog.get(id).revision, Number.MAX_SAFE_INTEGER);
+    assert.equal(f.value(id).students.length, 3);
+  }
+});
 
 function undoRecoveredStudent(f, saved = null) {
   const undo = saved || JSON.parse(JSON.stringify(f.stores.undo.get("first"))),

@@ -1452,35 +1452,37 @@ const old=sess.scores.find(sc=>sc.studentId===f.studentId.value&&sc.type===f.typ
 getSessionById(sessionId));return}}sess.scores.push({studentId:f.studentId.value,type:f.type.value,value:val,note:f.note.value.trim()});saveDB();openSessionModal(
 sess)}async function legacy_removeSessionScore(sessionId,idx){const sess=db.sessions.find(s=>s.id===sessionId);if(!sess)return;sess.scores.splice(idx,1);await saveDB(
 {sessionId:sess.id});openSessionModal(sess)}EduLegacyEvents.register("sessions-dialog:reuse-previous",function(){return runSessionEditorAction(this,()=>copyPreviousAttendance(
-this.getAttribute("data-session-target")))});EduLegacyEvents.register("sessions-dialog:attendance-search",function(){return filterSessionAttendance(this)});EduLegacyEvents.
-register("sessions-dialog:0",function(event){document.getElementById("shamsiSessDate").textContent=toShamsi(this.value);refreshSessionDateSchedule()});EduLegacyEvents.
-register("sessions-dialog:1",function(event){return runSessionFormAction(this,()=>changeSessionDate(this.getAttribute("data-legacy-click-arg3")))});EduLegacyEvents.
-register("sessions-dialog:2",function(event){return runSessionEditorAction(this,()=>updateSessionUnits())});EduLegacyEvents.register("sessions-dialog:3",function(event){
-return runSessionEditorAction(this,()=>saveSessionUnit())});EduLegacyEvents.register("sessions-dialog:4",function(event){return showSessionPanel("attendance")});
-EduLegacyEvents.register("sessions-dialog:5",function(event){return showSessionPanel("activity")});EduLegacyEvents.register("sessions-dialog:6",function(event){
-return runSessionEditorAction(this,()=>setAllAttendance("present",{onlyUnset:true}))});EduLegacyEvents.register("sessions-dialog:7",function(event){return runSessionEditorAction(
-this,()=>setAllAttendance("absent"))});EduLegacyEvents.register("sessions-dialog:8",function(event){return runSessionEditorAction(this,()=>toggleAtt(this,"prese\
-nt"))});EduLegacyEvents.register("sessions-dialog:9",function(event){return runSessionEditorAction(this,()=>toggleAtt(this,"late"))});EduLegacyEvents.register("\
-sessions-dialog:10",function(event){return runSessionEditorAction(this,()=>toggleAtt(this,"absent"))});EduLegacyEvents.register("sessions-dialog:11",function(event){
-return runSessionEditorAction(this,()=>addSessionScore(event,this.getAttribute("data-legacy-submit-arg0")))});EduLegacyEvents.register("sessions-dialog:12",function(event){
-return runSessionEditorAction(this,()=>removeSessionScore(this.getAttribute("data-legacy-click-arg5"),JSON.parse(this.getAttribute("data-legacy-click-arg6")),this))});
-EduLegacyEvents.register("sessions-dialog:13",function(event){return EduV24.copyReport(source=>EduPeriodicReports.sessionDeputyReport(source,this.getAttribute("\
-data-legacy-click-arg0")),this,text=>EduPeriodicReports.deputyReportHTML(text))});EduLegacyEvents.register("sessions-dialog:14",function(event){return closeModal()});
-EduLegacyEvents.register("sessions-dialog:leave",function(){return runSessionEditorAction(this,()=>toggleAtt(this,"leave"))});EduLegacyEvents.register("sessions\
--dialog:all-present",function(){return runSessionEditorAction(this,()=>setAllAttendance("present"))});EduLegacyEvents.register("sessions-dialog:entry-change",function(){
-return refreshSessionActivityInput(this.form,this)});async function legacy_exportBackup(){const data={version:23,exportedAt:new Date().toISOString(),db};const jsonString=JSON.
-stringify(data,null,2);const fileName=`پشتیبان-مدرسه-${todayISO()}.json`;if(window.showSaveFilePicker){try{const handle=await window.showSaveFilePicker(
-{suggestedName:fileName,types:[{description:"فایل JSON",accept:{"application/json":[".json"]}}]});const writable=await handle.createWritable();await writable.
-write(jsonString);await writable.close();alert("✅ پشتیبان با موفقیت ذخیره شد.");return}catch(err){if(err.name==="AbortError")return}}const blob=new Blob(
-[jsonString],{type:"application/json"});downloadLocalFile(blob,fileName)}function legacy_handleImport(e){const file=e.target.files[0];if(!file)return;if(file.size>
-20*1024*1024){e.target.value="";return alert("حداکثر حجم فایل ۲۰ مگابایت است.")}const reader=new FileReader;reader.onload=ev=>{try{const parsed=JSON.
-parse(ev.target.result);if(parsed.version!==void 0&&(!Number.isInteger(parsed.version)||parsed.version>23))throw Error("نسخه پشتیبان پشتیبانی نمی‌شود.");
-const candidate=prepareDB(parsed.db||parsed);if(!confirm("پشتیبان معتبر جایگزین تمام اطلاعات فعلی شود؟"))return;const raw=JSON.
-stringify(candidate);localStorage.setItem(STORAGE_KEY,raw);db=candidate;storageSnapshot=raw;storageBlocked=false;storageProblem="";isAuthenticated=false;state={
-view:"schools",schoolId:null,classId:null,lessonId:null,tab:"students",masterFilter:null,reportTab:"comprehensive"};lessonReportFilter={schoolId:"",classId:"",lessonId:""};
-karnamehFilter={schoolId:"",classId:"",studentId:""};resetGlobalFilters();render();alert("بازیابی انجام شد.")}catch(err){alert("بازیابی انجام نشد:\
- "+err.message)}finally{e.target.value=""}};reader.onerror=()=>{e.target.value="";alert("خواندن فایل انجام نشد.")};reader.readAsText(file,"UTF\
--8")}function legacy_wipeAllData(){const t1=confirm("⚠️ آیا از پاک کردن کامل تمام داده‌ها مطمئن هستید؟ این عمل غیرقابل بازگشت است.");
+this.getAttribute("data-session-target")))},{mutating:true});EduLegacyEvents.register("sessions-dialog:attendance-search",function(){return filterSessionAttendance(
+this)},{mutating:false});EduLegacyEvents.register("sessions-dialog:0",function(event){document.getElementById("shamsiSessDate").textContent=toShamsi(this.value);
+refreshSessionDateSchedule()},{mutating:false});EduLegacyEvents.register("sessions-dialog:1",function(event){return runSessionFormAction(this,()=>changeSessionDate(
+this.getAttribute("data-legacy-click-arg3")))},{mutating:true});EduLegacyEvents.register("sessions-dialog:2",function(event){return runSessionEditorAction(this,
+()=>updateSessionUnits())},{mutating:true});EduLegacyEvents.register("sessions-dialog:3",function(event){return runSessionEditorAction(this,()=>saveSessionUnit())},
+{mutating:true});EduLegacyEvents.register("sessions-dialog:4",function(event){return showSessionPanel("attendance")},{mutating:false});EduLegacyEvents.register(
+"sessions-dialog:5",function(event){return showSessionPanel("activity")},{mutating:false});EduLegacyEvents.register("sessions-dialog:6",function(event){return runSessionEditorAction(
+this,()=>setAllAttendance("present",{onlyUnset:true}))},{mutating:true});EduLegacyEvents.register("sessions-dialog:7",function(event){return runSessionEditorAction(
+this,()=>setAllAttendance("absent"))},{mutating:true});EduLegacyEvents.register("sessions-dialog:8",function(event){return runSessionEditorAction(this,()=>toggleAtt(
+this,"present"))},{mutating:true});EduLegacyEvents.register("sessions-dialog:9",function(event){return runSessionEditorAction(this,()=>toggleAtt(this,"late"))},
+{mutating:true});EduLegacyEvents.register("sessions-dialog:10",function(event){return runSessionEditorAction(this,()=>toggleAtt(this,"absent"))},{mutating:true});
+EduLegacyEvents.register("sessions-dialog:11",function(event){return runSessionEditorAction(this,()=>addSessionScore(event,this.getAttribute("data-legacy-submit\
+-arg0")))},{mutating:true});EduLegacyEvents.register("sessions-dialog:12",function(event){return runSessionEditorAction(this,()=>removeSessionScore(this.getAttribute(
+"data-legacy-click-arg5"),JSON.parse(this.getAttribute("data-legacy-click-arg6")),this))},{mutating:true});EduLegacyEvents.register("sessions-dialog:13",function(event){
+return EduV24.copyReport(source=>EduPeriodicReports.sessionDeputyReport(source,this.getAttribute("data-legacy-click-arg0")),this,text=>EduPeriodicReports.deputyReportHTML(
+text))},{mutating:false});EduLegacyEvents.register("sessions-dialog:14",function(event){return closeModal()},{mutating:false});EduLegacyEvents.register("session\
+s-dialog:leave",function(){return runSessionEditorAction(this,()=>toggleAtt(this,"leave"))},{mutating:true});EduLegacyEvents.register("sessions-dialog:all-prese\
+nt",function(){return runSessionEditorAction(this,()=>setAllAttendance("present"))},{mutating:true});EduLegacyEvents.register("sessions-dialog:entry-change",function(){
+return refreshSessionActivityInput(this.form,this)},{mutating:false});async function legacy_exportBackup(){const data={version:23,exportedAt:new Date().toISOString(),
+db};const jsonString=JSON.stringify(data,null,2);const fileName=`پشتیبان-مدرسه-${todayISO()}.json`;if(window.showSaveFilePicker){try{const handle=await window.
+showSaveFilePicker({suggestedName:fileName,types:[{description:"فایل JSON",accept:{"application/json":[".json"]}}]});const writable=await handle.createWritable();
+await writable.write(jsonString);await writable.close();alert("✅ پشتیبان با موفقیت ذخیره شد.");return}catch(err){if(err.name==="AbortErr\
+or")return}}const blob=new Blob([jsonString],{type:"application/json"});downloadLocalFile(blob,fileName)}function legacy_handleImport(e){const file=e.target.files[0];
+if(!file)return;if(file.size>20*1024*1024){e.target.value="";return alert("حداکثر حجم فایل ۲۰ مگابایت است.")}const reader=new FileReader;
+reader.onload=ev=>{try{const parsed=JSON.parse(ev.target.result);if(parsed.version!==void 0&&(!Number.isInteger(parsed.version)||parsed.version>23))throw Error(
+"نسخه پشتیبان پشتیبانی نمی‌شود.");const candidate=prepareDB(parsed.db||parsed);if(!confirm("پشتیبان معتبر جایگزین تمام اطلاعات فعلی ش\
+ود؟"))return;const raw=JSON.stringify(candidate);localStorage.setItem(STORAGE_KEY,raw);db=candidate;storageSnapshot=raw;storageBlocked=false;storageProblem="";
+isAuthenticated=false;state={view:"schools",schoolId:null,classId:null,lessonId:null,tab:"students",masterFilter:null,reportTab:"comprehensive"};lessonReportFilter=
+{schoolId:"",classId:"",lessonId:""};karnamehFilter={schoolId:"",classId:"",studentId:""};resetGlobalFilters();render();alert("بازیابی انجام شد.")}catch(err){
+alert("بازیابی انجام نشد: "+err.message)}finally{e.target.value=""}};reader.onerror=()=>{e.target.value="";alert("خواندن فایل انجام نشد.")};
+reader.readAsText(file,"UTF-8")}function legacy_wipeAllData(){const t1=confirm("⚠️ آیا از پاک کردن کامل تمام داده‌ها مطمئن هستید؟ این عمل غیرقابل بازگشت است.");
 if(!t1)return;const t2=confirm("🚨 آخرین هشدار: تمام مدارس، کلاس‌ها، دانش‌آموزان، نمرات و برنامه هفتگی برای همیشه حذف می‌شوند. ادامه می‌دهید؟");
 if(!t2)return;localStorage.removeItem(STORAGE_KEY);localStorage.removeItem(STORAGE_KEY+"_beforeImport");storageSnapshot=null;storageBlocked=false;storageProblem=
 "";db=defaultDB();isAuthenticated=false;state={view:"schools",schoolId:null,classId:null,lessonId:null,tab:"students",masterFilter:null,reportTab:"comprehensive"};

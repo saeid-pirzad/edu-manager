@@ -122,6 +122,51 @@ test("manual session snapshots the roster and saves its own id", async () => {
   assert.equal(f.c.db.sessions[0].period, 11);
   assert.equal(f.writes[0].sessionId, "new-session");
 });
+
+for (const archived of [false, true])
+  test(`manual session requires active students, even with archived members: ${archived}`, async () => {
+    const f = fixture();
+    f.cls.archivedStudents = archived ? structuredClone(f.cls.students) : [];
+    f.cls.students = [];
+    const before = JSON.stringify(f.c.db);
+    await assert.rejects(
+      f.c.addManualSessionV24(f.event(), "lesson"),
+      /ابتدا هنرجویان/,
+    );
+    assert.equal(JSON.stringify(f.c.db), before);
+    assert.equal(f.writes.length, 0);
+    assert.equal(f.modals.length, 0);
+  });
+
+test("manual creation rechecks active students after pending draft writes", async () => {
+  const f = fixture();
+  f.c.flushDrafts = async () => {
+    f.cls.students = [];
+  };
+  await assert.rejects(
+    f.c.addManualSessionV24(f.event(), "lesson"),
+    /ابتدا هنرجویان/,
+  );
+  assert.equal(f.c.db.sessions.length, 0);
+  assert.equal(f.writes.length, 0);
+});
+
+test("an existing empty-roster session remains viewable after all students leave", async () => {
+  const f = fixture();
+  f.cls.students = [];
+  const existing = {
+    id: "old",
+    classId: "class",
+    lessonId: "lesson",
+    date: "2026-10-27",
+    period: 0,
+    roster: [],
+  };
+  f.c.db.sessions.push(existing);
+  assert.equal(await f.c.addManualSessionV24(f.event(), "lesson"), false);
+  assert.equal(f.modals[0], existing);
+  assert.equal(f.writes.length, 0);
+});
 for (const kind of ["connection", "view"]) {
   test(`manual session completion preserves changed ${kind}`, async () => {
     const f = fixture();

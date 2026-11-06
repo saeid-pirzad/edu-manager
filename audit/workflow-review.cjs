@@ -74,6 +74,12 @@ if (process.argv.includes("--help")) {
         cases,
         root,
       });
+      await require("./forced-colors-focus-browser.cjs")({
+        cdp,
+        evaluate,
+        cases,
+        delay,
+      });
       await require("./mobile-ux.cjs")({ cdp, evaluate, cases, delay });
       await require("./csv-ux.cjs")({ cdp, evaluate, cases, delay });
       await require("./student-create-ux.cjs")({ cdp, evaluate, cases, delay });
@@ -211,6 +217,12 @@ if (process.argv.includes("--help")) {
         delay,
       });
       await require("./session-edit-access-browser.cjs").run({
+        cdp,
+        evaluate,
+        cases,
+        delay,
+      });
+      await require("./session-roster-readiness-browser.cjs").run({
         cdp,
         evaluate,
         cases,

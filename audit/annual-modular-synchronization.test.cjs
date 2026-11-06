@@ -8,6 +8,7 @@ const fs = require("node:fs"),
 function fixture() {
   const c = vm.createContext({ structuredClone, clone: structuredClone });
   for (const source of [
+    "domain/revision.js",
     "domain/grade-math.js",
     "domain/data-boundary.js",
     "domain/grade-policy.js",
@@ -483,4 +484,62 @@ test("a retired connection cannot queue consolidation writes", async () => {
   );
   assert.equal(f.transactions.length, 1);
   assert.equal(f.state.events.length, 0);
+});
+
+for (const exhausted of ["first", "second"]) {
+  test(`annual consolidation preflights every changed revision before writes when ${exhausted} is exhausted`, async () => {
+    const f = fixture(),
+      second = f.data([f.classroom("class", null)]);
+    second.schools[0].classes[0].lessons[0].poudmans[1].podScores.student = {
+      m: 5,
+      c: 3,
+    };
+    f.save("first", f.data());
+    f.save("second", second);
+    f.state.catalog.get(exhausted).revision = Number.MAX_SAFE_INTEGER;
+    const before = structuredClone(f.state);
+    // Any queued record write would fail before reaching a later peer guard.
+    f.hooks.failPut = 1;
+    await assert.rejects(
+      f.c.synchronizeAnnualModularGrades("first"),
+      (error) => error.code === "REVISION_LIMIT_REACHED",
+    );
+    assert.deepEqual(structuredClone(f.state), before);
+  });
+}
+
+test("annual consolidation consumes the final safe revisions exactly and preserves a zero grade", async () => {
+  const f = fixture(),
+    second = f.data([f.classroom("class", null)]);
+  second.schools[0].classes[0].lessons[0].poudmans[1].podScores.student = {
+    m: 5,
+    c: 3,
+  };
+  for (const [id, data] of [
+    ["first", f.data()],
+    ["second", second],
+  ])
+    f.save(id, data, { revision: Number.MAX_SAFE_INTEGER - 1 });
+  const result = await f.c.synchronizeAnnualModularGrades("first");
+  assert.equal(result.changed.length, 2);
+  for (const id of ["first", "second"]) {
+    assert.equal(f.state.catalog.get(id).revision, Number.MAX_SAFE_INTEGER);
+    assert.equal(f.score(id).m, 0);
+  }
+  for (const event of f.state.events)
+    assert.equal(event.revision, Number.MAX_SAFE_INTEGER);
+});
+
+test("annual consolidation allows an unchanged peer at the revision limit", async () => {
+  const f = fixture();
+  f.save("first", f.data(), { revision: Number.MAX_SAFE_INTEGER });
+  f.save("second", f.data([f.classroom("class", null)]), {
+    revision: Number.MAX_SAFE_INTEGER - 1,
+  });
+  const result = await f.c.synchronizeAnnualModularGrades("first");
+  assert.equal(result.changed.length, 1);
+  assert.equal(result.changed[0].workspace, "second");
+  assert.equal(result.changed[0].revision, Number.MAX_SAFE_INTEGER);
+  assert.equal(f.state.catalog.get("first").revision, Number.MAX_SAFE_INTEGER);
+  assert.equal(f.state.undo.has("first"), true);
 });

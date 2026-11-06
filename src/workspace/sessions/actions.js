@@ -2,6 +2,69 @@ function sessionRoster(c, x) {
   return x.roster || c.students.map((st) => ({ id: st.id, name: st.name }));
 }
 
+function emptySessionRosterClass(session) {
+  if (
+    !Array.isArray(session?.roster) ||
+    session.roster.length !== 0 ||
+    !EduAttendanceReminders.isEmptySession(session)
+  )
+    return null;
+  const cls = getClassObj(session.schoolId, session.classId);
+  return Array.isArray(cls?.students) && cls.students.length ? cls : null;
+}
+
+const sessionRosterRestores = new Set();
+async function restoreEmptySessionRosterV24(button) {
+  const id = button?.dataset?.key;
+  if (sessionRosterRestores.has(id)) return false;
+  const isCurrent = preserveSessionAction(id),
+    access = currentSessionEditAccess(id),
+    session = getSessionById(id),
+    cls = emptySessionRosterClass(session);
+  if (!button?.isConnected || !access?.root.contains(button))
+    throw Error(
+      "کنترل فهرست مربوط به پنجرهٔ فعلی نیست؛ جلسه را دوباره باز کنید.",
+    );
+  if (!cls)
+    throw Error(
+      "دریافت فهرست فقط برای جلسهٔ کاملاً خالی و کلاس دارای هنرجوی فعال امکان‌پذیر است.",
+    );
+  const roster = snapshotRoster(cls),
+    signature = JSON.stringify(roster);
+  sessionRosterRestores.add(id);
+  try {
+    if (
+      !confirm(
+        "فهرست " +
+          roster.length.toLocaleString("fa-IR") +
+          " هنرجوی فعال کلاس «" +
+          cls.name +
+          "» برای این جلسه ثبت شود؟ این جلسه هنوز حضور، نمره یا فعالیت ثبت‌شده ندارد.",
+      )
+    )
+      return false;
+    await flushDrafts({ strict: true });
+    await writer.catch(() => {});
+    assertEntityWritable();
+    if (
+      !isCurrent() ||
+      getSessionById(id) !== session ||
+      emptySessionRosterClass(session) !== cls ||
+      JSON.stringify(snapshotRoster(cls)) !== signature
+    )
+      throw Error("جلسه یا فهرست کلاس تغییر کرده است؛ دریافت فهرست انجام نشد.");
+    session.roster = roster;
+    await saveDBV24({
+      sessionId: id,
+      action: "تکمیل فهرست هنرجویان جلسهٔ خالی",
+    });
+    if (isCurrent()) openSessionModal(getSessionById(id));
+    return true;
+  } finally {
+    sessionRosterRestores.delete(id);
+  }
+}
+
 function preserveSessionAction(id) {
   const editToken = assertSessionEditable(id);
   const origin = workspace.id,
@@ -255,6 +318,8 @@ async function addManualSessionV24(event, lessonId) {
       return false;
     }
     validateSessionSchedule({ schoolId, classId, lessonId, date, period });
+    if (!cls.students.length)
+      throw Error("برای ایجاد جلسه، ابتدا هنرجویان این کلاس را ثبت کنید.");
     const session = {
       id: uid(),
       schoolId,

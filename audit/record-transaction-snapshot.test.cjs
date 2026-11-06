@@ -50,6 +50,10 @@ function fixture(liveRevision = 1) {
     EduDataStoreRuntime: { transactionDone: () => done },
   });
   vm.runInContext(
+    fs.readFileSync(path.join(__dirname, "../src/domain/revision.js"), "utf8"),
+    c,
+  );
+  vm.runInContext(
     fs.readFileSync(
       path.join(__dirname, "../src/data/record-transaction.js"),
       "utf8",

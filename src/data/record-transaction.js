@@ -160,6 +160,9 @@ globalThis.EduRecordTransaction = Object.freeze({
             tx.abort();
             return;
           }
+          // Reserve the revision before queuing source records or history.
+          // Reaching the safe-integer boundary must abort the whole save.
+          const nextRevision = globalThis.EduRevision.next(live.revision);
           if (sessionChanges?.guarded.length) {
             sessionSlots.assertScheduled(sessionChanges, sourceMeta);
             const year = meta?.settings?.academicYear ?? live.year,
@@ -223,7 +226,7 @@ globalThis.EduRecordTransaction = Object.freeze({
             // Editing the display label must not move grades between annual
             // terms. For legacy rows infer the role from the original label.
             termKind: live.termKind || academicTermKind(live.term),
-            revision: live.revision + 1,
+            revision: nextRevision,
             updatedAt: new Date().toISOString(),
           };
           const annualCompanions = [];
@@ -279,14 +282,19 @@ globalThis.EduRecordTransaction = Object.freeze({
                 )
                   throw Error("چیدمان نوبت برای ثبت نمرهٔ سالانه معتبر نیست.");
                 let pending = 0;
-                const companionChanges = [];
+                const companionChanges = [],
+                  companionRecords = [];
                 const finishCompanion = () => {
                   if (pending || !companionChanges.length) return;
                   const synchronized = {
                     ...companion,
-                    revision: companion.revision + 1,
+                    revision: globalThis.EduRevision.next(companion.revision),
                     updatedAt: next.updatedAt,
                   };
+                  // Validate the changed companion's revision before any of
+                  // its record writes. An unchanged peer consumes no revision.
+                  for (const row of companionRecords)
+                    tx.objectStore("records").put(row);
                   catalog.put(synchronized);
                   tx.objectStore("events").add({
                     workspace: companion.id,
@@ -336,7 +344,7 @@ globalThis.EduRecordTransaction = Object.freeze({
                         value &&
                         JSON.stringify(value) !== JSON.stringify(row.value)
                       ) {
-                        tx.objectStore("records").put({ ...row, value });
+                        companionRecords.push({ ...row, value });
                         companionChanges.push({
                           path: plan.logical + ".annualModules",
                           before: null,

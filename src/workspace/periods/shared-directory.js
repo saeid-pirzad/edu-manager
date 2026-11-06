@@ -200,11 +200,13 @@ async function synchronizeAcademicDirectoryForRead(id) {
           throw Error(
             "فهرست یا نوبت‌های سال در پنجرهٔ دیگری تغییر کرده‌اند؛ یکپارچه‌سازی انجام نشد.",
           );
-        const at = new Date().toISOString();
-        for (const { period, plans } of updates) {
-          const revision = period.revision + 1;
-          if (!Number.isSafeInteger(revision))
-            throw Error("شمارهٔ نسخهٔ فهرست سال قابل افزایش نیست.");
+        // Check every changed term before queuing any term's writes.
+        const revisions = updates.map(({ period }) =>
+            globalThis.EduRevision.next(period.revision),
+          ),
+          at = new Date().toISOString();
+        for (const [index, { period, plans }] of updates.entries()) {
+          const revision = revisions[index];
           for (const [logical, value] of plans)
             tx.objectStore("records").put({
               key: period.id + "|" + logical,

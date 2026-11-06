@@ -178,7 +178,7 @@
     {
       "output": "assets/scripts/data-store-runtime.js",
       "scope": "global",
-      "sources": ["src/data/idb-promises.js"]
+      "sources": ["src/domain/revision.js", "src/data/idb-promises.js"]
     },
     {
       "output": "assets/scripts/data-store-schema.js",

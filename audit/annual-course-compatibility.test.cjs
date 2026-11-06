@@ -12,6 +12,7 @@ function load(context, file) {
 }
 function fixture() {
   const context = vm.createContext({ structuredClone });
+  load(context, "src/domain/revision.js");
   load(context, "src/domain/data-boundary.js");
   load(context, "src/domain/grade-math.js");
   load(context, "src/domain/grade-policy.js");
@@ -418,6 +419,41 @@ function modularEditorFixture(options = {}) {
   vm.runInContext(controls.slice(controls.indexOf("function makePods(")), f.c);
   return f;
 }
+
+test("a course policy can advance to the last safe revision", async () => {
+  const f = modularEditorFixture();
+  f.lesson.gradingPolicy.revision = Number.MAX_SAFE_INTEGER - 1;
+  f.c.editing.seed = structuredClone(f.lesson);
+  f.values.reference = "مرجع اصلاح‌شده";
+  await f.c.save();
+  assert.equal(
+    f.classroom.lessons[0].gradingPolicy.revision,
+    Number.MAX_SAFE_INTEGER,
+  );
+  assert.equal(
+    f.classroom.lessons[0].gradingPolicy.reference,
+    "مرجع اصلاح‌شده",
+  );
+  assert.deepEqual(f.calls, ["saved", "rendered"]);
+});
+
+test("an exhausted course policy revision rejects an editor change before mutating or saving", async () => {
+  const f = modularEditorFixture();
+  f.lesson.gradingPolicy.revision = Number.MAX_SAFE_INTEGER;
+  f.c.editing.seed = structuredClone(f.lesson);
+  f.values.reference = "مرجع اصلاح‌شده";
+  const before = JSON.stringify(f.classroom),
+    editing = f.c.editing;
+  await assert.rejects(
+    f.c.save(),
+    (error) => error.code === "REVISION_LIMIT_REACHED",
+  );
+  assert.equal(JSON.stringify(f.classroom), before);
+  assert.equal(f.classroom.lessons[0], f.lesson);
+  assert.equal(f.c.editing, editing);
+  assert.equal(f.c.saving, false);
+  assert.deepEqual(f.calls, []);
+});
 
 test("unchanged modular counts preserve stable identities, variable unit counts, names and maps", async () => {
   const f = modularEditorFixture();

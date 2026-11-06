@@ -181,29 +181,29 @@ for(const part of prepared)if(model.scheduleHasChanges(sourceNext.get("meta"),pa
 before:options.before,removed,restoredRecords:options.restoredSessionRecords});if(sessionChanges?.guarded.length){sessionSlots.assertScheduled(sessionChanges,sourceNext.
 get("meta"));sessionSlots.assertAvailable(sessionChanges,live.id,prepared.filter(({period})=>period.id===live.id||["first","second"].includes(period.termKind||academicTermKind(
 period.term))).map(({period,next})=>({id:period.id,records:next})))}for(const part of prepared)part.plan=globalThis.EduRecordCommitPlan.create(part.next,new Map(
-[...part.old].map(([key,value])=>[key,JSON.stringify(value)])),{replace:true});const recoveredPeers=recoveredClasses.size&&prepared.length>1?prepared.filter(part=>part.
-period.id!==live.id).map(part=>{const rosters=[];for(const[key,value]of part.next){if(!key.startsWith("session:")||!recoveredClasses.has(value.classId))continue;
-const previous=part.old.get(key);if(previous&&JSON.stringify(previous.roster)!==JSON.stringify(value.roster))rosters.push({sessionId:value.id,classId:value.classId,
-before:copy(previous.roster??null)})}const previousWarnings=part.old.get("meta").migrationWarnings,nextWarnings=part.next.get("meta").migrationWarnings;return{id:part.
-period.id,revision:part.period.revision+(part.plan.changed.length||part.plan.removed.length?1:0),rosters,...JSON.stringify(previousWarnings)!==JSON.stringify(nextWarnings)?
-{migrationWarnings:copy(previousWarnings)}:{}}}):null;const at=new Date().toISOString();for(const part of prepared){const plan=part.plan,isSource=part.period.id===
-live.id;if(!plan.changed.length&&!plan.removed.length)continue;for(const[logical,json]of plan.changed)tx.objectStore("records").put({key:part.period.id+"|"+logical,
-workspace:part.period.id,logical,value:JSON.parse(json)});for(const logical of plan.removed)tx.objectStore("records").delete(part.period.id+"|"+logical);const updated={
-...part.period,...isSource?{year,term,termKind:live.termKind||academicTermKind(live.term)}:{},revision:part.period.revision+1,updatedAt:at};if(!Number.isSafeInteger(
-updated.revision))throw Error("شمارهٔ نسخهٔ اطلاعات قابل افزایش نیست.");tx.objectStore("catalog").put(updated);tx.objectStore("e\
-vents").add({workspace:updated.id,revision:updated.revision,at,action:isSource?action:scheduleChanged?"همگام‌سازی برنامهٔ هفتگی سال تحصیلی":
-"همگام‌سازی فهرست مشترک سال تحصیلی",changes:plan.changes});if(isSource&&keepUndo&&!sharedClassRemoval&&!sharedCourseRemoval)tx.objectStore(
-"undo").put({id:updated.id,action,revision:updated.revision,before:plan.before,...recoveredPeers?{recoveredPeers}:{}});else tx.objectStore("undo").delete(updated.
-id);if(isSource){nextCatalog=updated;sourceUpdates.push(...plan.changed.map(([key,json])=>[key,JSON.parse(json)]))}else peerUpdates.push({workspace:updated.id,revision:updated.
-revision})}}try{await done}catch(error){throw failure||error}for(const[key,value]of sourceUpdates){const index=changed.findIndex(([logical])=>logical===key),entry=[
-key,JSON.stringify(value)];if(index<0)changed.push(entry);else changed[index]=entry}if(directorySourceUpdates)directorySourceUpdates.push(...sourceUpdates);if(annualChanged)
-annualChanged.push(...peerUpdates);return nextCatalog}});"use strict";globalThis.EduRecordTransaction=Object.freeze({async commit({connection,expectedInstallation="",
-workspace,records,changed,removed,before,changes,action,keepUndo,normalizedName,academicTermKind,annualChanged,decodeRecords,historicalRoster,directorySourceUpdates,
-directoryRevisions,recoveredUndo,restoredSessionRecords}){const directoryTransaction=globalThis.EduAcademicDirectoryTransaction;if(directoryTransaction?.hasChanges(
-{records,changed,removed,before}))return directoryTransaction.commit({connection,expectedInstallation,workspace,records,changed,removed,before,changes,action,keepUndo,
-normalizedName,academicTermKind,annualChanged,decodeRecords,historicalRoster,directorySourceUpdates,directoryRevisions,recoveredUndo,restoredSessionRecords});workspace=
-{...workspace};const{transactionDone}=globalThis.EduDataStoreRuntime;const recordKey=logical=>workspace.id+"|"+logical;const tx=connection.transaction(["records",
-"catalog","events","undo"],"readwrite"),done=transactionDone(tx);let conflict=false,labelConflict=false,nextCatalog,queueError;const annualUpdates=[];const abortQueue=error=>{
+[...part.old].map(([key,value])=>[key,JSON.stringify(value)])),{replace:true});for(const part of prepared)if(part.plan.changed.length||part.plan.removed.length)
+part.nextRevision=EduRevision.next(part.period.revision);const recoveredPeers=recoveredClasses.size&&prepared.length>1?prepared.filter(part=>part.period.id!==live.
+id).map(part=>{const rosters=[];for(const[key,value]of part.next){if(!key.startsWith("session:")||!recoveredClasses.has(value.classId))continue;const previous=part.
+old.get(key);if(previous&&JSON.stringify(previous.roster)!==JSON.stringify(value.roster))rosters.push({sessionId:value.id,classId:value.classId,before:copy(previous.
+roster??null)})}const previousWarnings=part.old.get("meta").migrationWarnings,nextWarnings=part.next.get("meta").migrationWarnings;return{id:part.period.id,revision:part.
+nextRevision??part.period.revision,rosters,...JSON.stringify(previousWarnings)!==JSON.stringify(nextWarnings)?{migrationWarnings:copy(previousWarnings)}:{}}}):null;
+const at=new Date().toISOString();for(const part of prepared){const plan=part.plan,isSource=part.period.id===live.id;if(!plan.changed.length&&!plan.removed.length)
+continue;for(const[logical,json]of plan.changed)tx.objectStore("records").put({key:part.period.id+"|"+logical,workspace:part.period.id,logical,value:JSON.parse(
+json)});for(const logical of plan.removed)tx.objectStore("records").delete(part.period.id+"|"+logical);const updated={...part.period,...isSource?{year,term,termKind:live.
+termKind||academicTermKind(live.term)}:{},revision:part.nextRevision,updatedAt:at};tx.objectStore("catalog").put(updated);tx.objectStore("events").add({workspace:updated.
+id,revision:updated.revision,at,action:isSource?action:scheduleChanged?"همگام‌سازی برنامهٔ هفتگی سال تحصیلی":"همگام‌سازی فهرست م\
+شترک سال تحصیلی",changes:plan.changes});if(isSource&&keepUndo&&!sharedClassRemoval&&!sharedCourseRemoval)tx.objectStore("undo").put({id:updated.id,
+action,revision:updated.revision,before:plan.before,...recoveredPeers?{recoveredPeers}:{}});else tx.objectStore("undo").delete(updated.id);if(isSource){nextCatalog=
+updated;sourceUpdates.push(...plan.changed.map(([key,json])=>[key,JSON.parse(json)]))}else peerUpdates.push({workspace:updated.id,revision:updated.revision})}}try{
+await done}catch(error){throw failure||error}for(const[key,value]of sourceUpdates){const index=changed.findIndex(([logical])=>logical===key),entry=[key,JSON.stringify(
+value)];if(index<0)changed.push(entry);else changed[index]=entry}if(directorySourceUpdates)directorySourceUpdates.push(...sourceUpdates);if(annualChanged)annualChanged.
+push(...peerUpdates);return nextCatalog}});"use strict";globalThis.EduRecordTransaction=Object.freeze({async commit({connection,expectedInstallation="",workspace,
+records,changed,removed,before,changes,action,keepUndo,normalizedName,academicTermKind,annualChanged,decodeRecords,historicalRoster,directorySourceUpdates,directoryRevisions,
+recoveredUndo,restoredSessionRecords}){const directoryTransaction=globalThis.EduAcademicDirectoryTransaction;if(directoryTransaction?.hasChanges({records,changed,
+removed,before}))return directoryTransaction.commit({connection,expectedInstallation,workspace,records,changed,removed,before,changes,action,keepUndo,normalizedName,
+academicTermKind,annualChanged,decodeRecords,historicalRoster,directorySourceUpdates,directoryRevisions,recoveredUndo,restoredSessionRecords});workspace={...workspace};
+const{transactionDone}=globalThis.EduDataStoreRuntime;const recordKey=logical=>workspace.id+"|"+logical;const tx=connection.transaction(["records","catalog","ev\
+ents","undo"],"readwrite"),done=transactionDone(tx);let conflict=false,labelConflict=false,nextCatalog,queueError;const annualUpdates=[];const abortQueue=error=>{
 queueError=error;try{tx.abort()}catch(ignore){}};try{const epoch=tx.objectStore("records").get("@installation-reset");epoch.onsuccess=()=>{if((epoch.result?.value?.
 token||"")!==expectedInstallation)abortQueue(Object.assign(Error("اطلاعات در پنجرهٔ دیگری جایگزین شده است؛ صفحه را دوباره باز کنید."),
 {code:"INSTALLATION_CHANGED"}))};const catalog=tx.objectStore("catalog"),sessionSlots=globalThis.EduSessionSlots,sessionChanges=sessionSlots?.changes({changed,before,
@@ -216,32 +216,33 @@ return[{logical,previous:previous?JSON.parse(JSON.stringify(previous)):null,curr
 workspace.year||meta.settings?.academicTerm!==workspace.term),labels=labelChanged||annualPlans.length||sessionChanges?.guarded.length?catalog.getAll():null,get=catalog.
 get(workspace.id);get.onsuccess=()=>{if(queueError)return;try{const live=get.result;if(!live||live.revision!==workspace.revision){conflict=true;tx.abort();return}
 if(labelChanged&&labels.result.some(row=>row.id!==workspace.id&&row.year===meta.settings.academicYear&&normalizedName(row.term)===normalizedName(meta.settings.academicTerm))){
-labelConflict=true;tx.abort();return}if(sessionChanges?.guarded.length){sessionSlots.assertScheduled(sessionChanges,sourceMeta);const year=meta?.settings?.academicYear??
-live.year,family=labels.result.filter(row=>row.id===live.id||row.year===year&&["first","second"].includes(row.termKind||academicTermKind(row.term))),parts=[];let pending=family.
-length;for(const period of family){const request=tx.objectStore("records").getAll(IDBKeyRange.bound(period.id+"|session:",period.id+"|session;",false,true));request.
-onsuccess=()=>{try{parts.push({id:period.id,records:new Map(request.result.map(row=>[row.logical,row.value]))});if(!--pending)sessionSlots.assertAvailable(sessionChanges,
-live.id,parts)}catch(error){abortQueue(error)}}}}for(const[logical,json]of changed)tx.objectStore("records").put({key:recordKey(logical),workspace:workspace.id,
-logical,value:JSON.parse(json)});for(const logical of removed)tx.objectStore("records").delete(recordKey(logical));const next={...live,year:meta?.settings?.academicYear??
-live.year,term:meta?.settings?.academicTerm??live.term,termKind:live.termKind||academicTermKind(live.term),revision:live.revision+1,updatedAt:new Date().toISOString()};
-const annualCompanions=[];if(annualPlans.length&&["first","second"].includes(next.termKind)){const roles=new Set;for(const period of labels.result){const candidate=period.
-id===next.id?next:period;if(candidate.year!==next.year)continue;const kind=candidate.termKind||academicTermKind(candidate.term);if(kind!=="first"&&kind!=="secon\
-d")continue;if(roles.has(kind))throw Error("نوبت‌های سال برای ثبت نمرهٔ سالانه تکراری‌اند.");roles.add(kind);if(candidate.
-id!==next.id)annualCompanions.push(candidate)}}nextCatalog=next;catalog.put(next);tx.objectStore("events").add({workspace:workspace.id,at:next.updatedAt,action,
-revision:next.revision,changes});if(keepUndo)tx.objectStore("undo").put({id:workspace.id,action,revision:next.revision,before});else tx.objectStore("undo").delete(
-workspace.id);for(const companion of annualCompanions){const companionMeta=tx.objectStore("records").get(companion.id+"|meta");companionMeta.onsuccess=()=>{try{
-const metaRow=companionMeta.result,layout=metaRow?.value?.layout;if(metaRow?.workspace!==companion.id||metaRow?.logical!=="meta"||metaRow?.key!==companion.id+"|\
-meta"||!Array.isArray(layout))throw Error("چیدمان نوبت برای ثبت نمرهٔ سالانه معتبر نیست.");let pending=0;const companionChanges=[];
-const finishCompanion=()=>{if(pending||!companionChanges.length)return;const synchronized={...companion,revision:companion.revision+1,updatedAt:next.updatedAt};
-catalog.put(synchronized);tx.objectStore("events").add({workspace:companion.id,at:synchronized.updatedAt,action:"همگام‌سازی نمرهٔ سالانهٔ پودمان",
+labelConflict=true;tx.abort();return}const nextRevision=globalThis.EduRevision.next(live.revision);if(sessionChanges?.guarded.length){sessionSlots.assertScheduled(
+sessionChanges,sourceMeta);const year=meta?.settings?.academicYear??live.year,family=labels.result.filter(row=>row.id===live.id||row.year===year&&["first","seco\
+nd"].includes(row.termKind||academicTermKind(row.term))),parts=[];let pending=family.length;for(const period of family){const request=tx.objectStore("records").
+getAll(IDBKeyRange.bound(period.id+"|session:",period.id+"|session;",false,true));request.onsuccess=()=>{try{parts.push({id:period.id,records:new Map(request.result.
+map(row=>[row.logical,row.value]))});if(!--pending)sessionSlots.assertAvailable(sessionChanges,live.id,parts)}catch(error){abortQueue(error)}}}}for(const[logical,
+json]of changed)tx.objectStore("records").put({key:recordKey(logical),workspace:workspace.id,logical,value:JSON.parse(json)});for(const logical of removed)tx.objectStore(
+"records").delete(recordKey(logical));const next={...live,year:meta?.settings?.academicYear??live.year,term:meta?.settings?.academicTerm??live.term,termKind:live.
+termKind||academicTermKind(live.term),revision:nextRevision,updatedAt:new Date().toISOString()};const annualCompanions=[];if(annualPlans.length&&["first","secon\
+d"].includes(next.termKind)){const roles=new Set;for(const period of labels.result){const candidate=period.id===next.id?next:period;if(candidate.year!==next.year)
+continue;const kind=candidate.termKind||academicTermKind(candidate.term);if(kind!=="first"&&kind!=="second")continue;if(roles.has(kind))throw Error("نوبت‌های سا\
+ل برای ثبت نمرهٔ سالانه تکراری‌اند.");roles.add(kind);if(candidate.id!==next.id)annualCompanions.push(candidate)}}nextCatalog=next;
+catalog.put(next);tx.objectStore("events").add({workspace:workspace.id,at:next.updatedAt,action,revision:next.revision,changes});if(keepUndo)tx.objectStore("und\
+o").put({id:workspace.id,action,revision:next.revision,before});else tx.objectStore("undo").delete(workspace.id);for(const companion of annualCompanions){const companionMeta=tx.
+objectStore("records").get(companion.id+"|meta");companionMeta.onsuccess=()=>{try{const metaRow=companionMeta.result,layout=metaRow?.value?.layout;if(metaRow?.workspace!==
+companion.id||metaRow?.logical!=="meta"||metaRow?.key!==companion.id+"|meta"||!Array.isArray(layout))throw Error("چیدمان نوبت برای ثبت نمرهٔ سالانه معتبر نیست.");
+let pending=0;const companionChanges=[],companionRecords=[];const finishCompanion=()=>{if(pending||!companionChanges.length)return;const synchronized={...companion,
+revision:globalThis.EduRevision.next(companion.revision),updatedAt:next.updatedAt};for(const row of companionRecords)tx.objectStore("records").put(row);catalog.
+put(synchronized);tx.objectStore("events").add({workspace:companion.id,at:synchronized.updatedAt,action:"همگام‌سازی نمرهٔ سالانهٔ پودمان",
 revision:synchronized.revision,changes:companionChanges});tx.objectStore("undo").delete(companion.id);annualUpdates.push({workspace:companion.id,revision:synchronized.
 revision})};for(const plan of annualPlans){const owners=layout.filter(school=>school.classes?.includes(plan.current.id));if(!owners.length)continue;if(owners.length!==
 1)throw Error("کلاس در چیدمان نوبت تکرار شده است.");if(owners[0].id!==plan.schoolId)continue;pending++;const request=tx.objectStore("\
 records").get(companion.id+"|"+plan.logical);request.onsuccess=()=>{try{const row=request.result;if(!row||row.key!==companion.id+"|"+plan.logical||row.workspace!==
 companion.id||row.logical!==plan.logical||row.value?.id!==plan.current.id)throw Error("رکورد کلاس برای ثبت نمرهٔ سالانه معتبر نیست.");
-const value=annualModel.mirrorClass(plan.previous,plan.current,row.value);if(value&&JSON.stringify(value)!==JSON.stringify(row.value)){tx.objectStore("records").
-put({...row,value});companionChanges.push({path:plan.logical+".annualModules",before:null,after:"نمره‌های سالانهٔ پودمان همگام شد"})}
-pending--;finishCompanion()}catch(error){abortQueue(error)}}}}catch(error){abortQueue(error)}}}}catch(error){abortQueue(error)}}}catch(error){abortQueue(error)}
-try{await done}catch(e){if(labelConflict)throw Error("ترم دیگری با همین سال و عنوان نوبت وجود دارد؛ عنوان متمایز انتخاب کنید.",
+const value=annualModel.mirrorClass(plan.previous,plan.current,row.value);if(value&&JSON.stringify(value)!==JSON.stringify(row.value)){companionRecords.push({...row,
+value});companionChanges.push({path:plan.logical+".annualModules",before:null,after:"نمره‌های سالانهٔ پودمان همگام شد"})}pending--;
+finishCompanion()}catch(error){abortQueue(error)}}}}catch(error){abortQueue(error)}}}}catch(error){abortQueue(error)}}}catch(error){abortQueue(error)}try{await done}catch(e){
+if(labelConflict)throw Error("ترم دیگری با همین سال و عنوان نوبت وجود دارد؛ عنوان متمایز انتخاب کنید.",
 {cause:e});if(conflict){const error=Error("داده در تب دیگری تغییر کرده است؛ برای جلوگیری از بازنویسی، صفحه را دوباره بارگذاری کنید.",
 {cause:e});error.code="WORKSPACE_CONFLICT";throw error}throw queueError||e}if(annualChanged)annualChanged.push(...annualUpdates);return nextCatalog}});
 //# sourceMappingURL=record-transaction.js.map

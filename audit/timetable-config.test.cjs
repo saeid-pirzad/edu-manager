@@ -12,6 +12,15 @@ function fixture() {
       controls["cfg" + prefix + field] = { value: "" };
   controls.cfgAllClass.value = "class";
   controls.cfgAllLesson.value = "lesson";
+  const target = {
+    school: { id: "school" },
+    classObj: {
+      id: "class",
+      name: "کلاس آزمایشی",
+      lessons: [{ id: "lesson" }],
+      students: [{ id: "student", name: "هنرجوی آزمایشی" }],
+    },
+  };
   const c = vm.createContext({
     workspace: { id: "first" },
     connection: {},
@@ -27,13 +36,7 @@ function fixture() {
       sessions: [{ id: "historical" }],
     },
     document: { getElementById: (id) => controls[id] },
-    findClassById: (id) =>
-      id === "class"
-        ? {
-            school: { id: "school" },
-            classObj: { lessons: [{ id: "lesson" }] },
-          }
-        : null,
+    findClassById: (id) => (id === "class" ? target : null),
     assertEntityWritable() {},
     confirm: () => true,
     saveDBV24: async () => effects.push("save"),
@@ -47,7 +50,7 @@ function fixture() {
     ),
     c,
   );
-  return { c, effects, controls };
+  return { c, effects, controls, target };
 }
 for (const choice of ["foreign-lesson", "missing-class", "incomplete"]) {
   test(`invalid later timetable section leaves the entire previous plan unchanged: ${choice}`, async () => {
@@ -67,6 +70,62 @@ test("valid timetable configuration preserves unrelated slots and historical ses
   assert.equal(f.c.db.masterSchedule["0-0-all"].schoolId, "school");
   assert.equal(f.c.db.masterSchedule["1-0-all"].classId, "unrelated");
   assert.equal(f.c.db.sessions[0].id, "historical");
+  assert.deepEqual(f.effects, ["save", "close", "render"]);
+});
+for (const prefix of ["All", "Odd", "Even"])
+  for (const archivedOnly of [false, true])
+    test(`timetable ${prefix} requires active students and leaves all data unchanged: archived only ${archivedOnly}`, async () => {
+      const f = fixture();
+      f.controls.cfgAllClass.value = "";
+      f.controls.cfgAllLesson.value = "";
+      f.controls["cfg" + prefix + "Class"].value = "class";
+      f.controls["cfg" + prefix + "Lesson"].value = "lesson";
+      f.target.classObj.students = [];
+      f.target.classObj.archivedStudents = archivedOnly
+        ? [{ id: "archived", name: "هنرجوی بایگانی‌شده" }]
+        : [];
+      const originalPlan = f.c.db.masterSchedule,
+        before = JSON.stringify(f.c.db);
+      await assert.rejects(
+        f.c.saveMasterConfigV24(0, 0),
+        /ابتدا هنرجویان کلاس.*ثبت کنید/,
+      );
+      assert.equal(f.c.db.masterSchedule, originalPlan);
+      assert.equal(JSON.stringify(f.c.db), before);
+      assert.equal(f.effects.length, 0);
+    });
+test("an empty later timetable class prevents a partial valid earlier section from being saved", async () => {
+  const f = fixture(),
+    findClass = f.c.findClassById;
+  f.c.findClassById = (id) =>
+    id === "empty"
+      ? {
+          school: { id: "school" },
+          classObj: {
+            id: "empty",
+            name: "کلاس خالی",
+            students: [],
+            lessons: [{ id: "empty-lesson" }],
+          },
+        }
+      : findClass(id);
+  f.controls.cfgOddClass.value = "empty";
+  f.controls.cfgOddLesson.value = "empty-lesson";
+  const originalPlan = f.c.db.masterSchedule,
+    before = JSON.stringify(f.c.db);
+  await assert.rejects(f.c.saveMasterConfigV24(0, 0), /کلاس خالی/);
+  assert.equal(f.c.db.masterSchedule, originalPlan);
+  assert.equal(JSON.stringify(f.c.db), before);
+  assert.equal(f.effects.length, 0);
+});
+test("an obsolete empty-class slot can still be removed without blocking timetable cleanup", async () => {
+  const f = fixture();
+  f.target.classObj.students = [];
+  f.controls.cfgAllClass.value = "";
+  f.controls.cfgAllLesson.value = "";
+  await f.c.saveMasterConfigV24(0, 0);
+  assert.equal(f.c.db.masterSchedule["0-0-all"], undefined);
+  assert.equal(f.c.db.masterSchedule["1-0-all"].classId, "unrelated");
   assert.deepEqual(f.effects, ["save", "close", "render"]);
 });
 test("clearing one slot preserves other slots and sessions", async () => {

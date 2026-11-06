@@ -5002,7 +5002,6 @@
   #app .navigation-menu[open] .header-actions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 4px;
-    padding: 6px !important;
   }
   #app .navigation-menu .header-actions > .header-action,
   #app .navigation-menu .header-actions > .workspace-tools > summary {

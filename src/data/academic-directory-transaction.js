@@ -769,6 +769,9 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
           ),
           { replace: true },
         );
+      for (const part of prepared)
+        if (part.plan.changed.length || part.plan.removed.length)
+          part.nextRevision = EduRevision.next(part.period.revision);
       const recoveredPeers =
         recoveredClasses.size && prepared.length > 1
           ? prepared
@@ -797,11 +800,7 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
                   nextWarnings = part.next.get("meta").migrationWarnings;
                 return {
                   id: part.period.id,
-                  revision:
-                    part.period.revision +
-                    (part.plan.changed.length || part.plan.removed.length
-                      ? 1
-                      : 0),
+                  revision: part.nextRevision ?? part.period.revision,
                   rosters,
                   ...(JSON.stringify(previousWarnings) !==
                   JSON.stringify(nextWarnings)
@@ -833,11 +832,9 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
                 termKind: live.termKind || academicTermKind(live.term),
               }
             : {}),
-          revision: part.period.revision + 1,
+          revision: part.nextRevision,
           updatedAt: at,
         };
-        if (!Number.isSafeInteger(updated.revision))
-          throw Error("شمارهٔ نسخهٔ اطلاعات قابل افزایش نیست.");
         tx.objectStore("catalog").put(updated);
         tx.objectStore("events").add({
           workspace: updated.id,

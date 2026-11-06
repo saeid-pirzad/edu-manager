@@ -121,6 +121,10 @@ function fixture(phase, mutation) {
     },
   };
   vm.runInContext(
+    fs.readFileSync(path.join(__dirname, "../src/domain/revision.js"), "utf8"),
+    c,
+  );
+  vm.runInContext(
     fs.readFileSync(
       path.join(__dirname, "../src/workspace/reports/finalize.js"),
       "utf8",
@@ -166,6 +170,25 @@ test("finalization stores its fixed report and guards without an operation backu
     ["catalog", "reports", "events"],
   );
   assert.deepEqual(backupWrites, []);
+});
+
+test("finalization refuses an exhausted revision before any catalog, frozen report or history write", async () => {
+  const { c, writes, messages } = fixture();
+  c.workspace.revision = Number.MAX_SAFE_INTEGER;
+  await assert.rejects(c.finalizePeriod(), { code: "REVISION_LIMIT_REACHED" });
+  assert.equal(c.workspace.closed, false);
+  assert.equal(c.workspace.revision, Number.MAX_SAFE_INTEGER);
+  assert.deepEqual(writes, []);
+  assert.deepEqual(messages, []);
+});
+
+test("finalization may store the last exact safe revision", async () => {
+  const { c, writes } = fixture();
+  c.workspace.revision = Number.MAX_SAFE_INTEGER - 1;
+  await c.finalizePeriod();
+  assert.equal(c.workspace.revision, Number.MAX_SAFE_INTEGER);
+  assert.equal(c.workspace.closed, true);
+  assert.ok(writes.length > 0);
 });
 
 test("finalization rejects a stale durable installation before any report or catalog write", async () => {

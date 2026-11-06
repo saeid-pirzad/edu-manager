@@ -92,6 +92,17 @@ test("old full backups remain valid without a sender-identity module or field", 
   assert.equal(validate(fixture()).length, 1);
 });
 
+test("archived full backups remain readable at the last two safe revisions", () => {
+  for (const revision of [
+    Number.MAX_SAFE_INTEGER - 1,
+    Number.MAX_SAFE_INTEGER,
+  ]) {
+    const value = fixture();
+    value.stores.catalog[0].revision = revision;
+    assert.equal(validate(value)[0].period.revision, revision);
+  }
+});
+
 test("full-backup identity is optional but malformed metadata is never silently dropped", () => {
   const value = fixture();
   value.deputyExportIdentity = null;

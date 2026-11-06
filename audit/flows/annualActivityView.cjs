@@ -13,6 +13,7 @@ module.exports = async function annualActivityView() {
       otherLesson: "annual_activity_other",
       s1: "annual_activity_student1",
       s2: "annual_activity_student2",
+      otherStudent: "annual_activity_other_student",
       old: "annual_activity_first_session",
       oldLater: "annual_activity_first_later",
       recent: "annual_activity_second_session",
@@ -161,7 +162,13 @@ module.exports = async function annualActivityView() {
                 {
                   id: ids.b,
                   name: "کلاس دیگر مصنوعی",
-                  students: [],
+                  students: [
+                    {
+                      id: ids.otherStudent,
+                      name: "هنرجوی مصنوعی کلاس دیگر",
+                      code: "3",
+                    },
+                  ],
                   archivedStudents: [],
                   lessons: [
                     {

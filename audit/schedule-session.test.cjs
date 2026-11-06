@@ -106,6 +106,58 @@ test("new schedule session snapshots its roster and keeps selected school and le
   assert.equal(f.c.db.sessions[0].lessonId, "lesson");
   assert.deepEqual(f.effects, ["save"]);
 });
+for (const archivedOnly of [false, true])
+  test(`new scheduled session rejects a class without active students: archived only ${archivedOnly}`, async () => {
+    const f = fixture();
+    f.target.classObj.students = [];
+    f.target.classObj.archivedStudents = archivedOnly
+      ? [{ id: "archived", name: "Historical student" }]
+      : [];
+    const before = JSON.stringify(f.c.db);
+    await assert.rejects(
+      f.c.startSessionFromMasterV24(0, 0),
+      /ابتدا هنرجویان این کلاس را ثبت کنید/,
+    );
+    assert.equal(JSON.stringify(f.c.db), before);
+    assert.equal(f.effects.length, 0);
+    assert.equal(f.modals.length, 0);
+  });
+test("students removed during draft flush are checked before creating a scheduled session", async () => {
+  const f = fixture();
+  f.c.flushDrafts = async () => {
+    f.target.classObj.students = [];
+  };
+  await assert.rejects(
+    f.c.startSessionFromMasterV24(0, 0),
+    /ابتدا هنرجویان این کلاس را ثبت کنید/,
+  );
+  assert.equal(f.c.db.sessions.length, 0);
+  assert.equal(f.effects.length, 0);
+  assert.equal(f.modals.length, 0);
+});
+for (const roster of [[], [{ id: "archived", name: "Historical student" }]])
+  test(`existing scheduled session remains readable without current active students: frozen members ${roster.length}`, async () => {
+    const f = fixture(),
+      existing = {
+        id: "existing",
+        schoolId: "school",
+        classId: "class",
+        date: "2026-10-24",
+        period: 0,
+        lessonId: "lesson",
+        attendance: roster.length ? { archived: "present" } : {},
+        scores: [],
+        roster: structuredClone(roster),
+      };
+    f.target.classObj.students = [];
+    f.target.classObj.archivedStudents = structuredClone(roster);
+    f.c.db.sessions.push(existing);
+    const before = JSON.stringify(f.c.db);
+    assert.equal(await f.c.startSessionFromMasterV24(0, 0), true);
+    assert.equal(JSON.stringify(f.c.db), before);
+    assert.deepEqual(f.effects, []);
+    assert.deepEqual(f.modals, [existing]);
+  });
 test("existing different-lesson session is preserved rather than overwritten", async () => {
   const f = fixture();
   const existing = {

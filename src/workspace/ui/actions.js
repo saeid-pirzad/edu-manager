@@ -2,6 +2,10 @@
 function installWorkspaceActions() {
   const commands = new Map([
     ["session-toggle-edit", (button) => toggleSessionEditing(button)],
+    [
+      "session-restore-roster",
+      (button) => restoreEmptySessionRosterV24(button),
+    ],
     ["attendance-reminder-open", (button) => openAttendanceReminder(button)],
     ["attendance-reminders-all", () => openAttendanceRemindersList()],
     ["attendance-reminders-page", (button) => pageAttendanceReminders(button)],

@@ -198,6 +198,7 @@ function fixture({
     showModal() {},
   });
   for (const file of [
+    "domain/revision.js",
     "domain/grade-math.js",
     "domain/data-boundary.js",
     "domain/grade-policy.js",

@@ -155,7 +155,7 @@ async function save() {
         JSON.stringify({ ...p, revision: 1 }) !==
           JSON.stringify({ ...baseline, revision: 1 })
       )
-        p.revision++;
+        p.revision = EduRevision.next(p.revision);
       P.validate(p);
       const count = p.method === "modular" ? number("podCount") : 1;
       if (!Number.isInteger(count) || count < 1 || count > 20)

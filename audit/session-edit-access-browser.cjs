@@ -114,7 +114,7 @@ async function run({ cdp, evaluate, cases, delay }) {
       "db.sessions[0].attendance['reminder-student-a']==='absent'&&!EduV24.test.getState().busy",
     );
     await evaluate(
-      `showSessionPanel('activity');const f=document.querySelector('.session-entry-form');f.elements.studentId.value='reminder-student-b';f.elements.type.value='positive';f.elements.value.value='2';f.elements.note.value='Intentional synthetic edit';f.requestSubmit()`,
+      `(()=>{showSessionPanel('activity');const f=document.querySelector('.session-entry-form');f.elements.studentId.value='reminder-student-b';f.elements.type.value='positive';f.elements.value.value='2';f.elements.note.value='Intentional synthetic edit';f.requestSubmit()})()`,
     );
     await wait(
       "db.sessions[0].scores.length===2&&!EduV24.test.getState().busy&&!!document.querySelector('.session-workspace[data-session-mode=edit]')",
@@ -162,11 +162,26 @@ async function run({ cdp, evaluate, cases, delay }) {
       "!!document.querySelector('#modal:not(.hidden) .session-workspace[data-session-mode=edit]')&&!EduV24.test.getState().busy",
     );
     const createdId = await evaluate("currentSessionId");
+    const freshManual = await evaluate(`(()=>{
+      const root=document.querySelector('.session-workspace'),form=root.querySelector('.session-entry-form');
+      return {mode:root.dataset.sessionMode,date:getSessionById(currentSessionId).date,
+        empty:Object.keys(getSessionById(currentSessionId).attendance).length===0,
+        notice:!!root.querySelector('.session-edit-notice'),control:!!root.querySelector('[data-session-edit-control]'),
+        attendance:[...root.querySelectorAll('.att-btns button')].every(button=>!button.disabled),
+        activity:[...form.elements].filter(control=>!control.hasAttribute('data-session-next')).every(control=>!control.disabled),
+        nextStudent:form.querySelector('[data-session-next]').disabled===(form.elements.studentId.selectedIndex<1||form.elements.studentId.selectedIndex>=form.elements.studentId.options.length-1)};
+    })()`);
     check(
       "NEW_SESSION_EDITABLE",
-      await evaluate(
-        "getSessionById(currentSessionId).date===todayISO()&&Object.keys(getSessionById(currentSessionId).attendance).length===0",
-      ),
+      freshManual.mode === "edit" &&
+        freshManual.date === (await evaluate("todayISO()")) &&
+        freshManual.empty &&
+        !freshManual.notice &&
+        !freshManual.control &&
+        freshManual.attendance &&
+        freshManual.activity &&
+        freshManual.nextStudent,
+      freshManual,
     );
     await evaluate(
       "closeModal();openSessionModal(getSessionById(" +
@@ -176,13 +191,82 @@ async function run({ cdp, evaluate, cases, delay }) {
     check(
       "EMPTY_STORED_SESSION_RELOCKS",
       await evaluate(
-        "document.querySelector('.session-workspace').dataset.sessionMode==='view'",
+        `(()=>{const root=document.querySelector('.session-workspace');return root.dataset.sessionMode==='view'&&!!root.querySelector('.session-edit-notice')&&!!root.querySelector('[data-session-edit-control]')&&[...root.querySelectorAll('.att-btns button')].every(button=>button.disabled)&&Object.keys(getSessionById(currentSessionId).attendance).length===0})()`,
+      ),
+    );
+    await evaluate("closeModal();goSchools()");
+    await click('[data-legacy-click="today-agenda"][data-period="0"]');
+    await wait(
+      "!!document.querySelector('#modal:not(.hidden) .session-workspace[data-session-mode=edit]')&&!EduV24.test.getState().busy",
+    );
+    const scheduledId = await evaluate("currentSessionId");
+    const freshScheduled = await evaluate(`(()=>{
+      const root=document.querySelector('.session-workspace'),session=getSessionById(currentSessionId),form=root.querySelector('.session-entry-form');
+      return {mode:root.dataset.sessionMode,date:session.date,period:session.period,
+        notice:!!root.querySelector('.session-edit-notice'),control:!!root.querySelector('[data-session-edit-control]'),
+        attendance:[...root.querySelectorAll('.att-btns button')].every(button=>!button.disabled),
+        activity:[...form.elements].filter(control=>!control.hasAttribute('data-session-next')).every(control=>!control.disabled),
+        nextStudent:form.querySelector('[data-session-next]').disabled===(form.elements.studentId.selectedIndex<1||form.elements.studentId.selectedIndex>=form.elements.studentId.options.length-1)};
+    })()`);
+    check(
+      "TODAY_NEW_SESSION_NEEDS_NO_ACTIVATION",
+      scheduledId !== createdId &&
+        freshScheduled.mode === "edit" &&
+        freshScheduled.date === (await evaluate("todayISO()")) &&
+        freshScheduled.period === 0 &&
+        !freshScheduled.notice &&
+        !freshScheduled.control &&
+        freshScheduled.attendance &&
+        freshScheduled.activity &&
+        freshScheduled.nextStudent,
+      freshScheduled,
+    );
+    await click('.att-btns[data-sid="reminder-student-a"] .present');
+    await wait(
+      "getSessionById(currentSessionId).attendance['reminder-student-a']==='present'&&!EduV24.test.getState().busy",
+    );
+    check(
+      "NEW_SESSION_ATTENDANCE_SAVES_IMMEDIATELY",
+      await evaluate(`(async()=>{
+        const snapshot=await EduV24.snapshotInstallation(),row=snapshot.stores.records.find(record=>record.workspace===EduV24.getReportContext().id&&record.logical==='session:'+currentSessionId),root=document.querySelector('.session-workspace');
+        return row?.value.attendance['reminder-student-a']==='present'&&root.dataset.sessionMode==='edit'&&!root.querySelector('.session-edit-notice,[data-session-edit-control]');
+      })()`),
+    );
+    await evaluate(
+      `(()=>{showSessionPanel('activity');const f=document.querySelector('.session-entry-form');f.elements.studentId.value='reminder-student-b';f.elements.type.value='positive';f.elements.value.value='0.25';f.elements.note.value='Synthetic first-entry activity';f.requestSubmit()})()`,
+    );
+    await wait(
+      "getSessionById(currentSessionId).scores.length===1&&!EduV24.test.getState().busy",
+    );
+    check(
+      "NEW_SESSION_ACTIVITY_SAVES_AND_REPAINTS_WITHOUT_ACTIVATION",
+      await evaluate(`(async()=>{
+        const snapshot=await EduV24.snapshotInstallation(),row=snapshot.stores.records.find(record=>record.workspace===EduV24.getReportContext().id&&record.logical==='session:'+currentSessionId),score=row?.value.scores[0],root=document.querySelector('.session-workspace');
+        return score?.studentId==='reminder-student-b'&&score.type==='positive'&&score.value===0.25&&score.note==='Synthetic first-entry activity'&&root.dataset.sessionMode==='edit'&&!root.querySelector('.session-edit-notice,[data-session-edit-control]')&&root.querySelector('.session-activity-records').textContent.includes('Synthetic first-entry activity');
+      })()`),
+    );
+    await evaluate("openSessionModal(getSessionById(currentSessionId))");
+    check(
+      "NEW_SESSION_INTERNAL_RERENDER_KEEPS_FIRST_ENTRY_MODE",
+      await evaluate(
+        `(()=>{const root=document.querySelector('.session-workspace'),form=root.querySelector('.session-entry-form');return root.dataset.sessionMode==='edit'&&!root.querySelector('.session-edit-notice,[data-session-edit-control]')&&[...root.querySelectorAll('.att-btns button')].every(button=>!button.disabled)&&[...form.elements].filter(control=>!control.hasAttribute('data-session-next')).every(control=>!control.disabled)&&form.querySelector('[data-session-next]').disabled===(form.elements.studentId.selectedIndex<1||form.elements.studentId.selectedIndex>=form.elements.studentId.options.length-1)})()`,
+      ),
+    );
+    await evaluate(
+      "closeModal();openSessionModal(getSessionById(" +
+        JSON.stringify(scheduledId) +
+        "))",
+    );
+    check(
+      "NEW_SESSION_SECOND_ENTRY_REQUIRES_ACTIVATION",
+      await evaluate(
+        `(()=>{const root=document.querySelector('.session-workspace');return root.dataset.sessionMode==='view'&&!!root.querySelector('.session-edit-notice')&&!!root.querySelector('[data-session-edit-control]')&&[...root.querySelectorAll('.att-btns button')].every(button=>button.disabled)&&[...root.querySelector('.session-entry-form').elements].every(control=>control.disabled)})()`,
       ),
     );
     await click("[data-workspace-action=session-toggle-edit]");
     await require("./browser-ready.cjs")({ cdp, evaluate, delay });
     await evaluate(
-      "openSessionModal(getSessionById(" + JSON.stringify(createdId) + "))",
+      "openSessionModal(getSessionById(" + JSON.stringify(scheduledId) + "))",
     );
     check(
       "RELOAD_NEVER_PERSISTS_PERMISSION",

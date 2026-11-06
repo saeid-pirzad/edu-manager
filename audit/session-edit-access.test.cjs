@@ -39,6 +39,7 @@ function fixture() {
               root.notice = html;
             },
           };
+        if (!root.notice) return null;
         if (selector === "[data-session-edit-control]") return root.button;
         return nodes[
           selector.match(/data-session-edit-(title|description|label)/)?.[1]
@@ -154,6 +155,9 @@ test("a genuinely new committed session starts editable but closing and reopenin
   const f = fixture();
   f.c.openNewSessionDialogV24(f.session);
   assert.equal(f.c.isSessionEditable("session"), true);
+  assert.equal(f.dom.root.dataset.sessionMode, "edit");
+  assert.equal(f.dom.root.notice, "");
+  assert.equal(f.dom.root.querySelector("[data-session-edit-control]"), null);
   f.close();
   assert.equal(
     f.dom.root.isConnected,
@@ -163,6 +167,41 @@ test("a genuinely new committed session starts editable but closing and reopenin
   assert.equal(f.c.isSessionEditable("session"), false);
   f.c.openSessionModalV24(f.session);
   assert.equal(f.c.isSessionEditable("session"), false);
+  assert.match(f.dom.root.notice, /data-session-edit-control/);
+  assert.match(f.dom.root.nodes.label.textContent, /فعال‌کردن/);
+});
+
+test("the initial creation dialog stays directly editable without an edit notice after internal rerender", () => {
+  const f = fixture();
+  f.c.openNewSessionDialogV24(f.session);
+  const token = f.c.assertSessionEditable("session"),
+    root = f.dom.root;
+  f.c.workspace = { ...f.c.workspace, revision: 2 };
+  f.session.scores.push({
+    studentId: "student",
+    type: "positive",
+    value: 0.25,
+  });
+  f.c.openSessionModalV24(f.session, { activitySaved: {} });
+  assert.equal(root.isConnected, false);
+  assert.equal(f.c.isSessionEditable("session"), true);
+  assert.equal(f.c.isSessionEditable("session", token), false);
+  assert.equal(f.dom.root.notice, "");
+  assert.equal(f.dom.root.querySelector("[data-session-edit-control]"), null);
+  assert.equal(Object.hasOwn(f.session, "freshCreation"), false);
+  assert.equal(f.effects.length, 0);
+});
+
+test("creation dialog state never carries into a different recorded session or an opener option", () => {
+  const f = fixture();
+  f.c.openNewSessionDialogV24(f.session);
+  f.c.openSessionModalV24(f.other, { created: true, freshCreation: true });
+  assert.equal(f.c.isSessionEditable("other"), false);
+  assert.equal(f.dom.root.dataset.sessionMode, "view");
+  assert.match(f.dom.root.notice, /data-session-edit-control/);
+  f.c.openSessionModalV24(f.session);
+  assert.equal(f.c.isSessionEditable("session"), false);
+  assert.match(f.dom.root.notice, /data-session-edit-control/);
 });
 
 test("a stored empty session never counts as a new creation", () => {
@@ -281,10 +320,13 @@ test("closed workspaces, pending writes and detached controls cannot enable sess
   assert.equal(f.c.isSessionEditable("session"), false);
 });
 
-function recoveryFixture(editable = true) {
+function recoveryFixture(editable = true, freshCreation = false) {
   const f = fixture();
-  f.c.openSessionModalV24(f.session);
-  if (editable) f.unlock();
+  if (freshCreation) f.c.openNewSessionDialogV24(f.session);
+  else {
+    f.c.openSessionModalV24(f.session);
+    if (editable) f.unlock();
+  }
   const recovery = f.c.captureSessionEditRecovery(),
     previous = f.c.db,
     loaded = {
@@ -317,6 +359,27 @@ test("an own failed-save rollback restores the existing consent for the same con
   assert.equal(f.c.isSessionEditable("session"), true);
   assert.equal(f.c.isSessionEditable("session", f.recovery.token), false);
   assert.equal(f.c.db.sessions[0].date, "2026-11-05");
+});
+
+test("an own failed-save rollback preserves the creation dialog until it is closed, without persisting its mode", () => {
+  const f = recoveryFixture(true, true);
+  assert.equal(
+    f.c.rebindSessionEditAfterRollback(
+      f.recovery,
+      f.previous,
+      f.loaded,
+      f.expected,
+    ),
+    true,
+  );
+  f.c.openSessionModalV24(f.c.db.sessions[0]);
+  assert.equal(f.c.isSessionEditable("session"), true);
+  assert.equal(f.dom.root.notice, "");
+  assert.equal(Object.hasOwn(f.c.db.sessions[0], "freshCreation"), false);
+  f.close();
+  f.c.openSessionModalV24(f.c.db.sessions[0]);
+  assert.equal(f.c.isSessionEditable("session"), false);
+  assert.match(f.dom.root.notice, /data-session-edit-control/);
 });
 
 test("rollback never creates consent for a read-only session", () => {

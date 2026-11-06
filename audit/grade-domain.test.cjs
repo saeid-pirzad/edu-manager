@@ -12,6 +12,21 @@ for (const file of ["grade-math.js", "data-boundary.js", "grade-policy.js"])
     context,
   );
 const policy = context.EduPolicy;
+
+test("grade policy rejects unsafe revision metadata without changing valid score calculations", () => {
+  const valid = {
+    ...policy.defaults("dual", "1405-1406"),
+    revision: Number.MAX_SAFE_INTEGER,
+  };
+  assert.equal(policy.validate(valid), true);
+  assert.equal(policy.dual(valid, 20, 10).final, 17);
+  for (const revision of [
+    Number.MAX_SAFE_INTEGER + 1,
+    Number.MAX_VALUE,
+    Infinity,
+  ])
+    assert.throws(() => policy.validate({ ...valid, revision }), /نسخه یا روش/);
+});
 test("configurable dual grading uses saved weights and the exact passing threshold", () => {
   const p = {
     ...policy.defaults("dual", "1405-1406"),

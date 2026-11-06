@@ -197,6 +197,7 @@ function fixture({
   for (const item of extra)
     install(item.id, item.kind || "first", item.year, item.sessions);
   for (const source of [
+    "domain/revision.js",
     "domain/session-slots.js",
     ...(directory
       ? [

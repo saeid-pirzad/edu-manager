@@ -46,14 +46,14 @@ function fixture(options = {}) {
       year: "1405-1406",
       term: options.legacySource ? "سوابق پیشین" : "اول",
       termKind: options.legacySource ? null : "first",
-      revision: 1,
+      revision: options.sourceRevision ?? 1,
     },
     second = {
       id: "second",
       year: "1405-1406",
       term: "دوم",
       termKind: "second",
-      revision: 7,
+      revision: options.companionRevision ?? 7,
       closed: true,
       closedAt: "2026-01-01T00:00:00.000Z",
       reportSource: "preserved",
@@ -182,6 +182,7 @@ function fixture(options = {}) {
   });
   const modelPath = path.join(__dirname, "../src/domain/annual-modules.js");
   for (const filename of [
+    path.join(__dirname, "../src/domain/revision.js"),
     modelPath,
     path.join(__dirname, "../src/data/record-transaction.js"),
   ])
@@ -598,4 +599,116 @@ test("matching nonempty installation permits atomic annual grade save", async ()
       .podScores.student.c,
     3,
   );
+});
+
+for (const target of ["source", "companion"]) {
+  test(`exhausted ${target} revision aborts annual records, catalog, history and undo together`, async () => {
+    const f = fixture({
+      [target + "Revision"]: Number.MAX_SAFE_INTEGER,
+    });
+    const revision = f.c.EduRevision;
+    let domainError;
+    f.c.EduRevision = {
+      next(value) {
+        try {
+          return revision.next(value);
+        } catch (error) {
+          domainError = error;
+          throw error;
+        }
+      },
+    };
+    const before = structuredClone(f.stores);
+    await assert.rejects(
+      f.c.EduRecordTransaction.commit(f.args),
+      (error) =>
+        error === domainError && error.code === "REVISION_LIMIT_REACHED",
+    );
+    assert.equal(f.aborted, true);
+    assert.deepEqual(f.stores, before);
+    assert.deepEqual(f.args.annualChanged, []);
+    if (target === "source") assert.equal(f.writes.length, 0);
+    else
+      assert.equal(
+        f.writes.some(
+          ([name, operation, row]) =>
+            name === "records" &&
+            operation === "put" &&
+            row.workspace === "second",
+        ),
+        false,
+      );
+  });
+}
+
+test("the last safe source and companion revision commits with exact history and undo tokens", async () => {
+  const f = fixture({
+    sourceRevision: Number.MAX_SAFE_INTEGER - 1,
+    companionRevision: Number.MAX_SAFE_INTEGER - 1,
+  });
+  const result = await f.c.EduRecordTransaction.commit(f.args);
+  assert.equal(result.revision, Number.MAX_SAFE_INTEGER);
+  assert.equal(
+    f.stores.catalog.get("second").revision,
+    Number.MAX_SAFE_INTEGER,
+  );
+  for (const event of f.stores.events.values())
+    assert.equal(event.revision, Number.MAX_SAFE_INTEGER);
+  assert.equal(f.stores.undo.get("first").revision, Number.MAX_SAFE_INTEGER);
+  assert.equal(f.args.annualChanged[0].revision, Number.MAX_SAFE_INTEGER);
+});
+
+test("an unchanged companion at the revision limit permits a source grade save", async () => {
+  const f = fixture({
+    companionRevision: Number.MAX_SAFE_INTEGER,
+    companion: classroom(3),
+  });
+  await f.c.EduRecordTransaction.commit(f.args);
+  assert.equal(f.stores.catalog.get("first").revision, 2);
+  assert.equal(
+    f.stores.catalog.get("second").revision,
+    Number.MAX_SAFE_INTEGER,
+  );
+  assert.equal(f.stores.undo.has("second"), true);
+  assert.deepEqual(f.args.annualChanged, []);
+});
+
+test("zero revisions advance normally while preserving synchronized grade values", async () => {
+  const f = fixture({ sourceRevision: 0, companionRevision: 0 });
+  await f.c.EduRecordTransaction.commit(f.args);
+  for (const id of ["first", "second"]) {
+    assert.equal(f.stores.catalog.get(id).revision, 1);
+    assert.equal(
+      f.stores.records.get(id + "|class:class").value.lessons[0].poudmans[0]
+        .podScores.student.c,
+      3,
+    );
+  }
+});
+
+test("an ordinary edit can consume the last safe revision and its next edit is rejected atomically", async () => {
+  const edit = (f) => {
+    const value = structuredClone(f.args.before[0].value);
+    value.name = "Renamed class";
+    f.args.changed = [["class:class", JSON.stringify(value)]];
+  };
+  const f = fixture({ sourceRevision: Number.MAX_SAFE_INTEGER - 1 });
+  edit(f);
+  await f.c.EduRecordTransaction.commit(f.args);
+  assert.equal(f.stores.catalog.get("first").revision, Number.MAX_SAFE_INTEGER);
+  assert.equal(
+    f.stores.records.get("first|class:class").value.name,
+    "Renamed class",
+  );
+  const exhausted = fixture({
+    sourceRevision: f.stores.catalog.get("first").revision,
+  });
+  edit(exhausted);
+  const before = structuredClone(exhausted.stores);
+  await assert.rejects(
+    exhausted.c.EduRecordTransaction.commit(exhausted.args),
+    (error) => error.code === "REVISION_LIMIT_REACHED",
+  );
+  assert.deepEqual(exhausted.stores, before);
+  assert.equal(exhausted.writes.length, 0);
 });

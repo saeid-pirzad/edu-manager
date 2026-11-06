@@ -204,7 +204,7 @@ async function finalizePeriod() {
         ...request.result,
         closed: true,
         closedAt: at,
-        revision: request.result.revision + 1,
+        revision: EduRevision.next(request.result.revision),
       };
       tx.objectStore("catalog").put(finalizedWorkspace);
       tx.objectStore("reports").put(snapshot);
@@ -258,6 +258,7 @@ async function reopenPeriod() {
   const tx = connection.transaction(["catalog", "events"], "readwrite"),
     done = transactionDone(tx),
     request = tx.objectStore("catalog").get(context.id);
+  let reopeningError;
   request.onsuccess = () => {
     if (
       !request.result ||
@@ -269,21 +270,30 @@ async function reopenPeriod() {
       tx.abort();
       return;
     }
-    reopenedWorkspace = {
-      ...request.result,
-      closed: false,
-      revision: request.result.revision + 1,
-    };
-    tx.objectStore("catalog").put(reopenedWorkspace);
-    tx.objectStore("events").add({
-      workspace: context.id,
-      at: new Date().toISOString(),
-      revision: reopenedWorkspace.revision,
-      action: "بازگشایی نوبت؛ کارنامه ثابت پیشین محفوظ است",
-      changes: [],
-    });
+    try {
+      reopenedWorkspace = {
+        ...request.result,
+        closed: false,
+        revision: EduRevision.next(request.result.revision),
+      };
+      tx.objectStore("catalog").put(reopenedWorkspace);
+      tx.objectStore("events").add({
+        workspace: context.id,
+        at: new Date().toISOString(),
+        revision: reopenedWorkspace.revision,
+        action: "بازگشایی نوبت؛ کارنامه ثابت پیشین محفوظ است",
+        changes: [],
+      });
+    } catch (error) {
+      reopeningError = error;
+      tx.abort();
+    }
   };
-  await done;
+  try {
+    await done;
+  } catch (error) {
+    throw reopeningError || error;
+  }
   broadcast({
     workspace: context.id,
     revision: reopenedWorkspace.revision,

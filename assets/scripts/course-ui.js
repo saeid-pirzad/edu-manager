@@ -112,20 +112,20 @@ isInteger(p.unitCount)||p.unitCount<1||p.unitCount>10)throw recordFieldError("ت
 e_unitCount")}if(p.method==="dual"&&p.subjectType!=="general"){if(p.practicalWeight>100)throw recordFieldError("سهم عملی باید بین صفر و صد باشد.",
 "course_practicalWeight");if(p.passMin>20)throw recordFieldError("حداقل قبولی باید بین صفر و بیست باشد.","course_passMin");p.dualConfigurable=
 true}p.confirmed=editing.seed.gradingPolicy?.confirmed===true;p.requireGate=false;const baseline=original?.gradingPolicy;p.revision=baseline?.revision||1;if(baseline&&
-JSON.stringify({...p,revision:1})!==JSON.stringify({...baseline,revision:1}))p.revision++;P.validate(p);const count=p.method==="modular"?number("podCount"):1;if(!Number.
-isInteger(count)||count<1||count>20)throw recordFieldError("تعداد پودمان باید عدد صحیح بین ۱ تا ۲۰ باشد.","course_podCount");const methodChanged=original&&
-original.gradeMode==="kardanesh"!==(p.method==="dual"),hasSessions=history?.hasSessions||api.getDB().sessions.some(s=>s.lessonId===next.id);if(methodChanged&&hasSessions)
-throw Error("درس دارای جلسه است؛ برای تغییر ساختار یک کپی جدید بسازید.");if(p.method==="modular"){const previousUnitCount=original?.
-gradingPolicy?.unitCount??editing.seed.gradingPolicy?.unitCount??P.defaults("modular",api.year()).unitCount,uniformUnitsChanged=p.unitCount!==previousUnitCount,
-podCountChanged=count!==next.poudmans.length,unitCounts=new Map;for(const pod of next.poudmans.slice(0,count)){const requested=val("unitCount_"+pod.id),unitCount=requested!==
-void 0?number("unitCount_"+pod.id):uniformUnitsChanged?p.unitCount:pod.units.length;if(!Number.isInteger(unitCount)||unitCount<1||unitCount>10)throw recordFieldError(
-"تعداد واحدهای هر پودمان باید عدد صحیح بین ۱ تا ۱۰ باشد.",requested!==void 0?"course_unitCount_"+pod.id:"course_unitC\
-ount");unitCounts.set(pod.id,unitCount)}const unitCountChanged=next.poudmans.slice(0,count).some(pod=>unitCounts.get(pod.id)!==pod.units.length);if(hasSessions&&
-(podCountChanged||unitCountChanged))throw Error(podCountChanged?"برای تغییر تعداد پودمان‌های درس دارای جلسه، کپی جدید بسازید.":
-"برای تغییر تعداد واحدهای درس دارای جلسه، کپی جدید بسازید.");if(methodChanged||!next.poudmans.length)next.poudmans=
-makePods(count,p.unitCount);else{const uniqueName=(base,used)=>{let name2=base,suffix=2;while(used.has(normalizedName(name2)))name2=base+" ("+suffix+++")";used.
-add(normalizedName(name2));return name2},podNames=new Set(next.poudmans.slice(0,count).map(pod=>normalizedName(pod.name))),freshUnit=(index,used)=>({id:api.uid(),
-name:uniqueName("واحد یادگیری "+(index+1),used),unitScores:{},applyOptions:{}});next.poudmans=Array.from({length:count},(_,index)=>{const existing=next.
+JSON.stringify({...p,revision:1})!==JSON.stringify({...baseline,revision:1}))p.revision=EduRevision.next(p.revision);P.validate(p);const count=p.method==="modul\
+ar"?number("podCount"):1;if(!Number.isInteger(count)||count<1||count>20)throw recordFieldError("تعداد پودمان باید عدد صحیح بین ۱ تا ۲۰ باشد.",
+"course_podCount");const methodChanged=original&&original.gradeMode==="kardanesh"!==(p.method==="dual"),hasSessions=history?.hasSessions||api.getDB().sessions.some(
+s=>s.lessonId===next.id);if(methodChanged&&hasSessions)throw Error("درس دارای جلسه است؛ برای تغییر ساختار یک کپی جدید بسازید.");
+if(p.method==="modular"){const previousUnitCount=original?.gradingPolicy?.unitCount??editing.seed.gradingPolicy?.unitCount??P.defaults("modular",api.year()).unitCount,
+uniformUnitsChanged=p.unitCount!==previousUnitCount,podCountChanged=count!==next.poudmans.length,unitCounts=new Map;for(const pod of next.poudmans.slice(0,count)){
+const requested=val("unitCount_"+pod.id),unitCount=requested!==void 0?number("unitCount_"+pod.id):uniformUnitsChanged?p.unitCount:pod.units.length;if(!Number.isInteger(
+unitCount)||unitCount<1||unitCount>10)throw recordFieldError("تعداد واحدهای هر پودمان باید عدد صحیح بین ۱ تا ۱۰ باشد.",
+requested!==void 0?"course_unitCount_"+pod.id:"course_unitCount");unitCounts.set(pod.id,unitCount)}const unitCountChanged=next.poudmans.slice(0,count).some(pod=>unitCounts.
+get(pod.id)!==pod.units.length);if(hasSessions&&(podCountChanged||unitCountChanged))throw Error(podCountChanged?"برای تغییر تعداد پودمان‌های درس دارای جلسه، کپی\
+ جدید بسازید.":"برای تغییر تعداد واحدهای درس دارای جلسه، کپی جدید بسازید.");if(methodChanged||!next.poudmans.
+length)next.poudmans=makePods(count,p.unitCount);else{const uniqueName=(base,used)=>{let name2=base,suffix=2;while(used.has(normalizedName(name2)))name2=base+" \
+("+suffix+++")";used.add(normalizedName(name2));return name2},podNames=new Set(next.poudmans.slice(0,count).map(pod=>normalizedName(pod.name))),freshUnit=(index,used)=>({
+id:api.uid(),name:uniqueName("واحد یادگیری "+(index+1),used),unitScores:{},applyOptions:{}});next.poudmans=Array.from({length:count},(_,index)=>{const existing=next.
 poudmans[index];if(!existing){const unitNames2=new Set;return{id:api.uid(),name:uniqueName("پودمان "+(index+1),podNames),podScores:{},units:Array.from({length:p.
 unitCount},(_2,i)=>freshUnit(i,unitNames2))}}const unitNames=new Set(existing.units.slice(0,unitCounts.get(existing.id)).map(unit=>normalizedName(unit.name)));existing.
 units=Array.from({length:unitCounts.get(existing.id)},(_2,i)=>existing.units[i]||freshUnit(i,unitNames));return existing})}}else if(methodChanged)next.poudmans=

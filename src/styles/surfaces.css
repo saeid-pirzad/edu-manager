@@ -392,8 +392,36 @@
   }
 }
 @media screen and (forced-colors: active) {
+  /* Match both normal and invalid focus specificity before restoring system colors. */
   :is(#app, #modalBody, #calPopup, #pwaWelcome)
-    :is(input, select, textarea):focus {
+    :is(
+      input:not(
+        [type="checkbox"],
+        [type="radio"],
+        [type="range"],
+        [type="hidden"]
+      ),
+      select,
+      textarea
+    ):focus,
+  :is(#app, #modalBody, #calPopup, #pwaWelcome)
+    :is(
+      input:not(
+        [type="checkbox"],
+        [type="radio"],
+        [type="range"],
+        [type="hidden"]
+      ),
+      select,
+      textarea
+    )[aria-invalid="true"]:focus,
+  :is(#app, #modalBody, #calPopup, #pwaWelcome)
+    input:is(
+      [type="checkbox"],
+      [type="radio"],
+      [type="range"],
+      [type="hidden"]
+    ):focus {
     outline: 2px solid Highlight !important;
     outline-offset: 2px;
     border-color: Highlight !important;

@@ -267,6 +267,11 @@ async function restoreFullBackup() {
     )
   )
     return false;
+  const periods = validateFullBackup(source);
+  // Restored workspaces must retain capacity for at least one later edit.
+  // Reject exhausted input before pausing the file or draining any writers.
+  for (const { period } of periods)
+    globalThis.EduRevision.next(globalThis.EduRevision.next(period.revision));
   fullRestoreBusy = true;
   const hadFileTimer = !!singleFileTimer;
   pauseSingleFile();
@@ -288,7 +293,6 @@ async function restoreFullBackup() {
   };
   try {
     if (singleFileWriting) await singleFileWriting;
-    const periods = validateFullBackup(source);
     const guard = await readSystemRestoreGuard(check);
     await draftWriter.catch(() => {});
     check();
@@ -305,13 +309,13 @@ async function restoreFullBackup() {
     const previous = new Map(guard.catalog.map((row) => [row.id, row]));
     for (const { period, data } of periods) {
       const liveRevision = previous.get(period.id)?.revision;
-      const revision =
+      const revision = globalThis.EduRevision.next(
         Math.max(
           period.revision,
           Number.isSafeInteger(liveRevision) ? liveRevision : 0,
-        ) + 1;
-      if (!Number.isSafeInteger(revision))
-        throw Error("شماره نسخه اطلاعات قابل بازیابی نیست.");
+        ),
+      );
+      globalThis.EduRevision.next(revision);
       const notes = {
         ...validateReportNotes(period.reportNotesRecovery, period.id),
         ...validateReportNotes(source.reportDrafts?.[period.id], period.id),

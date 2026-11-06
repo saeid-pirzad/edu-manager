@@ -8,17 +8,17 @@ branch:method==="dual"?"kardanesh":"fani",grade:"",field:"",code:"",authority:""
 theoryMin:0,practicalMin:0,passMin:14,mostamarMax:5,competencyFactor:5,competencyMin:2,moduleMin:12,continuousStep:.5,requireGate:false,unitCount:1}}function validate(p){
 if(p?.dualConfigurable!==void 0&&typeof p.dualConfigurable!=="boolean")throw Error("وضعیت تنظیم ضرایب نامعتبر است.");if(p?.subjectType!==
 void 0&&!["general","vocational"].includes(p.subjectType))throw Error("نوع درس نامعتبر است.");if(p?.subjectType==="general"&&p.method!=="dual")throw Error(
-"درس عمومی نمره مستقیم دارد.");if(!p||p.version!==1||!Number.isInteger(p.revision)||p.revision<1||!["dual","modular"].includes(p.method))throw Error(
-"نسخه یا روش ارزشیابی نامعتبر است.");if(!["kardanesh","fani"].includes(p.branch)||!["","10","11","12"].includes(p.grade))throw Error(
-"شاخه یا پایه نامعتبر است.");if(p.branch==="kardanesh"!==(p.method==="dual"))throw Error("کاردانش باید نظری و عملی و فنی‌وحرفه‌ای باید پودما\
-نی باشد.");for(const k of["year","field","code","authority","circularNumber","circularDate","reference"])if(typeof p[k]!=="string"||p[k].length>2e3)throw Error(
-"مشخصات ابلاغیه نامعتبر است: "+k);if(!/^\d{4}-\d{4}$/.test(p.year)||Number(p.year.slice(5))-Number(p.year.slice(0,4))!==1)throw Error("سا\
-ل تحصیلی مانند 1405-1406 باشد.");if(typeof p.confirmed!=="boolean"||typeof p.requireGate!=="boolean")throw Error("وضعیت تأیید نامعتبر است.");
-if(p.confirmed&&!p.code.trim())throw Error("برای تأیید قواعد، کد درس / استاندارد را تکمیل کنید.");for(const k of["practi\
-calWeight","theoryMin","practicalMin","passMin","mostamarMax","competencyFactor","competencyMin","moduleMin","continuousStep"])if(typeof p[k]!=="number"||!Number.
-isFinite(p[k]))throw Error("عدد قواعد نامعتبر است: "+k);if(p.practicalWeight<0||p.practicalWeight>100||[p.theoryMin,p.practicalMin,p.passMin,p.
-moduleMin].some(x=>x<0||x>20))throw Error("وزن باید صفر تا صد و حدنصاب صفر تا بیست باشد.");if(p.mostamarMax<=0||p.mostamarMax>
-20||p.competencyFactor<=0||p.mostamarMax+3*p.competencyFactor!==20)throw Error("حداکثر مستمر + سه برابر ضریب شایستگی باید ۲۰ باشد.");
+"درس عمومی نمره مستقیم دارد.");if(!p||p.version!==1||!Number.isSafeInteger(p.revision)||p.revision<1||!["dual","modular"].includes(p.method))
+throw Error("نسخه یا روش ارزشیابی نامعتبر است.");if(!["kardanesh","fani"].includes(p.branch)||!["","10","11","12"].includes(p.grade))
+throw Error("شاخه یا پایه نامعتبر است.");if(p.branch==="kardanesh"!==(p.method==="dual"))throw Error("کاردانش باید نظری و عملی و فنی‌وحرفه‌ا\
+ی باید پودمانی باشد.");for(const k of["year","field","code","authority","circularNumber","circularDate","reference"])if(typeof p[k]!=="string"||
+p[k].length>2e3)throw Error("مشخصات ابلاغیه نامعتبر است: "+k);if(!/^\d{4}-\d{4}$/.test(p.year)||Number(p.year.slice(5))-Number(p.year.slice(
+0,4))!==1)throw Error("سال تحصیلی مانند 1405-1406 باشد.");if(typeof p.confirmed!=="boolean"||typeof p.requireGate!=="boolean")throw Error("وضع\
+یت تأیید نامعتبر است.");if(p.confirmed&&!p.code.trim())throw Error("برای تأیید قواعد، کد درس / استاندارد را تکمیل کنید.");
+for(const k of["practicalWeight","theoryMin","practicalMin","passMin","mostamarMax","competencyFactor","competencyMin","moduleMin","continuousStep"])if(typeof p[k]!==
+"number"||!Number.isFinite(p[k]))throw Error("عدد قواعد نامعتبر است: "+k);if(p.practicalWeight<0||p.practicalWeight>100||[p.theoryMin,p.practicalMin,
+p.passMin,p.moduleMin].some(x=>x<0||x>20))throw Error("وزن باید صفر تا صد و حدنصاب صفر تا بیست باشد.");if(p.mostamarMax<=0||p.
+mostamarMax>20||p.competencyFactor<=0||p.mostamarMax+3*p.competencyFactor!==20)throw Error("حداکثر مستمر + سه برابر ضریب شایستگی باید ۲۰ باشد.");
 if(![1,2,3].includes(p.competencyMin)||p.continuousStep<=0||p.continuousStep>p.mostamarMax||!Number.isInteger(p.unitCount)||p.unitCount<1||p.unitCount>10)throw Error(
 "گام مستمر، حد شایستگی یا تعداد واحد نامعتبر است.");return true}function parse(value,p,field,kind){const text=digits(value);
 if(!text)return{ok:false,message:"برای حذف نمره از دکمه پاک‌کردن استفاده کنید."};if(!/^(?:\d{1,2}(?:\.\d{1,6})?|\.\d{1,6})$/.

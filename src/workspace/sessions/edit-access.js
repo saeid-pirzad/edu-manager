@@ -161,7 +161,8 @@ function renderSessionDialogV24(session, options, created) {
     throw Error("جلسه دیگر موجود نیست؛ فهرست را دوباره باز کنید.");
   const previousId = currentSessionId,
     previousAccess = currentSessionEditAccess(session.id),
-    editable = created || !!previousAccess?.editable;
+    editable = created || !!previousAccess?.editable,
+    freshCreation = created || !!previousAccess?.freshCreation;
   const result = old.openSessionModal(session, options);
   if (result === false) {
     currentSessionId = previousId;
@@ -181,11 +182,28 @@ function renderSessionDialogV24(session, options, created) {
     data: db,
     root,
     editable,
+    freshCreation,
     token: {},
   };
-  root
-    .querySelector(".session-context")
-    .insertAdjacentHTML("afterend", sessionEditNoticeHtml(session.id));
+  // The initial creation dialog is already writable. Its edit controls are
+  // only needed after the user closes it and opens the recorded session again.
+  // Keep this distinction for internal rerenders, never in stored session data.
+  if (!freshCreation)
+    root
+      .querySelector(".session-context")
+      .insertAdjacentHTML("afterend", sessionEditNoticeHtml(session.id));
+  if (
+    Array.isArray(session.roster) &&
+    !session.roster.length &&
+    emptySessionRosterClass(session)
+  ) {
+    const empty = root.querySelector(".session-attendance-list .empty");
+    if (empty)
+      empty.innerHTML =
+        '<p>این جلسه بدون هنرجو ساخته شده است. می‌توانید فهرست هنرجویان فعال فعلی کلاس را برای همین جلسه ثبت کنید.</p><button type="button" class="ghost" data-mutating="1" data-workspace-action="session-restore-roster" data-key="' +
+        esc(session.id) +
+        '">دریافت هنرجویان فعلی کلاس</button>';
+  }
   // Mark non-autosaving date/period fields as writes too. Calendar clones
   // inherit the original field's lock through syncShamsiDisabledInputs.
   root

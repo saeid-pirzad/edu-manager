@@ -23,6 +23,11 @@ function fixture({ syncFailure = false, asyncFailure = false } = {}) {
     term: "دوم",
     closed: true,
   };
+  const stores = Object.fromEntries(
+    [...names, "drafts"].map((name) => [name, new Map()]),
+  );
+  stores.catalog.set(current.id, structuredClone(current));
+  let eventId = 0;
   const source = {
     activeWorkspace: period.id,
     gradeDrafts: [],
@@ -138,6 +143,16 @@ function fixture({ syncFailure = false, asyncFailure = false } = {}) {
           if (asyncFailure && mode === "readwrite")
             return reject(Error("asynchronous write failure"));
           committed.push(...queued);
+          for (const operation of queued) {
+            const store = stores[operation.name];
+            if (operation.clear) store.clear();
+            else if (operation.delete !== undefined)
+              store.delete(operation.delete);
+            else {
+              const row = structuredClone(operation.row);
+              store.set(row.key ?? row.id ?? ++eventId, row);
+            }
+          }
           resolve();
         });
         return {
@@ -147,9 +162,14 @@ function fixture({ syncFailure = false, asyncFailure = false } = {}) {
             reject(Error("transaction aborted"));
           },
           objectStore: (name) => ({
-            get() {
+            get(key) {
               const request = {
-                result: name === "drafts" ? c.liveIdentity : c.liveResetMarker,
+                result:
+                  (name === "drafts"
+                    ? c.liveIdentity
+                    : name === "records" && key === c.RESET_RECORD_KEY
+                      ? c.liveResetMarker
+                      : undefined) ?? stores[name].get(key),
               };
               queueMicrotask(() => request.onsuccess());
               return request;
@@ -158,11 +178,9 @@ function fixture({ syncFailure = false, asyncFailure = false } = {}) {
               const request = {
                 result: structuredClone(
                   c.rawStores?.[name] ||
-                    (name === "catalog"
-                      ? [current]
-                      : name === "drafts" && c.liveIdentity
-                        ? [c.liveIdentity]
-                        : []),
+                    (name === "drafts" && c.liveIdentity
+                      ? [c.liveIdentity]
+                      : [...stores[name].values()]),
                 ),
               };
               queueMicrotask(() => request.onsuccess());
@@ -179,12 +197,16 @@ function fixture({ syncFailure = false, asyncFailure = false } = {}) {
             put(row) {
               queued.push({ name, row });
             },
+            delete(key) {
+              queued.push({ name, delete: key });
+            },
           }),
         };
       },
     },
   });
   for (const source of [
+    "domain/revision.js",
     "domain/calendar.js",
     "domain/academic-year.js",
     "domain/deputy-export-identity.js",
@@ -201,7 +223,7 @@ function fixture({ syncFailure = false, asyncFailure = false } = {}) {
     c,
   );
   c.previewFullBackup(source);
-  return { c, source, committed, aborted: () => aborted };
+  return { c, source, stores, committed, aborted: () => aborted };
 }
 test("full restore preview isolates its layout and exposes inline errors and cancellation", () => {
   const { c, source } = fixture();
@@ -245,6 +267,137 @@ test("full restore preserves period identities and closed status without creatin
     committed.some((row) => row.name === "backups" && row.row),
     false,
   );
+});
+
+for (const revision of [
+  Number.MAX_SAFE_INTEGER - 1,
+  Number.MAX_SAFE_INTEGER,
+  Number.MAX_SAFE_INTEGER + 1,
+]) {
+  test(`full restore refuses an incoming revision without edit capacity before touching the installation or automatic file: ${revision}`, async () => {
+    const f = fixture(),
+      file = {
+        key: "file",
+        connectionId: "original-connection",
+        handle: { name: "original.json" },
+      };
+    f.source.stores.catalog[0].revision = revision;
+    f.c.previewFullBackup(f.source);
+    f.c.singleFile = file;
+    f.c.singleFileTimer = 1;
+    f.stores.drafts.set(file.key, structuredClone(file));
+    f.stores.records.set(f.c.RESET_RECORD_KEY, {
+      key: f.c.RESET_RECORD_KEY,
+      value: { token: "original-installation" },
+    });
+    f.c.installationToken = "original-installation";
+    let pauses = 0,
+      restarts = 0,
+      flushes = 0;
+    f.c.pauseSingleFile = () => pauses++;
+    f.c.startSingleFile = () => restarts++;
+    f.c.flushDrafts = async () => flushes++;
+    const before = structuredClone(f.stores),
+      original = structuredClone(f.c.workspace);
+    await assert.rejects(
+      f.c.restoreFullBackup(),
+      (error) =>
+        error.code ===
+        (Number.isSafeInteger(revision)
+          ? "REVISION_LIMIT_REACHED"
+          : "REVISION_INVALID"),
+    );
+    assert.deepEqual(f.stores, before);
+    assert.deepEqual(f.c.workspace, original);
+    assert.equal(f.committed.length, 0);
+    assert.equal(f.c.installationToken, "original-installation");
+    assert.equal(f.c.singleFile, file);
+    assert.equal(f.c.singleFileTimer, 1);
+    assert.equal(pauses, 0);
+    assert.equal(restarts, 0);
+    assert.equal(flushes, 0);
+    assert.equal(vm.runInContext("pendingFullBackup", f.c), f.source);
+    assert.equal(vm.runInContext("fullRestoreBusy", f.c), false);
+  });
+}
+
+for (const revision of [Number.MAX_SAFE_INTEGER - 1, Number.MAX_SAFE_INTEGER]) {
+  test(`full restore also preserves edit capacity above the matching live revision: ${revision}`, async () => {
+    const f = fixture();
+    f.c.rawStores = {
+      catalog: [{ ...f.source.stores.catalog[0], revision }],
+    };
+    const before = structuredClone(f.stores);
+    await assert.rejects(
+      f.c.restoreFullBackup(),
+      (error) => error.code === "REVISION_LIMIT_REACHED",
+    );
+    assert.deepEqual(f.stores, before);
+    assert.equal(f.committed.length, 0);
+    assert.equal(f.c.workspace.id, "original");
+  });
+}
+
+test("full restore at the last editable boundary permits one exact ordinary edit and rejects the next", async () => {
+  const f = fixture();
+  f.source.stores.catalog[0].revision = Number.MAX_SAFE_INTEGER - 2;
+  f.c.previewFullBackup(f.source);
+  await f.c.restoreFullBackup();
+  assert.equal(f.c.workspace.revision, Number.MAX_SAFE_INTEGER - 1);
+  assert.equal(
+    f.stores.catalog.get("source").revision,
+    Number.MAX_SAFE_INTEGER - 1,
+  );
+  f.c.EduDataStoreRuntime = { transactionDone: (tx) => tx.done };
+  vm.runInContext(
+    fs.readFileSync(
+      path.join(__dirname, "../src/data/record-transaction.js"),
+      "utf8",
+    ),
+    f.c,
+  );
+  const previous = f.stores.records.get("source|meta").value,
+    meta = {
+      ...previous,
+      settings: {
+        ...previous.settings,
+        academicYear: f.c.workspace.year,
+        teacherName: "Edited teacher",
+      },
+    },
+    args = {
+      connection: f.c.connection,
+      expectedInstallation: f.c.installationToken,
+      workspace: f.c.workspace,
+      records: new Map([["meta", meta]]),
+      changed: [["meta", JSON.stringify(meta)]],
+      removed: [],
+      before: [{ key: "meta", value: previous }],
+      changes: [],
+      action: "Edit teacher",
+      keepUndo: true,
+      normalizedName: String,
+      academicTermKind: () => "first",
+    };
+  const result = await f.c.EduRecordTransaction.commit(args);
+  assert.equal(result.revision, Number.MAX_SAFE_INTEGER);
+  assert.equal(
+    f.stores.records.get("source|meta").value.settings.teacherName,
+    "Edited teacher",
+  );
+  assert.equal(f.stores.undo.get("source").revision, Number.MAX_SAFE_INTEGER);
+  assert.equal(
+    [...f.stores.events.values()].at(-1).revision,
+    Number.MAX_SAFE_INTEGER,
+  );
+  const before = structuredClone(f.stores),
+    writeCount = f.committed.length;
+  await assert.rejects(
+    f.c.EduRecordTransaction.commit({ ...args, workspace: result }),
+    (error) => error.code === "REVISION_LIMIT_REACHED",
+  );
+  assert.deepEqual(f.stores, before);
+  assert.equal(f.committed.length, writeCount);
 });
 
 test("full restore retains ordinary backups from the file and keeps accepting historical full-copy rows", async () => {

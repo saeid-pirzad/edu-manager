@@ -176,8 +176,12 @@ async function synchronizeAnnualModularGrades(id) {
           throw Error(
             "نوبت‌ها یا نمرات سالانه در پنجرهٔ دیگری تغییر کرده‌اند؛ دوباره تلاش کنید.",
           );
-        const at = new Date().toISOString();
-        for (const { period, plans } of updates) {
+        // Check every changed term before queuing any term's writes.
+        const revisions = updates.map(({ period }) =>
+            globalThis.EduRevision.next(period.revision),
+          ),
+          at = new Date().toISOString();
+        for (const [index, { period, plans }] of updates.entries()) {
           for (const [logical, value] of plans)
             tx.objectStore("records").put({
               key: period.id + "|" + logical,
@@ -185,7 +189,7 @@ async function synchronizeAnnualModularGrades(id) {
               logical,
               value,
             });
-          const revision = period.revision + 1;
+          const revision = revisions[index];
           tx.objectStore("catalog").put({ ...period, revision, updatedAt: at });
           tx.objectStore("events").add({
             workspace: period.id,

@@ -68,6 +68,10 @@ async function openScheduledSessionV24(selection, isCurrent) {
       date,
       period,
     });
+    if (!target.classObj.students?.length)
+      throw Error(
+        "برای شروع جلسه، ابتدا هنرجویان این کلاس را ثبت کنید. کلاس بدون هنرجوی فعال نمی‌تواند جلسهٔ جدید داشته باشد.",
+      );
     session = {
       id: uid(),
       schoolId: target.school.id,
@@ -167,6 +171,12 @@ async function saveMasterConfigV24(day, period) {
       !target.classObj.lessons.some((lesson) => lesson.id === lessonId)
     )
       throw Error("کلاس و درس هر بخش برنامه را به‌درستی انتخاب کنید.");
+    if (!target.classObj.students?.length)
+      throw Error(
+        "برای تنظیم برنامه، ابتدا هنرجویان کلاس «" +
+          (target.classObj.name || "انتخاب‌شده") +
+          "» را ثبت کنید. کلاس بدون هنرجوی فعال نمی‌تواند در برنامه قرار بگیرد.",
+      );
     next[key] = { schoolId: target.school.id, classId, lessonId };
   }
   db.masterSchedule = next;

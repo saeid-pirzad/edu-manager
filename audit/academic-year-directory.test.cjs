@@ -407,6 +407,7 @@ function synchronizationFixture() {
     connectionRetired: false,
   });
   for (const source of [
+    "domain/revision.js",
     "domain/academic-year-directory.js",
     "data/workspace-records.js",
     "legacy/students/roster.js",
@@ -546,6 +547,42 @@ function synchronizationFixture() {
     state.records.get(id + "|" + logical)?.value;
   return { c, state, hooks, reads, transactions, save, data, value };
 }
+
+for (const exhausted of ["first", "second"]) {
+  test(`directory reconciliation preflights every changed revision before writes when ${exhausted} is exhausted`, async () => {
+    const f = synchronizationFixture(),
+      extra = classroom(),
+      second = classroom();
+    extra.id = "extra";
+    second.students.push(student("c"));
+    f.save("first", f.data([classroom(), extra]));
+    f.save("second", f.data([second]));
+    f.state.catalog.get(exhausted).revision = Number.MAX_SAFE_INTEGER;
+    const before = clone(f.state);
+    f.hooks.failPut = 1;
+    await assert.rejects(
+      f.c.synchronizeAcademicDirectoryForRead("first"),
+      (error) => error.code === "REVISION_LIMIT_REACHED",
+    );
+    assert.deepEqual(clone(f.state), before);
+  });
+}
+
+test("directory reconciliation consumes the final safe revision and permits an unchanged exhausted peer", async () => {
+  const f = synchronizationFixture(),
+    second = classroom();
+  second.students.push(student("c"));
+  f.save("first", f.data(), { revision: Number.MAX_SAFE_INTEGER - 1 });
+  f.save("second", f.data([second]), { revision: Number.MAX_SAFE_INTEGER });
+  const result = await f.c.synchronizeAcademicDirectoryForRead("first");
+  assert.equal(result.changed.length, 1);
+  assert.equal(result.changed[0].workspace, "first");
+  assert.equal(result.changed[0].revision, Number.MAX_SAFE_INTEGER);
+  assert.equal(f.state.catalog.get("first").revision, Number.MAX_SAFE_INTEGER);
+  assert.equal(f.state.catalog.get("second").revision, Number.MAX_SAFE_INTEGER);
+  assert.equal(f.state.undo.has("second"), true);
+  assert.equal(f.state.events[0].revision, Number.MAX_SAFE_INTEGER);
+});
 
 test("year reconciliation shares additive rosters atomically and preserves raw term grades and closed reports", async () => {
   const f = synchronizationFixture(),

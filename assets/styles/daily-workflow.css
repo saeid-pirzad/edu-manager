@@ -682,16 +682,16 @@ font-weight:400;color:var(--theme-muted);overflow-wrap:anywhere}#app .header-act
 0;border-top:1px solid var(--theme-line-soft);font-size:11px}#app .header-actions .workspace-period-context>span{padding:4px 8px;border-radius:6px;background:var(--theme-surface-muted);
 color:var(--theme-muted)}}@media screen and (max-width:700px),screen and (max-width:1000px)and (pointer:coarse){#app .header-actions>.workspace-tools>.workspace-tool-actions{
 width:100%;padding:8px;margin-top:6px;box-shadow:none}}@media screen{#app .workspace-bar>#singleFileBadge[hidden]{display:none}}@media screen and (max-width:700px),screen and (max-width:1000px)and (pointer:coarse){
-#app .navigation-menu[open] .header-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:6px!important}#app .navigation-menu .header-actions>.header-action,
-#app .navigation-menu .header-actions>.workspace-tools>summary{display:flex;align-items:center;justify-content:flex-start;gap:7px;width:100%;min-width:0;min-height:44px;
-margin:0;padding:7px 9px;box-sizing:border-box;border:1px solid var(--theme-line-soft);border-radius:11px;background:var(--theme-surface);color:var(--theme-ink);
-font-size:12px;line-height:1.7;text-align:start;white-space:nowrap}#app .navigation-menu .header-actions>.header-action svg:not(.header-caret),#app .navigation-menu
-.workspace-tools-symbol svg{flex:0 0 var(--header-icon-size);width:var(--header-icon-size);height:var(--header-icon-size)}#app .navigation-menu .header-actions>
-.header-action>span{min-width:0;white-space:nowrap}#app .navigation-menu .header-actions>.header-action:is(:hover,.is-active),#app .navigation-menu .header-actions>
-.workspace-tools[open]>summary{border-color:var(--status-danger-line);background:var(--status-danger-soft);color:var(--theme-primary)}#app .navigation-menu .workspace-tool-description{
-display:none}#app .navigation-menu .workspace-tool-actions .workspace-tool-button{min-height:44px;padding:6px 8px;gap:8px}#app .navigation-menu .workspace-tool-icon{
-flex-basis:28px;height:28px;border-radius:8px}#app .navigation-menu .workspace-tool-copy{font-size:12px}#app .navigation-menu .workspace-tools>.workspace-tool-actions{
-padding:6px;gap:6px}}@media screen and (max-width:700px),screen and (max-width:1000px)and (pointer:coarse){#app .topbar .header-home,#app .navigation-menu [data-header-action=reports],
+#app .navigation-menu[open] .header-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}#app .navigation-menu .header-actions>.header-action,#app .navigation-menu
+.header-actions>.workspace-tools>summary{display:flex;align-items:center;justify-content:flex-start;gap:7px;width:100%;min-width:0;min-height:44px;margin:0;padding:7px
+9px;box-sizing:border-box;border:1px solid var(--theme-line-soft);border-radius:11px;background:var(--theme-surface);color:var(--theme-ink);font-size:12px;line-height:1.7;
+text-align:start;white-space:nowrap}#app .navigation-menu .header-actions>.header-action svg:not(.header-caret),#app .navigation-menu .workspace-tools-symbol svg{
+flex:0 0 var(--header-icon-size);width:var(--header-icon-size);height:var(--header-icon-size)}#app .navigation-menu .header-actions>.header-action>span{min-width:0;
+white-space:nowrap}#app .navigation-menu .header-actions>.header-action:is(:hover,.is-active),#app .navigation-menu .header-actions>.workspace-tools[open]>summary{
+border-color:var(--status-danger-line);background:var(--status-danger-soft);color:var(--theme-primary)}#app .navigation-menu .workspace-tool-description{display:none}
+#app .navigation-menu .workspace-tool-actions .workspace-tool-button{min-height:44px;padding:6px 8px;gap:8px}#app .navigation-menu .workspace-tool-icon{flex-basis:28px;
+height:28px;border-radius:8px}#app .navigation-menu .workspace-tool-copy{font-size:12px}#app .navigation-menu .workspace-tools>.workspace-tool-actions{padding:6px;
+gap:6px}}@media screen and (max-width:700px),screen and (max-width:1000px)and (pointer:coarse){#app .topbar .header-home,#app .navigation-menu [data-header-action=reports],
 #app .navigation-menu [data-header-action=master],#app .navigation-menu [data-workspace-action=backups]{display:none!important}#app .topbar .header-brand{width:calc(100%
 - 54px)!important}#uiBottomNav{grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;padding-inline:6px}#uiBottomNav button{min-width:0;padding-inline:2px;font-size:11px;
 white-space:nowrap}}@media screen and (max-width:700px),screen and (max-width:1000px)and (pointer:coarse){#app .navigation-menu[open] .header-actions{display:block;
@@ -1259,7 +1259,9 @@ background-color:var(--theme-surface-subtle);border-color:var(--theme-line);colo
 textarea)[aria-invalid=true]{border-color:var(--field-error-line)!important}:is(#app,#modalBody,#calPopup,#pwaWelcome) :is(input:not([type=checkbox],[type=radio],
 [type=range],[type=hidden]),select,textarea)[aria-invalid=true]:focus{box-shadow:0 0 0 3px var(--field-error-ring)!important}:is(#app,#modalBody) :is(input[type=checkbox],
 input[type=radio],input[type=range]):focus-visible{outline:2px solid var(--field-focus-line);outline-offset:2px}}@media screen and (forced-colors:active){:is(#app,
-#modalBody,#calPopup,#pwaWelcome) :is(input,select,textarea):focus{outline:2px solid Highlight!important;outline-offset:2px;border-color:Highlight!important;box-shadow:none!important}}
+#modalBody,#calPopup,#pwaWelcome) :is(input:not([type=checkbox],[type=radio],[type=range],[type=hidden]),select,textarea):focus,:is(#app,#modalBody,#calPopup,#pwaWelcome)
+:is(input:not([type=checkbox],[type=radio],[type=range],[type=hidden]),select,textarea)[aria-invalid=true]:focus,:is(#app,#modalBody,#calPopup,#pwaWelcome) input:is([type=checkbox],
+[type=radio],[type=range],[type=hidden]):focus{outline:2px solid Highlight!important;outline-offset:2px;border-color:Highlight!important;box-shadow:none!important}}
 @media screen{#app .session-directory>.session-list-heading{grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:8px 12px}#app .session-directory>.session-list-heading>
 div{display:contents}#app .session-directory .session-list-heading h3{gap:6px;font-size:14px;line-height:1.7}#app .session-directory .session-directory-symbol{flex-basis:28px;
 width:28px;height:28px;border-radius:8px}#app .session-directory .session-list-heading .lesson-count{min-width:22px;height:22px;font-size:11px}#app .session-directory

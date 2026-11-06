@@ -168,6 +168,7 @@ function reopening({
   switchAfterWrite = false,
   deny = false,
   closing = false,
+  revision = 3,
 } = {}) {
   const puts = [],
     events = [],
@@ -180,7 +181,7 @@ function reopening({
     reject = rej;
   });
   const c = vm.createContext({
-    workspace: { id: "source", revision: 3, closed: !closing },
+    workspace: { id: "source", revision, closed: !closing },
     db: {},
     installationToken: "fixture-installation",
     RESET_RECORD_KEY: "@installation-reset",
@@ -218,7 +219,7 @@ function reopening({
                         ? { value: { token: c.installationToken } }
                         : missing
                           ? undefined
-                          : { id: "source", revision: 3, closed: !closing },
+                          : { id: "source", revision, closed: !closing },
                   };
                   queueMicrotask(() => {
                     if (switchBeforeRead)
@@ -238,6 +239,7 @@ function reopening({
       }),
     },
   });
+  vm.runInContext(read("domain/revision.js"), c);
   vm.runInContext(read("workspace/reports/finalize.js"), c);
   c.finalReportData = () => ({ classes: [], missing: [] });
   return { c, puts, events, messages };
@@ -273,4 +275,27 @@ test("reopening publishes the correct period without replacing a new active work
   assert.equal(puts[0].id, "source");
   assert.equal(events[0].workspace, "source");
   assert.equal(messages[0].workspace, "source");
+});
+
+test("reopening rejects exhausted revision without unlocking the term or writing history", async () => {
+  const { c, puts, events, messages } = reopening({
+    revision: Number.MAX_SAFE_INTEGER,
+  });
+  await assert.rejects(c.reopenPeriod(), { code: "REVISION_LIMIT_REACHED" });
+  assert.equal(c.workspace.closed, true);
+  assert.equal(c.workspace.revision, Number.MAX_SAFE_INTEGER);
+  assert.deepEqual(puts, []);
+  assert.deepEqual(events, []);
+  assert.deepEqual(messages, []);
+});
+
+test("reopening advances to the final exact safe revision", async () => {
+  const { c, puts, events } = reopening({
+    revision: Number.MAX_SAFE_INTEGER - 1,
+  });
+  await c.reopenPeriod();
+  assert.equal(c.workspace.closed, false);
+  assert.equal(c.workspace.revision, Number.MAX_SAFE_INTEGER);
+  assert.equal(puts[0].revision, Number.MAX_SAFE_INTEGER);
+  assert.equal(events[0].revision, Number.MAX_SAFE_INTEGER);
 });

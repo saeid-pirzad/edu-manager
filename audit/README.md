@@ -5,6 +5,14 @@
 جایگزین با `EDUMANAGER_EDGE` تعیین می‌شود. هیچ profile شخصی یا دادهٔ واقعی استفاده نمی‌شود.
 
 - `*.test.cjs`: تست‌های واحد با runner داخلی Node؛ ابزارهای لازمِ ساخت و آزمون با `npm ci` از نسخه‌های قفل‌شده نصب می‌شوند.
+- `revision.test.cjs`: افزایش دقیق شمارنده تا `Number.MAX_SAFE_INTEGER`، رد ورودی نامعتبر و تمام‌شدن ظرفیت با خطای دامنه، بدون گردکردن یا تولید عدد ناامن.
+- `annual-modular-transaction.test.cjs`، `annual-modular-synchronization.test.cjs`، `academic-directory-transaction.test.cjs` و `academic-year-directory.test.cjs`: ظرفیت revision در نویسندهٔ واقعی رکورد و تغییرات دو نوبت؛ توقف اتمی رکورد، catalog، history و undo، رسیدن به آخرین عدد امن و مصرف‌نکردن revision نوبت همراهِ بدون تغییر.
+- `full-restore-atomic.test.cjs` و `full-backup-validator.test.cjs`: رد revision نامعتبر یا فاقد ظرفیت بازیابی و دست‌کم یک ویرایش بعدی، حفظ نصب قبلی در شکست و کنترل مرز فایل ورودی و catalog زنده؛ مسیر موفق تا ویرایش واقعی پس از بازیابی بررسی می‌شود. پشتیبان آرشیوی با آخرین شمارندهٔ امن همچنان برای خواندن معتبر است؛ کنترل ظرفیت نوشتن در مرحلهٔ بازیابی انجام می‌شود.
+- `annual-course-compatibility.test.cjs` و `grade-domain.test.cjs`: اعتبار عدد صحیح امنِ revision سیاست درس، ذخیرهٔ موفق آخرین افزایش مجاز و رد اصلاح بعدی پیش از تغییر کلاس یا ذخیره؛ fixture ویرایش درس helper واقعی revision را بارگذاری می‌کند.
+- `legacy-events-metadata.test.cjs`: metadata صریح true/false مستقل از نام و wrapper تابع، fallback فقط برای ثبت فاقد metadata، کلید ناشناخته، رخدادهای مختلط، اعتبارسنجی پیش از رزرو کلید و طبقه‌بندی ۲۰ handler جلسه؛ رفتار dispatch و `source()` نیز حفظ می‌شود.
+- `session-roster-recovery.test.cjs`: ترمیم صریح فهرست فقط برای جلسهٔ کاملاً خالی، کنترل مجوز پنجره و تغییر کلاس حین انتظار، کپی مستقل اعضای فعال، لغو، ثبت تکراری، rollback واقعی ذخیره و تلاش مجدد.
+- `session-roster-readiness-browser.cjs`: پیش‌نیاز هنرجوی فعال برای برنامه و جلسه، ورود واقعی هنرجو و سپس برنامه/جلسه، عدم تغییر در مشاهده یا لغو ترمیم، تأیید نوشتن محدود به همان جلسه و حفظ فهرست تاریخی؛ مستقل و در workflow اجرا می‌شود.
+- `forced-colors-focus.test.cjs` و `forced-colors-focus-browser.cjs`: برابری specificity با فوکوس عادی و خطادار، outline و مرز با رنگ واقعی سیستمی `Highlight` و نبود shadow؛ مرورگر با Tab و شبیه‌سازی forced-colors، بازگشت سبک عادی و cleanup بدون تغییر داده را کنترل می‌کند. مستقل و در workflow اجرا می‌شود؛ جای آزمون فیزیکی حالت کنتراست سیستم نیست.
 - `compact-bundle.test.cjs` و `assembly-lint.test.cjs`: حفظ نام APIها، scope خصوصی، رشته‌های فارسی، مقادیر عددی دقیق، ترتیب/اولویت/fallbackهای CSS و نگاشت خطای واقعیِ خروجی فشرده به فایل اصلی؛ lint همچنان دستورهای محدودِ منبع اصلی را می‌بیند.
 - `optimization-metrics.test.cjs` و `npm run metrics`: شمارش قابل تکرارِ حجم خام/gzip کد اولیه و توابع AST؛ بدون ادعای سرعت دستگاه یا درصد کیفیت. کنترل CRLF، ورودی غایب و جلوگیری از شمارش source map و منابع بارگذاری‌نشده نیز پوشش دارند.
 - `app-shell-scans.test.cjs` و `app-shell-scans-browser.cjs`: پردازش محدودهٔ تغییریافته، حفظ تغییر متن، جمع‌آوری یک‌بارهٔ جدول، ریشهٔ جایگزین/دیرهنگام PWA، تقویم، fallback تغییر ناشناخته و عدم تغییر داده؛ آزمون مرورگر روی صفحهٔ مصنوعی ۲۵۰ردیفی، queryها را واقعاً شمارش می‌کند و cleanup رابط و state را کنترل می‌کند. گزینهٔ `--baseline` فقط اندازه‌گیری نسخهٔ قبلی است؛ دروازهٔ انتشار بدون آن اجرا می‌شود.
@@ -101,13 +109,17 @@ npm run bench
 می‌کند؛ پشتیبان یک سال کامل و تم مشترک نیز در همین دروازه‌اند. CI همین فرمان را اجرا می‌کند. موفقیت آن جای پذیرش روی
 دستگاه فیزیکی یا بررسی محرمانگی فایل‌های منتشرشده را نمی‌گیرد.
 
+پذیرش فیزیکی Android با Chrome و Samsung Internet و iPhone با Safari همچنان
+طبق [چک‌لیست README](../README.md#پذیرش-روی-دستگاه-واقعی) جداگانه انجام می‌شود؛
+شبیه‌سازی viewport، اشتراک فایل یا forced-colors در Edge، تأیید دستگاه واقعی نیست.
+
 کارتابل مستقل معاون حذف شده است؛ آزمون‌های باقی‌ماندهٔ قالب تبادل، سازگاری تاریخی فایل‌ها را بررسی می‌کنند.
 
 - report-excel.test.cjs: خروجی واقعی XLSX، خواندن مستقل ZIP/XML، صفر و سلول خالی، کد متنی، فیلترها و حریم گزارش اولیا، چهار مرحله و جلوگیری از خروجی با snapshot منقضی.
 - report-excel-browser.cjs: دانلود از دکمه واقعی هنگام قطع شبکه و بررسی چیدمان در عرض‌های ۳۲۰ تا ۱۲۸۰؛ در مجموعه workflow نیز اجرا می‌شود.
 
 - storage-installation-guard.test.cjs و draft-installation-guard.test.cjs: شکست‌های هم‌زمانی بازیابی و تمام نویسندگان جانبی/پاک‌سازی، با guard نصب در تراکنش.
-- finalize-write-boundary.test.cjs: نمرهٔ تازه و تغییر اتصال هنگام بستن نوبت.
+- finalize-write-boundary.test.cjs و period-operations.test.cjs: نمرهٔ تازه و تغییر اتصال هنگام بستن نوبت، کنترل revision پیش از ثابت‌کردن کارنامه/نوشتن تاریخچه و رد بازکردن نوبت با ظرفیت تمام‌شده بدون تغییر قفل؛ آخرین افزایش امن نیز بررسی می‌شود.
 - service-worker-cache.test.cjs و pwa-update-safety.test.cjs: cache ناقص، فعال‌شدن دیرهنگام، قفل و راه بازکردن دوباره.
 - release-package.test.cjs: فهرست دقیق و بایت‌های بسته، خارج‌ماندن فایل شخصی، امتناع از حذف فایل نامنتظره و رد symlink/junction مبدأ و مقصد.
 

@@ -74,7 +74,7 @@
     if (
       !p ||
       p.version !== 1 ||
-      !Number.isInteger(p.revision) ||
+      !Number.isSafeInteger(p.revision) ||
       p.revision < 1 ||
       !["dual", "modular"].includes(p.method)
     )
