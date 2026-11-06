@@ -138,7 +138,7 @@
         isRich =
           !!control.closest(rich) ||
           control.matches(
-            ".session-open,.session-setup-recent-item,.entity-enter,.lesson-enter,.header-home",
+            ".session-open,.session-setup-recent-item,.entity-enter,.lesson-enter,.header-home,.attendance-reminder-open",
           ),
         name =
           (control.matches(".grade-clear") ? "eraser" : null) ||
@@ -176,6 +176,7 @@
       }
       if (
         name &&
+        control.dataset.uiIcon !== "none" &&
         !control.querySelector("svg,.control-icon") &&
         !control.closest(
           ".cal-days,.karnameh-stage-options,.competency-choices,.att-btns",

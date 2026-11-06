@@ -216,6 +216,10 @@ async function openAttendanceReminder(button) {
     await refreshAttendanceReminders();
     throw Error("این یادآور دیگر نیاز به بررسی ندارد؛ فهرست به‌روز شد.");
   }
+  return showAttendanceReminderFromSnapshot(snapshot, item);
+}
+
+function showAttendanceReminderFromSnapshot(snapshot, item) {
   if (
     showModal("بررسی حضور جلسه", attendanceReminderDialogHtml(item)) === false
   )
@@ -238,34 +242,186 @@ function currentAttendanceReminderDialog() {
   return dialog;
 }
 
+function assertEmptyAttendanceReminderTarget(dialog) {
+  const item = dialog.item,
+    session = db.sessions.find((row) => row.id === item?.sessionId);
+  if (
+    item?.kind !== "empty" ||
+    item.sourcePeriodId !== workspace.id ||
+    !EduAttendanceReminders.isEmptySession(session) ||
+    session.date !== item.date ||
+    session.period !== item.period ||
+    session.schoolId !== item.schoolId ||
+    session.classId !== item.classId ||
+    session.lessonId !== item.lessonId ||
+    item.date >= todayISO()
+  )
+    throw Error(
+      "جلسه دیگر کاملاً خالی نیست یا مشخصات آن تغییر کرده است؛ اطلاعاتی حذف نشد. یادآور را دوباره بررسی کنید.",
+    );
+  const physicalSessions = dialog.snapshot.parts.flatMap((part) =>
+    (part.period.id === workspace.id ? db : part.data).sessions.filter(
+      (row) => row.date === item.date && row.period === item.period,
+    ),
+  );
+  if (physicalSessions.length !== 1)
+    throw Error(
+      "برای این تاریخ و زنگ، جلسهٔ دیگری وجود دارد؛ ابتدا تداخل جلسات را بررسی کنید.",
+    );
+  return session;
+}
+
+async function openEmptyReminderOwner(dialog) {
+  const item = dialog.item,
+    target = dialog.snapshot.parts.find(
+      (part) => part.period.id === item.sourcePeriodId,
+    );
+  if (!target)
+    throw Error("سوابق این جلسه در دسترس نیست؛ یادآورها را دوباره باز کنید.");
+  // The interactive year read already verified this exact owner's password.
+  // Switch for a fresh review; never write to another term using an old dialog.
+  await switchPeriod(item.sourcePeriodId);
+  if (
+    workspace.id !== target.period.id ||
+    workspace.year !== target.period.year ||
+    workspace.revision !== target.period.revision ||
+    !!workspace.closed !== !!target.period.closed ||
+    connection !== dialog.snapshot.origin.connection ||
+    installationToken !== dialog.snapshot.origin.installation ||
+    db.settings.password !== target.data.settings.password ||
+    resetBusy ||
+    periodLoading ||
+    connectionRetired
+  )
+    throw Error("اطلاعات یا دسترسی مقصد تغییر کرده است؛ دوباره وارد شوید.");
+  isAuthenticated = true;
+  render();
+  const previousModal = document.getElementById("modalBody").firstElementChild,
+    snapshot = await readAttendanceReminders({ interactive: true });
+  if (document.getElementById("modalBody").firstElementChild !== previousModal)
+    throw Error("پنجره تغییر کرده است؛ جلسه را دوباره از فهرست انتخاب کنید.");
+  const live = snapshot.model.items.find(
+    (row) =>
+      row.key === item.key &&
+      row.sessionId === item.sessionId &&
+      row.sourcePeriodId === target.period.id &&
+      row.kind === "empty",
+  );
+  if (!live)
+    throw Error(
+      "وضعیت این جلسه تغییر کرده است؛ یادآورها را دوباره بررسی کنید.",
+    );
+  return showAttendanceReminderFromSnapshot(snapshot, live);
+}
+
 async function markAttendanceReminderNotHeld() {
   if (attendanceReminderBusy) return false;
   attendanceReminderBusy = true;
   try {
     const dialog = currentAttendanceReminderDialog();
-    assertEntityWritable();
-    if (dialog.item?.kind !== "missing")
+    if (!["missing", "empty"].includes(dialog.item?.kind))
       throw Error(
         "جلسهٔ دارای اطلاعات را نمی‌توان تشکیل‌نشده علامت زد؛ حضور آن را تکمیل کنید.",
       );
     await assertAttendanceReminderSnapshot(dialog.snapshot);
     if (currentAttendanceReminderDialog() !== dialog)
       throw Error("پنجرهٔ بررسی تغییر کرده است؛ دوباره تلاش کنید.");
-    assertEntityWritable();
     const item = dialog.item;
-    db.notHeldSessions = [
-      ...(db.notHeldSessions || []),
-      {
-        id: uid(),
-        schoolId: item.schoolId,
-        classId: item.classId,
-        lessonId: item.lessonId,
-        date: item.date,
-        period: item.period,
-        recordedAt: new Date().toISOString(),
-      },
-    ];
-    await saveDBV24({ action: "ثبت تشکیل‌نشدن جلسه" });
+    if (item.kind === "empty" && item.sourcePeriodId !== workspace.id)
+      return await openEmptyReminderOwner(dialog);
+    assertEntityWritable();
+    let empty = null;
+    if (item.kind === "empty") {
+      empty = assertEmptyAttendanceReminderTarget(dialog);
+      if (
+        !confirm(
+          "این جلسه فقط باز شده و هیچ حضور، نمره یا فعالیتی در آن ثبت نشده است. فقط همین رکورد خالی حذف و وضعیت «برگزار نشده» ذخیره شود؟ هیچ غیبتی برای هنرجویان ثبت نمی‌شود.",
+        )
+      )
+        return false;
+      await flushDrafts({ strict: true });
+      await writer.catch(() => {});
+      await assertAttendanceReminderSnapshot(dialog.snapshot);
+      if (currentAttendanceReminderDialog() !== dialog)
+        throw Error("پنجرهٔ بررسی تغییر کرده است؛ دوباره تلاش کنید.");
+      assertEntityWritable();
+      if (assertEmptyAttendanceReminderTarget(dialog) !== empty)
+        throw Error(
+          "رکورد جلسه هنگام تأیید تغییر کرده است؛ اطلاعاتی حذف نشد. دوباره بررسی کنید.",
+        );
+    }
+    const matchesMarker = (marker) =>
+      marker.date === item.date &&
+      marker.period === item.period &&
+      marker.schoolId === item.schoolId &&
+      marker.classId === item.classId &&
+      marker.lessonId === item.lessonId;
+    const alreadyMarked = dialog.snapshot.parts.some((part) =>
+      (
+        (part.period.id === workspace.id ? db : part.data).notHeldSessions || []
+      ).some(matchesMarker),
+    );
+    const previousData = db,
+      previousWorkspace = workspace,
+      previousRevision = workspace.revision,
+      previousSessions = db.sessions,
+      hadPreviousMarkers = Object.hasOwn(db, "notHeldSessions"),
+      previousMarkers = db.notHeldSessions;
+    // One full replacement plan commits removal and marker together. A scoped
+    // session-only save would leave the old empty record in IndexedDB.
+    if (empty) db.sessions = db.sessions.filter((row) => row !== empty);
+    if (!alreadyMarked)
+      db.notHeldSessions = [
+        ...(db.notHeldSessions || []),
+        {
+          id: uid(),
+          schoolId: item.schoolId,
+          classId: item.classId,
+          lessonId: item.lessonId,
+          date: item.date,
+          period: item.period,
+          recordedAt: new Date().toISOString(),
+        },
+      ];
+    const plannedSessions = db.sessions,
+      plannedMarkers = db.notHeldSessions,
+      sessionEntries = [...plannedSessions],
+      markerEntries = [...(plannedMarkers || [])],
+      unchangedEntries = (rows, entries) =>
+        (rows || []).length === entries.length &&
+        (rows || []).every((row, index) => row === entries[index]);
+    try {
+      await saveDBV24({ action: "ثبت تشکیل‌نشدن جلسه" });
+    } catch (error) {
+      // A failed durable re-read must not leave an uncommitted deletion in
+      // memory. Never overwrite a successful reload, a published commit or
+      // later changes while recovering only this operation's array swaps.
+      if (
+        empty &&
+        db === previousData &&
+        workspace === previousWorkspace &&
+        workspace.revision === previousRevision &&
+        workspace.id === item.sourcePeriodId &&
+        connection === dialog.snapshot.origin.connection &&
+        installationToken === dialog.snapshot.origin.installation &&
+        db.sessions === plannedSessions &&
+        db.notHeldSessions === plannedMarkers &&
+        unchangedEntries(plannedSessions, sessionEntries) &&
+        unchangedEntries(plannedMarkers, markerEntries)
+      ) {
+        db.sessions = previousSessions;
+        if (hadPreviousMarkers) db.notHeldSessions = previousMarkers;
+        else delete db.notHeldSessions;
+        attendanceReminderDialog = null;
+        try {
+          render();
+        } catch {
+          // Keep the original save error even if repainting also fails.
+        }
+      }
+      throw error;
+    }
+    if (empty && currentSessionId === empty.id) currentSessionId = null;
     if (dialog.root.isConnected && attendanceReminderDialog === dialog) {
       attendanceReminderDialog = null;
       closeModal();

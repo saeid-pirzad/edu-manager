@@ -11,6 +11,19 @@
       "classId",
       "lessonId",
       "recordedAt",
+    ]),
+    sessionFields = new Set([
+      "id",
+      "date",
+      "period",
+      "schoolId",
+      "classId",
+      "lessonId",
+      "poudmanId",
+      "unitId",
+      "attendance",
+      "scores",
+      "roster",
     ]);
   const identityKey = (value) =>
     [
@@ -21,6 +34,40 @@
       value.lessonId,
     ].join("|");
   const slotKey = (value) => value.date + "|" + value.period;
+  // Opening a session freezes its roster but does not record attendance or
+  // activity. Be deliberately conservative before offering to replace that
+  // placeholder: even an orphan/invalid attendance key or unknown field must
+  // protect the record from being treated as empty.
+  function isEmptySession(session) {
+    if (!isDataObject(session)) return false;
+    const descriptors = Object.getOwnPropertyDescriptors(session);
+    if (
+      Reflect.ownKeys(descriptors).some(
+        (key) =>
+          !sessionFields.has(key) || !Object.hasOwn(descriptors[key], "value"),
+      ) ||
+      ![session.id, session.schoolId, session.classId, session.lessonId].every(
+        isSafeRecordId,
+      ) ||
+      !root.EduAcademicYear.validDate(session.date) ||
+      !Number.isInteger(session.period) ||
+      session.period < 0 ||
+      session.period > 11 ||
+      ![session.poudmanId, session.unitId].every(
+        (value) => value === undefined || value === null || value === "",
+      ) ||
+      !isDataObject(session.attendance) ||
+      Object.prototype.toString.call(session.attendance) !==
+        "[object Object]" ||
+      Reflect.ownKeys(session.attendance).length !== 0 ||
+      !Array.isArray(session.scores) ||
+      session.scores.length !== 0 ||
+      Reflect.ownKeys(session.scores).length !== 1 ||
+      (Object.hasOwn(session, "roster") && !Array.isArray(session.roster))
+    )
+      return false;
+    return true;
+  }
   function invalidMarkers() {
     const error = Error("فهرست جلسات برگزارنشده معتبر نیست.");
     error.code = "ATTENDANCE_REMINDER_MARKERS_INVALID";
@@ -144,6 +191,7 @@
             lessonName: lesson?.name || "درس نامشخص",
             sourcePeriodId,
             sessionId: session.id,
+            empty: isEmptySession(session),
             ...attendanceProgress(session, found?.classroom),
           },
           key = slotKey(item);
@@ -169,8 +217,12 @@
           total: sessions.reduce((sum, session) => sum + session.total, 0),
           sessions,
         });
-      else if (first.unknown)
-        items.push({ ...first, key: identityKey(first), kind: "incomplete" });
+      else if (first.empty || first.unknown)
+        items.push({
+          ...first,
+          key: identityKey(first),
+          kind: first.empty ? "empty" : "incomplete",
+        });
     }
     const classes = classIndex(source),
       activeDays = new Set(source.activeDays ?? [0, 1, 2, 3, 4, 5]),
@@ -222,5 +274,9 @@
     items.sort((a, b) => b.date.localeCompare(a.date) || a.period - b.period);
     return { start, end, items, scannedDays };
   }
-  root.EduAttendanceReminders = Object.freeze({ validateMarkers, build });
+  root.EduAttendanceReminders = Object.freeze({
+    validateMarkers,
+    isEmptySession,
+    build,
+  });
 })(globalThis);

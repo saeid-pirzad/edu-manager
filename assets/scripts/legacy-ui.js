@@ -3985,8 +3985,8 @@ function renderLessonSessions(
     sessions.length.toLocaleString("fa-IR") +
     "</span></h3><p>" +
     (annual
-      ? "همهٔ جلسات این درس در سال تحصیلی؛ مرتب از جدید به قدیم."
-      : "جدیدترین جلسه‌ها؛ برای ثبت حضور و فعالیت، وارد جلسه شوید.") +
+      ? "همهٔ جلسات سال تحصیلی، از جدید به قدیم."
+      : "برای مشاهده، جلسه را انتخاب کنید.") +
     "</p></div>";
   if (sessions.length && !annual)
     h += `<details class="session-list-actions"><summary>گزینه‌ها</summary><div><button class="danger" data-legacy-click="ui-lesson:7" data-legacy-click-arg0="${esc(classId)}" data-legacy-click-arg1="${esc(lessonId)}">حذف همه جلسات</button></div></details>`;
@@ -5368,12 +5368,13 @@ function refreshSessionAttendanceProgress() {
   );
   if (reuse) setControlLock(reuse, "attendance-complete", progress.unset === 0);
 }
-function refreshSessionActivityInput(form) {
+function refreshSessionActivityInput(form, changedControl = null) {
   if (!form?.isConnected) return;
   const type = form.elements.type.value;
   const value = form.elements.value;
   const count = ["positive", "negative"].includes(type);
-  if (count && value.value === "") value.value = "1";
+  if (count && (value.value === "" || changedControl?.name === "type"))
+    value.value = type === "positive" ? "0.25" : "0.5";
   value.placeholder = ["classGrade", "mostamar", "payani"].includes(type)
     ? "۰ تا ۲۰"
     : "۰ تا ۱۰۰۰";
@@ -5816,7 +5817,7 @@ EduLegacyEvents.register("sessions-dialog:all-present", function () {
   return runSessionEditorAction(this, () => setAllAttendance("present"));
 });
 EduLegacyEvents.register("sessions-dialog:entry-change", function () {
-  return refreshSessionActivityInput(this.form);
+  return refreshSessionActivityInput(this.form, this);
 });
 // Source: src/legacy/data/backup-import.js
 async function legacy_exportBackup() {

@@ -113,12 +113,13 @@ function refreshSessionAttendanceProgress() {
   );
   if (reuse) setControlLock(reuse, "attendance-complete", progress.unset === 0);
 }
-function refreshSessionActivityInput(form) {
+function refreshSessionActivityInput(form, changedControl = null) {
   if (!form?.isConnected) return;
   const type = form.elements.type.value;
   const value = form.elements.value;
   const count = ["positive", "negative"].includes(type);
-  if (count && value.value === "") value.value = "1";
+  if (count && (value.value === "" || changedControl?.name === "type"))
+    value.value = type === "positive" ? "0.25" : "0.5";
   value.placeholder = ["classGrade", "mostamar", "payani"].includes(type)
     ? "۰ تا ۲۰"
     : "۰ تا ۱۰۰۰";

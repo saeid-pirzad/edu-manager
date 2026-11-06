@@ -2,11 +2,13 @@
 module.exports = async function singleFile() {
   const cases = [];
   const directory = await navigator.storage.getDirectory();
-  const handle = await directory.getFileHandle("single-file-regression.json", {
-    create: true,
-  });
-  const originalPicker = window.showSaveFilePicker;
-  let frame;
+  const namingKey = "EduManager.singleFileNames",
+    previousNames = localStorage.getItem(namingKey),
+    originalPicker = window.showSaveFilePicker,
+    originalConfirm = window.confirm,
+    createdNames = new Set(),
+    pickerNames = [];
+  let frame, handle;
   let failedHandle;
   const waitFor = async (check) => {
     for (let i = 0; i < 150; i++) {
@@ -21,16 +23,70 @@ module.exports = async function singleFile() {
   const click = (action) =>
     document.querySelector('[data-workspace-action="' + action + '"]').click();
   const read = async () => JSON.parse(await (await handle.getFile()).text());
-  try {
-    window.showSaveFilePicker = async () => handle;
-    closeModal();
-    await EduV24.openBackups();
-    click("single-file-choose");
+  const readConnection = () =>
+    new Promise((resolve, reject) => {
+      const request = EduV24.test
+        .getConnection()
+        .transaction("drafts")
+        .objectStore("drafts")
+        .get("EduManager.singleFile");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  const namedPicker = async (options) => {
+    pickerNames.push(options.suggestedName);
+    createdNames.add(options.suggestedName);
+    return directory.getFileHandle(options.suggestedName, { create: true });
+  };
+  const waitForSaved = async () => {
     await waitFor(() =>
       document
         .getElementById("singleFileStatus")
         ?.textContent.startsWith("ذخیره شد:"),
     );
+    return readConnection();
+  };
+  try {
+    // This runner owns a disposable origin. Reset only the naming ledger, not
+    // application data, so suggestions can be asserted independently of prior
+    // synthetic flows. Restore its previous value in finally.
+    localStorage.removeItem(namingKey);
+    window.showSaveFilePicker = async (options) => {
+      handle = await namedPicker(options);
+      return handle;
+    };
+    closeModal();
+    await EduV24.openBackups();
+    click("single-file-choose");
+    click("single-file-choose");
+    await waitForSaved();
+    const localJalaliParts = new Intl.DateTimeFormat(
+      "en-US-u-ca-persian-nu-latn",
+      { year: "numeric", month: "2-digit", day: "2-digit" },
+    ).formatToParts(new Date());
+    const datePart = (type) =>
+      localJalaliParts.find((part) => part.type === type).value;
+    const expectedBase =
+      "MySchool-" +
+      datePart("year") +
+      "-" +
+      datePart("month") +
+      "-" +
+      datePart("day");
+    cases.push({
+      id: "SF00_JALALI_NAME",
+      name: "the real picker suggests MySchool with today's local Jalali date and a JSON extension",
+      pass:
+        pickerNames[0] === expectedBase + ".json" &&
+        handle.name === expectedBase + ".json",
+      observed: { suggestedName: pickerNames[0] },
+    });
+    cases.push({
+      id: "SF00_DOUBLE_CLICK",
+      name: "two immediate activation clicks open one picker and reserve only one filename",
+      pass: pickerNames.length === 1,
+      observed: { pickerCalls: pickerNames.length },
+    });
     const first = await read();
     const restoredPeriods = EduV24.validateFullBackup(first);
     cases.push({
@@ -53,6 +109,7 @@ module.exports = async function singleFile() {
       observed: {},
     });
     const before = first.exportedAt;
+    const firstNamingLedger = localStorage.getItem(namingKey);
     await waitFor(() => {
       const save = document.querySelector(
         '[data-workspace-action="single-file-save"]',
@@ -98,6 +155,191 @@ module.exports = async function singleFile() {
       name: "real FileSystemFileHandle survives an IndexedDB structured clone",
       pass: true,
       observed: {},
+    });
+    cases.push({
+      id: "SF03_SAVE_NAME_STABLE",
+      name: "save now updates the same file without reserving another daily filename",
+      pass:
+        localStorage.getItem(namingKey) === firstNamingLedger &&
+        pickerNames.length === 1,
+      observed: {},
+    });
+    const firstHandle = handle,
+      firstFileText = await (await firstHandle.getFile()).text();
+    window.showSaveFilePicker = namedPicker;
+    click("single-file-choose");
+    await waitFor(async () => {
+      const selected = await readConnection();
+      return (
+        selected?.savedAt &&
+        selected.handle.name === expectedBase + "-2.json" &&
+        document
+          .getElementById("singleFileStatus")
+          ?.textContent.startsWith("ذخیره شد:")
+      );
+    });
+    handle = (await readConnection()).handle;
+    const secondNamingLedger = localStorage.getItem(namingKey),
+      secondChoiceSnapshot = await read();
+    cases.push({
+      id: "SF03_SECOND_CHOICE",
+      name: "a second explicit choice on the same day selects the numbered second JSON file",
+      pass:
+        pickerNames[1] === expectedBase + "-2.json" &&
+        handle.name === pickerNames[1] &&
+        secondChoiceSnapshot.format === "EduManager.FullBackup",
+      observed: { suggestedName: pickerNames[1] },
+    });
+    cases.push({
+      id: "SF03_PREVIOUS_UNTOUCHED",
+      name: "switching to the newly suggested file preserves every byte of the previous backup",
+      pass: (await (await firstHandle.getFile()).text()) === firstFileText,
+      observed: {},
+    });
+    click("single-file-save");
+    await waitFor(async () => {
+      const selected = await readConnection();
+      return (
+        selected?.savedAt !== secondChoiceSnapshot.exportedAt &&
+        document
+          .getElementById("singleFileStatus")
+          ?.textContent.startsWith("ذخیره شد:")
+      );
+    });
+    cases.push({
+      id: "SF03_SAVE_NEW_ONLY",
+      name: "save now updates only the new selected file and does not advance its name counter",
+      pass:
+        (await read()).exportedAt !== secondChoiceSnapshot.exportedAt &&
+        (await (await firstHandle.getFile()).text()) === firstFileText &&
+        localStorage.getItem(namingKey) === secondNamingLedger &&
+        pickerNames.length === 2,
+      observed: {},
+    });
+    const beforeAutomatic = await read(),
+      originalWeekStart = db.settings.weekStartDate,
+      shiftedWeekStart = new Date(
+        (originalWeekStart || todayISO()) + "T12:00:00Z",
+      );
+    shiftedWeekStart.setUTCDate(shiftedWeekStart.getUTCDate() + 1);
+    db.settings.weekStartDate = shiftedWeekStart.toISOString().slice(0, 10);
+    await EduV24.saveDB({ action: "آزمون خودکار نام فایل پشتیبان" });
+    await waitFor(async () => {
+      const selected = await readConnection();
+      return (
+        selected?.savedAt !== beforeAutomatic.exportedAt &&
+        document
+          .getElementById("singleFileStatus")
+          ?.textContent.startsWith("ذخیره شد:")
+      );
+    });
+    const automaticallySaved = await read(),
+      automaticallyRestored = EduV24.validateFullBackup(automaticallySaved);
+    cases.push({
+      id: "SF03_AUTOMATIC_NEW_ONLY",
+      name: "a real saved setting automatically updates only the current file without allocating a new name",
+      pass:
+        automaticallyRestored.find(
+          (row) => row.period.id === EduV24.test.getState().workspace.id,
+        ).data.settings.weekStartDate === db.settings.weekStartDate &&
+        automaticallySaved.exportedAt !== beforeAutomatic.exportedAt &&
+        (await (await firstHandle.getFile()).text()) === firstFileText &&
+        localStorage.getItem(namingKey) === secondNamingLedger &&
+        pickerNames.length === 2,
+      observed: {},
+    });
+    db.settings.weekStartDate = originalWeekStart;
+    await EduV24.saveDB({ action: "پایان آزمون خودکار نام فایل پشتیبان" });
+    click("single-file-save");
+    await waitFor(async () => {
+      const selected = await readConnection();
+      return (
+        selected?.savedAt !== automaticallySaved.exportedAt &&
+        document
+          .getElementById("singleFileStatus")
+          ?.textContent.startsWith("ذخیره شد:")
+      );
+    });
+    const secondHandle = handle,
+      secondFileText = await (await secondHandle.getFile()).text(),
+      secondConnection = (await readConnection()).connectionId;
+    window.showSaveFilePicker = async (options) => {
+      pickerNames.push(options.suggestedName);
+      throw new DOMException("synthetic picker cancellation", "AbortError");
+    };
+    click("single-file-choose");
+    await waitFor(
+      () =>
+        pickerNames.length === 3 &&
+        localStorage.getItem(namingKey) === secondNamingLedger,
+    );
+    cases.push({
+      id: "SF03_CANCEL_PRESERVES",
+      name: "canceling a new picker releases its suggested number and keeps both earlier files and the current connection",
+      pass:
+        pickerNames[2] === expectedBase + "-3.json" &&
+        (await readConnection()).connectionId === secondConnection &&
+        (await (await firstHandle.getFile()).text()) === firstFileText &&
+        (await (await secondHandle.getFile()).text()) === secondFileText &&
+        localStorage.getItem(namingKey) === secondNamingLedger,
+      observed: {},
+    });
+    let overwriteConfirmations = 0;
+    window.confirm = () => {
+      overwriteConfirmations++;
+      return false;
+    };
+    window.showSaveFilePicker = async (options) => {
+      pickerNames.push(options.suggestedName);
+      return firstHandle;
+    };
+    click("single-file-choose");
+    await waitFor(
+      () =>
+        overwriteConfirmations === 1 &&
+        localStorage.getItem(namingKey) === secondNamingLedger,
+    );
+    window.confirm = originalConfirm;
+    cases.push({
+      id: "SF03_REJECT_OVERWRITE",
+      name: "rejecting overwrite of an existing backup neither changes files nor replaces the active connection or consumes a number",
+      pass:
+        pickerNames[3] === expectedBase + "-3.json" &&
+        overwriteConfirmations === 1 &&
+        (await readConnection()).connectionId === secondConnection &&
+        (await (await firstHandle.getFile()).text()) === firstFileText &&
+        (await (await secondHandle.getFile()).text()) === secondFileText &&
+        localStorage.getItem(namingKey) === secondNamingLedger,
+      observed: {},
+    });
+    click("single-file-stop");
+    await waitFor(() =>
+      document
+        .getElementById("singleFileStatus")
+        ?.textContent.includes("اتصال متوقف شد"),
+    );
+    window.showSaveFilePicker = namedPicker;
+    click("single-file-choose");
+    await waitFor(async () => {
+      const selected = await readConnection();
+      return (
+        selected?.savedAt &&
+        selected.handle.name === expectedBase + "-3.json" &&
+        document
+          .getElementById("singleFileStatus")
+          ?.textContent.startsWith("ذخیره شد:")
+      );
+    });
+    handle = (await readConnection()).handle;
+    cases.push({
+      id: "SF03_RECONNECT_NEXT_NAME",
+      name: "a fresh choice after disconnect uses the next same-day number while canceled attempts and both previous files are preserved",
+      pass:
+        pickerNames[4] === expectedBase + "-3.json" &&
+        handle.name === pickerNames[4] &&
+        (await (await firstHandle.getFile()).text()) === firstFileText &&
+        (await (await secondHandle.getFile()).text()) === secondFileText,
+      observed: { suggestedName: pickerNames[4] },
     });
     frame = document.createElement("iframe");
     frame.src = location.href;
@@ -361,8 +603,12 @@ module.exports = async function singleFile() {
   } finally {
     frame?.remove();
     window.showSaveFilePicker = originalPicker;
+    window.confirm = originalConfirm;
+    if (previousNames === null) localStorage.removeItem(namingKey);
+    else localStorage.setItem(namingKey, previousNames);
     closeModal();
-    await directory.removeEntry("single-file-regression.json").catch(() => {});
+    for (const name of createdNames)
+      await directory.removeEntry(name).catch(() => {});
     if (failedHandle)
       await directory.removeEntry("single-file-denied.json").catch(() => {});
   }

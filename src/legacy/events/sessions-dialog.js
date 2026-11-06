@@ -95,5 +95,5 @@ EduLegacyEvents.register("sessions-dialog:all-present", function () {
   return runSessionEditorAction(this, () => setAllAttendance("present"));
 });
 EduLegacyEvents.register("sessions-dialog:entry-change", function () {
-  return refreshSessionActivityInput(this.form);
+  return refreshSessionActivityInput(this.form, this);
 });

@@ -71,8 +71,14 @@ const marker = (extra = {}) => ({
   ...extra,
 });
 const session = (extra = {}) => ({
-  ...marker(),
   id: "session",
+  date: "2026-10-31",
+  period: 0,
+  schoolId: "school",
+  classId: "classroom",
+  lessonId: "lesson",
+  poudmanId: null,
+  unitId: null,
   roster: [{ id: "active", name: "Frozen active" }],
   attendance: {},
   scores: [],
@@ -164,7 +170,7 @@ test("not-held markers dismiss only their exact planned identity, including mark
 test("actual incomplete sessions always outrank not-held markers", () => {
   const f = fixture();
   f.source.notHeldSessions = [marker()];
-  f.source.sessions = [session()];
+  f.source.sessions = [session({ attendance: { active: "" } })];
   const [item] = dateItems(f.build());
   assert.equal(item.kind, "incomplete");
   assert.equal(item.unknown, 1);
@@ -212,11 +218,149 @@ test("incomplete existing sessions remain visible when the current timetable mov
     other = structuredClone(f.source);
   f.source.activeDays = [];
   f.source.masterSchedule = {};
-  other.sessions = [session({ lessonId: "alternate" })];
+  other.sessions = [
+    session({ lessonId: "alternate", attendance: { active: "" } }),
+  ];
   const [item] = dateItems(f.build({ parts: [peer(other)] }));
   assert.equal(item.kind, "incomplete");
   assert.equal(item.sourcePeriodId, "peer-term");
   assert.equal(item.lessonId, "alternate");
+});
+
+test("opening a content-free session is not incomplete attendance and keeps an explicit empty reminder", () => {
+  const f = fixture();
+  f.source.sessions = [session()];
+  const before = JSON.stringify(f.source),
+    [item] = dateItems(f.build());
+  assert.equal(item.kind, "empty");
+  assert.equal(item.empty, true);
+  assert.equal(item.sessionId, "session");
+  assert.equal(item.unknown, 1);
+  assert.equal(item.total, 1);
+  assert.equal(JSON.stringify(f.source), before);
+});
+
+test("empty frozen rosters and historical absent rosters do not hide an unstarted placeholder", () => {
+  const f = fixture();
+  f.source.schools[0].classes[0].students = [];
+  f.source.sessions = [session({ roster: [] })];
+  let [item] = dateItems(f.build());
+  assert.equal(item.kind, "empty");
+  assert.equal(item.total, 0);
+  assert.equal(item.unknown, 0);
+  delete f.source.sessions[0].roster;
+  [item] = dateItems(f.build());
+  assert.equal(item.kind, "empty");
+  assert.equal(item.total, 1);
+});
+
+test("an empty actual record still outranks a dismissal and is not duplicated by the schedule", () => {
+  const f = fixture(),
+    other = structuredClone(f.source);
+  other.sessions = [session()];
+  f.source.notHeldSessions = [marker()];
+  const rows = dateItems(f.build({ parts: [peer(other)] }));
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].kind, "empty");
+  assert.equal(rows[0].sourcePeriodId, "peer-term");
+});
+
+test("empty session detection ignores only the auto-frozen roster and permits no content-bearing fields", () => {
+  const f = fixture(),
+    isEmpty = f.c.EduAttendanceReminders.isEmptySession,
+    blank = session(),
+    before = JSON.stringify(blank);
+  assert.equal(isEmpty(blank), true);
+  assert.equal(isEmpty(session({ roster: [] })), true);
+  assert.equal(isEmpty(session({ attendance: Object.create(null) })), true);
+  assert.equal(isEmpty(session({ poudmanId: "", unitId: "" })), true);
+  assert.equal(JSON.stringify(blank), before);
+  for (const value of [
+    null,
+    undefined,
+    [],
+    {},
+    session({ attendance: undefined }),
+    session({ attendance: null }),
+    session({ attendance: [] }),
+    session({ attendance: new Date("2026-11-06") }),
+    session({ attendance: { active: "present" } }),
+    session({ attendance: { active: "" } }),
+    session({ attendance: { orphan: "" } }),
+    session({ attendance: { orphan: "invalid-status" } }),
+    session({ attendance: { orphan: null } }),
+    session({ attendance: { orphan: undefined } }),
+    session({ scores: undefined }),
+    session({ scores: {} }),
+    session({ scores: [null] }),
+    session({ scores: [{}] }),
+    session({ scores: [{ value: 0 }] }),
+    session({ scores: [{ type: "note", text: "پیگیری" }] }),
+    session({ poudmanId: "selected-poudman" }),
+    session({ unitId: "selected-unit" }),
+    session({ unitId: 0 }),
+    session({ roster: null }),
+    session({ note: "" }),
+    session({ note: "existing note" }),
+    session({ recordedAt: "2026-11-06T12:30:00.000Z" }),
+    session({ customActivities: [] }),
+    session({ date: "invalid" }),
+    session({ period: -1 }),
+    session({ id: "constructor" }),
+  ])
+    assert.equal(isEmpty(value), false, JSON.stringify(value));
+});
+
+test("non-enumerable, symbol and accessor content also fail closed without invoking accessors", () => {
+  const f = fixture(),
+    isEmpty = f.c.EduAttendanceReminders.isEmptySession,
+    hiddenAttendance = session(),
+    symbolAttendance = session(),
+    hiddenField = session(),
+    symbolField = session(),
+    decoratedScores = session(),
+    accessor = session();
+  Object.defineProperty(hiddenAttendance.attendance, "orphan", {
+    value: "",
+    enumerable: false,
+  });
+  symbolAttendance.attendance[Symbol("activity")] = "present";
+  Object.defineProperty(hiddenField, "note", { value: "", enumerable: false });
+  symbolField[Symbol("activity")] = "";
+  decoratedScores.scores.custom = "recorded";
+  Object.defineProperty(accessor, "attendance", {
+    get() {
+      throw Error("the emptiness check must not evaluate a session accessor");
+    },
+  });
+  for (const value of [
+    hiddenAttendance,
+    symbolAttendance,
+    hiddenField,
+    symbolField,
+    decoratedScores,
+    accessor,
+  ])
+    assert.equal(isEmpty(value), false);
+});
+
+test("recorded attendance, activity, module selection or unknown content stays incomplete, never convertible empty", () => {
+  const f = fixture();
+  for (const extra of [
+    { attendance: { orphan: "" } },
+    { attendance: { active: "invalid-status" } },
+    { scores: [{ type: "note", text: "keep this activity" }] },
+    { poudmanId: "selected" },
+    { unitId: "selected" },
+    { note: "keep this note" },
+  ]) {
+    f.source.sessions = [session(extra)];
+    const before = JSON.stringify(f.source),
+      [item] = dateItems(f.build());
+    assert.equal(item.kind, "incomplete");
+    assert.equal(item.empty, false);
+    assert.equal(JSON.stringify(f.source), before);
+  }
 });
 
 test("multiple real sessions in one physical bell produce one explicit deterministic conflict, never a missing candidate", () => {
@@ -227,6 +371,7 @@ test("multiple real sessions in one physical bell produce one explicit determini
   const [item] = dateItems(f.build({ parts: [peer(other)] }));
   assert.equal(dateItems(f.build({ parts: [peer(other)] })).length, 1);
   assert.equal(item.kind, "conflict");
+  assert.ok(item.sessions.every((row) => row.empty));
   assert.equal(item.sessions.length, 2);
   assert.deepEqual(
     Array.from(item.sessions, (row) => [row.sourcePeriodId, row.sessionId]),

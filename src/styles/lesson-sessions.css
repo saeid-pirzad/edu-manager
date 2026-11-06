@@ -1,0 +1,186 @@
+/* Compact lesson history only; other directories and the session editor retain their geometry. */
+@media screen {
+  #app .session-directory > .session-list-heading {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2px 10px;
+    padding: 8px 12px;
+  }
+  #app .session-directory > .session-list-heading > div {
+    display: contents;
+  }
+  #app .session-directory .session-list-heading h3 {
+    gap: 6px;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  #app .session-directory .session-directory-symbol {
+    flex-basis: 28px;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+  }
+  #app .session-directory .session-list-heading .lesson-count {
+    min-width: 22px;
+    height: 22px;
+    font-size: 11px;
+  }
+  #app .session-directory .session-list-heading p {
+    margin: 0;
+    font-size: 11px;
+    line-height: 1.7;
+  }
+  #app .session-directory > .session-list {
+    gap: 7px;
+    padding: 8px;
+  }
+  #app .session-directory .session-card {
+    border-radius: 11px;
+  }
+  #app .session-directory button.session-open {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 5px;
+    min-height: 44px;
+    padding: 8px 10px;
+  }
+  #app .session-directory .session-identity {
+    grid-column: 1;
+    grid-row: 1;
+    gap: 7px;
+    min-height: 44px;
+    padding-inline-end: 76px;
+  }
+  #app .session-directory .session-calendar {
+    flex-basis: 28px;
+    width: 28px;
+    height: 30px;
+    border-radius: 8px;
+  }
+  #app .session-directory .session-calendar svg {
+    width: 17px;
+    height: 17px;
+  }
+  #app .session-directory .session-date {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1px 7px;
+  }
+  #app .session-directory .session-date strong {
+    font-size: 12px;
+  }
+  #app .session-directory .session-date-meta {
+    gap: 4px;
+  }
+  #app .session-directory .session-counts {
+    grid-column: 1;
+    grid-row: 2;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+  }
+  #app .session-directory .session-counts > span {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0 3px;
+    min-height: 28px;
+    padding: 3px 2px;
+    border-radius: 6px;
+    font-size: 10px;
+    line-height: 1.7;
+    white-space: normal;
+  }
+  #app .session-directory .session-counts b {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  #app .session-directory .session-unit {
+    grid-column: 1;
+    grid-row: 3;
+    margin: 0;
+    padding-inline-start: 7px;
+    font-size: 11px;
+    line-height: 1.7;
+  }
+  #app .session-directory .session-enter-label {
+    position: absolute;
+    inset-inline-end: 61px;
+    top: 21px;
+    width: 18px;
+    height: 18px;
+    min-width: 0;
+    min-height: 0;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    font-size: 0;
+    line-height: 0;
+  }
+  #app .session-directory .session-enter-label svg {
+    width: 18px;
+    height: 18px;
+  }
+  #app .session-directory .session-card > .session-delete {
+    inset-inline-end: 8px;
+    top: 8px;
+    width: 44px;
+    height: 44px;
+    border-radius: 9px;
+    transform: none;
+  }
+  #app
+    .session-directory
+    .session-card:not(:has(> .session-delete))
+    .session-identity {
+    padding-inline-end: 24px;
+  }
+  #app
+    .session-directory
+    .session-card:not(:has(> .session-delete))
+    .session-enter-label {
+    inset-inline-end: 12px;
+  }
+}
+@media screen and (min-width: 1000px) {
+  #app .session-directory button.session-open {
+    grid-template-columns: minmax(145px, 0.8fr) minmax(0, 1.6fr) auto;
+    gap: 5px 12px;
+    padding-inline-end: 64px;
+  }
+  #app .session-directory .session-identity {
+    padding-inline-end: 0;
+  }
+  #app .session-directory .session-counts {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  #app .session-directory .session-enter-label {
+    position: static;
+    grid-column: 3;
+    grid-row: 1;
+    width: auto;
+    height: auto;
+    gap: 5px;
+    overflow: visible;
+    font-size: 11px;
+    line-height: 1.7;
+  }
+  #app .session-directory .session-unit {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  #app
+    .session-directory
+    .session-card:not(:has(> .session-delete))
+    button.session-open {
+    padding-inline-end: 10px;
+  }
+  #app
+    .session-directory
+    .session-card:not(:has(> .session-delete))
+    .session-identity {
+    padding-inline-end: 0;
+  }
+}

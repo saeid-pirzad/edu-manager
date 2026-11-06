@@ -95,6 +95,7 @@
         "src/workspace/backups/local.js",
         "src/workspace/backups/full-export.js",
         "src/workspace/backups/sharing.js",
+        "src/workspace/backups/single-file-name.js",
         "src/workspace/backups/single-file.js",
         "src/workspace/backups/full-restore.js",
         "src/workspace/backups/import-conversion.js",
@@ -352,7 +353,8 @@
         "src/styles/workflow/grades.css",
         "src/styles/karnameh-grid.css",
         "src/styles/buttons.css",
-        "src/styles/surfaces.css"
+        "src/styles/surfaces.css",
+        "src/styles/lesson-sessions.css"
       ]
     },
     {

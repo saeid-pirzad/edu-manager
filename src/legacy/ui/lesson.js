@@ -240,8 +240,8 @@ function renderLessonSessions(
     sessions.length.toLocaleString("fa-IR") +
     "</span></h3><p>" +
     (annual
-      ? "همهٔ جلسات این درس در سال تحصیلی؛ مرتب از جدید به قدیم."
-      : "جدیدترین جلسه‌ها؛ برای ثبت حضور و فعالیت، وارد جلسه شوید.") +
+      ? "همهٔ جلسات سال تحصیلی، از جدید به قدیم."
+      : "برای مشاهده، جلسه را انتخاب کنید.") +
     "</p></div>";
   if (sessions.length && !annual)
     h += `<details class="session-list-actions"><summary>گزینه‌ها</summary><div><button class="danger" data-legacy-click="ui-lesson:7" data-legacy-click-arg0="${esc(classId)}" data-legacy-click-arg1="${esc(lessonId)}">حذف همه جلسات</button></div></details>`;

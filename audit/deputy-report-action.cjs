@@ -226,6 +226,9 @@ function measure() {
       getComputedStyle(button).visibility !== "hidden",
     persistent: !!button?.closest(".periodic-controls"),
     enabled: !!button && !button.disabled,
+    noRedundantInputs: !document.querySelector(
+      '[data-legacy-input="reports-periodic-render:7"],[data-legacy-input="reports-periodic-render:8"]',
+    ),
     noPageOverflow: document.documentElement.scrollWidth <= innerWidth + 1,
     noButtonClipping: !!button && button.scrollWidth <= button.clientWidth + 1,
   };
@@ -337,6 +340,7 @@ async function run(env) {
             observed.visible &&
             observed.persistent &&
             !observed.enabled &&
+            observed.noRedundantInputs &&
             observed.noPageOverflow &&
             observed.noButtonClipping,
           observed,
@@ -390,21 +394,46 @@ async function run(env) {
         copied.delivery.html?.includes("<strong>مرخصی</strong>"),
       copied,
     );
-    for (const [field, value] of [
-      ["7", "CHANGED_AUTHOR"],
-      ["8", "CHANGED_NOTE"],
+    for (const level of ["full", "summary"]) {
+      const changed = await evaluate(
+        "(() => { const input = document.querySelector('[data-legacy-change=\"reports-periodic-render:6\"]'); input.value = " +
+          JSON.stringify(level) +
+          "; input.dispatchEvent(new Event('change',{bubbles:true})); return { ...measure(), level: EduPeriodicReports.filters.detailLevel, stale: EduPeriodicReports.getLast() === null }; })()",
+      );
+      check(
+        "deputy-action-detail-" + level,
+        "Changing the actual report detail control invalidates prepared deputy copy",
+        changed.visible &&
+          !changed.enabled &&
+          changed.stale &&
+          changed.level === level &&
+          changed.noRedundantInputs,
+        changed,
+      );
+      const rebuilt = await evaluate("(" + prepareReport.toString() + ")()");
+      if (!rebuilt.result || !rebuilt.after.enabled)
+        throw Error("Changed-detail report could not be prepared again");
+    }
+    // Backward-compatible note/author APIs remain available for old callers;
+    // their invalidation guards must still work without recreating deleted UI.
+    for (const [field, method, value] of [
+      ["7", "author", "CHANGED_AUTHOR"],
+      ["8", "note", "CHANGED_NOTE"],
     ]) {
       const changed = await evaluate(
-        "(() => { const input = document.querySelector('[data-legacy-input=\"reports-periodic-render:" +
-          field +
-          "\"]'); input.value = " +
+        "(() => { EduPeriodicReports[" +
+          JSON.stringify(method) +
+          "](" +
           JSON.stringify(value) +
-          "; input.dispatchEvent(new Event('input',{bubbles:true})); return measure(); })()",
+          "); return { ...measure(), stale: EduPeriodicReports.getLast() === null }; })()",
       );
       check(
         "deputy-action-edit-" + field,
-        "Editing report author or note disables the old prepared deputy copy",
-        changed.visible && !changed.enabled,
+        "Legacy report author or note API invalidates deputy copy without restoring deleted controls",
+        changed.visible &&
+          !changed.enabled &&
+          changed.stale &&
+          changed.noRedundantInputs,
         changed,
       );
       const rebuilt = await evaluate("(" + prepareReport.toString() + ")()");

@@ -404,10 +404,10 @@ async function dailyFlow() {
   form = formNow();
   check(
     "POSITIVE_DEFAULT",
-    "Positive entry keeps the student and leaves a one-point default for the next entry",
+    "Positive entry keeps the student and leaves a quarter-point default for the next entry",
     form.elements.studentId.value === ids.students[1] &&
       form.elements.type.value === "positive" &&
-      form.elements.value.value === "1" &&
+      form.elements.value.value === "0.25" &&
       form.elements.note.value === "",
     {
       student: form.elements.studentId.value,
@@ -581,6 +581,130 @@ async function dailyFlow() {
         },
       ]),
     { scores },
+  );
+  openSessionModal(getSessionById(ids.session));
+  await globalThis.__unlockRecordedSessionForAudit(ids.session);
+  showSessionPanel("activity");
+  form = setForm({ studentId: ids.students[0], type: "positive" });
+  check(
+    "POSITIVE_SELECTION_DEFAULT",
+    "Selecting positive supplies the quarter-point default without changing old records",
+    form.elements.value.value === "0.25" &&
+      JSON.stringify(
+        (await stored()).scores.map(({ studentId, type, value, note }) => ({
+          studentId,
+          type,
+          value,
+          note,
+        })),
+      ) === JSON.stringify(scores),
+    { value: form.elements.value.value, count: await count() },
+  );
+  form = setForm({ type: "negative" });
+  check(
+    "NEGATIVE_SELECTION_DEFAULT",
+    "Switching from positive to negative selects the half-point default",
+    form.elements.value.value === "0.5",
+    { value: form.elements.value.value },
+  );
+  setForm({ type: "positive", value: "0.75" });
+  form = setForm({ studentId: ids.students[1] });
+  check(
+    "MANUAL_AMOUNT_STUDENT_CHANGE",
+    "Changing the student preserves a manually entered activity amount",
+    form.elements.value.value === "0.75",
+    { value: form.elements.value.value },
+  );
+  setForm({ value: "0", note: "pending-zero-default-check" });
+  openSessionModal(getSessionById(ids.session));
+  form = formNow();
+  check(
+    "DEFAULTS_RERENDER_ZERO",
+    "A same-session refresh retains a pending zero rather than replacing it with the positive default",
+    form.elements.value.value === "0" &&
+      form.elements.note.value === "pending-zero-default-check" &&
+      form.elements.type.value === "positive" &&
+      form.elements.studentId.value === ids.students[1],
+    {
+      value: form.elements.value.value,
+      student: form.elements.studentId.value,
+    },
+  );
+  setForm({
+    studentId: ids.students[0],
+    type: "negative",
+  });
+  form = setForm({ type: "positive", note: "positive-default-persisted" });
+  check(
+    "POSITIVE_RESELECTION_DEFAULT",
+    "Returning from negative to positive restores the quarter-point default",
+    form.elements.value.value === "0.25",
+    { value: form.elements.value.value },
+  );
+  form.requestSubmit(form.querySelector("[data-session-next]"));
+  await waitCount(5);
+  form = formNow();
+  const positiveDefault = (await stored()).scores[4];
+  check(
+    "POSITIVE_DEFAULT_DURABLE_NEXT",
+    "Save-and-next persists positive 0.25 and prepares the same default for the next student",
+    positiveDefault.studentId === ids.students[0] &&
+      positiveDefault.type === "positive" &&
+      positiveDefault.value === 0.25 &&
+      positiveDefault.note === "positive-default-persisted" &&
+      form.elements.studentId.value === ids.students[1] &&
+      form.elements.type.value === "positive" &&
+      form.elements.value.value === "0.25" &&
+      form.elements.note.value === "",
+    {
+      score: positiveDefault,
+      nextStudent: form.elements.studentId.value,
+      nextValue: form.elements.value.value,
+    },
+  );
+  form = setForm({ type: "negative", note: "negative-default-persisted" });
+  EduV24.test.failNextWrite();
+  form.requestSubmit(
+    form.querySelector('button[type="submit"]:not([data-session-next])'),
+  );
+  await wait(
+    () =>
+      EduV24.test.getState().busy === 0 &&
+      !!document.querySelector(
+        '[data-modal-save-feedback][data-state="error"]:not([hidden])',
+      ),
+    "A failed negative-default write did not leave a visible local error",
+  );
+  await settle();
+  form = formNow();
+  check(
+    "NEGATIVE_DEFAULT_FAILURE_RETAINS",
+    "A failed negative entry preserves its half-point value and note without adding any score",
+    (await count()) === 5 &&
+      form.elements.type.value === "negative" &&
+      form.elements.value.value === "0.5" &&
+      form.elements.note.value === "negative-default-persisted" &&
+      !form.elements.value.disabled,
+    { count: await count(), value: form.elements.value.value },
+  );
+  form.requestSubmit(
+    form.querySelector('button[type="submit"]:not([data-session-next])'),
+  );
+  await waitCount(6);
+  form = formNow();
+  const negativeDefault = (await stored()).scores[5];
+  check(
+    "NEGATIVE_DEFAULT_DURABLE",
+    "Retry persists the negative half-point default exactly once and prepares the same default for the next entry",
+    negativeDefault.studentId === ids.students[1] &&
+      negativeDefault.type === "negative" &&
+      negativeDefault.value === 0.5 &&
+      negativeDefault.note === "negative-default-persisted" &&
+      form.elements.type.value === "negative" &&
+      form.elements.value.value === "0.5" &&
+      form.elements.note.value === "" &&
+      (await stored()).scores[2].value === 1,
+    { score: negativeDefault, nextValue: form.elements.value.value },
   );
   const before = db.sessions.length;
   let denied = false;

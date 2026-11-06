@@ -17,7 +17,9 @@ function fixture() {
     pollDelay = null,
     debounceCallback = null,
     debounceDelay = null;
-  const deliveries = [];
+  const deliveries = [],
+    pickerCalls = [],
+    nameStorage = new Map();
   const handle = {
     name: "EduManager-data.json",
     getFile: async () => ({ size: contents.length, lastModified: modified }),
@@ -49,7 +51,17 @@ function fixture() {
     fullRestoreBusy: false,
     connectionRetired: false,
     document: { getElementById: () => null },
-    window: { showSaveFilePicker: async () => handle },
+    window: {
+      showSaveFilePicker: async (options) => {
+        pickerCalls.push(options);
+        return handle;
+      },
+    },
+    localStorage: {
+      getItem: (key) => nameStorage.get(key) ?? null,
+      setItem: (key, value) => nameStorage.set(key, String(value)),
+      removeItem: (key) => nameStorage.delete(key),
+    },
     navigator: {},
     setInterval(callback, delay) {
       pollCallback = callback;
@@ -136,17 +148,21 @@ function fixture() {
       };
     },
   });
-  vm.runInContext(
-    fs.readFileSync(
-      path.join(__dirname, "../src/workspace/backups/single-file.js"),
-      "utf8",
-    ),
-    context,
-  );
+  for (const name of [
+    "src/domain/calendar.js",
+    "src/workspace/backups/single-file-name.js",
+    "src/workspace/backups/single-file.js",
+  ])
+    vm.runInContext(
+      fs.readFileSync(path.join(__dirname, "..", name), "utf8"),
+      context,
+    );
   return {
     context,
     handle,
     deliveries,
+    pickerCalls,
+    nameStorage,
     get contents() {
       return contents;
     },
@@ -1180,4 +1196,178 @@ test("automatic idle checks still reject a replaced installation before reading 
   assert.equal(f.snapshots, 1);
   assert.equal(f.writes, 1);
   assert.match(vm.runInContext("singleFileMessage", f.context), /جایگزین/);
+});
+
+test("file selection proposes a local Jalali dated name directly in the click before any await", async () => {
+  const f = fixture(),
+    expected = vm.runInContext(
+      "(()=>{const now=new Date();return 'MySchool-'+gregorianToJalali(now.getFullYear(),now.getMonth()+1,now.getDate()).map(v=>String(v).padStart(2,'0')).join('-')+'.json'})()",
+      f.context,
+    ),
+    choosing = f.context.chooseSingleFile();
+  assert.equal(f.pickerCalls.length, 1, "picker cannot wait for a snapshot");
+  assert.equal(f.pickerCalls[0].suggestedName, expected);
+  assert.equal(f.pickerCalls[0].excludeAcceptAllOption, true);
+  assert.equal(await choosing, true);
+});
+
+test("automatic writes and save-now retain the same file and do not consume new filename numbers", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  const metadata = f.nameStorage.get("EduManager.singleFileNames"),
+    selected = f.getStored().handle;
+  f.context.sourceValue++;
+  await f.tick();
+  await f.context.resumeSingleFile();
+  assert.equal(f.writes, 3);
+  assert.equal(f.pickerCalls.length, 1);
+  assert.equal(f.getStored().handle, selected);
+  assert.equal(f.nameStorage.get("EduManager.singleFileNames"), metadata);
+  await f.context.chooseSingleFile();
+  assert.equal(
+    f.pickerCalls[1].suggestedName,
+    f.pickerCalls[0].suggestedName.replace(/\.json$/, "-2.json"),
+  );
+});
+
+test("choosing a fresh numbered file preserves the earlier file and only updates the new handle", async () => {
+  const f = fixture(),
+    next = fixture();
+  await f.context.chooseSingleFile();
+  const previous = f.contents;
+  let proposed;
+  f.context.window.showSaveFilePicker = async (options) => {
+    proposed = options.suggestedName;
+    next.handle.name = proposed;
+    return next.handle;
+  };
+  f.context.sourceValue = 2;
+  assert.equal(await f.context.chooseSingleFile(), true);
+  assert.equal(
+    proposed,
+    f.pickerCalls[0].suggestedName.replace(/\.json$/, "-2.json"),
+  );
+  assert.equal(f.contents, previous);
+  assert.equal(f.writes, 1);
+  assert.equal(next.writes, 1);
+  assert.equal(f.getStored().handle, next.handle);
+  f.context.sourceValue = 3;
+  await f.context.resumeSingleFile();
+  assert.equal(next.writes, 2);
+  assert.equal(f.contents, previous);
+  assert.equal(JSON.parse(next.contents).stores.records[0].value, 3);
+  await f.context.disableSingleFile();
+  const lastNewFile = next.contents;
+  assert.equal(await f.context.syncSingleFile(), false);
+  assert.equal(next.contents, lastNewFile);
+  assert.equal(f.contents, previous);
+});
+
+test("canceling a new picker retains the prior connection, file and next available filename", async () => {
+  const f = fixture(),
+    proposals = [];
+  await f.context.chooseSingleFile();
+  const previous = f.contents,
+    connectionId = f.getStored().connectionId;
+  f.context.window.showSaveFilePicker = async (options) => {
+    proposals.push(options.suggestedName);
+    throw Object.assign(Error("cancel"), { name: "AbortError" });
+  };
+  await f.context.chooseSingleFile();
+  assert.equal(f.contents, previous);
+  assert.equal(f.getStored().connectionId, connectionId);
+  assert.equal(vm.runInContext("singleFileTimer", f.context), 1);
+  f.context.window.showSaveFilePicker = async (options) => {
+    proposals.push(options.suggestedName);
+    return f.handle;
+  };
+  assert.equal(await f.context.chooseSingleFile(), true);
+  assert.equal(proposals[1], proposals[0]);
+  assert.equal(f.writes, 2);
+});
+
+test("rejecting existing-file overwrite keeps its contents and releases the unused suggestion", async () => {
+  const f = fixture(),
+    existing = fixture(),
+    proposals = [];
+  await f.context.chooseSingleFile();
+  const previous = f.contents,
+    connectionId = f.getStored().connectionId;
+  existing.externalEdit();
+  f.context.confirm = () => false;
+  f.context.window.showSaveFilePicker = async (options) => {
+    proposals.push(options.suggestedName);
+    return existing.handle;
+  };
+  await f.context.chooseSingleFile();
+  assert.equal(existing.contents, "external");
+  assert.equal(existing.writes, 0);
+  assert.equal(f.contents, previous);
+  assert.equal(f.getStored().connectionId, connectionId);
+  assert.equal(vm.runInContext("singleFileTimer", f.context), 1);
+  f.context.confirm = () => true;
+  assert.equal(await f.context.chooseSingleFile(), true);
+  assert.equal(proposals[1], proposals[0]);
+  assert.equal(existing.writes, 1);
+  assert.equal(f.contents, previous);
+});
+
+test("a failed first write consumes the created file's number without touching the previous backup", async () => {
+  const f = fixture(),
+    next = fixture(),
+    retry = fixture(),
+    proposals = [];
+  await f.context.chooseSingleFile();
+  const previous = f.contents;
+  next.failWrites();
+  f.context.window.showSaveFilePicker = async (options) => {
+    proposals.push(options.suggestedName);
+    return proposals.length === 1 ? next.handle : retry.handle;
+  };
+  assert.equal(await f.context.chooseSingleFile(), false);
+  assert.equal(f.contents, previous);
+  assert.equal(next.writes, 0);
+  assert.equal(await f.context.chooseSingleFile(), true);
+  assert.match(proposals[0], /-2\.json$/);
+  assert.match(proposals[1], /-3\.json$/);
+  assert.equal(f.contents, previous);
+});
+
+test("repeated clicks cannot start concurrent pickers or reserve unused duplicate names", async () => {
+  const f = fixture();
+  let releasePicker,
+    calls = 0;
+  f.context.window.showSaveFilePicker = () => {
+    calls++;
+    return new Promise((resolve) => {
+      releasePicker = resolve;
+    });
+  };
+  const first = f.context.chooseSingleFile();
+  assert.equal(calls, 1);
+  assert.equal(await f.context.chooseSingleFile(), false);
+  assert.equal(calls, 1);
+  releasePicker(f.handle);
+  assert.equal(await first, true);
+  f.context.window.showSaveFilePicker = async (options) => {
+    assert.match(options.suggestedName, /-2\.json$/);
+    return f.handle;
+  };
+  assert.equal(await f.context.chooseSingleFile(), true);
+});
+
+test("unavailable filename metadata never prevents an otherwise valid automatic backup", async () => {
+  const f = fixture();
+  f.context.localStorage = {
+    getItem() {
+      throw Error("unavailable");
+    },
+    setItem() {
+      throw Error("unavailable");
+    },
+  };
+  assert.equal(await f.context.chooseSingleFile(), true);
+  await f.context.chooseSingleFile();
+  assert.equal(f.writes, 2);
+  assert.match(f.pickerCalls[1].suggestedName, /-2\.json$/);
 });

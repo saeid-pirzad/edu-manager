@@ -3,7 +3,8 @@ const singleFileKey = "EduManager.singleFile";
 const SINGLE_FILE_POLL_MS = 30000,
   SINGLE_FILE_DEBOUNCE_MS = 2000;
 let singleFileSavedSource = null,
-  singleFileReschedule = false;
+  singleFileReschedule = false,
+  singleFileChoosing = false;
 let singleFile = null,
   singleFileTimer = null,
   singleFileDebounce = null,
@@ -358,55 +359,69 @@ async function restoreSingleFile() {
   }
 }
 async function chooseSingleFile() {
+  if (singleFileChoosing) return false;
   if (!ready || blocked || resetBusy || connectionRetired)
     throw Error("بانک آماده ذخیره فایل نیست.");
-  let handle;
+  singleFileChoosing = true;
+  let reservation,
+    accepted = false;
   try {
-    // The picker must run directly in the click gesture, before snapshot awaits.
-    handle = await window.showSaveFilePicker({
-      suggestedName: "EduManager-data.json",
-      excludeAcceptAllOption: true,
-      types: [
-        {
-          description: "EduManager JSON",
-          accept: { "application/json": [".json"] },
-        },
-      ],
-    });
-  } catch (error) {
-    if (error.name === "AbortError") return;
-    return failSingleFile(error);
-  }
-  if (!/\.json$/i.test(handle.name)) throw Error("فقط فایل JSON انتخاب کنید.");
-  const file = await handle.getFile();
-  if (
-    file.size &&
-    !confirm(
-      "محتوای فایل انتخابی با همه اطلاعات فعلی برنامه جایگزین شود؟ برای بازیابی، انصراف دهید و «بازیابی از فایل» را بزنید.",
+    let handle;
+    try {
+      reservation = reserveSingleFileName();
+      // Name reservation is synchronous: keep the picker in the click gesture.
+      handle = await window.showSaveFilePicker({
+        suggestedName: reservation.name,
+        excludeAcceptAllOption: true,
+        types: [
+          {
+            description: "EduManager JSON",
+            accept: { "application/json": [".json"] },
+          },
+        ],
+      });
+    } catch (error) {
+      if (error.name === "AbortError") return;
+      return failSingleFile(error);
+    }
+    if (!/\.json$/i.test(handle.name))
+      throw Error("فقط فایل JSON انتخاب کنید.");
+    const file = await handle.getFile();
+    if (
+      file.size &&
+      !confirm(
+        "محتوای فایل انتخابی با همه اطلاعات فعلی برنامه جایگزین شود؟ برای بازیابی، انصراف دهید و «بازیابی از فایل» را بزنید.",
+      )
     )
-  )
-    return;
-  pauseSingleFile();
-  if (singleFileWriting) await singleFileWriting;
-  if (!ready || resetBusy || connectionRetired) return;
-  singleFile = {
-    connectionId: uid(),
-    handle,
-    modified: file.lastModified,
-    size: file.size,
-    savedAt: "",
-  };
-  try {
-    await persistSingleFile({ replace: true });
-    broadcast({
-      type: "single-file-changed",
-      connectionId: singleFile.connectionId,
-    });
-    const saved = await syncSingleFile();
-    if (saved) startSingleFile();
-    return saved;
-  } catch (error) {
-    return failSingleFile(error);
+      return;
+    // The picker may already have created an empty file. Keep its number even
+    // if the first write fails, so the next suggestion avoids that file.
+    accepted = true;
+    pauseSingleFile();
+    if (singleFileWriting) await singleFileWriting;
+    if (!ready || resetBusy || connectionRetired) return;
+    singleFile = {
+      connectionId: uid(),
+      handle,
+      modified: file.lastModified,
+      size: file.size,
+      savedAt: "",
+    };
+    try {
+      await persistSingleFile({ replace: true });
+      broadcast({
+        type: "single-file-changed",
+        connectionId: singleFile.connectionId,
+      });
+      const saved = await syncSingleFile();
+      if (saved) startSingleFile();
+      return saved;
+    } catch (error) {
+      return failSingleFile(error);
+    }
+  } finally {
+    if (!accepted) reservation?.release();
+    singleFileChoosing = false;
   }
 }
 async function resumeSingleFile() {

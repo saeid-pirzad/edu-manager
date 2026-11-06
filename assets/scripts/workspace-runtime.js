@@ -5985,33 +5985,35 @@ function attendanceReminderItems(model) {
 }
 
 function attendanceReminderStatus(item) {
+  if (item.kind === "empty") return "ثبت شروع نشده";
   if (item.kind === "incomplete")
     return "ناقص · " + attendanceReminderNumber(item.unknown) + " نفر";
   return item.kind === "conflict" ? "نیازمند بررسی" : "ثبت نشده";
 }
 
 function attendanceReminderRowHtml(item) {
-  const tone = ["missing", "incomplete", "conflict"].includes(item.kind)
+  const tone = ["missing", "empty", "incomplete", "conflict"].includes(
+    item.kind,
+  )
     ? item.kind
     : "missing";
   return (
     '<li class="attendance-reminder-item is-' +
     tone +
-    '"><button type="button" class="attendance-reminder-open" data-workspace-action="attendance-reminder-open" data-key="' +
+    (tone === "empty" ? " is-missing" : "") +
+    '"><button type="button" class="attendance-reminder-open" data-ui-icon="none" data-workspace-action="attendance-reminder-open" data-key="' +
     esc(item.key) +
-    '"><span class="attendance-reminder-date">' +
-    attendanceReminderDate(item) +
-    '</span><span class="attendance-reminder-identity"><strong>' +
+    '"><span class="attendance-reminder-identity"><strong>' +
     esc(item.className || "کلاس") +
     '</strong><span class="attendance-reminder-lesson">' +
     esc(item.lessonName || "درس") +
-    "</span><small>" +
-    esc(item.schoolName || "") +
-    '</small></span><span class="attendance-reminder-status">' +
+    '</span></span><span class="attendance-reminder-status">' +
     attendanceReminderStatus(item) +
-    '</span><span class="attendance-reminder-arrow" aria-hidden="true">' +
-    EduIcons.html("chevron-left") +
-    "</span></button></li>"
+    '</span><span class="attendance-reminder-meta"><span class="attendance-reminder-date">' +
+    attendanceReminderDate(item) +
+    '</span><span class="attendance-reminder-school">' +
+    esc(item.schoolName || "") +
+    "</span></span></button></li>"
   );
 }
 
@@ -6033,9 +6035,7 @@ function renderAttendanceReminders(model) {
   return (
     '<section class="attendance-reminders' +
     (items.length ? "" : " is-clear") +
-    '" aria-labelledby="attendanceRemindersTitle"><header class="attendance-reminders-heading"><span class="attendance-reminders-symbol" aria-hidden="true">' +
-    EduIcons.html(items.length ? "attendance" : "check") +
-    '</span><div><h3 id="attendanceRemindersTitle">پیگیری حضور‌وغیاب' +
+    '" aria-labelledby="attendanceRemindersTitle"><header class="attendance-reminders-heading"><div><h3 id="attendanceRemindersTitle">پیگیری حضور‌وغیاب' +
     (items.length
       ? '<span class="attendance-reminders-count">' +
         attendanceReminderNumber(items.length) +
@@ -6138,6 +6138,9 @@ function attendanceReminderListHtml(model, page = 0) {
 function attendanceReminderDialogHtml(item) {
   const key = esc(item.key),
     missing = item.kind === "missing",
+    empty = item.kind === "empty",
+    canMarkNotHeld = missing || empty,
+    foreignEmpty = empty && item.sourcePeriodId !== workspace?.id,
     conflict = item.kind === "conflict";
   const recordAttributes =
     ' data-key="' +
@@ -6148,9 +6151,19 @@ function attendanceReminderDialogHtml(item) {
       ? ' data-workspace="' + esc(item.sourcePeriodId) + '"'
       : "");
   return (
-    '<div class="attendance-reminder-dialog"><section class="attendance-reminder-summary"><span class="attendance-reminder-date">' +
+    '<div class="attendance-reminder-dialog is-' +
+    (conflict
+      ? "conflict"
+      : empty
+        ? "empty is-missing"
+        : missing
+          ? "missing"
+          : "incomplete") +
+    '"><section class="attendance-reminder-summary"><div class="attendance-reminder-summary-meta"><span class="attendance-reminder-date">' +
     attendanceReminderDate(item) +
-    "</span><h4>" +
+    '</span><span class="attendance-reminder-status">' +
+    attendanceReminderStatus(item) +
+    "</span></div><h4>" +
     esc(item.className || "کلاس") +
     "</h4><p>" +
     esc(item.lessonName || "درس") +
@@ -6161,92 +6174,162 @@ function attendanceReminderDialogHtml(item) {
     '">' +
     (missing
       ? "برای این زنگ، جلسه‌ای ثبت نشده است. اگر کلاس برگزار شده، حضور‌وغیاب آن را ثبت کنید."
-      : conflict
-        ? "برای این تاریخ و زنگ، بیش از یک جلسه ثبت شده است. جلسه‌های ثبت‌شده را جداگانه بررسی کنید."
-        : "حضور‌وغیاب " +
-          attendanceReminderNumber(item.unknown) +
-          " نفر از " +
-          attendanceReminderNumber(item.total) +
-          " نفر هنوز مشخص نشده است. اطلاعات قبلی جلسه حفظ می‌شود؛ فقط موارد تعیین‌نشده را تکمیل کنید.") +
-    "</p>" +
+      : empty
+        ? "جلسه فقط باز شده و هیچ حضور، نمره یا فعالیتی ثبت نشده است. اگر کلاس برگزار نشده، می‌توانید وضعیت آن را با تأیید خود مشخص کنید."
+        : conflict
+          ? "برای این تاریخ و زنگ، بیش از یک جلسه ثبت شده است. جلسه‌های ثبت‌شده را جداگانه بررسی کنید."
+          : "حضور‌وغیاب " +
+            attendanceReminderNumber(item.unknown) +
+            " نفر از " +
+            attendanceReminderNumber(item.total) +
+            " نفر هنوز مشخص نشده است. اطلاعات قبلی جلسه حفظ می‌شود؛ فقط موارد تعیین‌نشده را تکمیل کنید.") +
+    '</p><div class="attendance-reminder-choices">' +
     (conflict
       ? '<div class="attendance-reminder-conflict-sessions">' +
         (item.sessions || [])
           .map(
             (session, index) =>
-              '<button type="button" class="ghost" data-workspace-action="attendance-reminder-record" data-key="' +
+              '<button type="button" class="ghost" data-ui-icon="none" data-workspace-action="attendance-reminder-record" data-key="' +
               key +
               '" data-session="' +
               esc(session.sessionId) +
               '" data-workspace="' +
               esc(session.sourcePeriodId) +
               '">' +
-              EduIcons.html("attendance") +
               "بررسی جلسهٔ " +
               attendanceReminderNumber(index + 1) +
               "</button>",
           )
           .join("") +
         "</div>"
-      : '<div class="attendance-reminder-primary-action"><button type="button" data-workspace-action="attendance-reminder-record"' +
+      : '<section class="attendance-reminder-choice is-record"><h5>' +
+        (canMarkNotHeld ? "جلسه برگزار شده" : "تکمیل اطلاعات جلسه") +
+        "</h5><p>" +
+        (missing
+          ? "حضور‌وغیاب این زنگ را ثبت کنید."
+          : "جلسه ابتدا در حالت مشاهده باز می‌شود؛ برای تغییر، ویرایش را فعال کنید.") +
+        '</p><div class="attendance-reminder-primary-action"><button type="button" data-ui-icon="none" data-workspace-action="attendance-reminder-record"' +
         recordAttributes +
         (missing ? ' data-mutating="1"' : "") +
         ">" +
-        EduIcons.html("attendance") +
         (missing ? "ثبت حضور‌وغیاب این زنگ" : "تکمیل حضور‌وغیاب جلسه") +
-        "</button></div>") +
-    (missing
-      ? '<section class="attendance-reminder-not-held"><p>اگر این زنگ برگزار نشده، آن را مشخص کنید تا از پیگیری خارج شود. این انتخاب، غیبت هنرجویان را ثبت نمی‌کند.</p><button type="button" class="ghost" data-mutating="1" data-workspace-action="attendance-reminder-not-held" data-key="' +
-        key +
-        '">' +
-        EduIcons.html("calendar") +
-        "این زنگ برگزار نشده است</button></section>"
+        "</button></div></section>") +
+    (canMarkNotHeld
+      ? '<section class="attendance-reminder-choice attendance-reminder-not-held"><h5>جلسه برگزار نشده</h5><p>' +
+        (empty
+          ? "با تأیید شما، فقط همین رکورد خالی با نشان «برگزار نشده» جایگزین می‌شود. این انتخاب، غیبت هنرجویان را ثبت نمی‌کند."
+          : "این زنگ از پیگیری خارج می‌شود. این انتخاب، غیبت هنرجویان را ثبت نمی‌کند.") +
+        '</p><button type="button" class="ghost" data-ui-icon="none"' +
+        (foreignEmpty ? "" : ' data-mutating="1"') +
+        ' data-workspace-action="attendance-reminder-not-held"' +
+        (empty ? recordAttributes : ' data-key="' + key + '"') +
+        ">" +
+        (foreignEmpty
+          ? "باز کردن برای تعیین وضعیت"
+          : "این زنگ برگزار نشده است") +
+        "</button></section>"
       : "") +
-    '<p id="operationError" role="alert"></p><div class="attendance-reminder-dialog-actions"><button type="button" class="ghost" data-workspace-action="close">بستن</button></div></div>'
+    '</div><p id="operationError" role="alert"></p><div class="attendance-reminder-dialog-actions"><button type="button" class="ghost" data-workspace-action="close">بستن</button></div></div>'
+  );
+}
+
+function compareNotHeldReminders(a, b) {
+  const dateOrder = String(b.date).localeCompare(String(a.date)),
+    bellOrder = Number(a.period) - Number(b.period);
+  if (dateOrder || bellOrder) return dateOrder || bellOrder;
+  const fields = [
+    [a.schoolName, b.schoolName],
+    [a.className, b.className],
+    [a.lessonName, b.lessonName],
+    [a.sourcePeriodId || a.workspace, b.sourcePeriodId || b.workspace],
+    [a.id || a.key, b.id || b.key],
+  ];
+  for (const [left, right] of fields) {
+    const order = String(left || "").localeCompare(String(right || ""), "fa", {
+      numeric: true,
+    });
+    if (order) return order;
+  }
+  // Natural collation can equate distinct IDs such as item-1 and item-01.
+  // Keep equal-looking entries stable regardless of their input order.
+  for (const [left, right] of fields) {
+    const l = String(left || ""),
+      r = String(right || "");
+    if (l !== r) return l < r ? -1 : 1;
+  }
+  return 0;
+}
+
+function attendanceReminderHistoryRowHtml(marker) {
+  const source = marker.sourcePeriodId || marker.workspace || "",
+    current = source === workspace?.id;
+  return (
+    '<li class="attendance-reminder-history-item"><div class="attendance-reminder-history-details"><div class="attendance-reminder-history-meta"><span class="attendance-reminder-date">زنگ ' +
+    attendanceReminderNumber(Number(marker.period) + 1) +
+    '</span><span class="attendance-reminder-history-tag' +
+    (marker.closed ? " is-closed" : "") +
+    '">' +
+    (marker.closed ? "نوبت بسته" : "برگزار نشده") +
+    '</span></div><div class="attendance-reminder-history-identity"><strong>' +
+    esc(marker.className || "کلاس") +
+    '</strong><span class="attendance-reminder-lesson">' +
+    esc(marker.lessonName || "درس") +
+    '</span></div><span class="attendance-reminder-school">' +
+    esc(marker.schoolName || "") +
+    '</span></div><button type="button" class="ghost attendance-reminder-history-restore"' +
+    (current ? ' data-mutating="1"' : "") +
+    ' data-workspace-action="attendance-reminder-restore" data-key="' +
+    esc(marker.id || marker.key) +
+    '" data-workspace="' +
+    esc(source) +
+    '">' +
+    EduIcons.html("undo") +
+    (current ? "بازگرداندن یادآور" : "باز کردن برای اصلاح") +
+    "</button></li>"
+  );
+}
+
+function attendanceReminderHistoryGroupsHtml(rows) {
+  const dates = new Map();
+  for (const row of rows) {
+    if (!dates.has(row.date)) dates.set(row.date, []);
+    dates.get(row.date).push(row);
+  }
+  return (
+    '<div class="attendance-reminder-history-groups attendance-reminder-scroll">' +
+    [...dates]
+      .map(
+        ([date, sessions]) =>
+          '<section class="attendance-reminder-history-day" data-date="' +
+          esc(date) +
+          '" aria-label="جلسات برگزارنشدهٔ ' +
+          esc(faDate(date)) +
+          '"><h4 class="attendance-reminder-history-day-title"><time dir="ltr" datetime="' +
+          esc(date) +
+          '">' +
+          esc(faDate(date)) +
+          '</time></h4><ul class="attendance-reminder-items">' +
+          sessions.map(attendanceReminderHistoryRowHtml).join("") +
+          "</ul></section>",
+      )
+      .join("") +
+    "</div>"
   );
 }
 
 function renderNotHeldRemindersHtml(markers, page = 0) {
-  const rows = [...(markers || [])].sort(
-    (a, b) =>
-      String(b.date).localeCompare(String(a.date)) ||
-      Number(b.period) - Number(a.period),
-  );
+  const rows = [...(markers || [])].sort(compareNotHeldReminders);
   const pagination = attendanceReminderPage(rows, page);
   return (
-    '<div class="attendance-reminder-history"><p class="attendance-reminder-intro">زنگ‌هایی که برگزارنشده مشخص کرده‌اید. اگر اشتباهی ثبت شده، یادآور آن را برگردانید.</p>' +
+    '<div class="attendance-reminder-history"><div class="attendance-reminder-history-heading"><span class="attendance-reminder-history-symbol" aria-hidden="true">' +
+    EduIcons.html("calendar") +
+    '</span><div><p class="attendance-reminder-intro">ثبت‌های برگزارنشدن جلسه</p><small>برای اصلاح، یادآور را برگردانید.</small></div><span class="attendance-reminder-history-count"><bdi>' +
+    attendanceReminderNumber(rows.length) +
+    "</bdi><small>جلسه</small></span></div>" +
     (rows.length
-      ? '<ul class="attendance-reminder-items attendance-reminder-scroll">' +
-        pagination.rows
-          .map((marker) => {
-            const source = marker.sourcePeriodId || marker.workspace || "",
-              current = source === workspace?.id;
-            return (
-              '<li class="attendance-reminder-history-item"><div><span class="attendance-reminder-date">' +
-              attendanceReminderDate(marker) +
-              "</span><strong>" +
-              esc(marker.className || "کلاس") +
-              " · " +
-              esc(marker.lessonName || "درس") +
-              "</strong><small>" +
-              esc(marker.schoolName || "") +
-              (marker.closed ? " · نوبت بسته" : "") +
-              '</small></div><button type="button" class="ghost"' +
-              (current ? ' data-mutating="1"' : "") +
-              ' data-workspace-action="attendance-reminder-restore" data-key="' +
-              esc(marker.id || marker.key) +
-              '" data-workspace="' +
-              esc(source) +
-              '">' +
-              EduIcons.html("undo") +
-              (current ? "بازگرداندن یادآور" : "باز کردن برای اصلاح") +
-              "</button></li>"
-            );
-          })
-          .join("") +
-        "</ul>"
-      : '<p class="attendance-reminders-empty">زنگ برگزارنشده‌ای ثبت نشده است.</p>') +
-    attendanceReminderPaginationHtml(pagination) +
+      ? attendanceReminderHistoryGroupsHtml(pagination.rows)
+      : '<section class="attendance-reminders-empty attendance-reminder-history-empty"><strong>فهرست خالی است</strong><p>زنگ برگزارنشده‌ای ثبت نشده است.</p></section>') +
+    (pagination.pages > 1 ? attendanceReminderPaginationHtml(pagination) : "") +
     '<p id="operationError" role="alert"></p><div class="attendance-reminder-dialog-actions"><button type="button" class="ghost" data-workspace-action="close">بستن</button></div></div>'
   );
 }
@@ -6469,6 +6552,10 @@ async function openAttendanceReminder(button) {
     await refreshAttendanceReminders();
     throw Error("این یادآور دیگر نیاز به بررسی ندارد؛ فهرست به‌روز شد.");
   }
+  return showAttendanceReminderFromSnapshot(snapshot, item);
+}
+
+function showAttendanceReminderFromSnapshot(snapshot, item) {
   if (
     showModal("بررسی حضور جلسه", attendanceReminderDialogHtml(item)) === false
   )
@@ -6491,34 +6578,186 @@ function currentAttendanceReminderDialog() {
   return dialog;
 }
 
+function assertEmptyAttendanceReminderTarget(dialog) {
+  const item = dialog.item,
+    session = db.sessions.find((row) => row.id === item?.sessionId);
+  if (
+    item?.kind !== "empty" ||
+    item.sourcePeriodId !== workspace.id ||
+    !EduAttendanceReminders.isEmptySession(session) ||
+    session.date !== item.date ||
+    session.period !== item.period ||
+    session.schoolId !== item.schoolId ||
+    session.classId !== item.classId ||
+    session.lessonId !== item.lessonId ||
+    item.date >= todayISO()
+  )
+    throw Error(
+      "جلسه دیگر کاملاً خالی نیست یا مشخصات آن تغییر کرده است؛ اطلاعاتی حذف نشد. یادآور را دوباره بررسی کنید.",
+    );
+  const physicalSessions = dialog.snapshot.parts.flatMap((part) =>
+    (part.period.id === workspace.id ? db : part.data).sessions.filter(
+      (row) => row.date === item.date && row.period === item.period,
+    ),
+  );
+  if (physicalSessions.length !== 1)
+    throw Error(
+      "برای این تاریخ و زنگ، جلسهٔ دیگری وجود دارد؛ ابتدا تداخل جلسات را بررسی کنید.",
+    );
+  return session;
+}
+
+async function openEmptyReminderOwner(dialog) {
+  const item = dialog.item,
+    target = dialog.snapshot.parts.find(
+      (part) => part.period.id === item.sourcePeriodId,
+    );
+  if (!target)
+    throw Error("سوابق این جلسه در دسترس نیست؛ یادآورها را دوباره باز کنید.");
+  // The interactive year read already verified this exact owner's password.
+  // Switch for a fresh review; never write to another term using an old dialog.
+  await switchPeriod(item.sourcePeriodId);
+  if (
+    workspace.id !== target.period.id ||
+    workspace.year !== target.period.year ||
+    workspace.revision !== target.period.revision ||
+    !!workspace.closed !== !!target.period.closed ||
+    connection !== dialog.snapshot.origin.connection ||
+    installationToken !== dialog.snapshot.origin.installation ||
+    db.settings.password !== target.data.settings.password ||
+    resetBusy ||
+    periodLoading ||
+    connectionRetired
+  )
+    throw Error("اطلاعات یا دسترسی مقصد تغییر کرده است؛ دوباره وارد شوید.");
+  isAuthenticated = true;
+  render();
+  const previousModal = document.getElementById("modalBody").firstElementChild,
+    snapshot = await readAttendanceReminders({ interactive: true });
+  if (document.getElementById("modalBody").firstElementChild !== previousModal)
+    throw Error("پنجره تغییر کرده است؛ جلسه را دوباره از فهرست انتخاب کنید.");
+  const live = snapshot.model.items.find(
+    (row) =>
+      row.key === item.key &&
+      row.sessionId === item.sessionId &&
+      row.sourcePeriodId === target.period.id &&
+      row.kind === "empty",
+  );
+  if (!live)
+    throw Error(
+      "وضعیت این جلسه تغییر کرده است؛ یادآورها را دوباره بررسی کنید.",
+    );
+  return showAttendanceReminderFromSnapshot(snapshot, live);
+}
+
 async function markAttendanceReminderNotHeld() {
   if (attendanceReminderBusy) return false;
   attendanceReminderBusy = true;
   try {
     const dialog = currentAttendanceReminderDialog();
-    assertEntityWritable();
-    if (dialog.item?.kind !== "missing")
+    if (!["missing", "empty"].includes(dialog.item?.kind))
       throw Error(
         "جلسهٔ دارای اطلاعات را نمی‌توان تشکیل‌نشده علامت زد؛ حضور آن را تکمیل کنید.",
       );
     await assertAttendanceReminderSnapshot(dialog.snapshot);
     if (currentAttendanceReminderDialog() !== dialog)
       throw Error("پنجرهٔ بررسی تغییر کرده است؛ دوباره تلاش کنید.");
-    assertEntityWritable();
     const item = dialog.item;
-    db.notHeldSessions = [
-      ...(db.notHeldSessions || []),
-      {
-        id: uid(),
-        schoolId: item.schoolId,
-        classId: item.classId,
-        lessonId: item.lessonId,
-        date: item.date,
-        period: item.period,
-        recordedAt: new Date().toISOString(),
-      },
-    ];
-    await saveDBV24({ action: "ثبت تشکیل‌نشدن جلسه" });
+    if (item.kind === "empty" && item.sourcePeriodId !== workspace.id)
+      return await openEmptyReminderOwner(dialog);
+    assertEntityWritable();
+    let empty = null;
+    if (item.kind === "empty") {
+      empty = assertEmptyAttendanceReminderTarget(dialog);
+      if (
+        !confirm(
+          "این جلسه فقط باز شده و هیچ حضور، نمره یا فعالیتی در آن ثبت نشده است. فقط همین رکورد خالی حذف و وضعیت «برگزار نشده» ذخیره شود؟ هیچ غیبتی برای هنرجویان ثبت نمی‌شود.",
+        )
+      )
+        return false;
+      await flushDrafts({ strict: true });
+      await writer.catch(() => {});
+      await assertAttendanceReminderSnapshot(dialog.snapshot);
+      if (currentAttendanceReminderDialog() !== dialog)
+        throw Error("پنجرهٔ بررسی تغییر کرده است؛ دوباره تلاش کنید.");
+      assertEntityWritable();
+      if (assertEmptyAttendanceReminderTarget(dialog) !== empty)
+        throw Error(
+          "رکورد جلسه هنگام تأیید تغییر کرده است؛ اطلاعاتی حذف نشد. دوباره بررسی کنید.",
+        );
+    }
+    const matchesMarker = (marker) =>
+      marker.date === item.date &&
+      marker.period === item.period &&
+      marker.schoolId === item.schoolId &&
+      marker.classId === item.classId &&
+      marker.lessonId === item.lessonId;
+    const alreadyMarked = dialog.snapshot.parts.some((part) =>
+      (
+        (part.period.id === workspace.id ? db : part.data).notHeldSessions || []
+      ).some(matchesMarker),
+    );
+    const previousData = db,
+      previousWorkspace = workspace,
+      previousRevision = workspace.revision,
+      previousSessions = db.sessions,
+      hadPreviousMarkers = Object.hasOwn(db, "notHeldSessions"),
+      previousMarkers = db.notHeldSessions;
+    // One full replacement plan commits removal and marker together. A scoped
+    // session-only save would leave the old empty record in IndexedDB.
+    if (empty) db.sessions = db.sessions.filter((row) => row !== empty);
+    if (!alreadyMarked)
+      db.notHeldSessions = [
+        ...(db.notHeldSessions || []),
+        {
+          id: uid(),
+          schoolId: item.schoolId,
+          classId: item.classId,
+          lessonId: item.lessonId,
+          date: item.date,
+          period: item.period,
+          recordedAt: new Date().toISOString(),
+        },
+      ];
+    const plannedSessions = db.sessions,
+      plannedMarkers = db.notHeldSessions,
+      sessionEntries = [...plannedSessions],
+      markerEntries = [...(plannedMarkers || [])],
+      unchangedEntries = (rows, entries) =>
+        (rows || []).length === entries.length &&
+        (rows || []).every((row, index) => row === entries[index]);
+    try {
+      await saveDBV24({ action: "ثبت تشکیل‌نشدن جلسه" });
+    } catch (error) {
+      // A failed durable re-read must not leave an uncommitted deletion in
+      // memory. Never overwrite a successful reload, a published commit or
+      // later changes while recovering only this operation's array swaps.
+      if (
+        empty &&
+        db === previousData &&
+        workspace === previousWorkspace &&
+        workspace.revision === previousRevision &&
+        workspace.id === item.sourcePeriodId &&
+        connection === dialog.snapshot.origin.connection &&
+        installationToken === dialog.snapshot.origin.installation &&
+        db.sessions === plannedSessions &&
+        db.notHeldSessions === plannedMarkers &&
+        unchangedEntries(plannedSessions, sessionEntries) &&
+        unchangedEntries(plannedMarkers, markerEntries)
+      ) {
+        db.sessions = previousSessions;
+        if (hadPreviousMarkers) db.notHeldSessions = previousMarkers;
+        else delete db.notHeldSessions;
+        attendanceReminderDialog = null;
+        try {
+          render();
+        } catch {
+          // Keep the original save error even if repainting also fails.
+        }
+      }
+      throw error;
+    }
+    if (empty && currentSessionId === empty.id) currentSessionId = null;
     if (dialog.root.isConnected && attendanceReminderDialog === dialog) {
       attendanceReminderDialog = null;
       closeModal();
@@ -7337,13 +7576,107 @@ function downloadPreparedBackup() {
     return false;
   }
 }
+// Source: src/workspace/backups/single-file-name.js
+// Device-only filename reservations; never part of the educational backup.
+const SINGLE_FILE_NAMES_KEY = "EduManager.singleFileNames",
+  SINGLE_FILE_NAMES_LIMIT = 366;
+let singleFileNameLedger = Object.create(null),
+  singleFileNameReservationSequence = 0;
+
+function readSingleFileNames() {
+  const merged = { ...singleFileNameLedger };
+  try {
+    const raw = localStorage.getItem(SINGLE_FILE_NAMES_KEY);
+    if (!raw || raw.length > 65536) return merged;
+    const saved = JSON.parse(raw);
+    if (
+      saved?.version !== 1 ||
+      !saved.days ||
+      typeof saved.days !== "object" ||
+      Array.isArray(saved.days)
+    )
+      return merged;
+    for (const [day, entry] of Object.entries(saved.days)) {
+      if (
+        !/^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/.test(day) ||
+        !Number.isSafeInteger(entry?.count) ||
+        entry.count < 1 ||
+        entry.count >= Number.MAX_SAFE_INTEGER ||
+        typeof entry.token !== "string" ||
+        entry.token.length > 100 ||
+        !/^[a-z0-9-]+$/.test(entry.token)
+      )
+        continue;
+      if (!merged[day] || entry.count >= merged[day].count)
+        merged[day] = { count: entry.count, token: entry.token };
+    }
+  } catch {
+    // Storage can be denied or full. Naming must not disable a real backup.
+  }
+  return merged;
+}
+function rememberSingleFileNames(days, preferredDay) {
+  const keys = Object.keys(days).sort().reverse();
+  if (days[preferredDay]) {
+    keys.splice(keys.indexOf(preferredDay), 1);
+    keys.unshift(preferredDay);
+  }
+  singleFileNameLedger = Object.fromEntries(
+    keys.slice(0, SINGLE_FILE_NAMES_LIMIT).map((day) => [day, days[day]]),
+  );
+  try {
+    localStorage.setItem(
+      SINGLE_FILE_NAMES_KEY,
+      JSON.stringify({ version: 1, days: singleFileNameLedger }),
+    );
+  } catch {
+    // Continue with this page's reservations until storage becomes available.
+  }
+}
+function reserveSingleFileName(date = new Date()) {
+  const day = gregorianToJalali(
+      date.getFullYear(),
+      date.getMonth() + 1,
+      date.getDate(),
+    )
+      .map((part, index) => String(part).padStart(index ? 2 : 4, "0"))
+      .join("-"),
+    days = readSingleFileNames(),
+    previous = days[day],
+    count = (previous?.count || 0) + 1,
+    token =
+      Date.now().toString(36) +
+      "-" +
+      (++singleFileNameReservationSequence).toString(36) +
+      "-" +
+      Math.random().toString(36).slice(2);
+  days[day] = { count, token };
+  // This synchronous reservation must happen before the user-activated picker.
+  rememberSingleFileNames(days, day);
+  let released = false;
+  return {
+    name: "MySchool-" + day + (count > 1 ? "-" + count : "") + ".json",
+    release() {
+      if (released) return false;
+      released = true;
+      const current = readSingleFileNames();
+      if (current[day]?.count !== count || current[day]?.token !== token)
+        return false;
+      if (previous) current[day] = previous;
+      else delete current[day];
+      rememberSingleFileNames(current, day);
+      return true;
+    },
+  };
+}
 // Source: src/workspace/backups/single-file.js
 // A device-only handle: drafts is structured-clone storage, excluded from JSON backups.
 const singleFileKey = "EduManager.singleFile";
 const SINGLE_FILE_POLL_MS = 30000,
   SINGLE_FILE_DEBOUNCE_MS = 2000;
 let singleFileSavedSource = null,
-  singleFileReschedule = false;
+  singleFileReschedule = false,
+  singleFileChoosing = false;
 let singleFile = null,
   singleFileTimer = null,
   singleFileDebounce = null,
@@ -7698,55 +8031,69 @@ async function restoreSingleFile() {
   }
 }
 async function chooseSingleFile() {
+  if (singleFileChoosing) return false;
   if (!ready || blocked || resetBusy || connectionRetired)
     throw Error("بانک آماده ذخیره فایل نیست.");
-  let handle;
+  singleFileChoosing = true;
+  let reservation,
+    accepted = false;
   try {
-    // The picker must run directly in the click gesture, before snapshot awaits.
-    handle = await window.showSaveFilePicker({
-      suggestedName: "EduManager-data.json",
-      excludeAcceptAllOption: true,
-      types: [
-        {
-          description: "EduManager JSON",
-          accept: { "application/json": [".json"] },
-        },
-      ],
-    });
-  } catch (error) {
-    if (error.name === "AbortError") return;
-    return failSingleFile(error);
-  }
-  if (!/\.json$/i.test(handle.name)) throw Error("فقط فایل JSON انتخاب کنید.");
-  const file = await handle.getFile();
-  if (
-    file.size &&
-    !confirm(
-      "محتوای فایل انتخابی با همه اطلاعات فعلی برنامه جایگزین شود؟ برای بازیابی، انصراف دهید و «بازیابی از فایل» را بزنید.",
+    let handle;
+    try {
+      reservation = reserveSingleFileName();
+      // Name reservation is synchronous: keep the picker in the click gesture.
+      handle = await window.showSaveFilePicker({
+        suggestedName: reservation.name,
+        excludeAcceptAllOption: true,
+        types: [
+          {
+            description: "EduManager JSON",
+            accept: { "application/json": [".json"] },
+          },
+        ],
+      });
+    } catch (error) {
+      if (error.name === "AbortError") return;
+      return failSingleFile(error);
+    }
+    if (!/\.json$/i.test(handle.name))
+      throw Error("فقط فایل JSON انتخاب کنید.");
+    const file = await handle.getFile();
+    if (
+      file.size &&
+      !confirm(
+        "محتوای فایل انتخابی با همه اطلاعات فعلی برنامه جایگزین شود؟ برای بازیابی، انصراف دهید و «بازیابی از فایل» را بزنید.",
+      )
     )
-  )
-    return;
-  pauseSingleFile();
-  if (singleFileWriting) await singleFileWriting;
-  if (!ready || resetBusy || connectionRetired) return;
-  singleFile = {
-    connectionId: uid(),
-    handle,
-    modified: file.lastModified,
-    size: file.size,
-    savedAt: "",
-  };
-  try {
-    await persistSingleFile({ replace: true });
-    broadcast({
-      type: "single-file-changed",
-      connectionId: singleFile.connectionId,
-    });
-    const saved = await syncSingleFile();
-    if (saved) startSingleFile();
-    return saved;
-  } catch (error) {
-    return failSingleFile(error);
+      return;
+    // The picker may already have created an empty file. Keep its number even
+    // if the first write fails, so the next suggestion avoids that file.
+    accepted = true;
+    pauseSingleFile();
+    if (singleFileWriting) await singleFileWriting;
+    if (!ready || resetBusy || connectionRetired) return;
+    singleFile = {
+      connectionId: uid(),
+      handle,
+      modified: file.lastModified,
+      size: file.size,
+      savedAt: "",
+    };
+    try {
+      await persistSingleFile({ replace: true });
+      broadcast({
+        type: "single-file-changed",
+        connectionId: singleFile.connectionId,
+      });
+      const saved = await syncSingleFile();
+      if (saved) startSingleFile();
+      return saved;
+    } catch (error) {
+      return failSingleFile(error);
+    }
+  } finally {
+    if (!accepted) reservation?.release();
+    singleFileChoosing = false;
   }
 }
 async function resumeSingleFile() {

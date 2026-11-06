@@ -92,13 +92,7 @@ function render(mode) {
       (f.detailLevel === "full" ? "selected" : "") +
       ">جزئیات کامل حضور هر جلسه</option></select></label>";
   h +=
-    '<label>نام دبیر / تنظیم‌کننده (اختیاری)<input value="' +
-    esc(f.author) +
-    `" maxlength="200" data-legacy-input="reports-periodic-render:7"></label></div><label class="periodic-note-field">توضیحات این گزارش (اختیاری)<textarea rows="3" maxlength="` +
-    Math.max(10000, readNote(noteKey(f)).length) +
-    `" data-legacy-input="reports-periodic-render:8">` +
-    esc(readNote(noteKey(f))) +
-    '</textarea></label><div id="periodicNoteStatus">' +
+    '</div><div id="periodicNoteStatus">' +
     noteWarning() +
     `</div><div class="periodic-primary-actions"><button type="button" class="periodic-build" ${busy ? "disabled" : ""} data-legacy-click="reports-periodic-render:9">تهیه گزارش ` +
     modeLabel(mode) +
