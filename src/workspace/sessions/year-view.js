@@ -77,7 +77,9 @@ async function openYearSession(periodId, sessionId) {
     originConnection = connection,
     year = workspace.year;
   await flushDrafts({ strict: true });
-  await writer;
+  // A previous failed save already rolled back its data. Navigation must read
+  // the durable snapshot rather than remain blocked by the rejected promise.
+  await writer.catch(() => {});
   if (workspace.id !== origin.id || connection !== originConnection)
     throw Error("صفحه هنگام بازکردن جلسه تغییر کرد.");
   const target = await readWorkspaceSnapshot(periodId);

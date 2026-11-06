@@ -3,7 +3,7 @@ function sessionRoster(c, x) {
 }
 
 function preserveSessionAction(id) {
-  assertEntityWritable();
+  const editToken = assertSessionEditable(id);
   const origin = workspace.id,
     sourceData = db,
     sourceInstallation =
@@ -15,6 +15,7 @@ function preserveSessionAction(id) {
     (typeof installationToken === "undefined" ? "" : installationToken) ===
       sourceInstallation &&
     connection === sourceConnection &&
+    isSessionEditable(id, editToken) &&
     currentSessionId === id &&
     !periodLoading &&
     !resetBusy &&
@@ -251,7 +252,7 @@ async function addManualSessionV24(event, lessonId) {
     };
     db.sessions.push(session);
     await saveDBV24({ sessionId: session.id, action: "ایجاد جلسه دستی" });
-    if (isCurrent()) openSessionModal(getSessionById(session.id));
+    if (isCurrent()) openNewSessionDialogV24(getSessionById(session.id));
     return true;
   } finally {
     manualSessionBusy = false;
@@ -422,6 +423,11 @@ async function saveSessionUnitV24() {
     openSessionModal(x);
     return;
   }
+  assertSessionEditable(x.id);
+  if (!isCurrent())
+    throw Error(
+      "اجازهٔ ویرایش یا پنجرهٔ جلسه تغییر کرده است؛ تغییر اعمال نشد.",
+    );
   x.poudmanId = pid;
   x.unitId = unitId;
   await saveDBV24({
@@ -432,7 +438,7 @@ async function saveSessionUnitV24() {
 }
 
 function updateSessionUnitsV24() {
-  assertEntityWritable();
+  assertSessionEditable(currentSessionId);
   const x = getSessionById(currentSessionId);
   if (!x) throw Error("جلسه دیگر وجود ندارد.");
   const c = findClass(x.classId);

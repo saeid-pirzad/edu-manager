@@ -46,6 +46,8 @@ function fixture({ syncFailure = false, asyncFailure = false } = {}) {
     singleFileKey: "file",
     pauseSingleFile() {},
     startSingleFile() {},
+    announceSingleFileSuspension() {},
+    localStorage: { getItem: () => null },
     lockControls() {},
     assertWorkspaceReadable() {},
     captureWorkspaceContext: () => ({
@@ -839,11 +841,165 @@ test("replacement preserves the latest durable file handle and rotates its conne
   assert.equal(saved.handle.name, "current.json");
   assert.notEqual(saved.connectionId, current.connectionId);
   assert.equal(f.c.singleFile, saved);
+  assert.equal(saved.suspension, "restore");
   assert.equal(
     current.connectionId,
     "live-connection",
     "the source snapshot must not be mutated",
   );
+});
+
+test("successful full restore never restarts the previously active automatic file writer", async () => {
+  const f = fixture();
+  let restarted = 0;
+  f.c.singleFileTimer = 1;
+  f.c.rawStores = {
+    drafts: [
+      {
+        key: "file",
+        connectionId: "live",
+        savedAt: "2026-11-05",
+        modified: 2,
+        size: 100,
+      },
+    ],
+  };
+  f.c.startSingleFile = () => {
+    restarted++;
+  };
+  await f.c.restoreFullBackup();
+  assert.equal(restarted, 0);
+  assert.equal(f.c.singleFile.suspension, "restore");
+});
+
+test("a concurrent report-note edit while awaiting the file lock prevents destructive replacement", async () => {
+  const f = fixture();
+  let note = "before";
+  const key = "EduManager.periodicDrafts.original";
+  f.c.localStorage = {
+    [key]: "",
+    getItem: (name) => (name === key ? note : null),
+  };
+  f.c.navigator = {
+    locks: {
+      request: async (_name, run) => {
+        note = "new note from another tab";
+        return run();
+      },
+    },
+  };
+  await assert.rejects(f.c.restoreFullBackup(), /توضیحات گزارش/);
+  assert.equal(f.committed.length, 0);
+  assert.equal(note, "new note from another tab");
+});
+
+test("unreadable local report-note storage fails before destructive restore with a useful message", async () => {
+  const f = fixture();
+  f.c.localStorage = {
+    "EduManager.periodicDrafts.original": "",
+    getItem() {
+      throw Error("SecurityError");
+    },
+  };
+  await assert.rejects(f.c.restoreFullBackup(), /دسترسی به حافظه مرورگر/);
+  assert.equal(f.committed.length, 0);
+});
+
+test("guarded report-note publication merges inside the installation transaction", async () => {
+  const f = fixture();
+  const storage = new Map([
+    ["EduManager.periodicDrafts.original", JSON.stringify({ old: "retained" })],
+  ]);
+  f.c.validateReportNotes = (value) => ({ ...value });
+  f.c.localStorage = {
+    getItem: (key) => storage.get(key) || null,
+    setItem: (key, value) => storage.set(key, value),
+  };
+  assert.equal(
+    await f.c.commitReportNoteValues("original", { fresh: "new" }),
+    true,
+  );
+  assert.deepEqual(
+    JSON.parse(storage.get("EduManager.periodicDrafts.original")),
+    { old: "retained", fresh: "new" },
+  );
+  await f.c.commitReportNoteValues(
+    "original",
+    { old: "recovery must not replace current" },
+    { preserveExisting: true },
+  );
+  assert.equal(
+    JSON.parse(storage.get("EduManager.periodicDrafts.original")).old,
+    "retained",
+  );
+});
+
+test("an already queued note can finish for its explicit owner during normal same-installation term navigation", async () => {
+  const f = fixture();
+  const storage = new Map();
+  f.c.validateReportNotes = (value) => ({ ...value });
+  f.c.localStorage = {
+    getItem: (key) => storage.get(key) || null,
+    setItem: (key, value) => storage.set(key, value),
+  };
+  const pending = f.c.commitReportNoteValues("original", {
+    key: "original term note",
+  });
+  f.c.workspace = { id: "other-term" };
+  f.c.periodLoading = true;
+  assert.equal(await pending, true);
+  assert.equal(
+    JSON.parse(storage.get("EduManager.periodicDrafts.original")).key,
+    "original term note",
+  );
+  assert.equal(storage.has("EduManager.periodicDrafts.other-term"), false);
+});
+
+for (const phase of ["replaced", "cleanup"]) {
+  test(
+    "queued report-note publication never writes into a " +
+      phase +
+      " installation",
+    async () => {
+      const f = fixture();
+      let writes = 0;
+      f.c.validateReportNotes = (value) => value;
+      f.c.localStorage = {
+        getItem: () => null,
+        setItem: () => {
+          writes++;
+        },
+      };
+      const marker = { value: { token: "", phase: "complete" } };
+      f.c.liveResetMarker = marker;
+      const pending = f.c.commitReportNoteValues("original", {
+        key: "old note",
+      });
+      if (phase === "replaced") marker.value.token = "new installation";
+      else marker.value.phase = "cleanup";
+      await assert.rejects(pending, /توضیحات قدیمی/);
+      assert.equal(writes, 0);
+    },
+  );
+}
+
+test("full restore awaits the guarded recovery-note flush before reporting completion", async () => {
+  const f = fixture();
+  let flushed = false,
+    release;
+  f.c.window.EduPeriodicReports.flushNotes = async () => {
+    await new Promise((resolve) => {
+      release = resolve;
+    });
+    flushed = true;
+    return true;
+  };
+  const pending = f.c.restoreFullBackup();
+  while (!release) await new Promise(setImmediate);
+  assert.equal(flushed, false);
+  release();
+  assert.equal(await pending, 1);
+  assert.equal(flushed, true);
 });
 
 test("full replacement preserves both a reviewed grade and long invalid raw input from a portable JSON backup", async () => {

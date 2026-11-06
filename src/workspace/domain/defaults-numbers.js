@@ -12,6 +12,7 @@ function currentYearLabel() {
 function v24DefaultDB() {
   const d = old.defaultDB();
   d.schemaVersion = 26;
+  d.notHeldSessions = [];
   d.settings.academicYear = currentYearLabel();
   d.settings.academicTerm = "اول";
   return d;

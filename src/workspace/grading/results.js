@@ -237,6 +237,44 @@ function annualModularLesson(parts, schoolId, classId, lesson, sid) {
   );
 }
 
+function annualModularUnitRows(parts, schoolId, classId, lessonId, sid) {
+  // Official module grades are shared across the year; work-unit inputs are
+  // still independent term records. Never replace one term with the other.
+  const order = (period) => {
+    const kind =
+      period.termKind ||
+      (period.term === "اول" ? "first" : period.term === "دوم" ? "second" : "");
+    return kind === "first" ? 0 : kind === "second" ? 1 : 2;
+  };
+  return [...parts]
+    .sort(
+      (a, b) =>
+        order(a.period) - order(b.period) ||
+        a.period.id.localeCompare(b.period.id),
+    )
+    .flatMap((part) => {
+      const lesson = part.data.schools
+        .find((school) => school.id === schoolId)
+        ?.classes.find((classroom) => classroom.id === classId)
+        ?.lessons.find((course) => course.id === lessonId);
+      return (lesson?.poudmans || []).flatMap((pod) =>
+        pod.units.map((unit) => {
+          const raw = ownScoreRecord(unit.unitScores, sid);
+          return {
+            term: part.period.term,
+            sourcePeriodId: part.period.id,
+            moduleId: pod.id,
+            unitId: unit.id,
+            moduleName: pod.name,
+            unitName: unit.name,
+            mostamar: raw.m ?? null,
+            payani: raw.p ?? null,
+          };
+        }),
+      );
+    });
+}
+
 function annualTechnicalRows(parts, schoolId, classId, studentId = "") {
   assertAnnualLessonCompatibility(parts, schoolId, classId);
   const rows = [],
@@ -286,14 +324,7 @@ function annualTechnicalRows(parts, schoolId, classId, studentId = "") {
             method: legacy ? "legacy-unit" : "modular",
             legacyUnits,
             units: formal
-              ? merged.poudmans.flatMap((pod) =>
-                  pod.units.map((unit) => ({
-                    moduleName: pod.name,
-                    unitName: unit.name,
-                    mostamar: ownScoreRecord(unit.unitScores, st.id).m ?? null,
-                    payani: ownScoreRecord(unit.unitScores, st.id).p ?? null,
-                  })),
-                )
+              ? annualModularUnitRows(parts, schoolId, c.id, lesson.id, st.id)
               : [],
             provisionalAverage: legacy ? (r.final ?? null) : null,
             final: legacy && !complete ? null : (r.final ?? null),
@@ -312,6 +343,7 @@ function annualTechnicalRows(parts, schoolId, classId, studentId = "") {
                   st.id,
                 ).c ?? null,
               final: m.final ?? null,
+              threshold: m.threshold ?? null,
               complete: m.complete,
               passed: m.passed,
               reason: m.reason || "",

@@ -272,9 +272,178 @@ test("single-file backup replaces the same JSON with additions, edits and deleti
   await f.context.syncSingleFile();
   assert.equal(JSON.parse(f.contents).stores.records.length, 2);
   f.context.snapshotInstallation = async () => ({ stores: { records: [] } });
-  await f.context.syncSingleFile();
+  assert.equal(await f.context.syncSingleFile(), false);
+  assert.equal(
+    f.writes,
+    2,
+    "empty replacement requires a separate acknowledgement",
+  );
+  await f.context.resumeSingleFile();
   assert.equal(JSON.parse(f.contents).stores.records.length, 0);
   assert.equal(f.writes, 3);
+});
+
+test("a restored file connection stays suspended on reopen until the named overwrite is acknowledged", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  const previous = f.contents;
+  f.setStored({ ...f.getStored(), suspension: "restore" });
+  await f.context.restoreSingleFile();
+  assert.equal(f.writes, 1);
+  assert.equal(vm.runInContext("singleFileTimer", f.context), null);
+  assert.equal(await f.context.syncSingleFile(), false);
+  let warning;
+  f.context.confirm = (message) => {
+    warning = message;
+    return false;
+  };
+  assert.equal(await f.context.resumeSingleFile(), false);
+  assert.match(warning, /EduManager-data\.json/);
+  assert.equal(f.contents, previous);
+  assert.equal(f.getStored().suspension, "restore");
+  f.context.confirm = () => true;
+  assert.equal(await f.context.resumeSingleFile(), true);
+  assert.equal(f.getStored().suspension, undefined);
+  assert.equal(f.writes, 2);
+});
+
+test("a confirmed content baseline blocks an empty automatic startup snapshot without touching the file", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  const previous = f.contents;
+  assert.ok(f.getStored().contentBaseline);
+  f.context.snapshotInstallation = async () => ({ stores: { records: [] } });
+  await f.context.restoreSingleFile();
+  assert.equal(f.contents, previous);
+  assert.equal(f.writes, 1);
+  assert.equal(f.getStored().suspension, "source-drop");
+  assert.equal(vm.runInContext("singleFileTimer", f.context), null);
+  await f.context.restoreSingleFile();
+  assert.equal(
+    f.writes,
+    1,
+    "reopening must not bypass the persisted suspension",
+  );
+});
+
+test("ordinary student edits and small deletions sync while a large drop is suspended", async () => {
+  const f = fixture();
+  let students = 24;
+  f.context.snapshotInstallation = async () => ({
+    stores: {
+      records: [
+        {
+          logical: "class:c",
+          value: {
+            students: Array.from({ length: students }, (_, id) => ({ id })),
+            lessons: [],
+          },
+        },
+      ],
+    },
+  });
+  await f.context.chooseSingleFile();
+  students = 23;
+  f.context.sourceValue++;
+  await f.tick();
+  assert.equal(f.writes, 2);
+  students = 4;
+  f.context.sourceValue++;
+  await f.tick();
+  assert.equal(f.writes, 2);
+  assert.equal(f.getStored().suspension, "source-drop");
+  f.context.confirm = () => false;
+  assert.equal(await f.context.resumeSingleFile(), false);
+  f.context.confirm = () => true;
+  assert.equal(await f.context.resumeSingleFile(), true);
+  assert.equal(f.getStored().contentBaseline.students, 4);
+});
+
+test("a legacy saved connection derives its safety baseline from the still-unchanged JSON before startup publishing", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  const previous = f.contents,
+    stored = f.getStored();
+  delete stored.contentBaseline;
+  f.setStored(stored);
+  const getFile = f.handle.getFile;
+  f.handle.getFile = async () => ({
+    ...(await getFile()),
+    text: async () => f.contents,
+  });
+  f.context.snapshotInstallation = async () => ({ stores: { records: [] } });
+  await f.context.restoreSingleFile();
+  assert.equal(f.contents, previous);
+  assert.equal(f.writes, 1);
+  assert.equal(f.getStored().suspension, "source-drop");
+});
+
+test("archiving students preserves the educational baseline and does not suspend autosave", async () => {
+  const f = fixture();
+  let archived = false;
+  const roster = Array.from({ length: 24 }, (_, id) => ({ id }));
+  f.context.snapshotInstallation = async () => ({
+    stores: {
+      records: [
+        {
+          logical: "class:c",
+          value: {
+            students: archived ? [] : roster,
+            archivedStudents: archived ? roster : [],
+            lessons: [],
+          },
+        },
+      ],
+    },
+  });
+  await f.context.chooseSingleFile();
+  archived = true;
+  f.context.sourceValue++;
+  await f.tick();
+  assert.equal(f.writes, 2);
+  assert.equal(f.getStored().contentBaseline.students, 24);
+  assert.equal(f.getStored().suspension, undefined);
+});
+
+test("recorded zero grades count as content and loss of the complete educational payload is blocked even with class shells retained", async () => {
+  const f = fixture();
+  let populated = true;
+  f.context.snapshotInstallation = async () => ({
+    stores: {
+      records: [
+        { logical: "meta", value: { layout: [{ id: "s", classes: ["c"] }] } },
+        {
+          logical: "class:c",
+          value: {
+            students: [],
+            lessons: populated
+              ? [{ kardaneshScores: { student: { practical: 0, theory: 0 } } }]
+              : [],
+          },
+        },
+      ],
+    },
+  });
+  await f.context.chooseSingleFile();
+  assert.equal(f.getStored().contentBaseline.grades, 2);
+  const previous = f.contents;
+  populated = false;
+  f.context.sourceValue++;
+  await f.tick();
+  assert.equal(f.contents, previous);
+  assert.equal(f.writes, 1);
+  assert.equal(f.getStored().suspension, "source-drop");
+});
+
+test("acknowledging a suspended connection never bypasses externally edited file checks", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  f.setStored({ ...f.getStored(), suspension: "restore" });
+  await f.context.restoreSingleFile();
+  f.externalEdit();
+  assert.equal(await f.context.resumeSingleFile(), false);
+  assert.equal(f.contents, "external");
+  assert.equal(f.writes, 1);
 });
 
 test("API presence and granted permissions do not activate a rejected first write", async () => {

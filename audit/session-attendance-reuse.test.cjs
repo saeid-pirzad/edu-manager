@@ -43,6 +43,11 @@ function fixture() {
     resetBusy: false,
     connectionRetired: false,
     assertEntityWritable() {},
+    assertSessionEditable: () => {
+      c.assertEntityWritable();
+      return "isolated-edit-lease";
+    },
+    isSessionEditable: () => true,
     findClass: () => ({ students: roster }),
     getSessionById: (id) => c.db.sessions.find((s) => s.id === id),
     saveDBV24: async (scope) => writes.push(scope),

@@ -15,6 +15,11 @@ function fixture(states, { ignoreCache = true } = {}) {
         assert.match(expression, /__eduAuditBeforeReload = true/);
         return true;
       }
+      if (expression.startsWith("globalThis.__unlockRecordedSessionForAudit")) {
+        assert.match(expression, /button\.click\(\)/);
+        assert.doesNotMatch(expression, /openSessionModal\s*=/);
+        return true;
+      }
       assert.match(expression, /!globalThis\.__eduAuditBeforeReload/);
       const state = states.shift();
       if (state instanceof Error) throw state;
@@ -33,7 +38,7 @@ function fixture(states, { ignoreCache = true } = {}) {
 test("browser reload cannot proceed on readiness from the marked old document", async () => {
   const f = fixture([false, false, true]);
   await reloadReady(f.tools);
-  assert.equal(f.calls.length, 4);
+  assert.equal(f.calls.length, 5);
   assert.deepEqual(f.delays, [100, 100]);
 });
 
@@ -61,6 +66,6 @@ test("browser reload fails explicitly when no fresh ready document arrives", asy
 test("normal reload preserves the fresh-context guard without bypassing the service worker", async () => {
   const f = fixture([false, true], { ignoreCache: false });
   await reloadReady(f.tools, { ignoreCache: false });
-  assert.equal(f.calls.length, 3);
+  assert.equal(f.calls.length, 4);
   assert.deepEqual(f.delays, [100]);
 });

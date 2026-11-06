@@ -52,6 +52,11 @@ function fixture() {
       masterSchedule: { "0-0-all": { ...entry } },
     },
     assertEntityWritable() {},
+    assertSessionEditable: () => {
+      c.assertEntityWritable();
+      return "isolated-edit-lease";
+    },
+    isSessionEditable: () => true,
     asciiDigits: (value) => String(value),
     flushDrafts: async () => {},
     writer: Promise.resolve(),
@@ -87,6 +92,7 @@ function fixture() {
     snapshotRoster: (cls) => structuredClone(cls.students),
     saveDBV24: async (scope) => writes.push(structuredClone(scope)),
     openSessionModal: (session) => modals.push(session),
+    openNewSessionDialogV24: (session) => modals.push(session),
   });
   for (const source of [
     "domain/calendar.js",

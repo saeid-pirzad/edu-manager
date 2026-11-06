@@ -45,6 +45,14 @@ function syncControlLocks() {
     setControlLock(control, "workspace-readonly", mutation && controlReadonly);
     setControlLock(
       control,
+      "session-view-only",
+      mutation &&
+        !!control.closest(".session-workspace") &&
+        !control.matches("[data-session-edit-control]") &&
+        !isSessionEditable(currentSessionId),
+    );
+    setControlLock(
+      control,
       "workspace-saving",
       mutation && busy > 0 && !control.matches("[data-grade]"),
     );
@@ -95,6 +103,7 @@ function syncControlLocks() {
       ? "ترم بسته است؛ این تنظیمات فقط نمایش داده می‌شوند."
       : "ویرایش فعلاً متوقف است؛ پیام وضعیت ذخیره‌سازی را بررسی کنید.";
   }
+  syncSessionEditNotice();
   syncShamsiDisabledInputs();
 }
 const mutatingNames = [
@@ -285,4 +294,5 @@ function renderV24() {
   lockControls();
   paintStatus();
   void refreshYearLessonSessions();
+  void refreshAttendanceReminders();
 }

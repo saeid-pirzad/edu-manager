@@ -7,6 +7,7 @@ const old = {
   defaultDB: legacy_defaultDB,
   validateDB: legacy_validateDB,
   render: legacy_render,
+  openSessionModal: legacy_openSessionModal,
   calcStudentLesson: legacy_calcStudentLesson,
   clickMasterCell: legacy_clickMasterCell,
   showModal: legacy_showModal,

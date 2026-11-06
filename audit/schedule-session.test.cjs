@@ -38,6 +38,11 @@ function fixture() {
       },
     },
     assertEntityWritable() {},
+    assertSessionEditable: () => {
+      c.assertEntityWritable();
+      return "isolated-edit-lease";
+    },
+    isSessionEditable: () => true,
     document: { getElementById: (id) => controls[id] },
     flushDrafts: async () => {},
     writer: Promise.resolve(),
@@ -52,6 +57,7 @@ function fixture() {
     snapshotRoster: (cls) => structuredClone(cls.students),
     saveDBV24: async () => effects.push("save"),
     openSessionModal: (session) => modals.push(session),
+    openNewSessionDialogV24: (session) => modals.push(session),
     getSessionById: (id) => c.db.sessions.find((session) => session.id === id),
   });
   for (const name of ["calendar.js", "academic-year.js", "session-slots.js"])

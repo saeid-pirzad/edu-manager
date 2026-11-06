@@ -160,6 +160,7 @@ test("snapshot loads catalog and bounded records in one transaction and waits fo
       }),
     },
     IDBKeyRange: { bound: (...bounds) => ({ bounds }) },
+    RESET_RECORD_KEY: "@installation-reset",
     requestPromise: async (value) => value,
     transactionDone: () => done,
     connection: {
@@ -167,7 +168,10 @@ test("snapshot loads catalog and bounded records in one transaction and waits fo
         calls.push({ names, mode });
         return {
           objectStore: (name) => ({
-            get: (id) => ({ id, revision: 5 }),
+            get: (id) =>
+              name === "records" && id === "@installation-reset"
+                ? { value: { token: "durable-epoch" } }
+                : { id, revision: 5 },
             getAll: (range) => {
               calls.push(range);
               return [{ workspace: "target", value: 1 }];
@@ -196,6 +200,7 @@ test("snapshot loads catalog and bounded records in one transaction and waits fo
     true,
   ]);
   assert.equal(result.period.revision, 5);
+  assert.equal(result.installationToken, "durable-epoch");
   assert.equal(result.data.workspace, "target");
 });
 

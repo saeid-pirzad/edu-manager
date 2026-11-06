@@ -63,6 +63,20 @@ function fixture(saved = new Map()) {
     EduV24: {
       getReportContext: () => ctx,
       canWriteReportNotes: () => true,
+      persistReportNotes(id, values, { preserveExisting = false } = {}) {
+        const key = "EduManager.periodicDrafts." + id,
+          saved = JSON.parse(storage.get(key) || "{}");
+        writes.push(key);
+        storage.set(
+          key,
+          JSON.stringify(
+            preserveExisting
+              ? { ...values, ...saved }
+              : { ...saved, ...values },
+          ),
+        );
+        return true;
+      },
       async prepareReportSnapshot() {
         return { data: c.db, parts: [], context: {} };
       },
@@ -98,7 +112,7 @@ function fixture(saved = new Map()) {
   ])
     vm.runInContext(fs.readFileSync(p, "utf8"), c, { filename: p });
   vm.runInContext(
-    'globalThis.api={filters,noteKey,readNote,persistNote,getDrafts,initialize,generate,validateReportNotes,noteWorkspaceId};build=(data,input)=>({audience:input.audience,mode:input.mode,note:input.note,definitions:[]});documentHtml=()=>"rendered";',
+    'globalThis.api={filters,noteKey,readNote,persistNote,getDrafts,initialize,generate,validateReportNotes,noteWorkspaceId,retryNotes,restoreDrafts,resetDrafts,hasPendingNotes:()=>notes.size>0,noteWrites:()=>noteWriter};build=(data,input)=>({audience:input.audience,mode:input.mode,note:input.note,definitions:[]});documentHtml=()=>"rendered";',
     c,
   );
   Object.assign(c.api.filters, {
@@ -109,6 +123,123 @@ function fixture(saved = new Map()) {
   });
   return { c, api: c.api, ctx, storage, reads, writes, elements };
 }
+
+test("queued guarded note writes remain in backups and an older completion cannot clear a newer edit", async () => {
+  const f = fixture(),
+    pending = [];
+  f.c.root.EduV24.persistReportNotes = (_id, values) =>
+    new Promise((resolve) => pending.push({ values, resolve }));
+  const key = f.api.noteKey(f.api.filters);
+  assert.equal(f.api.persistNote(key, "first edit"), false);
+  assert.equal(f.api.getDrafts("first")[key], "first edit");
+  assert.equal(f.api.persistNote(key, "newer edit"), false);
+  pending[0].resolve(true);
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(f.api.hasPendingNotes(), true);
+  assert.equal(f.api.getDrafts("first")[key], "newer edit");
+  f.storage.set(
+    "EduManager.periodicDrafts.first",
+    JSON.stringify({ [key]: "newer edit" }),
+  );
+  pending[1].resolve(true);
+  await f.api.noteWrites();
+  assert.equal(f.api.hasPendingNotes(), false);
+});
+
+test("resetting note state invalidates old completion and rejection callbacks", async () => {
+  const f = fixture(),
+    pending = [];
+  f.c.root.EduV24.persistReportNotes = () =>
+    new Promise((resolve, reject) => pending.push({ resolve, reject }));
+  const key = f.api.noteKey(f.api.filters);
+  f.api.persistNote(key, "pre-restore edit");
+  f.api.resetDrafts();
+  f.api.persistNote(key, "restored install edit");
+  pending[0].reject(Error("obsolete installation"));
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(f.api.getDrafts("first")[key], "restored install edit");
+  assert.equal(f.api.hasPendingNotes(), true);
+  pending[1].resolve(true);
+  await f.api.noteWrites();
+  assert.equal(f.api.hasPendingNotes(), false);
+});
+
+test("missing guarded persistence never silently falls back to an uncoordinated localStorage write", () => {
+  const f = fixture();
+  delete f.c.root.EduV24.persistReportNotes;
+  const key = f.api.noteKey(f.api.filters);
+  assert.equal(f.api.persistNote(key, "preserve this pending value"), false);
+  assert.equal(f.writes.length, 0);
+  assert.equal(f.api.getDrafts("first")[key], "preserve this pending value");
+});
+
+test("retryNotes awaits guarded persistence before reporting that pending text is saved", async () => {
+  const f = fixture();
+  const key = f.api.noteKey(f.api.filters);
+  f.c.root.EduV24.persistReportNotes = async () => {
+    throw Error("not ready");
+  };
+  f.api.persistNote(key, "retry text");
+  await f.api.noteWrites();
+  f.c.root.EduV24.persistReportNotes = async (id, values) => {
+    f.storage.set("EduManager.periodicDrafts." + id, JSON.stringify(values));
+    return true;
+  };
+  assert.equal(await f.api.retryNotes(), true);
+  assert.equal(f.api.hasPendingNotes(), false);
+  assert.equal(
+    JSON.parse(f.storage.get("EduManager.periodicDrafts.first"))[key],
+    "retry text",
+  );
+});
+
+test("recovery hydration publishes through the guarded API without overwriting a later stored note", async () => {
+  const f = fixture(),
+    key = f.api.noteKey(f.api.filters);
+  let publish;
+  f.c.root.EduV24.persistReportNotes = async (id, values, options) => {
+    await new Promise((resolve) => {
+      publish = resolve;
+    });
+    assert.equal(options.preserveExisting, true);
+    const storageKey = "EduManager.periodicDrafts." + id,
+      current = JSON.parse(f.storage.get(storageKey) || "{}");
+    f.storage.set(storageKey, JSON.stringify({ ...values, ...current }));
+    return true;
+  };
+  assert.equal(
+    f.api.restoreDrafts("first", { [key]: "recovered value" }),
+    false,
+  );
+  assert.equal(f.api.getDrafts("first")[key], "recovered value");
+  f.storage.set(
+    "EduManager.periodicDrafts.first",
+    JSON.stringify({ [key]: "newer stored note" }),
+  );
+  publish();
+  await f.api.noteWrites();
+  assert.equal(f.api.getDrafts("first")[key], "newer stored note");
+  assert.equal(f.api.hasPendingNotes(), false);
+});
+
+test("an older hydration callback cannot reinsert recovered notes after installation reset", async () => {
+  const f = fixture(),
+    key = f.api.noteKey(f.api.filters);
+  let reject;
+  f.c.root.EduV24.persistReportNotes = () =>
+    new Promise((_resolve, fail) => {
+      reject = fail;
+    });
+  f.api.restoreDrafts("first", { [key]: "old recovered value" });
+  f.api.resetDrafts();
+  reject(Error("installation changed"));
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(f.api.hasPendingNotes(), false);
+  assert.equal(f.api.getDrafts("first")[key], undefined);
+});
 const legacy = (id) =>
   [
     id,

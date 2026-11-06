@@ -346,6 +346,7 @@ function closeModal() {
     return;
   const modal = document.getElementById("modal");
   closeShamsiCalendar();
+  globalThis.EduV24?.releaseSessionEditAccess?.();
   modal.classList.add("hidden");
   modal.setAttribute("aria-hidden", "true");
   setModalBackground(false);

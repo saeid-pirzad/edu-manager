@@ -269,8 +269,11 @@ module.exports = async function auditPwaUpgrade({ cdp, debuggerUrl, root }) {
         "db.schemaVersion===26&&db.schools[0].classes[0].lessons[0].kardaneshScores.upgrade_student.theory===12",
       ),
     );
+    await require("./session-edit-test-helpers.cjs").installSessionEditTestHelper(
+      evaluate,
+    );
     await evaluate(
-      '(async()=>{openSessionModal(db.sessions[0]);showSessionPanel("activity");const form=document.querySelector(".session-entry-form");form.elements.studentId.value="upgrade_student";form.elements.type.value="classGrade";form.elements.value.value="20";form.elements.note.value="new class grade";await addSessionScore({preventDefault(){},target:form},"upgrade_session");return true;})()',
+      '(async()=>{openSessionModal(db.sessions[0]);await globalThis.__unlockRecordedSessionForAudit("upgrade_session");showSessionPanel("activity");const form=document.querySelector(".session-entry-form");form.elements.studentId.value="upgrade_student";form.elements.type.value="classGrade";form.elements.value.value="20";form.elements.note.value="new class grade";await addSessionScore({preventDefault(){},target:form},"upgrade_session");return true;})()',
     );
     record(
       "W05",

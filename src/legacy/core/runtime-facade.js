@@ -1,4 +1,13 @@
 // Stable entry points used by existing markup and browser integrations.
+function openSessionModal(...args) {
+  return EduRuntimeAPI.invoke(
+    "openSessionModal",
+    legacy_openSessionModal,
+    this,
+    args,
+  );
+}
+
 function openSettingsModal(...args) {
   return EduRuntimeAPI.invoke("openSettingsModal", undefined, this, args);
 }

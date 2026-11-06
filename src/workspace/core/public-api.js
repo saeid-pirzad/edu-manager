@@ -50,6 +50,7 @@ async function prepareForUpdate() {
 }
 function installRuntimeAPI() {
   EduRuntimeAPI.install({
+    openSessionModal: openSessionModalV24,
     openSettingsModal: openSettingsV24,
     saveSettings: saveSettingsV24,
     sessionStudent: (c, x, id) =>
@@ -132,6 +133,7 @@ function installRuntimeAPI() {
     checkPassword: loginV24,
   });
   window.EduV24 = {
+    releaseSessionEditAccess,
     course: courseUI,
     openEntityEditor,
     saveEntityEditor,
@@ -215,7 +217,11 @@ function installRuntimeAPI() {
     recoverReportNotes: () =>
       workspace ? hydrateReportNotes(workspace) : true,
     canWriteReportNotes: () =>
-      !periodLoading && !resetBusy && !connectionRetired,
+      !periodLoading &&
+      !resetBusy &&
+      !connectionRetired &&
+      (!fullRestoreBusy || pendingFullBackup === null),
+    persistReportNotes: commitReportNoteValues,
     confirmWipe,
     saveDB: saveDBV24,
     bootstrap: bootstrapV24,

@@ -101,6 +101,7 @@ module.exports = async function academicYearSafety() {
     editDate = async (sessionId, date, blocked = false) => {
       closeModal();
       openSessionModal(db.sessions.find((session) => session.id === sessionId));
+      await globalThis.__unlockRecordedSessionForAudit(sessionId);
       const tools = document.querySelector(".session-date-tools");
       tools.open = true;
       document.getElementById("sessDate").value = date;
@@ -459,6 +460,7 @@ module.exports = async function academicYearSafety() {
     );
     openLesson();
     openSessionModal(db.sessions.find((session) => session.id === ids.legacy));
+    await globalThis.__unlockRecordedSessionForAudit(ids.legacy);
     const sessionWarning = document
       .getElementById("modalBody")
       .textContent.includes("خارج از سال تحصیلی");

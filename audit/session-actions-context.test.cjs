@@ -51,6 +51,11 @@ function fixture() {
     resetBusy: false,
     connectionRetired: false,
     assertEntityWritable() {},
+    assertSessionEditable: () => {
+      c.assertEntityWritable();
+      return "isolated-edit-lease";
+    },
+    isSessionEditable: () => true,
     getSessionById: () => session,
     findClass: () => cls,
     getLessonObj: () => lesson,

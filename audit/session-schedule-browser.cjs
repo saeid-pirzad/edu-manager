@@ -154,13 +154,14 @@ async function run(env) {
     return options;
   };
   const openEditor = async (id) => {
-    await page((sessionId) => {
+    await page(async (sessionId) => {
       const audit = window.__sessionScheduleAudit;
       audit.previousWorkspace = document.querySelector(
         "#modalBody .session-workspace",
       );
       closeModal();
       openSessionModal(getSessionById(sessionId));
+      await globalThis.__unlockRecordedSessionForAudit(sessionId);
       document.querySelector(".session-date-tools").open = true;
     }, id);
     await waitSession();
@@ -630,6 +631,9 @@ async function run(env) {
         offered: historicalOptions.offered,
       },
     );
+    await page(async () => {
+      await globalThis.__unlockRecordedSessionForAudit(currentSessionId);
+    });
     await page(() => {
       const sid = window.__reportSurfaceIds.a + "_student_2";
       document

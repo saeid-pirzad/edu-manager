@@ -1,6 +1,10 @@
 function installUI() {
   installWorkspaceActions();
   installGradeEvents();
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible")
+      void refreshAttendanceReminders();
+  });
   window.addEventListener("storage", (event) => {
     if (
       event.key === RESET_EPOCH_KEY &&
@@ -108,6 +112,7 @@ function installUI() {
       assessmentContext.workspaceChanged(message);
       invalidateYearNotesScope(message);
       void synchronizeYearNotesScope().catch(() => {});
+      if (message.workspace) void refreshAttendanceReminders();
       if (
         workspace &&
         message.workspace === workspace.id &&

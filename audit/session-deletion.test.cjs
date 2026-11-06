@@ -112,6 +112,9 @@ test("failed session deletion rolls back through the real save queue and can be 
   let durable = structuredClone(f.c.db),
     attempts = 0;
   Object.assign(f.c, {
+    captureSessionEditRecovery: () => null,
+    rebindSessionEditAfterRollback: () => false,
+    invalidateSessionEditRecovery() {},
     fileMode: false,
     writeFailureGeneration: 0,
     busy: 0,
@@ -121,7 +124,10 @@ test("failed session deletion rolls back through the real save queue and can be 
     collectRecords: (value) => value,
     setStatus() {},
     scheduleSingleFile() {},
-    readWorkspace: async () => ({ data: structuredClone(durable) }),
+    readWorkspaceSnapshot: async () => ({
+      period: { ...f.c.workspace },
+      data: structuredClone(durable),
+    }),
   });
   vm.runInContext(
     fs.readFileSync(

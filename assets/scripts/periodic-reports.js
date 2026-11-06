@@ -40,7 +40,12 @@ const filters = {
 // Only notes that have not reached local storage stay in memory.
 const notes = new Map(),
   noteReadErrors = new Map(),
-  recoveryNotes = new Map();
+  recoveryNotes = new Map(),
+  noteWriteVersions = new Map(),
+  recoveryNoteKeys = new Set();
+let noteWriter = Promise.resolve(),
+  noteResetGeneration = 0,
+  noteWriteSequence = 0;
 const context = () =>
   root.EduV24?.getReportContext() || { id: "", revision: 0 };
 let noteEditGeneration = 0;
@@ -236,16 +241,58 @@ function persistNote(key, value) {
     );
     values[acknowledgementKey(key)] = JSON.stringify(acknowledged);
   }
-  for (const [name, text] of Object.entries(values)) notes.set(name, text);
-  try {
-    const saved = storedNotes(id);
-    Object.assign(saved, values);
-    localStorage.setItem(draftStorageKey(id), JSON.stringify(saved));
-    for (const name of Object.keys(values)) notes.delete(name);
+  return publishNoteValues(id, values);
+}
+
+function publishNoteValues(id, values, { preserveExisting = false } = {}) {
+  const generation = noteResetGeneration,
+    version = ++noteWriteSequence,
+    entries = Object.entries(values);
+  for (const [key, text] of entries) {
+    notes.set(key, text);
+    noteWriteVersions.set(key, version);
+    if (preserveExisting) recoveryNoteKeys.add(key);
+    else recoveryNoteKeys.delete(key);
+  }
+  const owns = (key) =>
+    generation === noteResetGeneration &&
+    noteWriteVersions.get(key) === version;
+  const finish = (saved) => {
+    if (saved !== true) throw Error("ذخیره توضیحات گزارش تأیید نشد.");
+    for (const [key] of entries)
+      if (owns(key)) {
+        notes.delete(key);
+        noteWriteVersions.delete(key);
+        recoveryNoteKeys.delete(key);
+      }
+    if (
+      generation === noteResetGeneration &&
+      ![...notes.keys()].some((key) => key.split("|")[0] === id)
+    )
+      noteReadErrors.delete(id);
+    if (generation === noteResetGeneration) paintNoteState();
     return true;
-  } catch (error) {
-    noteReadErrors.set(id, error.message || String(error));
+  };
+  const fail = (error) => {
+    if (entries.some(([key]) => owns(key))) {
+      noteReadErrors.set(id, error.message || String(error));
+      paintNoteState();
+    }
     return false;
+  };
+  try {
+    const commit = root.EduV24?.persistReportNotes;
+    if (typeof commit !== "function")
+      throw Error("ذخیره امن توضیحات آماده نیست؛ متن در حافظه نگه داشته شد.");
+    const result = commit(id, values, { preserveExisting });
+    if (result && typeof result.then === "function") {
+      const operation = Promise.resolve(result).then(finish).catch(fail);
+      noteWriter = Promise.all([noteWriter, operation]).then(() => undefined);
+      return false;
+    }
+    return finish(result);
+  } catch (error) {
+    return fail(error);
   }
 }
 
@@ -271,10 +318,22 @@ function paintNoteState() {
   const el = document.getElementById("periodicNoteStatus");
   if (el) el.innerHTML = noteWarning();
 }
-function retryNotes() {
+async function retryNotes() {
   const id = noteWorkspaceId();
-  for (const [key, value] of [...notes])
-    if (noteWorkspaceIds().includes(key.split("|")[0])) persistNote(key, value);
+  if (root.EduV24?.canWriteReportNotes?.() === false) return false;
+  const grouped = new Map();
+  for (const [key, value] of [...notes]) {
+    const owner = key.split("|")[0];
+    if (!noteWorkspaceIds().includes(owner)) continue;
+    const preserveExisting = recoveryNoteKeys.has(key),
+      group = JSON.stringify([owner, preserveExisting]);
+    if (!grouped.has(group))
+      grouped.set(group, { owner, preserveExisting, values: {} });
+    grouped.get(group).values[key] = value;
+  }
+  for (const { owner, preserveExisting, values } of grouped.values())
+    publishNoteValues(owner, values, { preserveExisting });
+  await noteWriter;
   try {
     storedNotes(id);
   } catch (error) {
@@ -296,35 +355,40 @@ function getDrafts(id = noteWorkspaceId(), recovery = recoveryNotes.get(id)) {
   return saved;
 }
 function restoreDrafts(id, value) {
-  if (root.EduV24?.canWriteReportNotes?.() === false) return false;
   const recovered = validateReportNotes(value, id);
   recoveryNotes.set(id, recovered);
-  let merged = { ...recovered };
   try {
-    const saved = storedNotes(id);
-    merged = { ...recovered, ...saved };
-    for (const [key, text] of notes)
-      if (key.split("|")[0] === id) merged[key] = text;
-    if (
-      Object.entries(merged).some(
-        ([key, text]) =>
-          !Object.prototype.hasOwnProperty.call(saved, key) ||
-          saved[key] !== text,
-      )
-    )
-      localStorage.setItem(draftStorageKey(id), JSON.stringify(merged));
-    for (const [key, text] of [...notes])
-      if (key.split("|")[0] === id && merged[key] === text) notes.delete(key);
-    return true;
+    const saved = storedNotes(id),
+      missing = Object.fromEntries(
+        Object.entries(recovered).filter(
+          ([key]) => !Object.hasOwn(saved, key) && !notes.has(key),
+        ),
+      );
+    if (!Object.keys(missing).length) return true;
+    if (root.EduV24?.canWriteReportNotes?.() === false) {
+      for (const [key, text] of Object.entries(missing)) {
+        notes.set(key, text);
+        recoveryNoteKeys.add(key);
+      }
+      return false;
+    }
+    return publishNoteValues(id, missing, { preserveExisting: true });
   } catch (error) {
-    for (const [key, text] of Object.entries(merged))
-      if (!notes.has(key)) notes.set(key, text);
+    for (const [key, text] of Object.entries(recovered))
+      if (!notes.has(key)) {
+        notes.set(key, text);
+        recoveryNoteKeys.add(key);
+      }
     noteReadErrors.set(id, error.message || String(error));
     return false;
   }
 }
 function resetDrafts() {
+  noteResetGeneration++;
   notes.clear();
+  noteWriteVersions.clear();
+  recoveryNoteKeys.clear();
+  noteWriter = Promise.resolve();
   noteReadErrors.clear();
   recoveryNotes.clear();
   last = null;
@@ -1732,7 +1796,7 @@ async function generate() {
           "جلسات و فعالیت‌های این بازه فقط مربوط به ترم انتخاب‌شده‌اند؛ نمرات چهار مرحله و پودمان‌ها، وضعیت فعلی کل سال تحصیلی در زمان تهیه گزارش‌اند.",
         );
       model.definitions.push(
-        "نمره هر مرحله طبق تنظیمات همان نوبت محاسبه می‌شود؛ نهایی سالانه میانگین برابر هر چهار مرحله است. نمره ناقص، صفر محسوب نمی‌شود.",
+        "نمره هر مرحله طبق تنظیمات همان نوبت محاسبه می‌شود؛ نهایی سالانه میانگین برابر هر چهار مرحله است و قبولی سالانه فقط با حدنصاب همین میانگین تعیین می‌شود، مستقل از وضعیت قبولی مرحله‌ها. نمره ناقص، صفر محسوب نمی‌شود.",
       );
       if (annual)
         model.definitions.push(
@@ -2202,7 +2266,13 @@ function excelReportSheets(m) {
         : grade.passed
           ? "قبول"
           : "نیازمند جبران";
-  const safe = (grade) => (grade.complete ? grade.final : null);
+  const safe = (grade) => {
+    if (grade.complete !== true || !Number.isFinite(grade.final)) return null;
+    // Keep ordinary grades numeric, but do not let Excel's two-decimal format
+    // make a below-threshold result appear to meet its acceptance threshold.
+    const display = root.EduV24.finalText(grade);
+    return display === grade.final.toFixed(2) ? grade.final : display;
+  };
   const date = (value) =>
     new Intl.DateTimeFormat("fa-IR", {
       year: "numeric",
@@ -2465,15 +2535,18 @@ function excelReportSheets(m) {
           p.continuous,
           p.competency,
         ]);
-      for (const u of g.units || [])
+      for (const u of g.units || []) {
+        const unitIdentity = [...identity];
+        unitIdentity[4] = u.term || g.term;
         units.push([
-          ...identity,
+          ...unitIdentity,
           u.moduleName,
           u.unitName,
           u.mostamar,
           u.payani,
           null,
         ]);
+      }
       for (const u of g.legacyUnits || [])
         units.push([
           ...identity,
@@ -2971,6 +3044,10 @@ root.EduPeriodicReports = {
     syncReportActions();
   },
   retryNotes,
+  flushNotes: async () => {
+    await noteWriter;
+    return notes.size === 0;
+  },
   hasPendingNotes: () => notes.size > 0,
   getDrafts,
   restoreDrafts,

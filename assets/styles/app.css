@@ -9894,6 +9894,559 @@ body.modal-open {
     font-size: 11px;
   }
 }
+/* Source: src/styles/attendance-reminders.css */
+/* The reminder surface is scoped; existing dashboard and modal layouts stay intact. */
+#app > #attendanceReminderRegion {
+  order: 3;
+  min-width: 0;
+}
+#attendanceReminderRegion:empty {
+  display: none;
+}
+.attendance-reminder-notice {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-block: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--status-warning-line);
+  border-radius: 14px;
+  background: var(--status-warning-soft);
+  color: var(--status-warning);
+  font-size: 12px;
+  line-height: 1.9;
+}
+.attendance-reminder-notice > span {
+  flex: 1 1 200px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.attendance-reminder-notice > button {
+  min-height: 44px;
+  margin: 0;
+}
+.attendance-reminders {
+  margin-block: 16px;
+  overflow: hidden;
+  border: 1px solid #ead4a2;
+  border-radius: 16px;
+  background: var(--theme-surface, #fff);
+  color: var(--theme-ink, #2d3440);
+}
+.attendance-reminders-heading {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 44px;
+  align-items: start;
+  gap: 10px;
+  padding: 16px;
+  background: linear-gradient(110deg, #fffcf5, #fff4da);
+}
+.attendance-reminders-symbol {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #fce8b7;
+  color: #80540a;
+}
+.attendance-reminders-symbol svg {
+  width: 23px;
+  height: 23px;
+}
+.attendance-reminders-heading h3 {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 4px;
+  font-size: 16px;
+  line-height: 1.8;
+}
+.attendance-reminders-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 26px;
+  padding-inline: 6px;
+  border-radius: 8px;
+  background: #fff;
+  color: #86500a;
+  font-size: 12px;
+  font-weight: 600;
+}
+.attendance-reminder-range {
+  margin: 0;
+  color: var(--theme-muted, #6c6870);
+  font-size: 11px;
+  line-height: 1.9;
+  overflow-wrap: anywhere;
+}
+.attendance-reminders-heading .attendance-reminders-refresh {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  padding: 8px;
+  border-color: #e4cf9e;
+  background: #fff9;
+  color: #80540a;
+}
+.attendance-reminders-refresh svg {
+  width: 19px;
+  height: 19px;
+}
+.attendance-reminder-items {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.attendance-reminder-item + .attendance-reminder-item {
+  border-block-start: 1px solid var(--theme-line, #ece7df);
+}
+:is(#app, #modal)
+  .attendance-reminder-item
+  button.attendance-reminder-open:not([hidden]) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 20px;
+  align-items: center;
+  gap: 6px 10px;
+  width: 100%;
+  min-width: 0;
+  min-height: 76px;
+  margin: 0;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 0;
+  background: transparent !important;
+  color: inherit !important;
+  text-align: start;
+  box-shadow: none;
+}
+:is(#app, #modal)
+  .attendance-reminder-item
+  button.attendance-reminder-open:not([hidden]):hover {
+  background: #fffcf6 !important;
+}
+.attendance-reminder-open > .attendance-reminder-date {
+  grid-column: 1 / 3;
+}
+.attendance-reminder-date {
+  color: var(--theme-muted, #6c6870);
+  font-size: 11px;
+  line-height: 1.9;
+}
+.attendance-reminder-identity {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.attendance-reminder-identity strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+.attendance-reminder-lesson {
+  font-size: 12px;
+  font-weight: 400;
+}
+.attendance-reminder-identity small {
+  color: var(--theme-muted, #6c6870);
+  font-size: 11px;
+  font-weight: 400;
+}
+.attendance-reminder-status {
+  max-width: 130px;
+  padding: 4px 8px;
+  border: 1px solid #ecd69e;
+  border-radius: 8px;
+  background: #fff5da;
+  color: #80500a;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.attendance-reminder-item.is-incomplete .attendance-reminder-status {
+  border-color: #f2cfb3;
+  background: #fff0e5;
+  color: #924412;
+}
+.attendance-reminder-item.is-conflict .attendance-reminder-status {
+  border-color: #f1c6cb;
+  background: #fff0f1;
+  color: #a22e3c;
+}
+.attendance-reminder-arrow {
+  grid-column: 3;
+  grid-row: 1 / 3;
+  color: #a78c55;
+}
+.attendance-reminder-arrow svg {
+  width: 18px;
+  height: 18px;
+}
+.attendance-reminders-footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px;
+  border-block-start: 1px solid var(--theme-line, #ece7df);
+  background: #fdfcf9;
+}
+.attendance-reminders-footer > button {
+  min-height: 44px;
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+.attendance-reminders-footer small {
+  margin-inline-start: auto;
+  color: var(--theme-muted, #6c6870);
+  font-size: 11px;
+}
+.attendance-reminders-empty {
+  margin: 0;
+  padding: 16px;
+  color: var(--theme-muted, #6c6870);
+  font-size: 13px;
+  line-height: 1.9;
+}
+.attendance-reminders.is-clear {
+  border-color: #cee4d8;
+}
+.attendance-reminders.is-clear .attendance-reminders-heading {
+  background: #f0f8f2;
+}
+.attendance-reminders.is-clear .attendance-reminders-symbol {
+  background: #dbefdf;
+  color: #36724b;
+}
+.attendance-reminder-list-dialog,
+.attendance-reminder-dialog,
+.attendance-reminder-history {
+  min-width: 0;
+  color: var(--theme-ink, #2d3440);
+}
+.attendance-reminder-intro {
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.9;
+}
+.attendance-reminder-scroll {
+  max-height: min(55vh, 500px);
+  margin-block: 14px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--theme-line, #ece7df);
+  border-radius: 12px;
+}
+.attendance-reminder-summary {
+  padding: 16px;
+  border: 1px solid #ead5aa;
+  border-radius: 12px;
+  background: #fff9ed;
+  overflow-wrap: anywhere;
+}
+.attendance-reminder-summary h4 {
+  margin: 8px 0 4px;
+  font-size: 17px;
+  line-height: 1.8;
+}
+.attendance-reminder-summary p {
+  margin: 0 0 4px;
+  font-size: 13px;
+}
+.attendance-reminder-summary small {
+  color: var(--theme-muted, #6c6870);
+  font-size: 12px;
+}
+.attendance-reminder-explanation {
+  margin: 16px 0;
+  font-size: 13px;
+  line-height: 2;
+}
+.attendance-reminder-explanation.is-conflict {
+  padding: 12px;
+  border-inline-start: 3px solid #c7525c;
+  border-radius: 8px;
+  background: #fff3f3;
+  color: #8f2c37;
+}
+.attendance-reminder-primary-action > button,
+.attendance-reminder-not-held > button,
+.attendance-reminder-conflict-sessions > button,
+.attendance-reminder-history-item > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  max-width: 100%;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.8;
+  white-space: normal;
+}
+.attendance-reminder-primary-action > button {
+  width: 100%;
+}
+.attendance-reminder-primary-action svg,
+.attendance-reminder-not-held svg,
+.attendance-reminder-conflict-sessions svg,
+.attendance-reminder-history-item > button svg {
+  flex-shrink: 0;
+  width: 19px;
+  height: 19px;
+}
+.attendance-reminder-not-held {
+  margin-block-start: 16px;
+  padding-block-start: 16px;
+  border-block-start: 1px solid var(--theme-line, #ece7df);
+}
+.attendance-reminder-not-held p {
+  margin: 0 0 10px;
+  color: var(--theme-muted, #6c6870);
+  font-size: 12px;
+  line-height: 1.9;
+}
+.attendance-reminder-conflict-sessions {
+  display: grid;
+  gap: 8px;
+}
+.attendance-reminder-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-block-start: 16px;
+}
+.attendance-reminder-dialog-actions > button {
+  min-height: 44px;
+  margin: 0;
+}
+.attendance-reminder-pagination {
+  display: grid;
+  gap: 8px;
+  margin-block: 12px;
+  text-align: center;
+}
+.attendance-reminder-pagination p {
+  margin: 0;
+  color: var(--theme-muted, #6c6870);
+  font-size: 11px;
+}
+.attendance-reminder-pagination nav {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+.attendance-reminder-pagination nav > span {
+  font-size: 12px;
+}
+.attendance-reminder-pagination button {
+  min-height: 44px;
+  margin: 0;
+  font-size: 12px;
+}
+.attendance-reminder-history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px;
+}
+.attendance-reminder-history-item + .attendance-reminder-history-item {
+  border-block-start: 1px solid var(--theme-line, #ece7df);
+}
+.attendance-reminder-history-item > div {
+  display: grid;
+  flex: 1 1 180px;
+  gap: 4px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.attendance-reminder-history-item strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+.attendance-reminder-history-item small {
+  color: var(--theme-muted, #6c6870);
+  font-size: 11px;
+}
+.attendance-reminders button:focus-visible,
+.attendance-reminder-list-dialog button:focus-visible,
+.attendance-reminder-dialog button:focus-visible,
+.attendance-reminder-history button:focus-visible {
+  outline: 3px solid var(--theme-primary, #c0141b);
+  outline-offset: -3px;
+}
+@media (min-width: 700px) {
+  :is(#app, #modal)
+    .attendance-reminder-item
+    button.attendance-reminder-open:not([hidden]) {
+    grid-template-columns: 150px minmax(0, 1fr) auto 20px;
+    min-height: 70px;
+    gap: 12px;
+  }
+  .attendance-reminder-open > .attendance-reminder-date {
+    grid-column: 1;
+  }
+  .attendance-reminder-arrow {
+    grid-column: 4;
+    grid-row: 1;
+  }
+  .attendance-reminder-identity {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 2px 8px;
+    align-items: baseline;
+  }
+  .attendance-reminder-identity small {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 359px) {
+  .attendance-reminders-heading {
+    grid-template-columns: 32px minmax(0, 1fr) 44px;
+    gap: 8px;
+    padding: 12px;
+  }
+  .attendance-reminders-symbol {
+    width: 32px;
+    height: 36px;
+  }
+  .attendance-reminders-heading h3 {
+    font-size: 14px;
+  }
+  :is(#app, #modal)
+    .attendance-reminder-item
+    button.attendance-reminder-open:not([hidden]) {
+    grid-template-columns: minmax(0, 1fr) auto 16px;
+    gap: 6px;
+    padding: 10px 12px;
+  }
+  .attendance-reminder-status {
+    max-width: 90px;
+    padding: 3px 6px;
+    font-size: 10px;
+  }
+  .attendance-reminders-footer {
+    padding: 10px 12px;
+  }
+  .attendance-reminders-footer > button {
+    padding-inline: 8px;
+    font-size: 11px;
+  }
+}
+/* Source: src/styles/session-edit-access.css */
+/* Session access is enforced by the controller; these rules only present its state. */
+@media screen {
+  #modalBody .session-workspace .session-edit-notice {
+    --session-access-ink: var(--status-warning, #7c5105);
+    --session-access-line: var(--status-warning-line, #f2d39a);
+    --session-access-soft: var(--status-warning-soft, #fffaed);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    min-width: 0;
+    margin-block: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--session-access-line);
+    border-radius: 12px;
+    background: var(--session-access-soft);
+  }
+  #modalBody .session-workspace[data-session-mode="edit"] .session-edit-notice {
+    --session-access-ink: var(--status-success, #16664e);
+    --session-access-line: var(--status-success-line, #bfded0);
+    --session-access-soft: var(--status-success-soft, #eaf6f0);
+  }
+  #modalBody .session-edit-notice .session-edit-copy {
+    display: grid;
+    flex: 1 1 240px;
+    gap: 3px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  #modalBody .session-edit-notice [data-session-edit-title] {
+    color: var(--session-access-ink);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.8;
+  }
+  #modalBody .session-edit-notice [data-session-edit-description] {
+    margin: 0;
+    color: var(--theme-muted, #5a6179);
+    font-size: 12px;
+    line-height: 1.9;
+  }
+  #modalBody
+    .session-workspace
+    .session-edit-notice
+    [data-session-edit-control] {
+    --button-ink: var(--session-access-ink);
+    --button-soft: var(--theme-surface, #fff);
+    --button-line: var(--session-access-line);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 1 auto;
+    gap: 8px;
+    min-width: 0;
+    min-height: 44px;
+    max-width: 100%;
+    margin: 0;
+    padding: 8px 12px;
+    border: 1px solid var(--session-access-line);
+    border-radius: 10px;
+    background: var(--theme-surface, #fff);
+    color: var(--session-access-ink);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.8;
+    white-space: normal;
+  }
+  #modalBody .session-edit-notice [data-session-edit-control] svg {
+    flex: 0 0 18px;
+    width: 18px;
+    height: 18px;
+  }
+  #modalBody .session-edit-notice [data-session-edit-label] {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  #modalBody .session-edit-notice [data-session-edit-control]:focus-visible {
+    outline: 3px solid var(--session-access-ink);
+    outline-offset: 2px;
+  }
+}
+@media screen and (max-width: 599px) {
+  #modalBody .session-workspace .session-edit-notice {
+    gap: 10px;
+    padding: 10px 12px;
+  }
+  #modalBody .session-edit-notice .session-edit-copy {
+    flex-basis: 100%;
+  }
+  #modalBody
+    .session-workspace
+    .session-edit-notice
+    [data-session-edit-control] {
+    width: 100%;
+    min-height: 44px;
+  }
+}
+@media print {
+  .session-workspace .session-edit-notice {
+    display: none;
+  }
+}
 /* Source: src/styles/welcome-banner.css */
 /* One welcome banner design for both applications. */
 @media screen {

@@ -54,6 +54,7 @@ async function ensureAcademicAssessmentTerm(kind) {
       );
     const data = clone(source.data);
     data.sessions = [];
+    data.notHeldSessions = [];
     data.migrationWarnings = [];
     data.settings.academicTerm = kind === "first" ? "اول" : "دوم";
     for (const school of data.schools)

@@ -193,6 +193,18 @@ if (process.argv.includes("--help")) {
         cases,
         delay,
       });
+      await require("./attendance-reminders-browser.cjs").run({
+        cdp,
+        evaluate,
+        cases,
+        delay,
+      });
+      await require("./session-edit-access-browser.cjs").run({
+        cdp,
+        evaluate,
+        cases,
+        delay,
+      });
       await require("./report-export-layout.cjs")({ cdp, evaluate, cases });
       await require("./deputy-report-action.cjs")({
         cdp,

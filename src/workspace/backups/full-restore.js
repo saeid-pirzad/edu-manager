@@ -87,7 +87,7 @@ function previewFullBackup(value, { sourceName = "", legacy = false } = {}) {
       (legacyContent
         ? '<p class="full-restore-warning" role="status">این فایل سوابق قدیمی چند سال یا عنوان نوبت قدیمی دارد. همهٔ اطلاعات فایل بدون حذف یا ادغام حفظ می‌شوند؛ رابط برنامه در سالِ اطلاعات فعال داخل همین فایل باز می‌شود. پشتیبان‌گیری مستقل از نوبت اول و دوم است.</p>'
         : "") +
-      '<section class="full-restore-warning"><h4>اطلاعات فعلی جایگزین می‌شود</h4><p>کل اطلاعات سیستم به وضعیت این فایل برمی‌گردد؛ اطلاعات فایل با داده‌های فعلی ادغام نمی‌شود.</p><p>نوبت جدید یا تکراری ساخته نمی‌شود و وضعیت باز یا بستهٔ نوبت‌ها مطابق فایل خواهد بود.</p></section><label class="full-restore-confirm" for="fullRestoreConfirmed"><input type="checkbox" id="fullRestoreConfirmed"><span>می‌دانم کل اطلاعات فعلی با محتوای این فایل جایگزین می‌شود.</span></label><p id="operationError" role="alert"></p><div class="full-restore-actions"><button type="button" class="danger" data-full-restore data-workspace-action="restore-full">تأیید و بازیابی کل اطلاعات</button><button type="button" class="ghost" data-workspace-action="close">انصراف</button></div></div>',
+      '<section class="full-restore-warning"><h4>اطلاعات فعلی جایگزین می‌شود</h4><p>کل اطلاعات سیستم به وضعیت این فایل برمی‌گردد؛ اطلاعات فایل با داده‌های فعلی ادغام نمی‌شود.</p><p>نوبت جدید یا تکراری ساخته نمی‌شود و وضعیت باز یا بستهٔ نوبت‌ها مطابق فایل خواهد بود.</p><p>ذخیره خودکار فایل پس از بازیابی متوقف می‌ماند؛ فایل قبلی بدون تأیید جداگانهٔ شما جایگزین نمی‌شود.</p></section><label class="full-restore-confirm" for="fullRestoreConfirmed"><input type="checkbox" id="fullRestoreConfirmed"><span>می‌دانم کل اطلاعات فعلی با محتوای این فایل جایگزین می‌شود.</span></label><p id="operationError" role="alert"></p><div class="full-restore-actions"><button type="button" class="danger" data-full-restore data-workspace-action="restore-full">تأیید و بازیابی کل اطلاعات</button><button type="button" class="ghost" data-workspace-action="close">انصراف</button></div></div>',
   );
   if (opened !== false) {
     pendingFullBackup = value;
@@ -114,6 +114,83 @@ function restoreDraftSignature(rows) {
       .map((row) => [row.key, JSON.stringify(row)])
       .sort(([a], [b]) => a.localeCompare(b)),
   );
+}
+function restoreReportNotesSignature() {
+  try {
+    return JSON.stringify(
+      Object.keys(localStorage)
+        .filter((key) => key.startsWith("EduManager.periodicDrafts."))
+        .sort()
+        .map((key) => [key, localStorage.getItem(key)]),
+    );
+  } catch (error) {
+    throw Error(
+      "خواندن توضیحات مرورگر برای بررسی تداخل ممکن نیست؛ بازیابی انجام نشد. دسترسی به حافظه مرورگر را فعال و دوباره تلاش کنید.",
+      { cause: error },
+    );
+  }
+}
+async function commitReportNoteValues(
+  id,
+  values,
+  { preserveExisting = false } = {},
+) {
+  const safeValues = validateReportNotes(values, id),
+    sourceConnection = connection,
+    sourceInstallation = installationToken;
+  const current = () =>
+    connection === sourceConnection &&
+    installationToken === sourceInstallation &&
+    !resetBusy &&
+    !connectionRetired;
+  if (!sourceConnection || !current() || periodLoading)
+    throw Error(
+      "بانک برای ذخیره توضیحات گزارش آماده نیست؛ متن در حافظه حفظ شد.",
+    );
+  // This transaction serializes localStorage publication with installation
+  // replacement. Normal term navigation may finish an already-authorized
+  // write to its explicit original owner. A queued old-tab write checks the durable epoch,
+  // rather than recreating deleted notes after restore cleanup.
+  const tx = sourceConnection.transaction("records", "readwrite"),
+    done = transactionDone(tx),
+    request = tx.objectStore("records").get(RESET_RECORD_KEY);
+  let failure;
+  request.onsuccess = () => {
+    try {
+      if (
+        !current() ||
+        (request.result?.value?.token || "") !== sourceInstallation ||
+        request.result?.value?.phase === "cleanup"
+      )
+        throw Error(
+          "اطلاعات سیستم عوض شده است؛ توضیحات قدیمی روی اطلاعات بازیابی‌شده نوشته نشد.",
+        );
+      const key = "EduManager.periodicDrafts." + id,
+        saved = validateReportNotes(
+          JSON.parse(localStorage.getItem(key) || "{}"),
+          id,
+        );
+      localStorage.setItem(
+        key,
+        JSON.stringify(
+          preserveExisting
+            ? { ...safeValues, ...saved }
+            : { ...saved, ...safeValues },
+        ),
+      );
+    } catch (error) {
+      failure = error;
+      try {
+        tx.abort();
+      } catch {}
+    }
+  };
+  try {
+    await done;
+  } catch (error) {
+    throw failure || error;
+  }
+  return true;
 }
 async function readSystemRestoreGuard(check = () => {}) {
   if (ready) {
@@ -142,6 +219,7 @@ async function readSystemRestoreGuard(check = () => {}) {
       (row) => row?.key === EduDeputyExportIdentity.key,
     ),
     draftSignature: restoreDraftSignature(stores.drafts),
+    reportNotesSignature: restoreReportNotesSignature(),
   };
 }
 function restoreIdentityMatches(original, current) {
@@ -350,6 +428,10 @@ async function restoreFullBackup() {
               throw Error(
                 "اطلاعات سیستم در پنجره دیگری تغییر کرده است؛ پیش از بازیابی دوباره بررسی کنید.",
               );
+            if (restoreReportNotesSignature() !== guard.reportNotesSignature)
+              throw Error(
+                "توضیحات گزارش در پنجره دیگری تغییر کرده است؛ برای حفظ آن‌ها بازیابی انجام نشد. فایل را دوباره بررسی کنید.",
+              );
             for (const name of names) tx.objectStore(name).clear();
             for (const name of names) {
               // Preserve explicit legacy history IDs before the auto-increment
@@ -369,7 +451,7 @@ async function restoreFullBackup() {
               (row) => row.key === singleFileKey,
             );
             restoredSingleFile = currentFile
-              ? { ...currentFile, connectionId: uid() }
+              ? { ...currentFile, connectionId: uid(), suspension: "restore" }
               : null;
             if (restoredSingleFile)
               tx.objectStore("drafts").put(restoredSingleFile);
@@ -447,8 +529,11 @@ async function restoreFullBackup() {
     let notesSaved = true;
     for (const period of rows.catalog)
       if (!hydrateReportNotes(period)) notesSaved = false;
+    const notesFlushed = await window.EduPeriodicReports?.flushNotes?.();
+    if (notesFlushed !== undefined) notesSaved = notesFlushed;
     closeModal();
     render();
+    if (singleFile) announceSingleFileSuspension(singleFile);
     setStatus(
       "کل اطلاعات فایل بازیابی شد؛ هیچ نوبت تکراری ساخته نشد." +
         (notesSaved
@@ -483,7 +568,14 @@ async function restoreFullBackup() {
   } finally {
     if (ownsLoading) periodLoading = false;
     fullRestoreBusy = false;
-    if (hadFileTimer && singleFile && ready && !blocked && !connectionRetired)
+    if (
+      !committedRestore &&
+      hadFileTimer &&
+      singleFile &&
+      ready &&
+      !blocked &&
+      !connectionRetired
+    )
       startSingleFile();
     lockControls();
   }

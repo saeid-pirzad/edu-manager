@@ -142,7 +142,7 @@ function captureSessionActivityForm() {
     ]),
   );
 }
-function openSessionModal(session, { activitySaved = null } = {}) {
+function legacy_openSessionModal(session, { activitySaved = null } = {}) {
   const selectedPanel =
     !document.getElementById("modal").classList.contains("hidden") &&
     currentSessionId === session.id

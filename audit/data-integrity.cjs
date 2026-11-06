@@ -148,7 +148,10 @@ async function main({
       source:
         "window.__EDU_TEST_MODE__=true;window.confirm=()=>true;window.alert=()=>{};" +
         "window.__eduStartupErrors=[];window.addEventListener('error',e=>window.__eduStartupErrors.push(e.message||e.target?.src||'resource failed'),true);" +
-        "window.addEventListener('unhandledrejection',e=>window.__eduStartupErrors.push(String(e.reason?.stack||e.reason)));",
+        "window.addEventListener('unhandledrejection',e=>window.__eduStartupErrors.push(String(e.reason?.stack||e.reason)));" +
+        "globalThis.__unlockRecordedSessionForAudit = " +
+        require("./session-edit-test-helpers.cjs").unlockRecordedSessionForAudit.toString() +
+        ";",
     });
     const navigation = await cdp("Page.navigate", {
       url:

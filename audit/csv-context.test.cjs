@@ -129,11 +129,11 @@ test("CSV file read rejects a replaced bank before preparing preview", async () 
   assert.equal(f.c.pendingCSV, f.context);
 });
 
-test("large CSV additions use bounded push calls rather than an unbounded argument spread", async () => {
+test("maximum-size class CSV additions use bounded push calls rather than an argument spread", async () => {
   const f = fixture();
   let nextId = 0;
   f.c.uid = () => "csv-student-" + nextId++;
-  f.context.plan = Array.from({ length: 6000 }, (_, i) => ({
+  f.context.plan = Array.from({ length: 500 }, (_, i) => ({
     row: i + 2,
     name: "Student " + i,
     code: String(i + 1),
@@ -148,8 +148,26 @@ test("large CSV additions use bounded push calls rather than an unbounded argume
     return push.apply(this, args);
   };
   assert.equal(await f.c.commitCSV(), true);
-  assert.equal(pushes, 6000);
-  assert.equal(f.cls.students.length, 6000);
+  assert.equal(pushes, 500);
+  assert.equal(f.cls.students.length, 500);
+});
+
+test("oversized stale CSV plans are rejected before flushing or adding students", async () => {
+  const f = fixture();
+  f.context.plan = Array.from({ length: 6000 }, (_, i) => ({
+    row: i + 2,
+    name: "Student " + i,
+    code: String(i + 1),
+    existingId: null,
+  }));
+  f.choices.splice(0, 1, ...f.context.plan.map(() => ({ value: "add" })));
+  let flushes = 0;
+  f.c.flushDrafts = async () => flushes++;
+  assert.equal(await f.c.commitCSV(), false);
+  assert.equal(flushes, 0);
+  assert.equal(f.cls.students.length, 0);
+  assert.deepEqual(f.effects, []);
+  assert.match(f.errors[0].message, /۵۰۰/);
 });
 
 test("CSV identity updates use the active-id index and verify the saved code", async () => {
@@ -188,6 +206,9 @@ for (const mode of ["add", "update"]) {
       f.choices[0].value = "update";
     }
     Object.assign(f.c, {
+      captureSessionEditRecovery: () => null,
+      rebindSessionEditAfterRollback: () => false,
+      invalidateSessionEditRecovery() {},
       fileMode: false,
       writeFailureGeneration: 0,
       busy: 0,
@@ -196,7 +217,10 @@ for (const mode of ["add", "update"]) {
       refreshAcademicYearWarnings() {},
       collectRecords: (db) => db,
       scheduleSingleFile() {},
-      readWorkspace: async () => ({ data: structuredClone(durable) }),
+      readWorkspaceSnapshot: async () => ({
+        period: { ...f.c.workspace },
+        data: structuredClone(durable),
+      }),
     });
     vm.runInContext(
       fs.readFileSync(

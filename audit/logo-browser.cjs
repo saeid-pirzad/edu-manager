@@ -63,6 +63,44 @@ async function fetchAssets(paths) {
       const image = new Image();
       image.src = pathname;
       await image.decode();
+      const canvas = document.createElement("canvas");
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext("2d");
+      context.drawImage(image, 0, 0);
+      const pixels = context.getImageData(
+        0,
+        0,
+        canvas.width,
+        canvas.height,
+      ).data;
+      let opaque = true,
+        markTop = canvas.height,
+        markBottom = -1,
+        outsideSafeCircle = 0;
+      for (let offset = 0; offset < pixels.length; offset += 4) {
+        if (pixels[offset + 3] !== 255) opaque = false;
+        if (
+          pixels[offset] > 160 &&
+          pixels[offset] > pixels[offset + 1] * 1.15 &&
+          pixels[offset] > pixels[offset + 2] * 1.1 &&
+          pixels[offset + 3] > 128
+        ) {
+          const pixel = offset / 4,
+            x = pixel % canvas.width,
+            y = Math.floor(pixel / canvas.width);
+          markTop = Math.min(markTop, y);
+          markBottom = Math.max(markBottom, y);
+          if (
+            Math.hypot(
+              x + 0.5 - canvas.width / 2,
+              y + 0.5 - canvas.height / 2,
+            ) >
+            canvas.width * 0.4
+          )
+            outsideSafeCircle++;
+        }
+      }
       return {
         path: pathname,
         status: response.status,
@@ -73,6 +111,10 @@ async function fetchAssets(paths) {
         ).join(""),
         width: image.naturalWidth,
         height: image.naturalHeight,
+        opaque,
+        background: [...pixels.slice(0, 4)],
+        markHeight: markBottom < markTop ? 0 : markBottom - markTop + 1,
+        outsideSafeCircle,
       };
     }),
   );
@@ -214,26 +256,48 @@ async function run({ cdp, evaluate, cases, delay, root }) {
   const references = await evaluateCall(readLogoAssets);
   const expected = new Map([
     ["/edu-manager/assets/logo3.png", natural],
-    ["/edu-manager/assets/icons/logo-512.png", { width: 512, height: 512 }],
-    ["/edu-manager/assets/icons/logo-192.png", { width: 192, height: 192 }],
-    ["/edu-manager/assets/icons/logo-180.png", { width: 180, height: 180 }],
-    ["/edu-manager/assets/icons/logo-32.png", { width: 32, height: 32 }],
+    [
+      "/edu-manager/assets/icons/app-cream-v2-512.png",
+      { width: 512, height: 512 },
+    ],
+    [
+      "/edu-manager/assets/icons/app-cream-v2-192.png",
+      { width: 192, height: 192 },
+    ],
+    [
+      "/edu-manager/assets/icons/app-cream-v2-180.png",
+      { width: 180, height: 180 },
+    ],
+    [
+      "/edu-manager/assets/icons/app-cream-v2-32.png",
+      { width: 32, height: 32 },
+    ],
+    [
+      "/edu-manager/assets/icons/app-cream-v2-maskable-192.png",
+      { width: 192, height: 192 },
+    ],
+    [
+      "/edu-manager/assets/icons/app-cream-v2-maskable-512.png",
+      { width: 512, height: 512 },
+    ],
   ]);
   add(
     "METADATA",
     "Favicon, Apple and install manifest use the actual local logo derivatives",
     references.manifest === "/edu-manager/app.webmanifest" &&
-      references.favicon === "/edu-manager/assets/icons/logo-32.png" &&
-      references.apple === "/edu-manager/assets/icons/logo-180.png" &&
-      references.icons.length === 2 &&
+      references.favicon === "/edu-manager/assets/icons/app-cream-v2-32.png" &&
+      references.apple === "/edu-manager/assets/icons/app-cream-v2-180.png" &&
+      references.icons.length === 4 &&
       references.icons.every(
         (icon) =>
           expected.has(icon.path) &&
           icon.type === "image/png" &&
+          icon.purpose ===
+            (icon.path.includes("maskable") ? "maskable" : "any") &&
           icon.sizes ===
             `${expected.get(icon.path).width}x${expected.get(icon.path).height}`,
       ) &&
-      new Set(references.icons.map((icon) => icon.path)).size === 2,
+      new Set(references.icons.map((icon) => icon.path)).size === 4,
     references,
   );
   const fingerprint = new Map(
@@ -266,6 +330,36 @@ async function run({ cdp, evaluate, cases, delay, root }) {
           asset.height === original.height,
         asset,
       );
+      if (asset.path.includes("/icons/")) {
+        const maskable = asset.path.includes("maskable"),
+          markRatio = asset.markHeight / asset.height,
+          expectedRatio = maskable ? 0.66 : asset.height === 32 ? 0.88 : 0.8;
+        add(
+          name + "_APPEARANCE_" + path.posix.basename(asset.path),
+          "Install icon has an opaque cream tile and the correct red mark size/safe area",
+          asset.opaque &&
+            JSON.stringify(asset.background) === "[255,250,237,255]" &&
+            Math.abs(markRatio - expectedRatio) < 0.035 &&
+            (!maskable || asset.outsideSafeCircle === 0),
+          {
+            path: asset.path,
+            background: asset.background,
+            markRatio,
+            outsideSafeCircle: asset.outsideSafeCircle,
+          },
+        );
+      } else {
+        add(
+          name + "_TRANSPARENT_ORIGINAL",
+          "The in-app logo keeps transparent corners instead of the launcher background",
+          !asset.opaque && asset.background[3] === 0 && asset.markHeight > 0,
+          {
+            path: asset.path,
+            opaque: asset.opaque,
+            background: asset.background,
+          },
+        );
+      }
     }
   };
   await verifyAssets("ONLINE");

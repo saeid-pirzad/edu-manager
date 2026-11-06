@@ -26,7 +26,13 @@ function excelReportSheets(m) {
         : grade.passed
           ? "قبول"
           : "نیازمند جبران";
-  const safe = (grade) => (grade.complete ? grade.final : null);
+  const safe = (grade) => {
+    if (grade.complete !== true || !Number.isFinite(grade.final)) return null;
+    // Keep ordinary grades numeric, but do not let Excel's two-decimal format
+    // make a below-threshold result appear to meet its acceptance threshold.
+    const display = root.EduV24.finalText(grade);
+    return display === grade.final.toFixed(2) ? grade.final : display;
+  };
   const date = (value) =>
     new Intl.DateTimeFormat("fa-IR", {
       year: "numeric",
@@ -289,15 +295,18 @@ function excelReportSheets(m) {
           p.continuous,
           p.competency,
         ]);
-      for (const u of g.units || [])
+      for (const u of g.units || []) {
+        const unitIdentity = [...identity];
+        unitIdentity[4] = u.term || g.term;
         units.push([
-          ...identity,
+          ...unitIdentity,
           u.moduleName,
           u.unitName,
           u.mostamar,
           u.payani,
           null,
         ]);
+      }
       for (const u of g.legacyUnits || [])
         units.push([
           ...identity,

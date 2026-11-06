@@ -1,6 +1,27 @@
 // Explicit command dispatch: tokens are data, never code or global function names.
 function installWorkspaceActions() {
   const commands = new Map([
+    ["session-toggle-edit", (button) => toggleSessionEditing(button)],
+    ["attendance-reminder-open", (button) => openAttendanceReminder(button)],
+    ["attendance-reminders-all", () => openAttendanceRemindersList()],
+    ["attendance-reminders-page", (button) => pageAttendanceReminders(button)],
+    [
+      "attendance-reminders-not-held",
+      () => openAttendanceRemindersList({ notHeld: true }),
+    ],
+    [
+      "attendance-reminders-refresh",
+      () => refreshAttendanceReminders({ interactive: true }),
+    ],
+    ["attendance-reminder-not-held", () => markAttendanceReminderNotHeld()],
+    [
+      "attendance-reminder-record",
+      (button) => recordAttendanceReminder(button),
+    ],
+    [
+      "attendance-reminder-restore",
+      (button) => restoreAttendanceReminder(button),
+    ],
     ["year-sessions", () => refreshYearLessonSessions({ interactive: true })],
     [
       "year-session",

@@ -59,6 +59,7 @@ async function openScheduledSessionV24(selection, isCurrent) {
     throw Error(
       "تداخل جلسه: در این تاریخ و زنگ، جلسهٔ کلاس دیگری ثبت شده است. ابتدا تاریخ یا شمارهٔ زنگ را اصلاح کنید.",
     );
+  const created = !session;
   if (!session) {
     validateSessionSchedule({
       schoolId: target.school.id,
@@ -86,7 +87,10 @@ async function openScheduledSessionV24(selection, isCurrent) {
     throw Error(
       "تداخل جلسه: این تاریخ و زنگ برای درس دیگری ثبت شده است؛ درس یا زنگ درست را انتخاب کنید.",
     );
-  if (isCurrent()) openSessionModal(getSessionById(session.id));
+  if (isCurrent()) {
+    if (created) openNewSessionDialogV24(getSessionById(session.id));
+    else openSessionModal(getSessionById(session.id));
+  }
   return true;
 }
 async function startSessionFromMasterV24(day, period) {

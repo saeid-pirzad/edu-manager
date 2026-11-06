@@ -86,9 +86,12 @@
         "src/workspace/grading/assessment-context.js",
         "src/workspace/grading/editors.js",
         "src/workspace/ui/locks-render.js",
+        "src/workspace/sessions/edit-access.js",
         "src/workspace/sessions/actions.js",
         "src/workspace/sessions/year-view.js",
         "src/workspace/schedule/actions.js",
+        "src/workspace/sessions/reminder-view.js",
+        "src/workspace/sessions/reminders.js",
         "src/workspace/backups/local.js",
         "src/workspace/backups/full-export.js",
         "src/workspace/backups/sharing.js",
@@ -286,6 +289,7 @@
       "scope": "global",
       "sources": [
         "src/domain/session-slots.js",
+        "src/domain/attendance-reminders.js",
         "src/data/academic-directory-transaction.js",
         "src/data/record-transaction.js"
       ]
@@ -328,6 +332,8 @@
         "src/styles/select-controls.css",
         "src/styles/periodic-reports.css",
         "src/styles/daily-dashboard.css",
+        "src/styles/attendance-reminders.css",
+        "src/styles/session-edit-access.css",
         "src/styles/welcome-banner.css",
         "src/styles/about-dialog.css",
         "src/styles/backup-dialog.css",

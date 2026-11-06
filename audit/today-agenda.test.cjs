@@ -48,6 +48,11 @@ function fixture() {
     assertEntityWritable() {
       if (c.workspace.closed) throw Error("closed");
     },
+    assertSessionEditable: () => {
+      c.assertEntityWritable();
+      return "isolated-edit-lease";
+    },
+    isSessionEditable: () => true,
     todayISO: () => "2026-10-24",
     getDayIdxFromDate: (date) =>
       (new Date(date + "T00:00:00Z").getUTCDay() + 1) % 7,
@@ -60,6 +65,7 @@ function fixture() {
     saveDBV24: async () => effects.push("save"),
     getSessionById: (id) => c.db.sessions.find((item) => item.id === id),
     openSessionModal: (session) => effects.push(["open", session.id]),
+    openNewSessionDialogV24: (session) => effects.push(["open", session.id]),
     render: () => effects.push("render"),
     alert: () => effects.push("alert"),
     DAYS: [

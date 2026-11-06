@@ -28,18 +28,29 @@ try {
     if ($right -lt $left -or $bottom -lt $top) { throw 'Logo is fully transparent.' }
     $artWidth = $right - $left + 1
     $artHeight = $bottom - $top + 1
-    foreach ($iconSize in @(32, 180, 192, 512)) {
-        $targetPath = Join-Path $iconsDirectory ('logo-' + $iconSize + '.png')
+    # URLs are versioned: Chrome treats unchanged manifest icon URLs as immutable.
+    # Any-purpose desktop icons use a larger mark; Android's maskable icons
+    # separately keep the entire mark inside the central safe circle.
+    $iconSpecifications = @(
+        @{ Size = 32; Suffix = '32'; ArtRatio = 0.88 },
+        @{ Size = 180; Suffix = '180'; ArtRatio = 0.80 },
+        @{ Size = 192; Suffix = '192'; ArtRatio = 0.80 },
+        @{ Size = 512; Suffix = '512'; ArtRatio = 0.80 },
+        @{ Size = 192; Suffix = 'maskable-192'; ArtRatio = 0.66 },
+        @{ Size = 512; Suffix = 'maskable-512'; ArtRatio = 0.66 }
+    )
+    foreach ($iconSpecification in $iconSpecifications) {
+        $iconSize = $iconSpecification.Size
+        $iconFileName = 'app-cream-v2-' + $iconSpecification.Suffix + '.png'
+        $targetPath = Join-Path $iconsDirectory $iconFileName
         $iconBitmap = [System.Drawing.Bitmap]::new($iconSize, $iconSize, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
         $graphics = [System.Drawing.Graphics]::FromImage($iconBitmap)
         try {
-            $graphics.Clear([System.Drawing.Color]::White)
+            $graphics.Clear([System.Drawing.ColorTranslator]::FromHtml('#FFFAED'))
             $graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
             $graphics.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
             $graphics.CompositingQuality = [System.Drawing.Drawing2D.CompositingQuality]::HighQuality
-            # The entire bounding rectangle fits inside Android's central safe circle.
-            # Small favicons need a larger mark; they are not declared maskable.
-            $artRatio = if ($iconSize -eq 32) { 0.88 } else { 0.66 }
+            $artRatio = $iconSpecification.ArtRatio
             $scale = ($iconSize * $artRatio) / [Math]::Max($artWidth, $artHeight)
             $drawWidth = [single]($artWidth * $scale)
             $drawHeight = [single]($artHeight * $scale)
@@ -55,7 +66,7 @@ try {
             $graphics.Dispose()
             $iconBitmap.Dispose()
         }
-        Write-Output ('Generated assets/icons/logo-' + $iconSize + '.png')
+        Write-Output ('Generated assets/icons/' + $iconFileName)
     }
 } finally {
     $sourceBitmap.Dispose()

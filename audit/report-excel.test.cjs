@@ -11,6 +11,7 @@ const read = (name) =>
 function fixture(audience = "management", mode = "daily") {
   const c = vm.createContext({ Blob, TextEncoder, Intl });
   for (const name of [
+    "workspace/domain/defaults-numbers.js",
     "domain/calendar.js",
     "domain/academic-year.js",
     "domain/reporting/attendance.js",
@@ -20,6 +21,7 @@ function fixture(audience = "management", mode = "daily") {
     "reports/periodic/excel.js",
   ])
     vm.runInContext(read(name), c);
+  c.root = { EduV24: { finalText: c.finalText } };
   const data = {
     settings: { academicYear: "1405-1406", academicTerm: "اول" },
     schools: [
@@ -357,6 +359,132 @@ test("Excel module and unit details preserve zero, competency and missing values
   assert.equal(unit[8], 0);
   assert.equal(unit[9], null);
   assert.equal(unit[10], null);
+});
+
+test("annual modular work-unit export labels each independent term rather than the official annual grade scope", () => {
+  const { c, m } = fixture("management", "annual");
+  m.technicalGrades = [
+    {
+      className: "کلاس",
+      studentId: "a",
+      studentCode: "001",
+      studentName: "علی",
+      lessonName: "پودمانی",
+      term: "سالانه",
+      method: "modular",
+      final: 12,
+      complete: true,
+      passed: true,
+      modules: [{ name: "پودمان", final: 12, complete: true, passed: true }],
+      units: [
+        {
+          term: "اول",
+          sourcePeriodId: "first",
+          moduleName: "پودمان",
+          unitName: "واحد",
+          mostamar: 0,
+          payani: 6,
+        },
+        {
+          term: "دوم",
+          sourcePeriodId: "second",
+          moduleName: "پودمان",
+          unitName: "واحد",
+          mostamar: 14,
+          payani: 16,
+        },
+      ],
+    },
+  ];
+  const before = JSON.stringify(m),
+    sheets = c.excelReportSheets(m),
+    rows = sheets.find((sheet) => sheet.name === "واحدهای کار").rows.slice(1);
+  assert.deepEqual(
+    Array.from(rows, (row) => [row[4], row[8], row[9], row[10]]),
+    [
+      ["اول", 0, 6, null],
+      ["دوم", 14, 16, null],
+    ],
+  );
+  assert.equal(
+    sheets.find((sheet) => sheet.name === "نتیجه فنی").rows.length,
+    2,
+  );
+  assert.equal(
+    sheets.find((sheet) => sheet.name === "پودمان‌ها").rows.length,
+    2,
+  );
+  assert.equal(JSON.stringify(m), before);
+});
+
+test("grade export preserves shared below-threshold display guards while normal grades stay numeric", async () => {
+  const { c, m } = fixture("management", "annual");
+  for (const [final, threshold, expected] of [
+    [13.999999, 14, "13.999999 (کمتر از 14)"],
+    [11.999999, 12, "11.999999 (کمتر از 12)"],
+    [13.999999, undefined, "13.999999 (کمتر از ۱۴)"],
+    [13.98, 14, 13.98],
+    [14, 14, 14],
+    [0, 14, 0],
+  ]) {
+    const grade = {
+      final,
+      threshold,
+      complete: true,
+      passed: final >= (threshold ?? 14),
+    };
+    m.annualGrades = [
+      {
+        className: "کلاس",
+        studentName: "علی",
+        studentCode: "001",
+        lessonName: "درس",
+        components: [
+          {
+            ...grade,
+            term: "اول",
+            stage: "final",
+            practical: final,
+            theory: final,
+            practicalWeight: 70,
+          },
+        ],
+        ...grade,
+      },
+    ];
+    m.technicalGrades = [
+      {
+        className: "کلاس",
+        studentName: "علی",
+        studentCode: "001",
+        lessonName: "پودمانی",
+        term: "سالانه",
+        method: "modular",
+        modules: [{ name: "پودمان", ...grade }],
+        ...grade,
+      },
+    ];
+    const sheets = c.excelReportSheets(m);
+    for (const [name, column] of [
+      ["امتحانات چهار مرحله", 11],
+      ["نتیجه سالانه", 6],
+      ["نتیجه فنی", 6],
+      ["پودمان‌ها", 7],
+    ])
+      assert.equal(
+        sheets.find((sheet) => sheet.name === name).rows[1][column],
+        expected,
+        name,
+      );
+    const workbook = unzipStored(
+        Buffer.from(await c.xlsxWorkbook(sheets).arrayBuffer()),
+      ),
+      sheetIndex =
+        sheets.findIndex((sheet) => sheet.name === "نتیجه سالانه") + 1,
+      xml = workbook.get("xl/worksheets/sheet" + sheetIndex + ".xml");
+    if (typeof expected === "string") assert.ok(xml.includes(expected));
+    else assert.ok(xml.includes("<v>" + expected + "</v>"));
+  }
 });
 test("Excel filenames preserve the teacher name while excluding filesystem control characters", () => {
   const { c, m } = fixture();

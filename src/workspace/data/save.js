@@ -204,10 +204,28 @@ function saveDBV24(scope = {}, { feedbackScope = captureSaveFeedback() } = {}) {
     })
     .catch(async (error) => {
       if (isCurrentTarget()) {
+        const previousData = db,
+          editRecovery = captureSessionEditRecovery(),
+          recoveryContext = {
+            workspaceId: targetWorkspace,
+            connection: targetConnection,
+            installation: expectedInstallation,
+            revision: workspace.revision,
+          };
         try {
-          const loaded = await readWorkspace(targetWorkspace);
-          if (isCurrentTarget()) db = loaded.data;
-        } catch (ignore) {}
+          const loaded = await readWorkspaceSnapshot(targetWorkspace);
+          if (isCurrentTarget()) {
+            db = loaded.data;
+            rebindSessionEditAfterRollback(
+              editRecovery,
+              previousData,
+              loaded,
+              recoveryContext,
+            );
+          }
+        } catch (ignore) {
+          invalidateSessionEditRecovery(editRecovery);
+        }
       }
       // Invalidate every request queued against the in-memory data that was rolled back.
       writeFailureGeneration++;

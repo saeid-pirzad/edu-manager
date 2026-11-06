@@ -27,6 +27,9 @@ function fixture(sessionSchedule = false) {
   };
   const c = vm.createContext({
     captureSaveFeedback: () => null,
+    captureSessionEditRecovery: () => null,
+    rebindSessionEditAfterRollback: () => false,
+    invalidateSessionEditRecovery() {},
     workspace: { id: "first", year: "1405-1406", revision: 1 },
     connection: {},
     state: { view: "schedule" },
@@ -49,6 +52,11 @@ function fixture(sessionSchedule = false) {
     busy: 0,
     writeFailureGeneration: 0,
     assertEntityWritable() {},
+    assertSessionEditable: () => {
+      c.assertEntityWritable();
+      return "isolated-edit-lease";
+    },
+    isSessionEditable: () => true,
     paintStatus() {},
     checkScope() {},
     refreshAcademicYearWarnings() {},
@@ -59,6 +67,7 @@ function fixture(sessionSchedule = false) {
     closeModal: () => effects.push("close"),
     alert: () => effects.push("alert"),
     openSessionModal: () => effects.push("session"),
+    openNewSessionDialogV24: () => effects.push("session"),
     setStatus() {},
     document: { getElementById: (id) => controls[id] },
     confirm: () => true,
@@ -88,7 +97,10 @@ function fixture(sessionSchedule = false) {
     );
   let durable = structuredClone(c.db),
     attempts = 0;
-  c.readWorkspace = async () => ({ data: structuredClone(durable) });
+  c.readWorkspaceSnapshot = async () => ({
+    period: { ...c.workspace },
+    data: structuredClone(durable),
+  });
   c.commitRecords = async () => {
     if (++attempts === 1) throw Error("injected quota");
     durable = structuredClone(c.db);

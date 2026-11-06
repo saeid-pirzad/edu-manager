@@ -91,8 +91,63 @@ test("Pages uploads exactly the packaged application only after installation, re
   assert.match(step, /^\s+retention-days:\s*1\s*$/m);
   assert.doesNotMatch(
     source,
-    /continue-on-error|always\(\)|actions\/upload-artifact|peaceiris\/actions-gh-pages|JamesIves\/github-pages-deploy-action/,
+    /continue-on-error|always\(\)|peaceiris\/actions-gh-pages|JamesIves\/github-pages-deploy-action/,
   );
+});
+
+test("failed verification retains only explicitly allowlisted synthetic audit diagnostics", () => {
+  const source = workflow();
+  const verify = job(source, "verify");
+  const locate = steps(verify).find((step) =>
+    step.includes("name: Locate synthetic audit output"),
+  );
+  assert.ok(locate, "capture the real os.tmpdir used by audit processes");
+  assert.match(locate, /process\.env\.GITHUB_ENV/);
+  assert.match(locate, /EDU_AUDIT_OS_TEMP=/);
+  assert.match(locate, /require\('node:os'\)\.tmpdir\(\)/);
+  assert.ok(verify.indexOf(locate) < verify.indexOf("- run: npm ci"));
+  const diagnosticSteps = steps(source).filter((step) =>
+    /uses: actions\/upload-artifact@/.test(step),
+  );
+  assert.equal(diagnosticSteps.length, 1);
+  const diagnostic = diagnosticSteps[0];
+  assert.ok(
+    verify.includes(diagnostic),
+    "diagnostics belong to verification only",
+  );
+  assert.equal(
+    condition(diagnostic),
+    "failure() && env.EDU_AUDIT_OS_TEMP != ''",
+  );
+  assert.match(diagnostic, /uses: actions\/upload-artifact@v4/);
+  assert.match(
+    diagnostic,
+    /name: audit-failure-\$\{\{ github.run_id \}\}-\$\{\{ github.run_attempt \}\}/,
+  );
+  const paths = diagnostic.match(/ {10}path: \|\n([\s\S]*?)(?=^ {10}\S)/m);
+  assert.ok(paths);
+  assert.deepEqual(
+    paths[1]
+      .trim()
+      .split("\n")
+      .map((line) => line.trim()),
+    [
+      "${{ env.EDU_AUDIT_OS_TEMP }}/edu-integrity-audit-*/data-integrity-results.json",
+      "${{ env.EDU_AUDIT_OS_TEMP }}/edu-integrity-audit-*/startup-failure.json",
+      "${{ env.EDU_AUDIT_OS_TEMP }}/edu-karnameh-student-*/*.pdf",
+      "${{ env.EDU_AUDIT_OS_TEMP }}/edu-karnameh-student-*/raster-*/*.png",
+      "${{ env.EDU_AUDIT_OS_TEMP }}/edu-session-pdf-*/*.pdf",
+      "${{ env.EDU_AUDIT_OS_TEMP }}/edu-session-pdf-*/raster-*/*.png",
+      "${{ env.EDU_AUDIT_OS_TEMP }}/edu-session-preview-*/*.png",
+      "${{ env.EDU_AUDIT_OS_TEMP }}/edu-parent-performance-*/*.png",
+      "${{ env.EDU_AUDIT_OS_TEMP }}/edu-theme-after-*/*.png",
+    ],
+    "no repository files, full backup files, browser profiles or general temp wildcards",
+  );
+  assert.match(diagnostic, /^ {10}retention-days: 3$/m);
+  assert.match(diagnostic, /^ {10}if-no-files-found: ignore$/m);
+  assert.match(diagnostic, /^ {10}include-hidden-files: false$/m);
+  assert.doesNotMatch(diagnostic, /continue-on-error/);
 });
 
 test("Pages deployment requires the successful verification artifact and only runs for trusted master", () => {

@@ -88,6 +88,9 @@ for (const kind of ["session", "grades"]) {
 test("a rejected asynchronous session save retains the persistence explanation in its original inline feedback", async () => {
   const f = fixture();
   Object.assign(f.c, {
+    captureSessionEditRecovery: () => null,
+    rebindSessionEditAfterRollback: () => false,
+    invalidateSessionEditRecovery() {},
     connection: {},
     db: { settings: {}, sessions: [] },
     periodLoading: false,
@@ -99,7 +102,10 @@ test("a rejected asynchronous session save retains the persistence explanation i
     checkScope() {},
     refreshAcademicYearWarnings() {},
     collectRecords: (value) => value,
-    readWorkspace: async () => ({ data: { settings: {}, sessions: [] } }),
+    readWorkspaceSnapshot: async () => ({
+      period: { ...f.c.workspace },
+      data: { settings: {}, sessions: [] },
+    }),
     render() {},
     scheduleSingleFile() {},
   });

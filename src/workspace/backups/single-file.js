@@ -75,6 +75,94 @@ function showSingleFileFallback(visible) {
   const element = document.getElementById("singleFileFallback");
   if (element) element.hidden = !visible;
 }
+// Counts contain no names or grades. The last successfully published counts
+// survive reloads and detect a whole-data wipe or unusually large loss.
+function singleFileContentBaseline(snapshot) {
+  const counts = {
+    version: 1,
+    records: 0,
+    schools: 0,
+    students: 0,
+    lessons: 0,
+    grades: 0,
+    attendance: 0,
+    activities: 0,
+  };
+  const populatedScores = (value) => {
+    if (typeof value === "number") return Number.isFinite(value) ? 1 : 0;
+    if (typeof value === "string") return value.trim() ? 1 : 0;
+    if (!value || typeof value !== "object") return 0;
+    return Object.values(value).reduce(
+      (total, item) => total + populatedScores(item),
+      0,
+    );
+  };
+  const scores = (value) => {
+    if (!value || typeof value !== "object") return;
+    for (const [key, item] of Object.entries(value)) {
+      if (["kardaneshScores", "podScores", "unitScores"].includes(key))
+        counts.grades += populatedScores(item);
+      else if (item && typeof item === "object") scores(item);
+    }
+  };
+  for (const row of snapshot.stores?.records || []) {
+    if (row.logical === "meta") {
+      counts.schools += row.value?.layout?.length || 0;
+      continue;
+    }
+    counts.records++;
+    if (row.logical?.startsWith("class:")) {
+      counts.students +=
+        (row.value?.students?.length || 0) +
+        (row.value?.archivedStudents?.length || 0);
+      counts.lessons += row.value?.lessons?.length || 0;
+      scores(row.value);
+    } else if (row.logical?.startsWith("session:")) {
+      counts.activities += row.value?.scores?.length || 0;
+      counts.attendance += Object.values(row.value?.attendance || {}).filter(
+        (value) => value !== null && value !== undefined && value !== "",
+      ).length;
+    }
+  }
+  return counts;
+}
+function singleFileSourceDropped(previous, current) {
+  if (previous?.version !== 1) return false;
+  const keys = Object.keys(current).filter((key) => key !== "version");
+  if (
+    keys.some((key) => previous[key] > 0) &&
+    keys.every((key) => current[key] === 0)
+  )
+    return true;
+  const educational = [
+    "students",
+    "lessons",
+    "grades",
+    "attendance",
+    "activities",
+  ];
+  if (
+    educational.some((key) => previous[key] > 0) &&
+    educational.every((key) => current[key] === 0)
+  )
+    return true;
+  return keys.some(
+    (key) =>
+      previous[key] >= 10 &&
+      previous[key] - current[key] >= 10 &&
+      current[key] <= previous[key] / 2,
+  );
+}
+function announceSingleFileSuspension(target = singleFile) {
+  pauseSingleFile();
+  showSingleFileFallback(true);
+  singleFileStatus(
+    (target?.suspension === "restore"
+      ? "پس از بازیابی، اتصال فایل متوقف است؛ فایل قبلی تغییر نکرده است. "
+      : "کاهش غیرعادی اطلاعات شناسایی شد؛ برای حفظ نسخه قبلی، فایل نوشته نشد. ") +
+      "برای جایگزینی آگاهانه، «ذخیره اکنون / اجازه مجدد» را بزنید یا فایل دیگری انتخاب کنید.",
+  );
+}
 async function persistSingleFile({
   replace = false,
   target = singleFile,
@@ -151,7 +239,7 @@ function singleFileChanged(message) {
   }
   return true;
 }
-async function singleFileCurrent(target) {
+async function singleFileCurrent(target, { acknowledged = false } = {}) {
   if (fullRestoreBusy) return false;
   if (
     singleFile !== target ||
@@ -186,6 +274,11 @@ async function singleFileCurrent(target) {
         "اتصال فایل در پنجره دیگری متوقف یا عوض شد؛ دوباره فایل را انتخاب کنید.",
       );
     }
+    return false;
+  }
+  if (stored.suspension && !acknowledged) {
+    target.suspension = stored.suspension;
+    announceSingleFileSuspension(target);
     return false;
   }
   return (
@@ -238,6 +331,10 @@ async function restoreSingleFile() {
   try {
     singleFile = (await readRecord("drafts", singleFileKey)) || null;
     if (!singleFile) return;
+    if (singleFile.suspension) {
+      announceSingleFileSuspension();
+      return;
+    }
     if (!singleFile.savedAt) {
       pauseSingleFile();
       showSingleFileFallback(true);
@@ -316,6 +413,8 @@ async function resumeSingleFile() {
   if (!singleFile) throw Error("ابتدا فایل JSON را انتخاب کنید.");
   const target = singleFile;
   try {
+    // Preserve the click gesture for the permission prompt. A suspended mirror
+    // also needs a separate, file-named replacement acknowledgement below.
     // Permission request also needs the explicit click, not an automatic timer.
     if (
       (await target.handle.requestPermission({ mode: "readwrite" })) !==
@@ -328,12 +427,25 @@ async function resumeSingleFile() {
       });
       return false;
     }
-    if (!(await singleFileCurrent(target))) return false;
+    if (!(await singleFileCurrent(target, { acknowledged: true })))
+      return false;
     // An explicit save queues a fresh snapshot after any older write finishes.
     if (singleFileWriting && !(await singleFileWriting)) return false;
-    if (!(await singleFileCurrent(target))) return false;
+    if (!(await singleFileCurrent(target, { acknowledged: true })))
+      return false;
+    const stored = await readRecord("drafts", singleFileKey);
+    const acknowledged = !!(target.suspension || stored?.suspension);
+    if (
+      acknowledged &&
+      !confirm(
+        "فایل «" +
+          target.handle.name +
+          "» با همه اطلاعات فعلی برنامه جایگزین شود؟ نسخه قبلی این فایل از بین می‌رود. اگر به آن نیاز دارید، ابتدا یک کپی مستقل نگه دارید. برای حفظ فایل، انصراف دهید یا فایل دیگری انتخاب کنید.",
+      )
+    )
+      return false;
     pauseSingleFile();
-    const saved = await syncSingleFile();
+    const saved = await syncSingleFile({ acknowledged });
     if (saved) startSingleFile();
     return saved;
   } catch (error) {
@@ -355,7 +467,7 @@ async function disableSingleFile() {
     return failSingleFile(error);
   }
 }
-function syncSingleFile({ force = true } = {}) {
+function syncSingleFile({ force = true, acknowledged = false } = {}) {
   if (singleFileWriting) return singleFileWriting;
   if (
     !singleFile ||
@@ -370,7 +482,7 @@ function syncSingleFile({ force = true } = {}) {
   const write = async () => {
     let stream;
     try {
-      if (!(await singleFileCurrent(target))) return false;
+      if (!(await singleFileCurrent(target, { acknowledged }))) return false;
       if (!force) {
         const signature = await readBackupSourceSignature();
         if (
@@ -385,7 +497,7 @@ function syncSingleFile({ force = true } = {}) {
             throw Error(
               "فایل بیرون از برنامه تغییر کرده است؛ برای ادامه، فایل را دوباره انتخاب کنید.",
             );
-          return singleFileCurrent(target);
+          return singleFileCurrent(target, { acknowledged });
         }
       }
       singleFileStatus("در حال ذخیره فایل: " + target.handle.name);
@@ -410,10 +522,34 @@ function syncSingleFile({ force = true } = {}) {
         throw Error(
           "فایل بیرون از این اتصال تغییر کرده؛ برای جلوگیری از بازنویسی، دوباره آن را انتخاب کنید.",
         );
-      if (!(await singleFileCurrent(target))) return false;
+      let previousBaseline = target.contentBaseline;
+      if (
+        !previousBaseline &&
+        target.savedAt &&
+        file.size &&
+        typeof file.text === "function"
+      ) {
+        // Upgrade an existing connection using its unchanged confirmed file,
+        // never the possibly reduced in-memory source.
+        const previous = JSON.parse(await file.text());
+        validateFullBackup(previous);
+        previousBaseline = singleFileContentBaseline(previous);
+      }
+      const contentBaseline = singleFileContentBaseline(snapshot);
+      if (
+        !acknowledged &&
+        singleFileSourceDropped(previousBaseline, contentBaseline)
+      ) {
+        target.suspension = "source-drop";
+        target.contentBaseline = previousBaseline;
+        await persistSingleFile({ target });
+        announceSingleFileSuspension(target);
+        return false;
+      }
+      if (!(await singleFileCurrent(target, { acknowledged }))) return false;
       stream = await target.handle.createWritable();
       await stream.write(json);
-      if (!(await singleFileCurrent(target))) {
+      if (!(await singleFileCurrent(target, { acknowledged }))) {
         await stream.abort();
         return false;
       }
@@ -427,6 +563,8 @@ function syncSingleFile({ force = true } = {}) {
       target.modified = saved.lastModified;
       target.size = saved.size;
       target.savedAt = snapshot.exportedAt;
+      target.contentBaseline = contentBaseline;
+      delete target.suspension;
       if (!(await persistSingleFile({ target }))) return false;
       singleFileSavedSource =
         snapshotSignature === null

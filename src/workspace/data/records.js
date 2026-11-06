@@ -61,13 +61,18 @@ async function synchronizeAnnualForRead(id) {
 async function readWorkspaceSnapshot(id) {
   const tx = connection.transaction(["catalog", "records"], "readonly");
   const done = transactionDone(tx);
-  const [period, rows] = await Promise.all([
+  const [period, rows, epoch] = await Promise.all([
     requestPromise(tx.objectStore("catalog").get(id)),
     requestPromise(workspaceRecordRequest(tx.objectStore("records"), id)),
+    requestPromise(tx.objectStore("records").get(RESET_RECORD_KEY)),
     done,
   ]);
   if (!period) throw Error("ترم موجود نیست.");
-  return { period, ...decodeWorkspaceRecords(rows, { workspaceId: id }) };
+  return {
+    period,
+    installationToken: epoch?.value?.token || "",
+    ...decodeWorkspaceRecords(rows, { workspaceId: id }),
+  };
 }
 
 // The catalog, installation and selected class are read under one snapshot.

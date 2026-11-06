@@ -269,10 +269,13 @@ module.exports = async function annualActivityView() {
       "opening a historical card navigates to its owning record without copying or minting sessions",
       EduV24.getReportContext().id === ids.first &&
         currentSessionId === ids.old &&
+        document.querySelector(".session-workspace").dataset.sessionMode ===
+          "view" &&
         (await EduV24.snapshotInstallation()).stores.records.filter((row) =>
           row.logical.startsWith("session:"),
         ).length === 3,
     );
+    await globalThis.__unlockRecordedSessionForAudit(ids.old);
     document
       .querySelector('.att-btns[data-sid="' + ids.s1 + '"] .present')
       .click();

@@ -52,6 +52,7 @@ async function postFixFlows() {
     }
     const session = db.sessions.find((s) => s.lessonId === "lesson_dual");
     openSessionModal(session);
+    await globalThis.__unlockRecordedSessionForAudit(session.id);
     showSessionPanel("activity");
     for (const value of ["0", "20"]) {
       const form = document.querySelector(".session-entry-form");

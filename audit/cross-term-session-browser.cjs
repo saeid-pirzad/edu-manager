@@ -247,6 +247,7 @@ async function crossTermSessionFlow() {
     });
     await restore(legacy);
     openSessionModal(db.sessions[0]);
+    await globalThis.__unlockRecordedSessionForAudit(db.sessions[0].id);
     await toggleAtt(document.querySelector(".att-btns .present"), "present");
     saved = await EduV24.snapshotInstallation();
     check(
@@ -258,6 +259,7 @@ async function crossTermSessionFlow() {
     closeModal();
     await configureSchedule();
     openSessionModal(getSessionById(meeting.id));
+    await globalThis.__unlockRecordedSessionForAudit(meeting.id);
     document.getElementById("sessDate").value = tomorrow;
     document
       .getElementById("sessDate")

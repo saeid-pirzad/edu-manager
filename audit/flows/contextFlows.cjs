@@ -107,6 +107,7 @@ async function contextFlows() {
     const session = db.sessions[0];
     closeModal();
     openSessionModal(session);
+    await globalThis.__unlockRecordedSessionForAudit(session.id);
     const absent = document.querySelector(
       ".att-btns[data-sid=student_a] .absent",
     );

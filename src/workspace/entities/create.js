@@ -8,9 +8,21 @@ async function createEntityV24(event, kind) {
       .replace(/\s+/g, " ");
   const target = {
     workspace: workspace?.id,
+    bank: db,
+    connection,
+    installation:
+      typeof installationToken === "undefined" ? "" : installationToken,
     schoolId: state.schoolId,
     view: state.view,
   };
+  const sameInstallationTarget = () =>
+    target.workspace === workspace?.id &&
+    target.connection === connection &&
+    target.installation ===
+      (typeof installationToken === "undefined" ? "" : installationToken) &&
+    target.view === state.view &&
+    (kind !== "class" || target.schoolId === state.schoolId);
+  const sameTarget = () => target.bank === db && sameInstallationTarget();
   const fieldId = kind + "CreateName";
   entityCreationBusy = true;
   const finishSave = beginRecordEditorSave(form);
@@ -23,11 +35,7 @@ async function createEntityV24(event, kind) {
       );
     await flushDrafts({ strict: true });
     assertEntityWritable();
-    if (
-      target.workspace !== workspace.id ||
-      target.view !== state.view ||
-      (kind === "class" && target.schoolId !== state.schoolId)
-    )
+    if (!sameTarget())
       throw Error("ترم یا صفحه مقصد تغییر کرده است؛ ثبت انجام نشد.");
     const school = kind === "class" ? getSchool(target.schoolId) : null;
     if (kind === "class" && !school) throw Error("مدرسه مقصد وجود ندارد.");
@@ -53,14 +61,13 @@ async function createEntityV24(event, kind) {
     await saveDBV24({
       action: "افزودن " + (kind === "school" ? "مدرسه" : "کلاس") + ": " + name,
     });
-    render();
+    if (sameTarget() && !periodLoading && !resetBusy && !connectionRetired)
+      render();
     return true;
   } catch (error) {
-    const sameTarget =
-      target.workspace === workspace?.id &&
-      target.view === state.view &&
-      (kind !== "class" || target.schoolId === state.schoolId);
-    const currentForm = sameTarget
+    // A failed own write reloads the durable bank object. Restore the submitted
+    // name only in the same installation/view; never reuse it after a restore.
+    const currentForm = sameInstallationTarget()
       ? document.querySelector('form[data-entity-create="' + kind + '"]')
       : null;
     if (currentForm) {

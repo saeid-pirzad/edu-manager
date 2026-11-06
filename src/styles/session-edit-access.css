@@ -1,0 +1,103 @@
+/* Session access is enforced by the controller; these rules only present its state. */
+@media screen {
+  #modalBody .session-workspace .session-edit-notice {
+    --session-access-ink: var(--status-warning, #7c5105);
+    --session-access-line: var(--status-warning-line, #f2d39a);
+    --session-access-soft: var(--status-warning-soft, #fffaed);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    min-width: 0;
+    margin-block: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--session-access-line);
+    border-radius: 12px;
+    background: var(--session-access-soft);
+  }
+  #modalBody .session-workspace[data-session-mode="edit"] .session-edit-notice {
+    --session-access-ink: var(--status-success, #16664e);
+    --session-access-line: var(--status-success-line, #bfded0);
+    --session-access-soft: var(--status-success-soft, #eaf6f0);
+  }
+  #modalBody .session-edit-notice .session-edit-copy {
+    display: grid;
+    flex: 1 1 240px;
+    gap: 3px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  #modalBody .session-edit-notice [data-session-edit-title] {
+    color: var(--session-access-ink);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.8;
+  }
+  #modalBody .session-edit-notice [data-session-edit-description] {
+    margin: 0;
+    color: var(--theme-muted, #5a6179);
+    font-size: 12px;
+    line-height: 1.9;
+  }
+  #modalBody
+    .session-workspace
+    .session-edit-notice
+    [data-session-edit-control] {
+    --button-ink: var(--session-access-ink);
+    --button-soft: var(--theme-surface, #fff);
+    --button-line: var(--session-access-line);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 1 auto;
+    gap: 8px;
+    min-width: 0;
+    min-height: 44px;
+    max-width: 100%;
+    margin: 0;
+    padding: 8px 12px;
+    border: 1px solid var(--session-access-line);
+    border-radius: 10px;
+    background: var(--theme-surface, #fff);
+    color: var(--session-access-ink);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.8;
+    white-space: normal;
+  }
+  #modalBody .session-edit-notice [data-session-edit-control] svg {
+    flex: 0 0 18px;
+    width: 18px;
+    height: 18px;
+  }
+  #modalBody .session-edit-notice [data-session-edit-label] {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  #modalBody .session-edit-notice [data-session-edit-control]:focus-visible {
+    outline: 3px solid var(--session-access-ink);
+    outline-offset: 2px;
+  }
+}
+@media screen and (max-width: 599px) {
+  #modalBody .session-workspace .session-edit-notice {
+    gap: 10px;
+    padding: 10px 12px;
+  }
+  #modalBody .session-edit-notice .session-edit-copy {
+    flex-basis: 100%;
+  }
+  #modalBody
+    .session-workspace
+    .session-edit-notice
+    [data-session-edit-control] {
+    width: 100%;
+    min-height: 44px;
+  }
+}
+@media print {
+  .session-workspace .session-edit-notice {
+    display: none;
+  }
+}

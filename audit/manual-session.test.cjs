@@ -36,6 +36,11 @@ function fixture() {
       },
     },
     assertEntityWritable() {},
+    assertSessionEditable: () => {
+      c.assertEntityWritable();
+      return "isolated-edit-lease";
+    },
+    isSessionEditable: () => true,
     asciiDigits: (value) => value,
     flushDrafts: async () => {},
     writer: Promise.resolve(),
@@ -47,6 +52,7 @@ function fixture() {
     saveDBV24: async (scope) => writes.push(scope),
     confirm: () => true,
     openSessionModal: (session) => modals.push(session),
+    openNewSessionDialogV24: (session) => modals.push(session),
   });
   for (const name of ["calendar.js", "academic-year.js", "session-slots.js"])
     vm.runInContext(

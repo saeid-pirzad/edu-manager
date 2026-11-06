@@ -469,10 +469,13 @@ async function run({ cdp, evaluate, cases, delay, ws }) {
       await delay(25);
     }
     if (!ready) throw Error("The genuine peer window did not become ready");
+    await require("./session-edit-test-helpers.cjs").installSessionEditTestHelper(
+      (expression) => peer.evaluate(expression),
+    );
     const changed = await peer.evaluate(
       "(async()=>{const expected=" +
         JSON.stringify(fixture) +
-        ";if(EduV24.getReportContext().id!==expected.periodId)throw Error('Peer loaded a different academic term');openSessionModal(getSessionById(expected.sessionId));await setAllAttendance('present');return {periodId:EduV24.getReportContext().id,revision:EduV24.getReportContext().revision,attendance:getSessionById(expected.sessionId).attendance[expected.studentId]};})()",
+        ";if(EduV24.getReportContext().id!==expected.periodId)throw Error('Peer loaded a different academic term');openSessionModal(getSessionById(expected.sessionId));await globalThis.__unlockRecordedSessionForAudit(expected.sessionId);await setAllAttendance('present');return {periodId:EduV24.getReportContext().id,revision:EduV24.getReportContext().revision,attendance:getSessionById(expected.sessionId).attendance[expected.studentId]};})()",
     );
     cases.push(
       ...(await evaluate(

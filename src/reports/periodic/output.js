@@ -129,6 +129,10 @@ root.EduPeriodicReports = {
     syncReportActions();
   },
   retryNotes,
+  flushNotes: async () => {
+    await noteWriter;
+    return notes.size === 0;
+  },
   hasPendingNotes: () => notes.size > 0,
   getDrafts,
   restoreDrafts,

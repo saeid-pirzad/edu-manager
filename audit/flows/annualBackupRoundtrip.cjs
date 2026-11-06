@@ -14,6 +14,7 @@ module.exports = async function annualBackupRoundtrip() {
     clone = structuredClone;
   let directory,
     handle,
+    reopenedFrame,
     fileConnected = false;
   const wait = async (predicate) => {
     for (let attempt = 0; attempt < 250; attempt++) {
@@ -407,6 +408,59 @@ module.exports = async function annualBackupRoundtrip() {
         ?.textContent.startsWith("ذخیره شد:"),
     );
 
+    const protectedMirror = await (await handle.getFile()).text();
+    await restore(full);
+    const fileConfig = await new Promise((resolve, reject) => {
+      const request = EduV24.test
+        .getConnection()
+        .transaction("drafts")
+        .objectStore("drafts")
+        .get("EduManager.singleFile");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    check(
+      "ANNUAL_BACKUP_FILE_PAUSED",
+      "Real full restore persists mirror suspension without replacing the confirmed external JSON",
+      fileConfig?.suspension === "restore" &&
+        (await (await handle.getFile()).text()) === protectedMirror,
+    );
+    reopenedFrame = document.createElement("iframe");
+    reopenedFrame.src = location.href;
+    document.body.append(reopenedFrame);
+    await wait(() => reopenedFrame.contentWindow.EduV24?.test.getState().ready);
+    await wait(() =>
+      reopenedFrame.contentWindow.document
+        .getElementById("singleFileBadge")
+        ?.textContent.includes("پس از بازیابی"),
+    );
+    check(
+      "ANNUAL_BACKUP_FILE_REOPEN",
+      "A second real document reopens the suspended handle without overwriting its preserved bytes",
+      (await (await handle.getFile()).text()) === protectedMirror,
+    );
+    reopenedFrame.remove();
+    reopenedFrame = null;
+    await EduV24.openBackups();
+    const originalConfirm = window.confirm;
+    let replacementPrompt = "";
+    try {
+      window.confirm = (message) => {
+        replacementPrompt = message;
+        return false;
+      };
+      click("single-file-save");
+      await wait(() => !!replacementPrompt);
+      check(
+        "ANNUAL_BACKUP_FILE_DECLINE",
+        "Declining the named-file replacement preserves the mirror after real restore",
+        replacementPrompt.includes(handle.name) &&
+          (await (await handle.getFile()).text()) === protectedMirror,
+      );
+    } finally {
+      window.confirm = originalConfirm;
+    }
+
     click("single-file-stop");
     await wait(() =>
       document
@@ -661,15 +715,17 @@ module.exports = async function annualBackupRoundtrip() {
         "management",
         "",
       ].join("|");
-    if (
-      !EduPeriodicReports.restoreDrafts(firstId, {
-        [oldNoteKey]: "یادداشت قدیمی گزارش سالانه",
-      })
-    )
+    EduPeriodicReports.restoreDrafts(firstId, {
+      [oldNoteKey]: "یادداشت قدیمی گزارش سالانه",
+    });
+    // Note publication is installation-guarded and asynchronous. Verify the
+    // durable completion, not the synchronous "still pending" return value.
+    if (!(await EduPeriodicReports.flushNotes()))
       throw Error("Legacy annual note fixture did not persist");
     const oldAlias = EduPeriodicReports.getDrafts(firstId)[oldNoteKey];
     if (!oldAlias) throw Error("Legacy report note fixture is missing");
-    if (!EduPeriodicReports.note(""))
+    EduPeriodicReports.note("");
+    if (!(await EduPeriodicReports.flushNotes()))
       throw Error("Report clear did not persist");
     const clearFile = await EduV24.snapshotInstallation();
     await restore(clearFile);
@@ -691,7 +747,8 @@ module.exports = async function annualBackupRoundtrip() {
         ),
     );
     const editedNote = "گزارش ویرایش‌شدهٔ سال، بدون برگشت متن پیشین";
-    if (!EduPeriodicReports.note(editedNote))
+    EduPeriodicReports.note(editedNote);
+    if (!(await EduPeriodicReports.flushNotes()))
       throw Error("Report edit did not persist");
     const editFile = await EduV24.snapshotInstallation();
     await restore(editFile);
@@ -713,6 +770,7 @@ module.exports = async function annualBackupRoundtrip() {
       { error: error.stack || error.message },
     );
   } finally {
+    reopenedFrame?.remove();
     if (fileConnected) {
       try {
         closeModal();

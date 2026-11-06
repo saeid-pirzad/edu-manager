@@ -311,6 +311,34 @@ test("missing second-term assessments remain incomplete rather than zero", () =>
   ]);
 });
 
+test("annual acceptance uses only the four-stage average even when component minima fail", () => {
+  const c = fixture(),
+    course = lesson(c);
+  Object.assign(course.gradingPolicy, {
+    dualConfigurable: true,
+    practicalWeight: 70,
+    theoryMin: 10,
+    passMin: 14,
+  });
+  Object.assign(course.kardaneshScores.student, {
+    midtermPractical: 20,
+    midtermTheory: 0,
+    practical: 20,
+    theory: 0,
+  });
+  const [row] = c.annualGradeRows(
+    parts(course),
+    "school",
+    "classroom",
+    "student",
+  );
+  assert.ok(row.components.every((stage) => stage.final === 14));
+  assert.ok(row.components.every((stage) => stage.passed === false));
+  assert.equal(row.complete, true);
+  assert.equal(row.final, 14);
+  assert.equal(row.passed, true);
+});
+
 test("teacher and deputy policy stages are identical including legacy deputy fallback metadata", () => {
   const c = fixture();
   for (const options of [{}, { general: true }, { legacy: true }]) {
@@ -386,11 +414,122 @@ test("annual modular teacher traversal still merges terms once with archived stu
   assert.equal(rows[0].final, 12);
   assert.equal(rows[0].modules[0].continuous, 2);
   assert.equal(rows[0].modules[0].competency, 2);
+  assert.equal(rows[0].modules[0].threshold, 12);
   assert.equal(rows[0].units[0].mostamar, 0);
   assert.equal(rows[0].units[0].payani, 20);
   assert.equal(rows[1].complete, false);
   assert.equal(rows[1].final, null);
   assert.deepEqual(versions, before);
+});
+
+test("annual modular unit details retain both terms, zero, blank inputs and provenance without changing official grades", () => {
+  const c = fixture(),
+    first = lesson(c, { modular: true }),
+    second = structuredClone(first);
+  first.poudmans[0].units[0].unitScores.student = { m: 0, p: 6 };
+  second.poudmans[0].units[0].unitScores.student = { m: 14, p: 16 };
+  c.old = { calcStudentLesson: () => ({}) };
+  const versions = parts(first, second),
+    before = structuredClone(versions),
+    expected = [
+      {
+        term: "اول",
+        sourcePeriodId: "term_first",
+        moduleId: "pod",
+        unitId: "unit",
+        moduleName: "پودمان اول",
+        unitName: "واحد اول",
+        mostamar: 0,
+        payani: 6,
+      },
+      {
+        term: "دوم",
+        sourcePeriodId: "term_second",
+        moduleId: "pod",
+        unitId: "unit",
+        moduleName: "پودمان اول",
+        unitName: "واحد اول",
+        mostamar: 14,
+        payani: 16,
+      },
+    ];
+  for (const order of [versions, [...versions].reverse()]) {
+    const rows = c.annualTechnicalRows(order, "school", "classroom"),
+      row = rows.find((item) => item.studentId === "student"),
+      archived = rows.find((item) => item.studentId === "archived");
+    assert.equal(rows.length, 2);
+    assert.equal(row.term, "سالانه");
+    assert.equal(row.final, 12);
+    assert.equal(row.modules.length, 1);
+    assert.deepEqual(plain(row.units), expected);
+    assert.deepEqual(
+      plain(
+        archived.units.map((unit) => [unit.term, unit.mostamar, unit.payani]),
+      ),
+      [
+        ["اول", null, null],
+        ["دوم", null, null],
+      ],
+    );
+  }
+  assert.deepEqual(versions, before);
+});
+
+test("historical unit sources with the same legacy term label stay distinct and deterministic", () => {
+  const c = fixture(),
+    versions = parts(lesson(c, { modular: true }));
+  c.old = { calcStudentLesson: () => ({}) };
+  for (const [id, value] of [
+    ["legacy_b", 18],
+    ["legacy_a", 8],
+  ]) {
+    const historical = structuredClone(versions[0]);
+    historical.period.id = id;
+    historical.period.term = "عنوان قدیمی";
+    delete historical.period.termKind;
+    historical.data.schools[0].classes[0].lessons[0].poudmans[0].units[0].unitScores.student =
+      { m: value };
+    versions.push(historical);
+  }
+  const units = (source) =>
+    plain(
+      c.annualTechnicalRows(source, "school", "classroom", "student")[0].units,
+    );
+  assert.deepEqual(units(versions), units([...versions].reverse()));
+  assert.deepEqual(
+    units(versions).map((unit) => [
+      unit.sourcePeriodId,
+      unit.mostamar,
+      unit.payani,
+    ]),
+    [
+      ["term_first", 0, 20],
+      ["term_second", 0, 20],
+      ["legacy_a", 8, null],
+      ["legacy_b", 18, null],
+    ],
+  );
+});
+
+test("modular unit details order by saved term role while preserving customized historical titles", () => {
+  const c = fixture(),
+    versions = parts(lesson(c, { modular: true }));
+  c.old = { calcStudentLesson: () => ({}) };
+  Object.assign(versions[0].period, { id: "z_first", term: "عنوان نخست" });
+  Object.assign(versions[1].period, { id: "a_second", term: "عنوان بعدی" });
+  const [row] = c.annualTechnicalRows(
+    [...versions].reverse(),
+    "school",
+    "classroom",
+    "student",
+  );
+  assert.deepEqual(
+    plain(row.units.map((unit) => [unit.sourcePeriodId, unit.term])),
+    [
+      ["z_first", "عنوان نخست"],
+      ["a_second", "عنوان بعدی"],
+    ],
+  );
 });
 
 test("legacy unit rows remain raw per-term records without an invented final", () => {

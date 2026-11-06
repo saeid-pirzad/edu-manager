@@ -618,6 +618,7 @@ async function createNewPeriod({ fromDialog = false } = {}) {
     }
     const next = clone(source);
     next.sessions = [];
+    next.notHeldSessions = [];
     next.migrationWarnings = [];
     next.settings.academicYear = year;
     next.settings.academicTerm = term;

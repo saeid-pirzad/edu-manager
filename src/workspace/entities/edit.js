@@ -15,11 +15,23 @@ function assertEntityWritable() {
     throw Error("ابتدا وارد ترم شوید.");
 }
 async function openEntityEditor(kind, id, schoolId = "") {
-  const requestedWorkspace = workspace?.id;
+  const requestedContext = {
+    workspace: workspace?.id,
+    bank: db,
+    connection,
+    installation:
+      typeof installationToken === "undefined" ? "" : installationToken,
+  };
   assertEntityWritable();
   await flushDrafts({ strict: true });
   assertEntityWritable();
-  if (requestedWorkspace !== workspace.id)
+  if (
+    requestedContext.workspace !== workspace.id ||
+    requestedContext.bank !== db ||
+    requestedContext.connection !== connection ||
+    requestedContext.installation !==
+      (typeof installationToken === "undefined" ? "" : installationToken)
+  )
     throw Error("ترم هنگام باز شدن فرم تغییر کرد؛ دوباره ویرایش را باز کنید.");
   if (!["school", "class"].includes(kind))
     throw Error("نوع اطلاعات نامعتبر است.");
@@ -29,10 +41,10 @@ async function openEntityEditor(kind, id, schoolId = "") {
   if (!item) throw Error("اطلاعات پیدا نشد؛ صفحه را تازه کنید.");
   const previousEditing = entityEditing;
   entityEditing = {
+    ...requestedContext,
     kind,
     id,
     schoolId: school.id,
-    workspace: workspace.id,
     revision: workspace.revision,
   };
   const label = kind === "school" ? "مدرسه" : "کلاس";
@@ -72,16 +84,21 @@ async function saveEntityEditor() {
   const finishSave = beginRecordEditorSave(
     document.querySelector("#modal .record-editor"),
   );
+  const edit = entityEditing;
+  let attemptedSave = false;
   try {
     assertEntityWritable();
     if (!document.querySelector("#modal:not(.hidden) #entityEditName"))
       throw Error("فرم ویرایش باز نیست.");
-    const edit = entityEditing;
-    if (
-      !edit ||
-      edit.workspace !== workspace.id ||
-      edit.revision !== workspace.revision
-    )
+    const isCurrent = () =>
+      edit &&
+      entityEditing === edit &&
+      edit.workspace === workspace.id &&
+      edit.bank === db &&
+      edit.connection === connection &&
+      edit.installation ===
+        (typeof installationToken === "undefined" ? "" : installationToken);
+    if (!isCurrent() || edit.revision !== workspace.revision)
       throw Error(
         "اطلاعات از زمان باز شدن فرم تغییر کرده است؛ فرم را دوباره باز کنید.",
       );
@@ -96,7 +113,7 @@ async function saveEntityEditor() {
       );
     await flushDrafts({ strict: true });
     assertEntityWritable();
-    if (edit.workspace !== workspace.id || edit.revision !== workspace.revision)
+    if (!isCurrent() || edit.revision !== workspace.revision)
       throw Error("ترم یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.");
     const school = getSchool(edit.schoolId);
     const item =
@@ -120,17 +137,35 @@ async function saveEntityEditor() {
       );
     if (item.name !== name) {
       item.name = name;
+      attemptedSave = true;
       await saveDBV24({
         ...(edit.kind === "class" ? { classId: item.id } : {}),
         action: "ویرایش نام " + (edit.kind === "school" ? "مدرسه" : "کلاس"),
       });
     }
+    if (!isCurrent() || periodLoading || resetBusy || connectionRetired) return;
     entityEditing = null;
     finishSave();
     rememberRecordEditor();
     closeModal();
     render();
   } catch (error) {
+    // saveDBV24 reloads the durable bank after a failed own write. Permit a
+    // retry of this same form only when its installation and revision survived.
+    if (
+      attemptedSave &&
+      entityEditing === edit &&
+      edit.workspace === workspace?.id &&
+      edit.revision === workspace?.revision &&
+      edit.connection === connection &&
+      edit.installation ===
+        (typeof installationToken === "undefined" ? "" : installationToken) &&
+      !blocked &&
+      !periodLoading &&
+      !resetBusy &&
+      !connectionRetired
+    )
+      edit.bank = db;
     if (!showRecordEditorError(error, "entityEditError")) handleError(error);
   } finally {
     entitySaving = false;

@@ -249,6 +249,7 @@ async function dailyFlow() {
     "Continue reuses the existing session without creating a duplicate",
     currentSessionId === ids.session && existingCount === 2,
   );
+  await globalThis.__unlockRecordedSessionForAudit(ids.session);
   const initialProgress = document.querySelector(
     "[data-session-attendance-progress]",
   );
@@ -610,6 +611,7 @@ async function dailyFlow() {
   );
   const sourceBeforeReuse = JSON.stringify(await stored());
   openSessionModal(getSessionById(audit.startedSessionId));
+  await globalThis.__unlockRecordedSessionForAudit(audit.startedSessionId);
   const reuse = document.querySelector(
     '[data-legacy-click="sessions-dialog:reuse-previous"]',
   );

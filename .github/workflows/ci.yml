@@ -19,9 +19,30 @@ jobs:
         with:
           node-version: "22"
           cache: npm
+      # os.tmpdir() can differ from runner.temp on Windows hosted runners.
+      - name: Locate synthetic audit output
+        run: node -e "require('node:fs').appendFileSync(process.env.GITHUB_ENV, 'EDU_AUDIT_OS_TEMP=' + require('node:os').tmpdir() + '\n')"
       - run: npm ci --no-audit --no-fund
       - run: npm run check:release
       - run: npm run release:package
+      # Synthetic audit results only: never upload browser profiles or school files.
+      - uses: actions/upload-artifact@v4
+        if: failure() && env.EDU_AUDIT_OS_TEMP != ''
+        with:
+          name: audit-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.EDU_AUDIT_OS_TEMP }}/edu-integrity-audit-*/data-integrity-results.json
+            ${{ env.EDU_AUDIT_OS_TEMP }}/edu-integrity-audit-*/startup-failure.json
+            ${{ env.EDU_AUDIT_OS_TEMP }}/edu-karnameh-student-*/*.pdf
+            ${{ env.EDU_AUDIT_OS_TEMP }}/edu-karnameh-student-*/raster-*/*.png
+            ${{ env.EDU_AUDIT_OS_TEMP }}/edu-session-pdf-*/*.pdf
+            ${{ env.EDU_AUDIT_OS_TEMP }}/edu-session-pdf-*/raster-*/*.png
+            ${{ env.EDU_AUDIT_OS_TEMP }}/edu-session-preview-*/*.png
+            ${{ env.EDU_AUDIT_OS_TEMP }}/edu-parent-performance-*/*.png
+            ${{ env.EDU_AUDIT_OS_TEMP }}/edu-theme-after-*/*.png
+          retention-days: 3
+          if-no-files-found: ignore
+          include-hidden-files: false
       # Upload only the checked package, never the repository root.
       - uses: actions/upload-pages-artifact@v4
         if: github.repository == 'saeid-pirzad/edu-manager' && github.ref == 'refs/heads/master' && github.event_name != 'pull_request'

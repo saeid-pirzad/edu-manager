@@ -14,8 +14,12 @@ module.exports = async function reloadReady(
         await evaluate(
           "!globalThis.__eduAuditBeforeReload && !!globalThis.EduV24?.getReportContext?.().ready",
         )
-      )
+      ) {
+        await require("./session-edit-test-helpers.cjs").installSessionEditTestHelper(
+          evaluate,
+        );
         return;
+      }
     } catch (error) {
       if (
         !/Execution context was destroyed|Cannot find (?:default execution )?context|Inspected target navigated/i.test(

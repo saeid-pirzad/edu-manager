@@ -1,5 +1,23 @@
+const STUDENT_CSV_MAX_ROWS = 500;
+function studentCSVLimitError() {
+  return Error(
+    "هر فایل ورود هنرجویان می‌تواند حداکثر ۵۰۰ ردیف داشته باشد؛ فایل را به بخش‌های کوچک‌تر تقسیم و هر بخش را در کلاس مربوط وارد کنید.",
+  );
+}
+function assertStudentCSVRows(rows) {
+  if (!Array.isArray(rows) || rows.length > STUDENT_CSV_MAX_ROWS)
+    throw studentCSVLimitError();
+}
 function csvPlan(text, c) {
-  const rows = parseCSV(text);
+  let rows;
+  try {
+    // Include the header, and stop the parser before a school-wide file can
+    // allocate an unbounded plan or thousands of mobile preview controls.
+    rows = parseCSV(text, { maxRows: STUDENT_CSV_MAX_ROWS + 1 });
+  } catch (error) {
+    if (error.code === "CSV_ROW_LIMIT") throw studentCSVLimitError();
+    throw error;
+  }
   if (rows.length < 2)
     throw Error("فایل باید سرستون و دست‌کم یک ردیف داشته باشد.");
   const headers = rows[0].map(normalizedName),
@@ -62,6 +80,7 @@ function csvPlan(text, c) {
 }
 
 function csvPreviewHtml(plan, c, filename) {
+  assertStudentCSVRows(plan);
   const fresh = plan.filter((row) => row.choice === "add").length;
   return (
     '<form id="studentCSVEditor" class="record-editor csv-preview-editor" data-review-mode="none" data-workspace-submit="commit-csv" data-mutating="1">' +
@@ -238,6 +257,7 @@ async function commitCSV() {
       return c;
     };
     check();
+    assertStudentCSVRows(context.plan);
     await flushDrafts({ strict: true });
     await writer.catch(() => {});
     const c = check(),

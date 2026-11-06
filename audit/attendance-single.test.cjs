@@ -42,6 +42,11 @@ function fixture() {
     resetBusy: false,
     connectionRetired: false,
     assertEntityWritable() {},
+    assertSessionEditable: () => {
+      c.assertEntityWritable();
+      return "isolated-edit-lease";
+    },
+    isSessionEditable: () => true,
     getSessionById: () => session,
     findClass: () => ({ students: [] }),
     asciiDigits: (value) => value.replace(/۲/g, "2").replace(/۰/g, "0").trim(),
@@ -191,6 +196,9 @@ function useRealSaveQueue(f, failFirst) {
   let durable = structuredClone(f.c.db),
     attempts = 0;
   Object.assign(f.c, {
+    captureSessionEditRecovery: () => null,
+    rebindSessionEditAfterRollback: () => false,
+    invalidateSessionEditRecovery() {},
     fileMode: false,
     writeFailureGeneration: 0,
     busy: 0,
@@ -202,7 +210,10 @@ function useRealSaveQueue(f, failFirst) {
     setStatus() {},
     render() {},
     scheduleSingleFile() {},
-    readWorkspace: async () => ({ data: structuredClone(durable) }),
+    readWorkspaceSnapshot: async () => ({
+      period: { ...f.c.workspace },
+      data: structuredClone(durable),
+    }),
     getSessionById: () => f.c.db.sessions[0],
   });
   vm.runInContext(

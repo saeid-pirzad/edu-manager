@@ -10,7 +10,10 @@ function fixture() {
   const failure = Error("disk error");
   const c = vm.createContext({
     captureSaveFeedback: () => null,
-    workspace: { id: "first" },
+    captureSessionEditRecovery: () => null,
+    rebindSessionEditAfterRollback: () => false,
+    invalidateSessionEditRecovery() {},
+    workspace: { id: "first", revision: 1 },
     connection: {},
     db: { unsaved: true },
     periodLoading: false,
@@ -27,9 +30,9 @@ function fixture() {
     setStatus: (...args) => statuses.push(args),
     render() {},
     scheduleSingleFile() {},
-    readWorkspace: async (id) => {
+    readWorkspaceSnapshot: async (id) => {
       reads.push(id);
-      return { data: { durable: true } };
+      return { period: { id, revision: 1 }, data: { durable: true } };
     },
   });
   vm.runInContext(
@@ -103,12 +106,15 @@ for (const change of [
 ]) {
   test(`rollback read cannot overwrite state after ${change} changes`, async () => {
     const f = fixture();
-    f.c.readWorkspace = async () => {
+    f.c.readWorkspaceSnapshot = async () => {
       if (change === "workspace") f.c.workspace.id = "second";
       else if (change === "connection") f.c.connection = {};
       else f.c[change] = true;
       f.c.db = { selected: true };
-      return { data: { obsolete: true } };
+      return {
+        period: { id: "first", revision: 1 },
+        data: { obsolete: true },
+      };
     };
     await assert.rejects(f.c.saveDBV24());
     assert.equal(f.c.db.selected, true);
@@ -118,7 +124,7 @@ for (const change of [
 }
 test("rollback read failure preserves the original write error and releases busy state", async () => {
   const f = fixture();
-  f.c.readWorkspace = async () => {
+  f.c.readWorkspaceSnapshot = async () => {
     throw Error("read error");
   };
   await assert.rejects(f.c.saveDBV24(), (error) => error === f.failure);

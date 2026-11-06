@@ -284,6 +284,7 @@ async function seniorReviewFlows() {
     closeModal();
     const before = db.sessions.find((x) => x.id === existing.id).scores.length;
     openSessionModal(getSessionById(existing.id));
+    await globalThis.__unlockRecordedSessionForAudit(existing.id);
     showSessionPanel("activity");
     const activityForm = document.querySelector(".session-entry-form");
     activityForm.elements.studentId.value = "student_a";
@@ -302,7 +303,8 @@ async function seniorReviewFlows() {
     record(
       "R08",
       "class-grade control distinguishes a 0-20 grade from activity points",
-      !!markError || getSessionById(existing.id).scores.length === before,
+      /صفر تا بیست|۲۰|20/.test(markError) &&
+        getSessionById(existing.id).scores.length === before,
       {
         error: markError,
         storedValue: getSessionById(existing.id).scores.at(-1)?.value,

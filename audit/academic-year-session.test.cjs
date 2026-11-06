@@ -56,6 +56,11 @@ function fixture() {
       resetBusy: false,
       connectionRetired: false,
       assertEntityWritable() {},
+      assertSessionEditable: () => {
+        c.assertEntityWritable();
+        return "isolated-edit-lease";
+      },
+      isSessionEditable: () => true,
       asciiDigits: (value) => value,
       flushDrafts: async () => {},
       writer: Promise.resolve(),
@@ -73,6 +78,7 @@ function fixture() {
         c.db.sessions.find((session) => session.id === id),
       saveDBV24: async (scope) => writes.push(scope),
       openSessionModal: (session) => modals.push(session),
+      openNewSessionDialogV24: (session) => modals.push(session),
     });
   for (const source of [
     "domain/calendar.js",

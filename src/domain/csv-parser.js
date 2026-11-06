@@ -1,4 +1,6 @@
-function parseCSV(text) {
+function parseCSV(text, { maxRows = Infinity } = {}) {
+  if (maxRows !== Infinity && (!Number.isSafeInteger(maxRows) || maxRows < 1))
+    throw Error("حداکثر تعداد ردیف‌های CSV باید عدد صحیح مثبت باشد.");
   text = text.replace(/^\uFEFF/, "");
   // Detect separators outside quotes in the first logical record.
   // A comma inside a quoted name must not turn a semicolon file into CSV.
@@ -19,6 +21,15 @@ function parseCSV(text) {
   }
   const delimiter = semicolons > commas ? ";" : ",";
   const rows = [];
+  const appendRow = (value) => {
+    if (!value.some((cell) => cell.trim())) return;
+    if (rows.length >= maxRows) {
+      const error = Error("تعداد ردیف‌های فایل CSV بیش از حد مجاز است.");
+      error.code = "CSV_ROW_LIMIT";
+      throw error;
+    }
+    rows.push(value);
+  };
   let row = [],
     field = "",
     quoted = false,
@@ -52,7 +63,7 @@ function parseCSV(text) {
     if (ch === "\n" || ch === "\r") {
       if (ch === "\r" && text[i + 1] === "\n") i++;
       row.push(field);
-      if (row.some((x) => x.trim())) rows.push(row);
+      appendRow(row);
       row = [];
       field = "";
       closed = false;
@@ -63,6 +74,6 @@ function parseCSV(text) {
   }
   if (quoted) throw Error("نقل‌قول CSV بسته نشده است.");
   row.push(field);
-  if (row.some((x) => x.trim())) rows.push(row);
+  appendRow(row);
   return rows;
 }

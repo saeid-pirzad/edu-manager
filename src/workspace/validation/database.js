@@ -41,6 +41,17 @@ function validateV24(d) {
   )
     throw Error("نسخه ساختار داده پشتیبانی نمی‌شود.");
   old.validateDB(d);
+  if (d.notHeldSessions !== undefined) {
+    if (!Array.isArray(d.notHeldSessions))
+      throw Error("فهرست جلسات برگزارنشده معتبر نیست.");
+    const validateMarkers = globalThis.EduAttendanceReminders?.validateMarkers;
+    if (typeof validateMarkers === "function")
+      validateMarkers(d.notHeldSessions);
+    else if (d.notHeldSessions.length)
+      throw Error(
+        "اعتبارسنجی جلسات برگزارنشده آماده نیست؛ اطلاعات تغییر نکرد.",
+      );
+  }
   if (
     d.settings?.academicYear !== undefined &&
     EduAcademicYear.normalize(d.settings.academicYear) !==
@@ -111,6 +122,7 @@ function normalizeDB(input, { legacy = false } = {}) {
   );
   d.masterSchedule = d.masterSchedule || {};
   d.sessions = d.sessions || [];
+  if (d.notHeldSessions === undefined) d.notHeldSessions = [];
   d.activeDays = d.activeDays || defaults.activeDays;
   d.periods = d.periods ?? 6;
   const warnings = [...(d.migrationWarnings || [])],
