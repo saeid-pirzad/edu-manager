@@ -12,6 +12,7 @@
     "check": "npm run format:check && npm run lint && npm test",
     "check:release": "npm run check && node audit/period-deletion-browser.cjs && node audit/gradebook-mobile.cjs && node audit/year-editor-browser.cjs && npm run test:annual-backup && npm run test:theme && npm run test:logo && npm run test:navbar && npm run test:school-create",
     "bench": "npm run build:check && node scripts/benchmark.cjs",
+    "metrics": "npm run build:check && node scripts/optimization-metrics.cjs",
     "dev": "npm run build && node scripts/serve.cjs",
     "test": "npm run build:check && npm run test:unit && node audit/assets-contract.cjs && node audit/data-store-contract.cjs && node audit/workflow-review.cjs",
     "test:unit": "node --test",
@@ -31,6 +32,7 @@
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "esbuild": "0.28.2",
     "eslint": "10.0.0",
     "globals": "16.5.0",
     "prettier": "3.9.9"

@@ -2,7 +2,44 @@
 // Non-held decisions live in meta, never in the reportable session collection.
 let attendanceReminderGeneration = 0,
   attendanceReminderDialog = null,
-  attendanceReminderBusy = false;
+  attendanceReminderBusy = false,
+  attendanceReminderClockInstalled = false,
+  attendanceReminderClockDate = null;
+
+function checkAttendanceReminderDay() {
+  if (
+    document.visibilityState !== "visible" ||
+    !ready ||
+    busy ||
+    drafts.size ||
+    assessmentContext.hasDrafts() ||
+    state.view !== "schools" ||
+    !document.getElementById("attendanceReminderRegion")?.isConnected ||
+    document.getElementById("modal")?.classList.contains("hidden") === false
+  )
+    return;
+  try {
+    assertWorkspaceReadable();
+  } catch {
+    return;
+  }
+  if (attendanceReminderClockDate !== todayISO())
+    return refreshAttendanceReminders();
+}
+
+function installAttendanceReminderClock() {
+  if (attendanceReminderClockInstalled) return;
+  attendanceReminderClockInstalled = true;
+  attendanceReminderClockDate ??= todayISO();
+  // This cheap local-day check does not scan records on an unchanged day.
+  // Browsers may throttle timers; focus and visibility also catch up on return.
+  setInterval(checkAttendanceReminderDay, 60_000);
+  window.addEventListener("focus", checkAttendanceReminderDay);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible")
+      void refreshAttendanceReminders();
+  });
+}
 
 function attendanceReminderOrigin() {
   const origin = {
@@ -127,6 +164,7 @@ async function refreshAttendanceReminders({ interactive = false } = {}) {
   const generation = ++attendanceReminderGeneration,
     region = document.getElementById("attendanceReminderRegion");
   if (!region || state.view !== "schools" || fileMode) return;
+  attendanceReminderClockDate = todayISO();
   const current = () =>
     region.isConnected &&
     generation === attendanceReminderGeneration &&

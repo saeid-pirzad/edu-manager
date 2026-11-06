@@ -56,6 +56,8 @@ function fixture() {
       resetBusy: false,
       connectionRetired: false,
       assertEntityWritable() {},
+      captureSessionControlFocus: () => () => {},
+      refreshSessionAttendanceRows() {},
       assertSessionEditable: () => {
         c.assertEntityWritable();
         return "isolated-edit-lease";

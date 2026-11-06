@@ -67,6 +67,7 @@ EduLegacyEvents.register("sessions-dialog:12", function (event) {
     removeSessionScore(
       this.getAttribute("data-legacy-click-arg5"),
       JSON.parse(this.getAttribute("data-legacy-click-arg6")),
+      this,
     ),
   );
 });

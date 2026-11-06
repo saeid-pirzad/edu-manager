@@ -1,7 +1,10 @@
 (function () {
   "use strict";
   let pending = false;
-  function decorateIcons() {
+  function queryRoots(roots, selector) {
+    return roots.flatMap((root) => [...root.querySelectorAll(selector)]);
+  }
+  function decorateIcons(roots) {
     const actions = {
       periods: "calendar",
       backups: "shield",
@@ -118,7 +121,8 @@
       "‹": ["chevron-left", "ماه قبل"],
       "›": ["chevron-right", "ماه بعد"],
     };
-    for (const control of document.querySelectorAll(
+    for (const control of queryRoots(
+      roots,
       "button,.entity-quick-create > summary,.workspace-tools > summary",
     )) {
       if (control.closest("#printRoot") || control.dataset.copyState === "done")
@@ -226,7 +230,7 @@
     }
   }
 
-  function updateDesign() {
+  function updateDesign(appChanged) {
     let nav = document.getElementById("uiBottomNav");
     if (!nav) {
       nav = document.createElement("nav");
@@ -295,6 +299,7 @@
       if (b.getAttribute("aria-current") !== value)
         b.setAttribute("aria-current", value);
     }
+    if (!appChanged) return;
     for (const button of document.querySelectorAll("#app .tabs > button")) {
       const pressed = String(button.classList.contains("active"));
       if (button.getAttribute("aria-pressed") !== pressed)
@@ -322,10 +327,8 @@
     }
   }
 
-  function styleDataTables() {
-    for (const table of document.querySelectorAll(
-      "#app table,#modalBody table",
-    )) {
+  function styleDataTables(tables) {
+    for (const table of tables) {
       const head = table.tHead;
       if (!head || !head.rows.length) continue;
       const headers = [...head.rows[0].cells];
@@ -497,9 +500,19 @@
       box.append(input, result);
       items[0].before(box);
     }
-    for (const input of document.querySelectorAll(
-      "#app input[placeholder],#modalBody input[placeholder],#modalBody textarea[placeholder]",
-    )) {
+  }
+
+  function labelPlaceholderInputs(appChanged, modalChanged) {
+    const selector = [
+      appChanged ? "#app input[placeholder]" : "",
+      modalChanged
+        ? "#modalBody input[placeholder],#modalBody textarea[placeholder]"
+        : "",
+    ]
+      .filter(Boolean)
+      .join(",");
+    if (!selector) return;
+    for (const input of document.querySelectorAll(selector)) {
       if (!input.hasAttribute("aria-label") && !input.labels?.length)
         input.setAttribute("aria-label", input.placeholder);
     }
@@ -615,31 +628,52 @@
     }
   }
 
-  const designRoots = [];
+  const designRootIds = ["app", "modal", "calPopup", "mobileBar", "pwaWelcome"],
+    dirtyRoots = new Set();
+  let fullDesign = true;
   const designObserver = new MutationObserver(schedule);
   function observeDesignRoots() {
-    // PWA surfaces can be created after the application has rendered.
-    const roots = new Set([
-      ...designRoots.filter((root) => root.isConnected),
-      document.getElementById("mobileBar"),
-      document.getElementById("pwaWelcome"),
-    ]);
-    for (const root of roots)
+    // Resolve every surface again: PWA panels and even a root element can be
+    // created or replaced after startup. Never keep observing detached roots.
+    for (const id of designRootIds) {
+      const root = document.getElementById(id);
       if (root)
         designObserver.observe(root, { childList: true, subtree: true });
+    }
     designObserver.observe(document.body, { childList: true });
   }
   function enhance() {
+    const appChanged = fullDesign || dirtyRoots.has("app"),
+      modalChanged = fullDesign || dirtyRoots.has("modal"),
+      roots = fullDesign
+        ? [document]
+        : [...dirtyRoots]
+            .map((id) => document.getElementById(id))
+            .filter(Boolean),
+      tableSelector = [
+        appChanged ? "#app table" : "",
+        modalChanged ? "#modalBody table" : "",
+      ]
+        .filter(Boolean)
+        .join(",");
+    dirtyRoots.clear();
+    fullDesign = false;
     designObserver.disconnect();
     try {
-      polishReportFilters();
-      mobileExperience();
-      polishExperience();
-      updateDesign();
-      decorateIcons();
-      for (const table of document.querySelectorAll(
-        "#app table,#modalBody table",
-      )) {
+      if (appChanged) {
+        polishReportFilters();
+        mobileExperience();
+        polishExperience();
+      }
+      labelPlaceholderInputs(appChanged, modalChanged);
+      updateDesign(appChanged);
+      decorateIcons(roots);
+      // The same nodes are sized, wrapped and labelled. Collect them once,
+      // rather than traversing both surfaces independently for every phase.
+      const tables = tableSelector
+        ? [...document.querySelectorAll(tableSelector)]
+        : [];
+      for (const table of tables) {
         if (
           !table.dataset.responsiveSized &&
           table.dataset.mobileLayout !== "compact"
@@ -658,16 +692,14 @@
           table.dataset.responsiveSized = "1";
         }
       }
-      for (const container of document.querySelectorAll(".table-scroll")) {
+      for (const container of queryRoots(roots, ".table-scroll")) {
         if (!container.hasAttribute("tabindex")) {
           container.tabIndex = 0;
           container.setAttribute("role", "region");
           container.setAttribute("aria-label", "جدول با پیمایش افقی");
         }
       }
-      for (const table of document.querySelectorAll(
-        "#app table,#modalBody table",
-      )) {
+      for (const table of tables) {
         if (
           table.dataset.mobileLayout === "compact" ||
           table.closest(".responsive-scroll,.table-scroll")
@@ -684,8 +716,10 @@
         table.before(wrap);
         wrap.append(table);
       }
-      styleDataTables();
-      for (const grid of document.querySelectorAll("#app .schedule-grid")) {
+      styleDataTables(tables);
+      for (const grid of appChanged
+        ? document.querySelectorAll("#app .schedule-grid")
+        : []) {
         if (grid.parentElement.classList.contains("responsive-scroll"))
           continue;
         const wrap = document.createElement("div");
@@ -696,70 +730,72 @@
         grid.before(wrap);
         wrap.append(grid);
       }
-      const bar = document.querySelector(".workspace-bar");
-      if (bar && !document.querySelector("#app .workspace-tools")) {
-        const tools = document.createElement("details");
-        tools.className = "workspace-tools no-print";
-        tools.innerHTML =
-          '<summary>مدیریت و پشتیبان‌ها</summary><div class="tool-actions"></div>';
-        const box = tools.querySelector(".tool-actions");
-        for (const button of [...bar.querySelectorAll("button")])
-          box.append(button);
-        for (const small of [...bar.querySelectorAll("small")])
-          box.append(small);
-        const backup = document.createElement("button");
-        backup.className = "ghost";
-        backup.textContent = "ذخیره پشتیبان";
-        backup.onclick = () => exportBackup().catch((e) => alert(e.message));
-        box.prepend(backup);
-        bar.append(tools);
-      }
-      const topbar = document.querySelector(".topbar"),
-        actions = topbar?.querySelector(".actions");
-      if (actions && !topbar.querySelector(".navigation-menu")) {
-        const menu = document.createElement("details");
-        menu.className = "navigation-menu no-print";
-        menu.open =
-          innerWidth > 700 &&
-          !matchMedia("(max-width:1000px) and (pointer:coarse)").matches;
-        menu.innerHTML =
-          '<summary title="ابزارها و تنظیمات"><span class="menu-toggle-label">فهرست برنامه</span><svg class="menu-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path class="menu-line-top" d="M5 12h14"/><path class="menu-line-middle" d="M5 12h14"/><path class="menu-line-bottom" d="M5 12h14"/></svg></summary>';
-        actions.before(menu);
-        menu.querySelector("summary").id = "headerNavigationToggle";
-        menu.append(actions);
-        menu.addEventListener("toggle", () => {
-          if (
-            matchMedia(
-              "(max-width:700px), (max-width:1000px) and (pointer:coarse)",
-            ).matches
-          ) {
-            const tools = menu.querySelector(".workspace-tools");
-            if (tools) tools.open = menu.open;
+      if (appChanged) {
+        const bar = document.querySelector(".workspace-bar");
+        if (bar && !document.querySelector("#app .workspace-tools")) {
+          const tools = document.createElement("details");
+          tools.className = "workspace-tools no-print";
+          tools.innerHTML =
+            '<summary>مدیریت و پشتیبان‌ها</summary><div class="tool-actions"></div>';
+          const box = tools.querySelector(".tool-actions");
+          for (const button of [...bar.querySelectorAll("button")])
+            box.append(button);
+          for (const small of [...bar.querySelectorAll("small")])
+            box.append(small);
+          const backup = document.createElement("button");
+          backup.className = "ghost";
+          backup.textContent = "ذخیره پشتیبان";
+          backup.onclick = () => exportBackup().catch((e) => alert(e.message));
+          box.prepend(backup);
+          bar.append(tools);
+        }
+        const topbar = document.querySelector(".topbar"),
+          actions = topbar?.querySelector(".actions");
+        if (actions && !topbar.querySelector(".navigation-menu")) {
+          const menu = document.createElement("details");
+          menu.className = "navigation-menu no-print";
+          menu.open =
+            innerWidth > 700 &&
+            !matchMedia("(max-width:1000px) and (pointer:coarse)").matches;
+          menu.innerHTML =
+            '<summary title="ابزارها و تنظیمات"><span class="menu-toggle-label">فهرست برنامه</span><svg class="menu-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path class="menu-line-top" d="M5 12h14"/><path class="menu-line-middle" d="M5 12h14"/><path class="menu-line-bottom" d="M5 12h14"/></svg></summary>';
+          actions.before(menu);
+          menu.querySelector("summary").id = "headerNavigationToggle";
+          menu.append(actions);
+          menu.addEventListener("toggle", () => {
+            if (
+              matchMedia(
+                "(max-width:700px), (max-width:1000px) and (pointer:coarse)",
+              ).matches
+            ) {
+              const tools = menu.querySelector(".workspace-tools");
+              if (tools) tools.open = menu.open;
+            }
+            if (!menu.open) {
+              closeClassMenu();
+              closeDataMenu();
+            }
+          });
+          actions.addEventListener("click", (e) => {
+            const button = e.target.closest("button");
+            if (
+              button &&
+              !button.hasAttribute("aria-controls") &&
+              matchMedia(
+                "(max-width:700px), (max-width:1000px) and (pointer:coarse)",
+              ).matches
+            ) {
+              menu.open = false;
+              menu.querySelector("summary").focus({ preventScroll: true });
+            }
+          });
+          const settings = actions.querySelector(
+            'button[data-header-action="settings"]',
+          );
+          if (settings) {
+            settings.setAttribute("aria-label", "تنظیمات برنامه");
+            settings.title = "تنظیمات برنامه";
           }
-          if (!menu.open) {
-            closeClassMenu();
-            closeDataMenu();
-          }
-        });
-        actions.addEventListener("click", (e) => {
-          const button = e.target.closest("button");
-          if (
-            button &&
-            !button.hasAttribute("aria-controls") &&
-            matchMedia(
-              "(max-width:700px), (max-width:1000px) and (pointer:coarse)",
-            ).matches
-          ) {
-            menu.open = false;
-            menu.querySelector("summary").focus({ preventScroll: true });
-          }
-        });
-        const settings = actions.querySelector(
-          'button[data-header-action="settings"]',
-        );
-        if (settings) {
-          settings.setAttribute("aria-label", "تنظیمات برنامه");
-          settings.title = "تنظیمات برنامه";
         }
       }
       positionHomeAction();
@@ -768,7 +804,26 @@
       observeDesignRoots();
     }
   }
-  function schedule() {
+  function schedule(records) {
+    for (const record of records || []) {
+      if (record.target === document.body) {
+        const changed = [...record.addedNodes, ...record.removedNodes];
+        // Known top-level surfaces can be processed independently. Unknown
+        // body content retains the complete pass (including legacy buttons).
+        for (const node of changed) {
+          if (node.nodeType === 1 && designRootIds.includes(node.id))
+            dirtyRoots.add(node.id);
+          else fullDesign = true;
+        }
+      } else {
+        const root = record.target.closest?.(
+          "#app,#modal,#calPopup,#mobileBar,#pwaWelcome",
+        );
+        if (root) dirtyRoots.add(root.id);
+        else fullDesign = true;
+      }
+    }
+    if (!records) fullDesign = true;
     if (!pending) {
       pending = true;
       requestAnimationFrame(enhance);
@@ -802,12 +857,6 @@
     }
   }
   function start() {
-    for (const el of [
-      document.getElementById("app"),
-      document.getElementById("modal"),
-      document.getElementById("calPopup"),
-    ])
-      if (el) designRoots.push(el);
     enhance();
     viewport();
     window.visualViewport?.addEventListener("resize", viewport);

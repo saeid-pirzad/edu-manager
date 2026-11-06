@@ -500,9 +500,6 @@
   #app .entity-menu-panel > button.danger:hover {
     background: var(--status-danger-soft);
   }
-  #app .student-profile-actions {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
   #app .workflow-welcome:not(:has(button)) {
     grid-template-columns: minmax(0, 1fr);
     padding: 16px 18px;
@@ -2454,7 +2451,6 @@
   #modalBody .session-workspace .att-btns {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 4px;
     min-width: 0;
     width: 100%;
     max-width: 100%;

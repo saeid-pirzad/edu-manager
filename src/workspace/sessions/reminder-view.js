@@ -88,17 +88,22 @@ function renderAttendanceReminders(model) {
         "</ul>"
       : '<p class="attendance-reminders-empty">در این بازه موردی برای پیگیری نیست.</p>') +
     (items.length || notHeld.length
-      ? '<footer class="attendance-reminders-footer">' +
+      ? '<footer class="attendance-reminders-footer"><div class="attendance-reminders-footer-actions" role="group" aria-label="فهرست‌های پیگیری حضور‌وغیاب">' +
         (items.length
-          ? '<button type="button" class="ghost" data-workspace-action="attendance-reminders-all">همهٔ موارد (' +
+          ? '<button type="button" class="ghost attendance-reminders-footer-action attendance-reminders-all-button" data-ui-icon="none" data-workspace-action="attendance-reminders-all">' +
+            EduIcons.html("calendar-week") +
+            '<span class="attendance-reminders-action-label">همهٔ موارد</span> <bdi class="attendance-reminders-action-count">' +
             attendanceReminderNumber(items.length) +
-            ")</button>"
+            "</bdi></button>"
           : "") +
         (notHeld.length
-          ? '<button type="button" class="ghost attendance-reminders-history-button" data-workspace-action="attendance-reminders-not-held">برگزارنشده‌ها (' +
+          ? '<button type="button" class="ghost attendance-reminders-footer-action attendance-reminders-history-button" data-ui-icon="none" data-workspace-action="attendance-reminders-not-held">' +
+            EduIcons.html("clock") +
+            '<span class="attendance-reminders-action-label">برگزارنشده‌ها</span> <bdi class="attendance-reminders-action-count">' +
             attendanceReminderNumber(notHeld.length) +
-            ")</button>"
+            "</bdi></button>"
           : "") +
+        "</div>" +
         (items.length > visible.length
           ? "<small>نمایش " +
             attendanceReminderNumber(visible.length) +

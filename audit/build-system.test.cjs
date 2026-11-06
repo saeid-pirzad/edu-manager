@@ -25,6 +25,8 @@ test("build detects stale artifacts, regenerates missing output and fingerprints
     });
   for (const name of [
     "scripts/build.cjs",
+    "scripts/assemble-bundle.cjs",
+    "scripts/compact-bundle.cjs",
     "scripts/source-maps.cjs",
     "scripts/application-files.cjs",
     "audit/application-files.cjs",
@@ -37,6 +39,12 @@ test("build detects stale artifacts, regenerates missing output and fingerprints
       cwd: temporary,
       encoding: "utf8",
       windowsHide: true,
+      env: {
+        ...process.env,
+        NODE_PATH: [path.join(root, "node_modules"), process.env.NODE_PATH]
+          .filter(Boolean)
+          .join(path.delimiter),
+      },
     });
   assert.equal(run("--check").status, 0);
   const originalWorker = fs.readFileSync(
@@ -88,7 +96,7 @@ test("build detects stale artifacts, regenerates missing output and fingerprints
   );
   fs.appendFileSync(
     path.join(temporary, "src/domain/grade-math.js"),
-    "\n// source change\n",
+    "\nglobalThis.__eduBuildFixtureVersion = 1;\n",
   );
   assert.notEqual(run("--check").status, 0);
   assert.equal(run().status, 0);
@@ -104,6 +112,17 @@ test("build detects stale artifacts, regenerates missing output and fingerprints
   assert.equal(
     fs.readFileSync(path.join(temporary, "service-worker.js"), "utf8"),
     updatedWorker,
+  );
+  fs.appendFileSync(
+    path.join(temporary, "src/domain/grade-math.js"),
+    "\n// comment-only source edit\n",
+  );
+  assert.notEqual(run("--check").status, 0, "debug source contents changed");
+  assert.equal(run().status, 0);
+  assert.equal(
+    fs.readFileSync(path.join(temporary, "service-worker.js"), "utf8"),
+    updatedWorker,
+    "comment-only edits must not invalidate identical compacted runtime assets",
   );
   const fileNames = JSON.parse(
     updatedWorker.match(/const FILES\s*=\s*(\[[\s\S]*?\]);/)[1],

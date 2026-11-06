@@ -84,15 +84,33 @@ async function toggleAttendanceV24(button, status) {
   return true;
 }
 
-async function removeSessionScoreV24(id, index) {
+const sessionScoreDeletions = new Set();
+async function removeSessionScoreV24(id, index, control = null) {
   const isCurrent = preserveSessionAction(id);
+  if (sessionScoreDeletions.has(id)) return false;
   const session = getSessionById(id);
   if (!session) throw Error("جلسه دیگر وجود ندارد.");
   if (!Number.isInteger(index) || index < 0 || index >= session.scores.length)
     throw Error("امتیاز انتخاب‌شده دیگر وجود ندارد.");
-  session.scores.splice(index, 1);
-  await saveDBV24({ sessionId: id, action: "حذف امتیاز جلسه" });
-  if (isCurrent()) openSessionModal(getSessionById(id));
+  if (control && !sessionActivityControlMatches(control, session, index))
+    throw Error(
+      "ردیف فعالیت تغییر کرده است؛ فعالیت موردنظر را دوباره انتخاب کنید.",
+    );
+  prepareSessionActivityRecords(session);
+  const restoreFocus = captureSessionControlFocus(session);
+  sessionScoreDeletions.add(id);
+  try {
+    session.scores.splice(index, 1);
+    await saveDBV24({ sessionId: id, action: "حذف امتیاز جلسه" });
+    if (isCurrent()) {
+      refreshSessionActivityRecords(getSessionById(id));
+      syncControlLocks();
+    }
+    return true;
+  } finally {
+    sessionScoreDeletions.delete(id);
+    restoreFocus();
+  }
 }
 
 function validateSessionDate(date) {
@@ -356,11 +374,16 @@ async function copyPreviousAttendanceV24(targetId) {
     throw Error("جلسه یا اتصال بانک تغییر کرده است؛ حضور منتقل نشد.");
   for (const [studentId, value] of updates)
     session.attendance[studentId] = value;
-  await saveDBV24({
-    sessionId: id,
-    action: "تکمیل حضور از زنگ قبلی همین کلاس و روز",
-  });
-  if (isCurrent()) openSessionModal(getSessionById(id));
+  const restoreFocus = captureSessionControlFocus(session);
+  try {
+    await saveDBV24({
+      sessionId: id,
+      action: "تکمیل حضور از زنگ قبلی همین کلاس و روز",
+    });
+    if (isCurrent()) refreshSessionAttendanceRows(getSessionById(id));
+  } finally {
+    restoreFocus();
+  }
   return true;
 }
 
@@ -385,8 +408,13 @@ async function setAllAttendanceV24(statusValue, { onlyUnset = false } = {}) {
     changed = true;
   }
   if (!changed) return false;
-  await saveDBV24({ sessionId: x.id, action: "حضور و غیاب گروهی" });
-  if (isCurrent()) openSessionModal(getSessionById(x.id));
+  const restoreFocus = captureSessionControlFocus(x);
+  try {
+    await saveDBV24({ sessionId: x.id, action: "حضور و غیاب گروهی" });
+    if (isCurrent()) refreshSessionAttendanceRows(getSessionById(x.id));
+  } finally {
+    restoreFocus();
+  }
 }
 
 async function saveSessionUnitV24() {
@@ -465,6 +493,9 @@ async function addSessionScoreV24(e, id) {
   const f = e.target;
   if (sessionScoreForms.has(f)) return false;
   sessionScoreForms.add(f);
+  const focusOrigin = document.activeElement;
+  let restoreFocus = () => {},
+    activityFinished = false;
   try {
     const isCurrent = preserveSessionAction(id);
     const x = getSessionById(id);
@@ -493,6 +524,8 @@ async function addSessionScoreV24(e, id) {
       !sessionRoster(c, x).some((st) => st.id === sid)
     )
       throw Error("دانش‌آموز یا نوع امتیاز نامعتبر است.");
+    prepareSessionActivityRecords(x);
+    restoreFocus = captureSessionControlFocus(x);
     let value;
     if (type === "classGrade") {
       const parsed = parseGrade(f.value.value);
@@ -528,16 +561,22 @@ async function addSessionScoreV24(e, id) {
       sessionId: id,
       action: "ثبت یا اصلاح " + TYPE_LABELS[type],
     });
-    if (isCurrent())
-      openSessionModal(getSessionById(id), {
-        activitySaved: {
+    if (isCurrent()) {
+      refreshSessionActivityRecords(getSessionById(id));
+      syncControlLocks();
+      activityFinished = finishSessionActivitySave(
+        f,
+        {
           submitted,
           advance: !!e.submitter?.hasAttribute("data-session-next"),
         },
-      });
+        focusOrigin,
+      );
+    }
     return true;
   } finally {
     sessionScoreForms.delete(f);
+    if (!activityFinished) restoreFocus();
   }
 }
 

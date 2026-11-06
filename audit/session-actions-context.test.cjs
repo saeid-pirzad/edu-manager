@@ -6,7 +6,10 @@ const fs = require("node:fs"),
   vm = require("node:vm");
 function fixture() {
   const modals = [],
-    writes = [];
+    writes = [],
+    attendanceRefreshes = [],
+    activityRefreshes = [],
+    finishedForms = [];
   const session = {
     id: "session",
     schoolId: "school",
@@ -51,6 +54,9 @@ function fixture() {
     resetBusy: false,
     connectionRetired: false,
     assertEntityWritable() {},
+    syncControlLocks() {},
+    prepareSessionActivityRecords() {},
+    captureSessionControlFocus: () => () => {},
     assertSessionEditable: () => {
       c.assertEntityWritable();
       return "isolated-edit-lease";
@@ -72,6 +78,11 @@ function fixture() {
     confirm: () => true,
     saveDBV24: async (scope) => writes.push(scope),
     openSessionModal: (value) => modals.push(value),
+    refreshSessionAttendanceRows: (value) => attendanceRefreshes.push(value),
+    refreshSessionActivityRecords: (value) => activityRefreshes.push(value),
+    finishSessionActivitySave: (form, options, focusOrigin) =>
+      finishedForms.push({ form, options, focusOrigin }),
+    sessionActivityControlMatches: () => true,
     TYPE_LABELS: { classGrade: "class grade" },
     parseGrade: () => ({ ok: true, value: 18 }),
   });
@@ -104,18 +115,42 @@ function fixture() {
         : action === "unit"
           ? c.saveSessionUnitV24()
           : c.addSessionScoreV24(scoreEvent(), "session");
-  return { c, session, cls, lesson, modals, writes, run, scoreEvent };
+  return {
+    c,
+    session,
+    cls,
+    lesson,
+    modals,
+    writes,
+    attendanceRefreshes,
+    activityRefreshes,
+    finishedForms,
+    run,
+    scoreEvent,
+  };
+}
+function assertViewEffects(f, action, count = 1) {
+  assert.equal(f.modals.length, ["unit", "date"].includes(action) ? count : 0);
+  assert.equal(
+    f.attendanceRefreshes.length,
+    action === "attendance" ? count : 0,
+  );
+  assert.equal(
+    f.activityRefreshes.length,
+    ["score", "score-removal"].includes(action) ? count : 0,
+  );
+  assert.equal(f.finishedForms.length, action === "score" ? count : 0);
 }
 for (const action of ["attendance", "unit", "score", "date"]) {
   for (const change of ["connection", "session"]) {
-    test(`late ${action} save does not reopen a changed ${change} dialog`, async () => {
+    test(`late ${action} save does not update a changed ${change} dialog`, async () => {
       const f = fixture();
       f.c.saveDBV24 = async () => {
         if (change === "connection") f.c.connection = {};
         else f.c.currentSessionId = "other";
       };
       await f.run(action);
-      assert.equal(f.modals.length, 0);
+      assertViewEffects(f, action, 0);
     });
   }
   test(`${action} refuses read-only mutation before touching session data`, async () => {
@@ -135,7 +170,8 @@ test("bulk attendance uses the frozen session roster rather than new class membe
   assert.equal(f.session.attendance.historical, "present");
   assert.equal(f.session.attendance.current, undefined);
   assert.equal(f.writes[0].sessionId, "session");
-  assert.equal(f.modals.length, 1);
+  assertViewEffects(f, "attendance");
+  assert.equal(f.attendanceRefreshes[0], f.session);
 });
 test("session score preserves historical student identity and persists the original session", async () => {
   const f = fixture();
@@ -143,7 +179,8 @@ test("session score preserves historical student identity and persists the origi
   assert.equal(f.session.scores[0].studentId, "historical");
   assert.equal(f.session.scores[0].value, 18);
   assert.equal(f.writes[0].sessionId, "session");
-  assert.equal(f.modals.length, 1);
+  assertViewEffects(f, "score");
+  assert.equal(f.activityRefreshes[0], f.session);
 });
 
 for (const status of ["invalid", "late:1000", "late:-1", "late:1.5", null]) {
@@ -342,10 +379,11 @@ test("score removal deletes only its selected row and persists the session scope
   assert.equal(f.session.scores.length, 1);
   assert.equal(f.session.scores[0].value, 18);
   assert.equal(f.writes[0].sessionId, "session");
-  assert.equal(f.modals.length, 1);
+  assertViewEffects(f, "score-removal");
+  assert.equal(f.activityRefreshes[0], f.session);
 });
 for (const kind of ["connection", "session"]) {
-  test(`late score removal does not reopen a changed ${kind}`, async () => {
+  test(`late score removal does not update a changed ${kind}`, async () => {
     const f = fixture();
     f.session.scores.push({ value: 18 });
     f.c.saveDBV24 = async () => {
@@ -353,7 +391,7 @@ for (const kind of ["connection", "session"]) {
       else f.c.currentSessionId = "other";
     };
     await f.c.removeSessionScoreV24("session", 0);
-    assert.equal(f.modals.length, 0);
+    assertViewEffects(f, "score-removal", 0);
   });
 }
 test("read-only score removal fails before mutating scores", async () => {
@@ -446,7 +484,7 @@ test("fill-unset attendance preserves recorded exceptions and changes only missi
   assert.equal(f.session.attendance.current, undefined);
   assert.equal(f.writes.length, 1);
   assert.equal(f.writes[0].sessionId, "session");
-  assert.equal(f.modals.length, 1);
+  assertViewEffects(f, "attendance");
   const before = JSON.stringify(f.session);
   assert.equal(
     await f.c.setAllAttendanceV24("present", { onlyUnset: true }),
@@ -454,7 +492,7 @@ test("fill-unset attendance preserves recorded exceptions and changes only missi
   );
   assert.equal(JSON.stringify(f.session), before);
   assert.equal(f.writes.length, 1);
-  assert.equal(f.modals.length, 1);
+  assertViewEffects(f, "attendance");
 });
 
 test("explicit bulk overwrite remains available and a repeated identical overwrite is a no-op", async () => {
@@ -474,10 +512,10 @@ test("explicit bulk overwrite remains available and a repeated identical overwri
     outsider: "absent",
   });
   assert.equal(f.writes.length, 1);
-  assert.equal(f.modals.length, 1);
+  assertViewEffects(f, "attendance");
   assert.equal(await f.c.setAllAttendanceV24("present"), false);
   assert.equal(f.writes.length, 1);
-  assert.equal(f.modals.length, 1);
+  assertViewEffects(f, "attendance");
 });
 
 test("rapid submissions of the same score form while a save is pending add one activity", async () => {
@@ -496,10 +534,10 @@ test("rapid submissions of the same score form while a save is pending add one a
   assert.equal(await f.c.addSessionScoreV24(event, "session"), false);
   assert.equal(f.session.scores.length, 1);
   assert.equal(f.writes.length, 1);
-  assert.equal(f.modals.length, 0);
+  assertViewEffects(f, "score", 0);
   release();
   assert.equal(await first, true);
-  assert.equal(f.modals.length, 1);
+  assertViewEffects(f, "score");
 });
 
 for (const stale of ["disconnected", "different-session"]) {
@@ -533,7 +571,7 @@ test("a rejected disconnected score form does not leave its submission gate lock
 for (const action of ["attendance", "unit", "score", "date", "score-removal"]) {
   for (const change of ["same-id-database", "installation-epoch"]) {
     test(
-      "late " + action + " completion cannot reopen after a replaced " + change,
+      "late " + action + " completion cannot update after a replaced " + change,
       async () => {
         const f = fixture(),
           originalData = f.c.db,
@@ -558,7 +596,7 @@ for (const action of ["attendance", "unit", "score", "date", "score-removal"]) {
           assert.equal(f.c.db, originalData);
           assert.equal(f.c.installationToken, "restored-epoch");
         }
-        assert.equal(f.modals.length, 0);
+        assertViewEffects(f, action, 0);
       },
     );
   }
@@ -568,7 +606,7 @@ for (const action of ["attendance", "unit", "score", "date", "score-removal"]) {
   test(
     "a successful " +
       action +
-      " save still reopens after the normal catalog object replacement",
+      " save still updates after the normal catalog object replacement",
     async () => {
       const f = fixture(),
         original = f.c.workspace;
@@ -582,7 +620,162 @@ for (const action of ["attendance", "unit", "score", "date", "score-removal"]) {
       } else await f.run(action);
       assert.notEqual(f.c.workspace, original);
       assert.equal(f.writes.length, 1);
-      assert.equal(f.modals.length, 1);
+      assertViewEffects(f, action);
     },
   );
+}
+
+for (const action of ["attendance", "score", "score-removal"]) {
+  test(`a rejected ${action} write never refreshes or finishes the session form`, async () => {
+    const f = fixture(),
+      event = f.scoreEvent();
+    f.session.scores.push({ value: 16 }, { value: 18 });
+    const entry = JSON.stringify(event.target);
+    f.c.saveDBV24 = async (scope) => {
+      f.writes.push(scope);
+      throw Error("synthetic quota failure");
+    };
+    const operation =
+      action === "score-removal"
+        ? f.c.removeSessionScoreV24("session", 0)
+        : action === "score"
+          ? f.c.addSessionScoreV24(event, "session")
+          : f.run(action);
+    await assert.rejects(operation, /synthetic quota failure/);
+    assert.equal(f.writes.length, 1);
+    assert.equal(JSON.stringify(event.target), entry);
+    assertViewEffects(f, action, 0);
+  });
+}
+
+test("successful activity submission finishes only its original form with the exact submitted strings and next intent", async () => {
+  const f = fixture(),
+    event = f.scoreEvent();
+  event.target.value.value = "۱۸٫۵";
+  event.target.note.value = "  exact pending note  ";
+  event.submitter = { hasAttribute: (name) => name === "data-session-next" };
+  const expected = Object.fromEntries(
+    ["studentId", "type", "value", "note"].map((name) => [
+      name,
+      event.target[name].value,
+    ]),
+  );
+  const originalFocus = { name: "attendance tab" };
+  f.c.document.activeElement = originalFocus;
+  f.c.saveDBV24 = async (scope) => {
+    f.writes.push(scope);
+    f.c.document.activeElement = { name: "new focus while saving" };
+  };
+  await f.c.addSessionScoreV24(event, "session");
+  assertViewEffects(f, "score");
+  assert.equal(f.finishedForms[0].form, event.target);
+  assert.equal(f.finishedForms[0].focusOrigin, originalFocus);
+  assert.deepEqual(JSON.parse(JSON.stringify(f.finishedForms[0].options)), {
+    submitted: expected,
+    advance: true,
+  });
+  assert.equal(f.session.scores[0].note, "exact pending note");
+});
+
+test("ordinary activity submission does not request a next-student advance", async () => {
+  const f = fixture();
+  await f.run("score");
+  assert.equal(f.finishedForms[0].options.advance, false);
+});
+
+for (const failure of [false, true]) {
+  test(`pending activity removal deletes once and releases its gate after ${failure ? "failure" : "success"}`, async () => {
+    const f = fixture(),
+      firstScore = { value: 16 },
+      secondScore = { value: 18 };
+    f.session.scores.push(firstScore, secondScore);
+    let settle;
+    f.c.saveDBV24 = (scope) => {
+      f.writes.push(scope);
+      return new Promise((resolve, reject) => {
+        settle = () => {
+          if (failure) {
+            // Model the save queue restoring the original durable score list.
+            f.session.scores = [firstScore, secondScore];
+            reject(Error("synthetic quota failure"));
+          } else resolve();
+        };
+      });
+    };
+    const first = f.c.removeSessionScoreV24("session", 0),
+      completed = failure
+        ? assert.rejects(first, /synthetic quota failure/)
+        : first;
+    assert.deepEqual(f.session.scores, [secondScore]);
+    assert.equal(await f.c.removeSessionScoreV24("session", 0), false);
+    assert.deepEqual(f.session.scores, [secondScore]);
+    assert.equal(f.writes.length, 1);
+    assertViewEffects(f, "score-removal", 0);
+    settle();
+    await completed;
+    assertViewEffects(f, "score-removal", failure ? 0 : 1);
+    f.c.saveDBV24 = async (scope) => f.writes.push(scope);
+    assert.equal(await f.c.removeSessionScoreV24("session", 0), true);
+    assert.equal(f.writes.length, 2);
+    assert.deepEqual(f.session.scores, failure ? [secondScore] : []);
+    assertViewEffects(f, "score-removal", failure ? 1 : 2);
+  });
+}
+
+test("a stale activity control is rejected before deleting a row or claiming the removal gate", async () => {
+  const f = fixture(),
+    control = { isConnected: false };
+  f.session.scores.push({ value: 16 }, { value: 18 });
+  let checked = 0;
+  f.c.sessionActivityControlMatches = (button, session, index) => {
+    checked++;
+    assert.equal(button, control);
+    assert.equal(session, f.session);
+    assert.equal(index, 0);
+    return false;
+  };
+  const before = JSON.stringify(f.session);
+  await assert.rejects(
+    f.c.removeSessionScoreV24("session", 0, control),
+    /ردیف فعالیت تغییر/,
+  );
+  assert.equal(checked, 1);
+  assert.equal(JSON.stringify(f.session), before);
+  assert.equal(f.writes.length, 0);
+  assertViewEffects(f, "score-removal", 0);
+  f.c.sessionActivityControlMatches = () => true;
+  assert.equal(await f.c.removeSessionScoreV24("session", 0, control), true);
+  assert.equal(f.session.scores[0].value, 18);
+  assertViewEffects(f, "score-removal");
+});
+
+for (const action of ["attendance", "score", "score-removal"]) {
+  for (const change of [
+    "edit-lease",
+    "workspace-id",
+    "period-loading",
+    "reset-busy",
+    "connection-retired",
+  ]) {
+    test(`pending ${action} completion cannot patch after ${change} changes`, async () => {
+      const f = fixture();
+      let activeToken = {};
+      f.c.assertSessionEditable = () => activeToken;
+      f.c.isSessionEditable = (_id, token) => token === activeToken;
+      f.c.saveDBV24 = async (scope) => {
+        f.writes.push(scope);
+        if (change === "edit-lease") activeToken = {};
+        if (change === "workspace-id") f.c.workspace.id = "other-workspace";
+        if (change === "period-loading") f.c.periodLoading = true;
+        if (change === "reset-busy") f.c.resetBusy = true;
+        if (change === "connection-retired") f.c.connectionRetired = true;
+      };
+      if (action === "score-removal") {
+        f.session.scores.push({ value: 18 });
+        await f.c.removeSessionScoreV24("session", 0);
+      } else await f.run(action);
+      assert.equal(f.writes.length, 1);
+      assertViewEffects(f, action, 0);
+    });
+  }
 }

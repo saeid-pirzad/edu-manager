@@ -377,6 +377,8 @@ async function dailyFlow() {
       value: form.elements.value.value,
       note: form.elements.note.value,
       focus: document.activeElement?.name,
+      focusTag: document.activeElement?.tagName,
+      focusHTML: document.activeElement?.outerHTML.slice(0, 200),
     },
   );
   form = setForm({ value: "18.5", note: "daily-next" });
@@ -394,6 +396,8 @@ async function dailyFlow() {
     {
       student: form.elements.studentId.value,
       focus: document.activeElement?.name,
+      focusTag: document.activeElement?.tagName,
+      focusHTML: document.activeElement?.outerHTML.slice(0, 200),
     },
   );
   form = setForm({ type: "positive", value: "1", note: "daily-positive" });

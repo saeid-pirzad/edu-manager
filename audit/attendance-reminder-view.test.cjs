@@ -109,6 +109,67 @@ test("home reminder card shows at most three latest items while full list keeps 
   assert.equal(items[0].key, "key-0");
 });
 
+test("reminder footer separates action labels and Persian counts in an accessible group", () => {
+  const c = fixture(),
+    model = {
+      items: Array.from({ length: 4 }, (_, index) =>
+        item({ key: "key-" + index }),
+      ),
+      notHeld: [{ id: "not-held-one" }, { id: "not-held-two" }],
+    },
+    before = JSON.stringify(model),
+    html = c.renderAttendanceReminders(model),
+    footer = html.slice(
+      html.indexOf('<footer class="attendance-reminders-footer">'),
+    );
+  assert.match(footer, /role="group" aria-label="فهرست‌های پیگیری حضور‌وغیاب"/);
+  assert.equal((footer.match(/data-ui-icon="none"/g) || []).length, 2);
+  assert.equal(
+    (footer.match(/<svg aria-hidden="true"><\/svg>/g) || []).length,
+    2,
+  );
+  assert.match(footer, /attendance-reminders-action-label">همهٔ موارد<\/span>/);
+  assert.match(
+    footer,
+    /attendance-reminders-action-label">برگزارنشده‌ها<\/span>/,
+  );
+  assert.match(
+    footer,
+    /<bdi class="attendance-reminders-action-count">۴<\/bdi>/,
+  );
+  assert.match(
+    footer,
+    /<bdi class="attendance-reminders-action-count">۲<\/bdi>/,
+  );
+  assert.match(footer, /<\/div><small>نمایش ۳ مورد اخیر<\/small>/);
+  assert.equal(JSON.stringify(model), before);
+});
+
+for (const historyOnly of [true, false])
+  test(`reminder footer keeps only the relevant ${historyOnly ? "history" : "all items"} action`, () => {
+    const c = fixture(),
+      html = c.renderAttendanceReminders({
+        items: historyOnly ? [] : [item()],
+        notHeld: historyOnly ? [{ id: "marker" }] : [],
+      }),
+      footer = html.slice(
+        html.indexOf('<footer class="attendance-reminders-footer">'),
+      );
+    assert.equal((footer.match(/<button /g) || []).length, 1);
+    assert.match(
+      footer,
+      /<bdi class="attendance-reminders-action-count">۱<\/bdi>/,
+    );
+    assert.equal(
+      footer.includes('data-workspace-action="attendance-reminders-all"'),
+      !historyOnly,
+    );
+    assert.equal(
+      footer.includes('data-workspace-action="attendance-reminders-not-held"'),
+      historyOnly,
+    );
+  });
+
 test("reminder content and reference attributes are escaped without leaking student names", () => {
   const c = fixture(),
     unsafe = item({

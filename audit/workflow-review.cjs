@@ -63,6 +63,17 @@ if (process.argv.includes("--help")) {
         ...(await evaluate("(" + scopedNavigation.toString() + ")()")),
       );
       cases.push(...(await evaluate("(" + largeTable.toString() + ")()")));
+      await require("./app-shell-scans-browser.cjs").run({
+        cdp,
+        evaluate,
+        cases,
+        delay,
+      });
+      await require("./css-compaction-browser.cjs").run({
+        evaluate,
+        cases,
+        root,
+      });
       await require("./mobile-ux.cjs")({ cdp, evaluate, cases, delay });
       await require("./csv-ux.cjs")({ cdp, evaluate, cases, delay });
       await require("./student-create-ux.cjs")({ cdp, evaluate, cases, delay });
@@ -200,6 +211,12 @@ if (process.argv.includes("--help")) {
         delay,
       });
       await require("./session-edit-access-browser.cjs").run({
+        cdp,
+        evaluate,
+        cases,
+        delay,
+      });
+      await require("./session-local-render-browser.cjs").run({
         cdp,
         evaluate,
         cases,

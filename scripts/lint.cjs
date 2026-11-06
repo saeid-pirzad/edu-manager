@@ -1,11 +1,17 @@
 "use strict";
 const fs = require("node:fs");
 const path = require("node:path");
+const { SourceMap } = require("node:module");
+const { assembleBundle } = require("./assemble-bundle.cjs");
+const sourceMap = require("./source-maps.cjs");
 const { Linter } = require("eslint");
 const recommended = require("@eslint/js").configs.recommended.rules;
 const globals = require("globals");
 const { applicationFiles } = require("./application-files.cjs");
 const root = path.resolve(__dirname, "..");
+const layout = JSON.parse(
+  fs.readFileSync(path.join(root, "source-map.json"), "utf8"),
+);
 const files = [...applicationFiles(root).keys()].filter(
   (name) => name.endsWith(".js") && name !== "service-worker.js",
 );
@@ -14,8 +20,22 @@ const sections = [];
 let line = 1;
 const combined = files
   .map((name) => {
-    const code = fs.readFileSync(path.join(root, name), "utf8");
-    sections.push({ name, line, lines: code.split("\n") });
+    const bundle = layout.bundles.find((item) => item.output === name);
+    if (!bundle) throw Error("Unmapped application bundle: " + name);
+    const fragments = bundle.sources.map((source) =>
+      fs
+        .readFileSync(path.join(root, source), "utf8")
+        .replace(/\r\n/g, "\n")
+        .replace(/\n?$/, "\n"),
+    );
+    const { code, prefix } = assembleBundle(bundle, fragments);
+    sections.push({
+      name,
+      line,
+      map: new SourceMap(
+        JSON.parse(sourceMap(name, bundle.sources, fragments, prefix)),
+      ),
+    });
     line += code.split("\n").length;
     for (const match of code.matchAll(
       /\b(?:globalThis|window|root)\.(Edu[A-Za-z0-9_]+)\s*=/g,
@@ -63,13 +83,13 @@ function check(name, code, environment, extra = {}) {
     if (name === "application") {
       const section = sections.findLast((item) => item.line <= message.line);
       const generatedLine = message.line - section.line;
-      const banner = section.lines
-        .slice(0, generatedLine + 1)
-        .findLastIndex((text) => text.startsWith("// Source: "));
-      location =
-        banner >= 0
-          ? `${section.lines[banner].slice(11)}:${generatedLine - banner}:${message.column}`
-          : `${section.name}:${generatedLine + 1}:${message.column}`;
+      const original = section.map.findEntry(
+        generatedLine,
+        Math.max(0, message.column - 1),
+      );
+      location = original.originalSource
+        ? `${path.relative(root, path.resolve(root, path.dirname(section.name), original.originalSource)).replaceAll("\\", "/")}:${original.originalLine + 1}:${original.originalColumn + message.column - original.generatedColumn}`
+        : `${section.name}:${generatedLine + 1}:${message.column}`;
     }
     console.error(
       `${location} ${message.ruleId || "parse"} ${message.message}`,

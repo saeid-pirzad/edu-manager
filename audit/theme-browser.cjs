@@ -7,6 +7,56 @@ const os = require("node:os");
 const path = require("node:path");
 const { main } = require("./data-integrity.cjs");
 
+// Inspect the settled native cascade, not an arbitrary intermediate transition
+// frame. This observes animations without finishing/cancelling or restyling them.
+// Infinite decorative animations cannot settle and do not delay the audit.
+async function settleThemePaint({ timeoutMs = 2000 } = {}) {
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0)
+    throw Error("Theme paint timeout must be a positive finite duration");
+  let timer,
+    expired = false;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => {
+      expired = true;
+      reject(Error("Theme paint did not settle within " + timeoutMs + "ms"));
+    }, timeoutMs);
+  });
+  const settle = async () => {
+    let waitedAnimations = 0,
+      batches = 0;
+    for (;;) {
+      // Include delayed modal setup/MutationObserver/rAF work and paint once
+      // more after every completed/cancelled group of finite transitions.
+      await new Promise(requestAnimationFrame);
+      await new Promise(requestAnimationFrame);
+      if (expired) return;
+      const finite = document.getAnimations().filter((animation) => {
+        if (["finished", "idle"].includes(animation.playState)) return false;
+        const timing = animation.effect?.getComputedTiming?.();
+        return Number.isFinite(timing?.endTime);
+      });
+      if (!finite.length) return { waitedAnimations, batches };
+      waitedAnimations += finite.length;
+      batches++;
+      await Promise.all(
+        finite.map((animation) =>
+          animation.finished.catch((error) => {
+            // A replaced CSS transition rejects with AbortError; sample the
+            // replacement only after another pair of native animation frames.
+            if (error?.name !== "AbortError") throw error;
+          }),
+        ),
+      );
+      if (expired) return;
+    }
+  };
+  try {
+    return await Promise.race([settle(), timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function prepareThemeFixture() {
   closeModal();
   await EduV24.test.settle();
@@ -394,7 +444,7 @@ async function run({ cdp, evaluate, cases, delay }) {
           cause: error,
         });
       }
-      await delay(120);
+      await evaluate("(" + settleThemePaint.toString() + ")()");
       const observed = await evaluate("(" + inspectTheme.toString() + ")()");
       measurements.push({ width, view: name, ...observed });
       add(
@@ -444,6 +494,7 @@ async function run({ cdp, evaluate, cases, delay }) {
           return { student:root.textContent.includes('آرمان آزمایشی'), otherStudent:root.textContent.includes('بهار آزمایشی'), sheets:root.querySelectorAll('.karnameh-student-sheet').length, rows:root.querySelectorAll('tbody tr').length };
         })()`);
         await cdp("Emulation.setEmulatedMedia", { media: "print" });
+        await evaluate("(" + settleThemePaint.toString() + ")()");
         const printed = await evaluate("(" + inspectTheme.toString() + ")()");
         add(
           "THEME_PRINT_CONTENT",
@@ -500,7 +551,7 @@ async function run({ cdp, evaluate, cases, delay }) {
       ["home", "students", "grades", "reports", "backups"].includes(name),
     )) {
       await evaluate("(async()=>{" + open + ";window.scrollTo(0,0);})()");
-      await delay(75);
+      await evaluate("(" + settleThemePaint.toString() + ")()");
       const size = await evaluate(
         "({width:innerWidth,content:document.documentElement.scrollWidth})",
       );
@@ -539,11 +590,11 @@ async function run({ cdp, evaluate, cases, delay }) {
     await evaluate(
       "closeModal();goSchools();document.querySelector('.entity-quick-create').open=true",
     );
-    await delay(175);
+    await evaluate("(" + settleThemePaint.toString() + ")()");
     await evaluate(
       "document.querySelector('.entity-create-field input').focus()",
     );
-    await delay(175);
+    await evaluate("(" + settleThemePaint.toString() + ")()");
     const focus = await evaluate(`(() => {
       const input = document.querySelector('.entity-create-field input');
       const style = getComputedStyle(input);
@@ -583,7 +634,7 @@ async function run({ cdp, evaluate, cases, delay }) {
         nodeId,
         forcedPseudoClasses: ["hover"],
       });
-      await delay(200);
+      await evaluate("(" + settleThemePaint.toString() + ")()");
       const hover = await evaluate("(" + inspectTheme.toString() + ")()");
       const fields =
         name === "select"
@@ -621,6 +672,7 @@ async function run({ cdp, evaluate, cases, delay }) {
 }
 
 module.exports = run;
+module.exports.settleThemePaint = settleThemePaint;
 if (require.main === module)
   main({
     stage: process.argv.includes("--baseline")

@@ -235,7 +235,7 @@ function legacy_openSessionModal(session, { activitySaved = null } = {}) {
       <div class="att-name" title="${esc(s.name)}"><span class="attendance-number" aria-hidden="true">${(i + 1).toLocaleString("fa-IR")}</span><span>${esc(s.name)}</span></div>
       <div class="att-btns" data-sid="${s.id}" role="group" aria-label="وضعیت حضور ${esc(s.name)}">
         <button type="button" aria-pressed="${isPresent}" class="present ${isPresent ? "active" : ""}" data-legacy-click="sessions-dialog:8">حاضر</button>
-        <button type="button" aria-pressed="${isLate}" class="late ${isLate ? "active" : ""}" data-legacy-click="sessions-dialog:9">تأخیر ${isLate && lateMins ? `(${lateMins}د)` : ""}</button>
+        <button type="button" aria-pressed="${isLate}" class="late ${isLate ? "active" : ""}" data-legacy-click="sessions-dialog:9">تأخیر ${isLate && st.includes(":") ? `(${lateMins}د)` : ""}</button>
         <button type="button" aria-pressed="${isLeave}" class="leave ${isLeave ? "active" : ""}" data-legacy-click="sessions-dialog:leave">مرخصی</button>
         <button type="button" aria-pressed="${isAbsent}" class="absent ${isAbsent ? "active" : ""}" data-legacy-click="sessions-dialog:10">غایب</button>
       </div>
@@ -255,59 +255,29 @@ function legacy_openSessionModal(session, { activitySaved = null } = {}) {
       <label class="session-field"><span>نمره یا مقدار</span><input name="value" aria-label="مقدار" type="text" inputmode="decimal" placeholder="مثلاً ۱۸ یا ۱" required></label>
       <label class="session-field session-field-wide"><span>توضیح <small>(اختیاری)</small></span><input name="note" aria-label="توضیح فعالیت" placeholder="موضوع تمرین یا توضیح فعالیت"></label>
       <div class="session-entry-actions"><button type="submit">ثبت فعالیت</button><button type="submit" class="ghost" data-session-next>ثبت و نفر بعد</button></div>
-    </form><div class="session-activity-records"><h4>فعالیت‌های ثبت‌شده</h4>`;
-  if (!session.scores.length) h += `<div class="empty">امتیازی ثبت نشده</div>`;
-  else {
-    h += `<table class="karnameh-table session-score-table"><thead><tr><th>دانش‌آموز</th><th>نوع</th><th>مقدار</th><th>توضیح</th><th>عملیات</th></tr></thead><tbody>`;
-    session.scores.forEach((sc, idx) => {
-      const st = sessionStudent(c, session, sc.studentId);
-      h += `<tr><td>${esc(st ? st.name : "—")}</td>
-        <td><span class="badge ${sc.type}">${TYPE_LABELS[sc.type]}</span></td>
-        <td>${sc.value}</td><td>${esc(sc.note || "")}</td>
-        <td><button type="button" class="danger" aria-label="حذف فعالیت ${esc(st?.name || "هنرجو")}" data-legacy-click="sessions-dialog:12" data-legacy-click-arg5="${esc(session.id)}" data-legacy-click-arg6="${esc(idx)}">×</button></td></tr>`;
-    });
-    h += `</tbody></table>`;
-  }
+    </form><div class="session-activity-records">${sessionActivityRecordsHtml(session, c)}`;
   h += `</div></section><div class="session-workspace-footer">
     <button type="button" class="success" data-legacy-click="sessions-dialog:13" data-legacy-click-arg0="${esc(session.id)}" data-legacy-click-arg1="${esc(session.schoolId)}" data-legacy-click-arg2="${esc(session.classId)}" data-legacy-click-arg3="${esc(session.schoolId)}" data-legacy-click-arg4="${esc(session.classId)}" data-legacy-click-arg5="${esc(session.lessonId)}">کپی برای معاون</button>
     <button type="button" class="ghost" data-legacy-click="sessions-dialog:14">بستن</button></div></div>`;
   if (showModal("ثبت اطلاعات جلسه", h) === false) return false;
   if (selectedPanel) showSessionPanel(selectedPanel);
   const form = document.querySelector("#modalBody .session-entry-form");
-  let saved = false;
   if (entry) {
     for (const [name, value] of Object.entries(entry))
       form.elements[name].value = value;
-    saved =
-      activitySaved &&
-      Object.keys(entry).every(
-        (name) => entry[name] === activitySaved.submitted[name],
-      );
-    if (saved) {
-      form.elements.value.value = "";
-      form.elements.note.value = "";
-      if (activitySaved.advance) {
-        const select = form.elements.studentId;
-        select.value = select.options[select.selectedIndex + 1]?.value || "";
-      }
-    }
   }
-  refreshSessionActivityInput(form);
+  bindSessionActivityRecords(session);
+  if (
+    !entry ||
+    !activitySaved ||
+    !finishSessionActivitySave(form, activitySaved)
+  )
+    refreshSessionActivityInput(form);
   refreshSessionAttendanceProgress();
   filterSessionAttendance(
     document.querySelector("#modalBody .session-attendance-search input"),
   );
   if (selectedPanel) document.getElementById("modalBody").scrollTop = scroll;
-  if (saved && selectedPanel === "activity")
-    setTimeout(() => {
-      if (
-        form.isConnected &&
-        currentSessionId === session.id &&
-        !form.elements.value.disabled &&
-        !document.getElementById("modal").classList.contains("hidden")
-      )
-        form.elements.value.focus({ preventScroll: true });
-    }, 0);
 }
 
 function getSessionById(id) {

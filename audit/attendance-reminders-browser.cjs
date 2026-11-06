@@ -150,7 +150,7 @@ async function seedReminders() {
   return globalThis.__attendanceFixture;
 }
 
-async function run({ cdp, evaluate, cases, delay }) {
+async function run({ cdp, evaluate, cases, delay, baselineFooter = false }) {
   const directory = fs.mkdtempSync(
       path.join(os.tmpdir(), "edu-attendance-reminders-"),
     ),
@@ -420,6 +420,160 @@ async function run({ cdp, evaluate, cases, delay }) {
         );
       }
       check("HISTORY_VIEW_NO_WRITES", before === (await signature()));
+    },
+    footerLayouts = async () => {
+      const before = await signature();
+      for (const scenario of [
+        { name: "BOTH", actions: ["all", "not-held"] },
+        { name: "STRESS", actions: ["all", "not-held"], count: 1000 },
+        { name: "ALL_ONLY", actions: ["all"], count: 1000 },
+        { name: "HISTORY_ONLY", actions: ["not-held"], count: 1000 },
+      ]) {
+        if (scenario.count)
+          await evaluate(`(()=>{
+            const source=${JSON.stringify(reminderViewSource)},
+              render=new Function('workspace','esc','faDate','EduIcons','model',
+                source+'\\nreturn renderAttendanceReminders(model);'),
+              items=Array.from({length:1000},(_,index)=>({
+                key:'footer-layout-'+index,date:${JSON.stringify(fixture.date)},period:0,kind:'missing',
+                schoolName:'هنرستان آزمایشی',className:'کلاس آزمایشی',lessonName:'درس آزمایشی'}));
+            document.getElementById('attendanceReminderRegion').innerHTML=
+              render(null,esc,faDate,EduIcons,{start:${JSON.stringify(fixture.prior)},
+                end:${JSON.stringify(fixture.date)},
+                items:${scenario.actions.includes("all") ? "items" : "[]"},
+                notHeld:${scenario.actions.includes("not-held") ? "Array.from({length:1000},(_,id)=>({id}))" : "[]"}});
+          })()`);
+        for (const width of [320, 360, 390, 768, 1024, 1280]) {
+          await cdp("Emulation.setDeviceMetricsOverride", {
+            width,
+            height: 1000,
+            deviceScaleFactor: 1,
+            mobile: false,
+          });
+          await delay(100);
+          await evaluate(
+            "document.querySelector('#attendanceReminderRegion .attendance-reminders-footer').scrollIntoView({block:'center'})",
+          );
+          const layout = await evaluate(`(()=>{
+            const root=document.getElementById('attendanceReminderRegion'),
+              footer=root.querySelector('.attendance-reminders-footer'),
+              actions=footer.querySelector('.attendance-reminders-footer-actions'),
+              buttons=[...footer.querySelectorAll('button')],hint=footer.querySelector('small'),
+              rect=e=>{const r=e.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}},
+              inside=(a,b)=>a.left>=b.left-1&&a.right<=b.right+1&&a.top>=b.top-1&&a.bottom<=b.bottom+1,
+              overlap=(a,b)=>Math.min(a.right,b.right)-Math.max(a.left,b.left)>1&&Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>1,
+              box=rect(footer),buttonsLayout=buttons.map(button=>{
+                const label=button.querySelector('.attendance-reminders-action-label'),
+                  count=button.querySelector('.attendance-reminders-action-count'),
+                  icon=button.querySelector('svg'),buttonBox=rect(button),
+                  parts=[...(icon?.getClientRects().length?[icon]:[]),label,count].filter(Boolean).map(rect),
+                  range=label&&document.createRange();
+                if(range)range.selectNodeContents(label);
+                return {action:button.dataset.workspaceAction,text:button.textContent.trim(),
+                  label:label?.textContent.trim(),count:count?.textContent.trim(),rect:buttonBox,
+                  enabled:!button.disabled,inside:inside(buttonBox,box),
+                  clipped:button.scrollWidth>button.clientWidth+1,
+                  completeLabel:!!label&&getComputedStyle(label).textOverflow!=='ellipsis'&&
+                    label.scrollWidth<=label.clientWidth+1&&[...range.getClientRects()].every(r=>inside(r,buttonBox)),
+                  structure:!!label&&!!count&&!!icon&&button.dataset.uiIcon==='none',
+                  partsInside:parts.every(p=>inside(p,buttonBox)),
+                  partsOverlap:parts.some((p,index)=>parts.slice(index+1).some(q=>overlap(p,q)))};
+              });
+            return {width:innerWidth,scenario:${JSON.stringify(scenario.name)},
+              pageOverflow:document.documentElement.scrollWidth>innerWidth+1,
+              rootOverflow:root.scrollWidth>root.clientWidth+1,footerOverflow:footer.scrollWidth>footer.clientWidth+1,
+              actionsInside:!!actions&&inside(rect(actions),box),buttons:buttonsLayout,
+              sameRow:buttonsLayout.length===2&&Math.abs(buttonsLayout[0].rect.top-buttonsLayout[1].rect.top)<1,
+              equalHeight:buttonsLayout.length===2&&Math.abs(buttonsLayout[0].rect.height-buttonsLayout[1].rect.height)<1,
+              equalWidth:buttonsLayout.length===2&&Math.abs(buttonsLayout[0].rect.width-buttonsLayout[1].rect.width)<1,
+              singleFillsActions:buttonsLayout.length===1&&!!actions&&Math.abs(buttonsLayout[0].rect.width-rect(actions).width)<1,
+              noOverlap:buttonsLayout.length===2&&!overlap(buttonsLayout[0].rect,buttonsLayout[1].rect),
+              hintOwnLine:!hint||buttonsLayout.every(button=>rect(hint).top>=button.rect.bottom-1),
+              hint:hint&&{text:hint.textContent.trim(),rect:rect(hint),inside:inside(rect(hint),box)}};
+          })()`);
+          if (!baselineFooter)
+            check(
+              "FOOTER_" + scenario.name + "_" + width,
+              !layout.pageOverflow &&
+                !layout.rootOverflow &&
+                !layout.footerOverflow &&
+                layout.actionsInside &&
+                (scenario.actions.length === 1
+                  ? width > 600 || layout.singleFillsActions
+                  : layout.sameRow &&
+                    layout.equalHeight &&
+                    layout.equalWidth &&
+                    layout.noOverlap) &&
+                (width > 600 || layout.hintOwnLine) &&
+                (!layout.hint || layout.hint.inside) &&
+                layout.buttons.length === scenario.actions.length &&
+                layout.buttons.every(
+                  (button) =>
+                    button.enabled &&
+                    button.inside &&
+                    !button.clipped &&
+                    button.completeLabel &&
+                    button.structure &&
+                    button.partsInside &&
+                    !button.partsOverlap &&
+                    button.rect.height >= 44 &&
+                    (!scenario.count || button.count === "۱٬۰۰۰"),
+                ) &&
+                layout.buttons.every(
+                  (button, index) =>
+                    button.action ===
+                      "attendance-reminders-" + scenario.actions[index] &&
+                    button.label ===
+                      (scenario.actions[index] === "all"
+                        ? "همهٔ موارد"
+                        : "برگزارنشده‌ها"),
+                ),
+              layout,
+            );
+          else console.log("Footer baseline: " + JSON.stringify(layout));
+          await evaluate(
+            "document.querySelector('#attendanceReminderRegion .attendance-reminders-footer button').focus({preventScroll:true})",
+          );
+          if (scenario.actions.length === 2)
+            for (const type of ["keyDown", "keyUp"])
+              await cdp("Input.dispatchKeyEvent", {
+                type,
+                key: "Tab",
+                code: "Tab",
+                windowsVirtualKeyCode: 9,
+              });
+          const focus = await evaluate(`(()=>{
+            const button=document.activeElement,style=getComputedStyle(button);
+            return {action:button.dataset.workspaceAction,visible:button.getClientRects().length>0,
+              focusVisible:button.matches(':focus-visible'),outline:style.outlineStyle,
+              outlineWidth:parseFloat(style.outlineWidth)};
+          })()`);
+          if (!baselineFooter)
+            check(
+              "FOOTER_KEYBOARD_" + scenario.name + "_" + width,
+              focus.action ===
+                "attendance-reminders-" + scenario.actions.at(-1) &&
+                focus.visible &&
+                focus.focusVisible &&
+                focus.outline !== "none" &&
+                focus.outlineWidth >= 2,
+              focus,
+            );
+          const shot = await cdp("Page.captureScreenshot", { format: "png" });
+          fs.writeFileSync(
+            path.join(
+              directory,
+              `footer-${baselineFooter ? "baseline" : "updated"}-${scenario.name.toLowerCase()}-${width}.png`,
+            ),
+            Buffer.from(shot.data, "base64"),
+          );
+        }
+      }
+      await evaluate("goSchools()");
+      await wait(
+        "!!document.querySelector('#attendanceReminderRegion [data-workspace-action=attendance-reminders-not-held]')",
+      );
+      check("FOOTER_LAYOUT_NO_WRITES", before === (await signature()));
     },
     orderedHistoryProbe = async () => {
       const before = await signature(),
@@ -706,6 +860,8 @@ async function run({ cdp, evaluate, cases, delay }) {
       durable.markers === 1 && durable.sessions === 1 && !durable.missing,
       durable,
     );
+    await footerLayouts();
+    if (baselineFooter) return;
     await orderedHistoryProbe();
     await click("attendance-reminders-not-held");
     await wait(
@@ -1091,14 +1247,21 @@ async function run({ cdp, evaluate, cases, delay }) {
   check(
     "PREVIEWS",
     fs.readdirSync(directory).filter((name) => name.endsWith(".png")).length ===
-      30,
+      54,
     { directory, fixture },
   );
 }
 
 module.exports = { run, seedReminders };
 if (require.main === module)
-  main({ stage: "attendance-reminders", runExtra: run }).catch((error) => {
+  main({
+    stage: "attendance-reminders",
+    runExtra: (context) =>
+      run({
+        ...context,
+        baselineFooter: process.argv.includes("--baseline-footer"),
+      }),
+  }).catch((error) => {
     console.error(error.stack || String(error));
     process.exitCode = 2;
   });

@@ -1,10 +1,7 @@
 function installUI() {
   installWorkspaceActions();
   installGradeEvents();
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible")
-      void refreshAttendanceReminders();
-  });
+  installAttendanceReminderClock();
   window.addEventListener("storage", (event) => {
     if (
       event.key === RESET_EPOCH_KEY &&

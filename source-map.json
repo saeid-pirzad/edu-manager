@@ -44,6 +44,7 @@
         "src/legacy/events/students-membership.js",
         "src/legacy/courses/config.js",
         "src/legacy/events/courses-config.js",
+        "src/legacy/sessions/view-refresh.js",
         "src/legacy/sessions/dialog.js",
         "src/legacy/events/sessions-dialog.js",
         "src/legacy/data/backup-import.js",
