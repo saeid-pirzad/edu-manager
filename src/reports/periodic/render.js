@@ -28,11 +28,11 @@ function render(mode) {
   let h =
     '<section class="card periodic-controls no-print"><h3>تهیه گزارش ' +
     modeLabel(mode) +
-    "</h3><p>" +
+    '</h3><p class="periodic-scope-note"><span class="periodic-scope-full">' +
     (mode === "annual"
       ? "گزارش سالانه از ترم اول و دوم همین سال تحصیلی تهیه می‌شود. "
       : "جلسات و فعالیت‌های گزارش فقط از ترم انتخاب‌شده، در بازهٔ انتخابی خوانده می‌شوند. ") +
-    `گزارش اولیا فقط اطلاعات هنرجوی انتخاب‌شده را در بر می‌گیرد.</p><div class="periodic-control-grid"><label>مخاطب<select data-legacy-change="reports-periodic-render:0">` +
+    `گزارش اولیا فقط اطلاعات هنرجوی انتخاب‌شده را در بر می‌گیرد.</span><span class="periodic-scope-compact">${mode === "annual" ? "هر دو ترم همین سال تحصیلی؛ اولیا فقط هنرجوی انتخاب‌شده." : "فقط ترم و بازهٔ انتخابی؛ اولیا فقط هنرجوی انتخاب‌شده."}</span></p><div class="periodic-control-grid"><label>مخاطب<select data-legacy-change="reports-periodic-render:0">` +
     option("management", "مدیریت مدرسه", f.audience) +
     option("parent", "اولیای یک هنرجو", f.audience) +
     "</select></label>" +

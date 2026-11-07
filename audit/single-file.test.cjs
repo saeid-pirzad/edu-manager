@@ -610,15 +610,15 @@ test("missing picker offers a manual backup without pretending automatic support
   delete f.context.window.showSaveFilePicker;
   assert.match(
     f.context.singleFilePanel(),
-    /<section class="backup-automatic">/,
+    /<details class="backup-automatic">/,
   );
   assert.match(
     f.context.singleFilePanel(),
-    /<h3>ذخیره خودکار در یک فایل<\/h3>/,
+    /<summary><span>ذخیره خودکار<\/span>/,
   );
-  assert.match(
+  assert.doesNotMatch(
     f.context.singleFilePanel(),
-    /data-workspace-action="single-file-choose" disabled/,
+    /data-workspace-action="single-file-choose"/,
   );
   assert.match(f.context.singleFilePanel(), /در دسترس نیست/);
   assert.doesNotMatch(

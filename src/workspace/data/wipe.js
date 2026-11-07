@@ -6,10 +6,10 @@ async function wipeAllV24() {
     '<form class="record-editor wipe-editor" id="wipeEditor" data-workspace-submit="confirm-wipe" aria-describedby="wipeWarning">' +
       '<section class="wipe-warning" id="wipeWarning"><span class="wipe-symbol" aria-hidden="true">' +
       EduIcons.html("trash") +
-      "</span><div><h4>همه اطلاعات از این مرورگر پاک می‌شوند</h4><p>این عملیات تمام اطلاعات ذخیره‌شده داخل برنامه را حذف می‌کند.</p></div></section>" +
-      '<section class="wipe-scope" aria-label="اطلاعاتی که حذف می‌شوند"><h4>چه چیزهایی حذف می‌شوند؟</h4><ul><li>اطلاعات سال تحصیلی و هر دو ترم، مدرسه‌ها، کلاس‌ها و دانش‌آموزان</li><li>نمرات، جلسات و سوابق حضور و غیاب</li><li>پیش‌نویس‌ها، توضیحات گزارش و سوابق قدیمیِ موجود</li><li>کارنامه‌های ثابت و پشتیبان‌های داخلی</li></ul></section>' +
-      '<section class="wipe-backup"><h4>اول یک نسخه مستقل نگه دارید</h4><p>برنامه نصب‌شده و فایل‌های پشتیبان بیرون برنامه باقی می‌مانند. برای نگهداری کل اطلاعات، پشتیبان کامل را دریافت کنید.</p><button type="button" class="ghost wipe-export" data-workspace-action="export-full">دریافت پشتیبان کامل سیستم</button></section>' +
-      '<div class="wipe-confirmation"><label for="wipeText">برای تأیید، «حذف» را بنویسید</label><input id="wipeText" autocomplete="off" spellcheck="false" aria-describedby="wipeError" placeholder="حذف"><label class="wipe-backup-check" for="wipeBackup"><input type="checkbox" id="wipeBackup"><span>پشتیبان مستقل موردنیاز را نگه داشته‌ام.</span></label></div>' +
+      "</span><div><h4>حذف همهٔ سال‌های تحصیلی</h4><p>همهٔ اطلاعات این مرورگر پاک می‌شود؛ بازگردانی فقط با فایل پشتیبان ممکن است.</p></div></section>" +
+      '<section class="wipe-scope" aria-label="اطلاعاتی که حذف می‌شوند"><h4>اطلاعات مشمول حذف</h4><p>مدرسه‌ها، کلاس‌ها، هنرجویان، درس‌ها، برنامه، جلسات، نمرات، فعالیت‌ها، گزارش‌ها و پشتیبان‌های داخلی.</p></section>' +
+      '<section class="wipe-backup" aria-label="پشتیبان پیش از حذف"><p>فایل‌های روی دستگاه و نصب برنامه باقی می‌مانند.</p><button type="button" class="ghost wipe-export" data-workspace-action="export-full" title="دریافت پشتیبان کامل سیستم">دریافت پشتیبان</button></section>' +
+      '<div class="wipe-confirmation"><label for="wipeText">برای تأیید، «حذف» را بنویسید</label><input id="wipeText" autocomplete="off" spellcheck="false" aria-describedby="wipeError" placeholder="حذف"><label class="wipe-backup-check" for="wipeBackup"><input type="checkbox" id="wipeBackup"><span>پشتیبان مستقل را نگه داشته‌ام.</span></label></div>' +
       '<p id="wipeError" class="entity-create-error" role="alert"></p><div class="record-editor-actions wipe-actions"><button type="button" class="ghost" data-workspace-action="close">انصراف</button><button type="submit" class="danger">حذف کامل اطلاعات</button></div></form>',
   );
 }

@@ -1293,27 +1293,26 @@ if(element.innerHTML!==html)element.innerHTML=html}function singleFileNoticeHtml
 showSaveFilePicker&&typeof singleFile?.handle?.requestPermission==="function";return'<span class="single-file-message" role="status">'+esc(message)+"</span>"+(canRequest?
 '<button type="button" class="single-file-permission-action" data-workspace-action="single-file-save">اجازه مجدد</button>':"")}function singleFileStatus(message,{
 permission=false,saved=false}={}){singleFileMessage=message;singleFilePermissionNeeded=permission;singleFileNoticeSaved=saved;paintSingleFileBanner();const element=document.
-getElementById("singleFileStatus");if(element){element.innerHTML=singleFileNoticeHtml();element.hidden=saved}const badge=document.getElementById("singleFileBadg\
-e");if(badge){badge.innerHTML=singleFileNoticeHtml();badge.hidden=!singleFileFailure;const panel=document.querySelector("#app .workspace-bar");const destination=panel;
-if(destination&&badge.parentElement!==destination)destination.append(badge)}}function singleFilePanel(){if(!window.showSaveFilePicker)return'<section class="bac\
-kup-automatic"><h3>ذخیره خودکار در یک فایل</h3><p>فایل را یک‌بار انتخاب کنید؛ برنامه هنگام باز بودن، همان فایل را به‌روز می‌کند.</p><p id="singleFileStatus" rol\
-e="status">ذخیره خودکار در فایل در این محیط در دسترس نیست. این برنامه را در Chrome یا Edge باز کنید؛ پشتیبان دستی همچنان در دسترس است.</p><div class="row"><butt\
-on data-workspace-action="single-file-choose" disabled>انتخاب فایل و فعال‌سازی</button></div>'+singleFileFallbackPanel(true)+"</section>";return'\
-<section class="backup-automatic"><h3>ذخیره خودکار در یک فایل</h3><p>فایل را یک‌بار انتخاب کنید؛ برنامه هنگام باز بودن، همان فایل را به‌روز می‌کند.</p><div id="\
-singleFileStatus" class="single-file-notice"'+(singleFileNoticeSaved?" hidden":"")+">"+singleFileNoticeHtml()+"</div>"+singleFileFallbackPanel(singleFileFailure)+
-'<div class="row"><button data-workspace-action="single-file-choose">انتخاب فایل و فعال‌سازی</button><button class="ghost" data-workspace-action="single-file-sa\
-ve">ذخیره اکنون / اجازه مجدد</button><button class="ghost" data-workspace-action="single-file-stop">توقف اتصال فایل</button></div></section>'}
-function singleFileFallbackPanel(visible){return'<div id="singleFileFallback"'+(visible?"":" hidden")+"><p>ذخیره خودکار فایل فعال نیست. فایل خالی پشتیبان قابل ب\
-ازیابی نیست. می‌توانید مجوز یا محل فایل را عوض کنید، از مرورگر دیگری مانند Chrome استفاده کنید، یا از دکمهٔ دریافت پشتیبان کامل در بالای همین پنجره استفاده کنید\
-. دریافت دستی، ذخیره خودکار را فعال نمی‌کند.</p></div>"}function showSingleFileFallback(visible){singleFileFailure=visible;const element=document.
-getElementById("singleFileFallback");if(element)element.hidden=!visible}function singleFileContentBaseline(snapshot){const counts={version:1,records:0,schools:0,
-students:0,lessons:0,grades:0,attendance:0,activities:0};const populatedScores=value=>{if(typeof value==="number")return Number.isFinite(value)?1:0;if(typeof value===
-"string")return value.trim()?1:0;if(!value||typeof value!=="object")return 0;return Object.values(value).reduce((total,item)=>total+populatedScores(item),0)};const scores=value=>{
-if(!value||typeof value!=="object")return;for(const[key,item]of Object.entries(value)){if(["kardaneshScores","podScores","unitScores"].includes(key))counts.grades+=
-populatedScores(item);else if(item&&typeof item==="object")scores(item)}};for(const row of snapshot.stores?.records||[]){if(row.logical==="meta"){counts.schools+=
-row.value?.layout?.length||0;continue}counts.records++;if(row.logical?.startsWith("class:")){counts.students+=(row.value?.students?.length||0)+(row.value?.archivedStudents?.
-length||0);counts.lessons+=row.value?.lessons?.length||0;scores(row.value)}else if(row.logical?.startsWith("session:")){counts.activities+=row.value?.scores?.length||
-0;counts.attendance+=Object.values(row.value?.attendance||{}).filter(value=>value!==null&&value!==void 0&&value!=="").length}}return counts}function singleFileSourceDropped(previous,current){
+getElementById("singleFileStatus");if(element){element.innerHTML=singleFileNoticeHtml();element.hidden=saved;const panel=element.closest?.("details.backup-autom\
+atic");if(permission&&panel)panel.open=true}const badge=document.getElementById("singleFileBadge");if(badge){badge.innerHTML=singleFileNoticeHtml();badge.hidden=
+!singleFileFailure;const panel=document.querySelector("#app .workspace-bar");const destination=panel;if(destination&&badge.parentElement!==destination)destination.
+append(badge)}}function singleFilePanel(){const summary="<summary><span>ذخیره خودکار</span><small>اختیاری</small></summary>";if(!window.showSaveFilePicker)
+return'<details class="backup-automatic">'+summary+'<p id="singleFileStatus" role="status">در این مرورگر در دسترس نیست؛ از «دریافت فایل» استفاده کنید.</p></deta\
+ils>';return'<details class="backup-automatic"'+(singleFileFailure||singleFilePermissionNeeded?" open":"")+">"+summary+'<p>فایل را یک‌بار انتخاب کنید؛ هنگام باز\
+ بودن برنامه، همان فایل به‌روز می‌شود.</p><div id="singleFileStatus" class="single-file-notice"'+(singleFileNoticeSaved?" hidde\
+n":"")+">"+singleFileNoticeHtml()+"</div>"+singleFileFallbackPanel(singleFileFailure)+'<div class="row"><button data-workspace-action="single-file-choose">انتخا\
+ب فایل</button><button class="ghost" data-workspace-action="single-file-save" title="ذخیره اکنون / اجازه مجدد">ذخیره اکنون</button><button class="ghost" data-wo\
+rkspace-action="single-file-stop">قطع اتصال</button></div></details>'}function singleFileFallbackPanel(visible){return'<div id="singleFileFallback"'+(visible?
+"":" hidden")+"><p>فایل خالی پشتیبان نیست؛ فعلاً «دریافت فایل» را بزنید.</p></div>"}function showSingleFileFallback(visible){
+singleFileFailure=visible;const element=document.getElementById("singleFileFallback");if(element){element.hidden=!visible;const panel=element.closest?.("details\
+.backup-automatic");if(visible&&panel)panel.open=true}}function singleFileContentBaseline(snapshot){const counts={version:1,records:0,schools:0,students:0,lessons:0,
+grades:0,attendance:0,activities:0};const populatedScores=value=>{if(typeof value==="number")return Number.isFinite(value)?1:0;if(typeof value==="string")return value.
+trim()?1:0;if(!value||typeof value!=="object")return 0;return Object.values(value).reduce((total,item)=>total+populatedScores(item),0)};const scores=value=>{if(!value||
+typeof value!=="object")return;for(const[key,item]of Object.entries(value)){if(["kardaneshScores","podScores","unitScores"].includes(key))counts.grades+=populatedScores(
+item);else if(item&&typeof item==="object")scores(item)}};for(const row of snapshot.stores?.records||[]){if(row.logical==="meta"){counts.schools+=row.value?.layout?.
+length||0;continue}counts.records++;if(row.logical?.startsWith("class:")){counts.students+=(row.value?.students?.length||0)+(row.value?.archivedStudents?.length||
+0);counts.lessons+=row.value?.lessons?.length||0;scores(row.value)}else if(row.logical?.startsWith("session:")){counts.activities+=row.value?.scores?.length||0;
+counts.attendance+=Object.values(row.value?.attendance||{}).filter(value=>value!==null&&value!==void 0&&value!=="").length}}return counts}function singleFileSourceDropped(previous,current){
 if(previous?.version!==1)return false;const keys=Object.keys(current).filter(key=>key!=="version");if(keys.some(key=>previous[key]>0)&&keys.every(key=>current[key]===
 0))return true;const educational=["students","lessons","grades","attendance","activities"];if(educational.some(key=>previous[key]>0)&&educational.every(key=>current[key]===
 0))return true;return keys.some(key=>previous[key]>=10&&previous[key]-current[key]>=10&&current[key]<=previous[key]/2)}function announceSingleFileSuspension(target=singleFile){
@@ -1518,14 +1517,13 @@ content,name);try{localStorage.setItem("Edu24.externalBackup."+origin,JSON.strin
 "confirmed":"downloaded"}async function openBackups(){const ensureCurrent=preserveAsyncTarget();await writer.catch(()=>{});ensureCurrent();let estimate="";if(navigator.
 storage?.estimate){const e=await navigator.storage.estimate();ensureCurrent();estimate="مصرف تقریبی فضای این مبدا: "+Math.round((e.usage||0)/
 1048576)+" مگابایت از "+Math.round((e.quota||0)/1048576)+" مگابایت."}showModal("پشتیبان و بازیابی",'<div class="backup-hub"><sect\
-ion class="backup-manual"><h4>فایل پشتیبان شما</h4><p>یک فایل برای کل اطلاعات: سال تحصیلی و هر دو ترم، مدرسه‌ها، کلاس‌ها، هنرجویان، نمرات و حضور‌وغیاب. فایل پشت\
-یبان، ترم تازه‌ای ایجاد نمی‌کند؛ بازیابی فقط کل اطلاعات فعلی را با محتوای فایل جایگزین می‌کند. سوابق قدیمیِ موجود در بانک هم در فایل حفظ می‌شوند.</p><div class=\
-"backup-action-grid"><button data-workspace-action="export-full">دریافت پشتیبان کامل</button><button class="ghost backup-share-entry" data-workspace-action="pre\
-pare-share-backup">اشتراک‌گذاری پشتیبان کامل</button><button class="ghost" data-workspace-action="choose-import">بازیابی از فایل</button></div><p class="muted" \
-id="lastExternalBackupStatus" role="status">'+esc(lastExternalBackupLabel())+"</p></section>"+singleFilePanel()+'<details class="backup-help"><summary>فضای ذخیر\
-ه‌سازی مرورگر</summary><p>'+esc(estimate)+'</p></details><details class="backup-reset"><summary>پاک‌سازی اطلاعات سیستم</summary><p>برای شروع دوباره\
-، همه اطلاعات برنامه در همین مرورگر حذف می‌شود. این کار بازیابی فایل نیست؛ پیش از ادامه پشتیبان کامل دریافت کنید. فایل‌های ذخیره‌شده روی دستگاه حذف نمی‌شوند.</p\
-><button type="button" class="danger" data-workspace-action="open-wipe">بررسی و تأیید پاک‌سازی</button></details></div>')}function previewImport(candidate,label){
+ion class="backup-manual"><h4>پشتیبان کامل</h4><p>همهٔ اطلاعات و سال‌های تحصیلی، در یک فایل.</p><div class="backup-action-grid"><button data-workspace-action="e\
+xport-full">دریافت فایل</button><button class="ghost backup-share-entry" data-workspace-action="prepare-share-backup">ارسال فایل</button><button class="ghost" d\
+ata-workspace-action="choose-import">بازیابی فایل</button></div><p class="backup-restore-note">بازیابی، تمام اطلاعات فعلی را جایگزین می‌کند.</p><details class="\
+backup-delivery"><summary>آخرین پشتیبان</summary><p class="muted" id="lastExternalBackupStatus" role="status">'+esc(lastExternalBackupLabel())+"</p>\
+</details></section>"+singleFilePanel()+'<details class="backup-help"><summary>فضای مرورگر</summary><p>'+esc(estimate)+'</p></details><details class="\
+backup-reset"><summary>پاک‌سازی اطلاعات</summary><p>همهٔ اطلاعات همین مرورگر حذف می‌شود؛ فایل‌های دستگاه باقی می‌مانند. پیش از ادامه پشتیبان بگیرید.</p><button \
+type="button" class="danger" data-workspace-action="open-wipe">بررسی و تأیید پاک‌سازی</button></details></div>')}function previewImport(candidate,label){
 const preview={candidate,label,workspace:workspace?.id,revision:workspace?.revision,installation:typeof installationToken==="undefined"?"":installationToken};const classes=candidate.
 schools.flatMap(s=>s.classes),students=classes.reduce((n,c)=>n+c.students.length,0);const opened=showModal("پیش‌نمایش بازیابی","<p>منبع: "+
 esc(label)+"</p><p>"+candidate.schools.length+" مدرسه، "+classes.length+" کلاس، "+students+" دانش‌آموز فعال، "+candidate.sessions.length+
@@ -2340,19 +2338,18 @@ id!==context.workspace||state.schoolId!==context.schoolId||state.classId!==conte
 studentEditing=null;closeModal();render()}catch(error){if(!showRecordEditorError(error,"studentEditError"))handleError(error)}finally{studentSaving=false;finish()}}
 async function wipeAllV24(){if(fileMode||!ready||connectionRetired)return handleError(Error("ابتدا نسخه آماده برنامه را باز کنید."));
 showModal("حذف کامل اطلاعات سیستم",'<form class="record-editor wipe-editor" id="wipeEditor" data-workspace-submit="confirm-wipe" aria-describ\
-edby="wipeWarning"><section class="wipe-warning" id="wipeWarning"><span class="wipe-symbol" aria-hidden="true">'+EduIcons.html("trash")+'</span><div><h4>همه اطل\
-اعات از این مرورگر پاک می‌شوند</h4><p>این عملیات تمام اطلاعات ذخیره‌شده داخل برنامه را حذف می‌کند.</p></div></section><section class="wipe-scope" aria-label="اط\
-لاعاتی که حذف می‌شوند"><h4>چه چیزهایی حذف می‌شوند؟</h4><ul><li>اطلاعات سال تحصیلی و هر دو ترم، مدرسه‌ها، کلاس‌ها و دانش‌آموزان</li><li>نمرات، جلسات و سوابق حضور\
- و غیاب</li><li>پیش‌نویس‌ها، توضیحات گزارش و سوابق قدیمیِ موجود</li><li>کارنامه‌های ثابت و پشتیبان‌های داخلی</li></ul></section><section class="wipe-backup"><h4\
->اول یک نسخه مستقل نگه دارید</h4><p>برنامه نصب‌شده و فایل‌های پشتیبان بیرون برنامه باقی می‌مانند. برای نگهداری کل اطلاعات، پشتیبان کامل را دریافت کنید.</p><butt\
-on type="button" class="ghost wipe-export" data-workspace-action="export-full">دریافت پشتیبان کامل سیستم</button></section><div class="wipe-confirmation"><label\
- for="wipeText">برای تأیید، «حذف» را بنویسید</label><input id="wipeText" autocomplete="off" spellcheck="false" aria-describedby="wipeError" placeholder="حذف"><l\
-abel class="wipe-backup-check" for="wipeBackup"><input type="checkbox" id="wipeBackup"><span>پشتیبان مستقل موردنیاز را نگه داشته‌ام.</span></label></div><p id="\
-wipeError" class="entity-create-error" role="alert"></p><div class="record-editor-actions wipe-actions"><button type="button" class="ghost" data-workspace-actio\
-n="close">انصراف</button><button type="submit" class="danger">حذف کامل اطلاعات</button></div></form>')}async function confirmWipe(){if(resetBusy)
-return false;const form=document.querySelector("#modal:not(.hidden) #wipeEditor");if(!form)return false;if(fileMode||!ready||connectionRetired)return false;if(document.
-getElementById("wipeText").value!=="حذف"||!document.getElementById("wipeBackup").checked){showRecordEditorError(recordFieldError("متن تأیید و گزینه پشتیبان ر\
-ا تکمیل کنید.","wipeText"),"wipeError");return false}if(!confirm("آخرین تأیید: همه اطلاعات این برنامه از این مرورگر حذف شوند؟"))
+edby="wipeWarning"><section class="wipe-warning" id="wipeWarning"><span class="wipe-symbol" aria-hidden="true">'+EduIcons.html("trash")+'</span><div><h4>حذف همه\
+ٔ سال‌های تحصیلی</h4><p>همهٔ اطلاعات این مرورگر پاک می‌شود؛ بازگردانی فقط با فایل پشتیبان ممکن است.</p></div></section><section class="wipe-scope" aria-label="ا\
+طلاعاتی که حذف می‌شوند"><h4>اطلاعات مشمول حذف</h4><p>مدرسه‌ها، کلاس‌ها، هنرجویان، درس‌ها، برنامه، جلسات، نمرات، فعالیت‌ها، گزارش‌ها و پشتیبان‌های داخلی.</p></se\
+ction><section class="wipe-backup" aria-label="پشتیبان پیش از حذف"><p>فایل‌های روی دستگاه و نصب برنامه باقی می‌مانند.</p><button type="button" class="ghost wipe\
+-export" data-workspace-action="export-full" title="دریافت پشتیبان کامل سیستم">دریافت پشتیبان</button></section><div class="wipe-confirmation"><label for="wipeT\
+ext">برای تأیید، «حذف» را بنویسید</label><input id="wipeText" autocomplete="off" spellcheck="false" aria-describedby="wipeError" placeholder="حذف"><label class=\
+"wipe-backup-check" for="wipeBackup"><input type="checkbox" id="wipeBackup"><span>پشتیبان مستقل را نگه داشته‌ام.</span></label></div><p id="wipeError" class="en\
+tity-create-error" role="alert"></p><div class="record-editor-actions wipe-actions"><button type="button" class="ghost" data-workspace-action="close">انصراف</bu\
+tton><button type="submit" class="danger">حذف کامل اطلاعات</button></div></form>')}async function confirmWipe(){if(resetBusy)return false;const form=document.
+querySelector("#modal:not(.hidden) #wipeEditor");if(!form)return false;if(fileMode||!ready||connectionRetired)return false;if(document.getElementById("wipeText").
+value!=="حذف"||!document.getElementById("wipeBackup").checked){showRecordEditorError(recordFieldError("متن تأیید و گزینه پشتیبان را تکمیل کنید.",
+"wipeText"),"wipeError");return false}if(!confirm("آخرین تأیید: همه اطلاعات این برنامه از این مرورگر حذف شوند؟"))
 return false;resetBusy=true;const hadFileTimer=!!singleFileTimer;pauseSingleFile();const finish=beginRecordEditorSave(form),wasBlocked=blocked;let committedReset=false,
 resetConnection=null;const marker={key:RESET_RECORD_KEY,workspace:null,logical:"installation-reset",value:{token:uid(),phase:"cleanup",at:new Date().toISOString()}};
 try{clearTimeout(draftTimer);if(flushing)await flushing.catch(()=>{});if(singleFileWriting)await singleFileWriting.catch(()=>{});await writer.catch(()=>{});await draftWriter.

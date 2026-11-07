@@ -40,7 +40,7 @@ function renderMaster() {
     s += '<div class="week-slot-content">';
     if (filled) {
       s +=
-        `<div class="week-class-label"><span class="week-color" style="background:${getClassColor(entry.classId)}"></span>${esc(cls.classObj.name)}<span class="week-school">${esc(cls.school.name)}</span></div><h4>${esc(lesson.name)}</h4><p>${esc(lesson.teacher || "دبیر تعیین نشده")}</p><div class="week-slot-actions no-print"><button data-legacy-click="schedule-timetable:0" data-legacy-click-arg5="${esc(day)}" data-legacy-click-arg6="${esc(p)}">بازکردن جلسه</button><button class="ghost" data-legacy-click="schedule-timetable:17" data-legacy-click-arg7="${esc(day)}" data-legacy-click-arg8="${esc(p)}" aria-label="تنظیم ` +
+        `<div class="week-class-label"><span class="week-class-name"><span class="week-color" style="background:${getClassColor(entry.classId)}"></span>${esc(cls.classObj.name)}</span><span class="week-school">${esc(cls.school.name)}</span></div><h4>${esc(lesson.name)}</h4><p>${esc(lesson.teacher || "دبیر تعیین نشده")}</p><div class="week-slot-actions no-print"><button data-legacy-click="schedule-timetable:0" data-legacy-click-arg5="${esc(day)}" data-legacy-click-arg6="${esc(p)}">بازکردن جلسه</button><button class="ghost" data-legacy-click="schedule-timetable:17" data-legacy-click-arg7="${esc(day)}" data-legacy-click-arg8="${esc(p)}" aria-label="تنظیم ` +
         esc(DAYS[day]) +
         " زنگ " +
         (p + 1) +

@@ -1046,23 +1046,23 @@ periods;p++){const e=getMasterEntry(day,p,date);if(e&&(!state.masterFilter||e.cl
 day,p,date),other=entry&&state.masterFilter&&entry.classId!==state.masterFilter;const cls=entry?findClassById(entry.classId):null,lesson=cls?getLessonObj(cls.classObj,
 entry.lessonId):null;const filled=entry&&!other&&lesson;let s='<article class="week-slot '+(filled?"is-filled":other?"is-other":"is-empty")+'">';if(!compact)s+=
 '<div class="week-period"><span>زنگ</span><strong>'+number(p+1)+"</strong></div>";s+='<div class="week-slot-content">';if(filled){s+=`<div class="week-class-\
-label"><span class="week-color" style="background:${getClassColor(entry.classId)}"></span>${esc(cls.classObj.name)}<span class="week-school">${esc(cls.school.name)}\
-</span></div><h4>${esc(lesson.name)}</h4><p>${esc(lesson.teacher||"دبیر تعیین نشده")}</p><div class="week-slot-actions no-print"><button data-legac\
-y-click="schedule-timetable:0" data-legacy-click-arg5="${esc(day)}" data-legacy-click-arg6="${esc(p)}">بازکردن جلسه</button><button class="ghost" data-legacy-cl\
-ick="schedule-timetable:17" data-legacy-click-arg7="${esc(day)}" data-legacy-click-arg8="${esc(p)}" aria-label="تنظیم `+esc(DAYS[day])+" زنگ "+(p+1)+'">\
-تنظیم زنگ</button></div>'}else if(other){s+=`<h4>برنامه کلاس دیگر</h4><p>کلاس انتخاب‌شده در این زنگ برنامه ندارد.</p><button class="ghost no-print" data\
--legacy-click="schedule-timetable:1" data-legacy-click-arg0="${esc(day)}" data-legacy-click-arg1="${esc(p)}">بررسی برنامه</button>`}else{s+="<h4>"+(entry?
-"درس نیازمند بررسی است":"زنگ آزاد")+"</h4><p>"+(entry?"تعریف درس این زنگ در دسترس نیست.":"برای این زنگ کلاس و \
-درس انتخاب کنید.")+'</p><button class="week-add ghost no-print" data-legacy-click="week-configure" data-configure="'+(entry?"yes":"no")+'" data-day\
-="'+day+'" data-period="'+p+'">'+EduIcons.html("add")+"<span>تنظیم برنامه</span></button>"}return s+"</div></article>"};let h=headerHtml();h+='<secti\
-on class="card week-overview" aria-labelledby="weekOverviewTitle"><div class="week-overview-info"><header class="week-overview-title"><span class="week-overview\
--symbol no-print" aria-hidden="true">'+EduIcons.html("calendar-week")+'</span><h2 id="weekOverviewTitle">برنامه هفتگی</h2><span class="week-parity '+
-parity+'">هفته '+(parity==="odd"?"فرد":"زوج")+'</span></header><div class="week-overview-details"><span class="week-overview-date">'+EduIcons.html("ca\
-lendar")+'<span>از <time datetime="'+esc(getSaturdayOf(date))+'">'+esc(faDate(getSaturdayOf(date)))+'</time></span></span><span class="week-overview-count"><s\
-trong>'+number(weekly)+'</strong><span>زنگ برنامه‌ریزی‌شده</span></span></div></div><label class="week-filter no-print">نمایش برنامه کلاس<select data-legacy-cha\
-nge="schedule-timetable:3"><option value="">همه کلاس‌ها</option>';for(const school of db.schools)for(const c of school.classes)h+='<option value="'+esc(
-c.id)+'" '+(state.masterFilter===c.id?"selected":"")+">"+esc(school.name)+" — "+esc(c.name)+"</option>";h+="</select></label></section>";if(!days.length)h+='<\
-div class="card empty"><strong>روز کاری انتخاب نشده است</strong><p>از تنظیمات برنامه، روزهای تدریس خود را فعال کنید.</p></div>';else{
+label"><span class="week-class-name"><span class="week-color" style="background:${getClassColor(entry.classId)}"></span>${esc(cls.classObj.name)}</span><span cl\
+ass="week-school">${esc(cls.school.name)}</span></div><h4>${esc(lesson.name)}</h4><p>${esc(lesson.teacher||"دبیر تعیین نشده")}</p><div class="week-\
+slot-actions no-print"><button data-legacy-click="schedule-timetable:0" data-legacy-click-arg5="${esc(day)}" data-legacy-click-arg6="${esc(p)}">بازکردن جلسه</bu\
+tton><button class="ghost" data-legacy-click="schedule-timetable:17" data-legacy-click-arg7="${esc(day)}" data-legacy-click-arg8="${esc(p)}" aria-label="تنظیم `+
+esc(DAYS[day])+" زنگ "+(p+1)+'">تنظیم زنگ</button></div>'}else if(other){s+=`<h4>برنامه کلاس دیگر</h4><p>کلاس انتخاب‌شده در این زنگ برنامه ندارد.</p>\
+<button class="ghost no-print" data-legacy-click="schedule-timetable:1" data-legacy-click-arg0="${esc(day)}" data-legacy-click-arg1="${esc(p)}">بررسی برنامه</bu\
+tton>`}else{s+="<h4>"+(entry?"درس نیازمند بررسی است":"زنگ آزاد")+"</h4><p>"+(entry?"تعریف درس این زنگ در دسترس نیست.":
+"برای این زنگ کلاس و درس انتخاب کنید.")+'</p><button class="week-add ghost no-print" data-legacy-click="week-configure" data-configu\
+re="'+(entry?"yes":"no")+'" data-day="'+day+'" data-period="'+p+'">'+EduIcons.html("add")+"<span>تنظیم برنامه</span></button>"}return s+"</div></arti\
+cle>"};let h=headerHtml();h+='<section class="card week-overview" aria-labelledby="weekOverviewTitle"><div class="week-overview-info"><header class="week-overvi\
+ew-title"><span class="week-overview-symbol no-print" aria-hidden="true">'+EduIcons.html("calendar-week")+'</span><h2 id="weekOverviewTitle">برنامه هفتگی</h2><s\
+pan class="week-parity '+parity+'">هفته '+(parity==="odd"?"فرد":"زوج")+'</span></header><div class="week-overview-details"><span class="week-overview-\
+date">'+EduIcons.html("calendar")+'<span>از <time datetime="'+esc(getSaturdayOf(date))+'">'+esc(faDate(getSaturdayOf(date)))+'</time></span></span><span class\
+="week-overview-count"><strong>'+number(weekly)+'</strong><span>زنگ برنامه‌ریزی‌شده</span></span></div></div><label class="week-filter no-print">نمایش برنامه کل\
+اس<select data-legacy-change="schedule-timetable:3"><option value="">همه کلاس‌ها</option>';for(const school of db.schools)for(const c of school.classes)
+h+='<option value="'+esc(c.id)+'" '+(state.masterFilter===c.id?"selected":"")+">"+esc(school.name)+" — "+esc(c.name)+"</option>";h+="</select></label></sectio\
+n>";if(!days.length)h+='<div class="card empty"><strong>روز کاری انتخاب نشده است</strong><p>از تنظیمات برنامه، روزهای تدریس خود را فعال کنید.</p></div>';else{
 h+='<section class="week-agenda"><nav class="week-day-picker no-print" aria-label="انتخاب روز برنامه">';for(const d of days)h+=`<button type="but\
 ton" aria-pressed="${d===selected}" data-legacy-click="schedule-timetable:4" data-legacy-click-arg1="${esc(d)}"><span>`+esc(DAYS[d])+"</span>"+(d===today?"<smal\
 l>امروز</small>":"")+"</button>";const count=Array.from({length:periods},(_,p)=>getMasterEntry(selected,p,date)).filter(e=>e&&(!state.masterFilter||e.classId===

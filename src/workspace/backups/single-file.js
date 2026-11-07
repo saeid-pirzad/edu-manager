@@ -78,6 +78,8 @@ function singleFileStatus(message, { permission = false, saved = false } = {}) {
   if (element) {
     element.innerHTML = singleFileNoticeHtml();
     element.hidden = saved;
+    const panel = element.closest?.("details.backup-automatic");
+    if (permission && panel) panel.open = true;
   }
   const badge = document.getElementById("singleFileBadge");
   if (badge) {
@@ -90,33 +92,43 @@ function singleFileStatus(message, { permission = false, saved = false } = {}) {
   }
 }
 function singleFilePanel() {
+  const summary =
+    "<summary><span>ذخیره خودکار</span><small>اختیاری</small></summary>";
   if (!window.showSaveFilePicker)
     return (
-      '<section class="backup-automatic"><h3>ذخیره خودکار در یک فایل</h3><p>فایل را یک‌بار انتخاب کنید؛ برنامه هنگام باز بودن، همان فایل را به‌روز می‌کند.</p><p id="singleFileStatus" role="status">ذخیره خودکار در فایل در این محیط در دسترس نیست. این برنامه را در Chrome یا Edge باز کنید؛ پشتیبان دستی همچنان در دسترس است.</p><div class="row"><button data-workspace-action="single-file-choose" disabled>انتخاب فایل و فعال‌سازی</button></div>' +
-      singleFileFallbackPanel(true) +
-      "</section>"
+      '<details class="backup-automatic">' +
+      summary +
+      '<p id="singleFileStatus" role="status">در این مرورگر در دسترس نیست؛ از «دریافت فایل» استفاده کنید.</p></details>'
     );
   return (
-    '<section class="backup-automatic"><h3>ذخیره خودکار در یک فایل</h3><p>فایل را یک‌بار انتخاب کنید؛ برنامه هنگام باز بودن، همان فایل را به‌روز می‌کند.</p><div id="singleFileStatus" class="single-file-notice"' +
+    '<details class="backup-automatic"' +
+    (singleFileFailure || singleFilePermissionNeeded ? " open" : "") +
+    ">" +
+    summary +
+    '<p>فایل را یک‌بار انتخاب کنید؛ هنگام باز بودن برنامه، همان فایل به‌روز می‌شود.</p><div id="singleFileStatus" class="single-file-notice"' +
     (singleFileNoticeSaved ? " hidden" : "") +
     ">" +
     singleFileNoticeHtml() +
     "</div>" +
     singleFileFallbackPanel(singleFileFailure) +
-    '<div class="row"><button data-workspace-action="single-file-choose">انتخاب فایل و فعال‌سازی</button><button class="ghost" data-workspace-action="single-file-save">ذخیره اکنون / اجازه مجدد</button><button class="ghost" data-workspace-action="single-file-stop">توقف اتصال فایل</button></div></section>'
+    '<div class="row"><button data-workspace-action="single-file-choose">انتخاب فایل</button><button class="ghost" data-workspace-action="single-file-save" title="ذخیره اکنون / اجازه مجدد">ذخیره اکنون</button><button class="ghost" data-workspace-action="single-file-stop">قطع اتصال</button></div></details>'
   );
 }
 function singleFileFallbackPanel(visible) {
   return (
     '<div id="singleFileFallback"' +
     (visible ? "" : " hidden") +
-    "><p>ذخیره خودکار فایل فعال نیست. فایل خالی پشتیبان قابل بازیابی نیست. می‌توانید مجوز یا محل فایل را عوض کنید، از مرورگر دیگری مانند Chrome استفاده کنید، یا از دکمهٔ دریافت پشتیبان کامل در بالای همین پنجره استفاده کنید. دریافت دستی، ذخیره خودکار را فعال نمی‌کند.</p></div>"
+    "><p>فایل خالی پشتیبان نیست؛ فعلاً «دریافت فایل» را بزنید.</p></div>"
   );
 }
 function showSingleFileFallback(visible) {
   singleFileFailure = visible;
   const element = document.getElementById("singleFileFallback");
-  if (element) element.hidden = !visible;
+  if (element) {
+    element.hidden = !visible;
+    const panel = element.closest?.("details.backup-automatic");
+    if (visible && panel) panel.open = true;
+  }
 }
 // Counts contain no names or grades. The last successfully published counts
 // survive reloads and detect a whole-data wipe or unusually large loss.

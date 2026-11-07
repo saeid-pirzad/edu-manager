@@ -1488,3 +1488,27 @@ details.report-class-group:not([open]) > .report-class-body {
     padding: 16px;
   }
 }
+
+@media screen {
+  .periodic-scope-compact {
+    display: none;
+  }
+}
+@media screen and (max-width: 420px) {
+  .periodic-scope-full {
+    display: none;
+  }
+  .periodic-scope-compact {
+    display: inline;
+  }
+  #app .card.periodic-controls > h3 {
+    margin-bottom: 4px;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  #app .periodic-controls > .periodic-scope-note {
+    margin: 4px 0 10px;
+    font-size: 11px;
+    line-height: 1.75;
+  }
+}

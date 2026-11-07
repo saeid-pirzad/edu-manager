@@ -100,13 +100,13 @@ async function openBackups() {
   }
   showModal(
     "پشتیبان و بازیابی",
-    '<div class="backup-hub"><section class="backup-manual"><h4>فایل پشتیبان شما</h4><p>یک فایل برای کل اطلاعات: سال تحصیلی و هر دو ترم، مدرسه‌ها، کلاس‌ها، هنرجویان، نمرات و حضور‌وغیاب. فایل پشتیبان، ترم تازه‌ای ایجاد نمی‌کند؛ بازیابی فقط کل اطلاعات فعلی را با محتوای فایل جایگزین می‌کند. سوابق قدیمیِ موجود در بانک هم در فایل حفظ می‌شوند.</p><div class="backup-action-grid"><button data-workspace-action="export-full">دریافت پشتیبان کامل</button><button class="ghost backup-share-entry" data-workspace-action="prepare-share-backup">اشتراک‌گذاری پشتیبان کامل</button><button class="ghost" data-workspace-action="choose-import">بازیابی از فایل</button></div><p class="muted" id="lastExternalBackupStatus" role="status">' +
+    '<div class="backup-hub"><section class="backup-manual"><h4>پشتیبان کامل</h4><p>همهٔ اطلاعات و سال‌های تحصیلی، در یک فایل.</p><div class="backup-action-grid"><button data-workspace-action="export-full">دریافت فایل</button><button class="ghost backup-share-entry" data-workspace-action="prepare-share-backup">ارسال فایل</button><button class="ghost" data-workspace-action="choose-import">بازیابی فایل</button></div><p class="backup-restore-note">بازیابی، تمام اطلاعات فعلی را جایگزین می‌کند.</p><details class="backup-delivery"><summary>آخرین پشتیبان</summary><p class="muted" id="lastExternalBackupStatus" role="status">' +
       esc(lastExternalBackupLabel()) +
-      "</p></section>" +
+      "</p></details></section>" +
       singleFilePanel() +
-      '<details class="backup-help"><summary>فضای ذخیره‌سازی مرورگر</summary><p>' +
+      '<details class="backup-help"><summary>فضای مرورگر</summary><p>' +
       esc(estimate) +
-      '</p></details><details class="backup-reset"><summary>پاک‌سازی اطلاعات سیستم</summary><p>برای شروع دوباره، همه اطلاعات برنامه در همین مرورگر حذف می‌شود. این کار بازیابی فایل نیست؛ پیش از ادامه پشتیبان کامل دریافت کنید. فایل‌های ذخیره‌شده روی دستگاه حذف نمی‌شوند.</p><button type="button" class="danger" data-workspace-action="open-wipe">بررسی و تأیید پاک‌سازی</button></details></div>',
+      '</p></details><details class="backup-reset"><summary>پاک‌سازی اطلاعات</summary><p>همهٔ اطلاعات همین مرورگر حذف می‌شود؛ فایل‌های دستگاه باقی می‌مانند. پیش از ادامه پشتیبان بگیرید.</p><button type="button" class="danger" data-workspace-action="open-wipe">بررسی و تأیید پاک‌سازی</button></details></div>',
   );
 }
 
