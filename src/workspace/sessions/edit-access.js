@@ -161,6 +161,9 @@ function renderSessionDialogV24(session, options, created) {
     throw Error("جلسه دیگر موجود نیست؛ فهرست را دوباره باز کنید.");
   const previousId = currentSessionId,
     previousAccess = currentSessionEditAccess(session.id),
+    previousBody =
+      previousAccess && !created ? document.getElementById("modalBody") : null,
+    previousScroll = previousBody?.isConnected ? previousBody.scrollTop : null,
     editable = created || !!previousAccess?.editable,
     freshCreation = created || !!previousAccess?.freshCreation;
   const result = old.openSessionModal(session, options);
@@ -212,6 +215,21 @@ function renderSessionDialogV24(session, options, created) {
       control.dataset.mutating = "1";
     });
   lockControls();
+  // The legacy renderer restores scroll before the edit notice and locks can
+  // change the layout. Restore it once more only for the same live context.
+  if (
+    previousScroll !== null &&
+    Number.isFinite(previousScroll) &&
+    previousBody.isConnected &&
+    document.getElementById("modalBody") === previousBody &&
+    previousAccess.workspaceId === workspace?.id &&
+    previousAccess.connection === connection &&
+    previousAccess.installation === installationToken &&
+    previousAccess.data === db &&
+    previousAccess.session === session &&
+    currentSessionEditAccess(session.id)?.root === root
+  )
+    previousBody.scrollTop = previousScroll;
   return result;
 }
 

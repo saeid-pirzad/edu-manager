@@ -559,6 +559,37 @@ async function run(env) {
           }),
         "The real timetable start modal did not appear",
       );
+      const selectionBefore = await signature(),
+        calendarSelection = await page(() => {
+          const ids = window.__reportSurfaceIds,
+            classes = document.getElementById("sessNewClass"),
+            lessons = document.getElementById("sessNewLesson"),
+            expected = getMasterEntry(3, 0, todayISO()),
+            currentDefault =
+              classes.value === expected.classId &&
+              lessons.value === expected.lessonId;
+          // The initial choice follows today's odd/even week. The calendar
+          // fixture below deliberately tests class A's fixed November dates.
+          // Select that class through the real form instead of depending on
+          // the wall-clock week in which CI happens to run.
+          classes.value = ids.a;
+          classes.dispatchEvent(new Event("change", { bubbles: true }));
+          lessons.value = ids.a + "_lesson";
+          lessons.dispatchEvent(new Event("change", { bubbles: true }));
+          return {
+            currentDefault,
+            selected:
+              classes.value === ids.a && lessons.value === ids.a + "_lesson",
+          };
+        });
+      check(
+        "SCHEDULE_CALENDAR_MASTER_SELECTION_" + reason,
+        "The timetable defaults to the current week and selecting the fixed calendar fixture does not write data",
+        calendarSelection.currentDefault &&
+          calendarSelection.selected &&
+          selectionBefore === (await signature()),
+        calendarSelection,
+      );
       const calendarMaster = await inspectSessionCalendar("#sessNewDate");
       check(
         "SCHEDULE_CALENDAR_MASTER_" + reason,

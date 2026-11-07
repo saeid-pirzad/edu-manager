@@ -920,20 +920,62 @@ async function run(env) {
           observed,
         });
       }
-      await page(() =>
-        openSessionModal(
-          getSessionById(globalThis.__dailySessionAudit.startedSessionId),
-        ),
-      );
+      const reuseAccess = await page(async () => {
+        const id = globalThis.__dailySessionAudit.startedSessionId;
+        openSessionModal(getSessionById(id));
+        const root = document.querySelector("#modalBody .session-workspace"),
+          writes = [
+            ...root.querySelectorAll(
+              '[data-mutating="1"]:is(button,input,select,textarea):not([data-session-edit-control])',
+            ),
+          ],
+          viewReadonly =
+            root.dataset.sessionMode === "view" &&
+            writes.length > 0 &&
+            writes.every((control) => control.disabled);
+        if (!viewReadonly)
+          throw Error("The recorded reuse session must open read-only");
+        const beforeMemory = JSON.stringify(db),
+          beforeStores = JSON.stringify(
+            (await EduV24.snapshotInstallation()).stores,
+          );
+        await globalThis.__unlockRecordedSessionForAudit(id);
+        await EduV24.test.settle();
+        // Measure the real editing controls, not the disabled view badges or
+        // their transient geometry while the view/edit transition is painting.
+        await new Promise((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve)),
+        );
+        await Promise.all(
+          root
+            .getAnimations({ subtree: true })
+            .filter((animation) =>
+              Number.isFinite(animation.effect?.getTiming().iterations),
+            )
+            .map((animation) => animation.finished.catch(() => {})),
+        );
+        await new Promise(requestAnimationFrame);
+        return {
+          viewReadonly,
+          editEnabled: root.dataset.sessionMode === "edit",
+          activationPreservesData:
+            beforeMemory === JSON.stringify(db) &&
+            beforeStores ===
+              JSON.stringify((await EduV24.snapshotInstallation()).stores),
+        };
+      });
       const reuseLayout = await page(measure, "attendance");
       cases.push({
         id: "DAILY_UX_REUSE_LAYOUT_" + width,
         name: "Next-bell attendance shortcut fits at " + width,
         pass:
+          reuseAccess.viewReadonly &&
+          reuseAccess.editEnabled &&
+          reuseAccess.activationPreservesData &&
           reuseLayout.noModalOverflow &&
           reuseLayout.noEditorOverflow &&
           reuseLayout.touchTargets,
-        observed: reuseLayout,
+        observed: { ...reuseLayout, ...reuseAccess },
       });
       await evaluate("document.getElementById('modalBody').scrollTop=0");
       await delay(80);

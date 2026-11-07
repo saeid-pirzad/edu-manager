@@ -808,20 +808,35 @@ async function inspectMobileUx() {
   // Button enhancement starts a 150ms color transition; inspect its settled palette.
   await new Promise((resolve) => setTimeout(resolve, 220));
   const backupColor = (action) =>
-    getComputedStyle(
-      document.querySelector(
-        '.backup-hub [data-workspace-action="' + action + '"]',
+      getComputedStyle(
+        document.querySelector(
+          '.backup-hub [data-workspace-action="' + action + '"]',
+        ),
       ),
+    backupPalette = Object.fromEntries(
+      [
+        "export-full",
+        "single-file-choose",
+        "choose-import",
+        "prepare-share-backup",
+        "single-file-save",
+      ].map((action) => {
+        const style = backupColor(action);
+        return [
+          action,
+          { background: style.backgroundColor, color: style.color },
+        ];
+      }),
     );
   add(
     "backup actions use the red and warm amber palette without changing status colors",
-    backupColor("export-full").backgroundColor === "rgb(192, 20, 27)" &&
-      backupColor("single-file-choose").backgroundColor ===
-        "rgb(192, 20, 27)" &&
-      backupColor("choose-import").color === "rgb(192, 20, 27)" &&
-      backupColor("prepare-share-backup").backgroundColor ===
+    backupPalette["export-full"].background === "rgb(192, 20, 27)" &&
+      backupPalette["single-file-choose"].background === "rgb(192, 20, 27)" &&
+      backupPalette["choose-import"].color === "rgb(192, 20, 27)" &&
+      backupPalette["prepare-share-backup"].background ===
         "rgb(255, 250, 237)" &&
-      backupColor("single-file-save").color === "rgb(124, 81, 5)",
+      backupPalette["single-file-save"].color === "rgb(124, 81, 5)",
+    backupPalette,
   );
   const full = document.querySelector(
     '.backup-manual [data-workspace-action="export-full"]',
@@ -849,7 +864,67 @@ async function inspectMobileUx() {
   goClass(db.schools[0].classes[0].id);
   await EduV24.course.open(db.schools[0].classes[0].lessons[0].id);
   await pause();
-  const courseForm = document.getElementById("courseEditor");
+  const courseForm = document.getElementById("courseEditor"),
+    courseEdit = courseForm.querySelector("[data-record-enable-edit]"),
+    courseSubmit = courseForm.querySelector('button[type="submit"]'),
+    courseCancel = courseForm.querySelector("[data-course-cancel]"),
+    coursePolicy = courseForm.querySelector("#coursePolicy"),
+    policyWasLocked = coursePolicy.disabled,
+    readonlyCourseFields = [...courseForm.querySelectorAll("input,textarea")]
+      .filter((field) => field.readOnly)
+      .map((field) => ({ field, value: field.value })),
+    courseBeforeUnlock = JSON.stringify(db);
+  courseEdit.scrollIntoView({ block: "nearest", behavior: "instant" });
+  await pause();
+  add(
+    "existing course starts read-only with locked fields, hidden save and a reachable edit action",
+    courseForm.dataset.recordMode === "view" &&
+      [...courseForm.querySelectorAll("input,select,textarea")].every(
+        (control) => control.matches(":disabled"),
+      ) &&
+      getComputedStyle(courseSubmit).display === "none" &&
+      courseSubmit.getClientRects().length === 0 &&
+      !courseEdit.disabled &&
+      courseEdit.getBoundingClientRect().height >= 44 &&
+      courseEdit.getBoundingClientRect().bottom <= innerHeight + 1 &&
+      courseEdit.getBoundingClientRect().top >= 0 &&
+      !courseCancel.disabled &&
+      courseCancel.getBoundingClientRect().height >= 44,
+    {
+      mode: courseForm.dataset.recordMode,
+      policyLocked: policyWasLocked,
+      saveDisplay: getComputedStyle(courseSubmit).display,
+      editHeight: courseEdit.getBoundingClientRect().height,
+      cancelHeight: courseCancel.getBoundingClientRect().height,
+    },
+  );
+  courseEdit.click();
+  await pause();
+  add(
+    "native course edit action unlocks identity fields without changing data or grading locks",
+    courseForm === document.getElementById("courseEditor") &&
+      courseForm.dataset.recordMode === "edit" &&
+      !courseForm.querySelector("#course_name").disabled &&
+      !courseForm.querySelector("#course_teacher").disabled &&
+      !courseForm.querySelector("#course_periods").disabled &&
+      coursePolicy.disabled === policyWasLocked &&
+      [...coursePolicy.querySelectorAll("input,select,textarea")].every(
+        (control) => control.matches(":disabled") === policyWasLocked,
+      ) &&
+      readonlyCourseFields.every(
+        ({ field, value }) => field.readOnly && field.value === value,
+      ) &&
+      !courseSubmit.disabled &&
+      courseSubmit.getClientRects().length > 0 &&
+      JSON.stringify(db) === courseBeforeUnlock,
+    {
+      mode: courseForm.dataset.recordMode,
+      policyLockedBefore: policyWasLocked,
+      policyLockedAfter: coursePolicy.disabled,
+      readonlyFields: readonlyCourseFields.map(({ field }) => field.id),
+      unchanged: JSON.stringify(db) === courseBeforeUnlock,
+    },
+  );
   add(
     "course editor fields fit the viewport without horizontal scrolling",
     courseForm.scrollWidth <= courseForm.clientWidth + 1 &&

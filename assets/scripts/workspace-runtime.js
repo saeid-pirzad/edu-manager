@@ -777,25 +777,29 @@ const access=currentSessionEditAccess(button.dataset.key);if(!access||!button.is
 ؛ جلسه را دوباره باز کنید.");if(busy)throw Error("ثبت قبلی هنوز تمام نشده است؛ کمی صبر کنید.");access.editable=
 !access.editable;access.token={};syncControlLocks()}function renderSessionDialogV24(session,options,created){if(!session||!db.sessions.includes(session))throw Error(
 "جلسه دیگر موجود نیست؛ فهرست را دوباره باز کنید.");const previousId=currentSessionId,previousAccess=currentSessionEditAccess(
-session.id),editable=created||!!previousAccess?.editable,freshCreation=created||!!previousAccess?.freshCreation;const result=old.openSessionModal(session,options);
-if(result===false){currentSessionId=previousId;return false}const root=document.querySelector("#modalBody .session-workspace");if(!root||root.dataset.sessionId!==
-session.id){releaseSessionEditAccess();return result}sessionEditAccess={sessionId:session.id,session,workspaceId:workspace?.id,connection,installation:installationToken,
-data:db,root,editable,freshCreation,token:{}};if(!freshCreation)root.querySelector(".session-context").insertAdjacentHTML("beforeend",sessionEditNoticeHtml(session.
-id));if(Array.isArray(session.roster)&&!session.roster.length&&emptySessionRosterClass(session)){const empty=root.querySelector(".session-attendance-list .empty");
-if(empty)empty.innerHTML='<p>این جلسه بدون هنرجو ساخته شده است. می‌توانید فهرست هنرجویان فعال فعلی کلاس را برای همین جلسه ثبت کنید.</p><button type="button" cla\
-ss="ghost" data-mutating="1" data-workspace-action="session-restore-roster" data-key="'+esc(session.id)+'">دریافت هنرجویان فعلی کلاس</button>'}
-root.querySelectorAll("#sessDate,#sessPeriod,#sessPoudman,#sessUnit").forEach(control=>{control.dataset.mutating="1"});lockControls();return result}function openSessionModalV24(session,options={}){
-return renderSessionDialogV24(session,options,false)}function openNewSessionDialogV24(session){return renderSessionDialogV24(session,{},true)}function sessionRoster(c,x){
-return x.roster||c.students.map(st=>({id:st.id,name:st.name}))}function emptySessionRosterClass(session){if(!Array.isArray(session?.roster)||session.roster.length!==
-0||!EduAttendanceReminders.isEmptySession(session))return null;const cls=getClassObj(session.schoolId,session.classId);return Array.isArray(cls?.students)&&cls.
-students.length?cls:null}const sessionRosterRestores=new Set;async function restoreEmptySessionRosterV24(button){const id=button?.dataset?.key;if(sessionRosterRestores.
-has(id))return false;const isCurrent=preserveSessionAction(id),access=currentSessionEditAccess(id),session=getSessionById(id),cls=emptySessionRosterClass(session);
-if(!button?.isConnected||!access?.root.contains(button))throw Error("کنترل فهرست مربوط به پنجرهٔ فعلی نیست؛ جلسه را دوباره باز کنید.");
-if(!cls)throw Error("دریافت فهرست فقط برای جلسهٔ کاملاً خالی و کلاس دارای هنرجوی فعال امکان‌پذیر است.");
-const roster=snapshotRoster(cls),signature=JSON.stringify(roster);sessionRosterRestores.add(id);try{if(!confirm("فهرست "+roster.length.toLocaleString("fa-I\
-R")+" هنرجوی فعال کلاس «"+cls.name+"» برای این جلسه ثبت شود؟ این جلسه هنوز حضور، نمره یا فعالیت ثبت‌شده ندارد."))
-return false;await flushDrafts({strict:true});await writer.catch(()=>{});assertEntityWritable();if(!isCurrent()||getSessionById(id)!==session||emptySessionRosterClass(
-session)!==cls||JSON.stringify(snapshotRoster(cls))!==signature)throw Error("جلسه یا فهرست کلاس تغییر کرده است؛ دریافت فهرست انجام نشد.");
+session.id),previousBody=previousAccess&&!created?document.getElementById("modalBody"):null,previousScroll=previousBody?.isConnected?previousBody.scrollTop:null,
+editable=created||!!previousAccess?.editable,freshCreation=created||!!previousAccess?.freshCreation;const result=old.openSessionModal(session,options);if(result===
+false){currentSessionId=previousId;return false}const root=document.querySelector("#modalBody .session-workspace");if(!root||root.dataset.sessionId!==session.id){
+releaseSessionEditAccess();return result}sessionEditAccess={sessionId:session.id,session,workspaceId:workspace?.id,connection,installation:installationToken,data:db,
+root,editable,freshCreation,token:{}};if(!freshCreation)root.querySelector(".session-context").insertAdjacentHTML("beforeend",sessionEditNoticeHtml(session.id));
+if(Array.isArray(session.roster)&&!session.roster.length&&emptySessionRosterClass(session)){const empty=root.querySelector(".session-attendance-list .empty");if(empty)
+empty.innerHTML='<p>این جلسه بدون هنرجو ساخته شده است. می‌توانید فهرست هنرجویان فعال فعلی کلاس را برای همین جلسه ثبت کنید.</p><button type="button" class="ghost\
+" data-mutating="1" data-workspace-action="session-restore-roster" data-key="'+esc(session.id)+'">دریافت هنرجویان فعلی کلاس</button>'}root.
+querySelectorAll("#sessDate,#sessPeriod,#sessPoudman,#sessUnit").forEach(control=>{control.dataset.mutating="1"});lockControls();if(previousScroll!==null&&Number.
+isFinite(previousScroll)&&previousBody.isConnected&&document.getElementById("modalBody")===previousBody&&previousAccess.workspaceId===workspace?.id&&previousAccess.
+connection===connection&&previousAccess.installation===installationToken&&previousAccess.data===db&&previousAccess.session===session&&currentSessionEditAccess(session.
+id)?.root===root)previousBody.scrollTop=previousScroll;return result}function openSessionModalV24(session,options={}){return renderSessionDialogV24(session,options,
+false)}function openNewSessionDialogV24(session){return renderSessionDialogV24(session,{},true)}function sessionRoster(c,x){return x.roster||c.students.map(st=>({
+id:st.id,name:st.name}))}function emptySessionRosterClass(session){if(!Array.isArray(session?.roster)||session.roster.length!==0||!EduAttendanceReminders.isEmptySession(
+session))return null;const cls=getClassObj(session.schoolId,session.classId);return Array.isArray(cls?.students)&&cls.students.length?cls:null}const sessionRosterRestores=new Set;
+async function restoreEmptySessionRosterV24(button){const id=button?.dataset?.key;if(sessionRosterRestores.has(id))return false;const isCurrent=preserveSessionAction(
+id),access=currentSessionEditAccess(id),session=getSessionById(id),cls=emptySessionRosterClass(session);if(!button?.isConnected||!access?.root.contains(button))
+throw Error("کنترل فهرست مربوط به پنجرهٔ فعلی نیست؛ جلسه را دوباره باز کنید.");if(!cls)throw Error("دریافت فه\
+رست فقط برای جلسهٔ کاملاً خالی و کلاس دارای هنرجوی فعال امکان‌پذیر است.");const roster=snapshotRoster(
+cls),signature=JSON.stringify(roster);sessionRosterRestores.add(id);try{if(!confirm("فهرست "+roster.length.toLocaleString("fa-IR")+" هنرجوی فعال کلاس «"+
+cls.name+"» برای این جلسه ثبت شود؟ این جلسه هنوز حضور، نمره یا فعالیت ثبت‌شده ندارد."))return false;
+await flushDrafts({strict:true});await writer.catch(()=>{});assertEntityWritable();if(!isCurrent()||getSessionById(id)!==session||emptySessionRosterClass(session)!==
+cls||JSON.stringify(snapshotRoster(cls))!==signature)throw Error("جلسه یا فهرست کلاس تغییر کرده است؛ دریافت فهرست انجام نشد.");
 session.roster=roster;await saveDBV24({sessionId:id,action:"تکمیل فهرست هنرجویان جلسهٔ خالی"});if(isCurrent())openSessionModal(getSessionById(
 id));return true}finally{sessionRosterRestores.delete(id)}}function preserveSessionAction(id){const editToken=assertSessionEditable(id);const origin=workspace.id,
 sourceData=db,sourceInstallation=typeof installationToken==="undefined"?"":installationToken,sourceConnection=connection;return()=>db===sourceData&&workspace.id===

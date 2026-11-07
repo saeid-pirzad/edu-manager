@@ -1,7 +1,10 @@
 "use strict";
 
 const { main } = require("./data-integrity.cjs"),
-  { seedReminders } = require("./attendance-reminders-browser.cjs");
+  { seedReminders } = require("./attendance-reminders-browser.cjs"),
+  {
+    unlockExistingTimetableForAudit,
+  } = require("./timetable-edit-test-helpers.cjs");
 
 // All fixtures live in the isolated audit profile. Restore the original full
 // installation even if a native browser assertion or production action fails.
@@ -20,7 +23,25 @@ async function run({ cdp, evaluate, cases, delay }) {
         if (await evaluate(expression)) return;
         await delay(30);
       }
-      throw Error("Session roster readiness wait: " + expression);
+      let observed;
+      try {
+        observed = await evaluate(`({
+          modalHidden:document.getElementById('modal').classList.contains('hidden'),
+          modalTitle:document.getElementById('modalTitle')?.textContent,
+          configMode:document.querySelector('.week-config-editor')?.dataset.configMode,
+          busy:EduV24.test.getState().busy,
+          alerts:globalThis.__sessionRosterAudit?.alerts,
+          formErrors:[...document.querySelectorAll('.session-validation-alert')].map(node=>node.textContent)
+        })`);
+      } catch (error) {
+        observed = { diagnosticError: String(error) };
+      }
+      throw Error(
+        "Session roster readiness wait: " +
+          expression +
+          "; state=" +
+          JSON.stringify(observed),
+      );
     },
     click = (selector) =>
       evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`),
@@ -42,6 +63,14 @@ async function run({ cdp, evaluate, cases, delay }) {
         globalThis.__sessionRosterAudit.alerts.length=0;
         globalThis.__sessionRosterAudit.confirmations.length=0;
       })()`);
+  const editExistingSchedule = async (prefix) => {
+    const before = await signature(),
+      unlocked = await page(unlockExistingTimetableForAudit);
+    check(
+      prefix + "_SCHEDULE_UNLOCKS_WITHOUT_WRITES",
+      unlocked && before === (await signature()),
+    );
+  };
 
   await require("./browser-ready.cjs")({ cdp, evaluate, delay });
   const original = await evaluate("EduV24.snapshotInstallation()");
@@ -84,6 +113,7 @@ async function run({ cdp, evaluate, cases, delay }) {
       await evaluate(
         "state.view='master';render();openMasterConfig(todayIdx(),0)",
       );
+      await editExistingSchedule(kind.toUpperCase());
       const configBefore = await signature();
       await click('[data-legacy-click="schedule-timetable:18"]');
       await wait("globalThis.__sessionRosterAudit.alerts.length>0");
@@ -303,6 +333,7 @@ async function run({ cdp, evaluate, cases, delay }) {
     await evaluate(
       "closeModal();state.view='master';render();openMasterConfig(todayIdx(),0)",
     );
+    await editExistingSchedule("READY_CLASS");
     await resetFeedback();
     await click('[data-legacy-click="schedule-timetable:18"]');
     await wait(

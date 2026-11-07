@@ -4,6 +4,9 @@ const fs = require("node:fs"),
   os = require("node:os");
 const { main } = require("./data-integrity.cjs");
 const { seedReminders } = require("./attendance-reminders-browser.cjs");
+const {
+  unlockExistingTimetableForAudit,
+} = require("./timetable-edit-test-helpers.cjs");
 async function run({ cdp, evaluate, cases, delay }) {
   const directory = fs.mkdtempSync(
     path.join(os.tmpdir(), "edu-timetable-edit-"),
@@ -15,6 +18,11 @@ async function run({ cdp, evaluate, cases, delay }) {
       pass: !!pass,
       observed,
     });
+  const signature = () =>
+    evaluate(`(async()=>{
+      const snapshot=await EduV24.snapshotInstallation();
+      return JSON.stringify({data:db,stores:snapshot.stores,reportDrafts:snapshot.reportDrafts,gradeDrafts:snapshot.gradeDrafts});
+    })()`);
   await require("./browser-ready.cjs")({ cdp, evaluate, delay });
   const original = await evaluate("EduV24.snapshotInstallation()");
   try {
@@ -28,12 +36,18 @@ async function run({ cdp, evaluate, cases, delay }) {
       initial.mode === "view" && initial.locked && initial.edit,
       initial,
     );
-    const rejected = await evaluate(
-      `(async()=>{const before=JSON.stringify(db.masterSchedule),errors=[];for(const fn of [()=>saveMasterConfig(0,0),()=>clearMasterConfig(0,0)]){try{await fn()}catch(e){errors.push(e.message)}}return {errors,unchanged:before===JSON.stringify(db.masterSchedule)}})()`,
-    );
+    const lockedBefore = await signature(),
+      rejected = await evaluate(
+        `(async()=>{const before=JSON.stringify(db.masterSchedule),errors=[];for(const fn of [()=>saveMasterConfig(0,0),()=>clearMasterConfig(0,0)]){try{await fn()}catch(e){errors.push(e.message)}}return {errors,unchanged:before===JSON.stringify(db.masterSchedule)}})()`,
+      );
     check(
       "DIRECT_WRITES_BLOCKED",
-      rejected.errors.length === 2 && rejected.unchanged,
+      rejected.errors.length === 2 &&
+        rejected.errors.every((message) =>
+          message.includes("ابتدا ویرایش برنامهٔ این زنگ را فعال کنید"),
+        ) &&
+        rejected.unchanged &&
+        lockedBefore === (await signature()),
       rejected,
     );
     for (const width of [320, 390, 768, 1280]) {
@@ -54,14 +68,14 @@ async function run({ cdp, evaluate, cases, delay }) {
         Buffer.from(shot.data, "base64"),
       );
     }
-    await evaluate(
-      "document.querySelector('[data-legacy-click=week-config-enable-edit]').click()",
-    );
+    const unlockBefore = await signature();
+    await evaluate("(" + unlockExistingTimetableForAudit.toString() + ")()");
     check(
       "EXPLICIT_EDIT_UNLOCKS",
-      await evaluate(
-        `(()=>{const r=document.querySelector('.week-config-editor');return r.dataset.configMode==='edit'&&[...r.querySelectorAll('select')].every(c=>!c.disabled)})()`,
-      ),
+      unlockBefore === (await signature()) &&
+        (await evaluate(
+          `(()=>{const r=document.querySelector('.week-config-editor');return r.dataset.configMode==='edit'&&[...r.querySelectorAll('select')].every(c=>!c.disabled)})()`,
+        )),
     );
     const result = await evaluate(
       `(async()=>{const before=JSON.stringify(db.masterSchedule),sessions=JSON.stringify(db.sessions);await saveMasterConfig(0,0);openMasterConfig(0,0);return {same:before===JSON.stringify(db.masterSchedule),history:sessions===JSON.stringify(db.sessions),relocked:document.querySelector('.week-config-editor').dataset.configMode==='view'}})()`,

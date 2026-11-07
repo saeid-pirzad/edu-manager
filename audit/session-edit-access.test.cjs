@@ -19,7 +19,15 @@ function fixture() {
     },
     other = { ...structuredClone(session), id: "other" },
     effects = [],
-    documentState = { root: null, hidden: true, decline: false };
+    documentState = {
+      root: null,
+      hidden: true,
+      decline: false,
+      body: { isConnected: true, scrollTop: 0 },
+      noticeScrollShift: 0,
+      lockScrollShift: 0,
+      legacyScroll: 0,
+    };
   const makeRoot = (id) => {
     const nodes = Object.fromEntries(
       ["title", "description", "label"].map((key) => [
@@ -37,6 +45,7 @@ function fixture() {
           return {
             insertAdjacentHTML: (_position, html) => {
               root.notice = html;
+              documentState.body.scrollTop += documentState.noticeScrollShift;
             },
           };
         if (!root.notice) return null;
@@ -70,9 +79,10 @@ function fixture() {
     connectionRetired: false,
     document: {
       querySelector: () => documentState.root,
-      getElementById: () => ({
-        classList: { contains: () => documentState.hidden },
-      }),
+      getElementById: (id) =>
+        id === "modalBody"
+          ? documentState.body
+          : { classList: { contains: () => documentState.hidden } },
     },
     assertEntityWritable() {
       if (
@@ -90,6 +100,8 @@ function fixture() {
         if (documentState.root) documentState.root.isConnected = false;
         documentState.root = makeRoot(selected.id);
         documentState.hidden = false;
+        documentState.body.scrollTop = documentState.legacyScroll;
+        documentState.afterRender?.();
         return true;
       },
     },
@@ -98,7 +110,11 @@ function fixture() {
     setControlLock: (control, _reason, locked) => {
       control.disabled = locked;
     },
-    lockControls: () => c.syncSessionEditNotice(),
+    lockControls: () => {
+      c.syncSessionEditNotice();
+      documentState.body.scrollTop += documentState.lockScrollShift;
+      documentState.afterLocks?.();
+    },
     syncControlLocks: () => c.syncSessionEditNotice(),
     getSessionById: (id) => c.db.sessions.find((row) => row.id === id),
     saveDBV24: async () => effects.push("save"),
@@ -222,6 +238,129 @@ test("internal same-session rerender preserves edit mode but not stale callbacks
   assert.equal(oldRoot.isConnected, false);
   assert.equal(f.c.isSessionEditable("session"), true);
   assert.equal(f.c.isSessionEditable("session", token), false);
+});
+
+for (const mode of ["view", "edit", "creation"])
+  test(
+    "same-session " +
+      mode +
+      " rerender restores scroll after notice and control layout shifts",
+    () => {
+      const f = fixture();
+      if (mode === "creation") f.c.openNewSessionDialogV24(f.session);
+      else {
+        f.c.openSessionModalV24(f.session);
+        if (mode === "edit") f.unlock();
+      }
+      f.dom.body.scrollTop = 120;
+      f.dom.legacyScroll = 120;
+      f.dom.noticeScrollShift = 40;
+      f.dom.lockScrollShift = 33;
+      f.c.openSessionModalV24(f.session);
+      assert.equal(f.dom.body.scrollTop, 120);
+      assert.equal(f.c.isSessionEditable("session"), mode !== "view");
+      assert.equal(f.effects.length, 0);
+    },
+  );
+
+test("same-session rerender also preserves a zero scroll position", () => {
+  const f = fixture();
+  f.c.openSessionModalV24(f.session);
+  f.dom.noticeScrollShift = 40;
+  f.dom.lockScrollShift = 33;
+  f.c.openSessionModalV24(f.session);
+  assert.equal(f.dom.body.scrollTop, 0);
+});
+
+test("first opening and switching sessions keep the new dialog's own scroll", () => {
+  const f = fixture();
+  f.dom.body.scrollTop = 120;
+  f.dom.legacyScroll = 7;
+  f.dom.noticeScrollShift = 40;
+  f.dom.lockScrollShift = 33;
+  f.c.openSessionModalV24(f.session);
+  assert.equal(f.dom.body.scrollTop, 80);
+  f.dom.body.scrollTop = 120;
+  f.c.openSessionModalV24(f.other);
+  assert.equal(f.dom.body.scrollTop, 80);
+});
+
+test("a declined same-session render does not apply any scroll restoration", () => {
+  const f = fixture();
+  f.c.openSessionModalV24(f.session);
+  f.dom.body.scrollTop = 120;
+  f.dom.decline = true;
+  const open = f.c.old.openSessionModal;
+  f.c.old.openSessionModal = (session) => {
+    const result = open(session);
+    f.dom.body.scrollTop = 37;
+    return result;
+  };
+  assert.equal(f.c.openSessionModalV24(f.session), false);
+  assert.equal(f.dom.body.scrollTop, 37);
+});
+
+const invalidateScrollContext = [
+  ["workspace", (f) => (f.c.workspace.id = "second")],
+  ["installation", (f) => (f.c.installationToken = "replaced")],
+  ["connection", (f) => (f.c.connection = {})],
+  ["data bank", (f) => (f.c.db = structuredClone(f.c.db))],
+  [
+    "session identity",
+    (f) => (f.c.db.sessions[0] = structuredClone(f.session)),
+  ],
+  ["selection", (f) => (f.c.currentSessionId = "other")],
+  ["hidden modal", (f) => (f.dom.hidden = true)],
+  ["detached root", (f) => (f.dom.root.isConnected = false)],
+  ["changed root session", (f) => (f.dom.root.dataset.sessionId = "other")],
+  ["detached modal body", (f) => (f.dom.body.isConnected = false)],
+];
+
+for (const [label, invalidate] of invalidateScrollContext)
+  test(
+    "an invalid " +
+      label +
+      " before rerender cannot carry scroll into a new context",
+    () => {
+      const f = fixture();
+      f.c.openSessionModalV24(f.session);
+      f.dom.body.scrollTop = 120;
+      f.dom.legacyScroll = 7;
+      f.dom.noticeScrollShift = 40;
+      f.dom.lockScrollShift = 33;
+      invalidate(f);
+      f.c.openSessionModalV24(f.c.db.sessions[0]);
+      assert.equal(f.dom.body.scrollTop, 80);
+    },
+  );
+
+for (const [label, invalidate] of invalidateScrollContext)
+  test(
+    "a " + label + " invalidated during locks cannot receive the old scroll",
+    () => {
+      const f = fixture();
+      f.c.openSessionModalV24(f.session);
+      f.dom.body.scrollTop = 120;
+      f.dom.legacyScroll = 7;
+      f.dom.noticeScrollShift = 40;
+      f.dom.lockScrollShift = 33;
+      f.dom.afterLocks = () => invalidate(f);
+      f.c.openSessionModalV24(f.session);
+      assert.equal(f.dom.body.scrollTop, 80);
+    },
+  );
+
+test("a replaced modal body during render cannot receive the old body's scroll", () => {
+  const f = fixture();
+  f.c.openSessionModalV24(f.session);
+  const previousBody = f.dom.body;
+  previousBody.scrollTop = 120;
+  f.dom.afterRender = () => {
+    f.dom.body = { isConnected: true, scrollTop: 37 };
+  };
+  f.c.openSessionModalV24(f.session);
+  assert.equal(f.dom.body.scrollTop, 37);
+  assert.equal(previousBody.scrollTop, 0);
 });
 
 for (const [label, change] of [
