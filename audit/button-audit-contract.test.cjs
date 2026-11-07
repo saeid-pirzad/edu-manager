@@ -90,3 +90,34 @@ test("backup color roles use exact approved product colors without weakening ord
     true,
   );
 });
+
+test("only the scoped agenda schedule action permits the existing white and amber palette", () => {
+  const button = {
+    tone: "settings",
+    variant: "soft",
+    colorRole: "agenda-schedule",
+    color: "rgb(124, 81, 5)",
+    background: "rgb(255, 255, 255)",
+  };
+  assert.equal(approvedButtonColors(button), true);
+  for (const change of [
+    { colorRole: "action" },
+    { colorRole: "backup-secondary" },
+    { tone: "save" },
+    { tone: "edit" },
+    { variant: "solid" },
+    { variant: "unknown" },
+    { color: "rgb(0, 0, 0)" },
+    { background: "rgb(255, 250, 237)" },
+  ])
+    assert.equal(approvedButtonColors({ ...button, ...change }), false);
+  assert.equal(
+    approvedButtonColors({
+      ...button,
+      colorRole: "action",
+      background: "rgb(255, 250, 237)",
+    }),
+    true,
+    "ordinary settings actions still require their original warm surface",
+  );
+});

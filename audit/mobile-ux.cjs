@@ -2,7 +2,8 @@
 const fs = require("node:fs"),
   path = require("node:path"),
   os = require("node:os");
-async function inspectMobileUx() {
+const { settleThemePaint } = require("./theme-browser.cjs");
+async function inspectMobileUx(settlePaint) {
   const cases = [],
     pause = () =>
       new Promise((resolve) =>
@@ -804,9 +805,37 @@ async function inspectMobileUx() {
   );
   closeModal();
   await EduV24.openBackups();
-  await pause();
-  // Button enhancement starts a 150ms color transition; inspect its settled palette.
-  await new Promise((resolve) => setTimeout(resolve, 220));
+  const automaticBackup = document.querySelector(".backup-automatic"),
+    backupBeforeExpansion = JSON.stringify(db);
+  // Closed details can retain child rectangles while their content is not
+  // painted. Open the real disclosure before inspecting its button palette.
+  if (!automaticBackup.open)
+    automaticBackup.querySelector(":scope > summary").click();
+  await settlePaint();
+  const automaticActions = [
+    ...automaticBackup.querySelectorAll("button[data-workspace-action]"),
+  ];
+  add(
+    "automatic backup colors are sampled only after the native disclosure is visibly open without data writes",
+    automaticBackup.open &&
+      automaticActions.length > 0 &&
+      automaticActions.every(
+        (button) =>
+          button.getClientRects().length > 0 &&
+          (!button.checkVisibility ||
+            button.checkVisibility({
+              contentVisibilityAuto: true,
+              visibilityProperty: true,
+              opacityProperty: true,
+            })),
+      ) &&
+      JSON.stringify(db) === backupBeforeExpansion,
+    {
+      open: automaticBackup.open,
+      actions: automaticActions.length,
+      unchanged: JSON.stringify(db) === backupBeforeExpansion,
+    },
+  );
   const backupColor = (action) =>
       getComputedStyle(
         document.querySelector(
@@ -1069,7 +1098,15 @@ module.exports = async function mobileUx({ cdp, evaluate, cases, delay }) {
     });
     await cdp("Emulation.setTouchEmulationEnabled", { enabled: true });
     await delay(100);
-    cases.push(...(await evaluate("(" + inspectMobileUx.toString() + ")()")));
+    cases.push(
+      ...(await evaluate(
+        "(" +
+          inspectMobileUx.toString() +
+          ")(" +
+          settleThemePaint.toString() +
+          ")",
+      )),
+    );
     for (const [name, action] of [
       ["home", "goSchools()"],
       [

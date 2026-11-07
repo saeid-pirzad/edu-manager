@@ -1372,8 +1372,8 @@ body.modal-open {
   }
   #app .today-agenda .today-agenda-row > button.today-agenda-action {
     box-sizing: border-box;
-    min-height: 34px !important;
-    height: 34px;
+    min-height: 44px !important;
+    height: 44px;
     padding: 4px 6px;
     border-radius: 7px;
   }

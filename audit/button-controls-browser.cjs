@@ -27,6 +27,13 @@ function approvedButtonColors(button) {
     danger: { solid: ["#fff", "#b42335"], soft: ["#9f2635", "#fff0f2"] },
   };
   if (!["solid", "soft"].includes(button.variant)) return false;
+  if (button.colorRole === "agenda-schedule")
+    return (
+      button.tone === "settings" &&
+      button.variant === "soft" &&
+      button.color === rgb("#7c5105") &&
+      button.background === rgb("#fff")
+    );
   if (button.colorRole === "grade-clear")
     return (
       button.color === rgb("#5a6179") &&
@@ -459,14 +466,18 @@ function measure(isClippedAccessibleLabel) {
             : button.matches(".session-attendance-bulk .danger")
               ? "attendance-absent"
               : button.matches(
-                    '#modalBody .backup-hub button:is([data-workspace-action="export-full"],[data-workspace-action="single-file-choose"],[data-workspace-action="choose-import"])',
+                    '#app .today-agenda > .today-agenda-heading > button[data-legacy-click="ui-dashboard:3"]',
                   )
-                ? "backup-primary"
+                ? "agenda-schedule"
                 : button.matches(
-                      '#modalBody .backup-hub button:is([data-workspace-action="prepare-share-backup"],[data-workspace-action="single-file-save"])',
+                      '#modalBody .backup-hub button:is([data-workspace-action="export-full"],[data-workspace-action="single-file-choose"],[data-workspace-action="choose-import"])',
                     )
-                  ? "backup-secondary"
-                  : "action",
+                  ? "backup-primary"
+                  : button.matches(
+                        '#modalBody .backup-hub button:is([data-workspace-action="prepare-share-backup"],[data-workspace-action="single-file-save"])',
+                      )
+                    ? "backup-secondary"
+                    : "action",
         needsIcon: button.matches(
           ".tabs button,.csv-import-actions button,.week-add,.periodic-export-actions button,.session-workspace-footer button,.backup-action-grid button,.backup-automatic button,.modal-header button",
         ),

@@ -197,10 +197,34 @@ async function prepareThemeFixture() {
   return { date, year };
 }
 
+// Chromium can retain layout boxes and unresolved transition styles for content
+// inside a closed details element. Its first direct summary remains visible;
+// everything else must be opened through the real disclosure before sampling.
+// Self-contained because the native runner serializes this helper into the page.
+function isVisibleThemeElement(element) {
+  if (
+    !element ||
+    !element.isConnected ||
+    element.getClientRects().length === 0 ||
+    element.closest('[hidden],[aria-hidden="true"],svg,script,style') ||
+    getComputedStyle(element).visibility === "hidden" ||
+    element.closest(":disabled")
+  )
+    return false;
+  for (let current = element; current; current = current.parentElement) {
+    if (current.tagName !== "DETAILS" || current.open) continue;
+    const summary = [...current.children].find(
+      (child) => child.tagName === "SUMMARY",
+    );
+    if (!summary?.contains(element)) return false;
+  }
+  return true;
+}
+
 // Composite translucent solid backgrounds rather than assuming every control
 // sits on white. Unsupported background images are reported, never accepted as
 // contrast evidence. Actual text nodes avoid counting hidden decorative icons.
-function inspectTheme() {
+function inspectTheme(isVisibleThemeElement) {
   const parse = (value) => {
     const match = value.match(/^rgba?\(([^)]+)\)$/);
     if (!match) return null;
@@ -250,11 +274,7 @@ function inspectTheme() {
     }
     return unknown ? null : color;
   };
-  const visible = (element) =>
-    element.getClientRects().length > 0 &&
-    !element.closest('[hidden],[aria-hidden="true"],svg,script,style') &&
-    getComputedStyle(element).visibility !== "hidden" &&
-    !element.closest(":disabled");
+  const visible = isVisibleThemeElement;
   const describe = (element) =>
     element.tagName.toLowerCase() +
     (element.id ? `#${element.id}` : "") +
@@ -343,14 +363,26 @@ function inspectTheme() {
         .trim(),
     ]),
   );
+  const automatic = scope.querySelector(".backup-automatic"),
+    choose = automatic?.querySelector(
+      '[data-workspace-action="single-file-choose"]',
+    );
   return {
     viewport: innerWidth,
     content: document.documentElement.scrollWidth,
     sampled: sampled.length,
+    samples: sampled,
     failed,
     unsupported,
     fields,
     tokens,
+    backupAutomatic: {
+      exists: !!automatic,
+      open: !!automatic?.open,
+      filePickerAvailable: typeof window.showSaveFilePicker === "function",
+      chooseExists: !!choose,
+      chooseVisible: !!choose && visible(choose),
+    },
   };
 }
 
@@ -361,6 +393,14 @@ async function run({ cdp, evaluate, cases, delay }) {
   );
   await require("./browser-ready.cjs")({ cdp, evaluate, delay });
   await evaluate("(" + prepareThemeFixture.toString() + ")()");
+  const inspect = () =>
+    evaluate(
+      "(" +
+        inspectTheme.toString() +
+        ")(" +
+        isVisibleThemeElement.toString() +
+        ")",
+    );
   const measurements = [];
   const add = (id, name, pass, observed) =>
     cases.push({ id, name, pass: !!pass, observed });
@@ -424,6 +464,10 @@ async function run({ cdp, evaluate, cases, delay }) {
     ],
     ["backups", "closeModal();await EduV24.openBackups()"],
     [
+      "backups-automatic-open",
+      "closeModal();await EduV24.openBackups();document.querySelector('.backup-automatic > summary').click()",
+    ],
+    [
       "settings",
       "closeModal();document.querySelector('[data-header-action=\"settings\"]').click()",
     ],
@@ -445,7 +489,7 @@ async function run({ cdp, evaluate, cases, delay }) {
         });
       }
       await evaluate("(" + settleThemePaint.toString() + ")()");
-      const observed = await evaluate("(" + inspectTheme.toString() + ")()");
+      const observed = await inspect();
       measurements.push({ width, view: name, ...observed });
       add(
         `THEME_FIT_${width}_${name}`,
@@ -454,6 +498,34 @@ async function run({ cdp, evaluate, cases, delay }) {
         { width, content: observed.content },
       );
       if (!baseline) {
+        if (["backups", "backups-automatic-open"].includes(name)) {
+          const expectedOpen = name === "backups-automatic-open",
+            automatic = observed.backupAutomatic,
+            chooseSamples = observed.samples.filter(
+              (sample) => sample.text === "انتخاب فایل",
+            );
+          add(
+            `THEME_BACKUP_DISCLOSURE_${width}_${expectedOpen ? "OPEN" : "CLOSED"}`,
+            "Automatic backup controls are sampled only after the real disclosure opens at " +
+              width +
+              "px",
+            automatic.exists &&
+              automatic.open === expectedOpen &&
+              (automatic.filePickerAvailable
+                ? automatic.chooseExists &&
+                  automatic.chooseVisible === expectedOpen &&
+                  (expectedOpen
+                    ? chooseSamples.length > 0 &&
+                      chooseSamples.every(
+                        (sample) =>
+                          sample.minimum === 4.5 &&
+                          sample.ratio + 0.005 >= sample.minimum,
+                      )
+                    : chooseSamples.length === 0)
+                : !automatic.chooseExists && chooseSamples.length === 0),
+            { ...automatic, expectedOpen, chooseSamples },
+          );
+        }
         add(
           `THEME_TEXT_${width}_${name}`,
           `Actual ${name} text meets WCAG contrast at ${width}px`,
@@ -495,7 +567,7 @@ async function run({ cdp, evaluate, cases, delay }) {
         })()`);
         await cdp("Emulation.setEmulatedMedia", { media: "print" });
         await evaluate("(" + settleThemePaint.toString() + ")()");
-        const printed = await evaluate("(" + inspectTheme.toString() + ")()");
+        const printed = await inspect();
         add(
           "THEME_PRINT_CONTENT",
           "The actual authorized print action preserves one student's report and readable colors",
@@ -635,7 +707,7 @@ async function run({ cdp, evaluate, cases, delay }) {
         forcedPseudoClasses: ["hover"],
       });
       await evaluate("(" + settleThemePaint.toString() + ")()");
-      const hover = await evaluate("(" + inspectTheme.toString() + ")()");
+      const hover = await inspect();
       const fields =
         name === "select"
           ? hover.fields.filter((field) => field.element.startsWith("select"))
@@ -673,6 +745,8 @@ async function run({ cdp, evaluate, cases, delay }) {
 
 module.exports = run;
 module.exports.settleThemePaint = settleThemePaint;
+module.exports.isVisibleThemeElement = isVisibleThemeElement;
+module.exports.inspectTheme = inspectTheme;
 if (require.main === module)
   main({
     stage: process.argv.includes("--baseline")

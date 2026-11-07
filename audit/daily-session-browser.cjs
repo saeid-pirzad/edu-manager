@@ -830,9 +830,112 @@ async function dailyFlow() {
   openSessionModal(getSessionById(ids.session));
   return audit.cases;
 }
-function measure(panel) {
+async function prepareEditableLayout(id) {
+  // Every viewport starts a fresh recorded-session visit. Do not inherit the
+  // timetable/history dialog or the previous viewport's editing permission.
+  closeModal();
+  openSessionModal(getSessionById(id));
+  await EduV24.test.settle();
+  const root = document.querySelector("#modalBody .session-workspace"),
+    writes = [
+      ...root.querySelectorAll(
+        '[data-mutating="1"]:is(button,input,select,textarea):not([data-session-edit-control])',
+      ),
+    ],
+    editingControls = [
+      ...root.querySelectorAll(
+        ".att-btns button,.session-entry-form input,.session-entry-form select,.session-entry-form button",
+      ),
+    ],
+    viewReadonly =
+      currentSessionId === id &&
+      root.dataset.sessionId === id &&
+      root.dataset.sessionMode === "view" &&
+      writes.length > 0 &&
+      writes.every((control) => control.disabled) &&
+      editingControls.length > 0 &&
+      editingControls.every((control) => control.disabled);
+  if (!viewReadonly)
+    throw Error("The recorded layout session must open read-only: " + id);
+  const signature = async () => {
+    const snapshot = await EduV24.snapshotInstallation();
+    return JSON.stringify({
+      data: db,
+      stores: snapshot.stores,
+      reportDrafts: snapshot.reportDrafts,
+      gradeDrafts: snapshot.gradeDrafts,
+    });
+  };
+  const before = await signature();
+  await globalThis.__unlockRecordedSessionForAudit(id);
+  await EduV24.test.settle();
+  const students = root.querySelector('.session-entry-form [name="studentId"]'),
+    next = root.querySelector(".session-entry-form [data-session-next]"),
+    // "Save and next" stays unavailable without a selected student (or at
+    // the last student); unlocking must preserve this independent form rule.
+    nextMustBeDisabled =
+      students.selectedIndex < 1 ||
+      students.selectedIndex >= students.options.length - 1,
+    expectedDisabled = (control) => control === next && nextMustBeDisabled;
+  const editEnabled =
+    document.querySelector("#modalBody .session-workspace") === root &&
+    currentSessionId === id &&
+    root.dataset.sessionMode === "edit" &&
+    editingControls.every(
+      (control) =>
+        control.isConnected && control.disabled === expectedDisabled(control),
+    );
+  const activationPreservesData = before === (await signature());
+  if (!editEnabled || !activationPreservesData)
+    throw Error(
+      "Layout edit activation changed data or left controls locked: " +
+        JSON.stringify({
+          id,
+          currentSessionId,
+          editEnabled,
+          activationPreservesData,
+          connected: root.isConnected,
+          currentRoot:
+            document.querySelector("#modalBody .session-workspace") === root,
+          mode: root.dataset.sessionMode,
+          controls: editingControls.map((control) => ({
+            name: control.name || control.dataset.legacyClick,
+            type: control.type,
+            connected: control.isConnected,
+            disabled: control.disabled,
+            mutating: control.dataset.mutating,
+            readonly: control.readOnly,
+            locks: control.dataset.controlLock,
+            expectedDisabled: expectedDisabled(control),
+          })),
+        }),
+    );
+  return {
+    sessionId: id,
+    viewReadonly,
+    editEnabled,
+    activationPreservesData,
+    nextMustBeDisabled,
+  };
+}
+async function measure(panel) {
   showSessionPanel(panel);
+  await EduV24.test.settle();
+  // Measure the enabled editing controls only after viewport, panel and
+  // view/edit transitions have painted their final geometry.
+  await new Promise((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(resolve)),
+  );
   const root = document.querySelector("#modalBody .session-workspace");
+  await Promise.all(
+    root
+      .getAnimations({ subtree: true })
+      .filter((animation) =>
+        Number.isFinite(animation.effect?.getTiming().iterations),
+      )
+      .map((animation) => animation.finished.catch(() => {})),
+  );
+  await new Promise(requestAnimationFrame);
   const body = document.getElementById("modalBody");
   const visible = (element) =>
     element.getClientRects().length > 0 &&
@@ -884,6 +987,10 @@ async function run(env) {
       mobile: true,
     });
     cases.push(...(await page(dailyFlow)));
+    const sessionIds = await page(() => ({
+      primary: globalThis.__dailySessionAudit.ids.session,
+      reuse: globalThis.__dailySessionAudit.startedSessionId,
+    }));
     for (const width of [320, 390, 768, 1024, 1280]) {
       await cdp("Emulation.setDeviceMetricsOverride", {
         width,
@@ -891,6 +998,10 @@ async function run(env) {
         deviceScaleFactor: 1,
         mobile: width < 1000,
       });
+      const sessionAccess = await page(
+        prepareEditableLayout,
+        sessionIds.primary,
+      );
       for (const panel of ["attendance", "activity"]) {
         const observed = await page(measure, panel);
         await evaluate("document.getElementById('modalBody').scrollTop=0");
@@ -910,6 +1021,9 @@ async function run(env) {
             " fits and keeps touch controls accessible at " +
             width,
           pass:
+            sessionAccess.viewReadonly &&
+            sessionAccess.editEnabled &&
+            sessionAccess.activationPreservesData &&
             observed.noPageOverflow &&
             observed.noModalOverflow &&
             observed.noEditorOverflow &&
@@ -917,53 +1031,10 @@ async function run(env) {
             observed.activityFormSurface &&
             observed.activeStatusesReadable &&
             observed.correctPanel,
-          observed,
+          observed: { ...observed, ...sessionAccess },
         });
       }
-      const reuseAccess = await page(async () => {
-        const id = globalThis.__dailySessionAudit.startedSessionId;
-        openSessionModal(getSessionById(id));
-        const root = document.querySelector("#modalBody .session-workspace"),
-          writes = [
-            ...root.querySelectorAll(
-              '[data-mutating="1"]:is(button,input,select,textarea):not([data-session-edit-control])',
-            ),
-          ],
-          viewReadonly =
-            root.dataset.sessionMode === "view" &&
-            writes.length > 0 &&
-            writes.every((control) => control.disabled);
-        if (!viewReadonly)
-          throw Error("The recorded reuse session must open read-only");
-        const beforeMemory = JSON.stringify(db),
-          beforeStores = JSON.stringify(
-            (await EduV24.snapshotInstallation()).stores,
-          );
-        await globalThis.__unlockRecordedSessionForAudit(id);
-        await EduV24.test.settle();
-        // Measure the real editing controls, not the disabled view badges or
-        // their transient geometry while the view/edit transition is painting.
-        await new Promise((resolve) =>
-          requestAnimationFrame(() => requestAnimationFrame(resolve)),
-        );
-        await Promise.all(
-          root
-            .getAnimations({ subtree: true })
-            .filter((animation) =>
-              Number.isFinite(animation.effect?.getTiming().iterations),
-            )
-            .map((animation) => animation.finished.catch(() => {})),
-        );
-        await new Promise(requestAnimationFrame);
-        return {
-          viewReadonly,
-          editEnabled: root.dataset.sessionMode === "edit",
-          activationPreservesData:
-            beforeMemory === JSON.stringify(db) &&
-            beforeStores ===
-              JSON.stringify((await EduV24.snapshotInstallation()).stores),
-        };
-      });
+      const reuseAccess = await page(prepareEditableLayout, sessionIds.reuse);
       const reuseLayout = await page(measure, "attendance");
       cases.push({
         id: "DAILY_UX_REUSE_LAYOUT_" + width,
