@@ -105,7 +105,10 @@ test("home reminder card shows at most three latest items while full list keeps 
   assert.ok(card.indexOf("class-7") < card.indexOf("class-6"));
   assert.doesNotMatch(card, /class-0/);
   assert.match(card, /data-workspace-action="attendance-reminders-all"/);
-  assert.match(card, /data-workspace-action="attendance-reminders-refresh"/);
+  assert.doesNotMatch(
+    card,
+    /data-workspace-action="attendance-reminders-refresh"/,
+  );
   assert.equal(items[0].key, "key-0");
 });
 

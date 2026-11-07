@@ -14,6 +14,47 @@ let singleFile = null,
   singleFileNoticeSaved = false,
   singleFileMessage = "ذخیره خودکار در فایل هنوز فعال نیست.";
 
+function singleFileBannerHtml() {
+  const name = singleFile?.handle?.name,
+    date = singleFile?.savedAt ? new Date(singleFile.savedAt) : null,
+    saved = date && Number.isFinite(date.getTime()),
+    needsReview =
+      singleFileFailure ||
+      singleFilePermissionNeeded ||
+      !!singleFile?.suspension;
+  if (!name)
+    return '<span class="schools-file-meta">فایل پشتیبان انتخاب نشده</span>';
+  return (
+    '<bdi class="schools-file-name" dir="auto" title="' +
+    esc(name) +
+    '">' +
+    esc(name) +
+    '</bdi><span class="schools-file-meta">' +
+    (saved
+      ? 'آخرین ذخیره: <time datetime="' +
+        esc(date.toISOString()) +
+        '">' +
+        esc(
+          date.toLocaleString("fa-IR-u-ca-persian", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        ) +
+        "</time>"
+      : "هنوز ذخیره نشده") +
+    (needsReview ? " · نیاز به بررسی" : "") +
+    "</span>"
+  );
+}
+function paintSingleFileBanner() {
+  const element = document.getElementById("welcomeFileSummary");
+  if (!element) return;
+  const html = singleFileBannerHtml();
+  if (element.innerHTML !== html) element.innerHTML = html;
+}
 function singleFileNoticeHtml(message = singleFileMessage) {
   const canRequest =
     singleFilePermissionNeeded &&
@@ -32,6 +73,7 @@ function singleFileStatus(message, { permission = false, saved = false } = {}) {
   singleFileMessage = message;
   singleFilePermissionNeeded = permission;
   singleFileNoticeSaved = saved;
+  paintSingleFileBanner();
   const element = document.getElementById("singleFileStatus");
   if (element) {
     element.innerHTML = singleFileNoticeHtml();
@@ -331,6 +373,7 @@ function scheduleSingleFile() {
 async function restoreSingleFile() {
   try {
     singleFile = (await readRecord("drafts", singleFileKey)) || null;
+    paintSingleFileBanner();
     if (!singleFile) return;
     if (singleFile.suspension) {
       announceSingleFileSuspension();

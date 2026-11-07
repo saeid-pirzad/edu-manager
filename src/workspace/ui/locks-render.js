@@ -267,9 +267,15 @@ function renderV24() {
       esc(
         String(workspace.year).replace(/\d/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[digit]),
       ) +
-      "</bdi></span><span>دو نوبت · چهار مرحلهٔ ارزشیابی</span></div>";
+      "</bdi></span></div>";
     const about = welcome.querySelector(".schools-about");
     if (about) footer.append(about);
+    const fileSummary = document.createElement("div");
+    fileSummary.id = "welcomeFileSummary";
+    fileSummary.className = "schools-file-summary";
+    fileSummary.setAttribute("aria-live", "polite");
+    fileSummary.innerHTML = singleFileBannerHtml();
+    footer.querySelector(".schools-period-context").append(fileSummary);
     welcome.append(footer);
   }
   if (window.showSaveFilePicker) {

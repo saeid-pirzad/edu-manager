@@ -1179,16 +1179,22 @@ body.modal-open {
   #app:has(> .dashboard-directory):has(> .entity-quick-create) > .today-agenda {
     order: 3;
   }
-  #app .today-agenda {
+  #app .card.today-agenda {
+    --agenda-inset: 16px;
     min-width: 0;
-    padding: 16px;
+    padding: var(--agenda-inset);
     margin-block: 0 16px;
+    border: 1px solid #ead4a2;
+    border-radius: 16px;
   }
   .today-agenda-heading {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 4px;
+    margin: calc(-1 * var(--agenda-inset)) calc(-1 * var(--agenda-inset)) 0;
+    padding: 10px 12px;
+    border-radius: 15px 15px 0 0;
+    background: var(--status-warning-soft);
   }
   .today-agenda-icon {
     display: grid;
@@ -1196,8 +1202,8 @@ body.modal-open {
     flex: 0 0 38px;
     height: 38px;
     border-radius: 11px;
-    color: var(--workflow-accent, var(--theme-primary));
-    background: var(--workflow-accent-soft, var(--theme-primary-soft));
+    color: var(--theme-secondary);
+    background: var(--theme-surface);
   }
   .today-agenda-heading > div {
     flex: 1;
@@ -1205,14 +1211,19 @@ body.modal-open {
   }
   .today-agenda-heading h2 {
     margin: 0;
-    font-size: 15px;
+    font-size: 14px;
+    line-height: 1.7;
   }
   .today-agenda-heading p {
-    margin: 3px 0 0;
-    font-size: 12px;
+    margin: 0;
+    font-size: 11px;
+    line-height: 1.9;
     color: var(--workflow-muted, var(--theme-muted));
   }
   #app .today-agenda-heading > button {
+    --button-soft: var(--theme-surface);
+    --button-ink: var(--theme-secondary);
+    --button-line: var(--theme-secondary-line);
     min-height: 44px;
     gap: 6px;
     padding-inline: 9px;
@@ -1296,8 +1307,8 @@ body.modal-open {
   }
 }
 @media screen and (max-width: 700px) {
-  #app .today-agenda {
-    padding: 12px;
+  #app .card.today-agenda {
+    --agenda-inset: 12px;
   }
   .today-agenda-icon {
     flex-basis: 32px;
@@ -1351,5 +1362,19 @@ body.modal-open {
     margin-top: 2px;
     font-size: 10px;
     line-height: 1.6;
+  }
+}
+
+@media screen and (width < 420px) {
+  .today-agenda-row {
+    grid-template-columns: 38px minmax(0, 1fr) 58px;
+    gap: 7px;
+  }
+  #app .today-agenda .today-agenda-row > button.today-agenda-action {
+    box-sizing: border-box;
+    min-height: 34px !important;
+    height: 34px;
+    padding: 4px 6px;
+    border-radius: 7px;
   }
 }

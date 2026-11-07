@@ -112,8 +112,9 @@ outline-color:var(--theme-highlight, #fcaf17)}:is(#app,#deputyApp) .topbar .head
 .data-menu button svg{color:var(--theme-highlight, #fcaf17)}:is(#app,#deputyApp) .topbar .header-dropdown .data-menu button:hover{background:var(--theme-nav-hover,
 #6a6b6e);color:var(--theme-nav-ink, #fff)}:is(#app,#deputyApp) .topbar .header-dropdown .data-menu button.danger-item,:is(#app,#deputyApp) .topbar .header-dropdown
 .data-menu button.danger-item svg{color:#ffc3c9}:is(#app,#deputyApp) .topbar .header-dropdown .data-menu button.danger-item:hover{background:#75444a}#uiBottomNav{
-background:var(--theme-nav, #58595b);border-color:var(--theme-nav-line, #ffffff26);box-shadow:0 -4px 20px #2d344018}#uiBottomNav button{background:transparent;color:var(--theme-nav-ink,
-#fff)}#uiBottomNav button svg{color:var(--theme-highlight, #fcaf17)}#uiBottomNav button[aria-current=page]{background:var(--theme-primary, #c0141b);color:var(--theme-nav-ink,
+background:var(--theme-nav, #58595b);border-color:var(--theme-nav-line, #ffffff26);box-shadow:0 -4px 20px #2d344018}#uiBottomNav,#uiBottomNav *{-webkit-tap-highlight-color:transparent}
+#uiBottomNav button{background:transparent;color:var(--theme-nav-ink, #fff)}#uiBottomNav button:not(:disabled):not([aria-current=page]):active{background:var(--theme-nav-hover,
+#6a6b6e)}#uiBottomNav button svg{color:var(--theme-highlight, #fcaf17)}#uiBottomNav button[aria-current=page]{background:var(--theme-primary, #c0141b);color:var(--theme-nav-ink,
 #fff)}#uiBottomNav button[aria-current=page] svg{color:var(--theme-nav-ink, #fff)}#uiBottomNav button:focus-visible,#app>.tabs.classroom-tabs>.classroom-tab:focus-visible{
 outline-color:var(--theme-highlight, #fcaf17)}}@media(hover:hover){#app .dashboard-entity-actions>button:first-child:hover,.workflow-welcome button:hover{filter:brightness(0.94)}}
 @media(max-width:700px){.workflow-welcome{margin-bottom:14px}.dashboard-entity-symbol{flex-shrink:0}.dashboard-entity-actions>button:first-child{justify-content:space-between;

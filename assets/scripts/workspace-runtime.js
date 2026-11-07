@@ -740,17 +740,18 @@ workspace-closed-note">ترم بسته است؛ فقط مشاهده</span>':"")+
 draftReviewActionHtml();app.prepend(panel);const tools=panel.querySelector(".workspace-tools");const settings=app.querySelector('.topbar [data-header-action="se\
 ttings"]');if(settings)settings.replaceWith(tools);const welcome=app.querySelector(".schools-welcome");if(welcome){const footer=document.createElement("div");footer.
 className="schools-welcome-footer";footer.innerHTML='<div class="schools-period-context"><span>سال تحصیلی: <bdi>'+esc(String(workspace.year).replace(/\d/g,
-digit=>"۰۱۲۳۴۵۶۷۸۹"[digit]))+"</bdi></span><span>دو نوبت · چهار مرحلهٔ ارزشیابی</span></div>";const about=welcome.querySelector(
-".schools-about");if(about)footer.append(about);welcome.append(footer)}if(window.showSaveFilePicker){const fileStatus=document.createElement("div");fileStatus.id=
-"singleFileBadge";fileStatus.className="single-file-notice";fileStatus.hidden=!singleFileFailure;fileStatus.innerHTML=singleFileNoticeHtml();panel.append(fileStatus)}
-if(db.migrationWarnings?.length){const info=document.createElement("div");info.className="card";info.textContent="سوابق منتقل‌شده نیازمند بررسی: "+
-db.migrationWarnings.join(" | ");app.append(info)}if(fileMode)fileModeBanner(app);courseUI.activateCreate();applyDrafts();lockControls();paintStatus();void refreshYearLessonSessions();
-void refreshAttendanceReminders()}let sessionEditAccess=null;function currentSessionEditAccess(id){const access=sessionEditAccess;return access&&access.sessionId===
-id&&currentSessionId===id&&access.workspaceId===workspace?.id&&access.connection===connection&&access.installation===installationToken&&access.data===db&&access.
-session===db.sessions.find(session=>session.id===id)&&access.root.dataset.sessionId===id&&access.root.isConnected&&document.querySelector("#modalBody .session-w\
-orkspace")===access.root&&!document.getElementById("modal").classList.contains("hidden")?access:null}function isSessionEditable(id,token){const access=currentSessionEditAccess(
-id);return!!access?.editable&&(token===void 0||access.token===token)}function assertSessionEditable(id){assertEntityWritable();const access=currentSessionEditAccess(
-id);if(!access?.editable)throw Error("این جلسه فقط برای مشاهده باز شده است؛ ابتدا «فعال‌کردن ویرایش» را بزنید.");
+digit=>"۰۱۲۳۴۵۶۷۸۹"[digit]))+"</bdi></span></div>";const about=welcome.querySelector(".schools-about");if(about)footer.append(about);const fileSummary=document.
+createElement("div");fileSummary.id="welcomeFileSummary";fileSummary.className="schools-file-summary";fileSummary.setAttribute("aria-live","polite");fileSummary.
+innerHTML=singleFileBannerHtml();footer.querySelector(".schools-period-context").append(fileSummary);welcome.append(footer)}if(window.showSaveFilePicker){const fileStatus=document.
+createElement("div");fileStatus.id="singleFileBadge";fileStatus.className="single-file-notice";fileStatus.hidden=!singleFileFailure;fileStatus.innerHTML=singleFileNoticeHtml();
+panel.append(fileStatus)}if(db.migrationWarnings?.length){const info=document.createElement("div");info.className="card";info.textContent="سوابق منتقل‌شده نیازم\
+ند بررسی: "+db.migrationWarnings.join(" | ");app.append(info)}if(fileMode)fileModeBanner(app);courseUI.activateCreate();applyDrafts();lockControls();paintStatus();
+void refreshYearLessonSessions();void refreshAttendanceReminders()}let sessionEditAccess=null;function currentSessionEditAccess(id){const access=sessionEditAccess;
+return access&&access.sessionId===id&&currentSessionId===id&&access.workspaceId===workspace?.id&&access.connection===connection&&access.installation===installationToken&&
+access.data===db&&access.session===db.sessions.find(session=>session.id===id)&&access.root.dataset.sessionId===id&&access.root.isConnected&&document.querySelector(
+"#modalBody .session-workspace")===access.root&&!document.getElementById("modal").classList.contains("hidden")?access:null}function isSessionEditable(id,token){
+const access=currentSessionEditAccess(id);return!!access?.editable&&(token===void 0||access.token===token)}function assertSessionEditable(id){assertEntityWritable();
+const access=currentSessionEditAccess(id);if(!access?.editable)throw Error("این جلسه فقط برای مشاهده باز شده است؛ ابتدا «فعال‌کردن ویرایش» را بزنید.");
 return access.token}function releaseSessionEditAccess(){sessionEditAccess=null}function captureSessionEditRecovery(){const access=currentSessionEditAccess(currentSessionId);
 return access?{access,token:access.token}:null}function invalidateSessionEditRecovery(recovery){if(recovery&&sessionEditAccess===recovery.access&&sessionEditAccess.
 token===recovery.token)releaseSessionEditAccess()}function rebindSessionEditAfterRollback(recovery,previousData,loaded,expected){const access=recovery?.access,session=loaded.
@@ -991,48 +992,47 @@ pan class="attendance-reminder-date">'+attendanceReminderDate(item)+'</span><spa
  گذشته بر اساس برنامهٔ هفتگی فعلی</p>'}function renderAttendanceReminders(model){const items=attendanceReminderItems(model),visible=items.
 slice(0,3),notHeld=model?.notHeld||[];if(!items.length&&!notHeld.length)return"";return'<section class="attendance-reminders'+(items.length?"":" is-clear")+'" a\
 ria-labelledby="attendanceRemindersTitle"><header class="attendance-reminders-heading"><div><h3 id="attendanceRemindersTitle">پیگیری حضور‌وغیاب'+
-(items.length?'<span class="attendance-reminders-count">'+attendanceReminderNumber(items.length)+"</span>":"")+"</h3>"+attendanceReminderRangeHtml(model)+'</div\
-><button type="button" class="ghost attendance-reminders-refresh" data-workspace-action="attendance-reminders-refresh" aria-label="بررسی دوبارهٔ حضور‌وغیاب روزه\
-ای گذشته" title="بررسی دوباره">'+EduIcons.html("refresh")+"</button></header>"+(items.length?'<ul class="attendance-reminder-items">'+visible.
-map(attendanceReminderRowHtml).join("")+"</ul>":'<p class="attendance-reminders-empty">در این بازه موردی برای پیگیری نیست.</p>')+(items.
-length||notHeld.length?'<footer class="attendance-reminders-footer"><div class="attendance-reminders-footer-actions" role="group" aria-label="فهرست‌های پیگیری ح\
-ضور‌وغیاب">'+(items.length?'<button type="button" class="ghost attendance-reminders-footer-action attendance-reminders-all-button" data-ui-icon="none"\
- data-workspace-action="attendance-reminders-all">'+EduIcons.html("calendar-week")+'<span class="attendance-reminders-action-label">همهٔ موارد</span> <bdi class\
-="attendance-reminders-action-count">'+attendanceReminderNumber(items.length)+"</bdi></button>":"")+(notHeld.length?'<button type="button" class="ghost attendan\
-ce-reminders-footer-action attendance-reminders-history-button" data-ui-icon="none" data-workspace-action="attendance-reminders-not-held">'+EduIcons.html("clock")+
-'<span class="attendance-reminders-action-label">برگزارنشده‌ها</span> <bdi class="attendance-reminders-action-count">'+attendanceReminderNumber(notHeld.
-length)+"</bdi></button>":"")+"</div>"+(items.length>visible.length?"<small>نمایش "+attendanceReminderNumber(visible.length)+" مورد اخیر</small>":"")+
-"</footer>":"")+"</section>"}function attendanceReminderPage(rows,requestedPage){const pages=Math.max(1,Math.ceil(rows.length/50)),page=Number.isInteger(requestedPage)?
-Math.max(0,Math.min(requestedPage,pages-1)):0,offset=page*50;return{rows:rows.slice(offset,offset+50),page,pages,offset,total:rows.length}}function attendanceReminderPaginationHtml(pagination){
-if(!pagination.total)return"";const{page,pages,offset,rows,total}=pagination;return'<div class="attendance-reminder-pagination"><p>موارد '+attendanceReminderNumber(
-offset+1)+" تا "+attendanceReminderNumber(offset+rows.length)+" از "+attendanceReminderNumber(total)+"</p>"+(pages>1?'<nav aria-label="صفحه‌های پیگیری حضور‌\
-وغیاب"><button type="button" class="ghost" data-workspace-action="attendance-reminders-page" data-page="'+Math.max(0,page-1)+'"'+(page===0?" disabled":"")+
-">قبلی</button><span>صفحهٔ "+attendanceReminderNumber(page+1)+" از "+attendanceReminderNumber(pages)+'</span><button type="button" class="ghost" data\
--workspace-action="attendance-reminders-page" data-page="'+Math.min(pages-1,page+1)+'"'+(page===pages-1?" disabled":"")+">بعدی</button></nav>":"")+"</div>"}
-function attendanceReminderListHtml(model,page=0){const items=attendanceReminderItems(model),pagination=attendanceReminderPage(items,page);return'<div class="at\
-tendance-reminder-list-dialog"><p class="attendance-reminder-intro">زنگ موردنظر را برای ثبت یا تکمیل حضور‌وغیاب انتخاب کنید.</p>'+
-attendanceReminderRangeHtml(model)+(items.length?'<ul class="attendance-reminder-items attendance-reminder-scroll">'+pagination.rows.map(attendanceReminderRowHtml).
-join("")+"</ul>":'<p class="attendance-reminders-empty">موردی برای پیگیری باقی نمانده است.</p>')+attendanceReminderPaginationHtml(pagination)+
-'<div class="attendance-reminder-dialog-actions"><button type="button" class="ghost" data-workspace-action="close">بستن</button></div></div>'}function attendanceReminderDialogHtml(item){
-const key=esc(item.key),missing=item.kind==="missing",empty=item.kind==="empty",canMarkNotHeld=missing||empty,foreignEmpty=empty&&item.sourcePeriodId!==workspace?.
-id,conflict=item.kind==="conflict";const recordAttributes=' data-key="'+key+'"'+(item.sessionId?' data-session="'+esc(item.sessionId)+'"':"")+(item.sourcePeriodId?
-' data-workspace="'+esc(item.sourcePeriodId)+'"':"");return'<div class="attendance-reminder-dialog is-'+(conflict?"conflict":empty?"empty is-missing":missing?"m\
-issing":"incomplete")+'"><section class="attendance-reminder-summary"><div class="attendance-reminder-summary-meta"><span class="attendance-reminder-date">'+attendanceReminderDate(
-item)+'</span><span class="attendance-reminder-status">'+attendanceReminderStatus(item)+"</span></div><h4>"+esc(item.className||"کلاس")+"</h4><p>"+esc(item.
-lessonName||"درس")+"</p><small>"+esc(item.schoolName||"")+'</small></section><p class="attendance-reminder-explanation'+(conflict?" is-conflict":"")+'">'+(missing?
-"برای این زنگ، جلسه‌ای ثبت نشده است. اگر کلاس برگزار شده، حضور‌وغیاب آن را ثبت کنید.":empty?
-"جلسه فقط باز شده و هیچ حضور، نمره یا فعالیتی ثبت نشده است. اگر کلاس برگزار نشده، می‌توانید وضعیت آن را با تأیید خود مشخص کنید.":
-conflict?"برای این تاریخ و زنگ، بیش از یک جلسه ثبت شده است. جلسه‌های ثبت‌شده را جداگانه بررسی کنید.":
-"حضور‌وغیاب "+attendanceReminderNumber(item.unknown)+" نفر از "+attendanceReminderNumber(item.total)+" نفر هنوز مشخص نشده است. اطلاعات قبلی جلسه\
- حفظ می‌شود؛ فقط موارد تعیین‌نشده را تکمیل کنید.")+'</p><div class="attendance-reminder-choices">'+(conflict?'<div clas\
-s="attendance-reminder-conflict-sessions">'+(item.sessions||[]).map((session,index)=>'<button type="button" class="ghost" data-ui-icon="none" data-workspace-act\
-ion="attendance-reminder-record" data-key="'+key+'" data-session="'+esc(session.sessionId)+'" data-workspace="'+esc(session.sourcePeriodId)+'">بررسی جلسهٔ '+
-attendanceReminderNumber(index+1)+"</button>").join("")+"</div>":'<section class="attendance-reminder-choice is-record"><h5>'+(canMarkNotHeld?"جلسه برگزار شده":
-"تکمیل اطلاعات جلسه")+"</h5><p>"+(missing?"حضور‌وغیاب این زنگ را ثبت کنید.":"جلسه ابتدا در حالت مشاهده باز می‌شود؛ برا\
-ی تغییر، ویرایش را فعال کنید.")+'</p><div class="attendance-reminder-primary-action"><button type="button" data-ui-icon="none" data-works\
-pace-action="attendance-reminder-record"'+recordAttributes+(missing?' data-mutating="1"':"")+">"+(missing?"ثبت حضور‌وغیاب این زنگ":"تکمیل حض\
-ور‌وغیاب جلسه")+"</button></div></section>")+(canMarkNotHeld?'<section class="attendance-reminder-choice attendance-reminder-not-held"><h5>جلسه برگ\
-زار نشده</h5><p>'+(empty?"با تأیید شما، فقط همین رکورد خالی با نشان «برگزار نشده» جایگزین می‌شود. این انتخاب، غیبت هنرجویان را ثبت نمی‌کند.":
+(items.length?'<span class="attendance-reminders-count">'+attendanceReminderNumber(items.length)+"</span>":"")+"</h3>"+attendanceReminderRangeHtml(model)+"</div\
+></header>"+(items.length?'<ul class="attendance-reminder-items">'+visible.map(attendanceReminderRowHtml).join("")+"</ul>":'<p class="attendance-reminders-empty\
+">در این بازه موردی برای پیگیری نیست.</p>')+(items.length||notHeld.length?'<footer class="attendance-reminders-footer"><div class="a\
+ttendance-reminders-footer-actions" role="group" aria-label="فهرست‌های پیگیری حضور‌وغیاب">'+(items.length?'<button type="button" clas\
+s="ghost attendance-reminders-footer-action attendance-reminders-all-button" data-ui-icon="none" data-workspace-action="attendance-reminders-all">'+EduIcons.html(
+"calendar-week")+'<span class="attendance-reminders-action-label">همهٔ موارد</span> <bdi class="attendance-reminders-action-count">'+attendanceReminderNumber(
+items.length)+"</bdi></button>":"")+(notHeld.length?'<button type="button" class="ghost attendance-reminders-footer-action attendance-reminders-history-button" \
+data-ui-icon="none" data-workspace-action="attendance-reminders-not-held">'+EduIcons.html("clock")+'<span class="attendance-reminders-action-label">برگزارنشده‌ه\
+ا</span> <bdi class="attendance-reminders-action-count">'+attendanceReminderNumber(notHeld.length)+"</bdi></button>":"")+"</div>"+(items.length>visible.length?
+"<small>نمایش "+attendanceReminderNumber(visible.length)+" مورد اخیر</small>":"")+"</footer>":"")+"</section>"}function attendanceReminderPage(rows,requestedPage){
+const pages=Math.max(1,Math.ceil(rows.length/50)),page=Number.isInteger(requestedPage)?Math.max(0,Math.min(requestedPage,pages-1)):0,offset=page*50;return{rows:rows.
+slice(offset,offset+50),page,pages,offset,total:rows.length}}function attendanceReminderPaginationHtml(pagination){if(!pagination.total)return"";const{page,pages,
+offset,rows,total}=pagination;return'<div class="attendance-reminder-pagination"><p>موارد '+attendanceReminderNumber(offset+1)+" تا "+attendanceReminderNumber(
+offset+rows.length)+" از "+attendanceReminderNumber(total)+"</p>"+(pages>1?'<nav aria-label="صفحه‌های پیگیری حضور‌وغیاب"><button type="button" class="ghost" d\
+ata-workspace-action="attendance-reminders-page" data-page="'+Math.max(0,page-1)+'"'+(page===0?" disabled":"")+">قبلی</button><span>صفحهٔ "+attendanceReminderNumber(
+page+1)+" از "+attendanceReminderNumber(pages)+'</span><button type="button" class="ghost" data-workspace-action="attendance-reminders-page" data-page="'+Math.
+min(pages-1,page+1)+'"'+(page===pages-1?" disabled":"")+">بعدی</button></nav>":"")+"</div>"}function attendanceReminderListHtml(model,page=0){const items=attendanceReminderItems(
+model),pagination=attendanceReminderPage(items,page);return'<div class="attendance-reminder-list-dialog"><p class="attendance-reminder-intro">زنگ موردنظر را برا\
+ی ثبت یا تکمیل حضور‌وغیاب انتخاب کنید.</p>'+attendanceReminderRangeHtml(model)+(items.length?'<ul class="attendance-reminder-ite\
+ms attendance-reminder-scroll">'+pagination.rows.map(attendanceReminderRowHtml).join("")+"</ul>":'<p class="attendance-reminders-empty">موردی برای پیگیری باقی ن\
+مانده است.</p>')+attendanceReminderPaginationHtml(pagination)+'<div class="attendance-reminder-dialog-actions"><button type="button" class="ghost" data-\
+workspace-action="close">بستن</button></div></div>'}function attendanceReminderDialogHtml(item){const key=esc(item.key),missing=item.kind==="missing",empty=item.
+kind==="empty",canMarkNotHeld=missing||empty,foreignEmpty=empty&&item.sourcePeriodId!==workspace?.id,conflict=item.kind==="conflict";const recordAttributes=' da\
+ta-key="'+key+'"'+(item.sessionId?' data-session="'+esc(item.sessionId)+'"':"")+(item.sourcePeriodId?' data-workspace="'+esc(item.sourcePeriodId)+'"':"");return'\
+<div class="attendance-reminder-dialog is-'+(conflict?"conflict":empty?"empty is-missing":missing?"missing":"incomplete")+'"><section class="attendance-reminder\
+-summary"><div class="attendance-reminder-summary-meta"><span class="attendance-reminder-date">'+attendanceReminderDate(item)+'</span><span class="attendance-re\
+minder-status">'+attendanceReminderStatus(item)+"</span></div><h4>"+esc(item.className||"کلاس")+"</h4><p>"+esc(item.lessonName||"درس")+"</p><small>"+esc(
+item.schoolName||"")+'</small></section><p class="attendance-reminder-explanation'+(conflict?" is-conflict":"")+'">'+(missing?"برای این زنگ، جلسه‌ای ثبت نشده اس\
+ت. اگر کلاس برگزار شده، حضور‌وغیاب آن را ثبت کنید.":empty?"جلسه فقط باز شده و هیچ حضور، نمره یا فعالیتی ثبت نشده است. اگ\
+ر کلاس برگزار نشده، می‌توانید وضعیت آن را با تأیید خود مشخص کنید.":conflict?"برای این تاریخ و زنگ، بیش از ی\
+ک جلسه ثبت شده است. جلسه‌های ثبت‌شده را جداگانه بررسی کنید.":"حضور‌وغیاب "+attendanceReminderNumber(
+item.unknown)+" نفر از "+attendanceReminderNumber(item.total)+" نفر هنوز مشخص نشده است. اطلاعات قبلی جلسه حفظ می‌شود؛ فقط موارد تعیین‌نشده را تکمیل کنید.")+
+'</p><div class="attendance-reminder-choices">'+(conflict?'<div class="attendance-reminder-conflict-sessions">'+(item.sessions||[]).map((session,index)=>'<butto\
+n type="button" class="ghost" data-ui-icon="none" data-workspace-action="attendance-reminder-record" data-key="'+key+'" data-session="'+esc(session.sessionId)+'\
+" data-workspace="'+esc(session.sourcePeriodId)+'">بررسی جلسهٔ '+attendanceReminderNumber(index+1)+"</button>").join("")+"</div>":'<section class="att\
+endance-reminder-choice is-record"><h5>'+(canMarkNotHeld?"جلسه برگزار شده":"تکمیل اطلاعات جلسه")+"</h5><p>"+(missing?"حضور‌وغیاب ای\
+ن زنگ را ثبت کنید.":"جلسه ابتدا در حالت مشاهده باز می‌شود؛ برای تغییر، ویرایش را فعال کنید.")+
+'</p><div class="attendance-reminder-primary-action"><button type="button" data-ui-icon="none" data-workspace-action="attendance-reminder-record"'+recordAttributes+
+(missing?' data-mutating="1"':"")+">"+(missing?"ثبت حضور‌وغیاب این زنگ":"تکمیل حضور‌وغیاب جلسه")+"</button></div></secti\
+on>")+(canMarkNotHeld?'<section class="attendance-reminder-choice attendance-reminder-not-held"><h5>جلسه برگزار نشده</h5><p>'+(empty?"با تأیید شما\
+، فقط همین رکورد خالی با نشان «برگزار نشده» جایگزین می‌شود. این انتخاب، غیبت هنرجویان را ثبت نمی‌کند.":
 "این زنگ از پیگیری خارج می‌شود. این انتخاب، غیبت هنرجویان را ثبت نمی‌کند.")+'</p><button type="butto\
 n" class="ghost" data-ui-icon="none"'+(foreignEmpty?"":' data-mutating="1"')+' data-workspace-action="attendance-reminder-not-held"'+(empty?recordAttributes:' d\
 ata-key="'+key+'"')+">"+(foreignEmpty?"باز کردن برای تعیین وضعیت":"این زنگ برگزار نشده است")+"</button></section>":"")+'\
@@ -1283,20 +1283,26 @@ toString(36)+"-"+Math.random().toString(36).slice(2);days[day]={count,token};rem
 token)return false;if(previous)current[day]=previous;else delete current[day];rememberSingleFileNames(current,day);return true}}}const singleFileKey="EduManager\
 .singleFile";const SINGLE_FILE_POLL_MS=3e4,SINGLE_FILE_DEBOUNCE_MS=2e3;let singleFileSavedSource=null,singleFileReschedule=false,singleFileChoosing=false;let singleFile=null,
 singleFileTimer=null,singleFileDebounce=null,singleFileWriting=null,singleFileFailure=false,singleFilePermissionNeeded=false,singleFileNoticeSaved=false,singleFileMessage="\
-ذخیره خودکار در فایل هنوز فعال نیست.";function singleFileNoticeHtml(message=singleFileMessage){const canRequest=singleFilePermissionNeeded&&
-window.showSaveFilePicker&&typeof singleFile?.handle?.requestPermission==="function";return'<span class="single-file-message" role="status">'+esc(message)+"</sp\
-an>"+(canRequest?'<button type="button" class="single-file-permission-action" data-workspace-action="single-file-save">اجازه مجدد</button>':"")}function singleFileStatus(message,{
-permission=false,saved=false}={}){singleFileMessage=message;singleFilePermissionNeeded=permission;singleFileNoticeSaved=saved;const element=document.getElementById(
-"singleFileStatus");if(element){element.innerHTML=singleFileNoticeHtml();element.hidden=saved}const badge=document.getElementById("singleFileBadge");if(badge){badge.
-innerHTML=singleFileNoticeHtml();badge.hidden=!singleFileFailure;const panel=document.querySelector("#app .workspace-bar");const destination=panel;if(destination&&
-badge.parentElement!==destination)destination.append(badge)}}function singleFilePanel(){if(!window.showSaveFilePicker)return'<section class="backup-automatic"><\
-h3>ذخیره خودکار در یک فایل</h3><p>فایل را یک‌بار انتخاب کنید؛ برنامه هنگام باز بودن، همان فایل را به‌روز می‌کند.</p><p id="singleFileStatus" role="status">ذخیره\
- خودکار در فایل در این محیط در دسترس نیست. این برنامه را در Chrome یا Edge باز کنید؛ پشتیبان دستی همچنان در دسترس است.</p><div class="row"><button data-workspac\
-e-action="single-file-choose" disabled>انتخاب فایل و فعال‌سازی</button></div>'+singleFileFallbackPanel(true)+"</section>";return'<section c\
-lass="backup-automatic"><h3>ذخیره خودکار در یک فایل</h3><p>فایل را یک‌بار انتخاب کنید؛ برنامه هنگام باز بودن، همان فایل را به‌روز می‌کند.</p><div id="singleFile\
-Status" class="single-file-notice"'+(singleFileNoticeSaved?" hidden":"")+">"+singleFileNoticeHtml()+"</div>"+singleFileFallbackPanel(singleFileFailure)+'<div cl\
-ass="row"><button data-workspace-action="single-file-choose">انتخاب فایل و فعال‌سازی</button><button class="ghost" data-workspace-action="single-file-save">ذخیر\
-ه اکنون / اجازه مجدد</button><button class="ghost" data-workspace-action="single-file-stop">توقف اتصال فایل</button></div></section>'}
+ذخیره خودکار در فایل هنوز فعال نیست.";function singleFileBannerHtml(){const name=singleFile?.handle?.name,date=singleFile?.savedAt?
+new Date(singleFile.savedAt):null,saved=date&&Number.isFinite(date.getTime()),needsReview=singleFileFailure||singleFilePermissionNeeded||!!singleFile?.suspension;
+if(!name)return'<span class="schools-file-meta">فایل پشتیبان انتخاب نشده</span>';return'<bdi class="schools-file-name" dir="auto" title="'+
+esc(name)+'">'+esc(name)+'</bdi><span class="schools-file-meta">'+(saved?'آخرین ذخیره: <time datetime="'+esc(date.toISOString())+'">'+esc(date.toLocaleString(
+"fa-IR-u-ca-persian",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}))+"</time>":"هنوز ذخیره نشده")+(needsReview?" ·\
+ نیاز به بررسی":"")+"</span>"}function paintSingleFileBanner(){const element=document.getElementById("welcomeFileSummary");if(!element)return;const html=singleFileBannerHtml();
+if(element.innerHTML!==html)element.innerHTML=html}function singleFileNoticeHtml(message=singleFileMessage){const canRequest=singleFilePermissionNeeded&&window.
+showSaveFilePicker&&typeof singleFile?.handle?.requestPermission==="function";return'<span class="single-file-message" role="status">'+esc(message)+"</span>"+(canRequest?
+'<button type="button" class="single-file-permission-action" data-workspace-action="single-file-save">اجازه مجدد</button>':"")}function singleFileStatus(message,{
+permission=false,saved=false}={}){singleFileMessage=message;singleFilePermissionNeeded=permission;singleFileNoticeSaved=saved;paintSingleFileBanner();const element=document.
+getElementById("singleFileStatus");if(element){element.innerHTML=singleFileNoticeHtml();element.hidden=saved}const badge=document.getElementById("singleFileBadg\
+e");if(badge){badge.innerHTML=singleFileNoticeHtml();badge.hidden=!singleFileFailure;const panel=document.querySelector("#app .workspace-bar");const destination=panel;
+if(destination&&badge.parentElement!==destination)destination.append(badge)}}function singleFilePanel(){if(!window.showSaveFilePicker)return'<section class="bac\
+kup-automatic"><h3>ذخیره خودکار در یک فایل</h3><p>فایل را یک‌بار انتخاب کنید؛ برنامه هنگام باز بودن، همان فایل را به‌روز می‌کند.</p><p id="singleFileStatus" rol\
+e="status">ذخیره خودکار در فایل در این محیط در دسترس نیست. این برنامه را در Chrome یا Edge باز کنید؛ پشتیبان دستی همچنان در دسترس است.</p><div class="row"><butt\
+on data-workspace-action="single-file-choose" disabled>انتخاب فایل و فعال‌سازی</button></div>'+singleFileFallbackPanel(true)+"</section>";return'\
+<section class="backup-automatic"><h3>ذخیره خودکار در یک فایل</h3><p>فایل را یک‌بار انتخاب کنید؛ برنامه هنگام باز بودن، همان فایل را به‌روز می‌کند.</p><div id="\
+singleFileStatus" class="single-file-notice"'+(singleFileNoticeSaved?" hidden":"")+">"+singleFileNoticeHtml()+"</div>"+singleFileFallbackPanel(singleFileFailure)+
+'<div class="row"><button data-workspace-action="single-file-choose">انتخاب فایل و فعال‌سازی</button><button class="ghost" data-workspace-action="single-file-sa\
+ve">ذخیره اکنون / اجازه مجدد</button><button class="ghost" data-workspace-action="single-file-stop">توقف اتصال فایل</button></div></section>'}
 function singleFileFallbackPanel(visible){return'<div id="singleFileFallback"'+(visible?"":" hidden")+"><p>ذخیره خودکار فایل فعال نیست. فایل خالی پشتیبان قابل ب\
 ازیابی نیست. می‌توانید مجوز یا محل فایل را عوض کنید، از مرورگر دیگری مانند Chrome استفاده کنید، یا از دکمهٔ دریافت پشتیبان کامل در بالای همین پنجره استفاده کنید\
 . دریافت دستی، ذخیره خودکار را فعال نمی‌کند.</p></div>"}function showSingleFileFallback(visible){singleFileFailure=visible;const element=document.
@@ -1337,9 +1343,9 @@ or"||error?.name==="SecurityError";const message=(denied?"ذخیره خودکا�
 {permission:denied});setStatus(message,"error");return false}function pauseSingleFile(){clearInterval(singleFileTimer);clearTimeout(singleFileDebounce);singleFileTimer=
 singleFileDebounce=null}function startSingleFile(){pauseSingleFile();singleFileTimer=setInterval(()=>void syncSingleFile({force:false}),SINGLE_FILE_POLL_MS)}function scheduleSingleFile(){
 if(!singleFileTimer)return;if(singleFileWriting){singleFileReschedule=true;return}clearTimeout(singleFileDebounce);singleFileDebounce=setTimeout(()=>void syncSingleFile(
-{force:false}),SINGLE_FILE_DEBOUNCE_MS)}async function restoreSingleFile(){try{singleFile=await readRecord("drafts",singleFileKey)||null;if(!singleFile)return;if(singleFile.
-suspension){announceSingleFileSuspension();return}if(!singleFile.savedAt){pauseSingleFile();showSingleFileFallback(true);singleFileStatus("اولین ذخیره فایل تأیی\
-د نشده؛ ذخیره خودکار فعال نیست. «ذخیره اکنون / اجازه مجدد» را بزنید یا پشتیبان دستی بگیرید.");
+{force:false}),SINGLE_FILE_DEBOUNCE_MS)}async function restoreSingleFile(){try{singleFile=await readRecord("drafts",singleFileKey)||null;paintSingleFileBanner();
+if(!singleFile)return;if(singleFile.suspension){announceSingleFileSuspension();return}if(!singleFile.savedAt){pauseSingleFile();showSingleFileFallback(true);singleFileStatus(
+"اولین ذخیره فایل تأیید نشده؛ ذخیره خودکار فعال نیست. «ذخیره اکنون / اجازه مجدد» را بزنید یا پشتیبان دستی بگیرید.");
 return}if(await singleFile.handle.queryPermission({mode:"readwrite"})==="granted"){if(await syncSingleFile())startSingleFile()}else{pauseSingleFile();showSingleFileFallback(
 true);singleFileStatus("مجوز فایل نیاز به تأیید دارد.",{permission:true})}}catch(error){failSingleFile(error)}}async function chooseSingleFile(){
 if(singleFileChoosing)return false;if(!ready||blocked||resetBusy||connectionRetired)throw Error("بانک آماده ذخیره فایل نیست.");singleFileChoosing=

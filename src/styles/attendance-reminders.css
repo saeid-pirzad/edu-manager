@@ -39,7 +39,7 @@
 }
 .attendance-reminders-heading {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 44px;
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
@@ -71,21 +71,6 @@
   font-size: 11px;
   line-height: 1.9;
   overflow-wrap: anywhere;
-}
-.attendance-reminders-heading .attendance-reminders-refresh {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  min-width: 44px;
-  height: 44px;
-  padding: 8px;
-  border-color: #e4cf9e;
-  background: #fff9;
-  color: #80540a;
-}
-.attendance-reminders-refresh svg {
-  width: 19px;
-  height: 19px;
 }
 .attendance-reminder-items {
   display: grid;

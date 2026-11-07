@@ -175,9 +175,17 @@
     border-color: var(--theme-nav-line, #ffffff26);
     box-shadow: 0 -4px 20px #2d344018;
   }
+  /* Use the app press state instead of the browser touch overlay. */
+  #uiBottomNav,
+  #uiBottomNav * {
+    -webkit-tap-highlight-color: transparent;
+  }
   #uiBottomNav button {
     background: transparent;
     color: var(--theme-nav-ink, #fff);
+  }
+  #uiBottomNav button:not(:disabled):not([aria-current="page"]):active {
+    background: var(--theme-nav-hover, #6a6b6e);
   }
   #uiBottomNav button svg {
     color: var(--theme-highlight, #fcaf17);

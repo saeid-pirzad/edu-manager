@@ -79,9 +79,7 @@ function renderAttendanceReminders(model) {
       : "") +
     "</h3>" +
     attendanceReminderRangeHtml(model) +
-    '</div><button type="button" class="ghost attendance-reminders-refresh" data-workspace-action="attendance-reminders-refresh" aria-label="بررسی دوبارهٔ حضور‌وغیاب روزهای گذشته" title="بررسی دوباره">' +
-    EduIcons.html("refresh") +
-    "</button></header>" +
+    "</div></header>" +
     (items.length
       ? '<ul class="attendance-reminder-items">' +
         visible.map(attendanceReminderRowHtml).join("") +
