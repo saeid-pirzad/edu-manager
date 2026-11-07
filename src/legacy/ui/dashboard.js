@@ -473,7 +473,7 @@ function renderTodayAgenda() {
           getPeriodName(period),
       ) +
       '"><span>' +
-      label +
+      (session ? "ادامه" : closed ? "بسته" : "شروع") +
       "</span>" +
       EduIcons.html("arrow") +
       "</button></article>";

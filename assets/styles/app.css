@@ -1771,81 +1771,85 @@ padding-bottom:0}.today-agenda-period{display:inline-flex;align-items:center;jus
 border-radius:9px;background:var(--theme-primary-soft);color:var(--theme-muted);font-size:12px;white-space:nowrap}.today-agenda-copy{min-width:0;overflow-wrap:anywhere}
 .today-agenda-copy h3{margin:0;font-size:14px;line-height:1.7}.today-agenda-copy p{margin:2px 0 0;color:var(--workflow-muted, var(--theme-muted));font-size:12px;
 line-height:1.7}.today-agenda-status{display:inline-block;margin-top:4px;color:var(--status-success);font-size:11px}.today-agenda-status.is-pending{color:var(--status-warning)}
-#app .today-agenda-action{min-height:44px;gap:6px;padding:8px 10px;font-size:12px;white-space:nowrap}.today-agenda-action>svg{width:16px;height:16px}.today-agenda-empty{
-margin:14px 0 0;color:var(--workflow-muted, var(--theme-muted));font-size:12px;line-height:1.9}.today-agenda-row>.session-validation-alert{grid-column:1 / -1}}@media screen and (max-width:480px){
-#app .today-agenda{padding:12px}.today-agenda-icon{flex-basis:32px;height:32px}.today-agenda-heading{gap:8px}.today-agenda-row{gap:8px;grid-template-columns:auto
-minmax(0,1fr)}#app .today-agenda-action{grid-column:2;justify-self:start;min-width:116px}.today-agenda-copy h3{font-size:13px}.today-agenda-copy p{font-size:11px}}
-#app>#attendanceReminderRegion{order:3;min-width:0}#attendanceReminderRegion:empty{display:none}.attendance-reminder-notice{display:flex;align-items:center;flex-wrap:wrap;
-gap:10px;margin-block:16px;padding:12px 16px;border:1px solid var(--status-warning-line);border-radius:14px;background:var(--status-warning-soft);color:var(--status-warning);
-font-size:12px;line-height:1.9}.attendance-reminder-notice>span{flex:1 1 200px;min-width:0;overflow-wrap:anywhere}.attendance-reminder-notice>button{min-height:44px;
-margin:0}.attendance-reminders{margin-block:16px;overflow:hidden;border:1px solid #ead4a2;border-radius:16px;background:var(--theme-surface, #fff);color:var(--theme-ink,
-#2d3440)}.attendance-reminders-heading{display:grid;grid-template-columns:minmax(0,1fr) 44px;align-items:center;gap:8px;padding:10px 12px;background:var(--status-warning-soft)}
-.attendance-reminders-heading h3{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0 0 2px;font-size:14px;line-height:1.7}.attendance-reminders-count{
-display:inline-grid;place-items:center;min-width:26px;padding-inline:6px;border-radius:8px;background:#fff;color:#86500a;font-size:12px;font-weight:600}.attendance-reminder-range{
-margin:0;color:var(--theme-muted, #6c6870);font-size:11px;line-height:1.9;overflow-wrap:anywhere}.attendance-reminders-heading .attendance-reminders-refresh{display:grid;
-place-items:center;width:44px;min-width:44px;height:44px;padding:8px;border-color:#e4cf9e;background:#fff9;color:#80540a}.attendance-reminders-refresh svg{width:19px;
-height:19px}.attendance-reminder-items{display:grid;gap:0;margin:0;padding:0;list-style:none}.attendance-reminder-item+.attendance-reminder-item{border-block-start:1px
-solid var(--theme-line, #ece7df)}:is(#app,#modal) .attendance-reminder-item button.attendance-reminder-open:not([hidden]){display:grid;grid-template-columns:minmax(0,1fr)
-auto;align-items:center;gap:3px 8px;width:100%;min-width:0;min-height:44px;margin:0;padding:8px 12px;border:0;border-radius:0;background:transparent!important;color:inherit!important;
-text-align:start;box-shadow:none}:is(#app,#modal) .attendance-reminder-item button.attendance-reminder-open:not([hidden]):hover{background:#fffcf6!important}.attendance-reminder-meta{
-display:flex;flex-wrap:wrap;align-items:baseline;grid-column:1 / -1;gap:0 10px;min-width:0;overflow-wrap:anywhere}.attendance-reminder-school{color:var(--theme-muted);
-font-size:10px;font-weight:400;line-height:1.7}.attendance-reminder-date{color:var(--theme-muted, #6c6870);font-size:11px;line-height:1.7}.attendance-reminder-identity{
-display:flex;flex-wrap:wrap;align-items:baseline;gap:0 8px;min-width:0;line-height:1.7;overflow-wrap:anywhere}.attendance-reminder-identity strong{font-size:12px;
-font-weight:600}.attendance-reminder-lesson{font-size:11px;font-weight:400}.attendance-reminder-status{max-width:110px;padding:2px 6px;border:1px solid #ecd69e;
-border-radius:8px;background:#fff5da;color:#80500a;font-size:10px;font-weight:600;line-height:1.7;overflow-wrap:anywhere}.is-incomplete .attendance-reminder-status{
-border-color:#f2cfb3;background:#fff0e5;color:#924412}.is-conflict .attendance-reminder-status{border-color:#f1c6cb;background:#fff0f1;color:#a22e3c}.attendance-reminders-footer{
-display:grid;align-items:center;gap:8px;padding:10px 12px;border-block-start:1px solid var(--theme-line, #ece7df);background:var(--theme-surface-subtle, #fafafa)}
-.attendance-reminders-footer-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0}#app .attendance-reminders-footer button.attendance-reminders-footer-action{
-display:grid;grid-template-columns:16px minmax(0,1fr) auto;align-items:center;gap:6px;min-width:0;min-height:46px;margin:0;padding:8px 10px;border:1px solid var(--theme-line);
-border-radius:10px;background:var(--theme-surface, #fff);color:var(--theme-ink);font-size:12px;font-weight:500;line-height:1.7;text-align:start;box-shadow:none}
-#app .attendance-reminders-footer button.attendance-reminders-footer-action:only-child{grid-column:1 / -1}#app .attendance-reminders-footer button.attendance-reminders-all-button{
-border-color:var(--theme-primary-line);background:var(--theme-primary-soft);color:var(--theme-primary)}#app .attendance-reminders-footer button.attendance-reminders-footer-action:hover{
-border-color:var(--theme-muted);background:var(--theme-surface-muted)}#app .attendance-reminders-footer button.attendance-reminders-all-button:hover{border-color:var(--theme-primary);
-background:var(--theme-primary-soft)}#app .attendance-reminders-footer .attendance-reminders-footer-action>svg{width:16px;height:16px;min-width:16px;margin:0}.attendance-reminders-action-label{
-min-width:0;white-space:nowrap}.attendance-reminders-action-count{min-width:24px;padding:1px 5px;border-radius:6px;background:var(--theme-surface-muted);color:inherit;
-font-size:11px;font-weight:600;line-height:1.8;text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums}.attendance-reminders-all-button .attendance-reminders-action-count{
-background:var(--theme-surface, #fff)}.attendance-reminders-footer small{margin:0;color:var(--theme-muted, #6c6870);font-size:11px;line-height:1.8}.attendance-reminders-empty{
-margin:0;padding:16px;color:var(--theme-muted, #6c6870);font-size:13px;line-height:1.9}.attendance-reminders.is-clear{border-color:#cee4d8}.attendance-reminders.is-clear
-.attendance-reminders-heading{background:#f0f8f2}.attendance-reminder-list-dialog,.attendance-reminder-dialog,.attendance-reminder-history{min-width:0;color:var(--theme-ink,
-#2d3440)}.attendance-reminder-intro{margin:0 0 8px;font-size:13px;line-height:1.9}.attendance-reminder-scroll{max-height:min(55vh,500px);margin-block:14px;overflow-y:auto;
-overscroll-behavior:contain;border:1px solid var(--theme-line, #ece7df);border-radius:12px}.attendance-reminder-summary{padding:12px 14px;border:1px solid var(--status-warning-line);
-border-inline-start:3px solid var(--theme-highlight);border-radius:12px;background:var(--status-warning-soft);overflow-wrap:anywhere}.attendance-reminder-summary-meta{
-display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}.attendance-reminder-summary h4{margin:6px 0 2px;font-size:15px;line-height:1.7}
-.attendance-reminder-summary p{margin:0 0 4px;font-size:13px}.attendance-reminder-summary small{color:var(--theme-muted, #6c6870);font-size:11px}.attendance-reminder-explanation{
-margin:12px 0;color:var(--theme-muted);font-size:12px;line-height:1.9}.attendance-reminder-explanation.is-conflict{padding:12px;border-inline-start:3px solid #c7525c;
-border-radius:8px;background:#fff3f3;color:#8f2c37}.attendance-reminder-primary-action>button,.attendance-reminder-not-held>button,.attendance-reminder-conflict-sessions>
-button,.attendance-reminder-history-item>button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;max-width:100%;margin:0;font-size:12px;
-line-height:1.8;white-space:normal}.attendance-reminder-primary-action>button,.attendance-reminder-not-held>button{width:100%}.attendance-reminder-primary-action
-svg,.attendance-reminder-not-held svg,.attendance-reminder-conflict-sessions svg,.attendance-reminder-history-item>button svg{flex-shrink:0;width:19px;height:19px}
-.attendance-reminder-choices{display:grid;gap:10px}.attendance-reminder-choice{display:flex;flex-direction:column;align-items:stretch;gap:8px;min-width:0;padding:12px;
-border:1px solid var(--theme-line);border-radius:12px;background:var(--theme-surface-subtle)}.attendance-reminder-choice.is-record{border-color:var(--theme-primary-line);
-background:var(--theme-primary-soft)}.attendance-reminder-choice h5{margin:0;color:var(--theme-ink);font-size:13px;font-weight:600;line-height:1.8}.attendance-reminder-choice>
-p{flex:1;margin:0;color:var(--theme-muted, #6c6870);font-size:12px;line-height:1.9}.attendance-reminder-dialog #operationError:empty,.attendance-reminder-history
-#operationError:empty{display:none}.attendance-reminder-conflict-sessions{display:grid;gap:8px}.attendance-reminder-dialog-actions{display:flex;justify-content:flex-end;
-margin-block-start:12px;padding-block-start:10px;border-block-start:1px solid var(--theme-line-soft)}.attendance-reminder-dialog-actions>button{min-height:44px;
-margin:0}.attendance-reminder-pagination{display:grid;gap:8px;margin-block:12px;text-align:center}.attendance-reminder-pagination p{margin:0;color:var(--theme-muted,
-#6c6870);font-size:11px}.attendance-reminder-pagination nav{display:flex;justify-content:center;align-items:center;gap:12px}.attendance-reminder-pagination nav>
-span{font-size:12px}.attendance-reminder-pagination button{min-height:44px;margin:0;font-size:12px}.attendance-reminder-history-heading{display:grid;grid-template-columns:36px
-minmax(0,1fr) auto;align-items:center;gap:10px;padding:12px;border:1px solid var(--theme-secondary-line);border-radius:12px;background:var(--theme-secondary-soft)}
-.attendance-reminder-history-symbol{display:grid;place-items:center;width:36px;height:36px;border:1px solid var(--theme-secondary-line);border-radius:10px;background:var(--theme-surface);
-color:var(--theme-secondary)}.attendance-reminder-history-symbol svg{width:20px;height:20px}.attendance-reminder-history-heading .attendance-reminder-intro{margin:0
-0 2px;color:var(--theme-ink);font-size:12px;font-weight:600;line-height:1.8}.attendance-reminder-history-heading>div{min-width:0;overflow-wrap:anywhere}.attendance-reminder-history-heading
-small{color:var(--theme-muted);font-size:11px;line-height:1.8}.attendance-reminder-history-count{display:grid;place-items:center;gap:0;min-width:40px;color:var(--theme-secondary)}
-.attendance-reminder-history-count bdi{font-size:19px;font-weight:700;line-height:1.4}.attendance-reminder-history .attendance-reminder-scroll{display:grid;max-height:none;
-gap:14px;margin-block:12px;overflow:visible;border:0;border-radius:0}.attendance-reminder-history-day{min-width:0}.attendance-reminder-history-day-title{display:flex;
-align-items:center;gap:8px;margin:0 0 7px;color:var(--theme-secondary);font-size:11px;font-weight:600;line-height:1.8}.attendance-reminder-history-day-title time{
-min-width:0;padding:3px 8px;border:1px solid var(--theme-secondary-line);border-radius:7px;background:var(--theme-secondary-soft);overflow-wrap:anywhere}.attendance-reminder-history-day-title::after{
-content:"";flex:1;min-width:12px;height:1px;background:var(--theme-line)}.attendance-reminder-history-day>.attendance-reminder-items{gap:6px}.attendance-reminder-history-item{
-display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px 10px;padding:10px 12px;border:1px solid var(--theme-line);border-inline-start:3px
-solid var(--theme-secondary-line);border-radius:12px;background:var(--theme-surface)}.attendance-reminder-history-item+.attendance-reminder-history-item{border-block-start:1px
-solid var(--theme-line)}.attendance-reminder-history-details{display:grid;gap:2px;min-width:0;overflow-wrap:anywhere}.attendance-reminder-history-meta,.attendance-reminder-history-identity{
-display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 8px;min-width:0;line-height:1.7}.attendance-reminder-history-tag{padding:1px 6px;border:1px solid var(--theme-secondary-line);
-border-radius:6px;background:var(--theme-secondary-soft);color:var(--theme-secondary);font-size:10px;line-height:1.7}.attendance-reminder-history-tag.is-closed{
-border-color:var(--theme-line);background:var(--theme-surface-muted);color:var(--theme-muted)}.attendance-reminder-history-item strong{font-size:12px;font-weight:600}
-.attendance-reminder-history-item .attendance-reminder-history-restore{min-width:0;padding:8px 10px;border:1px solid var(--theme-line);border-radius:9px;background:var(--theme-surface-muted);
-color:var(--theme-ink);font-size:11px}.attendance-reminder-history-item .attendance-reminder-history-restore:hover{border-color:var(--theme-secondary-line);background:var(--theme-secondary-soft)}
-.attendance-reminder-history-empty{display:grid;gap:6px;margin-block:12px;padding:24px 16px;border:1px dashed var(--theme-secondary-line);border-radius:12px;background:var(--theme-surface-subtle);
-text-align:center}.attendance-reminder-history-empty strong{color:var(--theme-ink);font-size:14px}.attendance-reminder-history-empty p{margin:0;font-size:12px}.attendance-reminders
+#app .today-agenda-action{min-height:44px;gap:6px;padding:8px 10px;font-size:12px;white-space:nowrap}#app .today-agenda-action>svg{width:16px;height:16px;color:var(--theme-highlight)}
+#app .today-agenda-action.ghost>svg{color:var(--theme-secondary)}.today-agenda-empty{margin:14px 0 0;color:var(--workflow-muted, var(--theme-muted));font-size:12px;
+line-height:1.9}.today-agenda-row>.session-validation-alert{grid-column:1 / -1}}@media screen and (max-width:700px){#app .today-agenda{padding:12px}.today-agenda-icon{
+flex-basis:32px;height:32px}.today-agenda-heading{gap:8px}.today-agenda-list{margin-top:10px}.today-agenda-row{grid-template-columns:38px minmax(0,1fr) 80px;gap:8px;
+padding-block:9px}.today-agenda-period{min-width:0;min-height:30px;padding:4px;border-radius:8px;font-size:10px;line-height:1.6;white-space:normal;overflow-wrap:anywhere;
+text-align:center}#app .today-agenda-action{min-width:0;width:100%;min-height:44px;padding:6px 4px;border-radius:9px;font-size:10px;line-height:1.6;white-space:nowrap}
+.today-agenda-action>svg{display:none}.today-agenda-copy h3{font-size:12px;line-height:1.65}.today-agenda-copy p{margin-top:1px;font-size:10px;line-height:1.65}
+.today-agenda-status{margin-top:2px;font-size:10px;line-height:1.6}}#app>#attendanceReminderRegion{order:3;min-width:0}#attendanceReminderRegion:empty{display:none}
+.attendance-reminder-notice{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-block:16px;padding:12px 16px;border:1px solid var(--status-warning-line);
+border-radius:14px;background:var(--status-warning-soft);color:var(--status-warning);font-size:12px;line-height:1.9}.attendance-reminder-notice>span{flex:1 1 200px;
+min-width:0;overflow-wrap:anywhere}.attendance-reminder-notice>button{min-height:44px;margin:0}.attendance-reminders{margin-block:16px;overflow:hidden;border:1px
+solid #ead4a2;border-radius:16px;background:var(--theme-surface, #fff);color:var(--theme-ink, #2d3440)}.attendance-reminders-heading{display:grid;grid-template-columns:minmax(0,1fr)
+44px;align-items:center;gap:8px;padding:10px 12px;background:var(--status-warning-soft)}.attendance-reminders-heading h3{display:flex;align-items:center;flex-wrap:wrap;
+gap:8px;margin:0 0 2px;font-size:14px;line-height:1.7}.attendance-reminders-count{display:inline-grid;place-items:center;min-width:26px;padding-inline:6px;border-radius:8px;
+background:#fff;color:#86500a;font-size:12px;font-weight:600}.attendance-reminder-range{margin:0;color:var(--theme-muted, #6c6870);font-size:11px;line-height:1.9;
+overflow-wrap:anywhere}.attendance-reminders-heading .attendance-reminders-refresh{display:grid;place-items:center;width:44px;min-width:44px;height:44px;padding:8px;
+border-color:#e4cf9e;background:#fff9;color:#80540a}.attendance-reminders-refresh svg{width:19px;height:19px}.attendance-reminder-items{display:grid;gap:0;margin:0;
+padding:0;list-style:none}.attendance-reminder-item+.attendance-reminder-item{border-block-start:1px solid var(--theme-line, #ece7df)}:is(#app,#modal) .attendance-reminder-item
+button.attendance-reminder-open:not([hidden]){display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:3px 8px;width:100%;min-width:0;min-height:44px;
+margin:0;padding:8px 12px;border:0;border-radius:0;background:transparent!important;color:inherit!important;text-align:start;box-shadow:none}:is(#app,#modal) .attendance-reminder-item
+button.attendance-reminder-open:not([hidden]):hover{background:#fffcf6!important}.attendance-reminder-meta{display:flex;flex-wrap:wrap;align-items:baseline;grid-column:1
+/ -1;gap:0 10px;min-width:0;overflow-wrap:anywhere}.attendance-reminder-school{color:var(--theme-muted);font-size:10px;font-weight:400;line-height:1.7}.attendance-reminder-date{
+color:var(--theme-muted, #6c6870);font-size:11px;line-height:1.7}.attendance-reminder-identity{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 8px;min-width:0;
+line-height:1.7;overflow-wrap:anywhere}.attendance-reminder-identity strong{font-size:12px;font-weight:600}.attendance-reminder-lesson{font-size:11px;font-weight:400}
+.attendance-reminder-status{max-width:110px;padding:2px 6px;border:1px solid #ecd69e;border-radius:8px;background:#fff5da;color:#80500a;font-size:10px;font-weight:600;
+line-height:1.7;overflow-wrap:anywhere}.is-incomplete .attendance-reminder-status{border-color:#f2cfb3;background:#fff0e5;color:#924412}.is-conflict .attendance-reminder-status{
+border-color:#f1c6cb;background:#fff0f1;color:#a22e3c}.attendance-reminders-footer{display:grid;align-items:center;gap:8px;padding:10px 12px;border-block-start:1px
+solid var(--theme-line, #ece7df);background:var(--theme-surface-subtle, #fafafa)}.attendance-reminders-footer-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+gap:8px;min-width:0}#app .attendance-reminders-footer button.attendance-reminders-footer-action{display:grid;grid-template-columns:16px minmax(0,1fr) auto;align-items:center;
+gap:6px;min-width:0;min-height:46px;margin:0;padding:8px 10px;border:1px solid var(--theme-line);border-radius:10px;background:var(--theme-surface, #fff);color:var(--theme-ink);
+font-size:12px;font-weight:500;line-height:1.7;text-align:start;box-shadow:none}#app .attendance-reminders-footer button.attendance-reminders-footer-action:only-child{
+grid-column:1 / -1}#app .attendance-reminders-footer button.attendance-reminders-all-button{border-color:var(--theme-primary-line);background:var(--theme-primary-soft);
+color:var(--theme-primary)}#app .attendance-reminders-footer button.attendance-reminders-footer-action:hover{border-color:var(--theme-muted);background:var(--theme-surface-muted)}
+#app .attendance-reminders-footer button.attendance-reminders-all-button:hover{border-color:var(--theme-primary);background:var(--theme-primary-soft)}#app .attendance-reminders-footer
+.attendance-reminders-footer-action>svg{width:16px;height:16px;min-width:16px;margin:0}.attendance-reminders-action-label{min-width:0;white-space:nowrap}.attendance-reminders-action-count{
+min-width:24px;padding:1px 5px;border-radius:6px;background:var(--theme-surface-muted);color:inherit;font-size:11px;font-weight:600;line-height:1.8;text-align:center;
+white-space:nowrap;font-variant-numeric:tabular-nums}.attendance-reminders-all-button .attendance-reminders-action-count{background:var(--theme-surface, #fff)}.attendance-reminders-footer
+small{margin:0;color:var(--theme-muted, #6c6870);font-size:11px;line-height:1.8}.attendance-reminders-empty{margin:0;padding:16px;color:var(--theme-muted, #6c6870);
+font-size:13px;line-height:1.9}.attendance-reminders.is-clear{border-color:#cee4d8}.attendance-reminders.is-clear .attendance-reminders-heading{background:#f0f8f2}
+.attendance-reminder-list-dialog,.attendance-reminder-dialog,.attendance-reminder-history{min-width:0;color:var(--theme-ink, #2d3440)}.attendance-reminder-intro{
+margin:0 0 8px;font-size:13px;line-height:1.9}.attendance-reminder-scroll{max-height:min(55vh,500px);margin-block:14px;overflow-y:auto;overscroll-behavior:contain;
+border:1px solid var(--theme-line, #ece7df);border-radius:12px}.attendance-reminder-summary{padding:12px 14px;border:1px solid var(--status-warning-line);border-inline-start:3px
+solid var(--theme-highlight);border-radius:12px;background:var(--status-warning-soft);overflow-wrap:anywhere}.attendance-reminder-summary-meta{display:flex;align-items:center;
+justify-content:space-between;flex-wrap:wrap;gap:6px}.attendance-reminder-summary h4{margin:6px 0 2px;font-size:15px;line-height:1.7}.attendance-reminder-summary
+p{margin:0 0 4px;font-size:13px}.attendance-reminder-summary small{color:var(--theme-muted, #6c6870);font-size:11px}.attendance-reminder-explanation{margin:12px
+0;color:var(--theme-muted);font-size:12px;line-height:1.9}.attendance-reminder-explanation.is-conflict{padding:12px;border-inline-start:3px solid #c7525c;border-radius:8px;
+background:#fff3f3;color:#8f2c37}.attendance-reminder-primary-action>button,.attendance-reminder-not-held>button,.attendance-reminder-conflict-sessions>button,.attendance-reminder-history-item>
+button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;max-width:100%;margin:0;font-size:12px;line-height:1.8;white-space:normal}
+.attendance-reminder-primary-action>button,.attendance-reminder-not-held>button{width:100%}.attendance-reminder-primary-action svg,.attendance-reminder-not-held
+svg,.attendance-reminder-conflict-sessions svg,.attendance-reminder-history-item>button svg{flex-shrink:0;width:19px;height:19px}.attendance-reminder-choices{display:grid;
+gap:10px}.attendance-reminder-choice{display:flex;flex-direction:column;align-items:stretch;gap:8px;min-width:0;padding:12px;border:1px solid var(--theme-line);
+border-radius:12px;background:var(--theme-surface-subtle)}.attendance-reminder-choice.is-record{border-color:var(--theme-primary-line);background:var(--theme-primary-soft)}
+.attendance-reminder-choice h5{margin:0;color:var(--theme-ink);font-size:13px;font-weight:600;line-height:1.8}.attendance-reminder-choice>p{flex:1;margin:0;color:var(--theme-muted,
+#6c6870);font-size:12px;line-height:1.9}.attendance-reminder-dialog #operationError:empty,.attendance-reminder-history #operationError:empty{display:none}.attendance-reminder-conflict-sessions{
+display:grid;gap:8px}.attendance-reminder-dialog-actions{display:flex;justify-content:flex-end;margin-block-start:12px;padding-block-start:10px;border-block-start:1px
+solid var(--theme-line-soft)}.attendance-reminder-dialog-actions>button{min-height:44px;margin:0}.attendance-reminder-pagination{display:grid;gap:8px;margin-block:12px;
+text-align:center}.attendance-reminder-pagination p{margin:0;color:var(--theme-muted, #6c6870);font-size:11px}.attendance-reminder-pagination nav{display:flex;justify-content:center;
+align-items:center;gap:12px}.attendance-reminder-pagination nav>span{font-size:12px}.attendance-reminder-pagination button{min-height:44px;margin:0;font-size:12px}
+.attendance-reminder-history-heading{display:grid;grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:10px;padding:12px;border:1px solid var(--theme-secondary-line);
+border-radius:12px;background:var(--theme-secondary-soft)}.attendance-reminder-history-symbol{display:grid;place-items:center;width:36px;height:36px;border:1px solid
+var(--theme-secondary-line);border-radius:10px;background:var(--theme-surface);color:var(--theme-secondary)}.attendance-reminder-history-symbol svg{width:20px;height:20px}
+.attendance-reminder-history-heading .attendance-reminder-intro{margin:0 0 2px;color:var(--theme-ink);font-size:12px;font-weight:600;line-height:1.8}.attendance-reminder-history-heading>
+div{min-width:0;overflow-wrap:anywhere}.attendance-reminder-history-heading small{color:var(--theme-muted);font-size:11px;line-height:1.8}.attendance-reminder-history-count{
+display:grid;place-items:center;gap:0;min-width:40px;color:var(--theme-secondary)}.attendance-reminder-history-count bdi{font-size:19px;font-weight:700;line-height:1.4}
+.attendance-reminder-history .attendance-reminder-scroll{display:grid;max-height:none;gap:14px;margin-block:12px;overflow:visible;border:0;border-radius:0}.attendance-reminder-history-day{
+min-width:0}.attendance-reminder-history-day-title{display:flex;align-items:center;gap:8px;margin:0 0 7px;color:var(--theme-secondary);font-size:11px;font-weight:600;
+line-height:1.8}.attendance-reminder-history-day-title time{min-width:0;padding:3px 8px;border:1px solid var(--theme-secondary-line);border-radius:7px;background:var(--theme-secondary-soft);
+overflow-wrap:anywhere}.attendance-reminder-history-day-title::after{content:"";flex:1;min-width:12px;height:1px;background:var(--theme-line)}.attendance-reminder-history-day>
+.attendance-reminder-items{gap:6px}.attendance-reminder-history-item{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px 10px;padding:10px
+12px;border:1px solid var(--theme-line);border-inline-start:3px solid var(--theme-secondary-line);border-radius:12px;background:var(--theme-surface)}.attendance-reminder-history-item+
+.attendance-reminder-history-item{border-block-start:1px solid var(--theme-line)}.attendance-reminder-history-details{display:grid;gap:2px;min-width:0;overflow-wrap:anywhere}
+.attendance-reminder-history-meta,.attendance-reminder-history-identity{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 8px;min-width:0;line-height:1.7}
+.attendance-reminder-history-tag{padding:1px 6px;border:1px solid var(--theme-secondary-line);border-radius:6px;background:var(--theme-secondary-soft);color:var(--theme-secondary);
+font-size:10px;line-height:1.7}.attendance-reminder-history-tag.is-closed{border-color:var(--theme-line);background:var(--theme-surface-muted);color:var(--theme-muted)}
+.attendance-reminder-history-item strong{font-size:12px;font-weight:600}.attendance-reminder-history-item .attendance-reminder-history-restore{min-width:0;padding:8px
+10px;border:1px solid var(--theme-line);border-radius:9px;background:var(--theme-surface-muted);color:var(--theme-ink);font-size:11px}.attendance-reminder-history-item
+.attendance-reminder-history-restore:hover{border-color:var(--theme-secondary-line);background:var(--theme-secondary-soft)}.attendance-reminder-history-empty{display:grid;
+gap:6px;margin-block:12px;padding:24px 16px;border:1px dashed var(--theme-secondary-line);border-radius:12px;background:var(--theme-surface-subtle);text-align:center}
+.attendance-reminder-history-empty strong{color:var(--theme-ink);font-size:14px}.attendance-reminder-history-empty p{margin:0;font-size:12px}.attendance-reminders
 button:focus-visible,.attendance-reminder-list-dialog button:focus-visible,.attendance-reminder-dialog button:focus-visible,.attendance-reminder-history button:focus-visible{
 outline:3px solid var(--theme-primary, #c0141b);outline-offset:-3px}@media(min-width:700px){:is(#app,#modal) .attendance-reminder-item button.attendance-reminder-open:not([hidden]){
 grid-template-columns:150px minmax(0,1fr) auto;min-height:52px;gap:10px}.attendance-reminder-meta{flex-direction:column;grid-column:1;grid-row:1}.attendance-reminder-identity{

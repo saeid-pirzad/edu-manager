@@ -719,38 +719,38 @@ pan><div class="today-agenda-copy"><h3>'+esc(lesson.name)+"</h3><p>"+esc(school.
 pe="button" class="today-agenda-action'+(session?" ghost":"")+'" data-legacy-click="today-agenda" data-session="'+esc(session?.id||"")+'" data-school="'+esc(school.
 id)+'" data-class="'+esc(classroom.id)+'" data-lesson="'+esc(lesson.id)+'" data-date="'+esc(date)+'" data-day="'+day+'" data-period="'+period+'"'+(!session?' da\
 ta-mutating="1"':"")+(closed&&!session?" disabled":"")+' aria-label="'+esc(label+" "+lesson.name+" · "+classroom.name+" · "+getPeriodName(period))+'"><span>'+
-label+"</span>"+EduIcons.html("arrow")+"</button></article>"}return html+"</div></section>"}EduLegacyEvents.register("dashboard-open",function(){return this.dataset.
-kind==="school"?goSchool(this.dataset.key):goClass(this.dataset.key)});EduLegacyEvents.register("dashboard-delete",function(){return this.dataset.kind==="school"?
-deleteSchool(this.dataset.key):deleteClass(this.dataset.key)});EduLegacyEvents.register("dashboard-task",function(){return this.dataset.task==="session"?dashboardOpenSession(
-this.dataset.key):dashboardReviewGrades(this.dataset.key)});EduLegacyEvents.register("dashboard-agenda",function(){return this.dataset.session?dashboardOpenSession(
-this.dataset.session):dashboardStartSession(Number(this.dataset.day),Number(this.dataset.period),this.dataset.date)});EduLegacyEvents.register("ui-dashboard:0",
-function(event){return filterDashboardEntities(this)});EduLegacyEvents.register("ui-dashboard:1",function(event){return openReportScope(this.getAttribute("data-\
-legacy-click-arg7"),this.getAttribute("data-legacy-click-arg8"),this.getAttribute("data-legacy-click-arg9"))});EduLegacyEvents.register("ui-dashboard:2",function(event){
-return dashboardDailyReport()});EduLegacyEvents.register("ui-dashboard:3",function(event){return goMaster()});EduLegacyEvents.register("ui-dashboard:4",function(event){
-return EduV24.openEntityEditor(this.getAttribute("data-legacy-click-arg15"),this.getAttribute("data-legacy-click-arg16"),this.getAttribute("data-legacy-click-ar\
-g17"))});EduLegacyEvents.register("today-agenda",function(){if(this.dataset.session)return dashboardOpenSession(this.dataset.session);const selection={date:this.
-dataset.date,day:Number(this.dataset.day),period:Number(this.dataset.period),schoolId:this.dataset.school,classId:this.dataset.class,lessonId:this.dataset.lesson};
-return runSessionFormAction(this,()=>EduV24.startTodaySession(selection))});function studentAvatarHtml(studentId){const tone=Array.from(String(studentId)).reduce(
-(hash,char)=>Math.imul(hash,31)+char.codePointAt(0)>>>0,0)%5;return'<span class="student-avatar student-avatar-icon" data-tone="'+tone+'" aria-hidden="true"><sv\
-g viewBox="0 0 48 48" fill="none" focusable="false"><circle cx="24" cy="24" r="19" fill="currentColor" opacity=".09"/><circle cx="24" cy="18" r="7" fill="curren\
-tColor"/><path d="M11 38c0-7.2 5.8-12 13-12s13 4.8 13 12c-3.5 3.1-8 4.5-13 4.5S14.5 41.1 11 38Z" fill="currentColor"/><path d="M20 16a4 4 0 0 1 4-4" stroke="whi\
-te" stroke-opacity=".5" stroke-width="2" stroke-linecap="round"/><path d="m36 7 1.1 3.4L40.5 12l-3.4 1.2L36 17l-1.2-3.8L31.5 12l3.3-1.6L36 7Z" fill="currentColo\
-r" opacity=".65"/></svg></span>'}function createPanelHeading(icon,title,note=""){return'<summary><span class="create-panel-symbol" aria-hidden="true">'+EduIcons.
-html(icon)+'</span><span class="create-panel-title"><strong>'+title+"</strong>"+(note?"<small>"+note+"</small>":"")+'</span><span class="create-panel-toggle" ar\
-ia-hidden="true"></span></summary>'}function renderEntityQuickCreate(kind,empty){const school=kind==="school";const label=school?"مدرسه":"کلاس";const token=school?
-"1":"5";return'<details class="card quick-create entity-quick-create create-panel no-print'+(school?" school-create":" class-create")+'"'+(empty?" open":"")+">"+
-createPanelHeading(school?"school":"classroom",label+" جدید",school?"":"نام کلاس؛ هنرجویان و درس‌ها در مرحله بعد")+'<form \
-data-legacy-submit="ui-school-class:'+token+'" data-entity-create="'+kind+'" class="row"><label class="entity-create-field">نام '+label+'<input id="'+kind+'C\
-reateName" name="name" placeholder="'+(school?"مثلاً هنرستان دانش":"مثلاً دهم شبکه")+'" aria-describedby="'+kind+'CreateError" requi\
-red maxlength="500"'+(school?' enterkeyhint="done"':"")+'></label><div class="create-panel-footer"><button type="submit" data-mutating="1">ثبت '+label+'</but\
-ton></div><p id="'+kind+'CreateError" class="entity-create-error" role="alert"></p></form></details>'}function renderSchools(){let h=headerHtml()+`<section clas\
-s="workflow-welcome schools-welcome no-print"><span class="schools-welcome-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s\
-troke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M8 9h1M15 9h1M8 12h1M15 12h1"/></svg></span><div\
- class="schools-welcome-copy"><h2>مدرسه‌های من</h2><p>مدرسه‌ها را اضافه، ویرایش یا حذف کنید؛ برای مدیریت کلاس‌ها وارد مدرسه شوید.</p></div><button type="button"\
- class="schools-about" data-about-action="open"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12"\
- cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></svg><span>درباره و ارتباط</span></button></section>`;h+='<section id="attendanceReminderRegion" clas\
-s="no-print" aria-live="polite"></section>';h+=renderTodayAgenda();h+=dashboardDirectory(db.schools,"schools");h+=renderEntityQuickCreate("school",!db.schools.length);
-return h}function renderSchool(){const school=getSchool(state.schoolId);if(!school){state.view="schools";return renderSchools()}let h=headerHtml()+breadcrumbHtml(
+(session?"ادامه":closed?"بسته":"شروع")+"</span>"+EduIcons.html("arrow")+"</button></article>"}return html+"</div></section>"}EduLegacyEvents.register(
+"dashboard-open",function(){return this.dataset.kind==="school"?goSchool(this.dataset.key):goClass(this.dataset.key)});EduLegacyEvents.register("dashboard-delet\
+e",function(){return this.dataset.kind==="school"?deleteSchool(this.dataset.key):deleteClass(this.dataset.key)});EduLegacyEvents.register("dashboard-task",function(){
+return this.dataset.task==="session"?dashboardOpenSession(this.dataset.key):dashboardReviewGrades(this.dataset.key)});EduLegacyEvents.register("dashboard-agenda",
+function(){return this.dataset.session?dashboardOpenSession(this.dataset.session):dashboardStartSession(Number(this.dataset.day),Number(this.dataset.period),this.
+dataset.date)});EduLegacyEvents.register("ui-dashboard:0",function(event){return filterDashboardEntities(this)});EduLegacyEvents.register("ui-dashboard:1",function(event){
+return openReportScope(this.getAttribute("data-legacy-click-arg7"),this.getAttribute("data-legacy-click-arg8"),this.getAttribute("data-legacy-click-arg9"))});EduLegacyEvents.
+register("ui-dashboard:2",function(event){return dashboardDailyReport()});EduLegacyEvents.register("ui-dashboard:3",function(event){return goMaster()});EduLegacyEvents.
+register("ui-dashboard:4",function(event){return EduV24.openEntityEditor(this.getAttribute("data-legacy-click-arg15"),this.getAttribute("data-legacy-click-arg16"),
+this.getAttribute("data-legacy-click-arg17"))});EduLegacyEvents.register("today-agenda",function(){if(this.dataset.session)return dashboardOpenSession(this.dataset.
+session);const selection={date:this.dataset.date,day:Number(this.dataset.day),period:Number(this.dataset.period),schoolId:this.dataset.school,classId:this.dataset.
+class,lessonId:this.dataset.lesson};return runSessionFormAction(this,()=>EduV24.startTodaySession(selection))});function studentAvatarHtml(studentId){const tone=Array.
+from(String(studentId)).reduce((hash,char)=>Math.imul(hash,31)+char.codePointAt(0)>>>0,0)%5;return'<span class="student-avatar student-avatar-icon" data-tone="'+
+tone+'" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" focusable="false"><circle cx="24" cy="24" r="19" fill="currentColor" opacity=".09"/><circle cx="\
+24" cy="18" r="7" fill="currentColor"/><path d="M11 38c0-7.2 5.8-12 13-12s13 4.8 13 12c-3.5 3.1-8 4.5-13 4.5S14.5 41.1 11 38Z" fill="currentColor"/><path d="M20\
+ 16a4 4 0 0 1 4-4" stroke="white" stroke-opacity=".5" stroke-width="2" stroke-linecap="round"/><path d="m36 7 1.1 3.4L40.5 12l-3.4 1.2L36 17l-1.2-3.8L31.5 12l3.\
+3-1.6L36 7Z" fill="currentColor" opacity=".65"/></svg></span>'}function createPanelHeading(icon,title,note=""){return'<summary><span class="create-panel-symbol"\
+ aria-hidden="true">'+EduIcons.html(icon)+'</span><span class="create-panel-title"><strong>'+title+"</strong>"+(note?"<small>"+note+"</small>":"")+'</span><span\
+ class="create-panel-toggle" aria-hidden="true"></span></summary>'}function renderEntityQuickCreate(kind,empty){const school=kind==="school";const label=school?
+"مدرسه":"کلاس";const token=school?"1":"5";return'<details class="card quick-create entity-quick-create create-panel no-print'+(school?" school-create":
+" class-create")+'"'+(empty?" open":"")+">"+createPanelHeading(school?"school":"classroom",label+" جدید",school?"":"نام کلاس؛ هنرجویان و درس‌ها در مرحله بعد")+
+'<form data-legacy-submit="ui-school-class:'+token+'" data-entity-create="'+kind+'" class="row"><label class="entity-create-field">نام '+label+'<input id="'+
+kind+'CreateName" name="name" placeholder="'+(school?"مثلاً هنرستان دانش":"مثلاً دهم شبکه")+'" aria-describedby="'+kind+'CreateError\
+" required maxlength="500"'+(school?' enterkeyhint="done"':"")+'></label><div class="create-panel-footer"><button type="submit" data-mutating="1">ثبت '+label+
+'</button></div><p id="'+kind+'CreateError" class="entity-create-error" role="alert"></p></form></details>'}function renderSchools(){let h=headerHtml()+`<sectio\
+n class="workflow-welcome schools-welcome no-print"><span class="schools-welcome-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentCo\
+lor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M8 9h1M15 9h1M8 12h1M15 12h1"/></svg></spa\
+n><div class="schools-welcome-copy"><h2>مدرسه‌های من</h2><p>مدرسه‌ها را اضافه، ویرایش یا حذف کنید؛ برای مدیریت کلاس‌ها وارد مدرسه شوید.</p></div><button type="b\
+utton" class="schools-about" data-about-action="open"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle c\
+x="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></svg><span>درباره و ارتباط</span></button></section>`;h+='<section id="attendanceReminderRegion\
+" class="no-print" aria-live="polite"></section>';h+=renderTodayAgenda();h+=dashboardDirectory(db.schools,"schools");h+=renderEntityQuickCreate("school",!db.schools.
+length);return h}function renderSchool(){const school=getSchool(state.schoolId);if(!school){state.view="schools";return renderSchools()}let h=headerHtml()+breadcrumbHtml(
 [{label:"مدرسه‌ها",action:"ui-school-class:2"},{label:school.name},{label:"کلاس‌ها"}]);h+=dashboardDirectory(school.classes,"classes",school.id);
 h+=renderEntityQuickCreate("class",!school.classes.length);return h}function classroomTabsHtml(label,items,compact=false){return'<div class="tabs classroom-tabs'+
 (compact?" classroom-tabs-compact":"")+'" role="group" aria-label="'+esc(label)+'">'+items.map(({tab,action,icon,title,detail=""})=>{const active=state.tab===tab;
