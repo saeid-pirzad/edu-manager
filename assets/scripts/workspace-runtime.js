@@ -770,33 +770,32 @@ root.dataset.sessionId),editable=!!access?.editable;root.dataset.sessionMode=edi
 modalTitle.textContent=editable?"ثبت و ویرایش جلسه":"مشاهدهٔ جلسه";const title=root.querySelector("[data-session-edit-title]"),description=root.
 querySelector("[data-session-edit-description]"),button=root.querySelector("[data-session-edit-control]"),label=root.querySelector("[data-session-edit-label]");
 if(title)title.textContent=editable?"ویرایش جلسه فعال است":"فقط مشاهدهٔ جلسه";if(description)description.textContent=!access?"اطل\
-اعات این پنجره تغییر کرده است؛ جلسه را دوباره باز کنید.":editable?"ثبت حضور و فعالیت، فوراً ذخیره می‌شود. پس از پایا\
-ن کار، ویرایش را ببندید.":"برای جلوگیری از تغییر ناخواسته، ثبت‌های قبلی قفل‌اند. برای اصلاح، ویرایش را فعال کنید.";
-if(label)label.textContent=editable?"پایان ویرایش":"فعال‌کردن ویرایش";if(button){button.setAttribute("aria-pressed",String(editable));
-setControlLock(button,"session-access-stale",!access)}}function toggleSessionEditing(button){assertEntityWritable();const access=currentSessionEditAccess(button.
-dataset.key);if(!access||!button.isConnected||!access.root.contains(button))throw Error("پنجرهٔ جلسه تغییر کرده است؛ جلسه را دوباره باز کنید.");
-if(busy)throw Error("ثبت قبلی هنوز تمام نشده است؛ کمی صبر کنید.");access.editable=!access.editable;access.token={};syncControlLocks()}
-function renderSessionDialogV24(session,options,created){if(!session||!db.sessions.includes(session))throw Error("جلسه دیگر موجود نیست؛ فهرست را دوباره باز کنید\
-.");const previousId=currentSessionId,previousAccess=currentSessionEditAccess(session.id),editable=created||!!previousAccess?.editable,freshCreation=created||!!previousAccess?.
-freshCreation;const result=old.openSessionModal(session,options);if(result===false){currentSessionId=previousId;return false}const root=document.querySelector("\
-#modalBody .session-workspace");if(!root||root.dataset.sessionId!==session.id){releaseSessionEditAccess();return result}sessionEditAccess={sessionId:session.id,
-session,workspaceId:workspace?.id,connection,installation:installationToken,data:db,root,editable,freshCreation,token:{}};if(!freshCreation)root.querySelector("\
-.session-context").insertAdjacentHTML("afterend",sessionEditNoticeHtml(session.id));if(Array.isArray(session.roster)&&!session.roster.length&&emptySessionRosterClass(
-session)){const empty=root.querySelector(".session-attendance-list .empty");if(empty)empty.innerHTML='<p>این جلسه بدون هنرجو ساخته شده است. می‌توانید فهرست هنرج\
-ویان فعال فعلی کلاس را برای همین جلسه ثبت کنید.</p><button type="button" class="ghost" data-mutating="1" data-workspace-action="session-restore-roster" data-key\
-="'+esc(session.id)+'">دریافت هنرجویان فعلی کلاس</button>'}root.querySelectorAll("#sessDate,#sessPeriod,#sessPoudman,#sessUnit").forEach(control=>{
-control.dataset.mutating="1"});lockControls();return result}function openSessionModalV24(session,options={}){return renderSessionDialogV24(session,options,false)}
-function openNewSessionDialogV24(session){return renderSessionDialogV24(session,{},true)}function sessionRoster(c,x){return x.roster||c.students.map(st=>({id:st.
-id,name:st.name}))}function emptySessionRosterClass(session){if(!Array.isArray(session?.roster)||session.roster.length!==0||!EduAttendanceReminders.isEmptySession(
-session))return null;const cls=getClassObj(session.schoolId,session.classId);return Array.isArray(cls?.students)&&cls.students.length?cls:null}const sessionRosterRestores=new Set;
-async function restoreEmptySessionRosterV24(button){const id=button?.dataset?.key;if(sessionRosterRestores.has(id))return false;const isCurrent=preserveSessionAction(
-id),access=currentSessionEditAccess(id),session=getSessionById(id),cls=emptySessionRosterClass(session);if(!button?.isConnected||!access?.root.contains(button))
-throw Error("کنترل فهرست مربوط به پنجرهٔ فعلی نیست؛ جلسه را دوباره باز کنید.");if(!cls)throw Error("دریافت فه\
-رست فقط برای جلسهٔ کاملاً خالی و کلاس دارای هنرجوی فعال امکان‌پذیر است.");const roster=snapshotRoster(
-cls),signature=JSON.stringify(roster);sessionRosterRestores.add(id);try{if(!confirm("فهرست "+roster.length.toLocaleString("fa-IR")+" هنرجوی فعال کلاس «"+
-cls.name+"» برای این جلسه ثبت شود؟ این جلسه هنوز حضور، نمره یا فعالیت ثبت‌شده ندارد."))return false;
-await flushDrafts({strict:true});await writer.catch(()=>{});assertEntityWritable();if(!isCurrent()||getSessionById(id)!==session||emptySessionRosterClass(session)!==
-cls||JSON.stringify(snapshotRoster(cls))!==signature)throw Error("جلسه یا فهرست کلاس تغییر کرده است؛ دریافت فهرست انجام نشد.");
+اعات این پنجره تغییر کرده است؛ جلسه را دوباره باز کنید.":editable?"تغییرات خودکار ذخیره می‌شوند.":
+"ثبت‌ها تا فعال‌کردن ویرایش قفل‌اند.";if(label)label.textContent=editable?"پایان ویرایش":"فعال‌کردن ویرایش";
+if(button){button.setAttribute("aria-pressed",String(editable));setControlLock(button,"session-access-stale",!access)}}function toggleSessionEditing(button){assertEntityWritable();
+const access=currentSessionEditAccess(button.dataset.key);if(!access||!button.isConnected||!access.root.contains(button))throw Error("پنجرهٔ جلسه تغییر کرده است\
+؛ جلسه را دوباره باز کنید.");if(busy)throw Error("ثبت قبلی هنوز تمام نشده است؛ کمی صبر کنید.");access.editable=
+!access.editable;access.token={};syncControlLocks()}function renderSessionDialogV24(session,options,created){if(!session||!db.sessions.includes(session))throw Error(
+"جلسه دیگر موجود نیست؛ فهرست را دوباره باز کنید.");const previousId=currentSessionId,previousAccess=currentSessionEditAccess(
+session.id),editable=created||!!previousAccess?.editable,freshCreation=created||!!previousAccess?.freshCreation;const result=old.openSessionModal(session,options);
+if(result===false){currentSessionId=previousId;return false}const root=document.querySelector("#modalBody .session-workspace");if(!root||root.dataset.sessionId!==
+session.id){releaseSessionEditAccess();return result}sessionEditAccess={sessionId:session.id,session,workspaceId:workspace?.id,connection,installation:installationToken,
+data:db,root,editable,freshCreation,token:{}};if(!freshCreation)root.querySelector(".session-context").insertAdjacentHTML("beforeend",sessionEditNoticeHtml(session.
+id));if(Array.isArray(session.roster)&&!session.roster.length&&emptySessionRosterClass(session)){const empty=root.querySelector(".session-attendance-list .empty");
+if(empty)empty.innerHTML='<p>این جلسه بدون هنرجو ساخته شده است. می‌توانید فهرست هنرجویان فعال فعلی کلاس را برای همین جلسه ثبت کنید.</p><button type="button" cla\
+ss="ghost" data-mutating="1" data-workspace-action="session-restore-roster" data-key="'+esc(session.id)+'">دریافت هنرجویان فعلی کلاس</button>'}
+root.querySelectorAll("#sessDate,#sessPeriod,#sessPoudman,#sessUnit").forEach(control=>{control.dataset.mutating="1"});lockControls();return result}function openSessionModalV24(session,options={}){
+return renderSessionDialogV24(session,options,false)}function openNewSessionDialogV24(session){return renderSessionDialogV24(session,{},true)}function sessionRoster(c,x){
+return x.roster||c.students.map(st=>({id:st.id,name:st.name}))}function emptySessionRosterClass(session){if(!Array.isArray(session?.roster)||session.roster.length!==
+0||!EduAttendanceReminders.isEmptySession(session))return null;const cls=getClassObj(session.schoolId,session.classId);return Array.isArray(cls?.students)&&cls.
+students.length?cls:null}const sessionRosterRestores=new Set;async function restoreEmptySessionRosterV24(button){const id=button?.dataset?.key;if(sessionRosterRestores.
+has(id))return false;const isCurrent=preserveSessionAction(id),access=currentSessionEditAccess(id),session=getSessionById(id),cls=emptySessionRosterClass(session);
+if(!button?.isConnected||!access?.root.contains(button))throw Error("کنترل فهرست مربوط به پنجرهٔ فعلی نیست؛ جلسه را دوباره باز کنید.");
+if(!cls)throw Error("دریافت فهرست فقط برای جلسهٔ کاملاً خالی و کلاس دارای هنرجوی فعال امکان‌پذیر است.");
+const roster=snapshotRoster(cls),signature=JSON.stringify(roster);sessionRosterRestores.add(id);try{if(!confirm("فهرست "+roster.length.toLocaleString("fa-I\
+R")+" هنرجوی فعال کلاس «"+cls.name+"» برای این جلسه ثبت شود؟ این جلسه هنوز حضور، نمره یا فعالیت ثبت‌شده ندارد."))
+return false;await flushDrafts({strict:true});await writer.catch(()=>{});assertEntityWritable();if(!isCurrent()||getSessionById(id)!==session||emptySessionRosterClass(
+session)!==cls||JSON.stringify(snapshotRoster(cls))!==signature)throw Error("جلسه یا فهرست کلاس تغییر کرده است؛ دریافت فهرست انجام نشد.");
 session.roster=roster;await saveDBV24({sessionId:id,action:"تکمیل فهرست هنرجویان جلسهٔ خالی"});if(isCurrent())openSessionModal(getSessionById(
 id));return true}finally{sessionRosterRestores.delete(id)}}function preserveSessionAction(id){const editToken=assertSessionEditable(id);const origin=workspace.id,
 sourceData=db,sourceInstallation=typeof installationToken==="undefined"?"":installationToken,sourceConnection=connection;return()=>db===sourceData&&workspace.id===
@@ -957,26 +956,27 @@ value===selection.lessonId)}finally{scheduleSessionBusy=false}}async function st
 true;try{const isCurrent=preserveScheduleAction(),request={...selection};if(![request.schoolId,request.classId,request.lessonId].every(id=>typeof id==="string"&&
 id.length>0))throw Error("کلاس و درس مقصد معتبر نیستند.");if(request.date!==todayISO())throw Error("تاریخ روز تغییر کرده است؛ برنامه امرو\
 ز را دوباره باز کنید.");return await openScheduledSessionV24(request,()=>isCurrent()&&request.date===todayISO())}finally{scheduleSessionBusy=false}}
-async function saveMasterConfigV24(day,period){const isCurrent=preserveScheduleAction();validateScheduleSlot(day,period);const marker=document.getElementById("c\
-fgAllClass"),next={...db.masterSchedule||{}},fields={all:"All",odd:"Odd",even:"Even"};for(const[kind,prefix]of Object.entries(fields)){const classId=document.getElementById(
-"cfg"+prefix+"Class").value,lessonId=document.getElementById("cfg"+prefix+"Lesson").value,key=`${day}-${period}-${kind}`;if(!classId&&!lessonId){delete next[key];
-continue}const target=classId&&findClassById(classId);if(!target||!lessonId||!target.classObj.lessons.some(lesson=>lesson.id===lessonId))throw Error("کلاس و درس\
- هر بخش برنامه را به‌درستی انتخاب کنید.");if(!target.classObj.students?.length)throw Error("برای تنظیم برنامه، ابتدا هنرجویان کل\
-اس «"+(target.classObj.name||"انتخاب‌شده")+"» را ثبت کنید. کلاس بدون هنرجوی فعال نمی‌تواند در برنامه قرار بگیرد.");
-next[key]={schoolId:target.school.id,classId,lessonId}}db.masterSchedule=next;await saveDBV24({action:"ثبت برنامه زنگ"});if(isCurrent()&&document.getElementById(
-"cfgAllClass")===marker){closeModal();render()}}async function clearMasterConfigV24(day,period){const isCurrent=preserveScheduleAction();validateScheduleSlot(day,
-period);const marker=document.getElementById("cfgAllClass");if(!confirm("کل تنظیمات این زنگ پاک شوند؟"))return false;const next={...db.masterSchedule||
-{}};for(const kind of["all","odd","even"])delete next[`${day}-${period}-${kind}`];db.masterSchedule=next;await saveDBV24({action:"پاک‌کردن برنامه زنگ"});
-if(isCurrent()&&document.getElementById("cfgAllClass")===marker){closeModal();render()}return true}async function saveWeekStartDateV24(){const isCurrent=preserveScheduleAction();
-const date=validateSessionDate(document.getElementById("weekStartInput").value);if(date===db.settings.weekStartDate)return false;db.settings.weekStartDate=date;
-await saveDBV24({action:"تغییر تاریخ شروع محاسبه هفته"});if(isCurrent()){render();alert("✅ تاریخ شروع محاسبه ذخیره شد")}
-return true}async function toggleActiveDayV24(day){const isCurrent=preserveScheduleAction();if(!Number.isInteger(day)||day<0||day>6)throw Error("روز برنامه باید\
- عدد صحیح صفر تا شش باشد.");const days=db.activeDays||[0,1,2,3,4,5];db.activeDays=days.includes(day)?days.filter(value=>value!==day):[...days,
-day].sort((a,b)=>a-b);await saveDBV24({action:"تغییر روزهای فعال برنامه"});if(isCurrent())render()}async function changePeriodsV24(delta){const isCurrent=preserveScheduleAction();
-if(!Number.isInteger(delta))throw Error("تغییر تعداد زنگ‌ها باید عدد صحیح باشد.");const previous=db.periods||6,next=Math.max(1,Math.
-min(12,previous+delta));if(next===previous)return false;const occupied=Object.entries(db.masterSchedule||{}).filter(([key,value])=>value&&Number(key.split("-")[1])>=
-next);if(next<previous&&occupied.length){alert("کاهش تعداد زنگ‌ها انجام نشد؛ ابتدا برنامه زنگ‌های "+[...new Set(occupied.
-map(([key])=>Number(key.split("-")[1])+1))].sort((a,b)=>a-b).join("، ")+" را جابه‌جا یا پاک کنید.");return false}db.periods=next;await saveDBV24(
+async function saveMasterConfigV24(day,period){const isCurrent=preserveScheduleAction();validateScheduleSlot(day,period);assertMasterConfigEditable(day,period);
+const marker=document.getElementById("cfgAllClass"),next={...db.masterSchedule||{}},fields={all:"All",odd:"Odd",even:"Even"};for(const[kind,prefix]of Object.entries(
+fields)){const classId=document.getElementById("cfg"+prefix+"Class").value,lessonId=document.getElementById("cfg"+prefix+"Lesson").value,key=`${day}-${period}-${kind}`;
+if(!classId&&!lessonId){delete next[key];continue}const target=classId&&findClassById(classId);if(!target||!lessonId||!target.classObj.lessons.some(lesson=>lesson.
+id===lessonId))throw Error("کلاس و درس هر بخش برنامه را به‌درستی انتخاب کنید.");if(!target.classObj.students?.length)throw Error(
+"برای تنظیم برنامه، ابتدا هنرجویان کلاس «"+(target.classObj.name||"انتخاب‌شده")+"» را ثبت کنید. کلاس بدون هنرجوی فع\
+ال نمی‌تواند در برنامه قرار بگیرد.");next[key]={schoolId:target.school.id,classId,lessonId}}db.masterSchedule=next;await saveDBV24(
+{action:"ثبت برنامه زنگ"});if(isCurrent()&&document.getElementById("cfgAllClass")===marker){closeModal();render()}}async function clearMasterConfigV24(day,period){
+const isCurrent=preserveScheduleAction();validateScheduleSlot(day,period);assertMasterConfigEditable(day,period);const marker=document.getElementById("cfgAllCla\
+ss");if(!confirm("کل تنظیمات این زنگ پاک شوند؟"))return false;const next={...db.masterSchedule||{}};for(const kind of["all","odd","even"])
+delete next[`${day}-${period}-${kind}`];db.masterSchedule=next;await saveDBV24({action:"پاک‌کردن برنامه زنگ"});if(isCurrent()&&document.getElementById(
+"cfgAllClass")===marker){closeModal();render()}return true}async function saveWeekStartDateV24(){const isCurrent=preserveScheduleAction();const date=validateSessionDate(
+document.getElementById("weekStartInput").value);if(date===db.settings.weekStartDate)return false;db.settings.weekStartDate=date;await saveDBV24({action:"تغییر \
+تاریخ شروع محاسبه هفته"});if(isCurrent()){render();alert("✅ تاریخ شروع محاسبه ذخیره شد")}return true}async function toggleActiveDayV24(day){
+const isCurrent=preserveScheduleAction();if(!Number.isInteger(day)||day<0||day>6)throw Error("روز برنامه باید عدد صحیح صفر تا شش باشد.");
+const days=db.activeDays||[0,1,2,3,4,5];db.activeDays=days.includes(day)?days.filter(value=>value!==day):[...days,day].sort((a,b)=>a-b);await saveDBV24({action:"\
+تغییر روزهای فعال برنامه"});if(isCurrent())render()}async function changePeriodsV24(delta){const isCurrent=preserveScheduleAction();if(!Number.
+isInteger(delta))throw Error("تغییر تعداد زنگ‌ها باید عدد صحیح باشد.");const previous=db.periods||6,next=Math.max(1,Math.min(12,
+previous+delta));if(next===previous)return false;const occupied=Object.entries(db.masterSchedule||{}).filter(([key,value])=>value&&Number(key.split("-")[1])>=next);
+if(next<previous&&occupied.length){alert("کاهش تعداد زنگ‌ها انجام نشد؛ ابتدا برنامه زنگ‌های "+[...new Set(occupied.map(
+([key])=>Number(key.split("-")[1])+1))].sort((a,b)=>a-b).join("، ")+" را جابه‌جا یا پاک کنید.");return false}db.periods=next;await saveDBV24(
 {action:"تغییر تعداد زنگ‌های برنامه"});if(isCurrent())render();return true}function attendanceReminderNumber(value){return Number.isFinite(
 Number(value))?Number(value).toLocaleString("fa-IR"):"۰"}function attendanceReminderDate(item){return esc(faDate(item.date))+" · زنگ "+attendanceReminderNumber(
 Number(item.period)+1)}function attendanceReminderItems(model){return[...model?.items||[]].sort((a,b)=>String(b.date).localeCompare(String(a.date))||Number(b.period)-
@@ -2322,21 +2322,24 @@ ocomplete="off" aria-describedby="studentEditError" value="'+esc(student.name)+'
 ode" name="code" inputmode="numeric" autocomplete="off" aria-describedby="studentEditError" value="'+esc(student.code||"")+'"><p>مشخصات هنرجو در همهٔ نوبت‌های ا\
 ین سال تحصیلی اصلاح می‌شود. شناسه، نمرات و نام تاریخی جلسات قبلی حفظ می‌شوند. اصلاح نام موقت بازیابی‌شده، فقط نام‌های نیازمند بررسی همان هنرجو در جلسات این کلاس\
  را نیز اصلاح می‌کند.</p><p id="studentEditError" class="entity-create-error" role="alert"></p><div class="row record-editor-actions"><button type="button" clas\
-s="ghost" data-workspace-action="close">انصراف</button><button type="submit">ذخیره مشخصات</button></div></form>';if(showModal("ویرایش مشخصات هن\
-رجو",html)!==false){studentEditing=context;rememberRecordEditor()}}catch(error){handleError(error)}}async function saveStudent(studentId){if(studentSaving)return;
-const form=document.querySelector("#modal:not(.hidden) #studentEditor");if(!form)return;studentSaving=true;const finish=beginRecordEditorSave(form);try{const context=studentEditing;
-const sourceConnection=connection;const check=()=>{assertEntityWritable();if(!context||studentEditing!==context||connection!==sourceConnection||studentId&&studentId!==
-context.studentId||context.workspace!==workspace.id||context.revision!==workspace.revision||context.schoolId!==state.schoolId||context.classId!==state.classId)throw Error(
-"کلاس، ترم یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.");const c2=getClassObj(context.schoolId,context.classId),
-student2=c2&&getStudentObj(c2,context.studentId);if(!student2)throw Error("هنرجو دیگر در این کلاس وجود ندارد.");return{c:c2,student:student2}};
-let{student}=check();const{name,code}=studentIdentity(document.getElementById("editStudentName").value,document.getElementById("editStudentCode").value,student);
-await flushDrafts({strict:true});await writer.catch(()=>{});const current=check(),c=current.c;student=current.student;if(code&&knownStudents(c).some(x=>x.id!==student.
-id&&x.code===code))throw recordFieldError("این کد در فهرست فعال یا بایگانی کلاس وجود دارد.","editStudentCode");if(student.name!==
-name||(student.code||"")!==code||student.recovered&&!name.startsWith("دانش‌آموز بازیابی‌شده")){freezeClassRosters(c);applyStudentIdentity(
-c,student,{name,code});await saveDBV24({action:"اصلاح مشخصات هنرجو: "+name})}if(studentEditing!==context||connection!==sourceConnection||workspace.
-id!==context.workspace||state.schoolId!==context.schoolId||state.classId!==context.classId||periodLoading||resetBusy||connectionRetired)return;finish();rememberRecordEditor();
-studentEditing=null;closeModal();render()}catch(error){if(!showRecordEditorError(error,"studentEditError"))handleError(error)}finally{studentSaving=false;finish()}}
-async function wipeAllV24(){if(fileMode||!ready||connectionRetired)return handleError(Error("ابتدا نسخه آماده برنامه را باز کنید."));
+s="ghost" data-workspace-action="close">انصراف</button><button type="submit">ذخیره مشخصات</button></div></form>';if(showModal("مشاهدهٔ مشخصات ه\
+نرجو",html)!==false){studentEditing=context;const sourceConnection=connection;initializeRecordEditAccess(document.getElementById("studentEditor"),{title:"وی\
+رایش مشخصات هنرجو",validate:()=>{assertEntityWritable();if(studentEditing!==context||connection!==sourceConnection||context.workspace!==workspace.
+id||context.revision!==workspace.revision||context.schoolId!==state.schoolId||context.classId!==state.classId)throw Error("کلاس یا اطلاعات تغییر کرده است؛ فرم ر\
+ا دوباره باز کنید.")}});rememberRecordEditor()}}catch(error){handleError(error)}}async function saveStudent(studentId){if(studentSaving)return;const form=document.
+querySelector("#modal:not(.hidden) #studentEditor");if(!form)return;studentSaving=true;const finish=beginRecordEditorSave(form);try{assertRecordEditAccess(form);
+const context=studentEditing;const sourceConnection=connection;const check=()=>{assertEntityWritable();assertRecordEditAccess(form);if(!context||studentEditing!==
+context||connection!==sourceConnection||studentId&&studentId!==context.studentId||context.workspace!==workspace.id||context.revision!==workspace.revision||context.
+schoolId!==state.schoolId||context.classId!==state.classId)throw Error("کلاس، ترم یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.");
+const c2=getClassObj(context.schoolId,context.classId),student2=c2&&getStudentObj(c2,context.studentId);if(!student2)throw Error("هنرجو دیگر در این کلاس وجود ند\
+ارد.");return{c:c2,student:student2}};let{student}=check();const{name,code}=studentIdentity(document.getElementById("editStudentName").value,document.getElementById(
+"editStudentCode").value,student);await flushDrafts({strict:true});await writer.catch(()=>{});const current=check(),c=current.c;student=current.student;if(code&&
+knownStudents(c).some(x=>x.id!==student.id&&x.code===code))throw recordFieldError("این کد در فهرست فعال یا بایگانی کلاس وجود دارد.",
+"editStudentCode");if(student.name!==name||(student.code||"")!==code||student.recovered&&!name.startsWith("دانش‌آموز بازیابی‌شده")){freezeClassRosters(
+c);applyStudentIdentity(c,student,{name,code});await saveDBV24({action:"اصلاح مشخصات هنرجو: "+name})}if(studentEditing!==context||connection!==sourceConnection||
+workspace.id!==context.workspace||state.schoolId!==context.schoolId||state.classId!==context.classId||periodLoading||resetBusy||connectionRetired)return;finish();
+rememberRecordEditor();studentEditing=null;closeModal();render()}catch(error){if(!showRecordEditorError(error,"studentEditError"))handleError(error)}finally{studentSaving=
+false;finish()}}async function wipeAllV24(){if(fileMode||!ready||connectionRetired)return handleError(Error("ابتدا نسخه آماده برنامه را باز کنید."));
 showModal("حذف کامل اطلاعات سیستم",'<form class="record-editor wipe-editor" id="wipeEditor" data-workspace-submit="confirm-wipe" aria-describ\
 edby="wipeWarning"><section class="wipe-warning" id="wipeWarning"><span class="wipe-symbol" aria-hidden="true">'+EduIcons.html("trash")+'</span><div><h4>حذف همه\
 ٔ سال‌های تحصیلی</h4><p>همهٔ اطلاعات این مرورگر پاک می‌شود؛ بازگردانی فقط با فایل پشتیبان ممکن است.</p></div></section><section class="wipe-scope" aria-label="ا\
@@ -2384,68 +2387,69 @@ title,html)===false)return false;setTimeout(()=>{applyDrafts();lockControls();pa
 find(element=>element.closest("#modalBody"))||document.querySelector("#modal .modal-dialog"))?.focus({preventScroll:true})},0);return true}async function loginV24(e){
 if(fileMode){e.preventDefault();const input=document.getElementById("loginPass");if(await verifyPassword(input.value,db.settings.password)){isAuthenticated=true;
 render()}else{input.value="";alert("رمز عبور اشتباه است.")}return}await old.checkPassword(e);if(isAuthenticated)await recoverDrafts()}function installWorkspaceActions(){
-const commands=new Map([["session-toggle-edit",button=>toggleSessionEditing(button)],["session-restore-roster",button=>restoreEmptySessionRosterV24(button)],["a\
-ttendance-reminder-open",button=>openAttendanceReminder(button)],["attendance-reminders-all",()=>openAttendanceRemindersList()],["attendance-reminders-page",button=>pageAttendanceReminders(
-button)],["attendance-reminders-not-held",()=>openAttendanceRemindersList({notHeld:true})],["attendance-reminders-refresh",()=>refreshAttendanceReminders({interactive:true})],
-["attendance-reminder-not-held",()=>markAttendanceReminderNotHeld()],["attendance-reminder-record",button=>recordAttendanceReminder(button)],["attendance-remind\
-er-restore",button=>restoreAttendanceReminder(button)],["year-sessions",()=>refreshYearLessonSessions({interactive:true})],["year-session",button=>openYearSession(
-button.dataset.workspace,button.dataset.key)],["assessment-stage",button=>openAssessmentStage(button)],["karnameh-stage",button=>selectKarnamehStage(button)],["\
-karnameh-excel",button=>openKarnamehExcel(button)],["karnameh-excel-download",button=>downloadKarnamehExcel(button)],["karnameh-excel-mode",button=>setKarnamehExcelDelivery(
-button)],["karnameh-excel-send",button=>shareKarnamehExcel(button)],["karnameh-excel-save",button=>downloadPreparedKarnamehExcel(button)],["karnameh-student",button=>openKarnamehStudent(
-button.dataset.class,button.dataset.key)],["switch-period",button=>switchPeriod(button.dataset.key)],["frozen-report",button=>showFrozenReport(button.dataset.key)],
-["adopt-drafts",button=>adoptDrafts(button.dataset.key)],["approve-drafts",()=>approveDrafts()],["archived-report",button=>showArchivedKarnameh(button.dataset.key)],
-["edit-student",button=>openEditStudentModal(button.dataset.key)],["restore-student",button=>restoreStudent(button.dataset.key)],["copy-membership",()=>saveMembership(
-"copy")],["unfiltered-session",button=>{const day=integer(button.dataset.day),period=integer(button.dataset.period);state.masterFilter=null;closeModal();return clickMasterCell(
-day,period)}],["periods",()=>openAcademicYear()],["term-records",()=>openPeriods()],["backups",()=>openBackups()],["open-wipe",()=>wipeAllV24()],["discard-draft\
-s",()=>discardDrafts()],["review-drafts",()=>reviewDrafts()],["other-drafts",()=>openOtherDrafts()],["create-period",()=>createNewPeriod({fromDialog:true})],["r\
-eopen-period",()=>reopenPeriod()],["finalize-period",()=>finalizePeriod()],["new-second-period",button=>openNewPeriod(button.dataset.key)],["export-period",()=>exportFullBackup()],
-["export-full",()=>exportFullBackup()],["prepare-share-backup",()=>openBackupShare()],["share-backup-file",button=>sharePreparedBackup(button)],["download-share\
--backup",()=>downloadPreparedBackup()],["single-file-choose",()=>chooseSingleFile()],["single-file-save",()=>resumeSingleFile()],["single-file-stop",()=>disableSingleFile()],
-["restore-full",()=>restoreFullBackup()],["confirm-import",()=>confirmImport()],["undo",()=>openUndoModal()],["confirm-undo",()=>confirmUndo()],["raw-recovery",
-()=>rawRecoveryV24()],["choose-import",()=>document.getElementById("importFile").click()],["print",button=>printCurrentKarnameh(button)],["close",()=>closeModal()],
-["reload",()=>location.reload()]]);if(globalThis.__EDU_TEST_MODE__){commands.set("delete-period",button=>openDeletePeriod(button.dataset.key));commands.set("con\
-firm-delete-period",()=>confirmDeletePeriod())}function integer(value){if(!/^\d+$/.test(value)||!Number.isSafeInteger(Number(value)))throw Error("پارامتر عملیات\
- نامعتبر است.");return Number(value)}const submissions=new Map([["save-membership",()=>saveMembership()],["save-student",()=>saveStudent()],["save-ent\
-ity",()=>saveEntityEditor()],["commit-csv",()=>commitCSV()],["confirm-deletion",()=>confirmDeletion()],["confirm-wipe",()=>confirmWipe()]]);const allowed=element=>element&&
-!element.matches(":disabled")&&!element.closest("[inert]")&&element.closest("#app,#modalBody");const run=(handler,element)=>{try{void Promise.resolve(handler(element)).
-catch(handleError)}catch(error){handleError(error)}};document.addEventListener("click",event=>{const button=event.target.closest?.("button[data-workspace-action\
-]");if(!allowed(button))return;const handler=commands.get(button.dataset.workspaceAction);if(handler)run(handler,button)});document.addEventListener("submit",event=>{
-const form=event.target;if(!form.matches?.("form[data-workspace-submit]"))return;event.preventDefault();if(!allowed(form))return;const handler=submissions.get(form.
-dataset.workspaceSubmit);if(handler)run(handler,form)})}let entityCreationBusy=false;async function createEntityV24(event,kind){event.preventDefault();if(entityCreationBusy)
-return false;const form=event.target,name=String(form.elements.namedItem("name")?.value||"").trim().replace(/\s+/g," ");const target={workspace:workspace?.id,bank:db,
-connection,installation:typeof installationToken==="undefined"?"":installationToken,schoolId:state.schoolId,view:state.view};const sameInstallationTarget=()=>target.
-workspace===workspace?.id&&target.connection===connection&&target.installation===(typeof installationToken==="undefined"?"":installationToken)&&target.view===state.
-view&&(kind!=="class"||target.schoolId===state.schoolId);const sameTarget=()=>target.bank===db&&sameInstallationTarget();const fieldId=kind+"CreateName";entityCreationBusy=
-true;const finishSave=beginRecordEditorSave(form);try{assertEntityWritable();if(!normalizedName(name)||name.length>500)throw recordFieldError("نام معتبر با حداک\
-ثر ۵۰۰ نویسه وارد کنید.",fieldId);await flushDrafts({strict:true});assertEntityWritable();if(!sameTarget())throw Error("ترم یا صفحه مقصد تغییر\
- کرده است؛ ثبت انجام نشد.");const school=kind==="class"?getSchool(target.schoolId):null;if(kind==="class"&&!school)throw Error("مدرسه مقصد وج\
-ود ندارد.");const peers=kind==="school"?db.schools:school.classes;if(peers.some(x=>normalizedName(x.name)===normalizedName(name)))throw recordFieldError(
-kind==="school"?"مدرسه‌ای با همین نام وجود دارد.":"کلاسی با همین نام در این مدرسه وجود دارد.",fieldId);
-peers.push(kind==="school"?{id:uid(),name,classes:[]}:{id:uid(),name,students:[],archivedStudents:[],lessons:[]});await saveDBV24({action:"افزودن "+(kind===
-"school"?"مدرسه":"کلاس")+": "+name});if(sameTarget()&&!periodLoading&&!resetBusy&&!connectionRetired)render();return true}catch(error){const currentForm=sameInstallationTarget()?
-document.querySelector('form[data-entity-create="'+kind+'"]'):null;if(currentForm){const input=currentForm.elements.namedItem("name");input.value=name;currentForm.
-querySelector(".entity-create-error").textContent=error.message;const detail=currentForm.closest("details");if(detail)detail.open=true;if(error.fieldId)input.setAttribute(
-"aria-invalid","true");requestAnimationFrame(()=>{const currentDetail=input.closest("details");if(currentDetail)currentDetail.open=true;if(input.isConnected&&!input.
-disabled)input.focus({preventScroll:true})})}else handleError(error);return false}finally{entityCreationBusy=false;finishSave()}}let academicYearNotesScope={year:"",
-periods:[]};const verifiedYearNoteAccess=new Set;const noteAccessKey=(id,password)=>JSON.stringify([installationToken,id,password]);function permitYearNoteAccess(period,data){
-verifiedYearNoteAccess.add(noteAccessKey(period.id,data.settings.password))}function academicYearNotesContext(){const periods=academicYearNotesScope.year===workspace?.
-year?academicYearNotesScope.periods:[],authorized=periods.filter(period=>(period.id===workspace?.id||["first","second"].includes(period.kind))&&(period.id===workspace?.
-id||period.password===""||isAuthenticated&&period.password===db.settings.password||verifiedYearNoteAccess.has(noteAccessKey(period.id,period.password)))),owner=authorized.
-find(period=>period.kind==="first")||authorized.find(period=>period.id===workspace?.id),ids=authorized.map(period=>period.id);if(workspace?.id&&!ids.includes(workspace.
-id))ids.push(workspace.id);return{notesWorkspaceId:owner?.id||workspace?.id||"",notesWorkspaceIds:ids,yearScopeId:workspace?.year||""}}async function synchronizeYearNotesScope(){
-if(!connection||!workspace||resetBusy||connectionRetired)return;const origin={connection,id:workspace.id,year:workspace.year},tx=connection.transaction(["catalo\
-g","records"],"readonly"),done=transactionDone(tx);const pending=new Promise((resolve,reject)=>{const request=tx.objectStore("catalog").getAll();request.onerror=
-()=>reject(request.error);request.onsuccess=()=>{const periods2=request.result.filter(row=>row.year===origin.year&&(row.id===origin.id||["first","second"].includes(
-row.termKind||academicTermKind(row.term)))),metas=periods2.map(period=>requestPromise(tx.objectStore("records").get(period.id+"|meta")));Promise.all(metas).then(
-rows=>resolve(periods2.map((period,index)=>({id:period.id,revision:period.revision,kind:period.termKind||academicTermKind(period.term),password:rows[index]?.value?.
-settings?.password??null}))),reject)}});const[periods]=await Promise.all([pending,done]);if(connection===origin.connection&&workspace?.id===origin.id&&workspace.
-year===origin.year&&!resetBusy&&!connectionRetired)academicYearNotesScope={year:origin.year,periods}}function invalidateYearNotesScope(message){if(!message?.workspace)
-return;academicYearNotesScope.periods=academicYearNotesScope.periods.filter(period=>period.id!==message.workspace||message.revision&&period.revision>=message.revision)}
-function captureWorkspaceContext(){return Object.freeze({id:workspace?.id||"",revision:workspace?.revision||0})}function assertWorkspaceReadable(){if(fileMode||
-!ready||periodLoading||resetBusy||connectionRetired||!workspace)throw Error("اطلاعات آماده خواندن نیست؛ برنامه را دوباره باز کنید.");
-if(blocked)throw Error("اطلاعات این پنجره قدیمی است؛ صفحه را دوباره بارگذاری و گزارش یا فرم را دوباره تهیه کنید.");
-if(db.settings.password&&!isAuthenticated)throw Error("ابتدا وارد نوبت شوید.")}function assertWorkspaceContext(context,{write=false}={}){assertWorkspaceReadable();
-if(!context||context.id!==workspace.id||context.revision!==workspace.revision)throw Error("نوبت یا اطلاعات تغییر کرده است؛ فرم یا گزارش را دوباره باز کنید.");
+const commands=new Map([["record-enable-edit",button=>enableRecordEditAccess(button)],["session-toggle-edit",button=>toggleSessionEditing(button)],["session-res\
+tore-roster",button=>restoreEmptySessionRosterV24(button)],["attendance-reminder-open",button=>openAttendanceReminder(button)],["attendance-reminders-all",()=>openAttendanceRemindersList()],
+["attendance-reminders-page",button=>pageAttendanceReminders(button)],["attendance-reminders-not-held",()=>openAttendanceRemindersList({notHeld:true})],["attend\
+ance-reminders-refresh",()=>refreshAttendanceReminders({interactive:true})],["attendance-reminder-not-held",()=>markAttendanceReminderNotHeld()],["attendance-re\
+minder-record",button=>recordAttendanceReminder(button)],["attendance-reminder-restore",button=>restoreAttendanceReminder(button)],["year-sessions",()=>refreshYearLessonSessions(
+{interactive:true})],["year-session",button=>openYearSession(button.dataset.workspace,button.dataset.key)],["assessment-stage",button=>openAssessmentStage(button)],
+["karnameh-stage",button=>selectKarnamehStage(button)],["karnameh-excel",button=>openKarnamehExcel(button)],["karnameh-excel-download",button=>downloadKarnamehExcel(
+button)],["karnameh-excel-mode",button=>setKarnamehExcelDelivery(button)],["karnameh-excel-send",button=>shareKarnamehExcel(button)],["karnameh-excel-save",button=>downloadPreparedKarnamehExcel(
+button)],["karnameh-student",button=>openKarnamehStudent(button.dataset.class,button.dataset.key)],["switch-period",button=>switchPeriod(button.dataset.key)],["\
+frozen-report",button=>showFrozenReport(button.dataset.key)],["adopt-drafts",button=>adoptDrafts(button.dataset.key)],["approve-drafts",()=>approveDrafts()],["a\
+rchived-report",button=>showArchivedKarnameh(button.dataset.key)],["edit-student",button=>openEditStudentModal(button.dataset.key)],["restore-student",button=>restoreStudent(
+button.dataset.key)],["copy-membership",()=>saveMembership("copy")],["unfiltered-session",button=>{const day=integer(button.dataset.day),period=integer(button.dataset.
+period);state.masterFilter=null;closeModal();return clickMasterCell(day,period)}],["periods",()=>openAcademicYear()],["term-records",()=>openPeriods()],["backup\
+s",()=>openBackups()],["open-wipe",()=>wipeAllV24()],["discard-drafts",()=>discardDrafts()],["review-drafts",()=>reviewDrafts()],["other-drafts",()=>openOtherDrafts()],
+["create-period",()=>createNewPeriod({fromDialog:true})],["reopen-period",()=>reopenPeriod()],["finalize-period",()=>finalizePeriod()],["new-second-period",button=>openNewPeriod(
+button.dataset.key)],["export-period",()=>exportFullBackup()],["export-full",()=>exportFullBackup()],["prepare-share-backup",()=>openBackupShare()],["share-back\
+up-file",button=>sharePreparedBackup(button)],["download-share-backup",()=>downloadPreparedBackup()],["single-file-choose",()=>chooseSingleFile()],["single-file\
+-save",()=>resumeSingleFile()],["single-file-stop",()=>disableSingleFile()],["restore-full",()=>restoreFullBackup()],["confirm-import",()=>confirmImport()],["un\
+do",()=>openUndoModal()],["confirm-undo",()=>confirmUndo()],["raw-recovery",()=>rawRecoveryV24()],["choose-import",()=>document.getElementById("importFile").click()],
+["print",button=>printCurrentKarnameh(button)],["close",()=>closeModal()],["reload",()=>location.reload()]]);if(globalThis.__EDU_TEST_MODE__){commands.set("dele\
+te-period",button=>openDeletePeriod(button.dataset.key));commands.set("confirm-delete-period",()=>confirmDeletePeriod())}function integer(value){if(!/^\d+$/.test(
+value)||!Number.isSafeInteger(Number(value)))throw Error("پارامتر عملیات نامعتبر است.");return Number(value)}const submissions=new Map([[
+"save-membership",()=>saveMembership()],["save-student",()=>saveStudent()],["save-entity",()=>saveEntityEditor()],["commit-csv",()=>commitCSV()],["confirm-delet\
+ion",()=>confirmDeletion()],["confirm-wipe",()=>confirmWipe()]]);const allowed=element=>element&&!element.matches(":disabled")&&!element.closest("[inert]")&&element.
+closest("#app,#modalBody");const run=(handler,element)=>{try{void Promise.resolve(handler(element)).catch(handleError)}catch(error){handleError(error)}};document.
+addEventListener("click",event=>{const button=event.target.closest?.("button[data-workspace-action]");if(!allowed(button))return;const handler=commands.get(button.
+dataset.workspaceAction);if(handler)run(handler,button)});document.addEventListener("submit",event=>{const form=event.target;if(!form.matches?.("form[data-works\
+pace-submit]"))return;event.preventDefault();if(!allowed(form))return;const handler=submissions.get(form.dataset.workspaceSubmit);if(handler)run(handler,form)})}
+let entityCreationBusy=false;async function createEntityV24(event,kind){event.preventDefault();if(entityCreationBusy)return false;const form=event.target,name=String(
+form.elements.namedItem("name")?.value||"").trim().replace(/\s+/g," ");const target={workspace:workspace?.id,bank:db,connection,installation:typeof installationToken===
+"undefined"?"":installationToken,schoolId:state.schoolId,view:state.view};const sameInstallationTarget=()=>target.workspace===workspace?.id&&target.connection===
+connection&&target.installation===(typeof installationToken==="undefined"?"":installationToken)&&target.view===state.view&&(kind!=="class"||target.schoolId===state.
+schoolId);const sameTarget=()=>target.bank===db&&sameInstallationTarget();const fieldId=kind+"CreateName";entityCreationBusy=true;const finishSave=beginRecordEditorSave(
+form);try{assertEntityWritable();if(!normalizedName(name)||name.length>500)throw recordFieldError("نام معتبر با حداکثر ۵۰۰ نویسه وارد کنید.",
+fieldId);await flushDrafts({strict:true});assertEntityWritable();if(!sameTarget())throw Error("ترم یا صفحه مقصد تغییر کرده است؛ ثبت انجام نشد.");
+const school=kind==="class"?getSchool(target.schoolId):null;if(kind==="class"&&!school)throw Error("مدرسه مقصد وجود ندارد.");const peers=kind===
+"school"?db.schools:school.classes;if(peers.some(x=>normalizedName(x.name)===normalizedName(name)))throw recordFieldError(kind==="school"?"مدرسه‌ای با همین نام \
+وجود دارد.":"کلاسی با همین نام در این مدرسه وجود دارد.",fieldId);peers.push(kind==="school"?{id:uid(),name,classes:[]}:{
+id:uid(),name,students:[],archivedStudents:[],lessons:[]});await saveDBV24({action:"افزودن "+(kind==="school"?"مدرسه":"کلاس")+": "+name});if(sameTarget()&&
+!periodLoading&&!resetBusy&&!connectionRetired)render();return true}catch(error){const currentForm=sameInstallationTarget()?document.querySelector('form[data-en\
+tity-create="'+kind+'"]'):null;if(currentForm){const input=currentForm.elements.namedItem("name");input.value=name;currentForm.querySelector(".entity-create-err\
+or").textContent=error.message;const detail=currentForm.closest("details");if(detail)detail.open=true;if(error.fieldId)input.setAttribute("aria-invalid","true");
+requestAnimationFrame(()=>{const currentDetail=input.closest("details");if(currentDetail)currentDetail.open=true;if(input.isConnected&&!input.disabled)input.focus(
+{preventScroll:true})})}else handleError(error);return false}finally{entityCreationBusy=false;finishSave()}}let academicYearNotesScope={year:"",periods:[]};const verifiedYearNoteAccess=new Set;
+const noteAccessKey=(id,password)=>JSON.stringify([installationToken,id,password]);function permitYearNoteAccess(period,data){verifiedYearNoteAccess.add(noteAccessKey(
+period.id,data.settings.password))}function academicYearNotesContext(){const periods=academicYearNotesScope.year===workspace?.year?academicYearNotesScope.periods:
+[],authorized=periods.filter(period=>(period.id===workspace?.id||["first","second"].includes(period.kind))&&(period.id===workspace?.id||period.password===""||isAuthenticated&&
+period.password===db.settings.password||verifiedYearNoteAccess.has(noteAccessKey(period.id,period.password)))),owner=authorized.find(period=>period.kind==="firs\
+t")||authorized.find(period=>period.id===workspace?.id),ids=authorized.map(period=>period.id);if(workspace?.id&&!ids.includes(workspace.id))ids.push(workspace.id);
+return{notesWorkspaceId:owner?.id||workspace?.id||"",notesWorkspaceIds:ids,yearScopeId:workspace?.year||""}}async function synchronizeYearNotesScope(){if(!connection||
+!workspace||resetBusy||connectionRetired)return;const origin={connection,id:workspace.id,year:workspace.year},tx=connection.transaction(["catalog","records"],"r\
+eadonly"),done=transactionDone(tx);const pending=new Promise((resolve,reject)=>{const request=tx.objectStore("catalog").getAll();request.onerror=()=>reject(request.
+error);request.onsuccess=()=>{const periods2=request.result.filter(row=>row.year===origin.year&&(row.id===origin.id||["first","second"].includes(row.termKind||academicTermKind(
+row.term)))),metas=periods2.map(period=>requestPromise(tx.objectStore("records").get(period.id+"|meta")));Promise.all(metas).then(rows=>resolve(periods2.map((period,index)=>({
+id:period.id,revision:period.revision,kind:period.termKind||academicTermKind(period.term),password:rows[index]?.value?.settings?.password??null}))),reject)}});const[
+periods]=await Promise.all([pending,done]);if(connection===origin.connection&&workspace?.id===origin.id&&workspace.year===origin.year&&!resetBusy&&!connectionRetired)
+academicYearNotesScope={year:origin.year,periods}}function invalidateYearNotesScope(message){if(!message?.workspace)return;academicYearNotesScope.periods=academicYearNotesScope.
+periods.filter(period=>period.id!==message.workspace||message.revision&&period.revision>=message.revision)}function captureWorkspaceContext(){return Object.freeze(
+{id:workspace?.id||"",revision:workspace?.revision||0})}function assertWorkspaceReadable(){if(fileMode||!ready||periodLoading||resetBusy||connectionRetired||!workspace)
+throw Error("اطلاعات آماده خواندن نیست؛ برنامه را دوباره باز کنید.");if(blocked)throw Error("اطلاعات این پنجره قدیمی\
+ است؛ صفحه را دوباره بارگذاری و گزارش یا فرم را دوباره تهیه کنید.");if(db.settings.password&&!isAuthenticated)
+throw Error("ابتدا وارد نوبت شوید.")}function assertWorkspaceContext(context,{write=false}={}){assertWorkspaceReadable();if(!context||context.id!==
+workspace.id||context.revision!==workspace.revision)throw Error("نوبت یا اطلاعات تغییر کرده است؛ فرم یا گزارش را دوباره باز کنید.");
 if(write)assertEntityWritable()}function markWorkspaceConflict(){blocked=true;for(const item of drafts.values()){item.review=true;item.error="تعارض؛ نیازمند برر\
 سی پس از بارگذاری مجدد"}if(drafts.size)storeDrafts();const message="اطلاعات این نوبت در تب دیگری تغییر کرد. پیش‌نویس محفوظ است؛ صفحه را دوباره\
  بارگذاری کنید.";setStatus(message,"error");lockControls();window.EduPeriodicReports?.invalidate(message)}function assertLiveWorkspace(live,context){
@@ -2558,48 +2562,52 @@ assertEntityWritable();if(requestedContext.workspace!==workspace.id||requestedCo
 if(!["school","class"].includes(kind))throw Error("نوع اطلاعات نامعتبر است.");const school=kind==="school"?getSchool(id):getSchool(schoolId);
 const item=kind==="school"?school:school?.classes.find(c=>c.id===id);if(!item)throw Error("اطلاعات پیدا نشد؛ صفحه را تازه کنید.");const previousEditing=entityEditing;
 entityEditing={...requestedContext,kind,id,schoolId:school.id,revision:workspace.revision};const label=kind==="school"?"مدرسه":"کلاس";const classes=kind===
-"school"?item.classes:[item];const count=classes.reduce((n,c)=>n+c.students.length,0);const opened=showModal("ویرایش مشخصات "+label,'<form class="re\
-cord-editor" data-workspace-submit="save-entity"><div class="record-editor-context"><span>'+esc(workspace.year+" · "+workspace.term)+"</span><h4>"+esc(item.name)+
-"</h4><p>"+esc(kind==="class"?school.name:classes.length.toLocaleString("fa-IR")+" کلاس")+" · "+count.toLocaleString("fa-IR")+' هنرجو</p></div><label class\
-="course-field">نام '+label+'<input id="entityEditName" name="name" value="'+esc(item.name)+'" required maxlength="500" autocomplete="off" aria-describedby="\
-entityEditHint entityEditError"></label><p id="entityEditHint" class="muted">تغییر نام در همهٔ نوبت‌های این سال تحصیلی اعمال می‌شود؛ نمرات و جلسات هر نوبت حفظ م\
-ی‌شوند. کارنامه‌های نهایی قبلی تغییر نمی‌کنند.</p><p id="entityEditError" role="alert"></p><div class="record-editor-actions"><button type="submit" data-mutatin\
-g="1">ذخیره تغییرات</button><button type="button" class="ghost" data-workspace-action="close">انصراف</button></div></form>');if(opened===false){
-entityEditing=previousEditing;return false}rememberRecordEditor()}async function saveEntityEditor(){if(entitySaving)return;entitySaving=true;const finishSave=beginRecordEditorSave(
-document.querySelector("#modal .record-editor"));const edit=entityEditing;let attemptedSave=false;try{assertEntityWritable();if(!document.querySelector("#modal:\
-not(.hidden) #entityEditName"))throw Error("فرم ویرایش باز نیست.");const isCurrent=()=>edit&&entityEditing===edit&&edit.workspace===workspace.id&&
-edit.bank===db&&edit.connection===connection&&edit.installation===(typeof installationToken==="undefined"?"":installationToken);if(!isCurrent()||edit.revision!==
-workspace.revision)throw Error("اطلاعات از زمان باز شدن فرم تغییر کرده است؛ فرم را دوباره باز کنید.");const name=document.
-getElementById("entityEditName").value.trim().replace(/\s+/g," ");if(!normalizedName(name)||name.length>500)throw recordFieldError("نام معتبر با حداکثر ۵۰۰ نویس\
-ه وارد کنید.","entityEditName");await flushDrafts({strict:true});assertEntityWritable();if(!isCurrent()||edit.revision!==workspace.revision)throw Error(
-"ترم یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.");const school=getSchool(edit.schoolId);const item=edit.kind===
-"school"?school:school?.classes.find(c=>c.id===edit.id);if(!item)throw Error("اطلاعات مقصد دیگر وجود ندارد.");const peers=edit.kind==="s\
-chool"?db.schools:school.classes;if(normalizedName(item.name)!==normalizedName(name)&&peers.some(x=>x.id!==item.id&&normalizedName(x.name)===normalizedName(name)))
-throw recordFieldError(edit.kind==="school"?"مدرسه‌ای با همین نام وجود دارد.":"کلاسی با همین نام در این مدرسه وجود دارد.",
-"entityEditName");if(item.name!==name){item.name=name;attemptedSave=true;await saveDBV24({...edit.kind==="class"?{classId:item.id}:{},action:"ویرایش نام "+
-(edit.kind==="school"?"مدرسه":"کلاس")})}if(!isCurrent()||periodLoading||resetBusy||connectionRetired)return;entityEditing=null;finishSave();rememberRecordEditor();
-closeModal();render()}catch(error){if(attemptedSave&&entityEditing===edit&&edit.workspace===workspace?.id&&edit.revision===workspace?.revision&&edit.connection===
-connection&&edit.installation===(typeof installationToken==="undefined"?"":installationToken)&&!blocked&&!periodLoading&&!resetBusy&&!connectionRetired)edit.bank=
-db;if(!showRecordEditorError(error,"entityEditError"))handleError(error)}finally{entitySaving=false;finishSave()}}let membershipContext=null,membershipBusy=false;
-function freezeClassRosters(c){for(const session of db.sessions.filter(x=>x.classId===c.id))if(!session.roster)session.roster=historicalRoster(c,session)}async function openMembership(action,studentId){
-try{assertEntityWritable();const origin={workspace:workspace.id,schoolId:state.schoolId,classId:state.classId};await flushDrafts({strict:true});assertEntityWritable();
-if(origin.workspace!==workspace.id||origin.schoolId!==state.schoolId||origin.classId!==state.classId)throw Error("صفحه یا ترم تغییر کرده است؛ عملیات را دوباره ب\
-از کنید.");const c=getClassObj(origin.schoolId,origin.classId);const student=(action==="restore"?c?.archivedStudents:c?.students)?.find(x=>x.id===studentId);
-if(!student)throw Error("هنرجو در فهرست موردنظر وجود ندارد.");const context={...origin,action,studentId,revision:workspace.revision};
-const title=action==="transfer"?"انتقال یا کپی هنرجو":action==="archive"?"بایگانی هنرجو":"بازگردانی هنرجو";const activeElsewhere=db.
-schools.flatMap(s=>s.classes.filter(cl=>cl.id!==c.id&&cl.students.some(st=>st.id===studentId)).map(cl=>s.name+" / "+cl.name));let hasDestination=true;let body='\
-<form class="record-editor membership-editor" data-workspace-submit="save-membership"><div class="record-editor-context"><span>هنرجو و کلاس مبدأ</span><h4>'+
-esc(student.name)+"</h4><p>"+esc(getSchool(origin.schoolId).name+" / "+c.name)+"</p></div>";if(action==="transfer"){const options=db.schools.map(school=>{const classes=school.
-classes.filter(cl=>cl.id!==c.id);if(!classes.length)return"";return'<optgroup label="'+esc(school.name)+'">'+classes.map(cl=>'<option value="'+esc(cl.id)+'">'+esc(
-cl.name)+"</option>").join("")+"</optgroup>"}).filter(Boolean);hasDestination=options.length>0;if(hasDestination)body+='<label class="membership-destination" fo\
-r="transferTarget">کلاس مقصد<select id="transferTarget" required aria-describedby="membershipError"><option value="">کلاس مقصد را انتخاب کنید</option>'+
-options.join("")+'</select></label><fieldset class="membership-mode"><legend>نوع عملیات</legend><label><input type="radio" name="membershipMode" value="transfer\
-" checked><span><strong>انتقال</strong><small>در مقصد فعال و در مبدأ بایگانی می‌شود.</small></span></label><label><input type="radio" name="membershipMode" valu\
-e="copy" id="membershipCopy"><span><strong>کپی</strong><small>نسخه‌ای جدا در مقصد ساخته می‌شود؛ مبدأ باقی می‌ماند.</small></span></label></fieldset><p class="me\
-mbership-note">نمرات و حضور و غیاب قبلی در مبدأ محفوظ می‌مانند و به مقصد منتقل نمی‌شوند.</p>';else body+=
-'<p class="membership-empty" role="status">کلاس مقصدی وجود ندارد. ابتدا یک کلاس دیگر بسازید، سپس برای انتقال یا کپی برگردید.</p>'}else if(action===
-"archive"){body+="<p>هنرجو از فهرست فعال خارج می‌شود؛ نمرات، حضور‌وغیاب و نام او در جلسات گذشته حفظ می‌شوند. بازگردانی از بخش سوابق بایگانی‌شده امکان‌پذیر است.<\
-/p>"}else{body+="<p>عضویت فعال در این کلاس با همان شناسه و نمرات قبلی برقرار می‌شود. جلسات گذشته تغییر نمی‌کنند.</p>";
+"school"?item.classes:[item];const count=classes.reduce((n,c)=>n+c.students.length,0);const opened=showModal("مشاهدهٔ مشخصات "+label,'<form class="\
+record-editor" data-record-kind="'+kind+'" data-workspace-submit="save-entity"><div class="record-editor-context"><span>'+esc(workspace.year+" · "+workspace.term)+
+"</span><h4>"+esc(item.name)+"</h4><p>"+esc(kind==="class"?school.name:classes.length.toLocaleString("fa-IR")+" کلاس")+" · "+count.toLocaleString("fa-IR")+
+' هنرجو</p></div><label class="course-field">نام '+label+'<input id="entityEditName" name="name" value="'+esc(item.name)+'" required maxlength="500" aut\
+ocomplete="off" aria-describedby="entityEditHint entityEditError"></label><p id="entityEditHint" class="muted">تغییر نام در همهٔ نوبت‌های این سال تحصیلی اعمال م\
+ی‌شود؛ نمرات و جلسات هر نوبت حفظ می‌شوند. کارنامه‌های نهایی قبلی تغییر نمی‌کنند.</p><p id="entityEditError" role="alert"></p><div class="record-editor-actions">\
+<button type="submit" data-mutating="1">ذخیره تغییرات</button><button type="button" class="ghost" data-workspace-action="close">انصراف</button></div></form>');
+if(opened===false){entityEditing=previousEditing;return false}const edit=entityEditing;initializeRecordEditAccess(document.querySelector("#modal .record-editor"),
+{title:"ویرایش مشخصات "+label,validate:()=>{assertEntityWritable();if(entityEditing!==edit||edit.workspace!==workspace.id||edit.bank!==db||edit.connection!==
+connection||edit.revision!==workspace.revision||edit.installation!==(typeof installationToken==="undefined"?"":installationToken))throw Error("اطلاعات تغییر کرد\
+ه است؛ فرم را دوباره باز کنید.")}});rememberRecordEditor()}async function saveEntityEditor(){if(entitySaving)return;entitySaving=true;const finishSave=beginRecordEditorSave(
+document.querySelector("#modal .record-editor"));const edit=entityEditing;let attemptedSave=false;try{assertEntityWritable();assertRecordEditAccess(document.querySelector(
+"#modal .record-editor"));if(!document.querySelector("#modal:not(.hidden) #entityEditName"))throw Error("فرم ویرایش باز نیست.");const isCurrent=()=>edit&&
+entityEditing===edit&&edit.workspace===workspace.id&&edit.bank===db&&edit.connection===connection&&edit.installation===(typeof installationToken==="undefined"?"":
+installationToken);if(!isCurrent()||edit.revision!==workspace.revision)throw Error("اطلاعات از زمان باز شدن فرم تغییر کرده است؛ فرم را دوباره باز کنید.");
+const name=document.getElementById("entityEditName").value.trim().replace(/\s+/g," ");if(!normalizedName(name)||name.length>500)throw recordFieldError("نام معتب\
+ر با حداکثر ۵۰۰ نویسه وارد کنید.","entityEditName");await flushDrafts({strict:true});assertEntityWritable();assertRecordEditAccess(document.
+querySelector("#modal .record-editor"));if(!isCurrent()||edit.revision!==workspace.revision)throw Error("ترم یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.");
+const school=getSchool(edit.schoolId);const item=edit.kind==="school"?school:school?.classes.find(c=>c.id===edit.id);if(!item)throw Error("اطلاعات مقصد دیگر وجو\
+د ندارد.");const peers=edit.kind==="school"?db.schools:school.classes;if(normalizedName(item.name)!==normalizedName(name)&&peers.some(x=>x.id!==item.id&&normalizedName(
+x.name)===normalizedName(name)))throw recordFieldError(edit.kind==="school"?"مدرسه‌ای با همین نام وجود دارد.":"کلاسی با همین نام در ای\
+ن مدرسه وجود دارد.","entityEditName");if(item.name!==name){item.name=name;attemptedSave=true;await saveDBV24({...edit.kind==="class"?{classId:item.
+id}:{},action:"ویرایش نام "+(edit.kind==="school"?"مدرسه":"کلاس")})}if(!isCurrent()||periodLoading||resetBusy||connectionRetired)return;entityEditing=
+null;finishSave();rememberRecordEditor();closeModal();render()}catch(error){if(attemptedSave&&entityEditing===edit&&edit.workspace===workspace?.id&&edit.revision===
+workspace?.revision&&edit.connection===connection&&edit.installation===(typeof installationToken==="undefined"?"":installationToken)&&!blocked&&!periodLoading&&
+!resetBusy&&!connectionRetired)edit.bank=db;if(!showRecordEditorError(error,"entityEditError"))handleError(error)}finally{entitySaving=false;finishSave()}}let membershipContext=null,
+membershipBusy=false;function freezeClassRosters(c){for(const session of db.sessions.filter(x=>x.classId===c.id))if(!session.roster)session.roster=historicalRoster(
+c,session)}async function openMembership(action,studentId){try{assertEntityWritable();const origin={workspace:workspace.id,schoolId:state.schoolId,classId:state.
+classId};await flushDrafts({strict:true});assertEntityWritable();if(origin.workspace!==workspace.id||origin.schoolId!==state.schoolId||origin.classId!==state.classId)
+throw Error("صفحه یا ترم تغییر کرده است؛ عملیات را دوباره باز کنید.");const c=getClassObj(origin.schoolId,origin.classId);
+const student=(action==="restore"?c?.archivedStudents:c?.students)?.find(x=>x.id===studentId);if(!student)throw Error("هنرجو در فهرست موردنظر وجود ندارد.");
+const context={...origin,action,studentId,revision:workspace.revision};const title=action==="transfer"?"انتقال یا کپی هنرجو":action==="archive"?
+"بایگانی هنرجو":"بازگردانی هنرجو";const activeElsewhere=db.schools.flatMap(s=>s.classes.filter(cl=>cl.id!==c.id&&cl.students.some(st=>st.
+id===studentId)).map(cl=>s.name+" / "+cl.name));let hasDestination=true;let body='<form class="record-editor membership-editor" data-workspace-submit="save-memb\
+ership"><div class="record-editor-context"><span>هنرجو و کلاس مبدأ</span><h4>'+esc(student.name)+"</h4><p>"+esc(getSchool(origin.schoolId).name+" \
+/ "+c.name)+"</p></div>";if(action==="transfer"){const options=db.schools.map(school=>{const classes=school.classes.filter(cl=>cl.id!==c.id);if(!classes.length)
+return"";return'<optgroup label="'+esc(school.name)+'">'+classes.map(cl=>'<option value="'+esc(cl.id)+'">'+esc(cl.name)+"</option>").join("")+"</optgroup>"}).filter(
+Boolean);hasDestination=options.length>0;if(hasDestination)body+='<label class="membership-destination" for="transferTarget">کلاس مقصد<select id="transferTarget\
+" required aria-describedby="membershipError"><option value="">کلاس مقصد را انتخاب کنید</option>'+options.join("")+'</select></label><fields\
+et class="membership-mode"><legend>نوع عملیات</legend><label><input type="radio" name="membershipMode" value="transfer" checked><span><strong>انتقال</strong><sm\
+all>در مقصد فعال و در مبدأ بایگانی می‌شود.</small></span></label><label><input type="radio" name="membershipMode" value="copy" id="membershipCopy"><span><strong\
+>کپی</strong><small>نسخه‌ای جدا در مقصد ساخته می‌شود؛ مبدأ باقی می‌ماند.</small></span></label></fieldset><p class="membership-note">نمرات و حضور و غیاب قبلی در\
+ مبدأ محفوظ می‌مانند و به مقصد منتقل نمی‌شوند.</p>';else body+='<p class="membership-empty" role="status">کلاس مقصدی وجود\
+ ندارد. ابتدا یک کلاس دیگر بسازید، سپس برای انتقال یا کپی برگردید.</p>'}else if(action==="archive"){body+="<\
+p>هنرجو از فهرست فعال خارج می‌شود؛ نمرات، حضور‌وغیاب و نام او در جلسات گذشته حفظ می‌شوند. بازگردانی از بخش سوابق بایگانی‌شده امکان‌پذیر است.</p>"}else{
+body+="<p>عضویت فعال در این کلاس با همان شناسه و نمرات قبلی برقرار می‌شود. جلسات گذشته تغییر نمی‌کنند.</p>";
 if(activeElsewhere.length)body+="<p>این هنرجو در "+esc(activeElsewhere.join("، "))+" نیز فعال است. بازگردانی، عضویت او در آن کلاس‌ها را لغو نمی‌کند.<\
 /p>"}body+='<p id="membershipError" role="alert"></p><div class="row record-editor-actions"><button type="button" class="ghost" data-workspace-action="close">ان\
 صراف</button>';if(hasDestination)body+='<button type="submit">'+(action==="transfer"?"انتقال هنرجو":action==="archive"?"بایگانی هنرجو":

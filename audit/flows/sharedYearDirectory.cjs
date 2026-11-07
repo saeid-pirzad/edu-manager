@@ -275,6 +275,7 @@ module.exports = async function sharedYearDirectory() {
     );
 
     await openEditStudentModal(ids.student);
+    document.querySelector("[data-record-enable-edit]")?.click();
     document.getElementById("editStudentName").value = "سعید پیرزاد";
     document.getElementById("editStudentCode").value = "101";
     submit("#studentEditor");
@@ -384,6 +385,7 @@ module.exports = async function sharedYearDirectory() {
       ["class", ids.classroom, "یازدهم شبکه مشترک"],
     ]) {
       await EduV24.openEntityEditor(kind, key, ids.school);
+      document.querySelector("[data-record-enable-edit]")?.click();
       document.getElementById("entityEditName").value = name;
       submit('form[data-workspace-submit="save-entity"]');
       await wait(
@@ -660,6 +662,7 @@ module.exports = async function sharedYearDirectory() {
     const beforeConflict = await EduV24.snapshotInstallation();
     openClass();
     await openEditStudentModal(ids.student);
+    document.querySelector("[data-record-enable-edit]")?.click();
     document.getElementById("editStudentName").value =
       "این ویرایش نباید ثبت شود";
     submit("#studentEditor");

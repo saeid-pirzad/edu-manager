@@ -103,7 +103,7 @@ test("backup dialog offers file workflows without introducing internal version m
   assert.match(html, /backup-automatic/);
   assert.match(
     html,
-    /<details class="backup-reset"><summary>پاک‌سازی اطلاعات سیستم/,
+    /<details class="backup-reset"><summary>پاک‌سازی اطلاعات<\/summary>/,
   );
   assert.match(html, /data-workspace-action="open-wipe"/);
 });

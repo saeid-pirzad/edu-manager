@@ -135,8 +135,8 @@ function syncSessionEditNotice() {
     description.textContent = !access
       ? "اطلاعات این پنجره تغییر کرده است؛ جلسه را دوباره باز کنید."
       : editable
-        ? "ثبت حضور و فعالیت، فوراً ذخیره می‌شود. پس از پایان کار، ویرایش را ببندید."
-        : "برای جلوگیری از تغییر ناخواسته، ثبت‌های قبلی قفل‌اند. برای اصلاح، ویرایش را فعال کنید.";
+        ? "تغییرات خودکار ذخیره می‌شوند."
+        : "ثبت‌ها تا فعال‌کردن ویرایش قفل‌اند.";
   if (label) label.textContent = editable ? "پایان ویرایش" : "فعال‌کردن ویرایش";
   if (button) {
     button.setAttribute("aria-pressed", String(editable));
@@ -191,7 +191,7 @@ function renderSessionDialogV24(session, options, created) {
   if (!freshCreation)
     root
       .querySelector(".session-context")
-      .insertAdjacentHTML("afterend", sessionEditNoticeHtml(session.id));
+      .insertAdjacentHTML("beforeend", sessionEditNoticeHtml(session.id));
   if (
     Array.isArray(session.roster) &&
     !session.roster.length &&

@@ -107,6 +107,7 @@ module.exports = async function sharedYearCourses() {
     editCourse = async (id, fields, expectFailure = false) => {
       openClass();
       await EduV24.course.open(id);
+      document.querySelector("[data-record-enable-edit]")?.click();
       for (const [name, value] of Object.entries(fields)) fill(name, value);
       await submitCourse(expectFailure);
     },
@@ -396,6 +397,7 @@ module.exports = async function sharedYearCourses() {
 
     openClass();
     await EduV24.course.openNames(ids.modular);
+    document.querySelector("[data-record-enable-edit]")?.click();
     fill("pod_" + ids.pod, "پودمان طراحی شبکه");
     fill("unit_" + ids.unit1, "واحد طراحی مشترک");
     await submitCourse();
@@ -434,6 +436,7 @@ module.exports = async function sharedYearCourses() {
     const beforePolicy = await EduV24.snapshotInstallation();
     openClass();
     await EduV24.course.open(added);
+    document.querySelector("[data-record-enable-edit]")?.click();
     check(
       "SHARED_COURSE16",
       "the real editor locks policy controls when grades exist only in another term",
@@ -634,6 +637,7 @@ module.exports = async function sharedYearCourses() {
     );
     openClass();
     await EduV24.course.open(countLessonId);
+    document.querySelector("[data-record-enable-edit]")?.click();
     check(
       "SHARED_COURSE17",
       "an existing ungraded modular course exposes enabled module and uniform-unit count controls",

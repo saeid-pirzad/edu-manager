@@ -84,7 +84,10 @@ function sessionAttendanceProgress(session, classroom) {
   const unset = roster.filter(
     (student) => !session.attendance[student.id],
   ).length;
-  return { total: roster.length, unset };
+  const present = roster.filter(
+    (student) => session.attendance[student.id] === "present",
+  ).length;
+  return { total: roster.length, unset, present };
 }
 function refreshSessionAttendanceProgress() {
   const root = document.querySelector("#modalBody .session-workspace");
@@ -101,6 +104,11 @@ function refreshSessionAttendanceProgress() {
       progress.total.toLocaleString("fa-IR") +
       " نفر ثبت شده · تعیین‌نشده: " +
       progress.unset.toLocaleString("fa-IR");
+  const presentLabel = root.querySelector("[data-session-attendance-present]");
+  if (presentLabel) {
+    const text = progress.present.toLocaleString("fa-IR") + " حاضر";
+    if (presentLabel.textContent !== text) presentLabel.textContent = text;
+  }
   const fill = root.querySelector('[data-legacy-click="sessions-dialog:6"]');
   const meter = root.querySelector("[data-session-attendance-meter]");
   if (meter) {
@@ -212,7 +220,7 @@ function legacy_openSessionModal(session, { activitySaved = null } = {}) {
     </select></label>
   </div>`;
   h += `<div class="session-mode-picker"><button type="button" aria-pressed="true" data-session-tab="attendance" data-legacy-click="sessions-dialog:4">${EduIcons.html("attendance")}<span>حضور و غیاب</span></button><button type="button" aria-pressed="false" data-session-tab="activity" data-legacy-click="sessions-dialog:5">${EduIcons.html("grades")}<span>نمره و فعالیت</span></button></div><section data-session-panel="attendance"><div class="session-attendance-heading">
-    <div><h4>حضور و غیاب</h4><p data-session-attendance-progress role="status"></p><progress data-session-attendance-meter aria-label="تکمیل ثبت حضور و غیاب" max="1" value="0"></progress></div>
+    <div><h4>حضور و غیاب</h4><p data-session-attendance-progress role="status"></p><div class="session-attendance-progress-line"><progress data-session-attendance-meter aria-label="تکمیل ثبت حضور و غیاب" max="1" value="0"></progress><span data-session-attendance-present role="status" aria-live="polite"></span></div></div>
     <div class="session-attendance-bulk" role="group" aria-label="ثبت گروهی حضور و غیاب">
       <button type="button" class="success" data-mutating="1" data-legacy-click="sessions-dialog:6" aria-label="ثبت حاضر برای هنرجویان تعیین‌نشده" title="فقط وضعیت‌های تعیین‌نشده حاضر می‌شوند؛ ثبت‌های قبلی حفظ می‌شوند.">باقی‌ها حاضر</button>
       <button type="button" class="ghost" data-mutating="1" data-legacy-click="sessions-dialog:all-present">همه حاضر</button>

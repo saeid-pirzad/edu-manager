@@ -121,6 +121,10 @@ if (require.main === module)
             mobile: width < 700,
           });
           const observed = await evaluate("(" + measure.toString() + ")()");
+          if (width >= 701 && width <= 1100)
+            observed.singleColumn = await evaluate(
+              "getComputedStyle((document.querySelector('#modal:not(.hidden) .assessment-editor') || document.querySelector('#lessonGradesArea .assessment-editor')).querySelector('.assessment-students')).gridTemplateColumns.split(' ').length === 1",
+            );
           cases.push({
             id: "GRADE_MOBILE_" + width + "_" + (modal ? "modal" : "page"),
             name: "Grade headers and touch targets fit " + width,
@@ -149,10 +153,8 @@ if (require.main === module)
           const observed = await evaluate("(" + measure.toString() + ")()");
           const tablet = await evaluate(`(() => {
             const root = document.querySelector('#modal:not(.hidden) .assessment-editor') || document.querySelector('#lessonGradesArea .assessment-editor');
-            const style = getComputedStyle(root);
-            const available = root.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
             const columns = getComputedStyle(root.querySelector('.assessment-students')).gridTemplateColumns.split(' ').length;
-            return { touch: matchMedia('(pointer: coarse)').matches, columnsFit: columns === (available >= 640 ? 2 : 1) };
+            return { touch: matchMedia('(pointer: coarse)').matches, columnsFit: columns === 1 };
           })()`);
           cases.push({
             id:

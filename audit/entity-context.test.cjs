@@ -37,6 +37,8 @@ function fixture() {
     blocked: false,
     isAuthenticated: true,
     beginRecordEditorSave: () => () => {},
+    initializeRecordEditAccess() {},
+    assertRecordEditAccess() {},
     normalizedName: (value) => value.trim(),
     recordFieldError: (message) => Error(message),
     flushDrafts: async () => {},

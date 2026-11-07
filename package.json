@@ -10,7 +10,7 @@
     "format": "prettier --write src scripts audit EduManager.html index.html app.webmanifest source-map.json package.json README.md AUDIT.md docs/ARCHITECTURE.md docs/REFACTOR-RESULT.md docs/AUDIT-2026-10-25.md docs/BUSINESS-RULES.md docs/RELEASE-AUDIT-2026-11-01.md docs/AUDIT-2026-11-02.md .github/workflows/ci.yml",
     "format:check": "prettier --check src scripts audit EduManager.html index.html app.webmanifest source-map.json package.json README.md AUDIT.md docs/ARCHITECTURE.md docs/REFACTOR-RESULT.md docs/AUDIT-2026-10-25.md docs/BUSINESS-RULES.md docs/RELEASE-AUDIT-2026-11-01.md docs/AUDIT-2026-11-02.md .github/workflows/ci.yml",
     "check": "npm run format:check && npm run lint && npm test",
-    "check:release": "npm run check && node audit/period-deletion-browser.cjs && node audit/gradebook-mobile.cjs && node audit/year-editor-browser.cjs && npm run test:annual-backup && npm run test:theme && npm run test:logo && npm run test:navbar && npm run test:school-create",
+    "check:release": "npm run check && node audit/period-deletion-browser.cjs && node audit/gradebook-mobile.cjs && node audit/year-editor-browser.cjs && npm run test:annual-backup && npm run test:theme && npm run test:logo && npm run test:navbar && npm run test:school-create && node audit/record-edit-access-browser.cjs && node audit/timetable-edit-access-browser.cjs",
     "bench": "npm run build:check && node scripts/benchmark.cjs",
     "metrics": "npm run build:check && node scripts/optimization-metrics.cjs",
     "dev": "npm run build && node scripts/serve.cjs",

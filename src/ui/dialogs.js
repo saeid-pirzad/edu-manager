@@ -394,3 +394,83 @@ function closeModal() {
     }),
   );
 }
+
+const recordEditAccess = new WeakMap();
+
+function initializeRecordEditAccess(
+  form,
+  {
+    enabled = false,
+    validate = () => {},
+    title = "",
+    onEnable = () => {},
+  } = {},
+) {
+  if (!form) throw Error("فرم اطلاعات در دسترس نیست.");
+  const access = { enabled, validate, title, onEnable };
+  recordEditAccess.set(form, access);
+  form.dataset.recordMode = enabled ? "edit" : "view";
+  if (!enabled) {
+    const notice = document.createElement("div");
+    notice.className = "record-access";
+    notice.innerHTML =
+      '<span class="record-access-status" role="status">فقط مشاهده؛ برای تغییر، ویرایش را فعال کنید.</span><button type="button" class="ghost" data-mutating="1" data-record-enable-edit data-workspace-action="record-enable-edit">' +
+      EduIcons.html("edit") +
+      "<span>ویرایش</span></button>";
+    const context =
+      form.id === "courseEditor"
+        ? null
+        : form.querySelector(".record-editor-context");
+    if (context) context.append(notice);
+    else form.prepend(notice);
+  }
+  form.querySelectorAll("input,select,textarea,button").forEach((control) => {
+    if (
+      control.matches(
+        '[data-record-enable-edit],[data-workspace-action="close"],[data-course-cancel]',
+      )
+    )
+      return;
+    setControlLock(control, "record-view", !enabled);
+  });
+}
+
+function assertRecordEditAccess(form) {
+  const access = form && recordEditAccess.get(form);
+  if (
+    !access?.enabled ||
+    !form.isConnected ||
+    form.closest("#modal.hidden,[hidden],[inert]")
+  )
+    throw Error("ابتدا ویرایش این اطلاعات را فعال کنید.");
+  access.validate();
+}
+
+function enableRecordEditAccess(button) {
+  const form = button.closest(".record-editor"),
+    access = form && recordEditAccess.get(form);
+  if (
+    !access ||
+    !form.isConnected ||
+    button.disabled ||
+    form.getAttribute("aria-busy") === "true" ||
+    form.closest("#modal.hidden,[hidden],[inert]")
+  )
+    return;
+  access.validate();
+  access.enabled = true;
+  form.dataset.recordMode = "edit";
+  access.onEnable();
+  form
+    .querySelectorAll("input,select,textarea,button")
+    .forEach((control) => setControlLock(control, "record-view", false));
+  const status = form.querySelector(".record-access-status");
+  if (status) status.textContent = "ویرایش فعال است؛ تغییرات را ذخیره کنید.";
+  if (access.title && form.closest("#modal"))
+    document.getElementById("modalTitle").textContent = access.title;
+  form
+    .querySelector(
+      'input:not([type="hidden"]):not(:disabled),select:not(:disabled),textarea:not(:disabled)',
+    )
+    ?.focus({ preventScroll: true });
+}

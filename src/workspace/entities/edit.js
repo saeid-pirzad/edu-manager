@@ -51,8 +51,10 @@ async function openEntityEditor(kind, id, schoolId = "") {
   const classes = kind === "school" ? item.classes : [item];
   const count = classes.reduce((n, c) => n + c.students.length, 0);
   const opened = showModal(
-    "ویرایش مشخصات " + label,
-    '<form class="record-editor" data-workspace-submit="save-entity"><div class="record-editor-context"><span>' +
+    "مشاهدهٔ مشخصات " + label,
+    '<form class="record-editor" data-record-kind="' +
+      kind +
+      '" data-workspace-submit="save-entity"><div class="record-editor-context"><span>' +
       esc(workspace.year + " · " + workspace.term) +
       "</span><h4>" +
       esc(item.name) +
@@ -76,6 +78,23 @@ async function openEntityEditor(kind, id, schoolId = "") {
     entityEditing = previousEditing;
     return false;
   }
+  const edit = entityEditing;
+  initializeRecordEditAccess(document.querySelector("#modal .record-editor"), {
+    title: "ویرایش مشخصات " + label,
+    validate: () => {
+      assertEntityWritable();
+      if (
+        entityEditing !== edit ||
+        edit.workspace !== workspace.id ||
+        edit.bank !== db ||
+        edit.connection !== connection ||
+        edit.revision !== workspace.revision ||
+        edit.installation !==
+          (typeof installationToken === "undefined" ? "" : installationToken)
+      )
+        throw Error("اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.");
+    },
+  });
   rememberRecordEditor();
 }
 async function saveEntityEditor() {
@@ -88,6 +107,7 @@ async function saveEntityEditor() {
   let attemptedSave = false;
   try {
     assertEntityWritable();
+    assertRecordEditAccess(document.querySelector("#modal .record-editor"));
     if (!document.querySelector("#modal:not(.hidden) #entityEditName"))
       throw Error("فرم ویرایش باز نیست.");
     const isCurrent = () =>
@@ -113,6 +133,7 @@ async function saveEntityEditor() {
       );
     await flushDrafts({ strict: true });
     assertEntityWritable();
+    assertRecordEditAccess(document.querySelector("#modal .record-editor"));
     if (!isCurrent() || edit.revision !== workspace.revision)
       throw Error("ترم یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.");
     const school = getSchool(edit.schoolId);

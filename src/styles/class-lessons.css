@@ -558,3 +558,17 @@
     white-space: nowrap;
   }
 }
+
+/* Distinct warm accents for class and lesson identities. */
+@media screen {
+  #app .class-directory .dashboard-entity .dashboard-entity-symbol {
+    color: #626f3f;
+    background: #f1f4e6;
+    border-color: #d7dfbd;
+  }
+  #app .class-lessons .lesson-item .lesson-symbol {
+    color: var(--status-success, #16664e);
+    background: var(--status-success-soft, #eaf6f0);
+    border-color: var(--status-success-line, #bfded0);
+  }
+}

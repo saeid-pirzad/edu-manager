@@ -65,15 +65,29 @@ action]")].find(element=>element.dataset.headerAction===previous.headerAction)||
 find(element=>element.getAttribute("data-legacy-click")===previous.legacyAction&&previous.legacyArgs.every(([name,value])=>element.getAttribute(name)===value))||
 previous?.action&&[...document.querySelectorAll("#app button[onclick],#app a[onclick]")].find(element=>element.getAttribute("onclick")===previous.action)||document.
 getElementById("app");let closedMenu=target?.closest("details:not([open])");while(closedMenu){target=closedMenu.querySelector(":scope > summary");closedMenu=closedMenu.
-parentElement?.closest("details:not([open])")}if(target&&!target.matches(":disabled")&&!target.closest("[inert]"))target.focus({preventScroll:true})}))}"use str\
-ict";function openAboutDialog(){closeDataMenu();const opened=showModal("درباره کلاس‌یار و ارتباط با ما",window.EduAbout.html());if(opened!==
-false)document.getElementById("modalBody").scrollTop=0}document.addEventListener("click",event=>{const control=event.target.closest?.("button[data-about-action]");
-if(control?.dataset.aboutAction==="open"&&!control.disabled&&!control.closest("[inert]")&&control.closest("#app .schools-welcome")){openAboutDialog();return}if(!control||
-control.disabled||!control.closest("#modalBody .about-app"))return;if(control.dataset.aboutAction==="close")closeModal();else if(control.dataset.aboutAction==="\
-offline")window.EduPWA?.help()});"use strict";(()=>{const bindings=[["modalClose","click",()=>closeModal()],["importFile","change",event=>handleImport(event)],[
-"excelFile","change",event=>handleExcelImport(event)]];for(const[id,eventName,handler]of bindings){const element=document.getElementById(id);if(!element)throw Error(
-"Missing application shell element: "+id);element.addEventListener(eventName,handler)}})();"use strict";(()=>{const app=document.getElementById("app");const actions=new Map(
-[["schools",()=>goSchools()],["reports",()=>goReports()],["master",()=>goMaster()],["settings",()=>openSettingsModal()]]);app.addEventListener("click",event=>{const button=event.
-target.closest?.("button[data-header-action]");if(!button||!app.contains(button)||!button.closest(".topbar")||button.disabled||button.closest("[inert]"))return;
-const action=actions.get(button.dataset.headerAction);if(action)action(event)})})();
+parentElement?.closest("details:not([open])")}if(target&&!target.matches(":disabled")&&!target.closest("[inert]"))target.focus({preventScroll:true})}))}const recordEditAccess=new WeakMap;
+function initializeRecordEditAccess(form,{enabled=false,validate=()=>{},title="",onEnable=()=>{}}={}){if(!form)throw Error("فرم اطلاعات در دسترس نیست.");
+const access={enabled,validate,title,onEnable};recordEditAccess.set(form,access);form.dataset.recordMode=enabled?"edit":"view";if(!enabled){const notice=document.
+createElement("div");notice.className="record-access";notice.innerHTML='<span class="record-access-status" role="status">فقط مشاهده؛ برای تغییر، ویرایش را فعال \
+کنید.</span><button type="button" class="ghost" data-mutating="1" data-record-enable-edit data-workspace-action="record-enable-edit">'+EduIcons.html("edit")+
+"<span>ویرایش</span></button>";const context=form.id==="courseEditor"?null:form.querySelector(".record-editor-context");if(context)context.append(notice);else
+form.prepend(notice)}form.querySelectorAll("input,select,textarea,button").forEach(control=>{if(control.matches('[data-record-enable-edit],[data-workspace-actio\
+n="close"],[data-course-cancel]'))return;setControlLock(control,"record-view",!enabled)})}function assertRecordEditAccess(form){const access=form&&recordEditAccess.
+get(form);if(!access?.enabled||!form.isConnected||form.closest("#modal.hidden,[hidden],[inert]"))throw Error("ابتدا ویرایش این اطلاعات را فعال کنید.");
+access.validate()}function enableRecordEditAccess(button){const form=button.closest(".record-editor"),access=form&&recordEditAccess.get(form);if(!access||!form.
+isConnected||button.disabled||form.getAttribute("aria-busy")==="true"||form.closest("#modal.hidden,[hidden],[inert]"))return;access.validate();access.enabled=true;
+form.dataset.recordMode="edit";access.onEnable();form.querySelectorAll("input,select,textarea,button").forEach(control=>setControlLock(control,"record-view",false));
+const status=form.querySelector(".record-access-status");if(status)status.textContent="ویرایش فعال است؛ تغییرات را ذخیره کنید.";
+if(access.title&&form.closest("#modal"))document.getElementById("modalTitle").textContent=access.title;form.querySelector('input:not([type="hidden"]):not(:disab\
+led),select:not(:disabled),textarea:not(:disabled)')?.focus({preventScroll:true})}"use strict";function openAboutDialog(){closeDataMenu();const opened=showModal(
+"درباره کلاس‌یار و ارتباط با ما",window.EduAbout.html());if(opened!==false)document.getElementById("modalBody").scrollTop=0}document.addEventListener(
+"click",event=>{const control=event.target.closest?.("button[data-about-action]");if(control?.dataset.aboutAction==="open"&&!control.disabled&&!control.closest(
+"[inert]")&&control.closest("#app .schools-welcome")){openAboutDialog();return}if(!control||control.disabled||!control.closest("#modalBody .about-app"))return;if(control.
+dataset.aboutAction==="close")closeModal();else if(control.dataset.aboutAction==="offline")window.EduPWA?.help()});"use strict";(()=>{const bindings=[["modalClo\
+se","click",()=>closeModal()],["importFile","change",event=>handleImport(event)],["excelFile","change",event=>handleExcelImport(event)]];for(const[id,eventName,
+handler]of bindings){const element=document.getElementById(id);if(!element)throw Error("Missing application shell element: "+id);element.addEventListener(eventName,
+handler)}})();"use strict";(()=>{const app=document.getElementById("app");const actions=new Map([["schools",()=>goSchools()],["reports",()=>goReports()],["maste\
+r",()=>goMaster()],["settings",()=>openSettingsModal()]]);app.addEventListener("click",event=>{const button=event.target.closest?.("button[data-header-action]");
+if(!button||!app.contains(button)||!button.closest(".topbar")||button.disabled||button.closest("[inert]"))return;const action=actions.get(button.dataset.headerAction);
+if(action)action(event)})})();
 //# sourceMappingURL=dialogs-ui.js.map

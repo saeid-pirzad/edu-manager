@@ -189,8 +189,48 @@ async function legacy_changePeriods(d) {
   render();
 }
 
+let masterConfigEditAccess = null;
+
+function assertMasterConfigEditable(day, period) {
+  const access = masterConfigEditAccess;
+  if (
+    !access ||
+    !access.editable ||
+    access.day !== day ||
+    access.period !== period ||
+    access.data !== db ||
+    !access.root.isConnected ||
+    document.querySelector("#modalBody .week-config-editor") !== access.root ||
+    document.getElementById("modal").classList.contains("hidden")
+  )
+    throw Error("ابتدا ویرایش برنامهٔ این زنگ را فعال کنید.");
+}
+
+function enableMasterConfigEditing(button) {
+  const access = masterConfigEditAccess;
+  if (
+    !access ||
+    access.data !== db ||
+    !access.root.isConnected ||
+    document.querySelector("#modalBody .week-config-editor") !== access.root ||
+    !access.root.contains(button) ||
+    button.disabled ||
+    document.getElementById("modal").classList.contains("hidden")
+  )
+    return;
+  access.editable = true;
+  access.root.dataset.configMode = "edit";
+  access.root
+    .querySelectorAll("select")
+    .forEach((control) => setControlLock(control, "schedule-view", false));
+  document.getElementById("modalTitle").textContent =
+    "ویرایش " + DAYS[access.day] + " — زنگ " + (access.period + 1);
+  access.root.querySelector("select")?.focus();
+}
+
 function openMasterConfig(day, period) {
   const cur = getBothEntries(day, period);
+  const existing = !!(cur.all || cur.odd || cur.even);
   const allClasses = [];
   db.schools.forEach((s) =>
     s.classes.forEach((c) => allClasses.push({ school: s, class: c })),
@@ -232,7 +272,29 @@ function openMasterConfig(day, period) {
     "</section>";
   h += `<details class="week-config-exceptions" ${cur.odd || cur.even ? "open" : ""}><summary>برنامه متفاوت برای هفته فرد یا زوج</summary><section class="week-config-section"><h4>هفته‌های فرد</h4><label for="cfgOddClass">کلاس</label>${classSelect("cfgOddClass", cur.odd?.classId)}<label for="cfgOddLesson">درس</label>${lessonSelect("cfgOddLesson", cur.odd?.classId, cur.odd?.lessonId)}</section><section class="week-config-section"><h4>هفته‌های زوج</h4><label for="cfgEvenClass">کلاس</label>${classSelect("cfgEvenClass", cur.even?.classId)}<label for="cfgEvenLesson">درس</label>${lessonSelect("cfgEvenLesson", cur.even?.classId, cur.even?.lessonId)}</section></details><p class="week-config-note">برنامه فرد یا زوج، در همان هفته جایگزین برنامه ثابت می‌شود. نام دبیر از مشخصات درس خوانده می‌شود.</p><div class="week-config-actions"><button data-legacy-click="schedule-timetable:18" data-legacy-click-arg5="${esc(day)}" data-legacy-click-arg6="${esc(period)}">ذخیره برنامه</button><button class="ghost" data-legacy-click="schedule-timetable:12">انصراف</button><button class="danger" data-legacy-click="schedule-timetable:19" data-legacy-click-arg7="${esc(day)}" data-legacy-click-arg8="${esc(period)}">پاک‌کردن این زنگ</button></div>`;
 
-  showModal(`تنظیم ${DAYS[day]} — زنگ ${period + 1}`, h);
+  h =
+    '<div class="week-config-editor" data-config-mode="' +
+    (existing ? "view" : "edit") +
+    '">' +
+    (existing
+      ? '<div class="week-config-access"><span>مشاهدهٔ برنامه؛ برای تغییر، ویرایش را فعال کنید.</span><button type="button" class="ghost" data-mutating="1" data-legacy-click="week-config-enable-edit">' +
+        EduIcons.html("edit") +
+        "ویرایش</button></div>"
+      : "") +
+    h +
+    "</div>";
+  if (
+    showModal(
+      (existing ? "مشاهدهٔ " : "تنظیم ") + DAYS[day] + " — زنگ " + (period + 1),
+      h,
+    ) === false
+  )
+    return;
+  const root = document.querySelector("#modalBody .week-config-editor");
+  masterConfigEditAccess = { root, data: db, day, period, editable: !existing };
+  root
+    .querySelectorAll("select")
+    .forEach((control) => setControlLock(control, "schedule-view", existing));
 }
 
 function updateLessonOptions(classSelectId) {

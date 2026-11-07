@@ -149,8 +149,26 @@ async function editStudentV24(studentId) {
       '"><label for="editStudentCode">کد هنرجو (اختیاری)</label><input id="editStudentCode" name="code" inputmode="numeric" autocomplete="off" aria-describedby="studentEditError" value="' +
       esc(student.code || "") +
       '"><p>مشخصات هنرجو در همهٔ نوبت‌های این سال تحصیلی اصلاح می‌شود. شناسه، نمرات و نام تاریخی جلسات قبلی حفظ می‌شوند. اصلاح نام موقت بازیابی‌شده، فقط نام‌های نیازمند بررسی همان هنرجو در جلسات این کلاس را نیز اصلاح می‌کند.</p><p id="studentEditError" class="entity-create-error" role="alert"></p><div class="row record-editor-actions"><button type="button" class="ghost" data-workspace-action="close">انصراف</button><button type="submit">ذخیره مشخصات</button></div></form>';
-    if (showModal("ویرایش مشخصات هنرجو", html) !== false) {
+    if (showModal("مشاهدهٔ مشخصات هنرجو", html) !== false) {
       studentEditing = context;
+      const sourceConnection = connection;
+      initializeRecordEditAccess(document.getElementById("studentEditor"), {
+        title: "ویرایش مشخصات هنرجو",
+        validate: () => {
+          assertEntityWritable();
+          if (
+            studentEditing !== context ||
+            connection !== sourceConnection ||
+            context.workspace !== workspace.id ||
+            context.revision !== workspace.revision ||
+            context.schoolId !== state.schoolId ||
+            context.classId !== state.classId
+          )
+            throw Error(
+              "کلاس یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.",
+            );
+        },
+      });
       rememberRecordEditor();
     }
   } catch (error) {
@@ -164,10 +182,12 @@ async function saveStudent(studentId) {
   studentSaving = true;
   const finish = beginRecordEditorSave(form);
   try {
+    assertRecordEditAccess(form);
     const context = studentEditing;
     const sourceConnection = connection;
     const check = () => {
       assertEntityWritable();
+      assertRecordEditAccess(form);
       if (
         !context ||
         studentEditing !== context ||

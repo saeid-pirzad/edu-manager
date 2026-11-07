@@ -75,6 +75,7 @@ async function recoveredNameUndoFlow() {
       goClass(ids.classroom);
       setTab("students");
       await openEditStudentModal(ids.student);
+      document.querySelector("[data-record-enable-edit]")?.click();
       document.getElementById("editStudentName").value = corrected;
       document.querySelector("#studentEditor").requestSubmit();
       await wait(

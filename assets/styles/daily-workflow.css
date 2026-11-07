@@ -1011,30 +1011,29 @@ max-width:none;gap:12px}:is(#lessonGradesArea,#modalBody) .assessment-editor .as
 :is(#lessonGradesArea,#modalBody) .assessment-editor .grade-note:empty{display:none}.assessment-editor .gradebook-result{display:flex;width:100%;max-width:none;
 gap:6px 10px;margin-top:6px;padding:10px 0 0;border-top:1px solid var(--theme-line-soft);border-inline-start:0}.assessment-editor .gradebook-result>span:first-child{
 font-size:11px}.assessment-editor .gradebook-result [data-assessment-final]{font-size:20px}.assessment-editor .gradebook-result [data-assessment-status]{max-width:50%;
-margin-inline-start:auto}@container assessment-gradebook (min-width: 640px){:is(#lessonGradesArea,#modalBody) .assessment-editor .assessment-students{grid-template-columns:repeat(2,minmax(0,1fr))}}}
-@media screen{#modalBody .modal-save-feedback{display:flex;align-items:flex-start;gap:8px;margin:0 0 14px;padding:9px 12px;border:1px solid var(--status-success-line);
-border-radius:11px;background:var(--status-success-soft);color:var(--status-success);font-size:0.78rem;line-height:1.75;overflow-wrap:anywhere}#modalBody .modal-save-feedback[hidden]{
-display:none}#modalBody .modal-save-feedback::before{content:"";flex:0 0 8px;width:8px;height:8px;margin-top:0.5em;border-radius:50%;background:currentColor}#modalBody
-.modal-save-feedback[data-state=pending]{border-color:var(--status-warning-line);background:var(--status-warning-soft);color:var(--status-warning)}#modalBody .modal-save-feedback[data-state=error]{
-border-color:var(--status-danger-line);background:var(--status-danger-soft);color:var(--status-danger)}}@media screen and (max-width:700px){:is(#lessonGradesArea,
-#modalBody) .module-simple .assessment-student{grid-template-columns:minmax(0,1fr) 54px;grid-template-areas:"student result" "inputs inputs";gap:8px}:is(#lessonGradesArea,
-#modalBody) .module-simple .gradebook-student{grid-area:student;align-self:center;padding-top:0}:is(#lessonGradesArea,#modalBody) .module-simple .assessment-inputs{
-grid-area:inputs;grid-template-columns:repeat(2,minmax(0,1fr));justify-self:stretch;max-width:none;gap:8px}:is(#lessonGradesArea,#modalBody) .module-simple .grade-editor{
-max-width:80px;justify-self:center}:is(#lessonGradesArea,#modalBody) .module-simple .gradebook-result{grid-area:result}}@media screen{#app .karnameh-student-sheet.grade-report{
---karnameh-lesson-width: 130px;min-width:0;padding:18px;border-color:var(--theme-line);border-radius:16px;background:var(--theme-surface)}#app .karnameh-student-sheet
-.karnameh-report-heading{align-items:flex-start;gap:12px;margin-bottom:14px}#app .karnameh-student-sheet .karnameh-report-heading h3{margin:4px 0;font-size:20px;
-line-height:1.8}#app .karnameh-student-sheet .karnameh-report-heading p{margin:0;color:var(--theme-muted);font-size:12px;line-height:1.95;overflow-wrap:anywhere}
-.karnameh-student-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 16px;min-width:0}.karnameh-student-meta>:is(span,small){display:inline-flex;
-align-items:center;gap:5px;max-width:100%;padding:4px 8px;border-radius:7px;background:var(--theme-surface-muted);color:var(--theme-muted);font-size:11px;line-height:1.8;
-overflow-wrap:anywhere;font-variant-numeric:tabular-nums}.karnameh-student-pagination{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;
-gap:10px;margin-bottom:22px;padding:12px 0;border-top:1px solid var(--theme-line-soft);border-bottom:1px solid var(--theme-line-soft)}#app .karnameh-student-sheet
-.karnameh-student-pagination button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:0;min-height:44px;margin:0;padding:8px 12px;
-border:1px solid var(--theme-line);border-radius:10px;background:var(--theme-surface);color:var(--theme-muted);font-size:12px;font-weight:500;line-height:1.7;white-space:normal;
-box-shadow:none}#app .karnameh-student-sheet .karnameh-student-pagination button:disabled{border-color:var(--theme-line-soft);background:var(--theme-surface-subtle);
-color:var(--theme-muted);opacity:1;cursor:not-allowed}.karnameh-student-pagination button svg{width:18px;height:18px;flex:0 0 18px}.karnameh-student-position{min-width:0;
-color:var(--theme-muted);font-size:12px;line-height:1.9;text-align:center;font-variant-numeric:tabular-nums}.karnameh-subject-section{min-width:0;margin-top:22px}
-.karnameh-subject-section>header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:5px 12px;margin-bottom:10px;min-width:0;padding:6px
-8px;border-radius:8px;background:var(--theme-surface-muted)}#app .karnameh-student-sheet .karnameh-subject-section h4{margin:0;color:var(--theme-primary-hover);
+margin-inline-start:auto}}@media screen{#modalBody .modal-save-feedback{display:flex;align-items:flex-start;gap:8px;margin:0 0 14px;padding:9px 12px;border:1px solid
+var(--status-success-line);border-radius:11px;background:var(--status-success-soft);color:var(--status-success);font-size:0.78rem;line-height:1.75;overflow-wrap:anywhere}
+#modalBody .modal-save-feedback[hidden]{display:none}#modalBody .modal-save-feedback::before{content:"";flex:0 0 8px;width:8px;height:8px;margin-top:0.5em;border-radius:50%;
+background:currentColor}#modalBody .modal-save-feedback[data-state=pending]{border-color:var(--status-warning-line);background:var(--status-warning-soft);color:var(--status-warning)}
+#modalBody .modal-save-feedback[data-state=error]{border-color:var(--status-danger-line);background:var(--status-danger-soft);color:var(--status-danger)}}@media screen and (max-width:700px){
+:is(#lessonGradesArea,#modalBody) .module-simple .assessment-student{grid-template-columns:minmax(0,1fr) 54px;grid-template-areas:"student result" "inputs input\
+s";gap:8px}:is(#lessonGradesArea,#modalBody) .module-simple .gradebook-student{grid-area:student;align-self:center;padding-top:0}:is(#lessonGradesArea,#modalBody)
+.module-simple .assessment-inputs{grid-area:inputs;grid-template-columns:repeat(2,minmax(0,1fr));justify-self:stretch;max-width:none;gap:8px}:is(#lessonGradesArea,
+#modalBody) .module-simple .grade-editor{max-width:80px;justify-self:center}:is(#lessonGradesArea,#modalBody) .module-simple .gradebook-result{grid-area:result}}
+@media screen{#app .karnameh-student-sheet.grade-report{--karnameh-lesson-width: 130px;min-width:0;padding:18px;border-color:var(--theme-line);border-radius:16px;
+background:var(--theme-surface)}#app .karnameh-student-sheet .karnameh-report-heading{align-items:flex-start;gap:12px;margin-bottom:14px}#app .karnameh-student-sheet
+.karnameh-report-heading h3{margin:4px 0;font-size:20px;line-height:1.8}#app .karnameh-student-sheet .karnameh-report-heading p{margin:0;color:var(--theme-muted);
+font-size:12px;line-height:1.95;overflow-wrap:anywhere}.karnameh-student-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 16px;min-width:0}
+.karnameh-student-meta>:is(span,small){display:inline-flex;align-items:center;gap:5px;max-width:100%;padding:4px 8px;border-radius:7px;background:var(--theme-surface-muted);
+color:var(--theme-muted);font-size:11px;line-height:1.8;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}.karnameh-student-pagination{display:grid;grid-template-columns:minmax(0,1fr)
+auto minmax(0,1fr);align-items:center;gap:10px;margin-bottom:22px;padding:12px 0;border-top:1px solid var(--theme-line-soft);border-bottom:1px solid var(--theme-line-soft)}
+#app .karnameh-student-sheet .karnameh-student-pagination button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:0;min-height:44px;
+margin:0;padding:8px 12px;border:1px solid var(--theme-line);border-radius:10px;background:var(--theme-surface);color:var(--theme-muted);font-size:12px;font-weight:500;
+line-height:1.7;white-space:normal;box-shadow:none}#app .karnameh-student-sheet .karnameh-student-pagination button:disabled{border-color:var(--theme-line-soft);
+background:var(--theme-surface-subtle);color:var(--theme-muted);opacity:1;cursor:not-allowed}.karnameh-student-pagination button svg{width:18px;height:18px;flex:0
+0 18px}.karnameh-student-position{min-width:0;color:var(--theme-muted);font-size:12px;line-height:1.9;text-align:center;font-variant-numeric:tabular-nums}.karnameh-subject-section{
+min-width:0;margin-top:22px}.karnameh-subject-section>header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:5px 12px;margin-bottom:10px;
+min-width:0;padding:6px 8px;border-radius:8px;background:var(--theme-surface-muted)}#app .karnameh-student-sheet .karnameh-subject-section h4{margin:0;color:var(--theme-primary-hover);
 font-size:14px;line-height:1.9;overflow-wrap:anywhere}#app .karnameh-student-sheet .karnameh-sheet-scroll{width:100%;min-width:0;max-width:100%;margin:0;overflow:auto;
 overscroll-behavior-x:contain;border:1px solid var(--theme-line);border-radius:11px;background:var(--theme-surface);scrollbar-width:thin;scrollbar-color:var(--theme-line)
 var(--theme-surface-muted);scroll-padding-inline-start:var(--karnameh-lesson-width);-webkit-overflow-scrolling:touch}#app .karnameh-student-sheet .karnameh-sheet-scroll:focus-visible{

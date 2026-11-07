@@ -1459,11 +1459,6 @@
     max-width: 50%;
     margin-inline-start: auto;
   }
-  @container assessment-gradebook (min-width: 640px) {
-    :is(#lessonGradesArea, #modalBody) .assessment-editor .assessment-students {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
 }
 
 @media screen {

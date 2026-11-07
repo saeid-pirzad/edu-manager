@@ -160,6 +160,7 @@ module.exports = async function courseFormEvents() {
     policy: originalLesson.gradingPolicy,
   });
   await EduV24.course.open(originalLesson.id);
+  document.querySelector("[data-record-enable-edit]")?.click();
   const inline = document.getElementById("courseEditor");
   check(
     "CF24",
@@ -333,6 +334,7 @@ module.exports = async function courseFormEvents() {
     modular.poudmans.map((pod) => [pod.id, pod.units.map((unit) => unit.id)]),
   );
   await EduV24.course.openNames(modular.id);
+  document.querySelector("[data-record-enable-edit]")?.click();
   const names = document.getElementById("courseNames");
   check(
     "CF29",
@@ -428,6 +430,7 @@ module.exports = async function courseFormEvents() {
       EduPolicy.dual(configured.gradingPolicy, 20, 0).final === 12,
   );
   await EduV24.course.open(configured.id);
+  document.querySelector("[data-record-enable-edit]")?.click();
   check(
     "CF27",
     "reopening the course restores custom weights and the computed theory share",

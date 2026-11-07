@@ -40,6 +40,8 @@ function fixture() {
       }),
     },
     beginRecordEditorSave: () => () => {},
+    initializeRecordEditAccess() {},
+    assertRecordEditAccess() {},
     assertEntityWritable() {},
     getClassObj: () => cls,
     getStudentObj: () => student,

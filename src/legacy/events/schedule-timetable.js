@@ -113,3 +113,7 @@ EduLegacyEvents.register("schedule-timetable:19", function (event) {
     JSON.parse(this.getAttribute("data-legacy-click-arg8")),
   );
 });
+
+EduLegacyEvents.register("week-config-enable-edit", function () {
+  return enableMasterConfigEditing(this);
+});

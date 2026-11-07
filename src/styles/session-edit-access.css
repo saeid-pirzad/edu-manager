@@ -101,3 +101,669 @@
     display: none;
   }
 }
+
+/* Recorded sessions present results first; editing keeps its existing controls. */
+@media screen {
+  #modalBody
+    .session-workspace[data-session-mode="view"]
+    :is(
+      .session-date-tools,
+      .session-attendance-bulk,
+      .session-attendance-reuse,
+      .session-entry-form
+    ) {
+    display: none;
+  }
+  #modalBody .session-workspace[data-session-mode="view"] .att-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--theme-surface, #fff);
+    border: 1px solid var(--theme-line-soft, #ededf0);
+    border-radius: 12px;
+  }
+  #modalBody .session-workspace[data-session-mode="view"] .att-name {
+    min-width: 0;
+    font-size: 12px;
+  }
+  #modalBody .session-workspace[data-session-mode="view"] .att-btns {
+    display: flex;
+    width: auto;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+  #modalBody
+    .session-workspace[data-session-mode="view"]
+    .att-btns
+    button:not(.active) {
+    display: none;
+  }
+  #modalBody
+    .session-workspace[data-session-mode="view"]
+    .att-btns
+    button.active {
+    width: auto;
+    min-width: 64px;
+    min-height: 32px !important;
+    padding: 4px 8px;
+    opacity: 1;
+    filter: none;
+    font-size: 11px;
+    white-space: nowrap;
+    cursor: default;
+  }
+  #modalBody
+    .session-workspace[data-session-mode="view"]
+    .att-btns:not(:has(.active))::after {
+    content: "تعیین‌نشده";
+    padding: 5px 8px;
+    border-radius: 8px;
+    background: var(--theme-surface-muted, #f4f4f5);
+    color: var(--theme-muted, #5a6179);
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  #modalBody
+    .session-workspace[data-session-mode="view"]
+    .session-attendance-list {
+    display: grid;
+    gap: 6px;
+  }
+  #modalBody .session-workspace[data-session-mode="view"] .session-edit-notice {
+    background: var(--theme-surface-subtle, #fafafa);
+    border-color: var(--theme-line, #e4e4e7);
+  }
+}
+
+/* Compact activity ledger shared by phone, tablet and desktop. */
+@media screen {
+  #modalBody
+    .session-workspace[data-session-mode="view"]
+    [data-session-panel="activity"]
+    > :is(h4, p) {
+    display: none;
+  }
+  #modalBody .session-workspace .session-activity-records {
+    margin-top: 14px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+  #modalBody .session-workspace .session-activity-records > h4 {
+    margin: 0 0 10px;
+    padding-bottom: 4px;
+    border-bottom: 0;
+    color: var(--theme-ink);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  #modalBody
+    .session-workspace
+    .session-activity-records
+    :is(.responsive-scroll, .table-scroll):has(.session-score-table) {
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
+  }
+  #modalBody .session-workspace .session-score-table {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    border: 0;
+    box-shadow: none;
+    background: transparent;
+  }
+  #modalBody .session-workspace .session-score-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    clip-path: inset(50%);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  #modalBody .session-workspace .session-score-table tbody {
+    display: grid;
+    gap: 7px;
+  }
+  #modalBody .session-workspace .session-score-table tbody > tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(90px, 140px) 64px 44px;
+    align-items: center;
+    gap: 4px 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--theme-line-soft);
+    border-inline-start: 3px solid
+      var(--activity-line, var(--theme-secondary-line));
+    border-radius: 12px;
+    box-shadow: none;
+    background: var(--theme-surface);
+  }
+  #modalBody .session-workspace .session-score-table tbody > tr > td {
+    display: block;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    text-align: start;
+    font-size: 12px;
+    line-height: 1.8;
+    overflow-wrap: anywhere;
+  }
+  #modalBody .session-workspace .session-score-table td:first-child {
+    grid-column: 1;
+    grid-row: 1;
+    font-weight: 600;
+    color: var(--theme-ink);
+  }
+  #modalBody .session-workspace .session-score-table td:nth-child(2) {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  #modalBody .session-workspace .session-score-table td:nth-child(3) {
+    grid-column: 3;
+    grid-row: 1;
+    padding: 4px 8px;
+    border-radius: 9px;
+    background: var(--theme-secondary-soft);
+    color: var(--theme-secondary);
+    text-align: center;
+    font-size: 16px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  #modalBody .session-workspace .session-score-table td:nth-child(4) {
+    grid-column: 1 / 4;
+    grid-row: 2;
+    color: var(--theme-muted);
+    font-size: 11px;
+  }
+  #modalBody .session-workspace .session-score-table td:nth-child(4):empty {
+    display: none;
+  }
+  #modalBody .session-workspace .session-score-table td:last-child {
+    grid-column: 4;
+    grid-row: 1 / 3;
+  }
+  #modalBody .session-workspace .session-score-table .badge {
+    display: inline-block;
+    max-width: 100%;
+    padding: 3px 7px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1.7;
+    white-space: normal;
+  }
+  #modalBody
+    .session-workspace[data-session-mode="view"]
+    .session-score-table
+    tbody
+    > tr {
+    grid-template-columns: minmax(0, 1fr) minmax(90px, 140px) 64px;
+  }
+  #modalBody
+    .session-workspace[data-session-mode="view"]
+    .session-score-table
+    td:last-child {
+    display: none;
+  }
+}
+@media screen and (max-width: 700px) {
+  #modalBody .session-workspace .session-activity-records {
+    padding: 0;
+  }
+  #modalBody .session-workspace .session-score-table tbody > tr {
+    grid-template-columns: minmax(0, 1fr) 50px 44px;
+    gap: 3px 7px;
+    padding: 9px;
+  }
+  #modalBody .session-workspace .session-score-table td:nth-child(2) {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  #modalBody .session-workspace .session-score-table td:nth-child(3) {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    font-size: 15px;
+  }
+  #modalBody .session-workspace .session-score-table td:nth-child(4) {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+  #modalBody .session-workspace .session-score-table td:last-child {
+    grid-column: 3;
+    grid-row: 1 / 3;
+  }
+  #modalBody
+    .session-workspace[data-session-mode="view"]
+    .session-score-table
+    tbody
+    > tr {
+    grid-template-columns: minmax(0, 1fr) 50px;
+  }
+}
+
+@media screen and (max-width: 700px) {
+  #modalBody .session-workspace .session-score-table tbody td::before {
+    display: none;
+    content: none;
+  }
+  #modalBody .session-workspace .session-score-table tbody td[data-identity] {
+    padding-bottom: 0 !important;
+    border-bottom: 0 !important;
+  }
+  #modalBody .session-workspace .session-score-table tbody td[data-actions] {
+    padding-top: 0 !important;
+    border-top: 0 !important;
+  }
+  #modalBody .session-workspace .session-score-table tbody td:nth-child(3) {
+    padding: 4px 8px !important;
+    background: var(--theme-secondary-soft) !important;
+    text-align: center !important;
+  }
+}
+
+/* Session action colors convey intent rather than sharing the primary red. */
+@media screen {
+  #modalBody .session-workspace .session-mode-picker > button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    min-height: 44px;
+    padding: 6px 10px;
+    gap: 6px;
+    border: 0 !important;
+    border-radius: 8px;
+    background: transparent !important;
+    color: var(--theme-nav-ink, #fff) !important;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.5;
+    box-shadow: none;
+  }
+  #modalBody
+    .session-workspace
+    .session-mode-picker
+    > button[aria-pressed="true"] {
+    background: var(--theme-primary) !important;
+    color: var(--theme-surface) !important;
+    border-color: var(--theme-primary) !important;
+    box-shadow: none;
+  }
+  #modal #modalBody .session-workspace .session-mode-picker {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 3px;
+    padding: 3px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--theme-nav);
+    box-shadow: none;
+  }
+  #modalBody .session-workspace .session-mode-picker > button svg {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 20px;
+    color: var(--theme-highlight);
+  }
+  #modalBody
+    .session-workspace
+    .session-mode-picker
+    > button[aria-pressed="true"]
+    svg {
+    color: var(--theme-surface);
+  }
+  #modalBody .session-workspace .session-mode-picker > button span {
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+  #modalBody .session-workspace .session-mode-picker > button:focus-visible {
+    outline: 2px solid var(--theme-highlight);
+    outline-offset: 2px;
+  }
+  @media (hover: hover) {
+    #modalBody
+      .session-workspace
+      .session-mode-picker
+      > button[aria-pressed="false"]:hover {
+      background: var(--theme-nav-hover) !important;
+    }
+  }
+  #modalBody .session-workspace .session-entry-actions > button {
+    --button-fill: var(--status-success-fill, #16664e);
+    --button-hover: var(--status-success-hover, #11523e);
+    --button-ink: var(--status-success, #16664e);
+    --button-soft: var(--status-success-soft, #eaf6f0);
+    --button-line: var(--status-success-line, #bfded0);
+  }
+  #modalBody .session-workspace .session-entry-actions > button.ghost,
+  #modalBody .session-workspace .session-workspace-footer > button.ghost {
+    --button-fill: var(--theme-nav);
+    --button-hover: var(--theme-nav-surface);
+    --button-ink: var(--theme-ink);
+    --button-soft: var(--theme-surface-muted);
+    --button-line: var(--theme-line);
+    background: var(--theme-surface-muted) !important;
+    border-color: var(--theme-line) !important;
+    color: var(--theme-ink) !important;
+  }
+  #modalBody .session-workspace .session-score-table button.danger {
+    --button-fill: var(--status-danger-soft);
+    --button-hover: var(--status-danger-soft);
+    --button-ink: var(--status-danger);
+    --button-soft: var(--status-danger-soft);
+    --button-line: var(--status-danger-line);
+    background: var(--status-danger-soft) !important;
+    color: var(--status-danger) !important;
+    border-color: var(--status-danger-line) !important;
+  }
+  #modalBody .session-workspace .session-entry-actions > button:not(.ghost) {
+    background: var(--status-success-soft, #eaf6f0) !important;
+    color: var(--status-success, #16664e) !important;
+    border-color: var(--status-success-line, #bfded0) !important;
+  }
+}
+
+/* Gentle type cues replace repeated nested panels. */
+@media screen {
+  #modalBody .session-workspace .session-score-table tbody > tr {
+    --activity-ink: var(--theme-secondary);
+    --activity-soft: var(--theme-secondary-soft);
+    --activity-line: var(--theme-secondary-line);
+    background: linear-gradient(
+      to left,
+      var(--theme-surface),
+      var(--theme-surface-subtle)
+    );
+  }
+  #modalBody .session-workspace .session-score-table tr:has(.badge.positive) {
+    --activity-ink: var(--status-success);
+    --activity-soft: var(--status-success-soft);
+    --activity-line: var(--status-success-line);
+  }
+  #modalBody .session-workspace .session-score-table tr:has(.badge.negative) {
+    --activity-ink: var(--status-danger);
+    --activity-soft: var(--status-danger-soft);
+    --activity-line: var(--status-danger-line);
+  }
+  #modalBody .session-workspace .session-score-table tr:has(.badge.homework) {
+    --activity-ink: var(--theme-ink);
+    --activity-soft: var(--theme-surface-muted);
+    --activity-line: var(--theme-line);
+  }
+  #modalBody .session-workspace .session-score-table tbody td:nth-child(3) {
+    background: var(--activity-soft) !important;
+    color: var(--activity-ink);
+    border: 1px solid var(--activity-line) !important;
+    border-radius: 10px;
+    line-height: 1.6;
+  }
+  #modalBody .session-workspace .session-score-table .badge {
+    background: transparent;
+    color: var(--activity-ink);
+    padding: 0;
+  }
+  #modalBody .session-workspace .session-score-table .badge::before {
+    content: "";
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    margin-inline-end: 5px;
+    border-radius: 50%;
+    vertical-align: middle;
+    background: currentColor;
+  }
+  #modalBody
+    .session-workspace
+    .session-score-table
+    td:nth-child(4):not(:empty) {
+    padding-top: 5px !important;
+    border-top: 1px dashed var(--theme-line-soft) !important;
+    white-space: pre-line;
+  }
+  #modalBody .session-workspace .session-activity-records > .empty {
+    padding: 20px 12px;
+    border: 1px dashed var(--theme-line);
+    border-radius: 12px;
+    background: var(--theme-surface-subtle);
+    color: var(--theme-muted);
+    font-size: 12px;
+  }
+}
+
+@media screen {
+  #modalBody
+    .session-workspace
+    .session-workspace-footer
+    > button[data-legacy-click="sessions-dialog:13"] {
+    --button-fill: var(--theme-primary);
+    --button-hover: var(--theme-primary-hover);
+    --button-ink: var(--theme-primary);
+    --button-soft: var(--theme-primary-soft);
+    --button-line: var(--theme-primary-line);
+    background: var(--theme-primary) !important;
+    border-color: var(--theme-primary) !important;
+    color: var(--theme-surface) !important;
+  }
+  #modalBody
+    .session-workspace
+    .session-workspace-footer
+    > button[data-legacy-click="sessions-dialog:13"]:hover:not(:disabled) {
+    background: var(--theme-primary-hover) !important;
+    border-color: var(--theme-primary-hover) !important;
+  }
+}
+
+@media screen {
+  #modalBody .session-workspace .session-score-table button.danger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    padding: 0;
+    border-radius: 50%;
+    background: transparent !important;
+    border-color: transparent !important;
+    color: var(--theme-muted) !important;
+    box-shadow: none;
+  }
+  #modalBody .session-workspace .session-score-table button.danger > svg {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    pointer-events: none;
+  }
+  #modalBody
+    .session-workspace
+    .session-score-table
+    button.danger:hover:not(:disabled) {
+    background: var(--status-danger-soft) !important;
+    color: var(--status-danger) !important;
+  }
+  #modalBody
+    .session-workspace
+    .session-score-table
+    button.danger:focus-visible {
+    outline: 2px solid var(--status-danger);
+    outline-offset: 2px;
+  }
+}
+
+/* Edit access belongs to the session context, not a separate warning panel. */
+@media screen {
+  #modalBody .session-workspace .session-context:has(.session-edit-notice) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+  }
+  #modalBody .session-workspace .session-context > .session-edit-notice {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0 0;
+    padding: 10px 0 0;
+    border: 0;
+    border-top: 1px solid var(--theme-line);
+    border-radius: 0;
+    background: transparent;
+  }
+  #modalBody .session-context .session-edit-copy {
+    gap: 1px;
+  }
+  #modalBody .session-context [data-session-edit-title] {
+    font-size: 11px;
+  }
+  #modalBody .session-context [data-session-edit-description] {
+    font-size: 10px;
+    line-height: 1.8;
+  }
+  #modalBody .session-workspace .session-context [data-session-edit-control] {
+    width: auto;
+    padding: 6px 9px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+}
+
+/* Existing identities share the explicit view/edit pattern. */
+@media screen {
+  :is(#modalBody, #app) .record-access {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--theme-line);
+  }
+  :is(#modalBody, #app) .record-access-status {
+    font-size: 11px;
+    line-height: 1.9;
+    color: var(--theme-muted);
+  }
+  :is(#modalBody, #app) .record-access button {
+    flex-shrink: 0;
+    min-height: 44px;
+  }
+  :is(#modalBody, #app)
+    .record-editor[data-record-mode="edit"]
+    [data-record-enable-edit],
+  :is(#modalBody, #app)
+    .record-editor[data-record-mode="view"]
+    button[type="submit"],
+  :is(#modalBody, #app)
+    .record-editor[data-record-mode="view"]
+    .record-editor-review {
+    display: none;
+  }
+  :is(#modalBody, #app)
+    .record-editor[data-record-mode="view"]
+    :is(input, select, textarea):disabled {
+    opacity: 1;
+    color: var(--theme-ink);
+    -webkit-text-fill-color: var(--theme-ink);
+    background: var(--theme-surface-subtle);
+  }
+  #app #courseEditor > .record-access {
+    margin: 0 0 12px;
+    padding: 0 0 10px;
+    border-top: 0;
+    border-bottom: 1px solid var(--theme-line);
+  }
+}
+
+/* Class details use the same primary treatment as the lessons tab. */
+@media screen {
+  #modalBody .record-editor[data-record-kind="class"] > .record-editor-context {
+    background: var(--theme-surface-subtle);
+    border: 1px solid var(--theme-line);
+    border-radius: 12px;
+  }
+  #modalBody
+    .record-editor[data-record-kind="class"]
+    [data-record-enable-edit] {
+    --button-fill: var(--theme-primary);
+    --button-hover: var(--theme-primary-hover);
+    --button-soft: var(--theme-primary);
+    --button-ink: var(--theme-surface);
+    --button-line: var(--theme-primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 6px 10px;
+    border: 0;
+    border-radius: 8px;
+    background: var(--theme-primary) !important;
+    color: var(--theme-surface) !important;
+    font-size: 12px;
+    font-weight: 500;
+    box-shadow: none;
+  }
+  #modalBody
+    .record-editor[data-record-kind="class"]
+    [data-record-enable-edit]
+    :is(span, svg) {
+    color: inherit;
+  }
+  #modalBody
+    .record-editor[data-record-kind="class"]
+    [data-record-enable-edit]
+    svg {
+    width: 18px;
+    height: 18px;
+  }
+  #modalBody
+    .record-editor[data-record-kind="class"]
+    [data-record-enable-edit]:hover:not(:disabled) {
+    background: var(--theme-primary-hover) !important;
+  }
+}
+
+@media screen {
+  #modalBody .session-workspace .session-attendance-progress-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+    min-width: 0;
+  }
+  #modalBody
+    .session-workspace
+    .session-attendance-progress-line
+    [data-session-attendance-meter] {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+    margin: 0;
+  }
+  #modalBody .session-workspace [data-session-attendance-present] {
+    flex-shrink: 0;
+    padding: 2px 7px;
+    border-radius: 6px;
+    color: var(--status-success);
+    background: var(--status-success-soft);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.8;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+}

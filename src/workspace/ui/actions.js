@@ -1,6 +1,7 @@
 // Explicit command dispatch: tokens are data, never code or global function names.
 function installWorkspaceActions() {
   const commands = new Map([
+    ["record-enable-edit", (button) => enableRecordEditAccess(button)],
     ["session-toggle-edit", (button) => toggleSessionEditing(button)],
     [
       "session-restore-roster",

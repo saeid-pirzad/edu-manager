@@ -245,6 +245,8 @@ function editorFixture({
     P: c.EduPolicy,
     document: { getElementById: () => ({}), querySelector: () => ({}) },
     beginRecordEditorSave: () => () => {},
+    initializeRecordEditAccess() {},
+    assertRecordEditAccess() {},
     writable() {},
     val: (key) => values[key],
     number: (key) => Number(values[key]),

@@ -6,6 +6,7 @@ async function save() {
   );
   try {
     writable();
+    assertRecordEditAccess(document.getElementById("courseEditor"));
     if (!document.querySelector("#app #courseEditor #course_name"))
       throw Error("فرم درس باز نیست.");
     if (
@@ -274,6 +275,7 @@ async function save() {
     next.weightMostamar = next.weightMostamar ?? 40;
     next.weightPayani = next.weightPayani ?? 60;
     next.kardaneshScores = next.kardaneshScores || {};
+    assertRecordEditAccess(document.getElementById("courseEditor"));
     if (original) c.lessons[c.lessons.indexOf(original)] = next;
     else c.lessons.push(next);
     await api.saveDB({

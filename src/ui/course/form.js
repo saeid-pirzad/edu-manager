@@ -65,17 +65,20 @@ async function open(lid = "", seed) {
   const h = courseFormHtml(l, original, locked);
   const summary = panel.querySelector("summary");
   summary.querySelector("strong").textContent = original
-    ? "ویرایش درس"
+    ? "مشاهدهٔ درس"
     : "درس جدید";
   summary.querySelector("small").textContent = original
-    ? "اصلاح مشخصات همین درس"
+    ? "مشخصات و شیوه نمره‌دهی"
     : "مشخصات درس را وارد کنید";
   panel.replaceChildren(summary);
   panel.insertAdjacentHTML("beforeend", h);
   panel.open = true;
   initializeCourseForm(l);
   const form = panel.querySelector(".record-editor");
-  form.querySelector("#course_name").focus({ preventScroll: true });
+  (
+    form.querySelector("[data-record-enable-edit]") ||
+    form.querySelector("#course_name")
+  ).focus({ preventScroll: true });
   panel.scrollIntoView({ block: "start", behavior: "smooth" });
 }
 function courseFormHtml(l, original, locked) {
@@ -229,5 +232,28 @@ function initializeCourseForm(l) {
       : "اطلاعات فعلاً فقط خواندنی‌اند؛ پیام وضعیت ذخیره‌سازی را بررسی و صفحه را بازخوانی کنید.";
     form.querySelector(".record-editor-context").append(note);
   }
+  const openedEditing = editing;
+  initializeRecordEditAccess(form, {
+    enabled: !editing?.id,
+    onEnable: () => {
+      const summary = form.closest(".lesson-create")?.querySelector("summary");
+      if (summary) {
+        summary.querySelector("strong").textContent = "ویرایش درس";
+        summary.querySelector("small").textContent = "اصلاح مشخصات همین درس";
+      }
+    },
+    validate: () => {
+      writable();
+      if (
+        editing !== openedEditing ||
+        editing.context.id !== api.context().id ||
+        editing.context.revision !== api.context().revision ||
+        editing.classId !== api.state().classId
+      )
+        throw Error(
+          "کلاس یا اطلاعات درس تغییر کرده است؛ فرم را دوباره باز کنید.",
+        );
+    },
+  });
   rememberRecordEditor(form);
 }

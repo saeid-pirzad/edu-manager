@@ -207,3 +207,45 @@
     grid-row: 5;
   }
 }
+
+@media screen {
+  #modalBody .week-config-access {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    border: 1px solid var(--theme-line);
+    border-radius: 10px;
+    background: var(--theme-surface-subtle);
+  }
+  #modalBody .week-config-access > span {
+    font-size: 11px;
+    line-height: 1.9;
+    color: var(--theme-muted);
+  }
+  #modalBody .week-config-access > button {
+    flex-shrink: 0;
+    min-height: 44px;
+  }
+  #modalBody
+    .week-config-editor[data-config-mode="view"]
+    .week-config-actions
+    > button:not(.ghost),
+  #modalBody .week-config-editor[data-config-mode="view"] .week-config-note,
+  #modalBody .week-config-editor[data-config-mode="edit"] .week-config-access {
+    display: none;
+  }
+  #modalBody .week-config-editor[data-config-mode="view"] .week-config-intro p {
+    display: none;
+  }
+  #modalBody
+    .week-config-editor[data-config-mode="view"]
+    .week-config-section
+    select {
+    opacity: 1;
+    color: var(--theme-ink);
+    background: var(--theme-surface-subtle);
+  }
+}

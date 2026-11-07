@@ -153,6 +153,7 @@ async function startTodaySessionV24(selection) {
 async function saveMasterConfigV24(day, period) {
   const isCurrent = preserveScheduleAction();
   validateScheduleSlot(day, period);
+  assertMasterConfigEditable(day, period);
   const marker = document.getElementById("cfgAllClass"),
     next = { ...(db.masterSchedule || {}) },
     fields = { all: "All", odd: "Odd", even: "Even" };
@@ -190,6 +191,7 @@ async function saveMasterConfigV24(day, period) {
 async function clearMasterConfigV24(day, period) {
   const isCurrent = preserveScheduleAction();
   validateScheduleSlot(day, period);
+  assertMasterConfigEditable(day, period);
   const marker = document.getElementById("cfgAllClass");
   if (!confirm("کل تنظیمات این زنگ پاک شوند؟")) return false;
   const next = { ...(db.masterSchedule || {}) };

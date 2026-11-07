@@ -92,7 +92,7 @@ function sessionActivityRowHtml(session, classroom, score, index) {
   return `<tr><td>${esc(student ? student.name : "—")}</td>
         <td><span class="badge ${score.type}">${TYPE_LABELS[score.type]}</span></td>
         <td>${score.value}</td><td>${esc(score.note || "")}</td>
-        <td><button type="button" class="danger" data-mutating="1" aria-label="حذف فعالیت ${esc(student?.name || "هنرجو")}" data-legacy-click="sessions-dialog:12" data-legacy-click-arg5="${esc(session.id)}" data-legacy-click-arg6="${esc(index)}">×</button></td></tr>`;
+        <td><button type="button" class="danger" data-mutating="1" aria-label="حذف فعالیت ${esc(student?.name || "هنرجو")}" data-legacy-click="sessions-dialog:12" data-legacy-click-arg5="${esc(session.id)}" data-legacy-click-arg6="${esc(index)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/></svg></button></td></tr>`;
 }
 
 function sessionActivityTableHtml(session, classroom) {

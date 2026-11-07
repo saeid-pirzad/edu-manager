@@ -38,6 +38,7 @@ function fixture() {
     document: { getElementById: (id) => controls[id] },
     findClassById: (id) => (id === "class" ? target : null),
     assertEntityWritable() {},
+    assertMasterConfigEditable() {},
     confirm: () => true,
     saveDBV24: async () => effects.push("save"),
     closeModal: () => effects.push("close"),

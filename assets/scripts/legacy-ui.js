@@ -1092,10 +1092,16 @@ activeDays.sort((a,b)=>a-b);await saveDB();render()}async function legacy_saveWe
 const next=clamp((db.periods||6)+d,1,12);const occupied=Object.entries(db.masterSchedule||{}).filter(([key,value])=>value&&Number(key.split("-")[1])>=next);if(next<
 (db.periods||6)&&occupied.length){alert("کاهش تعداد زنگ‌ها انجام نشد؛ ابتدا برنامه زنگ‌های "+[...new Set(occupied.map(
 ([key])=>Number(key.split("-")[1])+1))].sort((a,b)=>a-b).join("، ")+" را جابه‌جا یا پاک کنید.");return}db.periods=next;await saveDB();render()}
-function openMasterConfig(day,period){const cur=getBothEntries(day,period);const allClasses=[];db.schools.forEach(s=>s.classes.forEach(c=>allClasses.push({school:s,
-class:c})));if(!allClasses.length){showModal("تنظیم زنگ",`<p class="empty">ابتدا مدرسه و کلاس بسازید</p><button data-legacy-click="schedule-timetable:10\
-">بستن</button>`);return}function classSelect(id,val){return`<select id="${id}" style="flex:1" data-legacy-change="schedule-timetable:11" data-legacy-change\
--arg1="${esc(id)}">
+let masterConfigEditAccess=null;function assertMasterConfigEditable(day,period){const access=masterConfigEditAccess;if(!access||!access.editable||access.day!==day||
+access.period!==period||access.data!==db||!access.root.isConnected||document.querySelector("#modalBody .week-config-editor")!==access.root||document.getElementById(
+"modal").classList.contains("hidden"))throw Error("ابتدا ویرایش برنامهٔ این زنگ را فعال کنید.")}function enableMasterConfigEditing(button){
+const access=masterConfigEditAccess;if(!access||access.data!==db||!access.root.isConnected||document.querySelector("#modalBody .week-config-editor")!==access.root||
+!access.root.contains(button)||button.disabled||document.getElementById("modal").classList.contains("hidden"))return;access.editable=true;access.root.dataset.configMode=
+"edit";access.root.querySelectorAll("select").forEach(control=>setControlLock(control,"schedule-view",false));document.getElementById("modalTitle").textContent=
+"ویرایش "+DAYS[access.day]+" — زنگ "+(access.period+1);access.root.querySelector("select")?.focus()}function openMasterConfig(day,period){const cur=getBothEntries(
+day,period);const existing=!!(cur.all||cur.odd||cur.even);const allClasses=[];db.schools.forEach(s=>s.classes.forEach(c=>allClasses.push({school:s,class:c})));if(!allClasses.
+length){showModal("تنظیم زنگ",`<p class="empty">ابتدا مدرسه و کلاس بسازید</p><button data-legacy-click="schedule-timetable:10">بستن</button>`);
+return}function classSelect(id,val){return`<select id="${id}" style="flex:1" data-legacy-change="schedule-timetable:11" data-legacy-change-arg1="${esc(id)}">
       <option value="">— هیچ —</option>
       ${allClasses.map(x=>`<option value="${x.class.id}" ${x.class.id===val?"selected":""}>${esc(x.school.name)} / ${esc(x.class.name)}</option>`).join("")}
     </select>`}function lessonSelect(id,classId,lessonId){if(!classId)return`<select id="${id}" style="flex:1"><option value="">— اول کلاس —</option></select>`;
@@ -1114,10 +1120,14 @@ bel for="cfgOddLesson">درس</label>${lessonSelect("cfgOddLesson",cur.odd?.clas
 . نام دبیر از مشخصات درس خوانده می‌شود.</p><div class="week-config-actions"><button data-legacy-click="schedule-timetable:18" data-legacy-click-arg5="${esc(
 day)}" data-legacy-click-arg6="${esc(period)}">ذخیره برنامه</button><button class="ghost" data-legacy-click="schedule-timetable:12">انصراف</button><button class\
 ="danger" data-legacy-click="schedule-timetable:19" data-legacy-click-arg7="${esc(day)}" data-legacy-click-arg8="${esc(period)}">پاک‌کردن این زنگ</button></div>`;
-showModal(`تنظیم ${DAYS[day]} — زنگ ${period+1}`,h)}function updateLessonOptions(classSelectId){const classId=document.getElementById(classSelectId).value;
-const lessonSelectId=classSelectId.replace("Class","Lesson");const sel=document.getElementById(lessonSelectId);if(!sel)return;if(!classId){sel.innerHTML='<optio\
-n value="">— اول کلاس —</option>';return}const cls=findClassById(classId);if(!cls){sel.innerHTML='<option value="">— خطا —</option>';return}sel.
-innerHTML='<option value="">— درس —</option>'+(cls.classObj.lessons||[]).map(l=>`<option value="${l.id}">${esc(l.name)}</option>`).join("")}async function legacy_saveMasterConfig(day,period){
+h='<div class="week-config-editor" data-config-mode="'+(existing?"view":"edit")+'">'+(existing?'<div class="week-config-access"><span>مشاهدهٔ برنامه؛ برای تغییر\
+، ویرایش را فعال کنید.</span><button type="button" class="ghost" data-mutating="1" data-legacy-click="week-config-enable-edit">'+EduIcons.html(
+"edit")+"ویرایش</button></div>":"")+h+"</div>";if(showModal((existing?"مشاهدهٔ ":"تنظیم ")+DAYS[day]+" — زنگ "+(period+1),h)===false)return;
+const root=document.querySelector("#modalBody .week-config-editor");masterConfigEditAccess={root,data:db,day,period,editable:!existing};root.querySelectorAll("s\
+elect").forEach(control=>setControlLock(control,"schedule-view",existing))}function updateLessonOptions(classSelectId){const classId=document.getElementById(classSelectId).
+value;const lessonSelectId=classSelectId.replace("Class","Lesson");const sel=document.getElementById(lessonSelectId);if(!sel)return;if(!classId){sel.innerHTML='\
+<option value="">— اول کلاس —</option>';return}const cls=findClassById(classId);if(!cls){sel.innerHTML='<option value="">— خطا —</option>';return}
+sel.innerHTML='<option value="">— درس —</option>'+(cls.classObj.lessons||[]).map(l=>`<option value="${l.id}">${esc(l.name)}</option>`).join("")}async function legacy_saveMasterConfig(day,period){
 db.masterSchedule=db.masterSchedule||{};const map={all:{c:"cfgAllClass",l:"cfgAllLesson"},odd:{c:"cfgOddClass",l:"cfgOddLesson"},even:{c:"cfgEvenClass",l:"cfgEv\
 enLesson"}};Object.keys(map).forEach(k=>{const classId=document.getElementById(map[k].c).value;const lessonId=document.getElementById(map[k].l).value;const key=`${day}\
 -${period}-${k}`;if(classId&&lessonId){const cls=findClassById(classId);if(cls)db.masterSchedule[key]={schoolId:cls.school.id,classId,lessonId}}else{delete db.masterSchedule[key]}});
@@ -1188,23 +1198,23 @@ function(event){return runSessionFormAction(this,()=>startSessionFromMaster(JSON
 arg0"))});EduLegacyEvents.register("schedule-timetable:17",function(event){return openMasterConfig(JSON.parse(this.getAttribute("data-legacy-click-arg7")),JSON.
 parse(this.getAttribute("data-legacy-click-arg8")))});EduLegacyEvents.register("schedule-timetable:18",function(event){return saveMasterConfig(JSON.parse(this.getAttribute(
 "data-legacy-click-arg5")),JSON.parse(this.getAttribute("data-legacy-click-arg6")))});EduLegacyEvents.register("schedule-timetable:19",function(event){return clearMasterConfig(
-JSON.parse(this.getAttribute("data-legacy-click-arg7")),JSON.parse(this.getAttribute("data-legacy-click-arg8")))});async function legacy_deleteSchool(id){if(!confirm(
-"مدرسه و تمام داده‌هایش حذف شوند؟"))return;const school=db.schools.find(s=>s.id===id);const classIds=(school?.classes||[]).map(c=>c.
-id);db.schools=db.schools.filter(s=>s.id!==id);db.sessions=db.sessions.filter(x=>x.schoolId!==id);Object.keys(db.masterSchedule||{}).forEach(k=>{const e=db.masterSchedule[k];
-if(e.schoolId===id||classIds.includes(e.classId))delete db.masterSchedule[k]});await saveDB();render()}async function legacy_deleteClass(id){if(!confirm("کلاس و\
- تمام داده‌هایش حذف شوند؟"))return;const s=getSchool(state.schoolId);s.classes=s.classes.filter(c=>c.id!==id);db.sessions=db.sessions.filter(
-x=>x.classId!==id);Object.keys(db.masterSchedule||{}).forEach(k=>{if(db.masterSchedule[k].classId===id)delete db.masterSchedule[k]});await saveDB();render()}function legacy_addStudent(e){
-e.preventDefault();const c=getClassObj(state.schoolId,state.classId);if(!c)return;const n=e.target.name.value.trim();if(!n)return;c.students.push({id:uid(),name:n});
-saveDB();e.target.reset();render()}async function legacy_deleteStudent(stId){if(!confirm("دانش‌آموز از فهرست فعال خارج و سوابق بایگانی شود؟"))
-return;const c=getClassObj(state.schoolId,state.classId),st=getStudentObj(c,stId);if(st){archiveStudent(c,st);await saveDB({classId:c.id});render()}}async function legacy_addLesson(e){
-e.preventDefault();const c=getClassObj(state.schoolId,state.classId);if(!c)return;const n=e.target.name.value.trim();if(!n)return;const teacher=e.target.teacher.
-value.trim();const periods=parseInt(e.target.periods.value)||2;c.lessons.push({id:uid(),name:n,teacher,periodsPerWeek:periods,gradeMode:e.target.gradeMode.value,
-kardaneshScores:{},weightMostamar:40,weightPayani:60,applyPosNegToFinal:false,poudmans:e.target.gradeMode.value==="kardanesh"?[]:makeDefaultPoudmans()});await saveDB(
-{classId:c.id});e.target.reset();render()}async function legacy_deleteLesson(id){if(!confirm("درس و تمام نمراتش حذف شوند؟"))return;const c=getClassObj(
-state.schoolId,state.classId);c.lessons=c.lessons.filter(l=>l.id!==id);db.sessions=db.sessions.filter(x=>x.lessonId!==id);Object.keys(db.masterSchedule||{}).forEach(
-k=>{if(db.masterSchedule[k].lessonId===id)delete db.masterSchedule[k]});await saveDB({action:"حذف درس و جلسات مرتبط"});render()}function legacy_openTransferModal(stId){
-const c=getClassObj(state.schoolId,state.classId);const student=getStudentObj(c,stId);if(!student)return;let h=`<p>دانش‌آموز: <strong>${esc(student.name)}\
-</strong></p>
+JSON.parse(this.getAttribute("data-legacy-click-arg7")),JSON.parse(this.getAttribute("data-legacy-click-arg8")))});EduLegacyEvents.register("week-config-enable-\
+edit",function(){return enableMasterConfigEditing(this)});async function legacy_deleteSchool(id){if(!confirm("مدرسه و تمام داده‌هایش حذف شوند؟"))
+return;const school=db.schools.find(s=>s.id===id);const classIds=(school?.classes||[]).map(c=>c.id);db.schools=db.schools.filter(s=>s.id!==id);db.sessions=db.sessions.
+filter(x=>x.schoolId!==id);Object.keys(db.masterSchedule||{}).forEach(k=>{const e=db.masterSchedule[k];if(e.schoolId===id||classIds.includes(e.classId))delete db.
+masterSchedule[k]});await saveDB();render()}async function legacy_deleteClass(id){if(!confirm("کلاس و تمام داده‌هایش حذف شوند؟"))return;
+const s=getSchool(state.schoolId);s.classes=s.classes.filter(c=>c.id!==id);db.sessions=db.sessions.filter(x=>x.classId!==id);Object.keys(db.masterSchedule||{}).
+forEach(k=>{if(db.masterSchedule[k].classId===id)delete db.masterSchedule[k]});await saveDB();render()}function legacy_addStudent(e){e.preventDefault();const c=getClassObj(
+state.schoolId,state.classId);if(!c)return;const n=e.target.name.value.trim();if(!n)return;c.students.push({id:uid(),name:n});saveDB();e.target.reset();render()}
+async function legacy_deleteStudent(stId){if(!confirm("دانش‌آموز از فهرست فعال خارج و سوابق بایگانی شود؟"))return;const c=getClassObj(
+state.schoolId,state.classId),st=getStudentObj(c,stId);if(st){archiveStudent(c,st);await saveDB({classId:c.id});render()}}async function legacy_addLesson(e){e.preventDefault();
+const c=getClassObj(state.schoolId,state.classId);if(!c)return;const n=e.target.name.value.trim();if(!n)return;const teacher=e.target.teacher.value.trim();const periods=parseInt(
+e.target.periods.value)||2;c.lessons.push({id:uid(),name:n,teacher,periodsPerWeek:periods,gradeMode:e.target.gradeMode.value,kardaneshScores:{},weightMostamar:40,
+weightPayani:60,applyPosNegToFinal:false,poudmans:e.target.gradeMode.value==="kardanesh"?[]:makeDefaultPoudmans()});await saveDB({classId:c.id});e.target.reset();
+render()}async function legacy_deleteLesson(id){if(!confirm("درس و تمام نمراتش حذف شوند؟"))return;const c=getClassObj(state.schoolId,state.
+classId);c.lessons=c.lessons.filter(l=>l.id!==id);db.sessions=db.sessions.filter(x=>x.lessonId!==id);Object.keys(db.masterSchedule||{}).forEach(k=>{if(db.masterSchedule[k].
+lessonId===id)delete db.masterSchedule[k]});await saveDB({action:"حذف درس و جلسات مرتبط"});render()}function legacy_openTransferModal(stId){const c=getClassObj(
+state.schoolId,state.classId);const student=getStudentObj(c,stId);if(!student)return;let h=`<p>دانش‌آموز: <strong>${esc(student.name)}</strong></p>
     <div class="form-row"><label>کلاس مقصد:</label><select id="transferTarget" style="flex:1">`;let hasTarget=false;db.schools.forEach(s=>s.classes.forEach(
 cl=>{if(cl.id===c.id)return;hasTarget=true;h+=`<option value="${cl.id}">${esc(s.name)} → ${esc(cl.name)}</option>`}));h+=`</select></div>`;if(!hasTarget)h+=`<\
 p class="muted">کلاس دیگری وجود ندارد</p><button data-legacy-click="students-membership:0">بستن</button>`;else h+=`<div class="row" style=\
@@ -1273,31 +1283,33 @@ const student=sessionStudent(classroom,session,score.studentId);return`<tr><td>$
         <td><span class="badge ${score.type}">${TYPE_LABELS[score.type]}</span></td>
         <td>${score.value}</td><td>${esc(score.note||"")}</td>
         <td><button type="button" class="danger" data-mutating="1" aria-label="حذف فعالیت ${esc(student?.name||"هنرجو")}" data-legacy-click="sessi\
-ons-dialog:12" data-legacy-click-arg5="${esc(session.id)}" data-legacy-click-arg6="${esc(index)}">×</button></td></tr>`}function sessionActivityTableHtml(session,classroom){
-return`<table class="karnameh-table session-score-table"><thead><tr><th>دانش‌آموز</th><th>نوع</th><th>مقدار</th><th>توضیح</th><th>عملیات</th></tr></thead><tbody\
->${session.scores.map((score,index)=>sessionActivityRowHtml(session,classroom,score,index)).join("")}</tbody></table>`}function sessionActivityRecordsHtml(session,classroom){
-return"<h4>فعالیت‌های ثبت‌شده</h4>"+(session.scores.length?sessionActivityTableHtml(session,classroom):'<div class="empty">امتیازی ثبت نشده</\
-div>')}function bindSessionActivityRecords(session){const root=liveSessionWorkspace(session),records=root?.querySelector(".session-activity-records");if(!records)
-return false;const rows=[...records.querySelectorAll("tbody > tr")];if(rows.length!==session.scores.length)return false;sessionActivityViews.set(records,{root,session,
-scope:[session.id,session.schoolId,session.classId,session.lessonId],rows:new Map(session.scores.map((score,index)=>[score,rows[index]])),snapshots:new Map(rows.
-map((row,index)=>[row,JSON.stringify(session.scores[index])]))});return true}function currentSessionActivityView(session){const root=liveSessionWorkspace(session),
-records=root?.querySelector(".session-activity-records"),view=records&&sessionActivityViews.get(records);if(!view||view.root!==root||view.scope.some((value,index)=>value!==
-[session.id,session.schoolId,session.classId,session.lessonId][index]))return null;return{records,view}}function rebindSessionActivityView(view,session){if(view.
-session===session)return true;const rows=[...view.rows.values()];if(rows.length!==session.scores.length||rows.some((row,index)=>view.snapshots.get(row)!==JSON.stringify(
-session.scores[index])))return false;view.session=session;view.rows=new Map(session.scores.map((score,index)=>[score,rows[index]]));return true}function prepareSessionActivityRecords(session){
-const current=currentSessionActivityView(session);return!!current&&rebindSessionActivityView(current.view,session)}function sessionActivityControlMatches(control,session,index){
-const current=currentSessionActivityView(session);if(!current||!control?.isConnected||!rebindSessionActivityView(current.view,session))return false;const row=current.
-view.rows.get(session.scores[index]);return!!row&&row.isConnected&&current.view.snapshots.get(row)===JSON.stringify(session.scores[index])&&row.contains(control)&&
-control.closest("tr")===row&&current.records.contains(row)}function refreshSessionActivityRecords(session){const current=currentSessionActivityView(session);if(!current)
-return false;const{records,view}=current,classroom=getClassObj(session.schoolId,session.classId);if(!classroom)return false;if(!rebindSessionActivityView(view,session)){
-records.innerHTML=sessionActivityRecordsHtml(session,classroom);bindSessionActivityRecords(session)}else if(!session.scores.length){if(view.rows.size){records.innerHTML=
-sessionActivityRecordsHtml(session,classroom);bindSessionActivityRecords(session)}}else{let body=records.querySelector("tbody");if(!body){records.innerHTML=sessionActivityRecordsHtml(
-session,classroom);bindSessionActivityRecords(session)}else{const desired=new Map(session.scores.map(score=>[score,JSON.stringify(score)])),nextRows=new Map,nextSnapshots=new Map;
-for(const[score,row]of view.rows)if(!desired.has(score)||view.snapshots.get(row)!==desired.get(score))row.remove();for(const[index,score]of session.scores.entries()){
-const snapshot=desired.get(score);let row=view.rows.get(score);if(!row||view.snapshots.get(row)!==snapshot){const template=document.createElement("template");template.
-innerHTML=sessionActivityRowHtml(session,classroom,score,index);row=template.content.firstElementChild}const position=body.children[index];if(position!==row)body.
-insertBefore(row,position||null);const remove=row.querySelector('[data-legacy-click="sessions-dialog:12"]');if(remove.dataset.legacyClickArg6!==String(index))remove.
-dataset.legacyClickArg6=String(index);nextRows.set(score,row);nextSnapshots.set(row,snapshot)}view.rows=nextRows;view.snapshots=nextSnapshots}}return true}function finishSessionActivitySave(form,{
+ons-dialog:12" data-legacy-click-arg5="${esc(session.id)}" data-legacy-click-arg6="${esc(index)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str\
+oke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7"\
+/></svg></button></td></tr>`}function sessionActivityTableHtml(session,classroom){return`<table class="karnameh-table session-score-table"><thead><tr><th>دانش‌آ\
+موز</th><th>نوع</th><th>مقدار</th><th>توضیح</th><th>عملیات</th></tr></thead><tbody>${session.scores.map((score,index)=>sessionActivityRowHtml(
+session,classroom,score,index)).join("")}</tbody></table>`}function sessionActivityRecordsHtml(session,classroom){return"<h4>فعالیت‌های ثبت‌شده</h4>"+
+(session.scores.length?sessionActivityTableHtml(session,classroom):'<div class="empty">امتیازی ثبت نشده</div>')}function bindSessionActivityRecords(session){
+const root=liveSessionWorkspace(session),records=root?.querySelector(".session-activity-records");if(!records)return false;const rows=[...records.querySelectorAll(
+"tbody > tr")];if(rows.length!==session.scores.length)return false;sessionActivityViews.set(records,{root,session,scope:[session.id,session.schoolId,session.classId,
+session.lessonId],rows:new Map(session.scores.map((score,index)=>[score,rows[index]])),snapshots:new Map(rows.map((row,index)=>[row,JSON.stringify(session.scores[index])]))});
+return true}function currentSessionActivityView(session){const root=liveSessionWorkspace(session),records=root?.querySelector(".session-activity-records"),view=records&&
+sessionActivityViews.get(records);if(!view||view.root!==root||view.scope.some((value,index)=>value!==[session.id,session.schoolId,session.classId,session.lessonId][index]))
+return null;return{records,view}}function rebindSessionActivityView(view,session){if(view.session===session)return true;const rows=[...view.rows.values()];if(rows.
+length!==session.scores.length||rows.some((row,index)=>view.snapshots.get(row)!==JSON.stringify(session.scores[index])))return false;view.session=session;view.rows=
+new Map(session.scores.map((score,index)=>[score,rows[index]]));return true}function prepareSessionActivityRecords(session){const current=currentSessionActivityView(
+session);return!!current&&rebindSessionActivityView(current.view,session)}function sessionActivityControlMatches(control,session,index){const current=currentSessionActivityView(
+session);if(!current||!control?.isConnected||!rebindSessionActivityView(current.view,session))return false;const row=current.view.rows.get(session.scores[index]);
+return!!row&&row.isConnected&&current.view.snapshots.get(row)===JSON.stringify(session.scores[index])&&row.contains(control)&&control.closest("tr")===row&&current.
+records.contains(row)}function refreshSessionActivityRecords(session){const current=currentSessionActivityView(session);if(!current)return false;const{records,view}=current,
+classroom=getClassObj(session.schoolId,session.classId);if(!classroom)return false;if(!rebindSessionActivityView(view,session)){records.innerHTML=sessionActivityRecordsHtml(
+session,classroom);bindSessionActivityRecords(session)}else if(!session.scores.length){if(view.rows.size){records.innerHTML=sessionActivityRecordsHtml(session,classroom);
+bindSessionActivityRecords(session)}}else{let body=records.querySelector("tbody");if(!body){records.innerHTML=sessionActivityRecordsHtml(session,classroom);bindSessionActivityRecords(
+session)}else{const desired=new Map(session.scores.map(score=>[score,JSON.stringify(score)])),nextRows=new Map,nextSnapshots=new Map;for(const[score,row]of view.
+rows)if(!desired.has(score)||view.snapshots.get(row)!==desired.get(score))row.remove();for(const[index,score]of session.scores.entries()){const snapshot=desired.
+get(score);let row=view.rows.get(score);if(!row||view.snapshots.get(row)!==snapshot){const template=document.createElement("template");template.innerHTML=sessionActivityRowHtml(
+session,classroom,score,index);row=template.content.firstElementChild}const position=body.children[index];if(position!==row)body.insertBefore(row,position||null);
+const remove=row.querySelector('[data-legacy-click="sessions-dialog:12"]');if(remove.dataset.legacyClickArg6!==String(index))remove.dataset.legacyClickArg6=String(
+index);nextRows.set(score,row);nextSnapshots.set(row,snapshot)}view.rows=nextRows;view.snapshots=nextSnapshots}}return true}function finishSessionActivitySave(form,{
 submitted,advance=false},focusOrigin=document.activeElement){const names=["studentId","type","value","note"],root=form?.closest(".session-workspace"),session=root&&
 getSessionById(root.dataset.sessionId);if(!form?.isConnected||!submitted||liveSessionWorkspace(session)!==root||names.some(name=>form.elements[name].value!==submitted[name]))
 return false;form.elements.value.value="";form.elements.note.value="";if(advance){const select=form.elements.studentId;select.value=select.options[select.selectedIndex+
@@ -1322,14 +1334,16 @@ nce","activity"].includes(panel))return;const root=document.querySelector("#moda
 const normalize=value=>String(value).normalize("NFKC").replace(/ي/g,"ی").replace(/ك/g,"ک").replace(/[\u200c\u200d]/g," ").replace(/\s+/g," ").trim().toLocaleLowerCase(
 "fa");const query=normalize(input.value);let visible=0;for(const row of root.querySelectorAll(".att-row")){row.hidden=!normalize(row.dataset.search).includes(query);
 if(!row.hidden)visible++}const empty=root.querySelector(".session-attendance-no-results");if(empty)empty.hidden=!query||visible>0}function sessionAttendanceProgress(session,classroom){
-const roster=sessionStudents(classroom,session);const unset=roster.filter(student=>!session.attendance[student.id]).length;return{total:roster.length,unset}}function refreshSessionAttendanceProgress(){
-const root=document.querySelector("#modalBody .session-workspace");if(!root||root.dataset.sessionId!==currentSessionId)return;const session=getSessionById(currentSessionId);
-const classroom=session&&getClassObj(session.schoolId,session.classId);if(!session||!classroom)return;const progress=sessionAttendanceProgress(session,classroom);
-const label=root.querySelector("[data-session-attendance-progress]");if(label)label.textContent=(progress.total-progress.unset).toLocaleString("fa-IR")+" از "+
-progress.total.toLocaleString("fa-IR")+" نفر ثبت شده · تعیین‌نشده: "+progress.unset.toLocaleString("fa-IR");const fill=root.querySelector('\
-[data-legacy-click="sessions-dialog:6"]');const meter=root.querySelector("[data-session-attendance-meter]");if(meter){meter.max=Math.max(progress.total,1);meter.
-value=progress.total-progress.unset}if(fill)setControlLock(fill,"attendance-complete",progress.unset===0);const reuse=root.querySelector('[data-legacy-click="se\
-ssions-dialog:reuse-previous"]');if(reuse)setControlLock(reuse,"attendance-complete",progress.unset===0)}function refreshSessionActivityInput(form,changedControl=null){
+const roster=sessionStudents(classroom,session);const unset=roster.filter(student=>!session.attendance[student.id]).length;const present=roster.filter(student=>session.
+attendance[student.id]==="present").length;return{total:roster.length,unset,present}}function refreshSessionAttendanceProgress(){const root=document.querySelector(
+"#modalBody .session-workspace");if(!root||root.dataset.sessionId!==currentSessionId)return;const session=getSessionById(currentSessionId);const classroom=session&&
+getClassObj(session.schoolId,session.classId);if(!session||!classroom)return;const progress=sessionAttendanceProgress(session,classroom);const label=root.querySelector(
+"[data-session-attendance-progress]");if(label)label.textContent=(progress.total-progress.unset).toLocaleString("fa-IR")+" از "+progress.total.toLocaleString(
+"fa-IR")+" نفر ثبت شده · تعیین‌نشده: "+progress.unset.toLocaleString("fa-IR");const presentLabel=root.querySelector("[data-session-attendan\
+ce-present]");if(presentLabel){const text=progress.present.toLocaleString("fa-IR")+" حاضر";if(presentLabel.textContent!==text)presentLabel.textContent=text}
+const fill=root.querySelector('[data-legacy-click="sessions-dialog:6"]');const meter=root.querySelector("[data-session-attendance-meter]");if(meter){meter.max=Math.
+max(progress.total,1);meter.value=progress.total-progress.unset}if(fill)setControlLock(fill,"attendance-complete",progress.unset===0);const reuse=root.querySelector(
+'[data-legacy-click="sessions-dialog:reuse-previous"]');if(reuse)setControlLock(reuse,"attendance-complete",progress.unset===0)}function refreshSessionActivityInput(form,changedControl=null){
 if(!form?.isConnected)return;const type=form.elements.type.value;const value=form.elements.value;const count=["positive","negative"].includes(type);if(count&&(value.
 value===""||changedControl?.name==="type"))value.value=type==="positive"?"0.25":"0.5";value.placeholder=["classGrade","mostamar","payani"].includes(type)?"۰ تا \
 ۲۰":"۰ تا ۱۰۰۰";const students=form.elements.studentId;const next=form.querySelector("[data-session-next]");if(next)setControlLock(next,"student-last",
@@ -1372,8 +1386,9 @@ tion>`).join("")}
   </div>`;h+=`<div class="session-mode-picker"><button type="button" aria-pressed="true" data-session-tab="attendance" data-legacy-click="sessions-dialog:4">${EduIcons.
 html("attendance")}<span>حضور و غیاب</span></button><button type="button" aria-pressed="false" data-session-tab="activity" data-legacy-click="sessions-dialog:5"\
 >${EduIcons.html("grades")}<span>نمره و فعالیت</span></button></div><section data-session-panel="attendance"><div class="session-attendance-heading">
-    <div><h4>حضور و غیاب</h4><p data-session-attendance-progress role="status"></p><progress data-session-attendance-meter aria-label="تکمیل ثبت حضور و غیاب" ma\
-x="1" value="0"></progress></div>
+    <div><h4>حضور و غیاب</h4><p data-session-attendance-progress role="status"></p><div class="session-attendance-progress-line"><progress data-session-attendan\
+ce-meter aria-label="تکمیل ثبت حضور و غیاب" max="1" value="0"></progress><span data-session-attendance-present role="status" aria-live="polite"></span></div></d\
+iv>
     <div class="session-attendance-bulk" role="group" aria-label="ثبت گروهی حضور و غیاب">
       <button type="button" class="success" data-mutating="1" data-legacy-click="sessions-dialog:6" aria-label="ثبت حاضر برای هنرجویان تعیین‌نشده" title="فقط وض\
 عیت‌های تعیین‌نشده حاضر می‌شوند؛ ثبت‌های قبلی حفظ می‌شوند.">باقی‌ها حاضر</button>

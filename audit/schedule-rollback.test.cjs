@@ -52,6 +52,7 @@ function fixture(sessionSchedule = false) {
     busy: 0,
     writeFailureGeneration: 0,
     assertEntityWritable() {},
+    assertMasterConfigEditable() {},
     assertSessionEditable: () => {
       c.assertEntityWritable();
       return "isolated-edit-lease";
