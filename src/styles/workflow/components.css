@@ -17,12 +17,12 @@ body {
   line-height: 1.65;
 }
 #app :is(input, select, textarea),
-#modalBody :is(input, select, textarea) {
+:is(#modalBody, .qb-body) :is(input, select, textarea) {
   border-color: var(--workflow-line);
   border-radius: 12px;
 }
 #app :is(button, summary):focus-visible,
-#modal :is(button, summary):focus-visible {
+:is(#modal, .qb-dialog, .qb-confirm) :is(button, summary):focus-visible {
   outline: 3px solid var(--theme-focus, #b77708);
   outline-offset: 3px;
 }

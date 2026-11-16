@@ -32,7 +32,7 @@
     background: var(--theme-nav);
   }
   #app button.ghost,
-  #modalBody button.ghost {
+  :is(#modalBody, .qb-body) button.ghost {
     background: var(--theme-surface-muted);
     color: var(--theme-ink);
     border-color: var(--workflow-line);
@@ -44,7 +44,7 @@
     box-shadow: inset 0 -3px var(--theme-highlight);
   }
   #app :is(input, select, textarea):focus,
-  #modalBody :is(input, select, textarea):focus {
+  :is(#modalBody, .qb-body) :is(input, select, textarea):focus {
     outline: none;
     outline-offset: 0;
     border-color: var(--field-focus-line);
@@ -146,7 +146,7 @@
     overflow-wrap: anywhere;
   }
   #app .workspace-bar > #singleFileBadge:not([hidden]),
-  #modalBody #singleFileStatus.single-file-notice {
+  :is(#modalBody, .qb-body) #singleFileStatus.single-file-notice {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -158,7 +158,7 @@
     line-height: 1.9;
   }
   #app #singleFileBadge > .single-file-permission-action,
-  #modalBody #singleFileStatus > .single-file-permission-action {
+  :is(#modalBody, .qb-body) #singleFileStatus > .single-file-permission-action {
     flex-shrink: 0;
     min-width: 0;
     min-height: 44px;
@@ -175,7 +175,9 @@
     box-shadow: none;
   }
   #app #singleFileBadge > .single-file-permission-action:focus-visible,
-  #modalBody #singleFileStatus > .single-file-permission-action:focus-visible {
+  :is(#modalBody, .qb-body)
+    #singleFileStatus
+    > .single-file-permission-action:focus-visible {
     outline: 2px solid var(--status-warning);
     outline-offset: 2px;
   }
@@ -747,18 +749,18 @@
     border: 1px solid var(--workflow-line);
     overflow: hidden;
   }
-  #modal .modal-header {
+  :is(#modal, .qb-dialog) .modal-header {
     background: var(--theme-surface-subtle);
     border-bottom: 1px solid var(--workflow-line);
     padding: 12px 18px;
     gap: 12px;
   }
-  #modal .modal-header h3 {
+  :is(#modal, .qb-dialog) .modal-header h3 {
     font-size: 16px;
     line-height: 1.8;
     overflow-wrap: anywhere;
   }
-  #modalClose {
+  :is(#modalClose, .qb-close) {
     flex-shrink: 0;
     width: 44px;
     min-height: 44px;
@@ -766,23 +768,23 @@
     background: var(--theme-line-soft);
     color: var(--theme-ink);
   }
-  #modal .modal-body {
+  :is(#modal, .qb-dialog) .modal-body {
     overscroll-behavior: contain;
     scroll-padding-block: 16px 100px;
   }
-  #modalBody .record-editor-context {
+  :is(#modalBody, .qb-body) .record-editor-context {
     background: var(--theme-primary-soft);
     border-inline-start: 3px solid var(--brand-orange);
     border-radius: 12px;
     padding: 14px;
   }
-  #modalBody .record-editor > label {
+  :is(#modalBody, .qb-body) .record-editor > label {
     font-size: 14px;
     font-weight: 600;
     color: var(--theme-ink);
     line-height: 1.8;
   }
-  #modalBody .record-editor-actions {
+  :is(#modalBody, .qb-body) .record-editor-actions {
     position: sticky;
     bottom: -1px;
     z-index: 4;
@@ -792,11 +794,11 @@
     margin-bottom: 0;
     box-shadow: 0 -8px 14px #2d344005;
   }
-  #modalBody :is(input, select, textarea)[aria-invalid="true"] {
+  :is(#modalBody, .qb-body) :is(input, select, textarea)[aria-invalid="true"] {
     border: 2px solid var(--status-danger-fill);
     background: var(--status-danger-soft);
   }
-  #modalBody .entity-create-error:not(:empty) {
+  :is(#modalBody, .qb-body) .entity-create-error:not(:empty) {
     border-radius: 10px;
     padding: 10px 12px;
     background: var(--status-danger-soft);
@@ -873,15 +875,15 @@
     font-size: 13px;
     padding-inline: 14px;
   }
-  #modal .modal-body {
+  :is(#modal, .qb-dialog) .modal-body {
     padding: 16px;
   }
-  #modalBody .record-editor-actions {
+  :is(#modalBody, .qb-body) .record-editor-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
   }
-  #modalBody .record-editor-actions > button {
+  :is(#modalBody, .qb-body) .record-editor-actions > button {
     flex: 1 1 110px;
     min-height: 48px;
     white-space: normal;
@@ -914,12 +916,13 @@
     .modal-body {
     padding: 20px;
   }
-  #modalBody :is([data-workspace-submit="save-entity"], #studentEditor) {
+  :is(#modalBody, .qb-body)
+    :is([data-workspace-submit="save-entity"], #studentEditor) {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 18px;
   }
-  #modalBody
+  :is(#modalBody, .qb-body)
     :is([data-workspace-submit="save-entity"], #studentEditor)
     .record-editor-context {
     padding: 14px 16px;
@@ -927,7 +930,7 @@
     border: 1px solid var(--workflow-line);
     border-radius: 12px;
   }
-  #modalBody
+  :is(#modalBody, .qb-body)
     :is([data-workspace-submit="save-entity"], #studentEditor)
     .record-editor-context
     h4 {
@@ -935,27 +938,29 @@
     font-size: 16px;
     overflow-wrap: anywhere;
   }
-  #modalBody
+  :is(#modalBody, .qb-body)
     :is([data-workspace-submit="save-entity"], #studentEditor)
     > label {
     display: grid;
     gap: 8px;
     font-size: 14px;
   }
-  #modalBody :is([data-workspace-submit="save-entity"], #studentEditor) input {
+  :is(#modalBody, .qb-body)
+    :is([data-workspace-submit="save-entity"], #studentEditor)
+    input {
     width: 100%;
     min-height: 48px;
     border-radius: 10px;
   }
-  #modalBody #entityEditHint {
+  :is(#modalBody, .qb-body) #entityEditHint {
     margin: 0;
     font-size: 12px;
     line-height: 1.9;
   }
-  #modalBody #entityEditError:empty {
+  :is(#modalBody, .qb-body) #entityEditError:empty {
     display: none;
   }
-  #modalBody
+  :is(#modalBody, .qb-body)
     :is([data-workspace-submit="save-entity"], #studentEditor)
     .record-editor-actions {
     position: static;
@@ -966,7 +971,7 @@
     padding: 16px 0 0;
     box-shadow: none;
   }
-  #modalBody
+  :is(#modalBody, .qb-body)
     :is([data-workspace-submit="save-entity"], #studentEditor)
     .record-editor-actions
     button {
@@ -1008,26 +1013,29 @@
     padding: 16px;
     scroll-padding-block: 12px;
   }
-  #modalBody :is([data-workspace-submit="save-entity"], #studentEditor) {
+  :is(#modalBody, .qb-body)
+    :is([data-workspace-submit="save-entity"], #studentEditor) {
     gap: 14px;
   }
-  #modalBody
+  :is(#modalBody, .qb-body)
     :is([data-workspace-submit="save-entity"], #studentEditor)
     .record-editor-context {
     padding: 12px;
   }
-  #modalBody :is([data-workspace-submit="save-entity"], #studentEditor) input {
+  :is(#modalBody, .qb-body)
+    :is([data-workspace-submit="save-entity"], #studentEditor)
+    input {
     font-size: 16px;
     scroll-margin-block: 12px;
   }
-  #modalBody
+  :is(#modalBody, .qb-body)
     :is([data-workspace-submit="save-entity"], #studentEditor)
     .record-editor-actions {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 8px;
     padding-top: 12px;
   }
-  #modalBody
+  :is(#modalBody, .qb-body)
     :is([data-workspace-submit="save-entity"], #studentEditor)
     .record-editor-actions
     button {
@@ -1158,20 +1166,20 @@
   #modal:has(#courseError) .modal-body {
     min-height: 0;
   }
-  #modalBody:has(#courseError) .record-editor-context {
+  :is(#modalBody, .qb-body):has(#courseError) .record-editor-context {
     background: var(--theme-surface-muted);
     border: 1px solid var(--workflow-line);
     border-radius: 12px;
   }
-  #modalBody:has(#courseError) .course-grid {
+  :is(#modalBody, .qb-body):has(#courseError) .course-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
   }
-  #modalBody:has(#courseError) .course-field {
+  :is(#modalBody, .qb-body):has(#courseError) .course-field {
     min-width: 0;
   }
-  #modalBody:has(#courseError) #courseError:empty {
+  :is(#modalBody, .qb-body):has(#courseError) #courseError:empty {
     display: none;
   }
 }
@@ -1195,16 +1203,16 @@
   #modal:has(#courseError) .modal-body {
     padding: 16px;
   }
-  #modalBody:has(#courseError) .course-grid {
+  :is(#modalBody, .qb-body):has(#courseError) .course-grid {
     grid-template-columns: minmax(0, 1fr);
     gap: 14px;
   }
-  #modalBody:has(#courseError) .record-editor-actions {
+  :is(#modalBody, .qb-body):has(#courseError) .record-editor-actions {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 8px;
   }
-  #modalBody:has(#courseError) .record-editor-actions button {
+  :is(#modalBody, .qb-body):has(#courseError) .record-editor-actions button {
     min-width: 0;
     white-space: normal;
     min-height: 48px;
@@ -1252,26 +1260,32 @@
   #app .roster-results {
     font-size: 13px;
   }
-  #modalBody #studentEditor {
+  :is(#modalBody, .qb-body) #studentEditor {
     gap: 8px;
   }
-  #modalBody #studentEditor > label {
+  :is(#modalBody, .qb-body) #studentEditor > label {
     margin-top: 8px;
   }
-  #modalBody #studentEditor > p:not(.entity-create-error) {
+  :is(#modalBody, .qb-body) #studentEditor > p:not(.entity-create-error) {
     margin: 6px 0;
     font-size: 12px;
     line-height: 1.9;
     color: var(--workflow-muted);
   }
-  #modalBody #studentEditError:empty {
+  :is(#modalBody, .qb-body) #studentEditError:empty {
     display: none;
   }
-  #modalBody #studentEditor .record-editor-actions > button[type="submit"] {
+  :is(#modalBody, .qb-body)
+    #studentEditor
+    .record-editor-actions
+    > button[type="submit"] {
     grid-column: 1;
     grid-row: 1;
   }
-  #modalBody #studentEditor .record-editor-actions > button[type="button"] {
+  :is(#modalBody, .qb-body)
+    #studentEditor
+    .record-editor-actions
+    > button[type="button"] {
     grid-column: 2;
     grid-row: 1;
   }
@@ -2073,11 +2087,11 @@
     padding: 20px;
     background: var(--theme-surface);
   }
-  #modalBody :is(.session-workspace, .session-start-panel) {
+  :is(#modalBody, .qb-body) :is(.session-workspace, .session-start-panel) {
     min-width: 0;
     color: var(--workflow-ink);
   }
-  #modalBody .session-field {
+  :is(#modalBody, .qb-body) .session-field {
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -2088,12 +2102,12 @@
     font-size: 12px;
     line-height: 1.8;
   }
-  #modalBody .session-field > span > small {
+  :is(#modalBody, .qb-body) .session-field > span > small {
     color: var(--theme-muted);
     font-size: inherit;
     font-weight: 400;
   }
-  #modalBody .session-field :is(input, select) {
+  :is(#modalBody, .qb-body) .session-field :is(input, select) {
     width: 100%;
     min-width: 0;
     min-height: 46px;
@@ -2102,20 +2116,22 @@
     background-color: var(--theme-surface);
     font-size: 14px;
   }
-  #modalBody :is(.session-date-grid, .session-setup-grid) .shamsi-display {
+  :is(#modalBody, .qb-body)
+    :is(.session-date-grid, .session-setup-grid)
+    .shamsi-display {
     display: none;
   }
-  #modalBody .session-setup-grid {
+  :is(#modalBody, .qb-body) .session-setup-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 14px;
   }
-  #modalBody .session-setup-help {
+  :is(#modalBody, .qb-body) .session-setup-help {
     margin-block: 14px;
     padding-inline-start: 12px;
     border-inline-start: 2px solid var(--theme-line);
   }
-  #modalBody .session-setup-actions > button {
+  :is(#modalBody, .qb-body) .session-setup-actions > button {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2149,7 +2165,7 @@
     display: grid;
     gap: 6px;
   }
-  #modalBody .session-setup-recent-item {
+  :is(#modalBody, .qb-body) .session-setup-recent-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -2191,7 +2207,7 @@
     flex-shrink: 0;
     color: var(--theme-primary);
   }
-  #modalBody .session-setup-recent-arrow svg {
+  :is(#modalBody, .qb-body) .session-setup-recent-arrow svg {
     width: 18px;
     height: 18px;
     flex-basis: 18px;
@@ -2232,13 +2248,13 @@
     color: var(--theme-primary);
     font-size: 13px;
   }
-  #modalBody .session-date-tools {
+  :is(#modalBody, .qb-body) .session-date-tools {
     margin-top: 8px;
     border: 0;
     border-bottom: 1px solid var(--theme-line-soft);
     border-radius: 0;
   }
-  #modalBody .session-date-tools > summary {
+  :is(#modalBody, .qb-body) .session-date-tools > summary {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -2259,7 +2275,7 @@
   .session-date-tools[open] > summary::after {
     content: "−";
   }
-  #modalBody .session-date-grid {
+  :is(#modalBody, .qb-body) .session-date-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 100px auto;
     align-items: end;
@@ -2267,17 +2283,17 @@
     margin: 0;
     padding: 8px 0 16px;
   }
-  #modalBody .session-date-grid > button {
+  :is(#modalBody, .qb-body) .session-date-grid > button {
     min-height: 46px;
     margin: 0;
   }
-  #modalBody .session-unit-fields {
+  :is(#modalBody, .qb-body) .session-unit-fields {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
     margin: 16px 0;
   }
-  #modalBody .session-mode-picker {
+  :is(#modalBody, .qb-body) .session-mode-picker {
     position: sticky;
     top: -20px;
     z-index: 5;
@@ -2290,7 +2306,7 @@
     background: var(--theme-surface-subtle);
     box-shadow: inset 0 0 0 1px var(--theme-line-soft);
   }
-  #modalBody .session-mode-picker button {
+  :is(#modalBody, .qb-body) .session-mode-picker button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -2306,7 +2322,7 @@
     font-size: 14px;
     font-weight: 500;
   }
-  #modalBody .session-mode-picker [aria-pressed="true"] {
+  :is(#modalBody, .qb-body) .session-mode-picker [aria-pressed="true"] {
     border-color: var(--theme-primary-line);
     background: var(--theme-surface);
     color: var(--theme-primary);
@@ -2321,13 +2337,13 @@
     margin-bottom: 8px;
   }
   .session-attendance-heading h4,
-  #modalBody [data-session-panel="activity"] > h4,
+  :is(#modalBody, .qb-body) [data-session-panel="activity"] > h4,
   .session-activity-records > h4 {
     margin: 0;
     font-size: 15px;
   }
   .session-attendance-heading p,
-  #modalBody [data-session-panel="activity"] > p {
+  :is(#modalBody, .qb-body) [data-session-panel="activity"] > p {
     margin: 5px 0 0;
     color: var(--workflow-muted);
     font-size: 12px;
@@ -2346,8 +2362,11 @@
     background: var(--theme-surface-subtle);
     box-shadow: inset 0 0 0 1px var(--theme-line);
   }
-  #modalBody .session-attendance-bulk button,
-  #modalBody .session-workspace .session-attendance-bulk button.ui-button {
+  :is(#modalBody, .qb-body) .session-attendance-bulk button,
+  :is(#modalBody, .qb-body)
+    .session-workspace
+    .session-attendance-bulk
+    button.ui-button {
     --button-ink: var(--theme-muted);
     --button-fill: var(--theme-surface);
     --button-soft: var(--theme-surface);
@@ -2370,13 +2389,13 @@
     white-space: normal;
     overflow-wrap: anywhere;
   }
-  #modalBody .session-attendance-bulk .control-icon,
-  #modalBody .session-attendance-bulk .control-icon > svg {
+  :is(#modalBody, .qb-body) .session-attendance-bulk .control-icon,
+  :is(#modalBody, .qb-body) .session-attendance-bulk .control-icon > svg {
     width: 16px;
     height: 16px;
     flex-basis: 16px;
   }
-  #modalBody
+  :is(#modalBody, .qb-body)
     .session-workspace
     .session-attendance-bulk
     button:is(.success, [data-legacy-click="sessions-dialog:all-present"]) {
@@ -2384,19 +2403,22 @@
     --button-line: var(--status-success-line);
     --button-hover: var(--status-success-soft);
   }
-  #modalBody .session-workspace .session-attendance-bulk button.danger {
+  :is(#modalBody, .qb-body)
+    .session-workspace
+    .session-attendance-bulk
+    button.danger {
     --button-ink: var(--status-danger);
     --button-line: var(--status-danger-line);
     --button-hover: var(--status-danger-soft);
   }
-  #modalBody
+  :is(#modalBody, .qb-body)
     .session-workspace
     .session-attendance-bulk
     button.ui-button:not(:disabled):hover {
     background: var(--button-hover) !important;
     border-color: var(--button-line) !important;
   }
-  #modalBody .session-attendance-list {
+  :is(#modalBody, .qb-body) .session-attendance-list {
     display: grid;
     min-width: 0;
     width: 100%;
@@ -2406,7 +2428,7 @@
     border-radius: 0;
     background: transparent;
   }
-  #modalBody .session-workspace .att-row {
+  :is(#modalBody, .qb-body) .session-workspace .att-row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 320px);
     min-width: 0;
@@ -2421,14 +2443,17 @@
     background: transparent;
     box-shadow: none;
   }
-  #modalBody .session-workspace .att-name {
+  :is(#modalBody, .qb-body) .session-workspace .att-name {
     display: flex;
     align-items: center;
     gap: 10px;
     min-width: 0;
     font-size: 14px;
   }
-  #modalBody .session-attendance-list .att-name > span:last-child {
+  :is(#modalBody, .qb-body)
+    .session-attendance-list
+    .att-name
+    > span:last-child {
     min-width: 0;
     font-weight: 600;
     line-height: 1.9;
@@ -2448,7 +2473,7 @@
     font-size: 12px;
     font-variant-numeric: tabular-nums;
   }
-  #modalBody .session-workspace .att-btns {
+  :is(#modalBody, .qb-body) .session-workspace .att-btns {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     min-width: 0;
@@ -2459,7 +2484,7 @@
     background: var(--theme-surface-subtle);
     box-shadow: inset 0 0 0 1px var(--theme-line-soft);
   }
-  #modalBody .session-workspace .att-btns button {
+  :is(#modalBody, .qb-body) .session-workspace .att-btns button {
     min-width: 0;
     width: 100%;
     min-height: 48px;
@@ -2476,39 +2501,42 @@
     overflow-wrap: anywhere;
     font-variant-numeric: tabular-nums;
   }
-  #modalBody .session-workspace .att-btns .present.active {
+  :is(#modalBody, .qb-body) .session-workspace .att-btns .present.active {
     background: var(--status-success-soft);
     color: var(--status-success);
     border-color: var(--status-success-line);
   }
-  #modalBody .session-workspace .att-btns .absent.active {
+  :is(#modalBody, .qb-body) .session-workspace .att-btns .absent.active {
     background: var(--status-danger-soft);
     color: var(--status-danger);
     border-color: var(--status-danger-line);
   }
-  #modalBody .session-workspace .att-btns .late.active {
+  :is(#modalBody, .qb-body) .session-workspace .att-btns .late.active {
     background: var(--status-warning-soft);
     color: var(--status-warning);
     border-color: var(--status-warning-line);
   }
-  #modalBody .session-workspace .att-btns .leave.active {
+  :is(#modalBody, .qb-body) .session-workspace .att-btns .leave.active {
     background: var(--status-leave-soft);
     color: var(--status-leave);
     border-color: var(--status-leave-line);
   }
-  #modalBody .session-workspace .att-btns button:not(.active):hover {
+  :is(#modalBody, .qb-body)
+    .session-workspace
+    .att-btns
+    button:not(.active):hover {
     background: var(--theme-surface-subtle);
     border-color: var(--theme-line);
   }
-  #modalBody .session-workspace .att-btns .active {
+  :is(#modalBody, .qb-body) .session-workspace .att-btns .active {
     font-weight: 600;
     box-shadow: inset 0 -2px 0 currentColor;
   }
-  #modalBody .session-workspace button:focus-visible {
+  :is(#modalBody, .qb-body) .session-workspace button:focus-visible {
     outline: 2px solid var(--theme-focus);
     outline-offset: 2px;
   }
-  #modalBody .session-entry-form {
+  :is(#modalBody, .qb-body) .session-entry-form {
     display: grid;
     grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
     gap: 14px;
@@ -2518,17 +2546,17 @@
     border-radius: 14px;
     background: var(--theme-surface);
   }
-  #modalBody
+  :is(#modalBody, .qb-body)
     .session-entry-form
     > :is(.session-field-wide, .session-entry-actions) {
     grid-column: 1 / -1;
   }
-  #modalBody .session-entry-actions {
+  :is(#modalBody, .qb-body) .session-entry-actions {
     display: flex;
     gap: 8px;
     min-width: 0;
   }
-  #modalBody .session-entry-actions > button {
+  :is(#modalBody, .qb-body) .session-entry-actions > button {
     flex: 1;
     min-width: 0;
     padding-inline: 8px;
@@ -2541,20 +2569,20 @@
   .session-activity-records > h4 {
     margin-bottom: 12px;
   }
-  #modalBody .session-score-table {
+  :is(#modalBody, .qb-body) .session-score-table {
     width: 100%;
     table-layout: fixed;
   }
-  #modalBody .session-score-table :is(th, td) {
+  :is(#modalBody, .qb-body) .session-score-table :is(th, td) {
     padding: 10px;
     font-size: 12px;
     overflow-wrap: anywhere;
   }
-  #modalBody .session-score-table button {
+  :is(#modalBody, .qb-body) .session-score-table button {
     min-width: 44px;
     min-height: 44px;
   }
-  #modalBody .session-workspace-footer {
+  :is(#modalBody, .qb-body) .session-workspace-footer {
     position: sticky;
     bottom: -20px;
     z-index: 4;
@@ -2566,7 +2594,7 @@
     border-top: 1px solid var(--theme-line-soft);
     background: var(--theme-surface);
   }
-  #modalBody .session-workspace-footer button {
+  :is(#modalBody, .qb-body) .session-workspace-footer button {
     min-width: 0;
     min-height: 46px;
     margin: 0;
@@ -2574,7 +2602,7 @@
     border-radius: 11px;
     font-size: 13px;
   }
-  #modalBody .session-workspace-footer .success {
+  :is(#modalBody, .qb-body) .session-workspace-footer .success {
     border: 1px solid var(--status-success-line);
     background: var(--status-success-soft);
     color: var(--status-success);
@@ -2615,21 +2643,21 @@
   .session-context h4 {
     font-size: 16px;
   }
-  #modalBody .session-mode-picker {
+  :is(#modalBody, .qb-body) .session-mode-picker {
     top: -14px;
     margin-block: 14px 18px;
   }
-  #modalBody .session-mode-picker button {
+  :is(#modalBody, .qb-body) .session-mode-picker button {
     font-size: 13px;
   }
-  #modalBody .session-field :is(input, select) {
+  :is(#modalBody, .qb-body) .session-field :is(input, select) {
     font-size: 16px;
   }
-  #modalBody .session-date-grid {
+  :is(#modalBody, .qb-body) .session-date-grid {
     grid-template-columns: minmax(0, 1fr) 90px;
     gap: 10px;
   }
-  #modalBody .session-date-grid > button {
+  :is(#modalBody, .qb-body) .session-date-grid > button {
     grid-column: 1 / -1;
   }
   .session-attendance-heading {
@@ -2637,63 +2665,66 @@
     align-items: stretch;
     gap: 10px;
   }
-  #modalBody .session-attendance-bulk button,
-  #modalBody .session-workspace .session-attendance-bulk button.ui-button {
+  :is(#modalBody, .qb-body) .session-attendance-bulk button,
+  :is(#modalBody, .qb-body)
+    .session-workspace
+    .session-attendance-bulk
+    button.ui-button {
     padding-inline: 4px;
     font-size: 11px;
   }
-  #modalBody .session-workspace .att-row {
+  :is(#modalBody, .qb-body) .session-workspace .att-row {
     grid-template-columns: minmax(0, 1fr);
     gap: 10px;
     padding: 14px 0;
   }
-  #modalBody .session-workspace .att-btns button {
+  :is(#modalBody, .qb-body) .session-workspace .att-btns button {
     min-width: 0;
     padding: 4px 2px;
     font-size: 11px;
     white-space: normal;
   }
-  #modalBody .session-entry-form {
+  :is(#modalBody, .qb-body) .session-entry-form {
     padding: 12px;
     gap: 12px 10px;
   }
-  #modalBody .session-workspace-footer {
+  :is(#modalBody, .qb-body) .session-workspace-footer {
     bottom: -14px;
   }
-  #modalBody .session-workspace-footer button {
+  :is(#modalBody, .qb-body) .session-workspace-footer button {
     padding-inline: 12px;
   }
 }
 @media screen and (max-width: 480px) {
-  #modalBody .session-entry-form {
+  :is(#modalBody, .qb-body) .session-entry-form {
     grid-template-columns: minmax(0, 1fr);
   }
 }
 @media screen and (max-width: 360px) {
-  #modalBody .session-unit-fields {
+  :is(#modalBody, .qb-body) .session-unit-fields {
     grid-template-columns: minmax(0, 1fr);
   }
 }
 /* The daily session editor prioritizes scanning names and selecting a clear status. */
 @media screen {
-  #modalBody .session-workspace .session-context {
+  :is(#modalBody, .qb-body) .session-workspace .session-context {
     gap: 10px;
     padding: 12px;
     border: 1px solid var(--theme-line);
     border-radius: 12px;
     background: var(--theme-surface-subtle);
   }
-  #modalBody .session-workspace .session-context h4 {
+  :is(#modalBody, .qb-body) .session-workspace .session-context h4 {
     margin: 2px 0 4px;
     font-size: 16px;
   }
-  #modalBody .session-workspace .session-context-meta {
+  :is(#modalBody, .qb-body) .session-workspace .session-context-meta {
     font-size: 12px;
   }
-  #modalBody .session-workspace .session-date-tools {
+  :is(#modalBody, .qb-body) .session-workspace .session-date-tools {
     margin-top: 4px;
   }
-  #modalBody .session-workspace .session-mode-picker {
+  :is(#modalBody, .qb-body) .session-workspace .session-mode-picker {
     gap: 3px;
     margin-block: 12px;
     padding: 3px;
@@ -2702,7 +2733,7 @@
     background: var(--theme-secondary-soft);
     box-shadow: none;
   }
-  #modalBody .session-workspace .session-mode-picker > button {
+  :is(#modalBody, .qb-body) .session-workspace .session-mode-picker > button {
     min-height: 44px;
     border: 0;
     border-radius: 8px;
@@ -2710,12 +2741,15 @@
     font-size: 12px;
     font-weight: 500;
   }
-  #modalBody .session-workspace .session-mode-picker > [aria-pressed="true"] {
+  :is(#modalBody, .qb-body)
+    .session-workspace
+    .session-mode-picker
+    > [aria-pressed="true"] {
     background: var(--theme-primary);
     color: var(--theme-surface);
     box-shadow: none;
   }
-  #modalBody .session-workspace [data-session-attendance-meter] {
+  :is(#modalBody, .qb-body) .session-workspace [data-session-attendance-meter] {
     display: block;
     width: 100%;
     height: 5px;
@@ -2727,40 +2761,42 @@
     background: var(--theme-line-soft);
     accent-color: var(--status-success-fill);
   }
-  #modalBody .session-workspace progress::-webkit-progress-bar {
+  :is(#modalBody, .qb-body) .session-workspace progress::-webkit-progress-bar {
     background: var(--theme-line-soft);
   }
-  #modalBody .session-workspace progress::-webkit-progress-value {
+  :is(#modalBody, .qb-body)
+    .session-workspace
+    progress::-webkit-progress-value {
     background: var(--status-success-fill);
   }
-  #modalBody .session-workspace progress::-moz-progress-bar {
+  :is(#modalBody, .qb-body) .session-workspace progress::-moz-progress-bar {
     background: var(--status-success-fill);
   }
-  #modalBody .session-attendance-search {
+  :is(#modalBody, .qb-body) .session-attendance-search {
     display: grid;
     gap: 5px;
     margin: 12px 0;
     color: var(--theme-muted);
     font-size: 12px;
   }
-  #modalBody .session-attendance-reuse {
+  :is(#modalBody, .qb-body) .session-attendance-reuse {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     gap: 6px 12px;
     margin-block: 12px;
   }
-  #modalBody .session-attendance-reuse button {
+  :is(#modalBody, .qb-body) .session-attendance-reuse button {
     min-height: 44px;
     margin: 0;
     font-size: 12px;
   }
-  #modalBody .session-attendance-reuse small {
+  :is(#modalBody, .qb-body) .session-attendance-reuse small {
     color: var(--theme-muted);
     font-size: 11px;
     line-height: 1.8;
   }
-  #modalBody .session-attendance-search input {
+  :is(#modalBody, .qb-body) .session-attendance-search input {
     width: 100%;
     min-width: 0;
     min-height: 44px;
@@ -2768,53 +2804,53 @@
     border-radius: 10px;
     font-size: 16px;
   }
-  #modalBody .session-workspace .session-attendance-list {
+  :is(#modalBody, .qb-body) .session-workspace .session-attendance-list {
     gap: 8px;
   }
-  #modalBody .session-workspace .att-row {
+  :is(#modalBody, .qb-body) .session-workspace .att-row {
     padding: 10px;
     border: 1px solid var(--theme-line);
     border-radius: 12px;
     background: var(--theme-surface-subtle);
   }
-  #modalBody .session-workspace .att-row[hidden],
-  #modalBody .session-attendance-no-results[hidden] {
+  :is(#modalBody, .qb-body) .session-workspace .att-row[hidden],
+  :is(#modalBody, .qb-body) .session-attendance-no-results[hidden] {
     display: none !important;
   }
-  #modalBody .session-workspace .att-name {
+  :is(#modalBody, .qb-body) .session-workspace .att-name {
     gap: 8px;
     font-size: 13px;
   }
-  #modalBody .session-workspace .att-btns {
+  :is(#modalBody, .qb-body) .session-workspace .att-btns {
     padding: 0;
     gap: 4px;
     box-shadow: none;
   }
-  #modalBody .session-workspace .att-btns .present {
+  :is(#modalBody, .qb-body) .session-workspace .att-btns .present {
     color: var(--status-success);
   }
-  #modalBody .session-workspace .att-btns .absent {
+  :is(#modalBody, .qb-body) .session-workspace .att-btns .absent {
     color: var(--status-danger);
   }
-  #modalBody .session-workspace .att-btns .late {
+  :is(#modalBody, .qb-body) .session-workspace .att-btns .late {
     color: var(--theme-secondary);
   }
-  #modalBody .session-workspace .att-btns .leave {
+  :is(#modalBody, .qb-body) .session-workspace .att-btns .leave {
     color: var(--status-leave);
   }
-  #modalBody .session-workspace .att-btns .present.active {
+  :is(#modalBody, .qb-body) .session-workspace .att-btns .present.active {
     background: var(--status-success-fill);
   }
-  #modalBody .session-workspace .att-btns .absent.active {
+  :is(#modalBody, .qb-body) .session-workspace .att-btns .absent.active {
     background: var(--status-danger-fill);
   }
-  #modalBody .session-workspace .att-btns .late.active {
+  :is(#modalBody, .qb-body) .session-workspace .att-btns .late.active {
     background: var(--theme-secondary);
   }
-  #modalBody .session-workspace .att-btns .leave.active {
+  :is(#modalBody, .qb-body) .session-workspace .att-btns .leave.active {
     background: var(--status-leave-fill);
   }
-  #modalBody
+  :is(#modalBody, .qb-body)
     .session-workspace
     .att-btns
     :is(.present, .absent, .late, .leave).active {
@@ -2822,13 +2858,13 @@
     border-color: transparent;
     box-shadow: none;
   }
-  #modalBody .session-workspace .session-entry-form {
+  :is(#modalBody, .qb-body) .session-workspace .session-entry-form {
     margin-block: 12px 20px;
     border-color: var(--theme-line);
     border-radius: 12px;
     background: var(--theme-surface);
   }
-  #modalBody
+  :is(#modalBody, .qb-body)
     .session-workspace
     .session-entry-form
     .session-field
@@ -3057,21 +3093,21 @@
   #modal:has(.settings-editor) .modal-dialog {
     width: min(100%, 480px);
   }
-  #modalBody .settings-editor {
+  :is(#modalBody, .qb-body) .settings-editor {
     gap: 18px;
   }
-  #modalBody .settings-context {
+  :is(#modalBody, .qb-body) .settings-context {
     position: relative;
     padding: 18px;
     border: 1px solid var(--theme-line);
     border-radius: 14px;
     background: var(--theme-surface-subtle);
   }
-  #modalBody .settings-context h4 {
+  :is(#modalBody, .qb-body) .settings-context h4 {
     margin: 6px 0;
     font-size: 21px;
   }
-  #modalBody .settings-context p {
+  :is(#modalBody, .qb-body) .settings-context p {
     margin: 0;
     color: var(--theme-muted);
     font-size: 12px;
@@ -3102,33 +3138,36 @@
     background: var(--status-success-soft);
     color: var(--status-success);
   }
-  #modalBody .settings-section {
+  :is(#modalBody, .qb-body) .settings-section {
     padding: 0;
     border: 0;
     background: transparent;
   }
-  #modalBody .settings-section h5 {
+  :is(#modalBody, .qb-body) .settings-section h5 {
     margin: 0 0 6px;
     font-size: 14px;
   }
-  #modalBody .settings-section > p {
+  :is(#modalBody, .qb-body) .settings-section > p {
     margin: 0 0 16px;
     font-size: 12px;
     line-height: 1.9;
     color: var(--theme-muted);
   }
-  #modalBody .settings-section .course-field {
+  :is(#modalBody, .qb-body) .settings-section .course-field {
     gap: 8px;
     font-size: 12px;
   }
-  #modalBody .settings-section input {
+  :is(#modalBody, .qb-body) .settings-section input {
     height: 44px;
     min-height: 44px;
-    border-radius: 10px;
     font-size: 14px;
     background: var(--theme-surface);
   }
-  #modalBody .settings-section .settings-field-hint {
+  :is(#modalBody, .qb-body) .settings-section input,
+  :is(#modalBody, .qb-body) .qb-form :is(input, select, textarea) {
+    border-radius: 10px;
+  }
+  :is(#modalBody, .qb-body) .settings-section .settings-field-hint {
     margin: 8px 0 0;
     font-size: 11px;
   }
@@ -3138,7 +3177,7 @@
     border-radius: 12px;
     background: var(--theme-surface-subtle);
   }
-  #modalBody .settings-remove-option {
+  :is(#modalBody, .qb-body) .settings-remove-option {
     display: flex;
     align-items: flex-start;
     gap: 10px;
@@ -3146,7 +3185,7 @@
     font-size: 13px;
     cursor: pointer;
   }
-  #modalBody .settings-remove-option input {
+  :is(#modalBody, .qb-body) .settings-remove-option input {
     width: 18px;
     height: 18px;
     min-height: 18px;
@@ -3162,19 +3201,19 @@
     line-height: 1.9;
     font-weight: 400;
   }
-  #modalBody .settings-privacy-note {
+  :is(#modalBody, .qb-body) .settings-privacy-note {
     margin: 0;
     font-size: 11px;
     line-height: 1.9;
     color: var(--theme-muted);
   }
-  #modalBody .settings-editor .record-editor-actions {
+  :is(#modalBody, .qb-body) .settings-editor .record-editor-actions {
     display: flex;
     gap: 8px;
     padding-top: 16px;
     border-top: 1px solid var(--theme-surface-muted);
   }
-  #modalBody .settings-editor .record-editor-actions button {
+  :is(#modalBody, .qb-body) .settings-editor .record-editor-actions button {
     flex: 0 0 auto;
     min-width: 0;
     min-height: 44px;
@@ -3183,7 +3222,10 @@
     font-size: 13px;
     white-space: nowrap;
   }
-  #modalBody .settings-editor .record-editor-actions button[type="submit"] {
+  :is(#modalBody, .qb-body)
+    .settings-editor
+    .record-editor-actions
+    button[type="submit"] {
     flex: 1;
     background: var(--theme-primary);
     color: var(--theme-surface);
@@ -3758,12 +3800,14 @@
     padding: 18px;
     background: var(--theme-surface-subtle);
   }
-  #modalBody :is(.period-hub, .frozen-report) {
+  :is(#modalBody, .qb-body) :is(.period-hub, .frozen-report) {
     display: grid;
     gap: 12px;
     min-width: 0;
   }
-  #modalBody :is(.period-hub, .period-create, .frozen-report) button {
+  :is(#modalBody, .qb-body)
+    :is(.period-hub, .period-create, .frozen-report)
+    button {
     min-width: 0;
     min-height: 42px;
     padding: 9px 12px;
@@ -3772,18 +3816,18 @@
     font-size: 12px;
     line-height: 1.8;
   }
-  #modalBody .period-hub > section {
+  :is(#modalBody, .qb-body) .period-hub > section {
     min-width: 0;
     padding: 16px;
     border: 1px solid var(--theme-line);
     border-radius: 13px;
     background: var(--theme-surface);
   }
-  #modalBody .period-hub h4 {
+  :is(#modalBody, .qb-body) .period-hub h4 {
     margin: 0 0 12px;
     font-size: 14px;
   }
-  #modalBody .period-intro {
+  :is(#modalBody, .qb-body) .period-intro {
     margin: 0;
     padding: 14px 16px;
     border: 1px solid var(--theme-line);
@@ -3797,14 +3841,14 @@
 
 /* One disclosure surface for the optional year-end record controls. */
 @media screen {
-  #modalBody .academic-year-hub .academic-records {
+  :is(#modalBody, .qb-body) .academic-year-hub .academic-records {
     min-width: 0;
     margin: 0;
     border: 1px solid var(--workflow-line);
     border-radius: 14px;
     background: var(--theme-surface);
   }
-  #modalBody .academic-records > summary {
+  :is(#modalBody, .qb-body) .academic-records > summary {
     display: grid;
     grid-template-columns: 36px minmax(0, 1fr) 28px;
     align-items: center;
@@ -3818,13 +3862,15 @@
     list-style: none;
     text-align: start;
   }
-  #modalBody .academic-records > summary::-webkit-details-marker {
+  :is(#modalBody, .qb-body)
+    .academic-records
+    > summary::-webkit-details-marker {
     display: none;
   }
-  #modalBody .academic-records > summary::marker {
+  :is(#modalBody, .qb-body) .academic-records > summary::marker {
     content: "";
   }
-  #modalBody .academic-records > summary:focus-visible {
+  :is(#modalBody, .qb-body) .academic-records > summary:focus-visible {
     outline: 2px solid var(--workflow-accent);
     outline-offset: -3px;
   }
@@ -3872,10 +3918,10 @@
     height: 18px;
     transition: transform 160ms ease;
   }
-  #modalBody .academic-records[open] {
+  :is(#modalBody, .qb-body) .academic-records[open] {
     border-color: var(--surface-open-line, var(--theme-primary-line));
   }
-  #modalBody .academic-records[open] > summary {
+  :is(#modalBody, .qb-body) .academic-records[open] > summary {
     background: var(--theme-surface-subtle);
     border-end-start-radius: 0;
     border-end-end-radius: 0;
@@ -3883,14 +3929,14 @@
   .academic-records[open] .academic-records-chevron .ui-icon {
     transform: rotate(-90deg);
   }
-  #modalBody .academic-records-body {
+  :is(#modalBody, .qb-body) .academic-records-body {
     display: grid;
     gap: 12px;
     min-width: 0;
     padding: 14px;
     border-top: 1px solid var(--workflow-line);
   }
-  #modalBody .academic-records-body > p {
+  :is(#modalBody, .qb-body) .academic-records-body > p {
     margin: 0;
     padding: 0;
     color: var(--workflow-muted);
@@ -3898,7 +3944,7 @@
     line-height: 1.95;
     overflow-wrap: anywhere;
   }
-  #modalBody .academic-records-body > button {
+  :is(#modalBody, .qb-body) .academic-records-body > button {
     justify-self: start;
     min-height: 44px;
     max-width: 100%;
@@ -3906,12 +3952,12 @@
   }
 }
 @media screen and (hover: hover) and (pointer: fine) {
-  #modalBody .academic-records:not([open]) > summary:hover {
+  :is(#modalBody, .qb-body) .academic-records:not([open]) > summary:hover {
     background: var(--theme-surface-subtle);
   }
 }
 @media screen and (max-width: 480px) {
-  #modalBody .academic-records > summary {
+  :is(#modalBody, .qb-body) .academic-records > summary {
     grid-template-columns: 32px minmax(0, 1fr) 24px;
     gap: 10px;
     padding: 10px 12px;
@@ -3926,10 +3972,10 @@
     width: 24px;
     height: 24px;
   }
-  #modalBody .academic-records-body {
+  :is(#modalBody, .qb-body) .academic-records-body {
     padding: 12px;
   }
-  #modalBody .academic-records-body > button {
+  :is(#modalBody, .qb-body) .academic-records-body > button {
     width: 100%;
     justify-self: stretch;
   }
@@ -3941,39 +3987,39 @@
 }
 
 @media screen {
-  #modalBody .period-list table {
+  :is(#modalBody, .qb-body) .period-list table {
     width: 100%;
     margin: 0;
   }
-  #modalBody .period-list th {
+  :is(#modalBody, .qb-body) .period-list th {
     background: var(--theme-surface-muted);
     color: var(--theme-muted);
     font-size: 11px;
   }
-  #modalBody .period-list td {
+  :is(#modalBody, .qb-body) .period-list td {
     padding: 10px 8px;
     font-size: 12px;
   }
-  #modalBody .period-list :is(th, td) {
+  :is(#modalBody, .qb-body) .period-list :is(th, td) {
     text-align: start;
     vertical-align: middle;
   }
-  #modalBody .period-list table:not([data-ui-layout="cards"]) {
+  :is(#modalBody, .qb-body) .period-list table:not([data-ui-layout="cards"]) {
     table-layout: fixed;
   }
-  #modalBody
+  :is(#modalBody, .qb-body)
     .period-list
     table:not([data-ui-layout="cards"])
     :is(th, td):nth-child(1) {
     width: 32%;
   }
-  #modalBody
+  :is(#modalBody, .qb-body)
     .period-list
     table:not([data-ui-layout="cards"])
     :is(th, td):nth-child(2) {
     width: 18%;
   }
-  #modalBody .period-row-actions {
+  :is(#modalBody, .qb-body) .period-row-actions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: stretch;
@@ -3981,7 +4027,7 @@
     width: 100%;
     min-width: 0;
   }
-  #modalBody .period-row-actions > button {
+  :is(#modalBody, .qb-body) .period-row-actions > button {
     display: inline-flex;
     justify-content: center;
     align-items: center;
@@ -3990,16 +4036,18 @@
     margin: 0;
     box-sizing: border-box;
   }
-  #modalBody .period-row-actions > [data-workspace-action="new-second-period"] {
+  :is(#modalBody, .qb-body)
+    .period-row-actions
+    > [data-workspace-action="new-second-period"] {
     order: 1;
     grid-column: 1 / -1;
   }
-  #modalBody .period-hub button.ghost {
+  :is(#modalBody, .qb-body) .period-hub button.ghost {
     background: var(--theme-surface-subtle);
     border: 1px solid var(--theme-line);
     color: var(--theme-ink);
   }
-  #modalBody .period-list button.period-delete-button {
+  :is(#modalBody, .qb-body) .period-list button.period-delete-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -4015,35 +4063,37 @@
     white-space: nowrap;
     box-shadow: none;
   }
-  #modalBody .period-delete-button > span:first-child {
+  :is(#modalBody, .qb-body) .period-delete-button > span:first-child {
     display: inline-flex;
     flex: 0 0 auto;
   }
-  #modalBody .period-delete-button svg {
+  :is(#modalBody, .qb-body) .period-delete-button svg {
     width: 16px;
     height: 16px;
   }
-  #modalBody .period-list button.period-delete-button:hover {
+  :is(#modalBody, .qb-body) .period-list button.period-delete-button:hover {
     background: var(--status-danger-soft);
     border-color: var(--status-danger-line);
     color: var(--status-danger);
   }
-  #modalBody .period-list button.period-delete-button:focus-visible {
+  :is(#modalBody, .qb-body)
+    .period-list
+    button.period-delete-button:focus-visible {
     outline: 2px solid var(--status-danger);
     outline-offset: 3px;
   }
-  #modalBody .period-actions {
+  :is(#modalBody, .qb-body) .period-actions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
     margin: 0;
   }
-  #modalBody .period-actions > button:first-child {
+  :is(#modalBody, .qb-body) .period-actions > button:first-child {
     grid-column: 1 / -1;
     background: var(--theme-primary);
     color: var(--theme-surface);
   }
-  #modalBody
+  :is(#modalBody, .qb-body)
     .period-actions
     > :is(
       [data-workspace-action="finalize-period"],
@@ -4053,7 +4103,7 @@
     border: 1px solid var(--theme-line);
     color: var(--theme-primary);
   }
-  #modalBody .period-report-row {
+  :is(#modalBody, .qb-body) .period-report-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -4063,17 +4113,17 @@
     padding: 12px 0;
     border-top: 1px solid var(--theme-surface-muted);
   }
-  #modalBody .period-report-row span {
+  :is(#modalBody, .qb-body) .period-report-row span {
     flex: 1;
     min-width: 0;
     font-size: 12px;
     line-height: 1.9;
     color: var(--theme-muted);
   }
-  #modalBody .period-report-row button {
+  :is(#modalBody, .qb-body) .period-report-row button {
     flex: 0 0 auto;
   }
-  #modalBody .period-create {
+  :is(#modalBody, .qb-body) .period-create {
     display: grid;
     gap: 16px;
     padding: 18px;
@@ -4081,14 +4131,14 @@
     border-radius: 13px;
     background: var(--theme-surface);
   }
-  #modalBody .period-create label {
+  :is(#modalBody, .qb-body) .period-create label {
     display: grid;
     gap: 7px;
     margin: 0;
     font-size: 12px;
     color: var(--theme-muted);
   }
-  #modalBody .period-create :is(input, select) {
+  :is(#modalBody, .qb-body) .period-create :is(input, select) {
     width: 100%;
     min-width: 0;
     min-height: 44px;
@@ -4098,45 +4148,45 @@
     background: var(--theme-surface-subtle);
     font-size: 16px;
   }
-  #modalBody .period-create p {
+  :is(#modalBody, .qb-body) .period-create p {
     margin: 0;
     color: var(--theme-muted);
     font-size: 12px;
     line-height: 1.95;
   }
-  #modalBody .period-create > button {
+  :is(#modalBody, .qb-body) .period-create > button {
     background: var(--theme-primary);
     color: var(--theme-surface);
   }
-  #modalBody .frozen-report-heading {
+  :is(#modalBody, .qb-body) .frozen-report-heading {
     padding: 18px;
     border: 1px solid var(--theme-line);
     border-radius: 13px;
     background: var(--theme-surface);
   }
-  #modalBody .frozen-report-heading h2 {
+  :is(#modalBody, .qb-body) .frozen-report-heading h2 {
     margin: 0 0 8px;
     font-size: 20px;
   }
-  #modalBody .frozen-report-heading p {
+  :is(#modalBody, .qb-body) .frozen-report-heading p {
     margin: 0 0 14px;
     color: var(--theme-muted);
     font-size: 12px;
     line-height: 1.9;
   }
-  #modalBody .frozen-report-heading > button {
+  :is(#modalBody, .qb-body) .frozen-report-heading > button {
     background: var(--theme-primary);
     color: var(--theme-surface);
   }
-  #modalBody .frozen-class {
+  :is(#modalBody, .qb-body) .frozen-class {
     min-width: 0;
   }
-  #modalBody .frozen-class > h3 {
+  :is(#modalBody, .qb-body) .frozen-class > h3 {
     margin: 12px 0;
     padding-inline: 4px;
     font-size: 15px;
   }
-  #modalBody .frozen-student {
+  :is(#modalBody, .qb-body) .frozen-student {
     min-width: 0;
     padding: 16px;
     margin-bottom: 12px;
@@ -4144,34 +4194,34 @@
     border-radius: 13px;
     background: var(--theme-surface);
   }
-  #modalBody .frozen-student > h4 {
+  :is(#modalBody, .qb-body) .frozen-student > h4 {
     margin: 0 0 14px;
     font-size: 15px;
   }
-  #modalBody .frozen-student .table-scroll {
+  :is(#modalBody, .qb-body) .frozen-student .table-scroll {
     border: 1px solid var(--theme-line);
     border-radius: 10px;
   }
-  #modalBody .frozen-student table {
+  :is(#modalBody, .qb-body) .frozen-student table {
     width: 100%;
     margin: 0;
   }
-  #modalBody .frozen-student th {
+  :is(#modalBody, .qb-body) .frozen-student th {
     background: var(--theme-surface-muted);
     color: var(--theme-muted);
     font-size: 11px;
   }
-  #modalBody .frozen-student td {
+  :is(#modalBody, .qb-body) .frozen-student td {
     padding: 10px 8px;
     font-size: 12px;
   }
-  #modalBody .frozen-student td small {
+  :is(#modalBody, .qb-body) .frozen-student td small {
     display: block;
     margin-top: 4px;
     color: var(--theme-muted);
     font-size: 10px;
   }
-  #modalBody .frozen-average {
+  :is(#modalBody, .qb-body) .frozen-average {
     display: inline-block;
     margin: 14px 0 0;
     padding: 8px 12px;
@@ -4201,43 +4251,52 @@
   #modal:has(.period-hub, .period-create, .frozen-report) .modal-body {
     padding: 10px;
   }
-  #modalBody .period-hub > section,
-  #modalBody :is(.period-create, .frozen-report-heading, .frozen-student) {
+  :is(#modalBody, .qb-body) .period-hub > section,
+  :is(#modalBody, .qb-body)
+    :is(.period-create, .frozen-report-heading, .frozen-student) {
     padding: 14px 12px;
     border-radius: 11px;
   }
-  #modalBody .period-intro {
+  :is(#modalBody, .qb-body) .period-intro {
     padding: 12px;
     font-size: 11px;
   }
-  #modalBody .period-list table[data-ui-layout="cards"] tbody {
+  :is(#modalBody, .qb-body) .period-list table[data-ui-layout="cards"] tbody {
     gap: 8px;
   }
-  #modalBody .period-list table[data-ui-layout="cards"] tbody tr {
+  :is(#modalBody, .qb-body)
+    .period-list
+    table[data-ui-layout="cards"]
+    tbody
+    tr {
     padding: 12px;
     border-color: var(--theme-line);
     border-radius: 10px;
     box-shadow: none;
   }
-  #modalBody .period-actions {
+  :is(#modalBody, .qb-body) .period-actions {
     grid-template-columns: minmax(0, 1fr);
   }
-  #modalBody .period-hub button {
+  :is(#modalBody, .qb-body) .period-hub button {
     font-size: 11px;
   }
-  #modalBody .period-report-row {
+  :is(#modalBody, .qb-body) .period-report-row {
     gap: 8px;
   }
-  #modalBody .period-report-row span {
+  :is(#modalBody, .qb-body) .period-report-row span {
     font-size: 11px;
   }
-  #modalBody .frozen-report-heading h2 {
+  :is(#modalBody, .qb-body) .frozen-report-heading h2 {
     font-size: 18px;
   }
-  #modalBody .frozen-class > h3 {
+  :is(#modalBody, .qb-body) .frozen-class > h3 {
     font-size: 13px;
   }
-  #modalBody .frozen-student table[data-ui-layout="cards"] tbody tr {
+  :is(#modalBody, .qb-body)
+    .frozen-student
+    table[data-ui-layout="cards"]
+    tbody
+    tr {
     padding: 12px;
     border-color: var(--theme-line);
     border-radius: 10px;
@@ -4274,18 +4333,18 @@
     padding: 18px;
     background: var(--theme-surface-muted);
   }
-  #modalBody .draft-review {
+  :is(#modalBody, .qb-body) .draft-review {
     display: grid;
     gap: 14px;
     min-width: 0;
   }
-  #modalBody .draft-review-heading {
+  :is(#modalBody, .qb-body) .draft-review-heading {
     padding: 16px;
     border: 1px solid var(--status-warning-line);
     border-radius: 12px;
     background: var(--theme-surface-subtle);
   }
-  #modalBody .draft-review-count {
+  :is(#modalBody, .qb-body) .draft-review-count {
     display: inline-block;
     padding: 4px 9px;
     border-radius: 20px;
@@ -4294,44 +4353,44 @@
     font-size: 11px;
     font-weight: 600;
   }
-  #modalBody .draft-review-heading p {
+  :is(#modalBody, .qb-body) .draft-review-heading p {
     margin: 10px 0 0;
     color: var(--theme-muted);
     font-size: 12px;
     line-height: 1.95;
   }
-  #modalBody .draft-review-table {
+  :is(#modalBody, .qb-body) .draft-review-table {
     border: 1px solid var(--theme-line);
     border-radius: 12px;
     background: var(--theme-surface);
   }
-  #modalBody .draft-review-table table {
+  :is(#modalBody, .qb-body) .draft-review-table table {
     width: 100%;
     margin: 0;
     table-layout: fixed;
   }
-  #modalBody .draft-review-table th {
+  :is(#modalBody, .qb-body) .draft-review-table th {
     padding: 12px;
     background: var(--theme-surface-muted);
     color: var(--theme-muted);
     font-size: 12px;
   }
-  #modalBody .draft-review-table th:first-child {
+  :is(#modalBody, .qb-body) .draft-review-table th:first-child {
     width: 50%;
   }
-  #modalBody .draft-review-table td {
+  :is(#modalBody, .qb-body) .draft-review-table td {
     padding: 14px 12px;
     vertical-align: middle;
     font-size: 12px;
     line-height: 1.95;
     overflow-wrap: anywhere;
   }
-  #modalBody
+  :is(#modalBody, .qb-body)
     .draft-review-table
     :is(.draft-review-current, .draft-review-proposed) {
     text-align: center;
   }
-  #modalBody .draft-review-table strong {
+  :is(#modalBody, .qb-body) .draft-review-table strong {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -4345,19 +4404,19 @@
     font-size: 15px;
     font-weight: 600;
   }
-  #modalBody .draft-review-proposed strong {
+  :is(#modalBody, .qb-body) .draft-review-proposed strong {
     border-color: var(--status-success-line);
     background: var(--status-success-soft);
     color: var(--status-success);
   }
-  #modalBody .draft-review-actions {
+  :is(#modalBody, .qb-body) .draft-review-actions {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 8px;
     padding-top: 14px;
     border-top: 1px solid var(--theme-line);
   }
-  #modalBody .draft-review-actions button {
+  :is(#modalBody, .qb-body) .draft-review-actions button {
     min-width: 0;
     min-height: 44px;
     margin: 0;
@@ -4367,12 +4426,12 @@
     line-height: 1.8;
     white-space: normal;
   }
-  #modalBody .draft-review-actions > button:first-child {
+  :is(#modalBody, .qb-body) .draft-review-actions > button:first-child {
     background: var(--theme-primary);
     border: 1px solid var(--theme-primary);
     color: var(--theme-surface);
   }
-  #modalBody .draft-review-actions > button.ghost {
+  :is(#modalBody, .qb-body) .draft-review-actions > button.ghost {
     background: var(--theme-surface-subtle);
     border: 1px solid var(--status-danger-line);
     color: var(--status-danger);
@@ -4396,40 +4455,50 @@
   #modal:has(.draft-review) .modal-body {
     padding: 10px;
   }
-  #modalBody .draft-review-heading {
+  :is(#modalBody, .qb-body) .draft-review-heading {
     padding: 12px;
   }
-  #modalBody .draft-review-heading p {
+  :is(#modalBody, .qb-body) .draft-review-heading p {
     font-size: 11px;
   }
-  #modalBody .draft-review-table table[data-ui-layout="cards"] tbody {
+  :is(#modalBody, .qb-body)
+    .draft-review-table
+    table[data-ui-layout="cards"]
+    tbody {
     gap: 8px;
     padding: 8px;
   }
-  #modalBody .draft-review-table table[data-ui-layout="cards"] tbody tr {
+  :is(#modalBody, .qb-body)
+    .draft-review-table
+    table[data-ui-layout="cards"]
+    tbody
+    tr {
     padding: 12px;
     gap: 10px;
     border-color: var(--theme-line);
     border-radius: 10px;
     box-shadow: none;
   }
-  #modalBody .draft-review-table table[data-ui-layout="cards"] td:first-child {
+  :is(#modalBody, .qb-body)
+    .draft-review-table
+    table[data-ui-layout="cards"]
+    td:first-child {
     font-size: 12px;
   }
-  #modalBody
+  :is(#modalBody, .qb-body)
     .draft-review-table
     table[data-ui-layout="cards"]
     :is(.draft-review-current, .draft-review-proposed) {
     text-align: center !important;
   }
-  #modalBody .draft-review-table strong {
+  :is(#modalBody, .qb-body) .draft-review-table strong {
     width: 100%;
     font-size: 14px;
   }
-  #modalBody .draft-review-actions {
+  :is(#modalBody, .qb-body) .draft-review-actions {
     grid-template-columns: minmax(0, 1fr);
   }
-  #modalBody .draft-review-actions button {
+  :is(#modalBody, .qb-body) .draft-review-actions button {
     font-size: 11px;
   }
 }
@@ -4451,18 +4520,18 @@
     padding: 18px;
     background: var(--theme-surface-subtle);
   }
-  #modalBody .other-drafts {
+  :is(#modalBody, .qb-body) .other-drafts {
     display: grid;
     gap: 14px;
     min-width: 0;
   }
-  #modalBody .other-drafts-heading {
+  :is(#modalBody, .qb-body) .other-drafts-heading {
     padding: 16px;
     border: 1px solid var(--theme-line);
     border-radius: 12px;
     background: var(--theme-primary-soft);
   }
-  #modalBody .other-drafts-heading > span {
+  :is(#modalBody, .qb-body) .other-drafts-heading > span {
     display: inline-block;
     padding: 4px 9px;
     border-radius: 20px;
@@ -4471,17 +4540,17 @@
     font-size: 11px;
     font-weight: 600;
   }
-  #modalBody .other-drafts-heading p {
+  :is(#modalBody, .qb-body) .other-drafts-heading p {
     margin: 10px 0 0;
     color: var(--theme-muted);
     font-size: 12px;
     line-height: 1.95;
   }
-  #modalBody .other-drafts-list {
+  :is(#modalBody, .qb-body) .other-drafts-list {
     display: grid;
     gap: 10px;
   }
-  #modalBody .other-draft-entry {
+  :is(#modalBody, .qb-body) .other-draft-entry {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
@@ -4491,24 +4560,24 @@
     border-radius: 12px;
     background: var(--theme-surface);
   }
-  #modalBody .other-draft-info {
+  :is(#modalBody, .qb-body) .other-draft-info {
     display: grid;
     gap: 8px;
     min-width: 0;
   }
-  #modalBody .other-draft-info strong {
+  :is(#modalBody, .qb-body) .other-draft-info strong {
     font-size: 13px;
     font-weight: 600;
     line-height: 1.8;
   }
-  #modalBody .other-draft-time {
+  :is(#modalBody, .qb-body) .other-draft-time {
     color: var(--theme-muted);
     font-size: 11px;
     line-height: 1.8;
     overflow-wrap: anywhere;
     text-align: start;
   }
-  #modalBody .other-draft-entry > button {
+  :is(#modalBody, .qb-body) .other-draft-entry > button {
     min-width: 0;
     min-height: 42px;
     margin: 0;
@@ -4521,7 +4590,7 @@
     line-height: 1.8;
     white-space: nowrap;
   }
-  #modalBody .other-drafts-empty {
+  :is(#modalBody, .qb-body) .other-drafts-empty {
     padding: 30px 16px;
     border: 1px dashed var(--theme-line);
     border-radius: 12px;
@@ -4550,18 +4619,18 @@
   #modal:has(.other-drafts) .modal-body {
     padding: 10px;
   }
-  #modalBody .other-drafts-heading {
+  :is(#modalBody, .qb-body) .other-drafts-heading {
     padding: 12px;
   }
-  #modalBody .other-drafts-heading p {
+  :is(#modalBody, .qb-body) .other-drafts-heading p {
     font-size: 11px;
   }
-  #modalBody .other-draft-entry {
+  :is(#modalBody, .qb-body) .other-draft-entry {
     grid-template-columns: minmax(0, 1fr);
     padding: 14px 12px;
     gap: 12px;
   }
-  #modalBody .other-draft-entry > button {
+  :is(#modalBody, .qb-body) .other-draft-entry > button {
     width: 100%;
     font-size: 11px;
   }
@@ -4668,17 +4737,17 @@
   #modal:has(.wipe-editor) .modal-dialog {
     width: min(100%, 520px);
   }
-  #modalBody .wipe-editor {
+  :is(#modalBody, .qb-body) .wipe-editor {
     display: grid;
     gap: 18px;
   }
-  #modalBody .wipe-editor p {
+  :is(#modalBody, .qb-body) .wipe-editor p {
     margin: 0;
     font-size: 12px;
     line-height: 1.9;
     color: var(--workflow-muted);
   }
-  #modalBody .wipe-editor h4 {
+  :is(#modalBody, .qb-body) .wipe-editor h4 {
     margin: 0 0 6px;
     font-size: 14px;
     line-height: 1.8;
@@ -4721,7 +4790,7 @@
     border-radius: 14px;
     background: var(--theme-surface-subtle);
   }
-  #modalBody .wipe-export {
+  :is(#modalBody, .qb-body) .wipe-export {
     width: 100%;
     min-height: 44px;
     margin: 12px 0 0;
@@ -4732,18 +4801,18 @@
     display: grid;
     gap: 8px;
   }
-  #modalBody .wipe-confirmation > label {
+  :is(#modalBody, .qb-body) .wipe-confirmation > label {
     margin: 0;
     font-size: 13px;
   }
-  #modalBody #wipeText {
+  :is(#modalBody, .qb-body) #wipeText {
     width: 100%;
     min-height: 44px;
     margin: 0;
     font-size: 14px;
     border-radius: 10px;
   }
-  #modalBody .wipe-backup-check {
+  :is(#modalBody, .qb-body) .wipe-backup-check {
     display: flex;
     align-items: flex-start;
     gap: 9px;
@@ -4754,7 +4823,7 @@
     line-height: 1.9;
     cursor: pointer;
   }
-  #modalBody .wipe-backup-check input {
+  :is(#modalBody, .qb-body) .wipe-backup-check input {
     flex: 0 0 18px;
     width: 18px;
     height: 18px;
@@ -4762,10 +4831,10 @@
     margin: 3px 0 0;
     accent-color: var(--workflow-accent);
   }
-  #modalBody #wipeError:empty {
+  :is(#modalBody, .qb-body) #wipeError:empty {
     display: none;
   }
-  #modalBody .wipe-actions {
+  :is(#modalBody, .qb-body) .wipe-actions {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     gap: 8px;
@@ -4773,33 +4842,35 @@
     border-top: 1px solid var(--workflow-line);
     margin: 0;
   }
-  #modalBody .wipe-actions button {
+  :is(#modalBody, .qb-body) .wipe-actions button {
     min-height: 44px;
     margin: 0;
     font-size: 13px;
     white-space: normal;
   }
-  #modalBody .wipe-actions .danger {
+  :is(#modalBody, .qb-body) .wipe-actions .danger {
     background: var(--workflow-accent);
     color: var(--theme-surface);
     border-color: var(--workflow-accent);
   }
-  #modalBody .wipe-actions .danger:hover {
+  :is(#modalBody, .qb-body) .wipe-actions .danger:hover {
     background: var(--brand-hover);
   }
 }
 @media screen {
-  #modalBody .backup-action-grid > .backup-share-entry {
+  :is(#modalBody, .qb-body) .backup-action-grid > .backup-share-entry {
     grid-column: auto;
     min-height: 44px;
   }
-  #modalBody .backup-action-grid > [data-workspace-action="choose-import"] {
+  :is(#modalBody, .qb-body)
+    .backup-action-grid
+    > [data-workspace-action="choose-import"] {
     grid-column: 1 / -1;
   }
   #modal:has(.backup-share) .modal-dialog {
     width: min(100%, 500px);
   }
-  #modalBody .backup-share {
+  :is(#modalBody, .qb-body) .backup-share {
     display: grid;
     gap: 16px;
   }
@@ -4825,11 +4896,11 @@
     background: var(--theme-surface);
     color: var(--theme-primary);
   }
-  #modalBody .backup-share h4 {
+  :is(#modalBody, .qb-body) .backup-share h4 {
     margin: 0 0 6px;
     font-size: 15px;
   }
-  #modalBody .backup-share p {
+  :is(#modalBody, .qb-body) .backup-share p {
     margin: 0;
     font-size: 12px;
     line-height: 1.9;
@@ -4851,10 +4922,10 @@
     font-size: 12px;
     color: var(--workflow-ink);
   }
-  #modalBody .backup-share-status[data-state="error"] {
+  :is(#modalBody, .qb-body) .backup-share-status[data-state="error"] {
     color: var(--status-danger);
   }
-  #modalBody .backup-share .backup-share-note {
+  :is(#modalBody, .qb-body) .backup-share .backup-share-note {
     padding: 10px 12px;
     border-inline-start: 3px solid var(--theme-primary-line);
     border-radius: 6px;
@@ -4866,19 +4937,19 @@
     grid-template-columns: minmax(0, 1fr);
     gap: 8px;
   }
-  #modalBody .backup-share-actions button {
+  :is(#modalBody, .qb-body) .backup-share-actions button {
     min-height: 44px;
     margin: 0;
     font-size: 13px;
     line-height: 1.8;
     white-space: normal;
   }
-  #modalBody .backup-share-actions button[hidden] {
+  :is(#modalBody, .qb-body) .backup-share-actions button[hidden] {
     display: none;
   }
 }
 @media screen {
-  #modalBody .backup-reset > button {
+  :is(#modalBody, .qb-body) .backup-reset > button {
     width: 100%;
     min-height: 44px;
     margin-top: 12px;
@@ -4887,7 +4958,7 @@
     color: var(--status-danger);
     white-space: normal;
   }
-  #modalBody .backup-reset > button:hover {
+  :is(#modalBody, .qb-body) .backup-reset > button:hover {
     background: var(--status-danger-line);
     border-color: var(--status-danger-line);
   }
@@ -5121,33 +5192,33 @@
   #modal:has(.full-restore) .modal-dialog {
     width: min(100%, 560px);
   }
-  #modalBody .full-restore {
+  :is(#modalBody, .qb-body) .full-restore {
     display: grid;
     gap: 16px;
     min-width: 0;
     line-height: 1.9;
   }
-  #modalBody .full-restore :is(h4, p, dl, dd) {
+  :is(#modalBody, .qb-body) .full-restore :is(h4, p, dl, dd) {
     margin: 0;
   }
-  #modalBody .full-restore :is(h4, dt) {
+  :is(#modalBody, .qb-body) .full-restore :is(h4, dt) {
     font-weight: 700;
   }
-  #modalBody .full-restore-file,
-  #modalBody .full-restore-warning {
+  :is(#modalBody, .qb-body) .full-restore-file,
+  :is(#modalBody, .qb-body) .full-restore-warning {
     padding: 14px;
     border: 1px solid var(--theme-line);
     border-radius: 12px;
     background: var(--theme-surface-subtle);
   }
-  #modalBody .full-restore-periods {
+  :is(#modalBody, .qb-body) .full-restore-periods {
     margin-top: 12px;
     padding-top: 12px;
     border-top: 1px solid var(--theme-line);
     font-size: 13px;
     overflow-wrap: anywhere;
   }
-  #modalBody .full-restore-periods ul {
+  :is(#modalBody, .qb-body) .full-restore-periods ul {
     display: grid;
     gap: 6px;
     max-height: 180px;
@@ -5155,32 +5226,32 @@
     margin: 8px 0 0;
     padding-inline-start: 22px;
   }
-  #modalBody .full-restore-file dl {
+  :is(#modalBody, .qb-body) .full-restore-file dl {
     display: grid;
     gap: 10px;
     margin-top: 12px;
     font-size: 13px;
   }
-  #modalBody .full-restore-file dl > div {
+  :is(#modalBody, .qb-body) .full-restore-file dl > div {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
     gap: 12px;
     overflow-wrap: anywhere;
   }
-  #modalBody .full-restore-warning {
+  :is(#modalBody, .qb-body) .full-restore-warning {
     border-color: var(--status-warning-line);
     background: var(--status-warning-soft);
     color: var(--status-danger);
   }
-  #modalBody .full-restore-warning p {
+  :is(#modalBody, .qb-body) .full-restore-warning p {
     margin-top: 8px;
     font-size: 13px;
   }
-  #modalBody .full-restore-safety {
+  :is(#modalBody, .qb-body) .full-restore-safety {
     color: var(--status-success);
     font-size: 13px;
   }
-  #modalBody .full-restore-confirm {
+  :is(#modalBody, .qb-body) .full-restore-confirm {
     display: flex;
     align-items: flex-start;
     gap: 10px;
@@ -5189,37 +5260,37 @@
     border-radius: 10px;
     cursor: pointer;
   }
-  #modalBody .full-restore-confirm input {
+  :is(#modalBody, .qb-body) .full-restore-confirm input {
     flex: 0 0 auto;
     width: 20px;
     height: 20px;
     margin: 4px 0 0;
   }
-  #modalBody .full-restore-actions {
+  :is(#modalBody, .qb-body) .full-restore-actions {
     display: grid;
     grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
     gap: 10px;
   }
-  #modalBody .full-restore-actions button {
+  :is(#modalBody, .qb-body) .full-restore-actions button {
     min-width: 0;
     min-height: 44px;
     margin: 0;
     white-space: normal;
   }
-  #modalBody .full-restore #operationError {
+  :is(#modalBody, .qb-body) .full-restore #operationError {
     color: var(--status-danger);
     overflow-wrap: anywhere;
   }
-  #modalBody .full-restore #operationError:empty {
+  :is(#modalBody, .qb-body) .full-restore #operationError:empty {
     display: none;
   }
 }
 @media screen and (max-width: 400px) {
-  #modalBody .full-restore-actions,
-  #modalBody .full-restore-file dl > div {
+  :is(#modalBody, .qb-body) .full-restore-actions,
+  :is(#modalBody, .qb-body) .full-restore-file dl > div {
     grid-template-columns: minmax(0, 1fr);
   }
-  #modalBody .full-restore-file dl > div {
+  :is(#modalBody, .qb-body) .full-restore-file dl > div {
     gap: 2px;
   }
 }
@@ -5227,27 +5298,27 @@
   #modal:has(.period-delete) .modal-dialog {
     width: min(100%, 480px);
   }
-  #modalBody .period-delete {
+  :is(#modalBody, .qb-body) .period-delete {
     gap: 12px;
   }
-  #modalBody .period-delete-identity {
+  :is(#modalBody, .qb-body) .period-delete-identity {
     padding-bottom: 12px;
     border-bottom: 1px solid var(--theme-line);
   }
-  #modalBody .period-delete-identity > span {
+  :is(#modalBody, .qb-body) .period-delete-identity > span {
     color: var(--theme-muted);
     font-size: 12px;
   }
-  #modalBody .period-delete-identity h4 {
+  :is(#modalBody, .qb-body) .period-delete-identity h4 {
     margin-top: 4px;
     font-size: 17px;
   }
-  #modalBody .period-delete-stats {
+  :is(#modalBody, .qb-body) .period-delete-stats {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
   }
-  #modalBody .period-delete-stats > div {
+  :is(#modalBody, .qb-body) .period-delete-stats > div {
     display: grid;
     gap: 2px;
     padding: 10px 6px;
@@ -5255,24 +5326,24 @@
     background: var(--theme-surface-subtle);
     text-align: center;
   }
-  #modalBody .period-delete-stats strong {
+  :is(#modalBody, .qb-body) .period-delete-stats strong {
     color: var(--theme-primary);
     font-size: 20px;
   }
-  #modalBody .period-delete-stats span {
+  :is(#modalBody, .qb-body) .period-delete-stats span {
     font-size: 12px;
     color: var(--theme-muted);
   }
-  #modalBody .period-delete-transition {
+  :is(#modalBody, .qb-body) .period-delete-transition {
     color: var(--theme-muted);
     font-size: 13px;
   }
-  #modalBody .period-delete-password {
+  :is(#modalBody, .qb-body) .period-delete-password {
     display: grid;
     gap: 6px;
     font-size: 13px;
   }
-  #modalBody .period-delete-password input {
+  :is(#modalBody, .qb-body) .period-delete-password input {
     box-sizing: border-box;
     width: 100%;
     min-width: 0;
@@ -5284,7 +5355,7 @@
   #modal:has(#periodLabelEditor) .modal-dialog {
     width: min(100%, 480px);
   }
-  #modalBody #periodLabelEditor {
+  :is(#modalBody, .qb-body) #periodLabelEditor {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 12px;
@@ -5377,41 +5448,44 @@
   #modal:has(.undo-preview) .modal-dialog {
     width: min(100%, 460px);
   }
-  #modalBody .undo-preview-summary {
+  :is(#modalBody, .qb-body) .undo-preview-summary {
     padding-bottom: 12px;
     border-bottom: 1px solid var(--theme-surface-muted);
   }
-  #modalBody
+  :is(#modalBody, .qb-body)
     .undo-preview
     :is(.undo-preview-summary, .undo-preview-change)
     > span {
     font-size: 12px;
     color: var(--theme-muted);
   }
-  #modalBody .undo-preview h4 {
+  :is(#modalBody, .qb-body) .undo-preview h4 {
     margin-top: 5px;
     color: var(--theme-primary);
     font-size: 16px;
     overflow-wrap: anywhere;
   }
-  #modalBody .undo-preview-change {
+  :is(#modalBody, .qb-body) .undo-preview-change {
     padding: 14px;
     border: 1px solid var(--theme-line);
     border-radius: 12px;
     background: var(--theme-surface-subtle);
   }
-  #modalBody .undo-preview-change p {
+  :is(#modalBody, .qb-body) .undo-preview-change p {
     margin-top: 8px;
     font-size: 12px;
     color: var(--theme-muted);
   }
-  #modalBody .undo-preview-hint,
-  #modalBody .undo-preview-empty {
+  :is(#modalBody, .qb-body) .undo-preview-hint,
+  :is(#modalBody, .qb-body) .undo-preview-empty {
     color: var(--theme-muted);
     font-size: 13px;
     line-height: 1.9;
   }
-  #modalBody .undo-preview .full-restore-actions button:first-child {
+  :is(#modalBody, .qb-body)
+    .undo-preview
+    .full-restore-actions
+    button:first-child {
     background: var(--theme-primary);
     border: 1px solid var(--theme-primary);
     color: var(--theme-surface);
@@ -5421,7 +5495,7 @@
   #modal:has(.membership-editor) .modal-dialog {
     width: min(100%, 520px);
   }
-  #modalBody .membership-editor {
+  :is(#modalBody, .qb-body) .membership-editor {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 14px;
@@ -6270,7 +6344,7 @@
     font-size: 14px;
   }
   #app .session-create .session-schedule-hint,
-  #modalBody .session-date-tools .session-schedule-hint {
+  :is(#modalBody, .qb-body) .session-date-tools .session-schedule-hint {
     margin: 12px 0 0;
     color: var(--workflow-muted);
     font-size: 12px;

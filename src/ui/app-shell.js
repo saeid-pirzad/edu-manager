@@ -545,6 +545,28 @@
       const strong = bar.querySelector(":scope > strong");
       if (strong && !strong.title) strong.title = strong.textContent;
     }
+    const bankTools =
+      app.querySelector(".workspace-tool-actions .workspace-tool-group") ||
+      app.querySelector(".header-actions");
+    if (bankTools && !bankTools.querySelector(".question-bank-entry")) {
+      const bankButton = document.createElement("button");
+      bankButton.className =
+        "question-bank-entry " +
+        (bankTools.matches(".header-actions")
+          ? "header-action"
+          : "ghost workspace-tool-button");
+      const bankIcon = document.createElement("span");
+      bankIcon.className = "workspace-tool-icon";
+      bankIcon.innerHTML = EduIcons.html("book");
+      const bankLabel = document.createElement("span");
+      bankLabel.className = "workspace-tool-copy";
+      const bankTitle = document.createElement("span");
+      bankTitle.textContent = "بانک سؤال";
+      bankLabel.append(bankTitle);
+      bankButton.append(bankIcon, bankLabel);
+      bankButton.onclick = () => window.EduQuestionBankUI.open();
+      bankTools.append(bankButton);
+    }
     const nav = app.querySelector(".navigation-menu");
     if (nav) {
       const summary = nav.querySelector(":scope > summary");

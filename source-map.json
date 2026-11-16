@@ -340,7 +340,8 @@
         "src/styles/about-dialog.css",
         "src/styles/backup-dialog.css",
         "src/styles/service-bar.css",
-        "src/styles/offline-help.css"
+        "src/styles/offline-help.css",
+        "src/styles/question-bank.css"
       ]
     },
     {
@@ -387,6 +388,15 @@
       "output": "assets/scripts/offline-help.js",
       "scope": "global",
       "sources": ["src/pwa/offline-help.js"]
+    },
+    {
+      "output": "assets/scripts/question-bank.js",
+      "scope": "global",
+      "sources": [
+        "src/features/question-bank/domain.js",
+        "src/features/question-bank/repository.js",
+        "src/features/question-bank/ui.js"
+      ]
     }
   ]
 }

@@ -92,15 +92,15 @@
   #modal .modal-header {
     border-bottom-color: var(--surface-inner-line);
   }
-  #modalBody .backup-hub > :is(section, details) {
+  :is(#modalBody, .qb-body) .backup-hub > :is(section, details) {
     border-color: var(--surface-line);
     border-radius: 14px;
     box-shadow: var(--surface-inner-shadow);
   }
-  #modalBody .backup-hub > details[open] {
+  :is(#modalBody, .qb-body) .backup-hub > details[open] {
     border-color: var(--surface-open-line);
   }
-  #modalBody
+  :is(#modalBody, .qb-body)
     :is(
       .record-editor-context,
       .settings-context,
@@ -133,7 +133,7 @@
     box-shadow: var(--theme-shadow-md);
   }
   #app .create-panel:not([open]):hover,
-  #modalBody .backup-hub > details:not([open]):hover {
+  :is(#modalBody, .qb-body) .backup-hub > details:not([open]):hover {
     border-color: var(--surface-hover-line);
   }
 }
@@ -159,7 +159,7 @@
       .week-slot
     ),
   #modal .modal-dialog,
-  #modalBody .backup-hub > :is(section, details) {
+  :is(#modalBody, .qb-body) .backup-hub > :is(section, details) {
     border-color: CanvasText;
     box-shadow: none;
   }
@@ -178,7 +178,7 @@
       .karnameh-controls
     ),
   #app #lessonGradesArea > .gradebook,
-  #modalBody .gradebook {
+  :is(#modalBody, .qb-body) .gradebook {
     background-color: var(--surface-paper);
   }
   #app
@@ -291,25 +291,26 @@
   }
   #app .create-panel > form,
   #app .create-panel #courseEditor,
-  #modalBody > form {
+  :is(#modalBody, .qb-body) > form {
     background: var(--theme-surface);
   }
-  #modalBody :is(.record-editor-context, .settings-context, .week-config-intro),
-  #modalBody .backup-hub > details,
-  #modalBody .course-policy-section > summary,
+  :is(#modalBody, .qb-body)
+    :is(.record-editor-context, .settings-context, .week-config-intro),
+  :is(#modalBody, .qb-body) .backup-hub > details,
+  :is(#modalBody, .qb-body) .course-policy-section > summary,
   #app .course-policy-section > summary,
   #app .week-settings > summary {
     background-color: var(--form-cream) !important;
   }
-  #modalBody .backup-hub > section,
-  #modalBody .week-config-section,
-  #modalBody #courseEditor {
+  :is(#modalBody, .qb-body) .backup-hub > section,
+  :is(#modalBody, .qb-body) .week-config-section,
+  :is(#modalBody, .qb-body) #courseEditor {
     background-color: var(--theme-surface);
   }
-  #modalBody .session-workspace .att-btns {
+  :is(#modalBody, .qb-body) .session-workspace .att-btns {
     background: var(--theme-surface);
   }
-  :is(#app, #modalBody, #calPopup, #pwaWelcome)
+  :is(#app, :is(#modalBody, .qb-body), #calPopup, #pwaWelcome)
     :is(
       input:not(
           [type="checkbox"],
@@ -329,7 +330,7 @@
     background-color: var(--theme-field);
     border-color: var(--theme-field-line);
   }
-  :is(#app, #modalBody, #pwaWelcome)
+  :is(#app, :is(#modalBody, .qb-body), #pwaWelcome)
     :is(input, textarea)[readonly]:not([data-gregorian-target]) {
     background-color: var(--theme-surface-subtle);
     border-color: var(--theme-line);
@@ -339,7 +340,7 @@
 
 /* One quiet focus treatment for editable fields throughout the application. */
 @media screen {
-  :is(#app, #modalBody, #calPopup, #pwaWelcome)
+  :is(#app, :is(#modalBody, .qb-body), #calPopup, #pwaWelcome)
     :is(
       input:not(
         [type="checkbox"],
@@ -355,7 +356,7 @@
     border-color: var(--field-focus-line) !important;
     box-shadow: 0 0 0 3px var(--field-focus-ring) !important;
   }
-  :is(#app, #modalBody, #calPopup, #pwaWelcome)
+  :is(#app, :is(#modalBody, .qb-body), #calPopup, #pwaWelcome)
     :is(
       input:not(
         [type="checkbox"],
@@ -368,7 +369,7 @@
     )[aria-invalid="true"] {
     border-color: var(--field-error-line) !important;
   }
-  :is(#app, #modalBody, #calPopup, #pwaWelcome)
+  :is(#app, :is(#modalBody, .qb-body), #calPopup, #pwaWelcome)
     :is(
       input:not(
         [type="checkbox"],
@@ -381,7 +382,7 @@
     )[aria-invalid="true"]:focus {
     box-shadow: 0 0 0 3px var(--field-error-ring) !important;
   }
-  :is(#app, #modalBody)
+  :is(#app, :is(#modalBody, .qb-body))
     :is(
       input[type="checkbox"],
       input[type="radio"],
@@ -393,7 +394,7 @@
 }
 @media screen and (forced-colors: active) {
   /* Match both normal and invalid focus specificity before restoring system colors. */
-  :is(#app, #modalBody, #calPopup, #pwaWelcome)
+  :is(#app, :is(#modalBody, .qb-body), #calPopup, #pwaWelcome)
     :is(
       input:not(
         [type="checkbox"],
@@ -404,7 +405,7 @@
       select,
       textarea
     ):focus,
-  :is(#app, #modalBody, #calPopup, #pwaWelcome)
+  :is(#app, :is(#modalBody, .qb-body), #calPopup, #pwaWelcome)
     :is(
       input:not(
         [type="checkbox"],
@@ -415,7 +416,7 @@
       select,
       textarea
     )[aria-invalid="true"]:focus,
-  :is(#app, #modalBody, #calPopup, #pwaWelcome)
+  :is(#app, :is(#modalBody, .qb-body), #calPopup, #pwaWelcome)
     input:is(
       [type="checkbox"],
       [type="radio"],

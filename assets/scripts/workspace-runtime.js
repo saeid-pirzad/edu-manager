@@ -2183,30 +2183,30 @@ session.working)return false;const prepared=session.prepared;let unlock=()=>{};t
 disabled||button.closest("#karnamehExcelPanel")!==session.panel)return false;unlock=lockKarnamehExcel(session);await assertReportSnapshot(prepared.context);assertPreparedKarnamehExcel(
 session,prepared);downloadLocalFile(prepared.blob,prepared.name);karnamehExcelMessage(session,"اکسل برای دریافت به مرورگر تحویل داده شد؛ در پیام‌رسان، پیوست ← ف\
 ایل را انتخاب کنید.","saved");return true}catch(error){if(session.prepared===prepared&&!prepared?.invalid)clearPreparedKarnamehExcel(session,error.
-message||String(error));return false}finally{unlock()}}let printAuthorization=null;function beforeReportPrint(){try{if(!printAuthorization||!document.getElementById(
-"printRoot"))throw Error("برای چاپ معتبر، از دکمه «چاپ / PDF» گزارش استفاده کنید.");if(!fileMode)assertWorkspaceContext(
-printAuthorization);if(busy||drafts.size||draftWritesPending||draftRecoveryFailed)throw Error("ثبت اطلاعات کامل نشده است؛ پس از ذخیره، گزارش را دوباره چاپ کنید.");
-return}catch(error){printAuthorization=null;document.getElementById("printRoot")?.remove();const root=document.createElement("div");root.id="printRoot";root.textContent=
-"چاپ انجام نشد: "+error.message;document.body.append(root)}}function preservePeriodicAppearance(source,copy){const properties=["display","box-sizing",
-"direction","font-family","font-size","font-weight","font-style","line-height","letter-spacing","color","background-color","background-image","text-align","text\
--decoration","white-space","overflow-wrap","word-break","border-top","border-right","border-bottom","border-left","border-radius","padding","margin","gap","row-\
-gap","column-gap","flex-direction","flex-wrap","flex-grow","flex-shrink","flex-basis","align-items","align-content","align-self","justify-content","grid-column",
-"grid-row","list-style","font-variant-numeric"];const originals=[source,...source.querySelectorAll("*")];const clones=[copy,...copy.querySelectorAll("*")];originals.
-forEach((original,index)=>{if(original.closest(".karnameh-student-sheet,.report-session-disclosure"))return;const target=clones[index],style=getComputedStyle(original);
-for(const property of properties)target.style.setProperty(property,style.getPropertyValue(property),"important");if(style.display==="grid"){const columns=style.
-gridTemplateColumns;target.style.setProperty("grid-template-columns",/^\d/.test(columns)&&columns.split(" ").every(value=>/^\d+(\.\d+)?px$/.test(value))?columns.
-split(" ").map(value=>"minmax(0, "+parseFloat(value)+"fr)").join(" "):columns,"important")}target.style.setProperty("print-color-adjust","exact","important");target.
-style.setProperty("-webkit-print-color-adjust","exact","important")});copy.style.setProperty("break-inside","auto","important");copy.style.setProperty("margin",
-"0","important");copy.style.setProperty("padding","0","important");copy.style.setProperty("border","0","important")}function prepareKarnamehPrint(copy){const originalHeader=copy.
-querySelector(".karnameh-report-heading");if(!originalHeader)return;const name=originalHeader.querySelector("h3")?.textContent||"",code=copy.dataset.karnamehCode||
-"—",archived=!!copy.querySelector(".karnameh-archived-tag"),context=[["مدرسه",copy.dataset.karnamehSchool],["کلاس",copy.dataset.karnamehClass],["سال \
-تحصیلی",copy.dataset.karnamehYear]],header=document.createElement("header");header.className="karnameh-print-header";header.innerHTML='<div class="karname\
-h-print-identity"><span class="karnameh-print-kind">کارنامهٔ تحصیلی</span><h2>'+esc(name)+"</h2><p>کد هنرجو: <bdi>"+esc(code)+"</bdi>"+(archived?
-' <span class="karnameh-print-archive">بایگانی</span>':"")+'</p></div><dl class="karnameh-print-context">'+context.filter(([,value])=>value).map(([label,
-value])=>"<div><dt>"+esc(label)+"</dt><dd>"+esc(value)+"</dd></div>").join("")+"</dl>";originalHeader.replaceWith(header);copy.querySelector(".karnameh-student-\
-meta")?.remove()}function preparePrint(button){printAuthorization=null;document.getElementById("printRoot")?.remove();const modal=document.getElementById("modal"),
-isModal=button?button.closest("#modal"):!modal.classList.contains("hidden");let source=isModal?document.getElementById("modalBody"):button?.closest(".report-doc\
-ument,#karnamehTabOutput,#lessonReportTabOutput,#lessonReportOutput,#globalReportOutput,#periodicReportOutput")||button?.closest(".card")||document.getElementById(
+message||String(error));return false}finally{unlock()}}let printAuthorization=null;function beforeReportPrint(){if(document.querySelector(".qb-dialog[open]"))return;
+try{if(!printAuthorization||!document.getElementById("printRoot"))throw Error("برای چاپ معتبر، از دکمه «چاپ / PDF» گزارش استفاده کنید.");
+if(!fileMode)assertWorkspaceContext(printAuthorization);if(busy||drafts.size||draftWritesPending||draftRecoveryFailed)throw Error("ثبت اطلاعات کامل نشده است؛ پس\
+ از ذخیره، گزارش را دوباره چاپ کنید.");return}catch(error){printAuthorization=null;document.getElementById("printRoot")?.remove();const root=document.
+createElement("div");root.id="printRoot";root.textContent="چاپ انجام نشد: "+error.message;document.body.append(root)}}function preservePeriodicAppearance(source,copy){
+const properties=["display","box-sizing","direction","font-family","font-size","font-weight","font-style","line-height","letter-spacing","color","background-col\
+or","background-image","text-align","text-decoration","white-space","overflow-wrap","word-break","border-top","border-right","border-bottom","border-left","bord\
+er-radius","padding","margin","gap","row-gap","column-gap","flex-direction","flex-wrap","flex-grow","flex-shrink","flex-basis","align-items","align-content","al\
+ign-self","justify-content","grid-column","grid-row","list-style","font-variant-numeric"];const originals=[source,...source.querySelectorAll("*")];const clones=[
+copy,...copy.querySelectorAll("*")];originals.forEach((original,index)=>{if(original.closest(".karnameh-student-sheet,.report-session-disclosure"))return;const target=clones[index],
+style=getComputedStyle(original);for(const property of properties)target.style.setProperty(property,style.getPropertyValue(property),"important");if(style.display===
+"grid"){const columns=style.gridTemplateColumns;target.style.setProperty("grid-template-columns",/^\d/.test(columns)&&columns.split(" ").every(value=>/^\d+(\.\d+)?px$/.
+test(value))?columns.split(" ").map(value=>"minmax(0, "+parseFloat(value)+"fr)").join(" "):columns,"important")}target.style.setProperty("print-color-adjust","e\
+xact","important");target.style.setProperty("-webkit-print-color-adjust","exact","important")});copy.style.setProperty("break-inside","auto","important");copy.style.
+setProperty("margin","0","important");copy.style.setProperty("padding","0","important");copy.style.setProperty("border","0","important")}function prepareKarnamehPrint(copy){
+const originalHeader=copy.querySelector(".karnameh-report-heading");if(!originalHeader)return;const name=originalHeader.querySelector("h3")?.textContent||"",code=copy.
+dataset.karnamehCode||"—",archived=!!copy.querySelector(".karnameh-archived-tag"),context=[["مدرسه",copy.dataset.karnamehSchool],["کلاس",copy.dataset.
+karnamehClass],["سال تحصیلی",copy.dataset.karnamehYear]],header=document.createElement("header");header.className="karnameh-print-header";header.innerHTML=
+'<div class="karnameh-print-identity"><span class="karnameh-print-kind">کارنامهٔ تحصیلی</span><h2>'+esc(name)+"</h2><p>کد هنرجو: <bdi>"+esc(
+code)+"</bdi>"+(archived?' <span class="karnameh-print-archive">بایگانی</span>':"")+'</p></div><dl class="karnameh-print-context">'+context.filter(([,value])=>value).
+map(([label,value])=>"<div><dt>"+esc(label)+"</dt><dd>"+esc(value)+"</dd></div>").join("")+"</dl>";originalHeader.replaceWith(header);copy.querySelector(".karna\
+meh-student-meta")?.remove()}function preparePrint(button){printAuthorization=null;document.getElementById("printRoot")?.remove();const modal=document.getElementById(
+"modal"),isModal=button?button.closest("#modal"):!modal.classList.contains("hidden");let source=isModal?document.getElementById("modalBody"):button?.closest(".r\
+eport-document,#karnamehTabOutput,#lessonReportTabOutput,#lessonReportOutput,#globalReportOutput,#periodicReportOutput")||button?.closest(".card")||document.getElementById(
 "karnamehTabOutput")||document.getElementById("lessonReportTabOutput")||document.getElementById("lessonReportOutput")||document.getElementById("globalReportOutp\
 ut")||document.getElementById("periodicReportOutput")||document.getElementById("app");if(!source)throw Error("گزارشی برای چاپ انتخاب نشده است.");
 const copy=source.cloneNode(true);const periodic=source.matches(".periodic-document")||!!source.querySelector(".periodic-document");const karnameh=source.matches(

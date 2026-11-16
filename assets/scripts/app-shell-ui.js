@@ -92,7 +92,12 @@ aria-label",input.placeholder)}}function positionHomeAction(){const home=documen
 r-brand");if(target&&home.parentElement!==target){if(wide)target.prepend(home);else target.append(home)}}function mobileExperience(){const app=document.getElementById(
 "app");if(!app)return;const tools=app.querySelector(".workspace-tools"),bar=app.querySelector(".workspace-bar");if(tools&&bar){for(const button of[...bar.children].
 filter(x=>x.tagName==="BUTTON"))tools.querySelector(".tool-actions")?.prepend(button);const strong=bar.querySelector(":scope > strong");if(strong&&!strong.title)
-strong.title=strong.textContent}const nav=app.querySelector(".navigation-menu");if(nav){const summary=nav.querySelector(":scope > summary");summary?.setAttribute(
+strong.title=strong.textContent}const bankTools=app.querySelector(".workspace-tool-actions .workspace-tool-group")||app.querySelector(".header-actions");if(bankTools&&
+!bankTools.querySelector(".question-bank-entry")){const bankButton=document.createElement("button");bankButton.className="question-bank-entry "+(bankTools.matches(
+".header-actions")?"header-action":"ghost workspace-tool-button");const bankIcon=document.createElement("span");bankIcon.className="workspace-tool-icon";bankIcon.
+innerHTML=EduIcons.html("book");const bankLabel=document.createElement("span");bankLabel.className="workspace-tool-copy";const bankTitle=document.createElement(
+"span");bankTitle.textContent="بانک سؤال";bankLabel.append(bankTitle);bankButton.append(bankIcon,bankLabel);bankButton.onclick=()=>window.EduQuestionBankUI.
+open();bankTools.append(bankButton)}const nav=app.querySelector(".navigation-menu");if(nav){const summary=nav.querySelector(":scope > summary");summary?.setAttribute(
 "aria-label","ابزارها و تنظیمات برنامه")}const gradeArea=app.querySelector("#lessonGradesArea");if(gradeArea){for(const card of gradeArea.querySelectorAll(
 ".card")){if(!card.classList.contains("mobile-grade-panel"))card.classList.add("mobile-grade-panel");if(!card.dataset.gradeHelpRemoved){const intro=[...card.children].
 find(x=>x.tagName==="P");intro?.remove();card.dataset.gradeHelpRemoved="true"}}}}function polishReportFilters(){if(state.view!=="reports")return;const tabs=document.

@@ -1,6 +1,7 @@
 let printAuthorization = null;
 
 function beforeReportPrint() {
+  if (document.querySelector(".qb-dialog[open]")) return;
   try {
     if (!printAuthorization || !document.getElementById("printRoot"))
       throw Error("برای چاپ معتبر، از دکمه «چاپ / PDF» گزارش استفاده کنید.");

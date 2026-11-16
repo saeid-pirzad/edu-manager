@@ -4,7 +4,13 @@
     vertical-align: middle;
     touch-action: manipulation;
   }
-  :is(#app, #modal, #calPopup, #mobileBar, #pwaWelcome)
+  :is(
+      #app,
+      :is(#modal, .qb-dialog, .qb-confirm),
+      #calPopup,
+      #mobileBar,
+      #pwaWelcome
+    )
     button.ui-button-flat:not([hidden]) {
     display: inline-flex;
     flex-direction: row;
@@ -33,7 +39,13 @@
     pointer-events: none;
   }
   .control-icon > svg,
-  :is(#app, #modal, #calPopup, #mobileBar, #pwaWelcome)
+  :is(
+      #app,
+      :is(#modal, .qb-dialog, .qb-confirm),
+      #calPopup,
+      #mobileBar,
+      #pwaWelcome
+    )
     button.ui-button-flat
     > svg {
     display: block;
@@ -44,7 +56,13 @@
     vertical-align: middle;
     pointer-events: none;
   }
-  :is(#app, #modal, #calPopup, #mobileBar, #pwaWelcome)
+  :is(
+      #app,
+      :is(#modal, .qb-dialog, .qb-confirm),
+      #calPopup,
+      #mobileBar,
+      #pwaWelcome
+    )
     button.ui-button-flat[data-ui-tone] {
     min-height: 44px !important;
     padding: 8px 12px;
@@ -117,13 +135,25 @@
     --button-soft: var(--theme-surface-muted);
     --button-line: var(--theme-line);
   }
-  :is(#app, #modal, #calPopup, #mobileBar, #pwaWelcome)
+  :is(
+      #app,
+      :is(#modal, .qb-dialog, .qb-confirm),
+      #calPopup,
+      #mobileBar,
+      #pwaWelcome
+    )
     button.ui-button-flat[data-ui-variant="solid"] {
     background: var(--button-fill) !important;
     border-color: var(--button-fill) !important;
     color: #fff !important;
   }
-  :is(#app, #modal, #calPopup, #mobileBar, #pwaWelcome)
+  :is(
+      #app,
+      :is(#modal, .qb-dialog, .qb-confirm),
+      #calPopup,
+      #mobileBar,
+      #pwaWelcome
+    )
     button.ui-button-flat.ui-button-icon-only {
     width: 44px;
     min-width: 44px;
@@ -135,7 +165,8 @@
     line-height: 0;
     border-radius: 10px;
   }
-  :is(#app, #modal) button.ui-button-flat.ui-button-compact {
+  :is(#app, :is(#modal, .qb-dialog, .qb-confirm))
+    button.ui-button-flat.ui-button-compact {
     width: 32px;
     min-width: 32px;
     min-height: 32px !important;
@@ -144,7 +175,9 @@
     padding: 0;
     border-radius: 8px;
   }
-  :is(#app, #modal) .module-simple button.ui-button-compact {
+  :is(#app, :is(#modal, .qb-dialog, .qb-confirm))
+    .module-simple
+    button.ui-button-compact {
     width: 20px;
     min-width: 20px;
     min-height: 28px !important;
@@ -153,14 +186,20 @@
     padding: 0;
     border-radius: 5px;
   }
-  :is(#app, #modal) button.ui-button-compact .control-icon,
-  :is(#app, #modal) button.ui-button-compact .ui-icon {
+  :is(#app, :is(#modal, .qb-dialog, .qb-confirm))
+    button.ui-button-compact
+    .control-icon,
+  :is(#app, :is(#modal, .qb-dialog, .qb-confirm))
+    button.ui-button-compact
+    .ui-icon {
     width: 16px;
     height: 16px;
     flex-basis: 16px;
   }
   /* Grade erasers have their own size and a quiet, separated action area. */
-  :is(#app, #modal) .grade-editor button.grade-clear.ui-button {
+  :is(#app, :is(#modal, .qb-dialog, .qb-confirm))
+    .grade-editor
+    button.grade-clear.ui-button {
     --button-ink: var(--theme-muted);
     --button-soft: transparent;
     --button-line: transparent;
@@ -180,7 +219,9 @@
     border-radius: 6px;
     line-height: 0;
   }
-  :is(#app, #modal) .grade-editor button.grade-clear.ui-button::before {
+  :is(#app, :is(#modal, .qb-dialog, .qb-confirm))
+    .grade-editor
+    button.grade-clear.ui-button::before {
     content: "";
     position: absolute;
     inset-inline-start: 0;
@@ -191,24 +232,42 @@
     transform: translateY(-50%);
     pointer-events: none;
   }
-  :is(#app, #modal) .grade-editor button.grade-clear.ui-button .control-icon,
-  :is(#app, #modal) .grade-editor button.grade-clear.ui-button svg {
+  :is(#app, :is(#modal, .qb-dialog, .qb-confirm))
+    .grade-editor
+    button.grade-clear.ui-button
+    .control-icon,
+  :is(#app, :is(#modal, .qb-dialog, .qb-confirm))
+    .grade-editor
+    button.grade-clear.ui-button
+    svg {
     width: var(--grade-clear-icon, 16px);
     height: var(--grade-clear-icon, 16px);
     flex: 0 0 var(--grade-clear-icon, 16px);
   }
-  :is(#app, #modal)
+  :is(#app, :is(#modal, .qb-dialog, .qb-confirm))
     .grade-editor
     button.grade-clear.ui-button:not(:disabled):is(:hover, :focus-visible) {
     --button-ink: var(--status-danger);
     --button-soft: var(--status-danger-soft);
   }
-  :is(#app, #modal, #calPopup, #mobileBar, #pwaWelcome)
+  :is(
+      #app,
+      :is(#modal, .qb-dialog, .qb-confirm),
+      #calPopup,
+      #mobileBar,
+      #pwaWelcome
+    )
     button.ui-button-flat:focus-visible {
     outline: 2px solid var(--button-ink, var(--theme-focus));
     outline-offset: 3px;
   }
-  :is(#app, #modal, #calPopup, #mobileBar, #pwaWelcome)
+  :is(
+      #app,
+      :is(#modal, .qb-dialog, .qb-confirm),
+      #calPopup,
+      #mobileBar,
+      #pwaWelcome
+    )
     button.ui-button-flat:disabled {
     cursor: not-allowed;
     opacity: 0.5;
@@ -221,13 +280,14 @@
     min-width: 0;
     gap: 6px;
   }
-  :is(#app, #modal) button[data-copy-state="done"] {
+  :is(#app, :is(#modal, .qb-dialog, .qb-confirm))
+    button[data-copy-state="done"] {
     color: var(--status-success) !important;
     background: var(--status-success-soft) !important;
     border-color: var(--status-success-line) !important;
   }
   /* Geometric +/− marks stay centered independently of the text font. */
-  :is(#app, #modalBody)
+  :is(#app, :is(#modalBody, .qb-body))
     :is(
       .quick-create:not(.create-panel),
       .week-settings,
@@ -235,7 +295,9 @@
       .backup-hub details
     )
     > summary::after,
-  :is(#app, #modalBody) .course-policy-section > summary::before {
+  :is(#app, :is(#modalBody, .qb-body))
+    .course-policy-section
+    > summary::before {
     content: "" !important;
     display: block;
     flex: 0 0 28px;
@@ -257,7 +319,7 @@
     line-height: 0;
     transform: none;
   }
-  :is(#app, #modalBody)
+  :is(#app, :is(#modalBody, .qb-body))
     :is(
       .quick-create:not(.create-panel),
       .week-settings,
@@ -265,7 +327,9 @@
       .backup-hub details
     )[open]
     > summary::after,
-  :is(#app, #modalBody) .course-policy-section[open] > summary::before {
+  :is(#app, :is(#modalBody, .qb-body))
+    .course-policy-section[open]
+    > summary::before {
     background-size:
       12px 2px,
       0 0;
@@ -277,7 +341,13 @@
   }
 }
 @media screen and (hover: hover) {
-  :is(#app, #modal, #calPopup, #mobileBar, #pwaWelcome)
+  :is(
+      #app,
+      :is(#modal, .qb-dialog, .qb-confirm),
+      #calPopup,
+      #mobileBar,
+      #pwaWelcome
+    )
     button.ui-button-flat[data-ui-tone]:not(:disabled):hover {
     background: color-mix(
       in srgb,
@@ -286,7 +356,13 @@
     ) !important;
     border-color: var(--button-ink) !important;
   }
-  :is(#app, #modal, #calPopup, #mobileBar, #pwaWelcome)
+  :is(
+      #app,
+      :is(#modal, .qb-dialog, .qb-confirm),
+      #calPopup,
+      #mobileBar,
+      #pwaWelcome
+    )
     button.ui-button-flat[data-ui-variant="solid"]:not(:disabled):hover {
     background: var(--button-hover) !important;
     border-color: var(--button-hover) !important;
@@ -299,8 +375,9 @@
 }
 
 @media screen {
-  :is(#app, #modal, #pwaWelcome) button.ui-button-flat[data-copy-state="done"],
-  :is(#app, #modal, #pwaWelcome)
+  :is(#app, :is(#modal, .qb-dialog, .qb-confirm), #pwaWelcome)
+    button.ui-button-flat[data-copy-state="done"],
+  :is(#app, :is(#modal, .qb-dialog, .qb-confirm), #pwaWelcome)
     button.ui-button-flat[data-ui-tone][data-ui-variant][data-copy-state="done"] {
     color: var(--status-success) !important;
     background: var(--status-success-soft) !important;
