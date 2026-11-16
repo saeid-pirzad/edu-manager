@@ -37,6 +37,16 @@
       fail("بارم باید بین ۰٫۰۱ و ۱۰۰ باشد.");
     return n;
   }
+  function searchText(value) {
+    return digits(value)
+      .normalize("NFKC")
+      .replace(/[يى]/g, "ی")
+      .replace(/ك/g, "ک")
+      .replace(/[\u064B-\u065F\u0670\u0640]/g, "")
+      .replace(/[\s\u200c\u200d]+/g, " ")
+      .trim()
+      .toLocaleLowerCase("fa-IR");
+  }
   function integer(value, min, max) {
     const s = digits(value),
       n = Number(s);
@@ -255,6 +265,7 @@
     LIMIT,
     types,
     digits,
+    searchText,
     score,
     integer,
     empty,

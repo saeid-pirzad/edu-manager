@@ -22,13 +22,13 @@ split("-");if(parts.length===3){const[jy,jm,jd]=gregorianToJalali(+parts[0],+par
 jm).padStart(2,"0"))}/${calendarFaNum(String(jd).padStart(2,"0"))}`;shamsiInput.dataset.jy=jy;shamsiInput.dataset.jm=jm;shamsiInput.dataset.jd=jd}}input.parentNode.
 insertBefore(shamsiInput,input.nextSibling);shamsiInput.addEventListener("keydown",event=>{if(["Enter"," ","ArrowDown"].includes(event.key)){event.preventDefault();
 shamsiInput.click()}});shamsiInput.addEventListener("click",e=>{e.stopPropagation();if(input.matches(":disabled")||input.readOnly||!input.isConnected)return;closeShamsiCalendar();
-(input.closest("#modal")?document.querySelector("#modal .modal-dialog"):document.body).append(calPopup);calPopup.setAttribute("role","dialog");calPopup.setAttribute(
-"aria-label","انتخاب تاریخ شمسی");shamsiInput.setAttribute("aria-expanded","true");calTargetInput=input;if(shamsiInput.dataset.jy){calSelectedJalali=
-[+shamsiInput.dataset.jy,+shamsiInput.dataset.jm,+shamsiInput.dataset.jd];calViewYear=calSelectedJalali[0];calViewMonth=calSelectedJalali[1]}else{calSelectedJalali=
-null;const t=new Date;const[tjy,tjm]=gregorianToJalali(t.getFullYear(),t.getMonth()+1,t.getDate());calViewYear=tjy;calViewMonth=tjm}calPopup.classList.add("open");
-renderShamsiCalendar(shamsiInput);const popupWidth=calPopup.offsetWidth||300;const popupHeight=calPopup.offsetHeight||350;const windowWidth=window.innerWidth;const windowHeight=window.
-innerHeight;let left=(windowWidth-popupWidth)/2;let top=(windowHeight-popupHeight)/2;if(top<10)top=10;calPopup.style.left=left+"px";calPopup.style.top=top+"px";
-calPopup.style.position="fixed";calPopup.querySelector(".selected,.today,.cal-days button:not(:disabled)")?.focus({preventScroll:true})})})}function calendarISODate(gy,gm,gd){
+(input.closest("dialog[open]")||(input.closest("#modal")?document.querySelector("#modal .modal-dialog"):document.body)).append(calPopup);calPopup.setAttribute("\
+role","dialog");calPopup.setAttribute("aria-label","انتخاب تاریخ شمسی");shamsiInput.setAttribute("aria-expanded","true");calTargetInput=input;if(shamsiInput.
+dataset.jy){calSelectedJalali=[+shamsiInput.dataset.jy,+shamsiInput.dataset.jm,+shamsiInput.dataset.jd];calViewYear=calSelectedJalali[0];calViewMonth=calSelectedJalali[1]}else{
+calSelectedJalali=null;const t=new Date;const[tjy,tjm]=gregorianToJalali(t.getFullYear(),t.getMonth()+1,t.getDate());calViewYear=tjy;calViewMonth=tjm}calPopup.classList.
+add("open");renderShamsiCalendar(shamsiInput);const popupWidth=calPopup.offsetWidth||300;const popupHeight=calPopup.offsetHeight||350;const windowWidth=window.innerWidth;
+const windowHeight=window.innerHeight;let left=(windowWidth-popupWidth)/2;let top=(windowHeight-popupHeight)/2;if(top<10)top=10;calPopup.style.left=left+"px";calPopup.
+style.top=top+"px";calPopup.style.position="fixed";calPopup.querySelector(".selected,.today,.cal-days button:not(:disabled)")?.focus({preventScroll:true})})})}function calendarISODate(gy,gm,gd){
 return String(gy).padStart(4,"0")+"-"+String(gm).padStart(2,"0")+"-"+String(gd).padStart(2,"0")}function calendarDateWithinBounds(input,isoDate){const valid=bound=>typeof bound===
 "string"&&/^\d{4}-\d{2}-\d{2}$/.test(bound);return(!valid(input?.min)||isoDate>=input.min)&&(!valid(input?.max)||isoDate<=input.max)&&(!input?.dataset?.sessionCalendar||
 typeof window.sessionCalendarDateAllowed==="function"&&window.sessionCalendarDateAllowed(input,isoDate))}function renderShamsiCalendar(shamsiInput){const t=new Date;

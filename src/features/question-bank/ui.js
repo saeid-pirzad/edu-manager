@@ -1,7 +1,8 @@
 (function (root) {
   "use strict";
   const D = root.EduQuestionBank,
-    R = root.EduQuestionBankRepository;
+    R = root.EduQuestionBankRepository,
+    F = root.EduQuestionBankFileBackup.service;
   const el = (tag, value, className) => {
     const n = document.createElement(tag);
     if (value !== undefined) n.textContent = value;
@@ -45,6 +46,13 @@
     parent.append(l);
     return n;
   };
+  const contextAction = (label, action, parent) => {
+    const b = button(label, action, parent);
+    b.classList.add("qb-context-action");
+    b.setAttribute("aria-label", label);
+    b.title = label;
+    return b;
+  };
   function select(parent, label, entries, value = "") {
     const n = field(parent, label, "", "select");
     for (const [id, title] of entries) {
@@ -63,15 +71,54 @@
       dateStyle: "long",
       timeZone: "UTC",
     }).format(new Date(date));
+  function fitOptions(container) {
+    const doc = container.ownerDocument;
+    const context = doc.createElement("canvas").getContext("2d");
+    if (!context) return;
+    for (const list of container.querySelectorAll(
+      ".qb-options,.qb-sheet-options",
+    )) {
+      if (!list.clientWidth) continue;
+      const style = doc.defaultView.getComputedStyle(list);
+      const required = Math.max(
+        ...[...list.children].map((item) => {
+          const css = doc.defaultView.getComputedStyle(item);
+          const widths = [...item.children].map((span) => {
+            const font = doc.defaultView.getComputedStyle(span);
+            context.font = `${font.fontWeight} ${font.fontSize} ${font.fontFamily}`;
+            return Math.max(
+              ...span.textContent
+                .split("\n")
+                .map((line) => context.measureText(line).width),
+              parseFloat(font.flexBasis) || 0,
+            );
+          });
+          return (
+            widths.reduce((a, b) => a + b, 0) +
+            (parseFloat(css.columnGap) || 0) +
+            parseFloat(css.paddingLeft) +
+            parseFloat(css.paddingRight) +
+            parseFloat(css.borderLeftWidth) +
+            parseFloat(css.borderRightWidth)
+          );
+        }),
+      );
+      list.dataset.columns =
+        required <=
+        (list.clientWidth - 3 * (parseFloat(style.columnGap) || 0)) / 4
+          ? "4"
+          : "2";
+    }
+  }
   function sheet(exam) {
     const s = el("article", undefined, "qb-sheet");
     s.dir = "rtl";
     const header = el("header", undefined, "qb-sheet-header");
+    header.append(el("p", exam.school || "برگهٔ آزمون", "qb-sheet-school"));
     header.append(el("h1", exam.title));
     const meta = el("div", undefined, "qb-sheet-meta");
     for (const [label, value] of [
       ["درس", exam.courseTitle],
-      ["مدرسه", exam.school],
       ["دبیر", exam.teacher],
       ["تاریخ", dateLabel(exam.date)],
       ["مدت", `${number(exam.duration)} دقیقه`],
@@ -87,18 +134,30 @@
     }
     const identity = el("div", undefined, "qb-student-fields");
     identity.append(
-      el("p", "نام و نام خانوادگی هنرجو: …………………………"),
-      el("p", "کلاس: ……………"),
+      el("p", "نام و نام خانوادگی: ................................"),
+      el("p", "کلاس: ...................."),
     );
     header.append(meta, identity);
     s.append(header);
+    const columns = el("div", undefined, "qb-sheet-columns");
+    columns.setAttribute("aria-hidden", "true");
+    columns.append(
+      el("span", "ردیف"),
+      el("span", "سؤال‌ها"),
+      el("span", "بارم"),
+    );
+    s.append(columns);
     exam.questions.forEach((q, i) => {
       const row = el("section", undefined, "qb-sheet-question");
       const body = el("div", undefined, "qb-sheet-prompt");
       body.append(
         el("span", `${number(i + 1)}.`, "qb-sheet-number"),
         el("p", q.text),
-        el("span", `${number(q.score / 100)} نمره`, "qb-sheet-score"),
+        el("span", number(q.score / 100), "qb-sheet-score"),
+      );
+      body.lastElementChild.setAttribute(
+        "aria-label",
+        `بارم ${number(q.score / 100)} نمره`,
       );
       row.append(body);
       if (q.type === "mcq") {
@@ -112,7 +171,12 @@
       }
       if (q.type === "boolean")
         row.append(el("p", "□ صحیح     □ غلط", "qb-sheet-boolean"));
-      if (q.type === "essay") row.append(el("div", "", "qb-answer-space"));
+      if (q.type === "essay") {
+        const space = el("div", undefined, "qb-answer-space");
+        space.setAttribute("aria-label", "محل پاسخ تشریحی");
+        for (let line = 0; line < 4; line++) space.append(el("span"));
+        row.append(space);
+      }
       s.append(row);
     });
     s.append(
@@ -127,6 +191,8 @@
   async function print(exam) {
     const frame = el("iframe");
     frame.className = "qb-print-frame";
+    frame.style.width = "794px";
+    frame.style.visibility = "hidden";
     frame.title = "چاپ آزمون";
     document.body.append(frame);
     const doc = frame.contentDocument;
@@ -148,11 +214,13 @@
       await Promise.all(loads);
       const style = doc.createElement("style");
       style.textContent =
-        "@page{size:A4 portrait;margin:15mm}body{font-family:IRANSans,sans-serif;background:white;color:black}body>.qb-sheet{display:block!important}.qb-sheet-question{break-inside:avoid;overflow-wrap:anywhere}.qb-answer-space{height:30mm;border-bottom:1px dotted #888}h1{font-size:20px}";
+        "@page{size:A4 portrait;margin:15mm}body{margin:0;font-family:IRANSans,sans-serif;background:white;color:black}body>.qb-sheet{display:block!important;padding:0}.qb-sheet-question{break-inside:avoid;overflow-wrap:anywhere}h1{font-size:20px}";
       doc.head.append(style);
       doc.body.append(doc.importNode(sheet(exam), true));
+      doc.body.style.width = "180mm";
       await doc.fonts.load("16px IRANSans");
       await doc.fonts.ready;
+      fitOptions(doc.body);
       await new Promise((resolve) =>
         frame.contentWindow.requestAnimationFrame(resolve),
       );
@@ -177,39 +245,102 @@
       message = el("p", "در حال خواندن…", "qb-message"),
       content = el("div", undefined, "modal-body qb-body");
     title.id = "qb-title";
+    title.insertAdjacentHTML("afterbegin", root.EduIcons.html("book"));
     dialog.setAttribute("aria-labelledby", title.id);
     message.setAttribute("role", "status");
+    const storage = el("div", undefined, "qb-storage-bar");
+    const storageState = el("span", "ذخیره در مرورگر", "qb-storage-state");
+    storageState.setAttribute("role", "status");
+    const storageAction = button(
+      "فعال‌سازی خودکار",
+      () => {
+        if (!F.state().connected && F.supported()) F.choose().catch(error);
+        else
+          discard(() => {
+            tab = "backup";
+            render();
+          });
+      },
+      storage,
+    );
+    storage.prepend(storageState);
+    storageAction.insertAdjacentHTML("afterbegin", root.EduIcons.html("save"));
+    storageAction.dataset.uiTone = "settings";
+    const unsubscribeStorage = F.subscribe((state) => {
+      storage.dataset.state = state.state;
+      storageState.textContent =
+        state.state === "active"
+          ? "فایل خودکار فعال است"
+          : state.state === "busy"
+            ? "در حال ذخیرهٔ فایل…"
+            : state.connected
+              ? "ذخیرهٔ فایل نیاز به بررسی دارد"
+              : "ذخیره در مرورگر";
+      storageState.title = state.message;
+      storageAction.querySelector(".ui-button-label").textContent =
+        state.connected || !F.supported()
+          ? "تنظیمات ذخیره"
+          : "فعال‌سازی خودکار";
+      storageAction.disabled = state.state === "busy";
+    });
+    const unsubscribeFileNotice = F.subscribe((state) => {
+      if (["error", "paused", "permission"].includes(state.state)) {
+        message.hidden = false;
+        message.textContent = state.message;
+        message.dataset.state = "error";
+        message.dataset.fileBackup = "true";
+        message.setAttribute("role", "alert");
+      } else if (
+        ["active", "inactive"].includes(state.state) &&
+        message.dataset.fileBackup
+      ) {
+        message.hidden = true;
+        delete message.dataset.fileBackup;
+        delete message.dataset.state;
+      }
+    });
     let bank,
       courseId = "",
       unitId = "",
       tab = "questions",
       page = 0,
       search = "",
+      archiveQuery = "",
+      archiveCourse = "",
+      archivePage = 0,
       questionType = "",
       dirty = false,
       busy = false,
-      confirmation = null;
+      confirmation = null,
+      unsubscribeBackup = () => {};
     const error = (e) => {
+      message.hidden = false;
       message.textContent = e.message || String(e);
       message.dataset.state = "error";
+      message.setAttribute("role", "alert");
     };
-    function confirmAction(label, action) {
-      if (confirmation || busy) return;
+    function confirmAction(label, action, onCancel = () => {}) {
+      if (confirmation || busy) {
+        onCancel();
+        return;
+      }
       const box = el("dialog", undefined, "qb-confirm modal-dialog qb-body");
       box.setAttribute("aria-label", label);
+      box.append(el("h4", "تأیید عملیات", "qb-editor-title"));
       box.append(el("p", label));
       const previous = document.activeElement;
-      const cancel = () => {
+      const cancel = (accepted = false) => {
         box.close();
         box.remove();
         confirmation = null;
         previous?.focus();
+        if (!accepted) onCancel();
       };
-      button("انصراف", cancel, box);
-      button(
+      button("انصراف", () => cancel(), box);
+      const confirm = button(
         "تأیید",
         async () => {
-          cancel();
+          cancel(true);
           try {
             await action();
           } catch (e) {
@@ -218,6 +349,7 @@
         },
         box,
       );
+      confirm.dataset.uiTone = /حذف|جایگزین/.test(label) ? "danger" : "save";
       box.addEventListener("cancel", (e) => {
         e.preventDefault();
         cancel();
@@ -237,21 +369,44 @@
     }
     function close() {
       discard(() => {
+        optionResize.disconnect();
+        optionChanges.disconnect();
+        unsubscribeBackup();
+        unsubscribeFileNotice();
+        unsubscribeStorage();
+        const calendar = dialog.querySelector("#calPopup");
+        if (calendar) {
+          root.closeShamsiCalendar();
+          document.body.append(calendar);
+        }
         dialog.close();
         dialog.remove();
-        let target = opener?.isConnected
-          ? opener
-          : document.querySelector(".question-bank-entry") ||
-            document.getElementById("workspaceToolsToggle") ||
-            document.getElementById("headerNavigationToggle");
-        for (
-          let parent = target?.parentElement;
-          parent;
-          parent = parent.parentElement
-        )
-          if (parent.tagName === "DETAILS" && !parent.open)
-            target = parent.querySelector(":scope > summary");
-        target?.focus({ preventScroll: true });
+        for (let target of [
+          opener,
+          document.querySelector(".question-bank-entry"),
+          document.getElementById("workspaceToolsToggle"),
+          document.getElementById("headerNavigationToggle"),
+        ]) {
+          if (
+            !target?.isConnected ||
+            target === document.body ||
+            target === document.documentElement
+          )
+            continue;
+          for (
+            let parent = target.parentElement;
+            parent;
+            parent = parent.parentElement
+          ) {
+            if (parent.tagName !== "DETAILS" || parent.open) continue;
+            const summary = parent.querySelector(":scope > summary");
+            if (summary?.getClientRects().length) target = summary;
+          }
+          if (!target.getClientRects().length || target.matches(":disabled"))
+            continue;
+          target.focus({ preventScroll: true });
+          if (document.activeElement === target) break;
+        }
       });
     }
     const closeButton = button("بستن", close, header);
@@ -260,9 +415,18 @@
     closeButton.title = "بستن";
     closeButton.querySelector(".ui-button-label").hidden = true;
     header.prepend(title);
-    dialog.append(header, message, content);
+    dialog.append(header, storage, message, content);
     document.body.append(dialog);
     dialog.showModal();
+    const updateOptions = () => fitOptions(content);
+    const optionResize = new ResizeObserver(updateOptions);
+    const optionChanges = new MutationObserver(updateOptions);
+    optionResize.observe(content);
+    optionChanges.observe(content, { childList: true, subtree: true });
+    content.addEventListener("toggle", updateOptions, true);
+    document.fonts.ready.then(() => {
+      if (dialog.isConnected) updateOptions();
+    });
     dialog.addEventListener("cancel", (e) => {
       e.preventDefault();
       if (!confirmation) close();
@@ -278,7 +442,21 @@
       try {
         bank = await R.save(next, bank.revision);
         dirty = false;
-        message.textContent = "در مرورگر ذخیره شد.";
+        const fileState = F.state();
+        if (["error", "paused", "permission"].includes(fileState.state)) {
+          message.hidden = false;
+          message.textContent = `در مرورگر ذخیره شد. ${fileState.message}`;
+          message.dataset.state = "error";
+          message.setAttribute("role", "alert");
+          return true;
+        }
+        message.hidden = true;
+        message.textContent = "";
+        storageState.textContent =
+          fileState.state === "active"
+            ? "در مرورگر ذخیره شد؛ فایل در حال به‌روزرسانی"
+            : "در مرورگر ذخیره شد";
+        message.setAttribute("role", "status");
         delete message.dataset.state;
         return true;
       } catch (e) {
@@ -324,7 +502,18 @@
       );
       actions.append(b);
       button("بازگشت", () => discard(render), actions);
-      f.append(actions);
+      const fields = el(
+        "div",
+        undefined,
+        "course-grid qb-form-fields qb-field-wide",
+      );
+      fields.append(...f.childNodes);
+      f.append(fields, actions);
+    }
+    function unitLabel() {
+      return bank.courses.find((c) => c.id === courseId)?.structure === "module"
+        ? "پودمان"
+        : "فصل";
     }
     function manageCourse(edit = false) {
       discard(() => {
@@ -348,6 +537,10 @@
             if (await commit(next)) {
               courseId = c.id;
               unitId = "";
+              tab = "questions";
+              search = "";
+              questionType = "";
+              page = 0;
               render();
             }
             return;
@@ -357,12 +550,12 @@
         const name = field(f, "عنوان درس", edit ? current.title : "");
         const structure = select(
           f,
-          "ساختار",
+          "نوع درس",
           [
-            ["chapter", "فصل‌بندی"],
+            ["chapter", "عمومی (فصلی)"],
             ["module", "پودمانی"],
           ],
-          current?.structure || "chapter",
+          edit ? current.structure : "chapter",
         );
         structure.disabled = edit;
         saveButton(f);
@@ -375,24 +568,26 @@
         content.append(
           el(
             "h4",
-            existing ? "ویرایش فصل / پودمان" : "افزودن فصل / پودمان",
+            existing ? `ویرایش ${unitLabel()}` : `${unitLabel()} جدید`,
             "qb-editor-title",
           ),
         );
         const f = form(content, async () => {
-          await mutate((next) => {
-            if (existing)
-              next.units.find((u) => u.id === existing.id).title =
-                name.value.trim();
-            else
-              next.units.push({
-                id: crypto.randomUUID(),
-                courseId,
-                title: name.value.trim(),
-              });
-          });
+          const next = structuredClone(bank);
+          const id = existing?.id || crypto.randomUUID();
+          if (existing)
+            next.units.find((u) => u.id === id).title = name.value.trim();
+          else next.units.push({ id, courseId, title: name.value.trim() });
+          if (await commit(next)) {
+            unitId = id;
+            search = "";
+            questionType = "";
+            page = 0;
+            render();
+          }
         });
-        const name = field(f, "عنوان فصل / پودمان", existing?.title || "");
+        const name = field(f, `عنوان ${unitLabel()}`, existing?.title || "");
+        name.placeholder = `${unitLabel()} اول`;
         saveButton(f);
         name.focus();
       });
@@ -432,9 +627,16 @@
             else next.questions[index] = q;
           });
         });
+        const context = el(
+          "div",
+          undefined,
+          "course-grid qb-field-wide qb-question-context",
+        );
+        f.classList.add("qb-question-form");
+        f.append(context);
         const unit = select(
-          f,
-          "فصل / پودمان",
+          context,
+          unitLabel(),
           [
             ["", "انتخاب بخش"],
             ...bank.units
@@ -444,27 +646,47 @@
           existing?.unitId || unitId,
         );
         const type = select(
-          f,
+          context,
           "نوع سؤال",
           Object.entries(D.types),
           existing?.type || "mcq",
         );
         const body = field(f, "متن سؤال", existing?.text || "", "textarea"),
-          area = el("div", undefined, "course-grid qb-field-wide");
+          area = el(
+            "fieldset",
+            undefined,
+            "course-grid qb-field-wide qb-answer-editor",
+          );
         f.append(area);
         let answer,
-          options = [];
+          options = [],
+          activeType;
+        const drafts = new Map();
+        if (existing)
+          drafts.set(existing.type, {
+            answer: String(existing.answer),
+            options: existing.options || [],
+          });
         function answers() {
+          if (activeType)
+            drafts.set(activeType, {
+              answer: answer.value,
+              options: options.map((n) => n.value),
+            });
+          activeType = type.value;
+          const draft = drafts.get(activeType);
           area.replaceChildren();
+          area.append(
+            el(
+              "legend",
+              type.value === "mcq" ? "گزینه‌ها و پاسخ" : "پاسخ سؤال",
+            ),
+          );
           options = [];
           if (type.value === "mcq") {
             for (let i = 0; i < 4; i++)
               options.push(
-                field(
-                  area,
-                  `گزینه ${i + 1}`,
-                  existing?.type === "mcq" ? existing.options[i] : "",
-                ),
+                field(area, `گزینه ${i + 1}`, draft?.options[i] || ""),
               );
             answer = select(
               area,
@@ -473,7 +695,7 @@
                 ["", "انتخاب پاسخ"],
                 ...[0, 1, 2, 3].map((i) => [String(i), `گزینه ${i + 1}`]),
               ],
-              existing?.type === "mcq" ? String(existing.answer) : "",
+              draft?.answer ?? "",
             );
           } else if (type.value === "boolean")
             answer = select(
@@ -484,20 +706,20 @@
                 ["true", "صحیح"],
                 ["false", "غلط"],
               ],
-              existing?.type === "boolean" ? String(existing.answer) : "",
+              draft?.answer ?? "",
             );
           else
-            answer = field(
-              area,
-              "پاسخ صحیح",
-              existing && existing.type === type.value ? existing.answer : "",
-              "textarea",
-            );
+            answer = field(area, "پاسخ صحیح", draft?.answer ?? "", "textarea");
+          answer.parentElement.classList.add("qb-field-wide");
         }
         type.onchange = answers;
         answers();
+        const optional = el("details", undefined, "qb-optional qb-field-wide");
+        optional.append(el("summary", "توضیح پاسخ (اختیاری)"));
+        optional.open = Boolean(existing?.explanation);
+        f.append(optional);
         const explanation = field(
-            f,
+            optional,
             "توضیح پاسخ (اختیاری)",
             existing?.explanation || "",
             "textarea",
@@ -514,14 +736,32 @@
     }
     function questions(parent) {
       const units = bank.units.filter((u) => u.courseId === courseId);
+      const sections = el("div", undefined, "qb-section-picker");
+      parent.append(sections);
       const filters = el("div", undefined, "course-grid qb-filters");
       parent.append(filters);
       const filter = select(
-        filters,
-        "فصل / پودمان",
-        [["", "همه"], ...units.map((u) => [u.id, u.title])],
+        sections,
+        unitLabel(),
+        [
+          [
+            "",
+            units.length
+              ? `همهٔ ${unitLabel()}‌ها`
+              : `ابتدا ${unitLabel()} بسازید`,
+          ],
+          ...units.map((u) => [u.id, u.title]),
+        ],
         unitId,
       );
+      filter.disabled = !units.length;
+      contextAction(`${unitLabel()} جدید`, () => manageUnit(), sections);
+      if (unitId)
+        contextAction(
+          `ویرایش ${unitLabel()}`,
+          () => manageUnit(units.find((u) => u.id === unitId)),
+          sections,
+        );
       const kind = select(
         filters,
         "نوع سؤال",
@@ -553,7 +793,7 @@
             units.some((u) => u.id === q.unitId) &&
             (!unitId || q.unitId === unitId) &&
             (!questionType || q.type === questionType) &&
-            q.text.includes(search),
+            D.searchText(q.text).includes(D.searchText(search)),
         );
         page = Math.min(page, Math.max(0, Math.ceil(list.length / 15) - 1));
         count.textContent = `${number(list.length)} سؤال`;
@@ -648,20 +888,22 @@
           empty.append(
             el(
               "h4",
-              search || questionType || unitId
+              search || questionType
                 ? "سؤالی با این فیلترها پیدا نشد"
-                : "اولین سؤال این درس را بسازید",
+                : units.length
+                  ? `اولین سؤال ${units.find((u) => u.id === unitId)?.title || "این درس"} را بسازید`
+                  : `اولین ${unitLabel()} این درس را بسازید`,
             ),
             el(
               "p",
-              search || questionType || unitId
+              search || questionType
                 ? "جست‌وجو یا فیلترها را تغییر دهید تا سؤال‌های بیشتری ببینید."
                 : units.length
                   ? "سؤال‌ها را همراه پاسخ و بارم ثبت کنید تا برای آزمون‌های بعدی آماده باشند."
-                  : "ابتدا یک فصل یا پودمان به درس اضافه کنید.",
+                  : `از دکمهٔ «${unitLabel()} جدید» شروع کنید؛ سپس سؤال‌های آن را ثبت کنید.`,
             ),
           );
-          if (search || questionType || unitId)
+          if (search || questionType)
             button(
               "پاک‌کردن فیلترها",
               () => {
@@ -673,8 +915,6 @@
               },
               empty,
             );
-          else if (!units.length)
-            button("افزودن بخش", () => manageUnit(), empty);
           results.append(empty);
         }
         button(
@@ -722,6 +962,8 @@
     }
     function builder(parent) {
       const f = form(parent, async () => {
+        update();
+        if (!f.reportValidity()) return;
         const exam = D.generate(bank, {
           courseId,
           unitIds: checks.filter((c) => c.checked).map((c) => c.value),
@@ -738,10 +980,28 @@
         next.exams.push(exam);
         if (await commit(next)) preview(exam);
       });
+      f.classList.add("qb-builder");
+      const intro = el("div", undefined, "qb-builder-intro qb-field-wide");
+      intro.append(
+        el("h4", "طرح آزمون"),
+        el(
+          "p",
+          "بخش‌ها را انتخاب کنید، تعداد سؤال‌ها را تعیین کنید و آزمون را بسازید. سؤال‌ها به‌صورت تصادفی از بانک همین درس انتخاب می‌شوند.",
+        ),
+      );
+      f.append(intro);
       const units = bank.units.filter((u) => u.courseId === courseId),
         scope = el("fieldset", undefined, "qb-unit-selection");
-      scope.append(el("legend", "فصل‌ها / پودمان‌ها"));
+      scope.append(el("legend", `۱ · ${unitLabel()}‌های آزمون`));
       f.append(scope);
+      if (!units.length)
+        scope.append(
+          el(
+            "p",
+            `ابتدا در بخش سؤال‌ها، ${unitLabel()} و سؤال‌های آن را ثبت کنید.`,
+            "qb-help",
+          ),
+        );
       const checks = units.map((u) => {
         const n = field(scope, u.title);
         n.type = "checkbox";
@@ -761,22 +1021,54 @@
       plan.setAttribute("aria-live", "polite");
       const update = () => {
         let total = 0;
+        const selected = new Set(
+          checks.filter((c) => c.checked).map((c) => c.value),
+        );
         for (const type of Object.keys(D.types)) {
           const capacity = bank.questions.filter(
-            (q) =>
-              q.type === type &&
-              checks.some((c) => c.checked && c.value === q.unitId),
+            (q) => q.type === type && selected.has(q.unitId),
           ).length;
           const requested = Number(D.digits(counts[type].value));
           if (Number.isInteger(requested) && requested > 0) total += requested;
-          available[type].textContent =
-            `${number(capacity)} سؤال موجود در بخش‌های انتخاب‌شده`;
+          available[type].replaceChildren(
+            el("span", number(capacity)),
+            el("span", " سؤال موجود", "qb-capacity-caption"),
+          );
+          available[type].setAttribute(
+            "aria-label",
+            `${number(capacity)} سؤال موجود`,
+          );
+          available[type].title = `${number(capacity)} سؤال موجود`;
+          counts[type].setCustomValidity(
+            !/^\d+$/.test(D.digits(counts[type].value)) ||
+              !Number.isInteger(requested) ||
+              requested < 0 ||
+              requested > 500
+              ? "تعداد را با عدد صحیح از صفر تا ۵۰۰ وارد کنید."
+              : requested > capacity
+                ? `فقط ${number(capacity)} سؤال از این نوع در بخش‌های انتخاب‌شده موجود است.`
+                : "",
+          );
+          counts[type].setAttribute(
+            "aria-invalid",
+            String(!counts[type].validity.valid),
+          );
           counts[type].parentElement.dataset.shortage = String(
             Number.isFinite(requested) && requested > capacity,
           );
         }
+        scope.dataset.empty = String(selected.size === 0);
+        checks[0]?.setCustomValidity(
+          selected.size ? "" : `حداقل یک ${unitLabel()} انتخاب کنید.`,
+        );
+        if (total === 0 || total > 500)
+          counts[Object.keys(D.types)[0]].setCustomValidity(
+            "مجموع سؤال‌های آزمون باید بین ۱ تا ۵۰۰ باشد.",
+          );
         plan.textContent = `${number(checks.filter((c) => c.checked).length)} بخش انتخاب‌شده · ${number(total)} سؤال در طرح آزمون`;
       };
+      const selectionActions = el("div", undefined, "qb-selection-actions");
+      scope.append(selectionActions);
       button(
         "انتخاب همه",
         () => {
@@ -784,48 +1076,84 @@
           dirty = true;
           update();
         },
-        scope,
+        selectionActions,
       );
       button(
-        "پاک‌کردن انتخاب‌ها",
+        "لغو انتخاب",
         () => {
           checks.forEach((c) => (c.checked = false));
           dirty = true;
           update();
         },
-        scope,
+        selectionActions,
       );
       checks.forEach((c) => (c.onchange = update));
-      f.append(el("h4", "ترکیب سؤال‌ها", "qb-form-heading qb-field-wide"));
+      f.append(el("h4", "۲ · ترکیب سؤال‌ها", "qb-form-heading qb-field-wide"));
+      const countGrid = el(
+        "div",
+        undefined,
+        "course-grid qb-field-wide qb-count-grid",
+      );
+      f.append(countGrid);
       for (const [type, label] of Object.entries(D.types)) {
-        counts[type] = field(f, `تعداد ${label}`, "0");
+        counts[type] = field(countGrid, `تعداد ${label}`, "0");
         counts[type].inputMode = "numeric";
         counts[type].oninput = update;
         counts[type].parentElement.classList.add("qb-count-field");
-        available[type] = el("small");
+        const countTitle = el("span", undefined, "qb-count-title");
+        const countPrefix = el("span", "تعداد ");
+        countPrefix.hidden = true;
+        countTitle.append(countPrefix, document.createTextNode(label));
+        counts[type].parentElement.firstChild.replaceWith(countTitle);
+        available[type] = el("small", undefined, "qb-capacity-badge");
+        available[type].id = `qb-capacity-${type}`;
+        counts[type].setAttribute("aria-describedby", available[type].id);
         counts[type].parentElement.append(available[type]);
       }
-      f.append(plan, el("h4", "مشخصات آزمون", "qb-form-heading qb-field-wide"));
+      f.append(plan);
+      const details = el(
+        "fieldset",
+        undefined,
+        "course-grid qb-exam-details qb-field-wide",
+      );
+      details.append(el("legend", "۳ · مشخصات آزمون"));
+      f.append(details);
       update();
-      const name = field(f, "عنوان آزمون"),
-        school = field(f, "نام مدرسه (اختیاری)"),
-        teacher = field(f, "نام دبیر (اختیاری)"),
-        date = field(f, "تاریخ آزمون", new Date().toISOString().slice(0, 10));
+      const name = field(details, "عنوان آزمون");
+      name.required = true;
+      name.placeholder = "مثلاً آزمون فصل اول";
+      name.parentElement.classList.add("qb-field-wide");
+      const school = field(details, "نام مدرسه (اختیاری)"),
+        teacher = field(details, "نام دبیر (اختیاری)");
+      school.autocomplete = "organization";
+      teacher.autocomplete = "name";
+      const today = new Date();
+      const localDate = [
+        today.getFullYear(),
+        String(today.getMonth() + 1).padStart(2, "0"),
+        String(today.getDate()).padStart(2, "0"),
+      ].join("-");
+      const date = field(details, "تاریخ آزمون", localDate);
       date.type = "date";
-      const shamsi = el("p");
-      f.append(shamsi);
-      const updateDate = () => {
-        try {
-          shamsi.textContent = dateLabel(date.value);
-        } catch {
-          shamsi.textContent = "تاریخ معتبر وارد کنید.";
-        }
-      };
-      date.onchange = updateDate;
-      updateDate();
-      const duration = field(f, "مدت آزمون (دقیقه)", "60");
+      date.required = true;
+      date.id = "qb-exam-date";
+      date.setAttribute("aria-label", "تاریخ آزمون");
+      root.initShamsiPickers();
+      const duration = field(details, "مدت آزمون (دقیقه)", "60");
       duration.inputMode = "numeric";
-      saveButton(f, "ساخت و ذخیره آزمون تصادفی");
+      duration.required = true;
+      duration.oninput = () => {
+        const minutes = Number(D.digits(duration.value));
+        duration.setCustomValidity(
+          /^\d+$/.test(D.digits(duration.value)) &&
+            Number.isInteger(minutes) &&
+            minutes >= 1 &&
+            minutes <= 600
+            ? ""
+            : "مدت آزمون را از ۱ تا ۶۰۰ دقیقه وارد کنید.",
+        );
+      };
+      saveButton(f, "ساخت آزمون");
     }
     function preview(exam) {
       content.replaceChildren();
@@ -843,15 +1171,18 @@
       content.append(sheet(exam));
     }
     function files(parent) {
-      const details = el("details");
+      const details = el("section", undefined, "qb-backup");
       details.append(
-        el("summary", "فایل مستقل بانک سؤال"),
+        el("h4", "پشتیبان و بازیابی بانک سؤال", "qb-form-heading"),
         el(
           "p",
-          "تغییرات در مرورگر ذخیره می‌شوند. فایل JSON فقط هنگام دریافت ساخته می‌شود و خودکار به‌روز نمی‌شود. پاک‌کردن کل داده‌های سایت، بانک را نیز حذف می‌کند؛ فایل دانلودشده روی دستگاه باقی می‌ماند.",
+          "بانک سؤال فایل پشتیبان جداگانه دارد؛ فایل مدرسه را برای آن انتخاب نکنید. فقط تغییرات ثبت‌شده در پشتیبان قرار می‌گیرند.",
         ),
       );
       parent.append(details);
+      const manual = el("section", undefined, "qb-backup-manual");
+      manual.append(el("h4", "پشتیبان دستی"));
+      details.append(manual);
       button(
         "دریافت فایل بانک",
         async () => {
@@ -863,18 +1194,25 @@
               ),
               a = el("a");
             a.href = url;
-            a.download = `Classyar-QuestionBank-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
+            a.download = F.suggestedName().replace(
+              ".json",
+              `-${Date.now()}.json`,
+            );
             a.click();
             setTimeout(() => URL.revokeObjectURL(url), 1000);
           } catch (e) {
             error(e);
           }
         },
-        details,
+        manual,
       );
-      const upload = field(details, "بازیابی بانک از JSON");
+      const upload = field(manual, "بازیابی بانک از JSON");
       upload.type = "file";
       upload.accept = ".json,application/json";
+      upload.parentElement.hidden = true;
+      const restore = button("بازیابی از فایل", () => upload.click(), manual);
+      restore.dataset.uiTone = "create";
+      restore.insertAdjacentHTML("afterbegin", root.EduIcons.html("folder"));
       upload.onchange = async () => {
         try {
           const file = upload.files[0];
@@ -884,8 +1222,9 @@
           const incoming = D.parse(await file.text());
           discard(() =>
             confirmAction(
-              `${incoming.courses.length} درس، ${incoming.questions.length} سؤال و ${incoming.exams.length} آزمون. تمام بانک سؤال فعلی جایگزین می‌شود؛ اطلاعات مدرسه تغییر نمی‌کند. ادامه؟`,
+              `فایل «${file.name}»: ${incoming.courses.length} درس، ${incoming.questions.length} سؤال و ${incoming.exams.length} آزمون. تمام بانک سؤال فعلی جایگزین می‌شود؛ اطلاعات مدرسه تغییر نمی‌کند. ادامه؟`,
               async () => {
+                await F.suspend();
                 if (await commit(incoming)) {
                   courseId = "";
                   unitId = "";
@@ -900,11 +1239,212 @@
           upload.value = "";
         }
       };
+      const automatic = el("section", undefined, "qb-backup-automatic");
+      automatic.append(
+        el("h4", "ذخیرهٔ خودکار در فایل"),
+        el(
+          "p",
+          "فایل را یک‌بار انتخاب کنید؛ هنگام باز بودن برنامه، همان فایل پس از ثبت تغییرات به‌روز می‌شود. فایل خودکار، اطلاعات را به برنامه وارد نمی‌کند.",
+        ),
+      );
+      const status = el("p", undefined, "qb-file-status");
+      const actions = el("div", undefined, "qb-file-actions");
+      automatic.append(status, actions);
+      details.append(automatic);
+      const choose = button("انتخاب فایل", () => F.choose(), actions);
+      const save = button(
+        "ذخیره اکنون",
+        () =>
+          F.saveNow(
+            (name, counts) =>
+              new Promise((resolve) =>
+                confirmAction(
+                  `فایل «${name}» با ${number(counts.questions)} سؤال و ${number(counts.exams)} آزمون فعلی جایگزین شود؟ نسخهٔ قبلی این فایل از بین می‌رود؛ اگر لازم است ابتدا یک کپی نگه دارید.`,
+                  () => resolve(true),
+                  () => resolve(false),
+                ),
+              ),
+          ),
+        actions,
+      );
+      const stop = button("قطع اتصال", () => F.stop().catch(error), actions);
+      for (const [control, tone, icon] of [
+        [choose, "create", "folder"],
+        [save, "settings", "save"],
+        [stop, "danger", "close"],
+      ]) {
+        control.dataset.uiTone = tone;
+        control.insertAdjacentHTML("afterbegin", root.EduIcons.html(icon));
+      }
+      unsubscribeBackup();
+      unsubscribeBackup = F.subscribe((state) => {
+        if (!status.isConnected) return;
+        status.textContent = state.message;
+        status.dataset.state = state.state;
+        status.setAttribute(
+          "role",
+          state.state === "error" ? "alert" : "status",
+        );
+        choose.disabled = !F.supported() || state.state === "busy";
+        save.disabled =
+          !state.connected || !F.supported() || state.state === "busy";
+        stop.disabled =
+          !state.connected || !F.supported() || state.state === "busy";
+      });
+    }
+    function exams(parent) {
+      parent.append(el("h4", "آزمون‌های ذخیره‌شده", "qb-form-heading"));
+      const filters = el("div", undefined, "course-grid qb-archive-filters");
+      parent.append(filters);
+      const find = field(filters, "جست‌وجوی آزمون", archiveQuery);
+      find.type = "search";
+      find.placeholder = "عنوان آزمون یا نام درس…";
+      const courseFilter = select(
+        filters,
+        "درس آزمون",
+        [
+          ["", "همهٔ درس‌ها"],
+          ...[...new Set(bank.exams.map((e) => e.courseTitle))].map((title) => [
+            title,
+            title,
+          ]),
+        ],
+        archiveCourse,
+      );
+      const results = el("div", undefined, "qb-exam-results");
+      const pager = el("nav", undefined, "qb-actions qb-pager");
+      pager.setAttribute("aria-label", "صفحه‌بندی آزمون‌ها");
+      const count = el("p", undefined, "qb-help");
+      count.setAttribute("role", "status");
+      parent.append(count, results, pager);
+      function draw() {
+        results.replaceChildren();
+        pager.replaceChildren();
+        const query = D.searchText(find.value);
+        const list = [...bank.exams]
+          .reverse()
+          .filter(
+            (exam) =>
+              (!courseFilter.value ||
+                exam.courseTitle === courseFilter.value) &&
+              D.searchText(`${exam.title} ${exam.courseTitle}`).includes(query),
+          );
+        archivePage = Math.min(
+          archivePage,
+          Math.max(0, Math.ceil(list.length / 12) - 1),
+        );
+        count.textContent = `${number(list.length)} آزمون${query || courseFilter.value ? ` از ${number(bank.exams.length)}` : ""}`;
+        for (const exam of list.slice(
+          archivePage * 12,
+          archivePage * 12 + 12,
+        )) {
+          const row = el("section", undefined, "qb-question qb-exam-card");
+          const copy = el("div", undefined, "qb-exam-copy");
+          const title = el("h3", exam.title);
+          title.title = exam.title;
+          const context = el("div", undefined, "qb-exam-context");
+          context.append(
+            el("span", exam.courseTitle, "qb-exam-course"),
+            el("span", dateLabel(exam.date), "qb-exam-date-label"),
+          );
+          copy.append(title, context);
+          row.append(copy);
+          const meta = el("div", undefined, "qb-exam-meta");
+          meta.append(
+            el("span", `${number(exam.questions.length)} سؤال`),
+            el(
+              "span",
+              `${number(exam.questions.reduce((sum, q) => sum + q.score, 0) / 100)} نمره`,
+            ),
+            el("span", `${number(exam.duration)} دقیقه`),
+          );
+          const actions = el("div", undefined, "qb-actions qb-exam-actions");
+          copy.append(meta);
+          row.append(actions);
+          button("مشاهده آزمون", () => preview(exam), actions);
+          const printButton = button(
+            "چاپ",
+            () => print(exam).catch(error),
+            actions,
+          );
+          printButton.title = "چاپ / ذخیرهٔ PDF";
+          printButton.setAttribute(
+            "aria-label",
+            `چاپ / PDF آزمون ${exam.title}`,
+          );
+          const remove = button(
+            "حذف آزمون",
+            () =>
+              confirmAction(
+                `آزمون «${exam.title}» از درس «${exam.courseTitle}» حذف شود؟ سؤال‌های بانک حفظ می‌شوند.`,
+                () =>
+                  mutate((next) => {
+                    next.exams = next.exams.filter((e) => e.id !== exam.id);
+                  }),
+              ),
+            actions,
+          );
+          remove.setAttribute("aria-label", `حذف آزمون ${exam.title}`);
+          remove.title = "حذف آزمون";
+          results.append(row);
+        }
+        if (!list.length)
+          results.append(
+            el(
+              "p",
+              bank.exams.length
+                ? "آزمونی با این عبارت پیدا نشد."
+                : "هنوز آزمونی ساخته نشده است.",
+              "qb-empty",
+            ),
+          );
+        button(
+          "قبلی",
+          () => {
+            archivePage--;
+            draw();
+          },
+          pager,
+        ).disabled = archivePage === 0;
+        pager.append(
+          el(
+            "span",
+            `صفحه ${number(archivePage + 1)} از ${number(Math.max(1, Math.ceil(list.length / 12)))}`,
+          ),
+        );
+        button(
+          "بعدی",
+          () => {
+            archivePage++;
+            draw();
+          },
+          pager,
+        ).disabled = (archivePage + 1) * 12 >= list.length;
+        pager.hidden = list.length <= 12;
+      }
+      find.oninput = () => {
+        archiveQuery = find.value;
+        archivePage = 0;
+        draw();
+      };
+      courseFilter.onchange = () => {
+        archiveCourse = courseFilter.value;
+        archivePage = 0;
+        draw();
+      };
+      draw();
     }
     function render() {
+      if (!bank.courses.some((course) => course.id === courseId)) courseId = "";
+      if (dialog.querySelector("#calPopup")) root.closeShamsiCalendar();
+      unsubscribeBackup();
+      unsubscribeBackup = () => {};
       content.replaceChildren();
       dirty = false;
       const toolbar = el("div", undefined, "qb-actions qb-toolbar");
+      toolbar.classList.toggle("qb-course-required", !courseId);
+      toolbar.hidden =
+        Boolean(courseId) && (tab === "exams" || tab === "backup");
       content.append(toolbar);
       const course = select(
         toolbar,
@@ -919,36 +1459,25 @@
           page = 0;
           render();
         });
-      const management = el("details", undefined, "qb-course-tools");
-      const managementToggle = el("summary");
-      managementToggle.setAttribute("aria-label", "مدیریت درس و بخش‌ها");
-      managementToggle.title = "مدیریت درس و بخش‌ها";
-      managementToggle.insertAdjacentHTML(
-        "afterbegin",
-        root.EduIcons.html("more"),
+      const courseActions = el(
+        "div",
+        undefined,
+        "qb-actions qb-course-actions",
       );
-      managementToggle.append(el("span", "مدیریت درس"));
-      const managementActions = el("div", undefined, "qb-course-tools-actions");
-      management.append(managementToggle, managementActions);
-      toolbar.append(management);
-      button("درس جدید", () => manageCourse(), managementActions);
+      toolbar.append(courseActions);
+      contextAction("درس جدید", () => manageCourse(), courseActions);
       if (courseId) {
-        button("ویرایش عنوان درس", () => manageCourse(true), managementActions);
-        button("افزودن بخش", () => manageUnit(), managementActions);
-        if (unitId)
-          button(
-            "ویرایش عنوان بخش",
-            () => manageUnit(bank.units.find((u) => u.id === unitId)),
-            managementActions,
-          );
+        contextAction("ویرایش درس", () => manageCourse(true), courseActions);
       }
       const tabs = el("nav", undefined, "tabs qb-actions qb-tabs");
+      tabs.classList.toggle("qb-tabs-global", !courseId);
       tabs.setAttribute("aria-label", "بخش‌های بانک سؤال");
       content.append(tabs);
       for (const [id, label] of [
         ["questions", "سؤال‌ها"],
         ["builder", "طرح آزمون"],
-        ["exams", "آزمون‌های من"],
+        ["exams", "آزمون‌ها"],
+        ["backup", "پشتیبان"],
       ]) {
         const b = button(
           label,
@@ -959,62 +1488,38 @@
             }),
           tabs,
         );
-        b.setAttribute("aria-pressed", String(tab === id));
+        b.disabled = !courseId && (id === "questions" || id === "builder");
+        b.hidden = b.disabled;
+        b.title = b.disabled ? "ابتدا یک درس انتخاب کنید" : label;
+        b.setAttribute("aria-pressed", String(tab === id && !b.disabled));
       }
-      const panel = el("section");
+      const panel = el("section", undefined, "qb-panel");
       content.append(panel);
       if (tab === "exams") {
-        for (const exam of [...bank.exams].reverse()) {
-          const row = el("section", undefined, "qb-question qb-exam-card");
-          row.append(
-            el("h3", exam.title),
-            el("p", `${exam.courseTitle} — ${dateLabel(exam.date)}`),
-          );
-          const meta = el("div", undefined, "qb-exam-meta");
-          meta.append(
-            el("span", `${number(exam.questions.length)} سؤال`),
-            el(
-              "span",
-              `${number(exam.questions.reduce((sum, q) => sum + q.score, 0) / 100)} نمره`,
-            ),
-            el("span", `${number(exam.duration)} دقیقه`),
-          );
-          const actions = el("div", undefined, "qb-actions qb-exam-actions");
-          row.append(meta, actions);
-          button("مشاهده آزمون", () => preview(exam), actions);
-          button(
-            "حذف آزمون",
-            () =>
-              confirmAction("آزمون حذف شود؟ سؤال‌های بانک حفظ می‌شوند.", () =>
-                mutate((next) => {
-                  next.exams = next.exams.filter((e) => e.id !== exam.id);
-                }),
-              ),
-            actions,
-          );
-          panel.append(row);
-        }
-        if (!bank.exams.length)
-          panel.append(el("p", "هنوز آزمونی ساخته نشده است."));
+        exams(panel);
+      } else if (tab === "backup") {
+        files(panel);
       } else if (!courseId) {
         const empty = el("div", undefined, "qb-empty");
         empty.insertAdjacentHTML("afterbegin", root.EduIcons.html("book"));
         empty.append(
-          el("h4", "سؤال‌های هر درس، در یک جا"),
+          el("h4", "ابتدا درس را انتخاب کنید"),
           el(
             "p",
-            "یک درس انتخاب کنید یا درس تازه‌ای بسازید و سؤال‌های آن را به بانک اضافه کنید.",
+            "با انتخاب درس از کادر بالا، سؤال‌ها و طرح آزمون آن در دسترس قرار می‌گیرند. برای شروع درس تازه، دکمهٔ + را بزنید.",
           ),
         );
-        button("درس جدید", () => manageCourse(), empty);
         panel.append(empty);
       } else if (tab === "builder") builder(panel);
       else questions(panel);
-      files(content);
     }
     try {
       bank = D.validate(await R.read());
-      message.textContent = "بانک مستقل از اطلاعات مدرسه است.";
+      await F.init();
+      if (!message.dataset.fileBackup) {
+        message.textContent = "";
+        message.hidden = true;
+      }
       render();
     } catch (e) {
       error(e);

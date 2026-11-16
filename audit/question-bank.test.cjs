@@ -6,6 +6,11 @@ require("node:vm").runInThisContext(
   fs.readFileSync("src/features/question-bank/domain.js", "utf8"),
 );
 const D = globalThis.EduQuestionBank;
+test("Persian search normalizes Arabic letters, digits, marks and spacing without changing data", () => {
+  assert.equal(D.searchText(" كِتاب يكم ١۲ "), D.searchText("کتاب یکم 12"));
+  assert.equal(D.searchText("جای‌خالی"), D.searchText("جای خالی"));
+  assert.equal(D.searchText("Exam ۳"), "exam 3");
+});
 function fixture() {
   const b = D.empty();
   b.courses = [

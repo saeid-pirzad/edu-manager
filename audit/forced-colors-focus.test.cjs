@@ -84,7 +84,7 @@ test("forced-colors focus has parity with both important normal and error select
   assert.deepEqual(specificity(forced.selector.nodes[1]), [1, 3, 1]);
   assert.equal(
     selectorText(forced.selector.nodes[2]),
-    ':is(#app,#modalBody,#calPopup,#pwaWelcome)input:is([type="checkbox"],[type="radio"],[type="range"],[type="hidden"]):focus',
+    ':is(#app,:is(#modalBody,.qb-body),#calPopup,#pwaWelcome)input:is([type="checkbox"],[type="radio"],[type="range"],[type="hidden"]):focus',
   );
   assert.ok(forced.source.start.offset > invalid.source.end.offset);
   assert.deepEqual(declarations(forced), {

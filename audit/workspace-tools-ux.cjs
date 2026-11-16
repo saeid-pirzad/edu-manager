@@ -115,13 +115,19 @@ async function inspectWorkspaceTools() {
   );
   const actions = [...tools.querySelectorAll("button")];
   add(
-    "backup keeps its header entry and tools contain only the three routine actions",
+    "backup keeps its header entry and tools contain three routine actions plus one question bank entry",
     !tools.querySelector('[data-workspace-action="backups"]') &&
       !!document.querySelector(
         '.header-actions > [data-workspace-action="backups"]',
       ) &&
-      actions.filter((button) => button.getClientRects().length).length === 3 &&
-      actions.length === 3 &&
+      actions.filter((button) => button.getClientRects().length).length === 4 &&
+      actions.length === 4 &&
+      tools.querySelectorAll(".question-bank-entry").length === 1 &&
+      tools.querySelector(".question-bank-entry").textContent.trim() ===
+        "بانک سؤال" &&
+      typeof tools.querySelector(".question-bank-entry").onclick ===
+        "function" &&
+      !!tools.querySelector(".question-bank-entry svg") &&
       !tools.querySelector(
         '[data-workspace-action="review-drafts"],[data-workspace-action="other-drafts"],[data-workspace-action="discard-drafts"]',
       ),

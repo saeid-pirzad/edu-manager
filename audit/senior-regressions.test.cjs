@@ -139,6 +139,7 @@ test("native print refuses unvalidated, stale and pending output", () => {
       if (!c.readable) throw Error("stale");
     },
     document: {
+      querySelector: () => null,
       getElementById: () => root,
       createElement: () => ({
         remove() {
@@ -184,6 +185,24 @@ test("native print refuses unvalidated, stale and pending output", () => {
   assert.equal(root.textContent, undefined);
 });
 
+test("question bank print does not prepare or alter school report output", () => {
+  const c = vm.createContext({
+    document: {
+      querySelector(selector) {
+        assert.equal(selector, ".qb-dialog[open]");
+        return {};
+      },
+      getElementById() {
+        assert.fail("question bank print must not touch school print output");
+      },
+    },
+  });
+  vm.runInContext(read("src/workspace/reports/printing.js"), c);
+  vm.runInContext("printAuthorization = { id: 'A', revision: 1 };", c);
+  c.beforeReportPrint();
+  assert.equal(vm.runInContext("printAuthorization.id", c), "A");
+});
+
 test("validated report button authorizes printing and rejects stale snapshots before preparation", async () => {
   let root = null,
     prints = 0,
@@ -202,7 +221,7 @@ test("validated report button authorizes printing and rejects stale snapshots be
     handleError: (error) => {
       throw error;
     },
-    document: { getElementById: () => root },
+    document: { getElementById: () => root, querySelector: () => null },
     window: {
       print() {
         c.beforeReportPrint();

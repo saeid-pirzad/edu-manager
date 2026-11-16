@@ -5,194 +5,335 @@ Object.keys(value).some(key=>!allowed.includes(key)))fail("فیلد ناشناخ
 return String(value).trim().replace(/[۰-۹٠-٩]/g,c=>String("۰۱۲۳۴۵۶۷۸۹".includes(c)?"۰۱۲۳۴۵۶۷۸۹".indexOf(c):"٠١٢٣٤٥٦٧٨٩".indexOf(
 c))).replace(/٫/g,".")}function score(value){const s=digits(value);if(!/^\d+(\.\d{1,2})?$/.test(s))fail("بارم باید عددی با حداکثر دو رقم اعشار باشد.");
 const[whole,fraction=""]=s.split(".");const n=Number(whole)*100+Number(fraction.padEnd(2,"0"));if(!Number.isSafeInteger(n)||n<1||n>1e4)fail("بارم باید بین ۰٫۰۱ \
-و ۱۰۰ باشد.");return n}function integer(value,min,max){const s=digits(value),n=Number(s);if(!/^\d+$/.test(s)||!Number.isSafeInteger(n)||n<min||n>max)fail(
-`عدد صحیح بین ${min} و ${max} وارد کنید.`);return n}function empty(){return{format:"classyar-question-bank",version:1,revision:0,courses:[],units:[],
-questions:[],exams:[]}}function question(q){fields(q,["id","unitId","type","text","answer","explanation","score","options","unitTitle"]);if(!q||!text(q.id)||!text(
-q.unitId)||!Object.hasOwn(types,q.type)||!text(q.text)||typeof q.explanation!=="string"||!Number.isInteger(q.score)||q.score<1||q.score>1e4)fail("سؤال یا بارم ن\
-امعتبر است.");if(q.type==="mcq"){if(!Array.isArray(q.options)||q.options.length!==4||!q.options.every(text)||new Set(q.options.map(x=>x.trim())).size!==
-4||!Number.isInteger(q.answer)||q.answer<0||q.answer>3)fail("چهار گزینه متفاوت و پاسخ معتبر لازم است.")}else{if(Object.hasOwn(q,
-"options"))fail("گزینه اضافی برای این نوع سؤال مجاز نیست.");if(q.type==="boolean"?typeof q.answer!=="boolean":!text(q.answer))fail(
-"پاسخ سؤال معتبر نیست.")}}function size(bank){const json=JSON.stringify(bank);if(new TextEncoder().encode(json).length>LIMIT)fail("سقف حجم بانک\
- ۲۰ مگابایت است.");return json}function validate(bank){if(!bank||bank.format!=="classyar-question-bank"||bank.version!==1||!Number.isSafeInteger(bank.
-revision)||bank.revision<0||Object.keys(bank).sort().join()!==["format","version","revision","courses","units","questions","exams"].sort().join())fail("قالب یا \
-نسخه فایل بانک سؤال معتبر نیست.");const allIds=new Set;for(const key of["courses","units","questions","exams"]){if(!Array.isArray(bank[key]))
-fail("ساختار بانک نامعتبر است.");for(const item of bank[key]){if(!item||!text(item.id)||allIds.has(item.id))fail("شناسه خالی یا تکراری است.");
-allIds.add(item.id)}}const uniqueTitles=(items,scope)=>{const titles=new Set;for(const item of items){const key=scope(item)+":"+String(item.title).trim();if(!text(
-item.title)||titles.has(key))fail("عنوان خالی یا تکراری است.");titles.add(key)}};uniqueTitles(bank.courses,()=>"");uniqueTitles(bank.units,u=>u.
-courseId);for(const c of bank.courses)fields(c,["id","title","structure"]);for(const u of bank.units)fields(u,["id","courseId","title"]);for(const c of bank.courses)
-if(!["chapter","module"].includes(c.structure))fail("ساختار درس نامعتبر است.");for(const u of bank.units)if(!bank.courses.some(c=>c.id===u.courseId))
-fail("ارتباط بخش با درس نامعتبر است.");for(const q of bank.questions){question(q);if(!bank.units.some(u=>u.id===q.unitId))fail("بخش سؤال\
- معتبر نیست.")}for(const e of bank.exams){fields(e,["id","title","courseTitle","school","teacher","date","duration","questions"]);if(!text(e.title)||!text(
-e.courseTitle)||typeof e.school!=="string"||typeof e.teacher!=="string"||!/^\d{4}-\d{2}-\d{2}$/.test(e.date)||!Number.isFinite(Date.parse(e.date))||new Date(e.date).
-toISOString().slice(0,10)!==e.date||!Number.isInteger(e.duration)||e.duration<1||e.duration>600||!Array.isArray(e.questions)||!e.questions.length||e.questions.length>
-500)fail("آزمون خالی یا نامعتبر است.");const ids=new Set;for(const q of e.questions){question(q);if(!text(q.unitTitle)||ids.has(q.id))fail(
-"سؤال تکراری یا بخش نامعتبر در آزمون.");ids.add(q.id)}}size(bank);return bank}function parse(json){if(new TextEncoder().encode(json).
-length>LIMIT)fail("سقف فایل ورودی ۲۰ مگابایت است.");return validate(JSON.parse(json.replace(/^\uFEFF/,"")))}function shuffle(list,random=Math.
-random){const result=[...list];for(let i=result.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[result[i],result[j]]=[result[j],result[i]]}return result}function generate(bank,spec,random=Math.
-random){const course=bank.courses.find(c=>c.id===spec.courseId);if(!course||!spec.unitIds.length||spec.unitIds.some(id=>!bank.units.some(u=>u.id===id&&u.courseId===
-course.id)))fail("درس و بخش‌های معتبر انتخاب کنید.");const selected=[];for(const type of Object.keys(types)){const count=integer(spec.
-counts[type],0,500);const pool=bank.questions.filter(q=>q.type===type&&spec.unitIds.includes(q.unitId));if(count>pool.length)fail(`${types[type]}: ${pool.length}\
- سؤال موجود است؛ تعداد درخواستی ${count} است.`);selected.push(...shuffle(pool,random).slice(0,count))}if(!selected.length||selected.
-length>500)fail("آزمون باید بین ۱ و ۵۰۰ سؤال داشته باشد.");const exam={id:crypto.randomUUID(),title:spec.title.trim(),courseTitle:course.
-title,school:spec.school.trim(),teacher:spec.teacher.trim(),date:spec.date,duration:integer(spec.duration,1,600),questions:shuffle(selected,random).map(q=>({...structuredClone(
-q),unitTitle:bank.units.find(u=>u.id===q.unitId).title}))};validate({...bank,exams:[...bank.exams,exam]});return exam}root.EduQuestionBank={LIMIT,types,digits,score,
-integer,empty,validate,question,parse,size,generate}})(globalThis);(function(root){"use strict";let connection;function open(){if(connection)return connection;connection=
-new Promise((resolve,reject)=>{const request=indexedDB.open("ClassyarQuestionBank",1);request.onupgradeneeded=()=>request.result.createObjectStore("bank");request.
-onerror=()=>{connection=null;reject(request.error)};request.onblocked=()=>{connection=null;reject(Error("برای به‌روزرسانی بانک پنجره‌های دیگر را ببندید."))};
-request.onsuccess=()=>{const db=request.result;db.onversionchange=()=>{db.close();connection=null};resolve(db)}});return connection}async function read(){const db=await open();
-return new Promise((resolve,reject)=>{const tx=db.transaction("bank","readonly");const r=tx.objectStore("bank").get("current");tx.oncomplete=()=>resolve(r.result||
-root.EduQuestionBank.empty());tx.onabort=()=>reject(tx.error||Error("خواندن بانک ناموفق بود."))})}async function save(bank,expected){const next=structuredClone(
-bank);next.revision=expected+1;root.EduQuestionBank.validate(next);const db=await open();return new Promise((resolve,reject)=>{const tx=db.transaction("bank","r\
-eadwrite"),store=tx.objectStore("bank"),r=store.get("current");let conflict=false;r.onsuccess=()=>{if((r.result?.revision||0)!==expected){conflict=true;tx.abort();
-return}store.put(next,"current")};tx.oncomplete=()=>resolve(next);tx.onabort=()=>reject(conflict?Error("بانک در پنجره دیگری تغییر کرده است. بانک را ببندید و دوب\
-اره باز کنید؛ تغییرات شما ذخیره نشد."):tx.error||Error("ذخیره بانک ناموفق بود؛ فضای دستگاه را بررسی کنید."))})}
-root.EduQuestionBankRepository={read,save}})(globalThis);(function(root){"use strict";const D=root.EduQuestionBank,R=root.EduQuestionBankRepository;const el=(tag,value,className)=>{
-const n=document.createElement(tag);if(value!==void 0)n.textContent=value;if(className)n.className=className;return n};const button=(label,action,parent)=>{const b=el(
-"button");b.append(el("span",label,"ui-button-label"));b.className="ghost ui-button ui-button-flat";const[tone,icon]=label.startsWith("حذف")?["danger","trash"]:
-/افزودن|جدید/.test(label)?["create","add"]:/ویرایش/.test(label)?["edit","edit"]:/چاپ/.test(label)?["print","print"]:/دریافت/.test(label)?
-["download","download"]:/بستن/.test(label)?["neutral","close"]:/بازگشت|قبلی/.test(label)?["navigate","chevron-right"]:/بعدی/.test(label)?["nav\
-igate","chevron-left"]:["neutral",""];b.dataset.uiTone=tone;if(icon)b.insertAdjacentHTML("afterbegin",root.EduIcons.html(icon));b.type="button";b.onclick=action;
-parent.append(b);return b};const field=(parent,label,value="",tag="input")=>{const l=el("label",label,"course-field"),n=el(tag);if(tag==="textarea")l.classList.
-add("qb-field-wide");n.value=value;l.append(n);parent.append(l);return n};function select(parent,label,entries,value=""){const n=field(parent,label,"","select");
-for(const[id,title]of entries){const o=el("option",title);o.value=id;n.append(o)}n.value=value;return n}const number=value=>new Intl.NumberFormat("fa-IR",{maximumFractionDigits:2}).
-format(value);const letters=["الف","ب","ج","د"];const dateLabel=date=>new Intl.DateTimeFormat("fa-IR",{dateStyle:"long",timeZone:"UTC"}).format(new Date(date));
-function sheet(exam){const s=el("article",void 0,"qb-sheet");s.dir="rtl";const header=el("header",void 0,"qb-sheet-header");header.append(el("h1",exam.title));const meta=el(
-"div",void 0,"qb-sheet-meta");for(const[label,value]of[["درس",exam.courseTitle],["مدرسه",exam.school],["دبیر",exam.teacher],["تاریخ",dateLabel(
-exam.date)],["مدت",`${number(exam.duration)} دقیقه`],["بارم کل",number(exam.questions.reduce((sum,q)=>sum+q.score,0)/100)]]){if(!value)continue;const item=el(
-"p");item.append(el("span",`${label}: `),el("strong",value));meta.append(item)}const identity=el("div",void 0,"qb-student-fields");identity.append(el("p","نام و\
- نام خانوادگی هنرجو: …………………………"),el("p","کلاس: ……………"));header.append(meta,identity);s.append(header);exam.questions.
-forEach((q,i)=>{const row=el("section",void 0,"qb-sheet-question");const body=el("div",void 0,"qb-sheet-prompt");body.append(el("span",`${number(i+1)}.`,"qb-she\
-et-number"),el("p",q.text),el("span",`${number(q.score/100)} نمره`,"qb-sheet-score"));row.append(body);if(q.type==="mcq"){const options=el("ol",void 0,"qb-s\
-heet-options");q.options.forEach((option,j)=>{const item=el("li");item.append(el("span",`${letters[j]})`),el("span",option));options.append(item)});row.append(options)}
-if(q.type==="boolean")row.append(el("p","□ صحیح     □ غلط","qb-sheet-boolean"));if(q.type==="essay")row.append(el("div","","qb-answer-space"));s.append(
-row)});s.append(el("p",`تعداد کل سؤال‌ها: ${number(exam.questions.length)}`,"qb-sheet-total"));return s}async function print(exam){const frame=el(
-"iframe");frame.className="qb-print-frame";frame.title="چاپ آزمون";document.body.append(frame);const doc=frame.contentDocument;try{doc.documentElement.lang=
-"fa";doc.documentElement.dir="rtl";const loads=[...document.querySelectorAll('link[rel="stylesheet"]')].map(source=>new Promise((resolve,reject)=>{const copy=source.
+و ۱۰۰ باشد.");return n}function searchText(value){return digits(value).normalize("NFKC").replace(/[يى]/g,"ی").replace(/ك/g,"ک").replace(/[\u064B-\u065F\u0670\u0640]/g,
+"").replace(/[\s\u200c\u200d]+/g," ").trim().toLocaleLowerCase("fa-IR")}function integer(value,min,max){const s=digits(value),n=Number(s);if(!/^\d+$/.test(s)||!Number.
+isSafeInteger(n)||n<min||n>max)fail(`عدد صحیح بین ${min} و ${max} وارد کنید.`);return n}function empty(){return{format:"classyar-question-ban\
+k",version:1,revision:0,courses:[],units:[],questions:[],exams:[]}}function question(q){fields(q,["id","unitId","type","text","answer","explanation","score","op\
+tions","unitTitle"]);if(!q||!text(q.id)||!text(q.unitId)||!Object.hasOwn(types,q.type)||!text(q.text)||typeof q.explanation!=="string"||!Number.isInteger(q.score)||
+q.score<1||q.score>1e4)fail("سؤال یا بارم نامعتبر است.");if(q.type==="mcq"){if(!Array.isArray(q.options)||q.options.length!==4||!q.options.every(
+text)||new Set(q.options.map(x=>x.trim())).size!==4||!Number.isInteger(q.answer)||q.answer<0||q.answer>3)fail("چهار گزینه متفاوت و پاسخ معتبر لازم است.")}else{
+if(Object.hasOwn(q,"options"))fail("گزینه اضافی برای این نوع سؤال مجاز نیست.");if(q.type==="boolean"?typeof q.answer!=="boolean":
+!text(q.answer))fail("پاسخ سؤال معتبر نیست.")}}function size(bank){const json=JSON.stringify(bank);if(new TextEncoder().encode(json).length>LIMIT)
+fail("سقف حجم بانک ۲۰ مگابایت است.");return json}function validate(bank){if(!bank||bank.format!=="classyar-question-bank"||bank.version!==
+1||!Number.isSafeInteger(bank.revision)||bank.revision<0||Object.keys(bank).sort().join()!==["format","version","revision","courses","units","questions","exams"].
+sort().join())fail("قالب یا نسخه فایل بانک سؤال معتبر نیست.");const allIds=new Set;for(const key of["courses","units","questions",
+"exams"]){if(!Array.isArray(bank[key]))fail("ساختار بانک نامعتبر است.");for(const item of bank[key]){if(!item||!text(item.id)||allIds.has(item.
+id))fail("شناسه خالی یا تکراری است.");allIds.add(item.id)}}const uniqueTitles=(items,scope)=>{const titles=new Set;for(const item of items){
+const key=scope(item)+":"+String(item.title).trim();if(!text(item.title)||titles.has(key))fail("عنوان خالی یا تکراری است.");titles.add(key)}};
+uniqueTitles(bank.courses,()=>"");uniqueTitles(bank.units,u=>u.courseId);for(const c of bank.courses)fields(c,["id","title","structure"]);for(const u of bank.units)
+fields(u,["id","courseId","title"]);for(const c of bank.courses)if(!["chapter","module"].includes(c.structure))fail("ساختار درس نامعتبر است.");
+for(const u of bank.units)if(!bank.courses.some(c=>c.id===u.courseId))fail("ارتباط بخش با درس نامعتبر است.");for(const q of bank.questions){
+question(q);if(!bank.units.some(u=>u.id===q.unitId))fail("بخش سؤال معتبر نیست.")}for(const e of bank.exams){fields(e,["id","title","courseTitle",
+"school","teacher","date","duration","questions"]);if(!text(e.title)||!text(e.courseTitle)||typeof e.school!=="string"||typeof e.teacher!=="string"||!/^\d{4}-\d{2}-\d{2}$/.
+test(e.date)||!Number.isFinite(Date.parse(e.date))||new Date(e.date).toISOString().slice(0,10)!==e.date||!Number.isInteger(e.duration)||e.duration<1||e.duration>
+600||!Array.isArray(e.questions)||!e.questions.length||e.questions.length>500)fail("آزمون خالی یا نامعتبر است.");const ids=new Set;for(const q of e.
+questions){question(q);if(!text(q.unitTitle)||ids.has(q.id))fail("سؤال تکراری یا بخش نامعتبر در آزمون.");ids.add(q.id)}}size(bank);
+return bank}function parse(json){if(new TextEncoder().encode(json).length>LIMIT)fail("سقف فایل ورودی ۲۰ مگابایت است.");return validate(JSON.
+parse(json.replace(/^\uFEFF/,"")))}function shuffle(list,random=Math.random){const result=[...list];for(let i=result.length-1;i>0;i--){const j=Math.floor(random()*
+(i+1));[result[i],result[j]]=[result[j],result[i]]}return result}function generate(bank,spec,random=Math.random){const course=bank.courses.find(c=>c.id===spec.courseId);
+if(!course||!spec.unitIds.length||spec.unitIds.some(id=>!bank.units.some(u=>u.id===id&&u.courseId===course.id)))fail("درس و بخش‌های معتبر انتخاب کنید.");
+const selected=[];for(const type of Object.keys(types)){const count=integer(spec.counts[type],0,500);const pool=bank.questions.filter(q=>q.type===type&&spec.unitIds.
+includes(q.unitId));if(count>pool.length)fail(`${types[type]}: ${pool.length} سؤال موجود است؛ تعداد درخواستی ${count} است.`);selected.
+push(...shuffle(pool,random).slice(0,count))}if(!selected.length||selected.length>500)fail("آزمون باید بین ۱ و ۵۰۰ سؤال داشته باشد.");
+const exam={id:crypto.randomUUID(),title:spec.title.trim(),courseTitle:course.title,school:spec.school.trim(),teacher:spec.teacher.trim(),date:spec.date,duration:integer(
+spec.duration,1,600),questions:shuffle(selected,random).map(q=>({...structuredClone(q),unitTitle:bank.units.find(u=>u.id===q.unitId).title}))};validate({...bank,
+exams:[...bank.exams,exam]});return exam}root.EduQuestionBank={LIMIT,types,digits,searchText,score,integer,empty,validate,question,parse,size,generate}})(globalThis);
+(function(root){"use strict";let connection;function open(){if(connection)return connection;connection=new Promise((resolve,reject)=>{const request=indexedDB.open(
+"ClassyarQuestionBank",1);request.onupgradeneeded=()=>request.result.createObjectStore("bank");request.onerror=()=>{connection=null;reject(request.error)};request.
+onblocked=()=>{connection=null;reject(Error("برای به‌روزرسانی بانک پنجره‌های دیگر را ببندید."))};request.onsuccess=()=>{
+const db=request.result;db.onversionchange=()=>{db.close();connection=null};resolve(db)}});return connection}async function read(){const db=await open();return new Promise(
+(resolve,reject)=>{const tx=db.transaction("bank","readonly");const r=tx.objectStore("bank").get("current");tx.oncomplete=()=>resolve(r.result||root.EduQuestionBank.
+empty());tx.onabort=()=>reject(tx.error||Error("خواندن بانک ناموفق بود."))})}async function save(bank,expected){const next=structuredClone(bank);
+next.revision=expected+1;root.EduQuestionBank.validate(next);const db=await open();return new Promise((resolve,reject)=>{const tx=db.transaction("bank","readwri\
+te"),store=tx.objectStore("bank"),r=store.get("current");let conflict=false;r.onsuccess=()=>{if((r.result?.revision||0)!==expected){conflict=true;tx.abort();return}
+store.put(next,"current")};tx.oncomplete=()=>{resolve(next);root.dispatchEvent?.(new Event("edu-question-bank-saved"))};tx.onabort=()=>reject(conflict?Error("با\
+نک در پنجره دیگری تغییر کرده است. بانک را ببندید و دوباره باز کنید؛ تغییرات شما ذخیره نشد."):
+tx.error||Error("ذخیره بانک ناموفق بود؛ فضای دستگاه را بررسی کنید."))})}async function readBackup(){const db=await open();
+return new Promise((resolve,reject)=>{const tx=db.transaction("bank","readonly");const request=tx.objectStore("bank").get("file-backup");tx.oncomplete=()=>resolve(
+request.result||null);tx.onabort=()=>reject(tx.error||Error("خواندن اتصال فایل ناموفق بود."))})}async function writeBackup(config){const db=await open();
+return new Promise((resolve,reject)=>{const tx=db.transaction("bank","readwrite");if(config)tx.objectStore("bank").put(config,"file-backup");else tx.objectStore(
+"bank").delete("file-backup");tx.oncomplete=()=>resolve();tx.onabort=()=>reject(tx.error||Error("ثبت اتصال فایل ناموفق بود."))})}root.EduQuestionBankRepository=
+{read,save,readBackup,writeBackup}})(globalThis);(function(root){"use strict";function createFileBackup(repository,host=root){const D=root.EduQuestionBank;let config=null,
+initialized,timer,debounce,choosing=false;const listeners=new Set;let status={state:"inactive",message:"ذخیرهٔ خودکار فایل فعال نیست."};
+const supported=()=>!!(host.isSecureContext&&host.showSaveFilePicker&&host.navigator?.locks?.request&&host.crypto?.subtle);function notify(state,message){status=
+{state,message,name:config?.handle?.name||"",savedAt:config?.savedAt||"",connected:!!config};for(const listener of listeners)listener({...status})}const locked=action=>host.
+navigator.locks.request("ClassyarQuestionBank.file",action);const counts=bank=>Object.fromEntries(["courses","units","questions","exams"].map(key=>[key,bank[key].
+length]));function dropped(before,after){return before&&Object.keys(after).some(key=>before[key]>0&&after[key]===0||before[key]>=10&&after[key]<=before[key]/2)}
+async function hash(text){const bytes=await host.crypto.subtle.digest("SHA-256",new TextEncoder().encode(text));return Array.from(new Uint8Array(bytes),n=>n.toString(
+16).padStart(2,"0")).join("")}async function inspect(handle,allowEmpty=false){const file=await handle.getFile();if(file.size>D.LIMIT)throw Error("فایل بزرگ‌تر ا\
+ز سقف ۲۰ مگابایت است؛ تغییر نکرد.");const text=await file.text();const bank=!text&&allowEmpty?null:D.parse(text);return{text,bank,hash:await hash(
+text)}}function failed(error){notify("error",`${error.message||error} فایل به‌روز نشد؛ پشتیبان دستی بگیرید.`);return false}async function write(handle,json){
+let stream;try{stream=await handle.createWritable();await stream.write(json);await stream.close();stream=null;const verified=await inspect(handle);if(verified.text!==
+json)throw Error("محتوای فایل پس از نوشتن تأیید نشد.");return verified.hash}catch(error){if(stream)await stream.abort().catch(()=>{});
+throw error}}function active(){notify("active",`ذخیره شد: ${config.handle.name} — ${new Date(config.savedAt).toLocaleString("fa-IR")}`)}async function sync({
+approved=false,expectedId,expectedRevision}={}){if(!supported())return false;return locked(async()=>{try{config=await repository.readBackup();if(!config){notify(
+"inactive","ذخیرهٔ خودکار فایل فعال نیست.");return false}if(expectedId&&config.id!==expectedId)throw Error("اتصال فایل تغییر کرد؛ نوشته \
+نشد.");if(await config.handle.queryPermission({mode:"readwrite"})!=="granted"){notify("permission","مجوز فایل نیاز به تأیید دارد؛ «ذخیره اکنون» را بزنید.");
+return false}if(config.suspended&&!approved){notify("paused","نوشتن فایل برای حفظ نسخهٔ قبلی متوقف است؛ نسخهٔ قبلی را نگه دارید و برای ادامه «ذخیره اکنون» را بز\
+نید.");return false}const current=await inspect(config.handle);if(current.hash!==config.hash)throw Error("فایل بیرون از این اتصال تغییر کرده؛ فایل تازه‌ای ان\
+تخاب کنید.");const bank=D.validate(await repository.read());if(approved&&bank.revision!==expectedRevision)throw Error("اطلاعات پس از تأیید تغییر کرد؛ دو\
+باره بررسی کنید.");const baseline=counts(bank);if(!approved&&(dropped(config.counts,baseline)||dropped(counts(current.bank),baseline))){config={...config,
+suspended:"source-drop"};await repository.writeBackup(config);notify("paused","کاهش شدید اطلاعات شناسایی شد؛ برای حفظ نسخهٔ قبلی، فایل تغییر نکرد. ادامه فقط با \
+تأیید شماست.");return false}const json=D.size(bank);if(current.text===json){if(config.suspended){delete config.suspended;await repository.writeBackup(
+config)}active();return true}notify("busy","در حال ذخیره و بررسی فایل بانک سؤال…");const fingerprint=await write(config.handle,json);
+config={...config,hash:fingerprint,counts:baseline,savedAt:new Date().toISOString()};delete config.suspended;await repository.writeBackup(config);active();return true}catch(error){
+return failed(error)}})}function schedule(){if(!supported())return;host.clearTimeout(debounce);debounce=host.setTimeout(()=>{sync().catch(failed)},2e3)}async function init(){
+if(initialized)return initialized;initialized=(async()=>{try{config=await repository.readBackup();if(!supported()){notify("unsupported","این مرورگر ذخیرهٔ خودکا\
+ر فایل را پشتیبانی نمی‌کند؛ پشتیبان دستی در دسترس است. برای ذخیرهٔ خودکار از Chrome یا Edge استفاده کنید.");
+return}if(!timer)timer=host.setInterval(()=>{sync().catch(failed)},3e4);if(config)await sync();else notify("inactive","ذخیرهٔ خودکار فایل فعال نیست.")}catch(error){
+failed(error)}})();return initialized}function suggestedName(){const day=new Intl.DateTimeFormat("en-US-u-ca-persian",{year:"numeric",month:"2-digit",day:"2-dig\
+it"}).formatToParts(new Date);const part=name=>day.find(p=>p.type===name).value;return`Classyar-QuestionBank-${part("year")}-${part("month")}-${part("day")}.jso\
+n`}async function choose(){if(choosing||!supported())return false;choosing=true;try{const handle=await host.showSaveFilePicker({suggestedName:suggestedName(),excludeAcceptAllOption:true,
+types:[{description:"Question bank JSON",accept:{"application/json":[".json"]}}]});if(handle.kind!=="file"||!/\.json$/i.test(handle.name))throw Error("فقط فایل \
+JSON بانک سؤال انتخاب کنید.");return await locked(async()=>{config=await repository.readBackup();const before=await inspect(handle,true);const bank=D.
+validate(await repository.read());const json=D.size(bank);if(before.bank&&D.size(before.bank)!==json)throw Error("برای حفظ محتوای این فایل، فایل تازه‌ای بسازید؛\
+ اگر قصد بازیابی دارید از بخش بازیابی استفاده کنید.");const rechecked=await inspect(handle,true);if(rechecked.hash!==before.
+hash)throw Error("فایل هنگام انتخاب تغییر کرد؛ نوشته نشد.");notify("busy","در حال اولین ذخیره و بررسی فایل…");
+const fingerprint=await write(handle,json);const next={id:host.crypto.randomUUID(),handle,hash:fingerprint,counts:counts(bank),savedAt:new Date().toISOString()};
+await repository.writeBackup(next);config=next;active();return true})}catch(error){return error.name==="AbortError"?false:failed(error)}finally{choosing=false}}
+async function saveNow(approve=()=>false){if(!supported()||!config)return false;const target=config;try{if(await target.handle.requestPermission({mode:"readwrit\
+e"})!=="granted"){notify("permission","اجازهٔ نوشتن داده نشد؛ فایل تغییر نکرد.");return false}if(await sync({expectedId:target.id}))
+return true;if(status.state!=="paused")return false;const preview=D.validate(await repository.read());const accepted=await approve(target.handle.name,counts(preview));
+if(!accepted)return false;const current=await repository.readBackup();if(current?.id!==target.id)throw Error("اتصال فایل تغییر کرده است؛ دوباره بررسی کنید.");
+return sync({approved:true,expectedId:target.id,expectedRevision:preview.revision})}catch(error){return failed(error)}}async function stop(){if(!supported())return false;
+const expectedId=config?.id;return locked(async()=>{const current=await repository.readBackup();if(current?.id!==expectedId)throw Error("اتصال فایل تغییر کرده؛ \
+ابتدا وضعیت را دوباره بررسی کنید.");await repository.writeBackup(null);config=null;host.clearTimeout(debounce);notify("inactive","اتص\
+ال قطع شد؛ فایل موجود حذف نشده است.");return true})}async function suspend(){if(!host.navigator?.locks?.request){if(await repository.
+readBackup())throw Error("برای حفظ فایل قبلی، بازیابی را در مرورگر پشتیبانی‌شده انجام دهید.");return}return locked(
+async()=>{config=await repository.readBackup();if(config){config={...config,suspended:"restore"};await repository.writeBackup(config);notify("paused","پس از باز\
+یابی، فایل قبلی تغییر نمی‌کند؛ ادامه نیاز به تأیید شما دارد.")}})}function subscribe(listener){listeners.add(listener);
+listener({...status});return()=>listeners.delete(listener)}function dispose(){host.clearInterval(timer);host.clearTimeout(debounce);listeners.clear()}return{supported,
+init,choose,sync,saveNow,stop,suspend,subscribe,schedule,dispose,suggestedName,state:()=>({...status})}}root.EduQuestionBankFileBackup={create:createFileBackup};
+if(root.EduQuestionBankRepository&&typeof document!=="undefined"){const service=createFileBackup(root.EduQuestionBankRepository);root.EduQuestionBankFileBackup.
+service=service;root.addEventListener("edu-question-bank-saved",service.schedule);service.init().catch(()=>{})}})(globalThis);(function(root){"use strict";const D=root.
+EduQuestionBank,R=root.EduQuestionBankRepository,F=root.EduQuestionBankFileBackup.service;const el=(tag,value,className)=>{const n=document.createElement(tag);if(value!==
+void 0)n.textContent=value;if(className)n.className=className;return n};const button=(label,action,parent)=>{const b=el("button");b.append(el("span",label,"ui-b\
+utton-label"));b.className="ghost ui-button ui-button-flat";const[tone,icon]=label.startsWith("حذف")?["danger","trash"]:/افزودن|جدید/.test(label)?[
+"create","add"]:/ویرایش/.test(label)?["edit","edit"]:/چاپ/.test(label)?["print","print"]:/دریافت/.test(label)?["download","download"]:/بستن/.
+test(label)?["neutral","close"]:/بازگشت|قبلی/.test(label)?["navigate","chevron-right"]:/بعدی/.test(label)?["navigate","chevron-left"]:["neutral",""];
+b.dataset.uiTone=tone;if(icon)b.insertAdjacentHTML("afterbegin",root.EduIcons.html(icon));b.type="button";b.onclick=action;parent.append(b);return b};const field=(parent,label,value="",tag="\
+input")=>{const l=el("label",label,"course-field"),n=el(tag);if(tag==="textarea")l.classList.add("qb-field-wide");n.value=value;l.append(n);parent.append(l);return n};
+const contextAction=(label,action,parent)=>{const b=button(label,action,parent);b.classList.add("qb-context-action");b.setAttribute("aria-label",label);b.title=
+label;return b};function select(parent,label,entries,value=""){const n=field(parent,label,"","select");for(const[id,title]of entries){const o=el("option",title);
+o.value=id;n.append(o)}n.value=value;return n}const number=value=>new Intl.NumberFormat("fa-IR",{maximumFractionDigits:2}).format(value);const letters=["الف",
+"ب","ج","د"];const dateLabel=date=>new Intl.DateTimeFormat("fa-IR",{dateStyle:"long",timeZone:"UTC"}).format(new Date(date));function fitOptions(container){const doc=container.
+ownerDocument;const context=doc.createElement("canvas").getContext("2d");if(!context)return;for(const list of container.querySelectorAll(".qb-options,.qb-sheet-\
+options")){if(!list.clientWidth)continue;const style=doc.defaultView.getComputedStyle(list);const required=Math.max(...[...list.children].map(item=>{const css=doc.
+defaultView.getComputedStyle(item);const widths=[...item.children].map(span=>{const font=doc.defaultView.getComputedStyle(span);context.font=`${font.fontWeight}\
+ ${font.fontSize} ${font.fontFamily}`;return Math.max(...span.textContent.split("\n").map(line=>context.measureText(line).width),parseFloat(font.flexBasis)||0)});
+return widths.reduce((a,b)=>a+b,0)+(parseFloat(css.columnGap)||0)+parseFloat(css.paddingLeft)+parseFloat(css.paddingRight)+parseFloat(css.borderLeftWidth)+parseFloat(
+css.borderRightWidth)}));list.dataset.columns=required<=(list.clientWidth-3*(parseFloat(style.columnGap)||0))/4?"4":"2"}}function sheet(exam){const s=el("articl\
+e",void 0,"qb-sheet");s.dir="rtl";const header=el("header",void 0,"qb-sheet-header");header.append(el("p",exam.school||"برگهٔ آزمون","qb-sheet-school"));
+header.append(el("h1",exam.title));const meta=el("div",void 0,"qb-sheet-meta");for(const[label,value]of[["درس",exam.courseTitle],["دبیر",exam.teacher],["\
+تاریخ",dateLabel(exam.date)],["مدت",`${number(exam.duration)} دقیقه`],["بارم کل",number(exam.questions.reduce((sum,q)=>sum+q.score,0)/100)]]){
+if(!value)continue;const item=el("p");item.append(el("span",`${label}: `),el("strong",value));meta.append(item)}const identity=el("div",void 0,"qb-student-field\
+s");identity.append(el("p","نام و نام خانوادگی: ................................"),el("p","کلاس: ...................."));header.append(meta,identity);
+s.append(header);const columns=el("div",void 0,"qb-sheet-columns");columns.setAttribute("aria-hidden","true");columns.append(el("span","ردیف"),el("span","سؤ\
+ال‌ها"),el("span","بارم"));s.append(columns);exam.questions.forEach((q,i)=>{const row=el("section",void 0,"qb-sheet-question");const body=el("div",void 0,
+"qb-sheet-prompt");body.append(el("span",`${number(i+1)}.`,"qb-sheet-number"),el("p",q.text),el("span",number(q.score/100),"qb-sheet-score"));body.lastElementChild.
+setAttribute("aria-label",`بارم ${number(q.score/100)} نمره`);row.append(body);if(q.type==="mcq"){const options=el("ol",void 0,"qb-sheet-options");q.options.
+forEach((option,j)=>{const item=el("li");item.append(el("span",`${letters[j]})`),el("span",option));options.append(item)});row.append(options)}if(q.type==="bool\
+ean")row.append(el("p","□ صحیح     □ غلط","qb-sheet-boolean"));if(q.type==="essay"){const space=el("div",void 0,"qb-answer-space");space.setAttribute(
+"aria-label","محل پاسخ تشریحی");for(let line=0;line<4;line++)space.append(el("span"));row.append(space)}s.append(row)});s.append(el("p",`تعداد کل س\
+ؤال‌ها: ${number(exam.questions.length)}`,"qb-sheet-total"));return s}async function print(exam){const frame=el("iframe");frame.className="qb-print-frame";
+frame.style.width="794px";frame.style.visibility="hidden";frame.title="چاپ آزمون";document.body.append(frame);const doc=frame.contentDocument;try{doc.documentElement.
+lang="fa";doc.documentElement.dir="rtl";const loads=[...document.querySelectorAll('link[rel="stylesheet"]')].map(source=>new Promise((resolve,reject)=>{const copy=source.
 cloneNode();copy.onload=resolve;copy.onerror=()=>reject(Error("فونت و سبک چاپ بارگیری نشد."));doc.head.append(copy)}));await Promise.all(loads);
-const style=doc.createElement("style");style.textContent="@page{size:A4 portrait;margin:15mm}body{font-family:IRANSans,sans-serif;background:white;color:black}b\
-ody>.qb-sheet{display:block!important}.qb-sheet-question{break-inside:avoid;overflow-wrap:anywhere}.qb-answer-space{height:30mm;border-bottom:1px dotted #888}h1\
-{font-size:20px}";doc.head.append(style);doc.body.append(doc.importNode(sheet(exam),true));await doc.fonts.load("16px IRANSans");await doc.fonts.ready;await new Promise(
-resolve=>frame.contentWindow.requestAnimationFrame(resolve));frame.contentWindow.addEventListener("afterprint",()=>frame.remove(),{once:true});frame.contentWindow.
-focus();frame.contentWindow.print()}catch(error){frame.remove();throw error}finally{if(frame.isConnected)setTimeout(()=>frame.remove(),6e4)}}async function openBank(){
-if(document.querySelector(".qb-dialog"))return;const opener=document.activeElement,dialog=el("dialog",void 0,"qb-dialog modal-dialog");const header=el("header",
-void 0,"modal-header"),title=el("h3","بانک سؤال"),message=el("p","در حال خواندن…","qb-message"),content=el("div",void 0,"modal-body qb-body");
-title.id="qb-title";dialog.setAttribute("aria-labelledby",title.id);message.setAttribute("role","status");let bank,courseId="",unitId="",tab="questions",page=0,
-search="",questionType="",dirty=false,busy=false,confirmation=null;const error=e=>{message.textContent=e.message||String(e);message.dataset.state="error"};function confirmAction(label,action){
-if(confirmation||busy)return;const box=el("dialog",void 0,"qb-confirm modal-dialog qb-body");box.setAttribute("aria-label",label);box.append(el("p",label));const previous=document.
-activeElement;const cancel=()=>{box.close();box.remove();confirmation=null;previous?.focus()};button("انصراف",cancel,box);button("تأیید",async()=>{cancel();
-try{await action()}catch(e){error(e)}},box);box.addEventListener("cancel",e=>{e.preventDefault();cancel()});dialog.append(box);confirmation=box;box.showModal()}
+const style=doc.createElement("style");style.textContent="@page{size:A4 portrait;margin:15mm}body{margin:0;font-family:IRANSans,sans-serif;background:white;colo\
+r:black}body>.qb-sheet{display:block!important;padding:0}.qb-sheet-question{break-inside:avoid;overflow-wrap:anywhere}h1{font-size:20px}";doc.head.append(style);
+doc.body.append(doc.importNode(sheet(exam),true));doc.body.style.width="180mm";await doc.fonts.load("16px IRANSans");await doc.fonts.ready;fitOptions(doc.body);
+await new Promise(resolve=>frame.contentWindow.requestAnimationFrame(resolve));frame.contentWindow.addEventListener("afterprint",()=>frame.remove(),{once:true});
+frame.contentWindow.focus();frame.contentWindow.print()}catch(error){frame.remove();throw error}finally{if(frame.isConnected)setTimeout(()=>frame.remove(),6e4)}}
+async function openBank(){if(document.querySelector(".qb-dialog"))return;const opener=document.activeElement,dialog=el("dialog",void 0,"qb-dialog modal-dialog");
+const header=el("header",void 0,"modal-header"),title=el("h3","بانک سؤال"),message=el("p","در حال خواندن…","qb-message"),content=el("div",void 0,
+"modal-body qb-body");title.id="qb-title";title.insertAdjacentHTML("afterbegin",root.EduIcons.html("book"));dialog.setAttribute("aria-labelledby",title.id);message.
+setAttribute("role","status");const storage=el("div",void 0,"qb-storage-bar");const storageState=el("span","ذخیره در مرورگر","qb-storage-state");storageState.
+setAttribute("role","status");const storageAction=button("فعال‌سازی خودکار",()=>{if(!F.state().connected&&F.supported())F.choose().catch(error);else
+discard(()=>{tab="backup";render()})},storage);storage.prepend(storageState);storageAction.insertAdjacentHTML("afterbegin",root.EduIcons.html("save"));storageAction.
+dataset.uiTone="settings";const unsubscribeStorage=F.subscribe(state=>{storage.dataset.state=state.state;storageState.textContent=state.state==="active"?"فایل خ\
+ودکار فعال است":state.state==="busy"?"در حال ذخیرهٔ فایل…":state.connected?"ذخیرهٔ فایل نیاز به بررسی دارد":
+"ذخیره در مرورگر";storageState.title=state.message;storageAction.querySelector(".ui-button-label").textContent=state.connected||!F.supported()?"تنظ\
+یمات ذخیره":"فعال‌سازی خودکار";storageAction.disabled=state.state==="busy"});const unsubscribeFileNotice=F.subscribe(state=>{if(["error",
+"paused","permission"].includes(state.state)){message.hidden=false;message.textContent=state.message;message.dataset.state="error";message.dataset.fileBackup="t\
+rue";message.setAttribute("role","alert")}else if(["active","inactive"].includes(state.state)&&message.dataset.fileBackup){message.hidden=true;delete message.dataset.
+fileBackup;delete message.dataset.state}});let bank,courseId="",unitId="",tab="questions",page=0,search="",archiveQuery="",archiveCourse="",archivePage=0,questionType="",
+dirty=false,busy=false,confirmation=null,unsubscribeBackup=()=>{};const error=e=>{message.hidden=false;message.textContent=e.message||String(e);message.dataset.
+state="error";message.setAttribute("role","alert")};function confirmAction(label,action,onCancel=()=>{}){if(confirmation||busy){onCancel();return}const box=el("\
+dialog",void 0,"qb-confirm modal-dialog qb-body");box.setAttribute("aria-label",label);box.append(el("h4","تأیید عملیات","qb-editor-title"));box.append(
+el("p",label));const previous=document.activeElement;const cancel=(accepted=false)=>{box.close();box.remove();confirmation=null;previous?.focus();if(!accepted)onCancel()};
+button("انصراف",()=>cancel(),box);const confirm=button("تأیید",async()=>{cancel(true);try{await action()}catch(e){error(e)}},box);confirm.dataset.uiTone=
+/حذف|جایگزین/.test(label)?"danger":"save";box.addEventListener("cancel",e=>{e.preventDefault();cancel()});dialog.append(box);confirmation=box;box.showModal()}
 function discard(action){if(busy)return;if(dirty)confirmAction("تغییرات فرم ذخیره نشده‌اند؛ کنار گذاشته شوند؟",()=>{dirty=
-false;action()});else action()}function close(){discard(()=>{dialog.close();dialog.remove();let target=opener?.isConnected?opener:document.querySelector(".quest\
-ion-bank-entry")||document.getElementById("workspaceToolsToggle")||document.getElementById("headerNavigationToggle");for(let parent=target?.parentElement;parent;parent=
-parent.parentElement)if(parent.tagName==="DETAILS"&&!parent.open)target=parent.querySelector(":scope > summary");target?.focus({preventScroll:true})})}const closeButton=button(
-"بستن",close,header);closeButton.classList.add("ui-button-icon-only","qb-close");closeButton.setAttribute("aria-label","بستن");closeButton.title="بستن";
-closeButton.querySelector(".ui-button-label").hidden=true;header.prepend(title);dialog.append(header,message,content);document.body.append(dialog);dialog.showModal();
-dialog.addEventListener("cancel",e=>{e.preventDefault();if(!confirmation)close()});dialog.addEventListener("input",e=>{if(e.target.closest("form"))dirty=true});
-async function commit(next){if(busy)return false;busy=true;dialog.setAttribute("aria-busy","true");content.inert=true;try{bank=await R.save(next,bank.revision);
-dirty=false;message.textContent="در مرورگر ذخیره شد.";delete message.dataset.state;return true}catch(e){error(e);return false}finally{busy=false;
+false;action()});else action()}function close(){discard(()=>{optionResize.disconnect();optionChanges.disconnect();unsubscribeBackup();unsubscribeFileNotice();unsubscribeStorage();
+const calendar=dialog.querySelector("#calPopup");if(calendar){root.closeShamsiCalendar();document.body.append(calendar)}dialog.close();dialog.remove();for(let target of[
+opener,document.querySelector(".question-bank-entry"),document.getElementById("workspaceToolsToggle"),document.getElementById("headerNavigationToggle")]){if(!target?.
+isConnected||target===document.body||target===document.documentElement)continue;for(let parent=target.parentElement;parent;parent=parent.parentElement){if(parent.
+tagName!=="DETAILS"||parent.open)continue;const summary=parent.querySelector(":scope > summary");if(summary?.getClientRects().length)target=summary}if(!target.getClientRects().
+length||target.matches(":disabled"))continue;target.focus({preventScroll:true});if(document.activeElement===target)break}})}const closeButton=button("بستن",
+close,header);closeButton.classList.add("ui-button-icon-only","qb-close");closeButton.setAttribute("aria-label","بستن");closeButton.title="بستن";closeButton.
+querySelector(".ui-button-label").hidden=true;header.prepend(title);dialog.append(header,storage,message,content);document.body.append(dialog);dialog.showModal();
+const updateOptions=()=>fitOptions(content);const optionResize=new ResizeObserver(updateOptions);const optionChanges=new MutationObserver(updateOptions);optionResize.
+observe(content);optionChanges.observe(content,{childList:true,subtree:true});content.addEventListener("toggle",updateOptions,true);document.fonts.ready.then(()=>{
+if(dialog.isConnected)updateOptions()});dialog.addEventListener("cancel",e=>{e.preventDefault();if(!confirmation)close()});dialog.addEventListener("input",e=>{if(e.
+target.closest("form"))dirty=true});async function commit(next){if(busy)return false;busy=true;dialog.setAttribute("aria-busy","true");content.inert=true;try{bank=
+await R.save(next,bank.revision);dirty=false;const fileState=F.state();if(["error","paused","permission"].includes(fileState.state)){message.hidden=false;message.
+textContent=`در مرورگر ذخیره شد. ${fileState.message}`;message.dataset.state="error";message.setAttribute("role","alert");return true}message.hidden=
+true;message.textContent="";storageState.textContent=fileState.state==="active"?"در مرورگر ذخیره شد؛ فایل در حال به‌روزرسانی":
+"در مرورگر ذخیره شد";message.setAttribute("role","status");delete message.dataset.state;return true}catch(e){error(e);return false}finally{busy=false;
 content.inert=false;dialog.removeAttribute("aria-busy")}}const mutate=async action=>{const next=structuredClone(bank);action(next);if(await commit(next))render()};
 function form(parent,submit){const f=el("form",void 0,"qb-form course-grid");f.noValidate=true;f.onsubmit=async e=>{e.preventDefault();if(busy)return;try{await submit(
 f)}catch(e2){error(e2)}};parent.append(f);return f}function saveButton(f,label="ذخیره"){const b=el("button",label);b.type="submit";b.className="ui-button u\
 i-button-flat";b.dataset.uiTone="save";b.dataset.uiVariant="solid";b.insertAdjacentHTML("afterbegin",root.EduIcons.html("save"));const actions=el("div",void 0,"\
-record-editor-actions qb-field-wide");actions.append(b);button("بازگشت",()=>discard(render),actions);f.append(actions)}function manageCourse(edit=false){discard(
-()=>{content.replaceChildren();content.append(el("h4",edit?"ویرایش درس":"درس جدید","qb-editor-title"));const current=bank.courses.find(c=>c.id===
-courseId);const f=form(content,async()=>{const next=structuredClone(bank);if(edit)next.courses.find(c=>c.id===courseId).title=name.value.trim();else{const c={id:crypto.
-randomUUID(),title:name.value.trim(),structure:structure.value};next.courses.push(c);if(await commit(next)){courseId=c.id;unitId="";render()}return}if(await commit(
-next))render()});const name=field(f,"عنوان درس",edit?current.title:"");const structure=select(f,"ساختار",[["chapter","فصل‌بندی"],["module",
-"پودمانی"]],current?.structure||"chapter");structure.disabled=edit;saveButton(f);name.focus()})}function manageUnit(existing){discard(()=>{content.replaceChildren();
-content.append(el("h4",existing?"ویرایش فصل / پودمان":"افزودن فصل / پودمان","qb-editor-title"));const f=form(content,async()=>{await mutate(
-next=>{if(existing)next.units.find(u=>u.id===existing.id).title=name.value.trim();else next.units.push({id:crypto.randomUUID(),courseId,title:name.value.trim()})})});
-const name=field(f,"عنوان فصل / پودمان",existing?.title||"");saveButton(f);name.focus()})}function editQuestion(existing){discard(()=>{content.replaceChildren();
-content.append(el("h4",existing?"ویرایش سؤال":"افزودن سؤال","qb-editor-title"));const f=form(content,async()=>{const q={id:existing?.id||crypto.
-randomUUID(),unitId:unit.value,type:type.value,text:body.value.trim(),answer:type.value==="mcq"?answer.value===""?null:Number(answer.value):type.value==="boolea\
-n"?answer.value==="true"?true:answer.value==="false"?false:null:answer.value.trim(),explanation:explanation.value.trim(),score:D.score(mark.value)};if(q.type===
-"mcq")q.options=options.map(n=>n.value.trim());D.question(q);await mutate(next=>{const index=next.questions.findIndex(x=>x.id===q.id);if(index<0)next.questions.
-push(q);else next.questions[index]=q})});const unit=select(f,"فصل / پودمان",[["","انتخاب بخش"],...bank.units.filter(u=>u.courseId===courseId).
-map(u=>[u.id,u.title])],existing?.unitId||unitId);const type=select(f,"نوع سؤال",Object.entries(D.types),existing?.type||"mcq");const body=field(f,"متن س\
-ؤال",existing?.text||"","textarea"),area=el("div",void 0,"course-grid qb-field-wide");f.append(area);let answer,options=[];function answers(){area.replaceChildren();
-options=[];if(type.value==="mcq"){for(let i=0;i<4;i++)options.push(field(area,`گزینه ${i+1}`,existing?.type==="mcq"?existing.options[i]:""));answer=select(
-area,"پاسخ صحیح",[["","انتخاب پاسخ"],...[0,1,2,3].map(i=>[String(i),`گزینه ${i+1}`])],existing?.type==="mcq"?String(existing.answer):"")}else if(type.
-value==="boolean")answer=select(area,"پاسخ صحیح",[["","انتخاب پاسخ"],["true","صحیح"],["false","غلط"]],existing?.type==="boolean"?String(
-existing.answer):"");else answer=field(area,"پاسخ صحیح",existing&&existing.type===type.value?existing.answer:"","textarea")}type.onchange=answers;answers();
-const explanation=field(f,"توضیح پاسخ (اختیاری)",existing?.explanation||"","textarea"),mark=field(f,"بارم",existing?String(existing.score/100):
-"1");mark.inputMode="decimal";saveButton(f);body.focus()})}function questions(parent){const units=bank.units.filter(u=>u.courseId===courseId);const filters=el("\
-div",void 0,"course-grid qb-filters");parent.append(filters);const filter=select(filters,"فصل / پودمان",[["","همه"],...units.map(u=>[u.id,u.title])],
-unitId);const kind=select(filters,"نوع سؤال",[["","همه"],...Object.entries(D.types)],questionType);const find=field(filters,"جست‌وجو در سؤال‌ها",
-search);find.type="search";find.placeholder="بخشی از متن سؤال را بنویسید…";const heading=el("div",void 0,"qb-list-heading");const headingCopy=el(
-"div");const count=el("h4");const range=el("p");count.setAttribute("aria-live","polite");headingCopy.append(count,range);heading.append(headingCopy);button("افز\
-ودن سؤال",()=>editQuestion(),heading).disabled=!units.length;parent.append(heading);const results=el("div",void 0,"qb-results");const pager=el("nav",void 0,
-"qb-actions qb-pager");pager.setAttribute("aria-label","صفحه‌بندی سؤال‌ها");parent.append(results,pager);function draw(){results.replaceChildren();
-pager.replaceChildren();const list=bank.questions.filter(q=>units.some(u=>u.id===q.unitId)&&(!unitId||q.unitId===unitId)&&(!questionType||q.type===questionType)&&
-q.text.includes(search));page=Math.min(page,Math.max(0,Math.ceil(list.length/15)-1));count.textContent=`${number(list.length)} سؤال`;range.textContent=list.
-length?`نمایش ${number(page*15+1)} تا ${number(Math.min((page+1)*15,list.length))} از سؤال‌های این محدوده`:"سؤال‌های این درس را اینجا\
- مدیریت کنید.";list.slice(page*15,page*15+15).forEach((q,index)=>{const card=el("details",void 0,"qb-question qb-question-row");card.setAttribute("nam\
-e","qb-question-list");const toggle=el("summary",void 0,"qb-question-toggle");const copy=el("span",void 0,"qb-row-copy");copy.append(el("span",q.text,"qb-row-ex\
-cerpt"),el("span",`${D.types[q.type]} · ${units.find(u=>u.id===q.unitId).title}`,"qb-row-meta"));toggle.append(el("span",number(page*15+index+1),"qb-question-n\
-umber"),copy,el("span",`${number(q.score/100)} نمره`,"qb-score"));toggle.insertAdjacentHTML("beforeend",root.EduIcons.html("chevron-left"));const expanded=el(
-"div",void 0,"qb-question-expanded");card.append(toggle,expanded);expanded.append(el("p",q.text,"qb-question-text"));if(q.options){const options=el("ol",void 0,
-"qb-options");options.setAttribute("aria-label","گزینه‌های سؤال");q.options.forEach((option,i)=>{const row=el("li");row.append(el("span",letters[i],
-"qb-option-letter"),el("span",option,"qb-option-text"));options.append(row)});expanded.append(options)}const footer=el("div",void 0,"qb-question-footer");const details=el(
-"details",void 0,"qb-solution");const summary=el("summary","پاسخ و توضیح");summary.insertAdjacentHTML("afterbegin",root.EduIcons.html("chevron-left"));
-const answer=q.type==="mcq"?`${letters[q.answer]}) ${q.options[q.answer]}`:q.type==="boolean"?q.answer?"صحیح":"غلط":q.answer;const answerBody=el("div",void 0,
-"qb-answer-content");answerBody.append(el("small","پاسخ صحیح"),el("p",answer));if(q.explanation)answerBody.append(el("small","توضیح پاسخ"),el("\
-p",q.explanation));details.append(summary,answerBody);const actions=el("div",void 0,"qb-question-actions");button("ویرایش سؤال",()=>editQuestion(q),actions);
-button("حذف سؤال",()=>confirmAction("این سؤال حذف شود؟ آزمون‌های قبلی حفظ می‌شوند.",()=>mutate(next=>{next.questions=
-next.questions.filter(x=>x.id!==q.id)})),actions);footer.append(details,actions);expanded.append(footer);results.append(card)});if(!list.length){const empty=el(
-"div",void 0,"qb-empty");empty.insertAdjacentHTML("afterbegin",root.EduIcons.html("book"));empty.append(el("h4",search||questionType||unitId?"سؤالی با این فیلتر\
-ها پیدا نشد":"اولین سؤال این درس را بسازید"),el("p",search||questionType||unitId?"جست‌وجو یا فیلترها را تغییر دهید تا سؤال‌های ب\
-یشتری ببینید.":units.length?"سؤال‌ها را همراه پاسخ و بارم ثبت کنید تا برای آزمون‌های بعدی آماده باشند.":
-"ابتدا یک فصل یا پودمان به درس اضافه کنید."));if(search||questionType||unitId)button("پاک‌کردن فیلترها",()=>{search=
-"";questionType="";unitId="";page=0;render()},empty);else if(!units.length)button("افزودن بخش",()=>manageUnit(),empty);results.append(empty)}button("قب\
-لی",()=>{page--;draw();results.scrollIntoView({block:"start"})},pager).disabled=page===0;pager.append(el("span",`صفحه ${number(page+1)} از ${number(Math.
-max(1,Math.ceil(list.length/15)))}`));button("بعدی",()=>{page++;draw();results.scrollIntoView({block:"start"})},pager).disabled=(page+1)*15>=list.length;pager.
-hidden=list.length<=15}filter.onchange=()=>{unitId=filter.value;page=0;render()};kind.onchange=()=>{questionType=kind.value;page=0;draw()};find.oninput=find.onchange=
-()=>{search=find.value;page=0;draw()};draw()}function builder(parent){const f=form(parent,async()=>{const exam=D.generate(bank,{courseId,unitIds:checks.filter(c=>c.
-checked).map(c=>c.value),counts:Object.fromEntries(Object.entries(counts).map(([k,n])=>[k,n.value])),title:name.value,school:school.value,teacher:teacher.value,
-date:date.value,duration:duration.value});const next=structuredClone(bank);next.exams.push(exam);if(await commit(next))preview(exam)});const units=bank.units.filter(
-u=>u.courseId===courseId),scope=el("fieldset",void 0,"qb-unit-selection");scope.append(el("legend","فصل‌ها / پودمان‌ها"));f.append(scope);const checks=units.
-map(u=>{const n=field(scope,u.title);n.type="checkbox";n.value=u.id;n.parentElement.append(el("small",`${number(bank.questions.filter(q=>q.unitId===u.id).length)}\
- سؤال`));return n});const counts={},available={};const plan=el("div",void 0,"qb-plan-summary qb-field-wide");plan.setAttribute("role","status");plan.setAttribute(
-"aria-live","polite");const update=()=>{let total=0;for(const type of Object.keys(D.types)){const capacity=bank.questions.filter(q=>q.type===type&&checks.some(c=>c.
-checked&&c.value===q.unitId)).length;const requested=Number(D.digits(counts[type].value));if(Number.isInteger(requested)&&requested>0)total+=requested;available[type].
-textContent=`${number(capacity)} سؤال موجود در بخش‌های انتخاب‌شده`;counts[type].parentElement.dataset.shortage=String(Number.isFinite(
-requested)&&requested>capacity)}plan.textContent=`${number(checks.filter(c=>c.checked).length)} بخش انتخاب‌شده · ${number(total)} سؤال در طرح آزم\
-ون`};button("انتخاب همه",()=>{checks.forEach(c=>c.checked=true);dirty=true;update()},scope);button("پاک‌کردن انتخاب‌ها",()=>{checks.
-forEach(c=>c.checked=false);dirty=true;update()},scope);checks.forEach(c=>c.onchange=update);f.append(el("h4","ترکیب سؤال‌ها","qb-form-heading qb-f\
-ield-wide"));for(const[type,label]of Object.entries(D.types)){counts[type]=field(f,`تعداد ${label}`,"0");counts[type].inputMode="numeric";counts[type].oninput=
-update;counts[type].parentElement.classList.add("qb-count-field");available[type]=el("small");counts[type].parentElement.append(available[type])}f.append(plan,el(
-"h4","مشخصات آزمون","qb-form-heading qb-field-wide"));update();const name=field(f,"عنوان آزمون"),school=field(f,"نام مدرسه (اختیاری)"),
-teacher=field(f,"نام دبیر (اختیاری)"),date=field(f,"تاریخ آزمون",new Date().toISOString().slice(0,10));date.type="date";const shamsi=el(
-"p");f.append(shamsi);const updateDate=()=>{try{shamsi.textContent=dateLabel(date.value)}catch{shamsi.textContent="تاریخ معتبر وارد کنید."}};date.
-onchange=updateDate;updateDate();const duration=field(f,"مدت آزمون (دقیقه)","60");duration.inputMode="numeric";saveButton(f,"ساخت و ذخیره آزمون تصا\
-دفی")}function preview(exam){content.replaceChildren();const actions=el("div",void 0,"qb-actions qb-preview-actions");content.append(actions);button("بازگشت \
-به آزمون‌های من",()=>{tab="exams";render()},actions);button("چاپ / PDF آزمون",()=>print(exam).catch(error),actions);content.append(sheet(exam))}
-function files(parent){const details=el("details");details.append(el("summary","فایل مستقل بانک سؤال"),el("p","تغییرات در مرورگر ذخیره می‌شوند.\
- فایل JSON فقط هنگام دریافت ساخته می‌شود و خودکار به‌روز نمی‌شود. پاک‌کردن کل داده‌های سایت، بانک را نیز حذف می‌کند؛ فایل دانلودشده روی دستگاه باقی می‌ماند."));
-parent.append(details);button("دریافت فایل بانک",async()=>{try{const current=await R.read();const json=D.size(D.validate(current));const url=URL.createObjectURL(
-new Blob([json],{type:"application/json"})),a=el("a");a.href=url;a.download=`Classyar-QuestionBank-${new Date().toISOString().replace(/[:.]/g,"-")}.json`;a.click();
-setTimeout(()=>URL.revokeObjectURL(url),1e3)}catch(e){error(e)}},details);const upload=field(details,"بازیابی بانک از JSON");upload.type="file";upload.
-accept=".json,application/json";upload.onchange=async()=>{try{const file=upload.files[0];if(!file)return;if(file.size>D.LIMIT)throw Error("سقف فایل ورودی ۲۰ مگا\
-بایت است.");const incoming=D.parse(await file.text());discard(()=>confirmAction(`${incoming.courses.length} درس، ${incoming.questions.length} سؤال و ${incoming.
-exams.length} آزمون. تمام بانک سؤال فعلی جایگزین می‌شود؛ اطلاعات مدرسه تغییر نمی‌کند. ادامه؟`,
-async()=>{if(await commit(incoming)){courseId="";unitId="";render()}}))}catch(e){error(e)}finally{upload.value=""}}}function render(){content.replaceChildren();
-dirty=false;const toolbar=el("div",void 0,"qb-actions qb-toolbar");content.append(toolbar);const course=select(toolbar,"درس",[["","انتخاب درس"],...bank.
-courses.map(c=>[c.id,c.title])],courseId);course.onchange=()=>discard(()=>{courseId=course.value;unitId="";page=0;render()});const management=el("details",void 0,
-"qb-course-tools");const managementToggle=el("summary");managementToggle.setAttribute("aria-label","مدیریت درس و بخش‌ها");managementToggle.title=
-"مدیریت درس و بخش‌ها";managementToggle.insertAdjacentHTML("afterbegin",root.EduIcons.html("more"));managementToggle.append(el("span","مدیریت در\
-س"));const managementActions=el("div",void 0,"qb-course-tools-actions");management.append(managementToggle,managementActions);toolbar.append(management);button(
-"درس جدید",()=>manageCourse(),managementActions);if(courseId){button("ویرایش عنوان درس",()=>manageCourse(true),managementActions);button("ا\
-فزودن بخش",()=>manageUnit(),managementActions);if(unitId)button("ویرایش عنوان بخش",()=>manageUnit(bank.units.find(u=>u.id===unitId)),managementActions)}
-const tabs=el("nav",void 0,"tabs qb-actions qb-tabs");tabs.setAttribute("aria-label","بخش‌های بانک سؤال");content.append(tabs);for(const[id,label]of[
-["questions","سؤال‌ها"],["builder","طرح آزمون"],["exams","آزمون‌های من"]]){const b=button(label,()=>discard(()=>{tab=id;render()}),tabs);
-b.setAttribute("aria-pressed",String(tab===id))}const panel=el("section");content.append(panel);if(tab==="exams"){for(const exam of[...bank.exams].reverse()){const row=el(
-"section",void 0,"qb-question qb-exam-card");row.append(el("h3",exam.title),el("p",`${exam.courseTitle} — ${dateLabel(exam.date)}`));const meta=el("div",void 0,
-"qb-exam-meta");meta.append(el("span",`${number(exam.questions.length)} سؤال`),el("span",`${number(exam.questions.reduce((sum,q)=>sum+q.score,0)/100)} نمره`),
-el("span",`${number(exam.duration)} دقیقه`));const actions=el("div",void 0,"qb-actions qb-exam-actions");row.append(meta,actions);button("مشاهده آزمون",
-()=>preview(exam),actions);button("حذف آزمون",()=>confirmAction("آزمون حذف شود؟ سؤال‌های بانک حفظ می‌شوند.",()=>mutate(
-next=>{next.exams=next.exams.filter(e=>e.id!==exam.id)})),actions);panel.append(row)}if(!bank.exams.length)panel.append(el("p","هنوز آزمونی ساخته نشده است."))}else if(!courseId){
-const empty=el("div",void 0,"qb-empty");empty.insertAdjacentHTML("afterbegin",root.EduIcons.html("book"));empty.append(el("h4","سؤال‌های هر درس، در یک جا"),
-el("p","یک درس انتخاب کنید یا درس تازه‌ای بسازید و سؤال‌های آن را به بانک اضافه کنید."));button("\
-درس جدید",()=>manageCourse(),empty);panel.append(empty)}else if(tab==="builder")builder(panel);else questions(panel);files(content)}try{bank=D.validate(await R.
-read());message.textContent="بانک مستقل از اطلاعات مدرسه است.";render()}catch(e){error(e)}}root.EduQuestionBankUI={open:openBank,sheet,
-print}})(globalThis);
+record-editor-actions qb-field-wide");actions.append(b);button("بازگشت",()=>discard(render),actions);const fields=el("div",void 0,"course-grid qb-form-fie\
+lds qb-field-wide");fields.append(...f.childNodes);f.append(fields,actions)}function unitLabel(){return bank.courses.find(c=>c.id===courseId)?.structure==="modu\
+le"?"پودمان":"فصل"}function manageCourse(edit=false){discard(()=>{content.replaceChildren();content.append(el("h4",edit?"ویرایش درس":"درس جدید",
+"qb-editor-title"));const current=bank.courses.find(c=>c.id===courseId);const f=form(content,async()=>{const next=structuredClone(bank);if(edit)next.courses.find(
+c=>c.id===courseId).title=name.value.trim();else{const c={id:crypto.randomUUID(),title:name.value.trim(),structure:structure.value};next.courses.push(c);if(await commit(
+next)){courseId=c.id;unitId="";tab="questions";search="";questionType="";page=0;render()}return}if(await commit(next))render()});const name=field(f,"عنوان درس",
+edit?current.title:"");const structure=select(f,"نوع درس",[["chapter","عمومی (فصلی)"],["module","پودمانی"]],edit?current.structure:"chapte\
+r");structure.disabled=edit;saveButton(f);name.focus()})}function manageUnit(existing){discard(()=>{content.replaceChildren();content.append(el("h4",existing?`و\
+یرایش ${unitLabel()}`:`${unitLabel()} جدید`,"qb-editor-title"));const f=form(content,async()=>{const next=structuredClone(bank);const id=existing?.id||
+crypto.randomUUID();if(existing)next.units.find(u=>u.id===id).title=name.value.trim();else next.units.push({id,courseId,title:name.value.trim()});if(await commit(
+next)){unitId=id;search="";questionType="";page=0;render()}});const name=field(f,`عنوان ${unitLabel()}`,existing?.title||"");name.placeholder=`${unitLabel()}\
+ اول`;saveButton(f);name.focus()})}function editQuestion(existing){discard(()=>{content.replaceChildren();content.append(el("h4",existing?"ویرایش سؤال":
+"افزودن سؤال","qb-editor-title"));const f=form(content,async()=>{const q={id:existing?.id||crypto.randomUUID(),unitId:unit.value,type:type.value,text:body.
+value.trim(),answer:type.value==="mcq"?answer.value===""?null:Number(answer.value):type.value==="boolean"?answer.value==="true"?true:answer.value==="false"?false:
+null:answer.value.trim(),explanation:explanation.value.trim(),score:D.score(mark.value)};if(q.type==="mcq")q.options=options.map(n=>n.value.trim());D.question(q);
+await mutate(next=>{const index=next.questions.findIndex(x=>x.id===q.id);if(index<0)next.questions.push(q);else next.questions[index]=q})});const context=el("di\
+v",void 0,"course-grid qb-field-wide qb-question-context");f.classList.add("qb-question-form");f.append(context);const unit=select(context,unitLabel(),[["","انت\
+خاب بخش"],...bank.units.filter(u=>u.courseId===courseId).map(u=>[u.id,u.title])],existing?.unitId||unitId);const type=select(context,"نوع سؤال",Object.
+entries(D.types),existing?.type||"mcq");const body=field(f,"متن سؤال",existing?.text||"","textarea"),area=el("fieldset",void 0,"course-grid qb-field-wide\
+ qb-answer-editor");f.append(area);let answer,options=[],activeType;const drafts=new Map;if(existing)drafts.set(existing.type,{answer:String(existing.answer),options:existing.
+options||[]});function answers(){if(activeType)drafts.set(activeType,{answer:answer.value,options:options.map(n=>n.value)});activeType=type.value;const draft=drafts.
+get(activeType);area.replaceChildren();area.append(el("legend",type.value==="mcq"?"گزینه‌ها و پاسخ":"پاسخ سؤال"));options=[];if(type.value===
+"mcq"){for(let i=0;i<4;i++)options.push(field(area,`گزینه ${i+1}`,draft?.options[i]||""));answer=select(area,"پاسخ صحیح",[["","انتخاب پاسخ"],
+...[0,1,2,3].map(i=>[String(i),`گزینه ${i+1}`])],draft?.answer??"")}else if(type.value==="boolean")answer=select(area,"پاسخ صحیح",[["","انتخاب پاسخ"],
+["true","صحیح"],["false","غلط"]],draft?.answer??"");else answer=field(area,"پاسخ صحیح",draft?.answer??"","textarea");answer.parentElement.classList.
+add("qb-field-wide")}type.onchange=answers;answers();const optional=el("details",void 0,"qb-optional qb-field-wide");optional.append(el("summary","توضیح پاسخ (ا\
+ختیاری)"));optional.open=Boolean(existing?.explanation);f.append(optional);const explanation=field(optional,"توضیح پاسخ (اختیاری)",existing?.
+explanation||"","textarea"),mark=field(f,"بارم",existing?String(existing.score/100):"1");mark.inputMode="decimal";saveButton(f);body.focus()})}function questions(parent){
+const units=bank.units.filter(u=>u.courseId===courseId);const sections=el("div",void 0,"qb-section-picker");parent.append(sections);const filters=el("div",void 0,
+"course-grid qb-filters");parent.append(filters);const filter=select(sections,unitLabel(),[["",units.length?`همهٔ ${unitLabel()}‌ها`:`ابتدا ${unitLabel()}\
+ بسازید`],...units.map(u=>[u.id,u.title])],unitId);filter.disabled=!units.length;contextAction(`${unitLabel()} جدید`,()=>manageUnit(),sections);if(unitId)
+contextAction(`ویرایش ${unitLabel()}`,()=>manageUnit(units.find(u=>u.id===unitId)),sections);const kind=select(filters,"نوع سؤال",[["","همه"],...Object.
+entries(D.types)],questionType);const find=field(filters,"جست‌وجو در سؤال‌ها",search);find.type="search";find.placeholder="بخشی از متن سؤال را\
+ بنویسید…";const heading=el("div",void 0,"qb-list-heading");const headingCopy=el("div");const count=el("h4");const range=el("p");count.setAttribute("ar\
+ia-live","polite");headingCopy.append(count,range);heading.append(headingCopy);button("افزودن سؤال",()=>editQuestion(),heading).disabled=!units.length;
+parent.append(heading);const results=el("div",void 0,"qb-results");const pager=el("nav",void 0,"qb-actions qb-pager");pager.setAttribute("aria-label","صفحه‌بندی\
+ سؤال‌ها");parent.append(results,pager);function draw(){results.replaceChildren();pager.replaceChildren();const list=bank.questions.filter(q=>units.some(
+u=>u.id===q.unitId)&&(!unitId||q.unitId===unitId)&&(!questionType||q.type===questionType)&&D.searchText(q.text).includes(D.searchText(search)));page=Math.min(page,
+Math.max(0,Math.ceil(list.length/15)-1));count.textContent=`${number(list.length)} سؤال`;range.textContent=list.length?`نمایش ${number(page*15+1)} تا ${number(
+Math.min((page+1)*15,list.length))} از سؤال‌های این محدوده`:"سؤال‌های این درس را اینجا مدیریت کنید.";list.slice(
+page*15,page*15+15).forEach((q,index)=>{const card=el("details",void 0,"qb-question qb-question-row");card.setAttribute("name","qb-question-list");const toggle=el(
+"summary",void 0,"qb-question-toggle");const copy=el("span",void 0,"qb-row-copy");copy.append(el("span",q.text,"qb-row-excerpt"),el("span",`${D.types[q.type]} ·\
+ ${units.find(u=>u.id===q.unitId).title}`,"qb-row-meta"));toggle.append(el("span",number(page*15+index+1),"qb-question-number"),copy,el("span",`${number(q.score/
+100)} نمره`,"qb-score"));toggle.insertAdjacentHTML("beforeend",root.EduIcons.html("chevron-left"));const expanded=el("div",void 0,"qb-question-expanded");card.
+append(toggle,expanded);expanded.append(el("p",q.text,"qb-question-text"));if(q.options){const options=el("ol",void 0,"qb-options");options.setAttribute("aria-l\
+abel","گزینه‌های سؤال");q.options.forEach((option,i)=>{const row=el("li");row.append(el("span",letters[i],"qb-option-letter"),el("span",option,"qb\
+-option-text"));options.append(row)});expanded.append(options)}const footer=el("div",void 0,"qb-question-footer");const details=el("details",void 0,"qb-solution");
+const summary=el("summary","پاسخ و توضیح");summary.insertAdjacentHTML("afterbegin",root.EduIcons.html("chevron-left"));const answer=q.type==="mcq"?`${letters[q.
+answer]}) ${q.options[q.answer]}`:q.type==="boolean"?q.answer?"صحیح":"غلط":q.answer;const answerBody=el("div",void 0,"qb-answer-content");answerBody.append(
+el("small","پاسخ صحیح"),el("p",answer));if(q.explanation)answerBody.append(el("small","توضیح پاسخ"),el("p",q.explanation));details.append(summary,
+answerBody);const actions=el("div",void 0,"qb-question-actions");button("ویرایش سؤال",()=>editQuestion(q),actions);button("حذف سؤال",()=>confirmAction(
+"این سؤال حذف شود؟ آزمون‌های قبلی حفظ می‌شوند.",()=>mutate(next=>{next.questions=next.questions.filter(x=>x.id!==q.id)})),
+actions);footer.append(details,actions);expanded.append(footer);results.append(card)});if(!list.length){const empty=el("div",void 0,"qb-empty");empty.insertAdjacentHTML(
+"afterbegin",root.EduIcons.html("book"));empty.append(el("h4",search||questionType?"سؤالی با این فیلترها پیدا نشد":units.length?`اولین س\
+ؤال ${units.find(u=>u.id===unitId)?.title||"این درس"} را بسازید`:`اولین ${unitLabel()} این درس را بسازید`),el("p",search||questionType?
+"جست‌وجو یا فیلترها را تغییر دهید تا سؤال‌های بیشتری ببینید.":units.length?"سؤال‌ها را همراه پاسخ و بارم ثبت \
+کنید تا برای آزمون‌های بعدی آماده باشند.":`از دکمهٔ «${unitLabel()} جدید» شروع کنید؛ سپس سؤال‌های آن را ثبت کنید.`));
+if(search||questionType)button("پاک‌کردن فیلترها",()=>{search="";questionType="";unitId="";page=0;render()},empty);results.append(empty)}button(
+"قبلی",()=>{page--;draw();results.scrollIntoView({block:"start"})},pager).disabled=page===0;pager.append(el("span",`صفحه ${number(page+1)} از ${number(
+Math.max(1,Math.ceil(list.length/15)))}`));button("بعدی",()=>{page++;draw();results.scrollIntoView({block:"start"})},pager).disabled=(page+1)*15>=list.length;
+pager.hidden=list.length<=15}filter.onchange=()=>{unitId=filter.value;page=0;render()};kind.onchange=()=>{questionType=kind.value;page=0;draw()};find.oninput=find.
+onchange=()=>{search=find.value;page=0;draw()};draw()}function builder(parent){const f=form(parent,async()=>{update();if(!f.reportValidity())return;const exam=D.
+generate(bank,{courseId,unitIds:checks.filter(c=>c.checked).map(c=>c.value),counts:Object.fromEntries(Object.entries(counts).map(([k,n])=>[k,n.value])),title:name.
+value,school:school.value,teacher:teacher.value,date:date.value,duration:duration.value});const next=structuredClone(bank);next.exams.push(exam);if(await commit(
+next))preview(exam)});f.classList.add("qb-builder");const intro=el("div",void 0,"qb-builder-intro qb-field-wide");intro.append(el("h4","طرح آزمون"),el("\
+p","بخش‌ها را انتخاب کنید، تعداد سؤال‌ها را تعیین کنید و آزمون را بسازید. سؤال‌ها به‌صورت تصادفی از بانک همین درس انتخاب می‌شوند."));
+f.append(intro);const units=bank.units.filter(u=>u.courseId===courseId),scope=el("fieldset",void 0,"qb-unit-selection");scope.append(el("legend",`۱ · ${unitLabel()}\
+‌های آزمون`));f.append(scope);if(!units.length)scope.append(el("p",`ابتدا در بخش سؤال‌ها، ${unitLabel()} و سؤال‌های آن را ثبت کنید.`,
+"qb-help"));const checks=units.map(u=>{const n=field(scope,u.title);n.type="checkbox";n.value=u.id;n.parentElement.append(el("small",`${number(bank.questions.filter(
+q=>q.unitId===u.id).length)} سؤال`));return n});const counts={},available={};const plan=el("div",void 0,"qb-plan-summary qb-field-wide");plan.setAttribute("\
+role","status");plan.setAttribute("aria-live","polite");const update=()=>{let total=0;const selected=new Set(checks.filter(c=>c.checked).map(c=>c.value));for(const type of Object.
+keys(D.types)){const capacity=bank.questions.filter(q=>q.type===type&&selected.has(q.unitId)).length;const requested=Number(D.digits(counts[type].value));if(Number.
+isInteger(requested)&&requested>0)total+=requested;available[type].replaceChildren(el("span",number(capacity)),el("span"," سؤال موجود","qb-capacity-cap\
+tion"));available[type].setAttribute("aria-label",`${number(capacity)} سؤال موجود`);available[type].title=`${number(capacity)} سؤال موجود`;counts[type].
+setCustomValidity(!/^\d+$/.test(D.digits(counts[type].value))||!Number.isInteger(requested)||requested<0||requested>500?"تعداد را با عدد صحیح از صفر تا ۵۰۰ وارد\
+ کنید.":requested>capacity?`فقط ${number(capacity)} سؤال از این نوع در بخش‌های انتخاب‌شده موجود است.`:"");counts[type].
+setAttribute("aria-invalid",String(!counts[type].validity.valid));counts[type].parentElement.dataset.shortage=String(Number.isFinite(requested)&&requested>capacity)}
+scope.dataset.empty=String(selected.size===0);checks[0]?.setCustomValidity(selected.size?"":`حداقل یک ${unitLabel()} انتخاب کنید.`);if(total===
+0||total>500)counts[Object.keys(D.types)[0]].setCustomValidity("مجموع سؤال‌های آزمون باید بین ۱ تا ۵۰۰ باشد.");plan.textContent=
+`${number(checks.filter(c=>c.checked).length)} بخش انتخاب‌شده · ${number(total)} سؤال در طرح آزمون`};const selectionActions=el("div",
+void 0,"qb-selection-actions");scope.append(selectionActions);button("انتخاب همه",()=>{checks.forEach(c=>c.checked=true);dirty=true;update()},selectionActions);
+button("لغو انتخاب",()=>{checks.forEach(c=>c.checked=false);dirty=true;update()},selectionActions);checks.forEach(c=>c.onchange=update);f.append(el("h4",
+"۲ · ترکیب سؤال‌ها","qb-form-heading qb-field-wide"));const countGrid=el("div",void 0,"course-grid qb-field-wide qb-count-grid");f.append(countGrid);
+for(const[type,label]of Object.entries(D.types)){counts[type]=field(countGrid,`تعداد ${label}`,"0");counts[type].inputMode="numeric";counts[type].oninput=update;
+counts[type].parentElement.classList.add("qb-count-field");const countTitle=el("span",void 0,"qb-count-title");const countPrefix=el("span","تعداد ");countPrefix.
+hidden=true;countTitle.append(countPrefix,document.createTextNode(label));counts[type].parentElement.firstChild.replaceWith(countTitle);available[type]=el("smal\
+l",void 0,"qb-capacity-badge");available[type].id=`qb-capacity-${type}`;counts[type].setAttribute("aria-describedby",available[type].id);counts[type].parentElement.
+append(available[type])}f.append(plan);const details=el("fieldset",void 0,"course-grid qb-exam-details qb-field-wide");details.append(el("legend","۳ · مشخصات آز\
+مون"));f.append(details);update();const name=field(details,"عنوان آزمون");name.required=true;name.placeholder="مثلاً آزمون فصل اول";
+name.parentElement.classList.add("qb-field-wide");const school=field(details,"نام مدرسه (اختیاری)"),teacher=field(details,"نام دبیر (اختیاری)");
+school.autocomplete="organization";teacher.autocomplete="name";const today=new Date;const localDate=[today.getFullYear(),String(today.getMonth()+1).padStart(2,"\
+0"),String(today.getDate()).padStart(2,"0")].join("-");const date=field(details,"تاریخ آزمون",localDate);date.type="date";date.required=true;date.id="\
+qb-exam-date";date.setAttribute("aria-label","تاریخ آزمون");root.initShamsiPickers();const duration=field(details,"مدت آزمون (دقیقه)","60");
+duration.inputMode="numeric";duration.required=true;duration.oninput=()=>{const minutes=Number(D.digits(duration.value));duration.setCustomValidity(/^\d+$/.test(
+D.digits(duration.value))&&Number.isInteger(minutes)&&minutes>=1&&minutes<=600?"":"مدت آزمون را از ۱ تا ۶۰۰ دقیقه وارد کنید.")};saveButton(
+f,"ساخت آزمون")}function preview(exam){content.replaceChildren();const actions=el("div",void 0,"qb-actions qb-preview-actions");content.append(actions);
+button("بازگشت به آزمون‌های من",()=>{tab="exams";render()},actions);button("چاپ / PDF آزمون",()=>print(exam).catch(error),actions);content.
+append(sheet(exam))}function files(parent){const details=el("section",void 0,"qb-backup");details.append(el("h4","پشتیبان و بازیابی بانک سؤال",
+"qb-form-heading"),el("p","بانک سؤال فایل پشتیبان جداگانه دارد؛ فایل مدرسه را برای آن انتخاب نکنید. فقط تغییرات ثبت‌شده در پشتیبان قرار می‌گیرند."));
+parent.append(details);const manual=el("section",void 0,"qb-backup-manual");manual.append(el("h4","پشتیبان دستی"));details.append(manual);button("دری\
+افت فایل بانک",async()=>{try{const current=await R.read();const json=D.size(D.validate(current));const url=URL.createObjectURL(new Blob([json],{type:"\
+application/json"})),a=el("a");a.href=url;a.download=F.suggestedName().replace(".json",`-${Date.now()}.json`);a.click();setTimeout(()=>URL.revokeObjectURL(url),
+1e3)}catch(e){error(e)}},manual);const upload=field(manual,"بازیابی بانک از JSON");upload.type="file";upload.accept=".json,application/json";upload.
+parentElement.hidden=true;const restore=button("بازیابی از فایل",()=>upload.click(),manual);restore.dataset.uiTone="create";restore.insertAdjacentHTML(
+"afterbegin",root.EduIcons.html("folder"));upload.onchange=async()=>{try{const file=upload.files[0];if(!file)return;if(file.size>D.LIMIT)throw Error("سقف فایل و\
+رودی ۲۰ مگابایت است.");const incoming=D.parse(await file.text());discard(()=>confirmAction(`فایل «${file.name}»: ${incoming.courses.length}\
+ درس، ${incoming.questions.length} سؤال و ${incoming.exams.length} آزمون. تمام بانک سؤال فعلی جایگزین می‌شود؛ اطلاعات مدرسه تغییر نمی‌کند. ادامه؟`,
+async()=>{await F.suspend();if(await commit(incoming)){courseId="";unitId="";render()}}))}catch(e){error(e)}finally{upload.value=""}};const automatic=el("sectio\
+n",void 0,"qb-backup-automatic");automatic.append(el("h4","ذخیرهٔ خودکار در فایل"),el("p","فایل را یک‌بار انتخاب کنید؛ هنگام باز بودن برنامه، \
+همان فایل پس از ثبت تغییرات به‌روز می‌شود. فایل خودکار، اطلاعات را به برنامه وارد نمی‌کند."));
+const status=el("p",void 0,"qb-file-status");const actions=el("div",void 0,"qb-file-actions");automatic.append(status,actions);details.append(automatic);const choose=button(
+"انتخاب فایل",()=>F.choose(),actions);const save=button("ذخیره اکنون",()=>F.saveNow((name,counts)=>new Promise(resolve=>confirmAction(`فایل \
+«${name}» با ${number(counts.questions)} سؤال و ${number(counts.exams)} آزمون فعلی جایگزین شود؟ نسخهٔ قبلی این فایل از بین می‌رود؛ اگر لازم است ابتدا ی\
+ک کپی نگه دارید.`,()=>resolve(true),()=>resolve(false)))),actions);const stop=button("قطع اتصال",()=>F.stop().catch(error),actions);for(const[
+control,tone,icon]of[[choose,"create","folder"],[save,"settings","save"],[stop,"danger","close"]]){control.dataset.uiTone=tone;control.insertAdjacentHTML("after\
+begin",root.EduIcons.html(icon))}unsubscribeBackup();unsubscribeBackup=F.subscribe(state=>{if(!status.isConnected)return;status.textContent=state.message;status.
+dataset.state=state.state;status.setAttribute("role",state.state==="error"?"alert":"status");choose.disabled=!F.supported()||state.state==="busy";save.disabled=
+!state.connected||!F.supported()||state.state==="busy";stop.disabled=!state.connected||!F.supported()||state.state==="busy"})}function exams(parent){parent.append(
+el("h4","آزمون‌های ذخیره‌شده","qb-form-heading"));const filters=el("div",void 0,"course-grid qb-archive-filters");parent.append(filters);const find=field(
+filters,"جست‌وجوی آزمون",archiveQuery);find.type="search";find.placeholder="عنوان آزمون یا نام درس…";const courseFilter=select(
+filters,"درس آزمون",[["","همهٔ درس‌ها"],...[...new Set(bank.exams.map(e=>e.courseTitle))].map(title2=>[title2,title2])],archiveCourse);const results=el(
+"div",void 0,"qb-exam-results");const pager=el("nav",void 0,"qb-actions qb-pager");pager.setAttribute("aria-label","صفحه‌بندی آزمون‌ها");const count=el(
+"p",void 0,"qb-help");count.setAttribute("role","status");parent.append(count,results,pager);function draw(){results.replaceChildren();pager.replaceChildren();const query=D.
+searchText(find.value);const list=[...bank.exams].reverse().filter(exam=>(!courseFilter.value||exam.courseTitle===courseFilter.value)&&D.searchText(`${exam.title}\
+ ${exam.courseTitle}`).includes(query));archivePage=Math.min(archivePage,Math.max(0,Math.ceil(list.length/12)-1));count.textContent=`${number(list.length)} آزمو\
+ن${query||courseFilter.value?` از ${number(bank.exams.length)}`:""}`;for(const exam of list.slice(archivePage*12,archivePage*12+12)){const row=el("section",void 0,
+"qb-question qb-exam-card");const copy=el("div",void 0,"qb-exam-copy");const title2=el("h3",exam.title);title2.title=exam.title;const context=el("div",void 0,"q\
+b-exam-context");context.append(el("span",exam.courseTitle,"qb-exam-course"),el("span",dateLabel(exam.date),"qb-exam-date-label"));copy.append(title2,context);row.
+append(copy);const meta=el("div",void 0,"qb-exam-meta");meta.append(el("span",`${number(exam.questions.length)} سؤال`),el("span",`${number(exam.questions.reduce(
+(sum,q)=>sum+q.score,0)/100)} نمره`),el("span",`${number(exam.duration)} دقیقه`));const actions=el("div",void 0,"qb-actions qb-exam-actions");copy.append(
+meta);row.append(actions);button("مشاهده آزمون",()=>preview(exam),actions);const printButton=button("چاپ",()=>print(exam).catch(error),actions);printButton.
+title="چاپ / ذخیرهٔ PDF";printButton.setAttribute("aria-label",`چاپ / PDF آزمون ${exam.title}`);const remove=button("حذف آزمون",()=>confirmAction(
+`آزمون «${exam.title}» از درس «${exam.courseTitle}» حذف شود؟ سؤال‌های بانک حفظ می‌شوند.`,()=>mutate(next=>{next.exams=
+next.exams.filter(e=>e.id!==exam.id)})),actions);remove.setAttribute("aria-label",`حذف آزمون ${exam.title}`);remove.title="حذف آزمون";results.append(
+row)}if(!list.length)results.append(el("p",bank.exams.length?"آزمونی با این عبارت پیدا نشد.":"هنوز آزمونی ساخته نشده است.",
+"qb-empty"));button("قبلی",()=>{archivePage--;draw()},pager).disabled=archivePage===0;pager.append(el("span",`صفحه ${number(archivePage+1)} از ${number(
+Math.max(1,Math.ceil(list.length/12)))}`));button("بعدی",()=>{archivePage++;draw()},pager).disabled=(archivePage+1)*12>=list.length;pager.hidden=list.length<=
+12}find.oninput=()=>{archiveQuery=find.value;archivePage=0;draw()};courseFilter.onchange=()=>{archiveCourse=courseFilter.value;archivePage=0;draw()};draw()}function render(){
+if(!bank.courses.some(course2=>course2.id===courseId))courseId="";if(dialog.querySelector("#calPopup"))root.closeShamsiCalendar();unsubscribeBackup();unsubscribeBackup=
+()=>{};content.replaceChildren();dirty=false;const toolbar=el("div",void 0,"qb-actions qb-toolbar");toolbar.classList.toggle("qb-course-required",!courseId);toolbar.
+hidden=Boolean(courseId)&&(tab==="exams"||tab==="backup");content.append(toolbar);const course=select(toolbar,"درس",[["","انتخاب درس"],...bank.courses.
+map(c=>[c.id,c.title])],courseId);course.onchange=()=>discard(()=>{courseId=course.value;unitId="";page=0;render()});const courseActions=el("div",void 0,"qb-act\
+ions qb-course-actions");toolbar.append(courseActions);contextAction("درس جدید",()=>manageCourse(),courseActions);if(courseId){contextAction("ویرایش درس",
+()=>manageCourse(true),courseActions)}const tabs=el("nav",void 0,"tabs qb-actions qb-tabs");tabs.classList.toggle("qb-tabs-global",!courseId);tabs.setAttribute(
+"aria-label","بخش‌های بانک سؤال");content.append(tabs);for(const[id,label]of[["questions","سؤال‌ها"],["builder","طرح آزمون"],["e\
+xams","آزمون‌ها"],["backup","پشتیبان"]]){const b=button(label,()=>discard(()=>{tab=id;render()}),tabs);b.disabled=!courseId&&(id==="questions"||
+id==="builder");b.hidden=b.disabled;b.title=b.disabled?"ابتدا یک درس انتخاب کنید":label;b.setAttribute("aria-pressed",String(tab===id&&!b.disabled))}
+const panel=el("section",void 0,"qb-panel");content.append(panel);if(tab==="exams"){exams(panel)}else if(tab==="backup"){files(panel)}else if(!courseId){const empty=el(
+"div",void 0,"qb-empty");empty.insertAdjacentHTML("afterbegin",root.EduIcons.html("book"));empty.append(el("h4","ابتدا درس را انتخاب کنید"),
+el("p","با انتخاب درس از کادر بالا، سؤال‌ها و طرح آزمون آن در دسترس قرار می‌گیرند. برای شروع درس تازه، دکمهٔ + را بزنید."));
+panel.append(empty)}else if(tab==="builder")builder(panel);else questions(panel)}try{bank=D.validate(await R.read());await F.init();if(!message.dataset.fileBackup){
+message.textContent="";message.hidden=true}render()}catch(e){error(e)}}root.EduQuestionBankUI={open:openBank,sheet,print}})(globalThis);
 //# sourceMappingURL=question-bank.js.map

@@ -219,6 +219,7 @@
   }
   #app .schools-period-context .schools-file-name {
     display: block;
+    text-align: right;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;

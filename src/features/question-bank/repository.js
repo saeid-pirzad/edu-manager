@@ -52,7 +52,10 @@
         }
         store.put(next, "current");
       };
-      tx.oncomplete = () => resolve(next);
+      tx.oncomplete = () => {
+        resolve(next);
+        root.dispatchEvent?.(new Event("edu-question-bank-saved"));
+      };
       tx.onabort = () =>
         reject(
           conflict
@@ -64,5 +67,26 @@
         );
     });
   }
-  root.EduQuestionBankRepository = { read, save };
+  async function readBackup() {
+    const db = await open();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction("bank", "readonly");
+      const request = tx.objectStore("bank").get("file-backup");
+      tx.oncomplete = () => resolve(request.result || null);
+      tx.onabort = () =>
+        reject(tx.error || Error("خواندن اتصال فایل ناموفق بود."));
+    });
+  }
+  async function writeBackup(config) {
+    const db = await open();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction("bank", "readwrite");
+      if (config) tx.objectStore("bank").put(config, "file-backup");
+      else tx.objectStore("bank").delete("file-backup");
+      tx.oncomplete = () => resolve();
+      tx.onabort = () =>
+        reject(tx.error || Error("ثبت اتصال فایل ناموفق بود."));
+    });
+  }
+  root.EduQuestionBankRepository = { read, save, readBackup, writeBackup };
 })(globalThis);

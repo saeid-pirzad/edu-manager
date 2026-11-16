@@ -150,9 +150,11 @@ function initShamsiPickers() {
       if (input.matches(":disabled") || input.readOnly || !input.isConnected)
         return;
       closeShamsiCalendar();
-      (input.closest("#modal")
-        ? document.querySelector("#modal .modal-dialog")
-        : document.body
+      (
+        input.closest("dialog[open]") ||
+        (input.closest("#modal")
+          ? document.querySelector("#modal .modal-dialog")
+          : document.body)
       ).append(calPopup);
       calPopup.setAttribute("role", "dialog");
       calPopup.setAttribute("aria-label", "انتخاب تاریخ شمسی");
