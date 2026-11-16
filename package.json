@@ -23,7 +23,8 @@
     "test:logo": "node audit/logo-browser.cjs",
     "test:navbar": "node audit/navbar-browser.cjs",
     "test:school-create": "node audit/school-create-browser.cjs",
-    "test:question-bank": "node audit/question-bank-browser.cjs",
+    "test:question-bank": "node audit/question-bank-browser.cjs && node audit/question-bank-business-browser.cjs",
+    "demo:question-bank": "npm run build:check && node scripts/question-bank-demo.cjs",
     "audit": "npm test",
     "release:package": "node scripts/package-release.cjs",
     "test:annual-backup": "node audit/annual-backup-scale.cjs"

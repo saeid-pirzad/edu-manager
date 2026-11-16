@@ -177,6 +177,14 @@
         for (let line = 0; line < 4; line++) space.append(el("span"));
         row.append(space);
       }
+      if (q.type === "blank" && !/_{2,}|…|\.{3,}|ـ{3,}/u.test(q.text))
+        row.append(
+          el(
+            "p",
+            "پاسخ: ................................................",
+            "qb-short-answer",
+          ),
+        );
       s.append(row);
     });
     s.append(
@@ -524,10 +532,12 @@
         const current = bank.courses.find((c) => c.id === courseId);
         const f = form(content, async () => {
           const next = structuredClone(bank);
-          if (edit)
-            next.courses.find((c) => c.id === courseId).title =
-              name.value.trim();
-          else {
+          if (edit) {
+            const course = next.courses.find((c) => c.id === courseId);
+            course.title = name.value.trim();
+            if (!bank.units.some((u) => u.courseId === courseId))
+              course.structure = structure.value;
+          } else {
             const c = {
               id: crypto.randomUUID(),
               title: name.value.trim(),
@@ -557,7 +567,34 @@
           ],
           edit ? current.structure : "chapter",
         );
-        structure.disabled = edit;
+        structure.disabled =
+          edit && bank.units.some((u) => u.courseId === courseId);
+        if (edit) {
+          const units = bank.units.filter((u) => u.courseId === courseId);
+          const unitIds = new Set(units.map((u) => u.id));
+          const questions = bank.questions.filter((q) =>
+            unitIds.has(q.unitId),
+          ).length;
+          const remove = button(
+            "حذف درس",
+            () =>
+              confirmAction(
+                `درس «${current.title}» با ${number(units.length)} بخش و ${number(questions)} سؤال حذف شود؟ این حذف از بانک قابل برگشت نیست؛ آزمون‌های ذخیره‌شده حفظ می‌شوند.`,
+                () =>
+                  mutate((next) => {
+                    next.courses = next.courses.filter(
+                      (c) => c.id !== current.id,
+                    );
+                    next.units = next.units.filter((u) => !unitIds.has(u.id));
+                    next.questions = next.questions.filter(
+                      (q) => !unitIds.has(q.unitId),
+                    );
+                  }),
+              ),
+            f,
+          );
+          remove.classList.add("qb-field-wide", "qb-delete-entity");
+        }
         saveButton(f);
         name.focus();
       });
@@ -588,6 +625,27 @@
         });
         const name = field(f, `عنوان ${unitLabel()}`, existing?.title || "");
         name.placeholder = `${unitLabel()} اول`;
+        if (existing) {
+          const count = bank.questions.filter(
+            (q) => q.unitId === existing.id,
+          ).length;
+          const remove = button(
+            `حذف ${unitLabel()}`,
+            () =>
+              confirmAction(
+                `بخش «${existing.title}» و ${number(count)} سؤال آن حذف شوند؟ این حذف از بانک قابل برگشت نیست؛ آزمون‌های ذخیره‌شده حفظ می‌شوند.`,
+                () =>
+                  mutate((next) => {
+                    next.units = next.units.filter((u) => u.id !== existing.id);
+                    next.questions = next.questions.filter(
+                      (q) => q.unitId !== existing.id,
+                    );
+                  }),
+              ),
+            f,
+          );
+          remove.classList.add("qb-field-wide", "qb-delete-entity");
+        }
         saveButton(f);
         name.focus();
       });
@@ -621,6 +679,13 @@
           };
           if (q.type === "mcq") q.options = options.map((n) => n.value.trim());
           D.question(q);
+          if (
+            q.type === "mcq" &&
+            new Set(q.options.map(D.optionKey)).size !== 4
+          )
+            throw Error(
+              "گزینه‌ها نباید فقط در شکل نوشتن ی، ک یا فاصله تفاوت داشته باشند؛ چهار پاسخ متمایز بنویسید.",
+            );
           await mutate((next) => {
             const index = next.questions.findIndex((x) => x.id === q.id);
             if (index < 0) next.questions.push(q);
@@ -736,6 +801,7 @@
     }
     function questions(parent) {
       const units = bank.units.filter((u) => u.courseId === courseId);
+      const unitMap = new Map(units.map((unit) => [unit.id, unit]));
       const sections = el("div", undefined, "qb-section-picker");
       parent.append(sections);
       const filters = el("div", undefined, "course-grid qb-filters");
@@ -790,7 +856,7 @@
         pager.replaceChildren();
         const list = bank.questions.filter(
           (q) =>
-            units.some((u) => u.id === q.unitId) &&
+            unitMap.has(q.unitId) &&
             (!unitId || q.unitId === unitId) &&
             (!questionType || q.type === questionType) &&
             D.searchText(q.text).includes(D.searchText(search)),
@@ -809,7 +875,7 @@
             el("span", q.text, "qb-row-excerpt"),
             el(
               "span",
-              `${D.types[q.type]} · ${units.find((u) => u.id === q.unitId).title}`,
+              `${D.types[q.type]} · ${unitMap.get(q.unitId).title}`,
               "qb-row-meta",
             ),
           );
@@ -1065,6 +1131,8 @@
           counts[Object.keys(D.types)[0]].setCustomValidity(
             "مجموع سؤال‌های آزمون باید بین ۱ تا ۵۰۰ باشد.",
           );
+        for (const input of Object.values(counts))
+          input.setAttribute("aria-invalid", String(!input.validity.valid));
         plan.textContent = `${number(checks.filter((c) => c.checked).length)} بخش انتخاب‌شده · ${number(total)} سؤال در طرح آزمون`;
       };
       const selectionActions = el("div", undefined, "qb-selection-actions");
@@ -1436,6 +1504,12 @@
     }
     function render() {
       if (!bank.courses.some((course) => course.id === courseId)) courseId = "";
+      if (
+        !bank.units.some(
+          (unit) => unit.id === unitId && unit.courseId === courseId,
+        )
+      )
+        unitId = "";
       if (dialog.querySelector("#calPopup")) root.closeShamsiCalendar();
       unsubscribeBackup();
       unsubscribeBackup = () => {};
@@ -1452,13 +1526,16 @@
         [["", "انتخاب درس"], ...bank.courses.map((c) => [c.id, c.title])],
         courseId,
       );
-      course.onchange = () =>
+      course.onchange = () => {
+        const requestedCourse = course.value;
+        course.value = courseId;
         discard(() => {
-          courseId = course.value;
+          courseId = requestedCourse;
           unitId = "";
           page = 0;
           render();
         });
+      };
       const courseActions = el(
         "div",
         undefined,

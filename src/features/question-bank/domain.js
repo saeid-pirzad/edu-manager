@@ -47,6 +47,14 @@
       .trim()
       .toLocaleLowerCase("fa-IR");
   }
+  function optionKey(value) {
+    return String(value)
+      .normalize("NFKC")
+      .replace(/[يى]/g, "ی")
+      .replace(/ك/g, "ک")
+      .replace(/[\s\u200c\u200d]+/g, " ")
+      .trim();
+  }
   function integer(value, min, max) {
     const s = digits(value),
       n = Number(s);
@@ -115,6 +123,14 @@
       fail("سقف حجم بانک ۲۰ مگابایت است.");
     return json;
   }
+  function validDate(value) {
+    return (
+      typeof value === "string" &&
+      /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+      Number.isFinite(Date.parse(value)) &&
+      new Date(value).toISOString().slice(0, 10) === value
+    );
+  }
   function validate(bank) {
     if (
       !bank ||
@@ -161,13 +177,13 @@
     for (const c of bank.courses)
       if (!["chapter", "module"].includes(c.structure))
         fail("ساختار درس نامعتبر است.");
+    const courseIds = new Set(bank.courses.map((c) => c.id));
+    const unitIds = new Set(bank.units.map((u) => u.id));
     for (const u of bank.units)
-      if (!bank.courses.some((c) => c.id === u.courseId))
-        fail("ارتباط بخش با درس نامعتبر است.");
+      if (!courseIds.has(u.courseId)) fail("ارتباط بخش با درس نامعتبر است.");
     for (const q of bank.questions) {
       question(q);
-      if (!bank.units.some((u) => u.id === q.unitId))
-        fail("بخش سؤال معتبر نیست.");
+      if (!unitIds.has(q.unitId)) fail("بخش سؤال معتبر نیست.");
     }
     for (const e of bank.exams) {
       fields(e, [
@@ -185,9 +201,7 @@
         !text(e.courseTitle) ||
         typeof e.school !== "string" ||
         typeof e.teacher !== "string" ||
-        !/^\d{4}-\d{2}-\d{2}$/.test(e.date) ||
-        !Number.isFinite(Date.parse(e.date)) ||
-        new Date(e.date).toISOString().slice(0, 10) !== e.date ||
+        !validDate(e.date) ||
         !Number.isInteger(e.duration) ||
         e.duration < 1 ||
         e.duration > 600 ||
@@ -221,30 +235,62 @@
     return result;
   }
   function generate(bank, spec, random = Math.random) {
+    if (!spec || typeof spec !== "object" || Array.isArray(spec))
+      fail("مشخصات طرح آزمون معتبر نیست.");
+    if (
+      !text(spec.courseId) ||
+      !Array.isArray(spec.unitIds) ||
+      !spec.unitIds.length ||
+      !spec.unitIds.every(text) ||
+      new Set(spec.unitIds).size !== spec.unitIds.length
+    )
+      fail("درس و بخش‌های معتبر و غیرتکراری انتخاب کنید.");
+    if (
+      !spec.counts ||
+      typeof spec.counts !== "object" ||
+      Array.isArray(spec.counts)
+    )
+      fail("تعداد سؤال‌های هر نوع را مشخص کنید.");
+    if (
+      !text(spec.title) ||
+      typeof spec.school !== "string" ||
+      typeof spec.teacher !== "string" ||
+      !validDate(spec.date)
+    )
+      fail("مشخصات آزمون معتبر نیست.");
+    const duration = integer(spec.duration, 1, 600);
     const course = bank.courses.find((c) => c.id === spec.courseId);
+    const units = new Map(bank.units.map((u) => [u.id, u]));
+    const unitIds = new Set(spec.unitIds);
     if (
       !course ||
-      !spec.unitIds.length ||
-      spec.unitIds.some(
-        (id) =>
-          !bank.units.some((u) => u.id === id && u.courseId === course.id),
-      )
+      spec.unitIds.some((id) => units.get(id)?.courseId !== spec.courseId)
     )
       fail("درس و بخش‌های معتبر انتخاب کنید.");
+    const counts = Object.fromEntries(
+      Object.keys(types).map((type) => [
+        type,
+        integer(spec.counts[type], 0, 500),
+      ]),
+    );
+    const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
+    if (!total || total > 500) fail("آزمون باید بین ۱ و ۵۰۰ سؤال داشته باشد.");
+    const pools = Object.fromEntries(
+      Object.keys(types).map((type) => [type, []]),
+    );
+    for (const q of bank.questions)
+      if (unitIds.has(q.unitId) && Object.hasOwn(pools, q.type))
+        pools[q.type].push(q);
     const selected = [];
     for (const type of Object.keys(types)) {
-      const count = integer(spec.counts[type], 0, 500);
-      const pool = bank.questions.filter(
-        (q) => q.type === type && spec.unitIds.includes(q.unitId),
-      );
+      const count = counts[type],
+        pool = pools[type];
       if (count > pool.length)
         fail(
           `${types[type]}: ${pool.length} سؤال موجود است؛ تعداد درخواستی ${count} است.`,
         );
       selected.push(...shuffle(pool, random).slice(0, count));
     }
-    if (!selected.length || selected.length > 500)
-      fail("آزمون باید بین ۱ و ۵۰۰ سؤال داشته باشد.");
     const exam = {
       id: crypto.randomUUID(),
       title: spec.title.trim(),
@@ -252,10 +298,10 @@
       school: spec.school.trim(),
       teacher: spec.teacher.trim(),
       date: spec.date,
-      duration: integer(spec.duration, 1, 600),
+      duration,
       questions: shuffle(selected, random).map((q) => ({
         ...structuredClone(q),
-        unitTitle: bank.units.find((u) => u.id === q.unitId).title,
+        unitTitle: units.get(q.unitId).title,
       })),
     };
     validate({ ...bank, exams: [...bank.exams, exam] });
@@ -266,6 +312,7 @@
     types,
     digits,
     searchText,
+    optionKey,
     score,
     integer,
     empty,
