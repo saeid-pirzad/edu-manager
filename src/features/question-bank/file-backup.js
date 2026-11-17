@@ -48,6 +48,20 @@
           bank[key].length,
         ]),
       );
+    function contents(bank) {
+      // Revisions belong to this device's optimistic save sequence. Restoring a
+      // backup changes that revision without changing its educational content.
+      // JSON object key order is immaterial; array order remains significant.
+      return JSON.stringify({ ...bank, revision: 0 }, (_key, value) =>
+        value && typeof value === "object" && !Array.isArray(value)
+          ? Object.fromEntries(
+              Object.keys(value)
+                .sort()
+                .map((key) => [key, value[key]]),
+            )
+          : value,
+      );
+    }
     function dropped(before, after) {
       return (
         before &&
@@ -245,7 +259,7 @@
           const bank = D.validate(await repository.read());
           const json = D.size(bank);
           // Never silently replace a populated, different backup during selection.
-          if (before.bank && D.size(before.bank) !== json)
+          if (before.bank && contents(before.bank) !== contents(bank))
             throw Error(
               "برای حفظ محتوای این فایل، فایل تازه‌ای بسازید؛ اگر قصد بازیابی دارید از بخش بازیابی استفاده کنید.",
             );

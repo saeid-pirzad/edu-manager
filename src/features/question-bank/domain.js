@@ -219,7 +219,7 @@
       if (
         !Array.isArray(q.options) ||
         q.options.length !== 4 ||
-        !q.options.every(text) ||
+        !Array.from(q.options).every(text) ||
         new Set(q.options.map((x) => x.trim())).size !== 4 ||
         !Number.isInteger(q.answer) ||
         q.answer < 0 ||

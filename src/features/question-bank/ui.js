@@ -3,6 +3,7 @@
   const D = root.EduQuestionBank,
     R = root.EduQuestionBankRepository,
     F = root.EduQuestionBankFileBackup.service;
+  let pendingChanges = () => false;
   const el = (tag, value, className) => {
     const n = document.createElement(tag);
     if (value !== undefined) n.textContent = value;
@@ -311,6 +312,9 @@
     const storage = el("div", undefined, "qb-storage-bar");
     const storageState = el("span", "ذخیره در مرورگر", "qb-storage-state");
     storageState.setAttribute("role", "status");
+    let persistentMessage = "",
+      persistentMessageOrigin = "",
+      transientMessage = "";
     const storageAction = button(
       "فعال‌سازی خودکار",
       () => {
@@ -349,6 +353,14 @@
             ? "تنظیمات ذخیره"
             : "فعال‌سازی خودکار";
       storageAction.disabled = state.state === "busy";
+      if (
+        persistentMessageOrigin === "file" &&
+        ["active", "inactive"].includes(state.state)
+      ) {
+        persistentMessage = "";
+        persistentMessageOrigin = "";
+        showMessage();
+      }
     });
     const tabScopes = {
       questions: { courseId: "", unitId: "" },
@@ -368,12 +380,34 @@
       busy = false,
       confirmation = null,
       unsubscribeBackup = () => {};
-    const error = (e) => {
-      message.hidden = false;
-      message.textContent = e.message || String(e);
-      message.dataset.state = "error";
-      message.setAttribute("role", "alert");
+    pendingChanges = () => dirty || busy;
+    const error = (e, persistent = false) => {
+      const detail = e.message || String(e);
+      if (persistent) {
+        persistentMessage = detail;
+        persistentMessageOrigin = "data";
+        transientMessage = "";
+      } else transientMessage = detail;
+      showMessage();
     };
+    function showMessage() {
+      const details = [...new Set([transientMessage, persistentMessage])]
+        .filter(Boolean)
+        .join(" ");
+      message.hidden = !details;
+      message.textContent = details;
+      if (details) {
+        message.dataset.state = "error";
+        message.setAttribute("role", "alert");
+      } else {
+        message.setAttribute("role", "status");
+        delete message.dataset.state;
+      }
+    }
+    function clearTransientMessage() {
+      transientMessage = "";
+      showMessage();
+    }
     function confirmAction(label, action, onCancel = () => {}) {
       if (confirmation || busy) {
         onCancel();
@@ -431,6 +465,7 @@
         optionChanges.disconnect();
         unsubscribeBackup();
         unsubscribeStorage();
+        pendingChanges = () => false;
         const calendar = dialog.querySelector("#calPopup");
         if (calendar) {
           root.closeShamsiCalendar();
@@ -518,6 +553,12 @@
     });
     async function commit(next) {
       if (busy) return false;
+      try {
+        D.validate(next);
+      } catch (e) {
+        error(e);
+        return false;
+      }
       busy = true;
       dialog.setAttribute("aria-busy", "true");
       content.inert = true;
@@ -526,23 +567,23 @@
         dirty = false;
         const fileState = F.state();
         if (["error", "paused", "permission"].includes(fileState.state)) {
-          message.hidden = false;
-          message.textContent = `در مرورگر ذخیره شد. ${fileState.message}`;
-          message.dataset.state = "error";
-          message.setAttribute("role", "alert");
+          persistentMessage = `در مرورگر ذخیره شد. ${fileState.message}`;
+          persistentMessageOrigin = "file";
+          transientMessage = "";
+          showMessage();
           return true;
         }
-        message.hidden = true;
-        message.textContent = "";
+        persistentMessage = "";
+        persistentMessageOrigin = "";
+        transientMessage = "";
+        showMessage();
         storageState.textContent =
           fileState.state === "active"
             ? "در مرورگر ذخیره شد؛ فایل در حال به‌روزرسانی"
             : "در مرورگر ذخیره شد";
-        message.setAttribute("role", "status");
-        delete message.dataset.state;
         return true;
       } catch (e) {
-        error(e);
+        error(e, true);
         return false;
       } finally {
         busy = false;
@@ -699,6 +740,7 @@
     }
     function manageCourse(edit = false) {
       discard(() => {
+        clearTransientMessage();
         content.replaceChildren();
         content.append(
           el("h4", edit ? "ویرایش درس" : "درس جدید", "qb-editor-title"),
@@ -753,6 +795,7 @@
     }
     function manageUnit(existing) {
       discard(() => {
+        clearTransientMessage();
         content.replaceChildren();
         content.append(
           el(
@@ -791,6 +834,7 @@
     }
     function editQuestion(existing) {
       discard(() => {
+        clearTransientMessage();
         content.replaceChildren();
         content.append(
           el("h4", existing ? "ویرایش سؤال" : "افزودن سؤال", "qb-editor-title"),
@@ -1461,6 +1505,7 @@
       });
     }
     function preview(exam) {
+      clearTransientMessage();
       content.replaceChildren();
       const actions = el("div", undefined, "qb-actions qb-preview-actions");
       content.append(actions);
@@ -1562,9 +1607,15 @@
           "فایل را یک‌بار انتخاب کنید؛ هنگام باز بودن برنامه، همان فایل پس از ثبت تغییرات به‌روز می‌شود. فایل خودکار، اطلاعات را به برنامه وارد نمی‌کند.",
         ),
       );
+      const fileSummary = el("div", undefined, "qb-file-summary");
+      const fileLabel = el("span", undefined, "qb-file-meta");
+      const fileName = el("bdi", undefined, "qb-file-name");
+      fileName.dir = "ltr";
+      const fileSaved = el("span", undefined, "qb-file-meta");
+      fileSummary.append(fileLabel, fileName, fileSaved);
       const status = el("p", undefined, "qb-file-status");
       const actions = el("div", undefined, "qb-file-actions");
-      automatic.append(status, actions);
+      automatic.append(fileSummary, status, actions);
       details.append(automatic);
       const choose = button("انتخاب فایل", () => F.choose(), actions);
       const save = button("ذخیره اکنون", () => saveBankFile(), actions);
@@ -1580,7 +1631,36 @@
       unsubscribeBackup();
       unsubscribeBackup = F.subscribe((state) => {
         if (!status.isConnected) return;
-        status.textContent = state.message;
+        fileLabel.textContent = state.connected
+          ? "فایل متصل"
+          : "فایل پشتیبان انتخاب نشده";
+        fileName.hidden = !state.connected;
+        fileName.textContent = state.connected
+          ? state.name || "نام فایل در دسترس نیست"
+          : "";
+        fileName.title = state.name || "";
+        fileSaved.hidden = !state.connected;
+        const savedAt = state.savedAt ? new Date(state.savedAt) : null;
+        if (state.connected && savedAt && Number.isFinite(savedAt.getTime())) {
+          const time = el(
+            "time",
+            savedAt.toLocaleString("fa-IR-u-ca-persian", {
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          );
+          time.dateTime = savedAt.toISOString();
+          fileSaved.replaceChildren("آخرین ذخیره: ", time);
+        } else {
+          fileSaved.textContent = state.connected ? "هنوز ذخیره نشده" : "";
+        }
+        status.textContent =
+          state.connected && state.state === "permission"
+            ? "این فایل قبلاً انتخاب شده است؛ برای تأیید مجوز همین فایل، «اجازه مجدد» را بزنید."
+            : state.message;
         status.dataset.state = state.state;
         status.setAttribute(
           "role",
@@ -1760,6 +1840,7 @@
       draw();
     }
     function render() {
+      clearTransientMessage();
       if (!bank.courses.some((course) => course.id === courseId)) courseId = "";
       if (
         !bank.units.some(
@@ -1873,5 +1954,10 @@
       error(e);
     }
   }
-  root.EduQuestionBankUI = { open: openBank, sheet, print };
+  root.EduQuestionBankUI = {
+    open: openBank,
+    sheet,
+    print,
+    hasPendingChanges: () => pendingChanges() || F.state().state === "busy",
+  };
 })(globalThis);

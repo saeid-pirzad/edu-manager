@@ -18,6 +18,7 @@ function installUI() {
       assessmentContext.hasDrafts() ||
       draftRecoveryFailed ||
       draftWritesPending ||
+      window.EduQuestionBankUI?.hasPendingChanges?.() ||
       hasRecordEditorChanges() ||
       document.querySelector(
         '.record-editor[aria-busy="true"],[data-entity-create][aria-busy="true"]',

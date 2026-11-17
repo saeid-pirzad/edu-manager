@@ -108,6 +108,169 @@ test("score solver agrees with exhaustive mixed-type small-bank combinations inc
     else assert.throws(() => D.generate(b, config, () => 0.3), /ترکیبی/);
   }
 });
+test("deterministic mixed-bank exhaustive oracle preserves exact-score quotas, scope and snapshots", (t) => {
+  const random = (initial) => {
+    let state = initial;
+    return () =>
+      (state = (Math.imul(state, 1664525) + 1013904223) >>> 0) / 4294967296;
+  };
+  const fixtureRandom = random(193729);
+  const covered = new Set();
+  let banks = 0;
+  let targets = 0;
+  for (let trial = 0; trial < 64; trial++) {
+    const bank = fixture();
+    bank.units.push(
+      { id: "selected-second", title: "دوم منتخب", courseId: "c" },
+      { id: "unselected", title: "انتخاب‌نشده", courseId: "c" },
+    );
+    bank.questions = [];
+    const counts = {};
+    let possible = new Set([0]);
+    for (const type of Object.keys(D.types)) {
+      const count = 1 + Math.floor(fixtureRandom() * 4);
+      const scores = Array.from(
+        { length: count },
+        () => 1 + Math.floor(fixtureRandom() * 6),
+      );
+      counts[type] = Math.floor(fixtureRandom() * (count + 1));
+      if (!counts[type]) covered.add("zero quota");
+      if (new Set(scores).size < scores.length) covered.add("repeated marks");
+      if (new Set(scores).size > 1) covered.add("different marks");
+      const sums = new Set();
+      for (let mask = 0; mask < 1 << count; mask++) {
+        let selected = 0;
+        let total = 0;
+        for (let index = 0; index < count; index++)
+          if (mask & (1 << index)) {
+            selected++;
+            total += scores[index];
+          }
+        if (selected === counts[type]) sums.add(total);
+      }
+      possible = new Set(
+        [...possible].flatMap((total) => [...sums].map((sum) => total + sum)),
+      );
+      const source = fixture().questions.find(
+        (question) => question.type === type,
+      );
+      bank.questions.push(
+        ...scores.map((score, index) => ({
+          ...structuredClone(source),
+          id: `${trial}-${type}-${index}`,
+          unitId: index % 2 ? "selected-second" : "u",
+          score,
+        })),
+        ...["unselected", "u2"].map((unitId) => ({
+          ...structuredClone(source),
+          id: `${trial}-${type}-${unitId}`,
+          unitId,
+          score: 1,
+        })),
+      );
+    }
+    if (!Object.values(counts).some(Boolean)) continue;
+    banks++;
+    D.validate(bank);
+    const before = JSON.stringify(bank);
+    const generationRandom = random(trial + 1);
+    const config = {
+      ...spec(),
+      unitIds: ["u", "selected-second"],
+      counts,
+    };
+    for (let target = 1; target <= Math.max(...possible) + 1; target++) {
+      targets++;
+      const requested = { ...config, totalScore: (target / 100).toFixed(2) };
+      const context = `trial ${trial}, target ${target}`;
+      if (!possible.has(target)) {
+        covered.add("unreachable total");
+        assert.throws(
+          () => D.generate(bank, requested, generationRandom),
+          /ترکیبی/,
+          context,
+        );
+        continue;
+      }
+      covered.add("reachable total");
+      const exam = D.generate(bank, requested, generationRandom);
+      assert.equal(
+        exam.questions.reduce((sum, question) => sum + question.score, 0),
+        target,
+        context,
+      );
+      assert.equal(
+        new Set(exam.questions.map((question) => question.id)).size,
+        exam.questions.length,
+        context,
+      );
+      for (const type of Object.keys(D.types))
+        assert.equal(
+          exam.questions.filter((question) => question.type === type).length,
+          counts[type],
+          context,
+        );
+      for (const snapshot of exam.questions) {
+        assert.ok(config.unitIds.includes(snapshot.unitId), context);
+        const original = bank.questions.find(
+          (question) => question.id === snapshot.id,
+        );
+        const unit = bank.units.find((item) => item.id === original.unitId);
+        assert.deepEqual(
+          snapshot,
+          { ...original, unitTitle: unit.title },
+          context,
+        );
+        assert.notEqual(snapshot, original, context);
+        if (snapshot.type === "mcq") {
+          covered.add("mcq");
+          assert.notEqual(snapshot.options, original.options, context);
+        }
+      }
+    }
+    assert.equal(JSON.stringify(bank), before, `trial ${trial} mutated source`);
+  }
+  assert.deepEqual(
+    [...covered].sort(),
+    [
+      "zero quota",
+      "repeated marks",
+      "different marks",
+      "unreachable total",
+      "reachable total",
+      "mcq",
+    ].sort(),
+  );
+  t.diagnostic(
+    `${targets} targets checked against exhaustive combinations in ${banks} mixed banks`,
+  );
+});
+
+test("score-search processing limit reports uncertainty without mutating or saving a partial exam", () => {
+  const bank = fixture();
+  const source = bank.questions.find((question) => question.type === "essay");
+  bank.questions = Array.from({ length: 100 }, (_, index) => ({
+    ...structuredClone(source),
+    id: `budget-${index}`,
+    score: (index + 1) * 2,
+  }));
+  const config = {
+    ...spec(),
+    counts: { mcq: 0, blank: 0, essay: 50, boolean: 0 },
+    totalScore: "50.01",
+  };
+  const before = JSON.stringify(bank);
+  const requested = JSON.stringify(config);
+  assert.throws(
+    () => D.generate(bank, config, () => 0.3),
+    (error) =>
+      /حد پردازش/.test(error.message) && /آزمونی ذخیره نشد/.test(error.message),
+  );
+  assert.equal(JSON.stringify(bank), before);
+  assert.equal(JSON.stringify(config), requested);
+  assert.equal(bank.exams.length, 0);
+});
+
 test("impossible score target never rescales original marks or changes the bank", () => {
   const b = fixture(),
     before = JSON.stringify(b);
@@ -188,6 +351,35 @@ test("all four question types and JSON/BOM round trip", () => {
   const b = fixture();
   assert.deepEqual(D.parse("\uFEFF" + D.size(b)), b);
 });
+test("sparse and null choice slots cannot enter live questions or archived snapshots", () => {
+  for (let missing = 0; missing < 4; missing++) {
+    for (const answer of [missing, (missing + 1) % 4]) {
+      const bank = fixture();
+      bank.questions[0].answer = answer;
+      delete bank.questions[0].options[missing];
+      assert.throws(() => D.question(bank.questions[0]), /چهار گزینه/);
+      assert.throws(() => D.validate(bank), /چهار گزینه/);
+      assert.throws(() => D.parse(JSON.stringify(bank)), /چهار گزینه/);
+
+      const archived = fixture();
+      archived.exams.push(D.generate(archived, spec()));
+      const snapshot = archived.exams[0].questions.find(
+        (question) => question.type === "mcq",
+      );
+      snapshot.answer = answer;
+      delete snapshot.options[missing];
+      assert.throws(() => D.validate(archived), /چهار گزینه/);
+      assert.throws(() => D.parse(JSON.stringify(archived)), /چهار گزینه/);
+    }
+    const bank = fixture();
+    bank.questions[0].options[missing] = null;
+    assert.throws(() => D.parse(JSON.stringify(bank)), /چهار گزینه/);
+  }
+  const complete = fixture();
+  complete.exams.push(D.generate(complete, spec()));
+  assert.deepEqual(D.parse(D.size(D.validate(complete))), complete);
+});
+
 test("rejects invalid options, answer, references, ids, versions and school files", () => {
   for (const change of [
     (b) => b.questions[0].options.pop(),

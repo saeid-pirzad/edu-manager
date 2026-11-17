@@ -40,6 +40,7 @@ async function prepareForUpdate() {
       assessmentContext.hasDrafts() ||
       draftWritesPending ||
       draftRecoveryFailed ||
+      window.EduQuestionBankUI?.hasPendingChanges?.() ||
       hasRecordEditorChanges()
     )
       throw Error(

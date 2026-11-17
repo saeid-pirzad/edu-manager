@@ -241,6 +241,93 @@ test("a matching existing bank can reconnect without importing or changing sourc
   assert.equal(await f.service.choose(), true);
   assert.equal(JSON.stringify(f.bank()), source);
 });
+test("restored educational content reconnects to its backup despite a different local revision", async () => {
+  const f = fixture(),
+    original = JSON.stringify(f.bank()),
+    restored = f.file("Classyar-QuestionBank(3).json", original);
+  f.change(() => {});
+  const source = JSON.stringify(f.bank());
+  f.choose(restored);
+  assert.equal(await f.service.choose(), true);
+  assert.equal(JSON.stringify(f.bank()), source);
+  assert.equal(restored.text(), source);
+  assert.equal(f.config().handle, restored.handle);
+  assert.equal(f.service.state().state, "active");
+});
+test("equivalent JSON object key order does not prevent reconnecting a restored bank", async () => {
+  const f = fixture();
+  function reorder(value) {
+    if (Array.isArray(value)) return value.map(reorder);
+    if (value && typeof value === "object")
+      return Object.fromEntries(
+        Object.keys(value)
+          .reverse()
+          .map((key) => [key, reorder(value[key])]),
+      );
+    return value;
+  }
+  const restored = f.file(
+    "Classyar-QuestionBank (4).json",
+    JSON.stringify(reorder(f.bank())),
+  );
+  f.change(() => {});
+  const source = JSON.stringify(f.bank());
+  f.choose(restored);
+  assert.equal(await f.service.choose(), true);
+  assert.equal(JSON.stringify(f.bank()), source);
+  assert.equal(restored.text(), source);
+  assert.equal(f.config().handle, restored.handle);
+});
+test("reconnecting ignores only local revision and preserves a populated different file and active connection", async () => {
+  for (const { prepare = () => {}, change } of [
+    {
+      change: (bank) => {
+        bank.questions[0].answer = "A different answer";
+      },
+    },
+    {
+      change: (bank) => {
+        bank.questions[0].score++;
+      },
+    },
+    {
+      change: (bank) => {
+        bank.courses[0].title = "A different course";
+      },
+    },
+    {
+      prepare: (bank) => {
+        bank.questions.push({ ...bank.questions[0], id: "another-question" });
+      },
+      change: (bank) => bank.questions.reverse(),
+    },
+    {
+      change: (bank) => {
+        bank.version = 2;
+      },
+    },
+  ]) {
+    const f = fixture();
+    f.change(prepare);
+    await f.service.choose();
+    const originalConfig = f.config(),
+      originalFile = f.target.text(),
+      originalBank = JSON.stringify(f.bank()),
+      otherBank = f.bank();
+    otherBank.revision += 10;
+    change(otherBank);
+    const otherText = JSON.stringify(otherBank),
+      other = f.file("Classyar-QuestionBank(5).json", otherText);
+    f.choose(other);
+    assert.equal(await f.service.choose(), false);
+    assert.equal(other.handle.opens, 0);
+    assert.equal(other.text(), otherText);
+    assert.equal(f.target.text(), originalFile);
+    assert.equal(JSON.stringify(f.bank()), originalBank);
+    assert.equal(f.config().id, originalConfig.id);
+    assert.equal(f.config().handle, originalConfig.handle);
+  }
+});
 test("source loss pauses writing across reloads; cancellation preserves the old file", async () => {
   const f = fixture();
   await f.service.choose();

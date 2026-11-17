@@ -2382,20 +2382,20 @@ error.message),"wipeError")}catch(reopenError){resetScreen("حذف ثبت نشد
 reopenError.message)}}return false}finally{resetConnection?.close();if(!committedReset){resetBusy=false;if(hadFileTimer&&singleFile&&!singleFileFailure&&ready&&
 !blocked&&!connectionRetired)startSingleFile()}finish()}}function installUI(){installWorkspaceActions();installGradeEvents();installAttendanceReminderClock();window.
 addEventListener("storage",event=>{if(event.key===RESET_EPOCH_KEY&&event.newValue&&event.newValue!==installationToken&&!resetBusy)invalidateInstallation()});window.
-addEventListener("beforeunload",event=>{if(busy||drafts.size||assessmentContext.hasDrafts()||draftRecoveryFailed||draftWritesPending||hasRecordEditorChanges()||
-document.querySelector('.record-editor[aria-busy="true"],[data-entity-create][aria-busy="true"]')){event.preventDefault();event.returnValue=""}});window.addEventListener(
-"pagehide",()=>{if(ready){storeDrafts();assessmentContext.persist().catch(()=>{})}tabClaimed=false;channel?.close()});window.addEventListener("pageshow",event=>{
-if(event.persisted)location.reload()});window.addEventListener("unhandledrejection",event=>{event.preventDefault();handleError(event.reason instanceof Error?event.
-reason:Error(String(event.reason)))});window.addEventListener("beforeprint",beforeReportPrint);window.addEventListener("afterprint",()=>{printAuthorization=null;
-document.getElementById("printRoot")?.remove();document.getElementById("printPageStyle")?.remove()});document.addEventListener("keydown",event=>{const overlay=document.
-getElementById("modal");if(overlay.classList.contains("hidden"))return;if(event.key==="Escape"){event.preventDefault();if(drafts.size||assessmentContext.hasDrafts()){
-flushDrafts({strict:true}).then(()=>closeModal()).catch(handleError)}else closeModal();return}if(event.key==="Tab"){const nodes=modalFocusableElements();if(nodes.
-length){const first=nodes[0],last=nodes[nodes.length-1];if(event.shiftKey&&(document.activeElement===first||!nodes.includes(document.activeElement))){event.preventDefault();
-last.focus()}else if(!event.shiftKey&&(document.activeElement===last||!nodes.includes(document.activeElement))){event.preventDefault();first.focus()}}}});if(channel)
-channel.onmessage=event=>{const message=event.data;if(singleFileChanged(message))return;if(message.type==="period-deleted"||message.type==="installation-restore\
-d"&&!fullRestoreBusy){invalidateInstallation();return}if(message.type==="installation-reset"&&!resetBusy){invalidateInstallation();return}if(tabMessage(message))
-return;if(typeof invalidateKarnamehExcelShare==="function")invalidateKarnamehExcelShare(message);window.EduPeriodicReports?.workspaceChanged?.(message);assessmentContext.
-workspaceChanged(message);invalidateYearNotesScope(message);void synchronizeYearNotesScope().catch(()=>{});if(message.workspace)void refreshAttendanceReminders();
+addEventListener("beforeunload",event=>{if(busy||drafts.size||assessmentContext.hasDrafts()||draftRecoveryFailed||draftWritesPending||window.EduQuestionBankUI?.
+hasPendingChanges?.()||hasRecordEditorChanges()||document.querySelector('.record-editor[aria-busy="true"],[data-entity-create][aria-busy="true"]')){event.preventDefault();
+event.returnValue=""}});window.addEventListener("pagehide",()=>{if(ready){storeDrafts();assessmentContext.persist().catch(()=>{})}tabClaimed=false;channel?.close()});
+window.addEventListener("pageshow",event=>{if(event.persisted)location.reload()});window.addEventListener("unhandledrejection",event=>{event.preventDefault();handleError(
+event.reason instanceof Error?event.reason:Error(String(event.reason)))});window.addEventListener("beforeprint",beforeReportPrint);window.addEventListener("afte\
+rprint",()=>{printAuthorization=null;document.getElementById("printRoot")?.remove();document.getElementById("printPageStyle")?.remove()});document.addEventListener(
+"keydown",event=>{const overlay=document.getElementById("modal");if(overlay.classList.contains("hidden"))return;if(event.key==="Escape"){event.preventDefault();
+if(drafts.size||assessmentContext.hasDrafts()){flushDrafts({strict:true}).then(()=>closeModal()).catch(handleError)}else closeModal();return}if(event.key==="Tab"){
+const nodes=modalFocusableElements();if(nodes.length){const first=nodes[0],last=nodes[nodes.length-1];if(event.shiftKey&&(document.activeElement===first||!nodes.
+includes(document.activeElement))){event.preventDefault();last.focus()}else if(!event.shiftKey&&(document.activeElement===last||!nodes.includes(document.activeElement))){
+event.preventDefault();first.focus()}}}});if(channel)channel.onmessage=event=>{const message=event.data;if(singleFileChanged(message))return;if(message.type==="\
+period-deleted"||message.type==="installation-restored"&&!fullRestoreBusy){invalidateInstallation();return}if(message.type==="installation-reset"&&!resetBusy){invalidateInstallation();
+return}if(tabMessage(message))return;if(typeof invalidateKarnamehExcelShare==="function")invalidateKarnamehExcelShare(message);window.EduPeriodicReports?.workspaceChanged?.(
+message);assessmentContext.workspaceChanged(message);invalidateYearNotesScope(message);void synchronizeYearNotesScope().catch(()=>{});if(message.workspace)void refreshAttendanceReminders();
 if(workspace&&message.workspace===workspace.id&&message.revision>workspace.revision){markWorkspaceConflict()}}}function showModalV24(title,html){if(old.showModal(
 title,html)===false)return false;setTimeout(()=>{applyDrafts();lockControls();paintStatus();if(!document.getElementById("modal").classList.contains("hidden"))(modalFocusableElements().
 find(element=>element.closest("#modalBody"))||document.querySelector("#modal .modal-dialog"))?.focus({preventScroll:true})},0);return true}async function loginV24(e){
@@ -2693,47 +2693,47 @@ id,connection};const check=()=>{assertWorkspaceReadable();if(workspace.id!==orig
 if(periodic?.hasPendingNotes?.()){await periodic.retryNotes?.();check();if(periodic.hasPendingNotes())throw Error("توضیحات گزارش هنوز ذخیره نشده است؛ پیش از به‌\
 روزرسانی ذخیرهٔ آن را دوباره امتحان کنید.")}const saves=writer,pendingDrafts=draftWriter,fileWrite=singleFileWriting;await saves;
 await pendingDrafts;if(fileWrite)await fileWrite;check();if(saves!==writer||pendingDrafts!==draftWriter||fileWrite!==singleFileWriting)continue;if(window.EduPeriodicReports?.
-hasPendingNotes?.())continue;if(busy||drafts.size||assessmentContext.hasDrafts()||draftWritesPending||draftRecoveryFailed||hasRecordEditorChanges())throw Error(
-"ویرایش ذخیره‌نشده وجود دارد؛ پیش از به‌روزرسانی آن را ذخیره یا لغو کنید.");return true}}function installRuntimeAPI(){
-EduRuntimeAPI.install({openSessionModal:openSessionModalV24,openSettingsModal:openSettingsV24,saveSettings:saveSettingsV24,sessionStudent:(c,x,id)=>sessionRoster(
-c,x).find(st=>st.id===id)||getStudentObj(c,id),knownStudentCode:(c,code,exclude)=>knownStudents(c).some(st=>st.code===code&&st.id!==exclude),downloadRawRecovery:rawRecoveryV24,
-openLessonConfig:courseUI.open,saveLessonConfig:courseUI.save,addLesson:courseUI.add,gradeStatus:policyStatus,buildLessonGradesHtml:(c,l)=>l.gradeMode==="kardan\
-esh"?buildKardaneshEditor(c,l):l.gradingPolicy?courseUI.table(c,l,null,true):old.buildLessonGradesHtml(c,l),renderLessonStudents:(c,l)=>l.gradingPolicy?courseUI.
-table(c,l):old.renderLessonStudents(c,l),buildLessonReportHtml:(c,l)=>l.gradeMode==="kardanesh"||l.gradingPolicy?'<div class="card report-document grade-report"\
-><button class="no-print" data-workspace-action="print">چاپ / PDF</button>'+(l.gradeMode==="kardanesh"?termAssessmentReport(c,l):courseUI.table(c,l))+"</div>":
-old.buildLessonReportHtml(c,l),defaultDB:v24DefaultDB,prepareDB:normalizeDB,validateDB:validateV24,saveDB:saveDBV24,render:renderV24,calcStudentLesson:calcV24,buildKardaneshGradesHtml:buildKardaneshEditor,
-buildKardaneshSummaryHtml:buildKardaneshSummary,openBulkScoreModal:openBulkV24,setAllAttendance:setAllAttendanceV24,previousSessionAttendance:previousSessionAttendanceV24,
-copyPreviousAttendance:copyPreviousAttendanceV24,toggleAtt:toggleAttendanceV24,changeSessionDate:changeSessionDateV24,addManualSession:addManualSessionV24,deleteSession:deleteSessionV24,
-deleteAllSessions:deleteAllSessionsV24,saveSessionUnit:saveSessionUnitV24,updateSessionUnits:updateSessionUnitsV24,addSessionScore:addSessionScoreV24,removeSessionScore:removeSessionScoreV24,
-clickMasterCell:clickMasterV24,toggleActiveDay:toggleActiveDayV24,changePeriods:changePeriodsV24,saveWeekStartDate:saveWeekStartDateV24,saveMasterConfig:saveMasterConfigV24,
-clearMasterConfig:clearMasterConfigV24,startSessionFromMaster:startSessionFromMasterV24,exportBackup:exportFullBackup,handleImport:handleImportV24,handleExcelImport:csvImportV24,
-downloadExcelTemplate:downloadCSVTemplate,openTransferModal:id=>openMembership("transfer",id),deleteStudent:id=>openMembership("archive",id),restoreStudent:id=>openMembership(
-"restore",id),doTransfer:(id,copy)=>membershipContext?.studentId===id?saveMembership(copy?"copy":""):void 0,deleteSchool:id=>openDeletion("school",id),deleteClass:id=>openDeletion(
-"class",id),deleteLesson:id=>openDeletion("lesson",id),addSchool:event=>createEntityV24(event,"school"),addClass:event=>createEntityV24(event,"class"),addStudent:addStudentV24,
-openEditStudentModal:editStudentV24,buildArchiveHtml:buildArchiveV24,buildOverviewKarnamehHtml:overviewV24,buildDetailedKarnamehHtml:detailedV24,generateParentReportText:parentReportV24,
-wipeAllData:wipeAllV24,showModal:showModalV24,checkPassword:loginV24});window.EduV24={releaseSessionEditAccess,course:courseUI,openEntityEditor,saveEntityEditor,
-confirmDeletion,saveMembership,openOtherDrafts,adoptDrafts,discardDrafts,reviewDrafts,approveDrafts,asciiDigits,parseGrade,fraction,weightedKardanesh,finalText,
-getReportContext:()=>({...academicYearNotesContext(),id:workspace?.id||"",revision:workspace?.revision||0,pendingDrafts:drafts.size+assessmentContext.pending,closed:!!workspace?.
-closed,year:workspace?.year||"",term:{first:"اول",second:"دوم"}[workspace?.termKind||academicTermKind(workspace?.term||"")]||workspace?.term||"",ready:ready&&
-!periodLoading,blocked,retired:connectionRetired,resetting:resetBusy,saving:busy,authenticated:!db.settings.password||isAuthenticated}),startTodaySession:startTodaySessionV24,
-openAcademicYear,refreshYearLessonSessions,openYearSession,prepareForUpdate,prepareReportSnapshot,renderAcademicKarnameh,periodicKarnamehHtml,initPeriodicKarnameh,
-openKarnamehStudent,listAnnualReportPeriods,assessmentResult,annualGradeRows,annualTechnicalRows,assertReportSnapshot,normalizeDB,validateV24,averageLabel,csvPlan,
-gradeInput,clearGrade,flushDrafts,openBackups,exportFullBackup,openBackupShare,sharePreparedBackup,downloadPreparedBackup,snapshotInstallation,validateFullBackup,
-previewFullBackup,restoreFullBackup,confirmImport,undoLast,openPeriods,switchPeriod:id=>switchPeriod(id),openNewPeriod,finalizePeriod,reopenPeriod,showFrozenReport,
-printReport,copyReport:copyReportV24,preparePrint,commitCSV,saveStudent,refreshControlLocks:lockControls,recoverReportNotes:()=>workspace?hydrateReportNotes(workspace):
-true,canWriteReportNotes:()=>!periodLoading&&!resetBusy&&!connectionRetired&&(!fullRestoreBusy||pendingFullBackup===null),persistReportNotes:commitReportNoteValues,
-confirmWipe,saveDB:saveDBV24,bootstrap:bootstrapV24,test:{prepareLegacyPeriodFixture:()=>{if(!globalThis.__EDU_TEST_MODE__)throw Error("فقط در حالت آزمون");
-return showModal("Synthetic legacy catalog fixture",'<input id="periodYear"><select id="periodTerm"><option>اول</option><option>دوم</option></select>')},createLegacyPeriod:()=>{
-if(!globalThis.__EDU_TEST_MODE__)throw Error("فقط در حالت آزمون");return createNewPeriod()},switchLegacyPeriod:id=>{if(!globalThis.__EDU_TEST_MODE__)
-throw Error("فقط در حالت آزمون");return switchPeriod(id,legacyPeriodSwitchToken)},openLegacyPeriodDeletion:id=>{if(!globalThis.__EDU_TEST_MODE__)throw Error(
-"فقط در حالت آزمون");return openDeletePeriod(id)},getState:()=>({db,ready,workspace,blocked,busy,status,drafts:[...drafts.values()]}),settle:async()=>{
-await flushDrafts();await writer;await draftWriter},failNextWrite:()=>{if(!globalThis.__EDU_TEST_MODE__)throw Error("فقط در حالت آزمون");failNextWrite=
-true},getConnection:()=>connection,importLegacyBackup:event=>{if(!globalThis.__EDU_TEST_MODE__)throw Error("فقط در حالت آزمون");return handleImportV24(
-event,{replaceSystem:false})}}}}let discardingDrafts=false;async function discardDrafts(){if(discardingDrafts)return;if(!drafts.size&&!assessmentContext.hasDrafts())
-return;if(!confirm("ویرایش‌های ثبت‌نشده کنار گذاشته شوند؟ داده‌های ذخیره‌شده تغییر نمی‌کنند."))
-return;const origin=workspace?.id,sourceRevision=workspace?.revision,sourceConnection=connection,isCurrentTarget=()=>workspace?.id===origin&&workspace?.revision===
-sourceRevision&&connection===sourceConnection&&!busy&&!flushing&&!periodLoading&&!resetBusy&&!connectionRetired;const ensureCurrent=()=>{if(!isCurrentTarget())throw Error(
-"اطلاعات، نوبت یا وضعیت ثبت تغییر کرده است؛ لغو پیش‌نویس را دوباره بررسی کنید.")};ensureCurrent();
+hasPendingNotes?.())continue;if(busy||drafts.size||assessmentContext.hasDrafts()||draftWritesPending||draftRecoveryFailed||window.EduQuestionBankUI?.hasPendingChanges?.()||
+hasRecordEditorChanges())throw Error("ویرایش ذخیره‌نشده وجود دارد؛ پیش از به‌روزرسانی آن را ذخیره یا لغو کنید.");
+return true}}function installRuntimeAPI(){EduRuntimeAPI.install({openSessionModal:openSessionModalV24,openSettingsModal:openSettingsV24,saveSettings:saveSettingsV24,
+sessionStudent:(c,x,id)=>sessionRoster(c,x).find(st=>st.id===id)||getStudentObj(c,id),knownStudentCode:(c,code,exclude)=>knownStudents(c).some(st=>st.code===code&&
+st.id!==exclude),downloadRawRecovery:rawRecoveryV24,openLessonConfig:courseUI.open,saveLessonConfig:courseUI.save,addLesson:courseUI.add,gradeStatus:policyStatus,
+buildLessonGradesHtml:(c,l)=>l.gradeMode==="kardanesh"?buildKardaneshEditor(c,l):l.gradingPolicy?courseUI.table(c,l,null,true):old.buildLessonGradesHtml(c,l),renderLessonStudents:(c,l)=>l.
+gradingPolicy?courseUI.table(c,l):old.renderLessonStudents(c,l),buildLessonReportHtml:(c,l)=>l.gradeMode==="kardanesh"||l.gradingPolicy?'<div class="card report\
+-document grade-report"><button class="no-print" data-workspace-action="print">چاپ / PDF</button>'+(l.gradeMode==="kardanesh"?termAssessmentReport(c,l):courseUI.
+table(c,l))+"</div>":old.buildLessonReportHtml(c,l),defaultDB:v24DefaultDB,prepareDB:normalizeDB,validateDB:validateV24,saveDB:saveDBV24,render:renderV24,calcStudentLesson:calcV24,
+buildKardaneshGradesHtml:buildKardaneshEditor,buildKardaneshSummaryHtml:buildKardaneshSummary,openBulkScoreModal:openBulkV24,setAllAttendance:setAllAttendanceV24,
+previousSessionAttendance:previousSessionAttendanceV24,copyPreviousAttendance:copyPreviousAttendanceV24,toggleAtt:toggleAttendanceV24,changeSessionDate:changeSessionDateV24,
+addManualSession:addManualSessionV24,deleteSession:deleteSessionV24,deleteAllSessions:deleteAllSessionsV24,saveSessionUnit:saveSessionUnitV24,updateSessionUnits:updateSessionUnitsV24,
+addSessionScore:addSessionScoreV24,removeSessionScore:removeSessionScoreV24,clickMasterCell:clickMasterV24,toggleActiveDay:toggleActiveDayV24,changePeriods:changePeriodsV24,
+saveWeekStartDate:saveWeekStartDateV24,saveMasterConfig:saveMasterConfigV24,clearMasterConfig:clearMasterConfigV24,startSessionFromMaster:startSessionFromMasterV24,
+exportBackup:exportFullBackup,handleImport:handleImportV24,handleExcelImport:csvImportV24,downloadExcelTemplate:downloadCSVTemplate,openTransferModal:id=>openMembership(
+"transfer",id),deleteStudent:id=>openMembership("archive",id),restoreStudent:id=>openMembership("restore",id),doTransfer:(id,copy)=>membershipContext?.studentId===
+id?saveMembership(copy?"copy":""):void 0,deleteSchool:id=>openDeletion("school",id),deleteClass:id=>openDeletion("class",id),deleteLesson:id=>openDeletion("less\
+on",id),addSchool:event=>createEntityV24(event,"school"),addClass:event=>createEntityV24(event,"class"),addStudent:addStudentV24,openEditStudentModal:editStudentV24,
+buildArchiveHtml:buildArchiveV24,buildOverviewKarnamehHtml:overviewV24,buildDetailedKarnamehHtml:detailedV24,generateParentReportText:parentReportV24,wipeAllData:wipeAllV24,
+showModal:showModalV24,checkPassword:loginV24});window.EduV24={releaseSessionEditAccess,course:courseUI,openEntityEditor,saveEntityEditor,confirmDeletion,saveMembership,
+openOtherDrafts,adoptDrafts,discardDrafts,reviewDrafts,approveDrafts,asciiDigits,parseGrade,fraction,weightedKardanesh,finalText,getReportContext:()=>({...academicYearNotesContext(),
+id:workspace?.id||"",revision:workspace?.revision||0,pendingDrafts:drafts.size+assessmentContext.pending,closed:!!workspace?.closed,year:workspace?.year||"",term:{
+first:"اول",second:"دوم"}[workspace?.termKind||academicTermKind(workspace?.term||"")]||workspace?.term||"",ready:ready&&!periodLoading,blocked,retired:connectionRetired,
+resetting:resetBusy,saving:busy,authenticated:!db.settings.password||isAuthenticated}),startTodaySession:startTodaySessionV24,openAcademicYear,refreshYearLessonSessions,
+openYearSession,prepareForUpdate,prepareReportSnapshot,renderAcademicKarnameh,periodicKarnamehHtml,initPeriodicKarnameh,openKarnamehStudent,listAnnualReportPeriods,
+assessmentResult,annualGradeRows,annualTechnicalRows,assertReportSnapshot,normalizeDB,validateV24,averageLabel,csvPlan,gradeInput,clearGrade,flushDrafts,openBackups,
+exportFullBackup,openBackupShare,sharePreparedBackup,downloadPreparedBackup,snapshotInstallation,validateFullBackup,previewFullBackup,restoreFullBackup,confirmImport,
+undoLast,openPeriods,switchPeriod:id=>switchPeriod(id),openNewPeriod,finalizePeriod,reopenPeriod,showFrozenReport,printReport,copyReport:copyReportV24,preparePrint,
+commitCSV,saveStudent,refreshControlLocks:lockControls,recoverReportNotes:()=>workspace?hydrateReportNotes(workspace):true,canWriteReportNotes:()=>!periodLoading&&
+!resetBusy&&!connectionRetired&&(!fullRestoreBusy||pendingFullBackup===null),persistReportNotes:commitReportNoteValues,confirmWipe,saveDB:saveDBV24,bootstrap:bootstrapV24,
+test:{prepareLegacyPeriodFixture:()=>{if(!globalThis.__EDU_TEST_MODE__)throw Error("فقط در حالت آزمون");return showModal("Synthetic legacy catalog\
+ fixture",'<input id="periodYear"><select id="periodTerm"><option>اول</option><option>دوم</option></select>')},createLegacyPeriod:()=>{if(!globalThis.__EDU_TEST_MODE__)
+throw Error("فقط در حالت آزمون");return createNewPeriod()},switchLegacyPeriod:id=>{if(!globalThis.__EDU_TEST_MODE__)throw Error("فقط در حالت آزمون");
+return switchPeriod(id,legacyPeriodSwitchToken)},openLegacyPeriodDeletion:id=>{if(!globalThis.__EDU_TEST_MODE__)throw Error("فقط در حالت آزمون");return openDeletePeriod(
+id)},getState:()=>({db,ready,workspace,blocked,busy,status,drafts:[...drafts.values()]}),settle:async()=>{await flushDrafts();await writer;await draftWriter},failNextWrite:()=>{
+if(!globalThis.__EDU_TEST_MODE__)throw Error("فقط در حالت آزمون");failNextWrite=true},getConnection:()=>connection,importLegacyBackup:event=>{if(!globalThis.
+__EDU_TEST_MODE__)throw Error("فقط در حالت آزمون");return handleImportV24(event,{replaceSystem:false})}}}}let discardingDrafts=false;async function discardDrafts(){
+if(discardingDrafts)return;if(!drafts.size&&!assessmentContext.hasDrafts())return;if(!confirm("ویرایش‌های ثبت‌نشده کنار گذاشته شوند؟ داده‌های ذخیره‌شده تغییر نم\
+ی‌کنند."))return;const origin=workspace?.id,sourceRevision=workspace?.revision,sourceConnection=connection,isCurrentTarget=()=>workspace?.id===origin&&workspace?.
+revision===sourceRevision&&connection===sourceConnection&&!busy&&!flushing&&!periodLoading&&!resetBusy&&!connectionRetired;const ensureCurrent=()=>{if(!isCurrentTarget())
+throw Error("اطلاعات، نوبت یا وضعیت ثبت تغییر کرده است؛ لغو پیش‌نویس را دوباره بررسی کنید.")};ensureCurrent();
 discardingDrafts=true;try{const previous=[...drafts];drafts.clear();clearTimeout(draftTimer);try{await storeDrafts()}catch(error){if(isCurrentTarget()){for(const[
 key,value]of previous)if(!drafts.has(key))drafts.set(key,value);await storeDrafts().catch(()=>{})}throw error}ensureCurrent();await assessmentContext.dispose({discard:true});
 ensureCurrent();const loaded=await readWorkspace(origin);ensureCurrent();db=loaded.data;setStatus("ویرایش‌های ثبت‌نشده لغو شدند.","sa\

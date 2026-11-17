@@ -18,6 +18,12 @@ main({
       }
       throw Error(`Timed out waiting for ${expression}`);
     };
+    // The shared audit deliberately leaves its classroom view stale. Reload it
+    // before exercising the real update guard with a valid current workspace.
+    await require("./browser-ready.cjs")({ cdp, evaluate, delay });
+    await waitFor(
+      `!!window.EduQuestionBankUI&&!!window.EduQuestionBankRepository`,
+    );
     await evaluate(`(async()=>{
       closeModal();
       const D=EduQuestionBank, R=EduQuestionBankRepository, bank=D.empty();
@@ -75,6 +81,173 @@ main({
       };
       await EduQuestionBankUI.open();__qbBusiness.chooseCourse('business-a');
       __qbBusiness.click('طراحی آزمون');
+    })()`);
+    check(
+      "an untouched bank form permits unloading and update preparation",
+      await evaluate(`(async()=>{
+        const event=new Event('beforeunload',{cancelable:true});dispatchEvent(event);
+        return !EduQuestionBankUI.hasPendingChanges()&&!event.defaultPrevented&&await EduV24.prepareForUpdate()===true;
+      })()`),
+    );
+    check(
+      "an unsaved bank plan blocks unloading and update without discarding its draft",
+      await evaluate(`(async()=>{
+        const before=JSON.stringify(await EduQuestionBankRepository.read());
+        __qbBusiness.fill('عنوان آزمون','پیش‌نویس آزمون برای بررسی خروج');
+        const event=new Event('beforeunload',{cancelable:true});dispatchEvent(event);
+        let blocked=false;try{await EduV24.prepareForUpdate();}catch(e){blocked=e.message.includes('ویرایش ذخیره‌نشده');}
+        return EduQuestionBankUI.hasPendingChanges()&&event.defaultPrevented&&blocked
+          &&__qbBusiness.field('عنوان آزمون').value==='پیش‌نویس آزمون برای بررسی خروج'
+          &&JSON.stringify(await EduQuestionBankRepository.read())===before;
+      })()`),
+    );
+    await evaluate(`(async()=>{
+      __qbBusiness.click('بستن');__qbBusiness.confirm();
+    })()`);
+    check(
+      "an active bank file write blocks unloading and updates after the bank dialog is closed",
+      await evaluate(`(async()=>{
+        const service=EduQuestionBankFileBackup.service,state=service.state;
+        try{
+          service.state=()=>({...state(),state:'busy'});
+          const event=new Event('beforeunload',{cancelable:true});dispatchEvent(event);
+          let blocked=false;try{await EduV24.prepareForUpdate();}catch(e){blocked=e.message.includes('ویرایش ذخیره‌نشده');}
+          return !document.querySelector('.qb-dialog')&&EduQuestionBankUI.hasPendingChanges()&&event.defaultPrevented&&blocked;
+        }finally{service.state=state;}
+      })()`),
+    );
+    await evaluate(`(async()=>{
+      await EduQuestionBankUI.open();
+      __qbBusiness.chooseCourse('business-a');__qbBusiness.click('ویرایش درس');
+      const repository=EduQuestionBankRepository;
+      window.__businessSaveOriginal=repository.save;
+      window.__businessBeforeFailedSave=JSON.stringify(await repository.read());
+      repository.save=()=>new Promise((_resolve,reject)=>{window.__businessRejectSave=()=>reject(Error('آزمون شکست ذخیرهٔ بانک'));});
+      __qbBusiness.submit();
+    })()`);
+    check(
+      "a pending bank commit blocks unloading and updates even without edited inputs",
+      await evaluate(`(async()=>{
+        const event=new Event('beforeunload',{cancelable:true});dispatchEvent(event);
+        let blocked=false;try{await EduV24.prepareForUpdate();}catch(e){blocked=e.message.includes('ویرایش ذخیره‌نشده');}
+        return EduQuestionBankUI.hasPendingChanges()&&event.defaultPrevented&&blocked
+          &&document.querySelector('.qb-dialog').getAttribute('aria-busy')==='true';
+      })()`),
+    );
+    await evaluate(`__businessRejectSave()`);
+    await waitFor(
+      `document.querySelector('.qb-dialog').getAttribute('aria-busy')!=='true'`,
+    );
+    check(
+      "a failed bank save retains editable form values and never changes the stored bank",
+      await evaluate(`(async()=>{
+        try{
+          EduQuestionBankRepository.save=async()=>{throw Error('آزمون شکست ذخیرهٔ بانک');};
+          __qbBusiness.fill('عنوان درس','متن حفظ‌شده پس از خطای ذخیره');__qbBusiness.submit();
+          await new Promise(r=>setTimeout(r,30));
+          return __qbBusiness.field('عنوان درس').value==='متن حفظ‌شده پس از خطای ذخیره'
+            &&!document.querySelector('.qb-body').inert&&EduQuestionBankUI.hasPendingChanges()
+            &&document.querySelector('.qb-message').textContent.includes('شکست ذخیره')
+            &&JSON.stringify(await EduQuestionBankRepository.read())===__businessBeforeFailedSave;
+        }finally{EduQuestionBankRepository.save=__businessSaveOriginal;}
+      })()`),
+    );
+    check(
+      "a new validation failure remains visible after a storage failure",
+      await evaluate(`(async()=>{
+        __qbBusiness.fill('عنوان درس','');__qbBusiness.submit();await new Promise(r=>setTimeout(r,30));
+        const text=document.querySelector('.qb-message').textContent;
+        return text.includes('عنوان خالی یا تکراری')&&text.includes('شکست ذخیره')
+          &&JSON.stringify(await EduQuestionBankRepository.read())===__businessBeforeFailedSave;
+      })()`),
+    );
+    await evaluate(`(async()=>{
+      __qbBusiness.click('بستن');__qbBusiness.confirm();await EduQuestionBankUI.open();
+      __qbBusiness.chooseCourse('business-a');__qbBusiness.click('درس جدید');
+      __qbBusiness.fill('عنوان درس','ریاضی نمونه');__qbBusiness.submit();
+    })()`);
+    await waitFor(
+      `document.querySelector('.qb-message').textContent.includes('عنوان خالی یا تکراری')`,
+    );
+    check(
+      "a duplicate course error clears when its form is discarded and a new course starts",
+      await evaluate(`(()=>{
+        __qbBusiness.click('بازگشت');__qbBusiness.confirm();__qbBusiness.click('درس جدید');
+        return document.querySelector('.qb-message').hidden&&__qbBusiness.field('عنوان درس').value==='';
+      })()`),
+    );
+    await evaluate(`__qbBusiness.click('بازگشت');__qbBusiness.chooseUnit('business-unit-a');
+      __qbBusiness.click('فصل جدید');__qbBusiness.fill('عنوان فصل','فصل نخست');__qbBusiness.submit();`);
+    await waitFor(
+      `document.querySelector('.qb-message').textContent.includes('عنوان خالی یا تکراری')`,
+    );
+    check(
+      "a duplicate section error clears before a new section form starts",
+      await evaluate(`(()=>{
+        __qbBusiness.click('بازگشت');__qbBusiness.confirm();__qbBusiness.click('فصل جدید');
+        return document.querySelector('.qb-message').hidden&&__qbBusiness.field('عنوان فصل').value==='';
+      })()`),
+    );
+    await evaluate(
+      `__qbBusiness.click('بازگشت');__qbBusiness.click('طراحی آزمون');`,
+    );
+    const recoveredNotice = await evaluate(`(async()=>{
+      __qbBusiness.click('بستن');
+      const service=EduQuestionBankFileBackup.service,repository=EduQuestionBankRepository;
+      const methods=['subscribe','init','state','supported'],original=Object.fromEntries(methods.map(key=>[key,service[key]]));
+      const originalSave=repository.save,listeners=new Set();
+      let state={state:'permission',connected:true,message:'FILE-PERMISSION-PROBE'};
+      const emit=(next)=>{state=next;for(const listener of listeners)listener(state);};
+      const settled=async()=>{for(let i=0;i<100&&document.querySelector('.qb-dialog').getAttribute('aria-busy')==='true';i++)await new Promise(r=>setTimeout(r,10));};
+      service.subscribe=listener=>{listeners.add(listener);listener(state);return()=>listeners.delete(listener);};
+      service.init=async()=>{};service.state=()=>state;service.supported=()=>true;
+      try{
+        await EduQuestionBankUI.open();__qbBusiness.chooseCourse('business-a');__qbBusiness.click('ویرایش درس');__qbBusiness.submit();await settled();
+        const warningShown=document.querySelector('.qb-message').textContent.includes('FILE-PERMISSION-PROBE');
+        emit({state:'active',connected:true,message:'FILE-ACTIVE-PROBE'});
+        const activeClears=warningShown&&document.querySelector('.qb-message').hidden;
+        emit({state:'permission',connected:true,message:'FILE-PERMISSION-PROBE'});
+        __qbBusiness.click('ویرایش درس');__qbBusiness.submit();await settled();
+        __qbBusiness.click('ویرایش درس');__qbBusiness.fill('عنوان درس','');__qbBusiness.submit();await settled();
+        emit({state:'active',connected:true,message:'FILE-ACTIVE-PROBE'});
+        const validationPreserved=!document.querySelector('.qb-message').hidden
+          &&document.querySelector('.qb-message').textContent.includes('عنوان خالی یا تکراری')
+          &&!document.querySelector('.qb-message').textContent.includes('FILE-PERMISSION-PROBE');
+        __qbBusiness.click('بازگشت');__qbBusiness.confirm();
+        emit({state:'permission',connected:true,message:'FILE-PERMISSION-PROBE'});
+        __qbBusiness.click('ویرایش درس');__qbBusiness.submit();await settled();
+        emit({state:'inactive',connected:false,message:'FILE-DISCONNECTED-PROBE'});
+        const inactiveClears=document.querySelector('.qb-message').hidden;
+        __qbBusiness.click('ویرایش درس');repository.save=async()=>{throw Error('DATA-SAVE-FAILURE-PROBE');};
+        __qbBusiness.submit();await settled();
+        emit({state:'active',connected:true,message:'FILE-ACTIVE-PROBE'});
+        const saveFailurePreserved=!document.querySelector('.qb-message').hidden
+          &&document.querySelector('.qb-message').textContent.includes('DATA-SAVE-FAILURE-PROBE');
+        return {activeClears,validationPreserved,inactiveClears,saveFailurePreserved};
+      }finally{
+        repository.save=originalSave;
+        __qbBusiness.click('بستن');if(document.querySelector('.qb-confirm'))__qbBusiness.confirm();
+        for(const key of methods)service[key]=original[key];
+      }
+    })()`);
+    check(
+      "file permission recovery clears its obsolete post-commit warning",
+      recoveredNotice.activeClears,
+    );
+    check(
+      "file recovery preserves a current unrelated form validation error",
+      recoveredNotice.validationPreserved,
+    );
+    check(
+      "disconnecting the bank file clears its obsolete post-commit warning",
+      recoveredNotice.inactiveClears,
+    );
+    check(
+      "file recovery never clears an independent failed bank save warning",
+      recoveredNotice.saveFailurePreserved,
+    );
+    await evaluate(`(async()=>{
+      await EduQuestionBankUI.open();__qbBusiness.chooseCourse('business-a');__qbBusiness.click('طراحی آزمون');
     })()`);
     await evaluate(
       `(()=>{const n=document.querySelector('.qb-count-field input');n.focus();n.click();})()`,
@@ -217,7 +390,16 @@ main({
           &&document.querySelector('.qb-message').textContent.includes('گزینه');
       })()`),
     );
-    await evaluate(`__qbBusiness.click('بازگشت');__qbBusiness.confirm();
+    await evaluate(
+      `__qbBusiness.click('بازگشت');__qbBusiness.confirm();__qbBusiness.click('افزودن سؤال');`,
+    );
+    check(
+      "leaving an invalid question clears its obsolete error before a new question is entered",
+      await evaluate(
+        `document.querySelector('.qb-message').hidden&&!!document.querySelector('.qb-question-form')`,
+      ),
+    );
+    await evaluate(`__qbBusiness.click('بازگشت');
       document.querySelector('.qb-question-row summary').click();__qbBusiness.click('ویرایش سؤال');
       __qbBusiness.fill('متن سؤال','اصلاح متن سؤال قدیمی بدون تغییر گزینه‌ها');__qbBusiness.submit();`);
     await waitFor(`!document.querySelector('.qb-question-form')`);
@@ -266,6 +448,14 @@ main({
       await evaluate(
         `(async()=>JSON.stringify(await EduQuestionBankRepository.read())===__businessPeerUnit)()`,
       ),
+    );
+    check(
+      "a revision conflict continues to require reopening after deliberate form navigation",
+      await evaluate(`(()=>{
+        __qbBusiness.click('بازگشت');__qbBusiness.click('فصل جدید');
+        return !document.querySelector('.qb-message').hidden
+          &&document.querySelector('.qb-message').textContent.includes('بانک را ببندید و دوباره باز کنید');
+      })()`),
     );
     await evaluate(`(async()=>{__qbBusiness.click('بستن');await EduQuestionBankUI.open();
       __qbBusiness.chooseCourse('business-a');__qbBusiness.chooseUnit('business-unit-a');
@@ -367,6 +557,35 @@ main({
         return inline&&heading&&closing&&running&&wrapped&&sheet.scrollWidth<=sheet.clientWidth+1;
       }finally{host.remove();}
     })()`),
+    );
+    await evaluate(`(async()=>{
+      __qbBusiness.click('بستن');
+      const R=EduQuestionBankRepository,bank=await R.read(),copy=structuredClone(bank.exams[0]);
+      copy.id='business-delete-only';copy.title='آزمون قابل حذف';bank.exams.push(copy);
+      window.__beforeExamDeletion=await R.save(bank,bank.revision);
+      await EduQuestionBankUI.open();__qbBusiness.click('آزمون‌های من');
+      window.__deleteSampleExam=()=>{
+        const card=[...document.querySelectorAll('.qb-exam-card')].find(n=>n.querySelector('h3').textContent===copy.title);
+        __qbBusiness.click('حذف آزمون',card);
+      };
+      __deleteSampleExam();__qbBusiness.cancel();
+    })()`);
+    check(
+      "cancelling exam deletion preserves every stored bank record and revision",
+      await evaluate(
+        `(async()=>JSON.stringify(await EduQuestionBankRepository.read())===JSON.stringify(__beforeExamDeletion))()`,
+      ),
+    );
+    await evaluate(`__deleteSampleExam();__qbBusiness.confirm()`);
+    await waitFor(`document.querySelectorAll('.qb-exam-card').length===1`);
+    check(
+      "confirmed exam deletion removes only its snapshot and preserves source questions and other exams",
+      await evaluate(`(async()=>{
+        const after=await EduQuestionBankRepository.read(),before=__beforeExamDeletion;
+        return ['courses','units','questions'].every(key=>JSON.stringify(after[key])===JSON.stringify(before[key]))
+          &&after.questions.length===1&&after.exams.length===1&&after.exams[0].id===before.exams[0].id
+          &&after.revision===before.revision+1;
+      })()`),
     );
     const server =
       require("../scripts/question-bank-review.cjs").createReviewServer();
