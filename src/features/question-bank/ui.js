@@ -1550,7 +1550,11 @@
       library.setAttribute("aria-label", "آزمون‌های ذخیره‌شده");
       parent.append(library);
       const controls = el("div", undefined, "qb-archive-controls");
-      const heading = el("div", undefined, "qb-list-heading qb-archive-heading");
+      const heading = el(
+        "div",
+        undefined,
+        "qb-list-heading qb-archive-heading",
+      );
       const archiveTitle = el("h4", "آزمون‌های من");
       archiveTitle.insertAdjacentHTML("afterbegin", root.EduIcons.html("copy"));
       heading.append(archiveTitle);
