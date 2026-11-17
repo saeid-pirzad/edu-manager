@@ -5,7 +5,7 @@ const { main } = require("./data-integrity.cjs");
 
 main({
   stage: "question-bank-business",
-  runExtra: async ({ evaluate, cases, delay }) => {
+  runExtra: async ({ evaluate, cases, delay, cdp }) => {
     const check = (name, result) => {
       const pass = result === true;
       cases.push({ name: `question bank business: ${name}`, pass });
@@ -35,6 +35,7 @@ main({
         answer:type==='mcq'?2:type==='boolean'?false:'SECRET-ANSWER-'+index,
         ...(type==='mcq'?{options:['یک','دو','سه','چهار']}: {})
       }));
+      bank.questions[0].options=['ی','ي','A','a'];
       bank.questions.push({
         id:'business-extra',unitId:'business-unit-extra',type:'essay',
         text:'پرسش فصل دوم',answer:'SECRET-EXTRA',explanation:'',score:100
@@ -49,7 +50,7 @@ main({
       window.__qbBusiness={
         click(label,scope=document.querySelector('.qb-dialog')){
           const node=[...scope.querySelectorAll('button')].find(n=>(n.querySelector('.ui-button-label')?.textContent||n.textContent).trim()===label);
-          if(!node)throw Error('Missing button: '+label);node.click();
+          if(!node)throw Error('Missing button: '+label);const menu=node.closest('.qb-entity-menu');if(menu&&!menu.matches(':popover-open'))document.querySelector('[aria-controls="'+menu.id+'"]').click();node.click();
         },
         field(label){
           const wrapper=[...document.querySelectorAll('.qb-dialog label')].find(n=>n.firstChild?.textContent===label);
@@ -62,7 +63,7 @@ main({
         },
         chooseCourse(id){
           const node=document.querySelector('.qb-toolbar select');
-          node.value=id;node.dispatchEvent(new Event('change',{bubbles:true}));
+          node.value=id;node.dispatchEvent(new Event('input',{bubbles:true}));node.dispatchEvent(new Event('change',{bubbles:true}));
         },
         chooseUnit(id){
           const node=document.querySelector('.qb-section-picker select');
@@ -102,7 +103,7 @@ main({
       })()`),
     );
     await evaluate(
-      `__qbBusiness.chooseCourse('business-b');__qbBusiness.confirm();__qbBusiness.click('سؤال‌ها');__qbBusiness.click('ویرایش درس');`,
+      `__qbBusiness.chooseCourse('business-b');__qbBusiness.confirm();__qbBusiness.click('سؤال‌ها');__qbBusiness.chooseCourse('business-b');__qbBusiness.click('ویرایش درس');`,
     );
     check(
       "an empty course can correct its structure before sections exist",
@@ -134,6 +135,23 @@ main({
       await evaluate(
         `(async()=> (await EduQuestionBankRepository.read()).courses.find(c=>c.id==='business-a').structure==='chapter')()`,
       ),
+    );
+    check(
+      "question entry follows course then section selection before enabling add, independently of search",
+      await evaluate(`(()=>{
+      __qbBusiness.chooseUnit('');
+      const findAdd=()=>[...document.querySelectorAll('.qb-question-entry button')].find(b=>b.textContent.trim()==='افزودن سؤال');
+      const initiallyDisabled=findAdd().disabled;
+      __qbBusiness.chooseUnit('business-unit-a');
+      const entry=document.querySelector('.qb-question-entry');
+      const search=document.querySelector('.qb-question-controls');
+      const ordered=!!(entry.compareDocumentPosition(search)&Node.DOCUMENT_POSITION_FOLLOWING);
+      const enabled=!findAdd().disabled;
+      __qbBusiness.click('افزودن سؤال');
+      const selected=__qbBusiness.field('فصل').value==='business-unit-a';
+      __qbBusiness.click('بازگشت');
+      return initiallyDisabled&&enabled&&ordered&&selected;
+    })()`),
     );
     check(
       "the printed blank has response space and never includes secret answers",
@@ -173,7 +191,18 @@ main({
           &&document.querySelector('.qb-message').textContent.includes('گزینه');
       })()`),
     );
-    await evaluate(`(async()=>{__qbBusiness.click('بازگشت');__qbBusiness.confirm();__qbBusiness.click('بستن');
+    await evaluate(`__qbBusiness.click('بازگشت');__qbBusiness.confirm();
+      document.querySelector('.qb-question-row summary').click();__qbBusiness.click('ویرایش سؤال');
+      __qbBusiness.fill('متن سؤال','اصلاح متن سؤال قدیمی بدون تغییر گزینه‌ها');__qbBusiness.submit();`);
+    await waitFor(`!document.querySelector('.qb-question-form')`);
+    check(
+      "legacy distinct options do not block unrelated question corrections",
+      await evaluate(`(async()=>{
+        const q=(await EduQuestionBankRepository.read()).questions.find(q=>q.id==='business-question-0');
+        return q.text==='اصلاح متن سؤال قدیمی بدون تغییر گزینه‌ها'&&JSON.stringify(q.options)===JSON.stringify(['ی','ي','A','a']);
+      })()`),
+    );
+    await evaluate(`(async()=>{__qbBusiness.click('بستن');
       const bank=await EduQuestionBankRepository.read();
       bank.units.push({id:'business-unit-b',courseId:'business-b',title:'بخش مستقل'});
       bank.questions.push({id:'business-independent',unitId:'business-unit-b',type:'essay',text:'پرسش درس مستقل',answer:'پاسخ مستقل',explanation:'',score:100});
@@ -283,6 +312,89 @@ main({
         &&!!document.querySelector('.qb-short-answer')
         &&!document.querySelector('.qb-sheet').textContent.includes('SECRET-')`),
     );
+    check(
+      "print header, closing and inline true-false choices adapt to available space",
+      await evaluate(`(async()=>{
+      const exam=structuredClone((await EduQuestionBankRepository.read()).exams[0]);
+      exam.questions=[{...exam.questions.find(q=>q.type==='boolean'),text:'آب مایع است.'}];
+      const host=document.createElement('div');
+      host.style.cssText='position:fixed;inset:0 auto auto 0;width:794px;background:white';
+      document.body.append(host);
+      try{
+        const sheet=EduQuestionBankUI.sheet(exam);host.append(sheet);
+        const prompt=sheet.querySelector('.qb-sheet-prompt p');
+        const choices=prompt.querySelector('.qb-sheet-boolean');
+        const range=document.createRange();range.selectNodeContents(prompt.firstChild);
+        const first=range.getClientRects()[0];
+        const inline=Math.abs(first.top-choices.getBoundingClientRect().top)<5;
+        const heading=sheet.querySelector('.qb-sheet-header').firstElementChild.textContent==='به نام خدا';
+        const closing=sheet.lastElementChild.querySelector('.qb-sheet-closing').textContent.includes('موفق باشید');
+        const pageStyle=sheet.querySelector('style[media="print"]');
+        const rules=[...pageStyle.sheet.cssRules];
+        const running=rules.length===2&&rules[0].cssText.includes('@top-center')
+          &&rules[0].cssText.includes('counter(pages)')&&rules[1].cssText.includes('content: none')
+          &&rules[0].selectorText===sheet.style.page;
+        host.style.width='260px';
+        prompt.firstChild.textContent='این صورت سؤال طولانی است و باید در عرض کم بدون بریدگی و با حفظ گزینه‌های صحیح و غلط به خط بعد برود. '.repeat(5);
+        range.selectNodeContents(prompt.firstChild);
+        const wrapped=choices.getBoundingClientRect().top>range.getClientRects()[0].top+10;
+        return inline&&heading&&closing&&running&&wrapped&&sheet.scrollWidth<=sheet.clientWidth+1;
+      }finally{host.remove();}
+    })()`),
+    );
+    const server =
+      require("../scripts/question-bank-review.cjs").createReviewServer();
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+    try {
+      const url = "http://127.0.0.1:" + server.address().port + "/";
+      await cdp("Page.navigate", { url });
+      await waitFor(`!!document.querySelector('.qb-dialog[open]')`);
+      check(
+        "review enters all twenty-four sample questions and three archived exams in independent IndexedDB",
+        await evaluate(`(async()=>{
+        const bank=await EduQuestionBankRepository.read();
+        return bank.courses.length===3&&bank.units.length===5&&bank.questions.length===24&&bank.exams.length===3&&bank.revision===1;
+      })()`),
+      );
+      await evaluate(`(async()=>{
+        const bank=await EduQuestionBankRepository.read();bank.questions[0].text='REVIEW-USER-EDIT';
+        await EduQuestionBankRepository.save(bank,bank.revision);
+      })()`);
+      await cdp("Page.navigate", { url });
+      await waitFor(`!!document.querySelector('.qb-dialog[open]')`);
+      check(
+        "reopening review preserves the reviewer edits without reseeding",
+        await evaluate(`(async()=>{
+        const bank=await EduQuestionBankRepository.read();
+        return bank.questions.length===24&&bank.questions[0].text==='REVIEW-USER-EDIT'&&bank.revision===2;
+      })()`),
+      );
+      await cdp("Page.navigate", { url: url + "?sample-exam=1" });
+      await waitFor(`!!document.querySelector('.qb-dialog[open]')`);
+      check(
+        "requested sample exam is saved with eight questions and twenty points",
+        await evaluate(`(async()=>{
+        const bank=await EduQuestionBankRepository.read();
+        const sample=bank.exams.find(exam=>exam.id==='review-user-sample-exam');
+        return bank.exams.length===4&&sample.questions.length===8&&sample.duration===45
+          &&sample.questions.reduce((sum,q)=>sum+q.score,0)===2000
+          &&bank.questions[0].text==='REVIEW-USER-EDIT'
+          &&document.querySelector('.qb-dialog').textContent.includes(sample.title);
+      })()`),
+      );
+      await cdp("Page.navigate", { url: url + "?sample-exam=1" });
+      await waitFor(`!!document.querySelector('.qb-dialog[open]')`);
+      check(
+        "sample registration is idempotent on reload",
+        await evaluate(`(async()=>{
+        const bank=await EduQuestionBankRepository.read();
+        return bank.exams.length===4&&bank.revision===3;
+      })()`),
+      );
+    } finally {
+      server.closeAllConnections();
+      await new Promise((resolve) => server.close(resolve));
+    }
   },
 }).catch((error) => {
   console.error(error.stack || String(error));

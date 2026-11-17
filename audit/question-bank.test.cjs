@@ -45,6 +45,25 @@ function spec() {
     duration: "۶۰",
   };
 }
+test("import rejects coerced question types instead of silently losing them in type filters", () => {
+  for (const type of [["essay"], ["mcq"], { toString: () => "essay" }]) {
+    const b = fixture();
+    b.questions[2].type = type;
+    assert.throws(() => D.validate(b), /سؤال یا بارم نامعتبر/);
+  }
+});
+test("section titles are unique within their actual course without delimiter collisions", () => {
+  const b = fixture();
+  b.courses[0].id = "course:a";
+  b.courses[1].id = "course";
+  b.units[0].courseId = "course:a";
+  b.units[0].title = "b";
+  b.units[1].courseId = "course";
+  b.units[1].title = "a:b";
+  assert.deepEqual(D.parse(D.size(b)), b);
+  b.units.push({ id: "third", courseId: "course:a", title: " b " });
+  assert.throws(() => D.validate(b), /عنوان خالی یا تکراری/);
+});
 test("localized score is exact and rejects invalid precision/ranges", () => {
   for (const s of ["۱٫۲۵", "١٫٢٥", "1.25"]) assert.equal(D.score(s), 125);
   for (const s of ["0", "100.01", "1.001", "-1", "NaN", "1e1"])

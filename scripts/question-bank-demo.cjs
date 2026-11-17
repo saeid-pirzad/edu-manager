@@ -21,6 +21,8 @@ const artifactNames = [
   "general-bank-390.png",
   "modular-bank-390.png",
   "preview-390.png",
+  "general-page2.png",
+  "general-page1.png",
 ];
 const sha = (value) => crypto.createHash("sha256").update(value).digest("hex");
 const escape = (value) =>
@@ -265,6 +267,13 @@ async function generate() {
           index === 0 ? "general-exam.pdf" : "modular-exam.pdf",
           bytes,
         );
+        if (index === 0) {
+          check(
+            "general sample spans multiple real PDF pages",
+            (bytes.toString("latin1").match(/\/Type \/Page\b/g) || []).length >=
+              2,
+          );
+        }
       }
       artifacts.set("teacher-answers.html", answerKey(saved));
       artifacts.set(
@@ -328,6 +337,38 @@ async function generate() {
           );
         }
       }
+      const pdfPath = path.join(
+        root,
+        ".cache",
+        "question-bank-header-preview.pdf",
+      );
+      fs.mkdirSync(path.dirname(pdfPath), { recursive: true });
+      fs.writeFileSync(pdfPath, artifacts.get("general-exam.pdf"));
+      await cdp("Emulation.setDeviceMetricsOverride", {
+        width: 1100,
+        height: 1000,
+        deviceScaleFactor: 1,
+        mobile: false,
+      });
+      await cdp("Page.navigate", {
+        url:
+          require("node:url").pathToFileURL(pdfPath).href + "#page=2&zoom=90",
+      });
+      await delay(1800);
+      const secondPage = await cdp("Page.captureScreenshot", { format: "png" });
+      artifacts.set(
+        "general-page2.png",
+        Buffer.from(secondPage.data, "base64"),
+      );
+      await cdp("Page.navigate", { url: "about:blank" });
+      await delay(150);
+      await cdp("Page.navigate", {
+        url:
+          require("node:url").pathToFileURL(pdfPath).href + "#page=1&zoom=90",
+      });
+      await delay(1400);
+      const firstPage = await cdp("Page.captureScreenshot", { format: "png" });
+      artifacts.set("general-page1.png", Buffer.from(firstPage.data, "base64"));
     },
   });
   if (process.exitCode)

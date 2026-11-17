@@ -12,7 +12,12 @@
   };
   const text = (value) => typeof value === "string" && value.trim().length > 0;
   function fields(value, allowed) {
-    if (!value || Object.keys(value).some((key) => !allowed.includes(key)))
+    if (
+      !value ||
+      typeof value !== "object" ||
+      Array.isArray(value) ||
+      Object.keys(value).some((key) => !allowed.includes(key))
+    )
       fail("فیلد ناشناخته در فایل بانک سؤال وجود دارد.");
   }
   function digits(value) {
@@ -89,6 +94,7 @@
       !q ||
       !text(q.id) ||
       !text(q.unitId) ||
+      typeof q.type !== "string" ||
       !Object.hasOwn(types, q.type) ||
       !text(q.text) ||
       typeof q.explanation !== "string" ||
@@ -164,7 +170,7 @@
     const uniqueTitles = (items, scope) => {
       const titles = new Set();
       for (const item of items) {
-        const key = scope(item) + ":" + String(item.title).trim();
+        const key = JSON.stringify([scope(item), String(item.title).trim()]);
         if (!text(item.title) || titles.has(key))
           fail("عنوان خالی یا تکراری است.");
         titles.add(key);

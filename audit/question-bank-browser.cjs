@@ -94,22 +94,53 @@ main({
     check(
       "storage status has a direct automatic-file action rather than a plain success notice",
       await evaluate(
-        `(()=>{const bar=document.querySelector('.qb-storage-bar'),action=bar.querySelector('button');return bar.querySelector('[role=status]')&&action.textContent.includes('خودکار')&&!!action.querySelector('svg')&&action.getBoundingClientRect().height>=44&&document.querySelector('.qb-message').hidden;})()`,
+        `(()=>{const bar=document.querySelector('.qb-storage-bar'),action=bar.querySelector('button');return bar.querySelector('[role=status]')&&action.textContent.includes('خودکار')&&!!action.querySelector('svg')&&action.getBoundingClientRect().height>=(innerWidth<=700?40:44)&&document.querySelector('.qb-message').hidden;})()`,
       ),
     );
     check(
-      "course-dependent tabs are disabled before selection but archive and backup remain accessible",
+      "all tabs stay accessible and course selection belongs to the active question panel",
       await evaluate(
-        `(()=>{const tabs=[...document.querySelectorAll('.qb-tabs button')];const locked=tabs[0].disabled&&tabs[1].disabled&&!tabs[2].disabled&&!tabs[3].disabled&&tabs.slice(0,2).every(b=>b.hidden&&b.getAttribute('aria-pressed')==='false')&&tabs.filter(b=>!b.hidden).length===2;tabs[3].click();const backup=!!document.querySelector('.qb-backup')&&!document.querySelector('.qb-toolbar').hidden;tabs[0].click();const blocked=!!document.querySelector('.qb-backup');return locked&&backup&&blocked;})()`,
+        `(()=>{const tabs=[...document.querySelectorAll('.qb-tabs button')];const accessible=tabs.length===4&&tabs.every(b=>!b.disabled&&!b.hidden);tabs[3].click();const backup=!!document.querySelector('.qb-backup')&&!document.querySelector('.qb-toolbar');document.querySelector('.qb-tabs button').click();return accessible&&backup&&!!document.querySelector('.qb-panel .qb-toolbar')&&!!document.querySelector('.qb-empty');})()`,
       ),
     );
+    for (const width of [320, 390, 768, 1440]) {
+      await cdp("Emulation.setDeviceMetricsOverride", {
+        width,
+        height: 900,
+        deviceScaleFactor: 1,
+        mobile: false,
+      });
+      for (const index of [0, 1]) {
+        await evaluate(
+          `document.querySelectorAll('.qb-tabs button')[${index}].click()`,
+        );
+        await delay(80);
+        check(
+          `initial course and empty cards align with tabs ${index} ${width}`,
+          await evaluate(
+            `(()=>{const tabs=document.querySelector('.qb-tabs').getBoundingClientRect();return ['.qb-course-required','.qb-panel>.qb-empty'].every(selector=>{const r=document.querySelector(selector).getBoundingClientRect();return Math.abs(r.left-tabs.left)<1&&Math.abs(r.right-tabs.right)<1;})&&document.querySelector('.qb-body').scrollWidth<=document.querySelector('.qb-body').clientWidth+1;})()`,
+          ),
+        );
+      }
+      const shot = await cdp("Page.captureScreenshot", { format: "png" });
+      fs.writeFileSync(
+        path.join(out, `initial-${width}.png`),
+        Buffer.from(shot.data, "base64"),
+      );
+    }
+    await cdp("Emulation.setDeviceMetricsOverride", {
+      width: 1440,
+      height: 900,
+      deviceScaleFactor: 1,
+      mobile: false,
+    });
     // Reopen on the initial empty course workspace before exercising course creation.
     await evaluate(
       `document.querySelector('.qb-close').click();EduQuestionBankUI.open()`,
     );
     await delay(100);
     await evaluate(
-      `window.__qbClick=(label,scope=document.querySelector('.qb-dialog'))=>{const b=[...scope.querySelectorAll('button')].find(b=>b.textContent===label);if(!b)throw Error(label);b.click();};window.__qbFill=(label,value)=>{const l=[...document.querySelectorAll('.qb-dialog label')].find(l=>l.firstChild.textContent===label);if(!l)throw Error(label);const n=l.querySelector('input,textarea,select');n.value=value;n.dispatchEvent(new Event('input',{bubbles:true}));return n;};__qbClick('درس جدید');document.querySelector('.qb-dialog form').requestSubmit();`,
+      `window.__qbClick=(label,scope=document.querySelector('.qb-dialog'))=>{const b=[...scope.querySelectorAll('button')].find(b=>b.textContent===label);if(!b)throw Error(label);const menu=b.closest('.qb-entity-menu');if(menu&&!menu.matches(':popover-open'))document.querySelector('[aria-controls="'+menu.id+'"]').click();b.click();};window.__qbFill=(label,value)=>{const l=[...document.querySelectorAll('.qb-dialog label')].find(l=>l.firstChild.textContent===label);if(!l)throw Error(label);const n=l.querySelector('input,textarea,select');n.value=value;n.dispatchEvent(new Event('input',{bubbles:true}));return n;};__qbClick('درس جدید');document.querySelector('.qb-dialog form').requestSubmit();`,
     );
     await delay(100);
     check(
@@ -129,9 +160,9 @@ main({
       ),
     );
     check(
-      "selecting and clearing a course updates both dependent tabs immediately",
+      "clearing a course only empties the current panel and keeps tabs accessible",
       await evaluate(
-        `(()=>{const picker=()=>document.querySelector('.qb-toolbar select'),tabs=()=>[...document.querySelectorAll('.qb-tabs button')].slice(0,2);const id=picker().value,enabled=tabs().every(b=>!b.disabled);picker().value='';picker().dispatchEvent(new Event('change'));const disabled=tabs().every(b=>b.disabled)&&!!document.querySelector('.qb-empty');picker().value=id;picker().dispatchEvent(new Event('change'));return enabled&&disabled&&tabs().every(b=>!b.disabled);})()`,
+        `(()=>{const picker=()=>document.querySelector('.qb-toolbar select'),tabs=()=>[...document.querySelectorAll('.qb-tabs button')].slice(0,2);const id=picker().value;picker().value='';picker().dispatchEvent(new Event('change'));const empty=!!document.querySelector('.qb-empty')&&tabs().every(b=>!b.disabled&&!b.hidden);picker().value=id;picker().dispatchEvent(new Event('change'));return empty&&!!document.querySelector('.qb-question-library');})()`,
       ),
     );
     await evaluate(
@@ -221,8 +252,36 @@ main({
       choose('second-course');const cleared=[...document.querySelectorAll('.qb-dialog label')].find(l=>l.firstChild.textContent==='پودمان').querySelector('select').value==='';choose(original);return cleared;
     })()`),
     );
+    check(
+      "question and builder tabs retain independent courses and sections",
+      await evaluate(`(()=>{
+        const choose=id=>{const n=document.querySelector('.qb-toolbar select');n.value=id;n.dispatchEvent(new Event('change'));};
+        const original=document.querySelector('.qb-toolbar select').value;
+        const unit=document.querySelector('.qb-section-picker select');unit.selectedIndex=1;unit.dispatchEvent(new Event('change'));const unitId=unit.value;
+        __qbClick('طرح آزمون');choose('second-course');__qbClick('انتخاب همه');
+        __qbClick('سؤال‌ها');if(document.querySelector('.qb-confirm'))__qbClick('تأیید',document.querySelector('.qb-confirm'));const questions=document.querySelector('.qb-toolbar select').value===original&&document.querySelector('.qb-section-picker select').value===unitId;
+        const score=document.querySelector('.qb-question-toggle>.qb-score'),style=getComputedStyle(score);
+        const badge=style.backgroundColor!=='rgba(0, 0, 0, 0)'&&parseFloat(style.borderRadius)>0;
+        __qbClick('طرح آزمون');const builder=document.querySelector('.qb-toolbar select').value==='second-course'&&document.querySelector('.qb-unit-selection input').checked;
+        choose(original);return questions&&builder&&badge&&!!document.querySelector('.qb-panel .qb-toolbar');
+      })()`),
+    );
+    check(
+      "more menu supports keyboard navigation and direct deletion can be cancelled without changing data",
+      await evaluate(`(async()=>{
+        const before=JSON.stringify(await EduQuestionBankRepository.read());
+        const trigger=document.querySelector('.qb-toolbar .qb-context-action');trigger.click();
+        const menu=document.getElementById(trigger.getAttribute('aria-controls'));
+        const items=[...menu.querySelectorAll('[role=menuitem]')];
+        const opened=menu.matches(':popover-open')&&items.length===3&&document.activeElement===items[0];
+        menu.dispatchEvent(new KeyboardEvent('keydown',{key:'End',bubbles:true}));const keyboard=document.activeElement===items[2];
+        items[2].click();const confirmation=!!document.querySelector('.qb-confirm')&&!menu.matches(':popover-open');
+        __qbClick('انصراف',document.querySelector('.qb-confirm'));
+        return opened&&keyboard&&confirmation&&JSON.stringify(await EduQuestionBankRepository.read())===before;
+      })()`),
+    );
     await evaluate(
-      `__qbClick('طرح آزمون');__qbClick('انتخاب همه');for(const label of ['چهارگزینه‌ای','جای‌خالی','تشریحی','صحیح / غلط'])__qbFill('تعداد '+label,'۱');__qbFill('عنوان آزمون','آزمون آزمایشی');document.querySelector('.qb-dialog form').requestSubmit();`,
+      `__qbClick('انتخاب همه');for(const label of ['چهارگزینه‌ای','جای‌خالی','تشریحی','صحیح / غلط'])__qbFill('تعداد '+label,'۱');__qbFill('عنوان آزمون','آزمون آزمایشی');document.querySelector('.qb-dialog form').requestSubmit();`,
     );
     await delay(100);
     check(
@@ -235,7 +294,7 @@ main({
       "exam sheet separates identity question numbering marks and lined answer space",
       await evaluate(`(()=>{
         const sheet=document.querySelector('.qb-sheet');
-        return sheet.querySelector('.qb-student-fields').textContent.includes('نام و نام خانوادگی')&&sheet.querySelector('.qb-sheet-columns').children.length===3&&sheet.querySelectorAll('.qb-sheet-number').length===4&&[...sheet.querySelectorAll('.qb-sheet-score')].every(n=>n.getAttribute('aria-label').includes('نمره'))&&sheet.querySelector('.qb-answer-space').children.length===4;
+        return sheet.querySelectorAll('.qb-student-field').length===2&&[...sheet.querySelectorAll('.qb-student-field')].some(n=>n.textContent.includes('نام و نام خانوادگی')&&n.querySelector('.qb-student-line'))&&sheet.querySelector('.qb-sheet-columns').children.length===3&&sheet.querySelectorAll('.qb-sheet-number').length===4&&[...sheet.querySelectorAll('.qb-sheet-score')].every(n=>n.getAttribute('aria-label').includes('نمره'))&&sheet.querySelector('.qb-answer-space').children.length===4;
       })()`),
     );
     for (const width of [320, 360, 390, 768, 1440]) {
@@ -264,11 +323,10 @@ main({
               try {
                 const differences=[];
                 const same=(a,b,props)=>{const x=getComputedStyle(a),y=getComputedStyle(b);for(const p of props)if(x[p]!==y[p])differences.push({element:a.className,property:p,bank:x[p],attendance:y[p]});return props.every(p=>x[p]===y[p]);};
-                const palette=same(document.querySelector('.qb-tabs'),actualSession.querySelector('.session-mode-picker'),['backgroundColor','borderTopWidth','borderRadius','paddingTop','boxShadow'])&&same(document.querySelector('.qb-tabs [aria-pressed=true]'),actualSession.querySelector('[aria-pressed=true]'),['backgroundColor','color','borderRadius','fontSize','lineHeight','boxShadow'])&&same(document.querySelector('.qb-tabs [aria-pressed=false]'),actualSession.querySelector('[aria-pressed=false]'),['backgroundColor','color','borderRadius','fontSize','lineHeight','boxShadow']);
-                const cards=same(document.querySelector('.qb-question-row'),host.querySelector('.att-row'),['backgroundColor','borderTopColor','borderRadius']);
-                // Search height is normalized to the bank's 44px selects;
-                // the attendance reference still defines its typography and radius.
-                const mobile=innerWidth>700||same(document.querySelector('.qb-filters input'),host.querySelector('input'),['fontSize','borderRadius','minHeight']);
+                const palette=same(document.querySelector('.qb-tabs'),actualSession.querySelector('.session-mode-picker'),['backgroundColor','borderTopWidth','borderRadius','boxShadow',...(innerWidth>700?['paddingTop']:[])])&&same(document.querySelector('.qb-tabs [aria-pressed=true]'),actualSession.querySelector('[aria-pressed=true]'),['backgroundColor','color','borderRadius','boxShadow',...(innerWidth>700?['fontSize','lineHeight']:[])])&&same(document.querySelector('.qb-tabs [aria-pressed=false]'),actualSession.querySelector('[aria-pressed=false]'),['backgroundColor','color','borderRadius','boxShadow',...(innerWidth>700?['fontSize','lineHeight']:[])]);
+                const cards=same(document.querySelector('.qb-question-library'),host.querySelector('.att-row'),['backgroundColor','borderTopColor','borderRadius']);
+                // Compact mobile controls keep the palette and readable editable text.
+                const mobile=innerWidth>700||same(document.querySelector('.qb-filters input'),host.querySelector('input'),['fontSize']);
                 return {pass:palette&&cards&&mobile,differences};
               } finally {host.remove();actualSession.remove();}
             })()`);
@@ -287,17 +345,17 @@ main({
           check(
             `mobile context controls are compact and accessible ${width}`,
             await evaluate(
-              `(()=>{if(innerWidth>700)return true;const toolbar=document.querySelector('.qb-toolbar'),picker=document.querySelector('.qb-section-picker'),buttons=[...document.querySelectorAll('.qb-context-action')];return toolbar.getBoundingClientRect().height<=84&&picker.getBoundingClientRect().height<=105&&buttons.length>=3&&buttons.every(b=>b.getAttribute('aria-label')===b.title&&!!b.querySelector('svg')&&b.getBoundingClientRect().width===44&&b.getBoundingClientRect().height===44)&&document.querySelector('.qb-question-row').getBoundingClientRect().top-document.querySelector('.qb-body').getBoundingClientRect().top<=460;})()`,
+              `(()=>{if(innerWidth>700)return true;const toolbar=document.querySelector('.qb-toolbar'),picker=document.querySelector('.qb-section-picker'),buttons=[...document.querySelectorAll('.qb-context-action')];return toolbar.getBoundingClientRect().height<=84&&picker.getBoundingClientRect().height<=105&&buttons.length===2&&buttons.every(b=>b.getAttribute('aria-label')===b.title&&!!b.querySelector('svg')&&b.getBoundingClientRect().width===36&&b.getBoundingClientRect().height===36)&&document.querySelector('.qb-question-row').getBoundingClientRect().bottom<=document.querySelector('.qb-body').getBoundingClientRect().bottom&&(document.querySelector('.qb-question-entry').compareDocumentPosition(document.querySelector('.qb-question-controls'))&Node.DOCUMENT_POSITION_FOLLOWING)!==0;})()`,
             ),
           );
         if (view === "questions") {
           const alignment = await evaluate(
-            `['.qb-toolbar','.qb-section-picker'].map(selector=>{const row=document.querySelector(selector),s=row.querySelector('select').getBoundingClientRect();return {selector,select:{height:s.height,bottom:s.bottom},buttons:[...row.querySelectorAll('button')].map(b=>{const r=b.getBoundingClientRect();return {height:r.height,bottom:r.bottom,text:b.textContent};})};})`,
+            `['.qb-toolbar','.qb-section-picker'].map(selector=>{const row=document.querySelector(selector),s=row.querySelector('select').getBoundingClientRect();return {selector,select:{height:s.height,bottom:s.bottom},buttons:[...row.querySelectorAll('.qb-course-actions')].map(b=>{const r=b.getBoundingClientRect();return {height:r.height,bottom:r.bottom,text:b.textContent};})};})`,
           );
           const aligned = alignment.every(
             (row) =>
-              Math.abs(row.select.height - 44) < 0.5 &&
-              row.buttons.length > 0 &&
+              Math.abs(row.select.height - (width <= 700 ? 40 : 44)) < 0.5 &&
+              row.buttons.length === 1 &&
               row.buttons.every(
                 (b) =>
                   Math.abs(b.height - row.select.height) < 0.5 &&
@@ -317,10 +375,12 @@ main({
           );
           const [a, b] = controls;
           const matches =
-            Math.abs(a.height - 44) < 0.5 &&
+            Math.abs(a.height - (width <= 700 ? 40 : 44)) < 0.5 &&
             Math.abs(a.height - b.height) < 0.5 &&
             Math.abs(a.bottom - b.bottom) < 0.5 &&
-            a.font === b.font &&
+            (width <= 700
+              ? a.font === "16px" && b.font === "13px"
+              : a.font === b.font) &&
             a.radius === b.radius;
           if (!matches)
             console.log("Search alignment", width, JSON.stringify(controls));
@@ -336,6 +396,25 @@ main({
               `(()=>{const rows=[...document.querySelectorAll('.qb-results>.qb-question-row')];return rows.length===15&&rows.every(r=>!r.open&&r.getBoundingClientRect().height<=105)&&document.querySelector('.qb-body').scrollWidth<=document.querySelector('.qb-body').clientWidth+1;})()`,
             ),
           );
+        if (view === "questions") {
+          check(
+            `question list scroll stays inside its bounded container ${width}`,
+            await evaluate(`(()=>{
+            const list=document.querySelector('.qb-question-library>.qb-results');
+            const controls=document.querySelector('.qb-question-controls');
+            const library=document.querySelector('.qb-question-library');
+            const panel=document.querySelector('.qb-panel');
+            const before={controls:controls.getBoundingClientRect().top,height:library.getBoundingClientRect().height,panel:panel.scrollTop};
+            list.scrollTop=list.scrollHeight;
+            const pass=list.scrollTop>0&&list.clientHeight<=420&&list.scrollHeight>list.clientHeight
+              &&getComputedStyle(list).overflowY==='auto'&&list.tabIndex===0
+              &&Math.abs(controls.getBoundingClientRect().top-before.controls)<1
+              &&Math.abs(library.getBoundingClientRect().height-before.height)<1
+              &&panel.scrollTop===before.panel&&list.querySelectorAll('.qb-question-row').length===15;
+            list.scrollTop=0;return pass;
+          })()`),
+          );
+        }
         check(
           `${view} width ${width}`,
           await evaluate(
@@ -456,13 +535,15 @@ main({
               ),
             );
           const actions = await evaluate(
-            `Array.from(document.querySelectorAll('.qb-course-actions button,.qb-tabs button,.qb-form>.record-editor-actions>button'),b=>({text:b.textContent,height:b.getBoundingClientRect().height,width:b.clientWidth,scroll:b.scrollWidth}))`,
+            `Array.from(document.querySelectorAll('.qb-course-actions>button,.qb-tabs button,.qb-form>.record-editor-actions>button'),b=>({text:b.textContent,tab:!!b.closest('.qb-tabs'),height:b.getBoundingClientRect().height,width:b.clientWidth,scroll:b.scrollWidth}))`,
           );
           const fits =
-            actions.length === 8 &&
+            actions.length === 7 &&
             actions.every(
               (b) =>
-                b.height >= 43.9 && b.height <= 50 && b.scroll <= b.width + 1,
+                b.height >= (width <= 700 ? (b.tab ? 35.9 : 39.9) : 43.9) &&
+                b.height <= 50 &&
+                b.scroll <= b.width + 1,
             );
           if (!fits)
             console.log(
@@ -475,6 +556,13 @@ main({
             fits,
           );
         }
+        if (view === "builder")
+          check(
+            `builder section edges align with tabs ${width}`,
+            await evaluate(
+              `(()=>{const tabs=document.querySelector('.qb-tabs').getBoundingClientRect();const boxes=[...document.querySelectorAll('.qb-builder>.qb-form-fields>fieldset')].map(n=>n.getBoundingClientRect());const aligned=boxes.length===3&&boxes.every(r=>Math.abs(r.left-tabs.left)<1&&Math.abs(r.right-tabs.right)<1);if(!aligned)throw Error(JSON.stringify({tabs:{left:tabs.left,right:tabs.right},boxes:boxes.map(r=>({left:r.left,right:r.right}))}));return aligned;})()`,
+            ),
+          );
         if (view === "builder")
           check(
             `builder counts use compact two-column grouping ${width}`,
@@ -528,7 +616,7 @@ main({
       check(
         `archive cards expose compact view print and named delete actions ${width}`,
         await evaluate(
-          `(()=>{const cards=[...document.querySelectorAll('.qb-exam-card')];return cards.length>0&&cards.every(card=>{const actions=[...card.querySelectorAll('.qb-exam-actions button')];return actions.length===3&&actions[1].textContent==='چاپ'&&actions[1].getAttribute('aria-label').includes('PDF')&&actions[2].getAttribute('aria-label').includes(card.querySelector('h3').textContent)&&actions.every(b=>Math.abs(b.getBoundingClientRect().height-44)<0.5&&b.scrollWidth<=b.clientWidth+1);});})()`,
+          `(()=>{const cards=[...document.querySelectorAll('.qb-exam-card')];return cards.length>0&&cards.every(card=>{const actions=[...card.querySelectorAll('.qb-exam-actions button')];return actions.length===3&&actions[1].textContent==='چاپ'&&actions[1].getAttribute('aria-label').includes('PDF')&&actions[2].getAttribute('aria-label').includes(card.querySelector('h3').textContent)&&actions.every(b=>Math.abs(b.getBoundingClientRect().height-(innerWidth<=700?40:44))<0.5&&b.scrollWidth<=b.clientWidth+1);});})()`,
         ),
       );
       check(
@@ -669,10 +757,12 @@ main({
         const extra=Array.from({length:13},(_,i)=>({...structuredClone(seed),id:'archive-'+i,title:'آزمون آرشیوی '+i,courseTitle:i===12?'كتاب عربي':'درس دیگر'}));
         await EduQuestionBankRepository.save({...bank,exams:[...bank.exams,...extra]},bank.revision);
         __qbClick('بستن');await EduQuestionBankUI.open();__qbClick('آزمون‌ها');
-        const first=document.querySelectorAll('.qb-exam-card').length===12&&!document.querySelector('.qb-toolbar').hidden&&document.querySelector('.qb-toolbar select').value==='';
-        __qbClick('بعدی');const second=document.querySelectorAll('.qb-exam-card').length===2;
+        const first=document.querySelectorAll('.qb-exam-card').length===12&&!document.querySelector('.qb-toolbar');
+        const region=document.querySelector('.qb-exam-results'),controls=document.querySelector('.qb-archive-controls'),top=controls.getBoundingClientRect().top;
+        region.scrollTop=300;const bounded=region.scrollTop>0&&region.clientHeight<=innerHeight*.55+1&&controls.getBoundingClientRect().top===top&&region.tabIndex===0;
+        __qbClick('بعدی');const second=document.querySelectorAll('.qb-exam-card').length===2&&region.scrollTop===0;
         const search=__qbFill('جست‌وجوی آزمون','کتاب عربی');search.focus();search.dispatchEvent(new Event('input',{bubbles:true}));
-        return first&&second&&document.querySelectorAll('.qb-exam-card').length===1&&document.activeElement===search;
+        return first&&bounded&&second&&document.querySelectorAll('.qb-exam-card').length===1&&document.activeElement===search;
       })()`),
     );
     check(
@@ -744,7 +834,10 @@ main({
         backupControls.automatic === 3 &&
         backupControls.buttons.length === 5 &&
         backupControls.buttons.every(
-          (b) => b.height >= 43.9 && b.height <= 50 && b.scroll <= b.width + 1,
+          (b) =>
+            b.height >= (width <= 700 ? 39.9 : 43.9) &&
+            b.height <= 50 &&
+            b.scroll <= b.width + 1,
         );
       if (!backupFits)
         console.log(
