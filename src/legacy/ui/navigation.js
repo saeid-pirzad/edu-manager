@@ -50,6 +50,10 @@ function goReports() {
     : "daily";
   render();
 }
+function goQuestionBank() {
+  state.view = "question-bank";
+  render();
+}
 function setTab(t) {
   state.tab = t;
   render();

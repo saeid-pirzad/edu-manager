@@ -248,6 +248,9 @@
       width: auto;
       flex: 0 0 auto;
     }
+    #app .topbar .navigation-menu {
+      flex-shrink: 1;
+    }
     #app .topbar h1 {
       gap: 8px;
     }
@@ -263,6 +266,31 @@
       gap: 3px;
       padding: 8px 4px;
       font-size: 12px;
+    }
+    #app .topbar .header-actions > .header-action {
+      flex: 0 1 auto;
+      min-width: 44px;
+      white-space: normal;
+    }
+    #app .topbar .header-actions > .header-action > span {
+      white-space: normal;
+      overflow-wrap: normal;
+      word-break: normal;
+      text-wrap: balance;
+    }
+    #app
+      .topbar
+      .header-actions
+      > .header-action:is(.header-home, [data-header-action="reports"]) {
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    #app
+      .topbar
+      .header-actions
+      > .header-action:is(.header-home, [data-header-action="reports"])
+      > span {
+      white-space: nowrap;
     }
   }
   @media (min-width: 701px) and (max-width: 850px) and (pointer: fine) {

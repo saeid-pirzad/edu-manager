@@ -21,9 +21,9 @@ on,.entity-menu-panel,.lesson-more-menu,.student-more-menu,.data-menu,.dashboard
 ession-mode-picker,.week-day-picker,.karnameh-stage-options,.competency-choices,.att-btns,.cal-days";const prefix=/^(?:📚|👥|📝|📅|💾|📥|📤|➕|✅|❌)\s*/u;
 const glyphs={"+":["add","افزودن"],"＋":["add","افزودن"],"−":["minus","کاهش"],"-":["minus","کاهش"],"×":["close","بستن"],"✕":["clos\
 e","بستن"],"↓":["download","دریافت فایل"],"↑":["upload","بارگذاری فایل"],"‹":["chevron-left","ماه قبل"],"›":["chevron-ri\
-ght","ماه بعد"]};for(const control of queryRoots(roots,"button,.entity-quick-create > summary,.workspace-tools > summary")){if(control.closest("#printRoot")||
-control.dataset.copyState==="done")continue;const button=control.tagName==="BUTTON",label=control.textContent.trim(),cleanLabel=(label||control.getAttribute("ar\
-ia-label")||control.title||"").replace(prefix,""),glyph=Object.hasOwn(glyphs,label)?glyphs[label]:null,choice=!!control.closest(choices),isRich=!!control.closest(
+ght","ماه بعد"]};for(const control of queryRoots(roots,"button,.entity-quick-create > summary,.workspace-tools > summary")){if(control.closest("#printRoot\
+,.qb-page")||control.dataset.copyState==="done")continue;const button=control.tagName==="BUTTON",label=control.textContent.trim(),cleanLabel=(label||control.getAttribute(
+"aria-label")||control.title||"").replace(prefix,""),glyph=Object.hasOwn(glyphs,label)?glyphs[label]:null,choice=!!control.closest(choices),isRich=!!control.closest(
 rich)||control.matches(".session-open,.session-setup-recent-item,.entity-enter,.lesson-enter,.header-home,.attendance-reminder-open"),name=(control.matches(".gr\
 ade-clear")?"eraser":null)||glyph?.[0]||(Object.hasOwn(ids,control.id)?ids[control.id]:null)||(Object.hasOwn(actions,control.dataset.workspaceAction)?actions[control.
 dataset.workspaceAction]:null)||(Object.hasOwn(legacyActions,control.dataset.legacyClick)?legacyActions[control.dataset.legacyClick]:null)||labels.find(([pattern])=>pattern.
@@ -41,13 +41,13 @@ if(node.nodeType!==3||!node.textContent.trim())continue;const span=document.crea
 node)}}}function updateDesign(appChanged){let nav=document.getElementById("uiBottomNav");if(!nav){nav=document.createElement("nav");nav.id="uiBottomNav";nav.className=
 "no-print";nav.setAttribute("aria-label","دسترسی اصلی");const items=[["schools","خانه","M3 10 12 3l9 7M5 9v12h5v-7h4v7h5V9",()=>goSchools()],["cla\
 ss","کلاس‌ها","M4 4h16v14H4zM8 21h8M12 18v3M8 8h8M8 12h5",()=>goCurrentClass()],["master","برنامه","M4 5h16v16H4zM8 3v4M16 3v4M4 10h16M8 14h2M14 1\
-4h2",()=>goMaster()],["reports","گزارش‌ها","M4 3v18h17M8 17v-5M13 17V8M18 17V5",()=>goReports()],["backups","پشتیبان","M12 3 4 6v6c0 5 8 9 8 9s8\
--4 8-9V6l-8-3ZM8 12l3 3 5-6",()=>document.querySelector('#app .header-actions > [data-workspace-action="backups"]')?.click()]];for(const[view,label,path,action]of items){
-const b=document.createElement("button");b.type="button";b.dataset.view=view;b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-widt\
-h="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="'+path+'"/></svg><span>'+label+"</span>";b.onclick=action;nav.append(b)}document.
-body.append(nav)}nav.hidden=!!(db.settings.password&&!isAuthenticated);nav.inert=!document.getElementById("modal").classList.contains("hidden");const current=["\
-school","class","lesson"].includes(state.view)?"class":state.view;for(const b of nav.children){const value=b.dataset.view===current?"page":"false";if(b.getAttribute(
-"aria-current")!==value)b.setAttribute("aria-current",value)}if(!appChanged)return;for(const button of document.querySelectorAll("#app .tabs > button")){const pressed=String(
+4h2",()=>goMaster()],["reports","گزارش‌ها","M4 3v18h17M8 17v-5M13 17V8M18 17V5",()=>goReports()],["question-bank","بانک سؤال","M12 5C9 3 6 3 3 \
+4v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1Zm0 0v15",()=>goQuestionBank()]];for(const[view,label,path,action]of items){const b=document.createElement("button");
+b.type="button";b.dataset.view=view;b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-lin\
+ejoin="round" aria-hidden="true"><path d="'+path+'"/></svg><span>'+label+"</span>";b.onclick=action;nav.append(b)}document.body.append(nav)}nav.hidden=!!(db.settings.
+password&&!isAuthenticated);nav.inert=!document.getElementById("modal").classList.contains("hidden");const current=["school","class","lesson"].includes(state.view)?
+"class":state.view;for(const b of nav.children){const value=b.dataset.view===current?"page":"false";if(b.getAttribute("aria-current")!==value)b.setAttribute("ar\
+ia-current",value)}if(!appChanged)return;for(const button of document.querySelectorAll("#app .tabs > button")){if(button.closest(".qb-page"))continue;const pressed=String(
 button.classList.contains("active"));if(button.getAttribute("aria-pressed")!==pressed)button.setAttribute("aria-pressed",pressed)}for(const item of document.querySelectorAll(
 "#app .list-item[onclick],#app .list-item[data-legacy-click]")){if(!item.hasAttribute("tabindex")){item.tabIndex=0;item.setAttribute("role","link");item.addEventListener(
 "keydown",e=>{if(e.target===item&&(e.key==="Enter"||e.key===" ")){e.preventDefault();item.click()}})}}for(const input of document.querySelectorAll('#app form in\
@@ -92,64 +92,59 @@ aria-label",input.placeholder)}}function positionHomeAction(){const home=documen
 r-brand");if(target&&home.parentElement!==target){if(wide)target.prepend(home);else target.append(home)}}function mobileExperience(){const app=document.getElementById(
 "app");if(!app)return;const tools=app.querySelector(".workspace-tools"),bar=app.querySelector(".workspace-bar");if(tools&&bar){for(const button of[...bar.children].
 filter(x=>x.tagName==="BUTTON"))tools.querySelector(".tool-actions")?.prepend(button);const strong=bar.querySelector(":scope > strong");if(strong&&!strong.title)
-strong.title=strong.textContent}const bankTools=app.querySelector(".workspace-tool-actions .workspace-tool-group")||app.querySelector(".header-actions");if(bankTools&&
-!bankTools.querySelector(".question-bank-entry")){const bankButton=document.createElement("button");bankButton.className="question-bank-entry "+(bankTools.matches(
-".header-actions")?"header-action":"ghost workspace-tool-button");const bankIcon=document.createElement("span");bankIcon.className="workspace-tool-icon";bankIcon.
-innerHTML=EduIcons.html("book");const bankLabel=document.createElement("span");bankLabel.className="workspace-tool-copy";const bankTitle=document.createElement(
-"span");bankTitle.textContent="بانک سؤال و طراحی آزمون";bankLabel.append(bankTitle);bankButton.append(bankIcon,bankLabel);bankButton.onclick=
-()=>window.EduQuestionBankUI.open();bankTools.append(bankButton)}const nav=app.querySelector(".navigation-menu");if(nav){const summary=nav.querySelector(":scope\
- > summary");summary?.setAttribute("aria-label","ابزارها و تنظیمات برنامه")}const gradeArea=app.querySelector("#lessonGradesArea");if(gradeArea){
-for(const card of gradeArea.querySelectorAll(".card")){if(!card.classList.contains("mobile-grade-panel"))card.classList.add("mobile-grade-panel");if(!card.dataset.
-gradeHelpRemoved){const intro=[...card.children].find(x=>x.tagName==="P");intro?.remove();card.dataset.gradeHelpRemoved="true"}}}}function polishReportFilters(){
-if(state.view!=="reports")return;const tabs=document.querySelector(".report-navigation"),active=tabs?.querySelector(".active");if(tabs&&active&&tabs.scrollWidth>
-tabs.clientWidth){const box2=tabs.getBoundingClientRect(),r=active.getBoundingClientRect();if(r.left<box2.left||r.right>box2.right)tabs.scrollLeft+=r.left-(box2.
-left+(box2.width-r.width)/2)}const names={schoolId:"مدرسه",classId:"کلاس",lessonId:"درس",studentId:"هنرجو",date:"تاریخ جلسه",period:"ز\
-نگ"};for(const control of document.querySelectorAll('#app select[onchange*="Filter"],#app input[type="date"][onchange*="GlobalFilter"],#app select[data-legacy\
--change],#app input[type="date"][data-legacy-change]')){const action=control.getAttribute("onchange")||EduLegacyEvents.source(control.getAttribute("data-legacy-\
-change")),key=action.match(/["']([^"']+)["']/)?.[1],caption=names[key];if(!caption||control.closest("label")||control.labels?.length)continue;const label=document.
-createElement("label");label.className="report-filter-field";const pairedDate=control.type==="date"&&control.nextElementSibling?.dataset.gregorianTarget==="true"?
-control.nextElementSibling:null;const text=document.createElement("span");text.textContent=caption;control.before(label);label.append(text,control);if(pairedDate){
-label.append(pairedDate);pairedDate.setAttribute("aria-label",caption)}const row=label.parentElement;if(!row.classList.contains("report-filter-grid"))row.classList.
-add("report-filter-grid");row.closest(".card")?.classList.add("report-filter-card")}const box=document.querySelector("#app .filter-box");if(box&&box.tagName!=="\
-DETAILS"){const details=document.createElement("details");details.className="filter-box report-options";details.open=!!state.reportOptionsOpen;details.ontoggle=
-()=>{state.reportOptionsOpen=details.open};const summary=document.createElement("summary");summary.textContent="تنظیم محتوای گزارش و نمایش اسامی";
-details.append(summary);while(box.firstChild)details.append(box.firstChild);box.replaceWith(details)}}const designRootIds=["app","modal","calPopup","mobileBar",
-"pwaWelcome"],dirtyRoots=new Set;let fullDesign=true;const designObserver=new MutationObserver(schedule);function observeDesignRoots(){for(const id of designRootIds){
-const root=document.getElementById(id);if(root)designObserver.observe(root,{childList:true,subtree:true})}designObserver.observe(document.body,{childList:true})}
-function enhance(){const appChanged=fullDesign||dirtyRoots.has("app"),modalChanged=fullDesign||dirtyRoots.has("modal"),roots=fullDesign?[document]:[...dirtyRoots].
-map(id=>document.getElementById(id)).filter(Boolean),tableSelector=[appChanged?"#app table":"",modalChanged?"#modalBody table":""].filter(Boolean).join(",");dirtyRoots.
-clear();fullDesign=false;designObserver.disconnect();try{if(appChanged){polishReportFilters();mobileExperience();polishExperience()}labelPlaceholderInputs(appChanged,
-modalChanged);updateDesign(appChanged);decorateIcons(roots);const tables=tableSelector?[...document.querySelectorAll(tableSelector)]:[];for(const table of tables){
-if(!table.dataset.responsiveSized&&table.dataset.mobileLayout!=="compact"){const columns=Math.max(1,...[...table.rows].slice(0,3).map(row=>[...row.cells].reduce(
-(n,cell)=>n+cell.colSpan,0)));table.style.minWidth=(columns>=4?columns*120:Math.min(380,columns*140))+"px";table.dataset.responsiveSized="1"}}for(const container of queryRoots(
-roots,".table-scroll")){if(!container.hasAttribute("tabindex")){container.tabIndex=0;container.setAttribute("role","region");container.setAttribute("aria-label",
-"جدول با پیمایش افقی")}}for(const table of tables){if(table.dataset.mobileLayout==="compact"||table.closest(".responsive-scroll,.table-scroll"))
-continue;const wrap=document.createElement("div");wrap.className="responsive-scroll";wrap.tabIndex=0;wrap.setAttribute("role","region");wrap.setAttribute("aria-\
-label","جدول؛ برای دیدن ستون‌های دیگر افقی پیمایش کنید");table.before(wrap);wrap.append(table)}styleDataTables(tables);for(const grid of appChanged?
-document.querySelectorAll("#app .schedule-grid"):[]){if(grid.parentElement.classList.contains("responsive-scroll"))continue;const wrap=document.createElement("d\
-iv");wrap.className="responsive-scroll";wrap.tabIndex=0;wrap.setAttribute("role","region");wrap.setAttribute("aria-label","برنامه هفتگی با پیمایش افقی");
-grid.before(wrap);wrap.append(grid)}if(appChanged){const bar=document.querySelector(".workspace-bar");if(bar&&!document.querySelector("#app .workspace-tools")){
-const tools=document.createElement("details");tools.className="workspace-tools no-print";tools.innerHTML='<summary>مدیریت و پشتیبان‌ها</summary><div class="tool\
--actions"></div>';const box=tools.querySelector(".tool-actions");for(const button of[...bar.querySelectorAll("button")])box.append(button);for(const small of[...bar.
-querySelectorAll("small")])box.append(small);const backup=document.createElement("button");backup.className="ghost";backup.textContent="ذخیره پشتیبان";
-backup.onclick=()=>exportBackup().catch(e=>alert(e.message));box.prepend(backup);bar.append(tools)}const topbar=document.querySelector(".topbar"),actions=topbar?.
-querySelector(".actions");if(actions&&!topbar.querySelector(".navigation-menu")){const menu=document.createElement("details");menu.className="navigation-menu no\
--print";menu.open=innerWidth>700&&!matchMedia("(max-width:1000px) and (pointer:coarse)").matches;menu.innerHTML='<summary title="ابزارها و تنظیمات"><span class=\
-"menu-toggle-label">فهرست برنامه</span><svg class="menu-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="ro\
-und" aria-hidden="true"><path class="menu-line-top" d="M5 12h14"/><path class="menu-line-middle" d="M5 12h14"/><path class="menu-line-bottom" d="M5 12h14"/></sv\
-g></summary>';actions.before(menu);menu.querySelector("summary").id="headerNavigationToggle";menu.append(actions);menu.addEventListener("toggle",()=>{if(matchMedia(
-"(max-width:700px), (max-width:1000px) and (pointer:coarse)").matches){const tools=menu.querySelector(".workspace-tools");if(tools)tools.open=menu.open}if(!menu.
-open){closeClassMenu();closeDataMenu()}});actions.addEventListener("click",e=>{const button=e.target.closest("button");if(button&&!button.hasAttribute("aria-con\
-trols")&&matchMedia("(max-width:700px), (max-width:1000px) and (pointer:coarse)").matches){menu.open=false;menu.querySelector("summary").focus({preventScroll:true})}});
-const settings=actions.querySelector('button[data-header-action="settings"]');if(settings){settings.setAttribute("aria-label","تنظیمات برنامه");settings.
-title="تنظیمات برنامه"}}}positionHomeAction()}finally{pending=false;observeDesignRoots()}}function schedule(records){for(const record of records||[]){
-if(record.target===document.body){const changed=[...record.addedNodes,...record.removedNodes];for(const node of changed){if(node.nodeType===1&&designRootIds.includes(
-node.id))dirtyRoots.add(node.id);else fullDesign=true}}else{const root=record.target.closest?.("#app,#modal,#calPopup,#mobileBar,#pwaWelcome");if(root)dirtyRoots.
-add(root.id);else fullDesign=true}}if(!records)fullDesign=true;if(!pending){pending=true;requestAnimationFrame(enhance)}}let wideLayout;function viewport(){const visualHeight=window.
-visualViewport?.height||innerHeight;const editing=document.activeElement?.matches('input:not([type="checkbox"]):not([type="radio"]),textarea,[contenteditable="t\
-rue"]');document.documentElement.dataset.keyboardOpen=String(!!editing&&innerHeight-visualHeight>120);document.documentElement.style.setProperty("--app-viewport",
-(window.visualViewport?.height||innerHeight)+"px");document.documentElement.style.setProperty("--app-viewport-top",(window.visualViewport?.offsetTop||0)+"px");const wide=innerWidth>
-700&&!matchMedia("(max-width:1000px) and (pointer:coarse)").matches;positionHomeAction();if(wide!==wideLayout){wideLayout=wide;for(const menu of document.querySelectorAll(
+strong.title=strong.textContent}const nav=app.querySelector(".navigation-menu");if(nav){const summary=nav.querySelector(":scope > summary");summary?.setAttribute(
+"aria-label","ابزارها و تنظیمات برنامه")}const gradeArea=app.querySelector("#lessonGradesArea");if(gradeArea){for(const card of gradeArea.querySelectorAll(
+".card")){if(!card.classList.contains("mobile-grade-panel"))card.classList.add("mobile-grade-panel");if(!card.dataset.gradeHelpRemoved){const intro=[...card.children].
+find(x=>x.tagName==="P");intro?.remove();card.dataset.gradeHelpRemoved="true"}}}}function polishReportFilters(){if(state.view!=="reports")return;const tabs=document.
+querySelector(".report-navigation"),active=tabs?.querySelector(".active");if(tabs&&active&&tabs.scrollWidth>tabs.clientWidth){const box2=tabs.getBoundingClientRect(),
+r=active.getBoundingClientRect();if(r.left<box2.left||r.right>box2.right)tabs.scrollLeft+=r.left-(box2.left+(box2.width-r.width)/2)}const names={schoolId:"مدرسه",
+classId:"کلاس",lessonId:"درس",studentId:"هنرجو",date:"تاریخ جلسه",period:"زنگ"};for(const control of document.querySelectorAll('#app sel\
+ect[onchange*="Filter"],#app input[type="date"][onchange*="GlobalFilter"],#app select[data-legacy-change],#app input[type="date"][data-legacy-change]')){const action=control.
+getAttribute("onchange")||EduLegacyEvents.source(control.getAttribute("data-legacy-change")),key=action.match(/["']([^"']+)["']/)?.[1],caption=names[key];if(!caption||
+control.closest("label")||control.labels?.length)continue;const label=document.createElement("label");label.className="report-filter-field";const pairedDate=control.
+type==="date"&&control.nextElementSibling?.dataset.gregorianTarget==="true"?control.nextElementSibling:null;const text=document.createElement("span");text.textContent=
+caption;control.before(label);label.append(text,control);if(pairedDate){label.append(pairedDate);pairedDate.setAttribute("aria-label",caption)}const row=label.parentElement;
+if(!row.classList.contains("report-filter-grid"))row.classList.add("report-filter-grid");row.closest(".card")?.classList.add("report-filter-card")}const box=document.
+querySelector("#app .filter-box");if(box&&box.tagName!=="DETAILS"){const details=document.createElement("details");details.className="filter-box report-options";
+details.open=!!state.reportOptionsOpen;details.ontoggle=()=>{state.reportOptionsOpen=details.open};const summary=document.createElement("summary");summary.textContent=
+"تنظیم محتوای گزارش و نمایش اسامی";details.append(summary);while(box.firstChild)details.append(box.firstChild);box.replaceWith(details)}}
+const designRootIds=["app","modal","calPopup","mobileBar","pwaWelcome"],dirtyRoots=new Set;let fullDesign=true;const designObserver=new MutationObserver(schedule);
+function observeDesignRoots(){for(const id of designRootIds){const root=document.getElementById(id);if(root)designObserver.observe(root,{childList:true,subtree:true})}
+designObserver.observe(document.body,{childList:true})}function enhance(){const appChanged=fullDesign||dirtyRoots.has("app"),modalChanged=fullDesign||dirtyRoots.
+has("modal"),roots=fullDesign?[document]:[...dirtyRoots].map(id=>document.getElementById(id)).filter(Boolean),tableSelector=[appChanged?"#app table":"",modalChanged?
+"#modalBody table":""].filter(Boolean).join(",");dirtyRoots.clear();fullDesign=false;designObserver.disconnect();try{if(appChanged){polishReportFilters();mobileExperience();
+polishExperience()}labelPlaceholderInputs(appChanged,modalChanged);updateDesign(appChanged);decorateIcons(roots);const tables=tableSelector?[...document.querySelectorAll(
+tableSelector)].filter(table=>!table.closest(".qb-page")):[];for(const table of tables){if(!table.dataset.responsiveSized&&table.dataset.mobileLayout!=="compact"){
+const columns=Math.max(1,...[...table.rows].slice(0,3).map(row=>[...row.cells].reduce((n,cell)=>n+cell.colSpan,0)));table.style.minWidth=(columns>=4?columns*120:
+Math.min(380,columns*140))+"px";table.dataset.responsiveSized="1"}}for(const container of queryRoots(roots,".table-scroll")){if(container.closest(".qb-page"))continue;
+if(!container.hasAttribute("tabindex")){container.tabIndex=0;container.setAttribute("role","region");container.setAttribute("aria-label","جدول با پیمایش افقی")}}
+for(const table of tables){if(table.dataset.mobileLayout==="compact"||table.closest(".responsive-scroll,.table-scroll"))continue;const wrap=document.createElement(
+"div");wrap.className="responsive-scroll";wrap.tabIndex=0;wrap.setAttribute("role","region");wrap.setAttribute("aria-label","جدول؛ برای دیدن ستون‌های دیگر افقی \
+پیمایش کنید");table.before(wrap);wrap.append(table)}styleDataTables(tables);for(const grid of appChanged?document.querySelectorAll("#app .schedule-gri\
+d"):[]){if(grid.parentElement.classList.contains("responsive-scroll"))continue;const wrap=document.createElement("div");wrap.className="responsive-scroll";wrap.
+tabIndex=0;wrap.setAttribute("role","region");wrap.setAttribute("aria-label","برنامه هفتگی با پیمایش افقی");grid.before(wrap);wrap.append(
+grid)}if(appChanged){const bar=document.querySelector(".workspace-bar");if(bar&&!document.querySelector("#app .workspace-tools")){const tools=document.createElement(
+"details");tools.className="workspace-tools no-print";tools.innerHTML='<summary>مدیریت و پشتیبان‌ها</summary><div class="tool-actions"></div>';
+const box=tools.querySelector(".tool-actions");for(const button of[...bar.querySelectorAll("button")])box.append(button);for(const small of[...bar.querySelectorAll(
+"small")])box.append(small);const backup=document.createElement("button");backup.className="ghost";backup.textContent="ذخیره پشتیبان";backup.onclick=
+()=>exportBackup().catch(e=>alert(e.message));box.prepend(backup);bar.append(tools)}const topbar=document.querySelector(".topbar"),actions=topbar?.querySelector(
+".actions");if(actions&&!topbar.querySelector(".navigation-menu")){const menu=document.createElement("details");menu.className="navigation-menu no-print";menu.open=
+innerWidth>700&&!matchMedia("(max-width:1000px) and (pointer:coarse)").matches;menu.innerHTML='<summary title="ابزارها و تنظیمات"><span class="menu-toggle-label\
+">فهرست برنامه</span><svg class="menu-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="\
+true"><path class="menu-line-top" d="M5 12h14"/><path class="menu-line-middle" d="M5 12h14"/><path class="menu-line-bottom" d="M5 12h14"/></svg></summary>';actions.
+before(menu);menu.querySelector("summary").id="headerNavigationToggle";menu.append(actions);menu.addEventListener("toggle",()=>{if(matchMedia("(max-width:700px)\
+, (max-width:1000px) and (pointer:coarse)").matches){const tools=menu.querySelector(".workspace-tools");if(tools)tools.open=menu.open}if(!menu.open){closeClassMenu();
+closeDataMenu()}});actions.addEventListener("click",e=>{const button=e.target.closest("button");if(button&&!button.hasAttribute("aria-controls")&&matchMedia("(m\
+ax-width:700px), (max-width:1000px) and (pointer:coarse)").matches){menu.open=false;menu.querySelector("summary").focus({preventScroll:true})}});const settings=actions.
+querySelector('button[data-header-action="settings"]');if(settings){settings.setAttribute("aria-label","تنظیمات برنامه");settings.title="تنظیمات بر\
+نامه"}}}positionHomeAction()}finally{pending=false;observeDesignRoots()}}function schedule(records){for(const record of records||[]){if(record.target===document.
+body){const changed=[...record.addedNodes,...record.removedNodes];for(const node of changed){if(node.nodeType===1&&designRootIds.includes(node.id))dirtyRoots.add(
+node.id);else fullDesign=true}}else{const root=record.target.closest?.("#app,#modal,#calPopup,#mobileBar,#pwaWelcome");if(root)dirtyRoots.add(root.id);else fullDesign=
+true}}if(!records)fullDesign=true;if(!pending){pending=true;requestAnimationFrame(enhance)}}let wideLayout;function viewport(){const visualHeight=window.visualViewport?.
+height||innerHeight;const editing=document.activeElement?.matches('input:not([type="checkbox"]):not([type="radio"]),textarea,[contenteditable="true"]');document.
+documentElement.dataset.keyboardOpen=String(!!editing&&innerHeight-visualHeight>120);document.documentElement.style.setProperty("--app-viewport",(window.visualViewport?.
+height||innerHeight)+"px");document.documentElement.style.setProperty("--app-viewport-top",(window.visualViewport?.offsetTop||0)+"px");const wide=innerWidth>700&&
+!matchMedia("(max-width:1000px) and (pointer:coarse)").matches;positionHomeAction();if(wide!==wideLayout){wideLayout=wide;for(const menu of document.querySelectorAll(
 ".navigation-menu"))menu.open=wide}}function start(){enhance();viewport();window.visualViewport?.addEventListener("resize",viewport);window.visualViewport?.addEventListener(
 "scroll",viewport);window.addEventListener("resize",viewport);document.addEventListener("focusin",viewport);document.addEventListener("focusout",()=>requestAnimationFrame(
 viewport))}if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start);else start()})();

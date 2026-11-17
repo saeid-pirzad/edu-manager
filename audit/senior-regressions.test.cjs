@@ -187,10 +187,10 @@ test("native print refuses unvalidated, stale and pending output", () => {
 
 test("question bank print does not prepare or alter school report output", () => {
   const c = vm.createContext({
+    EduQuestionBankUI: { isPreviewActive: () => true },
     document: {
-      querySelector(selector) {
-        assert.equal(selector, ".qb-dialog[open]");
-        return {};
+      querySelector() {
+        assert.fail("question bank preview is resolved by its page lifecycle");
       },
       getElementById() {
         assert.fail("question bank print must not touch school print output");

@@ -718,7 +718,7 @@ color:var(--theme-ink);font-size:12px;line-height:1.7;text-align:start;white-spa
 .workspace-tool-description{display:none}#app .navigation-menu .workspace-tool-actions .workspace-tool-button{min-height:44px;padding:6px 8px;gap:8px}#app .navigation-menu
 .workspace-tool-icon{flex-basis:28px;height:28px;border-radius:8px}#app .navigation-menu .workspace-tool-copy{font-size:12px}#app .navigation-menu .workspace-tools>
 .workspace-tool-actions{padding:6px;gap:6px}}@media screen and (max-width:700px),screen and (max-width:1000px)and (pointer:coarse){#app .topbar .header-home,#app
-.navigation-menu [data-header-action=reports],#app .navigation-menu [data-header-action=master],#app .navigation-menu [data-workspace-action=backups]{display:none!important}
+.navigation-menu [data-header-action=reports],#app .navigation-menu [data-header-action=master],#app .navigation-menu [data-header-action=question-bank]{display:none!important}
 #app .topbar .header-brand{width:calc(100% - 54px)!important}#uiBottomNav{grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;padding-inline:6px}#uiBottomNav button{
 min-width:0;padding-inline:2px;font-size:11px;white-space:nowrap}}@media screen and (max-width:700px),screen and (max-width:1000px)and (pointer:coarse){#app .navigation-menu[open]
 .header-actions{display:block;padding:10px!important;border-radius:16px;background:var(--theme-surface)}#app .navigation-menu .header-actions>.workspace-tools>summary{

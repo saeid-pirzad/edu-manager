@@ -113,6 +113,7 @@ async function bootstrapV24() {
     blocked = true;
     storageBlocked = true;
     storageProblem = error.message;
+    globalThis.EduQuestionBankUI?.dispose?.();
     document.getElementById("app").innerHTML =
       '<div class="card" role="alert"><h2>خواندن اطلاعات انجام نشد</h2><p>' +
       esc(error.message) +

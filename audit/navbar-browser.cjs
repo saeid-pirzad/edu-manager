@@ -161,8 +161,25 @@ function inspectNavbar() {
     ),
     noOverflow: document.documentElement.scrollWidth <= innerWidth + 1,
     bottom: bottom
-      ? [...bottom.querySelectorAll("button")].filter(visible).map(box)
+      ? [...bottom.querySelectorAll("button")]
+          .filter(visible)
+          .map((button) => ({
+            view: button.dataset.view,
+            ...box(button),
+          }))
       : [],
+    questionBank: {
+      direct: actions.querySelectorAll(
+        ':scope > .question-bank-entry[data-header-action="question-bank"]',
+      ).length,
+      inTools: tools.querySelectorAll(".question-bank-entry").length,
+    },
+    backup: actions.querySelectorAll(
+      ':scope > [data-workspace-action="backups"]',
+    ).length,
+    backupVisible: visible(
+      actions.querySelector(':scope > [data-workspace-action="backups"]'),
+    ),
   };
 }
 
@@ -260,6 +277,20 @@ async function run({ cdp, evaluate, cases, delay }) {
       });
       snapshots.push(result);
       const id = suffix + "_" + (open ? "open" : "closed");
+      add(
+        "QUESTION_BANK_ENTRY_" + id,
+        "Question bank is a main navigation entry and classroom backup remains available at " +
+          id,
+        result.questionBank.direct === 1 &&
+          result.questionBank.inTools === 0 &&
+          result.backup === 1 &&
+          (!result.compact || !open || result.backupVisible),
+        {
+          questionBank: result.questionBank,
+          backup: result.backup,
+          backupVisible: result.backupVisible,
+        },
+      );
       add(
         "EDGES_" + id,
         "Header content has healthy inner padding at " + id,
@@ -385,6 +416,8 @@ async function run({ cdp, evaluate, cases, delay }) {
           "The five compact bottom-navigation targets remain visible and fit at " +
             id,
           result.bottom.length === 5 &&
+            result.bottom.map((button) => button.view).join(",") ===
+              "schools,class,master,reports,question-bank" &&
             result.bottom.every(
               (button) =>
                 button.width >= 43.5 &&

@@ -46,6 +46,7 @@ function forgetInstallation() {
   isAuthenticated = false;
 }
 function resetScreen(message) {
+  globalThis.EduQuestionBankUI?.dispose?.();
   const modal = document.getElementById("modal");
   modal.classList.add("hidden");
   modal.setAttribute("aria-hidden", "true");

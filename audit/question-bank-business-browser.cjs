@@ -54,12 +54,13 @@ main({
       window.__businessArchive=JSON.stringify(bank.exams);
       await R.save(bank,(await R.read()).revision);
       window.__qbBusiness={
-        click(label,scope=document.querySelector('.qb-dialog')){
+        click(label,scope=document.querySelector('.qb-page')){
+          if(label==='بستن'){goSchools();return;}
           const node=[...scope.querySelectorAll('button')].find(n=>(n.querySelector('.ui-button-label')?.textContent||n.textContent).trim()===label);
           if(!node)throw Error('Missing button: '+label);const menu=node.closest('.qb-entity-menu');if(menu&&!menu.matches(':popover-open'))document.querySelector('[aria-controls="'+menu.id+'"]').click();node.click();
         },
         field(label){
-          const wrapper=[...document.querySelectorAll('.qb-dialog label')].find(n=>n.firstChild?.textContent===label);
+          const wrapper=[...document.querySelectorAll('.qb-page label')].find(n=>n.firstChild?.textContent===label);
           if(!wrapper)throw Error('Missing field: '+label);
           return wrapper.querySelector('input,select,textarea');
         },
@@ -83,6 +84,29 @@ main({
       __qbBusiness.click('طراحی آزمون');
     })()`);
     check(
+      "the bank is a main content page with one active entry and five mobile navigation targets",
+      await evaluate(`(()=>{
+        const page=document.querySelector('#questionBankPageHost > .qb-page');
+        return !!page&&page.tagName==='SECTION'&&!page.matches(':modal')
+          &&!document.querySelector('.qb-dialog,.qb-close')
+          &&document.querySelectorAll('.topbar .question-bank-entry').length===1
+          &&!!document.querySelector('.topbar [data-header-action="question-bank"][aria-current="page"]')
+          &&document.querySelectorAll('#uiBottomNav > button').length===5
+          &&!!document.querySelector('#uiBottomNav [data-view="question-bank"][aria-current="page"]')
+          &&!document.querySelector('.workspace-tools .question-bank-entry');
+      })()`),
+    );
+    check(
+      "the bank keeps exactly its selected tab active after application enhancement",
+      await evaluate(`(async()=>{
+        await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+        const tabs=[...document.querySelectorAll('.qb-page .qb-tabs > button')];
+        const selected=tabs.filter(button=>button.getAttribute('aria-pressed')==='true');
+        return tabs.length===4&&selected.length===1&&selected[0].textContent.trim()==='طراحی آزمون'
+          &&tabs.filter(button=>button.getAttribute('aria-pressed')==='false').length===3;
+      })()`),
+    );
+    check(
       "an untouched bank form permits unloading and update preparation",
       await evaluate(`(async()=>{
         const event=new Event('beforeunload',{cancelable:true});dispatchEvent(event);
@@ -101,18 +125,91 @@ main({
           &&JSON.stringify(await EduQuestionBankRepository.read())===before;
       })()`),
     );
+    check(
+      "unrelated application rerenders preserve the same bank form, values, focus and course selection",
+      await evaluate(`(async()=>{
+        const page=document.querySelector('.qb-page'),form=document.querySelector('.qb-form');
+        const title=__qbBusiness.field('عنوان آزمون');title.focus({preventScroll:true});
+        title.scrollIntoView({block:'center',behavior:'instant'});
+        const beforeScroll={left:scrollX,top:scrollY};
+        const value=title.value,course=document.querySelector('.qb-toolbar select').value;
+        render();render();
+        await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+        const observed={page:document.querySelector('.qb-page')===page,form:document.querySelector('.qb-form')===form,
+          input:__qbBusiness.field('عنوان آزمون')===title,value:title.value===value,
+          focus:document.activeElement===title,course:document.querySelector('.qb-toolbar select').value===course,
+          horizontalScroll:Math.abs(scrollX-beforeScroll.left)<=1,verticalScroll:Math.abs(scrollY-beforeScroll.top)<=1,
+          pending:EduQuestionBankUI.hasPendingChanges()};
+        if(!Object.values(observed).every(Boolean))throw Error(JSON.stringify({observed,beforeScroll,afterScroll:{left:scrollX,top:scrollY},pageTop:page.getBoundingClientRect().top,formHeight:form.getBoundingClientRect().height}));
+        return document.querySelector('.qb-page')===page&&document.querySelector('.qb-form')===form
+          &&__qbBusiness.field('عنوان آزمون')===title&&title.value===value
+          &&document.activeElement===title&&document.querySelector('.qb-toolbar select').value===course
+          &&Math.abs(scrollX-beforeScroll.left)<=1&&Math.abs(scrollY-beforeScroll.top)<=1
+          &&EduQuestionBankUI.hasPendingChanges();
+      })()`),
+    );
+    check(
+      "application rerenders preserve bank document scrolling while focus is outside the editor",
+      await evaluate(`(async()=>{
+        const title=__qbBusiness.field('عنوان آزمون'),form=document.querySelector('.qb-form');
+        title.scrollIntoView({block:'center',behavior:'instant'});
+        document.querySelector('.topbar [data-header-action="reports"]').focus({preventScroll:true});
+        const beforeScroll={left:scrollX,top:scrollY};
+        render();render();
+        await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+        return document.querySelector('.qb-form')===form&&title.isConnected
+          &&Math.abs(scrollX-beforeScroll.left)<=1&&Math.abs(scrollY-beforeScroll.top)<=1
+          &&EduQuestionBankUI.hasPendingChanges();
+      })()`),
+    );
+    check(
+      "application enhancement preserves the selected bank tab after global rerenders",
+      await evaluate(`(async()=>{
+        await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+        const tabs=[...document.querySelectorAll('.qb-page .qb-tabs > button')];
+        const selected=tabs.filter(button=>button.getAttribute('aria-pressed')==='true');
+        return tabs.length===4&&selected.length===1&&selected[0].textContent.trim()==='طراحی آزمون'
+          &&tabs.filter(button=>button.getAttribute('aria-pressed')==='false').length===3;
+      })()`),
+    );
+    check(
+      "inline confirmation survives rerenders and Escape preserves the bank draft, route and stored data",
+      await evaluate(`(async()=>{
+        const before=JSON.stringify(await EduQuestionBankRepository.read());
+        const page=document.querySelector('.qb-page'),title=__qbBusiness.field('عنوان آزمون'),value=title.value;
+        title.focus({preventScroll:true});title.setSelectionRange(3,8);
+        document.querySelector('.topbar [data-header-action="reports"]').click();
+        const confirmation=document.querySelector('.qb-confirm');
+        const cancel=[...confirmation.querySelectorAll('button')].find(button=>button.textContent.trim()==='انصراف');
+        const guarded=confirmation?.parentElement===page&&confirmation.tagName==='SECTION'
+          &&confirmation.getAttribute('role')==='region'&&!confirmation.hasAttribute('aria-modal')
+          &&!document.querySelector('dialog:modal')&&state.view==='question-bank'
+          &&page.querySelector('.qb-body').inert&&page.querySelector('.qb-storage-bar').inert
+          &&document.activeElement===cancel;
+        render();render();goSchools();
+        const retained=document.querySelector('.qb-confirm')===confirmation
+          &&document.querySelectorAll('.qb-confirm').length===1&&document.activeElement===cancel
+          &&document.querySelector('.qb-page')===page&&__qbBusiness.field('عنوان آزمون')===title;
+        cancel.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));
+        return guarded&&!document.querySelector('.qb-confirm')&&state.view==='question-bank'
+          &&retained&&document.querySelector('.qb-page')===page&&title.value===value&&title.isConnected
+          &&!page.querySelector('.qb-body').inert&&!page.querySelector('.qb-storage-bar').inert
+          &&document.activeElement===title&&title.selectionStart===3&&title.selectionEnd===8
+          &&JSON.stringify(await EduQuestionBankRepository.read())===before;
+      })()`),
+    );
     await evaluate(`(async()=>{
       __qbBusiness.click('بستن');__qbBusiness.confirm();
     })()`);
     check(
-      "an active bank file write blocks unloading and updates after the bank dialog is closed",
+      "an active bank file write blocks unloading and updates after leaving the bank page",
       await evaluate(`(async()=>{
         const service=EduQuestionBankFileBackup.service,state=service.state;
         try{
           service.state=()=>({...state(),state:'busy'});
           const event=new Event('beforeunload',{cancelable:true});dispatchEvent(event);
           let blocked=false;try{await EduV24.prepareForUpdate();}catch(e){blocked=e.message.includes('ویرایش ذخیره‌نشده');}
-          return !document.querySelector('.qb-dialog')&&EduQuestionBankUI.hasPendingChanges()&&event.defaultPrevented&&blocked;
+          return !document.querySelector('.qb-page')&&EduQuestionBankUI.hasPendingChanges()&&event.defaultPrevented&&blocked;
         }finally{service.state=state;}
       })()`),
     );
@@ -131,12 +228,22 @@ main({
         const event=new Event('beforeunload',{cancelable:true});dispatchEvent(event);
         let blocked=false;try{await EduV24.prepareForUpdate();}catch(e){blocked=e.message.includes('ویرایش ذخیره‌نشده');}
         return EduQuestionBankUI.hasPendingChanges()&&event.defaultPrevented&&blocked
-          &&document.querySelector('.qb-dialog').getAttribute('aria-busy')==='true';
+          &&document.querySelector('.qb-page').getAttribute('aria-busy')==='true';
+      })()`),
+    );
+    check(
+      "navigation during a bank commit preserves the route and editor until the save settles",
+      await evaluate(`(()=>{
+        const page=document.querySelector('.qb-page'),form=document.querySelector('.qb-form');
+        document.querySelector('#uiBottomNav [data-view="schools"]').click();
+        return state.view==='question-bank'&&document.querySelector('.qb-page')===page
+          &&document.querySelector('.qb-form')===form&&!document.querySelector('.qb-confirm')
+          &&page.getAttribute('aria-busy')==='true';
       })()`),
     );
     await evaluate(`__businessRejectSave()`);
     await waitFor(
-      `document.querySelector('.qb-dialog').getAttribute('aria-busy')!=='true'`,
+      `document.querySelector('.qb-page').getAttribute('aria-busy')!=='true'`,
     );
     check(
       "a failed bank save retains editable form values and never changes the stored bank",
@@ -176,7 +283,7 @@ main({
         return document.querySelector('.qb-message').hidden&&__qbBusiness.field('عنوان درس').value==='';
       })()`),
     );
-    await evaluate(`__qbBusiness.click('بازگشت');__qbBusiness.chooseUnit('business-unit-a');
+    await evaluate(`__qbBusiness.click('بازگشت');__qbBusiness.click('بانک سؤال');__qbBusiness.chooseUnit('business-unit-a');
       __qbBusiness.click('فصل جدید');__qbBusiness.fill('عنوان فصل','فصل نخست');__qbBusiness.submit();`);
     await waitFor(
       `document.querySelector('.qb-message').textContent.includes('عنوان خالی یا تکراری')`,
@@ -198,7 +305,7 @@ main({
       const originalSave=repository.save,listeners=new Set();
       let state={state:'permission',connected:true,message:'FILE-PERMISSION-PROBE'};
       const emit=(next)=>{state=next;for(const listener of listeners)listener(state);};
-      const settled=async()=>{for(let i=0;i<100&&document.querySelector('.qb-dialog').getAttribute('aria-busy')==='true';i++)await new Promise(r=>setTimeout(r,10));};
+      const settled=async()=>{for(let i=0;i<100&&document.querySelector('.qb-page').getAttribute('aria-busy')==='true';i++)await new Promise(r=>setTimeout(r,10));};
       service.subscribe=listener=>{listeners.add(listener);listener(state);return()=>listeners.delete(listener);};
       service.init=async()=>{};service.state=()=>state;service.supported=()=>true;
       try{
@@ -399,10 +506,34 @@ main({
         `document.querySelector('.qb-message').hidden&&!!document.querySelector('.qb-question-form')`,
       ),
     );
+    await cdp("Emulation.setDeviceMetricsOverride", {
+      width: 390,
+      height: 667,
+      deviceScaleFactor: 1,
+      mobile: false,
+    });
+    await delay(80);
     await evaluate(`__qbBusiness.click('بازگشت');
       document.querySelector('.qb-question-row summary').click();__qbBusiness.click('ویرایش سؤال');
-      __qbBusiness.fill('متن سؤال','اصلاح متن سؤال قدیمی بدون تغییر گزینه‌ها');__qbBusiness.submit();`);
+      __qbBusiness.fill('متن سؤال','اصلاح متن سؤال قدیمی بدون تغییر گزینه‌ها');
+      document.querySelector('.qb-form button[type=submit]').scrollIntoView({block:'center',behavior:'instant'});
+      __qbBusiness.submit();`);
     await waitFor(`!document.querySelector('.qb-question-form')`);
+    check(
+      "saving a long mobile question form returns the bank header below the application header",
+      await evaluate(`(()=>{
+        const topbar=document.querySelector('.topbar').getBoundingClientRect();
+        const header=document.querySelector('.qb-page-header').getBoundingClientRect();
+        return header.top>=topbar.bottom-1&&header.bottom<innerHeight
+          &&document.querySelector('.qb-page').scrollWidth<=innerWidth;
+      })()`),
+    );
+    await cdp("Emulation.setDeviceMetricsOverride", {
+      width: 1440,
+      height: 900,
+      deviceScaleFactor: 1,
+      mobile: false,
+    });
     check(
       "legacy distinct options do not block unrelated question corrections",
       await evaluate(`(async()=>{
@@ -432,6 +563,46 @@ main({
           &&JSON.stringify(await EduQuestionBankRepository.read())===__businessPeerUnit;
       })()`),
     );
+    await evaluate(`window.__inlineConfirmationText=document.querySelector('.qb-confirm > p').textContent;
+      document.querySelector('.qb-confirm > p').textContent=__inlineConfirmationText.repeat(20);`);
+    for (const [width, height] of [
+      [320, 568],
+      [390, 667],
+      [768, 900],
+    ]) {
+      await cdp("Emulation.setDeviceMetricsOverride", {
+        width,
+        height,
+        deviceScaleFactor: 1,
+        mobile: false,
+      });
+      await delay(80);
+      check(
+        `long inline confirmation keeps its actions visible and its message scrollable at ${width}`,
+        await evaluate(`(()=>{
+          const panel=document.querySelector('.qb-confirm'),page=document.querySelector('.qb-page');
+          const box=panel.getBoundingClientRect(),bounds=page.getBoundingClientRect();
+          const message=panel.querySelector('p'),text=message.getBoundingClientRect();
+          return panel.tagName==='SECTION'&&panel.parentElement===page&&!document.querySelector('dialog:modal')
+            &&box.left>=0&&box.right<=innerWidth+1&&box.top>=0&&box.bottom<=bounds.bottom+1
+            &&getComputedStyle(message).overflowY==='auto'&&message.scrollHeight>message.clientHeight
+            &&[...panel.querySelectorAll('button')].every(button=>{
+              const b=button.getBoundingClientRect();
+              return b.height>=44&&b.width>=44&&b.top>=box.top&&b.bottom<=box.bottom+1
+                &&b.left>=box.left&&b.right<=box.right+1
+                &&(text.right<=b.left+1||text.left>=b.right-1||text.bottom<=b.top+1);
+            });
+        })()`),
+      );
+    }
+    await evaluate(`document.querySelector('.qb-confirm > p').textContent=__inlineConfirmationText;
+      delete window.__inlineConfirmationText;`);
+    await cdp("Emulation.setDeviceMetricsOverride", {
+      width: 1440,
+      height: 900,
+      deviceScaleFactor: 1,
+      mobile: false,
+    });
     await evaluate(`__qbBusiness.cancel()`);
     check(
       "cancelling section deletion preserves the section, questions and archive",
@@ -587,13 +758,48 @@ main({
           &&after.revision===before.revision+1;
       })()`),
     );
+    check(
+      "a late initial bank read cannot replace a newer page after navigation",
+      await evaluate(`(async()=>{
+        __qbBusiness.click('بستن');
+        const repository=EduQuestionBankRepository,originalRead=repository.read;
+        const snapshot=await originalRead();let release;
+        repository.read=()=>new Promise(resolve=>{release=resolve;});
+        try{
+          const opening=EduQuestionBankUI.open(),oldPage=document.querySelector('.qb-page');
+          goReports();repository.read=originalRead;
+          const left=!oldPage.isConnected&&state.view==='reports';
+          await EduQuestionBankUI.open();const current=document.querySelector('.qb-page');
+          release(snapshot);await opening;
+          return left&&current!==oldPage&&document.querySelector('.qb-page')===current
+            &&document.querySelectorAll('.qb-page').length===1&&state.view==='question-bank'
+            &&JSON.stringify(await originalRead())===JSON.stringify(snapshot);
+        }finally{repository.read=originalRead;release?.(snapshot);}
+      })()`),
+    );
+    check(
+      "a file read completing after page exit cannot open a restore confirmation or replace bank data",
+      await evaluate(`(async()=>{
+        __qbBusiness.click('پشتیبان');
+        const before=JSON.stringify(await EduQuestionBankRepository.read());
+        const input=document.querySelector('.qb-page input[type=file]'),transfer=new DataTransfer();
+        transfer.items.add(new File([JSON.stringify(EduQuestionBank.empty())],'Classyar-QuestionBank.json',{type:'application/json'}));
+        input.files=transfer.files;let release;
+        Object.defineProperty(input.files[0],'text',{value:()=>new Promise(resolve=>{release=resolve;})});
+        const reading=input.onchange();goSchools();
+        release(JSON.stringify(EduQuestionBank.empty()));await reading;
+        const safe=state.view==='schools'&&!document.querySelector('.qb-page,.qb-confirm')
+          &&JSON.stringify(await EduQuestionBankRepository.read())===before;
+        await EduQuestionBankUI.open();return safe;
+      })()`),
+    );
     const server =
       require("../scripts/question-bank-review.cjs").createReviewServer();
     await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
     try {
       const url = "http://127.0.0.1:" + server.address().port + "/";
       await cdp("Page.navigate", { url });
-      await waitFor(`!!document.querySelector('.qb-dialog[open]')`);
+      await waitFor(`!!document.querySelector('.qb-page')`);
       check(
         "review enters all twenty-four sample questions and three archived exams in independent IndexedDB",
         await evaluate(`(async()=>{
@@ -606,7 +812,7 @@ main({
         await EduQuestionBankRepository.save(bank,bank.revision);
       })()`);
       await cdp("Page.navigate", { url });
-      await waitFor(`!!document.querySelector('.qb-dialog[open]')`);
+      await waitFor(`!!document.querySelector('.qb-page')`);
       check(
         "reopening review preserves the reviewer edits without reseeding",
         await evaluate(`(async()=>{
@@ -615,7 +821,7 @@ main({
       })()`),
       );
       await cdp("Page.navigate", { url: url + "?sample-exam=1" });
-      await waitFor(`!!document.querySelector('.qb-dialog[open]')`);
+      await waitFor(`!!document.querySelector('.qb-page')`);
       check(
         "requested sample exam is saved with eight questions and twenty points",
         await evaluate(`(async()=>{
@@ -624,11 +830,11 @@ main({
         return bank.exams.length===4&&sample.questions.length===8&&sample.duration===45
           &&sample.questions.reduce((sum,q)=>sum+q.score,0)===2000
           &&bank.questions[0].text==='REVIEW-USER-EDIT'
-          &&document.querySelector('.qb-dialog').textContent.includes(sample.title);
+          &&document.querySelector('.qb-page').textContent.includes(sample.title);
       })()`),
       );
       await cdp("Page.navigate", { url: url + "?sample-exam=1" });
-      await waitFor(`!!document.querySelector('.qb-dialog[open]')`);
+      await waitFor(`!!document.querySelector('.qb-page')`);
       check(
         "sample registration is idempotent on reload",
         await evaluate(`(async()=>{

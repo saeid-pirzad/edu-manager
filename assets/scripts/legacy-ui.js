@@ -37,8 +37,8 @@ masterFilter:null,reportTab:"comprehensive"};render()}function goSchool(id){stat
 function goClass(id){state.view="class";state.classId=id;state.lessonId=null;state.tab="lessons";render()}function goLesson(id){state.view="lesson";state.lessonId=
 id;state.tab="sessions";render()}function backToClass(){state.view="class";state.lessonId=null;state.tab="lessons";render()}function goMaster(filterClassId){state.
 view="master";state.masterFilter=filterClassId||null;render()}function goReports(){state.view="reports";state.reportTab=["daily","weekly","monthly","annual"].includes(
-state.reportTab)?state.reportTab:"daily";render()}function setTab(t){state.tab=t;render()}function setReportTab(t){state.reportTab=t;render()}function renderLogin(){
-const app=document.getElementById("app");app.innerHTML=`
+state.reportTab)?state.reportTab:"daily";render()}function goQuestionBank(){state.view="question-bank";render()}function setTab(t){state.tab=t;render()}function setReportTab(t){
+state.reportTab=t;render()}function renderLogin(){const app=document.getElementById("app");app.innerHTML=`
     <div class="login-box">
       <div class="login-brand"><span class="app-brand-mark" aria-hidden="true"><img class="app-logo" src="./assets/logo3.png" width="500" height="500" alt="" de\
 coding="async"></span><strong>کلاس‌یار</strong></div>
@@ -59,13 +59,17 @@ db.settings.password!==stored)throw Error("ترم یا رمز ورود تغیی�
 hashed;db.settings.password=hashed;migrationPending=true;await saveDB();migrationPending=false}if(!current())throw Error("ترم هنگام ورود تغییر کرده است؛ دوباره \
 وارد شوید.");isAuthenticated=true;render()}catch(err){if(migrationPending&&(!sourcePeriod||globalThis.EduV24?.getReportContext?.().id===sourcePeriod)){isAuthenticated=
 sourceAuthentication;if(db===sourceData&&db.settings.password===migratedPassword)db.settings.password=sourcePassword;render()}alert("ورود انجام نشد: "+
-err.message)}finally{if(button)setControlLock(button,"button-operation",false)}}function legacy_render(){if(db.settings.password&&!isAuthenticated){renderLogin();
-return}const app=document.getElementById("app");let h="";if(state.view==="schools")h=renderSchools();else if(state.view==="school")h=renderSchool();else if(state.
-view==="class")h=renderClass();else if(state.view==="lesson")h=renderLesson();else if(state.view==="master")h=renderMaster();else if(state.view==="reports")h=renderReports();
+err.message)}finally{if(button)setControlLock(button,"button-operation",false)}}let questionBankRouteState=null;function legacy_render(){const bank=globalThis.EduQuestionBankUI;
+if(db.settings.password&&!isAuthenticated){bank?.dispose?.();questionBankRouteState=null;renderLogin();return}if(bank?.isMounted?.()&&state.view!=="question-ban\
+k"){const destination={...state};state={...questionBankRouteState,view:"question-bank"};bank.requestLeave(()=>{questionBankRouteState=null;state=destination;render()});
+return false}const app=document.getElementById("app");let h="";if(state.view==="schools")h=renderSchools();else if(state.view==="school")h=renderSchool();else if(state.
+view==="class")h=renderClass();else if(state.view==="lesson")h=renderLesson();else if(state.view==="master")h=renderMaster();else if(state.view==="reports")h=renderReports();else if(state.
+view==="question-bank")h=headerHtml()+'<div id="questionBankPageHost" class="question-bank-page-host"></div>';if(state.view==="question-bank")bank?.preserveForRender?.();
 app.innerHTML=(storageBlocked?`<div class="card" role="alert" style="border:2px solid var(--status-danger, #9f2635)">${esc(storageProblem)} <button data-legacy-\
-click="ui-login-render:0">دریافت نسخه خام</button></div>`:"")+h;initShamsiPickers();setTimeout(initShamsiPickers,0);if(state.view==="reports"&&state.
-reportTab==="comprehensive")setTimeout(generateGlobalReport,0);if(state.view==="reports"&&state.reportTab==="lessonReport")setTimeout(renderLessonReportTab,0);if(state.
-view==="reports"&&state.reportTab==="karnameh")setTimeout(renderKarnamehTabReports,0);if(state.view==="lesson"&&state.tab==="grades"){const el=document.getElementById(
+click="ui-login-render:0">دریافت نسخه خام</button></div>`:"")+h;if(state.view==="question-bank"){questionBankRouteState={...state};bank?.mount?.(document.
+getElementById("questionBankPageHost"))}else questionBankRouteState=null;initShamsiPickers();setTimeout(initShamsiPickers,0);if(state.view==="reports"&&state.reportTab===
+"comprehensive")setTimeout(generateGlobalReport,0);if(state.view==="reports"&&state.reportTab==="lessonReport")setTimeout(renderLessonReportTab,0);if(state.view===
+"reports"&&state.reportTab==="karnameh")setTimeout(renderKarnamehTabReports,0);if(state.view==="lesson"&&state.tab==="grades"){const el=document.getElementById(
 "lessonGradesArea");if(el){const c=getClassObj(state.schoolId,state.classId);const l=getLessonObj(c,state.lessonId);if(c&&l)el.innerHTML=buildLessonGradesHtml(c,
 l)}}}EduLegacyEvents.register("ui-login-render:0",function(event){return downloadRawRecovery()});function breadcrumbHtml(items){return'<nav class="breadcrumb" a\
 ria-label="مسیر جاری"><ol>'+items.map((item,index)=>{const label="<bdi>"+esc(item.label)+"</bdi>";const content=index===items.length-1?'<span aria-curre\
@@ -79,7 +83,8 @@ M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M8 9h1M15 9h1M8 12h1M15 12h1",report:"M4 3
 <button type="button" class="header-action'+(active?" is-active":"")+'" data-header-action="'+action+'" '+(active?'aria-current="page" ':"")+extra+">"+icon(icons[key])+
 "<span>"+label+"</span></button>";let h='<div class="topbar"><div class="header-brand"><h1>کلاس‌یار</h1>';h+=btn("خانه","home","schools",state.view===
 "schools",'aria-label="خانه"').replace('class="header-action','class="header-home header-action');h+='</div><div class="actions header-actions">';h+=btn("گز\
-ارش‌ها","report","reports",state.view==="reports")+btn("برنامه هفتگی","calendar","master",state.view==="master");h+=btn("پشتیبان و بازیابی",
+ارش‌ها","report","reports",state.view==="reports")+btn("برنامه هفتگی","calendar","master",state.view==="master");h+=btn("بانک سؤال و طراحی آزم\
+ون","book","question-bank",state.view==="question-bank").replace('class="header-action','class="question-bank-entry header-action');h+=btn("پشتیبان و بازیابی",
 "shield","backups").replace('data-header-action="backups"','data-workspace-action="backups"');h+=btn("تنظیمات","settings","settings")+"</div></div>";return h}
 function setHeaderMenu(id,open){const menu=document.getElementById(id),button=document.getElementById(id+"Button");menu?.classList.toggle("open",open);button?.setAttribute(
 "aria-expanded",String(open))}function toggleClassMenu(e){e.stopPropagation();const open=!document.getElementById("classMenu")?.classList.contains("open");closeDataMenu();

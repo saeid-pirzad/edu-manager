@@ -87,7 +87,7 @@ dataset.aboutAction==="close")closeModal();else if(control.dataset.aboutAction==
 se","click",()=>closeModal()],["importFile","change",event=>handleImport(event)],["excelFile","change",event=>handleExcelImport(event)]];for(const[id,eventName,
 handler]of bindings){const element=document.getElementById(id);if(!element)throw Error("Missing application shell element: "+id);element.addEventListener(eventName,
 handler)}})();"use strict";(()=>{const app=document.getElementById("app");const actions=new Map([["schools",()=>goSchools()],["reports",()=>goReports()],["maste\
-r",()=>goMaster()],["settings",()=>openSettingsModal()]]);app.addEventListener("click",event=>{const button=event.target.closest?.("button[data-header-action]");
-if(!button||!app.contains(button)||!button.closest(".topbar")||button.disabled||button.closest("[inert]"))return;const action=actions.get(button.dataset.headerAction);
-if(action)action(event)})})();
+r",()=>goMaster()],["question-bank",()=>goQuestionBank()],["settings",()=>openSettingsModal()]]);app.addEventListener("click",event=>{const button=event.target.
+closest?.("button[data-header-action]");if(!button||!app.contains(button)||!button.closest(".topbar")||button.disabled||button.closest("[inert]"))return;const action=actions.
+get(button.dataset.headerAction);if(action)action(event)})})();
 //# sourceMappingURL=dialogs-ui.js.map

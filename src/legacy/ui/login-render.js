@@ -76,10 +76,24 @@ async function legacy_checkPassword(e) {
   }
 }
 
+let questionBankRouteState = null;
 function legacy_render() {
+  const bank = globalThis.EduQuestionBankUI;
   if (db.settings.password && !isAuthenticated) {
+    bank?.dispose?.();
+    questionBankRouteState = null;
     renderLogin();
     return;
+  }
+  if (bank?.isMounted?.() && state.view !== "question-bank") {
+    const destination = { ...state };
+    state = { ...questionBankRouteState, view: "question-bank" };
+    bank.requestLeave(() => {
+      questionBankRouteState = null;
+      state = destination;
+      render();
+    });
+    return false;
   }
   const app = document.getElementById("app");
   let h = "";
@@ -89,10 +103,20 @@ function legacy_render() {
   else if (state.view === "lesson") h = renderLesson();
   else if (state.view === "master") h = renderMaster();
   else if (state.view === "reports") h = renderReports();
+  else if (state.view === "question-bank")
+    h =
+      headerHtml() +
+      '<div id="questionBankPageHost" class="question-bank-page-host"></div>';
+  if (state.view === "question-bank") bank?.preserveForRender?.();
   app.innerHTML =
     (storageBlocked
       ? `<div class="card" role="alert" style="border:2px solid var(--status-danger, #9f2635)">${esc(storageProblem)} <button data-legacy-click="ui-login-render:0">دریافت نسخه خام</button></div>`
       : "") + h;
+
+  if (state.view === "question-bank") {
+    questionBankRouteState = { ...state };
+    bank?.mount?.(document.getElementById("questionBankPageHost"));
+  } else questionBankRouteState = null;
 
   initShamsiPickers();
   setTimeout(initShamsiPickers, 0);

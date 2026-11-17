@@ -69,6 +69,12 @@ function headerHtml() {
   h +=
     btn("گزارش‌ها", "report", "reports", state.view === "reports") +
     btn("برنامه هفتگی", "calendar", "master", state.view === "master");
+  h += btn(
+    "بانک سؤال و طراحی آزمون",
+    "book",
+    "question-bank",
+    state.view === "question-bank",
+  ).replace('class="header-action', 'class="question-bank-entry header-action');
   h += btn("پشتیبان و بازیابی", "shield", "backups").replace(
     'data-header-action="backups"',
     'data-workspace-action="backups"',

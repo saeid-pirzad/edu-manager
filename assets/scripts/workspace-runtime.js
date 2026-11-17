@@ -64,35 +64,35 @@ key===STORAGE_KEY||key===STORAGE_KEY+"_beforeImport"}function retireConnection(d
 false;blocked=true;clearTimeout(draftTimer);setStatus("بانک اطلاعات در پنجره دیگری تغییر می‌کند؛ برای ادامه صفحه را دوباره بارگذاری کنید.",
 "error");lockControls()}function forgetInstallation(){pauseSingleFile();singleFile=null;clearTimeout(draftTimer);assessmentContext.dispose({abandon:true});drafts.
 clear();draftGeneration++;writeFailureGeneration++;committed.clear();draftRecoveryFailed=false;window.EduPeriodicReports?.resetDrafts();db=v24DefaultDB();workspace=
-null;ready=false;blocked=true;connectionRetired=true;isAuthenticated=false}function resetScreen(message){const modal=document.getElementById("modal");modal.classList.
-add("hidden");modal.setAttribute("aria-hidden","true");document.getElementById("modalBody").replaceChildren();setModalBackground(false);document.getElementById(
-"app").innerHTML='<div class="card" role="alert"><h2>پاک‌سازی اطلاعات</h2><p>'+esc(message)+'</p><button data-workspace-action="reload">بارگذاری\
- مجدد و ادامه</button></div>'}function invalidateInstallation(){forgetInstallation();resetScreen("اطلاعات برنامه در پنجره دیگری تغییر کرده است؛ برای خ\
-واندن وضعیت فعلی، برنامه را دوباره بارگذاری کنید.")}async function completeResetCleanup(dbConnection,marker){const tx=dbConnection.
-transaction("records","readwrite"),done=transactionDone(tx),store=tx.objectStore("records"),request=store.get(RESET_RECORD_KEY);let failure;request.onsuccess=()=>{
-try{if(request.result?.value?.token!==marker.value.token){const error=Error("اطلاعات سیستم دوباره جایگزین شده است؛ پاک‌سازی قدیمی اجرا نشد.");
-error.code="INSTALLATION_CHANGED";throw error}if(request.result.value.phase==="complete")return;for(const key of Object.keys(localStorage))if(ownedDataKey(key))
-localStorage.removeItem(key);localStorage.setItem(RESET_EPOCH_KEY,marker.value.token);for(const key of Object.keys(sessionStorage))if(key.startsWith("Edu24."))sessionStorage.
-removeItem(key);if(localStorage.getItem(RESET_EPOCH_KEY)!==marker.value.token||Object.keys(localStorage).some(ownedDataKey))throw Error("پاک‌سازی حافظه مرورگر ک\
-امل نشده است.");store.put({...marker,value:{...marker.value,phase:"complete"}})}catch(error){failure=error;try{tx.abort()}catch{}}};try{await done}catch(error){
-throw failure||error}}function resetDatabase(version,marker){return new Promise((resolve,reject)=>{const request=indexedDB.open(EduDataStoreSchema.databaseName,
-version);let cancelled=false,upgraded=false;request.onblocked=()=>{cancelled=true;const error=Error("حذف انجام نشد؛ یک اتصال دیگر بانک را باز نگه داشته است. پنج\
-ره‌های دیگر برنامه را ببندید و دوباره بارگذاری کنید.");error.resetBlocked=true;reject(error)};request.onupgradeneeded=
-()=>{if(cancelled){request.transaction.abort();return}upgraded=true;for(const name of request.result.objectStoreNames)request.transaction.objectStore(name).clear();
-request.transaction.objectStore("records").put(marker)};request.onsuccess=()=>{if(cancelled||!upgraded){request.result.close();reject(Error("بانک در پنجره دیگری\
- تغییر کرده است؛ حذف تکراری انجام نشد."));return}resolve(request.result)};request.onerror=()=>reject(request.error||Error("حذف اطل\
-اعات ثبت نشد."))})}function openDatabase(){return EduDataStore.open({onVersionChange:retireConnection})}async function allFrom(store){const tx=connection.
-transaction(store,"readonly");return requestPromise(tx.objectStore(store).getAll())}async function readRecord(store,key){const tx=connection.transaction(store,"\
-readonly");return requestPromise(tx.objectStore(store).get(key))}function recordKey(key){return workspace.id+"|"+key}const{metaValue,collectRecords,logicalRecordType,
-validateLogicalValue,decodeWorkspaceRecords,decodeAssessmentRecords}=EduWorkspaceRecords.create({clone,normalizeDB,isDataObject,isSafeRecordId});async function readWorkspace(id){
-const tx=connection.transaction("records","readonly");return decodeWorkspaceRecords(await requestPromise(workspaceRecordRequest(tx.objectStore("records"),id)),{
-workspaceId:id})}function workspaceRecordRequest(store,id){return store.getAll(IDBKeyRange.bound(id+"|",id+"}",false,true))}async function synchronizeAnnualForRead(id){
-const directory=await synchronizeAcademicDirectoryForRead(id);try{const annual=await synchronizeAnnualModularGrades(id);return{changed:[...directory.changed,...annual.
-changed],conflicts:[...directory.conflicts,...annual.conflicts]}}catch(error){if(error.code!=="ANNUAL_PERIOD_AMBIGUOUS")throw error;return{changed:directory.changed,
-conflicts:[...directory.conflicts,{message:error.message}]}}}async function readWorkspaceSnapshot(id){const tx=connection.transaction(["catalog","records"],"rea\
-donly");const done=transactionDone(tx);const[period,rows,epoch]=await Promise.all([requestPromise(tx.objectStore("catalog").get(id)),requestPromise(workspaceRecordRequest(
-tx.objectStore("records"),id)),requestPromise(tx.objectStore("records").get(RESET_RECORD_KEY)),done]);if(!period)throw Error("ترم موجود نیست.");return{
-period,installationToken:epoch?.value?.token||"",...decodeWorkspaceRecords(rows,{workspaceId:id})}}async function readAssessmentSnapshot(id,identity,expectedInstallation){
+null;ready=false;blocked=true;connectionRetired=true;isAuthenticated=false}function resetScreen(message){globalThis.EduQuestionBankUI?.dispose?.();const modal=document.
+getElementById("modal");modal.classList.add("hidden");modal.setAttribute("aria-hidden","true");document.getElementById("modalBody").replaceChildren();setModalBackground(
+false);document.getElementById("app").innerHTML='<div class="card" role="alert"><h2>پاک‌سازی اطلاعات</h2><p>'+esc(message)+'</p><button data-wor\
+kspace-action="reload">بارگذاری مجدد و ادامه</button></div>'}function invalidateInstallation(){forgetInstallation();resetScreen("اطلاعات برنام\
+ه در پنجره دیگری تغییر کرده است؛ برای خواندن وضعیت فعلی، برنامه را دوباره بارگذاری کنید.")}
+async function completeResetCleanup(dbConnection,marker){const tx=dbConnection.transaction("records","readwrite"),done=transactionDone(tx),store=tx.objectStore(
+"records"),request=store.get(RESET_RECORD_KEY);let failure;request.onsuccess=()=>{try{if(request.result?.value?.token!==marker.value.token){const error=Error("ا\
+طلاعات سیستم دوباره جایگزین شده است؛ پاک‌سازی قدیمی اجرا نشد.");error.code="INSTALLATION_CHANGED";throw error}
+if(request.result.value.phase==="complete")return;for(const key of Object.keys(localStorage))if(ownedDataKey(key))localStorage.removeItem(key);localStorage.setItem(
+RESET_EPOCH_KEY,marker.value.token);for(const key of Object.keys(sessionStorage))if(key.startsWith("Edu24."))sessionStorage.removeItem(key);if(localStorage.getItem(
+RESET_EPOCH_KEY)!==marker.value.token||Object.keys(localStorage).some(ownedDataKey))throw Error("پاک‌سازی حافظه مرورگر کامل نشده است.");
+store.put({...marker,value:{...marker.value,phase:"complete"}})}catch(error){failure=error;try{tx.abort()}catch{}}};try{await done}catch(error){throw failure||error}}
+function resetDatabase(version,marker){return new Promise((resolve,reject)=>{const request=indexedDB.open(EduDataStoreSchema.databaseName,version);let cancelled=false,
+upgraded=false;request.onblocked=()=>{cancelled=true;const error=Error("حذف انجام نشد؛ یک اتصال دیگر بانک را باز نگه داشته است. پنجره‌های دیگر برنامه را ببندید \
+و دوباره بارگذاری کنید.");error.resetBlocked=true;reject(error)};request.onupgradeneeded=()=>{if(cancelled){request.transaction.abort();return}
+upgraded=true;for(const name of request.result.objectStoreNames)request.transaction.objectStore(name).clear();request.transaction.objectStore("records").put(marker)};
+request.onsuccess=()=>{if(cancelled||!upgraded){request.result.close();reject(Error("بانک در پنجره دیگری تغییر کرده است؛ حذف تکراری انجام نشد."));
+return}resolve(request.result)};request.onerror=()=>reject(request.error||Error("حذف اطلاعات ثبت نشد."))})}function openDatabase(){return EduDataStore.
+open({onVersionChange:retireConnection})}async function allFrom(store){const tx=connection.transaction(store,"readonly");return requestPromise(tx.objectStore(store).
+getAll())}async function readRecord(store,key){const tx=connection.transaction(store,"readonly");return requestPromise(tx.objectStore(store).get(key))}function recordKey(key){
+return workspace.id+"|"+key}const{metaValue,collectRecords,logicalRecordType,validateLogicalValue,decodeWorkspaceRecords,decodeAssessmentRecords}=EduWorkspaceRecords.
+create({clone,normalizeDB,isDataObject,isSafeRecordId});async function readWorkspace(id){const tx=connection.transaction("records","readonly");return decodeWorkspaceRecords(
+await requestPromise(workspaceRecordRequest(tx.objectStore("records"),id)),{workspaceId:id})}function workspaceRecordRequest(store,id){return store.getAll(IDBKeyRange.
+bound(id+"|",id+"}",false,true))}async function synchronizeAnnualForRead(id){const directory=await synchronizeAcademicDirectoryForRead(id);try{const annual=await synchronizeAnnualModularGrades(
+id);return{changed:[...directory.changed,...annual.changed],conflicts:[...directory.conflicts,...annual.conflicts]}}catch(error){if(error.code!=="ANNUAL_PERIOD_\
+AMBIGUOUS")throw error;return{changed:directory.changed,conflicts:[...directory.conflicts,{message:error.message}]}}}async function readWorkspaceSnapshot(id){const tx=connection.
+transaction(["catalog","records"],"readonly");const done=transactionDone(tx);const[period,rows,epoch]=await Promise.all([requestPromise(tx.objectStore("catalog").
+get(id)),requestPromise(workspaceRecordRequest(tx.objectStore("records"),id)),requestPromise(tx.objectStore("records").get(RESET_RECORD_KEY)),done]);if(!period)
+throw Error("ترم موجود نیست.");return{period,installationToken:epoch?.value?.token||"",...decodeWorkspaceRecords(rows,{workspaceId:id})}}async function readAssessmentSnapshot(id,identity,expectedInstallation){
 const tx=connection.transaction(["catalog","records"],"readonly"),done=transactionDone(tx),store=tx.objectStore("records"),[period,epoch,meta,classroom]=await Promise.
 all([requestPromise(tx.objectStore("catalog").get(id)),requestPromise(store.get("@installation-reset")),requestPromise(store.get(id+"|meta")),requestPromise(store.
 get(id+"|class:"+identity.classId)),done]);if((epoch?.value?.token||"")!==expectedInstallation)throw Object.assign(Error("اطلاعات در پنجرهٔ دیگری جایگزین شده اس\
@@ -309,34 +309,35 @@ setStatus("اطلاعات ذخیره‌شده خوانده شد.","saved");const
 setStatus(recoveryWarning,"pending");for(const change of annual?.changed||[])broadcast({...change,annualModular:true});if(annual?.conflicts.length)setStatus("اط\
 لاعات قدیمی این سال نیاز به بررسی دارد: "+annual.conflicts[0].message,"error");hydrateReportNotes(workspace);await loadDrafts();ready=
 true;render();await recoverDrafts();if(navigator.storage?.persist)navigator.storage.persist().catch(()=>{});await restoreSingleFile()}catch(error){blocked=true;
-storageBlocked=true;storageProblem=error.message;document.getElementById("app").innerHTML='<div class="card" role="alert"><h2>خواندن اطلاعات انجام نشد</h2><p>'+
-esc(error.message)+'</p><button data-workspace-action="raw-recovery">دریافت نسخه قبلی</button><button data-workspace-action="choose-import">بازیابی پشتیبان سالم\
-</button></div>'}}let pendingModalSaveScope=null;function modalSaveFeedbackTarget(){const body=document.querySelector?.("#modal:not(.hidden) #modalBody");if(!body)
-return null;const session=body.querySelector(".session-workspace");const input=body.querySelector("[data-grade]");if(!session&&!input)return null;const scope=[typeof installationToken===
-"undefined"?"":installationToken,typeof workspace==="undefined"?"":workspace?.id];if(session)scope.push("session",session.dataset.sessionId||(typeof currentSessionId===
-"undefined"?"":currentSessionId));else scope.push("grades",input.dataset.assessmentContext||"",input.dataset.class,input.dataset.lesson);return{scope:JSON.stringify(
-scope),host:session||input.closest(".gradebook")||body}}function captureSaveFeedback(){return modalSaveFeedbackTarget()?.scope||null}function paintModalSaveFeedback(){
-const target=modalSaveFeedbackTarget();if(!target)return;let notice=target.host.querySelector("[data-modal-save-feedback]");const pending=busy>0&&pendingModalSaveScope===
-target.scope;const matching=status.feedbackScope===target.scope;if(!notice&&!pending&&!matching)return;if(!notice){notice=document.createElement("p");notice.dataset.
-modalSaveFeedback="";notice.setAttribute("role","status");notice.setAttribute("aria-live","polite");const heading=target.host.querySelector(".session-context,.g\
-radebook-heading");if(heading)heading.after(notice);else target.host.prepend(notice)}notice.classList.add("modal-save-feedback","no-print");notice.setAttribute(
-"aria-atomic","true");notice.textContent=pending?"در حال ذخیره…":matching?status.message:"";notice.dataset.state=pending?"pending":matching?status.type:
-"idle";notice.hidden=!notice.textContent}function setStatus(message,type="saved",feedbackScope=null){status={message,type,feedbackScope};paintStatus()}function paintStatus(feedbackScope){
-if(arguments.length)pendingModalSaveScope=feedbackScope;const el=document.getElementById("saveStatus");if(el){el.textContent=busy?"در حال ذخیره…":status.
-message;el.dataset.state=busy?"pending":status.type;el.hidden=!busy&&(status.type==="saved"||!status.message)}paintModalSaveFeedback();if(!busy)pendingModalSaveScope=
-null;syncControlLocks()}function inputKey(d){return[d.kind,d.classId,d.lid,d.pid||"",d.uid||"",d.sid,d.field].join("|")}function draftStorageKey(){return draftBaseKey()+
-"."+documentToken}function isSupportedGradeDraft(item){return EduGradeDrafts.isSupportedGradeDraft(item)}async function persistedGradeDrafts(prefix){const records=new Map;
-const add=(key,raw)=>{const entry={key,entries:Array.isArray(raw)?raw:raw?.entries,generation:Array.isArray(raw)?0:Number(raw?.generation||0),updatedAt:Array.isArray(
-raw)?"":raw?.updatedAt??""};if(!Number.isSafeInteger(entry.generation)||entry.generation<0||typeof entry.updatedAt!=="string")throw Object.assign(Error("نسخه یا\
- زمان پیش‌نویس معتبر نیست؛ نسخهٔ خام را برای بررسی دریافت کنید."),{code:"GRADE_DRAFT_INVALID"});const previous=records.
-get(key);if(!previous||entry.generation>previous.generation||entry.generation===previous.generation&&entry.updatedAt>previous.updatedAt)records.set(key,entry)};
-let unreadable=false,unavailable=false;try{for(const key of Object.keys(localStorage).filter(key2=>key2===prefix||key2.startsWith(prefix+".")||prefix.endsWith("\
-.")&&key2.startsWith(prefix))){let raw;try{raw=localStorage.getItem(key)}catch{unavailable=true;continue}try{add(key,JSON.parse(raw))}catch{unreadable=true}}}catch{
-unavailable=true}if(connection?.objectStoreNames.contains("drafts")){const tx=connection.transaction("drafts","readonly");const rows=await requestPromise(tx.objectStore(
-"drafts").index("workspace").getAll(workspace.id));for(const row of rows)if(row.key===prefix||row.key.startsWith(prefix+".")||prefix.endsWith(".")&&row.key.startsWith(
-prefix))add(row.key,row)}if(unreadable)throw Object.assign(Error("خواندن یکی از پیش‌نویس‌های قبلی انجام نشد؛ نسخهٔ قدیمی جایگزین آن نشد. نسخهٔ خام را برای بررسی\
- دریافت کنید."),{code:"GRADE_DRAFT_INVALID"});if(unavailable&&!records.size)throw Error("خواندن پیش‌نویس‌های قبلی انجام نشد.");
-return[...records.values()]}function storeDrafts(){if(!workspace||resetBusy||connectionRetired)return Promise.resolve();const key=draftStorageKey(),entry={key,workspace:workspace.
+storageBlocked=true;storageProblem=error.message;globalThis.EduQuestionBankUI?.dispose?.();document.getElementById("app").innerHTML='<div class="card" role="ale\
+rt"><h2>خواندن اطلاعات انجام نشد</h2><p>'+esc(error.message)+'</p><button data-workspace-action="raw-recovery">دریافت نسخه قبلی</button><bu\
+tton data-workspace-action="choose-import">بازیابی پشتیبان سالم</button></div>'}}let pendingModalSaveScope=null;function modalSaveFeedbackTarget(){
+const body=document.querySelector?.("#modal:not(.hidden) #modalBody");if(!body)return null;const session=body.querySelector(".session-workspace");const input=body.
+querySelector("[data-grade]");if(!session&&!input)return null;const scope=[typeof installationToken==="undefined"?"":installationToken,typeof workspace==="undef\
+ined"?"":workspace?.id];if(session)scope.push("session",session.dataset.sessionId||(typeof currentSessionId==="undefined"?"":currentSessionId));else scope.push(
+"grades",input.dataset.assessmentContext||"",input.dataset.class,input.dataset.lesson);return{scope:JSON.stringify(scope),host:session||input.closest(".gradeboo\
+k")||body}}function captureSaveFeedback(){return modalSaveFeedbackTarget()?.scope||null}function paintModalSaveFeedback(){const target=modalSaveFeedbackTarget();
+if(!target)return;let notice=target.host.querySelector("[data-modal-save-feedback]");const pending=busy>0&&pendingModalSaveScope===target.scope;const matching=status.
+feedbackScope===target.scope;if(!notice&&!pending&&!matching)return;if(!notice){notice=document.createElement("p");notice.dataset.modalSaveFeedback="";notice.setAttribute(
+"role","status");notice.setAttribute("aria-live","polite");const heading=target.host.querySelector(".session-context,.gradebook-heading");if(heading)heading.after(
+notice);else target.host.prepend(notice)}notice.classList.add("modal-save-feedback","no-print");notice.setAttribute("aria-atomic","true");notice.textContent=pending?
+"در حال ذخیره…":matching?status.message:"";notice.dataset.state=pending?"pending":matching?status.type:"idle";notice.hidden=!notice.textContent}function setStatus(message,type="\
+saved",feedbackScope=null){status={message,type,feedbackScope};paintStatus()}function paintStatus(feedbackScope){if(arguments.length)pendingModalSaveScope=feedbackScope;
+const el=document.getElementById("saveStatus");if(el){el.textContent=busy?"در حال ذخیره…":status.message;el.dataset.state=busy?"pending":status.type;
+el.hidden=!busy&&(status.type==="saved"||!status.message)}paintModalSaveFeedback();if(!busy)pendingModalSaveScope=null;syncControlLocks()}function inputKey(d){return[
+d.kind,d.classId,d.lid,d.pid||"",d.uid||"",d.sid,d.field].join("|")}function draftStorageKey(){return draftBaseKey()+"."+documentToken}function isSupportedGradeDraft(item){
+return EduGradeDrafts.isSupportedGradeDraft(item)}async function persistedGradeDrafts(prefix){const records=new Map;const add=(key,raw)=>{const entry={key,entries:Array.
+isArray(raw)?raw:raw?.entries,generation:Array.isArray(raw)?0:Number(raw?.generation||0),updatedAt:Array.isArray(raw)?"":raw?.updatedAt??""};if(!Number.isSafeInteger(
+entry.generation)||entry.generation<0||typeof entry.updatedAt!=="string")throw Object.assign(Error("نسخه یا زمان پیش‌نویس معتبر نیست؛ نسخهٔ خام را برای بررسی در\
+یافت کنید."),{code:"GRADE_DRAFT_INVALID"});const previous=records.get(key);if(!previous||entry.generation>previous.generation||entry.generation===previous.
+generation&&entry.updatedAt>previous.updatedAt)records.set(key,entry)};let unreadable=false,unavailable=false;try{for(const key of Object.keys(localStorage).filter(
+key2=>key2===prefix||key2.startsWith(prefix+".")||prefix.endsWith(".")&&key2.startsWith(prefix))){let raw;try{raw=localStorage.getItem(key)}catch{unavailable=true;
+continue}try{add(key,JSON.parse(raw))}catch{unreadable=true}}}catch{unavailable=true}if(connection?.objectStoreNames.contains("drafts")){const tx=connection.transaction(
+"drafts","readonly");const rows=await requestPromise(tx.objectStore("drafts").index("workspace").getAll(workspace.id));for(const row of rows)if(row.key===prefix||
+row.key.startsWith(prefix+".")||prefix.endsWith(".")&&row.key.startsWith(prefix))add(row.key,row)}if(unreadable)throw Object.assign(Error("خواندن یکی از پیش‌نوی\
+س‌های قبلی انجام نشد؛ نسخهٔ قدیمی جایگزین آن نشد. نسخهٔ خام را برای بررسی دریافت کنید."),{
+code:"GRADE_DRAFT_INVALID"});if(unavailable&&!records.size)throw Error("خواندن پیش‌نویس‌های قبلی انجام نشد.");return[...records.
+values()]}function storeDrafts(){if(!workspace||resetBusy||connectionRetired)return Promise.resolve();const key=draftStorageKey(),entry={key,workspace:workspace.
 id,owner:documentToken,generation:draftGeneration,entries:clone([...drafts.values()]),updatedAt:new Date().toISOString()};let localFailure=false;try{const current=JSON.
 parse(localStorage.getItem(key)||"null");if(current&&!Array.isArray(current)&&Number(current.generation)>draftGeneration)return Promise.resolve();localStorage.setItem(
 key,JSON.stringify(entry))}catch{localFailure=true}const targetConnection=connection,sourceInstallation=typeof installationToken==="undefined"?"":installationToken;
@@ -707,61 +708,62 @@ ody></table></div>";showModal("ثبت گروهی نمرات",html)}function sync
 y");const modalWrite=modalBody&&!modalBody.querySelector("form")&&[...modalBody.querySelectorAll("[data-mutating]")].some(el=>el.tagName!=="FORM");const candidates=new Set(
 document.querySelectorAll('[data-control-lock],[data-mutating]:is(input,select,textarea,button),form[data-mutating] :is(input,select,textarea,button),form[aria-\
 busy="true"] :is(input,select,textarea,button)'));if(modalWrite)modalBody.querySelectorAll("input,select,textarea").forEach(control=>candidates.add(control));candidates.
-forEach(control=>{const form=control.form;const formWrite=form?.dataset.mutating==="1";const field=control.matches("input,select,textarea");const mutation=control.
-dataset.mutating==="1"||formWrite&&(field||control.type==="submit")||modalWrite&&field&&modalBody.contains(control);if(mutation&&control.dataset.gregorianTarget===
-void 0)control.dataset.mutating="1";const assessmentInput=assessmentContext.handles(control)?control:control.matches(".grade-clear")?control.parentElement?.querySelector(
-"[data-assessment-context]"):null;const controlReadonly=assessmentInput?baseReadonly||assessmentContext.readOnly(assessmentInput):readonly;setControlLock(control,
-"workspace-readonly",mutation&&controlReadonly);setControlLock(control,"session-view-only",mutation&&!!control.closest(".session-workspace")&&!control.matches("\
-[data-session-edit-control]")&&!isSessionEditable(currentSessionId));setControlLock(control,"workspace-saving",mutation&&busy>0&&!control.matches("[data-grade]"));
-setControlLock(control,"form-saving",!!form?.matches('[aria-busy="true"]'))});for(const form of document.querySelectorAll('form[data-mutating="1"]')){const existing=form.
-querySelector(".course-readonly-note");let note=form.querySelector(".control-lock-note");if(readonly&&!existing&&!note){note=document.createElement("p");note.className=
-"control-lock-note";note.setAttribute("role","status");(form.querySelector(".record-editor-context")||form).prepend(note)}if(note){note.hidden=!readonly||!!existing;
-note.textContent=workspace?.closed?"ترم بسته است؛ این فرم فقط خواندنی است. گزارش و پشتیبان همچنان در دسترس‌اند.":
-"ویرایش فعلاً متوقف است؛ پیام وضعیت ذخیره‌سازی را بررسی کنید."}}const assessmentOnly=!!modalBody?.querySelector(
-"[data-assessment-context]")&&![...modalBody.querySelectorAll("[data-mutating]")].some(element=>!element.matches("[data-grade],.grade-clear")&&element.tagName!==
-"FORM");const modalReadonly=assessmentOnly?[...modalBody.querySelectorAll("[data-assessment-context]")].every(input=>assessmentContext.readOnly(input)):readonly;
-let modalNote=modalBody?.querySelector(".standalone-lock-note");if(modalReadonly&&modalWrite&&!modalNote){modalNote=document.createElement("p");modalNote.className=
-"control-lock-note standalone-lock-note";modalNote.setAttribute("role","status");modalBody.prepend(modalNote)}if(modalNote){modalNote.hidden=!modalReadonly||!modalWrite;
-modalNote.textContent=workspace?.closed?"ترم بسته است؛ این تنظیمات فقط نمایش داده می‌شوند.":"ویرایش فعلاً متوقف است؛ پی\
-ام وضعیت ذخیره‌سازی را بررسی کنید."}syncSessionEditNotice();syncShamsiDisabledInputs()}const mutatingNames=["confirmDeletion","save\
-Membership","saveEntityEditor","savePeriodLabel","saveSettings","save","copy","gate","addSchool","deleteSchool","addClass","deleteClass","addStudent","deleteStu\
-dent","addLesson","deleteLesson","saveEditStudent","doTransfer","saveLessonConfig","saveMasterConfig","clearMasterConfig","toggleActiveDay","changePeriods","sav\
-eWeekStartDate","setAllAttendance","copyPreviousAttendance","toggleAtt","changeSessionDate","updateSessionUnits","saveSessionUnit","addSessionScore","removeSess\
-ionScore","deleteSession","deleteAllSessions","addManualSession","startSessionFromMaster","restoreStudent","commitCSV","saveStudent","confirmImport","undoLast",
-"toggleUnitApply","toggleAllApplyForLesson","toggleUnitApplyDirect","toggleAllApplyForLessonInLesson"];const mutationCall=new RegExp("\\b(?:"+mutatingNames.join(
-"|")+")\\s*\\(");function lockControls(){for(const element of document.querySelectorAll("button,input,select,textarea,form")){if(element.matches("[data-grade],.\
-grade-clear,[data-mutating]"))element.dataset.mutating="1";else{const handlers=["onclick","onchange","oninput","onsubmit"].map(key=>element.getAttribute(key)||"").
-join(" ");if(mutationCall.test(handlers)||EduLegacyEvents.mutates(element,mutationCall))element.dataset.mutating="1"}}syncControlLocks()}function workspaceToolsHtml(){
-const button=(action,icon,title,extra="",description="")=>'<button type="button" class="ghost workspace-tool-button '+extra+'" data-workspace-action="'+action+'\
-"><span class="workspace-tool-icon" aria-hidden="true">'+EduIcons.html(icon)+'</span><span class="workspace-tool-copy"><span>'+esc(title)+"</span>"+(description?
-'<span class="workspace-tool-description">'+esc(description)+"</span>":"")+"</span></button>";return'<details class="workspace-tools"><summary id="workspaceTool\
-sToggle"><span class="workspace-tools-symbol" aria-hidden="true">'+EduIcons.html("settings")+'</span><span>ابزارها و تنظیمات</span><span class="workspace-tools-\
-chevron" aria-hidden="true"></span></summary><div class="workspace-tool-actions"><div class="workspace-tool-group">'+button("periods","calendar","سال تحصیلی",
-"","سال فعال، چهار مرحلهٔ ارزشیابی و کارنامه‌های نهایی")+button("undo","undo","برگرداندن آخرین تغییر",
-"","اصلاح آخرین تغییر ثبت‌شده در ترم فعلی")+'<button type="button" class="ghost workspace-tool-button" data-header-action="setti\
-ngs"><span class="workspace-tool-icon" aria-hidden="true">'+EduIcons.html("settings")+'</span><span class="workspace-tool-copy"><span>تنظیمات برنامه</span><span\
- class="workspace-tool-description">شخصی‌سازی و تنظیم گزینه‌های برنامه</span></span></button></div></div></details>'}function draftReviewActionHtml(){
-if(!ready||fileMode||blocked||resetBusy||connectionRetired||periodLoading||db.settings.password&&!isAuthenticated||![...drafts.values()].some(item=>item.review))
-return"";return'<button type="button" class="ghost" data-workspace-action="review-drafts">بررسی نمرات ثبت‌نشده</button>'}function renderV24(){
-if(!ready)return;const coursePanel=courseUI.preserveEditor();old.render();courseUI.restoreEditor(coursePanel);const app=document.getElementById("app");if(db.settings.
-password&&!isAuthenticated){const banner=document.createElement("div");banner.id="saveStatus";banner.setAttribute("role","status");app.prepend(banner);paintStatus();
-return}const panel=document.createElement("div");panel.className="workspace-bar workspace-bar-compact no-print";panel.innerHTML=(workspace.closed?'<span class="\
-workspace-closed-note">ترم بسته است؛ فقط مشاهده</span>':"")+'<span id="saveStatus" role="status" aria-live="polite"></span>'+workspaceToolsHtml()+
-draftReviewActionHtml();app.prepend(panel);const tools=panel.querySelector(".workspace-tools");const settings=app.querySelector('.topbar [data-header-action="se\
-ttings"]');if(settings)settings.replaceWith(tools);const welcome=app.querySelector(".schools-welcome");if(welcome){const footer=document.createElement("div");footer.
-className="schools-welcome-footer";footer.innerHTML='<div class="schools-period-context"><span>سال تحصیلی: <bdi>'+esc(String(workspace.year).replace(/\d/g,
-digit=>"۰۱۲۳۴۵۶۷۸۹"[digit]))+"</bdi></span></div>";const about=welcome.querySelector(".schools-about");if(about)footer.append(about);const fileSummary=document.
-createElement("div");fileSummary.id="welcomeFileSummary";fileSummary.className="schools-file-summary";fileSummary.setAttribute("aria-live","polite");fileSummary.
-innerHTML=singleFileBannerHtml();footer.querySelector(".schools-period-context").append(fileSummary);welcome.append(footer)}if(window.showSaveFilePicker){const fileStatus=document.
-createElement("div");fileStatus.id="singleFileBadge";fileStatus.className="single-file-notice";fileStatus.hidden=!singleFileFailure;fileStatus.innerHTML=singleFileNoticeHtml();
-panel.append(fileStatus)}if(db.migrationWarnings?.length){const info=document.createElement("div");info.className="card";info.textContent="سوابق منتقل‌شده نیازم\
-ند بررسی: "+db.migrationWarnings.join(" | ");app.append(info)}if(fileMode)fileModeBanner(app);courseUI.activateCreate();applyDrafts();lockControls();paintStatus();
-void refreshYearLessonSessions();void refreshAttendanceReminders()}let sessionEditAccess=null;function currentSessionEditAccess(id){const access=sessionEditAccess;
-return access&&access.sessionId===id&&currentSessionId===id&&access.workspaceId===workspace?.id&&access.connection===connection&&access.installation===installationToken&&
-access.data===db&&access.session===db.sessions.find(session=>session.id===id)&&access.root.dataset.sessionId===id&&access.root.isConnected&&document.querySelector(
-"#modalBody .session-workspace")===access.root&&!document.getElementById("modal").classList.contains("hidden")?access:null}function isSessionEditable(id,token){
-const access=currentSessionEditAccess(id);return!!access?.editable&&(token===void 0||access.token===token)}function assertSessionEditable(id){assertEntityWritable();
-const access=currentSessionEditAccess(id);if(!access?.editable)throw Error("این جلسه فقط برای مشاهده باز شده است؛ ابتدا «فعال‌کردن ویرایش» را بزنید.");
+forEach(control=>{if(control.closest(".qb-page"))return;const form=control.form;const formWrite=form?.dataset.mutating==="1";const field=control.matches("input,\
+select,textarea");const mutation=control.dataset.mutating==="1"||formWrite&&(field||control.type==="submit")||modalWrite&&field&&modalBody.contains(control);if(mutation&&
+control.dataset.gregorianTarget===void 0)control.dataset.mutating="1";const assessmentInput=assessmentContext.handles(control)?control:control.matches(".grade-c\
+lear")?control.parentElement?.querySelector("[data-assessment-context]"):null;const controlReadonly=assessmentInput?baseReadonly||assessmentContext.readOnly(assessmentInput):
+readonly;setControlLock(control,"workspace-readonly",mutation&&controlReadonly);setControlLock(control,"session-view-only",mutation&&!!control.closest(".session\
+-workspace")&&!control.matches("[data-session-edit-control]")&&!isSessionEditable(currentSessionId));setControlLock(control,"workspace-saving",mutation&&busy>0&&
+!control.matches("[data-grade]"));setControlLock(control,"form-saving",!!form?.matches('[aria-busy="true"]'))});for(const form of document.querySelectorAll('for\
+m[data-mutating="1"]')){if(form.closest(".qb-page"))continue;const existing=form.querySelector(".course-readonly-note");let note=form.querySelector(".control-lo\
+ck-note");if(readonly&&!existing&&!note){note=document.createElement("p");note.className="control-lock-note";note.setAttribute("role","status");(form.querySelector(
+".record-editor-context")||form).prepend(note)}if(note){note.hidden=!readonly||!!existing;note.textContent=workspace?.closed?"ترم بسته است؛ این فرم فقط خواندنی \
+است. گزارش و پشتیبان همچنان در دسترس‌اند.":"ویرایش فعلاً متوقف است؛ پیام وضعیت ذخیره‌سازی را بررسی کنید."}}
+const assessmentOnly=!!modalBody?.querySelector("[data-assessment-context]")&&![...modalBody.querySelectorAll("[data-mutating]")].some(element=>!element.matches(
+"[data-grade],.grade-clear")&&element.tagName!=="FORM");const modalReadonly=assessmentOnly?[...modalBody.querySelectorAll("[data-assessment-context]")].every(input=>assessmentContext.
+readOnly(input)):readonly;let modalNote=modalBody?.querySelector(".standalone-lock-note");if(modalReadonly&&modalWrite&&!modalNote){modalNote=document.createElement(
+"p");modalNote.className="control-lock-note standalone-lock-note";modalNote.setAttribute("role","status");modalBody.prepend(modalNote)}if(modalNote){modalNote.hidden=
+!modalReadonly||!modalWrite;modalNote.textContent=workspace?.closed?"ترم بسته است؛ این تنظیمات فقط نمایش داده می‌شوند.":
+"ویرایش فعلاً متوقف است؛ پیام وضعیت ذخیره‌سازی را بررسی کنید."}syncSessionEditNotice();syncShamsiDisabledInputs()}
+const mutatingNames=["confirmDeletion","saveMembership","saveEntityEditor","savePeriodLabel","saveSettings","save","copy","gate","addSchool","deleteSchool","add\
+Class","deleteClass","addStudent","deleteStudent","addLesson","deleteLesson","saveEditStudent","doTransfer","saveLessonConfig","saveMasterConfig","clearMasterCo\
+nfig","toggleActiveDay","changePeriods","saveWeekStartDate","setAllAttendance","copyPreviousAttendance","toggleAtt","changeSessionDate","updateSessionUnits","sa\
+veSessionUnit","addSessionScore","removeSessionScore","deleteSession","deleteAllSessions","addManualSession","startSessionFromMaster","restoreStudent","commitCS\
+V","saveStudent","confirmImport","undoLast","toggleUnitApply","toggleAllApplyForLesson","toggleUnitApplyDirect","toggleAllApplyForLessonInLesson"];const mutationCall=new RegExp(
+"\\b(?:"+mutatingNames.join("|")+")\\s*\\(");function lockControls(){for(const element of document.querySelectorAll("button,input,select,textarea,form")){if(element.
+closest(".qb-page"))continue;if(element.matches("[data-grade],.grade-clear,[data-mutating]"))element.dataset.mutating="1";else{const handlers=["onclick","onchan\
+ge","oninput","onsubmit"].map(key=>element.getAttribute(key)||"").join(" ");if(mutationCall.test(handlers)||EduLegacyEvents.mutates(element,mutationCall))element.
+dataset.mutating="1"}}syncControlLocks()}function workspaceToolsHtml(){const button=(action,icon,title,extra="",description="")=>'<button type="button" class="g\
+host workspace-tool-button '+extra+'" data-workspace-action="'+action+'"><span class="workspace-tool-icon" aria-hidden="true">'+EduIcons.html(icon)+'</span><spa\
+n class="workspace-tool-copy"><span>'+esc(title)+"</span>"+(description?'<span class="workspace-tool-description">'+esc(description)+"</span>":"")+"</span></but\
+ton>";return'<details class="workspace-tools"><summary id="workspaceToolsToggle"><span class="workspace-tools-symbol" aria-hidden="true">'+EduIcons.html("settin\
+gs")+'</span><span>ابزارها و تنظیمات</span><span class="workspace-tools-chevron" aria-hidden="true"></span></summary><div class="workspace-tool-actions"><div cl\
+ass="workspace-tool-group">'+button("periods","calendar","سال تحصیلی","","سال فعال، چهار مرحلهٔ ارزشیابی و کارنامه‌های نهایی")+
+button("undo","undo","برگرداندن آخرین تغییر","","اصلاح آخرین تغییر ثبت‌شده در ترم فعلی")+'<button type="butto\
+n" class="ghost workspace-tool-button" data-header-action="settings"><span class="workspace-tool-icon" aria-hidden="true">'+EduIcons.html("settings")+'</span><s\
+pan class="workspace-tool-copy"><span>تنظیمات برنامه</span><span class="workspace-tool-description">شخصی‌سازی و تنظیم گزینه‌های برنامه</span></span></button></d\
+iv></div></details>'}function draftReviewActionHtml(){if(!ready||fileMode||blocked||resetBusy||connectionRetired||periodLoading||db.settings.password&&!isAuthenticated||
+![...drafts.values()].some(item=>item.review))return"";return'<button type="button" class="ghost" data-workspace-action="review-drafts">بررسی نمرات ثبت‌نشده</bu\
+tton>'}function renderV24(){if(!ready)return;const coursePanel=courseUI.preserveEditor();if(old.render()===false)return;courseUI.restoreEditor(coursePanel);const app=document.
+getElementById("app");if(db.settings.password&&!isAuthenticated){const banner=document.createElement("div");banner.id="saveStatus";banner.setAttribute("role","s\
+tatus");app.prepend(banner);paintStatus();return}const panel=document.createElement("div");panel.className="workspace-bar workspace-bar-compact no-print";panel.
+innerHTML=(workspace.closed?'<span class="workspace-closed-note">ترم بسته است؛ فقط مشاهده</span>':"")+'<span id="saveStatus" role="status" a\
+ria-live="polite"></span>'+workspaceToolsHtml()+draftReviewActionHtml();app.prepend(panel);const tools=panel.querySelector(".workspace-tools");const settings=app.
+querySelector('.topbar [data-header-action="settings"]');if(settings)settings.replaceWith(tools);const welcome=app.querySelector(".schools-welcome");if(welcome){
+const footer=document.createElement("div");footer.className="schools-welcome-footer";footer.innerHTML='<div class="schools-period-context"><span>سال تحصیلی: <bd\
+i>'+esc(String(workspace.year).replace(/\d/g,digit=>"۰۱۲۳۴۵۶۷۸۹"[digit]))+"</bdi></span></div>";const about=welcome.querySelector(".schools-about");if(about)
+footer.append(about);const fileSummary=document.createElement("div");fileSummary.id="welcomeFileSummary";fileSummary.className="schools-file-summary";fileSummary.
+setAttribute("aria-live","polite");fileSummary.innerHTML=singleFileBannerHtml();footer.querySelector(".schools-period-context").append(fileSummary);welcome.append(
+footer)}if(window.showSaveFilePicker){const fileStatus=document.createElement("div");fileStatus.id="singleFileBadge";fileStatus.className="single-file-notice";fileStatus.
+hidden=!singleFileFailure;fileStatus.innerHTML=singleFileNoticeHtml();panel.append(fileStatus)}if(db.migrationWarnings?.length){const info=document.createElement(
+"div");info.className="card";info.textContent="سوابق منتقل‌شده نیازمند بررسی: "+db.migrationWarnings.join(" | ");app.append(info)}if(fileMode)
+fileModeBanner(app);courseUI.activateCreate();applyDrafts();lockControls();paintStatus();void refreshYearLessonSessions();void refreshAttendanceReminders();globalThis.
+EduQuestionBankUI?.updateLayout?.()}let sessionEditAccess=null;function currentSessionEditAccess(id){const access=sessionEditAccess;return access&&access.sessionId===
+id&&currentSessionId===id&&access.workspaceId===workspace?.id&&access.connection===connection&&access.installation===installationToken&&access.data===db&&access.
+session===db.sessions.find(session=>session.id===id)&&access.root.dataset.sessionId===id&&access.root.isConnected&&document.querySelector("#modalBody .session-w\
+orkspace")===access.root&&!document.getElementById("modal").classList.contains("hidden")?access:null}function isSessionEditable(id,token){const access=currentSessionEditAccess(
+id);return!!access?.editable&&(token===void 0||access.token===token)}function assertSessionEditable(id){assertEntityWritable();const access=currentSessionEditAccess(
+id);if(!access?.editable)throw Error("این جلسه فقط برای مشاهده باز شده است؛ ابتدا «فعال‌کردن ویرایش» را بزنید.");
 return access.token}function releaseSessionEditAccess(){sessionEditAccess=null}function captureSessionEditRecovery(){const access=currentSessionEditAccess(currentSessionId);
 return access?{access,token:access.token}:null}function invalidateSessionEditRecovery(recovery){if(recovery&&sessionEditAccess===recovery.access&&sessionEditAccess.
 token===recovery.token)releaseSessionEditAccess()}function rebindSessionEditAfterRollback(recovery,previousData,loaded,expected){const access=recovery?.access,session=loaded.
@@ -2266,8 +2268,8 @@ session.working)return false;const prepared=session.prepared;let unlock=()=>{};t
 disabled||button.closest("#karnamehExcelPanel")!==session.panel)return false;unlock=lockKarnamehExcel(session);await assertReportSnapshot(prepared.context);assertPreparedKarnamehExcel(
 session,prepared);downloadLocalFile(prepared.blob,prepared.name);karnamehExcelMessage(session,"اکسل برای دریافت به مرورگر تحویل داده شد؛ در پیام‌رسان، پیوست ← ف\
 ایل را انتخاب کنید.","saved");return true}catch(error){if(session.prepared===prepared&&!prepared?.invalid)clearPreparedKarnamehExcel(session,error.
-message||String(error));return false}finally{unlock()}}let printAuthorization=null;function beforeReportPrint(){if(document.querySelector(".qb-dialog[open]"))return;
-try{if(!printAuthorization||!document.getElementById("printRoot"))throw Error("برای چاپ معتبر، از دکمه «چاپ / PDF» گزارش استفاده کنید.");
+message||String(error));return false}finally{unlock()}}let printAuthorization=null;function beforeReportPrint(){if(globalThis.EduQuestionBankUI?.isPreviewActive?.())
+return;try{if(!printAuthorization||!document.getElementById("printRoot"))throw Error("برای چاپ معتبر، از دکمه «چاپ / PDF» گزارش استفاده کنید.");
 if(!fileMode)assertWorkspaceContext(printAuthorization);if(busy||drafts.size||draftWritesPending||draftRecoveryFailed)throw Error("ثبت اطلاعات کامل نشده است؛ پس\
  از ذخیره، گزارش را دوباره چاپ کنید.");return}catch(error){printAuthorization=null;document.getElementById("printRoot")?.remove();const root=document.
 createElement("div");root.id="printRoot";root.textContent="چاپ انجام نشد: "+error.message;document.body.append(root)}}function preservePeriodicAppearance(source,copy){

@@ -1,15 +1,117 @@
-﻿"use strict";
+"use strict";
 const fs = require("node:fs");
 const path = require("node:path");
 const { main } = require("./data-integrity.cjs");
 
+async function compareClassFormDesign() {
+  if (!globalThis.__qbClassCreateReference)
+    throw Error("The real class creation form was not captured");
+  const panel = document.querySelector(".qb-editor-panel"),
+    form = panel?.querySelector(".qb-form"),
+    control = form?.querySelector(
+      form.dataset.qbEditor === "exam"
+        ? ".qb-exam-details input"
+        : 'input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"])',
+    );
+  if (!panel || !form || !control)
+    throw Error("A bank editor card and representative field are required");
+  const template = document.createElement("template");
+  template.innerHTML = globalThis.__qbClassCreateReference;
+  const referencePanel = template.content.firstElementChild;
+  referencePanel.open = true;
+  referencePanel.inert = true;
+  referencePanel.setAttribute("aria-hidden", "true");
+  referencePanel.style.cssText = `position:fixed;left:-20000px;top:0;width:${panel.getBoundingClientRect().width}px;margin:0;pointer-events:none`;
+  referencePanel
+    .querySelectorAll("[id]")
+    .forEach((node) => node.removeAttribute("id"));
+  referencePanel.querySelectorAll("input,button,select").forEach((node) => {
+    node.disabled = false;
+  });
+  document.activeElement?.blur();
+  document.getElementById("app").append(referencePanel);
+  try {
+    await new Promise((resolve) =>
+      setTimeout(
+        () => requestAnimationFrame(() => requestAnimationFrame(resolve)),
+        200,
+      ),
+    );
+    if (referencePanel.querySelector(":focus") || form.querySelector(":focus"))
+      throw Error(
+        "Compare class and bank fields in their neutral interaction state",
+      );
+    const values = {},
+      compare = (name, reference, bank, properties) => {
+        if (!reference || !bank)
+          throw Error("Missing class design element: " + name);
+        const referenceStyle = getComputedStyle(reference),
+          bankStyle = getComputedStyle(bank);
+        for (const property of properties)
+          values[name + "." + property] = {
+            system: referenceStyle[property],
+            bank: bankStyle[property],
+          };
+      };
+    const referenceControl = referencePanel.querySelector("input"),
+      referenceLabel = referenceControl.closest("label"),
+      bankLabel = control.closest("label");
+    compare("field", referenceControl, control, [
+      "fontFamily",
+      "fontSize",
+      "backgroundColor",
+      "borderTopColor",
+      "borderTopLeftRadius",
+      "paddingTop",
+      "paddingRight",
+      "height",
+    ]);
+    compare("label", referenceLabel, bankLabel, ["fontSize", "rowGap"]);
+    compare("card", referencePanel, panel, [
+      "backgroundColor",
+      "borderTopColor",
+      "borderTopLeftRadius",
+    ]);
+    compare(
+      "header",
+      referencePanel.querySelector("summary"),
+      panel.querySelector("summary"),
+      ["paddingTop", "paddingRight", "minHeight", "borderTopLeftRadius"],
+    );
+    compare(
+      "headerIcon",
+      referencePanel.querySelector(".create-panel-symbol"),
+      panel.querySelector(".create-panel-symbol"),
+      ["width", "height", "backgroundColor", "color", "borderTopLeftRadius"],
+    );
+    compare(
+      "headerTitle",
+      referencePanel.querySelector(".create-panel-title strong"),
+      panel.querySelector(".create-panel-title strong"),
+      ["fontSize", "fontWeight", "color"],
+    );
+    compare(
+      "primaryAction",
+      referencePanel.querySelector('button[type="submit"]'),
+      form.querySelector('button[type="submit"]'),
+      ["backgroundColor", "color", "height", "borderTopLeftRadius", "fontSize"],
+    );
+    const pass = Object.values(values).every(
+      ({ system, bank }) => system === bank,
+    );
+    return { pass, editor: form.dataset.qbEditor, values };
+  } finally {
+    referencePanel.remove();
+  }
+}
+
 async function keyboardEditorProbe({ landscape = false } = {}) {
   const viewport = window.visualViewport;
-  const dialog = document.querySelector(".qb-dialog");
+  const dialog = document.querySelector(".qb-page");
   const body = dialog.querySelector(".qb-body");
   const fields = dialog.querySelector(".qb-form-fields");
   const actions = dialog.querySelector(".qb-form > .record-editor-actions");
-  const header = dialog.querySelector(":scope > .modal-header");
+  const header = dialog.querySelector(":scope > .qb-page-header");
   const storage = dialog.querySelector(":scope > .qb-storage-bar");
   const tabs = body.querySelector(":scope > .qb-tabs");
   const original = {
@@ -54,6 +156,13 @@ async function keyboardEditorProbe({ landscape = false } = {}) {
       : null;
     const field = focused?.getBoundingClientRect();
     return {
+      pagePosition: getComputedStyle(dialog).position,
+      appPosition: getComputedStyle(document.getElementById("app")).position,
+      pageAvailableHeight: parseFloat(
+        dialog.style.getPropertyValue("--qb-page-available-height"),
+      ),
+      appWidth: document.documentElement.clientWidth,
+      pageWidth: box.width,
       top: box.top,
       bottom: box.bottom,
       height: box.height,
@@ -100,11 +209,13 @@ async function keyboardEditorProbe({ landscape = false } = {}) {
     };
   };
   const initial = geometry();
-  const chrome = {
+  const measureChrome = () => ({
     header: header.getBoundingClientRect().height,
     storage: storage.getBoundingClientRect().height,
     tabs: tabs?.getBoundingClientRect().height || 0,
-  };
+  });
+  const normalChrome = measureChrome();
+  let keyboardChrome;
   const controls = [
     ...fields.querySelectorAll(
       'input:not([type="checkbox"]):not([type="radio"]):not([type="date"]),textarea',
@@ -112,14 +223,28 @@ async function keyboardEditorProbe({ landscape = false } = {}) {
   ].filter(
     (control) => !control.disabled && control.getClientRects().length > 0,
   );
-  const originals = controls.map((control) => ({
-    control,
-    value: control.value,
-    css: control.style.cssText,
-    start: control.selectionStart,
-    end: control.selectionEnd,
-    height: control.getBoundingClientRect().height,
-  }));
+  const originals = controls.map((control) => {
+    const css = control.style.cssText,
+      height = control.getBoundingClientRect().height;
+    let naturalHeight = height;
+    if (control.tagName === "TEXTAREA") {
+      // A page can gain editing room when its header scrolls out of view.
+      // Compare its textarea with the normal rows/minimum size, before the
+      // visible-viewport cap, rather than a previously constrained height.
+      control.style.setProperty("--qb-textarea-max-height", "100000px");
+      naturalHeight = control.getBoundingClientRect().height;
+      control.style.cssText = css;
+    }
+    return {
+      control,
+      value: control.value,
+      css,
+      start: control.selectionStart,
+      end: control.selectionEnd,
+      height,
+      naturalHeight,
+    };
+  });
   const cleanup = async () => {
     for (const item of originals) {
       item.control.value = item.value;
@@ -151,13 +276,15 @@ async function keyboardEditorProbe({ landscape = false } = {}) {
     get: () => offset,
   });
   const cases = [];
-  const chromeStable = () =>
+  const chromeStable = (expected = keyboardChrome) =>
+    !!expected &&
     visible(header) &&
     visible(storage) &&
     (!tabs || visible(tabs)) &&
-    Math.abs(header.getBoundingClientRect().height - chrome.header) <= 1 &&
-    Math.abs(storage.getBoundingClientRect().height - chrome.storage) <= 1 &&
-    (!tabs || Math.abs(tabs.getBoundingClientRect().height - chrome.tabs) <= 1);
+    Math.abs(header.getBoundingClientRect().height - expected.header) <= 1 &&
+    Math.abs(storage.getBoundingClientRect().height - expected.storage) <= 1 &&
+    (!tabs ||
+      Math.abs(tabs.getBoundingClientRect().height - expected.tabs) <= 1);
   try {
     const phases = landscape
       ? [
@@ -186,11 +313,12 @@ async function keyboardEditorProbe({ landscape = false } = {}) {
         if (target.selectionStart !== null) target.setSelectionRange(3, 8);
         viewport.dispatchEvent(new Event("resize"));
         await wait();
+        if (!keyboardChrome) keyboardChrome = measureChrome();
         const g = geometry(),
           box = target.getBoundingClientRect(),
           before = originals.find((item) => item.control === target);
-        const top = g.bodyTop,
-          bottom = Math.min(g.bodyBottom, g.footerTop);
+        const top = Math.max(g.bodyTop, nextOffset),
+          bottom = Math.min(g.bodyBottom, g.footerTop, nextOffset + nextHeight);
         const fits = box.top >= top - 0.1 && box.bottom <= bottom + 0.1;
         cases.push({
           phase: "focus",
@@ -198,17 +326,27 @@ async function keyboardEditorProbe({ landscape = false } = {}) {
           offset: nextOffset,
           field: target.tagName,
           frame:
-            Math.abs(g.top - nextOffset) <= 1 &&
-            Math.abs(g.bottom - (nextOffset + nextHeight)) <= 1,
+            g.appPosition !== "fixed" &&
+            g.pagePosition !== "fixed" &&
+            g.pagePosition !== "absolute" &&
+            dialog.dataset.keyboardViewport === "true" &&
+            getComputedStyle(body).overflowY === "auto" &&
+            getComputedStyle(fields).overflowY === "visible" &&
+            Math.abs(g.height - g.pageAvailableHeight) <= 1 &&
+            g.pageWidth <= g.appWidth &&
+            g.bottom <= nextOffset + nextHeight + 1,
           chrome: chromeStable(),
           footer:
             visible(actions) &&
+            g.footerTop >= nextOffset - 1 &&
             g.footerBottom <= nextOffset + nextHeight + 1 &&
             g.footerTop >= g.bodyTop - 1,
           fieldVisible: fits,
           size:
             (target.tagName === "TEXTAREA"
-              ? box.height >= 44 && box.height <= before.height + 1
+              ? box.height >= 44 &&
+                box.height <= before.naturalHeight + 1 &&
+                box.height <= parseFloat(getComputedStyle(target).maxHeight) + 1
               : Math.abs(box.height - before.height) <= 1) &&
             parseFloat(getComputedStyle(target).fontSize) >= 16,
           preserved:
@@ -238,8 +376,11 @@ async function keyboardEditorProbe({ landscape = false } = {}) {
         phase: "keyboard-close",
         frame:
           Math.abs(restored.top - initial.top) <= 1 &&
-          Math.abs(restored.height - initial.height) <= 1,
-        chrome: chromeStable(),
+          Math.abs(restored.height - initial.height) <= 1 &&
+          getComputedStyle(body).overflowY === "visible" &&
+          getComputedStyle(fields).overflowY === "visible" &&
+          !dialog.hasAttribute("data-keyboard-viewport"),
+        chrome: chromeStable(normalChrome),
       });
     }
     const textarea = controls.find((control) => control.tagName === "TEXTAREA");
@@ -259,8 +400,9 @@ async function keyboardEditorProbe({ landscape = false } = {}) {
       cases.push({
         phase: "long-textarea",
         fieldVisible:
-          box.top >= g.bodyTop - 0.1 &&
-          box.bottom <= Math.min(g.bodyBottom, g.footerTop) + 0.1,
+          box.top >= Math.max(g.bodyTop, offset) - 0.1 &&
+          box.bottom <=
+            Math.min(g.bodyBottom, g.footerTop, offset + height) + 0.1,
         capped: box.height >= 44 && box.height < 380,
         caret:
           textarea.selectionStart === textarea.value.length &&
@@ -315,6 +457,7 @@ main({
     };
     const out = path.join(root, ".cache", "question-bank-audit");
     fs.mkdirSync(out, { recursive: true });
+    const designComparisons = [];
     const check = (name, pass) => {
       cases.push({ name: "question bank: " + name, pass: !!pass });
       if (!pass) throw Error(name);
@@ -391,10 +534,37 @@ main({
           ),
         );
         check(
-          `${name} close control fits ${width}`,
+          `${name} editor remains a normal page inside the main content ${width}`,
           await evaluate(
-            `(()=>{const b=document.querySelector('.qb-close'),r=b.getBoundingClientRect();return r.width<=46&&r.height<=46&&b.querySelector('.ui-button-label').hidden;})()`,
+            `(()=>{const page=document.querySelector('.qb-page');return page.tagName==='SECTION'&&page.closest('#questionBankPageHost')?.closest('#app')&&!page.matches(':modal')&&!document.querySelector('.qb-close')&&getComputedStyle(page).position!=='fixed'&&getComputedStyle(document.getElementById('app')).position!=='fixed';})()`,
           ),
+        );
+        check(
+          `${name} editor uses an open class-style creation card in document flow ${width}`,
+          await evaluate(`(()=>{
+            const page=document.querySelector('.qb-page'),body=page.querySelector('.qb-body'),panel=body.querySelector('.qb-editor-panel'),form=panel?.querySelector('.qb-form'),fields=form?.querySelector('.qb-form-fields'),summary=panel?.querySelector(':scope>summary');
+            const observed={card:panel?.tagName==='DETAILS'&&panel.open&&panel.classList.contains('card')&&panel.classList.contains('create-panel'),heading:!!summary?.querySelector('.create-panel-symbol svg')&&!!summary.querySelector('.create-panel-title strong')&&!!summary.querySelector('.create-panel-title small')&&!!summary.querySelector('.create-panel-toggle'),editor:form?.classList.contains('record-editor')&&form.dataset.qbEditor===${JSON.stringify(name === "builder" ? "exam" : name)},pageFlow:getComputedStyle(page).overflowY==='visible',bodyFlow:getComputedStyle(body).overflowY==='visible',fieldsFlow:getComputedStyle(fields).overflowY==='visible',noNestedScroll:[page,body,form,fields].every(node=>node.scrollHeight<=node.clientHeight+1),staticActions:getComputedStyle(form.querySelector('.record-editor-actions')).position==='static'};
+            if(!Object.values(observed).every(Boolean))throw Error(JSON.stringify(observed));return true;
+          })()`),
+        );
+        const comparison = await evaluate(
+          "(" + compareClassFormDesign.toString() + ")()",
+        );
+        designComparisons.push({ name, width, ...comparison });
+        fs.writeFileSync(
+          path.join(out, "design-comparison.json"),
+          JSON.stringify(designComparisons, null, 2),
+        );
+        if (!comparison.pass)
+          console.log(
+            "Class form design differences",
+            name,
+            width,
+            JSON.stringify(comparison.values),
+          );
+        check(
+          `${name} form matches the actual class creation design ${width}`,
+          comparison.pass,
         );
         if (name === "question")
           check(
@@ -461,6 +631,13 @@ main({
         });
       }
     };
+    await evaluate(`(()=>{
+      closeModal();goSchool(db.schools[0].id);
+      const panel=document.querySelector('#app>.class-create');
+      if(!panel)throw Error('The real class creation form is unavailable');
+      panel.open=true;globalThis.__qbClassCreateReference=panel.outerHTML;
+      goSchools();
+    })()`);
     await evaluate(`closeModal();goSchools();`);
     await delay(300);
     check(
@@ -472,9 +649,9 @@ main({
     );
     await delay(100);
     check(
-      "opening the bank keeps the status area unobtrusive and the header labelled",
+      "opening the bank uses a labelled main page without an outer modal",
       await evaluate(
-        `document.querySelector('.qb-message').hidden&&document.querySelector('.qb-dialog').getAttribute('aria-labelledby')==='qb-title'&&!!document.querySelector('#qb-title svg')`,
+        `document.querySelector('.qb-message').hidden&&document.querySelector('.qb-page').getAttribute('aria-labelledby')==='qb-title'&&!!document.querySelector('#qb-title svg')&&document.querySelector('.qb-page').tagName==='SECTION'&&!document.querySelector('.qb-dialog')&&!document.querySelector('.qb-page').matches(':modal')`,
       ),
     );
     check(
@@ -523,7 +700,7 @@ main({
     check(
       "bank permission actions show the connected file and renew it without choosing again or touching stored data",
       await evaluate(`(async()=>{
-      document.querySelector('.qb-close').click();
+      goSchools();
       const service=EduQuestionBankFileBackup.service,methods=['subscribe','init','state','saveNow','supported','choose'],original=Object.fromEntries(methods.map(k=>[k,service[k]])),callbacks=new Set();
       const before=JSON.stringify(await EduQuestionBankRepository.read()),config=await EduQuestionBankRepository.readBackup();
       const localBefore=JSON.stringify(Object.keys(localStorage).sort().map(k=>[k,localStorage.getItem(k)]));
@@ -549,16 +726,16 @@ main({
         emit({state:'inactive',connected:false,name:'',savedAt:'',message:'اتصال قطع شد'});
         const stopped=fileName.hidden&&!fileName.textContent&&!summary.querySelector('time')&&summary.textContent.includes('انتخاب نشده');
         return direct&&visible&&renewed&&paused&&stopped&&JSON.stringify(await EduQuestionBankRepository.read())===before&&(await EduQuestionBankRepository.readBackup())===config&&JSON.stringify(Object.keys(localStorage).sort().map(k=>[k,localStorage.getItem(k)]))===localBefore;
-      } finally {document.querySelector('.qb-close')?.click();for(const k of methods)service[k]=original[k];}
+      } finally {goSchools();for(const k of methods)service[k]=original[k];}
     })()`),
     );
     // Reopen on the initial empty course workspace before exercising course creation.
     await evaluate(
-      `document.querySelector('.qb-close')?.click();EduQuestionBankUI.open()`,
+      `(async()=>{goSchools();await EduQuestionBankUI.open();document.querySelector('.qb-tabs button').click();})()`,
     );
     await delay(100);
     await evaluate(
-      `window.__qbClick=(label,scope=document.querySelector('.qb-dialog'))=>{const b=[...scope.querySelectorAll('button')].find(b=>b.textContent===label);if(!b)throw Error(label);const menu=b.closest('.qb-entity-menu');if(menu&&!menu.matches(':popover-open'))document.querySelector('[aria-controls="'+menu.id+'"]').click();b.click();};window.__qbFill=(label,value)=>{const l=[...document.querySelectorAll('.qb-dialog label')].find(l=>l.firstChild.textContent===label);if(!l)throw Error(label);const n=l.querySelector('input,textarea,select');n.value=value;n.dispatchEvent(new Event('input',{bubbles:true}));return n;};__qbClick('درس جدید');document.querySelector('.qb-dialog form').requestSubmit();`,
+      `window.__qbClick=(label,scope=document.querySelector('.qb-page'))=>{const b=[...scope.querySelectorAll('button')].find(b=>b.textContent===label);if(!b)throw Error(label);const menu=b.closest('.qb-entity-menu');if(menu&&!menu.matches(':popover-open'))document.querySelector('[aria-controls="'+menu.id+'"]').click();b.click();};window.__qbFill=(label,value)=>{const l=[...document.querySelectorAll('.qb-page label')].find(l=>l.firstChild.textContent===label);if(!l)throw Error(label);const n=l.querySelector('input,textarea,select');n.value=value;n.dispatchEvent(new Event('input',{bubbles:true}));return n;};__qbClick('درس جدید');document.querySelector('.qb-page form').requestSubmit();`,
     );
     await delay(100);
     check(
@@ -568,7 +745,7 @@ main({
       ),
     );
     await evaluate(
-      `__qbFill('عنوان درس','درس آزمایشی');document.querySelector('.qb-dialog form').requestSubmit();`,
+      `__qbFill('عنوان درس','درس آزمایشی');document.querySelector('.qb-page form').requestSubmit();`,
     );
     await delay(100);
     check(
@@ -584,7 +761,7 @@ main({
       ),
     );
     await evaluate(
-      `__qbClick('فصل جدید');__qbFill('عنوان فصل','بخش آزمایشی');document.querySelector('.qb-dialog form').requestSubmit();`,
+      `__qbClick('فصل جدید');__qbFill('عنوان فصل','بخش آزمایشی');document.querySelector('.qb-page form').requestSubmit();`,
     );
     await delay(100);
     await evaluate(`__qbClick('ویرایش درس')`);
@@ -593,13 +770,13 @@ main({
     await captureEditor("unit");
     await evaluate(`__qbClick('بازگشت')`);
     await evaluate(
-      `__qbClick('افزودن سؤال');__qbFill('فصل',document.querySelector('.qb-dialog form select').options[1].value);__qbFill('متن سؤال','متن سؤال آزمایشی <img src=x onerror=alert(1)>');for(let i=1;i<=4;i++)__qbFill('گزینه '+i,'گزینه آزمایشی '+i);__qbFill('پاسخ صحیح','2');__qbFill('توضیح پاسخ (اختیاری)','SECRET-EXPLANATION');__qbFill('بارم','۱٫۲۵');document.querySelector('.qb-dialog form').requestSubmit();`,
+      `__qbClick('افزودن سؤال');__qbFill('فصل',document.querySelector('.qb-page form select').options[1].value);__qbFill('متن سؤال','متن سؤال آزمایشی <img src=x onerror=alert(1)>');for(let i=1;i<=4;i++)__qbFill('گزینه '+i,'گزینه آزمایشی '+i);__qbFill('پاسخ صحیح','2');__qbFill('توضیح پاسخ (اختیاری)','SECRET-EXPLANATION');__qbFill('بارم','۱٫۲۵');document.querySelector('.qb-page form').requestSubmit();`,
     );
     await delay(100);
     check(
       "question persisted safely",
       await evaluate(
-        `(async()=>{const b=await EduQuestionBankRepository.read();return b.questions.length===1&&b.questions[0].score===125&&!document.querySelector('.qb-dialog img');})()`,
+        `(async()=>{const b=await EduQuestionBankRepository.read();return b.questions.length===1&&b.questions[0].score===125&&!document.querySelector('.qb-page img');})()`,
       ),
     );
     await evaluate(`__qbClick('ویرایش سؤال')`);
@@ -619,24 +796,13 @@ main({
       })()`),
     );
     await captureEditor("question");
-    const designComparison = await evaluate(`(async()=>{
-      await openSettingsModal();await new Promise(r=>setTimeout(r,200));
-      const reference=getComputedStyle(document.getElementById('newPass'));
-      const bank=getComputedStyle(document.querySelector('.qb-form input'));
-      const properties=['fontFamily','fontSize','backgroundColor','borderTopColor','borderTopLeftRadius','paddingTop','paddingRight'];
-      const values=Object.fromEntries(properties.map(p=>[p,{system:reference[p],bank:bank[p]}]));
-      closeModal();return values;
-    })()`);
-    fs.writeFileSync(
-      path.join(out, "design-comparison.json"),
-      JSON.stringify(designComparison, null, 2),
-    );
     check(
-      "form controls use the system design",
-      Object.values(designComparison).every((v) => v.system === v.bank),
+      "course, section and question cards match actual class creation forms at every editor viewport",
+      designComparisons.length === 9 &&
+        designComparisons.every(({ pass }) => pass),
     );
     await evaluate(
-      `__qbFill('متن سؤال','متن ویرایش شده');document.querySelector('.qb-dialog form').requestSubmit();`,
+      `__qbFill('متن سؤال','متن ویرایش شده');document.querySelector('.qb-page form').requestSubmit();`,
     );
     await delay(100);
     check(
@@ -652,7 +818,7 @@ main({
         __qbClick('افزودن سؤال');__qbFill('فصل',(await EduQuestionBankRepository.read()).units[0].id);
         const n=__qbFill('نوع سؤال',type);n.dispatchEvent(new Event('change'));
         __qbFill('متن سؤال','سؤال آزمایشی '+type);__qbFill('پاسخ صحیح',type==='boolean'?'false':'SECRET-ANSWER');
-        document.querySelector('.qb-dialog form').requestSubmit();await new Promise(r=>setTimeout(r,100));
+        document.querySelector('.qb-page form').requestSubmit();await new Promise(r=>setTimeout(r,100));
       }
       return (await EduQuestionBankRepository.read()).questions.length===4;
     })()`),
@@ -664,10 +830,10 @@ main({
       const extra=Array.from({length:17},(_,i)=>({...b.questions.find(q=>q.type==='blank'),id:'layout-'+i,text:'سؤال تمرینی '+(i+1)+': '+('در جای خالی واژه مناسب را بنویسید و دلیل انتخاب خود را توضیح دهید. ').repeat(i%3+1)}));
       extra[16].text+='X'.repeat(400);
       await EduQuestionBankRepository.save({...b,questions:[...b.questions,...extra],courses:[...b.courses,{id:'second-course',title:'درس پودمانی',structure:'module'}],units:[...b.units,{id:'second-unit',courseId:'second-course',title:'پودمان اول'}]},b.revision);
-      __qbClick('بستن');await EduQuestionBankUI.open();
-      const choose=(id)=>{const n=[...document.querySelectorAll('.qb-dialog label')].find(l=>l.firstChild.textContent==='درس').querySelector('select');n.value=id;n.dispatchEvent(new Event('change'));};
-      choose(original);let unit=[...document.querySelectorAll('.qb-dialog label')].find(l=>l.firstChild.textContent==='فصل').querySelector('select');unit.value=b.units[0].id;unit.dispatchEvent(new Event('change'));
-      choose('second-course');const cleared=[...document.querySelectorAll('.qb-dialog label')].find(l=>l.firstChild.textContent==='پودمان').querySelector('select').value==='';choose(original);return cleared;
+      goSchools();await EduQuestionBankUI.open();
+      const choose=(id)=>{const n=[...document.querySelectorAll('.qb-page label')].find(l=>l.firstChild.textContent==='درس').querySelector('select');n.value=id;n.dispatchEvent(new Event('change'));};
+      choose(original);let unit=[...document.querySelectorAll('.qb-page label')].find(l=>l.firstChild.textContent==='فصل').querySelector('select');unit.value=b.units[0].id;unit.dispatchEvent(new Event('change'));
+      choose('second-course');const cleared=[...document.querySelectorAll('.qb-page label')].find(l=>l.firstChild.textContent==='پودمان').querySelector('select').value==='';choose(original);return cleared;
     })()`),
     );
     check(
@@ -699,7 +865,7 @@ main({
       })()`),
     );
     await evaluate(
-      `__qbClick('انتخاب همه');for(const label of ['چهارگزینه‌ای','جای‌خالی','تشریحی','صحیح / غلط'])__qbFill('تعداد '+label,'۱');__qbFill('نمرهٔ کل آزمون','4.25');__qbFill('عنوان آزمون','آزمون آزمایشی');document.querySelector('.qb-dialog form').requestSubmit();`,
+      `__qbClick('انتخاب همه');for(const label of ['چهارگزینه‌ای','جای‌خالی','تشریحی','صحیح / غلط'])__qbFill('تعداد '+label,'۱');__qbFill('نمرهٔ کل آزمون','4.25');__qbFill('عنوان آزمون','آزمون آزمایشی');document.querySelector('.qb-page form').requestSubmit();`,
     );
     await delay(100);
     check(
@@ -836,7 +1002,7 @@ main({
         check(
           `${view} width ${width}`,
           await evaluate(
-            `document.querySelector('.qb-dialog').scrollWidth<=document.querySelector('.qb-dialog').clientWidth+1`,
+            `document.querySelector('.qb-page').scrollWidth<=document.querySelector('.qb-page').clientWidth+1`,
           ),
         );
         const shot = await cdp("Page.captureScreenshot", { format: "png" });
@@ -897,38 +1063,46 @@ main({
           );
         }
         if (view === "builder") {
+          const comparison = await evaluate(
+            "(" + compareClassFormDesign.toString() + ")()",
+          );
+          designComparisons.push({ name: "builder", width, ...comparison });
+          fs.writeFileSync(
+            path.join(out, "design-comparison.json"),
+            JSON.stringify(designComparisons, null, 2),
+          );
+          if (!comparison.pass)
+            console.log(
+              "Class form design differences",
+              "builder",
+              width,
+              JSON.stringify(comparison.values),
+            );
           check(
-            `builder keeps its fields and actions reachable with the appropriate scroll area ${width}`,
+            `exam form matches the actual class creation design ${width}`,
+            comparison.pass,
+          );
+          check(
+            `builder fields and actions follow the class form document flow ${width}`,
             await evaluate(`(async()=>{
-              const fields=document.querySelector('.qb-form-fields'),tabs=document.querySelector('.qb-tabs'),footer=document.querySelector('.qb-form>.record-editor-actions'),body=document.querySelector('.qb-body');
-              const previous={body:body.scrollTop,fields:fields.scrollTop};
-              const mobile=matchMedia('(max-width:700px), (max-height:500px) and (pointer:coarse)').matches;
+              const page=document.querySelector('.qb-page'),body=page.querySelector('.qb-body'),card=body.querySelector('.qb-editor-panel'),form=card.querySelector('.qb-form'),fields=form.querySelector('.qb-form-fields'),tabs=body.querySelector('.qb-tabs'),footer=form.querySelector('.record-editor-actions');
+              const previous={x:scrollX,y:scrollY};
               const wait=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+              const visibleBounds=()=>{const topbar=document.querySelector('#app>.topbar'),nav=document.getElementById('uiBottomNav');return {top:topbar&&getComputedStyle(topbar).position==='sticky'?Math.max(0,topbar.getBoundingClientRect().bottom):0,bottom:nav?.getClientRects().length&&getComputedStyle(nav).visibility!=='hidden'?Math.min(innerHeight,nav.getBoundingClientRect().top):innerHeight};};
+              const inside=node=>{const box=node.getBoundingClientRect(),visible=visibleBounds();return box.height>0&&box.top>=visible.top-1&&box.bottom<=visible.bottom+1;};
               try{
-                if(mobile){
-                  body.scrollTop=0;await wait();
-                  const tabTop=tabs.getBoundingClientRect().top;
-                  const footerInside=()=>{const bounds=body.getBoundingClientRect(),actions=footer.getBoundingClientRect();return actions.height>0&&actions.top>=bounds.top-0.1&&actions.bottom<=bounds.bottom+0.1;};
-                  const startFooter=footerInside();
-                  body.scrollTop=body.scrollHeight;await wait();
-                  const bounds=body.getBoundingClientRect(),actions=footer.getBoundingClientRect();
-                  const last=[...fields.querySelectorAll('input,select,textarea')].filter(field=>!field.disabled&&field.getClientRects().length>0).at(-1).getBoundingClientRect();
-                  const canScroll=body.scrollHeight>body.clientHeight+1;
-                  const observed={bodyScroll:getComputedStyle(body).overflowY==='auto',fieldsFlow:getComputedStyle(fields).overflowY==='visible',stickyFooter:getComputedStyle(footer).position==='sticky',tabsFlow:getComputedStyle(tabs).position==='static',startFooter,endFooter:footerInside(),lastReachable:last.top>=bounds.top-0.1&&last.bottom<=Math.min(bounds.bottom,actions.top)+0.1,scrollWorks:!canScroll||body.scrollTop>0,tabsScroll:!canScroll||tabs.getBoundingClientRect().top<tabTop-1,noHorizontal:body.scrollWidth<=body.clientWidth+1&&fields.scrollWidth<=fields.clientWidth+1};
-                  if(!Object.values(observed).every(Boolean))throw Error(JSON.stringify({mobile,observed,scroll:{top:body.scrollTop,max:body.scrollHeight-body.clientHeight},body:{top:bounds.top,bottom:bounds.bottom},footer:{top:actions.top,bottom:actions.bottom},last:{top:last.top,bottom:last.bottom,height:last.height}}));
-                  return true;
-                }
-                const before={tab:tabs.getBoundingClientRect().top,footer:footer.getBoundingClientRect().top};
-                fields.scrollTop=fields.scrollHeight;
-                const box=fields.getBoundingClientRect();
-                return box.height>0&&box.top>=tabs.getBoundingClientRect().bottom-1&&box.bottom<=footer.getBoundingClientRect().top+1&&Math.abs(before.tab-tabs.getBoundingClientRect().top)<1&&Math.abs(before.footer-footer.getBoundingClientRect().top)<1&&getComputedStyle(body).overflowY==='hidden'&&getComputedStyle(footer).position==='static'&&(fields.scrollHeight<=fields.clientHeight+1||fields.scrollTop>0);
-              }finally{body.scrollTop=previous.body;fields.scrollTop=previous.fields;}
+                const last=[...fields.querySelectorAll('input,select,textarea')].filter(field=>!field.disabled&&field.getClientRects().length>0).at(-1);
+                last.scrollIntoView({block:'center',behavior:'instant'});await wait();const lastReachable=inside(last);
+                footer.scrollIntoView({block:'center',behavior:'instant'});await wait();
+                const observed={card:card.tagName==='DETAILS'&&card.open&&card.classList.contains('create-panel'),bodyFlow:getComputedStyle(body).overflowY==='visible',fieldsFlow:getComputedStyle(fields).overflowY==='visible',staticFooter:getComputedStyle(footer).position==='static',tabsFlow:getComputedStyle(tabs).position==='static',lastReachable,footerReachable:inside(footer),noNestedScroll:[page,body,form,fields].every(node=>node.scrollHeight<=node.clientHeight+1),noHorizontal:body.scrollWidth<=body.clientWidth+1&&fields.scrollWidth<=fields.clientWidth+1};
+                if(!Object.values(observed).every(Boolean))throw Error(JSON.stringify({observed,scroll:{top:scrollY,max:document.documentElement.scrollHeight-innerHeight},footer:footer.getBoundingClientRect().toJSON(),last:last.getBoundingClientRect().toJSON(),visible:visibleBounds()}));return true;
+              }finally{scrollTo({left:previous.x,top:previous.y,behavior:'instant'});}
             })()`),
           );
           check(
             `exam metadata keeps teacher and school visible beside each other ${width}`,
             await evaluate(
-              `(()=>{const details=document.querySelector('.qb-exam-details'),labels=[...details.querySelectorAll('label')],school=labels.find(n=>n.firstChild.textContent==='نام مدرسه (اختیاری)'),teacher=labels.find(n=>n.firstChild.textContent==='نام دبیر (اختیاری)'),a=school.getBoundingClientRect(),b=teacher.getBoundingClientRect();return labels.length===5&&!teacher.closest('details')&&Math.abs(a.top-b.top)<1&&a.left>=b.right&&details.scrollWidth<=details.clientWidth+1;})()`,
+              `(()=>{const details=document.querySelector('.qb-exam-details'),labels=[...details.querySelectorAll('label')],school=labels.find(n=>n.firstChild.textContent==='نام مدرسه (اختیاری)'),teacher=labels.find(n=>n.firstChild.textContent==='نام دبیر (اختیاری)'),a=school.getBoundingClientRect(),b=teacher.getBoundingClientRect();return labels.length===5&&teacher.closest('details')===document.querySelector('.qb-editor-panel')&&Math.abs(a.top-b.top)<1&&a.left>=b.right&&details.scrollWidth<=details.clientWidth+1;})()`,
             ),
           );
           await evaluate(
@@ -956,7 +1130,8 @@ main({
               if(!native.dataset.shamsiApplied||!proxy.dataset.gregorianTarget||!/[۰-۹]/.test(proxy.value))return false;
               proxy.click();
               const popup=document.getElementById('calPopup');
-              const visible=popup.closest('.qb-dialog')&&popup.classList.contains('open')&&document.activeElement.closest('#calPopup');
+              const bounds=popup.getBoundingClientRect();
+              const visible=popup.parentElement===document.body&&popup.classList.contains('open')&&proxy.getAttribute('aria-expanded')==='true'&&document.activeElement.closest('#calPopup')&&bounds.width>0&&bounds.height>0&&bounds.left>=-1&&bounds.right<=innerWidth+1&&bounds.top>=-1&&bounds.bottom<=innerHeight+1;
               const day=popup.querySelector('[data-calendar-action=select]:not(:disabled)');
               day.click();
               return !!visible&&!popup.classList.contains('open')&&/^\\d{4}-\\d{2}-\\d{2}$/.test(native.value)&&/[۰-۹]/.test(proxy.value);
@@ -966,7 +1141,7 @@ main({
             check(
               `mobile exam fields keep compact touch dimensions ${width}`,
               await evaluate(
-                `(()=>{const inputs=[...document.querySelectorAll('.qb-builder input:not([type=checkbox]):not([type=date])')].filter(n=>!n.closest('details:not([open])'));const grid=getComputedStyle(document.querySelector('.qb-builder>.qb-form-fields')).gridTemplateColumns;const cards=[...document.querySelectorAll('.qb-count-field')].map(n=>({height:n.getBoundingClientRect().height,rows:getComputedStyle(n).gridTemplateRows}));const pass=inputs.length===10&&inputs.every(n=>Math.abs(n.getBoundingClientRect().height-44)<0.5)&&cards.every(n=>n.height<=125)&&grid.split(' ').length===2;if(!pass)throw Error(JSON.stringify({count:inputs.length,inputs:inputs.map(n=>({type:n.type,label:n.closest('label')?.textContent,height:n.getBoundingClientRect().height,computedHeight:getComputedStyle(n).height,minHeight:getComputedStyle(n).minHeight})),gridColumns:grid,cardHeights:cards}));return pass;})()`,
+                `(()=>{const referenceHeight=parseFloat(${JSON.stringify(comparison.values["field.height"].system)});const inputs=[...document.querySelectorAll('.qb-builder input:not([type=checkbox]):not([type=date])')].filter(n=>!n.closest('details:not([open])'));const grid=getComputedStyle(document.querySelector('.qb-builder>.qb-form-fields')).gridTemplateColumns;const cards=[...document.querySelectorAll('.qb-count-field')].map(n=>({height:n.getBoundingClientRect().height,rows:getComputedStyle(n).gridTemplateRows}));const pass=referenceHeight>=48&&inputs.length===10&&inputs.every(n=>{const height=n.getBoundingClientRect().height;return n.closest('.qb-count-field')?Math.abs(height-44)<0.5:n.closest('.qb-target-score')?height>=44&&height<=referenceHeight+1:Math.abs(height-referenceHeight)<0.5;})&&cards.every(n=>n.height<=125)&&grid.split(' ').length===2;if(!pass)throw Error(JSON.stringify({referenceHeight,count:inputs.length,inputs:inputs.map(n=>({type:n.type,label:n.closest('label')?.textContent,height:n.getBoundingClientRect().height,computedHeight:getComputedStyle(n).height,minHeight:getComputedStyle(n).minHeight})),gridColumns:grid,cardHeights:cards}));return pass;})()`,
               ),
             );
           const actions = await evaluate(
@@ -993,9 +1168,9 @@ main({
         }
         if (view === "builder")
           check(
-            `builder section edges align with tabs ${width}`,
+            `builder section edges align inside the class-style form card ${width}`,
             await evaluate(
-              `(()=>{const tabs=document.querySelector('.qb-tabs').getBoundingClientRect();const boxes=[...document.querySelectorAll('.qb-builder>.qb-form-fields>fieldset')].map(n=>n.getBoundingClientRect());const aligned=boxes.length===3&&boxes.every(r=>Math.abs(r.left-tabs.left)<1&&Math.abs(r.right-tabs.right)<1);if(!aligned)throw Error(JSON.stringify({tabs:{left:tabs.left,right:tabs.right},boxes:boxes.map(r=>({left:r.left,right:r.right}))}));return aligned;})()`,
+              `(()=>{const form=document.querySelector('.qb-builder'),fields=form.querySelector('.qb-form-fields'),grid=fields.getBoundingClientRect(),style=getComputedStyle(fields),left=grid.left+parseFloat(style.paddingLeft),right=grid.right-parseFloat(style.paddingRight);const boxes=[...fields.querySelectorAll(':scope>fieldset')].map(n=>n.getBoundingClientRect());const aligned=boxes.length===3&&boxes.every(r=>Math.abs(r.left-left)<1&&Math.abs(r.right-right)<1);if(!aligned)throw Error(JSON.stringify({grid:{left,right},boxes:boxes.map(r=>({left:r.left,right:r.right}))}));return aligned;})()`,
             ),
           );
         if (view === "builder")
@@ -1163,7 +1338,7 @@ main({
       "large bank renders only one compact page",
       await evaluate(`(async()=>{
       const b=await EduQuestionBankRepository.read();const seed=b.questions.find(q=>q.type==='blank');const extra=Array.from({length:1000},(_,i)=>({...seed,id:'bulk-'+i,text:'سؤال حجیم '+i+' '+seed.text}));
-      await EduQuestionBankRepository.save({...b,questions:[...b.questions,...extra]},b.revision);__qbClick('بستن');await EduQuestionBankUI.open();
+      await EduQuestionBankRepository.save({...b,questions:[...b.questions,...extra]},b.revision);goSchools();await EduQuestionBankUI.open();__qbClick('بانک سؤال');
       const course=__qbFill('درس',b.courses[0].id);course.dispatchEvent(new Event('change'));
       return document.querySelectorAll('.qb-question-row').length===15&&[...document.querySelectorAll('.qb-question-row')].every(r=>!r.open);
     })()`),
@@ -1192,7 +1367,7 @@ main({
         const seed=bank.exams[0];
         const extra=Array.from({length:13},(_,i)=>({...structuredClone(seed),id:'archive-'+i,title:'آزمون آرشیوی '+i,courseTitle:i===12?'كتاب عربي':'درس دیگر'}));
         await EduQuestionBankRepository.save({...bank,exams:[...bank.exams,...extra]},bank.revision);
-        __qbClick('بستن');await EduQuestionBankUI.open();__qbClick('آزمون‌های من');
+        goSchools();await EduQuestionBankUI.open();__qbClick('آزمون‌های من');
         const first=document.querySelectorAll('.qb-exam-card').length===12&&!document.querySelector('.qb-toolbar');
         const region=document.querySelector('.qb-exam-results'),controls=document.querySelector('.qb-archive-controls'),top=controls.getBoundingClientRect().top;
         region.scrollTop=300;const bounded=region.scrollTop>0&&region.clientHeight<=innerHeight*.55+1&&controls.getBoundingClientRect().top===top&&region.tabIndex===0;
@@ -1209,7 +1384,7 @@ main({
         const simple=form.querySelectorAll('input,select,textarea').length===2;
         const type=__qbFill('نوع درس','module');type.dispatchEvent(new Event('change'));
         __qbFill('عنوان درس','دانش فنی');form.requestSubmit();await new Promise(r=>setTimeout(r,100));
-        const labels=()=>[...document.querySelectorAll('.qb-dialog label')];
+        const labels=()=>[...document.querySelectorAll('.qb-page label')];
         const modular=labels().some(l=>l.firstChild.textContent==='پودمان')&&!document.querySelector('.qb-course-tools');
         __qbClick('پودمان جدید');__qbFill('عنوان پودمان','پودمان اول');document.querySelector('.qb-form').requestSubmit();await new Promise(r=>setTimeout(r,100));
         const bank=await EduQuestionBankRepository.read();const unit=bank.units.find(u=>u.title==='پودمان اول'&&bank.courses.find(c=>c.id===u.courseId)?.title==='دانش فنی');
@@ -1251,7 +1426,7 @@ main({
         await peer.init();const resumed=peer.state().state==='active';peer.dispose();
         window.__qbAutomaticFile=handle;
         window.__qbAutomaticText=await (await readFile()).text();
-        __qbClick('بستن');await EduQuestionBankUI.open();
+        goSchools();await EduQuestionBankUI.open();
         __qbClick('پشتیبان');
         return initial&&updated&&resumed&&document.querySelector('.qb-file-status').dataset.state==='active'
           &&document.querySelector('.qb-file-name').textContent===handle.name
@@ -1263,7 +1438,7 @@ main({
       await evaluateGesture(`(async()=>{
         const R=EduQuestionBankRepository,service=EduQuestionBankFileBackup.service;
         const before=await R.read(),originalText=await (await __qbAutomaticFile.getFile()).text();
-        const upload=document.querySelector('.qb-dialog input[type=file]'),transfer=new DataTransfer();
+        const upload=document.querySelector('.qb-page input[type=file]'),transfer=new DataTransfer();
         transfer.items.add(await __qbAutomaticFile.getFile());upload.files=transfer.files;upload.dispatchEvent(new Event('change'));
         for(let i=0;i<100&&!document.querySelector('.qb-confirm');i++)await new Promise(r=>setTimeout(r,20));
         const confirmation=document.querySelector('.qb-confirm');if(!confirmation)return false;
@@ -1327,7 +1502,7 @@ main({
       "bank restore rejects foreign names and renamed classroom content without changing data",
       await evaluate(`(async()=>{
         const before=JSON.stringify(await EduQuestionBankRepository.read());
-        const input=document.querySelector('.qb-dialog input[type=file]');
+        const input=document.querySelector('.qb-page input[type=file]');
         for(const [name,content] of [['Classyar-Classroom.json',JSON.stringify(EduQuestionBank.empty())],['Classyar-QuestionBank(1).json',JSON.stringify({format:'EduManager.FullBackup',version:2})]]){
           const transfer=new DataTransfer();transfer.items.add(new File([content],name,{type:'application/json'}));input.files=transfer.files;input.dispatchEvent(new Event('change'));
           await new Promise(r=>setTimeout(r,80));
@@ -1342,7 +1517,7 @@ main({
     check(
       "restore preview and complete replacement",
       await evaluate(
-        `(async()=>{const before=await EduQuestionBankRepository.read();const replacement=EduQuestionBank.empty();const input=document.querySelector('.qb-dialog input[type=file]');const transfer=new DataTransfer();transfer.items.add(new File([JSON.stringify(replacement)],'Classyar-QuestionBank (2).json',{type:'application/json'}));input.files=transfer.files;input.dispatchEvent(new Event('change'));await new Promise(r=>setTimeout(r,80));const unchanged=JSON.stringify(await EduQuestionBankRepository.read())===JSON.stringify(before);const preview=document.querySelector('.qb-confirm')?.textContent.includes('0 درس');__qbClick('تأیید',document.querySelector('.qb-confirm'));await new Promise(r=>setTimeout(r,80));const after=await EduQuestionBankRepository.read();return unchanged&&preview&&!after.questions.length&&!after.exams.length&&!after.courses.length;})()`,
+        `(async()=>{const before=await EduQuestionBankRepository.read();const replacement=EduQuestionBank.empty();const input=document.querySelector('.qb-page input[type=file]');const transfer=new DataTransfer();transfer.items.add(new File([JSON.stringify(replacement)],'Classyar-QuestionBank (2).json',{type:'application/json'}));input.files=transfer.files;input.dispatchEvent(new Event('change'));await new Promise(r=>setTimeout(r,80));const unchanged=JSON.stringify(await EduQuestionBankRepository.read())===JSON.stringify(before);const preview=document.querySelector('.qb-confirm')?.textContent.includes('0 درس');__qbClick('تأیید',document.querySelector('.qb-confirm'));await new Promise(r=>setTimeout(r,80));const after=await EduQuestionBankRepository.read();return unchanged&&preview&&!after.questions.length&&!after.exams.length&&!after.courses.length;})()`,
       ),
     );
     check(
@@ -1373,11 +1548,11 @@ main({
         `(async()=>{const stale=await EduQuestionBankRepository.read();const peer=window.open('about:blank','question-bank-peer');if(!peer)throw Error('Peer window blocked');try{const script=peer.document.createElement('script');const loaded=new Promise((resolve,reject)=>{script.onload=resolve;script.onerror=reject;});script.src=new URL('assets/scripts/question-bank.js',location.href).href;peer.document.body.append(script);await loaded;await peer.EduQuestionBankRepository.save({...stale,courses:[{id:'winner',title:'پنجره دیگر',structure:'module'}]},stale.revision);try{await EduQuestionBankRepository.save(stale,stale.revision);return false;}catch(e){const current=await EduQuestionBankRepository.read();return current.courses[0].id==='winner'&&e.message.includes('پنجره');}}finally{peer.close();}})()`,
       ),
     );
-    await evaluate(`__qbClick('بستن')`);
+    await evaluate(`goSchools()`);
     check(
-      "close restores focus",
+      "leaving the bank returns to the main school page without a modal",
       await evaluate(
-        `!document.querySelector('.qb-dialog')&&(document.activeElement.classList.contains('question-bank-entry')||['workspaceToolsToggle','headerNavigationToggle'].includes(document.activeElement.id))`,
+        `!document.querySelector('.qb-page')&&!!document.querySelector('#app .topbar')&&!document.querySelector('dialog:modal')&&!!document.querySelector('.question-bank-entry')`,
       ),
     );
     await evaluate("window.__qbBeforeReload=true");
@@ -1410,13 +1585,13 @@ main({
       ),
     );
     check(
-      "unsaved confirmation and Escape preserve editor",
+      "main-page navigation and Escape preserve an unsaved bank editor",
       await evaluate(`(async()=>{
-      const click=(label,scope=document.querySelector('.qb-dialog'))=>[...scope.querySelectorAll('button')].find(b=>b.textContent===label).click();
-      closeModal();await EduQuestionBankUI.open();click('درس جدید');const input=document.querySelector('.qb-dialog form input');input.value='ذخیره نشده';input.dispatchEvent(new Event('input',{bubbles:true}));click('بستن');
-      const confirmation=document.querySelector('.qb-confirm');const shown=!!confirmation&&document.querySelector('.qb-dialog').matches(':modal');
-      confirmation.dispatchEvent(new Event('cancel',{cancelable:true}));const preserved=!!document.querySelector('.qb-dialog form')&&!document.querySelector('.qb-confirm');
-      click('بستن');click('تأیید',document.querySelector('.qb-confirm'));return shown&&preserved&&!document.querySelector('.qb-dialog');
+      const click=(label,scope=document.querySelector('.qb-page'))=>[...scope.querySelectorAll('button')].find(b=>b.textContent===label).click();
+      closeModal();await EduQuestionBankUI.open();document.querySelector('.qb-tabs button').click();click('درس جدید');const input=document.querySelector('.qb-page form input');input.value='ذخیره نشده';input.dispatchEvent(new Event('input',{bubbles:true}));goSchools();
+      const confirmation=document.querySelector('.qb-confirm');const page=document.querySelector('.qb-page');const shown=confirmation?.parentElement===page&&confirmation.tagName==='SECTION'&&!document.querySelector('dialog:modal')&&page.querySelector('.qb-body').inert;
+      confirmation.querySelector('button').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));const preserved=!!document.querySelector('.qb-page form')&&!document.querySelector('.qb-confirm')&&!page.querySelector('.qb-body').inert;
+      goSchools();click('تأیید',document.querySelector('.qb-confirm'));return shown&&preserved&&!document.querySelector('.qb-page');
     })()`),
     );
     check(
@@ -1447,7 +1622,7 @@ main({
     check(
       "bank opens after offline reload and school wipe",
       await evaluate(
-        `(async()=>{await EduQuestionBankUI.open();const b=await EduQuestionBankRepository.read();return !navigator.onLine&&b.courses[0].id==='winner'&&!!document.querySelector('.qb-dialog');})()`,
+        `(async()=>{await EduQuestionBankUI.open();const b=await EduQuestionBankRepository.read();return !navigator.onLine&&b.courses[0].id==='winner'&&!!document.querySelector('.qb-page');})()`,
       ),
     );
     fs.writeFileSync(

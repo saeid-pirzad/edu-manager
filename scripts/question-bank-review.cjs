@@ -33,7 +33,7 @@ function createReviewServer() {
       document.body.prepend(notice);
       await EduQuestionBankUI.open();
       if(new URLSearchParams(location.search).get('sample-exam')==='1'){
-        const buttons=[...document.querySelectorAll('.qb-dialog button')];
+        const buttons=[...document.querySelectorAll('.qb-page button')];
         buttons.find(button=>button.textContent.trim()==='آزمون‌های من')?.click();
       }
     }catch(error){const p=document.createElement('p');p.textContent=error.message;document.body.prepend(p);}

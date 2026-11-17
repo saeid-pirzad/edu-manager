@@ -120,7 +120,7 @@ async function generate() {
       };
       await evaluate(`(async()=>{
         closeModal();
-        if(document.querySelector('.qb-dialog'))document.querySelector('.qb-close').click();
+        if(document.querySelector('.qb-page'))goSchools();
         const bank=${JSON.stringify(fixture)};
         const current=await EduQuestionBankRepository.read();
         if(current.courses.length||current.units.length||current.questions.length||current.exams.length)
@@ -139,7 +139,7 @@ async function generate() {
         JSON.stringify(D.validate(saved), null, 2) + "\n",
       );
       await evaluate(`(async()=>{
-        document.querySelector('.qb-close').click();
+        goSchools();
         await EduQuestionBankUI.open();
       })()`);
       check(

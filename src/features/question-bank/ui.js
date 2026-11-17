@@ -3,7 +3,9 @@
   const D = root.EduQuestionBank,
     R = root.EduQuestionBankRepository,
     F = root.EduQuestionBankFileBackup.service;
-  let pendingChanges = () => false;
+  let pendingChanges = () => false,
+    activePage = null,
+    savedView = null;
   const el = (tag, value, className) => {
     const n = document.createElement(tag);
     if (value !== undefined) n.textContent = value;
@@ -297,17 +299,24 @@
       if (frame.isConnected) setTimeout(() => frame.remove(), 60000);
     }
   }
-  async function openBank() {
-    if (document.querySelector(".qb-dialog")) return;
-    const opener = document.activeElement,
-      dialog = el("dialog", undefined, "qb-dialog modal-dialog");
-    const header = el("header", undefined, "modal-header"),
-      title = el("h3", "بانک سؤال و طراحی آزمون"),
+  function openBank() {
+    root.goQuestionBank();
+    return activePage?.ready;
+  }
+  function mountBank(host) {
+    if (!host) return Promise.resolve();
+    if (activePage) {
+      activePage.mount(host);
+      return activePage.ready;
+    }
+    const pageRoot = el("section", undefined, "qb-page");
+    const header = el("header", undefined, "qb-page-header"),
+      title = el("h2", "بانک سؤال و طراحی آزمون"),
       message = el("p", "در حال خواندن…", "qb-message"),
-      content = el("div", undefined, "modal-body qb-body");
+      content = el("div", undefined, "qb-body");
     title.id = "qb-title";
     title.insertAdjacentHTML("afterbegin", root.EduIcons.html("book"));
-    dialog.setAttribute("aria-labelledby", title.id);
+    pageRoot.setAttribute("aria-labelledby", title.id);
     message.setAttribute("role", "status");
     const storage = el("div", undefined, "qb-storage-bar");
     const storageState = el("span", "ذخیره در مرورگر", "qb-storage-state");
@@ -332,7 +341,43 @@
     storage.prepend(storageState);
     storageAction.insertAdjacentHTML("afterbegin", root.EduIcons.html("save"));
     storageAction.dataset.uiTone = "settings";
+    const tabScopes = savedView?.tabScopes || {
+      questions: { courseId: "", unitId: "" },
+      builder: { courseId: null, unitId: "" },
+    };
+    let bank,
+      courseId = savedView?.courseId || "",
+      unitId = savedView?.unitId || "",
+      tab = savedView?.tab || "questions",
+      page = savedView?.page || 0,
+      search = savedView?.search || "",
+      archiveQuery = savedView?.archiveQuery || "",
+      archiveCourse = savedView?.archiveCourse || "",
+      archivePage = savedView?.archivePage || 0,
+      questionType = savedView?.questionType || "",
+      dirty = false,
+      busy = false,
+      alive = true,
+      leaving = false,
+      renderSnapshot = null,
+      mountedSnapshot = null,
+      restoreRenderFrame = null,
+      confirmation = null,
+      cancelConfirmation = () => {},
+      unsubscribeBackup = () => {};
+    pendingChanges = () => dirty || busy;
+    const error = (e, persistent = false) => {
+      if (!alive) return;
+      const detail = e.message || String(e);
+      if (persistent) {
+        persistentMessage = detail;
+        persistentMessageOrigin = "data";
+        transientMessage = "";
+      } else transientMessage = detail;
+      showMessage();
+    };
     const unsubscribeStorage = F.subscribe((state) => {
+      if (!alive) return;
       storage.dataset.state = state.state;
       const attention = ["error", "paused", "permission"].includes(state.state);
       storageState.textContent = attention
@@ -362,34 +407,6 @@
         showMessage();
       }
     });
-    const tabScopes = {
-      questions: { courseId: "", unitId: "" },
-      builder: { courseId: null, unitId: "" },
-    };
-    let bank,
-      courseId = "",
-      unitId = "",
-      tab = "questions",
-      page = 0,
-      search = "",
-      archiveQuery = "",
-      archiveCourse = "",
-      archivePage = 0,
-      questionType = "",
-      dirty = false,
-      busy = false,
-      confirmation = null,
-      unsubscribeBackup = () => {};
-    pendingChanges = () => dirty || busy;
-    const error = (e, persistent = false) => {
-      const detail = e.message || String(e);
-      if (persistent) {
-        persistentMessage = detail;
-        persistentMessageOrigin = "data";
-        transientMessage = "";
-      } else transientMessage = detail;
-      showMessage();
-    };
     function showMessage() {
       const details = [...new Set([transientMessage, persistentMessage])]
         .filter(Boolean)
@@ -409,46 +426,77 @@
       showMessage();
     }
     function confirmAction(label, action, onCancel = () => {}) {
-      if (confirmation || busy) {
+      if (!alive || !pageRoot.isConnected || confirmation || busy) {
         onCancel();
         return;
       }
-      const box = el("dialog", undefined, "qb-confirm modal-dialog qb-body");
+      closeOwnedCalendar();
+      const box = el("section", undefined, "qb-confirm");
+      box.setAttribute("role", "region");
       box.setAttribute("aria-label", label);
       box.append(el("h4", "تأیید عملیات", "qb-editor-title"));
       box.append(el("p", label));
       const previous = document.activeElement;
+      const previousWindowScroll = { left: root.scrollX, top: root.scrollY };
+      const selection = previous?.selectionStart;
+      const selectionEnd = previous?.selectionEnd;
+      const selectionDirection = previous?.selectionDirection;
+      const contentWasInert = content.inert;
+      const storageWasInert = storage.inert;
       const cancel = (accepted = false) => {
-        box.close();
+        if (confirmation !== box) return false;
         box.remove();
         confirmation = null;
-        previous?.focus();
+        cancelConfirmation = () => {};
+        content.inert = contentWasInert;
+        storage.inert = storageWasInert;
+        if (alive && previous?.isConnected) {
+          previous.focus({ preventScroll: true });
+          if (selection !== null && selection !== undefined)
+            previous.setSelectionRange?.(
+              selection,
+              selectionEnd,
+              selectionDirection,
+            );
+        }
         if (!accepted) onCancel();
+        if (!accepted && alive)
+          root.scrollTo({ ...previousWindowScroll, behavior: "instant" });
+        keepEditingVisible();
+        return true;
       };
-      button("انصراف", () => cancel(), box);
+      cancelConfirmation = cancel;
+      const actions = el("div", undefined, "qb-confirm-actions");
+      box.append(actions);
+      const cancelButton = button("انصراف", () => cancel(), actions);
       const confirm = button(
         "تأیید",
         async () => {
-          cancel(true);
+          if (!cancel(true)) return;
           try {
             await action();
           } catch (e) {
             error(e);
           }
         },
-        box,
+        actions,
       );
       confirm.dataset.uiTone = /حذف|جایگزین/.test(label) ? "danger" : "save";
-      box.addEventListener("cancel", (e) => {
+      box.addEventListener("keydown", (e) => {
+        if (e.key !== "Escape") return;
         e.preventDefault();
+        e.stopPropagation();
         cancel();
       });
-      dialog.append(box);
+      content.inert = true;
+      storage.inert = true;
+      pageRoot.insertBefore(box, message);
       confirmation = box;
-      box.showModal();
+      cancelButton.focus({ preventScroll: true });
+      updateLayout();
     }
     function discard(action) {
-      if (busy) return;
+      if (!alive || busy || confirmation) return;
       if (dirty)
         confirmAction("تغییرات فرم ذخیره نشده‌اند؛ کنار گذاشته شوند؟", () => {
           dirty = false;
@@ -456,65 +504,214 @@
         });
       else action();
     }
-    function close() {
-      discard(() => {
-        root.visualViewport?.removeEventListener("resize", keepEditingVisible);
-        root.visualViewport?.removeEventListener("scroll", keepEditingVisible);
-        root.removeEventListener("resize", keepEditingVisible);
-        cancelAnimationFrame(editingFrame);
-        optionResize.disconnect();
-        optionChanges.disconnect();
-        unsubscribeBackup();
-        unsubscribeStorage();
-        pendingChanges = () => false;
-        const calendar = dialog.querySelector("#calPopup");
-        if (calendar) {
-          root.closeShamsiCalendar();
-          document.body.append(calendar);
-        }
-        dialog.close();
-        dialog.remove();
-        for (let target of [
-          opener,
-          document.querySelector(".question-bank-entry"),
-          document.getElementById("workspaceToolsToggle"),
-          document.getElementById("headerNavigationToggle"),
-        ]) {
-          if (
-            !target?.isConnected ||
-            target === document.body ||
-            target === document.documentElement
-          )
-            continue;
-          for (
-            let parent = target.parentElement;
-            parent;
-            parent = parent.parentElement
-          ) {
-            if (parent.tagName !== "DETAILS" || parent.open) continue;
-            const summary = parent.querySelector(":scope > summary");
-            if (summary?.getClientRects().length) target = summary;
-          }
-          if (!target.getClientRects().length || target.matches(":disabled"))
-            continue;
-          target.focus({ preventScroll: true });
-          if (document.activeElement === target) break;
-        }
+    function closeOwnedCalendar() {
+      if (
+        pageRoot.querySelector('[data-gregorian-target][aria-expanded="true"]')
+      )
+        root.closeShamsiCalendar();
+    }
+    function cacheView() {
+      if (tabScopes[tab]) Object.assign(tabScopes[tab], { courseId, unitId });
+      savedView = structuredClone({
+        tabScopes,
+        courseId,
+        unitId,
+        tab,
+        page,
+        search,
+        archiveQuery,
+        archiveCourse,
+        archivePage,
+        questionType,
       });
     }
-    const closeButton = button("بستن", close, header);
-    closeButton.classList.add("ui-button-icon-only", "qb-close");
-    closeButton.setAttribute("aria-label", "بستن");
-    closeButton.title = "بستن";
-    closeButton.querySelector(".ui-button-label").hidden = true;
-    header.prepend(title);
-    dialog.append(header, storage, message, content);
-    document.body.append(dialog);
-    dialog.showModal();
-    let editingFrame;
+    function preserveForRender() {
+      if (!alive) {
+        renderSnapshot = null;
+        return;
+      }
+      const focused = pageRoot.contains(document.activeElement)
+        ? document.activeElement
+        : null;
+      const scrollers = [content];
+      for (
+        let parent = focused;
+        parent && parent !== pageRoot;
+        parent = parent.parentElement
+      )
+        scrollers.push(parent);
+      renderSnapshot = {
+        focused,
+        windowScroll: mountedSnapshot?.windowScroll || {
+          left: root.scrollX,
+          top: root.scrollY,
+        },
+        start: focused?.selectionStart,
+        end: focused?.selectionEnd,
+        direction: focused?.selectionDirection,
+        scroll: [...new Set(scrollers)].map((node) => [
+          node,
+          node.scrollTop,
+          node.scrollLeft,
+        ]),
+      };
+    }
+    function restoreRenderSnapshot(snapshot) {
+      if (!snapshot) return;
+      root.scrollTo({ ...snapshot.windowScroll, behavior: "instant" });
+      if (snapshot.focused?.isConnected) {
+        snapshot.focused.focus({ preventScroll: true });
+        if (snapshot.start !== null && snapshot.start !== undefined)
+          snapshot.focused.setSelectionRange?.(
+            snapshot.start,
+            snapshot.end,
+            snapshot.direction,
+          );
+      }
+      for (const [node, top, left] of snapshot.scroll) {
+        node.scrollTop = top;
+        node.scrollLeft = left;
+      }
+    }
+    function mount(host) {
+      if (!alive) return;
+      host.append(pageRoot);
+      mountedSnapshot = renderSnapshot;
+      renderSnapshot = null;
+      updateLayout();
+      restoreRenderSnapshot(mountedSnapshot);
+    }
+    function completeRender() {
+      updateLayout();
+      // The workspace adds its status bar and tools after mounting this page.
+      // Restore again once those elements establish the full document height.
+      restoreRenderSnapshot(mountedSnapshot);
+      cancelAnimationFrame(restoreRenderFrame);
+      if (!mountedSnapshot) return;
+      // Header enhancement also runs on the next animation frame. Retain the
+      // original position through consecutive renders until that layout settles.
+      restoreRenderFrame = requestAnimationFrame(() => {
+        restoreRenderFrame = requestAnimationFrame(() => {
+          if (!alive || !pageRoot.isConnected) return;
+          restoreRenderSnapshot(mountedSnapshot);
+          mountedSnapshot = null;
+          updateLayout();
+        });
+      });
+    }
+    function dispose() {
+      if (!alive) return;
+      closeOwnedCalendar();
+      alive = false;
+      root.visualViewport?.removeEventListener("resize", keepEditingVisible);
+      root.visualViewport?.removeEventListener("scroll", keepEditingVisible);
+      root.removeEventListener("resize", keepEditingVisible);
+      cancelAnimationFrame(editingFrame);
+      cancelAnimationFrame(restoreRenderFrame);
+      optionResize.disconnect();
+      optionChanges.disconnect();
+      unsubscribeBackup();
+      unsubscribeStorage();
+      cancelConfirmation();
+      restoreKeyboardScroll();
+      pendingChanges = () => false;
+      pageRoot.remove();
+      if (activePage?.element === pageRoot) activePage = null;
+    }
+    function requestLeave(action) {
+      if (!alive || busy || leaving || confirmation) return false;
+      const leave = () => {
+        cacheView();
+        dispose();
+        action();
+      };
+      if (dirty) {
+        leaving = true;
+        confirmAction(
+          "تغییرات فرم ذخیره نشده‌اند؛ کنار گذاشته شوند؟",
+          leave,
+          () => {
+            leaving = false;
+          },
+        );
+        return false;
+      }
+      leave();
+      return true;
+    }
+    header.append(title);
+    pageRoot.append(header, storage, message, content);
+    host.append(pageRoot);
+    let editingFrame,
+      keyboardScroll = null;
+    function restoreKeyboardScroll() {
+      if (!keyboardScroll) return;
+      const previous = keyboardScroll;
+      keyboardScroll = null;
+      delete pageRoot.dataset.keyboardViewport;
+      pageRoot.style.removeProperty("--qb-keyboard-scroll-space");
+      root.scrollTo({ left: previous.x, top: previous.y, behavior: "instant" });
+    }
+    function updateLayout() {
+      if (!alive || !pageRoot.isConnected) return;
+      const viewport = root.visualViewport;
+      const top = viewport?.offsetTop || 0;
+      const form = content.querySelector(".qb-form");
+      const mobile = root.matchMedia(
+        "(max-width: 700px), (max-height: 500px) and (pointer: coarse)",
+      ).matches;
+      const reduced = viewport && root.innerHeight - viewport.height > 120;
+      if (
+        mobile &&
+        form &&
+        reduced &&
+        (keyboardScroll || form.contains(document.activeElement))
+      ) {
+        if (!keyboardScroll)
+          keyboardScroll = { x: root.scrollX, y: root.scrollY };
+        pageRoot.dataset.keyboardViewport = "true";
+        // Keep enough document height to pan the application header away even
+        // while this page follows the smaller visible viewport. The page itself
+        // stays in normal flow and its own body remains the editing scroller.
+        pageRoot.style.setProperty(
+          "--qb-keyboard-scroll-space",
+          root.innerHeight + "px",
+        );
+        const distance = pageRoot.getBoundingClientRect().top - top - 4;
+        if (Math.abs(distance) > 1)
+          root.scrollBy({ top: distance, left: 0, behavior: "instant" });
+      } else restoreKeyboardScroll();
+      let bottom = top + (viewport?.height || root.innerHeight);
+      const navigation = document.getElementById("uiBottomNav");
+      if (
+        navigation?.getClientRects().length &&
+        root.getComputedStyle(navigation).visibility !== "hidden"
+      ) {
+        const bounds = navigation.getBoundingClientRect();
+        if (bounds.top < bottom && bounds.bottom > top)
+          bottom = Math.min(bottom, bounds.top);
+      }
+      if (confirmation) {
+        const bounds = confirmation.getBoundingClientRect();
+        if (bounds.top < top + 12 || bounds.bottom > bottom - 12)
+          confirmation.scrollIntoView({ block: "center", behavior: "instant" });
+      }
+      pageRoot.style.setProperty(
+        "--qb-page-available-height",
+        Math.max(
+          0,
+          bottom -
+            Math.max(top, pageRoot.getBoundingClientRect().top) -
+            (keyboardScroll ? 4 : 12),
+        ) + "px",
+      );
+    }
     function keepEditingVisible() {
+      if (!alive || !pageRoot.isConnected) return;
       cancelAnimationFrame(editingFrame);
       editingFrame = requestAnimationFrame(() => {
+        if (!alive || !pageRoot.isConnected) return;
+        updateLayout();
         if (
           !root.matchMedia(
             "(max-width: 700px), (max-height: 500px) and (pointer: coarse)",
@@ -570,25 +767,23 @@
       if (/^(Arrow|Home$|End$|Page)/.test(event.key)) keepEditingVisible();
     });
     root.addEventListener("resize", keepEditingVisible);
-    const updateOptions = () => fitOptions(content);
+    const updateOptions = () => {
+      if (alive && pageRoot.isConnected) fitOptions(content);
+    };
     const optionResize = new ResizeObserver(updateOptions);
     const optionChanges = new MutationObserver(updateOptions);
     optionResize.observe(content);
     optionChanges.observe(content, { childList: true, subtree: true });
     content.addEventListener("toggle", updateOptions, true);
     document.fonts.ready.then(() => {
-      if (dialog.isConnected) updateOptions();
+      if (alive && pageRoot.isConnected) updateOptions();
     });
-    dialog.addEventListener("cancel", (e) => {
-      e.preventDefault();
-      if (!confirmation) close();
-    });
-    dialog.addEventListener("input", (e) => {
+    pageRoot.addEventListener("input", (e) => {
       if (e.target.closest("form") && !e.target.closest(".qb-toolbar"))
         dirty = true;
     });
-    async function commit(next) {
-      if (busy) return false;
+    async function commit(next, prepare) {
+      if (!alive || busy || confirmation) return false;
       try {
         D.validate(next);
       } catch (e) {
@@ -596,10 +791,13 @@
         return false;
       }
       busy = true;
-      dialog.setAttribute("aria-busy", "true");
+      pageRoot.setAttribute("aria-busy", "true");
       content.inert = true;
       try {
+        if (prepare) await prepare();
+        if (!alive) return false;
         bank = await R.save(next, bank.revision);
+        if (!alive) return false;
         dirty = false;
         const fileState = F.state();
         if (["error", "paused", "permission"].includes(fileState.state)) {
@@ -623,8 +821,10 @@
         return false;
       } finally {
         busy = false;
-        content.inert = false;
-        dialog.removeAttribute("aria-busy");
+        if (alive) {
+          content.inert = false;
+          pageRoot.removeAttribute("aria-busy");
+        }
       }
     }
     const mutate = async (action) => {
@@ -632,19 +832,39 @@
       action(next);
       if (await commit(next)) render();
     };
-    function form(parent, submit) {
-      const f = el("form", undefined, "qb-form course-grid");
+    function form(parent, submit, { title, subtitle, kind }) {
+      const panel = el(
+        "details",
+        undefined,
+        "card quick-create entity-quick-create create-panel qb-editor-panel",
+      );
+      panel.open = true;
+      const heading = el("summary");
+      const symbol = el("span", undefined, "create-panel-symbol");
+      symbol.setAttribute("aria-hidden", "true");
+      symbol.insertAdjacentHTML("afterbegin", root.EduIcons.html("book"));
+      const copy = el("span", undefined, "create-panel-title");
+      const name = el("strong", title);
+      name.id = `qb-editor-${crypto.randomUUID()}`;
+      copy.append(name, el("small", subtitle));
+      const toggle = el("span", undefined, "create-panel-toggle");
+      toggle.setAttribute("aria-hidden", "true");
+      heading.append(symbol, copy, toggle);
+      const f = el("form", undefined, "qb-form record-editor course-grid");
+      f.dataset.qbEditor = kind;
+      f.setAttribute("aria-labelledby", name.id);
       f.noValidate = true;
       f.onsubmit = async (e) => {
         e.preventDefault();
-        if (busy) return;
+        if (!alive || busy || confirmation) return;
         try {
           await submit(f);
         } catch (e) {
           error(e);
         }
       };
-      parent.append(f);
+      panel.append(heading, f);
+      parent.append(panel);
       return f;
     }
     function saveButton(f, label = "ذخیره") {
@@ -777,38 +997,44 @@
     function manageCourse(edit = false) {
       discard(() => {
         clearTransientMessage();
+        closeOwnedCalendar();
         content.replaceChildren();
-        content.append(
-          el("h4", edit ? "ویرایش درس" : "درس جدید", "qb-editor-title"),
-        );
         const current = bank.courses.find((c) => c.id === courseId);
-        const f = form(content, async () => {
-          const next = structuredClone(bank);
-          if (edit) {
-            const course = next.courses.find((c) => c.id === courseId);
-            course.title = name.value.trim();
-            if (!bank.units.some((u) => u.courseId === courseId))
-              course.structure = structure.value;
-          } else {
-            const c = {
-              id: crypto.randomUUID(),
-              title: name.value.trim(),
-              structure: structure.value,
-            };
-            next.courses.push(c);
-            if (await commit(next)) {
-              courseId = c.id;
-              unitId = "";
-              if (tab === "builder") tabScopes.builder.unitIds = [];
-              search = "";
-              questionType = "";
-              page = 0;
-              render();
+        const f = form(
+          content,
+          async () => {
+            const next = structuredClone(bank);
+            if (edit) {
+              const course = next.courses.find((c) => c.id === courseId);
+              course.title = name.value.trim();
+              if (!bank.units.some((u) => u.courseId === courseId))
+                course.structure = structure.value;
+            } else {
+              const c = {
+                id: crypto.randomUUID(),
+                title: name.value.trim(),
+                structure: structure.value,
+              };
+              next.courses.push(c);
+              if (await commit(next)) {
+                courseId = c.id;
+                unitId = "";
+                if (tab === "builder") tabScopes.builder.unitIds = [];
+                search = "";
+                questionType = "";
+                page = 0;
+                render();
+              }
+              return;
             }
-            return;
-          }
-          if (await commit(next)) render();
-        });
+            if (await commit(next)) render();
+          },
+          {
+            title: edit ? "ویرایش درس" : "درس جدید",
+            subtitle: "نام درس و ساختار فصل‌ها یا پودمان‌ها",
+            kind: "course",
+          },
+        );
         const name = field(f, "عنوان درس", edit ? current.title : "");
         const structure = select(
           f,
@@ -832,28 +1058,32 @@
     function manageUnit(existing) {
       discard(() => {
         clearTransientMessage();
+        closeOwnedCalendar();
         content.replaceChildren();
-        content.append(
-          el(
-            "h4",
-            existing ? `ویرایش ${unitLabel()}` : `${unitLabel()} جدید`,
-            "qb-editor-title",
-          ),
+        const f = form(
+          content,
+          async () => {
+            const next = structuredClone(bank);
+            const id = existing?.id || crypto.randomUUID();
+            if (existing)
+              next.units.find((u) => u.id === id).title = name.value.trim();
+            else next.units.push({ id, courseId, title: name.value.trim() });
+            if (await commit(next)) {
+              unitId = id;
+              search = "";
+              questionType = "";
+              page = 0;
+              render();
+            }
+          },
+          {
+            title: existing ? `ویرایش ${unitLabel()}` : `${unitLabel()} جدید`,
+            subtitle:
+              bank.courses.find((course) => course.id === courseId)?.title ||
+              "",
+            kind: "unit",
+          },
         );
-        const f = form(content, async () => {
-          const next = structuredClone(bank);
-          const id = existing?.id || crypto.randomUUID();
-          if (existing)
-            next.units.find((u) => u.id === id).title = name.value.trim();
-          else next.units.push({ id, courseId, title: name.value.trim() });
-          if (await commit(next)) {
-            unitId = id;
-            search = "";
-            questionType = "";
-            page = 0;
-            render();
-          }
-        });
         const name = field(f, `عنوان ${unitLabel()}`, existing?.title || "");
         name.placeholder = `${unitLabel()} اول`;
         if (existing) {
@@ -871,50 +1101,57 @@
     function editQuestion(existing) {
       discard(() => {
         clearTransientMessage();
+        closeOwnedCalendar();
         content.replaceChildren();
-        content.append(
-          el("h4", existing ? "ویرایش سؤال" : "افزودن سؤال", "qb-editor-title"),
+        const f = form(
+          content,
+          async () => {
+            const q = {
+              id: existing?.id || crypto.randomUUID(),
+              unitId: unit.value,
+              type: type.value,
+              text: body.value.trim(),
+              answer:
+                type.value === "mcq"
+                  ? answer.value === ""
+                    ? null
+                    : Number(answer.value)
+                  : type.value === "boolean"
+                    ? answer.value === "true"
+                      ? true
+                      : answer.value === "false"
+                        ? false
+                        : null
+                    : answer.value.trim(),
+              explanation: explanation.value.trim(),
+              score: D.score(mark.value),
+            };
+            if (q.type === "mcq")
+              q.options = options.map((n) => n.value.trim());
+            D.question(q);
+            if (
+              q.type === "mcq" &&
+              (existing?.type !== "mcq" ||
+                q.options.some(
+                  (value, index) => value !== existing.options[index].trim(),
+                )) &&
+              new Set(q.options.map(D.optionKey)).size !== 4
+            )
+              throw Error(
+                "گزینه‌ها نباید فقط در شکل نوشتن ی، ک یا فاصله تفاوت داشته باشند؛ چهار پاسخ متمایز بنویسید.",
+              );
+            await mutate((next) => {
+              const index = next.questions.findIndex((x) => x.id === q.id);
+              if (index < 0) next.questions.push(q);
+              else next.questions[index] = q;
+            });
+          },
+          {
+            title: existing ? "ویرایش سؤال" : "افزودن سؤال",
+            subtitle: "صورت سؤال، پاسخ صحیح و بارم",
+            kind: "question",
+          },
         );
-        const f = form(content, async () => {
-          const q = {
-            id: existing?.id || crypto.randomUUID(),
-            unitId: unit.value,
-            type: type.value,
-            text: body.value.trim(),
-            answer:
-              type.value === "mcq"
-                ? answer.value === ""
-                  ? null
-                  : Number(answer.value)
-                : type.value === "boolean"
-                  ? answer.value === "true"
-                    ? true
-                    : answer.value === "false"
-                      ? false
-                      : null
-                  : answer.value.trim(),
-            explanation: explanation.value.trim(),
-            score: D.score(mark.value),
-          };
-          if (q.type === "mcq") q.options = options.map((n) => n.value.trim());
-          D.question(q);
-          if (
-            q.type === "mcq" &&
-            (existing?.type !== "mcq" ||
-              q.options.some(
-                (value, index) => value !== existing.options[index].trim(),
-              )) &&
-            new Set(q.options.map(D.optionKey)).size !== 4
-          )
-            throw Error(
-              "گزینه‌ها نباید فقط در شکل نوشتن ی، ک یا فاصله تفاوت داشته باشند؛ چهار پاسخ متمایز بنویسید.",
-            );
-          await mutate((next) => {
-            const index = next.questions.findIndex((x) => x.id === q.id);
-            if (index < 0) next.questions.push(q);
-            else next.questions[index] = q;
-          });
-        });
         const context = el(
           "div",
           undefined,
@@ -1279,27 +1516,35 @@
       draw();
     }
     function builder(parent) {
-      const f = form(parent, async () => {
-        f.dataset.submitted = "true";
-        update();
-        if (!f.reportValidity()) return;
-        const exam = D.generate(bank, {
-          courseId,
-          unitIds: checks.filter((c) => c.checked).map((c) => c.value),
-          counts: Object.fromEntries(
-            Object.entries(counts).map(([k, n]) => [k, n.value]),
-          ),
-          title: name.value,
-          school: school.value,
-          teacher: teacher.value,
-          date: date.value,
-          duration: duration.value,
-          totalScore: totalScore.value,
-        });
-        const next = structuredClone(bank);
-        next.exams.push(exam);
-        if (await commit(next)) preview(exam);
-      });
+      const f = form(
+        parent,
+        async () => {
+          f.dataset.submitted = "true";
+          update();
+          if (!f.reportValidity()) return;
+          const exam = D.generate(bank, {
+            courseId,
+            unitIds: checks.filter((c) => c.checked).map((c) => c.value),
+            counts: Object.fromEntries(
+              Object.entries(counts).map(([k, n]) => [k, n.value]),
+            ),
+            title: name.value,
+            school: school.value,
+            teacher: teacher.value,
+            date: date.value,
+            duration: duration.value,
+            totalScore: totalScore.value,
+          });
+          const next = structuredClone(bank);
+          next.exams.push(exam);
+          if (await commit(next)) preview(exam);
+        },
+        {
+          title: "طراحی آزمون",
+          subtitle: "انتخاب بخش‌ها، ترکیب سؤال‌ها و مشخصات آزمون",
+          kind: "exam",
+        },
+      );
       f.classList.add("qb-builder");
       const intro = el("div", undefined, "qb-builder-intro qb-field-wide");
       intro.append(el("p", "انتخاب بخش‌ها ← ترکیب سؤال‌ها ← مشخصات آزمون"));
@@ -1541,7 +1786,10 @@
       });
     }
     function preview(exam) {
+      if (!alive) return;
       clearTransientMessage();
+      closeOwnedCalendar();
+      restoreKeyboardScroll();
       content.replaceChildren();
       const actions = el("div", undefined, "qb-actions qb-preview-actions");
       content.append(actions);
@@ -1555,8 +1803,11 @@
       );
       button("چاپ / PDF آزمون", () => print(exam).catch(error), actions);
       content.append(sheet(exam));
+      root.scrollTo({ top: 0, left: 0, behavior: "instant" });
+      updateLayout();
     }
     function saveBankFile() {
+      if (!alive) return Promise.resolve(false);
       return F.saveNow(
         (name, counts) =>
           new Promise((resolve) =>
@@ -1586,6 +1837,7 @@
         async () => {
           try {
             const current = await R.read();
+            if (!alive) return;
             const json = D.size(D.validate(current));
             const url = URL.createObjectURL(
                 new Blob([json], { type: "application/json" }),
@@ -1616,12 +1868,12 @@
           if (file.size > D.LIMIT)
             throw Error("سقف فایل ورودی ۲۰ مگابایت است.");
           const incoming = D.parse(await file.text());
+          if (!alive) return;
           discard(() =>
             confirmAction(
               `فایل «${file.name}»: ${incoming.courses.length} درس، ${incoming.questions.length} سؤال و ${incoming.exams.length} آزمون. تمام بانک سؤال فعلی جایگزین می‌شود؛ اطلاعات مدرسه تغییر نمی‌کند. ادامه؟`,
               async () => {
-                await F.suspend();
-                if (await commit(incoming)) {
+                if (await commit(incoming, () => F.suspend())) {
                   courseId = "";
                   unitId = "";
                   render();
@@ -1666,7 +1918,7 @@
       }
       unsubscribeBackup();
       unsubscribeBackup = F.subscribe((state) => {
-        if (!status.isConnected) return;
+        if (!alive || !status.isConnected) return;
         fileLabel.textContent = state.connected
           ? "فایل متصل"
           : "فایل پشتیبان انتخاب نشده";
@@ -1876,6 +2128,8 @@
       draw();
     }
     function render() {
+      if (!alive) return;
+      const wasEditing = Boolean(content.querySelector(".qb-form"));
       clearTransientMessage();
       if (!bank.courses.some((course) => course.id === courseId)) courseId = "";
       if (
@@ -1885,7 +2139,7 @@
       )
         unitId = "";
       if (tabScopes[tab]) Object.assign(tabScopes[tab], { courseId, unitId });
-      if (dialog.querySelector("#calPopup")) root.closeShamsiCalendar();
+      closeOwnedCalendar();
       unsubscribeBackup();
       unsubscribeBackup = () => {};
       content.replaceChildren();
@@ -1979,19 +2233,55 @@
         panel.append(empty);
       } else if (tab === "builder") builder(panel);
       else questions(panel);
+      if (wasEditing && !content.querySelector(".qb-form")) {
+        restoreKeyboardScroll();
+        root.scrollTo({ top: 0, left: 0, behavior: "instant" });
+        updateLayout();
+      }
     }
-    try {
-      bank = D.validate(await R.read());
-      await F.init();
-      message.textContent = "";
-      message.hidden = true;
-      render();
-    } catch (e) {
-      error(e);
-    }
+    const controller = {
+      element: pageRoot,
+      ready: null,
+      mount,
+      preserveForRender,
+      requestLeave,
+      dispose,
+      updateLayout: completeRender,
+    };
+    activePage = controller;
+    controller.ready = (async () => {
+      try {
+        const current = await R.read();
+        if (!alive) return;
+        bank = D.validate(current);
+        await F.init();
+        if (!alive) return;
+        message.textContent = "";
+        message.hidden = true;
+        render();
+        updateLayout();
+      } catch (e) {
+        error(e, true);
+      }
+    })();
+    updateLayout();
+    return controller.ready;
   }
   root.EduQuestionBankUI = {
     open: openBank,
+    mount: mountBank,
+    isMounted: () => Boolean(activePage),
+    isPageActive: () => Boolean(activePage?.element.isConnected),
+    isPreviewActive: () =>
+      Boolean(
+        activePage?.element.isConnected &&
+        activePage.element.querySelector(".qb-sheet"),
+      ),
+    requestLeave: (action) =>
+      activePage ? activePage.requestLeave(action) : (action(), true),
+    dispose: () => activePage?.dispose(),
+    updateLayout: () => activePage?.updateLayout(),
+    preserveForRender: () => activePage?.preserveForRender(),
     sheet,
     print,
     hasPendingChanges: () => pendingChanges() || F.state().state === "busy",

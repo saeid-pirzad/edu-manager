@@ -125,7 +125,10 @@
       roots,
       "button,.entity-quick-create > summary,.workspace-tools > summary",
     )) {
-      if (control.closest("#printRoot") || control.dataset.copyState === "done")
+      if (
+        control.closest("#printRoot,.qb-page") ||
+        control.dataset.copyState === "done"
+      )
         continue;
       const button = control.tagName === "BUTTON",
         label = control.textContent.trim(),
@@ -263,15 +266,10 @@
           () => goReports(),
         ],
         [
-          "backups",
-          "پشتیبان",
-          "M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3ZM8 12l3 3 5-6",
-          () =>
-            document
-              .querySelector(
-                '#app .header-actions > [data-workspace-action="backups"]',
-              )
-              ?.click(),
+          "question-bank",
+          "بانک سؤال",
+          "M12 5C9 3 6 3 3 4v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1Zm0 0v15",
+          () => goQuestionBank(),
         ],
       ];
       for (const [view, label, path, action] of items) {
@@ -301,6 +299,7 @@
     }
     if (!appChanged) return;
     for (const button of document.querySelectorAll("#app .tabs > button")) {
+      if (button.closest(".qb-page")) continue;
       const pressed = String(button.classList.contains("active"));
       if (button.getAttribute("aria-pressed") !== pressed)
         button.setAttribute("aria-pressed", pressed);
@@ -545,28 +544,6 @@
       const strong = bar.querySelector(":scope > strong");
       if (strong && !strong.title) strong.title = strong.textContent;
     }
-    const bankTools =
-      app.querySelector(".workspace-tool-actions .workspace-tool-group") ||
-      app.querySelector(".header-actions");
-    if (bankTools && !bankTools.querySelector(".question-bank-entry")) {
-      const bankButton = document.createElement("button");
-      bankButton.className =
-        "question-bank-entry " +
-        (bankTools.matches(".header-actions")
-          ? "header-action"
-          : "ghost workspace-tool-button");
-      const bankIcon = document.createElement("span");
-      bankIcon.className = "workspace-tool-icon";
-      bankIcon.innerHTML = EduIcons.html("book");
-      const bankLabel = document.createElement("span");
-      bankLabel.className = "workspace-tool-copy";
-      const bankTitle = document.createElement("span");
-      bankTitle.textContent = "بانک سؤال و طراحی آزمون";
-      bankLabel.append(bankTitle);
-      bankButton.append(bankIcon, bankLabel);
-      bankButton.onclick = () => window.EduQuestionBankUI.open();
-      bankTools.append(bankButton);
-    }
     const nav = app.querySelector(".navigation-menu");
     if (nav) {
       const summary = nav.querySelector(":scope > summary");
@@ -693,7 +670,9 @@
       // The same nodes are sized, wrapped and labelled. Collect them once,
       // rather than traversing both surfaces independently for every phase.
       const tables = tableSelector
-        ? [...document.querySelectorAll(tableSelector)]
+        ? [...document.querySelectorAll(tableSelector)].filter(
+            (table) => !table.closest(".qb-page"),
+          )
         : [];
       for (const table of tables) {
         if (
@@ -715,6 +694,7 @@
         }
       }
       for (const container of queryRoots(roots, ".table-scroll")) {
+        if (container.closest(".qb-page")) continue;
         if (!container.hasAttribute("tabindex")) {
           container.tabIndex = 0;
           container.setAttribute("role", "region");

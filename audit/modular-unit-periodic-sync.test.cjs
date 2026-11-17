@@ -291,7 +291,14 @@ test("generated HTML, plain text and Excel expose identical annual unit inputs a
     model = await f.c.generate();
   assert.ok(model, f.elements.get("periodicError")?.textContent);
   const html = f.elements.get("periodicReportOutput").innerHTML;
-  assert.equal((html.match(/data-karnameh-unit=/g) || []).length, 4);
+  assert.equal(
+    (
+      html.match(
+        /<td\b[^>]*data-karnameh-field="unit-result"[^>]*data-karnameh-unit=/g,
+      ) || []
+    ).length,
+    4,
+  );
   const text = latin(f.c.textReport(model));
   const fallback = latin(f.c.documentHtml(model));
   const sheets = plain(f.c.excelReportSheets(model));

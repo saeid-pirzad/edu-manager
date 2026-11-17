@@ -115,19 +115,22 @@ async function inspectWorkspaceTools() {
   );
   const actions = [...tools.querySelectorAll("button")];
   add(
-    "backup keeps its header entry and tools contain three routine actions plus one question bank entry",
+    "backup keeps its header entry and the bank has a direct main-menu entry outside routine tools",
     !tools.querySelector('[data-workspace-action="backups"]') &&
       !!document.querySelector(
         '.header-actions > [data-workspace-action="backups"]',
       ) &&
-      actions.filter((button) => button.getClientRects().length).length === 4 &&
-      actions.length === 4 &&
-      tools.querySelectorAll(".question-bank-entry").length === 1 &&
-      tools.querySelector(".question-bank-entry").textContent.trim() ===
-        "بانک سؤال و طراحی آزمون" &&
-      typeof tools.querySelector(".question-bank-entry").onclick ===
-        "function" &&
-      !!tools.querySelector(".question-bank-entry svg") &&
+      actions.filter((button) => button.getClientRects().length).length === 3 &&
+      actions.length === 3 &&
+      !tools.querySelector(".question-bank-entry") &&
+      document.querySelectorAll('.topbar [data-header-action="question-bank"]')
+        .length === 1 &&
+      document
+        .querySelector('.topbar [data-header-action="question-bank"]')
+        .textContent.trim() === "بانک سؤال و طراحی آزمون" &&
+      !!document.querySelector(
+        '.topbar [data-header-action="question-bank"] svg',
+      ) &&
       !tools.querySelector(
         '[data-workspace-action="review-drafts"],[data-workspace-action="other-drafts"],[data-workspace-action="discard-drafts"]',
       ),
@@ -177,7 +180,14 @@ async function inspectWorkspaceTools() {
             el.scrollWidth <= el.clientWidth + 1
           );
         }) &&
+        !!document.querySelector('#uiBottomNav [data-view="question-bank"]') &&
+        !document.querySelector('#uiBottomNav [data-view="backups"]') &&
         !document
+          .querySelector(
+            '.header-actions > [data-header-action="question-bank"]',
+          )
+          .getClientRects().length &&
+        !!document
           .querySelector('.header-actions > [data-workspace-action="backups"]')
           .getClientRects().length,
     );
@@ -207,11 +217,7 @@ async function inspectWorkspaceTools() {
   );
   if (desktop) summary.click();
   document
-    .querySelector(
-      desktop
-        ? '.header-actions > [data-workspace-action="backups"]'
-        : '#uiBottomNav [data-view="backups"]',
-    )
+    .querySelector('.header-actions > [data-workspace-action="backups"]')
     .click();
   for (
     let attempt = 0;

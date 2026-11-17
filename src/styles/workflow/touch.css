@@ -5137,7 +5137,7 @@
   #app .topbar .header-home,
   #app .navigation-menu [data-header-action="reports"],
   #app .navigation-menu [data-header-action="master"],
-  #app .navigation-menu [data-workspace-action="backups"] {
+  #app .navigation-menu [data-header-action="question-bank"] {
     display: none !important;
   }
   #app .topbar .header-brand {

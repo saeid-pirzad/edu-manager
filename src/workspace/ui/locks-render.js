@@ -25,6 +25,8 @@ function syncControlLocks() {
       .querySelectorAll("input,select,textarea")
       .forEach((control) => candidates.add(control));
   candidates.forEach((control) => {
+    // The question bank has its own repository, operation locks and backup file.
+    if (control.closest(".qb-page")) return;
     const form = control.form;
     const formWrite = form?.dataset.mutating === "1";
     const field = control.matches("input,select,textarea");
@@ -63,6 +65,7 @@ function syncControlLocks() {
     );
   });
   for (const form of document.querySelectorAll('form[data-mutating="1"]')) {
+    if (form.closest(".qb-page")) continue;
     const existing = form.querySelector(".course-readonly-note");
     let note = form.querySelector(".control-lock-note");
     if (readonly && !existing && !note) {
@@ -160,6 +163,7 @@ function lockControls() {
   for (const element of document.querySelectorAll(
     "button,input,select,textarea,form",
   )) {
+    if (element.closest(".qb-page")) continue;
     if (element.matches("[data-grade],.grade-clear,[data-mutating]"))
       element.dataset.mutating = "1";
     else {
@@ -234,7 +238,7 @@ function draftReviewActionHtml() {
 function renderV24() {
   if (!ready) return;
   const coursePanel = courseUI.preserveEditor();
-  old.render();
+  if (old.render() === false) return;
   courseUI.restoreEditor(coursePanel);
   const app = document.getElementById("app");
   if (db.settings.password && !isAuthenticated) {
@@ -301,4 +305,5 @@ function renderV24() {
   paintStatus();
   void refreshYearLessonSessions();
   void refreshAttendanceReminders();
+  globalThis.EduQuestionBankUI?.updateLayout?.();
 }

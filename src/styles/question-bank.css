@@ -1,46 +1,46 @@
-/* Native dialog behavior with the application's shared modal and form styles. */
-.qb-dialog {
+/* The bank and its confirmations live in the main content area. Lists stay
+   bounded; creation forms follow the shared class form in the document. */
+#questionBankPageHost {
+  min-width: 0;
+}
+.qb-page {
   box-sizing: border-box;
-  width: min(900px, calc(100% - 40px));
-  max-width: 900px;
-  max-height: calc(var(--app-viewport, 100dvh) - 40px);
-  margin: auto;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  height: var(--qb-page-available-height, calc(100dvh - 190px));
+  min-height: 0;
+  margin: 0 0 calc(16px + var(--qb-keyboard-scroll-space, 0px));
   padding: 0;
   border: 1px solid var(--theme-line);
   border-radius: 14px;
   background: var(--surface-paper, var(--theme-surface));
   color: var(--theme-ink);
   font: inherit;
-  box-shadow: var(--theme-shadow-lg);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 5%);
   overflow: hidden;
   overflow-wrap: anywhere;
 }
-.qb-dialog:not([open]),
-.qb-confirm:not([open]) {
-  display: none;
-}
-.qb-dialog[open] {
+.qb-page > .qb-page-header {
   display: flex;
-  flex-direction: column;
-}
-.qb-dialog::backdrop,
-.qb-confirm::backdrop {
-  background: var(--theme-overlay);
-}
-.qb-dialog > .modal-header {
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   flex-shrink: 0;
+  padding: 14px 16px;
   background: var(--surface-paper, var(--theme-surface));
   border-bottom: 1px solid var(--theme-line-soft);
   border-radius: 14px 14px 0 0;
 }
-.qb-dialog #qb-title {
+.qb-page #qb-title {
   display: flex;
   align-items: center;
   gap: 10px;
   margin: 0;
   font-size: 1rem;
 }
-.qb-dialog #qb-title > svg {
+.qb-page #qb-title > svg {
   box-sizing: content-box;
   width: 20px;
   height: 20px;
@@ -49,11 +49,11 @@
   color: var(--theme-primary);
   background: var(--theme-primary-soft);
 }
-.qb-dialog > .modal-header button {
+.qb-page > .qb-page-header button {
   font-size: 14px;
   min-width: 44px;
 }
-.qb-dialog > .qb-message[data-state="error"] {
+.qb-page > .qb-message[data-state="error"] {
   color: var(--status-danger);
   background: var(--status-danger-soft);
 }
@@ -65,6 +65,9 @@
   overflow: hidden !important;
   overscroll-behavior: contain;
   scroll-padding-block: 12px;
+}
+.qb-page > .qb-body {
+  padding: 16px;
 }
 .qb-storage-bar {
   display: flex;
@@ -107,7 +110,7 @@
 .qb-storage-bar[data-state="active"] .qb-storage-state {
   color: var(--status-success);
 }
-:is(#app, .qb-dialog)
+:is(#app, .qb-page)
   .qb-storage-bar[data-state="permission"]
   > button.ui-button.ui-button-flat {
   background: var(--status-warning-soft) !important;
@@ -135,7 +138,7 @@
   border-radius: 12px;
   background: var(--theme-secondary-soft);
 }
-.qb-dialog .qb-tabs.qb-tabs-global {
+#app .qb-page .qb-tabs.qb-tabs-global {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .qb-body > :not(.qb-panel, .qb-form, .qb-sheet) {
@@ -166,34 +169,95 @@
   margin: 0;
   flex-shrink: 0;
 }
-.qb-panel:has(> .qb-form) {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+.qb-page:has(.qb-form) {
+  height: auto;
+  overflow: visible;
 }
-.qb-body .qb-form {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  grid-template-rows: minmax(0, 1fr) auto;
+.qb-page > .qb-body:has(.qb-form),
+.qb-page .qb-panel:has(> .qb-editor-panel) {
+  display: block;
+  overflow: visible !important;
+  scrollbar-gutter: auto;
+}
+#app .qb-page .qb-editor-panel,
+#app .qb-page .qb-editor-panel[open] {
+  min-width: 0;
   margin: 0;
+  border: 1px solid var(--theme-line);
+  border-radius: 16px;
+  box-shadow: none;
 }
-.qb-body .qb-form > .qb-form-fields {
+#app .qb-page .qb-editor-panel > summary {
+  border-radius: 15px;
+}
+#app .qb-page .qb-editor-panel[open] > summary {
+  border-radius: 15px 15px 0 0;
+}
+#app .qb-editor-panel > .qb-form {
   min-height: 0;
-  overflow: auto;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
+  overflow: visible;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  margin: 0;
+  border-end-start-radius: 15px;
+  border-end-end-radius: 15px;
+}
+.qb-editor-panel .qb-form > .qb-form-fields {
+  min-height: 0;
+  overflow: visible;
   align-content: start;
   margin: 0;
-  padding-block: 4px 12px;
-  padding-inline-end: 4px;
-  scroll-padding-block: 12px;
+  padding: 0;
+  scrollbar-gutter: auto;
+}
+#app .qb-editor-panel .qb-form label {
+  gap: 7px;
+  font-size: 14px;
+  font-weight: 400;
+}
+#app .qb-editor-panel .qb-form .course-field:has(input[type="checkbox"]) {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+#app .qb-editor-panel .qb-form input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  min-height: 20px;
+  border-radius: 4px;
+}
+#app
+  .qb-page
+  .qb-editor-panel
+  .qb-form
+  :is(input:not([type="checkbox"], [type="radio"]), select) {
+  height: auto !important;
+  min-height: 48px !important;
+  border-radius: 10px !important;
+  padding-block: 10px !important;
+  padding-inline: 12px !important;
+}
+#app .qb-page .qb-editor-panel .qb-form .qb-count-field input {
+  height: 44px !important;
+  min-height: 44px !important;
+  padding-block: 6px !important;
+  padding-inline: 8px !important;
+}
+#app .qb-editor-panel .qb-form .qb-count-field {
+  font-size: 12px;
+  font-weight: 600;
+}
+#app .qb-editor-panel .qb-form .qb-form-fields > :is(fieldset, .qb-optional) {
+  background: var(--theme-surface);
+  border-color: var(--theme-line);
 }
 .qb-body > .qb-sheet {
   min-height: 0;
   overflow: auto;
 }
-.qb-dialog > .qb-message {
+.qb-page > .qb-message {
   margin: 0;
   padding: 5px 20px;
   font-size: 0.78rem;
@@ -210,7 +274,7 @@
   gap: 8px;
   margin-block: 12px;
 }
-.qb-dialog button {
+.qb-page button {
   margin: 0;
   white-space: normal;
 }
@@ -221,7 +285,7 @@
   margin-top: 0;
   margin-bottom: 14px;
 }
-.qb-dialog [hidden] {
+.qb-page [hidden] {
   display: none !important;
 }
 .qb-optional {
@@ -248,7 +312,7 @@
 .qb-course-actions {
   margin: 0;
 }
-.qb-dialog .qb-context-action {
+.qb-page .qb-context-action {
   box-sizing: border-box;
   height: 44px;
   min-height: 44px !important;
@@ -279,7 +343,7 @@
   min-height: 44px;
 }
 /* Match adjacent 44px actions instead of inheriting the taller form controls. */
-.qb-dialog .qb-body :is(select, input[type="search"]) {
+.qb-page .qb-body :is(select, input[type="search"]) {
   box-sizing: border-box;
   height: 44px !important;
   min-height: 44px !important;
@@ -300,34 +364,26 @@
 .qb-form > .record-editor-actions {
   grid-column: 1/-1;
 }
-.qb-form > .record-editor-actions {
+#app .qb-editor-panel .qb-form > .record-editor-actions {
   position: static !important;
   bottom: auto !important;
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) auto;
   margin: 0;
-  padding: 12px 0 2px;
-  border-top: 1px solid var(--theme-line-soft);
-  background: var(--surface-paper, var(--theme-surface));
+  padding: 16px 0 0;
+  border-top: 1px solid var(--theme-line);
+  background: var(--theme-surface);
   gap: 10px;
   box-shadow: none;
   border-radius: 0;
 }
-.qb-form > .record-editor-actions > button {
-  flex: 1;
-  min-height: 44px;
+#app .qb-page .qb-editor-panel .qb-form > .record-editor-actions > button {
+  min-height: 44px !important;
+  height: auto;
+  padding: 8px 20px !important;
   border-radius: 10px !important;
-  font-size: 13px;
-}
-.qb-form > .record-editor-actions > button[type="submit"] {
-  --button-fill: var(--status-success-fill, #16664e);
-  --button-hover: var(--status-success-hover, #11523e);
-  background: var(--status-success-fill, #16664e) !important;
-  border-color: var(--status-success-fill, #16664e) !important;
-  color: #fff !important;
-}
-.qb-form > .record-editor-actions > button[type="button"] {
-  background: var(--theme-surface-subtle);
-  border-color: var(--theme-line);
-  color: var(--theme-ink);
+  font-size: 14px;
+  white-space: normal !important;
 }
 .qb-body .qb-question-context {
   margin: 0;
@@ -399,7 +455,7 @@
   min-height: 20px;
   accent-color: var(--theme-primary);
 }
-.qb-tabs {
+#app .qb-page .qb-tabs {
   position: static;
   z-index: 3;
   display: grid;
@@ -412,7 +468,7 @@
   background: var(--theme-nav);
   box-shadow: none;
 }
-.qb-tabs button {
+#app .qb-page .qb-tabs button {
   --button-ink: var(--theme-nav-ink, #fff);
   --button-soft: transparent;
   --button-line: transparent;
@@ -428,7 +484,7 @@
   line-height: 1.5 !important;
   box-shadow: none;
 }
-.qb-tabs button[aria-pressed="true"] {
+#app .qb-page .qb-tabs button[aria-pressed="true"] {
   --button-ink: var(--theme-surface);
   --button-soft: var(--theme-primary);
   --button-line: transparent;
@@ -437,17 +493,17 @@
   color: var(--theme-surface) !important;
   font-weight: 500;
 }
-.qb-tabs button:focus-visible {
+#app .qb-page .qb-tabs button:focus-visible {
   outline: 2px solid var(--theme-highlight);
   outline-offset: 2px;
 }
-.qb-tabs button:disabled {
+#app .qb-page .qb-tabs button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   box-shadow: none;
 }
 @media (hover: hover) {
-  .qb-tabs button[aria-pressed="false"]:not(:disabled):hover {
+  #app .qb-page .qb-tabs button[aria-pressed="false"]:not(:disabled):hover {
     background: var(--theme-nav-hover) !important;
   }
 }
@@ -748,7 +804,7 @@
 .qb-body .qb-question-controls > .qb-filters {
   margin: 0;
 }
-.qb-dialog .qb-filters :is(input, select) {
+#app .qb-page .qb-body .qb-filters :is(input, select) {
   font-size: var(--qb-filter-font-size, 14px) !important;
 }
 .qb-unit-actions {
@@ -1189,10 +1245,10 @@
   font-size: 1rem;
   margin-block: 0 8px;
 }
-.qb-dialog details {
+.qb-page details {
   margin-block: 16px;
 }
-.qb-dialog summary {
+.qb-page summary {
   cursor: pointer;
   min-height: 44px;
   display: flex;
@@ -1329,26 +1385,72 @@
 .qb-optional[open] > summary::after {
   content: "−";
 }
-.qb-confirm {
+.qb-page > .qb-confirm {
   box-sizing: border-box;
-  width: min(480px, calc(100% - 32px));
-  max-height: calc(100dvh - 40px);
-  padding: 20px;
-  border: 1px solid var(--theme-line);
-  border-radius: 14px;
-  margin: auto;
-  background: var(--theme-surface);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 16px;
+  row-gap: 4px;
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: min(220px, calc(var(--app-viewport, 100dvh) / 2));
+  padding: 10px 16px;
+  border: 0;
+  border-bottom: 1px solid var(--status-warning-line);
+  margin: 0;
+  background: var(--status-warning-soft);
   color: var(--theme-ink);
   font: inherit;
-  box-shadow: var(--theme-shadow-lg);
+  overflow: auto;
+  overscroll-behavior: contain;
+  scroll-padding-block: 10px;
 }
-.qb-confirm p {
-  font-size: 0.9rem;
-  line-height: 1.9;
-  margin-block: 0 20px;
+.qb-confirm > .qb-editor-title {
+  grid-column: 1;
+  padding: 0;
+  border: 0;
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.6;
 }
-.qb-confirm button {
-  margin-inline-end: 8px;
+.qb-confirm > p {
+  grid-column: 1;
+  align-self: stretch;
+  min-height: 0;
+  font-size: 0.8rem;
+  line-height: 1.8;
+  margin: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.qb-confirm-actions {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.qb-confirm-actions > button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+@media screen and (max-width: 700px) {
+  .qb-page > .qb-confirm {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 4px;
+    padding: 8px 10px;
+  }
+  .qb-confirm-actions {
+    grid-column: 1;
+    grid-row: auto;
+    margin-top: 2px;
+  }
 }
 .qb-sheet {
   background: white;
@@ -1566,7 +1668,7 @@
   white-space: nowrap;
 }
 @media screen {
-  .qb-dialog .qb-entity-menu {
+  .qb-page .qb-entity-menu {
     position: fixed;
     inset: auto;
     margin: 0;
@@ -1581,7 +1683,7 @@
     color: var(--theme-ink);
     box-shadow: 0 8px 24px rgb(0 0 0 / 14%);
   }
-  :is(#app, .qb-dialog) .qb-body .qb-entity-menu button.ui-button {
+  :is(#app, .qb-page) .qb-body .qb-entity-menu button.ui-button {
     display: flex;
     width: 100%;
     justify-content: flex-start;
@@ -1591,7 +1693,7 @@
     border-radius: 6px;
     background: transparent !important;
   }
-  :is(#app, .qb-dialog)
+  :is(#app, .qb-page)
     .qb-body
     .qb-entity-menu
     button.ui-button:not(:disabled):hover {
@@ -1710,14 +1812,14 @@
   .qb-exam-actions button {
     gap: 4px;
   }
-  .qb-dialog {
-    width: calc(100% - 24px);
-    max-height: calc(var(--app-viewport, 100dvh) - 24px);
+  .qb-page {
+    border-radius: 12px;
+    margin-bottom: calc(8px + var(--qb-keyboard-scroll-space, 0px));
   }
-  .qb-dialog > .modal-header {
+  .qb-page > .qb-page-header {
     padding: 12px 16px;
   }
-  .qb-dialog > .modal-body {
+  .qb-page > .qb-body {
     padding: 14px;
   }
   .qb-body .course-field {
@@ -1733,7 +1835,7 @@
   .qb-body .course-grid {
     gap: 12px 10px;
   }
-  .qb-dialog > .qb-message {
+  .qb-page > .qb-message {
     padding-inline: 16px;
   }
   .qb-toolbar {
@@ -1769,7 +1871,7 @@
   .qb-question-entry > button {
     width: 100%;
   }
-  .qb-tabs {
+  #app .qb-page .qb-tabs {
     top: -14px;
   }
   .qb-body .course-grid {
@@ -1814,7 +1916,7 @@
   .qb-capacity-badge::after {
     content: " موجود";
   }
-  .qb-dialog .qb-body .qb-builder input:not([type="checkbox"]) {
+  .qb-page .qb-body .qb-builder input:not([type="checkbox"]) {
     height: 44px !important;
     min-height: 44px !important;
     padding: 6px 10px !important;
@@ -1938,12 +2040,12 @@
   .qb-sheet-options li {
     gap: 4px;
   }
-  .qb-tabs {
+  #app .qb-page .qb-tabs {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 3px;
   }
-  .qb-tabs button {
+  #app .qb-page .qb-tabs button {
     min-width: 0;
     padding-inline: 4px;
     font-size: 12px;
@@ -1953,7 +2055,7 @@
   }
 }
 @media screen and (max-width: 360px) {
-  .qb-tabs {
+  #app .qb-page .qb-tabs {
     grid-template-columns:
       minmax(0, 0.9fr) minmax(0, 1.15fr) minmax(0, 1.2fr)
       minmax(0, 0.8fr);
@@ -1975,7 +2077,7 @@
   .qb-body .qb-answer-editor {
     grid-template-columns: minmax(0, 1fr);
   }
-  .qb-tabs button {
+  #app .qb-page .qb-tabs button {
     font-size: 12px;
     height: 44px;
     padding: 4px 1px !important;
@@ -1986,20 +2088,20 @@
   }
 }
 @media screen and (max-width: 700px) {
-  .qb-dialog > .modal-header {
+  .qb-page > .qb-page-header {
     padding: 8px 10px;
   }
-  .qb-dialog #qb-title {
+  .qb-page #qb-title {
     gap: 7px;
     font-size: 14px;
   }
-  .qb-dialog #qb-title > svg {
+  .qb-page #qb-title > svg {
     width: 16px;
     height: 16px;
     padding: 5px;
     border-radius: 8px;
   }
-  :is(#app, .qb-dialog) > .modal-header button.qb-close {
+  :is(#app, .qb-page) > .qb-page-header button.qb-close {
     width: 40px;
     height: 40px;
     min-width: 40px;
@@ -2013,7 +2115,7 @@
   .qb-storage-state {
     font-size: 10px;
   }
-  :is(#app, .qb-dialog) .qb-storage-bar > button.ui-button.ui-button-flat {
+  :is(#app, .qb-page) .qb-storage-bar > button.ui-button.ui-button-flat {
     height: 36px;
     min-height: 36px !important;
     padding: 3px 7px !important;
@@ -2024,54 +2126,54 @@
     border-color: var(--status-leave) !important;
     color: #fff !important;
   }
-  :is(#app, .qb-dialog) .qb-storage-bar > button.ui-button > svg {
+  :is(#app, .qb-page) .qb-storage-bar > button.ui-button > svg {
     width: 14px;
     height: 14px;
     flex-basis: 14px;
   }
-  .qb-dialog > .modal-body {
+  .qb-page > .qb-body {
     padding: 10px;
   }
   .qb-toolbar {
     gap: 6px;
     margin-bottom: 8px;
   }
-  .qb-dialog .qb-body .course-field {
+  .qb-page .qb-body .course-field {
     font-size: 11px;
     gap: 3px;
   }
-  :is(#app, .qb-dialog) .qb-body select {
+  #app .qb-page .qb-body .course-field select {
     height: 40px !important;
     min-height: 40px !important;
     font-size: 13px !important;
     border-radius: 8px !important;
   }
-  :is(#app, .qb-dialog) .qb-body input[type="search"] {
+  :is(#app, .qb-page) .qb-body input[type="search"] {
     height: 40px !important;
     min-height: 40px !important;
     border-radius: 8px !important;
     font-size: 16px !important;
   }
-  .qb-dialog .qb-body input[type="search"]::placeholder {
+  .qb-page .qb-body input[type="search"]::placeholder {
     font-size: 12px;
   }
-  :is(#app, .qb-dialog) .qb-body button.ui-button.ui-button-flat {
+  :is(#app, .qb-page) .qb-body button.ui-button.ui-button-flat {
     height: 40px;
     min-height: 40px !important;
     padding: 6px 10px !important;
     font-size: 12px;
     gap: 5px;
   }
-  :is(#app, .qb-dialog) .qb-body button.ui-button > svg {
+  :is(#app, .qb-page) .qb-body button.ui-button > svg {
     width: 16px;
     height: 16px;
     flex-basis: 16px;
   }
-  :is(#app, .qb-dialog) .qb-body .qb-exam-actions button.ui-button {
+  :is(#app, .qb-page) .qb-body .qb-exam-actions button.ui-button {
     padding-inline: 6px !important;
     gap: 4px;
   }
-  :is(#app, .qb-dialog) .qb-body button.ui-button.qb-context-action {
+  :is(#app, .qb-page) .qb-body button.ui-button.qb-context-action {
     flex-basis: 40px;
     width: 40px;
     min-width: 40px;
@@ -2079,12 +2181,12 @@
     min-height: 40px !important;
     padding: 0 !important;
   }
-  .qb-dialog .qb-tabs {
+  #app .qb-page .qb-tabs {
     padding: 3px;
     gap: 2px;
     margin-block: 6px 10px;
   }
-  :is(#app, .qb-dialog) .qb-body .qb-tabs button.ui-button {
+  :is(#app, .qb-page) .qb-body .qb-tabs button.ui-button {
     height: 36px;
     min-height: 36px !important;
     padding: 4px 3px !important;
@@ -2116,7 +2218,7 @@
     font-size: 10px;
     padding: 1px 6px;
   }
-  .qb-dialog .qb-question-library .course-field {
+  .qb-page .qb-question-library .course-field {
     font-size: 10px;
   }
   .qb-question-library .qb-results > .qb-question-row > .qb-question-toggle {
@@ -2156,12 +2258,12 @@
     border-radius: 9px;
     background: var(--status-info-soft);
   }
-  :is(#app, .qb-dialog) .qb-body .qb-course-actions > button.qb-context-action {
+  :is(#app, .qb-page) .qb-body .qb-course-actions > button.qb-context-action {
     background: var(--status-info-soft) !important;
     color: var(--status-info) !important;
     border-color: var(--status-info-line) !important;
   }
-  :is(#app, .qb-dialog)
+  :is(#app, .qb-page)
     .qb-question-entry
     .qb-course-actions
     button.qb-context-action {
@@ -2177,14 +2279,14 @@
     color: var(--status-info) !important;
     box-shadow: none;
   }
-  :is(#app, .qb-dialog)
+  :is(#app, .qb-page)
     .qb-question-entry
     .qb-course-actions
     button.qb-context-action:not(:disabled):is(:hover, [aria-expanded="true"]) {
     background: var(--status-info) !important;
     color: #fff !important;
   }
-  :is(#app, .qb-dialog)
+  :is(#app, .qb-page)
     .qb-question-entry
     .qb-course-actions
     button.qb-context-action:disabled {
@@ -2273,7 +2375,7 @@
     background: var(--theme-surface-subtle);
     margin-top: 8px;
   }
-  :is(#app, .qb-dialog) .qb-body .qb-selection-actions > button.ui-button {
+  :is(#app, .qb-page) .qb-body .qb-selection-actions > button.ui-button {
     border: 0;
     border-radius: 7px;
     background: transparent !important;
@@ -2282,14 +2384,14 @@
     font-size: 11px;
     gap: 5px;
   }
-  :is(#app, .qb-dialog)
+  :is(#app, .qb-page)
     .qb-body
     .qb-selection-actions
     > button.ui-button:first-child {
     background: var(--status-info-soft) !important;
     color: var(--status-info) !important;
   }
-  :is(#app, .qb-dialog)
+  :is(#app, .qb-page)
     .qb-body
     .qb-selection-actions
     > button.ui-button:not(:disabled):hover {
@@ -2541,52 +2643,58 @@
 }
 @media screen and (max-width: 700px),
   screen and (max-height: 500px) and (pointer: coarse) {
-  /* The editor uses one scroll area from the start. Keyboard transitions only
-     change the visible space; fields and navigation keep their normal size. */
-  :is(#app, .qb-dialog):has(.qb-form) {
-    position: fixed;
-    inset-inline: 0;
-    inset-block-start: var(--app-viewport-top, 0px);
-    inset-block-end: auto;
-    width: 100%;
-    max-width: none;
-    height: var(--app-viewport, 100dvh);
-    max-height: var(--app-viewport, 100dvh) !important;
-    margin: 0;
-    border: 0;
-    border-radius: 0;
+  #app .qb-editor-panel > .qb-form {
+    gap: 14px;
+    padding: 16px;
   }
-  :is(#app, .qb-dialog):has(.qb-form) > .modal-header {
-    border-radius: 0;
+  #app .qb-page .qb-editor-panel .qb-form :is(input, select, textarea) {
+    font-size: 16px !important;
+  }
+  #app .qb-editor-panel .qb-form > .record-editor-actions {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    padding-top: 12px;
+  }
+  #app .qb-page .qb-editor-panel .qb-form > .record-editor-actions > button {
+    padding-inline: 8px !important;
+  }
+  #app .qb-editor-panel .qb-form .qb-count-field {
+    font-size: 11px;
+  }
+  /* Normal editing follows the class creation form in the document. A bounded
+     body is needed only while the keyboard reduces the visible viewport. */
+  #app:has(.qb-page[data-keyboard-viewport="true"]) > .topbar {
+    position: static !important;
+  }
+  .qb-page[data-keyboard-viewport="true"]:has(.qb-form) {
+    height: var(--qb-page-available-height);
+    overflow: hidden;
+  }
+  .qb-page[data-keyboard-viewport="true"]:has(.qb-form) > .qb-page-header {
     padding: 4px 10px;
     padding-block-start: max(4px, env(safe-area-inset-top));
   }
-  :is(#app, .qb-dialog):has(.qb-form) #qb-title {
+  .qb-page[data-keyboard-viewport="true"]:has(.qb-form) #qb-title {
     gap: 7px;
     font-size: 14px;
   }
-  :is(#app, .qb-dialog):has(.qb-form) #qb-title > svg {
+  .qb-page[data-keyboard-viewport="true"]:has(.qb-form) #qb-title > svg {
     width: 16px;
     height: 16px;
     padding: 5px;
   }
-  :is(#app, .qb-dialog):has(.qb-form) > .modal-header button.qb-close {
-    width: 40px;
-    height: 40px;
-    min-width: 40px;
-    min-height: 40px !important;
-    padding: 0;
-  }
-  :is(#app, .qb-dialog):has(.qb-form) > .qb-storage-bar {
+  .qb-page[data-keyboard-viewport="true"]:has(.qb-form) > .qb-storage-bar {
     padding: 3px 10px;
   }
-  :is(#app, .qb-dialog):has(.qb-form) > .qb-storage-bar > button.ui-button {
+  .qb-page[data-keyboard-viewport="true"]:has(.qb-form)
+    > .qb-storage-bar
+    > button.ui-button {
     height: 36px;
     min-height: 36px !important;
     padding: 3px 7px !important;
     font-size: 10px;
   }
-  :is(#app, .qb-dialog) > .qb-body:has(.qb-form) {
+  .qb-page[data-keyboard-viewport="true"] > .qb-body:has(.qb-form) {
     display: block;
     overflow-y: auto !important;
     overflow-x: hidden !important;
@@ -2594,59 +2702,80 @@
     scrollbar-gutter: stable;
     padding: 10px;
   }
-  :is(#app, .qb-dialog) .qb-panel:has(> .qb-form) {
+  .qb-page[data-keyboard-viewport="true"] .qb-panel:has(> .qb-editor-panel) {
     display: block;
     overflow: visible;
     scrollbar-gutter: auto;
   }
-  :is(#app, .qb-dialog) .qb-body .qb-form {
+  #app .qb-page[data-keyboard-viewport="true"] .qb-editor-panel > .qb-form {
     display: block;
     overflow: visible;
     margin: 0;
   }
-  :is(#app, .qb-dialog) .qb-body .qb-form :is(input, select, textarea) {
-    font-size: 16px !important;
-  }
-  :is(#app, .qb-dialog)
-    .qb-body
+  #app
+    .qb-page[data-keyboard-viewport="true"]
+    .qb-editor-panel
     .qb-form
     :is(input:not([type="checkbox"], [type="radio"]), select) {
     box-sizing: border-box;
+    height: auto !important;
+    min-height: 48px !important;
+    padding-block: 10px !important;
+  }
+  #app
+    .qb-page[data-keyboard-viewport="true"]
+    .qb-editor-panel
+    .qb-form
+    .qb-count-field
+    input {
     height: 44px !important;
     min-height: 44px !important;
     padding-block: 6px !important;
   }
-  :is(#app, .qb-dialog) .qb-body .qb-form textarea {
+  #app
+    .qb-page[data-keyboard-viewport="true"]
+    .qb-editor-panel
+    .qb-form
+    textarea {
     box-sizing: border-box;
     min-height: min(100px, var(--qb-textarea-max-height, 100px));
     max-height: var(--qb-textarea-max-height, none);
     padding: 8px 10px;
     line-height: 1.6;
   }
-  :is(#app, .qb-dialog) .qb-body .qb-form > .qb-form-fields {
+  .qb-page[data-keyboard-viewport="true"] .qb-form > .qb-form-fields {
     overflow: visible;
     margin: 0;
     padding-inline-end: 0;
     padding-block-end: 24px;
     scrollbar-gutter: auto;
   }
-  :is(#app, .qb-dialog) .qb-body:has(.qb-form) > .qb-tabs {
+  .qb-page[data-keyboard-viewport="true"] .qb-body:has(.qb-form) > .qb-tabs {
     position: static;
     margin: 0 0 10px;
   }
-  :is(#app, .qb-dialog) .qb-body .qb-form > .record-editor-actions {
+  #app
+    .qb-page[data-keyboard-viewport="true"]
+    .qb-editor-panel
+    .qb-form
+    > .record-editor-actions {
     position: sticky !important;
     bottom: 0 !important;
     z-index: 3;
     padding-block: 4px max(4px, env(safe-area-inset-bottom));
   }
-  :is(#app, .qb-dialog) .qb-body .qb-form > .record-editor-actions > button {
-    height: 44px;
+  #app
+    .qb-page[data-keyboard-viewport="true"]
+    .qb-editor-panel
+    .qb-form
+    > .record-editor-actions
+    > button {
+    height: 44px !important;
     min-height: 44px !important;
   }
 }
 @media screen and (max-height: 500px) and (pointer: coarse) {
-  :is(#app, .qb-dialog) > .qb-body:has(.qb-form) {
+  .qb-page[data-keyboard-viewport="true"] > .qb-body:has(.qb-form) {
     padding: 6px;
   }
 }
@@ -2671,7 +2800,7 @@
     border: 0;
     background: transparent;
   }
-  :is(#app, .qb-dialog) .qb-body .qb-selection-actions > button.ui-button {
+  :is(#app, .qb-page) .qb-body .qb-selection-actions > button.ui-button {
     border: 1px solid var(--theme-line);
     border-radius: 8px;
     background: var(--theme-surface) !important;
@@ -2680,7 +2809,7 @@
     font-size: 10px;
     white-space: nowrap;
   }
-  :is(#app, .qb-dialog)
+  :is(#app, .qb-page)
     .qb-body
     .qb-selection-actions
     > button.ui-button:first-child {
@@ -2693,7 +2822,7 @@
     margin-bottom: 6px;
     line-height: 1.7;
   }
-  .qb-dialog .qb-body .qb-builder .qb-target-score {
+  .qb-page .qb-body .qb-builder .qb-target-score {
     padding: 5px 7px;
     margin-bottom: 8px;
     font-size: 11px;
@@ -2707,7 +2836,7 @@
     grid-template-rows: minmax(20px, auto) 44px;
     gap: 4px;
   }
-  :is(#app, .qb-dialog) .qb-body .qb-builder input:not([type="checkbox"]) {
+  :is(#app, .qb-page) .qb-body .qb-builder input:not([type="checkbox"]) {
     height: 44px !important;
     min-height: 44px !important;
     padding: 5px 8px !important;
@@ -2716,52 +2845,44 @@
   .qb-body .qb-builder .qb-form-fields > .qb-exam-details {
     gap: 8px;
   }
-  .qb-dialog .qb-body .qb-exam-details > .course-field {
+  .qb-page .qb-body .qb-exam-details > .course-field {
     font-size: 10px;
     gap: 3px;
   }
 }
 @media print {
-  .qb-dialog > .qb-body,
-  .qb-body > .qb-sheet {
-    overflow: visible !important;
-    height: auto;
-    max-height: none;
-  }
-  .qb-dialog::backdrop {
-    background: transparent !important;
-  }
-  body:has(.qb-dialog[open]) > #printRoot {
+  body:has(.qb-page .qb-sheet) > :not(#app),
+  body:has(.qb-page .qb-sheet) > #app > :not(#questionBankPageHost),
+  body:has(.qb-page .qb-sheet) #questionBankPageHost > :not(.qb-page),
+  body:has(.qb-page .qb-sheet) .qb-page > :not(.qb-body),
+  body:has(.qb-page .qb-sheet) .qb-page > .qb-body > :not(.qb-sheet) {
     display: none !important;
   }
-  body:has(.qb-dialog[open]) > * {
-    display: none !important;
-  }
-  body:has(.qb-dialog[open]) > .qb-dialog[open] {
+  body:has(.qb-page .qb-sheet) > #app,
+  body:has(.qb-page .qb-sheet) #questionBankPageHost,
+  body:has(.qb-page .qb-sheet) .qb-page,
+  body:has(.qb-page .qb-sheet) .qb-page > .qb-body {
     display: block !important;
-    position: static;
-    width: 100%;
-    height: auto;
-    max-height: none;
-    border: 0;
-    padding: 0;
-    overflow: visible;
-    margin: 0;
-    box-shadow: none;
+    position: static !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    max-width: none !important;
+    border: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    box-shadow: none !important;
     background: white !important;
   }
-  .qb-dialog > * {
-    display: none !important;
-  }
-  .qb-dialog > div:has(.qb-sheet) {
+  body:has(.qb-page .qb-sheet) .qb-page > .qb-body > .qb-sheet {
     display: block !important;
-  }
-  .qb-dialog > div > .qb-sheet {
-    display: block !important;
+    overflow: visible !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
     page: qb-exam;
-  }
-  .qb-dialog > div > :not(.qb-sheet) {
-    display: none !important;
   }
   .qb-solution,
   .qb-confirm,

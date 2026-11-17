@@ -7,6 +7,7 @@
     ["schools", () => goSchools()],
     ["reports", () => goReports()],
     ["master", () => goMaster()],
+    ["question-bank", () => goQuestionBank()],
     ["settings", () => openSettingsModal()],
   ]);
   app.addEventListener("click", (event) => {
