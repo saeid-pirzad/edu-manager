@@ -3,6 +3,99 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { main } = require("./data-integrity.cjs");
 
+function inspectReportShell() {
+  const page = document.querySelector(".qb-page"),
+    header = page.querySelector(":scope>.qb-page-header"),
+    body = page.querySelector(":scope>.qb-body"),
+    tabs = body.querySelector(":scope>.qb-tabs");
+  const plain = (node) => {
+    const style = getComputedStyle(node);
+    return (
+      style.backgroundColor === "rgba(0, 0, 0, 0)" &&
+      style.backgroundImage === "none" &&
+      style.boxShadow === "none" &&
+      ["Top", "Right", "Bottom", "Left"].every(
+        (side) => parseFloat(style["border" + side + "Width"]) === 0,
+      )
+    );
+  };
+  const observed = {
+    shell: plain(page) && plain(header),
+    flow:
+      !page.hasAttribute("data-keyboard-viewport") &&
+      getComputedStyle(page).overflowY === "visible" &&
+      getComputedStyle(body).overflowY === "visible",
+    heading:
+      getComputedStyle(page.querySelector("#qb-title")).fontSize === "18px" &&
+      parseFloat(getComputedStyle(header).paddingInlineStart) === 0,
+    navigation:
+      !tabs ||
+      (!tabs.closest(".qb-panel") &&
+        parseFloat(getComputedStyle(body).paddingInlineStart) === 0 &&
+        parseFloat(getComputedStyle(tabs).marginBottom) === 18 &&
+        Math.abs(
+          tabs.getBoundingClientRect().right -
+            page.getBoundingClientRect().right,
+        ) < 1 &&
+        Math.abs(
+          tabs.getBoundingClientRect().left - page.getBoundingClientRect().left,
+        ) < 1),
+  };
+  if (!Object.values(observed).every(Boolean))
+    throw Error(JSON.stringify(observed));
+  return true;
+}
+
+function inspectFlatEditor() {
+  const panel = document.querySelector(".qb-editor-panel"),
+    form = panel.querySelector(".qb-form"),
+    summary = panel.querySelector(":scope>summary"),
+    fields = form.querySelector(".qb-form-fields");
+  const transparent = (node) => {
+      const style = getComputedStyle(node);
+      return (
+        style.backgroundColor === "rgba(0, 0, 0, 0)" &&
+        style.backgroundImage === "none"
+      );
+    },
+    noBorders = (node, edges = ["Top", "Right", "Bottom", "Left"]) =>
+      edges.every(
+        (edge) =>
+          parseFloat(getComputedStyle(node)["border" + edge + "Width"]) === 0,
+      ),
+    square = (node) =>
+      ["TopLeft", "TopRight", "BottomLeft", "BottomRight"].every(
+        (corner) =>
+          parseFloat(getComputedStyle(node)["border" + corner + "Radius"]) ===
+          0,
+      );
+  const observed = {
+    panel:
+      transparent(panel) &&
+      noBorders(panel) &&
+      square(panel) &&
+      getComputedStyle(panel).boxShadow === "none",
+    form: transparent(form) && noBorders(form) && square(form),
+    heading: transparent(summary) && square(summary),
+    groups: [
+      ...fields.querySelectorAll(":scope>fieldset,:scope>.qb-optional"),
+    ].every(
+      (node) =>
+        transparent(node) &&
+        square(node) &&
+        noBorders(node, ["Right", "Bottom", "Left"]),
+    ),
+    alignment:
+      Math.abs(
+        summary.getBoundingClientRect().right -
+          fields.getBoundingClientRect().right,
+      ) < 1,
+  };
+  if (!Object.values(observed).every(Boolean))
+    throw Error(JSON.stringify(observed));
+  return true;
+}
+
 async function compareClassFormDesign() {
   if (!globalThis.__qbClassCreateReference)
     throw Error("The real class creation form was not captured");
@@ -67,16 +160,13 @@ async function compareClassFormDesign() {
       "height",
     ]);
     compare("label", referenceLabel, bankLabel, ["fontSize", "rowGap"]);
-    compare("card", referencePanel, panel, [
-      "backgroundColor",
-      "borderTopColor",
-      "borderTopLeftRadius",
-    ]);
+    // The editor deliberately has no nested card; controls and actions still
+    // follow the shared creation form design.
     compare(
       "header",
       referencePanel.querySelector("summary"),
       panel.querySelector("summary"),
-      ["paddingTop", "paddingRight", "minHeight", "borderTopLeftRadius"],
+      ["paddingTop", "minHeight"],
     );
     compare(
       "headerIcon",
@@ -534,18 +624,26 @@ main({
           ),
         );
         check(
+          `${name} editor uses the reports-style unframed page ${width}`,
+          await evaluate("(" + inspectReportShell.toString() + ")()"),
+        );
+        check(
           `${name} editor remains a normal page inside the main content ${width}`,
           await evaluate(
             `(()=>{const page=document.querySelector('.qb-page');return page.tagName==='SECTION'&&page.closest('#questionBankPageHost')?.closest('#app')&&!page.matches(':modal')&&!document.querySelector('.qb-close')&&getComputedStyle(page).position!=='fixed'&&getComputedStyle(document.getElementById('app')).position!=='fixed';})()`,
           ),
         );
         check(
-          `${name} editor uses an open class-style creation card in document flow ${width}`,
+          `${name} editor keeps its accessible disclosure in document flow ${width}`,
           await evaluate(`(()=>{
             const page=document.querySelector('.qb-page'),body=page.querySelector('.qb-body'),panel=body.querySelector('.qb-editor-panel'),form=panel?.querySelector('.qb-form'),fields=form?.querySelector('.qb-form-fields'),summary=panel?.querySelector(':scope>summary');
             const observed={card:panel?.tagName==='DETAILS'&&panel.open&&panel.classList.contains('card')&&panel.classList.contains('create-panel'),heading:!!summary?.querySelector('.create-panel-symbol svg')&&!!summary.querySelector('.create-panel-title strong')&&!!summary.querySelector('.create-panel-title small')&&!!summary.querySelector('.create-panel-toggle'),editor:form?.classList.contains('record-editor')&&form.dataset.qbEditor===${JSON.stringify(name === "builder" ? "exam" : name)},pageFlow:getComputedStyle(page).overflowY==='visible',bodyFlow:getComputedStyle(body).overflowY==='visible',fieldsFlow:getComputedStyle(fields).overflowY==='visible',noNestedScroll:[page,body,form,fields].every(node=>node.scrollHeight<=node.clientHeight+1),staticActions:getComputedStyle(form.querySelector('.record-editor-actions')).position==='static'};
             if(!Object.values(observed).every(Boolean))throw Error(JSON.stringify(observed));return true;
           })()`),
+        );
+        check(
+          `${name} form has no nested card or boxed field groups ${width}`,
+          await evaluate("(" + inspectFlatEditor.toString() + ")()"),
         );
         const comparison = await evaluate(
           "(" + compareClassFormDesign.toString() + ")()",
@@ -673,6 +771,18 @@ main({
         deviceScaleFactor: 1,
         mobile: false,
       });
+      check(
+        `bank container keeps responsive space below the page header ${width}`,
+        await evaluate(`(()=>{
+          const host=document.getElementById('questionBankPageHost'),page=host.querySelector('.qb-page'),header=document.querySelector('#app>.topbar'),gap=parseFloat(getComputedStyle(host).marginBlockStart);
+          const observed={gap,headerBottom:header.getBoundingClientRect().bottom,pageTop:page.getBoundingClientRect().top};
+          if(gap<16||gap>24||observed.pageTop<observed.headerBottom+gap-1)throw Error(JSON.stringify(observed));return true;
+        })()`),
+      );
+      check(
+        `empty bank uses the reports-style unframed page ${width}`,
+        await evaluate("(" + inspectReportShell.toString() + ")()"),
+      );
       for (const index of [0, 1]) {
         await evaluate(
           `document.querySelectorAll('.qb-tabs button')[${index}].click()`,
@@ -897,6 +1007,10 @@ main({
             `__qbClick('بازگشت به آزمون‌های من');__qbClick('بانک سؤال');`,
           );
         if (view === "builder") await evaluate(`__qbClick('طراحی آزمون')`);
+        check(
+          `${view} uses independent navigation and natural page flow ${width}`,
+          await evaluate("(" + inspectReportShell.toString() + ")()"),
+        );
         if (view === "questions") {
           const parity = await evaluate(`(()=>{
               const host=document.createElement('div');host.className='session-workspace';host.inert=true;host.setAttribute('aria-hidden','true');host.style.cssText='position:fixed;left:-10000px;top:0;width:500px;pointer-events:none';
@@ -1063,6 +1177,10 @@ main({
           );
         }
         if (view === "builder") {
+          check(
+            `exam form has no nested card or boxed field groups ${width}`,
+            await evaluate("(" + inspectFlatEditor.toString() + ")()"),
+          );
           const comparison = await evaluate(
             "(" + compareClassFormDesign.toString() + ")()",
           );
@@ -1168,7 +1286,7 @@ main({
         }
         if (view === "builder")
           check(
-            `builder section edges align inside the class-style form card ${width}`,
+            `builder section edges align in the flat form ${width}`,
             await evaluate(
               `(()=>{const form=document.querySelector('.qb-builder'),fields=form.querySelector('.qb-form-fields'),grid=fields.getBoundingClientRect(),style=getComputedStyle(fields),left=grid.left+parseFloat(style.paddingLeft),right=grid.right-parseFloat(style.paddingRight);const boxes=[...fields.querySelectorAll(':scope>fieldset')].map(n=>n.getBoundingClientRect());const aligned=boxes.length===3&&boxes.every(r=>Math.abs(r.left-left)<1&&Math.abs(r.right-right)<1);if(!aligned)throw Error(JSON.stringify({grid:{left,right},boxes:boxes.map(r=>({left:r.left,right:r.right}))}));return aligned;})()`,
             ),
