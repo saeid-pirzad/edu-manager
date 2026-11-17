@@ -15,71 +15,41 @@ let singleFile = null,
   singleFileMessage = "ذخیره خودکار در فایل هنوز فعال نیست.";
 
 function singleFileBannerHtml() {
-  const name = singleFile?.handle?.name,
-    date = singleFile?.savedAt ? new Date(singleFile.savedAt) : null,
-    saved = date && Number.isFinite(date.getTime()),
-    needsReview =
+  return EduBackupAutomaticView.summaryHtml({
+    name: singleFile?.handle?.name,
+    savedAt: singleFile?.savedAt,
+    needsReview:
       singleFileFailure ||
       singleFilePermissionNeeded ||
-      !!singleFile?.suspension;
-  if (!name)
-    return '<span class="schools-file-meta">فایل پشتیبان انتخاب نشده</span>';
-  return (
-    '<bdi class="schools-file-name" dir="auto" title="' +
-    esc(name) +
-    '">' +
-    esc(name) +
-    '</bdi><span class="schools-file-meta">' +
-    (saved
-      ? 'آخرین ذخیره: <time datetime="' +
-        esc(date.toISOString()) +
-        '">' +
-        esc(
-          date.toLocaleString("fa-IR-u-ca-persian", {
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        ) +
-        "</time>"
-      : "هنوز ذخیره نشده") +
-    (needsReview ? " · نیاز به بررسی" : "") +
-    "</span>"
-  );
+      !!singleFile?.suspension,
+  });
 }
 function paintSingleFileBanner() {
-  const element = document.getElementById("welcomeFileSummary");
-  if (!element) return;
   const html = singleFileBannerHtml();
-  if (element.innerHTML !== html) element.innerHTML = html;
+  for (const id of ["welcomeFileSummary", "singleFileSummary"]) {
+    const element = document.getElementById(id);
+    if (element && element.innerHTML !== html) element.innerHTML = html;
+  }
 }
 function singleFileNoticeHtml(message = singleFileMessage) {
   const canRequest =
     singleFilePermissionNeeded &&
     window.showSaveFilePicker &&
     typeof singleFile?.handle?.requestPermission === "function";
-  return (
-    '<span class="single-file-message" role="status">' +
-    '<strong class="backup-file-purpose">اطلاعات مدرسه</strong>' +
-    (singleFile?.handle?.name
-      ? '<bdi class="backup-notice-filename" dir="ltr">' +
-        esc(singleFile.handle.name) +
-        "</bdi>"
-      : "") +
-    '<span class="backup-file-detail">' +
-    esc(message) +
-    "</span></span>" +
-    (canRequest
-      ? '<button type="button" class="single-file-permission-action" data-workspace-action="single-file-save" aria-label="اجازه مجدد برای فایل اطلاعات مدرسه: ' +
-        esc(singleFile.handle.name) +
-        '">اجازه مجدد</button>'
-      : "")
-  );
+  return EduBackupAutomaticView.noticeHtml({
+    purpose: "اطلاعات مدرسه",
+    name: singleFile?.handle?.name,
+    message,
+    permission: canRequest
+      ? {
+          attributes: { "data-workspace-action": "single-file-save" },
+          ariaLabel:
+            "اجازه مجدد برای فایل اطلاعات مدرسه: " + singleFile.handle.name,
+        }
+      : null,
+  });
 }
-// Only the presentation is shared. Each file keeps its own permission request,
-// repository and replacement safeguards, including after a restore.
+// Only presentation is shared; each file keeps its own permissions and safeguards.
 function paintQuestionBankFileNotice() {
   const panel = document.querySelector?.("#app .workspace-bar");
   if (!panel) return;
@@ -108,21 +78,21 @@ function paintQuestionBankFileNotice() {
           ? '</span></span><button type="button" class="single-file-permission-action" data-workspace-action="question-bank-file-permission" aria-label="اجازه مجدد برای فایل بانک سؤال و آزمون‌ها: ' +
             esc(state.name) +
             '">اجازه مجدد</button>'
-          : " برای بررسی فایل، بخش «پشتیبان» در بانک سؤال را باز کنید.</span></span>");
+          : " برای بررسی فایل، از منوی «پشتیبان و بازیابی»، تب «بانک سؤال و آزمون‌ها» را باز کنید.</span></span>");
       if (notice.innerHTML !== html) notice.innerHTML = html;
       // School notices already occupy their own full-width row immediately above.
       if (notice.parentElement !== panel) panel.append(notice);
     }
   }
-  const localSave = document.querySelector(".qb-file-save");
-  if (localSave) localSave.hidden = !!permission;
 }
 function renewQuestionBankFilePermission() {
   const service = globalThis.EduQuestionBankFileBackup?.service;
   if (
     !service?.supported() ||
     service.state().state !== "permission" ||
-    document.querySelector(".qb-confirm,.qb-page[aria-busy='true']")
+    document.querySelector(
+      ".qb-confirm,.qb-backup-confirm,.qb-backup[aria-busy='true'],.qb-page[aria-busy='true']",
+    )
   )
     return false;
   // No await before this call: retain the user's activation. Default approval
@@ -152,34 +122,42 @@ function singleFileStatus(message, { permission = false, saved = false } = {}) {
   }
 }
 function singleFilePanel() {
-  const summary =
-    "<summary><span>ذخیره خودکار</span><small>اختیاری</small></summary>";
-  if (!window.showSaveFilePicker)
-    return (
-      '<details class="backup-automatic">' +
-      summary +
-      '<p id="singleFileStatus" role="status">در این مرورگر در دسترس نیست؛ از «دریافت فایل» استفاده کنید.</p></details>'
-    );
-  return (
-    '<details class="backup-automatic"' +
-    (singleFileFailure || singleFilePermissionNeeded ? " open" : "") +
-    ">" +
-    summary +
-    '<p>فایل را یک‌بار انتخاب کنید؛ هنگام باز بودن برنامه، همان فایل به‌روز می‌شود.</p><div id="singleFileStatus" class="single-file-notice"' +
-    (singleFileNoticeSaved ? " hidden" : "") +
-    ">" +
-    singleFileNoticeHtml() +
-    "</div>" +
-    singleFileFallbackPanel(singleFileFailure) +
-    '<div class="row"><button data-workspace-action="single-file-choose">انتخاب فایل</button><button class="ghost" data-workspace-action="single-file-save" title="ذخیره اکنون / اجازه مجدد">ذخیره اکنون</button><button class="ghost" data-workspace-action="single-file-stop">قطع اتصال</button></div></details>'
-  );
-}
-function singleFileFallbackPanel(visible) {
-  return (
-    '<div id="singleFileFallback"' +
-    (visible ? "" : " hidden") +
-    "><p>فایل خالی پشتیبان نیست؛ فعلاً «دریافت فایل» را بزنید.</p></div>"
-  );
+  const supported = !!window.showSaveFilePicker;
+  const canRequest =
+    singleFilePermissionNeeded &&
+    supported &&
+    typeof singleFile?.handle?.requestPermission === "function";
+  return EduBackupAutomaticView.html({
+    supported,
+    open: singleFileFailure || singleFilePermissionNeeded,
+    purpose: "اطلاعات مدرسه",
+    name: singleFile?.handle?.name,
+    savedAt: singleFile?.savedAt,
+    needsReview:
+      singleFileFailure ||
+      singleFilePermissionNeeded ||
+      !!singleFile?.suspension,
+    message: singleFileMessage,
+    noticeHidden: singleFileNoticeSaved,
+    fallback: singleFileFailure,
+    ids: {
+      summary: "singleFileSummary",
+      status: "singleFileStatus",
+      fallback: "singleFileFallback",
+    },
+    permission: canRequest
+      ? {
+          attributes: { "data-workspace-action": "single-file-save" },
+          ariaLabel:
+            "اجازه مجدد برای فایل اطلاعات مدرسه: " + singleFile.handle.name,
+        }
+      : null,
+    actions: {
+      choose: { "data-workspace-action": "single-file-choose" },
+      save: { "data-workspace-action": "single-file-save" },
+      stop: { "data-workspace-action": "single-file-stop" },
+    },
+  });
 }
 function showSingleFileFallback(visible) {
   singleFileFailure = visible;

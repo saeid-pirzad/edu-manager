@@ -102,8 +102,8 @@ main({
         await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
         const tabs=[...document.querySelectorAll('.qb-page .qb-tabs > button')];
         const selected=tabs.filter(button=>button.getAttribute('aria-pressed')==='true');
-        return tabs.length===4&&selected.length===1&&selected[0].textContent.trim()==='طراحی آزمون'
-          &&tabs.filter(button=>button.getAttribute('aria-pressed')==='false').length===3;
+        return tabs.length===3&&selected.length===1&&selected[0].textContent.trim()==='طراحی آزمون'
+          &&tabs.filter(button=>button.getAttribute('aria-pressed')==='false').length===2;
       })()`),
     );
     check(
@@ -168,8 +168,8 @@ main({
         await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
         const tabs=[...document.querySelectorAll('.qb-page .qb-tabs > button')];
         const selected=tabs.filter(button=>button.getAttribute('aria-pressed')==='true');
-        return tabs.length===4&&selected.length===1&&selected[0].textContent.trim()==='طراحی آزمون'
-          &&tabs.filter(button=>button.getAttribute('aria-pressed')==='false').length===3;
+        return tabs.length===3&&selected.length===1&&selected[0].textContent.trim()==='طراحی آزمون'
+          &&tabs.filter(button=>button.getAttribute('aria-pressed')==='false').length===2;
       })()`),
     );
     check(
@@ -778,17 +778,20 @@ main({
       })()`),
     );
     check(
-      "a file read completing after page exit cannot open a restore confirmation or replace bank data",
+      "a file read completing after closing the shared backup hub cannot open a restore confirmation or replace bank data",
       await evaluate(`(async()=>{
-        __qbBusiness.click('پشتیبان');
+        document.querySelector('[data-workspace-action="backups"]').click();
+        for(let i=0;i<100&&(!document.querySelector('#backupHub')||document.getElementById('modal').classList.contains('hidden'));i++)await new Promise(resolve=>setTimeout(resolve,30));
+        document.querySelector('#backupHub [data-backup-tab="bank"]').click();
         const before=JSON.stringify(await EduQuestionBankRepository.read());
-        const input=document.querySelector('.qb-page input[type=file]'),transfer=new DataTransfer();
+        const input=document.querySelector('#backupBankPanel input[type=file]'),transfer=new DataTransfer();
         transfer.items.add(new File([JSON.stringify(EduQuestionBank.empty())],'Classyar-QuestionBank.json',{type:'application/json'}));
         input.files=transfer.files;let release;
         Object.defineProperty(input.files[0],'text',{value:()=>new Promise(resolve=>{release=resolve;})});
-        const reading=input.onchange();goSchools();
+        const reading=input.onchange();closeModal();goSchools();
         release(JSON.stringify(EduQuestionBank.empty()));await reading;
-        const safe=state.view==='schools'&&!document.querySelector('.qb-page,.qb-confirm')
+        const safe=state.view==='schools'&&!document.querySelector('.qb-page,.qb-backup-confirm')
+          &&document.getElementById('modal').classList.contains('hidden')
           &&JSON.stringify(await EduQuestionBankRepository.read())===before;
         await EduQuestionBankUI.open();return safe;
       })()`),

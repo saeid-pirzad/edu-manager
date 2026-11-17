@@ -25,33 +25,34 @@ ght","ماه بعد"]};for(const control of queryRoots(roots,"button,.entity-qui
 ,.qb-page")||control.dataset.copyState==="done")continue;const button=control.tagName==="BUTTON",label=control.textContent.trim(),cleanLabel=(label||control.getAttribute(
 "aria-label")||control.title||"").replace(prefix,""),glyph=Object.hasOwn(glyphs,label)?glyphs[label]:null,choice=!!control.closest(choices),isRich=!!control.closest(
 rich)||control.matches(".session-open,.session-setup-recent-item,.entity-enter,.lesson-enter,.header-home,.attendance-reminder-open"),name=(control.matches(".gr\
-ade-clear")?"eraser":null)||glyph?.[0]||(Object.hasOwn(ids,control.id)?ids[control.id]:null)||(Object.hasOwn(actions,control.dataset.workspaceAction)?actions[control.
-dataset.workspaceAction]:null)||(Object.hasOwn(legacyActions,control.dataset.legacyClick)?legacyActions[control.dataset.legacyClick]:null)||labels.find(([pattern])=>pattern.
-test(cleanLabel))?.[1];if(button){control.classList.add("ui-button");control.classList.toggle("ui-button-flat",!isRich);control.classList.toggle("ui-button-comp\
-act",control.matches(".grade-clear"));if(!isRich&&!choice)control.classList.toggle("ui-button-icon-only",!!glyph||!label&&!!control.querySelector("svg"))}if(glyph&&
-button){if(!control.hasAttribute("aria-label"))control.setAttribute("aria-label",control.title||(control.classList.contains("danger")?"حذف":glyph[1]));control.
-classList.add("ui-button-icon-only");control.replaceChildren()}if(name&&control.dataset.uiIcon!=="none"&&!control.querySelector("svg,.control-icon")&&!control.closest(
-".cal-days,.karnameh-stage-options,.competency-choices,.att-btns")){const icon=document.createElement("span");icon.className="control-icon";icon.setAttribute("a\
-ria-hidden","true");icon.innerHTML=EduIcons.html(name);if(prefix.test(label)){const first=[...control.childNodes].find(node=>node.nodeType===3);if(first)first.textContent=
-first.textContent.replace(prefix,"")}control.prepend(icon)}if(!button||isRich||choice||control.matches(".header-action"))continue;const tone=control.classList.contains(
-"danger")?"danger":control.classList.contains("success")?"save":control.hasAttribute("data-periodic-excel")?"excel":control.hasAttribute("data-periodic-excel-sh\
-are")?"share":control.matches(".grade-clear")?"danger":tones[name];if(tone){control.dataset.uiTone=tone;control.dataset.uiVariant=control.classList.contains("gh\
-ost")||control.classList.contains("danger")||control.classList.contains("ui-button-icon-only")||tone==="neutral"?"soft":"solid"}for(const node of[...control.childNodes]){
-if(node.nodeType!==3||!node.textContent.trim())continue;const span=document.createElement("span");span.className="ui-button-label";node.replaceWith(span);span.append(
-node)}}}function updateDesign(appChanged){let nav=document.getElementById("uiBottomNav");if(!nav){nav=document.createElement("nav");nav.id="uiBottomNav";nav.className=
-"no-print";nav.setAttribute("aria-label","دسترسی اصلی");const items=[["schools","خانه","M3 10 12 3l9 7M5 9v12h5v-7h4v7h5V9",()=>goSchools()],["cla\
-ss","کلاس‌ها","M4 4h16v14H4zM8 21h8M12 18v3M8 8h8M8 12h5",()=>goCurrentClass()],["master","برنامه","M4 5h16v16H4zM8 3v4M16 3v4M4 10h16M8 14h2M14 1\
-4h2",()=>goMaster()],["reports","گزارش‌ها","M4 3v18h17M8 17v-5M13 17V8M18 17V5",()=>goReports()],["question-bank","بانک سؤال","M12 5C9 3 6 3 3 \
-4v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1Zm0 0v15",()=>goQuestionBank()]];for(const[view,label,path,action]of items){const b=document.createElement("button");
-b.type="button";b.dataset.view=view;b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-lin\
-ejoin="round" aria-hidden="true"><path d="'+path+'"/></svg><span>'+label+"</span>";b.onclick=action;nav.append(b)}document.body.append(nav)}nav.hidden=!!(db.settings.
-password&&!isAuthenticated);nav.inert=!document.getElementById("modal").classList.contains("hidden");const current=["school","class","lesson"].includes(state.view)?
-"class":state.view;for(const b of nav.children){const value=b.dataset.view===current?"page":"false";if(b.getAttribute("aria-current")!==value)b.setAttribute("ar\
-ia-current",value)}if(!appChanged)return;for(const button of document.querySelectorAll("#app .tabs > button")){if(button.closest(".qb-page"))continue;const pressed=String(
-button.classList.contains("active"));if(button.getAttribute("aria-pressed")!==pressed)button.setAttribute("aria-pressed",pressed)}for(const item of document.querySelectorAll(
-"#app .list-item[onclick],#app .list-item[data-legacy-click]")){if(!item.hasAttribute("tabindex")){item.tabIndex=0;item.setAttribute("role","link");item.addEventListener(
-"keydown",e=>{if(e.target===item&&(e.key==="Enter"||e.key===" ")){e.preventDefault();item.click()}})}}for(const input of document.querySelectorAll('#app form in\
-put[name="name"]')){if(!input.getAttribute("aria-label")&&!input.labels?.length)input.setAttribute("aria-label",input.placeholder||"نام")}}function styleDataTables(tables){
+ade-clear")?"eraser":null)||glyph?.[0]||(Object.hasOwn(ids,control.id)?ids[control.id]:null)||{choose:"folder",save:"save",stop:"disconnect",permission:"save"}[control.
+dataset.backupFileAction]||(Object.hasOwn(actions,control.dataset.workspaceAction)?actions[control.dataset.workspaceAction]:null)||(Object.hasOwn(legacyActions,
+control.dataset.legacyClick)?legacyActions[control.dataset.legacyClick]:null)||labels.find(([pattern])=>pattern.test(cleanLabel))?.[1];if(button){control.classList.
+add("ui-button");control.classList.toggle("ui-button-flat",!isRich);control.classList.toggle("ui-button-compact",control.matches(".grade-clear"));if(!isRich&&!choice)
+control.classList.toggle("ui-button-icon-only",!!glyph||!label&&!!control.querySelector("svg"))}if(glyph&&button){if(!control.hasAttribute("aria-label"))control.
+setAttribute("aria-label",control.title||(control.classList.contains("danger")?"حذف":glyph[1]));control.classList.add("ui-button-icon-only");control.replaceChildren()}
+if(name&&control.dataset.uiIcon!=="none"&&!control.querySelector("svg,.control-icon")&&!control.closest(".cal-days,.karnameh-stage-options,.competency-choices,.\
+att-btns")){const icon=document.createElement("span");icon.className="control-icon";icon.setAttribute("aria-hidden","true");icon.innerHTML=EduIcons.html(name);if(prefix.
+test(label)){const first=[...control.childNodes].find(node=>node.nodeType===3);if(first)first.textContent=first.textContent.replace(prefix,"")}control.prepend(icon)}
+if(!button||isRich||choice||control.matches(".header-action"))continue;const tone=control.classList.contains("danger")?"danger":control.classList.contains("succ\
+ess")?"save":control.hasAttribute("data-periodic-excel")?"excel":control.hasAttribute("data-periodic-excel-share")?"share":control.matches(".grade-clear")?"dang\
+er":tones[name];if(tone){control.dataset.uiTone=tone;control.dataset.uiVariant=control.classList.contains("ghost")||control.classList.contains("danger")||control.
+classList.contains("ui-button-icon-only")||tone==="neutral"?"soft":"solid"}for(const node of[...control.childNodes]){if(node.nodeType!==3||!node.textContent.trim())
+continue;const span=document.createElement("span");span.className="ui-button-label";node.replaceWith(span);span.append(node)}}}function updateDesign(appChanged){
+let nav=document.getElementById("uiBottomNav");if(!nav){nav=document.createElement("nav");nav.id="uiBottomNav";nav.className="no-print";nav.setAttribute("aria-l\
+abel","دسترسی اصلی");const items=[["schools","خانه","M3 10 12 3l9 7M5 9v12h5v-7h4v7h5V9",()=>goSchools()],["class","کلاس‌ها","M4 4h16v14H4\
+zM8 21h8M12 18v3M8 8h8M8 12h5",()=>goCurrentClass()],["master","برنامه","M4 5h16v16H4zM8 3v4M16 3v4M4 10h16M8 14h2M14 14h2",()=>goMaster()],["reports","گز\
+ارش‌ها","M4 3v18h17M8 17v-5M13 17V8M18 17V5",()=>goReports()],["question-bank","بانک سؤال","M12 5C9 3 6 3 3 4v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6\
+-1-9 1Zm0 0v15",()=>goQuestionBank()]];for(const[view,label,path,action]of items){const b=document.createElement("button");b.type="button";b.dataset.view=view;b.
+innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path\
+ d="'+path+'"/></svg><span>'+label+"</span>";b.onclick=action;nav.append(b)}document.body.append(nav)}nav.hidden=!!(db.settings.password&&!isAuthenticated);nav.
+inert=!document.getElementById("modal").classList.contains("hidden");const current=["school","class","lesson"].includes(state.view)?"class":state.view;for(const b of nav.
+children){const value=b.dataset.view===current?"page":"false";if(b.getAttribute("aria-current")!==value)b.setAttribute("aria-current",value)}if(!appChanged)return;
+for(const button of document.querySelectorAll("#app .tabs > button")){if(button.closest(".qb-page"))continue;const pressed=String(button.classList.contains("act\
+ive"));if(button.getAttribute("aria-pressed")!==pressed)button.setAttribute("aria-pressed",pressed)}for(const item of document.querySelectorAll("#app .list-item\
+[onclick],#app .list-item[data-legacy-click]")){if(!item.hasAttribute("tabindex")){item.tabIndex=0;item.setAttribute("role","link");item.addEventListener("keydo\
+wn",e=>{if(e.target===item&&(e.key==="Enter"||e.key===" ")){e.preventDefault();item.click()}})}}for(const input of document.querySelectorAll('#app form input[na\
+me="name"]')){if(!input.getAttribute("aria-label")&&!input.labels?.length)input.setAttribute("aria-label",input.placeholder||"نام")}}function styleDataTables(tables){
 for(const table of tables){const head=table.tHead;if(!head||!head.rows.length)continue;const headers=[...head.rows[0].cells];const labels=headers.map(c=>c.textContent.
 trim());const bodyRows=[...table.tBodies].flatMap(b=>[...b.rows]);const simple=!["matrix","compact"].includes(table.dataset.mobileLayout)&&!table.classList.contains(
 "week-table")&&head.rows.length===1&&(headers.length<=6||table.dataset.mobileLayout==="cards")&&headers.every(c=>c.colSpan===1)&&bodyRows.every(r=>r.cells.length===

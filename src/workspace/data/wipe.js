@@ -2,15 +2,15 @@ async function wipeAllV24() {
   if (fileMode || !ready || connectionRetired)
     return handleError(Error("ابتدا نسخه آماده برنامه را باز کنید."));
   showModal(
-    "حذف کامل اطلاعات سیستم",
+    "پاک‌سازی اطلاعات مدرسه",
     '<form class="record-editor wipe-editor" id="wipeEditor" data-workspace-submit="confirm-wipe" aria-describedby="wipeWarning">' +
       '<section class="wipe-warning" id="wipeWarning"><span class="wipe-symbol" aria-hidden="true">' +
       EduIcons.html("trash") +
-      "</span><div><h4>حذف همهٔ سال‌های تحصیلی</h4><p>همهٔ اطلاعات این مرورگر پاک می‌شود؛ بازگردانی فقط با فایل پشتیبان ممکن است.</p></div></section>" +
-      '<section class="wipe-scope" aria-label="اطلاعاتی که حذف می‌شوند"><h4>اطلاعات مشمول حذف</h4><p>مدرسه‌ها، کلاس‌ها، هنرجویان، درس‌ها، برنامه، جلسات، نمرات، فعالیت‌ها، گزارش‌ها و پشتیبان‌های داخلی.</p></section>' +
-      '<section class="wipe-backup" aria-label="پشتیبان پیش از حذف"><p>فایل‌های روی دستگاه و نصب برنامه باقی می‌مانند.</p><button type="button" class="ghost wipe-export" data-workspace-action="export-full" title="دریافت پشتیبان کامل سیستم">دریافت پشتیبان</button></section>' +
+      "</span><div><h4>حذف اطلاعات مدرسه از این مرورگر</h4><p>بازگردانی فقط با فایل پشتیبان مدرسه ممکن است.</p></div></section>" +
+      '<section class="wipe-scope" aria-label="اطلاعاتی که حذف می‌شوند"><h4>اطلاعات مشمول حذف</h4><p>مدرسه‌ها، کلاس‌ها، هنرجویان، درس‌ها، برنامه، جلسات، حضور، نمرات، فعالیت‌ها و پیش‌نویس‌های مدرسه.</p></section>' +
+      '<section class="wipe-backup" aria-label="پشتیبان پیش از حذف"><p>بانک سؤال و آزمون‌ها، فایل‌های روی دستگاه و نصب برنامه باقی می‌مانند.</p><button type="button" class="ghost wipe-export" data-workspace-action="export-full" title="دریافت پشتیبان اطلاعات مدرسه">دریافت پشتیبان</button></section>' +
       '<div class="wipe-confirmation"><label for="wipeText">برای تأیید، «حذف» را بنویسید</label><input id="wipeText" autocomplete="off" spellcheck="false" aria-describedby="wipeError" placeholder="حذف"><label class="wipe-backup-check" for="wipeBackup"><input type="checkbox" id="wipeBackup"><span>پشتیبان مستقل را نگه داشته‌ام.</span></label></div>' +
-      '<p id="wipeError" class="entity-create-error" role="alert"></p><div class="record-editor-actions wipe-actions"><button type="button" class="ghost" data-workspace-action="close">انصراف</button><button type="submit" class="danger">حذف کامل اطلاعات</button></div></form>',
+      '<p id="wipeError" class="entity-create-error" role="alert"></p><div class="record-editor-actions wipe-actions"><button type="button" class="ghost" data-workspace-action="close">انصراف</button><button type="submit" class="danger">حذف اطلاعات مدرسه</button></div></form>',
   );
 }
 async function confirmWipe() {
@@ -28,7 +28,11 @@ async function confirmWipe() {
     );
     return false;
   }
-  if (!confirm("آخرین تأیید: همه اطلاعات این برنامه از این مرورگر حذف شوند؟"))
+  if (
+    !confirm(
+      "آخرین تأیید: فقط اطلاعات مدرسه از این مرورگر حذف شود؟ بانک سؤال و فایل‌های دستگاه باقی می‌مانند.",
+    )
+  )
     return false;
   resetBusy = true;
   const hadFileTimer = !!singleFileTimer;
@@ -69,14 +73,16 @@ async function confirmWipe() {
     finish();
     rememberRecordEditor();
     closeModal();
-    resetScreen("اطلاعات پاک شد؛ برنامه با اطلاعات خالی دوباره باز می‌شود.");
+    resetScreen(
+      "اطلاعات مدرسه پاک شد؛ بانک سؤال و فایل‌های دستگاه باقی ماندند. برنامه دوباره باز می‌شود.",
+    );
     location.reload();
     return true;
   } catch (error) {
     if (committedReset) {
       forgetInstallation();
       resetScreen(
-        "اطلاعات بانک حذف شد، اما پاک‌سازی حافظه مرورگر کامل نشد. با بارگذاری مجدد، پاک‌سازی ادامه پیدا می‌کند و داده قدیمی وارد نخواهد شد. " +
+        "اطلاعات مدرسه حذف شد، اما پاک‌سازی حافظهٔ مربوط به مدرسه کامل نشد. با بارگذاری مجدد، پاک‌سازی ادامه پیدا می‌کند؛ بانک سؤال و فایل‌های دستگاه تغییر نکرده‌اند. " +
           error.message,
       );
     } else if (error.resetBlocked) {

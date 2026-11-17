@@ -86,7 +86,7 @@ function installWorkspaceActions() {
     ["undo", () => openUndoModal()],
     ["confirm-undo", () => confirmUndo()],
     ["raw-recovery", () => rawRecoveryV24()],
-    ["choose-import", () => document.getElementById("importFile").click()],
+    ["choose-import", () => chooseBackupImport()],
     ["print", (button) => printCurrentKarnameh(button)],
     ["close", () => closeModal()],
     ["reload", () => location.reload()],

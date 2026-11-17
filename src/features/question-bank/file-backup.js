@@ -1,9 +1,13 @@
 (function (root) {
   "use strict";
-  function assertFileName(name) {
+  function assertFileName(name, { allowText = false } = {}) {
     if (
       typeof name !== "string" ||
-      !/^Classyar-QuestionBank(?: ?\([1-9]\d*\))?\.json$/.test(name)
+      !(
+        allowText
+          ? /^Classyar-QuestionBank(?: ?\([1-9]\d*\))?\.(?:json|txt)$/
+          : /^Classyar-QuestionBank(?: ?\([1-9]\d*\))?\.json$/
+      ).test(name)
     )
       throw Error(
         "نام فایل بانک سؤال باید Classyar-QuestionBank.json یا نسخهٔ شماره‌دار آن مانند Classyar-QuestionBank(1).json باشد. فایل‌های قدیمی را ابتدا تغییر نام دهید؛ محتوای آن‌ها نیز بررسی می‌شود.",
@@ -16,7 +20,8 @@
       initialized,
       timer,
       debounce,
-      choosing = false;
+      choosing = false,
+      clearing = false;
     const listeners = new Set();
     let status = {
       state: "inactive",
@@ -205,7 +210,7 @@
       });
     }
     function schedule() {
-      if (!supported()) return;
+      if (!supported() || clearing) return;
       host.clearTimeout(debounce);
       debounce = host.setTimeout(() => {
         sync().catch(failed);
@@ -239,11 +244,11 @@
       return "Classyar-QuestionBank.json";
     }
     async function choose() {
-      if (choosing || !supported()) return false;
+      if (choosing || clearing || !supported()) return false;
       choosing = true;
       try {
         // Invoke the picker before awaiting storage, preserving the click gesture.
-        const handle = await host.showSaveFilePicker({
+        const selection = host.showSaveFilePicker({
           suggestedName: suggestedName(),
           excludeAcceptAllOption: true,
           types: [
@@ -253,12 +258,23 @@
             },
           ],
         });
+        // Start the source snapshot while the picker is open. A clear in another
+        // window must not turn an old pending selection into an empty-file write.
+        const initialBank = repository.read();
+        const [handle, selectedFrom] = await Promise.all([
+          selection,
+          initialBank,
+        ]);
         if (handle.kind !== "file" || !/\.json$/i.test(handle.name))
           throw Error("فقط فایل JSON بانک سؤال انتخاب کنید.");
         return await locked(async () => {
           config = await repository.readBackup();
           const before = await inspect(handle, true);
           const bank = D.validate(await repository.read());
+          if (bank.revision !== selectedFrom.revision)
+            throw Error(
+              "اطلاعات بانک هنگام انتخاب فایل تغییر کرد؛ فایل نوشته نشد. دوباره فایل را انتخاب کنید.",
+            );
           const json = D.size(bank);
           // Never silently replace a populated, different backup during selection.
           if (before.bank && contents(before.bank) !== contents(bank))
@@ -289,7 +305,7 @@
       }
     }
     async function saveNow(approve = () => false) {
-      if (!supported() || !config) return false;
+      if (clearing || !supported() || !config) return false;
       const target = config;
       try {
         // Permission must also be requested directly in the user's click.
@@ -318,6 +334,8 @@
       }
     }
     async function stop() {
+      if (clearing)
+        throw Error("پاک‌سازی بانک سؤال در حال انجام است؛ کمی صبر کنید.");
       if (!supported()) return false;
       const expectedId = config?.id;
       return locked(async () => {
@@ -353,6 +371,43 @@
         }
       });
     }
+    async function clear(expected, { isCurrent = () => true } = {}) {
+      const cancelled = () =>
+        Error("عملیات لغو شد؛ اطلاعات بانک سؤال تغییر نکرد.");
+      if (!isCurrent()) throw cancelled();
+      if (choosing || clearing)
+        throw Error(
+          "انتخاب فایل یا پاک‌سازی بانک سؤال در حال انجام است؛ پس از پایان آن دوباره تلاش کنید.",
+        );
+      clearing = true;
+      try {
+        // Initialization may have an existing file write in flight. Finish it
+        // before taking the same cross-window lock used by every writer.
+        if (initialized) await initialized;
+        if (!isCurrent()) throw cancelled();
+        const reset = async () => {
+          if (!isCurrent()) throw cancelled();
+          const bank = await repository.clear(expected, { isCurrent });
+          config = null;
+          host.clearTimeout(debounce);
+          notify(
+            "inactive",
+            "اطلاعات بانک سؤال پاک شد و ذخیرهٔ خودکار قطع شد؛ فایل‌های دستگاه تغییر نکردند.",
+          );
+          return bank;
+        };
+        if (host.navigator?.locks?.request) return await locked(reset);
+        // A previously connected file cannot be safely detached without the
+        // lock which coordinates its other windows. Manual-only banks can clear.
+        if (await repository.readBackup())
+          throw Error(
+            "برای حفظ فایل قبلی، پاک‌سازی بانک سؤال را در Chrome یا Edge انجام دهید.",
+          );
+        return await reset();
+      } finally {
+        clearing = false;
+      }
+    }
     function subscribe(listener) {
       listeners.add(listener);
       listener({ ...status });
@@ -371,6 +426,7 @@
       saveNow,
       stop,
       suspend,
+      clear,
       subscribe,
       schedule,
       dispose,

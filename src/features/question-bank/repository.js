@@ -34,23 +34,41 @@
       tx.onabort = () => reject(tx.error || Error("خواندن بانک ناموفق بود."));
     });
   }
-  async function save(bank, expected) {
+  async function writeBank(
+    bank,
+    expected,
+    { isCurrent = () => true } = {},
+    detachBackup = false,
+  ) {
+    const cancelled = () =>
+      Error("عملیات لغو شد؛ بخش پشتیبان دیگر فعال نیست. اطلاعات تغییر نکرد.");
+    if (!isCurrent()) throw cancelled();
     const next = structuredClone(bank);
     next.revision = expected + 1;
     root.EduQuestionBank.validate(next);
     const db = await open();
+    if (!isCurrent()) throw cancelled();
     return new Promise((resolve, reject) => {
       const tx = db.transaction("bank", "readwrite"),
         store = tx.objectStore("bank"),
         r = store.get("current");
-      let conflict = false;
+      let conflict = false,
+        invalidated = false;
       r.onsuccess = () => {
+        if (!isCurrent()) {
+          invalidated = true;
+          tx.abort();
+          return;
+        }
         if ((r.result?.revision || 0) !== expected) {
           conflict = true;
           tx.abort();
           return;
         }
         store.put(next, "current");
+        // Keep the new empty bank and detaching its file connection atomic.
+        // A monotonically increasing revision also invalidates stale editors.
+        if (detachBackup) store.delete("file-backup");
       };
       tx.oncomplete = () => {
         resolve(next);
@@ -58,14 +76,22 @@
       };
       tx.onabort = () =>
         reject(
-          conflict
-            ? Error(
-                "بانک در پنجره دیگری تغییر کرده است. بانک را ببندید و دوباره باز کنید؛ تغییرات شما ذخیره نشد.",
-              )
-            : tx.error ||
+          invalidated
+            ? cancelled()
+            : conflict
+              ? Error(
+                  "بانک در پنجره دیگری تغییر کرده است. بانک را ببندید و دوباره باز کنید؛ تغییرات شما ذخیره نشد.",
+                )
+              : tx.error ||
                 Error("ذخیره بانک ناموفق بود؛ فضای دستگاه را بررسی کنید."),
         );
     });
+  }
+  function save(bank, expected, options) {
+    return writeBank(bank, expected, options);
+  }
+  function clear(expected, options) {
+    return writeBank(root.EduQuestionBank.empty(), expected, options, true);
   }
   async function readBackup() {
     const db = await open();
@@ -88,5 +114,11 @@
         reject(tx.error || Error("ثبت اتصال فایل ناموفق بود."));
     });
   }
-  root.EduQuestionBankRepository = { read, save, readBackup, writeBackup };
+  root.EduQuestionBankRepository = {
+    read,
+    save,
+    clear,
+    readBackup,
+    writeBackup,
+  };
 })(globalThis);

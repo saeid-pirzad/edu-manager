@@ -539,6 +539,11 @@ async function keyboardEditorProbe({ landscape = false } = {}) {
 main({
   stage: "question-bank",
   runExtra: async ({ evaluate, cdp, cases, root, delay }) => {
+    // The shared integrity checks deliberately leave their school workspace
+    // stale. The shared backup menu correctly rejects that context, so start
+    // this user workflow in a fresh, readable application just as the business
+    // audit does; the bank and school databases themselves remain intact.
+    await require("./browser-ready.cjs")({ cdp, evaluate, delay });
     const evaluateGesture = async (expression) => {
       const result = await cdp("Runtime.evaluate", {
         expression,
@@ -751,6 +756,23 @@ main({
       `for(const d of document.querySelectorAll('.navigation-menu,.workspace-tools'))d.open=true;document.querySelector('.question-bank-entry').focus();document.querySelector('.question-bank-entry').click()`,
     );
     await delay(100);
+    await evaluate(`window.__qbOpenBackup=async()=>{
+      closeModal();
+      const previous=document.querySelector('#backupHub');
+      document.querySelector('[data-workspace-action="backups"]').click();
+      const ready=()=>document.querySelector('#backupHub')&&document.querySelector('#backupHub')!==previous&&!document.getElementById('modal').classList.contains('hidden');
+      for(let i=0;i<100&&!ready();i++)await new Promise(resolve=>setTimeout(resolve,30));
+      const hub=document.querySelector('#backupHub');
+      if(!ready())throw Error('The shared backup hub did not open');
+      hub.querySelector('[data-backup-tab="bank"]').click();
+      for(let i=0;i<100&&!hub.querySelector('#backupBankPanel .qb-backup');i++)await new Promise(resolve=>setTimeout(resolve,30));
+      if(!hub.querySelector('#backupBankPanel .qb-backup'))throw Error('The question bank backup panel did not mount');
+    };window.__qbOpenAutomaticBackup=()=>{
+      const details=document.querySelector('#backupBankPanel details.qb-backup-automatic');
+      if(!details)throw Error('The automatic backup disclosure is missing');
+      if(!details.open)details.querySelector('summary').click();
+      if(!details.open)throw Error('The automatic backup disclosure did not open');
+    };`);
     check(
       "opening the bank uses a labelled main page without an outer modal",
       await evaluate(
@@ -758,17 +780,20 @@ main({
       ),
     );
     check(
-      "the local storage banner is absent and file management remains accessible in the final backup tab",
+      "the bank has no local storage banner and file management opens in the shared backup hub",
       await evaluate(
-        `(()=>{
+        `(async()=>{
           const page=document.querySelector('.qb-page'),tabs=[...page.querySelectorAll('.qb-tabs button')];
           const absent=!page.querySelector('.qb-storage-bar,.qb-storage-copy,.qb-storage-state')
             &&![...page.querySelectorAll('button')].some(button=>['فعال‌سازی خودکار','تنظیمات ذخیره'].includes(button.textContent.trim()));
-          tabs.at(-1).click();
-          const backup=tabs.at(-1).textContent==='پشتیبان'&&!!document.querySelector('.qb-backup')
+          await __qbOpenBackup();
+          const backup=tabs.length===3&&!tabs.some(tab=>tab.textContent==='پشتیبان')
+            &&document.querySelector('#backupHub [data-backup-tab="bank"]').getAttribute('aria-selected')==='true'
+            &&!!document.querySelector('#modalBody .qb-backup')
             &&document.querySelectorAll('.qb-file-actions button').length===3
             &&!!document.querySelector('.qb-backup-manual input[type=file]')
-            &&[...document.querySelectorAll('.qb-backup-manual>button')].some(button=>button.textContent==='دریافت فایل بانک');
+            &&[...document.querySelectorAll('.qb-backup-manual button')].some(button=>button.textContent==='دریافت فایل');
+          closeModal();
           document.querySelector('.qb-tabs button').click();
           return absent&&backup&&document.querySelector('.qb-message').hidden&&!document.querySelector('.qb-storage-bar');
         })()`,
@@ -779,15 +804,15 @@ main({
       await evaluate(
         `(()=>{
           const tabs=[...document.querySelectorAll('.qb-tabs button')];
-          const accessible=tabs.length===4&&tabs.every(b=>!b.disabled&&!b.hidden);
-          for(let index=0;index<4;index++){
+          const accessible=tabs.length===3&&tabs.every(b=>!b.disabled&&!b.hidden);
+          for(let index=0;index<3;index++){
             document.querySelectorAll('.qb-tabs button')[index].click();
             if(document.querySelector('.qb-page .qb-storage-bar,.qb-page .qb-storage-copy'))return false;
             if([...document.querySelectorAll('.qb-page button')].some(button=>['فعال‌سازی خودکار','تنظیمات ذخیره'].includes(button.textContent.trim())))return false;
           }
-          const backup=!!document.querySelector('.qb-backup')&&!document.querySelector('.qb-toolbar');
+          const independent=!document.querySelector('.qb-page .qb-backup');
           document.querySelector('.qb-tabs button').click();
-          return accessible&&backup&&!!document.querySelector('.qb-panel .qb-toolbar')&&!!document.querySelector('.qb-empty');
+          return accessible&&independent&&!!document.querySelector('.qb-panel .qb-toolbar')&&!!document.querySelector('.qb-empty');
         })()`,
       ),
     );
@@ -863,19 +888,24 @@ main({
         const notice=document.getElementById('questionBankFileBadge'),button=notice.querySelector('button'),a=school.getBoundingClientRect(),b=notice.getBoundingClientRect();
         const shown=button.textContent==='اجازه مجدد'&&!document.querySelector('.qb-storage-bar,.qb-storage-state')&&notice.textContent.includes('مجوز فایل نیاز به تأیید دارد.')&&school.querySelector('.backup-file-purpose').textContent==='اطلاعات مدرسه'&&notice.querySelector('.backup-file-purpose').textContent==='بانک سؤال و آزمون‌ها'&&notice.querySelector('bdi').textContent===name&&button.getAttribute('aria-label').includes(name)&&b.top>=a.bottom+4&&Math.abs(a.left-b.left)<1&&Math.abs(a.right-b.right)<1&&school.scrollWidth<=school.clientWidth+1&&notice.scrollWidth<=notice.clientWidth+1&&[button,schoolAction].every(n=>n.getBoundingClientRect().height>=44);
         button.click();await Promise.resolve();
-        const direct=shown&&calls===1&&!school.hidden&&document.getElementById('questionBankFileBadge').hidden&&!document.querySelector('.qb-backup')&&!document.querySelector('.qb-storage-bar')&&service.state().state==='active';
+        const direct=shown&&calls===1&&!school.hidden&&document.getElementById('questionBankFileBadge').hidden&&!document.querySelector('#modal:not(.hidden) .qb-backup')&&!document.querySelector('.qb-storage-bar')&&service.state().state==='active';
         emit({state:'permission',connected:true,name,savedAt,message:'مجوز فایل نیاز به تأیید دارد.'});
-        document.querySelectorAll('.qb-tabs button')[3].click();
-        const summary=document.querySelector('.qb-file-summary'),fileName=summary.querySelector('bdi');
-        const visible=fileName.textContent===name&&!fileName.hidden&&fileName.dir==='ltr'&&fileName.title===name&&summary.querySelector('time').dateTime===savedAt&&document.querySelector('.qb-file-status').textContent.includes('قبلاً انتخاب شده');
-        const oneAction=document.querySelector('.qb-file-save').hidden&&!document.getElementById('questionBankFileBadge').hidden;
-        document.querySelector('#questionBankFileBadge button').click();await Promise.resolve();
-        const renewed=oneAction&&calls===2&&choices===0&&fileName.textContent===name&&document.querySelector('.qb-file-status').dataset.state==='active';
+        await __qbOpenBackup();
+        const summary=()=>document.querySelector('.qb-file-summary'),fileName=()=>summary().querySelector('bdi');
+        const visible=document.querySelector('details.qb-backup-automatic').open&&fileName().textContent===name&&!fileName().hidden&&fileName().dir==='auto'&&fileName().title===name&&summary().querySelector('time').dateTime===savedAt&&document.querySelector('.qb-file-status .backup-file-detail').textContent===state.message;
+        const localRenew=document.querySelector('[data-qb-file-permission]');
+        const oneAction=!!localRenew&&!localRenew.hidden&&!localRenew.disabled&&localRenew.textContent==='اجازه مجدد'
+          &&document.querySelector('.qb-file-save').textContent==='ذخیره اکنون'
+          &&document.querySelectorAll('.qb-backup-automatic .single-file-permission-action').length===1
+          &&!document.getElementById('questionBankFileBadge').hidden
+          &&!!document.querySelector('#questionBankFileBadge button').closest('[inert]');
+        localRenew.click();await Promise.resolve();
+        const renewed=oneAction&&calls===2&&choices===0&&fileName().textContent===name&&document.querySelector('.qb-file-status').dataset.state==='active';
         emit({state:'paused',connected:true,name,savedAt:'invalid',message:'تأیید جایگزینی لازم است'});
-        const paused=fileName.textContent===name&&!fileName.hidden&&!summary.querySelector('time')&&summary.textContent.includes('هنوز ذخیره نشده')&&document.querySelector('.qb-file-status').textContent==='تأیید جایگزینی لازم است';
+        const paused=fileName().textContent===name&&!fileName().hidden&&!summary().querySelector('time')&&summary().textContent.includes('هنوز ذخیره نشده')&&document.querySelector('.qb-file-status .backup-file-detail').textContent==='تأیید جایگزینی لازم است';
         emit({state:'inactive',connected:false,name:'',savedAt:'',message:'اتصال قطع شد'});
-        const stopped=fileName.hidden&&!fileName.textContent&&!summary.querySelector('time')&&summary.textContent.includes('انتخاب نشده');
-        goSchools();emit({state:'permission',connected:true,name,savedAt,message:'مجوز فایل نیاز به تأیید دارد.'});
+        const stopped=!fileName()&&!summary().querySelector('time')&&summary().textContent.includes('انتخاب نشده');
+        closeModal();goSchools();emit({state:'permission',connected:true,name,savedAt,message:'مجوز فایل نیاز به تأیید دارد.'});
         service.saveNow=()=>{calls++;emit({state:'paused',connected:true,name,savedAt,message:'فایل هنوز ذخیره نشده؛ تأیید جایگزینی لازم است'});return Promise.resolve(false);};
         document.querySelector('#questionBankFileBadge button').click();await Promise.resolve();
         const outsidePaused=calls===3&&!document.querySelector('.qb-page')&&!document.getElementById('questionBankFileBadge').hidden&&document.getElementById('questionBankFileBadge').textContent.includes(name)&&document.getElementById('questionBankFileBadge').textContent.includes('هنوز ذخیره نشده')&&!document.querySelector('#questionBankFileBadge button');
@@ -883,8 +913,10 @@ main({
         const outsideError=!document.getElementById('questionBankFileBadge').hidden&&document.getElementById('questionBankFileBadge').textContent.includes('خطای نوشتن');
         emit({state:'error',connected:false,name:'',savedAt:'',message:'نام فایل انتخاب‌شده پذیرفته نیست؛ فایل تغییر نکرد'});
         const unconnectedError=!document.getElementById('questionBankFileBadge').hidden&&document.getElementById('questionBankFileBadge').textContent.includes('نام فایل انتخاب‌شده')&&document.getElementById('questionBankFileBadge').querySelector('bdi').textContent==='فایل خودکار بانک سؤال انتخاب نشده'&&!document.querySelector('.qb-storage-bar');
-        return direct&&visible&&renewed&&paused&&stopped&&outsidePaused&&outsideError&&unconnectedError&&JSON.stringify(await EduQuestionBankRepository.read())===before&&(await EduQuestionBankRepository.readBackup())===config&&JSON.stringify(Object.keys(localStorage).sort().map(k=>[k,localStorage.getItem(k)]))===localBefore;
-      } finally {goSchools();for(const k of methods)service[k]=original[k];dispatchEvent(new Event('edu-question-bank-file-status'));}
+        const observed={direct,visible,renewed,paused,stopped,outsidePaused,outsideError,unconnectedError,bankUnchanged:JSON.stringify(await EduQuestionBankRepository.read())===before,configUnchanged:(await EduQuestionBankRepository.readBackup())===config,localUnchanged:JSON.stringify(Object.keys(localStorage).sort().map(k=>[k,localStorage.getItem(k)]))===localBefore};
+        if(!Object.values(observed).every(Boolean))throw Error(JSON.stringify(observed));
+        return true;
+      } finally {closeModal();goSchools();for(const k of methods)service[k]=original[k];dispatchEvent(new Event('edu-question-bank-file-status'));}
     })()`),
       );
     }
@@ -894,7 +926,7 @@ main({
     );
     await delay(100);
     await evaluate(
-      `window.__qbClick=(label,scope=document.querySelector('.qb-page'))=>{const b=[...scope.querySelectorAll('button')].find(b=>b.textContent===label);if(!b)throw Error(label);const menu=b.closest('.qb-entity-menu');if(menu&&!menu.matches(':popover-open'))document.querySelector('[aria-controls="'+menu.id+'"]').click();b.click();};window.__qbFill=(label,value)=>{const l=[...document.querySelectorAll('.qb-page label')].find(l=>l.firstChild.textContent===label);if(!l)throw Error(label);const n=l.querySelector('input,textarea,select');n.value=value;n.dispatchEvent(new Event('input',{bubbles:true}));return n;};__qbClick('درس جدید');document.querySelector('.qb-page form').requestSubmit();`,
+      `window.__qbClick=(label,scope=document.querySelector('#modal:not(.hidden) #backupBankPanel .qb-backup')||document.querySelector('.qb-page'))=>{const b=[...scope.querySelectorAll('button')].find(b=>b.textContent===label);if(!b)throw Error(label);const menu=b.closest('.qb-entity-menu');if(menu&&!menu.matches(':popover-open'))document.querySelector('[aria-controls="'+menu.id+'"]').click();b.click();};window.__qbFill=(label,value)=>{const l=[...document.querySelectorAll('.qb-page label')].find(l=>l.firstChild.textContent===label);if(!l)throw Error(label);const n=l.querySelector('input,textarea,select');n.value=value;n.dispatchEvent(new Event('input',{bubbles:true}));return n;};__qbClick('درس جدید');document.querySelector('.qb-page form').requestSubmit();`,
     );
     await delay(100);
     check(
@@ -1320,7 +1352,8 @@ main({
             `Array.from(document.querySelectorAll('.qb-course-actions>button,.qb-tabs button,.qb-form>.record-editor-actions>button'),b=>({text:b.textContent,tab:!!b.closest('.qb-tabs'),height:b.getBoundingClientRect().height,width:b.clientWidth,scroll:b.scrollWidth}))`,
           );
           const fits =
-            actions.length === 7 &&
+            actions.length === 6 &&
+            actions.filter((action) => action.tab).length === 3 &&
             actions.every(
               (b) =>
                 b.height >= (width <= 700 ? (b.tab ? 35.9 : 39.9) : 43.9) &&
@@ -1390,9 +1423,9 @@ main({
         ),
       );
       check(
-        `backup is the final tab and absent from the exam archive ${width}`,
+        `backup management stays outside the three bank workspace tabs ${width}`,
         await evaluate(
-          `(()=>{const tabs=[...document.querySelectorAll('.qb-tabs button')];return tabs.length===4&&tabs.at(-1).textContent==='پشتیبان'&&!document.querySelector('.qb-backup');})()`,
+          `(()=>{const tabs=[...document.querySelectorAll('.qb-tabs button')];return tabs.length===3&&!tabs.some(button=>button.textContent==='پشتیبان')&&!document.querySelector('.qb-page .qb-backup');})()`,
         ),
       );
       check(
@@ -1439,7 +1472,7 @@ main({
       downloadPath: downloadDir,
     });
     await evaluate(
-      "__qbClick('بازگشت به آزمون‌های من');__qbClick('پشتیبان');__qbClick('دریافت فایل بانک')",
+      "(async()=>{__qbClick('بازگشت به آزمون‌های من');await __qbOpenBackup();__qbClick('دریافت فایل');})()",
     );
     for (let i = 0; i < 100; i++) {
       if (
@@ -1469,7 +1502,9 @@ main({
         JSON.parse(fs.readFileSync(path.join(downloadDir, downloaded), "utf8"))
           .format === "classyar-question-bank",
     );
-    await evaluate("__qbClick('آزمون‌های من');__qbClick('مشاهده آزمون')");
+    await evaluate(
+      "closeModal();__qbClick('آزمون‌های من');__qbClick('مشاهده آزمون')",
+    );
     await cdp("Emulation.setEmulatedMedia", { media: "print" });
     check(
       "print only displays exam sheet",
@@ -1579,7 +1614,7 @@ main({
         const picker=window.showSaveFilePicker;
         try {
           window.showSaveFilePicker=async()=>handle;
-          __qbClick('پشتیبان');__qbClick('انتخاب فایل');
+          await __qbOpenBackup();__qbOpenAutomaticBackup();__qbClick('انتخاب فایل');
           for(let i=0;i<100&&service.state().state!=='active';i++)await new Promise(r=>setTimeout(r,30));
           if(service.state().state!=='active')throw Error(service.state().message);
         } finally {window.showSaveFilePicker=picker;}
@@ -1598,9 +1633,10 @@ main({
         await peer.init();const resumed=peer.state().state==='active';peer.dispose();
         window.__qbAutomaticFile=handle;
         window.__qbAutomaticText=await (await readFile()).text();
-        goSchools();await EduQuestionBankUI.open();
-        __qbClick('پشتیبان');
+        closeModal();goSchools();await EduQuestionBankUI.open();
+        await __qbOpenBackup();
         return initial&&updated&&resumed&&document.querySelector('.qb-file-status').dataset.state==='active'
+          &&!document.querySelector('details.qb-backup-automatic').open
           &&document.querySelector('.qb-file-name').textContent===handle.name
           &&document.querySelector('.qb-file-summary time').dateTime===(await EduQuestionBankRepository.readBackup()).savedAt;
       })()`),
@@ -1610,10 +1646,10 @@ main({
       await evaluateGesture(`(async()=>{
         const R=EduQuestionBankRepository,service=EduQuestionBankFileBackup.service;
         const before=await R.read(),originalText=await (await __qbAutomaticFile.getFile()).text();
-        const upload=document.querySelector('.qb-page input[type=file]'),transfer=new DataTransfer();
+        const upload=document.querySelector('#backupBankPanel input[type=file]'),transfer=new DataTransfer();
         transfer.items.add(await __qbAutomaticFile.getFile());upload.files=transfer.files;upload.dispatchEvent(new Event('change'));
-        for(let i=0;i<100&&!document.querySelector('.qb-confirm');i++)await new Promise(r=>setTimeout(r,20));
-        const confirmation=document.querySelector('.qb-confirm');if(!confirmation)return false;
+        for(let i=0;i<100&&!document.querySelector('.qb-backup-confirm');i++)await new Promise(r=>setTimeout(r,20));
+        const confirmation=document.querySelector('.qb-backup-confirm');if(!confirmation)return false;
         __qbClick('تأیید',confirmation);
         let restored;
         for(let i=0;i<100;i++){restored=await R.read();if(restored.revision>before.revision)break;await new Promise(r=>setTimeout(r,20));}
@@ -1621,6 +1657,7 @@ main({
         const picker=window.showSaveFilePicker;
         try{
           window.showSaveFilePicker=async()=>__qbAutomaticFile;
+          __qbOpenAutomaticBackup();
           __qbClick('انتخاب فایل');
           for(let i=0;i<100;i++){const config=await R.readBackup();if(service.state().state==='active'&&!config?.suspended)break;await new Promise(r=>setTimeout(r,20));}
           if(service.state().state!=='active')throw Error(service.state().message);
@@ -1639,13 +1676,16 @@ main({
         mobile: false,
       });
       await delay(80);
+      await evaluate(`__qbOpenAutomaticBackup()`);
       const backupControls = await evaluate(
-        `(()=>{const body=document.querySelector('.qb-body'),name=document.querySelector('.qb-file-name'),original=name.textContent;name.textContent='Classyar-QuestionBank ('+'1234567890'.repeat(8)+').json';const fits=body.scrollWidth<=body.clientWidth+1&&name.scrollWidth<=name.clientWidth+1;name.textContent=original;return {fits,automatic:document.querySelectorAll('.qb-file-actions button').length,buttons:[...document.querySelectorAll('.qb-file-actions button,.qb-backup-manual>button')].map(b=>({label:b.textContent,height:b.getBoundingClientRect().height,width:b.clientWidth,scroll:b.scrollWidth}))};})()`,
+        `(()=>{const body=document.getElementById('modalBody'),name=document.querySelector('.qb-file-name'),original=name.textContent;name.textContent='Classyar-QuestionBank ('+'1234567890'.repeat(8)+').json';const fits=body.scrollWidth<=body.clientWidth+1&&name.scrollWidth<=name.clientWidth+1;name.textContent=original;const automatic=[...document.querySelectorAll('.qb-file-actions button')],manual=[...document.querySelectorAll('.qb-backup-manual .backup-action-grid > button')].map(button=>button.getBoundingClientRect()),gap=parseFloat(getComputedStyle(document.querySelector('.qb-backup-manual .backup-action-grid')).columnGap);return {fits,automatic:automatic.length,singleRow:automatic.every(b=>Math.abs(b.getBoundingClientRect().top-automatic[0].getBoundingClientRect().top)<1),manualRows:manual.length===3&&Math.abs(manual[0].top-manual[1].top)<1&&manual[2].top>=manual[0].bottom&&Math.abs(manual[2].width-manual[0].width-manual[1].width-gap)<2,buttons:[...document.querySelectorAll('.qb-file-actions button,.qb-backup-manual button')].map(b=>({label:b.textContent,height:b.getBoundingClientRect().height,width:b.clientWidth,scroll:b.scrollWidth}))};})()`,
       );
       const backupFits =
         backupControls.fits &&
         backupControls.automatic === 3 &&
-        backupControls.buttons.length === 5 &&
+        backupControls.singleRow &&
+        backupControls.manualRows &&
+        backupControls.buttons.length === 6 &&
         backupControls.buttons.every(
           (b) =>
             b.height >= (width <= 700 ? 39.9 : 43.9) &&
@@ -1674,11 +1714,11 @@ main({
       "bank restore rejects foreign names and renamed classroom content without changing data",
       await evaluate(`(async()=>{
         const before=JSON.stringify(await EduQuestionBankRepository.read());
-        const input=document.querySelector('.qb-page input[type=file]');
+        const input=document.querySelector('#backupBankPanel input[type=file]');
         for(const [name,content] of [['Classyar-Classroom.json',JSON.stringify(EduQuestionBank.empty())],['Classyar-QuestionBank(1).json',JSON.stringify({format:'EduManager.FullBackup',version:2})]]){
           const transfer=new DataTransfer();transfer.items.add(new File([content],name,{type:'application/json'}));input.files=transfer.files;input.dispatchEvent(new Event('change'));
           await new Promise(r=>setTimeout(r,80));
-          if(document.querySelector('.qb-confirm')||JSON.stringify(await EduQuestionBankRepository.read())!==before)return false;
+          if(document.querySelector('.qb-backup-confirm')||JSON.stringify(await EduQuestionBankRepository.read())!==before)return false;
         }
         return true;
       })()`),
@@ -1689,7 +1729,7 @@ main({
     check(
       "restore preview and complete replacement",
       await evaluate(
-        `(async()=>{const before=await EduQuestionBankRepository.read();const replacement=EduQuestionBank.empty();const input=document.querySelector('.qb-page input[type=file]');const transfer=new DataTransfer();transfer.items.add(new File([JSON.stringify(replacement)],'Classyar-QuestionBank (2).json',{type:'application/json'}));input.files=transfer.files;input.dispatchEvent(new Event('change'));await new Promise(r=>setTimeout(r,80));const unchanged=JSON.stringify(await EduQuestionBankRepository.read())===JSON.stringify(before);const preview=document.querySelector('.qb-confirm')?.textContent.includes('0 درس');__qbClick('تأیید',document.querySelector('.qb-confirm'));await new Promise(r=>setTimeout(r,80));const after=await EduQuestionBankRepository.read();return unchanged&&preview&&!after.questions.length&&!after.exams.length&&!after.courses.length;})()`,
+        `(async()=>{const before=await EduQuestionBankRepository.read();const replacement=EduQuestionBank.empty();const input=document.querySelector('#backupBankPanel input[type=file]');const transfer=new DataTransfer();transfer.items.add(new File([JSON.stringify(replacement)],'Classyar-QuestionBank (2).json',{type:'application/json'}));input.files=transfer.files;input.dispatchEvent(new Event('change'));await new Promise(r=>setTimeout(r,80));const unchanged=JSON.stringify(await EduQuestionBankRepository.read())===JSON.stringify(before);const preview=document.querySelector('.qb-backup-confirm')?.textContent.includes('۰ درس');__qbClick('تأیید',document.querySelector('.qb-backup-confirm'));await new Promise(r=>setTimeout(r,80));const after=await EduQuestionBankRepository.read();return unchanged&&preview&&!after.questions.length&&!after.exams.length&&!after.courses.length;})()`,
       ),
     );
     check(
@@ -1704,13 +1744,14 @@ main({
         const service=EduQuestionBankFileBackup.service;
         const preserved=(await (await __qbAutomaticFile.getFile()).text())===__qbAutomaticText;
         const paused=service.state().state==='paused'&&(await EduQuestionBankRepository.readBackup()).suspended==='restore';
+        __qbOpenAutomaticBackup();
         __qbClick('ذخیره اکنون');
-        for(let i=0;i<100&&!document.querySelector('.qb-confirm');i++)await new Promise(r=>setTimeout(r,20));
-        const confirmation=document.querySelector('.qb-confirm');
+        for(let i=0;i<100&&!document.querySelector('.qb-backup-confirm');i++)await new Promise(r=>setTimeout(r,20));
+        const confirmation=document.querySelector('.qb-backup-confirm');
         if(!confirmation)throw Error(service.state().message);
         __qbClick('انصراف',confirmation);await new Promise(r=>setTimeout(r,30));
         const cancelled=(await (await __qbAutomaticFile.getFile()).text())===__qbAutomaticText;
-        await service.stop();
+        await service.stop();closeModal();
         return preserved&&paused&&cancelled&&!(await EduQuestionBankRepository.readBackup())&&(await (await __qbAutomaticFile.getFile()).text())===__qbAutomaticText;
       })()`),
     );

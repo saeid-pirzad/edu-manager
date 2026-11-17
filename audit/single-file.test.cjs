@@ -177,6 +177,7 @@ function fixture() {
   });
   for (const name of [
     "src/domain/calendar.js",
+    "src/ui/backup-automatic-view.js",
     "src/workspace/backups/single-file-name.js",
     "src/workspace/backups/single-file.js",
   ])
@@ -865,6 +866,34 @@ test("explicit successful disconnect clears a permission warning without restart
   assert.doesNotMatch(badge.innerHTML, /فعال شد/);
 });
 
+test("the backup hub keeps the connected school filename visible after a successful save", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  const html = f.context.singleFilePanel();
+  assert.match(html, /class="backup-file-summary" id="singleFileSummary"/);
+  assert.ok(html.includes(f.handle.name));
+  assert.match(html, /آخرین ذخیره/);
+  assert.match(
+    html,
+    /class="single-file-notice backup-automatic-notice" id="singleFileStatus" data-backup-file-status hidden/,
+  );
+});
+
+test("the school filename summary updates without requiring the home banner", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  const summary = { innerHTML: "" };
+  f.context.document = {
+    getElementById: (id) => (id === "singleFileSummary" ? summary : null),
+  };
+  f.context.paintSingleFileBanner();
+  assert.ok(summary.innerHTML.includes(f.handle.name));
+  assert.match(summary.innerHTML, /آخرین ذخیره/);
+  await f.context.disableSingleFile();
+  assert.match(summary.innerHTML, /فایل پشتیبان انتخاب نشده/);
+  assert.ok(!summary.innerHTML.includes(f.handle.name));
+});
+
 test("missing picker offers a manual backup without pretending automatic support", () => {
   const f = fixture();
   delete f.context.window.showSaveFilePicker;
@@ -876,9 +905,9 @@ test("missing picker offers a manual backup without pretending automatic support
     f.context.singleFilePanel(),
     /<summary><span>ذخیره خودکار<\/span>/,
   );
-  assert.doesNotMatch(
+  assert.match(
     f.context.singleFilePanel(),
-    /data-workspace-action="single-file-choose"/,
+    /data-workspace-action="single-file-choose" disabled/,
   );
   assert.match(f.context.singleFilePanel(), /در دسترس نیست/);
   assert.doesNotMatch(

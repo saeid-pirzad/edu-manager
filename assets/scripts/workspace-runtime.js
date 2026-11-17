@@ -1296,40 +1296,33 @@ return{name:"Classyar-Classroom"+(count>1?`(${count-1})`:"")+".json",release(){i
 count!==count||current.token!==token)return false;rememberSingleFileNames(previous);return true}}}const singleFileKey="EduManager.singleFile";const SINGLE_FILE_POLL_MS=3e4,
 SINGLE_FILE_DEBOUNCE_MS=2e3;let singleFileSavedSource=null,singleFileReschedule=false,singleFileChoosing=false;let singleFile=null,singleFileTimer=null,singleFileDebounce=null,
 singleFileWriting=null,singleFileFailure=false,singleFilePermissionNeeded=false,singleFileNoticeSaved=false,singleFileMessage="ذخیره خودکار در فایل هنوز فعال نی\
-ست.";function singleFileBannerHtml(){const name=singleFile?.handle?.name,date=singleFile?.savedAt?new Date(singleFile.savedAt):null,saved=date&&Number.isFinite(
-date.getTime()),needsReview=singleFileFailure||singleFilePermissionNeeded||!!singleFile?.suspension;if(!name)return'<span class="schools-file-meta">فایل پشتیبان\
- انتخاب نشده</span>';return'<bdi class="schools-file-name" dir="auto" title="'+esc(name)+'">'+esc(name)+'</bdi><span class="schools-file-meta">'+(saved?
-'آخرین ذخیره: <time datetime="'+esc(date.toISOString())+'">'+esc(date.toLocaleString("fa-IR-u-ca-persian",{year:"numeric",month:"2-digit",day:"2-digit",
-hour:"2-digit",minute:"2-digit"}))+"</time>":"هنوز ذخیره نشده")+(needsReview?" · نیاز به بررسی":"")+"</span>"}function paintSingleFileBanner(){
-const element=document.getElementById("welcomeFileSummary");if(!element)return;const html=singleFileBannerHtml();if(element.innerHTML!==html)element.innerHTML=html}
-function singleFileNoticeHtml(message=singleFileMessage){const canRequest=singleFilePermissionNeeded&&window.showSaveFilePicker&&typeof singleFile?.handle?.requestPermission===
-"function";return'<span class="single-file-message" role="status"><strong class="backup-file-purpose">اطلاعات مدرسه</strong>'+(singleFile?.handle?.name?
-'<bdi class="backup-notice-filename" dir="ltr">'+esc(singleFile.handle.name)+"</bdi>":"")+'<span class="backup-file-detail">'+esc(message)+"</span></span>"+(canRequest?
-'<button type="button" class="single-file-permission-action" data-workspace-action="single-file-save" aria-label="اجازه مجدد برای فایل اطلاعات مدرسه: '+
-esc(singleFile.handle.name)+'">اجازه مجدد</button>':"")}function paintQuestionBankFileNotice(){const panel=document.querySelector?.("#app .workspace-ba\
-r");if(!panel)return;const service=globalThis.EduQuestionBankFileBackup?.service,state2=service?.state(),visible=state2?.state==="error"||state2?.connected&&["p\
-ermission","paused"].includes(state2.state),permission=visible&&state2.state==="permission"&&service.supported();let notice=document.getElementById("questionBan\
-kFileBadge");if(visible&&!notice){notice=document.createElement("div");notice.id="questionBankFileBadge";notice.className="single-file-notice question-bank-file\
--notice"}if(notice){notice.hidden=!visible;if(visible){notice.dataset.state=state2.state;const html='<span class="single-file-message" role="status"><strong cla\
-ss="backup-file-purpose">بانک سؤال و آزمون‌ها</strong><bdi class="backup-notice-filename" dir="ltr">'+esc(state2.name||"فایل خودکار بانک سؤال \
-انتخاب نشده")+'</bdi><span class="backup-file-detail">'+esc(state2.message)+(permission?'</span></span><button type="button" class="single-file-permis\
-sion-action" data-workspace-action="question-bank-file-permission" aria-label="اجازه مجدد برای فایل بانک سؤال و آزمون‌ها: '+esc(
-state2.name)+'">اجازه مجدد</button>':" برای بررسی فایل، بخش «پشتیبان» در بانک سؤال را باز کنید.</span></span>");
-if(notice.innerHTML!==html)notice.innerHTML=html;if(notice.parentElement!==panel)panel.append(notice)}}const localSave=document.querySelector(".qb-file-save");if(localSave)
-localSave.hidden=!!permission}function renewQuestionBankFilePermission(){const service=globalThis.EduQuestionBankFileBackup?.service;if(!service?.supported()||service.
-state().state!=="permission"||document.querySelector(".qb-confirm,.qb-page[aria-busy='true']"))return false;return service.saveNow()}function singleFileStatus(message,{
-permission=false,saved=false}={}){singleFileMessage=message;singleFilePermissionNeeded=permission;singleFileNoticeSaved=saved;paintSingleFileBanner();const element=document.
-getElementById("singleFileStatus");if(element){element.innerHTML=singleFileNoticeHtml();element.hidden=saved;const panel=element.closest?.("details.backup-autom\
-atic");if(permission&&panel)panel.open=true}const badge=document.getElementById("singleFileBadge");if(badge){badge.innerHTML=singleFileNoticeHtml();badge.hidden=
-!singleFileFailure;const panel=document.querySelector("#app .workspace-bar");const destination=panel;if(destination&&badge.parentElement!==destination)destination.
-append(badge)}}function singleFilePanel(){const summary="<summary><span>ذخیره خودکار</span><small>اختیاری</small></summary>";if(!window.showSaveFilePicker)
-return'<details class="backup-automatic">'+summary+'<p id="singleFileStatus" role="status">در این مرورگر در دسترس نیست؛ از «دریافت فایل» استفاده کنید.</p></deta\
-ils>';return'<details class="backup-automatic"'+(singleFileFailure||singleFilePermissionNeeded?" open":"")+">"+summary+'<p>فایل را یک‌بار انتخاب کنید؛ هنگام باز\
- بودن برنامه، همان فایل به‌روز می‌شود.</p><div id="singleFileStatus" class="single-file-notice"'+(singleFileNoticeSaved?" hidde\
-n":"")+">"+singleFileNoticeHtml()+"</div>"+singleFileFallbackPanel(singleFileFailure)+'<div class="row"><button data-workspace-action="single-file-choose">انتخا\
-ب فایل</button><button class="ghost" data-workspace-action="single-file-save" title="ذخیره اکنون / اجازه مجدد">ذخیره اکنون</button><button class="ghost" data-wo\
-rkspace-action="single-file-stop">قطع اتصال</button></div></details>'}function singleFileFallbackPanel(visible){return'<div id="singleFileFallback"'+(visible?
-"":" hidden")+"><p>فایل خالی پشتیبان نیست؛ فعلاً «دریافت فایل» را بزنید.</p></div>"}function showSingleFileFallback(visible){
+ست.";function singleFileBannerHtml(){return EduBackupAutomaticView.summaryHtml({name:singleFile?.handle?.name,savedAt:singleFile?.savedAt,needsReview:singleFileFailure||
+singleFilePermissionNeeded||!!singleFile?.suspension})}function paintSingleFileBanner(){const html=singleFileBannerHtml();for(const id of["welcomeFileSummary","\
+singleFileSummary"]){const element=document.getElementById(id);if(element&&element.innerHTML!==html)element.innerHTML=html}}function singleFileNoticeHtml(message=singleFileMessage){
+const canRequest=singleFilePermissionNeeded&&window.showSaveFilePicker&&typeof singleFile?.handle?.requestPermission==="function";return EduBackupAutomaticView.
+noticeHtml({purpose:"اطلاعات مدرسه",name:singleFile?.handle?.name,message,permission:canRequest?{attributes:{"data-workspace-action":"single-file-sa\
+ve"},ariaLabel:"اجازه مجدد برای فایل اطلاعات مدرسه: "+singleFile.handle.name}:null})}function paintQuestionBankFileNotice(){const panel=document.
+querySelector?.("#app .workspace-bar");if(!panel)return;const service=globalThis.EduQuestionBankFileBackup?.service,state2=service?.state(),visible=state2?.state===
+"error"||state2?.connected&&["permission","paused"].includes(state2.state),permission=visible&&state2.state==="permission"&&service.supported();let notice=document.
+getElementById("questionBankFileBadge");if(visible&&!notice){notice=document.createElement("div");notice.id="questionBankFileBadge";notice.className="single-fil\
+e-notice question-bank-file-notice"}if(notice){notice.hidden=!visible;if(visible){notice.dataset.state=state2.state;const html='<span class="single-file-message\
+" role="status"><strong class="backup-file-purpose">بانک سؤال و آزمون‌ها</strong><bdi class="backup-notice-filename" dir="ltr">'+esc(state2.name||
+"فایل خودکار بانک سؤال انتخاب نشده")+'</bdi><span class="backup-file-detail">'+esc(state2.message)+(permission?'</span></span><butto\
+n type="button" class="single-file-permission-action" data-workspace-action="question-bank-file-permission" aria-label="اجازه مجدد برای فایل بانک سؤال و آزمون‌ه\
+ا: '+esc(state2.name)+'">اجازه مجدد</button>':" برای بررسی فایل، از منوی «پشتیبان و بازیابی»، تب «بانک سؤال و آزمون‌ها» را باز کنید.</span></span>");
+if(notice.innerHTML!==html)notice.innerHTML=html;if(notice.parentElement!==panel)panel.append(notice)}}}function renewQuestionBankFilePermission(){const service=globalThis.
+EduQuestionBankFileBackup?.service;if(!service?.supported()||service.state().state!=="permission"||document.querySelector(".qb-confirm,.qb-backup-confirm,.qb-ba\
+ckup[aria-busy='true'],.qb-page[aria-busy='true']"))return false;return service.saveNow()}function singleFileStatus(message,{permission=false,saved=false}={}){singleFileMessage=
+message;singleFilePermissionNeeded=permission;singleFileNoticeSaved=saved;paintSingleFileBanner();const element=document.getElementById("singleFileStatus");if(element){
+element.innerHTML=singleFileNoticeHtml();element.hidden=saved;const panel=element.closest?.("details.backup-automatic");if(permission&&panel)panel.open=true}const badge=document.
+getElementById("singleFileBadge");if(badge){badge.innerHTML=singleFileNoticeHtml();badge.hidden=!singleFileFailure;const panel=document.querySelector("#app .wor\
+kspace-bar");const destination=panel;if(destination&&badge.parentElement!==destination)destination.append(badge)}}function singleFilePanel(){const supported=!!window.
+showSaveFilePicker;const canRequest=singleFilePermissionNeeded&&supported&&typeof singleFile?.handle?.requestPermission==="function";return EduBackupAutomaticView.
+html({supported,open:singleFileFailure||singleFilePermissionNeeded,purpose:"اطلاعات مدرسه",name:singleFile?.handle?.name,savedAt:singleFile?.savedAt,
+needsReview:singleFileFailure||singleFilePermissionNeeded||!!singleFile?.suspension,message:singleFileMessage,noticeHidden:singleFileNoticeSaved,fallback:singleFileFailure,
+ids:{summary:"singleFileSummary",status:"singleFileStatus",fallback:"singleFileFallback"},permission:canRequest?{attributes:{"data-workspace-action":"single-fil\
+e-save"},ariaLabel:"اجازه مجدد برای فایل اطلاعات مدرسه: "+singleFile.handle.name}:null,actions:{choose:{"data-workspace-action":"si\
+ngle-file-choose"},save:{"data-workspace-action":"single-file-save"},stop:{"data-workspace-action":"single-file-stop"}}})}function showSingleFileFallback(visible){
 singleFileFailure=visible;const element=document.getElementById("singleFileFallback");if(element){element.hidden=!visible;const panel=element.closest?.("details\
 .backup-automatic");if(visible&&panel)panel.open=true}}function singleFileContentBaseline(snapshot){const counts={version:1,records:0,schools:0,students:0,lessons:0,
 grades:0,attendance:0,activities:0};const populatedScores=value=>{if(typeof value==="number")return Number.isFinite(value)?1:0;if(typeof value==="string")return value.
@@ -1553,59 +1546,83 @@ writable=null;const file=await handle.getFile();if(!file.size||await file.text()
 confirmed=true}catch(error){if(writable){try{await writable.abort()}catch(ignore){}}if(error.name==="AbortError")return false;downloadJSON(content,name)}}else downloadJSON(
 content,name);try{localStorage.setItem("Edu24.externalBackup."+origin,JSON.stringify({date:todayISO(),confirmed}))}catch(ignore){}setStatus(confirmed?"فایل پشتی\
 بان مستقل ذخیره شد.":"دانلود پشتیبان درخواست شد؛ وجود فایل را بررسی کنید.","saved");render();return confirmed?
-"confirmed":"downloaded"}async function openBackups(){const ensureCurrent=preserveAsyncTarget();await writer.catch(()=>{});ensureCurrent();let estimate="";if(navigator.
-storage?.estimate){const e=await navigator.storage.estimate();ensureCurrent();estimate="مصرف تقریبی فضای این مبدا: "+Math.round((e.usage||0)/
-1048576)+" مگابایت از "+Math.round((e.quota||0)/1048576)+" مگابایت."}showModal("پشتیبان و بازیابی مدرسه",'<div class="backup\
--hub"><section class="backup-manual"><h4>پشتیبان مدرسه</h4><p>مدرسه‌ها، کلاس‌ها، هنرجویان، جلسات و نمرات در یک فایل؛ بانک سؤال و آزمون‌ها فایل جدا دارند.</p><di\
-v class="backup-action-grid"><button data-workspace-action="export-full">دریافت فایل</button><button class="ghost backup-share-entry" data-workspace-action="pre\
-pare-share-backup">ارسال فایل</button><button class="ghost" data-workspace-action="choose-import">بازیابی فایل</button></div><p class="backup-restore-note">دریا\
-فت دستی و ذخیرهٔ خودکار، همین نوع پشتیبان را می‌سازند و هر دو قابل بازیابی‌اند. بازیابی فقط اطلاعات مدرسه را جایگزین می‌کند.</p><details class="backup-delivery"\
-><summary>آخرین پشتیبان مدرسه</summary><p class="muted" id="lastExternalBackupStatus" role="status">'+esc(lastExternalBackupLabel())+"</p></det\
-ails></section>"+singleFilePanel()+'<details class="backup-help"><summary>فضای مرورگر</summary><p>'+esc(estimate)+'</p></details><details class="backu\
-p-reset"><summary>پاک‌سازی اطلاعات</summary><p>اطلاعات مدرسه در همین مرورگر حذف می‌شود؛ بانک سؤال و فایل‌های دستگاه باقی می‌مانند. پیش از ادامه پشتیبان مدرسه بگ\
-یرید.</p><button type="button" class="danger" data-workspace-action="open-wipe">بررسی و تأیید پاک‌سازی</button></details></div>')}function previewImport(candidate,label){
-const preview={candidate,label,workspace:workspace?.id,revision:workspace?.revision,installation:typeof installationToken==="undefined"?"":installationToken};const classes=candidate.
-schools.flatMap(s=>s.classes),students=classes.reduce((n,c)=>n+c.students.length,0);const opened=showModal("پیش‌نمایش بازیابی","<p>منبع: "+
-esc(label)+"</p><p>"+candidate.schools.length+" مدرسه، "+classes.length+" کلاس، "+students+" دانش‌آموز فعال، "+candidate.sessions.length+
-" جلسه.</p>"+(candidate.migrationWarnings?.length?'<p role="alert">'+esc(candidate.migrationWarnings.join(" | "))+"</p>":"")+"<p>سال پشتیبان: "+esc(
-candidate.settings.academicYear+" / "+(candidate.settings.academicTerm||"نامشخص"))+"</p><p>این فایل اطلاعات نوبت "+esc(workspace.year+" \
-/ "+workspace.term)+' را بازمی‌گرداند؛ نوبت جدید ساخته نمی‌شود. نمره‌های پودمانی مشترکِ همین سال نیز به‌روز می‌شوند؛ نمرات نوبتیِ دیگر و سایر سال‌ها تغییر نمی‌ک\
-نند.</p><button data-workspace-action="export-period">۱. ذخیره پشتیبان اطلاعات فعلی</button><p><label><input id="restoreExternalConfirmed" type="checkbox"> نسخه\
- فعلی را در فایل مستقل ذخیره و بررسی کرده‌ام.</label></p><button data-mutating="1" data-workspace-action="confirm-import">۲. بازیابی اطلاعات همین نوبت</button><\
-p id="operationError" role="alert"></p>');if(opened!==false)pendingImport=preview}let backupImportReading=false;async function handleImportV24(e,{fullSystemOnly=false,
-replaceSystem=true}={}){const file=e.target.files[0];if(!file)return;if(backupImportReading){e.target.value="";handleError(new Error("خواندن فایل پشتیبان در حال\
- انجام است؛ صبر کنید."));return}if(replaceSystem&&fullRestoreBusy){e.target.value="";handleError(Error("بازیابی اطلاعات مدرسه در حال انجام است؛ \
-تا پایان آن صبر کنید."));return}if(replaceSystem){pendingFullBackup=null;pendingFullBackupSignature="";pendingImport=null}backupImportReading=true;
-const startedReady=ready;const origin=workspace?.id;let expectedConnection=connection;const ensureDestination=()=>{if(ready!==startedReady||workspace?.id!==origin||
-resetBusy||periodLoading||startedReady&&connectionRetired||replaceSystem&&connection!==expectedConnection)throw Error("مقصد بازیابی هنگام خواندن فایل تغییر کرد؛\
- فایل را دوباره انتخاب کنید.")};const previewReplacement=async(value,details)=>{if(!ready&&(!connection||connectionRetired)){validateFullBackup(
-value);const opened=await openDatabase();try{ensureDestination()}catch(error){opened.close();throw error}expectedConnection=opened;connection=opened;connectionRetired=
-false}ensureDestination();previewFullBackup(value,details)};try{ensureDestination();assertClassroomFileName(file.name,{allowText:true});if(file.size>100*1024*1024&&
-!confirm("حجم این فایل پشتیبان حدود "+Math.ceil(file.size/1048576).toLocaleString("fa-IR")+" مگابایت است. خواندن آن ممکن است زمان‌بر باشد و\
- حافظهٔ زیادی مصرف کند؛ روی دستگاه کم‌حافظه از رایانه استفاده کنید.\nفقط فایل مورداعتماد خودتان را باز کنید. خواندن و بررسی فایل ادامه پیدا کند؟ تا تأیید نهایی ب\
-ازیابی، اطلاعات فعلی تغییر نمی‌کند."))return;ensureDestination();const parsed=JSON.parse(await file.text());ensureDestination();if(!parsed||
-typeof parsed!=="object"||Array.isArray(parsed))throw Error("ساختار فایل پشتیبان معتبر نیست.");if(parsed.format==="EduManager.FullBack\
-up"){if(replaceSystem)await previewReplacement(parsed,{sourceName:file.name});else previewFullBackup(parsed);return}if(replaceSystem){const replacement=legacyBackupReplacement(
-parsed);await previewReplacement(replacement,{sourceName:file.name,legacy:true});return}if(fullSystemOnly)throw Error("این فایل پشتیبان کامل مدرسه نیست. فایل کا\
-مل شامل اطلاعات سال تحصیلی، هر دو ترم، مدرسه‌ها، کلاس‌ها و هنرجویان را انتخاب کنید؛ اطلاعات فعلی تغییر نکرده است.");
-if(parsed.version!==void 0&&(!Number.isInteger(parsed.version)||parsed.version>26||parsed.version<1))throw Error("نسخه پشتیبان پشتیبانی نمی‌شود.");
-const source=parsed.db||parsed;if(source.schemaVersion>26)throw Error("نسخه ساختار جدیدتر پشتیبانی نمی‌شود.");const candidate=normalizeDB(
-source,{legacy:(source.schemaVersion??parsed.version??23)<24});if(!ready){if(!connection){const opened=await openDatabase();try{ensureDestination();if(connection&&
-connection!==opened)throw Error("اتصال بانک هنگام بازیابی تغییر کرده است.")}catch(error){if(connection!==opened)opened.close();
-throw error}connection=opened}ensureDestination();const recoveryConnection=connection;const ensureRecovery=()=>{ensureDestination();if(connection!==recoveryConnection)
-throw Error("اتصال بانک هنگام بازیابی تغییر کرده است.")};const created=await installWorkspace(candidate,{id:uid(),year:candidate.
-settings.academicYear,term:candidate.settings.academicTerm});ensureRecovery();const loaded=await readWorkspace(created.id);ensureRecovery();workspace=created;db=
-loaded.data;committed=loaded.records;ready=true;blocked=false;storageBlocked=false;isAuthenticated=false;rememberPeriod(workspace.id);render();return}await flushDrafts(
-{strict:true});ensureDestination();previewImport(candidate,file.name)}catch(error){handleError(error)}finally{backupImportReading=false;e.target.value=""}}let periodImportBusy=false;
-async function confirmImport(){if(periodImportBusy)throw Error("بازیابی در حال انجام است؛ تا پایان آن صبر کنید.");periodImportBusy=
-true;try{if(fileMode)throw Error("این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.");if(!pendingImport||
-pendingImport.workspace!==workspace.id)throw Error("پیش‌نمایش بازیابی منقضی شده است.");const preview=pendingImport,expectedInstallation=preview.
-installation??"";const context={id:preview.workspace,revision:preview.revision};const check=(write=false)=>{if((typeof installationToken==="undefined"?"":installationToken)!==
-expectedInstallation)throw Object.assign(Error("اطلاعات جایگزین شده است؛ پیش‌نمایش پشتیبان را دوباره باز کنید."),
-{code:"INSTALLATION_CHANGED"});assertWorkspaceContext(context,{write});if(pendingImport!==preview)throw Error("پیش‌نمایش بازیابی تغییر کرده است؛ دوباره بررسی کن\
-ید.")};check();const savedKind=academicTermKind(preview.candidate.settings.academicTerm);const targetKind=workspace.termKind||academicTermKind(workspace.term);
-if(preview.candidate.settings.academicYear!==workspace.year||(savedKind&&targetKind?savedKind!==targetKind:normalizedName(preview.candidate.settings.academicTerm)!==
-normalizedName(workspace.term)))throw Error("این فایل متعلق به نوبت فعلی نیست؛ همان سال و نوبت را باز کنید یا از پشتیبان کامل مدرسه استفاده کنید.");
+"confirmed":"downloaded"}let backupHubSession=null;let backupHubRequest=0;let backupHubImportOrigin=null;function backupHubHtml(){return'<div id="backupHub" cla\
+ss="backup-hub"><div class="backup-hub-tabs" role="tablist" aria-label="نوع اطلاعات پشتیبان"><button type="button" id="backupSchoolTab" role="tab" data-backup-t\
+ab="school" aria-controls="backupSchoolPanel" aria-selected="true">اطلاعات مدرسه</button><button type="button" id="backupBankTab" role="tab" data-backup-tab="ba\
+nk" aria-controls="backupBankPanel" aria-selected="false" tabindex="-1">بانک سؤال و آزمون‌ها</button></div><section id="backupSchoolPanel" class="backup-hub-pan\
+el" role="tabpanel" aria-labelledby="backupSchoolTab" tabindex="0"><section class="backup-manual"><h4>فایل اطلاعات مدرسه</h4><p>کلاس‌ها، هنرجویان، جلسات و نمرات\
+؛ مستقل از بانک سؤال.</p><div class="backup-action-grid"><button type="button" data-workspace-action="export-full">دریافت فایل</button><button type="button" cla\
+ss="ghost backup-share-entry" data-workspace-action="prepare-share-backup">ارسال فایل</button><button type="button" class="ghost" data-workspace-action="choose-\
+import">بازیابی فایل</button></div><p id="lastExternalBackupStatus" class="backup-delivery-status" role="status">'+esc(lastExternalBackupLabel())+"</\
+p></section>"+singleFilePanel()+'<details class="backup-reset"><summary>پاک‌سازی اطلاعات</summary><p>فقط اطلاعات مدرسه در این مرورگر حذف می‌شود؛ بانک سؤال و فای\
+ل‌های دستگاه باقی می‌مانند. پیش از ادامه پشتیبان مدرسه بگیرید.</p><button type="button" class="danger" data-workspace-action="open-wipe">بررسی و تأیید پاک‌سازی<\
+/button></details></section><section id="backupBankPanel" class="backup-hub-panel" role="tabpanel" aria-labelledby="backupBankTab" tabindex="0" hidden inert></s\
+ection></div>'}async function openBackups({tab}={}){const request=++backupHubRequest;const ensureCurrent=preserveAsyncTarget();const modal=document.getElementById(
+"modal");const body=document.getElementById("modalBody");const previousContent=body.firstChild;const wasHidden=modal.classList.contains("hidden");const initialTab=tab===
+"school"||tab==="bank"?tab:window.EduQuestionBankUI?.isPageActive?.()?"bank":"school";await writer.catch(()=>{});ensureCurrent();if(request!==backupHubRequest||
+body.firstChild!==previousContent||modal.classList.contains("hidden")!==wasHidden)return;if(showModal("پشتیبان و بازیابی",backupHubHtml())===false)
+return;backupHubSession?.dispose();const root=document.getElementById("backupHub");const tabs=Array.from(root.querySelectorAll("[data-backup-tab]"));const panels={
+school:document.getElementById("backupSchoolPanel"),bank:document.getElementById("backupBankPanel")};let alive=true;let activeTab="";let disposeBank=null;const isCurrent=expectedTab=>alive&&
+backupHubSession===session&&root.isConnected&&!modal.classList.contains("hidden")&&(!expectedTab||activeTab===expectedTab);const dispose=()=>{if(!alive)return;alive=
+false;disposeBank?.();disposeBank=null;observer.disconnect();root.removeEventListener("click",handleTabClick);root.removeEventListener("keydown",handleTabKeydown);
+if(backupHubSession===session)backupHubSession=null};const selectTab=(next,focus=false)=>{if(!isCurrent()||!panels[next])return;if(next!==activeTab){disposeBank?.();
+disposeBank=null;panels.bank.replaceChildren();activeTab=next;for(const button of tabs){const selected=button.dataset.backupTab===next;button.setAttribute("aria\
+-selected",String(selected));button.tabIndex=selected?0:-1}for(const[key,panel]of Object.entries(panels)){panel.hidden=key!==next;panel.inert=key!==next}if(next===
+"bank")disposeBank=window.EduQuestionBankBackupUI.mount(panels.bank,{isCurrent:()=>isCurrent("bank")});else paintSingleFileBanner()}if(focus)tabs.find(button=>button.
+dataset.backupTab===next)?.focus()};const handleTabClick=event=>{const button=event.target.closest("[data-backup-tab]");if(button&&root.contains(button))selectTab(
+button.dataset.backupTab)};const handleTabKeydown=event=>{if(!event.target.closest("[data-backup-tab]"))return;let next;if(event.key==="Home")next="school";else if(event.
+key==="End")next="bank";else if(event.key==="ArrowRight"||event.key==="ArrowLeft")next=activeTab==="school"?"bank":"school";else return;event.preventDefault();selectTab(
+next,true)};const observer=new MutationObserver(()=>{if(!isCurrent())dispose()});const session={isCurrent,dispose};backupHubSession=session;observer.observe(modal,
+{attributes:true,attributeFilter:["class"]});observer.observe(body,{childList:true});root.addEventListener("click",handleTabClick);root.addEventListener("keydow\
+n",handleTabKeydown);selectTab(initialTab)}function chooseBackupImport(){const visibleHub=document.getElementById("backupHub")&&!document.getElementById("modal").
+classList.contains("hidden");const session=visibleHub?backupHubSession:null;if(visibleHub&&!session?.isCurrent("school"))throw Error("برای بازیابی اطلاعات مدرسه\
+، تب «اطلاعات مدرسه» را باز کنید.");const input=document.getElementById("importFile");backupHubImportOrigin?.cleanup();backupHubImportOrigin=
+session?{isCurrent:()=>session.isCurrent("school")}:null;if(backupHubImportOrigin){const origin=backupHubImportOrigin;const cancel=()=>{if(backupHubImportOrigin===
+origin)backupHubImportOrigin=null;origin.cleanup()};origin.cleanup=()=>input.removeEventListener("cancel",cancel);input.addEventListener("cancel",cancel,{once:true})}
+input.click()}function previewImport(candidate,label){const preview={candidate,label,workspace:workspace?.id,revision:workspace?.revision,installation:typeof installationToken===
+"undefined"?"":installationToken};const classes=candidate.schools.flatMap(s=>s.classes),students=classes.reduce((n,c)=>n+c.students.length,0);const opened=showModal(
+"پیش‌نمایش بازیابی","<p>منبع: "+esc(label)+"</p><p>"+candidate.schools.length+" مدرسه، "+classes.length+" کلاس، "+students+" دان\
+ش‌آموز فعال، "+candidate.sessions.length+" جلسه.</p>"+(candidate.migrationWarnings?.length?'<p role="alert">'+esc(candidate.migrationWarnings.join(
+" | "))+"</p>":"")+"<p>سال پشتیبان: "+esc(candidate.settings.academicYear+" / "+(candidate.settings.academicTerm||"نامشخص"))+"</p><p>این فایل اط\
+لاعات نوبت "+esc(workspace.year+" / "+workspace.term)+' را بازمی‌گرداند؛ نوبت جدید ساخته نمی‌شود. نمره‌های پودمانی مشترکِ همین سال نیز به‌روز می‌شوند؛ \
+نمرات نوبتیِ دیگر و سایر سال‌ها تغییر نمی‌کنند.</p><button data-workspace-action="export-period">۱. ذخیره پشتیبان اطلاعات فعلی</button><p><label><input id="rest\
+oreExternalConfirmed" type="checkbox"> نسخه فعلی را در فایل مستقل ذخیره و بررسی کرده‌ام.</label></p><button data-mutating="1" data-workspace-action="confirm-imp\
+ort">۲. بازیابی اطلاعات همین نوبت</button><p id="operationError" role="alert"></p>');if(opened!==false)pendingImport=preview}let backupImportReading=false;
+async function handleImportV24(e,{fullSystemOnly=false,replaceSystem=true}={}){const file=e.target.files[0];const uiOrigin=backupHubImportOrigin;uiOrigin?.cleanup();
+backupHubImportOrigin=null;if(!file)return;if(backupImportReading){e.target.value="";handleError(new Error("خواندن فایل پشتیبان در حال انجام است؛ صبر کنید."));
+return}if(replaceSystem&&fullRestoreBusy){e.target.value="";handleError(Error("بازیابی اطلاعات مدرسه در حال انجام است؛ تا پایان آن صبر کنید."));
+return}if(replaceSystem){pendingFullBackup=null;pendingFullBackupSignature="";pendingImport=null}backupImportReading=true;const startedReady=ready;const origin=workspace?.
+id;let expectedConnection=connection;const ensureDestination=()=>{if(uiOrigin&&!uiOrigin.isCurrent())throw Error("پنجرهٔ بازیابی بسته یا عوض شده است؛ فایل را دو\
+باره انتخاب کنید.");if(ready!==startedReady||workspace?.id!==origin||resetBusy||periodLoading||startedReady&&connectionRetired||replaceSystem&&connection!==
+expectedConnection)throw Error("مقصد بازیابی هنگام خواندن فایل تغییر کرد؛ فایل را دوباره انتخاب کنید.")};
+const previewReplacement=async(value,details)=>{if(!ready&&(!connection||connectionRetired)){validateFullBackup(value);const opened=await openDatabase();try{ensureDestination()}catch(error){
+opened.close();throw error}expectedConnection=opened;connection=opened;connectionRetired=false}ensureDestination();previewFullBackup(value,details)};try{ensureDestination();
+assertClassroomFileName(file.name,{allowText:true});if(file.size>100*1024*1024&&!confirm("حجم این فایل پشتیبان حدود "+Math.ceil(file.size/1048576).
+toLocaleString("fa-IR")+" مگابایت است. خواندن آن ممکن است زمان‌بر باشد و حافظهٔ زیادی مصرف کند؛ روی دستگاه کم‌حافظه از رایانه استفاده کنید.\nفقط فایل مورداعتماد \
+خودتان را باز کنید. خواندن و بررسی فایل ادامه پیدا کند؟ تا تأیید نهایی بازیابی، اطلاعات فعلی تغییر نمی‌کند."))
+return;ensureDestination();const parsed=JSON.parse(await file.text());ensureDestination();if(!parsed||typeof parsed!=="object"||Array.isArray(parsed))throw Error(
+"ساختار فایل پشتیبان معتبر نیست.");if(parsed.format==="EduManager.FullBackup"){if(replaceSystem)await previewReplacement(parsed,{sourceName:file.
+name});else previewFullBackup(parsed);return}if(replaceSystem){const replacement=legacyBackupReplacement(parsed);await previewReplacement(replacement,{sourceName:file.
+name,legacy:true});return}if(fullSystemOnly)throw Error("این فایل پشتیبان کامل مدرسه نیست. فایل کامل شامل اطلاعات سال تحصیلی، هر دو ترم، مدرسه‌ها، کلاس‌ها و هنر\
+جویان را انتخاب کنید؛ اطلاعات فعلی تغییر نکرده است.");if(parsed.version!==void 0&&(!Number.isInteger(parsed.version)||
+parsed.version>26||parsed.version<1))throw Error("نسخه پشتیبان پشتیبانی نمی‌شود.");const source=parsed.db||parsed;if(source.schemaVersion>
+26)throw Error("نسخه ساختار جدیدتر پشتیبانی نمی‌شود.");const candidate=normalizeDB(source,{legacy:(source.schemaVersion??parsed.
+version??23)<24});if(!ready){if(!connection){const opened=await openDatabase();try{ensureDestination();if(connection&&connection!==opened)throw Error("اتصال بان\
+ک هنگام بازیابی تغییر کرده است.")}catch(error){if(connection!==opened)opened.close();throw error}connection=opened}ensureDestination();
+const recoveryConnection=connection;const ensureRecovery=()=>{ensureDestination();if(connection!==recoveryConnection)throw Error("اتصال بانک هنگام بازیابی تغییر\
+ کرده است.")};const created=await installWorkspace(candidate,{id:uid(),year:candidate.settings.academicYear,term:candidate.settings.academicTerm});ensureRecovery();
+const loaded=await readWorkspace(created.id);ensureRecovery();workspace=created;db=loaded.data;committed=loaded.records;ready=true;blocked=false;storageBlocked=
+false;isAuthenticated=false;rememberPeriod(workspace.id);render();return}await flushDrafts({strict:true});ensureDestination();previewImport(candidate,file.name)}catch(error){
+handleError(error)}finally{backupImportReading=false;e.target.value=""}}let periodImportBusy=false;async function confirmImport(){if(periodImportBusy)throw Error(
+"بازیابی در حال انجام است؛ تا پایان آن صبر کنید.");periodImportBusy=true;try{if(fileMode)throw Error("این عملیات را در نسخه\
+ نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.");if(!pendingImport||pendingImport.workspace!==workspace.id)throw Error("پیش‌نمایش\
+ بازیابی منقضی شده است.");const preview=pendingImport,expectedInstallation=preview.installation??"";const context={id:preview.workspace,revision:preview.
+revision};const check=(write=false)=>{if((typeof installationToken==="undefined"?"":installationToken)!==expectedInstallation)throw Object.assign(Error("اطلاعات\
+ جایگزین شده است؛ پیش‌نمایش پشتیبان را دوباره باز کنید."),{code:"INSTALLATION_CHANGED"});assertWorkspaceContext(context,
+{write});if(pendingImport!==preview)throw Error("پیش‌نمایش بازیابی تغییر کرده است؛ دوباره بررسی کنید.")};check();const savedKind=academicTermKind(
+preview.candidate.settings.academicTerm);const targetKind=workspace.termKind||academicTermKind(workspace.term);if(preview.candidate.settings.academicYear!==workspace.
+year||(savedKind&&targetKind?savedKind!==targetKind:normalizedName(preview.candidate.settings.academicTerm)!==normalizedName(workspace.term)))throw Error("این ف\
+ایل متعلق به نوبت فعلی نیست؛ همان سال و نوبت را باز کنید یا از پشتیبان کامل مدرسه استفاده کنید.");
 if(!document.getElementById("restoreExternalConfirmed").checked){handleError(Error("ابتدا نسخه مستقل را ذخیره و وجود فایل را تأیید کنید."));
 return}if(workspace.closed)throw Error("ترم بسته است؛ برای بازیابی در آن ابتدا ترم را بازگشایی کنید.");if(!confirm(
 "اطلاعات این ترم با نسخه پیش‌نمایش جایگزین شود؟"))return;await flushDrafts({strict:true});await writer.catch(()=>{});check(
@@ -2459,117 +2476,117 @@ c);applyStudentIdentity(c,student,{name,code});await saveDBV24({action:"اصلا
 workspace.id!==context.workspace||state.schoolId!==context.schoolId||state.classId!==context.classId||periodLoading||resetBusy||connectionRetired)return;finish();
 rememberRecordEditor();studentEditing=null;closeModal();render()}catch(error){if(!showRecordEditorError(error,"studentEditError"))handleError(error)}finally{studentSaving=
 false;finish()}}async function wipeAllV24(){if(fileMode||!ready||connectionRetired)return handleError(Error("ابتدا نسخه آماده برنامه را باز کنید."));
-showModal("حذف کامل اطلاعات سیستم",'<form class="record-editor wipe-editor" id="wipeEditor" data-workspace-submit="confirm-wipe" aria-describ\
-edby="wipeWarning"><section class="wipe-warning" id="wipeWarning"><span class="wipe-symbol" aria-hidden="true">'+EduIcons.html("trash")+'</span><div><h4>حذف همه\
-ٔ سال‌های تحصیلی</h4><p>همهٔ اطلاعات این مرورگر پاک می‌شود؛ بازگردانی فقط با فایل پشتیبان ممکن است.</p></div></section><section class="wipe-scope" aria-label="ا\
-طلاعاتی که حذف می‌شوند"><h4>اطلاعات مشمول حذف</h4><p>مدرسه‌ها، کلاس‌ها، هنرجویان، درس‌ها، برنامه، جلسات، نمرات، فعالیت‌ها، گزارش‌ها و پشتیبان‌های داخلی.</p></se\
-ction><section class="wipe-backup" aria-label="پشتیبان پیش از حذف"><p>فایل‌های روی دستگاه و نصب برنامه باقی می‌مانند.</p><button type="button" class="ghost wipe\
--export" data-workspace-action="export-full" title="دریافت پشتیبان کامل سیستم">دریافت پشتیبان</button></section><div class="wipe-confirmation"><label for="wipeT\
-ext">برای تأیید، «حذف» را بنویسید</label><input id="wipeText" autocomplete="off" spellcheck="false" aria-describedby="wipeError" placeholder="حذف"><label class=\
-"wipe-backup-check" for="wipeBackup"><input type="checkbox" id="wipeBackup"><span>پشتیبان مستقل را نگه داشته‌ام.</span></label></div><p id="wipeError" class="en\
-tity-create-error" role="alert"></p><div class="record-editor-actions wipe-actions"><button type="button" class="ghost" data-workspace-action="close">انصراف</bu\
-tton><button type="submit" class="danger">حذف کامل اطلاعات</button></div></form>')}async function confirmWipe(){if(resetBusy)return false;const form=document.
+showModal("پاک‌سازی اطلاعات مدرسه",'<form class="record-editor wipe-editor" id="wipeEditor" data-workspace-submit="confirm-wipe" aria-descr\
+ibedby="wipeWarning"><section class="wipe-warning" id="wipeWarning"><span class="wipe-symbol" aria-hidden="true">'+EduIcons.html("trash")+'</span><div><h4>حذف ا\
+طلاعات مدرسه از این مرورگر</h4><p>بازگردانی فقط با فایل پشتیبان مدرسه ممکن است.</p></div></section><section class="wipe-scope" aria-label="اطلاعاتی که حذف می‌شو\
+ند"><h4>اطلاعات مشمول حذف</h4><p>مدرسه‌ها، کلاس‌ها، هنرجویان، درس‌ها، برنامه، جلسات، حضور، نمرات، فعالیت‌ها و پیش‌نویس‌های مدرسه.</p></section><section class="w\
+ipe-backup" aria-label="پشتیبان پیش از حذف"><p>بانک سؤال و آزمون‌ها، فایل‌های روی دستگاه و نصب برنامه باقی می‌مانند.</p><button type="button" class="ghost wipe-\
+export" data-workspace-action="export-full" title="دریافت پشتیبان اطلاعات مدرسه">دریافت پشتیبان</button></section><div class="wipe-confirmation"><label for="wip\
+eText">برای تأیید، «حذف» را بنویسید</label><input id="wipeText" autocomplete="off" spellcheck="false" aria-describedby="wipeError" placeholder="حذف"><label clas\
+s="wipe-backup-check" for="wipeBackup"><input type="checkbox" id="wipeBackup"><span>پشتیبان مستقل را نگه داشته‌ام.</span></label></div><p id="wipeError" class="\
+entity-create-error" role="alert"></p><div class="record-editor-actions wipe-actions"><button type="button" class="ghost" data-workspace-action="close">انصراف</\
+button><button type="submit" class="danger">حذف اطلاعات مدرسه</button></div></form>')}async function confirmWipe(){if(resetBusy)return false;const form=document.
 querySelector("#modal:not(.hidden) #wipeEditor");if(!form)return false;if(fileMode||!ready||connectionRetired)return false;if(document.getElementById("wipeText").
 value!=="حذف"||!document.getElementById("wipeBackup").checked){showRecordEditorError(recordFieldError("متن تأیید و گزینه پشتیبان را تکمیل کنید.",
-"wipeText"),"wipeError");return false}if(!confirm("آخرین تأیید: همه اطلاعات این برنامه از این مرورگر حذف شوند؟"))
+"wipeText"),"wipeError");return false}if(!confirm("آخرین تأیید: فقط اطلاعات مدرسه از این مرورگر حذف شود؟ بانک سؤال و فایل‌های دستگاه باقی می‌مانند."))
 return false;resetBusy=true;const hadFileTimer=!!singleFileTimer;pauseSingleFile();const finish=beginRecordEditorSave(form),wasBlocked=blocked;let committedReset=false,
 resetConnection=null;const marker={key:RESET_RECORD_KEY,workspace:null,logical:"installation-reset",value:{token:uid(),phase:"cleanup",at:new Date().toISOString()}};
 try{clearTimeout(draftTimer);if(flushing)await flushing.catch(()=>{});if(singleFileWriting)await singleFileWriting.catch(()=>{});await writer.catch(()=>{});await draftWriter.
 catch(()=>{});const nextVersion=connection.version+1;connectionRetired=true;ready=false;connection.close();resetConnection=await resetDatabase(nextVersion,marker);
 committedReset=true;broadcast({type:"installation-reset",token:marker.value.token});forgetInstallation();await completeResetCleanup(resetConnection,marker);installationToken=
-marker.value.token;finish();rememberRecordEditor();closeModal();resetScreen("اطلاعات پاک شد؛ برنامه با اطلاعات خالی دوباره باز می‌شود.");
-location.reload();return true}catch(error){if(committedReset){forgetInstallation();resetScreen("اطلاعات بانک حذف شد، اما پاک‌سازی حافظه مرورگر کامل نشد. با بارگ\
-ذاری مجدد، پاک‌سازی ادامه پیدا می‌کند و داده قدیمی وارد نخواهد شد. "+error.message)}else if(error.resetBlocked){
-resetScreen(error.message+" حذف معلق پس از بستن آن اتصال نیز خودکار اجرا نخواهد شد.")}else{try{connection=await openDatabase();
-connectionRetired=false;const observedReset=await readRecord("records",RESET_RECORD_KEY);if(connectionRetired||(observedReset?.value?.token||"")!==installationToken){
-connection.close();invalidateInstallation();return false}ready=true;blocked=wasBlocked;showRecordEditorError(Error("حذف ثبت نشد؛ اطلاعات قبلی محفوظ است. "+
-error.message),"wipeError")}catch(reopenError){resetScreen("حذف ثبت نشد؛ برای خواندن دوباره اطلاعات، برنامه را بارگذاری کنید. "+
-reopenError.message)}}return false}finally{resetConnection?.close();if(!committedReset){resetBusy=false;if(hadFileTimer&&singleFile&&!singleFileFailure&&ready&&
-!blocked&&!connectionRetired)startSingleFile()}finish()}}function installUI(){installWorkspaceActions();installGradeEvents();installAttendanceReminderClock();window.
-addEventListener("storage",event=>{if(event.key===RESET_EPOCH_KEY&&event.newValue&&event.newValue!==installationToken&&!resetBusy)invalidateInstallation()});window.
-addEventListener("beforeunload",event=>{if(busy||drafts.size||assessmentContext.hasDrafts()||draftRecoveryFailed||draftWritesPending||window.EduQuestionBankUI?.
-hasPendingChanges?.()||hasRecordEditorChanges()||document.querySelector('.record-editor[aria-busy="true"],[data-entity-create][aria-busy="true"]')){event.preventDefault();
-event.returnValue=""}});window.addEventListener("pagehide",()=>{if(ready){storeDrafts();assessmentContext.persist().catch(()=>{})}tabClaimed=false;channel?.close()});
-window.addEventListener("pageshow",event=>{if(event.persisted)location.reload()});window.addEventListener("unhandledrejection",event=>{event.preventDefault();handleError(
-event.reason instanceof Error?event.reason:Error(String(event.reason)))});window.addEventListener("beforeprint",beforeReportPrint);window.addEventListener("afte\
-rprint",()=>{printAuthorization=null;document.getElementById("printRoot")?.remove();document.getElementById("printPageStyle")?.remove()});document.addEventListener(
-"keydown",event=>{const overlay=document.getElementById("modal");if(overlay.classList.contains("hidden"))return;if(event.key==="Escape"){event.preventDefault();
-if(drafts.size||assessmentContext.hasDrafts()){flushDrafts({strict:true}).then(()=>closeModal()).catch(handleError)}else closeModal();return}if(event.key==="Tab"){
-const nodes=modalFocusableElements();if(nodes.length){const first=nodes[0],last=nodes[nodes.length-1];if(event.shiftKey&&(document.activeElement===first||!nodes.
-includes(document.activeElement))){event.preventDefault();last.focus()}else if(!event.shiftKey&&(document.activeElement===last||!nodes.includes(document.activeElement))){
-event.preventDefault();first.focus()}}}});if(channel)channel.onmessage=event=>{const message=event.data;if(singleFileChanged(message))return;if(message.type==="\
-period-deleted"||message.type==="installation-restored"&&!fullRestoreBusy){invalidateInstallation();return}if(message.type==="installation-reset"&&!resetBusy){invalidateInstallation();
-return}if(tabMessage(message))return;if(typeof invalidateKarnamehExcelShare==="function")invalidateKarnamehExcelShare(message);window.EduPeriodicReports?.workspaceChanged?.(
-message);assessmentContext.workspaceChanged(message);invalidateYearNotesScope(message);void synchronizeYearNotesScope().catch(()=>{});if(message.workspace)void refreshAttendanceReminders();
-if(workspace&&message.workspace===workspace.id&&message.revision>workspace.revision){markWorkspaceConflict()}}}function showModalV24(title,html){if(old.showModal(
-title,html)===false)return false;setTimeout(()=>{applyDrafts();lockControls();paintStatus();if(!document.getElementById("modal").classList.contains("hidden"))(modalFocusableElements().
-find(element=>element.closest("#modalBody"))||document.querySelector("#modal .modal-dialog"))?.focus({preventScroll:true})},0);return true}async function loginV24(e){
-if(fileMode){e.preventDefault();const input=document.getElementById("loginPass");if(await verifyPassword(input.value,db.settings.password)){isAuthenticated=true;
-render()}else{input.value="";alert("رمز عبور اشتباه است.")}return}await old.checkPassword(e);if(isAuthenticated)await recoverDrafts()}function installWorkspaceActions(){
-const commands=new Map([["record-enable-edit",button=>enableRecordEditAccess(button)],["session-toggle-edit",button=>toggleSessionEditing(button)],["session-res\
-tore-roster",button=>restoreEmptySessionRosterV24(button)],["attendance-reminder-open",button=>openAttendanceReminder(button)],["attendance-reminders-all",()=>openAttendanceRemindersList()],
-["attendance-reminders-page",button=>pageAttendanceReminders(button)],["attendance-reminders-not-held",()=>openAttendanceRemindersList({notHeld:true})],["attend\
-ance-reminders-refresh",()=>refreshAttendanceReminders({interactive:true})],["attendance-reminder-not-held",()=>markAttendanceReminderNotHeld()],["attendance-re\
-minder-record",button=>recordAttendanceReminder(button)],["attendance-reminder-restore",button=>restoreAttendanceReminder(button)],["year-sessions",()=>refreshYearLessonSessions(
-{interactive:true})],["year-session",button=>openYearSession(button.dataset.workspace,button.dataset.key)],["assessment-stage",button=>openAssessmentStage(button)],
-["karnameh-stage",button=>selectKarnamehStage(button)],["karnameh-excel",button=>openKarnamehExcel(button)],["karnameh-excel-download",button=>downloadKarnamehExcel(
-button)],["karnameh-excel-mode",button=>setKarnamehExcelDelivery(button)],["karnameh-excel-send",button=>shareKarnamehExcel(button)],["karnameh-excel-save",button=>downloadPreparedKarnamehExcel(
-button)],["karnameh-student",button=>openKarnamehStudent(button.dataset.class,button.dataset.key)],["switch-period",button=>switchPeriod(button.dataset.key)],["\
-frozen-report",button=>showFrozenReport(button.dataset.key)],["adopt-drafts",button=>adoptDrafts(button.dataset.key)],["approve-drafts",()=>approveDrafts()],["a\
-rchived-report",button=>showArchivedKarnameh(button.dataset.key)],["edit-student",button=>openEditStudentModal(button.dataset.key)],["restore-student",button=>restoreStudent(
-button.dataset.key)],["copy-membership",()=>saveMembership("copy")],["unfiltered-session",button=>{const day=integer(button.dataset.day),period=integer(button.dataset.
-period);state.masterFilter=null;closeModal();return clickMasterCell(day,period)}],["periods",()=>openAcademicYear()],["term-records",()=>openPeriods()],["backup\
-s",()=>openBackups()],["open-wipe",()=>wipeAllV24()],["discard-drafts",()=>discardDrafts()],["review-drafts",()=>reviewDrafts()],["other-drafts",()=>openOtherDrafts()],
-["create-period",()=>createNewPeriod({fromDialog:true})],["reopen-period",()=>reopenPeriod()],["finalize-period",()=>finalizePeriod()],["new-second-period",button=>openNewPeriod(
-button.dataset.key)],["export-period",()=>exportFullBackup()],["export-full",()=>exportFullBackup()],["prepare-share-backup",()=>openBackupShare()],["share-back\
-up-file",button=>sharePreparedBackup(button)],["download-share-backup",()=>downloadPreparedBackup()],["single-file-choose",()=>chooseSingleFile()],["single-file\
--save",()=>resumeSingleFile()],["question-bank-file-permission",()=>renewQuestionBankFilePermission()],["single-file-stop",()=>disableSingleFile()],["restore-fu\
-ll",()=>restoreFullBackup()],["confirm-import",()=>confirmImport()],["undo",()=>openUndoModal()],["confirm-undo",()=>confirmUndo()],["raw-recovery",()=>rawRecoveryV24()],
-["choose-import",()=>document.getElementById("importFile").click()],["print",button=>printCurrentKarnameh(button)],["close",()=>closeModal()],["reload",()=>location.
-reload()]]);if(globalThis.__EDU_TEST_MODE__){commands.set("delete-period",button=>openDeletePeriod(button.dataset.key));commands.set("confirm-delete-period",()=>confirmDeletePeriod())}
-function integer(value){if(!/^\d+$/.test(value)||!Number.isSafeInteger(Number(value)))throw Error("پارامتر عملیات نامعتبر است.");return Number(
-value)}const submissions=new Map([["save-membership",()=>saveMembership()],["save-student",()=>saveStudent()],["save-entity",()=>saveEntityEditor()],["commit-cs\
-v",()=>commitCSV()],["confirm-deletion",()=>confirmDeletion()],["confirm-wipe",()=>confirmWipe()]]);const allowed=element=>element&&!element.matches(":disabled")&&
-!element.closest("[inert]")&&element.closest("#app,#modalBody");const run=(handler,element)=>{try{void Promise.resolve(handler(element)).catch(handleError)}catch(error){
-handleError(error)}};document.addEventListener("click",event=>{const button=event.target.closest?.("button[data-workspace-action]");if(!allowed(button))return;const handler=commands.
-get(button.dataset.workspaceAction);if(handler)run(handler,button)});document.addEventListener("submit",event=>{const form=event.target;if(!form.matches?.("form\
-[data-workspace-submit]"))return;event.preventDefault();if(!allowed(form))return;const handler=submissions.get(form.dataset.workspaceSubmit);if(handler)run(handler,
-form)});globalThis.addEventListener?.("edu-question-bank-file-status",()=>{paintQuestionBankFileNotice();globalThis.EduQuestionBankUI?.updateLayout?.()})}let entityCreationBusy=false;
-async function createEntityV24(event,kind){event.preventDefault();if(entityCreationBusy)return false;const form=event.target,name=String(form.elements.namedItem(
-"name")?.value||"").trim().replace(/\s+/g," ");const target={workspace:workspace?.id,bank:db,connection,installation:typeof installationToken==="undefined"?"":installationToken,
-schoolId:state.schoolId,view:state.view};const sameInstallationTarget=()=>target.workspace===workspace?.id&&target.connection===connection&&target.installation===
-(typeof installationToken==="undefined"?"":installationToken)&&target.view===state.view&&(kind!=="class"||target.schoolId===state.schoolId);const sameTarget=()=>target.
-bank===db&&sameInstallationTarget();const fieldId=kind+"CreateName";entityCreationBusy=true;const finishSave=beginRecordEditorSave(form);try{assertEntityWritable();
-if(!normalizedName(name)||name.length>500)throw recordFieldError("نام معتبر با حداکثر ۵۰۰ نویسه وارد کنید.",fieldId);await flushDrafts(
-{strict:true});assertEntityWritable();if(!sameTarget())throw Error("ترم یا صفحه مقصد تغییر کرده است؛ ثبت انجام نشد.");const school=kind===
-"class"?getSchool(target.schoolId):null;if(kind==="class"&&!school)throw Error("مدرسه مقصد وجود ندارد.");const peers=kind==="school"?db.schools:
-school.classes;if(peers.some(x=>normalizedName(x.name)===normalizedName(name)))throw recordFieldError(kind==="school"?"مدرسه‌ای با همین نام وجود دارد.":
-"کلاسی با همین نام در این مدرسه وجود دارد.",fieldId);peers.push(kind==="school"?{id:uid(),name,classes:[]}:{id:uid(),name,students:[],
-archivedStudents:[],lessons:[]});await saveDBV24({action:"افزودن "+(kind==="school"?"مدرسه":"کلاس")+": "+name});if(sameTarget()&&!periodLoading&&
-!resetBusy&&!connectionRetired)render();return true}catch(error){const currentForm=sameInstallationTarget()?document.querySelector('form[data-entity-create="'+kind+
-'"]'):null;if(currentForm){const input=currentForm.elements.namedItem("name");input.value=name;currentForm.querySelector(".entity-create-error").textContent=error.
-message;const detail=currentForm.closest("details");if(detail)detail.open=true;if(error.fieldId)input.setAttribute("aria-invalid","true");requestAnimationFrame(
-()=>{const currentDetail=input.closest("details");if(currentDetail)currentDetail.open=true;if(input.isConnected&&!input.disabled)input.focus({preventScroll:true})})}else
-handleError(error);return false}finally{entityCreationBusy=false;finishSave()}}let academicYearNotesScope={year:"",periods:[]};const verifiedYearNoteAccess=new Set;
-const noteAccessKey=(id,password)=>JSON.stringify([installationToken,id,password]);function permitYearNoteAccess(period,data){verifiedYearNoteAccess.add(noteAccessKey(
-period.id,data.settings.password))}function academicYearNotesContext(){const periods=academicYearNotesScope.year===workspace?.year?academicYearNotesScope.periods:
-[],authorized=periods.filter(period=>(period.id===workspace?.id||["first","second"].includes(period.kind))&&(period.id===workspace?.id||period.password===""||isAuthenticated&&
-period.password===db.settings.password||verifiedYearNoteAccess.has(noteAccessKey(period.id,period.password)))),owner=authorized.find(period=>period.kind==="firs\
-t")||authorized.find(period=>period.id===workspace?.id),ids=authorized.map(period=>period.id);if(workspace?.id&&!ids.includes(workspace.id))ids.push(workspace.id);
-return{notesWorkspaceId:owner?.id||workspace?.id||"",notesWorkspaceIds:ids,yearScopeId:workspace?.year||""}}async function synchronizeYearNotesScope(){if(!connection||
-!workspace||resetBusy||connectionRetired)return;const origin={connection,id:workspace.id,year:workspace.year},tx=connection.transaction(["catalog","records"],"r\
-eadonly"),done=transactionDone(tx);const pending=new Promise((resolve,reject)=>{const request=tx.objectStore("catalog").getAll();request.onerror=()=>reject(request.
-error);request.onsuccess=()=>{const periods2=request.result.filter(row=>row.year===origin.year&&(row.id===origin.id||["first","second"].includes(row.termKind||academicTermKind(
-row.term)))),metas=periods2.map(period=>requestPromise(tx.objectStore("records").get(period.id+"|meta")));Promise.all(metas).then(rows=>resolve(periods2.map((period,index)=>({
-id:period.id,revision:period.revision,kind:period.termKind||academicTermKind(period.term),password:rows[index]?.value?.settings?.password??null}))),reject)}});const[
-periods]=await Promise.all([pending,done]);if(connection===origin.connection&&workspace?.id===origin.id&&workspace.year===origin.year&&!resetBusy&&!connectionRetired)
-academicYearNotesScope={year:origin.year,periods}}function invalidateYearNotesScope(message){if(!message?.workspace)return;academicYearNotesScope.periods=academicYearNotesScope.
-periods.filter(period=>period.id!==message.workspace||message.revision&&period.revision>=message.revision)}function captureWorkspaceContext(){return Object.freeze(
-{id:workspace?.id||"",revision:workspace?.revision||0})}function assertWorkspaceReadable(){if(fileMode||!ready||periodLoading||resetBusy||connectionRetired||!workspace)
-throw Error("اطلاعات آماده خواندن نیست؛ برنامه را دوباره باز کنید.");if(blocked)throw Error("اطلاعات این پنجره قدیمی\
- است؛ صفحه را دوباره بارگذاری و گزارش یا فرم را دوباره تهیه کنید.");if(db.settings.password&&!isAuthenticated)
-throw Error("ابتدا وارد نوبت شوید.")}function assertWorkspaceContext(context,{write=false}={}){assertWorkspaceReadable();if(!context||context.id!==
-workspace.id||context.revision!==workspace.revision)throw Error("نوبت یا اطلاعات تغییر کرده است؛ فرم یا گزارش را دوباره باز کنید.");
+marker.value.token;finish();rememberRecordEditor();closeModal();resetScreen("اطلاعات مدرسه پاک شد؛ بانک سؤال و فایل‌های دستگاه باقی ماندند. برنامه دوباره باز می\
+‌شود.");location.reload();return true}catch(error){if(committedReset){forgetInstallation();resetScreen("اطلاعات مدرسه حذف شد، اما پاک‌سازی حافظهٔ مربوط به \
+مدرسه کامل نشد. با بارگذاری مجدد، پاک‌سازی ادامه پیدا می‌کند؛ بانک سؤال و فایل‌های دستگاه تغییر نکرده‌اند. "+
+error.message)}else if(error.resetBlocked){resetScreen(error.message+" حذف معلق پس از بستن آن اتصال نیز خودکار اجرا نخواهد شد.")}else{
+try{connection=await openDatabase();connectionRetired=false;const observedReset=await readRecord("records",RESET_RECORD_KEY);if(connectionRetired||(observedReset?.
+value?.token||"")!==installationToken){connection.close();invalidateInstallation();return false}ready=true;blocked=wasBlocked;showRecordEditorError(Error("حذف ث\
+بت نشد؛ اطلاعات قبلی محفوظ است. "+error.message),"wipeError")}catch(reopenError){resetScreen("حذف ثبت نشد؛ برای خواندن دوباره اطلاعات، \
+برنامه را بارگذاری کنید. "+reopenError.message)}}return false}finally{resetConnection?.close();if(!committedReset){resetBusy=false;if(hadFileTimer&&
+singleFile&&!singleFileFailure&&ready&&!blocked&&!connectionRetired)startSingleFile()}finish()}}function installUI(){installWorkspaceActions();installGradeEvents();
+installAttendanceReminderClock();window.addEventListener("storage",event=>{if(event.key===RESET_EPOCH_KEY&&event.newValue&&event.newValue!==installationToken&&!resetBusy)
+invalidateInstallation()});window.addEventListener("beforeunload",event=>{if(busy||drafts.size||assessmentContext.hasDrafts()||draftRecoveryFailed||draftWritesPending||
+window.EduQuestionBankUI?.hasPendingChanges?.()||hasRecordEditorChanges()||document.querySelector('.record-editor[aria-busy="true"],[data-entity-create][aria-bu\
+sy="true"]')){event.preventDefault();event.returnValue=""}});window.addEventListener("pagehide",()=>{if(ready){storeDrafts();assessmentContext.persist().catch(()=>{})}
+tabClaimed=false;channel?.close()});window.addEventListener("pageshow",event=>{if(event.persisted)location.reload()});window.addEventListener("unhandledrejectio\
+n",event=>{event.preventDefault();handleError(event.reason instanceof Error?event.reason:Error(String(event.reason)))});window.addEventListener("beforeprint",beforeReportPrint);
+window.addEventListener("afterprint",()=>{printAuthorization=null;document.getElementById("printRoot")?.remove();document.getElementById("printPageStyle")?.remove()});
+document.addEventListener("keydown",event=>{const overlay=document.getElementById("modal");if(overlay.classList.contains("hidden"))return;if(event.key==="Escape"){
+event.preventDefault();if(drafts.size||assessmentContext.hasDrafts()){flushDrafts({strict:true}).then(()=>closeModal()).catch(handleError)}else closeModal();return}
+if(event.key==="Tab"){const nodes=modalFocusableElements();if(nodes.length){const first=nodes[0],last=nodes[nodes.length-1];if(event.shiftKey&&(document.activeElement===
+first||!nodes.includes(document.activeElement))){event.preventDefault();last.focus()}else if(!event.shiftKey&&(document.activeElement===last||!nodes.includes(document.
+activeElement))){event.preventDefault();first.focus()}}}});if(channel)channel.onmessage=event=>{const message=event.data;if(singleFileChanged(message))return;if(message.
+type==="period-deleted"||message.type==="installation-restored"&&!fullRestoreBusy){invalidateInstallation();return}if(message.type==="installation-reset"&&!resetBusy){
+invalidateInstallation();return}if(tabMessage(message))return;if(typeof invalidateKarnamehExcelShare==="function")invalidateKarnamehExcelShare(message);window.EduPeriodicReports?.
+workspaceChanged?.(message);assessmentContext.workspaceChanged(message);invalidateYearNotesScope(message);void synchronizeYearNotesScope().catch(()=>{});if(message.
+workspace)void refreshAttendanceReminders();if(workspace&&message.workspace===workspace.id&&message.revision>workspace.revision){markWorkspaceConflict()}}}function showModalV24(title,html){
+if(old.showModal(title,html)===false)return false;setTimeout(()=>{applyDrafts();lockControls();paintStatus();if(!document.getElementById("modal").classList.contains(
+"hidden"))(modalFocusableElements().find(element=>element.closest("#modalBody"))||document.querySelector("#modal .modal-dialog"))?.focus({preventScroll:true})},
+0);return true}async function loginV24(e){if(fileMode){e.preventDefault();const input=document.getElementById("loginPass");if(await verifyPassword(input.value,db.
+settings.password)){isAuthenticated=true;render()}else{input.value="";alert("رمز عبور اشتباه است.")}return}await old.checkPassword(e);if(isAuthenticated)
+await recoverDrafts()}function installWorkspaceActions(){const commands=new Map([["record-enable-edit",button=>enableRecordEditAccess(button)],["session-toggle-\
+edit",button=>toggleSessionEditing(button)],["session-restore-roster",button=>restoreEmptySessionRosterV24(button)],["attendance-reminder-open",button=>openAttendanceReminder(
+button)],["attendance-reminders-all",()=>openAttendanceRemindersList()],["attendance-reminders-page",button=>pageAttendanceReminders(button)],["attendance-remin\
+ders-not-held",()=>openAttendanceRemindersList({notHeld:true})],["attendance-reminders-refresh",()=>refreshAttendanceReminders({interactive:true})],["attendance\
+-reminder-not-held",()=>markAttendanceReminderNotHeld()],["attendance-reminder-record",button=>recordAttendanceReminder(button)],["attendance-reminder-restore",
+button=>restoreAttendanceReminder(button)],["year-sessions",()=>refreshYearLessonSessions({interactive:true})],["year-session",button=>openYearSession(button.dataset.
+workspace,button.dataset.key)],["assessment-stage",button=>openAssessmentStage(button)],["karnameh-stage",button=>selectKarnamehStage(button)],["karnameh-excel",
+button=>openKarnamehExcel(button)],["karnameh-excel-download",button=>downloadKarnamehExcel(button)],["karnameh-excel-mode",button=>setKarnamehExcelDelivery(button)],
+["karnameh-excel-send",button=>shareKarnamehExcel(button)],["karnameh-excel-save",button=>downloadPreparedKarnamehExcel(button)],["karnameh-student",button=>openKarnamehStudent(
+button.dataset.class,button.dataset.key)],["switch-period",button=>switchPeriod(button.dataset.key)],["frozen-report",button=>showFrozenReport(button.dataset.key)],
+["adopt-drafts",button=>adoptDrafts(button.dataset.key)],["approve-drafts",()=>approveDrafts()],["archived-report",button=>showArchivedKarnameh(button.dataset.key)],
+["edit-student",button=>openEditStudentModal(button.dataset.key)],["restore-student",button=>restoreStudent(button.dataset.key)],["copy-membership",()=>saveMembership(
+"copy")],["unfiltered-session",button=>{const day=integer(button.dataset.day),period=integer(button.dataset.period);state.masterFilter=null;closeModal();return clickMasterCell(
+day,period)}],["periods",()=>openAcademicYear()],["term-records",()=>openPeriods()],["backups",()=>openBackups()],["open-wipe",()=>wipeAllV24()],["discard-draft\
+s",()=>discardDrafts()],["review-drafts",()=>reviewDrafts()],["other-drafts",()=>openOtherDrafts()],["create-period",()=>createNewPeriod({fromDialog:true})],["r\
+eopen-period",()=>reopenPeriod()],["finalize-period",()=>finalizePeriod()],["new-second-period",button=>openNewPeriod(button.dataset.key)],["export-period",()=>exportFullBackup()],
+["export-full",()=>exportFullBackup()],["prepare-share-backup",()=>openBackupShare()],["share-backup-file",button=>sharePreparedBackup(button)],["download-share\
+-backup",()=>downloadPreparedBackup()],["single-file-choose",()=>chooseSingleFile()],["single-file-save",()=>resumeSingleFile()],["question-bank-file-permission",
+()=>renewQuestionBankFilePermission()],["single-file-stop",()=>disableSingleFile()],["restore-full",()=>restoreFullBackup()],["confirm-import",()=>confirmImport()],
+["undo",()=>openUndoModal()],["confirm-undo",()=>confirmUndo()],["raw-recovery",()=>rawRecoveryV24()],["choose-import",()=>chooseBackupImport()],["print",button=>printCurrentKarnameh(
+button)],["close",()=>closeModal()],["reload",()=>location.reload()]]);if(globalThis.__EDU_TEST_MODE__){commands.set("delete-period",button=>openDeletePeriod(button.
+dataset.key));commands.set("confirm-delete-period",()=>confirmDeletePeriod())}function integer(value){if(!/^\d+$/.test(value)||!Number.isSafeInteger(Number(value)))
+throw Error("پارامتر عملیات نامعتبر است.");return Number(value)}const submissions=new Map([["save-membership",()=>saveMembership()],["sav\
+e-student",()=>saveStudent()],["save-entity",()=>saveEntityEditor()],["commit-csv",()=>commitCSV()],["confirm-deletion",()=>confirmDeletion()],["confirm-wipe",()=>confirmWipe()]]);
+const allowed=element=>element&&!element.matches(":disabled")&&!element.closest("[inert]")&&element.closest("#app,#modalBody");const run=(handler,element)=>{try{
+void Promise.resolve(handler(element)).catch(handleError)}catch(error){handleError(error)}};document.addEventListener("click",event=>{const button=event.target.
+closest?.("button[data-workspace-action]");if(!allowed(button))return;const handler=commands.get(button.dataset.workspaceAction);if(handler)run(handler,button)});
+document.addEventListener("submit",event=>{const form=event.target;if(!form.matches?.("form[data-workspace-submit]"))return;event.preventDefault();if(!allowed(form))
+return;const handler=submissions.get(form.dataset.workspaceSubmit);if(handler)run(handler,form)});globalThis.addEventListener?.("edu-question-bank-file-status",
+()=>{paintQuestionBankFileNotice();globalThis.EduQuestionBankUI?.updateLayout?.()})}let entityCreationBusy=false;async function createEntityV24(event,kind){event.
+preventDefault();if(entityCreationBusy)return false;const form=event.target,name=String(form.elements.namedItem("name")?.value||"").trim().replace(/\s+/g," ");const target={
+workspace:workspace?.id,bank:db,connection,installation:typeof installationToken==="undefined"?"":installationToken,schoolId:state.schoolId,view:state.view};const sameInstallationTarget=()=>target.
+workspace===workspace?.id&&target.connection===connection&&target.installation===(typeof installationToken==="undefined"?"":installationToken)&&target.view===state.
+view&&(kind!=="class"||target.schoolId===state.schoolId);const sameTarget=()=>target.bank===db&&sameInstallationTarget();const fieldId=kind+"CreateName";entityCreationBusy=
+true;const finishSave=beginRecordEditorSave(form);try{assertEntityWritable();if(!normalizedName(name)||name.length>500)throw recordFieldError("نام معتبر با حداک\
+ثر ۵۰۰ نویسه وارد کنید.",fieldId);await flushDrafts({strict:true});assertEntityWritable();if(!sameTarget())throw Error("ترم یا صفحه مقصد تغییر\
+ کرده است؛ ثبت انجام نشد.");const school=kind==="class"?getSchool(target.schoolId):null;if(kind==="class"&&!school)throw Error("مدرسه مقصد وج\
+ود ندارد.");const peers=kind==="school"?db.schools:school.classes;if(peers.some(x=>normalizedName(x.name)===normalizedName(name)))throw recordFieldError(
+kind==="school"?"مدرسه‌ای با همین نام وجود دارد.":"کلاسی با همین نام در این مدرسه وجود دارد.",fieldId);
+peers.push(kind==="school"?{id:uid(),name,classes:[]}:{id:uid(),name,students:[],archivedStudents:[],lessons:[]});await saveDBV24({action:"افزودن "+(kind===
+"school"?"مدرسه":"کلاس")+": "+name});if(sameTarget()&&!periodLoading&&!resetBusy&&!connectionRetired)render();return true}catch(error){const currentForm=sameInstallationTarget()?
+document.querySelector('form[data-entity-create="'+kind+'"]'):null;if(currentForm){const input=currentForm.elements.namedItem("name");input.value=name;currentForm.
+querySelector(".entity-create-error").textContent=error.message;const detail=currentForm.closest("details");if(detail)detail.open=true;if(error.fieldId)input.setAttribute(
+"aria-invalid","true");requestAnimationFrame(()=>{const currentDetail=input.closest("details");if(currentDetail)currentDetail.open=true;if(input.isConnected&&!input.
+disabled)input.focus({preventScroll:true})})}else handleError(error);return false}finally{entityCreationBusy=false;finishSave()}}let academicYearNotesScope={year:"",
+periods:[]};const verifiedYearNoteAccess=new Set;const noteAccessKey=(id,password)=>JSON.stringify([installationToken,id,password]);function permitYearNoteAccess(period,data){
+verifiedYearNoteAccess.add(noteAccessKey(period.id,data.settings.password))}function academicYearNotesContext(){const periods=academicYearNotesScope.year===workspace?.
+year?academicYearNotesScope.periods:[],authorized=periods.filter(period=>(period.id===workspace?.id||["first","second"].includes(period.kind))&&(period.id===workspace?.
+id||period.password===""||isAuthenticated&&period.password===db.settings.password||verifiedYearNoteAccess.has(noteAccessKey(period.id,period.password)))),owner=authorized.
+find(period=>period.kind==="first")||authorized.find(period=>period.id===workspace?.id),ids=authorized.map(period=>period.id);if(workspace?.id&&!ids.includes(workspace.
+id))ids.push(workspace.id);return{notesWorkspaceId:owner?.id||workspace?.id||"",notesWorkspaceIds:ids,yearScopeId:workspace?.year||""}}async function synchronizeYearNotesScope(){
+if(!connection||!workspace||resetBusy||connectionRetired)return;const origin={connection,id:workspace.id,year:workspace.year},tx=connection.transaction(["catalo\
+g","records"],"readonly"),done=transactionDone(tx);const pending=new Promise((resolve,reject)=>{const request=tx.objectStore("catalog").getAll();request.onerror=
+()=>reject(request.error);request.onsuccess=()=>{const periods2=request.result.filter(row=>row.year===origin.year&&(row.id===origin.id||["first","second"].includes(
+row.termKind||academicTermKind(row.term)))),metas=periods2.map(period=>requestPromise(tx.objectStore("records").get(period.id+"|meta")));Promise.all(metas).then(
+rows=>resolve(periods2.map((period,index)=>({id:period.id,revision:period.revision,kind:period.termKind||academicTermKind(period.term),password:rows[index]?.value?.
+settings?.password??null}))),reject)}});const[periods]=await Promise.all([pending,done]);if(connection===origin.connection&&workspace?.id===origin.id&&workspace.
+year===origin.year&&!resetBusy&&!connectionRetired)academicYearNotesScope={year:origin.year,periods}}function invalidateYearNotesScope(message){if(!message?.workspace)
+return;academicYearNotesScope.periods=academicYearNotesScope.periods.filter(period=>period.id!==message.workspace||message.revision&&period.revision>=message.revision)}
+function captureWorkspaceContext(){return Object.freeze({id:workspace?.id||"",revision:workspace?.revision||0})}function assertWorkspaceReadable(){if(fileMode||
+!ready||periodLoading||resetBusy||connectionRetired||!workspace)throw Error("اطلاعات آماده خواندن نیست؛ برنامه را دوباره باز کنید.");
+if(blocked)throw Error("اطلاعات این پنجره قدیمی است؛ صفحه را دوباره بارگذاری و گزارش یا فرم را دوباره تهیه کنید.");
+if(db.settings.password&&!isAuthenticated)throw Error("ابتدا وارد نوبت شوید.")}function assertWorkspaceContext(context,{write=false}={}){assertWorkspaceReadable();
+if(!context||context.id!==workspace.id||context.revision!==workspace.revision)throw Error("نوبت یا اطلاعات تغییر کرده است؛ فرم یا گزارش را دوباره باز کنید.");
 if(write)assertEntityWritable()}function markWorkspaceConflict(){blocked=true;for(const item of drafts.values()){item.review=true;item.error="تعارض؛ نیازمند برر\
 سی پس از بارگذاری مجدد"}if(drafts.size)storeDrafts();const message="اطلاعات این نوبت در تب دیگری تغییر کرد. پیش‌نویس محفوظ است؛ صفحه را دوباره\
  بارگذاری کنید.";setStatus(message,"error");lockControls();window.EduPeriodicReports?.invalidate(message)}function assertLiveWorkspace(live,context){

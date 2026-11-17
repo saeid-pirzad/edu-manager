@@ -137,23 +137,24 @@ font-weight:500;line-height:1.8}#app .workspace-bar #saveStatus{text-align:start
 #app #saveStatus[data-state=saved]{background:var(--status-success-soft);color:var(--status-success)}#app #saveStatus[data-state=pending]{background:var(--status-warning-soft);
 color:var(--status-warning)}#app #saveStatus[data-state=error],#app .workspace-bar>:is(#singleFileBadge,#questionBankFileBadge){background:var(--status-danger-soft);
 color:var(--status-danger);padding:10px 12px;border-radius:10px;grid-column:1 / -1;line-height:1.9;overflow-wrap:anywhere}#app .workspace-bar>:is(#singleFileBadge,
-#questionBankFileBadge):not([hidden]),:is(#modalBody,.qb-body) #singleFileStatus.single-file-notice{display:flex;align-items:center;justify-content:space-between;
+#questionBankFileBadge):not([hidden]),:is(#modalBody,.qb-body) #backupHub .backup-automatic-notice{display:flex;align-items:center;justify-content:space-between;
 gap:12px}.single-file-message{display:flex;flex-direction:column;gap:3px;min-width:0;overflow-wrap:anywhere;line-height:1.9}.backup-file-purpose{color:var(--theme-ink);
 font-size:12px;font-weight:600}.backup-notice-filename{font-size:11px;font-weight:500;text-align:right;overflow-wrap:anywhere}.backup-file-detail{font-size:11px}
-#app :is(#singleFileBadge,#questionBankFileBadge)>.single-file-permission-action,:is(#modalBody,.qb-body) #singleFileStatus>.single-file-permission-action{flex-shrink:0;
-min-width:0;min-height:44px;margin:0;padding:8px 12px;border:1px solid var(--status-warning-line);border-radius:10px;background:var(--status-warning-soft);color:var(--status-warning);
-font-size:12px;font-weight:600;line-height:1.7;white-space:nowrap;box-shadow:none}#app :is(#singleFileBadge,#questionBankFileBadge)>.single-file-permission-action:focus-visible,
-:is(#modalBody,.qb-body) #singleFileStatus>.single-file-permission-action:focus-visible{outline:2px solid var(--status-warning);outline-offset:2px}.workspace-tool-actions{
-box-shadow:0 8px 24px #2d34400a}.entity-quick-create>summary{cursor:pointer;min-height:48px;padding-block:8px;font-weight:600;color:var(--workflow-accent)}.entity-quick-create
-form{align-items:end}.entity-create-field{display:grid;flex:1 1 200px;gap:8px;font-size:14px}.entity-create-field input{width:100%}.entity-quick-create .entity-create-error{
-flex-basis:100%}#app>.workflow-welcome{order:2}#app>.create-panel{order:4}#app .create-panel{padding:0;border:1px solid var(--workflow-line);border-radius:16px;
-background:var(--theme-surface);box-shadow:none}#app .create-panel[open]{border-color:var(--theme-primary-line);box-shadow:0 4px 18px #2d344007}#app .create-panel>
-summary{display:flex;align-items:center;gap:12px;min-height:76px;padding:14px 16px;margin:0;border:0;border-radius:16px;background:transparent;color:var(--workflow-ink);
-list-style:none;cursor:pointer}#app .create-panel>summary::before,#app .create-panel>summary::after,#app .create-panel>summary::-webkit-details-marker{display:none;
-content:none}.create-panel-symbol{display:grid;place-items:center;width:42px;height:42px;flex:0 0 42px;border-radius:12px;color:var(--theme-primary-hover);background:var(--status-warning-soft)}
-.create-panel-title{display:grid;flex:1;min-width:0;gap:4px;text-align:start}#app .create-panel-title strong{font-size:15px;line-height:1.7;color:var(--workflow-ink)}
-#app .create-panel-title small{font-size:12px;font-weight:400;color:var(--workflow-muted);line-height:1.8;margin:0}.create-panel-toggle{display:block;width:28px;
-height:28px;flex:0 0 28px;border:1px solid var(--status-info-line);border-radius:8px;color:var(--theme-primary);background-color:var(--theme-primary-soft);background-image:linear-gradient(currentColor,currentColor),linear-gradient(currentColor,currentColor);
+#app :is(#singleFileBadge,#questionBankFileBadge)>.single-file-permission-action,:is(#modalBody,.qb-body) #backupHub .backup-automatic-notice>.single-file-permission-action{
+flex-shrink:0;min-width:0;min-height:44px;margin:0;padding:8px 12px;border:1px solid var(--status-warning-line);border-radius:10px;background:var(--status-warning-soft);
+color:var(--status-warning);font-size:12px;font-weight:600;line-height:1.7;white-space:nowrap;box-shadow:none}#app :is(#singleFileBadge,#questionBankFileBadge)>
+.single-file-permission-action:focus-visible,:is(#modalBody,.qb-body) #backupHub .backup-automatic-notice>.single-file-permission-action:focus-visible{outline:2px
+solid var(--status-warning);outline-offset:2px}.workspace-tool-actions{box-shadow:0 8px 24px #2d34400a}.entity-quick-create>summary{cursor:pointer;min-height:48px;
+padding-block:8px;font-weight:600;color:var(--workflow-accent)}.entity-quick-create form{align-items:end}.entity-create-field{display:grid;flex:1 1 200px;gap:8px;
+font-size:14px}.entity-create-field input{width:100%}.entity-quick-create .entity-create-error{flex-basis:100%}#app>.workflow-welcome{order:2}#app>.create-panel{
+order:4}#app .create-panel{padding:0;border:1px solid var(--workflow-line);border-radius:16px;background:var(--theme-surface);box-shadow:none}#app .create-panel[open]{
+border-color:var(--theme-primary-line);box-shadow:0 4px 18px #2d344007}#app .create-panel>summary{display:flex;align-items:center;gap:12px;min-height:76px;padding:14px
+16px;margin:0;border:0;border-radius:16px;background:transparent;color:var(--workflow-ink);list-style:none;cursor:pointer}#app .create-panel>summary::before,#app
+.create-panel>summary::after,#app .create-panel>summary::-webkit-details-marker{display:none;content:none}.create-panel-symbol{display:grid;place-items:center;width:42px;
+height:42px;flex:0 0 42px;border-radius:12px;color:var(--theme-primary-hover);background:var(--status-warning-soft)}.create-panel-title{display:grid;flex:1;min-width:0;
+gap:4px;text-align:start}#app .create-panel-title strong{font-size:15px;line-height:1.7;color:var(--workflow-ink)}#app .create-panel-title small{font-size:12px;
+font-weight:400;color:var(--workflow-muted);line-height:1.8;margin:0}.create-panel-toggle{display:block;width:28px;height:28px;flex:0 0 28px;border:1px solid var(--status-info-line);
+border-radius:8px;color:var(--theme-primary);background-color:var(--theme-primary-soft);background-image:linear-gradient(currentColor,currentColor),linear-gradient(currentColor,currentColor);
 background-position:center;background-size:12px 2px,2px 12px;background-repeat:no-repeat}.create-panel[open] .create-panel-toggle{background-size:12px 2px,0 0}#app
 .create-panel>form{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;padding:18px 16px 16px;margin:0;border-top:1px solid var(--workflow-line);align-items:start}
 #app .create-panel form label{display:grid;gap:7px;font-size:14px;color:var(--theme-ink);min-width:0}#app .create-panel form :is(input,select){width:100%;min-height:48px;

@@ -194,6 +194,7 @@
       "output": "assets/scripts/dialogs-ui.js",
       "scope": "global",
       "sources": [
+        "src/ui/backup-automatic-view.js",
         "src/ui/dialogs.js",
         "src/ui/about.js",
         "src/ui/shell-events.js",
@@ -396,6 +397,8 @@
         "src/features/question-bank/domain.js",
         "src/features/question-bank/repository.js",
         "src/features/question-bank/file-backup.js",
+        "src/features/question-bank/backup-sharing.js",
+        "src/features/question-bank/backup-ui.js",
         "src/features/question-bank/ui.js"
       ]
     }

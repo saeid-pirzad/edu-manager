@@ -95,31 +95,143 @@ async function exportBackupV24() {
   return confirmed ? "confirmed" : "downloaded";
 }
 
-async function openBackups() {
+let backupHubSession = null;
+let backupHubRequest = 0;
+let backupHubImportOrigin = null;
+
+function backupHubHtml() {
+  return (
+    '<div id="backupHub" class="backup-hub"><div class="backup-hub-tabs" role="tablist" aria-label="نوع اطلاعات پشتیبان"><button type="button" id="backupSchoolTab" role="tab" data-backup-tab="school" aria-controls="backupSchoolPanel" aria-selected="true">اطلاعات مدرسه</button><button type="button" id="backupBankTab" role="tab" data-backup-tab="bank" aria-controls="backupBankPanel" aria-selected="false" tabindex="-1">بانک سؤال و آزمون‌ها</button></div><section id="backupSchoolPanel" class="backup-hub-panel" role="tabpanel" aria-labelledby="backupSchoolTab" tabindex="0"><section class="backup-manual"><h4>فایل اطلاعات مدرسه</h4><p>کلاس‌ها، هنرجویان، جلسات و نمرات؛ مستقل از بانک سؤال.</p><div class="backup-action-grid"><button type="button" data-workspace-action="export-full">دریافت فایل</button><button type="button" class="ghost backup-share-entry" data-workspace-action="prepare-share-backup">ارسال فایل</button><button type="button" class="ghost" data-workspace-action="choose-import">بازیابی فایل</button></div><p id="lastExternalBackupStatus" class="backup-delivery-status" role="status">' +
+    esc(lastExternalBackupLabel()) +
+    "</p></section>" +
+    singleFilePanel() +
+    '<details class="backup-reset"><summary>پاک‌سازی اطلاعات</summary><p>فقط اطلاعات مدرسه در این مرورگر حذف می‌شود؛ بانک سؤال و فایل‌های دستگاه باقی می‌مانند. پیش از ادامه پشتیبان مدرسه بگیرید.</p><button type="button" class="danger" data-workspace-action="open-wipe">بررسی و تأیید پاک‌سازی</button></details></section><section id="backupBankPanel" class="backup-hub-panel" role="tabpanel" aria-labelledby="backupBankTab" tabindex="0" hidden inert></section></div>'
+  );
+}
+
+async function openBackups({ tab } = {}) {
+  const request = ++backupHubRequest;
   const ensureCurrent = preserveAsyncTarget();
+  const modal = document.getElementById("modal");
+  const body = document.getElementById("modalBody");
+  const previousContent = body.firstChild;
+  const wasHidden = modal.classList.contains("hidden");
+  const initialTab =
+    tab === "school" || tab === "bank"
+      ? tab
+      : window.EduQuestionBankUI?.isPageActive?.()
+        ? "bank"
+        : "school";
   await writer.catch(() => {});
   ensureCurrent();
-  let estimate = "";
-  if (navigator.storage?.estimate) {
-    const e = await navigator.storage.estimate();
-    ensureCurrent();
-    estimate =
-      "مصرف تقریبی فضای این مبدا: " +
-      Math.round((e.usage || 0) / 1048576) +
-      " مگابایت از " +
-      Math.round((e.quota || 0) / 1048576) +
-      " مگابایت.";
+  // A delayed menu request must not replace a newer dialog or reopen a closed one.
+  if (
+    request !== backupHubRequest ||
+    body.firstChild !== previousContent ||
+    modal.classList.contains("hidden") !== wasHidden
+  )
+    return;
+  if (showModal("پشتیبان و بازیابی", backupHubHtml()) === false) return;
+  backupHubSession?.dispose();
+  const root = document.getElementById("backupHub");
+  const tabs = Array.from(root.querySelectorAll("[data-backup-tab]"));
+  const panels = {
+    school: document.getElementById("backupSchoolPanel"),
+    bank: document.getElementById("backupBankPanel"),
+  };
+  let alive = true;
+  let activeTab = "";
+  let disposeBank = null;
+  const isCurrent = (expectedTab) =>
+    alive &&
+    backupHubSession === session &&
+    root.isConnected &&
+    !modal.classList.contains("hidden") &&
+    (!expectedTab || activeTab === expectedTab);
+  const dispose = () => {
+    if (!alive) return;
+    alive = false;
+    disposeBank?.();
+    disposeBank = null;
+    observer.disconnect();
+    root.removeEventListener("click", handleTabClick);
+    root.removeEventListener("keydown", handleTabKeydown);
+    if (backupHubSession === session) backupHubSession = null;
+  };
+  const selectTab = (next, focus = false) => {
+    if (!isCurrent() || !panels[next]) return;
+    if (next !== activeTab) {
+      disposeBank?.();
+      disposeBank = null;
+      panels.bank.replaceChildren();
+      activeTab = next;
+      for (const button of tabs) {
+        const selected = button.dataset.backupTab === next;
+        button.setAttribute("aria-selected", String(selected));
+        button.tabIndex = selected ? 0 : -1;
+      }
+      for (const [key, panel] of Object.entries(panels)) {
+        panel.hidden = key !== next;
+        panel.inert = key !== next;
+      }
+      if (next === "bank")
+        disposeBank = window.EduQuestionBankBackupUI.mount(panels.bank, {
+          isCurrent: () => isCurrent("bank"),
+        });
+      else paintSingleFileBanner();
+    }
+    if (focus)
+      tabs.find((button) => button.dataset.backupTab === next)?.focus();
+  };
+  const handleTabClick = (event) => {
+    const button = event.target.closest("[data-backup-tab]");
+    if (button && root.contains(button)) selectTab(button.dataset.backupTab);
+  };
+  const handleTabKeydown = (event) => {
+    if (!event.target.closest("[data-backup-tab]")) return;
+    let next;
+    if (event.key === "Home") next = "school";
+    else if (event.key === "End") next = "bank";
+    else if (event.key === "ArrowRight" || event.key === "ArrowLeft")
+      next = activeTab === "school" ? "bank" : "school";
+    else return;
+    event.preventDefault();
+    selectTab(next, true);
+  };
+  const observer = new MutationObserver(() => {
+    if (!isCurrent()) dispose();
+  });
+  const session = { isCurrent, dispose };
+  backupHubSession = session;
+  observer.observe(modal, { attributes: true, attributeFilter: ["class"] });
+  observer.observe(body, { childList: true });
+  root.addEventListener("click", handleTabClick);
+  root.addEventListener("keydown", handleTabKeydown);
+  selectTab(initialTab);
+}
+
+function chooseBackupImport() {
+  const visibleHub =
+    document.getElementById("backupHub") &&
+    !document.getElementById("modal").classList.contains("hidden");
+  const session = visibleHub ? backupHubSession : null;
+  if (visibleHub && !session?.isCurrent("school"))
+    throw Error("برای بازیابی اطلاعات مدرسه، تب «اطلاعات مدرسه» را باز کنید.");
+  const input = document.getElementById("importFile");
+  backupHubImportOrigin?.cleanup();
+  backupHubImportOrigin = session
+    ? { isCurrent: () => session.isCurrent("school") }
+    : null;
+  if (backupHubImportOrigin) {
+    const origin = backupHubImportOrigin;
+    const cancel = () => {
+      if (backupHubImportOrigin === origin) backupHubImportOrigin = null;
+      origin.cleanup();
+    };
+    origin.cleanup = () => input.removeEventListener("cancel", cancel);
+    input.addEventListener("cancel", cancel, { once: true });
   }
-  showModal(
-    "پشتیبان و بازیابی مدرسه",
-    '<div class="backup-hub"><section class="backup-manual"><h4>پشتیبان مدرسه</h4><p>مدرسه‌ها، کلاس‌ها، هنرجویان، جلسات و نمرات در یک فایل؛ بانک سؤال و آزمون‌ها فایل جدا دارند.</p><div class="backup-action-grid"><button data-workspace-action="export-full">دریافت فایل</button><button class="ghost backup-share-entry" data-workspace-action="prepare-share-backup">ارسال فایل</button><button class="ghost" data-workspace-action="choose-import">بازیابی فایل</button></div><p class="backup-restore-note">دریافت دستی و ذخیرهٔ خودکار، همین نوع پشتیبان را می‌سازند و هر دو قابل بازیابی‌اند. بازیابی فقط اطلاعات مدرسه را جایگزین می‌کند.</p><details class="backup-delivery"><summary>آخرین پشتیبان مدرسه</summary><p class="muted" id="lastExternalBackupStatus" role="status">' +
-      esc(lastExternalBackupLabel()) +
-      "</p></details></section>" +
-      singleFilePanel() +
-      '<details class="backup-help"><summary>فضای مرورگر</summary><p>' +
-      esc(estimate) +
-      '</p></details><details class="backup-reset"><summary>پاک‌سازی اطلاعات</summary><p>اطلاعات مدرسه در همین مرورگر حذف می‌شود؛ بانک سؤال و فایل‌های دستگاه باقی می‌مانند. پیش از ادامه پشتیبان مدرسه بگیرید.</p><button type="button" class="danger" data-workspace-action="open-wipe">بررسی و تأیید پاک‌سازی</button></details></div>',
-  );
+  input.click();
 }
 
 function previewImport(candidate, label) {
@@ -170,6 +282,9 @@ async function handleImportV24(
   { fullSystemOnly = false, replaceSystem = true } = {},
 ) {
   const file = e.target.files[0];
+  const uiOrigin = backupHubImportOrigin;
+  uiOrigin?.cleanup();
+  backupHubImportOrigin = null;
   if (!file) return;
   if (backupImportReading) {
     e.target.value = "";
@@ -193,6 +308,10 @@ async function handleImportV24(
   const origin = workspace?.id;
   let expectedConnection = connection;
   const ensureDestination = () => {
+    if (uiOrigin && !uiOrigin.isCurrent())
+      throw Error(
+        "پنجرهٔ بازیابی بسته یا عوض شده است؛ فایل را دوباره انتخاب کنید.",
+      );
     if (
       ready !== startedReady ||
       workspace?.id !== origin ||

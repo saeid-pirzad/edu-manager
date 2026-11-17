@@ -148,7 +148,7 @@
   #app
     .workspace-bar
     > :is(#singleFileBadge, #questionBankFileBadge):not([hidden]),
-  :is(#modalBody, .qb-body) #singleFileStatus.single-file-notice {
+  :is(#modalBody, .qb-body) #backupHub .backup-automatic-notice {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -179,7 +179,10 @@
   #app
     :is(#singleFileBadge, #questionBankFileBadge)
     > .single-file-permission-action,
-  :is(#modalBody, .qb-body) #singleFileStatus > .single-file-permission-action {
+  :is(#modalBody, .qb-body)
+    #backupHub
+    .backup-automatic-notice
+    > .single-file-permission-action {
     flex-shrink: 0;
     min-width: 0;
     min-height: 44px;
@@ -199,7 +202,8 @@
     :is(#singleFileBadge, #questionBankFileBadge)
     > .single-file-permission-action:focus-visible,
   :is(#modalBody, .qb-body)
-    #singleFileStatus
+    #backupHub
+    .backup-automatic-notice
     > .single-file-permission-action:focus-visible {
     outline: 2px solid var(--status-warning);
     outline-offset: 2px;

@@ -149,6 +149,12 @@
           (control.matches(".grade-clear") ? "eraser" : null) ||
           glyph?.[0] ||
           (Object.hasOwn(ids, control.id) ? ids[control.id] : null) ||
+          {
+            choose: "folder",
+            save: "save",
+            stop: "disconnect",
+            permission: "save",
+          }[control.dataset.backupFileAction] ||
           (Object.hasOwn(actions, control.dataset.workspaceAction)
             ? actions[control.dataset.workspaceAction]
             : null) ||

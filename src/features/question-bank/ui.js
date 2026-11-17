@@ -328,7 +328,9 @@
     let bank,
       courseId = savedView?.courseId || "",
       unitId = savedView?.unitId || "",
-      tab = savedView?.tab || "questions",
+      tab = ["questions", "builder", "exams"].includes(savedView?.tab)
+        ? savedView.tab
+        : "questions",
       page = savedView?.page || 0,
       search = savedView?.search || "",
       archiveQuery = savedView?.archiveQuery || "",
@@ -344,7 +346,7 @@
       restoreRenderFrame = null,
       confirmation = null,
       cancelConfirmation = () => {},
-      unsubscribeBackup = () => {};
+      refreshSequence = 0;
     pendingChanges = () => dirty || busy;
     const error = (e, persistent = false) => {
       if (!alive) return;
@@ -567,7 +569,6 @@
       cancelAnimationFrame(restoreRenderFrame);
       optionResize.disconnect();
       optionChanges.disconnect();
-      unsubscribeBackup();
       unsubscribeStorage();
       cancelConfirmation();
       restoreKeyboardScroll();
@@ -739,7 +740,7 @@
       if (e.target.closest("form") && !e.target.closest(".qb-toolbar"))
         dirty = true;
     });
-    async function commit(next, prepare) {
+    async function commit(next) {
       if (!alive || busy || confirmation) return false;
       try {
         D.validate(next);
@@ -751,7 +752,6 @@
       pageRoot.setAttribute("aria-busy", "true");
       content.inert = true;
       try {
-        if (prepare) await prepare();
         if (!alive) return false;
         bank = await R.save(next, bank.revision);
         if (!alive) return false;
@@ -1759,176 +1759,6 @@
       root.scrollTo({ top: 0, left: 0, behavior: "instant" });
       updateLayout();
     }
-    function saveBankFile() {
-      if (!alive) return Promise.resolve(false);
-      return F.saveNow(
-        (name, counts) =>
-          new Promise((resolve) =>
-            confirmAction(
-              `فایل «${name}» با ${number(counts.questions)} سؤال و ${number(counts.exams)} آزمون فعلی جایگزین شود؟ نسخهٔ قبلی این فایل از بین می‌رود؛ اگر لازم است ابتدا یک کپی نگه دارید.`,
-              () => resolve(true),
-              () => resolve(false),
-            ),
-          ),
-      );
-    }
-    function files(parent) {
-      const details = el("section", undefined, "qb-backup");
-      details.append(
-        el("h4", "پشتیبان و بازیابی بانک سؤال", "qb-form-heading"),
-        el(
-          "p",
-          "نام فایل: Classyar-QuestionBank.json؛ نسخه‌های شماره‌دار مانند (1) هم پذیرفته می‌شوند. فایل‌های قدیمی را ابتدا تغییر نام دهید. فقط تغییرات ثبت‌شده در پشتیبان قرار می‌گیرند.",
-        ),
-        el(
-          "p",
-          "این فایل فقط درس‌ها، سؤال‌ها و آزمون‌های بانک سؤال را دارد؛ اطلاعات مدرسه جداست. دریافت دستی و ذخیرهٔ خودکار، دو روش تهیهٔ همین نوع فایل‌اند؛ هر دو از گزینهٔ بازیابی بانک قابل استفاده‌اند.",
-          "qb-help",
-        ),
-      );
-      parent.append(details);
-      const manual = el("section", undefined, "qb-backup-manual");
-      manual.append(el("h4", "پشتیبان دستی"));
-      details.append(manual);
-      button(
-        "دریافت فایل بانک",
-        async () => {
-          try {
-            const current = await R.read();
-            if (!alive) return;
-            const json = D.size(D.validate(current));
-            const url = URL.createObjectURL(
-                new Blob([json], { type: "application/json" }),
-              ),
-              a = el("a");
-            a.href = url;
-            a.download = F.suggestedName();
-            a.click();
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
-          } catch (e) {
-            error(e);
-          }
-        },
-        manual,
-      );
-      const upload = field(manual, "بازیابی بانک از JSON");
-      upload.type = "file";
-      upload.accept = ".json,application/json";
-      upload.parentElement.hidden = true;
-      const restore = button("بازیابی از فایل", () => upload.click(), manual);
-      restore.dataset.uiTone = "create";
-      restore.insertAdjacentHTML("afterbegin", root.EduIcons.html("folder"));
-      upload.onchange = async () => {
-        try {
-          const file = upload.files[0];
-          if (!file) return;
-          root.EduQuestionBankFileBackup.assertFileName(file.name);
-          if (file.size > D.LIMIT)
-            throw Error("سقف فایل ورودی ۲۰ مگابایت است.");
-          const incoming = D.parse(await file.text());
-          if (!alive) return;
-          discard(() =>
-            confirmAction(
-              `فایل «${file.name}»: ${incoming.courses.length} درس، ${incoming.questions.length} سؤال و ${incoming.exams.length} آزمون. تمام بانک سؤال فعلی جایگزین می‌شود؛ اطلاعات مدرسه تغییر نمی‌کند. ادامه؟`,
-              async () => {
-                if (await commit(incoming, () => F.suspend())) {
-                  courseId = "";
-                  unitId = "";
-                  render();
-                }
-              },
-            ),
-          );
-        } catch (e) {
-          error(e);
-        } finally {
-          upload.value = "";
-        }
-      };
-      const automatic = el("section", undefined, "qb-backup-automatic");
-      automatic.append(
-        el("h4", "ذخیرهٔ خودکار در فایل"),
-        el(
-          "p",
-          "فایل را یک‌بار انتخاب کنید؛ هنگام باز بودن برنامه، همان فایل پس از ثبت تغییرات به‌روز می‌شود. فایل خودکار، اطلاعات را به برنامه وارد نمی‌کند.",
-        ),
-      );
-      const fileSummary = el("div", undefined, "qb-file-summary");
-      const fileLabel = el("span", undefined, "qb-file-meta");
-      const fileName = el("bdi", undefined, "qb-file-name");
-      fileName.dir = "ltr";
-      const fileSaved = el("span", undefined, "qb-file-meta");
-      fileSummary.append(fileLabel, fileName, fileSaved);
-      const status = el("p", undefined, "qb-file-status");
-      const actions = el("div", undefined, "qb-file-actions");
-      automatic.append(fileSummary, status, actions);
-      details.append(automatic);
-      const choose = button("انتخاب فایل", () => F.choose(), actions);
-      const save = button("ذخیره اکنون", () => saveBankFile(), actions);
-      save.classList.add("qb-file-save");
-      const stop = button("قطع اتصال", () => F.stop().catch(error), actions);
-      for (const [control, tone, icon] of [
-        [choose, "create", "folder"],
-        [save, "settings", "save"],
-        [stop, "danger", "close"],
-      ]) {
-        control.dataset.uiTone = tone;
-        control.insertAdjacentHTML("afterbegin", root.EduIcons.html(icon));
-      }
-      unsubscribeBackup();
-      unsubscribeBackup = F.subscribe((state) => {
-        if (!alive || !status.isConnected) return;
-        fileLabel.textContent = state.connected
-          ? "فایل متصل"
-          : "فایل پشتیبان انتخاب نشده";
-        fileName.hidden = !state.connected;
-        fileName.textContent = state.connected
-          ? state.name || "نام فایل در دسترس نیست"
-          : "";
-        fileName.title = state.name || "";
-        fileSaved.hidden = !state.connected;
-        const savedAt = state.savedAt ? new Date(state.savedAt) : null;
-        if (state.connected && savedAt && Number.isFinite(savedAt.getTime())) {
-          const time = el(
-            "time",
-            savedAt.toLocaleString("fa-IR-u-ca-persian", {
-              year: "numeric",
-              month: "2-digit",
-              day: "2-digit",
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-          );
-          time.dateTime = savedAt.toISOString();
-          fileSaved.replaceChildren("آخرین ذخیره: ", time);
-        } else {
-          fileSaved.textContent = state.connected ? "هنوز ذخیره نشده" : "";
-        }
-        status.textContent =
-          state.connected && state.state === "permission"
-            ? "این فایل قبلاً انتخاب شده است؛ برای تأیید مجوز همین فایل، «اجازه مجدد» را بزنید."
-            : state.message;
-        status.dataset.state = state.state;
-        status.setAttribute(
-          "role",
-          state.state === "error" ? "alert" : "status",
-        );
-        choose.disabled = !F.supported() || state.state === "busy";
-        save.querySelector(".ui-button-label").textContent =
-          state.state === "permission" ? "اجازه مجدد" : "ذخیره اکنون";
-        save.hidden =
-          state.state === "permission" &&
-          !!document.querySelector("#questionBankFileBadge:not([hidden])");
-        save.title =
-          state.state === "permission"
-            ? "تأیید مجوز فایل بانک سؤال"
-            : "ذخیره اکنون";
-        save.disabled =
-          !state.connected || !F.supported() || state.state === "busy";
-        stop.disabled =
-          !state.connected || !F.supported() || state.state === "busy";
-      });
-    }
     function exams(parent) {
       const library = el("section", undefined, "qb-exam-library");
       library.setAttribute("aria-label", "آزمون‌های ذخیره‌شده");
@@ -2102,8 +1932,6 @@
         unitId = "";
       if (tabScopes[tab]) Object.assign(tabScopes[tab], { courseId, unitId });
       closeOwnedCalendar();
-      unsubscribeBackup();
-      unsubscribeBackup = () => {};
       content.replaceChildren();
       dirty = false;
       const tabs = el("nav", undefined, "tabs qb-actions qb-tabs");
@@ -2113,7 +1941,6 @@
         ["questions", "بانک سؤال"],
         ["builder", "طراحی آزمون"],
         ["exams", "آزمون‌های من"],
-        ["backup", "پشتیبان"],
       ]) {
         const b = button(
           label,
@@ -2180,8 +2007,6 @@
       }
       if (tab === "exams") {
         exams(panel);
-      } else if (tab === "backup") {
-        files(panel);
       } else if (!courseId) {
         const empty = el("div", undefined, "qb-empty");
         empty.insertAdjacentHTML("afterbegin", root.EduIcons.html("book"));
@@ -2201,6 +2026,42 @@
         updateLayout();
       }
     }
+    async function refreshAfterRestore() {
+      if (!alive) return false;
+      const refuse = () => {
+        error(
+          Error(
+            "بانک سؤال از فایل بازیابی شده است؛ فرم ذخیره‌نشدهٔ شما دست‌نخورده ماند. پیش از ثبت، تغییر اطلاعات را بررسی کنید.",
+          ),
+          true,
+        );
+        return false;
+      };
+      if (dirty || busy || confirmation) return refuse();
+      const sequence = ++refreshSequence;
+      const current = await R.read();
+      if (!alive || sequence !== refreshSequence) return false;
+      if (dirty || busy || confirmation) return refuse();
+      bank = D.validate(current);
+      courseId =
+        unitId =
+        search =
+        questionType =
+        archiveQuery =
+        archiveCourse =
+          "";
+      page = archivePage = 0;
+      Object.assign(tabScopes.questions, { courseId: "", unitId: "" });
+      Object.assign(tabScopes.builder, {
+        courseId: null,
+        unitId: "",
+        unitIds: [],
+      });
+      persistentMessage = persistentMessageOrigin = transientMessage = "";
+      render();
+      updateLayout();
+      return true;
+    }
     const controller = {
       element: pageRoot,
       ready: null,
@@ -2208,6 +2069,7 @@
       preserveForRender,
       requestLeave,
       dispose,
+      refreshAfterRestore,
       updateLayout: completeRender,
     };
     activePage = controller;
@@ -2244,8 +2106,15 @@
     dispose: () => activePage?.dispose(),
     updateLayout: () => activePage?.updateLayout(),
     preserveForRender: () => activePage?.preserveForRender(),
+    refreshAfterRestore: () =>
+      activePage?.refreshAfterRestore() || Promise.resolve(true),
     sheet,
     print,
     hasPendingChanges: () => pendingChanges() || F.state().state === "busy",
   };
+  root.addEventListener("edu-question-bank-restored", () => {
+    savedView = null;
+    const page = activePage;
+    page?.refreshAfterRestore().catch(() => {});
+  });
 })(globalThis);

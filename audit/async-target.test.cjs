@@ -54,50 +54,50 @@ test("bulk grade editor cannot open a different class after waiting for drafts",
   await assert.rejects(context.openBulkV24("lesson"), /ترم یا کلاس/);
   assert.equal(opened, false);
 });
-test("backup dialog rejects workspace navigation during storage estimate", async () => {
+test("backup dialog rejects workspace navigation while waiting for pending writes", async () => {
   const context = fixture();
-  let opened = false;
-  context.writer = Promise.resolve();
-  context.esc = String;
-  context.lastExternalBackupLabel = () => "backup";
-  context.allFrom = async () => [];
-  context.navigator = {
-    storage: {
-      estimate: async () => {
-        context.workspace = { id: "two" };
-        return { usage: 1, quota: 2 };
-      },
-    },
+  let opened = false,
+    release;
+  context.writer = new Promise((resolve) => {
+    release = resolve;
+  });
+  context.window = {};
+  const modal = { classList: { contains: () => true } },
+    body = { firstChild: {} };
+  context.document = {
+    getElementById: (id) => (id === "modal" ? modal : body),
   };
   context.showModal = () => {
     opened = true;
   };
   vm.runInContext(read("backups/period-import.js"), context);
-  await assert.rejects(context.openBackups(), /ترم یا کلاس/);
+  const pending = context.openBackups();
+  context.workspace = { id: "two" };
+  release();
+  await assert.rejects(pending, /ترم یا کلاس/);
   assert.equal(opened, false);
 });
 
-test("backup dialog offers file workflows without introducing internal version management", async () => {
+test("backup hub markup offers independent file workflows without internal version management", () => {
   const context = fixture();
-  let html;
-  context.writer = Promise.resolve();
   context.esc = String;
-  context.lastExternalBackupLabel = () => "backup";
+  context.lastExternalBackupLabel = () => "هنوز پشتیبانی دریافت نشده است.";
   context.singleFilePanel = () =>
     '<section class="backup-automatic"></section>';
-  context.navigator = {};
   context.allFrom = () => {
     throw Error("Internal backups must not be read");
   };
-  context.showModal = (title, body) => {
-    html = body;
-  };
   vm.runInContext(read("backups/period-import.js"), context);
-  await context.openBackups();
+  const html = context.backupHubHtml();
   assert.doesNotMatch(
     html,
     /backup-history|download-backup|preview-backup|lastSafetyBackup|download-safety|safetyBackupStatus|بازیابی اضطراری/,
   );
+  assert.match(html, /id="backupHub" class="backup-hub"/);
+  assert.match(html, /data-backup-tab="school"/);
+  assert.match(html, /data-backup-tab="bank"/);
+  assert.equal((html.match(/role="tab"/g) || []).length, 2);
+  assert.match(html, /id="backupBankPanel"[^>]*hidden inert/);
   for (const action of ["export-full", "prepare-share-backup", "choose-import"])
     assert.ok(html.includes('data-workspace-action="' + action + '"'));
   assert.match(html, /backup-automatic/);

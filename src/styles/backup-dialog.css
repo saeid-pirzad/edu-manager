@@ -62,6 +62,10 @@
     padding: 18px;
     background: var(--theme-canvas);
   }
+  #modal:has(#backupHub) .modal-body {
+    /* Switching tabs or expanding a notice must not change the card widths. */
+    scrollbar-gutter: stable;
+  }
   :is(#modalBody, #deputyBackupBody) .backup-hub {
     display: grid;
     gap: 12px;
@@ -142,7 +146,7 @@
     background: var(--status-danger-soft);
     border-color: var(--status-danger-line);
   }
-  :is(#modalBody, #deputyBackupBody) .backup-hub #singleFileStatus {
+  :is(#modalBody, #deputyBackupBody) .backup-hub [data-backup-file-status] {
     padding: 10px 12px;
     border: 1px solid var(--theme-line);
     border-radius: 9px;
@@ -211,7 +215,7 @@
   }
   :is(#modalBody, #deputyBackupBody)
     .backup-hub
-    #singleFileFallback:not([hidden]) {
+    .backup-automatic-fallback:not([hidden]) {
     margin-top: 12px;
     margin-bottom: 14px;
     padding: 12px;
@@ -219,7 +223,7 @@
     border-radius: 10px;
     background: var(--status-warning-soft);
   }
-  :is(#modalBody, #deputyBackupBody) .backup-hub #singleFileFallback p {
+  :is(#modalBody, #deputyBackupBody) .backup-hub .backup-automatic-fallback p {
     margin-bottom: 10px;
     font-size: 11px;
   }
@@ -528,7 +532,7 @@
     line-height: 1.5;
     white-space: nowrap;
   }
-  #modalBody .backup-hub #singleFileFallback p {
+  #modalBody .backup-hub .backup-automatic-fallback p {
     margin: 0;
   }
 }
@@ -546,6 +550,290 @@
     > button
     > :is(svg, .control-icon) {
     display: none;
+  }
+}
+
+/* One backup destination, with independent files and permission states. */
+@media screen {
+  #modalBody #backupHub > .backup-hub-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+    padding: 5px;
+    border: 1px solid var(--theme-line);
+    border-radius: 12px;
+    background: var(--theme-surface);
+  }
+  #modalBody #backupHub .backup-hub-tabs > button {
+    min-height: 44px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--theme-muted);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.6;
+  }
+  #modalBody #backupHub .backup-hub-tabs > button[aria-selected="true"] {
+    border-color: var(--theme-primary-line);
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
+  }
+  #modalBody #backupHub > .backup-hub-panel {
+    display: grid;
+    gap: 10px;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+  #modalBody #backupHub .backup-hub-panel[hidden] {
+    display: none;
+  }
+  #modalBody #backupHub .backup-hub-panel:focus-visible {
+    outline: 2px solid var(--theme-focus);
+    outline-offset: 2px;
+  }
+  #modalBody #backupHub .backup-hub-panel > :is(section, details),
+  #modalBody #backupHub .qb-backup-content > :is(section, details) {
+    display: block;
+    min-width: 0;
+    margin: 0;
+    padding: 12px;
+    border: 1px solid var(--theme-line);
+    border-radius: 12px;
+    background: var(--theme-surface);
+  }
+  #modalBody #backupHub .backup-hub-panel > .qb-backup {
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+  #modalBody #backupHub .qb-backup-content {
+    display: grid;
+    gap: 10px;
+  }
+  #modalBody #backupHub .backup-manual h4 {
+    margin: 0;
+    font-size: 14px;
+  }
+  #modalBody #backupHub .backup-manual > p {
+    margin-block: 4px 12px;
+    padding: 0;
+    border: 0;
+  }
+  #modalBody #backupHub .backup-manual > .backup-delivery-status {
+    margin-block: 10px 0;
+    padding-top: 8px;
+    border-top: 1px solid var(--theme-line-soft);
+    font-size: 11px;
+  }
+  #modalBody
+    #backupHub
+    .qb-backup
+    :is(.qb-backup-download, .qb-backup-restore) {
+    --button-ink: var(--theme-primary);
+    --button-soft: var(--theme-primary-soft);
+    --button-line: var(--theme-primary-line);
+    --button-fill: var(--theme-primary);
+    --button-hover: var(--theme-primary-hover);
+  }
+  #modalBody #backupHub .backup-automatic [data-backup-file-action="choose"] {
+    --button-ink: var(--theme-primary);
+    --button-soft: var(--theme-primary-soft);
+    --button-line: var(--theme-primary-line);
+    --button-fill: var(--theme-primary);
+    --button-hover: var(--theme-primary-hover);
+  }
+  #modalBody
+    #backupHub
+    .backup-automatic
+    :is(
+      [data-backup-file-action="save"],
+      [data-backup-file-action="permission"]
+    ) {
+    --button-ink: var(--theme-secondary);
+    --button-soft: var(--theme-secondary-soft);
+    --button-line: var(--theme-secondary-line);
+    --button-fill: var(--theme-secondary);
+    --button-hover: var(--theme-secondary-hover);
+  }
+  #modalBody #backupHub .qb-backup .qb-backup-share-entry {
+    --button-ink: var(--theme-secondary);
+    --button-soft: var(--theme-secondary-soft);
+    --button-line: var(--theme-secondary-line);
+    --button-fill: var(--theme-secondary);
+    --button-hover: var(--theme-secondary-hover);
+  }
+  #modalBody #backupHub .backup-manual .backup-action-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  #modalBody #backupHub .backup-manual .backup-action-grid > button {
+    flex-direction: row;
+    min-height: 44px;
+    padding: 8px;
+    font-size: 12px;
+  }
+  #modalBody
+    #backupHub
+    .backup-action-grid
+    > :is([data-workspace-action="choose-import"], .qb-backup-restore) {
+    grid-column: 1 / -1;
+  }
+  #modalBody #backupHub .qb-backup .qb-backup-download {
+    background: var(--theme-primary) !important;
+    color: var(--theme-surface) !important;
+    border-color: var(--theme-primary) !important;
+  }
+  #modalBody #backupHub .backup-automatic [data-backup-file-action="stop"] {
+    --button-ink: var(--theme-ink);
+    --button-soft: var(--theme-surface-muted);
+    --button-line: var(--theme-line);
+    --button-fill: var(--theme-nav);
+    --button-hover: var(--theme-nav-surface);
+  }
+  #modalBody #backupHub .qb-backup-manual .backup-action-grid > button {
+    flex-wrap: nowrap;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  #modalBody #backupHub .qb-backup-manual .ui-button-label {
+    white-space: nowrap;
+  }
+  #modalBody #backupHub .qb-backup-manual button > svg {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+  }
+  #modalBody #backupHub .backup-hub-panel > details,
+  #modalBody #backupHub .qb-backup-content > details {
+    padding-block: 6px;
+  }
+  #modalBody #backupHub .backup-hub-panel > details > summary,
+  #modalBody #backupHub .qb-backup-content > details > summary {
+    min-height: 44px;
+    margin: 0;
+  }
+  #modalBody #backupHub .backup-hub-panel > details[open] > summary,
+  #modalBody #backupHub .qb-backup-content > details[open] > summary {
+    margin-bottom: 8px;
+  }
+  #modalBody #backupHub .backup-hub-panel > .backup-reset {
+    border-color: var(--status-danger-line);
+  }
+  #modalBody #backupHub .qb-backup-content > .backup-reset {
+    border-color: var(--status-danger-line);
+  }
+  #modalBody #backupHub .qb-backup-reset > button {
+    width: 100%;
+  }
+  #modalBody #backupHub .qb-backup-message,
+  #modalBody #backupHub .qb-backup-confirm {
+    margin: 0 0 10px;
+    padding: 12px;
+    border: 1px solid var(--status-success-line);
+    border-radius: 12px;
+    background: var(--status-success-soft);
+    color: var(--status-success);
+    overflow-wrap: anywhere;
+  }
+  #modalBody #backupHub .qb-backup-message[data-state="error"] {
+    border-color: var(--status-danger-line);
+    background: var(--status-danger-soft);
+    color: var(--status-danger);
+  }
+  #modalBody #backupHub .qb-backup-confirm {
+    border-color: var(--theme-secondary-line);
+    background: var(--theme-secondary-soft);
+    color: var(--theme-ink);
+  }
+  #modalBody #backupHub .qb-backup-confirm p {
+    margin-block: 6px 12px;
+    color: inherit;
+  }
+  #modalBody #backupHub .qb-backup-confirm-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  #modalBody #backupHub .qb-backup-confirm-actions > button {
+    min-height: 44px;
+  }
+  #modalBody #backupHub .qb-backup-clear-fields,
+  #modalBody
+    #backupHub
+    .qb-backup-clear-fields
+    > label:not(.qb-backup-clear-check) {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 12px;
+    font-size: 12px;
+    line-height: 1.9;
+  }
+  #modalBody #backupHub .qb-backup-clear-fields input[type="text"] {
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 10px;
+    border: 1px solid var(--theme-line);
+    border-radius: 9px;
+    background: var(--theme-surface);
+    font: inherit;
+  }
+  #modalBody #backupHub .qb-backup-clear-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    cursor: pointer;
+  }
+  #modalBody #backupHub .qb-backup-clear-check > input {
+    flex: 0 0 20px;
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    accent-color: var(--theme-primary);
+  }
+  #modalBody #backupHub .qb-backup-confirm-error {
+    color: var(--status-danger);
+  }
+  #modalBody #backupHub .qb-backup-share {
+    padding: 12px;
+    margin: 0;
+    border: 1px solid var(--theme-secondary-line);
+    border-radius: 12px;
+    background: var(--theme-secondary-soft);
+  }
+  #modalBody #backupHub .qb-backup-share .backup-share-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  #modalBody #backupHub .qb-backup-share [data-qb-share-send] {
+    grid-column: 1 / -1;
+  }
+  #modalBody #backupHub .qb-backup-share .backup-share-file {
+    margin-block: 8px;
+    overflow-wrap: anywhere;
+  }
+  #modalBody #backupHub .backup-file-summary {
+    display: grid;
+    gap: 4px;
+    margin-bottom: 10px;
+    padding-block: 8px;
+    border-block: 1px solid var(--theme-line-soft);
+    color: var(--theme-muted);
+    font-size: 11px;
+    line-height: 1.8;
+  }
+  #modalBody #backupHub .backup-file-summary .schools-file-name {
+    min-width: 0;
+    color: var(--theme-ink);
+    font-size: 12px;
+    font-weight: 700;
+    text-align: right;
+    overflow-wrap: anywhere;
   }
 }
 
