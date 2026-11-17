@@ -69,6 +69,21 @@ main({
             ),
           );
         const shot = await cdp("Page.captureScreenshot", { format: "png" });
+        if (width === 390) {
+          check(
+            `${name} form stays usable above the mobile keyboard`,
+            await evaluate(`(async()=>{
+            const root=document.documentElement,style=root.style,oldHeight=style.getPropertyValue('--app-viewport'),fields=document.querySelector('.qb-form-fields'),scroll=fields.scrollTop;
+            const target=[...fields.querySelectorAll('input:not([type=checkbox]):not([type=date]),textarea')].at(-1);
+            const viewport=window.visualViewport,descriptor=Object.getOwnPropertyDescriptor(viewport,'height');Object.defineProperty(viewport,'height',{configurable:true,get:()=>420});target.focus({preventScroll:true});viewport.dispatchEvent(new Event('resize'));
+            await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+            const dialog=document.querySelector('.qb-dialog').getBoundingClientRect(),r=target.getBoundingClientRect(),bounds=fields.getBoundingClientRect();
+            const pass=getComputedStyle(document.querySelector('.qb-storage-bar')).display==='none'&&dialog.top>=0&&dialog.bottom<=421&&bounds.height>=r.height&&r.top>=bounds.top-1&&r.bottom<=bounds.bottom+1&&parseFloat(getComputedStyle(target).fontSize)>=16;
+            if(descriptor)Object.defineProperty(viewport,'height',descriptor);else delete viewport.height;target.blur();viewport.dispatchEvent(new Event('resize'));root.dataset.keyboardOpen='false';style.setProperty('--app-viewport',oldHeight);await new Promise(r=>requestAnimationFrame(r));fields.scrollTop=scroll;
+            if(!pass)throw Error(JSON.stringify({dialog:{top:dialog.top,bottom:dialog.bottom},field:{top:r.top,bottom:r.bottom,height:r.height},bounds:{top:bounds.top,bottom:bounds.bottom,height:bounds.height},font:getComputedStyle(target).fontSize}));return pass&&getComputedStyle(document.querySelector('.qb-storage-bar')).display!=='none';
+          })()`),
+          );
+        }
         fs.writeFileSync(
           path.join(out, `${name}-form-${width}.png`),
           Buffer.from(shot.data, "base64"),
@@ -94,7 +109,7 @@ main({
     check(
       "storage status has a direct automatic-file action rather than a plain success notice",
       await evaluate(
-        `(()=>{const bar=document.querySelector('.qb-storage-bar'),action=bar.querySelector('button');return bar.querySelector('[role=status]')&&action.textContent.includes('خودکار')&&!!action.querySelector('svg')&&action.getBoundingClientRect().height>=(innerWidth<=700?40:44)&&document.querySelector('.qb-message').hidden;})()`,
+        `(()=>{const bar=document.querySelector('.qb-storage-bar'),action=bar.querySelector('button');return bar.querySelector('[role=status]')&&action.textContent.includes('خودکار')&&!!action.querySelector('svg')&&action.getBoundingClientRect().height>=(innerWidth<=700?36:44)&&document.querySelector('.qb-message').hidden;})()`,
       ),
     );
     check(
@@ -134,9 +149,27 @@ main({
       deviceScaleFactor: 1,
       mobile: false,
     });
+    check(
+      "bank permission action renews directly without opening settings or touching stored school or bank data",
+      await evaluate(`(async()=>{
+      document.querySelector('.qb-close').click();
+      const service=EduQuestionBankFileBackup.service,methods=['subscribe','init','state','saveNow','supported'],original=Object.fromEntries(methods.map(k=>[k,service[k]])),callbacks=new Set();
+      const before=JSON.stringify(await EduQuestionBankRepository.read()),config=await EduQuestionBankRepository.readBackup();
+      const localBefore=JSON.stringify(Object.keys(localStorage).sort().map(k=>[k,localStorage.getItem(k)]));
+      let calls=0,state={state:'permission',connected:true,message:'مجوز فایل نیاز به تأیید دارد.'};
+      service.subscribe=fn=>{callbacks.add(fn);fn(state);return()=>callbacks.delete(fn);};service.init=async()=>{};service.state=()=>state;service.supported=()=>true;
+      service.saveNow=()=>{calls++;state={state:'active',connected:true,message:'ذخیره شد'};for(const fn of callbacks)fn(state);return Promise.resolve(true);};
+      try {
+        await EduQuestionBankUI.open();const button=document.querySelector('.qb-storage-bar button');
+        const shown=button.textContent==='اجازه مجدد'&&document.querySelector('.qb-storage-state').textContent==='مجوز فایل نیاز به تأیید دارد.';
+        button.click();await Promise.resolve();
+        return shown&&calls===1&&!document.querySelector('.qb-backup')&&document.querySelector('.qb-storage-bar').dataset.state==='active'&&JSON.stringify(await EduQuestionBankRepository.read())===before&&(await EduQuestionBankRepository.readBackup())===config&&JSON.stringify(Object.keys(localStorage).sort().map(k=>[k,localStorage.getItem(k)]))===localBefore;
+      } finally {document.querySelector('.qb-close')?.click();for(const k of methods)service[k]=original[k];}
+    })()`),
+    );
     // Reopen on the initial empty course workspace before exercising course creation.
     await evaluate(
-      `document.querySelector('.qb-close').click();EduQuestionBankUI.open()`,
+      `document.querySelector('.qb-close')?.click();EduQuestionBankUI.open()`,
     );
     await delay(100);
     await evaluate(
@@ -258,11 +291,11 @@ main({
         const choose=id=>{const n=document.querySelector('.qb-toolbar select');n.value=id;n.dispatchEvent(new Event('change'));};
         const original=document.querySelector('.qb-toolbar select').value;
         const unit=document.querySelector('.qb-section-picker select');unit.selectedIndex=1;unit.dispatchEvent(new Event('change'));const unitId=unit.value;
-        __qbClick('طرح آزمون');choose('second-course');__qbClick('انتخاب همه');
-        __qbClick('سؤال‌ها');if(document.querySelector('.qb-confirm'))__qbClick('تأیید',document.querySelector('.qb-confirm'));const questions=document.querySelector('.qb-toolbar select').value===original&&document.querySelector('.qb-section-picker select').value===unitId;
+        __qbClick('طراحی آزمون');choose('second-course');__qbClick('انتخاب همه');
+        __qbClick('بانک سؤال');if(document.querySelector('.qb-confirm'))__qbClick('تأیید',document.querySelector('.qb-confirm'));const questions=document.querySelector('.qb-toolbar select').value===original&&document.querySelector('.qb-section-picker select').value===unitId;
         const score=document.querySelector('.qb-question-toggle>.qb-score'),style=getComputedStyle(score);
         const badge=style.backgroundColor!=='rgba(0, 0, 0, 0)'&&parseFloat(style.borderRadius)>0;
-        __qbClick('طرح آزمون');const builder=document.querySelector('.qb-toolbar select').value==='second-course'&&document.querySelector('.qb-unit-selection input').checked;
+        __qbClick('طراحی آزمون');const builder=document.querySelector('.qb-toolbar select').value==='second-course'&&document.querySelector('.qb-unit-selection input').checked;
         choose(original);return questions&&builder&&badge&&!!document.querySelector('.qb-panel .qb-toolbar');
       })()`),
     );
@@ -281,7 +314,7 @@ main({
       })()`),
     );
     await evaluate(
-      `__qbClick('انتخاب همه');for(const label of ['چهارگزینه‌ای','جای‌خالی','تشریحی','صحیح / غلط'])__qbFill('تعداد '+label,'۱');__qbFill('عنوان آزمون','آزمون آزمایشی');document.querySelector('.qb-dialog form').requestSubmit();`,
+      `__qbClick('انتخاب همه');for(const label of ['چهارگزینه‌ای','جای‌خالی','تشریحی','صحیح / غلط'])__qbFill('تعداد '+label,'۱');__qbFill('نمرهٔ کل آزمون','4.25');__qbFill('عنوان آزمون','آزمون آزمایشی');document.querySelector('.qb-dialog form').requestSubmit();`,
     );
     await delay(100);
     check(
@@ -310,9 +343,9 @@ main({
           await checkOptionLayout(".qb-sheet-options", width);
         if (view === "questions")
           await evaluate(
-            `__qbClick('بازگشت به آزمون‌های من');__qbClick('سؤال‌ها');`,
+            `__qbClick('بازگشت به آزمون‌های من');__qbClick('بانک سؤال');`,
           );
-        if (view === "builder") await evaluate(`__qbClick('طرح آزمون')`);
+        if (view === "builder") await evaluate(`__qbClick('طراحی آزمون')`);
         if (view === "questions") {
           const parity = await evaluate(`(()=>{
               const host=document.createElement('div');host.className='session-workspace';host.inert=true;host.setAttribute('aria-hidden','true');host.style.cssText='position:fixed;left:-10000px;top:0;width:500px;pointer-events:none';
@@ -531,7 +564,7 @@ main({
             check(
               `mobile exam fields keep compact touch dimensions ${width}`,
               await evaluate(
-                `(()=>{const inputs=[...document.querySelectorAll('.qb-builder input:not([type=checkbox]):not([type=date])')].filter(n=>!n.closest('details:not([open])'));return inputs.length===9&&inputs.every(n=>Math.abs(n.getBoundingClientRect().height-44)<0.5)&&[...document.querySelectorAll('.qb-count-field')].every(n=>n.getBoundingClientRect().height<=125)&&getComputedStyle(document.querySelector('.qb-builder')).gridTemplateColumns.split(' ').length===2;})()`,
+                `(()=>{const inputs=[...document.querySelectorAll('.qb-builder input:not([type=checkbox]):not([type=date])')].filter(n=>!n.closest('details:not([open])'));return inputs.length===10&&inputs.every(n=>Math.abs(n.getBoundingClientRect().height-40)<0.5)&&[...document.querySelectorAll('.qb-count-field')].every(n=>n.getBoundingClientRect().height<=125)&&getComputedStyle(document.querySelector('.qb-builder')).gridTemplateColumns.split(' ').length===2;})()`,
               ),
             );
           const actions = await evaluate(
@@ -593,7 +626,7 @@ main({
         }
       }
       await evaluate(
-        `__qbClick('آزمون‌ها');if(document.querySelector('.qb-confirm'))__qbClick('تأیید',document.querySelector('.qb-confirm'));`,
+        `__qbClick('آزمون‌های من');if(document.querySelector('.qb-confirm'))__qbClick('تأیید',document.querySelector('.qb-confirm'));`,
       );
       check(
         `archive width ${width}`,
@@ -650,10 +683,11 @@ main({
         __qbClick('مشاهده آزمون');return restored;
       })()`),
     );
-    const existingDownloads = new Set(fs.readdirSync(out));
+    const downloadDir = fs.mkdtempSync(path.join(out, "downloads-"));
+    const existingDownloads = new Set(fs.readdirSync(downloadDir));
     await cdp("Browser.setDownloadBehavior", {
       behavior: "allow",
-      downloadPath: out,
+      downloadPath: downloadDir,
     });
     await evaluate(
       "__qbClick('بازگشت به آزمون‌های من');__qbClick('پشتیبان');__qbClick('دریافت فایل بانک')",
@@ -661,11 +695,11 @@ main({
     for (let i = 0; i < 100; i++) {
       if (
         fs
-          .readdirSync(out)
+          .readdirSync(downloadDir)
           .some(
             (n) =>
               !existingDownloads.has(n) &&
-              n.startsWith("Classyar-QuestionBank-") &&
+              n.startsWith("Classyar-QuestionBank") &&
               n.endsWith(".json"),
           )
       )
@@ -673,20 +707,20 @@ main({
       await delay(100);
     }
     const downloaded = fs
-      .readdirSync(out)
+      .readdirSync(downloadDir)
       .find(
         (n) =>
           !existingDownloads.has(n) &&
-          n.startsWith("Classyar-QuestionBank-") &&
+          n.startsWith("Classyar-QuestionBank") &&
           n.endsWith(".json"),
       );
     check(
       "independent JSON download",
       !!downloaded &&
-        JSON.parse(fs.readFileSync(path.join(out, downloaded), "utf8"))
+        JSON.parse(fs.readFileSync(path.join(downloadDir, downloaded), "utf8"))
           .format === "classyar-question-bank",
     );
-    await evaluate("__qbClick('آزمون‌ها');__qbClick('مشاهده آزمون')");
+    await evaluate("__qbClick('آزمون‌های من');__qbClick('مشاهده آزمون')");
     await cdp("Emulation.setEmulatedMedia", { media: "print" });
     check(
       "print only displays exam sheet",
@@ -756,7 +790,7 @@ main({
         const seed=bank.exams[0];
         const extra=Array.from({length:13},(_,i)=>({...structuredClone(seed),id:'archive-'+i,title:'آزمون آرشیوی '+i,courseTitle:i===12?'كتاب عربي':'درس دیگر'}));
         await EduQuestionBankRepository.save({...bank,exams:[...bank.exams,...extra]},bank.revision);
-        __qbClick('بستن');await EduQuestionBankUI.open();__qbClick('آزمون‌ها');
+        __qbClick('بستن');await EduQuestionBankUI.open();__qbClick('آزمون‌های من');
         const first=document.querySelectorAll('.qb-exam-card').length===12&&!document.querySelector('.qb-toolbar');
         const region=document.querySelector('.qb-exam-results'),controls=document.querySelector('.qb-archive-controls'),top=controls.getBoundingClientRect().top;
         region.scrollTop=300;const bounded=region.scrollTop>0&&region.clientHeight<=innerHeight*.55+1&&controls.getBoundingClientRect().top===top&&region.tabIndex===0;
@@ -768,7 +802,7 @@ main({
     check(
       "simple modular course flow uses two fields then module and question without management menus",
       await evaluate(`(async()=>{
-        __qbClick('سؤال‌ها');__qbClick('درس جدید');
+        __qbClick('بانک سؤال');__qbClick('درس جدید');
         const form=document.querySelector('.qb-form');
         const simple=form.querySelectorAll('input,select,textarea').length===2;
         const type=__qbFill('نوع درس','module');type.dispatchEvent(new Event('change'));
@@ -790,7 +824,7 @@ main({
       await evaluateGesture(`(async()=>{
         const service=EduQuestionBankFileBackup.service;
         const directory=await navigator.storage.getDirectory();
-        const handle=await directory.getFileHandle('question-bank-auto-'+Date.now()+'.json',{create:true});
+        const handle=await directory.getFileHandle('Classyar-QuestionBank.json',{create:true});
         const picker=window.showSaveFilePicker;
         try {
           window.showSaveFilePicker=async()=>handle;
@@ -858,9 +892,31 @@ main({
     }
     // Validate restore preview with a genuinely selected File; no early mutation.
     check(
+      "bank restore rejects foreign names and renamed classroom content without changing data",
+      await evaluate(`(async()=>{
+        const before=JSON.stringify(await EduQuestionBankRepository.read());
+        const input=document.querySelector('.qb-dialog input[type=file]');
+        for(const [name,content] of [['Classyar-Classroom.json',JSON.stringify(EduQuestionBank.empty())],['Classyar-QuestionBank(1).json',JSON.stringify({format:'EduManager.FullBackup',version:2})]]){
+          const transfer=new DataTransfer();transfer.items.add(new File([content],name,{type:'application/json'}));input.files=transfer.files;input.dispatchEvent(new Event('change'));
+          await new Promise(r=>setTimeout(r,80));
+          if(document.querySelector('.qb-confirm')||JSON.stringify(await EduQuestionBankRepository.read())!==before)return false;
+        }
+        return true;
+      })()`),
+    );
+    await evaluate(
+      `(async()=>{window.__qbSchoolBeforeBankRestore=JSON.stringify((await EduV24.snapshotInstallation()).stores);})()`,
+    );
+    check(
       "restore preview and complete replacement",
       await evaluate(
-        `(async()=>{const before=await EduQuestionBankRepository.read();const replacement=EduQuestionBank.empty();const input=document.querySelector('.qb-dialog input[type=file]');const transfer=new DataTransfer();transfer.items.add(new File([JSON.stringify(replacement)],'bank.json',{type:'application/json'}));input.files=transfer.files;input.dispatchEvent(new Event('change'));await new Promise(r=>setTimeout(r,80));const unchanged=JSON.stringify(await EduQuestionBankRepository.read())===JSON.stringify(before);const preview=document.querySelector('.qb-confirm')?.textContent.includes('0 درس');__qbClick('تأیید',document.querySelector('.qb-confirm'));await new Promise(r=>setTimeout(r,80));const after=await EduQuestionBankRepository.read();return unchanged&&preview&&!after.questions.length&&!after.exams.length&&!after.courses.length;})()`,
+        `(async()=>{const before=await EduQuestionBankRepository.read();const replacement=EduQuestionBank.empty();const input=document.querySelector('.qb-dialog input[type=file]');const transfer=new DataTransfer();transfer.items.add(new File([JSON.stringify(replacement)],'Classyar-QuestionBank (2).json',{type:'application/json'}));input.files=transfer.files;input.dispatchEvent(new Event('change'));await new Promise(r=>setTimeout(r,80));const unchanged=JSON.stringify(await EduQuestionBankRepository.read())===JSON.stringify(before);const preview=document.querySelector('.qb-confirm')?.textContent.includes('0 درس');__qbClick('تأیید',document.querySelector('.qb-confirm'));await new Promise(r=>setTimeout(r,80));const after=await EduQuestionBankRepository.read();return unchanged&&preview&&!after.questions.length&&!after.exams.length&&!after.courses.length;})()`,
+      ),
+    );
+    check(
+      "bank restore preserves classroom stores",
+      await evaluate(
+        `(async()=>JSON.stringify((await EduV24.snapshotInstallation()).stores)===window.__qbSchoolBeforeBankRestore)()`,
       ),
     );
     check(

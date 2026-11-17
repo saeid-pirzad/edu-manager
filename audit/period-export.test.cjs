@@ -20,6 +20,7 @@ function fixture() {
     },
   };
   const handle = {
+    name: "Classyar-Classroom.json",
     async createWritable() {
       return stream;
     },
@@ -44,6 +45,7 @@ function fixture() {
       };
     },
     window: { showSaveFilePicker: async () => handle },
+    assertSingleFileDestination: async () => {},
     downloadJSON: (data, name) => downloads.push({ data, name }),
     localStorage: {
       setItem: (key, value) => stamps.push({ key, value: JSON.parse(value) }),
@@ -52,6 +54,13 @@ function fixture() {
     setStatus() {},
     render() {},
   });
+  vm.runInContext(
+    fs.readFileSync(
+      path.join(__dirname, "../src/workspace/backups/single-file-name.js"),
+      "utf8",
+    ),
+    c,
+  );
   vm.runInContext(
     fs.readFileSync(
       path.join(__dirname, "../src/workspace/backups/period-import.js"),
@@ -75,7 +84,7 @@ function fixture() {
 test("period export freezes atomic metadata and stamps the origin after picker navigation", async () => {
   const f = fixture();
   f.c.window.showSaveFilePicker = async (options) => {
-    assert.match(options.suggestedName, /1405-1406-first-term/);
+    assert.equal(options.suggestedName, "Classyar-Classroom.json");
     f.c.workspace.id = "second";
     return f.handle;
   };

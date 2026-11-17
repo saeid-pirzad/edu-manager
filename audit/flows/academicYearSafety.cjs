@@ -63,7 +63,9 @@ module.exports = async function academicYearSafety() {
       const input = document.getElementById("importFile"),
         transfer = new DataTransfer();
       transfer.items.add(
-        new File([JSON.stringify(value)], name, { type: "application/json" }),
+        new File([JSON.stringify(value)], "Classyar-Classroom.json", {
+          type: "application/json",
+        }),
       );
       input.files = transfer.files;
       input.dispatchEvent(new Event("change", { bubbles: true }));

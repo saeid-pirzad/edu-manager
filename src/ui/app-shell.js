@@ -561,7 +561,7 @@
       const bankLabel = document.createElement("span");
       bankLabel.className = "workspace-tool-copy";
       const bankTitle = document.createElement("span");
-      bankTitle.textContent = "بانک سؤال";
+      bankTitle.textContent = "بانک سؤال و طراحی آزمون";
       bankLabel.append(bankTitle);
       bankButton.append(bankIcon, bankLabel);
       bankButton.onclick = () => window.EduQuestionBankUI.open();

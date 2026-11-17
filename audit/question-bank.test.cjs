@@ -45,6 +45,119 @@ function spec() {
     duration: "۶۰",
   };
 }
+test("target exam scores support localized decimals and reject invalid totals", () => {
+  assert.equal(D.examScore("۲۰"), 2000);
+  assert.equal(D.examScore("٣٠"), 3000);
+  assert.equal(D.examScore("۰٫۰۳"), 3);
+  assert.equal(D.examScore("50000"), 5000000);
+  for (const value of ["", "0", "-1", "50000.01", "1.001", "NaN", "1e1"])
+    assert.throws(() => D.examScore(value));
+});
+test("random selection respects exact twenty and thirty point targets and per-type quotas", () => {
+  const b = fixture();
+  b.questions = b.questions.flatMap((q) =>
+    [500, 750].map((score, i) => ({ ...q, id: q.id + "-" + i, score })),
+  );
+  const before = JSON.stringify(b);
+  for (const target of [20, 30]) {
+    const exam = D.generate(b, { ...spec(), totalScore: String(target) });
+    assert.equal(
+      exam.questions.reduce((n, q) => n + q.score, 0),
+      target * 100,
+    );
+    for (const type of Object.keys(D.types))
+      assert.equal(exam.questions.filter((q) => q.type === type).length, 1);
+    assert.equal(new Set(exam.questions.map((q) => q.id)).size, 4);
+  }
+  assert.equal(JSON.stringify(b), before);
+});
+test("score solver agrees with exhaustive mixed-type small-bank combinations including unreachable totals", () => {
+  const b = fixture();
+  b.questions = b.questions
+    .filter((q) => ["blank", "essay"].includes(q.type))
+    .flatMap((q) =>
+      [25, 75, 150, 225].map((score, i) => ({
+        ...q,
+        id: q.id + "-" + i,
+        score,
+      })),
+    );
+  const possible = new Set();
+  for (let mask = 0; mask < 256; mask++) {
+    const qs = b.questions.filter((_, i) => mask & (1 << i));
+    if (
+      qs.filter((q) => q.type === "blank").length === 2 &&
+      qs.filter((q) => q.type === "essay").length === 1
+    )
+      possible.add(qs.reduce((sum, q) => sum + q.score, 0));
+  }
+  for (let target = 25; target <= 650; target += 25) {
+    const config = {
+      ...spec(),
+      counts: { mcq: 0, blank: 2, essay: 1, boolean: 0 },
+      totalScore: String(target / 100),
+    };
+    if (possible.has(target))
+      assert.equal(
+        D.generate(b, config, () => 0.3).questions.reduce(
+          (sum, q) => sum + q.score,
+          0,
+        ),
+        target,
+      );
+    else assert.throws(() => D.generate(b, config, () => 0.3), /ترکیبی/);
+  }
+});
+test("impossible score target never rescales original marks or changes the bank", () => {
+  const b = fixture(),
+    before = JSON.stringify(b);
+  assert.throws(() => D.generate(b, { ...spec(), totalScore: "20" }), /ترکیبی/);
+  assert.equal(JSON.stringify(b), before);
+  assert.equal(
+    D.generate(b, { ...spec(), totalScore: "۵" }).questions.reduce(
+      (sum, q) => sum + q.score,
+      0,
+    ),
+    500,
+  );
+});
+test("target score cannot draw matching marks from unselected sections or courses", () => {
+  const b = fixture();
+  b.questions.push({
+    ...b.questions[2],
+    id: "foreign-score",
+    unitId: "u2",
+    score: 2000,
+  });
+  assert.throws(
+    () =>
+      D.generate(b, {
+        ...spec(),
+        counts: { mcq: 0, blank: 0, essay: 1, boolean: 0 },
+        totalScore: "20",
+      }),
+    /ترکیبی/,
+  );
+});
+test("target selection handles five hundred identical marks without recursive stack growth", () => {
+  const b = fixture(),
+    q = b.questions.find((q) => q.type === "essay");
+  b.questions = Array.from({ length: 520 }, (_, i) => ({
+    ...q,
+    id: "scale-" + i,
+    score: 4,
+  }));
+  const exam = D.generate(b, {
+    ...spec(),
+    counts: { mcq: 0, blank: 0, essay: 500, boolean: 0 },
+    totalScore: "20",
+  });
+  assert.equal(exam.questions.length, 500);
+  assert.equal(
+    exam.questions.reduce((sum, q) => sum + q.score, 0),
+    2000,
+  );
+});
 test("import rejects coerced question types instead of silently losing them in type filters", () => {
   for (const type of [["essay"], ["mcq"], { toString: () => "essay" }]) {
     const b = fixture();

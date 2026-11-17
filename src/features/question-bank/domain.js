@@ -52,6 +52,118 @@
       .trim()
       .toLocaleLowerCase("fa-IR");
   }
+  function examScore(value) {
+    const s = digits(value);
+    if (!/^\d+(\.\d{1,2})?$/.test(s))
+      fail("نمرهٔ کل باید عددی با حداکثر دو رقم اعشار باشد.");
+    const [whole, fraction = ""] = s.split(".");
+    const cents = Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
+    if (!Number.isSafeInteger(cents) || cents < 1 || cents > 5000000)
+      fail("نمرهٔ کل آزمون باید بین ۰٫۰۱ و ۵۰۰۰۰ باشد.");
+    return cents;
+  }
+  function selectForScore(pools, counts, target, random) {
+    const groups = [];
+    const infos = Object.keys(types)
+      .filter((type) => counts[type] > 0)
+      .map((type) => {
+        const ordered = shuffle(pools[type], random).sort(
+          (a, b) => b.score - a.score,
+        );
+        const prefix = [0];
+        for (const q of ordered) prefix.push(prefix.at(-1) + q.score);
+        const buckets = new Map();
+        for (const q of ordered) {
+          if (!buckets.has(q.score)) buckets.set(q.score, []);
+          buckets.get(q.score).push(q);
+        }
+        return { count: counts[type], ordered, prefix, buckets };
+      });
+    let tailMin = 0,
+      tailMax = 0;
+    for (let i = infos.length - 1; i >= 0; i--) {
+      const info = infos[i];
+      info.tailMin = tailMin;
+      info.tailMax = tailMax;
+      tailMin +=
+        info.prefix.at(-1) - info.prefix[info.ordered.length - info.count];
+      tailMax += info.prefix[info.count];
+    }
+    for (const info of infos) {
+      let offset = 0;
+      for (const [score, questions] of info.buckets) {
+        groups.push({ info, offset, score, questions });
+        offset += questions.length;
+      }
+    }
+    const stack = [
+      { index: 0, count: infos[0].count, left: target, path: null },
+    ];
+    const visited = new Set();
+    let work = 0;
+    while (stack.length) {
+      if (++work > 100000)
+        fail(
+          "جست‌وجوی ترکیب بارم به حد پردازش رسید؛ تعداد یا بارم سؤال‌ها را ساده‌تر کنید. آزمونی ذخیره نشد.",
+        );
+      const node = stack.pop();
+      if (node.index === groups.length) {
+        if (node.left !== 0) continue;
+        const selected = [];
+        for (let path = node.path; path; path = path.parent)
+          selected.push(...path.group.questions.slice(0, path.amount));
+        return selected;
+      }
+      const group = groups[node.index],
+        info = group.info;
+      if (node.count < 0 || node.count > info.ordered.length - group.offset)
+        continue;
+      const min =
+        info.prefix.at(-1) -
+        info.prefix[info.ordered.length - node.count] +
+        info.tailMin;
+      const max =
+        info.prefix[group.offset + node.count] -
+        info.prefix[group.offset] +
+        info.tailMax;
+      if (node.left < min || node.left > max) continue;
+      const key = `${node.index}:${node.count}:${node.left}`;
+      if (visited.has(key)) continue;
+      visited.add(key);
+      const next = groups[node.index + 1];
+      const low = Math.max(
+        0,
+        node.count -
+          (info.ordered.length - group.offset - group.questions.length),
+      );
+      const high = Math.min(
+        node.count,
+        group.questions.length,
+        Math.floor(node.left / group.score),
+      );
+      const choices = shuffle(
+        Array.from({ length: Math.max(0, high - low + 1) }, (_, i) => low + i),
+        random,
+      );
+      for (const amount of choices) {
+        if (++work > 100000)
+          fail(
+            "جست‌وجوی ترکیب بارم به حد پردازش رسید؛ تعداد یا بارم سؤال‌ها را ساده‌تر کنید. آزمونی ذخیره نشد.",
+          );
+        const remaining = node.count - amount;
+        if (next?.info !== info && remaining !== 0) continue;
+        stack.push({
+          index: node.index + 1,
+          count: next?.info === info ? remaining : next?.info.count || 0,
+          left: node.left - amount * group.score,
+          path: { group, amount, parent: node.path },
+        });
+      }
+    }
+    fail(
+      "با تعداد و بارم سؤال‌های بخش‌های منتخب، ترکیبی با نمرهٔ کل درخواستی وجود ندارد؛ تعداد سؤال‌ها، بخش‌ها یا نمرهٔ کل را تغییر دهید.",
+    );
+  }
   function optionKey(value) {
     return String(value)
       .normalize("NFKC")
@@ -287,7 +399,7 @@
     for (const q of bank.questions)
       if (unitIds.has(q.unitId) && Object.hasOwn(pools, q.type))
         pools[q.type].push(q);
-    const selected = [];
+    let selected = [];
     for (const type of Object.keys(types)) {
       const count = counts[type],
         pool = pools[type];
@@ -297,6 +409,13 @@
         );
       selected.push(...shuffle(pool, random).slice(0, count));
     }
+    if (spec.totalScore !== undefined)
+      selected = selectForScore(
+        pools,
+        counts,
+        examScore(spec.totalScore),
+        random,
+      );
     const exam = {
       id: crypto.randomUUID(),
       title: spec.title.trim(),
@@ -320,6 +439,7 @@
     searchText,
     optionKey,
     score,
+    examScore,
     integer,
     empty,
     validate,

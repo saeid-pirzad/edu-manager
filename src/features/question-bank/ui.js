@@ -301,7 +301,7 @@
     const opener = document.activeElement,
       dialog = el("dialog", undefined, "qb-dialog modal-dialog");
     const header = el("header", undefined, "modal-header"),
-      title = el("h3", "بانک سؤال"),
+      title = el("h3", "بانک سؤال و طراحی آزمون"),
       message = el("p", "در حال خواندن…", "qb-message"),
       content = el("div", undefined, "modal-body qb-body");
     title.id = "qb-title";
@@ -314,7 +314,9 @@
     const storageAction = button(
       "فعال‌سازی خودکار",
       () => {
-        if (!F.state().connected && F.supported()) F.choose().catch(error);
+        if (F.state().state === "permission" && F.supported())
+          saveBankFile().catch(error);
+        else if (!F.state().connected && F.supported()) F.choose().catch(error);
         else
           discard(() => {
             tab = "backup";
@@ -328,8 +330,10 @@
     storageAction.dataset.uiTone = "settings";
     const unsubscribeStorage = F.subscribe((state) => {
       storage.dataset.state = state.state;
-      storageState.textContent =
-        state.state === "active"
+      const attention = ["error", "paused", "permission"].includes(state.state);
+      storageState.textContent = attention
+        ? state.message
+        : state.state === "active"
           ? "فایل خودکار فعال است"
           : state.state === "busy"
             ? "در حال ذخیرهٔ فایل…"
@@ -337,27 +341,14 @@
               ? "ذخیرهٔ فایل نیاز به بررسی دارد"
               : "ذخیره در مرورگر";
       storageState.title = state.message;
+      storageState.setAttribute("role", attention ? "alert" : "status");
       storageAction.querySelector(".ui-button-label").textContent =
-        state.connected || !F.supported()
-          ? "تنظیمات ذخیره"
-          : "فعال‌سازی خودکار";
+        state.state === "permission" && F.supported()
+          ? "اجازه مجدد"
+          : state.connected || !F.supported()
+            ? "تنظیمات ذخیره"
+            : "فعال‌سازی خودکار";
       storageAction.disabled = state.state === "busy";
-    });
-    const unsubscribeFileNotice = F.subscribe((state) => {
-      if (["error", "paused", "permission"].includes(state.state)) {
-        message.hidden = false;
-        message.textContent = state.message;
-        message.dataset.state = "error";
-        message.dataset.fileBackup = "true";
-        message.setAttribute("role", "alert");
-      } else if (
-        ["active", "inactive"].includes(state.state) &&
-        message.dataset.fileBackup
-      ) {
-        message.hidden = true;
-        delete message.dataset.fileBackup;
-        delete message.dataset.state;
-      }
     });
     const tabScopes = {
       questions: { courseId: "", unitId: "" },
@@ -433,10 +424,12 @@
     }
     function close() {
       discard(() => {
+        root.visualViewport?.removeEventListener("resize", keepEditingVisible);
+        root.visualViewport?.removeEventListener("scroll", keepEditingVisible);
+        cancelAnimationFrame(editingFrame);
         optionResize.disconnect();
         optionChanges.disconnect();
         unsubscribeBackup();
-        unsubscribeFileNotice();
         unsubscribeStorage();
         const calendar = dialog.querySelector("#calPopup");
         if (calendar) {
@@ -482,6 +475,30 @@
     dialog.append(header, storage, message, content);
     document.body.append(dialog);
     dialog.showModal();
+    let editingFrame;
+    function keepEditingVisible() {
+      cancelAnimationFrame(editingFrame);
+      editingFrame = requestAnimationFrame(() => {
+        if (
+          innerWidth > 700 ||
+          document.documentElement.dataset.keyboardOpen !== "true"
+        )
+          return;
+        const active = document.activeElement;
+        if (!content.contains(active)) return;
+        const fields = active.closest(".qb-form-fields");
+        if (!fields) return;
+        const field = active.getBoundingClientRect();
+        const bounds = fields.getBoundingClientRect();
+        if (field.bottom > bounds.bottom - 8)
+          fields.scrollTop += field.bottom - bounds.bottom + 8;
+        else if (field.top < bounds.top + 8)
+          fields.scrollTop -= bounds.top + 8 - field.top;
+      });
+    }
+    root.visualViewport?.addEventListener("resize", keepEditingVisible);
+    root.visualViewport?.addEventListener("scroll", keepEditingVisible);
+    content.addEventListener("focusin", keepEditingVisible);
     const updateOptions = () => fitOptions(content);
     const optionResize = new ResizeObserver(updateOptions);
     const optionChanges = new MutationObserver(updateOptions);
@@ -1183,6 +1200,7 @@
     }
     function builder(parent) {
       const f = form(parent, async () => {
+        f.dataset.submitted = "true";
         update();
         if (!f.reportValidity()) return;
         const exam = D.generate(bank, {
@@ -1196,6 +1214,7 @@
           teacher: teacher.value,
           date: date.value,
           duration: duration.value,
+          totalScore: totalScore.value,
         });
         const next = structuredClone(bank);
         next.exams.push(exam);
@@ -1220,19 +1239,21 @@
         scope.append(
           el(
             "p",
-            `ابتدا در بخش سؤال‌ها، ${unitLabel()} و سؤال‌های آن را ثبت کنید.`,
+            `ابتدا در تب بانک سؤال، ${unitLabel()} و سؤال‌های آن را ثبت کنید.`,
             "qb-help",
           ),
         );
       const checks = units.map((u) => {
         const n = field(unitList, u.title);
         n.type = "checkbox";
+        n.parentElement.prepend(n);
         n.value = u.id;
         n.checked = tabScopes.builder.unitIds?.includes(u.id) || false;
         n.parentElement.append(
           el(
             "small",
             `${number(bank.questions.filter((q) => q.unitId === u.id).length)} سؤال`,
+            "qb-unit-count",
           ),
         );
         return n;
@@ -1250,6 +1271,9 @@
         const selected = new Set(
           checks.filter((c) => c.checked).map((c) => c.value),
         );
+        selectAll.disabled =
+          checks.length === 0 || selected.size === checks.length;
+        clearAll.disabled = selected.size === 0;
         for (const type of Object.keys(D.types)) {
           const capacity = bank.questions.filter(
             (q) => q.type === type && selected.has(q.unitId),
@@ -1287,10 +1311,23 @@
         checks[0]?.setCustomValidity(
           selected.size ? "" : `حداقل یک ${unitLabel()} انتخاب کنید.`,
         );
+        let scoreError = "";
+        try {
+          D.examScore(totalScore.value);
+        } catch (e) {
+          scoreError = e.message;
+        }
         if (total === 0 || total > 500)
-          counts[Object.keys(D.types)[0]].setCustomValidity(
-            "مجموع سؤال‌های آزمون باید بین ۱ تا ۵۰۰ باشد.",
-          );
+          scoreError = "مجموع سؤال‌های آزمون باید بین ۱ و ۵۰۰ باشد.";
+        totalScore.setCustomValidity(scoreError);
+        totalScore.setAttribute(
+          "aria-invalid",
+          String(
+            Boolean(scoreError) &&
+              (totalScore.dataset.touched === "true" ||
+                f.dataset.submitted === "true"),
+          ),
+        );
         for (const input of Object.values(counts))
           input.setAttribute("aria-invalid", String(!input.validity.valid));
         plan.replaceChildren(
@@ -1299,8 +1336,10 @@
         );
       };
       const selectionActions = el("div", undefined, "qb-selection-actions");
+      selectionActions.setAttribute("role", "group");
+      selectionActions.setAttribute("aria-label", "انتخاب بخش‌های آزمون");
       scope.append(selectionActions);
-      button(
+      const selectAll = button(
         "انتخاب همه",
         () => {
           checks.forEach((c) => (c.checked = true));
@@ -1309,7 +1348,7 @@
         },
         selectionActions,
       );
-      button(
+      const clearAll = button(
         "لغو انتخاب",
         () => {
           checks.forEach((c) => (c.checked = false));
@@ -1318,6 +1357,8 @@
         },
         selectionActions,
       );
+      selectAll.insertAdjacentHTML("afterbegin", root.EduIcons.html("check"));
+      clearAll.insertAdjacentHTML("afterbegin", root.EduIcons.html("minus"));
       checks.forEach((c) => (c.onchange = update));
       const composition = el(
         "fieldset",
@@ -1328,11 +1369,20 @@
       composition.append(
         el(
           "p",
-          "تعداد هر نوع را وارد کنید؛ انتخاب سؤال‌ها از بخش‌های بالا تصادفی است.",
+          "تعداد هر نوع و نمرهٔ کل را مشخص کنید؛ بارم سؤال‌های تصادفی دقیقاً برابر نمرهٔ کل خواهد بود.",
           "qb-composition-hint",
         ),
       );
       f.append(composition);
+      const totalScore = field(composition, "نمرهٔ کل آزمون", "20");
+      totalScore.parentElement.classList.add("qb-target-score");
+      totalScore.inputMode = "decimal";
+      totalScore.required = true;
+      totalScore.onfocus = totalScore.onclick = () => totalScore.select();
+      totalScore.oninput = () => {
+        totalScore.dataset.touched = "true";
+        update();
+      };
       const countGrid = el(
         "div",
         undefined,
@@ -1342,6 +1392,8 @@
       for (const [type, label] of Object.entries(D.types)) {
         counts[type] = field(countGrid, `تعداد ${label}`, "0");
         counts[type].inputMode = "numeric";
+        counts[type].onfocus = counts[type].onclick = () =>
+          counts[type].select();
         counts[type].oninput = update;
         counts[type].parentElement.classList.add("qb-count-field");
         counts[type].parentElement.dataset.questionType = type;
@@ -1423,13 +1475,25 @@
       button("چاپ / PDF آزمون", () => print(exam).catch(error), actions);
       content.append(sheet(exam));
     }
+    function saveBankFile() {
+      return F.saveNow(
+        (name, counts) =>
+          new Promise((resolve) =>
+            confirmAction(
+              `فایل «${name}» با ${number(counts.questions)} سؤال و ${number(counts.exams)} آزمون فعلی جایگزین شود؟ نسخهٔ قبلی این فایل از بین می‌رود؛ اگر لازم است ابتدا یک کپی نگه دارید.`,
+              () => resolve(true),
+              () => resolve(false),
+            ),
+          ),
+      );
+    }
     function files(parent) {
       const details = el("section", undefined, "qb-backup");
       details.append(
         el("h4", "پشتیبان و بازیابی بانک سؤال", "qb-form-heading"),
         el(
           "p",
-          "بانک سؤال فایل پشتیبان جداگانه دارد؛ فایل مدرسه را برای آن انتخاب نکنید. فقط تغییرات ثبت‌شده در پشتیبان قرار می‌گیرند.",
+          "نام فایل: Classyar-QuestionBank.json؛ نسخه‌های شماره‌دار مانند (1) هم پذیرفته می‌شوند. فایل‌های قدیمی را ابتدا تغییر نام دهید. فقط تغییرات ثبت‌شده در پشتیبان قرار می‌گیرند.",
         ),
       );
       parent.append(details);
@@ -1447,10 +1511,7 @@
               ),
               a = el("a");
             a.href = url;
-            a.download = F.suggestedName().replace(
-              ".json",
-              `-${Date.now()}.json`,
-            );
+            a.download = F.suggestedName();
             a.click();
             setTimeout(() => URL.revokeObjectURL(url), 1000);
           } catch (e) {
@@ -1470,6 +1531,7 @@
         try {
           const file = upload.files[0];
           if (!file) return;
+          root.EduQuestionBankFileBackup.assertFileName(file.name);
           if (file.size > D.LIMIT)
             throw Error("سقف فایل ورودی ۲۰ مگابایت است.");
           const incoming = D.parse(await file.text());
@@ -1505,21 +1567,7 @@
       automatic.append(status, actions);
       details.append(automatic);
       const choose = button("انتخاب فایل", () => F.choose(), actions);
-      const save = button(
-        "ذخیره اکنون",
-        () =>
-          F.saveNow(
-            (name, counts) =>
-              new Promise((resolve) =>
-                confirmAction(
-                  `فایل «${name}» با ${number(counts.questions)} سؤال و ${number(counts.exams)} آزمون فعلی جایگزین شود؟ نسخهٔ قبلی این فایل از بین می‌رود؛ اگر لازم است ابتدا یک کپی نگه دارید.`,
-                  () => resolve(true),
-                  () => resolve(false),
-                ),
-              ),
-          ),
-        actions,
-      );
+      const save = button("ذخیره اکنون", () => saveBankFile(), actions);
       const stop = button("قطع اتصال", () => F.stop().catch(error), actions);
       for (const [control, tone, icon] of [
         [choose, "create", "folder"],
@@ -1539,6 +1587,12 @@
           state.state === "error" ? "alert" : "status",
         );
         choose.disabled = !F.supported() || state.state === "busy";
+        save.querySelector(".ui-button-label").textContent =
+          state.state === "permission" ? "اجازه مجدد" : "ذخیره اکنون";
+        save.title =
+          state.state === "permission"
+            ? "تأیید مجوز فایل بانک سؤال"
+            : "ذخیره اکنون";
         save.disabled =
           !state.connected || !F.supported() || state.state === "busy";
         stop.disabled =
@@ -1720,12 +1774,12 @@
       content.replaceChildren();
       dirty = false;
       const tabs = el("nav", undefined, "tabs qb-actions qb-tabs");
-      tabs.setAttribute("aria-label", "بخش‌های بانک سؤال");
+      tabs.setAttribute("aria-label", "بخش‌های بانک سؤال و طراحی آزمون");
       content.append(tabs);
       for (const [id, label] of [
-        ["questions", "سؤال‌ها"],
-        ["builder", "طرح آزمون"],
-        ["exams", "آزمون‌ها"],
+        ["questions", "بانک سؤال"],
+        ["builder", "طراحی آزمون"],
+        ["exams", "آزمون‌های من"],
         ["backup", "پشتیبان"],
       ]) {
         const b = button(
@@ -1812,10 +1866,8 @@
     try {
       bank = D.validate(await R.read());
       await F.init();
-      if (!message.dataset.fileBackup) {
-        message.textContent = "";
-        message.hidden = true;
-      }
+      message.textContent = "";
+      message.hidden = true;
       render();
     } catch (e) {
       error(e);

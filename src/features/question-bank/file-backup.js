@@ -1,5 +1,14 @@
 (function (root) {
   "use strict";
+  function assertFileName(name) {
+    if (
+      typeof name !== "string" ||
+      !/^Classyar-QuestionBank(?: ?\([1-9]\d*\))?\.json$/.test(name)
+    )
+      throw Error(
+        "نام فایل بانک سؤال باید Classyar-QuestionBank.json یا نسخهٔ شماره‌دار آن مانند Classyar-QuestionBank(1).json باشد. فایل‌های قدیمی را ابتدا تغییر نام دهید؛ محتوای آن‌ها نیز بررسی می‌شود.",
+      );
+  }
   // File handles stay device-local; they never enter the exported bank JSON.
   function createFileBackup(repository, host = root) {
     const D = root.EduQuestionBank;
@@ -59,7 +68,9 @@
       ).join("");
     }
     async function inspect(handle, allowEmpty = false) {
+      assertFileName(handle.name);
       const file = await handle.getFile();
+      if (typeof file.name === "string") assertFileName(file.name);
       if (file.size > D.LIMIT)
         throw Error("فایل بزرگ‌تر از سقف ۲۰ مگابایت است؛ تغییر نکرد.");
       const text = await file.text();
@@ -114,10 +125,7 @@
             (await config.handle.queryPermission({ mode: "readwrite" })) !==
             "granted"
           ) {
-            notify(
-              "permission",
-              "مجوز فایل نیاز به تأیید دارد؛ «ذخیره اکنون» را بزنید.",
-            );
+            notify("permission", "مجوز فایل نیاز به تأیید دارد.");
             return false;
           }
           if (config.suspended && !approved) {
@@ -207,13 +215,7 @@
       return initialized;
     }
     function suggestedName() {
-      const day = new Intl.DateTimeFormat("en-US-u-ca-persian", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      }).formatToParts(new Date());
-      const part = (name) => day.find((p) => p.type === name).value;
-      return `Classyar-QuestionBank-${part("year")}-${part("month")}-${part("day")}.json`;
+      return "Classyar-QuestionBank.json";
     }
     async function choose() {
       if (choosing || !supported()) return false;
@@ -355,7 +357,7 @@
       state: () => ({ ...status }),
     };
   }
-  root.EduQuestionBankFileBackup = { create: createFileBackup };
+  root.EduQuestionBankFileBackup = { create: createFileBackup, assertFileName };
   if (root.EduQuestionBankRepository && typeof document !== "undefined") {
     const service = createFileBackup(root.EduQuestionBankRepository);
     root.EduQuestionBankFileBackup.service = service;

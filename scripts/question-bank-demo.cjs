@@ -13,7 +13,7 @@ const root = path.resolve(__dirname, "..");
 const output = path.join(root, "docs", "examples", "question-bank");
 const marker = "scripts/question-bank-demo.cjs";
 const artifactNames = [
-  "bank.json",
+  "Classyar-QuestionBank.json",
   "preview.html",
   "teacher-answers.html",
   "general-exam.pdf",
@@ -135,7 +135,7 @@ async function generate() {
         D.size(saved) === D.size(expected),
       );
       artifacts.set(
-        "bank.json",
+        "Classyar-QuestionBank.json",
         JSON.stringify(D.validate(saved), null, 2) + "\n",
       );
       await evaluate(`(async()=>{
@@ -280,7 +280,7 @@ async function generate() {
         "preview.html",
         page(
           "نمونهٔ آزمون عمومی و پودمانی",
-          `<header class="demo-intro"><h1>نمونهٔ طرح سؤال و آزمون</h1><p>این سؤال‌ها تألیفی و صرفاً نمونهٔ آموزشی‌اند؛ سرفصل رسمی یا آزمون استانداردشده نیستند. هر درس ۸ سؤال، چهار نوع سؤال و بارم کل ۲۰ دارد. نمونه‌ها در پروفایل موقت مرورگر ثبت و دوباره خوانده شده‌اند؛ اطلاعات واقعی شما تغییر نکرده است.</p><nav class="demo-links" aria-label="دریافت نمونه‌ها"><a href="bank.json" download>فایل بانک سؤال JSON</a><a href="general-exam.pdf">PDF آزمون عمومی</a><a href="modular-exam.pdf">PDF آزمون پودمانی</a><a href="teacher-answers.html">پاسخ‌نامهٔ جداگانهٔ دبیر</a></nav></header>` +
+          `<header class="demo-intro"><h1>نمونهٔ طرح سؤال و آزمون</h1><p>این سؤال‌ها تألیفی و صرفاً نمونهٔ آموزشی‌اند؛ سرفصل رسمی یا آزمون استانداردشده نیستند. هر درس ۸ سؤال، چهار نوع سؤال و بارم کل ۲۰ دارد. نمونه‌ها در پروفایل موقت مرورگر ثبت و دوباره خوانده شده‌اند؛ اطلاعات واقعی شما تغییر نکرده است.</p><nav class="demo-links" aria-label="دریافت نمونه‌ها"><a href="Classyar-QuestionBank.json" download>فایل بانک سؤال JSON</a><a href="general-exam.pdf">PDF آزمون عمومی</a><a href="modular-exam.pdf">PDF آزمون پودمانی</a><a href="teacher-answers.html">پاسخ‌نامهٔ جداگانهٔ دبیر</a></nav></header>` +
             sheets
               .map(
                 (sheet, index) =>

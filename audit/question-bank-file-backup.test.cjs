@@ -17,6 +17,49 @@ for (const file of ["domain.js", "file-backup.js"])
     context,
   );
 const D = context.EduQuestionBank;
+for (const name of [
+  "Classyar-QuestionBank.json",
+  "Classyar-QuestionBank(1).json",
+  "Classyar-QuestionBank (12).json",
+])
+  test(
+    "bank accepts its exact stable prefix and numbered copies: " + name,
+    () => {
+      assert.doesNotThrow(() =>
+        context.EduQuestionBankFileBackup.assertFileName(name),
+      );
+    },
+  );
+for (const name of [
+  "Classyar-Classroom.json",
+  "bank.json",
+  "Classyar-QuestionBank-old.json",
+  "Classyar-QuestionBank(0).json",
+  "Classyar-QuestionBank(01).json",
+  "Classyar-QuestionBank(1).json.exe",
+  "xClassyar-QuestionBank.json",
+  undefined,
+])
+  test(
+    "bank rejects wrong name before reading, connecting or writing: " + name,
+    async () => {
+      assert.throws(() =>
+        context.EduQuestionBankFileBackup.assertFileName(name),
+      );
+      const f = fixture(),
+        wrong = f.file(name ?? "wrong.json");
+      let reads = 0;
+      wrong.handle.getFile = async () => {
+        reads++;
+        throw Error("must not read");
+      };
+      f.choose(wrong);
+      assert.equal(await f.service.choose(), false);
+      assert.equal(reads, 0);
+      assert.equal(wrong.handle.opens, 0);
+      assert.equal(f.config(), null);
+    },
+  );
 function fixture() {
   let bank = D.empty(),
     config = null,
@@ -42,7 +85,7 @@ function fixture() {
       config = value ? { ...value } : null;
     },
   };
-  function file(name = "bank.json", initial = "") {
+  function file(name = "Classyar-QuestionBank.json", initial = "") {
     let text = initial,
       permission = "granted",
       failWrite = false;
@@ -153,10 +196,7 @@ test("connection activates only after verified JSON write and persists a device-
   assert.equal(f.config().handle, f.target.handle);
   assert.ok(f.config().hash.length === 64 && f.config().savedAt);
   assert.equal(D.size(f.bank()).includes("file-backup"), false);
-  assert.match(
-    f.service.suggestedName(),
-    /^Classyar-QuestionBank-\d{4}-\d{2}-\d{2}\.json$/,
-  );
+  assert.match(f.service.suggestedName(), /^Classyar-QuestionBank\.json$/);
 });
 test("updates the same file from fresh committed data and avoids unchanged rewrites", async () => {
   const f = fixture();
@@ -177,7 +217,7 @@ test("never overwrites school, corrupt, foreign or populated different bank file
     JSON.stringify(D.empty()),
   ]) {
     const f = fixture(),
-      foreign = f.file("school.json", initial);
+      foreign = f.file("Classyar-QuestionBank(1).json", initial);
     f.choose(foreign);
     assert.equal(await f.service.choose(), false);
     assert.equal(foreign.text(), initial);
@@ -185,7 +225,7 @@ test("never overwrites school, corrupt, foreign or populated different bank file
     assert.equal(f.config(), null);
   }
   const f = fixture(),
-    old = f.file("previous.json", JSON.stringify(f.bank()));
+    old = f.file("Classyar-QuestionBank(2).json", JSON.stringify(f.bank()));
   f.change((b) => {
     b.questions = [];
   });
@@ -195,7 +235,7 @@ test("never overwrites school, corrupt, foreign or populated different bank file
 });
 test("a matching existing bank can reconnect without importing or changing source data", async () => {
   const f = fixture(),
-    old = f.file("existing.json", JSON.stringify(f.bank()));
+    old = f.file("Classyar-QuestionBank(3).json", JSON.stringify(f.bank()));
   f.choose(old);
   const source = JSON.stringify(f.bank());
   assert.equal(await f.service.choose(), true);
@@ -265,6 +305,28 @@ test("permission is requested only by explicit save; a declined permission prese
   assert.equal(await f.service.saveNow(), true);
   assert.equal(D.parse(f.target.text()).questions[0].text, "داده جدید");
 });
+test("permission renewal starts in the click turn and uses only the bank lock and repository", async () => {
+  const f = fixture();
+  await f.service.choose();
+  f.target.permission("prompt");
+  await f.service.sync();
+  const requests = f.target.handle.requests,
+    locks = [];
+  const lock = f.host.navigator.locks.request;
+  f.host.navigator.locks.request = (name, action) => {
+    locks.push(name);
+    return lock(name, action);
+  };
+  const operation = f.service.saveNow();
+  assert.equal(f.target.handle.requests, requests + 1);
+  assert.equal(await operation, true);
+  assert.ok(
+    locks.length > 0 &&
+      locks.every((name) => name === "ClassyarQuestionBank.file"),
+  );
+  assert.equal(JSON.parse(f.target.text()).format, "classyar-question-bank");
+  assert.equal(f.service.state().state, "active");
+});
 test("write or configuration failure never claims activation and atomic write failure preserves the prior file", async () => {
   const f = fixture();
   f.target.fail(true);
@@ -298,7 +360,7 @@ test("two windows serialize writes and stale manual actions cannot touch the rep
     true,
   ]);
   assert.equal(f.target.handle.writes, 2);
-  const next = f.file("new.json");
+  const next = f.file("Classyar-QuestionBank(4).json");
   f.choose(next);
   await peer.choose();
   const written = next.text();

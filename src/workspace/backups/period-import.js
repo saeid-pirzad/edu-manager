@@ -35,8 +35,7 @@ async function exportBackupV24() {
       period: { year: period.year, term: period.term },
       db: durable,
     },
-    name =
-      "مدرسه-" + period.year + "-" + period.term + "-" + todayISO() + ".json";
+    name = "Classyar-Classroom.json";
   let confirmed = false;
   if (window.showSaveFilePicker) {
     let writable;
@@ -50,6 +49,8 @@ async function exportBackupV24() {
           },
         ],
       });
+      assertClassroomFileName(handle.name);
+      await assertSingleFileDestination(await handle.getFile());
       writable = await handle.createWritable();
       await writable.write(JSON.stringify(content, null, 2));
       await writable.close();
@@ -214,6 +215,7 @@ async function handleImportV24(
   };
   try {
     ensureDestination();
+    assertClassroomFileName(file.name, { allowText: true });
     // Full exports grow with the installation. Do not make our own large
     // backups unrestorable; ask before allocating memory, without writing data.
     if (

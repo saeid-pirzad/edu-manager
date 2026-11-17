@@ -133,7 +133,7 @@ test("backup preparation shares exact JSON bytes as a Chromium-compatible TXT at
   await f.c.sharePreparedBackup(f.shareButton());
   const file = f.shares[0].files[0];
   assert.equal(file.type, "text/plain");
-  assert.match(file.name, /^KelasYar-Backup-.*\.txt$/);
+  assert.match(file.name, /^Classyar-Classroom\.txt$/);
   assert.deepEqual(JSON.parse(await file.text()), f.content);
   assert.equal(f.deliveries[0].kind, "share-handed-off");
   assert.equal(f.deliveries[0].exportedAt, f.content.exportedAt);

@@ -124,7 +124,7 @@ async function inspectWorkspaceTools() {
       actions.length === 4 &&
       tools.querySelectorAll(".question-bank-entry").length === 1 &&
       tools.querySelector(".question-bank-entry").textContent.trim() ===
-        "بانک سؤال" &&
+        "بانک سؤال و طراحی آزمون" &&
       typeof tools.querySelector(".question-bank-entry").onclick ===
         "function" &&
       !!tools.querySelector(".question-bank-entry svg") &&

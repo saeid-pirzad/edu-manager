@@ -333,10 +333,9 @@ module.exports = async function annualBackupRoundtrip() {
       },
     );
     directory = await navigator.storage.getDirectory();
-    handle = await directory.getFileHandle(
-      "annual-complete-backup-regression.json",
-      { create: true },
-    );
+    handle = await directory.getFileHandle("Classyar-Classroom.json", {
+      create: true,
+    });
     window.showSaveFilePicker = async () => handle;
     await EduV24.openBackups();
     click("single-file-choose");

@@ -2,7 +2,7 @@
 module.exports = async function singleFile() {
   const cases = [];
   const directory = await navigator.storage.getDirectory();
-  const namingKey = "EduManager.singleFileNames",
+  const namingKey = "EduManager.singleFileNames.v2",
     previousNames = localStorage.getItem(namingKey),
     originalPicker = window.showSaveFilePicker,
     originalConfirm = window.confirm,
@@ -60,22 +60,10 @@ module.exports = async function singleFile() {
     click("single-file-choose");
     click("single-file-choose");
     await waitForSaved();
-    const localJalaliParts = new Intl.DateTimeFormat(
-      "en-US-u-ca-persian-nu-latn",
-      { year: "numeric", month: "2-digit", day: "2-digit" },
-    ).formatToParts(new Date());
-    const datePart = (type) =>
-      localJalaliParts.find((part) => part.type === type).value;
-    const expectedBase =
-      "MySchool-" +
-      datePart("year") +
-      "-" +
-      datePart("month") +
-      "-" +
-      datePart("day");
+    const expectedBase = "Classyar-Classroom";
     cases.push({
       id: "SF00_JALALI_NAME",
-      name: "the real picker suggests MySchool with today's local Jalali date and a JSON extension",
+      name: "the real picker suggests the fixed classroom filename with a JSON extension",
       pass:
         pickerNames[0] === expectedBase + ".json" &&
         handle.name === expectedBase + ".json",
@@ -172,7 +160,7 @@ module.exports = async function singleFile() {
       const selected = await readConnection();
       return (
         selected?.savedAt &&
-        selected.handle.name === expectedBase + "-2.json" &&
+        selected.handle.name === expectedBase + "(1).json" &&
         document
           .getElementById("singleFileStatus")
           ?.textContent.startsWith("ذخیره شد:")
@@ -185,7 +173,7 @@ module.exports = async function singleFile() {
       id: "SF03_SECOND_CHOICE",
       name: "a second explicit choice on the same day selects the numbered second JSON file",
       pass:
-        pickerNames[1] === expectedBase + "-2.json" &&
+        pickerNames[1] === expectedBase + "(1).json" &&
         handle.name === pickerNames[1] &&
         secondChoiceSnapshot.format === "EduManager.FullBackup",
       observed: { suggestedName: pickerNames[1] },
@@ -277,7 +265,7 @@ module.exports = async function singleFile() {
       id: "SF03_CANCEL_PRESERVES",
       name: "canceling a new picker releases its suggested number and keeps both earlier files and the current connection",
       pass:
-        pickerNames[2] === expectedBase + "-3.json" &&
+        pickerNames[2] === expectedBase + "(2).json" &&
         (await readConnection()).connectionId === secondConnection &&
         (await (await firstHandle.getFile()).text()) === firstFileText &&
         (await (await secondHandle.getFile()).text()) === secondFileText &&
@@ -304,7 +292,7 @@ module.exports = async function singleFile() {
       id: "SF03_REJECT_OVERWRITE",
       name: "rejecting overwrite of an existing backup neither changes files nor replaces the active connection or consumes a number",
       pass:
-        pickerNames[3] === expectedBase + "-3.json" &&
+        pickerNames[3] === expectedBase + "(2).json" &&
         overwriteConfirmations === 1 &&
         (await readConnection()).connectionId === secondConnection &&
         (await (await firstHandle.getFile()).text()) === firstFileText &&
@@ -324,7 +312,7 @@ module.exports = async function singleFile() {
       const selected = await readConnection();
       return (
         selected?.savedAt &&
-        selected.handle.name === expectedBase + "-3.json" &&
+        selected.handle.name === expectedBase + "(2).json" &&
         document
           .getElementById("singleFileStatus")
           ?.textContent.startsWith("ذخیره شد:")
@@ -335,7 +323,7 @@ module.exports = async function singleFile() {
       id: "SF03_RECONNECT_NEXT_NAME",
       name: "a fresh choice after disconnect uses the next same-day number while canceled attempts and both previous files are preserved",
       pass:
-        pickerNames[4] === expectedBase + "-3.json" &&
+        pickerNames[4] === expectedBase + "(2).json" &&
         handle.name === pickerNames[4] &&
         (await (await firstHandle.getFile()).text()) === firstFileText &&
         (await (await secondHandle.getFile()).text()) === secondFileText,
@@ -386,9 +374,12 @@ module.exports = async function singleFile() {
     });
     frame.remove();
     frame = null;
-    failedHandle = await directory.getFileHandle("single-file-denied.json", {
-      create: true,
-    });
+    failedHandle = await directory.getFileHandle(
+      "Classyar-Classroom(99).json",
+      {
+        create: true,
+      },
+    );
     const prototype = Object.getPrototypeOf(failedHandle);
     const originalCreate = prototype.createWritable;
     const originalDownload = downloadLocalFile;
@@ -610,7 +601,9 @@ module.exports = async function singleFile() {
     for (const name of createdNames)
       await directory.removeEntry(name).catch(() => {});
     if (failedHandle)
-      await directory.removeEntry("single-file-denied.json").catch(() => {});
+      await directory
+        .removeEntry("Classyar-Classroom(99).json")
+        .catch(() => {});
   }
   return cases;
 };

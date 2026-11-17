@@ -413,6 +413,21 @@ async function restoreSingleFile() {
     failSingleFile(error);
   }
 }
+async function assertSingleFileDestination(file) {
+  if (typeof file.name === "string") assertClassroomFileName(file.name);
+  if (!file.size || typeof file.text !== "function") return;
+  const text = await file.text();
+  let value;
+  try {
+    value = JSON.parse(text.replace(/^\uFEFF/, ""));
+  } catch {
+    return;
+  }
+  if (value?.format === "classyar-question-bank")
+    throw Error(
+      "این فایل متعلق به بانک سؤال و طراحی آزمون است؛ برای ذخیرهٔ کلاس‌داری، فایل جداگانه‌ای انتخاب کنید. فایل تغییر نکرد.",
+    );
+}
 async function chooseSingleFile() {
   if (singleFileChoosing) return false;
   if (!ready || blocked || resetBusy || connectionRetired)
@@ -439,9 +454,9 @@ async function chooseSingleFile() {
       if (error.name === "AbortError") return;
       return failSingleFile(error);
     }
-    if (!/\.json$/i.test(handle.name))
-      throw Error("فقط فایل JSON انتخاب کنید.");
+    assertClassroomFileName(handle.name);
     const file = await handle.getFile();
+    await assertSingleFileDestination(file);
     if (
       file.size &&
       !confirm(
@@ -553,6 +568,7 @@ function syncSingleFile({ force = true, acknowledged = false } = {}) {
     let stream;
     try {
       if (!(await singleFileCurrent(target, { acknowledged }))) return false;
+      assertClassroomFileName(target.handle.name);
       if (!force) {
         const signature = await readBackupSourceSignature();
         if (
@@ -560,6 +576,8 @@ function syncSingleFile({ force = true, acknowledged = false } = {}) {
           singleFileSavedSource.signature === signature
         ) {
           const current = await target.handle.getFile();
+          if (typeof current.name === "string")
+            assertClassroomFileName(current.name);
           if (
             current.lastModified !== target.modified ||
             current.size !== target.size
@@ -587,7 +605,9 @@ function syncSingleFile({ force = true, acknowledged = false } = {}) {
         singleFile !== target
       )
         return false;
+      assertClassroomFileName(target.handle.name);
       const file = await target.handle.getFile();
+      await assertSingleFileDestination(file);
       if (file.lastModified !== target.modified || file.size !== target.size)
         throw Error(
           "فایل بیرون از این اتصال تغییر کرده؛ برای جلوگیری از بازنویسی، دوباره آن را انتخاب کنید.",

@@ -154,7 +154,10 @@ module.exports = async function importReplacement() {
       await seed(oldInstallation);
       const before = await EduV24.snapshotInstallation(),
         oldIds = new Set(before.stores.catalog.map((period) => period.id));
-      const hasPreview = await choose(file, "restore-" + format + ".json");
+      const hasPreview = await choose(
+        file,
+        "Classyar-Classroom(" + (format === "FULL" ? 2 : 1) + ").json",
+      );
       check(
         prefix + "01",
         "actual file-input change opens a complete replacement preview for " +
@@ -183,7 +186,10 @@ module.exports = async function importReplacement() {
         stored(await EduV24.snapshotInstallation()) === stored(before) &&
           document.getElementById("modal").classList.contains("hidden"),
       );
-      await choose(file, "restore-" + format + ".json");
+      await choose(
+        file,
+        "Classyar-Classroom(" + (format === "FULL" ? 2 : 1) + ").json",
+      );
       document.querySelector('[data-workspace-action="restore-full"]').click();
       await wait(() => document.getElementById("operationError")?.textContent);
       check(
@@ -231,7 +237,10 @@ module.exports = async function importReplacement() {
           " replacement creates no operation backup of overwritten terms",
         !backups.some((backup) => backup.full),
       );
-      await choose(file, "restore-" + format + ".json");
+      await choose(
+        file,
+        "Classyar-Classroom(" + (format === "FULL" ? 2 : 1) + ").json",
+      );
       await approve();
       after = await EduV24.snapshotInstallation();
       restored = EduV24.validateFullBackup(after);
@@ -298,10 +307,7 @@ module.exports = async function importReplacement() {
       expectedDuplicates = JSON.stringify(duplicateProjection(duplicateFile));
     await seed(oldInstallation);
     const beforeDuplicate = await EduV24.snapshotInstallation(),
-      duplicatePreview = await choose(
-        duplicateFile,
-        "saved-with-two-first-terms.json",
-      ),
+      duplicatePreview = await choose(duplicateFile, "Classyar-Classroom.json"),
       displayedPeriods = [
         ...document.querySelectorAll(
           "#modal:not(.hidden) .full-restore-periods li",
@@ -355,7 +361,7 @@ module.exports = async function importReplacement() {
       padding = new Blob([" ".repeat(1024 * 1024)]),
       largeFile = new File(
         [JSON.stringify(fullFile), ...Array(101).fill(padding)],
-        "large-complete-backup.json",
+        "Classyar-Classroom.json",
         { type: "application/json" },
       ),
       originalConfirm = window.confirm;
@@ -414,7 +420,10 @@ module.exports = async function importReplacement() {
 
     const beforeInvalid = await EduV24.snapshotInstallation();
     closeModal();
-    const invalidPreview = await choose("{invalid-json", "broken-backup.json");
+    const invalidPreview = await choose(
+      "{invalid-json",
+      "Classyar-Classroom.json",
+    );
     check(
       "IMPORT_REPLACE_INVALID",
       "invalid file-input JSON never creates or replaces a term",

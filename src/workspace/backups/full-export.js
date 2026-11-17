@@ -303,7 +303,7 @@ async function snapshotInstallation({
 async function exportFullBackup() {
   const content = await snapshotInstallation();
   validateFullBackup(content);
-  downloadJSON(content, "پشتیبان-کامل-" + todayISO() + ".json");
+  downloadJSON(content, "Classyar-Classroom.json");
   recordFullBackupDelivery({
     kind: "download-requested",
     exportedAt: content.exportedAt,

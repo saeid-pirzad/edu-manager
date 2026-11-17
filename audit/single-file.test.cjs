@@ -21,7 +21,7 @@ function fixture() {
     pickerCalls = [],
     nameStorage = new Map();
   const handle = {
-    name: "EduManager-data.json",
+    name: "Classyar-Classroom.json",
     getFile: async () => ({ size: contents.length, lastModified: modified }),
     queryPermission: async () => "granted",
     requestPermission: async () => "granted",
@@ -209,6 +209,72 @@ function fixture() {
     },
   };
 }
+test("classroom rejects another feature's filename before reading, confirming or writing", async () => {
+  const f = fixture();
+  let reads = 0,
+    confirms = 0;
+  f.handle.name = "Classyar-QuestionBank.json";
+  f.handle.getFile = async () => {
+    reads++;
+    throw Error("must not read");
+  };
+  f.context.confirm = () => {
+    confirms++;
+    return true;
+  };
+  await assert.rejects(f.context.chooseSingleFile(), /Classyar-Classroom/);
+  assert.equal(reads, 0);
+  assert.equal(confirms, 0);
+  assert.equal(f.writes, 0);
+  assert.equal(f.getStored(), null);
+});
+test("classroom file selection rejects a question-bank backup before confirmation or writes", async () => {
+  const f = fixture(),
+    bank =
+      "\uFEFF" +
+      JSON.stringify({
+        format: "classyar-question-bank",
+        version: 1,
+        courses: [],
+        units: [],
+        questions: [],
+        exams: [],
+        revision: 0,
+      });
+  f.handle.getFile = async () => ({
+    size: bank.length,
+    lastModified: 1,
+    text: async () => bank,
+  });
+  let confirms = 0;
+  f.context.confirm = () => {
+    confirms++;
+    return true;
+  };
+  await assert.rejects(f.context.chooseSingleFile(), /بانک سؤال/);
+  assert.equal(confirms, 0);
+  assert.equal(f.writes, 0);
+  assert.equal(f.getStored(), null);
+  assert.equal(f.contents, "");
+});
+test("an existing classroom connection cannot overwrite a question-bank file even with matching metadata and explicit permission", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  const stored = f.getStored(),
+    before = f.contents,
+    writes = f.writes;
+  const bank = JSON.stringify({ format: "classyar-question-bank", version: 1 });
+  f.handle.getFile = async () => ({
+    size: stored.size,
+    lastModified: stored.modified,
+    text: async () => bank,
+  });
+  f.context.sourceValue++;
+  assert.equal(await f.context.syncSingleFile(), false);
+  assert.equal(await f.context.resumeSingleFile(), false);
+  assert.equal(f.writes, writes);
+  assert.equal(f.contents, before);
+});
 test("file warning stays visible on failure and hides after recovery without returning to tools", () => {
   const f = fixture();
   const panel = {
@@ -314,7 +380,7 @@ test("a restored file connection stays suspended on reopen until the named overw
     return false;
   };
   assert.equal(await f.context.resumeSingleFile(), false);
-  assert.match(warning, /EduManager-data\.json/);
+  assert.match(warning, /Classyar-Classroom\.json/);
   assert.equal(f.contents, previous);
   assert.equal(f.getStored().suspension, "restore");
   f.context.confirm = () => true;
@@ -1198,12 +1264,9 @@ test("automatic idle checks still reject a replaced installation before reading 
   assert.match(vm.runInContext("singleFileMessage", f.context), /جایگزین/);
 });
 
-test("file selection proposes a local Jalali dated name directly in the click before any await", async () => {
+test("file selection proposes the stable classroom name directly in the click before any await", async () => {
   const f = fixture(),
-    expected = vm.runInContext(
-      "(()=>{const now=new Date();return 'MySchool-'+gregorianToJalali(now.getFullYear(),now.getMonth()+1,now.getDate()).map(v=>String(v).padStart(2,'0')).join('-')+'.json'})()",
-      f.context,
-    ),
+    expected = "Classyar-Classroom.json",
     choosing = f.context.chooseSingleFile();
   assert.equal(f.pickerCalls.length, 1, "picker cannot wait for a snapshot");
   assert.equal(f.pickerCalls[0].suggestedName, expected);
@@ -1226,7 +1289,7 @@ test("automatic writes and save-now retain the same file and do not consume new 
   await f.context.chooseSingleFile();
   assert.equal(
     f.pickerCalls[1].suggestedName,
-    f.pickerCalls[0].suggestedName.replace(/\.json$/, "-2.json"),
+    f.pickerCalls[0].suggestedName.replace(/\.json$/, "(1).json"),
   );
 });
 
@@ -1245,7 +1308,7 @@ test("choosing a fresh numbered file preserves the earlier file and only updates
   assert.equal(await f.context.chooseSingleFile(), true);
   assert.equal(
     proposed,
-    f.pickerCalls[0].suggestedName.replace(/\.json$/, "-2.json"),
+    f.pickerCalls[0].suggestedName.replace(/\.json$/, "(1).json"),
   );
   assert.equal(f.contents, previous);
   assert.equal(f.writes, 1);
@@ -1328,8 +1391,8 @@ test("a failed first write consumes the created file's number without touching t
   assert.equal(f.contents, previous);
   assert.equal(next.writes, 0);
   assert.equal(await f.context.chooseSingleFile(), true);
-  assert.match(proposals[0], /-2\.json$/);
-  assert.match(proposals[1], /-3\.json$/);
+  assert.match(proposals[0], /\(1\)\.json$/);
+  assert.match(proposals[1], /\(2\)\.json$/);
   assert.equal(f.contents, previous);
 });
 
@@ -1350,7 +1413,7 @@ test("repeated clicks cannot start concurrent pickers or reserve unused duplicat
   releasePicker(f.handle);
   assert.equal(await first, true);
   f.context.window.showSaveFilePicker = async (options) => {
-    assert.match(options.suggestedName, /-2\.json$/);
+    assert.match(options.suggestedName, /\(1\)\.json$/);
     return f.handle;
   };
   assert.equal(await f.context.chooseSingleFile(), true);
@@ -1369,5 +1432,5 @@ test("unavailable filename metadata never prevents an otherwise valid automatic 
   assert.equal(await f.context.chooseSingleFile(), true);
   await f.context.chooseSingleFile();
   assert.equal(f.writes, 2);
-  assert.match(f.pickerCalls[1].suggestedName, /-2\.json$/);
+  assert.match(f.pickerCalls[1].suggestedName, /\(1\)\.json$/);
 });

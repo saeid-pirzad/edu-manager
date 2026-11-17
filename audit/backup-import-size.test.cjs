@@ -15,7 +15,7 @@ function fixture({ size, accepted = true, text, onConfirm } = {}) {
     value: "chosen-file",
     files: [
       {
-        name: "full-backup.json",
+        name: "Classyar-Classroom.json",
         size,
         async text() {
           reads++;
@@ -44,6 +44,13 @@ function fixture({ size, accepted = true, text, onConfirm } = {}) {
     legacyBackupReplacement: (value) => ({ ...full, legacy: value }),
     handleError: (error) => errors.push(error.message),
   });
+  vm.runInContext(
+    fs.readFileSync(
+      path.join(__dirname, "../src/workspace/backups/single-file-name.js"),
+      "utf8",
+    ),
+    c,
+  );
   vm.runInContext(
     fs.readFileSync(
       path.join(__dirname, "../src/workspace/backups/period-import.js"),

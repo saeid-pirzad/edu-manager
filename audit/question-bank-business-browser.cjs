@@ -74,13 +74,39 @@ main({
         submit(){document.querySelector('.qb-form').requestSubmit();}
       };
       await EduQuestionBankUI.open();__qbBusiness.chooseCourse('business-a');
-      __qbBusiness.click('طرح آزمون');
+      __qbBusiness.click('طراحی آزمون');
     })()`);
+    await evaluate(
+      `(()=>{const n=document.querySelector('.qb-count-field input');n.focus();n.click();})()`,
+    );
+    await cdp("Input.insertText", { text: "1" });
     check(
-      "zero-question aggregate exposes matching validity and aria state",
+      "typing a new count replaces the selected default zero",
+      await evaluate(
+        `document.querySelector('.qb-count-field input').value==='1'`,
+      ),
+    );
+    await evaluate(`(async()=>{
+      window.__targetBefore=JSON.stringify(await EduQuestionBankRepository.read());
+      __qbBusiness.click('انتخاب همه');
+      for(const label of ['چهارگزینه‌ای','جای‌خالی','تشریحی','صحیح / غلط'])__qbBusiness.fill('تعداد '+label,'1');
+      __qbBusiness.fill('نمرهٔ کل آزمون','20');__qbBusiness.fill('عنوان آزمون','هدف ناممکن');__qbBusiness.submit();
+    })()`);
+    await waitFor(`!document.querySelector('.qb-message').hidden`);
+    check(
+      "an impossible target score shows an error and saves no partial exam",
+      await evaluate(
+        `(async()=>document.querySelector('.qb-message').textContent.includes('ترکیبی')&&JSON.stringify(await EduQuestionBankRepository.read())===__targetBefore)()`,
+      ),
+    );
+    await evaluate(
+      `(async()=>{__qbBusiness.click('بستن');__qbBusiness.confirm();await EduQuestionBankUI.open();__qbBusiness.chooseCourse('business-a');__qbBusiness.click('طراحی آزمون');})()`,
+    );
+    check(
+      "empty composition does not mark the first type red and cannot create an exam",
       await evaluate(`(()=>{
         const input=document.querySelector('.qb-count-field input');
-        return !input.validity.valid&&input.getAttribute('aria-invalid')==='true';
+        return input.validity.valid&&input.getAttribute('aria-invalid')==='false'&&!document.querySelector('.qb-target-score input').validity.valid;
       })()`),
     );
     await evaluate(
@@ -103,7 +129,7 @@ main({
       })()`),
     );
     await evaluate(
-      `__qbBusiness.chooseCourse('business-b');__qbBusiness.confirm();__qbBusiness.click('سؤال‌ها');__qbBusiness.chooseCourse('business-b');__qbBusiness.click('ویرایش درس');`,
+      `__qbBusiness.chooseCourse('business-b');__qbBusiness.confirm();__qbBusiness.click('بانک سؤال');__qbBusiness.chooseCourse('business-b');__qbBusiness.click('ویرایش درس');`,
     );
     check(
       "an empty course can correct its structure before sections exist",
@@ -304,7 +330,7 @@ main({
       })()`),
     );
     await evaluate(
-      `__qbBusiness.click('آزمون‌ها');__qbBusiness.click('مشاهده آزمون')`,
+      `__qbBusiness.click('آزمون‌های من');__qbBusiness.click('مشاهده آزمون')`,
     );
     check(
       "an archived four-type exam remains printable after deleting its source course",

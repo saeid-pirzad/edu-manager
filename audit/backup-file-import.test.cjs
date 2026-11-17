@@ -24,6 +24,13 @@ function fixture() {
   });
   vm.runInContext(
     fs.readFileSync(
+      path.join(__dirname, "../src/workspace/backups/single-file-name.js"),
+      "utf8",
+    ),
+    c,
+  );
+  vm.runInContext(
+    fs.readFileSync(
       path.join(__dirname, "../src/workspace/backups/period-import.js"),
       "utf8",
     ),
@@ -40,7 +47,7 @@ function fixture() {
   ) => ({
     target: {
       value: "selected",
-      files: [{ size: 100, name: "backup.json", text }],
+      files: [{ size: 100, name: "Classyar-Classroom.json", text }],
     },
   });
   return { c, effects, errors, event, defaultImport };
@@ -67,6 +74,21 @@ function recoveryFixture() {
   });
   return f;
 }
+
+test("wrong filename is rejected before reading or restoring any classroom data", async () => {
+  const f = fixture();
+  let reads = 0;
+  const e = f.event(async () => {
+    reads++;
+    return "{}";
+  });
+  e.target.files[0].name = "Classyar-QuestionBank.json";
+  await f.c.handleImportV24(e);
+  assert.equal(reads, 0);
+  assert.deepEqual(f.effects, []);
+  assert.equal(f.errors.length, 1);
+  assert.match(f.errors[0].message, /Classyar-Classroom/);
+});
 
 test("initial recovery publishes workspace only after successful data read", async () => {
   const f = recoveryFixture();
@@ -284,7 +306,7 @@ for (const initialReady of [true, false])
       };
       f.c.previewFullBackup = (value, details) => {
         assert.equal(value, converted);
-        assert.equal(details.sourceName, "backup.json");
+        assert.equal(details.sourceName, "Classyar-Classroom.json");
         assert.equal(details.legacy, true);
         f.effects.push("full");
       };

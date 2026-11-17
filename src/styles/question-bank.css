@@ -78,6 +78,10 @@
 }
 .qb-storage-state {
   min-width: 0;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 11px;
   line-height: 1.8;
   color: var(--theme-muted);
@@ -102,6 +106,16 @@
 }
 .qb-storage-bar[data-state="active"] .qb-storage-state {
   color: var(--status-success);
+}
+:is(#app, .qb-dialog)
+  .qb-storage-bar[data-state="permission"]
+  > button.ui-button.ui-button-flat {
+  background: var(--status-warning-soft) !important;
+  border-color: var(--status-warning-line) !important;
+  color: var(--status-warning) !important;
+}
+.qb-storage-bar[data-state="permission"] .qb-storage-state::before {
+  background: var(--status-warning);
 }
 .qb-storage-bar > button {
   min-width: 0;
@@ -1920,10 +1934,9 @@
 }
 @media screen and (max-width: 360px) {
   .qb-tabs {
-    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.15fr) repeat(
-        2,
-        minmax(0, 0.95fr)
-      );
+    grid-template-columns:
+      minmax(0, 0.9fr) minmax(0, 1.15fr) minmax(0, 1.2fr)
+      minmax(0, 0.8fr);
   }
   .qb-file-actions {
     grid-template-columns: minmax(0, 1fr);
@@ -1980,11 +1993,21 @@
   .qb-storage-state {
     font-size: 10px;
   }
-  :is(#app, .qb-dialog) .qb-storage-bar > button.ui-button {
-    height: 40px;
-    min-height: 40px !important;
-    padding: 3px 6px !important;
+  :is(#app, .qb-dialog) .qb-storage-bar > button.ui-button.ui-button-flat {
+    height: 36px;
+    min-height: 36px !important;
+    padding: 3px 7px !important;
     font-size: 10px;
+    gap: 4px;
+    border-radius: 8px;
+    background: var(--status-leave) !important;
+    border-color: var(--status-leave) !important;
+    color: #fff !important;
+  }
+  :is(#app, .qb-dialog) .qb-storage-bar > button.ui-button > svg {
+    width: 14px;
+    height: 14px;
+    flex-basis: 14px;
   }
   .qb-dialog > .modal-body {
     padding: 10px;
@@ -2208,17 +2231,76 @@
     font-size: 10px;
     color: var(--theme-muted);
   }
+  .qb-builder .qb-builder-units .course-field .qb-unit-count {
+    flex-shrink: 0;
+    padding: 1px 7px;
+    border: 1px solid var(--status-info-line);
+    border-radius: 20px;
+    background: var(--status-info-soft);
+    color: var(--status-info);
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.8;
+    font-variant-numeric: tabular-nums;
+  }
   .qb-builder .qb-selection-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 3px;
+    border: 1px solid var(--theme-line);
+    border-radius: 10px;
+    background: var(--theme-surface-subtle);
     margin-top: 8px;
+  }
+  :is(#app, .qb-dialog) .qb-body .qb-selection-actions > button.ui-button {
+    border: 0;
+    border-radius: 7px;
+    background: transparent !important;
+    color: var(--theme-muted) !important;
+    box-shadow: none;
+    font-size: 11px;
+    gap: 5px;
+  }
+  :is(#app, .qb-dialog)
+    .qb-body
+    .qb-selection-actions
+    > button.ui-button:first-child {
+    background: var(--status-info-soft) !important;
+    color: var(--status-info) !important;
+  }
+  :is(#app, .qb-dialog)
+    .qb-body
+    .qb-selection-actions
+    > button.ui-button:not(:disabled):hover {
+    background: var(--theme-surface-muted) !important;
+    color: var(--theme-ink) !important;
+  }
+  .qb-selection-actions > button:disabled {
+    opacity: 0.4;
   }
   .qb-composition-hint {
     margin: 0 0 10px;
     color: var(--theme-muted);
     font-size: 11px;
     line-height: 1.8;
+  }
+  .qb-builder .qb-target-score {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(80px, 110px);
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding: 8px 10px;
+    border: 1px solid var(--status-info-line);
+    border-radius: 9px;
+    color: var(--status-info);
+    background: var(--status-info-soft);
+    font-size: 12px;
+  }
+  .qb-target-score input {
+    min-width: 0;
+    text-align: center;
   }
   .qb-body .qb-builder .qb-count-grid {
     gap: 8px;
@@ -2435,6 +2517,100 @@
     gap: 8px;
     padding: 6px;
     font-size: 11px;
+  }
+}
+@media screen and (max-width: 700px) {
+  [data-keyboard-open="true"] .qb-dialog:has(.qb-form) {
+    inset-block-start: calc(var(--app-viewport-top, 0px) + 6px);
+    inset-block-end: auto;
+    margin-block: 0;
+    max-height: calc(var(--app-viewport, 100dvh) - 12px) !important;
+  }
+  [data-keyboard-open="true"] .qb-dialog:has(.qb-form) > .modal-header {
+    padding: 3px 10px;
+  }
+  [data-keyboard-open="true"] .qb-dialog:has(.qb-form) > .qb-storage-bar,
+  [data-keyboard-open="true"] .qb-dialog:has(.qb-form) #qb-title > svg,
+  [data-keyboard-open="true"] .qb-body:has(.qb-form) > .qb-tabs,
+  [data-keyboard-open="true"] .qb-builder-intro {
+    display: none;
+  }
+  [data-keyboard-open="true"] .qb-dialog:has(.qb-form) > .qb-body {
+    padding: 8px;
+  }
+  [data-keyboard-open="true"] .qb-form > .record-editor-actions {
+    padding-block: 6px 0;
+  }
+}
+@media screen and (max-width: 700px) {
+  .qb-body .qb-builder > .qb-form-fields {
+    gap: 10px;
+  }
+  .qb-body .qb-builder .qb-form-fields > fieldset {
+    padding: 8px;
+  }
+  .qb-builder .qb-form-fields > fieldset > legend {
+    font-size: 11px;
+    padding-inline: 4px;
+  }
+  .qb-builder .qb-selection-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    box-sizing: border-box;
+    gap: 8px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+  :is(#app, .qb-dialog) .qb-body .qb-selection-actions > button.ui-button {
+    border: 1px solid var(--theme-line);
+    border-radius: 8px;
+    background: var(--theme-surface) !important;
+    gap: 6px;
+    padding-inline: 6px !important;
+    font-size: 10px;
+    white-space: nowrap;
+  }
+  :is(#app, .qb-dialog)
+    .qb-body
+    .qb-selection-actions
+    > button.ui-button:first-child {
+    border-color: var(--status-info-line) !important;
+    background: var(--status-info-soft) !important;
+    color: var(--status-info) !important;
+  }
+  .qb-builder .qb-composition-hint {
+    font-size: 10px;
+    margin-bottom: 6px;
+    line-height: 1.7;
+  }
+  .qb-dialog .qb-body .qb-builder .qb-target-score {
+    padding: 5px 7px;
+    margin-bottom: 8px;
+    font-size: 11px;
+    gap: 6px;
+  }
+  .qb-body .qb-builder .qb-count-grid {
+    gap: 6px;
+  }
+  .qb-body .qb-builder .qb-count-field {
+    padding: 6px;
+    grid-template-rows: minmax(20px, auto) 40px;
+    gap: 4px;
+  }
+  :is(#app, .qb-dialog) .qb-body .qb-builder input:not([type="checkbox"]) {
+    height: 40px !important;
+    min-height: 40px !important;
+    padding: 5px 8px !important;
+    font-size: 16px;
+  }
+  .qb-body .qb-builder .qb-form-fields > .qb-exam-details {
+    gap: 8px;
+  }
+  .qb-dialog .qb-body .qb-exam-details > .course-field {
+    font-size: 10px;
+    gap: 3px;
   }
 }
 @media print {

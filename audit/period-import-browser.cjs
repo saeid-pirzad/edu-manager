@@ -31,7 +31,7 @@ async function periodImportRace() {
     await EduV24.test.importLegacyBackup({
       target: {
         files: [
-          new File([JSON.stringify(backup)], "synthetic-period.json", {
+          new File([JSON.stringify(backup)], "Classyar-Classroom.json", {
             type: "application/json",
           }),
         ],
