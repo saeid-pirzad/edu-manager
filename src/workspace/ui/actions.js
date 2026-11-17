@@ -79,6 +79,7 @@ function installWorkspaceActions() {
     ["download-share-backup", () => downloadPreparedBackup()],
     ["single-file-choose", () => chooseSingleFile()],
     ["single-file-save", () => resumeSingleFile()],
+    ["question-bank-file-permission", () => renewQuestionBankFilePermission()],
     ["single-file-stop", () => disableSingleFile()],
     ["restore-full", () => restoreFullBackup()],
     ["confirm-import", () => confirmImport()],
@@ -134,5 +135,9 @@ function installWorkspaceActions() {
     if (!allowed(form)) return;
     const handler = submissions.get(form.dataset.workspaceSubmit);
     if (handler) run(handler, form);
+  });
+  globalThis.addEventListener?.("edu-question-bank-file-status", () => {
+    paintQuestionBankFileNotice();
+    globalThis.EduQuestionBankUI?.updateLayout?.();
   });
 }

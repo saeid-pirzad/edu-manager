@@ -184,7 +184,7 @@ main({
         const guarded=confirmation?.parentElement===page&&confirmation.tagName==='SECTION'
           &&confirmation.getAttribute('role')==='region'&&!confirmation.hasAttribute('aria-modal')
           &&!document.querySelector('dialog:modal')&&state.view==='question-bank'
-          &&page.querySelector('.qb-body').inert&&page.querySelector('.qb-storage-bar').inert
+          &&page.querySelector('.qb-body').inert&&!page.querySelector('.qb-storage-bar')
           &&document.activeElement===cancel;
         render();render();goSchools();
         const retained=document.querySelector('.qb-confirm')===confirmation
@@ -193,7 +193,7 @@ main({
         cancel.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));
         return guarded&&!document.querySelector('.qb-confirm')&&state.view==='question-bank'
           &&retained&&document.querySelector('.qb-page')===page&&title.value===value&&title.isConnected
-          &&!page.querySelector('.qb-body').inert&&!page.querySelector('.qb-storage-bar').inert
+          &&!page.querySelector('.qb-body').inert&&!page.querySelector('.qb-storage-bar')
           &&document.activeElement===title&&title.selectionStart===3&&title.selectionEnd===8
           &&JSON.stringify(await EduQuestionBankRepository.read())===before;
       })()`),

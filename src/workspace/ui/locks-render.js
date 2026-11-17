@@ -291,6 +291,7 @@ function renderV24() {
     // Connection details live in backups; only failures need a page notice.
     panel.append(fileStatus);
   }
+  paintQuestionBankFileNotice();
   if (db.migrationWarnings?.length) {
     const info = document.createElement("div");
     info.className = "card";

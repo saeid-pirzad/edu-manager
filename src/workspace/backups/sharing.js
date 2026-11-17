@@ -27,12 +27,12 @@ function checkBackupShare(session) {
 async function openBackupShare() {
   const ensureCurrent = preserveAsyncTarget();
   const opened = showModal(
-    "ارسال پشتیبان کامل",
+    "ارسال پشتیبان مدرسه",
     '<section class="backup-share" id="backupSharePanel"><header class="backup-share-heading"><span aria-hidden="true">' +
       EduIcons.html("shield") +
-      "</span><div><h4>همه اطلاعات سیستم، در یک فایل</h4><p>ابتدا فایل آماده می‌شود؛ سپس روش ارسال و گیرنده را خودتان انتخاب می‌کنید.</p></div></header>" +
+      "</span><div><h4>اطلاعات مدرسه، در یک فایل</h4><p>ابتدا فایل آماده می‌شود؛ سپس روش ارسال و گیرنده را خودتان انتخاب می‌کنید.</p></div></header>" +
       '<div class="backup-share-file" data-backup-share-file hidden></div><p class="backup-share-status" data-backup-share-status role="status" aria-live="polite">در حال آماده‌سازی و بررسی پشتیبان کامل…</p>' +
-      '<p class="backup-share-note">این فایل کل اطلاعات سیستم، هر دو ترم و سوابق قدیمیِ موجود را دارد؛ آن را فقط برای گیرنده مورداعتماد بفرستید.</p>' +
+      '<p class="backup-share-note">این فایل اطلاعات مدرسه، هر دو ترم و سوابق قدیمیِ موجود را دارد؛ بانک سؤال و آزمون‌ها در فایل جدا هستند. آن را فقط برای گیرنده مورداعتماد بفرستید.</p>' +
       '<div class="backup-share-actions"><button type="button" data-workspace-action="share-backup-file" disabled hidden>انتخاب برنامه و ارسال فایل</button><button type="button" class="ghost" data-workspace-action="download-share-backup" disabled hidden>دریافت فایل برای ارسال دستی</button><button type="button" class="ghost" data-workspace-action="prepare-share-backup" hidden>آماده‌سازی دوباره</button><button type="button" class="ghost" data-workspace-action="close">بستن</button></div></section>',
   );
   if (opened === false) return false;
@@ -162,7 +162,7 @@ async function sharePreparedBackup(button) {
     // No await before share: the second, explicit click preserves user activation.
     await navigator.share({
       files: [session.file],
-      title: "پشتیبان کامل کلاس‌یار",
+      title: "پشتیبان مدرسهٔ کلاس‌یار",
     });
     recordFullBackupDelivery({
       kind: "share-handed-off",

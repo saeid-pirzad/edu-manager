@@ -318,29 +318,9 @@
     title.insertAdjacentHTML("afterbegin", root.EduIcons.html("book"));
     pageRoot.setAttribute("aria-labelledby", title.id);
     message.setAttribute("role", "status");
-    const storage = el("div", undefined, "qb-storage-bar");
-    const storageState = el("span", "ذخیره در مرورگر", "qb-storage-state");
-    storageState.setAttribute("role", "status");
     let persistentMessage = "",
       persistentMessageOrigin = "",
       transientMessage = "";
-    const storageAction = button(
-      "فعال‌سازی خودکار",
-      () => {
-        if (F.state().state === "permission" && F.supported())
-          saveBankFile().catch(error);
-        else if (!F.state().connected && F.supported()) F.choose().catch(error);
-        else
-          discard(() => {
-            tab = "backup";
-            render();
-          });
-      },
-      storage,
-    );
-    storage.prepend(storageState);
-    storageAction.insertAdjacentHTML("afterbegin", root.EduIcons.html("save"));
-    storageAction.dataset.uiTone = "settings";
     const tabScopes = savedView?.tabScopes || {
       questions: { courseId: "", unitId: "" },
       builder: { courseId: null, unitId: "" },
@@ -378,26 +358,6 @@
     };
     const unsubscribeStorage = F.subscribe((state) => {
       if (!alive) return;
-      storage.dataset.state = state.state;
-      const attention = ["error", "paused", "permission"].includes(state.state);
-      storageState.textContent = attention
-        ? state.message
-        : state.state === "active"
-          ? "فایل خودکار فعال است"
-          : state.state === "busy"
-            ? "در حال ذخیرهٔ فایل…"
-            : state.connected
-              ? "ذخیرهٔ فایل نیاز به بررسی دارد"
-              : "ذخیره در مرورگر";
-      storageState.title = state.message;
-      storageState.setAttribute("role", attention ? "alert" : "status");
-      storageAction.querySelector(".ui-button-label").textContent =
-        state.state === "permission" && F.supported()
-          ? "اجازه مجدد"
-          : state.connected || !F.supported()
-            ? "تنظیمات ذخیره"
-            : "فعال‌سازی خودکار";
-      storageAction.disabled = state.state === "busy";
       if (
         persistentMessageOrigin === "file" &&
         ["active", "inactive"].includes(state.state)
@@ -442,14 +402,12 @@
       const selectionEnd = previous?.selectionEnd;
       const selectionDirection = previous?.selectionDirection;
       const contentWasInert = content.inert;
-      const storageWasInert = storage.inert;
       const cancel = (accepted = false) => {
         if (confirmation !== box) return false;
         box.remove();
         confirmation = null;
         cancelConfirmation = () => {};
         content.inert = contentWasInert;
-        storage.inert = storageWasInert;
         if (alive && previous?.isConnected) {
           previous.focus({ preventScroll: true });
           if (selection !== null && selection !== undefined)
@@ -489,7 +447,6 @@
         cancel();
       });
       content.inert = true;
-      storage.inert = true;
       pageRoot.insertBefore(box, message);
       confirmation = box;
       cancelButton.focus({ preventScroll: true });
@@ -640,7 +597,7 @@
       return true;
     }
     header.append(title);
-    pageRoot.append(header, storage, message, content);
+    pageRoot.append(header, message, content);
     host.append(pageRoot);
     let editingFrame,
       keyboardScroll = null;
@@ -811,10 +768,6 @@
         persistentMessageOrigin = "";
         transientMessage = "";
         showMessage();
-        storageState.textContent =
-          fileState.state === "active"
-            ? "در مرورگر ذخیره شد؛ فایل در حال به‌روزرسانی"
-            : "در مرورگر ذخیره شد";
         return true;
       } catch (e) {
         error(e, true);
@@ -1827,6 +1780,11 @@
           "p",
           "نام فایل: Classyar-QuestionBank.json؛ نسخه‌های شماره‌دار مانند (1) هم پذیرفته می‌شوند. فایل‌های قدیمی را ابتدا تغییر نام دهید. فقط تغییرات ثبت‌شده در پشتیبان قرار می‌گیرند.",
         ),
+        el(
+          "p",
+          "این فایل فقط درس‌ها، سؤال‌ها و آزمون‌های بانک سؤال را دارد؛ اطلاعات مدرسه جداست. دریافت دستی و ذخیرهٔ خودکار، دو روش تهیهٔ همین نوع فایل‌اند؛ هر دو از گزینهٔ بازیابی بانک قابل استفاده‌اند.",
+          "qb-help",
+        ),
       );
       parent.append(details);
       const manual = el("section", undefined, "qb-backup-manual");
@@ -1907,6 +1865,7 @@
       details.append(automatic);
       const choose = button("انتخاب فایل", () => F.choose(), actions);
       const save = button("ذخیره اکنون", () => saveBankFile(), actions);
+      save.classList.add("qb-file-save");
       const stop = button("قطع اتصال", () => F.stop().catch(error), actions);
       for (const [control, tone, icon] of [
         [choose, "create", "folder"],
@@ -1957,6 +1916,9 @@
         choose.disabled = !F.supported() || state.state === "busy";
         save.querySelector(".ui-button-label").textContent =
           state.state === "permission" ? "اجازه مجدد" : "ذخیره اکنون";
+        save.hidden =
+          state.state === "permission" &&
+          !!document.querySelector("#questionBankFileBadge:not([hidden])");
         save.title =
           state.state === "permission"
             ? "تأیید مجوز فایل بانک سؤال"

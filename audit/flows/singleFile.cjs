@@ -43,6 +43,7 @@ module.exports = async function singleFile() {
     await waitFor(() =>
       document
         .getElementById("singleFileStatus")
+        ?.querySelector(".backup-file-detail")
         ?.textContent.startsWith("ذخیره شد:"),
     );
     return readConnection();
@@ -113,6 +114,7 @@ module.exports = async function singleFile() {
       if (
         !document
           .getElementById("singleFileStatus")
+          ?.querySelector(".backup-file-detail")
           ?.textContent.startsWith("ذخیره شد:")
       )
         return false;
@@ -164,6 +166,7 @@ module.exports = async function singleFile() {
         selected.handle.name === expectedBase + "(1).json" &&
         document
           .getElementById("singleFileStatus")
+          ?.querySelector(".backup-file-detail")
           ?.textContent.startsWith("ذخیره شد:")
       );
     });
@@ -192,6 +195,7 @@ module.exports = async function singleFile() {
         selected?.savedAt !== secondChoiceSnapshot.exportedAt &&
         document
           .getElementById("singleFileStatus")
+          ?.querySelector(".backup-file-detail")
           ?.textContent.startsWith("ذخیره شد:")
       );
     });
@@ -219,6 +223,7 @@ module.exports = async function singleFile() {
         selected?.savedAt !== beforeAutomatic.exportedAt &&
         document
           .getElementById("singleFileStatus")
+          ?.querySelector(".backup-file-detail")
           ?.textContent.startsWith("ذخیره شد:")
       );
     });
@@ -246,6 +251,7 @@ module.exports = async function singleFile() {
         selected?.savedAt !== automaticallySaved.exportedAt &&
         document
           .getElementById("singleFileStatus")
+          ?.querySelector(".backup-file-detail")
           ?.textContent.startsWith("ذخیره شد:")
       );
     });
@@ -394,6 +400,7 @@ module.exports = async function singleFile() {
         selected.handle.name === expectedBase + "(2).json" &&
         document
           .getElementById("singleFileStatus")
+          ?.querySelector(".backup-file-detail")
           ?.textContent.startsWith("ذخیره شد:")
       );
     });
@@ -415,6 +422,7 @@ module.exports = async function singleFile() {
     await waitFor(() =>
       frame.contentWindow.document
         .getElementById("singleFileBadge")
+        ?.querySelector(".backup-file-detail")
         ?.textContent.startsWith("ذخیره شد:"),
     );
     const previous = await (await handle.getFile()).text();
@@ -525,6 +533,7 @@ module.exports = async function singleFile() {
     await waitFor(() =>
       document
         .getElementById("singleFileStatus")
+        ?.querySelector(".backup-file-detail")
         ?.textContent.startsWith("ذخیره شد:"),
     );
     cases.push({
@@ -569,6 +578,13 @@ module.exports = async function singleFile() {
             !message.contains(action) &&
             action.type === "button" &&
             action.textContent.trim() === "اجازه مجدد" &&
+            message.querySelector(".backup-file-purpose")?.textContent ===
+              "اطلاعات مدرسه" &&
+            message.querySelector(".backup-notice-filename")?.textContent ===
+              failedHandle.name &&
+            message.querySelector(".backup-notice-filename")?.dir === "ltr" &&
+            action.getAttribute("aria-label") ===
+              "اجازه مجدد برای فایل اطلاعات مدرسه: " + failedHandle.name &&
             notice.querySelectorAll(".single-file-permission-action").length ===
               1
           );
@@ -643,6 +659,7 @@ module.exports = async function singleFile() {
       await waitFor(() =>
         document
           .getElementById("singleFileBadge")
+          ?.querySelector(".backup-file-detail")
           ?.textContent.startsWith("ذخیره شد:"),
       );
       await EduV24.openBackups();

@@ -52,8 +52,8 @@ function previewFullBackup(value, { sourceName = "", legacy = false } = {}) {
     ? date.toLocaleString("fa-IR")
     : "در فایل ثبت نشده";
   const opened = showModal(
-    "بازیابی کل اطلاعات سیستم",
-    '<div class="full-restore"><section class="full-restore-file" aria-label="مشخصات پشتیبان"><h4>پشتیبان کامل سیستم</h4><dl><div><dt>زمان تهیه</dt><dd>' +
+    "بازیابی اطلاعات مدرسه",
+    '<div class="full-restore"><section class="full-restore-file" aria-label="مشخصات پشتیبان"><h4>پشتیبان کامل مدرسه</h4><dl><div><dt>زمان تهیه</dt><dd>' +
       esc(exportedAt) +
       "</dd></div><div><dt>اطلاعات موجود</dt><dd>" +
       periods.length.toLocaleString("fa-IR") +
@@ -87,7 +87,7 @@ function previewFullBackup(value, { sourceName = "", legacy = false } = {}) {
       (legacyContent
         ? '<p class="full-restore-warning" role="status">این فایل سوابق قدیمی چند سال یا عنوان نوبت قدیمی دارد. همهٔ اطلاعات فایل بدون حذف یا ادغام حفظ می‌شوند؛ رابط برنامه در سالِ اطلاعات فعال داخل همین فایل باز می‌شود. پشتیبان‌گیری مستقل از نوبت اول و دوم است.</p>'
         : "") +
-      '<section class="full-restore-warning"><h4>اطلاعات فعلی جایگزین می‌شود</h4><p>کل اطلاعات سیستم به وضعیت این فایل برمی‌گردد؛ اطلاعات فایل با داده‌های فعلی ادغام نمی‌شود.</p><p>نوبت جدید یا تکراری ساخته نمی‌شود و وضعیت باز یا بستهٔ نوبت‌ها مطابق فایل خواهد بود.</p><p>ذخیره خودکار فایل پس از بازیابی متوقف می‌ماند؛ فایل قبلی بدون تأیید جداگانهٔ شما جایگزین نمی‌شود.</p></section><label class="full-restore-confirm" for="fullRestoreConfirmed"><input type="checkbox" id="fullRestoreConfirmed"><span>می‌دانم کل اطلاعات فعلی با محتوای این فایل جایگزین می‌شود.</span></label><p id="operationError" role="alert"></p><div class="full-restore-actions"><button type="button" class="danger" data-full-restore data-workspace-action="restore-full">تأیید و بازیابی کل اطلاعات</button><button type="button" class="ghost" data-workspace-action="close">انصراف</button></div></div>',
+      '<section class="full-restore-warning"><h4>اطلاعات مدرسه جایگزین می‌شود</h4><p>تمام اطلاعات مدرسه به وضعیت این فایل برمی‌گردد؛ اطلاعات فایل با داده‌های فعلی ادغام نمی‌شود. بانک سؤال و آزمون‌ها جدا هستند و تغییر نمی‌کنند.</p><p>نوبت جدید یا تکراری ساخته نمی‌شود و وضعیت باز یا بستهٔ نوبت‌ها مطابق فایل خواهد بود.</p><p>ذخیره خودکار فایل مدرسه پس از بازیابی متوقف می‌ماند؛ فایل قبلی بدون تأیید جداگانهٔ شما جایگزین نمی‌شود.</p></section><label class="full-restore-confirm" for="fullRestoreConfirmed"><input type="checkbox" id="fullRestoreConfirmed"><span>می‌دانم تمام اطلاعات فعلی مدرسه با محتوای این فایل جایگزین می‌شود.</span></label><p id="operationError" role="alert"></p><div class="full-restore-actions"><button type="button" class="danger" data-full-restore data-workspace-action="restore-full">تأیید و بازیابی مدرسه</button><button type="button" class="ghost" data-workspace-action="close">انصراف</button></div></div>',
   );
   if (opened !== false) {
     pendingFullBackup = value;
@@ -251,7 +251,9 @@ async function restoreFullBackup() {
   if (!pendingFullBackup)
     throw Error("ابتدا فایل پشتیبان کامل را انتخاب کنید.");
   if (!document.getElementById("fullRestoreConfirmed")?.checked)
-    throw Error("ابتدا جایگزینی کل اطلاعات با فایل انتخاب‌شده را تأیید کنید.");
+    throw Error(
+      "ابتدا جایگزینی اطلاعات مدرسه با فایل انتخاب‌شده را تأیید کنید.",
+    );
   if (fileMode)
     throw Error("بازیابی را در نسخه نصب‌شده یا نشانی HTTPS انجام دهید.");
   if (ready) assertWorkspaceReadable();
@@ -263,7 +265,7 @@ async function restoreFullBackup() {
     sourceInstallation = installationToken;
   if (
     !confirm(
-      "کل اطلاعات سیستم به وضعیت این فایل برگردد؟ نوبت جدید ساخته نمی‌شود.",
+      "اطلاعات مدرسه به وضعیت این فایل برگردد؟ بانک سؤال و آزمون‌ها تغییر نمی‌کنند؛ نوبت جدید ساخته نمی‌شود.",
     )
   )
     return false;

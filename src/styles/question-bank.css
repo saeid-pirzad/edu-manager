@@ -70,71 +70,6 @@
 .qb-page > .qb-body {
   padding: 0;
 }
-.qb-storage-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
-  gap: 10px;
-  margin-bottom: 12px;
-  padding: 6px 12px;
-  border: 1px solid var(--theme-line-soft);
-  border-radius: 10px;
-  background: var(--theme-surface);
-}
-.qb-storage-state {
-  min-width: 0;
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 11px;
-  line-height: 1.8;
-  color: var(--theme-muted);
-}
-.qb-storage-state::before {
-  content: "";
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-inline-end: 5px;
-  border-radius: 50%;
-  background: var(--status-success);
-  vertical-align: middle;
-}
-.qb-storage-bar:is(
-    [data-state="paused"],
-    [data-state="permission"],
-    [data-state="error"]
-  )
-  .qb-storage-state::before {
-  background: var(--status-danger);
-}
-.qb-storage-bar[data-state="active"] .qb-storage-state {
-  color: var(--status-success);
-}
-:is(#app, .qb-page)
-  .qb-storage-bar[data-state="permission"]
-  > button.ui-button.ui-button-flat {
-  background: var(--status-warning-soft) !important;
-  border-color: var(--status-warning-line) !important;
-  color: var(--status-warning) !important;
-}
-.qb-storage-bar[data-state="permission"] .qb-storage-state::before {
-  background: var(--status-warning);
-}
-.qb-storage-bar > button {
-  min-width: 0;
-  min-height: 44px;
-  padding: 5px 8px !important;
-  font-size: 11px;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.qb-storage-bar > button svg {
-  width: 15px;
-  height: 15px;
-}
 .qb-course-required {
   padding: 10px;
   border: 1px solid var(--theme-secondary-line);
@@ -2124,29 +2059,6 @@
     min-height: 40px !important;
     padding: 0;
   }
-  .qb-storage-bar {
-    padding: 3px 10px;
-    gap: 6px;
-  }
-  .qb-storage-state {
-    font-size: 10px;
-  }
-  :is(#app, .qb-page) .qb-storage-bar > button.ui-button.ui-button-flat {
-    height: 36px;
-    min-height: 36px !important;
-    padding: 3px 7px !important;
-    font-size: 10px;
-    gap: 4px;
-    border-radius: 8px;
-    background: var(--status-leave) !important;
-    border-color: var(--status-leave) !important;
-    color: #fff !important;
-  }
-  :is(#app, .qb-page) .qb-storage-bar > button.ui-button > svg {
-    width: 14px;
-    height: 14px;
-    flex-basis: 14px;
-  }
   .qb-page > .qb-body {
     padding: 0;
   }
@@ -2704,18 +2616,6 @@
     width: 16px;
     height: 16px;
     padding: 5px;
-  }
-  .qb-page[data-keyboard-viewport="true"]:has(.qb-form) > .qb-storage-bar {
-    margin-bottom: 0;
-    padding: 3px 10px;
-  }
-  .qb-page[data-keyboard-viewport="true"]:has(.qb-form)
-    > .qb-storage-bar
-    > button.ui-button {
-    height: 36px;
-    min-height: 36px !important;
-    padding: 3px 7px !important;
-    font-size: 10px;
   }
   .qb-page[data-keyboard-viewport="true"] > .qb-body:has(.qb-form) {
     display: block;

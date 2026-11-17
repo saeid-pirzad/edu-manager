@@ -38,6 +38,8 @@
         connected: !!config,
       };
       for (const listener of listeners) listener({ ...status });
+      if (host === root)
+        root.dispatchEvent?.(new Event("edu-question-bank-file-status"));
     }
     const locked = (action) =>
       host.navigator.locks.request("ClassyarQuestionBank.file", action);

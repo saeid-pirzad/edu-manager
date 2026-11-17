@@ -62,12 +62,72 @@ function singleFileNoticeHtml(message = singleFileMessage) {
     typeof singleFile?.handle?.requestPermission === "function";
   return (
     '<span class="single-file-message" role="status">' +
+    '<strong class="backup-file-purpose">اطلاعات مدرسه</strong>' +
+    (singleFile?.handle?.name
+      ? '<bdi class="backup-notice-filename" dir="ltr">' +
+        esc(singleFile.handle.name) +
+        "</bdi>"
+      : "") +
+    '<span class="backup-file-detail">' +
     esc(message) +
-    "</span>" +
+    "</span></span>" +
     (canRequest
-      ? '<button type="button" class="single-file-permission-action" data-workspace-action="single-file-save">اجازه مجدد</button>'
+      ? '<button type="button" class="single-file-permission-action" data-workspace-action="single-file-save" aria-label="اجازه مجدد برای فایل اطلاعات مدرسه: ' +
+        esc(singleFile.handle.name) +
+        '">اجازه مجدد</button>'
       : "")
   );
+}
+// Only the presentation is shared. Each file keeps its own permission request,
+// repository and replacement safeguards, including after a restore.
+function paintQuestionBankFileNotice() {
+  const panel = document.querySelector?.("#app .workspace-bar");
+  if (!panel) return;
+  const service = globalThis.EduQuestionBankFileBackup?.service,
+    state = service?.state(),
+    visible =
+      state?.state === "error" ||
+      (state?.connected && ["permission", "paused"].includes(state.state)),
+    permission = visible && state.state === "permission" && service.supported();
+  let notice = document.getElementById("questionBankFileBadge");
+  if (visible && !notice) {
+    notice = document.createElement("div");
+    notice.id = "questionBankFileBadge";
+    notice.className = "single-file-notice question-bank-file-notice";
+  }
+  if (notice) {
+    notice.hidden = !visible;
+    if (visible) {
+      notice.dataset.state = state.state;
+      const html =
+        '<span class="single-file-message" role="status"><strong class="backup-file-purpose">بانک سؤال و آزمون‌ها</strong><bdi class="backup-notice-filename" dir="ltr">' +
+        esc(state.name || "فایل خودکار بانک سؤال انتخاب نشده") +
+        '</bdi><span class="backup-file-detail">' +
+        esc(state.message) +
+        (permission
+          ? '</span></span><button type="button" class="single-file-permission-action" data-workspace-action="question-bank-file-permission" aria-label="اجازه مجدد برای فایل بانک سؤال و آزمون‌ها: ' +
+            esc(state.name) +
+            '">اجازه مجدد</button>'
+          : " برای بررسی فایل، بخش «پشتیبان» در بانک سؤال را باز کنید.</span></span>");
+      if (notice.innerHTML !== html) notice.innerHTML = html;
+      // School notices already occupy their own full-width row immediately above.
+      if (notice.parentElement !== panel) panel.append(notice);
+    }
+  }
+  const localSave = document.querySelector(".qb-file-save");
+  if (localSave) localSave.hidden = !!permission;
+}
+function renewQuestionBankFilePermission() {
+  const service = globalThis.EduQuestionBankFileBackup?.service;
+  if (
+    !service?.supported() ||
+    service.state().state !== "permission" ||
+    document.querySelector(".qb-confirm,.qb-page[aria-busy='true']")
+  )
+    return false;
+  // No await before this call: retain the user's activation. Default approval
+  // stays false, so this action cannot approve replacing a suspended file.
+  return service.saveNow();
 }
 function singleFileStatus(message, { permission = false, saved = false } = {}) {
   singleFileMessage = message;
@@ -549,7 +609,7 @@ async function resumeSingleFile() {
       !confirm(
         "فایل «" +
           target.handle.name +
-          "» با همه اطلاعات فعلی برنامه جایگزین شود؟ نسخه قبلی این فایل از بین می‌رود. اگر به آن نیاز دارید، ابتدا یک کپی مستقل نگه دارید. برای حفظ فایل، انصراف دهید یا فایل دیگری انتخاب کنید.",
+          "» با اطلاعات فعلی مدرسه جایگزین شود؟ بانک سؤال و آزمون‌ها در فایل جدا هستند. نسخه قبلی این فایل از بین می‌رود. اگر به آن نیاز دارید، ابتدا یک کپی مستقل نگه دارید. برای حفظ فایل، انصراف دهید یا فایل دیگری انتخاب کنید.",
       )
     )
       return false;

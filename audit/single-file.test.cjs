@@ -1158,6 +1158,15 @@ test("permission notices escape their message and keep the command outside the l
   await f.context.restoreSingleFile();
   const html = f.context.singleFileNoticeHtml('<img src=x onerror="unsafe">');
   assert.match(html, /class="single-file-message" role="status"/);
+  assert.match(
+    html,
+    /<strong class="backup-file-purpose">اطلاعات مدرسه<[/]strong>/,
+  );
+  assert.match(
+    html,
+    /<bdi class="backup-notice-filename" dir="ltr">Classyar-Classroom\.json<[/]bdi>/,
+  );
+  assert.match(html, /class="backup-file-detail"/);
   assert.match(html, /&lt;img src=x onerror=&quot;unsafe&quot;&gt;/);
   assert.doesNotMatch(html, /<img/);
   assert.match(
@@ -1172,6 +1181,92 @@ test("permission notices escape their message and keep the command outside the l
     f.context.singleFilePanel(),
     /id="singleFileStatus"[^>]*>[\s\S]*class="single-file-permission-action"/,
   );
+});
+
+test("permission notices escape filenames in both visible text and accessible action labels", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  f.context.singleFileStatus("Needs permission", { permission: true });
+  f.handle.name = 'Classyar-<img src=x onerror="unsafe">&.json';
+  const html = f.context.singleFileNoticeHtml();
+  assert.match(
+    html,
+    /<bdi class="backup-notice-filename" dir="ltr">Classyar-&lt;img src=x onerror=&quot;unsafe&quot;&gt;&amp;\.json<[/]bdi>/,
+  );
+  assert.match(
+    html,
+    /aria-label="اجازه مجدد برای فایل اطلاعات مدرسه: Classyar-&lt;img src=x onerror=&quot;unsafe&quot;&gt;&amp;\.json"/,
+  );
+  assert.doesNotMatch(html, /<img/);
+  assert.equal(
+    (html.match(/data-workspace-action="single-file-save"/g) || []).length,
+    1,
+  );
+});
+
+test("bank permission retry directly calls only its service without approving replacement or writing the school backup", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  const before = {
+    contents: f.contents,
+    writes: f.writes,
+    snapshots: f.snapshots,
+    stored: f.getStored(),
+  };
+  let callerActive = true,
+    calls = 0;
+  const result = Promise.resolve(false);
+  f.context.document.querySelector = () => null;
+  f.context.EduQuestionBankFileBackup = {
+    service: {
+      supported: () => true,
+      state: () => ({ state: "permission", connected: true }),
+      saveNow(...args) {
+        assert.equal(callerActive, true);
+        assert.equal(args.length, 0, "replacement approval must stay omitted");
+        calls++;
+        return result;
+      },
+    },
+  };
+  const pending = f.context.renewQuestionBankFilePermission();
+  callerActive = false;
+  assert.equal(calls, 1, "service must be called before the click returns");
+  assert.equal(pending, result);
+  assert.equal(await pending, false);
+  assert.equal(f.contents, before.contents);
+  assert.equal(f.writes, before.writes);
+  assert.equal(f.snapshots, before.snapshots);
+  assert.deepEqual(f.getStored(), before.stored);
+});
+
+test("bank permission retry does nothing when unsupported, no longer needed, or blocked by a bank confirmation or save", () => {
+  const f = fixture();
+  let calls = 0,
+    supported = true,
+    state = "permission",
+    blocked = false;
+  f.context.document.querySelector = () => (blocked ? {} : null);
+  assert.equal(f.context.renewQuestionBankFilePermission(), false);
+  f.context.EduQuestionBankFileBackup = {
+    service: {
+      supported: () => supported,
+      state: () => ({ state }),
+      saveNow() {
+        calls++;
+      },
+    },
+  };
+  supported = false;
+  assert.equal(f.context.renewQuestionBankFilePermission(), false);
+  supported = true;
+  for (state of ["inactive", "active", "paused", "busy", "error"])
+    assert.equal(f.context.renewQuestionBankFilePermission(), false);
+  state = "permission";
+  blocked = true;
+  assert.equal(f.context.renewQuestionBankFilePermission(), false);
+  assert.equal(calls, 0);
+  assert.equal(f.writes, 0);
 });
 
 test("inline permission command requires a real connection, permission support and an explicit permission warning", async () => {

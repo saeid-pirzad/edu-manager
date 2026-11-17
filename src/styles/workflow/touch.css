@@ -136,7 +136,7 @@
     color: var(--status-warning);
   }
   #app #saveStatus[data-state="error"],
-  #app .workspace-bar > #singleFileBadge {
+  #app .workspace-bar > :is(#singleFileBadge, #questionBankFileBadge) {
     background: var(--status-danger-soft);
     color: var(--status-danger);
     padding: 10px 12px;
@@ -145,7 +145,9 @@
     line-height: 1.9;
     overflow-wrap: anywhere;
   }
-  #app .workspace-bar > #singleFileBadge:not([hidden]),
+  #app
+    .workspace-bar
+    > :is(#singleFileBadge, #questionBankFileBadge):not([hidden]),
   :is(#modalBody, .qb-body) #singleFileStatus.single-file-notice {
     display: flex;
     align-items: center;
@@ -153,11 +155,30 @@
     gap: 12px;
   }
   .single-file-message {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
     min-width: 0;
     overflow-wrap: anywhere;
     line-height: 1.9;
   }
-  #app #singleFileBadge > .single-file-permission-action,
+  .backup-file-purpose {
+    color: var(--theme-ink);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .backup-notice-filename {
+    font-size: 11px;
+    font-weight: 500;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+  .backup-file-detail {
+    font-size: 11px;
+  }
+  #app
+    :is(#singleFileBadge, #questionBankFileBadge)
+    > .single-file-permission-action,
   :is(#modalBody, .qb-body) #singleFileStatus > .single-file-permission-action {
     flex-shrink: 0;
     min-width: 0;
@@ -174,7 +195,9 @@
     white-space: nowrap;
     box-shadow: none;
   }
-  #app #singleFileBadge > .single-file-permission-action:focus-visible,
+  #app
+    :is(#singleFileBadge, #questionBankFileBadge)
+    > .single-file-permission-action:focus-visible,
   :is(#modalBody, .qb-body)
     #singleFileStatus
     > .single-file-permission-action:focus-visible {

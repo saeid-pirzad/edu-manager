@@ -135,14 +135,16 @@ border-color:var(--brand-orange);color:var(--theme-primary-hover)}#mobileBar but
 background:var(--theme-primary);color:var(--theme-nav-ink)}#app .workspace-bar{margin-bottom:10px;font-size:12px}#app .workspace-bar>strong{color:var(--theme-muted);
 font-weight:500;line-height:1.8}#app .workspace-bar #saveStatus{text-align:start;width:auto;border-radius:10px;padding:6px 10px;line-height:1.8;overflow-wrap:anywhere}
 #app #saveStatus[data-state=saved]{background:var(--status-success-soft);color:var(--status-success)}#app #saveStatus[data-state=pending]{background:var(--status-warning-soft);
-color:var(--status-warning)}#app #saveStatus[data-state=error],#app .workspace-bar>#singleFileBadge{background:var(--status-danger-soft);color:var(--status-danger);
-padding:10px 12px;border-radius:10px;grid-column:1 / -1;line-height:1.9;overflow-wrap:anywhere}#app .workspace-bar>#singleFileBadge:not([hidden]),:is(#modalBody,
-.qb-body) #singleFileStatus.single-file-notice{display:flex;align-items:center;justify-content:space-between;gap:12px}.single-file-message{min-width:0;overflow-wrap:anywhere;
-line-height:1.9}#app #singleFileBadge>.single-file-permission-action,:is(#modalBody,.qb-body) #singleFileStatus>.single-file-permission-action{flex-shrink:0;min-width:0;
-min-height:44px;margin:0;padding:8px 12px;border:1px solid var(--status-warning-line);border-radius:10px;background:var(--status-warning-soft);color:var(--status-warning);
-font-size:12px;font-weight:600;line-height:1.7;white-space:nowrap;box-shadow:none}#app #singleFileBadge>.single-file-permission-action:focus-visible,:is(#modalBody,
-.qb-body) #singleFileStatus>.single-file-permission-action:focus-visible{outline:2px solid var(--status-warning);outline-offset:2px}.workspace-tool-actions{box-shadow:0
-8px 24px #2d34400a}.entity-quick-create>summary{cursor:pointer;min-height:48px;padding-block:8px;font-weight:600;color:var(--workflow-accent)}.entity-quick-create
+color:var(--status-warning)}#app #saveStatus[data-state=error],#app .workspace-bar>:is(#singleFileBadge,#questionBankFileBadge){background:var(--status-danger-soft);
+color:var(--status-danger);padding:10px 12px;border-radius:10px;grid-column:1 / -1;line-height:1.9;overflow-wrap:anywhere}#app .workspace-bar>:is(#singleFileBadge,
+#questionBankFileBadge):not([hidden]),:is(#modalBody,.qb-body) #singleFileStatus.single-file-notice{display:flex;align-items:center;justify-content:space-between;
+gap:12px}.single-file-message{display:flex;flex-direction:column;gap:3px;min-width:0;overflow-wrap:anywhere;line-height:1.9}.backup-file-purpose{color:var(--theme-ink);
+font-size:12px;font-weight:600}.backup-notice-filename{font-size:11px;font-weight:500;text-align:right;overflow-wrap:anywhere}.backup-file-detail{font-size:11px}
+#app :is(#singleFileBadge,#questionBankFileBadge)>.single-file-permission-action,:is(#modalBody,.qb-body) #singleFileStatus>.single-file-permission-action{flex-shrink:0;
+min-width:0;min-height:44px;margin:0;padding:8px 12px;border:1px solid var(--status-warning-line);border-radius:10px;background:var(--status-warning-soft);color:var(--status-warning);
+font-size:12px;font-weight:600;line-height:1.7;white-space:nowrap;box-shadow:none}#app :is(#singleFileBadge,#questionBankFileBadge)>.single-file-permission-action:focus-visible,
+:is(#modalBody,.qb-body) #singleFileStatus>.single-file-permission-action:focus-visible{outline:2px solid var(--status-warning);outline-offset:2px}.workspace-tool-actions{
+box-shadow:0 8px 24px #2d34400a}.entity-quick-create>summary{cursor:pointer;min-height:48px;padding-block:8px;font-weight:600;color:var(--workflow-accent)}.entity-quick-create
 form{align-items:end}.entity-create-field{display:grid;flex:1 1 200px;gap:8px;font-size:14px}.entity-create-field input{width:100%}.entity-quick-create .entity-create-error{
 flex-basis:100%}#app>.workflow-welcome{order:2}#app>.create-panel{order:4}#app .create-panel{padding:0;border:1px solid var(--workflow-line);border-radius:16px;
 background:var(--theme-surface);box-shadow:none}#app .create-panel[open]{border-color:var(--theme-primary-line);box-shadow:0 4px 18px #2d344007}#app .create-panel>

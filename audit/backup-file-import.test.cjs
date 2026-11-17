@@ -267,7 +267,7 @@ for (const initialReady of [true, false])
       assert.equal(normalized, 0);
       assert.equal(f.effects.length, 0);
       assert.equal(f.errors.length, 1);
-      assert.match(f.errors[0].message, /پشتیبان کامل سیستم نیست/);
+      assert.match(f.errors[0].message, /پشتیبان کامل مدرسه نیست/);
       assert.equal(f.c.workspace.id, "first");
       assert.equal(f.c.ready, initialReady);
       assert.equal(e.target.value, "");
