@@ -74,7 +74,8 @@ async function output(kind) {
     );
     return true;
   } catch (e) {
-    if (kind !== "deputy" || last === prepared)
+    // An older export must not revoke a report prepared while it was waiting.
+    if (last === prepared || (!last && kind !== "deputy"))
       invalidate(e.message || String(e));
     else error(e);
     return false;

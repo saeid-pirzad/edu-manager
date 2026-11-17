@@ -16,12 +16,21 @@ function fileModeBanner(app) {
 function parseDraft(item) {
   const l = getLessonObj(findClass(item.classId), item.lid);
   if (!l) return { ok: false, message: "درس پیش‌نویس موجود نیست." };
-  if (item.kind === "pod") {
+  if (item.kind === "pod" || item.kind === "unit") {
+    const pod = l.poudmans.find((p) => p.id === item.pid);
     if (
       l.gradingPolicy?.method !== "modular" ||
-      !["m", "c"].includes(item.field)
+      !["m", "c"].includes(item.field) ||
+      !pod ||
+      (item.kind === "unit"
+        ? !EduPolicy.unitBased(l.gradingPolicy) ||
+          !pod.units.some((u) => u.id === item.uid)
+        : EduPolicy.unitBased(l.gradingPolicy))
     )
-      return { ok: false, message: "نوع نمره پودمان نامعتبر است." };
+      return {
+        ok: false,
+        message: "پودمان، واحد کار یا نوع نمره نامعتبر است.",
+      };
     return EduPolicy.parse(item.value, l.gradingPolicy, item.field, item.kind);
   }
   return parseGrade(item.value);
@@ -45,17 +54,18 @@ function validateCourse(l, ids, year) {
     )
       throw Error("ساختار پودمان و واحد معتبر نیست.");
   }
-  for (const pod of l.poudmans || []) {
-    if (pod.podScores === undefined) continue;
-    if (
-      !pod.podScores ||
-      typeof pod.podScores !== "object" ||
-      Array.isArray(pod.podScores)
-    )
-      throw Error("نمرات پودمان نامعتبر است.");
-    for (const [sid, g] of Object.entries(pod.podScores)) {
+  const unitBased = EduPolicy.unitBased(l.gradingPolicy);
+  const validateScores = (scores, unit = false) => {
+    if (scores === undefined) return;
+    if (!scores || typeof scores !== "object" || Array.isArray(scores))
+      throw Error("نمرات پودمان یا واحد کار نامعتبر است.");
+    if (unit !== unitBased && Object.keys(scores).length)
+      throw Error("نمره با مبنای نمره‌دهی درس یکسان نیست.");
+    for (const [sid, g] of Object.entries(scores)) {
       if (!ids.has(sid) || !g || typeof g !== "object" || Array.isArray(g))
         throw Error("دانش‌آموز یا نمره پودمان نامعتبر است.");
+      if (unit && Object.keys(g).some((key) => !["m", "c"].includes(key)))
+        throw Error("اجزای نمرهٔ واحد کار نامعتبر است.");
       if (g.gate !== undefined && typeof g.gate !== "boolean")
         throw Error("وضعیت معیارهای الزامی نامعتبر است.");
       for (const field of ["m", "c"])
@@ -67,10 +77,20 @@ function validateCourse(l, ids, year) {
           )
             throw Error("نمره پودمان فاقد قواعد معتبر است.");
           if (
-            !EduPolicy.parse(String(g[field]), l.gradingPolicy, field, "pod").ok
+            !EduPolicy.parse(
+              String(g[field]),
+              l.gradingPolicy,
+              field,
+              unit ? "unit" : "pod",
+            ).ok
           )
             throw Error("بازه یا گام نمره پودمان نامعتبر است.");
         }
     }
+  };
+  for (const pod of l.poudmans || []) {
+    validateScores(pod.podScores);
+    for (const unit of pod.units || [])
+      validateScores(unit.competencyScores, true);
   }
 }

@@ -155,7 +155,14 @@ function singleFileContentBaseline(snapshot) {
   const scores = (value) => {
     if (!value || typeof value !== "object") return;
     for (const [key, item] of Object.entries(value)) {
-      if (["kardaneshScores", "podScores", "unitScores"].includes(key))
+      if (
+        [
+          "kardaneshScores",
+          "podScores",
+          "unitScores",
+          "competencyScores",
+        ].includes(key)
+      )
         counts.grades += populatedScores(item);
       else if (item && typeof item === "object") scores(item);
     }

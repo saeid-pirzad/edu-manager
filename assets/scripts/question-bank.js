@@ -213,47 +213,53 @@ confirmation=null;previous?.focus();if(!accepted)onCancel()};button("انصرا�
 await action()}catch(e){error(e)}},box);confirm.dataset.uiTone=/حذف|جایگزین/.test(label)?"danger":"save";box.addEventListener("cancel",e=>{e.preventDefault();
 cancel()});dialog.append(box);confirmation=box;box.showModal()}function discard(action){if(busy)return;if(dirty)confirmAction("تغییرات فرم ذخیره نشده‌اند؛ کنار \
 گذاشته شوند؟",()=>{dirty=false;action()});else action()}function close(){discard(()=>{root.visualViewport?.removeEventListener("resize",keepEditingVisible);
-root.visualViewport?.removeEventListener("scroll",keepEditingVisible);cancelAnimationFrame(editingFrame);optionResize.disconnect();optionChanges.disconnect();unsubscribeBackup();
-unsubscribeStorage();pendingChanges=()=>false;const calendar=dialog.querySelector("#calPopup");if(calendar){root.closeShamsiCalendar();document.body.append(calendar)}
-dialog.close();dialog.remove();for(let target of[opener,document.querySelector(".question-bank-entry"),document.getElementById("workspaceToolsToggle"),document.
-getElementById("headerNavigationToggle")]){if(!target?.isConnected||target===document.body||target===document.documentElement)continue;for(let parent=target.parentElement;parent;parent=
-parent.parentElement){if(parent.tagName!=="DETAILS"||parent.open)continue;const summary=parent.querySelector(":scope > summary");if(summary?.getClientRects().length)
-target=summary}if(!target.getClientRects().length||target.matches(":disabled"))continue;target.focus({preventScroll:true});if(document.activeElement===target)break}})}
-const closeButton=button("بستن",close,header);closeButton.classList.add("ui-button-icon-only","qb-close");closeButton.setAttribute("aria-label","بستن");
-closeButton.title="بستن";closeButton.querySelector(".ui-button-label").hidden=true;header.prepend(title);dialog.append(header,storage,message,content);document.
-body.append(dialog);dialog.showModal();let editingFrame;function keepEditingVisible(){cancelAnimationFrame(editingFrame);editingFrame=requestAnimationFrame(()=>{
-if(innerWidth>700||document.documentElement.dataset.keyboardOpen!=="true")return;const active=document.activeElement;if(!content.contains(active))return;const fields=active.
-closest(".qb-form-fields");if(!fields)return;const field2=active.getBoundingClientRect();const bounds=fields.getBoundingClientRect();if(field2.bottom>bounds.bottom-
-8)fields.scrollTop+=field2.bottom-bounds.bottom+8;else if(field2.top<bounds.top+8)fields.scrollTop-=bounds.top+8-field2.top})}root.visualViewport?.addEventListener(
-"resize",keepEditingVisible);root.visualViewport?.addEventListener("scroll",keepEditingVisible);content.addEventListener("focusin",keepEditingVisible);const updateOptions=()=>fitOptions(
-content);const optionResize=new ResizeObserver(updateOptions);const optionChanges=new MutationObserver(updateOptions);optionResize.observe(content);optionChanges.
-observe(content,{childList:true,subtree:true});content.addEventListener("toggle",updateOptions,true);document.fonts.ready.then(()=>{if(dialog.isConnected)updateOptions()});
-dialog.addEventListener("cancel",e=>{e.preventDefault();if(!confirmation)close()});dialog.addEventListener("input",e=>{if(e.target.closest("form")&&!e.target.closest(
-".qb-toolbar"))dirty=true});async function commit(next){if(busy)return false;try{D.validate(next)}catch(e){error(e);return false}busy=true;dialog.setAttribute("\
-aria-busy","true");content.inert=true;try{bank=await R.save(next,bank.revision);dirty=false;const fileState=F.state();if(["error","paused","permission"].includes(
-fileState.state)){persistentMessage=`در مرورگر ذخیره شد. ${fileState.message}`;persistentMessageOrigin="file";transientMessage="";showMessage();return true}
-persistentMessage="";persistentMessageOrigin="";transientMessage="";showMessage();storageState.textContent=fileState.state==="active"?"در مرورگر ذخیره شد؛ فایل \
-در حال به‌روزرسانی":"در مرورگر ذخیره شد";return true}catch(e){error(e,true);return false}finally{busy=false;content.inert=false;
-dialog.removeAttribute("aria-busy")}}const mutate=async action=>{const next=structuredClone(bank);action(next);if(await commit(next))render()};function form(parent,submit){
-const f=el("form",void 0,"qb-form course-grid");f.noValidate=true;f.onsubmit=async e=>{e.preventDefault();if(busy)return;try{await submit(f)}catch(e2){error(e2)}};
-parent.append(f);return f}function saveButton(f,label="ذخیره"){const b=el("button",label);b.type="submit";b.className="ui-button ui-button-flat";b.dataset.
-uiTone="save";b.dataset.uiVariant="solid";b.insertAdjacentHTML("afterbegin",root.EduIcons.html("save"));const actions=el("div",void 0,"record-editor-actions qb-\
-field-wide");actions.append(b);button("بازگشت",()=>discard(render),actions);const fields=el("div",void 0,"course-grid qb-form-fields qb-field-wide");fields.
-append(...f.childNodes);f.append(fields,actions)}function unitLabel(){return bank.courses.find(c=>c.id===courseId)?.structure==="module"?"پودمان":"فصل"}
-function entityMenu(parent,label,selected,add,edit,remove){const trigger=contextAction(`بیشتر ${label}`,()=>{},parent);trigger.querySelector("svg")?.remove();
-trigger.insertAdjacentHTML("afterbegin",root.EduIcons.html("more"));const menu=el("div",void 0,"qb-entity-menu");menu.id=`qb-menu-${crypto.randomUUID()}`;menu.setAttribute(
-"popover","auto");menu.setAttribute("role","menu");menu.setAttribute("aria-label",`مدیریت ${label}`);parent.append(menu);trigger.setAttribute("aria-haspop\
-up","menu");trigger.setAttribute("aria-controls",menu.id);trigger.setAttribute("aria-expanded","false");const actions=[[`${label} جدید`,add,false],[`ویرایش ${label}`,
-edit,!selected],[`حذف ${label}`,remove,!selected]].map(([title2,action,disabled])=>{const item=button(title2,()=>{menu.hidePopover();trigger.focus();action()},
-menu);item.setAttribute("role","menuitem");item.disabled=disabled;return item});trigger.onclick=()=>{if(menu.matches(":popover-open"))return menu.hidePopover();
-menu.showPopover();const rect=trigger.getBoundingClientRect();menu.style.left=`${Math.max(8,Math.min(rect.right-menu.offsetWidth,innerWidth-menu.offsetWidth-8))}\
-px`;menu.style.top=`${Math.max(8,Math.min(rect.bottom+6,innerHeight-menu.offsetHeight-8))}px`;actions.find(item=>!item.disabled)?.focus()};menu.addEventListener(
-"toggle",()=>{trigger.setAttribute("aria-expanded",String(menu.matches(":popover-open")))});menu.onkeydown=event=>{const enabled=actions.filter(item=>!item.disabled);
-const index=enabled.indexOf(document.activeElement);if(["ArrowDown","ArrowUp","Home","End"].includes(event.key)){event.preventDefault();const next=event.key==="\
-Home"?0:event.key==="End"?enabled.length-1:(index+(event.key==="ArrowDown"?1:-1)+enabled.length)%enabled.length;enabled[next].focus()}else if(event.key==="Escap\
-e"){event.preventDefault();menu.hidePopover();trigger.focus()}}}function removeCourse(current){const units=bank.units.filter(u=>u.courseId===courseId);const unitIds=new Set(
-units.map(u=>u.id));const questions2=bank.questions.filter(q=>unitIds.has(q.unitId)).length;confirmAction(`درس «${current.title}» با ${number(units.length)}\
- بخش و ${number(questions2)} سؤال حذف شود؟ این حذف از بانک قابل برگشت نیست؛ آزمون‌های ذخیره‌شده حفظ می‌شوند.`,
+root.visualViewport?.removeEventListener("scroll",keepEditingVisible);root.removeEventListener("resize",keepEditingVisible);cancelAnimationFrame(editingFrame);optionResize.
+disconnect();optionChanges.disconnect();unsubscribeBackup();unsubscribeStorage();pendingChanges=()=>false;const calendar=dialog.querySelector("#calPopup");if(calendar){
+root.closeShamsiCalendar();document.body.append(calendar)}dialog.close();dialog.remove();for(let target of[opener,document.querySelector(".question-bank-entry"),
+document.getElementById("workspaceToolsToggle"),document.getElementById("headerNavigationToggle")]){if(!target?.isConnected||target===document.body||target===document.
+documentElement)continue;for(let parent=target.parentElement;parent;parent=parent.parentElement){if(parent.tagName!=="DETAILS"||parent.open)continue;const summary=parent.
+querySelector(":scope > summary");if(summary?.getClientRects().length)target=summary}if(!target.getClientRects().length||target.matches(":disabled"))continue;target.
+focus({preventScroll:true});if(document.activeElement===target)break}})}const closeButton=button("بستن",close,header);closeButton.classList.add("ui-button-i\
+con-only","qb-close");closeButton.setAttribute("aria-label","بستن");closeButton.title="بستن";closeButton.querySelector(".ui-button-label").hidden=true;header.
+prepend(title);dialog.append(header,storage,message,content);document.body.append(dialog);dialog.showModal();let editingFrame;function keepEditingVisible(){cancelAnimationFrame(
+editingFrame);editingFrame=requestAnimationFrame(()=>{if(!root.matchMedia("(max-width: 700px), (max-height: 500px) and (pointer: coarse)").matches)return;const form2=content.
+querySelector(".qb-form");if(!form2)return;const bounds=content.getBoundingClientRect();const actions=form2.querySelector(".record-editor-actions");content.style.
+setProperty("--qb-textarea-max-height",Math.max(44,content.clientHeight-(actions?.offsetHeight||0)-24)+"px");const active=document.activeElement;if(!form2.contains(
+active))return;for(let attempt=0;attempt<3;attempt++){const field2=active.getBoundingClientRect();const footer=actions?.getBoundingClientRect();const visibleBottom=Math.
+min(bounds.bottom,footer&&!actions.contains(active)?footer.top:bounds.bottom);const padding=Math.max(0,Math.min(12,(visibleBottom-bounds.top-field2.height)/2));
+const top=bounds.top+padding;const bottom=visibleBottom-padding;let distance=0;if(field2.height>bottom-top){if(field2.top>=bottom-40||field2.bottom<=top+40)distance=
+field2.top-top}else if(field2.bottom>bottom)distance=field2.bottom-bottom;else if(field2.top<top)distance=field2.top-top;if(Math.abs(distance)<.5)break;const previous=content.
+scrollTop;content.scrollTop+=distance;if(Math.abs(content.scrollTop-previous)<.5)break}})}root.visualViewport?.addEventListener("resize",keepEditingVisible);root.
+visualViewport?.addEventListener("scroll",keepEditingVisible);content.addEventListener("focusin",keepEditingVisible);content.addEventListener("input",keepEditingVisible);
+content.addEventListener("keyup",event=>{if(/^(Arrow|Home$|End$|Page)/.test(event.key))keepEditingVisible()});root.addEventListener("resize",keepEditingVisible);
+const updateOptions=()=>fitOptions(content);const optionResize=new ResizeObserver(updateOptions);const optionChanges=new MutationObserver(updateOptions);optionResize.
+observe(content);optionChanges.observe(content,{childList:true,subtree:true});content.addEventListener("toggle",updateOptions,true);document.fonts.ready.then(()=>{
+if(dialog.isConnected)updateOptions()});dialog.addEventListener("cancel",e=>{e.preventDefault();if(!confirmation)close()});dialog.addEventListener("input",e=>{if(e.
+target.closest("form")&&!e.target.closest(".qb-toolbar"))dirty=true});async function commit(next){if(busy)return false;try{D.validate(next)}catch(e){error(e);return false}
+busy=true;dialog.setAttribute("aria-busy","true");content.inert=true;try{bank=await R.save(next,bank.revision);dirty=false;const fileState=F.state();if(["error",
+"paused","permission"].includes(fileState.state)){persistentMessage=`در مرورگر ذخیره شد. ${fileState.message}`;persistentMessageOrigin="file";transientMessage=
+"";showMessage();return true}persistentMessage="";persistentMessageOrigin="";transientMessage="";showMessage();storageState.textContent=fileState.state==="activ\
+e"?"در مرورگر ذخیره شد؛ فایل در حال به‌روزرسانی":"در مرورگر ذخیره شد";return true}catch(e){error(e,true);return false}finally{
+busy=false;content.inert=false;dialog.removeAttribute("aria-busy")}}const mutate=async action=>{const next=structuredClone(bank);action(next);if(await commit(next))
+render()};function form(parent,submit){const f=el("form",void 0,"qb-form course-grid");f.noValidate=true;f.onsubmit=async e=>{e.preventDefault();if(busy)return;
+try{await submit(f)}catch(e2){error(e2)}};parent.append(f);return f}function saveButton(f,label="ذخیره"){const b=el("button",label);b.type="submit";b.className=
+"ui-button ui-button-flat";b.dataset.uiTone="save";b.dataset.uiVariant="solid";b.insertAdjacentHTML("afterbegin",root.EduIcons.html("save"));const actions=el("d\
+iv",void 0,"record-editor-actions qb-field-wide");actions.append(b);button("بازگشت",()=>discard(render),actions);const fields=el("div",void 0,"course-grid\
+ qb-form-fields qb-field-wide");fields.append(...f.childNodes);f.append(fields,actions)}function unitLabel(){return bank.courses.find(c=>c.id===courseId)?.structure===
+"module"?"پودمان":"فصل"}function entityMenu(parent,label,selected,add,edit,remove){const trigger=contextAction(`بیشتر ${label}`,()=>{},parent);trigger.
+querySelector("svg")?.remove();trigger.insertAdjacentHTML("afterbegin",root.EduIcons.html("more"));const menu=el("div",void 0,"qb-entity-menu");menu.id=`qb-menu\
+-${crypto.randomUUID()}`;menu.setAttribute("popover","auto");menu.setAttribute("role","menu");menu.setAttribute("aria-label",`مدیریت ${label}`);parent.append(
+menu);trigger.setAttribute("aria-haspopup","menu");trigger.setAttribute("aria-controls",menu.id);trigger.setAttribute("aria-expanded","false");const actions=[[`${label}\
+ جدید`,add,false],[`ویرایش ${label}`,edit,!selected],[`حذف ${label}`,remove,!selected]].map(([title2,action,disabled])=>{const item=button(title2,()=>{
+menu.hidePopover();trigger.focus();action()},menu);item.setAttribute("role","menuitem");item.disabled=disabled;return item});trigger.onclick=()=>{if(menu.matches(
+":popover-open"))return menu.hidePopover();menu.showPopover();const rect=trigger.getBoundingClientRect();menu.style.left=`${Math.max(8,Math.min(rect.right-menu.
+offsetWidth,innerWidth-menu.offsetWidth-8))}px`;menu.style.top=`${Math.max(8,Math.min(rect.bottom+6,innerHeight-menu.offsetHeight-8))}px`;actions.find(item=>!item.
+disabled)?.focus()};menu.addEventListener("toggle",()=>{trigger.setAttribute("aria-expanded",String(menu.matches(":popover-open")))});menu.onkeydown=event=>{const enabled=actions.
+filter(item=>!item.disabled);const index=enabled.indexOf(document.activeElement);if(["ArrowDown","ArrowUp","Home","End"].includes(event.key)){event.preventDefault();
+const next=event.key==="Home"?0:event.key==="End"?enabled.length-1:(index+(event.key==="ArrowDown"?1:-1)+enabled.length)%enabled.length;enabled[next].focus()}else if(event.
+key==="Escape"){event.preventDefault();menu.hidePopover();trigger.focus()}}}function removeCourse(current){const units=bank.units.filter(u=>u.courseId===courseId);
+const unitIds=new Set(units.map(u=>u.id));const questions2=bank.questions.filter(q=>unitIds.has(q.unitId)).length;confirmAction(`درس «${current.title}» با ${number(
+units.length)} بخش و ${number(questions2)} سؤال حذف شود؟ این حذف از بانک قابل برگشت نیست؛ آزمون‌های ذخیره‌شده حفظ می‌شوند.`,
 ()=>mutate(next=>{next.courses=next.courses.filter(c=>c.id!==current.id);next.units=next.units.filter(u=>!unitIds.has(u.id));next.questions=next.questions.filter(
 q=>!unitIds.has(q.unitId))}))}function removeUnit(existing){const count=bank.questions.filter(q=>q.unitId===existing.id).length;confirmAction(`بخش «${existing.
 title}» و ${number(count)} سؤال آن حذف شوند؟ این حذف از بانک قابل برگشت نیست؛ آزمون‌های ذخیره‌شده حفظ می‌شوند.`,

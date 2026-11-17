@@ -476,3 +476,176 @@ test("annual modular model supports dependency-free cloning fallback", () => {
   ]);
   assert.equal(scores(result).student.m, 0);
 });
+
+function unitClass(first = {}, second = {}) {
+  const value = classroom({ student: { m: 5, c: 3 } }),
+    course = lesson(value);
+  course.gradingPolicy.modularScope = "unit";
+  course.gradingPolicy.version = 2;
+  course.poudmans[0].units = [
+    {
+      id: "first",
+      name: "واحد اول",
+      unitScores: { student: { m: 20, p: 20 } },
+      competencyScores: structuredClone(first),
+    },
+    {
+      id: "second",
+      name: "واحد دوم",
+      unitScores: {},
+      competencyScores: structuredClone(second),
+    },
+  ];
+  return value;
+}
+const unitScores = (value, position = 0) =>
+  lesson(value).poudmans[0].units[position].competencyScores;
+
+test("annual unit merge combines distinct units by stable identity without changing legacy records", () => {
+  const first = unitClass({ student: { m: 0, c: 2 } }),
+    second = unitClass(
+      {},
+      { student: { m: 5, c: 3 }, archived: { m: 1 }, stranger: { m: 5 } },
+    ),
+    before = JSON.stringify([first, second]);
+  lesson(second).poudmans[0].units.reverse();
+  const result = annual.mergeClass([first, second]);
+  assert.deepEqual(plain(unitScores(result)), { student: { m: 0, c: 2 } });
+  assert.deepEqual(plain(unitScores(result, 1)), {
+    student: { m: 5, c: 3 },
+    archived: { m: 1 },
+  });
+  assert.deepEqual(plain(scores(result)), { student: { m: 5, c: 3 } });
+  assert.deepEqual(plain(lesson(result).poudmans[0].units[0].unitScores), {
+    student: { m: 20, p: 20 },
+  });
+  lesson(second).poudmans[0].units.reverse();
+  assert.equal(JSON.stringify([first, second]), before);
+});
+
+test("annual unit merge rejects conflicting or complementary partial records instead of inventing an assessment", () => {
+  for (const [first, second] of [
+    [
+      { m: 0, c: 2 },
+      { m: 5, c: 3 },
+    ],
+    [{ m: 0 }, { c: 2 }],
+    [{ m: 0, c: 2 }, { m: 0 }],
+  ])
+    assert.throws(
+      () =>
+        annual.mergeClass([
+          unitClass({ student: first }),
+          unitClass({ student: second }),
+        ]),
+      /دو نمرهٔ متفاوت/,
+    );
+  const result = annual.mergeClass([
+    unitClass({ student: { m: null, c: null } }),
+    unitClass({ student: { m: 0, c: 2 } }),
+  ]);
+  assert.deepEqual(plain(unitScores(result)), { student: { m: 0, c: 2 } });
+});
+
+test("annual unit compatibility rejects mixed scopes and different unit membership but accepts explicit module legacy scope", () => {
+  const first = unitClass({ student: { m: 0, c: 2 } });
+  assert.throws(
+    () => annual.mergeClass([first, classroom()]),
+    /قواعد نمره‌دهی/,
+  );
+  for (const mutate of [
+    (value) => lesson(value).poudmans[0].units.pop(),
+    (value) => {
+      lesson(value).poudmans[0].units[0].id = "other";
+    },
+  ]) {
+    const changed = structuredClone(first);
+    mutate(changed);
+    assert.throws(() => annual.mergeClass([first, changed]), /ساختار پودمان/);
+  }
+  const legacy = classroom({ student: { m: 0, c: 2 } }),
+    explicit = structuredClone(legacy);
+  lesson(explicit).gradingPolicy.modularScope = "module";
+  assert.deepEqual(
+    plain(scores(annual.mergeClass([legacy, explicit]))),
+    scores(legacy),
+  );
+});
+
+test("annual unit mirroring tracks edits, zero and removal without sharing legacy grades or other units", () => {
+  const previous = unitClass(
+      { student: { m: 0, c: 2 } },
+      { student: { m: 2, c: 2 } },
+    ),
+    current = structuredClone(previous),
+    companion = structuredClone(previous),
+    before = JSON.stringify(previous);
+  unitScores(current).student = { m: 4, c: 3 };
+  scores(current).student = { m: 0, c: 1 };
+  lesson(current).poudmans[0].units[0].unitScores.student.m = 1;
+  const result = annual.mirrorClass(previous, current, companion);
+  assert.equal(annual.hasChanges(previous, current), true);
+  assert.deepEqual(plain(unitScores(result)), { student: { m: 4, c: 3 } });
+  assert.deepEqual(
+    plain(unitScores(result, 1)),
+    plain(unitScores(previous, 1)),
+  );
+  assert.deepEqual(plain(scores(result)), plain(scores(previous)));
+  assert.equal(lesson(result).poudmans[0].units[0].unitScores.student.m, 20);
+  assert.equal(JSON.stringify(previous), before);
+  const partial = structuredClone(result);
+  delete unitScores(partial).student.m;
+  assert.deepEqual(
+    plain(unitScores(annual.mirrorClass(result, partial, result))),
+    { student: { c: 3 } },
+  );
+  const cleared = structuredClone(partial);
+  delete unitScores(cleared).student;
+  assert.deepEqual(
+    plain(unitScores(annual.mirrorClass(partial, cleared, partial))),
+    {},
+  );
+});
+
+test("annual unit mirroring rejects stale edits and stale clearing and supports idempotent saves", () => {
+  const previous = unitClass({ student: { m: 1, c: 2 } }),
+    edited = unitClass({ student: { m: 5, c: 3 } }),
+    stale = unitClass({ student: { m: 0, c: 2 } });
+  assert.throws(
+    () => annual.mirrorClass(previous, edited, stale),
+    /دوباره بارگذاری/,
+  );
+  assert.throws(
+    () => annual.mirrorClass(previous, unitClass(), stale),
+    /دوباره بارگذاری/,
+  );
+  assert.deepEqual(plain(annual.mirrorClass(previous, edited, edited)), edited);
+});
+
+test("annual unit comparison ignores inactive module and legacy unit records and preserves removed structure", () => {
+  const previous = unitClass({ student: { m: 0, c: 2 } }),
+    current = structuredClone(previous);
+  scores(current).student.m = 0;
+  lesson(current).poudmans[0].units[0].unitScores.student.m = 0;
+  assert.equal(annual.hasChanges(previous, current), false);
+  lesson(current).poudmans[0].units.shift();
+  assert.equal(annual.hasChanges(previous, current), false);
+  assert.deepEqual(
+    plain(annual.mirrorClass(previous, current, previous)),
+    previous,
+  );
+});
+
+test("annual unit records cannot inherit student or grade properties", () => {
+  const previous = unitClass(),
+    current = unitClass();
+  lesson(current).poudmans[0].units[0].competencyScores = Object.create({
+    student: { m: 5, c: 3 },
+  });
+  assert.deepEqual(
+    plain(unitScores(annual.mergeClass([previous, current]))),
+    {},
+  );
+  unitScores(current).student = Object.create({ m: 5, c: 3 });
+  assert.equal(annual.hasChanges(previous, current), false);
+});

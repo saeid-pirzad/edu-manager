@@ -27,16 +27,26 @@ test("module picker only reveals the selected panel and preserves the existing g
   const search = { value: "رضایی" },
     message = { hidden: false };
   const rows = [{ hidden: true }, { hidden: true }];
+  const pickers = ["one", "two"].map((id) => ({
+    dataset: { unitModule: id },
+    hidden: id !== "one",
+  }));
   const root = {
     dataset: { moduleSelectionKey: "lesson-key" },
     querySelectorAll: (selector) =>
-      selector === "[data-module-panel]" ? panels : rows,
+      ({
+        "[data-module-panel]": panels,
+        "[data-unit-picker]": pickers,
+        "[data-assessment-name]": rows,
+      })[selector] || [],
     querySelector: (selector) =>
       selector === "[data-assessment-search]" ? search : message,
   };
   context.selectGradeModule({ value: "two", closest: () => root });
   assert.equal(panels[0].hidden, true);
   assert.equal(panels[1].hidden, false);
+  assert.equal(pickers[0].hidden, true);
+  assert.equal(pickers[1].hidden, false);
   assert.equal(grade.value, "3.5");
   assert.equal(search.value, "");
   assert.equal(

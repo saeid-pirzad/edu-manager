@@ -44,7 +44,7 @@ function createKarnamehStudentNavigation(c, student) {
 function karnamehSheetCell(
   value,
   label,
-  { result = null, field = "", note = "" } = {},
+  { result = null, field = "", note = "", unitContext = null } = {},
 ) {
   const complete = result ? result.complete === true : Number.isFinite(value);
   const hasGrade = complete && Number.isFinite(result ? result.final : value);
@@ -59,7 +59,11 @@ function karnamehSheetCell(
         : "ثبت‌شده";
   const display = hasGrade
     ? karnamehSheetNumber(
-        result ? finalText(result) : finalText({ final: value }),
+        result
+          ? finalText(result)
+          : Number(value.toFixed(2)) === value
+            ? finalText({ final: value })
+            : String(value),
       )
     : failed
       ? "جبران"
@@ -69,7 +73,21 @@ function karnamehSheetCell(
     esc(field) +
     '" data-grade-complete="' +
     complete +
-    '">' +
+    '"' +
+    (unitContext
+      ? ' data-karnameh-module="' +
+        esc(unitContext.moduleId) +
+        '" data-karnameh-unit="' +
+        esc(unitContext.unitId) +
+        '" data-karnameh-unit-position="' +
+        unitContext.position +
+        '" data-karnameh-module-position="' +
+        unitContext.modulePosition +
+        '" data-karnameh-unit-index="' +
+        unitContext.unitIndex +
+        '"'
+      : "") +
+    ">" +
     (note
       ? '<small class="karnameh-module-name">' + esc(note) + "</small>"
       : "") +
@@ -84,14 +102,16 @@ function karnamehSheetCell(
     "</span></td>"
   );
 }
-function karnamehLessonName(lesson, index, note = "") {
+function karnamehLessonName(lesson, index, note = "", context = "") {
   return (
     '<th scope="row" class="karnameh-lesson-name"><span class="karnameh-lesson-index">' +
     karnamehSheetNumber(index + 1) +
     '</span><span class="karnameh-lesson-title">' +
     esc(lesson.name) +
     (note ? "<small>" + esc(note) + "</small>" : "") +
-    "</span></th>"
+    "</span>" +
+    context +
+    "</th>"
   );
 }
 function karnamehSheetSection(title, table) {
@@ -242,7 +262,8 @@ function individualKarnameh(c, options = {}) {
   const modular = lessons.filter(
     (lesson) =>
       lesson.gradeMode !== "kardanesh" &&
-      lesson.gradingPolicy?.method === "modular",
+      lesson.gradingPolicy?.method === "modular" &&
+      !EduPolicy.unitBased(lesson.gradingPolicy),
   );
   if (modular.length) {
     const count = Math.max(...modular.map((lesson) => lesson.poudmans.length));
@@ -298,7 +319,6 @@ function individualKarnameh(c, options = {}) {
               return (
                 karnamehSheetCell(raw.m, label + " · مستمر", {
                   field: "continuous",
-                  note: pod.name,
                 }) +
                 karnamehSheetCell(raw.c, label + " · شایستگی", {
                   field: "competency",
@@ -315,6 +335,165 @@ function individualKarnameh(c, options = {}) {
         .join("") +
       "</tbody></table>";
     body += karnamehSheetSection("دروس فنی پودمانی", table);
+  }
+  const unitBasedLessons = lessons.filter((lesson) =>
+    EduPolicy.unitBased(lesson.gradingPolicy),
+  );
+  if (unitBasedLessons.length) {
+    const unitLessons = unitBasedLessons.map((lesson) => {
+      const merged = annualModularLesson(
+        parts,
+        schoolId,
+        c.id,
+        lesson,
+        student.id,
+      );
+      return {
+        lesson,
+        modules: EduReportGrades.modular(merged, student.id).modules,
+      };
+    });
+    const moduleCount = Math.max(
+      ...unitLessons.map((item) => item.modules.length),
+    );
+    const slots = Array.from({ length: moduleCount }, (_, modulePosition) => {
+      const unitCount = Math.max(
+        ...unitLessons.map(
+          (item) => item.modules[modulePosition]?.units.length || 0,
+        ),
+      );
+      return Array.from({ length: unitCount }, (_, unitIndex) => ({
+        modulePosition,
+        unitIndex,
+        key: "unit-" + modulePosition + "-" + unitIndex,
+        label:
+          "پودمان " +
+          karnamehSheetNumber(modulePosition + 1) +
+          " · واحد کار " +
+          karnamehSheetNumber(unitIndex + 1),
+      }));
+    }).flat();
+    const slotAttributes = (slot, position) =>
+      ' data-karnameh-unit-position="' +
+      position +
+      '" data-karnameh-module-position="' +
+      slot.modulePosition +
+      '" data-karnameh-unit-index="' +
+      slot.unitIndex +
+      '"';
+    const rows = unitLessons.map(
+      ({ lesson, modules }, lessonIndex) =>
+        '<tr data-karnameh-lesson="' +
+        esc(lesson.id) +
+        '" data-karnameh-lesson-row="' +
+        esc(lesson.id) +
+        '" data-grade-mode="modular-unit">' +
+        karnamehLessonName(
+          lesson,
+          lessonIndex,
+          "",
+          slots
+            .map((slot) => {
+              const module = modules[slot.modulePosition];
+              const unit = module?.units[slot.unitIndex];
+              const moduleName =
+                module?.name ||
+                "پودمان " +
+                  karnamehSheetNumber(slot.modulePosition + 1) +
+                  " تعریف نشده است";
+              const unitName = unit?.name || "واحد کار تعریف نشده است";
+              return (
+                '<small class="karnameh-unit-context no-print" data-karnameh-group="' +
+                slot.key +
+                '" title="' +
+                esc(moduleName + " · " + unitName) +
+                '"><span>' +
+                esc(moduleName) +
+                "</span><span>" +
+                esc(unitName) +
+                "</span></small>"
+              );
+            })
+            .join(""),
+        ) +
+        slots
+          .map((slot, position) => {
+            const module = modules[slot.modulePosition];
+            const unit = module?.units[slot.unitIndex];
+            if (!unit)
+              return (
+                '<td colspan="3" class="karnameh-module-na" data-karnameh-unit-unavailable="true"' +
+                slotAttributes(slot, position) +
+                ' aria-label="' +
+                esc(
+                  lesson.name +
+                    "؛ " +
+                    slot.label +
+                    "؛ " +
+                    (module
+                      ? module.name +
+                        "، واحد کار " +
+                        karnamehSheetNumber(slot.unitIndex + 1) +
+                        " تعریف نشده است"
+                      : "پودمان " +
+                        karnamehSheetNumber(slot.modulePosition + 1) +
+                        " تعریف نشده است"),
+                ) +
+                '">ندارد</td>'
+              );
+            const label = lesson.name + " · " + module.name + " · " + unit.name;
+            const unitContext = {
+              moduleId: module.id,
+              unitId: unit.id,
+              position,
+              modulePosition: slot.modulePosition,
+              unitIndex: slot.unitIndex,
+            };
+            return (
+              karnamehSheetCell(unit.inputs.m, label + " · مستمر", {
+                field: "continuous",
+                unitContext,
+              }) +
+              karnamehSheetCell(unit.inputs.c, label + " · شایستگی", {
+                field: "competency",
+                unitContext,
+              }) +
+              karnamehSheetCell(null, label + " · نتیجه واحد کار", {
+                result: unit,
+                field: "unit-result",
+                unitContext,
+              })
+            );
+          })
+          .join("") +
+        "</tr>",
+    );
+    const table =
+      '<table class="karnameh-sheet-table karnameh-unit-competency-table" data-mobile-layout="table" data-karnameh-unit-count="' +
+      slots.length +
+      '"><caption class="sr-only">' +
+      esc("دروس واحد کار · نمرات مستقل واحدهای کار · " + student.name) +
+      '</caption><thead><tr><th scope="col" rowspan="2" class="karnameh-lesson-name">درس</th>' +
+      slots
+        .map(
+          (slot, position) =>
+            '<th scope="colgroup" colspan="3" class="karnameh-stage-group"' +
+            slotAttributes(slot, position) +
+            "><span>" +
+            esc(slot.label) +
+            "</span></th>",
+        )
+        .join("") +
+      "</tr><tr>" +
+      Array.from(
+        { length: slots.length },
+        () =>
+          '<th scope="col">مستمر</th><th scope="col">شایستگی</th><th scope="col">نتیجه</th>',
+      ).join("") +
+      "</tr></thead><tbody>" +
+      rows.join("") +
+      "</tbody></table>";
+    body += karnamehSheetSection("دروس واحد کار", table);
   }
   const legacy = lessons.filter(
     (lesson) =>
@@ -435,6 +614,7 @@ let karnamehStageSelection = {
   scope: "",
   assessment: "first-midterm",
   modular: "module-0",
+  unit: "unit-0-0",
   legacy: "first-term",
 };
 
@@ -450,6 +630,7 @@ function karnamehStagePreference(schoolId, classId) {
       scope,
       assessment: "first-midterm",
       modular: "module-0",
+      unit: "unit-0-0",
       legacy: "first-term",
     };
   return karnamehStageSelection;
@@ -475,6 +656,24 @@ function karnamehTableStageGroups(table) {
       width: 3,
     }));
   }
+  if (table.classList.contains("karnameh-unit-competency-table")) {
+    return [...table.tHead.rows[0].cells].slice(1).map((header) => {
+      const modulePosition = Number(header.dataset.karnamehModulePosition);
+      const unitIndex = Number(header.dataset.karnamehUnitIndex);
+      return {
+        key: "unit-" + modulePosition + "-" + unitIndex,
+        label:
+          "پودمان " +
+          karnamehSheetNumber(modulePosition + 1) +
+          " · واحد کار " +
+          karnamehSheetNumber(unitIndex + 1),
+        shortLabel: karnamehSheetNumber(unitIndex + 1),
+        modulePosition,
+        unitIndex,
+        width: 3,
+      };
+    });
+  }
   if (table.classList.contains("karnameh-legacy-table"))
     return [
       { key: "first-term", label: "نوبت اول", width: 1 },
@@ -499,6 +698,7 @@ function applyKarnamehStage(report, kind, selected) {
         buttons[0];
     if (!selectedButton) continue;
     const activeStage = selectedButton.dataset.karnamehStage;
+    const activeModule = selectedButton.dataset.karnamehUnitModule;
     section.dataset.karnamehActiveGroup = activeStage;
     section.querySelector("table").dataset.karnamehActiveGroup = activeStage;
     for (const cell of section.querySelectorAll("[data-karnameh-group]"))
@@ -508,6 +708,8 @@ function applyKarnamehStage(report, kind, selected) {
       );
     for (const button of buttons) {
       const active = button.dataset.karnamehStage === activeStage;
+      if (kind === "unit")
+        button.hidden = button.dataset.karnamehUnitModule !== activeModule;
       button.setAttribute("aria-pressed", String(active));
       const options = button.parentElement;
       if (active && options && options.scrollWidth > options.clientWidth) {
@@ -519,6 +721,14 @@ function applyKarnamehStage(report, kind, selected) {
           options.scrollLeft += bounds.right - frame.right + 4;
       }
     }
+    if (kind === "unit")
+      for (const button of section.querySelectorAll(
+        "[data-karnameh-unit-module]:not([data-karnameh-stage])",
+      ))
+        button.setAttribute(
+          "aria-pressed",
+          String(button.dataset.karnamehUnitModule === activeModule),
+        );
     const scroll = section.querySelector(".karnameh-sheet-scroll");
     if (scroll) scroll.scrollLeft = 0;
   }
@@ -528,7 +738,12 @@ function initKarnamehStageControls(
   { schoolId, classId, validate = null },
 ) {
   const preference = validate
-    ? { assessment: "first-midterm", modular: "module-0", legacy: "first-term" }
+    ? {
+        assessment: "first-midterm",
+        modular: "module-0",
+        unit: "unit-0-0",
+        legacy: "first-term",
+      }
     : karnamehStagePreference(schoolId, classId);
   for (const section of report.querySelectorAll(".karnameh-subject-section")) {
     const table = section.querySelector("table.karnameh-sheet-table");
@@ -538,9 +753,11 @@ function initKarnamehStageControls(
     if (!options.length) continue;
     const kind = table.classList.contains("karnameh-modular-table")
       ? "modular"
-      : table.classList.contains("karnameh-legacy-table")
-        ? "legacy"
-        : "assessment";
+      : table.classList.contains("karnameh-unit-competency-table")
+        ? "unit"
+        : table.classList.contains("karnameh-legacy-table")
+          ? "legacy"
+          : "assessment";
     section.dataset.karnamehGroupSet = kind;
     const selected = options.some((group) => group.key === preference[kind])
       ? preference[kind]
@@ -568,38 +785,82 @@ function initKarnamehStageControls(
         }
       }
     if (!section.querySelector(".karnameh-stage-switcher")) {
+      const stageButtons = options
+        .map(
+          (group) =>
+            '<button type="button" data-workspace-action="karnameh-stage" data-karnameh-stage="' +
+            group.key +
+            '" aria-pressed="' +
+            (group.key === selected) +
+            '"' +
+            (kind === "unit"
+              ? ' data-karnameh-unit-module="' +
+                group.modulePosition +
+                '" data-karnameh-unit-index="' +
+                group.unitIndex +
+                '"'
+              : "") +
+            (group.shortLabel
+              ? ' aria-label="' +
+                esc(group.label) +
+                '" title="' +
+                esc(group.label) +
+                '"'
+              : "") +
+            ">" +
+            esc(group.shortLabel || group.label) +
+            "</button>",
+        )
+        .join("");
       const controls =
-        '<div class="karnameh-stage-switcher no-print"><div class="karnameh-stage-options" role="group" aria-label="' +
-        (kind === "modular" ? "انتخاب پودمان" : "انتخاب مرحلهٔ کارنامه") +
-        '">' +
-        options
-          .map(
-            (group) =>
-              '<button type="button" data-workspace-action="karnameh-stage" data-karnameh-stage="' +
-              group.key +
-              '" aria-pressed="' +
-              (group.key === selected) +
-              '">' +
-              esc(group.label) +
-              "</button>",
-          )
-          .join("") +
-        "</div></div>";
+        kind === "unit"
+          ? '<div class="karnameh-stage-switcher karnameh-unit-stage-switcher no-print">' +
+            '<div class="karnameh-unit-stage-row"><span class="karnameh-unit-stage-label">پودمان</span>' +
+            '<div class="karnameh-stage-options" role="group" aria-label="انتخاب پودمان واحدهای کار">' +
+            [...new Set(options.map((group) => group.modulePosition))]
+              .map(
+                (modulePosition) =>
+                  '<button type="button" data-workspace-action="karnameh-stage" data-karnameh-unit-module="' +
+                  modulePosition +
+                  '" aria-label="پودمان ' +
+                  karnamehSheetNumber(modulePosition + 1) +
+                  '" title="پودمان ' +
+                  karnamehSheetNumber(modulePosition + 1) +
+                  '">' +
+                  karnamehSheetNumber(modulePosition + 1) +
+                  "</button>",
+              )
+              .join("") +
+            '</div></div><div class="karnameh-unit-stage-row"><span class="karnameh-unit-stage-label">واحد کار</span>' +
+            '<div class="karnameh-stage-options" role="group" aria-label="انتخاب واحد کار پودمان">' +
+            stageButtons +
+            "</div></div></div>"
+          : '<div class="karnameh-stage-switcher no-print"><div class="karnameh-stage-options" role="group" aria-label="' +
+            (kind === "modular"
+              ? "انتخاب پودمان"
+              : kind === "unit"
+                ? "انتخاب واحد کار"
+                : "انتخاب مرحلهٔ کارنامه") +
+            '">' +
+            stageButtons +
+            "</div></div>";
       section
         .querySelector(".karnameh-subject-header")
         .insertAdjacentHTML("beforeend", controls);
     }
     applyKarnamehStage(report, kind, selected);
   }
-  karnamehStageControllers.set(report, {
+  const controller = {
     validate,
     scope: preference.scope,
     workspaceId: workspace.id,
+    workspaceYear: workspace.year,
     schoolId,
     classId,
     studentId: report.dataset.studentId,
     requests: {},
-  });
+  };
+  karnamehStageControllers.set(report, controller);
   report.dataset.karnamehCompactReady = "true";
 }
 async function selectKarnamehStage(button) {
@@ -607,13 +868,15 @@ async function selectKarnamehStage(button) {
   const controller = karnamehStageControllers.get(report);
   const section = button.closest(".karnameh-subject-section");
   const kind = section?.dataset.karnamehGroupSet;
-  const selected = button.dataset.karnamehStage;
+  let selected = button.dataset.karnamehStage;
   const current = () =>
     !!controller &&
     !!section &&
+    karnamehStageControllers.get(report) === controller &&
     report.isConnected &&
     button.isConnected &&
     report.contains(section) &&
+    workspace.year === controller.workspaceYear &&
     (controller.validate
       ? controller.validate()
       : document.getElementById("karnamehTabOutput")?.contains(report) &&
@@ -627,11 +890,37 @@ async function selectKarnamehStage(button) {
         karnamehStageSelection.scope === controller.scope);
   if (
     !current() ||
-    !["assessment", "modular", "legacy"].includes(kind) ||
-    button.disabled
+    !["assessment", "modular", "unit", "legacy"].includes(kind) ||
+    button.disabled ||
+    !section.querySelector(".karnameh-stage-switcher")?.contains(button)
   )
     return;
   const options = karnamehTableStageOptions(section.querySelector("table"));
+  if (kind === "unit") {
+    if (selected) {
+      const group = options.find((option) => option.key === selected);
+      if (
+        button.hidden ||
+        !group ||
+        button.dataset.karnamehUnitModule !== String(group.modulePosition) ||
+        button.dataset.karnamehUnitIndex !== String(group.unitIndex)
+      )
+        return;
+    } else {
+      const moduleOptions = options.filter(
+        (group) =>
+          String(group.modulePosition) === button.dataset.karnamehUnitModule,
+      );
+      const active = options.find(
+        (group) => group.key === section.dataset.karnamehActiveGroup,
+      );
+      const target =
+        moduleOptions.find((group) => group.unitIndex === active?.unitIndex) ||
+        moduleOptions[0];
+      if (!target) return;
+      selected = target.key;
+    }
+  }
   if (!options.some((group) => group.key === selected)) return;
   const request = (controller.requests[kind] =
     (controller.requests[kind] || 0) + 1);

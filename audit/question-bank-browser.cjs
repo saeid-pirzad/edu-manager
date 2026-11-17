@@ -2,6 +2,303 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { main } = require("./data-integrity.cjs");
+
+async function keyboardEditorProbe({ landscape = false } = {}) {
+  const viewport = window.visualViewport;
+  const dialog = document.querySelector(".qb-dialog");
+  const body = dialog.querySelector(".qb-body");
+  const fields = dialog.querySelector(".qb-form-fields");
+  const actions = dialog.querySelector(".qb-form > .record-editor-actions");
+  const header = dialog.querySelector(":scope > .modal-header");
+  const storage = dialog.querySelector(":scope > .qb-storage-bar");
+  const tabs = body.querySelector(":scope > .qb-tabs");
+  const original = {
+    height: viewport.height,
+    offset: viewport.offsetTop,
+    scroll: body.scrollTop,
+    focus: document.activeElement,
+    descriptors: Object.fromEntries(
+      ["height", "offsetTop"].map((key) => [
+        key,
+        Object.getOwnPropertyDescriptor(viewport, key),
+      ]),
+    ),
+  };
+  let height = original.height,
+    offset = original.offset;
+  const wait = () =>
+    new Promise((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(resolve)),
+    );
+  const resize = async (nextHeight, nextOffset) => {
+    height = nextHeight;
+    offset = nextOffset;
+    viewport.dispatchEvent(new Event("resize"));
+    viewport.dispatchEvent(new Event("scroll"));
+    await wait();
+  };
+  const visible = (node) =>
+    !!node &&
+    getComputedStyle(node).display !== "none" &&
+    node.getBoundingClientRect().height > 0;
+  const geometry = () => {
+    const box = dialog.getBoundingClientRect(),
+      footer = actions.getBoundingClientRect(),
+      bounds = body.getBoundingClientRect();
+    const form = actions.closest(".qb-form");
+    const formBox = form.getBoundingClientRect();
+    const actionStyle = getComputedStyle(actions);
+    const bodyStyle = getComputedStyle(body);
+    const focused = body.contains(document.activeElement)
+      ? document.activeElement
+      : null;
+    const field = focused?.getBoundingClientRect();
+    return {
+      top: box.top,
+      bottom: box.bottom,
+      height: box.height,
+      bodyTop: bounds.top,
+      bodyBottom: bounds.bottom,
+      footerTop: footer.top,
+      footerBottom: footer.bottom,
+      scroll: {
+        top: body.scrollTop,
+        scrollHeight: body.scrollHeight,
+        clientHeight: body.clientHeight,
+        max: Math.max(0, body.scrollHeight - body.clientHeight),
+      },
+      form: {
+        top: formBox.top,
+        bottom: formBox.bottom,
+        height: formBox.height,
+        scrollHeight: form.scrollHeight,
+      },
+      actions: {
+        height: footer.height,
+        offsetHeight: actions.offsetHeight,
+        paddingTop: actionStyle.paddingTop,
+        paddingBottom: actionStyle.paddingBottom,
+        marginTop: actionStyle.marginTop,
+        marginBottom: actionStyle.marginBottom,
+        position: actionStyle.position,
+        bottom: actionStyle.bottom,
+      },
+      bodyPadding: {
+        top: bodyStyle.paddingTop,
+        bottom: bodyStyle.paddingBottom,
+        scrollTop: bodyStyle.scrollPaddingTop,
+        scrollBottom: bodyStyle.scrollPaddingBottom,
+      },
+      field: field
+        ? {
+            tag: focused.tagName,
+            top: field.top,
+            bottom: field.bottom,
+            height: field.height,
+          }
+        : null,
+    };
+  };
+  const initial = geometry();
+  const chrome = {
+    header: header.getBoundingClientRect().height,
+    storage: storage.getBoundingClientRect().height,
+    tabs: tabs?.getBoundingClientRect().height || 0,
+  };
+  const controls = [
+    ...fields.querySelectorAll(
+      'input:not([type="checkbox"]):not([type="radio"]):not([type="date"]),textarea',
+    ),
+  ].filter(
+    (control) => !control.disabled && control.getClientRects().length > 0,
+  );
+  const originals = controls.map((control) => ({
+    control,
+    value: control.value,
+    css: control.style.cssText,
+    start: control.selectionStart,
+    end: control.selectionEnd,
+    height: control.getBoundingClientRect().height,
+  }));
+  const cleanup = async () => {
+    for (const item of originals) {
+      item.control.value = item.value;
+      item.control.style.cssText = item.css;
+      if (item.start !== null)
+        item.control.setSelectionRange(item.start, item.end);
+    }
+    for (const key of ["height", "offsetTop"]) {
+      if (original.descriptors[key])
+        Object.defineProperty(viewport, key, original.descriptors[key]);
+      else delete viewport[key];
+    }
+    document.activeElement?.blur();
+    viewport.dispatchEvent(new Event("resize"));
+    viewport.dispatchEvent(new Event("scroll"));
+    await wait();
+    original.focus?.focus({ preventScroll: true });
+    await wait();
+    body.scrollTop = original.scroll;
+    delete globalThis.__qbKeyboardCleanup;
+  };
+  globalThis.__qbKeyboardCleanup = cleanup;
+  Object.defineProperty(viewport, "height", {
+    configurable: true,
+    get: () => height,
+  });
+  Object.defineProperty(viewport, "offsetTop", {
+    configurable: true,
+    get: () => offset,
+  });
+  const cases = [];
+  const chromeStable = () =>
+    visible(header) &&
+    visible(storage) &&
+    (!tabs || visible(tabs)) &&
+    Math.abs(header.getBoundingClientRect().height - chrome.header) <= 1 &&
+    Math.abs(storage.getBoundingClientRect().height - chrome.storage) <= 1 &&
+    (!tabs || Math.abs(tabs.getBoundingClientRect().height - chrome.tabs) <= 1);
+  try {
+    const phases = landscape
+      ? [
+          [250, 0],
+          [210, 30],
+          [250, 0],
+        ]
+      : [
+          [420, 0],
+          [320, 60],
+          [420, 0],
+        ];
+    for (const [nextHeight, nextOffset] of phases) {
+      await resize(nextHeight, nextOffset);
+      const targets = [
+        ...new Set([
+          controls[0],
+          controls[Math.floor(controls.length / 2)],
+          controls.at(-1),
+        ]),
+      ];
+      for (const target of targets) {
+        body.scrollTop = 0;
+        target.value = "آزمون حفظ نوشته و مکان‌نما ۱۲۳";
+        target.focus({ preventScroll: true });
+        if (target.selectionStart !== null) target.setSelectionRange(3, 8);
+        viewport.dispatchEvent(new Event("resize"));
+        await wait();
+        const g = geometry(),
+          box = target.getBoundingClientRect(),
+          before = originals.find((item) => item.control === target);
+        const top = g.bodyTop,
+          bottom = Math.min(g.bodyBottom, g.footerTop);
+        const fits = box.top >= top - 0.1 && box.bottom <= bottom + 0.1;
+        cases.push({
+          phase: "focus",
+          viewport: nextHeight,
+          offset: nextOffset,
+          field: target.tagName,
+          frame:
+            Math.abs(g.top - nextOffset) <= 1 &&
+            Math.abs(g.bottom - (nextOffset + nextHeight)) <= 1,
+          chrome: chromeStable(),
+          footer:
+            visible(actions) &&
+            g.footerBottom <= nextOffset + nextHeight + 1 &&
+            g.footerTop >= g.bodyTop - 1,
+          fieldVisible: fits,
+          size:
+            (target.tagName === "TEXTAREA"
+              ? box.height >= 44 && box.height <= before.height + 1
+              : Math.abs(box.height - before.height) <= 1) &&
+            parseFloat(getComputedStyle(target).fontSize) >= 16,
+          preserved:
+            target.value === "آزمون حفظ نوشته و مکان‌نما ۱۲۳" &&
+            (target.selectionStart === null ||
+              (target.selectionStart === 3 && target.selectionEnd === 8)),
+          geometry: g,
+        });
+      }
+      const beforeBlur = geometry();
+      actions.querySelector("button").focus({ preventScroll: true });
+      await wait();
+      const afterBlur = geometry();
+      cases.push({
+        phase: "blur-to-button",
+        viewport: nextHeight,
+        offset: nextOffset,
+        stable: ["top", "bottom", "height", "footerTop", "footerBottom"].every(
+          (key) => Math.abs(beforeBlur[key] - afterBlur[key]) <= 1,
+        ),
+        chrome: chromeStable(),
+        footer: afterBlur.footerBottom <= nextOffset + nextHeight + 1,
+      });
+      await resize(original.height, original.offset);
+      const restored = geometry();
+      cases.push({
+        phase: "keyboard-close",
+        frame:
+          Math.abs(restored.top - initial.top) <= 1 &&
+          Math.abs(restored.height - initial.height) <= 1,
+        chrome: chromeStable(),
+      });
+    }
+    const textarea = controls.find((control) => control.tagName === "TEXTAREA");
+    if (textarea) {
+      await resize(landscape ? 210 : 320, landscape ? 30 : 60);
+      textarea.value =
+        "نوشتهٔ بلند برای کنترل محل شروع و حفظ مکان‌نما. ".repeat(24);
+      textarea.style.height = "380px";
+      textarea.scrollTop = 0;
+      body.scrollTop = 0;
+      textarea.focus({ preventScroll: true });
+      textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+      viewport.dispatchEvent(new Event("resize"));
+      await wait();
+      const g = geometry(),
+        box = textarea.getBoundingClientRect();
+      cases.push({
+        phase: "long-textarea",
+        fieldVisible:
+          box.top >= g.bodyTop - 0.1 &&
+          box.bottom <= Math.min(g.bodyBottom, g.footerTop) + 0.1,
+        capped: box.height >= 44 && box.height < 380,
+        caret:
+          textarea.selectionStart === textarea.value.length &&
+          textarea.selectionEnd === textarea.value.length,
+        preserved:
+          textarea.value.startsWith("نوشتهٔ بلند") &&
+          textarea.value.length > 300,
+        chrome: chromeStable(),
+        footer: g.footerBottom <= offset + height + 1,
+        geometry: g,
+      });
+    } else {
+      await resize(landscape ? 210 : 320, landscape ? 30 : 60);
+      controls.at(-1).focus({ preventScroll: true });
+      await wait();
+    }
+    const pass = cases.every((item) =>
+      Object.entries(item).every(
+        ([key, value]) =>
+          ["phase", "viewport", "offset", "field", "geometry"].includes(key) ||
+          value === true,
+      ),
+    );
+    if (!pass) throw Error(JSON.stringify(cases));
+    return {
+      cases: cases.length,
+      landscape,
+      longTextarea: !!textarea,
+      singleScroller:
+        getComputedStyle(body).overflowY === "auto" &&
+        getComputedStyle(fields).overflowY === "visible",
+    };
+  } catch (error) {
+    await cleanup();
+    throw error;
+  }
+}
+
 main({
   stage: "question-bank",
   runExtra: async ({ evaluate, cdp, cases, root, delay }) => {
@@ -40,6 +337,44 @@ main({
         })()`),
       );
     };
+    const checkNativeTextareaCaret = async (name, observed) => {
+      if (!observed.longTextarea) return;
+      await evaluate(`(()=>{
+        const field=document.activeElement;
+        field.setSelectionRange(0,0);
+        field.scrollTop=0;
+        globalThis.__qbKeyEndEvent={beforeStart:field.selectionStart,beforeEnd:field.selectionEnd,scrollHeight:field.scrollHeight,clientHeight:field.clientHeight};
+        document.addEventListener('keydown',event=>{
+          const record=globalThis.__qbKeyEndEvent;
+          record.key=event.key;record.ctrlKey=event.ctrlKey;
+          queueMicrotask(()=>record.defaultPrevented=event.defaultPrevented);
+        },{once:true});
+      })()`);
+      await cdp("Input.dispatchKeyEvent", {
+        type: "keyDown",
+        key: "End",
+        code: "End",
+        windowsVirtualKeyCode: 35,
+        modifiers: 2,
+      });
+      await cdp("Input.dispatchKeyEvent", {
+        type: "keyUp",
+        key: "End",
+        code: "End",
+        windowsVirtualKeyCode: 35,
+        modifiers: 2,
+      });
+      await delay(50);
+      check(
+        `${name} long textarea reveals its last caret inside its own visible scroll area`,
+        await evaluate(`(()=>{
+          const field=document.activeElement,body=document.querySelector('.qb-body'),actions=document.querySelector('.qb-form > .record-editor-actions');
+          const box=field.getBoundingClientRect(),bounds=body.getBoundingClientRect(),footer=actions.getBoundingClientRect();
+          const pass=field.tagName==='TEXTAREA'&&field.selectionStart===field.value.length&&field.selectionEnd===field.value.length&&field.scrollTop>0&&field.value.startsWith('نوشتهٔ بلند')&&field.value.length>300&&box.height>=44&&box.top>=bounds.top-0.1&&box.bottom<=Math.min(bounds.bottom,footer.top)+0.1;
+          if(!pass)throw Error(JSON.stringify({field:field.tagName,caret:field.selectionStart,length:field.value?.length,scrollTop:field.scrollTop,scrollHeight:field.scrollHeight,clientHeight:field.clientHeight,keyEvent:globalThis.__qbKeyEndEvent,box:{top:box.top,bottom:box.bottom,height:box.height},body:{top:bounds.top,bottom:bounds.bottom},footer:{top:footer.top,bottom:footer.bottom}}));delete globalThis.__qbKeyEndEvent;return pass;
+        })()`),
+      );
+    };
     const captureEditor = async (name) => {
       for (const width of [390, 768, 1440]) {
         await cdp("Emulation.setDeviceMetricsOverride", {
@@ -70,24 +405,60 @@ main({
           );
         const shot = await cdp("Page.captureScreenshot", { format: "png" });
         if (width === 390) {
-          check(
-            `${name} form stays usable above the mobile keyboard`,
-            await evaluate(`(async()=>{
-            const root=document.documentElement,style=root.style,oldHeight=style.getPropertyValue('--app-viewport'),fields=document.querySelector('.qb-form-fields'),scroll=fields.scrollTop;
-            const target=[...fields.querySelectorAll('input:not([type=checkbox]):not([type=date]),textarea')].at(-1);
-            const viewport=window.visualViewport,descriptor=Object.getOwnPropertyDescriptor(viewport,'height');Object.defineProperty(viewport,'height',{configurable:true,get:()=>420});target.focus({preventScroll:true});viewport.dispatchEvent(new Event('resize'));
-            await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-            const dialog=document.querySelector('.qb-dialog').getBoundingClientRect(),r=target.getBoundingClientRect(),bounds=fields.getBoundingClientRect();
-            const pass=getComputedStyle(document.querySelector('.qb-storage-bar')).display==='none'&&dialog.top>=0&&dialog.bottom<=421&&bounds.height>=r.height&&r.top>=bounds.top-1&&r.bottom<=bounds.bottom+1&&parseFloat(getComputedStyle(target).fontSize)>=16;
-            if(descriptor)Object.defineProperty(viewport,'height',descriptor);else delete viewport.height;target.blur();viewport.dispatchEvent(new Event('resize'));root.dataset.keyboardOpen='false';style.setProperty('--app-viewport',oldHeight);await new Promise(r=>requestAnimationFrame(r));fields.scrollTop=scroll;
-            if(!pass)throw Error(JSON.stringify({dialog:{top:dialog.top,bottom:dialog.bottom},field:{top:r.top,bottom:r.bottom,height:r.height},bounds:{top:bounds.top,bottom:bounds.bottom,height:bounds.height},font:getComputedStyle(target).fontSize}));return pass&&getComputedStyle(document.querySelector('.qb-storage-bar')).display!=='none';
-          })()`),
-          );
+          try {
+            const observed = await evaluate(
+              "(" + keyboardEditorProbe.toString() + ")()",
+            );
+            check(
+              `${name} keyboard keeps the frame, fields, caret, chrome and actions usable`,
+              observed.cases >= 9 && observed.singleScroller,
+            );
+            await checkNativeTextareaCaret(name, observed);
+            const keyboardShot = await cdp("Page.captureScreenshot", {
+              format: "png",
+            });
+            fs.writeFileSync(
+              path.join(out, `${name}-keyboard-390.png`),
+              Buffer.from(keyboardShot.data, "base64"),
+            );
+          } finally {
+            await evaluate("globalThis.__qbKeyboardCleanup?.()");
+          }
         }
         fs.writeFileSync(
           path.join(out, `${name}-form-${width}.png`),
           Buffer.from(shot.data, "base64"),
         );
+      }
+      await cdp("Emulation.setTouchEmulationEnabled", {
+        enabled: true,
+        maxTouchPoints: 5,
+      });
+      await cdp("Emulation.setDeviceMetricsOverride", {
+        width: 844,
+        height: 390,
+        deviceScaleFactor: 1,
+        mobile: true,
+      });
+      await delay(80);
+      try {
+        const observed = await evaluate(
+          "(" + keyboardEditorProbe.toString() + ")({landscape:true})",
+        );
+        check(
+          `${name} keyboard supports a phone in landscape`,
+          observed.cases >= 9 && observed.singleScroller,
+        );
+        await checkNativeTextareaCaret(name + " landscape", observed);
+      } finally {
+        await evaluate("globalThis.__qbKeyboardCleanup?.()");
+        await cdp("Emulation.setTouchEmulationEnabled", { enabled: false });
+        await cdp("Emulation.setDeviceMetricsOverride", {
+          width: 1440,
+          height: 900,
+          deviceScaleFactor: 1,
+          mobile: false,
+        });
       }
     };
     await evaluate(`closeModal();goSchools();`);
@@ -527,14 +898,31 @@ main({
         }
         if (view === "builder") {
           check(
-            `form content scrolls strictly between fixed tabs and footer ${width}`,
-            await evaluate(`(()=>{
+            `builder keeps its fields and actions reachable with the appropriate scroll area ${width}`,
+            await evaluate(`(async()=>{
               const fields=document.querySelector('.qb-form-fields'),tabs=document.querySelector('.qb-tabs'),footer=document.querySelector('.qb-form>.record-editor-actions'),body=document.querySelector('.qb-body');
-              const before={tab:tabs.getBoundingClientRect().top,footer:footer.getBoundingClientRect().top};
-              fields.scrollTop=fields.scrollHeight;
-              const box=fields.getBoundingClientRect();
-              const pass=box.height>0&&box.top>=tabs.getBoundingClientRect().bottom-1&&box.bottom<=footer.getBoundingClientRect().top+1&&Math.abs(before.tab-tabs.getBoundingClientRect().top)<1&&Math.abs(before.footer-footer.getBoundingClientRect().top)<1&&getComputedStyle(body).overflowY==='hidden'&&getComputedStyle(footer).position==='static'&&(fields.scrollHeight<=fields.clientHeight+1||fields.scrollTop>0);
-              fields.scrollTop=0;return pass;
+              const previous={body:body.scrollTop,fields:fields.scrollTop};
+              const mobile=matchMedia('(max-width:700px), (max-height:500px) and (pointer:coarse)').matches;
+              const wait=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+              try{
+                if(mobile){
+                  body.scrollTop=0;await wait();
+                  const tabTop=tabs.getBoundingClientRect().top;
+                  const footerInside=()=>{const bounds=body.getBoundingClientRect(),actions=footer.getBoundingClientRect();return actions.height>0&&actions.top>=bounds.top-0.1&&actions.bottom<=bounds.bottom+0.1;};
+                  const startFooter=footerInside();
+                  body.scrollTop=body.scrollHeight;await wait();
+                  const bounds=body.getBoundingClientRect(),actions=footer.getBoundingClientRect();
+                  const last=[...fields.querySelectorAll('input,select,textarea')].filter(field=>!field.disabled&&field.getClientRects().length>0).at(-1).getBoundingClientRect();
+                  const canScroll=body.scrollHeight>body.clientHeight+1;
+                  const observed={bodyScroll:getComputedStyle(body).overflowY==='auto',fieldsFlow:getComputedStyle(fields).overflowY==='visible',stickyFooter:getComputedStyle(footer).position==='sticky',tabsFlow:getComputedStyle(tabs).position==='static',startFooter,endFooter:footerInside(),lastReachable:last.top>=bounds.top-0.1&&last.bottom<=Math.min(bounds.bottom,actions.top)+0.1,scrollWorks:!canScroll||body.scrollTop>0,tabsScroll:!canScroll||tabs.getBoundingClientRect().top<tabTop-1,noHorizontal:body.scrollWidth<=body.clientWidth+1&&fields.scrollWidth<=fields.clientWidth+1};
+                  if(!Object.values(observed).every(Boolean))throw Error(JSON.stringify({mobile,observed,scroll:{top:body.scrollTop,max:body.scrollHeight-body.clientHeight},body:{top:bounds.top,bottom:bounds.bottom},footer:{top:actions.top,bottom:actions.bottom},last:{top:last.top,bottom:last.bottom,height:last.height}}));
+                  return true;
+                }
+                const before={tab:tabs.getBoundingClientRect().top,footer:footer.getBoundingClientRect().top};
+                fields.scrollTop=fields.scrollHeight;
+                const box=fields.getBoundingClientRect();
+                return box.height>0&&box.top>=tabs.getBoundingClientRect().bottom-1&&box.bottom<=footer.getBoundingClientRect().top+1&&Math.abs(before.tab-tabs.getBoundingClientRect().top)<1&&Math.abs(before.footer-footer.getBoundingClientRect().top)<1&&getComputedStyle(body).overflowY==='hidden'&&getComputedStyle(footer).position==='static'&&(fields.scrollHeight<=fields.clientHeight+1||fields.scrollTop>0);
+              }finally{body.scrollTop=previous.body;fields.scrollTop=previous.fields;}
             })()`),
           );
           check(
@@ -578,7 +966,7 @@ main({
             check(
               `mobile exam fields keep compact touch dimensions ${width}`,
               await evaluate(
-                `(()=>{const inputs=[...document.querySelectorAll('.qb-builder input:not([type=checkbox]):not([type=date])')].filter(n=>!n.closest('details:not([open])'));return inputs.length===10&&inputs.every(n=>Math.abs(n.getBoundingClientRect().height-40)<0.5)&&[...document.querySelectorAll('.qb-count-field')].every(n=>n.getBoundingClientRect().height<=125)&&getComputedStyle(document.querySelector('.qb-builder')).gridTemplateColumns.split(' ').length===2;})()`,
+                `(()=>{const inputs=[...document.querySelectorAll('.qb-builder input:not([type=checkbox]):not([type=date])')].filter(n=>!n.closest('details:not([open])'));const grid=getComputedStyle(document.querySelector('.qb-builder>.qb-form-fields')).gridTemplateColumns;const cards=[...document.querySelectorAll('.qb-count-field')].map(n=>({height:n.getBoundingClientRect().height,rows:getComputedStyle(n).gridTemplateRows}));const pass=inputs.length===10&&inputs.every(n=>Math.abs(n.getBoundingClientRect().height-44)<0.5)&&cards.every(n=>n.height<=125)&&grid.split(' ').length===2;if(!pass)throw Error(JSON.stringify({count:inputs.length,inputs:inputs.map(n=>({type:n.type,label:n.closest('label')?.textContent,height:n.getBoundingClientRect().height,computedHeight:getComputedStyle(n).height,minHeight:getComputedStyle(n).minHeight})),gridColumns:grid,cardHeights:cards}));return pass;})()`,
               ),
             );
           const actions = await evaluate(

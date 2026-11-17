@@ -26,6 +26,35 @@ globalThis.EduFrozenReportValidator = Object.freeze({
         value <= 20);
     const optionalBoolean = (value) =>
       value == null || typeof value === "boolean";
+    const checkInputs = (item, policy, required = false) => {
+      if (item.inputs === undefined && !required) return;
+      const inputs = item.inputs;
+      if (
+        !isDataObject(inputs) ||
+        Object.keys(inputs).length !== 2 ||
+        !Object.hasOwn(inputs, "m") ||
+        !Object.hasOwn(inputs, "c")
+      )
+        fail();
+      for (const field of ["m", "c"])
+        if (
+          inputs[field] !== null &&
+          (typeof inputs[field] !== "number" ||
+            !Number.isFinite(inputs[field]) ||
+            !gradePolicy.parse(inputs[field], policy, field, "pod").ok)
+        )
+          fail();
+      const expected = gradePolicy.moduleResult(policy, inputs);
+      if (
+        item.final !== expected.final ||
+        item.complete !== expected.complete ||
+        item.passed !== expected.passed ||
+        (required &&
+          (item.reason !== expected.reason ||
+            item.threshold !== expected.threshold))
+      )
+        fail();
+    };
     assertSafeDataTree(report);
     if (
       !isDataObject(report) ||
@@ -142,7 +171,22 @@ globalThis.EduFrozenReportValidator = Object.freeze({
               modules.add(m.id);
             }
           }
-          if (l.policy?.version === 1 && l.policy.method === "modular") {
+          if (
+            l.unitBased === true ||
+            l.policy?.modularScope === "unit" ||
+            l.modules?.some((module) => module.units !== undefined)
+          ) {
+            if (
+              !gradePolicy ||
+              !gradePolicy.unitBased(l.policy) ||
+              l.policy.version !== 2
+            )
+              fail();
+          }
+          if (
+            [1, 2].includes(l.policy?.version) &&
+            l.policy.method === "modular"
+          ) {
             if (
               !gradePolicy ||
               l.mode !== "standard" ||
@@ -151,6 +195,54 @@ globalThis.EduFrozenReportValidator = Object.freeze({
             )
               fail();
             gradePolicy.validate(l.policy);
+            if (gradePolicy.unitBased(l.policy)) {
+              if (
+                l.unitBased !== true ||
+                l.final !== null ||
+                l.passed !== null ||
+                l.provisionalAverage != null ||
+                l.mostamar != null ||
+                l.payani != null ||
+                l.practical != null ||
+                l.theory != null
+              )
+                fail();
+              const unitIds = new Set();
+              for (const module of l.modules) {
+                if (
+                  !Array.isArray(module.units) ||
+                  module.inputs !== undefined ||
+                  module.final !== null ||
+                  module.passed !== null ||
+                  module.provisionalAverage != null
+                )
+                  fail();
+                for (const unit of module.units) {
+                  if (
+                    !isDataObject(unit) ||
+                    !isSafeRecordId(unit.id) ||
+                    unitIds.has(unit.id) ||
+                    !text(unit.name) ||
+                    !score(unit.final) ||
+                    typeof unit.complete !== "boolean" ||
+                    !optionalBoolean(unit.passed) ||
+                    !text(unit.reason)
+                  )
+                    fail();
+                  unitIds.add(unit.id);
+                  checkInputs(unit, l.policy, true);
+                }
+                if (
+                  module.complete !==
+                  (module.units.length > 0 &&
+                    module.units.every((unit) => unit.complete))
+                )
+                  fail();
+              }
+              if (l.complete !== l.modules.every((module) => module.complete))
+                fail();
+              continue;
+            }
             for (const module of l.modules) {
               if (
                 typeof module.complete !== "boolean" ||
@@ -160,32 +252,7 @@ globalThis.EduFrozenReportValidator = Object.freeze({
                 (module.passed === true && module.final < l.policy.moduleMin)
               )
                 fail();
-              if (module.inputs !== undefined) {
-                const inputs = module.inputs;
-                if (
-                  !isDataObject(inputs) ||
-                  Object.keys(inputs).length !== 2 ||
-                  !Object.hasOwn(inputs, "m") ||
-                  !Object.hasOwn(inputs, "c")
-                )
-                  fail();
-                for (const field of ["m", "c"])
-                  if (
-                    inputs[field] !== null &&
-                    (typeof inputs[field] !== "number" ||
-                      !Number.isFinite(inputs[field]) ||
-                      !gradePolicy.parse(inputs[field], l.policy, field, "pod")
-                        .ok)
-                  )
-                    fail();
-                const expected = gradePolicy.moduleResult(l.policy, inputs);
-                if (
-                  module.final !== expected.final ||
-                  module.complete !== expected.complete ||
-                  module.passed !== expected.passed
-                )
-                  fail();
-              }
+              checkInputs(module, l.policy);
             }
             // Older snapshots have results only. Validate their aggregate
             // without inventing raw inputs; new inputs are checked above.
@@ -200,14 +267,19 @@ globalThis.EduFrozenReportValidator = Object.freeze({
           st.lessons.length &&
           st.lessons.every(
             (lesson) =>
-              lesson.policy?.version === 1 &&
+              [1, 2].includes(lesson.policy?.version) &&
               ["dual", "modular"].includes(lesson.policy.method),
           )
         ) {
-          const average = st.lessons.every((lesson) => lesson.final != null)
-            ? st.lessons.reduce((sum, lesson) => sum + lesson.final, 0) /
-              st.lessons.length
-            : null;
+          const averagedLessons = st.lessons.filter(
+            (lesson) => !gradePolicy.unitBased(lesson.policy),
+          );
+          const average =
+            averagedLessons.length &&
+            averagedLessons.every((lesson) => lesson.final != null)
+              ? averagedLessons.reduce((sum, lesson) => sum + lesson.final, 0) /
+                averagedLessons.length
+              : null;
           if (st.average !== average) fail();
         }
       }

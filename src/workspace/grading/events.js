@@ -11,7 +11,11 @@ function filterAssessmentRows(root) {
     ?.checked;
   let visible = 0;
   const activePanel =
-    root.querySelector("[data-module-panel]:not([hidden])") || root;
+    root.querySelector(
+      "[data-module-panel]:not([hidden]) [data-unit-panel]:not([hidden])",
+    ) ||
+    root.querySelector("[data-module-panel]:not([hidden])") ||
+    root;
   for (const row of activePanel.querySelectorAll("[data-assessment-name]")) {
     row.hidden =
       !normalize(row.dataset.assessmentName).includes(query) ||

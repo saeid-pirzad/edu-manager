@@ -350,6 +350,7 @@ function modularValues(values) {
   Object.assign(values, {
     branch: "fani",
     method: "modular",
+    modularScope: "module",
     subjectType: "vocational",
     mostamarMax: "5",
     continuousStep: "0.5",
@@ -464,6 +465,44 @@ test("unchanged modular counts preserve stable identities, variable unit counts,
   await f.c.save();
   assert.equal(JSON.stringify(f.classroom.lessons[0].poudmans), before);
   assert.equal(f.classroom.lessons[0].teacher, "دبیر اصلاح‌شده");
+  assert.equal(
+    Object.hasOwn(f.classroom.lessons[0].gradingPolicy, "modularScope"),
+    false,
+  );
+});
+
+test("selecting independent work-unit grading marks its policy version without replacing module or unit identities", async () => {
+  const f = modularEditorFixture();
+  const before = JSON.stringify(f.lesson.poudmans);
+  f.values.modularScope = "unit";
+  await f.c.save();
+  const saved = f.classroom.lessons[0];
+  assert.equal(saved.gradingPolicy.modularScope, "unit");
+  assert.equal(saved.gradingPolicy.version, 2);
+  assert.equal(JSON.stringify(saved.poudmans), before);
+});
+
+test("an invalid modular score scope cannot change a saved course", async () => {
+  const f = modularEditorFixture();
+  const before = JSON.stringify(f.classroom);
+  f.values.modularScope = "combined";
+  await assert.rejects(f.c.save(), /مبنای ثبت نمره/);
+  assert.equal(JSON.stringify(f.classroom), before);
+  assert.deepEqual(f.calls, []);
+});
+
+test("existing work-unit scores lock the editor against switching its grading scope", async () => {
+  const f = modularEditorFixture();
+  Object.assign(f.lesson.gradingPolicy, { modularScope: "unit", version: 2 });
+  f.lesson.poudmans[0].units[0].competencyScores = {
+    student: { m: 4, c: 3 },
+  };
+  f.c.editing.seed = structuredClone(f.lesson);
+  const before = JSON.stringify(f.classroom);
+  f.values.modularScope = "module";
+  await assert.rejects(f.c.save(), /سوابق این درس تغییر کرده/);
+  assert.equal(JSON.stringify(f.classroom), before);
+  assert.deepEqual(f.calls, []);
 });
 
 test("increasing module count appends empty stable-ID modules and preserves retained modules exactly", async () => {
@@ -611,7 +650,7 @@ test("existing modular count controls remain visible while dual controls keep th
         nodes.set(id, {
           hidden: false,
           value: "modular",
-          closest: () => ({}),
+          closest: () => ({ firstChild: { textContent: "" } }),
           matches: () => false,
         });
       return nodes.get(id);

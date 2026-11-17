@@ -68,6 +68,8 @@ function assertCompatibleTermLessons(reference, candidate) {
   }
   if (reference.gradingPolicy?.method === "modular") {
     if (
+      EduPolicy.unitBased(reference.gradingPolicy) !==
+        EduPolicy.unitBased(candidate.gradingPolicy) ||
       [
         "version",
         "mostamarMax",
@@ -215,15 +217,31 @@ function annualModularLesson(parts, schoolId, classId, lesson, sid) {
     archivedStudents: [],
     lessons: classroom.lessons
       .filter((item) => item.id === lesson.id)
-      .map((item) => ({
-        ...clone(item),
-        poudmans: item.poudmans.map((pod) => ({
-          ...clone(pod),
-          podScores: Object.hasOwn(pod.podScores || {}, sid)
-            ? { [sid]: clone(pod.podScores[sid]) }
-            : {},
-        })),
-      })),
+      .map((item) => {
+        const unitBased = EduPolicy.unitBased(item.gradingPolicy);
+        return {
+          ...clone(item),
+          ...(unitBased ? { kardaneshScores: {} } : {}),
+          poudmans: item.poudmans.map((pod) => ({
+            ...clone(pod),
+            podScores:
+              !unitBased && Object.hasOwn(pod.podScores || {}, sid)
+                ? { [sid]: clone(pod.podScores[sid]) }
+                : {},
+            units: pod.units.map((unit) => ({
+              ...clone(unit),
+              ...(unitBased ? { unitScores: {} } : {}),
+              ...(unit.competencyScores !== undefined
+                ? {
+                    competencyScores: Object.hasOwn(unit.competencyScores, sid)
+                      ? { [sid]: clone(unit.competencyScores[sid]) }
+                      : {},
+                  }
+                : {}),
+            })),
+          })),
+        };
+      }),
   });
   const versions = parts.flatMap((part) => {
     const classroom = part.data.schools
@@ -238,8 +256,8 @@ function annualModularLesson(parts, schoolId, classId, lesson, sid) {
 }
 
 function annualModularUnitRows(parts, schoolId, classId, lessonId, sid) {
-  // Official module grades are shared across the year; work-unit inputs are
-  // still independent term records. Never replace one term with the other.
+  // These are historical unit inputs of the module-based model. Official
+  // unit-based competency records are annual and use a separate DTO.
   const order = (period) => {
     const kind =
       period.termKind ||
@@ -257,6 +275,7 @@ function annualModularUnitRows(parts, schoolId, classId, lessonId, sid) {
         .find((school) => school.id === schoolId)
         ?.classes.find((classroom) => classroom.id === classId)
         ?.lessons.find((course) => course.id === lessonId);
+      if (EduPolicy.unitBased(lesson?.gradingPolicy)) return [];
       return (lesson?.poudmans || []).flatMap((pod) =>
         pod.units.map((unit) => {
           const raw = ownScoreRecord(unit.unitScores, sid);
@@ -322,32 +341,48 @@ function annualTechnicalRows(parts, schoolId, classId, studentId = "") {
             lessonName: lesson.name,
             term: formal ? "سالانه" : part.period.term,
             method: legacy ? "legacy-unit" : "modular",
+            ...(r.unitBased ? { unitBased: true } : {}),
             legacyUnits,
-            units: formal
-              ? annualModularUnitRows(parts, schoolId, c.id, lesson.id, st.id)
-              : [],
+            units: r.unitBased
+              ? r.modules.flatMap((pod) =>
+                  pod.units.map((unit) => ({
+                    ...unit,
+                    term: "سالانه",
+                    moduleId: pod.id,
+                    unitId: unit.id,
+                    moduleName: pod.name,
+                    unitName: unit.name,
+                    mostamar: unit.inputs.m,
+                    competency: unit.inputs.c,
+                  })),
+                )
+              : formal
+                ? annualModularUnitRows(parts, schoolId, c.id, lesson.id, st.id)
+                : [],
             provisionalAverage: legacy ? (r.final ?? null) : null,
             final: legacy && !complete ? null : (r.final ?? null),
             complete,
             passed: legacy ? null : (r.passed ?? null),
-            modules: (r.modules || []).map((m) => ({
-              name: m.name,
-              continuous:
-                ownScoreRecord(
-                  merged.poudmans.find((p) => p.id === m.id)?.podScores,
-                  st.id,
-                ).m ?? null,
-              competency:
-                ownScoreRecord(
-                  merged.poudmans.find((p) => p.id === m.id)?.podScores,
-                  st.id,
-                ).c ?? null,
-              final: m.final ?? null,
-              threshold: m.threshold ?? null,
-              complete: m.complete,
-              passed: m.passed,
-              reason: m.reason || "",
-            })),
+            modules: (r.modules || []).map((m) => {
+              const inputs = r.unitBased
+                ? {}
+                : ownScoreRecord(
+                    merged.poudmans.find((p) => p.id === m.id)?.podScores,
+                    st.id,
+                  );
+              return {
+                id: m.id,
+                name: m.name,
+                ...(m.units ? { units: clone(m.units) } : {}),
+                continuous: inputs.m ?? null,
+                competency: inputs.c ?? null,
+                final: m.final ?? null,
+                threshold: m.threshold ?? null,
+                complete: m.complete,
+                passed: m.passed,
+                reason: m.reason || "",
+              };
+            }),
           });
         }
       }

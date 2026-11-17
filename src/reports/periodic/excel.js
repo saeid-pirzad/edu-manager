@@ -89,10 +89,24 @@ function excelReportSheets(m) {
     ["تعداد هنرجویان با سابقه جلسه", m.summary.students],
     ["نرخ حضور (درصد)", m.summary.attendanceRate],
     ["ثبت‌های فعالیت", m.summary.recordedMarks],
-    [
-      "نمرات واحد کار",
-      "نمرات واحدهای کار جزئیات آموزشی‌اند؛ برای پودمان رسمی، نتیجه از مستمر و شایستگی پودمان محاسبه می‌شود. سلول نمره ترکیبی واحد کار در روش رسمی خالی است.",
-    ],
+    ...((m.technicalGrades || []).some(
+      (grade) => grade.method === "modular" && !grade.unitBased,
+    )
+      ? [
+          [
+            "واحد کار در روش نمره‌دهی پودمان",
+            "در روش ثبت نمره برای پودمان، واحدهای کار جزئیات آموزشی‌اند؛ نتیجهٔ رسمی از مستمر و شایستگی پودمان محاسبه می‌شود و نمرهٔ ترکیبی واحد کار خالی است.",
+          ],
+        ]
+      : []),
+    ...((m.technicalGrades || []).some((grade) => grade.unitBased)
+      ? [
+          [
+            "ارزشیابی مستقل واحدهای کار",
+            "در روش ثبت نمره برای واحد کار، نمرهٔ هر واحد از مستمر و شایستگی خودش محاسبه می‌شود؛ پودمان و درس نمرهٔ تجمیعی ندارند. این نمرات در هر دو نوبت سال مشترک‌اند.",
+          ],
+        ]
+      : []),
     ...(m.definitions || []).map((text) => ["مبنای گزارش", text]),
     ...(m.warnings || []).map((text) => ["نیازمند بررسی", text]),
     [
@@ -208,7 +222,7 @@ function excelReportSheets(m) {
     (rows || []).filter(
       (g) => m.audience !== "parent" || g.studentId === m.student?.id,
     );
-  if (m.annualGrades) {
+  if (m.annualGrades?.length) {
     const rows = [],
       annual = [];
     for (const g of eligible(m.annualGrades)) {
@@ -272,6 +286,7 @@ function excelReportSheets(m) {
   if (m.technicalGrades?.length) {
     const totals = [],
       modules = [],
+      competencyUnits = [],
       units = [];
     for (const g of eligible(m.technicalGrades)) {
       const identity = [
@@ -282,8 +297,24 @@ function excelReportSheets(m) {
         g.term,
         g.method === "legacy-unit"
           ? "روش قدیمی واحد کار؛ غیررسمی"
-          : "پودمانی سالانه",
+          : g.unitBased
+            ? "واحد کار پودمانی سالانه"
+            : "پودمانی سالانه",
       ];
+      if (g.unitBased) {
+        for (const module of g.modules)
+          for (const unit of module.units)
+            competencyUnits.push([
+              ...identity,
+              module.name,
+              unit.name,
+              unit.inputs.m,
+              unit.inputs.c,
+              safe(unit),
+              result(unit),
+            ]);
+        continue;
+      }
       totals.push([...identity, safe(g), result(g), g.provisionalAverage]);
       for (const p of g.modules || [])
         modules.push([
@@ -342,6 +373,20 @@ function excelReportSheets(m) {
         [...headers, "پودمان", "واحد کار", "مستمر", "پایانی", "نمره ترکیبی"],
         units,
       );
+    if (competencyUnits.length)
+      sheet(
+        "واحدهای کار پودمانی",
+        [
+          ...headers,
+          "پودمان",
+          "واحد کار",
+          "مستمر",
+          "شایستگی",
+          "نتیجه واحد",
+          "وضعیت واحد",
+        ],
+        competencyUnits,
+      );
   }
   const reportTitle = {
     daily: "روزانه",
@@ -385,6 +430,7 @@ function excelReportSheets(m) {
     "نتیجه فنی",
     "پودمان‌ها",
     "واحدهای کار",
+    "واحدهای کار پودمانی",
     "آمار هنرجویان",
     "آمار درس‌ها",
     "جلسات",

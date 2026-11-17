@@ -37,7 +37,9 @@ function frozenLessonRows(lesson) {
       '</td><td colspan="4">' +
       modularReportGrades(lesson.modules, lesson) +
       "</td><td>" +
-      esc(gradeStatus(lesson)) +
+      (EduPolicy.unitBased(lesson.policy)
+        ? "ارزشیابی مستقل واحدهای کار"
+        : esc(gradeStatus(lesson))) +
       "</td></tr>"
     );
   const dual = lesson.mode === "kardanesh";
@@ -116,9 +118,22 @@ async function showFrozenReport(id) {
                   esc(st.name) +
                   '</h4><div class="table-scroll"><table><thead><tr><th>درس</th><th>مرحله</th><th>عملی / پایانی</th><th>نظری / مستمر</th><th>میانگین / نتیجه</th><th>وضعیت</th></tr></thead><tbody>' +
                   st.lessons.map(frozenLessonRows).join("") +
-                  '</tbody></table></div><p class="frozen-average">میانگین نهایی: ' +
-                  (Number.isFinite(st.average) ? st.average.toFixed(2) : "—") +
-                  "</p></article>",
+                  "</tbody></table></div>" +
+                  (st.lessons.some(
+                    (lesson) => !EduPolicy.unitBased(lesson.policy),
+                  )
+                    ? '<p class="frozen-average">' +
+                      (st.lessons.some((lesson) =>
+                        EduPolicy.unitBased(lesson.policy),
+                      )
+                        ? "میانگین دروس دارای نمرهٔ نهایی: "
+                        : "میانگین نهایی: ") +
+                      (Number.isFinite(st.average)
+                        ? st.average.toFixed(2)
+                        : "—") +
+                      "</p>"
+                    : "") +
+                  "</article>",
               )
               .join("") +
             "</section>",
@@ -129,6 +144,7 @@ async function showFrozenReport(id) {
 }
 
 function averageLabel(results) {
+  results = results.filter((result) => !result.unitBased);
   const numeric = results.filter((r) => Number.isFinite(r.final));
   const missing = results.filter(
     (r) => r.complete === false || (r.final == null && r.passed !== false),
@@ -143,6 +159,7 @@ function averageLabel(results) {
     remedial ? remedial + " درس نیازمند جبران" : "",
   ].filter(Boolean);
   return {
+    applicable: results.length > 0,
     average,
     missing,
     remedial,
@@ -174,6 +191,16 @@ function scoreSource(c, l, p, u, sid, field) {
 }
 
 function gradeReportStatus(result, label) {
+  if (result.unitBased) {
+    const complete = result.complete === true;
+    return (
+      '<span class="report-grade-status is-' +
+      (complete ? "complete" : "pending") +
+      '">' +
+      (complete ? "واحدهای کار تکمیل شده" : "واحدهای کار در حال تکمیل") +
+      "</span>"
+    );
+  }
   const tone =
     result.complete === false ||
     (result.final == null && result.passed !== false)
@@ -257,27 +284,53 @@ function karnamehLessons(parts, schoolId, classroom) {
 // Both live and immutable reports use the same module rows. Older frozen
 // reports have results only: absent component inputs stay absent, never inferred.
 function modularReportGrades(modules, result) {
+  const unitBased =
+    result.unitBased === true || EduPolicy.unitBased(result.policy);
+  const gradeRow = (item, unit = false) =>
+    '<div class="report-module-row' +
+    (unit ? " report-unit-row" : "") +
+    '" data-' +
+    (unit ? "unit" : "module") +
+    '-id="' +
+    esc(item.id) +
+    '"><span class="report-module-title">' +
+    esc(item.name) +
+    '</span><div class="report-stage-values"><span><span class="report-score-label">مستمر</span><b>' +
+    esc(item.inputs?.m ?? "—") +
+    '</b></span><span><span class="report-score-label">شایستگی</span><b>' +
+    esc(item.inputs?.c ?? "—") +
+    '</b></span><span><span class="report-score-label">نتیجه</span><strong>' +
+    finalText(item) +
+    "</strong>" +
+    (unit
+      ? '<small class="report-unit-status">' +
+        esc(gradeStatus(item)) +
+        "</small>"
+      : "") +
+    "</span></div></div>";
   return (
-    '<div class="report-modular-grades"><section class="report-modular-course"><div class="report-mobile-score-heading" aria-hidden="true"><span>پودمان</span><div><span>مستمر</span><span>شایستگی</span><span>نتیجه</span></div></div>' +
+    '<div class="report-modular-grades"><section class="report-modular-course"><div class="report-mobile-score-heading" aria-hidden="true"><span>' +
+    (unitBased ? "واحد کار" : "پودمان") +
+    "</span><div><span>مستمر</span><span>شایستگی</span><span>نتیجه</span></div></div>" +
     modules
-      .map(
-        (module) =>
-          '<div class="report-module-row" data-module-id="' +
-          esc(module.id) +
-          '"><span class="report-module-title">' +
-          esc(module.name) +
-          '</span><div class="report-stage-values"><span><span class="report-score-label">مستمر</span><b>' +
-          esc(module.inputs?.m ?? "—") +
-          '</b></span><span><span class="report-score-label">شایستگی</span><b>' +
-          esc(module.inputs?.c ?? "—") +
-          '</b></span><span><span class="report-score-label">نتیجه</span><strong>' +
-          finalText(module) +
-          "</strong></span></div></div>",
+      .map((module) =>
+        unitBased
+          ? '<section class="report-unit-module" data-module-id="' +
+            esc(module.id) +
+            '"><h5>' +
+            esc(module.name) +
+            "</h5>" +
+            module.units.map((unit) => gradeRow(unit, true)).join("") +
+            "</section>"
+          : gradeRow(module),
       )
       .join("") +
-    '<div class="report-modular-final"><span>نهایی درس</span><strong>' +
-    finalText(result) +
-    "</strong></div></section></div>"
+    (unitBased
+      ? ""
+      : '<div class="report-modular-final"><span>نهایی درس</span><strong>' +
+        finalText(result) +
+        "</strong></div>") +
+    "</section></div>"
   );
 }
 
@@ -307,13 +360,15 @@ function modularOverviewCell(
     }
     const result = EduPolicy.lesson(annual.gradingPolicy, annual.poudmans, sid);
     return modularReportGrades(
-      result.modules.map((module) => ({
-        ...module,
-        inputs: ownScoreRecord(
-          annual.poudmans.find((pod) => pod.id === module.id)?.podScores,
-          sid,
-        ),
-      })),
+      result.unitBased
+        ? result.modules
+        : result.modules.map((module) => ({
+            ...module,
+            inputs: ownScoreRecord(
+              annual.poudmans.find((pod) => pod.id === module.id)?.podScores,
+              sid,
+            ),
+          })),
       result,
     );
   }
@@ -715,7 +770,7 @@ function detailedV24(c, sid) {
           "</td><td>" +
           ((l.gradeMode === "kardanesh" ? r.theory : r.avgM) ?? "—") +
           '</td><td class="report-final-cell"><strong>' +
-          finalText(r) +
+          (r.unitBased ? "نمرات مستقل واحدهای کار" : finalText(r)) +
           "</strong></td><td>" +
           gradeReportStatus(
             r,
@@ -737,11 +792,14 @@ function detailedV24(c, sid) {
         );
       })
       .join("") +
-    "</tbody></table></div><p><b>" +
-    esc(mean.label) +
-    ": " +
-    (mean.average === null ? "—" : mean.average.toFixed(2)) +
-    "</b></p>";
+    "</tbody></table></div>" +
+    (mean.applicable
+      ? "<p><b>" +
+        esc(mean.label) +
+        ": " +
+        (mean.average === null ? "—" : mean.average.toFixed(2)) +
+        "</b></p>"
+      : "");
   for (let i = 0; i < lessons.length; i++) {
     const l = lessons[i],
       r = stats[i];
@@ -790,7 +848,45 @@ function detailedV24(c, sid) {
   return html + "</div>";
 }
 
-function parentReportV24(st, c) {
+function modularReportText(lesson, result, sid) {
+  return result.modules
+    .map((module) => {
+      const rows = result.unitBased ? module.units : [module];
+      const grades = rows.map((item) => {
+        const inputs = result.unitBased
+          ? item.inputs
+          : ownScoreRecord(
+              lesson.poudmans.find((pod) => pod.id === module.id)?.podScores,
+              sid,
+            );
+        return (
+          item.name +
+          ": مستمر " +
+          (inputs.m ?? "—") +
+          " | شایستگی " +
+          (inputs.c ?? "—") +
+          " | " +
+          finalText(item) +
+          " / " +
+          gradeStatus(item)
+        );
+      });
+      return (result.unitBased ? module.name + "\n" : "") + grades.join("\n");
+    })
+    .join("\n");
+}
+
+function parentReportV24(st, c, source = db) {
+  if (source !== db) {
+    const classroom = source.schools
+      ?.flatMap((school) => school.classes)
+      .find((item) => item.id === c.id);
+    const student =
+      classroom && knownStudents(classroom).find((item) => item.id === st.id);
+    if (!classroom || !student) return;
+    c = classroom;
+    st = student;
+  }
   let text =
     "کارنامه " +
     st.name +
@@ -802,7 +898,7 @@ function parentReportV24(st, c) {
     c.name +
     "\n";
   for (const l of c.lessons) {
-    const r = calcV24(c, l, st.id);
+    const r = calcV24(c, l, st.id, source);
     text +=
       "\n" +
       l.name +
@@ -830,17 +926,15 @@ function parentReportV24(st, c) {
             })
             .join("\n")
         : l.gradingPolicy?.method === "modular"
-          ? r.modules
-              .map(
-                (p) => p.name + ": " + finalText(p) + " / " + policyStatus(p),
-              )
-              .join(" | ")
+          ? modularReportText(l, r, st.id)
           : "مستمر " + (r.avgM ?? "—") + " | پایانی " + (r.avgP ?? "—")) +
-      "\nنهایی " +
-      finalText(r) +
-      (l.gradingPolicy || l.gradeMode === "kardanesh"
-        ? " | " + gradeStatus(r)
-        : "") +
+      (r.unitBased
+        ? ""
+        : "\nنهایی " +
+          finalText(r) +
+          (l.gradingPolicy || l.gradeMode === "kardanesh"
+            ? " | " + gradeStatus(r)
+            : "")) +
       "\nحاضر " +
       ((r.att.present || 0) + (r.att.late || 0)) +
       " | غایب " +
@@ -851,12 +945,12 @@ function parentReportV24(st, c) {
       r.att.late +
       "\n";
   }
-  const mean = averageLabel(c.lessons.map((l) => calcV24(c, l, st.id)));
-  return (
-    text +
-    "\n" +
-    mean.label +
-    ": " +
-    (mean.average === null ? "—" : mean.average.toFixed(2))
-  );
+  const mean = averageLabel(c.lessons.map((l) => calcV24(c, l, st.id, source)));
+  return mean.applicable
+    ? text +
+        "\n" +
+        mean.label +
+        ": " +
+        (mean.average === null ? "—" : mean.average.toFixed(2))
+    : text;
 }

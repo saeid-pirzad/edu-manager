@@ -854,6 +854,20 @@
   .module-simple .module-toolbar {
     margin-bottom: 20px;
   }
+  .unit-gradebook .module-toolbar {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .unit-gradebook-hint {
+    margin: 0 0 14px;
+    color: var(--theme-muted);
+    font-size: 12px;
+    line-height: 1.8;
+  }
+  .unit-gradebook-title {
+    display: none;
+  }
   .module-simple .module-toolbar > :is(input, select) {
     width: 100%;
     min-width: 0;
@@ -872,14 +886,25 @@
     background: transparent;
     box-shadow: none;
   }
-  .module-simple .gradebook-result [data-pod-final] {
+  .module-simple .gradebook-result :is([data-pod-final], [data-unit-final]) {
     font-size: 18px;
   }
-  .module-simple .gradebook-result [data-pod-status] {
+  .module-simple .gradebook-result :is([data-pod-status], [data-unit-status]) {
     color: var(--workflow-muted);
   }
 }
 @media screen and (max-width: 600px) {
+  .unit-gradebook .module-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .unit-gradebook .module-toolbar > input {
+    grid-column: 1 / -1;
+  }
+  .unit-gradebook-hint {
+    margin-bottom: 10px;
+    font-size: 10px;
+  }
   .module-simple .module-toolbar > :is(input, select) {
     font-size: 16px;
   }
@@ -1008,14 +1033,14 @@
     content: "نهایی";
     font-size: 10px;
   }
-  .module-simple .gradebook-result [data-pod-final] {
+  .module-simple .gradebook-result :is([data-pod-final], [data-unit-final]) {
     display: grid;
     place-items: center;
     min-height: 32px;
     font-size: 14px;
     white-space: nowrap;
   }
-  .module-simple .gradebook-result [data-pod-status] {
+  .module-simple .gradebook-result :is([data-pod-status], [data-unit-status]) {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -1031,19 +1056,19 @@
   .module-simple
     .assessment-student[data-result-state="passed"]
     .gradebook-result
-    [data-pod-final] {
+    :is([data-pod-final], [data-unit-final]) {
     color: var(--status-success);
   }
   .module-simple
     .assessment-student[data-result-state="review"]
     .gradebook-result
-    [data-pod-final] {
+    :is([data-pod-final], [data-unit-final]) {
     color: var(--status-danger-fill);
   }
   .module-simple
     .assessment-student[data-result-state="incomplete"]
     .gradebook-result
-    [data-pod-final] {
+    :is([data-pod-final], [data-unit-final]) {
     color: var(--theme-muted);
   }
 }
@@ -1129,6 +1154,9 @@
     display: none !important;
   }
   .module-panel[hidden] {
+    display: block !important;
+  }
+  .unit-gradebook [data-unit-panel][hidden] {
     display: block !important;
   }
   .gradebook-search,

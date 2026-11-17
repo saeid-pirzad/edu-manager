@@ -23,6 +23,7 @@ function fixture(save) {
     error: (error) => calls.push(error),
     toggleBranch: () => calls.push("branch"),
     toggleMethod: () => calls.push("method"),
+    toggleModularScope: () => calls.push("scope"),
     syncTheoryWeight: () => calls.push("weight"),
     cancelEditor: () => calls.push("cancel"),
   });
@@ -39,6 +40,7 @@ test("course form binds branch, method, cancellation and submission without inli
   f.listeners.get("#course_branch:change")();
   f.listeners.get("#course_method:change")();
   f.listeners.get("#course_subjectType:change")();
+  f.listeners.get("#course_modularScope:change")();
   f.listeners.get("#course_practicalWeight:input")();
   f.listeners.get("[data-course-cancel]:click")();
   f.listeners.get("submit")({
@@ -47,10 +49,17 @@ test("course form binds branch, method, cancellation and submission without inli
     },
   });
   await Promise.resolve();
-  assert.equal(f.listeners.size, 6);
+  assert.equal(f.listeners.size, 7);
   assert.equal(saved, 1);
   assert.equal(prevented, true);
-  assert.deepEqual(f.calls, ["branch", "method", "method", "weight", "cancel"]);
+  assert.deepEqual(f.calls, [
+    "branch",
+    "method",
+    "method",
+    "scope",
+    "weight",
+    "cancel",
+  ]);
 });
 test("course submit forwards asynchronous failure to the existing error presenter", async () => {
   const failure = Error("write rejected");

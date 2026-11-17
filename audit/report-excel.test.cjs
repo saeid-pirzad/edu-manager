@@ -521,7 +521,7 @@ test("Excel print setup repeats headers, fits A4 width and retains numeric preci
   assert.match(sheet, /<c r="B2" s="5"/);
   assert.match(book, /_xlnm.Print_Titles/);
   assert.match(book, /!\$1:\$1/);
-  assert.match(styles, /formatCode="0.##"/);
+  assert.match(styles, /formatCode="0\.###############"/);
   assert.throws(() =>
     c.xlsxWorkbook([
       { name: "SHEET", rows: [["x"]] },

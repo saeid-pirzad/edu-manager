@@ -205,16 +205,29 @@ function legacy_buildLessonReportHtml(c, lesson) {
 }
 
 function copyLessonReportForVicePrincipal(lessonId, button) {
-  return EduV24.copyReport(() => buildLessonReportText(lessonId), button);
+  return EduV24.copyReport(
+    (source) => buildLessonReportText(lessonId, source),
+    button,
+  );
 }
 
-function buildLessonReportText(lessonId) {
-  const cls = findClassById(lessonReportFilter.classId);
-  if (!cls) return;
-  const c = cls.classObj;
+function buildLessonReportText(lessonId, source = db) {
+  const c = source.schools
+    ? source.schools
+        .filter(
+          (school) =>
+            !lessonReportFilter.schoolId ||
+            school.id === lessonReportFilter.schoolId,
+        )
+        .flatMap((school) => school.classes)
+        .find((classroom) => classroom.id === lessonReportFilter.classId)
+    : source === db
+      ? findClassById(lessonReportFilter.classId)?.classObj
+      : null;
+  if (!c) return;
   const lesson = getLessonObj(c, lessonId);
-  if (!c || !lesson) return;
-  const sessions = db.sessions
+  if (!lesson) return;
+  const sessions = source.sessions
     .filter((x) => x.classId === c.id && x.lessonId === lesson.id)
     .sort(
       (a, b) =>
@@ -229,8 +242,13 @@ function buildLessonReportText(lessonId) {
   });
   text += `================================\n📌 خلاصه وضعیت دانش‌آموزان:\n`;
   getSortedStudents(c).forEach((st) => {
-    const s = calcStudentLesson(c, lesson, st.id);
-    text += `- ${st.name}: غایب ${s.att.absent} | مرخصی ${s.att.leave || 0} | ➕ ${s.posCount} | ➖ ${s.negCount} | نهایی: ${s.final !== null ? s.final.toFixed(2) : "---"}\n`;
+    const s = calcStudentLesson(c, lesson, st.id, source);
+    text += `- ${st.name}: غایب ${s.att.absent} | مرخصی ${s.att.leave || 0} | ➕ ${s.posCount} | ➖ ${s.negCount}`;
+    if (lesson.gradingPolicy?.method === "modular")
+      text += "\n" + EduV24.modularReportText(lesson, s, st.id);
+    if (!s.unitBased)
+      text += ` | نهایی: ${s.final !== null ? s.final.toFixed(2) : "---"}`;
+    text += "\n";
   });
   text += `\n✅ تولید شده توسط کلاس‌یار`;
   return text;

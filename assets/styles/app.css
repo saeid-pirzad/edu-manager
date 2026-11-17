@@ -1782,11 +1782,14 @@ container:course-form / inline-size}#app:has(>.class-lessons):has(>.lesson-creat
 .course-basic-fields>label:first-child,#app #courseEditor.course-simple-editor .course-dual-fields>label:last-of-type{grid-column:auto}#app #courseEditor.course-simple-editor
 .course-basic-fields>label:has(#course_periods){max-width:112px}#app #courseEditor :is(input[type=number],#course_theoryWeight){text-align:center;font-variant-numeric:tabular-nums}}
 @container course-form (min-width: 340px){#app #courseEditor.course-simple-editor .course-basic-fields{grid-template-columns:minmax(0,1fr) minmax(96px,112px)}#app
-#courseEditor.course-simple-editor .course-basic-fields>label:first-child{grid-column:1 / -1}}@container course-form (min-width: 600px){#app #courseEditor.course-simple-editor
-.course-basic-fields{grid-template-columns:minmax(0,2fr) minmax(0,1.5fr) minmax(96px,140px)}#app #courseEditor.course-simple-editor .course-basic-fields>label:first-child{
-grid-column:auto}#app #courseEditor.course-simple-editor .course-basic-fields>label:has(#course_periods){max-width:none}#app #courseEditor.course-simple-editor #coursePolicy>
-.course-method-fields,#app #courseEditor.course-simple-editor .course-pod-editor>.course-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#app #courseEditor.course-simple-editor
-#courseDual{grid-template-columns:repeat(3,minmax(0,1fr))}}@container course-form (min-width: 920px){#app #courseEditor.course-simple-editor .course-modular-fields>
+#courseEditor.course-simple-editor .course-basic-fields>label:first-child{grid-column:1 / -1}#app #courseEditor.course-simple-editor #coursePolicy>.course-method-fields{
+grid-template-columns:repeat(2,minmax(0,1fr))}#app #courseEditor.course-simple-editor .course-method-fields>label:has(#course_modularScope){grid-column:1 / -1}}
+@container course-form (min-width: 600px){#app #courseEditor.course-simple-editor .course-basic-fields{grid-template-columns:minmax(0,2fr) minmax(0,1.5fr) minmax(96px,140px)}
+#app #courseEditor.course-simple-editor .course-basic-fields>label:first-child{grid-column:auto}#app #courseEditor.course-simple-editor .course-basic-fields>label:has(#course_periods){
+max-width:none}#app #courseEditor.course-simple-editor #coursePolicy>.course-method-fields,#app #courseEditor.course-simple-editor .course-pod-editor>.course-grid{
+grid-template-columns:repeat(2,minmax(0,1fr))}#app #courseEditor.course-simple-editor #courseDual{grid-template-columns:repeat(3,minmax(0,1fr))}#app #courseEditor.course-simple-editor
+#coursePolicy>.course-method-fields:has(>label:not([hidden])>#course_modularScope){grid-template-columns:repeat(3,minmax(0,1fr))}#app #courseEditor.course-simple-editor
+.course-method-fields>label:has(#course_modularScope){grid-column:auto}}@container course-form (min-width: 920px){#app #courseEditor.course-simple-editor .course-modular-fields>
 .course-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}@media screen and (max-width:1100px){#app .lesson-create:has(#courseEditor){scroll-margin-top:88px}}
 .course-simple-editor .course-editor-status{padding:0;margin:0;border:0;background:none}.course-simple-editor .record-editor-context p{margin:6px 0;line-height:1.8}
 .course-simple-editor .course-policy-section>summary::before{color:var(--workflow-accent, var(--theme-primary))}.course-main-policy>legend{padding:0 8px;font-weight:700}
@@ -2498,22 +2501,33 @@ background:var(--status-info-soft)}.qb-exam-library .qb-exam-meta>span:nth-child
 border-top:1px solid var(--theme-line-soft)}}@media screen and (max-width:700px){.qb-archive-controls{padding:8px}.qb-archive-controls h4{font-size:13px}.qb-exam-library
 .course-field{font-size:10px}.qb-exam-library .qb-library-count{font-size:10px}.qb-exam-library .qb-exam-copy>h3{font-size:12px}.qb-exam-library .qb-exam-context{
 font-size:10px;gap:2px 8px}.qb-exam-library>.qb-exam-results{padding:6px;gap:6px}.qb-exam-library .qb-exam-card{padding:8px;gap:8px}.qb-exam-library .qb-exam-actions{
-padding-top:6px;gap:6px}.qb-exam-library>.qb-pager{gap:8px;padding:6px;font-size:11px}}@media screen and (max-width:700px){[data-keyboard-open=true] .qb-dialog:has(.qb-form){
-inset-block-start:calc(var(--app-viewport-top, 0px) + 6px);inset-block-end:auto;margin-block:0;max-height:calc(var(--app-viewport, 100dvh) - 12px)!important}[data-keyboard-open=true]
-.qb-dialog:has(.qb-form)>.modal-header{padding:3px 10px}[data-keyboard-open=true] .qb-dialog:has(.qb-form)>.qb-storage-bar,[data-keyboard-open=true] .qb-dialog:has(.qb-form)
-#qb-title>svg,[data-keyboard-open=true] .qb-body:has(.qb-form)>.qb-tabs,[data-keyboard-open=true] .qb-builder-intro{display:none}[data-keyboard-open=true] .qb-dialog:has(.qb-form)>
-.qb-body{padding:8px}[data-keyboard-open=true] .qb-form>.record-editor-actions{padding-block:6px 0}}@media screen and (max-width:700px){.qb-body .qb-builder>.qb-form-fields{
-gap:10px}.qb-body .qb-builder .qb-form-fields>fieldset{padding:8px}.qb-builder .qb-form-fields>fieldset>legend{font-size:11px;padding-inline:4px}.qb-builder .qb-selection-actions{
-display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;box-sizing:border-box;gap:8px;padding:0;border:0;background:transparent}:is(#app,.qb-dialog)
-.qb-body .qb-selection-actions>button.ui-button{border:1px solid var(--theme-line);border-radius:8px;background:var(--theme-surface)!important;gap:6px;padding-inline:6px!important;
-font-size:10px;white-space:nowrap}:is(#app,.qb-dialog) .qb-body .qb-selection-actions>button.ui-button:first-child{border-color:var(--status-info-line)!important;
-background:var(--status-info-soft)!important;color:var(--status-info)!important}.qb-builder .qb-composition-hint{font-size:10px;margin-bottom:6px;line-height:1.7}
-.qb-dialog .qb-body .qb-builder .qb-target-score{padding:5px 7px;margin-bottom:8px;font-size:11px;gap:6px}.qb-body .qb-builder .qb-count-grid{gap:6px}.qb-body .qb-builder
-.qb-count-field{padding:6px;grid-template-rows:minmax(20px,auto) 40px;gap:4px}:is(#app,.qb-dialog) .qb-body .qb-builder input:not([type=checkbox]){height:40px!important;
-min-height:40px!important;padding:5px 8px!important;font-size:16px}.qb-body .qb-builder .qb-form-fields>.qb-exam-details{gap:8px}.qb-dialog .qb-body .qb-exam-details>
-.course-field{font-size:10px;gap:3px}}@media print{.qb-dialog>.qb-body,.qb-body>.qb-sheet{overflow:visible!important;height:auto;max-height:none}.qb-dialog::backdrop{
-background:transparent!important}body:has(.qb-dialog[open])>#printRoot{display:none!important}body:has(.qb-dialog[open])>*{display:none!important}body:has(.qb-dialog[open])>
-.qb-dialog[open]{display:block!important;position:static;width:100%;height:auto;max-height:none;border:0;padding:0;overflow:visible;margin:0;box-shadow:none;background:white!important}
-.qb-dialog>*{display:none!important}.qb-dialog>div:has(.qb-sheet){display:block!important}.qb-dialog>div>.qb-sheet{display:block!important;page:qb-exam}.qb-dialog>
-div>:not(.qb-sheet){display:none!important}.qb-solution,.qb-confirm,.qb-print-frame{display:none!important}@page qb-exam{size:A4 portrait;margin:15mm}}
+padding-top:6px;gap:6px}.qb-exam-library>.qb-pager{gap:8px;padding:6px;font-size:11px}}@media screen and (max-width:700px),screen and (max-height:500px)and (pointer:coarse){
+:is(#app,.qb-dialog):has(.qb-form){position:fixed;inset-inline:0;inset-block-start:var(--app-viewport-top, 0px);inset-block-end:auto;width:100%;max-width:none;height:var(--app-viewport,
+100dvh);max-height:var(--app-viewport, 100dvh)!important;margin:0;border:0;border-radius:0}:is(#app,.qb-dialog):has(.qb-form)>.modal-header{border-radius:0;padding:4px
+10px;padding-block-start:max(4px,env(safe-area-inset-top))}:is(#app,.qb-dialog):has(.qb-form) #qb-title{gap:7px;font-size:14px}:is(#app,.qb-dialog):has(.qb-form)
+#qb-title>svg{width:16px;height:16px;padding:5px}:is(#app,.qb-dialog):has(.qb-form)>.modal-header button.qb-close{width:40px;height:40px;min-width:40px;min-height:40px!important;
+padding:0}:is(#app,.qb-dialog):has(.qb-form)>.qb-storage-bar{padding:3px 10px}:is(#app,.qb-dialog):has(.qb-form)>.qb-storage-bar>button.ui-button{height:36px;min-height:36px!important;
+padding:3px 7px!important;font-size:10px}:is(#app,.qb-dialog)>.qb-body:has(.qb-form){display:block;overflow-y:auto!important;overflow-x:hidden!important;scroll-padding-block:12px
+80px;scrollbar-gutter:stable;padding:10px}:is(#app,.qb-dialog) .qb-panel:has(>.qb-form){display:block;overflow:visible;scrollbar-gutter:auto}:is(#app,.qb-dialog)
+.qb-body .qb-form{display:block;overflow:visible;margin:0}:is(#app,.qb-dialog) .qb-body .qb-form :is(input,select,textarea){font-size:16px!important}:is(#app,.qb-dialog)
+.qb-body .qb-form :is(input:not([type=checkbox],[type=radio]),select){box-sizing:border-box;height:44px!important;min-height:44px!important;padding-block:6px!important}
+:is(#app,.qb-dialog) .qb-body .qb-form textarea{box-sizing:border-box;min-height:min(100px,var(--qb-textarea-max-height, 100px));max-height:var(--qb-textarea-max-height,
+none);padding:8px 10px;line-height:1.6}:is(#app,.qb-dialog) .qb-body .qb-form>.qb-form-fields{overflow:visible;margin:0;padding-inline-end:0;padding-block-end:24px;
+scrollbar-gutter:auto}:is(#app,.qb-dialog) .qb-body:has(.qb-form)>.qb-tabs{position:static;margin:0 0 10px}:is(#app,.qb-dialog) .qb-body .qb-form>.record-editor-actions{
+position:sticky!important;bottom:0!important;z-index:3;padding-block:4px max(4px,env(safe-area-inset-bottom))}:is(#app,.qb-dialog) .qb-body .qb-form>.record-editor-actions>
+button{height:44px;min-height:44px!important}}@media screen and (max-height:500px)and (pointer:coarse){:is(#app,.qb-dialog)>.qb-body:has(.qb-form){padding:6px}}
+@media screen and (max-width:700px){.qb-body .qb-builder>.qb-form-fields{gap:10px}.qb-body .qb-builder .qb-form-fields>fieldset{padding:8px}.qb-builder .qb-form-fields>
+fieldset>legend{font-size:11px;padding-inline:4px}.qb-builder .qb-selection-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;box-sizing:border-box;
+gap:8px;padding:0;border:0;background:transparent}:is(#app,.qb-dialog) .qb-body .qb-selection-actions>button.ui-button{border:1px solid var(--theme-line);border-radius:8px;
+background:var(--theme-surface)!important;gap:6px;padding-inline:6px!important;font-size:10px;white-space:nowrap}:is(#app,.qb-dialog) .qb-body .qb-selection-actions>
+button.ui-button:first-child{border-color:var(--status-info-line)!important;background:var(--status-info-soft)!important;color:var(--status-info)!important}.qb-builder
+.qb-composition-hint{font-size:10px;margin-bottom:6px;line-height:1.7}.qb-dialog .qb-body .qb-builder .qb-target-score{padding:5px 7px;margin-bottom:8px;font-size:11px;
+gap:6px}.qb-body .qb-builder .qb-count-grid{gap:6px}.qb-body .qb-builder .qb-count-field{padding:6px;grid-template-rows:minmax(20px,auto) 44px;gap:4px}:is(#app,
+.qb-dialog) .qb-body .qb-builder input:not([type=checkbox]){height:44px!important;min-height:44px!important;padding:5px 8px!important;font-size:16px}.qb-body .qb-builder
+.qb-form-fields>.qb-exam-details{gap:8px}.qb-dialog .qb-body .qb-exam-details>.course-field{font-size:10px;gap:3px}}@media print{.qb-dialog>.qb-body,.qb-body>.qb-sheet{
+overflow:visible!important;height:auto;max-height:none}.qb-dialog::backdrop{background:transparent!important}body:has(.qb-dialog[open])>#printRoot{display:none!important}
+body:has(.qb-dialog[open])>*{display:none!important}body:has(.qb-dialog[open])>.qb-dialog[open]{display:block!important;position:static;width:100%;height:auto;max-height:none;
+border:0;padding:0;overflow:visible;margin:0;box-shadow:none;background:white!important}.qb-dialog>*{display:none!important}.qb-dialog>div:has(.qb-sheet){display:block!important}
+.qb-dialog>div>.qb-sheet{display:block!important;page:qb-exam}.qb-dialog>div>:not(.qb-sheet){display:none!important}.qb-solution,.qb-confirm,.qb-print-frame{display:none!important}
+@page qb-exam{size:A4 portrait;margin:15mm}}
 /*# sourceMappingURL=app.css.map */

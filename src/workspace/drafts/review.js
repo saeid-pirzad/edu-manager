@@ -76,7 +76,9 @@ function reviewDrafts() {
               : item.kind === "pod"
                 ? ownScoreRecord(pod?.podScores, item.sid)
                 : ownScoreRecord(
-                    pod?.units.find((u) => u.id === item.uid)?.unitScores,
+                    pod?.units.find((u) => u.id === item.uid)?.[
+                      item.kind === "unit" ? "competencyScores" : "unitScores"
+                    ],
                     item.sid,
                   );
           const fieldLabel =
@@ -93,7 +95,10 @@ function reviewDrafts() {
             c?.name,
             st?.name || item.sid,
             l?.name || item.lid,
-            item.kind === "pod" ? pod?.name : "",
+            ["pod", "unit"].includes(item.kind) ? pod?.name : "",
+            item.kind === "unit"
+              ? pod?.units.find((u) => u.id === item.uid)?.name
+              : "",
             fieldLabel,
           ]
             .filter(Boolean)

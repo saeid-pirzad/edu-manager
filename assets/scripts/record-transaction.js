@@ -144,66 +144,66 @@ const incoming=new Set([...plan.current.students||[],...plan.current.archivedStu
 get(plan.key);if(!classroom)continue;const inSession=[...old].some(([key,value])=>key.startsWith("session:")&&value.classId===classroom.id&&((value.roster||historicalRoster(
 classroom,value)).some(member=>member.id===student.id)||Object.hasOwn(value.attendance||{},student.id)||value.scores?.some(score=>score.studentId===student.id)));
 const inGrade=(classroom.lessons||[]).some(lesson=>Object.hasOwn(lesson.kardaneshScores||{},student.id)||(lesson.poudmans||[]).some(pod=>Object.hasOwn(pod.podScores||
-{},student.id)||(pod.units||[]).some(unit=>Object.hasOwn(unit.unitScores||{},student.id))));if(inSession||inGrade){const error=Error("هنرجوی «"+student.name+
-"» در یکی از نوبت‌ها سابقه دارد؛ به‌جای حذف کامل، او را بایگانی کنید.");error.code="ACADEMIC_DIRECTORY_C\
-ONFLICT";throw error}}}const prepared=[{period:live,old:sourceOld,next:sourceNext}];for(const period of family){if(period.id===live.id)continue;const old=loaded.
-get(period.id),next=new Map([...old].map(([key,value])=>[key,copy(value)])),peerMeta=next.get("meta");if(scheduleChanged)Object.assign(peerMeta,model.mirrorSchedule(
-sourceOld.get("meta"),sourceNext.get("meta"),peerMeta));if(layoutChanged)peerMeta.layout=model.mirrorLayout(previousLayout,currentLayout,peerMeta.layout);for(const key of deletedClasses){
-const classroom=old.get(key);if(!classroom)continue;if(!keepUndo){const sourceClass=sourceOld.get(key),peerSchedule=Object.values(old.get("meta").masterSchedule||
-{}).some(slot=>slot.classId===classroom.id);if(JSON.stringify(classroom.lessons||[])!==JSON.stringify(sourceClass?.lessons||[])||peerSchedule){const error=Error(
-"کلاس «"+classroom.name+"» در نوبت دیگر تعریف درس یا برنامهٔ هفتگی مستقل دارد؛ بازگردانی افزودن کلاس انجام نشد. برای حذف، از مسیر حذف کلاس و پشتیبان کامل ا\
-ستفاده کنید.");error.code="ACADEMIC_DIRECTORY_CONFLICT";throw error}}model.assertClassRemovable(classroom,[...old].filter(([logical])=>logical.startsWith(
-"session:")).map(([,value])=>value));next.delete(key);for(const[slot,value]of Object.entries(peerMeta.masterSchedule||{}))if(value.classId===classroom.id)delete peerMeta.
-masterSchedule[slot]}for(const plan of directoryPlans){const classId=plan.current.id,sourceOwner=owner(currentLayout,classId),targetOwner=owner(peerMeta.layout,
-classId);if(!sourceOwner||targetOwner!==sourceOwner)throw Error("مالک کلاس در فهرست مشترک سال تحصیلی سازگار نیست.");const target=next.
-get(plan.key);freeze(old,next,classId);next.set(plan.key,model.mirrorClass(plan.previous,plan.current,target,{allowRemoval:true}));repairRecoveredIdentity(next,
-plan)}for(const plan of coursePlans){const classId=plan.current.id;if(!owner(currentLayout,classId)||owner(currentLayout,classId)!==owner(peerMeta.layout,classId))
-throw Error("مالک کلاس برای اشتراک درس‌های سال تحصیلی سازگار نیست.");const target=next.get(plan.key),value=courses.
-mirrorClass(plan.previous,plan.current,target,{sessions:sessionsFrom(old)});if(!keepUndo){const surviving=new Set((value.lessons||[]).map(lesson=>lesson.id)),removed2=new Set(
-(target?.lessons||[]).filter(lesson=>!surviving.has(lesson.id)).map(lesson=>lesson.id));if(Object.values(old.get("meta").masterSchedule||{}).some(slot=>slot.classId===
-classId&&removed2.has(slot.lessonId))){const error=Error("این درس در نوبت دیگر برنامهٔ هفتگی دارد؛ برای حذف از مسیر حذف درس و پشتیبان کامل استفاده کنید.");
-error.code="ACADEMIC_COURSE_CONFLICT";throw error}}pruneLessonSchedule(next,classId,target,value);next.set(plan.key,value)}const sourceKind=live.termKind||academicTermKind(
-live.term),targetKind=period.termKind||academicTermKind(period.term);if(annual&&["first","second"].includes(sourceKind)&&["first","second"].includes(targetKind))
-for(const plan of classPlans){const target=next.get(plan.key);if(target&&owner(currentLayout,plan.current.id)===owner(peerMeta.layout,plan.current.id)&&annual.hasChanges(
-plan.previous,plan.current)){const value=annual.mirrorClass(plan.previous,plan.current,target);if(value)next.set(plan.key,value)}}if(recoveredUndo!==null)restoreRecoveredPeer(
-old,next,recoveredUndo.find(peer=>peer.id===period.id),directoryPlans);validate(next,period.id);prepared.push({period,old,next})}if(prepared.length>1){const layout=JSON.
-stringify(currentLayout);for(const part of prepared){if(JSON.stringify(part.next.get("meta").layout)!==layout){const error=Error("چیدمان مدرسه و کلاس‌ها بین نوب\
-ت‌های این سال متفاوت است؛ ابتدا اختلاف فهرست را اصلاح کنید.");error.code="ACADEMIC_DIRECTORY_CONFLICT";throw error}
-for(const school of currentLayout)for(const id of school.classes){const source=sourceNext.get("class:"+id),target=part.next.get("class:"+id);if(!source||!target||
-JSON.stringify(model.projection(source))!==JSON.stringify(model.projection(target))){const error=Error("فهرست کلاس «"+(source?.name||id)+"» بین نوبت‌ه\
-ای سال متفاوت است؛ ابتدا نام، کد و عضویت هنرجویان را یکسان کنید.");error.code="ACADEMIC_DIRECTORY_CONFLICT";throw error}}}}
-if(courses&&coursePlans.length&&prepared.length>1)for(const part of prepared)for(const plan of coursePlans){const candidate=part.next.get(plan.key);if(!candidate||
-JSON.stringify(courses.projection(candidate))!==JSON.stringify(courses.projection(plan.current))){const error=Error("تعریف درس‌های کلاس «"+plan.
-current.name+"» بین نوبت‌های سال یکسان نیست؛ تغییر ثبت نشد.");error.code="ACADEMIC_COURSE_CONFLICT";throw error}}if(scheduleChanged){
-for(const part of prepared)if(model.scheduleHasChanges(sourceNext.get("meta"),part.next.get("meta"))){const error=Error("برنامهٔ هفتگی نوبت‌های این سال متفاوت ا\
-ست؛ برای جلوگیری از جایگزینی ناخواسته، تغییر ثبت نشد و برنامه‌های قبلی حفظ شدند.");error.code=
-"ACADEMIC_SCHEDULE_CONFLICT";throw error}}validate(sourceNext,live.id);const sessionSlots=globalThis.EduSessionSlots,sessionChanges=sessionSlots?.changes({changed,
-before:options.before,removed,restoredRecords:options.restoredSessionRecords});if(sessionChanges?.guarded.length){sessionSlots.assertScheduled(sessionChanges,sourceNext.
-get("meta"));sessionSlots.assertAvailable(sessionChanges,live.id,prepared.filter(({period})=>period.id===live.id||["first","second"].includes(period.termKind||academicTermKind(
-period.term))).map(({period,next})=>({id:period.id,records:next})))}for(const part of prepared)part.plan=globalThis.EduRecordCommitPlan.create(part.next,new Map(
-[...part.old].map(([key,value])=>[key,JSON.stringify(value)])),{replace:true});for(const part of prepared)if(part.plan.changed.length||part.plan.removed.length)
-part.nextRevision=EduRevision.next(part.period.revision);const recoveredPeers=recoveredClasses.size&&prepared.length>1?prepared.filter(part=>part.period.id!==live.
-id).map(part=>{const rosters=[];for(const[key,value]of part.next){if(!key.startsWith("session:")||!recoveredClasses.has(value.classId))continue;const previous=part.
-old.get(key);if(previous&&JSON.stringify(previous.roster)!==JSON.stringify(value.roster))rosters.push({sessionId:value.id,classId:value.classId,before:copy(previous.
-roster??null)})}const previousWarnings=part.old.get("meta").migrationWarnings,nextWarnings=part.next.get("meta").migrationWarnings;return{id:part.period.id,revision:part.
-nextRevision??part.period.revision,rosters,...JSON.stringify(previousWarnings)!==JSON.stringify(nextWarnings)?{migrationWarnings:copy(previousWarnings)}:{}}}):null;
-const at=new Date().toISOString();for(const part of prepared){const plan=part.plan,isSource=part.period.id===live.id;if(!plan.changed.length&&!plan.removed.length)
-continue;for(const[logical,json]of plan.changed)tx.objectStore("records").put({key:part.period.id+"|"+logical,workspace:part.period.id,logical,value:JSON.parse(
-json)});for(const logical of plan.removed)tx.objectStore("records").delete(part.period.id+"|"+logical);const updated={...part.period,...isSource?{year,term,termKind:live.
-termKind||academicTermKind(live.term)}:{},revision:part.nextRevision,updatedAt:at};tx.objectStore("catalog").put(updated);tx.objectStore("events").add({workspace:updated.
-id,revision:updated.revision,at,action:isSource?action:scheduleChanged?"همگام‌سازی برنامهٔ هفتگی سال تحصیلی":"همگام‌سازی فهرست م\
-شترک سال تحصیلی",changes:plan.changes});if(isSource&&keepUndo&&!sharedClassRemoval&&!sharedCourseRemoval)tx.objectStore("undo").put({id:updated.id,
-action,revision:updated.revision,before:plan.before,...recoveredPeers?{recoveredPeers}:{}});else tx.objectStore("undo").delete(updated.id);if(isSource){nextCatalog=
-updated;sourceUpdates.push(...plan.changed.map(([key,json])=>[key,JSON.parse(json)]))}else peerUpdates.push({workspace:updated.id,revision:updated.revision})}}try{
-await done}catch(error){throw failure||error}for(const[key,value]of sourceUpdates){const index=changed.findIndex(([logical])=>logical===key),entry=[key,JSON.stringify(
-value)];if(index<0)changed.push(entry);else changed[index]=entry}if(directorySourceUpdates)directorySourceUpdates.push(...sourceUpdates);if(annualChanged)annualChanged.
-push(...peerUpdates);return nextCatalog}});"use strict";globalThis.EduRecordTransaction=Object.freeze({async commit({connection,expectedInstallation="",workspace,
-records,changed,removed,before,changes,action,keepUndo,normalizedName,academicTermKind,annualChanged,decodeRecords,historicalRoster,directorySourceUpdates,directoryRevisions,
-recoveredUndo,restoredSessionRecords}){const directoryTransaction=globalThis.EduAcademicDirectoryTransaction;if(directoryTransaction?.hasChanges({records,changed,
-removed,before}))return directoryTransaction.commit({connection,expectedInstallation,workspace,records,changed,removed,before,changes,action,keepUndo,normalizedName,
-academicTermKind,annualChanged,decodeRecords,historicalRoster,directorySourceUpdates,directoryRevisions,recoveredUndo,restoredSessionRecords});workspace={...workspace};
-const{transactionDone}=globalThis.EduDataStoreRuntime;const recordKey=logical=>workspace.id+"|"+logical;const tx=connection.transaction(["records","catalog","ev\
-ents","undo"],"readwrite"),done=transactionDone(tx);let conflict=false,labelConflict=false,nextCatalog,queueError;const annualUpdates=[];const abortQueue=error=>{
+{},student.id)||(pod.units||[]).some(unit=>Object.hasOwn(unit.unitScores||{},student.id)||Object.hasOwn(unit.competencyScores||{},student.id))));if(inSession||inGrade){
+const error=Error("هنرجوی «"+student.name+"» در یکی از نوبت‌ها سابقه دارد؛ به‌جای حذف کامل، او را بایگانی کنید.");
+error.code="ACADEMIC_DIRECTORY_CONFLICT";throw error}}}const prepared=[{period:live,old:sourceOld,next:sourceNext}];for(const period of family){if(period.id===live.
+id)continue;const old=loaded.get(period.id),next=new Map([...old].map(([key,value])=>[key,copy(value)])),peerMeta=next.get("meta");if(scheduleChanged)Object.assign(
+peerMeta,model.mirrorSchedule(sourceOld.get("meta"),sourceNext.get("meta"),peerMeta));if(layoutChanged)peerMeta.layout=model.mirrorLayout(previousLayout,currentLayout,
+peerMeta.layout);for(const key of deletedClasses){const classroom=old.get(key);if(!classroom)continue;if(!keepUndo){const sourceClass=sourceOld.get(key),peerSchedule=Object.
+values(old.get("meta").masterSchedule||{}).some(slot=>slot.classId===classroom.id);if(JSON.stringify(classroom.lessons||[])!==JSON.stringify(sourceClass?.lessons||
+[])||peerSchedule){const error=Error("کلاس «"+classroom.name+"» در نوبت دیگر تعریف درس یا برنامهٔ هفتگی مستقل دارد؛ بازگردانی افزودن کلاس انجام نشد. برای ح\
+ذف، از مسیر حذف کلاس و پشتیبان کامل استفاده کنید.");error.code="ACADEMIC_DIRECTORY_CONFLICT";throw error}}model.assertClassRemovable(
+classroom,[...old].filter(([logical])=>logical.startsWith("session:")).map(([,value])=>value));next.delete(key);for(const[slot,value]of Object.entries(peerMeta.
+masterSchedule||{}))if(value.classId===classroom.id)delete peerMeta.masterSchedule[slot]}for(const plan of directoryPlans){const classId=plan.current.id,sourceOwner=owner(
+currentLayout,classId),targetOwner=owner(peerMeta.layout,classId);if(!sourceOwner||targetOwner!==sourceOwner)throw Error("مالک کلاس در فهرست مشترک سال تحصیلی سا\
+زگار نیست.");const target=next.get(plan.key);freeze(old,next,classId);next.set(plan.key,model.mirrorClass(plan.previous,plan.current,target,{allowRemoval:true}));
+repairRecoveredIdentity(next,plan)}for(const plan of coursePlans){const classId=plan.current.id;if(!owner(currentLayout,classId)||owner(currentLayout,classId)!==
+owner(peerMeta.layout,classId))throw Error("مالک کلاس برای اشتراک درس‌های سال تحصیلی سازگار نیست.");const target=next.
+get(plan.key),value=courses.mirrorClass(plan.previous,plan.current,target,{sessions:sessionsFrom(old)});if(!keepUndo){const surviving=new Set((value.lessons||[]).
+map(lesson=>lesson.id)),removed2=new Set((target?.lessons||[]).filter(lesson=>!surviving.has(lesson.id)).map(lesson=>lesson.id));if(Object.values(old.get("meta").
+masterSchedule||{}).some(slot=>slot.classId===classId&&removed2.has(slot.lessonId))){const error=Error("این درس در نوبت دیگر برنامهٔ هفتگی دارد؛ برای حذف از مسی\
+ر حذف درس و پشتیبان کامل استفاده کنید.");error.code="ACADEMIC_COURSE_CONFLICT";throw error}}pruneLessonSchedule(next,classId,target,
+value);next.set(plan.key,value)}const sourceKind=live.termKind||academicTermKind(live.term),targetKind=period.termKind||academicTermKind(period.term);if(annual&&
+["first","second"].includes(sourceKind)&&["first","second"].includes(targetKind))for(const plan of classPlans){const target=next.get(plan.key);if(target&&owner(
+currentLayout,plan.current.id)===owner(peerMeta.layout,plan.current.id)&&annual.hasChanges(plan.previous,plan.current)){const value=annual.mirrorClass(plan.previous,
+plan.current,target);if(value)next.set(plan.key,value)}}if(recoveredUndo!==null)restoreRecoveredPeer(old,next,recoveredUndo.find(peer=>peer.id===period.id),directoryPlans);
+validate(next,period.id);prepared.push({period,old,next})}if(prepared.length>1){const layout=JSON.stringify(currentLayout);for(const part of prepared){if(JSON.stringify(
+part.next.get("meta").layout)!==layout){const error=Error("چیدمان مدرسه و کلاس‌ها بین نوبت‌های این سال متفاوت است؛ ابتدا اختلاف فهرست را اصلاح کنید.");
+error.code="ACADEMIC_DIRECTORY_CONFLICT";throw error}for(const school of currentLayout)for(const id of school.classes){const source=sourceNext.get("class:"+id),
+target=part.next.get("class:"+id);if(!source||!target||JSON.stringify(model.projection(source))!==JSON.stringify(model.projection(target))){const error=Error("ف\
+هرست کلاس «"+(source?.name||id)+"» بین نوبت‌های سال متفاوت است؛ ابتدا نام، کد و عضویت هنرجویان را یکسان کنید.");
+error.code="ACADEMIC_DIRECTORY_CONFLICT";throw error}}}}if(courses&&coursePlans.length&&prepared.length>1)for(const part of prepared)for(const plan of coursePlans){
+const candidate=part.next.get(plan.key);if(!candidate||JSON.stringify(courses.projection(candidate))!==JSON.stringify(courses.projection(plan.current))){const error=Error(
+"تعریف درس‌های کلاس «"+plan.current.name+"» بین نوبت‌های سال یکسان نیست؛ تغییر ثبت نشد.");error.code="ACA\
+DEMIC_COURSE_CONFLICT";throw error}}if(scheduleChanged){for(const part of prepared)if(model.scheduleHasChanges(sourceNext.get("meta"),part.next.get("meta"))){const error=Error(
+"برنامهٔ هفتگی نوبت‌های این سال متفاوت است؛ برای جلوگیری از جایگزینی ناخواسته، تغییر ثبت نشد و برنامه‌های قبلی حفظ شدند.");
+error.code="ACADEMIC_SCHEDULE_CONFLICT";throw error}}validate(sourceNext,live.id);const sessionSlots=globalThis.EduSessionSlots,sessionChanges=sessionSlots?.changes(
+{changed,before:options.before,removed,restoredRecords:options.restoredSessionRecords});if(sessionChanges?.guarded.length){sessionSlots.assertScheduled(sessionChanges,
+sourceNext.get("meta"));sessionSlots.assertAvailable(sessionChanges,live.id,prepared.filter(({period})=>period.id===live.id||["first","second"].includes(period.
+termKind||academicTermKind(period.term))).map(({period,next})=>({id:period.id,records:next})))}for(const part of prepared)part.plan=globalThis.EduRecordCommitPlan.
+create(part.next,new Map([...part.old].map(([key,value])=>[key,JSON.stringify(value)])),{replace:true});for(const part of prepared)if(part.plan.changed.length||
+part.plan.removed.length)part.nextRevision=EduRevision.next(part.period.revision);const recoveredPeers=recoveredClasses.size&&prepared.length>1?prepared.filter(
+part=>part.period.id!==live.id).map(part=>{const rosters=[];for(const[key,value]of part.next){if(!key.startsWith("session:")||!recoveredClasses.has(value.classId))
+continue;const previous=part.old.get(key);if(previous&&JSON.stringify(previous.roster)!==JSON.stringify(value.roster))rosters.push({sessionId:value.id,classId:value.
+classId,before:copy(previous.roster??null)})}const previousWarnings=part.old.get("meta").migrationWarnings,nextWarnings=part.next.get("meta").migrationWarnings;
+return{id:part.period.id,revision:part.nextRevision??part.period.revision,rosters,...JSON.stringify(previousWarnings)!==JSON.stringify(nextWarnings)?{migrationWarnings:copy(
+previousWarnings)}:{}}}):null;const at=new Date().toISOString();for(const part of prepared){const plan=part.plan,isSource=part.period.id===live.id;if(!plan.changed.
+length&&!plan.removed.length)continue;for(const[logical,json]of plan.changed)tx.objectStore("records").put({key:part.period.id+"|"+logical,workspace:part.period.
+id,logical,value:JSON.parse(json)});for(const logical of plan.removed)tx.objectStore("records").delete(part.period.id+"|"+logical);const updated={...part.period,
+...isSource?{year,term,termKind:live.termKind||academicTermKind(live.term)}:{},revision:part.nextRevision,updatedAt:at};tx.objectStore("catalog").put(updated);tx.
+objectStore("events").add({workspace:updated.id,revision:updated.revision,at,action:isSource?action:scheduleChanged?"همگام‌سازی برنامهٔ هفتگی سال تحصیلی":
+"همگام‌سازی فهرست مشترک سال تحصیلی",changes:plan.changes});if(isSource&&keepUndo&&!sharedClassRemoval&&!sharedCourseRemoval)tx.objectStore(
+"undo").put({id:updated.id,action,revision:updated.revision,before:plan.before,...recoveredPeers?{recoveredPeers}:{}});else tx.objectStore("undo").delete(updated.
+id);if(isSource){nextCatalog=updated;sourceUpdates.push(...plan.changed.map(([key,json])=>[key,JSON.parse(json)]))}else peerUpdates.push({workspace:updated.id,revision:updated.
+revision})}}try{await done}catch(error){throw failure||error}for(const[key,value]of sourceUpdates){const index=changed.findIndex(([logical])=>logical===key),entry=[
+key,JSON.stringify(value)];if(index<0)changed.push(entry);else changed[index]=entry}if(directorySourceUpdates)directorySourceUpdates.push(...sourceUpdates);if(annualChanged)
+annualChanged.push(...peerUpdates);return nextCatalog}});"use strict";globalThis.EduRecordTransaction=Object.freeze({async commit({connection,expectedInstallation="",
+workspace,records,changed,removed,before,changes,action,keepUndo,normalizedName,academicTermKind,annualChanged,decodeRecords,historicalRoster,directorySourceUpdates,
+directoryRevisions,recoveredUndo,restoredSessionRecords}){const directoryTransaction=globalThis.EduAcademicDirectoryTransaction;if(directoryTransaction?.hasChanges(
+{records,changed,removed,before}))return directoryTransaction.commit({connection,expectedInstallation,workspace,records,changed,removed,before,changes,action,keepUndo,
+normalizedName,academicTermKind,annualChanged,decodeRecords,historicalRoster,directorySourceUpdates,directoryRevisions,recoveredUndo,restoredSessionRecords});workspace=
+{...workspace};const{transactionDone}=globalThis.EduDataStoreRuntime;const recordKey=logical=>workspace.id+"|"+logical;const tx=connection.transaction(["records",
+"catalog","events","undo"],"readwrite"),done=transactionDone(tx);let conflict=false,labelConflict=false,nextCatalog,queueError;const annualUpdates=[];const abortQueue=error=>{
 queueError=error;try{tx.abort()}catch(ignore){}};try{const epoch=tx.objectStore("records").get("@installation-reset");epoch.onsuccess=()=>{if((epoch.result?.value?.
 token||"")!==expectedInstallation)abortQueue(Object.assign(Error("اطلاعات در پنجرهٔ دیگری جایگزین شده است؛ صفحه را دوباره باز کنید."),
 {code:"INSTALLATION_CHANGED"}))};const catalog=tx.objectStore("catalog"),sessionSlots=globalThis.EduSessionSlots,sessionChanges=sessionSlots?.changes({changed,before,

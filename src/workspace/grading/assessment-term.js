@@ -63,7 +63,14 @@ async function ensureAcademicAssessmentTerm(kind) {
           lesson.kardaneshScores = {};
           for (const pod of lesson.poudmans || []) {
             if (lesson.gradingPolicy?.method !== "modular") pod.podScores = {};
-            for (const unit of pod.units || []) unit.unitScores = {};
+            for (const unit of pod.units || []) {
+              unit.unitScores = {};
+              if (
+                unit.competencyScores !== undefined &&
+                !EduPolicy.unitBased(lesson.gradingPolicy)
+              )
+                unit.competencyScores = {};
+            }
           }
         }
     const created = await installWorkspace(normalizeDB(data), {

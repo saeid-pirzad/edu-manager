@@ -884,6 +884,7 @@ function stageControllerFixture() {
           dataset: {},
           table: node,
           buttons: [],
+          switcher: null,
           allCells,
           scroll: { scrollLeft: 85 },
           header: {},
@@ -902,14 +903,15 @@ function stageControllerFixture() {
                 : null;
           return button;
         });
+        const members = new Set(section.buttons);
+        section.switcher = { contains: (button) => members.has(button) };
       };
       section.querySelector = (selector) => {
         if (selector === "table" || selector === "table.karnameh-sheet-table")
           return node;
         if (selector === ".karnameh-sheet-scroll") return section.scroll;
         if (selector === ".karnameh-subject-header") return section.header;
-        if (selector === ".karnameh-stage-switcher")
-          return section.buttons.length ? {} : null;
+        if (selector === ".karnameh-stage-switcher") return section.switcher;
         return null;
       };
       section.querySelectorAll = (selector) =>
@@ -1066,6 +1068,7 @@ test("forged stage names, negative/overflow module indices and disabled controls
     before = view.grades(),
     original = view.button("modular", "module-1");
   for (const selected of [
+    "module-1",
     "module--1",
     "module-2",
     "module-999999",

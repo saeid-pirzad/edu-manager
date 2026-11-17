@@ -150,7 +150,10 @@
       lesson.kardaneshScores = {};
       for (const pod of lesson.poudmans || []) {
         pod.podScores = {};
-        for (const unit of pod.units || []) unit.unitScores = {};
+        for (const unit of pod.units || []) {
+          unit.unitScores = {};
+          if (unit.competencyScores !== undefined) unit.competencyScores = {};
+        }
       }
     }
     return result;
@@ -373,7 +376,11 @@
       for (const pod of lesson.poudmans || []) {
         if (Object.keys(pod.podScores || {}).length) return true;
         for (const unit of pod.units || [])
-          if (Object.keys(unit.unitScores || {}).length) return true;
+          if (
+            Object.keys(unit.unitScores || {}).length ||
+            Object.keys(unit.competencyScores || {}).length
+          )
+            return true;
       }
     }
     return false;

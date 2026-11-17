@@ -665,7 +665,18 @@ async function createNewPeriod({ fromDialog = false } = {}) {
                   )
                 : {};
           for (const p of l.poudmans)
-            for (const u of p.units) u.unitScores = {};
+            for (const u of p.units) {
+              u.unitScores = {};
+              if (u.competencyScores !== undefined)
+                u.competencyScores =
+                  first?.year === year && EduPolicy.unitBased(l.gradingPolicy)
+                    ? Object.fromEntries(
+                        Object.entries(u.competencyScores).filter(
+                          ([studentId]) => students.has(studentId),
+                        ),
+                      )
+                    : {};
+            }
         }
       }
     checkDialog();

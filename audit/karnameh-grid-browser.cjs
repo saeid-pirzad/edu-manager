@@ -240,6 +240,9 @@ function sheetState() {
             note:
               cell.querySelector(".karnameh-module-name")?.textContent.trim() ||
               "",
+            label: cell
+              .querySelector(".karnameh-sheet-value")
+              .getAttribute("aria-label"),
             complete: cell.dataset.gradeComplete,
             tone: cell.querySelector(".karnameh-sheet-value").dataset.gradeTone,
           };
@@ -1058,8 +1061,10 @@ async function run(env) {
     check(
       "MODULE_IDENTITY",
       "Module raw inputs and results remain aligned by identity across reversed term order",
-      current.modular[0].cells[0].note === "پودمان اول شبکه" &&
-        current.modular[0].cells[3].note === "پودمان دوم شبکه" &&
+      current.modular[0].cells[0].note === "" &&
+        current.modular[0].cells[3].note === "" &&
+        current.modular[0].cells[0].label.includes("پودمان اول شبکه") &&
+        current.modular[0].cells[3].label.includes("پودمان دوم شبکه") &&
         same(numbers(current.modular[0]), [2, 2, 12, 4, 3, 19]),
       current.modular,
     );

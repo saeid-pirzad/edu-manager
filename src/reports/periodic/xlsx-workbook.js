@@ -295,7 +295,7 @@ function xlsxWorkbook(sheets) {
     "xl/styles.xml",
     '<styleSheet xmlns="' +
       ns +
-      '"><numFmts count="1"><numFmt numFmtId="164" formatCode="0.##"/></numFmts><fonts count="4"><font><sz val="11"/><color rgb="FF25344A"/><name val="Tahoma"/></font><font><b/><sz val="12"/><color rgb="FFFFFFFF"/><name val="Tahoma"/></font><font><b/><sz val="14"/><color rgb="FFFFFFFF"/><name val="Tahoma"/></font><font><sz val="11"/><color rgb="FF475569"/><name val="Tahoma"/></font></fonts><fills count="8"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>' +
+      '"><numFmts count="1"><numFmt numFmtId="164" formatCode="0.###############"/></numFmts><fonts count="4"><font><sz val="11"/><color rgb="FF25344A"/><name val="Tahoma"/></font><font><b/><sz val="12"/><color rgb="FFFFFFFF"/><name val="Tahoma"/></font><font><b/><sz val="14"/><color rgb="FFFFFFFF"/><name val="Tahoma"/></font><font><sz val="11"/><color rgb="FF475569"/><name val="Tahoma"/></font></fonts><fills count="8"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>' +
       ["FF244B73", "FFF0F5FA", "FFE4F4EA", "FFFFF3D6", "FFFCE8E6", "FFEAF0F8"]
         .map(
           (color) =>

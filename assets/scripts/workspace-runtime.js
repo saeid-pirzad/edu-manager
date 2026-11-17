@@ -51,47 +51,48 @@ session.classId).push(session)}for(const school of d.schools||[])for(const c of 
 lessons){for(const metadata of[l.courseInfo,l.gradingPolicy])if(metadata?.year!==void 0)metadata.year=EduAcademicYear.normalize(metadata.year);l.gradeMode=l.gradeMode||
 "standard";l.kardaneshScores=l.kardaneshScores||{};l.weightMostamar=l.weightMostamar??40;l.weightPayani=l.weightPayani??60;for(const id of Object.keys(l.kardaneshScores))
 references.add(id);for(const p of l.poudmans||[])for(const u of p.units||[]){u.unitScores=u.unitScores||{};u.applyOptions=Object.assign({pos:false,neg:false,hw:false,
-present:false,late:false},u.applyOptions||{});for(const id of Object.keys(u.unitScores))references.add(id)}deriveDualGrades(l)}for(const x of sessionsByClass.get(
-c.id)||[]){for(const st of x.roster||[])references.add(st.id);for(const id of Object.keys(x.attendance||{}))references.add(id);for(const sc of x.scores||[])references.
-add(sc.studentId)}if(legacy){for(const id of references)if(!all.has(id)){const st={id,name:"دانش‌آموز بازیابی‌شده ("+id+")",recovered:true};
-c.archivedStudents.push(st);all.set(id,st);warnings.push("نام دانش‌آموز "+id+" در "+c.name+" نیازمند بررسی است.")}}for(const x of sessionsByClass.
-get(c.id)||[]){if(!x.roster){x.roster=historicalRoster(c,x)}else if(legacy){const members=new Set(x.roster.map(st=>st.id));for(const id of[...Object.keys(x.attendance||
-{}),...(x.scores||[]).map(sc=>sc.studentId)])if(!members.has(id)&&all.has(id)){x.roster.push(clone(all.get(id)));members.add(id)}}}}d.schemaVersion=26;d.migrationWarnings=
-warnings;refreshAcademicYearWarnings(d);validateV24(d);return d}const{requestPromise,transactionDone}=EduDataStoreRuntime;const RESET_RECORD_KEY="@installation-\
-reset",RESET_EPOCH_KEY="EduManager.resetEpoch";let resetBusy=false,connectionRetired=false,installationToken="";function ownedDataKey(key){return key.startsWith(
-"Edu24.")||key.startsWith("EduManager.periodicDrafts.")||key==="EduDeputy.teacherExport.v1"||key===STORAGE_KEY||key===STORAGE_KEY+"_beforeImport"}function retireConnection(dbConnection){
-pauseSingleFile();dbConnection.close();connectionRetired=true;ready=false;blocked=true;clearTimeout(draftTimer);setStatus("بانک اطلاعات در پنجره دیگری تغییر می‌\
-کند؛ برای ادامه صفحه را دوباره بارگذاری کنید.","error");lockControls()}function forgetInstallation(){pauseSingleFile();singleFile=
-null;clearTimeout(draftTimer);assessmentContext.dispose({abandon:true});drafts.clear();draftGeneration++;writeFailureGeneration++;committed.clear();draftRecoveryFailed=
-false;window.EduPeriodicReports?.resetDrafts();db=v24DefaultDB();workspace=null;ready=false;blocked=true;connectionRetired=true;isAuthenticated=false}function resetScreen(message){
-const modal=document.getElementById("modal");modal.classList.add("hidden");modal.setAttribute("aria-hidden","true");document.getElementById("modalBody").replaceChildren();
-setModalBackground(false);document.getElementById("app").innerHTML='<div class="card" role="alert"><h2>پاک‌سازی اطلاعات</h2><p>'+esc(message)+'<\
-/p><button data-workspace-action="reload">بارگذاری مجدد و ادامه</button></div>'}function invalidateInstallation(){forgetInstallation();resetScreen(
-"اطلاعات برنامه در پنجره دیگری تغییر کرده است؛ برای خواندن وضعیت فعلی، برنامه را دوباره بارگذاری کنید.")}
-async function completeResetCleanup(dbConnection,marker){const tx=dbConnection.transaction("records","readwrite"),done=transactionDone(tx),store=tx.objectStore(
-"records"),request=store.get(RESET_RECORD_KEY);let failure;request.onsuccess=()=>{try{if(request.result?.value?.token!==marker.value.token){const error=Error("ا\
-طلاعات سیستم دوباره جایگزین شده است؛ پاک‌سازی قدیمی اجرا نشد.");error.code="INSTALLATION_CHANGED";throw error}
-if(request.result.value.phase==="complete")return;for(const key of Object.keys(localStorage))if(ownedDataKey(key))localStorage.removeItem(key);localStorage.setItem(
-RESET_EPOCH_KEY,marker.value.token);for(const key of Object.keys(sessionStorage))if(key.startsWith("Edu24."))sessionStorage.removeItem(key);if(localStorage.getItem(
-RESET_EPOCH_KEY)!==marker.value.token||Object.keys(localStorage).some(ownedDataKey))throw Error("پاک‌سازی حافظه مرورگر کامل نشده است.");
-store.put({...marker,value:{...marker.value,phase:"complete"}})}catch(error){failure=error;try{tx.abort()}catch{}}};try{await done}catch(error){throw failure||error}}
-function resetDatabase(version,marker){return new Promise((resolve,reject)=>{const request=indexedDB.open(EduDataStoreSchema.databaseName,version);let cancelled=false,
-upgraded=false;request.onblocked=()=>{cancelled=true;const error=Error("حذف انجام نشد؛ یک اتصال دیگر بانک را باز نگه داشته است. پنجره‌های دیگر برنامه را ببندید \
-و دوباره بارگذاری کنید.");error.resetBlocked=true;reject(error)};request.onupgradeneeded=()=>{if(cancelled){request.transaction.abort();return}
-upgraded=true;for(const name of request.result.objectStoreNames)request.transaction.objectStore(name).clear();request.transaction.objectStore("records").put(marker)};
-request.onsuccess=()=>{if(cancelled||!upgraded){request.result.close();reject(Error("بانک در پنجره دیگری تغییر کرده است؛ حذف تکراری انجام نشد."));
-return}resolve(request.result)};request.onerror=()=>reject(request.error||Error("حذف اطلاعات ثبت نشد."))})}function openDatabase(){return EduDataStore.
-open({onVersionChange:retireConnection})}async function allFrom(store){const tx=connection.transaction(store,"readonly");return requestPromise(tx.objectStore(store).
-getAll())}async function readRecord(store,key){const tx=connection.transaction(store,"readonly");return requestPromise(tx.objectStore(store).get(key))}function recordKey(key){
-return workspace.id+"|"+key}const{metaValue,collectRecords,logicalRecordType,validateLogicalValue,decodeWorkspaceRecords,decodeAssessmentRecords}=EduWorkspaceRecords.
-create({clone,normalizeDB,isDataObject,isSafeRecordId});async function readWorkspace(id){const tx=connection.transaction("records","readonly");return decodeWorkspaceRecords(
-await requestPromise(workspaceRecordRequest(tx.objectStore("records"),id)),{workspaceId:id})}function workspaceRecordRequest(store,id){return store.getAll(IDBKeyRange.
-bound(id+"|",id+"}",false,true))}async function synchronizeAnnualForRead(id){const directory=await synchronizeAcademicDirectoryForRead(id);try{const annual=await synchronizeAnnualModularGrades(
-id);return{changed:[...directory.changed,...annual.changed],conflicts:[...directory.conflicts,...annual.conflicts]}}catch(error){if(error.code!=="ANNUAL_PERIOD_\
-AMBIGUOUS")throw error;return{changed:directory.changed,conflicts:[...directory.conflicts,{message:error.message}]}}}async function readWorkspaceSnapshot(id){const tx=connection.
-transaction(["catalog","records"],"readonly");const done=transactionDone(tx);const[period,rows,epoch]=await Promise.all([requestPromise(tx.objectStore("catalog").
-get(id)),requestPromise(workspaceRecordRequest(tx.objectStore("records"),id)),requestPromise(tx.objectStore("records").get(RESET_RECORD_KEY)),done]);if(!period)
-throw Error("ترم موجود نیست.");return{period,installationToken:epoch?.value?.token||"",...decodeWorkspaceRecords(rows,{workspaceId:id})}}async function readAssessmentSnapshot(id,identity,expectedInstallation){
+present:false,late:false},u.applyOptions||{});for(const id of Object.keys(u.unitScores))references.add(id);for(const id of Object.keys(u.competencyScores||{}))references.
+add(id)}deriveDualGrades(l)}for(const x of sessionsByClass.get(c.id)||[]){for(const st of x.roster||[])references.add(st.id);for(const id of Object.keys(x.attendance||
+{}))references.add(id);for(const sc of x.scores||[])references.add(sc.studentId)}if(legacy){for(const id of references)if(!all.has(id)){const st={id,name:"دانش‌\
+آموز بازیابی‌شده ("+id+")",recovered:true};c.archivedStudents.push(st);all.set(id,st);warnings.push("نام دانش‌آموز "+id+" در "+c.
+name+" نیازمند بررسی است.")}}for(const x of sessionsByClass.get(c.id)||[]){if(!x.roster){x.roster=historicalRoster(c,x)}else if(legacy){const members=new Set(
+x.roster.map(st=>st.id));for(const id of[...Object.keys(x.attendance||{}),...(x.scores||[]).map(sc=>sc.studentId)])if(!members.has(id)&&all.has(id)){x.roster.push(
+clone(all.get(id)));members.add(id)}}}}d.schemaVersion=26;d.migrationWarnings=warnings;refreshAcademicYearWarnings(d);validateV24(d);return d}const{requestPromise,
+transactionDone}=EduDataStoreRuntime;const RESET_RECORD_KEY="@installation-reset",RESET_EPOCH_KEY="EduManager.resetEpoch";let resetBusy=false,connectionRetired=false,
+installationToken="";function ownedDataKey(key){return key.startsWith("Edu24.")||key.startsWith("EduManager.periodicDrafts.")||key==="EduDeputy.teacherExport.v1"||
+key===STORAGE_KEY||key===STORAGE_KEY+"_beforeImport"}function retireConnection(dbConnection){pauseSingleFile();dbConnection.close();connectionRetired=true;ready=
+false;blocked=true;clearTimeout(draftTimer);setStatus("بانک اطلاعات در پنجره دیگری تغییر می‌کند؛ برای ادامه صفحه را دوباره بارگذاری کنید.",
+"error");lockControls()}function forgetInstallation(){pauseSingleFile();singleFile=null;clearTimeout(draftTimer);assessmentContext.dispose({abandon:true});drafts.
+clear();draftGeneration++;writeFailureGeneration++;committed.clear();draftRecoveryFailed=false;window.EduPeriodicReports?.resetDrafts();db=v24DefaultDB();workspace=
+null;ready=false;blocked=true;connectionRetired=true;isAuthenticated=false}function resetScreen(message){const modal=document.getElementById("modal");modal.classList.
+add("hidden");modal.setAttribute("aria-hidden","true");document.getElementById("modalBody").replaceChildren();setModalBackground(false);document.getElementById(
+"app").innerHTML='<div class="card" role="alert"><h2>پاک‌سازی اطلاعات</h2><p>'+esc(message)+'</p><button data-workspace-action="reload">بارگذاری\
+ مجدد و ادامه</button></div>'}function invalidateInstallation(){forgetInstallation();resetScreen("اطلاعات برنامه در پنجره دیگری تغییر کرده است؛ برای خ\
+واندن وضعیت فعلی، برنامه را دوباره بارگذاری کنید.")}async function completeResetCleanup(dbConnection,marker){const tx=dbConnection.
+transaction("records","readwrite"),done=transactionDone(tx),store=tx.objectStore("records"),request=store.get(RESET_RECORD_KEY);let failure;request.onsuccess=()=>{
+try{if(request.result?.value?.token!==marker.value.token){const error=Error("اطلاعات سیستم دوباره جایگزین شده است؛ پاک‌سازی قدیمی اجرا نشد.");
+error.code="INSTALLATION_CHANGED";throw error}if(request.result.value.phase==="complete")return;for(const key of Object.keys(localStorage))if(ownedDataKey(key))
+localStorage.removeItem(key);localStorage.setItem(RESET_EPOCH_KEY,marker.value.token);for(const key of Object.keys(sessionStorage))if(key.startsWith("Edu24."))sessionStorage.
+removeItem(key);if(localStorage.getItem(RESET_EPOCH_KEY)!==marker.value.token||Object.keys(localStorage).some(ownedDataKey))throw Error("پاک‌سازی حافظه مرورگر ک\
+امل نشده است.");store.put({...marker,value:{...marker.value,phase:"complete"}})}catch(error){failure=error;try{tx.abort()}catch{}}};try{await done}catch(error){
+throw failure||error}}function resetDatabase(version,marker){return new Promise((resolve,reject)=>{const request=indexedDB.open(EduDataStoreSchema.databaseName,
+version);let cancelled=false,upgraded=false;request.onblocked=()=>{cancelled=true;const error=Error("حذف انجام نشد؛ یک اتصال دیگر بانک را باز نگه داشته است. پنج\
+ره‌های دیگر برنامه را ببندید و دوباره بارگذاری کنید.");error.resetBlocked=true;reject(error)};request.onupgradeneeded=
+()=>{if(cancelled){request.transaction.abort();return}upgraded=true;for(const name of request.result.objectStoreNames)request.transaction.objectStore(name).clear();
+request.transaction.objectStore("records").put(marker)};request.onsuccess=()=>{if(cancelled||!upgraded){request.result.close();reject(Error("بانک در پنجره دیگری\
+ تغییر کرده است؛ حذف تکراری انجام نشد."));return}resolve(request.result)};request.onerror=()=>reject(request.error||Error("حذف اطل\
+اعات ثبت نشد."))})}function openDatabase(){return EduDataStore.open({onVersionChange:retireConnection})}async function allFrom(store){const tx=connection.
+transaction(store,"readonly");return requestPromise(tx.objectStore(store).getAll())}async function readRecord(store,key){const tx=connection.transaction(store,"\
+readonly");return requestPromise(tx.objectStore(store).get(key))}function recordKey(key){return workspace.id+"|"+key}const{metaValue,collectRecords,logicalRecordType,
+validateLogicalValue,decodeWorkspaceRecords,decodeAssessmentRecords}=EduWorkspaceRecords.create({clone,normalizeDB,isDataObject,isSafeRecordId});async function readWorkspace(id){
+const tx=connection.transaction("records","readonly");return decodeWorkspaceRecords(await requestPromise(workspaceRecordRequest(tx.objectStore("records"),id)),{
+workspaceId:id})}function workspaceRecordRequest(store,id){return store.getAll(IDBKeyRange.bound(id+"|",id+"}",false,true))}async function synchronizeAnnualForRead(id){
+const directory=await synchronizeAcademicDirectoryForRead(id);try{const annual=await synchronizeAnnualModularGrades(id);return{changed:[...directory.changed,...annual.
+changed],conflicts:[...directory.conflicts,...annual.conflicts]}}catch(error){if(error.code!=="ANNUAL_PERIOD_AMBIGUOUS")throw error;return{changed:directory.changed,
+conflicts:[...directory.conflicts,{message:error.message}]}}}async function readWorkspaceSnapshot(id){const tx=connection.transaction(["catalog","records"],"rea\
+donly");const done=transactionDone(tx);const[period,rows,epoch]=await Promise.all([requestPromise(tx.objectStore("catalog").get(id)),requestPromise(workspaceRecordRequest(
+tx.objectStore("records"),id)),requestPromise(tx.objectStore("records").get(RESET_RECORD_KEY)),done]);if(!period)throw Error("ترم موجود نیست.");return{
+period,installationToken:epoch?.value?.token||"",...decodeWorkspaceRecords(rows,{workspaceId:id})}}async function readAssessmentSnapshot(id,identity,expectedInstallation){
 const tx=connection.transaction(["catalog","records"],"readonly"),done=transactionDone(tx),store=tx.objectStore("records"),[period,epoch,meta,classroom]=await Promise.
 all([requestPromise(tx.objectStore("catalog").get(id)),requestPromise(store.get("@installation-reset")),requestPromise(store.get(id+"|meta")),requestPromise(store.
 get(id+"|class:"+identity.classId)),done]);if((epoch?.value?.token||"")!==expectedInstallation)throw Object.assign(Error("اطلاعات در پنجرهٔ دیگری جایگزین شده اس\
@@ -104,14 +105,15 @@ target.term);if(!["first","second"].includes(kind))return[];return["first","seco
 (period.termKind||academicTermKind(period.term))===role);if(members.length>1){const error=Error("نوبت‌های سال برای همگام‌سازی نمرات پودمانی تکراری‌اند.");
 error.code="ANNUAL_PERIOD_AMBIGUOUS";throw error}if(members.some(period=>!Number.isSafeInteger(period.revision)||period.revision<1))throw Error("نسخهٔ نوبت برای\
  همگام‌سازی نمرات سالانه معتبر نیست.");return members})};const signature=periods2=>JSON.stringify(periods2.map(period=>[period.id,
-period.year,period.termKind||academicTermKind(period.term),period.revision,!!period.closed]));const projection=classroom=>JSON.stringify(classroom.lessons.filter(
-EduAnnualModules.isFormalModular).map(lesson=>[lesson.id,lesson.poudmans.map(pod=>[pod.id,Object.entries(pod.podScores||{}).map(([sid,score])=>[sid,score?.m??null,
-score?.c??null]).filter(([,mostamar,competency])=>mostamar!==null||competency!==null).sort(([a],[b])=>a.localeCompare(b))]).sort(([a],[b])=>a.localeCompare(b))]).
-sort(([a],[b])=>a.localeCompare(b)));const read=database.transaction(["catalog","records"],"readonly"),readDone=transactionDone(read);let periods;const pending=new Promise(
-(resolve,reject)=>{try{const request=read.objectStore("catalog").getAll();request.onerror=()=>reject(request.error);request.onsuccess=()=>{try{assertConnection();
-periods=family(request.result);Promise.all(periods.map(period=>requestPromise(workspaceRecordRequest(read.objectStore("records"),period.id)))).then(resolve,reject)}catch(error){
-reject(error);read.abort()}}}catch(error){reject(error);read.abort()}});const[recordSets]=await Promise.all([pending,readDone]);assertConnection();const conflicts=[],
-changed=[];if(periods.length<2)return{changed,conflicts};const parts=periods.map((period,index)=>({period,data:decodeWorkspaceRecords(recordSets[index],{workspaceId:period.
+period.year,period.termKind||academicTermKind(period.term),period.revision,!!period.closed]));const scoreProjection=scores=>Object.entries(scores||{}).map(([sid,
+score])=>[sid,score?.m??null,score?.c??null]).filter(([,m,c])=>m!==null||c!==null).sort(([a],[b])=>a.localeCompare(b));const projection=classroom=>JSON.stringify(
+classroom.lessons.filter(EduAnnualModules.isFormalModular).map(lesson=>[lesson.id,lesson.poudmans.map(pod=>[pod.id,scoreProjection(pod.podScores),(pod.units||[]).
+map(unit=>[unit.id,scoreProjection(unit.competencyScores)]).sort(([a],[b])=>a.localeCompare(b))]).sort(([a],[b])=>a.localeCompare(b))]).sort(([a],[b])=>a.localeCompare(
+b)));const read=database.transaction(["catalog","records"],"readonly"),readDone=transactionDone(read);let periods;const pending=new Promise((resolve,reject)=>{try{
+const request=read.objectStore("catalog").getAll();request.onerror=()=>reject(request.error);request.onsuccess=()=>{try{assertConnection();periods=family(request.
+result);Promise.all(periods.map(period=>requestPromise(workspaceRecordRequest(read.objectStore("records"),period.id)))).then(resolve,reject)}catch(error){reject(
+error);read.abort()}}}catch(error){reject(error);read.abort()}});const[recordSets]=await Promise.all([pending,readDone]);assertConnection();const conflicts=[],changed=[];
+if(periods.length<2)return{changed,conflicts};const parts=periods.map((period,index)=>({period,data:decodeWorkspaceRecords(recordSets[index],{workspaceId:period.
 id}).data,plans:new Map}));const classes=new Map;for(const part of parts)for(const[schoolIndex,school]of part.data.schools.entries())for(const[classIndex,classroom]of school.
 classes.entries()){const key=JSON.stringify([school.id,classroom.id]);if(!classes.has(key))classes.set(key,[]);classes.get(key).push({part,schoolIndex,classIndex,
 classroom})}for(const[key,members]of classes){if(members.length<2)continue;try{const plans=[];for(const member of members){const value=EduAnnualModules.mergeClass(
@@ -388,203 +390,211 @@ const c=findClass(classId);if(!c)throw Error("کلاس پیش‌نویس موج�
 !c.students.some(st=>st.id===item.sid))throw Error("دانش‌آموز یا درس پیش‌نویس فعال نیست.");let target;if(item.kind==="k"){if(l.gradeMode!==
 "kardanesh"||!["practical","theory","midtermPractical","midtermTheory"].includes(item.field))throw Error("نوع نمره معتبر نیست.");target=writableScoreRecord(
 l.kardaneshScores||(l.kardaneshScores={}),item.sid);l.kardaneshScores[item.sid]=target}else if(item.kind==="pod"){const pod=l.poudmans.find(p=>p.id===item.pid);
-if(!pod||l.gradingPolicy?.method!=="modular"||!["m","c"].includes(item.field))throw Error("پودمان یا نوع نمره نامعتبر است.");pod.podScores=
-pod.podScores||{};target=writableScoreRecord(pod.podScores,item.sid);pod.podScores[item.sid]=target}else{if(l.gradingPolicy)throw Error("نمرات رسمی را در فرم قو\
-اعد درس ثبت کنید.");if(!["m","p"].includes(item.field))throw Error("نوع نمره واحد نامعتبر است.");const unit=l.poudmans.find(p=>p.
-id===item.pid)?.units.find(u=>u.id===item.uid);if(!unit)throw Error("واحد پیش‌نویس موجود نیست.");target=writableScoreRecord(unit.unitScores||
-(unit.unitScores={}),item.sid);unit.unitScores[item.sid]=target}if(item.remove)delete target[item.field];else{const parsed=parseDraft(item);if(!parsed.ok)throw Error(
-parsed.message);target[item.field]=parsed.value}}await saveDBV24({classId,action:"ثبت نمره ("+c.name+")"},{feedbackScope});for(const[key,item]of items)if(drafts.
-get(key)===item)drafts.delete(key);await storeDrafts()}if(!drafts.size)setStatus("همه نمرات ذخیره شدند.","saved",feedbackScope);else setStatus(
-"برخی ورودی‌ها هنوز ذخیره نشده‌اند؛ پیام کنار کادر را بررسی کنید.","error",feedbackScope);refreshGradeResults();
-if(!document.activeElement?.matches?.("[data-grade]")&&!document.activeElement?.closest?.(".gradebook"))render()})().catch(async error=>{try{db=(await readWorkspace(
-workspace.id)).data}catch(ignore){}for(const[key]of entries){const item=drafts.get(key);if(item){item.error="ذخیره نشد: "+error.message;if(blocked)item.
-review=true}}await storeDrafts();setStatus("نمرات ذخیره نشدند؛ پیش‌نویس محفوظ است. "+error.message,"error",feedbackScope);render();
-throw error}).finally(()=>{flushing=null});await flushing;if(drafts.size&&[...drafts.values()].some(x=>!x.error&&!x.review))draftTimer=setTimeout(()=>flushDrafts().
-catch(()=>{}),180)}async function recoverDrafts(){if(!drafts.size)return;if([...drafts.values()].some(x=>x.review)){setStatus("نمرات ثبت‌نشده با اطلاعات جدید اخ\
-تلاف دارند؛ «بررسی نمرات ثبت‌نشده» را بزنید.","error");applyDrafts();return}setStatus("پیش‌نویس ویرایش قبلی بازیابی شد.",
-"pending");applyDrafts();if(!db.settings.password||isAuthenticated)await flushDrafts().catch(()=>{})}function gradeCell(c,l,st,field,{kind="k",pid="",uid:unitId="",
-value=null}={}){const d={kind,classId:c.id,lid:l.id,sid:st.id,pid,uid:unitId,field},key=inputKey(d),draft=drafts.get(key),shown=draft?draft.value:value??"";return'\
-<div class="grade-editor"><input type="text" inputmode="decimal" autocomplete="off" dir="ltr" data-grade="1" data-kind="'+esc(kind)+'" data-class="'+esc(c.id)+'\
-" data-lesson="'+esc(l.id)+'" data-student="'+esc(st.id)+'" data-pod="'+esc(pid)+'" data-unit="'+esc(unitId)+'" data-field="'+esc(field)+'" aria-invalid="'+(draft?.
-error?"true":"false")+'" value="'+esc(shown)+'" placeholder="—" aria-label="'+esc(st.name+" "+(field==="practical"||field==="midtermPractical"?"عملی":field===
-"theory"||field==="midtermTheory"?"تئوری":field==="c"?"شایستگی":field==="m"?"مستمر":"پایانی"))+'"><button type="button" class="ghost grad\
-e-clear no-print" data-clear-grade aria-label="پاک‌کردن نمره" title="پاک‌کردن نمره">×</button><small class="grade-note" aria-live="polite" data-state="'+
-(draft?draft.error?"error":"pending":String(shown).trim()!==""?"saved":"idle")+'">'+esc(draft?draft.error||"در انتظار ذخیره":"")+"</small></div>"}function applyDrafts(){
-document.querySelectorAll("[data-grade]").forEach(input=>{if(assessmentContext.handles(input))return;const item=drafts.get(inputKey(contextFromInput(input)));if(item){
-input.value=item.value;input.setAttribute("aria-invalid",item.error?"true":"false");const note=input.parentElement.querySelector(".grade-note");if(note){note.textContent=
-item.error||"در انتظار ذخیره";note.dataset.state=item.error?"error":"pending"}const row=input.closest(".assessment-student");if(row)row.dataset.editState=
-row.querySelector('.grade-note[data-state="error"]')?"error":"pending"}});assessmentContext.apply()}function filterAssessmentRows(root){const normalize=value=>String(
-value).replace(/ي/g,"ی").replace(/ك/g,"ک").replace(/‌/g," ").replace(/\s+/g," ").trim();const query=normalize(root.querySelector("[data-assessment-search]").
-value);const incompleteOnly=!!root.querySelector("[data-assessment-incomplete]")?.checked;let visible=0;const activePanel=root.querySelector("[data-module-panel\
-]:not([hidden])")||root;for(const row of activePanel.querySelectorAll("[data-assessment-name]")){row.hidden=!normalize(row.dataset.assessmentName).includes(query)||
-incompleteOnly&&row.dataset.assessmentComplete==="true";if(!row.hidden)visible++}const message=root.querySelector(".gradebook-no-results");message.hidden=!query&&
-!incompleteOnly||visible>0;message.textContent=incompleteOnly&&!query?"همه نمره‌های این مرحله تکمیل شده‌اند.":"دانش‌آموزی با ای\
-ن مشخصات پیدا نشد."}function installGradeEvents(){const isEditableGrade=input=>input?.matches?.('input[data-grade="1"]')&&!input.matches(":disable\
-d")&&!input.closest("[inert]");document.addEventListener("input",event=>{if(event.target.dataset?.assessmentSearch!==void 0){const root=event.target.closest(".g\
-radebook");if(!root||event.target.closest("[inert]"))return;filterAssessmentRows(root);return}if(isEditableGrade(event.target))gradeInput(event.target)});document.
-addEventListener("change",event=>{if(event.target.dataset?.assessmentIncomplete===void 0)return;const root=event.target.closest(".gradebook");if(root&&!event.target.
-closest("[inert]"))filterAssessmentRows(root)});document.addEventListener("keydown",event=>{if(event.isComposing||event.ctrlKey||event.altKey||event.metaKey)return;
-if(event.key!=="Enter")return;const input=event.target;if(!isEditableGrade(input))return;if(input.getAttribute?.("aria-invalid")==="true"){event.preventDefault();
-return}const root=input.closest(".gradebook");if(!root)return;const fields=[...root.querySelectorAll("input[data-grade]")].filter(field=>!field.disabled&&!field.
-readOnly&&!field.closest("[hidden]")&&field.getClientRects().length);const index=fields.indexOf(input);if(index<0)return;const next=fields[index+(event.shiftKey?
--1:1)];event.preventDefault();if(next){next.focus({preventScroll:true});next.select();next.scrollIntoView({block:"nearest",behavior:"auto"})}});document.addEventListener(
-"focusout",event=>{if(isEditableGrade(event.target))void flushDrafts().catch(()=>{})});document.addEventListener("click",event=>{const button=event.target.closest?.(
-"button[data-clear-grade]");if(!button||button.matches(":disabled")||button.closest("[inert]"))return;const input=button.previousElementSibling;if(isEditableGrade(
-input))clearGrade(input)})}function calcV24(c,l,sid,source=db){const r=old.calcStudentLesson(c,l,sid,source);if(l.gradingPolicy){const p=l.gradingPolicy;if(p.subjectType===
-"general")r.practical=null;if(p.method==="dual")Object.assign(r,EduPolicy.dual(p,r.practical,r.theory));else Object.assign(r,EduReportGrades.modular(l,sid),{avgM:null,
-avgP:null});r.policyConfirmed=p.confirmed}else if(l.gradeMode==="kardanesh")Object.assign(r,weightedKardanesh(r.practical,r.theory));return r}function assessmentWeights(lesson){
-return EduReportGrades.weights(lesson)}function assessmentResult(lesson,sid,stage="final"){return EduReportGrades.assessment(lesson,sid,stage)}function assertCompatibleTermLessons(reference,candidate){
-if(!reference||!candidate)return;const dual=reference.gradeMode==="kardanesh";if(dual!==(candidate.gradeMode==="kardanesh"))throw Error("شیوهٔ نمره‌دهی درس «"+
-reference.name+"» در دو نوبت متفاوت است؛ برای حفظ سوابق، درس با شیوهٔ متفاوت باید شناسهٔ مستقل داشته باشد.");
-if(reference.gradingPolicy?.method==="modular"!==(candidate.gradingPolicy?.method==="modular"))throw Error("شیوهٔ پودمانی و واحدی درس «"+reference.
-name+"» یکسان نیست؛ سوابق متفاوت قابل ترکیب نیستند.");if(dual&&reference.gradingPolicy?.subjectType==="general"!==(candidate.
-gradingPolicy?.subjectType==="general"))throw Error("نوع درس «"+reference.name+"» در دو نوبت یکسان نیست؛ گزارش این درس قابل محاسبه نیست.");
-if(dual&&reference.gradingPolicy?.subjectType!=="general"){const first=EduReportGrades.settings(reference),second=EduReportGrades.settings(candidate);if(["pract\
-icalWeight","theoryMin","practicalMin","passMin"].some(field=>first[field]!==second[field]))throw Error("قواعد نمره‌دهی درس «"+reference.name+
-"» در نوبت‌های این سال یکسان نیست؛ پیش از گزارش سالانه تعارض ضرایب و حدنصاب‌ها را اصلاح کنید.")}
-if(reference.gradingPolicy?.method==="modular"){if(["version","mostamarMax","competencyFactor","competencyMin","moduleMin","continuousStep"].some(field=>reference.
-gradingPolicy[field]!==candidate.gradingPolicy[field]))throw Error("قواعد نمره‌دهی درس پودمانی «"+reference.name+"» در نوبت‌های این سال\
- یکسان نیست؛ پیش از گزارش سالانه تعارض را اصلاح کنید.");const structure=lesson=>{const pods=new Map;for(const pod of lesson.
-poudmans||[]){const units=new Set((pod.units||[]).map(unit=>unit.id));if(pods.has(pod.id)||units.size!==(pod.units||[]).length)throw Error("ساختار پودمان‌ها یا \
-واحدهای درس دارای شناسهٔ تکراری است.");pods.set(pod.id,units)}return pods};const first=structure(reference),second=structure(candidate);
-if(first.size!==second.size||[...first].some(([id,units])=>{const other=second.get(id);return!other||units.size!==other.size||[...units].some(unitId=>!other.has(
-unitId))}))throw Error("ساختار پودمان‌ها و واحدهای درس «"+reference.name+"» در نوبت‌های این سال یکسان نیست؛ پیش از گزارش سالانه تعار\
-ض را اصلاح کنید.")}}function assertAnnualLessonCompatibility(parts,schoolId,classId=""){const lessons=new Map;for(const part of parts)for(const classroom of part.
-data.schools.find(school=>school.id===schoolId)?.classes||[]){if(classId&&classroom.id!==classId)continue;for(const lesson of classroom.lessons){const key=classroom.
-id+"|"+lesson.id;assertCompatibleTermLessons(lessons.get(key),lesson);lessons.set(key,lesson)}}}function annualGradeRows(parts,schoolId,classId,studentId=""){assertAnnualLessonCompatibility(
-parts,schoolId,classId);parts=[...parts].sort((a,b)=>(a.period.term==="اول"?0:1)-(b.period.term==="اول"?0:1));const rows=[],identities=new Map;for(const part of parts)
-for(const c of part.data.schools.find(s=>s.id===schoolId)?.classes||[]){if(classId&&c.id!==classId)continue;for(const st of knownStudents(c)){if(studentId&&st.id!==
-studentId)continue;for(const lesson of c.lessons.filter(l=>l.gradeMode==="kardanesh"))identities.set(c.id+"|"+st.id+"|"+lesson.id,{classId:c.id,className:c.name,
-studentId:st.id,studentName:st.name,studentCode:String(st.code??""),lessonId:lesson.id,lessonName:lesson.name,general:lesson.gradingPolicy?.subjectType==="gener\
-al"})}}for(const identity of identities.values()){const components=[];let annualThreshold=14;for(const term of["اول","دوم"]){const part=parts.find(item=>item.
-period.term===term);const lesson=part?.data.schools.find(s=>s.id===schoolId)?.classes.find(c=>c.id===identity.classId)?.lessons.find(l=>l.id===identity.lessonId&&
-l.gradeMode==="kardanesh");if(lesson&&lesson.gradingPolicy?.subjectType==="general"!==identity.general)throw Error("نوع درس در دو نوبت یکسان نیست؛ گزارش سالانه \
-این درس قابل محاسبه نیست.");const settings=EduReportGrades.settings(lesson||{});if(lesson)annualThreshold=settings.passMin;for(const stage of[
-"midterm","final"]){const r=lesson?assessmentResult(lesson,identity.studentId,stage):{practical:null,theory:null,final:null,complete:false};components.push({term,
-stage,...r,practicalWeight:settings.practicalWeight})}}rows.push({...identity,components,...EduReportGrades.annual(components,{general:identity.general,threshold:annualThreshold})})}
-return rows}function annualModularLesson(parts,schoolId,classId,lesson,sid){const selected=classroom=>({...classroom,students:[{id:sid}],archivedStudents:[],lessons:classroom.
-lessons.filter(item=>item.id===lesson.id).map(item=>({...clone(item),poudmans:item.poudmans.map(pod=>({...clone(pod),podScores:Object.hasOwn(pod.podScores||{},sid)?
-{[sid]:clone(pod.podScores[sid])}:{}}))}))});const versions=parts.flatMap(part=>{const classroom=part.data.schools.find(school=>school.id===schoolId)?.classes.find(
-item=>item.id===classId);return classroom?[selected(classroom)]:[]});const base=selected({id:classId,lessons:[lesson]});return EduAnnualModules.mergeClass([base,
-...versions]).lessons.find(item=>item.id===lesson.id)}function annualModularUnitRows(parts,schoolId,classId,lessonId,sid){const order=period=>{const kind=period.
-termKind||(period.term==="اول"?"first":period.term==="دوم"?"second":"");return kind==="first"?0:kind==="second"?1:2};return[...parts].sort((a,b)=>order(a.
-period)-order(b.period)||a.period.id.localeCompare(b.period.id)).flatMap(part=>{const lesson=part.data.schools.find(school=>school.id===schoolId)?.classes.find(
-classroom=>classroom.id===classId)?.lessons.find(course=>course.id===lessonId);return(lesson?.poudmans||[]).flatMap(pod=>pod.units.map(unit=>{const raw=ownScoreRecord(
-unit.unitScores,sid);return{term:part.period.term,sourcePeriodId:part.period.id,moduleId:pod.id,unitId:unit.id,moduleName:pod.name,unitName:unit.name,mostamar:raw.
-m??null,payani:raw.p??null}}))})}function annualTechnicalRows(parts,schoolId,classId,studentId=""){assertAnnualLessonCompatibility(parts,schoolId,classId);const rows=[],
-annual=new Set;for(const part of parts)for(const c of part.data.schools.find(s=>s.id===schoolId)?.classes||[]){if(classId&&c.id!==classId)continue;for(const st of knownStudents(
-c)){if(studentId&&st.id!==studentId)continue;for(const lesson of c.lessons.filter(l=>l.gradeMode!=="kardanesh")){const formal=lesson.gradingPolicy?.method==="mo\
-dular";const key=JSON.stringify([c.id,st.id,lesson.id]);if(formal&&annual.has(key))continue;if(formal)annual.add(key);const merged=formal?annualModularLesson(parts,
-schoolId,c.id,lesson,st.id):lesson;const r=calcV24(c,merged,st.id,part.data);const legacy=!lesson.gradingPolicy;const legacyUnits=legacy?lesson.poudmans.flatMap(
-pod=>pod.units.map(unit=>({moduleName:pod.name,unitName:unit.name,mostamar:r.details?.[pod.id]?.[unit.id]?.m??null,payani:r.details?.[pod.id]?.[unit.id]?.p??null,
-final:r.details?.[pod.id]?.[unit.id]?.final??null}))):[];const complete=legacy?legacyUnits.length>0&&legacyUnits.every(unit=>Number.isFinite(unit.final)):r.complete??
-false;rows.push({classId:c.id,className:c.name,studentId:st.id,studentName:st.name,studentCode:String(st.code??""),lessonId:lesson.id,lessonName:lesson.name,term:formal?
-"سالانه":part.period.term,method:legacy?"legacy-unit":"modular",legacyUnits,units:formal?annualModularUnitRows(parts,schoolId,c.id,lesson.id,st.id):[],provisionalAverage:legacy?
-r.final??null:null,final:legacy&&!complete?null:r.final??null,complete,passed:legacy?null:r.passed??null,modules:(r.modules||[]).map(m=>({name:m.name,continuous:ownScoreRecord(
-merged.poudmans.find(p=>p.id===m.id)?.podScores,st.id).m??null,competency:ownScoreRecord(merged.poudmans.find(p=>p.id===m.id)?.podScores,st.id).c??null,final:m.
-final??null,threshold:m.threshold??null,complete:m.complete,passed:m.passed,reason:m.reason||""}))})}}}return rows}const assessmentTermRequests=new Map;async function ensureAcademicAssessmentTerm(kind){
-if(!["first","second"].includes(kind))throw Error("مرحلهٔ سال تحصیلی معتبر نیست.");assertWorkspaceReadable();const year=workspace.year,key=year+
-"|"+kind;if(assessmentTermRequests.has(key))return assessmentTermRequests.get(key);const operation=(async()=>{const origin=captureWorkspaceContext(),database=connection;
-await writer.catch(()=>{});assertWorkspaceContext(origin);const rows=await allFrom("catalog");assertWorkspaceContext(origin);if(connection!==database)throw Error(
-"اتصال سال تحصیلی تغییر کرده است.");const matches=rows.filter(row=>row.year===year&&(row.termKind||academicTermKind(row.term))===kind);
-if(matches.length>1)throw Error("اطلاعات قدیمی این سال چند نسخه از مرحلهٔ انتخاب‌شده دارد؛ ابتدا فایل معتبر را بازیابی کنید.");
+if(!pod||l.gradingPolicy?.method!=="modular"||EduPolicy.unitBased(l.gradingPolicy)||!["m","c"].includes(item.field))throw Error("پودمان یا نوع نمره نامعتبر است.");
+pod.podScores=pod.podScores||{};target=writableScoreRecord(pod.podScores,item.sid);pod.podScores[item.sid]=target}else if(item.kind==="unit"){const unit=l.poudmans.
+find(p=>p.id===item.pid)?.units.find(u=>u.id===item.uid);if(!unit||!EduPolicy.unitBased(l.gradingPolicy)||!["m","c"].includes(item.field))throw Error("واحد کار \
+یا نوع نمره نامعتبر است.");unit.competencyScores||={};target=writableScoreRecord(unit.competencyScores,item.sid);unit.competencyScores[item.sid]=
+target}else{if(l.gradingPolicy)throw Error("نمرات رسمی را در فرم قواعد درس ثبت کنید.");if(!["m","p"].includes(item.field))throw Error(
+"نوع نمره واحد نامعتبر است.");const unit=l.poudmans.find(p=>p.id===item.pid)?.units.find(u=>u.id===item.uid);if(!unit)throw Error("واحد پیش\
+‌نویس موجود نیست.");target=writableScoreRecord(unit.unitScores||(unit.unitScores={}),item.sid);unit.unitScores[item.sid]=target}if(item.remove)delete target[item.
+field];else{const parsed=parseDraft(item);if(!parsed.ok)throw Error(parsed.message);target[item.field]=parsed.value}}await saveDBV24({classId,action:"ثبت نمره ("+
+c.name+")"},{feedbackScope});for(const[key,item]of items)if(drafts.get(key)===item)drafts.delete(key);await storeDrafts()}if(!drafts.size)setStatus("همه نمرات ذ\
+خیره شدند.","saved",feedbackScope);else setStatus("برخی ورودی‌ها هنوز ذخیره نشده‌اند؛ پیام کنار کادر را بررسی کنید.",
+"error",feedbackScope);refreshGradeResults();if(!document.activeElement?.matches?.("[data-grade]")&&!document.activeElement?.closest?.(".gradebook"))render()})().
+catch(async error=>{try{db=(await readWorkspace(workspace.id)).data}catch(ignore){}for(const[key]of entries){const item=drafts.get(key);if(item){item.error="ذخی\
+ره نشد: "+error.message;if(blocked)item.review=true}}await storeDrafts();setStatus("نمرات ذخیره نشدند؛ پیش‌نویس محفوظ است. "+
+error.message,"error",feedbackScope);render();throw error}).finally(()=>{flushing=null});await flushing;if(drafts.size&&[...drafts.values()].some(x=>!x.error&&!x.
+review))draftTimer=setTimeout(()=>flushDrafts().catch(()=>{}),180)}async function recoverDrafts(){if(!drafts.size)return;if([...drafts.values()].some(x=>x.review)){
+setStatus("نمرات ثبت‌نشده با اطلاعات جدید اختلاف دارند؛ «بررسی نمرات ثبت‌نشده» را بزنید.","er\
+ror");applyDrafts();return}setStatus("پیش‌نویس ویرایش قبلی بازیابی شد.","pending");applyDrafts();if(!db.settings.password||isAuthenticated)
+await flushDrafts().catch(()=>{})}function gradeCell(c,l,st,field,{kind="k",pid="",uid:unitId="",value=null}={}){const d={kind,classId:c.id,lid:l.id,sid:st.id,pid,
+uid:unitId,field},key=inputKey(d),draft=drafts.get(key),shown=draft?draft.value:value??"";return'<div class="grade-editor"><input type="text" inputmode="decimal\
+" autocomplete="off" dir="ltr" data-grade="1" data-kind="'+esc(kind)+'" data-class="'+esc(c.id)+'" data-lesson="'+esc(l.id)+'" data-student="'+esc(st.id)+'" dat\
+a-pod="'+esc(pid)+'" data-unit="'+esc(unitId)+'" data-field="'+esc(field)+'" aria-invalid="'+(draft?.error?"true":"false")+'" value="'+esc(shown)+'" placeholder\
+="—" aria-label="'+esc(st.name+" "+(field==="practical"||field==="midtermPractical"?"عملی":field==="theory"||field==="midtermTheory"?"تئوری":field===
+"c"?"شایستگی":field==="m"?"مستمر":"پایانی"))+'"><button type="button" class="ghost grade-clear no-print" data-clear-grade aria-label="پاک‌کردن\
+ نمره" title="پاک‌کردن نمره">×</button><small class="grade-note" aria-live="polite" data-state="'+(draft?draft.error?"error":"pending":String(
+shown).trim()!==""?"saved":"idle")+'">'+esc(draft?draft.error||"در انتظار ذخیره":"")+"</small></div>"}function applyDrafts(){document.querySelectorAll(
+"[data-grade]").forEach(input=>{if(assessmentContext.handles(input))return;const item=drafts.get(inputKey(contextFromInput(input)));if(item){input.value=item.value;
+input.setAttribute("aria-invalid",item.error?"true":"false");const note=input.parentElement.querySelector(".grade-note");if(note){note.textContent=item.error||"\
+در انتظار ذخیره";note.dataset.state=item.error?"error":"pending"}const row=input.closest(".assessment-student");if(row)row.dataset.editState=row.querySelector(
+'.grade-note[data-state="error"]')?"error":"pending"}});assessmentContext.apply()}function filterAssessmentRows(root){const normalize=value=>String(value).replace(
+/ي/g,"ی").replace(/ك/g,"ک").replace(/‌/g," ").replace(/\s+/g," ").trim();const query=normalize(root.querySelector("[data-assessment-search]").value);const incompleteOnly=!!root.
+querySelector("[data-assessment-incomplete]")?.checked;let visible=0;const activePanel=root.querySelector("[data-module-panel]:not([hidden]) [data-unit-panel]:n\
+ot([hidden])")||root.querySelector("[data-module-panel]:not([hidden])")||root;for(const row of activePanel.querySelectorAll("[data-assessment-name]")){row.hidden=
+!normalize(row.dataset.assessmentName).includes(query)||incompleteOnly&&row.dataset.assessmentComplete==="true";if(!row.hidden)visible++}const message=root.querySelector(
+".gradebook-no-results");message.hidden=!query&&!incompleteOnly||visible>0;message.textContent=incompleteOnly&&!query?"همه نمره‌های این مرحله تکمیل شده‌اند.":
+"دانش‌آموزی با این مشخصات پیدا نشد."}function installGradeEvents(){const isEditableGrade=input=>input?.matches?.('input[data-grade=\
+"1"]')&&!input.matches(":disabled")&&!input.closest("[inert]");document.addEventListener("input",event=>{if(event.target.dataset?.assessmentSearch!==void 0){const root=event.
+target.closest(".gradebook");if(!root||event.target.closest("[inert]"))return;filterAssessmentRows(root);return}if(isEditableGrade(event.target))gradeInput(event.
+target)});document.addEventListener("change",event=>{if(event.target.dataset?.assessmentIncomplete===void 0)return;const root=event.target.closest(".gradebook");
+if(root&&!event.target.closest("[inert]"))filterAssessmentRows(root)});document.addEventListener("keydown",event=>{if(event.isComposing||event.ctrlKey||event.altKey||
+event.metaKey)return;if(event.key!=="Enter")return;const input=event.target;if(!isEditableGrade(input))return;if(input.getAttribute?.("aria-invalid")==="true"){
+event.preventDefault();return}const root=input.closest(".gradebook");if(!root)return;const fields=[...root.querySelectorAll("input[data-grade]")].filter(field=>!field.
+disabled&&!field.readOnly&&!field.closest("[hidden]")&&field.getClientRects().length);const index=fields.indexOf(input);if(index<0)return;const next=fields[index+
+(event.shiftKey?-1:1)];event.preventDefault();if(next){next.focus({preventScroll:true});next.select();next.scrollIntoView({block:"nearest",behavior:"auto"})}});
+document.addEventListener("focusout",event=>{if(isEditableGrade(event.target))void flushDrafts().catch(()=>{})});document.addEventListener("click",event=>{const button=event.
+target.closest?.("button[data-clear-grade]");if(!button||button.matches(":disabled")||button.closest("[inert]"))return;const input=button.previousElementSibling;
+if(isEditableGrade(input))clearGrade(input)})}function calcV24(c,l,sid,source=db){const r=old.calcStudentLesson(c,l,sid,source);if(l.gradingPolicy){const p=l.gradingPolicy;
+if(p.subjectType==="general")r.practical=null;if(p.method==="dual")Object.assign(r,EduPolicy.dual(p,r.practical,r.theory));else Object.assign(r,EduReportGrades.
+modular(l,sid),{avgM:null,avgP:null});r.policyConfirmed=p.confirmed}else if(l.gradeMode==="kardanesh")Object.assign(r,weightedKardanesh(r.practical,r.theory));return r}
+function assessmentWeights(lesson){return EduReportGrades.weights(lesson)}function assessmentResult(lesson,sid,stage="final"){return EduReportGrades.assessment(
+lesson,sid,stage)}function assertCompatibleTermLessons(reference,candidate){if(!reference||!candidate)return;const dual=reference.gradeMode==="kardanesh";if(dual!==
+(candidate.gradeMode==="kardanesh"))throw Error("شیوهٔ نمره‌دهی درس «"+reference.name+"» در دو نوبت متفاوت است؛ برای حفظ سوابق، درس با شیوهٔ م\
+تفاوت باید شناسهٔ مستقل داشته باشد.");if(reference.gradingPolicy?.method==="modular"!==(candidate.gradingPolicy?.method==="modular"))
+throw Error("شیوهٔ پودمانی و واحدی درس «"+reference.name+"» یکسان نیست؛ سوابق متفاوت قابل ترکیب نیستند.");
+if(dual&&reference.gradingPolicy?.subjectType==="general"!==(candidate.gradingPolicy?.subjectType==="general"))throw Error("نوع درس «"+reference.name+"» \
+در دو نوبت یکسان نیست؛ گزارش این درس قابل محاسبه نیست.");if(dual&&reference.gradingPolicy?.subjectType!=="general"){const first=EduReportGrades.
+settings(reference),second=EduReportGrades.settings(candidate);if(["practicalWeight","theoryMin","practicalMin","passMin"].some(field=>first[field]!==second[field]))
+throw Error("قواعد نمره‌دهی درس «"+reference.name+"» در نوبت‌های این سال یکسان نیست؛ پیش از گزارش سالانه تعارض ضرایب و حدنصاب‌ها را اصلاح کنید\
+.")}if(reference.gradingPolicy?.method==="modular"){if(EduPolicy.unitBased(reference.gradingPolicy)!==EduPolicy.unitBased(candidate.gradingPolicy)||["version","\
+mostamarMax","competencyFactor","competencyMin","moduleMin","continuousStep"].some(field=>reference.gradingPolicy[field]!==candidate.gradingPolicy[field]))throw Error(
+"قواعد نمره‌دهی درس پودمانی «"+reference.name+"» در نوبت‌های این سال یکسان نیست؛ پیش از گزارش سالانه تعارض را اصلاح کنید.");
+const structure=lesson=>{const pods=new Map;for(const pod of lesson.poudmans||[]){const units=new Set((pod.units||[]).map(unit=>unit.id));if(pods.has(pod.id)||units.
+size!==(pod.units||[]).length)throw Error("ساختار پودمان‌ها یا واحدهای درس دارای شناسهٔ تکراری است.");pods.set(pod.
+id,units)}return pods};const first=structure(reference),second=structure(candidate);if(first.size!==second.size||[...first].some(([id,units])=>{const other=second.
+get(id);return!other||units.size!==other.size||[...units].some(unitId=>!other.has(unitId))}))throw Error("ساختار پودمان‌ها و واحدهای درس «"+
+reference.name+"» در نوبت‌های این سال یکسان نیست؛ پیش از گزارش سالانه تعارض را اصلاح کنید.")}}function assertAnnualLessonCompatibility(parts,schoolId,classId=""){
+const lessons=new Map;for(const part of parts)for(const classroom of part.data.schools.find(school=>school.id===schoolId)?.classes||[]){if(classId&&classroom.id!==
+classId)continue;for(const lesson of classroom.lessons){const key=classroom.id+"|"+lesson.id;assertCompatibleTermLessons(lessons.get(key),lesson);lessons.set(key,
+lesson)}}}function annualGradeRows(parts,schoolId,classId,studentId=""){assertAnnualLessonCompatibility(parts,schoolId,classId);parts=[...parts].sort((a,b)=>(a.
+period.term==="اول"?0:1)-(b.period.term==="اول"?0:1));const rows=[],identities=new Map;for(const part of parts)for(const c of part.data.schools.find(s=>s.
+id===schoolId)?.classes||[]){if(classId&&c.id!==classId)continue;for(const st of knownStudents(c)){if(studentId&&st.id!==studentId)continue;for(const lesson of c.
+lessons.filter(l=>l.gradeMode==="kardanesh"))identities.set(c.id+"|"+st.id+"|"+lesson.id,{classId:c.id,className:c.name,studentId:st.id,studentName:st.name,studentCode:String(
+st.code??""),lessonId:lesson.id,lessonName:lesson.name,general:lesson.gradingPolicy?.subjectType==="general"})}}for(const identity of identities.values()){const components=[];
+let annualThreshold=14;for(const term of["اول","دوم"]){const part=parts.find(item=>item.period.term===term);const lesson=part?.data.schools.find(s=>s.id===
+schoolId)?.classes.find(c=>c.id===identity.classId)?.lessons.find(l=>l.id===identity.lessonId&&l.gradeMode==="kardanesh");if(lesson&&lesson.gradingPolicy?.subjectType===
+"general"!==identity.general)throw Error("نوع درس در دو نوبت یکسان نیست؛ گزارش سالانه این درس قابل محاسبه نیست.");
+const settings=EduReportGrades.settings(lesson||{});if(lesson)annualThreshold=settings.passMin;for(const stage of["midterm","final"]){const r=lesson?assessmentResult(
+lesson,identity.studentId,stage):{practical:null,theory:null,final:null,complete:false};components.push({term,stage,...r,practicalWeight:settings.practicalWeight})}}
+rows.push({...identity,components,...EduReportGrades.annual(components,{general:identity.general,threshold:annualThreshold})})}return rows}function annualModularLesson(parts,schoolId,classId,lesson,sid){
+const selected=classroom=>({...classroom,students:[{id:sid}],archivedStudents:[],lessons:classroom.lessons.filter(item=>item.id===lesson.id).map(item=>{const unitBased=EduPolicy.
+unitBased(item.gradingPolicy);return{...clone(item),...unitBased?{kardaneshScores:{}}:{},poudmans:item.poudmans.map(pod=>({...clone(pod),podScores:!unitBased&&Object.
+hasOwn(pod.podScores||{},sid)?{[sid]:clone(pod.podScores[sid])}:{},units:pod.units.map(unit=>({...clone(unit),...unitBased?{unitScores:{}}:{},...unit.competencyScores!==
+void 0?{competencyScores:Object.hasOwn(unit.competencyScores,sid)?{[sid]:clone(unit.competencyScores[sid])}:{}}:{}}))}))}})});const versions=parts.flatMap(part=>{
+const classroom=part.data.schools.find(school=>school.id===schoolId)?.classes.find(item=>item.id===classId);return classroom?[selected(classroom)]:[]});const base=selected(
+{id:classId,lessons:[lesson]});return EduAnnualModules.mergeClass([base,...versions]).lessons.find(item=>item.id===lesson.id)}function annualModularUnitRows(parts,schoolId,classId,lessonId,sid){
+const order=period=>{const kind=period.termKind||(period.term==="اول"?"first":period.term==="دوم"?"second":"");return kind==="first"?0:kind==="second"?1:2};
+return[...parts].sort((a,b)=>order(a.period)-order(b.period)||a.period.id.localeCompare(b.period.id)).flatMap(part=>{const lesson=part.data.schools.find(school=>school.
+id===schoolId)?.classes.find(classroom=>classroom.id===classId)?.lessons.find(course=>course.id===lessonId);if(EduPolicy.unitBased(lesson?.gradingPolicy))return[];
+return(lesson?.poudmans||[]).flatMap(pod=>pod.units.map(unit=>{const raw=ownScoreRecord(unit.unitScores,sid);return{term:part.period.term,sourcePeriodId:part.period.
+id,moduleId:pod.id,unitId:unit.id,moduleName:pod.name,unitName:unit.name,mostamar:raw.m??null,payani:raw.p??null}}))})}function annualTechnicalRows(parts,schoolId,classId,studentId=""){
+assertAnnualLessonCompatibility(parts,schoolId,classId);const rows=[],annual=new Set;for(const part of parts)for(const c of part.data.schools.find(s=>s.id===schoolId)?.
+classes||[]){if(classId&&c.id!==classId)continue;for(const st of knownStudents(c)){if(studentId&&st.id!==studentId)continue;for(const lesson of c.lessons.filter(
+l=>l.gradeMode!=="kardanesh")){const formal=lesson.gradingPolicy?.method==="modular";const key=JSON.stringify([c.id,st.id,lesson.id]);if(formal&&annual.has(key))
+continue;if(formal)annual.add(key);const merged=formal?annualModularLesson(parts,schoolId,c.id,lesson,st.id):lesson;const r=calcV24(c,merged,st.id,part.data);const legacy=!lesson.
+gradingPolicy;const legacyUnits=legacy?lesson.poudmans.flatMap(pod=>pod.units.map(unit=>({moduleName:pod.name,unitName:unit.name,mostamar:r.details?.[pod.id]?.[unit.
+id]?.m??null,payani:r.details?.[pod.id]?.[unit.id]?.p??null,final:r.details?.[pod.id]?.[unit.id]?.final??null}))):[];const complete=legacy?legacyUnits.length>0&&
+legacyUnits.every(unit=>Number.isFinite(unit.final)):r.complete??false;rows.push({classId:c.id,className:c.name,studentId:st.id,studentName:st.name,studentCode:String(
+st.code??""),lessonId:lesson.id,lessonName:lesson.name,term:formal?"سالانه":part.period.term,method:legacy?"legacy-unit":"modular",...r.unitBased?{unitBased:true}:
+{},legacyUnits,units:r.unitBased?r.modules.flatMap(pod=>pod.units.map(unit=>({...unit,term:"سالانه",moduleId:pod.id,unitId:unit.id,moduleName:pod.name,unitName:unit.
+name,mostamar:unit.inputs.m,competency:unit.inputs.c}))):formal?annualModularUnitRows(parts,schoolId,c.id,lesson.id,st.id):[],provisionalAverage:legacy?r.final??
+null:null,final:legacy&&!complete?null:r.final??null,complete,passed:legacy?null:r.passed??null,modules:(r.modules||[]).map(m=>{const inputs=r.unitBased?{}:ownScoreRecord(
+merged.poudmans.find(p=>p.id===m.id)?.podScores,st.id);return{id:m.id,name:m.name,...m.units?{units:clone(m.units)}:{},continuous:inputs.m??null,competency:inputs.
+c??null,final:m.final??null,threshold:m.threshold??null,complete:m.complete,passed:m.passed,reason:m.reason||""}})})}}}return rows}const assessmentTermRequests=new Map;
+async function ensureAcademicAssessmentTerm(kind){if(!["first","second"].includes(kind))throw Error("مرحلهٔ سال تحصیلی معتبر نیست.");assertWorkspaceReadable();
+const year=workspace.year,key=year+"|"+kind;if(assessmentTermRequests.has(key))return assessmentTermRequests.get(key);const operation=(async()=>{const origin=captureWorkspaceContext(),
+database=connection;await writer.catch(()=>{});assertWorkspaceContext(origin);const rows=await allFrom("catalog");assertWorkspaceContext(origin);if(connection!==
+database)throw Error("اتصال سال تحصیلی تغییر کرده است.");const matches=rows.filter(row=>row.year===year&&(row.termKind||academicTermKind(
+row.term))===kind);if(matches.length>1)throw Error("اطلاعات قدیمی این سال چند نسخه از مرحلهٔ انتخاب‌شده دارد؛ ابتدا فایل معتبر را بازیابی کنید.");
 if(matches.length)return matches[0];const family=rows.filter(row=>row.year===year);if(!["first","second"].includes(workspace.termKind||academicTermKind(workspace.
 term))||family.some(row=>!["first","second"].includes(row.termKind||academicTermKind(row.term))))throw Error("ترم اطلاعات قدیمی این سال مشخص نیست؛ پیش از ایجاد \
 مرحله، فایل معتبر را بازیابی کنید.");const source=await readWorkspaceSnapshot(origin.id);assertWorkspaceContext(origin);if(source.period.
 revision!==origin.revision||source.period.year!==year||connection!==database)throw Error("اطلاعات سال هنگام آماده‌سازی مرحله تغییر کرد؛ دوباره انتخاب کنید.");
 const data=clone(source.data);data.sessions=[];data.notHeldSessions=[];data.migrationWarnings=[];data.settings.academicTerm=kind==="first"?"اول":"دوم";for(const school of data.
 schools)for(const classroom of school.classes)for(const lesson of classroom.lessons){lesson.kardaneshScores={};for(const pod of lesson.poudmans||[]){if(lesson.gradingPolicy?.
-method!=="modular")pod.podScores={};for(const unit of pod.units||[])unit.unitScores={}}}const created=await installWorkspace(normalizeDB(data),{year,term:data.settings.
-academicTerm,assessmentSource:{id:origin.id,revision:origin.revision,year}});broadcast({workspace:created.id,revision:created.revision,annualAssessment:true});return created})();
-assessmentTermRequests.set(key,operation);try{return await operation}finally{if(assessmentTermRequests.get(key)===operation)assessmentTermRequests.delete(key)}}
-const assessmentContext=(()=>{let selected=null,selectionGeneration=0,flushingAssessment=null;const fields=new Set(["practical","theory","midtermPractical","mid\
-termTheory"]);const scopeSuffix=context=>"-assessment-"+context.classroom.id.length+"_"+context.classroom.id+"-"+context.lesson.id.length+"_"+context.lesson.id+
-"-"+context.stage;const stageField=(context,field)=>fields.has(field)&&field.startsWith("midterm")===(context.stage==="midterm")&&!(context.lesson.gradingPolicy?.
-subjectType==="general"&&["practical","midtermPractical"].includes(field));const owner=context=>context.owner;const storageKey=context=>"Edu24.drafts."+context.
-period.id+"."+owner(context);const entryKey=item=>item.sid+"|"+item.field;const getClass=(data,schoolId,classId)=>data.schools.find(school=>school.id===schoolId)?.
-classes.find(classroom=>classroom.id===classId);function check(context,{write=false}={}){assertWorkspaceReadable();if((typeof installationToken==="undefined"?"":
-installationToken)!==context.installation)throw Object.assign(Error("اطلاعات در پنجرهٔ دیگری جایگزین شده است؛ صفحه را دوباره باز کنید."),
-{code:"INSTALLATION_CHANGED"});if(selected!==context||connection!==context.connection||workspace.id!==context.origin.id||workspace.year!==context.origin.year||workspace.
-id===context.period.id&&workspace.revision!==context.origin.revision||periodLoading||resetBusy||connectionRetired)throw Error("صفحه یا اطلاعات سال تغییر کرده اس\
-ت؛ صفحه را دوباره بارگذاری و پیش‌نویس‌های محفوظ را بررسی کنید.");if(write&&context.period.closed)throw Error(
-"این مرحلهٔ ارزشیابی فقط قابل مشاهده است؛ ابتدا ترم آن را بازگشایی کنید.");if(write&&(context.stale||!context.
-authenticated))throw Error("اطلاعات یا دسترسی این مرحله تغییر کرده است؛ صفحه را دوباره بارگذاری و پیش‌نویس‌های محفوظ را بررسی کنید.")}
-function handles(input2){return!!input2?.dataset?.assessmentContext}function inputContext(input2){const context=selected;if(!context||input2.dataset.assessmentContext!==
-context.token)throw Error("کادر نمره به مرحلهٔ فعلی تعلق ندارد؛ مرحله را دوباره باز کنید.");check(context,{write:true});
-if(input2.dataset.class!==context.classroom.id||input2.dataset.lesson!==context.lesson.id||!context.classroom.students.some(student=>student.id===input2.dataset.
-student)||!stageField(context,input2.dataset.field))throw Error("دانش‌آموز، درس یا نوع نمرهٔ این مرحله معتبر نیست.");return context}
-function showInputState(input2,item){input2.setAttribute("aria-invalid",item.error?"true":"false");const note=input2.parentElement?.querySelector(".grade-note");
-if(note){note.textContent=item.error||"در انتظار ذخیره";note.dataset.state=item.error?"error":"pending"}const row=input2.closest?.(".assessment-stu\
-dent");if(row)row.dataset.editState=[...selected.entries.values()].some(entry=>entry.sid===input2.dataset.student&&entry.error)?"error":"pending"}function refreshInput(input2){
-const context=selected;if(!context||input2.dataset.assessmentContext!==context.token)return;const item=context.entries.get(entryKey({sid:input2.dataset.student,
-field:input2.dataset.field}));input2.setAttribute("aria-invalid",item?.error?"true":"false");const note=input2.parentElement?.querySelector(".grade-note");if(note){
-const filled=input2.value.trim()!=="";note.textContent=item?item.error||"در انتظار ذخیره":filled?"ذخیره شد":"";note.dataset.state=item?item.
-error?"error":"pending":filled?"saved":"idle"}}function sameInstallation(context){return!context.abandoned&&!resetBusy&&!connectionRetired&&connection===context.
-connection&&(typeof installationToken==="undefined"?"":installationToken)===context.installation}function persist(context){if(!sameInstallation(context))return Promise.
-resolve();const entry={key:storageKey(context),workspace:context.period.id,owner:owner(context),generation:++context.generation,entries:clone([...context.entries.
-values()]),updatedAt:new Date().toISOString()};let localFailure=false;try{localStorage.setItem(entry.key,JSON.stringify(entry))}catch{localFailure=true}const targetConnection=context.
-connection;draftWritesPending++;const operation=draftWriter.catch(()=>{}).then(async()=>{if(!sameInstallation(context)||connection!==targetConnection)return;const tx=targetConnection.
-transaction(["records","drafts"],"readwrite"),done=transactionDone(tx),store=tx.objectStore("drafts"),epoch=tx.objectStore("records").get(typeof RESET_RECORD_KEY===
-"undefined"?"@installation-reset":RESET_RECORD_KEY);let persistenceFailure;epoch.onsuccess=()=>{if((epoch.result?.value?.token||"")!==context.installation||!sameInstallation(
-context)){persistenceFailure=Object.assign(Error("اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ پیش‌نویس قدیمی ثبت نشد."),
-{code:"INSTALLATION_CHANGED"});try{if(localStorage.getItem(entry.key)===JSON.stringify(entry))localStorage.removeItem(entry.key)}catch{}tx.abort();return}const request=store.
-get(entry.key);request.onsuccess=()=>{if(!request.result||request.result.generation<=entry.generation)store.put(entry)}};try{await done}catch(error){throw persistenceFailure||
-error}context.persistenceError="";if(localFailure&&entry.entries.length)setStatus("پیش‌نویس این مرحله در بانک داخلی محفوظ است.",
-"pending")}).catch(error=>{context.persistenceError=error.message;draftRecoveryFailed=true;setStatus("پیش‌نویس مرحله هنوز پایدار نشده است: "+
-error.message,"error");throw error}).finally(()=>{draftWritesPending--});draftWriter=operation;operation.catch(()=>{});return operation}async function recover(context){
-const prefix="Edu24.drafts."+context.period.id+".",rows=new Map,add=(row,expectedKey)=>{if(expectedKey&&row?.key!==expectedKey)throw Object.assign(Error("کلید پ\
-یش‌نویس مرحله معتبر نیست؛ نسخهٔ خام را بررسی کنید."),{code:"GRADE_DRAFT_INVALID"});if(!row?.key?.startsWith(prefix)||!row.
-key.split(".")[3]?.includes("-assessment"))return;if(!Number.isSafeInteger(row.generation)||row.generation<0||typeof row.updatedAt!=="string")throw Object.assign(
-Error("مشخصات پیش‌نویس مرحله معتبر نیست؛ فایل پشتیبان محفوظ را بررسی کنید."),{code:"GRADE_DRAFT_INVALID"});
-const previous=rows.get(row.key);if(!previous||previous.generation<row.generation||previous.generation===row.generation&&previous.updatedAt<row.updatedAt)rows.set(
-row.key,row)};let localKeys=[];try{localKeys=Object.keys(localStorage)}catch{}for(const key of localKeys){if(!key.startsWith(prefix)||!key.split(".")[3]?.includes(
-"-assessment"))continue;let json;try{json=localStorage.getItem(key)}catch{continue}let row;try{row=JSON.parse(json)}catch{throw Object.assign(Error("متن پیش‌نوی\
-س مرحله معتبر نیست؛ فایل پشتیبان محفوظ را بررسی کنید."),{code:"GRADE_DRAFT_INVALID"})}add(row,key)}const tx=context.connection.
-transaction("drafts","readonly"),done=transactionDone(tx),saved=await requestPromise(tx.objectStore("drafts").index("workspace").getAll(context.period.id));await done;
-check(context);for(const row of saved)add(row);const candidates=[...rows.values()].sort((a,b)=>b.generation-a.generation||String(b.updatedAt).localeCompare(String(
-a.updatedAt)));for(const row of candidates)if(!Array.isArray(row.entries))EduGradeDrafts.assertEntries(row.entries);context.generation=Math.max(0,...candidates.
-map(row=>row.generation));const suffix=scopeSuffix(context),relevant=candidates.filter(row=>row.key.endsWith(suffix)||row.entries.some(item=>item?.classId===context.
-classroom.id&&item?.lid===context.lesson.id&&stageField(context,item?.field))),empty=relevant.filter(row=>!row.entries.length).sort((a,b)=>String(b.updatedAt).localeCompare(
-String(a.updatedAt))||b.generation-a.generation)[0],latest=new Map;for(const row of relevant){if(empty&&String(row.updatedAt)<=String(empty.updatedAt)&&row.generation<=
-empty.generation)continue;EduGradeDrafts.assertEntries(row.entries);for(const original of row.entries){if(original.kind!=="k"||original.classId!==context.classroom.
-id||original.lid!==context.lesson.id||!stageField(context,original.field)||!context.classroom.students.some(student=>student.id===original.sid))continue;const key=entryKey(
-original),previous=latest.get(key);if(!previous||String(row.updatedAt)>String(previous.row.updatedAt)||row.updatedAt===previous.row.updatedAt&&row.generation>previous.
-row.generation)latest.set(key,{row,original})}}for(const{original}of latest.values()){const item=clone(original);if(item.baseRevision!==context.period.revision||
-item.review){item.review=true;item.error="دادهٔ این مرحله تغییر کرده است؛ مقدار را بررسی و دوباره وارد کنید."}
-context.entries.set(entryKey(item),item)}}async function select(kind,stage,identity){if(!["first","second"].includes(kind)||!["midterm","final"].includes(stage))
-throw Error("مرحلهٔ ارزشیابی معتبر نیست.");const expectedInstallation=typeof installationToken==="undefined"?"":installationToken;await flush(
-{strict:true});assertWorkspaceReadable();const generation=++selectionGeneration,origin={id:workspace.id,revision:workspace.revision,year:workspace.year},targetConnection=connection,
-assertOrigin=()=>{if((typeof installationToken==="undefined"?"":installationToken)!==expectedInstallation||generation!==selectionGeneration||connection!==targetConnection||
-workspace.id!==origin.id||workspace.year!==origin.year||workspace.revision!==origin.revision||periodLoading||resetBusy||connectionRetired)throw Error("صفحه یا س\
-ال هنگام انتخاب مرحله تغییر کرد؛ دوباره تلاش کنید.")};const period=await ensureAcademicAssessmentTerm(kind);assertOrigin();
-if(!period||period.year!==origin.year||(period.termKind||academicTermKind(period.term))!==kind)throw Error("نوبت ارزشیابی متعلق به سال فعال نیست.");
-const snapshot2=await readAssessmentSnapshot(period.id,identity,expectedInstallation);assertOrigin();if(snapshot2.period.revision!==period.revision)throw Error(
-"اطلاعات مرحله تغییر کرده است؛ انتخاب آن را دوباره انجام دهید.");const classroom=getClass(snapshot2.data,identity.
-schoolId,identity.classId),lesson=classroom?.lessons.find(item=>item.id===identity.lessonId);if(!lesson||lesson.gradeMode!=="kardanesh")throw Error("درس نظری و \
-عملی در مرحلهٔ انتخاب‌شده وجود ندارد.");const password=snapshot2.data.settings.password;if(password&&period.id!==workspace.id){const supplied=prompt(
-"برای ورود به نمرات نوبت "+(kind==="first"?"اول":"دوم")+"، رمز همان نوبت را وارد کنید:");if(supplied===null||!await verifyPassword(
-supplied,password))throw Error("دسترسی به نمرات این نوبت تأیید نشد.");assertOrigin()}const context={token:uid(),origin,connection:targetConnection,
-period:clone(snapshot2.period),data:snapshot2.data,classroom,lesson,schoolId:identity.schoolId,stage,password,authenticated:true,entries:new Map,generation:0,owner:documentToken+
-scopeSuffix({classroom,lesson,stage}),installation:expectedInstallation,timer:null,persistenceError:""};selected=context;try{await recover(context);check(context)}catch(error){
-if(selected===context){context.abandoned=true;selected=null}throw error}if(context.entries.size)setStatus("ورودی‌های ذخیره‌نشدهٔ این مرحله بازیابی شدند؛ پیام کا\
-درها را بررسی کنید.","pending");return context}function resolve(classroom,lesson){const context=selected;if(!context||context.origin.id!==workspace.
-id||context.origin.year!==workspace.year||context.classroom.id!==classroom?.id||context.lesson.id!==lesson?.id)return null;if(workspace.id===context.period.id&&
-workspace.revision!==context.origin.revision)workspaceChanged({workspace:context.period.id,revision:workspace.revision});return context}function cell(classroom,lesson,student,field,{
-value=null}={}){const context=resolve(classroom,lesson);if(!context)return gradeCell(classroom,lesson,student,field,{value});const item=context.entries.get(entryKey(
-{sid:student.id,field})),shown=item?item.value:value??"",locked=readOnly({dataset:{assessmentContext:context.token}});return'<div class="grade-editor"><input ty\
-pe="text" inputmode="decimal" autocomplete="off" dir="ltr" data-grade="1" data-kind="k" data-assessment-context="'+esc(context.token)+'" data-class="'+esc(classroom.
-id)+'" data-lesson="'+esc(lesson.id)+'" data-student="'+esc(student.id)+'" data-pod="" data-unit="" data-field="'+esc(field)+'" aria-invalid="'+(item?.error?"tr\
-ue":"false")+'" value="'+esc(shown)+'" placeholder="—" aria-label="'+esc(student.name+" "+(field==="practical"||field==="midtermPractical"?"عملی":"تئوری"))+
-'"'+(locked?' readonly aria-readonly="true"':"")+'><button type="button" class="ghost grade-clear no-print" data-clear-grade aria-label="پاک‌کردن نمره"'+
-(locked?" disabled":"")+'>×</button><small class="grade-note" aria-live="polite" data-state="'+(item?item.error?"error":"pending":String(shown).trim()!==""?"sa\
-ved":"idle")+'">'+esc(item?item.error||"در انتظار ذخیره":"")+"</small></div>"}function input(input2){const context=inputContext(input2),item={kind:"\
-k",baseRevision:context.period.revision,classId:context.classroom.id,lid:context.lesson.id,sid:input2.dataset.student,pid:"",uid:"",field:input2.dataset.field,value:input2.
-value,at:new Date().toISOString()},parsed=parseGrade(item.value);item.error=parsed.ok?"":parsed.message;context.entries.set(entryKey(item),item);showInputState(
-input2,item);persist(context);clearTimeout(context.timer);if(parsed.ok)context.timer=setTimeout(()=>flush().catch(()=>{}),180);setStatus(parsed.ok?"نمرهٔ این مر\
-حله در انتظار ذخیره است.":parsed.message,parsed.ok?"pending":"error",captureSaveFeedback())}function clear(input2){const context=inputContext(
-input2);if(!confirm("نمرهٔ همین مرحله پاک شود؟ این تغییر در تاریخچه ثبت می‌شود."))return;const item={kind:"k",baseRevision:context.
-period.revision,classId:context.classroom.id,lid:context.lesson.id,sid:input2.dataset.student,pid:"",uid:"",field:input2.dataset.field,value:"",remove:true,error:"",
-at:new Date().toISOString()};context.entries.set(entryKey(item),item);input2.value="";showInputState(input2,item);persist(context);flush().catch(()=>{})}async function commit(context,entries){
+method!=="modular")pod.podScores={};for(const unit of pod.units||[]){unit.unitScores={};if(unit.competencyScores!==void 0&&!EduPolicy.unitBased(lesson.gradingPolicy))
+unit.competencyScores={}}}}const created=await installWorkspace(normalizeDB(data),{year,term:data.settings.academicTerm,assessmentSource:{id:origin.id,revision:origin.
+revision,year}});broadcast({workspace:created.id,revision:created.revision,annualAssessment:true});return created})();assessmentTermRequests.set(key,operation);
+try{return await operation}finally{if(assessmentTermRequests.get(key)===operation)assessmentTermRequests.delete(key)}}const assessmentContext=(()=>{let selected=null,
+selectionGeneration=0,flushingAssessment=null;const fields=new Set(["practical","theory","midtermPractical","midtermTheory"]);const scopeSuffix=context=>"-asses\
+sment-"+context.classroom.id.length+"_"+context.classroom.id+"-"+context.lesson.id.length+"_"+context.lesson.id+"-"+context.stage;const stageField=(context,field)=>fields.
+has(field)&&field.startsWith("midterm")===(context.stage==="midterm")&&!(context.lesson.gradingPolicy?.subjectType==="general"&&["practical","midtermPractical"].
+includes(field));const owner=context=>context.owner;const storageKey=context=>"Edu24.drafts."+context.period.id+"."+owner(context);const entryKey=item=>item.sid+
+"|"+item.field;const getClass=(data,schoolId,classId)=>data.schools.find(school=>school.id===schoolId)?.classes.find(classroom=>classroom.id===classId);function check(context,{
+write=false}={}){assertWorkspaceReadable();if((typeof installationToken==="undefined"?"":installationToken)!==context.installation)throw Object.assign(Error("اط\
+لاعات در پنجرهٔ دیگری جایگزین شده است؛ صفحه را دوباره باز کنید."),{code:"INSTALLATION_CHANGED"});if(selected!==
+context||connection!==context.connection||workspace.id!==context.origin.id||workspace.year!==context.origin.year||workspace.id===context.period.id&&workspace.revision!==
+context.origin.revision||periodLoading||resetBusy||connectionRetired)throw Error("صفحه یا اطلاعات سال تغییر کرده است؛ صفحه را دوباره بارگذاری و پیش‌نویس‌های محف\
+وظ را بررسی کنید.");if(write&&context.period.closed)throw Error("این مرحلهٔ ارزشیابی فقط قابل مشاهده است؛ ابتدا ترم آن را بازگشایی کنید.");
+if(write&&(context.stale||!context.authenticated))throw Error("اطلاعات یا دسترسی این مرحله تغییر کرده است؛ صفحه را دوباره بارگذاری و پیش‌نویس‌های محفوظ را بررسی\
+ کنید.")}function handles(input2){return!!input2?.dataset?.assessmentContext}function inputContext(input2){const context=selected;if(!context||input2.dataset.
+assessmentContext!==context.token)throw Error("کادر نمره به مرحلهٔ فعلی تعلق ندارد؛ مرحله را دوباره باز کنید.");
+check(context,{write:true});if(input2.dataset.class!==context.classroom.id||input2.dataset.lesson!==context.lesson.id||!context.classroom.students.some(student=>student.
+id===input2.dataset.student)||!stageField(context,input2.dataset.field))throw Error("دانش‌آموز، درس یا نوع نمرهٔ این مرحله معتبر نیست.");
+return context}function showInputState(input2,item){input2.setAttribute("aria-invalid",item.error?"true":"false");const note=input2.parentElement?.querySelector(
+".grade-note");if(note){note.textContent=item.error||"در انتظار ذخیره";note.dataset.state=item.error?"error":"pending"}const row=input2.closest?.("\
+.assessment-student");if(row)row.dataset.editState=[...selected.entries.values()].some(entry=>entry.sid===input2.dataset.student&&entry.error)?"error":"pending"}
+function refreshInput(input2){const context=selected;if(!context||input2.dataset.assessmentContext!==context.token)return;const item=context.entries.get(entryKey(
+{sid:input2.dataset.student,field:input2.dataset.field}));input2.setAttribute("aria-invalid",item?.error?"true":"false");const note=input2.parentElement?.querySelector(
+".grade-note");if(note){const filled=input2.value.trim()!=="";note.textContent=item?item.error||"در انتظار ذخیره":filled?"ذخیره شد":"";note.
+dataset.state=item?item.error?"error":"pending":filled?"saved":"idle"}}function sameInstallation(context){return!context.abandoned&&!resetBusy&&!connectionRetired&&
+connection===context.connection&&(typeof installationToken==="undefined"?"":installationToken)===context.installation}function persist(context){if(!sameInstallation(
+context))return Promise.resolve();const entry={key:storageKey(context),workspace:context.period.id,owner:owner(context),generation:++context.generation,entries:clone(
+[...context.entries.values()]),updatedAt:new Date().toISOString()};let localFailure=false;try{localStorage.setItem(entry.key,JSON.stringify(entry))}catch{localFailure=
+true}const targetConnection=context.connection;draftWritesPending++;const operation=draftWriter.catch(()=>{}).then(async()=>{if(!sameInstallation(context)||connection!==
+targetConnection)return;const tx=targetConnection.transaction(["records","drafts"],"readwrite"),done=transactionDone(tx),store=tx.objectStore("drafts"),epoch=tx.
+objectStore("records").get(typeof RESET_RECORD_KEY==="undefined"?"@installation-reset":RESET_RECORD_KEY);let persistenceFailure;epoch.onsuccess=()=>{if((epoch.result?.
+value?.token||"")!==context.installation||!sameInstallation(context)){persistenceFailure=Object.assign(Error("اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ پیش\
+‌نویس قدیمی ثبت نشد."),{code:"INSTALLATION_CHANGED"});try{if(localStorage.getItem(entry.key)===JSON.stringify(entry))localStorage.removeItem(entry.
+key)}catch{}tx.abort();return}const request=store.get(entry.key);request.onsuccess=()=>{if(!request.result||request.result.generation<=entry.generation)store.put(
+entry)}};try{await done}catch(error){throw persistenceFailure||error}context.persistenceError="";if(localFailure&&entry.entries.length)setStatus("پیش‌نویس این م\
+رحله در بانک داخلی محفوظ است.","pending")}).catch(error=>{context.persistenceError=error.message;draftRecoveryFailed=true;setStatus("پیش‌\
+نویس مرحله هنوز پایدار نشده است: "+error.message,"error");throw error}).finally(()=>{draftWritesPending--});draftWriter=operation;operation.
+catch(()=>{});return operation}async function recover(context){const prefix="Edu24.drafts."+context.period.id+".",rows=new Map,add=(row,expectedKey)=>{if(expectedKey&&
+row?.key!==expectedKey)throw Object.assign(Error("کلید پیش‌نویس مرحله معتبر نیست؛ نسخهٔ خام را بررسی کنید."),{code:"\
+GRADE_DRAFT_INVALID"});if(!row?.key?.startsWith(prefix)||!row.key.split(".")[3]?.includes("-assessment"))return;if(!Number.isSafeInteger(row.generation)||row.generation<
+0||typeof row.updatedAt!=="string")throw Object.assign(Error("مشخصات پیش‌نویس مرحله معتبر نیست؛ فایل پشتیبان محفوظ را بررسی کنید."),
+{code:"GRADE_DRAFT_INVALID"});const previous=rows.get(row.key);if(!previous||previous.generation<row.generation||previous.generation===row.generation&&previous.
+updatedAt<row.updatedAt)rows.set(row.key,row)};let localKeys=[];try{localKeys=Object.keys(localStorage)}catch{}for(const key of localKeys){if(!key.startsWith(prefix)||
+!key.split(".")[3]?.includes("-assessment"))continue;let json;try{json=localStorage.getItem(key)}catch{continue}let row;try{row=JSON.parse(json)}catch{throw Object.
+assign(Error("متن پیش‌نویس مرحله معتبر نیست؛ فایل پشتیبان محفوظ را بررسی کنید."),{code:"GRADE_DRAFT_INVALI\
+D"})}add(row,key)}const tx=context.connection.transaction("drafts","readonly"),done=transactionDone(tx),saved=await requestPromise(tx.objectStore("drafts").index(
+"workspace").getAll(context.period.id));await done;check(context);for(const row of saved)add(row);const candidates=[...rows.values()].sort((a,b)=>b.generation-a.
+generation||String(b.updatedAt).localeCompare(String(a.updatedAt)));for(const row of candidates)if(!Array.isArray(row.entries))EduGradeDrafts.assertEntries(row.
+entries);context.generation=Math.max(0,...candidates.map(row=>row.generation));const suffix=scopeSuffix(context),relevant=candidates.filter(row=>row.key.endsWith(
+suffix)||row.entries.some(item=>item?.classId===context.classroom.id&&item?.lid===context.lesson.id&&stageField(context,item?.field))),empty=relevant.filter(row=>!row.
+entries.length).sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt))||b.generation-a.generation)[0],latest=new Map;for(const row of relevant){if(empty&&
+String(row.updatedAt)<=String(empty.updatedAt)&&row.generation<=empty.generation)continue;EduGradeDrafts.assertEntries(row.entries);for(const original of row.entries){
+if(original.kind!=="k"||original.classId!==context.classroom.id||original.lid!==context.lesson.id||!stageField(context,original.field)||!context.classroom.students.
+some(student=>student.id===original.sid))continue;const key=entryKey(original),previous=latest.get(key);if(!previous||String(row.updatedAt)>String(previous.row.
+updatedAt)||row.updatedAt===previous.row.updatedAt&&row.generation>previous.row.generation)latest.set(key,{row,original})}}for(const{original}of latest.values()){
+const item=clone(original);if(item.baseRevision!==context.period.revision||item.review){item.review=true;item.error="دادهٔ این مرحله تغییر کرده است؛ مقدار را بر\
+رسی و دوباره وارد کنید."}context.entries.set(entryKey(item),item)}}async function select(kind,stage,identity){if(!["first","second"].includes(
+kind)||!["midterm","final"].includes(stage))throw Error("مرحلهٔ ارزشیابی معتبر نیست.");const expectedInstallation=typeof installationToken===
+"undefined"?"":installationToken;await flush({strict:true});assertWorkspaceReadable();const generation=++selectionGeneration,origin={id:workspace.id,revision:workspace.
+revision,year:workspace.year},targetConnection=connection,assertOrigin=()=>{if((typeof installationToken==="undefined"?"":installationToken)!==expectedInstallation||
+generation!==selectionGeneration||connection!==targetConnection||workspace.id!==origin.id||workspace.year!==origin.year||workspace.revision!==origin.revision||periodLoading||
+resetBusy||connectionRetired)throw Error("صفحه یا سال هنگام انتخاب مرحله تغییر کرد؛ دوباره تلاش کنید.")};const period=await ensureAcademicAssessmentTerm(
+kind);assertOrigin();if(!period||period.year!==origin.year||(period.termKind||academicTermKind(period.term))!==kind)throw Error("نوبت ارزشیابی متعلق به سال فعال\
+ نیست.");const snapshot2=await readAssessmentSnapshot(period.id,identity,expectedInstallation);assertOrigin();if(snapshot2.period.revision!==period.revision)
+throw Error("اطلاعات مرحله تغییر کرده است؛ انتخاب آن را دوباره انجام دهید.");const classroom=getClass(snapshot2.
+data,identity.schoolId,identity.classId),lesson=classroom?.lessons.find(item=>item.id===identity.lessonId);if(!lesson||lesson.gradeMode!=="kardanesh")throw Error(
+"درس نظری و عملی در مرحلهٔ انتخاب‌شده وجود ندارد.");const password=snapshot2.data.settings.password;if(password&&period.
+id!==workspace.id){const supplied=prompt("برای ورود به نمرات نوبت "+(kind==="first"?"اول":"دوم")+"، رمز همان نوبت را وارد کنید:");
+if(supplied===null||!await verifyPassword(supplied,password))throw Error("دسترسی به نمرات این نوبت تأیید نشد.");assertOrigin()}const context={
+token:uid(),origin,connection:targetConnection,period:clone(snapshot2.period),data:snapshot2.data,classroom,lesson,schoolId:identity.schoolId,stage,password,authenticated:true,
+entries:new Map,generation:0,owner:documentToken+scopeSuffix({classroom,lesson,stage}),installation:expectedInstallation,timer:null,persistenceError:""};selected=
+context;try{await recover(context);check(context)}catch(error){if(selected===context){context.abandoned=true;selected=null}throw error}if(context.entries.size)setStatus(
+"ورودی‌های ذخیره‌نشدهٔ این مرحله بازیابی شدند؛ پیام کادرها را بررسی کنید.","pending");return context}
+function resolve(classroom,lesson){const context=selected;if(!context||context.origin.id!==workspace.id||context.origin.year!==workspace.year||context.classroom.
+id!==classroom?.id||context.lesson.id!==lesson?.id)return null;if(workspace.id===context.period.id&&workspace.revision!==context.origin.revision)workspaceChanged(
+{workspace:context.period.id,revision:workspace.revision});return context}function cell(classroom,lesson,student,field,{value=null}={}){const context=resolve(classroom,
+lesson);if(!context)return gradeCell(classroom,lesson,student,field,{value});const item=context.entries.get(entryKey({sid:student.id,field})),shown=item?item.value:
+value??"",locked=readOnly({dataset:{assessmentContext:context.token}});return'<div class="grade-editor"><input type="text" inputmode="decimal" autocomplete="off\
+" dir="ltr" data-grade="1" data-kind="k" data-assessment-context="'+esc(context.token)+'" data-class="'+esc(classroom.id)+'" data-lesson="'+esc(lesson.id)+'" da\
+ta-student="'+esc(student.id)+'" data-pod="" data-unit="" data-field="'+esc(field)+'" aria-invalid="'+(item?.error?"true":"false")+'" value="'+esc(shown)+'" pla\
+ceholder="—" aria-label="'+esc(student.name+" "+(field==="practical"||field==="midtermPractical"?"عملی":"تئوری"))+'"'+(locked?' readonly aria-readonl\
+y="true"':"")+'><button type="button" class="ghost grade-clear no-print" data-clear-grade aria-label="پاک‌کردن نمره"'+(locked?" disabled":"")+'>×</\
+button><small class="grade-note" aria-live="polite" data-state="'+(item?item.error?"error":"pending":String(shown).trim()!==""?"saved":"idle")+'">'+esc(item?item.
+error||"در انتظار ذخیره":"")+"</small></div>"}function input(input2){const context=inputContext(input2),item={kind:"k",baseRevision:context.period.
+revision,classId:context.classroom.id,lid:context.lesson.id,sid:input2.dataset.student,pid:"",uid:"",field:input2.dataset.field,value:input2.value,at:new Date().
+toISOString()},parsed=parseGrade(item.value);item.error=parsed.ok?"":parsed.message;context.entries.set(entryKey(item),item);showInputState(input2,item);persist(
+context);clearTimeout(context.timer);if(parsed.ok)context.timer=setTimeout(()=>flush().catch(()=>{}),180);setStatus(parsed.ok?"نمرهٔ این مرحله در انتظار ذخیره ا\
+ست.":parsed.message,parsed.ok?"pending":"error",captureSaveFeedback())}function clear(input2){const context=inputContext(input2);if(!confirm("نمرهٔ همین مرحله\
+ پاک شود؟ این تغییر در تاریخچه ثبت می‌شود."))return;const item={kind:"k",baseRevision:context.period.revision,classId:context.
+classroom.id,lid:context.lesson.id,sid:input2.dataset.student,pid:"",uid:"",field:input2.dataset.field,value:"",remove:true,error:"",at:new Date().toISOString()};
+context.entries.set(entryKey(item),item);input2.value="";showInputState(input2,item);persist(context);flush().catch(()=>{})}async function commit(context,entries){
 check(context,{write:true});const snapshot2=await readAssessmentSnapshot(context.period.id,{schoolId:context.schoolId,classId:context.classroom.id},context.installation);
 check(context,{write:true});if(snapshot2.period.revision!==context.period.revision||snapshot2.period.closed||snapshot2.data.settings.password!==context.password){
 const error=Error("نمرات یا دسترسی این مرحله در پنجرهٔ دیگری تغییر کرد؛ پیش‌نویس محفوظ است.");error.
@@ -1309,26 +1319,26 @@ singleFileFailure=visible;const element=document.getElementById("singleFileFallb
 .backup-automatic");if(visible&&panel)panel.open=true}}function singleFileContentBaseline(snapshot){const counts={version:1,records:0,schools:0,students:0,lessons:0,
 grades:0,attendance:0,activities:0};const populatedScores=value=>{if(typeof value==="number")return Number.isFinite(value)?1:0;if(typeof value==="string")return value.
 trim()?1:0;if(!value||typeof value!=="object")return 0;return Object.values(value).reduce((total,item)=>total+populatedScores(item),0)};const scores=value=>{if(!value||
-typeof value!=="object")return;for(const[key,item]of Object.entries(value)){if(["kardaneshScores","podScores","unitScores"].includes(key))counts.grades+=populatedScores(
-item);else if(item&&typeof item==="object")scores(item)}};for(const row of snapshot.stores?.records||[]){if(row.logical==="meta"){counts.schools+=row.value?.layout?.
-length||0;continue}counts.records++;if(row.logical?.startsWith("class:")){counts.students+=(row.value?.students?.length||0)+(row.value?.archivedStudents?.length||
-0);counts.lessons+=row.value?.lessons?.length||0;scores(row.value)}else if(row.logical?.startsWith("session:")){counts.activities+=row.value?.scores?.length||0;
-counts.attendance+=Object.values(row.value?.attendance||{}).filter(value=>value!==null&&value!==void 0&&value!=="").length}}return counts}function singleFileSourceDropped(previous,current){
-if(previous?.version!==1)return false;const keys=Object.keys(current).filter(key=>key!=="version");if(keys.some(key=>previous[key]>0)&&keys.every(key=>current[key]===
-0))return true;const educational=["students","lessons","grades","attendance","activities"];if(educational.some(key=>previous[key]>0)&&educational.every(key=>current[key]===
-0))return true;return keys.some(key=>previous[key]>=10&&previous[key]-current[key]>=10&&current[key]<=previous[key]/2)}function announceSingleFileSuspension(target=singleFile){
-pauseSingleFile();showSingleFileFallback(true);singleFileStatus((target?.suspension==="restore"?"پس از بازیابی، اتصال فایل متوقف است؛ فایل قبلی تغییر نکرده است.\
- ":"کاهش غیرعادی اطلاعات شناسایی شد؛ برای حفظ نسخه قبلی، فایل نوشته نشد. ")+"برای جایگزینی آگاهانه، «ذخی\
-ره اکنون / اجازه مجدد» را بزنید یا فایل دیگری انتخاب کنید.")}async function persistSingleFile({replace=false,target=singleFile}={}){
-if(!ready||resetBusy||connectionRetired)return false;const sourceConnection=connection,sourceInstallation=typeof installationToken==="undefined"?"":installationToken,
-tx=sourceConnection.transaction(["records","drafts"],"readwrite"),done=transactionDone(tx),store=tx.objectStore("drafts"),request=store.get(singleFileKey),epoch=tx.
-objectStore("records").get(typeof RESET_RECORD_KEY==="undefined"?"@installation-reset":RESET_RECORD_KEY);let changed=false,remaining=2,failure;const persist=()=>{
-if(--remaining)return;try{if((epoch.result?.value?.token||"")!==sourceInstallation||connection!==sourceConnection||connectionRetired||resetBusy){const error=Error(
-"اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ اتصال فایل قدیمی تغییر نکرد.");error.code="INSTALL\
-ATION_CHANGED";throw error}if(!replace&&(!request.result||(request.result.connectionId||"")!==(target?.connectionId||"")))return;if(singleFile===target&&target)
-store.put({key:singleFileKey,...target});else if(!singleFile)store.delete(singleFileKey);else return;changed=true}catch(error){failure=error;try{tx.abort()}catch{}}};
-request.onsuccess=persist;epoch.onsuccess=persist;try{await done}catch(error){throw failure||error}return changed}function singleFileChanged(message){if(message.
-type!=="single-file-changed")return false;if(singleFile&&(singleFile.connectionId||"")!==message.connectionId){pauseSingleFile();singleFile=null;singleFileStatus(
+typeof value!=="object")return;for(const[key,item]of Object.entries(value)){if(["kardaneshScores","podScores","unitScores","competencyScores"].includes(key))counts.
+grades+=populatedScores(item);else if(item&&typeof item==="object")scores(item)}};for(const row of snapshot.stores?.records||[]){if(row.logical==="meta"){counts.
+schools+=row.value?.layout?.length||0;continue}counts.records++;if(row.logical?.startsWith("class:")){counts.students+=(row.value?.students?.length||0)+(row.value?.
+archivedStudents?.length||0);counts.lessons+=row.value?.lessons?.length||0;scores(row.value)}else if(row.logical?.startsWith("session:")){counts.activities+=row.
+value?.scores?.length||0;counts.attendance+=Object.values(row.value?.attendance||{}).filter(value=>value!==null&&value!==void 0&&value!=="").length}}return counts}
+function singleFileSourceDropped(previous,current){if(previous?.version!==1)return false;const keys=Object.keys(current).filter(key=>key!=="version");if(keys.some(
+key=>previous[key]>0)&&keys.every(key=>current[key]===0))return true;const educational=["students","lessons","grades","attendance","activities"];if(educational.
+some(key=>previous[key]>0)&&educational.every(key=>current[key]===0))return true;return keys.some(key=>previous[key]>=10&&previous[key]-current[key]>=10&&current[key]<=
+previous[key]/2)}function announceSingleFileSuspension(target=singleFile){pauseSingleFile();showSingleFileFallback(true);singleFileStatus((target?.suspension===
+"restore"?"پس از بازیابی، اتصال فایل متوقف است؛ فایل قبلی تغییر نکرده است. ":"کاهش غیرعادی اطلاعات شناسایی شد\
+؛ برای حفظ نسخه قبلی، فایل نوشته نشد. ")+"برای جایگزینی آگاهانه، «ذخیره اکنون / اجازه مجدد» را بزنید یا فایل دیگری انتخاب کنید.")}
+async function persistSingleFile({replace=false,target=singleFile}={}){if(!ready||resetBusy||connectionRetired)return false;const sourceConnection=connection,sourceInstallation=typeof installationToken===
+"undefined"?"":installationToken,tx=sourceConnection.transaction(["records","drafts"],"readwrite"),done=transactionDone(tx),store=tx.objectStore("drafts"),request=store.
+get(singleFileKey),epoch=tx.objectStore("records").get(typeof RESET_RECORD_KEY==="undefined"?"@installation-reset":RESET_RECORD_KEY);let changed=false,remaining=2,
+failure;const persist=()=>{if(--remaining)return;try{if((epoch.result?.value?.token||"")!==sourceInstallation||connection!==sourceConnection||connectionRetired||
+resetBusy){const error=Error("اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ اتصال فایل قدیمی تغییر نکرد.");
+error.code="INSTALLATION_CHANGED";throw error}if(!replace&&(!request.result||(request.result.connectionId||"")!==(target?.connectionId||"")))return;if(singleFile===
+target&&target)store.put({key:singleFileKey,...target});else if(!singleFile)store.delete(singleFileKey);else return;changed=true}catch(error){failure=error;try{
+tx.abort()}catch{}}};request.onsuccess=persist;epoch.onsuccess=persist;try{await done}catch(error){throw failure||error}return changed}function singleFileChanged(message){
+if(message.type!=="single-file-changed")return false;if(singleFile&&(singleFile.connectionId||"")!==message.connectionId){pauseSingleFile();singleFile=null;singleFileStatus(
 "اتصال فایل در پنجره دیگری متوقف یا عوض شد؛ برای ادامه دوباره فایل را انتخاب کنید.")}return true}
 async function singleFileCurrent(target,{acknowledged=false}={}){if(fullRestoreBusy)return false;if(singleFile!==target||!ready||periodLoading||blocked||resetBusy||
 connectionRetired)return false;const expectedInstallation=typeof installationToken==="undefined"?"":installationToken;const stored=await readRecord("drafts",singleFileKey),
@@ -1743,14 +1753,15 @@ first.year!==year)c.archivedStudents=[];const students=new Set([...c.students,..
 info).some(([key,value])=>l.gradingPolicy[key]!==value);Object.assign(l.gradingPolicy,info);if(changedYear||changedIdentity){l.gradingPolicy.confirmed=false;l.gradingPolicy.
 revision=1}if(changedYear){l.gradingPolicy.circularNumber="";l.gradingPolicy.circularDate="";l.gradingPolicy.reference=""}}if(l.courseInfo||l.gradingPolicy)l.courseInfo=
 info}for(const p of l.poudmans)p.podScores=first?.year===year&&l.gradingPolicy?.method==="modular"?Object.fromEntries(Object.entries(p.podScores||{}).filter(([studentId])=>students.
-has(studentId))):{};for(const p of l.poudmans)for(const u of p.units)u.unitScores={}}}checkDialog();const created=await installWorkspace(normalizeDB(next),{year,
-term,requireSequence:true,firstRevision:first?.revision,source:sourcePeriod});assertWorkspaceContext(context);if(fromDialog&&secondTermDialog===dialog)secondTermDialog=
-null;await switchPeriod(created.id,fromDialog?null:legacyPeriodSwitchToken)}finally{newPeriodBusy=false}}let periodLabelEditing=null,periodLabelSaving=false;async function editPeriodLabel(){
-assertEntityWritable();const previous=periodLabelEditing;periodLabelEditing={id:workspace.id,revision:workspace.revision};const opened=showModal("اصلاح عنوان نو\
-بت",'<form id="periodLabelEditor" class="record-editor" novalidate><div class="record-editor-context"><span>دوره فعال</span><h4>'+esc(workspace.year+"\
- / "+workspace.term)+'</h4><p>کلاس‌ها، نمرات و سوابق این دوره حفظ می‌شوند.</p></div><label class="course-field">سال تحصیلی<input id="editYear" value="'+
-esc(workspace.year)+'" readonly aria-describedby="periodYearHint"></label><p id="periodYearHint" class="muted">سال این دوره ثابت است؛ برای سال دیگر از «دوره جدی\
-د» استفاده کنید تا سوابق و قواعد سالانه مستقل بمانند.</p><label class="course-field">عنوان نوبت<input id="editTerm" value="'+
+has(studentId))):{};for(const p of l.poudmans)for(const u of p.units){u.unitScores={};if(u.competencyScores!==void 0)u.competencyScores=first?.year===year&&EduPolicy.
+unitBased(l.gradingPolicy)?Object.fromEntries(Object.entries(u.competencyScores).filter(([studentId])=>students.has(studentId))):{}}}}checkDialog();const created=await installWorkspace(
+normalizeDB(next),{year,term,requireSequence:true,firstRevision:first?.revision,source:sourcePeriod});assertWorkspaceContext(context);if(fromDialog&&secondTermDialog===
+dialog)secondTermDialog=null;await switchPeriod(created.id,fromDialog?null:legacyPeriodSwitchToken)}finally{newPeriodBusy=false}}let periodLabelEditing=null,periodLabelSaving=false;
+async function editPeriodLabel(){assertEntityWritable();const previous=periodLabelEditing;periodLabelEditing={id:workspace.id,revision:workspace.revision};const opened=showModal(
+"اصلاح عنوان نوبت",'<form id="periodLabelEditor" class="record-editor" novalidate><div class="record-editor-context"><span>دوره فعال</span><h4>'+
+esc(workspace.year+" / "+workspace.term)+'</h4><p>کلاس‌ها، نمرات و سوابق این دوره حفظ می‌شوند.</p></div><label class="course-field">سال تحصیلی<input id="editYea\
+r" value="'+esc(workspace.year)+'" readonly aria-describedby="periodYearHint"></label><p id="periodYearHint" class="muted">سال این دوره ثابت است؛ برای سال دیگر \
+از «دوره جدید» استفاده کنید تا سوابق و قواعد سالانه مستقل بمانند.</p><label class="course-field">عنوان نوبت<input id="editTerm" value="'+
 esc(workspace.term)+'" maxlength="60" aria-describedby="periodLabelError" autocomplete="off"></label><p class="muted">این عنوان در فهرست دوره‌ها و گزارش‌های جار\
 ی نمایش داده می‌شود؛ کارنامه‌های ثابت قبلی تغییر نمی‌کنند.</p><p id="periodLabelError" role="alert"></p><div class="record-editor-actions"><button type="submit"\
  data-mutating="1">ذخیره عنوان نوبت</button><button type="button" class="ghost" data-period-label-cancel>انصراف</button></div></form>');if(opened===
@@ -1770,16 +1781,19 @@ for(const school of db.schools)for(const c of school.classes){const students=get
 c,l,st.id);const assessments=l.gradeMode==="kardanesh"?{version:1,midterm:assessmentResult(l,st.id,"midterm"),final:assessmentResult(l,st.id,"final")}:null;if(assessments)
 for(const[stage,r]of[["میان‌ترم",assessments.midterm],["پایان‌ترم",assessments.final]]){if(l.gradingPolicy?.subjectType!=="general"&&r.practical===
 null)missing.push(c.name+" / "+st.name+" / "+l.name+" / "+stage+" / عملی");if(r.theory===null)missing.push(c.name+" / "+st.name+" / "+l.name+" / "+stage+" /\
- تئوری")}const annualModuleInProgress=l.gradingPolicy?.method==="modular"&&(workspace.termKind||academicTermKind(workspace.term))==="first";if(!annualModuleInProgress&&
-result.final===null&&result.passed!==false)missing.push(c.name+" / "+st.name+" / "+l.name);return{id:l.id,name:l.name,mode:l.gradeMode,...assessments?{assessments}:
-{},policy:l.gradingPolicy?clone(l.gradingPolicy):null,courseInfo:EduPolicy.identity(l,workspace.year),modules:result.modules?.map(module=>{const pod=l.poudmans.
-find(item=>item.id===module.id),inputs=ownScoreRecord(pod?.podScores,st.id);return{...clone(module),inputs:{m:inputs.m??null,c:inputs.c??null}}})||null,reason:result.
-reason||"",teacher:l.teacher||"",practical:result.practical??null,theory:result.theory??null,mostamar:result.avgM,payani:result.avgP,final:result.final,passed:result.
-passed??null}});return{id:st.id,name:st.name,code:st.code||"",lessons,average:lessons.length&&lessons.every(l=>l.final!==null)?lessons.reduce((n,l)=>n+l.final,0)/
-lessons.length:null}});if(c.students.length&&!c.lessons.length)missing.push(c.name+" / بدون درس");classes.push({school:school.name,name:c.name,students})}
-if(!classes.some(c=>c.students.length))missing.push("دانش‌آموزی برای صدور کارنامه وجود ندارد.");return{classes,missing}}async function finalizePeriod(){
-assertWorkspaceReadable();assertEntityWritable();const origin=workspace.id,database=connection,sourceInstallation=installationToken;const assertInstallation=token=>{
-if(token!==sourceInstallation)throw Object.assign(Error("نوبت یا اتصال بانک هنگام بستن تغییر کرد؛ دوباره تلاش کنید."),
+ تئوری")}const annualModuleInProgress=l.gradingPolicy?.method==="modular"&&(workspace.termKind||academicTermKind(workspace.term))==="first";const unitBased=EduPolicy.
+unitBased(l.gradingPolicy);if(unitBased&&!annualModuleInProgress)for(const module of result.modules){if(!module.units.length)missing.push(c.name+" / "+st.name+"\
+ / "+l.name+" / "+module.name);for(const unit of module.units)if(!unit.complete)missing.push(c.name+" / "+st.name+" / "+l.name+" / "+module.name+" / "+unit.name)}
+if(!unitBased&&!annualModuleInProgress&&result.final===null&&result.passed!==false)missing.push(c.name+" / "+st.name+" / "+l.name);return{id:l.id,name:l.name,mode:l.
+gradeMode,...unitBased?{unitBased:true,complete:result.complete}:{},...assessments?{assessments}:{},policy:l.gradingPolicy?clone(l.gradingPolicy):null,courseInfo:EduPolicy.
+identity(l,workspace.year),modules:result.modules?.map(module=>{if(unitBased)return clone(module);const pod=l.poudmans.find(item=>item.id===module.id),inputs=ownScoreRecord(
+pod?.podScores,st.id);return{...clone(module),inputs:{m:inputs.m??null,c:inputs.c??null}}})||null,reason:result.reason||"",teacher:l.teacher||"",practical:result.
+practical??null,theory:result.theory??null,mostamar:result.avgM,payani:result.avgP,final:result.final,passed:result.passed??null}});const averagedLessons=lessons.
+filter(lesson=>!lesson.unitBased);return{id:st.id,name:st.name,code:st.code||"",lessons,average:averagedLessons.length&&averagedLessons.every(l=>l.final!==null)?
+averagedLessons.reduce((n,l)=>n+l.final,0)/averagedLessons.length:null}});if(c.students.length&&!c.lessons.length)missing.push(c.name+" / بدون درس");classes.
+push({school:school.name,name:c.name,students})}if(!classes.some(c=>c.students.length))missing.push("دانش‌آموزی برای صدور کارنامه وجود ندارد.");
+return{classes,missing}}async function finalizePeriod(){assertWorkspaceReadable();assertEntityWritable();const origin=workspace.id,database=connection,sourceInstallation=installationToken;
+const assertInstallation=token=>{if(token!==sourceInstallation)throw Object.assign(Error("نوبت یا اتصال بانک هنگام بستن تغییر کرد؛ دوباره تلاش کنید."),
 {code:"INSTALLATION_CHANGED"})};if(fileMode)throw Error("این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.");
 await flushDrafts({strict:true});await writer.catch(()=>{});if(workspace.id!==origin||connection!==database)throw Error("نوبت یا اتصال بانک هنگام بستن تغییر کرد\
 ؛ دوباره تلاش کنید.");assertInstallation(installationToken);const context=captureWorkspaceContext();const report=finalReportData();if(report.missing.
@@ -1813,134 +1827,179 @@ findIndex(item=>item.id===student.id);const button=(target,label,direction)=>'<b
 ce-action="karnameh-student" data-class="'+esc(c.id)+'" data-key="'+esc(target?.id||"")+'"'+(!target?" disabled":"")+">"+label+"</button>";return'<nav class="ka\
 rnameh-student-pagination no-print" aria-label="جابه‌جایی بین کارنامه هنرجویان">'+button(students[index-1],"هنرجوی قبلی","\
 previous")+'<span class="karnameh-student-position">'+karnamehSheetNumber(index+1)+" از "+karnamehSheetNumber(students.length)+" هنرجو</span>"+button(students[index+
-1],"هنرجوی بعدی","next")+"</nav>"}function karnamehSheetCell(value,label,{result=null,field="",note=""}={}){const complete=result?result.complete===true:
-Number.isFinite(value);const hasGrade=complete&&Number.isFinite(result?result.final:value);const failed=complete&&result?.passed===false;const tone=!complete?"p\
-ending":failed?"remedial":"complete";const status2=!complete?"تکمیل نشده":failed?"نیازمند جبران":result?.passed===true?"قبول":"ثبت‌شده";
-const display=hasGrade?karnamehSheetNumber(result?finalText(result):finalText({final:value})):failed?"جبران":"—";return'<td class="karnameh-sheet-score" \
-data-karnameh-field="'+esc(field)+'" data-grade-complete="'+complete+'">'+(note?'<small class="karnameh-module-name">'+esc(note)+"</small>":"")+'<span class="ka\
-rnameh-sheet-value" data-grade-tone="'+tone+'" title="'+esc(label+" · "+status2)+'" aria-label="'+esc(label+"؛ "+status2+(hasGrade?"؛ "+display:""))+'">'+esc(
-display)+"</span></td>"}function karnamehLessonName(lesson,index,note=""){return'<th scope="row" class="karnameh-lesson-name"><span class="karnameh-lesson-index\
-">'+karnamehSheetNumber(index+1)+'</span><span class="karnameh-lesson-title">'+esc(lesson.name)+(note?"<small>"+esc(note)+"</small>":"")+"</span></th>"}function karnamehSheetSection(title,table){
-return'<section class="karnameh-subject-section"><header class="karnameh-subject-header"><h4>'+esc(title)+'</h4></header><div class="table-scroll karnameh-sheet\
--scroll" tabindex="0" role="region" aria-label="'+esc(title+"؛ برای دیدن تمام نمرات جدول را به طرفین حرکت دهید")+'">'+table+
-"</div></section>"}function individualKarnameh(c,options={}){const student=options.student;if(!student)return'<div class="card report-empty" role="status"><h3>ک\
-ارنامه هنرجو</h3><p>'+(c.students.length?"یک هنرجو انتخاب کنید.":"هنوز هنرجوی فعالی در این کلاس ثبت نشده است.")+
-"</p></div>";const lessons=c.lessons||[],parts=options.parts||[],schoolId=options.schoolId;const assessmentLessons=lessons.filter(lesson=>lesson.gradeMode==="ka\
-rdanesh");const academicRows=assessmentLessons.length?new Map(annualGradeRows(parts,schoolId,c.id,student.id).map(row=>[row.lessonId,row])):new Map;const stages=[
-{term:"اول",stage:"midterm",label:"میان‌ترم اول"},{term:"اول",stage:"final",label:"پایان‌ترم اول"},{term:"دوم",stage:"midterm",
-label:"میان‌ترم دوم"},{term:"دوم",stage:"final",label:"پایان‌ترم دوم"}];const assessmentTable=(items,general2)=>{const fields=general2?
-[["theory","نمره"]]:[["practical","عملی"],["theory","نظری"],["result","نتیجه"]];return'<table class="karnameh-sheet-table '+(general2?"karnameh\
--general-table":"karnameh-assessment-table")+'" data-mobile-layout="table"><caption class="sr-only">'+esc((general2?"دروس عمومی":"دروس کاردانش")+
-" · "+student.name)+'</caption><thead><tr><th scope="col" rowspan="2" class="karnameh-lesson-name">درس</th>'+stages.map(stage=>'<th scope="colgroup" colspan\
-="'+fields.length+'" class="karnameh-stage-group"><span>'+esc(stage.label)+"</span></th>").join("")+"</tr><tr>"+stages.map(()=>fields.map(([field,title])=>'<th \
-scope="col" data-karnameh-column="'+field+'">'+title+"</th>").join("")).join("")+"</tr></thead><tbody>"+items.map((lesson,index)=>{const row=academicRows.get(lesson.
-id);const weights=assessmentWeights(lesson);const note=general2?"نمره مستقیم از ۲۰":"عملی "+karnamehSheetNumber(weights.practical)+"٪ · نظری "+
-karnamehSheetNumber(weights.theory)+"٪";return'<tr data-karnameh-lesson="'+esc(lesson.id)+'" data-karnameh-lesson-row="'+esc(lesson.id)+'" data-grade-mode="'+(general2?
-"general":"kardanesh")+'">'+karnamehLessonName(lesson,index,note)+stages.map(stage=>{const component=row?.components.find(item=>item.term===stage.term&&item.stage===
-stage.stage);return fields.map(([field,title])=>karnamehSheetCell(field==="result"?null:component?.[field],lesson.name+" · "+stage.label+" · "+title,{field,result:field===
-"result"?component||{complete:false}:null})).join("")}).join("")+"</tr>"}).join("")+"</tbody></table>"};let body="";const vocational=assessmentLessons.filter(lesson=>lesson.
-gradingPolicy?.subjectType!=="general");const general=assessmentLessons.filter(lesson=>lesson.gradingPolicy?.subjectType==="general");if(vocational.length)body+=
-karnamehSheetSection("دروس کاردانش",assessmentTable(vocational,false));if(general.length)body+=karnamehSheetSection("دروس عمومی",assessmentTable(
-general,true));const modular=lessons.filter(lesson=>lesson.gradeMode!=="kardanesh"&&lesson.gradingPolicy?.method==="modular");if(modular.length){const count=Math.
-max(...modular.map(lesson=>lesson.poudmans.length));const table='<table class="karnameh-sheet-table karnameh-modular-table" data-mobile-layout="table"><caption \
-class="sr-only">'+esc("دروس فنی پودمانی · "+student.name)+'</caption><thead><tr><th scope="col" rowspan="2" class="karnameh-lesson-name">درس</th>'+
-Array.from({length:count},(_,index)=>'<th scope="colgroup" colspan="3" class="karnameh-stage-group"><span>پودمان '+karnamehSheetNumber(index+1)+"</span></\
-th>").join("")+"</tr><tr>"+Array.from({length:count},()=>'<th scope="col">مستمر</th><th scope="col">شایستگی</th><th scope="col">نتیجه</th>').join(
-"")+"</tr></thead><tbody>"+modular.map((lesson,index)=>{const merged=annualModularLesson(parts,schoolId,c.id,lesson,student.id);const result=EduReportGrades.modular(
-merged,student.id);return'<tr data-karnameh-lesson="'+esc(lesson.id)+'" data-karnameh-lesson-row="'+esc(lesson.id)+'" data-grade-mode="modular">'+karnamehLessonName(
-lesson,index,"ارزشیابی پودمانی")+Array.from({length:count},(_,position)=>{const pod=lesson.poudmans[position];if(!pod)return'<td colspan="3" clas\
-s="karnameh-module-na" aria-label="این درس پودمان '+karnamehSheetNumber(position+1)+' ندارد">ندارد</td>';const module=result.modules.find(
-item=>item.id===pod.id);const raw=ownScoreRecord(merged.poudmans.find(item=>item.id===pod.id)?.podScores,student.id);const label=lesson.name+" · "+pod.name;return karnamehSheetCell(
-raw.m,label+" · مستمر",{field:"continuous",note:pod.name})+karnamehSheetCell(raw.c,label+" · شایستگی",{field:"competency"})+karnamehSheetCell(null,
-label+" · نتیجه",{result:module||{complete:false},field:"module-result"})}).join("")+"</tr>"}).join("")+"</tbody></table>";body+=karnamehSheetSection("درو\
-س فنی پودمانی",table)}const legacy=lessons.filter(lesson=>lesson.gradeMode!=="kardanesh"&&lesson.gradingPolicy?.method!=="modular");if(legacy.length){
-const rows=annualTechnicalRows(parts,schoolId,c.id,student.id);const table='<table class="karnameh-sheet-table karnameh-legacy-table" data-mobile-layout="table"\
-><caption class="sr-only">'+esc("سوابق نمرات واحدی · "+student.name)+'</caption><thead><tr><th rowspan="2" scope="col" class="karnameh-lesson-na\
-me">درس</th><th scope="col" class="karnameh-stage-group"><span>نوبت اول</span></th><th scope="col" class="karnameh-stage-group"><span>نوبت دوم</span></th></tr><\
-tr><th scope="col">نمرات ثبت‌شده</th><th scope="col">نمرات ثبت‌شده</th></tr></thead><tbody>'+legacy.map((lesson,index)=>'<tr data-karn\
-ameh-lesson="'+esc(lesson.id)+'" data-karnameh-lesson-row="'+esc(lesson.id)+'" data-grade-mode="legacy">'+karnamehLessonName(lesson,index)+["اول","دوم"].map(
-term=>{const row=rows.find(item=>item.lessonId===lesson.id&&item.term===term);return'<td class="karnameh-legacy-cell"><span class="karnameh-legacy-result">نتیجه\
-: '+(row?.complete&&Number.isFinite(row.final)?esc(karnamehSheetNumber(finalText(row))):"—")+"</span>"+(row?.legacyUnits?.length?'<ul class="karnameh-unit-lis\
-t">'+row.legacyUnits.map(unit=>"<li><strong>"+esc(unit.moduleName+" / "+unit.unitName)+"</strong><span>مستمر "+(unit.mostamar==null?"—":esc(karnamehSheetNumber(
-unit.mostamar)))+" · پایانی "+(unit.payani==null?"—":esc(karnamehSheetNumber(unit.payani)))+" · نتیجه "+(unit.final==null?"—":esc(karnamehSheetNumber(
-unit.final)))+"</span></li>").join("")+"</ul>":"")+"</td>"}).join("")+"</tr>").join("")+"</tbody></table>";body+=karnamehSheetSection("سوابق نمرات واحدی",
-table)}const archived=!c.students.some(item=>item.id===student.id);return'<article class="card report-document grade-report karnameh-student-sheet" data-student\
--id="'+esc(student.id)+'" data-karnameh-school="'+esc(options.schoolName||"")+'" data-karnameh-class="'+esc(c.name||"")+'" data-karnameh-year="'+esc(karnamehSheetNumber(
-workspace.year||""))+'" data-karnameh-code="'+esc(student.code==null||student.code===""?"—":karnamehSheetNumber(student.code))+'"><header class="karnameh-repo\
-rt-heading"><div><span class="karnameh-report-kind">کارنامهٔ فردی سال تحصیلی</span><h3>'+esc(student.name)+"</h3><p>"+esc([options.schoolName,
-c.name,workspace.year].filter(Boolean).join(" · "))+"</p></div>"+(options.embedded?"":'<div class="karnameh-report-actions no-print"><button type="button" data\
--workspace-action="print">چاپ / PDF</button></div>')+'</header><div class="karnameh-student-meta"><span>کد هنرجو: <strong>'+esc(student.code==null||student.
-code===""?"—":karnamehSheetNumber(student.code))+"</strong></span><span>"+karnamehSheetNumber(lessons.length)+" درس</span>"+(archived?'<span class="karname\
-h-archived-tag">بایگانی</span>':"")+"</div>"+(options.embedded?"":createKarnamehStudentNavigation(c,student))+(body?body:'<div class="report-empty" role=\
-"status">هنوز درسی در این کلاس تعریف نشده است.</div>')+'<p class="karnameh-sheet-note">«—» نمرهٔ ثبت‌نشده یا نتیجهٔ تکمیل‌نشده است؛\
- صفر، نمرهٔ ثبت‌شده است. نمرات جلسه و فعالیت از امتحان رسمی جدا هستند.</p></article>'}const karnamehStageControllers=new WeakMap;
-let karnamehStageSelection={scope:"",assessment:"first-midterm",modular:"module-0",legacy:"first-term"};function karnamehStagePreference(schoolId,classId){const scope=JSON.
-stringify([workspace.id,workspace.year,schoolId,classId]);if(karnamehStageSelection.scope!==scope)karnamehStageSelection={scope,assessment:"first-midterm",modular:"\
-module-0",legacy:"first-term"};return karnamehStageSelection}function karnamehTableStageGroups(table){if(table.classList.contains("karnameh-assessment-table")||
-table.classList.contains("karnameh-general-table")){const width=table.classList.contains("karnameh-general-table")?1:3;return[{key:"first-midterm",label:"میان‌ت\
-رم اول",width},{key:"first-final",label:"پایان‌ترم اول",width},{key:"second-midterm",label:"میان‌ترم دوم",width},{key:"second-fina\
-l",label:"پایان‌ترم دوم",width}]}if(table.classList.contains("karnameh-modular-table")){const count=Math.max(0,table.tHead.rows[0].cells.length-1);
-return Array.from({length:count},(_,index)=>({key:"module-"+index,label:"پودمان "+karnamehSheetNumber(index+1),width:3}))}if(table.classList.contains("kar\
-nameh-legacy-table"))return[{key:"first-term",label:"نوبت اول",width:1},{key:"second-term",label:"نوبت دوم",width:1}];return[]}function karnamehTableStageOptions(table){
-return karnamehTableStageGroups(table)}function applyKarnamehStage(report,kind,selected){for(const section of report.querySelectorAll(".karnameh-subject-section")){
-if(section.dataset.karnamehGroupSet!==kind)continue;const buttons=[...section.querySelectorAll("[data-karnameh-stage]")],selectedButton=buttons.find(button=>button.
-dataset.karnamehStage===selected)||buttons.find(button=>button.dataset.karnamehStage===section.dataset.karnamehActiveGroup)||buttons[0];if(!selectedButton)continue;
-const activeStage=selectedButton.dataset.karnamehStage;section.dataset.karnamehActiveGroup=activeStage;section.querySelector("table").dataset.karnamehActiveGroup=
-activeStage;for(const cell of section.querySelectorAll("[data-karnameh-group]"))cell.toggleAttribute("data-karnameh-group-active",cell.dataset.karnamehGroup===activeStage);
-for(const button of buttons){const active=button.dataset.karnamehStage===activeStage;button.setAttribute("aria-pressed",String(active));const options=button.parentElement;
-if(active&&options&&options.scrollWidth>options.clientWidth){const frame=options.getBoundingClientRect(),bounds=button.getBoundingClientRect();if(bounds.left<frame.
-left+4)options.scrollLeft+=bounds.left-frame.left-4;else if(bounds.right>frame.right-4)options.scrollLeft+=bounds.right-frame.right+4}}const scroll=section.querySelector(
-".karnameh-sheet-scroll");if(scroll)scroll.scrollLeft=0}}function initKarnamehStageControls(report,{schoolId,classId,validate=null}){const preference=validate?{
-assessment:"first-midterm",modular:"module-0",legacy:"first-term"}:karnamehStagePreference(schoolId,classId);for(const section of report.querySelectorAll(".karn\
-ameh-subject-section")){const table=section.querySelector("table.karnameh-sheet-table");if(!table)continue;const groups=karnamehTableStageGroups(table),options=karnamehTableStageOptions(
-table);if(!options.length)continue;const kind=table.classList.contains("karnameh-modular-table")?"modular":table.classList.contains("karnameh-legacy-table")?"le\
-gacy":"assessment";section.dataset.karnamehGroupSet=kind;const selected=options.some(group=>group.key===preference[kind])?preference[kind]:options[0].key;preference[kind]=
+1],"هنرجوی بعدی","next")+"</nav>"}function karnamehSheetCell(value,label,{result=null,field="",note="",unitContext=null}={}){const complete=result?result.
+complete===true:Number.isFinite(value);const hasGrade=complete&&Number.isFinite(result?result.final:value);const failed=complete&&result?.passed===false;const tone=!complete?
+"pending":failed?"remedial":"complete";const status2=!complete?"تکمیل نشده":failed?"نیازمند جبران":result?.passed===true?"قبول":"ثبت‌شد\
+ه";const display=hasGrade?karnamehSheetNumber(result?finalText(result):Number(value.toFixed(2))===value?finalText({final:value}):String(value)):failed?"جبران":
+"—";return'<td class="karnameh-sheet-score" data-karnameh-field="'+esc(field)+'" data-grade-complete="'+complete+'"'+(unitContext?' data-karnameh-module="'+esc(
+unitContext.moduleId)+'" data-karnameh-unit="'+esc(unitContext.unitId)+'" data-karnameh-unit-position="'+unitContext.position+'" data-karnameh-module-position="'+
+unitContext.modulePosition+'" data-karnameh-unit-index="'+unitContext.unitIndex+'"':"")+">"+(note?'<small class="karnameh-module-name">'+esc(note)+"</small>":"")+
+'<span class="karnameh-sheet-value" data-grade-tone="'+tone+'" title="'+esc(label+" · "+status2)+'" aria-label="'+esc(label+"؛ "+status2+(hasGrade?"؛ "+display:
+""))+'">'+esc(display)+"</span></td>"}function karnamehLessonName(lesson,index,note="",context=""){return'<th scope="row" class="karnameh-lesson-name"><span cla\
+ss="karnameh-lesson-index">'+karnamehSheetNumber(index+1)+'</span><span class="karnameh-lesson-title">'+esc(lesson.name)+(note?"<small>"+esc(note)+"</small>":"")+
+"</span>"+context+"</th>"}function karnamehSheetSection(title,table){return'<section class="karnameh-subject-section"><header class="karnameh-subject-header"><h\
+4>'+esc(title)+'</h4></header><div class="table-scroll karnameh-sheet-scroll" tabindex="0" role="region" aria-label="'+esc(title+"؛ برای دیدن تمام نمرات جدول را\
+ به طرفین حرکت دهید")+'">'+table+"</div></section>"}function individualKarnameh(c,options={}){const student=options.student;if(!student)return'<d\
+iv class="card report-empty" role="status"><h3>کارنامه هنرجو</h3><p>'+(c.students.length?"یک هنرجو انتخاب کنید.":"هنوز هنرجوی فعالی\
+ در این کلاس ثبت نشده است.")+"</p></div>";const lessons=c.lessons||[],parts=options.parts||[],schoolId=options.schoolId;const assessmentLessons=lessons.
+filter(lesson=>lesson.gradeMode==="kardanesh");const academicRows=assessmentLessons.length?new Map(annualGradeRows(parts,schoolId,c.id,student.id).map(row=>[row.
+lessonId,row])):new Map;const stages=[{term:"اول",stage:"midterm",label:"میان‌ترم اول"},{term:"اول",stage:"final",label:"پایان‌ترم اول"},
+{term:"دوم",stage:"midterm",label:"میان‌ترم دوم"},{term:"دوم",stage:"final",label:"پایان‌ترم دوم"}];const assessmentTable=(items,general2)=>{
+const fields=general2?[["theory","نمره"]]:[["practical","عملی"],["theory","نظری"],["result","نتیجه"]];return'<table class="karnameh-sheet-table\
+ '+(general2?"karnameh-general-table":"karnameh-assessment-table")+'" data-mobile-layout="table"><caption class="sr-only">'+esc((general2?"دروس عمومی":
+"دروس کاردانش")+" · "+student.name)+'</caption><thead><tr><th scope="col" rowspan="2" class="karnameh-lesson-name">درس</th>'+stages.map(stage=>'<\
+th scope="colgroup" colspan="'+fields.length+'" class="karnameh-stage-group"><span>'+esc(stage.label)+"</span></th>").join("")+"</tr><tr>"+stages.map(()=>fields.
+map(([field,title])=>'<th scope="col" data-karnameh-column="'+field+'">'+title+"</th>").join("")).join("")+"</tr></thead><tbody>"+items.map((lesson,index)=>{const row=academicRows.
+get(lesson.id);const weights=assessmentWeights(lesson);const note=general2?"نمره مستقیم از ۲۰":"عملی "+karnamehSheetNumber(weights.practical)+
+"٪ · نظری "+karnamehSheetNumber(weights.theory)+"٪";return'<tr data-karnameh-lesson="'+esc(lesson.id)+'" data-karnameh-lesson-row="'+esc(lesson.id)+'" da\
+ta-grade-mode="'+(general2?"general":"kardanesh")+'">'+karnamehLessonName(lesson,index,note)+stages.map(stage=>{const component=row?.components.find(item=>item.
+term===stage.term&&item.stage===stage.stage);return fields.map(([field,title])=>karnamehSheetCell(field==="result"?null:component?.[field],lesson.name+" · "+stage.
+label+" · "+title,{field,result:field==="result"?component||{complete:false}:null})).join("")}).join("")+"</tr>"}).join("")+"</tbody></table>"};let body="";const vocational=assessmentLessons.
+filter(lesson=>lesson.gradingPolicy?.subjectType!=="general");const general=assessmentLessons.filter(lesson=>lesson.gradingPolicy?.subjectType==="general");if(vocational.
+length)body+=karnamehSheetSection("دروس کاردانش",assessmentTable(vocational,false));if(general.length)body+=karnamehSheetSection("دروس عمومی",
+assessmentTable(general,true));const modular=lessons.filter(lesson=>lesson.gradeMode!=="kardanesh"&&lesson.gradingPolicy?.method==="modular"&&!EduPolicy.unitBased(
+lesson.gradingPolicy));if(modular.length){const count=Math.max(...modular.map(lesson=>lesson.poudmans.length));const table='<table class="karnameh-sheet-table k\
+arnameh-modular-table" data-mobile-layout="table"><caption class="sr-only">'+esc("دروس فنی پودمانی · "+student.name)+'</caption><thead><tr><th sc\
+ope="col" rowspan="2" class="karnameh-lesson-name">درس</th>'+Array.from({length:count},(_,index)=>'<th scope="colgroup" colspan="3" class="karnameh-stage-gro\
+up"><span>پودمان '+karnamehSheetNumber(index+1)+"</span></th>").join("")+"</tr><tr>"+Array.from({length:count},()=>'<th scope="col">مستمر</th><th scope="c\
+ol">شایستگی</th><th scope="col">نتیجه</th>').join("")+"</tr></thead><tbody>"+modular.map((lesson,index)=>{const merged=annualModularLesson(parts,schoolId,
+c.id,lesson,student.id);const result=EduReportGrades.modular(merged,student.id);return'<tr data-karnameh-lesson="'+esc(lesson.id)+'" data-karnameh-lesson-row="'+
+esc(lesson.id)+'" data-grade-mode="modular">'+karnamehLessonName(lesson,index,"ارزشیابی پودمانی")+Array.from({length:count},(_,position)=>{const pod=lesson.
+poudmans[position];if(!pod)return'<td colspan="3" class="karnameh-module-na" aria-label="این درس پودمان '+karnamehSheetNumber(position+1)+' ندارد">ن\
+دارد</td>';const module=result.modules.find(item=>item.id===pod.id);const raw=ownScoreRecord(merged.poudmans.find(item=>item.id===pod.id)?.podScores,student.
+id);const label=lesson.name+" · "+pod.name;return karnamehSheetCell(raw.m,label+" · مستمر",{field:"continuous"})+karnamehSheetCell(raw.c,label+" · شایستگ\
+ی",{field:"competency"})+karnamehSheetCell(null,label+" · نتیجه",{result:module||{complete:false},field:"module-result"})}).join("")+"</tr>"}).join("")+"\
+</tbody></table>";body+=karnamehSheetSection("دروس فنی پودمانی",table)}const unitBasedLessons=lessons.filter(lesson=>EduPolicy.unitBased(lesson.gradingPolicy));
+if(unitBasedLessons.length){const unitLessons=unitBasedLessons.map(lesson=>{const merged=annualModularLesson(parts,schoolId,c.id,lesson,student.id);return{lesson,
+modules:EduReportGrades.modular(merged,student.id).modules}});const moduleCount=Math.max(...unitLessons.map(item=>item.modules.length));const slots=Array.from({
+length:moduleCount},(_,modulePosition)=>{const unitCount=Math.max(...unitLessons.map(item=>item.modules[modulePosition]?.units.length||0));return Array.from({length:unitCount},
+(_2,unitIndex)=>({modulePosition,unitIndex,key:"unit-"+modulePosition+"-"+unitIndex,label:"پودمان "+karnamehSheetNumber(modulePosition+1)+" · واحد کار "+
+karnamehSheetNumber(unitIndex+1)}))}).flat();const slotAttributes=(slot,position)=>' data-karnameh-unit-position="'+position+'" data-karnameh-module-position="'+
+slot.modulePosition+'" data-karnameh-unit-index="'+slot.unitIndex+'"';const rows=unitLessons.map(({lesson,modules},lessonIndex)=>'<tr data-karnameh-lesson="'+esc(
+lesson.id)+'" data-karnameh-lesson-row="'+esc(lesson.id)+'" data-grade-mode="modular-unit">'+karnamehLessonName(lesson,lessonIndex,"",slots.map(slot=>{const module=modules[slot.
+modulePosition];const unit=module?.units[slot.unitIndex];const moduleName=module?.name||"پودمان "+karnamehSheetNumber(slot.modulePosition+1)+" تعریف نشده \
+است";const unitName=unit?.name||"واحد کار تعریف نشده است";return'<small class="karnameh-unit-context no-print" data-karnameh-group="'+slot.
+key+'" title="'+esc(moduleName+" · "+unitName)+'"><span>'+esc(moduleName)+"</span><span>"+esc(unitName)+"</span></small>"}).join(""))+slots.map((slot,position)=>{
+const module=modules[slot.modulePosition];const unit=module?.units[slot.unitIndex];if(!unit)return'<td colspan="3" class="karnameh-module-na" data-karnameh-unit\
+-unavailable="true"'+slotAttributes(slot,position)+' aria-label="'+esc(lesson.name+"؛ "+slot.label+"؛ "+(module?module.name+"، واحد کار "+karnamehSheetNumber(
+slot.unitIndex+1)+" تعریف نشده است":"پودمان "+karnamehSheetNumber(slot.modulePosition+1)+" تعریف نشده است"))+'">ندارد</td>';const label=lesson.
+name+" · "+module.name+" · "+unit.name;const unitContext={moduleId:module.id,unitId:unit.id,position,modulePosition:slot.modulePosition,unitIndex:slot.unitIndex};
+return karnamehSheetCell(unit.inputs.m,label+" · مستمر",{field:"continuous",unitContext})+karnamehSheetCell(unit.inputs.c,label+" · شایستگی",{field:"\
+competency",unitContext})+karnamehSheetCell(null,label+" · نتیجه واحد کار",{result:unit,field:"unit-result",unitContext})}).join("")+"</tr>");const table='\
+<table class="karnameh-sheet-table karnameh-unit-competency-table" data-mobile-layout="table" data-karnameh-unit-count="'+slots.length+'"><caption class="sr-onl\
+y">'+esc("دروس واحد کار · نمرات مستقل واحدهای کار · "+student.name)+'</caption><thead><tr><th scope="col" rowspan="2" class="ka\
+rnameh-lesson-name">درس</th>'+slots.map((slot,position)=>'<th scope="colgroup" colspan="3" class="karnameh-stage-group"'+slotAttributes(slot,position)+"><spa\
+n>"+esc(slot.label)+"</span></th>").join("")+"</tr><tr>"+Array.from({length:slots.length},()=>'<th scope="col">مستمر</th><th scope="col">شایستگی</th><th scope="\
+col">نتیجه</th>').join("")+"</tr></thead><tbody>"+rows.join("")+"</tbody></table>";body+=karnamehSheetSection("دروس واحد کار",table)}const legacy=lessons.
+filter(lesson=>lesson.gradeMode!=="kardanesh"&&lesson.gradingPolicy?.method!=="modular");if(legacy.length){const rows=annualTechnicalRows(parts,schoolId,c.id,student.
+id);const table='<table class="karnameh-sheet-table karnameh-legacy-table" data-mobile-layout="table"><caption class="sr-only">'+esc("سوابق نمرات واحدی · "+
+student.name)+'</caption><thead><tr><th rowspan="2" scope="col" class="karnameh-lesson-name">درس</th><th scope="col" class="karnameh-stage-group"><span>نوبت اول\
+</span></th><th scope="col" class="karnameh-stage-group"><span>نوبت دوم</span></th></tr><tr><th scope="col">نمرات ثبت‌شده</th><th scope="col">نمرات ثبت‌شده</th>\
+</tr></thead><tbody>'+legacy.map((lesson,index)=>'<tr data-karnameh-lesson="'+esc(lesson.id)+'" data-karnameh-lesson-row="'+esc(lesson.id)+'" data-grade-mode="l\
+egacy">'+karnamehLessonName(lesson,index)+["اول","دوم"].map(term=>{const row=rows.find(item=>item.lessonId===lesson.id&&item.term===term);return'<td class\
+="karnameh-legacy-cell"><span class="karnameh-legacy-result">نتیجه: '+(row?.complete&&Number.isFinite(row.final)?esc(karnamehSheetNumber(finalText(row))):"\
+—")+"</span>"+(row?.legacyUnits?.length?'<ul class="karnameh-unit-list">'+row.legacyUnits.map(unit=>"<li><strong>"+esc(unit.moduleName+" / "+unit.unitName)+"<\
+/strong><span>مستمر "+(unit.mostamar==null?"—":esc(karnamehSheetNumber(unit.mostamar)))+" · پایانی "+(unit.payani==null?"—":esc(karnamehSheetNumber(
+unit.payani)))+" · نتیجه "+(unit.final==null?"—":esc(karnamehSheetNumber(unit.final)))+"</span></li>").join("")+"</ul>":"")+"</td>"}).join("")+"</tr>").
+join("")+"</tbody></table>";body+=karnamehSheetSection("سوابق نمرات واحدی",table)}const archived=!c.students.some(item=>item.id===student.id);return'\
+<article class="card report-document grade-report karnameh-student-sheet" data-student-id="'+esc(student.id)+'" data-karnameh-school="'+esc(options.schoolName||
+"")+'" data-karnameh-class="'+esc(c.name||"")+'" data-karnameh-year="'+esc(karnamehSheetNumber(workspace.year||""))+'" data-karnameh-code="'+esc(student.code==null||
+student.code===""?"—":karnamehSheetNumber(student.code))+'"><header class="karnameh-report-heading"><div><span class="karnameh-report-kind">کارنامهٔ فردی سال \
+تحصیلی</span><h3>'+esc(student.name)+"</h3><p>"+esc([options.schoolName,c.name,workspace.year].filter(Boolean).join(" · "))+"</p></div>"+(options.embedded?
+"":'<div class="karnameh-report-actions no-print"><button type="button" data-workspace-action="print">چاپ / PDF</button></div>')+'</header><div class="karnam\
+eh-student-meta"><span>کد هنرجو: <strong>'+esc(student.code==null||student.code===""?"—":karnamehSheetNumber(student.code))+"</strong></span><span>"+karnamehSheetNumber(
+lessons.length)+" درس</span>"+(archived?'<span class="karnameh-archived-tag">بایگانی</span>':"")+"</div>"+(options.embedded?"":createKarnamehStudentNavigation(
+c,student))+(body?body:'<div class="report-empty" role="status">هنوز درسی در این کلاس تعریف نشده است.</div>')+'<p class="karnameh-s\
+heet-note">«—» نمرهٔ ثبت‌نشده یا نتیجهٔ تکمیل‌نشده است؛ صفر، نمرهٔ ثبت‌شده است. نمرات جلسه و فعالیت از امتحان رسمی جدا هستند.</p></article>'}
+const karnamehStageControllers=new WeakMap;let karnamehStageSelection={scope:"",assessment:"first-midterm",modular:"module-0",unit:"unit-0-0",legacy:"first-term"};
+function karnamehStagePreference(schoolId,classId){const scope=JSON.stringify([workspace.id,workspace.year,schoolId,classId]);if(karnamehStageSelection.scope!==
+scope)karnamehStageSelection={scope,assessment:"first-midterm",modular:"module-0",unit:"unit-0-0",legacy:"first-term"};return karnamehStageSelection}function karnamehTableStageGroups(table){
+if(table.classList.contains("karnameh-assessment-table")||table.classList.contains("karnameh-general-table")){const width=table.classList.contains("karnameh-gen\
+eral-table")?1:3;return[{key:"first-midterm",label:"میان‌ترم اول",width},{key:"first-final",label:"پایان‌ترم اول",width},{key:"second-m\
+idterm",label:"میان‌ترم دوم",width},{key:"second-final",label:"پایان‌ترم دوم",width}]}if(table.classList.contains("karnameh-modular-tab\
+le")){const count=Math.max(0,table.tHead.rows[0].cells.length-1);return Array.from({length:count},(_,index)=>({key:"module-"+index,label:"پودمان "+karnamehSheetNumber(
+index+1),width:3}))}if(table.classList.contains("karnameh-unit-competency-table")){return[...table.tHead.rows[0].cells].slice(1).map(header=>{const modulePosition=Number(
+header.dataset.karnamehModulePosition);const unitIndex=Number(header.dataset.karnamehUnitIndex);return{key:"unit-"+modulePosition+"-"+unitIndex,label:"پودمان "+
+karnamehSheetNumber(modulePosition+1)+" · واحد کار "+karnamehSheetNumber(unitIndex+1),shortLabel:karnamehSheetNumber(unitIndex+1),modulePosition,unitIndex,
+width:3}})}if(table.classList.contains("karnameh-legacy-table"))return[{key:"first-term",label:"نوبت اول",width:1},{key:"second-term",label:"نوبت دوم",
+width:1}];return[]}function karnamehTableStageOptions(table){return karnamehTableStageGroups(table)}function applyKarnamehStage(report,kind,selected){for(const section of report.
+querySelectorAll(".karnameh-subject-section")){if(section.dataset.karnamehGroupSet!==kind)continue;const buttons=[...section.querySelectorAll("[data-karnameh-st\
+age]")],selectedButton=buttons.find(button=>button.dataset.karnamehStage===selected)||buttons.find(button=>button.dataset.karnamehStage===section.dataset.karnamehActiveGroup)||
+buttons[0];if(!selectedButton)continue;const activeStage=selectedButton.dataset.karnamehStage;const activeModule=selectedButton.dataset.karnamehUnitModule;section.
+dataset.karnamehActiveGroup=activeStage;section.querySelector("table").dataset.karnamehActiveGroup=activeStage;for(const cell of section.querySelectorAll("[data\
+-karnameh-group]"))cell.toggleAttribute("data-karnameh-group-active",cell.dataset.karnamehGroup===activeStage);for(const button of buttons){const active=button.
+dataset.karnamehStage===activeStage;if(kind==="unit")button.hidden=button.dataset.karnamehUnitModule!==activeModule;button.setAttribute("aria-pressed",String(active));
+const options=button.parentElement;if(active&&options&&options.scrollWidth>options.clientWidth){const frame=options.getBoundingClientRect(),bounds=button.getBoundingClientRect();
+if(bounds.left<frame.left+4)options.scrollLeft+=bounds.left-frame.left-4;else if(bounds.right>frame.right-4)options.scrollLeft+=bounds.right-frame.right+4}}if(kind===
+"unit")for(const button of section.querySelectorAll("[data-karnameh-unit-module]:not([data-karnameh-stage])"))button.setAttribute("aria-pressed",String(button.dataset.
+karnamehUnitModule===activeModule));const scroll=section.querySelector(".karnameh-sheet-scroll");if(scroll)scroll.scrollLeft=0}}function initKarnamehStageControls(report,{
+schoolId,classId,validate=null}){const preference=validate?{assessment:"first-midterm",modular:"module-0",unit:"unit-0-0",legacy:"first-term"}:karnamehStagePreference(
+schoolId,classId);for(const section of report.querySelectorAll(".karnameh-subject-section")){const table=section.querySelector("table.karnameh-sheet-table");if(!table)
+continue;const groups=karnamehTableStageGroups(table),options=karnamehTableStageOptions(table);if(!options.length)continue;const kind=table.classList.contains("\
+karnameh-modular-table")?"modular":table.classList.contains("karnameh-unit-competency-table")?"unit":table.classList.contains("karnameh-legacy-table")?"legacy":
+"assessment";section.dataset.karnamehGroupSet=kind;const selected=options.some(group=>group.key===preference[kind])?preference[kind]:options[0].key;preference[kind]=
 selected;const headers=[...table.tHead.rows[0].cells].slice(1);headers.forEach((cell,index)=>{cell.dataset.karnamehGroup=groups[index].key});const subGroups=groups.
 flatMap((group,index)=>headers[index].rowSpan===1?Array(group.width).fill(group.key):[]);[...table.tHead.rows[1]?.cells||[]].forEach((cell,index)=>{cell.dataset.
 karnamehGroup=subGroups[index]});const columns=groups.flatMap(group=>Array(group.width).fill(group.key));for(const body of table.tBodies)for(const row of body.rows){
 let position=0;for(const cell of[...row.cells].slice(1)){cell.dataset.karnamehGroup=columns[position];position+=cell.colSpan}}if(!section.querySelector(".karnam\
-eh-stage-switcher")){const controls='<div class="karnameh-stage-switcher no-print"><div class="karnameh-stage-options" role="group" aria-label="'+(kind==="modul\
-ar"?"انتخاب پودمان":"انتخاب مرحلهٔ کارنامه")+'">'+options.map(group=>'<button type="button" data-workspace-action="karnameh-stage\
-" data-karnameh-stage="'+group.key+'" aria-pressed="'+(group.key===selected)+'">'+esc(group.label)+"</button>").join("")+"</div></div>";section.querySelector(".\
-karnameh-subject-header").insertAdjacentHTML("beforeend",controls)}applyKarnamehStage(report,kind,selected)}karnamehStageControllers.set(report,{validate,scope:preference.
-scope,workspaceId:workspace.id,schoolId,classId,studentId:report.dataset.studentId,requests:{}});report.dataset.karnamehCompactReady="true"}async function selectKarnamehStage(button){
+eh-stage-switcher")){const stageButtons=options.map(group=>'<button type="button" data-workspace-action="karnameh-stage" data-karnameh-stage="'+group.key+'" ari\
+a-pressed="'+(group.key===selected)+'"'+(kind==="unit"?' data-karnameh-unit-module="'+group.modulePosition+'" data-karnameh-unit-index="'+group.unitIndex+'"':"")+
+(group.shortLabel?' aria-label="'+esc(group.label)+'" title="'+esc(group.label)+'"':"")+">"+esc(group.shortLabel||group.label)+"</button>").join("");const controls=kind===
+"unit"?'<div class="karnameh-stage-switcher karnameh-unit-stage-switcher no-print"><div class="karnameh-unit-stage-row"><span class="karnameh-unit-stage-label">\
+پودمان</span><div class="karnameh-stage-options" role="group" aria-label="انتخاب پودمان واحدهای کار">'+[...new Set(options.map(group=>group.
+modulePosition))].map(modulePosition=>'<button type="button" data-workspace-action="karnameh-stage" data-karnameh-unit-module="'+modulePosition+'" aria-label="پ\
+ودمان '+karnamehSheetNumber(modulePosition+1)+'" title="پودمان '+karnamehSheetNumber(modulePosition+1)+'">'+karnamehSheetNumber(modulePosition+1)+"</\
+button>").join("")+'</div></div><div class="karnameh-unit-stage-row"><span class="karnameh-unit-stage-label">واحد کار</span><div class="karnameh-stage-options" \
+role="group" aria-label="انتخاب واحد کار پودمان">'+stageButtons+"</div></div></div>":'<div class="karnameh-stage-switcher no-print"><div clas\
+s="karnameh-stage-options" role="group" aria-label="'+(kind==="modular"?"انتخاب پودمان":kind==="unit"?"انتخاب واحد کار":"انتخاب مرحلهٔ \
+کارنامه")+'">'+stageButtons+"</div></div>";section.querySelector(".karnameh-subject-header").insertAdjacentHTML("beforeend",controls)}applyKarnamehStage(
+report,kind,selected)}const controller={validate,scope:preference.scope,workspaceId:workspace.id,workspaceYear:workspace.year,schoolId,classId,studentId:report.
+dataset.studentId,requests:{}};karnamehStageControllers.set(report,controller);report.dataset.karnamehCompactReady="true"}async function selectKarnamehStage(button){
 const report=button.closest(".karnameh-student-sheet");const controller=karnamehStageControllers.get(report);const section=button.closest(".karnameh-subject-sec\
-tion");const kind=section?.dataset.karnamehGroupSet;const selected=button.dataset.karnamehStage;const current=()=>!!controller&&!!section&&report.isConnected&&button.
-isConnected&&report.contains(section)&&(controller.validate?controller.validate():document.getElementById("karnamehTabOutput")?.contains(report)&&workspace.id===
-controller.workspaceId&&state.view==="reports"&&state.reportTab==="karnameh"&&karnamehFilter.classId===controller.classId&&karnamehFilter.studentId===controller.
-studentId&&(!karnamehFilter.schoolId||karnamehFilter.schoolId===controller.schoolId)&&karnamehStageSelection.scope===controller.scope);if(!current()||!["assessm\
-ent","modular","legacy"].includes(kind)||button.disabled)return;const options=karnamehTableStageOptions(section.querySelector("table"));if(!options.some(group=>group.
-key===selected))return;const request=controller.requests[kind]=(controller.requests[kind]||0)+1;if(section.dataset.karnamehActiveGroup===selected)return;const context=karnamehSnapshots.
-get(report);if(!context)return;try{await assertReportSnapshot(context)}catch(error){if(current()&&controller.requests[kind]===request)throw error;return}if(!current()||
-controller.requests[kind]!==request)return;if(!controller.validate)karnamehStageSelection[kind]=selected;applyKarnamehStage(report,kind,selected)}function openKarnamehStudent(classId,studentId=""){
-assertWorkspaceReadable();const found=findClassById(classId);if(!found||studentId&&![...found.classObj.students,...found.classObj.archivedStudents||[]].some(student=>student.
-id===studentId))throw Error("هنرجو یا کلاس دیگر در دسترس نیست؛ کارنامه را دوباره انتخاب کنید.");karnamehFilter=
-{schoolId:found.school.id,classId,studentId};state.view="reports";state.reportTab="karnameh";closeModal();render()}function validateFrozenReport(report){return EduFrozenReportValidator.
-validate(report,{assertSafeDataTree,isDataObject,isSafeRecordId,weightedKardanesh,gradePolicy:EduPolicy})}function frozenLessonRows(lesson){if(lesson.policy?.method===
-"modular"&&lesson.modules?.length)return"<tr><td>"+esc(lesson.name)+'</td><td colspan="4">'+modularReportGrades(lesson.modules,lesson)+"</td><td>"+esc(gradeStatus(
-lesson))+"</td></tr>";const dual=lesson.mode==="kardanesh";const stages=dual?["midterm","final"]:["final"];return stages.map(stage=>{const result=dual?lesson.assessments?.[stage]||
-(stage==="final"?lesson:null):lesson;const practical=result?lesson.policy?.subjectType==="general"?null:dual?result.practical:lesson.payani:null;const theory=result?
-dual?result.theory:lesson.mostamar:null;return"<tr><td>"+esc(lesson.name)+"</td><td>"+(dual?stage==="midterm"?"میان‌ترم":"پایان‌ترم":"—")+"\
-</td><td>"+esc(practical??"—")+"</td><td>"+esc(theory??"—")+"</td><td>"+(result?finalText(result):"—")+"</td><td>"+esc(result?lesson.policy||dual?gradeStatus(
-stage==="final"?{...result,reason:lesson.reason||result.reason}:result):"ثبت نهایی":"ثبت نشده در نسخه قدیمی")+"</td></tr>"}).join("")}
-async function showFrozenReport(id){const ensureCurrent=preserveAsyncTarget(),origin=workspace.id,sourceConnection=connection;const report=await readRecord("rep\
-orts",id);ensureCurrent();if(connection!==sourceConnection)throw Error("اتصال بانک هنگام خواندن کارنامه تغییر کرده است.");
+tion");const kind=section?.dataset.karnamehGroupSet;let selected=button.dataset.karnamehStage;const current=()=>!!controller&&!!section&&karnamehStageControllers.
+get(report)===controller&&report.isConnected&&button.isConnected&&report.contains(section)&&workspace.year===controller.workspaceYear&&(controller.validate?controller.
+validate():document.getElementById("karnamehTabOutput")?.contains(report)&&workspace.id===controller.workspaceId&&state.view==="reports"&&state.reportTab==="kar\
+nameh"&&karnamehFilter.classId===controller.classId&&karnamehFilter.studentId===controller.studentId&&(!karnamehFilter.schoolId||karnamehFilter.schoolId===controller.
+schoolId)&&karnamehStageSelection.scope===controller.scope);if(!current()||!["assessment","modular","unit","legacy"].includes(kind)||button.disabled||!section.querySelector(
+".karnameh-stage-switcher")?.contains(button))return;const options=karnamehTableStageOptions(section.querySelector("table"));if(kind==="unit"){if(selected){const group=options.
+find(option=>option.key===selected);if(button.hidden||!group||button.dataset.karnamehUnitModule!==String(group.modulePosition)||button.dataset.karnamehUnitIndex!==
+String(group.unitIndex))return}else{const moduleOptions=options.filter(group=>String(group.modulePosition)===button.dataset.karnamehUnitModule);const active=options.
+find(group=>group.key===section.dataset.karnamehActiveGroup);const target=moduleOptions.find(group=>group.unitIndex===active?.unitIndex)||moduleOptions[0];if(!target)
+return;selected=target.key}}if(!options.some(group=>group.key===selected))return;const request=controller.requests[kind]=(controller.requests[kind]||0)+1;if(section.
+dataset.karnamehActiveGroup===selected)return;const context=karnamehSnapshots.get(report);if(!context)return;try{await assertReportSnapshot(context)}catch(error){
+if(current()&&controller.requests[kind]===request)throw error;return}if(!current()||controller.requests[kind]!==request)return;if(!controller.validate)karnamehStageSelection[kind]=
+selected;applyKarnamehStage(report,kind,selected)}function openKarnamehStudent(classId,studentId=""){assertWorkspaceReadable();const found=findClassById(classId);
+if(!found||studentId&&![...found.classObj.students,...found.classObj.archivedStudents||[]].some(student=>student.id===studentId))throw Error("هنرجو یا کلاس دیگر\
+ در دسترس نیست؛ کارنامه را دوباره انتخاب کنید.");karnamehFilter={schoolId:found.school.id,classId,studentId};state.view="re\
+ports";state.reportTab="karnameh";closeModal();render()}function validateFrozenReport(report){return EduFrozenReportValidator.validate(report,{assertSafeDataTree,
+isDataObject,isSafeRecordId,weightedKardanesh,gradePolicy:EduPolicy})}function frozenLessonRows(lesson){if(lesson.policy?.method==="modular"&&lesson.modules?.length)
+return"<tr><td>"+esc(lesson.name)+'</td><td colspan="4">'+modularReportGrades(lesson.modules,lesson)+"</td><td>"+(EduPolicy.unitBased(lesson.policy)?"ارزشیابی م\
+ستقل واحدهای کار":esc(gradeStatus(lesson)))+"</td></tr>";const dual=lesson.mode==="kardanesh";const stages=dual?["midterm","final"]:["final"];return stages.
+map(stage=>{const result=dual?lesson.assessments?.[stage]||(stage==="final"?lesson:null):lesson;const practical=result?lesson.policy?.subjectType==="general"?null:
+dual?result.practical:lesson.payani:null;const theory=result?dual?result.theory:lesson.mostamar:null;return"<tr><td>"+esc(lesson.name)+"</td><td>"+(dual?stage===
+"midterm"?"میان‌ترم":"پایان‌ترم":"—")+"</td><td>"+esc(practical??"—")+"</td><td>"+esc(theory??"—")+"</td><td>"+(result?finalText(result):
+"—")+"</td><td>"+esc(result?lesson.policy||dual?gradeStatus(stage==="final"?{...result,reason:lesson.reason||result.reason}:result):"ثبت نهایی":"ثبت ن\
+شده در نسخه قدیمی")+"</td></tr>"}).join("")}async function showFrozenReport(id){const ensureCurrent=preserveAsyncTarget(),origin=workspace.id,sourceConnection=connection;
+const report=await readRecord("reports",id);ensureCurrent();if(connection!==sourceConnection)throw Error("اتصال بانک هنگام خواندن کارنامه تغییر کرده است.");
 if(!report)throw Error("کارنامه ثابت موجود نیست.");if(report.workspace!==origin)throw Error("این کارنامه متعلق به ترم انتخاب‌شده نیست.");
 validateFrozenReport(report);showModal("کارنامه نهایی ثابت",'<div class="frozen-report"><header class="frozen-report-heading"><h2>'+esc(report.year+
 " / "+report.term)+"</h2><p>نسخه ثابت ثبت‌شده در "+esc(new Date(report.at).toLocaleString("fa-IR"))+'</p><button data-workspace-action="print"\
 >چاپ / PDF</button></header>'+report.classes.map(c=>'<section class="frozen-class"><h3>'+esc(c.school+" / "+c.name)+"</h3>"+c.students.map(st=>'<article clas\
 s="frozen-student"><h4>'+esc(st.name)+'</h4><div class="table-scroll"><table><thead><tr><th>درس</th><th>مرحله</th><th>عملی / پایانی</th><th>نظری / مستمر</th><th\
->میانگین / نتیجه</th><th>وضعیت</th></tr></thead><tbody>'+st.lessons.map(frozenLessonRows).join("")+'</tbody></table></div><p class="frozen-aver\
-age">میانگین نهایی: '+(Number.isFinite(st.average)?st.average.toFixed(2):"—")+"</p></article>").join("")+"</section>").join("")+"</div>")}function averageLabel(results){
-const numeric=results.filter(r=>Number.isFinite(r.final));const missing=results.filter(r=>r.complete===false||r.final==null&&r.passed!==false).length;const remedial=results.
-filter(r=>r.passed===false).length;const pending=missing||numeric.length!==results.length;const average=numeric.length?numeric.reduce((n,r)=>n+r.final,0)/numeric.
-length:null;const details=[missing?missing+" درس با ورود ناقص":"",remedial?remedial+" درس نیازمند جبران":""].filter(Boolean);return{
-average,missing,remedial,label:(pending?"میانگین ساده موقت":"میانگین ساده دروس")+(details.length?" ("+details.join("؛ ")+")":"")}}
-function scoreSource(c,l,p,u,sid,field){if(ownScoreRecord(u.unitScores,sid)[field]!=null)return"ثبت گروهی (اولویت بالاتر)";const type=field===
-"m"?"mostamar":"payani";const x=db.sessions.filter(x2=>x2.classId===c.id&&x2.lessonId===l.id&&x2.poudmanId===p.id&&x2.unitId===u.id&&x2.scores.some(sc=>sc.studentId===
-sid&&sc.type===type)).sort((a,b)=>b.date.localeCompare(a.date)||b.period-a.period||b.id.localeCompare(a.id))[0];return x?"جلسه "+faDate(x.date)+" / زنگ "+
-(x.period+1):"ثبت نشده"}function gradeReportStatus(result,label){const tone=result.complete===false||result.final==null&&result.passed!==false?"pending":
-result.passed===false?"remedial":result.passed===true?"passed":"complete";return'<span class="report-grade-status is-'+tone+'">'+esc(label)+"</span>"}function assessmentOverviewCell(lesson,sid,parts=null,classId=""){
+>میانگین / نتیجه</th><th>وضعیت</th></tr></thead><tbody>'+st.lessons.map(frozenLessonRows).join("")+"</tbody></table></div>"+(st.lessons.some(lesson=>!EduPolicy.
+unitBased(lesson.policy))?'<p class="frozen-average">'+(st.lessons.some(lesson=>EduPolicy.unitBased(lesson.policy))?"میانگین دروس دارای نمرهٔ نهایی: ":
+"میانگین نهایی: ")+(Number.isFinite(st.average)?st.average.toFixed(2):"—")+"</p>":"")+"</article>").join("")+"</section>").join("")+"</div>")}function averageLabel(results){
+results=results.filter(result=>!result.unitBased);const numeric=results.filter(r=>Number.isFinite(r.final));const missing=results.filter(r=>r.complete===false||
+r.final==null&&r.passed!==false).length;const remedial=results.filter(r=>r.passed===false).length;const pending=missing||numeric.length!==results.length;const average=numeric.
+length?numeric.reduce((n,r)=>n+r.final,0)/numeric.length:null;const details=[missing?missing+" درس با ورود ناقص":"",remedial?remedial+" درس نیازمند\
+ جبران":""].filter(Boolean);return{applicable:results.length>0,average,missing,remedial,label:(pending?"میانگین ساده موقت":"میانگین ساده درو\
+س")+(details.length?" ("+details.join("؛ ")+")":"")}}function scoreSource(c,l,p,u,sid,field){if(ownScoreRecord(u.unitScores,sid)[field]!=null)return"ثبت گروهی\
+ (اولویت بالاتر)";const type=field==="m"?"mostamar":"payani";const x=db.sessions.filter(x2=>x2.classId===c.id&&x2.lessonId===l.id&&x2.poudmanId===p.
+id&&x2.unitId===u.id&&x2.scores.some(sc=>sc.studentId===sid&&sc.type===type)).sort((a,b)=>b.date.localeCompare(a.date)||b.period-a.period||b.id.localeCompare(a.
+id))[0];return x?"جلسه "+faDate(x.date)+" / زنگ "+(x.period+1):"ثبت نشده"}function gradeReportStatus(result,label){if(result.unitBased){const complete=result.
+complete===true;return'<span class="report-grade-status is-'+(complete?"complete":"pending")+'">'+(complete?"واحدهای کار تکمیل شده":"واحدهای ک\
+ار در حال تکمیل")+"</span>"}const tone=result.complete===false||result.final==null&&result.passed!==false?"pending":result.passed===false?"remedial":
+result.passed===true?"passed":"complete";return'<span class="report-grade-status is-'+tone+'">'+esc(label)+"</span>"}function assessmentOverviewCell(lesson,sid,parts=null,classId=""){
 const general=lesson.gradingPolicy?.subjectType==="general";const stages=parts?["اول","دوم"].flatMap(term=>["midterm","final"].map(stage=>({term,stage}))):
 ["midterm","final"].map(stage=>({term:"",stage}));return'<div class="report-assessment-stages'+(general?" report-assessment-general":"")+'"><div class="report-m\
 obile-score-heading" aria-hidden="true"><span>مرحله</span><div>'+(general?"":"<span>عملی</span><span>نظری</span>")+"<span>نتیجه</span></div></div>"+
@@ -1952,30 +2011,33 @@ sid,stage):{practical:null,theory:null,final:null,complete:false};return'<div cl
 pan><span class="report-score-label">'+(general?"نمره":"میانگین")+"</span> <strong>"+finalText(result)+"</strong></span></div></div>"}).join("")+"</d\
 iv>"}function karnamehLessons(parts,schoolId,classroom){const lessons=new Map(classroom.lessons.map(lesson=>[lesson.id,lesson]));for(const part of parts)for(const lesson of part.
 data.schools.find(school=>school.id===schoolId)?.classes.find(item=>item.id===classroom.id)?.lessons||[])if(!lessons.has(lesson.id))lessons.set(lesson.id,lesson);
-return[...lessons.values()]}function modularReportGrades(modules,result){return'<div class="report-modular-grades"><section class="report-modular-course"><div c\
-lass="report-mobile-score-heading" aria-hidden="true"><span>پودمان</span><div><span>مستمر</span><span>شایستگی</span><span>نتیجه</span></div></div>'+
-modules.map(module=>'<div class="report-module-row" data-module-id="'+esc(module.id)+'"><span class="report-module-title">'+esc(module.name)+'</span><div class=\
-"report-stage-values"><span><span class="report-score-label">مستمر</span><b>'+esc(module.inputs?.m??"—")+'</b></span><span><span class="report-score-labe\
-l">شایستگی</span><b>'+esc(module.inputs?.c??"—")+'</b></span><span><span class="report-score-label">نتیجه</span><strong>'+finalText(module)+"</str\
-ong></span></div></div>").join("")+'<div class="report-modular-final"><span>نهایی درس</span><strong>'+finalText(result)+"</strong></div></section></div>"}
-function modularOverviewCell(lesson,sid,parts=null,classId="",source=db){if(lesson.gradingPolicy?.method==="modular"){const versions=parts||[{data:source}];const schoolId=versions.
-flatMap(part=>part.data.schools||[]).find(school=>school.classes.some(item=>item.id===classId))?.id;let annual;try{annual=parts?annualModularLesson(parts,schoolId,
-classId,lesson,sid):lesson}catch(error){return'<div class="report-modular-conflict" role="alert">'+esc(error.message)+"</div>"}const result=EduPolicy.lesson(annual.
-gradingPolicy,annual.poudmans,sid);return modularReportGrades(result.modules.map(module=>({...module,inputs:ownScoreRecord(annual.poudmans.find(pod=>pod.id===module.
-id)?.podScores,sid)})),result)}const terms=parts?["اول","دوم"]:[""];return'<div class="report-modular-grades">'+terms.map(term=>{const part=parts?.find(item=>item.
-period.term===term);const data=parts?part?.data:source;const classroom=data?.schools?.flatMap(school=>school.classes).find(item=>item.id===classId);const currentLesson=parts?
-classroom?.lessons.find(item=>item.id===lesson.id):lesson;const title='<section class="report-modular-term"><h4>'+esc("نوبت "+(term||workspace.term))+"</h4>";
-if(!currentLesson)return title+'<p class="report-modular-empty" aria-label="درس در این نوبت موجود نیست">—</p></section>';assertCompatibleTermLessons(
-lesson,currentLesson);const result=calcV24(classroom||{id:classId},currentLesson,sid,data);const modular=currentLesson.gradingPolicy?.method==="modular";const rows=modular?
-currentLesson.poudmans.map(pod=>{const grade=ownScoreRecord(pod.podScores,sid);return{id:pod.id,name:pod.name,mostamar:grade.m??null,second:grade.c??null,result:result.
-modules.find(item=>item.id===pod.id)||{final:null}}}):currentLesson.poudmans.flatMap(pod=>pod.units.map(unit=>{const grade=result.details?.[pod.id]?.[unit.id]||
-{};return{id:unit.id,name:pod.name+" / "+unit.name,mostamar:grade.m??null,second:grade.p??null,result:{final:grade.final??null}}}));const secondLabel=modular?"ش\
-ایستگی":"پایانی";return title+'<div class="report-mobile-score-heading" aria-hidden="true"><span>'+(modular?"پودمان":"پودمان / واحد")+
-"</span><div><span>مستمر</span><span>"+secondLabel+"</span><span>نتیجه</span></div></div>"+(rows.length?rows.map(row=>'<div class="report-module-row" \
-data-module-id="'+esc(row.id)+'"><span class="report-module-title">'+esc(row.name)+'</span><div class="report-stage-values"><span><span class="report-score-labe\
-l">مستمر</span><b>'+esc(row.mostamar??"—")+'</b></span><span><span class="report-score-label">'+secondLabel+"</span><b>"+esc(row.second??"—")+'</b></sp\
-an><span><span class="report-score-label">نتیجه</span><strong>'+finalText(row.result)+"</strong></span></div></div>").join(""):'<p class="report-modular-em\
-pty">—</p>')+'<div class="report-modular-final"><span>نهایی درس</span><strong>'+finalText(result)+"</strong></div></section>"}).join("")+"</div>"}function overviewV24(c,options={}){
+return[...lessons.values()]}function modularReportGrades(modules,result){const unitBased=result.unitBased===true||EduPolicy.unitBased(result.policy);const gradeRow=(item,unit=false)=>'\
+<div class="report-module-row'+(unit?" report-unit-row":"")+'" data-'+(unit?"unit":"module")+'-id="'+esc(item.id)+'"><span class="report-module-title">'+esc(item.
+name)+'</span><div class="report-stage-values"><span><span class="report-score-label">مستمر</span><b>'+esc(item.inputs?.m??"—")+'</b></span><span><span c\
+lass="report-score-label">شایستگی</span><b>'+esc(item.inputs?.c??"—")+'</b></span><span><span class="report-score-label">نتیجه</span><strong>'+finalText(
+item)+"</strong>"+(unit?'<small class="report-unit-status">'+esc(gradeStatus(item))+"</small>":"")+"</span></div></div>";return'<div class="report-modular-grade\
+s"><section class="report-modular-course"><div class="report-mobile-score-heading" aria-hidden="true"><span>'+(unitBased?"واحد کار":"پودمان")+"</sp\
+an><div><span>مستمر</span><span>شایستگی</span><span>نتیجه</span></div></div>"+modules.map(module=>unitBased?'<section class="report-unit-module\
+" data-module-id="'+esc(module.id)+'"><h5>'+esc(module.name)+"</h5>"+module.units.map(unit=>gradeRow(unit,true)).join("")+"</section>":gradeRow(module)).join("")+
+(unitBased?"":'<div class="report-modular-final"><span>نهایی درس</span><strong>'+finalText(result)+"</strong></div>")+"</section></div>"}function modularOverviewCell(lesson,sid,parts=null,classId="",source=db){
+if(lesson.gradingPolicy?.method==="modular"){const versions=parts||[{data:source}];const schoolId=versions.flatMap(part=>part.data.schools||[]).find(school=>school.
+classes.some(item=>item.id===classId))?.id;let annual;try{annual=parts?annualModularLesson(parts,schoolId,classId,lesson,sid):lesson}catch(error){return'<div cl\
+ass="report-modular-conflict" role="alert">'+esc(error.message)+"</div>"}const result=EduPolicy.lesson(annual.gradingPolicy,annual.poudmans,sid);return modularReportGrades(
+result.unitBased?result.modules:result.modules.map(module=>({...module,inputs:ownScoreRecord(annual.poudmans.find(pod=>pod.id===module.id)?.podScores,sid)})),result)}
+const terms=parts?["اول","دوم"]:[""];return'<div class="report-modular-grades">'+terms.map(term=>{const part=parts?.find(item=>item.period.term===term);const data=parts?
+part?.data:source;const classroom=data?.schools?.flatMap(school=>school.classes).find(item=>item.id===classId);const currentLesson=parts?classroom?.lessons.find(
+item=>item.id===lesson.id):lesson;const title='<section class="report-modular-term"><h4>'+esc("نوبت "+(term||workspace.term))+"</h4>";if(!currentLesson)return title+
+'<p class="report-modular-empty" aria-label="درس در این نوبت موجود نیست">—</p></section>';assertCompatibleTermLessons(lesson,currentLesson);
+const result=calcV24(classroom||{id:classId},currentLesson,sid,data);const modular=currentLesson.gradingPolicy?.method==="modular";const rows=modular?currentLesson.
+poudmans.map(pod=>{const grade=ownScoreRecord(pod.podScores,sid);return{id:pod.id,name:pod.name,mostamar:grade.m??null,second:grade.c??null,result:result.modules.
+find(item=>item.id===pod.id)||{final:null}}}):currentLesson.poudmans.flatMap(pod=>pod.units.map(unit=>{const grade=result.details?.[pod.id]?.[unit.id]||{};return{
+id:unit.id,name:pod.name+" / "+unit.name,mostamar:grade.m??null,second:grade.p??null,result:{final:grade.final??null}}}));const secondLabel=modular?"شایستگی":
+"پایانی";return title+'<div class="report-mobile-score-heading" aria-hidden="true"><span>'+(modular?"پودمان":"پودمان / واحد")+"</span><div\
+><span>مستمر</span><span>"+secondLabel+"</span><span>نتیجه</span></div></div>"+(rows.length?rows.map(row=>'<div class="report-module-row" data-module-\
+id="'+esc(row.id)+'"><span class="report-module-title">'+esc(row.name)+'</span><div class="report-stage-values"><span><span class="report-score-label">مستمر</sp\
+an><b>'+esc(row.mostamar??"—")+'</b></span><span><span class="report-score-label">'+secondLabel+"</span><b>"+esc(row.second??"—")+'</b></span><span><span cl\
+ass="report-score-label">نتیجه</span><strong>'+finalText(row.result)+"</strong></span></div></div>").join(""):'<p class="report-modular-empty">—</p>')+'<\
+div class="report-modular-final"><span>نهایی درس</span><strong>'+finalText(result)+"</strong></div></section>"}).join("")+"</div>"}function overviewV24(c,options={}){
 const lessons=c.lessons||[];const students=getSortedStudents(options.student?{students:[options.student]}:c);if(!lessons.length||!students.length)return'<div cl\
 ass="card report-empty" role="status"><h3>کارنامه کلاس '+esc(c.name)+"</h3><p>"+(!students.length?"هنوز دانش‌آموزی در این کلاس ثبت نشده است.":
 "برای تهیه کارنامه، ابتدا دروس کلاس را اضافه کنید.")+"</p></div>";return'<div class="card report-document grade-report">\
@@ -2032,112 +2094,123 @@ type="button" class="ghost" data-workspace-action="karnameh-student" data-class=
 "print">چاپ / PDF</button></div></header><div class="table-scroll"><table class="grade-report-table karnameh-individual"><thead><tr><th>درس</th><th>عملی / پایان\
 ی</th><th>تئوری / مستمر</th><th>نتیجه پایان‌ترم / درس</th><th>وضعیت</th><th>حضور و غیاب</th></tr></thead><tbody>'+lessons.
 map((l,i)=>{const r=stats[i];return"<tr><td>"+esc(l.name)+"</td><td>"+((l.gradeMode==="kardanesh"?r.practical:r.avgP)??"—")+"</td><td>"+((l.gradeMode==="karda\
-nesh"?r.theory:r.avgM)??"—")+'</td><td class="report-final-cell"><strong>'+finalText(r)+"</strong></td><td>"+gradeReportStatus(r,l.gradingPolicy||l.gradeMode===
-"kardanesh"?gradeStatus(r):r.final===null?"ناقص":"تکمیل")+'</td><td><div class="report-attendance-counts"><span class="is-present">حاضر <b>'+((r.att.
-present||0)+(r.att.late||0))+'</b></span><span class="is-absent">غایب <b>'+r.att.absent+'</b></span><span class="is-late">تأخیر <b>'+r.att.late+'</b></\
-span><span class="is-leave">مرخصی <b>'+(r.att.leave||0)+"</b></span></div></td></tr>"}).join("")+"</tbody></table></div><p><b>"+esc(mean.label)+": "+(mean.
-average===null?"—":mean.average.toFixed(2))+"</b></p>";for(let i=0;i<lessons.length;i++){const l=lessons[i],r=stats[i];if(l.gradeMode==="kardanesh"){html+=termAssessmentReport(
-c,l,sid);continue}if(l.gradingPolicy){html+=courseUI.table(c,l,sid,false);continue}html+="<h3>"+esc(l.name)+"</h3><p>نمره گروهی بر جلسه اولویت دارد. هر واحد با \
-وزن‌های مستمر "+l.weightMostamar+"٪ و پایانی "+l.weightPayani+"٪ محاسبه می‌شود.</p><table><thead><tr><th>پودمان / واحد</th><th>مستمر و منبع\
-</th><th>پایانی و منبع</th><th>نهایی واحد</th></tr></thead><tbody>"+l.poudmans.map(p=>p.units.map(u=>{const d=r.details[p.id][u.id];return"<\
-tr><td>"+esc(p.name+" / "+u.name)+"</td><td>"+(d.m??"—")+"<br>"+esc(scoreSource(c,l,p,u,sid,"m"))+"</td><td>"+(d.p??"—")+"<br>"+esc(scoreSource(c,l,p,u,sid,
-"p"))+"</td><td>"+finalText(d)+"</td></tr>"}).join("")).join("")+"</tbody></table>"}return html+"</div>"}function parentReportV24(st,c){let text="کارنامه "+
-st.name+"\n"+workspace.year+" / "+workspace.term+"\nکلاس "+c.name+"\n";for(const l of c.lessons){const r=calcV24(c,l,st.id);text+="\n"+l.name+"\n"+(l.gradeMode===
-"kardanesh"?["midterm","final"].map(stage=>{const result=assessmentResult(l,st.id,stage);return(stage==="midterm"?"میان‌ترم":"پایان‌ترم")+" ن\
-وبت "+workspace.term+": "+(l.gradingPolicy?.subjectType==="general"?"":"عملی "+(result.practical??"—")+" | نظری "+(result.theory??"—")+" | ")+finalText(
-result)+" — "+gradeStatus(result)}).join("\n"):l.gradingPolicy?.method==="modular"?r.modules.map(p=>p.name+": "+finalText(p)+" / "+policyStatus(p)).join(" | "):
-"مستمر "+(r.avgM??"—")+" | پایانی "+(r.avgP??"—"))+"\nنهایی "+finalText(r)+(l.gradingPolicy||l.gradeMode==="kardanesh"?" | "+gradeStatus(r):
-"")+"\nحاضر "+((r.att.present||0)+(r.att.late||0))+" | غایب "+r.att.absent+" | مرخصی "+(r.att.leave||0)+" | تأخیر "+r.att.late+"\n"}const mean=averageLabel(
-c.lessons.map(l=>calcV24(c,l,st.id)));return text+"\n"+mean.label+": "+(mean.average===null?"—":mean.average.toFixed(2))}function karnamehExcelSheets({parts=[],
-schoolId,classroom,studentId="",year,generatedAt}={}){if(!year||!schoolId||!classroom?.id)throw Error("برای دریافت اکسل، سال تحصیلی، مدرسه و کلاس را انتخاب کنید\
-.");const scoped=parts.filter(part=>part.period?.year===year&&["اول","دوم"].includes(part.period.term));if(new Set(scoped.map(part=>part.period.term)).size!==
-scoped.length)throw Error("اطلاعات نوبت‌های سال تکراری است؛ کارنامه را دوباره باز کنید.");const locate=part=>part.
-data.schools.find(school2=>school2.id===schoolId),school=scoped.map(locate).find(item=>item?.classes.some(c=>c.id===classroom.id));if(!school)throw Error("کلاس \
-در مدرسه و سال تحصیلی انتخاب‌شده موجود نیست.");const prepared=new Date(generatedAt);if(!Number.isFinite(prepared.getTime()))
-throw Error("زمان تهیهٔ اکسل معتبر نیست.");const students=karnamehReportStudents(classroom).filter(student=>!studentId||student.id===studentId);
-if(studentId&&!students.length)throw Error("هنرجو در کلاس انتخاب‌شده موجود نیست.");assertAnnualLessonCompatibility(scoped,schoolId,
-classroom.id);const lessons=karnamehLessons(scoped,schoolId,classroom),teachers=[...new Set(lessons.map(lesson=>String(lesson.teacher||"").trim()).filter(Boolean))],
-active=new Set(classroom.students.map(student=>student.id)),member=student=>active.has(student.id)?"فعال":"بایگانی",finite=value=>typeof value==="num\
-ber"&&Number.isFinite(value)?value:null,result=value=>{if(value?.complete!==true||finite(value.final)===null)return null;const display=finalText(value);return display===
-value.final.toFixed(2)?value.final:display},status2=value=>value?.complete!==true?"ناقص":value.passed===false?"نیازمند جبران":value.passed===true?
-"قبول":"تکمیل",identity=(student,lesson)=>[String(student.code??""),student.name,member(student),lesson.name,String(lesson.teacher||"")],preparedAt=new Intl.
-DateTimeFormat("fa-IR",{calendar:"persian",dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Tehran"}).format(prepared),scope=studentId?"هنرجو: "+students[0].
-name+" · کد "+String(students[0].code??""):"تمام هنرجویان کلاس؛ فعال و بایگانی",banner=["کارنامهٔ نمرات · "+classroom.
-name,"مدرسه: "+school.name+" | سال تحصیلی: "+year,"محدوده: "+scope,"تهیه‌شده در "+preparedAt+" | دبیر: "+(teachers.join("، ")||
-"ثبت‌نشده")],sheets=[],sheet=(name,headers2,rows,widths2)=>{sheets.push({name,rows:[headers2,...rows],widths:widths2,banner:[...banner]})};sheet("مشخصا\
-ت و راهنما",["عنوان","مقدار"],[["نوع گزارش","کارنامهٔ نمرات سال تحصیلی؛ چهار مرحلهٔ امتحان و نمرات پودمان"],
-["مدرسه",school.name],["کلاس",classroom.name],["سال تحصیلی",String(year)],["محدوده",scope],["تعداد هنرجویان انتخاب‌شده",
-students.length],["نوبت اول",scoped.some(part=>part.period.term==="اول")?"موجود":"موجود نیست؛ نمرات این نوبت خالی‌اند"],
-["نوبت دوم",scoped.some(part=>part.period.term==="دوم")?"موجود":"موجود نیست؛ نمرات این نوبت خالی‌اند"],["دبیر",
-teachers.join("، ")||"ثبت‌نشده"],["زمان تهیه (شمسی)",preparedAt],["ترتیب هنرجویان","ترتیب ثبت در کلاس؛ پس از هنرجویان فعال، س\
-وابق بایگانی با وضعیت مشخص آمده‌اند."],["نمرات کاردانش","هر مرحله مستقل از عملی و نظری با ضرایب همان درس محاسبه می‌شو\
-د؛ نمرهٔ سالانه در این خروجی وجود ندارد."],["نمرات عمومی","چهار نمرهٔ مستقیم؛ نمرهٔ عملی یا میانگین ساختگی اضافه نشده \
-است."],["نمرات پودمانی","نمرهٔ رسمی هر پودمان از مستمر و شایستگی همان پودمان محاسبه می‌شود؛ نوبت‌ها نمرهٔ مستقل برای یک پودمان رسمی ندارند."],
-["جزئیات واحد کار","واحدهای پودمانی فقط ورودی‌های گروهی ثبت‌شدهٔ هر نوبت را نشان می‌دهند و نمرهٔ ترکیبی ندارند؛ سوابق واحدی قدیمی از همان محاسبهٔ ک\
-ارنامه، شامل اولویت ثبت گروهی بر جلسه، خوانده می‌شوند."],["راهنما","سلول خالی یعنی ثبت‌نشده، ناقص یا نامرتبط\
-؛ صفر نمرهٔ واقعی است. این فایل گزارش است و برای بازیابی سیستم نیست."]],[34,100]);sheets[0].filter=false;const headers=[
-"کد هنرجو","هنرجو","وضعیت عضویت","درس","دبیر"],widths=[17,27,17,35,24],stages=[{term:"اول",stage:"midterm",label:"میان‌ترم اول"},
-{term:"اول",stage:"final",label:"پایان‌ترم اول"},{term:"دوم",stage:"midterm",label:"میان‌ترم دوم"},{term:"دوم",stage:"final",label:"\
-پایان‌ترم دوم"}],academic=new Map(annualGradeRows(scoped,schoolId,classroom.id,studentId).map(row=>[JSON.stringify([row.studentId,row.lessonId]),row])),
-vocational=[],general=[],modular=[],units=[],legacy=[];const legacyIds=new Set(lessons.filter(lesson=>lesson.gradeMode!=="kardanesh"&&lesson.gradingPolicy?.method!==
-"modular").map(lesson=>lesson.id)),legacyRows=legacyIds.size?annualTechnicalRows(scoped,schoolId,classroom.id,studentId).filter(row=>legacyIds.has(row.lessonId)):
-[];for(const student of students){for(const lesson of lessons){const prefix=identity(student,lesson);if(lesson.gradeMode==="kardanesh"){const row=academic.get(JSON.
-stringify([student.id,lesson.id])),isGeneral=lesson.gradingPolicy?.subjectType==="general",components=stages.flatMap(stage=>{const value=row?.components.find(item=>item.
-term===stage.term&&item.stage===stage.stage);return isGeneral?[finite(value?.theory)]:[finite(value?.practical),finite(value?.theory),result(value)]});if(isGeneral)
-general.push([...prefix,...components]);else{const weights=assessmentWeights(lesson);vocational.push([...prefix,weights.practical,weights.theory,...components])}}else if(lesson.
-gradingPolicy?.method==="modular"){const merged=annualModularLesson(scoped,schoolId,classroom.id,lesson,student.id),grade=EduReportGrades.modular(merged,student.
-id);for(const pod of lesson.poudmans){const raw=ownScoreRecord(merged.poudmans.find(item=>item.id===pod.id)?.podScores,student.id),value=grade.modules.find(item=>item.
-id===pod.id);modular.push([...prefix,pod.name,finite(raw.m),finite(raw.c),result(value),status2(value)])}for(const term of["اول","دوم"]){const part=scoped.
-find(item=>item.period.term===term),course=part&&locate(part)?.classes.find(item=>item.id===classroom.id)?.lessons.find(item=>item.id===lesson.id);for(const pod of course?.
-poudmans||[])for(const unit of pod.units||[]){const raw=ownScoreRecord(unit.unitScores,student.id),m=finite(raw.m),p=finite(raw.p);if(m!==null||p!==null)units.push(
-[...prefix,term,pod.name,unit.name,m,p])}}}else{for(const term of["اول","دوم"]){const row=legacyRows.find(item=>item.studentId===student.id&&item.lessonId===
-lesson.id&&item.term===term);if(row)for(const unit of row.legacyUnits?.length?row.legacyUnits:[null])legacy.push([...prefix,term,unit?.moduleName||"",unit?.unitName||
-"",finite(unit?.mostamar),finite(unit?.payani),finite(unit?.final),result(row),status2(row)])}}}}if(vocational.length)sheet("کاردانش",[...headers,"سهم عم\
-لی (%)","سهم نظری (%)",...stages.flatMap(stage=>[stage.label+" · عملی",stage.label+" · نظری",stage.label+" · نتیجه"])],vocational,[...widths,
-17,17,...Array(12).fill(22)]);if(general.length)sheet("عمومی",[...headers,...stages.map(stage=>stage.label+" · نمره")],general,[...widths,...Array(4).
-fill(24)]);if(modular.length)sheet("پودمانی",[...headers,"پودمان","مستمر پودمان","شایستگی","نتیجه پودمان","وضعیت پودما\
-ن"],modular,[...widths,32,19,16,19,23]);if(units.length)sheet("جزئیات واحد کار",[...headers,"نوبت","پودمان","واحد کار","مستمر واح\
-د","پایانی واحد"],units,[...widths,14,28,30,19,19]);if(legacy.length)sheet("سوابق واحدی",[...headers,"نوبت","پودمان","واحد کار",
-"مستمر","پایانی","نتیجه واحد","نتیجه درس در نوبت","وضعیت درس در نوبت"],legacy,[...widths,14,28,30,18,18,20,23,23]);
-return[...sheets.slice(1),sheets[0]]}let karnamehExcelDialog=null;function karnamehExcelFilename({classroom,studentId,year,generatedAt}){const clean=value=>Array.
-from(String(value||""),character=>character.charCodeAt(0)<32||character.charCodeAt(0)===127||'\\/:*?"<>|'.includes(character)?"-":character).join("").trim().slice(
-0,55).replace(/[. ]+$/g,"")||"نمرات";const teachers=[...new Set(classroom.lessons.map(lesson=>String(lesson.teacher||"").trim()).filter(Boolean))];const teacher=teachers.
-length===1?teachers[0]:teachers.length?"چند دبیر":"دبیر";const student=studentId?karnamehReportStudents(classroom).find(item=>item.id===studentId):null;
-if(studentId&&!student)throw Error("هنرجوی انتخاب‌شده در کلاس موجود نیست.");const parts=Object.fromEntries(new Intl.DateTimeFormat(
-"fa-IR-u-nu-latn",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23",timeZone:"Asia/Tehran"}).formatToParts(
-new Date(generatedAt)).map(part=>[part.type,part.value]));const stamp=parts.year+"-"+parts.month+"-"+parts.day+"_"+parts.hour+"-"+parts.minute+"-"+parts.second;
-return clean(teacher)+"_"+stamp+"_نمرات-"+(student?clean(student.name):"کل-کلاس-"+clean(classroom.name))+"_"+clean(year)+".xlsx"}function assertKarnamehExcelDialog(session){
-assertWorkspaceReadable();if(!session||karnamehExcelDialog!==session||connection!==session.connection||installationToken!==session.installation||workspace.id!==
-session.workspaceId||workspace.year!==session.year||state.view!=="reports"||state.reportTab!=="karnameh"||JSON.stringify(karnamehFilter)!==session.selection||!session.
-entry.isConnected||!session.panel?.isConnected||document.getElementById("karnamehExcelPanel")!==session.panel||document.getElementById("modal").classList.contains(
-"hidden"))throw Error("کارنامه یا اطلاعات برنامه تغییر کرده است؛ پنجرهٔ اکسل را دوباره باز کنید.")}function openKarnamehExcel(button){
-assertWorkspaceReadable();const found=findClassById(karnamehFilter.classId);if(!button?.isConnected||state.view!=="reports"||state.reportTab!=="karnameh"||!found||
-karnamehFilter.schoolId&&found.school.id!==karnamehFilter.schoolId)throw Error("ابتدا مدرسه و کلاس کارنامه را انتخاب کنید.");const students=karnamehReportStudents(
-found.classObj);if(!students.length)throw Error("در کلاس انتخاب‌شده هنرجویی وجود ندارد.");const student=students.find(item=>item.
-id===karnamehFilter.studentId);if(karnamehFilter.studentId&&!student)throw Error("هنرجوی انتخاب‌شده در کلاس موجود نیست.");const session={
-connection,installation:installationToken,workspaceId:workspace.id,year:workspace.year,selection:JSON.stringify(karnamehFilter),schoolId:found.school.id,classId:found.
-classObj.id,studentId:student?.id||"",entry:button,panel:null,working:false,delivery:"download",prepared:null};const choice=(scope,title,detail,icon,disabled=false)=>'\
-<button type="button" class="ghost" data-workspace-action="karnameh-excel-download" data-scope="'+scope+'"'+(disabled?" disabled":"")+'><span class="karnameh-ex\
-cel-choice-icon" aria-hidden="true">'+EduIcons.html(icon)+'</span><span class="karnameh-excel-choice-copy"><strong>'+esc(title)+"</strong><small>"+esc(detail)+'\
-</small></span><span class="karnameh-excel-choice-end" aria-hidden="true">'+EduIcons.html("download")+"</span></button>";const opened=showModal("خروجی اکسل نمرا\
-ت",'<section class="karnameh-excel-dialog" id="karnamehExcelPanel"><div class="karnameh-excel-heading"><span class="karnameh-excel-choice-icon" aria-hidden="tr\
-ue">'+EduIcons.html("grades")+"</span><div><h4>نمرات سال تحصیلی</h4><p>"+esc([found.school.name,found.classObj.name,workspace.year].join(" · "))+
-'</p></div></div><p class="karnameh-excel-description">همهٔ مراحل و پودمان‌های همین سال در فایل قرار می‌گیرند؛ نمرهٔ ثبت‌نشده خالی می‌ماند.</p><div class="karna\
-meh-excel-delivery" aria-label="روش دریافت اکسل"><button type="button" class="ghost" data-workspace-action="karnameh-excel-mode" data-delivery="download" aria-p\
-ressed="true">دریافت فایل</button><button type="button" class="ghost" data-workspace-action="karnameh-excel-mode" data-delivery="share" aria-pressed="false">ارس\
-ال در پیام‌رسان</button></div><div class="karnameh-excel-choices">'+choice("student","اکسل هنرجوی انتخاب‌شده",student?.name||
-"ابتدا یک هنرجو انتخاب کنید.","grades",!student)+choice("class","اکسل نمرات کل کلاس",karnamehSheetNumber(students.length)+"\
- هنرجو · فعال و بایگانی","users")+'</div><p data-karnameh-excel-status role="status" aria-live="polite"></p><section class="karnameh-excel-rea\
-dy" data-karnameh-excel-ready hidden><strong data-karnameh-excel-file dir="auto"></strong><span data-karnameh-excel-file-size></span><div class="karnameh-excel-\
-ready-actions"><button type="button" data-workspace-action="karnameh-excel-send" hidden disabled>'+EduIcons.html("share")+'<span>انتخاب پیام‌رسان و ارسال</span>\
-</button><button type="button" class="ghost" data-workspace-action="karnameh-excel-save" disabled>'+EduIcons.html("download")+"<span>دریافت فایل برای پیوست</spa\
-n></button></div></section></section>");if(opened===false)return false;session.panel=document.getElementById("karnamehExcelPanel");clearPreparedKarnamehExcel(karnamehExcelDialog);
-karnamehExcelDialog=session;if(typeof MutationObserver==="function"){const modal=document.getElementById("modal");const observer=new MutationObserver(()=>{if(!session.
-panel.isConnected||modal.classList.contains("hidden")){clearPreparedKarnamehExcel(session);if(karnamehExcelDialog===session)karnamehExcelDialog=null;observer.disconnect()}});
-observer.observe(modal,{attributes:true,attributeFilter:["class"]});observer.observe(document.getElementById("modalBody"),{childList:true})}return true}async function downloadKarnamehExcel(button){
-const session=karnamehExcelDialog;if(!session||session.working)return false;const status2=session.panel.querySelector("[data-karnameh-excel-status]");let unlock=()=>{};
-try{assertKarnamehExcelDialog(session);const scope=button.dataset.scope;if(!button.isConnected||button.closest("#karnamehExcelPanel")!==session.panel||!["studen\
-t","class"].includes(scope)||scope==="student"&&!session.studentId||button.disabled)throw Error("محدودهٔ خروجی معتبر نیست؛ کلاس یا هنرجو را دوباره انتخاب کنید.");
+nesh"?r.theory:r.avgM)??"—")+'</td><td class="report-final-cell"><strong>'+(r.unitBased?"نمرات مستقل واحدهای کار":finalText(r))+"</strong>\
+</td><td>"+gradeReportStatus(r,l.gradingPolicy||l.gradeMode==="kardanesh"?gradeStatus(r):r.final===null?"ناقص":"تکمیل")+'</td><td><div class="report-at\
+tendance-counts"><span class="is-present">حاضر <b>'+((r.att.present||0)+(r.att.late||0))+'</b></span><span class="is-absent">غایب <b>'+r.att.absent+'</b\
+></span><span class="is-late">تأخیر <b>'+r.att.late+'</b></span><span class="is-leave">مرخصی <b>'+(r.att.leave||0)+"</b></span></div></td></tr>"}).join(
+"")+"</tbody></table></div>"+(mean.applicable?"<p><b>"+esc(mean.label)+": "+(mean.average===null?"—":mean.average.toFixed(2))+"</b></p>":"");for(let i=0;i<lessons.
+length;i++){const l=lessons[i],r=stats[i];if(l.gradeMode==="kardanesh"){html+=termAssessmentReport(c,l,sid);continue}if(l.gradingPolicy){html+=courseUI.table(c,
+l,sid,false);continue}html+="<h3>"+esc(l.name)+"</h3><p>نمره گروهی بر جلسه اولویت دارد. هر واحد با وزن‌های مستمر "+
+l.weightMostamar+"٪ و پایانی "+l.weightPayani+"٪ محاسبه می‌شود.</p><table><thead><tr><th>پودمان / واحد</th><th>مستمر و منبع</th><th>پایانی و منبع</th><t\
+h>نهایی واحد</th></tr></thead><tbody>"+l.poudmans.map(p=>p.units.map(u=>{const d=r.details[p.id][u.id];return"<tr><td>"+esc(p.name+" / "+u.name)+"</td>\
+<td>"+(d.m??"—")+"<br>"+esc(scoreSource(c,l,p,u,sid,"m"))+"</td><td>"+(d.p??"—")+"<br>"+esc(scoreSource(c,l,p,u,sid,"p"))+"</td><td>"+finalText(d)+"</td></t\
+r>"}).join("")).join("")+"</tbody></table>"}return html+"</div>"}function modularReportText(lesson,result,sid){return result.modules.map(module=>{const rows=result.
+unitBased?module.units:[module];const grades=rows.map(item=>{const inputs=result.unitBased?item.inputs:ownScoreRecord(lesson.poudmans.find(pod=>pod.id===module.
+id)?.podScores,sid);return item.name+": مستمر "+(inputs.m??"—")+" | شایستگی "+(inputs.c??"—")+" | "+finalText(item)+" / "+gradeStatus(item)});return(result.
+unitBased?module.name+"\n":"")+grades.join("\n")}).join("\n")}function parentReportV24(st,c,source=db){if(source!==db){const classroom=source.schools?.flatMap(school=>school.
+classes).find(item=>item.id===c.id);const student=classroom&&knownStudents(classroom).find(item=>item.id===st.id);if(!classroom||!student)return;c=classroom;st=
+student}let text="کارنامه "+st.name+"\n"+workspace.year+" / "+workspace.term+"\nکلاس "+c.name+"\n";for(const l of c.lessons){const r=calcV24(c,l,st.id,
+source);text+="\n"+l.name+"\n"+(l.gradeMode==="kardanesh"?["midterm","final"].map(stage=>{const result=assessmentResult(l,st.id,stage);return(stage==="midterm"?
+"میان‌ترم":"پایان‌ترم")+" نوبت "+workspace.term+": "+(l.gradingPolicy?.subjectType==="general"?"":"عملی "+(result.practical??"—")+"\
+ | نظری "+(result.theory??"—")+" | ")+finalText(result)+" — "+gradeStatus(result)}).join("\n"):l.gradingPolicy?.method==="modular"?modularReportText(l,r,
+st.id):"مستمر "+(r.avgM??"—")+" | پایانی "+(r.avgP??"—"))+(r.unitBased?"":"\nنهایی "+finalText(r)+(l.gradingPolicy||l.gradeMode==="kardanesh"?
+" | "+gradeStatus(r):""))+"\nحاضر "+((r.att.present||0)+(r.att.late||0))+" | غایب "+r.att.absent+" | مرخصی "+(r.att.leave||0)+" | تأخیر "+r.att.
+late+"\n"}const mean=averageLabel(c.lessons.map(l=>calcV24(c,l,st.id,source)));return mean.applicable?text+"\n"+mean.label+": "+(mean.average===null?"—":mean.
+average.toFixed(2)):text}function karnamehExcelSheets({parts=[],schoolId,classroom,studentId="",year,generatedAt}={}){if(!year||!schoolId||!classroom?.id)throw Error(
+"برای دریافت اکسل، سال تحصیلی، مدرسه و کلاس را انتخاب کنید.");const scoped=parts.filter(part=>part.period?.year===
+year&&["اول","دوم"].includes(part.period.term));if(new Set(scoped.map(part=>part.period.term)).size!==scoped.length)throw Error("اطلاعات نوبت‌های سال تکرا\
+ری است؛ کارنامه را دوباره باز کنید.");const locate=part=>part.data.schools.find(school2=>school2.id===schoolId),school=scoped.map(locate).
+find(item=>item?.classes.some(c=>c.id===classroom.id));if(!school)throw Error("کلاس در مدرسه و سال تحصیلی انتخاب‌شده موجود نیست.");
+const prepared=new Date(generatedAt);if(!Number.isFinite(prepared.getTime()))throw Error("زمان تهیهٔ اکسل معتبر نیست.");const students=karnamehReportStudents(
+classroom).filter(student=>!studentId||student.id===studentId);if(studentId&&!students.length)throw Error("هنرجو در کلاس انتخاب‌شده موجود نیست.");
+assertAnnualLessonCompatibility(scoped,schoolId,classroom.id);const lessons=karnamehLessons(scoped,schoolId,classroom),teachers=[...new Set(lessons.map(lesson=>String(
+lesson.teacher||"").trim()).filter(Boolean))],active=new Set(classroom.students.map(student=>student.id)),member=student=>active.has(student.id)?"فعال":"بای\
+گانی",finite=value=>typeof value==="number"&&Number.isFinite(value)?value:null,result=value=>{if(value?.complete!==true||finite(value.final)===null)return null;
+const display=finalText(value);return display===value.final.toFixed(2)?value.final:display},status2=value=>value?.complete!==true?"ناقص":value.passed===false?
+"نیازمند جبران":value.passed===true?"قبول":"تکمیل",identity=(student,lesson)=>[String(student.code??""),student.name,member(student),lesson.
+name,String(lesson.teacher||"")],preparedAt=new Intl.DateTimeFormat("fa-IR",{calendar:"persian",dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Tehran"}).format(
+prepared),scope=studentId?"هنرجو: "+students[0].name+" · کد "+String(students[0].code??""):"تمام هنرجویان کلاس؛ فعال و بایگانی",
+banner=["کارنامهٔ نمرات · "+classroom.name,"مدرسه: "+school.name+" | سال تحصیلی: "+year,"محدوده: "+scope,"تهیه‌شده در "+
+preparedAt+" | دبیر: "+(teachers.join("، ")||"ثبت‌نشده")],sheets=[],sheet=(name,headers2,rows,widths2)=>{sheets.push({name,rows:[headers2,...rows],
+widths:widths2,banner:[...banner]})};sheet("مشخصات و راهنما",["عنوان","مقدار"],[["نوع گزارش","کارنامهٔ نمرات سال تحصیلی؛ مراحل ام\
+تحان، نمرات پودمان و واحدهای کار مستقل"],["مدرسه",school.name],["کلاس",classroom.name],["سال تحصیلی",String(year)],
+["محدوده",scope],["تعداد هنرجویان انتخاب‌شده",students.length],["نوبت اول",scoped.some(part=>part.period.term==="اول")?"\
+موجود":"موجود نیست؛ نمرات این نوبت خالی‌اند"],["نوبت دوم",scoped.some(part=>part.period.term==="دوم")?"موجود":
+"موجود نیست؛ نمرات این نوبت خالی‌اند"],["دبیر",teachers.join("، ")||"ثبت‌نشده"],["زمان تهیه (شمسی)",preparedAt],
+["ترتیب هنرجویان","ترتیب ثبت در کلاس؛ پس از هنرجویان فعال، سوابق بایگانی با وضعیت مشخص آمده‌اند."],
+["نمرات کاردانش","هر مرحله مستقل از عملی و نظری با ضرایب همان درس محاسبه می‌شود؛ نمرهٔ سالانه در این خروجی وجود ندارد."],
+["نمرات عمومی","چهار نمرهٔ مستقیم؛ نمرهٔ عملی یا میانگین ساختگی اضافه نشده است."],["نمرات پودمانی",
+"نمرهٔ رسمی هر پودمان از مستمر و شایستگی همان پودمان محاسبه می‌شود؛ نوبت‌ها نمرهٔ مستقل برای یک پودمان رسمی ندارند."],
+["نمره‌دهی واحد کار پودمانی","در روش واحد کار، مستمر و شایستگی هر واحد مستقل و سالانه است؛ پودمان فقط دسته‌بندی است و نمرهٔ نهایی پودمان \
+یا درس محاسبه نمی‌شود."],["جزئیات واحد کار","برگهٔ «جزئیات واحد کار» مربوط به ورودی‌های واحدی روش قبلی در هر نوبت است؛ نمرات مست\
+قل روش جدید در برگهٔ «واحدهای کار پودمانی» می‌آیند. سوابق واحدی قدیمی از همان محاسبهٔ کارنامه، شامل اولویت ثبت گروهی بر جلسه، خوانده می‌شوند."],
+["راهنما","سلول خالی یعنی ثبت‌نشده، ناقص یا نامرتبط؛ صفر نمرهٔ واقعی است. این فایل گزارش است و برای بازیابی سیستم نیست."]],
+[34,100]);sheets[0].filter=false;const headers=["کد هنرجو","هنرجو","وضعیت عضویت","درس","دبیر"],widths=[17,27,17,35,24],stages=[{term:"\
+اول",stage:"midterm",label:"میان‌ترم اول"},{term:"اول",stage:"final",label:"پایان‌ترم اول"},{term:"دوم",stage:"midterm",label:"\
+میان‌ترم دوم"},{term:"دوم",stage:"final",label:"پایان‌ترم دوم"}],academic=new Map(annualGradeRows(scoped,schoolId,classroom.id,studentId).
+map(row=>[JSON.stringify([row.studentId,row.lessonId]),row])),vocational=[],general=[],modular=[],competencyUnits=[],units=[],legacy=[];const legacyIds=new Set(
+lessons.filter(lesson=>lesson.gradeMode!=="kardanesh"&&lesson.gradingPolicy?.method!=="modular").map(lesson=>lesson.id)),legacyRows=legacyIds.size?annualTechnicalRows(
+scoped,schoolId,classroom.id,studentId).filter(row=>legacyIds.has(row.lessonId)):[];for(const student of students){for(const lesson of lessons){const prefix=identity(
+student,lesson);if(lesson.gradeMode==="kardanesh"){const row=academic.get(JSON.stringify([student.id,lesson.id])),isGeneral=lesson.gradingPolicy?.subjectType===
+"general",components=stages.flatMap(stage=>{const value=row?.components.find(item=>item.term===stage.term&&item.stage===stage.stage);return isGeneral?[finite(value?.
+theory)]:[finite(value?.practical),finite(value?.theory),result(value)]});if(isGeneral)general.push([...prefix,...components]);else{const weights=assessmentWeights(
+lesson);vocational.push([...prefix,weights.practical,weights.theory,...components])}}else if(lesson.gradingPolicy?.method==="modular"){const merged=annualModularLesson(
+scoped,schoolId,classroom.id,lesson,student.id),grade=EduReportGrades.modular(merged,student.id);for(const pod of lesson.poudmans){const raw=ownScoreRecord(merged.
+poudmans.find(item=>item.id===pod.id)?.podScores,student.id),value=grade.modules.find(item=>item.id===pod.id);if(grade.unitBased){for(const unit of value.units)
+competencyUnits.push([...prefix,pod.name,unit.name,finite(unit.inputs.m),finite(unit.inputs.c),result(unit),status2(unit)]);continue}modular.push([...prefix,pod.
+name,finite(raw.m),finite(raw.c),result(value),status2(value)])}for(const term of grade.unitBased?[]:["اول","دوم"]){const part=scoped.find(item=>item.period.
+term===term),course=part&&locate(part)?.classes.find(item=>item.id===classroom.id)?.lessons.find(item=>item.id===lesson.id);for(const pod of course?.poudmans||[])
+for(const unit of pod.units||[]){const raw=ownScoreRecord(unit.unitScores,student.id),m=finite(raw.m),p=finite(raw.p);if(m!==null||p!==null)units.push([...prefix,
+term,pod.name,unit.name,m,p])}}}else{for(const term of["اول","دوم"]){const row=legacyRows.find(item=>item.studentId===student.id&&item.lessonId===lesson.id&&
+item.term===term);if(row)for(const unit of row.legacyUnits?.length?row.legacyUnits:[null])legacy.push([...prefix,term,unit?.moduleName||"",unit?.unitName||"",finite(
+unit?.mostamar),finite(unit?.payani),finite(unit?.final),result(row),status2(row)])}}}}if(vocational.length)sheet("کاردانش",[...headers,"سهم عملی (%)",
+"سهم نظری (%)",...stages.flatMap(stage=>[stage.label+" · عملی",stage.label+" · نظری",stage.label+" · نتیجه"])],vocational,[...widths,17,17,
+...Array(12).fill(22)]);if(general.length)sheet("عمومی",[...headers,...stages.map(stage=>stage.label+" · نمره")],general,[...widths,...Array(4).fill(24)]);
+if(modular.length)sheet("پودمانی",[...headers,"پودمان","مستمر پودمان","شایستگی","نتیجه پودمان","وضعیت پودمان"],
+modular,[...widths,32,19,16,19,23]);if(units.length)sheet("جزئیات واحد کار",[...headers,"نوبت","پودمان","واحد کار","مستمر واحد",
+"پایانی واحد"],units,[...widths,14,28,30,19,19]);if(competencyUnits.length)sheet("واحدهای کار پودمانی",[...headers,"پودمان","وا\
+حد کار","مستمر واحد","شایستگی واحد","نتیجه واحد","وضعیت واحد"],competencyUnits,[...widths,28,30,19,19,19,23]);if(legacy.
+length)sheet("سوابق واحدی",[...headers,"نوبت","پودمان","واحد کار","مستمر","پایانی","نتیجه واحد","نتیجه درس در نوب\
+ت","وضعیت درس در نوبت"],legacy,[...widths,14,28,30,18,18,20,23,23]);return[...sheets.slice(1),sheets[0]]}let karnamehExcelDialog=null;function karnamehExcelFilename({
+classroom,studentId,year,generatedAt}){const clean=value=>Array.from(String(value||""),character=>character.charCodeAt(0)<32||character.charCodeAt(0)===127||'\\/\
+:*?"<>|'.includes(character)?"-":character).join("").trim().slice(0,55).replace(/[. ]+$/g,"")||"نمرات";const teachers=[...new Set(classroom.lessons.map(lesson=>String(
+lesson.teacher||"").trim()).filter(Boolean))];const teacher=teachers.length===1?teachers[0]:teachers.length?"چند دبیر":"دبیر";const student=studentId?
+karnamehReportStudents(classroom).find(item=>item.id===studentId):null;if(studentId&&!student)throw Error("هنرجوی انتخاب‌شده در کلاس موجود نیست.");
+const parts=Object.fromEntries(new Intl.DateTimeFormat("fa-IR-u-nu-latn",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2\
+-digit",hourCycle:"h23",timeZone:"Asia/Tehran"}).formatToParts(new Date(generatedAt)).map(part=>[part.type,part.value]));const stamp=parts.year+"-"+parts.month+
+"-"+parts.day+"_"+parts.hour+"-"+parts.minute+"-"+parts.second;return clean(teacher)+"_"+stamp+"_نمرات-"+(student?clean(student.name):"کل-کلاس-"+clean(
+classroom.name))+"_"+clean(year)+".xlsx"}function assertKarnamehExcelDialog(session){assertWorkspaceReadable();if(!session||karnamehExcelDialog!==session||connection!==
+session.connection||installationToken!==session.installation||workspace.id!==session.workspaceId||workspace.year!==session.year||state.view!=="reports"||state.reportTab!==
+"karnameh"||JSON.stringify(karnamehFilter)!==session.selection||!session.entry.isConnected||!session.panel?.isConnected||document.getElementById("karnamehExcelP\
+anel")!==session.panel||document.getElementById("modal").classList.contains("hidden"))throw Error("کارنامه یا اطلاعات برنامه تغییر کرده است؛ پنجرهٔ اکسل را دوبا\
+ره باز کنید.")}function openKarnamehExcel(button){assertWorkspaceReadable();const found=findClassById(karnamehFilter.classId);if(!button?.isConnected||
+state.view!=="reports"||state.reportTab!=="karnameh"||!found||karnamehFilter.schoolId&&found.school.id!==karnamehFilter.schoolId)throw Error("ابتدا مدرسه و کلاس\
+ کارنامه را انتخاب کنید.");const students=karnamehReportStudents(found.classObj);if(!students.length)throw Error("در کلاس انتخاب‌شده هنرجویی \
+وجود ندارد.");const student=students.find(item=>item.id===karnamehFilter.studentId);if(karnamehFilter.studentId&&!student)throw Error("هنرجوی انتخاب‌شد\
+ه در کلاس موجود نیست.");const session={connection,installation:installationToken,workspaceId:workspace.id,year:workspace.year,selection:JSON.stringify(
+karnamehFilter),schoolId:found.school.id,classId:found.classObj.id,studentId:student?.id||"",entry:button,panel:null,working:false,delivery:"download",prepared:null};
+const choice=(scope,title,detail,icon,disabled=false)=>'<button type="button" class="ghost" data-workspace-action="karnameh-excel-download" data-scope="'+scope+
+'"'+(disabled?" disabled":"")+'><span class="karnameh-excel-choice-icon" aria-hidden="true">'+EduIcons.html(icon)+'</span><span class="karnameh-excel-choice-cop\
+y"><strong>'+esc(title)+"</strong><small>"+esc(detail)+'</small></span><span class="karnameh-excel-choice-end" aria-hidden="true">'+EduIcons.html("download")+"<\
+/span></button>";const opened=showModal("خروجی اکسل نمرات",'<section class="karnameh-excel-dialog" id="karnamehExcelPanel"><div class="karnameh-ex\
+cel-heading"><span class="karnameh-excel-choice-icon" aria-hidden="true">'+EduIcons.html("grades")+"</span><div><h4>نمرات سال تحصیلی</h4><p>"+esc(
+[found.school.name,found.classObj.name,workspace.year].join(" · "))+'</p></div></div><p class="karnameh-excel-description">همهٔ مراحل و پودمان‌های همین سال در \
+فایل قرار می‌گیرند؛ نمرهٔ ثبت‌نشده خالی می‌ماند.</p><div class="karnameh-excel-delivery" aria-label="روش دریافت اکسل"><button type="button" class="ghost" data-w\
+orkspace-action="karnameh-excel-mode" data-delivery="download" aria-pressed="true">دریافت فایل</button><button type="button" class="ghost" data-workspace-action\
+="karnameh-excel-mode" data-delivery="share" aria-pressed="false">ارسال در پیام‌رسان</button></div><div class="karnameh-excel-choices">'+choice(
+"student","اکسل هنرجوی انتخاب‌شده",student?.name||"ابتدا یک هنرجو انتخاب کنید.","grades",!student)+choice("class","اک\
+سل نمرات کل کلاس",karnamehSheetNumber(students.length)+" هنرجو · فعال و بایگانی","users")+'</div><p data-karnameh-excel-status ro\
+le="status" aria-live="polite"></p><section class="karnameh-excel-ready" data-karnameh-excel-ready hidden><strong data-karnameh-excel-file dir="auto"></strong><\
+span data-karnameh-excel-file-size></span><div class="karnameh-excel-ready-actions"><button type="button" data-workspace-action="karnameh-excel-send" hidden dis\
+abled>'+EduIcons.html("share")+'<span>انتخاب پیام‌رسان و ارسال</span></button><button type="button" class="ghost" data-workspace-action="karnameh-excel-save" di\
+sabled>'+EduIcons.html("download")+"<span>دریافت فایل برای پیوست</span></button></div></section></section>");if(opened===false)return false;session.
+panel=document.getElementById("karnamehExcelPanel");clearPreparedKarnamehExcel(karnamehExcelDialog);karnamehExcelDialog=session;if(typeof MutationObserver==="fu\
+nction"){const modal=document.getElementById("modal");const observer=new MutationObserver(()=>{if(!session.panel.isConnected||modal.classList.contains("hidden")){
+clearPreparedKarnamehExcel(session);if(karnamehExcelDialog===session)karnamehExcelDialog=null;observer.disconnect()}});observer.observe(modal,{attributes:true,attributeFilter:[
+"class"]});observer.observe(document.getElementById("modalBody"),{childList:true})}return true}async function downloadKarnamehExcel(button){const session=karnamehExcelDialog;
+if(!session||session.working)return false;const status2=session.panel.querySelector("[data-karnameh-excel-status]");let unlock=()=>{};try{assertKarnamehExcelDialog(
+session);const scope=button.dataset.scope;if(!button.isConnected||button.closest("#karnamehExcelPanel")!==session.panel||!["student","class"].includes(scope)||scope===
+"student"&&!session.studentId||button.disabled)throw Error("محدودهٔ خروجی معتبر نیست؛ کلاس یا هنرجو را دوباره انتخاب کنید.");
 clearPreparedKarnamehExcel(session);unlock=lockKarnamehExcel(session);status2.dataset.state="working";status2.textContent="در حال آماده‌سازی اکسل نمرات…";
 const snapshot=await prepareKarnamehSnapshot();assertKarnamehExcelDialog(session);const active=snapshot.parts.find(part=>part.period.id===session.workspaceId);const school=active?.
 data.schools.find(item=>item.id===session.schoolId);const classroom=school?.classes.find(item=>item.id===session.classId);if(!classroom)throw Error("کلاس انتخاب\
@@ -2214,91 +2287,107 @@ karnamehClass],["سال تحصیلی",copy.dataset.karnamehYear]],header=documen
 '<div class="karnameh-print-identity"><span class="karnameh-print-kind">کارنامهٔ تحصیلی</span><h2>'+esc(name)+"</h2><p>کد هنرجو: <bdi>"+esc(
 code)+"</bdi>"+(archived?' <span class="karnameh-print-archive">بایگانی</span>':"")+'</p></div><dl class="karnameh-print-context">'+context.filter(([,value])=>value).
 map(([label,value])=>"<div><dt>"+esc(label)+"</dt><dd>"+esc(value)+"</dd></div>").join("")+"</dl>";originalHeader.replaceWith(header);copy.querySelector(".karna\
-meh-student-meta")?.remove()}function preparePrint(button){printAuthorization=null;document.getElementById("printRoot")?.remove();const modal=document.getElementById(
-"modal"),isModal=button?button.closest("#modal"):!modal.classList.contains("hidden");let source=isModal?document.getElementById("modalBody"):button?.closest(".r\
-eport-document,#karnamehTabOutput,#lessonReportTabOutput,#lessonReportOutput,#globalReportOutput,#periodicReportOutput")||button?.closest(".card")||document.getElementById(
-"karnamehTabOutput")||document.getElementById("lessonReportTabOutput")||document.getElementById("lessonReportOutput")||document.getElementById("globalReportOutp\
-ut")||document.getElementById("periodicReportOutput")||document.getElementById("app");if(!source)throw Error("گزارشی برای چاپ انتخاب نشده است.");
-const copy=source.cloneNode(true);const periodic=source.matches(".periodic-document")||!!source.querySelector(".periodic-document");const karnameh=source.matches(
-".karnameh-student-sheet");if(periodic)preservePeriodicAppearance(source,copy);if(karnameh)prepareKarnamehPrint(copy);copy.querySelectorAll("details.report-clas\
-s-group, details.report-session-disclosure, details.report-session-compact").forEach(section=>{section.open=true;section.querySelector(".report-class-body, .rep\
-ort-session-body, .report-session-content")?.style.setProperty("display","block","important");const expanded=document.createElement("section");for(const attr of[
-...section.attributes])expanded.setAttribute(attr.name,attr.value);expanded.dataset.printExpanded="true";expanded.append(...section.childNodes);const summary=expanded.
-querySelector(":scope > summary");if(summary){const heading=document.createElement("header");for(const attr of[...summary.attributes])heading.setAttribute(attr.
-name,attr.value);heading.append(...summary.childNodes);summary.replaceWith(heading)}section.replaceWith(expanded)});copy.querySelectorAll("button,.no-print,form\
-,script,select").forEach(x=>x.remove());copy.querySelectorAll("input,textarea").forEach(input=>{const span=document.createElement("span");span.textContent=input.
-type==="checkbox"?input.checked?"بله":"خیر":input.value;input.replaceWith(span)});copy.querySelectorAll("*").forEach(el=>{for(const attr of[...el.attributes])
-if(attr.name.startsWith("on")||attr.name==="id")el.removeAttribute(attr.name);el.style.removeProperty("overflow");el.style.removeProperty("overflow-x");el.style.
-removeProperty("overflow-y");el.style.removeProperty("max-height");el.style.removeProperty("height")});const root=document.createElement("div");root.id="printRo\
-ot";if(karnameh)root.className="karnameh-print-root";root.innerHTML=periodic||karnameh?"":"<header><h1>گزارش مدرسه</h1><p>"+esc(workspace.year+" / "+workspace.
-term)+" · "+esc(new Date().toLocaleString("fa-IR"))+"</p></header>";root.append(copy);document.body.append(root);const columns=Math.max(0,...[...copy.querySelectorAll(
-"tr")].map(tr=>[...tr.children].reduce((sum,cell)=>sum+(Number(cell.colSpan)||1),0)));document.getElementById("printPageStyle")?.remove();const style=document.createElement(
-"style");style.id="printPageStyle";style.textContent="@page { size: A4 "+(columns>8?"landscape":"portrait")+"; margin: 12mm; }";document.head.append(style);return root}
-async function printReport(button,{context,validate}={}){try{const expected=context||captureWorkspaceContext();await document.fonts?.ready;await flushDrafts({strict:true});
-await writer.catch(()=>{});if(!fileMode)await assertReportSnapshot(expected);if(validate&&!validate())throw Error("محدوده یا متن گزارش تغییر کرده است؛ گزارش را \
-دوباره تهیه کنید.");preparePrint(button);printAuthorization=expected;if(!globalThis.__EDU_PRINT_TEST__)window.print();return true}catch(error){if(context)
-throw error;handleError(error);return false}}function reportCopyScope(){return JSON.stringify({navigation:state,activity:globalFilter,lesson:lessonReportFilter,
-student:karnamehFilter,session:currentSessionId})}async function copyReportV24(buildText,button,formatHTML){const origin=workspace?.id,sourceConnection=connection,
-scope=reportCopyScope();const ensureCurrent=()=>{if(!fileMode)assertWorkspaceReadable();else if(!ready||blocked||periodLoading||resetBusy||connectionRetired||db.
-settings.password&&!isAuthenticated)throw Error("اطلاعات برای تهیهٔ گزارش آماده نیست.");if(workspace?.id!==origin||connection!==sourceConnection||
-reportCopyScope()!==scope||button?.isConnected===false)throw Error("صفحه یا محدودهٔ گزارش تغییر کرد؛ گزارش را دوباره تهیه کنید.")};
-try{ensureCurrent();const snapshot=fileMode?null:await prepareReportSnapshot();ensureCurrent();const text=buildText(snapshot?.data||db);if(typeof text!=="string"||
-!text.length)return false;const html=formatHTML?formatHTML(text):void 0;if(snapshot)await assertReportSnapshot(snapshot.context);ensureCurrent();copyToClipboard(
-text,button,html);return true}catch(error){handleError(error);return false}}const STUDENT_CSV_MAX_ROWS=500;function studentCSVLimitError(){return Error("هر فایل\
- ورود هنرجویان می‌تواند حداکثر ۵۰۰ ردیف داشته باشد؛ فایل را به بخش‌های کوچک‌تر تقسیم و هر بخش را در کلاس مربوط وارد کنید.")}
-function assertStudentCSVRows(rows){if(!Array.isArray(rows)||rows.length>STUDENT_CSV_MAX_ROWS)throw studentCSVLimitError()}function csvPlan(text,c){let rows;try{
-rows=parseCSV(text,{maxRows:STUDENT_CSV_MAX_ROWS+1})}catch(error){if(error.code==="CSV_ROW_LIMIT")throw studentCSVLimitError();throw error}if(rows.length<2)throw Error(
-"فایل باید سرستون و دست‌کم یک ردیف داشته باشد.");const headers=rows[0].map(normalizedName),nameColumns=headers.flatMap((x,index)=>x.
-includes("نام")?[index]:[]),codeColumns=headers.flatMap((x,index)=>x==="کد"||x.includes("کد")&&(x.includes("دانش")||x.includes("هنرجو"))?[index]:
-[]);if(!nameColumns.length)throw Error("ستون نام یافت نشد.");if(nameColumns.length>1||codeColumns.length>1)throw Error("ستون نام یا کد مبهم است؛ ب\
-رای هرکدام فقط یک ستون در فایل نگه دارید.");const nameIndex=nameColumns[0],codeIndex=codeColumns[0]??-1,known=knownStudents(c),existingCodes=new Map,
-existingNames=new Set(known.map(st=>normalizedName(st.name))),activeIds=new Set(c.students.map(st=>st.id));for(const student of known)if(student.code&&!existingCodes.
-has(student.code))existingCodes.set(student.code,student);const codes=new Set,names=new Set,plan=[];for(let i=1;i<rows.length;i++){const row=rows[i];if(row.length!==
-headers.length)throw Error("تعداد ستون ردیف "+(i+1)+" معتبر نیست.");const name=normalizedName(row[nameIndex]),code=codeIndex<0?"":asciiDigits(
-row[codeIndex]);if(row.every(cell=>!String(cell).trim()))continue;if(name.startsWith("مثال:"))continue;try{studentIdentity(name,code)}catch(error){throw Error(
-"ردیف "+(i+1)+": "+error.message,{cause:error})}if(code&&codes.has(code))throw Error("کد "+code+" در فایل تکراری است.");if(code)codes.add(code);
-const exact=code?existingCodes.get(code):null,sameName=existingNames.has(name)||names.has(name);plan.push({row:i+1,name,code,existingId:exact?.id||null,archived:exact?
-!activeIds.has(exact.id):false,duplicate:!exact&&sameName,choice:exact?"skip":sameName?"skip":"add"});names.add(name)}return plan}function csvPreviewHtml(plan,c,filename){
-assertStudentCSVRows(plan);const fresh=plan.filter(row=>row.choice==="add").length;return'<form id="studentCSVEditor" class="record-editor csv-preview-editor" d\
-ata-review-mode="none" data-workspace-submit="commit-csv" data-mutating="1"><div class="csv-preview-context"><strong><bdi>'+esc(c.name)+"</bdi></strong><span><b\
-di>"+esc(filename||"فایل CSV")+'</bdi></span></div><div class="csv-preview-summary"><span><strong>'+plan.length.toLocaleString("fa-IR")+"</strong> ردیف</spa\
-n><span><strong>"+fresh.toLocaleString("fa-IR")+"</strong> آمادهٔ افزودن</span><span><strong>"+(plan.length-fresh).toLocaleString("fa-IR")+'</strong\
-> نیازمند بررسی</span></div><p class="csv-preview-help">کدهای موجود و افراد هم‌نام خودکار اضافه یا ادغام نمی‌شوند؛ تصمیم هر ردیف را بررسی کنید.</p><ol class="cs\
-v-preview-list">'+plan.map((row,index)=>'<li class="csv-preview-row"><div class="csv-row-identity"><span class="csv-row-number">'+row.row.toLocaleString("fa-IR")+
-"</span><div><strong><bdi>"+esc(row.name)+"</bdi></strong><small>کد: <bdi>"+esc(row.code||"ثبت نشده")+'</bdi></small></div></div><span class="csv-row-s\
-tatus '+(row.choice==="add"?"is-new":"needs-review")+'">'+(row.existingId?row.archived?"کد موجود در بایگانی":"کد موجود در کلاس":row.
-duplicate?"هم‌نام؛ بررسی شود":"هنرجوی جدید")+'</span><label class="csv-row-decision" for="csvDecision'+index+'"><span>تصمیم برای این ر\
-دیف</span><select id="csvDecision'+index+'" data-csv-row="'+index+'"><option value="skip" '+(row.choice==="skip"?"selected":"")+">ثبت نشود</option>"+(!row.
-existingId?'<option value="add" '+(row.choice==="add"?"selected":"")+">"+(row.duplicate?"افزودن به‌عنوان فرد مستقل":"افزودن هنرجو")+
-"</option>":!row.archived?'<option value="update">اصلاح نام صاحب این کد</option>':"")+"</select></label></li>").join("")+'</ol><p id="operation\
-Error" role="alert"></p><div class="record-editor-actions"><button type="submit">ثبت موارد انتخاب‌شده</button><button type="button" class="ghost" data-workspace\
--action="close">انصراف</button></div></form>'}let csvReading=false;async function csvImportV24(e){if(csvReading)return;const file=e.target.files[0];if(!file)
-return;csvReading=true;const panel=document.querySelector(".student-import");const button=panel?.querySelector('[data-legacy-click="ui-school-class:18"]');const status2=panel?.
-querySelector(".csv-import-status");const errorBox=panel?.querySelector(".csv-import-error");if(button)setControlLock(button,"csv-reading",true);if(panel)panel.
-setAttribute("aria-busy","true");if(status2)status2.textContent="در حال بررسی فایل…";if(errorBox)errorBox.textContent="";const origin={workspace:workspace?.
-id,connection,schoolId:state.schoolId,classId:state.classId,revision:workspace?.revision};try{assertEntityWritable();await flushDrafts({strict:true});await writer.
-catch(()=>{});assertEntityWritable();if(origin.workspace!==workspace.id||origin.connection!==connection||origin.schoolId!==state.schoolId||origin.classId!==state.
-classId)throw Error("کلاس یا ترم تغییر کرده است؛ فایل را دوباره انتخاب کنید.");origin.revision=workspace.revision;if(file.
-size>5*1024*1024)throw Error("حداکثر حجم CSV پنج مگابایت است.");const c=getClassObj(state.schoolId,state.classId);if(!c)throw Error("کلاس \
-انتخاب نشده است.");const text=await file.text();await writer.catch(()=>{});assertEntityWritable();if(origin.workspace!==workspace.id||origin.connection!==
-connection||origin.schoolId!==state.schoolId||origin.classId!==state.classId||origin.revision!==workspace.revision)throw Error("کلاس، ترم یا اطلاعات تغییر کرده \
-است؛ فایل را دوباره انتخاب کنید.");const plan=csvPlan(text,getClassObj(origin.schoolId,origin.classId));if(!plan.length)throw Error("ف\
-ایل ردیف قابل ثبت ندارد.");const opened=showModal("پیش‌نمایش ورود دانش‌آموزان",csvPreviewHtml(plan,c,file.name));if(opened!==
-false){pendingCSV={...origin,plan};rememberRecordEditor()}}catch(error){if(errorBox?.isConnected&&origin.workspace===workspace?.id&&origin.classId===state.classId){
-panel.open=true;errorBox.textContent=error.message||String(error)}else handleError(error)}finally{csvReading=false;if(button)setControlLock(button,"csv-reading",
-false);if(panel)panel.removeAttribute("aria-busy");if(status2)status2.textContent="";e.target.value=""}}let csvSaving=false;async function commitCSV(){if(csvSaving)
-return false;const form=document.querySelector("#modal:not(.hidden) #studentCSVEditor");if(!form)return false;csvSaving=true;const context=pendingCSV;const sourceConnection=connection;
-const choices=[...form.querySelectorAll("[data-csv-row]")].map(el=>el.value);const finish=beginRecordEditorSave(form);try{const check=()=>{assertEntityWritable();
-if(!context||pendingCSV!==context||connection!==sourceConnection||context.connection&&context.connection!==connection||context.workspace!==workspace.id||context.
-revision!==workspace.revision||context.schoolId!==state.schoolId||context.classId!==state.classId)throw Error("کلاس، ترم یا اطلاعات تغییر کرده است؛ پیش‌نمایش را\
- دوباره بسازید.");const c2=getClassObj(context.schoolId,context.classId);if(!c2)throw Error("کلاس دیگر وجود ندارد.");return c2};check();
-assertStudentCSVRows(context.plan);await flushDrafts({strict:true});await writer.catch(()=>{});const c=check(),additions=[],updates=[];const codes=new Set(knownStudents(
-c).map(st=>st.code).filter(Boolean));const activeById=new Map(c.students.map(student=>[student.id,student]));context.plan.forEach((row,i)=>{const choice=choices[i];
-if(choice==="skip")return;const identity=studentIdentity(row.name,row.code);if(choice==="add"&&!row.existingId){if(identity.code&&codes.has(identity.code))throw Error(
-"کد هنرجو در کلاس تکراری است: "+identity.code);if(identity.code)codes.add(identity.code);additions.push({id:uid(),...identity})}else if(choice===
-"update"&&row.existingId&&!row.archived){const student=activeById.get(row.existingId);if(!student||student.code!==identity.code)throw Error("هویت هنرجوی مقصد تغ\
-ییر کرده است؛ فایل را دوباره بررسی کنید.");if(student.name!==identity.name||student.recovered)updates.push({student,identity})}else
-throw Error("تصمیم ردیف "+row.row+" معتبر نیست.")});if(!additions.length&&!updates.length)throw Error("تغییری برای ثبت انتخاب نشده است.");
+meh-student-meta")?.remove()}function prepareKarnamehUnitPrintTables(copy){const trimColumns=(row,start,end,fixed)=>{let position=0;for(const cell of[...row.cells].
+slice(fixed)){const next=position+cell.colSpan;if(next<=start||position>=end)cell.remove();position=next}};for(const table of copy.querySelectorAll("table.karna\
+meh-unit-competency-table")){const headers=[...table.tHead?.rows[0]?.cells||[]].slice(1),count=headers.length;if(count<=5)continue;const section=table.closest("\
+.karnameh-subject-section");if(!section)continue;const hierarchy=headers.map(cell=>({module:Number(cell.dataset.karnamehModulePosition),unit:Number(cell.dataset.
+karnamehUnitIndex)}));const hasHierarchy=hierarchy.every((group,index)=>Number.isInteger(group.module)&&group.module>=0&&Number.isInteger(group.unit)&&group.unit>=
+0&&(!index||group.module>=hierarchy[index-1].module));const sections=[];for(let start=0;start<count;){let end=Math.min(start+5,count);if(hasHierarchy&&end<count&&
+hierarchy[end-1].module===hierarchy[end].module){let boundary=end;while(boundary>start&&hierarchy[boundary-1].module===hierarchy[end].module)boundary--;if(boundary>
+start)end=boundary}const part=section.cloneNode(true),sheet=part.querySelector("table.karnameh-unit-competency-table");for(const[index,row]of[...sheet.tHead.rows].
+entries())trimColumns(row,start*3,end*3,index===0?1:0);for(const body of sheet.tBodies)for(const row of body.rows)trimColumns(row,start*3,end*3,1);for(const element of[
+part,sheet]){element.dataset.karnamehUnitStart=String(start+1);element.dataset.karnamehUnitEnd=String(end);element.dataset.karnamehUnitCount=String(end-start);if(hasHierarchy){
+element.dataset.karnamehModuleStart=String(hierarchy[start].module+1);element.dataset.karnamehModuleEnd=String(hierarchy[end-1].module+1)}}const heading=part.querySelector(
+".karnameh-subject-header h4");if(heading){let range="واحدهای "+karnamehSheetNumber(start+1)+" تا "+karnamehSheetNumber(end);if(hasHierarchy){const first=hierarchy[start],
+last=hierarchy[end-1];range=first.module===last.module?"پودمان "+karnamehSheetNumber(first.module+1):"پودمان‌های "+karnamehSheetNumber(first.module+
+1)+" تا "+karnamehSheetNumber(last.module+1);if(first.module===last.module&&(start>0&&hierarchy[start-1].module===first.module||end<count&&hierarchy[end].module===
+first.module))range+=end-start===1?" · واحد کار "+karnamehSheetNumber(first.unit+1):" · واحدهای "+karnamehSheetNumber(first.unit+1)+" تا "+karnamehSheetNumber(
+last.unit+1)}heading.textContent+=" · "+range}sections.push(part);start=end}section.replaceWith(...sections)}}function preparePrint(button){printAuthorization=
+null;document.getElementById("printRoot")?.remove();const modal=document.getElementById("modal"),isModal=button?button.closest("#modal"):!modal.classList.contains(
+"hidden");let source=isModal?document.getElementById("modalBody"):button?.closest(".report-document,#karnamehTabOutput,#lessonReportTabOutput,#lessonReportOutpu\
+t,#globalReportOutput,#periodicReportOutput")||button?.closest(".card")||document.getElementById("karnamehTabOutput")||document.getElementById("lessonReportTabO\
+utput")||document.getElementById("lessonReportOutput")||document.getElementById("globalReportOutput")||document.getElementById("periodicReportOutput")||document.
+getElementById("app");if(!source)throw Error("گزارشی برای چاپ انتخاب نشده است.");const copy=source.cloneNode(true);const periodic=source.
+matches(".periodic-document")||!!source.querySelector(".periodic-document");const karnameh=source.matches(".karnameh-student-sheet");if(periodic)preservePeriodicAppearance(
+source,copy);if(karnameh)prepareKarnamehPrint(copy);prepareKarnamehUnitPrintTables(copy);copy.querySelectorAll("details.report-class-group, details.report-sessi\
+on-disclosure, details.report-session-compact").forEach(section=>{section.open=true;section.querySelector(".report-class-body, .report-session-body, .report-ses\
+sion-content")?.style.setProperty("display","block","important");const expanded=document.createElement("section");for(const attr of[...section.attributes])expanded.
+setAttribute(attr.name,attr.value);expanded.dataset.printExpanded="true";expanded.append(...section.childNodes);const summary=expanded.querySelector(":scope > s\
+ummary");if(summary){const heading=document.createElement("header");for(const attr of[...summary.attributes])heading.setAttribute(attr.name,attr.value);heading.
+append(...summary.childNodes);summary.replaceWith(heading)}section.replaceWith(expanded)});copy.querySelectorAll("button,.no-print,form,script,select").forEach(
+x=>x.remove());copy.querySelectorAll("input,textarea").forEach(input=>{const span=document.createElement("span");span.textContent=input.type==="checkbox"?input.
+checked?"بله":"خیر":input.value;input.replaceWith(span)});copy.querySelectorAll("*").forEach(el=>{for(const attr of[...el.attributes])if(attr.name.startsWith(
+"on")||attr.name==="id")el.removeAttribute(attr.name);el.style.removeProperty("overflow");el.style.removeProperty("overflow-x");el.style.removeProperty("overflo\
+w-y");el.style.removeProperty("max-height");el.style.removeProperty("height")});const root=document.createElement("div");root.id="printRoot";if(karnameh)root.className=
+"karnameh-print-root";root.innerHTML=periodic||karnameh?"":"<header><h1>گزارش مدرسه</h1><p>"+esc(workspace.year+" / "+workspace.term)+" · "+esc(new Date().
+toLocaleString("fa-IR"))+"</p></header>";root.append(copy);document.body.append(root);const columns=Math.max(0,...[...copy.querySelectorAll("tr")].map(tr=>[...tr.
+children].reduce((sum,cell)=>sum+(Number(cell.colSpan)||1),0)));document.getElementById("printPageStyle")?.remove();const style=document.createElement("style");
+style.id="printPageStyle";style.textContent="@page { size: A4 "+(columns>8?"landscape":"portrait")+"; margin: 12mm; }";document.head.append(style);return root}async function printReport(button,{
+context,validate}={}){try{const expected=context||captureWorkspaceContext();await document.fonts?.ready;await flushDrafts({strict:true});await writer.catch(()=>{});
+if(!fileMode)await assertReportSnapshot(expected);if(validate&&!validate())throw Error("محدوده یا متن گزارش تغییر کرده است؛ گزارش را دوباره تهیه کنید.");
+preparePrint(button);printAuthorization=expected;if(!globalThis.__EDU_PRINT_TEST__)window.print();return true}catch(error){if(context)throw error;handleError(error);
+return false}}function reportCopyScope(){return JSON.stringify({navigation:state,activity:globalFilter,lesson:lessonReportFilter,student:karnamehFilter,session:currentSessionId})}
+async function copyReportV24(buildText,button,formatHTML){const origin=workspace?.id,sourceConnection=connection,scope=reportCopyScope();const ensureCurrent=()=>{
+if(!fileMode)assertWorkspaceReadable();else if(!ready||blocked||periodLoading||resetBusy||connectionRetired||db.settings.password&&!isAuthenticated)throw Error(
+"اطلاعات برای تهیهٔ گزارش آماده نیست.");if(workspace?.id!==origin||connection!==sourceConnection||reportCopyScope()!==scope||button?.
+isConnected===false)throw Error("صفحه یا محدودهٔ گزارش تغییر کرد؛ گزارش را دوباره تهیه کنید.")};try{ensureCurrent();
+const snapshot=fileMode?null:await prepareReportSnapshot();ensureCurrent();const text=buildText(snapshot?.data||db);if(typeof text!=="string"||!text.length)return false;
+const html=formatHTML?formatHTML(text):void 0;if(snapshot)await assertReportSnapshot(snapshot.context);ensureCurrent();copyToClipboard(text,button,html);return true}catch(error){
+handleError(error);return false}}const STUDENT_CSV_MAX_ROWS=500;function studentCSVLimitError(){return Error("هر فایل ورود هنرجویان می‌تواند حداکثر ۵۰۰ ردیف داش\
+ته باشد؛ فایل را به بخش‌های کوچک‌تر تقسیم و هر بخش را در کلاس مربوط وارد کنید.")}function assertStudentCSVRows(rows){
+if(!Array.isArray(rows)||rows.length>STUDENT_CSV_MAX_ROWS)throw studentCSVLimitError()}function csvPlan(text,c){let rows;try{rows=parseCSV(text,{maxRows:STUDENT_CSV_MAX_ROWS+
+1})}catch(error){if(error.code==="CSV_ROW_LIMIT")throw studentCSVLimitError();throw error}if(rows.length<2)throw Error("فایل باید سرستون و دست‌کم یک ردیف داشته \
+باشد.");const headers=rows[0].map(normalizedName),nameColumns=headers.flatMap((x,index)=>x.includes("نام")?[index]:[]),codeColumns=headers.flatMap((x,index)=>x===
+"کد"||x.includes("کد")&&(x.includes("دانش")||x.includes("هنرجو"))?[index]:[]);if(!nameColumns.length)throw Error("ستون نام یافت نشد.");
+if(nameColumns.length>1||codeColumns.length>1)throw Error("ستون نام یا کد مبهم است؛ برای هرکدام فقط یک ستون در فایل نگه دارید.");
+const nameIndex=nameColumns[0],codeIndex=codeColumns[0]??-1,known=knownStudents(c),existingCodes=new Map,existingNames=new Set(known.map(st=>normalizedName(st.name))),
+activeIds=new Set(c.students.map(st=>st.id));for(const student of known)if(student.code&&!existingCodes.has(student.code))existingCodes.set(student.code,student);
+const codes=new Set,names=new Set,plan=[];for(let i=1;i<rows.length;i++){const row=rows[i];if(row.length!==headers.length)throw Error("تعداد ستون ردیف "+
+(i+1)+" معتبر نیست.");const name=normalizedName(row[nameIndex]),code=codeIndex<0?"":asciiDigits(row[codeIndex]);if(row.every(cell=>!String(cell).trim()))
+continue;if(name.startsWith("مثال:"))continue;try{studentIdentity(name,code)}catch(error){throw Error("ردیف "+(i+1)+": "+error.message,{cause:error})}if(code&&
+codes.has(code))throw Error("کد "+code+" در فایل تکراری است.");if(code)codes.add(code);const exact=code?existingCodes.get(code):null,sameName=existingNames.
+has(name)||names.has(name);plan.push({row:i+1,name,code,existingId:exact?.id||null,archived:exact?!activeIds.has(exact.id):false,duplicate:!exact&&sameName,choice:exact?
+"skip":sameName?"skip":"add"});names.add(name)}return plan}function csvPreviewHtml(plan,c,filename){assertStudentCSVRows(plan);const fresh=plan.filter(row=>row.
+choice==="add").length;return'<form id="studentCSVEditor" class="record-editor csv-preview-editor" data-review-mode="none" data-workspace-submit="commit-csv" da\
+ta-mutating="1"><div class="csv-preview-context"><strong><bdi>'+esc(c.name)+"</bdi></strong><span><bdi>"+esc(filename||"فایل CSV")+'</bdi></span></div><div \
+class="csv-preview-summary"><span><strong>'+plan.length.toLocaleString("fa-IR")+"</strong> ردیف</span><span><strong>"+fresh.toLocaleString("fa-IR")+"</stron\
+g> آمادهٔ افزودن</span><span><strong>"+(plan.length-fresh).toLocaleString("fa-IR")+'</strong> نیازمند بررسی</span></div><p class="csv-preview-help">\
+کدهای موجود و افراد هم‌نام خودکار اضافه یا ادغام نمی‌شوند؛ تصمیم هر ردیف را بررسی کنید.</p><ol class="csv-preview-list">'+
+plan.map((row,index)=>'<li class="csv-preview-row"><div class="csv-row-identity"><span class="csv-row-number">'+row.row.toLocaleString("fa-IR")+"</span><div><st\
+rong><bdi>"+esc(row.name)+"</bdi></strong><small>کد: <bdi>"+esc(row.code||"ثبت نشده")+'</bdi></small></div></div><span class="csv-row-status '+(row.choice===
+"add"?"is-new":"needs-review")+'">'+(row.existingId?row.archived?"کد موجود در بایگانی":"کد موجود در کلاس":row.duplicate?"هم‌نام؛ بر\
+رسی شود":"هنرجوی جدید")+'</span><label class="csv-row-decision" for="csvDecision'+index+'"><span>تصمیم برای این ردیف</span><select id="csvDecisi\
+on'+index+'" data-csv-row="'+index+'"><option value="skip" '+(row.choice==="skip"?"selected":"")+">ثبت نشود</option>"+(!row.existingId?'<option value="ad\
+d" '+(row.choice==="add"?"selected":"")+">"+(row.duplicate?"افزودن به‌عنوان فرد مستقل":"افزودن هنرجو")+"</option>":!row.archived?
+'<option value="update">اصلاح نام صاحب این کد</option>':"")+"</select></label></li>").join("")+'</ol><p id="operationError" role="alert"></p><d\
+iv class="record-editor-actions"><button type="submit">ثبت موارد انتخاب‌شده</button><button type="button" class="ghost" data-workspace-action="close">انصراف</bu\
+tton></div></form>'}let csvReading=false;async function csvImportV24(e){if(csvReading)return;const file=e.target.files[0];if(!file)return;csvReading=true;const panel=document.
+querySelector(".student-import");const button=panel?.querySelector('[data-legacy-click="ui-school-class:18"]');const status2=panel?.querySelector(".csv-import-s\
+tatus");const errorBox=panel?.querySelector(".csv-import-error");if(button)setControlLock(button,"csv-reading",true);if(panel)panel.setAttribute("aria-busy","tr\
+ue");if(status2)status2.textContent="در حال بررسی فایل…";if(errorBox)errorBox.textContent="";const origin={workspace:workspace?.id,connection,schoolId:state.
+schoolId,classId:state.classId,revision:workspace?.revision};try{assertEntityWritable();await flushDrafts({strict:true});await writer.catch(()=>{});assertEntityWritable();
+if(origin.workspace!==workspace.id||origin.connection!==connection||origin.schoolId!==state.schoolId||origin.classId!==state.classId)throw Error("کلاس یا ترم تغ\
+ییر کرده است؛ فایل را دوباره انتخاب کنید.");origin.revision=workspace.revision;if(file.size>5*1024*1024)throw Error("حداکثر حجم\
+ CSV پنج مگابایت است.");const c=getClassObj(state.schoolId,state.classId);if(!c)throw Error("کلاس انتخاب نشده است.");const text=await file.
+text();await writer.catch(()=>{});assertEntityWritable();if(origin.workspace!==workspace.id||origin.connection!==connection||origin.schoolId!==state.schoolId||origin.
+classId!==state.classId||origin.revision!==workspace.revision)throw Error("کلاس، ترم یا اطلاعات تغییر کرده است؛ فایل را دوباره انتخاب کنید.");
+const plan=csvPlan(text,getClassObj(origin.schoolId,origin.classId));if(!plan.length)throw Error("فایل ردیف قابل ثبت ندارد.");const opened=showModal(
+"پیش‌نمایش ورود دانش‌آموزان",csvPreviewHtml(plan,c,file.name));if(opened!==false){pendingCSV={...origin,plan};rememberRecordEditor()}}catch(error){
+if(errorBox?.isConnected&&origin.workspace===workspace?.id&&origin.classId===state.classId){panel.open=true;errorBox.textContent=error.message||String(error)}else
+handleError(error)}finally{csvReading=false;if(button)setControlLock(button,"csv-reading",false);if(panel)panel.removeAttribute("aria-busy");if(status2)status2.
+textContent="";e.target.value=""}}let csvSaving=false;async function commitCSV(){if(csvSaving)return false;const form=document.querySelector("#modal:not(.hidden\
+) #studentCSVEditor");if(!form)return false;csvSaving=true;const context=pendingCSV;const sourceConnection=connection;const choices=[...form.querySelectorAll("[\
+data-csv-row]")].map(el=>el.value);const finish=beginRecordEditorSave(form);try{const check=()=>{assertEntityWritable();if(!context||pendingCSV!==context||connection!==
+sourceConnection||context.connection&&context.connection!==connection||context.workspace!==workspace.id||context.revision!==workspace.revision||context.schoolId!==
+state.schoolId||context.classId!==state.classId)throw Error("کلاس، ترم یا اطلاعات تغییر کرده است؛ پیش‌نمایش را دوباره بسازید.");
+const c2=getClassObj(context.schoolId,context.classId);if(!c2)throw Error("کلاس دیگر وجود ندارد.");return c2};check();assertStudentCSVRows(context.
+plan);await flushDrafts({strict:true});await writer.catch(()=>{});const c=check(),additions=[],updates=[];const codes=new Set(knownStudents(c).map(st=>st.code).
+filter(Boolean));const activeById=new Map(c.students.map(student=>[student.id,student]));context.plan.forEach((row,i)=>{const choice=choices[i];if(choice==="ski\
+p")return;const identity=studentIdentity(row.name,row.code);if(choice==="add"&&!row.existingId){if(identity.code&&codes.has(identity.code))throw Error("کد هنرجو\
+ در کلاس تکراری است: "+identity.code);if(identity.code)codes.add(identity.code);additions.push({id:uid(),...identity})}else if(choice==="update"&&
+row.existingId&&!row.archived){const student=activeById.get(row.existingId);if(!student||student.code!==identity.code)throw Error("هویت هنرجوی مقصد تغییر کرده ا\
+ست؛ فایل را دوباره بررسی کنید.");if(student.name!==identity.name||student.recovered)updates.push({student,identity})}else throw Error("ت\
+صمیم ردیف "+row.row+" معتبر نیست.")});if(!additions.length&&!updates.length)throw Error("تغییری برای ثبت انتخاب نشده است.");
 freezeClassRosters(c);for(const{student,identity}of updates)applyStudentIdentity(c,student,identity);for(const student of additions)c.students.push(student);await saveDBV24(
 {action:"ورود CSV: "+additions.length+" افزوده، "+updates.length+" اصلاح"});if(pendingCSV!==context||connection!==sourceConnection||workspace.id!==
 context.workspace||state.schoolId!==context.schoolId||state.classId!==context.classId||periodLoading||resetBusy||connectionRetired)return true;finish();rememberRecordEditor();
@@ -2718,10 +2807,10 @@ id:workspace?.id||"",revision:workspace?.revision||0,pendingDrafts:drafts.size+a
 first:"اول",second:"دوم"}[workspace?.termKind||academicTermKind(workspace?.term||"")]||workspace?.term||"",ready:ready&&!periodLoading,blocked,retired:connectionRetired,
 resetting:resetBusy,saving:busy,authenticated:!db.settings.password||isAuthenticated}),startTodaySession:startTodaySessionV24,openAcademicYear,refreshYearLessonSessions,
 openYearSession,prepareForUpdate,prepareReportSnapshot,renderAcademicKarnameh,periodicKarnamehHtml,initPeriodicKarnameh,openKarnamehStudent,listAnnualReportPeriods,
-assessmentResult,annualGradeRows,annualTechnicalRows,assertReportSnapshot,normalizeDB,validateV24,averageLabel,csvPlan,gradeInput,clearGrade,flushDrafts,openBackups,
-exportFullBackup,openBackupShare,sharePreparedBackup,downloadPreparedBackup,snapshotInstallation,validateFullBackup,previewFullBackup,restoreFullBackup,confirmImport,
-undoLast,openPeriods,switchPeriod:id=>switchPeriod(id),openNewPeriod,finalizePeriod,reopenPeriod,showFrozenReport,printReport,copyReport:copyReportV24,preparePrint,
-commitCSV,saveStudent,refreshControlLocks:lockControls,recoverReportNotes:()=>workspace?hydrateReportNotes(workspace):true,canWriteReportNotes:()=>!periodLoading&&
+assessmentResult,annualGradeRows,annualTechnicalRows,modularReportText,assertReportSnapshot,normalizeDB,validateV24,averageLabel,csvPlan,gradeInput,clearGrade,flushDrafts,
+openBackups,exportFullBackup,openBackupShare,sharePreparedBackup,downloadPreparedBackup,snapshotInstallation,validateFullBackup,previewFullBackup,restoreFullBackup,
+confirmImport,undoLast,openPeriods,switchPeriod:id=>switchPeriod(id),openNewPeriod,finalizePeriod,reopenPeriod,showFrozenReport,printReport,copyReport:copyReportV24,
+preparePrint,commitCSV,saveStudent,refreshControlLocks:lockControls,recoverReportNotes:()=>workspace?hydrateReportNotes(workspace):true,canWriteReportNotes:()=>!periodLoading&&
 !resetBusy&&!connectionRetired&&(!fullRestoreBusy||pendingFullBackup===null),persistReportNotes:commitReportNoteValues,confirmWipe,saveDB:saveDBV24,bootstrap:bootstrapV24,
 test:{prepareLegacyPeriodFixture:()=>{if(!globalThis.__EDU_TEST_MODE__)throw Error("فقط در حالت آزمون");return showModal("Synthetic legacy catalog\
  fixture",'<input id="periodYear"><select id="periodTerm"><option>اول</option><option>دوم</option></select>')},createLegacyPeriod:()=>{if(!globalThis.__EDU_TEST_MODE__)
@@ -2742,25 +2831,26 @@ ved");render()}finally{discardingDrafts=false}}function reviewDrafts(){const ite
 ررسی</span><p>این ورودی‌ها پیش از تغییر داده در تب دیگر نوشته شده‌اند و خودکار اعمال نمی‌شوند. مقدار ثبت‌شده جدید و ویرایش خود را بررسی کنید.</p></header><div c\
 lass="table-scroll draft-review-table"><table><thead><tr><th>هنرجو، درس و بخش</th><th>ثبت‌شده جدید</th><th>ویرایش شما</th></tr></thead><tbody>'+
 items.map(item=>{const c=findClass(item.classId),l=getLessonObj(c,item.lid),st=getStudentObj(c,item.sid);const pod=l?.poudmans?.find(p=>p.id===item.pid);const source=item.
-kind==="k"?ownScoreRecord(l?.kardaneshScores,item.sid):item.kind==="pod"?ownScoreRecord(pod?.podScores,item.sid):ownScoreRecord(pod?.units.find(u=>u.id===item.uid)?.
-unitScores,item.sid);const fieldLabel={practical:"عملی",theory:"نظری",midtermPractical:"عملی میان‌ترم",midtermTheory:"نظری میان‌ترم",
-m:"مستمر",p:"پایانی",c:"شایستگی"}[item.field]||item.field;const description=[c?.name,st?.name||item.sid,l?.name||item.lid,item.kind==="pod"?pod?.
-name:"",fieldLabel].filter(Boolean).join(" / ");return"<tr><td>"+esc(description)+'</td><td class="draft-review-current"><strong dir="auto">'+esc(source?.[item.
-field]??"—")+'</strong></td><td class="draft-review-proposed"><strong dir="auto">'+esc(item.remove?"حذف نمره":item.value)+"</strong></td></tr>"}).join(
-"")+'</tbody></table></div><div class="draft-review-actions"><button data-workspace-action="approve-drafts">ورودی‌ها را بررسی کرده‌ام؛ اعمال شوند</button><butto\
-n class="ghost" data-workspace-action="discard-drafts">لغو این ویرایش‌ها</button></div></div>')}async function approveDrafts(){if(blocked)throw Error(
-"ابتدا صفحه را دوباره بارگذاری کنید تا داده جدید خوانده شود.");for(const item of drafts.values())if(item.review){
-item.review=false;item.baseRevision=workspace.revision;item.error=""}await storeDrafts();await flushDrafts({strict:true});closeModal();render()}function buildArchiveV24(c){
-if(!c.archivedStudents?.length)return"";return'<div class="card student-archive"><h3>سوابق بایگانی‌شده</h3>'+c.archivedStudents.map(st=>'<div c\
-lass="row"><span>'+esc(st.name)+(st.recovered?" · نام نیازمند بررسی":"")+'</span><button class="ghost" data-workspace-action="archived-report" d\
-ata-key="'+esc(st.id)+'">کارنامه</button><button class="ghost" data-mutating="1" data-workspace-action="edit-student" data-key="'+esc(st.id)+'">اصلاح مشخ\
-صات</button><button class="ghost" data-mutating="1" data-workspace-action="restore-student" data-key="'+esc(st.id)+'">بازگردانی</button></div>').join(
-"")+"</div>"}async function rawRecoveryV24(){let legacy=null;const notes=[];try{legacy=localStorage.getItem(STORAGE_KEY)}catch{notes.push("خواندن حافظهٔ نسخهٔ ق\
-دیمی در دسترس نبود.")}if(!connection){if(legacy===null)throw Error("بانک محلی در دسترس نیست؛ فایل پشتیبان مستقل را بازیابی کنید.");
-downloadLocalFile(new Blob([legacy],{type:"application/json"}),"school-legacy-raw-recovery.json");return}const sourceConnection=connection,check=()=>{if(connection!==
-sourceConnection||connectionRetired||resetBusy)throw Error("اتصال بانک هنگام تهیهٔ نسخهٔ خام تغییر کرد؛ فایلی دریافت نشد.")};
-check();const names=EduDataStoreSchema.stores.map(store=>store.name),tx=sourceConnection.transaction(names,"readonly"),done=transactionDone(tx),[values]=await Promise.
-all([Promise.all(names.map(name=>requestPromise(tx.objectStore(name).getAll()))),done]);check();const stores=Object.fromEntries(names.map((name,index)=>[name,values[index]])),
+kind==="k"?ownScoreRecord(l?.kardaneshScores,item.sid):item.kind==="pod"?ownScoreRecord(pod?.podScores,item.sid):ownScoreRecord(pod?.units.find(u=>u.id===item.uid)?.[item.
+kind==="unit"?"competencyScores":"unitScores"],item.sid);const fieldLabel={practical:"عملی",theory:"نظری",midtermPractical:"عملی میان‌ترم",
+midtermTheory:"نظری میان‌ترم",m:"مستمر",p:"پایانی",c:"شایستگی"}[item.field]||item.field;const description=[c?.name,st?.name||item.
+sid,l?.name||item.lid,["pod","unit"].includes(item.kind)?pod?.name:"",item.kind==="unit"?pod?.units.find(u=>u.id===item.uid)?.name:"",fieldLabel].filter(Boolean).
+join(" / ");return"<tr><td>"+esc(description)+'</td><td class="draft-review-current"><strong dir="auto">'+esc(source?.[item.field]??"—")+'</strong></td><td cl\
+ass="draft-review-proposed"><strong dir="auto">'+esc(item.remove?"حذف نمره":item.value)+"</strong></td></tr>"}).join("")+'</tbody></table></div><div clas\
+s="draft-review-actions"><button data-workspace-action="approve-drafts">ورودی‌ها را بررسی کرده‌ام؛ اعمال شوند</button><button class="ghost" data-workspace-actio\
+n="discard-drafts">لغو این ویرایش‌ها</button></div></div>')}async function approveDrafts(){if(blocked)throw Error("ابتدا صفحه را دوباره بارگذاری\
+ کنید تا داده جدید خوانده شود.");for(const item of drafts.values())if(item.review){item.review=false;item.baseRevision=workspace.revision;
+item.error=""}await storeDrafts();await flushDrafts({strict:true});closeModal();render()}function buildArchiveV24(c){if(!c.archivedStudents?.length)return"";return'\
+<div class="card student-archive"><h3>سوابق بایگانی‌شده</h3>'+c.archivedStudents.map(st=>'<div class="row"><span>'+esc(st.name)+(st.recovered?"\
+ · نام نیازمند بررسی":"")+'</span><button class="ghost" data-workspace-action="archived-report" data-key="'+esc(st.id)+'">کارنامه</button><butto\
+n class="ghost" data-mutating="1" data-workspace-action="edit-student" data-key="'+esc(st.id)+'">اصلاح مشخصات</button><button class="ghost" data-mutating="1" da\
+ta-workspace-action="restore-student" data-key="'+esc(st.id)+'">بازگردانی</button></div>').join("")+"</div>"}async function rawRecoveryV24(){let legacy=null;
+const notes=[];try{legacy=localStorage.getItem(STORAGE_KEY)}catch{notes.push("خواندن حافظهٔ نسخهٔ قدیمی در دسترس نبود.")}if(!connection){
+if(legacy===null)throw Error("بانک محلی در دسترس نیست؛ فایل پشتیبان مستقل را بازیابی کنید.");downloadLocalFile(
+new Blob([legacy],{type:"application/json"}),"school-legacy-raw-recovery.json");return}const sourceConnection=connection,check=()=>{if(connection!==sourceConnection||
+connectionRetired||resetBusy)throw Error("اتصال بانک هنگام تهیهٔ نسخهٔ خام تغییر کرد؛ فایلی دریافت نشد.")};check();
+const names=EduDataStoreSchema.stores.map(store=>store.name),tx=sourceConnection.transaction(names,"readonly"),done=transactionDone(tx),[values]=await Promise.all(
+[Promise.all(names.map(name=>requestPromise(tx.objectStore(name).getAll()))),done]);check();const stores=Object.fromEntries(names.map((name,index)=>[name,values[index]])),
 pending=[stores],seen=new WeakSet;while(pending.length){const current=pending.pop();if(!current||typeof current!=="object"||seen.has(current))continue;seen.add(
 current);if(Array.isArray(current.drafts))current.drafts=current.drafts.filter(row=>row?.key!=="EduManager.singleFile");for(const row of Array.isArray(current.backups)?
 current.backups:[])if(row?.full?.stores)pending.push(row.full.stores)}const localRecovery={};try{for(const key of Object.keys(localStorage))if(key.startsWith("E\
@@ -2823,29 +2913,38 @@ createElement("h3");title.textContent="حالت انتقال سوابق؛ فقط
 ستفاده روزمره، نسخه نصب‌شده برنامه یا نشانی HTTPS آن را باز کنید. ابتدا فایل پشتیبان سوابق قبلی را دریافت و سپس در همان نسخه بازیابی کنید.";
 const button=document.createElement("button");button.textContent="دریافت فایل انتقال سوابق";button.onclick=()=>exportBackup();warning.append(
 title,text,button);app.prepend(warning)}function parseDraft(item){const l=getLessonObj(findClass(item.classId),item.lid);if(!l)return{ok:false,message:"درس پیش‌\
-نویس موجود نیست."};if(item.kind==="pod"){if(l.gradingPolicy?.method!=="modular"||!["m","c"].includes(item.field))return{ok:false,message:"نوع نمره \
-پودمان نامعتبر است."};return EduPolicy.parse(item.value,l.gradingPolicy,item.field,item.kind)}return parseGrade(item.value)}function validateCourse(l,ids,year){
-if(l.gradingPolicy){EduPolicy.validate(l.gradingPolicy);if(l.gradingPolicy.year!==year)throw Error("سال قواعد درس با سال تحصیلی برنامه یکسان نیست؛ تنظیمات درس ر\
-ا بررسی کنید.");const p=l.gradingPolicy;if(l.gradeMode==="kardanesh"!==(p.method==="dual"))throw Error("روش درس با قواعد آن یکسان نیست.");
-if(p.method==="modular"&&(!l.poudmans.length||l.poudmans.length>20||l.poudmans.some(x=>!x.units.length||x.units.length>10)))throw Error("ساختار پودمان و واحد مع\
-تبر نیست.")}for(const pod of l.poudmans||[]){if(pod.podScores===void 0)continue;if(!pod.podScores||typeof pod.podScores!=="object"||Array.isArray(pod.podScores))
-throw Error("نمرات پودمان نامعتبر است.");for(const[sid,g]of Object.entries(pod.podScores)){if(!ids.has(sid)||!g||typeof g!=="object"||Array.
-isArray(g))throw Error("دانش‌آموز یا نمره پودمان نامعتبر است.");if(g.gate!==void 0&&typeof g.gate!=="boolean")throw Error("وضعیت\
- معیارهای الزامی نامعتبر است.");for(const field of["m","c"])if(g[field]!=null){if(typeof g[field]!=="number"||!Number.isFinite(g[field])||
-l.gradingPolicy?.method!=="modular")throw Error("نمره پودمان فاقد قواعد معتبر است.");if(!EduPolicy.parse(String(g[field]),l.gradingPolicy,
-field,"pod").ok)throw Error("بازه یا گام نمره پودمان نامعتبر است.")}}}}function policyStatus(r){if(r.complete===false&&r.final==null&&
-r.passed!==false)return r.reason||"در انتظار ثبت نمره";let label=r.passed===false?"نیازمند جبران":r.final==null?"ناقص":r.passed===
-true?"قبول":"تکمیل";if(r.reason)label+=" — "+r.reason;if(r.policyConfirmed===false)label+=" (قواعد پیش‌نویس)";return label}function refreshPolicyResults(){
-const c=findClass(state.classId);if(!c)return;for(const el of document.querySelectorAll("[data-pod-final],[data-pod-status]")){const key=el.dataset.podFinal||el.
-dataset.podStatus,[pid,sid]=key.split("|");const l=c.lessons.find(l2=>l2.poudmans.some(p=>p.id===pid)),pod=l?.poudmans.find(p=>p.id===pid);if(!l?.gradingPolicy)
-continue;const r=EduPolicy.moduleResult(l.gradingPolicy,ownScoreRecord(pod.podScores,sid));el.textContent=el.dataset.podFinal?finalText(r):policyStatus(r);const row=el.
-closest(".assessment-student");if(row)row.dataset.resultState=!r.complete?"incomplete":r.passed?"passed":"review"}for(const el of document.querySelectorAll("[da\
-ta-course-final],[data-course-mean],[data-course-status]")){const key=el.dataset.courseFinal||el.dataset.courseMean||el.dataset.courseStatus,[lid,sid]=key.split(
-"|"),l=getLessonObj(c,lid);if(!l)continue;const r=calcV24(c,l,sid);el.textContent=el.dataset.courseFinal?finalText(r):el.dataset.courseMean?r.provisionalAverage==
-null?"—":r.provisionalAverage.toFixed(2):policyStatus(r)}}const courseUI=EduCourseUI({esc,uid,asciiDigits,findClass,getDB:()=>db,context:()=>({id:workspace?.id,
-revision:workspace?.revision,closed:!!workspace?.closed,readOnly:fileMode||!!workspace?.closed||blocked||!ready||periodLoading||resetBusy||connectionRetired}),state:()=>state,
-year:()=>db.settings.academicYear,assertWritable:assertEntityWritable,flushDrafts,saveDB:saveDBV24,showModal:showModalV24,closeModal:()=>closeModal(),render:()=>render(),
-showCourseClass:()=>{state.view="class";state.lessonId=null;state.tab="lessons";render()},error:handleError,students:getSortedStudents,knownStudents,courseHistory:academicCourseHistory,
-calc:calcV24,gradeCell,finalText,status:policyStatus});installRuntimeAPI();if(!globalThis.__EDU_TEST_MODE__&&!globalThis.__EDU_UNIT_TEST__)delete window.EduV24.
-test;if(!globalThis.__EDU_UNIT_TEST__){installUI();bootstrapV24()}})();
+نویس موجود نیست."};if(item.kind==="pod"||item.kind==="unit"){const pod=l.poudmans.find(p=>p.id===item.pid);if(l.gradingPolicy?.method!=="modular"||
+!["m","c"].includes(item.field)||!pod||(item.kind==="unit"?!EduPolicy.unitBased(l.gradingPolicy)||!pod.units.some(u=>u.id===item.uid):EduPolicy.unitBased(l.gradingPolicy)))
+return{ok:false,message:"پودمان، واحد کار یا نوع نمره نامعتبر است."};return EduPolicy.parse(item.value,l.gradingPolicy,item.field,
+item.kind)}return parseGrade(item.value)}function validateCourse(l,ids,year){if(l.gradingPolicy){EduPolicy.validate(l.gradingPolicy);if(l.gradingPolicy.year!==year)
+throw Error("سال قواعد درس با سال تحصیلی برنامه یکسان نیست؛ تنظیمات درس را بررسی کنید.");const p=l.gradingPolicy;
+if(l.gradeMode==="kardanesh"!==(p.method==="dual"))throw Error("روش درس با قواعد آن یکسان نیست.");if(p.method==="modular"&&(!l.poudmans.
+length||l.poudmans.length>20||l.poudmans.some(x=>!x.units.length||x.units.length>10)))throw Error("ساختار پودمان و واحد معتبر نیست.")}
+const unitBased=EduPolicy.unitBased(l.gradingPolicy);const validateScores=(scores,unit=false)=>{if(scores===void 0)return;if(!scores||typeof scores!=="object"||
+Array.isArray(scores))throw Error("نمرات پودمان یا واحد کار نامعتبر است.");if(unit!==unitBased&&Object.keys(scores).length)throw Error(
+"نمره با مبنای نمره‌دهی درس یکسان نیست.");for(const[sid,g]of Object.entries(scores)){if(!ids.has(sid)||!g||typeof g!=="object"||
+Array.isArray(g))throw Error("دانش‌آموز یا نمره پودمان نامعتبر است.");if(unit&&Object.keys(g).some(key=>!["m","c"].includes(key)))
+throw Error("اجزای نمرهٔ واحد کار نامعتبر است.");if(g.gate!==void 0&&typeof g.gate!=="boolean")throw Error("وضعیت معیارهای الزامی نام\
+عتبر است.");for(const field of["m","c"])if(g[field]!=null){if(typeof g[field]!=="number"||!Number.isFinite(g[field])||l.gradingPolicy?.method!=="modular")
+throw Error("نمره پودمان فاقد قواعد معتبر است.");if(!EduPolicy.parse(String(g[field]),l.gradingPolicy,field,unit?"unit":"pod").ok)throw Error(
+"بازه یا گام نمره پودمان نامعتبر است.")}}};for(const pod of l.poudmans||[]){validateScores(pod.podScores);for(const unit of pod.units||
+[])validateScores(unit.competencyScores,true)}}function policyStatus(r){if(r.unitBased)return r.complete?"واحدهای کار تکمیل شده‌اند":"واح\
+د کار تکمیل‌نشده دارد";if(r.complete===false&&r.final==null&&r.passed!==false)return r.reason||"در انتظار ثبت نمره";let label=r.
+passed===false?"نیازمند جبران":r.final==null?"ناقص":r.passed===true?"قبول":"تکمیل";if(r.reason)label+=" — "+r.reason;if(r.policyConfirmed===
+false)label+=" (قواعد پیش‌نویس)";return label}function refreshPolicyResults(){const c=findClass(state.classId);if(!c)return;for(const el of document.
+querySelectorAll("[data-pod-final],[data-pod-status]")){const key=el.dataset.podFinal||el.dataset.podStatus,[pid,sid]=key.split("|");const l=c.lessons.find(l2=>l2.
+poudmans.some(p=>p.id===pid)),pod=l?.poudmans.find(p=>p.id===pid);if(!l?.gradingPolicy)continue;const r=EduPolicy.moduleResult(l.gradingPolicy,ownScoreRecord(pod.
+podScores,sid));el.textContent=el.dataset.podFinal?finalText(r):policyStatus(r);const row=el.closest(".assessment-student");if(row)row.dataset.resultState=!r.complete?
+"incomplete":r.passed?"passed":"review"}for(const el of document.querySelectorAll("[data-unit-final],[data-unit-status]")){const[pid,uid2,sid]=(el.dataset.unitFinal||
+el.dataset.unitStatus).split("|");const l=c.lessons.find(lesson=>lesson.poudmans.some(pod=>pod.id===pid));if(!EduPolicy.unitBased(l?.gradingPolicy))continue;const r=EduPolicy.
+lesson(l.gradingPolicy,l.poudmans,sid).modules.find(pod=>pod.id===pid)?.units.find(unit=>unit.id===uid2);if(!r)continue;el.textContent=el.dataset.unitFinal?finalText(
+r):policyStatus(r);const row=el.closest(".assessment-student");if(row)row.dataset.resultState=!r.complete?"incomplete":r.passed?"passed":"review"}for(const el of document.
+querySelectorAll("[data-course-final],[data-course-mean],[data-course-status]")){const key=el.dataset.courseFinal||el.dataset.courseMean||el.dataset.courseStatus,
+[lid,sid]=key.split("|"),l=getLessonObj(c,lid);if(!l)continue;const r=calcV24(c,l,sid);el.textContent=el.dataset.courseFinal?finalText(r):el.dataset.courseMean?
+r.provisionalAverage==null?"—":r.provisionalAverage.toFixed(2):policyStatus(r)}}const courseUI=EduCourseUI({esc,uid,asciiDigits,findClass,getDB:()=>db,context:()=>({
+id:workspace?.id,revision:workspace?.revision,closed:!!workspace?.closed,readOnly:fileMode||!!workspace?.closed||blocked||!ready||periodLoading||resetBusy||connectionRetired}),
+state:()=>state,year:()=>db.settings.academicYear,assertWritable:assertEntityWritable,flushDrafts,saveDB:saveDBV24,showModal:showModalV24,closeModal:()=>closeModal(),
+render:()=>render(),showCourseClass:()=>{state.view="class";state.lessonId=null;state.tab="lessons";render()},error:handleError,students:getSortedStudents,knownStudents,
+courseHistory:academicCourseHistory,calc:calcV24,gradeCell,finalText,status:policyStatus});installRuntimeAPI();if(!globalThis.__EDU_TEST_MODE__&&!globalThis.__EDU_UNIT_TEST__)
+delete window.EduV24.test;if(!globalThis.__EDU_UNIT_TEST__){installUI();bootstrapV24()}})();
 //# sourceMappingURL=workspace-runtime.js.map

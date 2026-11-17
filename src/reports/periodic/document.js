@@ -328,14 +328,31 @@ function documentHtml(m, gradeHtml = "") {
               ? " · سالانه"
               : " · نوبت " + grade.term),
         ) +
-        "</h4><p>" +
-        (grade.method === "legacy-unit"
-          ? "روش قدیمی؛ نتیجه زیر نمره رسمی پودمان نیست: "
-          : "نتیجه درس: ") +
-        esc(root.EduV24.finalText(grade)) +
-        (grade.complete ? "" : " — ناقص") +
-        "</p>";
-      if (grade.method === "legacy-unit")
+        "</h4>" +
+        (grade.unitBased
+          ? "<p>ارزشیابی مستقل واحدهای کار؛ پودمان فقط دسته‌بندی است.</p>"
+          : "<p>" +
+            (grade.method === "legacy-unit"
+              ? "روش قدیمی؛ نتیجه زیر نمره رسمی پودمان نیست: "
+              : "نتیجه درس: ") +
+            esc(root.EduV24.finalText(grade)) +
+            (grade.complete ? "" : " — ناقص") +
+            "</p>");
+      if (grade.unitBased)
+        h += table(
+          ["پودمان", "واحد کار", "مستمر", "شایستگی", "نتیجه واحد", "وضعیت"],
+          grade.modules.flatMap((module) =>
+            module.units.map((unit) => [
+              module.name,
+              unit.name,
+              unit.inputs.m ?? "—",
+              unit.inputs.c ?? "—",
+              root.EduV24.finalText(unit),
+              unit.complete ? (unit.passed ? "قبول" : "نیازمند جبران") : "ناقص",
+            ]),
+          ),
+        );
+      else if (grade.method === "legacy-unit")
         h += table(
           ["پودمان / واحد", "مستمر", "پایانی", "نمره ترکیبی"],
           (grade.legacyUnits || []).map((unit) => [
@@ -361,7 +378,7 @@ function documentHtml(m, gradeHtml = "") {
     }
     h += "</section>";
   }
-  if (!gradeHtml && m.annualGrades) {
+  if (!gradeHtml && m.annualGrades?.length) {
     h +=
       '<section class="annual-grades"><h3>نمرات چهار مرحله سال</h3><p>هر مرحله طبق تنظیمات همان نوبت محاسبه می‌شود؛ نهایی سالانه میانگین برابر چهار مرحله است. نمره ثبت‌نشده، صفر نیست.</p><div class="assessment-students">';
     for (const grade of m.annualGrades) {
@@ -401,34 +418,62 @@ function documentHtml(m, gradeHtml = "") {
     }
     h += "</div></section>";
   }
-  if (m.currentGrades.length)
+  if (m.currentGrades.some((grade) => !grade.unitBased))
     h +=
       '<h3>آخرین وضعیت تجمعی نمرات درس‌ها</h3><p class="periodic-method">این بخش وضعیت فعلی درس است، محدود به بازه گزارش نیست و ممکن است نمرات خارج از این بازه را شامل شود.</p>' +
       table(
         ["درس", "عملی فعلی", "نظری فعلی", "نهایی فعلی", "وضعیت", "قواعد"],
-        m.currentGrades.map((g) => [
-          g.lessonName,
-          g.method === "dual" ? num(g.practical) : "—",
-          g.method === "dual" ? num(g.theory) : "—",
-          g.final,
-          g.status,
-          g.policy,
-        ]),
+        m.currentGrades
+          .filter((g) => !g.unitBased)
+          .map((g) => [
+            g.lessonName,
+            g.method === "dual" ? num(g.practical) : "—",
+            g.method === "dual" ? num(g.theory) : "—",
+            g.final,
+            g.status,
+            g.policy,
+          ]),
       );
-  if (m.currentGrades.some((g) => g.modules?.length))
+  if (m.currentGrades.some((g) => !g.unitBased && g.modules?.length))
     h +=
       "<h3>جزئیات تجمعی پودمان‌ها</h3>" +
       table(
         ["درس / پودمان", "مستمر", "شایستگی", "نمره پودمان", "وضعیت و دلیل"],
-        m.currentGrades.flatMap((g) =>
-          (g.modules || []).map((p) => [
-            g.lessonName + " / " + p.name,
-            num(p.continuous),
-            num(p.competency),
-            num(p.final),
-            p.reason || (p.passed ? "احراز شده" : "نیازمند بررسی"),
-          ]),
-        ),
+        m.currentGrades
+          .filter((g) => !g.unitBased)
+          .flatMap((g) =>
+            (g.modules || []).map((p) => [
+              g.lessonName + " / " + p.name,
+              num(p.continuous),
+              num(p.competency),
+              num(p.final),
+              p.reason || (p.passed ? "احراز شده" : "نیازمند بررسی"),
+            ]),
+          ),
+      );
+  if (m.currentGrades.some((grade) => grade.unitBased))
+    h +=
+      "<h3>نمرات مستقل واحدهای کار</h3>" +
+      table(
+        ["درس / پودمان", "واحد کار", "مستمر", "شایستگی", "نتیجه واحد", "وضعیت"],
+        m.currentGrades
+          .filter((grade) => grade.unitBased)
+          .flatMap((grade) =>
+            grade.modules.flatMap((module) =>
+              module.units.map((unit) => [
+                grade.lessonName + " / " + module.name,
+                unit.name,
+                num(unit.inputs.m),
+                num(unit.inputs.c),
+                root.EduV24.finalText(unit),
+                unit.complete
+                  ? unit.passed
+                    ? "قبول"
+                    : "نیازمند جبران"
+                  : "ناقص",
+              ]),
+            ),
+          ),
       );
   if (m.note)
     h +=

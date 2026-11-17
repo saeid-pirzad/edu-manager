@@ -92,18 +92,24 @@ lines.push("","جزئیات جلسات");for(const s of m.sessions){lines.push("
 num(s.period+1)+" | "+s.className+" | "+s.lessonName+(s.moduleName?" | پودمان: "+s.moduleName:"")+(s.unitName?" | واحد: "+s.unitName:"")+(s.teacher?" \
 | دبیر: "+s.teacher:""));for(const p of reportParticipants(m,s))lines.push(p.name+": "+p.attendance.label+(p.attendance.minutes===null?"":" ("+num(p.attendance.
 minutes)+" دقیقه)")+(p.scores.length?" | "+p.scores.map(sc=>sc.label+": "+(sc.value??"—")+(sc.note?" — "+sc.note:"")).join(" | "):" | نمره یا فعالیتی ث\
-بت نشده"))}if(m.currentGrades.length){lines.push("","آخرین وضعیت تجمعی درس‌ها تا زمان تهیه گزارش؛ محدود به بازه بالا نیست");
-for(const g of m.currentGrades)lines.push(g.lessonName+": "+(g.method==="dual"?"عملی "+num(g.practical)+" | نظری "+num(g.theory)+" | ":"")+"نهایی "+
-g.final+" | "+g.status+" | "+g.policy)}if(m.currentGrades.some(g=>g.modules?.length)){lines.push("","جزئیات تجمعی پودمان‌ها تا زمان تهیه گزارش");
-for(const g of m.currentGrades)for(const p of g.modules||[])lines.push(g.lessonName+" / "+p.name+": مستمر "+num(p.continuous)+" | شایستگی "+num(p.competency)+
-" | نمره پودمان "+num(p.final)+" | "+(p.reason||(p.passed?"احراز شده":"نیازمند بررسی")))}if(m.note)lines.push("","توضیحات تنظیم‌کن\
-نده",m.note);if(m.warnings.length)lines.push("","موارد نیازمند بررسی",...m.warnings);lines.push("","توضیح روش گزارش",...m.definitions);
-if(m.technicalGrades?.length){lines.push("","نمرات فنی و پودمانی");for(const grade of m.technicalGrades){lines.push(grade.studentName+" | "+grade.
-className+" | "+grade.lessonName+(grade.method==="modular"?" | سالانه":" | نوبت "+grade.term));lines.push((grade.method==="legacy-unit"?"نتیجه روش قدی\
-می (پودمان رسمی نیست): ":"نتیجه درس: ")+root.EduV24.finalText(grade)+(grade.complete?"":" — ناقص"));for(const unit of grade.legacyUnits||
-[])lines.push(unit.moduleName+" / "+unit.unitName+": مستمر "+(unit.mostamar??"—")+"، پایانی "+(unit.payani??"—")+"، ترکیبی "+root.EduV24.
-finalText(unit));for(const module of grade.modules)lines.push(module.name+": "+root.EduV24.finalText(module)+(module.complete?module.passed?" — قبول":" — \
-نیازمند جبران":" — ناقص"))}}if(m.annualGrades){lines.push("","نمرات چهار مرحله سال — میانگین برابر چهار مرحله");
+بت نشده"))}if(m.currentGrades.some(grade=>!grade.unitBased)){lines.push("","آخرین وضعیت تجمعی درس‌ها تا زمان تهیه گزارش؛ محدود به بازه بالا نیست");
+for(const g of m.currentGrades.filter(grade=>!grade.unitBased))lines.push(g.lessonName+": "+(g.method==="dual"?"عملی "+num(g.practical)+" | نظری "+num(g.
+theory)+" | ":"")+"نهایی "+g.final+" | "+g.status+" | "+g.policy)}if(m.currentGrades.some(g=>!g.unitBased&&g.modules?.length)){lines.push("","جزئیات تجمعی \
+پودمان‌ها تا زمان تهیه گزارش");for(const g of m.currentGrades.filter(grade=>!grade.unitBased))for(const p of g.modules||[])lines.push(g.
+lessonName+" / "+p.name+": مستمر "+num(p.continuous)+" | شایستگی "+num(p.competency)+" | نمره پودمان "+num(p.final)+" | "+(p.reason||(p.passed?
+"احراز شده":"نیازمند بررسی")))}if(m.currentGrades.some(grade=>grade.unitBased)){lines.push("","نمرات مستقل واحدهای کار تا زمان تهیه گزارش");
+for(const grade of m.currentGrades.filter(item=>item.unitBased))for(const module of grade.modules)for(const unit of module.units)lines.push(grade.lessonName+" /\
+ "+module.name+" / "+unit.name+": مستمر "+num(unit.inputs.m)+" | شایستگی "+num(unit.inputs.c)+" | نتیجه واحد "+root.EduV24.finalText(unit)+
+(unit.complete?unit.passed?" — قبول":" — نیازمند جبران":" — ناقص"))}if(m.note)lines.push("","توضیحات تنظیم‌کننده",m.
+note);if(m.warnings.length)lines.push("","موارد نیازمند بررسی",...m.warnings);lines.push("","توضیح روش گزارش",...m.definitions);if(m.
+technicalGrades?.length){lines.push("","نمرات فنی و پودمانی");for(const grade of m.technicalGrades){lines.push(grade.studentName+" | "+grade.className+
+" | "+grade.lessonName+(grade.method==="modular"?" | سالانه":" | نوبت "+grade.term));if(!grade.unitBased)lines.push((grade.method==="legacy-unit"?"نتی\
+جه روش قدیمی (پودمان رسمی نیست): ":"نتیجه درس: ")+root.EduV24.finalText(grade)+(grade.complete?"":" — ناقص"));for(const unit of grade.
+legacyUnits||[])lines.push(unit.moduleName+" / "+unit.unitName+": مستمر "+(unit.mostamar??"—")+"، پایانی "+(unit.payani??"—")+"، ترکیبی "+
+root.EduV24.finalText(unit));for(const module of grade.modules)if(grade.unitBased){lines.push(module.name);for(const unit of module.units)lines.push(unit.name+"\
+: مستمر "+num(unit.inputs.m)+" | شایستگی "+num(unit.inputs.c)+" | نتیجه واحد "+root.EduV24.finalText(unit)+(unit.complete?unit.passed?" — ق\
+بول":" — نیازمند جبران":" — ناقص"))}else lines.push(module.name+": "+root.EduV24.finalText(module)+(module.complete?module.passed?" — قبو\
+ل":" — نیازمند جبران":" — ناقص"))}}if(m.annualGrades?.length){lines.push("","نمرات چهار مرحله سال — میانگین برابر چهار مرحله");
 for(const grade of m.annualGrades){lines.push(grade.className+" | "+grade.studentName+" | "+grade.lessonName);for(const item of grade.components)lines.push((item.
 stage==="midterm"?"میان‌ترم ":"پایان‌ترم ")+item.term+(grade.general?": نمره "+(item.theory??"ثبت نشده"):": عملی "+(item.practical??
 "ثبت نشده")+"، تئوری "+(item.theory??"ثبت نشده"))+"، ترکیبی "+root.EduV24.finalText(item));lines.push("نهایی سالانه: "+root.
@@ -214,76 +220,82 @@ length||m.technicalGrades?.length)h+='<p class="periodic-method">حضور و ف�
 در کل سال تحصیلی را نشان می‌دهد.</p>'}h+=sessionDisclosureHtml(m,m.sessions);if(gradeHtml)h+='<section class="periodic-karnameh"><h3>ک\
 ارنامهٔ نمرات</h3>'+gradeHtml+"</section>";if(!gradeHtml&&m.technicalGrades?.length){h+="<section><h3>نمرات فنی و پودمانی</h3>";for(const grade of m.
 technicalGrades){h+="<h4>"+esc(grade.studentName+" · "+grade.className+" · "+grade.lessonName+(grade.method==="modular"?" · سالانه":" · نوبت "+grade.
-term))+"</h4><p>"+(grade.method==="legacy-unit"?"روش قدیمی؛ نتیجه زیر نمره رسمی پودمان نیست: ":"نتیجه درس: ")+esc(root.
-EduV24.finalText(grade))+(grade.complete?"":" — ناقص")+"</p>";if(grade.method==="legacy-unit")h+=table(["پودمان / واحد","مستمر","پایانی",
+term))+"</h4>"+(grade.unitBased?"<p>ارزشیابی مستقل واحدهای کار؛ پودمان فقط دسته‌بندی است.</p>":"<p>"+(grade.method===
+"legacy-unit"?"روش قدیمی؛ نتیجه زیر نمره رسمی پودمان نیست: ":"نتیجه درس: ")+esc(root.EduV24.finalText(grade))+(grade.
+complete?"":" — ناقص")+"</p>");if(grade.unitBased)h+=table(["پودمان","واحد کار","مستمر","شایستگی","نتیجه واحد","وضعیت"],
+grade.modules.flatMap(module=>module.units.map(unit=>[module.name,unit.name,unit.inputs.m??"—",unit.inputs.c??"—",root.EduV24.finalText(unit),unit.complete?
+unit.passed?"قبول":"نیازمند جبران":"ناقص"])));else if(grade.method==="legacy-unit")h+=table(["پودمان / واحد","مستمر","پایانی",
 "نمره ترکیبی"],(grade.legacyUnits||[]).map(unit=>[unit.moduleName+" / "+unit.unitName,unit.mostamar??"—",unit.payani??"—",root.EduV24.finalText(unit)]));else
 h+=table(["پودمان","نمره","وضعیت"],grade.modules.map(module=>[module.name,root.EduV24.finalText(module),module.complete?module.passed?"قبول":
-"نیازمند جبران":"ناقص"]))}h+="</section>"}if(!gradeHtml&&m.annualGrades){h+='<section class="annual-grades"><h3>نمرات چهار مرحله سال</h3><p>هر م\
-رحله طبق تنظیمات همان نوبت محاسبه می‌شود؛ نهایی سالانه میانگین برابر چهار مرحله است. نمره ثبت‌نشده، صفر نیست.</p><div class="assessment-students">';
+"نیازمند جبران":"ناقص"]))}h+="</section>"}if(!gradeHtml&&m.annualGrades?.length){h+='<section class="annual-grades"><h3>نمرات چهار مرحله سال</h3\
+><p>هر مرحله طبق تنظیمات همان نوبت محاسبه می‌شود؛ نهایی سالانه میانگین برابر چهار مرحله است. نمره ثبت‌نشده، صفر نیست.</p><div class="assessment-students">';
 for(const grade of m.annualGrades){h+='<article class="assessment-student"><h4>'+esc(grade.studentName)+"</h4><p>"+esc(grade.className+" · "+grade.lessonName)+
 '</p><div class="annual-grade-components">';for(const item of grade.components)h+="<span>"+(item.stage==="midterm"?"میان‌ترم ":"پایان‌ترم ")+
 esc(item.term)+": <strong>"+esc(root.EduV24.finalText(item))+"</strong><br>"+(grade.general?"نمره "+esc(item.theory??"—"):"عملی "+esc(item.practical??
 "—")+" · تئوری "+esc(item.theory??"—"))+"</span>";h+="</div><p>نهایی سالانه: <strong>"+esc(root.EduV24.finalText(grade))+"</strong> · "+(grade.
 complete?grade.general?"تکمیل":grade.passed?"قبول":"نیازمند جبران":"ناقص؛ هر چهار نمره لازم است")+"</p></article>"}h+=
-"</div></section>"}if(m.currentGrades.length)h+='<h3>آخرین وضعیت تجمعی نمرات درس‌ها</h3><p class="periodic-method">این بخش وضعیت فعلی درس است، محدود به بازه گزا\
-رش نیست و ممکن است نمرات خارج از این بازه را شامل شود.</p>'+table(["درس","عملی فعلی","نظری فعلی","نه\
-ایی فعلی","وضعیت","قواعد"],m.currentGrades.map(g=>[g.lessonName,g.method==="dual"?num(g.practical):"—",g.method==="dual"?num(g.theory):"—",
-g.final,g.status,g.policy]));if(m.currentGrades.some(g=>g.modules?.length))h+="<h3>جزئیات تجمعی پودمان‌ها</h3>"+table(["درس / پودمان",
-"مستمر","شایستگی","نمره پودمان","وضعیت و دلیل"],m.currentGrades.flatMap(g=>(g.modules||[]).map(p=>[g.lessonName+" / "+p.name,num(
-p.continuous),num(p.competency),num(p.final),p.reason||(p.passed?"احراز شده":"نیازمند بررسی")])));if(m.note)h+='<h3>توضیحات تنظیم‌کننده</h3>\
-<p class="periodic-note">'+esc(m.note)+"</p>";if(m.warnings.length)h+='<aside class="periodic-warnings"><strong>موارد نیازمند بررسی</strong><ul>'+
-m.warnings.map(w=>"<li>"+esc(w)+"</li>").join("")+"</ul></aside>";h+="</article>";return h}EduLegacyEvents.register("reports-periodic-document:0",function(event){
-return EduPeriodicReports.output("print")});EduLegacyEvents.register("reports-periodic-document:1",function(event){return EduPeriodicReports.output("txt")});EduLegacyEvents.
-register("reports-periodic-document:2",function(event){return EduPeriodicReports.output("json")});EduLegacyEvents.register("reports-periodic-document:deputy",function(){
-return EduPeriodicReports.output("deputy")});EduLegacyEvents.register("reports-periodic-document:xlsx",function(){return EduPeriodicReports.output("xlsx")});EduLegacyEvents.
-register("reports-periodic-document:xlsx-share",function(){return EduPeriodicReports.output("xlsx-share")});EduLegacyEvents.register("reports-periodic-document:\
-share-file",function(){return EduPeriodicReports.sharePreparedExcel(this)});EduLegacyEvents.register("reports-periodic-document:download-file",function(){return EduPeriodicReports.
-downloadPreparedExcel()});let filterWorkspace="";function selectScope(schoolId="",classId=""){let school=schoolId?db.schools.find(s=>s.id===schoolId):null;if(schoolId&&
-!school)throw Error("مدرسه این گزارش دیگر وجود ندارد؛ فهرست را تازه کنید.");if(classId){school=school||db.schools.find(
-s=>s.classes.some(c=>c.id===classId));if(!school?.classes.some(c=>c.id===classId))throw Error("کلاس انتخاب‌شده متعلق به این مدرسه نیست.")}
-school=school||db.schools.find(s=>s.id===filters.schoolId)||db.schools[0];Object.assign(filters,{schoolId:school?.id||"",classId,studentId:"",audience:"manageme\
-nt",date:localToday(),startDate:"",endDate:""});filterWorkspace=noteYearScopeId();last=null}function initialize(mode){filters.mode=mode;const workspaceId=noteYearScopeId();
-if(filterWorkspace&&filterWorkspace!==workspaceId){Object.assign(filters,{schoolId:"",classId:"",studentId:"",audience:"management",date:localToday(),startDate:"",
-endDate:"",annualFirstId:"",annualSecondId:""});annualPeriodList=[];last=null}filterWorkspace=workspaceId;if(mode==="weekly"&&(!filters.startDate||!filters.endDate)){
-const dates=range("weekly",filters.date);filters.startDate=dates.start;filters.endDate=dates.end}if(!db.schools.some(s=>s.id===filters.schoolId)){filters.schoolId=
-db.schools.some(s=>s.id===globalFilter.schoolId)?globalFilter.schoolId:db.schools[0]?.id||"";filters.classId="";filters.studentId=""}const school=db.schools.find(
-s=>s.id===filters.schoolId);if(filters.classId&&!school?.classes.some(c=>c.id===filters.classId)){filters.classId="";filters.studentId=""}}let annualPeriodList=[],
-annualLoadingFor="";function annualPeriodOptions(field){const kind=field==="annualFirstId"?"first":"second";return annualPeriodList.filter(row=>row.termKind===kind)}
-function loadAnnualPeriodChoices(){const expected=noteYearScopeId();if(annualLoadingFor===expected)return;annualLoadingFor=expected;root.EduV24.listAnnualReportPeriods().
-then(rows=>{if(noteYearScopeId()!==expected||filters.mode!=="annual")return;annualPeriodList=rows;const status=document.getElementById("annualSourceStatus");if(!status)
-return;const first=annualPeriodOptions("annualFirstId"),second=annualPeriodOptions("annualSecondId");status.textContent=first.length>1||second.length>1?"اطلاعات\
- قدیمی این سال چند نسخه از یک نوبت دارد؛ نیازمند بررسی است.":!first.length?"این سال هنوز نوبت اول ندارد.":
-!second.length?"ترم دوم هنوز نمره ندارد؛ گزارش سال تحصیلی با داده‌های موجود تهیه می‌شود.":"گزارش سا\
-لانه از نوبت اول و دوم همین سال تهیه می‌شود."}).catch(error).finally(()=>{if(annualLoadingFor===expected)annualLoadingFor=""})}
-function render(mode){initialize(mode);if(mode==="annual")setTimeout(loadAnnualPeriodChoices,0);const f=filters,prepared=last&&last.signature===reportSignature(),
-school=db.schools.find(s=>s.id===f.schoolId),c=school?.classes.find(c2=>c2.id===f.classId);const people=new Map([...c?.students||[],...c?.archivedStudents||[]].
-map(st=>[st.id,st]));if(c){for(const x of db.sessions.filter(x2=>x2.schoolId===school.id&&x2.classId===c.id))for(const st of x.roster||[])if(!people.has(st.id))
-people.set(st.id,st)}const option=(value,label,chosen)=>'<option value="'+esc(value)+'" '+(value===chosen?"selected":"")+">"+esc(label)+"</option>";let h='<sect\
-ion class="card periodic-controls no-print"><h3>تهیه گزارش '+modeLabel(mode)+'</h3><p class="periodic-scope-note"><span class="periodic-scope-full">'+(mode===
-"annual"?"گزارش سالانه از ترم اول و دوم همین سال تحصیلی تهیه می‌شود. ":"جلسات و فعالیت‌های گزارش فقط از ترم انتخا\
-ب‌شده، در بازهٔ انتخابی خوانده می‌شوند. ")+`گزارش اولیا فقط اطلاعات هنرجوی انتخاب‌شده را در بر می‌گیرد.</span><span class="pe\
-riodic-scope-compact">${mode==="annual"?"هر دو ترم همین سال تحصیلی؛ اولیا فقط هنرجوی انتخاب‌شده.":"فقط ترم و بازهٔ\
- انتخابی؛ اولیا فقط هنرجوی انتخاب‌شده."}</span></p><div class="periodic-control-grid"><label>مخاطب<select data-legacy-change="r\
-eports-periodic-render:0">`+option("management","مدیریت مدرسه",f.audience)+option("parent","اولیای یک هنرجو",f.audience)+"</select></lab\
-el>"+(mode==="annual"?'<div class="periodic-year-field"><span>سال تحصیلی</span><strong>'+esc(db.settings.academicYear)+"</strong></div>":mode==="weekly"?
-'<label>از تاریخ<input type="date" value="'+esc(f.startDate)+'" data-legacy-change="reports-periodic-render:4" data-legacy-change-arg2="startDate"></labe\
-l><label>تا تاریخ<input type="date" min="'+esc(f.startDate)+'" value="'+esc(f.endDate)+'" data-legacy-change="reports-periodic-render:4" data-legacy-chan\
-ge-arg2="endDate"></label>':"<label>"+(mode==="monthly"?"یک تاریخ از ماه گزارش":"تاریخ گزارش")+'<input type="date" value="'+esc(f.date)+
-'" data-legacy-change="reports-periodic-render:1"></label>')+`<label>مدرسه<select data-legacy-change="reports-periodic-render:2">`+option("","انتخاب مدرسه",
-f.schoolId)+db.schools.map(s=>option(s.id,s.name,f.schoolId)).join("")+`</select></label><label>کلاس<select data-legacy-change="reports-periodic-render:3">`+
-option("",f.audience==="parent"?"انتخاب کلاس":"همه کلاس‌های این مدرسه",f.classId)+(school?.classes||[]).map(c2=>option(c2.id,c2.name,
-f.classId)).join("")+"</select></label>";if(mode==="annual")h+='<div class="periodic-year-field"><span id="annualSourceStatus">اطلاعات ترم اول و دوم همین سال به\
-‌صورت خودکار خوانده می‌شوند.</span><button type="button" class="ghost" data-workspace-action="periods">سال تحصیلی و دو ترم</button></div>';
-if(f.audience==="parent")h+=`<label>هنرجو<select data-legacy-change="reports-periodic-render:5">`+option("","انتخاب هنرجو",f.studentId)+[...people.
-values()].sort((a,b)=>a.name.localeCompare(b.name,"fa")).map(st=>option(st.id,st.name+(st.code?" — "+st.code:""),f.studentId)).join("")+"</select></label>";if(f.
-audience==="management")h+=`<label>سطح جزئیات<select data-legacy-change="reports-periodic-render:6"><option value="summary" `+(f.detailLevel==="summary"?
-"selected":"")+'>خلاصه مدیریتی و فعالیت‌ها</option><option value="full" '+(f.detailLevel==="full"?"selected":"")+">جزئیات کامل حضور هر جل\
-سه</option></select></label>";h+='</div><div id="periodicNoteStatus">'+noteWarning()+`</div><div class="periodic-primary-actions"><button type="button" class=\
-"periodic-build" ${busy?"disabled":""} data-legacy-click="reports-periodic-render:9">تهیه گزارش `+modeLabel(mode)+'</button><button type="button" class\
-="success periodic-deputy" data-deputy-copy'+(busy||!prepared?" disabled":"")+' data-legacy-click="reports-periodic-document:deputy">کپی برای معاون</button></di\
-v><p id="periodicError" role="alert"></p></section><div id="periodicReportOutput">';h+=prepared?documentHtml(last.model,last.gradeHtml):'<div class="card empty"\
- role="status">'+(last?"اطلاعات یا ترم تغییر کرده است؛ برای نمایش نتیجه معتبر، گزارش را دوباره تهیه کنید.":
-"محدوده و مخاطب را انتخاب کنید و «تهیه گزارش» را بزنید.")+"</div>";if(prepared&&last.gradeHtml){const preparedReport=last;
+"</div></section>"}if(m.currentGrades.some(grade=>!grade.unitBased))h+='<h3>آخرین وضعیت تجمعی نمرات درس‌ها</h3><p class="periodic-method">این بخش وضعیت فعلی درس\
+ است، محدود به بازه گزارش نیست و ممکن است نمرات خارج از این بازه را شامل شود.</p>'+table(["درس","ع\
+ملی فعلی","نظری فعلی","نهایی فعلی","وضعیت","قواعد"],m.currentGrades.filter(g=>!g.unitBased).map(g=>[g.lessonName,g.method==="d\
+ual"?num(g.practical):"—",g.method==="dual"?num(g.theory):"—",g.final,g.status,g.policy]));if(m.currentGrades.some(g=>!g.unitBased&&g.modules?.length))h+="<\
+h3>جزئیات تجمعی پودمان‌ها</h3>"+table(["درس / پودمان","مستمر","شایستگی","نمره پودمان","وضعیت و دلیل"],
+m.currentGrades.filter(g=>!g.unitBased).flatMap(g=>(g.modules||[]).map(p=>[g.lessonName+" / "+p.name,num(p.continuous),num(p.competency),num(p.final),p.reason||
+(p.passed?"احراز شده":"نیازمند بررسی")])));if(m.currentGrades.some(grade=>grade.unitBased))h+="<h3>نمرات مستقل واحدهای کار</h3>"+
+table(["درس / پودمان","واحد کار","مستمر","شایستگی","نتیجه واحد","وضعیت"],m.currentGrades.filter(grade=>grade.unitBased).
+flatMap(grade=>grade.modules.flatMap(module=>module.units.map(unit=>[grade.lessonName+" / "+module.name,unit.name,num(unit.inputs.m),num(unit.inputs.c),root.EduV24.
+finalText(unit),unit.complete?unit.passed?"قبول":"نیازمند جبران":"ناقص"]))));if(m.note)h+='<h3>توضیحات تنظیم‌کننده</h3><p class="periodic-no\
+te">'+esc(m.note)+"</p>";if(m.warnings.length)h+='<aside class="periodic-warnings"><strong>موارد نیازمند بررسی</strong><ul>'+m.warnings.map(w=>"\
+<li>"+esc(w)+"</li>").join("")+"</ul></aside>";h+="</article>";return h}EduLegacyEvents.register("reports-periodic-document:0",function(event){return EduPeriodicReports.
+output("print")});EduLegacyEvents.register("reports-periodic-document:1",function(event){return EduPeriodicReports.output("txt")});EduLegacyEvents.register("rep\
+orts-periodic-document:2",function(event){return EduPeriodicReports.output("json")});EduLegacyEvents.register("reports-periodic-document:deputy",function(){return EduPeriodicReports.
+output("deputy")});EduLegacyEvents.register("reports-periodic-document:xlsx",function(){return EduPeriodicReports.output("xlsx")});EduLegacyEvents.register("rep\
+orts-periodic-document:xlsx-share",function(){return EduPeriodicReports.output("xlsx-share")});EduLegacyEvents.register("reports-periodic-document:share-file",function(){
+return EduPeriodicReports.sharePreparedExcel(this)});EduLegacyEvents.register("reports-periodic-document:download-file",function(){return EduPeriodicReports.downloadPreparedExcel()});
+let filterWorkspace="";function selectScope(schoolId="",classId=""){let school=schoolId?db.schools.find(s=>s.id===schoolId):null;if(schoolId&&!school)throw Error(
+"مدرسه این گزارش دیگر وجود ندارد؛ فهرست را تازه کنید.");if(classId){school=school||db.schools.find(s=>s.classes.some(c=>c.
+id===classId));if(!school?.classes.some(c=>c.id===classId))throw Error("کلاس انتخاب‌شده متعلق به این مدرسه نیست.")}school=school||
+db.schools.find(s=>s.id===filters.schoolId)||db.schools[0];Object.assign(filters,{schoolId:school?.id||"",classId,studentId:"",audience:"management",date:localToday(),
+startDate:"",endDate:""});filterWorkspace=noteYearScopeId();last=null}function initialize(mode){filters.mode=mode;const workspaceId=noteYearScopeId();if(filterWorkspace&&
+filterWorkspace!==workspaceId){Object.assign(filters,{schoolId:"",classId:"",studentId:"",audience:"management",date:localToday(),startDate:"",endDate:"",annualFirstId:"",
+annualSecondId:""});annualPeriodList=[];last=null}filterWorkspace=workspaceId;if(mode==="weekly"&&(!filters.startDate||!filters.endDate)){const dates=range("wee\
+kly",filters.date);filters.startDate=dates.start;filters.endDate=dates.end}if(!db.schools.some(s=>s.id===filters.schoolId)){filters.schoolId=db.schools.some(s=>s.
+id===globalFilter.schoolId)?globalFilter.schoolId:db.schools[0]?.id||"";filters.classId="";filters.studentId=""}const school=db.schools.find(s=>s.id===filters.schoolId);
+if(filters.classId&&!school?.classes.some(c=>c.id===filters.classId)){filters.classId="";filters.studentId=""}}let annualPeriodList=[],annualLoadingFor="";function annualPeriodOptions(field){
+const kind=field==="annualFirstId"?"first":"second";return annualPeriodList.filter(row=>row.termKind===kind)}function loadAnnualPeriodChoices(){const expected=noteYearScopeId();
+if(annualLoadingFor===expected)return;annualLoadingFor=expected;root.EduV24.listAnnualReportPeriods().then(rows=>{if(noteYearScopeId()!==expected||filters.mode!==
+"annual")return;annualPeriodList=rows;const status=document.getElementById("annualSourceStatus");if(!status)return;const first=annualPeriodOptions("annualFirstI\
+d"),second=annualPeriodOptions("annualSecondId");status.textContent=first.length>1||second.length>1?"اطلاعات قدیمی این سال چند نسخه از یک نوبت دارد؛ نیازمند برر\
+سی است.":!first.length?"این سال هنوز نوبت اول ندارد.":!second.length?"ترم دوم هنوز نمره ندارد؛ گزارش سال تحصیلی با داده‌های موجود تهی\
+ه می‌شود.":"گزارش سالانه از نوبت اول و دوم همین سال تهیه می‌شود."}).catch(error).finally(()=>{if(annualLoadingFor===
+expected)annualLoadingFor=""})}function render(mode){initialize(mode);if(mode==="annual")setTimeout(loadAnnualPeriodChoices,0);const f=filters,prepared=last&&last.
+signature===reportSignature(),school=db.schools.find(s=>s.id===f.schoolId),c=school?.classes.find(c2=>c2.id===f.classId);const people=new Map([...c?.students||[],
+...c?.archivedStudents||[]].map(st=>[st.id,st]));if(c){for(const x of db.sessions.filter(x2=>x2.schoolId===school.id&&x2.classId===c.id))for(const st of x.roster||
+[])if(!people.has(st.id))people.set(st.id,st)}const option=(value,label,chosen)=>'<option value="'+esc(value)+'" '+(value===chosen?"selected":"")+">"+esc(label)+
+"</option>";let h='<section class="card periodic-controls no-print"><h3>تهیه گزارش '+modeLabel(mode)+'</h3><p class="periodic-scope-note"><span class="\
+periodic-scope-full">'+(mode==="annual"?"گزارش سالانه از ترم اول و دوم همین سال تحصیلی تهیه می‌شود. ":"جلسات و فع\
+الیت‌های گزارش فقط از ترم انتخاب‌شده، در بازهٔ انتخابی خوانده می‌شوند. ")+`گزارش اولیا فقط اطلاعات\
+ هنرجوی انتخاب‌شده را در بر می‌گیرد.</span><span class="periodic-scope-compact">${mode==="annual"?"هر دو ترم همین سال تحصیلی؛ اول\
+یا فقط هنرجوی انتخاب‌شده.":"فقط ترم و بازهٔ انتخابی؛ اولیا فقط هنرجوی انتخاب‌شده."}</span></p\
+><div class="periodic-control-grid"><label>مخاطب<select data-legacy-change="reports-periodic-render:0">`+option("management","مدیریت مدرسه",f.audience)+
+option("parent","اولیای یک هنرجو",f.audience)+"</select></label>"+(mode==="annual"?'<div class="periodic-year-field"><span>سال تحصیلی</span><strong\
+>'+esc(db.settings.academicYear)+"</strong></div>":mode==="weekly"?'<label>از تاریخ<input type="date" value="'+esc(f.startDate)+'" data-legacy-change="re\
+ports-periodic-render:4" data-legacy-change-arg2="startDate"></label><label>تا تاریخ<input type="date" min="'+esc(f.startDate)+'" value="'+esc(f.endDate)+
+'" data-legacy-change="reports-periodic-render:4" data-legacy-change-arg2="endDate"></label>':"<label>"+(mode==="monthly"?"یک تاریخ از ماه گزارش":
+"تاریخ گزارش")+'<input type="date" value="'+esc(f.date)+'" data-legacy-change="reports-periodic-render:1"></label>')+`<label>مدرسه<select data-legacy-\
+change="reports-periodic-render:2">`+option("","انتخاب مدرسه",f.schoolId)+db.schools.map(s=>option(s.id,s.name,f.schoolId)).join("")+`</select></labe\
+l><label>کلاس<select data-legacy-change="reports-periodic-render:3">`+option("",f.audience==="parent"?"انتخاب کلاس":"همه کلاس‌های این مدرسه",
+f.classId)+(school?.classes||[]).map(c2=>option(c2.id,c2.name,f.classId)).join("")+"</select></label>";if(mode==="annual")h+='<div class="periodic-year-field"><\
+span id="annualSourceStatus">اطلاعات ترم اول و دوم همین سال به‌صورت خودکار خوانده می‌شوند.</span><button type="button" class="ghost" data-workspace-action="peri\
+ods">سال تحصیلی و دو ترم</button></div>';if(f.audience==="parent")h+=`<label>هنرجو<select data-legacy-change="reports-periodic-render:5">`+option(
+"","انتخاب هنرجو",f.studentId)+[...people.values()].sort((a,b)=>a.name.localeCompare(b.name,"fa")).map(st=>option(st.id,st.name+(st.code?" — "+st.code:
+""),f.studentId)).join("")+"</select></label>";if(f.audience==="management")h+=`<label>سطح جزئیات<select data-legacy-change="reports-periodic-render:6"><option \
+value="summary" `+(f.detailLevel==="summary"?"selected":"")+'>خلاصه مدیریتی و فعالیت‌ها</option><option value="full" '+(f.detailLevel==="\
+full"?"selected":"")+">جزئیات کامل حضور هر جلسه</option></select></label>";h+='</div><div id="periodicNoteStatus">'+noteWarning()+`</div><di\
+v class="periodic-primary-actions"><button type="button" class="periodic-build" ${busy?"disabled":""} data-legacy-click="reports-periodic-render:9">تهیه گزارش `+
+modeLabel(mode)+'</button><button type="button" class="success periodic-deputy" data-deputy-copy'+(busy||!prepared?" disabled":"")+' data-legacy-click="reports-\
+periodic-document:deputy">کپی برای معاون</button></div><p id="periodicError" role="alert"></p></section><div id="periodicReportOutput">';h+=prepared?
+documentHtml(last.model,last.gradeHtml):'<div class="card empty" role="status">'+(last?"اطلاعات یا ترم تغییر کرده است؛ برای نمایش نتیجه معتبر، گزارش را دوباره ت\
+هیه کنید.":"محدوده و مخاطب را انتخاب کنید و «تهیه گزارش» را بزنید.")+"</div>";if(prepared&&last.gradeHtml){const preparedReport=last;
 setTimeout(()=>initializeReportKarnameh(preparedReport),0)}return h+"</div>"}EduLegacyEvents.register("reports-periodic-render:0",function(event){return EduPeriodicReports.
 set("audience",this.value)});EduLegacyEvents.register("reports-periodic-render:1",function(event){return EduPeriodicReports.set("date",this.value)});EduLegacyEvents.
 register("reports-periodic-render:2",function(event){return EduPeriodicReports.set("schoolId",this.value)});EduLegacyEvents.register("reports-periodic-render:3",
@@ -317,97 +329,101 @@ context.id!==snapshot.context.id||gradeSnapshot.context.revision!==snapshot.cont
 یه کنید.");refreshPreparedInput()}if(annual||model.audience==="parent"){model.technicalGrades=root.EduV24.annualTechnicalRows(gradeSnapshot.parts,input.schoolId,
 input.classId,input.audience==="parent"?input.studentId:"");model.annualGrades=root.EduV24.annualGradeRows(gradeSnapshot.parts,input.schoolId,input.classId,input.
 audience==="parent"?input.studentId:"");model.gradePeriods=gradeSnapshot.parts.map(part=>({id:part.period.id,term:part.period.term,label:part.period.displayTerm||
-part.period.term,revision:part.period.revision}));if(!annual)model.definitions.push("جلسات و فعالیت‌های این بازه فقط مربوط به ترم انتخاب‌شده‌اند؛ نمرات چهار مرح\
-له و پودمان‌ها، وضعیت فعلی کل سال تحصیلی در زمان تهیه گزارش‌اند.");model.definitions.push("نمره هر مرحله ط\
-بق تنظیمات همان نوبت محاسبه می‌شود؛ نهایی سالانه میانگین برابر هر چهار مرحله است و قبولی سالانه فقط با حدنصاب همین میانگین تعیین می‌شود، مستقل از وضعیت قبولی مر\
-حله‌ها. نمره ناقص، صفر محسوب نمی‌شود.");if(annual)model.definitions.push("گزارش سالانه از مهر تا شهریور و شامل ترم اول و دوم همی\
-ن سال تحصیلی است؛ نمرات پودمانی برای کل سال مشترک‌اند.");model.definitions.push("کلاس و هنرجو با شناسه مشترک بین نو\
-بت‌ها مرتبط می‌شوند؛ شباهت نام، دلیل ادغام افراد نیست.")}model.periods=annual?model.gradePeriods:[{id:snapshot.context.
-id,term:model.academicTerm,label:model.academicTerm,revision:snapshot.context.revision}];await root.EduV24.assertReportSnapshot(snapshot.context);if(gradeSnapshot!==
-snapshot)await root.EduV24.assertReportSnapshot(gradeSnapshot.context);refreshPreparedInput();model.note=input.note;const gradeHtml=annual||model.audience==="pa\
-rent"?root.EduV24.periodicKarnamehHtml(gradeSnapshot.parts,{schoolId:input.schoolId,classId:input.classId,student:model.audience==="parent"?model.student:null}):
-"";last={signature:reportSignature(),context:gradeSnapshot.context,model,gradeHtml};const out=document.getElementById("periodicReportOutput");if(out){out.innerHTML=
-documentHtml(model,gradeHtml);initializeReportKarnameh(last)}return model}catch(e){invalidate(e.message||String(e));return null}finally{busy=false;syncReportActions()}}
-function initializeReportKarnameh(prepared){if(!prepared?.gradeHtml)return;root.EduV24.initPeriodicKarnameh(document.getElementById("periodicReportOutput"),prepared.
-context,()=>isPreparedCurrent(prepared))}function xlsxWorkbook(sheets){const encoder=new TextEncoder;const xml=value=>String(value).replace(/_x[0-9a-f]{4}_/gi,text=>"\
-_x005F_"+text.slice(1)).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffe\uffff]/g,text=>"_x"+text.charCodeAt(0).toString(16).padStart(4,"0")+"_").replace(
-/[&<>"']/g,text=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&apos;"})[text]);const declaration='<?xml version="1.0" encoding="UTF-8" standalone="yes"\
-?>';const ns="http://schemas.openxmlformats.org/spreadsheetml/2006/main";const rel="http://schemas.openxmlformats.org/officeDocument/2006/relationships";const column=index=>{
-let result="";for(let n=index+1;n;n=Math.floor((n-1)/26))result=String.fromCharCode(65+(n-1)%26)+result;return result};const entries=[];const add=(name,content)=>entries.
-push([encoder.encode(name),encoder.encode(declaration+content)]);if(!sheets.length||sheets.length>100)throw Error("تعداد برگه‌های اکسل معتبر نیست.");
-const names=new Set;for(const[index,sheet]of sheets.entries()){if(!sheet.name||sheet.name.length>31||/[\\/?*[\]:]/.test(sheet.name)||names.has(sheet.name.toLowerCase())||
-/^\x27|\x27$/.test(sheet.name))throw Error("نام برگهٔ اکسل معتبر نیست.");names.add(sheet.name.toLowerCase());const banner=sheet.banner||[];
-const headerRow=banner.length?banner.length+1:1;const rowOffset=headerRow-1;if(!sheet.rows.length||sheet.rows.length+rowOffset>1048576)throw Error("تعداد ردیف‌ه\
-ا بیش از ظرفیت اکسل است؛ محدوده گزارش را کوچک‌تر کنید.");const width=Math.max(...sheet.rows.slice(0,1).map(row=>row.
-length));if(!width||width>16384)throw Error("تعداد ستون‌های اکسل معتبر نیست.");const range2="A1:"+column(width-1)+(sheet.rows.length+
-rowOffset);const rows=sheet.rows.map((row,ri)=>{if(row.length>width)throw Error("ستون‌های گزارش با عنوان‌ها یکسان نیستند.");
-return'<row r="'+(ri+1+rowOffset)+'"'+(ri===0?' ht="30" customHeight="1"':"")+">"+row.map((value,ci)=>{if(value==null||value==="")return"";const ref=column(ci)+
-(ri+1+rowOffset);let style=ri===0?1:ri%2?0:2;if(ri&&typeof value==="number")style=ri%2?3:4;if(ri&&String(sheet.rows[0][ci]).startsWith("وضعیت")){if(["قبول",
-"تکمیل","حاضر"].includes(value))style=5;else if(value==="غایب")style=7;else if(value)style=6}if(typeof value==="number"){if(!Number.isFinite(value))
-throw Error("مقدار عددی گزارش معتبر نیست.");return'<c r="'+ref+'" s="'+style+'"><v>'+value+"</v></c>"}const text=String(value);if(text.length>
-32767)throw Error("متن یک سلول بیش از ظرفیت اکسل است؛ از خروجی متن یا JSON استفاده کنید.");return'<c r="'+ref+
-'" s="'+style+'" t="inlineStr"><is><t xml:space="preserve">'+xml(text)+"</t></is></c>"}).join("")+"</row>"}).join("");const columnWidths=sheet.rows[0].map((header,ci)=>{
-if(sheet.widths?.[ci])return sheet.widths[ci];let longest=String(header).length;for(const row of sheet.rows.slice(1,201))longest=Math.max(longest,String(row[ci]??
-"").length);return Math.min(45,Math.max(14,Math.ceil(longest*1.15)+3))});const columns=sheet.rows[0].map((_,i)=>'<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+columnWidths[i]+
-'" customWidth="1"/>').join("");const bannerRows=banner.map((text,i)=>{if(String(text).length>32767)throw Error("سربرگ گزارش بیش از ظرفیت اکسل است.");
-return'<row r="'+(i+1)+'" ht="'+(i===0?30:Math.min(409,Math.max(26,Math.ceil(String(text).length/Math.max(18,columnWidths.reduce((sum,value)=>sum+value,0)*.8))*
-18+10)))+'" customHeight="1"><c r="A'+(i+1)+'" s="'+(i===0?8:9)+'" t="inlineStr"><is><t xml:space="preserve">'+xml(text)+"</t></is></c></row>"}).join("");add("x\
-l/worksheets/sheet"+(index+1)+".xml",'<worksheet xmlns="'+ns+'"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><dimension ref="'+range2+'"/><sheetViews><sheetVi\
-ew rightToLeft="1" showGridLines="0" workbookViewId="0"><pane ySplit="'+headerRow+'" topLeftCell="A'+(headerRow+1)+'" activePane="bottomLeft" state="frozen"/><s\
-election pane="bottomLeft" activeCell="A'+(headerRow+1)+'" sqref="A'+(headerRow+1)+'"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="24"/><cols>'+columns+
-"</cols><sheetData>"+bannerRows+rows+"</sheetData>"+(sheet.filter===false?"":'<autoFilter ref="A'+headerRow+":"+column(width-1)+(sheet.rows.length+rowOffset)+'"\
-/>')+(banner.length&&width>1?'<mergeCells count="'+banner.length+'">'+banner.map((_,i)=>'<mergeCell ref="A'+(i+1)+":"+column(width-1)+(i+1)+'"/>').join("")+"</m\
-ergeCells>":"")+'<pageMargins left="0.3" right="0.3" top="0.5" bottom="0.5" header="0.2" footer="0.2"/><pageSetup paperSize="9" orientation="'+(width>7?"landsca\
-pe":"portrait")+'" fitToWidth="1" fitToHeight="0"/><headerFooter><oddHeader>&amp;R&amp;A&amp;Lکلاس‌یار</oddHeader><oddFooter>&amp;Cصفحه &amp;P از &amp;N</oddFoo\
-ter></headerFooter></worksheet>')}add("xl/workbook.xml",'<workbook xmlns="'+ns+'" xmlns:r="'+rel+'"><bookViews><workbookView/></bookViews><sheets>'+sheets.map((sheet,i)=>'\
-<sheet name="'+xml(sheet.name)+'" sheetId="'+(i+1)+'" r:id="rId'+(i+1)+'"/>').join("")+"</sheets><definedNames>"+sheets.map((sheet,i)=>'<definedName name="_xlnm\
-.Print_Titles" localSheetId="'+i+'">'+xml("'"+sheet.name.replace(/'/g,"''")+"'!$1:$"+(sheet.banner?.length?sheet.banner.length+1:1))+"</definedName>").join("")+
-"</definedNames></workbook>");add("xl/_rels/workbook.xml.rels",'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+sheets.map(
-(_,i)=>'<Relationship Id="rId'+(i+1)+'" Type="'+rel+'/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>').join("")+'<Relationship Id="rIdStyles" Type="'+rel+'\
-/styles" Target="styles.xml"/></Relationships>');add("_rels/.rels",'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relatio\
-nship Id="rId1" Type="'+rel+'/officeDocument" Target="xl/workbook.xml"/></Relationships>');add("[Content_Types].xml",'<Types xmlns="http://schemas.openxmlformat\
-s.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" Con\
-tentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Ove\
-rride PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+sheets.map((_,i)=>'<Override PartName="/\
-xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join("")+"</Types>");add("xl/style\
-s.xml",'<styleSheet xmlns="'+ns+'"><numFmts count="1"><numFmt numFmtId="164" formatCode="0.##"/></numFmts><fonts count="4"><font><sz val="11"/><color rgb="FF253\
-44A"/><name val="Tahoma"/></font><font><b/><sz val="12"/><color rgb="FFFFFFFF"/><name val="Tahoma"/></font><font><b/><sz val="14"/><color rgb="FFFFFFFF"/><name \
-val="Tahoma"/></font><font><sz val="11"/><color rgb="FF475569"/><name val="Tahoma"/></font></fonts><fills count="8"><fill><patternFill patternType="none"/></fil\
-l><fill><patternFill patternType="gray125"/></fill>'+["FF244B73","FFF0F5FA","FFE4F4EA","FFFFF3D6","FFFCE8E6","FFEAF0F8"].map(color=>'<fill><patternFill patternT\
-ype="solid"><fgColor rgb="'+color+'"/><bgColor indexed="64"/></patternFill></fill>').join("")+'</fills><borders count="1"><border><left/><right/><top/><bottom/>\
-<diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="10">'+[0,1,2,3,4,5,6,7,
-8,9].map(i=>'<xf numFmtId="'+(i===3||i===4?164:0)+'" fontId="'+(i===8?2:i===9?3:i===1?1:0)+'" fillId="'+[0,2,3,0,3,4,5,6,2,7][i]+'" borderId="0" xfId="0" applyA\
-lignment="1" applyFill="1" applyNumberFormat="1"><alignment horizontal="'+(i===3||i===4?"center":"right")+'" vertical="center" wrapText="1" readingOrder="2"/></\
-xf>').join("")+'</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>');const table2=Uint32Array.from({length:256},
-(_,n)=>{for(let i=0;i<8;i++)n=n&1?3988292384^n>>>1:n>>>1;return n>>>0});const crc=bytes=>{let value=4294967295;for(const byte of bytes)value=table2[(value^byte)&
-255]^value>>>8;return(value^4294967295)>>>0};const chunks=[],directory=[];let offset=0,directorySize=0;for(const[name,bytes]of entries){if(offset+bytes.length>128*
-1024*1024)throw Error("حجم اکسل زیاد است؛ محدوده گزارش را کوچک‌تر کنید.");const checksum=crc(bytes);const header=new Uint8Array(
-30),h=new DataView(header.buffer);h.setUint32(0,67324752,true);h.setUint16(4,20,true);h.setUint16(6,2048,true);h.setUint16(12,33,true);h.setUint32(14,checksum,true);
-h.setUint32(18,bytes.length,true);h.setUint32(22,bytes.length,true);h.setUint16(26,name.length,true);chunks.push(header,name,bytes);const central=new Uint8Array(
-46),c=new DataView(central.buffer);c.setUint32(0,33639248,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,2048,true);c.setUint16(14,33,true);c.
-setUint32(16,checksum,true);c.setUint32(20,bytes.length,true);c.setUint32(24,bytes.length,true);c.setUint16(28,name.length,true);c.setUint32(42,offset,true);directory.
-push(central,name);directorySize+=central.length+name.length;offset+=header.length+name.length+bytes.length}const end=new Uint8Array(22),e=new DataView(end.buffer);
-e.setUint32(0,101010256,true);e.setUint16(8,entries.length,true);e.setUint16(10,entries.length,true);e.setUint32(12,directorySize,true);e.setUint32(16,offset,true);
-return new Blob([...chunks,...directory,end],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"})}function excelReportSheets(m){const sheets=[];
-const sheet=(name,headers,rows,widths)=>sheets.push({name,rows:[headers,...rows],widths});const counts=row=>[row.sessions,(row.present||0)+(row.late||0),row.absent,
-row.leave,row.late,row.unknown];const countHeaders=["جلسه","حاضر با احتساب تأخیر","غایب","مرخصی","تأخیر (زیرمجموعه حاضر)",
-"تعیین‌نشده"];const result=grade=>!grade.complete?"ناقص":grade.passed==null?"تکمیل":grade.passed?"قبول":"نیازمند جبران";const safe=grade=>{
-if(grade.complete!==true||!Number.isFinite(grade.final))return null;const display=root.EduV24.finalText(grade);return display===grade.final.toFixed(2)?grade.final:
-display};const date=value=>new Intl.DateTimeFormat("fa-IR",{year:"numeric",month:"2-digit",day:"2-digit",timeZone:"UTC"}).format(new Date(value+"T12:00:00Z"));const weekday=value=>new Intl.
-DateTimeFormat("fa-IR",{weekday:"long",timeZone:"UTC"}).format(new Date(value+"T12:00:00Z"));const preparedAt=new Intl.DateTimeFormat("fa-IR",{dateStyle:"short",
-timeStyle:"short",timeZone:"Asia/Tehran"}).format(new Date(m.generatedAt));const metadata=[["نوع گزارش",{daily:"روزانه",weekly:"هفتگی",monthly:"\
-ماهانه",annual:"سال تحصیلی"}[m.mode]],["مخاطب",m.audience==="parent"?"اولیا — فقط هنرجوی انتخاب‌شده":"مدیریت مدرس\
-ه"],["وضعیت داده",m.summary.sessions?"جلسات و ثبت‌های همین محدوده در شیت‌های داده آمده‌اند.":m.annualGrades?.
-length||m.technicalGrades?.length?"جلسه‌ای در این محدوده ثبت نشده است؛ نمرات موجود در شیت‌های امتحان آمده‌اند.":
-"هیچ جلسه یا نمره‌ای برای این محدوده در گزارش موجود نیست؛ تاریخ، مدرسه و کلاس انتخاب‌شده را بررسی کنید."],
-["مدرسه",m.school.name],["کلاس",m.class?.name||"همه کلاس‌ها"],["هنرجو",m.student?.name||"همه هنرجویان محدوده"],["کد هن\
-رجو",m.student?.code==null?"":String(m.student.code)],["سال تحصیلی",m.academicYear],["ترم",m.academicTerm||"هر دو ترم"],["از تاریخ",
-date(m.start)],["تا تاریخ",date(m.end)],["زمان تهیه (شمسی)",preparedAt],["تنظیم‌کننده",m.author],["توضیحات",m.note],...countHeaders.
-map((header,i)=>[header,counts(m.summary)[i]]),["تعداد هنرجویان با سابقه جلسه",m.summary.students],["نرخ حضور (درصد)",m.summary.
-attendanceRate],["ثبت‌های فعالیت",m.summary.recordedMarks],["نمرات واحد کار","نمرات واحدهای کار جزئیات آموزشی‌اند؛ برای پودمان رسمی، ن\
-تیجه از مستمر و شایستگی پودمان محاسبه می‌شود. سلول نمره ترکیبی واحد کار در روش رسمی خالی است."],
-...(m.definitions||[]).map(text=>["مبنای گزارش",text]),...(m.warnings||[]).map(text=>["نیازمند بررسی",text]),["راهنما","سلول خالی یع\
-نی ثبت‌نشده یا نامرتبط؛ صفر عدد واقعی است. این فایل گزارش است و برای بازیابی سیستم نیست."]];
+part.period.term,revision:part.period.revision}));if(!annual)model.definitions.push("جلسات و فعالیت‌های این بازه فقط مربوط به ترم انتخاب‌شده‌اند؛ نمرات رسمی، وض\
+عیت فعلی کل سال تحصیلی در زمان تهیه گزارش‌اند.");if(model.annualGrades.length)model.definitions.push("نمره هر مرحله طبق تن\
+ظیمات همان نوبت محاسبه می‌شود؛ نهایی سالانه میانگین برابر هر چهار مرحله است و قبولی سالانه فقط با حدنصاب همین میانگین تعیین می‌شود، مستقل از وضعیت قبولی مرحله‌ه\
+ا. نمره ناقص، صفر محسوب نمی‌شود.");if(model.technicalGrades.some(grade=>grade.unitBased))model.definitions.push("در ارزشیابی واحد کار،\
+ مستمر و شایستگی و نتیجهٔ هر واحد مستقل و در دو نوبت سال مشترک‌اند؛ پودمان فقط دسته‌بندی است و نمرهٔ تجمیعی پودمان یا درس محاسبه نمی‌شود. ورودی ناقص، صفر نیست.");
+if(annual)model.definitions.push("گزارش سالانه از مهر تا شهریور و شامل نوبت‌های موجود همین سال تحصیلی است؛ نمرات رسمی هر درس مطابق روش ارزشیابی آن گزارش می‌شوند\
+.");model.definitions.push("کلاس و هنرجو با شناسه مشترک بین نوبت‌ها مرتبط می‌شوند؛ شباهت نام، دلیل ادغام افراد نیست.")}
+model.periods=annual?model.gradePeriods:[{id:snapshot.context.id,term:model.academicTerm,label:model.academicTerm,revision:snapshot.context.revision}];await root.
+EduV24.assertReportSnapshot(snapshot.context);if(gradeSnapshot!==snapshot)await root.EduV24.assertReportSnapshot(gradeSnapshot.context);refreshPreparedInput();model.
+note=input.note;const gradeHtml=annual||model.audience==="parent"?root.EduV24.periodicKarnamehHtml(gradeSnapshot.parts,{schoolId:input.schoolId,classId:input.classId,
+student:model.audience==="parent"?model.student:null}):"";last={signature:reportSignature(),context:gradeSnapshot.context,model,gradeHtml};const out=document.getElementById(
+"periodicReportOutput");if(out){out.innerHTML=documentHtml(model,gradeHtml);initializeReportKarnameh(last)}return model}catch(e){invalidate(e.message||String(e));
+return null}finally{busy=false;syncReportActions()}}function initializeReportKarnameh(prepared){if(!prepared?.gradeHtml)return;root.EduV24.initPeriodicKarnameh(
+document.getElementById("periodicReportOutput"),prepared.context,()=>isPreparedCurrent(prepared))}function xlsxWorkbook(sheets){const encoder=new TextEncoder;const xml=value=>String(
+value).replace(/_x[0-9a-f]{4}_/gi,text=>"_x005F_"+text.slice(1)).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffe\uffff]/g,text=>"_x"+text.charCodeAt(0).toString(
+16).padStart(4,"0")+"_").replace(/[&<>"']/g,text=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&apos;"})[text]);const declaration='<?xml version="1.0" \
+encoding="UTF-8" standalone="yes"?>';const ns="http://schemas.openxmlformats.org/spreadsheetml/2006/main";const rel="http://schemas.openxmlformats.org/officeDoc\
+ument/2006/relationships";const column=index=>{let result="";for(let n=index+1;n;n=Math.floor((n-1)/26))result=String.fromCharCode(65+(n-1)%26)+result;return result};
+const entries=[];const add=(name,content)=>entries.push([encoder.encode(name),encoder.encode(declaration+content)]);if(!sheets.length||sheets.length>100)throw Error(
+"تعداد برگه‌های اکسل معتبر نیست.");const names=new Set;for(const[index,sheet]of sheets.entries()){if(!sheet.name||sheet.name.length>31||
+/[\\/?*[\]:]/.test(sheet.name)||names.has(sheet.name.toLowerCase())||/^\x27|\x27$/.test(sheet.name))throw Error("نام برگهٔ اکسل معتبر نیست.");
+names.add(sheet.name.toLowerCase());const banner=sheet.banner||[];const headerRow=banner.length?banner.length+1:1;const rowOffset=headerRow-1;if(!sheet.rows.length||
+sheet.rows.length+rowOffset>1048576)throw Error("تعداد ردیف‌ها بیش از ظرفیت اکسل است؛ محدوده گزارش را کوچک‌تر کنید.");
+const width=Math.max(...sheet.rows.slice(0,1).map(row=>row.length));if(!width||width>16384)throw Error("تعداد ستون‌های اکسل معتبر نیست.");
+const range2="A1:"+column(width-1)+(sheet.rows.length+rowOffset);const rows=sheet.rows.map((row,ri)=>{if(row.length>width)throw Error("ستون‌های گزارش با عنوان‌ه\
+ا یکسان نیستند.");return'<row r="'+(ri+1+rowOffset)+'"'+(ri===0?' ht="30" customHeight="1"':"")+">"+row.map((value,ci)=>{if(value==null||value==="")
+return"";const ref=column(ci)+(ri+1+rowOffset);let style=ri===0?1:ri%2?0:2;if(ri&&typeof value==="number")style=ri%2?3:4;if(ri&&String(sheet.rows[0][ci]).startsWith(
+"وضعیت")){if(["قبول","تکمیل","حاضر"].includes(value))style=5;else if(value==="غایب")style=7;else if(value)style=6}if(typeof value==="numbe\
+r"){if(!Number.isFinite(value))throw Error("مقدار عددی گزارش معتبر نیست.");return'<c r="'+ref+'" s="'+style+'"><v>'+value+"</v></c>"}const text=String(
+value);if(text.length>32767)throw Error("متن یک سلول بیش از ظرفیت اکسل است؛ از خروجی متن یا JSON استفاده کنید.");
+return'<c r="'+ref+'" s="'+style+'" t="inlineStr"><is><t xml:space="preserve">'+xml(text)+"</t></is></c>"}).join("")+"</row>"}).join("");const columnWidths=sheet.
+rows[0].map((header,ci)=>{if(sheet.widths?.[ci])return sheet.widths[ci];let longest=String(header).length;for(const row of sheet.rows.slice(1,201))longest=Math.
+max(longest,String(row[ci]??"").length);return Math.min(45,Math.max(14,Math.ceil(longest*1.15)+3))});const columns=sheet.rows[0].map((_,i)=>'<col min="'+(i+1)+'\
+" max="'+(i+1)+'" width="'+columnWidths[i]+'" customWidth="1"/>').join("");const bannerRows=banner.map((text,i)=>{if(String(text).length>32767)throw Error("سربر\
+گ گزارش بیش از ظرفیت اکسل است.");return'<row r="'+(i+1)+'" ht="'+(i===0?30:Math.min(409,Math.max(26,Math.ceil(String(text).length/Math.max(
+18,columnWidths.reduce((sum,value)=>sum+value,0)*.8))*18+10)))+'" customHeight="1"><c r="A'+(i+1)+'" s="'+(i===0?8:9)+'" t="inlineStr"><is><t xml:space="preserv\
+e">'+xml(text)+"</t></is></c></row>"}).join("");add("xl/worksheets/sheet"+(index+1)+".xml",'<worksheet xmlns="'+ns+'"><sheetPr><pageSetUpPr fitToPage="1"/></she\
+etPr><dimension ref="'+range2+'"/><sheetViews><sheetView rightToLeft="1" showGridLines="0" workbookViewId="0"><pane ySplit="'+headerRow+'" topLeftCell="A'+(headerRow+
+1)+'" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft" activeCell="A'+(headerRow+1)+'" sqref="A'+(headerRow+1)+'"/></sheetView></sheetViews>\
+<sheetFormatPr defaultRowHeight="24"/><cols>'+columns+"</cols><sheetData>"+bannerRows+rows+"</sheetData>"+(sheet.filter===false?"":'<autoFilter ref="A'+headerRow+
+":"+column(width-1)+(sheet.rows.length+rowOffset)+'"/>')+(banner.length&&width>1?'<mergeCells count="'+banner.length+'">'+banner.map((_,i)=>'<mergeCell ref="A'+
+(i+1)+":"+column(width-1)+(i+1)+'"/>').join("")+"</mergeCells>":"")+'<pageMargins left="0.3" right="0.3" top="0.5" bottom="0.5" header="0.2" footer="0.2"/><page\
+Setup paperSize="9" orientation="'+(width>7?"landscape":"portrait")+'" fitToWidth="1" fitToHeight="0"/><headerFooter><oddHeader>&amp;R&amp;A&amp;Lکلاس‌یار</oddH\
+eader><oddFooter>&amp;Cصفحه &amp;P از &amp;N</oddFooter></headerFooter></worksheet>')}add("xl/workbook.xml",'<workbook xmlns="'+ns+'" xmlns:r="'+rel+'"><b\
+ookViews><workbookView/></bookViews><sheets>'+sheets.map((sheet,i)=>'<sheet name="'+xml(sheet.name)+'" sheetId="'+(i+1)+'" r:id="rId'+(i+1)+'"/>').join("")+"</s\
+heets><definedNames>"+sheets.map((sheet,i)=>'<definedName name="_xlnm.Print_Titles" localSheetId="'+i+'">'+xml("'"+sheet.name.replace(/'/g,"''")+"'!$1:$"+(sheet.
+banner?.length?sheet.banner.length+1:1))+"</definedName>").join("")+"</definedNames></workbook>");add("xl/_rels/workbook.xml.rels",'<Relationships xmlns="http:/\
+/schemas.openxmlformats.org/package/2006/relationships">'+sheets.map((_,i)=>'<Relationship Id="rId'+(i+1)+'" Type="'+rel+'/worksheet" Target="worksheets/sheet'+
+(i+1)+'.xml"/>').join("")+'<Relationship Id="rIdStyles" Type="'+rel+'/styles" Target="styles.xml"/></Relationships>');add("_rels/.rels",'<Relationships xmlns="h\
+ttp://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="'+rel+'/officeDocument" Target="xl/workbook.xml"/></Relationships>');
+add("[Content_Types].xml",'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.op\
+enxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/\
+vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.\
+spreadsheetml.styles+xml"/>'+sheets.map((_,i)=>'<Override PartName="/xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocumen\
+t.spreadsheetml.worksheet+xml"/>').join("")+"</Types>");add("xl/styles.xml",'<styleSheet xmlns="'+ns+'"><numFmts count="1"><numFmt numFmtId="164" formatCode="0.\
+###############"/></numFmts><fonts count="4"><font><sz val="11"/><color rgb="FF25344A"/><name val="Tahoma"/></font><font><b/><sz val="12"/><color rgb="FFFFFFFF"\
+/><name val="Tahoma"/></font><font><b/><sz val="14"/><color rgb="FFFFFFFF"/><name val="Tahoma"/></font><font><sz val="11"/><color rgb="FF475569"/><name val="Tah\
+oma"/></font></fonts><fills count="8"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>'+["FF244B73","FFF0F5FA","F\
+FE4F4EA","FFFFF3D6","FFFCE8E6","FFEAF0F8"].map(color=>'<fill><patternFill patternType="solid"><fgColor rgb="'+color+'"/><bgColor indexed="64"/></patternFill></f\
+ill>').join("")+'</fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId=\
+"0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="10">'+[0,1,2,3,4,5,6,7,8,9].map(i=>'<xf numFmtId="'+(i===3||i===4?164:0)+'" fontId="'+(i===8?2:i===9?
+3:i===1?1:0)+'" fillId="'+[0,2,3,0,3,4,5,6,2,7][i]+'" borderId="0" xfId="0" applyAlignment="1" applyFill="1" applyNumberFormat="1"><alignment horizontal="'+(i===
+3||i===4?"center":"right")+'" vertical="center" wrapText="1" readingOrder="2"/></xf>').join("")+'</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="\
+0" builtinId="0"/></cellStyles></styleSheet>');const table2=Uint32Array.from({length:256},(_,n)=>{for(let i=0;i<8;i++)n=n&1?3988292384^n>>>1:n>>>1;return n>>>0});
+const crc=bytes=>{let value=4294967295;for(const byte of bytes)value=table2[(value^byte)&255]^value>>>8;return(value^4294967295)>>>0};const chunks=[],directory=[];
+let offset=0,directorySize=0;for(const[name,bytes]of entries){if(offset+bytes.length>128*1024*1024)throw Error("حجم اکسل زیاد است؛ محدوده گزارش را کوچک‌تر کنید.");
+const checksum=crc(bytes);const header=new Uint8Array(30),h=new DataView(header.buffer);h.setUint32(0,67324752,true);h.setUint16(4,20,true);h.setUint16(6,2048,true);
+h.setUint16(12,33,true);h.setUint32(14,checksum,true);h.setUint32(18,bytes.length,true);h.setUint32(22,bytes.length,true);h.setUint16(26,name.length,true);chunks.
+push(header,name,bytes);const central=new Uint8Array(46),c=new DataView(central.buffer);c.setUint32(0,33639248,true);c.setUint16(4,20,true);c.setUint16(6,20,true);
+c.setUint16(8,2048,true);c.setUint16(14,33,true);c.setUint32(16,checksum,true);c.setUint32(20,bytes.length,true);c.setUint32(24,bytes.length,true);c.setUint16(28,
+name.length,true);c.setUint32(42,offset,true);directory.push(central,name);directorySize+=central.length+name.length;offset+=header.length+name.length+bytes.length}
+const end=new Uint8Array(22),e=new DataView(end.buffer);e.setUint32(0,101010256,true);e.setUint16(8,entries.length,true);e.setUint16(10,entries.length,true);e.setUint32(
+12,directorySize,true);e.setUint32(16,offset,true);return new Blob([...chunks,...directory,end],{type:"application/vnd.openxmlformats-officedocument.spreadsheet\
+ml.sheet"})}function excelReportSheets(m){const sheets=[];const sheet=(name,headers,rows,widths)=>sheets.push({name,rows:[headers,...rows],widths});const counts=row=>[
+row.sessions,(row.present||0)+(row.late||0),row.absent,row.leave,row.late,row.unknown];const countHeaders=["جلسه","حاضر با احتساب تأخیر","غ\
+ایب","مرخصی","تأخیر (زیرمجموعه حاضر)","تعیین‌نشده"];const result=grade=>!grade.complete?"ناقص":grade.passed==null?"تکمی\
+ل":grade.passed?"قبول":"نیازمند جبران";const safe=grade=>{if(grade.complete!==true||!Number.isFinite(grade.final))return null;const display=root.
+EduV24.finalText(grade);return display===grade.final.toFixed(2)?grade.final:display};const date=value=>new Intl.DateTimeFormat("fa-IR",{year:"numeric",month:"2-\
+digit",day:"2-digit",timeZone:"UTC"}).format(new Date(value+"T12:00:00Z"));const weekday=value=>new Intl.DateTimeFormat("fa-IR",{weekday:"long",timeZone:"UTC"}).
+format(new Date(value+"T12:00:00Z"));const preparedAt=new Intl.DateTimeFormat("fa-IR",{dateStyle:"short",timeStyle:"short",timeZone:"Asia/Tehran"}).format(new Date(
+m.generatedAt));const metadata=[["نوع گزارش",{daily:"روزانه",weekly:"هفتگی",monthly:"ماهانه",annual:"سال تحصیلی"}[m.mode]],["م\
+خاطب",m.audience==="parent"?"اولیا — فقط هنرجوی انتخاب‌شده":"مدیریت مدرسه"],["وضعیت داده",m.summary.sessions?
+"جلسات و ثبت‌های همین محدوده در شیت‌های داده آمده‌اند.":m.annualGrades?.length||m.technicalGrades?.length?"جلسه‌ا\
+ی در این محدوده ثبت نشده است؛ نمرات موجود در شیت‌های امتحان آمده‌اند.":"هیچ جلسه یا نمره‌ای برای این م\
+حدوده در گزارش موجود نیست؛ تاریخ، مدرسه و کلاس انتخاب‌شده را بررسی کنید."],["مدرسه",m.school.name],
+["کلاس",m.class?.name||"همه کلاس‌ها"],["هنرجو",m.student?.name||"همه هنرجویان محدوده"],["کد هنرجو",m.student?.code==
+null?"":String(m.student.code)],["سال تحصیلی",m.academicYear],["ترم",m.academicTerm||"هر دو ترم"],["از تاریخ",date(m.start)],["تا تاری\
+خ",date(m.end)],["زمان تهیه (شمسی)",preparedAt],["تنظیم‌کننده",m.author],["توضیحات",m.note],...countHeaders.map((header,i)=>[header,
+counts(m.summary)[i]]),["تعداد هنرجویان با سابقه جلسه",m.summary.students],["نرخ حضور (درصد)",m.summary.attendanceRate],["ثبت\
+‌های فعالیت",m.summary.recordedMarks],...(m.technicalGrades||[]).some(grade=>grade.method==="modular"&&!grade.unitBased)?[["واحد کار در روش نمره‌دهی \
+پودمان","در روش ثبت نمره برای پودمان، واحدهای کار جزئیات آموزشی‌اند؛ نتیجهٔ رسمی از مستمر و شایستگی پودمان محاسبه می‌شود و نمرهٔ ترکیبی واحد کار خالی است."]]:
+[],...(m.technicalGrades||[]).some(grade=>grade.unitBased)?[["ارزشیابی مستقل واحدهای کار","در روش ثبت نمره برای واحد کار، نمرهٔ هر واحد ا\
+ز مستمر و شایستگی خودش محاسبه می‌شود؛ پودمان و درس نمرهٔ تجمیعی ندارند. این نمرات در هر دو نوبت سال مشترک‌اند."]]:
+[],...(m.definitions||[]).map(text=>["مبنای گزارش",text]),...(m.warnings||[]).map(text=>["نیازمند بررسی",text]),["راهنما","سلول خالی\
+ یعنی ثبت‌نشده یا نامرتبط؛ صفر عدد واقعی است. این فایل گزارش است و برای بازیابی سیستم نیست."]];
 sheet("خلاصه",["عنوان","مقدار"],metadata,[38,95]);sheets[0].filter=false;sheet("آمار روزها",["تاریخ شمسی","روز هفته",...countHeaders,
 "ثبت فعالیت"],m.days.filter(d=>d.sessions>0).map(d=>[date(d.date),weekday(d.date),...counts(d),d.markCount]));sheet("آمار هنرجویان",["کلاس",
 "کد دانش‌آموزی","هنرجو",...countHeaders,"ثبت فعالیت"],m.students.map(s=>[s.className,String(s.code??""),s.name,...counts(s),s.markCount]));
@@ -419,30 +435,33 @@ minutes]);for(const score of p.scores)activities.push([...prefix,String(p.code??
 سی","روز هفته","ترم","زنگ","کلاس","درس","دبیر","پودمان","واحد کار"];sheet("جلسات",[...contextHeaders,...countHeaders.
 slice(1),"ثبت فعالیت"],sessions);sheet("حضور و غیاب",[...contextHeaders,"کد دانش‌آموزی","هنرجو","وضعیت","دقیقه تأخیر"],
 attendance);sheet("فعالیت‌ها",[...contextHeaders,"کد دانش‌آموزی","هنرجو","نوع فعالیت","نمره یا امتیاز","یادداشت"],
-activities);const eligible=rows=>(rows||[]).filter(g=>m.audience!=="parent"||g.studentId===m.student?.id);if(m.annualGrades){const rows=[],annual=[];for(const g of eligible(
+activities);const eligible=rows=>(rows||[]).filter(g=>m.audience!=="parent"||g.studentId===m.student?.id);if(m.annualGrades?.length){const rows=[],annual=[];for(const g of eligible(
 m.annualGrades)){const identity=[g.className,String(g.studentCode??""),g.studentName,g.lessonName,g.general?"عمومی":"کاردانش"];for(const c of g.components)
 rows.push([...identity,c.term,c.stage==="midterm"?"میان‌ترم":"پایان‌ترم",c.practical,c.theory,g.general?null:c.practicalWeight,g.general?null:
 100-c.practicalWeight,safe(c),result(c)]);annual.push([...identity,...g.components.map(safe),safe(g),result(g)])}const identityHeaders=["کلاس","کد دانش‌آموز\
 ی","هنرجو","درس","نوع درس"];sheet("امتحانات چهار مرحله",[...identityHeaders,"ترم","مرحله","عملی","نظری","وزن عمل\
 ی (%)","وزن نظری (%)","نمره مرحله","وضعیت"],rows);sheet("نتیجه سالانه",[...identityHeaders,"میان‌ترم اول","پایان‌تر\
 م اول","میان‌ترم دوم","پایان‌ترم دوم","میانگین چهار مرحله","وضعیت"],annual)}if(m.technicalGrades?.length){const totals=[],
-modules=[],units=[];for(const g of eligible(m.technicalGrades)){const identity=[g.className,String(g.studentCode??""),g.studentName,g.lessonName,g.term,g.method===
-"legacy-unit"?"روش قدیمی واحد کار؛ غیررسمی":"پودمانی سالانه"];totals.push([...identity,safe(g),result(g),g.provisionalAverage]);
-for(const p of g.modules||[])modules.push([...identity,p.name,safe(p),result(p),p.reason,p.continuous,p.competency]);for(const u of g.units||[]){const unitIdentity=[
-...identity];unitIdentity[4]=u.term||g.term;units.push([...unitIdentity,u.moduleName,u.unitName,u.mostamar,u.payani,null])}for(const u of g.legacyUnits||[])units.
-push([...identity,u.moduleName,u.unitName,u.mostamar,u.payani,u.final])}const headers=["کلاس","کد دانش‌آموزی","هنرجو","درس","نوبت",
-"روش"];sheet("نتیجه فنی",[...headers,"نمره درس","وضعیت","میانگین موقت روش قدیمی"],totals);sheet("پودمان‌ها",
-[...headers,"پودمان","نمره","وضعیت","توضیح","مستمر پودمان","شایستگی"],modules);if(units.length)sheet("واحدهای کار",
-[...headers,"پودمان","واحد کار","مستمر","پایانی","نمره ترکیبی"],units)}const reportTitle={daily:"روزانه",weekly:"هفتگی",
-monthly:"ماهانه",annual:"سال تحصیلی"}[m.mode];const schoolScope="فیلتر محدوده — مدرسه: "+m.school.name+"  |  کلاس: "+(m.class?.
-name||"همه کلاس‌ها")+(m.student?"  |  هنرجو: "+m.student.name+" · کد "+(m.student.code||"ثبت‌نشده"):"");const dateScope="فیلتر زمانی\
- — بازه: "+date(m.start)+" تا "+date(m.end)+"  |  سال تحصیلی: "+m.academicYear+"  |  ترم: "+(m.academicTerm||"اول و دوم");const audience=m.
-audience==="parent"?"ویژه اولیا؛ یک هنرجو":"مدیریت مدرسه";for(const item of sheets)item.banner=["گزارش "+reportTitle+"  |  "+item.
-name,schoolScope+"  |  "+audience,dateScope+"  |  دبیر: "+excelTeacherName(m)];const priority=["حضور و غیاب","فعالیت‌ها","نتیجه سالانه",
-"امتحانات چهار مرحله","نتیجه فنی","پودمان‌ها","واحدهای کار","آمار هنرجویان","آمار درس‌ها","ج\
-لسات","آمار روزها","خلاصه"];return sheets.filter(s=>s.name==="خلاصه"||s.rows.length>1).sort((a,b)=>priority.indexOf(a.name)-priority.indexOf(
-b.name))}function excelTeacherName(m){const specified=String(m.author||"").trim();if(specified)return specified;const teachers=[...new Set((m.sessions||[]).map(
-s=>String(s.teacher||"").trim()).filter(Boolean))];return teachers.length===1?teachers[0]:teachers.length?"چند دبیر":"نام دبیر ثبت نشده"}function excelReportFilename(m){
+modules=[],competencyUnits=[],units=[];for(const g of eligible(m.technicalGrades)){const identity=[g.className,String(g.studentCode??""),g.studentName,g.lessonName,
+g.term,g.method==="legacy-unit"?"روش قدیمی واحد کار؛ غیررسمی":g.unitBased?"واحد کار پودمانی سالانه":"پودمانی سالانه"];
+if(g.unitBased){for(const module of g.modules)for(const unit of module.units)competencyUnits.push([...identity,module.name,unit.name,unit.inputs.m,unit.inputs.c,
+safe(unit),result(unit)]);continue}totals.push([...identity,safe(g),result(g),g.provisionalAverage]);for(const p of g.modules||[])modules.push([...identity,p.name,
+safe(p),result(p),p.reason,p.continuous,p.competency]);for(const u of g.units||[]){const unitIdentity=[...identity];unitIdentity[4]=u.term||g.term;units.push([...unitIdentity,
+u.moduleName,u.unitName,u.mostamar,u.payani,null])}for(const u of g.legacyUnits||[])units.push([...identity,u.moduleName,u.unitName,u.mostamar,u.payani,u.final])}
+const headers=["کلاس","کد دانش‌آموزی","هنرجو","درس","نوبت","روش"];sheet("نتیجه فنی",[...headers,"نمره درس","وضعیت",
+"میانگین موقت روش قدیمی"],totals);sheet("پودمان‌ها",[...headers,"پودمان","نمره","وضعیت","توضیح","مستمر پودمان",
+"شایستگی"],modules);if(units.length)sheet("واحدهای کار",[...headers,"پودمان","واحد کار","مستمر","پایانی","نمره ترکیبی"],
+units);if(competencyUnits.length)sheet("واحدهای کار پودمانی",[...headers,"پودمان","واحد کار","مستمر","شایستگی","نتیجه \
+واحد","وضعیت واحد"],competencyUnits)}const reportTitle={daily:"روزانه",weekly:"هفتگی",monthly:"ماهانه",annual:"سال تحصیلی"}[m.
+mode];const schoolScope="فیلتر محدوده — مدرسه: "+m.school.name+"  |  کلاس: "+(m.class?.name||"همه کلاس‌ها")+(m.student?"  |  هن\
+رجو: "+m.student.name+" · کد "+(m.student.code||"ثبت‌نشده"):"");const dateScope="فیلتر زمانی — بازه: "+date(m.start)+" تا "+date(
+m.end)+"  |  سال تحصیلی: "+m.academicYear+"  |  ترم: "+(m.academicTerm||"اول و دوم");const audience=m.audience==="parent"?"ویژه اولیا؛ یک هنر\
+جو":"مدیریت مدرسه";for(const item of sheets)item.banner=["گزارش "+reportTitle+"  |  "+item.name,schoolScope+"  |  "+audience,dateScope+"  |  د\
+بیر: "+excelTeacherName(m)];const priority=["حضور و غیاب","فعالیت‌ها","نتیجه سالانه","امتحانات چهار مرحله","نت\
+یجه فنی","پودمان‌ها","واحدهای کار","واحدهای کار پودمانی","آمار هنرجویان","آمار درس‌ها","جلسات",
+"آمار روزها","خلاصه"];return sheets.filter(s=>s.name==="خلاصه"||s.rows.length>1).sort((a,b)=>priority.indexOf(a.name)-priority.indexOf(b.name))}
+function excelTeacherName(m){const specified=String(m.author||"").trim();if(specified)return specified;const teachers=[...new Set((m.sessions||[]).map(s=>String(
+s.teacher||"").trim()).filter(Boolean))];return teachers.length===1?teachers[0]:teachers.length?"چند دبیر":"نام دبیر ثبت نشده"}function excelReportFilename(m){
 const teacher=Array.from(excelTeacherName(m),c=>c.charCodeAt(0)<32||'\\/:*?"<>|'.includes(c)?"-":c).join("").slice(0,70).replace(/[. ]+$/g,"");const parts=Object.
 fromEntries(new Intl.DateTimeFormat("fa-IR-u-nu-latn",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"\
 h23",timeZone:"Asia/Tehran"}).formatToParts(new Date(m.generatedAt)).map(p=>[p.type,p.value]));const stamp=parts.year+"-"+parts.month+"-"+parts.day+"_"+parts.hour+
@@ -457,11 +476,12 @@ retired||current.resetting||current.saving||current.pendingDrafts||current.id!==
 throw Error("اطلاعات یا محدوده گزارش تغییر کرده است؛ پنجره را ببندید و اکسل را دوباره آماده کنید.")}
 function canShareExcel(file){try{return!!(globalThis.isSecureContext&&file&&typeof navigator.share==="function"&&typeof navigator.canShare==="function"&&navigator.
 canShare({files:[file]}))}catch{return false}}function openExcelShare(prepared,blob,name){if(!isPreparedCurrent(prepared))throw Error("گزارش تغییر کرده است؛ فای\
-ل اکسل را دوباره آماده کنید.");const model=prepared.model;const file=typeof File==="function"?new File([blob],name,{type:blob.type}):null;
-const supported=canShareExcel(file);const shareIcon='<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-lineca\
-p="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"\
-/><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/></svg>';const opened=root.showModal("اشتراک‌گذاری اکسل",'<section class="report-excel-share" id="re\
-portExcelSharePanel"><div class="report-share-heading"><span aria-hidden="true">'+shareIcon+"</span><div><h4>گزارش آمادهٔ ارسال است</h4><p>"+
+ل اکسل را دوباره آماده کنید.");const model=prepared.model;let file=null;try{if(typeof File==="function")file=new File([blob],name,{type:blob.
+type})}catch{}const supported=canShareExcel(file);const shareIcon='<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"\
+ stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18"\
+ cy="19" r="3"/><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/></svg>';if(document.getElementById("modal").classList.contains("hidden"))document.querySelector("[data\
+-periodic-excel-share]")?.focus?.({preventScroll:true});const opened=root.showModal("اشتراک‌گذاری اکسل",'<section class="report-excel-share" id\
+="reportExcelSharePanel"><div class="report-share-heading"><span aria-hidden="true">'+shareIcon+"</span><div><h4>گزارش آمادهٔ ارسال است</h4><p>"+
 esc(model.school.name+(model.class?" · "+model.class.name:""))+'</p></div></div><div class="report-share-file" data-report-share-file><strong><bdi>'+esc(name)+
 "</bdi></strong><span>XLSX · "+esc(Math.max(1,Math.ceil(blob.size/1024)).toLocaleString("fa-IR"))+" کیلوبایت</span><span>"+esc(model.audience==="parent"?
 "ویژه اولیای "+model.student.name:"گزارش مدیریت مدرسه")+" · "+esc(faDate(model.start)+(model.start===model.end?"":" تا "+faDate(model.
@@ -476,13 +496,15 @@ session.file=null;session.blob=null;if(excelShareSession===session)excelShareSes
 "class"]});observer.observe(document.getElementById("modalBody"),{childList:true});excelShareMessage(session,supported?"دکمه ارسال را بزنید و شاد یا پیام‌رسان د\
 لخواه را از فهرست دستگاه انتخاب کنید. اگر برنامه مقصد نمایش داده نشد، اکسل را دریافت و به‌صورت فایل پیوست کنید.":
 "ارسال مستقیم اکسل در این مرورگر در دسترس نیست. فایل را دریافت کنید؛ سپس در شاد یا پیام‌رسان، از بخش پیوست ← فایل، همین اکسل را انتخاب کنید.");
-return true}async function sharePreparedExcel(button){const session=excelShareSession;if(!session||session.sharing)return false;try{checkExcelShare(session)}catch(error2){
-invalidateExcelShare(error2.message,session);return false}if(!canShareExcel(session.file)){session.panel.querySelector("[data-report-share-send]").hidden=true;excelShareMessage(
-session,"مرورگر از ارسال مستقیم این فایل پشتیبانی نمی‌کند؛ اکسل را دریافت و در پیام‌رسان پیوست کنید.");
-return false}session.sharing=true;button.disabled=true;session.panel.querySelector("[data-report-share-download]").disabled=true;try{await navigator.share({files:[
-session.file],title:"گزارش اکسل کلاس‌یار"});excelShareMessage(session,"فایل به پنجره اشتراک‌گذاری سپرده شد؛ ارسال نهایی و پیوست را در پیام‌رسا\
-ن بررسی کنید.");return true}catch(error2){excelShareMessage(session,error2.name==="AbortError"?"اشتراک‌گذاری لغو شد؛ فایل آماده است و می‌توانید دوباره\
- تلاش کنید.":"ارسال مستقیم انجام نشد. اکسل را دریافت و در شاد یا پیام‌رسان، به‌صورت فایل پیوست کنید.",
+return true}async function sharePreparedExcel(button){const session=excelShareSession;if(!session||session.sharing||button!==session.panel.querySelector("[data-\
+report-share-send]")||!button.isConnected||button.disabled||button.hidden)return false;try{checkExcelShare(session)}catch(error2){invalidateExcelShare(error2.message,
+session);return false}if(!canShareExcel(session.file)){session.panel.querySelector("[data-report-share-send]").hidden=true;excelShareMessage(session,"مرورگر از \
+ارسال مستقیم این فایل پشتیبانی نمی‌کند؛ اکسل را دریافت و در پیام‌رسان پیوست کنید.");return false}
+session.sharing=true;button.disabled=true;session.panel.querySelector("[data-report-share-download]").disabled=true;try{await navigator.share({files:[session.file],
+title:"گزارش اکسل کلاس‌یار"});checkExcelShare(session);excelShareMessage(session,"فایل به پنجره اشتراک‌گذاری سپرده شد؛ ارسال نهایی و پیوست را \
+در پیام‌رسان بررسی کنید.");return true}catch(error2){try{checkExcelShare(session)}catch(changed){invalidateExcelShare(changed.message,session);
+return false}excelShareMessage(session,error2.name==="AbortError"?"اشتراک‌گذاری لغو شد؛ فایل آماده است و می‌توانید دوباره تلاش کنید.":
+"ارسال مستقیم انجام نشد. اکسل را دریافت و در شاد یا پیام‌رسان، به‌صورت فایل پیوست کنید.",
 error2.name==="AbortError"?"ready":"error");return false}finally{session.sharing=false;if(button.isConnected)button.disabled=session.invalid;if(session.panel.isConnected)
 session.panel.querySelector("[data-report-share-download]").disabled=session.invalid}}async function downloadPreparedExcel(){const session=excelShareSession;if(!session||
 session.sharing)return false;try{checkExcelShare(session);session.sharing=true;session.panel.querySelector("[data-report-share-send]").disabled=true;session.panel.
@@ -501,8 +523,8 @@ if(kind==="deputy"){const text=deputyReport(model);copyToClipboard(text,document
  تلاش کنید.");const name=excelReportFilename(model);if(kind==="xlsx-share")return openExcelShare(prepared,blob2,name);downloadLocalFile(blob2,name);const status=document.
 getElementById("periodicExportStatus");if(status)status.textContent="فایل اکسل آماده شد و برای دریافت به مرورگر تحویل داده شد.";
 return true}const content=kind==="json"?JSON.stringify(model,null,2):textReport(model);const blob=new Blob([content],{type:kind==="json"?"application/json;chars\
-et=utf-8":"text/plain;charset=utf-8"});downloadLocalFile(blob,"edu-"+model.mode+"-"+model.start+"-"+model.audience+"."+kind);return true}catch(e){if(kind!=="dep\
-uty"||last===prepared)invalidate(e.message||String(e));else error(e);return false}}root.EduPeriodicReports={filters,selectScope,render,set,invalidate,workspaceChanged(message){
+et=utf-8":"text/plain;charset=utf-8"});downloadLocalFile(blob,"edu-"+model.mode+"-"+model.start+"-"+model.audience+"."+kind);return true}catch(e){if(last===prepared||
+!last&&kind!=="deputy")invalidate(e.message||String(e));else error(e);return false}}root.EduPeriodicReports={filters,selectScope,render,set,invalidate,workspaceChanged(message){
 if(last?.context?.members?.some(member=>member.id===message.workspace&&message.revision>member.revision))invalidate("اطلاعات یکی از نوبت‌های گزارش سالانه تغییر \
 کرد؛ گزارش را دوباره تهیه کنید.")},generate,output,createWorkbook(sheets){return xlsxWorkbook(sheets)},sharePreparedExcel,downloadPreparedExcel,
 build,range,addDays,textReport,deputyReport,sessionDeputyReport,deputyReportHTML,documentHtml,note(value){const key=noteKey(filters);const saved=persistNote(key,

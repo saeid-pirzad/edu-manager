@@ -1,4 +1,8 @@
 function policyStatus(r) {
+  if (r.unitBased)
+    return r.complete
+      ? "واحدهای کار تکمیل شده‌اند"
+      : "واحد کار تکمیل‌نشده دارد";
   if (r.complete === false && r.final == null && r.passed !== false)
     return r.reason || "در انتظار ثبت نمره";
   let label =
@@ -30,6 +34,29 @@ function refreshPolicyResults() {
       ownScoreRecord(pod.podScores, sid),
     );
     el.textContent = el.dataset.podFinal ? finalText(r) : policyStatus(r);
+    const row = el.closest(".assessment-student");
+    if (row)
+      row.dataset.resultState = !r.complete
+        ? "incomplete"
+        : r.passed
+          ? "passed"
+          : "review";
+  }
+  for (const el of document.querySelectorAll(
+    "[data-unit-final],[data-unit-status]",
+  )) {
+    const [pid, uid, sid] = (
+      el.dataset.unitFinal || el.dataset.unitStatus
+    ).split("|");
+    const l = c.lessons.find((lesson) =>
+      lesson.poudmans.some((pod) => pod.id === pid),
+    );
+    if (!EduPolicy.unitBased(l?.gradingPolicy)) continue;
+    const r = EduPolicy.lesson(l.gradingPolicy, l.poudmans, sid)
+      .modules.find((pod) => pod.id === pid)
+      ?.units.find((unit) => unit.id === uid);
+    if (!r) continue;
+    el.textContent = el.dataset.unitFinal ? finalText(r) : policyStatus(r);
     const row = el.closest(".assessment-student");
     if (row)
       row.dataset.resultState = !r.complete

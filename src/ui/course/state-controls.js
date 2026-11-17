@@ -32,6 +32,7 @@ function makePods(count, unitCount) {
       id: api.uid(),
       name: "واحد یادگیری " + (j + 1),
       unitScores: {},
+      competencyScores: {},
       applyOptions: {},
     })),
   }));

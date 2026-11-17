@@ -60,6 +60,12 @@
   }
   function validate(p) {
     if (
+      p?.modularScope !== undefined &&
+      (!["module", "unit"].includes(p.modularScope) ||
+        (p.modularScope === "unit" && p.method !== "modular"))
+    )
+      throw Error("سطح ارزشیابی پودمانی نامعتبر است.");
+    if (
       p?.dualConfigurable !== undefined &&
       typeof p.dualConfigurable !== "boolean"
     )
@@ -73,7 +79,8 @@
       throw Error("درس عمومی نمره مستقیم دارد.");
     if (
       !p ||
-      p.version !== 1 ||
+      ![1, 2].includes(p.version) ||
+      (p.version === 2) !== unitBased(p) ||
       !Number.isSafeInteger(p.revision) ||
       p.revision < 1 ||
       !["dual", "modular"].includes(p.method)
@@ -158,13 +165,14 @@
         message: "عدد معتبر با حداکثر شش رقم اعشار وارد کنید.",
       };
     const v = Number(text);
+    const competency = kind === "pod" || kind === "unit";
     let max = 20;
-    if (kind === "pod") max = field === "c" ? 3 : p.mostamarMax;
+    if (competency) max = field === "c" ? 3 : p.mostamarMax;
     if (v < 0 || v > max)
       return { ok: false, message: "بازه مجاز صفر تا " + max + " است." };
-    if (kind === "pod" && field === "c" && ![1, 2, 3].includes(v))
+    if (competency && field === "c" && ![1, 2, 3].includes(v))
       return { ok: false, message: "شایستگی فقط ۱، ۲ یا ۳ است." };
-    if (kind === "pod" && field === "m") {
+    if (competency && field === "m") {
       const a = decimal(v),
         b = decimal(p.continuousStep);
       if ((a.n * b.d) % (a.d * b.n) !== 0n)
@@ -240,7 +248,11 @@
     const final = finiteRatio(n, d),
       reasons = [];
     if (g.c < p.competencyMin) reasons.push("حد شایستگی احراز نشده");
-    if (n * t.d < t.n * d) reasons.push("نمره پودمان کمتر از " + p.moduleMin);
+    if (n * t.d < t.n * d)
+      reasons.push(
+        (unitBased(p) ? "نمره واحد کار کمتر از " : "نمره پودمان کمتر از ") +
+          p.moduleMin,
+      );
     return {
       final,
       passed: !reasons.length,
@@ -273,12 +285,51 @@
     };
   }
   function lesson(p, pods, sid) {
+    if (unitBased(p)) {
+      const modules = pods.map((pod) => {
+        const units = (pod.units || []).map((unit) => {
+          const score = ownScoreRecord(unit.competencyScores, sid);
+          return {
+            id: unit.id,
+            name: unit.name,
+            inputs: { m: score.m ?? null, c: score.c ?? null },
+            ...moduleResult(p, score),
+          };
+        });
+        const complete =
+          units.length > 0 && units.every((unit) => unit.complete);
+        return {
+          id: pod.id,
+          name: pod.name,
+          units,
+          final: null,
+          passed: null,
+          provisionalAverage: null,
+          complete,
+          reason: complete ? "" : "واحدهای کار ناقص",
+        };
+      });
+      const complete =
+        modules.length > 0 && modules.every((pod) => pod.complete);
+      return {
+        modules,
+        unitBased: true,
+        complete,
+        final: null,
+        passed: null,
+        provisionalAverage: null,
+        reason: complete ? "" : "واحدهای کار ناقص",
+      };
+    }
     const modules = pods.map((pod) => ({
       id: pod.id,
       name: pod.name,
       ...moduleResult(p, ownScoreRecord(pod.podScores, sid)),
     }));
     return { modules, ...moduleAggregate(modules) };
+  }
+  function unitBased(policy) {
+    return policy?.method === "modular" && policy.modularScope === "unit";
   }
   function hasGrades(l) {
     return (
@@ -292,7 +343,11 @@
       l.poudmans.some(
         (p) =>
           Object.keys(p.podScores || {}).length ||
-          p.units.some((u) => Object.keys(u.unitScores || {}).length),
+          p.units.some(
+            (u) =>
+              Object.keys(u.unitScores || {}).length ||
+              Object.keys(u.competencyScores || {}).length,
+          ),
       )
     );
   }
@@ -331,6 +386,7 @@
       for (const u of p.units) {
         u.id = newId();
         u.unitScores = {};
+        if (u.competencyScores !== undefined) u.competencyScores = {};
       }
     }
     if (next.gradingPolicy) {
@@ -370,7 +426,9 @@
           p.theoryMin +
           "، عملی " +
           p.practicalMin
-        : "پودمانی؛ مستمر تا " +
+        : (unitBased(p)
+            ? "واحدهای کار پودمان؛ مستمر تا "
+            : "پودمانی؛ مستمر تا ") +
           p.mostamarMax +
           " + شایستگی × " +
           p.competencyFactor +
@@ -388,6 +446,7 @@
     dualSettings,
     moduleResult,
     moduleAggregate,
+    unitBased,
     lesson,
     hasGrades,
     freshCopy,

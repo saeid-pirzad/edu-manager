@@ -30,6 +30,7 @@
       "unitCount",
       "dualConfigurable",
       "subjectType",
+      "modularScope",
     ];
   function fail(message, code = "DEPUTY_INVALID") {
     throw Object.assign(Error(message), { code });
@@ -239,10 +240,10 @@
         } else if (amount !== null) {
           numeric(amount);
           if (
-            kind === "pod" &&
+            ["pod", "unit"].includes(kind) &&
             (!policy ||
               policy.method !== "modular" ||
-              !root.EduPolicy.parse(String(amount), policy, key, "pod").ok)
+              !root.EduPolicy.parse(String(amount), policy, key, kind).ok)
           )
             fail("نمرهٔ پودمانی معتبر نیست.");
         }
@@ -318,13 +319,38 @@
           value.gradingPolicy,
           "pod",
         );
+        if (
+          root.EduPolicy.unitBased(value.gradingPolicy) &&
+          Object.keys(pod.podScores).length
+        )
+          fail("درس دارای ارزشیابی واحد کار، نمرهٔ مستقیم پودمان ندارد.");
         unique(
           array(pod.units, 10),
           (unit) => {
-            object(unit, ["id", "name", "unitScores", "applyOptions"]);
+            object(unit, [
+              "id",
+              "name",
+              "unitScores",
+              "competencyScores",
+              "applyOptions",
+            ]);
             id(unit.id);
             text(unit.name, 1000, true);
             scoreMap(unit.unitScores, ["m", "p"], students);
+            if (unit.competencyScores !== undefined) {
+              scoreMap(
+                unit.competencyScores,
+                ["m", "c"],
+                students,
+                value.gradingPolicy,
+                "unit",
+              );
+              if (
+                !root.EduPolicy.unitBased(value.gradingPolicy) &&
+                Object.keys(unit.competencyScores).length
+              )
+                fail("نمرهٔ شایستگی واحد کار با روش درس سازگار نیست.");
+            }
             if (unit.applyOptions !== undefined) {
               object(unit.applyOptions, [
                 "pos",
@@ -512,6 +538,19 @@
     return JSON.stringify(value);
   }
   function assertAnnual(packet) {
+    const unitScoreView = (records) =>
+      Object.fromEntries(
+        Object.entries(records || {})
+          .map(([sid, record]) => [
+            sid,
+            Object.fromEntries(
+              ["m", "c"]
+                .filter((field) => record[field] != null)
+                .map((field) => [field, record[field]]),
+            ),
+          ])
+          .filter(([, record]) => Object.keys(record).length),
+      );
     const lessons = new Map();
     for (const term of packet.periods)
       for (const classroom of term.school.classes)
@@ -545,7 +584,11 @@
           }
           if (previous && lesson.gradingPolicy?.method === "modular") {
             const view = (item) => ({
+              scope: root.EduPolicy.unitBased(item.gradingPolicy)
+                ? "unit"
+                : "module",
               rules: pick(item.gradingPolicy, [
+                "version",
                 "mostamarMax",
                 "competencyFactor",
                 "competencyMin",
@@ -555,8 +598,17 @@
               modules: item.poudmans
                 .map((pod) => ({
                   id: pod.id,
-                  units: pod.units.map((unit) => unit.id).sort(),
-                  scores: pod.podScores,
+                  units: root.EduPolicy.unitBased(item.gradingPolicy)
+                    ? pod.units
+                        .map((unit) => ({
+                          id: unit.id,
+                          scores: unitScoreView(unit.competencyScores),
+                        }))
+                        .sort((a, b) => a.id.localeCompare(b.id))
+                    : pod.units.map((unit) => unit.id).sort(),
+                  ...(root.EduPolicy.unitBased(item.gradingPolicy)
+                    ? {}
+                    : { scores: pod.podScores }),
                 }))
                 .sort((a, b) => a.id.localeCompare(b.id)),
             });
@@ -656,6 +708,14 @@
             units: (pod.units || []).map((unit) => ({
               ...pick(unit, ["id", "name"]),
               unitScores: sanitizeScores(unit.unitScores, ["m", "p"]),
+              ...(unit.competencyScores !== undefined
+                ? {
+                    competencyScores: sanitizeScores(unit.competencyScores, [
+                      "m",
+                      "c",
+                    ]),
+                  }
+                : {}),
               ...(unit.applyOptions
                 ? {
                     applyOptions: pick(unit.applyOptions, [
@@ -870,12 +930,21 @@
           if (lesson.gradingPolicy?.method === "modular") {
             // A formal module is one annual observation, not one per term.
             // validate() already rejects different shared annual values.
-            for (const pod of lesson.poudmans)
-              numbers(
-                ["annual", classroom.id, lesson.id, pod.id],
-                pod.podScores,
-                ["m", "c"],
-              );
+            for (const pod of lesson.poudmans) {
+              if (root.EduPolicy.unitBased(lesson.gradingPolicy)) {
+                for (const unit of pod.units)
+                  numbers(
+                    ["annual-unit", classroom.id, lesson.id, pod.id, unit.id],
+                    unit.competencyScores || {},
+                    ["m", "c"],
+                  );
+              } else
+                numbers(
+                  ["annual", classroom.id, lesson.id, pod.id],
+                  pod.podScores,
+                  ["m", "c"],
+                );
+            }
           } else if (lesson.gradeMode === "kardanesh") {
             numbers(
               base,
@@ -1033,19 +1102,24 @@
                 lesson,
                 student.id,
               );
-              row.modules = modules.map((module) => {
-                const grade = ownScoreRecord(
-                  lesson.poudmans.find((pod) => pod.id === module.id).podScores,
-                  student.id,
-                );
-                return {
-                  id: module.id,
-                  name: module.name,
-                  m: grade.m ?? null,
-                  c: grade.c ?? null,
-                  ...module,
-                };
-              });
+              if (root.EduPolicy.unitBased(policy)) {
+                row.unitBased = true;
+                row.modules = modules;
+              } else
+                row.modules = modules.map((module) => {
+                  const grade = ownScoreRecord(
+                    lesson.poudmans.find((pod) => pod.id === module.id)
+                      .podScores,
+                    student.id,
+                  );
+                  return {
+                    id: module.id,
+                    name: module.name,
+                    m: grade.m ?? null,
+                    c: grade.c ?? null,
+                    ...module,
+                  };
+                });
               row.result = result;
             } else if (kind === "legacy") {
               for (const pod of lesson.poudmans)

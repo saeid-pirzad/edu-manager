@@ -3,6 +3,14 @@ function installCourseTableEvents() {
   const change = (event) => {
     const control = event.target;
     if (
+      control.dataset?.unitPicker !== undefined &&
+      !control.matches(":disabled") &&
+      !control.closest("[inert]")
+    ) {
+      selectGradeUnit(control);
+      return;
+    }
+    if (
       control.dataset?.modulePicker !== undefined &&
       !control.matches(":disabled") &&
       !control.closest("[inert]")

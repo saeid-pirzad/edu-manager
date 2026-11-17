@@ -149,6 +149,29 @@ function fixture({ two = false, modular = false, general = false } = {}) {
 }
 const packet = (options) => exchange.build(fixture(options));
 const error = (code) => (failure) => failure.code === code;
+function unitFixture(two = true) {
+  const source = fixture({ two, modular: true });
+  for (const part of source.parts) {
+    const course = part.data.schools[0].classes[0].lessons[0];
+    Object.assign(course.gradingPolicy, { version: 2, modularScope: "unit" });
+    course.poudmans[0].podScores = {};
+    const first = course.poudmans[0].units[0];
+    first.competencyScores = {
+      student: { m: 0, c: 2 },
+      old_student: { m: null, c: 1 },
+    };
+    course.poudmans[0].units.push({
+      id: "unit_second",
+      name: "واحد دوم",
+      unitScores: {},
+      competencyScores: { student: { m: 5, c: 3 } },
+    });
+  }
+  return source;
+}
+const unitPacket = (two = true) => exchange.build(unitFixture(two)),
+  packetCourse = (value, term = 0) =>
+    value.periods[term].school.classes[0].lessons[0];
 test("deputy export uses a strict privacy whitelist and does not mutate teacher data", () => {
   const source = fixture(),
     before = clone(source),
@@ -725,4 +748,192 @@ test("deputy sparse or excessive arrays are rejected before JSON serialization c
     );
   assert.equal(serialized, 0);
   assert.doesNotThrow(() => exchange.assertSafeTree([1, null, { value: 0 }]));
+});
+
+test("deputy unit competency export roundtrips both annual units without leaking metadata or inventing an aggregate", () => {
+  const source = unitFixture(),
+    first =
+      source.parts[0].data.schools[0].classes[0].lessons[0].poudmans[0]
+        .units[0];
+  first.competencyScores.student.privateNote = "private-unit-note";
+  const before = clone(source),
+    output = exchange.build(source),
+    restored = exchange.validate(JSON.parse(JSON.stringify(output))),
+    row = exchange
+      .gradeRows(restored)
+      .find((item) => item.studentId === "student");
+  assert.deepEqual(source, before);
+  assert.equal(packetCourse(restored).gradingPolicy.version, 2);
+  assert.equal(packetCourse(restored).gradingPolicy.modularScope, "unit");
+  assert.equal(JSON.stringify(output).includes("private-unit-note"), false);
+  assert.equal(row.kind, "modular");
+  assert.equal(row.unitBased, true);
+  assert.equal(row.modules.length, 1);
+  assert.equal(row.modules[0].units.length, 2);
+  assert.deepEqual(json(row.modules[0].units[0].inputs), { m: 0, c: 2 });
+  assert.equal(row.modules[0].units[0].final, 10);
+  assert.equal(row.modules[0].units[0].passed, false);
+  assert.equal(row.modules[0].units[1].final, 20);
+  assert.equal(row.modules[0].units[1].passed, true);
+  assert.equal(row.modules[0].complete, true);
+  assert.equal(row.modules[0].final, null);
+  assert.equal(row.modules[0].passed, null);
+  assert.equal(row.result.complete, true);
+  assert.equal(row.result.final, null);
+  assert.equal(row.result.passed, null);
+  assert.equal(row.result.provisionalAverage, null);
+  assert.equal(row.stages.length, 0);
+  assert.equal(row.units.length, 0);
+  assert.deepEqual(json(packetCourse(output).poudmans[0].units[0].unitScores), {
+    student: { m: 0, p: 20 },
+  });
+  const archived = exchange
+    .gradeRows(restored)
+    .find((item) => item.studentId === "old_student");
+  assert.equal(archived.archived, true);
+  assert.equal(archived.result.complete, false);
+  assert.equal(archived.modules[0].units[0].inputs.m, null);
+});
+
+test("deputy rejects ambiguous mixed scoring and policy versions at the file boundary", () => {
+  const unit = unitPacket(false);
+  for (const mutate of [
+    (course) => {
+      course.gradingPolicy.version = 1;
+    },
+    (course) => {
+      delete course.gradingPolicy.modularScope;
+    },
+    (course) => {
+      course.gradingPolicy.modularScope = "module";
+    },
+    (course) => {
+      course.gradingPolicy.modularScope = "units";
+    },
+    (course) => {
+      course.poudmans[0].podScores.student = { m: 5, c: 3 };
+    },
+    (course) => {
+      course.poudmans[0].units[0].competencyScores.student.p = 20;
+    },
+    (course) => {
+      course.poudmans[0].units = [];
+    },
+    (course) => {
+      course.poudmans[0].units[1].id = course.poudmans[0].units[0].id;
+    },
+  ]) {
+    const invalid = clone(unit);
+    mutate(packetCourse(invalid));
+    assert.throws(() => exchange.validate(invalid));
+  }
+  const module = packet({ modular: true });
+  packetCourse(module).poudmans[0].units[0].competencyScores = {
+    student: { m: 0, c: 2 },
+  };
+  assert.throws(() => exchange.validate(module), /روش درس/);
+  packetCourse(module).poudmans[0].units[0].competencyScores = {};
+  assert.doesNotThrow(() => exchange.validate(module));
+});
+
+test("deputy validates the competency scale and student references for every individual unit", () => {
+  for (const record of [
+    { m: -1, c: 2 },
+    { m: 5.5, c: 2 },
+    { m: 4.25, c: 2 },
+    { m: 0, c: 0 },
+    { m: 0, c: 2.5 },
+    { m: 0, c: 4 },
+    { m: "0", c: 2 },
+    { m: 0, c: null, unknown: 2 },
+  ]) {
+    const invalid = unitPacket(false);
+    packetCourse(invalid).poudmans[0].units[1].competencyScores.student =
+      record;
+    assert.throws(() => exchange.validate(invalid), JSON.stringify(record));
+  }
+  const invalid = unitPacket(false);
+  packetCourse(invalid).poudmans[0].units[1].competencyScores.stranger = {
+    m: 5,
+    c: 3,
+  };
+  assert.throws(() => exchange.validate(invalid), /هنرجوی ناموجود/);
+});
+
+test("deputy unit annual consistency compares each unit by stable identity and never combines conflicting terms", () => {
+  const value = unitPacket();
+  for (const mutate of [
+    (course) => {
+      course.poudmans[0].units[1].competencyScores.student.m = 4;
+    },
+    (course) => {
+      course.poudmans[0].units[1].competencyScores = {};
+    },
+    (course) => {
+      course.poudmans[0].units[1].id = "changed_unit";
+    },
+    (course) => {
+      course.gradingPolicy.moduleMin = 10;
+    },
+  ]) {
+    const invalid = clone(value);
+    mutate(packetCourse(invalid, 1));
+    assert.throws(
+      () => exchange.validate(invalid),
+      error("DEPUTY_ANNUAL_CONFLICT"),
+    );
+  }
+  packetCourse(value, 1).poudmans[0].units.reverse();
+  assert.doesNotThrow(() => exchange.validate(value));
+  assert.equal(
+    exchange.gradeRows(value).find((row) => row.studentId === "student")
+      .modules[0].units.length,
+    2,
+  );
+});
+
+test("deputy unit annual validation treats null and missing as unrecorded while retaining numeric zero", () => {
+  const value = unitPacket();
+  packetCourse(value).poudmans[0].units[0].competencyScores.student = {
+    m: null,
+    c: null,
+  };
+  packetCourse(value, 1).poudmans[0].units[0].competencyScores.student = {};
+  delete packetCourse(value, 1).poudmans[0].units[0].competencyScores
+    .old_student.m;
+  assert.doesNotThrow(() => exchange.validate(value));
+  packetCourse(value, 1).poudmans[0].units[0].competencyScores.student.m = 0;
+  assert.throws(
+    () => exchange.validate(value),
+    error("DEPUTY_ANNUAL_CONFLICT"),
+  );
+});
+
+test("deputy change preview counts official unit edits once annually and keeps them independent from legacy grades", () => {
+  const before = unitPacket(),
+    updated = clone(before);
+  for (let term = 0; term < 2; term++) {
+    updated.periods[term].revision++;
+    packetCourse(
+      updated,
+      term,
+    ).poudmans[0].units[1].competencyScores.student.m = 4;
+  }
+  assert.equal(exchange.plan(before, updated).changed.assessments, 1);
+  const cleared = clone(updated);
+  for (let term = 0; term < 2; term++) {
+    cleared.periods[term].revision++;
+    delete packetCourse(cleared, term).poudmans[0].units[0].competencyScores
+      .student.m;
+  }
+  assert.equal(exchange.plan(updated, cleared).changed.assessments, 1);
+  const legacy = clone(before);
+  for (let term = 0; term < 2; term++) {
+    legacy.periods[term].revision++;
+    packetCourse(legacy, term).poudmans[0].units[0].unitScores.student.m = 20;
+  }
+  assert.equal(exchange.plan(before, legacy).changed.assessments, 0);
+  const firstOnly = clone(before);
+  firstOnly.periods.pop();
+  assert.equal(exchange.plan(firstOnly, before).changed.assessments, 0);
 });

@@ -50,7 +50,35 @@ function finalReportData() {
             l.gradingPolicy?.method === "modular" &&
             (workspace.termKind || academicTermKind(workspace.term)) ===
               "first";
+          const unitBased = EduPolicy.unitBased(l.gradingPolicy);
+          if (unitBased && !annualModuleInProgress)
+            for (const module of result.modules) {
+              if (!module.units.length)
+                missing.push(
+                  c.name +
+                    " / " +
+                    st.name +
+                    " / " +
+                    l.name +
+                    " / " +
+                    module.name,
+                );
+              for (const unit of module.units)
+                if (!unit.complete)
+                  missing.push(
+                    c.name +
+                      " / " +
+                      st.name +
+                      " / " +
+                      l.name +
+                      " / " +
+                      module.name +
+                      " / " +
+                      unit.name,
+                  );
+            }
           if (
+            !unitBased &&
             !annualModuleInProgress &&
             result.final === null &&
             result.passed !== false
@@ -60,11 +88,15 @@ function finalReportData() {
             id: l.id,
             name: l.name,
             mode: l.gradeMode,
+            ...(unitBased
+              ? { unitBased: true, complete: result.complete }
+              : {}),
             ...(assessments ? { assessments } : {}),
             policy: l.gradingPolicy ? clone(l.gradingPolicy) : null,
             courseInfo: EduPolicy.identity(l, workspace.year),
             modules:
               result.modules?.map((module) => {
+                if (unitBased) return clone(module);
                 const pod = l.poudmans.find((item) => item.id === module.id),
                   inputs = ownScoreRecord(pod?.podScores, st.id);
                 return {
@@ -82,14 +114,17 @@ function finalReportData() {
             passed: result.passed ?? null,
           };
         });
+        const averagedLessons = lessons.filter((lesson) => !lesson.unitBased);
         return {
           id: st.id,
           name: st.name,
           code: st.code || "",
           lessons,
           average:
-            lessons.length && lessons.every((l) => l.final !== null)
-              ? lessons.reduce((n, l) => n + l.final, 0) / lessons.length
+            averagedLessons.length &&
+            averagedLessons.every((l) => l.final !== null)
+              ? averagedLessons.reduce((n, l) => n + l.final, 0) /
+                averagedLessons.length
               : null,
         };
       });

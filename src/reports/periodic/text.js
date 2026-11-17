@@ -177,12 +177,12 @@ function textReport(m) {
             : " | نمره یا فعالیتی ثبت نشده"),
       );
   }
-  if (m.currentGrades.length) {
+  if (m.currentGrades.some((grade) => !grade.unitBased)) {
     lines.push(
       "",
       "آخرین وضعیت تجمعی درس‌ها تا زمان تهیه گزارش؛ محدود به بازه بالا نیست",
     );
-    for (const g of m.currentGrades)
+    for (const g of m.currentGrades.filter((grade) => !grade.unitBased))
       lines.push(
         g.lessonName +
           ": " +
@@ -197,9 +197,9 @@ function textReport(m) {
           g.policy,
       );
   }
-  if (m.currentGrades.some((g) => g.modules?.length)) {
+  if (m.currentGrades.some((g) => !g.unitBased && g.modules?.length)) {
     lines.push("", "جزئیات تجمعی پودمان‌ها تا زمان تهیه گزارش");
-    for (const g of m.currentGrades)
+    for (const g of m.currentGrades.filter((grade) => !grade.unitBased))
       for (const p of g.modules || [])
         lines.push(
           g.lessonName +
@@ -215,6 +215,30 @@ function textReport(m) {
             (p.reason || (p.passed ? "احراز شده" : "نیازمند بررسی")),
         );
   }
+  if (m.currentGrades.some((grade) => grade.unitBased)) {
+    lines.push("", "نمرات مستقل واحدهای کار تا زمان تهیه گزارش");
+    for (const grade of m.currentGrades.filter((item) => item.unitBased))
+      for (const module of grade.modules)
+        for (const unit of module.units)
+          lines.push(
+            grade.lessonName +
+              " / " +
+              module.name +
+              " / " +
+              unit.name +
+              ": مستمر " +
+              num(unit.inputs.m) +
+              " | شایستگی " +
+              num(unit.inputs.c) +
+              " | نتیجه واحد " +
+              root.EduV24.finalText(unit) +
+              (unit.complete
+                ? unit.passed
+                  ? " — قبول"
+                  : " — نیازمند جبران"
+                : " — ناقص"),
+          );
+  }
   if (m.note) lines.push("", "توضیحات تنظیم‌کننده", m.note);
   if (m.warnings.length) lines.push("", "موارد نیازمند بررسی", ...m.warnings);
   lines.push("", "توضیح روش گزارش", ...m.definitions);
@@ -229,13 +253,14 @@ function textReport(m) {
           grade.lessonName +
           (grade.method === "modular" ? " | سالانه" : " | نوبت " + grade.term),
       );
-      lines.push(
-        (grade.method === "legacy-unit"
-          ? "نتیجه روش قدیمی (پودمان رسمی نیست): "
-          : "نتیجه درس: ") +
-          root.EduV24.finalText(grade) +
-          (grade.complete ? "" : " — ناقص"),
-      );
+      if (!grade.unitBased)
+        lines.push(
+          (grade.method === "legacy-unit"
+            ? "نتیجه روش قدیمی (پودمان رسمی نیست): "
+            : "نتیجه درس: ") +
+            root.EduV24.finalText(grade) +
+            (grade.complete ? "" : " — ناقص"),
+        );
       for (const unit of grade.legacyUnits || [])
         lines.push(
           unit.moduleName +
@@ -249,19 +274,37 @@ function textReport(m) {
             root.EduV24.finalText(unit),
         );
       for (const module of grade.modules)
-        lines.push(
-          module.name +
-            ": " +
-            root.EduV24.finalText(module) +
-            (module.complete
-              ? module.passed
-                ? " — قبول"
-                : " — نیازمند جبران"
-              : " — ناقص"),
-        );
+        if (grade.unitBased) {
+          lines.push(module.name);
+          for (const unit of module.units)
+            lines.push(
+              unit.name +
+                ": مستمر " +
+                num(unit.inputs.m) +
+                " | شایستگی " +
+                num(unit.inputs.c) +
+                " | نتیجه واحد " +
+                root.EduV24.finalText(unit) +
+                (unit.complete
+                  ? unit.passed
+                    ? " — قبول"
+                    : " — نیازمند جبران"
+                  : " — ناقص"),
+            );
+        } else
+          lines.push(
+            module.name +
+              ": " +
+              root.EduV24.finalText(module) +
+              (module.complete
+                ? module.passed
+                  ? " — قبول"
+                  : " — نیازمند جبران"
+                : " — ناقص"),
+          );
     }
   }
-  if (m.annualGrades) {
+  if (m.annualGrades?.length) {
     lines.push("", "نمرات چهار مرحله سال — میانگین برابر چهار مرحله");
     for (const grade of m.annualGrades) {
       lines.push(

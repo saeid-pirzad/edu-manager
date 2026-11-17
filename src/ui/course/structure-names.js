@@ -1,6 +1,13 @@
 function prepareStructureNameEditor(lesson) {
   if (!lesson.poudmans.length) return;
-  const structure = document.getElementById("courseStructure");
+  const structure = document.createElement("div");
+  structure.id = "courseStructure";
+  structure.innerHTML = lesson.poudmans
+    .map(
+      (pod, index) =>
+        `<details class="course-pod-editor" ${index === 0 ? "open" : ""}><summary>پودمان ${(index + 1).toLocaleString("fa-IR")}<span class="muted">${pod.units.length.toLocaleString("fa-IR")} واحد یادگیری</span></summary><div class="course-grid">${input("pod_" + pod.id, "نام پودمان", pod.name)}${pod.units.map((unit) => input("unit_" + unit.id, "نام واحد یادگیری", unit.name)).join("")}</div></details>`,
+    )
+    .join("");
   const section = document.createElement("details");
   section.id = "courseNames";
   section.className = "course-policy-section course-name-section";

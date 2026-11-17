@@ -1,5 +1,5 @@
 async function openNames(lid) {
-  const opened = await open(lid);
+  const opened = await open(lid, undefined, { editNames: true });
   if (opened === false) return;
   const section = document.getElementById("courseNames");
   if (!section || section.hidden) return;
@@ -35,10 +35,21 @@ function toggleMethod() {
   document.getElementById("courseDual").hidden =
     general || val("method") !== "dual";
   document.getElementById("courseModular").hidden = val("method") !== "modular";
+  document.getElementById("course_modularScope").closest("label").hidden =
+    val("method") !== "modular";
   document.getElementById("courseAdvanced").hidden =
     val("method") !== "modular";
   const names = document.getElementById("courseNames");
   if (names) names.hidden = val("method") !== "modular";
+  toggleModularScope();
+}
+function toggleModularScope() {
+  const unitBased = val("modularScope") === "unit";
+  document
+    .getElementById("course_moduleMin")
+    .closest("label").firstChild.textContent = unitBased
+    ? "حد قبولی هر واحد کار"
+    : "حد قبولی هر پودمان";
 }
 function syncTheoryWeight() {
   const value = api.asciiDigits(val("practicalWeight"));

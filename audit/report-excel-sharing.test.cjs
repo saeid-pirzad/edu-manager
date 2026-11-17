@@ -13,9 +13,12 @@ const read = (name) =>
 const mime =
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 function deferred() {
-  let resolve;
-  const promise = new Promise((done) => (resolve = done));
-  return { promise, resolve };
+  let resolve, reject;
+  const promise = new Promise((done, fail) => {
+    resolve = done;
+    reject = fail;
+  });
+  return { promise, resolve, reject };
 }
 function fixture() {
   const shares = [],
@@ -235,6 +238,15 @@ for (const [name, setup] of [
   ["no canShare API", (c) => (c.navigator.canShare = undefined)],
   ["no File constructor", (c) => (c.File = undefined)],
   [
+    "rejected File construction",
+    (c) =>
+      (c.File = class {
+        constructor() {
+          throw Error("File construction is unavailable");
+        }
+      }),
+  ],
+  [
     "insecure context",
     (c) => {
       c.isSecureContext = false;
@@ -419,7 +431,8 @@ test("manual Excel download rechecks scope, permission and dialog after its asyn
 function outputFixture() {
   const f = fixture(),
     opened = [],
-    invalid = [];
+    invalid = [],
+    errors = [];
   Object.assign(f.c, {
     generate: async () => f.prepared.model,
     xlsxWorkbook: () => f.blob,
@@ -436,13 +449,14 @@ function outputFixture() {
       return true;
     },
     invalidate: (message) => invalid.push(message),
+    error: (value) => errors.push(value),
   });
   vm.runInContext(
     read("output.js").split("root.EduPeriodicReports =")[0],
     f.c,
     { filename: "output.js" },
   );
-  return { ...f, opened, invalid };
+  return { ...f, opened, invalid, errors };
 }
 
 test("Share Excel output opens only the validated filtered model's actual XLSX and does not download", async () => {
@@ -473,6 +487,61 @@ test("Share Excel output cannot expose a report when durable validation rejects 
   }
 });
 
+for (const kind of ["xlsx-share", "xlsx"])
+  for (const outcome of ["resolve", "reject"])
+    test(
+      "an older " +
+        kind +
+        " validation cannot revoke a newer prepared Excel dialog after " +
+        outcome,
+      async () => {
+        const f = outputFixture(),
+          gate = deferred(),
+          entered = deferred(),
+          newer = {
+            ...f.prepared,
+            model: {
+              ...f.prepared.model,
+              class: { id: "newer-class", name: "کلاس تازه" },
+            },
+          },
+          newerName = "newer-report.xlsx";
+        let calls = 0;
+        f.c.root.EduV24.assertReportSnapshot = async () => {
+          if (++calls === 1) {
+            entered.resolve();
+            await gate.promise;
+          }
+        };
+        const older = f.c.output(kind);
+        await entered.promise;
+        assert.equal(calls, 1);
+        f.c.generate = async () => {
+          f.c.last = newer;
+          return newer.model;
+        };
+        f.c.excelReportSheets = (model) => {
+          assert.equal(model, newer.model);
+          return [];
+        };
+        f.c.excelReportFilename = (model) => {
+          assert.equal(model, newer.model);
+          return newerName;
+        };
+        assert.equal(await f.c.output("xlsx-share"), true);
+        assert.equal(f.opened.length, 1);
+        assert.equal(f.opened[0][0], newer);
+        assert.equal(f.opened[0][2], newerName);
+        if (outcome === "reject") gate.reject(Error("old validation failed"));
+        else gate.resolve();
+        assert.equal(await older, false);
+        assert.equal(f.c.last, newer);
+        assert.equal(f.invalid.length, 0);
+        assert.equal(f.opened.length, 1);
+        assert.equal(f.downloads.length + f.shares.length, 0);
+      },
+    );
+
 test("an older pending download cannot invalidate a newly prepared Excel dialog", async () => {
   const f = fixture(),
     gate = deferred();
@@ -486,6 +555,36 @@ test("an older pending download cannot invalidate a newly prepared Excel dialog"
   assert.equal(f.downloads.length, 0);
   assert.equal(await f.c.sharePreparedExcel(f.send()), true);
   assert.equal(f.shares[0].files[0].name, newerName);
+});
+
+test("an obsolete share button cannot send the file from a newer Excel dialog", async () => {
+  const f = fixture();
+  f.open();
+  const oldButton = f.send();
+  const newerName = "newer-report.xlsx";
+  f.c.openExcelShare(f.prepared, f.blob, newerName);
+  assert.equal(await f.c.sharePreparedExcel(oldButton), false);
+  assert.equal(f.shares.length + f.downloads.length, 0);
+  assert.equal(f.send().disabled, false);
+  assert.equal(await f.c.sharePreparedExcel(f.send()), true);
+  assert.equal(f.shares[0].files[0].name, newerName);
+});
+
+test("only the current connected and enabled Excel send button can invoke native sharing", async () => {
+  for (const state of ["missing", "disconnected", "disabled", "hidden"]) {
+    const f = fixture();
+    f.open();
+    const button = f.send();
+    if (state === "disconnected") button.isConnected = false;
+    if (state === "disabled") button.disabled = true;
+    if (state === "hidden") button.hidden = true;
+    assert.equal(
+      await f.c.sharePreparedExcel(state === "missing" ? undefined : button),
+      false,
+      state,
+    );
+    assert.equal(f.shares.length + f.downloads.length, 0, state);
+  }
 });
 
 test("a native share completing after invalidation cannot replace the stale-report message", async () => {
@@ -507,6 +606,41 @@ test("a native share completing after invalidation cannot replace the stale-repo
   assert.equal(f.download().disabled, true);
   assert.equal(f.downloads.length, 0);
 });
+
+for (const outcome of ["resolve", "cancel", "reject"])
+  test(
+    "a native share cannot revive a changed report after " + outcome,
+    async () => {
+      for (const change of [
+        (f) => f.ctx.revision++,
+        (f) => (f.ctx.authenticated = false),
+        (f) => f.changeFilter(),
+      ]) {
+        const f = fixture(),
+          gate = deferred();
+        f.open();
+        f.c.navigator.share = async (payload) => {
+          f.shares.push(payload);
+          await gate.promise;
+        };
+        const operation = f.c.sharePreparedExcel(f.send());
+        change(f);
+        if (outcome === "resolve") gate.resolve();
+        else
+          gate.reject(
+            Object.assign(Error("native sharing ended"), {
+              name: outcome === "cancel" ? "AbortError" : "NotAllowedError",
+            }),
+          );
+        assert.equal(await operation, false);
+        assert.match(f.status(), /تغییر|محدوده/);
+        assert.equal(f.send().disabled, true);
+        assert.equal(f.download().disabled, true);
+        assert.equal(await f.c.downloadPreparedExcel(), false);
+        assert.equal(f.downloads.length, 0);
+      }
+    },
+  );
 
 test("a pending durable download locks both actions and blocks duplicate downloads or competing shares", async () => {
   const f = fixture(),

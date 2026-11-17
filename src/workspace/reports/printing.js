@@ -140,6 +140,111 @@ function prepareKarnamehPrint(copy) {
   copy.querySelector(".karnameh-student-meta")?.remove();
 }
 
+function prepareKarnamehUnitPrintTables(copy) {
+  // Keep wide work-unit sheets readable on A4 without changing the live report.
+  const trimColumns = (row, start, end, fixed) => {
+    let position = 0;
+    for (const cell of [...row.cells].slice(fixed)) {
+      const next = position + cell.colSpan;
+      if (next <= start || position >= end) cell.remove();
+      position = next;
+    }
+  };
+  for (const table of copy.querySelectorAll(
+    "table.karnameh-unit-competency-table",
+  )) {
+    const headers = [...(table.tHead?.rows[0]?.cells || [])].slice(1),
+      count = headers.length;
+    if (count <= 5) continue;
+    const section = table.closest(".karnameh-subject-section");
+    if (!section) continue;
+    const hierarchy = headers.map((cell) => ({
+      module: Number(cell.dataset.karnamehModulePosition),
+      unit: Number(cell.dataset.karnamehUnitIndex),
+    }));
+    const hasHierarchy = hierarchy.every(
+      (group, index) =>
+        Number.isInteger(group.module) &&
+        group.module >= 0 &&
+        Number.isInteger(group.unit) &&
+        group.unit >= 0 &&
+        (!index || group.module >= hierarchy[index - 1].module),
+    );
+    const sections = [];
+    for (let start = 0; start < count;) {
+      let end = Math.min(start + 5, count);
+      if (
+        hasHierarchy &&
+        end < count &&
+        hierarchy[end - 1].module === hierarchy[end].module
+      ) {
+        let boundary = end;
+        while (
+          boundary > start &&
+          hierarchy[boundary - 1].module === hierarchy[end].module
+        )
+          boundary--;
+        // An oversized module still splits at five, so pagination advances.
+        if (boundary > start) end = boundary;
+      }
+      const part = section.cloneNode(true),
+        sheet = part.querySelector("table.karnameh-unit-competency-table");
+      for (const [index, row] of [...sheet.tHead.rows].entries())
+        trimColumns(row, start * 3, end * 3, index === 0 ? 1 : 0);
+      for (const body of sheet.tBodies)
+        for (const row of body.rows) trimColumns(row, start * 3, end * 3, 1);
+      for (const element of [part, sheet]) {
+        element.dataset.karnamehUnitStart = String(start + 1);
+        element.dataset.karnamehUnitEnd = String(end);
+        element.dataset.karnamehUnitCount = String(end - start);
+        if (hasHierarchy) {
+          element.dataset.karnamehModuleStart = String(
+            hierarchy[start].module + 1,
+          );
+          element.dataset.karnamehModuleEnd = String(
+            hierarchy[end - 1].module + 1,
+          );
+        }
+      }
+      const heading = part.querySelector(".karnameh-subject-header h4");
+      if (heading) {
+        let range =
+          "واحدهای " +
+          karnamehSheetNumber(start + 1) +
+          " تا " +
+          karnamehSheetNumber(end);
+        if (hasHierarchy) {
+          const first = hierarchy[start],
+            last = hierarchy[end - 1];
+          range =
+            first.module === last.module
+              ? "پودمان " + karnamehSheetNumber(first.module + 1)
+              : "پودمان‌های " +
+                karnamehSheetNumber(first.module + 1) +
+                " تا " +
+                karnamehSheetNumber(last.module + 1);
+          if (
+            first.module === last.module &&
+            ((start > 0 && hierarchy[start - 1].module === first.module) ||
+              (end < count && hierarchy[end].module === first.module))
+          )
+            range +=
+              end - start === 1
+                ? " · واحد کار " + karnamehSheetNumber(first.unit + 1)
+                : " · واحدهای " +
+                  karnamehSheetNumber(first.unit + 1) +
+                  " تا " +
+                  karnamehSheetNumber(last.unit + 1);
+        }
+        heading.textContent += " · " + range;
+      }
+      sections.push(part);
+      start = end;
+    }
+    section.replaceWith(...sections);
+  }
+}
+
 function preparePrint(button) {
   printAuthorization = null;
   document.getElementById("printRoot")?.remove();
@@ -167,6 +272,7 @@ function preparePrint(button) {
   const karnameh = source.matches(".karnameh-student-sheet");
   if (periodic) preservePeriodicAppearance(source, copy);
   if (karnameh) prepareKarnamehPrint(copy);
+  prepareKarnamehUnitPrintTables(copy);
   // Attendance follow-up is a screen disclosure, never a print content filter.
   copy
     .querySelectorAll(

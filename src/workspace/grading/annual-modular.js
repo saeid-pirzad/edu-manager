@@ -47,6 +47,11 @@ async function synchronizeAnnualModularGrades(id) {
         !!period.closed,
       ]),
     );
+  const scoreProjection = (scores) =>
+    Object.entries(scores || {})
+      .map(([sid, score]) => [sid, score?.m ?? null, score?.c ?? null])
+      .filter(([, m, c]) => m !== null || c !== null)
+      .sort(([a], [b]) => a.localeCompare(b));
   const projection = (classroom) =>
     JSON.stringify(
       classroom.lessons
@@ -56,16 +61,12 @@ async function synchronizeAnnualModularGrades(id) {
           lesson.poudmans
             .map((pod) => [
               pod.id,
-              Object.entries(pod.podScores || {})
-                .map(([sid, score]) => [
-                  sid,
-                  score?.m ?? null,
-                  score?.c ?? null,
+              scoreProjection(pod.podScores),
+              (pod.units || [])
+                .map((unit) => [
+                  unit.id,
+                  scoreProjection(unit.competencyScores),
                 ])
-                .filter(
-                  ([, mostamar, competency]) =>
-                    mostamar !== null || competency !== null,
-                )
                 .sort(([a], [b]) => a.localeCompare(b)),
             ])
             .sort(([a], [b]) => a.localeCompare(b)),

@@ -414,10 +414,11 @@ studentId);return esc(s?s.name:"")}).join("، ")}</div>`:""}
       <td>${s.avgM!==null?s.avgM.toFixed(2):"—"}</td>
       <td>${s.avgP!==null?s.avgP.toFixed(2):"—"}</td>
       <td><b>${s.final!==null?s.final.toFixed(2):"—"}</b></td></tr>`});h+=`</tbody></table></div>`;return h}function copyLessonReportForVicePrincipal(lessonId,button){
-return EduV24.copyReport(()=>buildLessonReportText(lessonId),button)}function buildLessonReportText(lessonId){const cls=findClassById(lessonReportFilter.classId);
-if(!cls)return;const c=cls.classObj;const lesson=getLessonObj(c,lessonId);if(!c||!lesson)return;const sessions=db.sessions.filter(x=>x.classId===c.id&&x.lessonId===
-lesson.id).sort((a,b)=>a.date.localeCompare(b.date)||a.period-b.period||a.id.localeCompare(b.id));let text=`📊 گزارش درس: ${lesson.name} (کلاس ${c.
-name})
+return EduV24.copyReport(source=>buildLessonReportText(lessonId,source),button)}function buildLessonReportText(lessonId,source=db){const c=source.schools?source.
+schools.filter(school=>!lessonReportFilter.schoolId||school.id===lessonReportFilter.schoolId).flatMap(school=>school.classes).find(classroom=>classroom.id===lessonReportFilter.
+classId):source===db?findClassById(lessonReportFilter.classId)?.classObj:null;if(!c)return;const lesson=getLessonObj(c,lessonId);if(!lesson)return;const sessions=source.
+sessions.filter(x=>x.classId===c.id&&x.lessonId===lesson.id).sort((a,b)=>a.date.localeCompare(b.date)||a.period-b.period||a.id.localeCompare(b.id));let text=`📊\
+ گزارش درس: ${lesson.name} (کلاس ${c.name})
 👨‍🏫 دبیر: ${lesson.teacher||"---"}
 ================================
 
@@ -425,9 +426,9 @@ name})
 `;sessions.forEach(sess=>{text+=generateSessionReportText(sess,c,lesson)+`
 `});text+=`================================
 📌 خلاصه وضعیت دانش‌آموزان:
-`;getSortedStudents(c).forEach(st=>{const s=calcStudentLesson(c,lesson,st.id);text+=`- ${st.name}: غایب ${s.att.absent} | مرخصی ${s.att.leave||0} | ➕ ${s.
-posCount} | ➖ ${s.negCount} | نهایی: ${s.final!==null?s.final.toFixed(2):"---"}
-`});text+=`
+`;getSortedStudents(c).forEach(st=>{const s=calcStudentLesson(c,lesson,st.id,source);text+=`- ${st.name}: غایب ${s.att.absent} | مرخصی ${s.att.leave||0}\
+ | ➕ ${s.posCount} | ➖ ${s.negCount}`;if(lesson.gradingPolicy?.method==="modular")text+="\n"+EduV24.modularReportText(lesson,s,st.id);if(!s.unitBased)text+=
+` | نهایی: ${s.final!==null?s.final.toFixed(2):"---"}`;text+="\n"});text+=`
 ✅ تولید شده توسط کلاس‌یار`;return text}EduLegacyEvents.register("reports-lesson:0",function(event){return updateLessonReportFilter("schoo\
 lId",this.value)});EduLegacyEvents.register("reports-lesson:1",function(event){return updateLessonReportFilter("classId",this.value)});EduLegacyEvents.register(
 "reports-lesson:2",function(event){return updateLessonReportFilter("lessonId",this.value)});EduLegacyEvents.register("reports-lesson:3",function(event){return copyLessonReportForVicePrincipal(
@@ -1525,11 +1526,13 @@ l[k])||l[k]<0||l[k]>100))fail("وزن");if((l.gradeMode||"standard")==="standard
 arr(l.poudmans,"پودمان");const units=new Map,pids=new Set;l.poudmans.forEach(p=>{uid2(p.id);pids.add(p.id);text(p.name);arr(p.units,"واحد");p.units.forEach(
 u=>{uid2(u.id);units.set(u.id,p.id);text(u.name);if(u.applyOptions!==void 0){if(!obj(u.applyOptions)||Object.values(u.applyOptions).some(v=>typeof v!=="boolean"))
 fail("گزینه امتیاز")}if(u.unitScores!==void 0){if(!obj(u.unitScores))fail("نمرات واحد");for(const[sid,g]of Object.entries(u.unitScores)){id(
-sid);if(!obj(g))fail("نمره واحد");for(const k of["m","p"])if(g[k]!=null)score(g[k])}}})});if(l.kardaneshScores!==void 0){if(!obj(l.kardaneshScores))fail(
-"کاردانش");for(const[sid,g]of Object.entries(l.kardaneshScores)){id(sid);if(!obj(g))fail("نمره کاردانش");for(const k of["practical","theory","\
-midtermPractical","midtermTheory"])if(g[k]!=null)score(g[k])}}lessons.set(l.id,{classId:c.id,units,pids})})})});const slots=new Set;d.sessions.forEach(x=>{uid2(
-x.id);const c=classes.get(x.classId),l=lessons.get(x.lessonId);if(!c||c.schoolId!==x.schoolId||!l||l.classId!==x.classId)fail("ارتباط جلسه");date(x.date);
-if(!Number.isInteger(x.period)||x.period<0||x.period>11)fail("زنگ");const slot=x.classId+"|"+x.date+"|"+x.period;if(slots.has(slot))fail("جلسه تکراری");
+sid);if(!obj(g))fail("نمره واحد");for(const k of["m","p"])if(g[k]!=null)score(g[k])}}if(u.competencyScores!==void 0){if(!obj(u.competencyScores))fail("ن\
+مرات شایستگی واحد کار");for(const[sid,g]of Object.entries(u.competencyScores)){id(sid);if(!obj(g)||Object.keys(g).some(key=>!["m","c"].includes(
+key)))fail("نمره شایستگی واحد کار");for(const key of["m","c"])if(g[key]!=null)score(g[key])}}})});if(l.kardaneshScores!==void 0){if(!obj(l.kardaneshScores))
+fail("کاردانش");for(const[sid,g]of Object.entries(l.kardaneshScores)){id(sid);if(!obj(g))fail("نمره کاردانش");for(const k of["practical","theo\
+ry","midtermPractical","midtermTheory"])if(g[k]!=null)score(g[k])}}lessons.set(l.id,{classId:c.id,units,pids})})})});const slots=new Set;d.sessions.forEach(x=>{
+uid2(x.id);const c=classes.get(x.classId),l=lessons.get(x.lessonId);if(!c||c.schoolId!==x.schoolId||!l||l.classId!==x.classId)fail("ارتباط جلسه");date(
+x.date);if(!Number.isInteger(x.period)||x.period<0||x.period>11)fail("زنگ");const slot=x.classId+"|"+x.date+"|"+x.period;if(slots.has(slot))fail("جلسه تکراری");
 slots.add(slot);if(x.poudmanId&&!l.pids.has(x.poudmanId))fail("پودمان جلسه");if(x.unitId&&l.units.get(x.unitId)!==x.poudmanId)fail("واحد جلسه");
 if(!obj(x.attendance))fail("حضور");for(const[sid,status]of Object.entries(x.attendance)){id(sid);if(typeof status!=="string"||!/^(present|absent|leave|late(?::\d{1,3})?)$/.
 test(status))fail("وضعیت حضور")}arr(x.scores,"امتیازات");x.scores.forEach(sc=>{id(sc.studentId);if(!Object.hasOwn(TYPE_LABELS,sc.type)||!Number.

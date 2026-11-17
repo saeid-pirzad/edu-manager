@@ -17,7 +17,7 @@ globalThis.EduGradeDrafts = (() => {
       item !== null &&
       typeof item === "object" &&
       !Array.isArray(item) &&
-      ["k", "u", "pod"].includes(item.kind) &&
+      ["k", "u", "pod", "unit"].includes(item.kind) &&
       typeof item.value === "string"
     );
   }

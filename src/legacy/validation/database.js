@@ -151,6 +151,18 @@ function legacy_validateDB(d) {
                 for (const k of ["m", "p"]) if (g[k] != null) score(g[k]);
               }
             }
+            if (u.competencyScores !== undefined) {
+              if (!obj(u.competencyScores)) fail("نمرات شایستگی واحد کار");
+              for (const [sid, g] of Object.entries(u.competencyScores)) {
+                id(sid);
+                if (
+                  !obj(g) ||
+                  Object.keys(g).some((key) => !["m", "c"].includes(key))
+                )
+                  fail("نمره شایستگی واحد کار");
+                for (const key of ["m", "c"]) if (g[key] != null) score(g[key]);
+              }
+            }
           });
         });
         if (l.kardaneshScores !== undefined) {

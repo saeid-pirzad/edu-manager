@@ -97,7 +97,7 @@ function karnamehExcelSheets({
     [
       [
         "نوع گزارش",
-        "کارنامهٔ نمرات سال تحصیلی؛ چهار مرحلهٔ امتحان و نمرات پودمان",
+        "کارنامهٔ نمرات سال تحصیلی؛ مراحل امتحان، نمرات پودمان و واحدهای کار مستقل",
       ],
       ["مدرسه", school.name],
       ["کلاس", classroom.name],
@@ -135,8 +135,12 @@ function karnamehExcelSheets({
         "نمرهٔ رسمی هر پودمان از مستمر و شایستگی همان پودمان محاسبه می‌شود؛ نوبت‌ها نمرهٔ مستقل برای یک پودمان رسمی ندارند.",
       ],
       [
+        "نمره‌دهی واحد کار پودمانی",
+        "در روش واحد کار، مستمر و شایستگی هر واحد مستقل و سالانه است؛ پودمان فقط دسته‌بندی است و نمرهٔ نهایی پودمان یا درس محاسبه نمی‌شود.",
+      ],
+      [
         "جزئیات واحد کار",
-        "واحدهای پودمانی فقط ورودی‌های گروهی ثبت‌شدهٔ هر نوبت را نشان می‌دهند و نمرهٔ ترکیبی ندارند؛ سوابق واحدی قدیمی از همان محاسبهٔ کارنامه، شامل اولویت ثبت گروهی بر جلسه، خوانده می‌شوند.",
+        "برگهٔ «جزئیات واحد کار» مربوط به ورودی‌های واحدی روش قبلی در هر نوبت است؛ نمرات مستقل روش جدید در برگهٔ «واحدهای کار پودمانی» می‌آیند. سوابق واحدی قدیمی از همان محاسبهٔ کارنامه، شامل اولویت ثبت گروهی بر جلسه، خوانده می‌شوند.",
       ],
       [
         "راهنما",
@@ -163,6 +167,7 @@ function karnamehExcelSheets({
     vocational = [],
     general = [],
     modular = [],
+    competencyUnits = [],
     units = [],
     legacy = [];
   const legacyIds = new Set(
@@ -222,6 +227,19 @@ function karnamehExcelSheets({
               student.id,
             ),
             value = grade.modules.find((item) => item.id === pod.id);
+          if (grade.unitBased) {
+            for (const unit of value.units)
+              competencyUnits.push([
+                ...prefix,
+                pod.name,
+                unit.name,
+                finite(unit.inputs.m),
+                finite(unit.inputs.c),
+                result(unit),
+                status(unit),
+              ]);
+            continue;
+          }
           modular.push([
             ...prefix,
             pod.name,
@@ -231,7 +249,7 @@ function karnamehExcelSheets({
             status(value),
           ]);
         }
-        for (const term of ["اول", "دوم"]) {
+        for (const term of grade.unitBased ? [] : ["اول", "دوم"]) {
           const part = scoped.find((item) => item.period.term === term),
             course =
               part &&
@@ -317,6 +335,21 @@ function karnamehExcelSheets({
       [...headers, "نوبت", "پودمان", "واحد کار", "مستمر واحد", "پایانی واحد"],
       units,
       [...widths, 14, 28, 30, 19, 19],
+    );
+  if (competencyUnits.length)
+    sheet(
+      "واحدهای کار پودمانی",
+      [
+        ...headers,
+        "پودمان",
+        "واحد کار",
+        "مستمر واحد",
+        "شایستگی واحد",
+        "نتیجه واحد",
+        "وضعیت واحد",
+      ],
+      competencyUnits,
+      [...widths, 28, 30, 19, 19, 19, 23],
     );
   if (legacy.length)
     sheet(

@@ -114,9 +114,22 @@ async function save() {
               ];
       for (const k of numericFields) p[k] = number(k);
       if (p.method === "modular") {
+        p.modularScope = val("modularScope");
+        if (!["module", "unit"].includes(p.modularScope))
+          throw recordFieldError(
+            "مبنای ثبت نمره را انتخاب کنید.",
+            "course_modularScope",
+          );
+        p.version = p.modularScope === "unit" ? 2 : 1;
+        if (
+          p.modularScope === "module" &&
+          original &&
+          !original.gradingPolicy?.modularScope
+        )
+          delete p.modularScope;
         if (p.moduleMin > 20)
           throw recordFieldError(
-            "حداقل قبولی هر پودمان باید بین صفر و بیست باشد.",
+            "حداقل نمرهٔ قبولی باید بین صفر و بیست باشد.",
             "course_moduleMin",
           );
         if (![1, 2, 3].includes(p.competencyMin))
@@ -228,6 +241,7 @@ async function save() {
               id: api.uid(),
               name: uniqueName("واحد یادگیری " + (index + 1), used),
               unitScores: {},
+              competencyScores: {},
               applyOptions: {},
             });
           next.poudmans = Array.from({ length: count }, (_, index) => {

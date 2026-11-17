@@ -1,4 +1,56 @@
 /* One student's complete grade sheet; lesson rows stay a native table. */
+.report-unit-module {
+  margin-block: 8px;
+  border: 1px solid var(--theme-line-soft);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.report-unit-module > h5 {
+  margin: 0;
+  padding: 6px 8px;
+  background: var(--theme-surface-muted);
+  color: var(--theme-primary-hover);
+  font-size: 11px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.report-unit-module .report-unit-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 2fr);
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  break-inside: avoid;
+}
+.report-unit-module .report-unit-row + .report-unit-row {
+  border-top: 1px solid var(--theme-line-soft);
+}
+.report-unit-module .report-module-title {
+  font-size: 11px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.report-unit-module .report-stage-values {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  text-align: center;
+}
+.report-unit-module .report-score-label {
+  display: block;
+  color: var(--theme-muted);
+  font-size: 10px;
+}
+.report-unit-status {
+  display: block;
+  color: var(--theme-muted);
+  font-size: 10px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.karnameh-lesson-name .karnameh-unit-context {
+  display: none !important;
+}
 @media screen {
   #app .karnameh-student-sheet.grade-report {
     --karnameh-lesson-width: 130px;
@@ -583,18 +635,76 @@
     padding-inline: 2px;
     font-size: 10px;
   }
-  .karnameh-subject-section[data-karnameh-group-set="modular"]
+  .karnameh-subject-section:is(
+      [data-karnameh-group-set="modular"],
+      [data-karnameh-group-set="unit"]
+    )
     .karnameh-stage-options {
     gap: 2px;
   }
   #app
     .karnameh-student-sheet
-    .karnameh-subject-section[data-karnameh-group-set="modular"]
+    .karnameh-subject-section:is(
+      [data-karnameh-group-set="modular"],
+      [data-karnameh-group-set="unit"]
+    )
     .karnameh-stage-options
     button {
     flex-basis: 48px;
     min-width: 48px;
     padding-inline: 2px;
+  }
+  .karnameh-subject-section[data-karnameh-group-set="unit"]
+    .karnameh-stage-options {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    overflow-x: visible;
+  }
+  #app
+    .karnameh-student-sheet
+    .karnameh-subject-section[data-karnameh-group-set="unit"]
+    .karnameh-stage-options
+    button {
+    width: auto;
+    min-width: 0;
+    padding-inline: 0;
+  }
+  .karnameh-unit-stage-row {
+    display: grid;
+    grid-template-columns: 52px minmax(0, 1fr);
+    align-items: center;
+    gap: 3px;
+    min-width: 0;
+  }
+  .karnameh-unit-stage-label {
+    padding-inline-start: 4px;
+    color: var(--theme-muted);
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1.7;
+    white-space: nowrap;
+  }
+  #app .karnameh-student-sheet .karnameh-unit-stage-switcher button[hidden] {
+    display: none !important;
+  }
+  #app
+    .karnameh-student-sheet
+    .karnameh-lesson-name
+    .karnameh-unit-context[data-karnameh-group-active] {
+    display: block !important;
+    min-width: 0;
+    margin-top: 5px;
+    color: var(--theme-muted);
+    font-size: 10px;
+    font-weight: 400;
+    line-height: 1.7;
+  }
+  .karnameh-unit-context > span {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   #app
     .karnameh-student-sheet
@@ -604,6 +714,14 @@
     background: var(--theme-primary);
     color: #fff;
     font-weight: 600;
+  }
+  #app
+    .karnameh-student-sheet
+    .karnameh-unit-stage-switcher
+    button[data-karnameh-stage][aria-pressed="true"] {
+    border-color: var(--theme-primary-line);
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary-hover);
   }
   #app .karnameh-student-sheet .karnameh-stage-options button:focus-visible {
     outline: 2px solid var(--theme-focus);
@@ -905,11 +1023,13 @@
   }
   #printRoot .karnameh-sheet-table .karnameh-stage-group,
   #printRoot .karnameh-sheet-table [data-karnameh-field="result"],
-  #printRoot .karnameh-sheet-table [data-karnameh-field="module-result"] {
+  #printRoot .karnameh-sheet-table [data-karnameh-field="module-result"],
+  #printRoot .karnameh-sheet-table [data-karnameh-field="unit-result"] {
     border-inline-end: 1pt solid var(--theme-line) !important;
   }
   #printRoot .karnameh-sheet-table [data-karnameh-field="result"],
-  #printRoot .karnameh-sheet-table [data-karnameh-field="module-result"] {
+  #printRoot .karnameh-sheet-table [data-karnameh-field="module-result"],
+  #printRoot .karnameh-sheet-table [data-karnameh-field="unit-result"] {
     background: var(--theme-surface-subtle) !important;
   }
   #printRoot .karnameh-sheet-table tbody tr:nth-child(even) > :is(th, td) {
@@ -966,7 +1086,8 @@
     font-variant-numeric: tabular-nums;
   }
   #printRoot [data-karnameh-field="result"] .karnameh-sheet-value,
-  #printRoot [data-karnameh-field="module-result"] .karnameh-sheet-value {
+  #printRoot [data-karnameh-field="module-result"] .karnameh-sheet-value,
+  #printRoot [data-karnameh-field="unit-result"] .karnameh-sheet-value {
     font-weight: 700;
   }
   #printRoot .karnameh-sheet-value[data-grade-tone="pending"] {

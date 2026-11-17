@@ -163,6 +163,8 @@ function normalizeDB(input, { legacy = false } = {}) {
               u.applyOptions || {},
             );
             for (const id of Object.keys(u.unitScores)) references.add(id);
+            for (const id of Object.keys(u.competencyScores || {}))
+              references.add(id);
           }
         deriveDualGrades(l);
       }

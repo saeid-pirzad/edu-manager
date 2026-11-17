@@ -512,8 +512,10 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
                 (lesson.poudmans || []).some(
                   (pod) =>
                     Object.hasOwn(pod.podScores || {}, student.id) ||
-                    (pod.units || []).some((unit) =>
-                      Object.hasOwn(unit.unitScores || {}, student.id),
+                    (pod.units || []).some(
+                      (unit) =>
+                        Object.hasOwn(unit.unitScores || {}, student.id) ||
+                        Object.hasOwn(unit.competencyScores || {}, student.id),
                     ),
                 ),
             );

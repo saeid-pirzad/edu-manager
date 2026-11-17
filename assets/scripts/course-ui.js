@@ -6,10 +6,10 @@ text",extra="")=>`<label class="course-field">${label}<input id="course_${id}" t
 function currentClass(){return api.findClass(api.state().classId)}function writable(){api.assertWritable()}function number(id){const t=api.asciiDigits(val(id));
 if(!t||!/^\d+(?:\.\d{1,6})?$/.test(t))throw recordFieldError("برای «"+recordFieldLabel("course_"+id)+"» عدد معتبر وارد کنید.","course_"+id);
 return Number(t)}function makePods(count,unitCount){return Array.from({length:count},(_,i)=>({id:api.uid(),name:"پودمان "+(i+1),podScores:{},units:Array.from(
-{length:unitCount},(_2,j)=>({id:api.uid(),name:"واحد یادگیری "+(j+1),unitScores:{},applyOptions:{}}))}))}function newCourseSeed(){return{id:api.uid(),
-name:"",teacher:"",periodsPerWeek:2,gradeMode:"kardanesh",kardaneshScores:{},poudmans:[]}}function renderCreate(){return courseFormHtml(newCourseSeed(),null,false)}
-function activateCreate(){const form=document.querySelector("#app #courseEditor");if(!form||form.dataset.courseBound)return;const c=currentClass();if(!c)return;
-editing={pageState:{...api.state()},context:api.context(),classId:c.id,id:null,seed:newCourseSeed(),locked:false};initializeCourseForm(editing.seed)}function cancelEditor(){
+{length:unitCount},(_2,j)=>({id:api.uid(),name:"واحد یادگیری "+(j+1),unitScores:{},competencyScores:{},applyOptions:{}}))}))}function newCourseSeed(){
+return{id:api.uid(),name:"",teacher:"",periodsPerWeek:2,gradeMode:"kardanesh",kardaneshScores:{},poudmans:[]}}function renderCreate(){return courseFormHtml(newCourseSeed(),
+null,false)}function activateCreate(){const form=document.querySelector("#app #courseEditor");if(!form||form.dataset.courseBound)return;const c=currentClass();if(!c)
+return;editing={pageState:{...api.state()},context:api.context(),classId:c.id,id:null,seed:newCourseSeed(),locked:false};initializeCourseForm(editing.seed)}function cancelEditor(){
 const form=document.getElementById("courseEditor");if(!form)return false;if(saving||form?.getAttribute("aria-busy")==="true")return false;if(form?.dataset.savedState!==
 recordEditorState(form)&&!confirm("تغییرات درس ذخیره نشده‌اند؛ کنار گذاشته شوند؟"))return false;editing=null;api.render();
 document.querySelector(".lesson-create > summary")?.focus();return true}function preserveEditor(){const form=document.querySelector("#app #courseEditor");if(!form||
@@ -17,8 +17,11 @@ document.querySelector(".lesson-create > summary")?.focus();return true}function
 "lessons"&&state.classId===editing.classId;if(!samePage){const dirty=form.dataset.savedState!==recordEditorState(form);if(saving||dirty&&!confirm("تغییرات درس ذ\
 خیره نشده‌اند؛ از فرم خارج شوید؟"))Object.assign(state,editing.pageState);else{editing=null;return null}}return form.closest(".lesso\
 n-create")}function restoreEditor(panel){if(panel)document.querySelector("#app .lesson-create")?.replaceWith(panel)}function prepareStructureNameEditor(lesson){
-if(!lesson.poudmans.length)return;const structure=document.getElementById("courseStructure");const section=document.createElement("details");section.id="courseN\
-ames";section.className="course-policy-section course-name-section";const summary=document.createElement("summary"),note=document.createElement("p");summary.textContent=
+if(!lesson.poudmans.length)return;const structure=document.createElement("div");structure.id="courseStructure";structure.innerHTML=lesson.poudmans.map((pod,index)=>`\
+<details class="course-pod-editor" ${index===0?"open":""}><summary>پودمان ${(index+1).toLocaleString("fa-IR")}<span class="muted">${pod.units.length.toLocaleString(
+"fa-IR")} واحد یادگیری</span></summary><div class="course-grid">${input("pod_"+pod.id,"نام پودمان",pod.name)}${pod.units.map(unit=>input("un\
+it_"+unit.id,"نام واحد یادگیری",unit.name)).join("")}</div></details>`).join("");const section=document.createElement("details");section.id="cours\
+eNames";section.className="course-policy-section course-name-section";const summary=document.createElement("summary"),note=document.createElement("p");summary.textContent=
 "نام پودمان‌ها و واحدهای یادگیری";note.className="muted";note.textContent="می‌توانید نام‌ها را اصلاح کنید؛ نمرات، جلسات و ساختار درس\
  تغییر نمی‌کنند.";section.append(summary,note,structure);document.getElementById("coursePolicy").after(section);lesson.poudmans.forEach((pod,index)=>{
 const label=document.getElementById("course_pod_"+pod.id)?.closest("label");if(label)label.firstChild.textContent="نام پودمان "+(index+1).toLocaleString(
@@ -29,12 +32,12 @@ set(item.id,item.name);const value=val(prefix+item.id);if(value===void 0)return;
 pod,"pod_");for(const unit of pod.units)rename(unit,"unit_")}const distinct=(items,prefix,label)=>{for(const item of items)if(normalizedName(item.name)!==normalizedName(
 originalNames.get(item.id))&&items.some(other=>other.id!==item.id&&normalizedName(other.name)===normalizedName(item.name)))throw recordFieldError(label+" تکراری\
  است؛ عنوان متمایز انتخاب کنید.","course_"+prefix+item.id)};distinct(lesson.poudmans,"pod_","نام پودمان");for(const pod of lesson.
-poudmans)distinct(pod.units,"unit_","نام واحد در این پودمان")}async function open(lid="",seed){const activeForm=document.getElementById("cours\
-eEditor");if(saving||activeForm?.getAttribute("aria-busy")==="true")return false;if(activeForm&&activeForm.dataset.savedState!==recordEditorState(activeForm)&&!confirm(
-"تغییرات درس ذخیره نشده‌اند؛ فرم دیگری باز شود؟"))return false;const requested={workspace:api.context().id,classId:api.state().
-classId};await api.flushDrafts({strict:true});if(saving)return false;if(requested.workspace!==api.context().id||requested.classId!==api.state().classId)throw Error(
-"ترم یا کلاس هنگام باز شدن فرم تغییر کرد؛ دوباره وارد تنظیمات درس شوید.");const c=currentClass();if(!c)return;
-const original=c.lessons.find(l2=>l2.id===lid);if(lid&&!original&&!seed)throw Error("این درس دیگر در کلاس وجود ندارد؛ فهرست دروس را تازه کنید.");
+poudmans)distinct(pod.units,"unit_","نام واحد در این پودمان")}async function open(lid="",seed,{editNames=false}={}){const activeForm=document.
+getElementById("courseEditor");if(saving||activeForm?.getAttribute("aria-busy")==="true")return false;if(activeForm&&activeForm.dataset.savedState!==recordEditorState(
+activeForm)&&!confirm("تغییرات درس ذخیره نشده‌اند؛ فرم دیگری باز شود؟"))return false;const requested={workspace:api.context().
+id,classId:api.state().classId};await api.flushDrafts({strict:true});if(saving)return false;if(requested.workspace!==api.context().id||requested.classId!==api.state().
+classId)throw Error("ترم یا کلاس هنگام باز شدن فرم تغییر کرد؛ دوباره وارد تنظیمات درس شوید.");const c=currentClass();
+if(!c)return;const original=c.lessons.find(l2=>l2.id===lid);if(lid&&!original&&!seed)throw Error("این درس دیگر در کلاس وجود ندارد؛ فهرست دروس را تازه کنید.");
 const l=seed||original||newCourseSeed();const context={...api.context()},history=original&&api.courseHistory?await api.courseHistory(c.id,original.id):null;if(requested.
 workspace!==api.context().id||requested.classId!==api.state().classId||context.revision!==api.context().revision)throw Error("اطلاعات سال تحصیلی هنگام بررسی سوا\
 بق تغییر کرد؛ فرم درس را دوباره باز کنید.");const locked=!!original&&(history?.hasGrades||P.hasGrades(original)||api.getDB().sessions.
@@ -42,35 +45,34 @@ some(s=>s.lessonId===lid&&s.scores.some(g=>["mostamar","payani"].includes(g.type
  .lesson-create");if(!panel)return false;editing={pageState:{...api.state()},context:{...api.context()},classId:c.id,id:original?.id||null,seed:structuredClone(
 l),locked};const h=courseFormHtml(l,original,locked);const summary=panel.querySelector("summary");summary.querySelector("strong").textContent=original?"مشاهدهٔ \
 درس":"درس جدید";summary.querySelector("small").textContent=original?"مشخصات و شیوه نمره‌دهی":"مشخصات درس را وارد کنید";
-panel.replaceChildren(summary);panel.insertAdjacentHTML("beforeend",h);panel.open=true;initializeCourseForm(l);const form=panel.querySelector(".record-editor");
-(form.querySelector("[data-record-enable-edit]")||form.querySelector("#course_name")).focus({preventScroll:true});panel.scrollIntoView({block:"start",behavior:"\
-smooth"})}function courseFormHtml(l,original,locked){const p=l.gradingPolicy||P.defaults(l.gradeMode==="kardanesh"?"dual":"modular",api.year());const info=P.identity(
-l,api.year(),currentClass());let h='<form id="courseEditor" class="record-editor course-simple-editor" novalidate><div id="courseError" role="alert"></div><div \
-class="course-grid course-basic-fields">';h+=input("name","نام درس",l.name)+input("teacher","نام دبیر (اختیاری)",l.teacher)+input("periods",
-"زنگ در هفته",l.periodsPerWeek??2,"number",'min="1" max="10"');h+="</div>";const retainedMetadata={year:info.year||api.year(),branch:info.branch||p.branch,
-authority:info.authority,circularNumber:p.circularNumber,circularDate:p.circularDate,reference:p.reference};for(const[key,value]of Object.entries(retainedMetadata))
-h+=`<input id="course_${key}" type="hidden" value="${esc(value??"")}">`;h+='<fieldset id="coursePolicy" class="course-main-policy" '+(locked?"disabled":"")+'><l\
-egend>نمره‌دهی درس</legend><div class="course-grid course-method-fields">';h+=select("subjectType","نوع درس",[["vocational","تخصصی / مهارتی"],
-["general","عمومی — نمره مستقیم از ۲۰"]],p.subjectType||"vocational");h+=select("method","شیوه نمره‌دهی",[["dual","نظری و عملی"],
-["modular","پودمانی"]],p.method)+"</div>";if(locked)h+='<p class="course-lock-note">برای حفظ نمرات این سال تحصیلی، روش و ساختار نمره‌دهی قابل تغییر نیست.\
-</p>';if(locked&&!l.gradingPolicy)h+="<p>محاسبه نمرات با روش قبلی حفظ می‌شود.</p>";const dual=P.dualSettings(p);h+='<div id="cours\
-eDual" class="course-grid course-dual-fields">'+input("practicalWeight","سهم عملی (٪)",dual.practicalWeight,"number",'min="0" max="100" step="any" input\
-mode="decimal"')+input("theoryWeight","سهم نظری (٪) — خودکار",100-dual.practicalWeight,"text","readonly")+input("passMin","حداقل نمره قبولی",
-dual.passMin,"number",'min="0" max="20" step="any" inputmode="decimal"')+`<input id="course_theoryMin" type="hidden" value="${esc(dual.theoryMin)}"><input id="c\
-ourse_practicalMin" type="hidden" value="${esc(dual.practicalMin)}"></div>`;h+='<div id="courseModular" class="course-modular-fields"><div class="course-grid">'+
-input("moduleMin","حد قبولی هر پودمان",p.moduleMin,"number",'min="0" max="20" step="any" inputmode="decimal"')+select("competencyMin","حداقل سطح \
-شایستگی",[[1,"سطح ۱"],[2,"سطح ۲"],[3,"سطح ۳"]],p.competencyMin)+'<div id="courseAdvanced" class="course-structure-fields">';for(const key of[
-"mostamarMax","continuousStep","competencyFactor"])h+=`<input id="course_${key}" type="hidden" value="${esc(p[key])}">`;h+=input("podCount","تعداد پودمان",
-l.poudmans.length||5,"number",'min="1" max="20"')+input("unitCount","واحد در هر پودمان",p.unitCount,"number",'min="1" max="10"')+'</div></div><div\
- id="courseStructure">';for(const[index,pod]of l.poudmans.entries()){h+=`<details class="course-pod-editor" ${index===0?"open":""}><summary>پودمان ${(index+
-1).toLocaleString("fa-IR")}<span class="muted">${pod.units.length.toLocaleString("fa-IR")} واحد یادگیری</span></summary><div class="course-grid">${input(
-"pod_"+pod.id,"نام پودمان",pod.name)}`;for(const u of pod.units)h+=input("unit_"+u.id,"نام واحد یادگیری",u.name);h+="</div></details>"}h+=
-"</div></div></fieldset>";h+='<div class="record-editor-context course-editor-status"><p class="muted">تعریف درس و قواعد آن در همهٔ نوبت‌های این سال تحصیلی مشتر\
-ک است.</p></div><div class="record-editor-actions create-panel-footer"><button type="submit" data-mutating="1">'+(original?"ذخیره تغییرات":"ثبت \
-درس")+'</button><button type="button" class="ghost" data-course-cancel>انصراف</button></div></form>';return h}function initializeCourseForm(l){const form=document.
-getElementById("courseEditor");form.dataset.courseBound="1";bindCourseFormEvents(form);prepareStructureNameEditor(l);toggleMethod();if(api.context().readOnly){form.
-querySelectorAll("input,select,textarea,button[type=submit]").forEach(el=>{setControlDisabled(el,true)});const note=document.createElement("p");note.className="\
-course-readonly-note";note.textContent=api.context().closed?"ترم بسته است؛ اطلاعات فقط نمایش داده می‌شوند. ویرایش پس از بازگشایی ترم امکان‌پذیر است.":
+panel.replaceChildren(summary);panel.insertAdjacentHTML("beforeend",h);panel.open=true;initializeCourseForm(l,{editNames});const form=panel.querySelector(".reco\
+rd-editor");(form.querySelector("[data-record-enable-edit]")||form.querySelector("#course_name")).focus({preventScroll:true});panel.scrollIntoView({block:"start",
+behavior:"smooth"})}function courseFormHtml(l,original,locked){const p=l.gradingPolicy||P.defaults(l.gradeMode==="kardanesh"?"dual":"modular",api.year());const newModular=!original&&
+!l.gradingPolicy;const info=P.identity(l,api.year(),currentClass());let h='<form id="courseEditor" class="record-editor course-simple-editor" novalidate><div id\
+="courseError" role="alert"></div><div class="course-grid course-basic-fields">';h+=input("name","نام درس",l.name)+input("teacher","نام دبیر (اختیاری)",
+l.teacher)+input("periods","زنگ در هفته",l.periodsPerWeek??2,"number",'min="1" max="10"');h+="</div>";const retainedMetadata={year:info.year||api.year(),
+branch:info.branch||p.branch,authority:info.authority,circularNumber:p.circularNumber,circularDate:p.circularDate,reference:p.reference};for(const[key,value]of Object.
+entries(retainedMetadata))h+=`<input id="course_${key}" type="hidden" value="${esc(value??"")}">`;h+='<fieldset id="coursePolicy" class="course-main-policy" '+(locked?
+"disabled":"")+'><legend>نمره‌دهی درس</legend><div class="course-grid course-method-fields">';h+=select("subjectType","نوع درس",[["vocational",
+"تخصصی / مهارتی"],["general","عمومی — نمره مستقیم از ۲۰"]],p.subjectType||"vocational");h+=select("method","شیوه نمره‌دهی",
+[["dual","نظری و عملی"],["modular","پودمانی"]],p.method)+select("modularScope","ثبت نمره برای",[["unit","هر واحد کار — مستقل"],
+["module","خود پودمان — روش قبلی"]],newModular||P.unitBased(p)?"unit":"module")+"</div>";if(locked)h+='<p class="course-lock-note">برای حفظ نم\
+رات این سال تحصیلی، روش و ساختار نمره‌دهی قابل تغییر نیست.</p>';if(locked&&!l.gradingPolicy)h+="<p>محاسبه نمرات \
+با روش قبلی حفظ می‌شود.</p>";const dual=P.dualSettings(p);h+='<div id="courseDual" class="course-grid course-dual-fields">'+input("practicalW\
+eight","سهم عملی (٪)",dual.practicalWeight,"number",'min="0" max="100" step="any" inputmode="decimal"')+input("theoryWeight","سهم نظری (٪) — خودکار",
+100-dual.practicalWeight,"text","readonly")+input("passMin","حداقل نمره قبولی",dual.passMin,"number",'min="0" max="20" step="any" inputmode="decim\
+al"')+`<input id="course_theoryMin" type="hidden" value="${esc(dual.theoryMin)}"><input id="course_practicalMin" type="hidden" value="${esc(dual.practicalMin)}"\
+></div>`;h+='<div id="courseModular" class="course-modular-fields"><div class="course-grid">'+input("moduleMin","حد قبولی هر پودمان",p.moduleMin,
+"number",'min="0" max="20" step="any" inputmode="decimal"')+select("competencyMin","حداقل سطح شایستگی",[[1,"سطح ۱"],[2,"سطح ۲"],[3,"سطح ۳"]],
+p.competencyMin)+'<div id="courseAdvanced" class="course-structure-fields">';for(const key of["mostamarMax","continuousStep","competencyFactor"])h+=`<input id="\
+course_${key}" type="hidden" value="${esc(p[key])}">`;h+=input("podCount","تعداد پودمان",l.poudmans.length||5,"number",'min="1" max="20"')+input("uni\
+tCount","واحد کار در هر پودمان",newModular?2:p.unitCount,"number",'min="1" max="10"')+"</div></div></div></fieldset>";h+='<div class="record-ed\
+itor-context course-editor-status"><p class="muted">تعریف درس و قواعد آن در همهٔ نوبت‌های این سال تحصیلی مشترک است.</p></div><div class="record-editor-actions c\
+reate-panel-footer"><button type="submit" data-mutating="1">'+(original?"ذخیره تغییرات":"ثبت درس")+'</button><button type="button" class="ghos\
+t" data-course-cancel>انصراف</button></div></form>';return h}function initializeCourseForm(l,{editNames=false}={}){const form=document.getElementById("cou\
+rseEditor");form.dataset.courseBound="1";bindCourseFormEvents(form);if(editNames)prepareStructureNameEditor(l);toggleMethod();if(api.context().readOnly){form.querySelectorAll(
+"input,select,textarea,button[type=submit]").forEach(el=>{setControlDisabled(el,true)});const note=document.createElement("p");note.className="course-readonly-n\
+ote";note.textContent=api.context().closed?"ترم بسته است؛ اطلاعات فقط نمایش داده می‌شوند. ویرایش پس از بازگشایی ترم امکان‌پذیر است.":
 "اطلاعات فعلاً فقط خواندنی‌اند؛ پیام وضعیت ذخیره‌سازی را بررسی و صفحه را بازخوانی کنید.";
 form.querySelector(".record-editor-context").append(note)}const openedEditing=editing;initializeRecordEditAccess(form,{enabled:!editing?.id,onEnable:()=>{const summary=form.
 closest(".lesson-create")?.querySelector("summary");if(summary){summary.querySelector("strong").textContent="ویرایش درس";summary.querySelector("small").
@@ -78,29 +80,31 @@ textContent="اصلاح مشخصات همین درس"}},validate:()=>{writable()
 revision!==api.context().revision||editing.classId!==api.state().classId)throw Error("کلاس یا اطلاعات درس تغییر کرده است؛ فرم را دوباره باز کنید.")}});
 rememberRecordEditor(form)}function bindCourseFormEvents(form){form.addEventListener("submit",event=>{event.preventDefault();void save().catch(error)});form.querySelector(
 "#course_branch").addEventListener("change",toggleBranch);form.querySelector("#course_method").addEventListener("change",toggleMethod);form.querySelector("#cour\
-se_practicalWeight").addEventListener("input",syncTheoryWeight);form.querySelector("#course_subjectType")?.addEventListener("change",toggleMethod);form.querySelector(
-"[data-course-cancel]").addEventListener("click",()=>cancelEditor())}async function openNames(lid){const opened=await open(lid);if(opened===false)return;const section=document.
-getElementById("courseNames");if(!section||section.hidden)return;section.open=true;setTimeout(()=>{if(!section.isConnected||!document.getElementById("courseEdit\
-or"))return;section.querySelector("input:not(:disabled)")?.focus({preventScroll:true});section.scrollIntoView({block:"start"})},0)}function toggleBranch(){const branch=document.
-getElementById("course_branch");const method=document.getElementById("course_method");if(editing?.locked||method.disabled)return;method.value=branch.value==="ka\
-rdanesh"?"dual":"modular";toggleMethod()}function toggleMethod(){const method=document.getElementById("course_method");const general=val("subjectType")==="gener\
-al";if(general)method.value="dual";method.closest("label").hidden=general;syncTheoryWeight();document.getElementById("course_branch").value=method.value==="dual"?
-"kardanesh":"fani";setControlDisabled(document.getElementById("course_branch"),!!editing?.locked||method.matches(":disabled"));document.getElementById("courseDu\
-al").hidden=general||val("method")!=="dual";document.getElementById("courseModular").hidden=val("method")!=="modular";document.getElementById("courseAdvanced").
-hidden=val("method")!=="modular";const names=document.getElementById("courseNames");if(names)names.hidden=val("method")!=="modular"}function syncTheoryWeight(){
-const value=api.asciiDigits(val("practicalWeight"));const numeric=Number(value);const valid=/^\d+(?:\.\d{1,6})?$/.test(value)&&numeric>=0&&numeric<=100;document.
-getElementById("course_theoryWeight").value=valid?String(Number((100-numeric).toFixed(6))):""}function error(e){if(!showRecordEditorError(e,"courseError"))api.error(
-e)}async function save(){if(saving)return;saving=true;const finishSave=beginRecordEditorSave(document.getElementById("courseEditor"));try{writable();assertRecordEditAccess(
-document.getElementById("courseEditor"));if(!document.querySelector("#app #courseEditor #course_name"))throw Error("فرم درس باز نیست.");if(!editing||
-editing.context.id!==api.context().id||editing.context.revision!==api.context().revision)throw Error("اطلاعات از زمان باز شدن فرم تغییر کرده است؛ فرم را دوباره \
-باز کنید.");await api.flushDrafts({strict:true});writable();if(!editing||editing.context.id!==api.context().id||editing.context.revision!==api.context().
-revision)throw Error("ترم یا اطلاعات تغییر کرده است؛ فرم را دوباره باز کنید.");const editingContext=editing,c=api.findClass(
-editing.classId),original=c?.lessons.find(l=>l.id===editing.id),history=original&&api.courseHistory?await api.courseHistory(c.id,original.id):null;if(editing!==
-editingContext||editing.context.id!==api.context().id||editing.context.revision!==api.context().revision||editing.classId!==api.state().classId)throw Error("اطل\
-اعات سال تحصیلی هنگام بررسی سوابق تغییر کرد؛ فرم درس را دوباره باز کنید.");const next=structuredClone(
-original||editing.seed);if(!c||editing.id&&!original)throw Error("درس مقصد دیگر وجود ندارد.");const name=val("name").trim(),periods=number("\
-periods");if(!normalizedName(name)||name.length>500)throw recordFieldError("نام درس را با حداکثر ۵۰۰ نویسه وارد کنید.","course_n\
-ame");if(!Number.isInteger(periods)||periods<1||periods>10)throw recordFieldError("زنگ در هفته باید عدد صحیح بین ۱ تا ۱۰ باشد.",
+se_modularScope").addEventListener("change",toggleModularScope);form.querySelector("#course_practicalWeight").addEventListener("input",syncTheoryWeight);form.querySelector(
+"#course_subjectType")?.addEventListener("change",toggleMethod);form.querySelector("[data-course-cancel]").addEventListener("click",()=>cancelEditor())}async function openNames(lid){
+const opened=await open(lid,void 0,{editNames:true});if(opened===false)return;const section=document.getElementById("courseNames");if(!section||section.hidden)return;
+section.open=true;setTimeout(()=>{if(!section.isConnected||!document.getElementById("courseEditor"))return;section.querySelector("input:not(:disabled)")?.focus(
+{preventScroll:true});section.scrollIntoView({block:"start"})},0)}function toggleBranch(){const branch=document.getElementById("course_branch");const method=document.
+getElementById("course_method");if(editing?.locked||method.disabled)return;method.value=branch.value==="kardanesh"?"dual":"modular";toggleMethod()}function toggleMethod(){
+const method=document.getElementById("course_method");const general=val("subjectType")==="general";if(general)method.value="dual";method.closest("label").hidden=
+general;syncTheoryWeight();document.getElementById("course_branch").value=method.value==="dual"?"kardanesh":"fani";setControlDisabled(document.getElementById("c\
+ourse_branch"),!!editing?.locked||method.matches(":disabled"));document.getElementById("courseDual").hidden=general||val("method")!=="dual";document.getElementById(
+"courseModular").hidden=val("method")!=="modular";document.getElementById("course_modularScope").closest("label").hidden=val("method")!=="modular";document.getElementById(
+"courseAdvanced").hidden=val("method")!=="modular";const names=document.getElementById("courseNames");if(names)names.hidden=val("method")!=="modular";toggleModularScope()}
+function toggleModularScope(){const unitBased=val("modularScope")==="unit";document.getElementById("course_moduleMin").closest("label").firstChild.textContent=unitBased?
+"حد قبولی هر واحد کار":"حد قبولی هر پودمان"}function syncTheoryWeight(){const value=api.asciiDigits(val("practicalWeight"));const numeric=Number(
+value);const valid=/^\d+(?:\.\d{1,6})?$/.test(value)&&numeric>=0&&numeric<=100;document.getElementById("course_theoryWeight").value=valid?String(Number((100-numeric).
+toFixed(6))):""}function error(e){if(!showRecordEditorError(e,"courseError"))api.error(e)}async function save(){if(saving)return;saving=true;const finishSave=beginRecordEditorSave(
+document.getElementById("courseEditor"));try{writable();assertRecordEditAccess(document.getElementById("courseEditor"));if(!document.querySelector("#app #course\
+Editor #course_name"))throw Error("فرم درس باز نیست.");if(!editing||editing.context.id!==api.context().id||editing.context.revision!==api.context().
+revision)throw Error("اطلاعات از زمان باز شدن فرم تغییر کرده است؛ فرم را دوباره باز کنید.");await api.flushDrafts(
+{strict:true});writable();if(!editing||editing.context.id!==api.context().id||editing.context.revision!==api.context().revision)throw Error("ترم یا اطلاعات تغیی\
+ر کرده است؛ فرم را دوباره باز کنید.");const editingContext=editing,c=api.findClass(editing.classId),original=c?.lessons.find(l=>l.id===
+editing.id),history=original&&api.courseHistory?await api.courseHistory(c.id,original.id):null;if(editing!==editingContext||editing.context.id!==api.context().id||
+editing.context.revision!==api.context().revision||editing.classId!==api.state().classId)throw Error("اطلاعات سال تحصیلی هنگام بررسی سوابق تغییر کرد؛ فرم درس را\
+ دوباره باز کنید.");const next=structuredClone(original||editing.seed);if(!c||editing.id&&!original)throw Error("درس مقصد دیگر وجود ندارد.");
+const name=val("name").trim(),periods=number("periods");if(!normalizedName(name)||name.length>500)throw recordFieldError("نام درس را با حداکثر ۵۰۰ نویسه وارد کن\
+ید.","course_name");if(!Number.isInteger(periods)||periods<1||periods>10)throw recordFieldError("زنگ در هفته باید عدد صحیح بین ۱ تا ۱۰ باشد.",
 "course_periods");const info=P.identity(original||editing.seed,api.year(),c);info.branch=val("branch");if(!["","10","11","12"].includes(info.grade)||!["fani","k\
 ardanesh"].includes(info.branch)||Object.values(info).some(x=>x.length>500)||val("teacher").trim().length>500)throw Error("شناسنامه درس معتبر نیست؛ طول مشخصات ح\
 داکثر ۵۰۰ نویسه باشد.");if((!original||normalizedName(original.name)!==normalizedName(name))&&c.lessons.some(l=>l.id!==original?.id&&normalizedName(
@@ -110,9 +114,11 @@ some(s=>s.lessonId===original.id&&s.scores.some(g=>["mostamar","payani"].include
 ت؛ فرم را دوباره باز کنید.");if(!locked){const p=P.defaults(val("method"),api.year());p.subjectType=val("subjectType")||"vocational";if(p.subjectType===
 "general")p.method="dual";Object.assign(p,info);for(const k of["circularNumber","circularDate","reference"])p[k]=val(k).trim();const numericFields=p.subjectType===
 "general"?[]:p.method==="dual"?["practicalWeight","theoryMin","practicalMin","passMin"]:["mostamarMax","continuousStep","competencyFactor","competencyMin","modu\
-leMin","unitCount"];for(const k of numericFields)p[k]=number(k);if(p.method==="modular"){if(p.moduleMin>20)throw recordFieldError("حداقل قبولی هر پودمان باید بی\
-ن صفر و بیست باشد.","course_moduleMin");if(![1,2,3].includes(p.competencyMin))throw recordFieldError("سطح شایستگی را انتخاب کنید.",
-"course_competencyMin");if(!Number.isInteger(p.unitCount)||p.unitCount<1||p.unitCount>10)throw recordFieldError("تعداد واحد باید عدد صحیح بین ۱ تا ۱۰ باشد.",
+leMin","unitCount"];for(const k of numericFields)p[k]=number(k);if(p.method==="modular"){p.modularScope=val("modularScope");if(!["module","unit"].includes(p.modularScope))
+throw recordFieldError("مبنای ثبت نمره را انتخاب کنید.","course_modularScope");p.version=p.modularScope==="unit"?2:1;if(p.modularScope===
+"module"&&original&&!original.gradingPolicy?.modularScope)delete p.modularScope;if(p.moduleMin>20)throw recordFieldError("حداقل نمرهٔ قبولی باید بین صفر و بیست \
+باشد.","course_moduleMin");if(![1,2,3].includes(p.competencyMin))throw recordFieldError("سطح شایستگی را انتخاب کنید.","course_competen\
+cyMin");if(!Number.isInteger(p.unitCount)||p.unitCount<1||p.unitCount>10)throw recordFieldError("تعداد واحد باید عدد صحیح بین ۱ تا ۱۰ باشد.",
 "course_unitCount")}if(p.method==="dual"&&p.subjectType!=="general"){if(p.practicalWeight>100)throw recordFieldError("سهم عملی باید بین صفر و صد باشد.",
 "course_practicalWeight");if(p.passMin>20)throw recordFieldError("حداقل قبولی باید بین صفر و بیست باشد.","course_passMin");p.dualConfigurable=
 true}p.confirmed=editing.seed.gradingPolicy?.confirmed===true;p.requireGate=false;const baseline=original?.gradingPolicy;p.revision=baseline?.revision||1;if(baseline&&
@@ -129,12 +135,12 @@ get(pod.id)!==pod.units.length);if(hasSessions&&(podCountChanged||unitCountChang
  جدید بسازید.":"برای تغییر تعداد واحدهای درس دارای جلسه، کپی جدید بسازید.");if(methodChanged||!next.poudmans.
 length)next.poudmans=makePods(count,p.unitCount);else{const uniqueName=(base,used)=>{let name2=base,suffix=2;while(used.has(normalizedName(name2)))name2=base+" \
 ("+suffix+++")";used.add(normalizedName(name2));return name2},podNames=new Set(next.poudmans.slice(0,count).map(pod=>normalizedName(pod.name))),freshUnit=(index,used)=>({
-id:api.uid(),name:uniqueName("واحد یادگیری "+(index+1),used),unitScores:{},applyOptions:{}});next.poudmans=Array.from({length:count},(_,index)=>{const existing=next.
-poudmans[index];if(!existing){const unitNames2=new Set;return{id:api.uid(),name:uniqueName("پودمان "+(index+1),podNames),podScores:{},units:Array.from({length:p.
-unitCount},(_2,i)=>freshUnit(i,unitNames2))}}const unitNames=new Set(existing.units.slice(0,unitCounts.get(existing.id)).map(unit=>normalizedName(unit.name)));existing.
-units=Array.from({length:unitCounts.get(existing.id)},(_2,i)=>existing.units[i]||freshUnit(i,unitNames));return existing})}}else if(methodChanged)next.poudmans=
-[];next.gradeMode=p.method==="dual"?"kardanesh":"standard";next.gradingPolicy=p}else{const branch=(original.gradingPolicy?.method||(original.gradeMode==="kardan\
-esh"?"dual":"modular"))==="dual"?"kardanesh":"fani";if(info.branch!==branch)throw Error("شاخه و روش درس دارای نمره قابل تغییر نیست.")}
+id:api.uid(),name:uniqueName("واحد یادگیری "+(index+1),used),unitScores:{},competencyScores:{},applyOptions:{}});next.poudmans=Array.from({length:count},
+(_,index)=>{const existing=next.poudmans[index];if(!existing){const unitNames2=new Set;return{id:api.uid(),name:uniqueName("پودمان "+(index+1),podNames),podScores:{},
+units:Array.from({length:p.unitCount},(_2,i)=>freshUnit(i,unitNames2))}}const unitNames=new Set(existing.units.slice(0,unitCounts.get(existing.id)).map(unit=>normalizedName(
+unit.name)));existing.units=Array.from({length:unitCounts.get(existing.id)},(_2,i)=>existing.units[i]||freshUnit(i,unitNames));return existing})}}else if(methodChanged)
+next.poudmans=[];next.gradeMode=p.method==="dual"?"kardanesh":"standard";next.gradingPolicy=p}else{const branch=(original.gradingPolicy?.method||(original.gradeMode===
+"kardanesh"?"dual":"modular"))==="dual"?"kardanesh":"fani";if(info.branch!==branch)throw Error("شاخه و روش درس دارای نمره قابل تغییر نیست.")}
 if(next.gradeMode!=="kardanesh")applyStructureNames(next);next.courseInfo=info;next.name=name;next.teacher=val("teacher").trim();next.periodsPerWeek=periods;next.
 weightMostamar=next.weightMostamar??40;next.weightPayani=next.weightPayani??60;next.kardaneshScores=next.kardaneshScores||{};assertRecordEditAccess(document.getElementById(
 "courseEditor"));if(original)c.lessons[c.lessons.indexOf(original)]=next;else c.lessons.push(next);await api.saveDB({classId:c.id,action:original?"اصلاح شناسنام\
@@ -152,50 +158,69 @@ throw Error("معیار نامعتبر است.");p.podScores=p.podScores||{};con
 yes","no"].includes(value))g.gate=value==="yes";p.podScores[sid]=g;const inModal=!!document.querySelector("#modal:not(.hidden) [data-course-gate]");await api.saveDB(
 {classId:c.id,action:"تأیید معیارهای الزامی پودمان"});api.render();if(inModal)api.showModal("ثبت نمرات براساس قواعد درس",
 table(c,l,null,true))}function installCourseTableEvents(){const body=document.getElementById("modalBody");const change=event=>{const control=event.target;if(control.
-dataset?.modulePicker!==void 0&&!control.matches(":disabled")&&!control.closest("[inert]")){selectGradeModule(control);return}if(!control.matches?.("select[data\
--course-gate]")||!(body.contains(control)||app?.contains(control))||control.matches(":disabled")||control.closest("[inert]"))return;const{lessonId,podId,studentId}=control.
-dataset;if(!lessonId||!podId||!studentId)return;void gate(lessonId,podId,studentId,control.value).catch(error)};body.addEventListener("change",change);const app=document.
-getElementById("app");if(app&&app!==body)app.addEventListener("change",change)}const selectedGradeModules=new Map;function moduleSelectionKey(c,l){return JSON.stringify(
-[api.context().id,c.id,l.id])}function selectGradeModule(control){const root2=control.closest(".modular-gradebook");if(!root2)return;const panels=[...root2.querySelectorAll(
-"[data-module-panel]")];if(!panels.some(panel=>panel.dataset.modulePanel===control.value))return;selectedGradeModules.set(root2.dataset.moduleSelectionKey,control.
-value);for(const panel of panels)panel.hidden=panel.dataset.modulePanel!==control.value;const search=root2.querySelector("[data-assessment-search]");search.value=
-"";for(const row of root2.querySelectorAll("[data-assessment-name]"))row.hidden=false;root2.querySelector(".gradebook-no-results").hidden=true}function modularGradebook(c,l,students){
-const key=moduleSelectionKey(c,l);const selected=l.poudmans.find(p=>p.id===selectedGradeModules.get(key))||l.poudmans[0];const policy=l.gradingPolicy;let h='<di\
-v class="card gradebook modular-gradebook module-simple" data-module-selection-key="'+esc(key)+'"><header class="module-simple-heading"><h3>'+esc(l.name)+"</h3>\
-</header>";h+='<div class="module-toolbar"><select data-module-picker aria-label="انتخاب پودمان">'+l.poudmans.map((pod,index)=>'<option value="'+esc(
-pod.id)+'"'+(pod.id===selected?.id?" selected":"")+">"+(index+1).toLocaleString("fa-IR")+" · "+esc(pod.name)+"</option>").join("")+'</select><input type="searc\
-h" data-assessment-search="" aria-label="جست‌وجوی دانش‌آموز" placeholder="جست‌وجوی دانش‌آموز…" autocomplete="off"></div>';
-if(!students.length)h+='<div class="empty">ابتدا دانش‌آموزان کلاس را اضافه کنید.</div>';for(const pod of l.poudmans){h+='<sectio\
-n class="module-panel" data-module-panel="'+esc(pod.id)+'" aria-label="'+esc(pod.name)+'"'+(pod.id===selected?.id?"":" hidden")+'><div class="assessment-student\
-s">';for(const[index,st]of students.entries()){const score=ownScoreRecord(pod.podScores,st.id);const result=P.moduleResult(policy,score);h+='<article class="ass\
-essment-student" data-result-state="'+(!result.complete?"incomplete":result.passed?"passed":"review")+'" data-assessment-name="'+esc(st.name)+'"><div class="gra\
-debook-student"><h4 title="'+esc(st.name)+'">'+esc(st.name)+'</h4></div><div class="assessment-inputs"><label><span>مستمر <small>از '+policy.mostamarMax.
-toLocaleString("fa-IR")+"</small></span>"+api.gradeCell(c,l,st,"m",{kind:"pod",pid:pod.id,value:score.m})+"</label><label><span>شایستگی <small>۱، ۲ یا ۳</small>\
-</span>"+api.gradeCell(c,l,st,"c",{kind:"pod",pid:pod.id,value:score.c})+'</label></div><div class="gradebook-result"><span>نمره پودمان</span><strong data-pod-f\
-inal="'+esc(pod.id+"|"+st.id)+'">'+api.finalText(result)+'</strong><span data-pod-status="'+esc(pod.id+"|"+st.id)+'">'+esc(api.status(result))+"</span></div>";h+=
-"</article>"}h+="</div></section>"}return h+'<p class="gradebook-no-results" role="status" hidden>دانش‌آموزی با این نام پیدا نشد.</p></div>'}
-function table(c,l,sid,editable=false){const policy=l.gradingPolicy;if(!policy)return"";const students=api.students(sid?{students:api.knownStudents(c)}:c).filter(
-s=>!sid||s.id===sid);if(editable&&policy.method==="modular")return modularGradebook(c,l,students);let h='<div class="card course-grades"><h3>'+esc(l.name)+"</h3\
-><p>"+esc(P.describe(l))+"</p><p>ابلاغیه "+esc(policy.circularNumber||"ثبت نشده")+" | "+esc(policy.circularDate)+" | "+esc(policy.reference)+"</p>\
-<p>حضور و امتیازهای جلسه به نمره رسمی اضافه نمی‌شوند.</p>";if(!policy.confirmed)h+='<p class="course-warning">نتایج بر\
-اساس قواعد پیش‌نویس هستند؛ پیش از بستن کارنامه، قواعد را با ابلاغیه تطبیق دهید.</p>';if(editable)
-h+='<div class="grades-intro"><span>ثبت نمرات رسمی</span><p>نمره هر دانش‌آموز را در ستون مربوط وارد کنید؛ وضعیت ذخیره زیر هر ورودی نمایش داده می‌شود.</p><small>'+
-students.length.toLocaleString("fa-IR")+" دانش‌آموز</small></div>";if(!students.length)return h+'<div class="empty"><strong>دانش‌آموزی برای نمایش نیست\
-</strong><p>برای ثبت نمره، ابتدا اعضای کلاس را از تب دانش‌آموزان اضافه کنید.</p></div></div>';if(policy.subjectType===
-"general"){h+='<div class="table-scroll"><table><thead><tr><th>دانش‌آموز</th><th>نمره از ۲۰</th><th>وضعیت</th></tr></thead><tbody>';for(const st of students){
-const r=api.calc(c,l,st.id);h+="<tr><td>"+esc(st.name)+"</td><td>"+(editable?api.gradeCell(c,l,st,"theory",{value:r.theory}):api.finalText(r))+"</td><td>"+esc(api.
-status(r))+"</td></tr>"}return h+"</tbody></table></div></div>"}if(policy.method==="dual"){h+='<div class="table-scroll"><table><thead><tr><th>هنرجو</th><th>عمل\
-ی</th><th>نظری</th><th>نهایی</th><th>نتیجه و دلیل</th></tr></thead><tbody>';for(const st of students){const r=api.calc(c,l,st.id);h+="<tr><t\
-d>"+esc(st.name)+"</td><td>"+(editable?api.gradeCell(c,l,st,"practical",{value:r.practical}):r.practical??"—")+"</td><td>"+(editable?api.gradeCell(c,l,st,"the\
-ory",{value:r.theory}):r.theory??"—")+'</td><td data-kfinal="'+st.id+'">'+api.finalText(r)+'</td><td data-kstatus="'+st.id+'">'+esc(api.status(r))+"</td></tr>"}
-return h+"</tbody></table></div></div>"}for(const pod of l.poudmans){h+="<h4>"+esc(pod.name)+"</h4><p>"+pod.units.map(u=>esc(u.name)).join(" / ")+'</p><div clas\
-s="table-scroll"><table><thead><tr><th>هنرجو</th><th>مستمر از '+policy.mostamarMax+"</th><th>شایستگی ۱ / ۲ / ۳</th><th>نمره پودمان</th><th>نتیجه و د\
-لیل</th></tr></thead><tbody>";for(const st of students){const g=ownScoreRecord(pod.podScores,st.id),r=P.moduleResult(policy,g);h+=`<tr><td>${esc(st.name)}</t\
-d><td>`+(editable?api.gradeCell(c,l,st,"m",{kind:"pod",pid:pod.id,value:g.m}):g.m??"—")+"</td><td>"+(editable?api.gradeCell(c,l,st,"c",{kind:"pod",pid:pod.id,
-value:g.c}):g.c??"—")+"</td>";h+=`<td data-pod-final="${pod.id}|${st.id}">${api.finalText(r)}</td><td data-pod-status="${pod.id}|${st.id}">${esc(api.status(r))}\
-</td></tr>`}h+="</tbody></table></div>"}h+="<h4>نتیجه درس</h4><table><thead><tr><th>هنرجو</th><th>نهایی قابل ثبت</th><th>میانگین محاسباتی</th><th>وضعیت</th></tr\
-></thead><tbody>";for(const st of students){const r=api.calc(c,l,st.id);h+=`<tr><td>${esc(st.name)}</td><td data-course-final="${l.id}|${st.id}">${api.finalText(
-r)}</td><td data-course-mean="${l.id}|${st.id}">${r.provisionalAverage==null?"—":r.provisionalAverage.toFixed(2)}</td><td data-course-status="${l.id}|${st.id}\
-">${esc(api.status(r))}</td></tr>`}return h+"</tbody></table></div>"}installCourseTableEvents();return{renderCreate,activateCreate,cancelEditor,preserveEditor,restoreEditor,
-open,openNames,save,add,copy,gate,table,toggleMethod,toggleBranch,error}}})(globalThis);
+dataset?.unitPicker!==void 0&&!control.matches(":disabled")&&!control.closest("[inert]")){selectGradeUnit(control);return}if(control.dataset?.modulePicker!==void 0&&
+!control.matches(":disabled")&&!control.closest("[inert]")){selectGradeModule(control);return}if(!control.matches?.("select[data-course-gate]")||!(body.contains(
+control)||app?.contains(control))||control.matches(":disabled")||control.closest("[inert]"))return;const{lessonId,podId,studentId}=control.dataset;if(!lessonId||
+!podId||!studentId)return;void gate(lessonId,podId,studentId,control.value).catch(error)};body.addEventListener("change",change);const app=document.getElementById(
+"app");if(app&&app!==body)app.addEventListener("change",change)}const selectedGradeModules=new Map;const selectedGradeUnits=new Map;function moduleSelectionKey(c,l){
+return JSON.stringify([api.context().id,c.id,l.id])}function selectGradeModule(control){const root2=control.closest(".modular-gradebook");if(!root2)return;const panels=[
+...root2.querySelectorAll("[data-module-panel]")];if(!panels.some(panel=>panel.dataset.modulePanel===control.value))return;selectedGradeModules.set(root2.dataset.
+moduleSelectionKey,control.value);for(const panel of panels)panel.hidden=panel.dataset.modulePanel!==control.value;for(const picker of root2.querySelectorAll("[\
+data-unit-picker]"))picker.hidden=picker.dataset.unitModule!==control.value;resetGradeSearch(root2)}function resetGradeSearch(root2){const search=root2.querySelector(
+"[data-assessment-search]");search.value="";for(const row of root2.querySelectorAll("[data-assessment-name]"))row.hidden=false;root2.querySelector(".gradebook-n\
+o-results").hidden=true}function selectGradeUnit(control){const root2=control.closest(".modular-gradebook");if(!root2)return;const module=[...root2.querySelectorAll(
+"[data-module-panel]")].find(panel=>panel.dataset.modulePanel===control.dataset.unitModule);if(!module)return;const panels=[...module.querySelectorAll("[data-un\
+it-panel]")];if(!panels.some(panel=>panel.dataset.unitPanel===control.value))return;selectedGradeUnits.set(root2.dataset.moduleSelectionKey+"|"+control.dataset.
+unitModule,control.value);for(const panel of panels)panel.hidden=panel.dataset.unitPanel!==control.value;resetGradeSearch(root2)}function modularStudent(c,l,st,pod,unit){
+const policy=l.gradingPolicy;const score=ownScoreRecord(unit?unit.competencyScores:pod.podScores,st.id);const result=P.moduleResult(policy,score);const kind=unit?
+"unit":"pod";const resultKey=esc([pod.id,...unit?[unit.id]:[],st.id].join("|"));return'<article class="assessment-student" data-result-state="'+(!result.complete?
+"incomplete":result.passed?"passed":"review")+'" data-assessment-name="'+esc(st.name)+'"><div class="gradebook-student"><h4 title="'+esc(st.name)+'">'+esc(st.name)+
+'</h4></div><div class="assessment-inputs"><label><span>مستمر <small>از '+policy.mostamarMax.toLocaleString("fa-IR")+"</small></span>"+api.gradeCell(c,l,
+st,"m",{kind,pid:pod.id,...unit?{uid:unit.id}:{},value:score.m})+"</label><label><span>شایستگی <small>۱، ۲ یا ۳</small></span>"+api.gradeCell(c,l,st,
+"c",{kind,pid:pod.id,...unit?{uid:unit.id}:{},value:score.c})+'</label></div><div class="gradebook-result"><span>'+(unit?"نمره واحد کار":"نمره پودمان")+
+"</span><strong data-"+kind+'-final="'+resultKey+'">'+api.finalText(result)+"</strong><span data-"+kind+'-status="'+resultKey+'">'+esc(api.status(result))+"</sp\
+an></div></article>"}function modularGradebook(c,l,students){const key=moduleSelectionKey(c,l);const selected=l.poudmans.find(p=>p.id===selectedGradeModules.get(
+key))||l.poudmans[0];const policy=l.gradingPolicy;const unitBased=P.unitBased(policy);let h='<div class="card gradebook modular-gradebook module-simple'+(unitBased?
+" unit-gradebook":"")+'" data-module-selection-key="'+esc(key)+'"><header class="module-simple-heading"><h3>'+esc(l.name)+"</h3></header>";h+='<div class="modul\
+e-toolbar"><select data-module-picker aria-label="انتخاب پودمان">'+l.poudmans.map((pod,index)=>'<option value="'+esc(pod.id)+'"'+(pod.id===selected?.
+id?" selected":"")+">"+(index+1).toLocaleString("fa-IR")+" · "+esc(pod.name)+"</option>").join("")+"</select>";if(unitBased)for(const pod of l.poudmans){const selectedUnit=pod.
+units.find(unit=>unit.id===selectedGradeUnits.get(key+"|"+pod.id))||pod.units[0];h+='<select data-unit-picker data-unit-module="'+esc(pod.id)+'" aria-label="انت\
+خاب واحد کار در '+esc(pod.name)+'"'+(pod.id===selected?.id?"":" hidden")+">"+pod.units.map((unit,index)=>'<option value="'+esc(unit.id)+'"'+(unit.id===
+selectedUnit?.id?" selected":"")+">"+(index+1).toLocaleString("fa-IR")+" · "+esc(unit.name)+"</option>").join("")+"</select>"}h+='<input type="search" data-ass\
+essment-search="" aria-label="جست‌وجوی دانش‌آموز" placeholder="جست‌وجوی دانش‌آموز…" autocomplete="off"></div>';if(unitBased)
+h+='<p class="unit-gradebook-hint">نمرات هر واحد کار مستقل ثبت می‌شوند.</p>';if(!students.length)h+='<div class="empty">ابتدا دانش\
+‌آموزان کلاس را اضافه کنید.</div>';for(const pod of l.poudmans){h+='<section class="module-panel" data-module-panel="'+esc(pod.id)+'" ari\
+a-label="'+esc(pod.name)+'"'+(pod.id===selected?.id?"":" hidden")+">";if(unitBased){const selectedUnit=pod.units.find(unit=>unit.id===selectedGradeUnits.get(key+
+"|"+pod.id))||pod.units[0];for(const unit of pod.units){h+='<section data-unit-panel="'+esc(unit.id)+'" aria-label="'+esc(unit.name)+'"'+(unit.id===selectedUnit?.
+id?"":" hidden")+'><h4 class="unit-gradebook-title">'+esc(pod.name+" · "+unit.name)+'</h4><div class="assessment-students">'+students.map(st=>modularStudent(c,
+l,st,pod,unit)).join("")+"</div></section>"}}else h+='<div class="assessment-students">'+students.map(st=>modularStudent(c,l,st,pod)).join("")+"</div>";h+="</se\
+ction>"}return h+'<p class="gradebook-no-results" role="status" hidden>دانش‌آموزی با این نام پیدا نشد.</p></div>'}function table(c,l,sid,editable=false){
+const policy=l.gradingPolicy;if(!policy)return"";const students=api.students(sid?{students:api.knownStudents(c)}:c).filter(s=>!sid||s.id===sid);if(editable&&policy.
+method==="modular")return modularGradebook(c,l,students);let h='<div class="card course-grades"><h3>'+esc(l.name)+"</h3><p>"+esc(P.describe(l))+"</p><p>ابلاغیه "+
+esc(policy.circularNumber||"ثبت نشده")+" | "+esc(policy.circularDate)+" | "+esc(policy.reference)+"</p><p>حضور و امتیازهای جلسه به نمره رسمی اضافه نمی‌شو\
+ند.</p>";if(!policy.confirmed)h+='<p class="course-warning">نتایج براساس قواعد پیش‌نویس هستند؛ پیش از بستن کارنامه، قواعد را با ابلاغیه تطبیق دهید.</p>';
+if(editable)h+='<div class="grades-intro"><span>ثبت نمرات رسمی</span><p>نمره هر دانش‌آموز را در ستون مربوط وارد کنید؛ وضعیت ذخیره زیر هر ورودی نمایش داده می‌شود\
+.</p><small>'+students.length.toLocaleString("fa-IR")+" دانش‌آموز</small></div>";if(!students.length)return h+'<div class="empty"><strong>دانش‌آموزی ب\
+رای نمایش نیست</strong><p>برای ثبت نمره، ابتدا اعضای کلاس را از تب دانش‌آموزان اضافه کنید.</p></div></div>';
+if(policy.subjectType==="general"){h+='<div class="table-scroll"><table><thead><tr><th>دانش‌آموز</th><th>نمره از ۲۰</th><th>وضعیت</th></tr></thead><tbody>';
+for(const st of students){const r=api.calc(c,l,st.id);h+="<tr><td>"+esc(st.name)+"</td><td>"+(editable?api.gradeCell(c,l,st,"theory",{value:r.theory}):api.finalText(
+r))+"</td><td>"+esc(api.status(r))+"</td></tr>"}return h+"</tbody></table></div></div>"}if(policy.method==="dual"){h+='<div class="table-scroll"><table><thead><\
+tr><th>هنرجو</th><th>عملی</th><th>نظری</th><th>نهایی</th><th>نتیجه و دلیل</th></tr></thead><tbody>';for(const st of students){const r=api.
+calc(c,l,st.id);h+="<tr><td>"+esc(st.name)+"</td><td>"+(editable?api.gradeCell(c,l,st,"practical",{value:r.practical}):r.practical??"—")+"</td><td>"+(editable?
+api.gradeCell(c,l,st,"theory",{value:r.theory}):r.theory??"—")+'</td><td data-kfinal="'+st.id+'">'+api.finalText(r)+'</td><td data-kstatus="'+st.id+'">'+esc(api.
+status(r))+"</td></tr>"}return h+"</tbody></table></div></div>"}if(P.unitBased(policy)){for(const pod of l.poudmans){h+='<section class="unit-report-module"><h4\
+>'+esc(pod.name)+"</h4>";for(const unit of pod.units){h+="<h5>"+esc(unit.name)+'</h5><div class="table-scroll"><table><thead><tr><th>هنرجو</th><th>مستمر از '+
+policy.mostamarMax+"</th><th>شایستگی ۱ / ۲ / ۳</th><th>نمره واحد کار</th><th>نتیجه و دلیل</th></tr></thead><tbody>";for(const st of students){
+const score=ownScoreRecord(unit.competencyScores,st.id);const result=P.moduleResult(policy,score);const key=esc([pod.id,unit.id,st.id].join("|"));h+="<tr><td>"+
+esc(st.name)+"</td><td>"+(score.m??"—")+"</td><td>"+(score.c??"—")+'</td><td data-unit-final="'+key+'">'+api.finalText(result)+'</td><td data-unit-status="'+
+key+'">'+esc(api.status(result))+"</td></tr>"}h+="</tbody></table></div>"}h+="</section>"}return h+"</div>"}for(const pod of l.poudmans){h+="<h4>"+esc(pod.name)+
+"</h4><p>"+pod.units.map(u=>esc(u.name)).join(" / ")+'</p><div class="table-scroll"><table><thead><tr><th>هنرجو</th><th>مستمر از '+policy.mostamarMax+
+"</th><th>شایستگی ۱ / ۲ / ۳</th><th>نمره پودمان</th><th>نتیجه و دلیل</th></tr></thead><tbody>";for(const st of students){const g=ownScoreRecord(
+pod.podScores,st.id),r=P.moduleResult(policy,g);h+=`<tr><td>${esc(st.name)}</td><td>`+(editable?api.gradeCell(c,l,st,"m",{kind:"pod",pid:pod.id,value:g.m}):g.m??
+"—")+"</td><td>"+(editable?api.gradeCell(c,l,st,"c",{kind:"pod",pid:pod.id,value:g.c}):g.c??"—")+"</td>";h+=`<td data-pod-final="${pod.id}|${st.id}">${api.finalText(
+r)}</td><td data-pod-status="${pod.id}|${st.id}">${esc(api.status(r))}</td></tr>`}h+="</tbody></table></div>"}h+="<h4>نتیجه درس</h4><table><thead><tr><th>هنرجو<\
+/th><th>نهایی قابل ثبت</th><th>میانگین محاسباتی</th><th>وضعیت</th></tr></thead><tbody>";for(const st of students){const r=api.calc(
+c,l,st.id);h+=`<tr><td>${esc(st.name)}</td><td data-course-final="${l.id}|${st.id}">${api.finalText(r)}</td><td data-course-mean="${l.id}|${st.id}">${r.provisionalAverage==
+null?"—":r.provisionalAverage.toFixed(2)}</td><td data-course-status="${l.id}|${st.id}">${esc(api.status(r))}</td></tr>`}return h+"</tbody></table></div>"}installCourseTableEvents();
+return{renderCreate,activateCreate,cancelEditor,preserveEditor,restoreEditor,open,openNames,save,add,copy,gate,table,toggleMethod,toggleBranch,error}}})(globalThis);
 //# sourceMappingURL=course-ui.js.map

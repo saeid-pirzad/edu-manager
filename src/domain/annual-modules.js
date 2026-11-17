@@ -22,6 +22,31 @@
   function isFormalModular(lesson) {
     return lesson?.gradingPolicy?.method === "modular";
   }
+  function unitBased(lesson) {
+    return (
+      isFormalModular(lesson) && lesson.gradingPolicy.modularScope === "unit"
+    );
+  }
+
+  function assessments(lesson) {
+    const result = new Map();
+    for (const [pid, pod] of index(lesson.poudmans)) {
+      const add = (node, uid, field) => {
+        result.set(JSON.stringify([pid, uid ?? null]), {
+          pid,
+          uid,
+          node,
+          field,
+          name: uid ? pod.name + " / " + (node.name || uid) : pod.name || pid,
+        });
+      };
+      if (unitBased(lesson)) {
+        for (const [uid, unit] of index(pod.units))
+          add(unit, uid, "competencyScores");
+      } else add(pod, undefined, "podScores");
+    }
+    return result;
+  }
 
   function identify(value) {
     if (
@@ -113,6 +138,7 @@
     if (
       !isFormalModular(a) ||
       !isFormalModular(b) ||
+      unitBased(a) !== unitBased(b) ||
       policyFields.some(
         (field) => a.gradingPolicy[field] !== b.gradingPolicy[field],
       )
@@ -126,7 +152,16 @@
       second = index(b.poudmans);
     if (
       first.size !== second.size ||
-      [...first.keys()].some((id) => !second.has(id))
+      [...first.keys()].some((id) => {
+        if (!second.has(id)) return true;
+        if (!unitBased(a)) return false;
+        const units = index(first.get(id).units),
+          other = index(second.get(id).units);
+        return (
+          units.size !== other.size ||
+          [...units.keys()].some((uid) => !other.has(uid))
+        );
+      })
     )
       throw Error(
         "ساختار پودمان‌های درس «" +
@@ -140,7 +175,10 @@
     result.kardaneshScores = {};
     for (const pod of result.poudmans || []) {
       pod.podScores = {};
-      for (const unit of pod.units || []) unit.unitScores = {};
+      for (const unit of pod.units || []) {
+        unit.unitScores = {};
+        if (unit.competencyScores !== undefined) unit.competencyScores = {};
+      }
     }
     return result;
   }
@@ -169,12 +207,15 @@
         (result.lessons ||= []).push(target);
         lessons.set(id, target);
       }
-      const pods = index(target.poudmans);
-      for (const [pid, pod] of pods) {
+      const targets = assessments(target),
+        sourceAssessments = formal.map(assessments);
+      for (const [key, targetScore] of targets) {
         const merged = {};
-        for (const lesson of formal) {
-          const source = index(lesson.poudmans).get(pid);
-          for (const [sid, record] of Object.entries(source.podScores || {})) {
+        for (const sourceMap of sourceAssessments) {
+          const source = sourceMap.get(key);
+          for (const [sid, record] of Object.entries(
+            source.node[source.field] || {},
+          )) {
             if (!students.has(sid)) continue;
             score(record);
             if (!own(merged, sid)) merged[sid] = clone(record);
@@ -183,12 +224,12 @@
             else if (!empty(record) && !equal(merged[sid], record))
               throw Error(
                 "برای یک هنرجو در پودمان «" +
-                  (pod.name || pid) +
+                  targetScore.name +
                   "» دو نمرهٔ متفاوت در نوبت‌های سال ثبت شده است؛ ابتدا تعارض را اصلاح کنید.",
               );
           }
         }
-        pod.podScores = merged;
+        targetScore.node[targetScore.field] = merged;
       }
     }
     return result;
@@ -205,14 +246,16 @@
         second = after.get(lid);
       // Removing a term's course is not an explicit deletion of annual grades.
       if (!isFormalModular(second)) continue;
-      const a = index(isFormalModular(first) ? first.poudmans : []),
-        b = index(isFormalModular(second) ? second.poudmans : []),
+      const a = isFormalModular(first) ? assessments(first) : new Map(),
+        b = assessments(second),
         entries = [];
-      for (const pid of new Set([...a.keys(), ...b.keys()])) {
+      for (const key of new Set([...a.keys(), ...b.keys()])) {
         // Likewise, dropping a module's structure must not erase another term.
-        if (!b.has(pid)) continue;
-        const oldScores = a.get(pid)?.podScores || {},
-          newScores = b.get(pid)?.podScores || {};
+        if (!b.has(key)) continue;
+        const oldTarget = a.get(key),
+          newTarget = b.get(key),
+          oldScores = oldTarget?.node[oldTarget.field] || {},
+          newScores = newTarget.node[newTarget.field] || {};
         for (const sid of new Set([
           ...Object.keys(oldScores),
           ...Object.keys(newScores),
@@ -220,7 +263,13 @@
           const oldScore = rawScore(oldScores, sid),
             newScore = rawScore(newScores, sid);
           if (!equal(oldScore, newScore))
-            entries.push({ pid, sid, oldScore, newScore });
+            entries.push({
+              pid: newTarget.pid,
+              uid: newTarget.uid,
+              sid,
+              oldScore,
+              newScore,
+            });
         }
       }
       if (entries.length) result.push({ lid, first, second, entries });
@@ -245,21 +294,22 @@
       // A grade-only save cannot create a missing yearly course definition.
       if (!target) continue;
       compatible(reference, target);
-      const pods = index(target.poudmans);
-      for (const { pid, sid, oldScore, newScore } of entries) {
+      const targets = assessments(target);
+      for (const { pid, uid, sid, oldScore, newScore } of entries) {
         if (!students.has(sid)) continue;
-        const pod = pods.get(pid);
-        if (!pod) throw Error("پودمان مقصد برای ثبت نمرهٔ سالانه موجود نیست.");
-        pod.podScores ||= {};
-        const existing = rawScore(pod.podScores, sid);
+        const assessment = targets.get(JSON.stringify([pid, uid ?? null]));
+        if (!assessment)
+          throw Error("پودمان یا واحد مقصد برای ثبت نمرهٔ سالانه موجود نیست.");
+        const scores = (assessment.node[assessment.field] ||= {});
+        const existing = rawScore(scores, sid);
         if (equal(existing, newScore)) continue;
         if (!equal(existing, oldScore))
           throw Error(
             "نمرهٔ سالانهٔ پودمان در نوبت دیگری تغییر کرده است؛ اطلاعات را دوباره بارگذاری کنید.",
           );
         const next = applyScore(existing, newScore);
-        if (Object.keys(next).length) pod.podScores[sid] = next;
-        else delete pod.podScores[sid];
+        if (Object.keys(next).length) scores[sid] = next;
+        else delete scores[sid];
       }
     }
     return result;

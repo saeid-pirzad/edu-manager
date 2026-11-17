@@ -60,12 +60,26 @@ async function flushDrafts({ strict = false } = {}) {
           if (
             !pod ||
             l.gradingPolicy?.method !== "modular" ||
+            EduPolicy.unitBased(l.gradingPolicy) ||
             !["m", "c"].includes(item.field)
           )
             throw Error("پودمان یا نوع نمره نامعتبر است.");
           pod.podScores = pod.podScores || {};
           target = writableScoreRecord(pod.podScores, item.sid);
           pod.podScores[item.sid] = target;
+        } else if (item.kind === "unit") {
+          const unit = l.poudmans
+            .find((p) => p.id === item.pid)
+            ?.units.find((u) => u.id === item.uid);
+          if (
+            !unit ||
+            !EduPolicy.unitBased(l.gradingPolicy) ||
+            !["m", "c"].includes(item.field)
+          )
+            throw Error("واحد کار یا نوع نمره نامعتبر است.");
+          unit.competencyScores ||= {};
+          target = writableScoreRecord(unit.competencyScores, item.sid);
+          unit.competencyScores[item.sid] = target;
         } else {
           if (l.gradingPolicy)
             throw Error("نمرات رسمی را در فرم قواعد درس ثبت کنید.");

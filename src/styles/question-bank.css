@@ -2539,27 +2539,115 @@
     font-size: 11px;
   }
 }
-@media screen and (max-width: 700px) {
-  [data-keyboard-open="true"] .qb-dialog:has(.qb-form) {
-    inset-block-start: calc(var(--app-viewport-top, 0px) + 6px);
+@media screen and (max-width: 700px),
+  screen and (max-height: 500px) and (pointer: coarse) {
+  /* The editor uses one scroll area from the start. Keyboard transitions only
+     change the visible space; fields and navigation keep their normal size. */
+  :is(#app, .qb-dialog):has(.qb-form) {
+    position: fixed;
+    inset-inline: 0;
+    inset-block-start: var(--app-viewport-top, 0px);
     inset-block-end: auto;
-    margin-block: 0;
-    max-height: calc(var(--app-viewport, 100dvh) - 12px) !important;
+    width: 100%;
+    max-width: none;
+    height: var(--app-viewport, 100dvh);
+    max-height: var(--app-viewport, 100dvh) !important;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
   }
-  [data-keyboard-open="true"] .qb-dialog:has(.qb-form) > .modal-header {
+  :is(#app, .qb-dialog):has(.qb-form) > .modal-header {
+    border-radius: 0;
+    padding: 4px 10px;
+    padding-block-start: max(4px, env(safe-area-inset-top));
+  }
+  :is(#app, .qb-dialog):has(.qb-form) #qb-title {
+    gap: 7px;
+    font-size: 14px;
+  }
+  :is(#app, .qb-dialog):has(.qb-form) #qb-title > svg {
+    width: 16px;
+    height: 16px;
+    padding: 5px;
+  }
+  :is(#app, .qb-dialog):has(.qb-form) > .modal-header button.qb-close {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px !important;
+    padding: 0;
+  }
+  :is(#app, .qb-dialog):has(.qb-form) > .qb-storage-bar {
     padding: 3px 10px;
   }
-  [data-keyboard-open="true"] .qb-dialog:has(.qb-form) > .qb-storage-bar,
-  [data-keyboard-open="true"] .qb-dialog:has(.qb-form) #qb-title > svg,
-  [data-keyboard-open="true"] .qb-body:has(.qb-form) > .qb-tabs,
-  [data-keyboard-open="true"] .qb-builder-intro {
-    display: none;
+  :is(#app, .qb-dialog):has(.qb-form) > .qb-storage-bar > button.ui-button {
+    height: 36px;
+    min-height: 36px !important;
+    padding: 3px 7px !important;
+    font-size: 10px;
   }
-  [data-keyboard-open="true"] .qb-dialog:has(.qb-form) > .qb-body {
-    padding: 8px;
+  :is(#app, .qb-dialog) > .qb-body:has(.qb-form) {
+    display: block;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    scroll-padding-block: 12px 80px;
+    scrollbar-gutter: stable;
+    padding: 10px;
   }
-  [data-keyboard-open="true"] .qb-form > .record-editor-actions {
-    padding-block: 6px 0;
+  :is(#app, .qb-dialog) .qb-panel:has(> .qb-form) {
+    display: block;
+    overflow: visible;
+    scrollbar-gutter: auto;
+  }
+  :is(#app, .qb-dialog) .qb-body .qb-form {
+    display: block;
+    overflow: visible;
+    margin: 0;
+  }
+  :is(#app, .qb-dialog) .qb-body .qb-form :is(input, select, textarea) {
+    font-size: 16px !important;
+  }
+  :is(#app, .qb-dialog)
+    .qb-body
+    .qb-form
+    :is(input:not([type="checkbox"], [type="radio"]), select) {
+    box-sizing: border-box;
+    height: 44px !important;
+    min-height: 44px !important;
+    padding-block: 6px !important;
+  }
+  :is(#app, .qb-dialog) .qb-body .qb-form textarea {
+    box-sizing: border-box;
+    min-height: min(100px, var(--qb-textarea-max-height, 100px));
+    max-height: var(--qb-textarea-max-height, none);
+    padding: 8px 10px;
+    line-height: 1.6;
+  }
+  :is(#app, .qb-dialog) .qb-body .qb-form > .qb-form-fields {
+    overflow: visible;
+    margin: 0;
+    padding-inline-end: 0;
+    padding-block-end: 24px;
+    scrollbar-gutter: auto;
+  }
+  :is(#app, .qb-dialog) .qb-body:has(.qb-form) > .qb-tabs {
+    position: static;
+    margin: 0 0 10px;
+  }
+  :is(#app, .qb-dialog) .qb-body .qb-form > .record-editor-actions {
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 3;
+    padding-block: 4px max(4px, env(safe-area-inset-bottom));
+  }
+  :is(#app, .qb-dialog) .qb-body .qb-form > .record-editor-actions > button {
+    height: 44px;
+    min-height: 44px !important;
+  }
+}
+@media screen and (max-height: 500px) and (pointer: coarse) {
+  :is(#app, .qb-dialog) > .qb-body:has(.qb-form) {
+    padding: 6px;
   }
 }
 @media screen and (max-width: 700px) {
@@ -2616,12 +2704,12 @@
   }
   .qb-body .qb-builder .qb-count-field {
     padding: 6px;
-    grid-template-rows: minmax(20px, auto) 40px;
+    grid-template-rows: minmax(20px, auto) 44px;
     gap: 4px;
   }
   :is(#app, .qb-dialog) .qb-body .qb-builder input:not([type="checkbox"]) {
-    height: 40px !important;
-    min-height: 40px !important;
+    height: 44px !important;
+    min-height: 44px !important;
     padding: 5px 8px !important;
     font-size: 16px;
   }

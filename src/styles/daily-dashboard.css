@@ -1041,6 +1041,18 @@ body.modal-open {
     > label:first-child {
     grid-column: 1 / -1;
   }
+  #app
+    #courseEditor.course-simple-editor
+    #coursePolicy
+    > .course-method-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  #app
+    #courseEditor.course-simple-editor
+    .course-method-fields
+    > label:has(#course_modularScope) {
+    grid-column: 1 / -1;
+  }
 }
 @container course-form (min-width: 600px) {
   #app #courseEditor.course-simple-editor .course-basic-fields {
@@ -1064,6 +1076,18 @@ body.modal-open {
   }
   #app #courseEditor.course-simple-editor #courseDual {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  #app
+    #courseEditor.course-simple-editor
+    #coursePolicy
+    > .course-method-fields:has(> label:not([hidden]) > #course_modularScope) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  #app
+    #courseEditor.course-simple-editor
+    .course-method-fields
+    > label:has(#course_modularScope) {
+    grid-column: auto;
   }
 }
 @container course-form (min-width: 920px) {

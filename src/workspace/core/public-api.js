@@ -184,6 +184,7 @@ function installRuntimeAPI() {
     assessmentResult,
     annualGradeRows,
     annualTechnicalRows,
+    modularReportText,
     assertReportSnapshot,
     normalizeDB,
     validateV24,

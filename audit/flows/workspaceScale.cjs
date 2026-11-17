@@ -41,9 +41,16 @@ module.exports = async function workspaceScale() {
                   };
                 else
                   for (const pod of lesson.poudmans) {
-                    pod.podScores[student.id] = { m: 2, c: 2 };
-                    for (const unit of pod.units)
+                    if (!EduPolicy.unitBased(lesson.gradingPolicy))
+                      pod.podScores[student.id] = { m: 2, c: 2 };
+                    for (const unit of pod.units) {
+                      if (EduPolicy.unitBased(lesson.gradingPolicy))
+                        (unit.competencyScores ||= {})[student.id] = {
+                          m: 2,
+                          c: 2,
+                        };
                       unit.unitScores[student.id] = { m: 18, p: 18 };
+                    }
                   }
               }
         await saveDB();

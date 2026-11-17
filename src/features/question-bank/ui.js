@@ -460,6 +460,7 @@
       discard(() => {
         root.visualViewport?.removeEventListener("resize", keepEditingVisible);
         root.visualViewport?.removeEventListener("scroll", keepEditingVisible);
+        root.removeEventListener("resize", keepEditingVisible);
         cancelAnimationFrame(editingFrame);
         optionResize.disconnect();
         optionChanges.disconnect();
@@ -515,25 +516,60 @@
       cancelAnimationFrame(editingFrame);
       editingFrame = requestAnimationFrame(() => {
         if (
-          innerWidth > 700 ||
-          document.documentElement.dataset.keyboardOpen !== "true"
+          !root.matchMedia(
+            "(max-width: 700px), (max-height: 500px) and (pointer: coarse)",
+          ).matches
         )
           return;
+        const form = content.querySelector(".qb-form");
+        if (!form) return;
+        const bounds = content.getBoundingClientRect();
+        const actions = form.querySelector(".record-editor-actions");
+        content.style.setProperty(
+          "--qb-textarea-max-height",
+          Math.max(
+            44,
+            content.clientHeight - (actions?.offsetHeight || 0) - 24,
+          ) + "px",
+        );
         const active = document.activeElement;
-        if (!content.contains(active)) return;
-        const fields = active.closest(".qb-form-fields");
-        if (!fields) return;
-        const field = active.getBoundingClientRect();
-        const bounds = fields.getBoundingClientRect();
-        if (field.bottom > bounds.bottom - 8)
-          fields.scrollTop += field.bottom - bounds.bottom + 8;
-        else if (field.top < bounds.top + 8)
-          fields.scrollTop -= bounds.top + 8 - field.top;
+        if (!form.contains(active)) return;
+        // A sticky footer can move as its form scrolls. Recheck its actual
+        // position after scrolling, with a fixed limit and no focus changes.
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const field = active.getBoundingClientRect();
+          const footer = actions?.getBoundingClientRect();
+          const visibleBottom = Math.min(
+            bounds.bottom,
+            footer && !actions.contains(active) ? footer.top : bounds.bottom,
+          );
+          const padding = Math.max(
+            0,
+            Math.min(12, (visibleBottom - bounds.top - field.height) / 2),
+          );
+          const top = bounds.top + padding;
+          const bottom = visibleBottom - padding;
+          let distance = 0;
+          if (field.height > bottom - top) {
+            if (field.top >= bottom - 40 || field.bottom <= top + 40)
+              distance = field.top - top;
+          } else if (field.bottom > bottom) distance = field.bottom - bottom;
+          else if (field.top < top) distance = field.top - top;
+          if (Math.abs(distance) < 0.5) break;
+          const previous = content.scrollTop;
+          content.scrollTop += distance;
+          if (Math.abs(content.scrollTop - previous) < 0.5) break;
+        }
       });
     }
     root.visualViewport?.addEventListener("resize", keepEditingVisible);
     root.visualViewport?.addEventListener("scroll", keepEditingVisible);
     content.addEventListener("focusin", keepEditingVisible);
+    content.addEventListener("input", keepEditingVisible);
+    content.addEventListener("keyup", (event) => {
+      if (/^(Arrow|Home$|End$|Page)/.test(event.key)) keepEditingVisible();
+    });
+    root.addEventListener("resize", keepEditingVisible);
     const updateOptions = () => fitOptions(content);
     const optionResize = new ResizeObserver(updateOptions);
     const optionChanges = new MutationObserver(updateOptions);

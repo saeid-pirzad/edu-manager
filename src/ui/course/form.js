@@ -1,4 +1,4 @@
-async function open(lid = "", seed) {
+async function open(lid = "", seed, { editNames = false } = {}) {
   const activeForm = document.getElementById("courseEditor");
   if (saving || activeForm?.getAttribute("aria-busy") === "true") return false;
   if (
@@ -73,7 +73,7 @@ async function open(lid = "", seed) {
   panel.replaceChildren(summary);
   panel.insertAdjacentHTML("beforeend", h);
   panel.open = true;
-  initializeCourseForm(l);
+  initializeCourseForm(l, { editNames });
   const form = panel.querySelector(".record-editor");
   (
     form.querySelector("[data-record-enable-edit]") ||
@@ -85,6 +85,7 @@ function courseFormHtml(l, original, locked) {
   const p =
     l.gradingPolicy ||
     P.defaults(l.gradeMode === "kardanesh" ? "dual" : "modular", api.year());
+  const newModular = !original && !l.gradingPolicy;
   const info = P.identity(l, api.year(), currentClass());
   let h =
     '<form id="courseEditor" class="record-editor course-simple-editor" novalidate><div id="courseError" role="alert"></div><div class="course-grid course-basic-fields">';
@@ -131,7 +132,17 @@ function courseFormHtml(l, original, locked) {
         ["modular", "پودمانی"],
       ],
       p.method,
-    ) + "</div>";
+    ) +
+    select(
+      "modularScope",
+      "ثبت نمره برای",
+      [
+        ["unit", "هر واحد کار — مستقل"],
+        ["module", "خود پودمان — روش قبلی"],
+      ],
+      newModular || P.unitBased(p) ? "unit" : "module",
+    ) +
+    "</div>";
   if (locked)
     h +=
       '<p class="course-lock-note">برای حفظ نمرات این سال تحصیلی، روش و ساختار نمره‌دهی قابل تغییر نیست.</p>';
@@ -194,30 +205,23 @@ function courseFormHtml(l, original, locked) {
     ) +
     input(
       "unitCount",
-      "واحد در هر پودمان",
-      p.unitCount,
+      "واحد کار در هر پودمان",
+      newModular ? 2 : p.unitCount,
       "number",
       'min="1" max="10"',
     ) +
-    '</div></div><div id="courseStructure">';
-  for (const [index, pod] of l.poudmans.entries()) {
-    h += `<details class="course-pod-editor" ${index === 0 ? "open" : ""}><summary>پودمان ${(index + 1).toLocaleString("fa-IR")}<span class="muted">${pod.units.length.toLocaleString("fa-IR")} واحد یادگیری</span></summary><div class="course-grid">${input("pod_" + pod.id, "نام پودمان", pod.name)}`;
-    for (const u of pod.units)
-      h += input("unit_" + u.id, "نام واحد یادگیری", u.name);
-    h += "</div></details>";
-  }
-  h += "</div></div></fieldset>";
+    "</div></div></div></fieldset>";
   h +=
     '<div class="record-editor-context course-editor-status"><p class="muted">تعریف درس و قواعد آن در همهٔ نوبت‌های این سال تحصیلی مشترک است.</p></div><div class="record-editor-actions create-panel-footer"><button type="submit" data-mutating="1">' +
     (original ? "ذخیره تغییرات" : "ثبت درس") +
     '</button><button type="button" class="ghost" data-course-cancel>انصراف</button></div></form>';
   return h;
 }
-function initializeCourseForm(l) {
+function initializeCourseForm(l, { editNames = false } = {}) {
   const form = document.getElementById("courseEditor");
   form.dataset.courseBound = "1";
   bindCourseFormEvents(form);
-  prepareStructureNameEditor(l);
+  if (editNames) prepareStructureNameEditor(l);
   toggleMethod();
   if (api.context().readOnly) {
     form

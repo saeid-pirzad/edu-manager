@@ -70,13 +70,22 @@ function openExcelShare(prepared, blob, name) {
   if (!isPreparedCurrent(prepared))
     throw Error("گزارش تغییر کرده است؛ فایل اکسل را دوباره آماده کنید.");
   const model = prepared.model;
-  const file =
-    typeof File === "function"
-      ? new File([blob], name, { type: blob.type })
-      : null;
+  let file = null;
+  try {
+    if (typeof File === "function")
+      file = new File([blob], name, { type: blob.type });
+  } catch {
+    /* Keep the original XLSX available when a browser cannot create a shareable File. */
+  }
   const supported = canShareExcel(file);
   const shareIcon =
     '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/></svg>';
+  // Preparing the report replaces its export controls. Remember the current
+  // share button so the modal can return focus after it closes.
+  if (document.getElementById("modal").classList.contains("hidden"))
+    document
+      .querySelector("[data-periodic-excel-share]")
+      ?.focus?.({ preventScroll: true });
   const opened = root.showModal(
     "اشتراک‌گذاری اکسل",
     '<section class="report-excel-share" id="reportExcelSharePanel"><div class="report-share-heading"><span aria-hidden="true">' +
@@ -137,7 +146,15 @@ function openExcelShare(prepared, blob, name) {
 
 async function sharePreparedExcel(button) {
   const session = excelShareSession;
-  if (!session || session.sharing) return false;
+  if (
+    !session ||
+    session.sharing ||
+    button !== session.panel.querySelector("[data-report-share-send]") ||
+    !button.isConnected ||
+    button.disabled ||
+    button.hidden
+  )
+    return false;
   try {
     checkExcelShare(session);
   } catch (error) {
@@ -161,12 +178,19 @@ async function sharePreparedExcel(button) {
       files: [session.file],
       title: "گزارش اکسل کلاس‌یار",
     });
+    checkExcelShare(session);
     excelShareMessage(
       session,
       "فایل به پنجره اشتراک‌گذاری سپرده شد؛ ارسال نهایی و پیوست را در پیام‌رسان بررسی کنید.",
     );
     return true;
   } catch (error) {
+    try {
+      checkExcelShare(session);
+    } catch (changed) {
+      invalidateExcelShare(changed.message, session);
+      return false;
+    }
     excelShareMessage(
       session,
       error.name === "AbortError"

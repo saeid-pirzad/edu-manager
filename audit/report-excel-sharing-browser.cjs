@@ -29,6 +29,20 @@ module.exports = async function run({
     }
     throw Error(message);
   };
+  const key = async (value, code, modifiers = 0) => {
+    await cdp("Input.dispatchKeyEvent", {
+      type: "keyDown",
+      key: value,
+      code,
+      modifiers,
+    });
+    await cdp("Input.dispatchKeyEvent", {
+      type: "keyUp",
+      key: value,
+      code,
+      modifiers,
+    });
+  };
   const trustedClick = async (selector) => {
     let readiness;
     try {
@@ -109,6 +123,7 @@ module.exports = async function run({
         const button = document.querySelector("[data-periodic-excel-share]");
         if (!button || button.disabled)
           throw Error("The real report Excel-share button is unavailable");
+        button.focus({ preventScroll: true });
         button.click();
       },
       { supported, mode },
@@ -198,6 +213,11 @@ module.exports = async function run({
             call.base64 = btoa(binary);
           }
           call.complete = true;
+          if (call.mode === "pending")
+            await new Promise((resolve) => {
+              state.releaseShare = resolve;
+            });
+          call.settled = true;
           if (call.mode === "abort")
             throw new DOMException("Synthetic cancellation", "AbortError");
           if (call.mode === "denied")
@@ -269,6 +289,294 @@ module.exports = async function run({
         { ...observed, screenshot },
       );
     }
+
+    const semantics = await page(() => {
+      const panel = document.querySelector("#reportExcelSharePanel"),
+        dialog = panel.closest(".modal-dialog"),
+        status = panel.querySelector("[data-report-share-status]");
+      return {
+        labelledDialog:
+          dialog.getAttribute("role") === "dialog" &&
+          dialog.getAttribute("aria-modal") === "true" &&
+          document
+            .getElementById(dialog.getAttribute("aria-labelledby"))
+            ?.textContent.includes("اشتراک‌گذاری اکسل"),
+        liveStatus:
+          status.getAttribute("role") === "status" &&
+          status.getAttribute("aria-live") === "polite",
+        inertBackground: document.getElementById("app").inert,
+        buttonOnly: !panel.querySelector(
+          'input,textarea,select,[contenteditable="true"]',
+        ),
+        isolatedFilename: !!panel.querySelector("[data-report-share-file] bdi"),
+      };
+    });
+    check(
+      "XLSX_SHARE_ACCESSIBILITY",
+      "Sharing exposes a labelled modal, live status and isolated filename without an on-screen keyboard field",
+      Object.values(semantics).every(Boolean),
+      semantics,
+    );
+    await page(() => {
+      const nodes = modalFocusableElements();
+      nodes.at(-1).focus();
+    });
+    await key("Tab", "Tab");
+    const forward = await page(
+      () => document.activeElement === modalFocusableElements()[0],
+    );
+    await key("Tab", "Tab", 8);
+    const backward = await page(
+      () => document.activeElement === modalFocusableElements().at(-1),
+    );
+    check(
+      "XLSX_SHARE_FOCUS_TRAP",
+      "Tab and Shift+Tab keep focus inside the real sharing modal",
+      forward && backward,
+      { forward, backward },
+    );
+    await key("Escape", "Escape");
+    let returnFocusState = null;
+    try {
+      await wait(async () => {
+        returnFocusState = await page(() => {
+          const modalHidden = document
+              .getElementById("modal")
+              .classList.contains("hidden"),
+            backgroundInert = document.getElementById("app").inert,
+            active = document.activeElement,
+            opener = document.querySelector("[data-periodic-excel-share]"),
+            openerFocused = active === opener;
+          return {
+            ready: modalHidden && !backgroundInert && openerFocused,
+            modalHidden,
+            backgroundInert,
+            openerFocused,
+            activeElement: active?.outerHTML.slice(0, 300) || null,
+            opener: opener?.outerHTML.slice(0, 300) || null,
+            openerDisabled: !!opener?.disabled,
+          };
+        });
+        return returnFocusState.ready;
+      }, "Escape did not close sharing and return focus to its report button");
+    } catch (error) {
+      returnFocusState = { ...returnFocusState, error: error.message };
+    }
+    check(
+      "XLSX_SHARE_ESCAPE_RETURN_FOCUS",
+      "Escape closes sharing, unlocks the report and restores focus to its opener",
+      returnFocusState?.ready,
+      returnFocusState,
+    );
+    await open();
+    const originalLabels = await page(() => {
+      const panel = document.querySelector("#reportExcelSharePanel"),
+        filename = panel.querySelector("[data-report-share-file] bdi"),
+        identity = panel.querySelector(".report-share-heading p"),
+        original = {
+          filename: filename.textContent,
+          identity: identity.textContent,
+        };
+      // DOM-only presentation probes never alter the real File or report scope.
+      filename.textContent =
+        "هنرستان_" + "VeryLongSchoolAndTeacherName".repeat(12) + "_گزارش.xlsx";
+      identity.textContent =
+        "هنرستان نمونه با نام طولانی و کلاس یازدهم شبکه ".repeat(4);
+      return original;
+    });
+    for (const [width, height] of [
+      [320, 568],
+      [844, 390],
+      [844, 250],
+    ]) {
+      await cdp("Emulation.setDeviceMetricsOverride", {
+        width,
+        height,
+        deviceScaleFactor: 1,
+        mobile: true,
+      });
+      // Resize and visualViewport events update --app-viewport asynchronously.
+      // Settle that layout before measuring or scrolling in the new viewport.
+      await page(
+        () =>
+          new Promise((resolve) =>
+            requestAnimationFrame(() => requestAnimationFrame(resolve)),
+          ),
+      );
+      const observed = await page(async () => {
+        const panel = document.querySelector("#reportExcelSharePanel"),
+          dialog = panel.closest(".modal-dialog"),
+          overlay = document.getElementById("modal"),
+          body = document.getElementById("modalBody"),
+          header = dialog.querySelector(".modal-header"),
+          bounds = dialog.getBoundingClientRect(),
+          initialBodyBounds = body.getBoundingClientRect(),
+          buttons = [...panel.querySelectorAll("button:not([hidden])")];
+        const reachable = [],
+          buttonBounds = [];
+        for (const button of buttons) {
+          button.scrollIntoView({ block: "center", inline: "nearest" });
+          await new Promise((resolve) =>
+            requestAnimationFrame(() => requestAnimationFrame(resolve)),
+          );
+          const rect = button.getBoundingClientRect(),
+            bodyRect = body.getBoundingClientRect(),
+            x = rect.left + rect.width / 2,
+            y = rect.top + rect.height / 2,
+            hit = document.elementFromPoint(x, y);
+          reachable.push(
+            rect.height >= 44 &&
+              rect.top >= bodyRect.top - 1 &&
+              rect.bottom <= bodyRect.bottom + 1 &&
+              button.contains(hit),
+          );
+          buttonBounds.push({
+            text: button.textContent.trim(),
+            rect: rect.toJSON(),
+            body: bodyRect.toJSON(),
+            scrollTop: body.scrollTop,
+            hit: hit?.outerHTML.slice(0, 150) || null,
+            reachable: reachable.at(-1),
+          });
+        }
+        return {
+          dialogFits:
+            bounds.left >= -1 &&
+            bounds.right <= innerWidth + 1 &&
+            bounds.top >= -1 &&
+            bounds.bottom <= innerHeight + 1,
+          contentFits:
+            panel.scrollWidth <= panel.clientWidth + 1 &&
+            body.scrollWidth <= body.clientWidth + 1,
+          scrollable: /auto|scroll/.test(getComputedStyle(body).overflowY),
+          allButtonsReachable: reachable.every(Boolean),
+          viewport: { width: innerWidth, height: innerHeight },
+          rects: {
+            overlay: overlay.getBoundingClientRect().toJSON(),
+            dialog: bounds.toJSON(),
+            header: header.getBoundingClientRect().toJSON(),
+            initialBody: initialBodyBounds.toJSON(),
+            body: body.getBoundingClientRect().toJSON(),
+          },
+          styles: {
+            appViewport: getComputedStyle(
+              document.documentElement,
+            ).getPropertyValue("--app-viewport"),
+            visualViewport: window.visualViewport?.height,
+            overlayPadding: getComputedStyle(overlay).padding,
+            dialogMaxHeight: getComputedStyle(dialog).maxHeight,
+            bodyPadding: getComputedStyle(body).padding,
+          },
+          buttons: buttonBounds,
+        };
+      });
+      if (height <= 390) {
+        const screenshot = path.join(
+            artifacts,
+            "sharing-long-name-" + width + "x" + height + ".png",
+          ),
+          capture = await cdp("Page.captureScreenshot", {
+            format: "png",
+            captureBeyondViewport: false,
+          });
+        fs.writeFileSync(screenshot, Buffer.from(capture.data, "base64"));
+        observed.screenshot = screenshot;
+      }
+      check(
+        "XLSX_SHARE_LONG_NAME_" + width + "_" + height,
+        "Long RTL/Latin names wrap and sharing actions remain reachable in a short viewport",
+        observed.dialogFits &&
+          observed.contentFits &&
+          observed.scrollable &&
+          observed.allButtonsReachable,
+        observed,
+      );
+    }
+    await page((original) => {
+      const panel = document.querySelector("#reportExcelSharePanel");
+      panel.querySelector("[data-report-share-file] bdi").textContent =
+        original.filename;
+      panel.querySelector(".report-share-heading p").textContent =
+        original.identity;
+      document.getElementById("modalBody").scrollTop = 0;
+    }, originalLabels);
+    await cdp("Emulation.setDeviceMetricsOverride", {
+      width: 390,
+      height: 844,
+      deviceScaleFactor: 1,
+      mobile: true,
+    });
+
+    await open({ mode: "pending" });
+    const beforePending = files(),
+      pendingCalls = await page(() => window.__excelShareAudit.calls.length);
+    await trustedClick("[data-report-share-send]");
+    await wait(
+      () =>
+        page(() => typeof window.__excelShareAudit.releaseShare === "function"),
+      "The pending synthetic share did not reach its local gate",
+    );
+    const pending = await status();
+    await page(() => {
+      document.querySelector("[data-report-share-send]").click();
+      document.querySelector("[data-report-share-download]").click();
+    });
+    const pendingCount = await page(
+      () => window.__excelShareAudit.calls.length,
+    );
+    await page(() => {
+      window.__excelShareAudit.releaseShare();
+      delete window.__excelShareAudit.releaseShare;
+    });
+    await wait(
+      async () => !(await status()).sendDisabled,
+      "The finished share did not unlock its actions",
+    );
+    check(
+      "XLSX_SHARE_PENDING_ACTIONS",
+      "A pending share disables competing actions, ignores repeated clicks and unlocks after completion",
+      pending.sendDisabled &&
+        pending.downloadDisabled &&
+        pendingCount === pendingCalls + 1 &&
+        JSON.stringify(files()) === JSON.stringify(beforePending),
+      {
+        sendDisabled: pending.sendDisabled,
+        downloadDisabled: pending.downloadDisabled,
+        sharesAdded: pendingCount - pendingCalls,
+      },
+    );
+    await open();
+
+    await open({ mode: "pending" });
+    await trustedClick("[data-report-share-send]");
+    await wait(
+      () =>
+        page(() => typeof window.__excelShareAudit.releaseShare === "function"),
+      "The replaceable share did not reach its local gate",
+    );
+    const beforeReplacement = files();
+    await open();
+    const replacementBefore = await status();
+    await page(() => {
+      window.__excelShareAudit.releaseShare();
+      delete window.__excelShareAudit.releaseShare;
+    });
+    await wait(
+      () => page(() => window.__excelShareAudit.calls.at(-1)?.settled),
+      "The replaced sharing session did not settle",
+    );
+    // Let the old handler's await/finally finish before reading the new dialog.
+    await page(() => new Promise(requestAnimationFrame));
+    const replacementAfter = await status();
+    check(
+      "XLSX_SHARE_REPLACED_PENDING_DIALOG",
+      "Closing and replacing a pending sharing dialog isolates its later status and control updates",
+      JSON.stringify(replacementAfter) === JSON.stringify(replacementBefore) &&
+        !replacementAfter.sendDisabled &&
+        !replacementAfter.downloadDisabled &&
+        JSON.stringify(files()) === JSON.stringify(beforeReplacement),
+      { before: replacementBefore, after: replacementAfter },
+    );
 
     const beforeNative = files();
     await trustedClick("[data-report-share-send]");
@@ -538,6 +846,7 @@ module.exports = async function run({
     await page(() => {
       const state = window.__excelShareAudit;
       if (!state) return;
+      state.releaseShare?.();
       if (state.scope) Object.assign(EduPeriodicReports.filters, state.scope);
       if (state.revisionOwner)
         state.revisionOwner.revision = state.previousRevision;

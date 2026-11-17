@@ -58,8 +58,8 @@ function fixture(options = {}) {
       closedAt: "2026-01-01T00:00:00.000Z",
       reportSource: "preserved",
     },
-    source = classroom(2),
-    current = classroom(3),
+    source = options.source || classroom(2),
+    current = options.current || classroom(3),
     companion = options.companion || classroom(2),
     meta = {
       settings: { academicYear: first.year, academicTerm: first.term },
@@ -711,4 +711,144 @@ test("an ordinary edit can consume the last safe revision and its next edit is r
   );
   assert.deepEqual(exhausted.stores, before);
   assert.equal(exhausted.writes.length, 0);
+});
+
+function unitClass(first = { m: 0, c: 2 }, second = { m: 5, c: 3 }) {
+  const value = classroom(),
+    course = value.lessons[0],
+    pod = course.poudmans[0];
+  course.gradeMode = "standard";
+  Object.assign(course.gradingPolicy, { version: 2, modularScope: "unit" });
+  pod.podScores = {};
+  pod.units = [
+    {
+      id: "unit-first",
+      name: "First unit",
+      unitScores: { student: { m: 19, p: 18 } },
+      competencyScores: { student: structuredClone(first) },
+    },
+    {
+      id: "unit-second",
+      name: "Second unit",
+      unitScores: {},
+      competencyScores: { student: structuredClone(second) },
+    },
+  ];
+  return value;
+}
+const unitGrade = (value, index = 0) =>
+    value.lessons[0].poudmans[0].units[index].competencyScores.student,
+  storedClass = (fixture, period) =>
+    fixture.stores.records.get(period + "|class:class").value;
+
+test("official unit grade commits atomically across both terms while preserving the other unit and closed history", async () => {
+  const source = unitClass(),
+    current = unitClass({ m: 4, c: 3 }),
+    companion = unitClass();
+  companion.lessons[0].poudmans[0].units.reverse();
+  companion.lessons[0].poudmans[0].units[1].unitScores.student.m = 7;
+  const f = fixture({ source, current, companion }),
+    result = await f.c.EduRecordTransaction.commit(f.args),
+    savedCompanion = storedClass(f, "second"),
+    firstUnit = savedCompanion.lessons[0].poudmans[0].units.find(
+      (unit) => unit.id === "unit-first",
+    );
+  assert.equal(result.revision, 2);
+  assert.deepEqual(unitGrade(storedClass(f, "first")), { m: 4, c: 3 });
+  assert.deepEqual(firstUnit.competencyScores.student, { m: 4, c: 3 });
+  assert.equal(firstUnit.unitScores.student.m, 7);
+  assert.deepEqual(unitGrade(savedCompanion, 0), { m: 5, c: 3 });
+  assert.equal(f.stores.catalog.get("second").closed, true);
+  assert.equal(f.stores.catalog.get("second").reportSource, "preserved");
+  assert.equal(f.stores.catalog.get("second").revision, 8);
+  assert.equal(f.stores.undo.has("second"), false);
+  assert.deepEqual(f.stores.undo.get("first").before[0].value, source);
+  assert.deepEqual(JSON.parse(JSON.stringify(f.args.annualChanged)), [
+    { workspace: "second", revision: 8 },
+  ]);
+});
+
+test("clearing an official unit field mirrors annually and undo restores its valid zero in both terms", async () => {
+  const source = unitClass(),
+    current = unitClass({ c: 2 }),
+    cleared = fixture({ source, current, companion: unitClass() });
+  await cleared.c.EduRecordTransaction.commit(cleared.args);
+  for (const period of ["first", "second"]) {
+    assert.deepEqual(unitGrade(storedClass(cleared, period)), { c: 2 });
+    assert.deepEqual(unitGrade(storedClass(cleared, period), 1), {
+      m: 5,
+      c: 3,
+    });
+  }
+  const undoRecord = cleared.stores.undo.get("first"),
+    restored = fixture({
+      source: structuredClone(storedClass(cleared, "first")),
+      current: structuredClone(undoRecord.before[0].value),
+      companion: structuredClone(storedClass(cleared, "second")),
+      sourceRevision: cleared.stores.catalog.get("first").revision,
+      companionRevision: cleared.stores.catalog.get("second").revision,
+    });
+  restored.args.keepUndo = false;
+  restored.args.action = "Undo unit grade clearing";
+  await restored.c.EduRecordTransaction.commit(restored.args);
+  for (const period of ["first", "second"])
+    assert.deepEqual(unitGrade(storedClass(restored, period)), { m: 0, c: 2 });
+  assert.equal(restored.stores.catalog.get("first").revision, 3);
+  assert.equal(restored.stores.catalog.get("second").revision, 9);
+  assert.equal(restored.stores.undo.has("first"), false);
+  assert.equal(restored.stores.undo.has("second"), false);
+});
+
+test("a conflicting official unit grade rolls back source, annual companion, history, undo and notifications", async () => {
+  const f = fixture({
+      source: unitClass(),
+      current: unitClass({ m: 5, c: 3 }),
+      companion: unitClass({ m: 1, c: 2 }),
+    }),
+    before = structuredClone(f.stores);
+  await assert.rejects(
+    f.c.EduRecordTransaction.commit(f.args),
+    /دوباره بارگذاری/,
+  );
+  assert.equal(f.aborted, true);
+  assert.deepEqual(f.stores, before);
+  assert.deepEqual(f.args.annualChanged, []);
+});
+
+for (const stage of ["records.put", "events.add", "undo.delete"])
+  test(
+    "official unit " + stage + " failure rolls back every staged annual write",
+    async () => {
+      const f = fixture({
+          source: unitClass(),
+          current: unitClass({ m: 4, c: 3 }),
+          companion: unitClass(),
+          failCompanionAt: stage,
+        }),
+        before = structuredClone(f.stores);
+      await assert.rejects(
+        f.c.EduRecordTransaction.commit(f.args),
+        /injected companion/,
+      );
+      assert.equal(f.aborted, true);
+      assert.deepEqual(f.stores, before);
+      assert.deepEqual(f.args.annualChanged, []);
+    },
+  );
+
+test("different official unit identities cannot be matched by position during a transactional save", async () => {
+  const companion = unitClass();
+  companion.lessons[0].poudmans[0].units[0].id = "unrelated-unit";
+  const f = fixture({
+      source: unitClass(),
+      current: unitClass({ m: 4, c: 3 }),
+      companion,
+    }),
+    before = structuredClone(f.stores);
+  await assert.rejects(
+    f.c.EduRecordTransaction.commit(f.args),
+    /ساختار پودمان/,
+  );
+  assert.deepEqual(f.stores, before);
+  assert.deepEqual(f.args.annualChanged, []);
 });

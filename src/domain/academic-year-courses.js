@@ -95,6 +95,7 @@
       pod.units ||= [];
       for (const unit of pod.units) {
         delete unit.unitScores;
+        delete unit.competencyScores;
         unit.applyOptions = { ...optionDefaults, ...(unit.applyOptions || {}) };
       }
     }
@@ -175,7 +176,9 @@
       (pod) =>
         Object.keys(pod.podScores || {}).length ||
         (pod.units || []).some(
-          (unit) => Object.keys(unit.unitScores || {}).length,
+          (unit) =>
+            Object.keys(unit.unitScores || {}).length ||
+            Object.keys(unit.competencyScores || {}).length,
         ),
     );
   }
@@ -233,8 +236,10 @@
     for (const pod of result.poudmans || []) {
       const old = pods.get(pod.id);
       scoreMap(pod, old, "podScores");
-      for (const unit of pod.units || [])
+      for (const unit of pod.units || []) {
         scoreMap(unit, existingUnits.get(unit.id), "unitScores");
+        scoreMap(unit, existingUnits.get(unit.id), "competencyScores");
+      }
     }
     return result;
   }
