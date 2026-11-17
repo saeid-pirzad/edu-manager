@@ -415,18 +415,35 @@ async function restoreSingleFile() {
 }
 async function assertSingleFileDestination(file) {
   if (typeof file.name === "string") assertClassroomFileName(file.name);
-  if (!file.size || typeof file.text !== "function") return;
+  if (!file.size) return null;
+  if (typeof file.text !== "function")
+    throw Error("خواندن محتوای فایل انتخابی ممکن نیست؛ فایل تغییر نکرد.");
   const text = await file.text();
   let value;
   try {
     value = JSON.parse(text.replace(/^\uFEFF/, ""));
-  } catch {
-    return;
+  } catch (error) {
+    throw Error("محتوای فایل انتخابی JSON معتبر نیست؛ فایل تغییر نکرد.", {
+      cause: error,
+    });
   }
   if (value?.format === "classyar-question-bank")
     throw Error(
       "این فایل متعلق به بانک سؤال و طراحی آزمون است؛ برای ذخیرهٔ کلاس‌داری، فایل جداگانه‌ای انتخاب کنید. فایل تغییر نکرد.",
     );
+  try {
+    if (value?.format === "EduManager.FullBackup") {
+      validateFullBackup(value);
+      return value;
+    }
+    return legacyBackupReplacement(value);
+  } catch (error) {
+    throw Error(
+      "این فایل پشتیبان معتبر کلاس‌داری نیست؛ فایل تغییر نکرد. " +
+        (error?.message || String(error)),
+      { cause: error },
+    );
+  }
 }
 async function chooseSingleFile() {
   if (singleFileChoosing) return false;
@@ -607,22 +624,16 @@ function syncSingleFile({ force = true, acknowledged = false } = {}) {
         return false;
       assertClassroomFileName(target.handle.name);
       const file = await target.handle.getFile();
-      await assertSingleFileDestination(file);
+      if (typeof file.name === "string") assertClassroomFileName(file.name);
       if (file.lastModified !== target.modified || file.size !== target.size)
         throw Error(
           "فایل بیرون از این اتصال تغییر کرده؛ برای جلوگیری از بازنویسی، دوباره آن را انتخاب کنید.",
         );
+      const previous = await assertSingleFileDestination(file);
       let previousBaseline = target.contentBaseline;
-      if (
-        !previousBaseline &&
-        target.savedAt &&
-        file.size &&
-        typeof file.text === "function"
-      ) {
+      if (!previousBaseline && target.savedAt && previous) {
         // Upgrade an existing connection using its unchanged confirmed file,
         // never the possibly reduced in-memory source.
-        const previous = JSON.parse(await file.text());
-        validateFullBackup(previous);
         previousBaseline = singleFileContentBaseline(previous);
       }
       const contentBaseline = singleFileContentBaseline(snapshot);
@@ -637,6 +648,19 @@ function syncSingleFile({ force = true, acknowledged = false } = {}) {
         return false;
       }
       if (!(await singleFileCurrent(target, { acknowledged }))) return false;
+      // The connection checks await IndexedDB. Recheck the already-inspected
+      // file after them so an intervening external edit is never overwritten.
+      assertClassroomFileName(target.handle.name);
+      const current = await target.handle.getFile();
+      if (typeof current.name === "string")
+        assertClassroomFileName(current.name);
+      if (
+        current.lastModified !== file.lastModified ||
+        current.size !== file.size
+      )
+        throw Error(
+          "فایل هنگام بررسی اتصال، بیرون از برنامه تغییر کرد؛ برای جلوگیری از بازنویسی، دوباره آن را انتخاب کنید.",
+        );
       stream = await target.handle.createWritable();
       await stream.write(json);
       if (!(await singleFileCurrent(target, { acknowledged }))) {
@@ -649,6 +673,11 @@ function syncSingleFile({ force = true, acknowledged = false } = {}) {
       if (!saved.size)
         throw Error(
           "فایل پس از نوشتن خالی است؛ ذخیره تأیید نشد. پشتیبان دستی بگیرید.",
+        );
+      if (typeof saved.name === "string") assertClassroomFileName(saved.name);
+      if (typeof saved.text !== "function" || (await saved.text()) !== json)
+        throw Error(
+          "محتوای فایل پس از نوشتن با پشتیبان کامل مطابقت ندارد؛ ذخیره تأیید نشد. پشتیبان دستی بگیرید.",
         );
       target.modified = saved.lastModified;
       target.size = saved.size;

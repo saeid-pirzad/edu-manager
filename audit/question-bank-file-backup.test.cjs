@@ -288,6 +288,68 @@ test("externally changed or zero-length files are never overwritten, even on exp
     assert.equal(f.target.handle.writes, 1);
   }
 });
+test("an external edit during the committed source read prevents opening a replacement stream", async () => {
+  const f = fixture();
+  await f.service.choose();
+  f.change((bank) => {
+    bank.questions[0].text = "ویرایش محلی";
+  });
+  const external = f.bank();
+  external.questions[0].text = "ویرایش بیرونی که باید حفظ شود";
+  const text = JSON.stringify(external),
+    read = f.repository.read,
+    previousHash = f.config().hash;
+  f.repository.read = async () => {
+    const bank = await read();
+    f.target.external(text);
+    return bank;
+  };
+  assert.equal(await f.service.sync(), false);
+  assert.equal(f.target.text(), text);
+  assert.equal(f.target.handle.opens, 1);
+  assert.equal(f.target.handle.writes, 1);
+  assert.equal(f.config().hash, previousHash);
+  assert.equal(f.service.state().state, "error");
+});
+test("an external edit during selection source read prevents connecting or opening a stream", async () => {
+  const f = fixture(),
+    external = f.bank();
+  external.questions[0].text = "نسخهٔ بیرونی";
+  const text = JSON.stringify(external),
+    read = f.repository.read;
+  f.repository.read = async () => {
+    const bank = await read();
+    f.target.external(text);
+    return bank;
+  };
+  assert.equal(await f.service.choose(), false);
+  assert.equal(f.target.text(), text);
+  assert.equal(f.target.handle.opens, 0);
+  assert.equal(f.target.handle.writes, 0);
+  assert.equal(f.config(), null);
+});
+test("selection rechecks an edit made while its previous fingerprint was being calculated", async () => {
+  const f = fixture(),
+    external = f.bank();
+  external.questions[0].text = "نسخهٔ بیرونی پس از بررسی اولیه";
+  const text = JSON.stringify(external);
+  let digests = 0;
+  f.host.crypto = {
+    randomUUID: () => webcrypto.randomUUID(),
+    subtle: {
+      digest: async (...args) => {
+        const result = await webcrypto.subtle.digest(...args);
+        if (++digests === 2) f.target.external(text);
+        return result;
+      },
+    },
+  };
+  assert.equal(await f.service.choose(), false);
+  assert.equal(f.target.text(), text);
+  assert.equal(f.target.handle.opens, 0);
+  assert.equal(f.target.handle.writes, 0);
+  assert.equal(f.config(), null);
+});
 test("permission is requested only by explicit save; a declined permission preserves the file", async () => {
   const f = fixture();
   await f.service.choose();

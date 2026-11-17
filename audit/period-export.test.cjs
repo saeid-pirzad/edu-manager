@@ -9,12 +9,17 @@ function fixture() {
   const downloads = [],
     stamps = [],
     writes = [];
-  let aborts = 0;
+  let aborts = 0,
+    contents = "",
+    pending;
   const stream = {
     async write(value) {
+      pending = value;
       writes.push(JSON.parse(value));
     },
-    async close() {},
+    async close() {
+      contents = pending;
+    },
     async abort() {
       aborts++;
     },
@@ -25,7 +30,12 @@ function fixture() {
       return stream;
     },
     async getFile() {
-      return { size: 100 };
+      const captured = contents;
+      return {
+        name: handle.name,
+        size: captured.length,
+        text: async () => captured,
+      };
     },
   };
   const c = vm.createContext({
@@ -128,7 +138,64 @@ for (const method of ["write", "close"]) {
 
 test("empty file cannot be reported as a confirmed period backup", async () => {
   const f = fixture();
-  f.handle.getFile = async () => ({ size: 0 });
+  f.handle.getFile = async () => ({
+    name: f.handle.name,
+    size: 0,
+    text: async () => "",
+  });
+  assert.equal(await f.c.exportBackupV24(), "downloaded");
+  assert.equal(f.stamps[0].value.confirmed, false);
+});
+
+test("legacy export cannot overwrite an existing complete classroom backup", async () => {
+  const f = fixture(),
+    original = JSON.stringify({
+      format: "EduManager.FullBackup",
+      stores: { catalog: [1, 2] },
+    });
+  f.handle.getFile = async () => ({
+    name: f.handle.name,
+    size: original.length,
+    text: async () => original,
+  });
+  assert.equal(await f.c.exportBackupV24(), "downloaded");
+  assert.equal(f.writes.length, 0);
+  assert.equal(f.downloads.length, 1);
+  assert.equal(f.stamps[0].value.confirmed, false);
+});
+
+test("legacy export rejects a destination changed between validation and stream creation", async () => {
+  const f = fixture();
+  let reads = 0;
+  f.handle.getFile = async () => {
+    const content = reads++ ? '{"external":"keep"}' : "";
+    return {
+      name: f.handle.name,
+      size: content.length,
+      text: async () => content,
+    };
+  };
+  assert.equal(await f.c.exportBackupV24(), "downloaded");
+  assert.equal(f.writes.length, 0);
+  assert.equal(f.stamps[0].value.confirmed, false);
+});
+
+test("nonempty mismatched write is not recorded as a confirmed legacy backup", async () => {
+  const f = fixture();
+  let closed = false;
+  const close = f.stream.close;
+  f.stream.close = async () => {
+    await close();
+    closed = true;
+  };
+  f.handle.getFile = async () => {
+    const content = closed ? '{"incomplete":true}' : "";
+    return {
+      name: f.handle.name,
+      size: content.length,
+      text: async () => content,
+    };
+  };
   assert.equal(await f.c.exportBackupV24(), "downloaded");
   assert.equal(f.stamps[0].value.confirmed, false);
 });

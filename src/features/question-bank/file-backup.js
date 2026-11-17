@@ -84,9 +84,14 @@
       );
       return false;
     }
-    async function write(handle, json) {
+    async function write(handle, json, expectedHash, allowEmpty = false) {
       let stream;
       try {
+        // Source reads and serialization can yield after the earlier inspection.
+        // Recheck the destination before opening a stream that could replace it.
+        const before = await inspect(handle, allowEmpty);
+        if (before.hash !== expectedHash)
+          throw Error("فایل پیش از نوشتن تغییر کرد؛ بازنویسی نشد.");
         stream = await handle.createWritable();
         await stream.write(json);
         await stream.close();
@@ -167,7 +172,7 @@
             return true;
           }
           notify("busy", "در حال ذخیره و بررسی فایل بانک سؤال…");
-          const fingerprint = await write(config.handle, json);
+          const fingerprint = await write(config.handle, json, current.hash);
           config = {
             ...config,
             hash: fingerprint,
@@ -248,7 +253,7 @@
           if (rechecked.hash !== before.hash)
             throw Error("فایل هنگام انتخاب تغییر کرد؛ نوشته نشد.");
           notify("busy", "در حال اولین ذخیره و بررسی فایل…");
-          const fingerprint = await write(handle, json);
+          const fingerprint = await write(handle, json, rechecked.hash, true);
           const next = {
             id: host.crypto.randomUUID(),
             handle,

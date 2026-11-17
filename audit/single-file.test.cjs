@@ -22,7 +22,15 @@ function fixture() {
     nameStorage = new Map();
   const handle = {
     name: "Classyar-Classroom.json",
-    getFile: async () => ({ size: contents.length, lastModified: modified }),
+    getFile: async () => {
+      const captured = contents;
+      return {
+        name: handle.name,
+        size: captured.length,
+        lastModified: modified,
+        text: async () => captured,
+      };
+    },
     queryPermission: async () => "granted",
     requestPermission: async () => "granted",
     createWritable: async () => {
@@ -87,7 +95,26 @@ function fixture() {
         .replaceAll(">", "&gt;")
         .replaceAll('"', "&quot;"),
     setStatus() {},
-    validateFullBackup() {},
+    validateFullBackup(value) {
+      if (
+        value?.format !== "EduManager.FullBackup" ||
+        (value.version !== undefined && value.version !== 2) ||
+        !Array.isArray(value.stores?.records)
+      )
+        throw Error("invalid full backup");
+    },
+    legacyBackupReplacement(value) {
+      if (
+        value?.format !== undefined ||
+        !Array.isArray((value?.db || value)?.schools)
+      )
+        throw Error("unsupported legacy backup");
+      return {
+        format: "EduManager.FullBackup",
+        version: 2,
+        stores: { records: [] },
+      };
+    },
     uid: () => "file-" + Math.random(),
     broadcast() {},
     recordFullBackupDelivery: (value) => deliveries.push(value),
@@ -200,6 +227,10 @@ function fixture() {
       contents = "external";
       modified++;
     },
+    replaceContents(value) {
+      contents = value;
+      modified++;
+    },
     failWrites() {
       fail = true;
     },
@@ -275,6 +306,119 @@ test("an existing classroom connection cannot overwrite a question-bank file eve
   assert.equal(f.writes, writes);
   assert.equal(f.contents, before);
 });
+for (const [label, contents] of [
+  ["corrupt JSON", "{broken"],
+  ["foreign JSON", '{"format":"unrelated-backup","data":[1,2,3]}'],
+  ["unrecognized JSON", '{"hello":"world"}'],
+  ["scalar JSON", "null"],
+  ["array JSON", "[]"],
+  [
+    "invalid FullBackup",
+    '{"format":"EduManager.FullBackup","version":2,"stores":{}}',
+  ],
+  [
+    "unsupported FullBackup version",
+    '{"format":"EduManager.FullBackup","version":999,"stores":{"records":[]}}',
+  ],
+])
+  test("a correct classroom filename cannot authorize " + label, async () => {
+    const f = fixture();
+    f.replaceContents(contents);
+    let confirmations = 0;
+    f.context.confirm = () => {
+      confirmations++;
+      return true;
+    };
+    await assert.rejects(f.context.chooseSingleFile(), /فایل تغییر نکرد/);
+    assert.equal(confirmations, 0);
+    assert.equal(f.writes, 0);
+    assert.equal(f.getStored(), null);
+    assert.equal(f.contents, contents);
+  });
+for (const [label, contents] of [
+  ["empty new file", ""],
+  [
+    "validated full backup",
+    JSON.stringify({
+      format: "EduManager.FullBackup",
+      version: 2,
+      stores: { records: [] },
+    }),
+  ],
+  [
+    "validated legacy backup",
+    JSON.stringify({ version: 25, db: { schools: [] } }),
+  ],
+])
+  test("classroom selection permits " + label, async () => {
+    const f = fixture();
+    f.replaceContents(contents);
+    let confirmations = 0;
+    f.context.confirm = () => {
+      confirmations++;
+      return true;
+    };
+    assert.equal(await f.context.chooseSingleFile(), true);
+    assert.equal(confirmations, contents ? 1 : 0);
+    assert.equal(f.writes, 1);
+    assert.ok(f.getStored().savedAt);
+    assert.equal(JSON.parse(f.contents).format, "EduManager.FullBackup");
+  });
+test("a rejected destination preserves the previous connection and its confirmed file", async () => {
+  const f = fixture(),
+    bad = fixture();
+  await f.context.chooseSingleFile();
+  const before = f.contents,
+    connectionId = f.getStored().connectionId;
+  bad.replaceContents('{"format":"foreign-backup"}');
+  f.context.window.showSaveFilePicker = async () => bad.handle;
+  await assert.rejects(f.context.chooseSingleFile(), /فایل تغییر نکرد/);
+  assert.equal(f.getStored().connectionId, connectionId);
+  assert.equal(f.contents, before);
+  assert.equal(bad.writes, 0);
+  assert.notEqual(vm.runInContext("singleFileTimer", f.context), null);
+});
+for (const contents of [
+  "{broken",
+  '{"format":"unrelated-backup","data":[1,2,3]}',
+  '{"format":"EduManager.FullBackup","version":999,"stores":{"records":[]}}',
+])
+  test(
+    "matching metadata cannot bypass destination content validation: " +
+      contents,
+    async () => {
+      const f = fixture();
+      await f.context.chooseSingleFile();
+      const stored = f.getStored(),
+        before = f.contents,
+        writes = f.writes,
+        deliveries = f.deliveries.length;
+      f.handle.getFile = async () => ({
+        name: f.handle.name,
+        size: stored.size,
+        lastModified: stored.modified,
+        text: async () => contents,
+      });
+      f.context.sourceValue++;
+      assert.equal(await f.context.syncSingleFile(), false);
+      assert.equal(await f.context.resumeSingleFile(), false);
+      assert.equal(f.writes, writes);
+      assert.equal(f.contents, before);
+      assert.equal(f.deliveries.length, deliveries);
+      assert.equal(vm.runInContext("singleFileTimer", f.context), null);
+    },
+  );
+test("unreadable nonempty destination content cannot authorize a classroom write", async () => {
+  const f = fixture();
+  f.handle.getFile = async () => ({
+    name: f.handle.name,
+    size: 20,
+    lastModified: 1,
+  });
+  await assert.rejects(f.context.chooseSingleFile(), /خواندن محتوای فایل/);
+  assert.equal(f.writes, 0);
+  assert.equal(f.getStored(), null);
+});
 test("file warning stays visible on failure and hides after recovery without returning to tools", () => {
   const f = fixture();
   const panel = {
@@ -349,11 +493,17 @@ test("single-file backup replaces the same JSON with additions, edits and deleti
   await f.context.chooseSingleFile();
   assert.equal(JSON.parse(f.contents).stores.records[0].value, 1);
   f.context.snapshotInstallation = async () => ({
+    format: "EduManager.FullBackup",
+    version: 2,
     stores: { records: [{ value: 2 }, { value: 3 }] },
   });
   await f.context.syncSingleFile();
   assert.equal(JSON.parse(f.contents).stores.records.length, 2);
-  f.context.snapshotInstallation = async () => ({ stores: { records: [] } });
+  f.context.snapshotInstallation = async () => ({
+    format: "EduManager.FullBackup",
+    version: 2,
+    stores: { records: [] },
+  });
   assert.equal(await f.context.syncSingleFile(), false);
   assert.equal(
     f.writes,
@@ -394,7 +544,11 @@ test("a confirmed content baseline blocks an empty automatic startup snapshot wi
   await f.context.chooseSingleFile();
   const previous = f.contents;
   assert.ok(f.getStored().contentBaseline);
-  f.context.snapshotInstallation = async () => ({ stores: { records: [] } });
+  f.context.snapshotInstallation = async () => ({
+    format: "EduManager.FullBackup",
+    version: 2,
+    stores: { records: [] },
+  });
   await f.context.restoreSingleFile();
   assert.equal(f.contents, previous);
   assert.equal(f.writes, 1);
@@ -412,6 +566,8 @@ test("ordinary student edits and small deletions sync while a large drop is susp
   const f = fixture();
   let students = 24;
   f.context.snapshotInstallation = async () => ({
+    format: "EduManager.FullBackup",
+    version: 2,
     stores: {
       records: [
         {
@@ -453,7 +609,11 @@ test("a legacy saved connection derives its safety baseline from the still-uncha
     ...(await getFile()),
     text: async () => f.contents,
   });
-  f.context.snapshotInstallation = async () => ({ stores: { records: [] } });
+  f.context.snapshotInstallation = async () => ({
+    format: "EduManager.FullBackup",
+    version: 2,
+    stores: { records: [] },
+  });
   await f.context.restoreSingleFile();
   assert.equal(f.contents, previous);
   assert.equal(f.writes, 1);
@@ -465,6 +625,8 @@ test("archiving students preserves the educational baseline and does not suspend
   let archived = false;
   const roster = Array.from({ length: 24 }, (_, id) => ({ id }));
   f.context.snapshotInstallation = async () => ({
+    format: "EduManager.FullBackup",
+    version: 2,
     stores: {
       records: [
         {
@@ -491,6 +653,8 @@ test("recorded zero grades count as content and loss of the complete educational
   const f = fixture();
   let populated = true;
   f.context.snapshotInstallation = async () => ({
+    format: "EduManager.FullBackup",
+    version: 2,
     stores: {
       records: [
         { logical: "meta", value: { layout: [{ id: "s", classes: ["c"] }] } },
@@ -585,6 +749,36 @@ test("failed or empty first close never confirms activation", async () => {
     assert.equal(vm.runInContext("singleFileTimer", f.context), null);
   }
 });
+for (const [label, alter] of [
+  ["truncated", (json) => json.slice(0, -1)],
+  ["different valid JSON", (json) => json.replace('"value":1', '"value":9')],
+])
+  for (const connected of [false, true])
+    test(`${label} write cannot confirm ${connected ? "an existing" : "the first"} classroom backup`, async () => {
+      const f = fixture();
+      if (connected) await f.context.chooseSingleFile();
+      const savedAt = f.getStored()?.savedAt || "",
+        deliveries = f.deliveries.length,
+        create = f.handle.createWritable;
+      f.handle.createWritable = async () => {
+        const stream = await create(),
+          write = stream.write;
+        stream.write = async (json) => write(alter(json));
+        return stream;
+      };
+      const saved = connected
+        ? await f.context.syncSingleFile()
+        : await f.context.chooseSingleFile();
+      assert.equal(saved, false);
+      assert.equal(f.getStored().savedAt, savedAt);
+      assert.equal(f.deliveries.length, deliveries);
+      assert.equal(vm.runInContext("singleFileTimer", f.context), null);
+      assert.equal(vm.runInContext("singleFileFailure", f.context), true);
+      assert.match(
+        vm.runInContext("singleFileMessage", f.context),
+        /مطابقت ندارد.*ذخیره تأیید نشد/,
+      );
+    });
 
 test("pending initial activation stays paused after reload and can recover with save now", async () => {
   const f = fixture();
@@ -720,6 +914,8 @@ test("save now takes a fresh snapshot after an older in-flight write", async () 
   const old = f.context.syncSingleFile();
   await started;
   f.context.snapshotInstallation = async () => ({
+    format: "EduManager.FullBackup",
+    version: 2,
     stores: { records: [{ value: 2 }] },
   });
   const requested = f.context.resumeSingleFile();
@@ -837,17 +1033,55 @@ test("cancelled picker or refused replacement never writes", async () => {
   };
   await f.context.chooseSingleFile();
   f.context.window.showSaveFilePicker = async () => f.handle;
-  f.externalEdit();
+  const existing = JSON.stringify({
+    format: "EduManager.FullBackup",
+    version: 2,
+    stores: { records: [] },
+  });
+  f.replaceContents(existing);
   f.context.confirm = () => false;
   await f.context.chooseSingleFile();
   assert.equal(f.writes, 0);
-  assert.equal(f.contents, "external");
+  assert.equal(f.contents, existing);
 });
 test("external changes pause writing rather than overwriting another editor or tab", async () => {
   const f = fixture();
   await f.context.chooseSingleFile();
   f.externalEdit();
   assert.equal(await f.context.syncSingleFile(), false);
+  assert.equal(f.contents, "external");
+  assert.match(vm.runInContext("singleFileMessage", f.context), /بیرون/);
+});
+test("external edits during the final connection check never open or overwrite a stream", async () => {
+  const f = fixture();
+  await f.context.chooseSingleFile();
+  const getFile = f.handle.getFile,
+    readRecord = f.context.readRecord,
+    writes = f.writes;
+  let inspected = false,
+    changed = false,
+    opened = 0;
+  f.handle.getFile = async () => {
+    const file = await getFile();
+    inspected = true;
+    return file;
+  };
+  f.context.readRecord = async (store, key) => {
+    const row = await readRecord(store, key);
+    if (inspected && !changed && store === "records") {
+      changed = true;
+      f.externalEdit();
+    }
+    return row;
+  };
+  f.handle.createWritable = async () => {
+    opened++;
+    throw Error("must not open");
+  };
+  assert.equal(await f.context.syncSingleFile(), false);
+  assert.equal(changed, true);
+  assert.equal(opened, 0);
+  assert.equal(f.writes, writes);
   assert.equal(f.contents, "external");
   assert.match(vm.runInContext("singleFileMessage", f.context), /بیرون/);
 });
@@ -1356,14 +1590,19 @@ test("rejecting existing-file overwrite keeps its contents and releases the unus
   await f.context.chooseSingleFile();
   const previous = f.contents,
     connectionId = f.getStored().connectionId;
-  existing.externalEdit();
+  const existingContents = JSON.stringify({
+    format: "EduManager.FullBackup",
+    version: 2,
+    stores: { records: [] },
+  });
+  existing.replaceContents(existingContents);
   f.context.confirm = () => false;
   f.context.window.showSaveFilePicker = async (options) => {
     proposals.push(options.suggestedName);
     return existing.handle;
   };
   await f.context.chooseSingleFile();
-  assert.equal(existing.contents, "external");
+  assert.equal(existing.contents, existingContents);
   assert.equal(existing.writes, 0);
   assert.equal(f.contents, previous);
   assert.equal(f.getStored().connectionId, connectionId);

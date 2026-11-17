@@ -35,7 +35,8 @@ async function exportBackupV24() {
       period: { year: period.year, term: period.term },
       db: durable,
     },
-    name = "Classyar-Classroom.json";
+    name = "Classyar-Classroom.json",
+    json = JSON.stringify(content, null, 2);
   let confirmed = false;
   if (window.showSaveFilePicker) {
     let writable;
@@ -50,13 +51,23 @@ async function exportBackupV24() {
         ],
       });
       assertClassroomFileName(handle.name);
-      await assertSingleFileDestination(await handle.getFile());
+      const before = await handle.getFile();
+      await assertSingleFileDestination(before);
+      const previousText = await before.text();
+      // A legacy one-period export must never replace a complete installation.
+      if (previousText && previousText !== json)
+        throw Error("برای حفظ فایل قبلی، فایل تازه‌ای انتخاب کنید.");
+      const current = await handle.getFile();
+      assertClassroomFileName(current.name);
+      if ((await current.text()) !== previousText)
+        throw Error("فایل هنگام انتخاب تغییر کرد؛ نوشته نشد.");
       writable = await handle.createWritable();
-      await writable.write(JSON.stringify(content, null, 2));
+      await writable.write(json);
       await writable.close();
       writable = null;
       const file = await handle.getFile();
-      if (!file.size) throw new Error("فایل پشتیبان خالی است.");
+      if (!file.size || (await file.text()) !== json)
+        throw new Error("محتوای فایل پس از نوشتن تأیید نشد.");
       confirmed = true;
     } catch (error) {
       if (writable) {

@@ -6,6 +6,7 @@ module.exports = async function singleFile() {
     previousNames = localStorage.getItem(namingKey),
     originalPicker = window.showSaveFilePicker,
     originalConfirm = window.confirm,
+    originalAlert = window.alert,
     createdNames = new Set(),
     pickerNames = [];
   let frame, handle;
@@ -300,6 +301,84 @@ module.exports = async function singleFile() {
         localStorage.getItem(namingKey) === secondNamingLedger,
       observed: {},
     });
+    const invalidDestinations = [
+      { suffix: 90, kind: "CORRUPT", text: "{ unfinished classroom backup" },
+      {
+        suffix: 91,
+        kind: "FOREIGN",
+        text: JSON.stringify({ format: "another-application", data: [1, 2] }),
+      },
+      {
+        suffix: 92,
+        kind: "INVALID_CLASSROOM",
+        text: JSON.stringify({
+          format: "EduManager.FullBackup",
+          version: 2,
+          stores: {},
+        }),
+      },
+    ];
+    const connectionBeforeInvalid = JSON.stringify(await readConnection()),
+      pickerBeforeInvalid = window.showSaveFilePicker,
+      invalidSuggestions = [];
+    let invalidConfirmations = 0;
+    try {
+      // These real files have accepted classroom names. Content validation must
+      // protect them before an overwrite prompt can authorize replacement.
+      window.confirm = () => {
+        invalidConfirmations++;
+        return true;
+      };
+      window.alert = () => {};
+      for (const fixture of invalidDestinations) {
+        const destinationName = expectedBase + "(" + fixture.suffix + ").json";
+        createdNames.add(destinationName);
+        const destination = await directory.getFileHandle(destinationName, {
+            create: true,
+          }),
+          writer = await destination.createWritable();
+        await writer.write(fixture.text);
+        await writer.close();
+        window.showSaveFilePicker = async (options) => {
+          invalidSuggestions.push(options.suggestedName);
+          return destination;
+        };
+        click("single-file-choose");
+        await waitFor(
+          () =>
+            invalidSuggestions.length ===
+              invalidDestinations.indexOf(fixture) + 1 &&
+            localStorage.getItem(namingKey) === secondNamingLedger,
+        );
+        const connectionAfterInvalid = await readConnection();
+        cases.push({
+          id: "SF03_INVALID_DESTINATION_" + fixture.kind,
+          name:
+            "a correctly named " +
+            fixture.kind.toLowerCase() +
+            " destination is rejected before confirmation, connection changes or any file write",
+          pass:
+            invalidConfirmations === 0 &&
+            (await (await destination.getFile()).text()) === fixture.text &&
+            JSON.stringify(connectionAfterInvalid) ===
+              connectionBeforeInvalid &&
+            (await connectionAfterInvalid.handle.isSameEntry(secondHandle)) &&
+            (await (await firstHandle.getFile()).text()) === firstFileText &&
+            (await (await secondHandle.getFile()).text()) === secondFileText &&
+            localStorage.getItem(namingKey) === secondNamingLedger &&
+            invalidSuggestions.at(-1) === expectedBase + "(2).json",
+          observed: {
+            destinationName,
+            suggestedName: invalidSuggestions.at(-1),
+            overwriteConfirmations: invalidConfirmations,
+          },
+        });
+      }
+    } finally {
+      window.showSaveFilePicker = pickerBeforeInvalid;
+      window.confirm = originalConfirm;
+      window.alert = originalAlert;
+    }
     click("single-file-stop");
     await waitFor(() =>
       document
@@ -595,6 +674,7 @@ module.exports = async function singleFile() {
     frame?.remove();
     window.showSaveFilePicker = originalPicker;
     window.confirm = originalConfirm;
+    window.alert = originalAlert;
     if (previousNames === null) localStorage.removeItem(namingKey);
     else localStorage.setItem(namingKey, previousNames);
     closeModal();

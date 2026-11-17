@@ -92,33 +92,34 @@ async function hash(text){const bytes=await host.crypto.subtle.digest("SHA-256",
 16).padStart(2,"0")).join("")}async function inspect(handle,allowEmpty=false){assertFileName(handle.name);const file=await handle.getFile();if(typeof file.name===
 "string")assertFileName(file.name);if(file.size>D.LIMIT)throw Error("فایل بزرگ‌تر از سقف ۲۰ مگابایت است؛ تغییر نکرد.");const text=await file.
 text();const bank=!text&&allowEmpty?null:D.parse(text);return{text,bank,hash:await hash(text)}}function failed(error){notify("error",`${error.message||error} فا\
-یل به‌روز نشد؛ پشتیبان دستی بگیرید.`);return false}async function write(handle,json){let stream;try{stream=await handle.createWritable();
-await stream.write(json);await stream.close();stream=null;const verified=await inspect(handle);if(verified.text!==json)throw Error("محتوای فایل پس از نوشتن تأیی\
-د نشد.");return verified.hash}catch(error){if(stream)await stream.abort().catch(()=>{});throw error}}function active(){notify("active",`ذخیره شد: ${config.
-handle.name} — ${new Date(config.savedAt).toLocaleString("fa-IR")}`)}async function sync({approved=false,expectedId,expectedRevision}={}){if(!supported())return false;
-return locked(async()=>{try{config=await repository.readBackup();if(!config){notify("inactive","ذخیرهٔ خودکار فایل فعال نیست.");return false}
-if(expectedId&&config.id!==expectedId)throw Error("اتصال فایل تغییر کرد؛ نوشته نشد.");if(await config.handle.queryPermission({mode:"re\
-adwrite"})!=="granted"){notify("permission","مجوز فایل نیاز به تأیید دارد.");return false}if(config.suspended&&!approved){notify("paused",
-"نوشتن فایل برای حفظ نسخهٔ قبلی متوقف است؛ نسخهٔ قبلی را نگه دارید و برای ادامه «ذخیره اکنون» را بزنید.");
+یل به‌روز نشد؛ پشتیبان دستی بگیرید.`);return false}async function write(handle,json,expectedHash,allowEmpty=false){let stream;try{
+const before=await inspect(handle,allowEmpty);if(before.hash!==expectedHash)throw Error("فایل پیش از نوشتن تغییر کرد؛ بازنویسی نشد.");
+stream=await handle.createWritable();await stream.write(json);await stream.close();stream=null;const verified=await inspect(handle);if(verified.text!==json)throw Error(
+"محتوای فایل پس از نوشتن تأیید نشد.");return verified.hash}catch(error){if(stream)await stream.abort().catch(()=>{});throw error}}function active(){
+notify("active",`ذخیره شد: ${config.handle.name} — ${new Date(config.savedAt).toLocaleString("fa-IR")}`)}async function sync({approved=false,expectedId,
+expectedRevision}={}){if(!supported())return false;return locked(async()=>{try{config=await repository.readBackup();if(!config){notify("inactive","ذخیرهٔ خودکار\
+ فایل فعال نیست.");return false}if(expectedId&&config.id!==expectedId)throw Error("اتصال فایل تغییر کرد؛ نوشته نشد.");if(await config.
+handle.queryPermission({mode:"readwrite"})!=="granted"){notify("permission","مجوز فایل نیاز به تأیید دارد.");return false}if(config.suspended&&
+!approved){notify("paused","نوشتن فایل برای حفظ نسخهٔ قبلی متوقف است؛ نسخهٔ قبلی را نگه دارید و برای ادامه «ذخیره اکنون» را بزنید.");
 return false}const current=await inspect(config.handle);if(current.hash!==config.hash)throw Error("فایل بیرون از این اتصال تغییر کرده؛ فایل تازه‌ای انتخاب کنید.");
 const bank=D.validate(await repository.read());if(approved&&bank.revision!==expectedRevision)throw Error("اطلاعات پس از تأیید تغییر کرد؛ دوباره بررسی کنید.");
 const baseline=counts(bank);if(!approved&&(dropped(config.counts,baseline)||dropped(counts(current.bank),baseline))){config={...config,suspended:"source-drop"};
 await repository.writeBackup(config);notify("paused","کاهش شدید اطلاعات شناسایی شد؛ برای حفظ نسخهٔ قبلی، فایل تغییر نکرد. ادامه فقط با تأیید شماست.");
 return false}const json=D.size(bank);if(current.text===json){if(config.suspended){delete config.suspended;await repository.writeBackup(config)}active();return true}
-notify("busy","در حال ذخیره و بررسی فایل بانک سؤال…");const fingerprint=await write(config.handle,json);config={...config,hash:fingerprint,
-counts:baseline,savedAt:new Date().toISOString()};delete config.suspended;await repository.writeBackup(config);active();return true}catch(error){return failed(error)}})}
-function schedule(){if(!supported())return;host.clearTimeout(debounce);debounce=host.setTimeout(()=>{sync().catch(failed)},2e3)}async function init(){if(initialized)
-return initialized;initialized=(async()=>{try{config=await repository.readBackup();if(!supported()){notify("unsupported","این مرورگر ذخیرهٔ خودکار فایل را پشتیب\
-انی نمی‌کند؛ پشتیبان دستی در دسترس است. برای ذخیرهٔ خودکار از Chrome یا Edge استفاده کنید.");return}
-if(!timer)timer=host.setInterval(()=>{sync().catch(failed)},3e4);if(config)await sync();else notify("inactive","ذخیرهٔ خودکار فایل فعال نیست.")}catch(error){
+notify("busy","در حال ذخیره و بررسی فایل بانک سؤال…");const fingerprint=await write(config.handle,json,current.hash);config={...config,
+hash:fingerprint,counts:baseline,savedAt:new Date().toISOString()};delete config.suspended;await repository.writeBackup(config);active();return true}catch(error){
+return failed(error)}})}function schedule(){if(!supported())return;host.clearTimeout(debounce);debounce=host.setTimeout(()=>{sync().catch(failed)},2e3)}async function init(){
+if(initialized)return initialized;initialized=(async()=>{try{config=await repository.readBackup();if(!supported()){notify("unsupported","این مرورگر ذخیرهٔ خودکا\
+ر فایل را پشتیبانی نمی‌کند؛ پشتیبان دستی در دسترس است. برای ذخیرهٔ خودکار از Chrome یا Edge استفاده کنید.");
+return}if(!timer)timer=host.setInterval(()=>{sync().catch(failed)},3e4);if(config)await sync();else notify("inactive","ذخیرهٔ خودکار فایل فعال نیست.")}catch(error){
 failed(error)}})();return initialized}function suggestedName(){return"Classyar-QuestionBank.json"}async function choose(){if(choosing||!supported())return false;
 choosing=true;try{const handle=await host.showSaveFilePicker({suggestedName:suggestedName(),excludeAcceptAllOption:true,types:[{description:"Question bank JSON",
 accept:{"application/json":[".json"]}}]});if(handle.kind!=="file"||!/\.json$/i.test(handle.name))throw Error("فقط فایل JSON بانک سؤال انتخاب کنید.");
 return await locked(async()=>{config=await repository.readBackup();const before=await inspect(handle,true);const bank=D.validate(await repository.read());const json=D.
 size(bank);if(before.bank&&D.size(before.bank)!==json)throw Error("برای حفظ محتوای این فایل، فایل تازه‌ای بسازید؛ اگر قصد بازیابی دارید از بخش بازیابی استفاده ک\
 نید.");const rechecked=await inspect(handle,true);if(rechecked.hash!==before.hash)throw Error("فایل هنگام انتخاب تغییر کرد؛ نوشته نشد.");
-notify("busy","در حال اولین ذخیره و بررسی فایل…");const fingerprint=await write(handle,json);const next={id:host.crypto.randomUUID(),
-handle,hash:fingerprint,counts:counts(bank),savedAt:new Date().toISOString()};await repository.writeBackup(next);config=next;active();return true})}catch(error){
+notify("busy","در حال اولین ذخیره و بررسی فایل…");const fingerprint=await write(handle,json,rechecked.hash,true);const next={id:host.
+crypto.randomUUID(),handle,hash:fingerprint,counts:counts(bank),savedAt:new Date().toISOString()};await repository.writeBackup(next);config=next;active();return true})}catch(error){
 return error.name==="AbortError"?false:failed(error)}finally{choosing=false}}async function saveNow(approve=()=>false){if(!supported()||!config)return false;const target=config;
 try{if(await target.handle.requestPermission({mode:"readwrite"})!=="granted"){notify("permission","اجازهٔ نوشتن داده نشد؛ فایل تغییر نکرد.");
 return false}if(await sync({expectedId:target.id}))return true;if(status.state!=="paused")return false;const preview=D.validate(await repository.read());const accepted=await approve(
