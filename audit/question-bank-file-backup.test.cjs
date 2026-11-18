@@ -78,6 +78,13 @@ function fixture() {
   });
   const repository = {
     read: async () => structuredClone(bank),
+    clear: async (expected, { isCurrent = () => true } = {}) => {
+      if (!isCurrent() || expected !== bank.revision || failPersist)
+        throw Error("clear rejected");
+      bank = { ...D.empty(), revision: expected + 1 };
+      config = null;
+      return structuredClone(bank);
+    },
     readBackup: async () =>
       config ? { ...config, counts: { ...config.counts } } : null,
     writeBackup: async (value) => {
@@ -187,6 +194,92 @@ function fixture() {
     },
   };
 }
+test("explicit bank removal deletes only the previewed file and detaches its cleared bank", async () => {
+  const f = fixture();
+  await f.service.choose();
+  const id = f.config().id,
+    revision = f.bank().revision;
+  let removals = 0;
+  f.target.handle.remove = async () => {
+    removals++;
+  };
+  await f.service.clear(revision, { deleteFile: true, expectedFileId: id });
+  assert.equal(removals, 1);
+  assert.equal(f.config(), null);
+  assert.equal(f.bank().revision, revision + 1);
+  assert.equal(f.bank().questions.length, 0);
+  assert.equal(f.service.state().state, "inactive");
+});
+
+for (const failure of [
+  "unsupported",
+  "denied",
+  "changed-name",
+  "changed-bytes",
+  "changed-connection",
+  "changed-bank",
+  "remove-failed",
+  "closed-panel",
+]) {
+  test(
+    "bank file removal preserves data before deletion on " + failure,
+    async () => {
+      const f = fixture();
+      await f.service.choose();
+      const id = f.config().id,
+        revision = f.bank().revision;
+      let removals = 0;
+      f.target.handle.remove = async () => {
+        if (failure === "remove-failed") throw Error("OS rejected removal");
+        removals++;
+      };
+      if (failure === "unsupported") delete f.target.handle.remove;
+      if (failure === "denied") f.target.permission("denied");
+      if (failure === "changed-name")
+        f.target.handle.name = "Classyar-Classroom.json";
+      if (failure === "changed-bytes")
+        f.target.external(JSON.stringify(D.empty()));
+      if (failure === "changed-connection")
+        await f.repository.writeBackup({ ...f.config(), id: "replacement" });
+      if (failure === "changed-bank")
+        f.change((b) => {
+          b.courses[0].title = "concurrent change";
+        });
+      const before = f.bank();
+      await assert.rejects(
+        f.service.clear(revision, {
+          deleteFile: true,
+          expectedFileId: id,
+          isCurrent: () => failure !== "closed-panel",
+        }),
+      );
+      assert.equal(removals, 0);
+      assert.deepEqual(f.bank(), before);
+      assert.ok(f.config());
+    },
+  );
+}
+
+test("a database failure after physical removal reports the partial outcome and retains bank data", async () => {
+  const f = fixture();
+  await f.service.choose();
+  const before = f.bank(),
+    id = f.config().id;
+  let removed = false;
+  f.target.handle.remove = async () => {
+    removed = true;
+  };
+  f.failPersist(true);
+  await assert.rejects(
+    f.service.clear(before.revision, { deleteFile: true, expectedFileId: id }),
+    /فایل متصل حذف شد/,
+  );
+  assert.equal(removed, true);
+  assert.deepEqual(f.bank(), before);
+  assert.equal(f.service.state().state, "error");
+  assert.match(f.service.state().message, /فایل متصل حذف شد/);
+});
+
 test("connection activates only after verified JSON write and persists a device-only handle", async () => {
   const f = fixture();
   await f.service.init();

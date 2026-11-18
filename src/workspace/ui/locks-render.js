@@ -200,7 +200,7 @@ function workspaceToolsHtml() {
   return (
     '<details class="workspace-tools"><summary id="workspaceToolsToggle"><span class="workspace-tools-symbol" aria-hidden="true">' +
     EduIcons.html("settings") +
-    '</span><span>ابزارها و تنظیمات</span><span class="workspace-tools-chevron" aria-hidden="true"></span></summary><div class="workspace-tool-actions"><div class="workspace-tool-group">' +
+    '</span><span>ابزارها</span><span class="workspace-tools-chevron" aria-hidden="true"></span></summary><div class="workspace-tool-actions"><div class="workspace-tool-group">' +
     button(
       "periods",
       "calendar",
@@ -278,7 +278,7 @@ function renderV24() {
     fileSummary.id = "welcomeFileSummary";
     fileSummary.className = "schools-file-summary";
     fileSummary.setAttribute("aria-live", "polite");
-    fileSummary.innerHTML = singleFileBannerHtml();
+    fileSummary.innerHTML = welcomeFileSummariesHtml();
     footer.querySelector(".schools-period-context").append(fileSummary);
     welcome.append(footer);
   }

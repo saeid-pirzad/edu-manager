@@ -7,6 +7,7 @@ const { test } = require("node:test"),
 
 function fixture({ activeFile = true, fileFailed = false } = {}) {
   let restarts = 0;
+  const form = { dataset: {} };
   const c = vm.createContext({
     fileMode: false,
     ready: true,
@@ -25,7 +26,7 @@ function fixture({ activeFile = true, fileFailed = false } = {}) {
     connection: { version: 26, close() {} },
     RESET_RECORD_KEY: "@installation-reset",
     document: {
-      querySelector: () => ({}),
+      querySelector: () => form,
       getElementById: (id) =>
         id === "wipeText" ? { value: "حذف" } : { checked: true },
     },
@@ -54,8 +55,118 @@ function fixture({ activeFile = true, fileFailed = false } = {}) {
     ),
     c,
   );
-  return { c, restarts: () => restarts };
+  return { c, form, restarts: () => restarts };
 }
+
+function withConnectedFile() {
+  const f = fixture();
+  let removed = 0,
+    resets = 0;
+  const handle = {
+    name: "Classyar-Classroom.json",
+    kind: "file",
+    requestPermission: async () => "granted",
+    getFile: async () => ({ name: handle.name, size: 12, lastModified: 1 }),
+    remove: async () => {
+      removed++;
+    },
+  };
+  f.c.singleFile = {
+    handle,
+    connectionId: "school-only",
+    size: 12,
+    modified: 1,
+  };
+  f.form.dataset.deleteConnectedFile = "true";
+  vm.runInContext("wipeFileTarget=singleFile", f.c);
+  f.c.singleFileKey = "EduManager.singleFile";
+  f.c.navigator = { locks: { request: async (_key, action) => action() } };
+  f.c.readRecord = async (store) =>
+    store === "drafts"
+      ? { connectionId: "school-only" }
+      : { value: { token: "original-installation" } };
+  f.c.assertClassroomFileName = (name) => {
+    if (name !== "Classyar-Classroom.json") throw Error("foreign file");
+  };
+  f.c.assertSingleFileDestination = async () => {};
+  f.c.resetDatabase = async () => {
+    resets++;
+    return { close() {} };
+  };
+  f.c.broadcast =
+    f.c.forgetInstallation =
+    f.c.rememberRecordEditor =
+    f.c.closeModal =
+    f.c.resetScreen =
+      () => {};
+  f.c.completeResetCleanup = async () => {};
+  f.c.location = { reload() {} };
+  return { ...f, handle, removed: () => removed, resets: () => resets };
+}
+
+test("school wipe removes only its captured file before clearing its independent database", async () => {
+  const f = withConnectedFile();
+  assert.equal(await f.c.confirmWipe(), true);
+  assert.equal(f.removed(), 1);
+  assert.equal(f.resets(), 1);
+});
+
+test("school wipe never discards a pending bank draft or interrupts its file write", async () => {
+  const f = withConnectedFile();
+  f.c.EduQuestionBankUI = { hasPendingChanges: () => true };
+  assert.equal(await f.c.confirmWipe(), false);
+  assert.equal(f.removed(), 0);
+  assert.equal(f.resets(), 0);
+});
+
+for (const failure of [
+  "denied",
+  "unsupported",
+  "foreign-file",
+  "connection-changed",
+  "external-edit",
+  "file-remove-failed",
+]) {
+  test(
+    "school wipe preserves its database and file when " + failure,
+    async () => {
+      const f = withConnectedFile();
+      if (failure === "denied")
+        f.handle.requestPermission = async () => "denied";
+      if (failure === "unsupported") delete f.handle.remove;
+      if (failure === "foreign-file")
+        f.handle.name = "Classyar-QuestionBank.json";
+      if (failure === "connection-changed")
+        f.c.readRecord = async () => ({ connectionId: "different" });
+      if (failure === "external-edit")
+        f.handle.getFile = async () => ({
+          name: f.handle.name,
+          size: 99,
+          lastModified: 2,
+        });
+      if (failure === "file-remove-failed")
+        f.handle.remove = async () => {
+          throw Error("OS refused");
+        };
+      assert.equal(await f.c.confirmWipe(), false);
+      assert.equal(f.removed(), 0);
+      assert.equal(f.resets(), 0);
+    },
+  );
+}
+
+test("a reset failure after physical school-file removal reports that outcome and never restarts writing", async () => {
+  const f = withConnectedFile();
+  const errors = [];
+  f.c.resetDatabase = async () => {
+    throw Error("reset transaction failed");
+  };
+  f.c.showRecordEditorError = (error) => errors.push(error.message);
+  assert.equal(await f.c.confirmWipe(), false);
+  assert.equal(f.removed(), 1);
+  assert.equal(f.restarts(), 0);
+  assert.ok(errors.some((message) => message.includes("فایل متصل حذف شد")));
+});
 
 test("failed wipe resumes the previously active automatic file backup after reopening the original database", async () => {
   const { c, restarts } = fixture();

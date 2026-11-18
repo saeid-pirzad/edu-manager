@@ -247,6 +247,13 @@ function restoreIdentityMatches(original, current) {
   return (live?.token || null) === (expected?.token || null);
 }
 async function restoreFullBackup() {
+  const protectBankDraft = () => {
+    if (globalThis.EduQuestionBankUI?.hasPendingChanges?.())
+      throw Error(
+        "برای حفظ ویرایش بانک سؤال، ابتدا تغییرات آن را ذخیره یا لغو کنید و منتظر پایان ذخیره بمانید.",
+      );
+  };
+  protectBankDraft();
   if (fullRestoreBusy) throw Error("بازیابی کامل در حال انجام است؛ صبر کنید.");
   if (!pendingFullBackup)
     throw Error("ابتدا فایل پشتیبان کامل را انتخاب کنید.");
@@ -280,6 +287,7 @@ async function restoreFullBackup() {
   let committedRestore = false,
     ownsLoading = false;
   const check = () => {
+    protectBankDraft();
     if (
       resetBusy ||
       connectionRetired ||

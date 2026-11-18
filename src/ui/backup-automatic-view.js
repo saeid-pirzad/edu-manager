@@ -35,7 +35,71 @@
       .map(([name, item]) => " " + name + '="' + escape(item) + '"')
       .join("");
   }
-  function summaryHtml({ name = "", savedAt, needsReview = false } = {}) {
+  function summaryHtml(options = {}) {
+    const {
+      name = "",
+      savedAt,
+      needsReview = false,
+      detailed = false,
+    } = options;
+    if (detailed) {
+      const state =
+        options.supported === false
+          ? "unsupported"
+          : options.state ||
+            (name ? (needsReview ? "paused" : "active") : "inactive");
+      const labels = {
+        inactive: "بدون اتصال",
+        active: "متصل · ذخیرهٔ خودکار فعال",
+        permission: "نیاز به تأیید مجوز",
+        paused: "اتصال متوقف است",
+        error: "خطا در ذخیره",
+        busy: "در حال ذخیره",
+        unsupported: "ذخیرهٔ خودکار پشتیبانی نمی‌شود",
+      };
+      const file = name
+        ? '<bdi class="schools-file-name" dir="auto" title="' +
+          escape(name) +
+          '">' +
+          escape(name) +
+          "</bdi>"
+        : "انتخاب نشده";
+      let date;
+      try {
+        date = savedAt ? new Date(savedAt) : null;
+      } catch {
+        date = null;
+      }
+      const saved = date && Number.isFinite(date.getTime());
+      const time = saved
+        ? '<time datetime="' +
+          escape(date.toISOString()) +
+          '">' +
+          escape(
+            date.toLocaleString("fa-IR-u-ca-persian", {
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          ) +
+          "</time>"
+        : "هنوز ذخیره نشده";
+      return (
+        '<div class="backup-connection" data-state="' +
+        escape(state) +
+        '"><span>وضعیت اتصال</span><strong>' +
+        escape(labels[state] || labels.error) +
+        '</strong></div><dl class="backup-file-details"><div class="backup-file-name-row"><dt>نام فایل</dt><dd>' +
+        file +
+        '</dd></div><div><dt>نوع فایل</dt><dd><bdi dir="ltr">JSON</bdi> · ' +
+        "فایل پشتیبان مستقل" +
+        "</dd></div><div><dt>آخرین ذخیرهٔ موفق</dt><dd>" +
+        time +
+        "</dd></div></dl>"
+      );
+    }
     if (!name)
       return '<span class="schools-file-meta">فایل پشتیبان انتخاب نشده</span>';
     let date;
@@ -132,7 +196,7 @@
       '"' +
       idAttribute(ids.summary) +
       ">" +
-      summaryHtml(options) +
+      summaryHtml({ ...options, detailed: true }) +
       "</div>";
     return (
       '<details class="' +
@@ -153,7 +217,7 @@
           " data-backup-file-status" +
           (noticeHidden ? " hidden" : "") +
           ">" +
-          noticeHtml(options) +
+          noticeHtml({ ...options, permission: null }) +
           '</div><div class="' +
           classes("backup-automatic-fallback", aliases.fallback) +
           '"' +
@@ -171,7 +235,7 @@
       action("choose", "انتخاب فایل", "انتخاب فایل و محل ذخیرهٔ خودکار") +
       action("save", "ذخیره اکنون", "ذخیره اکنون / اجازه مجدد") +
       action("stop", "قطع اتصال", "قطع اتصال") +
-      "</div></details>"
+      '</div><p class="backup-automatic-help">«ذخیره اکنون» فایل را فوراً ذخیره و در صورت نیاز مجوز نوشتن را درخواست می‌کند. «قطع اتصال» ذخیرهٔ خودکار را متوقف می‌کند؛ فایل حذف نمی‌شود.</p></details>'
     );
   }
   root.EduBackupAutomaticView = Object.freeze({

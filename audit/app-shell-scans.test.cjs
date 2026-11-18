@@ -139,7 +139,7 @@ test("startup retains a complete enhancement and collects tables just once", () 
     1,
   );
   assert.ok(f.queries.some((row) => row.selector === "#app .tabs > button"));
-  assert.equal(f.elements.get("uiBottomNav").children.length, 5);
+  assert.equal(f.elements.get("uiBottomNav").children.length, 6);
   assert.equal(f.observer.observed.size, 6);
 });
 

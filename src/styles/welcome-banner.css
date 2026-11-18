@@ -239,6 +239,104 @@
   #app .schools-file-meta time {
     font-variant-numeric: tabular-nums;
   }
+  #app .schools-period-context > span {
+    white-space: nowrap;
+    color: var(--theme-ink);
+    font-size: 10px;
+    font-weight: 500;
+  }
+  #app .schools-period-context > span > bdi {
+    color: var(--theme-primary);
+    font-size: 12px;
+    font-weight: 800;
+  }
+  #app #welcomeFileSummary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-column: 1 / -1;
+    grid-row: 2;
+    gap: 16px;
+    margin-top: 2px;
+    padding-top: 12px;
+    border-top: 1px solid var(--theme-primary-line);
+  }
+  #app .schools-welcome-footer .schools-period-context {
+    display: contents;
+  }
+  #app .schools-welcome-footer {
+    row-gap: 4px;
+  }
+  #app .welcome-storage-item {
+    display: grid;
+    align-content: start;
+    gap: 3px;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    line-height: 1.7;
+  }
+  #app .welcome-storage-item + .welcome-storage-item {
+    padding-inline-start: 12px;
+    border-inline-start: 1px solid var(--theme-primary-line);
+  }
+  #app .welcome-storage-heading {
+    display: grid;
+    grid-template-rows: 18px 18px;
+    justify-items: start;
+    align-items: center;
+    gap: 2px;
+    margin: 0;
+    color: var(--theme-ink);
+    font-size: 10px;
+  }
+  #app .welcome-storage-heading strong {
+    font-weight: 700;
+    line-height: 18px;
+    white-space: nowrap;
+  }
+  #app .welcome-storage-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    width: fit-content;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: var(--theme-surface-muted);
+    color: var(--theme-muted);
+    font-size: 9px;
+    font-weight: 500;
+    line-height: 16px;
+  }
+  #app .welcome-storage-state::before {
+    content: "";
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  #app .welcome-storage-item[data-state="review"] .welcome-storage-state {
+    color: var(--status-danger);
+    background: var(--status-danger-soft);
+    font-weight: 600;
+  }
+  #app .welcome-storage-item[data-state="connected"] .welcome-storage-state {
+    color: var(--status-success);
+    background: var(--status-success-soft);
+  }
+  #app .schools-period-context .welcome-storage-item .schools-file-name {
+    display: block;
+    max-width: 100%;
+    color: var(--theme-muted);
+    font-size: 9px;
+    font-weight: 500;
+  }
+  #app .welcome-storage-item[data-state="inactive"] > .schools-file-meta {
+    display: none;
+  }
+  #app .welcome-storage-item .schools-file-meta time {
+    color: var(--theme-ink);
+    font-weight: 500;
+  }
 }
 
 :is(#app, #deputyApp) .workflow-welcome.schools-welcome .schools-about {

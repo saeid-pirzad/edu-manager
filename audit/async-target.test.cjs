@@ -103,7 +103,7 @@ test("backup hub markup offers independent file workflows without internal versi
   assert.match(html, /backup-automatic/);
   assert.match(
     html,
-    /<details class="backup-reset"><summary>پاک‌سازی اطلاعات<\/summary>/,
+    /<details class="backup-reset"><summary>حذف اطلاعات و فایل متصل<\/summary>/,
   );
   assert.match(html, /data-workspace-action="open-wipe"/);
 });

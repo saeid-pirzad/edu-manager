@@ -42,111 +42,115 @@ continue;const span=document.createElement("span");span.className="ui-button-lab
 let nav=document.getElementById("uiBottomNav");if(!nav){nav=document.createElement("nav");nav.id="uiBottomNav";nav.className="no-print";nav.setAttribute("aria-l\
 abel","دسترسی اصلی");const items=[["schools","خانه","M3 10 12 3l9 7M5 9v12h5v-7h4v7h5V9",()=>goSchools()],["class","کلاس‌ها","M4 4h16v14H4\
 zM8 21h8M12 18v3M8 8h8M8 12h5",()=>goCurrentClass()],["master","برنامه","M4 5h16v16H4zM8 3v4M16 3v4M4 10h16M8 14h2M14 14h2",()=>goMaster()],["reports","گز\
-ارش‌ها","M4 3v18h17M8 17v-5M13 17V8M18 17V5",()=>goReports()],["question-bank","بانک سؤال","M12 5C9 3 6 3 3 4v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6\
--1-9 1Zm0 0v15",()=>goQuestionBank()]];for(const[view,label,path,action]of items){const b=document.createElement("button");b.type="button";b.dataset.view=view;b.
-innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path\
- d="'+path+'"/></svg><span>'+label+"</span>";b.onclick=action;nav.append(b)}document.body.append(nav)}nav.hidden=!!(db.settings.password&&!isAuthenticated);nav.
-inert=!document.getElementById("modal").classList.contains("hidden");const current=["school","class","lesson"].includes(state.view)?"class":state.view;for(const b of nav.
-children){const value=b.dataset.view===current?"page":"false";if(b.getAttribute("aria-current")!==value)b.setAttribute("aria-current",value)}if(!appChanged)return;
-for(const button of document.querySelectorAll("#app .tabs > button")){if(button.closest(".qb-page"))continue;const pressed=String(button.classList.contains("act\
-ive"));if(button.getAttribute("aria-pressed")!==pressed)button.setAttribute("aria-pressed",pressed)}for(const item of document.querySelectorAll("#app .list-item\
-[onclick],#app .list-item[data-legacy-click]")){if(!item.hasAttribute("tabindex")){item.tabIndex=0;item.setAttribute("role","link");item.addEventListener("keydo\
-wn",e=>{if(e.target===item&&(e.key==="Enter"||e.key===" ")){e.preventDefault();item.click()}})}}for(const input of document.querySelectorAll('#app form input[na\
-me="name"]')){if(!input.getAttribute("aria-label")&&!input.labels?.length)input.setAttribute("aria-label",input.placeholder||"نام")}}function styleDataTables(tables){
-for(const table of tables){const head=table.tHead;if(!head||!head.rows.length)continue;const headers=[...head.rows[0].cells];const labels=headers.map(c=>c.textContent.
-trim());const bodyRows=[...table.tBodies].flatMap(b=>[...b.rows]);const simple=!["matrix","compact"].includes(table.dataset.mobileLayout)&&!table.classList.contains(
-"week-table")&&head.rows.length===1&&(headers.length<=6||table.dataset.mobileLayout==="cards")&&headers.every(c=>c.colSpan===1)&&bodyRows.every(r=>r.cells.length===
-headers.length&&[...r.cells].every(c=>c.colSpan===1&&c.rowSpan===1));const layout=simple?"cards":"matrix";if(table.dataset.uiLayout!==layout)table.dataset.uiLayout=
-layout;for(const th of table.querySelectorAll("thead th"))if(!th.hasAttribute("scope"))th.setAttribute("scope",th.colSpan>1?"colgroup":"col");const identity=Math.
-max(0,labels.findIndex(t=>/دانش‌آموز|هنرجو|نام|درس|سال.*نوبت/.test(t)));for(const row of bodyRows){for(const[i,cell]of[...row.cells].
-entries()){const label=labels[i]||"عملیات";if(simple&&cell.dataset.label!==label)cell.dataset.label=label;if(i===identity&&table.dataset.mobileLayout!=="c\
-ompact"&&!cell.hasAttribute("data-identity"))cell.setAttribute("data-identity","");const actions=simple&&(/عملیات|تصمیم/.test(label)||!labels[i]&&cell.
-querySelector("button"));if(actions&&!cell.hasAttribute("data-actions"))cell.setAttribute("data-actions","");for(const input of cell.querySelectorAll("input,sel\
-ect,textarea")){if(!input.hasAttribute("aria-label")){const who=row.cells[identity]?.textContent.trim()||"";input.setAttribute("aria-label",label+(who?" — "+who:
-""))}}for(const button of cell.querySelectorAll("button")){if(!button.hasAttribute("aria-label")&&/^(?:×|✕|⚙️)+$/.test(button.textContent.trim()))button.
-setAttribute("aria-label",button.classList.contains("danger")?"حذف ردیف":"تنظیمات ردیف")}}}if(!simple&&table.dataset.mobileLayout!=="compact"){
-const index=headers.indexOf(headers[identity]);const th=headers[index];if(th&&!th.hasAttribute("data-identity"))th.setAttribute("data-identity","")}const wrap=table.
-closest(".responsive-scroll,.table-scroll");if(wrap){if(wrap.dataset.uiLayout!==layout)wrap.dataset.uiLayout=layout;if(!simple&&!wrap.querySelector(".table-pan-\
-hint")){const hint=document.createElement("div");hint.className="table-pan-hint no-print";hint.textContent="برای دیدن ستون‌های بیشتر، جدول را افقی بکشید ↔";
-wrap.prepend(hint)}}}}function polishExperience(){const app=document.getElementById("app"),top=app?.querySelector(".topbar"),bar=app?.querySelector(".workspace-\
-bar");if(top&&bar&&top.nextElementSibling!==bar)bar.before(top);if(top){const title=top.querySelector("h1");if(title&&!title.dataset.branded){title.dataset.branded=
-"1";title.innerHTML='<span class="brand-mark app-brand-mark" aria-hidden="true"><img class="app-logo" src="./assets/logo3.png" width="500" height="500" alt="" d\
-ecoding="async"></span><span>کلاس‌یار<small>دفتر همراه هنرآموز</small></span>'}}const crumb=app?.querySelector(".breadcrumb");if(crumb){
-crumb.setAttribute("aria-label","مسیر جاری");for(const link of crumb.querySelectorAll("a[onclick],a[data-legacy-click]")){if(!link.hasAttribute("tabinde\
-x")){link.tabIndex=0;link.setAttribute("role","link");link.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();link.click()}})}}}for(const form of app?.
-querySelectorAll("form[onsubmit]")||[]){const action=form.getAttribute("onsubmit")||"";if(!/^(addSchool|addClass|addStudent)\(event\)/.test(action))continue;const card=form.
-closest(".card");if(!card||card.tagName==="DETAILS"||!card.querySelector("h3"))continue;const detail=document.createElement("details");detail.className=card.className+
-" quick-create";const heading=card.querySelector("h3"),summary=document.createElement("summary");summary.textContent=heading.textContent.replace(/^[^آ-یa-zA-Z]+/,
-"");const empty=state.view==="schools"?!db.schools.length:state.view==="school"?!db.schools.find(s=>s.id===state.schoolId)?.classes.length:!getClassObj(state.schoolId,
-state.classId)?.students.length;detail.open=!!empty;heading.remove();detail.append(summary);while(card.firstChild)detail.append(card.firstChild);card.replaceWith(
-detail)}for(const card of app?.querySelectorAll(".card")||[]){const items=[...card.children].filter(el=>el.matches(".list-item[onclick],.list-item[data-legacy-c\
-lick]"));if(items.length<4||card.querySelector(".list-search"))continue;const box=document.createElement("div");box.className="list-search no-print";const input=document.
-createElement("input");input.type="search";input.placeholder="جست‌وجو در این فهرست…";input.setAttribute("aria-label","جست‌وجو در فهرست");
-const result=document.createElement("p");result.className="search-feedback";result.setAttribute("role","status");result.hidden=true;const normalize=s=>s.replace(
-/ي/g,"ی").replace(/ك/g,"ک").replace(/\s+/g," ").trim();input.oninput=()=>{const query=normalize(input.value);let count=0;for(const item of items){const match=normalize(
-item.textContent).includes(query);item.hidden=!match;if(match)count++}result.hidden=!query;result.textContent=count?count.toLocaleString("fa-IR")+" مورد پیدا شد":
-"موردی پیدا نشد؛ عبارت دیگری وارد کنید."};box.append(input,result);items[0].before(box)}}function labelPlaceholderInputs(appChanged,modalChanged){
-const selector=[appChanged?"#app input[placeholder]":"",modalChanged?"#modalBody input[placeholder],#modalBody textarea[placeholder]":""].filter(Boolean).join("\
-,");if(!selector)return;for(const input of document.querySelectorAll(selector)){if(!input.hasAttribute("aria-label")&&!input.labels?.length)input.setAttribute("\
-aria-label",input.placeholder)}}function positionHomeAction(){const home=document.querySelector("#app .topbar .header-home");if(!home)return;const wide=innerWidth>
-700&&!matchMedia("(max-width:1000px) and (pointer:coarse)").matches;const target=document.querySelector(wide?"#app .topbar .header-actions":"#app .topbar .heade\
-r-brand");if(target&&home.parentElement!==target){if(wide)target.prepend(home);else target.append(home)}}function mobileExperience(){const app=document.getElementById(
-"app");if(!app)return;const tools=app.querySelector(".workspace-tools"),bar=app.querySelector(".workspace-bar");if(tools&&bar){for(const button of[...bar.children].
-filter(x=>x.tagName==="BUTTON"))tools.querySelector(".tool-actions")?.prepend(button);const strong=bar.querySelector(":scope > strong");if(strong&&!strong.title)
-strong.title=strong.textContent}const nav=app.querySelector(".navigation-menu");if(nav){const summary=nav.querySelector(":scope > summary");summary?.setAttribute(
-"aria-label","ابزارها و تنظیمات برنامه")}const gradeArea=app.querySelector("#lessonGradesArea");if(gradeArea){for(const card of gradeArea.querySelectorAll(
-".card")){if(!card.classList.contains("mobile-grade-panel"))card.classList.add("mobile-grade-panel");if(!card.dataset.gradeHelpRemoved){const intro=[...card.children].
-find(x=>x.tagName==="P");intro?.remove();card.dataset.gradeHelpRemoved="true"}}}}function polishReportFilters(){if(state.view!=="reports")return;const tabs=document.
-querySelector(".report-navigation"),active=tabs?.querySelector(".active");if(tabs&&active&&tabs.scrollWidth>tabs.clientWidth){const box2=tabs.getBoundingClientRect(),
-r=active.getBoundingClientRect();if(r.left<box2.left||r.right>box2.right)tabs.scrollLeft+=r.left-(box2.left+(box2.width-r.width)/2)}const names={schoolId:"مدرسه",
-classId:"کلاس",lessonId:"درس",studentId:"هنرجو",date:"تاریخ جلسه",period:"زنگ"};for(const control of document.querySelectorAll('#app sel\
-ect[onchange*="Filter"],#app input[type="date"][onchange*="GlobalFilter"],#app select[data-legacy-change],#app input[type="date"][data-legacy-change]')){const action=control.
-getAttribute("onchange")||EduLegacyEvents.source(control.getAttribute("data-legacy-change")),key=action.match(/["']([^"']+)["']/)?.[1],caption=names[key];if(!caption||
-control.closest("label")||control.labels?.length)continue;const label=document.createElement("label");label.className="report-filter-field";const pairedDate=control.
-type==="date"&&control.nextElementSibling?.dataset.gregorianTarget==="true"?control.nextElementSibling:null;const text=document.createElement("span");text.textContent=
-caption;control.before(label);label.append(text,control);if(pairedDate){label.append(pairedDate);pairedDate.setAttribute("aria-label",caption)}const row=label.parentElement;
-if(!row.classList.contains("report-filter-grid"))row.classList.add("report-filter-grid");row.closest(".card")?.classList.add("report-filter-card")}const box=document.
-querySelector("#app .filter-box");if(box&&box.tagName!=="DETAILS"){const details=document.createElement("details");details.className="filter-box report-options";
-details.open=!!state.reportOptionsOpen;details.ontoggle=()=>{state.reportOptionsOpen=details.open};const summary=document.createElement("summary");summary.textContent=
-"تنظیم محتوای گزارش و نمایش اسامی";details.append(summary);while(box.firstChild)details.append(box.firstChild);box.replaceWith(details)}}
-const designRootIds=["app","modal","calPopup","mobileBar","pwaWelcome"],dirtyRoots=new Set;let fullDesign=true;const designObserver=new MutationObserver(schedule);
-function observeDesignRoots(){for(const id of designRootIds){const root=document.getElementById(id);if(root)designObserver.observe(root,{childList:true,subtree:true})}
-designObserver.observe(document.body,{childList:true})}function enhance(){const appChanged=fullDesign||dirtyRoots.has("app"),modalChanged=fullDesign||dirtyRoots.
-has("modal"),roots=fullDesign?[document]:[...dirtyRoots].map(id=>document.getElementById(id)).filter(Boolean),tableSelector=[appChanged?"#app table":"",modalChanged?
-"#modalBody table":""].filter(Boolean).join(",");dirtyRoots.clear();fullDesign=false;designObserver.disconnect();try{if(appChanged){polishReportFilters();mobileExperience();
-polishExperience()}labelPlaceholderInputs(appChanged,modalChanged);updateDesign(appChanged);decorateIcons(roots);const tables=tableSelector?[...document.querySelectorAll(
-tableSelector)].filter(table=>!table.closest(".qb-page")):[];for(const table of tables){if(!table.dataset.responsiveSized&&table.dataset.mobileLayout!=="compact"){
-const columns=Math.max(1,...[...table.rows].slice(0,3).map(row=>[...row.cells].reduce((n,cell)=>n+cell.colSpan,0)));table.style.minWidth=(columns>=4?columns*120:
-Math.min(380,columns*140))+"px";table.dataset.responsiveSized="1"}}for(const container of queryRoots(roots,".table-scroll")){if(container.closest(".qb-page"))continue;
-if(!container.hasAttribute("tabindex")){container.tabIndex=0;container.setAttribute("role","region");container.setAttribute("aria-label","جدول با پیمایش افقی")}}
-for(const table of tables){if(table.dataset.mobileLayout==="compact"||table.closest(".responsive-scroll,.table-scroll"))continue;const wrap=document.createElement(
-"div");wrap.className="responsive-scroll";wrap.tabIndex=0;wrap.setAttribute("role","region");wrap.setAttribute("aria-label","جدول؛ برای دیدن ستون‌های دیگر افقی \
-پیمایش کنید");table.before(wrap);wrap.append(table)}styleDataTables(tables);for(const grid of appChanged?document.querySelectorAll("#app .schedule-gri\
-d"):[]){if(grid.parentElement.classList.contains("responsive-scroll"))continue;const wrap=document.createElement("div");wrap.className="responsive-scroll";wrap.
-tabIndex=0;wrap.setAttribute("role","region");wrap.setAttribute("aria-label","برنامه هفتگی با پیمایش افقی");grid.before(wrap);wrap.append(
-grid)}if(appChanged){const bar=document.querySelector(".workspace-bar");if(bar&&!document.querySelector("#app .workspace-tools")){const tools=document.createElement(
-"details");tools.className="workspace-tools no-print";tools.innerHTML='<summary>مدیریت و پشتیبان‌ها</summary><div class="tool-actions"></div>';
-const box=tools.querySelector(".tool-actions");for(const button of[...bar.querySelectorAll("button")])box.append(button);for(const small of[...bar.querySelectorAll(
-"small")])box.append(small);const backup=document.createElement("button");backup.className="ghost";backup.textContent="ذخیره پشتیبان";backup.onclick=
-()=>exportBackup().catch(e=>alert(e.message));box.prepend(backup);bar.append(tools)}const topbar=document.querySelector(".topbar"),actions=topbar?.querySelector(
-".actions");if(actions&&!topbar.querySelector(".navigation-menu")){const menu=document.createElement("details");menu.className="navigation-menu no-print";menu.open=
-innerWidth>700&&!matchMedia("(max-width:1000px) and (pointer:coarse)").matches;menu.innerHTML='<summary title="ابزارها و تنظیمات"><span class="menu-toggle-label\
-">فهرست برنامه</span><svg class="menu-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="\
-true"><path class="menu-line-top" d="M5 12h14"/><path class="menu-line-middle" d="M5 12h14"/><path class="menu-line-bottom" d="M5 12h14"/></svg></summary>';actions.
-before(menu);menu.querySelector("summary").id="headerNavigationToggle";menu.append(actions);menu.addEventListener("toggle",()=>{if(matchMedia("(max-width:700px)\
-, (max-width:1000px) and (pointer:coarse)").matches){const tools=menu.querySelector(".workspace-tools");if(tools)tools.open=menu.open}if(!menu.open){closeClassMenu();
-closeDataMenu()}});actions.addEventListener("click",e=>{const button=e.target.closest("button");if(button&&!button.hasAttribute("aria-controls")&&matchMedia("(m\
-ax-width:700px), (max-width:1000px) and (pointer:coarse)").matches){menu.open=false;menu.querySelector("summary").focus({preventScroll:true})}});const settings=actions.
-querySelector('button[data-header-action="settings"]');if(settings){settings.setAttribute("aria-label","تنظیمات برنامه");settings.title="تنظیمات بر\
-نامه"}}}positionHomeAction()}finally{pending=false;observeDesignRoots()}}function schedule(records){for(const record of records||[]){if(record.target===document.
-body){const changed=[...record.addedNodes,...record.removedNodes];for(const node of changed){if(node.nodeType===1&&designRootIds.includes(node.id))dirtyRoots.add(
-node.id);else fullDesign=true}}else{const root=record.target.closest?.("#app,#modal,#calPopup,#mobileBar,#pwaWelcome");if(root)dirtyRoots.add(root.id);else fullDesign=
-true}}if(!records)fullDesign=true;if(!pending){pending=true;requestAnimationFrame(enhance)}}let wideLayout;function viewport(){const visualHeight=window.visualViewport?.
-height||innerHeight;const editing=document.activeElement?.matches('input:not([type="checkbox"]):not([type="radio"]),textarea,[contenteditable="true"]');document.
-documentElement.dataset.keyboardOpen=String(!!editing&&innerHeight-visualHeight>120);document.documentElement.style.setProperty("--app-viewport",(window.visualViewport?.
-height||innerHeight)+"px");document.documentElement.style.setProperty("--app-viewport-top",(window.visualViewport?.offsetTop||0)+"px");const wide=innerWidth>700&&
-!matchMedia("(max-width:1000px) and (pointer:coarse)").matches;positionHomeAction();if(wide!==wideLayout){wideLayout=wide;for(const menu of document.querySelectorAll(
-".navigation-menu"))menu.open=wide}}function start(){enhance();viewport();window.visualViewport?.addEventListener("resize",viewport);window.visualViewport?.addEventListener(
-"scroll",viewport);window.addEventListener("resize",viewport);document.addEventListener("focusin",viewport);document.addEventListener("focusout",()=>requestAnimationFrame(
-viewport))}if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start);else start()})();
+ارش‌ها","M4 3v18h17M8 17v-5M13 17V8M18 17V5",()=>goReports()],["question-bank","سؤال و آزمون","M12 5C9 3 6 3 3 4v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-\
+3-1-6-1-9 1Zm0 0v15",()=>goQuestionBank()],["backups","پشتیبان","M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3ZM8 12l3 3 5-6",()=>document.querySelector('#app .\
+header-actions [data-workspace-action="backups"]')?.click()]];for(const[view,label,path,action]of items){const b=document.createElement("button");b.type="button";
+b.dataset.view=view;if(view==="backups"){b.setAttribute("aria-label","ذخیره، پشتیبان‌گیری و بازیابی");b.setAttribute("aria-haspopup",
+"dialog");b.title="ذخیره، پشتیبان‌گیری و بازیابی"}else if(view==="question-bank"){b.setAttribute("aria-label","بانک سؤال و طراحی آزمو\
+ن");b.title="بانک سؤال و طراحی آزمون"}b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-line\
+cap="round" stroke-linejoin="round" aria-hidden="true"><path d="'+path+'"/></svg><span>'+label+"</span>";b.onclick=action;nav.append(b)}document.body.append(nav)}
+nav.hidden=!!(db.settings.password&&!isAuthenticated);nav.inert=!document.getElementById("modal").classList.contains("hidden");const current=["school","class","\
+lesson"].includes(state.view)?"class":state.view;for(const b of nav.children){const value=b.dataset.view===current?"page":"false";if(b.getAttribute("aria-curren\
+t")!==value)b.setAttribute("aria-current",value)}if(!appChanged)return;for(const button of document.querySelectorAll("#app .tabs > button")){if(button.closest("\
+.qb-page"))continue;const pressed=String(button.classList.contains("active"));if(button.getAttribute("aria-pressed")!==pressed)button.setAttribute("aria-pressed",
+pressed)}for(const item of document.querySelectorAll("#app .list-item[onclick],#app .list-item[data-legacy-click]")){if(!item.hasAttribute("tabindex")){item.tabIndex=
+0;item.setAttribute("role","link");item.addEventListener("keydown",e=>{if(e.target===item&&(e.key==="Enter"||e.key===" ")){e.preventDefault();item.click()}})}}for(const input of document.
+querySelectorAll('#app form input[name="name"]')){if(!input.getAttribute("aria-label")&&!input.labels?.length)input.setAttribute("aria-label",input.placeholder||
+"نام")}}function styleDataTables(tables){for(const table of tables){const head=table.tHead;if(!head||!head.rows.length)continue;const headers=[...head.rows[0].
+cells];const labels=headers.map(c=>c.textContent.trim());const bodyRows=[...table.tBodies].flatMap(b=>[...b.rows]);const simple=!["matrix","compact"].includes(table.
+dataset.mobileLayout)&&!table.classList.contains("week-table")&&head.rows.length===1&&(headers.length<=6||table.dataset.mobileLayout==="cards")&&headers.every(c=>c.
+colSpan===1)&&bodyRows.every(r=>r.cells.length===headers.length&&[...r.cells].every(c=>c.colSpan===1&&c.rowSpan===1));const layout=simple?"cards":"matrix";if(table.
+dataset.uiLayout!==layout)table.dataset.uiLayout=layout;for(const th of table.querySelectorAll("thead th"))if(!th.hasAttribute("scope"))th.setAttribute("scope",
+th.colSpan>1?"colgroup":"col");const identity=Math.max(0,labels.findIndex(t=>/دانش‌آموز|هنرجو|نام|درس|سال.*نوبت/.test(t)));for(const row of bodyRows){
+for(const[i,cell]of[...row.cells].entries()){const label=labels[i]||"عملیات";if(simple&&cell.dataset.label!==label)cell.dataset.label=label;if(i===identity&&
+table.dataset.mobileLayout!=="compact"&&!cell.hasAttribute("data-identity"))cell.setAttribute("data-identity","");const actions=simple&&(/عملیات|تصمیم/.
+test(label)||!labels[i]&&cell.querySelector("button"));if(actions&&!cell.hasAttribute("data-actions"))cell.setAttribute("data-actions","");for(const input of cell.
+querySelectorAll("input,select,textarea")){if(!input.hasAttribute("aria-label")){const who=row.cells[identity]?.textContent.trim()||"";input.setAttribute("aria-\
+label",label+(who?" — "+who:""))}}for(const button of cell.querySelectorAll("button")){if(!button.hasAttribute("aria-label")&&/^(?:×|✕|⚙️)+$/.test(button.
+textContent.trim()))button.setAttribute("aria-label",button.classList.contains("danger")?"حذف ردیف":"تنظیمات ردیف")}}}if(!simple&&table.dataset.
+mobileLayout!=="compact"){const index=headers.indexOf(headers[identity]);const th=headers[index];if(th&&!th.hasAttribute("data-identity"))th.setAttribute("data-\
+identity","")}const wrap=table.closest(".responsive-scroll,.table-scroll");if(wrap){if(wrap.dataset.uiLayout!==layout)wrap.dataset.uiLayout=layout;if(!simple&&!wrap.
+querySelector(".table-pan-hint")){const hint=document.createElement("div");hint.className="table-pan-hint no-print";hint.textContent="برای دیدن ستون‌های بیشتر، \
+جدول را افقی بکشید ↔";wrap.prepend(hint)}}}}function polishExperience(){const app=document.getElementById("app"),top=app?.querySelector(".topba\
+r"),bar=app?.querySelector(".workspace-bar");if(top&&bar&&top.nextElementSibling!==bar)bar.before(top);if(top){const title=top.querySelector("h1");if(title&&!title.
+dataset.branded){title.dataset.branded="1";title.innerHTML='<span class="brand-mark app-brand-mark" aria-hidden="true"><img class="app-logo" src="./assets/logo3\
+.png" width="500" height="500" alt="" decoding="async"></span><span>کلاس‌یار<small>دفتر همراه هنرآموز</small></span>'}}const crumb=app?.
+querySelector(".breadcrumb");if(crumb){crumb.setAttribute("aria-label","مسیر جاری");for(const link of crumb.querySelectorAll("a[onclick],a[data-legacy-c\
+lick]")){if(!link.hasAttribute("tabindex")){link.tabIndex=0;link.setAttribute("role","link");link.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();
+link.click()}})}}}for(const form of app?.querySelectorAll("form[onsubmit]")||[]){const action=form.getAttribute("onsubmit")||"";if(!/^(addSchool|addClass|addStudent)\(event\)/.
+test(action))continue;const card=form.closest(".card");if(!card||card.tagName==="DETAILS"||!card.querySelector("h3"))continue;const detail=document.createElement(
+"details");detail.className=card.className+" quick-create";const heading=card.querySelector("h3"),summary=document.createElement("summary");summary.textContent=
+heading.textContent.replace(/^[^آ-یa-zA-Z]+/,"");const empty=state.view==="schools"?!db.schools.length:state.view==="school"?!db.schools.find(s=>s.id===state.
+schoolId)?.classes.length:!getClassObj(state.schoolId,state.classId)?.students.length;detail.open=!!empty;heading.remove();detail.append(summary);while(card.firstChild)
+detail.append(card.firstChild);card.replaceWith(detail)}for(const card of app?.querySelectorAll(".card")||[]){const items=[...card.children].filter(el=>el.matches(
+".list-item[onclick],.list-item[data-legacy-click]"));if(items.length<4||card.querySelector(".list-search"))continue;const box=document.createElement("div");box.
+className="list-search no-print";const input=document.createElement("input");input.type="search";input.placeholder="جست‌وجو در این فهرست…";input.
+setAttribute("aria-label","جست‌وجو در فهرست");const result=document.createElement("p");result.className="search-feedback";result.setAttribute("ro\
+le","status");result.hidden=true;const normalize=s=>s.replace(/ي/g,"ی").replace(/ك/g,"ک").replace(/\s+/g," ").trim();input.oninput=()=>{const query=normalize(
+input.value);let count=0;for(const item of items){const match=normalize(item.textContent).includes(query);item.hidden=!match;if(match)count++}result.hidden=!query;
+result.textContent=count?count.toLocaleString("fa-IR")+" مورد پیدا شد":"موردی پیدا نشد؛ عبارت دیگری وارد کنید."};box.append(
+input,result);items[0].before(box)}}function labelPlaceholderInputs(appChanged,modalChanged){const selector=[appChanged?"#app input[placeholder]":"",modalChanged?
+"#modalBody input[placeholder],#modalBody textarea[placeholder]":""].filter(Boolean).join(",");if(!selector)return;for(const input of document.querySelectorAll(
+selector)){if(!input.hasAttribute("aria-label")&&!input.labels?.length)input.setAttribute("aria-label",input.placeholder)}}function positionHomeAction(){const home=document.
+querySelector("#app .topbar .header-home");if(!home)return;const wide=innerWidth>700&&!matchMedia("(max-width:1000px) and (pointer:coarse)").matches;const target=document.
+querySelector(wide?"#app .topbar .header-actions":"#app .topbar .header-brand");if(target&&home.parentElement!==target){if(wide)target.prepend(home);else target.
+append(home)}}function mobileExperience(){const app=document.getElementById("app");if(!app)return;const tools=app.querySelector(".workspace-tools"),bar=app.querySelector(
+".workspace-bar");if(tools&&bar){for(const button of[...bar.children].filter(x=>x.tagName==="BUTTON"))tools.querySelector(".tool-actions")?.prepend(button);const strong=bar.
+querySelector(":scope > strong");if(strong&&!strong.title)strong.title=strong.textContent}const nav=app.querySelector(".navigation-menu");if(nav){const summary=nav.
+querySelector(":scope > summary");summary?.setAttribute("aria-label","ابزارها و تنظیمات برنامه")}const gradeArea=app.querySelector("#lesson\
+GradesArea");if(gradeArea){for(const card of gradeArea.querySelectorAll(".card")){if(!card.classList.contains("mobile-grade-panel"))card.classList.add("mobile-g\
+rade-panel");if(!card.dataset.gradeHelpRemoved){const intro=[...card.children].find(x=>x.tagName==="P");intro?.remove();card.dataset.gradeHelpRemoved="true"}}}}
+function polishReportFilters(){if(state.view!=="reports")return;const tabs=document.querySelector(".report-navigation"),active=tabs?.querySelector(".active");if(tabs&&
+active&&tabs.scrollWidth>tabs.clientWidth){const box2=tabs.getBoundingClientRect(),r=active.getBoundingClientRect();if(r.left<box2.left||r.right>box2.right)tabs.
+scrollLeft+=r.left-(box2.left+(box2.width-r.width)/2)}const names={schoolId:"مدرسه",classId:"کلاس",lessonId:"درس",studentId:"هنرجو",date:"تاریخ\
+ جلسه",period:"زنگ"};for(const control of document.querySelectorAll('#app select[onchange*="Filter"],#app input[type="date"][onchange*="GlobalFilter"],#a\
+pp select[data-legacy-change],#app input[type="date"][data-legacy-change]')){const action=control.getAttribute("onchange")||EduLegacyEvents.source(control.getAttribute(
+"data-legacy-change")),key=action.match(/["']([^"']+)["']/)?.[1],caption=names[key];if(!caption||control.closest("label")||control.labels?.length)continue;const label=document.
+createElement("label");label.className="report-filter-field";const pairedDate=control.type==="date"&&control.nextElementSibling?.dataset.gregorianTarget==="true"?
+control.nextElementSibling:null;const text=document.createElement("span");text.textContent=caption;control.before(label);label.append(text,control);if(pairedDate){
+label.append(pairedDate);pairedDate.setAttribute("aria-label",caption)}const row=label.parentElement;if(!row.classList.contains("report-filter-grid"))row.classList.
+add("report-filter-grid");row.closest(".card")?.classList.add("report-filter-card")}const box=document.querySelector("#app .filter-box");if(box&&box.tagName!=="\
+DETAILS"){const details=document.createElement("details");details.className="filter-box report-options";details.open=!!state.reportOptionsOpen;details.ontoggle=
+()=>{state.reportOptionsOpen=details.open};const summary=document.createElement("summary");summary.textContent="تنظیم محتوای گزارش و نمایش اسامی";
+details.append(summary);while(box.firstChild)details.append(box.firstChild);box.replaceWith(details)}}const designRootIds=["app","modal","calPopup","mobileBar",
+"pwaWelcome"],dirtyRoots=new Set;let fullDesign=true;const designObserver=new MutationObserver(schedule);function observeDesignRoots(){for(const id of designRootIds){
+const root=document.getElementById(id);if(root)designObserver.observe(root,{childList:true,subtree:true})}designObserver.observe(document.body,{childList:true})}
+function enhance(){const appChanged=fullDesign||dirtyRoots.has("app"),modalChanged=fullDesign||dirtyRoots.has("modal"),roots=fullDesign?[document]:[...dirtyRoots].
+map(id=>document.getElementById(id)).filter(Boolean),tableSelector=[appChanged?"#app table":"",modalChanged?"#modalBody table":""].filter(Boolean).join(",");dirtyRoots.
+clear();fullDesign=false;designObserver.disconnect();try{if(appChanged){polishReportFilters();mobileExperience();polishExperience()}labelPlaceholderInputs(appChanged,
+modalChanged);updateDesign(appChanged);decorateIcons(roots);const tables=tableSelector?[...document.querySelectorAll(tableSelector)].filter(table=>!table.closest(
+".qb-page")):[];for(const table of tables){if(!table.dataset.responsiveSized&&table.dataset.mobileLayout!=="compact"){const columns=Math.max(1,...[...table.rows].
+slice(0,3).map(row=>[...row.cells].reduce((n,cell)=>n+cell.colSpan,0)));table.style.minWidth=(columns>=4?columns*120:Math.min(380,columns*140))+"px";table.dataset.
+responsiveSized="1"}}for(const container of queryRoots(roots,".table-scroll")){if(container.closest(".qb-page"))continue;if(!container.hasAttribute("tabindex")){
+container.tabIndex=0;container.setAttribute("role","region");container.setAttribute("aria-label","جدول با پیمایش افقی")}}for(const table of tables){
+if(table.dataset.mobileLayout==="compact"||table.closest(".responsive-scroll,.table-scroll"))continue;const wrap=document.createElement("div");wrap.className="r\
+esponsive-scroll";wrap.tabIndex=0;wrap.setAttribute("role","region");wrap.setAttribute("aria-label","جدول؛ برای دیدن ستون‌های دیگر افقی پیمایش کنید");
+table.before(wrap);wrap.append(table)}styleDataTables(tables);for(const grid of appChanged?document.querySelectorAll("#app .schedule-grid"):[]){if(grid.parentElement.
+classList.contains("responsive-scroll"))continue;const wrap=document.createElement("div");wrap.className="responsive-scroll";wrap.tabIndex=0;wrap.setAttribute("\
+role","region");wrap.setAttribute("aria-label","برنامه هفتگی با پیمایش افقی");grid.before(wrap);wrap.append(grid)}if(appChanged){const bar=document.
+querySelector(".workspace-bar");if(bar&&!document.querySelector("#app .workspace-tools")){const tools=document.createElement("details");tools.className="workspa\
+ce-tools no-print";tools.innerHTML='<summary>مدیریت و پشتیبان‌ها</summary><div class="tool-actions"></div>';const box=tools.querySelector(".to\
+ol-actions");for(const button of[...bar.querySelectorAll("button")])box.append(button);for(const small of[...bar.querySelectorAll("small")])box.append(small);const backup=document.
+createElement("button");backup.className="ghost";backup.textContent="ذخیره پشتیبان";backup.onclick=()=>exportBackup().catch(e=>alert(e.message));box.
+prepend(backup);bar.append(tools)}const topbar=document.querySelector(".topbar"),actions=topbar?.querySelector(".actions");if(actions&&!topbar.querySelector(".n\
+avigation-menu")){const menu=document.createElement("details");menu.className="navigation-menu no-print";menu.open=innerWidth>700&&!matchMedia("(max-width:1000p\
+x) and (pointer:coarse)").matches;menu.innerHTML='<summary title="ابزارها و تنظیمات"><span class="menu-toggle-label">فهرست برنامه</span><svg class="menu-toggle-\
+icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path class="menu-line-top" d="M5 12h14\
+"/><path class="menu-line-middle" d="M5 12h14"/><path class="menu-line-bottom" d="M5 12h14"/></svg></summary>';actions.before(menu);menu.querySelector("summary").
+id="headerNavigationToggle";menu.append(actions);menu.addEventListener("toggle",()=>{if(matchMedia("(max-width:700px), (max-width:1000px) and (pointer:coarse)").
+matches){const tools=menu.querySelector(".workspace-tools");if(tools)tools.open=menu.open}if(!menu.open){closeClassMenu();closeDataMenu()}});actions.addEventListener(
+"click",e=>{const button=e.target.closest("button");if(button&&!button.hasAttribute("aria-controls")&&matchMedia("(max-width:700px), (max-width:1000px) and (poi\
+nter:coarse)").matches){menu.open=false;menu.querySelector("summary").focus({preventScroll:true})}});const settings=actions.querySelector('button[data-header-ac\
+tion="settings"]');if(settings){settings.setAttribute("aria-label","تنظیمات برنامه");settings.title="تنظیمات برنامه"}}}positionHomeAction()}finally{
+pending=false;observeDesignRoots()}}function schedule(records){for(const record of records||[]){if(record.target===document.body){const changed=[...record.addedNodes,
+...record.removedNodes];for(const node of changed){if(node.nodeType===1&&designRootIds.includes(node.id))dirtyRoots.add(node.id);else fullDesign=true}}else{const root=record.
+target.closest?.("#app,#modal,#calPopup,#mobileBar,#pwaWelcome");if(root)dirtyRoots.add(root.id);else fullDesign=true}}if(!records)fullDesign=true;if(!pending){
+pending=true;requestAnimationFrame(enhance)}}let wideLayout;function viewport(){const visualHeight=window.visualViewport?.height||innerHeight;const editing=document.
+activeElement?.matches('input:not([type="checkbox"]):not([type="radio"]),textarea,[contenteditable="true"]');document.documentElement.dataset.keyboardOpen=String(
+!!editing&&innerHeight-visualHeight>120);document.documentElement.style.setProperty("--app-viewport",(window.visualViewport?.height||innerHeight)+"px");document.
+documentElement.style.setProperty("--app-viewport-top",(window.visualViewport?.offsetTop||0)+"px");const wide=innerWidth>700&&!matchMedia("(max-width:1000px) an\
+d (pointer:coarse)").matches;positionHomeAction();if(wide!==wideLayout){wideLayout=wide;for(const menu of document.querySelectorAll(".navigation-menu"))menu.open=
+wide}}function start(){enhance();viewport();window.visualViewport?.addEventListener("resize",viewport);window.visualViewport?.addEventListener("scroll",viewport);
+window.addEventListener("resize",viewport);document.addEventListener("focusin",viewport);document.addEventListener("focusout",()=>requestAnimationFrame(viewport))}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start);else start()})();
 //# sourceMappingURL=app-shell-ui.js.map

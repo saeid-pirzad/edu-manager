@@ -77,6 +77,7 @@ function installWorkspaceActions() {
     ["prepare-share-backup", () => openBackupShare()],
     ["share-backup-file", (button) => sharePreparedBackup(button)],
     ["download-share-backup", () => downloadPreparedBackup()],
+    ["close-backup-share", () => closeBackupShare()],
     ["single-file-choose", () => chooseSingleFile()],
     ["single-file-save", () => resumeSingleFile()],
     ["question-bank-file-permission", () => renewQuestionBankFilePermission()],

@@ -273,15 +273,34 @@
         ],
         [
           "question-bank",
-          "بانک سؤال",
+          "سؤال و آزمون",
           "M12 5C9 3 6 3 3 4v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1Zm0 0v15",
           () => goQuestionBank(),
+        ],
+        [
+          "backups",
+          "پشتیبان",
+          "M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3ZM8 12l3 3 5-6",
+          () =>
+            document
+              .querySelector(
+                '#app .header-actions [data-workspace-action="backups"]',
+              )
+              ?.click(),
         ],
       ];
       for (const [view, label, path, action] of items) {
         const b = document.createElement("button");
         b.type = "button";
         b.dataset.view = view;
+        if (view === "backups") {
+          b.setAttribute("aria-label", "ذخیره، پشتیبان‌گیری و بازیابی");
+          b.setAttribute("aria-haspopup", "dialog");
+          b.title = "ذخیره، پشتیبان‌گیری و بازیابی";
+        } else if (view === "question-bank") {
+          b.setAttribute("aria-label", "بانک سؤال و طراحی آزمون");
+          b.title = "بانک سؤال و طراحی آزمون";
+        }
         b.innerHTML =
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' +
           path +

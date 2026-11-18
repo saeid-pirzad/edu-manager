@@ -1,4 +1,17 @@
 let backupShareSession = null;
+function closeBackupShare({ restoreFocus = true } = {}) {
+  const session = backupShareSession;
+  if (!session) return;
+  session.file = session.blob = null;
+  backupShareSession = null;
+  if (session.inline) {
+    session.panel.remove();
+    if (restoreFocus)
+      document
+        .querySelector("#backupSchoolPanel .backup-share-entry")
+        ?.focus({ preventScroll: true });
+  } else closeModal();
+}
 
 function backupShareMessage(session, text, state = "ready") {
   if (backupShareSession !== session || !session.panel.isConnected) return;
@@ -15,6 +28,7 @@ function checkBackupShare(session) {
   if (
     backupShareSession !== session ||
     !session.panel.isConnected ||
+    (session.hub && !session.hub.isCurrent("school")) ||
     document.getElementById("modal").classList.contains("hidden")
   )
     throw Error("پنجره ارسال بسته شده است؛ پشتیبان را دوباره آماده کنید.");
@@ -26,16 +40,23 @@ function checkBackupShare(session) {
 
 async function openBackupShare() {
   const ensureCurrent = preserveAsyncTarget();
-  const opened = showModal(
-    "ارسال پشتیبان مدرسه",
+  const hub = typeof backupHubSession === "undefined" ? null : backupHubSession;
+  const inline = !!hub?.isCurrent("school");
+  const html =
     '<section class="backup-share" id="backupSharePanel"><header class="backup-share-heading"><span aria-hidden="true">' +
-      EduIcons.html("shield") +
-      "</span><div><h4>اطلاعات مدرسه، در یک فایل</h4><p>ابتدا فایل آماده می‌شود؛ سپس روش ارسال و گیرنده را خودتان انتخاب می‌کنید.</p></div></header>" +
-      '<div class="backup-share-file" data-backup-share-file hidden></div><p class="backup-share-status" data-backup-share-status role="status" aria-live="polite">در حال آماده‌سازی و بررسی پشتیبان کامل…</p>' +
-      '<p class="backup-share-note">این فایل اطلاعات مدرسه، هر دو ترم و سوابق قدیمیِ موجود را دارد؛ بانک سؤال و آزمون‌ها در فایل جدا هستند. آن را فقط برای گیرنده مورداعتماد بفرستید.</p>' +
-      '<div class="backup-share-actions"><button type="button" data-workspace-action="share-backup-file" disabled hidden>انتخاب برنامه و ارسال فایل</button><button type="button" class="ghost" data-workspace-action="download-share-backup" disabled hidden>دریافت فایل برای ارسال دستی</button><button type="button" class="ghost" data-workspace-action="prepare-share-backup" hidden>آماده‌سازی دوباره</button><button type="button" class="ghost" data-workspace-action="close">بستن</button></div></section>',
-  );
-  if (opened === false) return false;
+    EduIcons.html("shield") +
+    "</span><div><h4>اطلاعات مدرسه، در یک فایل</h4><p>ابتدا فایل آماده می‌شود؛ سپس روش ارسال و گیرنده را خودتان انتخاب می‌کنید.</p></div></header>" +
+    '<div class="backup-share-file" data-backup-share-file hidden></div><p class="backup-share-status" data-backup-share-status role="status" aria-live="polite">در حال آماده‌سازی و بررسی پشتیبان کامل…</p>' +
+    '<p class="backup-share-note">این فایل اطلاعات مدرسه، هر دو ترم و سوابق قدیمیِ موجود را دارد؛ بانک سؤال و آزمون‌ها در فایل جدا هستند. آن را فقط برای گیرنده مورداعتماد بفرستید.</p>' +
+    '<div class="backup-share-actions"><button type="button" data-workspace-action="share-backup-file" disabled hidden>انتخاب برنامه و ارسال فایل</button><button type="button" class="ghost" data-workspace-action="download-share-backup" disabled hidden>دریافت فایل برای ارسال دستی</button><button type="button" class="ghost" data-workspace-action="prepare-share-backup" hidden>آماده‌سازی دوباره</button><button type="button" class="ghost" data-workspace-action="close-backup-share">بستن</button></div></section>';
+  if (inline) {
+    if (backupShareSession?.inline) closeBackupShare();
+    const template = document.createElement("template");
+    template.innerHTML = html;
+    document
+      .querySelector("#backupSchoolPanel .backup-manual")
+      .after(template.content.firstElementChild);
+  } else if (showModal("ارسال پشتیبان مدرسه", html) === false) return false;
   const session = {
     panel: document.getElementById("backupSharePanel"),
     connection,
@@ -44,6 +65,8 @@ async function openBackupShare() {
     file: null,
     blob: null,
     sharing: false,
+    inline,
+    hub: inline ? hub : null,
   };
   backupShareSession = session;
   const modal = document.getElementById("modal"),

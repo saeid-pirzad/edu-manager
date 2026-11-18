@@ -68,17 +68,27 @@ function headerHtml() {
   h += '</div><div class="actions header-actions">';
   h +=
     btn("گزارش‌ها", "report", "reports", state.view === "reports") +
-    btn("برنامه هفتگی", "calendar", "master", state.view === "master");
+    btn(
+      "برنامه",
+      "calendar",
+      "master",
+      state.view === "master",
+      'title="برنامه هفتگی"',
+    );
   h += btn(
-    "بانک سؤال و طراحی آزمون",
+    "سؤال و آزمون",
     "book",
     "question-bank",
     state.view === "question-bank",
+    'title="بانک سؤال و طراحی آزمون"',
   ).replace('class="header-action', 'class="question-bank-entry header-action');
-  h += btn("پشتیبان و بازیابی", "shield", "backups").replace(
-    'data-header-action="backups"',
-    'data-workspace-action="backups"',
-  );
+  h += btn(
+    "پشتیبان",
+    "shield",
+    "backups",
+    false,
+    'title="ذخیره، پشتیبان‌گیری و بازیابی"',
+  ).replace('data-header-action="backups"', 'data-workspace-action="backups"');
   h += btn("تنظیمات", "settings", "settings") + "</div></div>";
   return h;
 }

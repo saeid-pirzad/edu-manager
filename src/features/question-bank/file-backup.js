@@ -371,7 +371,10 @@
         }
       });
     }
-    async function clear(expected, { isCurrent = () => true } = {}) {
+    async function clear(
+      expected,
+      { isCurrent = () => true, deleteFile = false, expectedFileId } = {},
+    ) {
       const cancelled = () =>
         Error("عملیات لغو شد؛ اطلاعات بانک سؤال تغییر نکرد.");
       if (!isCurrent()) throw cancelled();
@@ -380,19 +383,76 @@
           "انتخاب فایل یا پاک‌سازی بانک سؤال در حال انجام است؛ پس از پایان آن دوباره تلاش کنید.",
         );
       clearing = true;
+      let removed = false;
       try {
+        const target = config;
+        if (deleteFile && target) assertFileName(target.handle.name);
+        if (deleteFile && target && target.handle.kind !== "file")
+          throw Error("فقط فایل متصل بانک سؤال قابل حذف است.");
+        if (deleteFile && target && typeof target.handle.remove !== "function")
+          throw Error(
+            "این مرورگر حذف مستقیم فایل متصل را پشتیبانی نمی‌کند؛ هیچ اطلاعاتی حذف نشد. فایل را از مدیریت فایل دستگاه حذف کنید؛ سپس اتصال را قطع کرده و حذف اطلاعات را دوباره انجام دهید.",
+          );
+        // Start the permission request in the explicit confirmation gesture.
+        const permission =
+          deleteFile && target
+            ? await target.handle.requestPermission({ mode: "readwrite" })
+            : null;
         // Initialization may have an existing file write in flight. Finish it
         // before taking the same cross-window lock used by every writer.
         if (initialized) await initialized;
         if (!isCurrent()) throw cancelled();
         const reset = async () => {
           if (!isCurrent()) throw cancelled();
-          const bank = await repository.clear(expected, { isCurrent });
+          if (deleteFile) {
+            const current = await repository.readBackup();
+            if (
+              (current?.id || null) !== (expectedFileId || null) ||
+              (current?.id || null) !== (target?.id || null)
+            )
+              throw Error(
+                "اتصال فایل پس از پیش‌نمایش تغییر کرده؛ هیچ اطلاعاتی حذف نشد.",
+              );
+            if ((await repository.read()).revision !== expected)
+              throw Error(
+                "بانک پس از پیش‌نمایش تغییر کرده؛ هیچ اطلاعاتی حذف نشد.",
+              );
+            if (current) {
+              if (permission !== "granted")
+                throw Error("مجوز حذف فایل داده نشد؛ اطلاعات بانک حفظ شد.");
+              const inspected = await inspect(current.handle);
+              if (inspected.hash !== current.hash)
+                throw Error("فایل متصل بیرون از برنامه تغییر کرده؛ حذف نشد.");
+              if ((await repository.read()).revision !== expected)
+                throw Error("بانک هنگام بررسی فایل تغییر کرده؛ حذف نشد.");
+              if (!isCurrent()) throw cancelled();
+              await current.handle.remove();
+              removed = true;
+            }
+          }
+          let bank;
+          try {
+            bank = await repository.clear(expected, { isCurrent });
+          } catch (error) {
+            if (removed) {
+              // Keep the connection suspended under the writer's lock. A file
+              // removal cannot be rolled back with the IndexedDB transaction.
+              config = { ...target, suspended: "file-deleted" };
+              await repository.writeBackup(config).catch(() => {});
+              notify(
+                "error",
+                "فایل متصل حذف شد، اما اطلاعات بانک کامل پاک نشد؛ اتصال را قطع و وضعیت اطلاعات را بررسی کنید.",
+              );
+            }
+            throw error;
+          }
           config = null;
           host.clearTimeout(debounce);
           notify(
             "inactive",
-            "اطلاعات بانک سؤال پاک شد و ذخیرهٔ خودکار قطع شد؛ فایل‌های دستگاه تغییر نکردند.",
+            removed
+              ? "اطلاعات بانک سؤال و فایل متصل آن حذف شدند؛ اتصال خودکار قطع شد."
+              : "اطلاعات بانک سؤال پاک شد و ذخیرهٔ خودکار قطع شد؛ فایل‌های دستگاه تغییر نکردند.",
           );
           return bank;
         };
@@ -404,6 +464,14 @@
             "برای حفظ فایل قبلی، پاک‌سازی بانک سؤال را در Chrome یا Edge انجام دهید.",
           );
         return await reset();
+      } catch (error) {
+        if (removed)
+          throw Error(
+            "فایل متصل حذف شد، اما پاک‌سازی اطلاعات بانک کامل نشد؛ اطلاعات باقی‌مانده را بررسی و دوباره تلاش کنید. " +
+              error.message,
+            { cause: error },
+          );
+        throw error;
       } finally {
         clearing = false;
       }

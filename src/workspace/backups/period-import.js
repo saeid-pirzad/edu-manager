@@ -101,11 +101,11 @@ let backupHubImportOrigin = null;
 
 function backupHubHtml() {
   return (
-    '<div id="backupHub" class="backup-hub"><div class="backup-hub-tabs" role="tablist" aria-label="نوع اطلاعات پشتیبان"><button type="button" id="backupSchoolTab" role="tab" data-backup-tab="school" aria-controls="backupSchoolPanel" aria-selected="true">اطلاعات مدرسه</button><button type="button" id="backupBankTab" role="tab" data-backup-tab="bank" aria-controls="backupBankPanel" aria-selected="false" tabindex="-1">بانک سؤال و آزمون‌ها</button></div><section id="backupSchoolPanel" class="backup-hub-panel" role="tabpanel" aria-labelledby="backupSchoolTab" tabindex="0"><section class="backup-manual"><h4>فایل اطلاعات مدرسه</h4><p>کلاس‌ها، هنرجویان، جلسات و نمرات؛ مستقل از بانک سؤال.</p><div class="backup-action-grid"><button type="button" data-workspace-action="export-full">دریافت فایل</button><button type="button" class="ghost backup-share-entry" data-workspace-action="prepare-share-backup">ارسال فایل</button><button type="button" class="ghost" data-workspace-action="choose-import">بازیابی فایل</button></div><p id="lastExternalBackupStatus" class="backup-delivery-status" role="status">' +
+    '<div id="backupHub" class="backup-hub"><div class="backup-hub-tabs" role="tablist" aria-label="نوع اطلاعات پشتیبان"><button type="button" id="backupSchoolTab" role="tab" data-backup-tab="school" aria-controls="backupSchoolPanel" aria-selected="true">اطلاعات مدرسه</button><button type="button" id="backupBankTab" role="tab" data-backup-tab="bank" aria-controls="backupBankPanel" aria-selected="false" tabindex="-1">بانک سؤال و آزمون‌ها</button></div><section id="backupSchoolPanel" class="backup-hub-panel" role="tabpanel" aria-labelledby="backupSchoolTab" tabindex="0"><section class="backup-manual"><h4>پشتیبان دستی</h4><p>کلاس‌ها، هنرجویان، جلسات و نمرات؛ مستقل از بانک سؤال.</p><div class="backup-action-grid"><button type="button" data-workspace-action="export-full">دریافت فایل</button><button type="button" class="ghost backup-share-entry" data-workspace-action="prepare-share-backup">ارسال فایل</button><button type="button" class="ghost" data-workspace-action="choose-import">بازیابی فایل</button></div><p id="lastExternalBackupStatus" class="backup-delivery-status" role="status">' +
     esc(lastExternalBackupLabel()) +
-    "</p></section>" +
+    '</p><p class="backup-restore-help">فایل دریافتی، ارسالی (JSON یا TXT) و ذخیرهٔ خودکار همگی از «بازیابی فایل» قابل بازیابی‌اند.</p></section>' +
     singleFilePanel() +
-    '<details class="backup-reset"><summary>پاک‌سازی اطلاعات</summary><p>فقط اطلاعات مدرسه در این مرورگر حذف می‌شود؛ بانک سؤال و فایل‌های دستگاه باقی می‌مانند. پیش از ادامه پشتیبان مدرسه بگیرید.</p><button type="button" class="danger" data-workspace-action="open-wipe">بررسی و تأیید پاک‌سازی</button></details></section><section id="backupBankPanel" class="backup-hub-panel" role="tabpanel" aria-labelledby="backupBankTab" tabindex="0" hidden inert></section></div>'
+    '<details class="backup-reset"><summary>حذف اطلاعات و فایل متصل</summary><p>اطلاعات مدرسه و فقط فایل خودکارِ متصل به مدرسه حذف می‌شوند. بانک سؤال و فایل‌های دیگر محفوظ‌اند. یک پشتیبان جداگانه نگه دارید.</p><button type="button" class="danger" data-workspace-action="open-wipe">بررسی و تأیید حذف</button></details></section><section id="backupBankPanel" class="backup-hub-panel" role="tabpanel" aria-labelledby="backupBankTab" tabindex="0" hidden inert></section></div>'
   );
 }
 
@@ -151,6 +151,8 @@ async function openBackups({ tab } = {}) {
   const dispose = () => {
     if (!alive) return;
     alive = false;
+    if (backupShareSession?.hub === session)
+      closeBackupShare({ restoreFocus: false });
     disposeBank?.();
     disposeBank = null;
     observer.disconnect();
@@ -161,6 +163,8 @@ async function openBackups({ tab } = {}) {
   const selectTab = (next, focus = false) => {
     if (!isCurrent() || !panels[next]) return;
     if (next !== activeTab) {
+      if (backupShareSession?.hub === session)
+        closeBackupShare({ restoreFocus: false });
       disposeBank?.();
       disposeBank = null;
       panels.bank.replaceChildren();

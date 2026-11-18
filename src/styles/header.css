@@ -298,4 +298,14 @@
       display: none;
     }
   }
+  @media (min-width: 701px) and (pointer: fine), (min-width: 1001px) {
+    #app .topbar .header-actions {
+      gap: clamp(6px, 0.8vw, 12px);
+    }
+    #app .topbar .header-actions > .header-action,
+    #app .topbar .header-actions > .workspace-tools > summary {
+      padding: 8px clamp(6px, 0.65vw, 10px);
+      flex-shrink: 0;
+    }
+  }
 }

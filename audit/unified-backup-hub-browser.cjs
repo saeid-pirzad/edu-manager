@@ -300,6 +300,28 @@ main({
           &&!!document.querySelector('.header-actions [data-workspace-action=backups]');
       })()`),
     );
+    check(
+      "school sharing stays inside its tab and sends only its verified school file on the second click",
+      await evaluateGesture(`(async()=>{
+        const hub=document.getElementById('backupHub'),bank=JSON.stringify(await EduQuestionBankRepository.read());
+        const descriptors=Object.fromEntries(['share','canShare'].map(key=>[key,Object.getOwnPropertyDescriptor(navigator,key)]));
+        let calls=0,payload;
+        Object.defineProperty(navigator,'canShare',{configurable:true,value:()=>true});
+        Object.defineProperty(navigator,'share',{configurable:true,value:value=>{calls++;payload=value;return Promise.reject(new DOMException('cancelled','AbortError'));}});
+        try{
+          document.querySelector('#backupSchoolPanel .backup-share-entry').click();
+          for(let i=0;i<100&&!document.querySelector('#backupSchoolPanel [data-workspace-action=share-backup-file]:not([disabled])');i++)await __hubTick();
+          const panel=document.querySelector('#backupSchoolPanel #backupSharePanel');
+          if(!panel||!hub.isConnected||calls!==0)return false;
+          panel.querySelector('[data-workspace-action=share-backup-file]').click();await __hubTick();
+          const file=payload?.files?.[0];
+          const passed=calls===1&&file.name==='Classyar-Classroom.txt'&&JSON.parse(await file.text()).format==='EduManager.FullBackup'
+            &&bank===JSON.stringify(await EduQuestionBankRepository.read());
+          panel.querySelector('[data-workspace-action=close-backup-share]').click();
+          return passed&&!document.querySelector('#backupSharePanel')&&hub.isConnected;
+        }finally{for(const [key,descriptor] of Object.entries(descriptors)){if(descriptor)Object.defineProperty(navigator,key,descriptor);else delete navigator[key];}}
+      })()`),
+    );
     await selectTab("bank");
     const inactiveDisclosure = await evaluate(`(()=>{
       const panel=document.getElementById('backupBankPanel'),details=panel.querySelector('details.backup-automatic.qb-backup-automatic');
@@ -307,21 +329,25 @@ main({
         state:EduQuestionBankFileBackup.service.state().state,
         manual:!!panel.querySelector('.backup-manual.qb-backup-manual .backup-action-grid'),
         details:!!details,
-        closed:!!details&&!details.open,
+        open:!!details&&details.open,
         heading:details?.querySelector('summary > span')?.textContent,
         optional:details?.querySelector('summary > small')?.textContent,
-        hiddenActions:!!details&&[...details.querySelectorAll('.qb-file-actions button')].every(button=>!button.checkVisibility())
+        visibleActions:!!details&&[...details.querySelectorAll('.qb-file-actions button')].every(button=>button.checkVisibility()),
+        metadata:!!details?.querySelector('.backup-connection[data-state=inactive]')&&details.querySelectorAll('.backup-file-details dt').length===3,
+        noConnection:details?.querySelector('.qb-file-save')?.disabled&&details?.querySelector('.qb-file-stop')?.disabled
       };
     })()`);
     check(
-      "inactive bank backup uses the same manual card and a closed optional automatic disclosure",
+      "inactive bank backup exposes its three automatic actions, disconnected state and complete file metadata",
       inactiveDisclosure.state === "inactive" &&
         inactiveDisclosure.manual &&
         inactiveDisclosure.details &&
-        inactiveDisclosure.closed &&
+        inactiveDisclosure.open &&
         inactiveDisclosure.heading === "ذخیره خودکار" &&
         inactiveDisclosure.optional === "اختیاری" &&
-        inactiveDisclosure.hiddenActions,
+        inactiveDisclosure.visibleActions &&
+        inactiveDisclosure.metadata &&
+        inactiveDisclosure.noConnection,
       inactiveDisclosure,
     );
     // Let the dialog's initial focus pass finish before exercising native keys.
@@ -336,8 +362,8 @@ main({
       ),
     );
     for (const [key, code, expectedOpen] of [
-      ["Enter", 13, true],
-      [" ", 32, false],
+      ["Enter", 13, false],
+      [" ", 32, true],
     ]) {
       await cdp("Input.dispatchKeyEvent", {
         type: "keyDown",
@@ -809,7 +835,7 @@ main({
       })()`),
     );
     check(
-      "bank clear atomically detaches its real native file, preserves file bytes and the school file connection, and refreshes the bank page",
+      "bank clear removes its native file and data, preserves the school file and connection, and refreshes the bank page",
       await evaluateGesture(`(async()=>{
         closeModal();await __hubTick();
         const directory=await navigator.storage.getDirectory(),picker=window.showSaveFilePicker;
@@ -843,9 +869,10 @@ main({
           form=await __hubOpenClear();__hubClearFields(form,'حذف',true);form.requestSubmit();
           let after;
           for(let i=0;i<150;i++){after=await R.read();if(after.revision>before.revision&&!document.querySelector('.qb-backup[aria-busy=true]'))break;await __hubTick();}
+          let removed=false;try{await bankHandle.getFile();}catch(error){removed=error.name==='NotFoundError';}
           return after.revision===before.revision+1&&['courses','units','questions','exams'].every(key=>after[key].length===0)
             &&!(await R.readBackup())&&EduQuestionBankFileBackup.service.state().state==='inactive'
-            &&(await (await bankHandle.getFile()).text())===saved
+            &&removed
             &&await __hubStableSchool()===school&&await __hubSameSchoolConnection(schoolConfig)
             &&(await (await schoolHandle.getFile()).text())===schoolFile
             &&!document.querySelector('.qb-page .qb-question-row,.qb-page .qb-exam-card')
@@ -911,6 +938,51 @@ main({
         `[...document.querySelectorAll('.qb-backup-confirm button')].find(button=>button.textContent==='انصراف').click()`,
       );
     }
+    const beforeSchoolWipe = await evaluate(`(async()=>{
+      const school=await __hubSchoolConnection(),bank=await EduQuestionBankRepository.readBackup();
+      return {schoolName:school.handle.name,bankName:bank.handle.name,bank:JSON.stringify(await EduQuestionBankRepository.read()),bankFile:await (await bank.handle.getFile()).text()};
+    })()`);
+    await evaluateGesture(`(async()=>{
+      closeModal();await __hubTick();await EduV24.openBackups({tab:'school'});
+      document.querySelector('#backupSchoolPanel [data-workspace-action=open-wipe]').click();
+      await __hubTick();
+      if(!document.getElementById('wipeWarning')||!document.querySelector('.wipe-backup').textContent.includes(${JSON.stringify(beforeSchoolWipe.schoolName)}))throw Error('Wipe must name the exact school file');
+      window.confirm=()=>true;
+      document.getElementById('wipeText').value='حذف';document.getElementById('wipeBackup').checked=true;
+      globalThis.__beforeScopedSchoolWipe=true;
+      document.getElementById('wipeEditor').requestSubmit();
+    })()`);
+    let schoolWipeReloaded = false;
+    for (let attempt = 0; attempt < 150; attempt++) {
+      await delay(100);
+      try {
+        schoolWipeReloaded = await evaluate(
+          "!globalThis.__beforeScopedSchoolWipe && !!globalThis.EduV24?.getReportContext?.().ready",
+        );
+        if (schoolWipeReloaded) break;
+      } catch (error) {
+        if (
+          !/Execution context was destroyed|Cannot find (?:default execution )?context|Inspected target navigated/i.test(
+            error.message || String(error),
+          )
+        )
+          throw error;
+      }
+    }
+    check(
+      "school deletion returns to a ready application after its own reset",
+      schoolWipeReloaded,
+    );
+    check(
+      "school wipe removes only its connected native file and school database while preserving the bank and its file",
+      await evaluate(`(async()=>{
+        const directory=await navigator.storage.getDirectory();
+        let removed=false;try{await directory.getFileHandle(${JSON.stringify(beforeSchoolWipe.schoolName)});}catch(error){removed=error.name==='NotFoundError';}
+        const handle=await directory.getFileHandle(${JSON.stringify(beforeSchoolWipe.bankName)});
+        return removed&&db.schools.length===0&&JSON.stringify(await EduQuestionBankRepository.read())===${JSON.stringify(beforeSchoolWipe.bank)}
+          &&await (await handle.getFile()).text()===${JSON.stringify(beforeSchoolWipe.bankFile)}&&!!(await EduQuestionBankRepository.readBackup());
+      })()`),
+    );
   },
 }).catch((error) => {
   console.error(error.stack || String(error));

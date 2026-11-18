@@ -208,6 +208,149 @@
     outline: 2px solid var(--status-warning);
     outline-offset: 2px;
   }
+  /* Both file scopes share one compact notice; only the scope marker differs. */
+  #app
+    > .workspace-bar:has(
+      > :is(#singleFileBadge, #questionBankFileBadge):not([hidden])
+    ) {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 8px 0 !important;
+    margin-inline: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  #app .workspace-bar > :is(#singleFileBadge, #questionBankFileBadge) {
+    --file-scope-color: var(--theme-primary);
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--status-danger-soft);
+    color: var(--theme-ink);
+    border: 1px solid
+      color-mix(in srgb, var(--status-danger) 38%, var(--status-danger-soft));
+    padding: 0 10px 8px;
+    border-radius: 6px;
+    box-shadow: none;
+    text-align: start;
+  }
+  #app .workspace-bar > #questionBankFileBadge {
+    --file-scope-color: var(--status-success);
+  }
+  #app
+    .workspace-bar
+    > :is(#singleFileBadge, #questionBankFileBadge):not([hidden]) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  #app :is(#singleFileBadge, #questionBankFileBadge) .single-file-message {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 6px;
+    padding-inline-end: 88px;
+    padding-top: 8px;
+    line-height: 1.65;
+  }
+  #app :is(#singleFileBadge, #questionBankFileBadge) .backup-file-purpose {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    min-height: 28px;
+    flex: 0 0 100%;
+    box-sizing: border-box;
+    padding-inline-end: 0;
+    color: var(--theme-ink);
+  }
+  #app
+    :is(#singleFileBadge, #questionBankFileBadge)
+    .backup-file-purpose::before {
+    content: "";
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+    background: var(--file-scope-color);
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 22H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8l6 6v3M13 2v6h6M7 12h3M7 16h1'/%3E%3Crect x='11' y='16' width='11' height='7' rx='1.5'/%3E%3Cpath d='M14 16v-2a2.5 2.5 0 0 1 5 0v2M16.5 19v1'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+  }
+  #app :is(#singleFileBadge, #questionBankFileBadge) .backup-notice-filename {
+    color: var(--theme-muted);
+    font-size: 9px;
+    line-height: 1.6;
+    order: 1;
+    max-width: 100%;
+    flex-shrink: 0;
+    font-weight: 600;
+    border: 0;
+    padding-top: 0;
+    margin-top: 0;
+    text-align: start;
+  }
+  #app :is(#singleFileBadge, #questionBankFileBadge) .backup-file-detail {
+    color: var(--theme-muted);
+    font-size: 10px;
+    order: 2;
+    flex: 1 1 110px;
+    min-width: 0;
+    padding-inline-end: 0;
+  }
+  #app
+    :is(#singleFileBadge, #questionBankFileBadge)
+    > .single-file-permission-action {
+    position: absolute;
+    inset-inline-end: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 78px;
+    min-width: 0;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 8px;
+    border: 0 !important;
+    background: transparent !important;
+    color: var(--theme-ink) !important;
+    font-size: 11px;
+    line-height: 1;
+    border-radius: 6px;
+  }
+  #app
+    :is(#singleFileBadge, #questionBankFileBadge)
+    > .single-file-permission-action::before {
+    content: "";
+    position: absolute;
+    inset: 6px 0;
+    border: 1px solid
+      color-mix(in srgb, var(--status-danger) 25%, var(--theme-surface));
+    border-radius: 6px;
+    background: var(--theme-surface);
+    pointer-events: none;
+  }
+  #app
+    :is(#singleFileBadge, #questionBankFileBadge)
+    > .single-file-permission-action
+    .ui-button-label {
+    position: relative;
+    line-height: 1.5;
+  }
+  #app
+    :is(#singleFileBadge, #questionBankFileBadge)
+    > .single-file-permission-action
+    .control-icon {
+    display: none;
+  }
+  #app
+    :is(#singleFileBadge, #questionBankFileBadge)
+    > .single-file-permission-action:focus-visible {
+    outline-color: var(--theme-primary);
+  }
   .workspace-tool-actions {
     box-shadow: 0 8px 24px #2d34400a;
   }
@@ -5170,17 +5313,6 @@
   #app .topbar .header-brand {
     width: calc(100% - 54px) !important;
   }
-  #uiBottomNav {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 2px;
-    padding-inline: 6px;
-  }
-  #uiBottomNav button {
-    min-width: 0;
-    padding-inline: 2px;
-    font-size: 11px;
-    white-space: nowrap;
-  }
 }
 @media screen and (max-width: 700px),
   screen and (max-width: 1000px) and (pointer: coarse) {
@@ -6382,5 +6514,106 @@
 @media screen and (max-width: 700px) {
   #app .session-create-form select {
     font-size: 16px;
+  }
+}
+/* Navigation controls share one icon box, label rhythm and touch target. */
+@media screen {
+  #app .topbar .header-actions > .header-action,
+  #app .topbar .header-actions > .workspace-tools > summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+  #app .topbar .header-actions > .header-action > svg,
+  #app .topbar .workspace-tools-symbol {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--header-icon-size);
+    height: var(--header-icon-size);
+    flex: 0 0 var(--header-icon-size);
+  }
+  #app .topbar .header-actions > .header-action > span,
+  #app
+    .topbar
+    .workspace-tools
+    > summary
+    > span:not(.workspace-tools-symbol):not(.workspace-tools-chevron) {
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+}
+@media screen and (max-width: 700px),
+  screen and (max-width: 1000px) and (pointer: coarse) {
+  #uiBottomNav {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 2px;
+    padding-inline: 6px;
+  }
+  #uiBottomNav > button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 0;
+    min-height: 54px;
+    margin: 0;
+    padding: 5px 0;
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+  #uiBottomNav > button > svg {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+  }
+  #uiBottomNav > button > span {
+    display: block;
+    line-height: 14px;
+    white-space: nowrap;
+  }
+  #app .navigation-menu .header-actions > [data-workspace-action="backups"] {
+    display: none;
+  }
+}
+@media screen and (max-width: 360px) {
+  #uiBottomNav > button {
+    font-size: 9px;
+  }
+}
+@media screen and (min-width: 701px) and (max-width: 850px) and (pointer: fine) {
+  #app .topbar {
+    padding-inline: 12px;
+  }
+  #app .topbar .header-actions > .header-action,
+  #app .topbar .header-actions > .workspace-tools > summary {
+    gap: 6px;
+  }
+}
+@media screen and (min-width: 701px) and (max-width: 1100px) and (pointer: fine),
+  screen and (min-width: 1001px) and (max-width: 1100px) {
+  #app .topbar {
+    flex-wrap: wrap;
+    column-gap: 16px;
+    row-gap: 8px;
+  }
+  #app .topbar .header-brand {
+    flex: 0 0 auto;
+    min-inline-size: max-content;
+  }
+  #app .topbar .header-brand h1 {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  #app .topbar .navigation-menu {
+    flex: 0 0 auto;
+    min-inline-size: max-content;
+    margin-inline-start: auto;
   }
 }

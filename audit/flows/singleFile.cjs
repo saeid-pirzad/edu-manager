@@ -558,35 +558,49 @@ module.exports = async function singleFile() {
         return originalCreate.apply(this, args);
       };
       click("single-file-save");
-      await waitFor(() =>
-        document
-          .getElementById("singleFileStatus")
-          ?.querySelector(".single-file-permission-action"),
+      await waitFor(
+        () =>
+          document
+            .getElementById("singleFileStatus")
+            ?.textContent.includes("اجازه") &&
+          !document.querySelector(
+            '#backupSchoolPanel [data-backup-file-action="save"]',
+          )?.disabled,
       );
       const badge = document.getElementById("singleFileBadge"),
         modalStatus = document.getElementById("singleFileStatus");
       cases.push({
         id: "SF09_INLINE_PERMISSION",
-        name: "permission warning offers one explicit action beside each live status, outside the live region",
+        name: "permission warning uses the global retry and the existing automatic save control without adding a fourth panel action",
         pass: [badge, modalStatus].every((notice) => {
+          const inPanel = notice === modalStatus;
           const message = notice.querySelector('[role="status"]'),
-            action = notice.querySelector(".single-file-permission-action");
+            action = inPanel
+              ? notice
+                  .closest(".backup-automatic")
+                  .querySelector('[data-backup-file-action="save"]')
+              : notice.querySelector(".single-file-permission-action");
           return (
             message &&
             action &&
-            action.parentElement === message.parentElement &&
+            (inPanel || action.parentElement === message.parentElement) &&
             !message.contains(action) &&
             action.type === "button" &&
-            action.textContent.trim() === "اجازه مجدد" &&
+            action.textContent.trim() ===
+              (inPanel ? "ذخیره اکنون" : "اجازه مجدد") &&
             message.querySelector(".backup-file-purpose")?.textContent ===
               "اطلاعات مدرسه" &&
             message.querySelector(".backup-notice-filename")?.textContent ===
               failedHandle.name &&
             message.querySelector(".backup-notice-filename")?.dir === "ltr" &&
-            action.getAttribute("aria-label") ===
-              "اجازه مجدد برای فایل اطلاعات مدرسه: " + failedHandle.name &&
+            (inPanel
+              ? action.dataset.workspaceAction === "single-file-save" &&
+                notice.closest(".backup-automatic").querySelectorAll("button")
+                  .length === 3
+              : action.getAttribute("aria-label") ===
+                "اجازه مجدد برای فایل اطلاعات مدرسه: " + failedHandle.name) &&
             notice.querySelectorAll(".single-file-permission-action").length ===
-              1
+              (inPanel ? 0 : 1)
           );
         }),
         observed: {},

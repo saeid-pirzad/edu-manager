@@ -94,7 +94,7 @@
           clearBackup.setAttribute("data-qb-clear-backup", "");
           backupLabel.append(
             clearBackup,
-            el("span", "پشتیبان مستقل بانک سؤال را نگه داشته‌ام."),
+            el("span", "یک پشتیبان جدا از فایلِ مشمول حذف نگه داشته‌ام."),
           );
           clearError = el("p", undefined, "qb-backup-confirm-error");
           clearError.setAttribute("role", "alert");
@@ -157,7 +157,7 @@
     }
     const manual = el("section", undefined, "backup-manual qb-backup-manual");
     manual.append(
-      el("h4", "فایل بانک سؤال و آزمون‌ها"),
+      el("h4", "پشتیبان دستی"),
       el("p", "درس‌ها، سؤال‌ها و آزمون‌ها؛ مستقل از اطلاعات مدرسه.", "qb-help"),
     );
     const manualActions = el("div", undefined, "backup-action-grid");
@@ -220,6 +220,13 @@
       manualActions,
     );
     restore.classList.add("qb-backup-restore");
+    manual.append(
+      el(
+        "p",
+        "فایل دریافتی، ارسالی (JSON یا TXT) و ذخیرهٔ خودکار همگی از «بازیابی فایل» قابل بازیابی‌اند.",
+        "backup-restore-help",
+      ),
+    );
     upload.onchange = async () => {
       const token = ++generation;
       try {
@@ -289,12 +296,13 @@
             : state.message;
       return {
         supported: F.supported(),
+        state: state.state,
         purpose: "بانک سؤال و آزمون‌ها",
         name: state.connected ? state.name : "",
         savedAt: state.savedAt,
         needsReview: attention,
         message,
-        open: attention,
+        open: true,
         noticeHidden: state.state === "active",
         fallback: attention,
         ids: {
@@ -357,10 +365,10 @@
     bindAutomatic(stop, () => F.stop());
     const reset = el("details", undefined, "backup-reset qb-backup-reset");
     reset.append(
-      el("summary", "پاک‌سازی اطلاعات"),
+      el("summary", "حذف اطلاعات و فایل متصل"),
       el(
         "p",
-        "فقط درس‌ها، سؤال‌ها و آزمون‌های بانک سؤال در این مرورگر حذف می‌شوند؛ اطلاعات مدرسه و فایل‌های دستگاه باقی می‌مانند.",
+        "اطلاعات بانک سؤال و فقط فایل خودکارِ متصل به آن حذف می‌شوند. اطلاعات مدرسه و فایل‌های دیگر محفوظ‌اند. یک پشتیبان جداگانه نگه دارید.",
       ),
     );
     const clear = button(
@@ -372,10 +380,11 @@
         disposeShare();
         const token = ++generation;
         const baseline = D.validate(await R.read());
+        const fileTarget = await R.readBackup();
         if (!current() || token !== generation) return;
         assertRestoreAllowed();
         await confirm(
-          "تمام درس‌ها، بخش‌ها، سؤال‌ها و آزمون‌های بانک سؤال از این مرورگر پاک و اتصال فایل خودکار قطع می‌شود. اطلاعات مدرسه و فایل‌های قبلی روی دستگاه تغییر نمی‌کنند. بازگردانی فقط با فایل پشتیبان بانک سؤال ممکن است.",
+          `تمام درس‌ها، بخش‌ها، سؤال‌ها و آزمون‌های بانک سؤال حذف می‌شوند. ${fileTarget ? `فایل متصل «${fileTarget.handle.name}» نیز از دستگاه حذف می‌شود.` : "فایل خودکار متصلی وجود ندارد."} اطلاعات مدرسه و فایل‌های دیگر تغییر نمی‌کنند. بازگردانی فقط با پشتیبان جداگانه ممکن است.`,
           async () => {
             assertRestoreAllowed();
             if (token !== generation) return false;
@@ -384,12 +393,16 @@
             section.setAttribute("aria-busy", "true");
             try {
               await F.clear(baseline.revision, {
+                deleteFile: true,
+                expectedFileId: fileTarget?.id,
                 isCurrent: () =>
                   current() && token === generation && !editorPending(),
               });
               root.dispatchEvent(new Event("edu-question-bank-restored"));
               show(
-                "اطلاعات بانک سؤال پاک و اتصال خودکار قطع شد؛ اطلاعات مدرسه و فایل‌های دستگاه تغییر نکردند.",
+                fileTarget
+                  ? "اطلاعات بانک سؤال و فایل متصل آن حذف شدند؛ اطلاعات مدرسه و فایل‌های دیگر تغییر نکردند."
+                  : "اطلاعات بانک سؤال حذف شد؛ فایل متصلی وجود نداشت و اطلاعات مدرسه تغییر نکرد.",
               );
               return true;
             } finally {
@@ -417,10 +430,12 @@
         automatic.open = true;
       previousState = state.state;
       const options = viewOptions(state);
-      summary.innerHTML = view.summaryHtml(options);
-      summary.querySelector("bdi")?.classList.add("qb-file-name");
+      summary.innerHTML = view.summaryHtml({ ...options, detailed: true });
+      summary
+        .querySelector(".schools-file-name")
+        ?.classList.add("qb-file-name");
       if (options.supported) {
-        status.innerHTML = view.noticeHtml(options);
+        status.innerHTML = view.noticeHtml({ ...options, permission: null });
         status.hidden = options.noticeHidden;
         const permission = status.querySelector("[data-qb-file-permission]");
         if (permission) bindAutomatic(permission, () => F.saveNow());
@@ -432,7 +447,8 @@
         restore.disabled =
         clear.disabled =
           busy;
-      choose.disabled = save.disabled = stop.disabled = busy || !F.supported();
+      choose.disabled = busy || state.state === "busy" || !F.supported();
+      save.disabled = stop.disabled = choose.disabled || !state.connected;
     }
     const unsubscribe = F.subscribe(paint);
     F.init().catch(error);

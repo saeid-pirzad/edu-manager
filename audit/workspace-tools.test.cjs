@@ -50,7 +50,7 @@ test("workspace tools retain periods, undo and settings without a duplicate back
   assert.doesNotMatch(html, /data-workspace-action="backups"/);
   assert.doesNotMatch(html, /data-workspace-action="history"|تاریخچه تغییرات/);
   assert.match(html, /data-header-action="settings"/);
-  assert.match(html, /ابزارها و تنظیمات/);
+  assert.match(html, /<span>ابزارها<\/span>/);
 });
 test("workspace tools start collapsed with one native keyboard disclosure", () => {
   const html = fixture().workspaceToolsHtml();

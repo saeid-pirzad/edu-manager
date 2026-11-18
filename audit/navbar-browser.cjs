@@ -137,6 +137,17 @@ function inspectNavbar() {
     rowAlignment,
     insets,
     brandMenuOverlap: overlap(brandBox, menuBox),
+    brandActionGap:
+      brandBox.left -
+      Math.max(
+        ...[
+          ...actions.querySelectorAll(
+            ":scope > .header-action,:scope > .workspace-tools > summary",
+          ),
+        ]
+          .filter(visible)
+          .map((element) => box(element).right),
+      ),
     controls,
     logo,
     icons,
@@ -166,6 +177,9 @@ function inspectNavbar() {
           .map((button) => ({
             view: button.dataset.view,
             ...box(button),
+            icon: box(button.querySelector("svg")),
+            label: box(button.querySelector("span")),
+            clipped: button.scrollWidth > button.clientWidth + 1,
           }))
       : [],
     questionBank: {
@@ -231,8 +245,8 @@ async function run({ cdp, evaluate, cases, delay }) {
   };
   const scenarios = [
     ...[
-      320, 390, 600, 700, 701, 768, 834, 900, 1000, 1001, 1023, 1024, 1100,
-      1101, 1280, 1281, 1440,
+      320, 390, 600, 640, 700, 701, 720, 744, 768, 800, 834, 850, 851, 900,
+      1000, 1001, 1023, 1024, 1100, 1101, 1280, 1281, 1440,
     ].map((width) => ({ width, height: 1000, touch: false })),
     { width: 768, height: 1024, touch: true },
     { width: 1024, height: 768, touch: true },
@@ -284,7 +298,8 @@ async function run({ cdp, evaluate, cases, delay }) {
         result.questionBank.direct === 1 &&
           result.questionBank.inTools === 0 &&
           result.backup === 1 &&
-          (!result.compact || !open || result.backupVisible),
+          (!result.compact ||
+            result.bottom.some((button) => button.view === "backups")),
         {
           questionBank: result.questionBank,
           backup: result.backup,
@@ -350,19 +365,22 @@ async function run({ cdp, evaluate, cases, delay }) {
       );
       if (!result.compact)
         add(
-          "SINGLE_ROW_" + id,
-          "The brand and every primary header action share one vertically centered row at " +
+          "HEADER_ROWS_" + id,
+          "Primary actions align and remain separated from the brand, wrapping safely when needed at " +
             id,
           result.rowAlignment.actionsHeight > 0 &&
-            Math.abs(
-              result.rowAlignment.brandCenterY -
-                result.rowAlignment.actionsCenterY,
-            ) <= 1 &&
+            ((result.brandActionGap >= 8 &&
+              Math.abs(
+                result.rowAlignment.brandCenterY -
+                  result.rowAlignment.actionsCenterY,
+              ) <= 1) ||
+              (width <= 850 && result.menu.top >= result.brand.bottom + 8)) &&
             result.rowAlignment.primaryControls.length > 0 &&
             result.rowAlignment.primaryControls.every(
               (control) =>
-                Math.abs(control.centerY - result.rowAlignment.brandCenterY) <=
-                1,
+                Math.abs(
+                  control.centerY - result.rowAlignment.actionsCenterY,
+                ) <= 1,
             ),
           result.rowAlignment,
         );
@@ -371,14 +389,14 @@ async function run({ cdp, evaluate, cases, delay }) {
           "DENSITY_" + id,
           "Tablet and LG menus use readable compact spacing without reducing touch targets at " +
             id,
-          result.groupGap === "3px" &&
+          parseFloat(result.groupGap) >= 6 &&
             result.rowAlignment.primaryControls.length > 0 &&
             result.rowAlignment.primaryControls.every(
               (control) =>
                 control.fontSize === "12px" &&
-                control.gap === "3px" &&
-                control.paddingInlineStart === "4px" &&
-                control.paddingInlineEnd === "4px",
+                control.gap === (width <= 850 ? "6px" : "8px") &&
+                parseFloat(control.paddingInlineStart) >= 6 &&
+                parseFloat(control.paddingInlineEnd) >= 6,
             ),
           {
             groupGap: result.groupGap,
@@ -413,15 +431,25 @@ async function run({ cdp, evaluate, cases, delay }) {
       if (result.compact)
         add(
           "BOTTOM_" + id,
-          "The five compact bottom-navigation targets remain visible and fit at " +
+          "The six compact bottom-navigation targets remain visible and fit at " +
             id,
-          result.bottom.length === 5 &&
+          result.bottom.length === 6 &&
             result.bottom.map((button) => button.view).join(",") ===
-              "schools,class,master,reports,question-bank" &&
+              "schools,class,master,reports,question-bank,backups" &&
             result.bottom.every(
               (button) =>
                 button.width >= 43.5 &&
                 button.height >= 43.5 &&
+                !button.clipped &&
+                button.icon.width === 20 &&
+                button.icon.height === 20 &&
+                Math.abs(
+                  (button.icon.left +
+                    button.icon.right -
+                    button.label.left -
+                    button.label.right) /
+                    2,
+                ) <= 1 &&
                 button.left >= -1 &&
                 button.right <= width + 1,
             ),
@@ -505,6 +533,28 @@ async function run({ cdp, evaluate, cases, delay }) {
       );
     }
   }
+  await cdp("Emulation.setDeviceMetricsOverride", {
+    width: 390,
+    height: 900,
+    deviceScaleFactor: 1,
+    mobile: false,
+  });
+  await evaluate("closeModal(); goSchools()");
+  await pause();
+  await evaluate(
+    'document.querySelector("#uiBottomNav [data-view=backups]").click()',
+  );
+  await pause();
+  const backupAction = await evaluate(
+    '({open:!document.getElementById("modal").classList.contains("hidden"),hub:!!document.getElementById("backupHub"),tabs:document.querySelectorAll("#backupHub [role=tab]").length})',
+  );
+  add(
+    "BOTTOM_BACKUP_ACTION",
+    "The bottom backup action opens the existing two-database backup hub",
+    backupAction.open && backupAction.hub && backupAction.tabs === 2,
+    backupAction,
+  );
+  await evaluate("closeModal()");
   await cdp("Emulation.setTouchEmulationEnabled", { enabled: false });
   await evaluate("delete globalThis.__navbarAuditTrigger");
   fs.writeFileSync(

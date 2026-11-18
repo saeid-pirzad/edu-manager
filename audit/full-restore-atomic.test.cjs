@@ -243,6 +243,14 @@ test("full restore preview isolates its layout and exposes inline errors and can
   assert.doesNotMatch(html, /courseError|در فایل ثبت نشده/);
 });
 
+test("school restoration preserves an unsaved bank draft before replacing any school data", async () => {
+  const { c, committed } = fixture();
+  c.EduQuestionBankUI = { hasPendingChanges: () => true };
+  await assert.rejects(c.restoreFullBackup(), /بانک سؤال/);
+  assert.equal(committed.length, 0);
+  assert.equal(c.workspace.id, "original");
+});
+
 test("synchronous write failure rolls back all clears and queued restore writes", async () => {
   const { c, committed, aborted } = fixture({ syncFailure: true });
   await assert.rejects(c.restoreFullBackup(), /synchronous write failure/);

@@ -83,16 +83,17 @@ M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M8 9h1M15 9h1M8 12h1M15 12h1",report:"M4 3
 <button type="button" class="header-action'+(active?" is-active":"")+'" data-header-action="'+action+'" '+(active?'aria-current="page" ':"")+extra+">"+icon(icons[key])+
 "<span>"+label+"</span></button>";let h='<div class="topbar"><div class="header-brand"><h1>کلاس‌یار</h1>';h+=btn("خانه","home","schools",state.view===
 "schools",'aria-label="خانه"').replace('class="header-action','class="header-home header-action');h+='</div><div class="actions header-actions">';h+=btn("گز\
-ارش‌ها","report","reports",state.view==="reports")+btn("برنامه هفتگی","calendar","master",state.view==="master");h+=btn("بانک سؤال و طراحی آزم\
-ون","book","question-bank",state.view==="question-bank").replace('class="header-action','class="question-bank-entry header-action');h+=btn("پشتیبان و بازیابی",
-"shield","backups").replace('data-header-action="backups"','data-workspace-action="backups"');h+=btn("تنظیمات","settings","settings")+"</div></div>";return h}
-function setHeaderMenu(id,open){const menu=document.getElementById(id),button=document.getElementById(id+"Button");menu?.classList.toggle("open",open);button?.setAttribute(
-"aria-expanded",String(open))}function toggleClassMenu(e){e.stopPropagation();const open=!document.getElementById("classMenu")?.classList.contains("open");closeDataMenu();
-setHeaderMenu("classMenu",open)}function closeClassMenu(){setHeaderMenu("classMenu",false)}const contextualMenuSelector=".dashboard-entity-more,.lesson-more,.st\
-udent-more,.session-list-actions,.workspace-tools";function closeContextualMenus(except=null){for(const menu of document.querySelectorAll(contextualMenuSelector))
-if(menu!==except&&menu.open)menu.open=false}document.addEventListener("toggle",event=>{if(event.target.matches?.(contextualMenuSelector)&&event.target.open)closeContextualMenus(
-event.target)},true);document.addEventListener("click",event=>{const current=event.target.closest?.(contextualMenuSelector);if(current&&event.target.closest("bu\
-tton,a"))current.querySelector("summary")?.focus({preventScroll:true});closeContextualMenus(current&&!event.target.closest("button,a")?current:null)});function closeDataMenu(){
+ارش‌ها","report","reports",state.view==="reports")+btn("برنامه","calendar","master",state.view==="master",'title="برنامه هفتگی"');h+=btn(
+"سؤال و آزمون","book","question-bank",state.view==="question-bank",'title="بانک سؤال و طراحی آزمون"').replace('class="header-action',
+'class="question-bank-entry header-action');h+=btn("پشتیبان","shield","backups",false,'title="ذخیره، پشتیبان‌گیری و بازیابی"').
+replace('data-header-action="backups"','data-workspace-action="backups"');h+=btn("تنظیمات","settings","settings")+"</div></div>";return h}function setHeaderMenu(id,open){
+const menu=document.getElementById(id),button=document.getElementById(id+"Button");menu?.classList.toggle("open",open);button?.setAttribute("aria-expanded",String(
+open))}function toggleClassMenu(e){e.stopPropagation();const open=!document.getElementById("classMenu")?.classList.contains("open");closeDataMenu();setHeaderMenu(
+"classMenu",open)}function closeClassMenu(){setHeaderMenu("classMenu",false)}const contextualMenuSelector=".dashboard-entity-more,.lesson-more,.student-more,.se\
+ssion-list-actions,.workspace-tools";function closeContextualMenus(except=null){for(const menu of document.querySelectorAll(contextualMenuSelector))if(menu!==except&&
+menu.open)menu.open=false}document.addEventListener("toggle",event=>{if(event.target.matches?.(contextualMenuSelector)&&event.target.open)closeContextualMenus(event.
+target)},true);document.addEventListener("click",event=>{const current=event.target.closest?.(contextualMenuSelector);if(current&&event.target.closest("button,a"))
+current.querySelector("summary")?.focus({preventScroll:true});closeContextualMenus(current&&!event.target.closest("button,a")?current:null)});function closeDataMenu(){
 setHeaderMenu("dataMenu",false)}document.addEventListener("click",e=>{closeClassMenu();closeDataMenu();const nav=document.querySelector(".navigation-menu");if(nav&&
 !e.target.closest(".navigation-menu")&&matchMedia("(max-width:700px), (max-width:1000px) and (pointer:coarse)").matches)nav.open=false});document.addEventListener(
 "keydown",e=>{if(e.key!=="Escape"||!document.getElementById("modal").classList.contains("hidden"))return;const contextMenu=document.querySelector(".dashboard-en\

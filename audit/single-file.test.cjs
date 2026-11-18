@@ -4,6 +4,38 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs"),
   path = require("node:path"),
   vm = require("node:vm");
+test("welcome banner keeps both database file states independent and escapes names", () => {
+  const { context } = fixture();
+  vm.runInContext(
+    `singleFile = {handle:{name:'Classyar-Classroom.json'},savedAt:'2026-11-18T10:00:00Z'}; singleFilePermissionNeeded = true;`,
+    context,
+  );
+  context.EduQuestionBankFileBackup = {
+    service: {
+      state: () => ({
+        connected: true,
+        state: "active",
+        name: "Classyar-QuestionBank<script>.json",
+        savedAt: "2026-11-17T10:00:00Z",
+      }),
+    },
+  };
+  let html = vm.runInContext("welcomeFileSummariesHtml()", context);
+  assert.match(html, /data-scope="school" data-state="review"/);
+  assert.match(html, /data-scope="bank" data-state="connected"/);
+  assert.match(html, /Classyar-QuestionBank&lt;script&gt;.json/);
+  assert.doesNotMatch(html, /<script>/);
+  assert.equal((html.match(/<time /g) || []).length, 2);
+  context.EduQuestionBankFileBackup.service.state = () => ({
+    connected: true,
+    state: "permission",
+    name: "Classyar-QuestionBank.json",
+  });
+  vm.runInContext("singleFilePermissionNeeded = false", context);
+  html = vm.runInContext("welcomeFileSummariesHtml()", context);
+  assert.match(html, /data-scope="school" data-state="connected"/);
+  assert.match(html, /data-scope="bank" data-state="review"/);
+});
 function fixture() {
   let contents = "",
     modified = 1,
@@ -890,7 +922,8 @@ test("the school filename summary updates without requiring the home banner", as
   assert.ok(summary.innerHTML.includes(f.handle.name));
   assert.match(summary.innerHTML, /آخرین ذخیره/);
   await f.context.disableSingleFile();
-  assert.match(summary.innerHTML, /فایل پشتیبان انتخاب نشده/);
+  assert.match(summary.innerHTML, /بدون اتصال/);
+  assert.match(summary.innerHTML, /انتخاب نشده/);
   assert.ok(!summary.innerHTML.includes(f.handle.name));
 });
 
@@ -899,7 +932,7 @@ test("missing picker offers a manual backup without pretending automatic support
   delete f.context.window.showSaveFilePicker;
   assert.match(
     f.context.singleFilePanel(),
-    /<details class="backup-automatic">/,
+    /<details class="backup-automatic" open>/,
   );
   assert.match(
     f.context.singleFilePanel(),
@@ -1206,10 +1239,10 @@ test("permission notices escape their message and keep the command outside the l
     (html.match(/data-workspace-action="single-file-save"/g) || []).length,
     1,
   );
-  assert.match(
-    f.context.singleFilePanel(),
-    /id="singleFileStatus"[^>]*>[\s\S]*class="single-file-permission-action"/,
-  );
+  const panel = f.context.singleFilePanel();
+  assert.doesNotMatch(panel, /single-file-permission-action/);
+  assert.match(panel, /data-backup-file-action="save"[^>]*>ذخیره اکنون/);
+  assert.equal((panel.match(/<button/g) || []).length, 3);
 });
 
 test("permission notices escape filenames in both visible text and accessible action labels", async () => {
@@ -1362,13 +1395,13 @@ test("denied inline retry preserves the last healthy file and a successful retry
   f.handle.queryPermission = async () => "prompt";
   await f.context.restoreSingleFile();
   assert.match(badge.innerHTML, /single-file-permission-action/);
-  assert.match(status.innerHTML, /single-file-permission-action/);
+  assert.doesNotMatch(status.innerHTML, /single-file-permission-action/);
   f.handle.requestPermission = async () => "denied";
   assert.equal(await f.context.resumeSingleFile(), false);
   assert.equal(f.contents, before);
   assert.equal(f.writes, 1);
   assert.match(badge.innerHTML, /single-file-permission-action/);
-  assert.match(status.innerHTML, /single-file-permission-action/);
+  assert.doesNotMatch(status.innerHTML, /single-file-permission-action/);
   assert.equal(badge.hidden, false);
   f.handle.requestPermission = async () => "granted";
   assert.equal(await f.context.resumeSingleFile(), true);

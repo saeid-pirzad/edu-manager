@@ -207,7 +207,7 @@ test("automatic backup action maps cannot inject scripts or replace control sema
   );
   assert.match(html, /data-value="0"/);
   assert.match(html, /data-qb-backup-action="choose"/);
-  assert.equal((html.match(/type="button"/g) || []).length, 4);
+  assert.equal((html.match(/type="button"/g) || []).length, 3);
 });
 
 test("automatic backup disclosure supports adapter ids and compatibility hooks without a new view", () => {
@@ -249,7 +249,8 @@ test("automatic backup controls keep the same labels during permission and busy 
     /data-backup-file-action="save"[^>]* disabled>ذخیره اکنون/,
   );
   assert.match(html, /data-backup-file-action="stop"[^>]* disabled>قطع اتصال/);
-  assert.equal((html.match(/>اجازه مجدد<\/button>/g) || []).length, 1);
+  assert.equal((html.match(/>اجازه مجدد<\/button>/g) || []).length, 0);
+  assert.equal((html.match(/type="button"/g) || []).length, 3);
 });
 
 test("automatic backup unsupported state keeps the original simple school fallback", () => {

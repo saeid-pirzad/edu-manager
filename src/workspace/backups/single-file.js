@@ -25,14 +25,90 @@ function singleFileBannerHtml() {
   });
 }
 function paintSingleFileBanner() {
-  const html = singleFileBannerHtml();
+  const html = welcomeFileSummariesHtml();
   for (const id of ["welcomeFileSummary", "singleFileSummary"]) {
     const element = document.getElementById(id);
-    if (element && element.innerHTML !== html) element.innerHTML = html;
+    const content =
+      id === "singleFileSummary"
+        ? EduBackupAutomaticView.summaryHtml({
+            ...singleFileViewState(),
+            detailed: true,
+          })
+        : html;
+    if (element && element.innerHTML !== content) element.innerHTML = content;
   }
+  const panel = document
+    .getElementById("singleFileSummary")
+    ?.closest?.(".backup-automatic");
+  if (panel)
+    for (const action of ["choose", "save", "stop"]) {
+      const button = panel.querySelector(
+        '[data-backup-file-action="' + action + '"]',
+      );
+      if (button)
+        button.disabled =
+          !window.showSaveFilePicker ||
+          !!singleFileChoosing ||
+          !!singleFileWriting ||
+          (action !== "choose" && !singleFile);
+    }
 }
-function singleFileNoticeHtml(message = singleFileMessage) {
+function welcomeFileSummariesHtml() {
+  const bank = globalThis.EduQuestionBankFileBackup?.service?.state() || {};
+  const schoolReview =
+    singleFileFailure || singleFilePermissionNeeded || !!singleFile?.suspension;
+  return [
+    {
+      scope: "school",
+      label: "اطلاعات مدرسه",
+      name: singleFile?.handle?.name,
+      savedAt: singleFile?.savedAt,
+      review: schoolReview,
+      state: schoolReview ? "review" : singleFile ? "connected" : "inactive",
+    },
+    {
+      scope: "bank",
+      label: "بانک سؤال و آزمون‌ها",
+      name: bank.name,
+      savedAt: bank.savedAt,
+      review: ["permission", "paused", "error"].includes(bank.state),
+      state: ["permission", "paused", "error"].includes(bank.state)
+        ? "review"
+        : bank.connected
+          ? "connected"
+          : "inactive",
+    },
+  ]
+    .map(
+      (file) =>
+        '<div class="welcome-storage-item" data-scope="' +
+        file.scope +
+        '" data-state="' +
+        file.state +
+        '"><div class="welcome-storage-heading"><strong>' +
+        file.label +
+        '</strong><span class="welcome-storage-state">' +
+        (file.review
+          ? "نیاز به بررسی"
+          : file.state === "connected"
+            ? "فایل متصل"
+            : "بدون اتصال") +
+        "</span></div>" +
+        EduBackupAutomaticView.summaryHtml({
+          name: file.name,
+          savedAt: file.savedAt,
+          needsReview: false,
+        }) +
+        "</div>",
+    )
+    .join("");
+}
+function singleFileNoticeHtml(
+  message = singleFileMessage,
+  permissionAction = true,
+) {
   const canRequest =
+    permissionAction &&
     singleFilePermissionNeeded &&
     window.showSaveFilePicker &&
     typeof singleFile?.handle?.requestPermission === "function";
@@ -51,6 +127,11 @@ function singleFileNoticeHtml(message = singleFileMessage) {
 }
 // Only presentation is shared; each file keeps its own permissions and safeguards.
 function paintQuestionBankFileNotice() {
+  const welcome = document.getElementById("welcomeFileSummary");
+  if (welcome) {
+    const html = welcomeFileSummariesHtml();
+    if (welcome.innerHTML !== html) welcome.innerHTML = html;
+  }
   const panel = document.querySelector?.("#app .workspace-bar");
   if (!panel) return;
   const service = globalThis.EduQuestionBankFileBackup?.service,
@@ -106,7 +187,7 @@ function singleFileStatus(message, { permission = false, saved = false } = {}) {
   paintSingleFileBanner();
   const element = document.getElementById("singleFileStatus");
   if (element) {
-    element.innerHTML = singleFileNoticeHtml();
+    element.innerHTML = singleFileNoticeHtml(singleFileMessage, false);
     element.hidden = saved;
     const panel = element.closest?.("details.backup-automatic");
     if (permission && panel) panel.open = true;
@@ -121,6 +202,31 @@ function singleFileStatus(message, { permission = false, saved = false } = {}) {
       destination.append(badge);
   }
 }
+function singleFileViewState() {
+  return {
+    supported: !!window.showSaveFilePicker,
+    purpose: "اطلاعات مدرسه",
+    name: singleFile?.handle?.name,
+    savedAt: singleFile?.savedAt,
+    needsReview:
+      singleFileFailure ||
+      singleFilePermissionNeeded ||
+      !!singleFile?.suspension,
+    state: singleFilePermissionNeeded
+      ? "permission"
+      : singleFile?.suspension
+        ? "paused"
+        : singleFileFailure
+          ? "error"
+          : !singleFile
+            ? "inactive"
+            : singleFileNoticeSaved
+              ? "active"
+              : singleFileWriting
+                ? "busy"
+                : "paused",
+  };
+}
 function singleFilePanel() {
   const supported = !!window.showSaveFilePicker;
   const canRequest =
@@ -128,8 +234,9 @@ function singleFilePanel() {
     supported &&
     typeof singleFile?.handle?.requestPermission === "function";
   return EduBackupAutomaticView.html({
+    ...singleFileViewState(),
     supported,
-    open: singleFileFailure || singleFilePermissionNeeded,
+    open: true,
     purpose: "اطلاعات مدرسه",
     name: singleFile?.handle?.name,
     savedAt: singleFile?.savedAt,
@@ -140,6 +247,7 @@ function singleFilePanel() {
     message: singleFileMessage,
     noticeHidden: singleFileNoticeSaved,
     fallback: singleFileFailure,
+    disabled: { save: !singleFile, stop: !singleFile },
     ids: {
       summary: "singleFileSummary",
       status: "singleFileStatus",
@@ -554,6 +662,7 @@ async function chooseSingleFile() {
   } finally {
     if (!accepted) reservation?.release();
     singleFileChoosing = false;
+    paintSingleFileBanner();
   }
 }
 async function resumeSingleFile() {
@@ -769,6 +878,7 @@ function syncSingleFile({ force = true, acknowledged = false } = {}) {
     .catch(failSingleFile)
     .finally(() => {
       singleFileWriting = null;
+      paintSingleFileBanner();
       if (singleFileReschedule) {
         singleFileReschedule = false;
         scheduleSingleFile();
