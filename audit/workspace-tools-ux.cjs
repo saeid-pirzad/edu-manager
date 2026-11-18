@@ -127,7 +127,7 @@ async function inspectWorkspaceTools() {
         .length === 1 &&
       document
         .querySelector('.topbar [data-header-action="question-bank"]')
-        .textContent.trim() === "بانک سؤال و طراحی آزمون" &&
+        .textContent.trim() === "سؤال و آزمون" &&
       !!document.querySelector(
         '.topbar [data-header-action="question-bank"] svg',
       ) &&
@@ -170,8 +170,8 @@ async function inspectWorkspaceTools() {
   if (!desktop) {
     const bottomButtons = [...document.querySelectorAll("#uiBottomNav button")];
     add(
-      "five bottom navigation buttons fit without wrapping or horizontal overflow",
-      bottomButtons.length === 5 &&
+      "six bottom navigation buttons fit without wrapping or horizontal overflow",
+      bottomButtons.length === 6 &&
         bottomButtons.every((el) => {
           const rect = el.getBoundingClientRect();
           return (
@@ -181,13 +181,13 @@ async function inspectWorkspaceTools() {
           );
         }) &&
         !!document.querySelector('#uiBottomNav [data-view="question-bank"]') &&
-        !document.querySelector('#uiBottomNav [data-view="backups"]') &&
+        !!document.querySelector('#uiBottomNav [data-view="backups"]') &&
         !document
           .querySelector(
             '.header-actions > [data-header-action="question-bank"]',
           )
           .getClientRects().length &&
-        !!document
+        !document
           .querySelector('.header-actions > [data-workspace-action="backups"]')
           .getClientRects().length,
     );

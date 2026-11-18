@@ -342,7 +342,7 @@ module.exports = async function annualBackupRoundtrip() {
     fileConnected = true;
     await wait(() =>
       document
-        .getElementById("singleFileStatus")
+        .querySelector("#singleFileStatus .backup-file-detail")
         ?.textContent.startsWith("ذخیره شد:"),
     );
     const automatic = JSON.parse(await (await handle.getFile()).text());
@@ -403,7 +403,7 @@ module.exports = async function annualBackupRoundtrip() {
     click("single-file-save");
     await wait(() =>
       document
-        .getElementById("singleFileStatus")
+        .querySelector("#singleFileStatus .backup-file-detail")
         ?.textContent.startsWith("ذخیره شد:"),
     );
 

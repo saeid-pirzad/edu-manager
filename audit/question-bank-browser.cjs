@@ -891,12 +891,13 @@ main({
         const direct=shown&&calls===1&&!school.hidden&&document.getElementById('questionBankFileBadge').hidden&&!document.querySelector('#modal:not(.hidden) .qb-backup')&&!document.querySelector('.qb-storage-bar')&&service.state().state==='active';
         emit({state:'permission',connected:true,name,savedAt,message:'مجوز فایل نیاز به تأیید دارد.'});
         await __qbOpenBackup();
-        const summary=()=>document.querySelector('.qb-file-summary'),fileName=()=>summary().querySelector('bdi');
+        const summary=()=>document.querySelector('.qb-file-summary'),fileName=()=>summary().querySelector('.schools-file-name');
         const visible=document.querySelector('details.qb-backup-automatic').open&&fileName().textContent===name&&!fileName().hidden&&fileName().dir==='auto'&&fileName().title===name&&summary().querySelector('time').dateTime===savedAt&&document.querySelector('.qb-file-status .backup-file-detail').textContent===state.message;
-        const localRenew=document.querySelector('[data-qb-file-permission]');
-        const oneAction=!!localRenew&&!localRenew.hidden&&!localRenew.disabled&&localRenew.textContent==='اجازه مجدد'
+        const localRenew=document.querySelector('.qb-file-save');
+        const oneAction=!!localRenew&&!localRenew.hidden&&!localRenew.disabled&&localRenew.textContent==='ذخیره اکنون'
           &&document.querySelector('.qb-file-save').textContent==='ذخیره اکنون'
-          &&document.querySelectorAll('.qb-backup-automatic .single-file-permission-action').length===1
+          &&document.querySelectorAll('.qb-backup-automatic .single-file-permission-action').length===0
+          &&document.querySelectorAll('.qb-backup-automatic .backup-automatic-actions button').length===3
           &&!document.getElementById('questionBankFileBadge').hidden
           &&!!document.querySelector('#questionBankFileBadge button').closest('[inert]');
         localRenew.click();await Promise.resolve();
@@ -1611,6 +1612,7 @@ main({
         const directory=await native('open audit directory',()=>navigator.storage.getDirectory());
         const handle=await native('create bank audit file',()=>directory.getFileHandle('Classyar-QuestionBank.json',{create:true}));
         const readFile=()=>native('read bank audit file',()=>handle.getFile());
+        const readText=()=>native('read bank audit file contents',()=>navigator.locks.request('ClassyarQuestionBank.file',async()=>(await readFile()).text()));
         const picker=window.showSaveFilePicker;
         try {
           window.showSaveFilePicker=async()=>handle;
@@ -1619,7 +1621,7 @@ main({
           if(service.state().state!=='active')throw Error(service.state().message);
         } finally {window.showSaveFilePicker=picker;}
         const stored=await EduQuestionBankRepository.readBackup();
-        const first=EduQuestionBank.parse(await (await readFile()).text());
+        const first=EduQuestionBank.parse(await readText());
         const source=await EduQuestionBankRepository.read();
         const initial=stored?.handle?.name===handle.name&&first.revision===source.revision;
         source.questions[0].text+=' — ثبت خودکار';
@@ -1627,16 +1629,16 @@ main({
         let updated=false;
         for(let i=0;i<150;i++){
           await new Promise(r=>setTimeout(r,100));
-          if(EduQuestionBank.parse(await (await readFile()).text()).revision===changed.revision){updated=true;break;}
+          if(EduQuestionBank.parse(await readText()).revision===changed.revision){updated=true;break;}
         }
         const peer=EduQuestionBankFileBackup.create(EduQuestionBankRepository);
         await peer.init();const resumed=peer.state().state==='active';peer.dispose();
         window.__qbAutomaticFile=handle;
-        window.__qbAutomaticText=await (await readFile()).text();
+        window.__qbAutomaticText=await readText();
         closeModal();goSchools();await EduQuestionBankUI.open();
         await __qbOpenBackup();
         return initial&&updated&&resumed&&document.querySelector('.qb-file-status').dataset.state==='active'
-          &&!document.querySelector('details.qb-backup-automatic').open
+          &&document.querySelector('details.qb-backup-automatic').open
           &&document.querySelector('.qb-file-name').textContent===handle.name
           &&document.querySelector('.qb-file-summary time').dateTime===(await EduQuestionBankRepository.readBackup()).savedAt;
       })()`),

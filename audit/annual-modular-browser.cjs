@@ -363,8 +363,9 @@ async function annualModularFlow() {
             "competency",
             "module-result",
           ]) &&
-        JSON.stringify(moduleNames) ===
-          JSON.stringify(["پودمان طراحی", "پودمان اجرا"]) &&
+        moduleNames.length === 0 &&
+        course.closest("table").querySelectorAll('thead [scope="colgroup"]')
+          .length === 2 &&
         !course.querySelector(".report-modular-term") &&
         !/نوبت|میان‌ترم|پایان‌ترم/.test(course.textContent) &&
         JSON.stringify(values) === JSON.stringify([0, 3, 15, 4, 2, 14]),

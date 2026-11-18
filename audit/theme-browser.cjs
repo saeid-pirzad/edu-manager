@@ -462,10 +462,13 @@ async function run({ cdp, evaluate, cases, delay }) {
       "karnameh",
       "closeModal();goReports();state.reportTab='karnameh';karnamehFilter={schoolId:'theme_school',classId:'theme_class',studentId:'theme_student_0'};render();await renderKarnamehTabReports()",
     ],
-    ["backups", "closeModal();await EduV24.openBackups()"],
+    [
+      "backups",
+      "closeModal();await EduV24.openBackups();const automatic=document.querySelector('.backup-automatic');if(automatic.open)automatic.querySelector('summary').click()",
+    ],
     [
       "backups-automatic-open",
-      "closeModal();await EduV24.openBackups();document.querySelector('.backup-automatic > summary').click()",
+      "closeModal();await EduV24.openBackups();const automatic=document.querySelector('.backup-automatic');if(!automatic.open)automatic.querySelector('summary').click()",
     ],
     [
       "settings",

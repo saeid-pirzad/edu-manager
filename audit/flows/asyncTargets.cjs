@@ -37,38 +37,37 @@ module.exports = async function asyncTargets() {
   const other = records.find((row) => row.id !== current);
   if (!other)
     throw Error("Async target regression needs a second isolated period");
-  const originalEstimate = navigator.storage.estimate;
-  let release, pending;
+  let pending;
   try {
-    navigator.storage.estimate = () =>
-      new Promise((resolve) => {
-        release = () => resolve({ usage: 0, quota: 1 });
-      });
+    // The file-based hub no longer reads storage estimates. Its actual async
+    // boundary is the pending writer; a newer dialog must win that boundary.
     pending = EduV24.openBackups();
     pending.catch(() => {});
-    for (let attempt = 0; attempt < 100 && !release; attempt++)
-      await new Promise((resolve) => setTimeout(resolve, 10));
-    if (!release)
-      throw Error("Backup dialog did not reach the delayed estimate stage");
-    await EduV24.test.switchLegacyPeriod(other.id);
-    release();
+    showModal(
+      "Newer synthetic dialog",
+      '<p id="asyncTargetNewerDialog">Newer content</p>',
+    );
     rejected = false;
     try {
       await pending;
     } catch {
       rejected = true;
     }
+    const newerPreserved =
+      !!document.getElementById("asyncTargetNewerDialog") &&
+      !document.getElementById("backupHub");
+    await EduV24.test.switchLegacyPeriod(other.id);
+    await EduV24.test.settle();
     cases.push({
       id: "AT02",
-      name: "backup dialog cannot reopen old rows after a real period switch",
+      name: "queued backup hub preserves a newer dialog and cannot reopen after a real period switch",
       pass:
-        rejected &&
+        !rejected &&
+        newerPreserved &&
         document.getElementById("modal").classList.contains("hidden"),
-      observed: {},
+      observed: { newerPreserved, rejected },
     });
   } finally {
-    navigator.storage.estimate = originalEstimate;
-    release?.();
     await pending?.catch(() => {});
     if (EduV24.getReportContext().id !== current)
       await EduV24.test.switchLegacyPeriod(current);

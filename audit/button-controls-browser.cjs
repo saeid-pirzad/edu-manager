@@ -478,9 +478,12 @@ function measure(isClippedAccessibleLabel) {
                       )
                     ? "backup-secondary"
                     : "action",
-        needsIcon: button.matches(
-          ".tabs button,.csv-import-actions button,.week-add,.periodic-export-actions button,.session-workspace-footer button,.backup-action-grid button,.backup-automatic button,.modal-header button",
-        ),
+        needsIcon:
+          button.dataset.uiIcon !== "none" &&
+          !button.matches(".backup-automatic-actions > button") &&
+          button.matches(
+            ".tabs button,.csv-import-actions button,.week-add,.periodic-export-actions button,.session-workspace-footer button,.backup-action-grid button,.backup-automatic button,.modal-header button",
+          ),
         icons: icons.map((icon) => ({
           width: icon.getBoundingClientRect().width,
           height: icon.getBoundingClientRect().height,

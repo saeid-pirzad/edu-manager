@@ -84,14 +84,14 @@ main({
       __qbBusiness.click('طراحی آزمون');
     })()`);
     check(
-      "the bank is a main content page with one active entry and five mobile navigation targets",
+      "the bank is a main content page with one active entry and six mobile navigation targets",
       await evaluate(`(()=>{
         const page=document.querySelector('#questionBankPageHost > .qb-page');
         return !!page&&page.tagName==='SECTION'&&!page.matches(':modal')
           &&!document.querySelector('.qb-dialog,.qb-close')
           &&document.querySelectorAll('.topbar .question-bank-entry').length===1
           &&!!document.querySelector('.topbar [data-header-action="question-bank"][aria-current="page"]')
-          &&document.querySelectorAll('#uiBottomNav > button').length===5
+          &&document.querySelectorAll('#uiBottomNav > button').length===6
           &&!!document.querySelector('#uiBottomNav [data-view="question-bank"][aria-current="page"]')
           &&!document.querySelector('.workspace-tools .question-bank-entry');
       })()`),

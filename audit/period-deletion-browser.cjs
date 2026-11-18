@@ -443,8 +443,7 @@ async function deletionFlow() {
     check(
       "KARNAMEH_PARTIAL_MODULAR_GRADES_VISIBLE",
       same(values(modularReport), [4, 3, 19, null, null, null]) &&
-        modularReport.querySelector(".karnameh-module-name")?.textContent ===
-          modular.poudmans[0].name &&
+        !modularReport.querySelector(".karnameh-module-name") &&
         [
           ...modularReport.querySelectorAll(
             '[data-karnameh-field="module-result"]',

@@ -884,7 +884,9 @@ async function inspectMobileUx(settlePaint) {
     "backup workflow prioritizes files without internal-history controls",
     full.getBoundingClientRect().height >= 44 &&
       !document.querySelector(".backup-history") &&
-      !!document.querySelector(".backup-help"),
+      document.querySelectorAll(".backup-manual .backup-action-grid button")
+        .length === 3 &&
+      document.querySelectorAll('#backupHub [role="tab"]').length === 2,
   );
   closeModal();
   goSchools();
