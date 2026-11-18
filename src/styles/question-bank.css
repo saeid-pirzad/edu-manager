@@ -411,14 +411,14 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 3px;
   padding: 3px;
-  border: 0;
+  border: 1px solid var(--theme-secondary-line);
   border-radius: 12px;
   margin-block: 0 18px;
-  background: var(--theme-nav);
+  background: var(--theme-secondary-soft);
   box-shadow: none;
 }
 #app .qb-page .qb-tabs button {
-  --button-ink: var(--theme-nav-ink, #fff);
+  --button-ink: var(--theme-ink);
   --button-soft: transparent;
   --button-line: transparent;
   flex: 1;
@@ -426,7 +426,7 @@
   min-height: 44px;
   border: 0 !important;
   background: transparent !important;
-  color: var(--theme-nav-ink, #fff) !important;
+  color: var(--theme-ink) !important;
   border-radius: 8px !important;
   font-size: 12px;
   font-weight: 500;
@@ -453,7 +453,7 @@
 }
 @media (hover: hover) {
   #app .qb-page .qb-tabs button[aria-pressed="false"]:not(:disabled):hover {
-    background: var(--theme-nav-hover) !important;
+    background: var(--theme-secondary-line) !important;
   }
 }
 .qb-editor-title {

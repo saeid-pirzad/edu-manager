@@ -295,7 +295,6 @@
         b.dataset.view = view;
         if (view === "backups") {
           b.setAttribute("aria-label", "ذخیره، پشتیبان‌گیری و بازیابی");
-          b.setAttribute("aria-haspopup", "dialog");
           b.title = "ذخیره، پشتیبان‌گیری و بازیابی";
         } else if (view === "question-bank") {
           b.setAttribute("aria-label", "بانک سؤال و طراحی آزمون");

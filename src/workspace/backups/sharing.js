@@ -29,7 +29,8 @@ function checkBackupShare(session) {
     backupShareSession !== session ||
     !session.panel.isConnected ||
     (session.hub && !session.hub.isCurrent("school")) ||
-    document.getElementById("modal").classList.contains("hidden")
+    (!session.inline &&
+      document.getElementById("modal").classList.contains("hidden"))
   )
     throw Error("پنجره ارسال بسته شده است؛ پشتیبان را دوباره آماده کنید.");
   session.ensureCurrent();
@@ -71,7 +72,10 @@ async function openBackupShare() {
   backupShareSession = session;
   const modal = document.getElementById("modal"),
     observer = new MutationObserver(() => {
-      if (!session.panel.isConnected || modal.classList.contains("hidden")) {
+      if (
+        !session.panel.isConnected ||
+        (!session.inline && modal.classList.contains("hidden"))
+      ) {
         session.file = null;
         session.blob = null;
         if (backupShareSession === session) backupShareSession = null;
@@ -80,6 +84,8 @@ async function openBackupShare() {
     });
   observer.observe(modal, { attributes: true, attributeFilter: ["class"] });
   observer.observe(document.getElementById("modalBody"), { childList: true });
+  if (inline)
+    observer.observe(document.getElementById("app"), { childList: true });
   try {
     const content = await snapshotInstallation();
     checkBackupShare(session);

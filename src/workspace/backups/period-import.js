@@ -115,24 +115,43 @@ async function openBackups({ tab } = {}) {
   const modal = document.getElementById("modal");
   const body = document.getElementById("modalBody");
   const previousContent = body.firstChild;
+  const previousPage = document.getElementById("app").firstChild;
   const wasHidden = modal.classList.contains("hidden");
   const initialTab =
     tab === "school" || tab === "bank"
       ? tab
-      : window.EduQuestionBankUI?.isPageActive?.()
-        ? "bank"
-        : "school";
+      : state.view === "backups"
+        ? state.backupTab
+        : window.EduQuestionBankUI?.isPageActive?.()
+          ? "bank"
+          : "school";
   await writer.catch(() => {});
   ensureCurrent();
   // A delayed menu request must not replace a newer dialog or reopen a closed one.
   if (
     request !== backupHubRequest ||
+    document.getElementById("app").firstChild !== previousPage ||
     body.firstChild !== previousContent ||
     modal.classList.contains("hidden") !== wasHidden
   )
     return;
-  if (showModal("پشتیبان و بازیابی", backupHubHtml()) === false) return;
+  if (backupHubSession?.isCurrent()) {
+    backupHubSession.selectTab(initialTab);
+    return;
+  }
+  state.backupTab = initialTab;
+  state.view = "backups";
+  render();
+}
+
+function mountBackupHubPage() {
   backupHubSession?.dispose();
+  const host = document.getElementById("backupPageHost");
+  if (!host || state.view !== "backups") return;
+  host.innerHTML = backupHubHtml();
+  const initialTab = state.backupTab === "bank" ? "bank" : "school";
+  const pageConnection = connection;
+  const pageWorkspace = workspace.id;
   const root = document.getElementById("backupHub");
   const tabs = Array.from(root.querySelectorAll("[data-backup-tab]"));
   const panels = {
@@ -146,7 +165,9 @@ async function openBackups({ tab } = {}) {
     alive &&
     backupHubSession === session &&
     root.isConnected &&
-    !modal.classList.contains("hidden") &&
+    state.view === "backups" &&
+    connection === pageConnection &&
+    workspace.id === pageWorkspace &&
     (!expectedTab || activeTab === expectedTab);
   const dispose = () => {
     if (!alive) return;
@@ -169,6 +190,7 @@ async function openBackups({ tab } = {}) {
       disposeBank = null;
       panels.bank.replaceChildren();
       activeTab = next;
+      state.backupTab = next;
       for (const button of tabs) {
         const selected = button.dataset.backupTab === next;
         button.setAttribute("aria-selected", String(selected));
@@ -205,10 +227,9 @@ async function openBackups({ tab } = {}) {
   const observer = new MutationObserver(() => {
     if (!isCurrent()) dispose();
   });
-  const session = { isCurrent, dispose };
+  const session = { isCurrent, dispose, selectTab };
   backupHubSession = session;
-  observer.observe(modal, { attributes: true, attributeFilter: ["class"] });
-  observer.observe(body, { childList: true });
+  observer.observe(document.getElementById("app"), { childList: true });
   root.addEventListener("click", handleTabClick);
   root.addEventListener("keydown", handleTabKeydown);
   selectTab(initialTab);
@@ -216,8 +237,7 @@ async function openBackups({ tab } = {}) {
 
 function chooseBackupImport() {
   const visibleHub =
-    document.getElementById("backupHub") &&
-    !document.getElementById("modal").classList.contains("hidden");
+    document.getElementById("backupHub") && backupHubSession?.isCurrent();
   const session = visibleHub ? backupHubSession : null;
   if (visibleHub && !session?.isCurrent("school"))
     throw Error("برای بازیابی اطلاعات مدرسه، تب «اطلاعات مدرسه» را باز کنید.");

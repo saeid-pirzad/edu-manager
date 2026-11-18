@@ -103,6 +103,10 @@ function legacy_render() {
   else if (state.view === "lesson") h = renderLesson();
   else if (state.view === "master") h = renderMaster();
   else if (state.view === "reports") h = renderReports();
+  else if (state.view === "backups")
+    h =
+      headerHtml() +
+      '<section class="backup-page"><div class="view-heading"><h2>پشتیبان و بازیابی</h2></div><div id="backupPageHost"></div></section>';
   else if (state.view === "question-bank")
     h =
       headerHtml() +

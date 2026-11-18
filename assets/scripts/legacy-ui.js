@@ -64,16 +64,17 @@ if(db.settings.password&&!isAuthenticated){bank?.dispose?.();questionBankRouteSt
 k"){const destination={...state};state={...questionBankRouteState,view:"question-bank"};bank.requestLeave(()=>{questionBankRouteState=null;state=destination;render()});
 return false}const app=document.getElementById("app");let h="";if(state.view==="schools")h=renderSchools();else if(state.view==="school")h=renderSchool();else if(state.
 view==="class")h=renderClass();else if(state.view==="lesson")h=renderLesson();else if(state.view==="master")h=renderMaster();else if(state.view==="reports")h=renderReports();else if(state.
-view==="question-bank")h=headerHtml()+'<div id="questionBankPageHost" class="question-bank-page-host"></div>';if(state.view==="question-bank")bank?.preserveForRender?.();
-app.innerHTML=(storageBlocked?`<div class="card" role="alert" style="border:2px solid var(--status-danger, #9f2635)">${esc(storageProblem)} <button data-legacy-\
-click="ui-login-render:0">دریافت نسخه خام</button></div>`:"")+h;if(state.view==="question-bank"){questionBankRouteState={...state};bank?.mount?.(document.
-getElementById("questionBankPageHost"))}else questionBankRouteState=null;initShamsiPickers();setTimeout(initShamsiPickers,0);if(state.view==="reports"&&state.reportTab===
-"comprehensive")setTimeout(generateGlobalReport,0);if(state.view==="reports"&&state.reportTab==="lessonReport")setTimeout(renderLessonReportTab,0);if(state.view===
-"reports"&&state.reportTab==="karnameh")setTimeout(renderKarnamehTabReports,0);if(state.view==="lesson"&&state.tab==="grades"){const el=document.getElementById(
-"lessonGradesArea");if(el){const c=getClassObj(state.schoolId,state.classId);const l=getLessonObj(c,state.lessonId);if(c&&l)el.innerHTML=buildLessonGradesHtml(c,
-l)}}}EduLegacyEvents.register("ui-login-render:0",function(event){return downloadRawRecovery()});function breadcrumbHtml(items){return'<nav class="breadcrumb" a\
-ria-label="مسیر جاری"><ol>'+items.map((item,index)=>{const label="<bdi>"+esc(item.label)+"</bdi>";const content=index===items.length-1?'<span aria-curre\
-nt="page">'+label+"</span>":item.action?'<a data-legacy-click="'+esc(item.action)+'"'+(item.schoolId?' data-legacy-click-arg0="'+esc(item.schoolId)+'"':"")+">"+
+view==="backups")h=headerHtml()+'<section class="backup-page"><div class="view-heading"><h2>پشتیبان و بازیابی</h2></div><div id="backupPageHost"></div></section\
+>';else if(state.view==="question-bank")h=headerHtml()+'<div id="questionBankPageHost" class="question-bank-page-host"></div>';if(state.view==="question-bank")bank?.
+preserveForRender?.();app.innerHTML=(storageBlocked?`<div class="card" role="alert" style="border:2px solid var(--status-danger, #9f2635)">${esc(storageProblem)}\
+ <button data-legacy-click="ui-login-render:0">دریافت نسخه خام</button></div>`:"")+h;if(state.view==="question-bank"){questionBankRouteState={...state};
+bank?.mount?.(document.getElementById("questionBankPageHost"))}else questionBankRouteState=null;initShamsiPickers();setTimeout(initShamsiPickers,0);if(state.view===
+"reports"&&state.reportTab==="comprehensive")setTimeout(generateGlobalReport,0);if(state.view==="reports"&&state.reportTab==="lessonReport")setTimeout(renderLessonReportTab,
+0);if(state.view==="reports"&&state.reportTab==="karnameh")setTimeout(renderKarnamehTabReports,0);if(state.view==="lesson"&&state.tab==="grades"){const el=document.
+getElementById("lessonGradesArea");if(el){const c=getClassObj(state.schoolId,state.classId);const l=getLessonObj(c,state.lessonId);if(c&&l)el.innerHTML=buildLessonGradesHtml(
+c,l)}}}EduLegacyEvents.register("ui-login-render:0",function(event){return downloadRawRecovery()});function breadcrumbHtml(items){return'<nav class="breadcrumb"\
+ aria-label="مسیر جاری"><ol>'+items.map((item,index)=>{const label="<bdi>"+esc(item.label)+"</bdi>";const content=index===items.length-1?'<span aria-cur\
+rent="page">'+label+"</span>":item.action?'<a data-legacy-click="'+esc(item.action)+'"'+(item.schoolId?' data-legacy-click-arg0="'+esc(item.schoolId)+'"':"")+">"+
 label+"</a>":"<span>"+label+"</span>";return"<li>"+content+"</li>"}).join("")+"</ol></nav>"}function headerHtml(){const icon=path=>'<svg viewBox="0 0 24 24" fil\
 l="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="'+path+'"/></svg>';const icons={school:"\
 M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M8 9h1M15 9h1M8 12h1M15 12h1",report:"M4 3v18h17M8 17v-5M13 17V8M18 17V5",calendar:"M4 5h16v16H4zM8 3v4M16 3v4M4 10h16M8 1\
@@ -85,7 +86,7 @@ M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M8 9h1M15 9h1M8 12h1M15 12h1",report:"M4 3
 "schools",'aria-label="خانه"').replace('class="header-action','class="header-home header-action');h+='</div><div class="actions header-actions">';h+=btn("گز\
 ارش‌ها","report","reports",state.view==="reports")+btn("برنامه","calendar","master",state.view==="master",'title="برنامه هفتگی"');h+=btn(
 "سؤال و آزمون","book","question-bank",state.view==="question-bank",'title="بانک سؤال و طراحی آزمون"').replace('class="header-action',
-'class="question-bank-entry header-action');h+=btn("پشتیبان","shield","backups",false,'title="ذخیره، پشتیبان‌گیری و بازیابی"').
+'class="question-bank-entry header-action');h+=btn("پشتیبان","shield","backups",state.view==="backups",'title="ذخیره، پشتیبان‌گیری و بازیابی"').
 replace('data-header-action="backups"','data-workspace-action="backups"');h+=btn("تنظیمات","settings","settings")+"</div></div>";return h}function setHeaderMenu(id,open){
 const menu=document.getElementById(id),button=document.getElementById(id+"Button");menu?.classList.toggle("open",open);button?.setAttribute("aria-expanded",String(
 open))}function toggleClassMenu(e){e.stopPropagation();const open=!document.getElementById("classMenu")?.classList.contains("open");closeDataMenu();setHeaderMenu(

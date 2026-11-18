@@ -86,7 +86,7 @@ function headerHtml() {
     "پشتیبان",
     "shield",
     "backups",
-    false,
+    state.view === "backups",
     'title="ذخیره، پشتیبان‌گیری و بازیابی"',
   ).replace('data-header-action="backups"', 'data-workspace-action="backups"');
   h += btn("تنظیمات", "settings", "settings") + "</div></div>";

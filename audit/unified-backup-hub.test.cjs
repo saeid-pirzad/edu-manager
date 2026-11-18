@@ -12,6 +12,7 @@ function fixture() {
     clicks = 0,
     hub = null;
   const body = { firstChild: { id: "original-content" } },
+    app = { firstChild: { id: "original-page" } },
     modal = { classList: { contains: () => hidden } },
     listeners = new Map(),
     input = {
@@ -21,6 +22,7 @@ function fixture() {
     },
     shown = [];
   const context = vm.createContext({
+    state: { view: "schools" },
     writer: new Promise((resolve) => {
       release = resolve;
     }),
@@ -31,18 +33,20 @@ function fixture() {
           ? modal
           : id === "modalBody"
             ? body
-            : id === "backupHub"
-              ? hub
-              : id === "importFile"
-                ? input
-                : null,
+            : id === "app"
+              ? app
+              : id === "backupHub"
+                ? hub
+                : id === "importFile"
+                  ? input
+                  : null,
     },
     preserveAsyncTarget: () => () => checks++,
     esc: String,
     lastExternalBackupLabel: () => "هنوز پشتیبانی دریافت نشده است.",
     singleFilePanel: () => "<details>automatic file</details>",
-    showModal: (title, html) => {
-      shown.push({ title, html });
+    render: () => {
+      shown.push({ view: context.state.view, tab: context.state.backupTab });
       return false;
     },
   });
@@ -56,6 +60,7 @@ function fixture() {
   return {
     context,
     body,
+    app,
     shown,
     release,
     checks: () => checks,
@@ -86,6 +91,15 @@ test("a delayed backup opener does not reopen a modal the user closed", async ()
   assert.equal(f.shown.length, 0);
 });
 
+test("a delayed backup opener preserves navigation to a newer page", async () => {
+  const f = fixture(),
+    pending = f.context.openBackups();
+  f.app.firstChild = { id: "reports-page" };
+  f.release();
+  await pending;
+  assert.equal(f.shown.length, 0);
+});
+
 test("only the latest queued backup request can present a hub", async () => {
   const f = fixture(),
     first = f.context.openBackups({ tab: "school" }),
@@ -94,13 +108,34 @@ test("only the latest queued backup request can present a hub", async () => {
   await Promise.all([first, second]);
   assert.equal(f.checks(), 2);
   assert.equal(f.shown.length, 1);
-  assert.match(f.shown[0].html, /id="backupHub"/);
+  assert.equal(f.shown[0].view, "backups");
+  assert.equal(f.shown[0].tab, "bank");
 });
 
-test("a modal replacement refused by the existing editor guard does not dispose the active hub", async () => {
+test("reopening the active backup page preserves its tab and selects an explicit tab without rerendering", async () => {
+  const f = fixture(),
+    selected = [];
+  f.context.state = { view: "backups", backupTab: "bank" };
+  f.context.existingHub = {
+    isCurrent: () => true,
+    selectTab: (tab) => selected.push(tab),
+  };
+  vm.runInContext("backupHubSession=existingHub", f.context);
+  const opening = f.context.openBackups();
+  f.release();
+  await opening;
+  await f.context.openBackups({ tab: "school" });
+  assert.deepEqual(selected, ["bank", "school"]);
+  assert.equal(f.shown.length, 0);
+});
+
+test("navigation refused by the existing editor guard does not dispose the active hub", async () => {
   const f = fixture();
   let disposals = 0;
-  f.context.existingHub = { dispose: () => disposals++ };
+  f.context.existingHub = {
+    isCurrent: () => false,
+    dispose: () => disposals++,
+  };
   vm.runInContext("backupHubSession=existingHub", f.context);
   const pending = f.context.openBackups();
   f.release();
@@ -119,7 +154,7 @@ test("school restore selection requires the live school panel and captures its l
   f.hub({});
   f.hide(false);
   f.context.session = {
-    isCurrent: (scope) => current && scope === "school",
+    isCurrent: (scope) => !scope || (current && scope === "school"),
   };
   vm.runInContext("backupHubSession=session", f.context);
   assert.throws(() => f.context.chooseBackupImport(), /اطلاعات مدرسه/);

@@ -546,7 +546,7 @@ async function run({ cdp, evaluate, cases, delay }) {
   );
   await pause();
   const backupAction = await evaluate(
-    '({open:!document.getElementById("modal").classList.contains("hidden"),hub:!!document.getElementById("backupHub"),tabs:document.querySelectorAll("#backupHub [role=tab]").length})',
+    '({open:state.view==="backups"&&!!document.querySelector("#app #backupHub")&&document.getElementById("modal").classList.contains("hidden"),hub:!!document.getElementById("backupHub"),tabs:document.querySelectorAll("#backupHub [role=tab]").length})',
   );
   add(
     "BOTTOM_BACKUP_ACTION",

@@ -238,7 +238,13 @@ function draftReviewActionHtml() {
 function renderV24() {
   if (!ready) return;
   const coursePanel = courseUI.preserveEditor();
+  const backupPage =
+    state.view === "backups" ? document.getElementById("backupHub") : null;
   if (old.render() === false) return;
+  const backupHost = document.getElementById("backupPageHost");
+  if (backupPage && backupHost) backupHost.replaceChildren(backupPage);
+  if (!backupPage || !backupHost || !backupHubSession?.isCurrent())
+    mountBackupHubPage();
   courseUI.restoreEditor(coursePanel);
   const app = document.getElementById("app");
   if (db.settings.password && !isAuthenticated) {

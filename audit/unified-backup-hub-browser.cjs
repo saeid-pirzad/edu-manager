@@ -291,10 +291,10 @@ main({
       await EduV24.openBackups();
     })()`);
     check(
-      "school context opens the school panel in the shared main-menu dialog",
+      "school context opens the school panel in the main content page without a modal",
       await evaluate(`(()=>{
         const hub=document.getElementById('backupHub');
-        return !!hub&&hub.closest('#modalBody')&&!document.getElementById('modal').classList.contains('hidden')
+        return !!hub&&hub.closest('#app')&&!hub.closest('#modalBody')&&document.getElementById('modal').classList.contains('hidden')
           &&hub.querySelector('[data-backup-tab=school]').getAttribute('aria-selected')==='true'
           &&!!hub.querySelector('#backupSchoolPanel .backup-manual')
           &&!!document.querySelector('.header-actions [data-workspace-action=backups]');
@@ -674,7 +674,7 @@ main({
       })()`),
     );
     check(
-      "switching panels, closing and replacing the modal dispose bank subscriptions and stale actions",
+      "switching panels and navigating away dispose bank subscriptions and stale actions",
       await evaluate(`(async()=>{
         closeModal();await __hubTick();goSchools();
         const service=EduQuestionBankFileBackup.service;
@@ -687,21 +687,23 @@ main({
         service.choose=()=>{choices++;return Promise.resolve(false);};
         try {
           await EduV24.openBackups();
-          if(active!==0)return false;
+          if(active!==0)throw Error('initial subscriptions '+active);
           document.querySelector('#backupHub [data-backup-tab=bank]').click();await __hubTick();
           const first=document.querySelector('#backupBankPanel .qb-file-actions button');
-          if(active!==1)return false;
+          if(active!==1)throw Error('expected mounted subscription '+active);
           document.querySelector('#backupHub [data-backup-tab=school]').click();await __hubTick();
-          first.click();if(active!==0||choices!==0)return false;
+          first.click();if(active!==0||choices!==0)throw Error('stale action '+JSON.stringify({active,choices}));
           document.querySelector('#backupHub [data-backup-tab=bank]').click();await __hubTick();
           const closed=document.querySelector('#backupBankPanel .qb-file-actions button');
           if(active!==1||document.querySelectorAll('#backupBankPanel .qb-backup').length!==1)return false;
-          closeModal();await __hubTick();closed.click();if(active!==0||choices!==0)return false;
+          goSchools();await __hubTick();closed.click();if(active!==0||choices!==0)throw Error('stale action '+JSON.stringify({active,choices}));
           await EduV24.openBackups();document.querySelector('#backupHub [data-backup-tab=bank]').click();await __hubTick();
           const retired=document.querySelector('#backupBankPanel .qb-file-actions button');
           showModal('پنجرهٔ دیگر','<p id="hubReplacement">محتوای مستقل</p>');await __hubTick();
+          if(active!==1)return false;
+          closeModal();goReports();await __hubTick();
           retired.click();
-          return active===0&&subscriptions===3&&choices===0&&!!document.getElementById('hubReplacement');
+          if(!(active===0&&subscriptions===3&&choices===0&&state.view==='reports'))throw Error('final '+JSON.stringify({active,subscriptions,choices,view:state.view}));return true;
         } finally {closeModal();await __hubTick();service.subscribe=subscribe;service.choose=choose;}
       })()`),
     );
@@ -713,7 +715,7 @@ main({
         let release,started=false;
         __hubBankInput(__hubBankFile(),()=>{started=true;return new Promise(resolve=>release=resolve);});
         await __hubTick();if(!started)return false;
-        closeModal();await __hubTick();release(EduQuestionBank.size(__hubTestIncoming));await __hubTick();
+        goSchools();await __hubTick();release(EduQuestionBank.size(__hubTestIncoming));await __hubTick();
         return document.getElementById('modal').classList.contains('hidden')
           &&!document.querySelector('.qb-backup-confirm')
           &&JSON.stringify(await EduQuestionBankRepository.read())===bank&&await __hubStableSchool()===school;
@@ -733,7 +735,7 @@ main({
           const transfer=new DataTransfer();transfer.items.add(file);input.files=transfer.files;
           Object.defineProperty(input.files[0],'text',{value:()=>{started=true;return new Promise(resolve=>release=resolve);}});
           input.dispatchEvent(new Event('change',{bubbles:true}));await __hubTick();if(!started)return false;
-          closeModal();await __hubTick();release(JSON.stringify(snapshot));await __hubTick();
+          goSchools();await __hubTick();release(JSON.stringify(snapshot));await __hubTick();
           return document.getElementById('modal').classList.contains('hidden')
             &&!document.querySelector('.full-restore')
             &&JSON.stringify(await EduQuestionBankRepository.read())===bank&&await __hubStableSchool()===school;
@@ -911,7 +913,7 @@ main({
         deviceScaleFactor: 1,
         mobile: false,
       });
-      await evaluate(`document.getElementById('modalBody').scrollTop=0`);
+      await evaluate(`window.scrollTo(0,0)`);
       await delay(60);
       const activeShot = await cdp("Page.captureScreenshot", { format: "png" });
       fs.writeFileSync(
@@ -919,7 +921,7 @@ main({
         Buffer.from(activeShot.data, "base64"),
       );
       await evaluate(
-        `(async()=>{await __hubOpenClear();document.getElementById('modalBody').scrollTop=0;})()`,
+        `(async()=>{await __hubOpenClear();window.scrollTo(0,0);})()`,
       );
       const confirmLayout = await evaluate(
         "(" + inspectHubLayout.toString() + ")()",

@@ -758,9 +758,8 @@ main({
     await delay(100);
     await evaluate(`window.__qbOpenBackup=async()=>{
       closeModal();
-      const previous=document.querySelector('#backupHub');
       document.querySelector('[data-workspace-action="backups"]').click();
-      const ready=()=>document.querySelector('#backupHub')&&document.querySelector('#backupHub')!==previous&&!document.getElementById('modal').classList.contains('hidden');
+      const ready=()=>document.querySelector('#app #backupHub')&&state.view==='backups'&&document.getElementById('modal').classList.contains('hidden');
       for(let i=0;i<100&&!ready();i++)await new Promise(resolve=>setTimeout(resolve,30));
       const hub=document.querySelector('#backupHub');
       if(!ready())throw Error('The shared backup hub did not open');
@@ -789,11 +788,12 @@ main({
           await __qbOpenBackup();
           const backup=tabs.length===3&&!tabs.some(tab=>tab.textContent==='پشتیبان')
             &&document.querySelector('#backupHub [data-backup-tab="bank"]').getAttribute('aria-selected')==='true'
-            &&!!document.querySelector('#modalBody .qb-backup')
+            &&!!document.querySelector('#app .qb-backup')
             &&document.querySelectorAll('.qb-file-actions button').length===3
             &&!!document.querySelector('.qb-backup-manual input[type=file]')
             &&[...document.querySelectorAll('.qb-backup-manual button')].some(button=>button.textContent==='دریافت فایل');
           closeModal();
+          await EduQuestionBankUI.open();
           document.querySelector('.qb-tabs button').click();
           return absent&&backup&&document.querySelector('.qb-message').hidden&&!document.querySelector('.qb-storage-bar');
         })()`,
@@ -899,7 +899,7 @@ main({
           &&document.querySelectorAll('.qb-backup-automatic .single-file-permission-action').length===0
           &&document.querySelectorAll('.qb-backup-automatic .backup-automatic-actions button').length===3
           &&!document.getElementById('questionBankFileBadge').hidden
-          &&!!document.querySelector('#questionBankFileBadge button').closest('[inert]');
+          &&!document.querySelector('#questionBankFileBadge button').closest('[inert]');
         localRenew.click();await Promise.resolve();
         const renewed=oneAction&&calls===2&&choices===0&&fileName().textContent===name&&document.querySelector('.qb-file-status').dataset.state==='active';
         emit({state:'paused',connected:true,name,savedAt:'invalid',message:'تأیید جایگزینی لازم است'});
@@ -927,7 +927,7 @@ main({
     );
     await delay(100);
     await evaluate(
-      `window.__qbClick=(label,scope=document.querySelector('#modal:not(.hidden) #backupBankPanel .qb-backup')||document.querySelector('.qb-page'))=>{const b=[...scope.querySelectorAll('button')].find(b=>b.textContent===label);if(!b)throw Error(label);const menu=b.closest('.qb-entity-menu');if(menu&&!menu.matches(':popover-open'))document.querySelector('[aria-controls="'+menu.id+'"]').click();b.click();};window.__qbFill=(label,value)=>{const l=[...document.querySelectorAll('.qb-page label')].find(l=>l.firstChild.textContent===label);if(!l)throw Error(label);const n=l.querySelector('input,textarea,select');n.value=value;n.dispatchEvent(new Event('input',{bubbles:true}));return n;};__qbClick('درس جدید');document.querySelector('.qb-page form').requestSubmit();`,
+      `window.__qbClick=(label,scope=document.querySelector('#app #backupBankPanel .qb-backup')||document.querySelector('.qb-page'))=>{const b=[...scope.querySelectorAll('button')].find(b=>b.textContent===label);if(!b)throw Error(label);const menu=b.closest('.qb-entity-menu');if(menu&&!menu.matches(':popover-open'))document.querySelector('[aria-controls="'+menu.id+'"]').click();b.click();};window.__qbFill=(label,value)=>{const l=[...document.querySelectorAll('.qb-page label')].find(l=>l.firstChild.textContent===label);if(!l)throw Error(label);const n=l.querySelector('input,textarea,select');n.value=value;n.dispatchEvent(new Event('input',{bubbles:true}));return n;};__qbClick('درس جدید');document.querySelector('.qb-page form').requestSubmit();`,
     );
     await delay(100);
     check(
@@ -1504,7 +1504,7 @@ main({
           .format === "classyar-question-bank",
     );
     await evaluate(
-      "closeModal();__qbClick('آزمون‌های من');__qbClick('مشاهده آزمون')",
+      "(async()=>{closeModal();await EduQuestionBankUI.open();__qbClick('آزمون‌های من');__qbClick('مشاهده آزمون');})()",
     );
     await cdp("Emulation.setEmulatedMedia", { media: "print" });
     check(
