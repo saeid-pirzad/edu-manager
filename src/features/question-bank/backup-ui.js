@@ -9,7 +9,9 @@
     if (className) node.className = className;
     return node;
   };
-  const number = (value) => new Intl.NumberFormat("fa-IR").format(value);
+  let numberFormatter;
+  const number = (value) =>
+    (numberFormatter ||= new Intl.NumberFormat("fa-IR")).format(value);
   function mount(parent, { isCurrent = () => true } = {}) {
     const section = el("section", undefined, "qb-backup");
     const message = el("p", undefined, "qb-backup-message");

@@ -584,6 +584,52 @@ test("legacy lessons without work units retain an explicit per-term result row",
   );
 });
 
+test("legacy Excel lookup preserves the first repeated row and keeps delimiter-bearing identities separate", () => {
+  const f = fixture({ count: 2 }),
+    template = structuredClone(f.options.classroom.lessons[3]),
+    classroom = {
+      ...f.options.classroom,
+      students: [
+        { id: "a|b", name: "هنرجوی اول", code: "01" },
+        { id: "a", name: "هنرجوی دوم", code: "02" },
+      ],
+      archivedStudents: [],
+      lessons: [
+        { ...template, id: "c", name: "درس اول", poudmans: [] },
+        { ...template, id: "b|c", name: "درس دوم", poudmans: [] },
+      ],
+    },
+    parts = f.parts.map((part) => ({
+      ...part,
+      data: {
+        ...part.data,
+        schools: [{ ...part.data.schools[0], classes: [classroom] }],
+      },
+    })),
+    row = (studentId, lessonId, final) => ({
+      studentId,
+      lessonId,
+      term: "اول",
+      complete: true,
+      final,
+      passed: null,
+      legacyUnits: [],
+    });
+  f.c.annualTechnicalRows = () => [
+    row("a|b", "c", 7),
+    row("a", "b|c", 11),
+    row("a|b", "c", 18),
+  ];
+  const rows = data(f.build({ classroom, parts }), "سوابق واحدی");
+  assert.deepEqual(
+    rows.map((item) => [item[1], item[3], item[5], item[11]]),
+    [
+      ["هنرجوی اول", "درس اول", "اول", 7],
+      ["هنرجوی دوم", "درس دوم", "اول", 11],
+    ],
+  );
+});
+
 test("legacy session fallback is retained for a missing field while an explicit grouped zero has priority", () => {
   const f = fixture();
   delete courses(f.parts[0])[3].poudmans[0].units[0].unitScores.student_0.p;

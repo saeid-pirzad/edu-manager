@@ -197,6 +197,48 @@ test("selected-student annual lesson exposes only official unit scores and remov
   assert.deepEqual(parts, before);
 });
 
+test("annual lesson projection retains custom metadata and missing-value distinctions without sharing source objects", () => {
+  for (const unitBased of [true, false]) {
+    const { c, parts, lesson } = fixture({ unitBased }),
+      course = lesson(0),
+      pod = course.poudmans[0],
+      unit = pod.units[0];
+    course.custom = { nested: [{ label: "lesson", optional: undefined }] };
+    course.optional = undefined;
+    pod.custom = { nested: [{ label: "module", value: null }] };
+    unit.custom = { nested: [{ label: "unit", enabled: false }] };
+    unit.optional = undefined;
+    unit.applyOptions = { present: true, extension: { amount: 0 } };
+    unit.competencyScores = undefined;
+    const before = structuredClone(parts),
+      merged = c.annualModularLesson(
+        parts,
+        "school",
+        "class",
+        course,
+        "student",
+      ),
+      projectedPod = merged.poudmans[0],
+      projectedUnit = projectedPod.units[0];
+    assert.deepEqual(structuredClone(merged.custom), course.custom);
+    assert.deepEqual(structuredClone(projectedPod.custom), pod.custom);
+    assert.deepEqual(structuredClone(projectedUnit.custom), unit.custom);
+    assert.equal(Object.hasOwn(merged, "optional"), true);
+    assert.equal(merged.optional, undefined);
+    assert.equal(Object.hasOwn(projectedUnit, "optional"), true);
+    assert.equal(projectedUnit.optional, undefined);
+    if (!unitBased) {
+      assert.equal(Object.hasOwn(projectedUnit, "competencyScores"), true);
+      assert.equal(projectedUnit.competencyScores, undefined);
+    }
+    merged.custom.nested[0].label = "changed";
+    projectedPod.custom.nested[0].value = 1;
+    projectedUnit.custom.nested[0].enabled = true;
+    projectedUnit.applyOptions.extension.amount = 5;
+    assert.deepEqual(parts, before);
+  }
+});
+
 test("annual unit report keeps zero, blank and archived student grades independent and does not depend on source order", () => {
   const { c, parts, lesson } = fixture();
   const read = (versions, student = "student") =>

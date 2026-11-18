@@ -1,9 +1,11 @@
-const num = (value) =>
-  value === null || value === undefined
-    ? "—"
-    : Number(value).toLocaleString("fa-IR", {
-        maximumFractionDigits: 2,
-      });
+let reportNumberFormatter;
+const num = (value) => {
+  if (value === null || value === undefined) return "—";
+  const numeric = Number(value);
+  return (reportNumberFormatter ??= new Intl.NumberFormat("fa-IR", {
+    maximumFractionDigits: 2,
+  })).format(numeric);
+};
 function table(headers, rows, kind = "") {
   return (
     '<div class="table-scroll"><table' +

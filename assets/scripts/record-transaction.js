@@ -21,14 +21,15 @@ const allowed=matchingPeriods(source,value,today);if(allowed.includes(value.peri
 قط در زنگ "+allowed.map(period=>period+1).join("، ")+" برنامه دارد؛ زنگ درست را انتخاب کنید. هیچ تغییری ذخیره نشد.":
 "برای این مدرسه، کلاس و درس در تاریخ انتخاب‌شده برنامه‌ای وجود ندارد؛ روز جلسه، هفتهٔ زوج/فرد یا برنامهٔ هفتگی را اصلاح کنید. هیچ تغییری ذخیره نشد.")}}
 root.EduSessionSlots=Object.freeze({weekParity,entry,matchingPeriods,assertScheduled,changes({changed,before,removed,restoredRecords=null}){const updates=changed.
-filter(([logical])=>logical.startsWith("session:")).map(([logical,json])=>({logical,value:JSON.parse(json),json})),guarded=updates.filter(({logical,value,json})=>{
-const previous=before.find(row=>row.key===logical)?.value;if(previous&&previous.schoolId===value.schoolId&&previous.classId===value.classId&&previous.lessonId===
-value.lessonId&&previous.date===value.date&&previous.period===value.period)return false;return JSON.stringify(restoredRecords?.get(logical))!==json});return{updates,
-guarded,removed:removed.filter(logical=>logical.startsWith("session:"))}},assertAvailable(changes,workspaceId,parts){if(!changes.guarded.length)return;const family=parts.
-map(part=>{const records=new Map(part.records);if(part.id===workspaceId){for(const{logical,value}of changes.updates)records.set(logical,value);for(const logical of changes.
-removed)records.delete(logical)}return{id:part.id,records}});for(const{logical,value}of changes.guarded)for(const part of family)for(const[key,session]of part.records){
-if(!key.startsWith("session:")||part.id===workspaceId&&key===logical)continue;if(session.date===value.date&&session.period===value.period){const error=Error("تد\
-اخل جلسه: در این تاریخ و زنگ، جلسهٔ دیگری در همین سال تحصیلی ثبت شده است؛ کلاس، ترم و جلسهٔ قبلی را بررسی یا تاریخ و زنگ را اصلاح کنید. هیچ تغییری ذخیره نشد.");
+filter(([logical])=>logical.startsWith("session:")).map(([logical,json])=>({logical,value:JSON.parse(json),json}));const previousByKey=new Map;if(updates.length){
+for(const row of before)if(!previousByKey.has(row.key))previousByKey.set(row.key,row.value)}const guarded=updates.filter(({logical,value,json})=>{const previous=previousByKey.
+get(logical);if(previous&&previous.schoolId===value.schoolId&&previous.classId===value.classId&&previous.lessonId===value.lessonId&&previous.date===value.date&&
+previous.period===value.period)return false;return JSON.stringify(restoredRecords?.get(logical))!==json});return{updates,guarded,removed:removed.filter(logical=>logical.
+startsWith("session:"))}},assertAvailable(changes,workspaceId,parts){if(!changes.guarded.length)return;const family=parts.map(part=>{const records=new Map(part.
+records);if(part.id===workspaceId){for(const{logical,value}of changes.updates)records.set(logical,value);for(const logical of changes.removed)records.delete(logical)}
+return{id:part.id,records}});for(const{logical,value}of changes.guarded)for(const part of family)for(const[key,session]of part.records){if(!key.startsWith("sess\
+ion:")||part.id===workspaceId&&key===logical)continue;if(session.date===value.date&&session.period===value.period){const error=Error("تداخل جلسه: در این تاریخ و\
+ زنگ، جلسهٔ دیگری در همین سال تحصیلی ثبت شده است؛ کلاس، ترم و جلسهٔ قبلی را بررسی یا تاریخ و زنگ را اصلاح کنید. هیچ تغییری ذخیره نشد.");
 error.code="ACADEMIC_SESSION_SLOT_CONFLICT";throw error}}}})})(globalThis);(function(root){"use strict";const DAY_MS=24*60*60*1e3,MAX_MARKERS=5e3,fields=new Set(
 ["id","date","period","schoolId","classId","lessonId","recordedAt"]),sessionFields=new Set(["id","date","period","schoolId","classId","lessonId","poudmanId","un\
 itId","attendance","scores","roster"]);const identityKey=value=>[value.date,value.period,value.schoolId,value.classId,value.lessonId].join("|");const slotKey=value=>value.
@@ -72,9 +73,10 @@ name,lessonName:lesson.name,sourcePeriodId:workspaceId,sessionId:"",unknown:foun
 item.key=identityKey(item);if(!dismissed.has(item.key))items.push(item)}}items.sort((a,b)=>b.date.localeCompare(a.date)||a.period-b.period);return{start,end,items,
 scannedDays}}root.EduAttendanceReminders=Object.freeze({validateMarkers,isEmptySession,build})})(globalThis);"use strict";globalThis.EduAcademicDirectoryTransaction=
 Object.freeze({hasChanges({records,changed,removed,before}){const model=globalThis.EduAcademicYearDirectory;if(!model||!records?.has("meta"))return false;if(removed.
-some(key=>key.startsWith("class:")))return true;return changed.some(([key,json])=>{const previous=before.find(row=>row.key===key)?.value;const current=JSON.parse(
-json);return key==="meta"?model.layoutHasChanges(previous?.layout||[],current.layout||[])||!!model.scheduleHasChanges?.(previous,current):key.startsWith("class:")&&
-(model.hasChanges(previous,current)||globalThis.EduAcademicYearCourses?.hasChanges(previous,current))})},async commit(options){const{connection,expectedInstallation="",
+some(key=>key.startsWith("class:")))return true;let previousByKey;return changed.some(([key,json])=>{if(key!=="meta"&&!key.startsWith("class:"))return false;if(!previousByKey){
+previousByKey=new Map;for(const row of before)if(!previousByKey.has(row.key))previousByKey.set(row.key,row.value)}const previous=previousByKey.get(key);const current=JSON.
+parse(json);return key==="meta"?model.layoutHasChanges(previous?.layout||[],current.layout||[])||!!model.scheduleHasChanges?.(previous,current):key.startsWith("\
+class:")&&(model.hasChanges(previous,current)||globalThis.EduAcademicYearCourses?.hasChanges(previous,current))})},async commit(options){const{connection,expectedInstallation="",
 records,changed,removed,action,keepUndo,normalizedName,academicTermKind,annualChanged,decodeRecords,historicalRoster,directorySourceUpdates}=options;const workspace={
 ...options.workspace},model=globalThis.EduAcademicYearDirectory,annual=globalThis.EduAnnualModules,courses=globalThis.EduAcademicYearCourses,copy=value=>structuredClone(
 value),directoryRevisions=options.directoryRevisions===void 0?null:copy(options.directoryRevisions),recoveredUndo=options.recoveredUndo===void 0?null:copy(options.

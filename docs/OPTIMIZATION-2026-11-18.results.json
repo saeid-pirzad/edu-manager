@@ -1,0 +1,439 @@
+{
+  "schemaVersion": 1,
+  "baselineRevision": "d058937",
+  "node": "v24.21.0",
+  "generatedAt": "2026-11-18T13:06:50.088Z",
+  "releaseCacheVersion": "c572597eb2f21f6d",
+  "limitations": "Synthetic isolated Node VM routines. Timings do not measure the whole app, mobile hardware, DOM, IndexedDB, file writes or ZIP encoding. Browser totals include repeated common checks in each isolated run, not unique independent scenarios.",
+  "validation": {
+    "unit": {
+      "total": 3115,
+      "passed": 3115,
+      "failed": 0,
+      "added": 26
+    },
+    "browser": {
+      "runs": 18,
+      "total": 7817,
+      "passed": 7817,
+      "failed": 0,
+      "applicationReleases": ["cf1e9e8a101cbae6"],
+      "results": [
+        {
+          "stage": "navbar-layout",
+          "total": 679,
+          "passed": 679,
+          "failed": 0,
+          "applicationRelease": "cf1e9e8a101cbae6",
+          "executedAt": "2026-11-18T13:04:38.572Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-optimization-20261118-final\\edu-integrity-audit-1ysP8s\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "period-deletion",
+          "total": 277,
+          "passed": 277,
+          "failed": 0,
+          "applicationRelease": "cf1e9e8a101cbae6",
+          "executedAt": "2026-11-18T13:01:51.512Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-optimization-20261118-final\\edu-integrity-audit-4NEAU5\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "theme-reactium-acceptance",
+          "total": 411,
+          "passed": 411,
+          "failed": 0,
+          "applicationRelease": "cf1e9e8a101cbae6",
+          "executedAt": "2026-11-18T13:03:32.927Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-optimization-20261118-final\\edu-integrity-audit-7bXQPE\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "annual-backup-file-scale",
+          "total": 239,
+          "passed": 239,
+          "failed": 0,
+          "applicationRelease": "cf1e9e8a101cbae6",
+          "executedAt": "2026-11-18T13:03:04.631Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-optimization-20261118-final\\edu-integrity-audit-8BCVLB\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "logo-ui-pwa",
+          "total": 269,
+          "passed": 269,
+          "failed": 0,
+          "applicationRelease": "cf1e9e8a101cbae6",
+          "executedAt": "2026-11-18T13:03:53.594Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-optimization-20261118-final\\edu-integrity-audit-AL0c1G\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "modular-unit-grading",
+          "total": 255,
+          "passed": 255,
+          "failed": 0,
+          "applicationRelease": "cf1e9e8a101cbae6",
+          "executedAt": "2026-11-18T13:00:56.891Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-optimization-20261118-final\\edu-integrity-audit-Dd1ECx\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "record-edit-access",
+          "total": 265,
+          "passed": 265,
+          "failed": 0,
+          "applicationRelease": "cf1e9e8a101cbae6",
+          "executedAt": "2026-11-18T13:05:33.358Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-optimization-20261118-final\\edu-integrity-audit-DTXcJ8\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "single-academic-year-ui",
+          "total": 235,
+          "passed": 235,
+          "failed": 0,
+          "applicationRelease": "cf1e9e8a101cbae6",
+          "executedAt": "2026-11-18T13:02:30.315Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-optimization-20261118-final\\edu-integrity-audit-gZBg0E\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "modular-unit-karnameh-layout",
+          "total": 345,
+          "passed": 345,
+          "failed": 0,
+          "applicationRelease": "cf1e9e8a101cbae6",
+          "executedAt": "2026-11-18T13:01:18.548Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-optimization-20261118-final\\edu-integrity-audit-HiaCYG\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "question-bank-business",
+          "total": 283,
+          "passed": 283,
+          "failed": 0,
+          "applicationRelease": "cf1e9e8a101cbae6",
+          "executedAt": "2026-11-18T12:59:26.139Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-optimization-20261118-final\\edu-integrity-audit-HRXGas\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "week-settings",
+          "total": 246,
+          "passed": 246,
+          "failed": 0,
+          "applicationRelease": "cf1e9e8a101cbae6",
+          "executedAt": "2026-11-18T13:06:10.647Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-optimization-20261118-final\\edu-integrity-audit-J5xcUM\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "4-adversarial-workflow-review",
+          "total": 2385,
+          "passed": 2385,
+          "failed": 0,
+          "applicationRelease": "cf1e9e8a101cbae6",
+          "executedAt": "2026-11-18T12:58:12.471Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-optimization-20261118-final\\edu-integrity-audit-LJjfkS\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "timetable-edit-access",
+          "total": 236,
+          "passed": 236,
+          "failed": 0,
+          "applicationRelease": "cf1e9e8a101cbae6",
+          "executedAt": "2026-11-18T13:05:51.341Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-optimization-20261118-final\\edu-integrity-audit-Mkldp5\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "question-bank",
+          "total": 538,
+          "passed": 538,
+          "failed": 0,
+          "applicationRelease": "cf1e9e8a101cbae6",
+          "executedAt": "2026-11-18T12:59:03.473Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-optimization-20261118-final\\edu-integrity-audit-MzOC5h\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "unified-backup-hub",
+          "total": 301,
+          "passed": 301,
+          "failed": 0,
+          "applicationRelease": "cf1e9e8a101cbae6",
+          "executedAt": "2026-11-18T13:00:20.634Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-optimization-20261118-final\\edu-integrity-audit-NoBu7y\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "school-create-ui",
+          "total": 340,
+          "passed": 340,
+          "failed": 0,
+          "applicationRelease": "cf1e9e8a101cbae6",
+          "executedAt": "2026-11-18T13:05:13.172Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-optimization-20261118-final\\edu-integrity-audit-OJP6X3\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "gradebook-mobile-layout",
+          "total": 266,
+          "passed": 266,
+          "failed": 0,
+          "applicationRelease": "cf1e9e8a101cbae6",
+          "executedAt": "2026-11-18T13:02:12.745Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-optimization-20261118-final\\edu-integrity-audit-PBXBRZ\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "question-bank-import",
+          "total": 247,
+          "passed": 247,
+          "failed": 0,
+          "applicationRelease": "cf1e9e8a101cbae6",
+          "executedAt": "2026-11-18T13:00:38.303Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-optimization-20261118-final\\edu-integrity-audit-sTMS3T\\data-integrity-results.json",
+          "browserProfileRetained": false
+        }
+      ]
+    },
+    "releaseCommand": "npm run check:release",
+    "releaseExitCode": 0,
+    "packageLog": ".cache/optimization-package.log",
+    "packagedFiles": 81,
+    "packageMatchesCurrentAssets": true
+  },
+  "payload": {
+    "before": {
+      "javascript": {
+        "files": 33,
+        "rawBytes": 1256541,
+        "gzipBytes": 349549,
+        "functions": 3896
+      },
+      "stylesheets": {
+        "files": 2,
+        "rawBytes": 693520,
+        "gzipBytes": 181587,
+        "functions": 0
+      }
+    },
+    "after": {
+      "javascript": {
+        "files": 33,
+        "rawBytes": 1258768,
+        "gzipBytes": 350264,
+        "functions": 3894
+      },
+      "stylesheets": {
+        "files": 2,
+        "rawBytes": 693520,
+        "gzipBytes": 181587,
+        "functions": 0
+      }
+    },
+    "method": {
+      "initialScope": "Unique static external script and stylesheet references in the entry HTML; excludes inline code, dynamic imports, workers, maps, images and user data.",
+      "rawBytes": "UTF-8 text with CRLF normalized to LF, matching release asset hashing.",
+      "gzipBytes": "Sum of independent gzip level 9 encodings, not observed HTTP transfer bytes or browser cache usage.",
+      "functions": "AST function declarations, expressions and arrows in built JavaScript, including generated wrappers. Source-layout scopes are build groups, not lexical scopes.",
+      "limitations": "These are code inventory and payload measurements, not device timing, business correctness, maintainability scores or percentages of optimization."
+    }
+  },
+  "measurements": {
+    "savePaths": {
+      "node": "v24.21.0",
+      "scope": "Synthetic in-memory session batches, two warmups and five measured runs. Save benchmark stubs commit planning and the durable transaction; no IndexedDB, DOM, file I/O or device timing is measured.",
+      "baseline": {
+        "revision": "d058937",
+        "measurements": [
+          {
+            "records": 1000,
+            "operation": "session-directory-detection",
+            "medianMs": 11.325
+          },
+          {
+            "records": 1000,
+            "operation": "session-slot-change-detection",
+            "medianMs": 10.004
+          },
+          {
+            "records": 1000,
+            "operation": "save-date-validation-and-publish",
+            "medianMs": 13.546
+          },
+          {
+            "records": 10000,
+            "operation": "session-directory-detection",
+            "medianMs": 1044.476
+          },
+          {
+            "records": 10000,
+            "operation": "session-slot-change-detection",
+            "medianMs": 1112.97
+          },
+          {
+            "records": 10000,
+            "operation": "save-date-validation-and-publish",
+            "medianMs": 1165.886
+          }
+        ]
+      },
+      "current": {
+        "measurements": [
+          {
+            "records": 1000,
+            "operation": "session-directory-detection",
+            "medianMs": 0.171
+          },
+          {
+            "records": 1000,
+            "operation": "session-slot-change-detection",
+            "medianMs": 2.312
+          },
+          {
+            "records": 1000,
+            "operation": "save-date-validation-and-publish",
+            "medianMs": 1.976
+          },
+          {
+            "records": 10000,
+            "operation": "session-directory-detection",
+            "medianMs": 0.484
+          },
+          {
+            "records": 10000,
+            "operation": "session-slot-change-detection",
+            "medianMs": 24.957
+          },
+          {
+            "records": 10000,
+            "operation": "save-date-validation-and-publish",
+            "medianMs": 33.818
+          }
+        ]
+      }
+    },
+    "grading": {
+      "node": "v24.21.0",
+      "generatedAt": "2026-11-18T12:35:47.924Z",
+      "notes": "Synthetic Node VM measurements; 9 alternating batches, median milliseconds per call after 3 warmups. Identical DTOs asserted before timing. Not real mobile, IndexedDB, DOM, XLSX ZIP or total app speed.",
+      "annualModularProjection": {
+        "fixture": "100 students, 5 modules x 2 units, 2 terms, one selected student",
+        "beforeCloneWork": {
+          "bytes": 587166,
+          "calls": 78
+        },
+        "afterCloneWork": {
+          "bytes": 4938,
+          "calls": 78
+        },
+        "beforeMs": 17.24,
+        "afterMs": 0.819,
+        "ratio": 21.04,
+        "samples": {
+          "before": [
+            18.66959, 16.451839999999994, 19.796754999999997, 16.31760999999999,
+            16.476315, 19.077940000000012, 15.354175000000009,
+            18.317540000000008, 17.23977500000001
+          ],
+          "after": [
+            1.1616299999999966, 0.9409850000000006, 0.9172149999999988,
+            0.8031150000000025, 0.7698700000000145, 0.7135899999999993,
+            1.072225000000003, 0.8193199999999934, 0.7764300000000048
+          ]
+        }
+      },
+      "legacyCalculation": {
+        "fixture": "60 sessions x 200 scores, one selected student",
+        "beforeMs": 0.713,
+        "afterMs": 0.117,
+        "ratio": 6.07,
+        "samples": {
+          "before": [
+            0.8470720000000074, 0.8598759999999948, 0.8503340000000026,
+            1.19136199999999, 0.7125840000000062, 0.7045900000000074,
+            0.7084319999999934, 0.7077440000000024, 0.6410260000000017
+          ],
+          "after": [
+            0.13039200000000165, 0.11540600000000267, 0.10142399999999725,
+            0.10874800000000505, 0.117541999999994, 0.1360120000000097,
+            0.11729800000000978, 0.11786200000000463, 0.10468399999999747
+          ]
+        }
+      },
+      "legacyExcelRows": {
+        "fixture": "121 students including archive, 12 legacy lessons, 2 terms, 2904 precomputed grade rows; export mapping only",
+        "beforeMs": 93.506,
+        "afterMs": 10.069,
+        "ratio": 9.29,
+        "samples": {
+          "before": [
+            89.98424999999997, 106.40044999999964, 101.4965000000002,
+            95.99244999999974, 93.50610000000006, 93.37744999999995,
+            108.09945000000016, 92.58334999999988, 88.84105
+          ],
+          "after": [
+            9.305499999999938, 12.475300000000061, 9.969450000000052,
+            11.56750000000011, 10.069250000000011, 8.684349999999995,
+            13.312800000000152, 12.033200000000306, 8.590450000000146
+          ]
+        }
+      }
+    },
+    "periodic": {
+      "node": "v24.21.0",
+      "method": "One warmup plus median of three runs in the same local Node process; original and changed source loaded into isolated VM contexts; output strings asserted identical.",
+      "scope": "Excel sheet-data preparation only (1000 sessions with one pupil each), and 1000 numeric report cells separately; excludes model preparation, ZIP encoding, IndexedDB, DOM, physical device and browser timings.",
+      "excel": {
+        "sessions": 1000,
+        "days": 3,
+        "totalSheetRows": 2031,
+        "before": {
+          "constructorsPerExport": 2011,
+          "medianMs": 259.78
+        },
+        "after": {
+          "constructorsPerExport": 3,
+          "medianMs": 16.09
+        },
+        "identicalOutput": true
+      },
+      "number": {
+        "cells": 1000,
+        "beforeMs": 44.25,
+        "afterMs": 0.98,
+        "identicalOutput": true
+      }
+    },
+    "bank": {
+      "runtime": "v24.21.0",
+      "questions": 10000,
+      "units": 100,
+      "definitions": {
+        "questionFilterCallbackVisits": "All question-element filter callback invocations, including the initial source scope filter and every subsequent filter of the scoped array. Pagination reusing a cached list adds none.",
+        "questionIteratorVisits": "All question-element yields from for...of over the input question array; covers the builder index construction.",
+        "totalQuestionElementVisits": "questionFilterCallbackVisits + questionIteratorVisits. Includes scoped scans, excludes iteration over units/checks/types, string characters and DOM construction.",
+        "searchTextCalls": "Calls to the existing domain searchText normalizer for query or question text. Both are counted."
+      },
+      "search": {
+        "draws": 30,
+        "distinctQueries": 5,
+        "beforeNormalizations": 600000,
+        "afterNormalizations": 10030,
+        "beforeQuestionVisits": 300000,
+        "afterQuestionVisits": 60000
+      },
+      "builder": {
+        "updates": 20,
+        "beforeQuestionVisits": 1800000,
+        "afterQuestionVisits": 10000,
+        "afterUnitTypeAdditions": 8000
+      }
+    }
+  }
+}

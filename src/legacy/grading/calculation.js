@@ -53,33 +53,34 @@ function calcStudentLessonBase(c, lesson, stId, source = db) {
       }
     }
 
-    [...s.scores]
-      .reverse()
-      .filter((x) => x.studentId === stId)
-      .forEach((sc) => {
-        const d =
-          (s.poudmanId && s.unitId && details[s.poudmanId]?.[s.unitId]) || null;
-        if (sc.type === "positive") {
-          posCount++;
-          if (d) {
-            d.pos++;
-            d.posSum += Number(sc.value);
-          }
-        } else if (sc.type === "negative") {
-          negCount++;
-          if (d) {
-            d.neg++;
-            d.negSum += Number(sc.value);
-          }
-        } else if (sc.type === "homework") {
-          hwCount++;
-          if (d) d.hw++;
-        } else if (sc.type === "mostamar" && d && d.m === null) {
-          d.m = sc.value;
-        } else if (sc.type === "payani" && d && d.p === null) {
-          d.p = sc.value;
+    const d =
+      (s.poudmanId && s.unitId && details[s.poudmanId]?.[s.unitId]) || null;
+    // Preserve last-entry priority and addition order without allocating a
+    // reversed copy and a filtered array for each student in every session.
+    for (let index = s.scores.length - 1; index >= 0; index--) {
+      const sc = s.scores[index];
+      if (sc.studentId !== stId) continue;
+      if (sc.type === "positive") {
+        posCount++;
+        if (d) {
+          d.pos++;
+          d.posSum += Number(sc.value);
         }
-      });
+      } else if (sc.type === "negative") {
+        negCount++;
+        if (d) {
+          d.neg++;
+          d.negSum += Number(sc.value);
+        }
+      } else if (sc.type === "homework") {
+        hwCount++;
+        if (d) d.hw++;
+      } else if (sc.type === "mostamar" && d && d.m === null) {
+        d.m = sc.value;
+      } else if (sc.type === "payani" && d && d.p === null) {
+        d.p = sc.value;
+      }
+    }
   });
 
   lesson.poudmans.forEach((p) => {

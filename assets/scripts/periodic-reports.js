@@ -64,28 +64,28 @@ end)}const noteKey=f=>[noteWorkspaceId(),f.mode,notePeriodScope(f.mode==="weekly
 mode==="annual"?"academic-year:"+(f.annualFirstId||"auto")+":"+(f.annualSecondId||"auto"):f.date),f.schoolId,f.classId,f.audience,f.audience==="parent"?f.studentId:
 ""].join("|");const inputSnapshot=()=>({...filters,workspaceId:context().id,note:readNote(noteKey(filters))});const reportSignature=()=>JSON.stringify({input:inputSnapshot(),
 context:context()});function build(source,options){return root.EduReportModel.build(source,options,{generatedAt:new Date().toISOString(),collisionScope:"teacher"})}
-const num=value=>value===null||value===void 0?"—":Number(value).toLocaleString("fa-IR",{maximumFractionDigits:2});function table(headers,rows,kind=""){return'\
-<div class="table-scroll"><table'+(kind?' class="'+esc(kind)+'"':"")+"><thead><tr>"+headers.map(x=>"<th>"+esc(x)+"</th>").join("")+"</tr></thead><tbody>"+rows.map(
-row=>"<tr>"+row.map(cell=>"<td>"+esc(cell)+"</td>").join("")+"</tr>").join("")+"</tbody></table></div>"}function reportParticipants(model,session){return model.
-audience==="management"&&model.detailLevel==="summary"?session.participants.filter(participant=>participant.scores.length):session.participants}function parentPerformanceRows(m){
-const scores=m.sessions.flatMap(session=>reportParticipants(m,session).flatMap(p=>p.scores));const groups=[["نمره‌های ثبت‌شده",["mostamar","pay\
-ani","classGrade"]],["امتیاز مثبت",["positive"]],["امتیاز منفی",["negative"]],["تکلیف",["homework"]],["فعالیت کلاسی",["activ\
-ity"]]];const known=new Set(groups.flatMap(([,types])=>types));return[["جلسات ثبت‌شده",num(m.summary.sessions)],["حاضر (شامل تأخیر)",num(
-(m.summary.present||0)+(m.summary.late||0))],["غایب",num(m.summary.absent)],["مرخصی",num(m.summary.leave)],["با تأخیر (زیرمجموعهٔ حاضر)",
-num(m.summary.late)],["حضور تعیین‌نشده",num(m.summary.unknown)],...groups.map(([label,types])=>[label,num(scores.filter(score=>types.includes(score.
-type)).length)+" ثبت"]),["سایر ثبت‌ها",num(scores.filter(score=>!known.has(score.type)).length)+" ثبت"],["توضیحات همراه ثبت‌ها",
-num(scores.filter(score=>String(score.note||"").trim()).length)+" مورد"]]}function textReport(m){const lines=["گزارش "+modeLabel(m.mode)+" — "+(m.audience===
-"parent"?"ویژه اولیا":"ویژه مدیریت مدرسه"),"مدرسه: "+m.school.name,"بازه: "+faDate(m.start)+" تا "+faDate(m.end),"سال تحصیلی:\
- "+m.academicYear,...m.academicTerm?["ترم: "+m.academicTerm]:[]];if(m.audience==="management"&&m.detailLevel==="summary")lines.push("نمایش خلاصه مدیریتی: آما\
-ر همه هنرجویان و تمام ثبت‌های فعالیت؛ ریز حضور هر جلسه در نمایش کامل و فایل JSON موجود است.");
-if(m.class)lines.push("کلاس: "+m.class.name);if(m.student)lines.push("هنرجو: "+m.student.name+" | کد: "+(m.student.code||"ثبت نشده"));lines.push(
-"زمان تهیه: "+new Date(m.generatedAt).toLocaleString("fa-IR",{timeZone:"Asia/Tehran"}),"","خلاصه","جلسات ثبت‌شده: "+num(m.summary.sessions),
-"حاضر: "+num((m.summary.present||0)+(m.summary.late||0))+" | غایب: "+num(m.summary.absent)+" | مرخصی: "+num(m.summary.leave)+" | تأخیر: "+num(
-m.summary.late)+" | تعیین‌نشده: "+num(m.summary.unknown)+" (نفرـجلسه)","نرخ حضور از موارد تعیین‌شده، به‌جز مرخصی: "+
-(m.summary.attendanceRate===null?"قابل محاسبه نیست":num(m.summary.attendanceRate)+"٪"),"تعداد ثبت‌های نمره، تکلیف و فعالیت: "+
-num(m.summary.recordedMarks),"");if(!m.sessions.length)lines.push("در این بازه و محدوده، جلسه مرتبطی ثبت نشده است.");if(m.audience===
-"parent"){lines.push("","جمع‌بندی عملکرد هنرجو در بازهٔ گزارش");for(const[label,value]of parentPerformanceRows(m))lines.push(label+
-": "+value);lines.push("تعداد ثبت‌ها، مجموع امتیاز یا نمره نیست؛ جزئیات و توضیحات هر ثبت در ادامه آمده است.")}
+let reportNumberFormatter;const num=value=>{if(value===null||value===void 0)return"—";const numeric=Number(value);return(reportNumberFormatter??=new Intl.NumberFormat(
+"fa-IR",{maximumFractionDigits:2})).format(numeric)};function table(headers,rows,kind=""){return'<div class="table-scroll"><table'+(kind?' class="'+esc(kind)+'"':
+"")+"><thead><tr>"+headers.map(x=>"<th>"+esc(x)+"</th>").join("")+"</tr></thead><tbody>"+rows.map(row=>"<tr>"+row.map(cell=>"<td>"+esc(cell)+"</td>").join("")+"\
+</tr>").join("")+"</tbody></table></div>"}function reportParticipants(model,session){return model.audience==="management"&&model.detailLevel==="summary"?session.
+participants.filter(participant=>participant.scores.length):session.participants}function parentPerformanceRows(m){const scores=m.sessions.flatMap(session=>reportParticipants(
+m,session).flatMap(p=>p.scores));const groups=[["نمره‌های ثبت‌شده",["mostamar","payani","classGrade"]],["امتیاز مثبت",["positive"]],[
+"امتیاز منفی",["negative"]],["تکلیف",["homework"]],["فعالیت کلاسی",["activity"]]];const known=new Set(groups.flatMap(([,types])=>types));
+return[["جلسات ثبت‌شده",num(m.summary.sessions)],["حاضر (شامل تأخیر)",num((m.summary.present||0)+(m.summary.late||0))],["غایب",num(
+m.summary.absent)],["مرخصی",num(m.summary.leave)],["با تأخیر (زیرمجموعهٔ حاضر)",num(m.summary.late)],["حضور تعیین‌نشده",
+num(m.summary.unknown)],...groups.map(([label,types])=>[label,num(scores.filter(score=>types.includes(score.type)).length)+" ثبت"]),["سایر ثبت‌ها",
+num(scores.filter(score=>!known.has(score.type)).length)+" ثبت"],["توضیحات همراه ثبت‌ها",num(scores.filter(score=>String(score.note||"").trim()).
+length)+" مورد"]]}function textReport(m){const lines=["گزارش "+modeLabel(m.mode)+" — "+(m.audience==="parent"?"ویژه اولیا":"ویژه مدیریت مدرس\
+ه"),"مدرسه: "+m.school.name,"بازه: "+faDate(m.start)+" تا "+faDate(m.end),"سال تحصیلی: "+m.academicYear,...m.academicTerm?["ترم: "+m.academicTerm]:
+[]];if(m.audience==="management"&&m.detailLevel==="summary")lines.push("نمایش خلاصه مدیریتی: آمار همه هنرجویان و تمام ثبت‌های فعالیت؛ ریز حضور هر جلسه در نمایش \
+کامل و فایل JSON موجود است.");if(m.class)lines.push("کلاس: "+m.class.name);if(m.student)lines.push("هنرجو: "+m.student.name+" | کد: "+
+(m.student.code||"ثبت نشده"));lines.push("زمان تهیه: "+new Date(m.generatedAt).toLocaleString("fa-IR",{timeZone:"Asia/Tehran"}),"","خلاصه","\
+جلسات ثبت‌شده: "+num(m.summary.sessions),"حاضر: "+num((m.summary.present||0)+(m.summary.late||0))+" | غایب: "+num(m.summary.absent)+" | مرخ\
+صی: "+num(m.summary.leave)+" | تأخیر: "+num(m.summary.late)+" | تعیین‌نشده: "+num(m.summary.unknown)+" (نفرـجلسه)","نرخ حضور از موارد \
+تعیین‌شده، به‌جز مرخصی: "+(m.summary.attendanceRate===null?"قابل محاسبه نیست":num(m.summary.attendanceRate)+"٪"),"تعداد ثبت\
+‌های نمره، تکلیف و فعالیت: "+num(m.summary.recordedMarks),"");if(!m.sessions.length)lines.push("در این بازه و محدوده، جلسه مرتبطی ثبت نشده\
+ است.");if(m.audience==="parent"){lines.push("","جمع‌بندی عملکرد هنرجو در بازهٔ گزارش");for(const[label,value]of parentPerformanceRows(
+m))lines.push(label+": "+value);lines.push("تعداد ثبت‌ها، مجموع امتیاز یا نمره نیست؛ جزئیات و توضیحات هر ثبت در ادامه آمده است.")}
 if(m.audience==="management"){lines.push("","وضعیت هنرجویان");for(const st of m.students)lines.push(st.name+" / "+st.className+": حاضر "+num((st.
 present||0)+(st.late||0))+"، غایب "+num(st.absent)+" | مرخصی: "+num(st.leave)+"، تأخیر "+num(st.late)+"، تعیین‌نشده "+num(st.unknown))}
 lines.push("","جزئیات جلسات");for(const s of m.sessions){lines.push("",faDate(s.date)+(s.academicTerm?" | نوبت "+s.academicTerm:"")+" | زنگ "+
@@ -406,24 +406,24 @@ ml.sheet"})}function excelReportSheets(m){const sheets=[];const sheet=(name,head
 row.sessions,(row.present||0)+(row.late||0),row.absent,row.leave,row.late,row.unknown];const countHeaders=["جلسه","حاضر با احتساب تأخیر","غ\
 ایب","مرخصی","تأخیر (زیرمجموعه حاضر)","تعیین‌نشده"];const result=grade=>!grade.complete?"ناقص":grade.passed==null?"تکمی\
 ل":grade.passed?"قبول":"نیازمند جبران";const safe=grade=>{if(grade.complete!==true||!Number.isFinite(grade.final))return null;const display=root.
-EduV24.finalText(grade);return display===grade.final.toFixed(2)?grade.final:display};const date=value=>new Intl.DateTimeFormat("fa-IR",{year:"numeric",month:"2-\
-digit",day:"2-digit",timeZone:"UTC"}).format(new Date(value+"T12:00:00Z"));const weekday=value=>new Intl.DateTimeFormat("fa-IR",{weekday:"long",timeZone:"UTC"}).
-format(new Date(value+"T12:00:00Z"));const preparedAt=new Intl.DateTimeFormat("fa-IR",{dateStyle:"short",timeStyle:"short",timeZone:"Asia/Tehran"}).format(new Date(
-m.generatedAt));const metadata=[["نوع گزارش",{daily:"روزانه",weekly:"هفتگی",monthly:"ماهانه",annual:"سال تحصیلی"}[m.mode]],["م\
-خاطب",m.audience==="parent"?"اولیا — فقط هنرجوی انتخاب‌شده":"مدیریت مدرسه"],["وضعیت داده",m.summary.sessions?
-"جلسات و ثبت‌های همین محدوده در شیت‌های داده آمده‌اند.":m.annualGrades?.length||m.technicalGrades?.length?"جلسه‌ا\
-ی در این محدوده ثبت نشده است؛ نمرات موجود در شیت‌های امتحان آمده‌اند.":"هیچ جلسه یا نمره‌ای برای این م\
-حدوده در گزارش موجود نیست؛ تاریخ، مدرسه و کلاس انتخاب‌شده را بررسی کنید."],["مدرسه",m.school.name],
-["کلاس",m.class?.name||"همه کلاس‌ها"],["هنرجو",m.student?.name||"همه هنرجویان محدوده"],["کد هنرجو",m.student?.code==
-null?"":String(m.student.code)],["سال تحصیلی",m.academicYear],["ترم",m.academicTerm||"هر دو ترم"],["از تاریخ",date(m.start)],["تا تاری\
-خ",date(m.end)],["زمان تهیه (شمسی)",preparedAt],["تنظیم‌کننده",m.author],["توضیحات",m.note],...countHeaders.map((header,i)=>[header,
-counts(m.summary)[i]]),["تعداد هنرجویان با سابقه جلسه",m.summary.students],["نرخ حضور (درصد)",m.summary.attendanceRate],["ثبت\
-‌های فعالیت",m.summary.recordedMarks],...(m.technicalGrades||[]).some(grade=>grade.method==="modular"&&!grade.unitBased)?[["واحد کار در روش نمره‌دهی \
-پودمان","در روش ثبت نمره برای پودمان، واحدهای کار جزئیات آموزشی‌اند؛ نتیجهٔ رسمی از مستمر و شایستگی پودمان محاسبه می‌شود و نمرهٔ ترکیبی واحد کار خالی است."]]:
-[],...(m.technicalGrades||[]).some(grade=>grade.unitBased)?[["ارزشیابی مستقل واحدهای کار","در روش ثبت نمره برای واحد کار، نمرهٔ هر واحد ا\
-ز مستمر و شایستگی خودش محاسبه می‌شود؛ پودمان و درس نمرهٔ تجمیعی ندارند. این نمرات در هر دو نوبت سال مشترک‌اند."]]:
-[],...(m.definitions||[]).map(text=>["مبنای گزارش",text]),...(m.warnings||[]).map(text=>["نیازمند بررسی",text]),["راهنما","سلول خالی\
- یعنی ثبت‌نشده یا نامرتبط؛ صفر عدد واقعی است. این فایل گزارش است و برای بازیابی سیستم نیست."]];
+EduV24.finalText(grade);return display===grade.final.toFixed(2)?grade.final:display};let dateFormatter,weekdayFormatter;const date=value=>(dateFormatter??=new Intl.
+DateTimeFormat("fa-IR",{year:"numeric",month:"2-digit",day:"2-digit",timeZone:"UTC"})).format(new Date(value+"T12:00:00Z"));const weekday=value=>(weekdayFormatter??=
+new Intl.DateTimeFormat("fa-IR",{weekday:"long",timeZone:"UTC"})).format(new Date(value+"T12:00:00Z"));const preparedAt=new Intl.DateTimeFormat("fa-IR",{dateStyle:"\
+short",timeStyle:"short",timeZone:"Asia/Tehran"}).format(new Date(m.generatedAt));const metadata=[["نوع گزارش",{daily:"روزانه",weekly:"هفتگی",
+monthly:"ماهانه",annual:"سال تحصیلی"}[m.mode]],["مخاطب",m.audience==="parent"?"اولیا — فقط هنرجوی انتخاب‌شده":"مد\
+یریت مدرسه"],["وضعیت داده",m.summary.sessions?"جلسات و ثبت‌های همین محدوده در شیت‌های داده آمده‌اند.":
+m.annualGrades?.length||m.technicalGrades?.length?"جلسه‌ای در این محدوده ثبت نشده است؛ نمرات موجود در شیت‌های امتحان آمده‌اند.":
+"هیچ جلسه یا نمره‌ای برای این محدوده در گزارش موجود نیست؛ تاریخ، مدرسه و کلاس انتخاب‌شده را بررسی کنید."],
+["مدرسه",m.school.name],["کلاس",m.class?.name||"همه کلاس‌ها"],["هنرجو",m.student?.name||"همه هنرجویان محدوده"],["کد هن\
+رجو",m.student?.code==null?"":String(m.student.code)],["سال تحصیلی",m.academicYear],["ترم",m.academicTerm||"هر دو ترم"],["از تاریخ",
+date(m.start)],["تا تاریخ",date(m.end)],["زمان تهیه (شمسی)",preparedAt],["تنظیم‌کننده",m.author],["توضیحات",m.note],...countHeaders.
+map((header,i)=>[header,counts(m.summary)[i]]),["تعداد هنرجویان با سابقه جلسه",m.summary.students],["نرخ حضور (درصد)",m.summary.
+attendanceRate],["ثبت‌های فعالیت",m.summary.recordedMarks],...(m.technicalGrades||[]).some(grade=>grade.method==="modular"&&!grade.unitBased)?[["و\
+احد کار در روش نمره‌دهی پودمان","در روش ثبت نمره برای پودمان، واحدهای کار جزئیات آموزشی‌اند؛ نتیجهٔ رسمی از مستمر و شایستگی پودمان محا\
+سبه می‌شود و نمرهٔ ترکیبی واحد کار خالی است."]]:[],...(m.technicalGrades||[]).some(grade=>grade.unitBased)?[["ارزشیابی مستقل\
+ واحدهای کار","در روش ثبت نمره برای واحد کار، نمرهٔ هر واحد از مستمر و شایستگی خودش محاسبه می‌شود؛ پودمان و درس نمرهٔ تجمیعی ندارند. این نمرات در هر د\
+و نوبت سال مشترک‌اند."]]:[],...(m.definitions||[]).map(text=>["مبنای گزارش",text]),...(m.warnings||[]).map(text=>["نیازمند بررسی",
+text]),["راهنما","سلول خالی یعنی ثبت‌نشده یا نامرتبط؛ صفر عدد واقعی است. این فایل گزارش است و برای بازیابی سیستم نیست."]];
 sheet("خلاصه",["عنوان","مقدار"],metadata,[38,95]);sheets[0].filter=false;sheet("آمار روزها",["تاریخ شمسی","روز هفته",...countHeaders,
 "ثبت فعالیت"],m.days.filter(d=>d.sessions>0).map(d=>[date(d.date),weekday(d.date),...counts(d),d.markCount]));sheet("آمار هنرجویان",["کلاس",
 "کد دانش‌آموزی","هنرجو",...countHeaders,"ثبت فعالیت"],m.students.map(s=>[s.className,String(s.code??""),s.name,...counts(s),s.markCount]));

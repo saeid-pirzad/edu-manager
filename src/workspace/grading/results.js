@@ -211,6 +211,13 @@ function annualGradeRows(parts, schoolId, classId, studentId = "") {
   return rows;
 }
 function annualModularLesson(parts, schoolId, classId, lesson, sid) {
+  // Clone retained metadata once. Rebuilt score banks and child collections can
+  // contain every student and must not be copied before being replaced below.
+  const metadata = (value, rebuilt) => {
+    const fields = { ...value };
+    for (const field of rebuilt) delete fields[field];
+    return clone(fields);
+  };
   const selected = (classroom) => ({
     ...classroom,
     students: [{ id: sid }],
@@ -220,16 +227,24 @@ function annualModularLesson(parts, schoolId, classId, lesson, sid) {
       .map((item) => {
         const unitBased = EduPolicy.unitBased(item.gradingPolicy);
         return {
-          ...clone(item),
+          ...metadata(
+            item,
+            unitBased ? ["poudmans", "kardaneshScores"] : ["poudmans"],
+          ),
           ...(unitBased ? { kardaneshScores: {} } : {}),
           poudmans: item.poudmans.map((pod) => ({
-            ...clone(pod),
+            ...metadata(pod, ["podScores", "units"]),
             podScores:
               !unitBased && Object.hasOwn(pod.podScores || {}, sid)
                 ? { [sid]: clone(pod.podScores[sid]) }
                 : {},
             units: pod.units.map((unit) => ({
-              ...clone(unit),
+              ...metadata(unit, [
+                ...(unitBased ? ["unitScores"] : []),
+                ...(unit.competencyScores !== undefined
+                  ? ["competencyScores"]
+                  : []),
+              ]),
               ...(unitBased ? { unitScores: {} } : {}),
               ...(unit.competencyScores !== undefined
                 ? {

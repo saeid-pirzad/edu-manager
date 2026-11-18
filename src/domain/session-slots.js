@@ -146,27 +146,32 @@
     assertScheduled,
     changes({ changed, before, removed, restoredRecords = null }) {
       const updates = changed
-          .filter(([logical]) => logical.startsWith("session:"))
-          .map(([logical, json]) => ({
-            logical,
-            value: JSON.parse(json),
-            json,
-          })),
-        guarded = updates.filter(({ logical, value, json }) => {
-          const previous = before.find((row) => row.key === logical)?.value;
-          if (
-            previous &&
-            previous.schoolId === value.schoolId &&
-            previous.classId === value.classId &&
-            previous.lessonId === value.lessonId &&
-            previous.date === value.date &&
-            previous.period === value.period
-          )
-            return false;
-          // This map comes only from the already validated historical undo,
-          // never from a public save scope or a caller-supplied allow flag.
-          return JSON.stringify(restoredRecords?.get(logical)) !== json;
-        });
+        .filter(([logical]) => logical.startsWith("session:"))
+        .map(([logical, json]) => ({
+          logical,
+          value: JSON.parse(json),
+          json,
+        }));
+      const previousByKey = new Map();
+      if (updates.length)
+        for (const row of before)
+          if (!previousByKey.has(row.key))
+            previousByKey.set(row.key, row.value);
+      const guarded = updates.filter(({ logical, value, json }) => {
+        const previous = previousByKey.get(logical);
+        if (
+          previous &&
+          previous.schoolId === value.schoolId &&
+          previous.classId === value.classId &&
+          previous.lessonId === value.lessonId &&
+          previous.date === value.date &&
+          previous.period === value.period
+        )
+          return false;
+        // This map comes only from the already validated historical undo,
+        // never from a public save scope or a caller-supplied allow flag.
+        return JSON.stringify(restoredRecords?.get(logical)) !== json;
+      });
       return {
         updates,
         guarded,

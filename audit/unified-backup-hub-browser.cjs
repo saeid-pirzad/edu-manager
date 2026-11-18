@@ -1126,26 +1126,13 @@ main({
       globalThis.__beforeScopedSchoolWipe=true;
       document.getElementById('wipeEditor').requestSubmit();
     })()`);
-    let schoolWipeReloaded = false;
-    for (let attempt = 0; attempt < 150; attempt++) {
-      await delay(100);
-      try {
-        schoolWipeReloaded = await evaluate(
-          "!globalThis.__beforeScopedSchoolWipe && !!globalThis.EduV24?.getReportContext?.().ready",
-        );
-        if (schoolWipeReloaded) break;
-      } catch (error) {
-        if (
-          !/Execution context was destroyed|Cannot find (?:default execution )?context|Inspected target navigated/i.test(
-            error.message || String(error),
-          )
-        )
-          throw error;
-      }
-    }
+    await require("./browser-ready.cjs").waitReady(
+      { evaluate, delay },
+      { marker: "__beforeScopedSchoolWipe" },
+    );
     check(
       "school deletion returns to a ready application after its own reset",
-      schoolWipeReloaded,
+      true,
     );
     check(
       "school wipe removes only its connected native file and school database while preserving the bank and its file",

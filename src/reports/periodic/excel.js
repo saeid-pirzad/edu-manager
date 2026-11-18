@@ -33,18 +33,19 @@ function excelReportSheets(m) {
     const display = root.EduV24.finalText(grade);
     return display === grade.final.toFixed(2) ? grade.final : display;
   };
+  let dateFormatter, weekdayFormatter;
   const date = (value) =>
-    new Intl.DateTimeFormat("fa-IR", {
+    (dateFormatter ??= new Intl.DateTimeFormat("fa-IR", {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
       timeZone: "UTC",
-    }).format(new Date(value + "T12:00:00Z"));
+    })).format(new Date(value + "T12:00:00Z"));
   const weekday = (value) =>
-    new Intl.DateTimeFormat("fa-IR", {
+    (weekdayFormatter ??= new Intl.DateTimeFormat("fa-IR", {
       weekday: "long",
       timeZone: "UTC",
-    }).format(new Date(value + "T12:00:00Z"));
+    })).format(new Date(value + "T12:00:00Z"));
   const preparedAt = new Intl.DateTimeFormat("fa-IR", {
     dateStyle: "short",
     timeStyle: "short",

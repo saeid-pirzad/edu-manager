@@ -1,6 +1,7 @@
 "use strict";
 const { test } = require("node:test"),
   assert = require("node:assert/strict"),
+  vm = require("node:vm"),
   reloadReady = require("./browser-ready.cjs");
 
 function fixture(states, { ignoreCache = true } = {}) {
@@ -20,7 +21,7 @@ function fixture(states, { ignoreCache = true } = {}) {
         assert.doesNotMatch(expression, /openSessionModal\s*=/);
         return true;
       }
-      assert.match(expression, /!globalThis\.__eduAuditBeforeReload/);
+      assert.match(expression, /!globalThis\["__eduAuditBeforeReload"\]/);
       const state = states.shift();
       if (state instanceof Error) throw state;
       return state;
@@ -69,3 +70,86 @@ test("normal reload preserves the fresh-context guard without bypassing the serv
   assert.equal(f.calls.length, 4);
   assert.deepEqual(f.delays, [100]);
 });
+
+function documentContext({
+  old = false,
+  readyState = "complete",
+  read = () => {},
+  readBackup = () => {},
+  open = () => {},
+} = {}) {
+  return vm.createContext({
+    ...(old ? { __beforeScopedSchoolWipe: true } : {}),
+    document: { readyState },
+    EduV24: { getReportContext: () => ({ ready: true }) },
+    EduQuestionBankRepository: { read, readBackup },
+    EduQuestionBankUI: { open },
+  });
+}
+
+function documentFixture(documents) {
+  const calls = [],
+    delays = [];
+  let current;
+  return {
+    calls,
+    delays,
+    current: () => current,
+    tools: {
+      cdp: async () => assert.fail("waiting must not request navigation"),
+      evaluate: async (expression) => {
+        calls.push(expression);
+        if (
+          !expression.startsWith("globalThis.__unlockRecordedSessionForAudit")
+        )
+          current = documents.shift() || current;
+        return vm.runInContext(expression, current);
+      },
+      delay: async (milliseconds) => delays.push(milliseconds),
+    },
+  };
+}
+
+test("wait-only readiness rejects an old ready document and waits through school-ready parsing and absent bank APIs", async () => {
+  const old = documentContext({ old: true });
+  const loading = documentContext({ readyState: "loading", read: undefined });
+  delete loading.EduQuestionBankRepository;
+  const missingBank = documentContext();
+  delete missingBank.EduQuestionBankRepository;
+  const complete = documentContext();
+  const f = documentFixture([old, loading, missingBank, complete]);
+  await reloadReady.waitReady(f.tools, { marker: "__beforeScopedSchoolWipe" });
+  assert.equal(f.calls.length, 5);
+  assert.deepEqual(f.delays, [100, 100, 100]);
+  assert.equal(f.current(), complete);
+  assert.equal(typeof complete.__unlockRecordedSessionForAudit, "function");
+  for (const premature of [old, loading, missingBank])
+    assert.equal(premature.__unlockRecordedSessionForAudit, undefined);
+  assert.equal(old.__beforeScopedSchoolWipe, true);
+});
+
+for (const missing of ["read", "readBackup", "open"])
+  test(
+    "a complete school-ready document times out when the bank API is missing: " +
+      missing,
+    async () => {
+      const document = documentContext();
+      const owner =
+        missing === "open"
+          ? document.EduQuestionBankUI
+          : document.EduQuestionBankRepository;
+      delete owner[missing];
+      const f = documentFixture([document]);
+      await assert.rejects(
+        reloadReady.waitReady(f.tools, {
+          attempts: 3,
+          marker: "__beforeScopedSchoolWipe",
+        }),
+        /fresh, ready application context/,
+      );
+      assert.equal(f.calls.length, 3);
+      assert.deepEqual(f.delays, [100, 100, 100]);
+      assert.equal(document.__unlockRecordedSessionForAudit, undefined);
+      assert.ok(f.calls.every((expression) => !expression.includes(" = ")));
+    },
+  );

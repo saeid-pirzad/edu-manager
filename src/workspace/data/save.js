@@ -65,10 +65,16 @@ async function commitRecords(
   // session or move an existing session to a different out-of-year date.
   const academicYear =
     records.get("meta")?.settings?.academicYear ?? workspace.year;
+  let previousByKey;
   for (const [key, json] of changed) {
     if (!key.startsWith("session:")) continue;
+    if (!previousByKey) {
+      previousByKey = new Map();
+      for (const row of before)
+        if (!previousByKey.has(row.key)) previousByKey.set(row.key, row.value);
+    }
     const current = JSON.parse(json),
-      previous = before.find((row) => row.key === key)?.value;
+      previous = previousByKey.get(key);
     if (
       (!previous || previous.date !== current.date) &&
       JSON.stringify(historicalRecords?.get(key)) !== JSON.stringify(current)

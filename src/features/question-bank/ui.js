@@ -66,14 +66,61 @@
     n.value = value;
     return n;
   }
+  let numberFormatter, dateFormatter;
   const number = (value) =>
-    new Intl.NumberFormat("fa-IR", { maximumFractionDigits: 2 }).format(value);
+    (numberFormatter ||= new Intl.NumberFormat("fa-IR", {
+      maximumFractionDigits: 2,
+    })).format(value);
   const letters = ["الف", "ب", "ج", "د"];
   const dateLabel = (date) =>
-    new Intl.DateTimeFormat("fa-IR", {
+    (dateFormatter ||= new Intl.DateTimeFormat("fa-IR", {
       dateStyle: "long",
       timeZone: "UTC",
-    }).format(new Date(date));
+    })).format(new Date(date));
+  function questionSearch(questions, unitMap) {
+    // This index belongs to one render; committed edits and restores rebuild it.
+    const scoped = questions.filter((q) => unitMap.has(q.unitId));
+    const normalized = new Map();
+    let previous;
+    return (unitId, type, value) => {
+      const query = D.searchText(value);
+      if (
+        previous &&
+        previous.unitId === unitId &&
+        previous.type === type &&
+        previous.query === query
+      )
+        return previous.list;
+      const list = scoped.filter((q) => {
+        if ((unitId && q.unitId !== unitId) || (type && q.type !== type))
+          return false;
+        if (!query) return true;
+        if (!normalized.has(q)) normalized.set(q, D.searchText(q.text));
+        return normalized.get(q).includes(query);
+      });
+      previous = { unitId, type, query, list };
+      return list;
+    };
+  }
+  function questionCountsByUnit(questions, units) {
+    const types = Object.keys(D.types);
+    const counts = new Map(
+      units.map((unit) => [
+        unit.id,
+        {
+          total: 0,
+          types: Object.fromEntries(types.map((type) => [type, 0])),
+        },
+      ]),
+    );
+    for (const question of questions) {
+      const unit = counts.get(question.unitId);
+      if (!unit) continue;
+      unit.total++;
+      unit.types[question.type]++;
+    }
+    return counts;
+  }
   function fitOptions(container) {
     const doc = container.ownerDocument;
     const context = doc.createElement("canvas").getContext("2d");
@@ -1258,6 +1305,7 @@
     function questions(parent) {
       const units = bank.units.filter((u) => u.courseId === courseId);
       const unitMap = new Map(units.map((unit) => [unit.id, unit]));
+      const searchQuestions = questionSearch(bank.questions, unitMap);
       const entry = el("section", undefined, "qb-question-entry");
       entry.setAttribute("aria-label", "انتخاب بخش و افزودن سؤال");
       parent.append(entry);
@@ -1349,13 +1397,7 @@
       function draw() {
         results.replaceChildren();
         pager.replaceChildren();
-        const list = bank.questions.filter(
-          (q) =>
-            unitMap.has(q.unitId) &&
-            (!unitId || q.unitId === unitId) &&
-            (!questionType || q.type === questionType) &&
-            D.searchText(q.text).includes(D.searchText(search)),
-        );
+        const list = searchQuestions(unitId, questionType, search);
         page = Math.min(page, Math.max(0, Math.ceil(list.length / 15) - 1));
         count.textContent = `${number(list.length)} سؤال`;
         range.textContent = list.length
@@ -1553,6 +1595,8 @@
       );
       f.classList.add("qb-builder");
       const units = bank.units.filter((u) => u.courseId === courseId),
+        questionTypes = Object.keys(D.types),
+        questionCounts = questionCountsByUnit(bank.questions, units),
         scope = el("fieldset", undefined, "qb-unit-selection");
       scope.append(el("legend", `۱ · درس و ${unitLabel()}‌های آزمون`));
       f.append(scope);
@@ -1580,7 +1624,7 @@
         n.parentElement.append(
           el(
             "small",
-            `${number(bank.questions.filter((q) => q.unitId === u.id).length)} سؤال`,
+            `${number(questionCounts.get(u.id).total)} سؤال`,
             "qb-unit-count",
           ),
         );
@@ -1592,20 +1636,20 @@
       plan.setAttribute("role", "status");
       plan.setAttribute("aria-live", "polite");
       const update = () => {
-        tabScopes.builder.unitIds = checks
-          .filter((c) => c.checked)
-          .map((c) => c.value);
-        let total = 0;
-        const selected = new Set(
-          checks.filter((c) => c.checked).map((c) => c.value),
+        const selected = checks.filter((c) => c.checked).map((c) => c.value);
+        tabScopes.builder.unitIds = selected;
+        const capacities = Object.fromEntries(
+          questionTypes.map((type) => [type, 0]),
         );
+        for (const id of selected)
+          for (const type of questionTypes)
+            capacities[type] += questionCounts.get(id).types[type];
+        let total = 0;
         selectAll.disabled =
-          checks.length === 0 || selected.size === checks.length;
-        clearAll.disabled = selected.size === 0;
-        for (const type of Object.keys(D.types)) {
-          const capacity = bank.questions.filter(
-            (q) => q.type === type && selected.has(q.unitId),
-          ).length;
+          checks.length === 0 || selected.length === checks.length;
+        clearAll.disabled = selected.length === 0;
+        for (const type of questionTypes) {
+          const capacity = capacities[type];
           const requested = Number(D.digits(counts[type].value));
           if (Number.isInteger(requested) && requested > 0) total += requested;
           available[type].replaceChildren(
@@ -1635,9 +1679,9 @@
             Number.isFinite(requested) && requested > capacity,
           );
         }
-        scope.dataset.empty = String(selected.size === 0);
+        scope.dataset.empty = String(selected.length === 0);
         checks[0]?.setCustomValidity(
-          selected.size ? "" : `حداقل یک ${unitLabel()} انتخاب کنید.`,
+          selected.length ? "" : `حداقل یک ${unitLabel()} انتخاب کنید.`,
         );
         let scoreError = "";
         try {
@@ -1659,7 +1703,7 @@
         for (const input of Object.values(counts))
           input.setAttribute("aria-invalid", String(!input.validity.valid));
         plan.replaceChildren(
-          el("span", `${number(selected.size)} بخش انتخاب‌شده`),
+          el("span", `${number(selected.length)} بخش انتخاب‌شده`),
           el("strong", `${number(total)} سؤال در آزمون`),
         );
       };

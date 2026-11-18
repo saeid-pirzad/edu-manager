@@ -183,7 +183,13 @@ function karnamehExcelSheets({
       ? annualTechnicalRows(scoped, schoolId, classroom.id, studentId).filter(
           (row) => legacyIds.has(row.lessonId),
         )
-      : [];
+      : [],
+    legacyIndex = new Map();
+  for (const row of legacyRows) {
+    const key = JSON.stringify([row.studentId, row.lessonId, row.term]);
+    // Match Array.find's first-row priority if historical input repeats a row.
+    if (!legacyIndex.has(key)) legacyIndex.set(key, row);
+  }
   for (const student of students) {
     for (const lesson of lessons) {
       const prefix = identity(student, lesson);
@@ -267,11 +273,8 @@ function karnamehExcelSheets({
         }
       } else {
         for (const term of ["اول", "دوم"]) {
-          const row = legacyRows.find(
-            (item) =>
-              item.studentId === student.id &&
-              item.lessonId === lesson.id &&
-              item.term === term,
+          const row = legacyIndex.get(
+            JSON.stringify([student.id, lesson.id, term]),
           );
           if (row)
             for (const unit of row.legacyUnits?.length

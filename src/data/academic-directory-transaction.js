@@ -7,8 +7,18 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
     const model = globalThis.EduAcademicYearDirectory;
     if (!model || !records?.has("meta")) return false;
     if (removed.some((key) => key.startsWith("class:"))) return true;
+    let previousByKey;
     return changed.some(([key, json]) => {
-      const previous = before.find((row) => row.key === key)?.value;
+      // Session/activity edits cannot change the shared directory. Avoid
+      // decoding their payloads or searching all undo records for each one.
+      if (key !== "meta" && !key.startsWith("class:")) return false;
+      if (!previousByKey) {
+        previousByKey = new Map();
+        for (const row of before)
+          if (!previousByKey.has(row.key))
+            previousByKey.set(row.key, row.value);
+      }
+      const previous = previousByKey.get(key);
       const current = JSON.parse(json);
       return key === "meta"
         ? model.layoutHasChanges(
