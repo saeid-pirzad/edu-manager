@@ -45,6 +45,8 @@ async function main({
   const profile = fs.mkdtempSync(
     path.join(os.tmpdir(), "edu-integrity-audit-"),
   );
+  // Keep reports and screenshots separate from disposable browser data.
+  const browserProfile = path.join(profile, "browser-profile");
   const applicationFiles = require("./application-files.cjs").applicationFiles(
     root,
   );
@@ -85,7 +87,7 @@ async function main({
         "--disable-extensions",
         "--no-first-run",
         "--remote-debugging-port=0",
-        "--user-data-dir=" + profile,
+        "--user-data-dir=" + browserProfile,
         "about:blank",
       ],
       { windowsHide: true, stdio: "ignore" },
@@ -94,7 +96,7 @@ async function main({
     browser.once("error", (error) => {
       launchError = error;
     });
-    const devTools = path.join(profile, "DevToolsActivePort");
+    const devTools = path.join(browserProfile, "DevToolsActivePort");
     for (let i = 0; i < 200 && !fs.existsSync(devTools); i++) {
       if (launchError) throw launchError;
       await delay(100);
@@ -354,6 +356,27 @@ async function main({
     }
     pending.clear();
     if (browser && browser.exitCode === null) browser.kill();
+    if (browser) {
+      for (
+        let attempt = 0;
+        attempt < 50 && browser.exitCode === null;
+        attempt++
+      )
+        await delay(100);
+      // Never remove a profile while its browser process is still running.
+      if (browser.exitCode !== null || browser.signalCode !== null) {
+        try {
+          fs.rmSync(browserProfile, {
+            recursive: true,
+            force: true,
+            maxRetries: 5,
+            retryDelay: 200,
+          });
+        } catch (error) {
+          console.warn("Temporary browser profile retained: " + error.message);
+        }
+      }
+    }
     server.closeAllConnections();
     await new Promise((resolve) => server.close(resolve));
   }

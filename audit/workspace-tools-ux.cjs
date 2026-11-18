@@ -221,8 +221,7 @@ async function inspectWorkspaceTools() {
     .click();
   for (
     let attempt = 0;
-    attempt < 100 &&
-    !document.querySelector("#modal:not(.hidden) .backup-manual");
+    attempt < 100 && !document.querySelector("#app .backup-manual");
     attempt++
   )
     await new Promise((resolve) => setTimeout(resolve, 10));
@@ -230,10 +229,10 @@ async function inspectWorkspaceTools() {
     "backup action opens the existing backup workflow and closes the tools disclosure",
     !tools.open &&
       !!document.querySelector(
-        '#modal [data-workspace-action="export-full"]',
+        '#app .backup-hub [data-workspace-action="export-full"]',
       ) &&
       !!document.querySelector(
-        '#modal [data-workspace-action="choose-import"]',
+        '#app .backup-hub [data-workspace-action="choose-import"]',
       ) &&
       JSON.stringify(db) === before,
   );

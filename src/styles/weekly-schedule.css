@@ -1763,6 +1763,8 @@
     margin: 0;
     padding: 12px;
     border: 0;
+    border-end-start-radius: 15px;
+    border-end-end-radius: 15px;
   }
   #app .week-settings-fields:disabled .week-working-days label {
     cursor: default;

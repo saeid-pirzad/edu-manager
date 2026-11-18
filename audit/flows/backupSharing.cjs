@@ -101,10 +101,10 @@ module.exports = async function backupSharing() {
         shares.length === 2,
     );
     const beforeCount = downloads.length;
-    closeModal();
+    goSchools();
     record(
       "BKS06",
-      "closing discards prepared backup without downloading",
+      "leaving the backup page discards prepared backup without downloading",
       EduV24.downloadPreparedBackup() === false &&
         downloads.length === beforeCount,
     );

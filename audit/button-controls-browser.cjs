@@ -27,6 +27,21 @@ function approvedButtonColors(button) {
     danger: { solid: ["#fff", "#b42335"], soft: ["#9f2635", "#fff0f2"] },
   };
   if (!["solid", "soft"].includes(button.variant)) return false;
+  const backupFamily = {
+    "backup-download": "excel",
+    "backup-save": "excel",
+    "backup-restore": "info",
+    "backup-choose": "info",
+    "backup-share": "secondary",
+    "backup-disconnect": "secondary",
+  }[button.colorRole];
+  if (backupFamily) {
+    const expected = roles[backupFamily].soft;
+    return (
+      button.color === rgb(expected[0]) &&
+      button.background === rgb(expected[1])
+    );
+  }
   if (button.colorRole === "agenda-schedule")
     return (
       button.tone === "settings" &&
@@ -459,25 +474,35 @@ function measure(isClippedAccessibleLabel) {
           })(),
         tone: button.dataset.uiTone || "",
         variant: button.dataset.uiVariant || "",
-        colorRole: button.matches(".grade-clear")
-          ? "grade-clear"
-          : button.matches(".session-attendance-bulk .success")
-            ? "attendance-present"
-            : button.matches(".session-attendance-bulk .danger")
-              ? "attendance-absent"
-              : button.matches(
-                    '#app .today-agenda > .today-agenda-heading > button[data-legacy-click="ui-dashboard:3"]',
-                  )
-                ? "agenda-schedule"
+        colorRole:
+          (button.closest(".backup-hub") &&
+            {
+              "export-full": "backup-download",
+              "prepare-share-backup": "backup-share",
+              "choose-import": "backup-restore",
+              "single-file-choose": "backup-choose",
+              "single-file-save": "backup-save",
+              "single-file-stop": "backup-disconnect",
+            }[button.dataset.workspaceAction]) ||
+          (button.matches(".grade-clear")
+            ? "grade-clear"
+            : button.matches(".session-attendance-bulk .success")
+              ? "attendance-present"
+              : button.matches(".session-attendance-bulk .danger")
+                ? "attendance-absent"
                 : button.matches(
-                      '#modalBody .backup-hub button:is([data-workspace-action="export-full"],[data-workspace-action="single-file-choose"],[data-workspace-action="choose-import"])',
+                      '#app .today-agenda > .today-agenda-heading > button[data-legacy-click="ui-dashboard:3"]',
                     )
-                  ? "backup-primary"
+                  ? "agenda-schedule"
                   : button.matches(
-                        '#modalBody .backup-hub button:is([data-workspace-action="prepare-share-backup"],[data-workspace-action="single-file-save"])',
+                        '#modalBody .backup-hub button:is([data-workspace-action="export-full"],[data-workspace-action="single-file-choose"],[data-workspace-action="choose-import"])',
                       )
-                    ? "backup-secondary"
-                    : "action",
+                    ? "backup-primary"
+                    : button.matches(
+                          '#modalBody .backup-hub button:is([data-workspace-action="prepare-share-backup"],[data-workspace-action="single-file-save"])',
+                        )
+                      ? "backup-secondary"
+                      : "action"),
         needsIcon:
           button.dataset.uiIcon !== "none" &&
           !button.matches(".backup-automatic-actions > button") &&

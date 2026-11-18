@@ -38,7 +38,7 @@ module.exports = async function headerEvents() {
     .click();
   for (
     let i = 0;
-    i < 100 && !document.querySelector("#modal:not(.hidden) .backup-manual");
+    i < 100 && !document.querySelector("#app .backup-manual");
     i++
   )
     await new Promise((resolve) => setTimeout(resolve, 10));
@@ -51,8 +51,12 @@ module.exports = async function headerEvents() {
       "choose-import",
       "single-file-choose",
     ].every((action) =>
-      document.querySelector('#modal [data-workspace-action="' + action + '"]'),
-    ) && !document.querySelector("#modal .backup-history"),
+      document.querySelector(
+        '#app .backup-hub [data-workspace-action="' + action + '"]',
+      ),
+    ) &&
+      state.view === "backups" &&
+      !document.querySelector("#app .backup-history"),
   );
   document.querySelector(".backup-reset").open = true;
   document.querySelector('[data-workspace-action="open-wipe"]').click();
