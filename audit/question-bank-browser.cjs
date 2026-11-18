@@ -195,8 +195,19 @@ async function compareClassFormDesign() {
       form.querySelector('button[type="submit"]'),
       ["backgroundColor", "color", "height", "borderTopLeftRadius", "fontSize"],
     );
-    const pass = Object.values(values).every(
-      ({ system, bank }) => system === bank,
+    const compactExam = form.dataset.qbEditor === "exam" && innerWidth <= 700;
+    const compactSizes = compactExam
+      ? {
+          "field.borderTopLeftRadius": "8px",
+          "field.paddingTop": "5px",
+          "field.paddingRight": "8px",
+          "field.height": "44px",
+          "label.fontSize": "11px",
+          "label.rowGap": "4px",
+        }
+      : {};
+    const pass = Object.entries(values).every(
+      ([key, { system, bank }]) => bank === (compactSizes[key] ?? system),
     );
     return { pass, editor: form.dataset.qbEditor, values };
   } finally {
@@ -1106,9 +1117,10 @@ main({
               const actualSession=host.cloneNode(true);
               document.getElementById('modalBody').append(actualSession);
               try {
+                const schedule=document.createElement('nav');schedule.className='week-day-picker';schedule.innerHTML='<button aria-pressed="true">1</button><button aria-pressed="false">2</button>';host.append(schedule);
                 const differences=[];
                 const same=(a,b,props)=>{const x=getComputedStyle(a),y=getComputedStyle(b);for(const p of props)if(x[p]!==y[p])differences.push({element:a.className,property:p,bank:x[p],attendance:y[p]});return props.every(p=>x[p]===y[p]);};
-                const palette=same(document.querySelector('.qb-tabs'),actualSession.querySelector('.session-mode-picker'),['backgroundColor','borderTopWidth','borderRadius','boxShadow',...(innerWidth>700?['paddingTop']:[])])&&same(document.querySelector('.qb-tabs [aria-pressed=true]'),actualSession.querySelector('[aria-pressed=true]'),['backgroundColor','color','borderRadius','boxShadow',...(innerWidth>700?['fontSize','lineHeight']:[])])&&same(document.querySelector('.qb-tabs [aria-pressed=false]'),actualSession.querySelector('[aria-pressed=false]'),['backgroundColor','color','borderRadius','boxShadow',...(innerWidth>700?['fontSize','lineHeight']:[])]);
+                const palette=same(document.querySelector('.qb-tabs'),schedule,['backgroundColor','borderTopWidth','borderRadius','boxShadow',...(innerWidth>700?['paddingTop']:[])])&&same(document.querySelector('.qb-tabs [aria-pressed=true]'),schedule.querySelector('[aria-pressed=true]'),['backgroundColor','color','borderRadius','boxShadow',...(innerWidth>700?['fontSize','lineHeight']:[])])&&same(document.querySelector('.qb-tabs [aria-pressed=false]'),schedule.querySelector('[aria-pressed=false]'),['backgroundColor','color','borderRadius','boxShadow',...(innerWidth>700?['fontSize','lineHeight']:[])]);
                 const cards=same(document.querySelector('.qb-question-library'),host.querySelector('.att-row'),['backgroundColor','borderTopColor','borderRadius']);
                 // Compact mobile controls keep the palette and readable editable text.
                 const mobile=innerWidth>700||same(document.querySelector('.qb-filters input'),host.querySelector('input'),['fontSize']);
@@ -1122,7 +1134,7 @@ main({
               JSON.stringify(parity.differences),
             );
           check(
-            `question bank matches attendance palette and geometry ${width}`,
+            `question bank matches schedule tabs and attendance cards ${width}`,
             parity.pass,
           );
         }
@@ -1346,7 +1358,7 @@ main({
             check(
               `mobile exam fields keep compact touch dimensions ${width}`,
               await evaluate(
-                `(()=>{const referenceHeight=parseFloat(${JSON.stringify(comparison.values["field.height"].system)});const inputs=[...document.querySelectorAll('.qb-builder input:not([type=checkbox]):not([type=date])')].filter(n=>!n.closest('details:not([open])'));const grid=getComputedStyle(document.querySelector('.qb-builder>.qb-form-fields')).gridTemplateColumns;const cards=[...document.querySelectorAll('.qb-count-field')].map(n=>({height:n.getBoundingClientRect().height,rows:getComputedStyle(n).gridTemplateRows}));const pass=referenceHeight>=48&&inputs.length===10&&inputs.every(n=>{const height=n.getBoundingClientRect().height;return n.closest('.qb-count-field')?Math.abs(height-44)<0.5:n.closest('.qb-target-score')?height>=44&&height<=referenceHeight+1:Math.abs(height-referenceHeight)<0.5;})&&cards.every(n=>n.height<=125)&&grid.split(' ').length===2;if(!pass)throw Error(JSON.stringify({referenceHeight,count:inputs.length,inputs:inputs.map(n=>({type:n.type,label:n.closest('label')?.textContent,height:n.getBoundingClientRect().height,computedHeight:getComputedStyle(n).height,minHeight:getComputedStyle(n).minHeight})),gridColumns:grid,cardHeights:cards}));return pass;})()`,
+                `(()=>{const referenceHeight=parseFloat(${JSON.stringify(comparison.values["field.height"].system)});const inputs=[...document.querySelectorAll('.qb-builder input:not([type=checkbox]):not([type=date])')].filter(n=>!n.closest('details:not([open])'));const grid=getComputedStyle(document.querySelector('.qb-builder>.qb-form-fields')).gridTemplateColumns;const cards=[...document.querySelectorAll('.qb-count-field')].map(n=>({height:n.getBoundingClientRect().height,rows:getComputedStyle(n).gridTemplateRows}));const pass=referenceHeight>=48&&inputs.length===10&&inputs.every(n=>{const height=n.getBoundingClientRect().height;return innerWidth<=700||n.closest('.qb-count-field')?Math.abs(height-44)<0.5:n.closest('.qb-target-score')?height>=44&&height<=referenceHeight+1:Math.abs(height-referenceHeight)<0.5;})&&cards.every(n=>n.height<=125)&&grid.split(' ').length===2;if(!pass)throw Error(JSON.stringify({referenceHeight,count:inputs.length,inputs:inputs.map(n=>({type:n.type,label:n.closest('label')?.textContent,height:n.getBoundingClientRect().height,computedHeight:getComputedStyle(n).height,minHeight:getComputedStyle(n).minHeight})),gridColumns:grid,cardHeights:cards}));return pass;})()`,
               ),
             );
           const actions = await evaluate(
@@ -1372,6 +1384,13 @@ main({
             fits,
           );
         }
+        if (view === "builder")
+          check(
+            `builder course selector and menu button have identical height and alignment ${width}`,
+            await evaluate(
+              `(()=>{const row=document.querySelector('.qb-builder-course'),select=row.querySelector('select').getBoundingClientRect(),button=row.querySelector('.qb-context-action').getBoundingClientRect();return Math.abs(select.height-button.height)<1&&Math.abs(select.top-button.top)<1&&Math.abs(select.bottom-button.bottom)<1&&button.height>=44&&Math.abs(button.width-button.height)<1&&row.scrollWidth<=row.clientWidth+1;})()`,
+            ),
+          );
         if (view === "builder")
           check(
             `builder section edges align in the flat form ${width}`,
@@ -1680,7 +1699,7 @@ main({
       await delay(80);
       await evaluate(`__qbOpenAutomaticBackup()`);
       const backupControls = await evaluate(
-        `(()=>{const body=document.getElementById('modalBody'),name=document.querySelector('.qb-file-name'),original=name.textContent;name.textContent='Classyar-QuestionBank ('+'1234567890'.repeat(8)+').json';const fits=body.scrollWidth<=body.clientWidth+1&&name.scrollWidth<=name.clientWidth+1;name.textContent=original;const automatic=[...document.querySelectorAll('.qb-file-actions button')],manual=[...document.querySelectorAll('.qb-backup-manual .backup-action-grid > button')].map(button=>button.getBoundingClientRect()),gap=parseFloat(getComputedStyle(document.querySelector('.qb-backup-manual .backup-action-grid')).columnGap);return {fits,automatic:automatic.length,singleRow:automatic.every(b=>Math.abs(b.getBoundingClientRect().top-automatic[0].getBoundingClientRect().top)<1),manualRows:manual.length===3&&Math.abs(manual[0].top-manual[1].top)<1&&manual[2].top>=manual[0].bottom&&Math.abs(manual[2].width-manual[0].width-manual[1].width-gap)<2,buttons:[...document.querySelectorAll('.qb-file-actions button,.qb-backup-manual button')].map(b=>({label:b.textContent,height:b.getBoundingClientRect().height,width:b.clientWidth,scroll:b.scrollWidth}))};})()`,
+        `(()=>{const body=document.getElementById('modalBody'),name=document.querySelector('.qb-file-name'),original=name.textContent;name.textContent='Classyar-QuestionBank ('+'1234567890'.repeat(8)+').json';const fits=body.scrollWidth<=body.clientWidth+1&&name.scrollWidth<=name.clientWidth+1;name.textContent=original;const automatic=[...document.querySelectorAll('.qb-file-actions button')],manual=[...document.querySelectorAll('.qb-backup-manual .backup-action-grid > button')].map(button=>button.getBoundingClientRect());return {fits,automatic:automatic.length,singleRow:automatic.every(b=>Math.abs(b.getBoundingClientRect().top-automatic[0].getBoundingClientRect().top)<1),manualRows:manual.length===3&&manual.every(box=>Math.abs(box.top-manual[0].top)<1&&Math.abs(box.width-manual[0].width)<1),buttons:[...document.querySelectorAll('.qb-file-actions button,.qb-backup-manual button')].map(b=>({label:b.textContent,height:b.getBoundingClientRect().height,width:b.clientWidth,scroll:b.scrollWidth}))};})()`,
       );
       const backupFits =
         backupControls.fits &&

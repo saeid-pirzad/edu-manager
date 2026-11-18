@@ -38,6 +38,9 @@ function fixture() {
     ),
     c,
   );
+  // Domain rules are exercised with editing already authorized; lease guards
+  // have their own focused tests and real-browser coverage.
+  c.assertWeekSettingsEditable = () => {};
   return { c, effects };
 }
 for (const day of [-1, 7, 1.5, "1"]) {

@@ -404,6 +404,136 @@
   min-height: 20px;
   accent-color: var(--theme-primary);
 }
+.qb-question-entry-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.qb-question-entry-actions > button {
+  min-height: 44px;
+  white-space: nowrap;
+}
+.qb-question-entry-actions > .qb-add-question {
+  --button-ink: var(--theme-teal);
+  --button-fill: var(--theme-teal);
+  --button-hover: var(--theme-secondary-hover);
+  --button-soft: var(--theme-teal-soft);
+  --button-line: var(--theme-teal-line);
+}
+.qb-import {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--theme-line);
+  border-radius: 12px;
+  background: var(--theme-surface);
+  overflow-wrap: anywhere;
+}
+.qb-import :is(h3, p) {
+  margin: 0;
+}
+.qb-import > p {
+  color: var(--theme-muted);
+  font-size: 12px;
+  line-height: 1.9;
+}
+.qb-import .qb-import-destination {
+  color: var(--theme-primary);
+  font-weight: 600;
+}
+.qb-import .qb-actions {
+  margin: 0;
+  flex-wrap: wrap;
+}
+#app .qb-page .qb-import .qb-actions > button.ui-button {
+  min-height: 44px !important;
+  height: auto !important;
+}
+.qb-import-preview {
+  min-width: 0;
+}
+.qb-import-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.qb-import-counts > span {
+  padding: 4px 8px;
+  border-radius: 7px;
+  font-size: 11px;
+}
+.qb-import [data-state="ready"],
+.qb-import-success {
+  color: var(--status-success);
+  background: var(--status-success-soft);
+}
+.qb-import [data-state="error"] {
+  color: var(--status-danger);
+  background: var(--status-danger-soft);
+}
+.qb-import [data-state="duplicate"] {
+  color: var(--status-warning);
+  background: var(--status-warning-soft);
+}
+.qb-import-rows {
+  display: grid;
+  gap: 8px;
+  max-height: min(50dvh, 480px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.qb-import-rows > li {
+  display: grid;
+  gap: 5px;
+  padding: 10px;
+  border: 1px solid var(--theme-line);
+  border-radius: 9px;
+  font-size: 12px;
+}
+.qb-import-rows > li > :is(p, small) {
+  color: var(--theme-ink);
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+.qb-import-success {
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+@media (max-width: 900px) {
+  .qb-question-entry {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .qb-question-entry-actions {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .qb-import {
+    gap: 10px;
+    padding: 10px;
+  }
+  .qb-import h3 {
+    font-size: 14px;
+  }
+  .qb-import > .qb-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  #app .qb-page .qb-import .qb-actions > button.ui-button,
+  .qb-question-entry-actions > button {
+    min-width: 0;
+    padding-inline: 5px !important;
+    font-size: 11px;
+  }
+}
 #app .qb-page .qb-tabs {
   position: static;
   z-index: 3;
@@ -1171,10 +1301,21 @@
 .qb-exam-actions button[data-ui-tone="danger"] .ui-button-label {
   display: none;
 }
-.qb-exam-actions button:first-child {
-  color: var(--theme-primary);
-  background: var(--theme-primary-soft);
-  border-color: var(--theme-primary-line);
+.qb-exam-actions button:first-child,
+.qb-preview-actions button[data-ui-tone="navigate"] {
+  --button-ink: var(--status-info);
+  --button-fill: var(--status-info-fill);
+  --button-hover: var(--status-info-hover);
+  --button-soft: var(--status-info-soft);
+  --button-line: var(--status-info-line);
+}
+.qb-exam-actions button[data-ui-tone="print"],
+.qb-preview-actions button[data-ui-tone="print"] {
+  --button-ink: var(--theme-teal);
+  --button-fill: var(--theme-teal);
+  --button-hover: var(--theme-secondary-hover);
+  --button-soft: var(--theme-teal-soft);
+  --button-line: var(--theme-teal-line);
 }
 .qb-question > p,
 .qb-solution p {
@@ -1336,25 +1477,15 @@
   border-top: 1px solid #c1c9d2;
 }
 .qb-sheet-motivation {
-  position: relative;
   display: table;
   width: fit-content;
-  max-width: calc(100% - 44px);
+  max-width: 100%;
   margin: 0 auto 12px;
   text-align: center;
   font-size: 10px;
   font-weight: 400;
   line-height: 1.9;
   color: #374151;
-}
-.qb-sheet-sticker {
-  position: absolute;
-  inset-inline-end: calc(100% + 6px);
-  top: 50%;
-  transform: translateY(-50%);
-  font-family: "Segoe UI Emoji", "Apple Color Emoji", sans-serif;
-  font-size: 16px;
-  line-height: 1;
 }
 .qb-sheet-meta {
   display: grid;
@@ -2154,9 +2285,52 @@
     font-size: 11px;
   }
   .qb-builder .qb-builder-course {
+    --qb-course-control-size: 44px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--qb-course-control-size);
+    align-items: end;
+    gap: 8px;
     margin: 0 0 10px;
     padding-bottom: 10px;
     border-bottom: 1px solid var(--theme-line-soft);
+  }
+  #app .qb-builder .qb-builder-course > .course-field {
+    min-width: 0;
+    margin: 0;
+  }
+  #app .qb-page .qb-body .qb-builder .qb-builder-course select {
+    box-sizing: border-box;
+    width: 100%;
+    height: var(--qb-course-control-size) !important;
+    min-height: var(--qb-course-control-size) !important;
+    margin: 0;
+    padding-block: 6px !important;
+    border-radius: 8px !important;
+  }
+  #app .qb-builder .qb-builder-course > .qb-course-actions {
+    display: flex;
+    align-items: center;
+    padding: 0;
+    margin: 0;
+  }
+  #app
+    .qb-page
+    .qb-body
+    .qb-builder
+    .qb-builder-course
+    button.qb-context-action {
+    box-sizing: border-box;
+    flex: 0 0 var(--qb-course-control-size);
+    width: var(--qb-course-control-size);
+    min-width: var(--qb-course-control-size);
+    height: var(--qb-course-control-size) !important;
+    min-height: var(--qb-course-control-size) !important;
+    margin: 0;
+    padding: 0 !important;
+    border-radius: 8px;
+  }
+  .qb-builder .qb-builder-course .qb-context-action > .ui-button-label {
+    display: none;
   }
   .qb-builder-units {
     display: grid;
@@ -2666,6 +2840,97 @@
   .qb-page .qb-body .qb-exam-details > .course-field {
     font-size: 10px;
     gap: 3px;
+  }
+}
+@media screen and (min-width: 701px) {
+  .qb-builder .qb-selection-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(112px, 1fr));
+    justify-self: start;
+    width: fit-content;
+    gap: 8px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+  #app .qb-page .qb-builder .qb-selection-actions > button.ui-button {
+    height: 44px;
+    min-height: 44px !important;
+    margin: 0;
+    padding: 6px 12px !important;
+    border: 1px solid var(--theme-line) !important;
+    border-radius: 8px;
+    background: var(--theme-surface) !important;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  #app
+    .qb-page
+    .qb-builder
+    .qb-selection-actions
+    > button.ui-button:first-child {
+    border-color: var(--status-info-line) !important;
+    background: var(--status-info-soft) !important;
+    color: var(--status-info) !important;
+  }
+}
+@media screen and (max-width: 700px) {
+  #app
+    .qb-page
+    .qb-editor-panel
+    .qb-builder
+    :is(.qb-composition, .qb-exam-details) {
+    padding: 8px;
+    gap: 8px;
+  }
+  #app
+    .qb-page
+    .qb-editor-panel
+    .qb-builder
+    :is(.qb-composition, .qb-exam-details)
+    > legend {
+    font-size: 11px;
+    line-height: 1.6;
+  }
+  #app
+    .qb-page
+    .qb-editor-panel
+    .qb-builder
+    :is(.qb-composition, .qb-exam-details)
+    .course-field {
+    font-size: 11px;
+    gap: 4px;
+  }
+  #app
+    .qb-page
+    .qb-editor-panel
+    .qb-builder
+    :is(.qb-composition, .qb-exam-details)
+    .course-field
+    :is(input, select) {
+    box-sizing: border-box;
+    height: 44px !important;
+    min-height: 44px !important;
+    padding: 5px 8px !important;
+    border-radius: 8px !important;
+    font-size: 16px !important;
+  }
+  #app .qb-page .qb-editor-panel .qb-builder .qb-count-field {
+    grid-template-rows: minmax(18px, auto) 44px;
+    padding: 5px;
+  }
+  #app .qb-page .qb-editor-panel .qb-builder .qb-count-title {
+    font-size: 10px;
+  }
+  #app .qb-page .qb-editor-panel .qb-builder .qb-target-score {
+    grid-template-columns: minmax(0, 1fr) 76px;
+    margin-bottom: 6px;
+    padding: 5px 6px;
+  }
+  #app .qb-page .qb-editor-panel .qb-builder .qb-plan-summary {
+    padding: 6px 8px;
+    margin-top: 6px;
+    font-size: 10px;
   }
 }
 @media print {

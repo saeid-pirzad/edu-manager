@@ -58,14 +58,11 @@ function inspectHubLayout() {
       manual.length === 3 &&
       manual.map((button) => button.textContent.trim()).join("|") ===
         "دریافت فایل|ارسال فایل|بازیابی فایل" &&
-      Math.abs(manualBoxes[0].top - manualBoxes[1].top) < 1 &&
-      manualBoxes[2].top >= manualBoxes[0].bottom &&
-      Math.abs(
-        manualBoxes[2].width -
-          manualBoxes[0].width -
-          manualBoxes[1].width -
-          parseFloat(getComputedStyle(manual[0].parentElement).columnGap),
-      ) < 2,
+      manualBoxes.every(
+        (box) =>
+          Math.abs(box.top - manualBoxes[0].top) < 1 &&
+          Math.abs(box.width - manualBoxes[0].width) < 1,
+      ),
     independentReset:
       !!reset &&
       reset.compareDocumentPosition(active.querySelector(".backup-automatic")) &
@@ -115,7 +112,7 @@ function inspectHubAppearance() {
           Math.abs(rect.top - bounds[0].top) < 1 &&
           Math.abs(rect.width - bounds[0].width) < 1 &&
           rect.height >= 44 &&
-          rect.height <= 50,
+          rect.height <= (innerWidth <= 600 ? 54 : 50),
       ),
   };
 }

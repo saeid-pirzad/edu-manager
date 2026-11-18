@@ -96,6 +96,7 @@ function fixture(sessionSchedule = false) {
       fs.readFileSync(path.join(__dirname, "../src/workspace", file), "utf8"),
       c,
     );
+  c.assertWeekSettingsEditable = () => {};
   let durable = structuredClone(c.db),
     attempts = 0;
   c.readWorkspaceSnapshot = async () => ({

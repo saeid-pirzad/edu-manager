@@ -1,6 +1,23 @@
 // Explicit command dispatch: tokens are data, never code or global function names.
 function installWorkspaceActions() {
+  document.addEventListener(
+    "toggle",
+    (event) => {
+      const root = event.target;
+      if (
+        root.matches?.("#app .week-settings") &&
+        !root.open &&
+        root.isConnected
+      )
+        closeWeekSettingsEditing(root);
+    },
+    true,
+  );
   const commands = new Map([
+    [
+      "week-settings-toggle-edit",
+      (button) => toggleWeekSettingsEditing(button),
+    ],
     ["record-enable-edit", (button) => enableRecordEditAccess(button)],
     ["session-toggle-edit", (button) => toggleSessionEditing(button)],
     [

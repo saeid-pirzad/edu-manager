@@ -707,7 +707,7 @@
   }
   :is(#modalBody, #app) #backupHub .backup-manual .backup-action-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
   }
   :is(#modalBody, #app) #backupHub .backup-manual .backup-action-grid > button {
@@ -720,12 +720,12 @@
     #backupHub
     .backup-action-grid
     > :is([data-workspace-action="choose-import"], .qb-backup-restore) {
-    grid-column: 1 / -1;
+    grid-column: auto;
   }
   :is(#modalBody, #app) #backupHub .qb-backup .qb-backup-download {
-    background: var(--theme-primary) !important;
-    color: var(--theme-surface) !important;
-    border-color: var(--theme-primary) !important;
+    background: var(--status-success-soft) !important;
+    color: var(--status-success) !important;
+    border-color: var(--status-success-line) !important;
   }
   :is(#modalBody, #app)
     #backupHub
@@ -901,9 +901,9 @@
     .backup-manual
     .backup-action-grid
     > button:first-child {
-    background: var(--theme-primary) !important;
-    color: var(--theme-primary-contrast, #fff) !important;
-    border-color: var(--theme-primary) !important;
+    background: var(--status-success-soft) !important;
+    color: var(--status-success) !important;
+    border-color: var(--status-success-line) !important;
   }
   #modal:has(#backupHub) .modal-dialog {
     max-width: 680px;
@@ -1177,7 +1177,106 @@
     background: transparent;
   }
 }
+@media screen {
+  #app #backupHub .backup-manual .backup-action-grid > button {
+    min-width: 0;
+    margin: 0;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  #app #backupHub .backup-manual .backup-action-grid > button:nth-child(2) {
+    background: var(--theme-secondary-soft) !important;
+    color: var(--theme-secondary) !important;
+    border-color: var(--theme-secondary-line) !important;
+  }
+  #app #backupHub .backup-manual .backup-action-grid > button:nth-child(3) {
+    background: var(--status-info-soft) !important;
+    color: var(--status-info) !important;
+    border-color: var(--status-info-line) !important;
+  }
+  #app #backupHub .backup-manual .backup-action-grid > button > svg {
+    color: inherit;
+  }
+  #app
+    #backupHub
+    .backup-manual
+    .backup-action-grid
+    > button:not(:disabled):hover {
+    filter: brightness(0.96);
+  }
+}
+@media screen {
+  #app #backupHub .backup-automatic > .backup-automatic-actions {
+    gap: 8px;
+  }
+  #app #backupHub .backup-automatic > .backup-automatic-actions > button {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    margin: 0;
+    gap: 6px;
+    border-radius: 8px;
+    font-size: 12px;
+  }
+  #app #backupHub .backup-automatic [data-backup-file-action="choose"] {
+    background: var(--status-info-soft) !important;
+    color: var(--status-info) !important;
+    border-color: var(--status-info-line) !important;
+  }
+  #app #backupHub .backup-automatic [data-backup-file-action="save"] {
+    background: var(--status-success-soft) !important;
+    color: var(--status-success) !important;
+    border-color: var(--status-success-line) !important;
+  }
+  #app #backupHub .backup-automatic [data-backup-file-action="stop"] {
+    background: var(--theme-secondary-soft) !important;
+    color: var(--theme-secondary) !important;
+    border-color: var(--theme-secondary-line) !important;
+  }
+  #app
+    #backupHub
+    .backup-automatic
+    > .backup-automatic-actions
+    > button
+    > :is(svg, .control-icon) {
+    display: inline-flex;
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    margin: 0;
+    color: inherit;
+  }
+  #app
+    #backupHub
+    .backup-automatic
+    > .backup-automatic-actions
+    > button:not(:disabled):hover {
+    filter: brightness(0.96);
+  }
+}
 @media (max-width: 600px) {
+  #app #backupHub .backup-automatic > .backup-automatic-actions {
+    gap: 5px;
+  }
+  #app #backupHub .backup-automatic > .backup-automatic-actions > button {
+    flex-direction: column;
+    min-height: 54px;
+    padding: 6px 3px;
+    font-size: 10px;
+    gap: 4px;
+  }
+  #app #backupHub .backup-manual .backup-action-grid {
+    gap: 5px;
+  }
+  #app #backupHub .backup-manual .backup-action-grid > button {
+    flex-direction: column;
+    min-height: 54px;
+    padding: 6px 3px;
+    font-size: 10px;
+    gap: 4px;
+  }
   #app .backup-page {
     margin-block: 10px;
   }

@@ -746,73 +746,74 @@ iv></div></details>'}function draftReviewActionHtml(){if(!ready||fileMode||block
 ![...drafts.values()].some(item=>item.review))return"";return'<button type="button" class="ghost" data-workspace-action="review-drafts">بررسی نمرات ثبت‌نشده</bu\
 tton>'}function renderV24(){if(!ready)return;const coursePanel=courseUI.preserveEditor();const backupPage=state.view==="backups"?document.getElementById("backup\
 Hub"):null;if(old.render()===false)return;const backupHost=document.getElementById("backupPageHost");if(backupPage&&backupHost)backupHost.replaceChildren(backupPage);
-if(!backupPage||!backupHost||!backupHubSession?.isCurrent())mountBackupHubPage();courseUI.restoreEditor(coursePanel);const app=document.getElementById("app");if(db.
-settings.password&&!isAuthenticated){const banner=document.createElement("div");banner.id="saveStatus";banner.setAttribute("role","status");app.prepend(banner);
-paintStatus();return}const panel=document.createElement("div");panel.className="workspace-bar workspace-bar-compact no-print";panel.innerHTML=(workspace.closed?
-'<span class="workspace-closed-note">ترم بسته است؛ فقط مشاهده</span>':"")+'<span id="saveStatus" role="status" aria-live="polite"></span>'+workspaceToolsHtml()+
-draftReviewActionHtml();app.prepend(panel);const tools=panel.querySelector(".workspace-tools");const settings=app.querySelector('.topbar [data-header-action="se\
-ttings"]');if(settings)settings.replaceWith(tools);const welcome=app.querySelector(".schools-welcome");if(welcome){const footer=document.createElement("div");footer.
-className="schools-welcome-footer";footer.innerHTML='<div class="schools-period-context"><span>سال تحصیلی: <bdi>'+esc(String(workspace.year).replace(/\d/g,
-digit=>"۰۱۲۳۴۵۶۷۸۹"[digit]))+"</bdi></span></div>";const about=welcome.querySelector(".schools-about");if(about)footer.append(about);const fileSummary=document.
-createElement("div");fileSummary.id="welcomeFileSummary";fileSummary.className="schools-file-summary";fileSummary.setAttribute("aria-live","polite");fileSummary.
-innerHTML=welcomeFileSummariesHtml();footer.querySelector(".schools-period-context").append(fileSummary);welcome.append(footer)}if(window.showSaveFilePicker){const fileStatus=document.
-createElement("div");fileStatus.id="singleFileBadge";fileStatus.className="single-file-notice";fileStatus.hidden=!singleFileFailure;fileStatus.innerHTML=singleFileNoticeHtml();
-panel.append(fileStatus)}paintQuestionBankFileNotice();if(db.migrationWarnings?.length){const info=document.createElement("div");info.className="card";info.textContent=
-"سوابق منتقل‌شده نیازمند بررسی: "+db.migrationWarnings.join(" | ");app.append(info)}if(fileMode)fileModeBanner(app);courseUI.activateCreate();
-applyDrafts();lockControls();paintStatus();void refreshYearLessonSessions();void refreshAttendanceReminders();globalThis.EduQuestionBankUI?.updateLayout?.()}let sessionEditAccess=null;
-function currentSessionEditAccess(id){const access=sessionEditAccess;return access&&access.sessionId===id&&currentSessionId===id&&access.workspaceId===workspace?.
-id&&access.connection===connection&&access.installation===installationToken&&access.data===db&&access.session===db.sessions.find(session=>session.id===id)&&access.
-root.dataset.sessionId===id&&access.root.isConnected&&document.querySelector("#modalBody .session-workspace")===access.root&&!document.getElementById("modal").classList.
-contains("hidden")?access:null}function isSessionEditable(id,token){const access=currentSessionEditAccess(id);return!!access?.editable&&(token===void 0||access.
-token===token)}function assertSessionEditable(id){assertEntityWritable();const access=currentSessionEditAccess(id);if(!access?.editable)throw Error("این جلسه فق\
-ط برای مشاهده باز شده است؛ ابتدا «فعال‌کردن ویرایش» را بزنید.");return access.token}function releaseSessionEditAccess(){
-sessionEditAccess=null}function captureSessionEditRecovery(){const access=currentSessionEditAccess(currentSessionId);return access?{access,token:access.token}:null}
-function invalidateSessionEditRecovery(recovery){if(recovery&&sessionEditAccess===recovery.access&&sessionEditAccess.token===recovery.token)releaseSessionEditAccess()}
-function rebindSessionEditAfterRollback(recovery,previousData,loaded,expected){const access=recovery?.access,session=loaded.data.sessions.find(row=>row.id===access?.
-sessionId);if(!access||sessionEditAccess!==access||access.token!==recovery.token||access.data!==previousData||access.session!==previousData.sessions.find(row=>row.
-id===access.sessionId)||!session||["schoolId","classId","lessonId"].some(key=>session[key]!==access.session[key])||expected.workspaceId!==workspace?.id||loaded.
-period.id!==workspace.id||loaded.period.revision!==expected.revision||loaded.installationToken!==expected.installation||workspace.revision!==expected.revision||
-access.workspaceId!==workspace.id||access.connection!==expected.connection||connection!==expected.connection||access.installation!==expected.installation||installationToken!==
-expected.installation||db!==loaded.data||previousData.settings.password!==loaded.data.settings.password||currentSessionId!==access.sessionId||!access.root.isConnected||
-document.querySelector("#modalBody .session-workspace")!==access.root||document.getElementById("modal").classList.contains("hidden")||blocked||!ready||fileMode||
-workspace.closed||periodLoading||resetBusy||connectionRetired){invalidateSessionEditRecovery(recovery);return false}access.data=loaded.data;access.session=session;
-access.token={};return true}function sessionEditNoticeHtml(id){return'<aside class="session-edit-notice" role="status"><div class="session-edit-copy"><strong da\
-ta-session-edit-title></strong><p data-session-edit-description></p></div><button type="button" class="ghost" data-session-edit-control data-mutating="1" data-w\
-orkspace-action="session-toggle-edit" data-key="'+esc(id)+'">'+EduIcons.html("edit")+"<span data-session-edit-label></span></button></aside>"}function syncSessionEditNotice(){
-const root=document.querySelector("#modalBody .session-workspace");if(!root)return;const access=currentSessionEditAccess(root.dataset.sessionId),editable=!!access?.
-editable;root.dataset.sessionMode=editable?"edit":"view";const modalTitle=document.getElementById("modalTitle");if(modalTitle)modalTitle.textContent=editable?"ث\
-بت و ویرایش جلسه":"مشاهدهٔ جلسه";const title=root.querySelector("[data-session-edit-title]"),description=root.querySelector("[data-sessi\
-on-edit-description]"),button=root.querySelector("[data-session-edit-control]"),label=root.querySelector("[data-session-edit-label]");if(title)title.textContent=
-editable?"ویرایش جلسه فعال است":"فقط مشاهدهٔ جلسه";if(description)description.textContent=!access?"اطلاعات این پنجره تغییر کرده ا\
-ست؛ جلسه را دوباره باز کنید.":editable?"تغییرات خودکار ذخیره می‌شوند.":"ثبت‌ها تا فعال‌کردن ویرایش قفل‌اند.";
-if(label)label.textContent=editable?"پایان ویرایش":"فعال‌کردن ویرایش";if(button){button.setAttribute("aria-pressed",String(editable));
-setControlLock(button,"session-access-stale",!access)}}function toggleSessionEditing(button){assertEntityWritable();const access=currentSessionEditAccess(button.
-dataset.key);if(!access||!button.isConnected||!access.root.contains(button))throw Error("پنجرهٔ جلسه تغییر کرده است؛ جلسه را دوباره باز کنید.");
-if(busy)throw Error("ثبت قبلی هنوز تمام نشده است؛ کمی صبر کنید.");access.editable=!access.editable;access.token={};syncControlLocks()}
-function renderSessionDialogV24(session,options,created){if(!session||!db.sessions.includes(session))throw Error("جلسه دیگر موجود نیست؛ فهرست را دوباره باز کنید\
-.");const previousId=currentSessionId,previousAccess=currentSessionEditAccess(session.id),previousBody=previousAccess&&!created?document.getElementById("modalBo\
-dy"):null,previousScroll=previousBody?.isConnected?previousBody.scrollTop:null,editable=created||!!previousAccess?.editable,freshCreation=created||!!previousAccess?.
-freshCreation;const result=old.openSessionModal(session,options);if(result===false){currentSessionId=previousId;return false}const root=document.querySelector("\
-#modalBody .session-workspace");if(!root||root.dataset.sessionId!==session.id){releaseSessionEditAccess();return result}sessionEditAccess={sessionId:session.id,
-session,workspaceId:workspace?.id,connection,installation:installationToken,data:db,root,editable,freshCreation,token:{}};if(!freshCreation)root.querySelector("\
-.session-context").insertAdjacentHTML("beforeend",sessionEditNoticeHtml(session.id));if(Array.isArray(session.roster)&&!session.roster.length&&emptySessionRosterClass(
-session)){const empty=root.querySelector(".session-attendance-list .empty");if(empty)empty.innerHTML='<p>این جلسه بدون هنرجو ساخته شده است. می‌توانید فهرست هنرج\
-ویان فعال فعلی کلاس را برای همین جلسه ثبت کنید.</p><button type="button" class="ghost" data-mutating="1" data-workspace-action="session-restore-roster" data-key\
-="'+esc(session.id)+'">دریافت هنرجویان فعلی کلاس</button>'}root.querySelectorAll("#sessDate,#sessPeriod,#sessPoudman,#sessUnit").forEach(control=>{
-control.dataset.mutating="1"});lockControls();if(previousScroll!==null&&Number.isFinite(previousScroll)&&previousBody.isConnected&&document.getElementById("moda\
-lBody")===previousBody&&previousAccess.workspaceId===workspace?.id&&previousAccess.connection===connection&&previousAccess.installation===installationToken&&previousAccess.
-data===db&&previousAccess.session===session&&currentSessionEditAccess(session.id)?.root===root)previousBody.scrollTop=previousScroll;return result}function openSessionModalV24(session,options={}){
-return renderSessionDialogV24(session,options,false)}function openNewSessionDialogV24(session){return renderSessionDialogV24(session,{},true)}function sessionRoster(c,x){
-return x.roster||c.students.map(st=>({id:st.id,name:st.name}))}function emptySessionRosterClass(session){if(!Array.isArray(session?.roster)||session.roster.length!==
-0||!EduAttendanceReminders.isEmptySession(session))return null;const cls=getClassObj(session.schoolId,session.classId);return Array.isArray(cls?.students)&&cls.
-students.length?cls:null}const sessionRosterRestores=new Set;async function restoreEmptySessionRosterV24(button){const id=button?.dataset?.key;if(sessionRosterRestores.
-has(id))return false;const isCurrent=preserveSessionAction(id),access=currentSessionEditAccess(id),session=getSessionById(id),cls=emptySessionRosterClass(session);
-if(!button?.isConnected||!access?.root.contains(button))throw Error("کنترل فهرست مربوط به پنجرهٔ فعلی نیست؛ جلسه را دوباره باز کنید.");
-if(!cls)throw Error("دریافت فهرست فقط برای جلسهٔ کاملاً خالی و کلاس دارای هنرجوی فعال امکان‌پذیر است.");
-const roster=snapshotRoster(cls),signature=JSON.stringify(roster);sessionRosterRestores.add(id);try{if(!confirm("فهرست "+roster.length.toLocaleString("fa-I\
-R")+" هنرجوی فعال کلاس «"+cls.name+"» برای این جلسه ثبت شود؟ این جلسه هنوز حضور، نمره یا فعالیت ثبت‌شده ندارد."))
-return false;await flushDrafts({strict:true});await writer.catch(()=>{});assertEntityWritable();if(!isCurrent()||getSessionById(id)!==session||emptySessionRosterClass(
-session)!==cls||JSON.stringify(snapshotRoster(cls))!==signature)throw Error("جلسه یا فهرست کلاس تغییر کرده است؛ دریافت فهرست انجام نشد.");
+if(!backupPage||!backupHost||!backupHubSession?.isCurrent())mountBackupHubPage();courseUI.restoreEditor(coursePanel);paintWeekSettingsAccess();const app=document.
+getElementById("app");if(db.settings.password&&!isAuthenticated){const banner=document.createElement("div");banner.id="saveStatus";banner.setAttribute("role","s\
+tatus");app.prepend(banner);paintStatus();return}const panel=document.createElement("div");panel.className="workspace-bar workspace-bar-compact no-print";panel.
+innerHTML=(workspace.closed?'<span class="workspace-closed-note">ترم بسته است؛ فقط مشاهده</span>':"")+'<span id="saveStatus" role="status" a\
+ria-live="polite"></span>'+workspaceToolsHtml()+draftReviewActionHtml();app.prepend(panel);const tools=panel.querySelector(".workspace-tools");const settings=app.
+querySelector('.topbar [data-header-action="settings"]');if(settings)settings.replaceWith(tools);const welcome=app.querySelector(".schools-welcome");if(welcome){
+const footer=document.createElement("div");footer.className="schools-welcome-footer";footer.innerHTML='<div class="schools-period-context"><span>سال تحصیلی: <bd\
+i>'+esc(String(workspace.year).replace(/\d/g,digit=>"۰۱۲۳۴۵۶۷۸۹"[digit]))+"</bdi></span></div>";const about=welcome.querySelector(".schools-about");if(about)
+footer.append(about);const fileSummary=document.createElement("div");fileSummary.id="welcomeFileSummary";fileSummary.className="schools-file-summary";fileSummary.
+setAttribute("aria-live","polite");fileSummary.innerHTML=welcomeFileSummariesHtml();footer.querySelector(".schools-period-context").append(fileSummary);welcome.
+append(footer)}if(window.showSaveFilePicker){const fileStatus=document.createElement("div");fileStatus.id="singleFileBadge";fileStatus.className="single-file-no\
+tice";fileStatus.hidden=!singleFileFailure;fileStatus.innerHTML=singleFileNoticeHtml();panel.append(fileStatus)}paintQuestionBankFileNotice();if(db.migrationWarnings?.
+length){const info=document.createElement("div");info.className="card";info.textContent="سوابق منتقل‌شده نیازمند بررسی: "+db.migrationWarnings.
+join(" | ");app.append(info)}if(fileMode)fileModeBanner(app);courseUI.activateCreate();applyDrafts();lockControls();paintStatus();void refreshYearLessonSessions();
+void refreshAttendanceReminders();globalThis.EduQuestionBankUI?.updateLayout?.()}let sessionEditAccess=null;function currentSessionEditAccess(id){const access=sessionEditAccess;
+return access&&access.sessionId===id&&currentSessionId===id&&access.workspaceId===workspace?.id&&access.connection===connection&&access.installation===installationToken&&
+access.data===db&&access.session===db.sessions.find(session=>session.id===id)&&access.root.dataset.sessionId===id&&access.root.isConnected&&document.querySelector(
+"#modalBody .session-workspace")===access.root&&!document.getElementById("modal").classList.contains("hidden")?access:null}function isSessionEditable(id,token){
+const access=currentSessionEditAccess(id);return!!access?.editable&&(token===void 0||access.token===token)}function assertSessionEditable(id){assertEntityWritable();
+const access=currentSessionEditAccess(id);if(!access?.editable)throw Error("این جلسه فقط برای مشاهده باز شده است؛ ابتدا «فعال‌کردن ویرایش» را بزنید.");
+return access.token}function releaseSessionEditAccess(){sessionEditAccess=null}function captureSessionEditRecovery(){const access=currentSessionEditAccess(currentSessionId);
+return access?{access,token:access.token}:null}function invalidateSessionEditRecovery(recovery){if(recovery&&sessionEditAccess===recovery.access&&sessionEditAccess.
+token===recovery.token)releaseSessionEditAccess()}function rebindSessionEditAfterRollback(recovery,previousData,loaded,expected){const access=recovery?.access,session=loaded.
+data.sessions.find(row=>row.id===access?.sessionId);if(!access||sessionEditAccess!==access||access.token!==recovery.token||access.data!==previousData||access.session!==
+previousData.sessions.find(row=>row.id===access.sessionId)||!session||["schoolId","classId","lessonId"].some(key=>session[key]!==access.session[key])||expected.
+workspaceId!==workspace?.id||loaded.period.id!==workspace.id||loaded.period.revision!==expected.revision||loaded.installationToken!==expected.installation||workspace.
+revision!==expected.revision||access.workspaceId!==workspace.id||access.connection!==expected.connection||connection!==expected.connection||access.installation!==
+expected.installation||installationToken!==expected.installation||db!==loaded.data||previousData.settings.password!==loaded.data.settings.password||currentSessionId!==
+access.sessionId||!access.root.isConnected||document.querySelector("#modalBody .session-workspace")!==access.root||document.getElementById("modal").classList.contains(
+"hidden")||blocked||!ready||fileMode||workspace.closed||periodLoading||resetBusy||connectionRetired){invalidateSessionEditRecovery(recovery);return false}access.
+data=loaded.data;access.session=session;access.token={};return true}function sessionEditNoticeHtml(id){return'<aside class="session-edit-notice" role="status"><\
+div class="session-edit-copy"><strong data-session-edit-title></strong><p data-session-edit-description></p></div><button type="button" class="ghost" data-sessi\
+on-edit-control data-mutating="1" data-workspace-action="session-toggle-edit" data-key="'+esc(id)+'">'+EduIcons.html("edit")+"<span data-session-edit-label></sp\
+an></button></aside>"}function syncSessionEditNotice(){const root=document.querySelector("#modalBody .session-workspace");if(!root)return;const access=currentSessionEditAccess(
+root.dataset.sessionId),editable=!!access?.editable;root.dataset.sessionMode=editable?"edit":"view";const modalTitle=document.getElementById("modalTitle");if(modalTitle)
+modalTitle.textContent=editable?"ثبت و ویرایش جلسه":"مشاهدهٔ جلسه";const title=root.querySelector("[data-session-edit-title]"),description=root.
+querySelector("[data-session-edit-description]"),button=root.querySelector("[data-session-edit-control]"),label=root.querySelector("[data-session-edit-label]");
+if(title)title.textContent=editable?"ویرایش جلسه فعال است":"فقط مشاهدهٔ جلسه";if(description)description.textContent=!access?"اطل\
+اعات این پنجره تغییر کرده است؛ جلسه را دوباره باز کنید.":editable?"تغییرات خودکار ذخیره می‌شوند.":
+"ثبت‌ها تا فعال‌کردن ویرایش قفل‌اند.";if(label)label.textContent=editable?"پایان ویرایش":"فعال‌کردن ویرایش";
+if(button){button.setAttribute("aria-pressed",String(editable));setControlLock(button,"session-access-stale",!access)}}function toggleSessionEditing(button){assertEntityWritable();
+const access=currentSessionEditAccess(button.dataset.key);if(!access||!button.isConnected||!access.root.contains(button))throw Error("پنجرهٔ جلسه تغییر کرده است\
+؛ جلسه را دوباره باز کنید.");if(busy)throw Error("ثبت قبلی هنوز تمام نشده است؛ کمی صبر کنید.");access.editable=
+!access.editable;access.token={};syncControlLocks()}function renderSessionDialogV24(session,options,created){if(!session||!db.sessions.includes(session))throw Error(
+"جلسه دیگر موجود نیست؛ فهرست را دوباره باز کنید.");const previousId=currentSessionId,previousAccess=currentSessionEditAccess(
+session.id),previousBody=previousAccess&&!created?document.getElementById("modalBody"):null,previousScroll=previousBody?.isConnected?previousBody.scrollTop:null,
+editable=created||!!previousAccess?.editable,freshCreation=created||!!previousAccess?.freshCreation;const result=old.openSessionModal(session,options);if(result===
+false){currentSessionId=previousId;return false}const root=document.querySelector("#modalBody .session-workspace");if(!root||root.dataset.sessionId!==session.id){
+releaseSessionEditAccess();return result}sessionEditAccess={sessionId:session.id,session,workspaceId:workspace?.id,connection,installation:installationToken,data:db,
+root,editable,freshCreation,token:{}};if(!freshCreation)root.querySelector(".session-context").insertAdjacentHTML("beforeend",sessionEditNoticeHtml(session.id));
+if(Array.isArray(session.roster)&&!session.roster.length&&emptySessionRosterClass(session)){const empty=root.querySelector(".session-attendance-list .empty");if(empty)
+empty.innerHTML='<p>این جلسه بدون هنرجو ساخته شده است. می‌توانید فهرست هنرجویان فعال فعلی کلاس را برای همین جلسه ثبت کنید.</p><button type="button" class="ghost\
+" data-mutating="1" data-workspace-action="session-restore-roster" data-key="'+esc(session.id)+'">دریافت هنرجویان فعلی کلاس</button>'}root.
+querySelectorAll("#sessDate,#sessPeriod,#sessPoudman,#sessUnit").forEach(control=>{control.dataset.mutating="1"});lockControls();if(previousScroll!==null&&Number.
+isFinite(previousScroll)&&previousBody.isConnected&&document.getElementById("modalBody")===previousBody&&previousAccess.workspaceId===workspace?.id&&previousAccess.
+connection===connection&&previousAccess.installation===installationToken&&previousAccess.data===db&&previousAccess.session===session&&currentSessionEditAccess(session.
+id)?.root===root)previousBody.scrollTop=previousScroll;return result}function openSessionModalV24(session,options={}){return renderSessionDialogV24(session,options,
+false)}function openNewSessionDialogV24(session){return renderSessionDialogV24(session,{},true)}function sessionRoster(c,x){return x.roster||c.students.map(st=>({
+id:st.id,name:st.name}))}function emptySessionRosterClass(session){if(!Array.isArray(session?.roster)||session.roster.length!==0||!EduAttendanceReminders.isEmptySession(
+session))return null;const cls=getClassObj(session.schoolId,session.classId);return Array.isArray(cls?.students)&&cls.students.length?cls:null}const sessionRosterRestores=new Set;
+async function restoreEmptySessionRosterV24(button){const id=button?.dataset?.key;if(sessionRosterRestores.has(id))return false;const isCurrent=preserveSessionAction(
+id),access=currentSessionEditAccess(id),session=getSessionById(id),cls=emptySessionRosterClass(session);if(!button?.isConnected||!access?.root.contains(button))
+throw Error("کنترل فهرست مربوط به پنجرهٔ فعلی نیست؛ جلسه را دوباره باز کنید.");if(!cls)throw Error("دریافت فه\
+رست فقط برای جلسهٔ کاملاً خالی و کلاس دارای هنرجوی فعال امکان‌پذیر است.");const roster=snapshotRoster(
+cls),signature=JSON.stringify(roster);sessionRosterRestores.add(id);try{if(!confirm("فهرست "+roster.length.toLocaleString("fa-IR")+" هنرجوی فعال کلاس «"+
+cls.name+"» برای این جلسه ثبت شود؟ این جلسه هنوز حضور، نمره یا فعالیت ثبت‌شده ندارد."))return false;
+await flushDrafts({strict:true});await writer.catch(()=>{});assertEntityWritable();if(!isCurrent()||getSessionById(id)!==session||emptySessionRosterClass(session)!==
+cls||JSON.stringify(snapshotRoster(cls))!==signature)throw Error("جلسه یا فهرست کلاس تغییر کرده است؛ دریافت فهرست انجام نشد.");
 session.roster=roster;await saveDBV24({sessionId:id,action:"تکمیل فهرست هنرجویان جلسهٔ خالی"});if(isCurrent())openSessionModal(getSessionById(
 id));return true}finally{sessionRosterRestores.delete(id)}}function preserveSessionAction(id){const editToken=assertSessionEditable(id);const origin=workspace.id,
 sourceData=db,sourceInstallation=typeof installationToken==="undefined"?"":installationToken,sourceConnection=connection;return()=>db===sourceData&&workspace.id===
@@ -948,23 +949,39 @@ const password=target.data.settings.password;let authenticated=!password||isAuth
 if(periodId!==workspace.id)await switchPeriod(periodId);if(workspace.id!==periodId||workspace.year!==year||connection!==originConnection||db.settings.password!==
 password)throw Error("اطلاعات یا دسترسی جلسه تغییر کرد؛ دوباره وارد شوید.");isAuthenticated=authenticated;state={...state,
 view:"lesson",schoolId:session.schoolId,classId:session.classId,lessonId:session.lessonId,tab:"sessions"};render();const live=db.sessions.find(item=>item.id===sessionId);
-if(!live)throw Error("جلسه هنگام بازخوانی تغییر کرد؛ فهرست را دوباره باز کنید.");openSessionModal(live)}function preserveScheduleAction(){
-assertEntityWritable();const origin=workspace.id,sourceData=db,sourceConnection=connection,sourceInstallation=typeof installationToken==="undefined"?"":installationToken,
-view=state.view;return()=>workspace.id===origin&&db===sourceData&&connection===sourceConnection&&(typeof installationToken==="undefined"?"":installationToken)===
-sourceInstallation&&state.view===view&&!periodLoading&&!resetBusy&&!connectionRetired}function validateScheduleSlot(day,period){if(!Number.isInteger(day)||day<0||
-day>6||!Number.isInteger(period)||period<0||period>11)throw Error("روز یا زنگ برنامه معتبر نیست.")}let scheduleSessionBusy=false;async function openScheduledSessionV24(selection,isCurrent){
-const{day,period,classId,lessonId,schoolId}=selection;validateScheduleSlot(day,period);const date=validateAcademicSessionDate(selection.date);await flushDrafts(
-{strict:true});await writer.catch(()=>{});assertEntityWritable();if(!isCurrent())throw Error("صفحه یا انتخاب جلسه تغییر کرده است؛ دوباره تلاش کنید.");
-const target=classId&&findClassById(classId);if(!target||schoolId&&target.school.id!==schoolId||!target.classObj.lessons.some(lesson=>lesson.id===lessonId))throw Error(
-"کلاس و درس مقصد معتبر نیستند.");const actualDay=getDayIdxFromDate(date);if(actualDay!==day)throw Error(`تاریخ انتخاب‌شده متعلق به ${DAYS[actualDay]}\
- است، اما زنگ را از ${DAYS[day]} انتخاب کرده‌اید؛ تاریخ یا روز برنامه را اصلاح کنید.`);let session=db.sessions.
-find(row=>row.date===date&&row.period===period);if(session&&session.classId!==classId)throw Error("تداخل جلسه: در این تاریخ و زنگ، جلسهٔ کلاس دیگری ثبت شده است.\
- ابتدا تاریخ یا شمارهٔ زنگ را اصلاح کنید.");const created=!session;if(!session){validateSessionSchedule({schoolId:target.school.
-id,classId,lessonId,date,period});if(!target.classObj.students?.length)throw Error("برای شروع جلسه، ابتدا هنرجویان این کلاس را ثبت کنید. کلاس بدون هنرجوی فعال ن\
-می‌تواند جلسهٔ جدید داشته باشد.");session={id:uid(),schoolId:target.school.id,classId,lessonId,date,period,poudmanId:null,unitId:null,
-attendance:{},scores:[],roster:snapshotRoster(target.classObj)};db.sessions.push(session);await saveDBV24({sessionId:session.id,action:"ایجاد جلسه از برنامه"})}else if(session.
-lessonId!==lessonId)throw Error("تداخل جلسه: این تاریخ و زنگ برای درس دیگری ثبت شده است؛ درس یا زنگ درست را انتخاب کنید.");
-if(isCurrent()){if(created)openNewSessionDialogV24(getSessionById(session.id));else openSessionModal(getSessionById(session.id))}return true}async function startSessionFromMasterV24(day,period){
+if(!live)throw Error("جلسه هنگام بازخوانی تغییر کرد؛ فهرست را دوباره باز کنید.");openSessionModal(live)}let weekSettingsEditAccess=null;
+function weekSettingsAccessMatches(){const access=weekSettingsEditAccess;return!!access&&state.view==="master"&&access.workspace===workspace.id&&access.connection===
+connection&&access.data===db&&access.installation===installationToken}function assertWeekSettingsEditable(){assertEntityWritable();if(!weekSettingsAccessMatches()||
+!weekSettingsEditAccess.root.isConnected||document.querySelector("#app .week-settings")!==weekSettingsEditAccess.root)throw Error("ابتدا ویرایش تنظیمات روزها و \
+زنگ‌ها را فعال کنید.")}function closeWeekSettingsEditing(root){if(weekSettingsEditAccess?.root!==root)return;weekSettingsEditAccess=null;paintWeekSettingsAccess()}
+function paintWeekSettingsAccess(){const root=document.querySelector("#app .week-settings");const editable=!!root&&weekSettingsAccessMatches();if(!editable)weekSettingsEditAccess=
+null;if(!root)return;if(editable)weekSettingsEditAccess.root=root;root.dataset.editMode=editable?"edit":"view";let fields=root.querySelector(".week-settings-fie\
+lds");if(!fields){fields=document.createElement("fieldset");fields.className="week-settings-fields";const body=root.querySelector(".week-settings-body");body.before(
+fields);fields.append(body)}fields.disabled=!editable;syncShamsiDisabledInputs();let bar=root.querySelector(".week-settings-access");if(!bar){bar=document.createElement(
+"div");bar.className="week-settings-access";fields.before(bar)}bar.innerHTML="<span>"+(editable?"ویرایش فعال · ذخیرهٔ خودکار":"حالت مشاهد\
+ه")+'</span><button type="button" class="ghost" data-mutating="1" data-workspace-action="week-settings-toggle-edit" aria-pressed="'+editable+'">'+EduIcons.html(
+editable?"check":"edit")+"<span>"+(editable?"پایان ویرایش":"فعال‌کردن ویرایش")+"</span></button>"}function toggleWeekSettingsEditing(button){
+assertEntityWritable();const root=document.querySelector("#app .week-settings");if(state.view!=="master"||!root||!root.contains(button)||button.disabled)return;
+if(weekSettingsAccessMatches()){const value=root.querySelector("#weekStartInput").value;if(value&&value!==(db.settings.weekStartDate||todayISO())&&!confirm("تار\
+یخ مبنا ذخیره نشده است؛ تغییر این تاریخ کنار گذاشته شود؟"))return;weekSettingsEditAccess=null;if(typeof closeShamsiCalendar===
+"function")closeShamsiCalendar();render()}else{weekSettingsEditAccess={workspace:workspace.id,connection,data:db,installation:installationToken,root};paintWeekSettingsAccess()}}
+function preserveScheduleAction(){assertEntityWritable();const origin=workspace.id,sourceData=db,sourceConnection=connection,sourceInstallation=typeof installationToken===
+"undefined"?"":installationToken,view=state.view;return()=>workspace.id===origin&&db===sourceData&&connection===sourceConnection&&(typeof installationToken==="u\
+ndefined"?"":installationToken)===sourceInstallation&&state.view===view&&!periodLoading&&!resetBusy&&!connectionRetired}function validateScheduleSlot(day,period){
+if(!Number.isInteger(day)||day<0||day>6||!Number.isInteger(period)||period<0||period>11)throw Error("روز یا زنگ برنامه معتبر نیست.")}let scheduleSessionBusy=false;
+async function openScheduledSessionV24(selection,isCurrent){const{day,period,classId,lessonId,schoolId}=selection;validateScheduleSlot(day,period);const date=validateAcademicSessionDate(
+selection.date);await flushDrafts({strict:true});await writer.catch(()=>{});assertEntityWritable();if(!isCurrent())throw Error("صفحه یا انتخاب جلسه تغییر کرده ا\
+ست؛ دوباره تلاش کنید.");const target=classId&&findClassById(classId);if(!target||schoolId&&target.school.id!==schoolId||!target.classObj.lessons.
+some(lesson=>lesson.id===lessonId))throw Error("کلاس و درس مقصد معتبر نیستند.");const actualDay=getDayIdxFromDate(date);if(actualDay!==day)
+throw Error(`تاریخ انتخاب‌شده متعلق به ${DAYS[actualDay]} است، اما زنگ را از ${DAYS[day]} انتخاب کرده‌اید؛ تاریخ یا روز برن\
+امه را اصلاح کنید.`);let session=db.sessions.find(row=>row.date===date&&row.period===period);if(session&&session.classId!==classId)throw Error("تد\
+اخل جلسه: در این تاریخ و زنگ، جلسهٔ کلاس دیگری ثبت شده است. ابتدا تاریخ یا شمارهٔ زنگ را اصلاح کنید.");
+const created=!session;if(!session){validateSessionSchedule({schoolId:target.school.id,classId,lessonId,date,period});if(!target.classObj.students?.length)throw Error(
+"برای شروع جلسه، ابتدا هنرجویان این کلاس را ثبت کنید. کلاس بدون هنرجوی فعال نمی‌تواند جلسهٔ جدید داشته باشد.");
+session={id:uid(),schoolId:target.school.id,classId,lessonId,date,period,poudmanId:null,unitId:null,attendance:{},scores:[],roster:snapshotRoster(target.classObj)};
+db.sessions.push(session);await saveDBV24({sessionId:session.id,action:"ایجاد جلسه از برنامه"})}else if(session.lessonId!==lessonId)throw Error(
+"تداخل جلسه: این تاریخ و زنگ برای درس دیگری ثبت شده است؛ درس یا زنگ درست را انتخاب کنید.");if(isCurrent()){
+if(created)openNewSessionDialogV24(getSessionById(session.id));else openSessionModal(getSessionById(session.id))}return true}async function startSessionFromMasterV24(day,period){
 if(scheduleSessionBusy)return false;scheduleSessionBusy=true;try{const isCurrent=preserveScheduleAction(),dateInput=document.getElementById("sessNewDate"),classInput=document.
 getElementById("sessNewClass"),lessonInput=document.getElementById("sessNewLesson"),selection={day,period,date:dateInput?.value||"",classId:classInput?.value||"",
 lessonId:lessonInput?.value||""};return await openScheduledSessionV24(selection,()=>isCurrent()&&document.getElementById("sessNewDate")===dateInput&&document.getElementById(
@@ -984,75 +1001,75 @@ id===lessonId))throw Error("کلاس و درس هر بخش برنامه را ب�
 const isCurrent=preserveScheduleAction();validateScheduleSlot(day,period);assertMasterConfigEditable(day,period);const marker=document.getElementById("cfgAllCla\
 ss");if(!confirm("کل تنظیمات این زنگ پاک شوند؟"))return false;const next={...db.masterSchedule||{}};for(const kind of["all","odd","even"])
 delete next[`${day}-${period}-${kind}`];db.masterSchedule=next;await saveDBV24({action:"پاک‌کردن برنامه زنگ"});if(isCurrent()&&document.getElementById(
-"cfgAllClass")===marker){closeModal();render()}return true}async function saveWeekStartDateV24(){const isCurrent=preserveScheduleAction();const date=validateSessionDate(
-document.getElementById("weekStartInput").value);if(date===db.settings.weekStartDate)return false;db.settings.weekStartDate=date;await saveDBV24({action:"تغییر \
-تاریخ شروع محاسبه هفته"});if(isCurrent()){render();alert("✅ تاریخ شروع محاسبه ذخیره شد")}return true}async function toggleActiveDayV24(day){
-const isCurrent=preserveScheduleAction();if(!Number.isInteger(day)||day<0||day>6)throw Error("روز برنامه باید عدد صحیح صفر تا شش باشد.");
-const days=db.activeDays||[0,1,2,3,4,5];db.activeDays=days.includes(day)?days.filter(value=>value!==day):[...days,day].sort((a,b)=>a-b);await saveDBV24({action:"\
-تغییر روزهای فعال برنامه"});if(isCurrent())render()}async function changePeriodsV24(delta){const isCurrent=preserveScheduleAction();if(!Number.
-isInteger(delta))throw Error("تغییر تعداد زنگ‌ها باید عدد صحیح باشد.");const previous=db.periods||6,next=Math.max(1,Math.min(12,
-previous+delta));if(next===previous)return false;const occupied=Object.entries(db.masterSchedule||{}).filter(([key,value])=>value&&Number(key.split("-")[1])>=next);
-if(next<previous&&occupied.length){alert("کاهش تعداد زنگ‌ها انجام نشد؛ ابتدا برنامه زنگ‌های "+[...new Set(occupied.map(
-([key])=>Number(key.split("-")[1])+1))].sort((a,b)=>a-b).join("، ")+" را جابه‌جا یا پاک کنید.");return false}db.periods=next;await saveDBV24(
-{action:"تغییر تعداد زنگ‌های برنامه"});if(isCurrent())render();return true}function attendanceReminderNumber(value){return Number.isFinite(
-Number(value))?Number(value).toLocaleString("fa-IR"):"۰"}function attendanceReminderDate(item){return esc(faDate(item.date))+" · زنگ "+attendanceReminderNumber(
-Number(item.period)+1)}function attendanceReminderItems(model){return[...model?.items||[]].sort((a,b)=>String(b.date).localeCompare(String(a.date))||Number(b.period)-
-Number(a.period))}function attendanceReminderStatus(item){if(item.kind==="empty")return"ثبت شروع نشده";if(item.kind==="incomplete")return"ناقص · "+
-attendanceReminderNumber(item.unknown)+" نفر";return item.kind==="conflict"?"نیازمند بررسی":"ثبت نشده"}function attendanceReminderRowHtml(item){
-const tone=["missing","empty","incomplete","conflict"].includes(item.kind)?item.kind:"missing";return'<li class="attendance-reminder-item is-'+tone+(tone==="emp\
-ty"?" is-missing":"")+'"><button type="button" class="attendance-reminder-open" data-ui-icon="none" data-workspace-action="attendance-reminder-open" data-key="'+
-esc(item.key)+'"><span class="attendance-reminder-identity"><strong>'+esc(item.className||"کلاس")+'</strong><span class="attendance-reminder-lesson">'+esc(item.
-lessonName||"درس")+'</span></span><span class="attendance-reminder-status">'+attendanceReminderStatus(item)+'</span><span class="attendance-reminder-meta"><s\
-pan class="attendance-reminder-date">'+attendanceReminderDate(item)+'</span><span class="attendance-reminder-school">'+esc(item.schoolName||"")+"</span></span><\
-/button></li>"}function attendanceReminderRangeHtml(model){return model?.start&&model?.end?'<p class="attendance-reminder-range"><span class="attendance-reminde\
-r-range-dates"><span>بازهٔ بررسی</span><bdi>'+esc(faDate(model.start))+"</bdi> تا <bdi>"+esc(faDate(model.end))+'</bdi></span><span class="attendanc\
-e-reminder-range-note">بر اساس برنامهٔ هفتگی فعلی</span></p>':'<p class="attendance-reminder-range"><span class="attendance-reminder-range\
--note">پیگیری زنگ‌های گذشته بر اساس برنامهٔ هفتگی فعلی</span></p>'}function renderAttendanceReminders(model){const items=attendanceReminderItems(
-model),visible=items.slice(0,3),notHeld=model?.notHeld||[];if(!items.length&&!notHeld.length)return"";return'<section class="attendance-reminders'+(items.length?
-"":" is-clear")+'" aria-labelledby="attendanceRemindersTitle"><header class="attendance-reminders-heading"><div><h3 id="attendanceRemindersTitle"><span class="a\
-ttendance-reminders-icon" aria-hidden="true">'+EduIcons.html("users")+"</span>پیگیری حضور‌وغیاب"+(items.length?'<span class="attendance-reminde\
-rs-count">'+attendanceReminderNumber(items.length)+"</span>":"")+"</h3>"+attendanceReminderRangeHtml(model)+"</div></header>"+(items.length?'<ul class="attendan\
-ce-reminder-items">'+visible.map(attendanceReminderRowHtml).join("")+"</ul>":'<p class="attendance-reminders-empty">در این بازه موردی برای پیگیری نیست.</p>')+
-(items.length||notHeld.length?'<footer class="attendance-reminders-footer"><div class="attendance-reminders-footer-actions" role="group" aria-label="فهرست‌های پ\
-یگیری حضور‌وغیاب">'+(items.length?'<button type="button" class="ghost attendance-reminders-footer-action attendance-reminders-all-button" data-u\
-i-icon="none" data-workspace-action="attendance-reminders-all">'+EduIcons.html("calendar-week")+'<span class="attendance-reminders-action-label">همهٔ موارد</spa\
-n> <bdi class="attendance-reminders-action-count">'+attendanceReminderNumber(items.length)+"</bdi></button>":"")+(notHeld.length?'<button type="button" class="g\
-host attendance-reminders-footer-action attendance-reminders-history-button" data-ui-icon="none" data-workspace-action="attendance-reminders-not-held">'+EduIcons.
-html("clock")+'<span class="attendance-reminders-action-label">برگزارنشده‌ها</span> <bdi class="attendance-reminders-action-count">'+attendanceReminderNumber(
-notHeld.length)+"</bdi></button>":"")+"</div>"+(items.length>visible.length?"<small>نمایش "+attendanceReminderNumber(visible.length)+" مورد اخیر</small>":
-"")+"</footer>":"")+"</section>"}function attendanceReminderPage(rows,requestedPage){const pages=Math.max(1,Math.ceil(rows.length/50)),page=Number.isInteger(requestedPage)?
-Math.max(0,Math.min(requestedPage,pages-1)):0,offset=page*50;return{rows:rows.slice(offset,offset+50),page,pages,offset,total:rows.length}}function attendanceReminderPaginationHtml(pagination){
-if(!pagination.total)return"";const{page,pages,offset,rows,total}=pagination;return'<div class="attendance-reminder-pagination"><p>موارد '+attendanceReminderNumber(
-offset+1)+" تا "+attendanceReminderNumber(offset+rows.length)+" از "+attendanceReminderNumber(total)+"</p>"+(pages>1?'<nav aria-label="صفحه‌های پیگیری حضور‌\
-وغیاب"><button type="button" class="ghost" data-workspace-action="attendance-reminders-page" data-page="'+Math.max(0,page-1)+'"'+(page===0?" disabled":"")+
-">قبلی</button><span>صفحهٔ "+attendanceReminderNumber(page+1)+" از "+attendanceReminderNumber(pages)+'</span><button type="button" class="ghost" data\
--workspace-action="attendance-reminders-page" data-page="'+Math.min(pages-1,page+1)+'"'+(page===pages-1?" disabled":"")+">بعدی</button></nav>":"")+"</div>"}
-function attendanceReminderListHtml(model,page=0){const items=attendanceReminderItems(model),pagination=attendanceReminderPage(items,page);return'<div class="at\
-tendance-reminder-list-dialog"><p class="attendance-reminder-intro">زنگ موردنظر را برای ثبت یا تکمیل حضور‌وغیاب انتخاب کنید.</p>'+
-attendanceReminderRangeHtml(model)+(items.length?'<ul class="attendance-reminder-items attendance-reminder-scroll">'+pagination.rows.map(attendanceReminderRowHtml).
-join("")+"</ul>":'<p class="attendance-reminders-empty">موردی برای پیگیری باقی نمانده است.</p>')+attendanceReminderPaginationHtml(pagination)+
-'<div class="attendance-reminder-dialog-actions"><button type="button" class="ghost" data-workspace-action="close">بستن</button></div></div>'}function attendanceReminderDialogHtml(item){
-const key=esc(item.key),missing=item.kind==="missing",empty=item.kind==="empty",canMarkNotHeld=missing||empty,foreignEmpty=empty&&item.sourcePeriodId!==workspace?.
-id,conflict=item.kind==="conflict";const recordAttributes=' data-key="'+key+'"'+(item.sessionId?' data-session="'+esc(item.sessionId)+'"':"")+(item.sourcePeriodId?
-' data-workspace="'+esc(item.sourcePeriodId)+'"':"");return'<div class="attendance-reminder-dialog is-'+(conflict?"conflict":empty?"empty is-missing":missing?"m\
-issing":"incomplete")+'"><section class="attendance-reminder-summary"><div class="attendance-reminder-summary-meta"><span class="attendance-reminder-date">'+attendanceReminderDate(
-item)+'</span><span class="attendance-reminder-status">'+attendanceReminderStatus(item)+'</span></div><div class="attendance-reminder-session-identity"><h4><spa\
-n class="attendance-reminder-field-label">کلاس</span><span>'+esc(item.className||"کلاس")+'</span></h4><p><span class="attendance-reminder-field-label">د\
-رس</span><span>'+esc(item.lessonName||"درس")+'</span></p><small><span class="attendance-reminder-field-label">مدرسه</span><span>'+esc(item.schoolName||
-"")+'</span></small></div></section><p class="attendance-reminder-explanation'+(conflict?" is-conflict":"")+'">'+(missing?"برای این زنگ، جلسه‌ای ثبت نشده است. ا\
-گر کلاس برگزار شده، حضور‌وغیاب آن را ثبت کنید.":empty?"جلسه فقط باز شده و هیچ حضور، نمره یا فعالیتی ثبت نشده است. اگر کلاس\
- برگزار نشده، می‌توانید وضعیت آن را با تأیید خود مشخص کنید.":conflict?"برای این تاریخ و زنگ، بیش از یک جلسه ثبت \
-شده است. جلسه‌های ثبت‌شده را جداگانه بررسی کنید.":"حضور‌وغیاب "+attendanceReminderNumber(item.unknown)+" نفر\
- از "+attendanceReminderNumber(item.total)+" نفر هنوز مشخص نشده است. اطلاعات قبلی جلسه حفظ می‌شود؛ فقط موارد تعیین‌نشده را تکمیل کنید.")+
-'</p><div class="attendance-reminder-choices">'+(conflict?'<div class="attendance-reminder-conflict-sessions">'+(item.sessions||[]).map((session,index)=>'<butto\
-n type="button" class="ghost" data-ui-icon="none" data-workspace-action="attendance-reminder-record" data-key="'+key+'" data-session="'+esc(session.sessionId)+'\
-" data-workspace="'+esc(session.sourcePeriodId)+'">بررسی جلسهٔ '+attendanceReminderNumber(index+1)+"</button>").join("")+"</div>":'<section class="att\
-endance-reminder-choice is-record"><h5>'+(canMarkNotHeld?"جلسه برگزار شده":"تکمیل اطلاعات جلسه")+"</h5><p>"+(missing?"حضور‌وغیاب ای\
-ن زنگ را ثبت کنید.":"جلسه ابتدا در حالت مشاهده باز می‌شود؛ برای تغییر، ویرایش را فعال کنید.")+
-'</p><div class="attendance-reminder-primary-action"><button type="button" data-ui-icon="none" data-workspace-action="attendance-reminder-record"'+recordAttributes+
-(missing?' data-mutating="1"':"")+">"+(missing?"ثبت حضور‌وغیاب این زنگ":"تکمیل حضور‌وغیاب جلسه")+"</button></div></secti\
-on>")+(canMarkNotHeld?'<section class="attendance-reminder-choice attendance-reminder-not-held"><h5>جلسه برگزار نشده</h5><p>'+(empty?"با تأیید شما\
-، فقط همین رکورد خالی با نشان «برگزار نشده» جایگزین می‌شود. این انتخاب، غیبت هنرجویان را ثبت نمی‌کند.":
+"cfgAllClass")===marker){closeModal();render()}return true}async function saveWeekStartDateV24(){assertWeekSettingsEditable();const isCurrent=preserveScheduleAction();
+const date=validateSessionDate(document.getElementById("weekStartInput").value);if(date===db.settings.weekStartDate)return false;db.settings.weekStartDate=date;
+await saveDBV24({action:"تغییر تاریخ شروع محاسبه هفته"});if(isCurrent()){render();alert("✅ تاریخ شروع محاسبه ذخیره شد")}
+return true}async function toggleActiveDayV24(day){assertWeekSettingsEditable();const isCurrent=preserveScheduleAction();if(!Number.isInteger(day)||day<0||day>6)
+throw Error("روز برنامه باید عدد صحیح صفر تا شش باشد.");const days=db.activeDays||[0,1,2,3,4,5];db.activeDays=days.includes(day)?
+days.filter(value=>value!==day):[...days,day].sort((a,b)=>a-b);await saveDBV24({action:"تغییر روزهای فعال برنامه"});if(isCurrent())render()}
+async function changePeriodsV24(delta){assertWeekSettingsEditable();const isCurrent=preserveScheduleAction();if(!Number.isInteger(delta))throw Error("تغییر تعدا\
+د زنگ‌ها باید عدد صحیح باشد.");const previous=db.periods||6,next=Math.max(1,Math.min(12,previous+delta));if(next===previous)return false;
+const occupied=Object.entries(db.masterSchedule||{}).filter(([key,value])=>value&&Number(key.split("-")[1])>=next);if(next<previous&&occupied.length){alert("کاه\
+ش تعداد زنگ‌ها انجام نشد؛ ابتدا برنامه زنگ‌های "+[...new Set(occupied.map(([key])=>Number(key.split("-")[1])+1))].sort(
+(a,b)=>a-b).join("، ")+" را جابه‌جا یا پاک کنید.");return false}db.periods=next;await saveDBV24({action:"تغییر تعداد زنگ‌های برنامه"});
+if(isCurrent())render();return true}function attendanceReminderNumber(value){return Number.isFinite(Number(value))?Number(value).toLocaleString("fa-IR"):"۰"}function attendanceReminderDate(item){
+return esc(faDate(item.date))+" · زنگ "+attendanceReminderNumber(Number(item.period)+1)}function attendanceReminderItems(model){return[...model?.items||[]].
+sort((a,b)=>String(b.date).localeCompare(String(a.date))||Number(b.period)-Number(a.period))}function attendanceReminderStatus(item){if(item.kind==="empty")return"\
+ثبت شروع نشده";if(item.kind==="incomplete")return"ناقص · "+attendanceReminderNumber(item.unknown)+" نفر";return item.kind==="conflict"?"نیازم\
+ند بررسی":"ثبت نشده"}function attendanceReminderRowHtml(item){const tone=["missing","empty","incomplete","conflict"].includes(item.kind)?item.kind:
+"missing";return'<li class="attendance-reminder-item is-'+tone+(tone==="empty"?" is-missing":"")+'"><button type="button" class="attendance-reminder-open" data-\
+ui-icon="none" data-workspace-action="attendance-reminder-open" data-key="'+esc(item.key)+'"><span class="attendance-reminder-identity"><strong>'+esc(item.className||
+"کلاس")+'</strong><span class="attendance-reminder-lesson">'+esc(item.lessonName||"درس")+'</span></span><span class="attendance-reminder-status">'+attendanceReminderStatus(
+item)+'</span><span class="attendance-reminder-meta"><span class="attendance-reminder-date">'+attendanceReminderDate(item)+'</span><span class="attendance-remin\
+der-school">'+esc(item.schoolName||"")+"</span></span></button></li>"}function attendanceReminderRangeHtml(model){return model?.start&&model?.end?'<p class="att\
+endance-reminder-range"><span class="attendance-reminder-range-dates"><span>بازهٔ بررسی</span><bdi>'+esc(faDate(model.start))+"</bdi> تا <bdi>"+esc(
+faDate(model.end))+'</bdi></span><span class="attendance-reminder-range-note">بر اساس برنامهٔ هفتگی فعلی</span></p>':'<p class="attendance\
+-reminder-range"><span class="attendance-reminder-range-note">پیگیری زنگ‌های گذشته بر اساس برنامهٔ هفتگی فعلی</span></p>'}
+function renderAttendanceReminders(model){const items=attendanceReminderItems(model),visible=items.slice(0,3),notHeld=model?.notHeld||[];if(!items.length&&!notHeld.
+length)return"";return'<section class="attendance-reminders'+(items.length?"":" is-clear")+'" aria-labelledby="attendanceRemindersTitle"><header class="attendan\
+ce-reminders-heading"><div><h3 id="attendanceRemindersTitle"><span class="attendance-reminders-icon" aria-hidden="true">'+EduIcons.html("users")+"</span>پیگیری \
+حضور‌وغیاب"+(items.length?'<span class="attendance-reminders-count">'+attendanceReminderNumber(items.length)+"</span>":"")+"</h3>"+attendanceReminderRangeHtml(
+model)+"</div></header>"+(items.length?'<ul class="attendance-reminder-items">'+visible.map(attendanceReminderRowHtml).join("")+"</ul>":'<p class="attendance-re\
+minders-empty">در این بازه موردی برای پیگیری نیست.</p>')+(items.length||notHeld.length?'<footer class="attendance-reminders-footer">\
+<div class="attendance-reminders-footer-actions" role="group" aria-label="فهرست‌های پیگیری حضور‌وغیاب">'+(items.length?'<button type=\
+"button" class="ghost attendance-reminders-footer-action attendance-reminders-all-button" data-ui-icon="none" data-workspace-action="attendance-reminders-all">'+
+EduIcons.html("calendar-week")+'<span class="attendance-reminders-action-label">همهٔ موارد</span> <bdi class="attendance-reminders-action-count">'+attendanceReminderNumber(
+items.length)+"</bdi></button>":"")+(notHeld.length?'<button type="button" class="ghost attendance-reminders-footer-action attendance-reminders-history-button" \
+data-ui-icon="none" data-workspace-action="attendance-reminders-not-held">'+EduIcons.html("clock")+'<span class="attendance-reminders-action-label">برگزارنشده‌ه\
+ا</span> <bdi class="attendance-reminders-action-count">'+attendanceReminderNumber(notHeld.length)+"</bdi></button>":"")+"</div>"+(items.length>visible.length?
+"<small>نمایش "+attendanceReminderNumber(visible.length)+" مورد اخیر</small>":"")+"</footer>":"")+"</section>"}function attendanceReminderPage(rows,requestedPage){
+const pages=Math.max(1,Math.ceil(rows.length/50)),page=Number.isInteger(requestedPage)?Math.max(0,Math.min(requestedPage,pages-1)):0,offset=page*50;return{rows:rows.
+slice(offset,offset+50),page,pages,offset,total:rows.length}}function attendanceReminderPaginationHtml(pagination){if(!pagination.total)return"";const{page,pages,
+offset,rows,total}=pagination;return'<div class="attendance-reminder-pagination"><p>موارد '+attendanceReminderNumber(offset+1)+" تا "+attendanceReminderNumber(
+offset+rows.length)+" از "+attendanceReminderNumber(total)+"</p>"+(pages>1?'<nav aria-label="صفحه‌های پیگیری حضور‌وغیاب"><button type="button" class="ghost" d\
+ata-workspace-action="attendance-reminders-page" data-page="'+Math.max(0,page-1)+'"'+(page===0?" disabled":"")+">قبلی</button><span>صفحهٔ "+attendanceReminderNumber(
+page+1)+" از "+attendanceReminderNumber(pages)+'</span><button type="button" class="ghost" data-workspace-action="attendance-reminders-page" data-page="'+Math.
+min(pages-1,page+1)+'"'+(page===pages-1?" disabled":"")+">بعدی</button></nav>":"")+"</div>"}function attendanceReminderListHtml(model,page=0){const items=attendanceReminderItems(
+model),pagination=attendanceReminderPage(items,page);return'<div class="attendance-reminder-list-dialog"><p class="attendance-reminder-intro">زنگ موردنظر را برا\
+ی ثبت یا تکمیل حضور‌وغیاب انتخاب کنید.</p>'+attendanceReminderRangeHtml(model)+(items.length?'<ul class="attendance-reminder-ite\
+ms attendance-reminder-scroll">'+pagination.rows.map(attendanceReminderRowHtml).join("")+"</ul>":'<p class="attendance-reminders-empty">موردی برای پیگیری باقی ن\
+مانده است.</p>')+attendanceReminderPaginationHtml(pagination)+'<div class="attendance-reminder-dialog-actions"><button type="button" class="ghost" data-\
+workspace-action="close">بستن</button></div></div>'}function attendanceReminderDialogHtml(item){const key=esc(item.key),missing=item.kind==="missing",empty=item.
+kind==="empty",canMarkNotHeld=missing||empty,foreignEmpty=empty&&item.sourcePeriodId!==workspace?.id,conflict=item.kind==="conflict";const recordAttributes=' da\
+ta-key="'+key+'"'+(item.sessionId?' data-session="'+esc(item.sessionId)+'"':"")+(item.sourcePeriodId?' data-workspace="'+esc(item.sourcePeriodId)+'"':"");return'\
+<div class="attendance-reminder-dialog is-'+(conflict?"conflict":empty?"empty is-missing":missing?"missing":"incomplete")+'"><section class="attendance-reminder\
+-summary"><div class="attendance-reminder-summary-meta"><span class="attendance-reminder-date">'+attendanceReminderDate(item)+'</span><span class="attendance-re\
+minder-status">'+attendanceReminderStatus(item)+'</span></div><div class="attendance-reminder-session-identity"><h4><span class="attendance-reminder-field-label\
+">کلاس</span><span>'+esc(item.className||"کلاس")+'</span></h4><p><span class="attendance-reminder-field-label">درس</span><span>'+esc(item.lessonName||
+"درس")+'</span></p><small><span class="attendance-reminder-field-label">مدرسه</span><span>'+esc(item.schoolName||"")+'</span></small></div></section><p \
+class="attendance-reminder-explanation'+(conflict?" is-conflict":"")+'">'+(missing?"برای این زنگ، جلسه‌ای ثبت نشده است. اگر کلاس برگزار شده، حضور‌وغیاب آن را ثب\
+ت کنید.":empty?"جلسه فقط باز شده و هیچ حضور، نمره یا فعالیتی ثبت نشده است. اگر کلاس برگزار نشده، می‌توانید وضعیت آن را با تأیید خود مشخص کنید.":
+conflict?"برای این تاریخ و زنگ، بیش از یک جلسه ثبت شده است. جلسه‌های ثبت‌شده را جداگانه بررسی کنید.":
+"حضور‌وغیاب "+attendanceReminderNumber(item.unknown)+" نفر از "+attendanceReminderNumber(item.total)+" نفر هنوز مشخص نشده است. اطلاعات قبلی جلسه\
+ حفظ می‌شود؛ فقط موارد تعیین‌نشده را تکمیل کنید.")+'</p><div class="attendance-reminder-choices">'+(conflict?'<div clas\
+s="attendance-reminder-conflict-sessions">'+(item.sessions||[]).map((session,index)=>'<button type="button" class="ghost" data-ui-icon="none" data-workspace-act\
+ion="attendance-reminder-record" data-key="'+key+'" data-session="'+esc(session.sessionId)+'" data-workspace="'+esc(session.sourcePeriodId)+'">بررسی جلسهٔ '+
+attendanceReminderNumber(index+1)+"</button>").join("")+"</div>":'<section class="attendance-reminder-choice is-record"><h5>'+(canMarkNotHeld?"جلسه برگزار شده":
+"تکمیل اطلاعات جلسه")+"</h5><p>"+(missing?"حضور‌وغیاب این زنگ را ثبت کنید.":"جلسه ابتدا در حالت مشاهده باز می‌شود؛ برا\
+ی تغییر، ویرایش را فعال کنید.")+'</p><div class="attendance-reminder-primary-action"><button type="button" data-ui-icon="none" data-works\
+pace-action="attendance-reminder-record"'+recordAttributes+(missing?' data-mutating="1"':"")+">"+(missing?"ثبت حضور‌وغیاب این زنگ":"تکمیل حض\
+ور‌وغیاب جلسه")+"</button></div></section>")+(canMarkNotHeld?'<section class="attendance-reminder-choice attendance-reminder-not-held"><h5>جلسه برگ\
+زار نشده</h5><p>'+(empty?"با تأیید شما، فقط همین رکورد خالی با نشان «برگزار نشده» جایگزین می‌شود. این انتخاب، غیبت هنرجویان را ثبت نمی‌کند.":
 "این زنگ از پیگیری خارج می‌شود. این انتخاب، غیبت هنرجویان را ثبت نمی‌کند.")+'</p><button type="butto\
 n" class="ghost" data-ui-icon="none"'+(foreignEmpty?"":' data-mutating="1"')+' data-workspace-action="attendance-reminder-not-held"'+(empty?recordAttributes:' d\
 ata-key="'+key+'"')+">"+(foreignEmpty?"باز کردن برای تعیین وضعیت":"این زنگ برگزار نشده است")+"</button></section>":"")+'\
@@ -2579,35 +2596,37 @@ title,html)===false)return false;setTimeout(()=>{applyDrafts();lockControls();pa
 find(element=>element.closest("#modalBody"))||document.querySelector("#modal .modal-dialog"))?.focus({preventScroll:true})},0);return true}async function loginV24(e){
 if(fileMode){e.preventDefault();const input=document.getElementById("loginPass");if(await verifyPassword(input.value,db.settings.password)){isAuthenticated=true;
 render()}else{input.value="";alert("رمز عبور اشتباه است.")}return}await old.checkPassword(e);if(isAuthenticated)await recoverDrafts()}function installWorkspaceActions(){
-const commands=new Map([["record-enable-edit",button=>enableRecordEditAccess(button)],["session-toggle-edit",button=>toggleSessionEditing(button)],["session-res\
-tore-roster",button=>restoreEmptySessionRosterV24(button)],["attendance-reminder-open",button=>openAttendanceReminder(button)],["attendance-reminders-all",()=>openAttendanceRemindersList()],
-["attendance-reminders-page",button=>pageAttendanceReminders(button)],["attendance-reminders-not-held",()=>openAttendanceRemindersList({notHeld:true})],["attend\
-ance-reminders-refresh",()=>refreshAttendanceReminders({interactive:true})],["attendance-reminder-not-held",()=>markAttendanceReminderNotHeld()],["attendance-re\
-minder-record",button=>recordAttendanceReminder(button)],["attendance-reminder-restore",button=>restoreAttendanceReminder(button)],["year-sessions",()=>refreshYearLessonSessions(
-{interactive:true})],["year-session",button=>openYearSession(button.dataset.workspace,button.dataset.key)],["assessment-stage",button=>openAssessmentStage(button)],
-["karnameh-stage",button=>selectKarnamehStage(button)],["karnameh-excel",button=>openKarnamehExcel(button)],["karnameh-excel-download",button=>downloadKarnamehExcel(
-button)],["karnameh-excel-mode",button=>setKarnamehExcelDelivery(button)],["karnameh-excel-send",button=>shareKarnamehExcel(button)],["karnameh-excel-save",button=>downloadPreparedKarnamehExcel(
-button)],["karnameh-student",button=>openKarnamehStudent(button.dataset.class,button.dataset.key)],["switch-period",button=>switchPeriod(button.dataset.key)],["\
-frozen-report",button=>showFrozenReport(button.dataset.key)],["adopt-drafts",button=>adoptDrafts(button.dataset.key)],["approve-drafts",()=>approveDrafts()],["a\
-rchived-report",button=>showArchivedKarnameh(button.dataset.key)],["edit-student",button=>openEditStudentModal(button.dataset.key)],["restore-student",button=>restoreStudent(
-button.dataset.key)],["copy-membership",()=>saveMembership("copy")],["unfiltered-session",button=>{const day=integer(button.dataset.day),period=integer(button.dataset.
-period);state.masterFilter=null;closeModal();return clickMasterCell(day,period)}],["periods",()=>openAcademicYear()],["term-records",()=>openPeriods()],["backup\
-s",()=>openBackups()],["open-wipe",()=>wipeAllV24()],["discard-drafts",()=>discardDrafts()],["review-drafts",()=>reviewDrafts()],["other-drafts",()=>openOtherDrafts()],
-["create-period",()=>createNewPeriod({fromDialog:true})],["reopen-period",()=>reopenPeriod()],["finalize-period",()=>finalizePeriod()],["new-second-period",button=>openNewPeriod(
-button.dataset.key)],["export-period",()=>exportFullBackup()],["export-full",()=>exportFullBackup()],["prepare-share-backup",()=>openBackupShare()],["share-back\
-up-file",button=>sharePreparedBackup(button)],["download-share-backup",()=>downloadPreparedBackup()],["close-backup-share",()=>closeBackupShare()],["single-file\
--choose",()=>chooseSingleFile()],["single-file-save",()=>resumeSingleFile()],["question-bank-file-permission",()=>renewQuestionBankFilePermission()],["single-fi\
-le-stop",()=>disableSingleFile()],["restore-full",()=>restoreFullBackup()],["confirm-import",()=>confirmImport()],["undo",()=>openUndoModal()],["confirm-undo",()=>confirmUndo()],
-["raw-recovery",()=>rawRecoveryV24()],["choose-import",()=>chooseBackupImport()],["print",button=>printCurrentKarnameh(button)],["close",()=>closeModal()],["rel\
-oad",()=>location.reload()]]);if(globalThis.__EDU_TEST_MODE__){commands.set("delete-period",button=>openDeletePeriod(button.dataset.key));commands.set("confirm-\
-delete-period",()=>confirmDeletePeriod())}function integer(value){if(!/^\d+$/.test(value)||!Number.isSafeInteger(Number(value)))throw Error("پارامتر عملیات نامع\
-تبر است.");return Number(value)}const submissions=new Map([["save-membership",()=>saveMembership()],["save-student",()=>saveStudent()],["save-entity",()=>saveEntityEditor()],
-["commit-csv",()=>commitCSV()],["confirm-deletion",()=>confirmDeletion()],["confirm-wipe",()=>confirmWipe()]]);const allowed=element=>element&&!element.matches(
-":disabled")&&!element.closest("[inert]")&&element.closest("#app,#modalBody");const run=(handler,element)=>{try{void Promise.resolve(handler(element)).catch(handleError)}catch(error){
-handleError(error)}};document.addEventListener("click",event=>{const button=event.target.closest?.("button[data-workspace-action]");if(!allowed(button))return;const handler=commands.
-get(button.dataset.workspaceAction);if(handler)run(handler,button)});document.addEventListener("submit",event=>{const form=event.target;if(!form.matches?.("form\
-[data-workspace-submit]"))return;event.preventDefault();if(!allowed(form))return;const handler=submissions.get(form.dataset.workspaceSubmit);if(handler)run(handler,
-form)});globalThis.addEventListener?.("edu-question-bank-file-status",()=>{paintQuestionBankFileNotice();globalThis.EduQuestionBankUI?.updateLayout?.()})}let entityCreationBusy=false;
+document.addEventListener("toggle",event=>{const root=event.target;if(root.matches?.("#app .week-settings")&&!root.open&&root.isConnected)closeWeekSettingsEditing(
+root)},true);const commands=new Map([["week-settings-toggle-edit",button=>toggleWeekSettingsEditing(button)],["record-enable-edit",button=>enableRecordEditAccess(
+button)],["session-toggle-edit",button=>toggleSessionEditing(button)],["session-restore-roster",button=>restoreEmptySessionRosterV24(button)],["attendance-remin\
+der-open",button=>openAttendanceReminder(button)],["attendance-reminders-all",()=>openAttendanceRemindersList()],["attendance-reminders-page",button=>pageAttendanceReminders(
+button)],["attendance-reminders-not-held",()=>openAttendanceRemindersList({notHeld:true})],["attendance-reminders-refresh",()=>refreshAttendanceReminders({interactive:true})],
+["attendance-reminder-not-held",()=>markAttendanceReminderNotHeld()],["attendance-reminder-record",button=>recordAttendanceReminder(button)],["attendance-remind\
+er-restore",button=>restoreAttendanceReminder(button)],["year-sessions",()=>refreshYearLessonSessions({interactive:true})],["year-session",button=>openYearSession(
+button.dataset.workspace,button.dataset.key)],["assessment-stage",button=>openAssessmentStage(button)],["karnameh-stage",button=>selectKarnamehStage(button)],["\
+karnameh-excel",button=>openKarnamehExcel(button)],["karnameh-excel-download",button=>downloadKarnamehExcel(button)],["karnameh-excel-mode",button=>setKarnamehExcelDelivery(
+button)],["karnameh-excel-send",button=>shareKarnamehExcel(button)],["karnameh-excel-save",button=>downloadPreparedKarnamehExcel(button)],["karnameh-student",button=>openKarnamehStudent(
+button.dataset.class,button.dataset.key)],["switch-period",button=>switchPeriod(button.dataset.key)],["frozen-report",button=>showFrozenReport(button.dataset.key)],
+["adopt-drafts",button=>adoptDrafts(button.dataset.key)],["approve-drafts",()=>approveDrafts()],["archived-report",button=>showArchivedKarnameh(button.dataset.key)],
+["edit-student",button=>openEditStudentModal(button.dataset.key)],["restore-student",button=>restoreStudent(button.dataset.key)],["copy-membership",()=>saveMembership(
+"copy")],["unfiltered-session",button=>{const day=integer(button.dataset.day),period=integer(button.dataset.period);state.masterFilter=null;closeModal();return clickMasterCell(
+day,period)}],["periods",()=>openAcademicYear()],["term-records",()=>openPeriods()],["backups",()=>openBackups()],["open-wipe",()=>wipeAllV24()],["discard-draft\
+s",()=>discardDrafts()],["review-drafts",()=>reviewDrafts()],["other-drafts",()=>openOtherDrafts()],["create-period",()=>createNewPeriod({fromDialog:true})],["r\
+eopen-period",()=>reopenPeriod()],["finalize-period",()=>finalizePeriod()],["new-second-period",button=>openNewPeriod(button.dataset.key)],["export-period",()=>exportFullBackup()],
+["export-full",()=>exportFullBackup()],["prepare-share-backup",()=>openBackupShare()],["share-backup-file",button=>sharePreparedBackup(button)],["download-share\
+-backup",()=>downloadPreparedBackup()],["close-backup-share",()=>closeBackupShare()],["single-file-choose",()=>chooseSingleFile()],["single-file-save",()=>resumeSingleFile()],
+["question-bank-file-permission",()=>renewQuestionBankFilePermission()],["single-file-stop",()=>disableSingleFile()],["restore-full",()=>restoreFullBackup()],["\
+confirm-import",()=>confirmImport()],["undo",()=>openUndoModal()],["confirm-undo",()=>confirmUndo()],["raw-recovery",()=>rawRecoveryV24()],["choose-import",()=>chooseBackupImport()],
+["print",button=>printCurrentKarnameh(button)],["close",()=>closeModal()],["reload",()=>location.reload()]]);if(globalThis.__EDU_TEST_MODE__){commands.set("dele\
+te-period",button=>openDeletePeriod(button.dataset.key));commands.set("confirm-delete-period",()=>confirmDeletePeriod())}function integer(value){if(!/^\d+$/.test(
+value)||!Number.isSafeInteger(Number(value)))throw Error("پارامتر عملیات نامعتبر است.");return Number(value)}const submissions=new Map([[
+"save-membership",()=>saveMembership()],["save-student",()=>saveStudent()],["save-entity",()=>saveEntityEditor()],["commit-csv",()=>commitCSV()],["confirm-delet\
+ion",()=>confirmDeletion()],["confirm-wipe",()=>confirmWipe()]]);const allowed=element=>element&&!element.matches(":disabled")&&!element.closest("[inert]")&&element.
+closest("#app,#modalBody");const run=(handler,element)=>{try{void Promise.resolve(handler(element)).catch(handleError)}catch(error){handleError(error)}};document.
+addEventListener("click",event=>{const button=event.target.closest?.("button[data-workspace-action]");if(!allowed(button))return;const handler=commands.get(button.
+dataset.workspaceAction);if(handler)run(handler,button)});document.addEventListener("submit",event=>{const form=event.target;if(!form.matches?.("form[data-works\
+pace-submit]"))return;event.preventDefault();if(!allowed(form))return;const handler=submissions.get(form.dataset.workspaceSubmit);if(handler)run(handler,form)});
+globalThis.addEventListener?.("edu-question-bank-file-status",()=>{paintQuestionBankFileNotice();globalThis.EduQuestionBankUI?.updateLayout?.()})}let entityCreationBusy=false;
 async function createEntityV24(event,kind){event.preventDefault();if(entityCreationBusy)return false;const form=event.target,name=String(form.elements.namedItem(
 "name")?.value||"").trim().replace(/\s+/g," ");const target={workspace:workspace?.id,bank:db,connection,installation:typeof installationToken==="undefined"?"":installationToken,
 schoolId:state.schoolId,view:state.view};const sameInstallationTarget=()=>target.workspace===workspace?.id&&target.connection===connection&&target.installation===

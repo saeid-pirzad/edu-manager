@@ -10,7 +10,7 @@
     "format": "prettier --write src scripts audit EduManager.html index.html app.webmanifest source-map.json package.json README.md AUDIT.md docs/ARCHITECTURE.md docs/REFACTOR-RESULT.md docs/AUDIT-2026-10-25.md docs/BUSINESS-RULES.md docs/RELEASE-AUDIT-2026-11-01.md docs/AUDIT-2026-11-02.md .github/workflows/ci.yml",
     "format:check": "prettier --check src scripts audit EduManager.html index.html app.webmanifest source-map.json package.json README.md AUDIT.md docs/ARCHITECTURE.md docs/REFACTOR-RESULT.md docs/AUDIT-2026-10-25.md docs/BUSINESS-RULES.md docs/RELEASE-AUDIT-2026-11-01.md docs/AUDIT-2026-11-02.md .github/workflows/ci.yml",
     "check": "npm run format:check && npm run lint && npm test",
-    "check:release": "npm run check && npm run test:question-bank && npm run test:modular-unit && node audit/period-deletion-browser.cjs && node audit/gradebook-mobile.cjs && node audit/year-editor-browser.cjs && npm run test:annual-backup && npm run test:theme && npm run test:logo && npm run test:navbar && npm run test:school-create && node audit/record-edit-access-browser.cjs && node audit/timetable-edit-access-browser.cjs",
+    "check:release": "npm run check && npm run test:question-bank && npm run test:modular-unit && node audit/period-deletion-browser.cjs && node audit/gradebook-mobile.cjs && node audit/year-editor-browser.cjs && npm run test:annual-backup && npm run test:theme && npm run test:logo && npm run test:navbar && npm run test:school-create && node audit/record-edit-access-browser.cjs && node audit/timetable-edit-access-browser.cjs && npm run test:week-settings",
     "bench": "npm run build:check && node scripts/benchmark.cjs",
     "metrics": "npm run build:check && node scripts/optimization-metrics.cjs",
     "dev": "npm run build && node scripts/serve.cjs",
@@ -23,13 +23,15 @@
     "test:logo": "node audit/logo-browser.cjs",
     "test:navbar": "node audit/navbar-browser.cjs",
     "test:school-create": "node audit/school-create-browser.cjs",
-    "test:question-bank": "node audit/question-bank-browser.cjs && node audit/question-bank-business-browser.cjs && node audit/unified-backup-hub-browser.cjs",
+    "test:question-bank": "node audit/question-bank-browser.cjs && node audit/question-bank-business-browser.cjs && node audit/unified-backup-hub-browser.cjs && npm run test:question-import",
+    "test:question-import": "node audit/question-bank-import-browser.cjs",
     "test:modular-unit": "node audit/modular-unit-browser.cjs && node audit/modular-unit-karnameh-browser.cjs",
     "demo:question-bank": "npm run build:check && node scripts/question-bank-demo.cjs",
     "review:question-bank": "npm run build:check && node scripts/question-bank-review.cjs",
     "audit": "npm test",
     "release:package": "node scripts/package-release.cjs",
-    "test:annual-backup": "node audit/annual-backup-scale.cjs"
+    "test:annual-backup": "node audit/annual-backup-scale.cjs",
+    "test:week-settings": "node audit/week-settings-browser.cjs"
   },
   "engines": {
     "node": ">=22.13.0"

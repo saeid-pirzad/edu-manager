@@ -1,3 +1,96 @@
+let weekSettingsEditAccess = null;
+function weekSettingsAccessMatches() {
+  const access = weekSettingsEditAccess;
+  return (
+    !!access &&
+    state.view === "master" &&
+    access.workspace === workspace.id &&
+    access.connection === connection &&
+    access.data === db &&
+    access.installation === installationToken
+  );
+}
+function assertWeekSettingsEditable() {
+  assertEntityWritable();
+  if (
+    !weekSettingsAccessMatches() ||
+    !weekSettingsEditAccess.root.isConnected ||
+    document.querySelector("#app .week-settings") !==
+      weekSettingsEditAccess.root
+  )
+    throw Error("ابتدا ویرایش تنظیمات روزها و زنگ‌ها را فعال کنید.");
+}
+function closeWeekSettingsEditing(root) {
+  if (weekSettingsEditAccess?.root !== root) return;
+  weekSettingsEditAccess = null;
+  paintWeekSettingsAccess();
+}
+function paintWeekSettingsAccess() {
+  const root = document.querySelector("#app .week-settings");
+  const editable = !!root && weekSettingsAccessMatches();
+  if (!editable) weekSettingsEditAccess = null;
+  if (!root) return;
+  if (editable) weekSettingsEditAccess.root = root;
+  root.dataset.editMode = editable ? "edit" : "view";
+  let fields = root.querySelector(".week-settings-fields");
+  if (!fields) {
+    fields = document.createElement("fieldset");
+    fields.className = "week-settings-fields";
+    const body = root.querySelector(".week-settings-body");
+    body.before(fields);
+    fields.append(body);
+  }
+  fields.disabled = !editable;
+  syncShamsiDisabledInputs();
+  let bar = root.querySelector(".week-settings-access");
+  if (!bar) {
+    bar = document.createElement("div");
+    bar.className = "week-settings-access";
+    fields.before(bar);
+  }
+  bar.innerHTML =
+    "<span>" +
+    (editable ? "ویرایش فعال · ذخیرهٔ خودکار" : "حالت مشاهده") +
+    '</span><button type="button" class="ghost" data-mutating="1" data-workspace-action="week-settings-toggle-edit" aria-pressed="' +
+    editable +
+    '">' +
+    EduIcons.html(editable ? "check" : "edit") +
+    "<span>" +
+    (editable ? "پایان ویرایش" : "فعال‌کردن ویرایش") +
+    "</span></button>";
+}
+function toggleWeekSettingsEditing(button) {
+  assertEntityWritable();
+  const root = document.querySelector("#app .week-settings");
+  if (
+    state.view !== "master" ||
+    !root ||
+    !root.contains(button) ||
+    button.disabled
+  )
+    return;
+  if (weekSettingsAccessMatches()) {
+    const value = root.querySelector("#weekStartInput").value;
+    if (
+      value &&
+      value !== (db.settings.weekStartDate || todayISO()) &&
+      !confirm("تاریخ مبنا ذخیره نشده است؛ تغییر این تاریخ کنار گذاشته شود؟")
+    )
+      return;
+    weekSettingsEditAccess = null;
+    if (typeof closeShamsiCalendar === "function") closeShamsiCalendar();
+    render();
+  } else {
+    weekSettingsEditAccess = {
+      workspace: workspace.id,
+      connection,
+      data: db,
+      installation: installationToken,
+      root,
+    };
+    paintWeekSettingsAccess();
+  }
+}
 function preserveScheduleAction() {
   assertEntityWritable();
   const origin = workspace.id,
@@ -207,6 +300,7 @@ async function clearMasterConfigV24(day, period) {
 }
 
 async function saveWeekStartDateV24() {
+  assertWeekSettingsEditable();
   const isCurrent = preserveScheduleAction();
   const date = validateSessionDate(
     document.getElementById("weekStartInput").value,
@@ -222,6 +316,7 @@ async function saveWeekStartDateV24() {
 }
 
 async function toggleActiveDayV24(day) {
+  assertWeekSettingsEditable();
   const isCurrent = preserveScheduleAction();
   if (!Number.isInteger(day) || day < 0 || day > 6)
     throw Error("روز برنامه باید عدد صحیح صفر تا شش باشد.");
@@ -234,6 +329,7 @@ async function toggleActiveDayV24(day) {
 }
 
 async function changePeriodsV24(delta) {
+  assertWeekSettingsEditable();
   const isCurrent = preserveScheduleAction();
   if (!Number.isInteger(delta))
     throw Error("تغییر تعداد زنگ‌ها باید عدد صحیح باشد.");

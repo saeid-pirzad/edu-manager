@@ -146,9 +146,7 @@
     const header = el("header", undefined, "qb-sheet-header");
     header.append(el("p", "به نام خدا", "qb-sheet-invocation"));
     const motivation = el("p", undefined, "qb-sheet-motivation");
-    const sticker = el("span", "🌱", "qb-sheet-sticker");
-    sticker.setAttribute("aria-hidden", "true");
-    motivation.append(sticker, el("span", "باور کن؛ از پسش برمی‌آیی."));
+    motivation.textContent = "با آرامش بیندیشید و با اطمینان پاسخ دهید.";
     header.append(motivation);
     const meta = el("div", undefined, "qb-sheet-meta");
     for (const [label, value] of [
@@ -740,7 +738,7 @@
       if (e.target.closest("form") && !e.target.closest(".qb-toolbar"))
         dirty = true;
     });
-    async function commit(next) {
+    async function commit(next, { isCurrent = () => true } = {}) {
       if (!alive || busy || confirmation) return false;
       try {
         D.validate(next);
@@ -753,7 +751,9 @@
       content.inert = true;
       try {
         if (!alive) return false;
-        bank = await R.save(next, bank.revision);
+        bank = await R.save(next, bank.revision, {
+          isCurrent: () => alive && pageRoot.isConnected && isCurrent(),
+        });
         if (!alive) return false;
         dirty = false;
         const fileState = F.state();
@@ -1212,6 +1212,49 @@
         body.focus();
       });
     }
+    function importQuestions() {
+      discard(() => {
+        if (!unitId) return;
+        clearTransientMessage();
+        closeOwnedCalendar();
+        content.replaceChildren();
+        const destinationCourse = courseId,
+          destinationUnit = unitId;
+        root.EduQuestionBankImportUI.mount({
+          parent: content,
+          bank,
+          unitId,
+          courseTitle: bank.courses.find((c) => c.id === courseId).title,
+          unitTitle: bank.units.find((u) => u.id === unitId).title,
+          el,
+          button,
+          isCurrent: () =>
+            alive &&
+            courseId === destinationCourse &&
+            unitId === destinationUnit,
+          onPending: (value) => {
+            dirty = value;
+          },
+          onSave: async (next, isCurrent) => {
+            if (await commit(next, { isCurrent })) {
+              render();
+              const note = el(
+                "p",
+                "سؤال‌ها با موفقیت به بخش انتخاب‌شده افزوده شدند.",
+                "qb-import-success",
+              );
+              note.setAttribute("role", "status");
+              content.prepend(note);
+            }
+          },
+          onClose: () =>
+            discard(() => {
+              dirty = false;
+              render();
+            }),
+        });
+      });
+    }
     function questions(parent) {
       const units = bank.units.filter((u) => u.courseId === courseId);
       const unitMap = new Map(units.map((unit) => [unit.id, unit]));
@@ -1279,9 +1322,19 @@
       count.setAttribute("aria-live", "polite");
       headingCopy.append(el("h4", "بانک سؤال‌ها"), range);
       heading.append(headingCopy, count);
-      const add = button("افزودن سؤال", () => editQuestion(), entry);
-      add.dataset.uiVariant = "solid";
+      const entryActions = el("div", undefined, "qb-question-entry-actions");
+      entry.append(entryActions);
+      const add = button("افزودن سؤال", () => editQuestion(), entryActions);
+      add.classList.add("qb-add-question");
       add.disabled = !unitId;
+      const bulk = button("ورود از اکسل", importQuestions, entryActions);
+      bulk.classList.add("qb-import-entry");
+      bulk.dataset.uiTone = "excel";
+      bulk.insertAdjacentHTML("afterbegin", root.EduIcons.html("upload"));
+      bulk.disabled = !unitId;
+      bulk.title = unitId
+        ? "ورود سؤال‌ها از الگوی اکسل به بخش انتخاب‌شده"
+        : `ابتدا یک ${unitLabel()} انتخاب کنید`;
       add.title = unitId
         ? `افزودن سؤال به ${filter.selectedOptions[0].textContent}`
         : `ابتدا یک ${unitLabel()} انتخاب کنید`;
@@ -1499,9 +1552,6 @@
         },
       );
       f.classList.add("qb-builder");
-      const intro = el("div", undefined, "qb-builder-intro qb-field-wide");
-      intro.append(el("p", "انتخاب بخش‌ها ← ترکیب سؤال‌ها ← مشخصات آزمون"));
-      f.append(intro);
       const units = bank.units.filter((u) => u.courseId === courseId),
         scope = el("fieldset", undefined, "qb-unit-selection");
       scope.append(el("legend", `۱ · درس و ${unitLabel()}‌های آزمون`));

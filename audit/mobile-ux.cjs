@@ -858,13 +858,13 @@ async function inspectMobileUx(settlePaint) {
       }),
     );
   add(
-    "backup actions use the red and warm amber palette without changing status colors",
-    backupPalette["export-full"].background === "rgb(192, 20, 27)" &&
-      backupPalette["single-file-choose"].background === "rgb(192, 20, 27)" &&
-      backupPalette["choose-import"].color === "rgb(192, 20, 27)" &&
+    "manual backup actions use distinct green, amber and blue colors",
+    backupPalette["export-full"].background === "rgb(234, 246, 240)" &&
+      backupPalette["single-file-choose"].background === "rgb(237, 244, 255)" &&
+      backupPalette["choose-import"].color === "rgb(29, 79, 145)" &&
       backupPalette["prepare-share-backup"].background ===
         "rgb(255, 250, 237)" &&
-      backupPalette["single-file-save"].color === "rgb(124, 81, 5)",
+      backupPalette["single-file-save"].color === "rgb(22, 102, 78)",
     backupPalette,
   );
   const full = document.querySelector(

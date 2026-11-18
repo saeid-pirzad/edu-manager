@@ -246,6 +246,7 @@ function renderV24() {
   if (!backupPage || !backupHost || !backupHubSession?.isCurrent())
     mountBackupHubPage();
   courseUI.restoreEditor(coursePanel);
+  paintWeekSettingsAccess();
   const app = document.getElementById("app");
   if (db.settings.password && !isAuthenticated) {
     const banner = document.createElement("div");
