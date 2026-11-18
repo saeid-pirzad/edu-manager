@@ -150,11 +150,16 @@ test("navigation refused by the existing editor guard does not dispose the activ
 
 test("school restore selection requires the live school panel and captures its lifetime before clicking", () => {
   const f = fixture();
-  let current = false;
+  let current = false,
+    generation = 0;
   f.hub({});
   f.hide(false);
   f.context.session = {
     isCurrent: (scope) => !scope || (current && scope === "school"),
+    captureTab: (scope) => {
+      const captured = generation;
+      return () => current && scope === "school" && captured === generation;
+    },
   };
   vm.runInContext("backupHubSession=session", f.context);
   assert.throws(() => f.context.chooseBackupImport(), /اطلاعات مدرسه/);
@@ -167,13 +172,77 @@ test("school restore selection requires the live school panel and captures its l
     true,
   );
   current = false;
+  generation++;
   assert.equal(
     vm.runInContext("backupHubImportOrigin.isCurrent()", f.context),
     false,
+  );
+  current = true;
+  assert.equal(
+    vm.runInContext("backupHubImportOrigin.isCurrent()", f.context),
+    false,
+    "returning to the same panel must not revive its abandoned file picker",
   );
   f.cancel();
   assert.equal(
     vm.runInContext("backupHubImportOrigin===null", f.context),
     true,
   );
+});
+
+test("a backup tab action lease expires permanently after a real tab switch", () => {
+  const f = fixture(),
+    panels = {
+      school: {},
+      bank: { replaceChildren() {} },
+    },
+    tabs = ["school", "bank"].map((tab) => ({
+      dataset: { backupTab: tab },
+      setAttribute() {},
+      focus() {},
+    })),
+    root = {
+      isConnected: true,
+      querySelectorAll: () => tabs,
+      addEventListener() {},
+      removeEventListener() {},
+    },
+    host = {};
+  const originalGetElement = f.context.document.getElementById;
+  f.context.document.getElementById = (id) =>
+    ({
+      backupPageHost: host,
+      backupHub: root,
+      backupSchoolPanel: panels.school,
+      backupBankPanel: panels.bank,
+    })[id] || originalGetElement(id);
+  f.context.state = { view: "backups", backupTab: "school" };
+  f.context.connection = {};
+  f.context.workspace = { id: "period" };
+  f.context.backupShareSession = null;
+  f.context.paintSingleFileBanner = () => {};
+  f.context.MutationObserver = class {
+    observe() {}
+    disconnect() {}
+  };
+  f.context.window.EduQuestionBankBackupUI = { mount: () => () => {} };
+  f.context.mountBackupHubPage();
+  const captured = vm.runInContext(
+    "backupHubSession.captureTab('school')",
+    f.context,
+  );
+  assert.equal(captured(), true);
+  vm.runInContext("backupHubSession.selectTab('school')", f.context);
+  assert.equal(captured(), true, "selecting the current tab keeps its lease");
+  vm.runInContext("backupHubSession.selectTab('bank')", f.context);
+  assert.equal(captured(), false);
+  vm.runInContext("backupHubSession.selectTab('school')", f.context);
+  assert.equal(captured(), false, "an abandoned action cannot be revived");
+  const fresh = vm.runInContext(
+    "backupHubSession.captureTab('school')",
+    f.context,
+  );
+  assert.equal(fresh(), true);
+  root.isConnected = false;
+  assert.equal(fresh(), false);
 });

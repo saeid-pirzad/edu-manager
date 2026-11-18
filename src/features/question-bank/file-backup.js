@@ -48,6 +48,27 @@
     }
     const locked = (action) =>
       host.navigator.locks.request("ClassyarQuestionBank.file", action);
+    const cancelled = () => {
+      const error = Error("عملیات فایل لغو شد؛ بخش پشتیبان دیگر فعال نیست.");
+      error.code = "question-bank-file-cancelled";
+      return error;
+    };
+    const assertCurrent = (isCurrent) => {
+      if (!isCurrent()) throw cancelled();
+    };
+    const isCancelled = (error) =>
+      error?.code === "question-bank-file-cancelled";
+    function restoreStatus(previous) {
+      if (previous && status.state === "busy")
+        notify(previous.state, previous.message);
+    }
+    const writtenAfterClose = (written = true) =>
+      Error(
+        (written
+          ? "فایل نوشته شد، اما ثبت اتصال کامل نشد؛ "
+          : "بستن فایل آغاز شد و ممکن است محتوای آن تغییر کرده باشد؛ ") +
+          "بخش پشتیبان بسته شده است. وضعیت فایل و اتصال را بررسی کنید.",
+      );
     const counts = (bank) =>
       Object.fromEntries(
         ["courses", "units", "questions", "exams"].map((key) => [
@@ -101,27 +122,44 @@
     function failed(error) {
       notify(
         "error",
-        `${error.message || error} فایل به‌روز نشد؛ پشتیبان دستی بگیرید.`,
+        `${error.message || error} وضعیت فایل را بررسی کنید؛ پشتیبان دستی بگیرید.`,
       );
       return false;
     }
-    async function write(handle, json, expectedHash, allowEmpty = false) {
-      let stream;
+    async function write(
+      handle,
+      json,
+      expectedHash,
+      allowEmpty = false,
+      isCurrent = () => true,
+    ) {
+      let stream,
+        closeStarted = false,
+        committed = false;
       try {
         // Source reads and serialization can yield after the earlier inspection.
         // Recheck the destination before opening a stream that could replace it.
         const before = await inspect(handle, allowEmpty);
+        assertCurrent(isCurrent);
         if (before.hash !== expectedHash)
           throw Error("فایل پیش از نوشتن تغییر کرد؛ بازنویسی نشد.");
         stream = await handle.createWritable();
+        assertCurrent(isCurrent);
         await stream.write(json);
+        assertCurrent(isCurrent);
+        // Closing commits the file. Once it starts, finishing verification is
+        // necessary even if the page is retired while the close is pending.
+        closeStarted = true;
         await stream.close();
+        committed = true;
         stream = null;
         const verified = await inspect(handle);
         if (verified.text !== json)
           throw Error("محتوای فایل پس از نوشتن تأیید نشد.");
         return verified.hash;
       } catch (error) {
+        if (closeStarted) error.fileCommitStarted = true;
+        if (committed) error.fileCommitted = true;
         if (stream) await stream.abort().catch(() => {});
         throw error;
       }
@@ -136,21 +174,27 @@
       approved = false,
       expectedId,
       expectedRevision,
+      isCurrent = () => true,
     } = {}) {
-      if (!supported()) return false;
+      if (!supported() || !isCurrent()) return false;
       return locked(async () => {
+        const previousStatus = { ...status };
+        let fileWritten = false;
         try {
+          assertCurrent(isCurrent);
           config = await repository.readBackup();
+          assertCurrent(isCurrent);
           if (!config) {
             notify("inactive", "ذخیرهٔ خودکار فایل فعال نیست.");
             return false;
           }
           if (expectedId && config.id !== expectedId)
             throw Error("اتصال فایل تغییر کرد؛ نوشته نشد.");
-          if (
-            (await config.handle.queryPermission({ mode: "readwrite" })) !==
-            "granted"
-          ) {
+          const permission = await config.handle.queryPermission({
+            mode: "readwrite",
+          });
+          assertCurrent(isCurrent);
+          if (permission !== "granted") {
             notify("permission", "مجوز فایل نیاز به تأیید دارد.");
             return false;
           }
@@ -162,11 +206,13 @@
             return false;
           }
           const current = await inspect(config.handle);
+          assertCurrent(isCurrent);
           if (current.hash !== config.hash)
             throw Error(
               "فایل بیرون از این اتصال تغییر کرده؛ فایل تازه‌ای انتخاب کنید.",
             );
           const bank = D.validate(await repository.read());
+          assertCurrent(isCurrent);
           if (approved && bank.revision !== expectedRevision)
             throw Error("اطلاعات پس از تأیید تغییر کرد؛ دوباره بررسی کنید.");
           const baseline = counts(bank);
@@ -175,8 +221,9 @@
             (dropped(config.counts, baseline) ||
               dropped(counts(current.bank), baseline))
           ) {
-            config = { ...config, suspended: "source-drop" };
-            await repository.writeBackup(config);
+            const next = { ...config, suspended: "source-drop" };
+            await repository.writeBackup(next, { isCurrent });
+            config = next;
             notify(
               "paused",
               "کاهش شدید اطلاعات شناسایی شد؛ برای حفظ نسخهٔ قبلی، فایل تغییر نکرد. ادامه فقط با تأیید شماست.",
@@ -186,25 +233,44 @@
           const json = D.size(bank);
           if (current.text === json) {
             if (config.suspended) {
-              delete config.suspended;
-              await repository.writeBackup(config);
+              const next = { ...config };
+              delete next.suspended;
+              await repository.writeBackup(next, { isCurrent });
+              config = next;
             }
             active();
             return true;
           }
           notify("busy", "در حال ذخیره و بررسی فایل بانک سؤال…");
-          const fingerprint = await write(config.handle, json, current.hash);
-          config = {
+          const fingerprint = await write(
+            config.handle,
+            json,
+            current.hash,
+            false,
+            isCurrent,
+          );
+          fileWritten = true;
+          assertCurrent(isCurrent);
+          const next = {
             ...config,
             hash: fingerprint,
             counts: baseline,
             savedAt: new Date().toISOString(),
           };
-          delete config.suspended;
-          await repository.writeBackup(config);
+          delete next.suspended;
+          await repository.writeBackup(next, { isCurrent });
+          config = next;
           active();
           return true;
         } catch (error) {
+          if (isCancelled(error) || !isCurrent()) {
+            if (fileWritten || error.fileCommitStarted)
+              return failed(
+                writtenAfterClose(fileWritten || error.fileCommitted),
+              );
+            restoreStatus(previousStatus);
+            return false;
+          }
           return failed(error);
         }
       });
@@ -243,8 +309,8 @@
     function suggestedName() {
       return "Classyar-QuestionBank.json";
     }
-    async function choose() {
-      if (choosing || clearing || !supported()) return false;
+    async function choose({ isCurrent = () => true } = {}) {
+      if (choosing || clearing || !supported() || !isCurrent()) return false;
       choosing = true;
       try {
         // Invoke the picker before awaiting storage, preserving the click gesture.
@@ -265,90 +331,138 @@
           selection,
           initialBank,
         ]);
+        assertCurrent(isCurrent);
         if (handle.kind !== "file" || !/\.json$/i.test(handle.name))
           throw Error("فقط فایل JSON بانک سؤال انتخاب کنید.");
         return await locked(async () => {
-          config = await repository.readBackup();
-          const before = await inspect(handle, true);
-          const bank = D.validate(await repository.read());
-          if (bank.revision !== selectedFrom.revision)
-            throw Error(
-              "اطلاعات بانک هنگام انتخاب فایل تغییر کرد؛ فایل نوشته نشد. دوباره فایل را انتخاب کنید.",
+          const previousStatus = { ...status };
+          let fileWritten = false;
+          try {
+            assertCurrent(isCurrent);
+            config = await repository.readBackup();
+            assertCurrent(isCurrent);
+            const before = await inspect(handle, true);
+            assertCurrent(isCurrent);
+            const bank = D.validate(await repository.read());
+            assertCurrent(isCurrent);
+            if (bank.revision !== selectedFrom.revision)
+              throw Error(
+                "اطلاعات بانک هنگام انتخاب فایل تغییر کرد؛ فایل نوشته نشد. دوباره فایل را انتخاب کنید.",
+              );
+            const json = D.size(bank);
+            // Never silently replace a populated, different backup during selection.
+            if (before.bank && contents(before.bank) !== contents(bank))
+              throw Error(
+                "برای حفظ محتوای این فایل، فایل تازه‌ای بسازید؛ اگر قصد بازیابی دارید از بخش بازیابی استفاده کنید.",
+              );
+            const rechecked = await inspect(handle, true);
+            assertCurrent(isCurrent);
+            if (rechecked.hash !== before.hash)
+              throw Error("فایل هنگام انتخاب تغییر کرد؛ نوشته نشد.");
+            notify("busy", "در حال اولین ذخیره و بررسی فایل…");
+            const fingerprint = await write(
+              handle,
+              json,
+              rechecked.hash,
+              true,
+              isCurrent,
             );
-          const json = D.size(bank);
-          // Never silently replace a populated, different backup during selection.
-          if (before.bank && contents(before.bank) !== contents(bank))
-            throw Error(
-              "برای حفظ محتوای این فایل، فایل تازه‌ای بسازید؛ اگر قصد بازیابی دارید از بخش بازیابی استفاده کنید.",
-            );
-          const rechecked = await inspect(handle, true);
-          if (rechecked.hash !== before.hash)
-            throw Error("فایل هنگام انتخاب تغییر کرد؛ نوشته نشد.");
-          notify("busy", "در حال اولین ذخیره و بررسی فایل…");
-          const fingerprint = await write(handle, json, rechecked.hash, true);
-          const next = {
-            id: host.crypto.randomUUID(),
-            handle,
-            hash: fingerprint,
-            counts: counts(bank),
-            savedAt: new Date().toISOString(),
-          };
-          await repository.writeBackup(next);
-          config = next;
-          active();
-          return true;
+            fileWritten = true;
+            assertCurrent(isCurrent);
+            const next = {
+              id: host.crypto.randomUUID(),
+              handle,
+              hash: fingerprint,
+              counts: counts(bank),
+              savedAt: new Date().toISOString(),
+            };
+            await repository.writeBackup(next, { isCurrent });
+            config = next;
+            active();
+            return true;
+          } catch (error) {
+            if (isCancelled(error) || !isCurrent()) {
+              if (fileWritten || error.fileCommitStarted)
+                return failed(
+                  writtenAfterClose(fileWritten || error.fileCommitted),
+                );
+              restoreStatus(previousStatus);
+              return false;
+            }
+            throw error;
+          }
         });
       } catch (error) {
-        return error.name === "AbortError" ? false : failed(error);
+        return error.name === "AbortError" || isCancelled(error)
+          ? false
+          : failed(error);
       } finally {
         choosing = false;
       }
     }
-    async function saveNow(approve = () => false) {
-      if (clearing || !supported() || !config) return false;
+    async function saveNow(
+      approve = () => false,
+      { isCurrent = () => true } = {},
+    ) {
+      if (clearing || !supported() || !config || !isCurrent()) return false;
       const target = config;
       try {
         // Permission must also be requested directly in the user's click.
-        if (
-          (await target.handle.requestPermission({ mode: "readwrite" })) !==
-          "granted"
-        ) {
+        const permission = await target.handle.requestPermission({
+          mode: "readwrite",
+        });
+        assertCurrent(isCurrent);
+        if (permission !== "granted") {
           notify("permission", "اجازهٔ نوشتن داده نشد؛ فایل تغییر نکرد.");
           return false;
         }
-        if (await sync({ expectedId: target.id })) return true;
+        if (await sync({ expectedId: target.id, isCurrent })) return true;
+        assertCurrent(isCurrent);
         if (status.state !== "paused") return false;
         const preview = D.validate(await repository.read());
+        assertCurrent(isCurrent);
         const accepted = await approve(target.handle.name, counts(preview));
         if (!accepted) return false;
+        assertCurrent(isCurrent);
         const current = await repository.readBackup();
+        assertCurrent(isCurrent);
         if (current?.id !== target.id)
           throw Error("اتصال فایل تغییر کرده است؛ دوباره بررسی کنید.");
         return sync({
           approved: true,
           expectedId: target.id,
           expectedRevision: preview.revision,
+          isCurrent,
         });
       } catch (error) {
+        if (isCancelled(error) || !isCurrent()) return false;
         return failed(error);
       }
     }
-    async function stop() {
+    async function stop({ isCurrent = () => true } = {}) {
+      if (!isCurrent()) return false;
       if (clearing)
         throw Error("پاک‌سازی بانک سؤال در حال انجام است؛ کمی صبر کنید.");
       if (!supported()) return false;
       const expectedId = config?.id;
       return locked(async () => {
-        const current = await repository.readBackup();
-        if (current?.id !== expectedId)
-          throw Error(
-            "اتصال فایل تغییر کرده؛ ابتدا وضعیت را دوباره بررسی کنید.",
-          );
-        await repository.writeBackup(null);
-        config = null;
-        host.clearTimeout(debounce);
-        notify("inactive", "اتصال قطع شد؛ فایل موجود حذف نشده است.");
-        return true;
+        try {
+          if (!isCurrent()) return false;
+          const current = await repository.readBackup();
+          if (!isCurrent()) return false;
+          if (current?.id !== expectedId)
+            throw Error(
+              "اتصال فایل تغییر کرده؛ ابتدا وضعیت را دوباره بررسی کنید.",
+            );
+          await repository.writeBackup(null, { isCurrent });
+          config = null;
+          host.clearTimeout(debounce);
+          notify("inactive", "اتصال قطع شد؛ فایل موجود حذف نشده است.");
+          return true;
+        } catch (error) {
+          if (isCancelled(error) || !isCurrent()) return false;
+          throw error;
+        }
       });
     }
     async function suspend() {

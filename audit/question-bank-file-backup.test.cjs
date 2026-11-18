@@ -87,7 +87,8 @@ function fixture() {
     },
     readBackup: async () =>
       config ? { ...config, counts: { ...config.counts } } : null,
-    writeBackup: async (value) => {
+    writeBackup: async (value, { isCurrent = () => true } = {}) => {
+      if (!isCurrent()) throw Error("operation cancelled");
       if (failPersist) throw Error("storage full");
       config = value ? { ...value } : null;
     },
@@ -101,6 +102,7 @@ function fixture() {
       kind: "file",
       writes: 0,
       opens: 0,
+      aborts: 0,
       requests: 0,
       getFile: async () => ({
         size: Buffer.byteLength(text),
@@ -123,7 +125,9 @@ function fixture() {
             text = pending;
             handle.writes++;
           },
-          abort: async () => {},
+          abort: async () => {
+            handle.aborts++;
+          },
         };
       },
     };
@@ -678,3 +682,330 @@ test("automatic schedule debounces saves and checks periodically without a selec
   f.service.dispose();
   assert.equal(f.timers.size, 0);
 });
+
+function deferred() {
+  let resolve;
+  const promise = new Promise((done) => (resolve = done));
+  return { promise, resolve };
+}
+
+test("retired manual file controls cannot start a picker, permission request or disconnect", async () => {
+  const f = fixture();
+  await f.service.choose();
+  const original = f.target.text(),
+    connection = f.config(),
+    requests = f.target.handle.requests;
+  let pickers = 0;
+  f.host.showSaveFilePicker = () => {
+    pickers++;
+    throw Error("retired picker");
+  };
+  const options = { isCurrent: () => false };
+  assert.equal(await f.service.choose(options), false);
+  assert.equal(await f.service.saveNow(undefined, options), false);
+  assert.equal(await f.service.stop(options), false);
+  assert.equal(pickers, 0);
+  assert.equal(f.target.handle.requests, requests);
+  assert.equal(f.config().id, connection.id);
+  assert.equal(f.target.text(), original);
+});
+
+test("a late picker cannot replace the prior connection or write after leaving the backup panel", async () => {
+  const f = fixture();
+  await f.service.choose();
+  const original = f.target.text(),
+    connection = f.config(),
+    next = f.file("Classyar-QuestionBank(8).json"),
+    selection = deferred();
+  let current = true;
+  f.host.showSaveFilePicker = () => selection.promise;
+  const operation = f.service.choose({ isCurrent: () => current });
+  current = false;
+  selection.resolve(next.handle);
+  assert.equal(await operation, false);
+  assert.equal(next.handle.opens, 0);
+  assert.equal(next.text(), "");
+  assert.equal(f.config().id, connection.id);
+  assert.equal(f.target.text(), original);
+  assert.equal(f.service.state().state, "active");
+});
+
+test("retiring during the final destination read cancels before opening a file stream", async () => {
+  const f = fixture();
+  await f.service.choose();
+  const original = f.target.text(),
+    connection = f.config(),
+    next = f.file("Classyar-QuestionBank(8).json"),
+    waiting = deferred(),
+    release = deferred(),
+    getFile = next.handle.getFile;
+  let current = true,
+    reads = 0;
+  next.handle.getFile = async () => {
+    if (++reads === 3) {
+      waiting.resolve();
+      await release.promise;
+    }
+    return getFile();
+  };
+  f.choose(next);
+  const operation = f.service.choose({ isCurrent: () => current });
+  await waiting.promise;
+  current = false;
+  release.resolve();
+  assert.equal(await operation, false);
+  assert.equal(next.handle.opens, 0);
+  assert.equal(next.text(), "");
+  assert.equal(f.config().id, connection.id);
+  assert.equal(f.target.text(), original);
+  assert.equal(f.service.state().state, "active");
+});
+
+for (const stage of ["open", "write"])
+  test(`retiring during stream ${stage} aborts its temporary contents before close`, async () => {
+    const f = fixture();
+    await f.service.choose();
+    const original = f.target.text(),
+      connection = f.config(),
+      next = f.file("Classyar-QuestionBank(8).json"),
+      waiting = deferred(),
+      release = deferred(),
+      createWritable = next.handle.createWritable;
+    let current = true;
+    next.handle.createWritable = async () => {
+      const stream = await createWritable();
+      if (stage === "open") {
+        waiting.resolve();
+        await release.promise;
+      } else {
+        const write = stream.write;
+        stream.write = async (text) => {
+          await write(text);
+          waiting.resolve();
+          await release.promise;
+        };
+      }
+      return stream;
+    };
+    f.choose(next);
+    const operation = f.service.choose({ isCurrent: () => current });
+    await waiting.promise;
+    current = false;
+    release.resolve();
+    assert.equal(await operation, false);
+    assert.equal(next.handle.aborts, 1);
+    assert.equal(next.handle.writes, 0);
+    assert.equal(next.text(), "");
+    assert.equal(f.config().id, connection.id);
+    assert.equal(f.target.text(), original);
+    assert.equal(f.service.state().state, "active");
+  });
+
+test("retiring after close begins reports the committed file and keeps the prior connection", async () => {
+  const f = fixture();
+  await f.service.choose();
+  const original = f.target.text(),
+    connection = f.config(),
+    next = f.file("Classyar-QuestionBank(8).json"),
+    waiting = deferred(),
+    release = deferred(),
+    createWritable = next.handle.createWritable;
+  let current = true;
+  next.handle.createWritable = async () => {
+    const stream = await createWritable(),
+      close = stream.close;
+    stream.close = async () => {
+      waiting.resolve();
+      await release.promise;
+      await close();
+    };
+    return stream;
+  };
+  f.choose(next);
+  const operation = f.service.choose({ isCurrent: () => current });
+  await waiting.promise;
+  current = false;
+  release.resolve();
+  assert.equal(await operation, false);
+  assert.equal(next.handle.writes, 1);
+  assert.equal(JSON.parse(next.text()).revision, f.bank().revision);
+  assert.equal(f.config().id, connection.id);
+  assert.equal(f.target.text(), original);
+  assert.equal(f.service.state().state, "error");
+  assert.match(f.service.state().message, /فایل نوشته شد/);
+  assert.doesNotMatch(f.service.state().message, /فایل به‌روز نشد/);
+});
+
+test("a late permission grant cannot save from a retired panel and automatic sync remains independent", async () => {
+  const f = fixture();
+  await f.service.choose();
+  const original = f.target.text(),
+    connection = f.config(),
+    permission = deferred();
+  f.change((bank) => (bank.questions[0].text = "new question"));
+  let current = true;
+  f.target.handle.requestPermission = () => permission.promise;
+  const operation = f.service.saveNow(undefined, {
+    isCurrent: () => current,
+  });
+  current = false;
+  permission.resolve("granted");
+  assert.equal(await operation, false);
+  assert.equal(f.config().id, connection.id);
+  assert.equal(f.target.text(), original);
+  assert.equal(f.target.handle.writes, 1);
+  assert.equal(await f.service.sync(), true);
+  assert.equal(JSON.parse(f.target.text()).questions[0].text, "new question");
+});
+
+for (const action of ["choose", "saveNow", "stop"])
+  test(`a queued manual ${action} rechecks the page lifetime after acquiring its lock`, async () => {
+    const f = fixture();
+    await f.service.choose();
+    const original = f.target.text(),
+      connection = f.config(),
+      next = f.file("Classyar-QuestionBank(8).json"),
+      waiting = deferred(),
+      release = deferred(),
+      lock = f.host.navigator.locks.request;
+    let current = true;
+    f.change((bank) => (bank.questions[0].text = "new question"));
+    f.choose(next);
+    f.host.navigator.locks.request = (name, run) =>
+      lock(name, async () => {
+        waiting.resolve();
+        await release.promise;
+        return run();
+      });
+    const options = { isCurrent: () => current },
+      operation =
+        action === "saveNow"
+          ? f.service.saveNow(undefined, options)
+          : f.service[action](options);
+    await waiting.promise;
+    current = false;
+    release.resolve();
+    assert.equal(await operation, false);
+    assert.equal(next.handle.opens, 0);
+    assert.equal(f.config().id, connection.id);
+    assert.equal(f.target.text(), original);
+    assert.equal(f.target.handle.writes, 1);
+  });
+
+test("replacement approval from a retired panel cannot resume a suspended file", async () => {
+  const f = fixture();
+  await f.service.choose();
+  await f.service.suspend();
+  const original = f.target.text(),
+    connection = f.config(),
+    waiting = deferred(),
+    approval = deferred();
+  let current = true;
+  f.change((bank) => (bank.questions[0].text = "new question"));
+  const operation = f.service.saveNow(
+    () => {
+      waiting.resolve();
+      return approval.promise;
+    },
+    { isCurrent: () => current },
+  );
+  await waiting.promise;
+  current = false;
+  approval.resolve(true);
+  assert.equal(await operation, false);
+  assert.equal(f.config().id, connection.id);
+  assert.equal(f.config().suspended, "restore");
+  assert.equal(f.target.text(), original);
+  assert.equal(f.target.handle.writes, 1);
+});
+
+for (const state of ["active", "permission", "error"])
+  test(`aborting a scoped replacement restores the prior ${state} status`, async () => {
+    const f = fixture();
+    await f.service.choose();
+    if (state === "permission") {
+      f.target.permission("prompt");
+      await f.service.sync();
+    } else if (state === "error") {
+      f.change((bank) => (bank.questions[0].text = "new question"));
+      f.target.fail(true);
+      await f.service.sync();
+    }
+    const previous = f.service.state(),
+      original = f.target.text(),
+      connection = f.config(),
+      next = f.file("Classyar-QuestionBank(8).json"),
+      waiting = deferred(),
+      release = deferred(),
+      createWritable = next.handle.createWritable;
+    assert.equal(previous.state, state);
+    let current = true;
+    next.handle.createWritable = async () => {
+      const stream = await createWritable(),
+        write = stream.write;
+      stream.write = async (text) => {
+        await write(text);
+        waiting.resolve();
+        await release.promise;
+      };
+      return stream;
+    };
+    f.choose(next);
+    const operation = f.service.choose({ isCurrent: () => current });
+    await waiting.promise;
+    current = false;
+    release.resolve();
+    assert.equal(await operation, false);
+    assert.deepEqual(f.service.state(), previous);
+    assert.equal(next.handle.aborts, 1);
+    assert.equal(next.text(), "");
+    assert.equal(f.config().id, connection.id);
+    assert.equal(f.target.text(), original);
+  });
+
+for (const action of ["choose", "saveNow", "stop"])
+  test(`retiring during queued metadata persistence cannot publish a successful manual ${action}`, async () => {
+    const f = fixture();
+    await f.service.choose();
+    const original = f.target.text(),
+      connection = f.config(),
+      next = f.file("Classyar-QuestionBank(8).json"),
+      waiting = deferred(),
+      release = deferred(),
+      writeBackup = f.repository.writeBackup;
+    let current = true;
+    f.change((bank) => (bank.questions[0].text = "new question"));
+    f.choose(next);
+    f.repository.writeBackup = async (config, options) => {
+      waiting.resolve();
+      await release.promise;
+      return writeBackup(config, options);
+    };
+    const options = { isCurrent: () => current },
+      operation =
+        action === "saveNow"
+          ? f.service.saveNow(undefined, options)
+          : f.service[action](options);
+    await waiting.promise;
+    current = false;
+    release.resolve();
+    assert.equal(await operation, false);
+    assert.deepEqual(f.config(), connection);
+    if (action === "stop") {
+      assert.equal(f.service.state().state, "active");
+      assert.equal(f.target.text(), original);
+    } else {
+      assert.equal(f.service.state().state, "error");
+      assert.match(f.service.state().message, /فایل نوشته شد/);
+      if (action === "choose") {
+        assert.equal(next.handle.writes, 1);
+        assert.equal(f.target.text(), original);
+      } else {
+        assert.equal(f.target.handle.writes, 2);
+        assert.equal(
+          JSON.parse(f.target.text()).questions[0].text,
+          "new question",
+        );
+      }
+    }
+  });

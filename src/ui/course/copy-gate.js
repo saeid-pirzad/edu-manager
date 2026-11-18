@@ -22,11 +22,39 @@ async function add(e) {
   });
   if (opened !== false) await save();
 }
+function preserveCourseAction(message) {
+  // Saving drafts may advance the revision and redraw the same page. Preserve
+  // its actual data/installation and selection instead of a DOM or revision lease.
+  const requested = { ...api.context() },
+    selection = { ...api.state() },
+    identity = api.actionContext(),
+    year = api.year();
+  return () => {
+    writable();
+    const context = api.context(),
+      current = api.actionContext(),
+      state = api.state();
+    if (
+      requested.id !== context.id ||
+      requested.closed !== context.closed ||
+      year !== api.year() ||
+      Object.keys(identity).some((key) => identity[key] !== current[key]) ||
+      ["view", "tab", "schoolId", "classId", "lessonId"].some(
+        (key) => selection[key] !== state[key],
+      )
+    )
+      throw Error(message);
+  };
+}
 async function copy(lid) {
   writable();
+  const assertCurrent = preserveCourseAction(
+    "ترم یا کلاس هنگام آماده‌سازی کپی تغییر کرد؛ دوباره درس را انتخاب کنید.",
+  );
   await api.flushDrafts({ strict: true });
+  assertCurrent();
   const c = currentClass(),
-    l = c.lessons.find((l) => l.id === lid);
+    l = c?.lessons.find((l) => l.id === lid);
   if (!l) return;
   const next = P.freshCopy(l, api.uid(), api.year(), api.uid);
   next.name = l.name + " (کپی)";
@@ -36,25 +64,17 @@ async function copy(lid) {
       api.year(),
     );
   Object.assign(next.gradingPolicy, P.identity(next, api.year()));
-  await open("", next);
+  await open("", next, { assertCurrent });
 }
 async function gate(lid, pid, sid, value) {
   writable();
   if (!["", "yes", "no"].includes(value))
     throw Error("وضعیت معیار نامعتبر است.");
-  const requested = {
-    workspace: api.context().id,
-    classId: api.state().classId,
-  };
+  const assertCurrent = preserveCourseAction(
+    "ترم یا کلاس هنگام ذخیره معیار تغییر کرد؛ دوباره جدول را باز کنید.",
+  );
   await api.flushDrafts({ strict: true });
-  writable();
-  if (
-    requested.workspace !== api.context().id ||
-    requested.classId !== api.state().classId
-  )
-    throw Error(
-      "ترم یا کلاس هنگام ذخیره معیار تغییر کرد؛ دوباره جدول را باز کنید.",
-    );
+  assertCurrent();
   const c = currentClass(),
     l = c.lessons.find((l) => l.id === lid),
     p = l?.poudmans.find((p) => p.id === pid);
@@ -76,6 +96,7 @@ async function gate(lid, pid, sid, value) {
     classId: c.id,
     action: "تأیید معیارهای الزامی پودمان",
   });
+  assertCurrent();
   api.render();
   if (inModal)
     api.showModal("ثبت نمرات براساس قواعد درس", table(c, l, null, true));

@@ -1,4 +1,9 @@
-async function open(lid = "", seed, { editNames = false } = {}) {
+async function open(
+  lid = "",
+  seed,
+  { editNames = false, assertCurrent = () => {} } = {},
+) {
+  assertCurrent();
   const activeForm = document.getElementById("courseEditor");
   if (saving || activeForm?.getAttribute("aria-busy") === "true") return false;
   if (
@@ -12,6 +17,7 @@ async function open(lid = "", seed, { editNames = false } = {}) {
     classId: api.state().classId,
   };
   await api.flushDrafts({ strict: true });
+  assertCurrent();
   if (saving) return false;
   if (
     requested.workspace !== api.context().id ||
@@ -31,6 +37,7 @@ async function open(lid = "", seed, { editNames = false } = {}) {
       original && api.courseHistory
         ? await api.courseHistory(c.id, original.id)
         : null;
+  assertCurrent();
   if (
     requested.workspace !== api.context().id ||
     requested.classId !== api.state().classId ||

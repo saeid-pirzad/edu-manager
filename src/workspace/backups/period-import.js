@@ -160,6 +160,7 @@ function mountBackupHubPage() {
   };
   let alive = true;
   let activeTab = "";
+  let tabGeneration = 0;
   let disposeBank = null;
   const isCurrent = (expectedTab) =>
     alive &&
@@ -184,6 +185,7 @@ function mountBackupHubPage() {
   const selectTab = (next, focus = false) => {
     if (!isCurrent() || !panels[next]) return;
     if (next !== activeTab) {
+      tabGeneration++;
       if (backupShareSession?.hub === session)
         closeBackupShare({ restoreFocus: false });
       disposeBank?.();
@@ -227,7 +229,11 @@ function mountBackupHubPage() {
   const observer = new MutationObserver(() => {
     if (!isCurrent()) dispose();
   });
-  const session = { isCurrent, dispose, selectTab };
+  const captureTab = (expectedTab) => {
+    const generation = tabGeneration;
+    return () => isCurrent(expectedTab) && generation === tabGeneration;
+  };
+  const session = { isCurrent, captureTab, dispose, selectTab };
   backupHubSession = session;
   observer.observe(document.getElementById("app"), { childList: true });
   root.addEventListener("click", handleTabClick);
@@ -244,7 +250,7 @@ function chooseBackupImport() {
   const input = document.getElementById("importFile");
   backupHubImportOrigin?.cleanup();
   backupHubImportOrigin = session
-    ? { isCurrent: () => session.isCurrent("school") }
+    ? { isCurrent: session.captureTab("school") }
     : null;
   if (backupHubImportOrigin) {
     const origin = backupHubImportOrigin;

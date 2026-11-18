@@ -201,6 +201,138 @@ function appearanceDifferences(school, bank) {
   return differences;
 }
 
+async function inspectRetiredAutomaticPicker(scope) {
+  const {
+    __hubSchoolConnection,
+    __hubTick,
+    __hubStableSchool,
+    __hubSameSchoolConnection,
+  } = window;
+  const picker = window.showSaveFilePicker,
+    directory = await navigator.storage.getDirectory(),
+    prefix =
+      scope === "school" ? "Classyar-Classroom" : "Classyar-QuestionBank",
+    priorHandle = await directory.getFileHandle(prefix + "(901).json", {
+      create: true,
+    }),
+    metrics = { pickers: 0, reads: 0, streams: 0, writes: 0, closes: 0 };
+  let release,
+    lateText = "";
+  const lateHandle = {
+    kind: "file",
+    name: prefix + "(902).json",
+    queryPermission: async () => "granted",
+    requestPermission: async () => "granted",
+    isSameEntry: async () => false,
+    getFile: async () => {
+      metrics.reads++;
+      return new File([lateText], lateHandle.name, {
+        type: "application/json",
+      });
+    },
+    createWritable: async () => {
+      metrics.streams++;
+      let pending = lateText;
+      return {
+        write: async (value) => {
+          metrics.writes++;
+          pending = value;
+        },
+        close: async () => {
+          metrics.closes++;
+          lateText = pending;
+        },
+        abort: async () => {},
+      };
+    },
+  };
+  const connection = () =>
+      scope === "school"
+        ? __hubSchoolConnection()
+        : EduQuestionBankRepository.readBackup(),
+    handleMatches = async (config) =>
+      !!config?.savedAt &&
+      !!config.handle &&
+      (await config.handle.isSameEntry(priorHandle)),
+    choose = () => {
+      const panel = document.getElementById(
+        scope === "school" ? "backupSchoolPanel" : "backupBankPanel",
+      );
+      const automatic = panel.querySelector("details.backup-automatic");
+      if (!automatic.open) automatic.querySelector("summary").click();
+      const button = panel.querySelector(
+        scope === "school"
+          ? '[data-workspace-action="single-file-choose"]'
+          : ".qb-file-choose",
+      );
+      if (button.disabled) throw Error("Automatic picker control is disabled");
+      button.click();
+    };
+  try {
+    closeModal();
+    await __hubTick();
+    await EduV24.openBackups({ tab: scope });
+    window.showSaveFilePicker = async () => priorHandle;
+    choose();
+    let attached = false;
+    for (let attempt = 0; attempt < 150; attempt++) {
+      if (await handleMatches(await connection())) {
+        attached = true;
+        break;
+      }
+      await __hubTick();
+    }
+    if (!attached) throw Error("Prior automatic file did not become connected");
+    const priorText = await (await priorHandle.getFile()).text(),
+      schoolBefore = await __hubSchoolConnection(),
+      bankBefore = await EduQuestionBankRepository.readBackup(),
+      schoolData = await __hubStableSchool(),
+      bankData = JSON.stringify(await EduQuestionBankRepository.read());
+    window.showSaveFilePicker = () => {
+      metrics.pickers++;
+      return new Promise((resolve) => (release = resolve));
+    };
+    choose();
+    if (!release || metrics.pickers !== 1)
+      throw Error("The real choose click did not enter the delayed picker");
+    const away = scope === "school" ? "bank" : "school";
+    document
+      .querySelector('#backupHub [data-backup-tab="' + away + '"]')
+      .click();
+    await __hubTick();
+    document
+      .querySelector('#backupHub [data-backup-tab="' + scope + '"]')
+      .click();
+    await __hubTick();
+    release(lateHandle);
+    // A stale selection must stop immediately after the picker resolves,
+    // before even reading its returned file or starting asynchronous storage.
+    await __hubTick();
+    await __hubTick();
+    const bankAfter = await EduQuestionBankRepository.readBackup();
+    return {
+      ...metrics,
+      returnedToScope:
+        document
+          .querySelector('#backupHub [data-backup-tab="' + scope + '"]')
+          .getAttribute("aria-selected") === "true",
+      schoolConnectionUnchanged: await __hubSameSchoolConnection(schoolBefore),
+      bankConnectionUnchanged:
+        JSON.stringify(bankAfter) === JSON.stringify(bankBefore) &&
+        (!bankBefore?.handle ||
+          (await bankBefore.handle.isSameEntry(bankAfter.handle))),
+      priorFileUnchanged:
+        (await (await priorHandle.getFile()).text()) === priorText,
+      lateFileUnchanged: lateText === "",
+      schoolDataUnchanged: (await __hubStableSchool()) === schoolData,
+      bankDataUnchanged:
+        JSON.stringify(await EduQuestionBankRepository.read()) === bankData,
+    };
+  } finally {
+    window.showSaveFilePicker = picker;
+  }
+}
+
 main({
   stage: "unified-backup-hub",
   async runExtra({ cdp, evaluate, cases, root, delay }) {
@@ -833,6 +965,31 @@ main({
         return unchanged&&!!document.querySelector('.qb-backup-message[role=alert]');
       })()`),
     );
+    for (const scope of ["school", "bank"]) {
+      const retiredPicker = await evaluateGesture(
+        "(" +
+          inspectRetiredAutomaticPicker.toString() +
+          ")(" +
+          JSON.stringify(scope) +
+          ")",
+      );
+      check(
+        `${scope} automatic picker cannot resume after switching tabs away and back`,
+        retiredPicker.pickers === 1 &&
+          retiredPicker.reads === 0 &&
+          retiredPicker.streams === 0 &&
+          retiredPicker.writes === 0 &&
+          retiredPicker.closes === 0 &&
+          retiredPicker.returnedToScope &&
+          retiredPicker.schoolConnectionUnchanged &&
+          retiredPicker.bankConnectionUnchanged &&
+          retiredPicker.priorFileUnchanged &&
+          retiredPicker.lateFileUnchanged &&
+          retiredPicker.schoolDataUnchanged &&
+          retiredPicker.bankDataUnchanged,
+        retiredPicker,
+      );
+    }
     check(
       "bank clear removes its native file and data, preserves the school file and connection, and refreshes the bank page",
       await evaluateGesture(`(async()=>{
@@ -848,16 +1005,28 @@ main({
           await EduV24.openBackups({tab:'school'});
           const automatic=document.querySelector('#backupSchoolPanel details.backup-automatic');
           if(!automatic.open)automatic.querySelector('summary').click();
+          const previousSchool=await __hubSchoolConnection();
           document.querySelector('#backupSchoolPanel [data-workspace-action=single-file-choose]').click();
-          for(let i=0;i<150;i++){const config=await __hubSchoolConnection();if(config?.savedAt&&schoolHandle)break;await __hubTick();}
+          let schoolAttached=false;
+          for(let i=0;i<150;i++){
+            const config=await __hubSchoolConnection();
+            if(config?.savedAt&&schoolHandle&&config.connectionId!==previousSchool?.connectionId&&await config.handle.isSameEntry(schoolHandle)){schoolAttached=true;break;}
+            await __hubTick();
+          }
           const schoolConfig=await __hubSchoolConnection(),schoolTime=document.querySelector('#backupSchoolPanel #singleFileSummary time');
-          if(!schoolConfig?.savedAt||!schoolHandle||!schoolTime||schoolTime.dateTime!==schoolConfig.savedAt||!/[۰-۹]/.test(schoolTime.textContent)||!schoolTime.textContent.includes(':'))return false;
+          if(!schoolAttached||!schoolTime||schoolTime.dateTime!==schoolConfig.savedAt||!/[۰-۹]/.test(schoolTime.textContent)||!schoolTime.textContent.includes(':'))return false;
           const schoolFile=await (await schoolHandle.getFile()).text();
           closeModal();await __hubTick();await EduQuestionBankUI.open();await EduV24.openBackups({tab:'bank'});
           const bankAuto=document.querySelector('#backupBankPanel details.backup-automatic');if(!bankAuto.open)bankAuto.querySelector('summary').click();
+          const previousBank=await EduQuestionBankRepository.readBackup();
           document.querySelector('.qb-file-choose').click();
-          for(let i=0;i<150&&EduQuestionBankFileBackup.service.state().state!=='active';i++)await __hubTick();
-          if(EduQuestionBankFileBackup.service.state().state!=='active'||!bankHandle)return false;
+          let bankAttached=false;
+          for(let i=0;i<150;i++){
+            const config=await EduQuestionBankRepository.readBackup();
+            if(config?.savedAt&&bankHandle&&config.id!==previousBank?.id&&await config.handle.isSameEntry(bankHandle)&&EduQuestionBankFileBackup.service.state().state==='active'){bankAttached=true;break;}
+            await __hubTick();
+          }
+          if(!bankAttached)return false;
           const R=EduQuestionBankRepository,config=await R.readBackup(),before=await R.read(),school=await __hubStableSchool();
           const saved=await (await bankHandle.getFile()).text(),time=document.querySelector('.qb-file-summary time');
           if(!time||time.dateTime!==config.savedAt||!/[۰-۹]/.test(time.textContent)||!time.textContent.includes(':'))return false;
@@ -886,13 +1055,19 @@ main({
         await EduQuestionBankRepository.save({...bank,courses:[{id:'hub-final-preview',title:'نمونهٔ تصویری نهایی',structure:'chapter'}]},bank.revision);
         const picker=window.showSaveFilePicker,directory=await navigator.storage.getDirectory();
         try{
-          window.showSaveFilePicker=()=>directory.getFileHandle('Classyar-QuestionBank(99).json',{create:true});
+          const previewHandle=await directory.getFileHandle('Classyar-QuestionBank(99).json',{create:true}),previous=await EduQuestionBankRepository.readBackup();
+          window.showSaveFilePicker=async()=>previewHandle;
           document.querySelector('.qb-file-choose').click();
-          for(let i=0;i<150&&EduQuestionBankFileBackup.service.state().state!=='active';i++)await __hubTick();
+          let attached=false;
+          for(let i=0;i<150;i++){
+            const config=await EduQuestionBankRepository.readBackup();
+            if(config?.savedAt&&config.id!==previous?.id&&await config.handle.isSameEntry(previewHandle)&&EduQuestionBankFileBackup.service.state().state==='active'){attached=true;break;}
+            await __hubTick();
+          }
           const saved=await EduQuestionBankRepository.readBackup(),time=document.querySelector('.qb-file-summary time'),name=document.querySelector('.qb-file-name');
           const automatic=document.querySelector('#backupBankPanel details.backup-automatic');if(!automatic.open)automatic.querySelector('summary').click();
           const reset=document.querySelector('#backupBankPanel details.backup-reset');if(reset.open)reset.querySelector('summary').click();
-          return !!saved&&EduQuestionBankFileBackup.service.state().state==='active'&&name.textContent===saved.handle.name
+          return attached&&!!saved&&EduQuestionBankFileBackup.service.state().state==='active'&&name.textContent===saved.handle.name
             &&name.checkVisibility()&&time?.checkVisibility()&&time.dateTime===saved.savedAt
             &&document.querySelector('.qb-file-status').hidden;
         }finally{window.showSaveFilePicker=picker;}

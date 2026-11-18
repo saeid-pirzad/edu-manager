@@ -17,6 +17,11 @@ const courseUI = EduCourseUI({
       resetBusy ||
       connectionRetired,
   }),
+  actionContext: () => ({
+    connection,
+    installation: installationToken,
+    data: db,
+  }),
   state: () => state,
   year: () => db.settings.academicYear,
   assertWritable: assertEntityWritable,

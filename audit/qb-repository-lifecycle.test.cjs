@@ -5,24 +5,33 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 
 function fixture({ holdOpen = false, holdRead = false } = {}) {
-  let stored, finishOpen, finishRead, readStarted;
+  let stored,
+    backup = { id: "prior-file" },
+    finishOpen,
+    finishRead,
+    readStarted;
   const metrics = { opens: 0, transactions: 0, puts: 0, savedEvents: 0 };
+  const backupMetrics = { puts: 0, deletes: 0 };
   const reading = new Promise((resolve) => (readStarted = resolve));
   const database = {
     transaction() {
       metrics.transactions++;
       let aborted = false,
-        pending;
+        pending = new Map();
       const transaction = {
         objectStore: () => ({
-          get() {
+          get(key) {
             const request = {};
             finishRead = () => {
-              request.result = structuredClone(stored);
+              request.result = structuredClone(
+                key === "file-backup" ? backup : stored,
+              );
               request.onsuccess?.();
               queueMicrotask(() => {
                 if (aborted) return;
-                if (pending !== undefined) stored = pending;
+                if (pending.has("current")) stored = pending.get("current");
+                if (pending.has("file-backup"))
+                  backup = pending.get("file-backup");
                 transaction.oncomplete?.();
               });
             };
@@ -30,9 +39,14 @@ function fixture({ holdOpen = false, holdRead = false } = {}) {
             if (!holdRead) queueMicrotask(() => finishRead());
             return request;
           },
-          put(value) {
+          put(value, key) {
             metrics.puts++;
-            pending = structuredClone(value);
+            if (key === "file-backup") backupMetrics.puts++;
+            pending.set(key, structuredClone(value));
+          },
+          delete(key) {
+            if (key === "file-backup") backupMetrics.deletes++;
+            pending.set(key, undefined);
           },
         }),
         abort() {
@@ -82,8 +96,10 @@ function fixture({ holdOpen = false, holdRead = false } = {}) {
     incoming,
     original,
     metrics,
+    backupMetrics,
     reading,
     stored: () => structuredClone(stored),
+    backup: () => structuredClone(backup),
     finishOpen: () => finishOpen(),
     finishRead: () => finishRead(),
     replace: (value) => (stored = structuredClone(value)),
@@ -173,4 +189,61 @@ test("a live restore guard does not weaken concurrent revision protection", asyn
   assert.equal(f.metrics.puts, 0);
   assert.equal(f.metrics.savedEvents, 0);
   assert.deepEqual(f.stored(), winner);
+});
+
+test("a retired file panel cannot open the backup connection repository", async () => {
+  const f = fixture();
+  await assert.rejects(
+    f.repository.writeBackup({ id: "new-file" }, { isCurrent: () => false }),
+    /عملیات لغو شد/,
+  );
+  assert.equal(f.metrics.opens, 0);
+  assert.equal(f.metrics.transactions, 0);
+  assert.equal(f.metrics.puts, 0);
+});
+
+test("retiring while IndexedDB opens prevents attaching or detaching a file", async () => {
+  for (const config of [null, { id: "new-file" }]) {
+    const f = fixture({ holdOpen: true });
+    let current = true;
+    const operation = f.repository.writeBackup(config, {
+      isCurrent: () => current,
+    });
+    current = false;
+    f.finishOpen();
+    await assert.rejects(operation, /عملیات لغو شد/);
+    assert.equal(f.metrics.transactions, 0);
+    assert.equal(f.metrics.puts, 0);
+    assert.equal(JSON.stringify(f.stored()), f.original);
+  }
+});
+
+for (const config of [null, { id: "new-file" }])
+  test(`retiring while a queued metadata transaction starts preserves the prior connection on ${config ? "attach" : "detach"}`, async () => {
+    const f = fixture({ holdRead: true }),
+      original = f.backup();
+    let current = true;
+    const operation = f.repository.writeBackup(config, {
+      isCurrent: () => current,
+    });
+    await f.reading;
+    current = false;
+    f.finishRead();
+    await assert.rejects(operation, /عملیات لغو شد/);
+    assert.deepEqual(f.backup(), original);
+    assert.deepEqual(f.backupMetrics, { puts: 0, deletes: 0 });
+    assert.equal(f.metrics.transactions, 1);
+    assert.equal(f.metrics.savedEvents, 0);
+    assert.equal(JSON.stringify(f.stored()), f.original);
+  });
+
+test("a live metadata owner can attach and detach without changing educational data", async () => {
+  const f = fixture();
+  await f.repository.writeBackup({ id: "new-file" }, { isCurrent: () => true });
+  assert.equal(f.backup().id, "new-file");
+  await f.repository.writeBackup(null, { isCurrent: () => true });
+  assert.equal(f.backup(), undefined);
+  assert.deepEqual(f.backupMetrics, { puts: 1, deletes: 1 });
+  assert.equal(f.metrics.savedEvents, 0);
+  assert.equal(JSON.stringify(f.stored()), f.original);
 });

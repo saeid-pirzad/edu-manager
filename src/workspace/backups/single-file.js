@@ -178,7 +178,13 @@ function renewQuestionBankFilePermission() {
     return false;
   // No await before this call: retain the user's activation. Default approval
   // stays false, so this action cannot approve replacing a suspended file.
-  return service.saveNow();
+  const tab =
+      typeof state !== "undefined" && state.backupTab === "bank"
+        ? "bank"
+        : "school",
+    context = captureSingleFileAction({ tab, fileScoped: false });
+  context.assertCurrent();
+  return service.saveNow(undefined, { isCurrent: () => context.isCurrent() });
 }
 function singleFileStatus(message, { permission = false, saved = false } = {}) {
   singleFileMessage = message;
@@ -374,7 +380,10 @@ function announceSingleFileSuspension(target = singleFile) {
 async function persistSingleFile({
   replace = false,
   target = singleFile,
+  expectedConnectionId,
+  guard,
 } = {}) {
+  guard?.();
   if (!ready || resetBusy || connectionRetired) return false;
   const sourceConnection = connection,
     sourceInstallation =
@@ -396,6 +405,7 @@ async function persistSingleFile({
   const persist = () => {
     if (--remaining) return;
     try {
+      guard?.();
       if (
         (epoch.result?.value?.token || "") !== sourceInstallation ||
         connection !== sourceConnection ||
@@ -408,6 +418,16 @@ async function persistSingleFile({
         error.code = "INSTALLATION_CHANGED";
         throw error;
       }
+      if (
+        expectedConnectionId !== undefined &&
+        (request.result?.connectionId || null) !== expectedConnectionId
+      )
+        throw Object.assign(
+          Error(
+            "اتصال فایل در پنجرهٔ دیگری تغییر کرده است؛ انتخاب قبلی جایگزین آن نشد.",
+          ),
+          { code: "SINGLE_FILE_CONNECTION_CHANGED" },
+        );
       // A stale tab must never recreate a disconnected/replaced configuration.
       if (
         !replace &&
@@ -598,10 +618,48 @@ async function assertSingleFileDestination(file) {
     );
   }
 }
+function captureSingleFileAction({ tab = "school", fileScoped = true } = {}) {
+  const sourceConnection = connection,
+    sourceInstallation =
+      typeof installationToken === "undefined" ? "" : installationToken,
+    sourceFile = singleFile,
+    sourceView = typeof state === "undefined" ? null : state.view,
+    sourceHub =
+      typeof backupHubSession === "undefined" ? null : backupHubSession,
+    hubCurrent = sourceHub?.captureTab
+      ? sourceHub.captureTab(tab)
+      : () => !sourceHub || sourceHub.isCurrent(tab);
+  const sameInstallation = () =>
+    connection === sourceConnection &&
+    (typeof installationToken === "undefined" ? "" : installationToken) ===
+      sourceInstallation &&
+    ready &&
+    !resetBusy &&
+    !connectionRetired;
+  const isCurrent = (target = sourceFile) =>
+    sameInstallation() &&
+    !periodLoading &&
+    !(typeof fullRestoreBusy !== "undefined" && fullRestoreBusy) &&
+    (!fileScoped || singleFile === target) &&
+    (typeof state === "undefined" ? null : state.view) === sourceView &&
+    hubCurrent();
+  const assertCurrent = (target = sourceFile) => {
+    if (!isCurrent(target))
+      throw Object.assign(
+        Error(
+          "صفحه، اطلاعات یا اتصال فایل تغییر کرده است؛ عملیات فایل را دوباره انجام دهید.",
+        ),
+        { code: "SINGLE_FILE_CONTEXT_CHANGED" },
+      );
+  };
+  return { file: sourceFile, sameInstallation, isCurrent, assertCurrent };
+}
 async function chooseSingleFile() {
   if (singleFileChoosing) return false;
   if (!ready || blocked || resetBusy || connectionRetired)
     throw Error("بانک آماده ذخیره فایل نیست.");
+  const context = captureSingleFileAction();
+  context.assertCurrent();
   singleFileChoosing = true;
   let reservation,
     accepted = false;
@@ -621,12 +679,16 @@ async function chooseSingleFile() {
         ],
       });
     } catch (error) {
+      context.assertCurrent();
       if (error.name === "AbortError") return;
       return failSingleFile(error);
     }
+    context.assertCurrent();
     assertClassroomFileName(handle.name);
     const file = await handle.getFile();
+    context.assertCurrent();
     await assertSingleFileDestination(file);
+    context.assertCurrent();
     if (
       file.size &&
       !confirm(
@@ -634,29 +696,77 @@ async function chooseSingleFile() {
       )
     )
       return;
+    context.assertCurrent();
     // The picker may already have created an empty file. Keep its number even
     // if the first write fails, so the next suggestion avoids that file.
     accepted = true;
-    pauseSingleFile();
     if (singleFileWriting) await singleFileWriting;
-    if (!ready || resetBusy || connectionRetired) return;
-    singleFile = {
-      connectionId: uid(),
-      handle,
-      modified: file.lastModified,
-      size: file.size,
-      savedAt: "",
-    };
+    context.assertCurrent();
+    const hadFileTimer = !!singleFileTimer,
+      previousNotice = {
+        message: singleFileMessage,
+        failure: singleFileFailure,
+        permission: singleFilePermissionNeeded,
+        saved: singleFileNoticeSaved,
+      },
+      target = {
+        connectionId: uid(),
+        handle,
+        modified: file.lastModified,
+        size: file.size,
+        savedAt: "",
+      };
+    pauseSingleFile();
+    singleFile = target;
+    let persisted = false;
     try {
-      await persistSingleFile({ replace: true });
+      persisted = await persistSingleFile({
+        replace: true,
+        target,
+        expectedConnectionId: context.file?.connectionId || null,
+        guard: () => context.assertCurrent(target),
+      });
+      context.assertCurrent(target);
+      const saved = await syncSingleFile({
+        guard: () => context.assertCurrent(target),
+      });
+      context.assertCurrent(target);
       broadcast({
         type: "single-file-changed",
-        connectionId: singleFile.connectionId,
+        connectionId: target.connectionId,
       });
-      const saved = await syncSingleFile();
       if (saved) startSingleFile();
       return saved;
     } catch (error) {
+      if (
+        !persisted ||
+        [
+          "SINGLE_FILE_CONTEXT_CHANGED",
+          "SINGLE_FILE_CONNECTION_CHANGED",
+        ].includes(error.code)
+      ) {
+        if (context.sameInstallation() && singleFile === target) {
+          singleFile = context.file;
+          if (persisted)
+            await persistSingleFile({
+              replace: true,
+              target: context.file,
+              expectedConnectionId: target.connectionId,
+            }).catch(() => {});
+          singleFileMessage = previousNotice.message;
+          singleFileFailure = previousNotice.failure;
+          singleFilePermissionNeeded = previousNotice.permission;
+          singleFileNoticeSaved = previousNotice.saved;
+          if (
+            hadFileTimer &&
+            singleFile &&
+            !blocked &&
+            !error.fileCommitStarted
+          )
+            startSingleFile();
+        }
+        throw error;
+      }
       return failSingleFile(error);
     }
   } finally {
@@ -667,15 +777,19 @@ async function chooseSingleFile() {
 }
 async function resumeSingleFile() {
   if (!singleFile) throw Error("ابتدا فایل JSON را انتخاب کنید.");
-  const target = singleFile;
+  const context = captureSingleFileAction();
+  context.assertCurrent();
+  const target = singleFile,
+    hadFileTimer = !!singleFileTimer;
   try {
     // Preserve the click gesture for the permission prompt. A suspended mirror
     // also needs a separate, file-named replacement acknowledgement below.
     // Permission request also needs the explicit click, not an automatic timer.
-    if (
-      (await target.handle.requestPermission({ mode: "readwrite" })) !==
-      "granted"
-    ) {
+    const permission = await target.handle.requestPermission({
+      mode: "readwrite",
+    });
+    context.assertCurrent();
+    if (permission !== "granted") {
       pauseSingleFile();
       showSingleFileFallback(true);
       singleFileStatus("اجازه نوشتن داده نشد؛ فایل به‌روز نشده است.", {
@@ -685,11 +799,15 @@ async function resumeSingleFile() {
     }
     if (!(await singleFileCurrent(target, { acknowledged: true })))
       return false;
+    context.assertCurrent();
     // An explicit save queues a fresh snapshot after any older write finishes.
     if (singleFileWriting && !(await singleFileWriting)) return false;
+    context.assertCurrent();
     if (!(await singleFileCurrent(target, { acknowledged: true })))
       return false;
+    context.assertCurrent();
     const stored = await readRecord("drafts", singleFileKey);
+    context.assertCurrent();
     const acknowledged = !!(target.suspension || stored?.suspension);
     if (
       acknowledged &&
@@ -700,30 +818,62 @@ async function resumeSingleFile() {
       )
     )
       return false;
+    context.assertCurrent();
     pauseSingleFile();
-    const saved = await syncSingleFile({ acknowledged });
+    const saved = await syncSingleFile({
+      acknowledged,
+      guard: () => context.assertCurrent(),
+    });
+    context.assertCurrent();
     if (saved) startSingleFile();
     return saved;
   } catch (error) {
+    if (!context.isCurrent() || error.code === "SINGLE_FILE_CONTEXT_CHANGED") {
+      if (
+        context.sameInstallation() &&
+        singleFile === target &&
+        hadFileTimer &&
+        !blocked &&
+        !error.fileCommitStarted
+      )
+        startSingleFile();
+      if (error.fileCommitStarted) throw error;
+      context.assertCurrent();
+      throw error;
+    }
     return failSingleFile(error);
   }
 }
 async function disableSingleFile() {
-  const target = singleFile;
+  const context = captureSingleFileAction();
+  context.assertCurrent();
+  const target = singleFile,
+    hadFileTimer = !!singleFileTimer;
   pauseSingleFile();
   singleFile = null;
   try {
-    if (await persistSingleFile({ target }))
+    if (
+      await persistSingleFile({
+        target,
+        guard: () => context.assertCurrent(null),
+      })
+    )
       broadcast({ type: "single-file-changed", connectionId: null });
     if (singleFileWriting) await singleFileWriting;
     showSingleFileFallback(false);
     singleFileStatus("اتصال متوقف شد؛ فایل موجود حذف نشده است.");
   } catch (error) {
-    singleFile = target;
+    const stale = !context.isCurrent(null);
+    if (context.sameInstallation() && singleFile === null) {
+      singleFile = target;
+      if (hadFileTimer && singleFile && !blocked) startSingleFile();
+    }
+    if (stale) context.assertCurrent(null);
+    if (error.code === "SINGLE_FILE_CONTEXT_CHANGED") throw error;
     return failSingleFile(error);
   }
 }
-function syncSingleFile({ force = true, acknowledged = false } = {}) {
+function syncSingleFile({ force = true, acknowledged = false, guard } = {}) {
   if (singleFileWriting) return singleFileWriting;
   if (
     !singleFile ||
@@ -735,10 +885,28 @@ function syncSingleFile({ force = true, acknowledged = false } = {}) {
   )
     return Promise.resolve(false);
   const target = singleFile;
+  const currentTarget = async () => {
+    guard?.();
+    const current = await singleFileCurrent(target, { acknowledged });
+    guard?.();
+    return current;
+  };
   const write = async () => {
-    let stream;
+    let stream,
+      closeStarted = false;
+    const cancelled = (error) => {
+      if (closeStarted)
+        throw Object.assign(
+          Error(
+            "صفحه یا اطلاعات هنگام بستن فایل تغییر کرده است؛ بستن/نوشتن فایل شروع شده و ممکن است فایل تغییر کرده باشد. فایل را بررسی و برای ادامه دوباره انتخاب کنید.",
+            { cause: error },
+          ),
+          { code: "SINGLE_FILE_CONTEXT_CHANGED", fileCommitStarted: true },
+        );
+      return false;
+    };
     try {
-      if (!(await singleFileCurrent(target, { acknowledged }))) return false;
+      if (!(await currentTarget())) return false;
       assertClassroomFileName(target.handle.name);
       if (!force) {
         const signature = await readBackupSourceSignature();
@@ -756,7 +924,7 @@ function syncSingleFile({ force = true, acknowledged = false } = {}) {
             throw Error(
               "فایل بیرون از برنامه تغییر کرده است؛ برای ادامه، فایل را دوباره انتخاب کنید.",
             );
-          return singleFileCurrent(target, { acknowledged });
+          return currentTarget();
         }
       }
       singleFileStatus("در حال ذخیره فایل: " + target.handle.name);
@@ -766,6 +934,7 @@ function syncSingleFile({ force = true, acknowledged = false } = {}) {
           snapshotSignature = signature;
         },
       });
+      guard?.();
       validateFullBackup(snapshot);
       const json = JSON.stringify(snapshot);
       if (
@@ -778,12 +947,14 @@ function syncSingleFile({ force = true, acknowledged = false } = {}) {
         return false;
       assertClassroomFileName(target.handle.name);
       const file = await target.handle.getFile();
+      guard?.();
       if (typeof file.name === "string") assertClassroomFileName(file.name);
       if (file.lastModified !== target.modified || file.size !== target.size)
         throw Error(
           "فایل بیرون از این اتصال تغییر کرده؛ برای جلوگیری از بازنویسی، دوباره آن را انتخاب کنید.",
         );
       const previous = await assertSingleFileDestination(file);
+      guard?.();
       let previousBaseline = target.contentBaseline;
       if (!previousBaseline && target.savedAt && previous) {
         // Upgrade an existing connection using its unchanged confirmed file,
@@ -797,15 +968,17 @@ function syncSingleFile({ force = true, acknowledged = false } = {}) {
       ) {
         target.suspension = "source-drop";
         target.contentBaseline = previousBaseline;
-        await persistSingleFile({ target });
+        await persistSingleFile({ target, guard });
+        guard?.();
         announceSingleFileSuspension(target);
         return false;
       }
-      if (!(await singleFileCurrent(target, { acknowledged }))) return false;
+      if (!(await currentTarget())) return false;
       // The connection checks await IndexedDB. Recheck the already-inspected
       // file after them so an intervening external edit is never overwritten.
       assertClassroomFileName(target.handle.name);
       const current = await target.handle.getFile();
+      guard?.();
       if (typeof current.name === "string")
         assertClassroomFileName(current.name);
       if (
@@ -816,11 +989,15 @@ function syncSingleFile({ force = true, acknowledged = false } = {}) {
           "فایل هنگام بررسی اتصال، بیرون از برنامه تغییر کرد؛ برای جلوگیری از بازنویسی، دوباره آن را انتخاب کنید.",
         );
       stream = await target.handle.createWritable();
+      guard?.();
       await stream.write(json);
-      if (!(await singleFileCurrent(target, { acknowledged }))) {
+      if (!(await currentTarget())) {
         await stream.abort();
         return false;
       }
+      // The file-system publication begins at close(). A view change after
+      // this point cannot roll that external write back atomically with IDB.
+      closeStarted = true;
       await stream.close();
       stream = null;
       const saved = await target.handle.getFile();
@@ -833,12 +1010,14 @@ function syncSingleFile({ force = true, acknowledged = false } = {}) {
         throw Error(
           "محتوای فایل پس از نوشتن با پشتیبان کامل مطابقت ندارد؛ ذخیره تأیید نشد. پشتیبان دستی بگیرید.",
         );
+      guard?.();
       target.modified = saved.lastModified;
       target.size = saved.size;
       target.savedAt = snapshot.exportedAt;
       target.contentBaseline = contentBaseline;
       delete target.suspension;
-      if (!(await persistSingleFile({ target }))) return false;
+      if (!(await persistSingleFile({ target, guard }))) return false;
+      guard?.();
       singleFileSavedSource =
         snapshotSignature === null
           ? null
@@ -859,6 +1038,14 @@ function syncSingleFile({ force = true, acknowledged = false } = {}) {
       return true;
     } catch (error) {
       if (stream) await stream.abort().catch(() => {});
+      try {
+        guard?.();
+      } catch (contextError) {
+        if (contextError.code === "SINGLE_FILE_CONTEXT_CHANGED")
+          return cancelled(contextError);
+        return failSingleFile(contextError);
+      }
+      if (error.code === "SINGLE_FILE_CONTEXT_CHANGED") return cancelled(error);
       if (error.code === "BACKUP_CONTEXT_CHANGED") {
         singleFileStatus(
           "ذخیره فایل پس از پایان جابه‌جایی دوباره بررسی می‌شود.",
@@ -875,7 +1062,10 @@ function syncSingleFile({ force = true, acknowledged = false } = {}) {
         ? navigator.locks.request("EduManager.singleFile", write)
         : write(),
     )
-    .catch(failSingleFile)
+    .catch((error) => {
+      if (error.code === "SINGLE_FILE_CONTEXT_CHANGED") throw error;
+      return failSingleFile(error);
+    })
     .finally(() => {
       singleFileWriting = null;
       paintSingleFileBanner();

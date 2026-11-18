@@ -155,6 +155,7 @@ function fixture() {
     connection: {
       transaction: () => {
         let finish, fail;
+        let pending = 0;
         const finished = new Promise((resolve, reject) => {
           finish = resolve;
           fail = reject;
@@ -166,6 +167,7 @@ function fixture() {
           },
           objectStore: (storeName) => ({
             get: () => {
+              pending++;
               const request = {};
               queueMicrotask(() => {
                 request.result =
@@ -177,7 +179,7 @@ function fixture() {
                       }
                     : stored && { ...stored };
                 request.onsuccess();
-                finish();
+                if (!--pending) finish();
               });
               return request;
             },
@@ -1285,7 +1287,13 @@ test("bank permission retry directly calls only its service without approving re
       state: () => ({ state: "permission", connected: true }),
       saveNow(...args) {
         assert.equal(callerActive, true);
-        assert.equal(args.length, 0, "replacement approval must stay omitted");
+        assert.equal(
+          args[0],
+          undefined,
+          "replacement approval must stay omitted",
+        );
+        assert.equal(typeof args[1].isCurrent, "function");
+        assert.equal(args[1].isCurrent(), true);
         calls++;
         return result;
       },
@@ -1830,3 +1838,460 @@ test("unavailable filename metadata never prevents an otherwise valid automatic 
   assert.equal(f.writes, 2);
   assert.match(f.pickerCalls[1].suggestedName, /\(1\)\.json$/);
 });
+
+function deferredFileAction() {
+  let resolve;
+  const promise = new Promise((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
+for (const change of ["navigation", "backup tab", "connection", "installation"])
+  test(`a pending classroom picker cannot publish after ${change} changes`, async () => {
+    const f = fixture(),
+      next = fixture();
+    f.context.state = { view: "backups" };
+    f.context.installationToken = "original";
+    f.context.durableInstallationToken = "original";
+    f.context.readRecord = async (store) =>
+      store === "records"
+        ? { value: { token: f.context.durableInstallationToken } }
+        : f.getStored();
+    let activeTab = "school";
+    f.context.backupHubSession = {
+      isCurrent: (tab) => activeTab === tab,
+    };
+    await f.context.chooseSingleFile();
+    const previous = f.getStored(),
+      contents = f.contents,
+      pending = deferredFileAction();
+    f.context.window.showSaveFilePicker = () => pending.promise;
+    const choosing = f.context.chooseSingleFile();
+    if (change === "navigation") f.context.state.view = "schools";
+    else if (change === "backup tab") activeTab = "bank";
+    else if (change === "connection")
+      f.context.connection = { ...f.context.connection };
+    else {
+      f.context.installationToken = "replacement";
+      f.context.durableInstallationToken = "replacement";
+    }
+    pending.resolve(next.handle);
+    await assert.rejects(choosing, {
+      code: "SINGLE_FILE_CONTEXT_CHANGED",
+    });
+    assert.equal(f.getStored().connectionId, previous.connectionId);
+    assert.equal(f.contents, contents);
+    assert.equal(f.writes, 1);
+    assert.equal(next.writes, 0);
+    assert.equal(next.contents, "");
+    assert.notEqual(vm.runInContext("singleFileTimer", f.context), null);
+  });
+
+test("an abandoned picker preserves the restored installation's new file configuration", async () => {
+  const f = fixture(),
+    next = fixture();
+  f.context.installationToken = "original";
+  f.context.durableInstallationToken = "original";
+  f.context.readRecord = async (store) =>
+    store === "records"
+      ? { value: { token: f.context.durableInstallationToken } }
+      : f.getStored();
+  await f.context.chooseSingleFile();
+  const contents = f.contents,
+    pending = deferredFileAction();
+  f.context.window.showSaveFilePicker = () => pending.promise;
+  const choosing = f.context.chooseSingleFile();
+  f.context.connection = { ...f.context.connection };
+  f.context.installationToken = "restored";
+  f.context.durableInstallationToken = "restored";
+  const restored = {
+    key: "EduManager.singleFile",
+    connectionId: "restored-file",
+    handle: next.handle,
+    suspension: "restore",
+  };
+  f.setStored(restored);
+  f.context.restoredFileForAudit = restored;
+  vm.runInContext(
+    "pauseSingleFile(); singleFile = restoredFileForAudit",
+    f.context,
+  );
+  pending.resolve(next.handle);
+  await assert.rejects(choosing, { code: "SINGLE_FILE_CONTEXT_CHANGED" });
+  assert.equal(f.getStored().connectionId, restored.connectionId);
+  assert.equal(vm.runInContext("singleFile", f.context), restored);
+  assert.equal(vm.runInContext("singleFileTimer", f.context), null);
+  assert.equal(f.contents, contents);
+  assert.equal(next.writes, 0);
+  assert.equal(next.contents, "");
+});
+
+test("navigation during destination reading preserves the existing connection and its active timer", async () => {
+  const f = fixture(),
+    next = fixture();
+  f.context.state = { view: "backups" };
+  await f.context.chooseSingleFile();
+  const previous = f.getStored(),
+    contents = f.contents,
+    reading = deferredFileAction(),
+    entered = deferredFileAction();
+  next.replaceContents(contents);
+  const getFile = next.handle.getFile;
+  next.handle.getFile = async () => {
+    const file = await getFile();
+    file.text = () => {
+      entered.resolve();
+      return reading.promise;
+    };
+    return file;
+  };
+  let confirmations = 0;
+  f.context.confirm = () => {
+    confirmations++;
+    return true;
+  };
+  f.context.window.showSaveFilePicker = async () => next.handle;
+  const choosing = f.context.chooseSingleFile();
+  await entered.promise;
+  f.context.state.view = "schools";
+  reading.resolve(contents);
+  await assert.rejects(choosing, { code: "SINGLE_FILE_CONTEXT_CHANGED" });
+  assert.equal(confirmations, 0);
+  assert.equal(f.getStored().connectionId, previous.connectionId);
+  assert.equal(f.contents, contents);
+  assert.equal(next.contents, contents);
+  assert.equal(next.writes, 0);
+  assert.notEqual(vm.runInContext("singleFileTimer", f.context), null);
+});
+
+for (const connected of [false, true])
+  test(`file selection compares the original ${connected ? "connected" : "disconnected"} configuration inside its transaction`, async () => {
+    const f = fixture(),
+      next = fixture();
+    if (connected) await f.context.chooseSingleFile();
+    const contents = f.contents,
+      previous = vm.runInContext("singleFile", f.context),
+      originalTransaction = f.context.connection.transaction;
+    let replaced = false;
+    f.context.connection.transaction = (...args) => {
+      if (!replaced) {
+        replaced = true;
+        f.setStored({
+          key: "EduManager.singleFile",
+          connectionId: "newer-peer-file",
+          handle: next.handle,
+        });
+      }
+      return originalTransaction(...args);
+    };
+    f.context.window.showSaveFilePicker = async () => next.handle;
+    await assert.rejects(f.context.chooseSingleFile(), {
+      code: "SINGLE_FILE_CONNECTION_CHANGED",
+    });
+    assert.equal(f.getStored().connectionId, "newer-peer-file");
+    assert.equal(vm.runInContext("singleFile", f.context), previous);
+    assert.equal(f.contents, contents);
+    assert.equal(next.contents, "");
+    assert.equal(next.writes, 0);
+    assert.equal(
+      vm.runInContext("singleFileTimer !== null", f.context),
+      connected,
+    );
+  });
+
+for (const permission of ["granted", "denied"])
+  test(`an abandoned ${permission} permission request neither writes nor pauses the existing automatic backup`, async () => {
+    const f = fixture();
+    f.context.state = { view: "backups" };
+    await f.context.chooseSingleFile();
+    const previous = f.getStored(),
+      contents = f.contents,
+      pending = deferredFileAction();
+    f.handle.requestPermission = () => pending.promise;
+    const saving = f.context.resumeSingleFile();
+    f.context.state.view = "schools";
+    pending.resolve(permission);
+    await assert.rejects(saving, { code: "SINGLE_FILE_CONTEXT_CHANGED" });
+    assert.equal(f.getStored().connectionId, previous.connectionId);
+    assert.equal(f.contents, contents);
+    assert.equal(f.writes, 1);
+    assert.notEqual(vm.runInContext("singleFileTimer", f.context), null);
+    assert.equal(
+      vm.runInContext("singleFilePermissionNeeded", f.context),
+      false,
+    );
+  });
+
+test("a manual disconnect abandoned before its storage callback preserves the configuration and restarts its prior timer", async () => {
+  const f = fixture();
+  f.context.state = { view: "backups" };
+  await f.context.chooseSingleFile();
+  const previous = f.getStored(),
+    contents = f.contents,
+    stopping = f.context.disableSingleFile();
+  f.context.state.view = "schools";
+  await assert.rejects(stopping, { code: "SINGLE_FILE_CONTEXT_CHANGED" });
+  assert.equal(f.getStored().connectionId, previous.connectionId);
+  assert.equal(
+    vm.runInContext("singleFile", f.context).connectionId,
+    previous.connectionId,
+  );
+  assert.equal(f.contents, contents);
+  assert.equal(f.writes, 1);
+  assert.notEqual(vm.runInContext("singleFileTimer", f.context), null);
+});
+
+test("background automatic backups remain active after leaving the backup page", async () => {
+  const f = fixture();
+  f.context.state = { view: "backups" };
+  await f.context.chooseSingleFile();
+  f.context.state.view = "schools";
+  f.context.sourceValue++;
+  await f.tick();
+  assert.equal(f.writes, 2);
+  assert.equal(
+    JSON.parse(f.contents).stores.records[0].value,
+    f.context.sourceValue,
+  );
+  assert.notEqual(vm.runInContext("singleFileTimer", f.context), null);
+});
+
+for (const action of ["choose", "save"])
+  for (const phase of ["snapshot", "stream"])
+    test(`a manual ${action} abandoned during its ${phase} preserves files, configuration and the previous automatic timer`, async () => {
+      const f = fixture(),
+        next = fixture();
+      f.context.state = { view: "backups" };
+      await f.context.chooseSingleFile();
+      const previous = f.getStored(),
+        contents = f.contents,
+        pending = deferredFileAction(),
+        entered = deferredFileAction(),
+        destination = action === "choose" ? next : f;
+      if (action === "choose")
+        f.context.window.showSaveFilePicker = async () => next.handle;
+      if (phase === "snapshot") {
+        const snapshot = f.context.snapshotInstallation;
+        f.context.snapshotInstallation = async (...args) => {
+          entered.resolve();
+          await pending.promise;
+          return snapshot(...args);
+        };
+      } else {
+        const open = destination.handle.createWritable;
+        destination.handle.createWritable = async () => {
+          const stream = await open();
+          return {
+            ...stream,
+            async write(value) {
+              await stream.write(value);
+              entered.resolve();
+              await pending.promise;
+            },
+          };
+        };
+      }
+      const operation =
+        action === "choose"
+          ? f.context.chooseSingleFile()
+          : f.context.resumeSingleFile();
+      await entered.promise;
+      f.context.state.view = "schools";
+      pending.resolve();
+      await assert.rejects(operation, { code: "SINGLE_FILE_CONTEXT_CHANGED" });
+      assert.equal(f.getStored().connectionId, previous.connectionId);
+      assert.equal(
+        vm.runInContext("singleFile", f.context).connectionId,
+        previous.connectionId,
+      );
+      assert.equal(f.contents, contents);
+      assert.equal(f.writes, 1);
+      assert.equal(next.contents, "");
+      assert.equal(next.writes, 0);
+      assert.notEqual(vm.runInContext("singleFileTimer", f.context), null);
+      assert.equal(vm.runInContext("singleFileFailure", f.context), false);
+      if (phase === "stream") assert.equal(destination.aborts, 1);
+    });
+
+test("returning to the school tab does not revive a pending picker from its earlier visit", async () => {
+  const f = fixture(),
+    next = fixture();
+  f.context.state = { view: "backups" };
+  let generation = 0;
+  f.context.backupHubSession = {
+    captureTab: () => {
+      const captured = generation;
+      return () => captured === generation;
+    },
+  };
+  await f.context.chooseSingleFile();
+  const previous = f.getStored(),
+    pending = deferredFileAction();
+  f.context.window.showSaveFilePicker = () => pending.promise;
+  const choosing = f.context.chooseSingleFile();
+  generation += 2;
+  pending.resolve(next.handle);
+  await assert.rejects(choosing, { code: "SINGLE_FILE_CONTEXT_CHANGED" });
+  assert.equal(f.getStored().connectionId, previous.connectionId);
+  assert.equal(next.writes, 0);
+  assert.notEqual(vm.runInContext("singleFileTimer", f.context), null);
+});
+
+test("a bank permission retry carries the banner page's lifetime without coupling to the school file", async () => {
+  const f = fixture(),
+    pending = deferredFileAction();
+  f.context.state = { view: "schools" };
+  f.context.document.querySelector = () => null;
+  let supplied,
+    calls = 0;
+  f.context.EduQuestionBankFileBackup = {
+    service: {
+      supported: () => true,
+      state: () => ({ state: "permission" }),
+      saveNow(approval, options) {
+        assert.equal(approval, undefined);
+        supplied = options;
+        calls++;
+        return pending.promise.then(() => options.isCurrent());
+      },
+    },
+  };
+  const saving = f.context.renewQuestionBankFilePermission();
+  assert.equal(calls, 1, "request stays in the explicit click gesture");
+  assert.equal(supplied.isCurrent(), true);
+  f.context.temporarySchoolFile = { connectionId: "school-file" };
+  vm.runInContext("singleFile = temporarySchoolFile", f.context);
+  assert.equal(
+    supplied.isCurrent(),
+    true,
+    "school connection remains independent",
+  );
+  f.context.state.view = "classes";
+  pending.resolve();
+  assert.equal(await saving, false);
+  assert.equal(f.writes, 0);
+  assert.equal(f.getStored(), null);
+});
+
+for (const tab of ["school", "bank"])
+  test(`the bank permission banner remains usable from the active ${tab} backup tab and expires when that tab changes`, () => {
+    const f = fixture();
+    f.context.state = { view: "backups", backupTab: tab };
+    f.context.document.querySelector = () => null;
+    let generation = 0,
+      supplied;
+    f.context.backupHubSession = {
+      captureTab(expected) {
+        assert.equal(expected, tab);
+        const captured = generation;
+        return () => captured === generation;
+      },
+    };
+    f.context.EduQuestionBankFileBackup = {
+      service: {
+        supported: () => true,
+        state: () => ({ state: "permission" }),
+        saveNow(approval, options) {
+          assert.equal(approval, undefined);
+          supplied = options;
+          return true;
+        },
+      },
+    };
+    assert.equal(f.context.renewQuestionBankFilePermission(), true);
+    assert.equal(supplied.isCurrent(), true);
+    generation++;
+    assert.equal(supplied.isCurrent(), false);
+    assert.equal(f.writes, 0);
+  });
+
+for (const action of ["choose", "save"])
+  test(`a manual ${action} interrupted after close starts reports its partial file result explicitly`, async () => {
+    const f = fixture(),
+      next = fixture();
+    f.context.state = { view: "backups" };
+    await f.context.chooseSingleFile();
+    const previous = f.getStored(),
+      pending = deferredFileAction(),
+      entered = deferredFileAction(),
+      destination = action === "choose" ? next : f,
+      open = destination.handle.createWritable;
+    if (action === "choose")
+      f.context.window.showSaveFilePicker = async () => next.handle;
+    destination.handle.createWritable = async () => {
+      const stream = await open();
+      return {
+        ...stream,
+        async close() {
+          entered.resolve();
+          await pending.promise;
+          return stream.close();
+        },
+      };
+    };
+    const operation =
+      action === "choose"
+        ? f.context.chooseSingleFile()
+        : f.context.resumeSingleFile();
+    await entered.promise;
+    f.context.state.view = "schools";
+    pending.resolve();
+    await assert.rejects(operation, (error) => {
+      assert.equal(error.code, "SINGLE_FILE_CONTEXT_CHANGED");
+      assert.equal(error.fileCommitStarted, true);
+      assert.match(error.message, /ممکن است فایل تغییر کرده باشد/);
+      return true;
+    });
+    assert.equal(
+      JSON.parse(destination.contents).format,
+      "EduManager.FullBackup",
+    );
+    assert.equal(destination.writes, action === "choose" ? 1 : 2);
+    assert.equal(f.getStored().connectionId, previous.connectionId);
+    assert.equal(
+      f.deliveries.length,
+      1,
+      "the interrupted write is never reported as delivered",
+    );
+    assert.equal(vm.runInContext("singleFileTimer", f.context), null);
+  });
+
+for (const action of ["picker", "permission", "snapshot"])
+  test(`a late ${action} rejection from an abandoned manual action cannot fail the healthy existing backup`, async () => {
+    const f = fixture(),
+      next = fixture();
+    f.context.state = { view: "backups" };
+    await f.context.chooseSingleFile();
+    const previous = f.getStored(),
+      contents = f.contents,
+      entered = deferredFileAction();
+    let reject;
+    const pending = new Promise((_resolve, fail) => {
+      reject = fail;
+    });
+    let operation;
+    if (action === "picker") {
+      f.context.window.showSaveFilePicker = () => pending;
+      operation = f.context.chooseSingleFile();
+    } else if (action === "permission") {
+      f.handle.requestPermission = () => pending;
+      operation = f.context.resumeSingleFile();
+    } else {
+      f.context.window.showSaveFilePicker = async () => next.handle;
+      f.context.snapshotInstallation = () => {
+        entered.resolve();
+        return pending;
+      };
+      operation = f.context.chooseSingleFile();
+      await entered.promise;
+    }
+    f.context.state.view = "schools";
+    reject(Error("late file failure"));
+    await assert.rejects(operation, { code: "SINGLE_FILE_CONTEXT_CHANGED" });
+    assert.equal(f.getStored().connectionId, previous.connectionId);
+    assert.equal(f.contents, contents);
+    assert.equal(next.writes, 0);
+    assert.notEqual(vm.runInContext("singleFileTimer", f.context), null);
+    assert.equal(vm.runInContext("singleFileFailure", f.context), false);
+  });

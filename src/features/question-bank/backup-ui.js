@@ -352,17 +352,20 @@
         }
       };
     }
-    bindAutomatic(choose, () => F.choose());
+    bindAutomatic(choose, () => F.choose({ isCurrent: current }));
     bindAutomatic(save, () => {
       if (!F.state().connected) throw Error("ابتدا فایل JSON را انتخاب کنید.");
-      return F.saveNow((name, counts) => {
-        if (!current()) return false;
-        return confirm(
-          `فایل «${name}» با ${number(counts.questions)} سؤال و ${number(counts.exams)} آزمون فعلی جایگزین شود؟ نسخهٔ قبلی این فایل از بین می‌رود؛ اگر لازم است ابتدا یک کپی نگه دارید.`,
-        ).then((accepted) => Boolean(accepted && current()));
-      });
+      return F.saveNow(
+        (name, counts) => {
+          if (!current()) return false;
+          return confirm(
+            `فایل «${name}» با ${number(counts.questions)} سؤال و ${number(counts.exams)} آزمون فعلی جایگزین شود؟ نسخهٔ قبلی این فایل از بین می‌رود؛ اگر لازم است ابتدا یک کپی نگه دارید.`,
+          ).then((accepted) => Boolean(accepted && current()));
+        },
+        { isCurrent: current },
+      );
     });
-    bindAutomatic(stop, () => F.stop());
+    bindAutomatic(stop, () => F.stop({ isCurrent: current }));
     const reset = el("details", undefined, "backup-reset qb-backup-reset");
     reset.append(
       el("summary", "حذف اطلاعات و فایل متصل"),
@@ -438,7 +441,10 @@
         status.innerHTML = view.noticeHtml({ ...options, permission: null });
         status.hidden = options.noticeHidden;
         const permission = status.querySelector("[data-qb-file-permission]");
-        if (permission) bindAutomatic(permission, () => F.saveNow());
+        if (permission)
+          bindAutomatic(permission, () =>
+            F.saveNow(undefined, { isCurrent: current }),
+          );
       }
       status.dataset.state = state.state;
       if (fallback) fallback.hidden = !options.fallback;

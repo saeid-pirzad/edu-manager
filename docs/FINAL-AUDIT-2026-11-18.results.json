@@ -1,0 +1,189 @@
+{
+  "runs": 18,
+  "total": 7817,
+  "passed": 7817,
+  "failed": 0,
+  "applicationReleases": ["9d0c5b2549425000"],
+  "results": [
+    {
+      "stage": "period-deletion",
+      "total": 277,
+      "passed": 277,
+      "failed": 0,
+      "applicationRelease": "9d0c5b2549425000",
+      "executedAt": "2026-11-18T12:19:13.410Z",
+      "resultFile": "C:\\Users\\Public\\edu-manager-final-audit-20261118-release\\edu-integrity-audit-0NEH1X\\data-integrity-results.json",
+      "browserProfileRetained": false
+    },
+    {
+      "stage": "question-bank-business",
+      "total": 283,
+      "passed": 283,
+      "failed": 0,
+      "applicationRelease": "9d0c5b2549425000",
+      "executedAt": "2026-11-18T12:16:43.308Z",
+      "resultFile": "C:\\Users\\Public\\edu-manager-final-audit-20261118-release\\edu-integrity-audit-c3qcVT\\data-integrity-results.json",
+      "browserProfileRetained": false
+    },
+    {
+      "stage": "record-edit-access",
+      "total": 265,
+      "passed": 265,
+      "failed": 0,
+      "applicationRelease": "9d0c5b2549425000",
+      "executedAt": "2026-11-18T12:22:55.117Z",
+      "resultFile": "C:\\Users\\Public\\edu-manager-final-audit-20261118-release\\edu-integrity-audit-D6EVuw\\data-integrity-results.json",
+      "browserProfileRetained": false
+    },
+    {
+      "stage": "theme-reactium-acceptance",
+      "total": 411,
+      "passed": 411,
+      "failed": 0,
+      "applicationRelease": "9d0c5b2549425000",
+      "executedAt": "2026-11-18T12:20:52.446Z",
+      "resultFile": "C:\\Users\\Public\\edu-manager-final-audit-20261118-release\\edu-integrity-audit-GSla33\\data-integrity-results.json",
+      "browserProfileRetained": false
+    },
+    {
+      "stage": "modular-unit-grading",
+      "total": 255,
+      "passed": 255,
+      "failed": 0,
+      "applicationRelease": "9d0c5b2549425000",
+      "executedAt": "2026-11-18T12:18:19.286Z",
+      "resultFile": "C:\\Users\\Public\\edu-manager-final-audit-20261118-release\\edu-integrity-audit-IHkLbO\\data-integrity-results.json",
+      "browserProfileRetained": false
+    },
+    {
+      "stage": "navbar-layout",
+      "total": 679,
+      "passed": 679,
+      "failed": 0,
+      "applicationRelease": "9d0c5b2549425000",
+      "executedAt": "2026-11-18T12:21:58.535Z",
+      "resultFile": "C:\\Users\\Public\\edu-manager-final-audit-20261118-release\\edu-integrity-audit-lBBSKs\\data-integrity-results.json",
+      "browserProfileRetained": false
+    },
+    {
+      "stage": "modular-unit-karnameh-layout",
+      "total": 345,
+      "passed": 345,
+      "failed": 0,
+      "applicationRelease": "9d0c5b2549425000",
+      "executedAt": "2026-11-18T12:18:45.155Z",
+      "resultFile": "C:\\Users\\Public\\edu-manager-final-audit-20261118-release\\edu-integrity-audit-MMG80v\\data-integrity-results.json",
+      "browserProfileRetained": false
+    },
+    {
+      "stage": "school-create-ui",
+      "total": 340,
+      "passed": 340,
+      "failed": 0,
+      "applicationRelease": "9d0c5b2549425000",
+      "executedAt": "2026-11-18T12:22:34.192Z",
+      "resultFile": "C:\\Users\\Public\\edu-manager-final-audit-20261118-release\\edu-integrity-audit-MUce31\\data-integrity-results.json",
+      "browserProfileRetained": false
+    },
+    {
+      "stage": "question-bank",
+      "total": 538,
+      "passed": 538,
+      "failed": 0,
+      "applicationRelease": "9d0c5b2549425000",
+      "executedAt": "2026-11-18T12:16:18.797Z",
+      "resultFile": "C:\\Users\\Public\\edu-manager-final-audit-20261118-release\\edu-integrity-audit-NnqjcF\\data-integrity-results.json",
+      "browserProfileRetained": false
+    },
+    {
+      "stage": "timetable-edit-access",
+      "total": 236,
+      "passed": 236,
+      "failed": 0,
+      "applicationRelease": "9d0c5b2549425000",
+      "executedAt": "2026-11-18T12:23:13.183Z",
+      "resultFile": "C:\\Users\\Public\\edu-manager-final-audit-20261118-release\\edu-integrity-audit-OpqPRN\\data-integrity-results.json",
+      "browserProfileRetained": false
+    },
+    {
+      "stage": "unified-backup-hub",
+      "total": 301,
+      "passed": 301,
+      "failed": 0,
+      "applicationRelease": "9d0c5b2549425000",
+      "executedAt": "2026-11-18T12:17:40.172Z",
+      "resultFile": "C:\\Users\\Public\\edu-manager-final-audit-20261118-release\\edu-integrity-audit-PhKfqA\\data-integrity-results.json",
+      "browserProfileRetained": false
+    },
+    {
+      "stage": "4-adversarial-workflow-review",
+      "total": 2385,
+      "passed": 2385,
+      "failed": 0,
+      "applicationRelease": "9d0c5b2549425000",
+      "executedAt": "2026-11-18T12:15:23.875Z",
+      "resultFile": "C:\\Users\\Public\\edu-manager-final-audit-20261118-release\\edu-integrity-audit-q2TNnR\\data-integrity-results.json",
+      "browserProfileRetained": false
+    },
+    {
+      "stage": "annual-backup-file-scale",
+      "total": 239,
+      "passed": 239,
+      "failed": 0,
+      "applicationRelease": "9d0c5b2549425000",
+      "executedAt": "2026-11-18T12:20:24.218Z",
+      "resultFile": "C:\\Users\\Public\\edu-manager-final-audit-20261118-release\\edu-integrity-audit-QOGxX8\\data-integrity-results.json",
+      "browserProfileRetained": false
+    },
+    {
+      "stage": "week-settings",
+      "total": 246,
+      "passed": 246,
+      "failed": 0,
+      "applicationRelease": "9d0c5b2549425000",
+      "executedAt": "2026-11-18T12:23:32.059Z",
+      "resultFile": "C:\\Users\\Public\\edu-manager-final-audit-20261118-release\\edu-integrity-audit-S5IrfW\\data-integrity-results.json",
+      "browserProfileRetained": false
+    },
+    {
+      "stage": "gradebook-mobile-layout",
+      "total": 266,
+      "passed": 266,
+      "failed": 0,
+      "applicationRelease": "9d0c5b2549425000",
+      "executedAt": "2026-11-18T12:19:34.722Z",
+      "resultFile": "C:\\Users\\Public\\edu-manager-final-audit-20261118-release\\edu-integrity-audit-UlaFJ3\\data-integrity-results.json",
+      "browserProfileRetained": false
+    },
+    {
+      "stage": "question-bank-import",
+      "total": 247,
+      "passed": 247,
+      "failed": 0,
+      "applicationRelease": "9d0c5b2549425000",
+      "executedAt": "2026-11-18T12:17:59.549Z",
+      "resultFile": "C:\\Users\\Public\\edu-manager-final-audit-20261118-release\\edu-integrity-audit-Uzqt4E\\data-integrity-results.json",
+      "browserProfileRetained": false
+    },
+    {
+      "stage": "single-academic-year-ui",
+      "total": 235,
+      "passed": 235,
+      "failed": 0,
+      "applicationRelease": "9d0c5b2549425000",
+      "executedAt": "2026-11-18T12:19:52.040Z",
+      "resultFile": "C:\\Users\\Public\\edu-manager-final-audit-20261118-release\\edu-integrity-audit-v3eAVn\\data-integrity-results.json",
+      "browserProfileRetained": false
+    },
+    {
+      "stage": "logo-ui-pwa",
+      "total": 269,
+      "passed": 269,
+      "failed": 0,
+      "applicationRelease": "9d0c5b2549425000",
+      "executedAt": "2026-11-18T12:21:13.213Z",
+      "resultFile": "C:\\Users\\Public\\edu-manager-final-audit-20261118-release\\edu-integrity-audit-wcc7UY\\data-integrity-results.json",
+      "browserProfileRetained": false
+    }
+  ]
+}

@@ -59,8 +59,18 @@ function installUI() {
     if (event.key === "Escape") {
       event.preventDefault();
       if (drafts.size || assessmentContext.hasDrafts()) {
+        const body = document.getElementById("modalBody"),
+          content = body.firstChild;
         flushDrafts({ strict: true })
-          .then(() => closeModal())
+          .then(() => {
+            if (
+              document.getElementById("modal") === overlay &&
+              !overlay.classList.contains("hidden") &&
+              document.getElementById("modalBody") === body &&
+              body.firstChild === content
+            )
+              closeModal();
+          })
           .catch(handleError);
       } else closeModal();
       return;

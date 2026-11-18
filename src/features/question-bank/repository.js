@@ -103,15 +103,36 @@
         reject(tx.error || Error("خواندن اتصال فایل ناموفق بود."));
     });
   }
-  async function writeBackup(config) {
+  async function writeBackup(config, { isCurrent = () => true } = {}) {
+    const cancelled = () =>
+      Error("عملیات لغو شد؛ بخش پشتیبان دیگر فعال نیست. اتصال تغییر نکرد.");
+    if (!isCurrent()) throw cancelled();
     const db = await open();
+    if (!isCurrent()) throw cancelled();
     return new Promise((resolve, reject) => {
-      const tx = db.transaction("bank", "readwrite");
-      if (config) tx.objectStore("bank").put(config, "file-backup");
-      else tx.objectStore("bank").delete("file-backup");
+      const tx = db.transaction("bank", "readwrite"),
+        store = tx.objectStore("bank"),
+        request = store.get("file-backup");
+      let invalidated = false;
+      // A readwrite transaction can wait behind another window's writer.
+      // Check its owner when the first request actually executes, before
+      // queueing a connection change in that transaction.
+      request.onsuccess = () => {
+        if (!isCurrent()) {
+          invalidated = true;
+          tx.abort();
+          return;
+        }
+        if (config) store.put(config, "file-backup");
+        else store.delete("file-backup");
+      };
       tx.oncomplete = () => resolve();
       tx.onabort = () =>
-        reject(tx.error || Error("ثبت اتصال فایل ناموفق بود."));
+        reject(
+          invalidated
+            ? cancelled()
+            : tx.error || Error("ثبت اتصال فایل ناموفق بود."),
+        );
     });
   }
   root.EduQuestionBankRepository = {
