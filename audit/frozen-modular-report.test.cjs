@@ -31,6 +31,7 @@ function fixture() {
     "workspace/domain/defaults-numbers.js",
     "legacy/grading/calculation.js",
     "legacy/grading/kardanesh.js",
+    "services/grading-results.js",
     "workspace/grading/results.js",
     "workspace/courses/results.js",
     "workspace/reports/finalize.js",

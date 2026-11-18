@@ -1,0 +1,329 @@
+@media screen {
+  :is(#modalBody, .qb-body) .period-list table {
+    width: 100%;
+    margin: 0;
+  }
+  :is(#modalBody, .qb-body) .period-list th {
+    background: var(--theme-surface-muted);
+    color: var(--theme-muted);
+    font-size: 11px;
+  }
+  :is(#modalBody, .qb-body) .period-list td {
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+  :is(#modalBody, .qb-body) .period-list :is(th, td) {
+    text-align: start;
+    vertical-align: middle;
+  }
+  :is(#modalBody, .qb-body) .period-list table:not([data-ui-layout="cards"]) {
+    table-layout: fixed;
+  }
+  :is(#modalBody, .qb-body)
+    .period-list
+    table:not([data-ui-layout="cards"])
+    :is(th, td):nth-child(1) {
+    width: 32%;
+  }
+  :is(#modalBody, .qb-body)
+    .period-list
+    table:not([data-ui-layout="cards"])
+    :is(th, td):nth-child(2) {
+    width: 18%;
+  }
+  :is(#modalBody, .qb-body) .period-row-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+  }
+  :is(#modalBody, .qb-body) .period-row-actions > button {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 44px;
+    width: 100%;
+    margin: 0;
+    box-sizing: border-box;
+  }
+  :is(#modalBody, .qb-body)
+    .period-row-actions
+    > [data-workspace-action="new-second-period"] {
+    order: 1;
+    grid-column: 1 / -1;
+  }
+  :is(#modalBody, .qb-body) .period-hub button.ghost {
+    background: var(--theme-surface-subtle);
+    border: 1px solid var(--theme-line);
+    color: var(--theme-ink);
+  }
+  :is(#modalBody, .qb-body) .period-list button.period-delete-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 8px 12px;
+    margin-inline-start: 0;
+    border: 1px solid var(--status-danger-line);
+    border-radius: 9px;
+    background: var(--status-danger-soft);
+    color: var(--status-danger);
+    font-weight: 600;
+    white-space: nowrap;
+    box-shadow: none;
+  }
+  :is(#modalBody, .qb-body) .period-delete-button > span:first-child {
+    display: inline-flex;
+    flex: 0 0 auto;
+  }
+  :is(#modalBody, .qb-body) .period-delete-button svg {
+    width: 16px;
+    height: 16px;
+  }
+  :is(#modalBody, .qb-body) .period-list button.period-delete-button:hover {
+    background: var(--status-danger-soft);
+    border-color: var(--status-danger-line);
+    color: var(--status-danger);
+  }
+  :is(#modalBody, .qb-body)
+    .period-list
+    button.period-delete-button:focus-visible {
+    outline: 2px solid var(--status-danger);
+    outline-offset: 3px;
+  }
+  :is(#modalBody, .qb-body) .period-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin: 0;
+  }
+  :is(#modalBody, .qb-body) .period-actions > button:first-child {
+    grid-column: 1 / -1;
+    background: var(--theme-primary);
+    color: var(--theme-surface);
+  }
+  :is(#modalBody, .qb-body)
+    .period-actions
+    > :is(
+      [data-workspace-action="finalize-period"],
+      [data-workspace-action="reopen-period"]
+    ) {
+    background: var(--theme-primary-soft);
+    border: 1px solid var(--theme-line);
+    color: var(--theme-primary);
+  }
+  :is(#modalBody, .qb-body) .period-report-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    gap: 12px;
+    margin: 0;
+    padding: 12px 0;
+    border-top: 1px solid var(--theme-surface-muted);
+  }
+  :is(#modalBody, .qb-body) .period-report-row span {
+    flex: 1;
+    min-width: 0;
+    font-size: 12px;
+    line-height: 1.9;
+    color: var(--theme-muted);
+  }
+  :is(#modalBody, .qb-body) .period-report-row button {
+    flex: 0 0 auto;
+  }
+  :is(#modalBody, .qb-body) .period-create {
+    display: grid;
+    gap: 16px;
+    padding: 18px;
+    border: 1px solid var(--theme-line);
+    border-radius: 13px;
+    background: var(--theme-surface);
+  }
+  :is(#modalBody, .qb-body) .period-create label {
+    display: grid;
+    gap: 7px;
+    margin: 0;
+    font-size: 12px;
+    color: var(--theme-muted);
+  }
+  :is(#modalBody, .qb-body) .period-create :is(input, select) {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    margin: 0;
+    border: 1px solid var(--theme-line);
+    border-radius: 9px;
+    background: var(--theme-surface-subtle);
+    font-size: 16px;
+  }
+  :is(#modalBody, .qb-body) .period-create p {
+    margin: 0;
+    color: var(--theme-muted);
+    font-size: 12px;
+    line-height: 1.95;
+  }
+  :is(#modalBody, .qb-body) .period-create > button {
+    background: var(--theme-primary);
+    color: var(--theme-surface);
+  }
+  :is(#modalBody, .qb-body) .frozen-report-heading {
+    padding: 18px;
+    border: 1px solid var(--theme-line);
+    border-radius: 13px;
+    background: var(--theme-surface);
+  }
+  :is(#modalBody, .qb-body) .frozen-report-heading h2 {
+    margin: 0 0 8px;
+    font-size: 20px;
+  }
+  :is(#modalBody, .qb-body) .frozen-report-heading p {
+    margin: 0 0 14px;
+    color: var(--theme-muted);
+    font-size: 12px;
+    line-height: 1.9;
+  }
+  :is(#modalBody, .qb-body) .frozen-report-heading > button {
+    background: var(--theme-primary);
+    color: var(--theme-surface);
+  }
+  :is(#modalBody, .qb-body) .frozen-class {
+    min-width: 0;
+  }
+  :is(#modalBody, .qb-body) .frozen-class > h3 {
+    margin: 12px 0;
+    padding-inline: 4px;
+    font-size: 15px;
+  }
+  :is(#modalBody, .qb-body) .frozen-student {
+    min-width: 0;
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 1px solid var(--theme-line);
+    border-radius: 13px;
+    background: var(--theme-surface);
+  }
+  :is(#modalBody, .qb-body) .frozen-student > h4 {
+    margin: 0 0 14px;
+    font-size: 15px;
+  }
+  :is(#modalBody, .qb-body) .frozen-student .table-scroll {
+    border: 1px solid var(--theme-line);
+    border-radius: 10px;
+  }
+  :is(#modalBody, .qb-body) .frozen-student table {
+    width: 100%;
+    margin: 0;
+  }
+  :is(#modalBody, .qb-body) .frozen-student th {
+    background: var(--theme-surface-muted);
+    color: var(--theme-muted);
+    font-size: 11px;
+  }
+  :is(#modalBody, .qb-body) .frozen-student td {
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+  :is(#modalBody, .qb-body) .frozen-student td small {
+    display: block;
+    margin-top: 4px;
+    color: var(--theme-muted);
+    font-size: 10px;
+  }
+  :is(#modalBody, .qb-body) .frozen-average {
+    display: inline-block;
+    margin: 14px 0 0;
+    padding: 8px 12px;
+    border: 1px solid var(--status-warning-line);
+    border-radius: 9px;
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
+    font-size: 13px;
+    font-weight: 600;
+  }
+}
+@media screen and (max-width: 700px) {
+  #modal:has(.period-hub, .period-create, .frozen-report) {
+    padding: 10px;
+    align-items: center;
+  }
+  #modal:has(.period-hub, .period-create, .frozen-report) .modal-dialog {
+    max-height: calc(var(--app-viewport, 100dvh) - 20px);
+    border-radius: 16px;
+  }
+  #modal:has(.period-hub, .period-create, .frozen-report) .modal-header {
+    padding: 10px 14px;
+  }
+  #modal:has(.period-hub, .period-create, .frozen-report) .modal-header h3 {
+    font-size: 14px;
+  }
+  #modal:has(.period-hub, .period-create, .frozen-report) .modal-body {
+    padding: 10px;
+  }
+  :is(#modalBody, .qb-body) .period-hub > section,
+  :is(#modalBody, .qb-body)
+    :is(.period-create, .frozen-report-heading, .frozen-student) {
+    padding: 14px 12px;
+    border-radius: 11px;
+  }
+  :is(#modalBody, .qb-body) .period-intro {
+    padding: 12px;
+    font-size: 11px;
+  }
+  :is(#modalBody, .qb-body) .period-list table[data-ui-layout="cards"] tbody {
+    gap: 8px;
+  }
+  :is(#modalBody, .qb-body)
+    .period-list
+    table[data-ui-layout="cards"]
+    tbody
+    tr {
+    padding: 12px;
+    border-color: var(--theme-line);
+    border-radius: 10px;
+    box-shadow: none;
+  }
+  :is(#modalBody, .qb-body) .period-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  :is(#modalBody, .qb-body) .period-hub button {
+    font-size: 11px;
+  }
+  :is(#modalBody, .qb-body) .period-report-row {
+    gap: 8px;
+  }
+  :is(#modalBody, .qb-body) .period-report-row span {
+    font-size: 11px;
+  }
+  :is(#modalBody, .qb-body) .frozen-report-heading h2 {
+    font-size: 18px;
+  }
+  :is(#modalBody, .qb-body) .frozen-class > h3 {
+    font-size: 13px;
+  }
+  :is(#modalBody, .qb-body)
+    .frozen-student
+    table[data-ui-layout="cards"]
+    tbody
+    tr {
+    padding: 12px;
+    border-color: var(--theme-line);
+    border-radius: 10px;
+    box-shadow: none;
+  }
+}
+@media print {
+  .frozen-student {
+    break-inside: auto;
+    margin-block: 12px;
+  }
+  .frozen-student > h4 {
+    break-after: avoid;
+  }
+  .frozen-student .table-scroll {
+    overflow: visible !important;
+  }
+}

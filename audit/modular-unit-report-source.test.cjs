@@ -24,6 +24,7 @@ function fixture({ unitBased = true } = {}) {
     "domain/annual-modules.js",
     "legacy/grading/calculation.js",
     "legacy/grading/kardanesh.js",
+    "services/grading-results.js",
     "workspace/grading/results.js",
   ])
     vm.runInContext(

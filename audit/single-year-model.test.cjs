@@ -408,6 +408,7 @@ test("a full snapshot retains records, reports, events and drafts from every leg
   });
   vm.runInContext(source("domain/grade-drafts.js"), c);
   vm.runInContext(source("domain/deputy-export-identity.js"), c);
+  vm.runInContext(source("services/installation-backup.js"), c);
   vm.runInContext(source("workspace/backups/full-export.js"), c);
   const snapshot = await c.snapshotInstallation();
   for (const store of ["catalog", "records", "reports", "events"])

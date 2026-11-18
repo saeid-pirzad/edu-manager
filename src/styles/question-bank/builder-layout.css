@@ -1,0 +1,246 @@
+@media screen {
+  .qb-body:has(.qb-builder) > .qb-tabs {
+    margin-inline-end: var(--qb-builder-scrollbar, 0px);
+  }
+  .qb-panel:has(> .qb-builder) {
+    scrollbar-gutter: auto;
+  }
+  .qb-body .qb-builder > .qb-form-fields {
+    padding-inline: 0;
+    scrollbar-width: thin;
+    scrollbar-gutter: stable;
+  }
+  .qb-body .qb-builder > .record-editor-actions {
+    margin-inline-end: var(--qb-builder-scrollbar, 0px);
+  }
+  .qb-body .qb-builder .qb-form-fields > fieldset {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    margin-inline: 0;
+  }
+  .qb-builder .qb-builder-intro {
+    padding: 0 2px;
+    border: 0;
+    background: transparent;
+  }
+  .qb-builder-intro p {
+    color: var(--theme-muted);
+    font-size: 11px;
+  }
+  .qb-builder .qb-builder-course {
+    --qb-course-control-size: 44px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--qb-course-control-size);
+    align-items: end;
+    gap: 8px;
+    margin: 0 0 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--theme-line-soft);
+  }
+  #app .qb-builder .qb-builder-course > .course-field {
+    min-width: 0;
+    margin: 0;
+  }
+  #app .qb-page .qb-body .qb-builder .qb-builder-course select {
+    box-sizing: border-box;
+    width: 100%;
+    height: var(--qb-course-control-size) !important;
+    min-height: var(--qb-course-control-size) !important;
+    margin: 0;
+    padding-block: 6px !important;
+    border-radius: 8px !important;
+  }
+  #app .qb-builder .qb-builder-course > .qb-course-actions {
+    display: flex;
+    align-items: center;
+    padding: 0;
+    margin: 0;
+  }
+  #app
+    .qb-page
+    .qb-body
+    .qb-builder
+    .qb-builder-course
+    button.qb-context-action {
+    box-sizing: border-box;
+    flex: 0 0 var(--qb-course-control-size);
+    width: var(--qb-course-control-size);
+    min-width: var(--qb-course-control-size);
+    height: var(--qb-course-control-size) !important;
+    min-height: var(--qb-course-control-size) !important;
+    margin: 0;
+    padding: 0 !important;
+    border-radius: 8px;
+  }
+  .qb-builder .qb-builder-course .qb-context-action > .ui-button-label {
+    display: none;
+  }
+  .qb-builder-units {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    max-height: 190px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+  .qb-body .qb-builder .qb-builder-units > .course-field {
+    margin: 0;
+    padding: 7px 8px;
+    font-size: 12px;
+    gap: 6px;
+  }
+  .qb-builder-units .course-field small {
+    white-space: nowrap;
+    font-size: 10px;
+    color: var(--theme-muted);
+  }
+  .qb-builder .qb-builder-units .course-field .qb-unit-count {
+    flex-shrink: 0;
+    padding: 1px 7px;
+    border: 1px solid var(--status-info-line);
+    border-radius: 20px;
+    background: var(--status-info-soft);
+    color: var(--status-info);
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.8;
+    font-variant-numeric: tabular-nums;
+  }
+  .qb-builder .qb-selection-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 3px;
+    border: 1px solid var(--theme-line);
+    border-radius: 10px;
+    background: var(--theme-surface-subtle);
+    margin-top: 8px;
+  }
+  :is(#app, .qb-page) .qb-body .qb-selection-actions > button.ui-button {
+    border: 0;
+    border-radius: 7px;
+    background: transparent !important;
+    color: var(--theme-muted) !important;
+    box-shadow: none;
+    font-size: 11px;
+    gap: 5px;
+  }
+  :is(#app, .qb-page)
+    .qb-body
+    .qb-selection-actions
+    > button.ui-button:first-child {
+    background: var(--status-info-soft) !important;
+    color: var(--status-info) !important;
+  }
+  :is(#app, .qb-page)
+    .qb-body
+    .qb-selection-actions
+    > button.ui-button:not(:disabled):hover {
+    background: var(--theme-surface-muted) !important;
+    color: var(--theme-ink) !important;
+  }
+  .qb-selection-actions > button:disabled {
+    opacity: 0.4;
+  }
+  .qb-composition-hint {
+    margin: 0 0 10px;
+    color: var(--theme-muted);
+    font-size: 11px;
+    line-height: 1.8;
+  }
+  .qb-builder .qb-target-score {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(80px, 110px);
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding: 8px 10px;
+    border: 1px solid var(--status-info-line);
+    border-radius: 9px;
+    color: var(--status-info);
+    background: var(--status-info-soft);
+    font-size: 12px;
+  }
+  .qb-target-score input {
+    min-width: 0;
+    text-align: center;
+  }
+  .qb-body .qb-builder .qb-count-grid {
+    gap: 8px;
+  }
+  .qb-body .qb-builder .qb-count-field {
+    padding: 8px;
+    border: 1px solid var(--theme-line);
+    border-radius: 9px;
+    background: var(--theme-surface-subtle);
+    grid-template-rows: minmax(24px, auto) 44px;
+    gap: 5px;
+  }
+  .qb-count-field[data-question-type="mcq"] {
+    --qb-count-ink: var(--status-info);
+    --qb-count-soft: var(--status-info-soft);
+  }
+  .qb-count-field[data-question-type="blank"] {
+    --qb-count-ink: var(--status-warning);
+    --qb-count-soft: var(--status-warning-soft);
+  }
+  .qb-count-field[data-question-type="essay"] {
+    --qb-count-ink: var(--status-leave);
+    --qb-count-soft: var(--status-leave-soft);
+  }
+  .qb-count-field[data-question-type="boolean"] {
+    --qb-count-ink: var(--status-success);
+    --qb-count-soft: var(--status-success-soft);
+  }
+  .qb-body .qb-builder .qb-count-field .qb-capacity-badge {
+    color: var(--qb-count-ink);
+    background: var(--qb-count-soft);
+    border-color: transparent;
+  }
+  .qb-body .qb-builder .qb-count-field[data-shortage="true"] {
+    border-color: var(--status-danger-line);
+  }
+  .qb-body
+    .qb-builder
+    .qb-count-field[data-shortage="true"]
+    .qb-capacity-badge {
+    color: var(--status-danger);
+    background: var(--status-danger-soft);
+  }
+  .qb-builder .qb-count-field[data-shortage="true"] input {
+    border-color: var(--status-danger-line);
+  }
+  .qb-builder .qb-plan-summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    margin-top: 10px;
+    padding: 8px 10px;
+    background: var(--status-info-soft);
+    color: var(--status-info);
+    font-size: 11px;
+  }
+}
+@media screen and (max-width: 700px) {
+  .qb-builder-units {
+    grid-template-columns: minmax(0, 1fr);
+    max-height: 156px;
+  }
+  .qb-body .qb-builder .qb-form-fields > fieldset {
+    padding: 10px;
+    border-radius: 10px;
+  }
+  .qb-builder .qb-form-fields > fieldset > legend {
+    font-size: 12px;
+  }
+  .qb-builder .qb-count-title {
+    font-size: 10px;
+  }
+  .qb-builder .qb-builder-course .qb-context-action > .ui-button-label {
+    display: none;
+  }
+}

@@ -1,0 +1,31 @@
+@media screen and (max-width: 400px) {
+  #app .dashboard-entity-actions {
+    gap: 8px;
+    grid-template-columns: minmax(0, 1fr) 68px;
+    align-items: center;
+  }
+  #app .dashboard-entity-actions > button.entity-enter,
+  #app .dashboard-entity-more > summary {
+    box-sizing: border-box;
+    height: 48px;
+    min-height: 48px;
+    min-width: 0;
+    padding: 0 6px;
+    gap: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  #app .dashboard-entity-actions > button.entity-enter > span:first-child {
+    white-space: nowrap;
+  }
+  #app .dashboard-entity-actions .entity-enter-arrow {
+    flex: 0 0 16px;
+  }
+  #app .dashboard-entity-actions .entity-enter-arrow svg {
+    width: 16px;
+    height: 16px;
+  }
+  #app .dashboard-entity-more > summary {
+    width: 68px;
+  }
+}

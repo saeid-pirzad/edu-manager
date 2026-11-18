@@ -1,0 +1,47 @@
+@media screen {
+  #modal:has(.undo-preview) .modal-dialog {
+    width: min(100%, 460px);
+  }
+  :is(#modalBody, .qb-body) .undo-preview-summary {
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--theme-surface-muted);
+  }
+  :is(#modalBody, .qb-body)
+    .undo-preview
+    :is(.undo-preview-summary, .undo-preview-change)
+    > span {
+    font-size: 12px;
+    color: var(--theme-muted);
+  }
+  :is(#modalBody, .qb-body) .undo-preview h4 {
+    margin-top: 5px;
+    color: var(--theme-primary);
+    font-size: 16px;
+    overflow-wrap: anywhere;
+  }
+  :is(#modalBody, .qb-body) .undo-preview-change {
+    padding: 14px;
+    border: 1px solid var(--theme-line);
+    border-radius: 12px;
+    background: var(--theme-surface-subtle);
+  }
+  :is(#modalBody, .qb-body) .undo-preview-change p {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--theme-muted);
+  }
+  :is(#modalBody, .qb-body) .undo-preview-hint,
+  :is(#modalBody, .qb-body) .undo-preview-empty {
+    color: var(--theme-muted);
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  :is(#modalBody, .qb-body)
+    .undo-preview
+    .full-restore-actions
+    button:first-child {
+    background: var(--theme-primary);
+    border: 1px solid var(--theme-primary);
+    color: var(--theme-surface);
+  }
+}

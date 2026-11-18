@@ -1,0 +1,111 @@
+@media screen {
+  #app .karnameh-controls {
+    padding: 18px;
+    border: 1px solid var(--theme-line);
+    border-radius: 13px;
+    background: var(--theme-surface);
+  }
+  .karnameh-controls h3 {
+    margin: 0;
+    font-size: 17px;
+    color: var(--theme-ink);
+  }
+  .karnameh-controls header p {
+    margin: 6px 0 16px;
+    color: var(--theme-muted);
+    font-size: 12px;
+  }
+  .karnameh-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .karnameh-filter-grid label {
+    display: grid;
+    gap: 7px;
+    min-width: 0;
+    margin: 0;
+    font-size: 13px;
+    color: var(--theme-ink);
+  }
+  .karnameh-filter-grid select {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    margin: 0;
+    font-size: 16px;
+    border: 1px solid var(--theme-line);
+    border-radius: 9px;
+    background: var(--theme-surface-subtle);
+  }
+  .karnameh-filter-grid select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .karnameh-report-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .karnameh-report-heading > div {
+    min-width: 0;
+  }
+  .karnameh-report-heading :is(h2, h3) {
+    margin: 5px 0;
+    font-size: 19px;
+    overflow-wrap: anywhere;
+  }
+  .karnameh-report-heading p {
+    margin: 0;
+    color: var(--theme-muted);
+    font-size: 12px;
+    line-height: 1.9;
+  }
+  .karnameh-report-kind {
+    color: var(--theme-primary);
+    font-size: 12px;
+  }
+  .karnameh-report-heading button {
+    flex: 0 0 auto;
+    min-height: 44px;
+    margin: 0;
+    border-radius: 9px;
+    background: var(--theme-primary);
+    color: var(--theme-surface);
+  }
+  .karnameh-report-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .karnameh-report-meta span {
+    padding: 5px 10px;
+    border-radius: 8px;
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
+    font-size: 12px;
+  }
+}
+@media screen and (max-width: 700px) {
+  .karnameh-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .karnameh-filter-grid > label:last-child {
+    grid-column: 1 / -1;
+  }
+}
+@media screen and (max-width: 400px) {
+  .karnameh-filter-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .karnameh-report-heading {
+    align-items: flex-start;
+  }
+  .karnameh-report-heading :is(h2, h3) {
+    font-size: 16px;
+  }
+}

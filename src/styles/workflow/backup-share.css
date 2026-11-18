@@ -1,0 +1,106 @@
+@media screen {
+  :is(#modalBody, .qb-body) .backup-action-grid > .backup-share-entry {
+    grid-column: auto;
+    min-height: 44px;
+  }
+  :is(#modalBody, .qb-body)
+    .backup-action-grid
+    > [data-workspace-action="choose-import"] {
+    grid-column: 1 / -1;
+  }
+  #modal:has(.backup-share) .modal-dialog {
+    width: min(100%, 500px);
+  }
+  :is(#modalBody, .qb-body) .backup-share {
+    display: grid;
+    gap: 16px;
+  }
+  .backup-share-heading {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid var(--theme-line);
+    border-radius: 14px;
+    background: linear-gradient(
+      120deg,
+      var(--theme-primary-soft),
+      var(--theme-primary-soft)
+    );
+  }
+  .backup-share-heading > span {
+    display: grid;
+    place-items: center;
+    flex: 0 0 38px;
+    height: 38px;
+    border-radius: 11px;
+    background: var(--theme-surface);
+    color: var(--theme-primary);
+  }
+  :is(#modalBody, .qb-body) .backup-share h4 {
+    margin: 0 0 6px;
+    font-size: 15px;
+  }
+  :is(#modalBody, .qb-body) .backup-share p {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.9;
+    color: var(--workflow-muted);
+  }
+  .backup-share-file:not([hidden]) {
+    display: grid;
+    gap: 8px;
+    padding: 14px;
+    background: var(--theme-surface-subtle);
+    border: 1px solid var(--workflow-line);
+    border-radius: 12px;
+    min-width: 0;
+    font-size: 12px;
+    color: var(--workflow-muted);
+  }
+  .backup-share-file strong {
+    overflow-wrap: anywhere;
+    font-size: 12px;
+    color: var(--workflow-ink);
+  }
+  :is(#modalBody, .qb-body) .backup-share-status[data-state="error"] {
+    color: var(--status-danger);
+  }
+  :is(#modalBody, .qb-body) .backup-share .backup-share-note {
+    padding: 10px 12px;
+    border-inline-start: 3px solid var(--theme-primary-line);
+    border-radius: 6px;
+    background: var(--theme-surface-subtle);
+    font-size: 11px;
+  }
+  .backup-share-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  :is(#modalBody, .qb-body) .backup-share-actions button {
+    min-height: 44px;
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.8;
+    white-space: normal;
+  }
+  :is(#modalBody, .qb-body) .backup-share-actions button[hidden] {
+    display: none;
+  }
+}
+@media screen {
+  :is(#modalBody, .qb-body) .backup-reset > button {
+    width: 100%;
+    min-height: 44px;
+    margin-top: 12px;
+    border: 1px solid var(--status-danger-line);
+    background: var(--status-danger-soft);
+    color: var(--status-danger);
+    white-space: normal;
+  }
+  :is(#modalBody, .qb-body) .backup-reset > button:hover {
+    background: var(--status-danger-line);
+    border-color: var(--status-danger-line);
+  }
+}

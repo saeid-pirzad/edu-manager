@@ -1,0 +1,78 @@
+/* Keep student records as compact directory rows, not oversized profile cards. */
+@media screen {
+  #app .student-directory .student-roster {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  #app .student-directory .student-profile {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    padding: 14px;
+    border-radius: 14px;
+    box-shadow: var(--surface-inner-shadow);
+  }
+  #app .student-directory .student-profile-main {
+    gap: 10px;
+    padding: 0;
+    border: 0;
+  }
+  #app .student-directory .student-profile-actions {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  #app .student-directory .student-profile-info h4 {
+    margin: 0 0 3px;
+    font-size: 14px;
+    line-height: 1.8;
+  }
+  #app .student-directory .student-profile-info p {
+    font-size: 11px;
+    line-height: 1.9;
+  }
+  #app .student-directory .student-avatar.student-avatar-icon {
+    flex: 0 0 40px;
+    width: 40px;
+    height: 44px;
+    border-radius: 11px;
+  }
+  #app .student-directory .student-avatar-icon svg {
+    width: 30px;
+    height: 30px;
+  }
+  #app .student-directory .student-profile-actions > button,
+  #app .student-directory .student-more > summary {
+    box-sizing: border-box;
+    min-width: 0;
+    min-height: 44px;
+    height: 44px;
+    margin: 0;
+    padding: 8px 10px;
+    border-radius: 9px;
+    font-size: 11px;
+    line-height: 1.8;
+    white-space: nowrap;
+  }
+  #app .student-directory .student-more {
+    grid-column: auto;
+    margin: 0;
+  }
+  #app .student-directory .student-more > summary {
+    width: 68px;
+  }
+}
+@media screen and (min-width: 701px) {
+  #app .student-directory .student-roster {
+    padding: 0 18px 18px;
+  }
+  #app .student-directory .student-profile {
+    grid-template-columns: minmax(0, 1fr) minmax(220px, auto);
+    gap: 18px;
+    padding: 16px;
+  }
+}

@@ -1,0 +1,1066 @@
+/* Touch product layer: shared hierarchy, tablet layouts and focused mobile forms.
+   Screen-only so reports retain their existing print layout. */
+@media screen {
+  body {
+    background: var(--brand-canvas);
+  }
+  #app .topbar {
+    background: var(--theme-nav);
+  }
+  .control-icon {
+    display: inline-flex;
+    vertical-align: middle;
+    margin-inline-end: 6px;
+    pointer-events: none;
+    flex-shrink: 0;
+  }
+  .ui-icon {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+  }
+  #app .brand-mark {
+    background: var(--brand-charcoal);
+    box-shadow: 0 3px 0 var(--brand-orange);
+  }
+  #app .header-brand > .header-home.is-active {
+    background: var(--theme-primary);
+    border-color: var(--theme-primary);
+    color: var(--theme-nav-ink);
+  }
+  #app .tabs {
+    background: var(--theme-nav);
+  }
+  #app button.ghost,
+  :is(#modalBody, .qb-body) button.ghost {
+    background: var(--theme-surface-muted);
+    color: var(--theme-ink);
+    border-color: var(--workflow-line);
+  }
+  #app .tabs > button.active,
+  #app .tabs > button[aria-current="page"] {
+    background: var(--theme-primary);
+    color: var(--theme-nav-ink);
+    box-shadow: inset 0 -3px var(--theme-highlight);
+  }
+  #app :is(input, select, textarea):focus,
+  :is(#modalBody, .qb-body) :is(input, select, textarea):focus {
+    outline: none;
+    outline-offset: 0;
+    border-color: var(--field-focus-line);
+    box-shadow: 0 0 0 3px var(--field-focus-ring);
+  }
+  #app .breadcrumb a {
+    color: var(--workflow-accent);
+  }
+  #app .breadcrumb ol {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  #app .breadcrumb li {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+  #app .breadcrumb li + li::before {
+    content: "/";
+    color: var(--theme-muted);
+    flex-shrink: 0;
+  }
+  #app .breadcrumb :is(a, span) {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+  #app .breadcrumb a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  #app .breadcrumb [aria-current="page"] {
+    font-weight: 600;
+    color: var(--workflow-ink);
+  }
+  #app button.master-btn,
+  #app button.report-btn {
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary-hover);
+  }
+  #app .session-mode-picker [aria-pressed="false"] {
+    background: var(--theme-surface-muted);
+    color: var(--theme-ink);
+  }
+  #mobileBar {
+    background: var(--theme-primary-soft);
+    border-color: var(--brand-orange);
+    color: var(--theme-primary-hover);
+  }
+  #mobileBar button:not(.ghost) {
+    background: var(--workflow-accent);
+  }
+  #uiBottomNav button[aria-current="page"] {
+    background: var(--theme-primary);
+    color: var(--theme-nav-ink);
+  }
+  #app .workspace-bar {
+    margin-bottom: 10px;
+    font-size: 12px;
+  }
+  #app .workspace-bar > strong {
+    color: var(--theme-muted);
+    font-weight: 500;
+    line-height: 1.8;
+  }
+  #app .workspace-bar #saveStatus {
+    text-align: start;
+    width: auto;
+    border-radius: 10px;
+    padding: 6px 10px;
+    line-height: 1.8;
+    overflow-wrap: anywhere;
+  }
+  #app #saveStatus[data-state="saved"] {
+    background: var(--status-success-soft);
+    color: var(--status-success);
+  }
+  #app #saveStatus[data-state="pending"] {
+    background: var(--status-warning-soft);
+    color: var(--status-warning);
+  }
+  #app #saveStatus[data-state="error"],
+  #app .workspace-bar > :is(#singleFileBadge, #questionBankFileBadge) {
+    background: var(--status-danger-soft);
+    color: var(--status-danger);
+    padding: 10px 12px;
+    border-radius: 10px;
+    grid-column: 1 / -1;
+    line-height: 1.9;
+    overflow-wrap: anywhere;
+  }
+  #app
+    .workspace-bar
+    > :is(#singleFileBadge, #questionBankFileBadge):not([hidden]),
+  :is(#modalBody, .qb-body) #backupHub .backup-automatic-notice {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .single-file-message {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    line-height: 1.9;
+  }
+  .backup-file-purpose {
+    color: var(--theme-ink);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .backup-notice-filename {
+    font-size: 11px;
+    font-weight: 500;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+  .backup-file-detail {
+    font-size: 11px;
+  }
+  #app
+    :is(#singleFileBadge, #questionBankFileBadge)
+    > .single-file-permission-action,
+  :is(#modalBody, .qb-body)
+    #backupHub
+    .backup-automatic-notice
+    > .single-file-permission-action {
+    flex-shrink: 0;
+    min-width: 0;
+    min-height: 44px;
+    margin: 0;
+    padding: 8px 12px;
+    border: 1px solid var(--status-warning-line);
+    border-radius: 10px;
+    background: var(--status-warning-soft);
+    color: var(--status-warning);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.7;
+    white-space: nowrap;
+    box-shadow: none;
+  }
+  #app
+    :is(#singleFileBadge, #questionBankFileBadge)
+    > .single-file-permission-action:focus-visible,
+  :is(#modalBody, .qb-body)
+    #backupHub
+    .backup-automatic-notice
+    > .single-file-permission-action:focus-visible {
+    outline: 2px solid var(--status-warning);
+    outline-offset: 2px;
+  }
+  /* Both file scopes share one compact notice; only the scope marker differs. */
+  #app
+    > .workspace-bar:has(
+      > :is(#singleFileBadge, #questionBankFileBadge):not([hidden])
+    ) {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 8px 0 !important;
+    margin-inline: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  #app .workspace-bar > :is(#singleFileBadge, #questionBankFileBadge) {
+    --file-scope-color: var(--theme-primary);
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--status-danger-soft);
+    color: var(--theme-ink);
+    border: 1px solid
+      color-mix(in srgb, var(--status-danger) 38%, var(--status-danger-soft));
+    padding: 0 10px 8px;
+    border-radius: 6px;
+    box-shadow: none;
+    text-align: start;
+  }
+  #app .workspace-bar > #questionBankFileBadge {
+    --file-scope-color: var(--status-success);
+  }
+  #app
+    .workspace-bar
+    > :is(#singleFileBadge, #questionBankFileBadge):not([hidden]) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  #app :is(#singleFileBadge, #questionBankFileBadge) .single-file-message {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 6px;
+    padding-inline-end: 88px;
+    padding-top: 8px;
+    line-height: 1.65;
+  }
+  #app :is(#singleFileBadge, #questionBankFileBadge) .backup-file-purpose {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    min-height: 28px;
+    flex: 0 0 100%;
+    box-sizing: border-box;
+    padding-inline-end: 0;
+    color: var(--theme-ink);
+  }
+  #app
+    :is(#singleFileBadge, #questionBankFileBadge)
+    .backup-file-purpose::before {
+    content: "";
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+    background: var(--file-scope-color);
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 22H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8l6 6v3M13 2v6h6M7 12h3M7 16h1'/%3E%3Crect x='11' y='16' width='11' height='7' rx='1.5'/%3E%3Cpath d='M14 16v-2a2.5 2.5 0 0 1 5 0v2M16.5 19v1'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+  }
+  #app :is(#singleFileBadge, #questionBankFileBadge) .backup-notice-filename {
+    color: var(--theme-muted);
+    font-size: 9px;
+    line-height: 1.6;
+    order: 1;
+    max-width: 100%;
+    flex-shrink: 0;
+    font-weight: 600;
+    border: 0;
+    padding-top: 0;
+    margin-top: 0;
+    text-align: start;
+  }
+  #app :is(#singleFileBadge, #questionBankFileBadge) .backup-file-detail {
+    color: var(--theme-muted);
+    font-size: 10px;
+    order: 2;
+    flex: 1 1 110px;
+    min-width: 0;
+    padding-inline-end: 0;
+  }
+  #app
+    :is(#singleFileBadge, #questionBankFileBadge)
+    > .single-file-permission-action {
+    position: absolute;
+    inset-inline-end: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 78px;
+    min-width: 0;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 8px;
+    border: 0 !important;
+    background: transparent !important;
+    color: var(--theme-ink) !important;
+    font-size: 11px;
+    line-height: 1;
+    border-radius: 6px;
+  }
+  #app
+    :is(#singleFileBadge, #questionBankFileBadge)
+    > .single-file-permission-action::before {
+    content: "";
+    position: absolute;
+    inset: 6px 0;
+    border: 1px solid
+      color-mix(in srgb, var(--status-danger) 25%, var(--theme-surface));
+    border-radius: 6px;
+    background: var(--theme-surface);
+    pointer-events: none;
+  }
+  #app
+    :is(#singleFileBadge, #questionBankFileBadge)
+    > .single-file-permission-action
+    .ui-button-label {
+    position: relative;
+    line-height: 1.5;
+  }
+  #app
+    :is(#singleFileBadge, #questionBankFileBadge)
+    > .single-file-permission-action
+    .control-icon {
+    display: none;
+  }
+  #app
+    :is(#singleFileBadge, #questionBankFileBadge)
+    > .single-file-permission-action:focus-visible {
+    outline-color: var(--theme-primary);
+  }
+  .workspace-tool-actions {
+    box-shadow: 0 8px 24px #2d34400a;
+  }
+  .entity-quick-create > summary {
+    cursor: pointer;
+    min-height: 48px;
+    padding-block: 8px;
+    font-weight: 600;
+    color: var(--workflow-accent);
+  }
+  .entity-quick-create form {
+    align-items: end;
+  }
+  .entity-create-field {
+    display: grid;
+    flex: 1 1 200px;
+    gap: 8px;
+    font-size: 14px;
+  }
+  .entity-create-field input {
+    width: 100%;
+  }
+  .entity-quick-create .entity-create-error {
+    flex-basis: 100%;
+  }
+  /* One neutral disclosure and one real submit per creation workflow. */
+  #app > .workflow-welcome {
+    order: 2;
+  }
+  #app > .create-panel {
+    order: 4;
+  }
+  #app .create-panel {
+    padding: 0;
+    border: 1px solid var(--workflow-line);
+    border-radius: 16px;
+    background: var(--theme-surface);
+    box-shadow: none;
+  }
+  #app .create-panel[open] {
+    border-color: var(--theme-primary-line);
+    box-shadow: 0 4px 18px #2d344007;
+  }
+  #app .create-panel > summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 76px;
+    padding: 14px 16px;
+    margin: 0;
+    border: 0;
+    border-radius: 16px;
+    background: transparent;
+    color: var(--workflow-ink);
+    list-style: none;
+    cursor: pointer;
+  }
+  #app .create-panel > summary::before,
+  #app .create-panel > summary::after,
+  #app .create-panel > summary::-webkit-details-marker {
+    display: none;
+    content: none;
+  }
+  .create-panel-symbol {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    border-radius: 12px;
+    color: var(--theme-primary-hover);
+    background: var(--status-warning-soft);
+  }
+  .create-panel-title {
+    display: grid;
+    flex: 1;
+    min-width: 0;
+    gap: 4px;
+    text-align: start;
+  }
+  #app .create-panel-title strong {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--workflow-ink);
+  }
+  #app .create-panel-title small {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--workflow-muted);
+    line-height: 1.8;
+    margin: 0;
+  }
+  .create-panel-toggle {
+    display: block;
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
+    border: 1px solid var(--status-info-line);
+    border-radius: 8px;
+    color: var(--theme-primary);
+    background-color: var(--theme-primary-soft);
+    background-image:
+      linear-gradient(currentColor, currentColor),
+      linear-gradient(currentColor, currentColor);
+    background-position: center;
+    background-size:
+      12px 2px,
+      2px 12px;
+    background-repeat: no-repeat;
+  }
+  .create-panel[open] .create-panel-toggle {
+    background-size:
+      12px 2px,
+      0 0;
+  }
+  #app .create-panel > form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    padding: 18px 16px 16px;
+    margin: 0;
+    border-top: 1px solid var(--workflow-line);
+    align-items: start;
+  }
+  #app .create-panel form label {
+    display: grid;
+    gap: 7px;
+    font-size: 14px;
+    color: var(--theme-ink);
+    min-width: 0;
+  }
+  #app .create-panel form :is(input, select) {
+    width: 100%;
+    min-height: 48px;
+    background: var(--theme-surface-subtle);
+    border-radius: 10px;
+  }
+  #app .create-panel-footer,
+  #app .create-panel .entity-create-error {
+    grid-column: 1 / -1;
+  }
+  .create-panel .entity-create-error:empty {
+    display: none;
+  }
+  .create-panel-footer {
+    padding-top: 2px;
+  }
+  #app .create-panel-footer > button {
+    width: 100%;
+    min-height: 48px;
+    font-size: 14px;
+    border-radius: 10px;
+  }
+  #app .create-panel > .lesson-form-note {
+    margin: 0;
+    padding: 0 16px 16px;
+  }
+  #app .dashboard-entity,
+  #app .lesson-item,
+  #app .student-profile {
+    border: 1px solid var(--workflow-line);
+    border-inline-start: 1px solid var(--workflow-line);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 3px 12px #2d344005;
+  }
+  #app .dashboard-entity-symbol,
+  #app .lesson-symbol,
+  #app .student-avatar {
+    background: var(--theme-surface-muted);
+    color: var(--theme-primary);
+    border-radius: 12px;
+  }
+  #app .dashboard-entity-actions > button:first-child,
+  #app button.lesson-enter,
+  #app button.student-report {
+    background: var(--brand-charcoal);
+    color: var(--theme-surface);
+    box-shadow: none;
+  }
+  #app .dashboard-entity-info,
+  #app .lesson-identity,
+  #app .student-profile-main {
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--theme-surface-muted);
+  }
+  #app .dashboard-entity-info h4,
+  #app .lesson-identity h4,
+  #app .student-profile-info h4 {
+    font-size: 16px;
+    line-height: 1.8;
+    margin-block: 0 4px;
+    overflow-wrap: anywhere;
+  }
+  #app .dashboard-entity-actions {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  #app .dashboard-entity-actions > button:first-child {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  #app .dashboard-entity-more {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+  }
+  #app
+    :is(.dashboard-entity-actions > button.entity-enter, button.lesson-enter) {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+    padding: 12px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.8;
+    background: var(--workflow-soft);
+    color: var(--workflow-accent);
+    border: 1px solid var(--theme-primary-line);
+    border-radius: 12px;
+    white-space: normal;
+    text-align: start;
+  }
+  .entity-enter-arrow {
+    display: inline-flex;
+    flex: 0 0 20px;
+  }
+  #app :is(.dashboard-entity-more, .lesson-more) > summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: auto;
+    min-width: 92px;
+    min-height: 48px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--theme-surface);
+    border: 1px solid var(--workflow-line);
+    color: var(--theme-ink);
+    font-size: 13px;
+    line-height: 1.8;
+    list-style: none;
+  }
+  #app :is(.dashboard-entity-more, .lesson-more) > summary > span:first-child {
+    display: inline-flex;
+  }
+  #app :is(.dashboard-entity-more, .lesson-more) > summary > span:last-child {
+    display: inline;
+    white-space: nowrap;
+  }
+  #app :is(.dashboard-entity-more, .lesson-more) > summary:hover {
+    background: var(--theme-surface-muted);
+    border-color: var(--theme-primary-line);
+  }
+  #app :is(.dashboard-entity-more, .lesson-more) > summary:focus-visible {
+    outline: 2px solid var(--workflow-accent);
+    outline-offset: 3px;
+  }
+  #app .dashboard-entity-more:not([open]) > summary {
+    height: 100%;
+  }
+  #app :is(.dashboard-entity-more, .lesson-more) > summary::after {
+    content: none;
+  }
+  #app .dashboard-entity-more[open] {
+    z-index: 40;
+  }
+  #app .dashboard-entity-more[open] > summary {
+    background: var(--theme-surface-muted);
+    border-color: var(--theme-primary-line);
+    color: var(--workflow-ink);
+  }
+  /* Float above the trigger without resizing the card or its action row. */
+  #app .dashboard-entity-more > .entity-menu-panel {
+    position: absolute;
+    inset: auto;
+    inset-inline-end: 0;
+    bottom: calc(100% + 8px);
+    min-width: 0;
+    width: min(220px, calc(100vw - 64px));
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+    margin: 0;
+    padding: 6px;
+    border-radius: 12px;
+    border-color: var(--workflow-line);
+    background: var(--theme-surface);
+    box-shadow: 0 8px 28px #2d344024;
+  }
+  #app .entity-menu-panel > button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 46px;
+    font-size: 14px;
+    text-align: start;
+    white-space: normal;
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  #app .entity-menu-panel > button.ghost {
+    background: transparent;
+    border-color: transparent;
+  }
+  #app .entity-menu-panel > button.ghost:hover {
+    background: var(--theme-surface-muted);
+  }
+  #app .entity-menu-panel > button.danger {
+    background: transparent;
+    color: var(--status-danger);
+    border: 1px solid transparent;
+    border-top-color: var(--workflow-line);
+  }
+  #app .entity-menu-panel > button.danger:hover {
+    background: var(--status-danger-soft);
+  }
+  #app .workflow-welcome:not(:has(button)) {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 16px 18px;
+  }
+  @media (min-width: 701px) {
+    #app .create-panel > form {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    #app .entity-quick-create .entity-create-field {
+      grid-column: 1 / -1;
+    }
+    #app .create-panel-footer > button {
+      width: auto;
+      min-width: 160px;
+    }
+  }
+  /* Rounded child backgrounds must stay inside their creation frames. */
+  #app
+    > details:is(
+      .class-create,
+      .lesson-create,
+      .student-add,
+      .student-import
+    ).create-panel,
+  #app
+    > details:is(
+      .class-create,
+      .lesson-create,
+      .student-add,
+      .student-import
+    ).create-panel[open] {
+    border: 1px solid var(--theme-line);
+    border-radius: 16px;
+    box-shadow: none;
+  }
+  #app
+    :is(
+      .class-create,
+      .lesson-create,
+      .student-add,
+      .student-import
+    ).create-panel
+    > summary {
+    border-radius: 15px;
+  }
+  #app
+    :is(
+      .class-create,
+      .lesson-create,
+      .student-add,
+      .student-import
+    ).create-panel[open]
+    > summary {
+    border-end-start-radius: 0;
+    border-end-end-radius: 0;
+  }
+  #app :is(.class-create, .lesson-create, .student-add).create-panel > form,
+  #app .student-import.create-panel > .csv-import-body {
+    border-end-start-radius: 15px;
+    border-end-end-radius: 15px;
+  }
+  /* Match the school directory width while keeping creation controls compact. */
+  #app > details.school-create.create-panel {
+    inline-size: 100%;
+    max-inline-size: none;
+    align-self: stretch;
+    border-color: var(--theme-line);
+    box-shadow: none;
+  }
+  #app > details.school-create.create-panel[open] {
+    border-color: var(--theme-line);
+    box-shadow: none;
+  }
+  #app .school-create.create-panel > summary {
+    min-height: 64px;
+    padding: 12px 16px;
+    gap: 10px;
+    border-radius: 15px;
+    background: var(--theme-surface);
+  }
+  #app .school-create.create-panel[open] > summary {
+    border-end-start-radius: 0;
+    border-end-end-radius: 0;
+  }
+  #app .school-create.create-panel > summary:focus-visible {
+    outline: 2px solid var(--theme-focus);
+    outline-offset: 3px;
+  }
+  #app .school-create .create-panel-symbol {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
+  }
+  #app .school-create .create-panel-toggle {
+    border: 0;
+    background-color: var(--theme-surface-muted);
+  }
+  #app .school-create[open] .create-panel-toggle {
+    background-color: var(--theme-primary-soft);
+  }
+  #app .school-create.create-panel > form {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding: 16px;
+    align-items: end;
+    border-end-start-radius: 15px;
+    border-end-end-radius: 15px;
+  }
+  #app .school-create .entity-create-field {
+    grid-column: auto;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  #app .school-create form input {
+    min-height: 48px;
+    font-size: 16px;
+  }
+  #app .school-create .create-panel-footer {
+    grid-column: auto;
+    padding: 0;
+  }
+  #app .school-create.create-panel .create-panel-footer > button {
+    width: 100%;
+    min-width: 0;
+    min-height: 48px !important;
+    white-space: nowrap;
+  }
+  #app .school-create .entity-create-error {
+    grid-column: 1 / -1;
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.8;
+  }
+  @media (min-width: 640px) {
+    #app .school-create.create-panel > form {
+      grid-template-columns: minmax(0, 1fr) 144px;
+    }
+  }
+  .backup-hub {
+    display: grid;
+    gap: 18px;
+  }
+  .backup-hub > section,
+  .backup-hub > details {
+    border: 1px solid var(--workflow-line);
+    border-radius: 16px;
+    padding: 16px;
+  }
+  .backup-hub h4 {
+    margin: 0;
+    font-size: 17px;
+  }
+  .backup-hub p {
+    font-size: 14px;
+    line-height: 1.9;
+  }
+  .backup-action-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .backup-action-grid > :first-child {
+    grid-column: auto;
+    background: var(--touch-teal);
+    min-height: 48px;
+  }
+  .backup-automatic > .row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .backup-automatic > .row > button {
+    min-width: 0;
+    white-space: normal;
+    line-height: 1.8;
+  }
+  .backup-automatic > .row > button:first-child {
+    grid-column: 1 / -1;
+  }
+  .backup-history > summary,
+  .backup-help > summary {
+    cursor: pointer;
+    min-height: 44px;
+    line-height: 1.9;
+    padding-block: 8px;
+    font-weight: 600;
+  }
+  #app .workflow-welcome {
+    border: 1px solid var(--theme-line);
+    border-radius: 20px;
+    background: linear-gradient(
+      120deg,
+      var(--theme-primary-soft),
+      var(--theme-primary-soft)
+    );
+    padding: 22px;
+    margin-block: 10px 20px;
+    gap: 10px;
+  }
+  #app .workflow-welcome h2 {
+    color: var(--theme-ink);
+    font-size: clamp(21px, 3vw, 27px);
+  }
+  #app .workflow-welcome p {
+    color: var(--theme-muted);
+    font-size: 14px;
+  }
+  #app .workflow-welcome button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .dashboard-entity:nth-child(3n + 2) {
+    border-inline-start-color: var(--status-success-fill);
+  }
+  .dashboard-entity:nth-child(3n + 2) .dashboard-entity-symbol {
+    background: var(--status-success-soft);
+    color: var(--touch-teal);
+  }
+  .dashboard-entity:nth-child(3n) {
+    border-inline-start-color: var(--status-warning-fill);
+  }
+  .dashboard-entity:nth-child(3n) .dashboard-entity-symbol {
+    background: var(--theme-primary-soft);
+    color: var(--touch-amber);
+  }
+  #app button.success,
+  #modal button.success {
+    background: var(--touch-teal);
+    color: var(--theme-surface);
+  }
+  #app button.danger,
+  #modal button.danger {
+    background: var(--status-danger-fill);
+    color: var(--theme-surface);
+  }
+  #app .tabs > button {
+    font-weight: 600;
+  }
+  #modal .modal-dialog {
+    border: 1px solid var(--workflow-line);
+    overflow: hidden;
+  }
+  :is(#modal, .qb-dialog) .modal-header {
+    background: var(--theme-surface-subtle);
+    border-bottom: 1px solid var(--workflow-line);
+    padding: 12px 18px;
+    gap: 12px;
+  }
+  :is(#modal, .qb-dialog) .modal-header h3 {
+    font-size: 16px;
+    line-height: 1.8;
+    overflow-wrap: anywhere;
+  }
+  :is(#modalClose, .qb-close) {
+    flex-shrink: 0;
+    width: 44px;
+    min-height: 44px;
+    border-radius: 12px;
+    background: var(--theme-line-soft);
+    color: var(--theme-ink);
+  }
+  :is(#modal, .qb-dialog) .modal-body {
+    overscroll-behavior: contain;
+    scroll-padding-block: 16px 100px;
+  }
+  :is(#modalBody, .qb-body) .record-editor-context {
+    background: var(--theme-primary-soft);
+    border-inline-start: 3px solid var(--brand-orange);
+    border-radius: 12px;
+    padding: 14px;
+  }
+  :is(#modalBody, .qb-body) .record-editor > label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--theme-ink);
+    line-height: 1.8;
+  }
+  :is(#modalBody, .qb-body) .record-editor-actions {
+    position: sticky;
+    bottom: -1px;
+    z-index: 4;
+    background: var(--theme-surface);
+    border-top: 1px solid var(--workflow-line);
+    padding: 12px 0 max(12px, env(safe-area-inset-bottom));
+    margin-bottom: 0;
+    box-shadow: 0 -8px 14px #2d344005;
+  }
+  :is(#modalBody, .qb-body) :is(input, select, textarea)[aria-invalid="true"] {
+    border: 2px solid var(--status-danger-fill);
+    background: var(--status-danger-soft);
+  }
+  :is(#modalBody, .qb-body) .entity-create-error:not(:empty) {
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: var(--status-danger-soft);
+    color: var(--status-danger);
+  }
+  #uiBottomNav {
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+  [data-keyboard-open="true"] #uiBottomNav {
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+@media screen and (max-width: 1000px) {
+  #app :is(button, summary),
+  #modal :is(button, summary) {
+    touch-action: manipulation;
+  }
+  #app button:not(.grade-clear),
+  #modal button:not(.grade-clear) {
+    min-height: 46px;
+  }
+  #app :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]),
+  #modal
+    :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]) {
+    /* Legacy editors have inline em sizes; touch readability takes precedence. */
+    font-size: 16px !important;
+    scroll-margin-block: 90px;
+  }
+  #modal :is(input[type="checkbox"], input[type="radio"]) {
+    width: 22px;
+    height: 22px;
+    accent-color: var(--workflow-accent);
+    vertical-align: middle;
+  }
+  .workspace-tool-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .workspace-tool-actions :is(small, #singleFileBadge) {
+    grid-column: 1 / -1;
+  }
+  .workspace-tool-actions button {
+    white-space: normal;
+  }
+}
+@media screen and (max-width: 700px) {
+  #app .workspace-bar {
+    padding: 8px 0 12px !important;
+    row-gap: 6px !important;
+  }
+  .workspace-tools > summary {
+    font-size: 12px;
+  }
+  #app .workflow-welcome {
+    padding: 18px;
+    margin-block: 6px 16px;
+  }
+  #app .dashboard-entity {
+    padding: 14px;
+  }
+  #app .dashboard-entity-info h4 {
+    font-size: 16px;
+  }
+  #app .dashboard-entity-info p {
+    font-size: 13px;
+  }
+  #app .tabs {
+    gap: 4px;
+    padding: 4px;
+    scroll-padding-inline: 12px;
+  }
+  #app .tabs button {
+    font-size: 13px;
+    padding-inline: 14px;
+  }
+  :is(#modal, .qb-dialog) .modal-body {
+    padding: 16px;
+  }
+  :is(#modalBody, .qb-body) .record-editor-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  :is(#modalBody, .qb-body) .record-editor-actions > button {
+    flex: 1 1 110px;
+    min-height: 48px;
+    white-space: normal;
+  }
+  #uiBottomNav button {
+    min-height: 54px;
+    font-size: 12px;
+    gap: 4px;
+  }
+}

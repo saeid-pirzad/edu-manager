@@ -1,0 +1,58 @@
+#app .qb-page .qb-tabs {
+  position: static;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--theme-secondary-line);
+  border-radius: 12px;
+  margin-block: 0 18px;
+  background: var(--theme-secondary-soft);
+  box-shadow: none;
+}
+#app .qb-page .qb-tabs button {
+  --button-ink: var(--theme-ink);
+  --button-soft: transparent;
+  --button-line: transparent;
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--theme-ink) !important;
+  border-radius: 8px !important;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5 !important;
+  box-shadow: none;
+}
+#app .qb-page .qb-tabs button[aria-pressed="true"] {
+  --button-ink: var(--theme-surface);
+  --button-soft: var(--theme-primary);
+  --button-line: transparent;
+  background: var(--theme-primary) !important;
+  border-color: transparent;
+  color: var(--theme-surface) !important;
+  font-weight: 500;
+}
+#app .qb-page .qb-tabs button:focus-visible {
+  outline: 2px solid var(--theme-highlight);
+  outline-offset: 2px;
+}
+#app .qb-page .qb-tabs button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+@media (hover: hover) {
+  #app .qb-page .qb-tabs button[aria-pressed="false"]:not(:disabled):hover {
+    background: var(--theme-secondary-line) !important;
+  }
+}
+.qb-editor-title {
+  margin: 0 0 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--theme-line-soft);
+  font-size: 1rem;
+}

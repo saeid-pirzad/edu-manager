@@ -45,10 +45,21 @@ function redundantDeclarations(css) {
 }
 
 test("touch CSS has no earlier exact duplicate declaration in the same media and selector", () => {
-  const css = fs.readFileSync(
-    path.join(__dirname, "../src/styles/workflow/touch.css"),
-    "utf8",
+  const layout = JSON.parse(
+    fs.readFileSync(path.join(__dirname, "../source-map.json"), "utf8"),
   );
+  const sources = layout.bundles.find(
+    (bundle) => bundle.output === "assets/styles/daily-workflow.css",
+  ).sources;
+  const start = sources.indexOf("src/styles/workflow/touch-foundation.css");
+  const end = sources.indexOf("src/styles/workflow/navigation-layout.css");
+  assert.ok(start >= 0 && end > start, "The touch product group is mapped");
+  const css = sources
+    .slice(start, end + 1)
+    .map((source) =>
+      fs.readFileSync(path.join(__dirname, "..", source), "utf8"),
+    )
+    .join("\n");
   assert.deepEqual(redundantDeclarations(css), []);
 });
 

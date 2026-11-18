@@ -91,6 +91,7 @@ function fixture(entries, local = {}) {
   });
   for (const file of [
     "domain/grade-drafts.js",
+    "services/installation-backup.js",
     "workspace/backups/full-export.js",
   ])
     vm.runInContext(

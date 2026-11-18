@@ -1,0 +1,683 @@
+@media screen {
+  .session-setup-heading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .session-setup-symbol,
+  .session-context-icon {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    border-radius: 13px;
+    background: var(--status-warning-soft);
+    color: var(--theme-primary-hover);
+  }
+  .session-setup-heading :is(h3, h4) {
+    margin: 0;
+    color: var(--workflow-ink);
+    font-size: 17px;
+    line-height: 1.8;
+  }
+  .session-setup-heading p,
+  .session-setup-help {
+    margin: 4px 0 0;
+    color: var(--workflow-muted);
+    font-size: 12px;
+    line-height: 1.9;
+  }
+  .session-setup-eyebrow {
+    color: var(--theme-primary-hover);
+    font-size: 11px;
+  }
+  #app .session-create {
+    padding: 20px;
+    border-radius: 17px;
+    box-shadow: none;
+  }
+  #app .session-create-form {
+    grid-template-columns: minmax(0, 1fr) 110px auto;
+    gap: 12px;
+  }
+  #modal:has(.session-workspace, .session-start-panel) .modal-dialog {
+    width: 100%;
+    max-width: 820px;
+    border-radius: 20px;
+  }
+  #modal:has(.session-workspace, .session-start-panel) .modal-dialog:focus {
+    outline: none;
+  }
+  #modal:has(.session-start-panel) .modal-dialog {
+    max-width: 560px;
+  }
+  #modal:has(.session-workspace, .session-start-panel) .modal-header {
+    flex-shrink: 0;
+    padding: 14px 20px;
+    background: var(--theme-surface-subtle);
+  }
+  #modal:has(.session-workspace, .session-start-panel) .modal-body {
+    min-height: 0;
+    padding: 20px;
+    background: var(--theme-surface);
+  }
+  :is(#modalBody, .qb-body) :is(.session-workspace, .session-start-panel) {
+    min-width: 0;
+    color: var(--workflow-ink);
+  }
+  :is(#modalBody, .qb-body) .session-field {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 7px;
+    min-width: 0;
+    margin: 0;
+    color: var(--theme-ink);
+    font-size: 12px;
+    line-height: 1.8;
+  }
+  :is(#modalBody, .qb-body) .session-field > span > small {
+    color: var(--theme-muted);
+    font-size: inherit;
+    font-weight: 400;
+  }
+  :is(#modalBody, .qb-body) .session-field :is(input, select) {
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    margin: 0;
+    border-radius: 11px;
+    background-color: var(--theme-surface);
+    font-size: 14px;
+  }
+  :is(#modalBody, .qb-body)
+    :is(.session-date-grid, .session-setup-grid)
+    .shamsi-display {
+    display: none;
+  }
+  :is(#modalBody, .qb-body) .session-setup-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+  :is(#modalBody, .qb-body) .session-setup-help {
+    margin-block: 14px;
+    padding-inline-start: 12px;
+    border-inline-start: 2px solid var(--theme-line);
+  }
+  :is(#modalBody, .qb-body) .session-setup-actions > button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 48px;
+    margin: 0;
+    border-radius: 12px;
+  }
+  .session-setup-history {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--workflow-line);
+  }
+  .session-setup-history > header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .session-setup-history h4 {
+    margin: 0;
+    font-size: 13px;
+  }
+  .session-setup-history > header > span {
+    color: var(--workflow-muted);
+    font-size: 11px;
+  }
+  .session-setup-recent {
+    display: grid;
+    gap: 6px;
+  }
+  :is(#modalBody, .qb-body) .session-setup-recent-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    min-height: 44px;
+    padding: 7px 10px;
+    border: 1px solid var(--workflow-line);
+    border-radius: 10px;
+    background: var(--theme-surface-subtle);
+    color: var(--workflow-ink);
+    text-align: start;
+    box-shadow: none;
+  }
+  .session-setup-recent-copy {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: baseline;
+    gap: 2px 8px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-size: 11px;
+    line-height: 1.7;
+  }
+  .session-setup-recent-copy strong {
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .session-setup-recent-copy small {
+    grid-column: 1 / -1;
+    color: var(--workflow-muted);
+    font-size: 10px;
+  }
+  .session-setup-recent-arrow {
+    display: inline-flex;
+    flex-shrink: 0;
+    color: var(--theme-primary);
+  }
+  :is(#modalBody, .qb-body) .session-setup-recent-arrow svg {
+    width: 18px;
+    height: 18px;
+    flex-basis: 18px;
+  }
+  .session-context {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 0 0 16px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+  .session-context-icon {
+    border: 1px solid var(--theme-line-soft);
+    background: var(--theme-surface-subtle);
+    color: var(--theme-primary);
+  }
+  .session-context-copy {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .session-context p {
+    margin: 0;
+    line-height: 1.8;
+  }
+  .session-context-path,
+  .session-context-teacher {
+    color: var(--workflow-muted);
+    font-size: 12px;
+  }
+  .session-context h4 {
+    margin: 4px 0 6px;
+    font-size: 18px;
+    line-height: 1.7;
+  }
+  .session-context-meta {
+    color: var(--theme-primary);
+    font-size: 13px;
+  }
+  :is(#modalBody, .qb-body) .session-date-tools {
+    margin-top: 8px;
+    border: 0;
+    border-bottom: 1px solid var(--theme-line-soft);
+    border-radius: 0;
+  }
+  :is(#modalBody, .qb-body) .session-date-tools > summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 8px 0;
+    color: var(--theme-primary);
+    font-size: 12px;
+    list-style: none;
+  }
+  .session-date-tools > summary::-webkit-details-marker {
+    display: none;
+  }
+  .session-date-tools > summary::after {
+    content: "+";
+    margin-inline-start: auto;
+    font-size: 20px;
+  }
+  .session-date-tools[open] > summary::after {
+    content: "−";
+  }
+  :is(#modalBody, .qb-body) .session-date-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 100px auto;
+    align-items: end;
+    gap: 12px;
+    margin: 0;
+    padding: 8px 0 16px;
+  }
+  :is(#modalBody, .qb-body) .session-date-grid > button {
+    min-height: 46px;
+    margin: 0;
+  }
+  :is(#modalBody, .qb-body) .session-unit-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+  }
+  :is(#modalBody, .qb-body) .session-mode-picker {
+    position: sticky;
+    top: -20px;
+    z-index: 5;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+    margin: 16px 0 20px;
+    padding: 5px;
+    border-radius: 13px;
+    background: var(--theme-surface-subtle);
+    box-shadow: inset 0 0 0 1px var(--theme-line-soft);
+  }
+  :is(#modalBody, .qb-body) .session-mode-picker button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-width: 0;
+    min-height: 46px;
+    margin: 0;
+    padding: 8px;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--theme-muted);
+    font-size: 14px;
+    font-weight: 500;
+  }
+  :is(#modalBody, .qb-body) .session-mode-picker [aria-pressed="true"] {
+    border-color: var(--theme-primary-line);
+    background: var(--theme-surface);
+    color: var(--theme-primary);
+    font-weight: 600;
+    box-shadow: inset 0 -2px 0 var(--theme-primary);
+  }
+  .session-attendance-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 320px);
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .session-attendance-heading h4,
+  :is(#modalBody, .qb-body) [data-session-panel="activity"] > h4,
+  .session-activity-records > h4 {
+    margin: 0;
+    font-size: 15px;
+  }
+  .session-attendance-heading p,
+  :is(#modalBody, .qb-body) [data-session-panel="activity"] > p {
+    margin: 5px 0 0;
+    color: var(--workflow-muted);
+    font-size: 12px;
+    line-height: 1.9;
+  }
+  .session-attendance-bulk {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 3px;
+    border-radius: 11px;
+    background: var(--theme-surface-subtle);
+    box-shadow: inset 0 0 0 1px var(--theme-line);
+  }
+  :is(#modalBody, .qb-body) .session-attendance-bulk button,
+  :is(#modalBody, .qb-body)
+    .session-workspace
+    .session-attendance-bulk
+    button.ui-button {
+    --button-ink: var(--theme-muted);
+    --button-fill: var(--theme-surface);
+    --button-soft: var(--theme-surface);
+    --button-hover: var(--theme-surface-subtle);
+    --button-line: var(--theme-line-soft);
+    background: var(--button-soft) !important;
+    color: var(--button-ink) !important;
+    border-color: var(--button-line) !important;
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    height: 48px;
+    margin: 0;
+    padding: 4px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.5;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  :is(#modalBody, .qb-body) .session-attendance-bulk .control-icon,
+  :is(#modalBody, .qb-body) .session-attendance-bulk .control-icon > svg {
+    width: 16px;
+    height: 16px;
+    flex-basis: 16px;
+  }
+  :is(#modalBody, .qb-body)
+    .session-workspace
+    .session-attendance-bulk
+    button:is(.success, [data-legacy-click="sessions-dialog:all-present"]) {
+    --button-ink: var(--status-success);
+    --button-line: var(--status-success-line);
+    --button-hover: var(--status-success-soft);
+  }
+  :is(#modalBody, .qb-body)
+    .session-workspace
+    .session-attendance-bulk
+    button.danger {
+    --button-ink: var(--status-danger);
+    --button-line: var(--status-danger-line);
+    --button-hover: var(--status-danger-soft);
+  }
+  :is(#modalBody, .qb-body)
+    .session-workspace
+    .session-attendance-bulk
+    button.ui-button:not(:disabled):hover {
+    background: var(--button-hover) !important;
+    border-color: var(--button-line) !important;
+  }
+  :is(#modalBody, .qb-body) .session-attendance-list {
+    display: grid;
+    min-width: 0;
+    width: 100%;
+    gap: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+  :is(#modalBody, .qb-body) .session-workspace .att-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 320px);
+    min-width: 0;
+    width: 100%;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    padding: 14px 0;
+    border: 0;
+    border-bottom: 1px solid var(--theme-line-soft);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  :is(#modalBody, .qb-body) .session-workspace .att-name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    font-size: 14px;
+  }
+  :is(#modalBody, .qb-body)
+    .session-attendance-list
+    .att-name
+    > span:last-child {
+    min-width: 0;
+    font-weight: 600;
+    line-height: 1.9;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .attendance-number {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    flex: 0 0 30px;
+    border-radius: 10px;
+    border: 1px solid var(--theme-line-soft);
+    background: var(--theme-surface-subtle);
+    color: var(--theme-primary);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  :is(#modalBody, .qb-body) .session-workspace .att-btns {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    padding: 3px;
+    border-radius: 11px;
+    background: var(--theme-surface-subtle);
+    box-shadow: inset 0 0 0 1px var(--theme-line-soft);
+  }
+  :is(#modalBody, .qb-body) .session-workspace .att-btns button {
+    min-width: 0;
+    width: 100%;
+    min-height: 48px;
+    height: 48px;
+    margin: 0;
+    padding: 4px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: var(--theme-surface);
+    color: var(--theme-muted);
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    font-variant-numeric: tabular-nums;
+  }
+  :is(#modalBody, .qb-body) .session-workspace .att-btns .present.active {
+    background: var(--status-success-soft);
+    color: var(--status-success);
+    border-color: var(--status-success-line);
+  }
+  :is(#modalBody, .qb-body) .session-workspace .att-btns .absent.active {
+    background: var(--status-danger-soft);
+    color: var(--status-danger);
+    border-color: var(--status-danger-line);
+  }
+  :is(#modalBody, .qb-body) .session-workspace .att-btns .late.active {
+    background: var(--status-warning-soft);
+    color: var(--status-warning);
+    border-color: var(--status-warning-line);
+  }
+  :is(#modalBody, .qb-body) .session-workspace .att-btns .leave.active {
+    background: var(--status-leave-soft);
+    color: var(--status-leave);
+    border-color: var(--status-leave-line);
+  }
+  :is(#modalBody, .qb-body)
+    .session-workspace
+    .att-btns
+    button:not(.active):hover {
+    background: var(--theme-surface-subtle);
+    border-color: var(--theme-line);
+  }
+  :is(#modalBody, .qb-body) .session-workspace .att-btns .active {
+    font-weight: 600;
+    box-shadow: inset 0 -2px 0 currentColor;
+  }
+  :is(#modalBody, .qb-body) .session-workspace button:focus-visible {
+    outline: 2px solid var(--theme-focus);
+    outline-offset: 2px;
+  }
+  :is(#modalBody, .qb-body) .session-entry-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    gap: 14px;
+    margin: 16px 0 22px;
+    padding: 16px;
+    border: 1px solid var(--theme-line-soft);
+    border-radius: 14px;
+    background: var(--theme-surface);
+  }
+  :is(#modalBody, .qb-body)
+    .session-entry-form
+    > :is(.session-field-wide, .session-entry-actions) {
+    grid-column: 1 / -1;
+  }
+  :is(#modalBody, .qb-body) .session-entry-actions {
+    display: flex;
+    gap: 8px;
+    min-width: 0;
+  }
+  :is(#modalBody, .qb-body) .session-entry-actions > button {
+    flex: 1;
+    min-width: 0;
+    padding-inline: 8px;
+    font-size: 12px;
+    white-space: nowrap;
+    min-height: 46px;
+    margin: 0;
+    border-radius: 11px;
+  }
+  .session-activity-records > h4 {
+    margin-bottom: 12px;
+  }
+  :is(#modalBody, .qb-body) .session-score-table {
+    width: 100%;
+    table-layout: fixed;
+  }
+  :is(#modalBody, .qb-body) .session-score-table :is(th, td) {
+    padding: 10px;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+  :is(#modalBody, .qb-body) .session-score-table button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  :is(#modalBody, .qb-body) .session-workspace-footer {
+    position: sticky;
+    bottom: -20px;
+    z-index: 4;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    margin-top: 12px;
+    padding: 12px 0;
+    border-top: 1px solid var(--theme-line-soft);
+    background: var(--theme-surface);
+  }
+  :is(#modalBody, .qb-body) .session-workspace-footer button {
+    min-width: 0;
+    min-height: 46px;
+    margin: 0;
+    padding-inline: 16px;
+    border-radius: 11px;
+    font-size: 13px;
+  }
+  :is(#modalBody, .qb-body) .session-workspace-footer .success {
+    border: 1px solid var(--status-success-line);
+    background: var(--status-success-soft);
+    color: var(--status-success);
+  }
+}
+@media screen and (max-width: 700px) {
+  #app .session-create {
+    padding: 16px;
+  }
+  #app .session-create-form {
+    grid-template-columns: minmax(0, 1fr) 90px;
+    gap: 10px;
+  }
+  #modal:has(.session-workspace, .session-start-panel) {
+    padding: 8px;
+    align-items: center;
+  }
+  #modal:has(.session-workspace, .session-start-panel) .modal-dialog {
+    max-height: calc(var(--app-viewport, 100dvh) - 16px);
+    border-radius: 17px;
+  }
+  #modal:has(.session-workspace, .session-start-panel) .modal-header {
+    padding: 10px 14px;
+  }
+  #modal:has(.session-workspace, .session-start-panel) .modal-body {
+    padding: 14px;
+  }
+  .session-context {
+    gap: 10px;
+    padding-bottom: 12px;
+  }
+  .session-context-icon {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+    border-radius: 11px;
+  }
+  .session-context h4 {
+    font-size: 16px;
+  }
+  :is(#modalBody, .qb-body) .session-mode-picker {
+    top: -14px;
+    margin-block: 14px 18px;
+  }
+  :is(#modalBody, .qb-body) .session-mode-picker button {
+    font-size: 13px;
+  }
+  :is(#modalBody, .qb-body) .session-field :is(input, select) {
+    font-size: 16px;
+  }
+  :is(#modalBody, .qb-body) .session-date-grid {
+    grid-template-columns: minmax(0, 1fr) 90px;
+    gap: 10px;
+  }
+  :is(#modalBody, .qb-body) .session-date-grid > button {
+    grid-column: 1 / -1;
+  }
+  .session-attendance-heading {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 10px;
+  }
+  :is(#modalBody, .qb-body) .session-attendance-bulk button,
+  :is(#modalBody, .qb-body)
+    .session-workspace
+    .session-attendance-bulk
+    button.ui-button {
+    padding-inline: 4px;
+    font-size: 11px;
+  }
+  :is(#modalBody, .qb-body) .session-workspace .att-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    padding: 14px 0;
+  }
+  :is(#modalBody, .qb-body) .session-workspace .att-btns button {
+    min-width: 0;
+    padding: 4px 2px;
+    font-size: 11px;
+    white-space: normal;
+  }
+  :is(#modalBody, .qb-body) .session-entry-form {
+    padding: 12px;
+    gap: 12px 10px;
+  }
+  :is(#modalBody, .qb-body) .session-workspace-footer {
+    bottom: -14px;
+  }
+  :is(#modalBody, .qb-body) .session-workspace-footer button {
+    padding-inline: 12px;
+  }
+}
+@media screen and (max-width: 480px) {
+  :is(#modalBody, .qb-body) .session-entry-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media screen and (max-width: 360px) {
+  :is(#modalBody, .qb-body) .session-unit-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

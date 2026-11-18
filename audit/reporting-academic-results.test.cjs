@@ -23,6 +23,7 @@ function fixture() {
     "domain/annual-modules.js",
     "domain/deputy-exchange.js",
     "workspace/domain/defaults-numbers.js",
+    "services/grading-results.js",
     "workspace/grading/results.js",
   ])
     vm.runInContext(read(file), context, { filename: file });

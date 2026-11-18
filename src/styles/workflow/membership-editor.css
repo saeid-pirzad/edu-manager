@@ -1,0 +1,123 @@
+@media screen {
+  #modal:has(.membership-editor) .modal-dialog {
+    width: min(100%, 520px);
+  }
+  :is(#modalBody, .qb-body) .membership-editor {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    min-width: 0;
+  }
+  .membership-editor .record-editor-context {
+    padding: 14px;
+    border: 1px solid var(--theme-line);
+    border-radius: 12px;
+    background: var(--theme-primary-soft);
+  }
+  .membership-editor .record-editor-context h4 {
+    color: var(--theme-primary);
+  }
+  .membership-editor .membership-destination {
+    display: grid;
+    gap: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0;
+  }
+  .membership-editor #transferTarget {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    margin: 0;
+    font-size: 16px;
+    border: 1px solid var(--theme-line);
+    border-radius: 9px;
+    background: var(--theme-surface);
+  }
+  .membership-editor .membership-mode {
+    display: grid;
+    gap: 8px;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  .membership-mode legend {
+    padding: 0 0 8px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .membership-editor .membership-mode label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    min-width: 0;
+    padding: 12px;
+    margin: 0;
+    border: 1px solid var(--theme-line);
+    border-radius: 10px;
+    background: var(--theme-surface-subtle);
+    cursor: pointer;
+  }
+  .membership-mode label:has(input:checked) {
+    border-color: var(--theme-primary-line);
+    background: var(--theme-primary-soft);
+  }
+  .membership-mode label:focus-within {
+    outline: 2px solid var(--theme-primary);
+    outline-offset: 2px;
+  }
+  .membership-editor .membership-mode input {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 auto;
+    margin: 3px 0 0;
+    accent-color: var(--theme-primary);
+  }
+  .membership-mode label > span {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+  }
+  .membership-mode strong {
+    font-size: 13px;
+    color: var(--theme-ink);
+  }
+  .membership-mode small {
+    font-size: 12px;
+    color: var(--theme-muted);
+    line-height: 1.8;
+  }
+  .membership-editor :is(.membership-note, .membership-empty) {
+    margin: 0;
+    color: var(--theme-muted);
+    font-size: 12px;
+    line-height: 1.9;
+  }
+  .membership-editor .record-editor-actions {
+    position: static;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    gap: 8px;
+    margin: 0;
+    padding: 12px 0 0;
+    border-top: 1px solid var(--theme-surface-muted);
+  }
+  .membership-editor .record-editor-actions button {
+    min-width: 0;
+    min-height: 44px;
+    margin: 0;
+    white-space: normal;
+    border-radius: 9px;
+    font-size: 13px;
+  }
+  .membership-editor .record-editor-actions button[type="submit"] {
+    background: var(--theme-primary);
+    color: var(--theme-surface);
+    border: 1px solid var(--theme-primary);
+  }
+  .membership-editor .record-editor-actions > button:only-child {
+    grid-column: 1 / -1;
+  }
+}

@@ -1,0 +1,8 @@
+@media (max-width: 700px) {
+  .record-editor-actions {
+    bottom: -16px;
+  }
+  .record-editor-actions button {
+    flex: 1;
+  }
+}

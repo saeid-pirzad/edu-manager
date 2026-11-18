@@ -1,0 +1,321 @@
+@media screen {
+  .karnameh-year-document .report-assessment-stages {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    min-width: 0;
+  }
+  .karnameh-year-document .report-assessment-stages .report-lesson-stage {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: 5px;
+    padding: 8px;
+    margin: 0;
+    border: 1px solid var(--theme-line);
+    border-radius: 8px;
+    background: var(--theme-surface-subtle);
+    min-width: 0;
+  }
+  .karnameh-year-document .report-lesson-stage > span {
+    color: var(--theme-primary);
+    font-weight: 600;
+  }
+  .karnameh-year-document .report-stage-values {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    margin: 0;
+    text-align: center;
+  }
+  .karnameh-year-document .report-stage-values > span {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .karnameh-year-document .report-stage-values :is(b, strong) {
+    font-size: 14px;
+  }
+  .karnameh-year-document .report-assessment-stages .report-grade-status {
+    grid-column: auto;
+    justify-self: start;
+    margin: 0;
+    font-size: 10px;
+  }
+  #app .karnameh-year-document .karnameh-overview td.report-assessment-cell {
+    min-width: 300px;
+  }
+}
+@media screen and (max-width: 700px),
+  screen and (max-width: 1000px) and (pointer: coarse) {
+  #app
+    .karnameh-year-document
+    .karnameh-overview[data-ui-layout="cards"]
+    td.report-assessment-cell {
+    min-width: 0;
+  }
+}
+@media screen and (max-width: 700px) {
+  .karnameh-year-document .report-assessment-stages {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  #app .karnameh-year-document .report-lesson-stage {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  #app
+    .karnameh-year-document
+    .report-lesson-stage
+    > :is(.report-stage-values, .report-grade-status) {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+  #app .karnameh-year-document .report-lesson-stage > .report-stage-title {
+    display: block;
+    grid-column: 1 / -1;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding-block-end: 6px;
+    border-bottom: 1px solid var(--theme-line-soft);
+    font-size: 12px;
+    line-height: 1.8;
+    text-align: start;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: normal;
+  }
+}
+@media screen {
+  #app .karnameh-year-document .report-assessment-stages {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    border: 0;
+    border-radius: 0;
+    min-width: 0;
+    background: transparent;
+  }
+  #app .karnameh-year-document .report-mobile-score-heading,
+  #app .karnameh-year-document .report-assessment-stages .report-lesson-stage {
+    display: grid;
+    grid-template-columns: 84px minmax(0, 1fr);
+    align-items: center;
+    gap: 6px;
+    padding: 10px 8px;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+  #app .karnameh-year-document .report-mobile-score-heading {
+    background: var(--theme-surface-muted);
+    color: var(--theme-primary);
+    font-size: 11px;
+    font-weight: 600;
+  }
+  #app .karnameh-year-document .report-mobile-score-heading > div {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    text-align: center;
+  }
+  #app .karnameh-year-document .report-lesson-stage + .report-lesson-stage {
+    border-top: 1px solid var(--theme-line-soft);
+  }
+  #app .karnameh-year-document .report-lesson-stage > .report-stage-title {
+    display: block;
+    grid-column: 1;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.8;
+    text-align: start;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: normal;
+  }
+  #app .karnameh-year-document .report-lesson-stage > .report-stage-values {
+    grid-column: 2;
+    min-width: 0;
+  }
+  #app .karnameh-year-document .report-score-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  #app .karnameh-year-document .report-assessment-general .report-stage-values,
+  #app
+    .karnameh-year-document
+    .report-assessment-general
+    .report-mobile-score-heading
+    > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  #app
+    .karnameh-year-document
+    .karnameh-overview
+    td[data-report-lesson]::before {
+    font-size: 13px;
+    font-weight: 700;
+    margin-block: 8px;
+    color: var(--theme-primary);
+  }
+}
+.karnameh-year-document .report-modular-grades {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.karnameh-year-document :is(.report-modular-term, .report-modular-course) {
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.karnameh-year-document .report-modular-term > h4 {
+  margin: 0;
+  padding: 8px;
+  background: var(--theme-primary-soft);
+  color: var(--theme-primary);
+  font-size: 12px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--theme-line-soft);
+}
+#app
+  .karnameh-year-document
+  :is(.report-modular-term, .report-modular-course)
+  > .report-mobile-score-heading,
+.karnameh-year-document .report-module-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 2fr);
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  min-width: 0;
+}
+.karnameh-year-document .report-module-row + .report-module-row {
+  border-top: 1px solid var(--theme-line-soft);
+}
+.karnameh-year-document .report-module-title {
+  color: var(--theme-ink);
+  font-size: 11px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.karnameh-year-document .report-modular-empty {
+  margin: 0;
+  padding: 10px;
+  color: var(--theme-muted);
+}
+.karnameh-year-document .report-modular-final {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px;
+  border-top: 1px solid var(--theme-line-soft);
+  font-size: 11px;
+  color: var(--theme-ink);
+}
+.karnameh-year-document .report-modular-final strong {
+  font-size: 14px;
+}
+.karnameh-year-document .report-modular-conflict {
+  padding: 10px;
+  color: var(--status-danger);
+  background: var(--status-danger-soft);
+  border-radius: 8px;
+  font-size: 11px;
+  line-height: 1.8;
+}
+/* A variable lesson count must not turn the year report into a wide canvas. */
+@media screen and (min-width: 701px) {
+  #app .karnameh-year-document table.karnameh-many-lessons,
+  #app .karnameh-year-document .karnameh-many-lessons tbody {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+  #app .karnameh-year-document .karnameh-many-lessons thead {
+    display: none;
+  }
+  #app .karnameh-year-document .karnameh-many-lessons tbody tr {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+    gap: 12px;
+    margin-block: 12px;
+    padding: 12px;
+    border: 1px solid var(--theme-line);
+    border-radius: 10px;
+  }
+  #app .karnameh-year-document .karnameh-many-lessons tbody td {
+    display: block;
+    min-width: 0;
+    width: auto;
+    overflow-wrap: anywhere;
+  }
+  #app .karnameh-year-document .karnameh-many-lessons tbody td:first-child {
+    grid-column: 1 / -1;
+  }
+  #app
+    .karnameh-year-document
+    .karnameh-many-lessons
+    td[data-report-lesson]::before {
+    content: attr(data-report-lesson);
+    display: block;
+    margin-block-end: 8px;
+    color: var(--theme-primary);
+    font-weight: 600;
+  }
+}
+@media print {
+  .karnameh-year-document .karnameh-overview,
+  .karnameh-year-document .karnameh-overview tbody {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+  .karnameh-year-document .karnameh-overview thead {
+    display: none;
+  }
+  .karnameh-year-document .karnameh-overview tbody tr {
+    display: block;
+    break-inside: auto;
+    margin-block: 12pt;
+  }
+  .karnameh-year-document .karnameh-overview tbody td {
+    display: block;
+    width: auto;
+    min-width: 0;
+    break-inside: avoid;
+  }
+  .karnameh-year-document td[data-report-lesson]::before {
+    content: attr(data-report-lesson);
+    display: block;
+    font-weight: bold;
+  }
+  .karnameh-year-document .report-lesson-stage {
+    margin-block: 6px;
+    break-inside: avoid;
+  }
+  .karnameh-year-document .report-stage-values span {
+    display: inline-block;
+    margin-inline-end: 8px;
+  }
+  .karnameh-year-document .karnameh-overview tbody td.report-modular-cell {
+    break-inside: auto;
+  }
+  .karnameh-year-document .report-module-row {
+    break-inside: avoid;
+  }
+  .karnameh-year-document .report-modular-term > h4 {
+    break-after: avoid;
+  }
+}

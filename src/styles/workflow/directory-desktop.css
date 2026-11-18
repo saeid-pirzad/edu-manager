@@ -1,0 +1,137 @@
+@media screen and (min-width: 1101px) {
+  #app:has(> .class-lessons) {
+    display: flex;
+    flex-direction: column;
+  }
+  #app:has(> .class-lessons) > .topbar {
+    order: 0;
+  }
+  #app:has(> .class-lessons) > .workspace-bar {
+    order: 1;
+  }
+  #app:has(> .class-lessons) > .breadcrumb {
+    order: 2;
+  }
+  #app:has(> .class-lessons) > .tabs {
+    order: 3;
+  }
+  #app:has(> .class-lessons) > .class-lessons {
+    order: 4;
+  }
+  #app:has(> .class-lessons) > .lesson-create {
+    order: 5;
+  }
+}
+@media screen and (min-width: 1101px) {
+  #app:has(> .dashboard-directory) {
+    display: flex;
+    flex-direction: column;
+  }
+  #app:has(> .dashboard-directory) > * {
+    min-width: 0;
+  }
+  #app:has(> .dashboard-directory) > .topbar {
+    order: 0;
+  }
+  #app:has(> .dashboard-directory) > .workspace-bar {
+    order: 1;
+  }
+  #app:has(> .dashboard-directory) > .breadcrumb {
+    order: 2;
+  }
+  #app:has(> .dashboard-directory) > .dashboard-directory {
+    order: 3;
+  }
+  #app .dashboard-entities {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 20px;
+    padding: 0 20px 20px;
+  }
+  #app .dashboard-entity {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 22px;
+  }
+  #app .dashboard-entity-info {
+    flex: 1;
+    align-items: flex-start;
+    gap: 16px;
+    padding-bottom: 18px;
+  }
+  #app .dashboard-entity-info > div {
+    flex: 1;
+  }
+  #app .dashboard-entity-info h4 {
+    font-size: 18px;
+  }
+  #app .dashboard-entity-info p {
+    font-size: 14px;
+  }
+  #app .dashboard-entity-actions {
+    width: 100%;
+    margin-top: 0;
+    padding-top: 18px;
+    border-top: 0;
+    align-items: start;
+    gap: 12px;
+  }
+  #app .dashboard-entities > .empty {
+    grid-column: 1 / -1;
+  }
+}
+@media screen and (min-width: 701px) and (max-width: 1100px) {
+  #app {
+    padding-inline: 24px;
+  }
+  .dashboard-entities {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+  .dashboard-entity {
+    height: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .dashboard-entity-actions {
+    flex-wrap: wrap;
+  }
+  .modal-dialog {
+    width: min(92vw, 840px);
+  }
+}
+@media screen and (min-width: 1101px) {
+  #app :is(.dashboard-entity-actions, .lesson-actions) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+  }
+  #app :is(.dashboard-entity-more, .lesson-more) {
+    margin: 0;
+    align-self: center;
+  }
+  #app :is(.dashboard-entity-actions, .lesson-actions) > button,
+  #app :is(.dashboard-entity-more, .lesson-more) > summary {
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    height: 48px;
+    min-height: 48px;
+    margin: 0;
+    padding: 0 14px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 24px;
+    white-space: nowrap;
+    border-radius: 12px;
+  }
+  #app :is(.dashboard-entity-more, .lesson-more) > summary {
+    min-width: 100px;
+    justify-content: center;
+    gap: 6px;
+  }
+}

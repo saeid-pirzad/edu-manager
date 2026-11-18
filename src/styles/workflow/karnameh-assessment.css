@@ -1,0 +1,119 @@
+@media screen {
+  .gradebook .assessment-term-navigation {
+    margin-bottom: 8px;
+    background: var(--theme-primary-soft);
+  }
+  .gradebook .assessment-stage-navigation {
+    margin-bottom: 18px;
+  }
+  .grade-report-table .report-lesson-stage + .report-lesson-stage {
+    padding-top: 8px;
+    margin-top: 8px;
+    border-top: 1px solid var(--theme-line-soft);
+  }
+  .report-lesson-stage > span {
+    color: var(--theme-muted);
+    font-size: 11px;
+  }
+  .report-stage-values {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 5px;
+    font-size: 11px;
+    color: var(--theme-muted);
+  }
+  .report-stage-values b,
+  .report-stage-values strong {
+    color: var(--theme-ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .report-stage-values strong {
+    font-size: 14px;
+  }
+  #app .karnameh-overview td.report-assessment-cell {
+    min-width: 170px;
+  }
+}
+@media screen {
+  .karnameh-student-print {
+    display: none;
+  }
+  #app .grade-report .karnameh-student-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    max-width: 100%;
+    margin: 0;
+    padding: 5px 8px;
+    border: 1px solid var(--theme-line);
+    border-radius: 8px;
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
+    font: inherit;
+    font-weight: 600;
+    text-align: start;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  #app .grade-report .karnameh-student-link:hover {
+    background: var(--theme-primary-soft);
+    border-color: var(--theme-primary-line);
+  }
+  .karnameh-student-link:focus-visible {
+    outline: 2px solid var(--theme-primary);
+    outline-offset: 2px;
+  }
+  .karnameh-report-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .karnameh-report-heading .karnameh-report-actions .ghost {
+    background: var(--theme-surface-subtle);
+    border: 1px solid var(--theme-line);
+    color: var(--theme-ink);
+  }
+}
+@media screen and (max-width: 600px) {
+  .karnameh-report-heading:has(.karnameh-report-actions) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .karnameh-report-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .karnameh-report-actions button {
+    min-width: 0;
+    font-size: 12px;
+    white-space: normal;
+  }
+}
+@media screen and (max-width: 700px),
+  screen and (max-width: 1000px) and (pointer: coarse) {
+  #app .karnameh-overview[data-ui-layout="cards"] td.report-assessment-cell {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+  .karnameh-overview[data-ui-layout="cards"] .report-lesson-stage {
+    display: grid;
+    grid-template-columns: 70px minmax(0, 1fr);
+    gap: 4px 8px;
+    align-items: center;
+  }
+  .karnameh-overview[data-ui-layout="cards"]
+    .report-lesson-stage
+    .report-grade-status {
+    grid-column: 2;
+    justify-self: start;
+  }
+  .karnameh-overview[data-ui-layout="cards"] .report-stage-values {
+    margin: 0;
+    justify-content: flex-start;
+  }
+}
+.report-mobile-score-heading {
+  display: none;
+}

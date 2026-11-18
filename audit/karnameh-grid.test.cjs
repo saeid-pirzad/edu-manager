@@ -88,6 +88,7 @@ function fixture({ count = 3 } = {}) {
     "legacy/grading/calculation.js",
     "legacy/grading/kardanesh.js",
     "workspace/domain/defaults-numbers.js",
+    "services/grading-results.js",
     "workspace/grading/results.js",
     "workspace/reports/student.js",
   ])

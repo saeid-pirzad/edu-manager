@@ -16,6 +16,7 @@ function fixture() {
     "domain/grade-policy.js",
     "domain/reporting/academic-results.js",
     "workspace/domain/defaults-numbers.js",
+    "services/grading-results.js",
     "workspace/grading/results.js",
     "workspace/periods/install.js",
     "workspace/periods/switch-create.js",

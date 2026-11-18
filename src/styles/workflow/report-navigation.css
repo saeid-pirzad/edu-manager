@@ -1,0 +1,307 @@
+@media screen {
+  #app .report-page-heading {
+    margin-block: 8px 12px;
+  }
+  #app .report-page-heading h2 {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.8;
+  }
+  #app .report-navigation {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 3px;
+    width: 100%;
+    min-width: 0;
+    margin: 0 0 18px;
+    padding: 3px;
+    border: 1px solid var(--theme-secondary-line);
+    border-radius: 12px;
+    background: var(--theme-secondary-soft);
+    overflow: visible;
+  }
+  #app .report-navigation > button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-width: 0;
+    min-height: 54px;
+    margin: 0;
+    padding: 6px 2px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--theme-ink);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.5;
+    box-shadow: none;
+    white-space: nowrap;
+    transition:
+      background-color 160ms ease,
+      color 160ms ease,
+      box-shadow 160ms ease;
+  }
+  #app .report-tab-icon {
+    color: var(--theme-secondary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+    pointer-events: none;
+  }
+  #app .report-tab-icon .ui-icon {
+    width: 18px;
+    height: 18px;
+    flex-basis: 18px;
+    margin: 0;
+  }
+  #app .report-tab-label {
+    min-width: 0;
+    pointer-events: none;
+  }
+  #app .report-navigation > button.active,
+  #app .report-navigation > button[aria-current="page"] {
+    border-color: var(--theme-primary);
+    background: var(--theme-primary);
+    color: var(--theme-surface);
+    box-shadow: none;
+  }
+  #app .report-navigation > button[aria-current="page"] .report-tab-icon {
+    color: inherit;
+  }
+  #app .report-navigation > button:focus-visible {
+    outline: 2px solid var(--theme-focus);
+    outline-offset: 2px;
+  }
+  #app .report-extra {
+    margin: 0 0 16px;
+  }
+  #app .report-extra > summary {
+    min-height: 36px;
+    color: var(--theme-muted);
+    font-size: 11px;
+    cursor: pointer;
+  }
+  #app :is(.periodic-controls, .report-filter-card) {
+    padding: 20px;
+    border: 1px solid var(--theme-line);
+    border-radius: 15px;
+    box-shadow: none;
+  }
+  #app :is(.periodic-controls, .report-filter-card) > h3 {
+    margin: 0 0 14px;
+    font-size: 15px;
+  }
+  #app :is(.periodic-control-grid, .report-filter-grid) {
+    gap: 12px !important;
+  }
+  #app
+    :is(.periodic-controls, .report-filter-card)
+    :is(
+      select,
+      input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"])
+    ) {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    border: 1px solid var(--theme-line);
+    border-radius: 9px;
+    background: var(--theme-surface-subtle);
+    font-size: 14px;
+  }
+  #app :is(.periodic-control-grid, .report-filter-field, .periodic-note-field) {
+    color: var(--theme-muted);
+    font-size: 12px;
+  }
+  #app .periodic-note-field textarea {
+    border: 1px solid var(--theme-line);
+    border-radius: 10px;
+    background: var(--theme-surface-subtle);
+    padding: 10px;
+    font-size: 14px;
+    resize: vertical;
+  }
+  #app .periodic-build {
+    min-height: 44px;
+    padding-inline: 20px;
+    border-radius: 10px;
+    background: var(--theme-primary);
+    color: var(--theme-surface);
+    font-size: 13px;
+  }
+  #app :is(.grade-report, .periodic-document) {
+    padding: 22px;
+    border: 1px solid var(--theme-line);
+    border-radius: 15px;
+    box-shadow: none;
+  }
+  #app .grade-report > :is(h2, h3) {
+    margin: 0 0 8px;
+    font-size: 19px;
+  }
+  #app .grade-report > p {
+    margin: 8px 0 16px;
+    font-size: 12px;
+    line-height: 1.9;
+    color: var(--theme-muted);
+  }
+  #app .grade-report > button {
+    min-height: 42px;
+    margin-bottom: 16px;
+    border-radius: 9px;
+    font-size: 12px;
+    background: var(--theme-primary);
+    color: var(--theme-surface);
+  }
+  #app .grade-report-section {
+    margin-top: 18px;
+    padding: 16px 0;
+    border: 0;
+    border-top: 1px solid var(--theme-line);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  #app .grade-report-section > h3 {
+    margin: 0 0 6px;
+    font-size: 14px;
+  }
+  #app .report-term-label {
+    margin: 0 0 14px;
+    color: var(--theme-muted);
+    font-size: 11px;
+  }
+  #app .grade-report .table-scroll {
+    border: 1px solid var(--theme-line);
+    border-radius: 10px;
+    background: var(--theme-surface);
+  }
+  #app .grade-report table {
+    margin: 0;
+  }
+  #app .grade-report th {
+    background: var(--theme-surface-muted);
+    color: var(--theme-ink);
+    font-size: 11px;
+  }
+  #app .grade-report td {
+    padding: 12px 10px;
+    font-size: 12px;
+  }
+  #app .periodic-document-heading {
+    border-color: var(--theme-line);
+  }
+  #app .periodic-document-heading > span {
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
+    border-radius: 20px;
+  }
+  #app .report-empty {
+    padding: 24px 18px;
+    border: 1px dashed var(--theme-line);
+    border-radius: 14px;
+    background: var(--theme-surface-subtle);
+    text-align: center;
+  }
+  #app .report-empty h3 {
+    font-size: 15px;
+  }
+  #app .report-empty p {
+    color: var(--theme-muted);
+    font-size: 12px;
+    line-height: 1.9;
+  }
+}
+@media screen and (min-width: 640px) {
+  #app .report-navigation > button {
+    flex-direction: row;
+    gap: 6px;
+    min-height: 44px;
+    padding: 6px 10px;
+  }
+}
+@media screen and (hover: hover) {
+  #app .report-navigation > button:not([aria-current="page"]):hover {
+    background: var(--theme-surface);
+    color: var(--theme-primary-hover);
+  }
+  #app .report-navigation > button[aria-current="page"]:hover {
+    background: var(--theme-primary-hover);
+    color: var(--theme-surface);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #app .report-navigation > button {
+    transition: none;
+  }
+}
+@media screen and (max-width: 700px) {
+  #app > .periodic-controls,
+  #app > .report-extra {
+    order: 5;
+  }
+  #app > #periodicReportOutput,
+  #app > #lessonReportTabOutput {
+    order: 6;
+  }
+  #app
+    :is(
+      .periodic-controls,
+      .report-filter-card,
+      .grade-report,
+      .periodic-document
+    ) {
+    padding: 14px;
+  }
+  #app :is(.periodic-control-grid, .report-filter-grid) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px !important;
+  }
+  #app
+    :is(.periodic-controls, .report-filter-card)
+    :is(
+      select,
+      input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"])
+    ),
+  #app .periodic-note-field textarea {
+    font-size: 16px;
+  }
+  #app .periodic-build {
+    width: 100%;
+  }
+  #app .grade-report > :is(h2, h3) {
+    font-size: 17px;
+  }
+  #app .grade-report-section {
+    padding: 16px 0;
+  }
+  #app .periodic-export-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+  #app .periodic-export-actions > button {
+    min-width: 0;
+    padding-inline: 4px;
+    white-space: nowrap;
+    margin: 0;
+    font-size: 12px;
+  }
+}
+@media print {
+  .grade-report-section {
+    break-inside: auto;
+    margin-top: 12px;
+  }
+  .grade-report-section h3 {
+    break-after: avoid;
+  }
+  .grade-report .table-scroll {
+    overflow: visible !important;
+  }
+}

@@ -22,6 +22,13 @@ function fixture() {
     setStatus() {},
     validateFullBackup() {},
   });
+  vm.runInContext(
+    fs.readFileSync(
+      path.join(__dirname, "../src/services/installation-backup.js"),
+      "utf8",
+    ),
+    c,
+  );
   for (const name of ["local.js", "full-export.js"])
     vm.runInContext(
       fs.readFileSync(

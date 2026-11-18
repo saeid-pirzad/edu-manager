@@ -17,6 +17,7 @@ function fixture() {
   load(context, "src/domain/grade-math.js");
   load(context, "src/domain/grade-policy.js");
   load(context, "src/domain/reporting/academic-results.js");
+  load(context, "src/services/grading-results.js");
   load(context, "src/workspace/grading/results.js");
   return context;
 }

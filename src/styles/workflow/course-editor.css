@@ -1,0 +1,173 @@
+@media screen {
+  #app .lesson-items {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    padding: 18px;
+  }
+  #app .lesson-item {
+    min-width: 0;
+    gap: 14px;
+  }
+  #app .lesson-identity > div {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  #app .lesson-meta {
+    align-content: start;
+    font-size: 13px;
+  }
+  #app .lesson-policy {
+    background: var(--theme-canvas);
+    border-color: var(--workflow-line);
+    color: var(--workflow-muted);
+    padding: 12px 14px;
+    overflow-wrap: anywhere;
+  }
+  #app .lesson-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 12px;
+  }
+  #app .lesson-actions > .lesson-enter {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+  }
+  #app .lesson-actions > .lesson-more {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+  }
+  #app button.lesson-enter {
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--workflow-soft);
+    color: var(--workflow-accent);
+    border: 1px solid var(--theme-primary-line);
+    font-size: 14px;
+    white-space: normal;
+    text-align: start;
+  }
+  #app :is(.lesson-more, .student-more) {
+    margin: 0;
+  }
+  #app :is(.lesson-more, .student-more) > summary {
+    min-width: 92px;
+    min-height: 48px;
+    padding: 10px 12px;
+    background: var(--theme-surface);
+    color: var(--theme-ink);
+    border-color: var(--workflow-line);
+    font-size: 13px;
+  }
+  #app :is(.lesson-more, .student-more) > summary:hover,
+  #app :is(.lesson-more, .student-more)[open] > summary {
+    background: var(--theme-surface-muted);
+    border-color: var(--theme-primary-line);
+  }
+  #app :is(.lesson-more, .student-more) > summary:focus-visible {
+    outline: 2px solid var(--workflow-accent);
+    outline-offset: 3px;
+  }
+  #app :is(.lesson-more, .student-more)[open] {
+    z-index: 40;
+  }
+  #app :is(.lesson-more-menu, .student-more-menu) {
+    top: auto;
+    bottom: calc(100% + 8px);
+    width: min(240px, calc(100vw - 64px));
+    padding: 6px;
+    gap: 4px;
+    border-color: var(--workflow-line);
+    border-radius: 12px;
+    box-shadow: 0 8px 28px #2d344024;
+  }
+  #app :is(.lesson-more-menu, .student-more-menu) button {
+    width: 100%;
+    min-height: 46px;
+    padding: 10px 12px;
+    font-size: 14px;
+    white-space: normal;
+    border-radius: 10px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--theme-ink);
+  }
+  #app :is(.lesson-more-menu, .student-more-menu) button:hover {
+    background: var(--theme-surface-muted);
+  }
+  #app :is(.lesson-more-menu, .student-more-menu) button.danger {
+    color: var(--status-danger);
+    border-top-color: var(--workflow-line);
+  }
+  #app :is(.lesson-more-menu, .student-more-menu) button.danger:hover {
+    background: var(--status-danger-soft);
+  }
+  #modal:has(#courseError) .modal-dialog {
+    width: 100%;
+    max-width: 680px;
+    border-radius: 20px;
+  }
+  #modal:has(#courseError) .modal-header {
+    background: var(--theme-surface);
+  }
+  #modal:has(#courseError) .modal-body {
+    min-height: 0;
+  }
+  :is(#modalBody, .qb-body):has(#courseError) .record-editor-context {
+    background: var(--theme-surface-muted);
+    border: 1px solid var(--workflow-line);
+    border-radius: 12px;
+  }
+  :is(#modalBody, .qb-body):has(#courseError) .course-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+  :is(#modalBody, .qb-body):has(#courseError) .course-field {
+    min-width: 0;
+  }
+  :is(#modalBody, .qb-body):has(#courseError) #courseError:empty {
+    display: none;
+  }
+}
+@media screen and (max-width: 700px) {
+  #app .lesson-items {
+    padding: 12px 0 0;
+    gap: 12px;
+  }
+  #modal:has(#courseError) {
+    padding: 12px;
+    align-items: center;
+  }
+  #modal:has(#courseError) .modal-dialog {
+    max-height: calc(var(--app-viewport, 100dvh) - 24px);
+    border-radius: 16px;
+  }
+  #modal:has(#courseError) .modal-header {
+    padding: 12px 14px;
+    flex-shrink: 0;
+  }
+  #modal:has(#courseError) .modal-body {
+    padding: 16px;
+  }
+  :is(#modalBody, .qb-body):has(#courseError) .course-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+  :is(#modalBody, .qb-body):has(#courseError) .record-editor-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+  :is(#modalBody, .qb-body):has(#courseError) .record-editor-actions button {
+    min-width: 0;
+    white-space: normal;
+    min-height: 48px;
+    padding-inline: 12px;
+  }
+}

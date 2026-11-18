@@ -1,0 +1,59 @@
+@media screen {
+  :is(#lessonGradesArea, #modalBody) .gradebook .assessment-inputs {
+    grid-template-columns: repeat(2, minmax(0, 88px));
+    justify-content: end;
+    justify-self: end;
+    gap: 12px;
+    width: 100%;
+    max-width: 188px;
+  }
+  :is(#lessonGradesArea, #modalBody)
+    .gradebook
+    .assessment-inputs.general-inputs {
+    grid-template-columns: minmax(0, 88px);
+    max-width: 88px;
+  }
+  :is(#lessonGradesArea, #modalBody)
+    .gradebook
+    .assessment-inputs
+    label
+    > span {
+    justify-content: center;
+    text-align: center;
+  }
+  :is(#lessonGradesArea, #modalBody) .gradebook .grade-editor {
+    max-width: 88px;
+  }
+}
+@media screen and (max-width: 700px) {
+  :is(#lessonGradesArea, #modalBody) .gradebook .assessment-inputs {
+    grid-template-columns: repeat(2, minmax(0, 64px));
+    gap: 8px;
+    max-width: 136px;
+  }
+  :is(#lessonGradesArea, #modalBody)
+    .gradebook
+    .assessment-inputs.general-inputs {
+    grid-template-columns: minmax(0, 64px);
+    max-width: 64px;
+  }
+  :is(#lessonGradesArea, #modalBody) .gradebook .grade-editor {
+    max-width: 64px;
+  }
+}
+@media print {
+  .module-toolbar {
+    display: none !important;
+  }
+  .module-panel[hidden] {
+    display: block !important;
+  }
+  .unit-gradebook [data-unit-panel][hidden] {
+    display: block !important;
+  }
+  .gradebook-search,
+  .gradebook-help,
+  .gradebook .assessment-navigation {
+    display: none !important;
+  }
+}

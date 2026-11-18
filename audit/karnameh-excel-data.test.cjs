@@ -34,9 +34,11 @@ function fixture({ count = 3 } = {}) {
     "legacy/grading/kardanesh.js",
     "workspace/domain/defaults-numbers.js",
     "workspace/validation/database.js",
+    "services/grading-results.js",
     "workspace/grading/results.js",
     "workspace/reports/student.js",
     "workspace/reports/karnameh-grid.js",
+    "services/karnameh-excel.js",
     "workspace/reports/karnameh-excel-data.js",
     "reports/periodic/xlsx-workbook.js",
   ])
@@ -180,8 +182,41 @@ function fixture({ count = 3 } = {}) {
     generatedAt: "2026-11-04T10:00:00.000Z",
   };
   const build = (extra = {}) => c.karnamehExcelSheets({ ...options, ...extra });
-  return { c, parts, options, build, students, archived };
+  const service = (overrides = {}) =>
+    c.EduKarnamehExcel({
+      grades: c.EduReportGrades,
+      annualGradeRows: c.annualGradeRows,
+      annualModularLesson: c.annualModularLesson,
+      annualTechnicalRows: c.annualTechnicalRows,
+      assertAnnualLessonCompatibility: c.assertAnnualLessonCompatibility,
+      assessmentWeights: c.assessmentWeights,
+      finalText: c.finalText,
+      lessons: c.karnamehLessons,
+      students: c.karnamehReportStudents,
+      ownScoreRecord: c.ownScoreRecord,
+      ...overrides,
+    });
+  return { c, parts, options, build, service, students, archived };
 }
+
+test("independent workbook services retain their injected student scope without sharing application selection", () => {
+  const f = fixture(),
+    first = f.service({ students: () => [f.students[0]] }),
+    second = f.service({ students: () => [f.students[1]] });
+  assert.ok(Object.isFrozen(first) && Object.isFrozen(second));
+  for (const [service, expected] of [
+    [first, f.students[0]],
+    [second, f.students[1]],
+    [first, f.students[0]],
+  ]) {
+    const rows = service
+      .sheets(f.options)
+      .flatMap((item) => item.rows.slice(1));
+    assert.ok(rows.some((row) => row[1] === expected.name));
+    for (const student of f.students.filter((student) => student !== expected))
+      assert.ok(rows.every((row) => !row.includes(student.name)));
+  }
+});
 
 test("class export preserves registration order, leading-zero codes and explicit archived membership", () => {
   const f = fixture(),
@@ -615,12 +650,17 @@ test("legacy Excel lookup preserves the first repeated row and keeps delimiter-b
       passed: null,
       legacyUnits: [],
     });
-  f.c.annualTechnicalRows = () => [
-    row("a|b", "c", 7),
-    row("a", "b|c", 11),
-    row("a|b", "c", 18),
-  ];
-  const rows = data(f.build({ classroom, parts }), "سوابق واحدی");
+  const service = f.service({
+    annualTechnicalRows: () => [
+      row("a|b", "c", 7),
+      row("a", "b|c", 11),
+      row("a|b", "c", 18),
+    ],
+  });
+  const rows = data(
+    service.sheets({ ...f.options, classroom, parts }),
+    "سوابق واحدی",
+  );
   assert.deepEqual(
     rows.map((item) => [item[1], item[3], item[5], item[11]]),
     [

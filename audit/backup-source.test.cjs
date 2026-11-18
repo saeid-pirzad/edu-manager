@@ -150,6 +150,7 @@ function fixture() {
     "domain/academic-year.js",
     "domain/grade-drafts.js",
     "domain/deputy-export-identity.js",
+    "services/installation-backup.js",
     "workspace/backups/full-export.js",
   ])
     vm.runInContext(

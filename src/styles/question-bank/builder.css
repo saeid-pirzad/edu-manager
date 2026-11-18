@@ -1,0 +1,151 @@
+.qb-form-heading {
+  margin: 8px 0 0;
+  font-size: 0.9rem;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--theme-line-soft);
+}
+.qb-builder-intro {
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--theme-secondary-soft);
+  border: 1px solid var(--theme-secondary-line);
+}
+.qb-builder-intro h4 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  color: var(--theme-secondary);
+}
+.qb-builder-intro p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.9;
+  color: var(--theme-ink);
+}
+.qb-builder .qb-form-fields > .course-field:has(input:not([type="date"])) {
+  align-self: start;
+}
+.qb-builder .qb-form-fields > .course-field:has(input[placeholder]) {
+  grid-column: 1/-1;
+}
+.qb-builder .qb-exam-date {
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--theme-muted);
+}
+.qb-builder .qb-count-field {
+  grid-template-rows: auto auto auto;
+  padding: 10px;
+}
+.qb-builder .qb-count-field input {
+  font-size: 16px;
+  font-weight: 600;
+}
+.qb-builder .qb-unit-selection .qb-builder-units > .course-field {
+  margin-block: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+.qb-builder .qb-unit-selection input[type="checkbox"] {
+  flex-shrink: 0;
+}
+.qb-builder input[aria-invalid="true"] {
+  border-color: var(--status-danger-line);
+}
+.qb-body .qb-builder .qb-form-fields > .qb-exam-details {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 14px;
+  background: var(--theme-surface-subtle);
+  border-color: var(--theme-line-soft);
+}
+.qb-exam-details > .course-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-self: start;
+}
+.qb-exam-details input {
+  height: 44px;
+  min-width: 0;
+  background: var(--theme-surface);
+}
+.qb-count-field {
+  padding: 12px;
+  border: 1px solid var(--theme-line-soft);
+  border-radius: 10px;
+  background: var(--theme-surface-subtle);
+}
+.qb-body .qb-count-grid {
+  margin: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.qb-body .qb-count-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: minmax(28px, auto) 44px;
+  align-items: start;
+  gap: 6px;
+  padding: 0 0 10px;
+  border: 0;
+  border-bottom: 1px solid var(--theme-line-soft);
+  background: transparent;
+  font-size: 0.8rem;
+}
+.qb-count-title {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: center;
+  min-width: 0;
+  line-height: 1.6;
+}
+.qb-count-field input {
+  grid-column: 1/-1;
+  grid-row: 2;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.qb-count-field small {
+  line-height: 1.8;
+}
+.qb-body .qb-count-field .qb-capacity-badge {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  padding: 2px 7px;
+  border: 1px solid var(--theme-primary-line);
+  border-radius: 20px;
+  color: var(--theme-primary);
+  background: var(--theme-primary-soft);
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.qb-count-field[data-shortage="true"] .qb-capacity-badge {
+  background: var(--status-danger-soft);
+  border-color: var(--status-danger-line);
+  color: var(--status-danger);
+}
+.qb-count-field[data-shortage="true"] {
+  border-color: var(--status-danger-line);
+}
+.qb-count-field[data-shortage="true"] small {
+  color: var(--status-danger);
+}
+.qb-plan-summary {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--theme-primary-soft);
+  color: var(--theme-primary);
+  font-size: 0.8rem;
+  line-height: 1.8;
+}
+.qb-unit-selection .course-field small {
+  margin-inline-start: auto;
+  font-weight: 400;
+}
+.qb-preview-actions {
+  justify-content: space-between;
+  margin-top: 0;
+}

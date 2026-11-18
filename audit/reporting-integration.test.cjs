@@ -48,6 +48,7 @@ function fixture({ host = false } = {}) {
     context.root = context;
     load(context, "reports/periodic/date-range.js");
     load(context, "reports/periodic/model.js");
+    load(context, "services/grading-results.js");
     load(context, "workspace/grading/results.js");
   }
   return context;

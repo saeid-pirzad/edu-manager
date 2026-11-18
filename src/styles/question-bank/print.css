@@ -1,0 +1,44 @@
+@media print {
+  body:has(.qb-page .qb-sheet) > :not(#app),
+  body:has(.qb-page .qb-sheet) > #app > :not(#questionBankPageHost),
+  body:has(.qb-page .qb-sheet) #questionBankPageHost > :not(.qb-page),
+  body:has(.qb-page .qb-sheet) .qb-page > :not(.qb-body),
+  body:has(.qb-page .qb-sheet) .qb-page > .qb-body > :not(.qb-sheet) {
+    display: none !important;
+  }
+  body:has(.qb-page .qb-sheet) > #app,
+  body:has(.qb-page .qb-sheet) #questionBankPageHost,
+  body:has(.qb-page .qb-sheet) .qb-page,
+  body:has(.qb-page .qb-sheet) .qb-page > .qb-body {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    max-width: none !important;
+    border: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    background: white !important;
+  }
+  body:has(.qb-page .qb-sheet) .qb-page > .qb-body > .qb-sheet {
+    display: block !important;
+    overflow: visible !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    page: qb-exam;
+  }
+  .qb-solution,
+  .qb-confirm,
+  .qb-print-frame {
+    display: none !important;
+  }
+  @page qb-exam {
+    size: A4 portrait;
+    margin: 15mm;
+  }
+}

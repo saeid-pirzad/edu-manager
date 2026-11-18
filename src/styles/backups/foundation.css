@@ -1,0 +1,322 @@
+@media screen {
+  /* Backup actions share the red/amber product palette, not generic upload blue. */
+  #modal:has(.backup-hub) .modal-header {
+    --form-cream: var(--theme-secondary-soft);
+  }
+  :is(#modalBody, #app)
+    .backup-hub
+    button:is(
+      [data-workspace-action="export-full"],
+      [data-workspace-action="single-file-choose"],
+      [data-workspace-action="choose-import"]
+    ) {
+    --button-ink: var(--theme-primary);
+    --button-fill: var(--theme-primary);
+    --button-soft: var(--theme-primary-soft);
+    --button-line: var(--theme-primary-line);
+    --button-hover: var(--theme-primary-hover);
+  }
+  :is(#modalBody, #app)
+    .backup-hub
+    button:is(
+      [data-workspace-action="prepare-share-backup"],
+      [data-workspace-action="single-file-save"]
+    ) {
+    --button-ink: var(--theme-secondary);
+    --button-fill: var(--theme-secondary);
+    --button-soft: var(--theme-secondary-soft);
+    --button-line: var(--theme-secondary-line);
+    --button-hover: var(--theme-secondary-hover);
+  }
+  :is(#modalBody, #app) .backup-hub > details {
+    --form-cream: var(--theme-secondary-soft);
+    border-color: var(--theme-secondary-line);
+  }
+  :is(#modalBody, #app) .backup-hub > .backup-reset {
+    --form-cream: var(--status-danger-soft);
+    border-color: var(--status-danger-line);
+  }
+  :is(#modalBody, #app) .backup-reset > summary {
+    color: var(--status-danger);
+  }
+  :is(#modalBody, #app) .backup-reset > summary::after {
+    background: var(--status-danger-soft);
+    color: var(--status-danger);
+  }
+  :is(
+    :is(#modal:has(.backup-hub), #deputyBackupDialog) .modal-dialog,
+    #deputyBackupDialog
+  ) {
+    width: min(100%, 640px);
+    max-height: calc(var(--app-viewport, 100dvh) - 48px);
+    border-radius: 18px;
+  }
+  :is(#modal:has(.backup-hub), #deputyBackupDialog) .modal-header {
+    padding: 14px 20px;
+    background: var(--theme-surface);
+  }
+  :is(#modal:has(.backup-hub), #deputyBackupDialog) .modal-header h3 {
+    font-size: 17px;
+  }
+  :is(#modal:has(.backup-hub), #deputyBackupDialog) .modal-body {
+    padding: 18px;
+    background: var(--theme-canvas);
+  }
+  #modal:has(#backupHub) .modal-body {
+    /* Switching tabs or expanding a notice must not change the card widths. */
+    scrollbar-gutter: stable;
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody) .backup-hub {
+    display: grid;
+    gap: 12px;
+    min-width: 0;
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody)
+    .backup-hub
+    > :is(section, details) {
+    min-width: 0;
+    padding: 18px;
+    border: 1px solid var(--theme-line);
+    border-radius: 13px;
+    background: var(--theme-surface);
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody) .backup-hub :is(h3, h4) {
+    margin: 0 0 7px;
+    color: var(--theme-ink);
+    font-size: 15px;
+    line-height: 1.8;
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody) .backup-hub p {
+    margin: 0 0 14px;
+    color: var(--theme-muted);
+    font-size: 12px;
+    line-height: 1.95;
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody) .backup-hub button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-width: 0;
+    min-height: 44px;
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 9px;
+    font-size: 12px;
+    line-height: 1.7;
+    white-space: normal;
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody) .backup-action-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody)
+    .backup-action-grid
+    > button:first-child {
+    min-height: 46px;
+    background: var(--theme-primary);
+    color: var(--theme-surface);
+    border: 1px solid var(--theme-primary);
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody) .backup-hub button.ghost {
+    border: 1px solid var(--theme-line);
+    background: var(--theme-surface-subtle);
+    color: var(--theme-muted);
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody) .backup-manual > p:last-child {
+    margin: 12px 0 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--theme-line-soft);
+    font-size: 11px;
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody) .backup-automatic > .row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin: 0;
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody)
+    .backup-automatic
+    > .row
+    > button:first-child {
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
+    border: 1px solid var(--theme-primary-line);
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody)
+    .backup-automatic
+    > .row
+    > button:last-child {
+    color: var(--status-danger);
+    background: var(--status-danger-soft);
+    border-color: var(--status-danger-line);
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody)
+    .backup-hub
+    [data-backup-file-status] {
+    padding: 10px 12px;
+    border: 1px solid var(--theme-line);
+    border-radius: 9px;
+    background: var(--theme-surface-subtle);
+    color: var(--theme-muted);
+    font-size: 11px;
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody)
+    .backup-automatic
+    > .backup-help {
+    margin-top: 14px;
+    padding-top: 6px;
+    border-top: 1px solid var(--theme-line-soft);
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody) .backup-hub details > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 40px;
+    padding: 4px 0;
+    list-style: none;
+    color: var(--theme-muted);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody)
+    .backup-hub
+    details
+    > summary::-webkit-details-marker {
+    display: none;
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody)
+    .backup-hub
+    details
+    > summary::after {
+    content: "+";
+    display: grid;
+    place-items: center;
+    flex: 0 0 24px;
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
+    font-size: 17px;
+    font-weight: 400;
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody)
+    .backup-hub
+    details[open]
+    > summary {
+    margin-bottom: 10px;
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody)
+    .backup-hub
+    details[open]
+    > summary::after {
+    content: "-";
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody) .backup-hub > details {
+    padding-block: 10px;
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody) .backup-help > p:last-child {
+    margin-bottom: 0;
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody) .backup-hub > p {
+    margin: 0;
+    padding: 14px;
+    border: 1px solid var(--theme-line);
+    border-radius: 12px;
+    background: var(--theme-surface-subtle);
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody)
+    .backup-hub
+    .backup-automatic-fallback:not([hidden]) {
+    margin-top: 12px;
+    margin-bottom: 14px;
+    padding: 12px;
+    border: 1px solid var(--status-warning-line);
+    border-radius: 10px;
+    background: var(--status-warning-soft);
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody)
+    .backup-hub
+    .backup-automatic-fallback
+    p {
+    margin-bottom: 10px;
+    font-size: 11px;
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody) .backup-history table {
+    width: 100%;
+    margin: 0;
+    font-size: 12px;
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody) .backup-history th {
+    background: var(--theme-surface-muted);
+    color: var(--theme-muted);
+    font-size: 11px;
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody) .backup-history td {
+    font-size: 11px;
+    padding: 10px 8px;
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody)
+    .backup-history
+    td:last-child
+    button {
+    margin: 3px;
+    padding: 7px 9px;
+    font-size: 11px;
+    min-height: 38px;
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody)
+    .backup-hub
+    :is(button, summary):focus-visible {
+    outline: 2px solid var(--theme-focus);
+    outline-offset: 2px;
+  }
+}
+@media screen and (max-width: 700px) {
+  :is(#modal:has(.backup-hub), #deputyBackupDialog) {
+    padding: 10px;
+    align-items: center;
+  }
+  :is(
+    :is(#modal:has(.backup-hub), #deputyBackupDialog) .modal-dialog,
+    #deputyBackupDialog
+  ) {
+    max-height: calc(var(--app-viewport, 100dvh) - 20px);
+    border-radius: 16px;
+  }
+  :is(#modal:has(.backup-hub), #deputyBackupDialog) .modal-header {
+    padding: 10px 14px;
+  }
+  :is(#modal:has(.backup-hub), #deputyBackupDialog) .modal-header h3 {
+    font-size: 15px;
+  }
+  :is(#modal:has(.backup-hub), #deputyBackupDialog) .modal-body {
+    padding: 10px;
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody) .backup-hub {
+    gap: 10px;
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody)
+    .backup-hub
+    > :is(section, details) {
+    padding: 14px 12px;
+    border-radius: 11px;
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody) .backup-hub > details {
+    padding-block: 8px;
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody) .backup-hub :is(h3, h4) {
+    font-size: 14px;
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody) .backup-hub p {
+    font-size: 11px;
+    margin-bottom: 12px;
+  }
+  :is(:is(#modalBody, #app), #deputyBackupBody) .backup-hub button {
+    padding: 9px 7px;
+    font-size: 11px;
+    gap: 5px;
+  }
+}

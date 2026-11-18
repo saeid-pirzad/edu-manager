@@ -21,6 +21,13 @@ function fixture() {
   });
   vm.runInContext(
     fs.readFileSync(
+      path.join(__dirname, "../src/services/installation-backup.js"),
+      "utf8",
+    ),
+    c,
+  );
+  vm.runInContext(
+    fs.readFileSync(
       path.join(__dirname, "../src/workspace/backups/full-export.js"),
       "utf8",
     ),

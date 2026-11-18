@@ -1,0 +1,101 @@
+/* Navigation controls share one icon box, label rhythm and touch target. */
+@media screen {
+  #app .topbar .header-actions > .header-action,
+  #app .topbar .header-actions > .workspace-tools > summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+  #app .topbar .header-actions > .header-action > svg,
+  #app .topbar .workspace-tools-symbol {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--header-icon-size);
+    height: var(--header-icon-size);
+    flex: 0 0 var(--header-icon-size);
+  }
+  #app .topbar .header-actions > .header-action > span,
+  #app
+    .topbar
+    .workspace-tools
+    > summary
+    > span:not(.workspace-tools-symbol):not(.workspace-tools-chevron) {
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+}
+@media screen and (max-width: 700px),
+  screen and (max-width: 1000px) and (pointer: coarse) {
+  #uiBottomNav {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 2px;
+    padding-inline: 6px;
+  }
+  #uiBottomNav > button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 0;
+    min-height: 54px;
+    margin: 0;
+    padding: 5px 0;
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+  #uiBottomNav > button > svg {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+  }
+  #uiBottomNav > button > span {
+    display: block;
+    line-height: 14px;
+    white-space: nowrap;
+  }
+  #app .navigation-menu .header-actions > [data-workspace-action="backups"] {
+    display: none;
+  }
+}
+@media screen and (max-width: 360px) {
+  #uiBottomNav > button {
+    font-size: 9px;
+  }
+}
+@media screen and (min-width: 701px) and (max-width: 850px) and (pointer: fine) {
+  #app .topbar {
+    padding-inline: 12px;
+  }
+  #app .topbar .header-actions > .header-action,
+  #app .topbar .header-actions > .workspace-tools > summary {
+    gap: 6px;
+  }
+}
+@media screen and (min-width: 701px) and (max-width: 1100px) and (pointer: fine),
+  screen and (min-width: 1001px) and (max-width: 1100px) {
+  #app .topbar {
+    flex-wrap: wrap;
+    column-gap: 16px;
+    row-gap: 8px;
+  }
+  #app .topbar .header-brand {
+    flex: 0 0 auto;
+    min-inline-size: max-content;
+  }
+  #app .topbar .header-brand h1 {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  #app .topbar .navigation-menu {
+    flex: 0 0 auto;
+    min-inline-size: max-content;
+    margin-inline-start: auto;
+  }
+}

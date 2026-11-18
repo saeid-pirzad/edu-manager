@@ -1,0 +1,107 @@
+/* Match report navigation while allowing long weekday names on narrow screens. */
+@media screen {
+  #app .week-day-picker {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 3px;
+    padding: 3px;
+    border: 1px solid var(--theme-secondary-line);
+    border-radius: 12px;
+    background: var(--theme-secondary-soft);
+    overflow: visible;
+  }
+  #app .week-day-picker > button,
+  #app .week-day-picker > button.ui-button-flat:not([hidden]) {
+    flex: 1 1 0;
+    flex-direction: row;
+    gap: 3px;
+    min-width: 0;
+    min-height: 44px;
+    margin: 0;
+    padding: 6px 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--theme-ink);
+    font-size: clamp(10px, 2.8vw, 12px);
+    font-weight: 500;
+    line-height: 1.5;
+    white-space: nowrap;
+    box-shadow: none;
+  }
+  #app .week-day-picker > button[aria-pressed="true"],
+  #app .week-day-picker > button.ui-button-flat[aria-pressed="true"] {
+    background: var(--theme-primary);
+    color: var(--theme-surface);
+    box-shadow: none;
+  }
+  #app .week-day-picker > button small {
+    color: inherit;
+    font-size: 10px;
+    line-height: 1.5;
+  }
+}
+@media screen and (max-width: 639px) {
+  #app .week-day-picker {
+    gap: 1px;
+    padding: 2px;
+  }
+  #app .week-day-picker > button {
+    position: relative;
+  }
+  #app .week-day-picker > button small {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  #app .week-day-picker > button:has(small)::after {
+    content: "";
+    position: absolute;
+    top: 4px;
+    inset-inline-end: 4px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    color: var(--theme-primary);
+    background: currentColor;
+    box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 18%, transparent);
+    animation: week-today-pulse 1.8s ease-in-out infinite;
+  }
+  #app .week-day-picker > button[aria-pressed="true"]:has(small)::after {
+    color: var(--theme-surface);
+  }
+}
+@media screen and (max-width: 360px) {
+  #app .week-day-picker:has(> button:nth-child(7)) > button {
+    font-size: 9.5px;
+  }
+}
+@media screen and (min-width: 640px) {
+  #app .week-day-picker > button,
+  #app .week-day-picker > button.ui-button-flat:not([hidden]) {
+    flex: 1 1 0;
+    flex-direction: row;
+    min-width: 0;
+    min-height: 44px;
+    gap: 4px;
+    padding: 6px 4px;
+  }
+}
+@media screen and (hover: hover) {
+  #app .week-day-picker > button:not([aria-pressed="true"]):hover,
+  #app
+    .week-day-picker
+    > button.ui-button-flat:not([aria-pressed="true"]):hover {
+    background: var(--theme-surface);
+    color: var(--theme-primary-hover);
+  }
+  #app .week-day-picker > button[aria-pressed="true"]:hover,
+  #app .week-day-picker > button.ui-button-flat[aria-pressed="true"]:hover {
+    background: var(--theme-primary-hover);
+  }
+}

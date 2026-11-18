@@ -1,0 +1,159 @@
+/* Shared hierarchy for both independent backup tabs. */
+@media screen {
+  :is(#modalBody, #app)
+    #backupHub
+    .backup-automatic-notice
+    :is(.backup-file-purpose, .backup-notice-filename) {
+    display: none;
+  }
+  :is(#modalBody, #app)
+    #backupHub
+    .backup-manual
+    .backup-action-grid
+    > button:first-child {
+    background: var(--status-success-soft) !important;
+    color: var(--status-success) !important;
+    border-color: var(--status-success-line) !important;
+  }
+  #modal:has(#backupHub) .modal-dialog {
+    max-width: 680px;
+  }
+  :is(#modalBody, #app) #backupHub .backup-automatic > summary {
+    font-size: 14px;
+    font-weight: 700;
+  }
+  :is(#modalBody, #app) #backupHub .backup-automatic > summary > small {
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--theme-muted);
+  }
+  :is(#modalBody, #app) #backupHub .backup-file-summary {
+    gap: 10px;
+    padding: 10px;
+    border: 1px solid var(--theme-line-soft);
+    border-radius: 10px;
+    background: var(--theme-surface-subtle);
+  }
+  :is(#modalBody, #app) #backupHub .backup-connection {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 11px;
+  }
+  :is(#modalBody, #app) #backupHub .backup-connection strong {
+    padding: 3px 8px;
+    border-radius: 7px;
+    background: var(--theme-surface);
+    color: var(--theme-muted);
+    font-size: 11px;
+  }
+  :is(#modalBody, #app)
+    #backupHub
+    .backup-connection[data-state="active"]
+    strong {
+    background: var(--status-success-soft);
+    color: var(--status-success);
+  }
+  :is(#modalBody, #app)
+    #backupHub
+    .backup-connection:is([data-state="permission"], [data-state="paused"])
+    strong {
+    background: var(--status-warning-soft);
+    color: var(--status-warning);
+  }
+  :is(#modalBody, #app)
+    #backupHub
+    .backup-connection[data-state="error"]
+    strong {
+    background: var(--status-danger-soft);
+    color: var(--status-danger);
+  }
+  :is(#modalBody, #app)
+    #backupHub
+    .backup-connection[data-state="busy"]
+    strong {
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
+  }
+  :is(#modalBody, #app) #backupHub .backup-file-details {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px 12px;
+    margin: 0;
+  }
+  :is(#modalBody, #app) #backupHub .backup-file-details > div {
+    min-width: 0;
+  }
+  :is(#modalBody, #app) #backupHub .backup-file-name-row {
+    grid-column: 1/-1;
+  }
+  :is(#modalBody, #app) #backupHub .backup-file-details dt {
+    color: var(--theme-muted);
+    font-size: 10px;
+    margin-bottom: 2px;
+  }
+  :is(#modalBody, #app) #backupHub .backup-file-details dd {
+    margin: 0;
+    font-size: 11px;
+    color: var(--theme-ink);
+    overflow-wrap: anywhere;
+  }
+  :is(#modalBody, #app) #backupHub .backup-file-details time {
+    font-variant-numeric: tabular-nums;
+  }
+  :is(#modalBody, #app) #backupHub .backup-automatic-help,
+  :is(#modalBody, #app) #backupHub .backup-manual > .backup-restore-help {
+    margin: 10px 0 0;
+    color: var(--theme-muted);
+    font-size: 10.5px;
+    line-height: 1.9;
+  }
+  :is(#modalBody, #app)
+    #backupHub
+    .backup-automatic
+    > .backup-automatic-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+  :is(#modalBody, #app)
+    #backupHub
+    .backup-automatic
+    > .backup-automatic-actions
+    > button {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: 8px 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    gap: 5px;
+  }
+  :is(#modalBody, #app)
+    #backupHub
+    .backup-automatic
+    > .backup-automatic-actions
+    > button
+    > :is(svg, .control-icon) {
+    display: none;
+  }
+  :is(#modalBody, #app) #backupHub .backup-manual .backup-action-grid > button {
+    font-size: 12px;
+    min-height: 44px;
+  }
+  :is(#modalBody, #app) #backupHub .backup-reset > summary {
+    color: var(--status-danger);
+    font-size: 13px;
+  }
+  :is(#modalBody, #app) #backupHub .backup-reset > p {
+    font-size: 11px;
+    line-height: 1.9;
+  }
+  :is(#modalBody, #app) #backupHub .backup-reset > button {
+    width: 100%;
+    min-height: 44px;
+    font-size: 12px;
+  }
+}

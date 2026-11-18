@@ -1,0 +1,401 @@
+{
+  "schemaVersion": 1,
+  "baselineRevision": "0aa4c95",
+  "generatedAt": "2026-11-18T13:38:10.740Z",
+  "node": "v24.21.0",
+  "releaseCacheVersion": "988b85a54d88c87f",
+  "limitations": "Automated Node and isolated Edge browser checks with synthetic data and emulated viewports. Browser totals include repeated shared checks, not unique independent scenarios. No physical mobile keyboard, iOS Safari or real user data was exercised. Payload figures describe static asset inventory and independent gzip encodings, not measured HTTP transfers or app speed.",
+  "validation": {
+    "releaseCommand": "npm run check:release",
+    "releaseExitCode": 0,
+    "releaseLog": ".cache/architecture-release.log",
+    "unit": {
+      "total": 3139,
+      "passed": 3139,
+      "failed": 0,
+      "added": 24
+    },
+    "browser": {
+      "runs": 18,
+      "total": 7817,
+      "passed": 7817,
+      "failed": 0,
+      "applicationReleases": ["5356f9aef2421773"],
+      "results": [
+        {
+          "stage": "4-adversarial-workflow-review",
+          "total": 2385,
+          "passed": 2385,
+          "failed": 0,
+          "applicationRelease": "5356f9aef2421773",
+          "executedAt": "2026-11-18T13:29:44.783Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-architecture-20261118\\edu-integrity-audit-1kDKWJ\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "record-edit-access",
+          "total": 265,
+          "passed": 265,
+          "failed": 0,
+          "applicationRelease": "5356f9aef2421773",
+          "executedAt": "2026-11-18T13:37:14.578Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-architecture-20261118\\edu-integrity-audit-9iYBS1\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "single-academic-year-ui",
+          "total": 235,
+          "passed": 235,
+          "failed": 0,
+          "applicationRelease": "5356f9aef2421773",
+          "executedAt": "2026-11-18T13:34:10.919Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-architecture-20261118\\edu-integrity-audit-9pYfm6\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "question-bank",
+          "total": 538,
+          "passed": 538,
+          "failed": 0,
+          "applicationRelease": "5356f9aef2421773",
+          "executedAt": "2026-11-18T13:30:37.687Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-architecture-20261118\\edu-integrity-audit-b1ohPH\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "logo-ui-pwa",
+          "total": 269,
+          "passed": 269,
+          "failed": 0,
+          "applicationRelease": "5356f9aef2421773",
+          "executedAt": "2026-11-18T13:35:36.174Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-architecture-20261118\\edu-integrity-audit-E3PF6Q\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "question-bank-import",
+          "total": 247,
+          "passed": 247,
+          "failed": 0,
+          "applicationRelease": "5356f9aef2421773",
+          "executedAt": "2026-11-18T13:32:17.733Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-architecture-20261118\\edu-integrity-audit-fNQv18\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "theme-reactium-acceptance",
+          "total": 411,
+          "passed": 411,
+          "failed": 0,
+          "applicationRelease": "5356f9aef2421773",
+          "executedAt": "2026-11-18T13:35:14.938Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-architecture-20261118\\edu-integrity-audit-GPYHhp\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "week-settings",
+          "total": 246,
+          "passed": 246,
+          "failed": 0,
+          "applicationRelease": "5356f9aef2421773",
+          "executedAt": "2026-11-18T13:37:49.827Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-architecture-20261118\\edu-integrity-audit-IAWC5q\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "school-create-ui",
+          "total": 340,
+          "passed": 340,
+          "failed": 0,
+          "applicationRelease": "5356f9aef2421773",
+          "executedAt": "2026-11-18T13:36:55.170Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-architecture-20261118\\edu-integrity-audit-khaISL\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "modular-unit-karnameh-layout",
+          "total": 345,
+          "passed": 345,
+          "failed": 0,
+          "applicationRelease": "5356f9aef2421773",
+          "executedAt": "2026-11-18T13:33:00.098Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-architecture-20261118\\edu-integrity-audit-lT3dFE\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "timetable-edit-access",
+          "total": 236,
+          "passed": 236,
+          "failed": 0,
+          "applicationRelease": "5356f9aef2421773",
+          "executedAt": "2026-11-18T13:37:31.819Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-architecture-20261118\\edu-integrity-audit-mi39nP\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "period-deletion",
+          "total": 277,
+          "passed": 277,
+          "failed": 0,
+          "applicationRelease": "5356f9aef2421773",
+          "executedAt": "2026-11-18T13:33:29.170Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-architecture-20261118\\edu-integrity-audit-NBDnga\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "gradebook-mobile-layout",
+          "total": 266,
+          "passed": 266,
+          "failed": 0,
+          "applicationRelease": "5356f9aef2421773",
+          "executedAt": "2026-11-18T13:33:51.967Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-architecture-20261118\\edu-integrity-audit-olFSRr\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "modular-unit-grading",
+          "total": 255,
+          "passed": 255,
+          "failed": 0,
+          "applicationRelease": "5356f9aef2421773",
+          "executedAt": "2026-11-18T13:32:37.076Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-architecture-20261118\\edu-integrity-audit-oNCQlU\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "navbar-layout",
+          "total": 679,
+          "passed": 679,
+          "failed": 0,
+          "applicationRelease": "5356f9aef2421773",
+          "executedAt": "2026-11-18T13:36:21.216Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-architecture-20261118\\edu-integrity-audit-OnDDBC\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "unified-backup-hub",
+          "total": 301,
+          "passed": 301,
+          "failed": 0,
+          "applicationRelease": "5356f9aef2421773",
+          "executedAt": "2026-11-18T13:31:59.038Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-architecture-20261118\\edu-integrity-audit-oqK2Vw\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "question-bank-business",
+          "total": 283,
+          "passed": 283,
+          "failed": 0,
+          "applicationRelease": "5356f9aef2421773",
+          "executedAt": "2026-11-18T13:31:02.236Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-architecture-20261118\\edu-integrity-audit-RM8xhs\\data-integrity-results.json",
+          "browserProfileRetained": false
+        },
+        {
+          "stage": "annual-backup-file-scale",
+          "total": 239,
+          "passed": 239,
+          "failed": 0,
+          "applicationRelease": "5356f9aef2421773",
+          "executedAt": "2026-11-18T13:34:44.941Z",
+          "resultFile": "C:\\Users\\Public\\edu-manager-architecture-20261118\\edu-integrity-audit-X9RoZQ\\data-integrity-results.json",
+          "browserProfileRetained": false
+        }
+      ]
+    },
+    "build": {
+      "bundles": 37,
+      "sourceFiles": 324,
+      "exitCode": 0
+    },
+    "package": {
+      "command": "npm run release:package",
+      "exitCode": 0,
+      "files": 83,
+      "matchesCurrentAssets": true
+    }
+  },
+  "architecture": {
+    "baselineRevision": "0aa4c95",
+    "records": [
+      {
+        "adapter": "src/workspace/grading/results.js",
+        "service": "src/services/grading-results.js",
+        "beforeSharedLines": 406,
+        "afterAdapterLines": 62,
+        "serviceLines": 450,
+        "beforeAmbientDependencies": [
+          "EduAnnualModules",
+          "EduPolicy",
+          "EduReportGrades",
+          "clone",
+          "db",
+          "knownStudents",
+          "old",
+          "ownScoreRecord",
+          "weightedKardanesh"
+        ],
+        "serviceAmbientDependencies": [],
+        "serviceSha256": "94cb52874d25f8d6876ab72adcf06d3d200cb9e42ab219a43bd737755c7a1ff7"
+      },
+      {
+        "adapter": "src/workspace/reports/karnameh-excel-data.js",
+        "service": "src/services/karnameh-excel.js",
+        "beforeSharedLines": 375,
+        "afterAdapterLines": 17,
+        "serviceLines": 399,
+        "beforeAmbientDependencies": [
+          "EduReportGrades",
+          "annualGradeRows",
+          "annualModularLesson",
+          "annualTechnicalRows",
+          "assertAnnualLessonCompatibility",
+          "assessmentWeights",
+          "finalText",
+          "karnamehLessons",
+          "karnamehReportStudents",
+          "ownScoreRecord"
+        ],
+        "serviceAmbientDependencies": [],
+        "serviceSha256": "33b507db2a95872c2e4392e9430400e4d11580a1b77c234291edb19cc0b651dc"
+      },
+      {
+        "adapter": "src/workspace/backups/full-export.js",
+        "service": "src/services/installation-backup.js",
+        "beforeSharedLines": 320,
+        "afterAdapterLines": 68,
+        "serviceLines": 317,
+        "beforeAmbientDependencies": [
+          "EduDeputyExportIdentity",
+          "EduGradeDrafts",
+          "RESET_RECORD_KEY",
+          "assessmentContext",
+          "backupStores",
+          "clone",
+          "connection",
+          "connectionRetired",
+          "documentToken",
+          "downloadJSON",
+          "draftGeneration",
+          "draftStorageKey",
+          "draftWriter",
+          "drafts",
+          "flushDrafts",
+          "installationToken",
+          "localStorage",
+          "periodLoading",
+          "ready",
+          "recordFullBackupDelivery",
+          "requestPromise",
+          "resetBusy",
+          "setStatus",
+          "storeDrafts",
+          "transactionDone",
+          "validateFullBackup",
+          "window",
+          "workspace",
+          "writer"
+        ],
+        "serviceAmbientDependencies": [],
+        "serviceSha256": "4a25b032af3be4679b5aadb4686536a17909a8088d3aa0342964f57b258cfdf7"
+      },
+      {
+        "adapter": "src/workspace/reports/year-notes-scope.js",
+        "service": "src/services/year-note-scope.js",
+        "beforeSharedLines": 87,
+        "afterAdapterLines": 30,
+        "serviceLines": 109,
+        "beforeAmbientDependencies": [
+          "academicTermKind",
+          "connection",
+          "connectionRetired",
+          "db",
+          "installationToken",
+          "isAuthenticated",
+          "requestPromise",
+          "resetBusy",
+          "transactionDone",
+          "workspace"
+        ],
+        "serviceAmbientDependencies": [],
+        "serviceSha256": "fa961b16e77f5d3cec6f53384661d1b50c20e1f99446710aa137e5360588ce1d"
+      }
+    ],
+    "beforeSharedLines": 1188,
+    "afterAdapterLines": 177,
+    "serviceLines": 1275
+  },
+  "css": {
+    "generatedAt": "2026-11-18T13:21:17.843Z",
+    "oldCssSources": 41,
+    "newCssSources": 120,
+    "oldLargestNonfontSource": {
+      "path": "src/styles/workflow/touch.css",
+      "lines": 6619,
+      "bytes": 168804
+    },
+    "newLargestNonfontSource": {
+      "path": "src/styles/workflow/touch-foundation.css",
+      "lines": 1066,
+      "bytes": 27696
+    },
+    "bundles": [
+      {
+        "output": "assets/styles/app.css",
+        "sources": 70,
+        "bytes": 458985,
+        "canonicalSha256": "5d73f1da16693684f2e005cb04bf879a4e7f9fa0d58e6f178000da9e15c7e195",
+        "emittedSha256": "ad3f1ec1902a6e45efe9546151917389c6b46ebc782fdd8a6bb8af0bb505288e",
+        "canonicalUnchanged": true,
+        "exactBytes": true
+      },
+      {
+        "output": "assets/styles/daily-workflow.css",
+        "sources": 50,
+        "bytes": 234535,
+        "canonicalSha256": "6431f8965daabf27be19f9736ef05dcb50085890dff875eefe67ce2d0aa4a4c8",
+        "emittedSha256": "92077e314ada98455683f6182486cf03af4123b61d093fe55dcfb810b73f5101",
+        "canonicalUnchanged": true,
+        "exactBytes": true
+      }
+    ]
+  },
+  "payload": {
+    "before": {
+      "javascript": {
+        "files": 33,
+        "rawBytes": 1258768,
+        "gzipBytes": 350264,
+        "functions": 3894
+      },
+      "stylesheets": {
+        "files": 2,
+        "rawBytes": 693520,
+        "gzipBytes": 181587,
+        "functions": 0
+      }
+    },
+    "after": {
+      "javascript": {
+        "files": 34,
+        "rawBytes": 1263416,
+        "gzipBytes": 352368,
+        "functions": 3942
+      },
+      "stylesheets": {
+        "files": 2,
+        "rawBytes": 693520,
+        "gzipBytes": 181587,
+        "functions": 0
+      }
+    },
+    "method": {
+      "initialScope": "Unique static external script and stylesheet references in the entry HTML; excludes inline code, dynamic imports, workers, maps, images and user data.",
+      "rawBytes": "UTF-8 text with CRLF normalized to LF, matching release asset hashing.",
+      "gzipBytes": "Sum of independent gzip level 9 encodings, not observed HTTP transfer bytes or browser cache usage.",
+      "functions": "AST function declarations, expressions and arrows in built JavaScript, including generated wrappers. Source-layout scopes are build groups, not lexical scopes.",
+      "limitations": "These are code inventory and payload measurements, not device timing, business correctness, maintainability scores or percentages of optimization."
+    }
+  }
+}

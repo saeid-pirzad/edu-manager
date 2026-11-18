@@ -1,0 +1,55 @@
+@media screen {
+  .qb-question-entry > :is(.qb-entry-course, .qb-section-picker) {
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 8px;
+  }
+  .qb-question-entry .qb-course-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+    padding: 3px;
+    border: 1px solid var(--status-info-line);
+    border-radius: 9px;
+    background: var(--status-info-soft);
+  }
+  :is(#app, .qb-page) .qb-body .qb-course-actions > button.qb-context-action {
+    background: var(--status-info-soft) !important;
+    color: var(--status-info) !important;
+    border-color: var(--status-info-line) !important;
+  }
+  :is(#app, .qb-page)
+    .qb-question-entry
+    .qb-course-actions
+    button.qb-context-action {
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    min-height: 36px !important;
+    flex: 0 0 36px;
+    padding: 0 !important;
+    border: 0;
+    border-radius: 6px;
+    background: var(--status-info-soft) !important;
+    color: var(--status-info) !important;
+    box-shadow: none;
+  }
+  :is(#app, .qb-page)
+    .qb-question-entry
+    .qb-course-actions
+    button.qb-context-action:not(:disabled):is(:hover, [aria-expanded="true"]) {
+    background: var(--status-info) !important;
+    color: #fff !important;
+  }
+  :is(#app, .qb-page)
+    .qb-question-entry
+    .qb-course-actions
+    button.qb-context-action:disabled {
+    opacity: 0.35;
+  }
+}
+@media screen and (max-width: 700px) {
+  .qb-question-entry .qb-course-actions {
+    padding: 1px;
+  }
+}

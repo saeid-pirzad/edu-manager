@@ -1,0 +1,75 @@
+/* A lightweight day caption, not another card between navigation and lessons. */
+@media screen {
+  #app .week-day-heading {
+    gap: 6px 12px;
+    margin: 12px 0 8px;
+    padding: 0 2px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  #app .week-day-heading .week-day-symbol {
+    display: none;
+  }
+  #app .week-day-heading h3 {
+    font-size: 13px;
+    font-weight: 500;
+  }
+  #app .week-day-heading .week-day-stats {
+    gap: 12px;
+  }
+  #app .week-day-heading .week-day-stat {
+    gap: 4px;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--theme-muted);
+  }
+  #app .week-day-heading .week-day-stat dt,
+  #app .week-day-heading .week-day-stat dd {
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.8;
+  }
+}
+@media print {
+  .week-day-heading,
+  .week-day-stats,
+  .week-day-stat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .week-day-heading {
+    justify-content: space-between;
+    margin-block: 12px 8px;
+  }
+  .week-day-heading h3,
+  .week-day-stats,
+  .week-day-stat dd {
+    margin: 0;
+  }
+  .week-day-stat dd {
+    order: -1;
+  }
+  .week-desktop > summary {
+    display: none;
+  }
+  .week-desktop > :not(summary) {
+    display: block !important;
+  }
+  .week-desktop::details-content {
+    display: block;
+    content-visibility: visible;
+  }
+}
+
+@media screen {
+  #app .week-class-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+}

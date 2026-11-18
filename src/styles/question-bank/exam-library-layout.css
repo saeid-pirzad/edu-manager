@@ -1,0 +1,140 @@
+@media screen {
+  .qb-panel:has(> .qb-exam-library) {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    scrollbar-gutter: auto;
+  }
+  .qb-exam-library {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border: 1px solid var(--theme-line);
+    border-radius: 12px;
+    background: var(--theme-surface);
+    overflow: hidden;
+  }
+  .qb-archive-controls {
+    flex-shrink: 0;
+    padding: 12px;
+    border-bottom: 1px solid var(--theme-line-soft);
+  }
+  .qb-archive-controls .qb-list-heading {
+    margin-bottom: 10px;
+  }
+  .qb-archive-controls h4 {
+    margin: 0;
+    font-size: 14px;
+  }
+  .qb-archive-controls .qb-archive-heading {
+    padding: 8px 10px;
+    border: 1px solid var(--status-info-line);
+    border-radius: 9px;
+    background: var(--status-info-soft);
+  }
+  .qb-archive-heading h4 {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--status-info);
+  }
+  .qb-archive-heading h4 > svg {
+    width: 17px;
+    height: 17px;
+    flex-shrink: 0;
+  }
+  .qb-archive-heading .qb-library-count {
+    padding: 3px 9px;
+    border: 0;
+    border-radius: 20px;
+    background: var(--status-info);
+    color: #fff;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .qb-body .qb-archive-controls .qb-archive-filters {
+    margin: 0;
+    gap: 10px;
+  }
+  .qb-exam-library > .qb-exam-results {
+    min-height: 0;
+    max-height: 55dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-gutter: stable;
+    padding: 8px;
+    align-content: start;
+  }
+  .qb-exam-library .qb-exam-card {
+    border: 1px solid var(--theme-line);
+    border-radius: 9px;
+    background: var(--theme-surface-subtle);
+    padding: 10px;
+  }
+  .qb-exam-library .qb-exam-meta {
+    gap: 5px;
+  }
+  .qb-exam-library .qb-exam-actions {
+    grid-template-columns: minmax(0, 1fr) auto 40px;
+  }
+  .qb-exam-library .qb-exam-meta > span {
+    padding: 1px 6px;
+    border-radius: 5px;
+    font-size: 10px;
+    color: var(--status-info);
+    background: var(--status-info-soft);
+  }
+  .qb-exam-library .qb-exam-meta > span:nth-child(2) {
+    color: var(--status-success);
+    background: var(--status-success-soft);
+  }
+  .qb-exam-library .qb-exam-meta > span:nth-child(3) {
+    color: var(--status-warning);
+    background: var(--status-warning-soft);
+  }
+  .qb-exam-library > .qb-pager {
+    flex-shrink: 0;
+    margin: 0;
+    padding: 8px;
+    border-top: 1px solid var(--theme-line-soft);
+  }
+}
+@media screen and (max-width: 700px) {
+  .qb-archive-controls {
+    padding: 8px;
+  }
+  .qb-archive-controls h4 {
+    font-size: 13px;
+  }
+  .qb-exam-library .course-field {
+    font-size: 10px;
+  }
+  .qb-exam-library .qb-library-count {
+    font-size: 10px;
+  }
+  .qb-exam-library .qb-exam-copy > h3 {
+    font-size: 12px;
+  }
+  .qb-exam-library .qb-exam-context {
+    font-size: 10px;
+    gap: 2px 8px;
+  }
+  .qb-exam-library > .qb-exam-results {
+    padding: 6px;
+    gap: 6px;
+  }
+  .qb-exam-library .qb-exam-card {
+    padding: 8px;
+    gap: 8px;
+  }
+  .qb-exam-library .qb-exam-actions {
+    padding-top: 6px;
+    gap: 6px;
+  }
+  .qb-exam-library > .qb-pager {
+    gap: 8px;
+    padding: 6px;
+    font-size: 11px;
+  }
+}

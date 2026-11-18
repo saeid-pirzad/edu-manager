@@ -13,6 +13,7 @@ function fixture() {
     "domain/reporting/academic-results.js",
     "domain/annual-modules.js",
     "workspace/domain/defaults-numbers.js",
+    "services/grading-results.js",
     "workspace/grading/results.js",
     "workspace/reports/finalize.js",
     "validation/frozen-report.js",

@@ -1,0 +1,214 @@
+@media screen and (max-width: 700px),
+  screen and (max-width: 1000px) and (pointer: coarse) {
+  #app .header-actions > [data-workspace-action="backups"] {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    min-height: 44px;
+  }
+}
+/* Keep the tools disclosure readable within both navigation layouts. */
+@media screen {
+  #app .header-actions > .workspace-tools > .workspace-tool-actions {
+    width: min(360px, calc(100vw - 32px));
+    padding: 12px;
+    gap: 12px;
+    border: 1px solid var(--theme-line);
+    border-radius: 16px;
+    background: var(--theme-surface);
+    box-shadow: 0 16px 40px #2d344024;
+    box-sizing: border-box;
+    overscroll-behavior: contain;
+  }
+  #app .header-actions .workspace-tool-group {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+  #app .header-actions .workspace-tool-actions .workspace-tool-button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 60px;
+    padding: 10px;
+    margin: 0;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    background: var(--theme-surface);
+    color: var(--theme-ink);
+    line-height: 1.7;
+    text-align: start;
+    white-space: normal;
+    box-shadow: none;
+  }
+  #app .header-actions .workspace-tool-actions .workspace-tool-button:hover {
+    background: var(--theme-surface-muted);
+    border-color: var(--theme-primary-line);
+  }
+  #app .header-actions .workspace-tool-button:focus-visible,
+  #app .header-actions .workspace-tools summary:focus-visible {
+    outline: 2px solid var(--theme-focus);
+    outline-offset: 2px;
+  }
+  #app .header-actions .workspace-tool-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 36px;
+    height: 36px;
+    border-radius: 11px;
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
+  }
+  #app .header-actions .workspace-tool-icon svg {
+    width: var(--header-icon-size);
+    height: var(--header-icon-size);
+  }
+  #app .header-actions .workspace-tool-copy {
+    display: grid;
+    min-width: 0;
+    gap: 2px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  #app .header-actions .workspace-tool-description {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--theme-muted);
+    overflow-wrap: anywhere;
+  }
+  #app .header-actions .workspace-period-context {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 10px 4px 0;
+    border-top: 1px solid var(--theme-line-soft);
+    font-size: 11px;
+  }
+  #app .header-actions .workspace-period-context > span {
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: var(--theme-surface-muted);
+    color: var(--theme-muted);
+  }
+}
+@media screen and (max-width: 700px),
+  screen and (max-width: 1000px) and (pointer: coarse) {
+  #app .header-actions > .workspace-tools > .workspace-tool-actions {
+    width: 100%;
+    padding: 8px;
+    margin-top: 6px;
+    box-shadow: none;
+  }
+}
+@media screen {
+  #app .workspace-bar > #singleFileBadge[hidden] {
+    display: none;
+  }
+}
+@media screen and (max-width: 700px),
+  screen and (max-width: 1000px) and (pointer: coarse) {
+  #app .navigation-menu[open] .header-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+  }
+  #app .navigation-menu .header-actions > .header-action,
+  #app .navigation-menu .header-actions > .workspace-tools > summary {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 7px;
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    margin: 0;
+    padding: 7px 9px;
+    box-sizing: border-box;
+    border: 1px solid var(--theme-line-soft);
+    border-radius: 11px;
+    background: var(--theme-surface);
+    color: var(--theme-ink);
+    font-size: 12px;
+    line-height: 1.7;
+    text-align: start;
+    white-space: nowrap;
+  }
+  #app .navigation-menu .header-actions > .header-action svg:not(.header-caret),
+  #app .navigation-menu .workspace-tools-symbol svg {
+    flex: 0 0 var(--header-icon-size);
+    width: var(--header-icon-size);
+    height: var(--header-icon-size);
+  }
+  #app .navigation-menu .header-actions > .header-action > span {
+    min-width: 0;
+    white-space: nowrap;
+  }
+  #app .navigation-menu .header-actions > .header-action:is(:hover, .is-active),
+  #app .navigation-menu .header-actions > .workspace-tools[open] > summary {
+    border-color: var(--status-danger-line);
+    background: var(--status-danger-soft);
+    color: var(--theme-primary);
+  }
+  #app .navigation-menu .workspace-tool-description {
+    display: none;
+  }
+  #app .navigation-menu .workspace-tool-actions .workspace-tool-button {
+    min-height: 44px;
+    padding: 6px 8px;
+    gap: 8px;
+  }
+  #app .navigation-menu .workspace-tool-icon {
+    flex-basis: 28px;
+    height: 28px;
+    border-radius: 8px;
+  }
+  #app .navigation-menu .workspace-tool-copy {
+    font-size: 12px;
+  }
+  #app .navigation-menu .workspace-tools > .workspace-tool-actions {
+    padding: 6px;
+    gap: 6px;
+  }
+}
+@media screen and (max-width: 700px),
+  screen and (max-width: 1000px) and (pointer: coarse) {
+  #app .topbar .header-home,
+  #app .navigation-menu [data-header-action="reports"],
+  #app .navigation-menu [data-header-action="master"],
+  #app .navigation-menu [data-header-action="question-bank"] {
+    display: none !important;
+  }
+  #app .topbar .header-brand {
+    width: calc(100% - 54px) !important;
+  }
+}
+@media screen and (max-width: 700px),
+  screen and (max-width: 1000px) and (pointer: coarse) {
+  #app .navigation-menu[open] .header-actions {
+    display: block;
+    padding: 10px !important;
+    border-radius: 16px;
+    background: var(--theme-surface);
+  }
+  #app .navigation-menu .header-actions > .workspace-tools > summary {
+    display: none;
+  }
+  #app
+    .navigation-menu
+    .header-actions
+    > .workspace-tools
+    > .workspace-tool-actions {
+    margin: 0;
+    padding: 0;
+    gap: 10px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  #app .navigation-menu .workspace-tool-group {
+    gap: 4px;
+  }
+  #app .navigation-menu .workspace-tool-group .workspace-tool-button {
+    min-height: 46px;
+    background: var(--theme-surface-subtle);
+    border-color: var(--theme-line-soft);
+  }
+}

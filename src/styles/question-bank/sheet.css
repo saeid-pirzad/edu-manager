@@ -1,0 +1,205 @@
+.qb-sheet {
+  background: white;
+  color: black;
+  padding: 16px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.qb-sheet-header {
+  border: 1px solid #c1c9d2;
+  padding: 14px 18px;
+  margin-bottom: 18px;
+  border-radius: 6px;
+  break-inside: avoid;
+  background: white;
+}
+.qb-sheet-invocation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 0 0 4px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.8;
+  color: #374151;
+}
+.qb-sheet-invocation::before,
+.qb-sheet-invocation::after {
+  content: "";
+  width: 32px;
+  border-top: 1px solid #c1c9d2;
+}
+.qb-sheet-motivation {
+  display: table;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto 12px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.9;
+  color: #374151;
+}
+.qb-sheet-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 20px;
+  padding: 8px 0 0;
+  background: transparent;
+  font-size: 10px;
+  color: #526174;
+}
+.qb-sheet-meta-item {
+  margin: 0;
+  line-height: 1.9;
+  min-width: 0;
+}
+.qb-sheet-meta strong,
+.qb-sheet-meta h1 {
+  color: #17212e;
+  font-size: 12px;
+  font-weight: 500;
+}
+.qb-sheet-meta h1 {
+  display: inline;
+  margin: 0;
+  font-weight: 600;
+  line-height: inherit;
+}
+.qb-student-field {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.qb-student-field > :first-child {
+  flex-shrink: 0;
+}
+.qb-student-line {
+  flex: 1;
+  min-width: 0;
+  border-bottom: 1px dotted #737d8b;
+}
+.qb-sheet-question {
+  padding: 14px 10px;
+  border: 1px solid #cbd0d8;
+  border-top: 0;
+}
+.qb-sheet-columns {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 42px;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid #b6bec9;
+  border-radius: 6px 6px 0 0;
+  color: #374151;
+  background: #f3f4f6;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+}
+.qb-sheet-columns > :nth-child(2) {
+  text-align: start;
+}
+.qb-sheet-number {
+  font-weight: 600;
+  text-align: center;
+}
+.qb-sheet-prompt {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 42px;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 13px;
+  line-height: 2;
+}
+.qb-sheet-prompt p {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.qb-sheet-score {
+  font-size: 11px;
+  text-align: center;
+  border-inline-start: 1px solid #d1d5db;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.qb-sheet-options {
+  list-style: none;
+  padding: 0;
+  margin: 10px 32px 0 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 18px;
+  font-size: 12px;
+}
+.qb-sheet-options li {
+  display: flex;
+  gap: 7px;
+  line-height: 1.9;
+  min-width: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.qb-sheet-boolean {
+  display: inline-block;
+  font-size: 12px;
+  margin-inline-start: 0.75em;
+  white-space: pre;
+}
+.qb-short-answer {
+  margin: 8px 36px 0 50px;
+  font-size: 12px;
+  line-height: 2;
+  color: #374151;
+  overflow-wrap: anywhere;
+}
+.qb-delete-entity {
+  justify-self: start;
+  margin-top: 8px !important;
+  font-size: 12px;
+}
+.qb-sheet-total {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  font-size: 10px;
+  line-height: 1.8;
+  margin: 0;
+  padding: 3px 12px;
+  border: 1px solid #c1c9d2;
+  border-radius: 999px;
+  color: #374151;
+}
+.qb-sheet-total strong {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.qb-sheet-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #c1c9d2;
+  break-inside: avoid;
+}
+.qb-sheet-closing {
+  margin: 0;
+  font-size: 11px;
+  line-height: 2;
+  color: #374151;
+}
+.qb-sheet-closing strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: #17212e;
+  white-space: nowrap;
+}

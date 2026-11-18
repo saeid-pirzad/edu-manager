@@ -1,0 +1,131 @@
+@media screen and (max-width: 700px),
+  screen and (max-height: 500px) and (pointer: coarse) {
+  #app .qb-editor-panel > .qb-form {
+    gap: 14px;
+    padding: 16px 0 0;
+  }
+  #app .qb-page .qb-editor-panel .qb-form :is(input, select, textarea) {
+    font-size: 16px !important;
+  }
+  #app .qb-editor-panel .qb-form > .record-editor-actions {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    padding-top: 12px;
+  }
+  #app .qb-page .qb-editor-panel .qb-form > .record-editor-actions > button {
+    padding-inline: 8px !important;
+  }
+  #app .qb-editor-panel .qb-form .qb-count-field {
+    font-size: 11px;
+  }
+  /* Normal editing follows the class creation form in the document. A bounded
+     body is needed only while the keyboard reduces the visible viewport. */
+  #app:has(.qb-page[data-keyboard-viewport="true"]) > .topbar {
+    position: static !important;
+  }
+  .qb-page[data-keyboard-viewport="true"]:has(.qb-form) {
+    display: flex;
+    height: var(--qb-page-available-height);
+    overflow: hidden;
+  }
+  .qb-page[data-keyboard-viewport="true"]:has(.qb-form) > .qb-page-header {
+    margin-bottom: 0;
+    padding: 4px 10px;
+    padding-block-start: max(4px, env(safe-area-inset-top));
+  }
+  .qb-page[data-keyboard-viewport="true"]:has(.qb-form) #qb-title {
+    gap: 7px;
+    font-size: 14px;
+  }
+  .qb-page[data-keyboard-viewport="true"]:has(.qb-form) #qb-title > svg {
+    width: 16px;
+    height: 16px;
+    padding: 5px;
+  }
+  .qb-page[data-keyboard-viewport="true"] > .qb-body:has(.qb-form) {
+    display: block;
+    flex: 1;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    scroll-padding-block: 12px 80px;
+    scrollbar-gutter: stable;
+    padding: 10px;
+  }
+  .qb-page[data-keyboard-viewport="true"] .qb-panel:has(> .qb-editor-panel) {
+    display: block;
+    overflow: visible;
+    scrollbar-gutter: auto;
+  }
+  #app .qb-page[data-keyboard-viewport="true"] .qb-editor-panel > .qb-form {
+    display: block;
+    overflow: visible;
+    margin: 0;
+  }
+  #app
+    .qb-page[data-keyboard-viewport="true"]
+    .qb-editor-panel
+    .qb-form
+    :is(input:not([type="checkbox"], [type="radio"]), select) {
+    box-sizing: border-box;
+    height: auto !important;
+    min-height: 48px !important;
+    padding-block: 10px !important;
+  }
+  #app
+    .qb-page[data-keyboard-viewport="true"]
+    .qb-editor-panel
+    .qb-form
+    .qb-count-field
+    input {
+    height: 44px !important;
+    min-height: 44px !important;
+    padding-block: 6px !important;
+  }
+  #app
+    .qb-page[data-keyboard-viewport="true"]
+    .qb-editor-panel
+    .qb-form
+    textarea {
+    box-sizing: border-box;
+    min-height: min(100px, var(--qb-textarea-max-height, 100px));
+    max-height: var(--qb-textarea-max-height, none);
+    padding: 8px 10px;
+    line-height: 1.6;
+  }
+  .qb-page[data-keyboard-viewport="true"] .qb-form > .qb-form-fields {
+    overflow: visible;
+    margin: 0;
+    padding-inline-end: 0;
+    padding-block-end: 24px;
+    scrollbar-gutter: auto;
+  }
+  .qb-page[data-keyboard-viewport="true"] .qb-body:has(.qb-form) > .qb-tabs {
+    position: static;
+    margin: 0 0 10px;
+  }
+  #app
+    .qb-page[data-keyboard-viewport="true"]
+    .qb-editor-panel
+    .qb-form
+    > .record-editor-actions {
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 3;
+    padding-block: 4px max(4px, env(safe-area-inset-bottom));
+    background: var(--surface-paper, var(--theme-surface));
+  }
+  #app
+    .qb-page[data-keyboard-viewport="true"]
+    .qb-editor-panel
+    .qb-form
+    > .record-editor-actions
+    > button {
+    height: 44px !important;
+    min-height: 44px !important;
+  }
+}
+@media screen and (max-height: 500px) and (pointer: coarse) {
+  .qb-page[data-keyboard-viewport="true"] > .qb-body:has(.qb-form) {
+    padding: 6px;
+  }
+}

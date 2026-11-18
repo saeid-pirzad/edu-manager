@@ -1,0 +1,66 @@
+@media screen {
+  #modalBody .modal-save-feedback {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 0 0 14px;
+    padding: 9px 12px;
+    border: 1px solid var(--status-success-line);
+    border-radius: 11px;
+    background: var(--status-success-soft);
+    color: var(--status-success);
+    font-size: 0.78rem;
+    line-height: 1.75;
+    overflow-wrap: anywhere;
+  }
+  #modalBody .modal-save-feedback[hidden] {
+    display: none;
+  }
+  #modalBody .modal-save-feedback::before {
+    content: "";
+    flex: 0 0 8px;
+    width: 8px;
+    height: 8px;
+    margin-top: 0.5em;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  #modalBody .modal-save-feedback[data-state="pending"] {
+    border-color: var(--status-warning-line);
+    background: var(--status-warning-soft);
+    color: var(--status-warning);
+  }
+  #modalBody .modal-save-feedback[data-state="error"] {
+    border-color: var(--status-danger-line);
+    background: var(--status-danger-soft);
+    color: var(--status-danger);
+  }
+}
+
+/* Give fractional module scores and the eraser separate space on phones. */
+@media screen and (max-width: 700px) {
+  :is(#lessonGradesArea, #modalBody) .module-simple .assessment-student {
+    grid-template-columns: minmax(0, 1fr) 54px;
+    grid-template-areas: "student result" "inputs inputs";
+    gap: 8px;
+  }
+  :is(#lessonGradesArea, #modalBody) .module-simple .gradebook-student {
+    grid-area: student;
+    align-self: center;
+    padding-top: 0;
+  }
+  :is(#lessonGradesArea, #modalBody) .module-simple .assessment-inputs {
+    grid-area: inputs;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-self: stretch;
+    max-width: none;
+    gap: 8px;
+  }
+  :is(#lessonGradesArea, #modalBody) .module-simple .grade-editor {
+    max-width: 80px;
+    justify-self: center;
+  }
+  :is(#lessonGradesArea, #modalBody) .module-simple .gradebook-result {
+    grid-area: result;
+  }
+}

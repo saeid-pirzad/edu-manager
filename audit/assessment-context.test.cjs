@@ -209,6 +209,7 @@ function fixture({
     "data/workspace-records.js",
     "workspace/domain/defaults-numbers.js",
     "workspace/grading/scope.js",
+    "services/grading-results.js",
     "workspace/grading/results.js",
     "workspace/grading/assessment-context.js",
     "workspace/grading/editors.js",

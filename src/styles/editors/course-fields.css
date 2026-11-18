@@ -1,0 +1,86 @@
+.course-simple-editor .course-editor-status {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: none;
+}
+.course-simple-editor .record-editor-context p {
+  margin: 6px 0;
+  line-height: 1.8;
+}
+.course-simple-editor .course-policy-section > summary::before {
+  color: var(--workflow-accent, var(--theme-primary));
+}
+.course-main-policy > legend {
+  padding: 0 8px;
+  font-weight: 700;
+}
+.course-policy-hint {
+  margin: 12px 0;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--workflow-accent-soft, var(--theme-primary-soft));
+  line-height: 1.9;
+}
+.course-simple-editor .course-policy-section > summary {
+  min-height: 48px;
+  align-content: center;
+}
+.course-policy-section {
+  border: 1px solid var(--theme-line);
+  border-radius: 14px;
+  padding: 12px;
+}
+.course-name-section #courseStructure {
+  display: grid;
+  gap: 12px;
+}
+.course-name-section #courseStructure > .card {
+  margin: 0;
+  padding: 14px;
+}
+.course-name-section .course-field {
+  margin-bottom: 10px;
+}
+.course-name-section[hidden] {
+  display: none;
+}
+.course-policy-section > summary {
+  cursor: pointer;
+  font-weight: 600;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.course-policy-section > summary::before {
+  content: "+";
+  color: var(--theme-primary);
+  font-size: 1.25rem;
+}
+.course-policy-section[open] > summary::before {
+  content: "−";
+}
+.course-policy-section > summary::-webkit-details-marker {
+  display: none;
+}
+.entity-context-edit {
+  margin: 0 0 14px;
+}
+#entityEditError {
+  margin: 0;
+  padding: 10px;
+  border-radius: 10px;
+  background: var(--status-danger-soft);
+  color: var(--status-danger);
+}
+#periodLabelError {
+  color: var(--status-danger);
+  margin: 0;
+}
+#periodLabelError:empty {
+  display: none;
+}
+#entityEditError:empty {
+  display: none;
+}

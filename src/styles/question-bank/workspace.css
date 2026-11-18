@@ -1,0 +1,406 @@
+/* Match the reports page: independent heading and navigation, with surfaces
+   only for content. Long result lists keep their own bounded scroll regions. */
+#questionBankPageHost {
+  min-width: 0;
+  margin-block-start: clamp(16px, 2vw, 24px);
+}
+.qb-page {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  min-height: 0;
+  margin: 0 0 calc(16px + var(--qb-keyboard-scroll-space, 0px));
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--theme-ink);
+  font: inherit;
+  box-shadow: none;
+  overflow: visible;
+  overflow-wrap: anywhere;
+}
+.qb-page > .qb-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+  margin-block: 0 12px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+.qb-page #qb-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.8;
+}
+.qb-page #qb-title > svg {
+  box-sizing: content-box;
+  width: 20px;
+  height: 20px;
+  padding: 8px;
+  border-radius: 11px;
+  color: var(--theme-primary);
+  background: var(--theme-primary-soft);
+}
+.qb-page > .qb-page-header button {
+  font-size: 14px;
+  min-width: 44px;
+}
+.qb-page > .qb-message[data-state="error"] {
+  color: var(--status-danger);
+  background: var(--status-danger-soft);
+}
+.qb-body {
+  display: block;
+  min-height: 0;
+  overflow: visible !important;
+  overscroll-behavior: contain;
+  scroll-padding-block: 12px;
+}
+.qb-page > .qb-body {
+  padding: 0;
+}
+.qb-course-required {
+  padding: 10px;
+  border: 1px solid var(--theme-secondary-line);
+  border-radius: 12px;
+  background: var(--theme-secondary-soft);
+}
+.qb-body > :not(.qb-panel, .qb-form, .qb-sheet) {
+  flex-shrink: 0;
+}
+.qb-panel {
+  min-height: 0;
+  overflow: visible;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scroll-padding-block: 12px;
+}
+.qb-panel > .qb-toolbar {
+  flex-shrink: 0;
+}
+.qb-panel.qb-course-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  scrollbar-gutter: auto;
+}
+.qb-course-empty > :is(.qb-toolbar, .qb-empty) {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  flex-shrink: 0;
+}
+.qb-page:has(.qb-form) {
+  height: auto;
+  overflow: visible;
+}
+.qb-page > .qb-body:has(.qb-form),
+.qb-page .qb-panel:has(> .qb-editor-panel) {
+  display: block;
+  overflow: visible !important;
+  scrollbar-gutter: auto;
+}
+.qb-page > .qb-body:has(> .qb-editor-panel),
+.qb-page .qb-panel:has(> .qb-editor-panel) {
+  padding: 20px;
+  border: 1px solid var(--theme-line);
+  border-radius: 15px;
+  background: var(--theme-surface);
+}
+#app .qb-page .qb-editor-panel,
+#app .qb-page .qb-editor-panel[open] {
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+#app .qb-page .qb-editor-panel > summary,
+#app .qb-page .qb-editor-panel[open] > summary {
+  padding-inline: 0;
+  border-radius: 0;
+  background: transparent;
+}
+#app .qb-editor-panel > .qb-form {
+  min-height: 0;
+  overflow: visible;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  margin: 0;
+  padding-inline: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.qb-editor-panel .qb-form > .qb-form-fields {
+  min-height: 0;
+  overflow: visible;
+  align-content: start;
+  margin: 0;
+  padding: 0;
+  scrollbar-gutter: auto;
+}
+#app .qb-editor-panel .qb-form label {
+  gap: 7px;
+  font-size: 14px;
+  font-weight: 400;
+}
+#app .qb-editor-panel .qb-form .course-field:has(input[type="checkbox"]) {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+#app .qb-editor-panel .qb-form input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  min-height: 20px;
+  border-radius: 4px;
+}
+#app
+  .qb-page
+  .qb-editor-panel
+  .qb-form
+  :is(input:not([type="checkbox"], [type="radio"]), select) {
+  height: auto !important;
+  min-height: 48px !important;
+  border-radius: 10px !important;
+  padding-block: 10px !important;
+  padding-inline: 12px !important;
+}
+#app .qb-page .qb-editor-panel .qb-form .qb-count-field input {
+  height: 44px !important;
+  min-height: 44px !important;
+  padding-block: 6px !important;
+  padding-inline: 8px !important;
+}
+#app .qb-editor-panel .qb-form .qb-count-field {
+  font-size: 12px;
+  font-weight: 600;
+}
+#app .qb-editor-panel .qb-form .qb-form-fields > :is(fieldset, .qb-optional) {
+  /* Group with a single quiet divider, not another card inside the form. */
+  padding: 14px 0 0;
+  border: 0;
+  border-top: 1px solid var(--theme-line-soft);
+  border-radius: 0;
+  background: transparent;
+}
+.qb-body > .qb-sheet {
+  min-height: 0;
+  overflow: auto;
+}
+.qb-page > .qb-message {
+  margin: 0;
+  padding: 5px 20px;
+  font-size: 0.78rem;
+  line-height: 1.8;
+  color: var(--theme-muted);
+  background: var(--surface-milk, var(--theme-surface-subtle));
+  border-bottom: 1px solid var(--theme-line-soft);
+  white-space: pre-wrap;
+}
+.qb-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block: 12px;
+}
+.qb-page button {
+  margin: 0;
+  white-space: normal;
+}
+.qb-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  margin-top: 0;
+  margin-bottom: 14px;
+}
+.qb-page [hidden] {
+  display: none !important;
+}
+.qb-optional {
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--theme-line-soft);
+  border-radius: 12px;
+  background: var(--surface-milk, var(--theme-surface-subtle));
+}
+.qb-optional > summary {
+  cursor: pointer;
+  color: var(--theme-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.qb-optional[open] > summary {
+  margin-bottom: 12px;
+}
+.qb-help {
+  color: var(--theme-muted);
+  font-size: 0.8rem;
+  line-height: 1.9;
+}
+.qb-course-actions {
+  margin: 0;
+}
+.qb-page .qb-context-action {
+  box-sizing: border-box;
+  height: 44px;
+  min-height: 44px !important;
+}
+.qb-section-picker {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: end;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--theme-surface-subtle);
+  border: 1px solid var(--theme-line);
+}
+.qb-body .course-field {
+  min-width: 0;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.8;
+  color: var(--theme-ink);
+}
+.qb-body :is(input, select, textarea) {
+  box-sizing: border-box;
+  max-width: 100%;
+  width: 100%;
+  font: inherit;
+  min-height: 44px;
+}
+/* Match adjacent 44px actions instead of inheriting the taller form controls. */
+.qb-page .qb-body :is(select, input[type="search"]) {
+  box-sizing: border-box;
+  height: 44px !important;
+  min-height: 44px !important;
+  padding-block: 0 !important;
+}
+.qb-body textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+.qb-body .course-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-block: 16px;
+}
+.qb-field-wide,
+.qb-form-fields > fieldset,
+.qb-form > .record-editor-actions {
+  grid-column: 1/-1;
+}
+#app .qb-editor-panel .qb-form > .record-editor-actions {
+  position: static !important;
+  bottom: auto !important;
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) auto;
+  margin: 0;
+  padding: 16px 0 0;
+  border-top: 1px solid var(--theme-line);
+  background: transparent;
+  gap: 10px;
+  box-shadow: none;
+  border-radius: 0;
+}
+#app .qb-page .qb-editor-panel .qb-form > .record-editor-actions > button {
+  min-height: 44px !important;
+  height: auto;
+  padding: 8px 20px !important;
+  border-radius: 10px !important;
+  font-size: 14px;
+  white-space: normal !important;
+}
+.qb-body .qb-question-context {
+  margin: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.qb-body .qb-answer-editor {
+  margin: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  background: var(--theme-surface-subtle);
+}
+.qb-answer-editor > legend {
+  color: var(--theme-secondary);
+}
+.qb-answer-editor > label:has(select) {
+  margin-top: 4px;
+}
+.qb-form > .course-field:has(input[type="date"]) + p {
+  align-self: end;
+  font-size: 0.78rem;
+  color: var(--theme-muted);
+}
+.qb-form-fields > fieldset {
+  min-width: 0;
+  padding: 14px;
+  margin: 0;
+  border: 1px solid var(--theme-line);
+  border-radius: 12px;
+  background: var(--theme-surface);
+}
+.qb-form-fields > fieldset > legend {
+  padding-inline: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.qb-body .course-field:has(input[type="checkbox"]) {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin-block: 10px;
+}
+.qb-body .qb-unit-selection .qb-builder-units > .course-field {
+  padding: 10px 12px;
+  border: 1px solid var(--theme-line-soft);
+  border-radius: 10px;
+  background: var(--theme-surface-subtle);
+  cursor: pointer;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+.qb-body .qb-unit-selection .qb-builder-units > .course-field:has(:checked) {
+  border-color: var(--theme-primary-line);
+  background: var(--theme-primary-soft);
+}
+.qb-selection-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+.qb-selection-actions > button {
+  min-width: 0;
+  font-size: 0.8rem;
+  padding-inline: 8px;
+}
+.qb-body input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  min-height: 20px;
+  accent-color: var(--theme-primary);
+}

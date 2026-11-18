@@ -1,0 +1,201 @@
+/* Class and lesson directories share the compact session-card surface. */
+@media screen {
+  #app :is(.class-lessons .lesson-item, .class-directory .dashboard-entity) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    margin: 0;
+    padding: 14px;
+    border: 1px solid var(--theme-line);
+    border-radius: 14px;
+    background: var(--theme-surface);
+    box-shadow: var(--surface-inner-shadow);
+  }
+  #app
+    :is(
+      .class-lessons .lesson-identity,
+      .class-directory .dashboard-entity-info
+    ) {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+  }
+  #app .class-directory .dashboard-entity-info > div {
+    min-width: 0;
+  }
+  #app
+    :is(
+      .class-lessons .lesson-identity,
+      .class-directory .dashboard-entity-info
+    )
+    h4 {
+    margin: 0 0 3px;
+    font-size: 14px;
+    line-height: 1.8;
+    overflow-wrap: anywhere;
+  }
+  #app
+    :is(
+      .class-lessons .lesson-identity,
+      .class-directory .dashboard-entity-info
+    )
+    p {
+    margin: 0;
+    color: var(--theme-muted);
+    font-size: 11px;
+    line-height: 1.9;
+  }
+  #app
+    :is(
+      .class-lessons .lesson-symbol,
+      .class-directory .dashboard-entity-symbol
+    ) {
+    display: grid;
+    place-items: center;
+    flex: 0 0 40px;
+    width: 40px;
+    height: 44px;
+    border: 1px solid var(--theme-primary-line);
+    border-radius: 11px;
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
+  }
+  #app
+    :is(
+      .class-lessons .lesson-symbol,
+      .class-directory .dashboard-entity-symbol
+    )
+    svg {
+    width: 21px;
+    height: 21px;
+  }
+  #app .class-lessons .lesson-meta {
+    grid-column: 1;
+    justify-content: flex-start;
+    gap: 8px;
+    min-width: 0;
+  }
+  #app .class-lessons .lesson-mode {
+    padding: 4px 8px;
+    border-radius: 7px;
+    font-size: 10px;
+    line-height: 1.8;
+  }
+  #app .class-lessons .lesson-period {
+    color: var(--theme-muted);
+    font-size: 11px;
+  }
+  #app
+    :is(
+      .class-lessons .lesson-actions,
+      .class-directory .dashboard-entity-actions
+    ) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    grid-column: 1;
+  }
+  #app
+    :is(
+      .class-lessons .lesson-actions,
+      .class-directory .dashboard-entity-actions
+    )
+    > button,
+  #app
+    :is(.class-lessons .lesson-more, .class-directory .dashboard-entity-more)
+    > summary {
+    box-sizing: border-box;
+    min-width: 0;
+    min-height: 44px;
+    height: 44px;
+    margin: 0;
+    padding: 8px 10px;
+    border-radius: 9px;
+    font-size: 11px;
+    line-height: 1.8;
+    white-space: nowrap;
+  }
+  #app
+    :is(.class-lessons .lesson-more, .class-directory .dashboard-entity-more) {
+    margin: 0;
+  }
+  #app
+    :is(.class-lessons .lesson-more, .class-directory .dashboard-entity-more)
+    > summary {
+    width: 68px;
+    gap: 5px;
+    background: var(--theme-surface);
+  }
+  #app
+    :is(.class-lessons .lesson-more, .class-directory .dashboard-entity-more)
+    > summary
+    svg,
+  #app
+    :is(
+      .class-lessons .lesson-actions,
+      .class-directory .dashboard-entity-actions
+    )
+    .entity-enter-arrow
+    svg {
+    width: 17px;
+    height: 17px;
+  }
+  #app .class-directory .dashboard-search {
+    margin: 0;
+    padding: 12px 12px 0;
+  }
+  #app .class-directory .dashboard-search-result {
+    margin: 10px 12px 0;
+  }
+}
+@media screen and (min-width: 701px) {
+  #app :is(.class-lessons .lesson-item, .class-directory .dashboard-entity) {
+    padding: 16px;
+  }
+  #app .class-directory .dashboard-entity {
+    grid-template-columns: minmax(0, 1fr) minmax(220px, auto);
+    gap: 18px;
+  }
+  #app .class-directory .dashboard-entity-actions {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  #app .class-directory .dashboard-search {
+    padding: 16px 18px 0;
+  }
+  #app .class-directory .dashboard-search-result {
+    margin-inline: 18px;
+  }
+}
+@media screen and (min-width: 1101px) {
+  #app .class-lessons .lesson-item {
+    grid-template-columns: minmax(0, 1fr) auto minmax(220px, auto);
+    gap: 18px;
+  }
+  #app .class-lessons .lesson-meta {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  #app .class-lessons .lesson-actions {
+    grid-column: 3;
+    grid-row: 1;
+  }
+}
+@media print {
+  .session-delete,
+  .session-enter-label,
+  .session-calendar {
+    display: none !important;
+  }
+}

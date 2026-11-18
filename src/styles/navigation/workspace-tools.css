@@ -1,0 +1,401 @@
+@media screen {
+  #app .header-actions > .header-home {
+    position: static;
+    flex: 0 0 auto;
+    gap: 8px;
+    min-height: 44px;
+    margin: 0;
+  }
+  #app .header-actions > .header-home.is-active {
+    color: var(--theme-primary);
+    background: var(--theme-primary-soft);
+    border-color: var(--theme-primary-line);
+  }
+  #app .workspace-bar.workspace-bar-compact {
+    display: flex !important;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px !important;
+    min-height: 0;
+  }
+  #app .workspace-bar-compact #saveStatus:not([hidden]),
+  #app .workspace-bar-compact > :is(#singleFileBadge, #questionBankFileBadge) {
+    flex: 1 0 100%;
+    order: 1;
+    font-size: 12px;
+    text-align: start;
+    margin: 0;
+  }
+  #app .workspace-bar-compact #saveStatus::before {
+    content: none;
+  }
+  #app
+    .workspace-bar-compact:not(
+      :has(
+        .workspace-closed-note,
+        #saveStatus:not([hidden]),
+        #singleFileBadge:not([hidden]),
+        #questionBankFileBadge:not([hidden])
+      )
+    ) {
+    display: none !important;
+  }
+  #app .workspace-bar-compact .workspace-tools:not([open]) {
+    margin-inline-start: 0;
+  }
+  #app .workspace-closed-note {
+    margin-inline-end: auto;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: var(--status-warning-soft);
+    color: var(--status-warning);
+    font-size: 12px;
+  }
+  #app .workspace-period-context {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    padding: 8px 2px;
+    color: var(--theme-muted);
+    font-size: 12px;
+    line-height: 1.9;
+  }
+  #app .workspace-period-context > span {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 5px 10px;
+    border-radius: 8px;
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
+  }
+  #app .workspace-period-context > span + span {
+    background: var(--theme-teal-soft);
+    color: var(--theme-teal);
+  }
+  #app .workspace-period-context bdi {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  #app .workspace-tools > summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid var(--theme-line);
+    border-radius: 10px;
+    background: var(--theme-surface-subtle);
+    color: var(--theme-muted);
+    list-style: none;
+  }
+  #app .workspace-tools {
+    scroll-margin-top: 24px;
+  }
+  #app .header-actions > .workspace-tools {
+    position: relative;
+    min-width: 0;
+    width: auto;
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  #app .header-actions > .workspace-tools > .workspace-tool-actions {
+    position: absolute;
+    inset-inline-end: 0;
+    top: 100%;
+    width: min(420px, calc(100vw - 32px));
+    max-height: 65dvh;
+    overflow-y: auto;
+    z-index: 50;
+    background: var(--theme-surface);
+    border: 1px solid var(--theme-line);
+    border-radius: 12px;
+    box-shadow: 0 12px 32px var(--theme-primary-shadow);
+  }
+  #app .header-actions .workspace-tool-group {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  @media (max-width: 700px), (max-width: 1000px) and (pointer: coarse) {
+    #app .navigation-menu[open] .header-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: stretch;
+      gap: 4px;
+      padding: 6px !important;
+      flex-wrap: nowrap;
+      scrollbar-gutter: stable;
+    }
+    #app .header-actions > .header-dropdown {
+      grid-column: 1 / -1;
+    }
+    #app .header-actions > .header-action,
+    #app .header-actions .header-dropdown > .header-action,
+    #app .header-actions .workspace-tools > summary,
+    #app .header-actions .workspace-tool-actions .workspace-tool-button,
+    #app .header-actions .data-menu button {
+      min-height: 40px;
+      padding: 4px 7px;
+      font-size: 12px;
+      line-height: 1.5;
+      border-radius: 8px;
+    }
+    #app .header-actions .header-action svg:not(.header-caret),
+    #app .header-actions .workspace-tool-icon svg,
+    #app .header-actions .workspace-tools-symbol svg {
+      width: var(--header-icon-size);
+      height: var(--header-icon-size);
+    }
+    #app .header-actions .workspace-tool-icon {
+      flex-basis: 16px;
+    }
+    #app .header-actions .workspace-tool-button {
+      gap: 5px;
+    }
+    #app .header-actions > .workspace-tools {
+      grid-column: 1 / -1;
+      flex: none;
+      width: 100%;
+      margin: 0;
+    }
+    #app .header-actions > .workspace-tools > .workspace-tool-actions {
+      position: static;
+      width: 100%;
+      max-height: none;
+      overflow: visible;
+      box-sizing: border-box;
+      box-shadow: none;
+      gap: 4px;
+      padding: 4px;
+      margin-top: 4px;
+    }
+    #app .header-actions .workspace-tool-group {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 4px;
+    }
+    #app .header-actions .workspace-period-context {
+      gap: 4px;
+      padding: 2px 0;
+      font-size: 11px;
+    }
+    #app .header-actions .workspace-period-context > span {
+      padding: 2px 5px;
+    }
+    #app .header-actions .workspace-tool-actions > #singleFileBadge {
+      padding: 5px 8px;
+      font-size: 11px;
+      line-height: 1.6;
+    }
+  }
+  #app .workspace-tools > summary::-webkit-details-marker {
+    display: none;
+  }
+  #app .workspace-tools summary::after {
+    content: none;
+  }
+  .workspace-tools-symbol {
+    display: inline-flex;
+  }
+  .workspace-tools-chevron {
+    width: 7px;
+    height: 7px;
+    margin-inline-start: auto;
+    border-inline-end: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg);
+  }
+  #app .workspace-tools[open] > summary {
+    background: var(--theme-primary-soft);
+    border-color: var(--theme-primary-line);
+    color: var(--theme-primary);
+  }
+  .workspace-tools[open] > summary .workspace-tools-chevron {
+    transform: rotate(225deg);
+  }
+  #app .workspace-tools .workspace-tool-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    padding: 8px;
+    margin-top: 8px;
+    border-color: var(--theme-line);
+    box-shadow: none;
+  }
+  #app .workspace-tools:not([open]) > .workspace-tool-actions {
+    display: none;
+  }
+  #app .workspace-tool-group {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  #app .workspace-tool-actions .workspace-tool-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    padding: 8px 10px;
+    font-size: 13px;
+    font-weight: 500;
+    text-align: start;
+    white-space: normal;
+    border: 1px solid var(--theme-line);
+    border-radius: 8px;
+    background: var(--theme-surface);
+    color: var(--theme-ink);
+  }
+  .workspace-tool-icon {
+    display: inline-flex;
+    flex: 0 0 22px;
+    color: var(--theme-primary);
+  }
+  #app .workspace-tool-actions .workspace-tool-primary {
+    border-color: var(--theme-primary-line);
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
+  }
+  #app .workspace-tool-actions > #singleFileBadge {
+    display: block;
+    margin: 0;
+    padding: 9px 12px;
+    border-radius: 8px;
+    background: var(--status-warning-soft);
+    color: var(--status-warning);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+    line-height: 1.9;
+  }
+  #app:has(> .dashboard-directory):has(> .entity-quick-create) {
+    display: flex;
+    flex-direction: column;
+  }
+  #app:has(> .dashboard-directory):has(> .entity-quick-create) > * {
+    min-width: 0;
+  }
+  #app:has(> .dashboard-directory):has(> .entity-quick-create) > .topbar {
+    order: 0;
+  }
+  #app:has(> .dashboard-directory):has(> .entity-quick-create)
+    > .workspace-bar {
+    order: 1;
+  }
+  #app:has(> .dashboard-directory):has(> .entity-quick-create) > .breadcrumb {
+    order: 2;
+  }
+  #app:has(> .dashboard-directory):has(> .entity-quick-create)
+    > :is(.workflow-welcome, .view-heading) {
+    order: 3;
+  }
+  #app:has(> .dashboard-directory):has(> .entity-quick-create)
+    > .dashboard-directory {
+    order: 4;
+  }
+  #app:has(> .dashboard-directory):has(> .entity-quick-create)
+    > .entity-quick-create {
+    order: 5;
+  }
+  #modal:has(.deletion-editor) .modal-dialog {
+    max-width: 520px;
+  }
+  #modalBody .deletion-editor {
+    display: grid;
+    gap: 16px;
+    color: var(--theme-ink);
+  }
+  #modalBody .deletion-editor p {
+    margin: 0;
+    line-height: 1.9;
+  }
+  .deletion-target {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .deletion-symbol {
+    display: grid;
+    place-items: center;
+    flex: 0 0 44px;
+    height: 44px;
+    border-radius: 12px;
+    color: var(--status-danger-fill);
+    background: var(--theme-primary-soft);
+  }
+  .deletion-symbol svg {
+    width: 24px;
+    height: 24px;
+  }
+  .deletion-warning {
+    font-size: 14px;
+  }
+  .deletion-impact {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+  }
+  .deletion-impact li {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px;
+    border-radius: 12px;
+    background: var(--theme-surface-muted);
+  }
+  .deletion-impact strong {
+    font-size: 20px;
+  }
+  .deletion-impact span,
+  .deletion-backup-note {
+    font-size: 12px;
+    color: var(--theme-muted);
+  }
+  #modalBody .deletion-confirm {
+    display: grid;
+    gap: 8px;
+    font-size: 13px;
+  }
+  #modalBody .deletion-confirm input {
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    font-size: 16px;
+  }
+  #modalBody #deleteEntityError:empty {
+    display: none;
+  }
+  #modalBody .deletion-editor .record-editor-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 10px;
+  }
+  #modalBody .deletion-editor .record-editor-actions button {
+    min-width: 0;
+    min-height: 48px;
+    font-size: 14px;
+    white-space: normal;
+  }
+  #modalBody .deletion-editor button.danger {
+    color: var(--theme-surface);
+    background: var(--status-danger-fill);
+    border-color: var(--status-danger-fill);
+  }
+}
+@media screen and (max-width: 599px) {
+  #app .workspace-tool-group {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media screen and (max-width: 1100px) {
+  #app .workspace-tools {
+    scroll-margin-top: 88px;
+  }
+}

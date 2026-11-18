@@ -1,0 +1,89 @@
+.qb-exam-card {
+  margin: 0;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 10px 12px;
+  border-inline-start: 3px solid var(--theme-primary-line);
+}
+.qb-exam-results {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+.qb-exam-copy {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+.qb-exam-card .qb-exam-copy > h3 {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.qb-exam-context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  font-size: 11px;
+  line-height: 1.8;
+  color: var(--theme-muted);
+}
+.qb-exam-context > .qb-exam-course {
+  color: var(--theme-primary);
+  font-weight: 500;
+}
+.qb-exam-results > .qb-empty {
+  grid-column: 1/-1;
+}
+.qb-body .qb-archive-filters {
+  margin-block: 12px 8px;
+}
+.qb-exam-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 0.73rem;
+  color: var(--theme-muted);
+}
+.qb-exam-meta > span {
+  padding: 0;
+  background: transparent;
+  white-space: nowrap;
+}
+.qb-exam-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.qb-exam-actions button {
+  font-size: 12px;
+  min-width: 0;
+  height: 44px;
+  padding-inline: 6px !important;
+  white-space: nowrap;
+}
+.qb-exam-actions button[data-ui-tone="danger"] .ui-button-label {
+  display: none;
+}
+.qb-exam-actions button:first-child,
+.qb-preview-actions button[data-ui-tone="navigate"] {
+  --button-ink: var(--status-info);
+  --button-fill: var(--status-info-fill);
+  --button-hover: var(--status-info-hover);
+  --button-soft: var(--status-info-soft);
+  --button-line: var(--status-info-line);
+}
+.qb-exam-actions button[data-ui-tone="print"],
+.qb-preview-actions button[data-ui-tone="print"] {
+  --button-ink: var(--theme-teal);
+  --button-fill: var(--theme-teal);
+  --button-hover: var(--theme-secondary-hover);
+  --button-soft: var(--theme-teal-soft);
+  --button-line: var(--theme-teal-line);
+}

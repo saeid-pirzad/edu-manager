@@ -8,6 +8,7 @@ const { Linter } = require("eslint");
 const recommended = require("@eslint/js").configs.recommended.rules;
 const globals = require("globals");
 const { applicationFiles } = require("./application-files.cjs");
+const { checkArchitecture } = require("./architecture-boundaries.cjs");
 const root = path.resolve(__dirname, "..");
 const layout = JSON.parse(
   fs.readFileSync(path.join(root, "source-map.json"), "utf8"),
@@ -140,6 +141,10 @@ check(
   fs.readFileSync(path.join(root, "service-worker.js"), "utf8"),
   globals.serviceworker,
 );
+for (const error of checkArchitecture(root)) {
+  console.error(error);
+  failures++;
+}
 if (failures) process.exitCode = 1;
 else
   console.log(

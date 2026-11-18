@@ -1,0 +1,106 @@
+@media screen {
+  #modal:has(.full-restore) .modal-dialog {
+    width: min(100%, 560px);
+  }
+  :is(#modalBody, .qb-body) .full-restore {
+    display: grid;
+    gap: 16px;
+    min-width: 0;
+    line-height: 1.9;
+  }
+  :is(#modalBody, .qb-body) .full-restore :is(h4, p, dl, dd) {
+    margin: 0;
+  }
+  :is(#modalBody, .qb-body) .full-restore :is(h4, dt) {
+    font-weight: 700;
+  }
+  :is(#modalBody, .qb-body) .full-restore-file,
+  :is(#modalBody, .qb-body) .full-restore-warning {
+    padding: 14px;
+    border: 1px solid var(--theme-line);
+    border-radius: 12px;
+    background: var(--theme-surface-subtle);
+  }
+  :is(#modalBody, .qb-body) .full-restore-periods {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--theme-line);
+    font-size: 13px;
+    overflow-wrap: anywhere;
+  }
+  :is(#modalBody, .qb-body) .full-restore-periods ul {
+    display: grid;
+    gap: 6px;
+    max-height: 180px;
+    overflow-y: auto;
+    margin: 8px 0 0;
+    padding-inline-start: 22px;
+  }
+  :is(#modalBody, .qb-body) .full-restore-file dl {
+    display: grid;
+    gap: 10px;
+    margin-top: 12px;
+    font-size: 13px;
+  }
+  :is(#modalBody, .qb-body) .full-restore-file dl > div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    gap: 12px;
+    overflow-wrap: anywhere;
+  }
+  :is(#modalBody, .qb-body) .full-restore-warning {
+    border-color: var(--status-warning-line);
+    background: var(--status-warning-soft);
+    color: var(--status-danger);
+  }
+  :is(#modalBody, .qb-body) .full-restore-warning p {
+    margin-top: 8px;
+    font-size: 13px;
+  }
+  :is(#modalBody, .qb-body) .full-restore-safety {
+    color: var(--status-success);
+    font-size: 13px;
+  }
+  :is(#modalBody, .qb-body) .full-restore-confirm {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid var(--theme-line);
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  :is(#modalBody, .qb-body) .full-restore-confirm input {
+    flex: 0 0 auto;
+    width: 20px;
+    height: 20px;
+    margin: 4px 0 0;
+  }
+  :is(#modalBody, .qb-body) .full-restore-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 10px;
+  }
+  :is(#modalBody, .qb-body) .full-restore-actions button {
+    min-width: 0;
+    min-height: 44px;
+    margin: 0;
+    white-space: normal;
+  }
+  :is(#modalBody, .qb-body) .full-restore #operationError {
+    color: var(--status-danger);
+    overflow-wrap: anywhere;
+  }
+  :is(#modalBody, .qb-body) .full-restore #operationError:empty {
+    display: none;
+  }
+}
+@media screen and (max-width: 400px) {
+  :is(#modalBody, .qb-body) .full-restore-actions,
+  :is(#modalBody, .qb-body) .full-restore-file dl > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  :is(#modalBody, .qb-body) .full-restore-file dl > div {
+    gap: 2px;
+  }
+}

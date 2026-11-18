@@ -1,0 +1,126 @@
+.qb-question > p,
+.qb-solution p {
+  white-space: pre-wrap;
+  line-height: 1.9;
+}
+.qb-question > small,
+.qb-form small {
+  font-size: 0.75rem;
+  color: var(--theme-muted);
+}
+.qb-question > button {
+  margin-inline-end: 8px;
+  margin-top: 10px;
+}
+.qb-question h3 {
+  font-size: 1rem;
+  margin-block: 0 8px;
+}
+.qb-page details {
+  margin-block: 16px;
+}
+.qb-page summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font-size: 0.85rem;
+  color: var(--theme-ink);
+}
+.qb-body > details {
+  border: 1px solid var(--theme-line);
+  border-radius: 12px;
+  padding: 0 14px;
+  background: var(--theme-surface);
+}
+.qb-body > details > summary {
+  background: var(--form-cream);
+  margin-inline: -14px;
+  padding-inline: 14px;
+  border-radius: 12px;
+}
+.qb-body > details > p {
+  color: var(--theme-muted);
+  font-size: 0.8rem;
+  line-height: 1.9;
+}
+.qb-body > details > label {
+  margin-block: 14px;
+}
+.qb-optional > summary::after {
+  content: "+";
+  margin-inline-start: auto;
+  padding-inline-start: 10px;
+  font-size: 1.1rem;
+  color: var(--theme-primary);
+}
+.qb-optional[open] > summary::after {
+  content: "−";
+}
+.qb-page > .qb-confirm {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 16px;
+  row-gap: 4px;
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: min(220px, calc(var(--app-viewport, 100dvh) / 2));
+  padding: 10px 16px;
+  border: 0;
+  border-bottom: 1px solid var(--status-warning-line);
+  margin: 0;
+  background: var(--status-warning-soft);
+  color: var(--theme-ink);
+  font: inherit;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scroll-padding-block: 10px;
+}
+.qb-confirm > .qb-editor-title {
+  grid-column: 1;
+  padding: 0;
+  border: 0;
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+.qb-confirm > p {
+  grid-column: 1;
+  align-self: stretch;
+  min-height: 0;
+  font-size: 0.8rem;
+  line-height: 1.8;
+  margin: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.qb-confirm-actions {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.qb-confirm-actions > button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+@media screen and (max-width: 700px) {
+  .qb-page > .qb-confirm {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 4px;
+    padding: 8px 10px;
+  }
+  .qb-confirm-actions {
+    grid-column: 1;
+    grid-row: auto;
+    margin-top: 2px;
+  }
+}

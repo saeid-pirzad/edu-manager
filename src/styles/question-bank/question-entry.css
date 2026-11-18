@@ -1,0 +1,53 @@
+.qb-question-entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+  padding: 12px;
+  margin-bottom: 16px;
+  border: 1px solid var(--theme-line);
+  border-radius: 12px;
+  background: var(--theme-surface-subtle);
+}
+.qb-question-entry > .qb-entry-course {
+  min-width: 0;
+  margin: 0;
+  gap: 6px;
+}
+.qb-question-entry > .qb-section-picker {
+  min-width: 0;
+}
+.qb-question-entry .qb-course-actions {
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+.qb-question-entry .qb-context-action > .ui-button-label {
+  display: none;
+}
+.qb-question-entry .qb-context-action {
+  width: 40px;
+  min-width: 40px;
+  padding: 0 !important;
+}
+.qb-question-entry > button {
+  align-self: end;
+}
+.qb-question-entry > .qb-section-picker {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.qb-question-entry > button {
+  min-height: 44px;
+  white-space: nowrap;
+}
+.qb-body .qb-question-controls > .qb-filters {
+  margin: 0;
+}
+#app .qb-page .qb-body .qb-filters :is(input, select) {
+  font-size: var(--qb-filter-font-size, 14px) !important;
+}
+.qb-unit-actions {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--theme-line-soft);
+}

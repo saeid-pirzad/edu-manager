@@ -204,6 +204,7 @@ test("configured practical and theory weights are shared by both grade stages", 
   vm.runInContext(read("domain/grade-math.js"), context);
   vm.runInContext(read("domain/grade-policy.js"), context);
   vm.runInContext(read("domain/reporting/academic-results.js"), context);
+  vm.runInContext(read("services/grading-results.js"), context);
   vm.runInContext(read("workspace/grading/results.js"), context);
   const lesson = {
     gradingPolicy: {
@@ -247,6 +248,7 @@ test("general assessment keeps the two stages separate and missing grades distin
   vm.runInContext(read("domain/grade-math.js"), context);
   vm.runInContext(read("domain/grade-policy.js"), context);
   vm.runInContext(read("domain/reporting/academic-results.js"), context);
+  vm.runInContext(read("services/grading-results.js"), context);
   vm.runInContext(read("workspace/grading/results.js"), context);
   const lesson = {
     gradingPolicy: { subjectType: "general" },

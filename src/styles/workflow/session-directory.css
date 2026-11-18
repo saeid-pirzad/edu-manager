@@ -1,0 +1,411 @@
+@media screen {
+  #app :is(.session-directory, .class-lessons, .class-directory) {
+    padding: 0;
+    overflow: visible;
+    background: var(--theme-surface);
+  }
+  #app .directory-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px 12px;
+    margin: 0;
+    padding: 16px;
+    border-bottom: 1px solid var(--theme-line-soft);
+    border-start-start-radius: inherit;
+    border-start-end-radius: inherit;
+    background: linear-gradient(
+      115deg,
+      var(--theme-surface),
+      var(--theme-primary-soft)
+    );
+  }
+  #app .directory-heading > div {
+    display: contents;
+  }
+  #app .directory-heading h3 {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.8;
+  }
+  #app .directory-symbol {
+    display: grid;
+    place-items: center;
+    flex: 0 0 32px;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--theme-primary-line);
+    border-radius: 10px;
+    background: var(--theme-surface);
+    color: var(--theme-primary);
+  }
+  #app .directory-symbol svg {
+    width: 18px;
+    height: 18px;
+  }
+  #app .directory-heading .lesson-count {
+    display: inline-grid;
+    place-items: center;
+    min-width: 26px;
+    height: 26px;
+    padding: 0 6px;
+    border-radius: 8px;
+    background: var(--theme-surface);
+    color: var(--theme-primary);
+    font-size: 12px;
+    line-height: 1;
+  }
+  #app .directory-heading p {
+    display: block;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    margin: 0;
+    min-width: 0;
+    color: var(--theme-muted);
+    font-size: 11px;
+    line-height: 1.9;
+  }
+  #app .session-list-actions {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+  #app .session-list-actions > summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-sizing: border-box;
+    min-height: 44px;
+    padding: 8px 10px;
+    border: 1px solid var(--theme-line);
+    border-radius: 10px;
+    background: var(--theme-surface);
+    color: var(--theme-muted);
+    font-size: 11px;
+    line-height: 1.8;
+    list-style: none;
+  }
+  #app .session-list-actions > summary::-webkit-details-marker {
+    display: none;
+  }
+  #app .session-list-actions > summary::after {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-inline-end: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: translateY(-2px) rotate(45deg);
+  }
+  #app .session-list-actions[open] > summary {
+    border-color: var(--theme-primary-line);
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
+  }
+  #app .session-list-actions[open] > summary::after {
+    transform: translateY(2px) rotate(225deg);
+  }
+  #app
+    :is(
+      .session-list,
+      .class-lessons .lesson-items,
+      .class-directory .dashboard-entities
+    ) {
+    display: grid;
+    gap: 10px;
+    padding: 12px;
+  }
+  #app .session-card {
+    position: relative;
+    margin: 0;
+    padding: 0;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    min-width: 0;
+    border: 1px solid var(--theme-line);
+    border-radius: 14px;
+    background: var(--theme-surface);
+    box-shadow: none;
+    transition:
+      border-color 0.18s,
+      box-shadow 0.18s;
+  }
+  #app .session-card.is-today {
+    border-color: var(--theme-primary-line);
+    background: linear-gradient(
+      120deg,
+      var(--theme-surface) 60%,
+      var(--theme-primary-soft)
+    );
+    box-shadow: inset -3px 0 0 var(--theme-primary);
+  }
+  #app button.session-open {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    padding: 14px;
+    border-radius: inherit;
+  }
+  #app button.session-open:hover {
+    background: transparent;
+  }
+  #app button.session-open:focus-visible,
+  #app .session-delete:focus-visible {
+    outline: 2px solid var(--theme-primary);
+    outline-offset: 3px;
+  }
+  #app .session-identity {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    padding-inline-end: 44px;
+  }
+  #app .session-calendar {
+    display: grid;
+    place-items: center;
+    flex: 0 0 40px;
+    width: 40px;
+    height: 44px;
+    border: 1px solid var(--theme-primary-line);
+    border-radius: 11px;
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
+  }
+  #app .session-calendar svg {
+    width: 21px;
+    height: 21px;
+  }
+  #app .session-date {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+  }
+  #app .session-date strong {
+    color: var(--theme-ink);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.7;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+  #app .session-date-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  #app .session-period {
+    color: var(--theme-muted);
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1.8;
+  }
+  #app .session-today {
+    padding: 1px 6px;
+    border-radius: 5px;
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
+    font-size: 10px;
+    line-height: 1.8;
+    white-space: nowrap;
+  }
+  #app .session-unit {
+    grid-column: 1 / -1;
+    padding-inline-start: 10px;
+    border-inline-start: 2px solid var(--theme-primary-line);
+    color: var(--theme-muted);
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1.9;
+    overflow-wrap: anywhere;
+  }
+  #app .session-counts {
+    grid-column: 1;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 5px;
+    min-width: 0;
+  }
+  #app .session-counts > span {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-width: 0;
+    padding: 6px 2px;
+    border-radius: 8px;
+    font-size: 10px;
+    line-height: 1.7;
+    font-weight: 400;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  #app .session-counts b {
+    font-size: 14px;
+    line-height: 1.5;
+    font-weight: 600;
+  }
+  #app .session-counts .session-present {
+    background: var(--status-success-soft);
+    color: var(--status-success);
+  }
+  #app .session-counts .session-absent {
+    background: var(--status-danger-soft);
+    color: var(--status-danger);
+  }
+  #app .session-counts .session-late {
+    background: var(--status-warning-soft);
+    color: var(--status-warning);
+  }
+  #app .session-counts .session-leave {
+    background: var(--status-leave-soft);
+    color: var(--status-leave);
+  }
+  #app .session-counts .session-activities {
+    background: var(--theme-surface-muted);
+    color: var(--theme-ink);
+  }
+  #app .session-enter-label {
+    grid-column: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 40px;
+    padding: 8px 12px;
+    box-sizing: border-box;
+    border: 1px solid var(--theme-primary-line);
+    border-radius: 9px;
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary);
+    font-size: 11px;
+    line-height: 1.8;
+    white-space: nowrap;
+  }
+  #app .session-enter-label > span {
+    display: inline-flex;
+  }
+  #app .session-enter-label svg {
+    width: 17px;
+    height: 17px;
+  }
+  #app .session-card > .session-delete {
+    position: absolute;
+    inset-inline-end: 10px;
+    top: 14px;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    padding: 11px;
+    border: 1px solid var(--theme-line-soft);
+    border-radius: 10px;
+    background: var(--theme-surface);
+    color: var(--theme-muted);
+    box-shadow: none;
+  }
+  #app .session-card > .session-delete:hover {
+    background: var(--status-danger-soft);
+    border-color: var(--status-danger-line);
+    color: var(--status-danger);
+  }
+}
+@media screen and (min-width: 701px) {
+  #app .directory-heading {
+    padding: 18px 20px;
+  }
+  #app .directory-heading h3 {
+    font-size: 17px;
+  }
+  #app .directory-heading p {
+    font-size: 12px;
+  }
+  #app
+    :is(
+      .session-list,
+      .class-lessons .lesson-items,
+      .class-directory .dashboard-entities
+    ) {
+    gap: 12px;
+    padding: 18px;
+  }
+  #app button.session-open {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 14px 18px;
+    padding: 16px;
+  }
+  #app .session-enter-label {
+    grid-column: 2;
+    min-width: 138px;
+    min-height: 44px;
+    font-size: 12px;
+  }
+  #app .session-counts > span {
+    flex-direction: row;
+    gap: 5px;
+    padding: 8px 6px;
+    font-size: 11px;
+  }
+  #app .session-card > .session-delete {
+    top: 16px;
+    inset-inline-end: 12px;
+  }
+}
+@media screen and (min-width: 1101px) {
+  #app .directory-heading > div {
+    display: block;
+  }
+  #app .directory-heading p {
+    margin: 5px 40px 0 0;
+  }
+  #app button.session-open {
+    grid-template-columns: minmax(170px, 0.85fr) minmax(290px, 1.4fr) auto;
+    padding-inline-end: 72px;
+  }
+  #app .session-identity {
+    grid-column: 1;
+    grid-row: 1;
+    padding-inline-end: 0;
+  }
+  #app .session-counts {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  #app .session-enter-label {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  #app .session-unit {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    margin-inline-start: 50px;
+  }
+  #app .session-card > .session-delete {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+}
+@media screen and (hover: hover) and (pointer: fine) {
+  #app .session-directory .session-card:hover,
+  #app .session-directory .session-card:focus-within {
+    border-color: var(--theme-primary-line);
+    box-shadow: 0 3px 12px var(--theme-primary-shadow);
+  }
+}
+@media screen and (prefers-reduced-motion: reduce) {
+  #app .session-card {
+    transition: none;
+  }
+}

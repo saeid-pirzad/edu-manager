@@ -3,7 +3,7 @@ const { test } = require("node:test"),
   assert = require("node:assert/strict"),
   fs = require("node:fs"),
   vm = require("node:vm");
-function fixture() {
+async function fixture() {
   const c = {
     installationToken: "installation-one",
     workspace: { id: "first", year: "1405-1406" },
@@ -13,27 +13,65 @@ function fixture() {
     connectionRetired: false,
     academicTermKind: (term) =>
       ({ first: "first", second: "second" })[term] || null,
+    transactionDone: async () => {},
+    requestPromise: async (value) => value,
+  };
+  const rows = [
+    { id: "first", termKind: "first", password: "source-hash" },
+    { id: "second", termKind: "second", password: "peer-hash" },
+    { id: "empty", termKind: "second", password: "" },
+    { id: "same", termKind: "second", password: "source-hash" },
+    { id: "unknown", termKind: null, password: "" },
+  ];
+  c.connection = {
+    transaction() {
+      return {
+        objectStore(name) {
+          return name === "catalog"
+            ? {
+                getAll() {
+                  const request = {};
+                  queueMicrotask(() => {
+                    request.result = rows.map((row) => ({
+                      ...row,
+                      year: "1405-1406",
+                    }));
+                    request.onsuccess();
+                  });
+                  return request;
+                },
+              }
+            : {
+                get(key) {
+                  return {
+                    value: {
+                      settings: {
+                        password: rows.find((row) => key === row.id + "|meta")
+                          .password,
+                      },
+                    },
+                  };
+                },
+              };
+        },
+      };
+    },
   };
   vm.createContext(c);
   vm.runInContext(
-    fs.readFileSync("src/workspace/reports/year-notes-scope.js", "utf8") +
-      "\nglobalThis.api={context:academicYearNotesContext,permit:permitYearNoteAccess,sync:synchronizeYearNotesScope,setScope:(value)=>academicYearNotesScope=value};",
+    fs.readFileSync("src/services/year-note-scope.js", "utf8"),
     c,
   );
-  c.api.setScope({
-    year: c.workspace.year,
-    periods: [
-      { id: "first", kind: "first", password: "source-hash" },
-      { id: "second", kind: "second", password: "peer-hash" },
-      { id: "empty", kind: "second", password: "" },
-      { id: "same", kind: "second", password: "source-hash" },
-      { id: "unknown", kind: null, password: "" },
-    ],
-  });
+  vm.runInContext(
+    fs.readFileSync("src/workspace/reports/year-notes-scope.js", "utf8") +
+      "\nglobalThis.api={context:academicYearNotesContext,permit:permitYearNoteAccess,sync:synchronizeYearNotesScope,invalidate:invalidateYearNotesScope};",
+    c,
+  );
+  await c.api.sync();
   return c;
 }
-test("annual note scope excludes differently protected peers and legacy unknown roles", () => {
-  const c = fixture(),
+test("annual note scope excludes differently protected peers and legacy unknown roles", async () => {
+  const c = await fixture(),
     value = c.api.context();
   assert.deepEqual([...value.notesWorkspaceIds].sort(), [
     "empty",
@@ -42,34 +80,34 @@ test("annual note scope excludes differently protected peers and legacy unknown 
   ]);
   assert.equal(value.notesWorkspaceId, "first");
 });
-test("equal password hashes require authenticated source before granting peer access", () => {
-  const c = fixture();
+test("equal password hashes require authenticated source before granting peer access", async () => {
+  const c = await fixture();
   c.isAuthenticated = false;
   assert.equal(c.api.context().notesWorkspaceIds.includes("same"), false);
   c.isAuthenticated = true;
   assert.equal(c.api.context().notesWorkspaceIds.includes("same"), true);
 });
-test("explicitly verified peer is included only for that installation and current password", () => {
-  const c = fixture();
+test("explicitly verified peer is included only for that installation and current password", async () => {
+  const c = await fixture();
   c.api.permit({ id: "second" }, { settings: { password: "peer-hash" } });
   assert.equal(c.api.context().notesWorkspaceIds.includes("second"), true);
   c.installationToken = "installation-two";
   assert.equal(c.api.context().notesWorkspaceIds.includes("second"), false);
 });
-test("changing the year revokes cached note scope", () => {
-  const c = fixture();
+test("changing the year revokes cached note scope", async () => {
+  const c = await fixture();
   c.workspace.year = "1406-1407";
   assert.deepEqual([...c.api.context().notesWorkspaceIds], ["first"]);
 });
-test("active legacy workspace remains readable while unrelated unknown roles stay excluded", () => {
-  const c = fixture();
+test("active legacy workspace remains readable while unrelated unknown roles stay excluded", async () => {
+  const c = await fixture();
   c.workspace.id = "unknown";
   const scope = c.api.context();
   assert.equal(scope.notesWorkspaceIds.includes("unknown"), true);
   assert.equal(scope.notesWorkspaceIds.includes("second"), false);
 });
 test("catalog synchronization does not read other years or unknown role metadata", async () => {
-  const c = fixture(),
+  const c = await fixture(),
     reads = [],
     catalog = [
       { id: "first", year: c.workspace.year, termKind: "first" },
