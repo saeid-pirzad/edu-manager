@@ -1003,43 +1003,46 @@ ty"?" is-missing":"")+'"><button type="button" class="attendance-reminder-open" 
 esc(item.key)+'"><span class="attendance-reminder-identity"><strong>'+esc(item.className||"کلاس")+'</strong><span class="attendance-reminder-lesson">'+esc(item.
 lessonName||"درس")+'</span></span><span class="attendance-reminder-status">'+attendanceReminderStatus(item)+'</span><span class="attendance-reminder-meta"><s\
 pan class="attendance-reminder-date">'+attendanceReminderDate(item)+'</span><span class="attendance-reminder-school">'+esc(item.schoolName||"")+"</span></span><\
-/button></li>"}function attendanceReminderRangeHtml(model){return model?.start&&model?.end?'<p class="attendance-reminder-range">از <bdi>'+esc(faDate(model.start))+
-"</bdi> تا <bdi>"+esc(faDate(model.end))+"</bdi> · بر اساس برنامهٔ هفتگی فعلی</p>":'<p class="attendance-reminder-range">پیگیری زنگ‌های\
- گذشته بر اساس برنامهٔ هفتگی فعلی</p>'}function renderAttendanceReminders(model){const items=attendanceReminderItems(model),visible=items.
-slice(0,3),notHeld=model?.notHeld||[];if(!items.length&&!notHeld.length)return"";return'<section class="attendance-reminders'+(items.length?"":" is-clear")+'" a\
-ria-labelledby="attendanceRemindersTitle"><header class="attendance-reminders-heading"><div><h3 id="attendanceRemindersTitle">پیگیری حضور‌وغیاب'+
-(items.length?'<span class="attendance-reminders-count">'+attendanceReminderNumber(items.length)+"</span>":"")+"</h3>"+attendanceReminderRangeHtml(model)+"</div\
-></header>"+(items.length?'<ul class="attendance-reminder-items">'+visible.map(attendanceReminderRowHtml).join("")+"</ul>":'<p class="attendance-reminders-empty\
-">در این بازه موردی برای پیگیری نیست.</p>')+(items.length||notHeld.length?'<footer class="attendance-reminders-footer"><div class="a\
-ttendance-reminders-footer-actions" role="group" aria-label="فهرست‌های پیگیری حضور‌وغیاب">'+(items.length?'<button type="button" clas\
-s="ghost attendance-reminders-footer-action attendance-reminders-all-button" data-ui-icon="none" data-workspace-action="attendance-reminders-all">'+EduIcons.html(
-"calendar-week")+'<span class="attendance-reminders-action-label">همهٔ موارد</span> <bdi class="attendance-reminders-action-count">'+attendanceReminderNumber(
-items.length)+"</bdi></button>":"")+(notHeld.length?'<button type="button" class="ghost attendance-reminders-footer-action attendance-reminders-history-button" \
-data-ui-icon="none" data-workspace-action="attendance-reminders-not-held">'+EduIcons.html("clock")+'<span class="attendance-reminders-action-label">برگزارنشده‌ه\
-ا</span> <bdi class="attendance-reminders-action-count">'+attendanceReminderNumber(notHeld.length)+"</bdi></button>":"")+"</div>"+(items.length>visible.length?
-"<small>نمایش "+attendanceReminderNumber(visible.length)+" مورد اخیر</small>":"")+"</footer>":"")+"</section>"}function attendanceReminderPage(rows,requestedPage){
-const pages=Math.max(1,Math.ceil(rows.length/50)),page=Number.isInteger(requestedPage)?Math.max(0,Math.min(requestedPage,pages-1)):0,offset=page*50;return{rows:rows.
-slice(offset,offset+50),page,pages,offset,total:rows.length}}function attendanceReminderPaginationHtml(pagination){if(!pagination.total)return"";const{page,pages,
-offset,rows,total}=pagination;return'<div class="attendance-reminder-pagination"><p>موارد '+attendanceReminderNumber(offset+1)+" تا "+attendanceReminderNumber(
-offset+rows.length)+" از "+attendanceReminderNumber(total)+"</p>"+(pages>1?'<nav aria-label="صفحه‌های پیگیری حضور‌وغیاب"><button type="button" class="ghost" d\
-ata-workspace-action="attendance-reminders-page" data-page="'+Math.max(0,page-1)+'"'+(page===0?" disabled":"")+">قبلی</button><span>صفحهٔ "+attendanceReminderNumber(
-page+1)+" از "+attendanceReminderNumber(pages)+'</span><button type="button" class="ghost" data-workspace-action="attendance-reminders-page" data-page="'+Math.
-min(pages-1,page+1)+'"'+(page===pages-1?" disabled":"")+">بعدی</button></nav>":"")+"</div>"}function attendanceReminderListHtml(model,page=0){const items=attendanceReminderItems(
-model),pagination=attendanceReminderPage(items,page);return'<div class="attendance-reminder-list-dialog"><p class="attendance-reminder-intro">زنگ موردنظر را برا\
-ی ثبت یا تکمیل حضور‌وغیاب انتخاب کنید.</p>'+attendanceReminderRangeHtml(model)+(items.length?'<ul class="attendance-reminder-ite\
-ms attendance-reminder-scroll">'+pagination.rows.map(attendanceReminderRowHtml).join("")+"</ul>":'<p class="attendance-reminders-empty">موردی برای پیگیری باقی ن\
-مانده است.</p>')+attendanceReminderPaginationHtml(pagination)+'<div class="attendance-reminder-dialog-actions"><button type="button" class="ghost" data-\
-workspace-action="close">بستن</button></div></div>'}function attendanceReminderDialogHtml(item){const key=esc(item.key),missing=item.kind==="missing",empty=item.
-kind==="empty",canMarkNotHeld=missing||empty,foreignEmpty=empty&&item.sourcePeriodId!==workspace?.id,conflict=item.kind==="conflict";const recordAttributes=' da\
-ta-key="'+key+'"'+(item.sessionId?' data-session="'+esc(item.sessionId)+'"':"")+(item.sourcePeriodId?' data-workspace="'+esc(item.sourcePeriodId)+'"':"");return'\
-<div class="attendance-reminder-dialog is-'+(conflict?"conflict":empty?"empty is-missing":missing?"missing":"incomplete")+'"><section class="attendance-reminder\
--summary"><div class="attendance-reminder-summary-meta"><span class="attendance-reminder-date">'+attendanceReminderDate(item)+'</span><span class="attendance-re\
-minder-status">'+attendanceReminderStatus(item)+"</span></div><h4>"+esc(item.className||"کلاس")+"</h4><p>"+esc(item.lessonName||"درس")+"</p><small>"+esc(
-item.schoolName||"")+'</small></section><p class="attendance-reminder-explanation'+(conflict?" is-conflict":"")+'">'+(missing?"برای این زنگ، جلسه‌ای ثبت نشده اس\
-ت. اگر کلاس برگزار شده، حضور‌وغیاب آن را ثبت کنید.":empty?"جلسه فقط باز شده و هیچ حضور، نمره یا فعالیتی ثبت نشده است. اگ\
-ر کلاس برگزار نشده، می‌توانید وضعیت آن را با تأیید خود مشخص کنید.":conflict?"برای این تاریخ و زنگ، بیش از ی\
-ک جلسه ثبت شده است. جلسه‌های ثبت‌شده را جداگانه بررسی کنید.":"حضور‌وغیاب "+attendanceReminderNumber(
-item.unknown)+" نفر از "+attendanceReminderNumber(item.total)+" نفر هنوز مشخص نشده است. اطلاعات قبلی جلسه حفظ می‌شود؛ فقط موارد تعیین‌نشده را تکمیل کنید.")+
+/button></li>"}function attendanceReminderRangeHtml(model){return model?.start&&model?.end?'<p class="attendance-reminder-range"><span class="attendance-reminde\
+r-range-dates"><span>بازهٔ بررسی</span><bdi>'+esc(faDate(model.start))+"</bdi> تا <bdi>"+esc(faDate(model.end))+'</bdi></span><span class="attendanc\
+e-reminder-range-note">بر اساس برنامهٔ هفتگی فعلی</span></p>':'<p class="attendance-reminder-range"><span class="attendance-reminder-range\
+-note">پیگیری زنگ‌های گذشته بر اساس برنامهٔ هفتگی فعلی</span></p>'}function renderAttendanceReminders(model){const items=attendanceReminderItems(
+model),visible=items.slice(0,3),notHeld=model?.notHeld||[];if(!items.length&&!notHeld.length)return"";return'<section class="attendance-reminders'+(items.length?
+"":" is-clear")+'" aria-labelledby="attendanceRemindersTitle"><header class="attendance-reminders-heading"><div><h3 id="attendanceRemindersTitle"><span class="a\
+ttendance-reminders-icon" aria-hidden="true">'+EduIcons.html("users")+"</span>پیگیری حضور‌وغیاب"+(items.length?'<span class="attendance-reminde\
+rs-count">'+attendanceReminderNumber(items.length)+"</span>":"")+"</h3>"+attendanceReminderRangeHtml(model)+"</div></header>"+(items.length?'<ul class="attendan\
+ce-reminder-items">'+visible.map(attendanceReminderRowHtml).join("")+"</ul>":'<p class="attendance-reminders-empty">در این بازه موردی برای پیگیری نیست.</p>')+
+(items.length||notHeld.length?'<footer class="attendance-reminders-footer"><div class="attendance-reminders-footer-actions" role="group" aria-label="فهرست‌های پ\
+یگیری حضور‌وغیاب">'+(items.length?'<button type="button" class="ghost attendance-reminders-footer-action attendance-reminders-all-button" data-u\
+i-icon="none" data-workspace-action="attendance-reminders-all">'+EduIcons.html("calendar-week")+'<span class="attendance-reminders-action-label">همهٔ موارد</spa\
+n> <bdi class="attendance-reminders-action-count">'+attendanceReminderNumber(items.length)+"</bdi></button>":"")+(notHeld.length?'<button type="button" class="g\
+host attendance-reminders-footer-action attendance-reminders-history-button" data-ui-icon="none" data-workspace-action="attendance-reminders-not-held">'+EduIcons.
+html("clock")+'<span class="attendance-reminders-action-label">برگزارنشده‌ها</span> <bdi class="attendance-reminders-action-count">'+attendanceReminderNumber(
+notHeld.length)+"</bdi></button>":"")+"</div>"+(items.length>visible.length?"<small>نمایش "+attendanceReminderNumber(visible.length)+" مورد اخیر</small>":
+"")+"</footer>":"")+"</section>"}function attendanceReminderPage(rows,requestedPage){const pages=Math.max(1,Math.ceil(rows.length/50)),page=Number.isInteger(requestedPage)?
+Math.max(0,Math.min(requestedPage,pages-1)):0,offset=page*50;return{rows:rows.slice(offset,offset+50),page,pages,offset,total:rows.length}}function attendanceReminderPaginationHtml(pagination){
+if(!pagination.total)return"";const{page,pages,offset,rows,total}=pagination;return'<div class="attendance-reminder-pagination"><p>موارد '+attendanceReminderNumber(
+offset+1)+" تا "+attendanceReminderNumber(offset+rows.length)+" از "+attendanceReminderNumber(total)+"</p>"+(pages>1?'<nav aria-label="صفحه‌های پیگیری حضور‌\
+وغیاب"><button type="button" class="ghost" data-workspace-action="attendance-reminders-page" data-page="'+Math.max(0,page-1)+'"'+(page===0?" disabled":"")+
+">قبلی</button><span>صفحهٔ "+attendanceReminderNumber(page+1)+" از "+attendanceReminderNumber(pages)+'</span><button type="button" class="ghost" data\
+-workspace-action="attendance-reminders-page" data-page="'+Math.min(pages-1,page+1)+'"'+(page===pages-1?" disabled":"")+">بعدی</button></nav>":"")+"</div>"}
+function attendanceReminderListHtml(model,page=0){const items=attendanceReminderItems(model),pagination=attendanceReminderPage(items,page);return'<div class="at\
+tendance-reminder-list-dialog"><p class="attendance-reminder-intro">زنگ موردنظر را برای ثبت یا تکمیل حضور‌وغیاب انتخاب کنید.</p>'+
+attendanceReminderRangeHtml(model)+(items.length?'<ul class="attendance-reminder-items attendance-reminder-scroll">'+pagination.rows.map(attendanceReminderRowHtml).
+join("")+"</ul>":'<p class="attendance-reminders-empty">موردی برای پیگیری باقی نمانده است.</p>')+attendanceReminderPaginationHtml(pagination)+
+'<div class="attendance-reminder-dialog-actions"><button type="button" class="ghost" data-workspace-action="close">بستن</button></div></div>'}function attendanceReminderDialogHtml(item){
+const key=esc(item.key),missing=item.kind==="missing",empty=item.kind==="empty",canMarkNotHeld=missing||empty,foreignEmpty=empty&&item.sourcePeriodId!==workspace?.
+id,conflict=item.kind==="conflict";const recordAttributes=' data-key="'+key+'"'+(item.sessionId?' data-session="'+esc(item.sessionId)+'"':"")+(item.sourcePeriodId?
+' data-workspace="'+esc(item.sourcePeriodId)+'"':"");return'<div class="attendance-reminder-dialog is-'+(conflict?"conflict":empty?"empty is-missing":missing?"m\
+issing":"incomplete")+'"><section class="attendance-reminder-summary"><div class="attendance-reminder-summary-meta"><span class="attendance-reminder-date">'+attendanceReminderDate(
+item)+'</span><span class="attendance-reminder-status">'+attendanceReminderStatus(item)+'</span></div><div class="attendance-reminder-session-identity"><h4><spa\
+n class="attendance-reminder-field-label">کلاس</span><span>'+esc(item.className||"کلاس")+'</span></h4><p><span class="attendance-reminder-field-label">د\
+رس</span><span>'+esc(item.lessonName||"درس")+'</span></p><small><span class="attendance-reminder-field-label">مدرسه</span><span>'+esc(item.schoolName||
+"")+'</span></small></div></section><p class="attendance-reminder-explanation'+(conflict?" is-conflict":"")+'">'+(missing?"برای این زنگ، جلسه‌ای ثبت نشده است. ا\
+گر کلاس برگزار شده، حضور‌وغیاب آن را ثبت کنید.":empty?"جلسه فقط باز شده و هیچ حضور، نمره یا فعالیتی ثبت نشده است. اگر کلاس\
+ برگزار نشده، می‌توانید وضعیت آن را با تأیید خود مشخص کنید.":conflict?"برای این تاریخ و زنگ، بیش از یک جلسه ثبت \
+شده است. جلسه‌های ثبت‌شده را جداگانه بررسی کنید.":"حضور‌وغیاب "+attendanceReminderNumber(item.unknown)+" نفر\
+ از "+attendanceReminderNumber(item.total)+" نفر هنوز مشخص نشده است. اطلاعات قبلی جلسه حفظ می‌شود؛ فقط موارد تعیین‌نشده را تکمیل کنید.")+
 '</p><div class="attendance-reminder-choices">'+(conflict?'<div class="attendance-reminder-conflict-sessions">'+(item.sessions||[]).map((session,index)=>'<butto\
 n type="button" class="ghost" data-ui-icon="none" data-workspace-action="attendance-reminder-record" data-key="'+key+'" data-session="'+esc(session.sessionId)+'\
 " data-workspace="'+esc(session.sourcePeriodId)+'">بررسی جلسهٔ '+attendanceReminderNumber(index+1)+"</button>").join("")+"</div>":'<section class="att\

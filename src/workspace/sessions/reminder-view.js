@@ -55,12 +55,12 @@ function attendanceReminderRowHtml(item) {
 
 function attendanceReminderRangeHtml(model) {
   return model?.start && model?.end
-    ? '<p class="attendance-reminder-range">از <bdi>' +
+    ? '<p class="attendance-reminder-range"><span class="attendance-reminder-range-dates"><span>بازهٔ بررسی</span><bdi>' +
         esc(faDate(model.start)) +
         "</bdi> تا <bdi>" +
         esc(faDate(model.end)) +
-        "</bdi> · بر اساس برنامهٔ هفتگی فعلی</p>"
-    : '<p class="attendance-reminder-range">پیگیری زنگ‌های گذشته بر اساس برنامهٔ هفتگی فعلی</p>';
+        '</bdi></span><span class="attendance-reminder-range-note">بر اساس برنامهٔ هفتگی فعلی</span></p>'
+    : '<p class="attendance-reminder-range"><span class="attendance-reminder-range-note">پیگیری زنگ‌های گذشته بر اساس برنامهٔ هفتگی فعلی</span></p>';
 }
 
 function renderAttendanceReminders(model) {
@@ -71,7 +71,9 @@ function renderAttendanceReminders(model) {
   return (
     '<section class="attendance-reminders' +
     (items.length ? "" : " is-clear") +
-    '" aria-labelledby="attendanceRemindersTitle"><header class="attendance-reminders-heading"><div><h3 id="attendanceRemindersTitle">پیگیری حضور‌وغیاب' +
+    '" aria-labelledby="attendanceRemindersTitle"><header class="attendance-reminders-heading"><div><h3 id="attendanceRemindersTitle"><span class="attendance-reminders-icon" aria-hidden="true">' +
+    EduIcons.html("users") +
+    "</span>پیگیری حضور‌وغیاب" +
     (items.length
       ? '<span class="attendance-reminders-count">' +
         attendanceReminderNumber(items.length) +
@@ -202,13 +204,13 @@ function attendanceReminderDialogHtml(item) {
     attendanceReminderDate(item) +
     '</span><span class="attendance-reminder-status">' +
     attendanceReminderStatus(item) +
-    "</span></div><h4>" +
+    '</span></div><div class="attendance-reminder-session-identity"><h4><span class="attendance-reminder-field-label">کلاس</span><span>' +
     esc(item.className || "کلاس") +
-    "</h4><p>" +
+    '</span></h4><p><span class="attendance-reminder-field-label">درس</span><span>' +
     esc(item.lessonName || "درس") +
-    "</p><small>" +
+    '</span></p><small><span class="attendance-reminder-field-label">مدرسه</span><span>' +
     esc(item.schoolName || "") +
-    '</small></section><p class="attendance-reminder-explanation' +
+    '</span></small></div></section><p class="attendance-reminder-explanation' +
     (conflict ? " is-conflict" : "") +
     '">' +
     (missing

@@ -607,7 +607,7 @@ test("compact reminders keep the full identity and status without decorative che
   assert.match(row, /attendance-reminder-meta/);
   assert.match(row, /attendance-reminder-status/);
   assert.doesNotMatch(row, /<svg|attendance-reminder-arrow/);
-  assert.doesNotMatch(card, /attendance-reminders-symbol/);
+  assert.match(card, /attendance-reminders-icon" aria-hidden="true"><svg/);
 });
 
 test("review choices are distinct and iconless while existing sessions explain explicit editing", () => {
