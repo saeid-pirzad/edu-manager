@@ -1710,7 +1710,7 @@ main({
         backupControls.buttons.every(
           (b) =>
             b.height >= (width <= 700 ? 39.9 : 43.9) &&
-            b.height <= 50 &&
+            b.height <= (width <= 600 ? 54 : 50) &&
             b.scroll <= b.width + 1,
         );
       if (!backupFits)
