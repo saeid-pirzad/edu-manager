@@ -1220,6 +1220,41 @@ async function run({ cdp, evaluate, cases, delay, baselineFooter = false }) {
     );
     await click("attendance-reminders-all");
     await wait("!!document.querySelector('.attendance-reminder-list-dialog')");
+    for (const [width, height] of [
+      [320, 640],
+      [390, 844],
+      [768, 600],
+      [1440, 900],
+      [740, 360],
+    ]) {
+      await cdp("Emulation.setDeviceMetricsOverride", {
+        width,
+        height,
+        deviceScaleFactor: 1,
+        mobile: width < 700,
+      });
+      await delay(100);
+      check(
+        `PENDING_LIST_FITS_${width}_${height}`,
+        await evaluate(`(()=>{
+        const root=document.querySelector('.attendance-reminder-list-dialog'),
+          shell=root.closest('.modal-dialog').getBoundingClientRect(),
+          body=root.closest('.modal-body'),
+          list=root.querySelector('.attendance-reminder-scroll'),
+          close=root.querySelector('[data-workspace-action=close]').getBoundingClientRect();
+        return shell.left>=0&&shell.right<=innerWidth&&shell.top>=0&&shell.bottom<=innerHeight+1&&
+          body.scrollHeight<=body.clientHeight+1&&root.scrollWidth<=root.clientWidth+1&&
+          close.bottom<=shell.bottom&&close.height>=44&&list.clientHeight>40&&
+          [...root.querySelectorAll('.attendance-reminder-item')].every(row=>
+            parseFloat(getComputedStyle(row).borderInlineStartWidth)===0);
+      })()`),
+      );
+      const shot = await cdp("Page.captureScreenshot", { format: "png" });
+      fs.writeFileSync(
+        path.join(directory, `pending-list-${width}-${height}.png`),
+        Buffer.from(shot.data, "base64"),
+      );
+    }
     check(
       "BOUNDED_FULL_LIST",
       await evaluate(
@@ -1247,7 +1282,7 @@ async function run({ cdp, evaluate, cases, delay, baselineFooter = false }) {
   check(
     "PREVIEWS",
     fs.readdirSync(directory).filter((name) => name.endsWith(".png")).length ===
-      54,
+      59,
     { directory, fixture },
   );
 }

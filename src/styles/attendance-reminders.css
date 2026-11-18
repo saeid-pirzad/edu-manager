@@ -195,15 +195,6 @@
   font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
-.attendance-reminder-item {
-  border-inline-start: 3px solid var(--status-warning-line);
-}
-.attendance-reminder-item.is-incomplete {
-  border-inline-start-color: #edbb94;
-}
-.attendance-reminder-item.is-conflict {
-  border-inline-start-color: var(--status-danger-line);
-}
 .attendance-reminder-status {
   max-width: 110px;
   padding: 2px 6px;
@@ -688,6 +679,53 @@
   }
 }
 @media screen {
+  #modal:has(.attendance-reminder-list-dialog) {
+    padding: 12px;
+    align-items: center;
+  }
+  #modal:has(.attendance-reminder-list-dialog) .modal-dialog {
+    width: 100%;
+    max-width: 720px;
+    max-height: calc(var(--app-viewport, 100dvh) - 24px);
+    border: 1px solid var(--theme-secondary-line);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  #modal:has(.attendance-reminder-list-dialog) .modal-header {
+    flex-shrink: 0;
+    padding: 10px 14px;
+  }
+  #modal:has(.attendance-reminder-list-dialog) .modal-header h3 {
+    font-size: 14px;
+    line-height: 1.8;
+  }
+  #modal:has(.attendance-reminder-list-dialog) .modal-body {
+    display: flex;
+    min-height: 0;
+    padding: 12px;
+    overflow: hidden;
+  }
+  .attendance-reminder-list-dialog {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-height: 0;
+  }
+  .attendance-reminder-list-dialog > :not(.attendance-reminder-scroll) {
+    flex-shrink: 0;
+  }
+  .attendance-reminder-list-dialog .attendance-reminder-scroll {
+    min-height: 0;
+    max-height: min(55dvh, 460px);
+    margin-block: 10px 0;
+  }
+  .attendance-reminder-list-dialog .attendance-reminder-intro {
+    font-size: 12px;
+  }
+  .attendance-reminder-list-dialog .attendance-reminder-dialog-actions {
+    margin-block-start: 8px;
+    padding-block-start: 8px;
+  }
   #modal:has(.attendance-reminder-dialog, .attendance-reminder-history)
     .modal-dialog {
     max-width: 660px;
@@ -708,6 +746,24 @@
   #modal:has(.attendance-reminder-dialog, .attendance-reminder-history)
     .modal-body {
     padding: 14px 16px;
+  }
+}
+@media screen and (max-height: 500px) {
+  .attendance-reminder-list-dialog .attendance-reminder-pagination {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 4px 12px;
+    margin-block: 4px;
+    font-size: 11px;
+  }
+  .attendance-reminder-list-dialog .attendance-reminder-intro {
+    margin-bottom: 2px;
+  }
+  .attendance-reminder-list-dialog .attendance-reminder-dialog-actions {
+    margin-block-start: 4px;
+    padding-block-start: 4px;
   }
 }
 @media (max-width: 600px) {
