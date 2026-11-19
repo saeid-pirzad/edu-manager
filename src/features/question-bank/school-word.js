@@ -142,17 +142,25 @@
           throw Error("متن، نوع یا بارم سؤال برای خروجی Word معتبر نیست.");
         total += q.score;
         const questionDirection = direction(q.text);
-        let body = paragraph(
-          (questionDirection === "rtl" ? number(i + 1) : String(i + 1)) +
-            ". " +
-            q.text +
-            (q.type === "boolean"
-              ? questionDirection === "rtl"
-                ? "    □ صحیح    □ غلط"
-                : "    □ True    □ False"
-              : ""),
-          { dir: questionDirection },
-        );
+        const lines = q.text.split(/\r\n|\r|\n/);
+        let body = lines
+          .map((line, lineIndex) =>
+            paragraph(
+              (lineIndex === 0
+                ? (questionDirection === "rtl"
+                    ? number(i + 1)
+                    : String(i + 1)) + ". "
+                : "") +
+                line +
+                (q.type === "boolean" && lineIndex === lines.length - 1
+                  ? questionDirection === "rtl"
+                    ? "    □ صحیح    □ غلط"
+                    : "    □ True    □ False"
+                  : ""),
+              { dir: direction(line, questionDirection) },
+            ),
+          )
+          .join("");
         if (q.type === "mcq") {
           if (
             !Array.isArray(q.options) ||
@@ -162,11 +170,15 @@
             )
           )
             throw Error("چهار گزینهٔ معتبر برای سؤال لازم است.");
-          const columns = q.options.every(
-            (o) => !/[\r\n]/.test(o) && Array.from(o).length <= 26,
+          const columns = q.options.some(
+            (o) => /[\r\n]/.test(o) || Array.from(o).length > 80,
           )
-            ? 4
-            : 2;
+            ? 1
+            : q.options.every(
+                  (o) => !/[\r\n]/.test(o) && Array.from(o).length <= 26,
+                )
+              ? 4
+              : 2;
           const optionWidth = Math.floor(9500 / columns);
           let optionRows = "";
           for (let index = 0; index < 4; index += columns) {

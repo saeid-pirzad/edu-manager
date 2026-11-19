@@ -56,6 +56,11 @@ test("print sheet isolates Persian, mixed and English prompts without moving sco
         score: 100,
         options: ["One", "Two", "Three", "Four"],
       },
+      {
+        type: "essay",
+        text: "خروجی کد زیر چیست؟\nlet sum = 2 + 3;\nconsole.log(sum);",
+        score: 100,
+      },
     ],
   });
   const rows = result.children.filter(
@@ -77,7 +82,7 @@ test("print sheet isolates Persian, mixed and English prompts without moving sco
   assert.ok(rows.every((row) => row.children[0].children[0].dir === "ltr"));
   assert.deepEqual(
     rows.map((row) => row.children[0].children[1].dir),
-    ["rtl", "ltr", "rtl", "ltr"],
+    ["rtl", "ltr", "rtl", "ltr", "rtl"],
   );
   assert.equal(
     rows[0].children[0].children[1].children[1].textContent,
@@ -93,4 +98,10 @@ test("print sheet isolates Persian, mixed and English prompts without moving sco
   assert.equal(rows[3].children[1].dir, "ltr");
   assert.equal(rows[3].children[1].children[0].children[0].textContent, "A)");
   assert.equal(rows[3].children[1].children[3].children[0].textContent, "D)");
+  const lines = rows[4].children[0].children[1].children;
+  assert.deepEqual(
+    lines.map((line) => line.dir),
+    ["rtl", "ltr", "ltr"],
+  );
+  assert.equal(lines[1].textContent, "let sum = 2 + 3;");
 });

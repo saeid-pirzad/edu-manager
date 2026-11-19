@@ -153,11 +153,14 @@
           );
         }),
       );
+      const gap = parseFloat(style.columnGap) || 0;
       list.dataset.columns =
-        required <=
-        (list.clientWidth - 3 * (parseFloat(style.columnGap) || 0)) / 4
-          ? "4"
-          : "2";
+        [...list.children].some((item) => /[\r\n]/.test(item.textContent)) ||
+        required > (list.clientWidth - gap) / 2
+          ? "1"
+          : required <= (list.clientWidth - 3 * gap) / 4
+            ? "4"
+            : "2";
     }
   }
   function sheetTextDirection(text, fallback = "rtl") {
@@ -252,6 +255,20 @@
         questionDirection === "ltr" ? `${i + 1}. ${q.text}` : q.text,
       );
       prompt.dir = questionDirection;
+      if (/[\r\n]/.test(q.text)) {
+        prompt.textContent = "";
+        q.text.split(/\r\n|\r|\n/).forEach((line, lineIndex) => {
+          const part = el(
+            "span",
+            (lineIndex === 0 && questionDirection === "ltr"
+              ? `${i + 1}. `
+              : "") + line,
+            "qb-sheet-line",
+          );
+          part.dir = sheetTextDirection(line, questionDirection);
+          prompt.append(part);
+        });
+      }
       if (q.type === "boolean") {
         const choices = el(
           "span",
@@ -934,7 +951,15 @@
         ? "پودمان"
         : "فصل";
     }
-    function entityMenu(parent, label, selected, add, edit, remove) {
+    function entityMenu(
+      parent,
+      label,
+      selected,
+      add,
+      edit,
+      remove,
+      extra = [],
+    ) {
       const trigger = contextAction(`بیشتر ${label}`, () => {}, parent);
       trigger.querySelector("svg")?.remove();
       trigger.insertAdjacentHTML("afterbegin", root.EduIcons.html("more"));
@@ -951,6 +976,7 @@
         [`${label} جدید`, add, false],
         [`ویرایش ${label}`, edit, !selected],
         [`حذف ${label}`, remove, !selected],
+        ...extra,
       ].map(([title, action, disabled]) => {
         const item = button(
           title,
@@ -2153,6 +2179,32 @@
             discard(() =>
               removeCourse(bank.courses.find((c) => c.id === courseId)),
             ),
+          [
+            [
+              "افزودن نمونهٔ یازدهم شبکه و نرم‌افزار",
+              () =>
+                discard(() =>
+                  confirmAction(
+                    "۲ درس، ۲۴ سؤال تألیفی و ۴ آزمون آزمایشی اضافه شوند؟ اطلاعات موجود حفظ می‌شود. این نمونه‌ها محتوای رسمی کتاب درسی نیستند و در پشتیبان بانک سؤال نیز ذخیره خواهند شد.",
+                    async () => {
+                      try {
+                        const next = root.EduQuestionBankSample.addTo(bank);
+                        if (await commit(next)) {
+                          courseId = "net11-web";
+                          unitId = "";
+                          tab = "questions";
+                          page = 0;
+                          render();
+                        }
+                      } catch (e) {
+                        error(e);
+                      }
+                    },
+                  ),
+                ),
+              false,
+            ],
+          ],
         );
       }
       if (tab === "exams") {

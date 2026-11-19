@@ -1,0 +1,707 @@
+{
+  "format": "classyar-question-bank",
+  "version": 1,
+  "revision": 1,
+  "courses": [
+    {
+      "id": "net11-web",
+      "title": "طراحی وب و برنامه‌نویسی — یازدهم — آزمایشی",
+      "structure": "module"
+    },
+    {
+      "id": "net11-data",
+      "title": "داده، رایانه و شبکه — یازدهم — آزمایشی",
+      "structure": "chapter"
+    }
+  ],
+  "units": [
+    {
+      "id": "net11-web-1",
+      "courseId": "net11-web",
+      "title": "پودمان ۱ — مفاهیم و خواندن کد"
+    },
+    {
+      "id": "net11-web-2",
+      "courseId": "net11-web",
+      "title": "پودمان ۲ — تحلیل و حل مسئله"
+    },
+    {
+      "id": "net11-data-1",
+      "courseId": "net11-data",
+      "title": "فصل ۱ — مفاهیم و خواندن کد"
+    },
+    {
+      "id": "net11-data-2",
+      "courseId": "net11-data",
+      "title": "فصل ۲ — تحلیل و حل مسئله"
+    }
+  ],
+  "questions": [
+    {
+      "id": "net11-q-1",
+      "unitId": "net11-web-1",
+      "type": "mcq",
+      "text": "برای ایجاد پیوند به صفحهٔ دیگری در HTML از کدام عنصر استفاده می‌کنیم؟",
+      "explanation": "عنصر a همراه ویژگی href برای پیوند استفاده می‌شود.",
+      "score": 100,
+      "answer": 0,
+      "options": [
+        "a",
+        "p",
+        "h1",
+        "br"
+      ]
+    },
+    {
+      "id": "net11-q-2",
+      "unitId": "net11-web-1",
+      "type": "mcq",
+      "text": "Which CSS property changes the text color?",
+      "explanation": "The color property sets the foreground text color.",
+      "score": 150,
+      "answer": 1,
+      "options": [
+        "width",
+        "color",
+        "display",
+        "margin"
+      ]
+    },
+    {
+      "id": "net11-q-3",
+      "unitId": "net11-web-2",
+      "type": "mcq",
+      "text": "در فرم ثبت‌نام، چرا اعتبارسنجی سمت سرور نیز لازم است؟",
+      "explanation": "اعتبارسنجی مرورگر برای تجربهٔ کاربر مفید است، اما مرز امنیتی قابل اتکا نیست.",
+      "score": 250,
+      "answer": 3,
+      "options": [
+        "چون اعتبارسنجی سرور جایگزین تمام کنترل‌های دسترسی و احراز هویت است.",
+        "چون استفاده از HTML به‌تنهایی مانع ارسال دادهٔ نامعتبر از هر ابزار دیگری می‌شود.",
+        "چون اگر مرورگر پیام خطا نمایش دهد، دیگر هیچ داده‌ای به سرور نمی‌رسد و بررسی سرور همیشه اضافی است.",
+        "چون درخواست می‌تواند بدون اجرای اعتبارسنجی مرورگر مستقیماً به سرور ارسال شود و دادهٔ ورودی باید دوباره بررسی شود."
+      ]
+    },
+    {
+      "id": "net11-q-4",
+      "unitId": "net11-web-1",
+      "type": "boolean",
+      "text": "در CSS، انتخابگر .notice عناصر دارای class برابر notice را انتخاب می‌کند.",
+      "explanation": "نقطه پیش از نام، انتخابگر کلاس را مشخص می‌کند.",
+      "score": 100,
+      "answer": true
+    },
+    {
+      "id": "net11-q-5",
+      "unitId": "net11-web-1",
+      "type": "boolean",
+      "text": "HTML is a database management system.",
+      "explanation": "HTML describes document structure; it is not a database management system.",
+      "score": 150,
+      "answer": false
+    },
+    {
+      "id": "net11-q-6",
+      "unitId": "net11-web-2",
+      "type": "boolean",
+      "text": "اگر ورودی یک فرم در مرورگر بررسی شود، بررسی همان ورودی در Server دیگر لازم نیست.",
+      "explanation": "کنترل مرورگر قابل دور زدن است؛ سرور باید دادهٔ ورودی را بررسی کند.",
+      "score": 250,
+      "answer": false
+    },
+    {
+      "id": "net11-q-7",
+      "unitId": "net11-web-1",
+      "type": "blank",
+      "text": "برای تعیین مقصد پیوند در عنصر a از ویژگی ........ استفاده می‌کنیم.",
+      "explanation": "نمونه: <a href=\"lesson.html\">درس</a>",
+      "score": 100,
+      "answer": "href"
+    },
+    {
+      "id": "net11-q-8",
+      "unitId": "net11-web-1",
+      "type": "blank",
+      "text": "In CSS, the ........ property sets the space inside the border of an element.",
+      "explanation": "Padding is inside the border; margin is outside it.",
+      "score": 150,
+      "answer": "padding"
+    },
+    {
+      "id": "net11-q-9",
+      "unitId": "net11-web-2",
+      "type": "blank",
+      "text": "در JavaScript، خروجی عبارت 2 + 3 * 4 برابر است با",
+      "explanation": "ضرب پیش از جمع انجام می‌شود؛ 2 + 12 = 14.",
+      "score": 250,
+      "answer": "14"
+    },
+    {
+      "id": "net11-q-10",
+      "unitId": "net11-web-1",
+      "type": "essay",
+      "text": "کد زیر را بخوانید و مقدار نهایی total را همراه دلیل بنویسید:\nlet total = 0;\nfor (let i = 1; i <= 3; i++) { total += i; }",
+      "explanation": "پاسخ باید تعداد تکرارها و نتیجهٔ جمع را توضیح دهد.",
+      "score": 100,
+      "answer": "مقدار نهایی 6 است؛ حلقه اعداد 1، 2 و 3 را جمع می‌کند."
+    },
+    {
+      "id": "net11-q-11",
+      "unitId": "net11-web-1",
+      "type": "essay",
+      "text": "Explain the difference between HTML structure and CSS presentation. Give one short example for each.",
+      "explanation": "Accept equivalent correct examples; assess the distinction, not memorized wording.",
+      "score": 150,
+      "answer": "HTML defines elements such as headings and paragraphs; CSS controls presentation such as color and spacing. Example: <h1>Title</h1> and h1 { color: blue; }."
+    },
+    {
+      "id": "net11-q-12",
+      "unitId": "net11-web-2",
+      "type": "essay",
+      "text": "برای فرم ثبت نام هنرجو، یک طرح بررسی ورودی پیشنهاد کنید.\nالف) نام خالی چه پیامی داشته باشد؟\nب) ایمیل نامعتبر چگونه اعلام شود؟\nج) چرا خطا نباید فقط با رنگ مشخص شود؟\nد) نقش Client و Server را جدا توضیح دهید.",
+      "explanation": "برای هر یک از چهار بخش پاسخ مستقل ارزیابی شود.",
+      "score": 250,
+      "answer": "نام و ایمیل باید با پیام روشن کنار فیلد بررسی شوند؛ پیام متنی و ارتباط دسترس‌پذیر با فیلد لازم است. کنترل سمت کاربر برای بازخورد سریع و سمت سرور برای اعتبارسنجی قابل اتکا انجام می‌شود."
+    },
+    {
+      "id": "net11-q-13",
+      "unitId": "net11-data-1",
+      "type": "mcq",
+      "text": "کدام گزینه برای شناسایی یکتای هر رکورد در یک جدول رابطه‌ای مناسب است؟",
+      "explanation": "کلید اصلی هر رکورد را به‌صورت یکتا مشخص می‌کند.",
+      "score": 100,
+      "answer": 0,
+      "options": [
+        "کلید اصلی",
+        "رنگ سطر",
+        "ترتیب نمایش سطر",
+        "عنوان گزارش"
+      ]
+    },
+    {
+      "id": "net11-q-14",
+      "unitId": "net11-data-1",
+      "type": "mcq",
+      "text": "Which device forwards IP packets between different networks?",
+      "explanation": "A router forwards packets between networks.",
+      "score": 150,
+      "answer": 1,
+      "options": [
+        "Keyboard",
+        "Router",
+        "Monitor",
+        "Scanner"
+      ]
+    },
+    {
+      "id": "net11-q-15",
+      "unitId": "net11-data-2",
+      "type": "mcq",
+      "text": "برای جدول هنرجویان، کدام طراحی مناسب‌تر است؟",
+      "explanation": "هویت پایدار نباید به نام یا ترتیب نمایش وابسته باشد.",
+      "score": 250,
+      "answer": 2,
+      "options": [
+        "نام کامل به‌تنهایی کلید اصلی باشد، چون دو هنرجو هیچ‌گاه نام یکسان ندارند.",
+        "شمارهٔ سطرِ نمایش‌داده‌شده در گزارش، بدون ذخیرهٔ شناسهٔ پایدار، تنها هویت هنرجو باشد.",
+        "یک شناسهٔ یکتا برای هر هنرجو تعریف شود و نام کامل در فیلدی جدا ذخیره شود تا افراد هم‌نام قابل تشخیص باشند.",
+        "تمام اطلاعات همهٔ هنرجویان در یک خانهٔ متنی نوشته شود تا جست‌وجو و اصلاح رکوردها لازم نباشد."
+      ]
+    },
+    {
+      "id": "net11-q-16",
+      "unitId": "net11-data-1",
+      "type": "boolean",
+      "text": "داشتن نسخهٔ پشتیبان روی همان دیسک، به‌تنهایی در برابر خرابی کامل همان دیسک کافی است.",
+      "explanation": "خرابی دیسک می‌تواند دادهٔ اصلی و پشتیبان روی همان دیسک را هم‌زمان از بین ببرد.",
+      "score": 100,
+      "answer": false
+    },
+    {
+      "id": "net11-q-17",
+      "unitId": "net11-data-1",
+      "type": "boolean",
+      "text": "A primary key uniquely identifies a row in a relational table.",
+      "explanation": "Primary key values uniquely identify rows.",
+      "score": 150,
+      "answer": true
+    },
+    {
+      "id": "net11-q-18",
+      "unitId": "net11-data-2",
+      "type": "boolean",
+      "text": "در جدول هنرجویان، ستون student_id می‌تواند برای تفکیک دو هنرجوی هم‌نام استفاده شود.",
+      "explanation": "شناسه باید یکتا باشد؛ نام افراد الزاماً یکتا نیست.",
+      "score": 250,
+      "answer": true
+    },
+    {
+      "id": "net11-q-19",
+      "unitId": "net11-data-1",
+      "type": "blank",
+      "text": "در SQL، برای خواندن رکوردها از جدول از دستور ........ استفاده می‌شود.",
+      "explanation": "SELECT برای بازیابی داده کاربرد دارد.",
+      "score": 100,
+      "answer": "SELECT"
+    },
+    {
+      "id": "net11-q-20",
+      "unitId": "net11-data-1",
+      "type": "blank",
+      "text": "The device that forwards packets between networks is called a ........ .",
+      "explanation": "Accept router, regardless of capitalization.",
+      "score": 150,
+      "answer": "router"
+    },
+    {
+      "id": "net11-q-21",
+      "unitId": "net11-data-2",
+      "type": "blank",
+      "text": "برای محدودکردن رکوردهای خروجی SELECT بر اساس یک شرط از کدام بند استفاده می‌کنیم؟",
+      "explanation": "WHERE شرط انتخاب رکوردها را بیان می‌کند.",
+      "score": 250,
+      "answer": "WHERE"
+    },
+    {
+      "id": "net11-q-22",
+      "unitId": "net11-data-1",
+      "type": "essay",
+      "text": "جدول Students دارای ستون‌های student_id، full_name و grade است. دستور SQL نمایش نام هنرجویان پایهٔ 11 را بنویسید؛ فرض کنید grade عددی است.",
+      "explanation": "تفاوت حروف بزرگ و کوچک کلیدواژه‌ها و فاصله‌های اضافی در ارزیابی نادیده گرفته شود.",
+      "score": 100,
+      "answer": "SELECT full_name FROM Students WHERE grade = 11;"
+    },
+    {
+      "id": "net11-q-23",
+      "unitId": "net11-data-1",
+      "type": "essay",
+      "text": "Explain why a backup should be tested by restoring it in a separate environment. Do not overwrite the original data in your proposed test.",
+      "explanation": "Assess isolation, successful restore and data verification.",
+      "score": 150,
+      "answer": "A successful backup operation alone does not prove recoverability. Restore a copy into an isolated environment and verify records and integrity without modifying the source."
+    },
+    {
+      "id": "net11-q-24",
+      "unitId": "net11-data-2",
+      "type": "essay",
+      "text": "در کارگاه، دو هنرجو نام یکسان دارند و ارتباط شبکه هم گاهی قطع می‌شود.\n۱) برای جلوگیری از اشتباه در ثبت نمره چه شناسه‌ای پیشنهاد می‌کنید؟\n۲) هنگام قطع ارتباط، چرا نباید پیام «ذخیره شد» نمایش داده شود مگر ذخیره واقعاً تأیید شده باشد؟\n۳) یک روش امن برای بررسی بازیابی پشتیبان توضیح دهید.",
+      "explanation": "سه مؤلفهٔ هویت، صداقت وضعیت ذخیره و بازیابی ایمن مستقل ارزیابی شوند.",
+      "score": 250,
+      "answer": "شناسهٔ یکتا و پایدار لازم است. پیام ذخیره باید مطابق نتیجهٔ واقعی باشد و خطا امکان تلاش مجدد بدهد. بازیابی ابتدا در محیط جدا و با کنترل صحت داده آزمایش شود."
+    }
+  ],
+  "exams": [
+    {
+      "id": "1041f28d-5dc2-434c-b2e7-558c14289396",
+      "title": "آزمون جامع ترکیبی — ۲۰ نمره — نمونهٔ تألیفی",
+      "courseTitle": "طراحی وب و برنامه‌نویسی — یازدهم — آزمایشی",
+      "school": "هنرستان نمونه — دادهٔ آزمایشی",
+      "teacher": "دبیر نمونه",
+      "date": "2026-11-19",
+      "duration": 60,
+      "questions": [
+        {
+          "id": "net11-q-10",
+          "unitId": "net11-web-1",
+          "type": "essay",
+          "text": "کد زیر را بخوانید و مقدار نهایی total را همراه دلیل بنویسید:\nlet total = 0;\nfor (let i = 1; i <= 3; i++) { total += i; }",
+          "explanation": "پاسخ باید تعداد تکرارها و نتیجهٔ جمع را توضیح دهد.",
+          "score": 100,
+          "answer": "مقدار نهایی 6 است؛ حلقه اعداد 1، 2 و 3 را جمع می‌کند.",
+          "unitTitle": "پودمان ۱ — مفاهیم و خواندن کد"
+        },
+        {
+          "id": "net11-q-9",
+          "unitId": "net11-web-2",
+          "type": "blank",
+          "text": "در JavaScript، خروجی عبارت 2 + 3 * 4 برابر است با",
+          "explanation": "ضرب پیش از جمع انجام می‌شود؛ 2 + 12 = 14.",
+          "score": 250,
+          "answer": "14",
+          "unitTitle": "پودمان ۲ — تحلیل و حل مسئله"
+        },
+        {
+          "id": "net11-q-11",
+          "unitId": "net11-web-1",
+          "type": "essay",
+          "text": "Explain the difference between HTML structure and CSS presentation. Give one short example for each.",
+          "explanation": "Accept equivalent correct examples; assess the distinction, not memorized wording.",
+          "score": 150,
+          "answer": "HTML defines elements such as headings and paragraphs; CSS controls presentation such as color and spacing. Example: <h1>Title</h1> and h1 { color: blue; }.",
+          "unitTitle": "پودمان ۱ — مفاهیم و خواندن کد"
+        },
+        {
+          "id": "net11-q-12",
+          "unitId": "net11-web-2",
+          "type": "essay",
+          "text": "برای فرم ثبت نام هنرجو، یک طرح بررسی ورودی پیشنهاد کنید.\nالف) نام خالی چه پیامی داشته باشد؟\nب) ایمیل نامعتبر چگونه اعلام شود؟\nج) چرا خطا نباید فقط با رنگ مشخص شود؟\nد) نقش Client و Server را جدا توضیح دهید.",
+          "explanation": "برای هر یک از چهار بخش پاسخ مستقل ارزیابی شود.",
+          "score": 250,
+          "answer": "نام و ایمیل باید با پیام روشن کنار فیلد بررسی شوند؛ پیام متنی و ارتباط دسترس‌پذیر با فیلد لازم است. کنترل سمت کاربر برای بازخورد سریع و سمت سرور برای اعتبارسنجی قابل اتکا انجام می‌شود.",
+          "unitTitle": "پودمان ۲ — تحلیل و حل مسئله"
+        },
+        {
+          "id": "net11-q-1",
+          "unitId": "net11-web-1",
+          "type": "mcq",
+          "text": "برای ایجاد پیوند به صفحهٔ دیگری در HTML از کدام عنصر استفاده می‌کنیم؟",
+          "explanation": "عنصر a همراه ویژگی href برای پیوند استفاده می‌شود.",
+          "score": 100,
+          "answer": 0,
+          "options": [
+            "a",
+            "p",
+            "h1",
+            "br"
+          ],
+          "unitTitle": "پودمان ۱ — مفاهیم و خواندن کد"
+        },
+        {
+          "id": "net11-q-6",
+          "unitId": "net11-web-2",
+          "type": "boolean",
+          "text": "اگر ورودی یک فرم در مرورگر بررسی شود، بررسی همان ورودی در Server دیگر لازم نیست.",
+          "explanation": "کنترل مرورگر قابل دور زدن است؛ سرور باید دادهٔ ورودی را بررسی کند.",
+          "score": 250,
+          "answer": false,
+          "unitTitle": "پودمان ۲ — تحلیل و حل مسئله"
+        },
+        {
+          "id": "net11-q-2",
+          "unitId": "net11-web-1",
+          "type": "mcq",
+          "text": "Which CSS property changes the text color?",
+          "explanation": "The color property sets the foreground text color.",
+          "score": 150,
+          "answer": 1,
+          "options": [
+            "width",
+            "color",
+            "display",
+            "margin"
+          ],
+          "unitTitle": "پودمان ۱ — مفاهیم و خواندن کد"
+        },
+        {
+          "id": "net11-q-3",
+          "unitId": "net11-web-2",
+          "type": "mcq",
+          "text": "در فرم ثبت‌نام، چرا اعتبارسنجی سمت سرور نیز لازم است؟",
+          "explanation": "اعتبارسنجی مرورگر برای تجربهٔ کاربر مفید است، اما مرز امنیتی قابل اتکا نیست.",
+          "score": 250,
+          "answer": 3,
+          "options": [
+            "چون اعتبارسنجی سرور جایگزین تمام کنترل‌های دسترسی و احراز هویت است.",
+            "چون استفاده از HTML به‌تنهایی مانع ارسال دادهٔ نامعتبر از هر ابزار دیگری می‌شود.",
+            "چون اگر مرورگر پیام خطا نمایش دهد، دیگر هیچ داده‌ای به سرور نمی‌رسد و بررسی سرور همیشه اضافی است.",
+            "چون درخواست می‌تواند بدون اجرای اعتبارسنجی مرورگر مستقیماً به سرور ارسال شود و دادهٔ ورودی باید دوباره بررسی شود."
+          ],
+          "unitTitle": "پودمان ۲ — تحلیل و حل مسئله"
+        },
+        {
+          "id": "net11-q-4",
+          "unitId": "net11-web-1",
+          "type": "boolean",
+          "text": "در CSS، انتخابگر .notice عناصر دارای class برابر notice را انتخاب می‌کند.",
+          "explanation": "نقطه پیش از نام، انتخابگر کلاس را مشخص می‌کند.",
+          "score": 100,
+          "answer": true,
+          "unitTitle": "پودمان ۱ — مفاهیم و خواندن کد"
+        },
+        {
+          "id": "net11-q-8",
+          "unitId": "net11-web-1",
+          "type": "blank",
+          "text": "In CSS, the ........ property sets the space inside the border of an element.",
+          "explanation": "Padding is inside the border; margin is outside it.",
+          "score": 150,
+          "answer": "padding",
+          "unitTitle": "پودمان ۱ — مفاهیم و خواندن کد"
+        },
+        {
+          "id": "net11-q-5",
+          "unitId": "net11-web-1",
+          "type": "boolean",
+          "text": "HTML is a database management system.",
+          "explanation": "HTML describes document structure; it is not a database management system.",
+          "score": 150,
+          "answer": false,
+          "unitTitle": "پودمان ۱ — مفاهیم و خواندن کد"
+        },
+        {
+          "id": "net11-q-7",
+          "unitId": "net11-web-1",
+          "type": "blank",
+          "text": "برای تعیین مقصد پیوند در عنصر a از ویژگی ........ استفاده می‌کنیم.",
+          "explanation": "نمونه: <a href=\"lesson.html\">درس</a>",
+          "score": 100,
+          "answer": "href",
+          "unitTitle": "پودمان ۱ — مفاهیم و خواندن کد"
+        }
+      ]
+    },
+    {
+      "id": "b0064e22-845c-44cd-970d-6cff8275a338",
+      "title": "آزمون کوتاه ترکیبی — انتخاب از بانک",
+      "courseTitle": "طراحی وب و برنامه‌نویسی — یازدهم — آزمایشی",
+      "school": "هنرستان نمونه — دادهٔ آزمایشی",
+      "teacher": "دبیر نمونه",
+      "date": "2026-11-19",
+      "duration": 30,
+      "questions": [
+        {
+          "id": "net11-q-8",
+          "unitId": "net11-web-1",
+          "type": "blank",
+          "text": "In CSS, the ........ property sets the space inside the border of an element.",
+          "explanation": "Padding is inside the border; margin is outside it.",
+          "score": 150,
+          "answer": "padding",
+          "unitTitle": "پودمان ۱ — مفاهیم و خواندن کد"
+        },
+        {
+          "id": "net11-q-5",
+          "unitId": "net11-web-1",
+          "type": "boolean",
+          "text": "HTML is a database management system.",
+          "explanation": "HTML describes document structure; it is not a database management system.",
+          "score": 150,
+          "answer": false,
+          "unitTitle": "پودمان ۱ — مفاهیم و خواندن کد"
+        },
+        {
+          "id": "net11-q-12",
+          "unitId": "net11-web-2",
+          "type": "essay",
+          "text": "برای فرم ثبت نام هنرجو، یک طرح بررسی ورودی پیشنهاد کنید.\nالف) نام خالی چه پیامی داشته باشد؟\nب) ایمیل نامعتبر چگونه اعلام شود؟\nج) چرا خطا نباید فقط با رنگ مشخص شود؟\nد) نقش Client و Server را جدا توضیح دهید.",
+          "explanation": "برای هر یک از چهار بخش پاسخ مستقل ارزیابی شود.",
+          "score": 250,
+          "answer": "نام و ایمیل باید با پیام روشن کنار فیلد بررسی شوند؛ پیام متنی و ارتباط دسترس‌پذیر با فیلد لازم است. کنترل سمت کاربر برای بازخورد سریع و سمت سرور برای اعتبارسنجی قابل اتکا انجام می‌شود.",
+          "unitTitle": "پودمان ۲ — تحلیل و حل مسئله"
+        },
+        {
+          "id": "net11-q-3",
+          "unitId": "net11-web-2",
+          "type": "mcq",
+          "text": "در فرم ثبت‌نام، چرا اعتبارسنجی سمت سرور نیز لازم است؟",
+          "explanation": "اعتبارسنجی مرورگر برای تجربهٔ کاربر مفید است، اما مرز امنیتی قابل اتکا نیست.",
+          "score": 250,
+          "answer": 3,
+          "options": [
+            "چون اعتبارسنجی سرور جایگزین تمام کنترل‌های دسترسی و احراز هویت است.",
+            "چون استفاده از HTML به‌تنهایی مانع ارسال دادهٔ نامعتبر از هر ابزار دیگری می‌شود.",
+            "چون اگر مرورگر پیام خطا نمایش دهد، دیگر هیچ داده‌ای به سرور نمی‌رسد و بررسی سرور همیشه اضافی است.",
+            "چون درخواست می‌تواند بدون اجرای اعتبارسنجی مرورگر مستقیماً به سرور ارسال شود و دادهٔ ورودی باید دوباره بررسی شود."
+          ],
+          "unitTitle": "پودمان ۲ — تحلیل و حل مسئله"
+        }
+      ]
+    },
+    {
+      "id": "89f4d8ae-3ff6-47b5-8c6f-de73746e2f2a",
+      "title": "آزمون جامع ترکیبی — ۲۰ نمره — نمونهٔ تألیفی",
+      "courseTitle": "داده، رایانه و شبکه — یازدهم — آزمایشی",
+      "school": "هنرستان نمونه — دادهٔ آزمایشی",
+      "teacher": "دبیر نمونه",
+      "date": "2026-11-19",
+      "duration": 60,
+      "questions": [
+        {
+          "id": "net11-q-20",
+          "unitId": "net11-data-1",
+          "type": "blank",
+          "text": "The device that forwards packets between networks is called a ........ .",
+          "explanation": "Accept router, regardless of capitalization.",
+          "score": 150,
+          "answer": "router",
+          "unitTitle": "فصل ۱ — مفاهیم و خواندن کد"
+        },
+        {
+          "id": "net11-q-22",
+          "unitId": "net11-data-1",
+          "type": "essay",
+          "text": "جدول Students دارای ستون‌های student_id، full_name و grade است. دستور SQL نمایش نام هنرجویان پایهٔ 11 را بنویسید؛ فرض کنید grade عددی است.",
+          "explanation": "تفاوت حروف بزرگ و کوچک کلیدواژه‌ها و فاصله‌های اضافی در ارزیابی نادیده گرفته شود.",
+          "score": 100,
+          "answer": "SELECT full_name FROM Students WHERE grade = 11;",
+          "unitTitle": "فصل ۱ — مفاهیم و خواندن کد"
+        },
+        {
+          "id": "net11-q-19",
+          "unitId": "net11-data-1",
+          "type": "blank",
+          "text": "در SQL، برای خواندن رکوردها از جدول از دستور ........ استفاده می‌شود.",
+          "explanation": "SELECT برای بازیابی داده کاربرد دارد.",
+          "score": 100,
+          "answer": "SELECT",
+          "unitTitle": "فصل ۱ — مفاهیم و خواندن کد"
+        },
+        {
+          "id": "net11-q-23",
+          "unitId": "net11-data-1",
+          "type": "essay",
+          "text": "Explain why a backup should be tested by restoring it in a separate environment. Do not overwrite the original data in your proposed test.",
+          "explanation": "Assess isolation, successful restore and data verification.",
+          "score": 150,
+          "answer": "A successful backup operation alone does not prove recoverability. Restore a copy into an isolated environment and verify records and integrity without modifying the source.",
+          "unitTitle": "فصل ۱ — مفاهیم و خواندن کد"
+        },
+        {
+          "id": "net11-q-18",
+          "unitId": "net11-data-2",
+          "type": "boolean",
+          "text": "در جدول هنرجویان، ستون student_id می‌تواند برای تفکیک دو هنرجوی هم‌نام استفاده شود.",
+          "explanation": "شناسه باید یکتا باشد؛ نام افراد الزاماً یکتا نیست.",
+          "score": 250,
+          "answer": true,
+          "unitTitle": "فصل ۲ — تحلیل و حل مسئله"
+        },
+        {
+          "id": "net11-q-13",
+          "unitId": "net11-data-1",
+          "type": "mcq",
+          "text": "کدام گزینه برای شناسایی یکتای هر رکورد در یک جدول رابطه‌ای مناسب است؟",
+          "explanation": "کلید اصلی هر رکورد را به‌صورت یکتا مشخص می‌کند.",
+          "score": 100,
+          "answer": 0,
+          "options": [
+            "کلید اصلی",
+            "رنگ سطر",
+            "ترتیب نمایش سطر",
+            "عنوان گزارش"
+          ],
+          "unitTitle": "فصل ۱ — مفاهیم و خواندن کد"
+        },
+        {
+          "id": "net11-q-17",
+          "unitId": "net11-data-1",
+          "type": "boolean",
+          "text": "A primary key uniquely identifies a row in a relational table.",
+          "explanation": "Primary key values uniquely identify rows.",
+          "score": 150,
+          "answer": true,
+          "unitTitle": "فصل ۱ — مفاهیم و خواندن کد"
+        },
+        {
+          "id": "net11-q-14",
+          "unitId": "net11-data-1",
+          "type": "mcq",
+          "text": "Which device forwards IP packets between different networks?",
+          "explanation": "A router forwards packets between networks.",
+          "score": 150,
+          "answer": 1,
+          "options": [
+            "Keyboard",
+            "Router",
+            "Monitor",
+            "Scanner"
+          ],
+          "unitTitle": "فصل ۱ — مفاهیم و خواندن کد"
+        },
+        {
+          "id": "net11-q-21",
+          "unitId": "net11-data-2",
+          "type": "blank",
+          "text": "برای محدودکردن رکوردهای خروجی SELECT بر اساس یک شرط از کدام بند استفاده می‌کنیم؟",
+          "explanation": "WHERE شرط انتخاب رکوردها را بیان می‌کند.",
+          "score": 250,
+          "answer": "WHERE",
+          "unitTitle": "فصل ۲ — تحلیل و حل مسئله"
+        },
+        {
+          "id": "net11-q-24",
+          "unitId": "net11-data-2",
+          "type": "essay",
+          "text": "در کارگاه، دو هنرجو نام یکسان دارند و ارتباط شبکه هم گاهی قطع می‌شود.\n۱) برای جلوگیری از اشتباه در ثبت نمره چه شناسه‌ای پیشنهاد می‌کنید؟\n۲) هنگام قطع ارتباط، چرا نباید پیام «ذخیره شد» نمایش داده شود مگر ذخیره واقعاً تأیید شده باشد؟\n۳) یک روش امن برای بررسی بازیابی پشتیبان توضیح دهید.",
+          "explanation": "سه مؤلفهٔ هویت، صداقت وضعیت ذخیره و بازیابی ایمن مستقل ارزیابی شوند.",
+          "score": 250,
+          "answer": "شناسهٔ یکتا و پایدار لازم است. پیام ذخیره باید مطابق نتیجهٔ واقعی باشد و خطا امکان تلاش مجدد بدهد. بازیابی ابتدا در محیط جدا و با کنترل صحت داده آزمایش شود.",
+          "unitTitle": "فصل ۲ — تحلیل و حل مسئله"
+        },
+        {
+          "id": "net11-q-15",
+          "unitId": "net11-data-2",
+          "type": "mcq",
+          "text": "برای جدول هنرجویان، کدام طراحی مناسب‌تر است؟",
+          "explanation": "هویت پایدار نباید به نام یا ترتیب نمایش وابسته باشد.",
+          "score": 250,
+          "answer": 2,
+          "options": [
+            "نام کامل به‌تنهایی کلید اصلی باشد، چون دو هنرجو هیچ‌گاه نام یکسان ندارند.",
+            "شمارهٔ سطرِ نمایش‌داده‌شده در گزارش، بدون ذخیرهٔ شناسهٔ پایدار، تنها هویت هنرجو باشد.",
+            "یک شناسهٔ یکتا برای هر هنرجو تعریف شود و نام کامل در فیلدی جدا ذخیره شود تا افراد هم‌نام قابل تشخیص باشند.",
+            "تمام اطلاعات همهٔ هنرجویان در یک خانهٔ متنی نوشته شود تا جست‌وجو و اصلاح رکوردها لازم نباشد."
+          ],
+          "unitTitle": "فصل ۲ — تحلیل و حل مسئله"
+        },
+        {
+          "id": "net11-q-16",
+          "unitId": "net11-data-1",
+          "type": "boolean",
+          "text": "داشتن نسخهٔ پشتیبان روی همان دیسک، به‌تنهایی در برابر خرابی کامل همان دیسک کافی است.",
+          "explanation": "خرابی دیسک می‌تواند دادهٔ اصلی و پشتیبان روی همان دیسک را هم‌زمان از بین ببرد.",
+          "score": 100,
+          "answer": false,
+          "unitTitle": "فصل ۱ — مفاهیم و خواندن کد"
+        }
+      ]
+    },
+    {
+      "id": "90359ec0-5a9c-4928-b0ad-0f799f2854f5",
+      "title": "آزمون کوتاه ترکیبی — انتخاب از بانک",
+      "courseTitle": "داده، رایانه و شبکه — یازدهم — آزمایشی",
+      "school": "هنرستان نمونه — دادهٔ آزمایشی",
+      "teacher": "دبیر نمونه",
+      "date": "2026-11-19",
+      "duration": 30,
+      "questions": [
+        {
+          "id": "net11-q-17",
+          "unitId": "net11-data-1",
+          "type": "boolean",
+          "text": "A primary key uniquely identifies a row in a relational table.",
+          "explanation": "Primary key values uniquely identify rows.",
+          "score": 150,
+          "answer": true,
+          "unitTitle": "فصل ۱ — مفاهیم و خواندن کد"
+        },
+        {
+          "id": "net11-q-15",
+          "unitId": "net11-data-2",
+          "type": "mcq",
+          "text": "برای جدول هنرجویان، کدام طراحی مناسب‌تر است؟",
+          "explanation": "هویت پایدار نباید به نام یا ترتیب نمایش وابسته باشد.",
+          "score": 250,
+          "answer": 2,
+          "options": [
+            "نام کامل به‌تنهایی کلید اصلی باشد، چون دو هنرجو هیچ‌گاه نام یکسان ندارند.",
+            "شمارهٔ سطرِ نمایش‌داده‌شده در گزارش، بدون ذخیرهٔ شناسهٔ پایدار، تنها هویت هنرجو باشد.",
+            "یک شناسهٔ یکتا برای هر هنرجو تعریف شود و نام کامل در فیلدی جدا ذخیره شود تا افراد هم‌نام قابل تشخیص باشند.",
+            "تمام اطلاعات همهٔ هنرجویان در یک خانهٔ متنی نوشته شود تا جست‌وجو و اصلاح رکوردها لازم نباشد."
+          ],
+          "unitTitle": "فصل ۲ — تحلیل و حل مسئله"
+        },
+        {
+          "id": "net11-q-20",
+          "unitId": "net11-data-1",
+          "type": "blank",
+          "text": "The device that forwards packets between networks is called a ........ .",
+          "explanation": "Accept router, regardless of capitalization.",
+          "score": 150,
+          "answer": "router",
+          "unitTitle": "فصل ۱ — مفاهیم و خواندن کد"
+        },
+        {
+          "id": "net11-q-23",
+          "unitId": "net11-data-1",
+          "type": "essay",
+          "text": "Explain why a backup should be tested by restoring it in a separate environment. Do not overwrite the original data in your proposed test.",
+          "explanation": "Assess isolation, successful restore and data verification.",
+          "score": 150,
+          "answer": "A successful backup operation alone does not prove recoverability. Restore a copy into an isolated environment and verify records and integrity without modifying the source.",
+          "unitTitle": "فصل ۱ — مفاهیم و خواندن کد"
+        }
+      ]
+    }
+  ]
+}

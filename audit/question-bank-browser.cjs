@@ -575,7 +575,7 @@ main({
     };
     const checkOptionLayout = async (selector, width) => {
       check(
-        `short and long options use one or two rows ${selector} ${width}`,
+        `short options share a row and very long options stack vertically ${selector} ${width}`,
         await evaluate(`(async()=>{
           const list=document.querySelector('${selector}');
           const spans=[...list.children].map(item=>item.lastElementChild);
@@ -583,8 +583,8 @@ main({
           const wait=()=>new Promise(r=>setTimeout(r,80));
           spans.forEach(n=>n.textContent='۱');await wait();
           const short=list.dataset.columns==='4'&&getComputedStyle(list).gridTemplateColumns.split(' ').length===4;
-          spans[0].textContent='این یک گزینه با متن بسیار طولانی برای بررسی چیدمان گزینه‌های آزمون است';await wait();
-          const long=list.dataset.columns==='2'&&getComputedStyle(list).gridTemplateColumns.split(' ').length===2&&list.scrollWidth<=list.clientWidth+1;
+          spans[0].textContent='این یک گزینه با متن بسیار طولانی برای بررسی چیدمان گزینه‌های آزمون است'.repeat(3);await wait();
+          const long=list.dataset.columns==='1'&&getComputedStyle(list).gridTemplateColumns.split(' ').length===1&&list.scrollWidth<=list.clientWidth+1;
           spans.forEach((n,i)=>n.textContent=original[i]);await wait();
           if(!short||!long)throw Error(JSON.stringify({selector:'${selector}',short,long,width:list.clientWidth,scroll:list.scrollWidth,columns:list.dataset.columns,grid:getComputedStyle(list).gridTemplateColumns}));
           return short&&long;
@@ -1065,8 +1065,8 @@ main({
         const trigger=document.querySelector('.qb-toolbar .qb-context-action');trigger.click();
         const menu=document.getElementById(trigger.getAttribute('aria-controls'));
         const items=[...menu.querySelectorAll('[role=menuitem]')];
-        const opened=menu.matches(':popover-open')&&items.length===3&&document.activeElement===items[0];
-        menu.dispatchEvent(new KeyboardEvent('keydown',{key:'End',bubbles:true}));const keyboard=document.activeElement===items[2];
+        const opened=menu.matches(':popover-open')&&items.length===4&&document.activeElement===items[0];
+        menu.dispatchEvent(new KeyboardEvent('keydown',{key:'End',bubbles:true}));const keyboard=document.activeElement===items[3]&&items[3].textContent==='افزودن نمونهٔ یازدهم شبکه و نرم‌افزار';
         items[2].click();const confirmation=!!document.querySelector('.qb-confirm')&&!menu.matches(':popover-open');
         __qbClick('انصراف',document.querySelector('.qb-confirm'));
         return opened&&keyboard&&confirmation&&JSON.stringify(await EduQuestionBankRepository.read())===before;
@@ -1637,7 +1637,7 @@ main({
         exam.questions=[
           {type:'boolean',text:'Is this a book?',score:100,answer:true},
           {type:'mcq',text:'Choose the answer?',score:100,options:['One','Two','Three','Four'],answer:0},
-          {type:'boolean',text:'این یک book است ؟',score:100,answer:false}
+          {type:'boolean',text:['این یک book است ؟','let sum = 2 + 3;','console.log(sum);'].join(String.fromCharCode(10)),score:100,answer:false}
         ];
         let observed=false;
         const observer=new MutationObserver(()=>{
@@ -1650,7 +1650,8 @@ main({
             observed=rows.length===3&&rows[0].querySelector('.qb-sheet-prompt p').textContent.startsWith('1. Is this a book?')&&
               rows[0].querySelector('.qb-sheet-number').textContent===''&&prompt.dir==='ltr'&&prompt.textContent==='2. Choose the answer?'&&
               o.left>=p.left-1&&o.right<=p.right+1&&items[0].left<items[3].left&&
-              rows[2].querySelector('.qb-sheet-prompt p').dir==='rtl'&&rows[2].querySelector('.qb-sheet-number').textContent==='۳.';
+              rows[2].querySelector('.qb-sheet-prompt p').dir==='rtl'&&rows[2].querySelector('.qb-sheet-number').textContent==='۳.'&&
+              [...rows[2].querySelectorAll('.qb-sheet-line')].map(line=>frame.contentWindow.getComputedStyle(line).direction).join(',')==='rtl,ltr,ltr';
             frame.contentWindow.dispatchEvent(new Event('afterprint'));
           };
         });

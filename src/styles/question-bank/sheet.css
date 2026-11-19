@@ -130,6 +130,15 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+.qb-sheet-line {
+  display: block;
+  min-height: 1em;
+  text-align: start;
+  unicode-bidi: isolate;
+}
+.qb-sheet-options bdi {
+  min-width: 0;
+}
 .qb-sheet-options {
   list-style: none;
   padding: 0;

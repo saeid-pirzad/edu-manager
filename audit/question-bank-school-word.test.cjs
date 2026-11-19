@@ -346,8 +346,27 @@ test("question XML and line breaks are escaped without embedding executable or e
   value.questions[0].text = '<w:hyperlink> & "متن"\nسطر دوم';
   const doc = W.documentXml(value);
   assert.ok(plain(doc).includes('<w:hyperlink> & "متن"'));
-  assert.match(doc, /<w:br\/>/);
+  assert.ok(plain(doc).includes("سطر دوم"));
   assert.doesNotMatch(doc, /<w:hyperlink>/);
+});
+test("long options stack vertically and Persian introductions do not force English code lines RTL", () => {
+  const doc = W.documentXml({
+    questions: [
+      {
+        type: "mcq",
+        text: "خروجی قطعه کد زیر چیست؟\nlet total = 2 + 3;\nconsole.log(total);",
+        score: 100,
+        options: ["گزینهٔ طولانی ".repeat(12), "دو", "سه", "چهار"],
+      },
+    ],
+  });
+  assert.match(doc, /<w:gridCol w:w="9500"\/>/);
+  const code = [...doc.matchAll(/<w:p>[\s\S]*?<\/w:p>/g)]
+    .map((m) => m[0])
+    .find((p) => plain(p) === "let total = 2 + 3;");
+  assert.ok(code);
+  assert.match(code, /<w:bidi w:val="0"\/>/);
+  assert.match(code, /<w:jc w:val="left"\/>/);
 });
 test("invalid question bodies and more than 500 questions are rejected before download", () => {
   for (const questions of [

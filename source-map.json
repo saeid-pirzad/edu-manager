@@ -484,6 +484,7 @@
       "scope": "global",
       "sources": [
         "src/features/question-bank/domain.js",
+        "src/features/question-bank/sample-bank.js",
         "src/features/question-bank/repository.js",
         "src/features/question-bank/file-backup.js",
         "src/features/question-bank/backup-sharing.js",

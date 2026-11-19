@@ -7,9 +7,9 @@ require("../src/features/question-bank/domain.js");
 const { applicationFiles } = require("./application-files.cjs");
 const { createReviewBank } = require("./fixtures/question-bank-review.cjs");
 const root = path.resolve(__dirname, "..");
-function createReviewServer() {
+function createReviewServer({ createBank = createReviewBank } = {}) {
   const files = applicationFiles(root);
-  const bank = createReviewBank(globalThis.EduQuestionBank);
+  const bank = createBank(globalThis.EduQuestionBank);
   const initialization = `window.addEventListener('load',async()=>{
     try{
       const R=EduQuestionBankRepository;
