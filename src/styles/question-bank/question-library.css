@@ -125,9 +125,34 @@
 }
 .qb-question-controls {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
   gap: 0;
   padding: 14px;
   background: var(--theme-surface-subtle);
+}
+.qb-question-controls .qb-list-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 8px;
+  align-items: center;
+}
+.qb-question-controls .qb-list-heading > div {
+  display: contents;
+}
+.qb-question-controls .qb-list-heading h4 {
+  grid-column: 1;
+  grid-row: 1;
+}
+.qb-question-controls .qb-library-count {
+  grid-column: 2;
+  grid-row: 1;
+}
+.qb-question-controls .qb-list-heading p {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  margin: 0;
+  line-height: 1.7;
 }
 .qb-question-library {
   display: flex;
@@ -215,10 +240,36 @@
   width: 12px;
   height: 12px;
 }
-.qb-question-library > .qb-pager {
+:is(.qb-question-library, .qb-exam-library) > .qb-numbered-pager {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 6px;
   margin: 0;
   padding: 12px;
   border-top: 1px solid var(--theme-line-soft);
+}
+:is(.qb-question-library, .qb-exam-library) > .qb-numbered-pager[hidden] {
+  display: none;
+}
+.qb-page-numbers {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+}
+.qb-numbered-pager button {
+  min-width: 32px;
+  padding-inline: 8px;
+}
+.qb-page-status {
+  grid-column: 1 / -1;
+  text-align: center;
+  font-size: 11px;
+}
+@media screen and (max-width: 420px) {
+  .qb-numbered-pager > button > svg {
+    display: none !important;
+  }
 }
 @media screen and (min-height: 760px) {
   .qb-panel:has(> .qb-question-library) {

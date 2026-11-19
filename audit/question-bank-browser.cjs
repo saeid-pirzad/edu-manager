@@ -1190,7 +1190,7 @@ main({
           check(
             `compact question rows ${width}`,
             await evaluate(
-              `(()=>{const rows=[...document.querySelectorAll('.qb-results>.qb-question-row')];return rows.length===15&&rows.every(r=>!r.open&&r.getBoundingClientRect().height<=105)&&document.querySelector('.qb-body').scrollWidth<=document.querySelector('.qb-body').clientWidth+1;})()`,
+              `(()=>{const rows=[...document.querySelectorAll('.qb-results>.qb-question-row')];return rows.length===10&&rows.every(r=>!r.open&&r.getBoundingClientRect().height<=105)&&document.querySelector('.qb-body').scrollWidth<=document.querySelector('.qb-body').clientWidth+1;})()`,
             ),
           );
         if (view === "questions") {
@@ -1208,7 +1208,7 @@ main({
             const rect=last.getBoundingClientRect();
             const pass=[list,library,panel].every(node=>getComputedStyle(node).overflowY==='visible'&&node.scrollHeight<=node.clientHeight+1)
               &&list.scrollTop===0&&scrollY>0&&rect.top<innerHeight&&rect.bottom>0
-              &&controls.isConnected&&list.querySelectorAll('.qb-question-row').length===15;
+              &&controls.isConnected&&list.querySelectorAll('.qb-question-row').length===10;
             scrollTo({left:before.x,top:before.y,behavior:'instant'});return pass;
           })()`),
           );
@@ -1232,15 +1232,39 @@ main({
             const focused=document.activeElement===search&&document.querySelectorAll('.qb-results>.qb-question').length===1;
             const type=__qbFill('نوع سؤال','boolean');type.dispatchEvent(new Event('change'));const empty=!!document.querySelector('.qb-results .qb-empty');
             type.value='';type.dispatchEvent(new Event('change'));search.value='';search.dispatchEvent(new Event('input',{bubbles:true}));
-            return focused&&empty&&document.querySelectorAll('.qb-results>.qb-question').length===15;
+            return focused&&empty&&document.querySelectorAll('.qb-results>.qb-question').length===10;
           })()`),
           );
           await evaluate(`__qbClick('بعدی')`);
           check(
+            `question heading stays above full-width search and filters ${width}`,
+            await evaluate(`(()=>{
+              const controls=document.querySelector('.qb-question-controls');
+              const heading=controls.querySelector('.qb-list-heading').getBoundingClientRect();
+              const filters=controls.querySelector('.qb-filters').getBoundingClientRect();
+              const fields=[...controls.querySelectorAll('input,select')].map(n=>n.getBoundingClientRect());
+              return heading.bottom<=filters.top+1&&Math.abs(heading.left-filters.left)<1&&Math.abs(heading.right-filters.right)<1&&
+                fields.length===2&&Math.abs(fields[0].bottom-fields[1].bottom)<1&&controls.scrollWidth<=controls.clientWidth+1;
+            })()`),
+          );
+          check(
             `pagination shows remaining questions ${width}`,
             await evaluate(
-              `document.querySelectorAll('.qb-results>.qb-question').length===6&&document.querySelector('.qb-body').scrollWidth<=document.querySelector('.qb-body').clientWidth+1`,
+              `document.querySelectorAll('.qb-results>.qb-question').length===10&&document.querySelector('.qb-body').scrollWidth<=document.querySelector('.qb-body').clientWidth+1`,
             ),
+          );
+          check(
+            `numbered pagination reaches the final question without overflow ${width}`,
+            await evaluate(`(()=>{
+              const pager=document.querySelector('.qb-question-library>.qb-pager');
+              pager.querySelector('[aria-label="صفحه ۳"]').click();
+              const rows=[...document.querySelectorAll('.qb-question-row')];
+              const pass=rows.length===1&&rows[0].querySelector('.qb-question-number').textContent==='۲۱'&&
+                pager.querySelector('[aria-current="page"]').getAttribute('aria-label')==='صفحه ۳'&&
+                [...pager.children].find(b=>b.textContent==='بعدی').disabled&&pager.scrollWidth<=pager.clientWidth+1;
+              pager.querySelector('[aria-label="صفحه ۲"]').click();
+              return pass;
+            })()`),
           );
           const nextPage = await cdp("Page.captureScreenshot", {
             format: "png",
@@ -1667,7 +1691,7 @@ main({
       const b=await EduQuestionBankRepository.read();const seed=b.questions.find(q=>q.type==='blank');const extra=Array.from({length:1000},(_,i)=>({...seed,id:'bulk-'+i,text:'سؤال حجیم '+i+' '+seed.text}));
       await EduQuestionBankRepository.save({...b,questions:[...b.questions,...extra]},b.revision);goSchools();await EduQuestionBankUI.open();__qbClick('بانک سؤال');
       const course=__qbFill('درس',b.courses[0].id);course.dispatchEvent(new Event('change'));
-      return document.querySelectorAll('.qb-question-row').length===15&&[...document.querySelectorAll('.qb-question-row')].every(r=>!r.open);
+      return document.querySelectorAll('.qb-question-row').length===10&&[...document.querySelectorAll('.qb-question-row')].every(r=>!r.open);
     })()`),
     );
     await cdp("Emulation.setDeviceMetricsOverride", {
@@ -1695,13 +1719,41 @@ main({
         const extra=Array.from({length:13},(_,i)=>({...structuredClone(seed),id:'archive-'+i,title:'آزمون آرشیوی '+i,courseTitle:i===12?'كتاب عربي':'درس دیگر'}));
         await EduQuestionBankRepository.save({...bank,exams:[...bank.exams,...extra]},bank.revision);
         goSchools();await EduQuestionBankUI.open();__qbClick('آزمون‌های من');
-        const first=document.querySelectorAll('.qb-exam-card').length===12&&!document.querySelector('.qb-toolbar');
+        const first=document.querySelectorAll('.qb-exam-card').length===10&&!document.querySelector('.qb-toolbar');
         const region=document.querySelector('.qb-exam-results'),controls=document.querySelector('.qb-archive-controls'),top=controls.getBoundingClientRect().top;
-        region.scrollTop=300;const bounded=region.scrollTop>0&&region.clientHeight<=innerHeight*.55+1&&controls.getBoundingClientRect().top===top&&region.tabIndex===0;
-        __qbClick('بعدی');const second=document.querySelectorAll('.qb-exam-card').length===2&&region.scrollTop===0;
+        region.scrollTop=300;const bounded=region.scrollTop===0&&getComputedStyle(region).overflowY==='visible'&&controls.getBoundingClientRect().top===top&&region.tabIndex===0;
+        __qbClick('بعدی');const second=document.querySelectorAll('.qb-exam-card').length===4&&region.scrollTop===0;
         const search=__qbFill('جست‌وجوی آزمون','کتاب عربی');search.focus();search.dispatchEvent(new Event('input',{bubbles:true}));
         return first&&bounded&&second&&document.querySelectorAll('.qb-exam-card').length===1&&document.activeElement===search;
       })()`),
+    );
+    await evaluate(
+      `__qbFill('جست‌وجوی آزمون','').dispatchEvent(new Event('input',{bubbles:true}));`,
+    );
+    for (const width of [320, 390, 768, 1440]) {
+      await cdp("Emulation.setDeviceMetricsOverride", {
+        width,
+        height: 900,
+        deviceScaleFactor: 1,
+        mobile: false,
+      });
+      check(
+        `archive uses the shared numbered pager without internal scrolling ${width}`,
+        await evaluate(`(()=>{
+        const pager=document.querySelector('.qb-exam-library>.qb-numbered-pager');
+        pager.querySelector('[aria-label="صفحه ۲"]').click();
+        const results=document.querySelector('.qb-exam-results');
+        return document.querySelectorAll('.qb-exam-card').length===4&&pager.querySelector('[aria-current="page"]').getAttribute('aria-label')==='صفحه ۲'&&
+          getComputedStyle(results).overflowY==='visible'&&results.scrollHeight<=results.clientHeight+1&&pager.scrollWidth<=pager.clientWidth+1&&document.querySelector('.qb-body').scrollWidth<=document.querySelector('.qb-body').clientWidth+1;
+      })()`),
+      );
+    }
+    check(
+      "archive retains the current numbered page after preview",
+      await evaluate(`(()=>{
+      __qbClick('مشاهده آزمون');__qbClick('بازگشت به آزمون‌های من');
+      return document.querySelectorAll('.qb-exam-card').length===4&&document.querySelector('.qb-exam-library [aria-current="page"]').getAttribute('aria-label')==='صفحه ۲';
+    })()`),
     );
     check(
       "simple modular course flow uses two fields then module and question without management menus",

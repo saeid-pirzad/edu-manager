@@ -40,6 +40,37 @@
     parent.append(b);
     return b;
   };
+  function renderPager(pager, page, pageCount, goToPage) {
+    pager.replaceChildren();
+    pager.classList.add("qb-numbered-pager");
+    button("قبلی", () => goToPage(page - 1), pager).disabled = page === 0;
+    const pages = el("div", undefined, "qb-page-numbers");
+    pager.append(pages);
+    const startPage = Math.max(0, Math.min(page - 1, pageCount - 3));
+    for (
+      let target = startPage;
+      target < Math.min(pageCount, startPage + 3);
+      target++
+    ) {
+      const item = button(number(target + 1), () => goToPage(target), pages);
+      item.dataset.uiTone = "navigate";
+      item.setAttribute("aria-label", `صفحه ${number(target + 1)}`);
+      if (target === page) {
+        item.setAttribute("aria-current", "page");
+        item.dataset.uiVariant = "solid";
+      }
+    }
+    button("بعدی", () => goToPage(page + 1), pager).disabled =
+      page === pageCount - 1;
+    const status = el(
+      "span",
+      `صفحه ${number(page + 1)} از ${number(pageCount)}`,
+      "qb-page-status",
+    );
+    status.setAttribute("role", "status");
+    pager.append(status);
+    pager.hidden = pageCount <= 1;
+  }
   const field = (parent, label, value = "", tag = "input") => {
     const l = el("label", label, "course-field"),
       n = el(tag);
@@ -1492,98 +1523,110 @@
       results.setAttribute("aria-label", "فهرست سؤال‌ها");
       const pager = el("nav", undefined, "qb-actions qb-pager");
       pager.setAttribute("aria-label", "صفحه‌بندی سؤال‌ها");
+      const pageSize = 10;
       library.append(results, pager);
       function draw() {
         results.replaceChildren();
         pager.replaceChildren();
         const list = searchQuestions(unitId, questionType, search);
-        page = Math.min(page, Math.max(0, Math.ceil(list.length / 15) - 1));
+        const pageCount = Math.max(1, Math.ceil(list.length / pageSize));
+        page = Math.max(0, Math.min(page, pageCount - 1));
         count.textContent = `${number(list.length)} سؤال`;
         range.textContent = list.length
-          ? `نمایش ${number(page * 15 + 1)} تا ${number(Math.min((page + 1) * 15, list.length))} از سؤال‌های این محدوده`
+          ? `نمایش ${number(page * pageSize + 1)} تا ${number(Math.min((page + 1) * pageSize, list.length))} از سؤال‌های این محدوده`
           : "سؤال‌های این درس را اینجا مدیریت کنید.";
-        list.slice(page * 15, page * 15 + 15).forEach((q, index) => {
-          const card = el("details", undefined, "qb-question qb-question-row");
-          card.setAttribute("name", "qb-question-list");
-          card.dataset.questionType = q.type;
-          const toggle = el("summary", undefined, "qb-question-toggle");
-          const copy = el("span", undefined, "qb-row-copy");
-          const metadata = el("span", undefined, "qb-row-meta");
-          metadata.append(el("span", D.types[q.type], "qb-kind-badge"));
-          if (!unitId)
-            metadata.append(
-              el("span", unitMap.get(q.unitId).title, "qb-row-unit"),
+        list
+          .slice(page * pageSize, (page + 1) * pageSize)
+          .forEach((q, index) => {
+            const card = el(
+              "details",
+              undefined,
+              "qb-question qb-question-row",
             );
-          copy.append(el("span", q.text, "qb-row-excerpt"), metadata);
-          toggle.append(
-            el("span", number(page * 15 + index + 1), "qb-question-number"),
-            copy,
-            el("span", `${number(q.score / 100)} نمره`, "qb-score"),
-          );
-          toggle.insertAdjacentHTML(
-            "beforeend",
-            root.EduIcons.html("chevron-left"),
-          );
-          const expanded = el("div", undefined, "qb-question-expanded");
-          card.append(toggle, expanded);
-          expanded.append(el("p", q.text, "qb-question-text"));
-
-          if (q.options) {
-            const options = el("ol", undefined, "qb-options");
-            options.setAttribute("aria-label", "گزینه‌های سؤال");
-            q.options.forEach((option, i) => {
-              const row = el("li");
-              row.append(
-                el("span", letters[i], "qb-option-letter"),
-                el("span", option, "qb-option-text"),
+            card.setAttribute("name", "qb-question-list");
+            card.dataset.questionType = q.type;
+            const toggle = el("summary", undefined, "qb-question-toggle");
+            const copy = el("span", undefined, "qb-row-copy");
+            const metadata = el("span", undefined, "qb-row-meta");
+            metadata.append(el("span", D.types[q.type], "qb-kind-badge"));
+            if (!unitId)
+              metadata.append(
+                el("span", unitMap.get(q.unitId).title, "qb-row-unit"),
               );
-              options.append(row);
-            });
-            expanded.append(options);
-          }
-          const footer = el("div", undefined, "qb-question-footer");
-          const details = el("details", undefined, "qb-solution");
-          const summary = el("summary", "پاسخ و توضیح");
-          summary.insertAdjacentHTML(
-            "afterbegin",
-            root.EduIcons.html("chevron-left"),
-          );
-          const answer =
-            q.type === "mcq"
-              ? `${letters[q.answer]}) ${q.options[q.answer]}`
-              : q.type === "boolean"
-                ? q.answer
-                  ? "صحیح"
-                  : "غلط"
-                : q.answer;
-          const answerBody = el("div", undefined, "qb-answer-content");
-          answerBody.append(el("small", "پاسخ صحیح"), el("p", answer));
-          if (q.explanation)
-            answerBody.append(
-              el("small", "توضیح پاسخ"),
-              el("p", q.explanation),
-            );
-          details.append(summary, answerBody);
-          const actions = el("div", undefined, "qb-question-actions");
-          button("ویرایش سؤال", () => editQuestion(q), actions);
-          button(
-            "حذف سؤال",
-            () =>
-              confirmAction(
-                "این سؤال حذف شود؟ آزمون‌های قبلی حفظ می‌شوند.",
-                () =>
-                  mutate((next) => {
-                    next.questions = next.questions.filter(
-                      (x) => x.id !== q.id,
-                    );
-                  }),
+            copy.append(el("span", q.text, "qb-row-excerpt"), metadata);
+            toggle.append(
+              el(
+                "span",
+                number(page * pageSize + index + 1),
+                "qb-question-number",
               ),
-            actions,
-          );
-          footer.append(details, actions);
-          expanded.append(footer);
-          results.append(card);
-        });
+              copy,
+              el("span", `${number(q.score / 100)} نمره`, "qb-score"),
+            );
+            toggle.insertAdjacentHTML(
+              "beforeend",
+              root.EduIcons.html("chevron-left"),
+            );
+            const expanded = el("div", undefined, "qb-question-expanded");
+            card.append(toggle, expanded);
+            expanded.append(el("p", q.text, "qb-question-text"));
+
+            if (q.options) {
+              const options = el("ol", undefined, "qb-options");
+              options.setAttribute("aria-label", "گزینه‌های سؤال");
+              q.options.forEach((option, i) => {
+                const row = el("li");
+                row.append(
+                  el("span", letters[i], "qb-option-letter"),
+                  el("span", option, "qb-option-text"),
+                );
+                options.append(row);
+              });
+              expanded.append(options);
+            }
+            const footer = el("div", undefined, "qb-question-footer");
+            const details = el("details", undefined, "qb-solution");
+            const summary = el("summary", "پاسخ و توضیح");
+            summary.insertAdjacentHTML(
+              "afterbegin",
+              root.EduIcons.html("chevron-left"),
+            );
+            const answer =
+              q.type === "mcq"
+                ? `${letters[q.answer]}) ${q.options[q.answer]}`
+                : q.type === "boolean"
+                  ? q.answer
+                    ? "صحیح"
+                    : "غلط"
+                  : q.answer;
+            const answerBody = el("div", undefined, "qb-answer-content");
+            answerBody.append(el("small", "پاسخ صحیح"), el("p", answer));
+            if (q.explanation)
+              answerBody.append(
+                el("small", "توضیح پاسخ"),
+                el("p", q.explanation),
+              );
+            details.append(summary, answerBody);
+            const actions = el("div", undefined, "qb-question-actions");
+            button("ویرایش سؤال", () => editQuestion(q), actions);
+            button(
+              "حذف سؤال",
+              () =>
+                confirmAction(
+                  "این سؤال حذف شود؟ آزمون‌های قبلی حفظ می‌شوند.",
+                  () =>
+                    mutate((next) => {
+                      next.questions = next.questions.filter(
+                        (x) => x.id !== q.id,
+                      );
+                    }),
+                ),
+              actions,
+            );
+            footer.append(details, actions);
+            expanded.append(footer);
+            results.append(card);
+          });
         if (!list.length) {
           const empty = el("div", undefined, "qb-empty");
           empty.insertAdjacentHTML("afterbegin", root.EduIcons.html("book"));
@@ -1619,31 +1662,13 @@
             );
           results.append(empty);
         }
-        button(
-          "قبلی",
-          () => {
-            page--;
-            draw();
-            results.scrollTop = 0;
-          },
-          pager,
-        ).disabled = page === 0;
-        pager.append(
-          el(
-            "span",
-            `صفحه ${number(page + 1)} از ${number(Math.max(1, Math.ceil(list.length / 15)))}`,
-          ),
-        );
-        button(
-          "بعدی",
-          () => {
-            page++;
-            draw();
-            results.scrollTop = 0;
-          },
-          pager,
-        ).disabled = (page + 1) * 15 >= list.length;
-        pager.hidden = list.length <= 15;
+        const goToPage = (target) => {
+          page = target;
+          draw();
+          results.focus({ preventScroll: true });
+          results.scrollIntoView({ block: "start", behavior: "instant" });
+        };
+        renderPager(pager, page, pageCount, goToPage);
       }
       filter.onchange = () => {
         unitId = filter.value;
@@ -2005,6 +2030,7 @@
       results.setAttribute("aria-label", "فهرست آزمون‌ها");
       const pager = el("nav", undefined, "qb-actions qb-pager");
       pager.setAttribute("aria-label", "صفحه‌بندی آزمون‌ها");
+      const pageSize = 10;
       const count = el("span", undefined, "qb-library-count");
       count.setAttribute("role", "status");
       heading.append(count);
@@ -2022,14 +2048,12 @@
                 exam.courseTitle === courseFilter.value) &&
               D.searchText(`${exam.title} ${exam.courseTitle}`).includes(query),
           );
-        archivePage = Math.min(
-          archivePage,
-          Math.max(0, Math.ceil(list.length / 12) - 1),
-        );
+        const pageCount = Math.max(1, Math.ceil(list.length / pageSize));
+        archivePage = Math.max(0, Math.min(archivePage, pageCount - 1));
         count.textContent = `${number(list.length)} آزمون${query || courseFilter.value ? ` از ${number(bank.exams.length)}` : ""}`;
         for (const exam of list.slice(
-          archivePage * 12,
-          archivePage * 12 + 12,
+          archivePage * pageSize,
+          (archivePage + 1) * pageSize,
         )) {
           const row = el("section", undefined, "qb-question qb-exam-card");
           const copy = el("div", undefined, "qb-exam-copy");
@@ -2091,29 +2115,12 @@
               "qb-empty",
             ),
           );
-        button(
-          "قبلی",
-          () => {
-            archivePage--;
-            draw();
-          },
-          pager,
-        ).disabled = archivePage === 0;
-        pager.append(
-          el(
-            "span",
-            `صفحه ${number(archivePage + 1)} از ${number(Math.max(1, Math.ceil(list.length / 12)))}`,
-          ),
-        );
-        button(
-          "بعدی",
-          () => {
-            archivePage++;
-            draw();
-          },
-          pager,
-        ).disabled = (archivePage + 1) * 12 >= list.length;
-        pager.hidden = list.length <= 12;
+        renderPager(pager, archivePage, pageCount, (target) => {
+          archivePage = target;
+          draw();
+          results.focus({ preventScroll: true });
+          results.scrollIntoView({ block: "start", behavior: "instant" });
+        });
       }
       find.oninput = () => {
         archiveQuery = find.value;
