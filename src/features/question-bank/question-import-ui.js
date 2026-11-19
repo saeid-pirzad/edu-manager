@@ -18,16 +18,37 @@
     panel.setAttribute("aria-label", "ورود گروهی سؤال‌ها");
     parent.append(panel);
     const current = () => panel.isConnected && isCurrent();
-    panel.append(
+    const heading = el("header", undefined, "qb-import-heading");
+    heading.append(
       el("h3", "ورود گروهی سؤال‌ها"),
       el("p", `${courseTitle} · ${unitTitle}`, "qb-import-destination"),
-      el(
-        "p",
-        "الگو را تکمیل کنید، فایل را بررسی کنید و سپس سؤال‌ها را ثبت کنید. سؤال‌های قبلی تغییر نمی‌کنند.",
-      ),
     );
-    const actions = el("div", undefined, "qb-actions");
+    panel.append(heading);
+    const actions = el("div", undefined, "qb-import-steps");
     panel.append(actions);
+    const templateStep = el("div", undefined, "qb-import-step");
+    const uploadStep = el("div", undefined, "qb-import-step");
+    for (const [container, number, title, detail] of [
+      [
+        templateStep,
+        "۱",
+        "آماده‌سازی سؤال‌ها",
+        "الگوی اکسل را دریافت و تکمیل کنید؛ نمونه و راهنما داخل فایل است.",
+      ],
+      [
+        uploadStep,
+        "۲",
+        "بررسی و پیش‌نمایش",
+        "فایل تکمیل‌شده را انتخاب کنید؛ قبل از ثبت، سؤال‌ها را می‌بینید.",
+      ],
+    ]) {
+      container.append(
+        el("span", number, "qb-import-step-number"),
+        el("h4", title),
+        el("p", detail),
+      );
+      actions.append(container);
+    }
     const status = el(
       "p",
       "فقط XLSX؛ حداکثر ۱۰۰۰ سؤال و ۵ مگابایت. نمونه‌ها و راهنما در برگه‌های جدا هستند.",
@@ -58,7 +79,7 @@
           showError(error);
         }
       },
-      actions,
+      templateStep,
     );
     const choose = button(
       "انتخاب فایل",
@@ -66,14 +87,24 @@
         input.value = "";
         input.click();
       },
-      actions,
+      uploadStep,
     );
+    template.classList.add("qb-import-template");
+    choose.dataset.uiVariant = "solid";
     choose.insertAdjacentHTML("afterbegin", root.EduIcons.html("upload"));
     panel.append(input, status);
     const preview = el("div", undefined, "qb-import-preview");
+    preview.hidden = true;
     panel.append(preview);
     const footer = el("div", undefined, "qb-actions qb-import-footer");
     panel.append(footer);
+    footer.append(
+      el(
+        "small",
+        "سؤال‌های قبلی حفظ می‌شوند؛ ثبت فقط پس از تأیید شما انجام می‌شود.",
+        "qb-import-safety",
+      ),
+    );
     let report = null,
       sequence = 0,
       busy = false,
@@ -118,6 +149,7 @@
       status.setAttribute("role", "alert");
     }
     function draw() {
+      preview.hidden = false;
       preview.replaceChildren();
       const counts = el("div", undefined, "qb-import-counts");
       for (const [kind, label, count] of [
@@ -210,6 +242,7 @@
       report = null;
       preview.replaceChildren();
       busy = true;
+      preview.hidden = true;
       lock(true);
       onPending(false);
       status.removeAttribute("data-state");

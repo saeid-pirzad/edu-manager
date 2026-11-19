@@ -114,7 +114,7 @@ main({
     check(
       "template is a real workbook with a blank input sheet and four separate examples",
       await evaluate(
-        `(async()=>{const I=EduQuestionBankImport,s=I.templateSheets(),file=new File([EduPeriodicReports.createWorkbook(s)],'template.xlsx');const rows=await I.readXlsx(file);return s.length===3&&rows.length===2&&rows[1].cells.every(c=>!c)&&s[1].rows.length===5;})()`,
+        `(async()=>{const I=EduQuestionBankImport,s=I.templateSheets(),file=new File([EduPeriodicReports.createWorkbook(s)],'template.xlsx');const rows=await I.readXlsx(file);return s.length===3&&rows.length===1001&&rows.slice(1).every(row=>row.cells.every(c=>!c))&&s[1].rows.length===5;})()`,
       ),
     );
     for (const [name, bytes] of [
@@ -208,13 +208,12 @@ main({
       behavior: "allow",
       downloadPath: out,
     });
-    await evaluate(
-      "document.querySelector('.qb-import > .qb-actions button').click()",
-    );
     const downloadedTemplate = path.join(
       out,
       "Classyar-Questions-Template-v1.xlsx",
     );
+    fs.rmSync(downloadedTemplate, { force: true });
+    await evaluate("document.querySelector('.qb-import-template').click()");
     for (let i = 0; i < 100 && !fs.existsSync(downloadedTemplate); i++)
       await delay(30);
     check(

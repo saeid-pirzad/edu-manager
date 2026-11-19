@@ -314,15 +314,23 @@ globalThis);(function(root){"use strict";const D=root.EduQuestionBank;const head
 "۱","گزینهٔ چهارم صحیح است."],["صحیح / غلط","آب در شرایط معمول در دمای صفر درجه یخ می‌زند.","","",
 "","","صحیح","۰٫۵",""],["جای‌خالی","پایتخت ایران ........ است.","","","","","تهران","۱",""],["تشریحی","دو روش صرفه‌جوی\
 ی در مصرف آب را بنویسید.","","","","","بستن شیر آب هنگام مسواک‌زدن و رفع نشتی شیرها.","۲","هر مورد درست \
-یک نمره دارد."]];function templateSheets(){return[{name:sheetName,rows:[headers,Array(9).fill("")]},{name:"نمونه‌ها",rows:[headers,...examples]},
-{name:"راهنما",rows:[["ورود گروهی سؤال‌ها ـ نسخه ۱","راهنما"],["مقصد","قبل از ورود، درس و فصل یا پودمان را در برنامه انتخ\
-اب کنید؛ تمام ردیف‌ها به همان بخش افزوده می‌شوند."],["برگهٔ ورود","فقط برگهٔ «سؤال‌ها» خوانده می‌شود. نام برگ\
-ه و عنوان یا ترتیب ستون‌ها را تغییر ندهید."],["نمونه‌ها","برگهٔ نمونه‌ها ثبت نمی‌شود؛ در صورت نیاز ردیف‌های آن را به \
-برگهٔ سؤال‌ها کپی کنید."],["نوع سؤال","چهارگزینه‌ای، صحیح / غلط، جای‌خالی، تشریحی؛ یا mcq، boolean، blank، essay."],
-["پاسخ چهارگزینه‌ای","شمارهٔ گزینهٔ صحیح از ۱ تا ۴؛ چهار گزینهٔ متفاوت الزامی است."],["پاسخ صحی\
-ح / غلط","صحیح یا غلط؛ true و false نیز پذیرفته می‌شوند."],["پاسخ جای‌خالی و تشریحی","پاسخ متنی الزامی است؛\
- گزینه‌ها را خالی بگذارید."],["بارم","بین ۰٫۰۱ و ۱۰۰، حداکثر دو رقم اعشار؛ رقم فارسی و انگلیسی پذیرفته می‌شود."],
-["محدودیت","حداکثر ۱۰۰۰ سؤال و ۵ مگابایت؛ فایل XLSX بدون فرمول، سلول ادغام‌شده یا رمزگذاری."],
+یک نمره دارد."]];function templateSheets(){return[{name:sheetName,rows:[headers,Array(9).fill("")],entryRows:1e3,widths:[23,60,25,25,25,25,44,12,48],validations:[
+{ref:"A2:A1001",type:"list",formula:'"چهارگزینه‌ای,صحیح / غلط,جای‌خالی,تشریحی"',title:"نوع سؤال",prompt:"نوع سؤال را ا\
+ز فهرست انتخاب کنید."},{ref:"B2:B1001",title:"متن سؤال ـ الزامی",prompt:"هر ردیف یک سؤال؛ برای خط جدید داخل سلول Alt+Enter بزنید."},
+{ref:"C2:F1001",title:"فقط برای چهارگزینه‌ای",prompt:"برای سؤال چهارگزینه‌ای هر چهار گزینه را بنویسید؛ برای بقیه انواع خالی بگذارید."},
+{ref:"G2:G1001",title:"پاسخ صحیح ـ الزامی",prompt:"چهارگزینه‌ای: شماره ۱ تا ۴؛ صحیح / غلط: صحیح یا غلط؛ بقیه: پاسخ متنی."},
+{ref:"H2:H1001",title:"بارم ـ الزامی",prompt:"عددی بین ۰٫۰۱ و ۱۰۰ با حداکثر دو رقم اعشار؛ مانند 0.5 یا 2."},
+{ref:"I2:I1001",title:"توضیح پاسخ ـ اختیاری",prompt:"راهنمای تصحیح یا توضیح تکمیلی؛ این ستون را می‌توانید خالی بگذارید."}]},
+{name:"نمونه‌ها",rows:[headers,...examples],widths:[23,60,25,25,25,25,44,12,48]},{name:"راهنما",rows:[["ورود گروهی سؤال‌ها ـ نسخه ۱",
+"راهنما"],["مقصد","قبل از ورود، درس و فصل یا پودمان را در برنامه انتخاب کنید؛ تمام ردیف‌ها به همان بخش افزوده می‌شوند."],
+["برگهٔ ورود","فقط برگهٔ «سؤال‌ها» خوانده می‌شود. نام برگه و عنوان یا ترتیب ستون‌ها را تغییر ندهید."],
+["نمونه‌ها","برگهٔ نمونه‌ها ثبت نمی‌شود؛ در صورت نیاز ردیف‌های آن را به برگهٔ سؤال‌ها کپی کنید."],
+["نوع سؤال","در ستون نوع سؤال روی سلول کلیک و از فلش فهرست انتخاب کنید: چهارگزینه‌ای، صحیح / غلط، جای‌خالی یا تشریحی."],
+["تکمیل جدول","از ردیف ۲ شروع کنید؛ هر سؤال در یک ردیف. ردیف‌های خالی نادیده گرفته می‌شوند. با انتخاب هر سلول راهنمای همان ستون نمایش داده می‌شود. برای\
+ خط جدید داخل سلول Alt+Enter بزنید."],["پاسخ چهارگزینه‌ای","شمارهٔ گزینهٔ صحیح از ۱ تا ۴؛ چهار گزینهٔ متفاوت الزامی است."],
+["پاسخ صحیح / غلط","صحیح یا غلط؛ true و false نیز پذیرفته می‌شوند."],["پاسخ جای‌خالی و تشریحی","پاسخ\
+ متنی الزامی است؛ گزینه‌ها را خالی بگذارید."],["بارم","بین ۰٫۰۱ و ۱۰۰، حداکثر دو رقم اعشار؛ رقم فارسی و انگلیسی پذیرفته \
+می‌شود."],["محدودیت","حداکثر ۱۰۰۰ سؤال و ۵ مگابایت؛ فایل XLSX بدون فرمول، سلول ادغام‌شده یا رمزگذاری."],
 ["ثبت","ابتدا پیش‌نمایش را بررسی کنید. وجود خطا مانع ثبت کل فایل است؛ هیچ سؤال قبلی تغییر نمی‌کند."],
 ["تکراری","نوع و متن یکسان در همان بخش تکراری است؛ تکراری‌های فایل و بانک ثبت نمی‌شوند."],[
 "متن","حداکثر ۱۰۰۰۰ نویسه برای متن، پاسخ و توضیح و ۲۰۰۰ نویسه برای هر گزینه."]]}]}function key(q){return q.
@@ -390,36 +398,41 @@ value=strings[Number(raw)]}if(type==="b")value=raw==="1"?"true":"false";if(colum
 (_,hex)=>String.fromCharCode(parseInt(hex,16)))}return{number,cells,error}})}root.EduQuestionBankImport={headers,templateSheets,examples,preview,prepare,readXlsx,
 MAX_ROWS,MAX_FILE}})(globalThis);(function(root){"use strict";const I=root.EduQuestionBankImport;function mount({parent,bank,unitId,courseTitle,unitTitle,el,button,
 isCurrent,onPending,onSave,onClose}){const panel=el("section",void 0,"qb-import");panel.setAttribute("aria-label","ورود گروهی سؤال‌ها");parent.
-append(panel);const current=()=>panel.isConnected&&isCurrent();panel.append(el("h3","ورود گروهی سؤال‌ها"),el("p",`${courseTitle} · ${unitTitle}`,
-"qb-import-destination"),el("p","الگو را تکمیل کنید، فایل را بررسی کنید و سپس سؤال‌ها را ثبت کنید. سؤال‌های قبلی تغییر نمی‌کنند."));
-const actions=el("div",void 0,"qb-actions");panel.append(actions);const status=el("p","فقط XLSX؛ حداکثر ۱۰۰۰ سؤال و ۵ مگابایت. نمونه‌ها و راهنما در برگه‌های جدا\
- هستند.","qb-import-status");status.setAttribute("role","status");const input=el("input");input.type="file";input.accept=".xlsx,application/vnd.openxmlform\
-ats-officedocument.spreadsheetml.sheet";input.hidden=true;const template=button("دریافت الگو",()=>{try{const blob=root.EduPeriodicReports.createWorkbook(
-I.templateSheets());const url=URL.createObjectURL(blob),link=el("a");link.href=url;link.download="Classyar-Questions-Template-v1.xlsx";document.body.append(link);
-link.click();link.remove();root.setTimeout(()=>URL.revokeObjectURL(url),6e4)}catch(error){showError(error)}},actions);const choose=button("انتخاب فایل",
-()=>{input.value="";input.click()},actions);choose.insertAdjacentHTML("afterbegin",root.EduIcons.html("upload"));panel.append(input,status);const preview=el("di\
-v",void 0,"qb-import-preview");panel.append(preview);const footer=el("div",void 0,"qb-actions qb-import-footer");panel.append(footer);let report=null,sequence=0,
-busy=false,page=0;const save=button("ثبت سؤال‌ها",async()=>{if(!current()||busy||!report||report.errors||!report.ready)return;busy=true;lock(true);try{
-const next=I.prepare(report,bank);if(current())await onSave(next,current)}catch(error){showError(error)}finally{busy=false;if(current())lock(false)}},footer);save.
-dataset.uiVariant="solid";save.disabled=true;const close=button("بازگشت",()=>{if(!busy)onClose()},footer);function lock(value){panel.setAttribute("aria-bu\
-sy",String(value));choose.disabled=template.disabled=close.disabled=value;save.disabled=value||!report||report.errors>0||!report.ready}function showError(error){
-if(!current())return;status.textContent=error.message||String(error);status.dataset.state="error";status.setAttribute("role","alert")}function draw(){preview.replaceChildren();
-const counts=el("div",void 0,"qb-import-counts");for(const[kind,label,count]of[["ready","آماده",report.ready],["duplicate","تکراری؛ ثبت نمی‌شود",
-report.duplicates],["error","خطا",report.errors]]){const badge=el("span",`${label}: ${count.toLocaleString("fa-IR")}`);badge.dataset.state=kind;counts.append(
-badge)}preview.append(counts);const list=el("ol",void 0,"qb-import-rows");list.setAttribute("aria-label","پیش‌نمایش ردیف‌های فایل");for(const row of report.
-results.slice(page*25,(page+1)*25)){const item=el("li");item.dataset.state=row.status;item.append(el("strong",`ردیف ${row.number.toLocaleString("fa-IR")} · ${row.
-status==="ready"?"آمادهٔ ثبت":row.status==="error"?"خطا":"تکراری"}`),el("p",row.text||"متن سؤال خالی است."));if(row.question){const q=row.
-question;if(q.options)item.append(el("p",q.options.map((option,index)=>`${index+1}) ${option}`).join(" · ")));const answer=q.type==="mcq"?`گزینهٔ ${q.answer+
-1}`:q.type==="boolean"?q.answer?"صحیح":"غلط":q.answer;item.append(el("small",`${root.EduQuestionBank.types[q.type]} · بارم: ${(q.score/100).toLocaleString(
-"fa-IR")} · پاسخ: ${answer}`));if(q.explanation)item.append(el("small",q.explanation))}if(row.message)item.append(el("small",row.message));list.append(item)}
-preview.append(list);if(report.results.length>25){const pager=el("nav",void 0,"qb-actions qb-pager");pager.setAttribute("aria-label","صفحه‌بندی پیش‌نمایش ورود س\
-ؤال");const previous=button("قبلی",()=>{page--;draw()},pager);previous.disabled=page===0;pager.append(el("span",`${(page+1).toLocaleString("fa-IR")} / ${Math.
-ceil(report.results.length/25).toLocaleString("fa-IR")}`));const next=button("بعدی",()=>{page++;draw()},pager);next.disabled=(page+1)*25>=report.results.length;
-preview.append(pager)}}input.addEventListener("change",async()=>{const file=input.files[0];if(!file||busy||!current())return;const request=++sequence;report=null;
-preview.replaceChildren();busy=true;lock(true);onPending(false);status.removeAttribute("data-state");status.setAttribute("role","status");status.textContent="در\
- حال بررسی فایل…";try{const rows=await I.readXlsx(file);if(!current()||request!==sequence)return;report=I.preview(rows,bank,unitId);page=0;onPending(
-report.ready>0);status.textContent=report.errors?"فایل دارای خطاست. ردیف‌های مشخص‌شده را در اکسل اصلاح و فایل را دوباره انتخاب کنید؛ هنوز هیچ سؤالی ثبت نشده است\
-.":`فایل «${file.name}» بررسی شد. مقصد را بررسی کنید و برای افزودن سؤال‌های آماده، «ثبت سؤال‌ها» را بزنید.`;
+append(panel);const current=()=>panel.isConnected&&isCurrent();const heading=el("header",void 0,"qb-import-heading");heading.append(el("h3","ورود گروهی سؤال‌ها"),
+el("p",`${courseTitle} · ${unitTitle}`,"qb-import-destination"));panel.append(heading);const actions=el("div",void 0,"qb-import-steps");panel.append(actions);const templateStep=el(
+"div",void 0,"qb-import-step");const uploadStep=el("div",void 0,"qb-import-step");for(const[container,number,title,detail]of[[templateStep,"۱","آماده‌سازی سؤال\
+‌ها","الگوی اکسل را دریافت و تکمیل کنید؛ نمونه و راهنما داخل فایل است."],[uploadStep,"۲","بررسی و پیش‌نم\
+ایش","فایل تکمیل‌شده را انتخاب کنید؛ قبل از ثبت، سؤال‌ها را می‌بینید."]]){container.append(el("span",number,
+"qb-import-step-number"),el("h4",title),el("p",detail));actions.append(container)}const status=el("p","فقط XLSX؛ حداکثر ۱۰۰۰ سؤال و ۵ مگابایت. نمونه‌ها و راهنما\
+ در برگه‌های جدا هستند.","qb-import-status");status.setAttribute("role","status");const input=el("input");input.type="file";input.accept=".xl\
+sx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";input.hidden=true;const template=button("دریافت الگو",()=>{try{const blob=root.EduPeriodicReports.
+createWorkbook(I.templateSheets());const url=URL.createObjectURL(blob),link=el("a");link.href=url;link.download="Classyar-Questions-Template-v1.xlsx";document.body.
+append(link);link.click();link.remove();root.setTimeout(()=>URL.revokeObjectURL(url),6e4)}catch(error){showError(error)}},templateStep);const choose=button("انت\
+خاب فایل",()=>{input.value="";input.click()},uploadStep);template.classList.add("qb-import-template");choose.dataset.uiVariant="solid";choose.insertAdjacentHTML(
+"afterbegin",root.EduIcons.html("upload"));panel.append(input,status);const preview=el("div",void 0,"qb-import-preview");preview.hidden=true;panel.append(preview);
+const footer=el("div",void 0,"qb-actions qb-import-footer");panel.append(footer);footer.append(el("small","سؤال‌های قبلی حفظ می‌شوند؛ ثبت فقط پس از تأیید شما ان\
+جام می‌شود.","qb-import-safety"));let report=null,sequence=0,busy=false,page=0;const save=button("ثبت سؤال‌ها",async()=>{if(!current()||busy||
+!report||report.errors||!report.ready)return;busy=true;lock(true);try{const next=I.prepare(report,bank);if(current())await onSave(next,current)}catch(error){showError(
+error)}finally{busy=false;if(current())lock(false)}},footer);save.dataset.uiVariant="solid";save.disabled=true;const close=button("بازگشت",()=>{if(!busy)onClose()},
+footer);function lock(value){panel.setAttribute("aria-busy",String(value));choose.disabled=template.disabled=close.disabled=value;save.disabled=value||!report||
+report.errors>0||!report.ready}function showError(error){if(!current())return;status.textContent=error.message||String(error);status.dataset.state="error";status.
+setAttribute("role","alert")}function draw(){preview.hidden=false;preview.replaceChildren();const counts=el("div",void 0,"qb-import-counts");for(const[kind,label,
+count]of[["ready","آماده",report.ready],["duplicate","تکراری؛ ثبت نمی‌شود",report.duplicates],["error","خطا",report.errors]]){const badge=el(
+"span",`${label}: ${count.toLocaleString("fa-IR")}`);badge.dataset.state=kind;counts.append(badge)}preview.append(counts);const list=el("ol",void 0,"qb-import-r\
+ows");list.setAttribute("aria-label","پیش‌نمایش ردیف‌های فایل");for(const row of report.results.slice(page*25,(page+1)*25)){const item=el(
+"li");item.dataset.state=row.status;item.append(el("strong",`ردیف ${row.number.toLocaleString("fa-IR")} · ${row.status==="ready"?"آمادهٔ ثبت":row.
+status==="error"?"خطا":"تکراری"}`),el("p",row.text||"متن سؤال خالی است."));if(row.question){const q=row.question;if(q.options)item.append(
+el("p",q.options.map((option,index)=>`${index+1}) ${option}`).join(" · ")));const answer=q.type==="mcq"?`گزینهٔ ${q.answer+1}`:q.type==="boolean"?q.answer?
+"صحیح":"غلط":q.answer;item.append(el("small",`${root.EduQuestionBank.types[q.type]} · بارم: ${(q.score/100).toLocaleString("fa-IR")} · پاسخ: ${answer}`));
+if(q.explanation)item.append(el("small",q.explanation))}if(row.message)item.append(el("small",row.message));list.append(item)}preview.append(list);if(report.results.
+length>25){const pager=el("nav",void 0,"qb-actions qb-pager");pager.setAttribute("aria-label","صفحه‌بندی پیش‌نمایش ورود سؤال");const previous=button(
+"قبلی",()=>{page--;draw()},pager);previous.disabled=page===0;pager.append(el("span",`${(page+1).toLocaleString("fa-IR")} / ${Math.ceil(report.results.length/
+25).toLocaleString("fa-IR")}`));const next=button("بعدی",()=>{page++;draw()},pager);next.disabled=(page+1)*25>=report.results.length;preview.append(pager)}}
+input.addEventListener("change",async()=>{const file=input.files[0];if(!file||busy||!current())return;const request=++sequence;report=null;preview.replaceChildren();
+busy=true;preview.hidden=true;lock(true);onPending(false);status.removeAttribute("data-state");status.setAttribute("role","status");status.textContent="در حال ب\
+ررسی فایل…";try{const rows=await I.readXlsx(file);if(!current()||request!==sequence)return;report=I.preview(rows,bank,unitId);page=0;onPending(report.
+ready>0);status.textContent=report.errors?"فایل دارای خطاست. ردیف‌های مشخص‌شده را در اکسل اصلاح و فایل را دوباره انتخاب کنید؛ هنوز هیچ سؤالی ثبت نشده است.":
+`فایل «${file.name}» بررسی شد. مقصد را بررسی کنید و برای افزودن سؤال‌های آماده، «ثبت سؤال‌ها» را بزنید.`;
 if(report.errors){status.dataset.state="error";status.setAttribute("role","alert")}save.querySelector(".ui-button-label").textContent=`ثبت ${report.ready.toLocaleString(
 "fa-IR")} سؤال`;draw()}catch(error){showError(error)}finally{busy=false;if(current())lock(false)}})}root.EduQuestionBankImportUI={mount}})(globalThis);(function(root){
 "use strict";const D=root.EduQuestionBank,R=root.EduQuestionBankRepository,F=root.EduQuestionBankFileBackup.service;let pendingChanges=()=>false,activePage=null,

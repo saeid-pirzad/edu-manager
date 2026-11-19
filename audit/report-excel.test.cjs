@@ -555,7 +555,7 @@ test("every report sheet identifies its exact filters in a merged banner without
   assert.match(styles, /<sz val="14"/);
   assert.equal((styles.match(/<fill>/g) || []).length, 8);
   assert.equal((styles.match(/<font>/g) || []).length, 4);
-  assert.equal((styles.match(/<xf /g) || []).length, 11);
+  assert.equal((styles.match(/<xf /g) || []).length, 13);
   assert.equal(files.size, sheets.length + 5);
 });
 test("filename dates use report creation in Tehran and explicit teacher name takes priority", () => {

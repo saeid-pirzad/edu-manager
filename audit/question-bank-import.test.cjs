@@ -4,6 +4,7 @@ const { test } = require("node:test"),
   fs = require("node:fs"),
   vm = require("node:vm");
 const context = vm.createContext({
+  Blob,
   TextEncoder,
   structuredClone,
   crypto: require("node:crypto").webcrypto,
@@ -15,6 +16,24 @@ for (const file of ["domain", "question-import"])
   );
 const D = context.EduQuestionBank,
   I = context.EduQuestionBankImport;
+vm.runInContext(
+  fs.readFileSync("src/reports/periodic/xlsx-workbook.js", "utf8"),
+  context,
+);
+test("entry workbook includes dropdowns, contextual guidance and 1000 bordered blank rows", async () => {
+  const sheets = I.templateSheets();
+  const workbook = Buffer.from(
+    await context.xlsxWorkbook(sheets).arrayBuffer(),
+  ).toString("utf8");
+  assert.match(workbook, /dataValidation type="list"[^>]*sqref="A2:A1001"/);
+  assert.ok(workbook.includes("چهارگزینه‌ای,صحیح / غلط,جای‌خالی,تشریحی"));
+  assert.match(workbook, /<autoFilter ref="A1:I1001"/);
+  assert.match(workbook, /<c r="I1001" s="11"/);
+  assert.match(workbook, /showInputMessage="1"/);
+  assert.match(workbook, /<left style="thin">/);
+  assert.match(workbook, /ySplit="1"/);
+  assert.equal(sheets[0].validations.length, 6);
+});
 function bank() {
   const value = D.empty();
   value.courses = [{ id: "c", title: "درس", structure: "module" }];

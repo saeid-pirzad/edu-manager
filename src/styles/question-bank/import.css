@@ -24,6 +24,84 @@
   background: var(--theme-surface);
   overflow-wrap: anywhere;
 }
+.qb-import-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--theme-line);
+}
+.qb-import-heading h3 {
+  font-size: 15px;
+}
+.qb-import-heading .qb-import-destination {
+  padding: 4px 9px;
+  border-radius: 8px;
+  background: var(--theme-primary-soft);
+  font-size: 12px;
+}
+.qb-import-steps {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.qb-import-step {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px 9px;
+  padding: 12px;
+  border: 1px solid var(--theme-line);
+  border-radius: 10px;
+  background: var(--theme-surface);
+}
+.qb-import-step-number {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  color: var(--status-info);
+  background: var(--status-info-soft);
+  font-weight: 700;
+}
+.qb-import-step h4 {
+  margin: 0;
+  font-size: 13px;
+}
+.qb-import-step > :is(p, button) {
+  grid-column: 1 / -1;
+}
+.qb-import-step p {
+  color: var(--theme-muted);
+  font-size: 12px;
+  line-height: 1.9;
+}
+.qb-import-step > button {
+  width: 100%;
+  margin-top: 3px;
+}
+.qb-import-status {
+  padding: 10px 12px;
+  border-inline-start: 3px solid var(--status-info);
+  border-radius: 8px;
+  background: var(--status-info-soft);
+}
+.qb-import-footer {
+  padding-top: 12px;
+  border-top: 1px solid var(--theme-line);
+}
+.qb-import-safety {
+  flex: 1 1 100%;
+  color: var(--theme-muted);
+  font-size: 11px;
+  line-height: 1.9;
+}
+.qb-import-preview[hidden] {
+  display: none;
+}
 .qb-import :is(h3, p) {
   margin: 0;
 }
@@ -40,7 +118,7 @@
   margin: 0;
   flex-wrap: wrap;
 }
-#app .qb-page .qb-import .qb-actions > button.ui-button {
+#app .qb-page .qb-import :is(.qb-actions, .qb-import-step) > button.ui-button {
   min-height: 44px !important;
   height: auto !important;
 }
@@ -120,6 +198,16 @@
   .qb-import > .qb-actions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .qb-import-steps {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .qb-import-step {
+    padding: 10px;
+  }
+  .qb-import-safety {
+    grid-column: 1 / -1;
   }
   #app .qb-page .qb-import .qb-actions > button.ui-button,
   .qb-question-entry-actions > button {

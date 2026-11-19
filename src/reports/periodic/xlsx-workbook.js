@@ -56,8 +56,14 @@ function xlsxWorkbook(sheets) {
       );
     const width = Math.max(...sheet.rows.slice(0, 1).map((row) => row.length));
     if (!width || width > 16384) throw Error("تعداد ستون‌های اکسل معتبر نیست.");
-    const range = "A1:" + column(width - 1) + (sheet.rows.length + rowOffset);
-    const rows = sheet.rows
+    const sheetRows = sheet.entryRows
+      ? Array.from(
+          { length: sheet.entryRows + 1 },
+          (_, i) => sheet.rows[i] || Array(width).fill(""),
+        )
+      : sheet.rows;
+    const range = "A1:" + column(width - 1) + (sheetRows.length + rowOffset);
+    const rows = sheetRows
       .map((row, ri) => {
         if (row.length > width)
           throw Error("ستون‌های گزارش با عنوان‌ها یکسان نیستند.");
@@ -65,13 +71,19 @@ function xlsxWorkbook(sheets) {
           '<row r="' +
           (ri + 1 + rowOffset) +
           '"' +
-          (ri === 0 ? ' ht="30" customHeight="1"' : "") +
+          (ri === 0
+            ? ' ht="30" customHeight="1"'
+            : sheet.entryRows
+              ? ' ht="42" customHeight="1"'
+              : "") +
           ">" +
           row
             .map((value, ci) => {
-              if (value == null || value === "") return "";
+              if ((value == null || value === "") && !sheet.entryRows)
+                return "";
               const ref = column(ci) + (ri + 1 + rowOffset);
               let style = ri === 0 ? 1 : ri % 2 ? 0 : 2;
+              if (ri && sheet.entryRows) style = ri % 2 ? 10 : 11;
               if (ri && typeof value === "number") style = ri % 2 ? 3 : 4;
               if (ri && String(sheet.rows[0][ci]).startsWith("وضعیت")) {
                 if (["قبول", "تکمیل", "حاضر"].includes(value)) style = 5;
@@ -192,7 +204,7 @@ function xlsxWorkbook(sheets) {
             headerRow +
             ":" +
             column(width - 1) +
-            (sheet.rows.length + rowOffset) +
+            (sheetRows.length + rowOffset) +
             '"/>') +
         (banner.length && width > 1
           ? '<mergeCells count="' +
@@ -210,6 +222,36 @@ function xlsxWorkbook(sheets) {
               )
               .join("") +
             "</mergeCells>"
+          : "") +
+        (sheet.validations?.length
+          ? '<dataValidations count="' +
+            sheet.validations.length +
+            '">' +
+            sheet.validations
+              .map((rule) => {
+                if (
+                  !/^[A-Z]+[1-9][0-9]*:[A-Z]+[1-9][0-9]*$/.test(rule.ref) ||
+                  (rule.type && rule.type !== "list")
+                )
+                  throw Error("اعتبارسنجی ستون اکسل معتبر نیست.");
+                return (
+                  '<dataValidation type="' +
+                  (rule.type || "none") +
+                  '" allowBlank="1" showInputMessage="1" showErrorMessage="1" errorStyle="stop" errorTitle="نوع سؤال نامعتبر" error="نوع سؤال را از فهرست انتخاب کنید." promptTitle="' +
+                  xml(rule.title) +
+                  '" prompt="' +
+                  xml(rule.prompt) +
+                  '" sqref="' +
+                  rule.ref +
+                  '">' +
+                  (rule.formula
+                    ? "<formula1>" + xml(rule.formula) + "</formula1>"
+                    : "") +
+                  "</dataValidation>"
+                );
+              })
+              .join("") +
+            "</dataValidations>"
           : "") +
         '<pageMargins left="0.3" right="0.3" top="0.5" bottom="0.5" header="0.2" footer="0.2"/><pageSetup paperSize="9" orientation="' +
         (width > 7 ? "landscape" : "portrait") +
@@ -304,8 +346,8 @@ function xlsxWorkbook(sheets) {
             '"/><bgColor indexed="64"/></patternFill></fill>',
         )
         .join("") +
-      '</fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="10">' +
-      [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+      '</fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFDCE4EE"/></left><right style="thin"><color rgb="FFDCE4EE"/></right><top style="thin"><color rgb="FFDCE4EE"/></top><bottom style="thin"><color rgb="FFDCE4EE"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="12">' +
+      [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
         .map(
           (i) =>
             '<xf numFmtId="' +
@@ -313,8 +355,10 @@ function xlsxWorkbook(sheets) {
             '" fontId="' +
             (i === 8 ? 2 : i === 9 ? 3 : i === 1 ? 1 : 0) +
             '" fillId="' +
-            [0, 2, 3, 0, 3, 4, 5, 6, 2, 7][i] +
-            '" borderId="0" xfId="0" applyAlignment="1" applyFill="1" applyNumberFormat="1"><alignment horizontal="' +
+            [0, 2, 3, 0, 3, 4, 5, 6, 2, 7, 0, 3][i] +
+            '" borderId="' +
+            (i >= 10 ? 1 : 0) +
+            '" xfId="0" applyBorder="1" applyAlignment="1" applyFill="1" applyNumberFormat="1"><alignment horizontal="' +
             (i === 3 || i === 4 ? "center" : "right") +
             '" vertical="center" wrapText="1" readingOrder="2"/></xf>',
         )
