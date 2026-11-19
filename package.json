@@ -26,6 +26,7 @@
     "test:question-bank": "node audit/question-bank-browser.cjs && node audit/question-bank-business-browser.cjs && node audit/question-bank-sample-browser.cjs && node audit/unified-backup-hub-browser.cjs && npm run test:question-import",
     "test:question-import": "node audit/question-bank-import-browser.cjs",
     "test:question-output": "node audit/question-bank-output-browser.cjs",
+    "test:session-history": "npm run build:check && node audit/session-history-pagination-browser.cjs",
     "test:modular-unit": "node audit/modular-unit-browser.cjs && node audit/modular-unit-karnameh-browser.cjs",
     "demo:question-bank": "npm run build:check && node scripts/question-bank-demo.cjs",
     "review:question-bank": "npm run build:check && node scripts/question-bank-review.cjs",

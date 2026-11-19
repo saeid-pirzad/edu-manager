@@ -92,6 +92,12 @@ EduLegacyEvents.register("schedule-timetable:15", function (event) {
 EduLegacyEvents.register("schedule-timetable:16", function (event) {
   return openExistingSession(this.getAttribute("data-legacy-click-arg0"));
 });
+EduLegacyEvents.register("session-history-page", function () {
+  return renderSessionSetupHistory(
+    this.getAttribute("data-history-page"),
+    true,
+  );
+});
 // Event handlers extracted from src/legacy/schedule/timetable.js.
 EduLegacyEvents.register("schedule-timetable:17", function (event) {
   return openMasterConfig(

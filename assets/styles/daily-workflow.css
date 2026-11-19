@@ -394,38 +394,41 @@ margin-block:14px;padding-inline-start:12px;border-inline-start:2px solid var(--
 align-items:center;justify-content:center;gap:8px;width:100%;min-height:48px;margin:0;border-radius:12px}.session-setup-history{margin-top:12px;padding-top:10px;
 border-top:1px solid var(--workflow-line)}.session-setup-history>header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
 .session-setup-history h4{margin:0;font-size:13px}.session-setup-history>header>span{color:var(--workflow-muted);font-size:11px}.session-setup-recent{display:grid;
-gap:6px}:is(#modalBody,.qb-body) .session-setup-recent-item{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-width:0;margin:0;
-min-height:44px;padding:7px 10px;border:1px solid var(--workflow-line);border-radius:10px;background:var(--theme-surface-subtle);color:var(--workflow-ink);text-align:start;
-box-shadow:none}.session-setup-recent-copy{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:baseline;gap:2px 8px;min-width:0;overflow-wrap:anywhere;
-font-size:11px;line-height:1.7}.session-setup-recent-copy strong{font-size:12px;font-weight:500;white-space:nowrap}.session-setup-recent-copy small{grid-column:1
-/ -1;color:var(--workflow-muted);font-size:10px}.session-setup-recent-arrow{display:inline-flex;flex-shrink:0;color:var(--theme-primary)}:is(#modalBody,.qb-body)
-.session-setup-recent-arrow svg{width:18px;height:18px;flex-basis:18px}.session-context{display:flex;align-items:flex-start;gap:12px;padding:0 0 16px;border:0;border-radius:0;
-background:transparent}.session-context-icon{border:1px solid var(--theme-line-soft);background:var(--theme-surface-subtle);color:var(--theme-primary)}.session-context-copy{
-min-width:0;overflow-wrap:anywhere}.session-context p{margin:0;line-height:1.8}.session-context-path,.session-context-teacher{color:var(--workflow-muted);font-size:12px}
-.session-context h4{margin:4px 0 6px;font-size:18px;line-height:1.7}.session-context-meta{color:var(--theme-primary);font-size:13px}:is(#modalBody,.qb-body) .session-date-tools{
-margin-top:8px;border:0;border-bottom:1px solid var(--theme-line-soft);border-radius:0}:is(#modalBody,.qb-body) .session-date-tools>summary{display:flex;align-items:center;
-gap:8px;min-height:44px;padding:8px 0;color:var(--theme-primary);font-size:12px;list-style:none}.session-date-tools>summary::-webkit-details-marker{display:none}
-.session-date-tools>summary::after{content:"+";margin-inline-start:auto;font-size:20px}.session-date-tools[open]>summary::after{content:"−"}:is(#modalBody,.qb-body)
-.session-date-grid{display:grid;grid-template-columns:minmax(0,1fr) 100px auto;align-items:end;gap:12px;margin:0;padding:8px 0 16px}:is(#modalBody,.qb-body) .session-date-grid>
-button{min-height:46px;margin:0}:is(#modalBody,.qb-body) .session-unit-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}
-:is(#modalBody,.qb-body) .session-mode-picker{position:sticky;top:-20px;z-index:5;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin:16px
-0 20px;padding:5px;border-radius:13px;background:var(--theme-surface-subtle);box-shadow:inset 0 0 0 1px var(--theme-line-soft)}:is(#modalBody,.qb-body) .session-mode-picker
-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:0;min-height:46px;margin:0;padding:8px;border:1px solid transparent;border-radius:9px;
-background:transparent;color:var(--theme-muted);font-size:14px;font-weight:500}:is(#modalBody,.qb-body) .session-mode-picker [aria-pressed=true]{border-color:var(--theme-primary-line);
-background:var(--theme-surface);color:var(--theme-primary);font-weight:600;box-shadow:inset 0 -2px 0 var(--theme-primary)}.session-attendance-heading{display:grid;
-grid-template-columns:minmax(0,1fr) minmax(0,320px);align-items:center;gap:12px;margin-bottom:8px}.session-attendance-heading h4,:is(#modalBody,.qb-body) [data-session-panel=activity]>
-h4,.session-activity-records>h4{margin:0;font-size:15px}.session-attendance-heading p,:is(#modalBody,.qb-body) [data-session-panel=activity]>p{margin:5px 0 0;color:var(--workflow-muted);
-font-size:12px;line-height:1.9}.session-attendance-bulk{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;width:100%;max-width:100%;min-width:0;
-box-sizing:border-box;padding:0;border-radius:0;background:transparent;box-shadow:none}:is(#modalBody,.qb-body) .session-attendance-bulk button,:is(#modalBody,.qb-body)
-.session-workspace .session-attendance-bulk button.ui-button{--button-ink: var(--theme-muted);--button-fill: var(--theme-surface);--button-soft: var(--theme-surface);
---button-hover: var(--theme-surface-subtle);--button-line: var(--theme-line-soft);background:var(--button-soft)!important;color:var(--button-ink)!important;border-color:var(--button-line)!important;
-width:100%;min-width:0;min-height:44px;height:44px;margin:0;padding:4px;border:1px solid transparent;border-radius:8px;font-size:12px;line-height:1.5;text-align:center;
-white-space:nowrap;overflow-wrap:normal}:is(#modalBody,.qb-body) .session-attendance-bulk .control-icon,:is(#modalBody,.qb-body) .session-attendance-bulk .control-icon>
-svg{width:16px;height:16px;flex-basis:16px}:is(#modalBody,.qb-body) .session-workspace .session-attendance-bulk button:is(.success,[data-legacy-click="sessions-\
-dialog:all-present"]){--button-ink: var(--status-success);--button-line: var(--status-success-line);--button-hover: var(--status-success-soft)}:is(#modalBody,.qb-body)
-.session-workspace .session-attendance-bulk button.danger{--button-ink: var(--status-danger);--button-soft: var(--status-danger-soft);--button-line: var(--status-danger-line);
---button-hover: var(--status-danger-soft)}:is(#modalBody,.qb-body) .session-workspace .session-attendance-bulk button.success{--button-soft: var(--status-success-soft)}
-:is(#modalBody,.qb-body) .session-workspace .session-attendance-bulk button.ui-button:not(:disabled):hover{background:var(--button-hover)!important;border-color:var(--button-line)!important}
+gap:6px}.session-history-pager{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px;align-items:center;margin-top:8px;padding-top:8px;border-top:1px
+solid var(--workflow-line)}.session-history-pages{display:flex;justify-content:center;gap:4px;min-width:0}#modalBody .session-history-pager button{margin:0;min-width:32px;
+padding-inline:8px;font-size:12px}.session-history-page-status{grid-column:1 / -1;color:var(--workflow-muted);font-size:11px;text-align:center}:is(#modalBody,.qb-body)
+.session-setup-recent-item{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-width:0;margin:0;min-height:44px;padding:7px 10px;
+border:1px solid var(--workflow-line);border-radius:10px;background:var(--theme-surface-subtle);color:var(--workflow-ink);text-align:start;box-shadow:none}.session-setup-recent-copy{
+display:grid;grid-template-columns:auto minmax(0,1fr);align-items:baseline;gap:2px 8px;min-width:0;overflow-wrap:anywhere;font-size:11px;line-height:1.7}.session-setup-recent-copy
+strong{font-size:12px;font-weight:500;white-space:nowrap}.session-setup-recent-copy small{grid-column:1 / -1;color:var(--workflow-muted);font-size:10px}.session-setup-recent-arrow{
+display:inline-flex;flex-shrink:0;color:var(--theme-primary)}:is(#modalBody,.qb-body) .session-setup-recent-arrow svg{width:18px;height:18px;flex-basis:18px}.session-context{
+display:flex;align-items:flex-start;gap:12px;padding:0 0 16px;border:0;border-radius:0;background:transparent}.session-context-icon{border:1px solid var(--theme-line-soft);
+background:var(--theme-surface-subtle);color:var(--theme-primary)}.session-context-copy{min-width:0;overflow-wrap:anywhere}.session-context p{margin:0;line-height:1.8}
+.session-context-path,.session-context-teacher{color:var(--workflow-muted);font-size:12px}.session-context h4{margin:4px 0 6px;font-size:18px;line-height:1.7}.session-context-meta{
+color:var(--theme-primary);font-size:13px}:is(#modalBody,.qb-body) .session-date-tools{margin-top:8px;border:0;border-bottom:1px solid var(--theme-line-soft);border-radius:0}
+:is(#modalBody,.qb-body) .session-date-tools>summary{display:flex;align-items:center;gap:8px;min-height:44px;padding:8px 0;color:var(--theme-primary);font-size:12px;
+list-style:none}.session-date-tools>summary::-webkit-details-marker{display:none}.session-date-tools>summary::after{content:"+";margin-inline-start:auto;font-size:20px}
+.session-date-tools[open]>summary::after{content:"−"}:is(#modalBody,.qb-body) .session-date-grid{display:grid;grid-template-columns:minmax(0,1fr) 100px auto;align-items:end;
+gap:12px;margin:0;padding:8px 0 16px}:is(#modalBody,.qb-body) .session-date-grid>button{min-height:46px;margin:0}:is(#modalBody,.qb-body) .session-unit-fields{display:grid;
+grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}:is(#modalBody,.qb-body) .session-mode-picker{position:sticky;top:-20px;z-index:5;display:grid;
+grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin:16px 0 20px;padding:5px;border-radius:13px;background:var(--theme-surface-subtle);box-shadow:inset 0
+0 0 1px var(--theme-line-soft)}:is(#modalBody,.qb-body) .session-mode-picker button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:0;
+min-height:46px;margin:0;padding:8px;border:1px solid transparent;border-radius:9px;background:transparent;color:var(--theme-muted);font-size:14px;font-weight:500}
+:is(#modalBody,.qb-body) .session-mode-picker [aria-pressed=true]{border-color:var(--theme-primary-line);background:var(--theme-surface);color:var(--theme-primary);
+font-weight:600;box-shadow:inset 0 -2px 0 var(--theme-primary)}.session-attendance-heading{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,320px);align-items:center;
+gap:12px;margin-bottom:8px}.session-attendance-heading h4,:is(#modalBody,.qb-body) [data-session-panel=activity]>h4,.session-activity-records>h4{margin:0;font-size:15px}
+.session-attendance-heading p,:is(#modalBody,.qb-body) [data-session-panel=activity]>p{margin:5px 0 0;color:var(--workflow-muted);font-size:12px;line-height:1.9}
+.session-attendance-bulk{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;width:100%;max-width:100%;min-width:0;box-sizing:border-box;padding:0;
+border-radius:0;background:transparent;box-shadow:none}:is(#modalBody,.qb-body) .session-attendance-bulk button,:is(#modalBody,.qb-body) .session-workspace .session-attendance-bulk
+button.ui-button{--button-ink: var(--theme-muted);--button-fill: var(--theme-surface);--button-soft: var(--theme-surface);--button-hover: var(--theme-surface-subtle);
+--button-line: var(--theme-line-soft);background:var(--button-soft)!important;color:var(--button-ink)!important;border-color:var(--button-line)!important;width:100%;
+min-width:0;min-height:44px;height:44px;margin:0;padding:4px;border:1px solid transparent;border-radius:8px;font-size:12px;line-height:1.5;text-align:center;white-space:nowrap;
+overflow-wrap:normal}:is(#modalBody,.qb-body) .session-attendance-bulk .control-icon,:is(#modalBody,.qb-body) .session-attendance-bulk .control-icon>svg{width:16px;
+height:16px;flex-basis:16px}:is(#modalBody,.qb-body) .session-workspace .session-attendance-bulk button:is(.success,[data-legacy-click="sessions-dialog:all-pres\
+ent"]){--button-ink: var(--status-success);--button-line: var(--status-success-line);--button-hover: var(--status-success-soft)}:is(#modalBody,.qb-body) .session-workspace
+.session-attendance-bulk button.danger{--button-ink: var(--status-danger);--button-soft: var(--status-danger-soft);--button-line: var(--status-danger-line);--button-hover:
+var(--status-danger-soft)}:is(#modalBody,.qb-body) .session-workspace .session-attendance-bulk button.success{--button-soft: var(--status-success-soft)}:is(#modalBody,
+.qb-body) .session-workspace .session-attendance-bulk button.ui-button:not(:disabled):hover{background:var(--button-hover)!important;border-color:var(--button-line)!important}
 :is(#modalBody,.qb-body) .session-attendance-list{display:grid;min-width:0;width:100%;gap:0;padding:0;border:0;border-radius:0;background:transparent}:is(#modalBody,
 .qb-body) .session-workspace .att-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,320px);min-width:0;width:100%;align-items:center;gap:12px;margin:0;
 padding:14px 0;border:0;border-bottom:1px solid var(--theme-line-soft);border-radius:0;background:transparent;box-shadow:none}:is(#modalBody,.qb-body) .session-workspace

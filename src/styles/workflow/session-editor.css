@@ -141,6 +141,33 @@
     display: grid;
     gap: 6px;
   }
+  .session-history-pager {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 6px;
+    align-items: center;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--workflow-line);
+  }
+  .session-history-pages {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    min-width: 0;
+  }
+  #modalBody .session-history-pager button {
+    margin: 0;
+    min-width: 32px;
+    padding-inline: 8px;
+    font-size: 12px;
+  }
+  .session-history-page-status {
+    grid-column: 1 / -1;
+    color: var(--workflow-muted);
+    font-size: 11px;
+    text-align: center;
+  }
   :is(#modalBody, .qb-body) .session-setup-recent-item {
     display: flex;
     align-items: center;

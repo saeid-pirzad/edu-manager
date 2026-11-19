@@ -1206,7 +1206,7 @@ async function run(env) {
     });
   }
 }
-module.exports = { run };
+module.exports = { run, setup };
 if (require.main === module)
   require("./data-integrity.cjs")
     .main({ stage: "daily-session-usability", runExtra: run })

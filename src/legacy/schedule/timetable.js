@@ -407,29 +407,85 @@ function legacy_clickMasterCell(day, period) {
   </div>`;
 
   if (existing.length) {
-    h += `<section class="session-setup-history"><header><h4>جلسات قبلی این زنگ</h4><span>${existing.length.toLocaleString("fa-IR")} جلسه</span></header><div class="session-setup-recent">`;
-    existing.slice(0, 15).forEach((s) => {
-      const present = Object.values(s.attendance).filter(
-        (x) =>
-          x === "present" || (typeof x === "string" && x.startsWith("late")),
-      ).length;
-      const total = sessionStudents(cls.classObj, s).length;
-      const lessonName = cls.classObj.lessons.find(
-        (l) => l.id === s.lessonId,
-      )?.name;
-      h += `<button type="button" class="session-setup-recent-item" data-legacy-click="schedule-timetable:16" data-legacy-click-arg0="${esc(s.id)}">
-        <span class="session-setup-recent-copy"><strong>${esc(faDate(s.date))}</strong>${lessonName ? `<span>${esc(lessonName)}</span>` : ""}<small>${present}/${total} حاضر · ${s.scores.length} امتیاز</small></span>
+    h += `<section class="session-setup-history" data-history-class="${esc(entry.classId)}"><header><h4>جلسات قبلی این زنگ</h4><span>${existing.length.toLocaleString("fa-IR")} جلسه</span></header><div class="session-setup-recent"></div></section>`;
+  }
+  if (
+    showModal(
+      "ثبت جلسه",
+      `<div class="session-start-panel" data-session-day="${esc(day)}" data-session-period="${esc(period)}">` +
+        h +
+        "</div>",
+    ) === false
+  )
+    return;
+  renderSessionSetupHistory();
+}
+
+function renderSessionSetupHistory(requestedPage = 0, focusPager = false) {
+  const history = document.querySelector("#modalBody .session-setup-history");
+  const panel = history?.closest(".session-start-panel");
+  if (!panel) return;
+  const classId = history.dataset.historyClass;
+  const cls = findClassById(classId);
+  if (!cls) return;
+  const day = Number(panel.dataset.sessionDay);
+  const period = Number(panel.dataset.sessionPeriod);
+  const existing = db.sessions
+    .filter(
+      (s) =>
+        s.classId === classId &&
+        s.period === period &&
+        getDayIdxFromDate(s.date) === day,
+    )
+    .sort((a, b) => b.date.localeCompare(a.date));
+  const pageSize = 5;
+  const pageCount = Math.max(1, Math.ceil(existing.length / pageSize));
+  const page = Math.max(
+    0,
+    Math.min(
+      Number.isInteger(Number(requestedPage)) ? Number(requestedPage) : 0,
+      pageCount - 1,
+    ),
+  );
+  history.dataset.historyPage = String(page);
+  history.querySelector("header > span").textContent =
+    `${existing.length.toLocaleString("fa-IR")} جلسه`;
+  let rows = "";
+  existing.slice(page * pageSize, (page + 1) * pageSize).forEach((s) => {
+    const present = Object.values(s.attendance || {}).filter(
+      (x) => x === "present" || (typeof x === "string" && x.startsWith("late")),
+    ).length;
+    const total = sessionStudents(cls.classObj, s).length;
+    const lessonName = cls.classObj.lessons.find(
+      (l) => l.id === s.lessonId,
+    )?.name;
+    rows += `<button type="button" class="session-setup-recent-item" data-legacy-click="schedule-timetable:16" data-legacy-click-arg0="${esc(s.id)}">
+        <span class="session-setup-recent-copy"><strong>${esc(faDate(s.date))}</strong>${lessonName ? `<span>${esc(lessonName)}</span>` : ""}<small>${present}/${total} حاضر · ${(s.scores || []).length} امتیاز</small></span>
         <span class="session-setup-recent-arrow" aria-hidden="true">${EduIcons.html("arrow")}</span>
       </button>`;
-    });
-    h += `</div></section>`;
-  }
-  showModal(
-    "ثبت جلسه",
-    `<div class="session-start-panel" data-session-day="${esc(day)}" data-session-period="${esc(period)}">` +
-      h +
-      "</div>",
+  });
+  history.querySelector(".session-setup-recent").innerHTML = rows;
+  history.querySelector(".session-history-pager")?.remove();
+  if (pageCount <= 1) return;
+  const number = (value) => value.toLocaleString("fa-IR");
+  const control = (target, label, disabled = false, current = false) =>
+    `<button type="button" class="ghost ui-button ui-button-flat" data-ui-tone="navigate" data-legacy-click="session-history-page" data-history-page="${target}"${disabled ? " disabled" : ""}${current ? ' aria-current="page" data-ui-variant="solid"' : ""} aria-label="${esc(label === "قبلی" || label === "بعدی" ? label : "صفحه " + label)}">${esc(label)}</button>`;
+  let nav =
+    control(page - 1, "قبلی", page === 0) +
+    '<div class="session-history-pages">';
+  const start = Math.max(0, Math.min(page - 1, pageCount - 3));
+  for (let target = start; target < Math.min(pageCount, start + 3); target++)
+    nav += control(target, number(target + 1), false, target === page);
+  nav += "</div>" + control(page + 1, "بعدی", page === pageCount - 1);
+  nav += `<span class="session-history-page-status" role="status">صفحه ${number(page + 1)} از ${number(pageCount)}</span>`;
+  history.insertAdjacentHTML(
+    "beforeend",
+    `<nav class="session-history-pager" aria-label="صفحه‌بندی جلسات قبلی">${nav}</nav>`,
   );
+  if (focusPager)
+    history
+      .querySelector('[aria-current="page"]')
+      ?.focus({ preventScroll: true });
 }
 
 function updateSessionLessonOptions() {

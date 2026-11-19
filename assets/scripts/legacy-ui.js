@@ -1170,23 +1170,37 @@ s.date);return s.classId===entry.classId&&s.period===period&&sd===day}).sort((a,
   <div class="session-setup-actions">
     <button type="button" data-legacy-click="schedule-timetable:15" data-legacy-click-arg6="${esc(day)}" data-legacy-click-arg7="${esc(period)}">${EduIcons.html(
 "arrow")}<span>شروع / ادامه جلسه</span></button>
-  </div>`;if(existing.length){h+=`<section class="session-setup-history"><header><h4>جلسات قبلی این زنگ</h4><span>${existing.length.toLocaleString(
-"fa-IR")} جلسه</span></header><div class="session-setup-recent">`;existing.slice(0,15).forEach(s=>{const present=Object.values(s.attendance).filter(x=>x==="\
-present"||typeof x==="string"&&x.startsWith("late")).length;const total=sessionStudents(cls.classObj,s).length;const lessonName=cls.classObj.lessons.find(l=>l.id===
-s.lessonId)?.name;h+=`<button type="button" class="session-setup-recent-item" data-legacy-click="schedule-timetable:16" data-legacy-click-arg0="${esc(s.id)}">
+  </div>`;if(existing.length){h+=`<section class="session-setup-history" data-history-class="${esc(entry.classId)}"><header><h4>جلسات قبلی این زنگ</h4><span>${existing.
+length.toLocaleString("fa-IR")} جلسه</span></header><div class="session-setup-recent"></div></section>`}if(showModal("ثبت جلسه",`<div class="session-\
+start-panel" data-session-day="${esc(day)}" data-session-period="${esc(period)}">`+h+"</div>")===false)return;renderSessionSetupHistory()}function renderSessionSetupHistory(requestedPage=0,focusPager=false){
+const history=document.querySelector("#modalBody .session-setup-history");const panel=history?.closest(".session-start-panel");if(!panel)return;const classId=history.
+dataset.historyClass;const cls=findClassById(classId);if(!cls)return;const day=Number(panel.dataset.sessionDay);const period=Number(panel.dataset.sessionPeriod);
+const existing=db.sessions.filter(s=>s.classId===classId&&s.period===period&&getDayIdxFromDate(s.date)===day).sort((a,b)=>b.date.localeCompare(a.date));const pageSize=5;
+const pageCount=Math.max(1,Math.ceil(existing.length/pageSize));const page=Math.max(0,Math.min(Number.isInteger(Number(requestedPage))?Number(requestedPage):0,pageCount-
+1));history.dataset.historyPage=String(page);history.querySelector("header > span").textContent=`${existing.length.toLocaleString("fa-IR")} جلسه`;let rows="";
+existing.slice(page*pageSize,(page+1)*pageSize).forEach(s=>{const present=Object.values(s.attendance||{}).filter(x=>x==="present"||typeof x==="string"&&x.startsWith(
+"late")).length;const total=sessionStudents(cls.classObj,s).length;const lessonName=cls.classObj.lessons.find(l=>l.id===s.lessonId)?.name;rows+=`<button type="b\
+utton" class="session-setup-recent-item" data-legacy-click="schedule-timetable:16" data-legacy-click-arg0="${esc(s.id)}">
         <span class="session-setup-recent-copy"><strong>${esc(faDate(s.date))}</strong>${lessonName?`<span>${esc(lessonName)}</span>`:""}<small>${present}/${total}\
- حاضر · ${s.scores.length} امتیاز</small></span>
+ حاضر · ${(s.scores||[]).length} امتیاز</small></span>
         <span class="session-setup-recent-arrow" aria-hidden="true">${EduIcons.html("arrow")}</span>
-      </button>`});h+=`</div></section>`}showModal("ثبت جلسه",`<div class="session-start-panel" data-session-day="${esc(day)}" data-session-period="${esc(
-period)}">`+h+"</div>")}function updateSessionLessonOptions(){const classId=document.getElementById("sessNewClass").value;const sel=document.getElementById("ses\
-sNewLesson");if(!sel)return;const cls=findClassById(classId);if(!cls){sel.innerHTML='<option value="">ابتدا کلاس را انتخاب کنید</option>';return}
-sel.innerHTML=(cls.classObj.lessons||[]).map(l=>`<option value="${l.id}">${esc(l.name)}</option>`).join("")}async function legacy_startSessionFromMaster(day,period){
-const date=document.getElementById("sessNewDate").value;const classId=document.getElementById("sessNewClass").value;const lessonId=document.getElementById("sess\
-NewLesson").value;if(!date)return alert("تاریخ را انتخاب کنید");if(!classId||!lessonId)return alert("کلاس و درس را انتخاب کنید");
-const dIdx=getDayIdxFromDate(date);if(dIdx!==day){if(!confirm(`تاریخ ${faDate(date)} روز ${DAYS[dIdx]} است، نه ${DAYS[day]}. ادامه می‌دهید؟`))
-return}let session=db.sessions.find(s=>s.classId===classId&&s.date===date&&s.period===period);if(!session){const cls=findClassById(classId);session={id:uid(),schoolId:cls.
-school.id,classId,date,period,lessonId,poudmanId:null,unitId:null,attendance:{},scores:[],roster:snapshotRoster(cls.classObj)};db.sessions.push(session);await saveDB(
-{sessionId:session.id})}else if(session.lessonId!==lessonId){alert("این زنگ برای درس دیگری ثبت شده است؛ برای حفظ سابقه جلسه قبلی باز می‌شود.")}
+      </button>`});history.querySelector(".session-setup-recent").innerHTML=rows;history.querySelector(".session-history-pager")?.remove();if(pageCount<=1)return;
+const number=value=>value.toLocaleString("fa-IR");const control=(target,label,disabled=false,current=false)=>`<button type="button" class="ghost ui-button ui-bu\
+tton-flat" data-ui-tone="navigate" data-legacy-click="session-history-page" data-history-page="${target}"${disabled?" disabled":""}${current?' aria-current="pag\
+e" data-ui-variant="solid"':""} aria-label="${esc(label==="قبلی"||label==="بعدی"?label:"صفحه "+label)}">${esc(label)}</button>`;let nav=control(page-
+1,"قبلی",page===0)+'<div class="session-history-pages">';const start=Math.max(0,Math.min(page-1,pageCount-3));for(let target=start;target<Math.min(pageCount,
+start+3);target++)nav+=control(target,number(target+1),false,target===page);nav+="</div>"+control(page+1,"بعدی",page===pageCount-1);nav+=`<span class="sessi\
+on-history-page-status" role="status">صفحه ${number(page+1)} از ${number(pageCount)}</span>`;history.insertAdjacentHTML("beforeend",`<nav class="session-h\
+istory-pager" aria-label="صفحه‌بندی جلسات قبلی">${nav}</nav>`);if(focusPager)history.querySelector('[aria-current="page"]')?.focus({preventScroll:true})}
+function updateSessionLessonOptions(){const classId=document.getElementById("sessNewClass").value;const sel=document.getElementById("sessNewLesson");if(!sel)return;
+const cls=findClassById(classId);if(!cls){sel.innerHTML='<option value="">ابتدا کلاس را انتخاب کنید</option>';return}sel.innerHTML=(cls.classObj.
+lessons||[]).map(l=>`<option value="${l.id}">${esc(l.name)}</option>`).join("")}async function legacy_startSessionFromMaster(day,period){const date=document.getElementById(
+"sessNewDate").value;const classId=document.getElementById("sessNewClass").value;const lessonId=document.getElementById("sessNewLesson").value;if(!date)return alert(
+"تاریخ را انتخاب کنید");if(!classId||!lessonId)return alert("کلاس و درس را انتخاب کنید");const dIdx=getDayIdxFromDate(date);
+if(dIdx!==day){if(!confirm(`تاریخ ${faDate(date)} روز ${DAYS[dIdx]} است، نه ${DAYS[day]}. ادامه می‌دهید؟`))return}let session=db.sessions.
+find(s=>s.classId===classId&&s.date===date&&s.period===period);if(!session){const cls=findClassById(classId);session={id:uid(),schoolId:cls.school.id,classId,date,
+period,lessonId,poudmanId:null,unitId:null,attendance:{},scores:[],roster:snapshotRoster(cls.classObj)};db.sessions.push(session);await saveDB({sessionId:session.
+id})}else if(session.lessonId!==lessonId){alert("این زنگ برای درس دیگری ثبت شده است؛ برای حفظ سابقه جلسه قبلی باز می‌شود.")}
 openSessionModal(session)}function openExistingSession(id){const sess=db.sessions.find(s=>s.id===id);if(sess)openSessionModal(sess)}EduLegacyEvents.register("we\
 ek-settings-toggle",function(){state.masterSettingsOpen=this.open});EduLegacyEvents.register("week-configure",function(){const day=Number(this.dataset.day),period=Number(
 this.dataset.period);return this.dataset.configure==="yes"?openMasterConfig(day,period):clickMasterCell(day,period)});EduLegacyEvents.register("schedule-timetab\
@@ -1203,9 +1217,10 @@ return closeModal()});EduLegacyEvents.register("schedule-timetable:13",function(
 timetable:14",function(event){return document.getElementById("shamsiSessNew").textContent=toShamsi(this.value)});EduLegacyEvents.register("schedule-timetable:15",
 function(event){return runSessionFormAction(this,()=>startSessionFromMaster(JSON.parse(this.getAttribute("data-legacy-click-arg6")),JSON.parse(this.getAttribute(
 "data-legacy-click-arg7"))))});EduLegacyEvents.register("schedule-timetable:16",function(event){return openExistingSession(this.getAttribute("data-legacy-click-\
-arg0"))});EduLegacyEvents.register("schedule-timetable:17",function(event){return openMasterConfig(JSON.parse(this.getAttribute("data-legacy-click-arg7")),JSON.
-parse(this.getAttribute("data-legacy-click-arg8")))});EduLegacyEvents.register("schedule-timetable:18",function(event){return saveMasterConfig(JSON.parse(this.getAttribute(
-"data-legacy-click-arg5")),JSON.parse(this.getAttribute("data-legacy-click-arg6")))});EduLegacyEvents.register("schedule-timetable:19",function(event){return clearMasterConfig(
+arg0"))});EduLegacyEvents.register("session-history-page",function(){return renderSessionSetupHistory(this.getAttribute("data-history-page"),true)});EduLegacyEvents.
+register("schedule-timetable:17",function(event){return openMasterConfig(JSON.parse(this.getAttribute("data-legacy-click-arg7")),JSON.parse(this.getAttribute("d\
+ata-legacy-click-arg8")))});EduLegacyEvents.register("schedule-timetable:18",function(event){return saveMasterConfig(JSON.parse(this.getAttribute("data-legacy-c\
+lick-arg5")),JSON.parse(this.getAttribute("data-legacy-click-arg6")))});EduLegacyEvents.register("schedule-timetable:19",function(event){return clearMasterConfig(
 JSON.parse(this.getAttribute("data-legacy-click-arg7")),JSON.parse(this.getAttribute("data-legacy-click-arg8")))});EduLegacyEvents.register("week-config-enable-\
 edit",function(){return enableMasterConfigEditing(this)});async function legacy_deleteSchool(id){if(!confirm("مدرسه و تمام داده‌هایش حذف شوند؟"))
 return;const school=db.schools.find(s=>s.id===id);const classIds=(school?.classes||[]).map(c=>c.id);db.schools=db.schools.filter(s=>s.id!==id);db.sessions=db.sessions.
