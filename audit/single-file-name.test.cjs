@@ -29,6 +29,21 @@ function fixture(shared = new Map()) {
     validate: (name, options) => context.assertClassroomFileName(name, options),
   };
 }
+
+test("classroom filename errors identify the actual rejected name and the supported prefix", () => {
+  const f = fixture();
+  for (const name of [
+    "legacy-school.json",
+    "Classyar-Classroom(۱).json",
+    "Classyar-QuestionBank.json",
+  ])
+    assert.throws(
+      () => f.validate(name),
+      (error) =>
+        error.message.includes("«" + name + "»") &&
+        error.message.includes("Classyar-Classroom.json"),
+    );
+});
 test("stable classroom names reserve numbered copies across reloads, independently of date", () => {
   const f = fixture(),
     a = f.reserve();

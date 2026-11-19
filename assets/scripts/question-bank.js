@@ -87,40 +87,40 @@ bank"),request=store.get("file-backup");let invalidated=false;request.onsuccess=
 "file-backup");else store.delete("file-backup")};tx.oncomplete=()=>resolve();tx.onabort=()=>reject(invalidated?cancelled():tx.error||Error("ثبت اتصال فایل ناموف\
 ق بود."))})}root.EduQuestionBankRepository={read,save,clear,readBackup,writeBackup}})(globalThis);(function(root){"use strict";function assertFileName(name,{
 allowText=false}={}){if(typeof name!=="string"||!(allowText?/^Classyar-QuestionBank(?: ?\([1-9]\d*\))?\.(?:json|txt)$/:/^Classyar-QuestionBank(?: ?\([1-9]\d*\))?\.json$/).
-test(name))throw Error("نام فایل بانک سؤال باید Classyar-QuestionBank.json یا نسخهٔ شماره‌دار آن مانند Classyar-QuestionBank(1).json باشد. فایل‌های قدیمی را ابت\
-دا تغییر نام دهید؛ محتوای آن‌ها نیز بررسی می‌شود.")}function createFileBackup(repository,host=root){const D=root.EduQuestionBank;
-let config=null,initialized,timer,debounce,choosing=false,clearing=false;const listeners=new Set;let status={state:"inactive",message:"ذخیرهٔ خودکار فایل فعال ن\
-یست."};const supported=()=>!!(host.isSecureContext&&host.showSaveFilePicker&&host.navigator?.locks?.request&&host.crypto?.subtle);function notify(state,message){
-status={state,message,name:config?.handle?.name||"",savedAt:config?.savedAt||"",connected:!!config};for(const listener of listeners)listener({...status});if(host===
-root)root.dispatchEvent?.(new Event("edu-question-bank-file-status"))}const locked=action=>host.navigator.locks.request("ClassyarQuestionBank.file",action);const cancelled=()=>{
-const error=Error("عملیات فایل لغو شد؛ بخش پشتیبان دیگر فعال نیست.");error.code="question-bank-file-cancelled";return error};
-const assertCurrent=isCurrent=>{if(!isCurrent())throw cancelled()};const isCancelled=error=>error?.code==="question-bank-file-cancelled";function restoreStatus(previous){
-if(previous&&status.state==="busy")notify(previous.state,previous.message)}const writtenAfterClose=(written=true)=>Error((written?"فایل نوشته شد، اما ثبت اتصال \
-کامل نشد؛ ":"بستن فایل آغاز شد و ممکن است محتوای آن تغییر کرده باشد؛ ")+"بخش پشتیبان بسته شده است. وضعیت فای\
-ل و اتصال را بررسی کنید.");const counts=bank=>Object.fromEntries(["courses","units","questions","exams"].map(key=>[key,bank[key].length]));function contents(bank){
-return JSON.stringify({...bank,revision:0},(_key,value)=>value&&typeof value==="object"&&!Array.isArray(value)?Object.fromEntries(Object.keys(value).sort().map(
-key=>[key,value[key]])):value)}function dropped(before,after){return before&&Object.keys(after).some(key=>before[key]>0&&after[key]===0||before[key]>=10&&after[key]<=
-before[key]/2)}async function hash(text){const bytes=await host.crypto.subtle.digest("SHA-256",new TextEncoder().encode(text));return Array.from(new Uint8Array(
-bytes),n=>n.toString(16).padStart(2,"0")).join("")}async function inspect(handle,allowEmpty=false){assertFileName(handle.name);const file=await handle.getFile();
-if(typeof file.name==="string")assertFileName(file.name);if(file.size>D.LIMIT)throw Error("فایل بزرگ‌تر از سقف ۲۰ مگابایت است؛ تغییر نکرد.");
-const text=await file.text();const bank=!text&&allowEmpty?null:D.parse(text);return{text,bank,hash:await hash(text)}}function failed(error){notify("error",`${error.
-message||error} وضعیت فایل را بررسی کنید؛ پشتیبان دستی بگیرید.`);return false}async function write(handle,json,expectedHash,allowEmpty=false,isCurrent=()=>true){
-let stream,closeStarted=false,committed=false;try{const before=await inspect(handle,allowEmpty);assertCurrent(isCurrent);if(before.hash!==expectedHash)throw Error(
-"فایل پیش از نوشتن تغییر کرد؛ بازنویسی نشد.");stream=await handle.createWritable();assertCurrent(isCurrent);await stream.write(
-json);assertCurrent(isCurrent);closeStarted=true;await stream.close();committed=true;stream=null;const verified=await inspect(handle);if(verified.text!==json)throw Error(
-"محتوای فایل پس از نوشتن تأیید نشد.");return verified.hash}catch(error){if(closeStarted)error.fileCommitStarted=true;if(committed)error.
-fileCommitted=true;if(stream)await stream.abort().catch(()=>{});throw error}}function active(){notify("active",`ذخیره شد: ${config.handle.name} — ${new Date(
-config.savedAt).toLocaleString("fa-IR")}`)}async function sync({approved=false,expectedId,expectedRevision,isCurrent=()=>true}={}){if(!supported()||!isCurrent())
-return false;return locked(async()=>{const previousStatus={...status};let fileWritten=false;try{assertCurrent(isCurrent);config=await repository.readBackup();assertCurrent(
-isCurrent);if(!config){notify("inactive","ذخیرهٔ خودکار فایل فعال نیست.");return false}if(expectedId&&config.id!==expectedId)throw Error(
-"اتصال فایل تغییر کرد؛ نوشته نشد.");const permission=await config.handle.queryPermission({mode:"readwrite"});assertCurrent(isCurrent);
-if(permission!=="granted"){notify("permission","مجوز فایل نیاز به تأیید دارد.");return false}if(config.suspended&&!approved){notify("paus\
-ed","نوشتن فایل برای حفظ نسخهٔ قبلی متوقف است؛ نسخهٔ قبلی را نگه دارید و برای ادامه «ذخیره اکنون» را بزنید.");
-return false}const current=await inspect(config.handle);assertCurrent(isCurrent);if(current.hash!==config.hash)throw Error("فایل بیرون از این اتصال تغییر کرده؛ \
-فایل تازه‌ای انتخاب کنید.");const bank=D.validate(await repository.read());assertCurrent(isCurrent);if(approved&&bank.revision!==expectedRevision)
-throw Error("اطلاعات پس از تأیید تغییر کرد؛ دوباره بررسی کنید.");const baseline=counts(bank);if(!approved&&(dropped(config.
-counts,baseline)||dropped(counts(current.bank),baseline))){const next2={...config,suspended:"source-drop"};await repository.writeBackup(next2,{isCurrent});config=
-next2;notify("paused","کاهش شدید اطلاعات شناسایی شد؛ برای حفظ نسخهٔ قبلی، فایل تغییر نکرد. ادامه فقط با تأیید شماست.");
+test(name))throw Error("نام فایل بانک سؤال باید Classyar-QuestionBank.json یا نسخهٔ شماره‌دار آن مانند Classyar-QuestionBank(1).json باشد. نام فعلی: «"+
+(typeof name==="string"?name:"نامشخص")+"». فایل‌های قدیمی را ابتدا تغییر نام دهید و دوباره انتخاب کنید؛ محتوای آن‌ها نیز بررسی می‌شود.")}
+function createFileBackup(repository,host=root){const D=root.EduQuestionBank;let config=null,initialized,timer,debounce,choosing=false,clearing=false;const listeners=new Set;
+let status={state:"inactive",message:"ذخیرهٔ خودکار فایل فعال نیست."};const supported=()=>!!(host.isSecureContext&&host.showSaveFilePicker&&
+host.navigator?.locks?.request&&host.crypto?.subtle);function notify(state,message){status={state,message,name:config?.handle?.name||"",savedAt:config?.savedAt||
+"",connected:!!config};for(const listener of listeners)listener({...status});if(host===root)root.dispatchEvent?.(new Event("edu-question-bank-file-status"))}const locked=action=>host.
+navigator.locks.request("ClassyarQuestionBank.file",action);const cancelled=()=>{const error=Error("عملیات فایل لغو شد؛ بخش پشتیبان دیگر فعال نیست.");
+error.code="question-bank-file-cancelled";return error};const assertCurrent=isCurrent=>{if(!isCurrent())throw cancelled()};const isCancelled=error=>error?.code===
+"question-bank-file-cancelled";function restoreStatus(previous){if(previous&&status.state==="busy")notify(previous.state,previous.message)}const writtenAfterClose=(written=true)=>Error(
+(written?"فایل نوشته شد، اما ثبت اتصال کامل نشد؛ ":"بستن فایل آغاز شد و ممکن است محتوای آن تغییر کرده باشد؛ ")+
+"بخش پشتیبان بسته شده است. وضعیت فایل و اتصال را بررسی کنید.");const counts=bank=>Object.fromEntries(["courses","u\
+nits","questions","exams"].map(key=>[key,bank[key].length]));function contents(bank){return JSON.stringify({...bank,revision:0},(_key,value)=>value&&typeof value===
+"object"&&!Array.isArray(value)?Object.fromEntries(Object.keys(value).sort().map(key=>[key,value[key]])):value)}function dropped(before,after){return before&&Object.
+keys(after).some(key=>before[key]>0&&after[key]===0||before[key]>=10&&after[key]<=before[key]/2)}async function hash(text){const bytes=await host.crypto.subtle.
+digest("SHA-256",new TextEncoder().encode(text));return Array.from(new Uint8Array(bytes),n=>n.toString(16).padStart(2,"0")).join("")}async function inspect(handle,allowEmpty=false){
+assertFileName(handle.name);const file=await handle.getFile();if(typeof file.name==="string")assertFileName(file.name);if(file.size>D.LIMIT)throw Error("فایل بز\
+رگ‌تر از سقف ۲۰ مگابایت است؛ تغییر نکرد.");const text=await file.text();const bank=!text&&allowEmpty?null:D.parse(text);return{
+text,bank,hash:await hash(text)}}function failed(error){notify("error",`${error.message||error} وضعیت فایل را بررسی کنید؛ پشتیبان دستی بگیرید.`);
+return false}async function write(handle,json,expectedHash,allowEmpty=false,isCurrent=()=>true){let stream,closeStarted=false,committed=false;try{const before=await inspect(
+handle,allowEmpty);assertCurrent(isCurrent);if(before.hash!==expectedHash)throw Error("فایل پیش از نوشتن تغییر کرد؛ بازنویسی نشد.");
+stream=await handle.createWritable();assertCurrent(isCurrent);await stream.write(json);assertCurrent(isCurrent);closeStarted=true;await stream.close();committed=
+true;stream=null;const verified=await inspect(handle);if(verified.text!==json)throw Error("محتوای فایل پس از نوشتن تأیید نشد.");return verified.
+hash}catch(error){if(closeStarted)error.fileCommitStarted=true;if(committed)error.fileCommitted=true;if(stream)await stream.abort().catch(()=>{});throw error}}function active(){
+notify("active",`ذخیره شد: ${config.handle.name} — ${new Date(config.savedAt).toLocaleString("fa-IR")}`)}async function sync({approved=false,expectedId,
+expectedRevision,isCurrent=()=>true}={}){if(!supported()||!isCurrent())return false;return locked(async()=>{const previousStatus={...status};let fileWritten=false;
+try{assertCurrent(isCurrent);config=await repository.readBackup();assertCurrent(isCurrent);if(!config){notify("inactive","ذخیرهٔ خودکار فایل فعال نیست.");
+return false}if(expectedId&&config.id!==expectedId)throw Error("اتصال فایل تغییر کرد؛ نوشته نشد.");const permission=await config.handle.
+queryPermission({mode:"readwrite"});assertCurrent(isCurrent);if(permission!=="granted"){notify("permission","مجوز فایل نیاز به تأیید دارد.");
+return false}if(config.suspended&&!approved){notify("paused","نوشتن فایل برای حفظ نسخهٔ قبلی متوقف است؛ نسخهٔ قبلی را نگه دارید و برای ادامه «ذخیره اکنون» را بز\
+نید.");return false}const current=await inspect(config.handle);assertCurrent(isCurrent);if(current.hash!==config.hash)throw Error("فایل بیرون از این اتصال تغ\
+ییر کرده؛ فایل تازه‌ای انتخاب کنید.");const bank=D.validate(await repository.read());assertCurrent(isCurrent);if(approved&&bank.revision!==
+expectedRevision)throw Error("اطلاعات پس از تأیید تغییر کرد؛ دوباره بررسی کنید.");const baseline=counts(bank);if(!approved&&
+(dropped(config.counts,baseline)||dropped(counts(current.bank),baseline))){const next2={...config,suspended:"source-drop"};await repository.writeBackup(next2,{isCurrent});
+config=next2;notify("paused","کاهش شدید اطلاعات شناسایی شد؛ برای حفظ نسخهٔ قبلی، فایل تغییر نکرد. ادامه فقط با تأیید شماست.");
 return false}const json=D.size(bank);if(current.text===json){if(config.suspended){const next2={...config};delete next2.suspended;await repository.writeBackup(next2,
 {isCurrent});config=next2}active();return true}notify("busy","در حال ذخیره و بررسی فایل بانک سؤال…");const fingerprint=await write(
 config.handle,json,current.hash,false,isCurrent);fileWritten=true;assertCurrent(isCurrent);const next={...config,hash:fingerprint,counts:baseline,savedAt:new Date().

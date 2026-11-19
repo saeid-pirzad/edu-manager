@@ -194,7 +194,9 @@ async function confirmWipe() {
       );
     } else {
       try {
-        connection = await openDatabase();
+        // A permission/name/file failure can precede retiring the connection.
+        // Reuse that live connection rather than abandoning it on every retry.
+        if (connectionRetired) connection = await openDatabase();
         connectionRetired = false;
         const observedReset = await readRecord("records", RESET_RECORD_KEY);
         if (
@@ -208,7 +210,12 @@ async function confirmWipe() {
         ready = true;
         blocked = wasBlocked;
         showRecordEditorError(
-          Error("حذف ثبت نشد؛ اطلاعات قبلی محفوظ است. " + error.message),
+          Error(
+            fileRemoved
+              ? "فایل متصل حذف شد، اما پاک‌سازی اطلاعات مدرسه ثبت نشد؛ اطلاعات مدرسه محفوظ است. " +
+                  failure.message
+              : "حذف ثبت نشد؛ فایل و اطلاعات قبلی محفوظ است. " + error.message,
+          ),
           "wipeError",
         );
       } catch (reopenError) {

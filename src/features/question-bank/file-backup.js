@@ -10,7 +10,9 @@
       ).test(name)
     )
       throw Error(
-        "نام فایل بانک سؤال باید Classyar-QuestionBank.json یا نسخهٔ شماره‌دار آن مانند Classyar-QuestionBank(1).json باشد. فایل‌های قدیمی را ابتدا تغییر نام دهید؛ محتوای آن‌ها نیز بررسی می‌شود.",
+        "نام فایل بانک سؤال باید Classyar-QuestionBank.json یا نسخهٔ شماره‌دار آن مانند Classyar-QuestionBank(1).json باشد. نام فعلی: «" +
+          (typeof name === "string" ? name : "نامشخص") +
+          "». فایل‌های قدیمی را ابتدا تغییر نام دهید و دوباره انتخاب کنید؛ محتوای آن‌ها نیز بررسی می‌شود.",
       );
   }
   // File handles stay device-local; they never enter the exported bank JSON.

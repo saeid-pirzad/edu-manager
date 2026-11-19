@@ -9,7 +9,9 @@ function assertClassroomFileName(name, { allowText = false } = {}) {
     : /^Classyar-Classroom(?: ?\([1-9]\d*\))?\.json$/;
   if (typeof name !== "string" || !pattern.test(name))
     throw Error(
-      "نام فایل کلاس‌داری باید Classyar-Classroom.json یا نسخهٔ شماره‌دار آن مانند Classyar-Classroom(1).json باشد. فایل‌های قدیمی را ابتدا تغییر نام دهید؛ محتوای آن‌ها نیز بررسی می‌شود.",
+      "نام فایل کلاس‌داری باید Classyar-Classroom.json یا نسخهٔ شماره‌دار آن مانند Classyar-Classroom(1).json باشد. نام فعلی: «" +
+        (typeof name === "string" ? name : "نامشخص") +
+        "». فایل‌های قدیمی را ابتدا تغییر نام دهید و دوباره انتخاب کنید؛ محتوای آن‌ها نیز بررسی می‌شود.",
     );
 }
 function readSingleFileNames() {

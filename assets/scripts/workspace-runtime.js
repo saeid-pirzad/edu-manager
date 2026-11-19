@@ -1233,33 +1233,33 @@ name});backupShareMessage(session,"دانلود فایل درخواست شد؛ �
 return true}catch(error){backupShareMessage(session,error.message,"error");return false}}const SINGLE_FILE_NAMES_KEY="EduManager.singleFileNames.v2";let singleFileNameLedger={
 count:0,token:""},singleFileNameReservationSequence=0;function assertClassroomFileName(name,{allowText=false}={}){const pattern=allowText?/^Classyar-Classroom(?: ?\([1-9]\d*\))?\.(?:json|txt)$/:
 /^Classyar-Classroom(?: ?\([1-9]\d*\))?\.json$/;if(typeof name!=="string"||!pattern.test(name))throw Error("نام فایل کلاس‌داری باید Classyar-Classroom.json یا ن\
-سخهٔ شماره‌دار آن مانند Classyar-Classroom(1).json باشد. فایل‌های قدیمی را ابتدا تغییر نام دهید؛ محتوای آن‌ها نیز بررسی می‌شود.")}
-function readSingleFileNames(){try{const saved=JSON.parse(localStorage.getItem(SINGLE_FILE_NAMES_KEY));if(saved?.version===2&&Number.isSafeInteger(saved.count)&&
-saved.count>=0&&saved.count<Number.MAX_SAFE_INTEGER&&typeof saved.token==="string"&&saved.token.length<=100&&saved.count>=singleFileNameLedger.count)return{count:saved.
-count,token:saved.token}}catch{}return{...singleFileNameLedger}}function rememberSingleFileNames(value){singleFileNameLedger={...value};try{localStorage.setItem(
-SINGLE_FILE_NAMES_KEY,JSON.stringify({version:2,...value}))}catch{}}function reserveSingleFileName(){const previous=readSingleFileNames(),count=previous.count+1,
-token=Date.now().toString(36)+"-"+ ++singleFileNameReservationSequence+"-"+Math.random().toString(36).slice(2);rememberSingleFileNames({count,token});let released=false;
-return{name:"Classyar-Classroom"+(count>1?`(${count-1})`:"")+".json",release(){if(released)return false;released=true;const current=readSingleFileNames();if(current.
-count!==count||current.token!==token)return false;rememberSingleFileNames(previous);return true}}}const singleFileKey="EduManager.singleFile";const SINGLE_FILE_POLL_MS=3e4,
-SINGLE_FILE_DEBOUNCE_MS=2e3;let singleFileSavedSource=null,singleFileReschedule=false,singleFileChoosing=false;let singleFile=null,singleFileTimer=null,singleFileDebounce=null,
-singleFileWriting=null,singleFileFailure=false,singleFilePermissionNeeded=false,singleFileNoticeSaved=false,singleFileMessage="ذخیره خودکار در فایل هنوز فعال نی\
-ست.";function singleFileBannerHtml(){return EduBackupAutomaticView.summaryHtml({name:singleFile?.handle?.name,savedAt:singleFile?.savedAt,needsReview:singleFileFailure||
-singleFilePermissionNeeded||!!singleFile?.suspension})}function paintSingleFileBanner(){const html=welcomeFileSummariesHtml();for(const id of["welcomeFileSummar\
-y","singleFileSummary"]){const element=document.getElementById(id);const content=id==="singleFileSummary"?EduBackupAutomaticView.summaryHtml({...singleFileViewState(),
-detailed:true}):html;if(element&&element.innerHTML!==content)element.innerHTML=content}const panel=document.getElementById("singleFileSummary")?.closest?.(".bac\
-kup-automatic");if(panel)for(const action of["choose","save","stop"]){const button=panel.querySelector('[data-backup-file-action="'+action+'"]');if(button)button.
-disabled=!window.showSaveFilePicker||!!singleFileChoosing||!!singleFileWriting||action!=="choose"&&!singleFile}}function welcomeFileSummariesHtml(){const bank=globalThis.
-EduQuestionBankFileBackup?.service?.state()||{};const schoolReview=singleFileFailure||singleFilePermissionNeeded||!!singleFile?.suspension;return[{scope:"school",
-label:"اطلاعات مدرسه",name:singleFile?.handle?.name,savedAt:singleFile?.savedAt,review:schoolReview,state:schoolReview?"review":singleFile?"connecte\
-d":"inactive"},{scope:"bank",label:"بانک سؤال و آزمون‌ها",name:bank.name,savedAt:bank.savedAt,review:["permission","paused","error"].includes(
-bank.state),state:["permission","paused","error"].includes(bank.state)?"review":bank.connected?"connected":"inactive"}].map(file=>'<div class="welcome-storage-i\
-tem" data-scope="'+file.scope+'" data-state="'+file.state+'"><div class="welcome-storage-heading"><strong>'+file.label+'</strong><span class="welcome-storage-st\
-ate">'+(file.review?"نیاز به بررسی":file.state==="connected"?"فایل متصل":"بدون اتصال")+"</span></div>"+EduBackupAutomaticView.summaryHtml(
-{name:file.name,savedAt:file.savedAt,needsReview:false})+"</div>").join("")}function singleFileNoticeHtml(message=singleFileMessage,permissionAction=true){const canRequest=permissionAction&&
-singleFilePermissionNeeded&&window.showSaveFilePicker&&typeof singleFile?.handle?.requestPermission==="function";return EduBackupAutomaticView.noticeHtml({purpose:"\
-اطلاعات مدرسه",name:singleFile?.handle?.name,message,permission:canRequest?{attributes:{"data-workspace-action":"single-file-save"},ariaLabel:"اجازه\
- مجدد برای فایل اطلاعات مدرسه: "+singleFile.handle.name}:null})}function paintQuestionBankFileNotice(){const welcome=document.getElementById(
-"welcomeFileSummary");if(welcome){const html=welcomeFileSummariesHtml();if(welcome.innerHTML!==html)welcome.innerHTML=html}const panel=document.querySelector?.(
+سخهٔ شماره‌دار آن مانند Classyar-Classroom(1).json باشد. نام فعلی: «"+(typeof name==="string"?name:"نامشخص")+"». فایل‌های\
+ قدیمی را ابتدا تغییر نام دهید و دوباره انتخاب کنید؛ محتوای آن‌ها نیز بررسی می‌شود.")}function readSingleFileNames(){
+try{const saved=JSON.parse(localStorage.getItem(SINGLE_FILE_NAMES_KEY));if(saved?.version===2&&Number.isSafeInteger(saved.count)&&saved.count>=0&&saved.count<Number.
+MAX_SAFE_INTEGER&&typeof saved.token==="string"&&saved.token.length<=100&&saved.count>=singleFileNameLedger.count)return{count:saved.count,token:saved.token}}catch{}
+return{...singleFileNameLedger}}function rememberSingleFileNames(value){singleFileNameLedger={...value};try{localStorage.setItem(SINGLE_FILE_NAMES_KEY,JSON.stringify(
+{version:2,...value}))}catch{}}function reserveSingleFileName(){const previous=readSingleFileNames(),count=previous.count+1,token=Date.now().toString(36)+"-"+ ++singleFileNameReservationSequence+
+"-"+Math.random().toString(36).slice(2);rememberSingleFileNames({count,token});let released=false;return{name:"Classyar-Classroom"+(count>1?`(${count-1})`:"")+"\
+.json",release(){if(released)return false;released=true;const current=readSingleFileNames();if(current.count!==count||current.token!==token)return false;rememberSingleFileNames(
+previous);return true}}}const singleFileKey="EduManager.singleFile";const SINGLE_FILE_POLL_MS=3e4,SINGLE_FILE_DEBOUNCE_MS=2e3;let singleFileSavedSource=null,singleFileReschedule=false,
+singleFileChoosing=false;let singleFile=null,singleFileTimer=null,singleFileDebounce=null,singleFileWriting=null,singleFileFailure=false,singleFilePermissionNeeded=false,
+singleFileNoticeSaved=false,singleFileMessage="ذخیره خودکار در فایل هنوز فعال نیست.";function singleFileBannerHtml(){return EduBackupAutomaticView.
+summaryHtml({name:singleFile?.handle?.name,savedAt:singleFile?.savedAt,needsReview:singleFileFailure||singleFilePermissionNeeded||!!singleFile?.suspension})}function paintSingleFileBanner(){
+const html=welcomeFileSummariesHtml();for(const id of["welcomeFileSummary","singleFileSummary"]){const element=document.getElementById(id);const content=id==="s\
+ingleFileSummary"?EduBackupAutomaticView.summaryHtml({...singleFileViewState(),detailed:true}):html;if(element&&element.innerHTML!==content)element.innerHTML=content}
+const panel=document.getElementById("singleFileSummary")?.closest?.(".backup-automatic");if(panel)for(const action of["choose","save","stop"]){const button=panel.
+querySelector('[data-backup-file-action="'+action+'"]');if(button)button.disabled=!window.showSaveFilePicker||!!singleFileChoosing||!!singleFileWriting||action!==
+"choose"&&!singleFile}}function welcomeFileSummariesHtml(){const bank=globalThis.EduQuestionBankFileBackup?.service?.state()||{};const schoolReview=singleFileFailure||
+singleFilePermissionNeeded||!!singleFile?.suspension;return[{scope:"school",label:"اطلاعات مدرسه",name:singleFile?.handle?.name,savedAt:singleFile?.
+savedAt,review:schoolReview,state:schoolReview?"review":singleFile?"connected":"inactive"},{scope:"bank",label:"بانک سؤال و آزمون‌ها",name:bank.
+name,savedAt:bank.savedAt,review:["permission","paused","error"].includes(bank.state),state:["permission","paused","error"].includes(bank.state)?"review":bank.connected?
+"connected":"inactive"}].map(file=>'<div class="welcome-storage-item" data-scope="'+file.scope+'" data-state="'+file.state+'"><div class="welcome-storage-headin\
+g"><strong>'+file.label+'</strong><span class="welcome-storage-state">'+(file.review?"نیاز به بررسی":file.state==="connected"?"فایل متصل":"بد\
+ون اتصال")+"</span></div>"+EduBackupAutomaticView.summaryHtml({name:file.name,savedAt:file.savedAt,needsReview:false})+"</div>").join("")}function singleFileNoticeHtml(message=singleFileMessage,permissionAction=true){
+const canRequest=permissionAction&&singleFilePermissionNeeded&&window.showSaveFilePicker&&typeof singleFile?.handle?.requestPermission==="function";return EduBackupAutomaticView.
+noticeHtml({purpose:"اطلاعات مدرسه",name:singleFile?.handle?.name,message,permission:canRequest?{attributes:{"data-workspace-action":"single-file-sa\
+ve"},ariaLabel:"اجازه مجدد برای فایل اطلاعات مدرسه: "+singleFile.handle.name}:null})}function paintQuestionBankFileNotice(){const welcome=document.
+getElementById("welcomeFileSummary");if(welcome){const html=welcomeFileSummariesHtml();if(welcome.innerHTML!==html)welcome.innerHTML=html}const panel=document.querySelector?.(
 "#app .workspace-bar");if(!panel)return;const service=globalThis.EduQuestionBankFileBackup?.service,state2=service?.state(),visible=state2?.state==="error"||state2?.
 connected&&["permission","paused"].includes(state2.state),permission=visible&&state2.state==="permission"&&service.supported();let notice=document.getElementById(
 "questionBankFileBadge");if(visible&&!notice){notice=document.createElement("div");notice.id="questionBankFileBadge";notice.className="single-file-notice questi\
@@ -2464,89 +2464,90 @@ await completeResetCleanup(resetConnection,marker);installationToken=marker.valu
 location.reload();return true}catch(failure){const error=fileRemoved?Error("فایل متصل حذف شد. "+failure.message,{cause:failure}):failure;if(fileRemoved){
 singleFileFailure=true}if(committedReset){forgetInstallation();resetScreen("اطلاعات مدرسه حذف شد، اما پاک‌سازی حافظهٔ مربوط به مدرسه کامل نشد. با بارگذاری مجدد،\
  پاک‌سازی ادامه پیدا می‌کند؛ بانک سؤال و فایل‌های دیگر تغییر نکرده‌اند. "+error.message)}else if(error.
-resetBlocked){resetScreen(error.message+" حذف معلق پس از بستن آن اتصال نیز خودکار اجرا نخواهد شد.")}else{try{connection=
-await openDatabase();connectionRetired=false;const observedReset=await readRecord("records",RESET_RECORD_KEY);if(connectionRetired||(observedReset?.value?.token||
-"")!==installationToken){connection.close();invalidateInstallation();return false}ready=true;blocked=wasBlocked;showRecordEditorError(Error("حذف ثبت نشد؛ اطلاعا\
-ت قبلی محفوظ است. "+error.message),"wipeError")}catch(reopenError){resetScreen("حذف ثبت نشد؛ برای خواندن دوباره اطلاعات، برنامه را بارگذاری کنید. "+
-reopenError.message)}}return false}finally{resetConnection?.close();if(!committedReset){resetBusy=false;if(hadFileTimer&&singleFile&&!singleFileFailure&&ready&&
-!blocked&&!connectionRetired)startSingleFile()}finish()}}function installUI(){installWorkspaceActions();installGradeEvents();installAttendanceReminderClock();window.
-addEventListener("storage",event=>{if(event.key===RESET_EPOCH_KEY&&event.newValue&&event.newValue!==installationToken&&!resetBusy)invalidateInstallation()});window.
-addEventListener("beforeunload",event=>{if(busy||drafts.size||assessmentContext.hasDrafts()||draftRecoveryFailed||draftWritesPending||window.EduQuestionBankUI?.
-hasPendingChanges?.()||hasRecordEditorChanges()||document.querySelector('.record-editor[aria-busy="true"],[data-entity-create][aria-busy="true"]')){event.preventDefault();
-event.returnValue=""}});window.addEventListener("pagehide",()=>{if(ready){storeDrafts();assessmentContext.persist().catch(()=>{})}tabClaimed=false;channel?.close()});
-window.addEventListener("pageshow",event=>{if(event.persisted)location.reload()});window.addEventListener("unhandledrejection",event=>{event.preventDefault();handleError(
-event.reason instanceof Error?event.reason:Error(String(event.reason)))});window.addEventListener("beforeprint",beforeReportPrint);window.addEventListener("afte\
-rprint",()=>{printAuthorization=null;document.getElementById("printRoot")?.remove();document.getElementById("printPageStyle")?.remove()});document.addEventListener(
-"keydown",event=>{const overlay=document.getElementById("modal");if(overlay.classList.contains("hidden"))return;if(event.key==="Escape"){event.preventDefault();
-if(drafts.size||assessmentContext.hasDrafts()){const body=document.getElementById("modalBody"),content=body.firstChild;flushDrafts({strict:true}).then(()=>{if(document.
-getElementById("modal")===overlay&&!overlay.classList.contains("hidden")&&document.getElementById("modalBody")===body&&body.firstChild===content)closeModal()}).
-catch(handleError)}else closeModal();return}if(event.key==="Tab"){const nodes=modalFocusableElements();if(nodes.length){const first=nodes[0],last=nodes[nodes.length-
-1];if(event.shiftKey&&(document.activeElement===first||!nodes.includes(document.activeElement))){event.preventDefault();last.focus()}else if(!event.shiftKey&&(document.
-activeElement===last||!nodes.includes(document.activeElement))){event.preventDefault();first.focus()}}}});if(channel)channel.onmessage=event=>{const message=event.
-data;if(singleFileChanged(message))return;if(message.type==="period-deleted"||message.type==="installation-restored"&&!fullRestoreBusy){invalidateInstallation();
-return}if(message.type==="installation-reset"&&!resetBusy){invalidateInstallation();return}if(tabMessage(message))return;if(typeof invalidateKarnamehExcelShare===
-"function")invalidateKarnamehExcelShare(message);window.EduPeriodicReports?.workspaceChanged?.(message);assessmentContext.workspaceChanged(message);invalidateYearNotesScope(
-message);void synchronizeYearNotesScope().catch(()=>{});if(message.workspace)void refreshAttendanceReminders();if(workspace&&message.workspace===workspace.id&&message.
-revision>workspace.revision){markWorkspaceConflict()}}}function showModalV24(title,html){if(old.showModal(title,html)===false)return false;setTimeout(()=>{applyDrafts();
-lockControls();paintStatus();if(!document.getElementById("modal").classList.contains("hidden"))(modalFocusableElements().find(element=>element.closest("#modalBo\
-dy"))||document.querySelector("#modal .modal-dialog"))?.focus({preventScroll:true})},0);return true}async function loginV24(e){if(fileMode){e.preventDefault();const input=document.
-getElementById("loginPass");if(await verifyPassword(input.value,db.settings.password)){isAuthenticated=true;render()}else{input.value="";alert("رمز عبور اشتباه \
-است.")}return}await old.checkPassword(e);if(isAuthenticated)await recoverDrafts()}function installWorkspaceActions(){document.addEventListener("toggle",event=>{
-const root=event.target;if(root.matches?.("#app .week-settings")&&!root.open&&root.isConnected)closeWeekSettingsEditing(root)},true);const commands=new Map([["w\
-eek-settings-toggle-edit",button=>toggleWeekSettingsEditing(button)],["record-enable-edit",button=>enableRecordEditAccess(button)],["session-toggle-edit",button=>toggleSessionEditing(
-button)],["session-restore-roster",button=>restoreEmptySessionRosterV24(button)],["attendance-reminder-open",button=>openAttendanceReminder(button)],["attendanc\
-e-reminders-all",()=>openAttendanceRemindersList()],["attendance-reminders-page",button=>pageAttendanceReminders(button)],["attendance-reminders-not-held",()=>openAttendanceRemindersList(
-{notHeld:true})],["attendance-reminders-refresh",()=>refreshAttendanceReminders({interactive:true})],["attendance-reminder-not-held",()=>markAttendanceReminderNotHeld()],
-["attendance-reminder-record",button=>recordAttendanceReminder(button)],["attendance-reminder-restore",button=>restoreAttendanceReminder(button)],["year-session\
-s",()=>refreshYearLessonSessions({interactive:true})],["year-session",button=>openYearSession(button.dataset.workspace,button.dataset.key)],["assessment-stage",
-button=>openAssessmentStage(button)],["karnameh-stage",button=>selectKarnamehStage(button)],["karnameh-excel",button=>openKarnamehExcel(button)],["karnameh-exce\
-l-download",button=>downloadKarnamehExcel(button)],["karnameh-excel-mode",button=>setKarnamehExcelDelivery(button)],["karnameh-excel-send",button=>shareKarnamehExcel(
-button)],["karnameh-excel-save",button=>downloadPreparedKarnamehExcel(button)],["karnameh-student",button=>openKarnamehStudent(button.dataset.class,button.dataset.
-key)],["switch-period",button=>switchPeriod(button.dataset.key)],["frozen-report",button=>showFrozenReport(button.dataset.key)],["adopt-drafts",button=>adoptDrafts(
-button.dataset.key)],["approve-drafts",()=>approveDrafts()],["archived-report",button=>showArchivedKarnameh(button.dataset.key)],["edit-student",button=>openEditStudentModal(
-button.dataset.key)],["restore-student",button=>restoreStudent(button.dataset.key)],["copy-membership",()=>saveMembership("copy")],["unfiltered-session",button=>{
-const day=integer(button.dataset.day),period=integer(button.dataset.period);state.masterFilter=null;closeModal();return clickMasterCell(day,period)}],["periods",
-()=>openAcademicYear()],["term-records",()=>openPeriods()],["backups",()=>openBackups()],["open-wipe",()=>wipeAllV24()],["discard-drafts",()=>discardDrafts()],[
-"review-drafts",()=>reviewDrafts()],["other-drafts",()=>openOtherDrafts()],["create-period",()=>createNewPeriod({fromDialog:true})],["reopen-period",()=>reopenPeriod()],
-["finalize-period",()=>finalizePeriod()],["new-second-period",button=>openNewPeriod(button.dataset.key)],["export-period",()=>exportFullBackup()],["export-full",
-()=>exportFullBackup()],["prepare-share-backup",()=>openBackupShare()],["share-backup-file",button=>sharePreparedBackup(button)],["download-share-backup",()=>downloadPreparedBackup()],
-["close-backup-share",()=>closeBackupShare()],["single-file-choose",()=>chooseSingleFile()],["single-file-save",()=>resumeSingleFile()],["question-bank-file-per\
-mission",()=>renewQuestionBankFilePermission()],["single-file-stop",()=>disableSingleFile()],["restore-full",()=>restoreFullBackup()],["confirm-import",()=>confirmImport()],
-["undo",()=>openUndoModal()],["confirm-undo",()=>confirmUndo()],["raw-recovery",()=>rawRecoveryV24()],["choose-import",()=>chooseBackupImport()],["print",button=>printCurrentKarnameh(
-button)],["close",()=>closeModal()],["reload",()=>location.reload()]]);if(globalThis.__EDU_TEST_MODE__){commands.set("delete-period",button=>openDeletePeriod(button.
-dataset.key));commands.set("confirm-delete-period",()=>confirmDeletePeriod())}function integer(value){if(!/^\d+$/.test(value)||!Number.isSafeInteger(Number(value)))
-throw Error("پارامتر عملیات نامعتبر است.");return Number(value)}const submissions=new Map([["save-membership",()=>saveMembership()],["sav\
-e-student",()=>saveStudent()],["save-entity",()=>saveEntityEditor()],["commit-csv",()=>commitCSV()],["confirm-deletion",()=>confirmDeletion()],["confirm-wipe",()=>confirmWipe()]]);
-const allowed=element=>element&&!element.matches(":disabled")&&!element.closest("[inert]")&&element.closest("#app,#modalBody");const run=(handler,element)=>{try{
-void Promise.resolve(handler(element)).catch(handleError)}catch(error){handleError(error)}};document.addEventListener("click",event=>{const button=event.target.
-closest?.("button[data-workspace-action]");if(!allowed(button))return;const handler=commands.get(button.dataset.workspaceAction);if(handler)run(handler,button)});
-document.addEventListener("submit",event=>{const form=event.target;if(!form.matches?.("form[data-workspace-submit]"))return;event.preventDefault();if(!allowed(form))
-return;const handler=submissions.get(form.dataset.workspaceSubmit);if(handler)run(handler,form)});globalThis.addEventListener?.("edu-question-bank-file-status",
-()=>{paintQuestionBankFileNotice();globalThis.EduQuestionBankUI?.updateLayout?.()})}let entityCreationBusy=false;async function createEntityV24(event,kind){event.
-preventDefault();if(entityCreationBusy)return false;const form=event.target,name=String(form.elements.namedItem("name")?.value||"").trim().replace(/\s+/g," ");const target={
-workspace:workspace?.id,bank:db,connection,installation:typeof installationToken==="undefined"?"":installationToken,schoolId:state.schoolId,view:state.view};const sameInstallationTarget=()=>target.
-workspace===workspace?.id&&target.connection===connection&&target.installation===(typeof installationToken==="undefined"?"":installationToken)&&target.view===state.
-view&&(kind!=="class"||target.schoolId===state.schoolId);const sameTarget=()=>target.bank===db&&sameInstallationTarget();const fieldId=kind+"CreateName";entityCreationBusy=
-true;const finishSave=beginRecordEditorSave(form);try{assertEntityWritable();if(!normalizedName(name)||name.length>500)throw recordFieldError("نام معتبر با حداک\
-ثر ۵۰۰ نویسه وارد کنید.",fieldId);await flushDrafts({strict:true});assertEntityWritable();if(!sameTarget())throw Error("ترم یا صفحه مقصد تغییر\
- کرده است؛ ثبت انجام نشد.");const school=kind==="class"?getSchool(target.schoolId):null;if(kind==="class"&&!school)throw Error("مدرسه مقصد وج\
-ود ندارد.");const peers=kind==="school"?db.schools:school.classes;if(peers.some(x=>normalizedName(x.name)===normalizedName(name)))throw recordFieldError(
-kind==="school"?"مدرسه‌ای با همین نام وجود دارد.":"کلاسی با همین نام در این مدرسه وجود دارد.",fieldId);
-peers.push(kind==="school"?{id:uid(),name,classes:[]}:{id:uid(),name,students:[],archivedStudents:[],lessons:[]});await saveDBV24({action:"افزودن "+(kind===
-"school"?"مدرسه":"کلاس")+": "+name});if(sameTarget()&&!periodLoading&&!resetBusy&&!connectionRetired)render();return true}catch(error){const currentForm=sameInstallationTarget()?
-document.querySelector('form[data-entity-create="'+kind+'"]'):null;if(currentForm){const input=currentForm.elements.namedItem("name");input.value=name;currentForm.
-querySelector(".entity-create-error").textContent=error.message;const detail=currentForm.closest("details");if(detail)detail.open=true;if(error.fieldId)input.setAttribute(
-"aria-invalid","true");requestAnimationFrame(()=>{const currentDetail=input.closest("details");if(currentDetail)currentDetail.open=true;if(input.isConnected&&!input.
-disabled)input.focus({preventScroll:true})})}else handleError(error);return false}finally{entityCreationBusy=false;finishSave()}}const yearNoteScope=EduYearNoteScope(
-{getState:()=>({workspace,connection,installation:installationToken,password:db.settings.password,authenticated:isAuthenticated,resetBusy,connectionRetired}),storage:{
-request:request=>requestPromise(request),done:transaction=>transactionDone(transaction)},termKind:term=>academicTermKind(term)});function permitYearNoteAccess(period,data){
-return yearNoteScope.permit(period,data)}function academicYearNotesContext(){return yearNoteScope.context()}function synchronizeYearNotesScope(){return yearNoteScope.
-synchronize()}function invalidateYearNotesScope(message){return yearNoteScope.invalidate(message)}function captureWorkspaceContext(){return Object.freeze({id:workspace?.
-id||"",revision:workspace?.revision||0})}function assertWorkspaceReadable(){if(fileMode||!ready||periodLoading||resetBusy||connectionRetired||!workspace)throw Error(
-"اطلاعات آماده خواندن نیست؛ برنامه را دوباره باز کنید.");if(blocked)throw Error("اطلاعات این پنجره قدیمی است؛ صفحه ر\
-ا دوباره بارگذاری و گزارش یا فرم را دوباره تهیه کنید.");if(db.settings.password&&!isAuthenticated)throw Error("ابتدا و\
-ارد نوبت شوید.")}function assertWorkspaceContext(context,{write=false}={}){assertWorkspaceReadable();if(!context||context.id!==workspace.id||context.
-revision!==workspace.revision)throw Error("نوبت یا اطلاعات تغییر کرده است؛ فرم یا گزارش را دوباره باز کنید.");
+resetBlocked){resetScreen(error.message+" حذف معلق پس از بستن آن اتصال نیز خودکار اجرا نخواهد شد.")}else{try{if(connectionRetired)
+connection=await openDatabase();connectionRetired=false;const observedReset=await readRecord("records",RESET_RECORD_KEY);if(connectionRetired||(observedReset?.value?.
+token||"")!==installationToken){connection.close();invalidateInstallation();return false}ready=true;blocked=wasBlocked;showRecordEditorError(Error(fileRemoved?"\
+فایل متصل حذف شد، اما پاک‌سازی اطلاعات مدرسه ثبت نشد؛ اطلاعات مدرسه محفوظ است. "+failure.message:
+"حذف ثبت نشد؛ فایل و اطلاعات قبلی محفوظ است. "+error.message),"wipeError")}catch(reopenError){resetScreen("حذف ثبت نشد؛ برای خ\
+واندن دوباره اطلاعات، برنامه را بارگذاری کنید. "+reopenError.message)}}return false}finally{resetConnection?.close();if(!committedReset){
+resetBusy=false;if(hadFileTimer&&singleFile&&!singleFileFailure&&ready&&!blocked&&!connectionRetired)startSingleFile()}finish()}}function installUI(){installWorkspaceActions();
+installGradeEvents();installAttendanceReminderClock();window.addEventListener("storage",event=>{if(event.key===RESET_EPOCH_KEY&&event.newValue&&event.newValue!==
+installationToken&&!resetBusy)invalidateInstallation()});window.addEventListener("beforeunload",event=>{if(busy||drafts.size||assessmentContext.hasDrafts()||draftRecoveryFailed||
+draftWritesPending||window.EduQuestionBankUI?.hasPendingChanges?.()||hasRecordEditorChanges()||document.querySelector('.record-editor[aria-busy="true"],[data-en\
+tity-create][aria-busy="true"]')){event.preventDefault();event.returnValue=""}});window.addEventListener("pagehide",()=>{if(ready){storeDrafts();assessmentContext.
+persist().catch(()=>{})}tabClaimed=false;channel?.close()});window.addEventListener("pageshow",event=>{if(event.persisted)location.reload()});window.addEventListener(
+"unhandledrejection",event=>{event.preventDefault();handleError(event.reason instanceof Error?event.reason:Error(String(event.reason)))});window.addEventListener(
+"beforeprint",beforeReportPrint);window.addEventListener("afterprint",()=>{printAuthorization=null;document.getElementById("printRoot")?.remove();document.getElementById(
+"printPageStyle")?.remove()});document.addEventListener("keydown",event=>{const overlay=document.getElementById("modal");if(overlay.classList.contains("hidden"))
+return;if(event.key==="Escape"){event.preventDefault();if(drafts.size||assessmentContext.hasDrafts()){const body=document.getElementById("modalBody"),content=body.
+firstChild;flushDrafts({strict:true}).then(()=>{if(document.getElementById("modal")===overlay&&!overlay.classList.contains("hidden")&&document.getElementById("m\
+odalBody")===body&&body.firstChild===content)closeModal()}).catch(handleError)}else closeModal();return}if(event.key==="Tab"){const nodes=modalFocusableElements();
+if(nodes.length){const first=nodes[0],last=nodes[nodes.length-1];if(event.shiftKey&&(document.activeElement===first||!nodes.includes(document.activeElement))){event.
+preventDefault();last.focus()}else if(!event.shiftKey&&(document.activeElement===last||!nodes.includes(document.activeElement))){event.preventDefault();first.focus()}}}});
+if(channel)channel.onmessage=event=>{const message=event.data;if(singleFileChanged(message))return;if(message.type==="period-deleted"||message.type==="installat\
+ion-restored"&&!fullRestoreBusy){invalidateInstallation();return}if(message.type==="installation-reset"&&!resetBusy){invalidateInstallation();return}if(tabMessage(
+message))return;if(typeof invalidateKarnamehExcelShare==="function")invalidateKarnamehExcelShare(message);window.EduPeriodicReports?.workspaceChanged?.(message);
+assessmentContext.workspaceChanged(message);invalidateYearNotesScope(message);void synchronizeYearNotesScope().catch(()=>{});if(message.workspace)void refreshAttendanceReminders();
+if(workspace&&message.workspace===workspace.id&&message.revision>workspace.revision){markWorkspaceConflict()}}}function showModalV24(title,html){if(old.showModal(
+title,html)===false)return false;setTimeout(()=>{applyDrafts();lockControls();paintStatus();if(!document.getElementById("modal").classList.contains("hidden"))(modalFocusableElements().
+find(element=>element.closest("#modalBody"))||document.querySelector("#modal .modal-dialog"))?.focus({preventScroll:true})},0);return true}async function loginV24(e){
+if(fileMode){e.preventDefault();const input=document.getElementById("loginPass");if(await verifyPassword(input.value,db.settings.password)){isAuthenticated=true;
+render()}else{input.value="";alert("رمز عبور اشتباه است.")}return}await old.checkPassword(e);if(isAuthenticated)await recoverDrafts()}function installWorkspaceActions(){
+document.addEventListener("toggle",event=>{const root=event.target;if(root.matches?.("#app .week-settings")&&!root.open&&root.isConnected)closeWeekSettingsEditing(
+root)},true);const commands=new Map([["week-settings-toggle-edit",button=>toggleWeekSettingsEditing(button)],["record-enable-edit",button=>enableRecordEditAccess(
+button)],["session-toggle-edit",button=>toggleSessionEditing(button)],["session-restore-roster",button=>restoreEmptySessionRosterV24(button)],["attendance-remin\
+der-open",button=>openAttendanceReminder(button)],["attendance-reminders-all",()=>openAttendanceRemindersList()],["attendance-reminders-page",button=>pageAttendanceReminders(
+button)],["attendance-reminders-not-held",()=>openAttendanceRemindersList({notHeld:true})],["attendance-reminders-refresh",()=>refreshAttendanceReminders({interactive:true})],
+["attendance-reminder-not-held",()=>markAttendanceReminderNotHeld()],["attendance-reminder-record",button=>recordAttendanceReminder(button)],["attendance-remind\
+er-restore",button=>restoreAttendanceReminder(button)],["year-sessions",()=>refreshYearLessonSessions({interactive:true})],["year-session",button=>openYearSession(
+button.dataset.workspace,button.dataset.key)],["assessment-stage",button=>openAssessmentStage(button)],["karnameh-stage",button=>selectKarnamehStage(button)],["\
+karnameh-excel",button=>openKarnamehExcel(button)],["karnameh-excel-download",button=>downloadKarnamehExcel(button)],["karnameh-excel-mode",button=>setKarnamehExcelDelivery(
+button)],["karnameh-excel-send",button=>shareKarnamehExcel(button)],["karnameh-excel-save",button=>downloadPreparedKarnamehExcel(button)],["karnameh-student",button=>openKarnamehStudent(
+button.dataset.class,button.dataset.key)],["switch-period",button=>switchPeriod(button.dataset.key)],["frozen-report",button=>showFrozenReport(button.dataset.key)],
+["adopt-drafts",button=>adoptDrafts(button.dataset.key)],["approve-drafts",()=>approveDrafts()],["archived-report",button=>showArchivedKarnameh(button.dataset.key)],
+["edit-student",button=>openEditStudentModal(button.dataset.key)],["restore-student",button=>restoreStudent(button.dataset.key)],["copy-membership",()=>saveMembership(
+"copy")],["unfiltered-session",button=>{const day=integer(button.dataset.day),period=integer(button.dataset.period);state.masterFilter=null;closeModal();return clickMasterCell(
+day,period)}],["periods",()=>openAcademicYear()],["term-records",()=>openPeriods()],["backups",()=>openBackups()],["open-wipe",()=>wipeAllV24()],["discard-draft\
+s",()=>discardDrafts()],["review-drafts",()=>reviewDrafts()],["other-drafts",()=>openOtherDrafts()],["create-period",()=>createNewPeriod({fromDialog:true})],["r\
+eopen-period",()=>reopenPeriod()],["finalize-period",()=>finalizePeriod()],["new-second-period",button=>openNewPeriod(button.dataset.key)],["export-period",()=>exportFullBackup()],
+["export-full",()=>exportFullBackup()],["prepare-share-backup",()=>openBackupShare()],["share-backup-file",button=>sharePreparedBackup(button)],["download-share\
+-backup",()=>downloadPreparedBackup()],["close-backup-share",()=>closeBackupShare()],["single-file-choose",()=>chooseSingleFile()],["single-file-save",()=>resumeSingleFile()],
+["question-bank-file-permission",()=>renewQuestionBankFilePermission()],["single-file-stop",()=>disableSingleFile()],["restore-full",()=>restoreFullBackup()],["\
+confirm-import",()=>confirmImport()],["undo",()=>openUndoModal()],["confirm-undo",()=>confirmUndo()],["raw-recovery",()=>rawRecoveryV24()],["choose-import",()=>chooseBackupImport()],
+["print",button=>printCurrentKarnameh(button)],["close",()=>closeModal()],["reload",()=>location.reload()]]);if(globalThis.__EDU_TEST_MODE__){commands.set("dele\
+te-period",button=>openDeletePeriod(button.dataset.key));commands.set("confirm-delete-period",()=>confirmDeletePeriod())}function integer(value){if(!/^\d+$/.test(
+value)||!Number.isSafeInteger(Number(value)))throw Error("پارامتر عملیات نامعتبر است.");return Number(value)}const submissions=new Map([[
+"save-membership",()=>saveMembership()],["save-student",()=>saveStudent()],["save-entity",()=>saveEntityEditor()],["commit-csv",()=>commitCSV()],["confirm-delet\
+ion",()=>confirmDeletion()],["confirm-wipe",()=>confirmWipe()]]);const allowed=element=>element&&!element.matches(":disabled")&&!element.closest("[inert]")&&element.
+closest("#app,#modalBody");const run=(handler,element)=>{try{void Promise.resolve(handler(element)).catch(handleError)}catch(error){handleError(error)}};document.
+addEventListener("click",event=>{const button=event.target.closest?.("button[data-workspace-action]");if(!allowed(button))return;const handler=commands.get(button.
+dataset.workspaceAction);if(handler)run(handler,button)});document.addEventListener("submit",event=>{const form=event.target;if(!form.matches?.("form[data-works\
+pace-submit]"))return;event.preventDefault();if(!allowed(form))return;const handler=submissions.get(form.dataset.workspaceSubmit);if(handler)run(handler,form)});
+globalThis.addEventListener?.("edu-question-bank-file-status",()=>{paintQuestionBankFileNotice();globalThis.EduQuestionBankUI?.updateLayout?.()})}let entityCreationBusy=false;
+async function createEntityV24(event,kind){event.preventDefault();if(entityCreationBusy)return false;const form=event.target,name=String(form.elements.namedItem(
+"name")?.value||"").trim().replace(/\s+/g," ");const target={workspace:workspace?.id,bank:db,connection,installation:typeof installationToken==="undefined"?"":installationToken,
+schoolId:state.schoolId,view:state.view};const sameInstallationTarget=()=>target.workspace===workspace?.id&&target.connection===connection&&target.installation===
+(typeof installationToken==="undefined"?"":installationToken)&&target.view===state.view&&(kind!=="class"||target.schoolId===state.schoolId);const sameTarget=()=>target.
+bank===db&&sameInstallationTarget();const fieldId=kind+"CreateName";entityCreationBusy=true;const finishSave=beginRecordEditorSave(form);try{assertEntityWritable();
+if(!normalizedName(name)||name.length>500)throw recordFieldError("نام معتبر با حداکثر ۵۰۰ نویسه وارد کنید.",fieldId);await flushDrafts(
+{strict:true});assertEntityWritable();if(!sameTarget())throw Error("ترم یا صفحه مقصد تغییر کرده است؛ ثبت انجام نشد.");const school=kind===
+"class"?getSchool(target.schoolId):null;if(kind==="class"&&!school)throw Error("مدرسه مقصد وجود ندارد.");const peers=kind==="school"?db.schools:
+school.classes;if(peers.some(x=>normalizedName(x.name)===normalizedName(name)))throw recordFieldError(kind==="school"?"مدرسه‌ای با همین نام وجود دارد.":
+"کلاسی با همین نام در این مدرسه وجود دارد.",fieldId);peers.push(kind==="school"?{id:uid(),name,classes:[]}:{id:uid(),name,students:[],
+archivedStudents:[],lessons:[]});await saveDBV24({action:"افزودن "+(kind==="school"?"مدرسه":"کلاس")+": "+name});if(sameTarget()&&!periodLoading&&
+!resetBusy&&!connectionRetired)render();return true}catch(error){const currentForm=sameInstallationTarget()?document.querySelector('form[data-entity-create="'+kind+
+'"]'):null;if(currentForm){const input=currentForm.elements.namedItem("name");input.value=name;currentForm.querySelector(".entity-create-error").textContent=error.
+message;const detail=currentForm.closest("details");if(detail)detail.open=true;if(error.fieldId)input.setAttribute("aria-invalid","true");requestAnimationFrame(
+()=>{const currentDetail=input.closest("details");if(currentDetail)currentDetail.open=true;if(input.isConnected&&!input.disabled)input.focus({preventScroll:true})})}else
+handleError(error);return false}finally{entityCreationBusy=false;finishSave()}}const yearNoteScope=EduYearNoteScope({getState:()=>({workspace,connection,installation:installationToken,
+password:db.settings.password,authenticated:isAuthenticated,resetBusy,connectionRetired}),storage:{request:request=>requestPromise(request),done:transaction=>transactionDone(
+transaction)},termKind:term=>academicTermKind(term)});function permitYearNoteAccess(period,data){return yearNoteScope.permit(period,data)}function academicYearNotesContext(){
+return yearNoteScope.context()}function synchronizeYearNotesScope(){return yearNoteScope.synchronize()}function invalidateYearNotesScope(message){return yearNoteScope.
+invalidate(message)}function captureWorkspaceContext(){return Object.freeze({id:workspace?.id||"",revision:workspace?.revision||0})}function assertWorkspaceReadable(){
+if(fileMode||!ready||periodLoading||resetBusy||connectionRetired||!workspace)throw Error("اطلاعات آماده خواندن نیست؛ برنامه را دوباره باز کنید.");
+if(blocked)throw Error("اطلاعات این پنجره قدیمی است؛ صفحه را دوباره بارگذاری و گزارش یا فرم را دوباره تهیه کنید.");
+if(db.settings.password&&!isAuthenticated)throw Error("ابتدا وارد نوبت شوید.")}function assertWorkspaceContext(context,{write=false}={}){assertWorkspaceReadable();
+if(!context||context.id!==workspace.id||context.revision!==workspace.revision)throw Error("نوبت یا اطلاعات تغییر کرده است؛ فرم یا گزارش را دوباره باز کنید.");
 if(write)assertEntityWritable()}function markWorkspaceConflict(){blocked=true;for(const item of drafts.values()){item.review=true;item.error="تعارض؛ نیازمند برر\
 سی پس از بارگذاری مجدد"}if(drafts.size)storeDrafts();const message="اطلاعات این نوبت در تب دیگری تغییر کرد. پیش‌نویس محفوظ است؛ صفحه را دوباره\
  بارگذاری کنید.";setStatus(message,"error");lockControls();window.EduPeriodicReports?.invalidate(message)}function assertLiveWorkspace(live,context){

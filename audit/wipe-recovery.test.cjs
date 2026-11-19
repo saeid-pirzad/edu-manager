@@ -119,6 +119,31 @@ test("school wipe never discards a pending bank draft or interrupts its file wri
   assert.equal(f.resets(), 0);
 });
 
+for (const failure of ["invalid-name", "denied", "remove-failed"]) {
+  test(`school wipe reuses its live connection after ${failure} instead of leaking it on retry`, async () => {
+    const f = withConnectedFile();
+    const source = f.c.connection;
+    let opens = 0;
+    f.c.openDatabase = async () => {
+      opens++;
+      throw Error("A live connection must not be replaced");
+    };
+    if (failure === "invalid-name") f.handle.name = "legacy-school.json";
+    if (failure === "denied") f.handle.requestPermission = async () => "denied";
+    if (failure === "remove-failed")
+      f.handle.remove = async () => {
+        throw Error("OS refused");
+      };
+    assert.equal(await f.c.confirmWipe(), false);
+    assert.equal(await f.c.confirmWipe(), false);
+    assert.equal(opens, 0);
+    assert.equal(f.c.connection, source);
+    assert.equal(f.c.ready, true);
+    assert.equal(f.removed(), 0);
+    assert.equal(f.resets(), 0);
+  });
+}
+
 for (const failure of [
   "denied",
   "unsupported",

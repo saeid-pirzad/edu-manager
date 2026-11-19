@@ -17,6 +17,19 @@ for (const file of ["domain.js", "file-backup.js"])
     context,
   );
 const D = context.EduQuestionBank;
+test("bank filename errors identify the actual rejected name and the supported prefix", () => {
+  for (const name of [
+    "legacy-bank.json",
+    "Classyar-QuestionBank(۱).json",
+    "Classyar-Classroom.json",
+  ])
+    assert.throws(
+      () => context.EduQuestionBankFileBackup.assertFileName(name),
+      (error) =>
+        error.message.includes("«" + name + "»") &&
+        error.message.includes("Classyar-QuestionBank.json"),
+    );
+});
 for (const name of [
   "Classyar-QuestionBank.json",
   "Classyar-QuestionBank(1).json",
@@ -219,6 +232,9 @@ for (const failure of [
   "unsupported",
   "denied",
   "changed-name",
+  "actual-name-changed",
+  "missing-file",
+  "invalid-content",
   "changed-bytes",
   "changed-connection",
   "changed-bank",
@@ -241,6 +257,20 @@ for (const failure of [
       if (failure === "denied") f.target.permission("denied");
       if (failure === "changed-name")
         f.target.handle.name = "Classyar-Classroom.json";
+      if (failure === "actual-name-changed") {
+        const originalRead = f.target.handle.getFile;
+        f.target.handle.getFile = async () => ({
+          ...(await originalRead()),
+          name: "Classyar-Classroom.json",
+        });
+      }
+      if (failure === "missing-file")
+        f.target.handle.getFile = async () => {
+          throw Object.assign(Error("File was removed outside the app"), {
+            name: "NotFoundError",
+          });
+        };
+      if (failure === "invalid-content") f.target.external("not-json");
       if (failure === "changed-bytes")
         f.target.external(JSON.stringify(D.empty()));
       if (failure === "changed-connection")
@@ -260,6 +290,7 @@ for (const failure of [
       assert.equal(removals, 0);
       assert.deepEqual(f.bank(), before);
       assert.ok(f.config());
+      if (failure === "changed-name") assert.equal(f.target.handle.requests, 0);
     },
   );
 }
