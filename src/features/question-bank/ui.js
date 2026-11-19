@@ -157,7 +157,7 @@
     const context = doc.createElement("canvas").getContext("2d");
     if (!context) return;
     for (const list of container.querySelectorAll(
-      ".qb-options,.qb-sheet-options",
+      ".qb-options,.qb-sheet-options,.qb-import-options",
     )) {
       if (!list.clientWidth) continue;
       const style = doc.defaultView.getComputedStyle(list);
@@ -186,7 +186,12 @@
       );
       const gap = parseFloat(style.columnGap) || 0;
       list.dataset.columns =
-        [...list.children].some((item) => /[\r\n]/.test(item.textContent)) ||
+        list.dataset.multiline === "true" ||
+        [...list.children].some(
+          (item) =>
+            /[\r\n]/.test(item.textContent) ||
+            item.querySelectorAll(".qb-sheet-line,.qb-import-line").length > 1,
+        ) ||
         required > (list.clientWidth - gap) / 2
           ? "1"
           : required <= (list.clientWidth - 3 * gap) / 4
@@ -1239,7 +1244,7 @@
               id: existing?.id || crypto.randomUUID(),
               unitId: unit.value,
               type: type.value,
-              text: body.value.trim(),
+              text: body.value,
               answer:
                 type.value === "mcq"
                   ? answer.value === ""
@@ -1251,18 +1256,17 @@
                       : answer.value === "false"
                         ? false
                         : null
-                    : answer.value.trim(),
-              explanation: explanation.value.trim(),
+                    : answer.value,
+              explanation: explanation.value,
               score: D.score(mark.value),
             };
-            if (q.type === "mcq")
-              q.options = options.map((n) => n.value.trim());
+            if (q.type === "mcq") q.options = options.map((n) => n.value);
             D.question(q);
             if (
               q.type === "mcq" &&
               (existing?.type !== "mcq" ||
                 q.options.some(
-                  (value, index) => value !== existing.options[index].trim(),
+                  (value, index) => value !== existing.options[index],
                 )) &&
               new Set(q.options.map(D.optionKey)).size !== 4
             )
@@ -1340,7 +1344,12 @@
           if (type.value === "mcq") {
             for (let i = 0; i < 4; i++)
               options.push(
-                field(area, `گزینه ${i + 1}`, draft?.options[i] || ""),
+                field(
+                  area,
+                  `گزینه ${i + 1}`,
+                  draft?.options[i] || "",
+                  /[\r\n]/.test(draft?.options[i] || "") ? "textarea" : "input",
+                ),
               );
             answer = select(
               area,
@@ -2351,6 +2360,7 @@
       activePage?.refreshAfterRestore() || Promise.resolve(true),
     sheet,
     print,
+    previewText: { direction: sheetTextDirection, clean: sheetCleanText },
     hasPendingChanges: () => pendingChanges() || F.state().state === "busy",
   };
   root.addEventListener("edu-question-bank-restored", () => {

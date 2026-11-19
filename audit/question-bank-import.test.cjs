@@ -28,11 +28,19 @@ test("entry workbook includes dropdowns, contextual guidance and 1000 bordered b
   assert.match(workbook, /dataValidation type="list"[^>]*sqref="A2:A1001"/);
   assert.ok(workbook.includes("چهارگزینه‌ای,صحیح / غلط,جای‌خالی,تشریحی"));
   assert.match(workbook, /<autoFilter ref="A1:I1001"/);
-  assert.match(workbook, /<c r="I1001" s="11"/);
+  assert.match(workbook, /<c r="I1001" s="\d+"/);
   assert.match(workbook, /showInputMessage="1"/);
   assert.match(workbook, /<left style="thin">/);
   assert.match(workbook, /ySplit="1"/);
   assert.equal(sheets[0].validations.length, 6);
+  for (const sheet of sheets.slice(0, 2)) {
+    assert.equal(sheet.columnStyles.length, 9);
+    assert.ok(
+      sheet.columnStyles.every(
+        (s) => s.format === "text" && s.direction === "context",
+      ),
+    );
+  }
 });
 function bank() {
   const value = D.empty();
@@ -88,11 +96,18 @@ for (const [name, change] of [
   [
     "duplicate option",
     (c) => {
+      c[2] = "کتاب";
+      c[3] = " کتاب ";
+    },
+  ],
+  ["wrong answer index", (c) => (c[6] = "0")],
+  [
+    "visually duplicate Persian prose option",
+    (c) => {
       c[2] = "كتاب";
       c[3] = "کتاب";
     },
   ],
-  ["wrong answer index", (c) => (c[6] = "0")],
   ["missing answer index", (c) => (c[6] = "")],
   ["long text", (c) => (c[1] = "a".repeat(10001))],
   ["long option", (c) => (c[2] = "a".repeat(2001))],
@@ -135,6 +150,122 @@ test("existing and file-local duplicates are skipped only inside the selected un
   assert.equal(repeated.duplicates, 2);
   assert.equal(repeated.ready, 1);
   assert.equal(I.preview(rows([I.examples[0]]), first, "v").ready, 1);
+});
+
+test("same prompt with different options, answer, score, explanation or type is not discarded", () => {
+  const original = [...I.examples[0]];
+  const variants = [original];
+  for (const [column, value] of [
+    [2, "گزینهٔ تازه"],
+    [6, "۱"],
+    [7, "۱٫۲۵"],
+    [8, "راهنمای تصحیح تازه"],
+  ]) {
+    const changed = [...original];
+    changed[column] = value;
+    variants.push(changed);
+  }
+  variants.push(["essay", original[1], "", "", "", "", "۴", "۱", ""]);
+  const source = bank();
+  const report = I.preview(rows([...variants, original]), source, "u");
+  assert.equal(report.errors, 0);
+  assert.equal(report.ready, variants.length);
+  assert.equal(report.duplicates, 1);
+  const next = I.prepare(report, source);
+  assert.equal(
+    I.preview(rows(variants), next, "u").duplicates,
+    variants.length,
+  );
+});
+
+test("code identity preserves case, indentation, string spacing, Unicode and newline distinctions", () => {
+  const texts = [
+    'خروجی چیست؟\nconsole.log("A")',
+    'خروجی چیست؟\nconsole.log("a")',
+    'خروجی چیست؟\nconsole.log("a b")',
+    'خروجی چیست؟\nconsole.log("a  b")',
+    "if value:\n  run()",
+    "if value:\n    run()",
+    "if value: run()",
+    'const value = "Ａ";',
+    'const value = "A";',
+    'const value = "ي";',
+    'const value = "ی";',
+  ];
+  const values = texts.map((text) => [
+    "essay",
+    text,
+    "",
+    "",
+    "",
+    "",
+    "پاسخ",
+    "1",
+    "",
+  ]);
+  const report = I.preview(rows(values), bank(), "u");
+  assert.equal(report.ready, texts.length);
+  assert.equal(report.errors, 0);
+  assert.equal(report.duplicates, 0);
+});
+
+test("only line-ending encoding is ignored when detecting a complete duplicate", () => {
+  const original = [
+    "essay",
+    "سؤال\n  run()",
+    "",
+    "",
+    "",
+    "",
+    "A\nB",
+    "1",
+    "X\nY",
+  ];
+  const windows = original.map((value) => value.replace(/\n/g, "\r\n"));
+  const report = I.preview(rows([original, windows]), bank(), "u");
+  assert.equal(report.ready, 1);
+  assert.equal(report.duplicates, 1);
+});
+
+test("technical MCQ options are distinct without search-style normalization", () => {
+  const options = [
+    'print("a b")',
+    'print("a  b")',
+    "if x:\n  run()",
+    "if x:\n    run()",
+  ];
+  const report = I.preview(
+    rows([["mcq", "کدام خروجی درست است؟", ...options, "۲", "۰٫۲۵", ""]]),
+    bank(),
+    "u",
+  );
+  assert.equal(report.errors, 0);
+  assert.equal(report.ready, 1);
+  assert.deepEqual(Array.from(report.results[0].question.options), options);
+  assert.equal(report.results[0].question.answer, 1);
+});
+
+test("import preserves content padding, tabs, newlines and literal answers without trimming code", () => {
+  const text = "  run()\n\tconsole.log('سلام');  ";
+  const answer = "  001\n\t1e3\n1/2\n=SUM(1,2)  ";
+  const explanation = "\tراهنما\n  end  ";
+  const source = bank();
+  const next = I.prepare(
+    I.preview(
+      rows([
+        [" essay ", text, " ", "\t", "", "", answer, " ۱٫۲۵ ", explanation],
+      ]),
+      source,
+      "u",
+    ),
+    source,
+  );
+  assert.equal(next.questions[0].text, text);
+  assert.equal(next.questions[0].answer, answer);
+  assert.equal(next.questions[0].explanation, explanation);
+  assert.equal(next.questions[0].score, 125);
+  assert.equal(source.questions.length, 0);
+  assert.equal(source.exams.length, 0);
 });
 test("row numbers and formula errors survive blank-row filtering", () => {
   const input = rows([I.examples[0]]);

@@ -639,13 +639,23 @@ test("legacy exact title and option distinctions remain accepted without canonic
   assert.equal(D.validate(b), b);
   assert.deepEqual(D.parse(D.size(b)), b);
 });
-test("new-option comparison normalizes Persian presentation without folding deliberate distinctions", () => {
-  assert.equal(D.optionKey(" كِتاب يكم "), D.optionKey("کِتاب یکم"));
+test("new-option comparison normalizes plain Arabic prose but preserves technical content", () => {
+  assert.equal(D.optionKey(" A \t"), D.optionKey("A"));
+  assert.equal(D.optionKey("a\r\nb"), D.optionKey("a\nb"));
+  assert.equal(D.optionKey("كِتاب يكم"), D.optionKey("کِتاب یکم"));
   assert.equal(D.optionKey("على"), D.optionKey("علی"));
   assert.equal(D.optionKey("جای‌خالی"), D.optionKey("جای خالی"));
   assert.equal(D.optionKey(" دو\u200d  واژه\t"), D.optionKey("دو واژه"));
-  assert.equal(D.optionKey("Ａ"), D.optionKey("A"));
+  assert.notEqual(D.optionKey("Ａ"), D.optionKey("A"));
+  assert.notEqual(D.optionKey('print("a b")'), D.optionKey('print("a  b")'));
+  assert.notEqual(
+    D.optionKey("if x:\n  run()"),
+    D.optionKey("if x:\n    run()"),
+  );
   assert.notEqual(D.optionKey("A"), D.optionKey("a"));
+  assert.notEqual(D.optionKey('"علي"'), D.optionKey('"علی"'));
+  assert.notEqual(D.optionKey('"الف ب"'), D.optionKey('"الف  ب"'));
+  assert.notEqual(D.optionKey("عدد ١"), D.optionKey("عدد ۱"));
   assert.notEqual(D.optionKey("عَلَم"), D.optionKey("عِلْم"));
   assert.notEqual(D.optionKey("کتاب"), D.optionKey("کِتاب"));
   assert.notEqual(D.optionKey("+"), D.optionKey("−"));

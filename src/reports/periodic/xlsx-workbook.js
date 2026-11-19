@@ -4,7 +4,8 @@ function xlsxWorkbook(sheets) {
   const encoder = new TextEncoder();
   const xml = (value) =>
     String(value)
-      .replace(/_x[0-9a-f]{4}_/gi, (text) => "_x005F_" + text.slice(1))
+      // Match only the underscore: adjacent escapes can share an underscore.
+      .replace(/_(?=x[0-9a-f]{4}_)/gi, "_x005F_")
       .replace(
         // eslint-disable-next-line no-control-regex -- XML 1.0 forbids these code points.
         /[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffe\uffff]/g,
@@ -20,7 +21,9 @@ function xlsxWorkbook(sheets) {
             '"': "&quot;",
             "'": "&apos;",
           })[text],
-      );
+      )
+      // A literal CR would otherwise be normalized by XML readers to LF.
+      .replace(/\r/g, "&#13;");
   const declaration = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
   const ns = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
   const rel =
@@ -32,6 +35,23 @@ function xlsxWorkbook(sheets) {
     return result;
   };
   const entries = [];
+  const extraStyles = [],
+    extraStyleIds = new Map();
+  // Opt-in entry-column formatting. Report sheets retain the original styles.
+  const columnStyle = (base, options) => {
+    if (!options || (!options.format && !options.direction)) return base;
+    const key =
+      base + ":" + (options.format || "") + ":" + (options.direction || "");
+    if (!extraStyleIds.has(key)) {
+      extraStyleIds.set(key, 12 + extraStyles.length);
+      extraStyles.push({
+        base,
+        format: options.format,
+        direction: options.direction,
+      });
+    }
+    return extraStyleIds.get(key);
+  };
   const add = (name, content) =>
     entries.push([encoder.encode(name), encoder.encode(declaration + content)]);
   if (!sheets.length || sheets.length > 100)
@@ -56,6 +76,21 @@ function xlsxWorkbook(sheets) {
       );
     const width = Math.max(...sheet.rows.slice(0, 1).map((row) => row.length));
     if (!width || width > 16384) throw Error("تعداد ستون‌های اکسل معتبر نیست.");
+    if (
+      sheet.columnStyles &&
+      (!Array.isArray(sheet.columnStyles) ||
+        sheet.columnStyles.length > width ||
+        sheet.columnStyles.some(
+          (options) =>
+            options != null &&
+            (typeof options !== "object" ||
+              Array.isArray(options) ||
+              (options.format != null && options.format !== "text") ||
+              (options.direction != null &&
+                !["context", "ltr", "rtl"].includes(options.direction))),
+        ))
+    )
+      throw Error("قالب ستون اکسل معتبر نیست.");
     const sheetRows = sheet.entryRows
       ? Array.from(
           { length: sheet.entryRows + 1 },
@@ -82,26 +117,30 @@ function xlsxWorkbook(sheets) {
               if ((value == null || value === "") && !sheet.entryRows)
                 return "";
               const ref = column(ci) + (ri + 1 + rowOffset);
+              const options = ri ? sheet.columnStyles?.[ci] : null;
               let style = ri === 0 ? 1 : ri % 2 ? 0 : 2;
               if (ri && sheet.entryRows) style = ri % 2 ? 10 : 11;
-              if (ri && typeof value === "number") style = ri % 2 ? 3 : 4;
+              if (ri && typeof value === "number" && options?.format !== "text")
+                style = ri % 2 ? 3 : 4;
               if (ri && String(sheet.rows[0][ci]).startsWith("وضعیت")) {
                 if (["قبول", "تکمیل", "حاضر"].includes(value)) style = 5;
                 else if (value === "غایب") style = 7;
                 else if (value) style = 6;
               }
+              style = columnStyle(style, options);
               if (typeof value === "number") {
                 if (!Number.isFinite(value))
                   throw Error("مقدار عددی گزارش معتبر نیست.");
-                return (
-                  '<c r="' +
-                  ref +
-                  '" s="' +
-                  style +
-                  '"><v>' +
-                  value +
-                  "</v></c>"
-                );
+                if (options?.format !== "text")
+                  return (
+                    '<c r="' +
+                    ref +
+                    '" s="' +
+                    style +
+                    '"><v>' +
+                    value +
+                    "</v></c>"
+                  );
               }
               const text = String(value);
               if (text.length > 32767)
@@ -139,7 +178,13 @@ function xlsxWorkbook(sheets) {
           (i + 1) +
           '" width="' +
           columnWidths[i] +
-          '" customWidth="1"/>',
+          '" customWidth="1"' +
+          (sheet.columnStyles?.[i]
+            ? ' style="' +
+              columnStyle(sheet.entryRows ? 10 : 0, sheet.columnStyles[i]) +
+              '"'
+            : "") +
+          "/>",
       )
       .join("");
     const bannerRows = banner
@@ -346,12 +391,14 @@ function xlsxWorkbook(sheets) {
             '"/><bgColor indexed="64"/></patternFill></fill>',
         )
         .join("") +
-      '</fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFDCE4EE"/></left><right style="thin"><color rgb="FFDCE4EE"/></right><top style="thin"><color rgb="FFDCE4EE"/></top><bottom style="thin"><color rgb="FFDCE4EE"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="12">' +
-      [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+      '</fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFDCE4EE"/></left><right style="thin"><color rgb="FFDCE4EE"/></right><top style="thin"><color rgb="FFDCE4EE"/></top><bottom style="thin"><color rgb="FFDCE4EE"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="' +
+      (12 + extraStyles.length) +
+      '">' +
+      [...Array.from({ length: 12 }, (_, base) => ({ base })), ...extraStyles]
         .map(
-          (i) =>
+          ({ base: i, format, direction }) =>
             '<xf numFmtId="' +
-            (i === 3 || i === 4 ? 164 : 0) +
+            (format === "text" ? 49 : i === 3 || i === 4 ? 164 : 0) +
             '" fontId="' +
             (i === 8 ? 2 : i === 9 ? 3 : i === 1 ? 1 : 0) +
             '" fillId="' +
@@ -359,8 +406,18 @@ function xlsxWorkbook(sheets) {
             '" borderId="' +
             (i >= 10 ? 1 : 0) +
             '" xfId="0" applyBorder="1" applyAlignment="1" applyFill="1" applyNumberFormat="1"><alignment horizontal="' +
-            (i === 3 || i === 4 ? "center" : "right") +
-            '" vertical="center" wrapText="1" readingOrder="2"/></xf>',
+            (direction === "context"
+              ? "general"
+              : direction === "ltr"
+                ? "left"
+                : direction === "rtl"
+                  ? "right"
+                  : i === 3 || i === 4
+                    ? "center"
+                    : "right") +
+            '" vertical="center" wrapText="1" readingOrder="' +
+            (direction === "context" ? 0 : direction === "ltr" ? 1 : 2) +
+            '"/></xf>',
         )
         .join("") +
       '</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>',

@@ -25,54 +25,55 @@ questions.length,Math.floor(node.left/group.score));const choices=shuffle(Array.
 if(++work>1e5)fail("جست‌وجوی ترکیب بارم به حد پردازش رسید؛ تعداد یا بارم سؤال‌ها را ساده‌تر کنید. آزمونی ذخیره نشد.");
 const remaining=node.count-amount;if(next?.info!==info&&remaining!==0)continue;stack.push({index:node.index+1,count:next?.info===info?remaining:next?.info.count||
 0,left:node.left-amount*group.score,path:{group,amount,parent:node.path}})}}fail("با تعداد و بارم سؤال‌های بخش‌های منتخب، ترکیبی با نمرهٔ کل درخواستی وجود ندارد\
-؛ تعداد سؤال‌ها، بخش‌ها یا نمرهٔ کل را تغییر دهید.")}function optionKey(value){return String(value).normalize("NFKC").
-replace(/[يى]/g,"ی").replace(/ك/g,"ک").replace(/[\s\u200c\u200d]+/g," ").trim()}function integer(value,min,max){const s=digits(value),n=Number(s);if(!/^\d+$/.
-test(s)||!Number.isSafeInteger(n)||n<min||n>max)fail(`عدد صحیح بین ${min} و ${max} وارد کنید.`);return n}function empty(){return{format:"clas\
-syar-question-bank",version:1,revision:0,courses:[],units:[],questions:[],exams:[]}}function question(q){fields(q,["id","unitId","type","text","answer","explana\
-tion","score","options","unitTitle"]);if(!q||!text(q.id)||!text(q.unitId)||typeof q.type!=="string"||!Object.hasOwn(types,q.type)||!text(q.text)||typeof q.explanation!==
-"string"||!Number.isInteger(q.score)||q.score<1||q.score>1e4)fail("سؤال یا بارم نامعتبر است.");if(q.type==="mcq"){if(!Array.isArray(q.options)||
-q.options.length!==4||!Array.from(q.options).every(text)||new Set(q.options.map(x=>x.trim())).size!==4||!Number.isInteger(q.answer)||q.answer<0||q.answer>3)fail(
-"چهار گزینه متفاوت و پاسخ معتبر لازم است.")}else{if(Object.hasOwn(q,"options"))fail("گزینه اضافی برای این نوع سؤال مجاز نیست.");
-if(q.type==="boolean"?typeof q.answer!=="boolean":!text(q.answer))fail("پاسخ سؤال معتبر نیست.")}}function size(bank){const json=JSON.stringify(
-bank);if(new TextEncoder().encode(json).length>LIMIT)fail("سقف حجم بانک ۲۰ مگابایت است.");return json}function validDate(value){return typeof value===
-"string"&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&Number.isFinite(Date.parse(value))&&new Date(value).toISOString().slice(0,10)===value}function validate(bank){if(!bank||
-bank.format!=="classyar-question-bank"||bank.version!==1||!Number.isSafeInteger(bank.revision)||bank.revision<0||Object.keys(bank).sort().join()!==["format","ve\
-rsion","revision","courses","units","questions","exams"].sort().join())fail("قالب یا نسخه فایل بانک سؤال معتبر نیست.");const allIds=new Set;
-for(const key of["courses","units","questions","exams"]){if(!Array.isArray(bank[key]))fail("ساختار بانک نامعتبر است.");for(const item of bank[key]){
-if(!item||!text(item.id)||allIds.has(item.id))fail("شناسه خالی یا تکراری است.");allIds.add(item.id)}}const uniqueTitles=(items,scope)=>{const titles=new Set;
-for(const item of items){const key=JSON.stringify([scope(item),String(item.title).trim()]);if(!text(item.title)||titles.has(key))fail("عنوان خالی یا تکراری است.");
-titles.add(key)}};uniqueTitles(bank.courses,()=>"");uniqueTitles(bank.units,u=>u.courseId);for(const c of bank.courses)fields(c,["id","title","structure"]);for(const u of bank.
-units)fields(u,["id","courseId","title"]);for(const c of bank.courses)if(!["chapter","module"].includes(c.structure))fail("ساختار درس نامعتبر است.");
-const courseIds=new Set(bank.courses.map(c=>c.id));const unitIds=new Set(bank.units.map(u=>u.id));for(const u of bank.units)if(!courseIds.has(u.courseId))fail("\
-ارتباط بخش با درس نامعتبر است.");for(const q of bank.questions){question(q);if(!unitIds.has(q.unitId))fail("بخش سؤال معتبر نیست.")}
-for(const e of bank.exams){fields(e,["id","title","courseTitle","school","teacher","date","duration","questions"]);if(!text(e.title)||!text(e.courseTitle)||typeof e.
-school!=="string"||typeof e.teacher!=="string"||!validDate(e.date)||!Number.isInteger(e.duration)||e.duration<1||e.duration>600||!Array.isArray(e.questions)||!e.
-questions.length||e.questions.length>500)fail("آزمون خالی یا نامعتبر است.");const ids=new Set;for(const q of e.questions){question(q);if(!text(
-q.unitTitle)||ids.has(q.id))fail("سؤال تکراری یا بخش نامعتبر در آزمون.");ids.add(q.id)}}size(bank);return bank}function parse(json){
-if(new TextEncoder().encode(json).length>LIMIT)fail("سقف فایل ورودی ۲۰ مگابایت است.");return validate(JSON.parse(json.replace(/^\uFEFF/,
-"")))}function shuffle(list,random=Math.random){const result=[...list];for(let i=result.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[result[i],result[j]]=
-[result[j],result[i]]}return result}function generate(bank,spec,random=Math.random){if(!spec||typeof spec!=="object"||Array.isArray(spec))fail("مشخصات طرح آزمون\
- معتبر نیست.");if(!text(spec.courseId)||!Array.isArray(spec.unitIds)||!spec.unitIds.length||!spec.unitIds.every(text)||new Set(spec.unitIds).size!==spec.
-unitIds.length)fail("درس و بخش‌های معتبر و غیرتکراری انتخاب کنید.");if(!spec.counts||typeof spec.counts!=="object"||Array.isArray(
-spec.counts))fail("تعداد سؤال‌های هر نوع را مشخص کنید.");if(!text(spec.title)||typeof spec.school!=="string"||typeof spec.teacher!==
-"string"||!validDate(spec.date))fail("مشخصات آزمون معتبر نیست.");const duration=integer(spec.duration,1,600);const course=bank.courses.find(
-c=>c.id===spec.courseId);const units=new Map(bank.units.map(u=>[u.id,u]));const unitIds=new Set(spec.unitIds);if(!course||spec.unitIds.some(id=>units.get(id)?.courseId!==
-spec.courseId))fail("درس و بخش‌های معتبر انتخاب کنید.");const counts=Object.fromEntries(Object.keys(types).map(type=>[type,integer(spec.
-counts[type],0,500)]));const total=Object.values(counts).reduce((sum,count)=>sum+count,0);if(!total||total>500)fail("آزمون باید بین ۱ و ۵۰۰ سؤال داشته باشد.");
-const pools=Object.fromEntries(Object.keys(types).map(type=>[type,[]]));for(const q of bank.questions)if(unitIds.has(q.unitId)&&Object.hasOwn(pools,q.type))pools[q.
-type].push(q);let selected=[];for(const type of Object.keys(types)){const count=counts[type],pool=pools[type];if(count>pool.length)fail(`${types[type]}: ${pool.
-length} سؤال موجود است؛ تعداد درخواستی ${count} است.`);selected.push(...shuffle(pool,random).slice(0,count))}if(spec.totalScore!==void 0)
-selected=selectForScore(pools,counts,examScore(spec.totalScore),random);const exam={id:crypto.randomUUID(),title:spec.title.trim(),courseTitle:course.title,school:spec.
-school.trim(),teacher:spec.teacher.trim(),date:spec.date,duration,questions:shuffle(selected,random).map(q=>({...structuredClone(q),unitTitle:units.get(q.unitId).
-title}))};validate({...bank,exams:[...bank.exams,exam]});return exam}root.EduQuestionBank={LIMIT,types,digits,searchText,optionKey,score,examScore,integer,empty,
-validate,question,parse,size,generate}})(globalThis);(function(root){"use strict";function createNetworkGrade11Bank(D){const bank=D.empty();bank.courses=[{id:"n\
-et11-web",title:"طراحی وب و برنامه‌نویسی — یازدهم — آزمایشی",structure:"module"},{id:"net11-data",title:"داده، رایانه و شب\
-که — یازدهم — آزمایشی",structure:"chapter"}];bank.units=bank.courses.flatMap(c=>[{id:c.id+"-1",courseId:c.id,title:(c.structure==="module"?"پ\
-ودمان":"فصل")+" ۱ — مفاهیم و خواندن کد"},{id:c.id+"-2",courseId:c.id,title:(c.structure==="module"?"پودمان":"فصل")+" ۲ — تحلی\
-ل و حل مسئله"}]);const records=[["mcq","برای ایجاد پیوند به صفحهٔ دیگری در HTML از کدام عنصر استفاده می‌کنیم؟",
-["a","p","h1","br"],0,"عنصر a همراه ویژگی href برای پیوند استفاده می‌شود."],["mcq","Which CSS property changes the text col\
-or?",["color","width","display","margin"],0,"The color property sets the foreground text color."],["mcq","در فرم ثبت‌نام، چرا اعتبارسنجی سمت سرور نیز لازم است؟",
-["چون درخواست می‌تواند بدون اجرای اعتبارسنجی مرورگر مستقیماً به سرور ارسال شود و دادهٔ ورودی باید دوباره بررسی شود.",
+؛ تعداد سؤال‌ها، بخش‌ها یا نمرهٔ کل را تغییر دهید.")}function optionKey(value){const content=String(value).replace(/\r\n?/g,
+"\n").trim();if(!/^[\p{Script=Arabic}\p{Mark}\p{Zs}\t،؛؟.!]+$/u.test(content.replace(/[\u200c\u200d]/g,""))||/\p{Number}/u.test(content))return content;return content.
+normalize("NFKC").replace(/[يى]/g,"ی").replace(/ك/g,"ک").replace(/[\s\u200c\u200d]+/g," ").trim()}function integer(value,min,max){const s=digits(value),n=Number(
+s);if(!/^\d+$/.test(s)||!Number.isSafeInteger(n)||n<min||n>max)fail(`عدد صحیح بین ${min} و ${max} وارد کنید.`);return n}function empty(){return{
+format:"classyar-question-bank",version:1,revision:0,courses:[],units:[],questions:[],exams:[]}}function question(q){fields(q,["id","unitId","type","text","answ\
+er","explanation","score","options","unitTitle"]);if(!q||!text(q.id)||!text(q.unitId)||typeof q.type!=="string"||!Object.hasOwn(types,q.type)||!text(q.text)||typeof q.
+explanation!=="string"||!Number.isInteger(q.score)||q.score<1||q.score>1e4)fail("سؤال یا بارم نامعتبر است.");if(q.type==="mcq"){if(!Array.isArray(
+q.options)||q.options.length!==4||!Array.from(q.options).every(text)||new Set(q.options.map(x=>x.trim())).size!==4||!Number.isInteger(q.answer)||q.answer<0||q.answer>
+3)fail("چهار گزینه متفاوت و پاسخ معتبر لازم است.")}else{if(Object.hasOwn(q,"options"))fail("گزینه اضافی برای این نوع سؤال مجاز ن\
+یست.");if(q.type==="boolean"?typeof q.answer!=="boolean":!text(q.answer))fail("پاسخ سؤال معتبر نیست.")}}function size(bank){const json=JSON.
+stringify(bank);if(new TextEncoder().encode(json).length>LIMIT)fail("سقف حجم بانک ۲۰ مگابایت است.");return json}function validDate(value){
+return typeof value==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&Number.isFinite(Date.parse(value))&&new Date(value).toISOString().slice(0,10)===value}function validate(bank){
+if(!bank||bank.format!=="classyar-question-bank"||bank.version!==1||!Number.isSafeInteger(bank.revision)||bank.revision<0||Object.keys(bank).sort().join()!==["f\
+ormat","version","revision","courses","units","questions","exams"].sort().join())fail("قالب یا نسخه فایل بانک سؤال معتبر نیست.");
+const allIds=new Set;for(const key of["courses","units","questions","exams"]){if(!Array.isArray(bank[key]))fail("ساختار بانک نامعتبر است.");
+for(const item of bank[key]){if(!item||!text(item.id)||allIds.has(item.id))fail("شناسه خالی یا تکراری است.");allIds.add(item.id)}}const uniqueTitles=(items,scope)=>{
+const titles=new Set;for(const item of items){const key=JSON.stringify([scope(item),String(item.title).trim()]);if(!text(item.title)||titles.has(key))fail("عنوا\
+ن خالی یا تکراری است.");titles.add(key)}};uniqueTitles(bank.courses,()=>"");uniqueTitles(bank.units,u=>u.courseId);for(const c of bank.courses)fields(
+c,["id","title","structure"]);for(const u of bank.units)fields(u,["id","courseId","title"]);for(const c of bank.courses)if(!["chapter","module"].includes(c.structure))
+fail("ساختار درس نامعتبر است.");const courseIds=new Set(bank.courses.map(c=>c.id));const unitIds=new Set(bank.units.map(u=>u.id));for(const u of bank.
+units)if(!courseIds.has(u.courseId))fail("ارتباط بخش با درس نامعتبر است.");for(const q of bank.questions){question(q);if(!unitIds.has(q.
+unitId))fail("بخش سؤال معتبر نیست.")}for(const e of bank.exams){fields(e,["id","title","courseTitle","school","teacher","date","duration","quest\
+ions"]);if(!text(e.title)||!text(e.courseTitle)||typeof e.school!=="string"||typeof e.teacher!=="string"||!validDate(e.date)||!Number.isInteger(e.duration)||e.duration<
+1||e.duration>600||!Array.isArray(e.questions)||!e.questions.length||e.questions.length>500)fail("آزمون خالی یا نامعتبر است.");const ids=new Set;
+for(const q of e.questions){question(q);if(!text(q.unitTitle)||ids.has(q.id))fail("سؤال تکراری یا بخش نامعتبر در آزمون.");ids.add(q.
+id)}}size(bank);return bank}function parse(json){if(new TextEncoder().encode(json).length>LIMIT)fail("سقف فایل ورودی ۲۰ مگابایت است.");return validate(
+JSON.parse(json.replace(/^\uFEFF/,"")))}function shuffle(list,random=Math.random){const result=[...list];for(let i=result.length-1;i>0;i--){const j=Math.floor(random()*
+(i+1));[result[i],result[j]]=[result[j],result[i]]}return result}function generate(bank,spec,random=Math.random){if(!spec||typeof spec!=="object"||Array.isArray(
+spec))fail("مشخصات طرح آزمون معتبر نیست.");if(!text(spec.courseId)||!Array.isArray(spec.unitIds)||!spec.unitIds.length||!spec.unitIds.every(
+text)||new Set(spec.unitIds).size!==spec.unitIds.length)fail("درس و بخش‌های معتبر و غیرتکراری انتخاب کنید.");if(!spec.counts||
+typeof spec.counts!=="object"||Array.isArray(spec.counts))fail("تعداد سؤال‌های هر نوع را مشخص کنید.");if(!text(spec.title)||typeof spec.
+school!=="string"||typeof spec.teacher!=="string"||!validDate(spec.date))fail("مشخصات آزمون معتبر نیست.");const duration=integer(spec.duration,
+1,600);const course=bank.courses.find(c=>c.id===spec.courseId);const units=new Map(bank.units.map(u=>[u.id,u]));const unitIds=new Set(spec.unitIds);if(!course||
+spec.unitIds.some(id=>units.get(id)?.courseId!==spec.courseId))fail("درس و بخش‌های معتبر انتخاب کنید.");const counts=Object.fromEntries(
+Object.keys(types).map(type=>[type,integer(spec.counts[type],0,500)]));const total=Object.values(counts).reduce((sum,count)=>sum+count,0);if(!total||total>500)fail(
+"آزمون باید بین ۱ و ۵۰۰ سؤال داشته باشد.");const pools=Object.fromEntries(Object.keys(types).map(type=>[type,[]]));for(const q of bank.
+questions)if(unitIds.has(q.unitId)&&Object.hasOwn(pools,q.type))pools[q.type].push(q);let selected=[];for(const type of Object.keys(types)){const count=counts[type],
+pool=pools[type];if(count>pool.length)fail(`${types[type]}: ${pool.length} سؤال موجود است؛ تعداد درخواستی ${count} است.`);selected.
+push(...shuffle(pool,random).slice(0,count))}if(spec.totalScore!==void 0)selected=selectForScore(pools,counts,examScore(spec.totalScore),random);const exam={id:crypto.
+randomUUID(),title:spec.title.trim(),courseTitle:course.title,school:spec.school.trim(),teacher:spec.teacher.trim(),date:spec.date,duration,questions:shuffle(selected,
+random).map(q=>({...structuredClone(q),unitTitle:units.get(q.unitId).title}))};validate({...bank,exams:[...bank.exams,exam]});return exam}root.EduQuestionBank={
+LIMIT,types,digits,searchText,optionKey,score,examScore,integer,empty,validate,question,parse,size,generate}})(globalThis);(function(root){"use strict";function createNetworkGrade11Bank(D){
+const bank=D.empty();bank.courses=[{id:"net11-web",title:"طراحی وب و برنامه‌نویسی — یازدهم — آزمایشی",structure:"module"},
+{id:"net11-data",title:"داده، رایانه و شبکه — یازدهم — آزمایشی",structure:"chapter"}];bank.units=bank.courses.flatMap(c=>[{id:c.
+id+"-1",courseId:c.id,title:(c.structure==="module"?"پودمان":"فصل")+" ۱ — مفاهیم و خواندن کد"},{id:c.id+"-2",courseId:c.id,title:(c.structure===
+"module"?"پودمان":"فصل")+" ۲ — تحلیل و حل مسئله"}]);const records=[["mcq","برای ایجاد پیوند به صفحهٔ دیگری در HTML از کدام عنصر استفاده\
+ می‌کنیم؟",["a","p","h1","br"],0,"عنصر a همراه ویژگی href برای پیوند استفاده می‌شود."],["mcq","Which CSS property \
+changes the text color?",["color","width","display","margin"],0,"The color property sets the foreground text color."],["mcq","در فرم ثبت‌نام، چرا اعتبارسنجی سمت\
+ سرور نیز لازم است؟",["چون درخواست می‌تواند بدون اجرای اعتبارسنجی مرورگر مستقیماً به سرور ارسال شود و دادهٔ ورودی باید دوباره بررسی شود.",
 "چون اعتبارسنجی سرور جایگزین تمام کنترل‌های دسترسی و احراز هویت است.","چون استفاده از HTML به‌تنهایی ما\
 نع ارسال دادهٔ نامعتبر از هر ابزار دیگری می‌شود.","چون اگر مرورگر پیام خطا نمایش دهد، دیگر هیچ داده‌ای به سرور نمی‌رسد و\
  بررسی سرور همیشه اضافی است."],0,"اعتبارسنجی مرورگر برای تجربهٔ کاربر مفید است، اما مرز امنیتی قابل اتکا نیست."],
@@ -376,98 +377,113 @@ globalThis);(function(root){"use strict";const D=root.EduQuestionBank;const head
 "۱","گزینهٔ چهارم صحیح است."],["صحیح / غلط","آب در شرایط معمول در دمای صفر درجه یخ می‌زند.","","",
 "","","صحیح","۰٫۵",""],["جای‌خالی","پایتخت ایران ........ است.","","","","","تهران","۱",""],["تشریحی","دو روش صرفه‌جوی\
 ی در مصرف آب را بنویسید.","","","","","بستن شیر آب هنگام مسواک‌زدن و رفع نشتی شیرها.","۲","هر مورد درست \
-یک نمره دارد."]];function templateSheets(){return[{name:sheetName,rows:[headers,Array(9).fill("")],entryRows:1e3,widths:[23,60,25,25,25,25,44,12,48],validations:[
-{ref:"A2:A1001",type:"list",formula:'"چهارگزینه‌ای,صحیح / غلط,جای‌خالی,تشریحی"',title:"نوع سؤال",prompt:"نوع سؤال را ا\
-ز فهرست انتخاب کنید."},{ref:"B2:B1001",title:"متن سؤال ـ الزامی",prompt:"هر ردیف یک سؤال؛ برای خط جدید داخل سلول Alt+Enter بزنید."},
-{ref:"C2:F1001",title:"فقط برای چهارگزینه‌ای",prompt:"برای سؤال چهارگزینه‌ای هر چهار گزینه را بنویسید؛ برای بقیه انواع خالی بگذارید."},
-{ref:"G2:G1001",title:"پاسخ صحیح ـ الزامی",prompt:"چهارگزینه‌ای: شماره ۱ تا ۴؛ صحیح / غلط: صحیح یا غلط؛ بقیه: پاسخ متنی."},
+یک نمره دارد."]];function templateSheets(){return[{name:sheetName,rows:[headers,Array(9).fill("")],entryRows:1e3,widths:[23,60,25,25,25,25,44,12,48],columnStyles:Array.
+from({length:9},()=>({format:"text",direction:"context"})),validations:[{ref:"A2:A1001",type:"list",formula:'"چهارگزینه‌ای,صحیح / غلط,جای‌خالی,تشریحی"',
+title:"نوع سؤال",prompt:"نوع سؤال را از فهرست انتخاب کنید."},{ref:"B2:B1001",title:"متن سؤال ـ الزامی",prompt:"هر\
+ ردیف یک سؤال؛ برای خط جدید داخل سلول Alt+Enter بزنید."},{ref:"C2:F1001",title:"فقط برای چهارگزینه‌ای",prompt:"\
+برای سؤال چهارگزینه‌ای هر چهار گزینه را بنویسید؛ برای بقیه انواع خالی بگذارید."},{ref:"G2:G100\
+1",title:"پاسخ صحیح ـ الزامی",prompt:"چهارگزینه‌ای: شماره ۱ تا ۴؛ صحیح / غلط: صحیح یا غلط؛ بقیه: پاسخ متنی."},
 {ref:"H2:H1001",title:"بارم ـ الزامی",prompt:"عددی بین ۰٫۰۱ و ۱۰۰ با حداکثر دو رقم اعشار؛ مانند 0.5 یا 2."},
 {ref:"I2:I1001",title:"توضیح پاسخ ـ اختیاری",prompt:"راهنمای تصحیح یا توضیح تکمیلی؛ این ستون را می‌توانید خالی بگذارید."}]},
-{name:"نمونه‌ها",rows:[headers,...examples],widths:[23,60,25,25,25,25,44,12,48]},{name:"راهنما",rows:[["ورود گروهی سؤال‌ها ـ نسخه ۱",
-"راهنما"],["مقصد","قبل از ورود، درس و فصل یا پودمان را در برنامه انتخاب کنید؛ تمام ردیف‌ها به همان بخش افزوده می‌شوند."],
-["برگهٔ ورود","فقط برگهٔ «سؤال‌ها» خوانده می‌شود. نام برگه و عنوان یا ترتیب ستون‌ها را تغییر ندهید."],
-["نمونه‌ها","برگهٔ نمونه‌ها ثبت نمی‌شود؛ در صورت نیاز ردیف‌های آن را به برگهٔ سؤال‌ها کپی کنید."],
-["نوع سؤال","در ستون نوع سؤال روی سلول کلیک و از فلش فهرست انتخاب کنید: چهارگزینه‌ای، صحیح / غلط، جای‌خالی یا تشریحی."],
-["تکمیل جدول","از ردیف ۲ شروع کنید؛ هر سؤال در یک ردیف. ردیف‌های خالی نادیده گرفته می‌شوند. با انتخاب هر سلول راهنمای همان ستون نمایش داده می‌شود. برای\
- خط جدید داخل سلول Alt+Enter بزنید."],["پاسخ چهارگزینه‌ای","شمارهٔ گزینهٔ صحیح از ۱ تا ۴؛ چهار گزینهٔ متفاوت الزامی است."],
-["پاسخ صحیح / غلط","صحیح یا غلط؛ true و false نیز پذیرفته می‌شوند."],["پاسخ جای‌خالی و تشریحی","پاسخ\
- متنی الزامی است؛ گزینه‌ها را خالی بگذارید."],["بارم","بین ۰٫۰۱ و ۱۰۰، حداکثر دو رقم اعشار؛ رقم فارسی و انگلیسی پذیرفته \
-می‌شود."],["محدودیت","حداکثر ۱۰۰۰ سؤال و ۵ مگابایت؛ فایل XLSX بدون فرمول، سلول ادغام‌شده یا رمزگذاری."],
+{name:"نمونه‌ها",rows:[headers,...examples],widths:[23,60,25,25,25,25,44,12,48],columnStyles:Array.from({length:9},()=>({format:"text",direction:"conte\
+xt"}))},{name:"راهنما",rows:[["ورود گروهی سؤال‌ها ـ نسخه ۱","راهنما"],["مقصد","قبل از ورود، درس و فصل یا پودمان را در برن\
+امه انتخاب کنید؛ تمام ردیف‌ها به همان بخش افزوده می‌شوند."],["برگهٔ ورود","فقط برگهٔ «سؤال‌ها» خوانده \
+می‌شود. نام برگه و عنوان یا ترتیب ستون‌ها را تغییر ندهید."],["نمونه‌ها","برگهٔ نمونه‌ها ثبت نمی‌شود؛ در \
+صورت نیاز ردیف‌های آن را به برگهٔ سؤال‌ها کپی کنید."],["نوع سؤال","در ستون نوع سؤال روی سلول کلیک و از فلش فهر\
+ست انتخاب کنید: چهارگزینه‌ای، صحیح / غلط، جای‌خالی یا تشریحی."],["تکمیل جدول","از ردیف ۲ شروع کنید؛ \
+هر سؤال در یک ردیف. ردیف‌های خالی نادیده گرفته می‌شوند. با انتخاب هر سلول راهنمای همان ستون نمایش داده می‌شود. برای خط جدید داخل سلول Alt+Enter بزنید."],
+["پاسخ چهارگزینه‌ای","شمارهٔ گزینهٔ صحیح از ۱ تا ۴؛ چهار گزینهٔ متفاوت الزامی است."],["پاسخ صحی\
+ح / غلط","صحیح یا غلط؛ true و false نیز پذیرفته می‌شوند."],["پاسخ جای‌خالی و تشریحی","پاسخ متنی الزامی است؛\
+ گزینه‌ها را خالی بگذارید."],["بارم","بین ۰٫۰۱ و ۱۰۰، حداکثر دو رقم اعشار؛ رقم فارسی و انگلیسی پذیرفته می‌شود."],
+["محدودیت","حداکثر ۱۰۰۰ سؤال و ۵ مگابایت؛ فایل XLSX بدون فرمول، سلول ادغام‌شده یا رمزگذاری."],
 ["ثبت","ابتدا پیش‌نمایش را بررسی کنید. وجود خطا مانع ثبت کل فایل است؛ هیچ سؤال قبلی تغییر نمی‌کند."],
-["تکراری","نوع و متن یکسان در همان بخش تکراری است؛ تکراری‌های فایل و بانک ثبت نمی‌شوند."],[
-"متن","حداکثر ۱۰۰۰۰ نویسه برای متن، پاسخ و توضیح و ۲۰۰۰ نویسه برای هر گزینه."]]}]}function key(q){return q.
-type+":"+D.searchText(q.text)}function preview(rows,bank,unitId){if(!bank.units.some(u=>u.id===unitId))fail("فصل یا پودمان مقصد معتبر نیست.");
-if(!rows.length||rows[0].error||headers.some((h,i)=>D.searchText(rows[0].cells[i]||"")!==D.searchText(h))||rows[0].cells.length>headers.length)fail("ستون‌های فا\
-یل مطابق الگو نیستند؛ الگوی اکسل را دوباره دریافت کنید.");const input=rows.slice(1).filter(row=>row.error||row.cells.
-some(value=>String(value).trim()));if(!input.length)fail("برگهٔ سؤال‌ها خالی است؛ سؤال‌ها را در همین برگه وارد کنید.");
-if(input.length>MAX_ROWS)fail("در هر فایل حداکثر ۱۰۰۰ سؤال وارد کنید.");const seen=new Set(bank.questions.filter(q=>q.unitId===unitId).
-map(key));const aliases=new Map(Object.entries(D.types).flatMap(([type,label])=>[[D.searchText(label).replaceAll(" ",""),type],[type,type]]));aliases.set("صحیح‌\
-وغلط".replaceAll("‌",""),"boolean");aliases.set("صحیحغلط","boolean");const results=input.map(row=>{let question;try{if(row.error)fail(row.error);if(row.
-cells.length>headers.length)fail("ستون اضافه خارج از الگو وجود دارد.");const cells=Array.from({length:9},(_,i)=>String(row.cells[i]??
-"").trim());const[kind,text,...rest]=cells;const options=rest.slice(0,4),answer=cells[6];if(cells.some((value,i)=>value.length>(i>=2&&i<=5?2e3:1e4)))fail("طول م\
-تن از سقف مجاز الگو بیشتر است.");const type=aliases.get(D.searchText(kind).replaceAll(" ",""));if(!type)fail("نوع سؤال ناشناخته است؛ یکی \
-از چهار نوع راهنما را بنویسید.");question={id:"preview-"+row.number,unitId,type,text,answer,score:D.score(cells[7]),explanation:cells[8]};
-if(type==="mcq"){if(!/^[1-4]$/.test(D.digits(answer)))fail("پاسخ چهارگزینه‌ای باید شماره‌ای از ۱ تا ۴ باشد.");question.answer=
-Number(D.digits(answer))-1;question.options=options;if(new Set(options.map(D.optionKey)).size!==4)fail("چهار گزینه باید متفاوت باشند.")}else{
-if(options.some(Boolean))fail("گزینه‌ها فقط برای سؤال چهارگزینه‌ای مجازند.");if(type==="boolean"){const value=D.searchText(
-answer);if(!["صحیح","غلط","true","false"].includes(value))fail("پاسخ صحیح / غلط باید «صحیح» یا «غلط» باشد.");question.answer=
-value==="صحیح"||value==="true"}}D.question(question);const identity=key(question);if(seen.has(identity))return{number:row.number,text,status:"duplicate",message:"\
-نوع و متن در این فایل یا همین بخش بانک تکراری است؛ ثبت نمی‌شود."};seen.add(identity);return{number:row.number,
-text,status:"ready",question}}catch(error){return{number:row.number,text:String(row.cells[1]||""),status:"error",message:error.message}}});return{revision:bank.
-revision,unitId,results,ready:results.filter(r=>r.status==="ready").length,errors:results.filter(r=>r.status==="error").length,duplicates:results.filter(r=>r.status===
-"duplicate").length}}function prepare(report,bank){if(report.revision!==bank.revision)fail("بانک سؤال تغییر کرده است؛ فایل را دوباره بررسی کنید.");
-if(report.errors||!report.ready)fail("فایل سؤال آمادهٔ ثبت ندارد یا دارای خطاست.");if(!bank.units.some(u=>u.id===report.unitId))
-fail("بخش مقصد حذف شده است.");const next=structuredClone(bank);for(const row of report.results.filter(r=>r.status==="ready"))next.questions.push(
-{...structuredClone(row.question),id:root.crypto.randomUUID()});D.validate(next);D.size(next);return next}function xml(bytes){const text=new TextDecoder("utf-8",
-{fatal:true}).decode(bytes);if(/<!DOCTYPE|<!ENTITY/i.test(text))fail("ساختار XML فایل مجاز نیست.");const doc=new DOMParser().parseFromString(text,
-"application/xml");if(doc.getElementsByTagName("parsererror").length)fail("ساختار اکسل خراب است.");return doc}const nodes=(node,name)=>[...node.
-getElementsByTagNameNS("*",name)];const crcTable=Array.from({length:256},(_,n)=>{for(let bit=0;bit<8;bit++)n=n&1?3988292384^n>>>1:n>>>1;return n>>>0});async function readXlsx(file){
-if(!/\.xlsx$/i.test(file.name)||file.size>MAX_FILE||!file.size)fail("یک فایل XLSX معتبر با حجم حداکثر ۵ مگابایت انتخاب کنید.");
-const bytes=new Uint8Array(await file.arrayBuffer());const view=new DataView(bytes.buffer),u16=n=>view.getUint16(n,true),u32=n=>view.getUint32(n,true);const ensure=(offset2,length2)=>{
-if(offset2<0||length2<0||offset2+length2>bytes.length)fail("فایل اکسل ناقص یا خراب است.")};let end=-1;for(let i=bytes.length-22;i>=Math.max(
-0,bytes.length-65557);i--)if(u32(i)===101010256&&i+22+u16(i+20)===bytes.length){end=i;break}if(end<0)fail("فایل، اکسل XLSX معتبر نیست.");if(u16(
-end+4)||u16(end+6)||u16(end+8)!==u16(end+10))fail("فایل اکسل چندبخشی پشتیبانی نمی‌شود.");const count=u16(end+10),offset=u32(end+16),
-length=u32(end+12);if(count>100||count<1)fail("تعداد اجزای اکسل بیش از حد مجاز است.");ensure(offset,length);let cursor=offset,expanded=0;
-const entries=new Map;for(let i=0;i<count;i++){ensure(cursor,46);if(u32(cursor)!==33639248)fail("ساختار ZIP اکسل معتبر نیست.");const flags=u16(
-cursor+8),method=u16(cursor+10),size=u32(cursor+24),packed=u32(cursor+20),nameLength=u16(cursor+28),local=u32(cursor+42);ensure(cursor+46,nameLength+u16(cursor+
-30)+u16(cursor+32));const name=new TextDecoder().decode(bytes.subarray(cursor+46,cursor+46+nameLength));expanded+=size;if(flags&1||![0,8].includes(method)||expanded>
-MAX_EXPANDED||name.includes("..")||name.startsWith("/")||name.includes("\\")||entries.has(name))fail("فایل رمزگذاری‌شده، تکراری یا بیش از حد بزرگ است.");
-entries.set(name,{flags,method,size,packed,local,crc:u32(cursor+16)});cursor+=46+nameLength+u16(cursor+30)+u16(cursor+32)}if(cursor!==offset+length)fail("فهرست \
-اجزای اکسل معتبر نیست.");async function part(name,optional=false){const item=entries.get(name);if(!item){if(optional)return null;fail("برگه یا\
- اطلاعات لازم در اکسل پیدا نشد.")}ensure(item.local,30);if(u32(item.local)!==67324752||u16(item.local+8)!==item.method||u16(item.local+6)&
-1)fail("ساختار داخلی اکسل معتبر نیست.");const start=item.local+30+u16(item.local+26)+u16(item.local+28);ensure(start,item.packed);let data=bytes.
-subarray(start,start+item.packed);if(item.method===8){if(!root.DecompressionStream)fail("مرورگر شما خواندن این اکسل را پشتیبانی نمی‌کند؛ مرورگر را به‌روز کنید.");
-const reader=new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw")).getReader();const chunks=[];let total=0;try{for(;;){const{done,value}=await reader.
-read();if(done)break;total+=value.length;if(total>item.size||total>MAX_EXPANDED)fail("حجم بازشدهٔ اکسل بیش از حد مجاز است.");chunks.
-push(value)}}catch(error){await reader.cancel().catch(()=>{});throw error}data=new Uint8Array(total);let index=0;for(const chunk of chunks){data.set(chunk,index);
-index+=chunk.length}}let crc=4294967295;for(const byte of data)crc=crcTable[(crc^byte)&255]^crc>>>8;if(data.length!==item.size||(crc^4294967295)>>>0!==item.crc)
-fail("داده‌های اکسل ناقص یا خراب‌اند.");return xml(data)}const book=await part("xl/workbook.xml"),rels=await part("xl/_rels/workbook\
-.xml.rels");const sheets=nodes(book,"sheet").filter(s=>s.getAttribute("name")===sheetName);if(sheets.length!==1)fail("برگهٔ «سؤال‌ها» پیدا نشد؛ از الگوی برنامه \
-استفاده کنید.");const id=sheets[0].getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships","id");const rel=nodes(rels,"R\
-elationship").find(r=>r.getAttribute("Id")===id);const target=rel?.getAttribute("Target")||"";if(rel?.getAttribute("TargetMode")==="External"||!/^(?:\/xl\/|)(?:worksheets\/)sheet[\w-]*\.xml$/.
-test(target))fail("نشانی برگهٔ سؤال‌ها معتبر نیست.");const sheet=await part(target.startsWith("/xl/")?target.slice(1):"xl/"+target);if(nodes(
-sheet,"mergeCell").length)fail("سلول‌های برگهٔ سؤال‌ها نباید ادغام شده باشند.");const shared=await part("xl/sharedString\
-s.xml",true);const strings=shared?nodes(shared,"si").map(si=>nodes(si,"t").map(t=>t.textContent).join("")):[];const rows=nodes(sheet,"row");if(rows.length>MAX_ROWS+
-100)fail("تعداد ردیف‌های فایل بیش از حد مجاز است؛ ردیف‌های خالی اضافه را حذف کنید.");const seenRows=new Set;
-return rows.map((row,index)=>{const number=Number(row.getAttribute("r"));if(!Number.isInteger(number)||number<1||seenRows.has(number)||index===0&&number!==1)fail(
-"شمارهٔ ردیف‌های اکسل معتبر نیست.");seenRows.add(number);const cells=[],used=new Set;let error="";for(const cell of nodes(row,"c")){
-const reference=/^([A-Z]+)(\d+)$/.exec(cell.getAttribute("r")||"");if(!reference||Number(reference[2])!==number)fail("نشانی سلول اکسل معتبر نیست.");
-let column=0;for(const letter of reference[1])column=column*26+letter.charCodeAt(0)-64;column--;if(column>50||used.has(column))fail("ستون اضافه یا تکراری در فای\
-ل وجود دارد.");used.add(column);if(nodes(cell,"f").length)error="فرمول مجاز نیست؛ مقدار سلول را به متن یا عدد تبدیل کنید.";
-const type=cell.getAttribute("t"),raw=nodes(cell,"v")[0]?.textContent||"";if(type==="e")error="سلول اکسل دارای خطاست.";let value=type==="inlin\
-eStr"?nodes(cell,"t").map(t=>t.textContent).join(""):raw;if(type==="s"){if(!/^\d+$/.test(raw)||Number(raw)>=strings.length)fail("جدول متن‌های اکسل معتبر نیست.");
+["تکراری","فقط سؤال کاملاً یکسان در همان بخش تکراری است: نوع، متن، گزینه‌ها، پاسخ، بارم و توضیح. حروف بزرگ و کوچک و فاصله‌های داخل کد حفظ می‌شوند؛ تکراری‌\
+ها ثبت نمی‌شوند."],["متن فنی و کد","سلول‌های ورود از نوع متن هستند تا 001، 1/2، 1e3 و متن آغازشده با = تغییر نکنند. قالب متن سلول‌ها را ح\
+فظ کنید؛ فرمول قابل ورود نیست. کد چندخطی و تورفتگی آن حفظ می‌شود."],["متن","حداکثر ۱۰۰۰۰ نویسه برای متن، \
+پاسخ و توضیح و ۲۰۰۰ نویسه برای هر گزینه."]]}]}const contentKey=value=>String(value??"").replace(/\r\n?/g,"\n");function key(q){return JSON.
+stringify([q.type,contentKey(q.text),q.options?.map(contentKey)||null,typeof q.answer==="string"?contentKey(q.answer):q.answer,q.score,contentKey(q.explanation)])}
+function preview(rows,bank,unitId){if(!bank.units.some(u=>u.id===unitId))fail("فصل یا پودمان مقصد معتبر نیست.");if(!rows.length||rows[0].
+error||headers.some((h,i)=>D.searchText(rows[0].cells[i]||"")!==D.searchText(h))||rows[0].cells.length>headers.length)fail("ستون‌های فایل مطابق الگو نیستند؛ الگ\
+وی اکسل را دوباره دریافت کنید.");const input=rows.slice(1).filter(row=>row.error||row.cells.some(value=>String(value).trim()));if(!input.
+length)fail("برگهٔ سؤال‌ها خالی است؛ سؤال‌ها را در همین برگه وارد کنید.");if(input.length>MAX_ROWS)fail("در هر \
+فایل حداکثر ۱۰۰۰ سؤال وارد کنید.");const seen=new Set(bank.questions.filter(q=>q.unitId===unitId).map(key));const aliases=new Map(Object.
+entries(D.types).flatMap(([type,label])=>[[D.searchText(label).replaceAll(" ",""),type],[type,type]]));aliases.set("صحیح‌وغلط".replaceAll("‌",""),"b\
+oolean");aliases.set("صحیحغلط","boolean");const results=input.map(row=>{let question;try{if(row.error)fail(row.error);if(row.cells.length>headers.length)
+fail("ستون اضافه خارج از الگو وجود دارد.");const cells=Array.from({length:9},(_,i)=>String(row.cells[i]??""));const[kind,text,...rest]=cells;
+const options=rest.slice(0,4),answer=cells[6];if(cells.some((value,i)=>value.length>(i>=2&&i<=5?2e3:1e4)))fail("طول متن از سقف مجاز الگو بیشتر است.");
+const type=aliases.get(D.searchText(kind).replaceAll(" ",""));if(!type)fail("نوع سؤال ناشناخته است؛ یکی از چهار نوع راهنما را بنویسید.");
+question={id:"preview-"+row.number,unitId,type,text,answer,score:D.score(cells[7]),explanation:cells[8]};if(type==="mcq"){if(!/^[1-4]$/.test(D.digits(answer)))fail(
+"پاسخ چهارگزینه‌ای باید شماره‌ای از ۱ تا ۴ باشد.");question.answer=Number(D.digits(answer))-1;question.options=options;if(new Set(
+options.map(D.optionKey)).size!==4)fail("چهار گزینه باید متفاوت باشند.")}else{if(options.some(option=>option.trim()))fail("گزینه‌ها فقط \
+برای سؤال چهارگزینه‌ای مجازند.");if(type==="boolean"){const value=D.searchText(answer);if(!["صحیح","غلط","true","false"].includes(
+value))fail("پاسخ صحیح / غلط باید «صحیح» یا «غلط» باشد.");question.answer=value==="صحیح"||value==="true"}}D.question(question);
+const identity=key(question);if(seen.has(identity))return{number:row.number,text,status:"duplicate",message:"محتوای کامل سؤال در این فایل یا همین بخش بانک یکسان\
+ است؛ ثبت نمی‌شود."};seen.add(identity);return{number:row.number,text,status:"ready",question}}catch(error){return{number:row.number,text:String(
+row.cells[1]||""),status:"error",message:error.message}}});return{revision:bank.revision,unitId,results,ready:results.filter(r=>r.status==="ready").length,errors:results.
+filter(r=>r.status==="error").length,duplicates:results.filter(r=>r.status==="duplicate").length}}function prepare(report,bank){if(report.revision!==bank.revision)
+fail("بانک سؤال تغییر کرده است؛ فایل را دوباره بررسی کنید.");if(report.errors||!report.ready)fail("فایل سؤال آمادهٔ ثب\
+ت ندارد یا دارای خطاست.");if(!bank.units.some(u=>u.id===report.unitId))fail("بخش مقصد حذف شده است.");const next=structuredClone(
+bank);for(const row of report.results.filter(r=>r.status==="ready"))next.questions.push({...structuredClone(row.question),id:root.crypto.randomUUID()});D.validate(
+next);D.size(next);return next}function xml(bytes){const text=new TextDecoder("utf-8",{fatal:true}).decode(bytes);if(/<!DOCTYPE|<!ENTITY/i.test(text))fail("ساخت\
+ار XML فایل مجاز نیست.");const doc=new DOMParser().parseFromString(text,"application/xml");if(doc.getElementsByTagName("parsererror").length)fail(
+"ساختار اکسل خراب است.");return doc}const nodes=(node,name)=>[...node.getElementsByTagNameNS("*",name)];const crcTable=Array.from({length:256},
+(_,n)=>{for(let bit=0;bit<8;bit++)n=n&1?3988292384^n>>>1:n>>>1;return n>>>0});async function readXlsx(file){if(!/\.xlsx$/i.test(file.name)||file.size>MAX_FILE||
+!file.size)fail("یک فایل XLSX معتبر با حجم حداکثر ۵ مگابایت انتخاب کنید.");const bytes=new Uint8Array(await file.arrayBuffer());
+const view=new DataView(bytes.buffer),u16=n=>view.getUint16(n,true),u32=n=>view.getUint32(n,true);const ensure=(offset2,length2)=>{if(offset2<0||length2<0||offset2+
+length2>bytes.length)fail("فایل اکسل ناقص یا خراب است.")};let end=-1;for(let i=bytes.length-22;i>=Math.max(0,bytes.length-65557);i--)if(u32(
+i)===101010256&&i+22+u16(i+20)===bytes.length){end=i;break}if(end<0)fail("فایل، اکسل XLSX معتبر نیست.");if(u16(end+4)||u16(end+6)||u16(end+8)!==
+u16(end+10))fail("فایل اکسل چندبخشی پشتیبانی نمی‌شود.");const count=u16(end+10),offset=u32(end+16),length=u32(end+12);if(count>100||
+count<1)fail("تعداد اجزای اکسل بیش از حد مجاز است.");ensure(offset,length);let cursor=offset,expanded=0;const entries=new Map;for(let i=0;i<
+count;i++){ensure(cursor,46);if(u32(cursor)!==33639248)fail("ساختار ZIP اکسل معتبر نیست.");const flags=u16(cursor+8),method=u16(cursor+10),size=u32(
+cursor+24),packed=u32(cursor+20),nameLength=u16(cursor+28),local=u32(cursor+42);ensure(cursor+46,nameLength+u16(cursor+30)+u16(cursor+32));const name=new TextDecoder().
+decode(bytes.subarray(cursor+46,cursor+46+nameLength));expanded+=size;if(flags&1||![0,8].includes(method)||expanded>MAX_EXPANDED||name.includes("..")||name.startsWith(
+"/")||name.includes("\\")||entries.has(name))fail("فایل رمزگذاری‌شده، تکراری یا بیش از حد بزرگ است.");entries.set(name,{
+flags,method,size,packed,local,crc:u32(cursor+16)});cursor+=46+nameLength+u16(cursor+30)+u16(cursor+32)}if(cursor!==offset+length)fail("فهرست اجزای اکسل معتبر ن\
+یست.");async function part(name,optional=false){const item=entries.get(name);if(!item){if(optional)return null;fail("برگه یا اطلاعات لازم در اکسل پیدا نشد.")}
+ensure(item.local,30);if(u32(item.local)!==67324752||u16(item.local+8)!==item.method||u16(item.local+6)&1)fail("ساختار داخلی اکسل معتبر نیست.");
+const start=item.local+30+u16(item.local+26)+u16(item.local+28);ensure(start,item.packed);let data=bytes.subarray(start,start+item.packed);if(item.method===8){if(!root.
+DecompressionStream)fail("مرورگر شما خواندن این اکسل را پشتیبانی نمی‌کند؛ مرورگر را به‌روز کنید.");const reader=new Blob(
+[data]).stream().pipeThrough(new DecompressionStream("deflate-raw")).getReader();const chunks=[];let total=0;try{for(;;){const{done,value}=await reader.read();if(done)
+break;total+=value.length;if(total>item.size||total>MAX_EXPANDED)fail("حجم بازشدهٔ اکسل بیش از حد مجاز است.");chunks.push(value)}}catch(error){
+await reader.cancel().catch(()=>{});throw error}data=new Uint8Array(total);let index=0;for(const chunk of chunks){data.set(chunk,index);index+=chunk.length}}let crc=4294967295;
+for(const byte of data)crc=crcTable[(crc^byte)&255]^crc>>>8;if(data.length!==item.size||(crc^4294967295)>>>0!==item.crc)fail("داده‌های اکسل ناقص یا خراب‌اند.");
+return xml(data)}const book=await part("xl/workbook.xml"),rels=await part("xl/_rels/workbook.xml.rels");const sheets=nodes(book,"sheet").filter(s=>s.getAttribute(
+"name")===sheetName);if(sheets.length!==1)fail("برگهٔ «سؤال‌ها» پیدا نشد؛ از الگوی برنامه استفاده کنید.");const id=sheets[0].
+getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships","id");const rel=nodes(rels,"Relationship").find(r=>r.getAttribute("Id")===id);
+const target=rel?.getAttribute("Target")||"";if(rel?.getAttribute("TargetMode")==="External"||!/^(?:\/xl\/|)(?:worksheets\/)sheet[\w-]*\.xml$/.test(target))fail(
+"نشانی برگهٔ سؤال‌ها معتبر نیست.");const sheet=await part(target.startsWith("/xl/")?target.slice(1):"xl/"+target);if(nodes(sheet,"mer\
+geCell").length)fail("سلول‌های برگهٔ سؤال‌ها نباید ادغام شده باشند.");const shared=await part("xl/sharedStrings.xml",true);
+const strings=shared?nodes(shared,"si").map(si=>nodes(si,"t").map(t=>t.textContent).join("")):[];const rows=nodes(sheet,"row");if(rows.length>MAX_ROWS+100)fail(
+"تعداد ردیف‌های فایل بیش از حد مجاز است؛ ردیف‌های خالی اضافه را حذف کنید.");const seenRows=new Set;return rows.
+map((row,index)=>{const number=Number(row.getAttribute("r"));if(!Number.isInteger(number)||number<1||seenRows.has(number)||index===0&&number!==1)fail("شمارهٔ رد\
+یف‌های اکسل معتبر نیست.");seenRows.add(number);const cells=[],used=new Set;let error="";for(const cell of nodes(row,"c")){const reference=/^([A-Z]+)(\d+)$/.
+exec(cell.getAttribute("r")||"");if(!reference||Number(reference[2])!==number)fail("نشانی سلول اکسل معتبر نیست.");let column=0;for(const letter of reference[1])
+column=column*26+letter.charCodeAt(0)-64;column--;if(column>50||used.has(column))fail("ستون اضافه یا تکراری در فایل وجود دارد.");
+used.add(column);if(nodes(cell,"f").length)error="فرمول مجاز نیست؛ مقدار سلول را به متن یا عدد تبدیل کنید.";const type=cell.
+getAttribute("t"),raw=nodes(cell,"v")[0]?.textContent||"";if(type==="e")error="سلول اکسل دارای خطاست.";let value=type==="inlineStr"?nodes(cell,
+"t").map(t=>t.textContent).join(""):raw;if(type==="s"){if(!/^\d+$/.test(raw)||Number(raw)>=strings.length)fail("جدول متن‌های اکسل معتبر نیست.");
 value=strings[Number(raw)]}if(type==="b")value=raw==="1"?"true":"false";if(column>=9&&!value&&!nodes(cell,"f").length)continue;cells[column]=value.replace(/_x([0-9a-f]{4})_/gi,
 (_,hex)=>String.fromCharCode(parseInt(hex,16)))}return{number,cells,error}})}root.EduQuestionBankImport={headers,templateSheets,examples,preview,prepare,readXlsx,
-MAX_ROWS,MAX_FILE}})(globalThis);(function(root){"use strict";const I=root.EduQuestionBankImport;function mount({parent,bank,unitId,courseTitle,unitTitle,el,button,
-isCurrent,onPending,onSave,onClose}){const panel=el("section",void 0,"qb-import");panel.setAttribute("aria-label","ورود گروهی سؤال‌ها");parent.
-append(panel);const current=()=>panel.isConnected&&isCurrent();const heading=el("header",void 0,"qb-import-heading");heading.append(el("h3","ورود گروهی سؤال‌ها"),
-el("p",`${courseTitle} · ${unitTitle}`,"qb-import-destination"));panel.append(heading);const actions=el("div",void 0,"qb-import-steps");panel.append(actions);const templateStep=el(
-"div",void 0,"qb-import-step");const uploadStep=el("div",void 0,"qb-import-step");for(const[container,number,title,detail]of[[templateStep,"۱","آماده‌سازی سؤال\
-‌ها","الگوی اکسل را دریافت و تکمیل کنید؛ نمونه و راهنما داخل فایل است."],[uploadStep,"۲","بررسی و پیش‌نم\
-ایش","فایل تکمیل‌شده را انتخاب کنید؛ قبل از ثبت، سؤال‌ها را می‌بینید."]]){container.append(el("span",number,
-"qb-import-step-number"),el("h4",title),el("p",detail));actions.append(container)}const status=el("p","فقط XLSX؛ حداکثر ۱۰۰۰ سؤال و ۵ مگابایت. نمونه‌ها و راهنما\
- در برگه‌های جدا هستند.","qb-import-status");status.setAttribute("role","status");const input=el("input");input.type="file";input.accept=".xl\
-sx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";input.hidden=true;const template=button("دریافت الگو",()=>{try{const blob=root.EduPeriodicReports.
+MAX_ROWS,MAX_FILE}})(globalThis);(function(root){"use strict";const I=root.EduQuestionBankImport;function textBlock(el,tag,value,className,fallback="rtl"){const format=root.
+EduQuestionBankUI.previewText;const text=format.clean(value);const block=el(tag,void 0,className);block.dir=format.direction(text,fallback);text.split(/\r\n|\r|\n/).
+forEach(line=>{const part=el("span",line,"qb-import-line");part.dir=format.direction(line,block.dir);block.append(part)});return block}function appendQuestion(item,q,el){
+const direction=root.EduQuestionBankUI.previewText.direction(q.text);if(q.options){const options=el("ol",void 0,"qb-import-options");options.dir=direction;if(q.
+options.some(option=>/[\r\n]/.test(option)))options.dataset.multiline="true";options.setAttribute("aria-label","گزینه‌های سؤال");q.options.forEach(
+(option,index)=>{const choice=el("li");choice.append(el("span",`${direction==="rtl"?["الف","ب","ج","د"][index]:["A","B","C","D"][index]})`,"qb-import-opti\
+on-label"),textBlock(el,"bdi",option,"qb-import-option-text",direction));options.append(choice)});item.append(options)}item.append(el("small",`${root.EduQuestionBank.
+types[q.type]} · بارم: ${(q.score/100).toLocaleString("fa-IR")}`,"qb-import-question-meta"));const answer=q.type==="mcq"?`گزینهٔ ${(q.answer+1).toLocaleString(
+"fa-IR")}`:q.type==="boolean"?q.answer?"صحیح":"غلط":q.answer;for(const[label,value]of[["پاسخ صحیح",answer],["توضیح پاسخ",q.explanation]]){
+if(!value)continue;const detail=el("div",void 0,"qb-import-question-detail");detail.append(el("small",`${label}:`,"qb-import-detail-label"),textBlock(el,"div",value,
+"qb-import-detail-text",direction));item.append(detail)}}function mount({parent,bank,unitId,courseTitle,unitTitle,el,button,isCurrent,onPending,onSave,onClose}){
+const panel=el("section",void 0,"qb-import");panel.setAttribute("aria-label","ورود گروهی سؤال‌ها");parent.append(panel);const current=()=>panel.
+isConnected&&isCurrent();const heading=el("header",void 0,"qb-import-heading");heading.append(el("h3","ورود گروهی سؤال‌ها"),el("p",`${courseTitle}\
+ · ${unitTitle}`,"qb-import-destination"));panel.append(heading);const actions=el("div",void 0,"qb-import-steps");panel.append(actions);const templateStep=el("\
+div",void 0,"qb-import-step");const uploadStep=el("div",void 0,"qb-import-step");for(const[container,number,title,detail]of[[templateStep,"۱","آماده‌سازی سؤال‌\
+ها","الگوی اکسل را دریافت و تکمیل کنید؛ نمونه و راهنما داخل فایل است."],[uploadStep,"۲","بررسی و پیش‌نمایش",
+"فایل تکمیل‌شده را انتخاب کنید؛ قبل از ثبت، سؤال‌ها را می‌بینید."]]){container.append(el("span",number,"q\
+b-import-step-number"),el("h4",title),el("p",detail));actions.append(container)}const status=el("p","فقط XLSX؛ حداکثر ۱۰۰۰ سؤال و ۵ مگابایت. نمونه‌ها و راهنما د\
+ر برگه‌های جدا هستند.","qb-import-status");status.setAttribute("role","status");const input=el("input");input.type="file";input.accept=".xlsx,\
+application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";input.hidden=true;const template=button("دریافت الگو",()=>{try{const blob=root.EduPeriodicReports.
 createWorkbook(I.templateSheets());const url=URL.createObjectURL(blob),link=el("a");link.href=url;link.download="Classyar-Questions-Template-v1.xlsx";document.body.
 append(link);link.click();link.remove();root.setTimeout(()=>URL.revokeObjectURL(url),6e4)}catch(error){showError(error)}},templateStep);const choose=button("انت\
 خاب فایل",()=>{input.value="";input.click()},uploadStep);template.classList.add("qb-import-template");choose.dataset.uiVariant="solid";choose.insertAdjacentHTML(
@@ -483,17 +499,15 @@ count]of[["ready","آماده",report.ready],["duplicate","تکراری؛ ثبت
 "span",`${label}: ${count.toLocaleString("fa-IR")}`);badge.dataset.state=kind;counts.append(badge)}preview.append(counts);const list=el("ol",void 0,"qb-import-r\
 ows");list.setAttribute("aria-label","پیش‌نمایش ردیف‌های فایل");for(const row of report.results.slice(page*25,(page+1)*25)){const item=el(
 "li");item.dataset.state=row.status;item.append(el("strong",`ردیف ${row.number.toLocaleString("fa-IR")} · ${row.status==="ready"?"آمادهٔ ثبت":row.
-status==="error"?"خطا":"تکراری"}`),el("p",row.text||"متن سؤال خالی است."));if(row.question){const q=row.question;if(q.options)item.append(
-el("p",q.options.map((option,index)=>`${index+1}) ${option}`).join(" · ")));const answer=q.type==="mcq"?`گزینهٔ ${q.answer+1}`:q.type==="boolean"?q.answer?
-"صحیح":"غلط":q.answer;item.append(el("small",`${root.EduQuestionBank.types[q.type]} · بارم: ${(q.score/100).toLocaleString("fa-IR")} · پاسخ: ${answer}`));
-if(q.explanation)item.append(el("small",q.explanation))}if(row.message)item.append(el("small",row.message));list.append(item)}preview.append(list);if(report.results.
-length>25){const pager=el("nav",void 0,"qb-actions qb-pager");pager.setAttribute("aria-label","صفحه‌بندی پیش‌نمایش ورود سؤال");const previous=button(
-"قبلی",()=>{page--;draw()},pager);previous.disabled=page===0;pager.append(el("span",`${(page+1).toLocaleString("fa-IR")} / ${Math.ceil(report.results.length/
-25).toLocaleString("fa-IR")}`));const next=button("بعدی",()=>{page++;draw()},pager);next.disabled=(page+1)*25>=report.results.length;preview.append(pager)}}
-input.addEventListener("change",async()=>{const file=input.files[0];if(!file||busy||!current())return;const request=++sequence;report=null;preview.replaceChildren();
-busy=true;preview.hidden=true;lock(true);onPending(false);status.removeAttribute("data-state");status.setAttribute("role","status");status.textContent="در حال ب\
-ررسی فایل…";try{const rows=await I.readXlsx(file);if(!current()||request!==sequence)return;report=I.preview(rows,bank,unitId);page=0;onPending(report.
-ready>0);status.textContent=report.errors?"فایل دارای خطاست. ردیف‌های مشخص‌شده را در اکسل اصلاح و فایل را دوباره انتخاب کنید؛ هنوز هیچ سؤالی ثبت نشده است.":
+status==="error"?"خطا":"تکراری"}`),textBlock(el,"p",row.text||"متن سؤال خالی است.","qb-import-question-text"));if(row.question)appendQuestion(
+item,row.question,el);if(row.message)item.append(el("small",row.message));list.append(item)}preview.append(list);if(report.results.length>25){const pager=el("na\
+v",void 0,"qb-actions qb-pager");pager.setAttribute("aria-label","صفحه‌بندی پیش‌نمایش ورود سؤال");const previous=button("قبلی",()=>{
+page--;draw()},pager);previous.disabled=page===0;pager.append(el("span",`${(page+1).toLocaleString("fa-IR")} / ${Math.ceil(report.results.length/25).toLocaleString(
+"fa-IR")}`));const next=button("بعدی",()=>{page++;draw()},pager);next.disabled=(page+1)*25>=report.results.length;preview.append(pager)}}input.addEventListener(
+"change",async()=>{const file=input.files[0];if(!file||busy||!current())return;const request=++sequence;report=null;preview.replaceChildren();busy=true;preview.
+hidden=true;lock(true);onPending(false);status.removeAttribute("data-state");status.setAttribute("role","status");status.textContent="در حال بررسی فایل…";
+try{const rows=await I.readXlsx(file);if(!current()||request!==sequence)return;report=I.preview(rows,bank,unitId);page=0;onPending(report.ready>0);status.textContent=
+report.errors?"فایل دارای خطاست. ردیف‌های مشخص‌شده را در اکسل اصلاح و فایل را دوباره انتخاب کنید؛ هنوز هیچ سؤالی ثبت نشده است.":
 `فایل «${file.name}» بررسی شد. مقصد را بررسی کنید و برای افزودن سؤال‌های آماده، «ثبت سؤال‌ها» را بزنید.`;
 if(report.errors){status.dataset.state="error";status.setAttribute("role","alert")}save.querySelector(".ui-button-label").textContent=`ثبت ${report.ready.toLocaleString(
 "fa-IR")} سؤال`;draw()}catch(error){showError(error)}finally{busy=false;if(current())lock(false)}})}root.EduQuestionBankImportUI={mount}})(globalThis);(function(root){
@@ -582,14 +596,14 @@ list;const list=scoped.filter(q=>{if(unitId&&q.unitId!==unitId||type&&q.type!==t
 searchText(q.text));return normalized.get(q).includes(query)});previous={unitId,type,query,list};return list}}function questionCountsByUnit(questions,units){const types=Object.
 keys(D.types);const counts=new Map(units.map(unit=>[unit.id,{total:0,types:Object.fromEntries(types.map(type=>[type,0]))}]));for(const question of questions){const unit=counts.
 get(question.unitId);if(!unit)continue;unit.total++;unit.types[question.type]++}return counts}function fitOptions(container){const doc=container.ownerDocument;const context=doc.
-createElement("canvas").getContext("2d");if(!context)return;for(const list of container.querySelectorAll(".qb-options,.qb-sheet-options")){if(!list.clientWidth)
-continue;const style=doc.defaultView.getComputedStyle(list);const required=Math.max(...[...list.children].map(item=>{const css=doc.defaultView.getComputedStyle(
+createElement("canvas").getContext("2d");if(!context)return;for(const list of container.querySelectorAll(".qb-options,.qb-sheet-options,.qb-import-options")){if(!list.
+clientWidth)continue;const style=doc.defaultView.getComputedStyle(list);const required=Math.max(...[...list.children].map(item=>{const css=doc.defaultView.getComputedStyle(
 item);const widths=[...item.children].map(span=>{const font=doc.defaultView.getComputedStyle(span);context.font=`${font.fontWeight} ${font.fontSize} ${font.fontFamily}`;
 return Math.max(...span.textContent.split("\n").map(line=>context.measureText(line).width),parseFloat(font.flexBasis)||0)});return widths.reduce((a,b)=>a+b,0)+(parseFloat(
 css.columnGap)||0)+parseFloat(css.paddingLeft)+parseFloat(css.paddingRight)+parseFloat(css.borderLeftWidth)+parseFloat(css.borderRightWidth)}));const gap=parseFloat(
-style.columnGap)||0;list.dataset.columns=[...list.children].some(item=>/[\r\n]/.test(item.textContent))||required>(list.clientWidth-gap)/2?"1":required<=(list.clientWidth-
-3*gap)/4?"4":"2"}}function sheetTextDirection(text,fallback="rtl"){const line=sheetCleanText(text).split(/\r\n|\r|\n/).find(value=>value.trim())||"";if(!/؟\s*$/.
-test(line)&&/^\s*(?:(?:const|let|var|function|return|throw|echo|def|class|import|from)\s|(?:if|for|while|switch|catch)\s*\(|[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*\s*(?:\(|[+\-*/]?=(?!=))|<\/?[A-Za-z][\w:-]*(?:\s|\/?>)|\/\/|\/\*|\*\/|[{}][;,\s]*$)/.
+style.columnGap)||0;list.dataset.columns=list.dataset.multiline==="true"||[...list.children].some(item=>/[\r\n]/.test(item.textContent)||item.querySelectorAll("\
+.qb-sheet-line,.qb-import-line").length>1)||required>(list.clientWidth-gap)/2?"1":required<=(list.clientWidth-3*gap)/4?"4":"2"}}function sheetTextDirection(text,fallback="\
+rtl"){const line=sheetCleanText(text).split(/\r\n|\r|\n/).find(value=>value.trim())||"";if(!/؟\s*$/.test(line)&&/^\s*(?:(?:const|let|var|function|return|throw|echo|def|class|import|from)\s|(?:if|for|while|switch|catch)\s*\(|[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*\s*(?:\(|[+\-*/]?=(?!=))|<\/?[A-Za-z][\w:-]*(?:\s|\/?>)|\/\/|\/\*|\*\/|[{}][;,\s]*$)/.
 test(line))return"ltr";const chars=Array.from(line);if(chars.some(char=>/\p{Letter}/u.test(char)&&/[\p{Script=Arabic}\p{Script=Hebrew}]/u.test(char)))return"rtl";
 return chars.some(char=>/\p{Letter}/u.test(char))?"ltr":fallback}function sheetCleanText(text){return String(text).replace(/[\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]/g,
 "")}function sheet(exam){const s=el("article",void 0,"qb-sheet");s.dir="rtl";const pageName=`qb-exam-${crypto.randomUUID()}`;s.style.page=pageName;const compact=(value,limit)=>{
@@ -748,23 +762,23 @@ u=>u.id===id).title=name.value.trim();else next.units.push({id,courseId,title:na
 nit"});const name=field(f,`عنوان ${unitLabel()}`,existing?.title||"");name.placeholder=`${unitLabel()} اول`;if(existing){const remove=button(`حذف ${unitLabel()}`,
 ()=>removeUnit(existing),f);remove.classList.add("qb-field-wide","qb-delete-entity")}saveButton(f);name.focus()})}function editQuestion(existing){discard(()=>{clearTransientMessage();
 closeOwnedCalendar();content.replaceChildren();const f=form(content,async()=>{const q={id:existing?.id||crypto.randomUUID(),unitId:unit.value,type:type.value,text:body.
-value.trim(),answer:type.value==="mcq"?answer.value===""?null:Number(answer.value):type.value==="boolean"?answer.value==="true"?true:answer.value==="false"?false:
-null:answer.value.trim(),explanation:explanation.value.trim(),score:D.score(mark.value)};if(q.type==="mcq")q.options=options.map(n=>n.value.trim());D.question(q);
-if(q.type==="mcq"&&(existing?.type!=="mcq"||q.options.some((value,index)=>value!==existing.options[index].trim()))&&new Set(q.options.map(D.optionKey)).size!==4)
-throw Error("گزینه‌ها نباید فقط در شکل نوشتن ی، ک یا فاصله تفاوت داشته باشند؛ چهار پاسخ متمایز بنویسید.");
-await mutate(next=>{const index=next.questions.findIndex(x=>x.id===q.id);if(index<0)next.questions.push(q);else next.questions[index]=q})},{title:existing?"ویرا\
-یش سؤال":"افزودن سؤال",subtitle:"صورت سؤال، پاسخ صحیح و بارم",kind:"question"});const context=el("div",void 0,"course-grid\
- qb-field-wide qb-question-context");f.classList.add("qb-question-form");f.append(context);const unit=select(context,unitLabel(),[["","انتخاب بخش"],...bank.
-units.filter(u=>u.courseId===courseId).map(u=>[u.id,u.title])],existing?.unitId||unitId);const type=select(context,"نوع سؤال",Object.entries(D.types),existing?.
-type||"mcq");const body=field(f,"متن سؤال",existing?.text||"","textarea"),area=el("fieldset",void 0,"course-grid qb-field-wide qb-answer-editor");f.append(
-area);let answer,options=[],activeType;const drafts=new Map;if(existing)drafts.set(existing.type,{answer:String(existing.answer),options:existing.options||[]});
-function answers(){if(activeType)drafts.set(activeType,{answer:answer.value,options:options.map(n=>n.value)});activeType=type.value;const draft=drafts.get(activeType);
-area.replaceChildren();area.append(el("legend",type.value==="mcq"?"گزینه‌ها و پاسخ":"پاسخ سؤال"));options=[];if(type.value==="mcq"){for(let i=0;i<
-4;i++)options.push(field(area,`گزینه ${i+1}`,draft?.options[i]||""));answer=select(area,"پاسخ صحیح",[["","انتخاب پاسخ"],...[0,1,2,3].map(
-i=>[String(i),`گزینه ${i+1}`])],draft?.answer??"")}else if(type.value==="boolean")answer=select(area,"پاسخ صحیح",[["","انتخاب پاسخ"],["tr\
-ue","صحیح"],["false","غلط"]],draft?.answer??"");else answer=field(area,"پاسخ صحیح",draft?.answer??"","textarea");answer.parentElement.classList.add(
-"qb-field-wide")}type.onchange=answers;answers();const mark=field(f,"بارم",existing?String(existing.score/100):"1");mark.parentElement.classList.add("qb-fie\
-ld-wide");mark.inputMode="decimal";const optional=el("details",void 0,"qb-optional qb-field-wide");optional.append(el("summary","توضیح پاسخ (اختیاری)"));
+value,answer:type.value==="mcq"?answer.value===""?null:Number(answer.value):type.value==="boolean"?answer.value==="true"?true:answer.value==="false"?false:null:
+answer.value,explanation:explanation.value,score:D.score(mark.value)};if(q.type==="mcq")q.options=options.map(n=>n.value);D.question(q);if(q.type==="mcq"&&(existing?.
+type!=="mcq"||q.options.some((value,index)=>value!==existing.options[index]))&&new Set(q.options.map(D.optionKey)).size!==4)throw Error("گزینه‌ها نباید فقط در ش\
+کل نوشتن ی، ک یا فاصله تفاوت داشته باشند؛ چهار پاسخ متمایز بنویسید.");await mutate(next=>{const index=next.
+questions.findIndex(x=>x.id===q.id);if(index<0)next.questions.push(q);else next.questions[index]=q})},{title:existing?"ویرایش سؤال":"افزودن سؤال",
+subtitle:"صورت سؤال، پاسخ صحیح و بارم",kind:"question"});const context=el("div",void 0,"course-grid qb-field-wide qb-question-context");f.
+classList.add("qb-question-form");f.append(context);const unit=select(context,unitLabel(),[["","انتخاب بخش"],...bank.units.filter(u=>u.courseId===courseId).
+map(u=>[u.id,u.title])],existing?.unitId||unitId);const type=select(context,"نوع سؤال",Object.entries(D.types),existing?.type||"mcq");const body=field(f,
+"متن سؤال",existing?.text||"","textarea"),area=el("fieldset",void 0,"course-grid qb-field-wide qb-answer-editor");f.append(area);let answer,options=[],activeType;
+const drafts=new Map;if(existing)drafts.set(existing.type,{answer:String(existing.answer),options:existing.options||[]});function answers(){if(activeType)drafts.
+set(activeType,{answer:answer.value,options:options.map(n=>n.value)});activeType=type.value;const draft=drafts.get(activeType);area.replaceChildren();area.append(
+el("legend",type.value==="mcq"?"گزینه‌ها و پاسخ":"پاسخ سؤال"));options=[];if(type.value==="mcq"){for(let i=0;i<4;i++)options.push(field(area,
+`گزینه ${i+1}`,draft?.options[i]||"",/[\r\n]/.test(draft?.options[i]||"")?"textarea":"input"));answer=select(area,"پاسخ صحیح",[["","انتخاب پاسخ"],
+...[0,1,2,3].map(i=>[String(i),`گزینه ${i+1}`])],draft?.answer??"")}else if(type.value==="boolean")answer=select(area,"پاسخ صحیح",[["","انتخاب پاسخ"],
+["true","صحیح"],["false","غلط"]],draft?.answer??"");else answer=field(area,"پاسخ صحیح",draft?.answer??"","textarea");answer.parentElement.classList.
+add("qb-field-wide")}type.onchange=answers;answers();const mark=field(f,"بارم",existing?String(existing.score/100):"1");mark.parentElement.classList.add("qb\
+-field-wide");mark.inputMode="decimal";const optional=el("details",void 0,"qb-optional qb-field-wide");optional.append(el("summary","توضیح پاسخ (اختیاری)"));
 optional.open=Boolean(existing?.explanation);f.append(optional);const explanation=field(optional,"توضیح پاسخ (اختیاری)",existing?.explanation||"",
 "textarea");saveButton(f);body.focus()})}function importQuestions(){discard(()=>{if(!unitId)return;clearTransientMessage();closeOwnedCalendar();content.replaceChildren();
 const destinationCourse=courseId,destinationUnit=unitId;root.EduQuestionBankImportUI.mount({parent:content,bank,unitId,courseTitle:bank.courses.find(c=>c.id===courseId).
@@ -917,6 +931,7 @@ init();if(!alive)return;message.textContent="";message.hidden=true;render();upda
 EduQuestionBankUI={open:openBank,mount:mountBank,isMounted:()=>Boolean(activePage),isPageActive:()=>Boolean(activePage?.element.isConnected),isPreviewActive:()=>Boolean(
 activePage?.element.isConnected&&activePage.element.querySelector(".qb-sheet")),requestLeave:action=>activePage?activePage.requestLeave(action):(action(),true),
 dispose:()=>activePage?.dispose(),updateLayout:()=>activePage?.updateLayout(),preserveForRender:()=>activePage?.preserveForRender(),refreshAfterRestore:()=>activePage?.
-refreshAfterRestore()||Promise.resolve(true),sheet,print,hasPendingChanges:()=>pendingChanges()||F.state().state==="busy"};root.addEventListener("edu-question-b\
-ank-restored",()=>{savedView=null;const page=activePage;page?.refreshAfterRestore().catch(()=>{})})})(globalThis);
+refreshAfterRestore()||Promise.resolve(true),sheet,print,previewText:{direction:sheetTextDirection,clean:sheetCleanText},hasPendingChanges:()=>pendingChanges()||
+F.state().state==="busy"};root.addEventListener("edu-question-bank-restored",()=>{savedView=null;const page=activePage;page?.refreshAfterRestore().catch(()=>{})})})(
+globalThis);
 //# sourceMappingURL=question-bank.js.map

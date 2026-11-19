@@ -228,6 +228,28 @@ test("schedule session list includes late students as present and uses the compl
   f.session.roster.push({ id: "absent", name: "ABSENT" });
   f.session.attendance.absent = "absent";
   let html = "";
+  // History rows are now rendered after showModal so the same markup can page.
+  // Model that DOM boundary instead of expecting every row in the modal body.
+  const recent = { innerHTML: "" },
+    count = { textContent: "" },
+    panel = { dataset: { sessionDay: "0", sessionPeriod: "0" } },
+    history = {
+      dataset: { historyClass: "class" },
+      closest(selector) {
+        assert.equal(selector, ".session-start-panel");
+        return panel;
+      },
+      querySelector(selector) {
+        if (selector === "header > span") return count;
+        if (selector === ".session-setup-recent") return recent;
+        assert.equal(selector, ".session-history-pager");
+        return null;
+      },
+    };
+  f.c.document.querySelector = (selector) => {
+    assert.equal(selector, "#modalBody .session-setup-history");
+    return history;
+  };
   Object.assign(f.c, {
     DAYS: ["SATURDAY"],
     getMasterEntry: () => ({ classId: "class", lessonId: "lesson" }),
@@ -239,8 +261,10 @@ test("schedule session list includes late students as present and uses the compl
   vm.runInContext(source("src/legacy/schedule/timetable.js"), f.c);
   f.c.legacy_clickMasterCell(0, 0);
   assert.match(html, /<svg class="ui-icon"/);
-  assert.match(html, /2\/4 حاضر/);
-  assert.doesNotMatch(html, /1\/3 حاضر/);
+  assert.equal(history.dataset.historyPage, "0");
+  assert.equal(count.textContent, "۱ جلسه");
+  assert.match(recent.innerHTML, /2\/4 حاضر/);
+  assert.doesNotMatch(recent.innerHTML, /1\/3 حاضر/);
 });
 
 for (const late of ["late", "late:0", "late:10"]) {

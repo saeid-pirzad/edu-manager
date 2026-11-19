@@ -165,7 +165,18 @@
     );
   }
   function optionKey(value) {
-    return String(value)
+    const content = String(value).replace(/\r\n?/g, "\n").trim();
+    // Retain the visual-duplicate guard for plain Persian/Arabic prose only.
+    // Technical text (including quotes, symbols, numbers, other scripts and
+    // multiple lines) must not lose Unicode, case, string spacing or indentation.
+    if (
+      !/^[\p{Script=Arabic}\p{Mark}\p{Zs}\t،؛؟.!]+$/u.test(
+        content.replace(/[\u200c\u200d]/g, ""),
+      ) ||
+      /\p{Number}/u.test(content)
+    )
+      return content;
+    return content
       .normalize("NFKC")
       .replace(/[يى]/g, "ی")
       .replace(/ك/g, "ک")

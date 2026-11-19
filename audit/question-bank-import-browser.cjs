@@ -348,6 +348,312 @@ main({
       return conflict&&cancelled&&JSON.stringify(await R.read())===stable&&(await R.read()).questions.length===4&&JSON.stringify(db)===__importSchool;
     })()`),
     );
+    // Exercise the actual XLSX parser through both course structures, exam
+    // snapshots and the two student outputs. No native Excel/Word installation
+    // or existing browser profile is needed for these regression contracts.
+    const longOption = (label) =>
+      label +
+      " — در این روش، تنظیمات شبکه و مجوز دسترسی کاربران پیش از اجرای برنامه بررسی می‌شود و نتیجه به صورت دقیق در گزارش ثبت خواهد شد.";
+    const scenarioRows = [
+      [
+        "mcq",
+        "Choose the correct network device?",
+        "Switch",
+        "Router",
+        "Hub",
+        "Modem",
+        "۲",
+        "۰٫۷۵",
+        "SECRET-EXPLANATION-1",
+      ],
+      [
+        "mcq",
+        "کدام روش برای بررسی دسترسی کاربران مناسب‌تر است؟",
+        ...["روش اول", "روش دوم", "روش سوم", "روش چهارم"].map(longOption),
+        "۴",
+        "۱٫۲۵",
+        "SECRET-EXPLANATION-2",
+      ],
+      [
+        "mcq",
+        "کدام قطعه کد پیام فارسی را نمایش می‌دهد؟",
+        '  const text = "سلام";\n  console.log(text);',
+        'const text = "خداحافظ";\nconsole.log(text);',
+        'const text = "درود";\nconsole.log(text);',
+        'const text = "خوش آمدید";\nconsole.log(text);',
+        "1",
+        "1",
+        "SECRET-EXPLANATION-3",
+      ],
+      [
+        "boolean",
+        'قطعه کد زیر پیام را نمایش می‌دهد؟\nconst label = "سلام";\nconsole.log(label);',
+        "",
+        "",
+        "",
+        "",
+        "صحیح",
+        "۱٫۲۵",
+        "SECRET-EXPLANATION-4",
+      ],
+      [
+        "boolean",
+        "A switch connects devices in a local network.",
+        "",
+        "",
+        "",
+        "",
+        "false",
+        "0.50",
+        "SECRET-EXPLANATION-5",
+      ],
+      ...["001", "1e3", "1/2", "=SUM(1,2)", "_x005F_x0042_"].map(
+        (literal, i) => [
+          "blank",
+          "Write the literal " + literal + " in the blank: ____.",
+          "",
+          "",
+          "",
+          "",
+          literal,
+          "0.25",
+          "SECRET-EXPLANATION-" + (i + 6),
+        ],
+      ),
+      [
+        "essay",
+        '  خروجی قطعه کد زیر چیست؟\nconst label = "سلام";\nif (label) {\n  console.log(label);\n}',
+        "",
+        "",
+        "",
+        "",
+        "  SECRET-ANSWER-PERSIAN\n",
+        "1.50",
+        "  SECRET-EXPLANATION-10\n",
+      ],
+      [
+        "essay",
+        "Explain how a router forwards an IP packet.",
+        "",
+        "",
+        "",
+        "",
+        "SECRET-ANSWER-ENGLISH",
+        "۲",
+        "SECRET-EXPLANATION-11",
+      ],
+    ];
+    await evaluate(`(async()=>{
+      await EduQuestionBankUI.open();__importSelect();document.querySelector('.qb-import-entry').click();
+      const file=EduPeriodicReports.createWorkbook([{name:'سؤال‌ها',rows:[EduQuestionBankImport.headers,...${JSON.stringify(scenarioRows)}]}]);
+      __importUpload(Array.from(new Uint8Array(await file.arrayBuffer())));
+    })()`);
+    await wait(
+      `document.querySelectorAll('.qb-import-rows > li').length===${scenarioRows.length}`,
+    );
+    for (const width of [320, 390, 768, 1440]) {
+      await cdp("Emulation.setDeviceMetricsOverride", {
+        width,
+        height: 900,
+        deviceScaleFactor: 1,
+        mobile: false,
+      });
+      await delay(100);
+      const preview = await evaluate(`(()=>{
+        const panel=document.querySelector('.qb-import'),items=[...panel.querySelectorAll('.qb-import-rows > li')];
+        const mixed=items.find(item=>item.querySelector('.qb-import-question-text').textContent.includes('خروجی قطعه کد زیر چیست؟'));
+        const lines=[...mixed.querySelectorAll('.qb-import-question-text .qb-import-line')];
+        const long=items[1].querySelector('.qb-import-options'),code=items[2].querySelector('.qb-import-options'),english=items[0].querySelector('.qb-import-options');
+        const stacked=list=>[...list.children].every((item,i,all)=>!i||item.getBoundingClientRect().top>=all[i-1].getBoundingClientRect().bottom-1);
+        const inside=[...panel.querySelectorAll('.qb-import-options')].every(list=>{const bounds=list.getBoundingClientRect();return list.scrollWidth<=list.clientWidth+1&&[...list.children].every(item=>{const box=item.getBoundingClientRect();return box.left>=bounds.left-1&&box.right<=bounds.right+1;});});
+        return {count:items.length===${scenarioRows.length},contained:panel.scrollWidth<=panel.clientWidth+1&&document.documentElement.scrollWidth<=innerWidth+1,inside,stacked:stacked(long)&&stacked(code),lines:lines.map(line=>line.dir).join(',')==='rtl,ltr,ltr,ltr,ltr',indent:lines[0].textContent.startsWith('  خروجی')&&lines[3].textContent==='  console.log(label);',optionLines:[...code.querySelectorAll('.qb-import-line')].length===8&&[...code.querySelectorAll('.qb-import-line')].every(line=>line.dir==='ltr'),english:english.dir==='ltr'&&items[0].querySelector('.qb-import-question-text').dir==='ltr',details:items.every(item=>item.querySelector('.qb-import-detail-text')),correctIndex:items[0].textContent.includes('گزینهٔ ۲'),literal:items[9].querySelector('.qb-import-detail-text').textContent==='_x005F_x0042_'};
+      })()`);
+      check(
+        "mixed XLSX preview preserves line directions, indentation, long-option layout and literal answer at " +
+          width,
+        Object.values(preview).every(Boolean),
+        preview,
+      );
+      const scenarioShot = await cdp("Page.captureScreenshot", {
+        format: "png",
+      });
+      fs.writeFileSync(
+        path.join(out, `mixed-preview-${width}.png`),
+        Buffer.from(scenarioShot.data, "base64"),
+      );
+    }
+    await evaluate(
+      "goSchools();document.querySelector('.qb-confirm-actions button:last-child').click()",
+    );
+    await wait("state.view==='schools'");
+    const pipeline = await evaluate(`(async()=>{
+      const R=EduQuestionBankRepository,D=EduQuestionBank,I=EduQuestionBankImport;
+      const original=await R.read(),school=JSON.stringify(db),rows=${JSON.stringify(scenarioRows)};
+      const bytes=await EduPeriodicReports.createWorkbook([{name:'سؤال‌ها',rows:[I.headers,...rows]}]).arrayBuffer();
+      const parsed=await I.readXlsx(new File([bytes],'mixed-scenarios.xlsx'));
+      const unchanged=JSON.stringify(await R.read())===JSON.stringify(original)&&JSON.stringify(db)===school;
+      let bank=structuredClone(original);bank.courses.push({id:'roundtrip-chapter-course',title:'شبکه و نرم‌افزار ـ فصل',structure:'chapter'});
+      bank.units.push({id:'roundtrip-chapter-unit',courseId:'roundtrip-chapter-course',title:'فصل اول'});
+      const reports=[],exams=[],source=JSON.stringify(original.questions),oldExams=JSON.stringify(original.exams);
+      for(const target of [{courseId:'import-course',unitId:'import-other'},{courseId:'roundtrip-chapter-course',unitId:'roundtrip-chapter-unit'}]){
+        const report=I.preview(parsed,bank,target.unitId);reports.push({ready:report.ready,errors:report.errors,duplicates:report.duplicates});
+        bank=I.prepare(report,bank);
+        const exam=D.generate(bank,{title:'آزمون یکپارچه اکسل',courseId:target.courseId,unitIds:[target.unitId],counts:{mcq:3,boolean:2,blank:5,essay:2},totalScore:'۹٫۵',school:'هنرستان نمونه',teacher:'دبیر نمونه',date:'2026-11-20',duration:60},()=>0.5);
+        bank.exams.push(exam);exams.push(exam);
+      }
+      D.validate(bank);await R.save(bank,original.revision);
+      const saved=await R.read();window.__importRoundtripExams=exams;window.__importRoundtripBank=JSON.stringify(saved);
+      const expectedScores=[75,125,100,125,50,25,25,25,25,25,150,200];
+      const exact=exams.every(exam=>exam.questions.length===rows.length&&exam.questions.reduce((sum,q)=>sum+q.score,0)===950&&rows.every((row,index)=>{
+        const q=exam.questions.find(item=>item.text===row[1]);
+        return q&&q.score===expectedScores[index]&&q.explanation===row[8]&&
+          (row[0]!=='mcq'||JSON.stringify(q.options)===JSON.stringify(row.slice(2,6))&&q.answer===([1,3,0][index]))&&
+          (!['blank','essay'].includes(row[0])||q.answer===row[6])&&
+          (row[0]!=='boolean'||q.answer===(index===3));
+      }));
+      return {unchanged,reports,exact,oldQuestions:JSON.stringify(saved.questions.slice(0,original.questions.length))===source,oldExams:JSON.stringify(saved.exams.slice(0,original.exams.length))===oldExams,questions:saved.questions.length-original.questions.length,exams:saved.exams.length-original.exams.length,school:JSON.stringify(db)===school};
+    })()`);
+    check(
+      "real XLSX preserves all four types, exact scores, literal text and multiline code through chapter/module exam snapshots",
+      pipeline.unchanged &&
+        pipeline.exact &&
+        pipeline.oldQuestions &&
+        pipeline.oldExams &&
+        pipeline.school &&
+        pipeline.questions === scenarioRows.length * 2 &&
+        pipeline.exams === 2 &&
+        pipeline.reports.every(
+          (report) =>
+            report.ready === scenarioRows.length &&
+            report.errors === 0 &&
+            report.duplicates === 0,
+        ),
+      pipeline,
+    );
+    await evaluate(`(async()=>{
+      window.__importBeforeEditor=await EduQuestionBankRepository.read();
+      window.__importCanonical=value=>Array.isArray(value)?value.map(__importCanonical):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,__importCanonical(value[key])])):value;
+      await EduQuestionBankUI.open();__importSelect();
+      const unit=document.querySelector('.qb-section-picker select');unit.value='import-other';unit.dispatchEvent(new Event('change'));
+    })()`);
+    for (const [type, needle] of [
+      ["essay", "خروجی قطعه کد زیر چیست؟"],
+      ["mcq", "کدام قطعه کد پیام فارسی را نمایش می‌دهد؟"],
+    ]) {
+      await evaluate(`(()=>{
+        const type=document.querySelector('.qb-filters select');type.value=${JSON.stringify(type)};type.dispatchEvent(new Event('change'));
+        const search=document.querySelector('.qb-filters input[type=search]');search.value=${JSON.stringify(needle)};search.dispatchEvent(new Event('input'));
+        const row=document.querySelector('.qb-question-row');row.querySelector('summary').click();row.querySelector('.qb-question-actions button').click();
+        document.querySelector('.qb-question-form').requestSubmit();
+      })()`);
+      await wait(
+        "!document.querySelector('.qb-question-form')&&!!document.querySelector('.qb-question-row')",
+      );
+      const edited = await evaluate(`(async()=>{
+          const bank=await EduQuestionBankRepository.read(),original=__importBeforeEditor.questions.find(q=>q.unitId==='import-other'&&q.type===${JSON.stringify(type)}&&q.text.includes(${JSON.stringify(needle)}));
+          const saved=bank.questions.find(q=>q.id===original.id);
+          return {question:JSON.stringify(__importCanonical(saved))===JSON.stringify(__importCanonical(original)),text:saved.text===original.text,answer:saved.answer===original.answer,explanation:saved.explanation===original.explanation,options:JSON.stringify(saved.options)===JSON.stringify(original.options),exams:JSON.stringify(bank.exams)===JSON.stringify(__importBeforeEditor.exams),school:JSON.stringify(db)===__importSchool,before:original,after:saved};
+        })()`);
+      check(
+        "saving an imported " +
+          type +
+          " unchanged preserves raw question, answer, explanation and multiline options",
+        [
+          "question",
+          "text",
+          "answer",
+          "explanation",
+          "options",
+          "exams",
+          "school",
+        ].every((key) => edited[key]),
+        edited,
+      );
+    }
+    check(
+      "opening and saving imported content changes only the revision, never existing questions or exam snapshots",
+      await evaluate(`(async()=>{
+        const bank=await EduQuestionBankRepository.read(),before=structuredClone(__importBeforeEditor),after=structuredClone(bank);
+        delete before.revision;delete after.revision;
+        window.__importRoundtripBank=JSON.stringify(bank);goSchools();
+        return JSON.stringify(__importCanonical(before))===JSON.stringify(__importCanonical(after));
+      })()`),
+    );
+    const word = await evaluate(`(()=>{
+      const NS='http://schemas.openxmlformats.org/wordprocessingml/2006/main',results=[];
+      for(const exam of __importRoundtripExams){
+        const xml=EduQuestionBankSchoolWord.documentXml(exam),doc=new DOMParser().parseFromString(xml,'application/xml');
+        const text=node=>[...node.getElementsByTagNameNS(NS,'t')].map(item=>item.textContent).join('');
+        const paragraphs=[...doc.getElementsByTagNameNS(NS,'p')];
+        const bidi=node=>node.getElementsByTagNameNS(NS,'bidi')[0]?.getAttributeNS(NS,'val');
+        const code=paragraphs.filter(p=>text(p).includes('const label = "سلام";')||text(p).includes('  console.log(label);'));
+        const optionCode=paragraphs.filter(p=>text(p).includes('const text = "')||text(p).trim()==='console.log(text);');
+        const english=paragraphs.filter(p=>text(p).includes('Explain how a router')||text(p).includes('Choose the correct network'));
+        const persian=paragraphs.find(p=>text(p).includes('خروجی قطعه کد زیر چیست؟'));
+        const tables=[...doc.getElementsByTagNameNS(NS,'tbl')];
+        const longTable=tables.find(table=>text(table).includes('روش اول —')&&table!==tables[0]);
+        const longRows=longTable?[...longTable.children].filter(n=>n.localName==='tr'):[];
+        const questionRows=[...tables[0].children].filter(n=>n.localName==='tr').slice(1,-1);
+        const labels=questionRows.every((row,index)=>{
+          const value=text(row),q=exam.questions[index],english=/^[A-Za-z]/.test(q.text);
+          return value.startsWith((english?String(index+1):new Intl.NumberFormat('fa-IR').format(index+1))+'. ');
+        });
+        results.push({xml:!doc.querySelector('parsererror'),noAnswers:!text(doc).includes('SECRET-'),labels,code:code.length>=3&&code.every(p=>bidi(p)==='0'),optionCode:optionCode.length===8&&optionCode.every(p=>bidi(p)==='0'),indent:code.some(p=>text(p)==='  console.log(label);'),english:english.length===2&&english.every(p=>bidi(p)==='0'),persian:!!persian&&bidi(persian)==='1',literals:['001','1e3','1/2','=SUM(1,2)','_x005F_x0042_'].every(v=>text(doc).includes(v)),longOptions:longRows.length===4&&longRows.every(row=>[...row.children].filter(n=>n.localName==='tc').length===1)});
+      }
+      return results;
+    })()`);
+    check(
+      "imported exams produce well-formed answer-free Word with per-line directions, literal text, numbering and stacked long options",
+      word.length === 2 &&
+        word.every((result) => Object.values(result).every(Boolean)),
+      word,
+    );
+    const printed = await evaluate(`(async()=>{
+      const results=[];
+      for(const exam of __importRoundtripExams){
+        let observed;
+        const observer=new MutationObserver(()=>{
+          const frame=document.querySelector('.qb-print-frame');
+          if(frame)frame.contentWindow.print=()=>{
+            const doc=frame.contentDocument,rows=[...doc.querySelectorAll('.qb-sheet-question')];
+            const validRows=rows.map((row,index)=>{
+              const q=exam.questions[index],prompt=row.querySelector('.qb-sheet-prompt p'),number=row.querySelector('.qb-sheet-number'),p=prompt.getBoundingClientRect();
+              const lines=[...prompt.querySelectorAll('.qb-sheet-line')];
+              const exactLines=!lines.length||lines.every((line,i)=>line.textContent===((i===0&&prompt.dir==='ltr'?(index+1)+'. ':'')+q.text.split('\\n')[i]));
+              const directions=lines.every(line=>line.dir===(/^(const |if \\(|\\s*console\\.|})/.test(line.textContent)?'ltr':'rtl'));
+              const english=/^[A-Za-z]/.test(q.text);
+              const numbering=english?prompt.dir==='ltr'&&prompt.textContent.startsWith((index+1)+'. ')&&number.textContent==='':prompt.dir==='rtl'&&number.textContent===new Intl.NumberFormat('fa-IR').format(index+1)+'.';
+              const options=row.querySelector('.qb-sheet-options');
+              const optionDirections=!options||[...options.querySelectorAll('.qb-sheet-line')].every(line=>line.dir==='ltr');
+              const bounds=options?.getBoundingClientRect();
+              const inside=!options||(bounds.left>=p.left-1&&bounds.right<=p.right+1&&[...options.children].every(item=>{const box=item.getBoundingClientRect();return box.left>=p.left-1&&box.right<=p.right+1;}));
+              const stacked=!options||!q.options.some(o=>o.length>80||o.includes('\\n'))||[...options.children].every((item,i,all)=>!i||item.getBoundingClientRect().top>=all[i-1].getBoundingClientRect().bottom-1);
+              return {exactLines,directions,optionDirections,numbering,inside,stacked};
+            });
+            observed={count:rows.length===exam.questions.length,noAnswers:!doc.body.textContent.includes('SECRET-'),validRows,contained:doc.body.scrollWidth<=doc.body.clientWidth+1};
+            frame.contentWindow.dispatchEvent(new Event('afterprint'));
+          };
+        });
+        observer.observe(document.body,{childList:true});
+        try{await EduQuestionBankUI.print(exam);}finally{observer.disconnect();}
+        results.push({...observed,cleaned:!document.querySelector('.qb-print-frame')});
+      }
+      return {results,unchanged:JSON.stringify(await EduQuestionBankRepository.read())===__importRoundtripBank&&JSON.stringify(db)===__importSchool};
+    })()`);
+    check(
+      "actual imported exam print frames keep numbering, code direction and long English/Persian options out of the score column without exposing answers or changing data",
+      printed.unchanged &&
+        printed.results.length === 2 &&
+        printed.results.every(
+          (result) =>
+            result.count &&
+            result.noAnswers &&
+            result.contained &&
+            result.cleaned &&
+            result.validRows.every((row) => Object.values(row).every(Boolean)),
+        ),
+      printed,
+    );
     await evaluate(
       "(async()=>{const R=EduQuestionBankRepository,current=await R.read();await R.save(__importOriginal,current.revision);})()",
     );

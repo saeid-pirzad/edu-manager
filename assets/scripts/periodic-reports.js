@@ -343,82 +343,90 @@ student:model.audience==="parent"?model.student:null}):"";last={signature:report
 "periodicReportOutput");if(out){out.innerHTML=documentHtml(model,gradeHtml);initializeReportKarnameh(last)}return model}catch(e){invalidate(e.message||String(e));
 return null}finally{busy=false;syncReportActions()}}function initializeReportKarnameh(prepared){if(!prepared?.gradeHtml)return;root.EduV24.initPeriodicKarnameh(
 document.getElementById("periodicReportOutput"),prepared.context,()=>isPreparedCurrent(prepared))}function xlsxWorkbook(sheets){const encoder=new TextEncoder;const xml=value=>String(
-value).replace(/_x[0-9a-f]{4}_/gi,text=>"_x005F_"+text.slice(1)).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffe\uffff]/g,text=>"_x"+text.charCodeAt(0).toString(
-16).padStart(4,"0")+"_").replace(/[&<>"']/g,text=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&apos;"})[text]);const declaration='<?xml version="1.0" \
-encoding="UTF-8" standalone="yes"?>';const ns="http://schemas.openxmlformats.org/spreadsheetml/2006/main";const rel="http://schemas.openxmlformats.org/officeDoc\
-ument/2006/relationships";const column=index=>{let result="";for(let n=index+1;n;n=Math.floor((n-1)/26))result=String.fromCharCode(65+(n-1)%26)+result;return result};
-const entries=[];const add=(name,content)=>entries.push([encoder.encode(name),encoder.encode(declaration+content)]);if(!sheets.length||sheets.length>100)throw Error(
-"تعداد برگه‌های اکسل معتبر نیست.");const names=new Set;for(const[index,sheet]of sheets.entries()){if(!sheet.name||sheet.name.length>31||
-/[\\/?*[\]:]/.test(sheet.name)||names.has(sheet.name.toLowerCase())||/^\x27|\x27$/.test(sheet.name))throw Error("نام برگهٔ اکسل معتبر نیست.");
-names.add(sheet.name.toLowerCase());const banner=sheet.banner||[];const headerRow=banner.length?banner.length+1:1;const rowOffset=headerRow-1;if(!sheet.rows.length||
-sheet.rows.length+rowOffset>1048576)throw Error("تعداد ردیف‌ها بیش از ظرفیت اکسل است؛ محدوده گزارش را کوچک‌تر کنید.");
-const width=Math.max(...sheet.rows.slice(0,1).map(row=>row.length));if(!width||width>16384)throw Error("تعداد ستون‌های اکسل معتبر نیست.");
-const sheetRows=sheet.entryRows?Array.from({length:sheet.entryRows+1},(_,i)=>sheet.rows[i]||Array(width).fill("")):sheet.rows;const range2="A1:"+column(width-1)+
-(sheetRows.length+rowOffset);const rows=sheetRows.map((row,ri)=>{if(row.length>width)throw Error("ستون‌های گزارش با عنوان‌ها یکسان نیستند.");
-return'<row r="'+(ri+1+rowOffset)+'"'+(ri===0?' ht="30" customHeight="1"':sheet.entryRows?' ht="42" customHeight="1"':"")+">"+row.map((value,ci)=>{if((value==null||
-value==="")&&!sheet.entryRows)return"";const ref=column(ci)+(ri+1+rowOffset);let style=ri===0?1:ri%2?0:2;if(ri&&sheet.entryRows)style=ri%2?10:11;if(ri&&typeof value===
-"number")style=ri%2?3:4;if(ri&&String(sheet.rows[0][ci]).startsWith("وضعیت")){if(["قبول","تکمیل","حاضر"].includes(value))style=5;else if(value===
-"غایب")style=7;else if(value)style=6}if(typeof value==="number"){if(!Number.isFinite(value))throw Error("مقدار عددی گزارش معتبر نیست.");
-return'<c r="'+ref+'" s="'+style+'"><v>'+value+"</v></c>"}const text=String(value);if(text.length>32767)throw Error("متن یک سلول بیش از ظرفیت اکسل است؛ از خروجی\
- متن یا JSON استفاده کنید.");return'<c r="'+ref+'" s="'+style+'" t="inlineStr"><is><t xml:space="preserve">'+xml(text)+"</t></is></c>"}).join("")+
-"</row>"}).join("");const columnWidths=sheet.rows[0].map((header,ci)=>{if(sheet.widths?.[ci])return sheet.widths[ci];let longest=String(header).length;for(const row of sheet.
-rows.slice(1,201))longest=Math.max(longest,String(row[ci]??"").length);return Math.min(45,Math.max(14,Math.ceil(longest*1.15)+3))});const columns=sheet.rows[0].
-map((_,i)=>'<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+columnWidths[i]+'" customWidth="1"/>').join("");const bannerRows=banner.map((text,i)=>{if(String(text).
-length>32767)throw Error("سربرگ گزارش بیش از ظرفیت اکسل است.");return'<row r="'+(i+1)+'" ht="'+(i===0?30:Math.min(409,Math.max(26,Math.
-ceil(String(text).length/Math.max(18,columnWidths.reduce((sum,value)=>sum+value,0)*.8))*18+10)))+'" customHeight="1"><c r="A'+(i+1)+'" s="'+(i===0?8:9)+'" t="in\
-lineStr"><is><t xml:space="preserve">'+xml(text)+"</t></is></c></row>"}).join("");add("xl/worksheets/sheet"+(index+1)+".xml",'<worksheet xmlns="'+ns+'"><sheetPr\
-><pageSetUpPr fitToPage="1"/></sheetPr><dimension ref="'+range2+'"/><sheetViews><sheetView rightToLeft="1" showGridLines="0" workbookViewId="0"><pane ySplit="'+
-headerRow+'" topLeftCell="A'+(headerRow+1)+'" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft" activeCell="A'+(headerRow+1)+'" sqref="A'+(headerRow+
-1)+'"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="24"/><cols>'+columns+"</cols><sheetData>"+bannerRows+rows+"</sheetData>"+(sheet.filter===false?
-"":'<autoFilter ref="A'+headerRow+":"+column(width-1)+(sheetRows.length+rowOffset)+'"/>')+(banner.length&&width>1?'<mergeCells count="'+banner.length+'">'+banner.
-map((_,i)=>'<mergeCell ref="A'+(i+1)+":"+column(width-1)+(i+1)+'"/>').join("")+"</mergeCells>":"")+(sheet.validations?.length?'<dataValidations count="'+sheet.validations.
-length+'">'+sheet.validations.map(rule=>{if(!/^[A-Z]+[1-9][0-9]*:[A-Z]+[1-9][0-9]*$/.test(rule.ref)||rule.type&&rule.type!=="list")throw Error("اعتبارسنجی ستون \
-اکسل معتبر نیست.");return'<dataValidation type="'+(rule.type||"none")+'" allowBlank="1" showInputMessage="1" showErrorMessage="1" errorStyle="stop"\
- errorTitle="نوع سؤال نامعتبر" error="نوع سؤال را از فهرست انتخاب کنید." promptTitle="'+xml(rule.title)+'" prompt="'+xml(
-rule.prompt)+'" sqref="'+rule.ref+'">'+(rule.formula?"<formula1>"+xml(rule.formula)+"</formula1>":"")+"</dataValidation>"}).join("")+"</dataValidations>":"")+'<\
-pageMargins left="0.3" right="0.3" top="0.5" bottom="0.5" header="0.2" footer="0.2"/><pageSetup paperSize="9" orientation="'+(width>7?"landscape":"portrait")+'"\
- fitToWidth="1" fitToHeight="0"/><headerFooter><oddHeader>&amp;R&amp;A&amp;Lکلاس‌یار</oddHeader><oddFooter>&amp;Cصفحه &amp;P از &amp;N</oddFooter></headerFooter\
-></worksheet>')}add("xl/workbook.xml",'<workbook xmlns="'+ns+'" xmlns:r="'+rel+'"><bookViews><workbookView/></bookViews><sheets>'+sheets.map((sheet,i)=>'<sheet \
-name="'+xml(sheet.name)+'" sheetId="'+(i+1)+'" r:id="rId'+(i+1)+'"/>').join("")+"</sheets><definedNames>"+sheets.map((sheet,i)=>'<definedName name="_xlnm.Print_\
-Titles" localSheetId="'+i+'">'+xml("'"+sheet.name.replace(/'/g,"''")+"'!$1:$"+(sheet.banner?.length?sheet.banner.length+1:1))+"</definedName>").join("")+"</defi\
-nedNames></workbook>");add("xl/_rels/workbook.xml.rels",'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+sheets.map((_,i)=>'\
-<Relationship Id="rId'+(i+1)+'" Type="'+rel+'/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>').join("")+'<Relationship Id="rIdStyles" Type="'+rel+'/styles"\
- Target="styles.xml"/></Relationships>');add("_rels/.rels",'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id\
-="rId1" Type="'+rel+'/officeDocument" Target="xl/workbook.xml"/></Relationships>');add("[Content_Types].xml",'<Types xmlns="http://schemas.openxmlformats.org/pa\
-ckage/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType\
-="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override Pa\
-rtName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+sheets.map((_,i)=>'<Override PartName="/xl/works\
-heets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join("")+"</Types>");add("xl/styles.xml",'\
-<styleSheet xmlns="'+ns+'"><numFmts count="1"><numFmt numFmtId="164" formatCode="0.###############"/></numFmts><fonts count="4"><font><sz val="11"/><color rgb="\
-FF25344A"/><name val="Tahoma"/></font><font><b/><sz val="12"/><color rgb="FFFFFFFF"/><name val="Tahoma"/></font><font><b/><sz val="14"/><color rgb="FFFFFFFF"/><\
-name val="Tahoma"/></font><font><sz val="11"/><color rgb="FF475569"/><name val="Tahoma"/></font></fonts><fills count="8"><fill><patternFill patternType="none"/>\
-</fill><fill><patternFill patternType="gray125"/></fill>'+["FF244B73","FFF0F5FA","FFE4F4EA","FFFFF3D6","FFFCE8E6","FFEAF0F8"].map(color=>'<fill><patternFill pat\
-ternType="solid"><fgColor rgb="'+color+'"/><bgColor indexed="64"/></patternFill></fill>').join("")+'</fills><borders count="2"><border><left/><right/><top/><bot\
-tom/><diagonal/></border><border><left style="thin"><color rgb="FFDCE4EE"/></left><right style="thin"><color rgb="FFDCE4EE"/></right><top style="thin"><color rg\
-b="FFDCE4EE"/></top><bottom style="thin"><color rgb="FFDCE4EE"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillI\
-d="0" borderId="0"/></cellStyleXfs><cellXfs count="12">'+[0,1,2,3,4,5,6,7,8,9,10,11].map(i=>'<xf numFmtId="'+(i===3||i===4?164:0)+'" fontId="'+(i===8?2:i===9?3:
-i===1?1:0)+'" fillId="'+[0,2,3,0,3,4,5,6,2,7,0,3][i]+'" borderId="'+(i>=10?1:0)+'" xfId="0" applyBorder="1" applyAlignment="1" applyFill="1" applyNumberFormat="\
-1"><alignment horizontal="'+(i===3||i===4?"center":"right")+'" vertical="center" wrapText="1" readingOrder="2"/></xf>').join("")+'</cellXfs><cellStyles count="1\
-"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>');const table2=Uint32Array.from({length:256},(_,n)=>{for(let i=0;i<8;i++)n=n&1?3988292384^
-n>>>1:n>>>1;return n>>>0});const crc=bytes=>{let value=4294967295;for(const byte of bytes)value=table2[(value^byte)&255]^value>>>8;return(value^4294967295)>>>0};
-const chunks=[],directory=[];let offset=0,directorySize=0;for(const[name,bytes]of entries){if(offset+bytes.length>128*1024*1024)throw Error("حجم اکسل زیاد است؛ \
-محدوده گزارش را کوچک‌تر کنید.");const checksum=crc(bytes);const header=new Uint8Array(30),h=new DataView(header.buffer);h.setUint32(0,67324752,
-true);h.setUint16(4,20,true);h.setUint16(6,2048,true);h.setUint16(12,33,true);h.setUint32(14,checksum,true);h.setUint32(18,bytes.length,true);h.setUint32(22,bytes.
-length,true);h.setUint16(26,name.length,true);chunks.push(header,name,bytes);const central=new Uint8Array(46),c=new DataView(central.buffer);c.setUint32(0,33639248,
-true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,2048,true);c.setUint16(14,33,true);c.setUint32(16,checksum,true);c.setUint32(20,bytes.length,true);
-c.setUint32(24,bytes.length,true);c.setUint16(28,name.length,true);c.setUint32(42,offset,true);directory.push(central,name);directorySize+=central.length+name.length;
-offset+=header.length+name.length+bytes.length}const end=new Uint8Array(22),e=new DataView(end.buffer);e.setUint32(0,101010256,true);e.setUint16(8,entries.length,
-true);e.setUint16(10,entries.length,true);e.setUint32(12,directorySize,true);e.setUint32(16,offset,true);return new Blob([...chunks,...directory,end],{type:"app\
-lication/vnd.openxmlformats-officedocument.spreadsheetml.sheet"})}function excelReportSheets(m){const sheets=[];const sheet=(name,headers,rows,widths)=>sheets.push(
-{name,rows:[headers,...rows],widths});const counts=row=>[row.sessions,(row.present||0)+(row.late||0),row.absent,row.leave,row.late,row.unknown];const countHeaders=[
-"جلسه","حاضر با احتساب تأخیر","غایب","مرخصی","تأخیر (زیرمجموعه حاضر)","تعیین‌نشده"];const result=grade=>!grade.
-complete?"ناقص":grade.passed==null?"تکمیل":grade.passed?"قبول":"نیازمند جبران";const safe=grade=>{if(grade.complete!==true||!Number.isFinite(
-grade.final))return null;const display=root.EduV24.finalText(grade);return display===grade.final.toFixed(2)?grade.final:display};let dateFormatter,weekdayFormatter;
-const date=value=>(dateFormatter??=new Intl.DateTimeFormat("fa-IR",{year:"numeric",month:"2-digit",day:"2-digit",timeZone:"UTC"})).format(new Date(value+"T12:00\
-:00Z"));const weekday=value=>(weekdayFormatter??=new Intl.DateTimeFormat("fa-IR",{weekday:"long",timeZone:"UTC"})).format(new Date(value+"T12:00:00Z"));const preparedAt=new Intl.
-DateTimeFormat("fa-IR",{dateStyle:"short",timeStyle:"short",timeZone:"Asia/Tehran"}).format(new Date(m.generatedAt));const metadata=[["نوع گزارش",{daily:"\
-روزانه",weekly:"هفتگی",monthly:"ماهانه",annual:"سال تحصیلی"}[m.mode]],["مخاطب",m.audience==="parent"?"اولیا — فقط هنرجوی انتخاب‌ش\
-ده":"مدیریت مدرسه"],["وضعیت داده",m.summary.sessions?"جلسات و ثبت‌های همین محدوده در شیت‌های داده آمده‌اند.":
+value).replace(/_(?=x[0-9a-f]{4}_)/gi,"_x005F_").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffe\uffff]/g,text=>"_x"+text.charCodeAt(0).toString(16).padStart(
+4,"0")+"_").replace(/[&<>"']/g,text=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&apos;"})[text]).replace(/\r/g,"&#13;");const declaration='<?xml vers\
+ion="1.0" encoding="UTF-8" standalone="yes"?>';const ns="http://schemas.openxmlformats.org/spreadsheetml/2006/main";const rel="http://schemas.openxmlformats.org\
+/officeDocument/2006/relationships";const column=index=>{let result="";for(let n=index+1;n;n=Math.floor((n-1)/26))result=String.fromCharCode(65+(n-1)%26)+result;
+return result};const entries=[];const extraStyles=[],extraStyleIds=new Map;const columnStyle=(base,options)=>{if(!options||!options.format&&!options.direction)return base;
+const key=base+":"+(options.format||"")+":"+(options.direction||"");if(!extraStyleIds.has(key)){extraStyleIds.set(key,12+extraStyles.length);extraStyles.push({base,
+format:options.format,direction:options.direction})}return extraStyleIds.get(key)};const add=(name,content)=>entries.push([encoder.encode(name),encoder.encode(declaration+
+content)]);if(!sheets.length||sheets.length>100)throw Error("تعداد برگه‌های اکسل معتبر نیست.");const names=new Set;for(const[index,sheet]of sheets.
+entries()){if(!sheet.name||sheet.name.length>31||/[\\/?*[\]:]/.test(sheet.name)||names.has(sheet.name.toLowerCase())||/^\x27|\x27$/.test(sheet.name))throw Error(
+"نام برگهٔ اکسل معتبر نیست.");names.add(sheet.name.toLowerCase());const banner=sheet.banner||[];const headerRow=banner.length?banner.length+
+1:1;const rowOffset=headerRow-1;if(!sheet.rows.length||sheet.rows.length+rowOffset>1048576)throw Error("تعداد ردیف‌ها بیش از ظرفیت اکسل است؛ محدوده گزارش را کوچ\
+ک‌تر کنید.");const width=Math.max(...sheet.rows.slice(0,1).map(row=>row.length));if(!width||width>16384)throw Error("تعداد ستون‌های اکسل معتبر نیست.");
+if(sheet.columnStyles&&(!Array.isArray(sheet.columnStyles)||sheet.columnStyles.length>width||sheet.columnStyles.some(options=>options!=null&&(typeof options!=="\
+object"||Array.isArray(options)||options.format!=null&&options.format!=="text"||options.direction!=null&&!["context","ltr","rtl"].includes(options.direction)))))
+throw Error("قالب ستون اکسل معتبر نیست.");const sheetRows=sheet.entryRows?Array.from({length:sheet.entryRows+1},(_,i)=>sheet.rows[i]||Array(
+width).fill("")):sheet.rows;const range2="A1:"+column(width-1)+(sheetRows.length+rowOffset);const rows=sheetRows.map((row,ri)=>{if(row.length>width)throw Error(
+"ستون‌های گزارش با عنوان‌ها یکسان نیستند.");return'<row r="'+(ri+1+rowOffset)+'"'+(ri===0?' ht="30" customHeight="1"':sheet.
+entryRows?' ht="42" customHeight="1"':"")+">"+row.map((value,ci)=>{if((value==null||value==="")&&!sheet.entryRows)return"";const ref=column(ci)+(ri+1+rowOffset);
+const options=ri?sheet.columnStyles?.[ci]:null;let style=ri===0?1:ri%2?0:2;if(ri&&sheet.entryRows)style=ri%2?10:11;if(ri&&typeof value==="number"&&options?.format!==
+"text")style=ri%2?3:4;if(ri&&String(sheet.rows[0][ci]).startsWith("وضعیت")){if(["قبول","تکمیل","حاضر"].includes(value))style=5;else if(value===
+"غایب")style=7;else if(value)style=6}style=columnStyle(style,options);if(typeof value==="number"){if(!Number.isFinite(value))throw Error("مقدار عددی گزارش م\
+عتبر نیست.");if(options?.format!=="text")return'<c r="'+ref+'" s="'+style+'"><v>'+value+"</v></c>"}const text=String(value);if(text.length>32767)throw Error(
+"متن یک سلول بیش از ظرفیت اکسل است؛ از خروجی متن یا JSON استفاده کنید.");return'<c r="'+ref+'" s="'+style+'" t\
+="inlineStr"><is><t xml:space="preserve">'+xml(text)+"</t></is></c>"}).join("")+"</row>"}).join("");const columnWidths=sheet.rows[0].map((header,ci)=>{if(sheet.
+widths?.[ci])return sheet.widths[ci];let longest=String(header).length;for(const row of sheet.rows.slice(1,201))longest=Math.max(longest,String(row[ci]??"").length);
+return Math.min(45,Math.max(14,Math.ceil(longest*1.15)+3))});const columns=sheet.rows[0].map((_,i)=>'<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+columnWidths[i]+
+'" customWidth="1"'+(sheet.columnStyles?.[i]?' style="'+columnStyle(sheet.entryRows?10:0,sheet.columnStyles[i])+'"':"")+"/>").join("");const bannerRows=banner.map(
+(text,i)=>{if(String(text).length>32767)throw Error("سربرگ گزارش بیش از ظرفیت اکسل است.");return'<row r="'+(i+1)+'" ht="'+(i===0?30:Math.
+min(409,Math.max(26,Math.ceil(String(text).length/Math.max(18,columnWidths.reduce((sum,value)=>sum+value,0)*.8))*18+10)))+'" customHeight="1"><c r="A'+(i+1)+'" \
+s="'+(i===0?8:9)+'" t="inlineStr"><is><t xml:space="preserve">'+xml(text)+"</t></is></c></row>"}).join("");add("xl/worksheets/sheet"+(index+1)+".xml",'<workshee\
+t xmlns="'+ns+'"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><dimension ref="'+range2+'"/><sheetViews><sheetView rightToLeft="1" showGridLines="0" workbookVi\
+ewId="0"><pane ySplit="'+headerRow+'" topLeftCell="A'+(headerRow+1)+'" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft" activeCell="A'+(headerRow+
+1)+'" sqref="A'+(headerRow+1)+'"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="24"/><cols>'+columns+"</cols><sheetData>"+bannerRows+rows+"</sheetDa\
+ta>"+(sheet.filter===false?"":'<autoFilter ref="A'+headerRow+":"+column(width-1)+(sheetRows.length+rowOffset)+'"/>')+(banner.length&&width>1?'<mergeCells count=\
+"'+banner.length+'">'+banner.map((_,i)=>'<mergeCell ref="A'+(i+1)+":"+column(width-1)+(i+1)+'"/>').join("")+"</mergeCells>":"")+(sheet.validations?.length?'<dat\
+aValidations count="'+sheet.validations.length+'">'+sheet.validations.map(rule=>{if(!/^[A-Z]+[1-9][0-9]*:[A-Z]+[1-9][0-9]*$/.test(rule.ref)||rule.type&&rule.type!==
+"list")throw Error("اعتبارسنجی ستون اکسل معتبر نیست.");return'<dataValidation type="'+(rule.type||"none")+'" allowBlank="1" showInput\
+Message="1" showErrorMessage="1" errorStyle="stop" errorTitle="نوع سؤال نامعتبر" error="نوع سؤال را از فهرست انتخاب کنید." promptTitle="'+
+xml(rule.title)+'" prompt="'+xml(rule.prompt)+'" sqref="'+rule.ref+'">'+(rule.formula?"<formula1>"+xml(rule.formula)+"</formula1>":"")+"</dataValidation>"}).join(
+"")+"</dataValidations>":"")+'<pageMargins left="0.3" right="0.3" top="0.5" bottom="0.5" header="0.2" footer="0.2"/><pageSetup paperSize="9" orientation="'+(width>
+7?"landscape":"portrait")+'" fitToWidth="1" fitToHeight="0"/><headerFooter><oddHeader>&amp;R&amp;A&amp;Lکلاس‌یار</oddHeader><oddFooter>&amp;Cصفحه &amp;P از &amp\
+;N</oddFooter></headerFooter></worksheet>')}add("xl/workbook.xml",'<workbook xmlns="'+ns+'" xmlns:r="'+rel+'"><bookViews><workbookView/></bookViews><sheets>'+sheets.
+map((sheet,i)=>'<sheet name="'+xml(sheet.name)+'" sheetId="'+(i+1)+'" r:id="rId'+(i+1)+'"/>').join("")+"</sheets><definedNames>"+sheets.map((sheet,i)=>'<defined\
+Name name="_xlnm.Print_Titles" localSheetId="'+i+'">'+xml("'"+sheet.name.replace(/'/g,"''")+"'!$1:$"+(sheet.banner?.length?sheet.banner.length+1:1))+"</definedN\
+ame>").join("")+"</definedNames></workbook>");add("xl/_rels/workbook.xml.rels",'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationshi\
+ps">'+sheets.map((_,i)=>'<Relationship Id="rId'+(i+1)+'" Type="'+rel+'/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>').join("")+'<Relationship Id="rIdStyl\
+es" Type="'+rel+'/styles" Target="styles.xml"/></Relationships>');add("_rels/.rels",'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relati\
+onships"><Relationship Id="rId1" Type="'+rel+'/officeDocument" Target="xl/workbook.xml"/></Relationships>');add("[Content_Types].xml",'<Types xmlns="http://sche\
+mas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Ex\
+tension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.shee\
+t.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+sheets.map((_,i)=>'<Ove\
+rride PartName="/xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join("")+"</Types\
+>");add("xl/styles.xml",'<styleSheet xmlns="'+ns+'"><numFmts count="1"><numFmt numFmtId="164" formatCode="0.###############"/></numFmts><fonts count="4"><font><\
+sz val="11"/><color rgb="FF25344A"/><name val="Tahoma"/></font><font><b/><sz val="12"/><color rgb="FFFFFFFF"/><name val="Tahoma"/></font><font><b/><sz val="14"/\
+><color rgb="FFFFFFFF"/><name val="Tahoma"/></font><font><sz val="11"/><color rgb="FF475569"/><name val="Tahoma"/></font></fonts><fills count="8"><fill><pattern\
+Fill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>'+["FF244B73","FFF0F5FA","FFE4F4EA","FFFFF3D6","FFFCE8E6","FFEAF0F8"].map(color=>'\
+<fill><patternFill patternType="solid"><fgColor rgb="'+color+'"/><bgColor indexed="64"/></patternFill></fill>').join("")+'</fills><borders count="2"><border><le\
+ft/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFDCE4EE"/></left><right style="thin"><color rgb="FFDCE4EE"/></right><top \
+style="thin"><color rgb="FFDCE4EE"/></top><bottom style="thin"><color rgb="FFDCE4EE"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtI\
+d="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="'+(12+extraStyles.length)+'">'+[...Array.from({length:12},(_,base)=>({base})),...extraStyles].
+map(({base:i,format,direction})=>'<xf numFmtId="'+(format==="text"?49:i===3||i===4?164:0)+'" fontId="'+(i===8?2:i===9?3:i===1?1:0)+'" fillId="'+[0,2,3,0,3,4,5,6,
+2,7,0,3][i]+'" borderId="'+(i>=10?1:0)+'" xfId="0" applyBorder="1" applyAlignment="1" applyFill="1" applyNumberFormat="1"><alignment horizontal="'+(direction===
+"context"?"general":direction==="ltr"?"left":direction==="rtl"?"right":i===3||i===4?"center":"right")+'" vertical="center" wrapText="1" readingOrder="'+(direction===
+"context"?0:direction==="ltr"?1:2)+'"/></xf>').join("")+'</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSh\
+eet>');const table2=Uint32Array.from({length:256},(_,n)=>{for(let i=0;i<8;i++)n=n&1?3988292384^n>>>1:n>>>1;return n>>>0});const crc=bytes=>{let value=4294967295;
+for(const byte of bytes)value=table2[(value^byte)&255]^value>>>8;return(value^4294967295)>>>0};const chunks=[],directory=[];let offset=0,directorySize=0;for(const[
+name,bytes]of entries){if(offset+bytes.length>128*1024*1024)throw Error("حجم اکسل زیاد است؛ محدوده گزارش را کوچک‌تر کنید.");
+const checksum=crc(bytes);const header=new Uint8Array(30),h=new DataView(header.buffer);h.setUint32(0,67324752,true);h.setUint16(4,20,true);h.setUint16(6,2048,true);
+h.setUint16(12,33,true);h.setUint32(14,checksum,true);h.setUint32(18,bytes.length,true);h.setUint32(22,bytes.length,true);h.setUint16(26,name.length,true);chunks.
+push(header,name,bytes);const central=new Uint8Array(46),c=new DataView(central.buffer);c.setUint32(0,33639248,true);c.setUint16(4,20,true);c.setUint16(6,20,true);
+c.setUint16(8,2048,true);c.setUint16(14,33,true);c.setUint32(16,checksum,true);c.setUint32(20,bytes.length,true);c.setUint32(24,bytes.length,true);c.setUint16(28,
+name.length,true);c.setUint32(42,offset,true);directory.push(central,name);directorySize+=central.length+name.length;offset+=header.length+name.length+bytes.length}
+const end=new Uint8Array(22),e=new DataView(end.buffer);e.setUint32(0,101010256,true);e.setUint16(8,entries.length,true);e.setUint16(10,entries.length,true);e.setUint32(
+12,directorySize,true);e.setUint32(16,offset,true);return new Blob([...chunks,...directory,end],{type:"application/vnd.openxmlformats-officedocument.spreadsheet\
+ml.sheet"})}function excelReportSheets(m){const sheets=[];const sheet=(name,headers,rows,widths)=>sheets.push({name,rows:[headers,...rows],widths});const counts=row=>[
+row.sessions,(row.present||0)+(row.late||0),row.absent,row.leave,row.late,row.unknown];const countHeaders=["جلسه","حاضر با احتساب تأخیر","غ\
+ایب","مرخصی","تأخیر (زیرمجموعه حاضر)","تعیین‌نشده"];const result=grade=>!grade.complete?"ناقص":grade.passed==null?"تکمی\
+ل":grade.passed?"قبول":"نیازمند جبران";const safe=grade=>{if(grade.complete!==true||!Number.isFinite(grade.final))return null;const display=root.
+EduV24.finalText(grade);return display===grade.final.toFixed(2)?grade.final:display};let dateFormatter,weekdayFormatter;const date=value=>(dateFormatter??=new Intl.
+DateTimeFormat("fa-IR",{year:"numeric",month:"2-digit",day:"2-digit",timeZone:"UTC"})).format(new Date(value+"T12:00:00Z"));const weekday=value=>(weekdayFormatter??=
+new Intl.DateTimeFormat("fa-IR",{weekday:"long",timeZone:"UTC"})).format(new Date(value+"T12:00:00Z"));const preparedAt=new Intl.DateTimeFormat("fa-IR",{dateStyle:"\
+short",timeStyle:"short",timeZone:"Asia/Tehran"}).format(new Date(m.generatedAt));const metadata=[["نوع گزارش",{daily:"روزانه",weekly:"هفتگی",
+monthly:"ماهانه",annual:"سال تحصیلی"}[m.mode]],["مخاطب",m.audience==="parent"?"اولیا — فقط هنرجوی انتخاب‌شده":"مد\
+یریت مدرسه"],["وضعیت داده",m.summary.sessions?"جلسات و ثبت‌های همین محدوده در شیت‌های داده آمده‌اند.":
 m.annualGrades?.length||m.technicalGrades?.length?"جلسه‌ای در این محدوده ثبت نشده است؛ نمرات موجود در شیت‌های امتحان آمده‌اند.":
 "هیچ جلسه یا نمره‌ای برای این محدوده در گزارش موجود نیست؛ تاریخ، مدرسه و کلاس انتخاب‌شده را بررسی کنید."],
 ["مدرسه",m.school.name],["کلاس",m.class?.name||"همه کلاس‌ها"],["هنرجو",m.student?.name||"همه هنرجویان محدوده"],["کد هن\

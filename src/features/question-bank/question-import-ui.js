@@ -1,6 +1,68 @@
 (function (root) {
   "use strict";
   const I = root.EduQuestionBankImport;
+  function textBlock(el, tag, value, className, fallback = "rtl") {
+    const format = root.EduQuestionBankUI.previewText;
+    const text = format.clean(value);
+    const block = el(tag, undefined, className);
+    block.dir = format.direction(text, fallback);
+    text.split(/\r\n|\r|\n/).forEach((line) => {
+      const part = el("span", line, "qb-import-line");
+      part.dir = format.direction(line, block.dir);
+      block.append(part);
+    });
+    return block;
+  }
+  function appendQuestion(item, q, el) {
+    const direction = root.EduQuestionBankUI.previewText.direction(q.text);
+    if (q.options) {
+      const options = el("ol", undefined, "qb-import-options");
+      options.dir = direction;
+      if (q.options.some((option) => /[\r\n]/.test(option)))
+        options.dataset.multiline = "true";
+      options.setAttribute("aria-label", "گزینه‌های سؤال");
+      q.options.forEach((option, index) => {
+        const choice = el("li");
+        choice.append(
+          el(
+            "span",
+            `${direction === "rtl" ? ["الف", "ب", "ج", "د"][index] : ["A", "B", "C", "D"][index]})`,
+            "qb-import-option-label",
+          ),
+          textBlock(el, "bdi", option, "qb-import-option-text", direction),
+        );
+        options.append(choice);
+      });
+      item.append(options);
+    }
+    item.append(
+      el(
+        "small",
+        `${root.EduQuestionBank.types[q.type]} · بارم: ${(q.score / 100).toLocaleString("fa-IR")}`,
+        "qb-import-question-meta",
+      ),
+    );
+    const answer =
+      q.type === "mcq"
+        ? `گزینهٔ ${(q.answer + 1).toLocaleString("fa-IR")}`
+        : q.type === "boolean"
+          ? q.answer
+            ? "صحیح"
+            : "غلط"
+          : q.answer;
+    for (const [label, value] of [
+      ["پاسخ صحیح", answer],
+      ["توضیح پاسخ", q.explanation],
+    ]) {
+      if (!value) continue;
+      const detail = el("div", undefined, "qb-import-question-detail");
+      detail.append(
+        el("small", `${label}:`, "qb-import-detail-label"),
+        textBlock(el, "div", value, "qb-import-detail-text", direction),
+      );
+      item.append(detail);
+    }
+  }
   function mount({
     parent,
     bank,
@@ -172,35 +234,14 @@
             "strong",
             `ردیف ${row.number.toLocaleString("fa-IR")} · ${row.status === "ready" ? "آمادهٔ ثبت" : row.status === "error" ? "خطا" : "تکراری"}`,
           ),
-          el("p", row.text || "متن سؤال خالی است."),
+          textBlock(
+            el,
+            "p",
+            row.text || "متن سؤال خالی است.",
+            "qb-import-question-text",
+          ),
         );
-        if (row.question) {
-          const q = row.question;
-          if (q.options)
-            item.append(
-              el(
-                "p",
-                q.options
-                  .map((option, index) => `${index + 1}) ${option}`)
-                  .join(" · "),
-              ),
-            );
-          const answer =
-            q.type === "mcq"
-              ? `گزینهٔ ${q.answer + 1}`
-              : q.type === "boolean"
-                ? q.answer
-                  ? "صحیح"
-                  : "غلط"
-                : q.answer;
-          item.append(
-            el(
-              "small",
-              `${root.EduQuestionBank.types[q.type]} · بارم: ${(q.score / 100).toLocaleString("fa-IR")} · پاسخ: ${answer}`,
-            ),
-          );
-          if (q.explanation) item.append(el("small", q.explanation));
-        }
+        if (row.question) appendQuestion(item, row.question, el);
         if (row.message) item.append(el("small", row.message));
         list.append(item);
       }

@@ -72,6 +72,10 @@
         rows: [headers, Array(9).fill("")],
         entryRows: 1000,
         widths: [23, 60, 25, 25, 25, 25, 44, 12, 48],
+        columnStyles: Array.from({ length: 9 }, () => ({
+          format: "text",
+          direction: "context",
+        })),
         validations: [
           {
             ref: "A2:A1001",
@@ -115,6 +119,10 @@
         name: "نمونه‌ها",
         rows: [headers, ...examples],
         widths: [23, 60, 25, 25, 25, 25, 44, 12, 48],
+        columnStyles: Array.from({ length: 9 }, () => ({
+          format: "text",
+          direction: "context",
+        })),
       },
       {
         name: "راهنما",
@@ -163,7 +171,11 @@
           ],
           [
             "تکراری",
-            "نوع و متن یکسان در همان بخش تکراری است؛ تکراری‌های فایل و بانک ثبت نمی‌شوند.",
+            "فقط سؤال کاملاً یکسان در همان بخش تکراری است: نوع، متن، گزینه‌ها، پاسخ، بارم و توضیح. حروف بزرگ و کوچک و فاصله‌های داخل کد حفظ می‌شوند؛ تکراری‌ها ثبت نمی‌شوند.",
+          ],
+          [
+            "متن فنی و کد",
+            "سلول‌های ورود از نوع متن هستند تا 001، 1/2، 1e3 و متن آغازشده با = تغییر نکنند. قالب متن سلول‌ها را حفظ کنید؛ فرمول قابل ورود نیست. کد چندخطی و تورفتگی آن حفظ می‌شود.",
           ],
           [
             "متن",
@@ -173,8 +185,18 @@
       },
     ];
   }
+  // Search normalization is intentionally not an identity rule: case, spacing,
+  // Unicode symbols and line breaks can change the meaning of source code.
+  const contentKey = (value) => String(value ?? "").replace(/\r\n?/g, "\n");
   function key(q) {
-    return q.type + ":" + D.searchText(q.text);
+    return JSON.stringify([
+      q.type,
+      contentKey(q.text),
+      q.options?.map(contentKey) || null,
+      typeof q.answer === "string" ? contentKey(q.answer) : q.answer,
+      q.score,
+      contentKey(q.explanation),
+    ]);
   }
   function preview(rows, bank, unitId) {
     if (!bank.units.some((u) => u.id === unitId))
@@ -216,7 +238,7 @@
         if (row.cells.length > headers.length)
           fail("ستون اضافه خارج از الگو وجود دارد.");
         const cells = Array.from({ length: 9 }, (_, i) =>
-          String(row.cells[i] ?? "").trim(),
+          String(row.cells[i] ?? ""),
         );
         const [kind, text, ...rest] = cells;
         const options = rest.slice(0, 4),
@@ -247,7 +269,7 @@
           if (new Set(options.map(D.optionKey)).size !== 4)
             fail("چهار گزینه باید متفاوت باشند.");
         } else {
-          if (options.some(Boolean))
+          if (options.some((option) => option.trim()))
             fail("گزینه‌ها فقط برای سؤال چهارگزینه‌ای مجازند.");
           if (type === "boolean") {
             const value = D.searchText(answer);
@@ -264,7 +286,7 @@
             text,
             status: "duplicate",
             message:
-              "نوع و متن در این فایل یا همین بخش بانک تکراری است؛ ثبت نمی‌شود.",
+              "محتوای کامل سؤال در این فایل یا همین بخش بانک یکسان است؛ ثبت نمی‌شود.",
           };
         seen.add(identity);
         return { number: row.number, text, status: "ready", question };
