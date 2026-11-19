@@ -13,6 +13,18 @@ test("print sheet isolates Persian, mixed and English prompts without moving sco
     source.indexOf("  function sheetTextDirection("),
     source.indexOf("  async function print("),
   );
+  const textDirection = vm.runInNewContext(
+    `${implementation}; sheetTextDirection`,
+  );
+  for (const text of [
+    'const message = "سلام";',
+    'console.log("سلام");',
+    "<h1>سلام</h1>",
+    'Explain the output:\nconsole.log("سلام");',
+  ])
+    assert.equal(textDirection(text), "ltr", text);
+  assert.equal(textDirection("CPU چیست؟"), "rtl");
+  assert.equal(textDirection("CPU (واحد پردازش مرکزی) چیست؟"), "rtl");
   const el = (tag, text, className) => ({
     tag,
     textContent: text,

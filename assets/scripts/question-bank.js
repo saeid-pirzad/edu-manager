@@ -500,19 +500,21 @@ if(report.errors){status.dataset.state="error";status.setAttribute("role","alert
 "use strict";const NS="http://schemas.openxmlformats.org/wordprocessingml/2006/main";const MIME="application/vnd.openxmlformats-officedocument.wordprocessingml.\
 document";const xml=value=>String(value).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffe\uffff]/g,"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"\
 &gt;",'"':"&quot;","'":"&apos;"})[c]);const number=value=>new Intl.NumberFormat("fa-IR",{maximumFractionDigits:2}).format(value);const cleanDirectionControls=text=>String(
-text).replace(/[\u202a-\u202e\u2066-\u2069]/g,"");const rtlLetter=char=>/\p{Letter}/u.test(char)&&/[\p{Script=Arabic}\p{Script=Hebrew}]/u.test(char);function direction(text,fallback="\
-rtl"){const chars=Array.from(cleanDirectionControls(text));if(chars.some(rtlLetter))return"rtl";return chars.some(char=>/\p{Letter}/u.test(char))?"ltr":fallback}
-function run(text,bold=false,dir="rtl"){return"<w:r><w:rPr>"+(bold?"<w:b/><w:bCs/>":"")+'<w:rtl w:val="'+(dir==="rtl"?"1":"0")+'"/><w:lang w:val="'+(dir==="rtl"?
-"fa-IR":"en-US")+'" w:bidi="fa-IR"/></w:rPr>'+String(text).split(/\r\n|\r|\n/).map((line,i)=>(i?"<w:br/>":"")+'<w:t xml:space="preserve">'+xml(line)+"</w:t>").join(
-"")+"</w:r>"}function mixedRuns(text,bold,baseDirection){const chars=Array.from(cleanDirectionControls(text)),dirs=chars.map(char=>rtlLetter(char)||/[\u0660-\u0669\u06f0-\u06f9]/u.
-test(char)?"rtl":/[\p{Letter}\p{Number}]/u.test(char)?"ltr":null);for(let i=0;i<dirs.length;){if(dirs[i]){i++;continue}const start=i;while(i<dirs.length&&!dirs[i])
-i++;const before=dirs[start-1],after=dirs[i],neutral=chars.slice(start,i).join("");const resolved=before&&before===after?before:/[()[\]{}<>:/\\@._+\-=?!%]/.test(
-neutral)&&!/[،؛؟]/.test(neutral)&&(before==="ltr"||after==="ltr")?"ltr":baseDirection;for(let n=start;n<i;n++)dirs[n]=resolved}let result="";for(let i=0;i<chars.
-length;){const start=i,dir=dirs[i];while(i<chars.length&&dirs[i]===dir)i++;result+=run(chars.slice(start,i).join(""),bold,dir)}return result||run("",bold,baseDirection)}
-const paragraph=(text,{bold=false,center=false,dir=direction(text)}={})=>'<w:p><w:pPr><w:pStyle w:val="Normal"/><w:bidi w:val="'+(dir==="rtl"?"1":"0")+'"/><w:sp\
-acing w:after="100" w:line="300" w:lineRule="auto"/><w:jc w:val="'+(center?"center":"left")+'"/></w:pPr>'+mixedRuns(text,bold,dir)+"</w:p>";const cell=(body,width,shade=false)=>'\
-<w:tc><w:tcPr><w:tcW w:w="'+width+'" w:type="pct"/>'+(shade?'<w:shd w:fill="F1F3F5"/>':"")+'<w:vAlign w:val="top"/></w:tcPr>'+body+"</w:tc>";function documentXml(exam){
-if(!exam||!Array.isArray(exam.questions)||!exam.questions.length||exam.questions.length>500)throw Error("آزمون باید بین ۱ و ۵۰۰ سؤال داشته باشد.");
+text).replace(/[\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]/g,"");const rtlLetter=char=>/\p{Letter}/u.test(char)&&/[\p{Script=Arabic}\p{Script=Hebrew}]/u.test(
+char);function direction(text,fallback="rtl"){const line=cleanDirectionControls(text).split(/\r\n|\r|\n/).find(value=>value.trim())||"";if(!/؟\s*$/.test(line)&&
+/^\s*(?:(?:const|let|var|function|return|throw|echo|def|class|import|from)\s|(?:if|for|while|switch|catch)\s*\(|[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*\s*(?:\(|[+\-*/]?=(?!=))|<\/?[A-Za-z][\w:-]*(?:\s|\/?>)|\/\/|\/\*|\*\/|[{}][;,\s]*$)/.
+test(line))return"ltr";const chars=Array.from(line);if(chars.some(rtlLetter))return"rtl";return chars.some(char=>/\p{Letter}/u.test(char))?"ltr":fallback}function run(text,bold=false,dir="\
+rtl"){return"<w:r><w:rPr>"+(bold?"<w:b/><w:bCs/>":"")+'<w:rtl w:val="'+(dir==="rtl"?"1":"0")+'"/><w:lang w:val="'+(dir==="rtl"?"fa-IR":"en-US")+'" w:bidi="fa-IR\
+"/></w:rPr>'+String(text).split(/\r\n|\r|\n/).map((line,i)=>(i?"<w:br/>":"")+'<w:t xml:space="preserve">'+xml(line)+"</w:t>").join("")+"</w:r>"}function mixedRuns(text,bold,baseDirection){
+const chars=Array.from(cleanDirectionControls(text)),dirs=chars.map(char=>rtlLetter(char)||/[\u0660-\u0669\u06f0-\u06f9]/u.test(char)?"rtl":/[\p{Letter}\p{Number}]/u.
+test(char)?"ltr":null);for(let i=0;i<dirs.length;){if(dirs[i]){i++;continue}const start=i;while(i<dirs.length&&!dirs[i])i++;const before=dirs[start-1],after=dirs[i],
+neutral=chars.slice(start,i).join("");const resolved=before&&before===after?before:/[()[\]{}<>:/\\@._+\-=?!%]/.test(neutral)&&!/[،؛؟]/.test(neutral)&&(before===
+"ltr"||after==="ltr")?"ltr":baseDirection;for(let n=start;n<i;n++)dirs[n]=resolved}let result="";for(let i=0;i<chars.length;){const start=i,dir=dirs[i];while(i<
+chars.length&&dirs[i]===dir)i++;result+=run(chars.slice(start,i).join(""),bold,dir)}return result||run("",bold,baseDirection)}const paragraph=(text,{bold=false,
+center=false,dir=direction(text)}={})=>'<w:p><w:pPr><w:pStyle w:val="Normal"/><w:bidi w:val="'+(dir==="rtl"?"1":"0")+'"/><w:spacing w:after="100" w:line="300" w\
+:lineRule="auto"/><w:jc w:val="'+(center?"center":"left")+'"/></w:pPr>'+mixedRuns(text,bold,dir)+"</w:p>";const cell=(body,width,shade=false)=>'<w:tc><w:tcPr><w\
+:tcW w:w="'+width+'" w:type="pct"/>'+(shade?'<w:shd w:fill="F1F3F5"/>':"")+'<w:vAlign w:val="top"/></w:tcPr>'+body+"</w:tc>";function documentXml(exam){if(!exam||
+!Array.isArray(exam.questions)||!exam.questions.length||exam.questions.length>500)throw Error("آزمون باید بین ۱ و ۵۰۰ سؤال داشته باشد.");
 let total=0;const rows=Array.from(exam.questions).map((q,i)=>{if(!q||typeof q.text!=="string"||!q.text.trim()||!["mcq","boolean","blank","essay"].includes(q.type)||
 !Number.isSafeInteger(q.score)||q.score<1||q.score>1e4)throw Error("متن، نوع یا بارم سؤال برای خروجی Word معتبر نیست.");total+=
 q.score;const questionDirection=direction(q.text);const lines=q.text.split(/\r\n|\r|\n/);let body=lines.map((line,lineIndex)=>paragraph((lineIndex===0?(questionDirection===
@@ -520,72 +522,75 @@ q.score;const questionDirection=direction(q.text);const lines=q.text.split(/\r\n
 rue    □ False":""),{dir:direction(line,questionDirection)})).join("");if(q.type==="mcq"){if(!Array.isArray(q.options)||q.options.length!==4||Array.from(q.options).
 some(o=>typeof o!=="string"||!o.trim()))throw Error("چهار گزینهٔ معتبر برای سؤال لازم است.");const columns=q.options.some(o=>/[\r\n]/.
 test(o)||Array.from(o).length>80)?1:q.options.every(o=>!/[\r\n]/.test(o)&&Array.from(o).length<=26)?4:2;const optionWidth=Math.floor(9500/columns);let optionRows="";
-for(let index=0;index<4;index+=columns){optionRows+="<w:tr><w:trPr><w:cantSplit/></w:trPr>"+q.options.slice(index,index+columns).map((option,j)=>cell(paragraph(
-(questionDirection==="rtl"?["الف","ب","ج","د"][index+j]:["A","B","C","D"][index+j])+") "+option,{dir:direction(option,questionDirection)}),5e3/columns)).join(
-"")+"</w:tr>"}body+='<w:tbl><w:tblPr><w:bidiVisual w:val="'+(questionDirection==="rtl"?"1":"0")+'"/><w:tblW w:w="5000" w:type="pct"/><w:tblLayout w:type="fixed"\
-/></w:tblPr><w:tblGrid>'+Array.from({length:columns},()=>'<w:gridCol w:w="'+optionWidth+'"/>').join("")+"</w:tblGrid>"+optionRows+"</w:tbl><w:p/>"}if(q.type==="\
-blank"&&!/_{2,}|…|\.{3,}|ـ{3,}/u.test(q.text))body+=paragraph(questionDirection==="rtl"?"پاسخ: ":"Answer: ",{dir:questionDirection});if(q.type==="essay")
-for(let line=0;line<4;line++)body+=paragraph("",{dir:questionDirection});return"<w:tr><w:trPr>"+(q.text.length+(q.options||[]).join("").length<1200?"<w:cantSpli\
-t/>":"")+"</w:trPr>"+cell(body,4450)+cell(paragraph(number(q.score/100),{center:true}),550)+"</w:tr>"}).join("");const borders=["top","left","bottom","right","i\
-nsideH","insideV"].map(side=>"<w:"+side+' w:val="single" w:sz="4" w:color="A8AFB8"/>').join("");return'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w\
-:document xmlns:w="'+NS+'"><w:body><w:tbl><w:tblPr><w:bidiVisual/><w:tblW w:w="5000" w:type="pct"/><w:tblBorders>'+borders+'</w:tblBorders><w:tblLayout w:type="\
-fixed"/><w:tblCellMar><w:top w:w="100" w:type="dxa"/><w:left w:w="100" w:type="dxa"/><w:bottom w:w="100" w:type="dxa"/><w:right w:w="100" w:type="dxa"/></w:tblC\
-ellMar></w:tblPr><w:tblGrid><w:gridCol w:w="9500"/><w:gridCol w:w="1138"/></w:tblGrid><w:tr><w:trPr><w:cantSplit/><w:tblHeader/></w:trPr>'+cell(paragraph("سؤال‌\
-ها",{bold:true}),4450,true)+cell(paragraph("بارم",{bold:true,center:true}),550,true)+"</w:tr>"+rows+"<w:tr><w:trPr><w:cantSplit/></w:trPr>"+cell(paragraph(
-"جمع بارم",{bold:true}),4450)+cell(paragraph(number(total/100),{bold:true,center:true}),550)+'</w:tr></w:tbl><w:p/><w:sectPr><w:pgSz w:w="11906" w:h="168\
-38"/><w:pgMar w:top="720" w:right="634" w:bottom="720" w:left="634" w:header="0" w:footer="0"/><w:bidi/></w:sectPr></w:body></w:document>'}function zip(files){const encoder=new TextEncoder,
-parts=[],directory=[];let offset=0,size=0;const table=Uint32Array.from({length:256},(_,n)=>{for(let i=0;i<8;i++)n=n&1?3988292384^n>>>1:n>>>1;return n>>>0});for(const[
-name,text]of Object.entries(files)){const filename2=encoder.encode(name),data=encoder.encode(text);let crc=4294967295;for(const byte of data)crc=table[(crc^byte)&
-255]^crc>>>8;crc=(crc^4294967295)>>>0;const header=new Uint8Array(30),h=new DataView(header.buffer);h.setUint32(0,67324752,true);h.setUint16(4,20,true);h.setUint16(
-6,2048,true);h.setUint16(12,33,true);h.setUint32(14,crc,true);h.setUint32(18,data.length,true);h.setUint32(22,data.length,true);h.setUint16(26,filename2.length,
-true);parts.push(header,filename2,data);const entry=new Uint8Array(46),d=new DataView(entry.buffer);d.setUint32(0,33639248,true);d.setUint16(4,20,true);d.setUint16(
-6,20,true);d.setUint16(8,2048,true);d.setUint16(14,33,true);d.setUint32(16,crc,true);d.setUint32(20,data.length,true);d.setUint32(24,data.length,true);d.setUint16(
-28,filename2.length,true);d.setUint32(42,offset,true);directory.push(entry,filename2);offset+=header.length+filename2.length+data.length;size+=entry.length+filename2.
-length}const end=new Uint8Array(22),e=new DataView(end.buffer);e.setUint32(0,101010256,true);e.setUint16(8,directory.length/2,true);e.setUint16(10,directory.length/
-2,true);e.setUint32(12,size,true);e.setUint32(16,offset,true);return new Blob([...parts,...directory,end],{type:MIME})}function create(exam){const declaration='\
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';return zip({"[Content_Types].xml":declaration+'<Types xmlns="http://schemas.openxmlformats.org/package/\
-2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="appl\
-ication/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override \
-PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>',"_rels/.rels":declaration+'<Relat\
-ionships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/200\
-6/relationships/officeDocument" Target="word/document.xml"/></Relationships>',"word/document.xml":documentXml(exam),"word/_rels/document.xml.rels":declaration+'\
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeD\
-ocument/2006/relationships/styles" Target="styles.xml"/></Relationships>',"word/styles.xml":declaration+'<w:styles xmlns:w="'+NS+'"><w:docDefaults><w:rPrDefault\
-><w:rPr><w:lang w:val="fa-IR" w:bidi="fa-IR"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:bidi/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="parag\
-raph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style></w:styles>'})}function filename(exam){const safe=value=>String(value||"آزمون").replace(
-/[<>:"/\\|?*\u0000-\u001f\u007f\u202a-\u202e\u2066-\u2069]/g,"-").replace(/[.\s]+$/g,"").slice(0,60)||"آزمون";return safe(exam.courseTitle)+" - "+safe(exam.
-title)+" - بدون سربرگ.docx"}function download(exam){const blob=create(exam),url=URL.createObjectURL(blob),link=document.createElement("a");link.href=url;
-link.download=filename(exam);document.body.append(link);try{link.click()}finally{link.remove();root.setTimeout(()=>URL.revokeObjectURL(url),6e4)}}root.EduQuestionBankSchoolWord=
-Object.freeze({create,filename,documentXml,download})})(globalThis);(function(root){"use strict";const D=root.EduQuestionBank,R=root.EduQuestionBankRepository,F=root.
-EduQuestionBankFileBackup.service;let pendingChanges=()=>false,activePage=null,savedView=null;const el=(tag,value,className)=>{const n=document.createElement(tag);
-if(value!==void 0)n.textContent=value;if(className)n.className=className;return n};const button=(label,action,parent)=>{const b=el("button");b.append(el("span",
-label,"ui-button-label"));b.className="ghost ui-button ui-button-flat";const[tone,icon]=label.startsWith("حذف")?["danger","trash"]:/افزودن|جدید/.test(
-label)?["create","add"]:/ویرایش/.test(label)?["edit","edit"]:/چاپ/.test(label)?["print","print"]:/دریافت/.test(label)?["download","download"]:/بستن/.
-test(label)?["neutral","close"]:/بازگشت|قبلی/.test(label)?["navigate","chevron-right"]:/بعدی/.test(label)?["navigate","chevron-left"]:["neutral",""];
-b.dataset.uiTone=tone;if(icon)b.insertAdjacentHTML("afterbegin",root.EduIcons.html(icon));b.type="button";b.onclick=action;parent.append(b);return b};const field=(parent,label,value="",tag="\
-input")=>{const l=el("label",label,"course-field"),n=el(tag);if(tag==="textarea")l.classList.add("qb-field-wide");n.value=value;l.append(n);parent.append(l);return n};
-const contextAction=(label,action,parent)=>{const b=button(label,action,parent);b.classList.add("qb-context-action");b.setAttribute("aria-label",label);b.title=
-label;return b};function select(parent,label,entries,value=""){const n=field(parent,label,"","select");for(const[id,title]of entries){const o=el("option",title);
-o.value=id;n.append(o)}n.value=value;return n}let numberFormatter,dateFormatter;const number=value=>(numberFormatter||=new Intl.NumberFormat("fa-IR",{maximumFractionDigits:2})).
-format(value);const letters=["الف","ب","ج","د"];const dateLabel=date=>(dateFormatter||=new Intl.DateTimeFormat("fa-IR",{dateStyle:"long",timeZone:"UTC"})).
-format(new Date(date));function questionSearch(questions,unitMap){const scoped=questions.filter(q=>unitMap.has(q.unitId));const normalized=new Map;let previous;
-return(unitId,type,value)=>{const query=D.searchText(value);if(previous&&previous.unitId===unitId&&previous.type===type&&previous.query===query)return previous.
-list;const list=scoped.filter(q=>{if(unitId&&q.unitId!==unitId||type&&q.type!==type)return false;if(!query)return true;if(!normalized.has(q))normalized.set(q,D.
-searchText(q.text));return normalized.get(q).includes(query)});previous={unitId,type,query,list};return list}}function questionCountsByUnit(questions,units){const types=Object.
-keys(D.types);const counts=new Map(units.map(unit=>[unit.id,{total:0,types:Object.fromEntries(types.map(type=>[type,0]))}]));for(const question of questions){const unit=counts.
-get(question.unitId);if(!unit)continue;unit.total++;unit.types[question.type]++}return counts}function fitOptions(container){const doc=container.ownerDocument;const context=doc.
-createElement("canvas").getContext("2d");if(!context)return;for(const list of container.querySelectorAll(".qb-options,.qb-sheet-options")){if(!list.clientWidth)
-continue;const style=doc.defaultView.getComputedStyle(list);const required=Math.max(...[...list.children].map(item=>{const css=doc.defaultView.getComputedStyle(
-item);const widths=[...item.children].map(span=>{const font=doc.defaultView.getComputedStyle(span);context.font=`${font.fontWeight} ${font.fontSize} ${font.fontFamily}`;
-return Math.max(...span.textContent.split("\n").map(line=>context.measureText(line).width),parseFloat(font.flexBasis)||0)});return widths.reduce((a,b)=>a+b,0)+(parseFloat(
-css.columnGap)||0)+parseFloat(css.paddingLeft)+parseFloat(css.paddingRight)+parseFloat(css.borderLeftWidth)+parseFloat(css.borderRightWidth)}));const gap=parseFloat(
-style.columnGap)||0;list.dataset.columns=[...list.children].some(item=>/[\r\n]/.test(item.textContent))||required>(list.clientWidth-gap)/2?"1":required<=(list.clientWidth-
-3*gap)/4?"4":"2"}}function sheetTextDirection(text,fallback="rtl"){const chars=Array.from(String(text));if(chars.some(char=>/\p{Letter}/u.test(char)&&/[\p{Script=Arabic}\p{Script=Hebrew}]/u.
-test(char)))return"rtl";return chars.some(char=>/\p{Letter}/u.test(char))?"ltr":fallback}function sheet(exam){const s=el("article",void 0,"qb-sheet");s.dir="rtl";
-const pageName=`qb-exam-${crypto.randomUUID()}`;s.style.page=pageName;const compact=(value,limit)=>{const chars=Array.from(value.replace(/\s+/g," ").trim());return chars.
-length>limit?chars.slice(0,limit-1).join("")+"…":chars.join("")};const cssString=value=>'"'+Array.from(value,char=>{const code=char.codePointAt(0);return code<
-32||code===127||char==='"'||char==="\\"?"\\"+code.toString(16)+" ":char}).join("")+'"';const runningTitle=cssString(`${compact(exam.courseTitle,35)}  |  ${compact(
-exam.title,50)}`);const pages=el("style");pages.media="print";pages.textContent=`@page ${pageName}{size:A4 portrait;margin:23mm 15mm 18mm;
+for(let index=0;index<4;index+=columns){optionRows+="<w:tr><w:trPr><w:cantSplit/></w:trPr>"+q.options.slice(index,index+columns).map((option,j)=>cell(option.split(
+/\r\n|\r|\n/).map((line,lineIndex)=>paragraph((lineIndex===0?(questionDirection==="rtl"?["الف","ب","ج","د"][index+j]:["A","B","C","D"][index+j])+") ":"")+
+line,{dir:direction(line,questionDirection)})).join(""),5e3/columns)).join("")+"</w:tr>"}body+='<w:tbl><w:tblPr><w:bidiVisual w:val="'+(questionDirection==="rtl"?
+"1":"0")+'"/><w:tblW w:w="5000" w:type="pct"/><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid>'+Array.from({length:columns},()=>'<w:gridCol w:w="'+optionWidth+
+'"/>').join("")+"</w:tblGrid>"+optionRows+"</w:tbl><w:p/>"}if(q.type==="blank"&&!/_{2,}|…|\.{3,}|ـ{3,}/u.test(q.text))body+=paragraph(questionDirection==="rt\
+l"?"پاسخ: ":"Answer: ",{dir:questionDirection});if(q.type==="essay")for(let line=0;line<4;line++)body+=paragraph("",{dir:questionDirection});return"<w:tr><w\
+:trPr>"+(q.text.length+(q.options||[]).join("").length<1200?"<w:cantSplit/>":"")+"</w:trPr>"+cell(body,4450)+cell(paragraph(number(q.score/100),{center:true}),550)+
+"</w:tr>"}).join("");const borders=["top","left","bottom","right","insideH","insideV"].map(side=>"<w:"+side+' w:val="single" w:sz="4" w:color="A8AFB8"/>').join(
+"");return'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="'+NS+'"><w:body><w:tbl><w:tblPr><w:bidiVisual/><w:tblW w:w="5000" w:type=\
+"pct"/><w:tblBorders>'+borders+'</w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="100" w:type="dxa"/><w:left w:w="100" w:type="dxa"/><w:bott\
+om w:w="100" w:type="dxa"/><w:right w:w="100" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid><w:gridCol w:w="9500"/><w:gridCol w:w="1138"/></w:tblGrid><w:tr>\
+<w:trPr><w:cantSplit/><w:tblHeader/></w:trPr>'+cell(paragraph("سؤال‌ها",{bold:true}),4450,true)+cell(paragraph("بارم",{bold:true,center:true}),550,true)+
+"</w:tr>"+rows+"<w:tr><w:trPr><w:cantSplit/></w:trPr>"+cell(paragraph("جمع بارم",{bold:true}),4450)+cell(paragraph(number(total/100),{bold:true,center:true}),
+550)+'</w:tr></w:tbl><w:p/><w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="720" w:right="634" w:bottom="720" w:left="634" w:header="0" w:footer="0"/>\
+<w:bidi/></w:sectPr></w:body></w:document>'}function zip(files){const encoder=new TextEncoder,parts=[],directory=[];let offset=0,size=0;const table=Uint32Array.
+from({length:256},(_,n)=>{for(let i=0;i<8;i++)n=n&1?3988292384^n>>>1:n>>>1;return n>>>0});for(const[name,text]of Object.entries(files)){const filename2=encoder.
+encode(name),data=encoder.encode(text);let crc=4294967295;for(const byte of data)crc=table[(crc^byte)&255]^crc>>>8;crc=(crc^4294967295)>>>0;const header=new Uint8Array(
+30),h=new DataView(header.buffer);h.setUint32(0,67324752,true);h.setUint16(4,20,true);h.setUint16(6,2048,true);h.setUint16(12,33,true);h.setUint32(14,crc,true);
+h.setUint32(18,data.length,true);h.setUint32(22,data.length,true);h.setUint16(26,filename2.length,true);parts.push(header,filename2,data);const entry=new Uint8Array(
+46),d=new DataView(entry.buffer);d.setUint32(0,33639248,true);d.setUint16(4,20,true);d.setUint16(6,20,true);d.setUint16(8,2048,true);d.setUint16(14,33,true);d.setUint32(
+16,crc,true);d.setUint32(20,data.length,true);d.setUint32(24,data.length,true);d.setUint16(28,filename2.length,true);d.setUint32(42,offset,true);directory.push(
+entry,filename2);offset+=header.length+filename2.length+data.length;size+=entry.length+filename2.length}const end=new Uint8Array(22),e=new DataView(end.buffer);
+e.setUint32(0,101010256,true);e.setUint16(8,directory.length/2,true);e.setUint16(10,directory.length/2,true);e.setUint32(12,size,true);e.setUint32(16,offset,true);
+return new Blob([...parts,...directory,end],{type:MIME})}function create(exam){const declaration='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';return zip(
+{"[Content_Types].xml":declaration+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="applicati\
+on/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="a\
+pplication/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlform\
+ats-officedocument.wordprocessingml.styles+xml"/></Types>',"_rels/.rels":declaration+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relat\
+ionships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relati\
+onships>',"word/document.xml":documentXml(exam),"word/_rels/document.xml.rels":declaration+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006\
+/relationships"><Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationsh\
+ips>',"word/styles.xml":declaration+'<w:styles xmlns:w="'+NS+'"><w:docDefaults><w:rPrDefault><w:rPr><w:lang w:val="fa-IR" w:bidi="fa-IR"/></w:rPr></w:rPrDefault\
+><w:pPrDefault><w:pPr><w:bidi/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:s\
+tyle></w:styles>'})}function filename(exam){const safe=value=>String(value||"آزمون").replace(/[<>:"/\\|?*\u0000-\u001f\u007f\u202a-\u202e\u2066-\u2069]/g,"\
+-").replace(/[.\s]+$/g,"").slice(0,60)||"آزمون";return safe(exam.courseTitle)+" - "+safe(exam.title)+" - بدون سربرگ.docx"}function download(exam){
+const blob=create(exam),url=URL.createObjectURL(blob),link=document.createElement("a");link.href=url;link.download=filename(exam);document.body.append(link);try{
+link.click()}finally{link.remove();root.setTimeout(()=>URL.revokeObjectURL(url),6e4)}}root.EduQuestionBankSchoolWord=Object.freeze({create,filename,documentXml,
+download})})(globalThis);(function(root){"use strict";const D=root.EduQuestionBank,R=root.EduQuestionBankRepository,F=root.EduQuestionBankFileBackup.service;let pendingChanges=()=>false,
+activePage=null,savedView=null;const el=(tag,value,className)=>{const n=document.createElement(tag);if(value!==void 0)n.textContent=value;if(className)n.className=
+className;return n};const button=(label,action,parent)=>{const b=el("button");b.append(el("span",label,"ui-button-label"));b.className="ghost ui-button ui-butto\
+n-flat";const[tone,icon]=label.startsWith("حذف")?["danger","trash"]:/افزودن|جدید/.test(label)?["create","add"]:/ویرایش/.test(label)?["edit","\
+edit"]:/چاپ/.test(label)?["print","print"]:/دریافت/.test(label)?["download","download"]:/بستن/.test(label)?["neutral","close"]:/بازگشت|قبلی/.
+test(label)?["navigate","chevron-right"]:/بعدی/.test(label)?["navigate","chevron-left"]:["neutral",""];b.dataset.uiTone=tone;if(icon)b.insertAdjacentHTML("a\
+fterbegin",root.EduIcons.html(icon));b.type="button";b.onclick=action;parent.append(b);return b};const field=(parent,label,value="",tag="input")=>{const l=el("l\
+abel",label,"course-field"),n=el(tag);if(tag==="textarea")l.classList.add("qb-field-wide");n.value=value;l.append(n);parent.append(l);return n};const contextAction=(label,action,parent)=>{
+const b=button(label,action,parent);b.classList.add("qb-context-action");b.setAttribute("aria-label",label);b.title=label;return b};function select(parent,label,entries,value=""){
+const n=field(parent,label,"","select");for(const[id,title]of entries){const o=el("option",title);o.value=id;n.append(o)}n.value=value;return n}let numberFormatter,
+dateFormatter;const number=value=>(numberFormatter||=new Intl.NumberFormat("fa-IR",{maximumFractionDigits:2})).format(value);const letters=["الف","ب","ج","\
+د"];const dateLabel=date=>(dateFormatter||=new Intl.DateTimeFormat("fa-IR",{dateStyle:"long",timeZone:"UTC"})).format(new Date(date));function questionSearch(questions,unitMap){
+const scoped=questions.filter(q=>unitMap.has(q.unitId));const normalized=new Map;let previous;return(unitId,type,value)=>{const query=D.searchText(value);if(previous&&
+previous.unitId===unitId&&previous.type===type&&previous.query===query)return previous.list;const list=scoped.filter(q=>{if(unitId&&q.unitId!==unitId||type&&q.type!==
+type)return false;if(!query)return true;if(!normalized.has(q))normalized.set(q,D.searchText(q.text));return normalized.get(q).includes(query)});previous={unitId,
+type,query,list};return list}}function questionCountsByUnit(questions,units){const types=Object.keys(D.types);const counts=new Map(units.map(unit=>[unit.id,{total:0,
+types:Object.fromEntries(types.map(type=>[type,0]))}]));for(const question of questions){const unit=counts.get(question.unitId);if(!unit)continue;unit.total++;unit.
+types[question.type]++}return counts}function fitOptions(container){const doc=container.ownerDocument;const context=doc.createElement("canvas").getContext("2d");
+if(!context)return;for(const list of container.querySelectorAll(".qb-options,.qb-sheet-options")){if(!list.clientWidth)continue;const style=doc.defaultView.getComputedStyle(
+list);const required=Math.max(...[...list.children].map(item=>{const css=doc.defaultView.getComputedStyle(item);const widths=[...item.children].map(span=>{const font=doc.
+defaultView.getComputedStyle(span);context.font=`${font.fontWeight} ${font.fontSize} ${font.fontFamily}`;return Math.max(...span.textContent.split("\n").map(line=>context.
+measureText(line).width),parseFloat(font.flexBasis)||0)});return widths.reduce((a,b)=>a+b,0)+(parseFloat(css.columnGap)||0)+parseFloat(css.paddingLeft)+parseFloat(
+css.paddingRight)+parseFloat(css.borderLeftWidth)+parseFloat(css.borderRightWidth)}));const gap=parseFloat(style.columnGap)||0;list.dataset.columns=[...list.children].
+some(item=>/[\r\n]/.test(item.textContent))||required>(list.clientWidth-gap)/2?"1":required<=(list.clientWidth-3*gap)/4?"4":"2"}}function sheetTextDirection(text,fallback="\
+rtl"){const line=sheetCleanText(text).split(/\r\n|\r|\n/).find(value=>value.trim())||"";if(!/؟\s*$/.test(line)&&/^\s*(?:(?:const|let|var|function|return|throw|echo|def|class|import|from)\s|(?:if|for|while|switch|catch)\s*\(|[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*\s*(?:\(|[+\-*/]?=(?!=))|<\/?[A-Za-z][\w:-]*(?:\s|\/?>)|\/\/|\/\*|\*\/|[{}][;,\s]*$)/.
+test(line))return"ltr";const chars=Array.from(line);if(chars.some(char=>/\p{Letter}/u.test(char)&&/[\p{Script=Arabic}\p{Script=Hebrew}]/u.test(char)))return"rtl";
+return chars.some(char=>/\p{Letter}/u.test(char))?"ltr":fallback}function sheetCleanText(text){return String(text).replace(/[\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]/g,
+"")}function sheet(exam){const s=el("article",void 0,"qb-sheet");s.dir="rtl";const pageName=`qb-exam-${crypto.randomUUID()}`;s.style.page=pageName;const compact=(value,limit)=>{
+const chars=Array.from(value.replace(/\s+/g," ").trim());return chars.length>limit?chars.slice(0,limit-1).join("")+"…":chars.join("")};const cssString=value=>'\
+"'+Array.from(value,char=>{const code=char.codePointAt(0);return code<32||code===127||char==='"'||char==="\\"?"\\"+code.toString(16)+" ":char}).join("")+'"';const runningTitle=cssString(
+`${compact(exam.courseTitle,35)}  |  ${compact(exam.title,50)}`);const pages=el("style");pages.media="print";pages.textContent=`@page ${pageName}{size:A4 portra\
+it;margin:23mm 15mm 18mm;
       @top-center{content:${runningTitle};font-family:IRANSans,sans-serif;font-size:9pt;font-weight:500;color:#374151;direction:rtl;text-align:right;vertical-al\
 ign:bottom;padding-bottom:3mm;margin-bottom:4mm;border-bottom:0.3mm solid #aab4c0;width:180mm}
       @bottom-center{content:"صفحهٔ " counter(page) " از " counter(pages);font-family:IRANSans,sans-serif;font-size:9pt;color:#4b5563;direction:rtl}}
@@ -598,78 +603,81 @@ m");item.append(el("span",`${label}: `),el(label==="آزمون"?"h1":"strong",va
 "کلاس"]){const item=el("div",void 0,"qb-sheet-meta-item qb-student-field");item.append(el("span",`${label}:`),el("span","","qb-student-line"));meta.append(item)}
 header.append(meta);s.append(header);const columns=el("div",void 0,"qb-sheet-columns");columns.setAttribute("aria-hidden","true");columns.append(el("span","ردیف"),
 el("span","سؤال‌ها"),el("span","بارم"));s.append(columns);exam.questions.forEach((q,i)=>{const row=el("section",void 0,"qb-sheet-question");const body=el(
-"div",void 0,"qb-sheet-prompt");const questionDirection=sheetTextDirection(q.text);const prompt=el("p",questionDirection==="ltr"?`${i+1}. ${q.text}`:q.text);prompt.
-dir=questionDirection;if(/[\r\n]/.test(q.text)){prompt.textContent="";q.text.split(/\r\n|\r|\n/).forEach((line,lineIndex)=>{const part=el("span",(lineIndex===0&&
-questionDirection==="ltr"?`${i+1}. `:"")+line,"qb-sheet-line");part.dir=sheetTextDirection(line,questionDirection);prompt.append(part)})}if(q.type==="boolean"){
-const choices=el("span",questionDirection==="rtl"?"□ صحیح     □ غلط":"□ True     □ False","qb-sheet-boolean");choices.dir=questionDirection;prompt.
-append(document.createTextNode("  "),choices)}const questionNumber=el("span",questionDirection==="rtl"?`${number(i+1)}.`:"","qb-sheet-number");questionNumber.dir=
-"ltr";if(questionDirection==="ltr")questionNumber.setAttribute("aria-hidden","true");body.append(questionNumber,prompt,el("span",number(q.score/100),"qb-sheet-s\
-core"));body.lastElementChild.setAttribute("aria-label",`بارم ${number(q.score/100)} نمره`);row.append(body);if(q.type==="mcq"){const options=el("ol",void 0,
-"qb-sheet-options");options.dir=questionDirection;q.options.forEach((option,j)=>{const item=el("li");item.dir=questionDirection;const optionText=el("bdi",option);
-optionText.dir=sheetTextDirection(option,questionDirection);item.append(el("span",`${questionDirection==="rtl"?letters[j]:["A","B","C","D"][j]})`),optionText);options.
-append(item)});row.append(options)}if(q.type==="essay"){const space=el("div",void 0,"qb-answer-space");space.setAttribute("aria-label","محل پاسخ تشریحی");
-for(let line=0;line<4;line++)space.append(el("span"));row.append(space)}if(q.type==="blank"&&!/_{2,}|…|\.{3,}|ـ{3,}/u.test(q.text))row.append(el("p","پاسخ: .\
-...............................................","qb-short-answer"));s.append(row)});const footer=el("footer",void 0,"qb-sheet-footer");const closing=el("p",void 0,
-"qb-sheet-closing");closing.append(el("span","با آرامش و دقت پاسخ دهید؛"),document.createTextNode(" "),el("strong","موفق باشید."));
-const total=el("p",void 0,"qb-sheet-total");total.setAttribute("aria-label",`تعداد کل سؤال‌ها: ${number(exam.questions.length)}`);total.append(el(
-"strong",number(exam.questions.length)),el("span","سؤال"));footer.append(closing,total);s.append(footer);return s}async function print(exam){const frame=el(
-"iframe");frame.className="qb-print-frame";frame.style.width="794px";frame.style.visibility="hidden";frame.title="چاپ آزمون";document.body.append(frame);
-const doc=frame.contentDocument;try{doc.documentElement.lang="fa";doc.documentElement.dir="rtl";const loads=[...document.querySelectorAll('link[rel="stylesheet"\
-]')].map(source=>new Promise((resolve,reject)=>{const copy=source.cloneNode();copy.onload=resolve;copy.onerror=()=>reject(Error("فونت و سبک چاپ بارگیری نشد."));
-doc.head.append(copy)}));await Promise.all(loads);const style=doc.createElement("style");style.textContent="@page{size:A4 portrait;margin:15mm}body{margin:0;fon\
-t-family:IRANSans,sans-serif;background:white;color:black}body>.qb-sheet{display:block!important;padding:0}.qb-sheet-question{break-inside:avoid;overflow-wrap:a\
-nywhere}h1{font-size:20px}";doc.head.append(style);doc.body.append(doc.importNode(sheet(exam),true));doc.body.style.width="180mm";await doc.fonts.load("16px IRA\
-NSans");await doc.fonts.ready;fitOptions(doc.body);await new Promise(resolve=>frame.contentWindow.requestAnimationFrame(resolve));frame.contentWindow.addEventListener(
-"afterprint",()=>frame.remove(),{once:true});frame.contentWindow.focus();frame.contentWindow.print()}catch(error){frame.remove();throw error}finally{if(frame.isConnected)
-setTimeout(()=>frame.remove(),6e4)}}function openBank(){root.goQuestionBank();return activePage?.ready}function mountBank(host){if(!host)return Promise.resolve();
-if(activePage){activePage.mount(host);return activePage.ready}const pageRoot=el("section",void 0,"qb-page");const header=el("header",void 0,"qb-page-header"),title=el(
-"h2","بانک سؤال و طراحی آزمون"),message=el("p","در حال خواندن…","qb-message"),content=el("div",void 0,"qb-body");title.id="qb-ti\
-tle";title.insertAdjacentHTML("afterbegin",root.EduIcons.html("book"));pageRoot.setAttribute("aria-labelledby",title.id);message.setAttribute("role","status");let persistentMessage="",
-persistentMessageOrigin="",transientMessage="";const tabScopes=savedView?.tabScopes||{questions:{courseId:"",unitId:""},builder:{courseId:null,unitId:""}};let bank,
-courseId=savedView?.courseId||"",unitId=savedView?.unitId||"",tab=["questions","builder","exams"].includes(savedView?.tab)?savedView.tab:"questions",page=savedView?.
-page||0,search=savedView?.search||"",archiveQuery=savedView?.archiveQuery||"",archiveCourse=savedView?.archiveCourse||"",archivePage=savedView?.archivePage||0,questionType=savedView?.
-questionType||"",dirty=false,busy=false,alive=true,leaving=false,renderSnapshot=null,mountedSnapshot=null,restoreRenderFrame=null,confirmation=null,cancelConfirmation=()=>{},
-refreshSequence=0;pendingChanges=()=>dirty||busy;const error=(e,persistent=false)=>{if(!alive)return;const detail=e.message||String(e);if(persistent){persistentMessage=
-detail;persistentMessageOrigin="data";transientMessage=""}else transientMessage=detail;showMessage()};const unsubscribeStorage=F.subscribe(state=>{if(!alive)return;
-if(persistentMessageOrigin==="file"&&["active","inactive"].includes(state.state)){persistentMessage="";persistentMessageOrigin="";showMessage()}});function showMessage(){
-const details=[...new Set([transientMessage,persistentMessage])].filter(Boolean).join(" ");message.hidden=!details;message.textContent=details;if(details){message.
-dataset.state="error";message.setAttribute("role","alert")}else{message.setAttribute("role","status");delete message.dataset.state}}function clearTransientMessage(){
-transientMessage="";showMessage()}function confirmAction(label,action,onCancel=()=>{}){if(!alive||!pageRoot.isConnected||confirmation||busy){onCancel();return}closeOwnedCalendar();
-const box=el("section",void 0,"qb-confirm");box.setAttribute("role","region");box.setAttribute("aria-label",label);box.append(el("h4","تأیید عملیات",
-"qb-editor-title"));box.append(el("p",label));const previous=document.activeElement;const previousWindowScroll={left:root.scrollX,top:root.scrollY};const selection=previous?.
-selectionStart;const selectionEnd=previous?.selectionEnd;const selectionDirection=previous?.selectionDirection;const contentWasInert=content.inert;const cancel=(accepted=false)=>{
-if(confirmation!==box)return false;box.remove();confirmation=null;cancelConfirmation=()=>{};content.inert=contentWasInert;if(alive&&previous?.isConnected){previous.
-focus({preventScroll:true});if(selection!==null&&selection!==void 0)previous.setSelectionRange?.(selection,selectionEnd,selectionDirection)}if(!accepted)onCancel();
-if(!accepted&&alive)root.scrollTo({...previousWindowScroll,behavior:"instant"});keepEditingVisible();return true};cancelConfirmation=cancel;const actions=el("di\
-v",void 0,"qb-confirm-actions");box.append(actions);const cancelButton=button("انصراف",()=>cancel(),actions);const confirm=button("تأیید",async()=>{if(!cancel(
-true))return;try{await action()}catch(e){error(e)}},actions);confirm.dataset.uiTone=/حذف|جایگزین/.test(label)?"danger":"save";box.addEventListener("ke\
-ydown",e=>{if(e.key!=="Escape")return;e.preventDefault();e.stopPropagation();cancel()});content.inert=true;pageRoot.insertBefore(box,message);confirmation=box;cancelButton.
-focus({preventScroll:true});updateLayout()}function discard(action){if(!alive||busy||confirmation)return;if(dirty)confirmAction("تغییرات فرم ذخیره نشده‌اند؛ کنا\
-ر گذاشته شوند؟",()=>{dirty=false;action()});else action()}function closeOwnedCalendar(){if(pageRoot.querySelector('[data-gregorian-target][aria-expa\
-nded="true"]'))root.closeShamsiCalendar()}function cacheView(){if(tabScopes[tab])Object.assign(tabScopes[tab],{courseId,unitId});savedView=structuredClone({tabScopes,
-courseId,unitId,tab,page,search,archiveQuery,archiveCourse,archivePage,questionType})}function preserveForRender(){if(!alive){renderSnapshot=null;return}const focused=pageRoot.
-contains(document.activeElement)?document.activeElement:null;const scrollers=[content];for(let parent=focused;parent&&parent!==pageRoot;parent=parent.parentElement)
-scrollers.push(parent);renderSnapshot={focused,windowScroll:mountedSnapshot?.windowScroll||{left:root.scrollX,top:root.scrollY},start:focused?.selectionStart,end:focused?.
-selectionEnd,direction:focused?.selectionDirection,scroll:[...new Set(scrollers)].map(node=>[node,node.scrollTop,node.scrollLeft])}}function restoreRenderSnapshot(snapshot){
-if(!snapshot)return;root.scrollTo({...snapshot.windowScroll,behavior:"instant"});if(snapshot.focused?.isConnected){snapshot.focused.focus({preventScroll:true});
-if(snapshot.start!==null&&snapshot.start!==void 0)snapshot.focused.setSelectionRange?.(snapshot.start,snapshot.end,snapshot.direction)}for(const[node,top,left]of snapshot.
-scroll){node.scrollTop=top;node.scrollLeft=left}}function mount(host2){if(!alive)return;host2.append(pageRoot);mountedSnapshot=renderSnapshot;renderSnapshot=null;
-updateLayout();restoreRenderSnapshot(mountedSnapshot)}function completeRender(){updateLayout();restoreRenderSnapshot(mountedSnapshot);cancelAnimationFrame(restoreRenderFrame);
-if(!mountedSnapshot)return;restoreRenderFrame=requestAnimationFrame(()=>{restoreRenderFrame=requestAnimationFrame(()=>{if(!alive||!pageRoot.isConnected)return;restoreRenderSnapshot(
-mountedSnapshot);mountedSnapshot=null;updateLayout()})})}function dispose(){if(!alive)return;closeOwnedCalendar();alive=false;root.visualViewport?.removeEventListener(
-"resize",keepEditingVisible);root.visualViewport?.removeEventListener("scroll",keepEditingVisible);root.removeEventListener("resize",keepEditingVisible);cancelAnimationFrame(
-editingFrame);cancelAnimationFrame(restoreRenderFrame);optionResize.disconnect();optionChanges.disconnect();unsubscribeStorage();cancelConfirmation();restoreKeyboardScroll();
-pendingChanges=()=>false;pageRoot.remove();if(activePage?.element===pageRoot)activePage=null}function requestLeave(action){if(!alive||busy||leaving||confirmation)
-return false;const leave=()=>{cacheView();dispose();action()};if(dirty){leaving=true;confirmAction("تغییرات فرم ذخیره نشده‌اند؛ کنار گذاشته شوند؟",
-leave,()=>{leaving=false});return false}leave();return true}header.append(title);pageRoot.append(header,message,content);host.append(pageRoot);let editingFrame,
-keyboardScroll=null;function restoreKeyboardScroll(){if(!keyboardScroll)return;const previous=keyboardScroll;keyboardScroll=null;delete pageRoot.dataset.keyboardViewport;
-pageRoot.style.removeProperty("--qb-keyboard-scroll-space");root.scrollTo({left:previous.x,top:previous.y,behavior:"instant"})}function updateLayout(){if(!alive||
-!pageRoot.isConnected)return;const viewport=root.visualViewport;const top=viewport?.offsetTop||0;const form2=content.querySelector(".qb-form");const mobile=root.
-matchMedia("(max-width: 700px), (max-height: 500px) and (pointer: coarse)").matches;const reduced=viewport&&root.innerHeight-viewport.height>120;if(mobile&&form2&&
-reduced&&(keyboardScroll||form2.contains(document.activeElement))){if(!keyboardScroll)keyboardScroll={x:root.scrollX,y:root.scrollY};pageRoot.dataset.keyboardViewport=
-"true";pageRoot.style.setProperty("--qb-keyboard-scroll-space",root.innerHeight+"px");const distance=pageRoot.getBoundingClientRect().top-top-4;if(Math.abs(distance)>
-1)root.scrollBy({top:distance,left:0,behavior:"instant"})}else restoreKeyboardScroll();let bottom=top+(viewport?.height||root.innerHeight);const navigation=document.
-getElementById("uiBottomNav");if(navigation?.getClientRects().length&&root.getComputedStyle(navigation).visibility!=="hidden"){const bounds=navigation.getBoundingClientRect();
+"div",void 0,"qb-sheet-prompt");const questionDirection=sheetTextDirection(q.text);const questionText=sheetCleanText(q.text);const prompt=el("p",questionDirection===
+"ltr"?`${i+1}. ${questionText}`:questionText);prompt.dir=questionDirection;if(/[\r\n]/.test(q.text)){prompt.textContent="";questionText.split(/\r\n|\r|\n/).forEach(
+(line,lineIndex)=>{const part=el("span",(lineIndex===0&&questionDirection==="ltr"?`${i+1}. `:"")+line,"qb-sheet-line");part.dir=sheetTextDirection(line,questionDirection);
+prompt.append(part)})}if(q.type==="boolean"){const choices=el("span",questionDirection==="rtl"?"□ صحیح     □ غلط":"□ True     □ False","qb-sheet-\
+boolean");choices.dir=questionDirection;prompt.append(document.createTextNode("  "),choices)}const questionNumber=el("span",questionDirection==="rtl"?`${number(
+i+1)}.`:"","qb-sheet-number");questionNumber.dir="ltr";if(questionDirection==="ltr")questionNumber.setAttribute("aria-hidden","true");body.append(questionNumber,
+prompt,el("span",number(q.score/100),"qb-sheet-score"));body.lastElementChild.setAttribute("aria-label",`بارم ${number(q.score/100)} نمره`);row.append(body);
+if(q.type==="mcq"){const options=el("ol",void 0,"qb-sheet-options");options.dir=questionDirection;q.options.forEach((option,j)=>{const item=el("li");item.dir=questionDirection;
+const optionText=el("bdi",sheetCleanText(option));optionText.dir=sheetTextDirection(option,questionDirection);if(/[\r\n]/.test(option)){optionText.textContent="";
+sheetCleanText(option).split(/\r\n|\r|\n/).forEach(line=>{const part=el("span",line,"qb-sheet-line");part.dir=sheetTextDirection(line,questionDirection);optionText.
+append(part)})}item.append(el("span",`${questionDirection==="rtl"?letters[j]:["A","B","C","D"][j]})`),optionText);options.append(item)});row.append(options)}if(q.
+type==="essay"){const space=el("div",void 0,"qb-answer-space");space.setAttribute("aria-label","محل پاسخ تشریحی");for(let line=0;line<4;line++)space.
+append(el("span"));row.append(space)}if(q.type==="blank"&&!/_{2,}|…|\.{3,}|ـ{3,}/u.test(q.text)){const answer=el("p",(questionDirection==="rtl"?"پاسخ: ":
+"Answer: ")+"................................................","qb-short-answer");answer.dir=questionDirection;row.append(answer)}s.append(row)});const footer=el(
+"footer",void 0,"qb-sheet-footer");const closing=el("p",void 0,"qb-sheet-closing");closing.append(el("span","با آرامش و دقت پاسخ دهید؛"),document.
+createTextNode(" "),el("strong","موفق باشید."));const total=el("p",void 0,"qb-sheet-total");total.setAttribute("aria-label",`تعداد کل سؤال‌ها: ${number(
+exam.questions.length)}`);total.append(el("strong",number(exam.questions.length)),el("span","سؤال"));footer.append(closing,total);s.append(footer);return s}
+async function print(exam){const frame=el("iframe");frame.className="qb-print-frame";frame.style.width="794px";frame.style.visibility="hidden";frame.title="چاپ \
+آزمون";document.body.append(frame);const doc=frame.contentDocument;try{doc.documentElement.lang="fa";doc.documentElement.dir="rtl";const loads=[...document.
+querySelectorAll('link[rel="stylesheet"]')].map(source=>new Promise((resolve,reject)=>{const copy=source.cloneNode();copy.onload=resolve;copy.onerror=()=>reject(
+Error("فونت و سبک چاپ بارگیری نشد."));doc.head.append(copy)}));await Promise.all(loads);const style=doc.createElement("style");style.textContent=
+"@page{size:A4 portrait;margin:15mm}body{margin:0;font-family:IRANSans,sans-serif;background:white;color:black}body>.qb-sheet{display:block!important;padding:0}\
+.qb-sheet-question{break-inside:avoid;overflow-wrap:anywhere}h1{font-size:20px}";doc.head.append(style);doc.body.append(doc.importNode(sheet(exam),true));doc.body.
+style.width="180mm";await doc.fonts.load("16px IRANSans");await doc.fonts.ready;fitOptions(doc.body);await new Promise(resolve=>frame.contentWindow.requestAnimationFrame(
+resolve));frame.contentWindow.addEventListener("afterprint",()=>frame.remove(),{once:true});frame.contentWindow.focus();frame.contentWindow.print()}catch(error){
+frame.remove();throw error}finally{if(frame.isConnected)setTimeout(()=>frame.remove(),6e4)}}function openBank(){root.goQuestionBank();return activePage?.ready}function mountBank(host){
+if(!host)return Promise.resolve();if(activePage){activePage.mount(host);return activePage.ready}const pageRoot=el("section",void 0,"qb-page");const header=el("h\
+eader",void 0,"qb-page-header"),title=el("h2","بانک سؤال و طراحی آزمون"),message=el("p","در حال خواندن…","qb-message"),content=el(
+"div",void 0,"qb-body");title.id="qb-title";title.insertAdjacentHTML("afterbegin",root.EduIcons.html("book"));pageRoot.setAttribute("aria-labelledby",title.id);
+message.setAttribute("role","status");let persistentMessage="",persistentMessageOrigin="",transientMessage="";const tabScopes=savedView?.tabScopes||{questions:{
+courseId:"",unitId:""},builder:{courseId:null,unitId:""}};let bank,courseId=savedView?.courseId||"",unitId=savedView?.unitId||"",tab=["questions","builder","exa\
+ms"].includes(savedView?.tab)?savedView.tab:"questions",page=savedView?.page||0,search=savedView?.search||"",archiveQuery=savedView?.archiveQuery||"",archiveCourse=savedView?.
+archiveCourse||"",archivePage=savedView?.archivePage||0,questionType=savedView?.questionType||"",dirty=false,busy=false,alive=true,leaving=false,renderSnapshot=null,
+mountedSnapshot=null,restoreRenderFrame=null,confirmation=null,cancelConfirmation=()=>{},refreshSequence=0;pendingChanges=()=>dirty||busy;const error=(e,persistent=false)=>{
+if(!alive)return;const detail=e.message||String(e);if(persistent){persistentMessage=detail;persistentMessageOrigin="data";transientMessage=""}else transientMessage=
+detail;showMessage()};const unsubscribeStorage=F.subscribe(state=>{if(!alive)return;if(persistentMessageOrigin==="file"&&["active","inactive"].includes(state.state)){
+persistentMessage="";persistentMessageOrigin="";showMessage()}});function showMessage(){const details=[...new Set([transientMessage,persistentMessage])].filter(
+Boolean).join(" ");message.hidden=!details;message.textContent=details;if(details){message.dataset.state="error";message.setAttribute("role","alert")}else{message.
+setAttribute("role","status");delete message.dataset.state}}function clearTransientMessage(){transientMessage="";showMessage()}function confirmAction(label,action,onCancel=()=>{}){
+if(!alive||!pageRoot.isConnected||confirmation||busy){onCancel();return}closeOwnedCalendar();const box=el("section",void 0,"qb-confirm");box.setAttribute("role",
+"region");box.setAttribute("aria-label",label);box.append(el("h4","تأیید عملیات","qb-editor-title"));box.append(el("p",label));const previous=document.
+activeElement;const previousWindowScroll={left:root.scrollX,top:root.scrollY};const selection=previous?.selectionStart;const selectionEnd=previous?.selectionEnd;
+const selectionDirection=previous?.selectionDirection;const contentWasInert=content.inert;const cancel=(accepted=false)=>{if(confirmation!==box)return false;box.
+remove();confirmation=null;cancelConfirmation=()=>{};content.inert=contentWasInert;if(alive&&previous?.isConnected){previous.focus({preventScroll:true});if(selection!==
+null&&selection!==void 0)previous.setSelectionRange?.(selection,selectionEnd,selectionDirection)}if(!accepted)onCancel();if(!accepted&&alive)root.scrollTo({...previousWindowScroll,
+behavior:"instant"});keepEditingVisible();return true};cancelConfirmation=cancel;const actions=el("div",void 0,"qb-confirm-actions");box.append(actions);const cancelButton=button(
+"انصراف",()=>cancel(),actions);const confirm=button("تأیید",async()=>{if(!cancel(true))return;try{await action()}catch(e){error(e)}},actions);confirm.
+dataset.uiTone=/حذف|جایگزین/.test(label)?"danger":"save";box.addEventListener("keydown",e=>{if(e.key!=="Escape")return;e.preventDefault();e.stopPropagation();
+cancel()});content.inert=true;pageRoot.insertBefore(box,message);confirmation=box;cancelButton.focus({preventScroll:true});updateLayout()}function discard(action){
+if(!alive||busy||confirmation)return;if(dirty)confirmAction("تغییرات فرم ذخیره نشده‌اند؛ کنار گذاشته شوند؟",()=>{dirty=false;
+action()});else action()}function closeOwnedCalendar(){if(pageRoot.querySelector('[data-gregorian-target][aria-expanded="true"]'))root.closeShamsiCalendar()}function cacheView(){
+if(tabScopes[tab])Object.assign(tabScopes[tab],{courseId,unitId});savedView=structuredClone({tabScopes,courseId,unitId,tab,page,search,archiveQuery,archiveCourse,
+archivePage,questionType})}function preserveForRender(){if(!alive){renderSnapshot=null;return}const focused=pageRoot.contains(document.activeElement)?document.activeElement:
+null;const scrollers=[content];for(let parent=focused;parent&&parent!==pageRoot;parent=parent.parentElement)scrollers.push(parent);renderSnapshot={focused,windowScroll:mountedSnapshot?.
+windowScroll||{left:root.scrollX,top:root.scrollY},start:focused?.selectionStart,end:focused?.selectionEnd,direction:focused?.selectionDirection,scroll:[...new Set(
+scrollers)].map(node=>[node,node.scrollTop,node.scrollLeft])}}function restoreRenderSnapshot(snapshot){if(!snapshot)return;root.scrollTo({...snapshot.windowScroll,
+behavior:"instant"});if(snapshot.focused?.isConnected){snapshot.focused.focus({preventScroll:true});if(snapshot.start!==null&&snapshot.start!==void 0)snapshot.focused.
+setSelectionRange?.(snapshot.start,snapshot.end,snapshot.direction)}for(const[node,top,left]of snapshot.scroll){node.scrollTop=top;node.scrollLeft=left}}function mount(host2){
+if(!alive)return;host2.append(pageRoot);mountedSnapshot=renderSnapshot;renderSnapshot=null;updateLayout();restoreRenderSnapshot(mountedSnapshot)}function completeRender(){
+updateLayout();restoreRenderSnapshot(mountedSnapshot);cancelAnimationFrame(restoreRenderFrame);if(!mountedSnapshot)return;restoreRenderFrame=requestAnimationFrame(
+()=>{restoreRenderFrame=requestAnimationFrame(()=>{if(!alive||!pageRoot.isConnected)return;restoreRenderSnapshot(mountedSnapshot);mountedSnapshot=null;updateLayout()})})}
+function dispose(){if(!alive)return;closeOwnedCalendar();alive=false;root.visualViewport?.removeEventListener("resize",keepEditingVisible);root.visualViewport?.
+removeEventListener("scroll",keepEditingVisible);root.removeEventListener("resize",keepEditingVisible);cancelAnimationFrame(editingFrame);cancelAnimationFrame(restoreRenderFrame);
+optionResize.disconnect();optionChanges.disconnect();unsubscribeStorage();cancelConfirmation();restoreKeyboardScroll();pendingChanges=()=>false;pageRoot.remove();
+if(activePage?.element===pageRoot)activePage=null}function requestLeave(action){if(!alive||busy||leaving||confirmation)return false;const leave=()=>{cacheView();
+dispose();action()};if(dirty){leaving=true;confirmAction("تغییرات فرم ذخیره نشده‌اند؛ کنار گذاشته شوند؟",leave,()=>{leaving=
+false});return false}leave();return true}header.append(title);pageRoot.append(header,message,content);host.append(pageRoot);let editingFrame,keyboardScroll=null;
+function restoreKeyboardScroll(){if(!keyboardScroll)return;const previous=keyboardScroll;keyboardScroll=null;delete pageRoot.dataset.keyboardViewport;pageRoot.style.
+removeProperty("--qb-keyboard-scroll-space");root.scrollTo({left:previous.x,top:previous.y,behavior:"instant"})}function updateLayout(){if(!alive||!pageRoot.isConnected)
+return;const viewport=root.visualViewport;const top=viewport?.offsetTop||0;const form2=content.querySelector(".qb-form");const mobile=root.matchMedia("(max-widt\
+h: 700px), (max-height: 500px) and (pointer: coarse)").matches;const reduced=viewport&&root.innerHeight-viewport.height>120;if(mobile&&form2&&reduced&&(keyboardScroll||
+form2.contains(document.activeElement))){if(!keyboardScroll)keyboardScroll={x:root.scrollX,y:root.scrollY};pageRoot.dataset.keyboardViewport="true";pageRoot.style.
+setProperty("--qb-keyboard-scroll-space",root.innerHeight+"px");const distance=pageRoot.getBoundingClientRect().top-top-4;if(Math.abs(distance)>1)root.scrollBy(
+{top:distance,left:0,behavior:"instant"})}else restoreKeyboardScroll();let bottom=top+(viewport?.height||root.innerHeight);const navigation=document.getElementById(
+"uiBottomNav");if(navigation?.getClientRects().length&&root.getComputedStyle(navigation).visibility!=="hidden"){const bounds=navigation.getBoundingClientRect();
 if(bounds.top<bottom&&bounds.bottom>top)bottom=Math.min(bottom,bounds.top)}if(confirmation){const bounds=confirmation.getBoundingClientRect();if(bounds.top<top+
 12||bounds.bottom>bottom-12)confirmation.scrollIntoView({block:"center",behavior:"instant"})}pageRoot.style.setProperty("--qb-page-available-height",Math.max(0,
 bottom-Math.max(top,pageRoot.getBoundingClientRect().top)-(keyboardScroll?4:12))+"px")}function keepEditingVisible(){if(!alive||!pageRoot.isConnected)return;cancelAnimationFrame(

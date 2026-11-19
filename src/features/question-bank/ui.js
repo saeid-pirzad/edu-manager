@@ -164,7 +164,18 @@
     }
   }
   function sheetTextDirection(text, fallback = "rtl") {
-    const chars = Array.from(String(text));
+    const line =
+      sheetCleanText(text)
+        .split(/\r\n|\r|\n/)
+        .find((value) => value.trim()) || "";
+    if (
+      !/؟\s*$/.test(line) &&
+      /^\s*(?:(?:const|let|var|function|return|throw|echo|def|class|import|from)\s|(?:if|for|while|switch|catch)\s*\(|[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*\s*(?:\(|[+\-*/]?=(?!=))|<\/?[A-Za-z][\w:-]*(?:\s|\/?>)|\/\/|\/\*|\*\/|[{}][;,\s]*$)/.test(
+        line,
+      )
+    )
+      return "ltr";
+    const chars = Array.from(line);
     if (
       chars.some(
         (char) =>
@@ -174,6 +185,12 @@
     )
       return "rtl";
     return chars.some((char) => /\p{Letter}/u.test(char)) ? "ltr" : fallback;
+  }
+  function sheetCleanText(text) {
+    return String(text).replace(
+      /[\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]/g,
+      "",
+    );
   }
   function sheet(exam) {
     const s = el("article", undefined, "qb-sheet");
@@ -250,14 +267,17 @@
       const row = el("section", undefined, "qb-sheet-question");
       const body = el("div", undefined, "qb-sheet-prompt");
       const questionDirection = sheetTextDirection(q.text);
+      const questionText = sheetCleanText(q.text);
       const prompt = el(
         "p",
-        questionDirection === "ltr" ? `${i + 1}. ${q.text}` : q.text,
+        questionDirection === "ltr"
+          ? `${i + 1}. ${questionText}`
+          : questionText,
       );
       prompt.dir = questionDirection;
       if (/[\r\n]/.test(q.text)) {
         prompt.textContent = "";
-        q.text.split(/\r\n|\r|\n/).forEach((line, lineIndex) => {
+        questionText.split(/\r\n|\r|\n/).forEach((line, lineIndex) => {
           const part = el(
             "span",
             (lineIndex === 0 && questionDirection === "ltr"
@@ -304,8 +324,18 @@
         q.options.forEach((option, j) => {
           const item = el("li");
           item.dir = questionDirection;
-          const optionText = el("bdi", option);
+          const optionText = el("bdi", sheetCleanText(option));
           optionText.dir = sheetTextDirection(option, questionDirection);
+          if (/[\r\n]/.test(option)) {
+            optionText.textContent = "";
+            sheetCleanText(option)
+              .split(/\r\n|\r|\n/)
+              .forEach((line) => {
+                const part = el("span", line, "qb-sheet-line");
+                part.dir = sheetTextDirection(line, questionDirection);
+                optionText.append(part);
+              });
+          }
           item.append(
             el(
               "span",
@@ -323,14 +353,16 @@
         for (let line = 0; line < 4; line++) space.append(el("span"));
         row.append(space);
       }
-      if (q.type === "blank" && !/_{2,}|…|\.{3,}|ـ{3,}/u.test(q.text))
-        row.append(
-          el(
-            "p",
-            "پاسخ: ................................................",
-            "qb-short-answer",
-          ),
+      if (q.type === "blank" && !/_{2,}|…|\.{3,}|ـ{3,}/u.test(q.text)) {
+        const answer = el(
+          "p",
+          (questionDirection === "rtl" ? "پاسخ: " : "Answer: ") +
+            "................................................",
+          "qb-short-answer",
         );
+        answer.dir = questionDirection;
+        row.append(answer);
+      }
       s.append(row);
     });
     const footer = el("footer", undefined, "qb-sheet-footer");

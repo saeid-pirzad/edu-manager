@@ -23,13 +23,25 @@
   // Word/clipboard text may contain invisible embedding/override characters.
   // Direction is owned by OOXML runs, not unbalanced controls inside user text.
   const cleanDirectionControls = (text) =>
-    String(text).replace(/[\u202a-\u202e\u2066-\u2069]/g, "");
+    String(text).replace(/[\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, "");
   const rtlLetter = (char) =>
     /\p{Letter}/u.test(char) &&
     /[\p{Script=Arabic}\p{Script=Hebrew}]/u.test(char);
   function direction(text, fallback = "rtl") {
     // A Latin term at the beginning (e.g. "CPU چیست؟") is not an English question.
-    const chars = Array.from(cleanDirectionControls(text));
+    const line =
+      cleanDirectionControls(text)
+        .split(/\r\n|\r|\n/)
+        .find((value) => value.trim()) || "";
+    // Code syntax owns the line direction even when a string/comment is Persian.
+    if (
+      !/؟\s*$/.test(line) &&
+      /^\s*(?:(?:const|let|var|function|return|throw|echo|def|class|import|from)\s|(?:if|for|while|switch|catch)\s*\(|[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*\s*(?:\(|[+\-*/]?=(?!=))|<\/?[A-Za-z][\w:-]*(?:\s|\/?>)|\/\/|\/\*|\*\/|[{}][;,\s]*$)/.test(
+        line,
+      )
+    )
+      return "ltr";
+    const chars = Array.from(line);
     if (chars.some(rtlLetter)) return "rtl";
     return chars.some((char) => /\p{Letter}/u.test(char)) ? "ltr" : fallback;
   }
@@ -188,14 +200,19 @@
                 .slice(index, index + columns)
                 .map((option, j) =>
                   cell(
-                    paragraph(
-                      (questionDirection === "rtl"
-                        ? ["الف", "ب", "ج", "د"][index + j]
-                        : ["A", "B", "C", "D"][index + j]) +
-                        ") " +
-                        option,
-                      { dir: direction(option, questionDirection) },
-                    ),
+                    option
+                      .split(/\r\n|\r|\n/)
+                      .map((line, lineIndex) =>
+                        paragraph(
+                          (lineIndex === 0
+                            ? (questionDirection === "rtl"
+                                ? ["الف", "ب", "ج", "د"][index + j]
+                                : ["A", "B", "C", "D"][index + j]) + ") "
+                            : "") + line,
+                          { dir: direction(line, questionDirection) },
+                        ),
+                      )
+                      .join(""),
                     5000 / columns,
                   ),
                 )

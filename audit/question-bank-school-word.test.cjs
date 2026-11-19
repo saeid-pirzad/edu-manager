@@ -136,6 +136,7 @@ test("Persian questions, including Latin-leading CPU terms, are explicitly RTL a
   for (const text of [
     "کاربرد رایانه چیست؟",
     "CPU چیست؟",
+    "CPU (واحد پردازش مرکزی) چیست؟",
     "کار با Adobe Photoshop (2026) را شرح دهید.",
     "نشانی https://example.com/a?b=2 را بررسی کنید.",
   ]) {
@@ -395,6 +396,36 @@ test("Word exports long question and option text accepted by the bank without tr
   });
   assert.ok(plain(doc).includes(text));
   assert.ok(plain(doc).includes(option));
+});
+test("Persian strings inside code do not change code direction or an English prompt's numbering", () => {
+  const doc = W.documentXml({
+    questions: [
+      {
+        type: "mcq",
+        text: 'Explain this code:\nconst message = "سلام";\nconsole.log("سلام");\n<h1>سلام</h1>',
+        score: 100,
+        options: ['شرح فارسی\nconsole.log("سلام");', "Two", "Three", "Four"],
+      },
+    ],
+  });
+  const paragraphs = [...doc.matchAll(/<w:p>[\s\S]*?<\/w:p>/g)].map(
+    (m) => m[0],
+  );
+  for (const text of [
+    "1. Explain this code:",
+    'const message = "سلام";',
+    'console.log("سلام");',
+    "<h1>سلام</h1>",
+  ]) {
+    const p = paragraphs.find((p) => plain(p) === text);
+    assert.ok(p, text);
+    assert.match(p, /<w:bidi w:val="0"\/>/);
+  }
+  assert.ok(
+    paragraphs.some(
+      (p) => plain(p) === "A) شرح فارسی" && p.includes('<w:bidi w:val="1"/>'),
+    ),
+  );
 });
 test("download filenames cannot contain Windows paths, controls or direction overrides", () => {
   const name = W.filename({

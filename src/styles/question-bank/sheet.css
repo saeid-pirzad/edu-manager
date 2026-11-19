@@ -158,6 +158,10 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+.qb-sheet-options li > span:first-child {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
 .qb-sheet-boolean {
   display: inline-block;
   font-size: 12px;

@@ -59,6 +59,7 @@ c.EduQuestionBankSchoolWord.create({ questions })
     fs.writeFileSync(destination, Buffer.from(buffer));
     console.log(destination);
     await generateStress();
+    await generateEdge();
     fs.writeFileSync(path.join(auditRoot, "latest.txt"), destination);
   })
   .catch((error) => {
@@ -127,4 +128,80 @@ async function generateStress() {
     }),
   );
   console.log("Generated synthetic 80-question pagination fixture.");
+}
+
+async function generateEdge() {
+  const questions = [
+    {
+      type: "essay",
+      text: 'خروجی قطعه کد زیر چیست؟\nconsole.log("سلام");\nconst message = "سلام";\n<h1>سلام</h1>',
+      score: 100,
+    },
+    { type: "blank", text: "Name the network device:", score: 25 },
+    {
+      type: "mcq",
+      text: "کدام گزینه درست است؟",
+      options: [
+        "گزینهٔ بلند برای بررسی حفظ تمام متن و نمایش تمام‌عرض در فایل Word. ".repeat(
+          4,
+        ),
+        'توضیح فارسی گزینه\nconsole.log("سلام");',
+        "گزینهٔ سوم",
+        "گزینهٔ چهارم",
+      ],
+      score: 125,
+    },
+    { type: "boolean", text: "Is this a computer?", score: 50 },
+    { type: "boolean", text: "این یک book است؟", score: 75 },
+    {
+      type: "mcq",
+      text: 'Explain this code:\nconsole.log("سلام");',
+      options: ["One", "Two", "Three", "Four"],
+      score: 25,
+    },
+  ].map((question, index) => ({
+    ...question,
+    answer: "PRIVATE_EDGE_ANSWER_" + index,
+    explanation: "PRIVATE_EDGE_EXPLANATION_" + index,
+  }));
+  const paragraphs = [
+    { row: 2, text: "۱. خروجی قطعه کد زیر چیست؟", dir: "rtl" },
+    { row: 2, text: 'console.log("سلام");', dir: "ltr" },
+    { row: 2, text: 'const message = "سلام";', dir: "ltr" },
+    { row: 2, text: "<h1>سلام</h1>", dir: "ltr" },
+    { row: 3, text: "2. Name the network device:", dir: "ltr" },
+    { row: 3, text: "Answer: ", dir: "ltr" },
+    { row: 4, text: "ب) توضیح فارسی گزینه", dir: "rtl" },
+    { row: 4, text: 'console.log("سلام");', dir: "ltr" },
+    {
+      row: 5,
+      text: "4. Is this a computer?    □ True    □ False",
+      dir: "ltr",
+    },
+    { row: 6, text: "۵. این یک book است؟    □ صحیح    □ غلط", dir: "rtl" },
+    { row: 7, text: "6. Explain this code:", dir: "ltr" },
+    { row: 7, text: 'console.log("سلام");', dir: "ltr" },
+    { row: 7, text: "A) One", dir: "ltr" },
+    { row: 7, text: "D) Four", dir: "ltr" },
+  ];
+  const folder = path.dirname(destination);
+  fs.writeFileSync(
+    path.join(folder, "edge.docx"),
+    Buffer.from(
+      await c.EduQuestionBankSchoolWord.create({ questions }).arrayBuffer(),
+    ),
+  );
+  fs.writeFileSync(
+    path.join(folder, "edge.json"),
+    JSON.stringify({
+      questions,
+      paragraphs,
+      total: new Intl.NumberFormat("fa-IR").format(
+        questions.reduce((sum, q) => sum + q.score, 0) / 100,
+      ),
+    }),
+  );
+  console.log(
+    "Generated synthetic code, bilingual and multiline-option fixture.",
+  );
 }

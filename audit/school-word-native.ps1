@@ -81,6 +81,47 @@ try {
   $wordStressPages = $wordAuditDocument.ComputeStatistics(2)
   if ($wordStressPages -lt 2) { throw 'Stress fixture did not exercise continuation pages.' }
   Write-Output ('Native Word: 80 ordered questions, exact scores and total, no answer leakage, repeated header and '+$wordStressPages+' pages verified.')
+  [void][Runtime.InteropServices.Marshal]::ReleaseComObject($wordStressTable)
+  $wordAuditDocument.Close([ref]$wordAuditSaveNone)
+  [void][Runtime.InteropServices.Marshal]::ReleaseComObject($wordAuditDocument)
+  $wordAuditDocument = $null
+  $wordEdgePath = [IO.Path]::Combine([IO.Path]::GetDirectoryName($wordDocumentPath), 'edge.docx')
+  $wordEdgeSource = Get-Content -Encoding UTF8 -Raw -LiteralPath (Join-Path (Split-Path $wordDocumentPath) 'edge.json') | ConvertFrom-Json
+  $wordAuditDocument = $wordAuditApplication.Documents.Open([ref]$wordEdgePath, [ref]$wordAuditFalse, [ref]$wordAuditTrue, [ref]$wordAuditFalse)
+  $wordEdgeTable = $wordAuditDocument.Tables.Item(1)
+  if ($wordEdgeTable.Rows.Count -ne $wordEdgeSource.questions.Count+2) { throw 'Edge fixture lost question rows.' }
+  if ($wordAuditDocument.Content.Text.Contains('PRIVATE_')) { throw 'Answer key leaked into the edge Word document.' }
+  foreach ($wordEdgeExpected in $wordEdgeSource.paragraphs) {
+    $wordEdgeFound = $false
+    foreach ($wordEdgeParagraph in $wordEdgeTable.Cell($wordEdgeExpected.row,1).Range.Paragraphs) {
+      $wordEdgeParagraphText = $wordEdgeParagraph.Range.Text.Trim([char]13,[char]7) -replace '[\u202A-\u202E\u2066-\u2069]', ''
+      if ($wordEdgeParagraphText -ceq $wordEdgeExpected.text) {
+        $wordEdgeFound = $true
+        $wordEdgeAlignment = if ($wordEdgeExpected.dir -eq 'rtl') { 2 } else { 0 }
+        $wordEdgeReadingOrder = if ($wordEdgeExpected.dir -eq 'rtl') { 0 } else { 1 }
+        if ($wordEdgeParagraph.Format.Alignment -ne $wordEdgeAlignment -or $wordEdgeParagraph.Format.ReadingOrder -ne $wordEdgeReadingOrder) { throw ('Code or bilingual paragraph direction changed: '+$wordEdgeExpected.text) }
+      }
+      [void][Runtime.InteropServices.Marshal]::ReleaseComObject($wordEdgeParagraph)
+    }
+    if (-not $wordEdgeFound) { throw ('Missing, reordered, or non-independent edge paragraph: '+$wordEdgeExpected.text) }
+  }
+  for ($wordEdgeIndex=0; $wordEdgeIndex -lt $wordEdgeSource.questions.Count; $wordEdgeIndex++) {
+    $wordEdgeQuestion = $wordEdgeSource.questions[$wordEdgeIndex]
+    $wordEdgeCellText = $wordEdgeTable.Cell(($wordEdgeIndex+2),1).Range.Text -replace '[\u202A-\u202E\u2066-\u2069]', ''
+    foreach ($wordEdgeSourceText in (@($wordEdgeQuestion.text)+@($wordEdgeQuestion.options))) {
+      foreach ($wordEdgeLine in ($wordEdgeSourceText -split '\r\n|\r|\n')) {
+        if ($wordEdgeLine -and -not $wordEdgeCellText.Contains($wordEdgeLine)) { throw ('Question or option text was changed in edge row '+($wordEdgeIndex+2)) }
+      }
+    }
+    $wordEdgeExpectedScore = ($wordEdgeQuestion.score/100).ToString('0.##',[Globalization.CultureInfo]::InvariantCulture)
+    $wordEdgeScore = $wordEdgeTable.Cell(($wordEdgeIndex+2),2).Range.Text.Trim([char]13,[char]7) -replace '[\u202A-\u202E\u2066-\u2069]', ''
+    $wordEdgeLatinScore = -join ($wordEdgeScore.ToCharArray() | ForEach-Object { if ([int]$_ -ge 1776 -and [int]$_ -le 1785) { [char]([int]$_-1728) } elseif ([int]$_ -eq 1643) { '.' } else { $_ } })
+    if ($wordEdgeLatinScore -ne $wordEdgeExpectedScore) { throw ('Score changed for edge row '+($wordEdgeIndex+2)) }
+  }
+  $wordEdgeTotal = $wordEdgeTable.Cell(($wordEdgeSource.questions.Count+2),2).Range.Text.Trim([char]13,[char]7) -replace '[\u202A-\u202E\u2066-\u2069]', ''
+  if ($wordEdgeTotal -ne $wordEdgeSource.total) { throw 'Edge fixture total score is incorrect.' }
+  [void][Runtime.InteropServices.Marshal]::ReleaseComObject($wordEdgeTable)
+  Write-Output 'Native Word: code with Persian strings, multiline options, English blank label, inline true/false, exact text and scores verified.'
 } finally {
   $wordAuditSaveNone = 0
   if ($wordAuditDocument) { $wordAuditDocument.Close([ref]$wordAuditSaveNone); [void][Runtime.InteropServices.Marshal]::ReleaseComObject($wordAuditDocument) }
