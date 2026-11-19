@@ -445,6 +445,7 @@
         "src/styles/reports/karnameh/print.css",
         "src/styles/reports/karnameh/excel.css",
         "src/styles/buttons.css",
+        "src/styles/pagination.css",
         "src/styles/surfaces.css",
         "src/styles/lesson-sessions.css"
       ]

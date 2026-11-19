@@ -1,0 +1,70 @@
+/* One pagination treatment for question banks, exam archives and session history. */
+@media screen {
+  :is(#app, #modal)
+    :is(.qb-numbered-pager, .session-history-pager)
+    button.ui-button-flat[data-ui-tone] {
+    --button-ink: var(--theme-muted);
+    --button-fill: var(--theme-primary);
+    --button-hover: var(--theme-primary-hover);
+    --button-soft: var(--theme-surface);
+    --button-line: var(--theme-line);
+    min-height: 44px;
+    margin: 0;
+    padding: 8px 10px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    box-shadow: var(--theme-shadow-sm);
+  }
+
+  :is(#app, #modal)
+    :is(.qb-numbered-pager, .session-history-pager)
+    > button.ui-button-flat[data-ui-tone] {
+    --button-ink: var(--theme-primary);
+    --button-soft: var(--theme-primary-soft);
+    --button-line: var(--theme-primary-line);
+  }
+
+  :is(#app, #modal)
+    :is(.qb-page-numbers, .session-history-pages)
+    > button.ui-button-flat[data-ui-tone] {
+    width: 40px;
+    min-width: 40px;
+    height: 44px;
+    padding: 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  :is(#app, #modal)
+    :is(.qb-numbered-pager, .session-history-pager)
+    button.ui-button-flat[aria-current="page"] {
+    --button-ink: var(--theme-primary);
+    --button-fill: var(--theme-primary);
+    --button-hover: var(--theme-primary-hover);
+    box-shadow: 0 3px 10px var(--theme-primary-shadow);
+  }
+
+  :is(#app, #modal)
+    :is(.qb-numbered-pager, .session-history-pager)
+    button.ui-button-flat:focus-visible {
+    outline: 2px solid var(--theme-primary);
+    outline-offset: 2px;
+  }
+
+  :is(#app, #modal)
+    :is(.qb-numbered-pager, .session-history-pager)
+    button.ui-button-flat:disabled {
+    --button-ink: var(--theme-disabled-ink);
+    --button-soft: var(--theme-surface-muted);
+    --button-line: var(--theme-line-soft);
+    box-shadow: none;
+  }
+
+  :is(.qb-page-status, .session-history-page-status) {
+    color: var(--theme-muted);
+    font-size: 11px;
+    line-height: 1.8;
+    font-variant-numeric: tabular-nums;
+  }
+}

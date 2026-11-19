@@ -49,7 +49,9 @@ main({
             width,
           await evaluate(`(()=>{
           const section=document.querySelector('.session-setup-history'),pager=section.querySelector('.session-history-pager'),modal=document.getElementById('modalBody');
+          const selected=getComputedStyle(pager.querySelector('[aria-current="page"]'));
           return section.querySelectorAll('.session-setup-recent-item').length===5&&section.dataset.historyPage==='0'&&
+            selected.backgroundColor==='rgb(192, 20, 27)'&&selected.color==='rgb(255, 255, 255)'&&selected.borderRadius==='10px'&&
             pager.querySelector('[aria-label="قبلی"]').disabled&&pager.querySelector('[aria-current="page"]').getAttribute('aria-label')==='صفحه ۱'&&
             pager.scrollWidth<=pager.clientWidth+1&&modal.scrollWidth<=modal.clientWidth+1&&[...pager.querySelectorAll('button')].every(b=>b.getBoundingClientRect().height>=44);
         })()`),

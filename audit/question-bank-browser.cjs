@@ -1259,8 +1259,10 @@ main({
               const pager=document.querySelector('.qb-question-library>.qb-pager');
               pager.querySelector('[aria-label="صفحه ۳"]').click();
               const rows=[...document.querySelectorAll('.qb-question-row')];
+              const selected=getComputedStyle(pager.querySelector('[aria-current="page"]'));
               const pass=rows.length===1&&rows[0].querySelector('.qb-question-number').textContent==='۲۱'&&
                 pager.querySelector('[aria-current="page"]').getAttribute('aria-label')==='صفحه ۳'&&
+                selected.backgroundColor==='rgb(192, 20, 27)'&&selected.color==='rgb(255, 255, 255)'&&selected.borderRadius==='10px'&&
                 [...pager.children].find(b=>b.textContent==='بعدی').disabled&&pager.scrollWidth<=pager.clientWidth+1;
               pager.querySelector('[aria-label="صفحه ۲"]').click();
               return pass;
@@ -1743,7 +1745,9 @@ main({
         const pager=document.querySelector('.qb-exam-library>.qb-numbered-pager');
         pager.querySelector('[aria-label="صفحه ۲"]').click();
         const results=document.querySelector('.qb-exam-results');
+        const selected=getComputedStyle(pager.querySelector('[aria-current="page"]'));
         return document.querySelectorAll('.qb-exam-card').length===4&&pager.querySelector('[aria-current="page"]').getAttribute('aria-label')==='صفحه ۲'&&
+          selected.backgroundColor==='rgb(192, 20, 27)'&&selected.color==='rgb(255, 255, 255)'&&selected.borderRadius==='10px'&&
           getComputedStyle(results).overflowY==='visible'&&results.scrollHeight<=results.clientHeight+1&&pager.scrollWidth<=pager.clientWidth+1&&document.querySelector('.qb-body').scrollWidth<=document.querySelector('.qb-body').clientWidth+1;
       })()`),
       );
