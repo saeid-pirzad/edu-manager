@@ -70,7 +70,7 @@
     margin: 0;
     font-size: 13px;
   }
-  :is(#modalBody, .qb-body) #wipeText {
+  :is(#modalBody, .qb-body) :is(#wipeText, [data-qb-clear-text]) {
     width: 100%;
     min-height: 44px;
     margin: 0;

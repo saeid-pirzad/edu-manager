@@ -926,6 +926,34 @@ main({
         return JSON.stringify(await EduQuestionBankRepository.read())===bank;
       })()`),
     );
+    for (const width of [320, 390, 768, 1440]) {
+      await cdp("Emulation.setDeviceMetricsOverride", {
+        width,
+        height: 900,
+        deviceScaleFactor: 1,
+        mobile: false,
+      });
+      check(
+        `bank deletion uses the shared modal and Escape preserves both databases ${width}`,
+        await evaluate(`(async()=>{
+          closeModal();await __hubTick();await EduV24.openBackups({tab:'bank'});
+          const bank=JSON.stringify(await EduQuestionBankRepository.read()),school=await __hubStableSchool();
+          const form=await __hubOpenClear();await __hubTick();
+          const modal=document.getElementById('modal'),dialog=modal.querySelector('.modal-dialog'),rect=dialog.getBoundingClientRect();
+          const shown=!modal.classList.contains('hidden')&&modal.contains(form)&&form.classList.contains('wipe-editor')
+            &&dialog.getAttribute('aria-modal')==='true'&&document.getElementById('app').inert
+            &&!document.querySelector('#backupHub .qb-backup-confirm')
+            &&!!form.querySelector('.wipe-warning .wipe-symbol svg')&&!!form.querySelector('.wipe-export')
+            &&rect.left>=0&&rect.right<=innerWidth+1&&rect.width<=521
+            &&dialog.scrollWidth<=dialog.clientWidth+1;
+          form.querySelector('input').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));
+          await __hubTick();
+          return shown&&modal.classList.contains('hidden')&&!document.getElementById('app').inert
+            &&!document.querySelector('.qb-backup-confirm')
+            &&JSON.stringify(await EduQuestionBankRepository.read())===bank&&await __hubStableSchool()===school;
+        })()`),
+      );
+    }
     check(
       "the independent bank clear form requires both its exact confirmation text and a backup acknowledgement",
       await evaluate(`(async()=>{

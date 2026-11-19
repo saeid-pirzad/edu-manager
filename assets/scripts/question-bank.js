@@ -224,39 +224,52 @@ failure.message||String(failure),true);function button(label,tone,icon,action,ho
 -button ui-button-flat";control.dataset.uiTone=tone;if(icon)control.insertAdjacentHTML("afterbegin",root.EduIcons.html(icon));control.append(el("span",label,"ui\
 -button-label"));control.onclick=()=>{if(!current()||busy||confirmation)return;try{void Promise.resolve(action()).catch(error)}catch(failure){error(failure)}};host.
 append(control);return control}function confirm(label,action,{clear:clear2=false}={}){if(!current()||busy||confirmation)return Promise.resolve(false);return new Promise(
-resolve=>{const previous=document.activeElement;const box=el(clear2?"form":"section",void 0,"qb-backup-confirm");box.setAttribute("role","region");box.setAttribute(
-"aria-label",label);box.append(el("h4",clear2?"حذف اطلاعات بانک سؤال":"تأیید عملیات"),el("p",label));let clearText,clearBackup,clearError;
-if(clear2){const fields=el("div",void 0,"qb-backup-clear-fields");const textLabel=el("label","برای تأیید، «حذف» را بنویسید");clearText=el(
-"input");clearText.type="text";clearText.autocomplete="off";clearText.spellcheck=false;clearText.placeholder="حذف";clearText.setAttribute("data-qb-clear-text",
-"");textLabel.append(clearText);const backupLabel=el("label",void 0,"qb-backup-clear-check");clearBackup=el("input");clearBackup.type="checkbox";clearBackup.setAttribute(
-"data-qb-clear-backup","");backupLabel.append(clearBackup,el("span","یک پشتیبان جدا از فایلِ مشمول حذف نگه داشته‌ام."));clearError=
-el("p",void 0,"qb-backup-confirm-error");clearError.setAttribute("role","alert");clearError.hidden=true;fields.append(textLabel,backupLabel,clearError);box.append(
-fields)}const actions=el("div",void 0,"qb-backup-confirm-actions");box.append(actions);const close=(accepted=false)=>{if(confirmation!==box)return;confirmation=
-null;cancelConfirmation=()=>{};box.remove();contents.inert=false;if(current()&&previous?.isConnected)previous.focus({preventScroll:true});resolve(accepted&&current())};
-const cancel=el("button","انصراف");cancel.type="button";cancel.className="ghost ui-button ui-button-flat";cancel.onclick=()=>close();const accept=el("butt\
-on",clear2?"حذف اطلاعات بانک سؤال":"تأیید");accept.type=clear2?"submit":"button";accept.className="ui-button ui-button-flat";accept.dataset.
-uiTone="danger";if(clear2)box.onsubmit=event=>{event.preventDefault();if(clearText.value!=="حذف"||!clearBackup.checked){clearError.hidden=false;clearError.textContent=
-"متن «حذف» و تأیید نگهداری پشتیبان را تکمیل کنید.";(!clearText.value||clearText.value!=="حذف"?clearText:clearBackup).focus();
-return}close(true)};else accept.onclick=()=>close(true);actions.append(cancel,accept);box.addEventListener("keydown",event=>{if(event.key!=="Escape")return;event.
-preventDefault();event.stopPropagation();close()});confirmation=box;cancelConfirmation=close;contents.inert=true;section.prepend(box);cancel.focus({preventScroll:true})}).
-then(async accepted=>{if(!accepted||!current())return false;return action?action():true})}const manual=el("section",void 0,"backup-manual qb-backup-manual");manual.
-append(el("h4","پشتیبان دستی"),el("p","درس‌ها، سؤال‌ها و آزمون‌ها؛ مستقل از اطلاعات مدرسه.","qb-help"));
-const manualActions=el("div",void 0,"backup-action-grid");manual.append(manualActions);contents.append(manual);const download=button("دریافت فایل","do\
-wnload","download",async()=>{assertRestoreAllowed();const bank=D.validate(await R.read());if(!current())return;const url=URL.createObjectURL(new Blob([D.size(bank)],
-{type:"application/json"}));const link=el("a");link.href=url;link.download=F.suggestedName();link.click();setTimeout(()=>URL.revokeObjectURL(url),1e3)},manualActions);
-download.classList.remove("ghost");download.classList.add("qb-backup-download");const share=button("ارسال فایل","share","share",()=>{assertRestoreAllowed();
-disposeShare();disposeShare=root.EduQuestionBankBackupShare.mount(contents,{isCurrent:current,onClose:()=>share.focus({preventScroll:true})});const panel=contents.
-querySelector(".qb-backup-share");manual.after(panel)},manualActions);share.classList.add("backup-share-entry","qb-backup-share-entry");const uploadLabel=el("la\
-bel","بازیابی بانک از JSON","course-field");const upload=el("input");upload.type="file";upload.accept=".json,.txt,application/json,text/plain";uploadLabel.
-hidden=true;uploadLabel.append(upload);manual.append(uploadLabel);const restore=button("بازیابی فایل","create","folder",()=>{assertRestoreAllowed();disposeShare();
-upload.click()},manualActions);restore.classList.add("qb-backup-restore");manual.append(el("p","فایل دریافتی، ارسالی (JSON یا TXT) و ذخیرهٔ خودکار همگی از «بازی\
-ابی فایل» قابل بازیابی‌اند.","backup-restore-help"));upload.onchange=async()=>{const token=++generation;try{assertRestoreAllowed();const file=upload.
-files[0];if(!file)return;root.EduQuestionBankFileBackup.assertFileName(file.name,{allowText:true});if(file.size>D.LIMIT)throw Error("سقف فایل ورودی ۲۰ مگابایت ا\
-ست.");const incoming=D.parse(await file.text());if(!current()||token!==generation)return;const baseline=D.validate(await R.read());if(!current()||token!==generation)
-return;assertRestoreAllowed();void confirm(`فایل «${file.name}»: ${number(incoming.courses.length)} درس، ${number(incoming.questions.length)} سؤال و ${number(
-incoming.exams.length)} آزمون. تمام بانک سؤال فعلی جایگزین می‌شود؛ اطلاعات مدرسه تغییر نمی‌کند. ادامه؟`,
-async()=>{assertRestoreAllowed();if(token!==generation)return false;busy=true;contents.inert=true;section.setAttribute("aria-busy","true");try{const before=D.validate(
-await R.read());assertRestoreAllowed();if(before.revision!==baseline.revision)throw Error("بانک پس از پیش‌نمایش تغییر کرده؛ فایل را دوباره بررسی کنید.");
+resolve=>{const previous=document.activeElement;const modal=clear2?document.getElementById("modal"):null;if(clear2&&(!modal||!modal.classList.contains("hidden")||
+root.showModal("پاک‌سازی اطلاعات بانک سؤال","")===false)){resolve(false);return}let observer;const box=el(clear2?"form":"section",void 0,
+clear2?"qb-backup-confirm record-editor wipe-editor":"qb-backup-confirm");if(!clear2)box.setAttribute("role","region");box.setAttribute("aria-label",label);if(clear2){
+const warning=el("section",void 0,"wipe-warning"),symbol=el("span",void 0,"wipe-symbol"),copy=el("div"),scope=el("section",void 0,"wipe-scope"),backup=el("secti\
+on",void 0,"wipe-backup");symbol.setAttribute("aria-hidden","true");symbol.insertAdjacentHTML("afterbegin",root.EduIcons.html("trash"));copy.append(el("h4","حذف\
+ اطلاعات بانک سؤال از این مرورگر"),el("p","بازگردانی فقط با فایل پشتیبان بانک سؤال ممکن است."));
+warning.append(symbol,copy);scope.append(el("h4","اطلاعات مشمول حذف"),el("p","درس‌ها، فصل‌ها، پودمان‌ها، سؤال‌ها و آزمون‌های بانک سؤال."));
+backup.append(el("p",label));const exportButton=el("button","دریافت پشتیبان","ghost wipe-export");exportButton.type="button";exportButton.onclick=async()=>{
+if(!current()||busy||confirmation!==box)return;exportButton.disabled=true;try{await downloadBankBackup()}catch(failure){clearError.hidden=false;clearError.textContent=
+failure.message||String(failure)}finally{exportButton.disabled=false}};backup.append(exportButton);box.append(warning,scope,backup)}else box.append(el("h4","تأی\
+ید عملیات"),el("p",label));let clearText,clearBackup,clearError;if(clear2){const fields=el("div",void 0,"qb-backup-clear-fields wipe-confirmation");const textLabel=el(
+"label","برای تأیید، «حذف» را بنویسید");clearText=el("input");clearText.type="text";clearText.autocomplete="off";clearText.spellcheck=false;
+clearText.placeholder="حذف";clearText.setAttribute("data-qb-clear-text","");textLabel.append(clearText);const backupLabel=el("label",void 0,"qb-backup-clear-\
+check wipe-backup-check");clearBackup=el("input");clearBackup.type="checkbox";clearBackup.setAttribute("data-qb-clear-backup","");backupLabel.append(clearBackup,
+el("span","یک پشتیبان جدا از فایلِ مشمول حذف نگه داشته‌ام."));clearError=el("p",void 0,"qb-backup-confirm-error");clearError.
+setAttribute("role","alert");clearError.hidden=true;fields.append(textLabel,backupLabel,clearError);box.append(fields)}const actions=el("div",void 0,clear2?"qb-\
+backup-confirm-actions record-editor-actions wipe-actions":"qb-backup-confirm-actions");box.append(actions);const close=(accepted=false)=>{if(confirmation!==box)
+return;confirmation=null;cancelConfirmation=()=>{};observer?.disconnect();const ownsModal=modal?.contains(box);box.remove();contents.inert=false;if(ownsModal&&!modal.
+classList.contains("hidden")){if(current())root.closeModal();else{modal.classList.add("hidden");modal.setAttribute("aria-hidden","true");root.setModalBackground(
+false)}}if(current()&&previous?.isConnected)previous.focus({preventScroll:true});resolve(accepted&&current())};const cancel=el("button","انصراف");cancel.type=
+"button";cancel.className="ghost ui-button ui-button-flat";cancel.onclick=()=>close();const accept=el("button",clear2?"حذف اطلاعات بانک سؤال":
+"تأیید");accept.type=clear2?"submit":"button";accept.className="ui-button ui-button-flat";accept.dataset.uiTone="danger";if(clear2)box.onsubmit=event=>{event.
+preventDefault();if(clearText.value!=="حذف"||!clearBackup.checked){clearError.hidden=false;clearError.textContent="متن «حذف» و تأیید نگهداری پشتیبان را تکمیل\
+ کنید.";(!clearText.value||clearText.value!=="حذف"?clearText:clearBackup).focus();return}close(true)};else accept.onclick=()=>close(true);actions.append(
+cancel,accept);box.addEventListener("keydown",event=>{if(event.key!=="Escape")return;event.preventDefault();event.stopPropagation();close()});confirmation=box;cancelConfirmation=
+close;contents.inert=true;if(clear2){document.getElementById("modalBody").append(box);observer=new MutationObserver(()=>{if(modal.classList.contains("hidden")||
+!modal.contains(box))close()});observer.observe(modal,{attributes:true,attributeFilter:["class"],childList:true,subtree:true})}else section.prepend(box);cancel.
+focus({preventScroll:true})}).then(async accepted=>{if(!accepted||!current())return false;return action?action():true})}const manual=el("section",void 0,"backup\
+-manual qb-backup-manual");manual.append(el("h4","پشتیبان دستی"),el("p","درس‌ها، سؤال‌ها و آزمون‌ها؛ مستقل از اطلاعات مدرسه.",
+"qb-help"));const manualActions=el("div",void 0,"backup-action-grid");manual.append(manualActions);contents.append(manual);async function downloadBankBackup(){assertRestoreAllowed();
+const bank=D.validate(await R.read());if(!current())return;const url=URL.createObjectURL(new Blob([D.size(bank)],{type:"application/json"}));const link=el("a");
+link.href=url;link.download=F.suggestedName();link.click();setTimeout(()=>URL.revokeObjectURL(url),1e3)}const download=button("دریافت فایل","download",
+"download",downloadBankBackup,manualActions);download.classList.remove("ghost");download.classList.add("qb-backup-download");const share=button("ارسال فایل",
+"share","share",()=>{assertRestoreAllowed();disposeShare();disposeShare=root.EduQuestionBankBackupShare.mount(contents,{isCurrent:current,onClose:()=>share.focus(
+{preventScroll:true})});const panel=contents.querySelector(".qb-backup-share");manual.after(panel)},manualActions);share.classList.add("backup-share-entry","qb-\
+backup-share-entry");const uploadLabel=el("label","بازیابی بانک از JSON","course-field");const upload=el("input");upload.type="file";upload.accept=
+".json,.txt,application/json,text/plain";uploadLabel.hidden=true;uploadLabel.append(upload);manual.append(uploadLabel);const restore=button("بازیابی فایل",
+"create","folder",()=>{assertRestoreAllowed();disposeShare();upload.click()},manualActions);restore.classList.add("qb-backup-restore");manual.append(el("p","فای\
+ل دریافتی، ارسالی (JSON یا TXT) و ذخیرهٔ خودکار همگی از «بازیابی فایل» قابل بازیابی‌اند.","back\
+up-restore-help"));upload.onchange=async()=>{const token=++generation;try{assertRestoreAllowed();const file=upload.files[0];if(!file)return;root.EduQuestionBankFileBackup.
+assertFileName(file.name,{allowText:true});if(file.size>D.LIMIT)throw Error("سقف فایل ورودی ۲۰ مگابایت است.");const incoming=D.parse(await file.
+text());if(!current()||token!==generation)return;const baseline=D.validate(await R.read());if(!current()||token!==generation)return;assertRestoreAllowed();void confirm(
+`فایل «${file.name}»: ${number(incoming.courses.length)} درس، ${number(incoming.questions.length)} سؤال و ${number(incoming.exams.length)} آزمون.\
+ تمام بانک سؤال فعلی جایگزین می‌شود؛ اطلاعات مدرسه تغییر نمی‌کند. ادامه؟`,async()=>{assertRestoreAllowed();
+if(token!==generation)return false;busy=true;contents.inert=true;section.setAttribute("aria-busy","true");try{const before=D.validate(await R.read());assertRestoreAllowed();
+if(before.revision!==baseline.revision)throw Error("بانک پس از پیش‌نمایش تغییر کرده؛ فایل را دوباره بررسی کنید.");
 await F.suspend();assertRestoreAllowed();if(token!==generation)return false;await R.save(incoming,baseline.revision,{isCurrent:()=>current()&&token===generation&&
 !editorPending()});root.dispatchEvent(new Event("edu-question-bank-restored"));show("بانک سؤال و آزمون‌ها بازیابی شد؛ اطلاعات مدرسه تغییر نکرد.");
 return true}finally{busy=false;contents.inert=false;section.removeAttribute("aria-busy");paint(F.state())}}).catch(error)}catch(failure){error(failure)}finally{

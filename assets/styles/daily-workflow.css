@@ -704,10 +704,10 @@ gap:12px;padding:16px;border:1px solid var(--status-danger-line);border-radius:1
 svg{width:20px;height:20px}.wipe-scope ul{margin:0;padding-inline-start:20px;color:var(--workflow-muted);font-size:12px;line-height:2}.wipe-backup{padding:16px;
 border:1px solid var(--workflow-line);border-radius:14px;background:var(--theme-surface-subtle)}:is(#modalBody,.qb-body) .wipe-export{width:100%;min-height:44px;
 margin:12px 0 0;white-space:normal;line-height:1.8}.wipe-confirmation{display:grid;gap:8px}:is(#modalBody,.qb-body) .wipe-confirmation>label{margin:0;font-size:13px}
-:is(#modalBody,.qb-body) #wipeText{width:100%;min-height:44px;margin:0;font-size:14px;border-radius:10px}:is(#modalBody,.qb-body) .wipe-backup-check{display:flex;
-align-items:flex-start;gap:9px;min-height:44px;padding:12px;border:1px solid var(--workflow-line);border-radius:10px;line-height:1.9;cursor:pointer}:is(#modalBody,
-.qb-body) .wipe-backup-check input{flex:0 0 18px;width:18px;height:18px;min-height:0;margin:3px 0 0;accent-color:var(--workflow-accent)}:is(#modalBody,.qb-body)
-#wipeError:empty{display:none}:is(#modalBody,.qb-body) .wipe-actions{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;padding-top:14px;border-top:1px
+:is(#modalBody,.qb-body) :is(#wipeText,[data-qb-clear-text]){width:100%;min-height:44px;margin:0;font-size:14px;border-radius:10px}:is(#modalBody,.qb-body) .wipe-backup-check{
+display:flex;align-items:flex-start;gap:9px;min-height:44px;padding:12px;border:1px solid var(--workflow-line);border-radius:10px;line-height:1.9;cursor:pointer}
+:is(#modalBody,.qb-body) .wipe-backup-check input{flex:0 0 18px;width:18px;height:18px;min-height:0;margin:3px 0 0;accent-color:var(--workflow-accent)}:is(#modalBody,
+.qb-body) #wipeError:empty{display:none}:is(#modalBody,.qb-body) .wipe-actions{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;padding-top:14px;border-top:1px
 solid var(--workflow-line);margin:0}:is(#modalBody,.qb-body) .wipe-actions button{min-height:44px;margin:0;font-size:13px;white-space:normal}:is(#modalBody,.qb-body)
 .wipe-actions .danger{background:var(--workflow-accent);color:var(--theme-surface);border-color:var(--workflow-accent)}:is(#modalBody,.qb-body) .wipe-actions .danger:hover{
 background:var(--brand-hover)}}@media screen{:is(#modalBody,.qb-body) .backup-action-grid>.backup-share-entry{grid-column:auto;min-height:44px}:is(#modalBody,.qb-body)

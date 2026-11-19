@@ -68,20 +68,75 @@
       if (!current() || busy || confirmation) return Promise.resolve(false);
       return new Promise((resolve) => {
         const previous = document.activeElement;
+        const modal = clear ? document.getElementById("modal") : null;
+        if (
+          clear &&
+          (!modal ||
+            !modal.classList.contains("hidden") ||
+            root.showModal("پاک‌سازی اطلاعات بانک سؤال", "") === false)
+        ) {
+          resolve(false);
+          return;
+        }
+        let observer;
         const box = el(
           clear ? "form" : "section",
           undefined,
-          "qb-backup-confirm",
+          clear
+            ? "qb-backup-confirm record-editor wipe-editor"
+            : "qb-backup-confirm",
         );
-        box.setAttribute("role", "region");
+        if (!clear) box.setAttribute("role", "region");
         box.setAttribute("aria-label", label);
-        box.append(
-          el("h4", clear ? "حذف اطلاعات بانک سؤال" : "تأیید عملیات"),
-          el("p", label),
-        );
+        if (clear) {
+          const warning = el("section", undefined, "wipe-warning"),
+            symbol = el("span", undefined, "wipe-symbol"),
+            copy = el("div"),
+            scope = el("section", undefined, "wipe-scope"),
+            backup = el("section", undefined, "wipe-backup");
+          symbol.setAttribute("aria-hidden", "true");
+          symbol.insertAdjacentHTML("afterbegin", root.EduIcons.html("trash"));
+          copy.append(
+            el("h4", "حذف اطلاعات بانک سؤال از این مرورگر"),
+            el("p", "بازگردانی فقط با فایل پشتیبان بانک سؤال ممکن است."),
+          );
+          warning.append(symbol, copy);
+          scope.append(
+            el("h4", "اطلاعات مشمول حذف"),
+            el(
+              "p",
+              "درس‌ها، فصل‌ها، پودمان‌ها، سؤال‌ها و آزمون‌های بانک سؤال.",
+            ),
+          );
+          backup.append(el("p", label));
+          const exportButton = el(
+            "button",
+            "دریافت پشتیبان",
+            "ghost wipe-export",
+          );
+          exportButton.type = "button";
+          exportButton.onclick = async () => {
+            if (!current() || busy || confirmation !== box) return;
+            exportButton.disabled = true;
+            try {
+              await downloadBankBackup();
+            } catch (failure) {
+              clearError.hidden = false;
+              clearError.textContent = failure.message || String(failure);
+            } finally {
+              exportButton.disabled = false;
+            }
+          };
+          backup.append(exportButton);
+          box.append(warning, scope, backup);
+        } else box.append(el("h4", "تأیید عملیات"), el("p", label));
         let clearText, clearBackup, clearError;
         if (clear) {
-          const fields = el("div", undefined, "qb-backup-clear-fields");
+          const fields = el(
+            "div",
+            undefined,
+            "qb-backup-clear-fields wipe-confirmation",
+          );
           const textLabel = el("label", "برای تأیید، «حذف» را بنویسید");
           clearText = el("input");
           clearText.type = "text";
@@ -90,7 +145,11 @@
           clearText.placeholder = "حذف";
           clearText.setAttribute("data-qb-clear-text", "");
           textLabel.append(clearText);
-          const backupLabel = el("label", undefined, "qb-backup-clear-check");
+          const backupLabel = el(
+            "label",
+            undefined,
+            "qb-backup-clear-check wipe-backup-check",
+          );
           clearBackup = el("input");
           clearBackup.type = "checkbox";
           clearBackup.setAttribute("data-qb-clear-backup", "");
@@ -104,14 +163,30 @@
           fields.append(textLabel, backupLabel, clearError);
           box.append(fields);
         }
-        const actions = el("div", undefined, "qb-backup-confirm-actions");
+        const actions = el(
+          "div",
+          undefined,
+          clear
+            ? "qb-backup-confirm-actions record-editor-actions wipe-actions"
+            : "qb-backup-confirm-actions",
+        );
         box.append(actions);
         const close = (accepted = false) => {
           if (confirmation !== box) return;
           confirmation = null;
           cancelConfirmation = () => {};
+          observer?.disconnect();
+          const ownsModal = modal?.contains(box);
           box.remove();
           contents.inert = false;
+          if (ownsModal && !modal.classList.contains("hidden")) {
+            if (current()) root.closeModal();
+            else {
+              modal.classList.add("hidden");
+              modal.setAttribute("aria-hidden", "true");
+              root.setModalBackground(false);
+            }
+          }
           if (current() && previous?.isConnected)
             previous.focus({ preventScroll: true });
           resolve(accepted && current());
@@ -150,7 +225,19 @@
         confirmation = box;
         cancelConfirmation = close;
         contents.inert = true;
-        section.prepend(box);
+        if (clear) {
+          document.getElementById("modalBody").append(box);
+          observer = new MutationObserver(() => {
+            if (modal.classList.contains("hidden") || !modal.contains(box))
+              close();
+          });
+          observer.observe(modal, {
+            attributes: true,
+            attributeFilter: ["class"],
+            childList: true,
+            subtree: true,
+          });
+        } else section.prepend(box);
         cancel.focus({ preventScroll: true });
       }).then(async (accepted) => {
         if (!accepted || !current()) return false;
@@ -165,23 +252,24 @@
     const manualActions = el("div", undefined, "backup-action-grid");
     manual.append(manualActions);
     contents.append(manual);
+    async function downloadBankBackup() {
+      assertRestoreAllowed();
+      const bank = D.validate(await R.read());
+      if (!current()) return;
+      const url = URL.createObjectURL(
+        new Blob([D.size(bank)], { type: "application/json" }),
+      );
+      const link = el("a");
+      link.href = url;
+      link.download = F.suggestedName();
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
     const download = button(
       "دریافت فایل",
       "download",
       "download",
-      async () => {
-        assertRestoreAllowed();
-        const bank = D.validate(await R.read());
-        if (!current()) return;
-        const url = URL.createObjectURL(
-          new Blob([D.size(bank)], { type: "application/json" }),
-        );
-        const link = el("a");
-        link.href = url;
-        link.download = F.suggestedName();
-        link.click();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-      },
+      downloadBankBackup,
       manualActions,
     );
     download.classList.remove("ghost");
