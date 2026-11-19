@@ -1064,3 +1064,39 @@
     gap: 4px;
   }
 }
+
+@media screen and (max-width: 700px) {
+  #app :is(#singleFileBadge, #questionBankFileBadge) .single-file-message {
+    padding-inline-end: 0;
+  }
+  #app :is(#singleFileBadge, #questionBankFileBadge) .backup-file-purpose {
+    min-height: 44px;
+    padding-inline-end: 88px;
+  }
+  #app
+    :is(#singleFileBadge, #questionBankFileBadge):not(
+      :has(> .single-file-permission-action)
+    )
+    .backup-file-purpose {
+    min-height: 28px;
+    padding-inline-end: 0;
+  }
+  #app :is(#singleFileBadge, #questionBankFileBadge) .backup-notice-filename {
+    min-width: 0;
+    flex-shrink: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  #app :is(#singleFileBadge, #questionBankFileBadge) .backup-file-detail {
+    flex: 1 1 auto;
+    overflow-wrap: break-word;
+    word-break: normal;
+  }
+  #app
+    :is(#singleFileBadge, #questionBankFileBadge)
+    > .single-file-permission-action {
+    top: 8px;
+    transform: none;
+  }
+}

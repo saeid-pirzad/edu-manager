@@ -245,72 +245,77 @@ vertical-align:middle}.workspace-tool-actions{display:grid;grid-template-columns
 .workspace-tools>summary{font-size:12px}#app .workflow-welcome{padding:18px;margin-block:6px 16px}#app .dashboard-entity{padding:14px}#app .dashboard-entity-info
 h4{font-size:16px}#app .dashboard-entity-info p{font-size:13px}#app .tabs{gap:4px;padding:4px;scroll-padding-inline:12px}#app .tabs button{font-size:13px;padding-inline:14px}
 :is(#modal,.qb-dialog) .modal-body{padding:16px}:is(#modalBody,.qb-body) .record-editor-actions{display:flex;flex-wrap:wrap;gap:10px}:is(#modalBody,.qb-body) .record-editor-actions>
-button{flex:1 1 110px;min-height:48px;white-space:normal}#uiBottomNav button{min-height:54px;font-size:12px;gap:4px}}@media screen{#modal:has(:is([data-workspace-submit=save-entity],
-#studentEditor)){align-items:center;padding:20px}#modal:has(:is([data-workspace-submit=save-entity],#studentEditor)) .modal-dialog{width:100%;max-width:460px;max-height:calc(var(--app-viewport,
-100dvh) - 40px);border-radius:20px;box-shadow:0 24px 80px #2d34402b}#modal:has(:is([data-workspace-submit=save-entity],#studentEditor)) .modal-header{padding:16px
-20px;background:var(--theme-surface)}#modal:has(:is([data-workspace-submit=save-entity],#studentEditor)) .modal-body{padding:20px}:is(#modalBody,.qb-body) :is([data-workspace-submit=save-entity],
-#studentEditor){display:grid;grid-template-columns:minmax(0,1fr);gap:18px}:is(#modalBody,.qb-body) :is([data-workspace-submit=save-entity],#studentEditor) .record-editor-context{
-padding:14px 16px;background:var(--theme-canvas);border:1px solid var(--workflow-line);border-radius:12px}:is(#modalBody,.qb-body) :is([data-workspace-submit=save-entity],
-#studentEditor) .record-editor-context h4{margin-block:6px;font-size:16px;overflow-wrap:anywhere}:is(#modalBody,.qb-body) :is([data-workspace-submit=save-entity],
-#studentEditor)>label{display:grid;gap:8px;font-size:14px}:is(#modalBody,.qb-body) :is([data-workspace-submit=save-entity],#studentEditor) input{width:100%;min-height:48px;
-border-radius:10px}:is(#modalBody,.qb-body) #entityEditHint{margin:0;font-size:12px;line-height:1.9}:is(#modalBody,.qb-body) #entityEditError:empty{display:none}
-:is(#modalBody,.qb-body) :is([data-workspace-submit=save-entity],#studentEditor) .record-editor-actions{position:static;display:grid;grid-template-columns:minmax(0,1fr)
-auto;gap:10px;margin:0;padding:16px 0 0;box-shadow:none}:is(#modalBody,.qb-body) :is([data-workspace-submit=save-entity],#studentEditor) .record-editor-actions button{
-min-height:46px;border-radius:10px;padding-inline:20px}}@media screen and (max-width:700px){#modal:has(:is([data-workspace-submit=save-entity],#studentEditor)){
-padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}#modal:has(:is([data-workspace-submit=save-entity],
-#studentEditor)) .modal-dialog{max-height:calc(var(--app-viewport, 100dvh) - max(12px,env(safe-area-inset-top)) - max(12px,env(safe-area-inset-bottom)));min-height:0;
-border-radius:16px}#modal:has(:is([data-workspace-submit=save-entity],#studentEditor)) .modal-header{flex-shrink:0;padding:12px 14px;gap:8px}#modal:has(:is([data-workspace-submit=save-entity],
-#studentEditor)) .modal-header h3{font-size:15px}#modal:has(:is([data-workspace-submit=save-entity],#studentEditor)) .modal-body{min-height:0;padding:16px;scroll-padding-block:12px}
-:is(#modalBody,.qb-body) :is([data-workspace-submit=save-entity],#studentEditor){gap:14px}:is(#modalBody,.qb-body) :is([data-workspace-submit=save-entity],#studentEditor)
-.record-editor-context{padding:12px}:is(#modalBody,.qb-body) :is([data-workspace-submit=save-entity],#studentEditor) input{font-size:16px;scroll-margin-block:12px}
-:is(#modalBody,.qb-body) :is([data-workspace-submit=save-entity],#studentEditor) .record-editor-actions{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;
-padding-top:12px}:is(#modalBody,.qb-body) :is([data-workspace-submit=save-entity],#studentEditor) .record-editor-actions button{min-width:0;min-height:48px;padding-inline:8px;
-font-size:14px;white-space:normal}}@media screen{#app .lesson-items{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;padding:18px}#app .lesson-item{min-width:0;
-gap:14px}#app .lesson-identity>div{min-width:0;overflow-wrap:anywhere}#app .lesson-meta{align-content:start;font-size:13px}#app .lesson-policy{background:var(--theme-canvas);
-border-color:var(--workflow-line);color:var(--workflow-muted);padding:12px 14px;overflow-wrap:anywhere}#app .lesson-actions{display:grid;grid-template-columns:minmax(0,1fr)
-auto;align-items:start;gap:12px}#app .lesson-actions>.lesson-enter{grid-column:1;grid-row:1;min-width:0}#app .lesson-actions>.lesson-more{grid-column:2;grid-row:1;
-min-width:0}#app button.lesson-enter{width:100%;min-height:48px;padding:12px 14px;border-radius:12px;background:var(--workflow-soft);color:var(--workflow-accent);
-border:1px solid var(--theme-primary-line);font-size:14px;white-space:normal;text-align:start}#app :is(.lesson-more,.student-more){margin:0}#app :is(.lesson-more,
-.student-more)>summary{min-width:92px;min-height:48px;padding:10px 12px;background:var(--theme-surface);color:var(--theme-ink);border-color:var(--workflow-line);
-font-size:13px}#app :is(.lesson-more,.student-more)>summary:hover,#app :is(.lesson-more,.student-more)[open]>summary{background:var(--theme-surface-muted);border-color:var(--theme-primary-line)}
-#app :is(.lesson-more,.student-more)>summary:focus-visible{outline:2px solid var(--workflow-accent);outline-offset:3px}#app :is(.lesson-more,.student-more)[open]{
-z-index:40}#app :is(.lesson-more-menu,.student-more-menu){top:auto;bottom:calc(100% + 8px);width:min(240px,calc(100vw - 64px));padding:6px;gap:4px;border-color:var(--workflow-line);
-border-radius:12px;box-shadow:0 8px 28px #2d344024}#app :is(.lesson-more-menu,.student-more-menu) button{width:100%;min-height:46px;padding:10px 12px;font-size:14px;
-white-space:normal;border-radius:10px;background:transparent;border:1px solid transparent;color:var(--theme-ink)}#app :is(.lesson-more-menu,.student-more-menu) button:hover{
-background:var(--theme-surface-muted)}#app :is(.lesson-more-menu,.student-more-menu) button.danger{color:var(--status-danger);border-top-color:var(--workflow-line)}
-#app :is(.lesson-more-menu,.student-more-menu) button.danger:hover{background:var(--status-danger-soft)}#modal:has(#courseError) .modal-dialog{width:100%;max-width:680px;
-border-radius:20px}#modal:has(#courseError) .modal-header{background:var(--theme-surface)}#modal:has(#courseError) .modal-body{min-height:0}:is(#modalBody,.qb-body):has(#courseError)
-.record-editor-context{background:var(--theme-surface-muted);border:1px solid var(--workflow-line);border-radius:12px}:is(#modalBody,.qb-body):has(#courseError)
-.course-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}:is(#modalBody,.qb-body):has(#courseError) .course-field{min-width:0}:is(#modalBody,
-.qb-body):has(#courseError) #courseError:empty{display:none}}@media screen and (max-width:700px){#app .lesson-items{padding:12px 0 0;gap:12px}#modal:has(#courseError){
-padding:12px;align-items:center}#modal:has(#courseError) .modal-dialog{max-height:calc(var(--app-viewport, 100dvh) - 24px);border-radius:16px}#modal:has(#courseError)
-.modal-header{padding:12px 14px;flex-shrink:0}#modal:has(#courseError) .modal-body{padding:16px}:is(#modalBody,.qb-body):has(#courseError) .course-grid{grid-template-columns:minmax(0,1fr);
-gap:14px}:is(#modalBody,.qb-body):has(#courseError) .record-editor-actions{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}:is(#modalBody,.qb-body):has(#courseError)
-.record-editor-actions button{min-width:0;white-space:normal;min-height:48px;padding-inline:12px}}@media screen{#app .student-profile-actions{grid-template-columns:minmax(0,1fr)
-auto;align-items:start;gap:12px}#app .student-profile-actions>button{min-height:48px;padding:12px 14px;font-size:14px;border-radius:12px;background:var(--workflow-soft);
-color:var(--workflow-accent);border:1px solid var(--theme-primary-line)}#app .student-profile-info p{font-size:13px;line-height:1.9}#app .student-avatar{width:46px;
-height:46px;border-radius:14px;background:var(--status-warning-soft);color:var(--status-warning);border:1px solid var(--status-warning-line);box-shadow:inset 0 1px
-0 var(--theme-surface);font-size:18px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}#app .roster-toolbar input,#app .roster-toolbar select{min-height:48px;
-border-radius:10px}#app .roster-toolbar label>span,#app .roster-results{font-size:13px}:is(#modalBody,.qb-body) #studentEditor{gap:8px}:is(#modalBody,.qb-body) #studentEditor>
-label{margin-top:8px}:is(#modalBody,.qb-body) #studentEditor>p:not(.entity-create-error){margin:6px 0;font-size:12px;line-height:1.9;color:var(--workflow-muted)}
-:is(#modalBody,.qb-body) #studentEditError:empty{display:none}:is(#modalBody,.qb-body) #studentEditor .record-editor-actions>button[type=submit]{grid-column:1;grid-row:1}
-:is(#modalBody,.qb-body) #studentEditor .record-editor-actions>button[type=button]{grid-column:2;grid-row:1}}@media screen{#app:has(>.student-directory){display:flex;
-flex-direction:column}#app:has(>.student-directory)>*{min-width:0}#app:has(>.student-directory)>.topbar{order:0}#app:has(>.student-directory)>.workspace-bar{order:1}
-#app:has(>.student-directory)>.breadcrumb{order:2}#app:has(>.student-directory)>.view-heading{order:3}#app:has(>.student-directory)>.tabs{order:4}#app:has(>.student-directory)>
-.student-directory{order:5}#app:has(>.student-directory)>.student-add{order:6}#app:has(>.student-directory)>.student-import{order:7}#app:has(>.student-directory)>
-.student-archive{order:8}#app .student-directory{padding:0}#app .roster-heading{padding:20px;margin-bottom:16px;border-bottom:1px solid var(--workflow-line)}#app
-.roster-toolbar,#app .roster-results{padding-inline:20px}#app .student-import{padding:16px;background:var(--theme-surface-subtle);box-shadow:none}#app .student-import>
-summary{min-height:44px;color:var(--workflow-ink);font-size:14px;font-weight:600}#app .student-add-form label .muted{display:inline;font-size:12px}}@media screen and (max-width:700px){
-#app:has(>.student-directory)>.student-add{order:5}#app:has(>.student-directory)>.student-directory{order:6;display:flex;flex-direction:column;padding:0;background:transparent;
-border:0;box-shadow:none}#app .student-directory>.roster-toolbar{order:0;padding:16px;margin-bottom:18px;gap:14px;background:var(--theme-surface);border:1px solid
-var(--workflow-line);border-radius:16px}#app .roster-toolbar .roster-search input{min-height:48px;padding-inline:40px 12px;background-color:var(--theme-surface-subtle);
-background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23636466' str\
-oke-width='1.7' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='m16 16 5 5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right
-12px center;font-size:16px}#app .roster-toolbar .roster-sort select{background-color:var(--theme-surface-subtle);padding:10px 12px;font-size:16px}#app .student-directory>
-.roster-heading{order:1;padding:0 4px 12px;margin:0;border:0}#app .student-directory>.roster-results{order:2;padding-inline:4px;margin:0 0 12px}#app .student-directory>
-.student-roster{order:3;padding:0;gap:12px}#app .student-directory>.empty{order:4}}@media screen{#app :is(.session-directory,.class-lessons,.class-directory){padding:0;
-overflow:visible;background:var(--theme-surface)}#app .directory-heading{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px 12px;
-margin:0;padding:16px;border-bottom:1px solid var(--theme-line-soft);border-start-start-radius:inherit;border-start-end-radius:inherit;background:linear-gradient(115deg,var(--theme-surface),var(--theme-primary-soft))}
+button{flex:1 1 110px;min-height:48px;white-space:normal}#uiBottomNav button{min-height:54px;font-size:12px;gap:4px}}@media screen and (max-width:700px){#app :is(#singleFileBadge,
+#questionBankFileBadge) .single-file-message{padding-inline-end:0}#app :is(#singleFileBadge,#questionBankFileBadge) .backup-file-purpose{min-height:44px;padding-inline-end:88px}
+#app :is(#singleFileBadge,#questionBankFileBadge):not(:has(>.single-file-permission-action)) .backup-file-purpose{min-height:28px;padding-inline-end:0}#app :is(#singleFileBadge,
+#questionBankFileBadge) .backup-notice-filename{min-width:0;flex-shrink:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#app :is(#singleFileBadge,#questionBankFileBadge)
+.backup-file-detail{flex:1 1 auto;overflow-wrap:break-word;word-break:normal}#app :is(#singleFileBadge,#questionBankFileBadge)>.single-file-permission-action{top:8px;
+transform:none}}@media screen{#modal:has(:is([data-workspace-submit=save-entity],#studentEditor)){align-items:center;padding:20px}#modal:has(:is([data-workspace-submit=save-entity],
+#studentEditor)) .modal-dialog{width:100%;max-width:460px;max-height:calc(var(--app-viewport, 100dvh) - 40px);border-radius:20px;box-shadow:0 24px 80px #2d34402b}
+#modal:has(:is([data-workspace-submit=save-entity],#studentEditor)) .modal-header{padding:16px 20px;background:var(--theme-surface)}#modal:has(:is([data-workspace-submit=save-entity],
+#studentEditor)) .modal-body{padding:20px}:is(#modalBody,.qb-body) :is([data-workspace-submit=save-entity],#studentEditor){display:grid;grid-template-columns:minmax(0,1fr);
+gap:18px}:is(#modalBody,.qb-body) :is([data-workspace-submit=save-entity],#studentEditor) .record-editor-context{padding:14px 16px;background:var(--theme-canvas);
+border:1px solid var(--workflow-line);border-radius:12px}:is(#modalBody,.qb-body) :is([data-workspace-submit=save-entity],#studentEditor) .record-editor-context
+h4{margin-block:6px;font-size:16px;overflow-wrap:anywhere}:is(#modalBody,.qb-body) :is([data-workspace-submit=save-entity],#studentEditor)>label{display:grid;gap:8px;
+font-size:14px}:is(#modalBody,.qb-body) :is([data-workspace-submit=save-entity],#studentEditor) input{width:100%;min-height:48px;border-radius:10px}:is(#modalBody,
+.qb-body) #entityEditHint{margin:0;font-size:12px;line-height:1.9}:is(#modalBody,.qb-body) #entityEditError:empty{display:none}:is(#modalBody,.qb-body) :is([data-workspace-submit=save-entity],
+#studentEditor) .record-editor-actions{position:static;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin:0;padding:16px 0 0;box-shadow:none}
+:is(#modalBody,.qb-body) :is([data-workspace-submit=save-entity],#studentEditor) .record-editor-actions button{min-height:46px;border-radius:10px;padding-inline:20px}}
+@media screen and (max-width:700px){#modal:has(:is([data-workspace-submit=save-entity],#studentEditor)){padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right))
+max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}#modal:has(:is([data-workspace-submit=save-entity],#studentEditor)) .modal-dialog{max-height:calc(var(--app-viewport,
+100dvh) - max(12px,env(safe-area-inset-top)) - max(12px,env(safe-area-inset-bottom)));min-height:0;border-radius:16px}#modal:has(:is([data-workspace-submit=save-entity],
+#studentEditor)) .modal-header{flex-shrink:0;padding:12px 14px;gap:8px}#modal:has(:is([data-workspace-submit=save-entity],#studentEditor)) .modal-header h3{font-size:15px}
+#modal:has(:is([data-workspace-submit=save-entity],#studentEditor)) .modal-body{min-height:0;padding:16px;scroll-padding-block:12px}:is(#modalBody,.qb-body) :is([data-workspace-submit=save-entity],
+#studentEditor){gap:14px}:is(#modalBody,.qb-body) :is([data-workspace-submit=save-entity],#studentEditor) .record-editor-context{padding:12px}:is(#modalBody,.qb-body)
+:is([data-workspace-submit=save-entity],#studentEditor) input{font-size:16px;scroll-margin-block:12px}:is(#modalBody,.qb-body) :is([data-workspace-submit=save-entity],
+#studentEditor) .record-editor-actions{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;padding-top:12px}:is(#modalBody,.qb-body) :is([data-workspace-submit=save-entity],
+#studentEditor) .record-editor-actions button{min-width:0;min-height:48px;padding-inline:8px;font-size:14px;white-space:normal}}@media screen{#app .lesson-items{
+display:grid;grid-template-columns:minmax(0,1fr);gap:16px;padding:18px}#app .lesson-item{min-width:0;gap:14px}#app .lesson-identity>div{min-width:0;overflow-wrap:anywhere}
+#app .lesson-meta{align-content:start;font-size:13px}#app .lesson-policy{background:var(--theme-canvas);border-color:var(--workflow-line);color:var(--workflow-muted);
+padding:12px 14px;overflow-wrap:anywhere}#app .lesson-actions{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:12px}#app .lesson-actions>
+.lesson-enter{grid-column:1;grid-row:1;min-width:0}#app .lesson-actions>.lesson-more{grid-column:2;grid-row:1;min-width:0}#app button.lesson-enter{width:100%;min-height:48px;
+padding:12px 14px;border-radius:12px;background:var(--workflow-soft);color:var(--workflow-accent);border:1px solid var(--theme-primary-line);font-size:14px;white-space:normal;
+text-align:start}#app :is(.lesson-more,.student-more){margin:0}#app :is(.lesson-more,.student-more)>summary{min-width:92px;min-height:48px;padding:10px 12px;background:var(--theme-surface);
+color:var(--theme-ink);border-color:var(--workflow-line);font-size:13px}#app :is(.lesson-more,.student-more)>summary:hover,#app :is(.lesson-more,.student-more)[open]>
+summary{background:var(--theme-surface-muted);border-color:var(--theme-primary-line)}#app :is(.lesson-more,.student-more)>summary:focus-visible{outline:2px solid
+var(--workflow-accent);outline-offset:3px}#app :is(.lesson-more,.student-more)[open]{z-index:40}#app :is(.lesson-more-menu,.student-more-menu){top:auto;bottom:calc(100%
++ 8px);width:min(240px,calc(100vw - 64px));padding:6px;gap:4px;border-color:var(--workflow-line);border-radius:12px;box-shadow:0 8px 28px #2d344024}#app :is(.lesson-more-menu,
+.student-more-menu) button{width:100%;min-height:46px;padding:10px 12px;font-size:14px;white-space:normal;border-radius:10px;background:transparent;border:1px solid
+transparent;color:var(--theme-ink)}#app :is(.lesson-more-menu,.student-more-menu) button:hover{background:var(--theme-surface-muted)}#app :is(.lesson-more-menu,
+.student-more-menu) button.danger{color:var(--status-danger);border-top-color:var(--workflow-line)}#app :is(.lesson-more-menu,.student-more-menu) button.danger:hover{
+background:var(--status-danger-soft)}#modal:has(#courseError) .modal-dialog{width:100%;max-width:680px;border-radius:20px}#modal:has(#courseError) .modal-header{
+background:var(--theme-surface)}#modal:has(#courseError) .modal-body{min-height:0}:is(#modalBody,.qb-body):has(#courseError) .record-editor-context{background:var(--theme-surface-muted);
+border:1px solid var(--workflow-line);border-radius:12px}:is(#modalBody,.qb-body):has(#courseError) .course-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+gap:16px}:is(#modalBody,.qb-body):has(#courseError) .course-field{min-width:0}:is(#modalBody,.qb-body):has(#courseError) #courseError:empty{display:none}}@media screen and (max-width:700px){
+#app .lesson-items{padding:12px 0 0;gap:12px}#modal:has(#courseError){padding:12px;align-items:center}#modal:has(#courseError) .modal-dialog{max-height:calc(var(--app-viewport,
+100dvh) - 24px);border-radius:16px}#modal:has(#courseError) .modal-header{padding:12px 14px;flex-shrink:0}#modal:has(#courseError) .modal-body{padding:16px}:is(#modalBody,
+.qb-body):has(#courseError) .course-grid{grid-template-columns:minmax(0,1fr);gap:14px}:is(#modalBody,.qb-body):has(#courseError) .record-editor-actions{display:grid;
+grid-template-columns:minmax(0,1fr) auto;gap:8px}:is(#modalBody,.qb-body):has(#courseError) .record-editor-actions button{min-width:0;white-space:normal;min-height:48px;
+padding-inline:12px}}@media screen{#app .student-profile-actions{grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:12px}#app .student-profile-actions>
+button{min-height:48px;padding:12px 14px;font-size:14px;border-radius:12px;background:var(--workflow-soft);color:var(--workflow-accent);border:1px solid var(--theme-primary-line)}
+#app .student-profile-info p{font-size:13px;line-height:1.9}#app .student-avatar{width:46px;height:46px;border-radius:14px;background:var(--status-warning-soft);
+color:var(--status-warning);border:1px solid var(--status-warning-line);box-shadow:inset 0 1px 0 var(--theme-surface);font-size:18px;font-weight:600;line-height:1;
+font-variant-numeric:tabular-nums}#app .roster-toolbar input,#app .roster-toolbar select{min-height:48px;border-radius:10px}#app .roster-toolbar label>span,#app
+.roster-results{font-size:13px}:is(#modalBody,.qb-body) #studentEditor{gap:8px}:is(#modalBody,.qb-body) #studentEditor>label{margin-top:8px}:is(#modalBody,.qb-body)
+#studentEditor>p:not(.entity-create-error){margin:6px 0;font-size:12px;line-height:1.9;color:var(--workflow-muted)}:is(#modalBody,.qb-body) #studentEditError:empty{
+display:none}:is(#modalBody,.qb-body) #studentEditor .record-editor-actions>button[type=submit]{grid-column:1;grid-row:1}:is(#modalBody,.qb-body) #studentEditor
+.record-editor-actions>button[type=button]{grid-column:2;grid-row:1}}@media screen{#app:has(>.student-directory){display:flex;flex-direction:column}#app:has(>.student-directory)>
+*{min-width:0}#app:has(>.student-directory)>.topbar{order:0}#app:has(>.student-directory)>.workspace-bar{order:1}#app:has(>.student-directory)>.breadcrumb{order:2}
+#app:has(>.student-directory)>.view-heading{order:3}#app:has(>.student-directory)>.tabs{order:4}#app:has(>.student-directory)>.student-directory{order:5}#app:has(>
+.student-directory)>.student-add{order:6}#app:has(>.student-directory)>.student-import{order:7}#app:has(>.student-directory)>.student-archive{order:8}#app .student-directory{
+padding:0}#app .roster-heading{padding:20px;margin-bottom:16px;border-bottom:1px solid var(--workflow-line)}#app .roster-toolbar,#app .roster-results{padding-inline:20px}
+#app .student-import{padding:16px;background:var(--theme-surface-subtle);box-shadow:none}#app .student-import>summary{min-height:44px;color:var(--workflow-ink);
+font-size:14px;font-weight:600}#app .student-add-form label .muted{display:inline;font-size:12px}}@media screen and (max-width:700px){#app:has(>.student-directory)>
+.student-add{order:5}#app:has(>.student-directory)>.student-directory{order:6;display:flex;flex-direction:column;padding:0;background:transparent;border:0;box-shadow:none}
+#app .student-directory>.roster-toolbar{order:0;padding:16px;margin-bottom:18px;gap:14px;background:var(--theme-surface);border:1px solid var(--workflow-line);border-radius:16px}
+#app .roster-toolbar .roster-search input{min-height:48px;padding-inline:40px 12px;background-color:var(--theme-surface-subtle);background-image:url("data:image\
+/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23636466' stroke-width='1.7' stroke-linecap='\
+round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='m16 16 5 5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;font-size:16px}
+#app .roster-toolbar .roster-sort select{background-color:var(--theme-surface-subtle);padding:10px 12px;font-size:16px}#app .student-directory>.roster-heading{order:1;
+padding:0 4px 12px;margin:0;border:0}#app .student-directory>.roster-results{order:2;padding-inline:4px;margin:0 0 12px}#app .student-directory>.student-roster{
+order:3;padding:0;gap:12px}#app .student-directory>.empty{order:4}}@media screen{#app :is(.session-directory,.class-lessons,.class-directory){padding:0;overflow:visible;
+background:var(--theme-surface)}#app .directory-heading{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px 12px;margin:0;padding:16px;
+border-bottom:1px solid var(--theme-line-soft);border-start-start-radius:inherit;border-start-end-radius:inherit;background:linear-gradient(115deg,var(--theme-surface),var(--theme-primary-soft))}
 #app .directory-heading>div{display:contents}#app .directory-heading h3{grid-column:1;grid-row:1;display:flex;align-items:center;gap:8px;min-width:0;margin:0;font-size:15px;
 line-height:1.8}#app .directory-symbol{display:grid;place-items:center;flex:0 0 32px;width:32px;height:32px;border:1px solid var(--theme-primary-line);border-radius:10px;
 background:var(--theme-surface);color:var(--theme-primary)}#app .directory-symbol svg{width:18px;height:18px}#app .directory-heading .lesson-count{display:inline-grid;
