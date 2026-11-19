@@ -134,7 +134,6 @@
           !q ||
           typeof q.text !== "string" ||
           !q.text.trim() ||
-          q.text.length > 10000 ||
           !["mcq", "boolean", "blank", "essay"].includes(q.type) ||
           !Number.isSafeInteger(q.score) ||
           q.score < 1 ||
@@ -159,7 +158,7 @@
             !Array.isArray(q.options) ||
             q.options.length !== 4 ||
             Array.from(q.options).some(
-              (o) => typeof o !== "string" || !o.trim() || o.length > 2000,
+              (o) => typeof o !== "string" || !o.trim(),
             )
           )
             throw Error("چهار گزینهٔ معتبر برای سؤال لازم است.");

@@ -1630,6 +1630,35 @@ main({
       return printed&&!document.querySelector('.qb-print-frame')&&document.querySelector('.qb-sheet').outerHTML===before;
     })()`),
     );
+    check(
+      "actual print frame keeps English numbering with text and options outside score column",
+      await evaluate(`(async()=>{
+        const exam=structuredClone((await EduQuestionBankRepository.read()).exams[0]);
+        exam.questions=[
+          {type:'boolean',text:'Is this a book?',score:100,answer:true},
+          {type:'mcq',text:'Choose the answer?',score:100,options:['One','Two','Three','Four'],answer:0},
+          {type:'boolean',text:'این یک book است ؟',score:100,answer:false}
+        ];
+        let observed=false;
+        const observer=new MutationObserver(()=>{
+          const frame=document.querySelector('.qb-print-frame');
+          if(frame)frame.contentWindow.print=()=>{
+            const doc=frame.contentDocument,rows=[...doc.querySelectorAll('.qb-sheet-question')];
+            const prompt=rows[1].querySelector('.qb-sheet-prompt p');
+            const p=prompt.getBoundingClientRect(),options=rows[1].querySelector('.qb-sheet-options'),o=options.getBoundingClientRect();
+            const items=[...options.children].map(n=>n.getBoundingClientRect());
+            observed=rows.length===3&&rows[0].querySelector('.qb-sheet-prompt p').textContent.startsWith('1. Is this a book?')&&
+              rows[0].querySelector('.qb-sheet-number').textContent===''&&prompt.dir==='ltr'&&prompt.textContent==='2. Choose the answer?'&&
+              o.left>=p.left-1&&o.right<=p.right+1&&items[0].left<items[3].left&&
+              rows[2].querySelector('.qb-sheet-prompt p').dir==='rtl'&&rows[2].querySelector('.qb-sheet-number').textContent==='۳.';
+            frame.contentWindow.dispatchEvent(new Event('afterprint'));
+          };
+        });
+        observer.observe(document.body,{childList:true});
+        try{await EduQuestionBankUI.print(exam);}finally{observer.disconnect();}
+        return observed&&!document.querySelector('.qb-print-frame');
+      })()`),
+    );
     await evaluate(`__qbClick('بازگشت به آزمون‌های من');`);
     check(
       "large bank renders only one compact page",

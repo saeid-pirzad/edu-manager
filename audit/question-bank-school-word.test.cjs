@@ -361,6 +361,22 @@ test("invalid question bodies and more than 500 questions are rejected before do
     W.create({ questions: Array(500).fill(exam().questions[0]) }),
   );
 });
+test("Word exports long question and option text accepted by the bank without truncation", () => {
+  const text = "متن بلند سؤال ".repeat(900);
+  const option = "گزینهٔ بلند ".repeat(220);
+  const doc = W.documentXml({
+    questions: [
+      {
+        type: "mcq",
+        text,
+        score: 100,
+        options: [option, "دوم", "سوم", "چهارم"],
+      },
+    ],
+  });
+  assert.ok(plain(doc).includes(text));
+  assert.ok(plain(doc).includes(option));
+});
 test("download filenames cannot contain Windows paths, controls or direction overrides", () => {
   const name = W.filename({
     courseTitle: "../مدرسه\\درس\u202e",

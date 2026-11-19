@@ -451,27 +451,27 @@ const paragraph=(text,{bold=false,center=false,dir=direction(text)}={})=>'<w:p><
 acing w:after="100" w:line="300" w:lineRule="auto"/><w:jc w:val="'+(center?"center":"left")+'"/></w:pPr>'+mixedRuns(text,bold,dir)+"</w:p>";const cell=(body,width,shade=false)=>'\
 <w:tc><w:tcPr><w:tcW w:w="'+width+'" w:type="pct"/>'+(shade?'<w:shd w:fill="F1F3F5"/>':"")+'<w:vAlign w:val="top"/></w:tcPr>'+body+"</w:tc>";function documentXml(exam){
 if(!exam||!Array.isArray(exam.questions)||!exam.questions.length||exam.questions.length>500)throw Error("آزمون باید بین ۱ و ۵۰۰ سؤال داشته باشد.");
-let total=0;const rows=Array.from(exam.questions).map((q,i)=>{if(!q||typeof q.text!=="string"||!q.text.trim()||q.text.length>1e4||!["mcq","boolean","blank","ess\
-ay"].includes(q.type)||!Number.isSafeInteger(q.score)||q.score<1||q.score>1e4)throw Error("متن، نوع یا بارم سؤال برای خروجی Word معتبر نیست.");
-total+=q.score;const questionDirection=direction(q.text);let body=paragraph((questionDirection==="rtl"?number(i+1):String(i+1))+". "+q.text+(q.type==="boolean"?
-questionDirection==="rtl"?"    □ صحیح    □ غلط":"    □ True    □ False":""),{dir:questionDirection});if(q.type==="mcq"){if(!Array.isArray(q.options)||
-q.options.length!==4||Array.from(q.options).some(o=>typeof o!=="string"||!o.trim()||o.length>2e3))throw Error("چهار گزینهٔ معتبر برای سؤال لازم است.");
-const columns=q.options.every(o=>!/[\r\n]/.test(o)&&Array.from(o).length<=26)?4:2;const optionWidth=Math.floor(9500/columns);let optionRows="";for(let index=0;index<
-4;index+=columns){optionRows+="<w:tr><w:trPr><w:cantSplit/></w:trPr>"+q.options.slice(index,index+columns).map((option,j)=>cell(paragraph((questionDirection==="\
-rtl"?["الف","ب","ج","د"][index+j]:["A","B","C","D"][index+j])+") "+option,{dir:direction(option,questionDirection)}),5e3/columns)).join("")+"</w:tr>"}body+=
-'<w:tbl><w:tblPr><w:bidiVisual w:val="'+(questionDirection==="rtl"?"1":"0")+'"/><w:tblW w:w="5000" w:type="pct"/><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGr\
-id>'+Array.from({length:columns},()=>'<w:gridCol w:w="'+optionWidth+'"/>').join("")+"</w:tblGrid>"+optionRows+"</w:tbl><w:p/>"}if(q.type==="blank"&&!/_{2,}|…|\.{3,}|ـ{3,}/u.
-test(q.text))body+=paragraph(questionDirection==="rtl"?"پاسخ: ":"Answer: ",{dir:questionDirection});if(q.type==="essay")for(let line=0;line<4;line++)body+=paragraph(
-"",{dir:questionDirection});return"<w:tr><w:trPr>"+(q.text.length+(q.options||[]).join("").length<1200?"<w:cantSplit/>":"")+"</w:trPr>"+cell(body,4450)+cell(paragraph(
-number(q.score/100),{center:true}),550)+"</w:tr>"}).join("");const borders=["top","left","bottom","right","insideH","insideV"].map(side=>"<w:"+side+' w:val="sin\
-gle" w:sz="4" w:color="A8AFB8"/>').join("");return'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="'+NS+'"><w:body><w:tbl><w:tblPr><\
-w:bidiVisual/><w:tblW w:w="5000" w:type="pct"/><w:tblBorders>'+borders+'</w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="100" w:type="dxa"/\
-><w:left w:w="100" w:type="dxa"/><w:bottom w:w="100" w:type="dxa"/><w:right w:w="100" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid><w:gridCol w:w="9500"/><\
-w:gridCol w:w="1138"/></w:tblGrid><w:tr><w:trPr><w:cantSplit/><w:tblHeader/></w:trPr>'+cell(paragraph("سؤال‌ها",{bold:true}),4450,true)+cell(paragraph("\
-بارم",{bold:true,center:true}),550,true)+"</w:tr>"+rows+"<w:tr><w:trPr><w:cantSplit/></w:trPr>"+cell(paragraph("جمع بارم",{bold:true}),4450)+cell(paragraph(
-number(total/100),{bold:true,center:true}),550)+'</w:tr></w:tbl><w:p/><w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="720" w:right="634" w:bottom="72\
-0" w:left="634" w:header="0" w:footer="0"/><w:bidi/></w:sectPr></w:body></w:document>'}function zip(files){const encoder=new TextEncoder,parts=[],directory=[];let offset=0,
-size=0;const table=Uint32Array.from({length:256},(_,n)=>{for(let i=0;i<8;i++)n=n&1?3988292384^n>>>1:n>>>1;return n>>>0});for(const[name,text]of Object.entries(files)){
+let total=0;const rows=Array.from(exam.questions).map((q,i)=>{if(!q||typeof q.text!=="string"||!q.text.trim()||!["mcq","boolean","blank","essay"].includes(q.type)||
+!Number.isSafeInteger(q.score)||q.score<1||q.score>1e4)throw Error("متن، نوع یا بارم سؤال برای خروجی Word معتبر نیست.");total+=
+q.score;const questionDirection=direction(q.text);let body=paragraph((questionDirection==="rtl"?number(i+1):String(i+1))+". "+q.text+(q.type==="boolean"?questionDirection===
+"rtl"?"    □ صحیح    □ غلط":"    □ True    □ False":""),{dir:questionDirection});if(q.type==="mcq"){if(!Array.isArray(q.options)||q.options.length!==
+4||Array.from(q.options).some(o=>typeof o!=="string"||!o.trim()))throw Error("چهار گزینهٔ معتبر برای سؤال لازم است.");const columns=q.
+options.every(o=>!/[\r\n]/.test(o)&&Array.from(o).length<=26)?4:2;const optionWidth=Math.floor(9500/columns);let optionRows="";for(let index=0;index<4;index+=columns){
+optionRows+="<w:tr><w:trPr><w:cantSplit/></w:trPr>"+q.options.slice(index,index+columns).map((option,j)=>cell(paragraph((questionDirection==="rtl"?["الف","ب",
+"ج","د"][index+j]:["A","B","C","D"][index+j])+") "+option,{dir:direction(option,questionDirection)}),5e3/columns)).join("")+"</w:tr>"}body+='<w:tbl><w:tblPr><\
+w:bidiVisual w:val="'+(questionDirection==="rtl"?"1":"0")+'"/><w:tblW w:w="5000" w:type="pct"/><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid>'+Array.from({length:columns},
+()=>'<w:gridCol w:w="'+optionWidth+'"/>').join("")+"</w:tblGrid>"+optionRows+"</w:tbl><w:p/>"}if(q.type==="blank"&&!/_{2,}|…|\.{3,}|ـ{3,}/u.test(q.text))body+=
+paragraph(questionDirection==="rtl"?"پاسخ: ":"Answer: ",{dir:questionDirection});if(q.type==="essay")for(let line=0;line<4;line++)body+=paragraph("",{dir:questionDirection});
+return"<w:tr><w:trPr>"+(q.text.length+(q.options||[]).join("").length<1200?"<w:cantSplit/>":"")+"</w:trPr>"+cell(body,4450)+cell(paragraph(number(q.score/100),{
+center:true}),550)+"</w:tr>"}).join("");const borders=["top","left","bottom","right","insideH","insideV"].map(side=>"<w:"+side+' w:val="single" w:sz="4" w:color\
+="A8AFB8"/>').join("");return'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="'+NS+'"><w:body><w:tbl><w:tblPr><w:bidiVisual/><w:tblW\
+ w:w="5000" w:type="pct"/><w:tblBorders>'+borders+'</w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="100" w:type="dxa"/><w:left w:w="100" w:\
+type="dxa"/><w:bottom w:w="100" w:type="dxa"/><w:right w:w="100" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid><w:gridCol w:w="9500"/><w:gridCol w:w="1138"/\
+></w:tblGrid><w:tr><w:trPr><w:cantSplit/><w:tblHeader/></w:trPr>'+cell(paragraph("سؤال‌ها",{bold:true}),4450,true)+cell(paragraph("بارم",{bold:true,
+center:true}),550,true)+"</w:tr>"+rows+"<w:tr><w:trPr><w:cantSplit/></w:trPr>"+cell(paragraph("جمع بارم",{bold:true}),4450)+cell(paragraph(number(total/100),
+{bold:true,center:true}),550)+'</w:tr></w:tbl><w:p/><w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="720" w:right="634" w:bottom="720" w:left="634" w:\
+header="0" w:footer="0"/><w:bidi/></w:sectPr></w:body></w:document>'}function zip(files){const encoder=new TextEncoder,parts=[],directory=[];let offset=0,size=0;
+const table=Uint32Array.from({length:256},(_,n)=>{for(let i=0;i<8;i++)n=n&1?3988292384^n>>>1:n>>>1;return n>>>0});for(const[name,text]of Object.entries(files)){
 const filename2=encoder.encode(name),data=encoder.encode(text);let crc=4294967295;for(const byte of data)crc=table[(crc^byte)&255]^crc>>>8;crc=(crc^4294967295)>>>
 0;const header=new Uint8Array(30),h=new DataView(header.buffer);h.setUint32(0,67324752,true);h.setUint16(4,20,true);h.setUint16(6,2048,true);h.setUint16(12,33,true);
 h.setUint32(14,crc,true);h.setUint32(18,data.length,true);h.setUint32(22,data.length,true);h.setUint16(26,filename2.length,true);parts.push(header,filename2,data);
