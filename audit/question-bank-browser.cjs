@@ -1195,20 +1195,21 @@ main({
           );
         if (view === "questions") {
           check(
-            `question list scroll stays inside its bounded container ${width}`,
+            `question list follows document scrolling without a nested scroller ${width}`,
             await evaluate(`(()=>{
             const list=document.querySelector('.qb-question-library>.qb-results');
             const controls=document.querySelector('.qb-question-controls');
             const library=document.querySelector('.qb-question-library');
             const panel=document.querySelector('.qb-panel');
-            const before={controls:controls.getBoundingClientRect().top,height:library.getBoundingClientRect().height,panel:panel.scrollTop};
+            const before={x:scrollX,y:scrollY};
             list.scrollTop=list.scrollHeight;
-            const pass=list.scrollTop>0&&list.clientHeight<=420&&list.scrollHeight>list.clientHeight
-              &&getComputedStyle(list).overflowY==='auto'&&list.tabIndex===0
-              &&Math.abs(controls.getBoundingClientRect().top-before.controls)<1
-              &&Math.abs(library.getBoundingClientRect().height-before.height)<1
-              &&panel.scrollTop===before.panel&&list.querySelectorAll('.qb-question-row').length===15;
-            list.scrollTop=0;return pass;
+            const last=list.lastElementChild;
+            last.scrollIntoView({block:'center',behavior:'instant'});
+            const rect=last.getBoundingClientRect();
+            const pass=[list,library,panel].every(node=>getComputedStyle(node).overflowY==='visible'&&node.scrollHeight<=node.clientHeight+1)
+              &&list.scrollTop===0&&scrollY>0&&rect.top<innerHeight&&rect.bottom>0
+              &&controls.isConnected&&list.querySelectorAll('.qb-question-row').length===15;
+            scrollTo({left:before.x,top:before.y,behavior:'instant'});return pass;
           })()`),
           );
         }

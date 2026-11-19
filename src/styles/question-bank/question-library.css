@@ -132,12 +132,11 @@
 .qb-question-library {
   display: flex;
   flex-direction: column;
-  max-height: min(620px, 70dvh);
   min-width: 0;
   border: 1px solid var(--theme-line);
   border-radius: 12px;
   background: var(--theme-surface-subtle);
-  overflow: hidden;
+  overflow: visible;
 }
 .qb-question-library > .qb-question-controls,
 .qb-question-library > .qb-pager {
@@ -157,19 +156,13 @@
 }
 .qb-question-library > .qb-results {
   display: block;
-  flex: 0 1 auto;
+  flex: none;
   min-height: 0;
-  max-height: min(420px, 44dvh);
   gap: 6px;
   margin: 0;
   padding: 6px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-gutter: stable;
-  scroll-padding-block: 8px;
-  overflow-anchor: none;
+  overflow: visible;
+  overscroll-behavior: auto;
 }
 .qb-question-library > .qb-results:focus-visible {
   outline: 2px solid var(--theme-primary);
@@ -229,17 +222,14 @@
 }
 @media screen and (min-height: 760px) {
   .qb-panel:has(> .qb-question-library) {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    overflow: hidden;
+    display: block;
+    overflow: visible;
     scrollbar-gutter: auto;
   }
   .qb-question-entry {
     flex-shrink: 0;
   }
   .qb-question-library {
-    flex: 1;
     min-height: 0;
   }
 }

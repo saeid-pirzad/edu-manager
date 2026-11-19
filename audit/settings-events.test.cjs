@@ -13,9 +13,14 @@ function fixture(opened = true, password = "") {
     calls = [];
   const form = {
     addEventListener: (name, handler) => listeners.set(name, handler),
-    querySelector: () => ({
+    querySelector: (selector) => ({
       addEventListener: (name, handler) =>
-        listeners.set("cancel:" + name, handler),
+        listeners.set(
+          (selector === "[data-settings-cancel]" ? "cancel" : selector) +
+            ":" +
+            name,
+          handler,
+        ),
     }),
   };
   const context = vm.createContext({
@@ -48,7 +53,7 @@ test("settings binds submit and cancellation explicitly on each newly opened for
   const f = fixture();
   await f.context.openSettingsV24();
   assert.doesNotMatch(f.calls[0], /\son[a-z]+\s*=/i);
-  assert.equal(f.listeners.size, 2);
+  assert.equal(f.listeners.size, 4);
   let prevented = false,
     saved = 0;
   f.context.saveSettingsV24 = async () => {

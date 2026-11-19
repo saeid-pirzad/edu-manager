@@ -65,6 +65,28 @@ function fixture() {
     pending: () => vm.runInContext("settingsEditing", c),
   };
 }
+for (const value of ["   ", "x".repeat(257)]) {
+  test(
+    "invalid new password is rejected before hashing or persistence: " +
+      value.length,
+    async () => {
+      const f = fixture();
+      f.input.value = value;
+      f.c.recordFieldError = (message, field) =>
+        Object.assign(Error(message), { field });
+      let hashed = false;
+      f.c.hashPassword = async () => {
+        hashed = true;
+        return "bad";
+      };
+      assert.equal(await f.c.saveSettingsV24(), false);
+      assert.equal(hashed, false);
+      assert.equal(f.c.db.settings.password, "old-hash");
+      assert.equal(f.errors[0].field, "newPass");
+      assert.deepEqual(f.effects, []);
+    },
+  );
+}
 test("password hashing rechecks connection before changing stored password", async () => {
   const f = fixture();
   f.c.hashPassword = async () => {

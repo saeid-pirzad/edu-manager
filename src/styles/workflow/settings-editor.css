@@ -3,18 +3,18 @@
     width: min(100%, 480px);
   }
   :is(#modalBody, .qb-body) .settings-editor {
-    gap: 18px;
+    gap: 14px;
   }
   :is(#modalBody, .qb-body) .settings-context {
     position: relative;
-    padding: 18px;
+    padding: 12px 14px;
     border: 1px solid var(--theme-line);
     border-radius: 14px;
     background: var(--theme-surface-subtle);
   }
   :is(#modalBody, .qb-body) .settings-context h4 {
-    margin: 6px 0;
-    font-size: 21px;
+    margin: 4px 0;
+    font-size: 17px;
   }
   :is(#modalBody, .qb-body) .settings-context p {
     margin: 0;
@@ -29,7 +29,7 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    margin-top: 14px;
+    margin-top: 8px;
     padding: 5px 10px;
     border-radius: 20px;
     background: var(--theme-surface-muted);
@@ -82,9 +82,33 @@
   }
   .settings-remove-section {
     padding: 14px;
-    border: 1px solid var(--theme-line);
+    border: 1px solid var(--status-warning-line);
     border-radius: 12px;
-    background: var(--theme-surface-subtle);
+    background: var(--status-warning-soft);
+  }
+  .settings-remove-section[hidden] {
+    display: none;
+  }
+  .settings-show-password {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    margin: 0;
+    color: var(--theme-muted);
+    font-size: 12px;
+    cursor: pointer;
+  }
+  :is(#modalBody, .qb-body) .settings-section .settings-show-password input {
+    width: 18px;
+    height: 18px;
+    min-height: 18px;
+    margin: 0;
+    accent-color: var(--theme-primary);
+  }
+  .settings-section input:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
   }
   :is(#modalBody, .qb-body) .settings-remove-option {
     display: flex;
@@ -115,6 +139,9 @@
     font-size: 11px;
     line-height: 1.9;
     color: var(--theme-muted);
+    padding: 10px 12px;
+    border-radius: 9px;
+    background: var(--status-info-soft);
   }
   :is(#modalBody, .qb-body) .settings-editor .record-editor-actions {
     display: flex;
