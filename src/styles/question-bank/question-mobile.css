@@ -300,7 +300,7 @@
     margin-inline: 26px 36px;
   }
   .qb-sheet-options {
-    margin-inline-start: 26px;
+    margin: 10px 34px 0 36px;
     column-gap: 6px;
   }
   .qb-sheet-options li {

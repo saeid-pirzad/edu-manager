@@ -36,6 +36,38 @@
   color: var(--theme-primary);
   font-weight: 500;
 }
+.qb-preview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 8px;
+}
+.qb-preview-actions > button:first-child {
+  margin-inline-end: auto;
+}
+#app .qb-page .qb-preview-actions > [data-qb-school-word] {
+  --button-ink: var(--status-leave);
+  --button-fill: var(--status-leave-fill);
+  --button-hover: var(--status-leave-hover);
+  --button-soft: var(--status-leave-soft);
+  --button-line: var(--status-leave-line);
+}
+#app .qb-page .qb-body .qb-preview-actions > button.ui-button {
+  min-height: 44px !important;
+  height: auto !important;
+  min-width: 0;
+  white-space: normal;
+}
+@media (max-width: 700px) {
+  .qb-preview-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .qb-preview-actions > button:first-child {
+    grid-column: 1 / -1;
+    margin-inline-end: 0;
+  }
+}
 .qb-exam-results > .qb-empty {
   grid-column: 1/-1;
 }

@@ -490,6 +490,7 @@
         "src/features/question-bank/backup-ui.js",
         "src/features/question-bank/question-import.js",
         "src/features/question-bank/question-import-ui.js",
+        "src/features/question-bank/school-word.js",
         "src/features/question-bank/ui.js"
       ]
     }

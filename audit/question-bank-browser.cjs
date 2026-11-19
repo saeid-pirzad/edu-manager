@@ -1492,6 +1492,75 @@ main({
       behavior: "allow",
       downloadPath: downloadDir,
     });
+    const beforeWord = await evaluate(
+      "(async()=>({data:JSON.stringify(await EduQuestionBankRepository.read()),sheet:document.querySelector('.qb-sheet').outerHTML,width:innerWidth,height:innerHeight}))()",
+    );
+    check(
+      "English and Persian print options stay inside the question column, outside scores",
+      await evaluate(`(()=>{
+        const lists=[...document.querySelectorAll('.qb-sheet-options')];
+        return lists.length>0&&lists.every(list=>{
+          const original=list.dir;
+          const prompt=list.closest('.qb-sheet-question').querySelector('.qb-sheet-prompt p').getBoundingClientRect();
+          const pass=['rtl','ltr'].every(dir=>{
+            list.dir=dir;
+            const bounds=list.getBoundingClientRect();
+            return bounds.left>=prompt.left-1&&bounds.right<=prompt.right+1;
+          });
+          list.dir=original;
+          return pass;
+        });
+      })()`),
+    );
+    for (const width of [320, 390, 768, 1440]) {
+      await cdp("Emulation.setDeviceMetricsOverride", {
+        width,
+        height: 900,
+        deviceScaleFactor: 1,
+        mobile: width < 700,
+      });
+      check(
+        "school Word export is accessible without overflow " + width,
+        await evaluate(
+          `(()=>{const panel=document.querySelector('.qb-preview-actions'),button=panel.querySelector('[data-qb-school-word]'),print=panel.children[1],box=panel.getBoundingClientRect(),wordBox=button.getBoundingClientRect(),printBox=print.getBoundingClientRect();const standard=getComputedStyle(panel.firstElementChild),style=getComputedStyle(button);const matching=['borderTopWidth','borderRadius','fontWeight','fontSize'].every(key=>style[key]===standard[key]);const observed={height:wordBox.height,printHeight:printBox.height,top:wordBox.top,printTop:printBox.top,scroll:panel.scrollWidth,width:panel.clientWidth,left:box.left,right:box.right,viewport:innerWidth,color:style.backgroundColor,matching};const pass=!document.querySelector('.qb-school-output')&&panel.children.length===3&&matching&&button.classList.contains('ghost')&&!button.dataset.uiVariant&&observed.height>=44&&Math.abs(wordBox.top-printBox.top)<1&&Math.abs(wordBox.height-printBox.height)<1&&button.scrollWidth<=button.clientWidth+1&&observed.scroll<=observed.width+1&&box.left>=0&&box.right<=innerWidth+1&&style.backgroundColor!==standard.backgroundColor&&style.color!==standard.color&&style.backgroundColor!==getComputedStyle(print).backgroundColor;if(!pass)throw Error(JSON.stringify(observed));return pass;})()`,
+        ),
+      );
+      const wordActionShot = await cdp("Page.captureScreenshot", {
+        format: "png",
+      });
+      fs.writeFileSync(
+        path.join(out, `word-actions-${width}.png`),
+        Buffer.from(wordActionShot.data, "base64"),
+      );
+    }
+    await cdp("Emulation.setDeviceMetricsOverride", {
+      width: beforeWord.width,
+      height: beforeWord.height,
+      deviceScaleFactor: 1,
+      mobile: false,
+    });
+    await evaluate("document.querySelector('[data-qb-school-word]').click()");
+    let wordFile;
+    for (let attempt = 0; attempt < 100 && !wordFile; attempt++) {
+      wordFile = fs
+        .readdirSync(downloadDir)
+        .find((name) => name.endsWith(".docx"));
+      if (!wordFile) await delay(30);
+    }
+    check(
+      "school Word download is a real ZIP containing OOXML, not renamed HTML",
+      wordFile &&
+        fs.readFileSync(path.join(downloadDir, wordFile)).readUInt32LE(0) ===
+          0x04034b50,
+    );
+    const afterWord = await evaluate(
+      "(async()=>({data:JSON.stringify(await EduQuestionBankRepository.read()),sheet:document.querySelector('.qb-sheet').outerHTML}))()",
+    );
+    check(
+      "school Word export never changes saved questions or the existing print sheet",
+      beforeWord.data === afterWord.data &&
+        beforeWord.sheet === afterWord.sheet,
+    );
     await evaluate(
       "(async()=>{__qbClick('بازگشت به آزمون‌های من');await __qbOpenBackup();__qbClick('دریافت فایل');})()",
     );

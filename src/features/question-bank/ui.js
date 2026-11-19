@@ -160,6 +160,18 @@
           : "2";
     }
   }
+  function sheetTextDirection(text, fallback = "rtl") {
+    const chars = Array.from(String(text));
+    if (
+      chars.some(
+        (char) =>
+          /\p{Letter}/u.test(char) &&
+          /[\p{Script=Arabic}\p{Script=Hebrew}]/u.test(char),
+      )
+    )
+      return "rtl";
+    return chars.some((char) => /\p{Letter}/u.test(char)) ? "ltr" : fallback;
+  }
   function sheet(exam) {
     const s = el("article", undefined, "qb-sheet");
     s.dir = "rtl";
@@ -234,15 +246,33 @@
     exam.questions.forEach((q, i) => {
       const row = el("section", undefined, "qb-sheet-question");
       const body = el("div", undefined, "qb-sheet-prompt");
-      const prompt = el("p", q.text);
+      const questionDirection = sheetTextDirection(q.text);
+      const prompt = el(
+        "p",
+        questionDirection === "ltr" ? `${i + 1}. ${q.text}` : q.text,
+      );
+      prompt.dir = questionDirection;
       if (q.type === "boolean") {
-        prompt.append(
-          document.createTextNode("  "),
-          el("span", "□ صحیح     □ غلط", "qb-sheet-boolean"),
+        const choices = el(
+          "span",
+          questionDirection === "rtl"
+            ? "□ صحیح     □ غلط"
+            : "□ True     □ False",
+          "qb-sheet-boolean",
         );
+        choices.dir = questionDirection;
+        prompt.append(document.createTextNode("  "), choices);
       }
+      const questionNumber = el(
+        "span",
+        questionDirection === "rtl" ? `${number(i + 1)}.` : "",
+        "qb-sheet-number",
+      );
+      questionNumber.dir = "ltr";
+      if (questionDirection === "ltr")
+        questionNumber.setAttribute("aria-hidden", "true");
       body.append(
-        el("span", `${number(i + 1)}.`, "qb-sheet-number"),
+        questionNumber,
         prompt,
         el("span", number(q.score / 100), "qb-sheet-score"),
       );
@@ -253,9 +283,19 @@
       row.append(body);
       if (q.type === "mcq") {
         const options = el("ol", undefined, "qb-sheet-options");
+        options.dir = questionDirection;
         q.options.forEach((option, j) => {
           const item = el("li");
-          item.append(el("span", `${letters[j]})`), el("span", option));
+          item.dir = questionDirection;
+          const optionText = el("bdi", option);
+          optionText.dir = sheetTextDirection(option, questionDirection);
+          item.append(
+            el(
+              "span",
+              `${questionDirection === "rtl" ? letters[j] : ["A", "B", "C", "D"][j]})`,
+            ),
+            optionText,
+          );
           options.append(item);
         });
         row.append(options);
@@ -1850,6 +1890,21 @@
         actions,
       );
       button("چاپ / PDF آزمون", () => print(exam).catch(error), actions);
+      const word = button(
+        "دریافت Word بدون سربرگ",
+        () => {
+          try {
+            root.EduQuestionBankSchoolWord.download(exam);
+          } catch (failure) {
+            error(failure);
+          }
+        },
+        actions,
+      );
+      word.dataset.qbSchoolWord = "";
+      word.dataset.uiTone = "copy";
+      word.title =
+        "فایل Word قابل‌ویرایش؛ فقط سؤال‌ها و بارم، بدون سربرگ و پاسخ صحیح";
       content.append(sheet(exam));
       root.scrollTo({ top: 0, left: 0, behavior: "instant" });
       updateLayout();
