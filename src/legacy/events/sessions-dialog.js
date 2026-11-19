@@ -79,6 +79,16 @@ EduLegacyEvents.register(
 );
 
 EduLegacyEvents.register(
+  "sessions-dialog:remaining-absent",
+  function () {
+    return runSessionEditorAction(this, () =>
+      setAllAttendance("absent", { onlyUnset: true }),
+    );
+  },
+  { mutating: true },
+);
+
+EduLegacyEvents.register(
   "sessions-dialog:7",
   function (event) {
     return runSessionEditorAction(this, () => setAllAttendance("absent"));

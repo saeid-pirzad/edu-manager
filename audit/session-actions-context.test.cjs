@@ -454,46 +454,47 @@ test("period correction rejects a collision even when the date did not change", 
   assert.equal(f.writes.length, 0);
 });
 
-test("fill-unset attendance preserves recorded exceptions and changes only missing frozen-roster members", async () => {
-  const f = fixture();
-  f.session.roster = [
-    "historical",
-    "absent",
-    "leave",
-    "late",
-    "present",
-    "missing",
-  ].map((id) => ({ id, name: id }));
-  f.session.attendance = {
-    absent: "absent",
-    leave: "leave",
-    late: "late:17",
-    present: "present",
-    outsider: "leave",
-  };
-  await f.c.setAllAttendanceV24("present", { onlyUnset: true });
-  assert.deepEqual(f.session.attendance, {
-    absent: "absent",
-    leave: "leave",
-    late: "late:17",
-    present: "present",
-    outsider: "leave",
-    historical: "present",
-    missing: "present",
+for (const status of ["present", "absent"])
+  test(`fill-unset ${status} preserves recorded exceptions and changes only missing frozen-roster members`, async () => {
+    const f = fixture();
+    f.session.roster = [
+      "historical",
+      "absent",
+      "leave",
+      "late",
+      "present",
+      "missing",
+    ].map((id) => ({ id, name: id }));
+    f.session.attendance = {
+      absent: "absent",
+      leave: "leave",
+      late: "late:17",
+      present: "present",
+      outsider: "leave",
+    };
+    await f.c.setAllAttendanceV24(status, { onlyUnset: true });
+    assert.deepEqual(f.session.attendance, {
+      absent: "absent",
+      leave: "leave",
+      late: "late:17",
+      present: "present",
+      outsider: "leave",
+      historical: status,
+      missing: status,
+    });
+    assert.equal(f.session.attendance.current, undefined);
+    assert.equal(f.writes.length, 1);
+    assert.equal(f.writes[0].sessionId, "session");
+    assertViewEffects(f, "attendance");
+    const before = JSON.stringify(f.session);
+    assert.equal(
+      await f.c.setAllAttendanceV24(status, { onlyUnset: true }),
+      false,
+    );
+    assert.equal(JSON.stringify(f.session), before);
+    assert.equal(f.writes.length, 1);
+    assertViewEffects(f, "attendance");
   });
-  assert.equal(f.session.attendance.current, undefined);
-  assert.equal(f.writes.length, 1);
-  assert.equal(f.writes[0].sessionId, "session");
-  assertViewEffects(f, "attendance");
-  const before = JSON.stringify(f.session);
-  assert.equal(
-    await f.c.setAllAttendanceV24("present", { onlyUnset: true }),
-    false,
-  );
-  assert.equal(JSON.stringify(f.session), before);
-  assert.equal(f.writes.length, 1);
-  assertViewEffects(f, "attendance");
-});
 
 test("explicit bulk overwrite remains available and a repeated identical overwrite is a no-op", async () => {
   const f = fixture();

@@ -1,5 +1,42 @@
 /* The daily session editor prioritizes scanning names and selecting a clear status. */
 @media screen {
+  #modalBody .session-workspace .session-attendance-heading {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid var(--theme-line-soft);
+    border-radius: 12px;
+    background: var(--theme-surface-subtle);
+  }
+  #modalBody .session-workspace .session-attendance-heading > div:first-child {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 6px 10px;
+    min-width: 0;
+  }
+  #modalBody .session-workspace .session-attendance-heading h4 {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--theme-ink);
+    white-space: nowrap;
+  }
+  #modalBody .session-workspace .session-attendance-heading p {
+    margin: 0;
+    font-size: 11px;
+    line-height: 1.8;
+    color: var(--theme-muted);
+    text-align: end;
+  }
+  #modalBody .session-workspace .session-attendance-progress-line {
+    grid-column: 1 / -1;
+    margin-top: 0;
+  }
+  #modalBody .session-workspace .session-attendance-bulk .ui-button-label {
+    white-space: nowrap;
+    line-height: 1.5;
+  }
   :is(#modalBody, .qb-body) .session-workspace .session-context {
     gap: 10px;
     padding: 12px;
@@ -164,5 +201,27 @@
     :is(input, select) {
     min-height: 48px;
     font-size: 16px;
+  }
+}
+
+@media screen and (max-width: 420px) {
+  #modalBody .session-workspace .session-attendance-heading {
+    gap: 10px;
+    padding: 10px;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  #modalBody .session-workspace .session-attendance-bulk .control-icon {
+    display: none;
+  }
+  #modalBody .session-workspace .session-attendance-bulk .ui-button-label {
+    min-width: 0;
+    white-space: normal;
+  }
+  #modalBody .session-workspace .session-attendance-bulk button.ui-button {
+    gap: 0;
+    padding-inline: 3px;
+    font-size: 11px;
   }
 }

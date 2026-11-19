@@ -415,54 +415,60 @@ background:transparent;color:var(--theme-muted);font-size:14px;font-weight:500}:
 background:var(--theme-surface);color:var(--theme-primary);font-weight:600;box-shadow:inset 0 -2px 0 var(--theme-primary)}.session-attendance-heading{display:grid;
 grid-template-columns:minmax(0,1fr) minmax(0,320px);align-items:center;gap:12px;margin-bottom:8px}.session-attendance-heading h4,:is(#modalBody,.qb-body) [data-session-panel=activity]>
 h4,.session-activity-records>h4{margin:0;font-size:15px}.session-attendance-heading p,:is(#modalBody,.qb-body) [data-session-panel=activity]>p{margin:5px 0 0;color:var(--workflow-muted);
-font-size:12px;line-height:1.9}.session-attendance-bulk{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;width:100%;max-width:100%;min-width:0;
-box-sizing:border-box;padding:3px;border-radius:11px;background:var(--theme-surface-subtle);box-shadow:inset 0 0 0 1px var(--theme-line)}:is(#modalBody,.qb-body)
-.session-attendance-bulk button,:is(#modalBody,.qb-body) .session-workspace .session-attendance-bulk button.ui-button{--button-ink: var(--theme-muted);--button-fill:
-var(--theme-surface);--button-soft: var(--theme-surface);--button-hover: var(--theme-surface-subtle);--button-line: var(--theme-line-soft);background:var(--button-soft)!important;
-color:var(--button-ink)!important;border-color:var(--button-line)!important;width:100%;min-width:0;min-height:48px;height:48px;margin:0;padding:4px;border:1px solid
-transparent;border-radius:8px;font-size:12px;line-height:1.5;text-align:center;white-space:normal;overflow-wrap:anywhere}:is(#modalBody,.qb-body) .session-attendance-bulk
-.control-icon,:is(#modalBody,.qb-body) .session-attendance-bulk .control-icon>svg{width:16px;height:16px;flex-basis:16px}:is(#modalBody,.qb-body) .session-workspace
-.session-attendance-bulk button:is(.success,[data-legacy-click="sessions-dialog:all-present"]){--button-ink: var(--status-success);--button-line: var(--status-success-line);
---button-hover: var(--status-success-soft)}:is(#modalBody,.qb-body) .session-workspace .session-attendance-bulk button.danger{--button-ink: var(--status-danger);
---button-line: var(--status-danger-line);--button-hover: var(--status-danger-soft)}:is(#modalBody,.qb-body) .session-workspace .session-attendance-bulk button.ui-button:not(:disabled):hover{
-background:var(--button-hover)!important;border-color:var(--button-line)!important}:is(#modalBody,.qb-body) .session-attendance-list{display:grid;min-width:0;width:100%;
-gap:0;padding:0;border:0;border-radius:0;background:transparent}:is(#modalBody,.qb-body) .session-workspace .att-row{display:grid;grid-template-columns:minmax(0,1fr)
-minmax(0,320px);min-width:0;width:100%;align-items:center;gap:12px;margin:0;padding:14px 0;border:0;border-bottom:1px solid var(--theme-line-soft);border-radius:0;
-background:transparent;box-shadow:none}:is(#modalBody,.qb-body) .session-workspace .att-name{display:flex;align-items:center;gap:10px;min-width:0;font-size:14px}
-:is(#modalBody,.qb-body) .session-attendance-list .att-name>span:last-child{min-width:0;font-weight:600;line-height:1.9;white-space:normal;overflow-wrap:anywhere}
-.attendance-number{display:grid;place-items:center;width:30px;height:30px;flex:0 0 30px;border-radius:10px;border:1px solid var(--theme-line-soft);background:var(--theme-surface-subtle);
-color:var(--theme-primary);font-size:12px;font-variant-numeric:tabular-nums}:is(#modalBody,.qb-body) .session-workspace .att-btns{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
-min-width:0;width:100%;max-width:100%;padding:3px;border-radius:11px;background:var(--theme-surface-subtle);box-shadow:inset 0 0 0 1px var(--theme-line-soft)}:is(#modalBody,
-.qb-body) .session-workspace .att-btns button{min-width:0;width:100%;min-height:48px;height:48px;margin:0;padding:4px;border:1px solid transparent;border-radius:8px;
-background:var(--theme-surface);color:var(--theme-muted);font-size:12px;line-height:1.5;white-space:normal;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
-:is(#modalBody,.qb-body) .session-workspace .att-btns .present.active{background:var(--status-success-soft);color:var(--status-success);border-color:var(--status-success-line)}
-:is(#modalBody,.qb-body) .session-workspace .att-btns .absent.active{background:var(--status-danger-soft);color:var(--status-danger);border-color:var(--status-danger-line)}
-:is(#modalBody,.qb-body) .session-workspace .att-btns .late.active{background:var(--status-warning-soft);color:var(--status-warning);border-color:var(--status-warning-line)}
-:is(#modalBody,.qb-body) .session-workspace .att-btns .leave.active{background:var(--status-leave-soft);color:var(--status-leave);border-color:var(--status-leave-line)}
-:is(#modalBody,.qb-body) .session-workspace .att-btns button:not(.active):hover{background:var(--theme-surface-subtle);border-color:var(--theme-line)}:is(#modalBody,
-.qb-body) .session-workspace .att-btns .active{font-weight:600;box-shadow:inset 0 -2px 0 currentColor}:is(#modalBody,.qb-body) .session-workspace button:focus-visible{
-outline:2px solid var(--theme-focus);outline-offset:2px}:is(#modalBody,.qb-body) .session-entry-form{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);
-gap:14px;margin:16px 0 22px;padding:16px;border:1px solid var(--theme-line-soft);border-radius:14px;background:var(--theme-surface)}:is(#modalBody,.qb-body) .session-entry-form>
-:is(.session-field-wide,.session-entry-actions){grid-column:1 / -1}:is(#modalBody,.qb-body) .session-entry-actions{display:flex;gap:8px;min-width:0}:is(#modalBody,
-.qb-body) .session-entry-actions>button{flex:1;min-width:0;padding-inline:8px;font-size:12px;white-space:nowrap;min-height:46px;margin:0;border-radius:11px}.session-activity-records>
-h4{margin-bottom:12px}:is(#modalBody,.qb-body) .session-score-table{width:100%;table-layout:fixed}:is(#modalBody,.qb-body) .session-score-table :is(th,td){padding:10px;
-font-size:12px;overflow-wrap:anywhere}:is(#modalBody,.qb-body) .session-score-table button{min-width:44px;min-height:44px}:is(#modalBody,.qb-body) .session-workspace-footer{
-position:sticky;bottom:-20px;z-index:4;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin-top:12px;padding:12px 0;border-top:1px solid var(--theme-line-soft);
-background:var(--theme-surface)}:is(#modalBody,.qb-body) .session-workspace-footer button{min-width:0;min-height:46px;margin:0;padding-inline:16px;border-radius:11px;
-font-size:13px}:is(#modalBody,.qb-body) .session-workspace-footer .success{border:1px solid var(--status-success-line);background:var(--status-success-soft);color:var(--status-success)}}
-@media screen and (max-width:700px){#app .session-create{padding:16px}#app .session-create-form{grid-template-columns:minmax(0,1fr) 90px;gap:10px}#modal:has(.session-workspace,
-.session-start-panel){padding:8px;align-items:center}#modal:has(.session-workspace,.session-start-panel) .modal-dialog{max-height:calc(var(--app-viewport, 100dvh)
-- 16px);border-radius:17px}#modal:has(.session-workspace,.session-start-panel) .modal-header{padding:10px 14px}#modal:has(.session-workspace,.session-start-panel)
-.modal-body{padding:14px}.session-context{gap:10px;padding-bottom:12px}.session-context-icon{width:36px;height:36px;flex-basis:36px;border-radius:11px}.session-context
-h4{font-size:16px}:is(#modalBody,.qb-body) .session-mode-picker{top:-14px;margin-block:14px 18px}:is(#modalBody,.qb-body) .session-mode-picker button{font-size:13px}
-:is(#modalBody,.qb-body) .session-field :is(input,select){font-size:16px}:is(#modalBody,.qb-body) .session-date-grid{grid-template-columns:minmax(0,1fr) 90px;gap:10px}
-:is(#modalBody,.qb-body) .session-date-grid>button{grid-column:1 / -1}.session-attendance-heading{grid-template-columns:minmax(0,1fr);align-items:stretch;gap:10px}
-:is(#modalBody,.qb-body) .session-attendance-bulk button,:is(#modalBody,.qb-body) .session-workspace .session-attendance-bulk button.ui-button{padding-inline:4px;
-font-size:11px}:is(#modalBody,.qb-body) .session-workspace .att-row{grid-template-columns:minmax(0,1fr);gap:10px;padding:14px 0}:is(#modalBody,.qb-body) .session-workspace
-.att-btns button{min-width:0;padding:4px 2px;font-size:11px;white-space:normal}:is(#modalBody,.qb-body) .session-entry-form{padding:12px;gap:12px 10px}:is(#modalBody,
-.qb-body) .session-workspace-footer{bottom:-14px}:is(#modalBody,.qb-body) .session-workspace-footer button{padding-inline:12px}}@media screen and (max-width:480px){
-:is(#modalBody,.qb-body) .session-entry-form{grid-template-columns:minmax(0,1fr)}}@media screen and (max-width:360px){:is(#modalBody,.qb-body) .session-unit-fields{
-grid-template-columns:minmax(0,1fr)}}@media screen{:is(#modalBody,.qb-body) .session-workspace .session-context{gap:10px;padding:12px;border:1px solid var(--theme-line);
+font-size:12px;line-height:1.9}.session-attendance-bulk{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;width:100%;max-width:100%;min-width:0;
+box-sizing:border-box;padding:0;border-radius:0;background:transparent;box-shadow:none}:is(#modalBody,.qb-body) .session-attendance-bulk button,:is(#modalBody,.qb-body)
+.session-workspace .session-attendance-bulk button.ui-button{--button-ink: var(--theme-muted);--button-fill: var(--theme-surface);--button-soft: var(--theme-surface);
+--button-hover: var(--theme-surface-subtle);--button-line: var(--theme-line-soft);background:var(--button-soft)!important;color:var(--button-ink)!important;border-color:var(--button-line)!important;
+width:100%;min-width:0;min-height:44px;height:44px;margin:0;padding:4px;border:1px solid transparent;border-radius:8px;font-size:12px;line-height:1.5;text-align:center;
+white-space:nowrap;overflow-wrap:normal}:is(#modalBody,.qb-body) .session-attendance-bulk .control-icon,:is(#modalBody,.qb-body) .session-attendance-bulk .control-icon>
+svg{width:16px;height:16px;flex-basis:16px}:is(#modalBody,.qb-body) .session-workspace .session-attendance-bulk button:is(.success,[data-legacy-click="sessions-\
+dialog:all-present"]){--button-ink: var(--status-success);--button-line: var(--status-success-line);--button-hover: var(--status-success-soft)}:is(#modalBody,.qb-body)
+.session-workspace .session-attendance-bulk button.danger{--button-ink: var(--status-danger);--button-soft: var(--status-danger-soft);--button-line: var(--status-danger-line);
+--button-hover: var(--status-danger-soft)}:is(#modalBody,.qb-body) .session-workspace .session-attendance-bulk button.success{--button-soft: var(--status-success-soft)}
+:is(#modalBody,.qb-body) .session-workspace .session-attendance-bulk button.ui-button:not(:disabled):hover{background:var(--button-hover)!important;border-color:var(--button-line)!important}
+:is(#modalBody,.qb-body) .session-attendance-list{display:grid;min-width:0;width:100%;gap:0;padding:0;border:0;border-radius:0;background:transparent}:is(#modalBody,
+.qb-body) .session-workspace .att-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,320px);min-width:0;width:100%;align-items:center;gap:12px;margin:0;
+padding:14px 0;border:0;border-bottom:1px solid var(--theme-line-soft);border-radius:0;background:transparent;box-shadow:none}:is(#modalBody,.qb-body) .session-workspace
+.att-name{display:flex;align-items:center;gap:10px;min-width:0;font-size:14px}:is(#modalBody,.qb-body) .session-attendance-list .att-name>span:last-child{min-width:0;
+font-weight:600;line-height:1.9;white-space:normal;overflow-wrap:anywhere}.attendance-number{display:grid;place-items:center;width:30px;height:30px;flex:0 0 30px;
+border-radius:10px;border:1px solid var(--theme-line-soft);background:var(--theme-surface-subtle);color:var(--theme-primary);font-size:12px;font-variant-numeric:tabular-nums}
+:is(#modalBody,.qb-body) .session-workspace .att-btns{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));min-width:0;width:100%;max-width:100%;padding:3px;
+border-radius:11px;background:var(--theme-surface-subtle);box-shadow:inset 0 0 0 1px var(--theme-line-soft)}:is(#modalBody,.qb-body) .session-workspace .att-btns
+button{min-width:0;width:100%;min-height:48px;height:48px;margin:0;padding:4px;border:1px solid transparent;border-radius:8px;background:var(--theme-surface);color:var(--theme-muted);
+font-size:12px;line-height:1.5;white-space:normal;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}:is(#modalBody,.qb-body) .session-workspace .att-btns
+.present.active{background:var(--status-success-soft);color:var(--status-success);border-color:var(--status-success-line)}:is(#modalBody,.qb-body) .session-workspace
+.att-btns .absent.active{background:var(--status-danger-soft);color:var(--status-danger);border-color:var(--status-danger-line)}:is(#modalBody,.qb-body) .session-workspace
+.att-btns .late.active{background:var(--status-warning-soft);color:var(--status-warning);border-color:var(--status-warning-line)}:is(#modalBody,.qb-body) .session-workspace
+.att-btns .leave.active{background:var(--status-leave-soft);color:var(--status-leave);border-color:var(--status-leave-line)}:is(#modalBody,.qb-body) .session-workspace
+.att-btns button:not(.active):hover{background:var(--theme-surface-subtle);border-color:var(--theme-line)}:is(#modalBody,.qb-body) .session-workspace .att-btns .active{
+font-weight:600;box-shadow:inset 0 -2px 0 currentColor}:is(#modalBody,.qb-body) .session-workspace button:focus-visible{outline:2px solid var(--theme-focus);outline-offset:2px}
+:is(#modalBody,.qb-body) .session-entry-form{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:14px;margin:16px 0 22px;padding:16px;border:1px
+solid var(--theme-line-soft);border-radius:14px;background:var(--theme-surface)}:is(#modalBody,.qb-body) .session-entry-form>:is(.session-field-wide,.session-entry-actions){
+grid-column:1 / -1}:is(#modalBody,.qb-body) .session-entry-actions{display:flex;gap:8px;min-width:0}:is(#modalBody,.qb-body) .session-entry-actions>button{flex:1;
+min-width:0;padding-inline:8px;font-size:12px;white-space:nowrap;min-height:46px;margin:0;border-radius:11px}.session-activity-records>h4{margin-bottom:12px}:is(#modalBody,
+.qb-body) .session-score-table{width:100%;table-layout:fixed}:is(#modalBody,.qb-body) .session-score-table :is(th,td){padding:10px;font-size:12px;overflow-wrap:anywhere}
+:is(#modalBody,.qb-body) .session-score-table button{min-width:44px;min-height:44px}:is(#modalBody,.qb-body) .session-workspace-footer{position:sticky;bottom:-20px;
+z-index:4;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin-top:12px;padding:12px 0;border-top:1px solid var(--theme-line-soft);background:var(--theme-surface)}
+:is(#modalBody,.qb-body) .session-workspace-footer button{min-width:0;min-height:46px;margin:0;padding-inline:16px;border-radius:11px;font-size:13px}:is(#modalBody,
+.qb-body) .session-workspace-footer .success{border:1px solid var(--status-success-line);background:var(--status-success-soft);color:var(--status-success)}}@media screen and (max-width:700px){
+#app .session-create{padding:16px}#app .session-create-form{grid-template-columns:minmax(0,1fr) 90px;gap:10px}#modal:has(.session-workspace,.session-start-panel){
+padding:8px;align-items:center}#modal:has(.session-workspace,.session-start-panel) .modal-dialog{max-height:calc(var(--app-viewport, 100dvh) - 16px);border-radius:17px}
+#modal:has(.session-workspace,.session-start-panel) .modal-header{padding:10px 14px}#modal:has(.session-workspace,.session-start-panel) .modal-body{padding:14px}
+.session-context{gap:10px;padding-bottom:12px}.session-context-icon{width:36px;height:36px;flex-basis:36px;border-radius:11px}.session-context h4{font-size:16px}
+:is(#modalBody,.qb-body) .session-mode-picker{top:-14px;margin-block:14px 18px}:is(#modalBody,.qb-body) .session-mode-picker button{font-size:13px}:is(#modalBody,
+.qb-body) .session-field :is(input,select){font-size:16px}:is(#modalBody,.qb-body) .session-date-grid{grid-template-columns:minmax(0,1fr) 90px;gap:10px}:is(#modalBody,
+.qb-body) .session-date-grid>button{grid-column:1 / -1}.session-attendance-heading{grid-template-columns:minmax(0,1fr);align-items:stretch;gap:10px}:is(#modalBody,
+.qb-body) .session-attendance-bulk button,:is(#modalBody,.qb-body) .session-workspace .session-attendance-bulk button.ui-button{padding-inline:4px;font-size:11px}
+:is(#modalBody,.qb-body) .session-workspace .att-row{grid-template-columns:minmax(0,1fr);gap:10px;padding:14px 0}:is(#modalBody,.qb-body) .session-workspace .att-btns
+button{min-width:0;padding:4px 2px;font-size:11px;white-space:normal}:is(#modalBody,.qb-body) .session-entry-form{padding:12px;gap:12px 10px}:is(#modalBody,.qb-body)
+.session-workspace-footer{bottom:-14px}:is(#modalBody,.qb-body) .session-workspace-footer button{padding-inline:12px}}@media screen and (max-width:480px){:is(#modalBody,
+.qb-body) .session-entry-form{grid-template-columns:minmax(0,1fr)}}@media screen and (max-width:360px){:is(#modalBody,.qb-body) .session-unit-fields{grid-template-columns:minmax(0,1fr)}}
+@media screen{#modalBody .session-workspace .session-attendance-heading{grid-template-columns:minmax(0,1fr);align-items:center;gap:12px;padding:12px;border:1px solid
+var(--theme-line-soft);border-radius:12px;background:var(--theme-surface-subtle)}#modalBody .session-workspace .session-attendance-heading>div:first-child{display:grid;
+grid-template-columns:auto minmax(0,1fr);align-items:center;gap:6px 10px;min-width:0}#modalBody .session-workspace .session-attendance-heading h4{font-size:13px;
+line-height:1.6;color:var(--theme-ink);white-space:nowrap}#modalBody .session-workspace .session-attendance-heading p{margin:0;font-size:11px;line-height:1.8;color:var(--theme-muted);
+text-align:end}#modalBody .session-workspace .session-attendance-progress-line{grid-column:1 / -1;margin-top:0}#modalBody .session-workspace .session-attendance-bulk
+.ui-button-label{white-space:nowrap;line-height:1.5}:is(#modalBody,.qb-body) .session-workspace .session-context{gap:10px;padding:12px;border:1px solid var(--theme-line);
 border-radius:12px;background:var(--theme-surface-subtle)}:is(#modalBody,.qb-body) .session-workspace .session-context h4{margin:2px 0 4px;font-size:16px}:is(#modalBody,
 .qb-body) .session-workspace .session-context-meta{font-size:12px}:is(#modalBody,.qb-body) .session-workspace .session-date-tools{margin-top:4px}:is(#modalBody,
 .qb-body) .session-workspace .session-mode-picker{gap:3px;margin-block:12px;padding:3px;border:1px solid var(--theme-secondary-line);border-radius:12px;background:var(--theme-secondary-soft);
@@ -485,8 +491,11 @@ padding:10px;border:1px solid var(--theme-line);border-radius:12px;background:va
 background:var(--theme-secondary)}:is(#modalBody,.qb-body) .session-workspace .att-btns .leave.active{background:var(--status-leave-fill)}:is(#modalBody,.qb-body)
 .session-workspace .att-btns :is(.present,.absent,.late,.leave).active{color:var(--theme-surface);border-color:transparent;box-shadow:none}:is(#modalBody,.qb-body)
 .session-workspace .session-entry-form{margin-block:12px 20px;border-color:var(--theme-line);border-radius:12px;background:var(--theme-surface)}:is(#modalBody,.qb-body)
-.session-workspace .session-entry-form .session-field :is(input,select){min-height:48px;font-size:16px}}@media screen{#app .student-directory .student-roster{grid-template-columns:minmax(0,1fr);
-gap:10px}#app .student-directory .student-profile{display:grid;grid-template-columns:minmax(0,1fr);align-items:center;gap:10px;padding:14px;border-radius:14px;box-shadow:var(--surface-inner-shadow)}
+.session-workspace .session-entry-form .session-field :is(input,select){min-height:48px;font-size:16px}}@media screen and (max-width:420px){#modalBody .session-workspace
+.session-attendance-heading{gap:10px;padding:10px}}@media screen and (max-width:600px){#modalBody .session-workspace .session-attendance-bulk .control-icon{display:none}
+#modalBody .session-workspace .session-attendance-bulk .ui-button-label{min-width:0;white-space:normal}#modalBody .session-workspace .session-attendance-bulk button.ui-button{
+gap:0;padding-inline:3px;font-size:11px}}@media screen{#app .student-directory .student-roster{grid-template-columns:minmax(0,1fr);gap:10px}#app .student-directory
+.student-profile{display:grid;grid-template-columns:minmax(0,1fr);align-items:center;gap:10px;padding:14px;border-radius:14px;box-shadow:var(--surface-inner-shadow)}
 #app .student-directory .student-profile-main{gap:10px;padding:0;border:0}#app .student-directory .student-profile-actions{grid-template-columns:minmax(0,1fr) auto;
 align-items:center;gap:8px;margin:0;padding:0;border:0}#app .student-directory .student-profile-info h4{margin:0 0 3px;font-size:14px;line-height:1.8}#app .student-directory
 .student-profile-info p{font-size:11px;line-height:1.9}#app .student-directory .student-avatar.student-avatar-icon{flex:0 0 40px;width:40px;height:44px;border-radius:11px}

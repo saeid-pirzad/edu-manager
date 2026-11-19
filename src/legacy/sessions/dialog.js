@@ -109,13 +109,16 @@ function refreshSessionAttendanceProgress() {
     const text = progress.present.toLocaleString("fa-IR") + " حاضر";
     if (presentLabel.textContent !== text) presentLabel.textContent = text;
   }
-  const fill = root.querySelector('[data-legacy-click="sessions-dialog:6"]');
+  const fillButtons = root.querySelectorAll(
+    '[data-legacy-click="sessions-dialog:6"],[data-legacy-click="sessions-dialog:remaining-absent"]',
+  );
   const meter = root.querySelector("[data-session-attendance-meter]");
   if (meter) {
     meter.max = Math.max(progress.total, 1);
     meter.value = progress.total - progress.unset;
   }
-  if (fill) setControlLock(fill, "attendance-complete", progress.unset === 0);
+  for (const fill of fillButtons)
+    setControlLock(fill, "attendance-complete", progress.unset === 0);
   const reuse = root.querySelector(
     '[data-legacy-click="sessions-dialog:reuse-previous"]',
   );
@@ -223,6 +226,7 @@ function legacy_openSessionModal(session, { activitySaved = null } = {}) {
     <div><h4>حضور و غیاب</h4><p data-session-attendance-progress role="status"></p><div class="session-attendance-progress-line"><progress data-session-attendance-meter aria-label="تکمیل ثبت حضور و غیاب" max="1" value="0"></progress><span data-session-attendance-present role="status" aria-live="polite"></span></div></div>
     <div class="session-attendance-bulk" role="group" aria-label="ثبت گروهی حضور و غیاب">
       <button type="button" class="success" data-mutating="1" data-legacy-click="sessions-dialog:6" aria-label="ثبت حاضر برای هنرجویان تعیین‌نشده" title="فقط وضعیت‌های تعیین‌نشده حاضر می‌شوند؛ ثبت‌های قبلی حفظ می‌شوند.">باقی‌ها حاضر</button>
+      <button type="button" class="danger" data-mutating="1" data-legacy-click="sessions-dialog:remaining-absent" aria-label="ثبت غایب برای هنرجویان تعیین‌نشده" title="فقط وضعیت‌های تعیین‌نشده غایب می‌شوند؛ ثبت‌های قبلی حفظ می‌شوند.">باقی‌ها غایب</button>
       <button type="button" class="ghost" data-mutating="1" data-legacy-click="sessions-dialog:all-present">همه حاضر</button>
       <button type="button" class="danger" data-mutating="1" data-legacy-click="sessions-dialog:7">همه غایب</button>
     </div>
@@ -292,22 +296,24 @@ function getSessionById(id) {
   return db.sessions.find((s) => s.id === id);
 }
 
-function legacy_setAllAttendance(status) {
+async function legacy_setAllAttendance(status, { onlyUnset = false } = {}) {
   const sess = db.sessions.find((s) => s.id === currentSessionId);
   if (!sess) return;
   const c = getClassObj(sess.schoolId, sess.classId);
   if (!c) return;
-  c.students.forEach((s) => {
+  let changed = false;
+  sessionStudents(c, sess).forEach((s) => {
+    if (
+      (onlyUnset && sess.attendance[s.id]) ||
+      sess.attendance[s.id] === status
+    )
+      return;
     sess.attendance[s.id] = status;
+    changed = true;
   });
-  saveDB();
-  document.querySelectorAll(".att-btns").forEach((wrap) => {
-    wrap.querySelectorAll("button").forEach((b) => {
-      b.classList.remove("active");
-      b.innerHTML = b.innerHTML.replace(/\s\(\d+د\)/, "");
-      if (b.classList.contains(status)) b.classList.add("active");
-    });
-  });
+  if (!changed) return false;
+  await saveDB();
+  refreshSessionAttendanceRows(sess);
 }
 
 async function legacy_toggleAtt(btn, status) {

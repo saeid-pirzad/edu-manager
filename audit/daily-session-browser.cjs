@@ -331,17 +331,54 @@ async function dailyFlow() {
     },
   );
   const bulk = document.querySelector(".session-attendance-bulk");
+  const beforeRemainingAbsent = structuredClone((await stored()).attendance);
+  document
+    .querySelector(`.att-btns[data-sid="${ids.students[11]}"] .present`)
+    .click();
+  await wait(
+    async () =>
+      !(await stored()).attendance[ids.students[11]] &&
+      EduV24.test.getState().busy === 0,
+    "Could not clear the synthetic student's presence",
+  );
+  document
+    .querySelector('[data-legacy-click="sessions-dialog:remaining-absent"]')
+    .click();
+  await wait(
+    async () =>
+      (await stored()).attendance[ids.students[11]] === "absent" &&
+      EduV24.test.getState().busy === 0,
+    "Remaining absent was not saved",
+  );
+  const afterRemainingAbsent = (await stored()).attendance;
+  check(
+    "ONLY_UNSET_ABSENT",
+    "Remaining absent preserves all recorded statuses and disables both remaining-only controls when complete",
+    afterRemainingAbsent[ids.students[11]] === "absent" &&
+      ids.students
+        .slice(0, 11)
+        .every(
+          (id) => afterRemainingAbsent[id] === beforeRemainingAbsent[id],
+        ) &&
+      ["sessions-dialog:6", "sessions-dialog:remaining-absent"].every(
+        (action) =>
+          document.querySelector('[data-legacy-click="' + action + '"]')
+            .disabled,
+      ),
+    { attendance: afterRemainingAbsent },
+  );
   const bulkActions = [
     ...(bulk?.querySelectorAll(":scope > button") || []),
   ].map((button) => button.dataset.legacyClick);
   check(
     "EXPLICIT_BULK",
-    "Three direct bulk controls keep distinct remaining-only and overwrite-all actions",
+    "Four direct bulk controls keep distinct remaining-only and overwrite-all actions",
     bulk?.getAttribute("role") === "group" &&
       !bulk.querySelector("details") &&
       JSON.stringify(bulkActions) ===
         JSON.stringify([
           "sessions-dialog:6",
+          "sessions-dialog:remaining-absent",
           "sessions-dialog:all-present",
           "sessions-dialog:7",
         ]),

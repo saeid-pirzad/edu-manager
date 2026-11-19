@@ -1349,28 +1349,29 @@ getClassObj(session.schoolId,session.classId);if(!session||!classroom)return;con
 "[data-session-attendance-progress]");if(label)label.textContent=(progress.total-progress.unset).toLocaleString("fa-IR")+" از "+progress.total.toLocaleString(
 "fa-IR")+" نفر ثبت شده · تعیین‌نشده: "+progress.unset.toLocaleString("fa-IR");const presentLabel=root.querySelector("[data-session-attendan\
 ce-present]");if(presentLabel){const text=progress.present.toLocaleString("fa-IR")+" حاضر";if(presentLabel.textContent!==text)presentLabel.textContent=text}
-const fill=root.querySelector('[data-legacy-click="sessions-dialog:6"]');const meter=root.querySelector("[data-session-attendance-meter]");if(meter){meter.max=Math.
-max(progress.total,1);meter.value=progress.total-progress.unset}if(fill)setControlLock(fill,"attendance-complete",progress.unset===0);const reuse=root.querySelector(
-'[data-legacy-click="sessions-dialog:reuse-previous"]');if(reuse)setControlLock(reuse,"attendance-complete",progress.unset===0)}function refreshSessionActivityInput(form,changedControl=null){
-if(!form?.isConnected)return;const type=form.elements.type.value;const value=form.elements.value;const count=["positive","negative"].includes(type);if(count&&(value.
-value===""||changedControl?.name==="type"))value.value=type==="positive"?"0.25":"0.5";value.placeholder=["classGrade","mostamar","payani"].includes(type)?"۰ تا \
-۲۰":"۰ تا ۱۰۰۰";const students=form.elements.studentId;const next=form.querySelector("[data-session-next]");if(next)setControlLock(next,"student-last",
-students.selectedIndex<1||students.selectedIndex>=students.options.length-1)}function captureSessionActivityForm(){const form=document.querySelector("#modalBody\
- .session-entry-form");if(!form)return null;return Object.fromEntries(["studentId","type","value","note"].map(name=>[name,form.elements[name].value]))}function legacy_openSessionModal(session,{
-activitySaved=null}={}){const selectedPanel=!document.getElementById("modal").classList.contains("hidden")&&currentSessionId===session.id?document.querySelector(
-"#modalBody [data-session-tab][aria-pressed=true]")?.dataset.sessionTab:null;const entry=selectedPanel?captureSessionActivityForm():null;const attendanceQuery=selectedPanel?
-document.querySelector("#modalBody .session-attendance-search input")?.value||"":"";const scroll=selectedPanel?document.getElementById("modalBody").scrollTop:0;
-currentSessionId=session.id;const c=getClassObj(session.schoolId,session.classId);if(!c){closeModal();return}const lesson=getLessonObj(c,session.lessonId);if(!lesson){
-closeModal();return}const dIdx=getDayIdxFromDate(session.date);const previousAttendance=typeof previousSessionAttendance==="function"?previousSessionAttendance(
-session):null;const school=getSchool(session.schoolId);let h=`<div class="session-workspace" data-session-id="${esc(session.id)}"><header class="session-context\
-"><span class="session-context-icon" aria-hidden="true">${EduIcons.html("book")}</span><div class="session-context-copy"><p class="session-context-path">${esc(school?.
-name||"")} / ${esc(c.name)}</p><h4>${esc(lesson.name)}</h4><p class="session-context-meta">${esc(DAYS[dIdx])} · ${esc(faDate(session.date))} · زنگ ${(session.
-period+1).toLocaleString("fa-IR")}</p>${lesson.teacher?`<p class="session-context-teacher">دبیر: ${esc(lesson.teacher)}</p>`:""}</div></header>`;h+='<div da\
-ta-modal-save-feedback role="status" aria-live="polite" hidden></div>';const academicRange=EduAcademicYear.range(db.settings.academicYear);if(!EduAcademicYear.contains(
-db.settings.academicYear,session.date))h+='<aside class="session-year-warning" role="status"><strong>جلسهٔ قدیمی خارج از سال تحصیلی</strong><p>سوابق این جلسه حف\
-ظ شده‌اند. این تاریخ در گزارش سالانهٔ '+esc(db.settings.academicYear)+" قرار نمی‌گیرد؛ تاریخ را بررسی و در صورت نیاز اصلاح کنید.<\
-/p></aside>";const sessionSelection=sessionScheduleSelection(session,String(session.period+1),[session]);h+=`<details class="session-date-tools"><summary>${EduIcons.
-html("edit")}<span>ویرایش تاریخ و زنگ</span></summary><div class="form-row session-date-grid">
+const fillButtons=root.querySelectorAll('[data-legacy-click="sessions-dialog:6"],[data-legacy-click="sessions-dialog:remaining-absent"]');const meter=root.querySelector(
+"[data-session-attendance-meter]");if(meter){meter.max=Math.max(progress.total,1);meter.value=progress.total-progress.unset}for(const fill of fillButtons)setControlLock(
+fill,"attendance-complete",progress.unset===0);const reuse=root.querySelector('[data-legacy-click="sessions-dialog:reuse-previous"]');if(reuse)setControlLock(reuse,
+"attendance-complete",progress.unset===0)}function refreshSessionActivityInput(form,changedControl=null){if(!form?.isConnected)return;const type=form.elements.type.
+value;const value=form.elements.value;const count=["positive","negative"].includes(type);if(count&&(value.value===""||changedControl?.name==="type"))value.value=
+type==="positive"?"0.25":"0.5";value.placeholder=["classGrade","mostamar","payani"].includes(type)?"۰ تا ۲۰":"۰ تا ۱۰۰۰";const students=form.elements.
+studentId;const next=form.querySelector("[data-session-next]");if(next)setControlLock(next,"student-last",students.selectedIndex<1||students.selectedIndex>=students.
+options.length-1)}function captureSessionActivityForm(){const form=document.querySelector("#modalBody .session-entry-form");if(!form)return null;return Object.fromEntries(
+["studentId","type","value","note"].map(name=>[name,form.elements[name].value]))}function legacy_openSessionModal(session,{activitySaved=null}={}){const selectedPanel=!document.
+getElementById("modal").classList.contains("hidden")&&currentSessionId===session.id?document.querySelector("#modalBody [data-session-tab][aria-pressed=true]")?.
+dataset.sessionTab:null;const entry=selectedPanel?captureSessionActivityForm():null;const attendanceQuery=selectedPanel?document.querySelector("#modalBody .sess\
+ion-attendance-search input")?.value||"":"";const scroll=selectedPanel?document.getElementById("modalBody").scrollTop:0;currentSessionId=session.id;const c=getClassObj(
+session.schoolId,session.classId);if(!c){closeModal();return}const lesson=getLessonObj(c,session.lessonId);if(!lesson){closeModal();return}const dIdx=getDayIdxFromDate(
+session.date);const previousAttendance=typeof previousSessionAttendance==="function"?previousSessionAttendance(session):null;const school=getSchool(session.schoolId);
+let h=`<div class="session-workspace" data-session-id="${esc(session.id)}"><header class="session-context"><span class="session-context-icon" aria-hidden="true"\
+>${EduIcons.html("book")}</span><div class="session-context-copy"><p class="session-context-path">${esc(school?.name||"")} / ${esc(c.name)}</p><h4>${esc(lesson.
+name)}</h4><p class="session-context-meta">${esc(DAYS[dIdx])} · ${esc(faDate(session.date))} · زنگ ${(session.period+1).toLocaleString("fa-IR")}</p>${lesson.
+teacher?`<p class="session-context-teacher">دبیر: ${esc(lesson.teacher)}</p>`:""}</div></header>`;h+='<div data-modal-save-feedback role="status" aria-live=\
+"polite" hidden></div>';const academicRange=EduAcademicYear.range(db.settings.academicYear);if(!EduAcademicYear.contains(db.settings.academicYear,session.date))
+h+='<aside class="session-year-warning" role="status"><strong>جلسهٔ قدیمی خارج از سال تحصیلی</strong><p>سوابق این جلسه حفظ شده‌اند. این تاریخ در گزارش سالانهٔ '+
+esc(db.settings.academicYear)+" قرار نمی‌گیرد؛ تاریخ را بررسی و در صورت نیاز اصلاح کنید.</p></aside>";const sessionSelection=sessionScheduleSelection(
+session,String(session.period+1),[session]);h+=`<details class="session-date-tools"><summary>${EduIcons.html("edit")}<span>ویرایش تاریخ و زنگ</span></summary><d\
+iv class="form-row session-date-grid">
     <label class="session-field"><span>تاریخ جلسه</span>
       <input type="date" id="sessDate" data-session-calendar="edit" data-session-id="${esc(session.id)}" value="${session.date}" min="${academicRange.start}" ma\
 x="${academicRange.end}" data-legacy-change="sessions-dialog:0">
@@ -1400,6 +1401,8 @@ iv>
     <div class="session-attendance-bulk" role="group" aria-label="ثبت گروهی حضور و غیاب">
       <button type="button" class="success" data-mutating="1" data-legacy-click="sessions-dialog:6" aria-label="ثبت حاضر برای هنرجویان تعیین‌نشده" title="فقط وض\
 عیت‌های تعیین‌نشده حاضر می‌شوند؛ ثبت‌های قبلی حفظ می‌شوند.">باقی‌ها حاضر</button>
+      <button type="button" class="danger" data-mutating="1" data-legacy-click="sessions-dialog:remaining-absent" aria-label="ثبت غایب برای هنرجویان تعیین‌نشده"\
+ title="فقط وضعیت‌های تعیین‌نشده غایب می‌شوند؛ ثبت‌های قبلی حفظ می‌شوند.">باقی‌ها غایب</button>
       <button type="button" class="ghost" data-mutating="1" data-legacy-click="sessions-dialog:all-present">همه حاضر</button>
       <button type="button" class="danger" data-mutating="1" data-legacy-click="sessions-dialog:7">همه غایب</button>
     </div>
@@ -1448,21 +1451,21 @@ data-legacy-click-arg5="${esc(session.lessonId)}">کپی برای معاون</bu
 false)return false;if(selectedPanel)showSessionPanel(selectedPanel);const form=document.querySelector("#modalBody .session-entry-form");if(entry){for(const[name,
 value]of Object.entries(entry))form.elements[name].value=value}bindSessionActivityRecords(session);if(!entry||!activitySaved||!finishSessionActivitySave(form,activitySaved))
 refreshSessionActivityInput(form);refreshSessionAttendanceProgress();filterSessionAttendance(document.querySelector("#modalBody .session-attendance-search input"));
-if(selectedPanel)document.getElementById("modalBody").scrollTop=scroll}function getSessionById(id){return db.sessions.find(s=>s.id===id)}function legacy_setAllAttendance(status){
-const sess=db.sessions.find(s=>s.id===currentSessionId);if(!sess)return;const c=getClassObj(sess.schoolId,sess.classId);if(!c)return;c.students.forEach(s=>{sess.
-attendance[s.id]=status});saveDB();document.querySelectorAll(".att-btns").forEach(wrap=>{wrap.querySelectorAll("button").forEach(b=>{b.classList.remove("active");
-b.innerHTML=b.innerHTML.replace(/\s\(\d+د\)/,"");if(b.classList.contains(status))b.classList.add("active")})})}async function legacy_toggleAtt(btn,status){const wrap=btn.
-parentElement;const was=btn.classList.contains("active");const sess=db.sessions.find(s=>s.id===currentSessionId);if(!sess)return;const sid=wrap.dataset.sid;wrap.
-querySelectorAll("button").forEach(b=>{b.classList.remove("active");if(b.classList.contains("late"))b.innerHTML="تأخیر";else if(b.classList.contains("prese\
-nt"))b.innerHTML="حاضر";else if(b.classList.contains("absent"))b.innerHTML="غایب"});if(!was){btn.classList.add("active");if(status==="late"){const mins=prompt(
-"دقیقه تأخیر: عدد صحیح صفر تا ۹۹۹","10");if(mins===null){openSessionModal(sess);return}if(!/^\d{1,3}$/.test(mins.trim())){alert("دقیقه \
-نامعتبر است.");openSessionModal(sess);return}if(mins!==null&&mins.trim()!==""){sess.attendance[sid]="late:"+Number(mins);btn.textContent=`تأخیر (${Number(
-mins)}د)`}else{sess.attendance[sid]="late:0"}}else{sess.attendance[sid]=status}}else{delete sess.attendance[sid]}await saveDB({sessionId:sess.id})}async function legacy_changeSessionDate(sessionId){
-const sess=db.sessions.find(s=>s.id===sessionId);if(!sess)return;const newDate=document.getElementById("sessDate").value;if(!newDate)return alert("تاریخ معتبر ن\
-یست");if(newDate===sess.date)return;const conflict=db.sessions.find(s=>s.id!==sessionId&&s.classId===sess.classId&&s.date===newDate&&s.period===sess.period);
-if(conflict){if(confirm("برای این تاریخ و زنگ جلسه‌ای ثبت شده. آن را باز کنیم؟"))openSessionModal(conflict);return}sess.
-date=newDate;await saveDB({sessionId:sess.id});openSessionModal(sess)}function legacy_updateSessionUnits(){const sess=db.sessions.find(s=>s.id===currentSessionId);
-if(!sess)return;sess.poudmanId=document.getElementById("sessPoudman").value||null;sess.unitId=null;saveDB();const c=getClassObj(sess.schoolId,sess.classId);const lesson=getLessonObj(
+if(selectedPanel)document.getElementById("modalBody").scrollTop=scroll}function getSessionById(id){return db.sessions.find(s=>s.id===id)}async function legacy_setAllAttendance(status,{
+onlyUnset=false}={}){const sess=db.sessions.find(s=>s.id===currentSessionId);if(!sess)return;const c=getClassObj(sess.schoolId,sess.classId);if(!c)return;let changed=false;
+sessionStudents(c,sess).forEach(s=>{if(onlyUnset&&sess.attendance[s.id]||sess.attendance[s.id]===status)return;sess.attendance[s.id]=status;changed=true});if(!changed)
+return false;await saveDB();refreshSessionAttendanceRows(sess)}async function legacy_toggleAtt(btn,status){const wrap=btn.parentElement;const was=btn.classList.
+contains("active");const sess=db.sessions.find(s=>s.id===currentSessionId);if(!sess)return;const sid=wrap.dataset.sid;wrap.querySelectorAll("button").forEach(b=>{
+b.classList.remove("active");if(b.classList.contains("late"))b.innerHTML="تأخیر";else if(b.classList.contains("present"))b.innerHTML="حاضر";else if(b.classList.
+contains("absent"))b.innerHTML="غایب"});if(!was){btn.classList.add("active");if(status==="late"){const mins=prompt("دقیقه تأخیر: عدد صحیح صفر تا ۹۹۹",
+"10");if(mins===null){openSessionModal(sess);return}if(!/^\d{1,3}$/.test(mins.trim())){alert("دقیقه نامعتبر است.");openSessionModal(sess);return}
+if(mins!==null&&mins.trim()!==""){sess.attendance[sid]="late:"+Number(mins);btn.textContent=`تأخیر (${Number(mins)}د)`}else{sess.attendance[sid]="late:0"}}else{
+sess.attendance[sid]=status}}else{delete sess.attendance[sid]}await saveDB({sessionId:sess.id})}async function legacy_changeSessionDate(sessionId){const sess=db.
+sessions.find(s=>s.id===sessionId);if(!sess)return;const newDate=document.getElementById("sessDate").value;if(!newDate)return alert("تاریخ معتبر نیست");
+if(newDate===sess.date)return;const conflict=db.sessions.find(s=>s.id!==sessionId&&s.classId===sess.classId&&s.date===newDate&&s.period===sess.period);if(conflict){
+if(confirm("برای این تاریخ و زنگ جلسه‌ای ثبت شده. آن را باز کنیم؟"))openSessionModal(conflict);return}sess.date=newDate;
+await saveDB({sessionId:sess.id});openSessionModal(sess)}function legacy_updateSessionUnits(){const sess=db.sessions.find(s=>s.id===currentSessionId);if(!sess)return;
+sess.poudmanId=document.getElementById("sessPoudman").value||null;sess.unitId=null;saveDB();const c=getClassObj(sess.schoolId,sess.classId);const lesson=getLessonObj(
 c,sess.lessonId);const p=lesson.poudmans.find(x=>x.id===sess.poudmanId);document.getElementById("sessUnit").innerHTML='<option value="">— انتخاب —</option>'+
 (p?p.units.map(u=>`<option value="${u.id}">${esc(u.name)}</option>`).join(""):"")}function legacy_saveSessionUnit(){const sess=db.sessions.find(s=>s.id===currentSessionId);
 if(!sess)return;sess.unitId=document.getElementById("sessUnit").value||null;saveDB()}function legacy_addSessionScore(e,sessionId){e.preventDefault();const sess=db.
@@ -1482,7 +1485,8 @@ this.getAttribute("data-legacy-click-arg3")))},{mutating:true});EduLegacyEvents.
 ()=>updateSessionUnits())},{mutating:true});EduLegacyEvents.register("sessions-dialog:3",function(event){return runSessionEditorAction(this,()=>saveSessionUnit())},
 {mutating:true});EduLegacyEvents.register("sessions-dialog:4",function(event){return showSessionPanel("attendance")},{mutating:false});EduLegacyEvents.register(
 "sessions-dialog:5",function(event){return showSessionPanel("activity")},{mutating:false});EduLegacyEvents.register("sessions-dialog:6",function(event){return runSessionEditorAction(
-this,()=>setAllAttendance("present",{onlyUnset:true}))},{mutating:true});EduLegacyEvents.register("sessions-dialog:7",function(event){return runSessionEditorAction(
+this,()=>setAllAttendance("present",{onlyUnset:true}))},{mutating:true});EduLegacyEvents.register("sessions-dialog:remaining-absent",function(){return runSessionEditorAction(
+this,()=>setAllAttendance("absent",{onlyUnset:true}))},{mutating:true});EduLegacyEvents.register("sessions-dialog:7",function(event){return runSessionEditorAction(
 this,()=>setAllAttendance("absent"))},{mutating:true});EduLegacyEvents.register("sessions-dialog:8",function(event){return runSessionEditorAction(this,()=>toggleAtt(
 this,"present"))},{mutating:true});EduLegacyEvents.register("sessions-dialog:9",function(event){return runSessionEditorAction(this,()=>toggleAtt(this,"late"))},
 {mutating:true});EduLegacyEvents.register("sessions-dialog:10",function(event){return runSessionEditorAction(this,()=>toggleAtt(this,"absent"))},{mutating:true});
