@@ -595,15 +595,15 @@ area.replaceChildren();area.append(el("legend",type.value==="mcq"?"گزینه‌
 4;i++)options.push(field(area,`گزینه ${i+1}`,draft?.options[i]||""));answer=select(area,"پاسخ صحیح",[["","انتخاب پاسخ"],...[0,1,2,3].map(
 i=>[String(i),`گزینه ${i+1}`])],draft?.answer??"")}else if(type.value==="boolean")answer=select(area,"پاسخ صحیح",[["","انتخاب پاسخ"],["tr\
 ue","صحیح"],["false","غلط"]],draft?.answer??"");else answer=field(area,"پاسخ صحیح",draft?.answer??"","textarea");answer.parentElement.classList.add(
-"qb-field-wide")}type.onchange=answers;answers();const optional=el("details",void 0,"qb-optional qb-field-wide");optional.append(el("summary","توضیح پاسخ (اختیا\
-ری)"));optional.open=Boolean(existing?.explanation);f.append(optional);const explanation=field(optional,"توضیح پاسخ (اختیاری)",existing?.explanation||
-"","textarea"),mark=field(f,"بارم",existing?String(existing.score/100):"1");mark.inputMode="decimal";saveButton(f);body.focus()})}function importQuestions(){
-discard(()=>{if(!unitId)return;clearTransientMessage();closeOwnedCalendar();content.replaceChildren();const destinationCourse=courseId,destinationUnit=unitId;root.
-EduQuestionBankImportUI.mount({parent:content,bank,unitId,courseTitle:bank.courses.find(c=>c.id===courseId).title,unitTitle:bank.units.find(u=>u.id===unitId).title,
-el,button,isCurrent:()=>alive&&courseId===destinationCourse&&unitId===destinationUnit,onPending:value=>{dirty=value},onSave:async(next,isCurrent)=>{if(await commit(
-next,{isCurrent})){render();const note=el("p","سؤال‌ها با موفقیت به بخش انتخاب‌شده افزوده شدند.","qb-import-success");
-note.setAttribute("role","status");content.prepend(note)}},onClose:()=>discard(()=>{dirty=false;render()})})})}function questions(parent){const units=bank.units.
-filter(u=>u.courseId===courseId);const unitMap=new Map(units.map(unit=>[unit.id,unit]));const searchQuestions=questionSearch(bank.questions,unitMap);const entry=el(
+"qb-field-wide")}type.onchange=answers;answers();const mark=field(f,"بارم",existing?String(existing.score/100):"1");mark.parentElement.classList.add("qb-fie\
+ld-wide");mark.inputMode="decimal";const optional=el("details",void 0,"qb-optional qb-field-wide");optional.append(el("summary","توضیح پاسخ (اختیاری)"));
+optional.open=Boolean(existing?.explanation);f.append(optional);const explanation=field(optional,"توضیح پاسخ (اختیاری)",existing?.explanation||"",
+"textarea");saveButton(f);body.focus()})}function importQuestions(){discard(()=>{if(!unitId)return;clearTransientMessage();closeOwnedCalendar();content.replaceChildren();
+const destinationCourse=courseId,destinationUnit=unitId;root.EduQuestionBankImportUI.mount({parent:content,bank,unitId,courseTitle:bank.courses.find(c=>c.id===courseId).
+title,unitTitle:bank.units.find(u=>u.id===unitId).title,el,button,isCurrent:()=>alive&&courseId===destinationCourse&&unitId===destinationUnit,onPending:value=>{
+dirty=value},onSave:async(next,isCurrent)=>{if(await commit(next,{isCurrent})){render();const note=el("p","سؤال‌ها با موفقیت به بخش انتخاب‌شده افزوده شدند.",
+"qb-import-success");note.setAttribute("role","status");content.prepend(note)}},onClose:()=>discard(()=>{dirty=false;render()})})})}function questions(parent){const units=bank.
+units.filter(u=>u.courseId===courseId);const unitMap=new Map(units.map(unit=>[unit.id,unit]));const searchQuestions=questionSearch(bank.questions,unitMap);const entry=el(
 "section",void 0,"qb-question-entry");entry.setAttribute("aria-label","انتخاب بخش و افزودن سؤال");parent.append(entry);const coursePicker=parent.
 querySelector(".qb-toolbar");if(coursePicker){coursePicker.classList.add("qb-entry-course");entry.append(coursePicker)}const library=el("section",void 0,"qb-que\
 stion-library");library.setAttribute("aria-label","بانک سؤال‌های درس");parent.append(library);const controls=el("section",void 0,"qb-question-co\

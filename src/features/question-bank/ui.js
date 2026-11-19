@@ -1239,22 +1239,23 @@
         }
         type.onchange = answers;
         answers();
+        const mark = field(
+          f,
+          "بارم",
+          existing ? String(existing.score / 100) : "1",
+        );
+        mark.parentElement.classList.add("qb-field-wide");
+        mark.inputMode = "decimal";
         const optional = el("details", undefined, "qb-optional qb-field-wide");
         optional.append(el("summary", "توضیح پاسخ (اختیاری)"));
         optional.open = Boolean(existing?.explanation);
         f.append(optional);
         const explanation = field(
-            optional,
-            "توضیح پاسخ (اختیاری)",
-            existing?.explanation || "",
-            "textarea",
-          ),
-          mark = field(
-            f,
-            "بارم",
-            existing ? String(existing.score / 100) : "1",
-          );
-        mark.inputMode = "decimal";
+          optional,
+          "توضیح پاسخ (اختیاری)",
+          existing?.explanation || "",
+          "textarea",
+        );
         saveButton(f);
         body.focus();
       });
