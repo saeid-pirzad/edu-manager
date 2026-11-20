@@ -19,9 +19,35 @@ set(key,{date,...attendance});sessions.set(sessionKey,date);students.add(JSON.st
 if(!days.has(dayKey))days.set(dayKey,new Set);const statuses=days.get(dayKey);statuses.add(attendance.status);if(attendance.status==="late")statuses.add("presen\
 t");tally(counts,attendance)}for(const statuses of days.values())for(const status of statuses)studentDayCounts[status]++;return{counts,attendanceRate:attendanceRate(
 counts),observations:observations.size,sessions:sessions.size,uniqueStudents:students.size,studentDays:days.size,studentDayCounts}}root.EduReportAttendance=Object.
-freeze({normalize,emptyCounts,tally,attendanceRate,summarizeObservations})})(globalThis);(function(root){"use strict";function isoDate(value){if(typeof value!==
-"string"||!/^\d{4}-\d{2}-\d{2}$/.test(value)||value.startsWith("0000-"))throw Error("تاریخ معتبر انتخاب کنید.");const d=new Date(value+"T12:\
-00:00Z");if(!Number.isFinite(+d)||d.toISOString().slice(0,10)!==value)throw Error("تاریخ معتبر انتخاب کنید.");return d}function addDays(value,n){
+freeze({normalize,emptyCounts,tally,attendanceRate,summarizeObservations})})(globalThis);(function(root){"use strict";root.EduActivityReportModel=function(api){
+function filterSessions(source,filter){const classroom=session=>source.schools.find(school=>school.id===session.schoolId)?.classes.find(item=>item.id===session.
+classId);return source.sessions.filter(session=>{if(filter.date&&session.date!==filter.date)return false;if(filter.schoolId&&session.schoolId!==filter.schoolId)
+return false;if(filter.classId&&session.classId!==filter.classId)return false;if(filter.lessonId&&session.lessonId!==filter.lessonId)return false;if(filter.period&&
+String(session.period)!==filter.period)return false;if(filter.studentId){const hasAttendance=session.attendance[filter.studentId]!==void 0;const hasScore=session.
+scores.some(score=>score.studentId===filter.studentId);const roster=session.roster||classroom(session)?.students||[];if(!hasAttendance&&!hasScore&&!roster.some(
+student=>student.id===filter.studentId))return false}return true}).map(session=>{const studentId=filter.studentId;if(!studentId)return session;const roster=session.
+roster||classroom(session)?.students||[];return{...session,roster:roster.filter(student=>student.id===studentId),attendance:Object.hasOwn(session.attendance,studentId)?
+{[studentId]:session.attendance[studentId]}:{},scores:session.scores.filter(score=>score.studentId===studentId)}}).sort((a,b)=>{if(a.date!==b.date)return b.date.
+localeCompare(a.date);return a.period-b.period})}function attendance(classroom,session){const counts=api.attendance.emptyCounts(),names={presentNames:[],absentNames:[],
+leaveNames:[],lateNames:[],unknownNames:[]};const people=api.sessionStudents(classroom,session).map(student=>{const attendance2=api.attendance.normalize(session.
+attendance[student.id]);api.attendance.tally(counts,attendance2);if(attendance2.status==="present")names.presentNames.push(student.name);else if(attendance2.status===
+"leave")names.leaveNames.push(student.name);else if(attendance2.status==="absent")names.absentNames.push(student.name);else if(attendance2.status==="late"){names.
+presentNames.push(student.name);names.lateNames.push(`${student.name}${attendance2.minutes===null?"":" ("+attendance2.minutes+"د)"}`)}else names.unknownNames.push(
+student.name);return{student,attendance:attendance2}});return{counts,people,...names}}function project(session,filter){const classInfo=api.findClass(session.classId,
+session.schoolId),classroom=classInfo.classObj,lesson=api.getLesson(classroom,session.lessonId),records=filter.studentId?session.scores.filter(score=>score.studentId===
+filter.studentId):session.scores,scores={};for(const type of["mostamar","payani","classGrade","activity","positive","negative","homework"])scores[type]=records.
+filter(score=>score.type===type);scores.exams=records.filter(score=>score.type==="mostamar"||score.type==="payani"||score.type==="classGrade"||score.type==="act\
+ivity");const entries={};if(filter.reportMode!=="summary"){const studentName=score=>{const student=api.sessionStudent(classroom,session,score.studentId);return student?
+student.name:""};if(filter.showScores)entries.exams=scores.exams.map(score=>`${studentName(score)}(${api.typeLabel(score.type)}:${score.value})`);if(filter.showPosNeg)
+for(const type of["positive","negative"])entries[type]=scores[type].map(score=>`${studentName(score)}(${score.value})`);if(filter.showHomework)entries.homework=
+scores.homework.map(score=>`${studentName(score)}${score.note?"("+score.note+")":""}`)}return{session,classInfo,lesson,scores,entries,attendance:filter.showAttendance&&
+(filter.reportMode!=="summary"||!filter.studentId)?attendance(classroom,session):null,studentAttendance:filter.reportMode==="summary"&&filter.studentId&&filter.
+showAttendance?api.attendance.normalize(session.attendance[filter.studentId]):null}}function build(sessions,filter){const rows=sessions.map(session=>project(session,
+filter)),groupedByPeriod={};rows.forEach(row=>{const period=row.session.period;if(!groupedByPeriod[period])groupedByPeriod[period]=[];groupedByPeriod[period].push(
+row)});const periods=Object.keys(groupedByPeriod).sort((a,b)=>parseInt(a)-parseInt(b)).map(period=>({period:parseInt(period),rows:groupedByPeriod[period]}));return{
+rows,periods}}return Object.freeze({filterSessions,attendance,build})}})(globalThis);(function(root){"use strict";function isoDate(value){if(typeof value!=="str\
+ing"||!/^\d{4}-\d{2}-\d{2}$/.test(value)||value.startsWith("0000-"))throw Error("تاریخ معتبر انتخاب کنید.");const d=new Date(value+"T12:00:0\
+0Z");if(!Number.isFinite(+d)||d.toISOString().slice(0,10)!==value)throw Error("تاریخ معتبر انتخاب کنید.");return d}function addDays(value,n){
 if(!Number.isSafeInteger(n))throw Error("تاریخ معتبر انتخاب کنید.");const d=isoDate(value);d.setUTCDate(d.getUTCDate()+n);if(!Number.isFinite(
 +d)||d.getUTCFullYear()<1||d.getUTCFullYear()>9999)throw Error("تاریخ معتبر انتخاب کنید.");return d.toISOString().slice(0,10)}function range(mode,date,academicYear,selection={}){
 if(!["daily","weekly","monthly","annual"].includes(mode))throw Error("نوع گزارش نامعتبر است.");const d=isoDate(date);if(mode==="weekly"&&(selection.

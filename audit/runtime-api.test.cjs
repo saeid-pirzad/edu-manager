@@ -78,6 +78,7 @@ test("every installed public operation routes through the stable runtime facade"
       path.join(__dirname, "../src/workspace/core/public-api.js"),
       "utf8",
     )
+    .split("function installRuntimeAPI() {")[1]
     .split("  window.EduV24")[0];
   const names = [...apiSource.matchAll(/^ {4}(\w+):/gm)].map((m) => m[1]);
   const c = vm.createContext({});

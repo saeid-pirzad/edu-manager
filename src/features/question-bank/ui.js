@@ -199,276 +199,13 @@
             : "2";
     }
   }
-  function sheetTextDirection(text, fallback = "rtl") {
-    const line =
-      sheetCleanText(text)
-        .split(/\r\n|\r|\n/)
-        .find((value) => value.trim()) || "";
-    if (
-      !/؟\s*$/.test(line) &&
-      /^\s*(?:(?:const|let|var|function|return|throw|echo|def|class|import|from)\s|(?:if|for|while|switch|catch)\s*\(|[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*\s*(?:\(|[+\-*/]?=(?!=))|<\/?[A-Za-z][\w:-]*(?:\s|\/?>)|\/\/|\/\*|\*\/|[{}][;,\s]*$)/.test(
-        line,
-      )
-    )
-      return "ltr";
-    const chars = Array.from(line);
-    if (
-      chars.some(
-        (char) =>
-          /\p{Letter}/u.test(char) &&
-          /[\p{Script=Arabic}\p{Script=Hebrew}]/u.test(char),
-      )
-    )
-      return "rtl";
-    return chars.some((char) => /\p{Letter}/u.test(char)) ? "ltr" : fallback;
-  }
-  function sheetCleanText(text) {
-    return String(text).replace(
-      /[\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]/g,
-      "",
-    );
-  }
-  function sheet(exam) {
-    const s = el("article", undefined, "qb-sheet");
-    s.dir = "rtl";
-    const pageName = `qb-exam-${crypto.randomUUID()}`;
-    s.style.page = pageName;
-    const compact = (value, limit) => {
-      const chars = Array.from(value.replace(/\s+/g, " ").trim());
-      return chars.length > limit
-        ? chars.slice(0, limit - 1).join("") + "…"
-        : chars.join("");
-    };
-    const cssString = (value) =>
-      '"' +
-      Array.from(value, (char) => {
-        const code = char.codePointAt(0);
-        return code < 32 || code === 127 || char === '"' || char === "\\"
-          ? "\\" + code.toString(16) + " "
-          : char;
-      }).join("") +
-      '"';
-    const runningTitle = cssString(
-      `${compact(exam.courseTitle, 35)}  |  ${compact(exam.title, 50)}`,
-    );
-    const pages = el("style");
-    pages.media = "print";
-    pages.textContent = `@page ${pageName}{size:A4 portrait;margin:23mm 15mm 18mm;
-      @top-center{content:${runningTitle};font-family:IRANSans,sans-serif;font-size:9pt;font-weight:500;color:#374151;direction:rtl;text-align:right;vertical-align:bottom;padding-bottom:3mm;margin-bottom:4mm;border-bottom:0.3mm solid #aab4c0;width:180mm}
-      @bottom-center{content:"صفحهٔ " counter(page) " از " counter(pages);font-family:IRANSans,sans-serif;font-size:9pt;color:#4b5563;direction:rtl}}
-      @page ${pageName}:first{margin-top:15mm;@top-center{content:none;border:0}}`;
-    s.append(pages);
-    const header = el("header", undefined, "qb-sheet-header");
-    header.append(el("p", "به نام خدا", "qb-sheet-invocation"));
-    const motivation = el("p", undefined, "qb-sheet-motivation");
-    motivation.textContent = "با آرامش بیندیشید و با اطمینان پاسخ دهید.";
-    header.append(motivation);
-    const meta = el("div", undefined, "qb-sheet-meta");
-    for (const [label, value] of [
-      ["مدرسه", exam.school],
-      ["درس", exam.courseTitle],
-      ["آزمون", exam.title],
-      ["دبیر", exam.teacher],
-      ["تاریخ", dateLabel(exam.date)],
-      ["مدت", `${number(exam.duration)} دقیقه`],
-      [
-        "بارم کل",
-        number(exam.questions.reduce((sum, q) => sum + q.score, 0) / 100),
-      ],
-    ]) {
-      if (!value && label !== "مدرسه" && label !== "دبیر") continue;
-      const item = el("div", undefined, "qb-sheet-meta-item");
-      item.append(
-        el("span", `${label}: `),
-        el(label === "آزمون" ? "h1" : "strong", value || "—"),
-      );
-      meta.append(item);
-    }
-    for (const label of ["نام و نام خانوادگی", "کلاس"]) {
-      const item = el("div", undefined, "qb-sheet-meta-item qb-student-field");
-      item.append(el("span", `${label}:`), el("span", "", "qb-student-line"));
-      meta.append(item);
-    }
-    header.append(meta);
-    s.append(header);
-    const columns = el("div", undefined, "qb-sheet-columns");
-    columns.setAttribute("aria-hidden", "true");
-    columns.append(
-      el("span", "ردیف"),
-      el("span", "سؤال‌ها"),
-      el("span", "بارم"),
-    );
-    s.append(columns);
-    exam.questions.forEach((q, i) => {
-      const row = el("section", undefined, "qb-sheet-question");
-      const body = el("div", undefined, "qb-sheet-prompt");
-      const questionDirection = sheetTextDirection(q.text);
-      const questionText = sheetCleanText(q.text);
-      const prompt = el(
-        "p",
-        questionDirection === "ltr"
-          ? `${i + 1}. ${questionText}`
-          : questionText,
-      );
-      prompt.dir = questionDirection;
-      if (/[\r\n]/.test(q.text)) {
-        prompt.textContent = "";
-        questionText.split(/\r\n|\r|\n/).forEach((line, lineIndex) => {
-          const part = el(
-            "span",
-            (lineIndex === 0 && questionDirection === "ltr"
-              ? `${i + 1}. `
-              : "") + line,
-            "qb-sheet-line",
-          );
-          part.dir = sheetTextDirection(line, questionDirection);
-          prompt.append(part);
-        });
-      }
-      if (q.type === "boolean") {
-        const choices = el(
-          "span",
-          questionDirection === "rtl"
-            ? "□ صحیح     □ غلط"
-            : "□ True     □ False",
-          "qb-sheet-boolean",
-        );
-        choices.dir = questionDirection;
-        prompt.append(document.createTextNode("  "), choices);
-      }
-      const questionNumber = el(
-        "span",
-        questionDirection === "rtl" ? `${number(i + 1)}.` : "",
-        "qb-sheet-number",
-      );
-      questionNumber.dir = "ltr";
-      if (questionDirection === "ltr")
-        questionNumber.setAttribute("aria-hidden", "true");
-      body.append(
-        questionNumber,
-        prompt,
-        el("span", number(q.score / 100), "qb-sheet-score"),
-      );
-      body.lastElementChild.setAttribute(
-        "aria-label",
-        `بارم ${number(q.score / 100)} نمره`,
-      );
-      row.append(body);
-      if (q.type === "mcq") {
-        const options = el("ol", undefined, "qb-sheet-options");
-        options.dir = questionDirection;
-        q.options.forEach((option, j) => {
-          const item = el("li");
-          item.dir = questionDirection;
-          const optionText = el("bdi", sheetCleanText(option));
-          optionText.dir = sheetTextDirection(option, questionDirection);
-          if (/[\r\n]/.test(option)) {
-            optionText.textContent = "";
-            sheetCleanText(option)
-              .split(/\r\n|\r|\n/)
-              .forEach((line) => {
-                const part = el("span", line, "qb-sheet-line");
-                part.dir = sheetTextDirection(line, questionDirection);
-                optionText.append(part);
-              });
-          }
-          item.append(
-            el(
-              "span",
-              `${questionDirection === "rtl" ? letters[j] : ["A", "B", "C", "D"][j]})`,
-            ),
-            optionText,
-          );
-          options.append(item);
-        });
-        row.append(options);
-      }
-      if (q.type === "essay") {
-        const space = el("div", undefined, "qb-answer-space");
-        space.setAttribute("aria-label", "محل پاسخ تشریحی");
-        for (let line = 0; line < 4; line++) space.append(el("span"));
-        row.append(space);
-      }
-      if (q.type === "blank" && !/_{2,}|…|\.{3,}|ـ{3,}/u.test(q.text)) {
-        const answer = el(
-          "p",
-          (questionDirection === "rtl" ? "پاسخ: " : "Answer: ") +
-            "................................................",
-          "qb-short-answer",
-        );
-        answer.dir = questionDirection;
-        row.append(answer);
-      }
-      s.append(row);
-    });
-    const footer = el("footer", undefined, "qb-sheet-footer");
-    const closing = el("p", undefined, "qb-sheet-closing");
-    closing.append(
-      el("span", "با آرامش و دقت پاسخ دهید؛"),
-      document.createTextNode(" "),
-      el("strong", "موفق باشید."),
-    );
-    const total = el("p", undefined, "qb-sheet-total");
-    total.setAttribute(
-      "aria-label",
-      `تعداد کل سؤال‌ها: ${number(exam.questions.length)}`,
-    );
-    total.append(
-      el("strong", number(exam.questions.length)),
-      el("span", "سؤال"),
-    );
-    footer.append(closing, total);
-    s.append(footer);
-    return s;
-  }
-  async function print(exam) {
-    const frame = el("iframe");
-    frame.className = "qb-print-frame";
-    frame.style.width = "794px";
-    frame.style.visibility = "hidden";
-    frame.title = "چاپ آزمون";
-    document.body.append(frame);
-    const doc = frame.contentDocument;
-    try {
-      doc.documentElement.lang = "fa";
-      doc.documentElement.dir = "rtl";
-      // Reuse the actual application styles, including its embedded offline font.
-      const loads = [
-        ...document.querySelectorAll('link[rel="stylesheet"]'),
-      ].map(
-        (source) =>
-          new Promise((resolve, reject) => {
-            const copy = source.cloneNode();
-            copy.onload = resolve;
-            copy.onerror = () => reject(Error("فونت و سبک چاپ بارگیری نشد."));
-            doc.head.append(copy);
-          }),
-      );
-      await Promise.all(loads);
-      const style = doc.createElement("style");
-      style.textContent =
-        "@page{size:A4 portrait;margin:15mm}body{margin:0;font-family:IRANSans,sans-serif;background:white;color:black}body>.qb-sheet{display:block!important;padding:0}.qb-sheet-question{break-inside:avoid;overflow-wrap:anywhere}h1{font-size:20px}";
-      doc.head.append(style);
-      doc.body.append(doc.importNode(sheet(exam), true));
-      doc.body.style.width = "180mm";
-      await doc.fonts.load("16px IRANSans");
-      await doc.fonts.ready;
-      fitOptions(doc.body);
-      await new Promise((resolve) =>
-        frame.contentWindow.requestAnimationFrame(resolve),
-      );
-      frame.contentWindow.addEventListener("afterprint", () => frame.remove(), {
-        once: true,
-      });
-      frame.contentWindow.focus();
-      frame.contentWindow.print();
-    } catch (error) {
-      frame.remove();
-      throw error;
-    } finally {
-      if (frame.isConnected) setTimeout(() => frame.remove(), 60000);
-    }
-  }
+  const { sheet, print, previewText } = root.EduQuestionBankPaperUI.create({
+    el,
+    number,
+    dateLabel,
+    letters,
+    fitOptions,
+  });
   function openBank() {
     root.goQuestionBank();
     return activePage?.ready;
@@ -957,489 +694,113 @@
       action(next);
       if (await commit(next)) render();
     };
-    function form(parent, submit, { title, subtitle, kind }) {
-      const panel = el(
-        "details",
-        undefined,
-        "card quick-create entity-quick-create create-panel qb-editor-panel",
-      );
-      panel.open = true;
-      const heading = el("summary");
-      const symbol = el("span", undefined, "create-panel-symbol");
-      symbol.setAttribute("aria-hidden", "true");
-      symbol.insertAdjacentHTML("afterbegin", root.EduIcons.html("book"));
-      const copy = el("span", undefined, "create-panel-title");
-      const name = el("strong", title);
-      name.id = `qb-editor-${crypto.randomUUID()}`;
-      copy.append(name, el("small", subtitle));
-      const toggle = el("span", undefined, "create-panel-toggle");
-      toggle.setAttribute("aria-hidden", "true");
-      heading.append(symbol, copy, toggle);
-      const f = el("form", undefined, "qb-form record-editor course-grid");
-      f.dataset.qbEditor = kind;
-      f.setAttribute("aria-labelledby", name.id);
-      f.noValidate = true;
-      f.onsubmit = async (e) => {
-        e.preventDefault();
-        if (!alive || busy || confirmation) return;
-        try {
-          await submit(f);
-        } catch (e) {
-          error(e);
-        }
-      };
-      panel.append(heading, f);
-      parent.append(panel);
-      return f;
-    }
-    function saveButton(f, label = "ذخیره") {
-      const b = el("button", label);
-      b.type = "submit";
-      b.className = "ui-button ui-button-flat";
-      b.dataset.uiTone = "save";
-      b.dataset.uiVariant = "solid";
-      b.insertAdjacentHTML("afterbegin", root.EduIcons.html("save"));
-      const actions = el(
-        "div",
-        undefined,
-        "record-editor-actions qb-field-wide",
-      );
-      actions.append(b);
-      button("بازگشت", () => discard(render), actions);
-      const fields = el(
-        "div",
-        undefined,
-        "course-grid qb-form-fields qb-field-wide",
-      );
-      fields.append(...f.childNodes);
-      f.append(fields, actions);
-    }
+    const viewState = {
+      get bank() {
+        return bank;
+      },
+      get courseId() {
+        return courseId;
+      },
+      set courseId(value) {
+        courseId = value;
+      },
+      get unitId() {
+        return unitId;
+      },
+      set unitId(value) {
+        unitId = value;
+      },
+      get tab() {
+        return tab;
+      },
+      set tab(value) {
+        tab = value;
+      },
+      get search() {
+        return search;
+      },
+      set search(value) {
+        search = value;
+      },
+      get questionType() {
+        return questionType;
+      },
+      set questionType(value) {
+        questionType = value;
+      },
+      get page() {
+        return page;
+      },
+      set page(value) {
+        page = value;
+      },
+      get dirty() {
+        return dirty;
+      },
+      set dirty(value) {
+        dirty = value;
+      },
+      get alive() {
+        return alive;
+      },
+      get busy() {
+        return busy;
+      },
+      get confirmation() {
+        return confirmation;
+      },
+    };
+    const {
+      form,
+      saveButton,
+      entityMenu,
+      removeCourse,
+      removeUnit,
+      manageCourse,
+      manageUnit,
+      editQuestion,
+      importQuestions,
+    } = root.EduQuestionBankFormsUI.create({
+      state: viewState,
+      D,
+      el,
+      button,
+      field,
+      select,
+      contextAction,
+      number,
+      discard,
+      render,
+      clearTransientMessage,
+      closeOwnedCalendar,
+      commit,
+      mutate,
+      unitLabel,
+      error,
+      content,
+      tabScopes,
+      confirmAction,
+    });
+    const { builder } = root.EduQuestionBankBuilderUI.create({
+      state: viewState,
+      D,
+      el,
+      button,
+      field,
+      number,
+      form,
+      saveButton,
+      questionCountsByUnit,
+      unitLabel,
+      tabScopes,
+      commit,
+      preview,
+      content,
+    });
     function unitLabel() {
       return bank.courses.find((c) => c.id === courseId)?.structure === "module"
         ? "پودمان"
         : "فصل";
-    }
-    function entityMenu(
-      parent,
-      label,
-      selected,
-      add,
-      edit,
-      remove,
-      extra = [],
-    ) {
-      const trigger = contextAction(`بیشتر ${label}`, () => {}, parent);
-      trigger.querySelector("svg")?.remove();
-      trigger.insertAdjacentHTML("afterbegin", root.EduIcons.html("more"));
-      const menu = el("div", undefined, "qb-entity-menu");
-      menu.id = `qb-menu-${crypto.randomUUID()}`;
-      menu.setAttribute("popover", "auto");
-      menu.setAttribute("role", "menu");
-      menu.setAttribute("aria-label", `مدیریت ${label}`);
-      parent.append(menu);
-      trigger.setAttribute("aria-haspopup", "menu");
-      trigger.setAttribute("aria-controls", menu.id);
-      trigger.setAttribute("aria-expanded", "false");
-      const actions = [
-        [`${label} جدید`, add, false],
-        [`ویرایش ${label}`, edit, !selected],
-        [`حذف ${label}`, remove, !selected],
-        ...extra,
-      ].map(([title, action, disabled]) => {
-        const item = button(
-          title,
-          () => {
-            menu.hidePopover();
-            trigger.focus();
-            action();
-          },
-          menu,
-        );
-        item.setAttribute("role", "menuitem");
-        item.disabled = disabled;
-        return item;
-      });
-      trigger.onclick = () => {
-        if (menu.matches(":popover-open")) return menu.hidePopover();
-        menu.showPopover();
-        const rect = trigger.getBoundingClientRect();
-        menu.style.left = `${Math.max(8, Math.min(rect.right - menu.offsetWidth, innerWidth - menu.offsetWidth - 8))}px`;
-        menu.style.top = `${Math.max(8, Math.min(rect.bottom + 6, innerHeight - menu.offsetHeight - 8))}px`;
-        actions.find((item) => !item.disabled)?.focus();
-      };
-      menu.addEventListener("toggle", () => {
-        trigger.setAttribute(
-          "aria-expanded",
-          String(menu.matches(":popover-open")),
-        );
-      });
-      menu.onkeydown = (event) => {
-        const enabled = actions.filter((item) => !item.disabled);
-        const index = enabled.indexOf(document.activeElement);
-        if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
-          event.preventDefault();
-          const next =
-            event.key === "Home"
-              ? 0
-              : event.key === "End"
-                ? enabled.length - 1
-                : (index +
-                    (event.key === "ArrowDown" ? 1 : -1) +
-                    enabled.length) %
-                  enabled.length;
-          enabled[next].focus();
-        } else if (event.key === "Escape") {
-          event.preventDefault();
-          menu.hidePopover();
-          trigger.focus();
-        }
-      };
-    }
-    function removeCourse(current) {
-      const units = bank.units.filter((u) => u.courseId === courseId);
-      const unitIds = new Set(units.map((u) => u.id));
-      const questions = bank.questions.filter((q) =>
-        unitIds.has(q.unitId),
-      ).length;
-      confirmAction(
-        `درس «${current.title}» با ${number(units.length)} بخش و ${number(questions)} سؤال حذف شود؟ این حذف از بانک قابل برگشت نیست؛ آزمون‌های ذخیره‌شده حفظ می‌شوند.`,
-        () =>
-          mutate((next) => {
-            next.courses = next.courses.filter((c) => c.id !== current.id);
-            next.units = next.units.filter((u) => !unitIds.has(u.id));
-            next.questions = next.questions.filter(
-              (q) => !unitIds.has(q.unitId),
-            );
-          }),
-      );
-    }
-    function removeUnit(existing) {
-      const count = bank.questions.filter(
-        (q) => q.unitId === existing.id,
-      ).length;
-      confirmAction(
-        `بخش «${existing.title}» و ${number(count)} سؤال آن حذف شوند؟ این حذف از بانک قابل برگشت نیست؛ آزمون‌های ذخیره‌شده حفظ می‌شوند.`,
-        () =>
-          mutate((next) => {
-            next.units = next.units.filter((u) => u.id !== existing.id);
-            next.questions = next.questions.filter(
-              (q) => q.unitId !== existing.id,
-            );
-          }),
-      );
-    }
-    function manageCourse(edit = false) {
-      discard(() => {
-        clearTransientMessage();
-        closeOwnedCalendar();
-        content.replaceChildren();
-        const current = bank.courses.find((c) => c.id === courseId);
-        const f = form(
-          content,
-          async () => {
-            const next = structuredClone(bank);
-            if (edit) {
-              const course = next.courses.find((c) => c.id === courseId);
-              course.title = name.value.trim();
-              if (!bank.units.some((u) => u.courseId === courseId))
-                course.structure = structure.value;
-            } else {
-              const c = {
-                id: crypto.randomUUID(),
-                title: name.value.trim(),
-                structure: structure.value,
-              };
-              next.courses.push(c);
-              if (await commit(next)) {
-                courseId = c.id;
-                unitId = "";
-                if (tab === "builder") tabScopes.builder.unitIds = [];
-                search = "";
-                questionType = "";
-                page = 0;
-                render();
-              }
-              return;
-            }
-            if (await commit(next)) render();
-          },
-          {
-            title: edit ? "ویرایش درس" : "درس جدید",
-            subtitle: "نام درس و ساختار فصل‌ها یا پودمان‌ها",
-            kind: "course",
-          },
-        );
-        const name = field(f, "عنوان درس", edit ? current.title : "");
-        const structure = select(
-          f,
-          "نوع درس",
-          [
-            ["chapter", "عمومی (فصلی)"],
-            ["module", "پودمانی"],
-          ],
-          edit ? current.structure : "chapter",
-        );
-        structure.disabled =
-          edit && bank.units.some((u) => u.courseId === courseId);
-        if (edit) {
-          const remove = button("حذف درس", () => removeCourse(current), f);
-          remove.classList.add("qb-field-wide", "qb-delete-entity");
-        }
-        saveButton(f);
-        name.focus();
-      });
-    }
-    function manageUnit(existing) {
-      discard(() => {
-        clearTransientMessage();
-        closeOwnedCalendar();
-        content.replaceChildren();
-        const f = form(
-          content,
-          async () => {
-            const next = structuredClone(bank);
-            const id = existing?.id || crypto.randomUUID();
-            if (existing)
-              next.units.find((u) => u.id === id).title = name.value.trim();
-            else next.units.push({ id, courseId, title: name.value.trim() });
-            if (await commit(next)) {
-              unitId = id;
-              search = "";
-              questionType = "";
-              page = 0;
-              render();
-            }
-          },
-          {
-            title: existing ? `ویرایش ${unitLabel()}` : `${unitLabel()} جدید`,
-            subtitle:
-              bank.courses.find((course) => course.id === courseId)?.title ||
-              "",
-            kind: "unit",
-          },
-        );
-        const name = field(f, `عنوان ${unitLabel()}`, existing?.title || "");
-        name.placeholder = `${unitLabel()} اول`;
-        if (existing) {
-          const remove = button(
-            `حذف ${unitLabel()}`,
-            () => removeUnit(existing),
-            f,
-          );
-          remove.classList.add("qb-field-wide", "qb-delete-entity");
-        }
-        saveButton(f);
-        name.focus();
-      });
-    }
-    function editQuestion(existing) {
-      discard(() => {
-        clearTransientMessage();
-        closeOwnedCalendar();
-        content.replaceChildren();
-        const f = form(
-          content,
-          async () => {
-            const q = {
-              id: existing?.id || crypto.randomUUID(),
-              unitId: unit.value,
-              type: type.value,
-              text: body.value,
-              answer:
-                type.value === "mcq"
-                  ? answer.value === ""
-                    ? null
-                    : Number(answer.value)
-                  : type.value === "boolean"
-                    ? answer.value === "true"
-                      ? true
-                      : answer.value === "false"
-                        ? false
-                        : null
-                    : answer.value,
-              explanation: explanation.value,
-              score: D.score(mark.value),
-            };
-            if (q.type === "mcq") q.options = options.map((n) => n.value);
-            D.question(q);
-            if (
-              q.type === "mcq" &&
-              (existing?.type !== "mcq" ||
-                q.options.some(
-                  (value, index) => value !== existing.options[index],
-                )) &&
-              new Set(q.options.map(D.optionKey)).size !== 4
-            )
-              throw Error(
-                "گزینه‌ها نباید فقط در شکل نوشتن ی، ک یا فاصله تفاوت داشته باشند؛ چهار پاسخ متمایز بنویسید.",
-              );
-            await mutate((next) => {
-              const index = next.questions.findIndex((x) => x.id === q.id);
-              if (index < 0) next.questions.push(q);
-              else next.questions[index] = q;
-            });
-          },
-          {
-            title: existing ? "ویرایش سؤال" : "افزودن سؤال",
-            subtitle: "صورت سؤال، پاسخ صحیح و بارم",
-            kind: "question",
-          },
-        );
-        const context = el(
-          "div",
-          undefined,
-          "course-grid qb-field-wide qb-question-context",
-        );
-        f.classList.add("qb-question-form");
-        f.append(context);
-        const unit = select(
-          context,
-          unitLabel(),
-          [
-            ["", "انتخاب بخش"],
-            ...bank.units
-              .filter((u) => u.courseId === courseId)
-              .map((u) => [u.id, u.title]),
-          ],
-          existing?.unitId || unitId,
-        );
-        const type = select(
-          context,
-          "نوع سؤال",
-          Object.entries(D.types),
-          existing?.type || "mcq",
-        );
-        const body = field(f, "متن سؤال", existing?.text || "", "textarea"),
-          area = el(
-            "fieldset",
-            undefined,
-            "course-grid qb-field-wide qb-answer-editor",
-          );
-        f.append(area);
-        let answer,
-          options = [],
-          activeType;
-        const drafts = new Map();
-        if (existing)
-          drafts.set(existing.type, {
-            answer: String(existing.answer),
-            options: existing.options || [],
-          });
-        function answers() {
-          if (activeType)
-            drafts.set(activeType, {
-              answer: answer.value,
-              options: options.map((n) => n.value),
-            });
-          activeType = type.value;
-          const draft = drafts.get(activeType);
-          area.replaceChildren();
-          area.append(
-            el(
-              "legend",
-              type.value === "mcq" ? "گزینه‌ها و پاسخ" : "پاسخ سؤال",
-            ),
-          );
-          options = [];
-          if (type.value === "mcq") {
-            for (let i = 0; i < 4; i++)
-              options.push(
-                field(
-                  area,
-                  `گزینه ${i + 1}`,
-                  draft?.options[i] || "",
-                  /[\r\n]/.test(draft?.options[i] || "") ? "textarea" : "input",
-                ),
-              );
-            answer = select(
-              area,
-              "پاسخ صحیح",
-              [
-                ["", "انتخاب پاسخ"],
-                ...[0, 1, 2, 3].map((i) => [String(i), `گزینه ${i + 1}`]),
-              ],
-              draft?.answer ?? "",
-            );
-          } else if (type.value === "boolean")
-            answer = select(
-              area,
-              "پاسخ صحیح",
-              [
-                ["", "انتخاب پاسخ"],
-                ["true", "صحیح"],
-                ["false", "غلط"],
-              ],
-              draft?.answer ?? "",
-            );
-          else
-            answer = field(area, "پاسخ صحیح", draft?.answer ?? "", "textarea");
-          answer.parentElement.classList.add("qb-field-wide");
-        }
-        type.onchange = answers;
-        answers();
-        const mark = field(
-          f,
-          "بارم",
-          existing ? String(existing.score / 100) : "1",
-        );
-        mark.parentElement.classList.add("qb-field-wide");
-        mark.inputMode = "decimal";
-        const optional = el("details", undefined, "qb-optional qb-field-wide");
-        optional.append(el("summary", "توضیح پاسخ (اختیاری)"));
-        optional.open = Boolean(existing?.explanation);
-        f.append(optional);
-        const explanation = field(
-          optional,
-          "توضیح پاسخ (اختیاری)",
-          existing?.explanation || "",
-          "textarea",
-        );
-        saveButton(f);
-        body.focus();
-      });
-    }
-    function importQuestions() {
-      discard(() => {
-        if (!unitId) return;
-        clearTransientMessage();
-        closeOwnedCalendar();
-        content.replaceChildren();
-        const destinationCourse = courseId,
-          destinationUnit = unitId;
-        root.EduQuestionBankImportUI.mount({
-          parent: content,
-          bank,
-          unitId,
-          courseTitle: bank.courses.find((c) => c.id === courseId).title,
-          unitTitle: bank.units.find((u) => u.id === unitId).title,
-          el,
-          button,
-          isCurrent: () =>
-            alive &&
-            courseId === destinationCourse &&
-            unitId === destinationUnit,
-          onPending: (value) => {
-            dirty = value;
-          },
-          onSave: async (next, isCurrent) => {
-            if (await commit(next, { isCurrent })) {
-              render();
-              const note = el(
-                "p",
-                "سؤال‌ها با موفقیت به بخش انتخاب‌شده افزوده شدند.",
-                "qb-import-success",
-              );
-              note.setAttribute("role", "status");
-              content.prepend(note);
-            }
-          },
-          onClose: () =>
-            discard(() => {
-              dirty = false;
-              render();
-            }),
-        });
-      });
     }
     function questions(parent) {
       const units = bank.units.filter((u) => u.courseId === courseId);
@@ -1695,275 +1056,6 @@
         draw();
       };
       draw();
-    }
-    function builder(parent) {
-      const f = form(
-        parent,
-        async () => {
-          f.dataset.submitted = "true";
-          update();
-          if (!f.reportValidity()) return;
-          const exam = D.generate(bank, {
-            courseId,
-            unitIds: checks.filter((c) => c.checked).map((c) => c.value),
-            counts: Object.fromEntries(
-              Object.entries(counts).map(([k, n]) => [k, n.value]),
-            ),
-            title: name.value,
-            school: school.value,
-            teacher: teacher.value,
-            date: date.value,
-            duration: duration.value,
-            totalScore: totalScore.value,
-          });
-          const next = structuredClone(bank);
-          next.exams.push(exam);
-          if (await commit(next)) preview(exam);
-        },
-        {
-          title: "طراحی آزمون",
-          subtitle: "انتخاب بخش‌ها، ترکیب سؤال‌ها و مشخصات آزمون",
-          kind: "exam",
-        },
-      );
-      f.classList.add("qb-builder");
-      const units = bank.units.filter((u) => u.courseId === courseId),
-        questionTypes = Object.keys(D.types),
-        questionCounts = questionCountsByUnit(bank.questions, units),
-        scope = el("fieldset", undefined, "qb-unit-selection");
-      scope.append(el("legend", `۱ · درس و ${unitLabel()}‌های آزمون`));
-      f.append(scope);
-      const coursePicker = parent.querySelector(".qb-toolbar");
-      if (coursePicker) {
-        coursePicker.classList.add("qb-builder-course");
-        scope.append(coursePicker);
-      }
-      const unitList = el("div", undefined, "qb-builder-units");
-      scope.append(unitList);
-      if (!units.length)
-        scope.append(
-          el(
-            "p",
-            `ابتدا در تب بانک سؤال، ${unitLabel()} و سؤال‌های آن را ثبت کنید.`,
-            "qb-help",
-          ),
-        );
-      const checks = units.map((u) => {
-        const n = field(unitList, u.title);
-        n.type = "checkbox";
-        n.parentElement.prepend(n);
-        n.value = u.id;
-        n.checked = tabScopes.builder.unitIds?.includes(u.id) || false;
-        n.parentElement.append(
-          el(
-            "small",
-            `${number(questionCounts.get(u.id).total)} سؤال`,
-            "qb-unit-count",
-          ),
-        );
-        return n;
-      });
-      const counts = {},
-        available = {};
-      const plan = el("div", undefined, "qb-plan-summary qb-field-wide");
-      plan.setAttribute("role", "status");
-      plan.setAttribute("aria-live", "polite");
-      const update = () => {
-        const selected = checks.filter((c) => c.checked).map((c) => c.value);
-        tabScopes.builder.unitIds = selected;
-        const capacities = Object.fromEntries(
-          questionTypes.map((type) => [type, 0]),
-        );
-        for (const id of selected)
-          for (const type of questionTypes)
-            capacities[type] += questionCounts.get(id).types[type];
-        let total = 0;
-        selectAll.disabled =
-          checks.length === 0 || selected.length === checks.length;
-        clearAll.disabled = selected.length === 0;
-        for (const type of questionTypes) {
-          const capacity = capacities[type];
-          const requested = Number(D.digits(counts[type].value));
-          if (Number.isInteger(requested) && requested > 0) total += requested;
-          available[type].replaceChildren(
-            el("span", number(capacity)),
-            el("span", " سؤال موجود", "qb-capacity-caption"),
-          );
-          available[type].setAttribute(
-            "aria-label",
-            `${number(capacity)} سؤال موجود`,
-          );
-          available[type].title = `${number(capacity)} سؤال موجود`;
-          counts[type].setCustomValidity(
-            !/^\d+$/.test(D.digits(counts[type].value)) ||
-              !Number.isInteger(requested) ||
-              requested < 0 ||
-              requested > 500
-              ? "تعداد را با عدد صحیح از صفر تا ۵۰۰ وارد کنید."
-              : requested > capacity
-                ? `فقط ${number(capacity)} سؤال از این نوع در بخش‌های انتخاب‌شده موجود است.`
-                : "",
-          );
-          counts[type].setAttribute(
-            "aria-invalid",
-            String(!counts[type].validity.valid),
-          );
-          counts[type].parentElement.dataset.shortage = String(
-            Number.isFinite(requested) && requested > capacity,
-          );
-        }
-        scope.dataset.empty = String(selected.length === 0);
-        checks[0]?.setCustomValidity(
-          selected.length ? "" : `حداقل یک ${unitLabel()} انتخاب کنید.`,
-        );
-        let scoreError = "";
-        try {
-          D.examScore(totalScore.value);
-        } catch (e) {
-          scoreError = e.message;
-        }
-        if (total === 0 || total > 500)
-          scoreError = "مجموع سؤال‌های آزمون باید بین ۱ و ۵۰۰ باشد.";
-        totalScore.setCustomValidity(scoreError);
-        totalScore.setAttribute(
-          "aria-invalid",
-          String(
-            Boolean(scoreError) &&
-              (totalScore.dataset.touched === "true" ||
-                f.dataset.submitted === "true"),
-          ),
-        );
-        for (const input of Object.values(counts))
-          input.setAttribute("aria-invalid", String(!input.validity.valid));
-        plan.replaceChildren(
-          el("span", `${number(selected.length)} بخش انتخاب‌شده`),
-          el("strong", `${number(total)} سؤال در آزمون`),
-        );
-      };
-      const selectionActions = el("div", undefined, "qb-selection-actions");
-      selectionActions.setAttribute("role", "group");
-      selectionActions.setAttribute("aria-label", "انتخاب بخش‌های آزمون");
-      scope.append(selectionActions);
-      const selectAll = button(
-        "انتخاب همه",
-        () => {
-          checks.forEach((c) => (c.checked = true));
-          dirty = true;
-          update();
-        },
-        selectionActions,
-      );
-      const clearAll = button(
-        "لغو انتخاب",
-        () => {
-          checks.forEach((c) => (c.checked = false));
-          dirty = true;
-          update();
-        },
-        selectionActions,
-      );
-      selectAll.insertAdjacentHTML("afterbegin", root.EduIcons.html("check"));
-      clearAll.insertAdjacentHTML("afterbegin", root.EduIcons.html("minus"));
-      checks.forEach((c) => (c.onchange = update));
-      const composition = el(
-        "fieldset",
-        undefined,
-        "qb-composition qb-field-wide",
-      );
-      composition.append(el("legend", "۲ · ترکیب سؤال‌ها"));
-      composition.append(
-        el(
-          "p",
-          "تعداد هر نوع و نمرهٔ کل را مشخص کنید؛ بارم سؤال‌های تصادفی دقیقاً برابر نمرهٔ کل خواهد بود.",
-          "qb-composition-hint",
-        ),
-      );
-      f.append(composition);
-      const totalScore = field(composition, "نمرهٔ کل آزمون", "20");
-      totalScore.parentElement.classList.add("qb-target-score");
-      totalScore.inputMode = "decimal";
-      totalScore.required = true;
-      totalScore.onfocus = totalScore.onclick = () => totalScore.select();
-      totalScore.oninput = () => {
-        totalScore.dataset.touched = "true";
-        update();
-      };
-      const countGrid = el(
-        "div",
-        undefined,
-        "course-grid qb-field-wide qb-count-grid",
-      );
-      composition.append(countGrid);
-      for (const [type, label] of Object.entries(D.types)) {
-        counts[type] = field(countGrid, `تعداد ${label}`, "0");
-        counts[type].inputMode = "numeric";
-        counts[type].onfocus = counts[type].onclick = () =>
-          counts[type].select();
-        counts[type].oninput = update;
-        counts[type].parentElement.classList.add("qb-count-field");
-        counts[type].parentElement.dataset.questionType = type;
-        const countTitle = el("span", undefined, "qb-count-title");
-        const countPrefix = el("span", "تعداد ");
-        countPrefix.hidden = true;
-        countTitle.append(countPrefix, document.createTextNode(label));
-        counts[type].parentElement.firstChild.replaceWith(countTitle);
-        available[type] = el("small", undefined, "qb-capacity-badge");
-        available[type].id = `qb-capacity-${type}`;
-        counts[type].setAttribute("aria-describedby", available[type].id);
-        counts[type].parentElement.append(available[type]);
-      }
-      composition.append(plan);
-      const details = el(
-        "fieldset",
-        undefined,
-        "course-grid qb-exam-details qb-field-wide",
-      );
-      details.append(el("legend", "۳ · مشخصات آزمون"));
-      f.append(details);
-      update();
-      const name = field(details, "عنوان آزمون");
-      name.required = true;
-      name.placeholder = "مثلاً آزمون فصل اول";
-      name.parentElement.classList.add("qb-field-wide");
-      const school = field(details, "نام مدرسه (اختیاری)"),
-        teacher = field(details, "نام دبیر (اختیاری)");
-      school.autocomplete = "organization";
-      teacher.autocomplete = "name";
-      const today = new Date();
-      const localDate = [
-        today.getFullYear(),
-        String(today.getMonth() + 1).padStart(2, "0"),
-        String(today.getDate()).padStart(2, "0"),
-      ].join("-");
-      const date = field(details, "تاریخ آزمون", localDate);
-      date.type = "date";
-      date.required = true;
-      date.id = "qb-exam-date";
-      date.setAttribute("aria-label", "تاریخ آزمون");
-      root.initShamsiPickers();
-      const duration = field(details, "مدت آزمون (دقیقه)", "60");
-      duration.inputMode = "numeric";
-      duration.required = true;
-      duration.oninput = () => {
-        const minutes = Number(D.digits(duration.value));
-        duration.setCustomValidity(
-          /^\d+$/.test(D.digits(duration.value)) &&
-            Number.isInteger(minutes) &&
-            minutes >= 1 &&
-            minutes <= 600
-            ? ""
-            : "مدت آزمون را از ۱ تا ۶۰۰ دقیقه وارد کنید.",
-        );
-      };
-      saveButton(f, "ساخت آزمون");
-      requestAnimationFrame(() => {
-        if (!f.isConnected) return;
-        const fields = f.querySelector(".qb-form-fields");
-        content.style.setProperty(
-          "--qb-builder-scrollbar",
-          `${fields.offsetWidth - fields.clientWidth}px`,
-        );
-      });
     }
     function preview(exam) {
       if (!alive) return;
@@ -2360,7 +1452,7 @@
       activePage?.refreshAfterRestore() || Promise.resolve(true),
     sheet,
     print,
-    previewText: { direction: sheetTextDirection, clean: sheetCleanText },
+    previewText,
     hasPendingChanges: () => pendingChanges() || F.state().state === "busy",
   };
   root.addEventListener("edu-question-bank-restored", () => {

@@ -13,6 +13,7 @@ const services = Object.freeze({
   "src/services/installation-backup.js": "EduInstallationBackup",
   "src/services/karnameh-excel.js": "EduKarnamehExcel",
   "src/services/year-note-scope.js": "EduYearNoteScope",
+  "src/services/update-preparation.js": "EduUpdatePreparation",
 });
 
 function inspectService(code, exportName) {

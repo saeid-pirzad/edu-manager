@@ -40,6 +40,11 @@ function fixture({ countSearch = false, countFormatters = false } = {}) {
       normalizations++;
       return originalSearch(value);
     };
+  for (const name of ["ui-paper", "ui-forms", "ui-builder"])
+    vm.runInContext(
+      fs.readFileSync(`src/features/question-bank/${name}.js`, "utf8"),
+      context,
+    );
   const source = fs.readFileSync("src/features/question-bank/ui.js", "utf8");
   const marker = "  root.EduQuestionBankUI = {";
   assert.equal(source.split(marker).length, 2);

@@ -162,68 +162,19 @@ function resetGlobalFilters() {
   render();
 }
 
-function getFilteredSessions(source = db) {
-  const classroom = (session) =>
-    source.schools
-      .find((school) => school.id === session.schoolId)
-      ?.classes.find((item) => item.id === session.classId);
-  return source.sessions
-    .filter((s) => {
-      if (globalFilter.date && s.date !== globalFilter.date) return false;
-      if (globalFilter.schoolId && s.schoolId !== globalFilter.schoolId)
-        return false;
-      if (globalFilter.classId && s.classId !== globalFilter.classId)
-        return false;
-      if (globalFilter.lessonId && s.lessonId !== globalFilter.lessonId)
-        return false;
-      if (globalFilter.period && String(s.period) !== globalFilter.period)
-        return false;
-      if (globalFilter.studentId) {
-        const hasAtt = s.attendance[globalFilter.studentId] !== undefined;
-        const hasScore = s.scores.some(
-          (x) => x.studentId === globalFilter.studentId,
-        );
-        const roster = s.roster || classroom(s)?.students || [];
-        if (
-          !hasAtt &&
-          !hasScore &&
-          !roster.some((st) => st.id === globalFilter.studentId)
-        )
-          return false;
-      }
-      return true;
-    })
-    .map((session) => {
-      const studentId = globalFilter.studentId;
-      if (!studentId) return session;
-      // Scope the complete session projection, not just the list of sessions.
-      // The detailed renderer and copied text must not expose other students.
-      const roster = session.roster || classroom(session)?.students || [];
-      return {
-        ...session,
-        roster: roster.filter((student) => student.id === studentId),
-        attendance: Object.hasOwn(session.attendance, studentId)
-          ? { [studentId]: session.attendance[studentId] }
-          : {},
-        scores: session.scores.filter((score) => score.studentId === studentId),
-      };
-    })
-    .sort((a, b) => {
-      if (a.date !== b.date) return b.date.localeCompare(a.date);
-      return a.period - b.period;
-    });
+function createGlobalReportModel(findClass = findClassById) {
+  return EduActivityReportModel({
+    findClass,
+    getLesson: getLessonObj,
+    sessionStudents,
+    sessionStudent,
+    attendance: EduReportAttendance,
+    typeLabel: (type) => TYPE_LABELS[type],
+  });
 }
 
-function activityReportAttendance(classroom, session) {
-  const counts = EduReportAttendance.emptyCounts();
-  const people = sessionStudents(classroom, session).map((student) => {
-    const attendance = EduReportAttendance.normalize(
-      session.attendance[student.id],
-    );
-    EduReportAttendance.tally(counts, attendance);
-    return { student, attendance };
-  });
-  return { counts, people };
+function getFilteredSessions(source = db) {
+  return EduActivityReportModel({}).filterSessions(source, globalFilter);
 }
 
 function generateGlobalReport() {
@@ -244,6 +195,10 @@ function generateGlobalReport() {
     return;
   }
 
+  const report = createGlobalReportModel().build(
+    filteredSessions,
+    globalFilter,
+  );
   if (globalFilter.reportMode === "summary") {
     let headers = ["تاریخ", "کلاس", "درس", "زنگ"];
     if (globalFilter.studentId) {
@@ -262,123 +217,117 @@ function generateGlobalReport() {
       h += `<th>${header}</th>`;
     });
     h += `</tr></thead><tbody>`;
-    filteredSessions.forEach((sess) => {
-      const cls = findClassById(sess.classId);
-      const lesson = getLessonObj(cls.classObj, sess.lessonId);
-      h += `<tr><td>${faDate(sess.date)}</td><td>${esc(cls.classObj.name)}</td><td>${esc(lesson.name)}</td><td>زنگ ${sess.period + 1}</td>`;
-      if (globalFilter.studentId) {
-        if (globalFilter.showAttendance) {
-          const st = EduReportAttendance.normalize(
-            sess.attendance[globalFilter.studentId],
-          );
-          let attText = '<span class="muted">ثبت نشده</span>';
-          if (st.status === "present")
-            attText = '<span class="badge present">حاضر</span>';
-          else if (st.status === "leave")
-            attText = '<span class="badge leave">مرخصی</span>';
-          else if (st.status === "absent")
-            attText = '<span class="badge absent">غایب</span>';
-          else if (st.status === "late") {
-            attText = `<span class="badge late">تأخیر${st.minutes === null ? "" : " (" + st.minutes + "د)"}</span>`;
+    report.rows.forEach(
+      ({
+        session: sess,
+        classInfo: cls,
+        lesson,
+        attendance,
+        studentAttendance,
+        scores,
+      }) => {
+        h += `<tr><td>${faDate(sess.date)}</td><td>${esc(cls.classObj.name)}</td><td>${esc(lesson.name)}</td><td>زنگ ${sess.period + 1}</td>`;
+        if (globalFilter.studentId) {
+          if (globalFilter.showAttendance) {
+            const st = studentAttendance;
+            let attText = '<span class="muted">ثبت نشده</span>';
+            if (st.status === "present")
+              attText = '<span class="badge present">حاضر</span>';
+            else if (st.status === "leave")
+              attText = '<span class="badge leave">مرخصی</span>';
+            else if (st.status === "absent")
+              attText = '<span class="badge absent">غایب</span>';
+            else if (st.status === "late") {
+              attText = `<span class="badge late">تأخیر${st.minutes === null ? "" : " (" + st.minutes + "د)"}</span>`;
+            }
+            h += `<td>${attText}</td>`;
           }
-          h += `<td>${attText}</td>`;
+          if (globalFilter.showScores) {
+            const ms = scores.mostamar
+              .map((x) => `${x.value}`)
+              .map(esc)
+              .join("، ");
+            const ps = scores.payani
+              .map((x) => `${x.value}`)
+              .map(esc)
+              .join("، ");
+            const classMarks = scores.classGrade
+              .map((score) => score.value)
+              .join("، ");
+            const activityMarks = scores.activity
+              .map((score) => score.value)
+              .join("، ");
+            h +=
+              "<td>" +
+              (ms || "—") +
+              " / " +
+              (ps || "—") +
+              (classMarks ? "<br>کلاسی: " + esc(classMarks) : "") +
+              (activityMarks ? "<br>فعالیت: " + esc(activityMarks) : "") +
+              "</td>";
+          }
+          if (globalFilter.showPosNeg) {
+            const pos = scores.positive;
+            const neg = scores.negative;
+            h += `<td>${
+              pos.length
+                ? pos
+                    .map((x) => `(${x.value})`)
+                    .map(esc)
+                    .join("، ")
+                : '<span class="muted">0</span>'
+            }</td>`;
+            h += `<td>${
+              neg.length
+                ? neg
+                    .map((x) => `(${x.value})`)
+                    .map(esc)
+                    .join("، ")
+                : '<span class="muted">0</span>'
+            }</td>`;
+          }
+          if (globalFilter.showHomework) {
+            const hw = scores.homework;
+            h += `<td>${hw.length ? hw.length : '<span class="muted">0</span>'}</td>`;
+          }
+        } else {
+          if (globalFilter.showAttendance) {
+            const { counts } = attendance;
+            h += `<td>✅${counts.present + counts.late} ❌${counts.absent} ⏰${counts.late} · مرخصی ${counts.leave} · تعیین‌نشده ${counts.unknown}</td>`;
+          }
+          if (globalFilter.showScores) {
+            const m = scores.mostamar.length;
+            const pay = scores.payani.length;
+            const classMarks = scores.classGrade.length;
+            const activityMarks = scores.activity.length;
+            h +=
+              "<td>" +
+              (m || pay || classMarks || activityMarks
+                ? "مستمر: " +
+                  m +
+                  " · پایانی: " +
+                  pay +
+                  " · کلاسی: " +
+                  classMarks +
+                  " · فعالیت: " +
+                  activityMarks
+                : "—") +
+              "</td>";
+          }
+          if (globalFilter.showPosNeg) {
+            const pos = scores.positive.length;
+            const neg = scores.negative.length;
+            h += `<td style="color:var(--status-success, #16664e);font-weight:600">${pos}</td>`;
+            h += `<td style="color:var(--status-danger, #9f2635);font-weight:600">${neg}</td>`;
+          }
+          if (globalFilter.showHomework) {
+            const hw = scores.homework.length;
+            h += `<td>${hw}</td>`;
+          }
         }
-        const myScores = sess.scores.filter(
-          (x) => x.studentId === globalFilter.studentId,
-        );
-        if (globalFilter.showScores) {
-          const ms = myScores
-            .filter((x) => x.type === "mostamar")
-            .map((x) => `${x.value}`)
-            .map(esc)
-            .join("، ");
-          const ps = myScores
-            .filter((x) => x.type === "payani")
-            .map((x) => `${x.value}`)
-            .map(esc)
-            .join("، ");
-          const classMarks = myScores
-            .filter((score) => score.type === "classGrade")
-            .map((score) => score.value)
-            .join("، ");
-          const activityMarks = myScores
-            .filter((score) => score.type === "activity")
-            .map((score) => score.value)
-            .join("، ");
-          h +=
-            "<td>" +
-            (ms || "—") +
-            " / " +
-            (ps || "—") +
-            (classMarks ? "<br>کلاسی: " + esc(classMarks) : "") +
-            (activityMarks ? "<br>فعالیت: " + esc(activityMarks) : "") +
-            "</td>";
-        }
-        if (globalFilter.showPosNeg) {
-          const pos = myScores.filter((x) => x.type === "positive");
-          const neg = myScores.filter((x) => x.type === "negative");
-          h += `<td>${
-            pos.length
-              ? pos
-                  .map((x) => `(${x.value})`)
-                  .map(esc)
-                  .join("، ")
-              : '<span class="muted">0</span>'
-          }</td>`;
-          h += `<td>${
-            neg.length
-              ? neg
-                  .map((x) => `(${x.value})`)
-                  .map(esc)
-                  .join("، ")
-              : '<span class="muted">0</span>'
-          }</td>`;
-        }
-        if (globalFilter.showHomework) {
-          const hw = myScores.filter((x) => x.type === "homework");
-          h += `<td>${hw.length ? hw.length : '<span class="muted">0</span>'}</td>`;
-        }
-      } else {
-        if (globalFilter.showAttendance) {
-          const { counts } = activityReportAttendance(cls.classObj, sess);
-          h += `<td>✅${counts.present + counts.late} ❌${counts.absent} ⏰${counts.late} · مرخصی ${counts.leave} · تعیین‌نشده ${counts.unknown}</td>`;
-        }
-        if (globalFilter.showScores) {
-          const m = sess.scores.filter((x) => x.type === "mostamar").length;
-          const pay = sess.scores.filter((x) => x.type === "payani").length;
-          const classMarks = sess.scores.filter(
-            (score) => score.type === "classGrade",
-          ).length;
-          const activityMarks = sess.scores.filter(
-            (score) => score.type === "activity",
-          ).length;
-          h +=
-            "<td>" +
-            (m || pay || classMarks || activityMarks
-              ? "مستمر: " +
-                m +
-                " · پایانی: " +
-                pay +
-                " · کلاسی: " +
-                classMarks +
-                " · فعالیت: " +
-                activityMarks
-              : "—") +
-            "</td>";
-        }
-        if (globalFilter.showPosNeg) {
-          const pos = sess.scores.filter((x) => x.type === "positive").length;
-          const neg = sess.scores.filter((x) => x.type === "negative").length;
-          h += `<td style="color:var(--status-success, #16664e);font-weight:600">${pos}</td>`;
-          h += `<td style="color:var(--status-danger, #9f2635);font-weight:600">${neg}</td>`;
-        }
-        if (globalFilter.showHomework) {
-          const hw = sess.scores.filter((x) => x.type === "homework").length;
-          h += `<td>${hw}</td>`;
-        }
-      }
-      h += `</tr>`;
-    });
+        h += `</tr>`;
+      },
+    );
     h += `</tbody></table></div>`;
   } else {
     h += `<div class="detailed-report-box">`;
@@ -391,127 +340,83 @@ function generateGlobalReport() {
       mainHeader += `🏫 مدرسه: ${esc(cls.school.name)} | کلاس: ${esc(cls.classObj.name)}<br>`;
     }
     h += `<h2 style="text-align:center">${mainHeader}</h2>`;
-    const groupedByPeriod = {};
-    filteredSessions.forEach((sess) => {
-      if (!groupedByPeriod[sess.period]) groupedByPeriod[sess.period] = [];
-      groupedByPeriod[sess.period].push(sess);
-    });
-    const sortedPeriods = Object.keys(groupedByPeriod).sort(
-      (a, b) => parseInt(a) - parseInt(b),
-    );
-    sortedPeriods.forEach((periodStr) => {
-      const periodNum = parseInt(periodStr);
+    report.periods.forEach(({ period: periodNum, rows }) => {
       h += `<div class="period-block"><div class="period-title">⏰ ${getPeriodName(periodNum)}</div>`;
-      groupedByPeriod[periodStr].forEach((sess) => {
-        const cls = findClassById(sess.classId);
-        const lesson = getLessonObj(cls.classObj, sess.lessonId);
-        h += `<div class="session-detail"><b>📅 تاریخ:</b> ${faDate(sess.date)} | <b>📚 درس:</b> ${esc(lesson.name)} | <b>👨‍🏫 دبیر:</b> ${esc(lesson.teacher || "---")} | <b>کلاس:</b> ${esc(cls.classObj.name)}<br>`;
-        if (globalFilter.showAttendance) {
-          const presentNames = [],
-            absentNames = [],
-            leaveNames = [],
-            lateNames = [],
-            unknownNames = [];
-          activityReportAttendance(cls.classObj, sess).people.forEach(
-            ({ student: st, attendance }) => {
-              if (attendance.status === "present") presentNames.push(st.name);
-              else if (attendance.status === "leave") leaveNames.push(st.name);
-              else if (attendance.status === "absent")
-                absentNames.push(st.name);
-              else if (attendance.status === "late") {
-                presentNames.push(st.name);
-                lateNames.push(
-                  `${st.name}${attendance.minutes === null ? "" : " (" + attendance.minutes + "د)"}`,
-                );
-              } else unknownNames.push(st.name);
-            },
-          );
-          if (unknownNames.length)
-            h += `<div class="names-list muted"><b>تعیین‌نشده (${unknownNames.length}):</b> ${unknownNames.map(esc).join("، ")}</div>`;
-          if (leaveNames.length)
-            h += `<div class="names-list"><b>مرخصی:</b> ${leaveNames.map(esc).join("، ")}</div>`;
-          if (globalFilter.showPresentNames && presentNames.length > 0)
-            h += `<div class="names-list"><b class="present">✅ حاضرین (${presentNames.length}):</b> ${presentNames.map(esc).join("، ")}</div>`;
-          else if (presentNames.length > 0)
-            h += `<div class="names-list"><b class="present">✅ حاضر:</b> ${presentNames.length} نفر</div>`;
-          if (globalFilter.showAbsentNames && absentNames.length > 0)
-            h += `<div class="names-list"><b class="absent">❌ غایبین (${absentNames.length}):</b> ${absentNames.map(esc).join("، ")}</div>`;
-          else if (absentNames.length > 0)
-            h += `<div class="names-list"><b class="absent">❌ غایب:</b> ${absentNames.length} نفر</div>`;
-          if (globalFilter.showLateNames && lateNames.length > 0)
-            h += `<div class="names-list"><b class="late">⏰ تأخیری‌ها (${lateNames.length}):</b> ${lateNames.map(esc).join("، ")}</div>`;
-          else if (lateNames.length > 0)
-            h += `<div class="names-list"><b class="late">⏰ تأخیر:</b> ${lateNames.length} نفر</div>`;
-          if (
-            presentNames.length === 0 &&
-            absentNames.length === 0 &&
-            lateNames.length === 0 &&
-            leaveNames.length === 0
-          )
-            h += `<div class="names-list muted">وضعیت حضور ثبت نشده است.</div>`;
-        }
-        if (globalFilter.showScores) {
-          const exams = sess.scores.filter(
-            (x) =>
-              x.type === "mostamar" ||
-              x.type === "payani" ||
-              x.type === "classGrade" ||
-              x.type === "activity",
-          );
-          if (exams.length)
-            h +=
-              `<div class="names-list" style="color:var(--status-info, #1d4f91);margin-top:8px">📊 نمرات: ` +
-              exams
-                .map((x) => {
-                  const st = sessionStudent(cls.classObj, sess, x.studentId);
-                  return `${st ? st.name : ""}(${TYPE_LABELS[x.type]}:${x.value})`;
-                })
-                .map(esc)
-                .join("، ") +
-              `</div>`;
-        }
-        if (globalFilter.showPosNeg) {
-          const pos = sess.scores.filter((x) => x.type === "positive");
-          const neg = sess.scores.filter((x) => x.type === "negative");
-          if (pos.length)
-            h +=
-              `<div class="names-list" style="color:var(--status-success, #16664e);margin-top:4px">➕ مثبت (${pos.length}): ` +
-              pos
-                .map((x) => {
-                  const st = sessionStudent(cls.classObj, sess, x.studentId);
-                  return `${st ? st.name : ""}(${x.value})`;
-                })
-                .map(esc)
-                .join("، ") +
-              `</div>`;
-          if (neg.length)
-            h +=
-              `<div class="names-list" style="color:var(--status-danger, #9f2635);margin-top:4px">➖ منفی (${neg.length}): ` +
-              neg
-                .map((x) => {
-                  const st = sessionStudent(cls.classObj, sess, x.studentId);
-                  return `${st ? st.name : ""}(${x.value})`;
-                })
-                .map(esc)
-                .join("، ") +
-              `</div>`;
-        }
-        if (globalFilter.showHomework) {
-          const hw = sess.scores.filter((x) => x.type === "homework");
-          if (hw.length)
-            h +=
-              `<div class="names-list" style="color:var(--status-info, #1d4f91);margin-top:4px">📝 تکالیف (${hw.length}): ` +
-              hw
-                .map((x) => {
-                  const st = sessionStudent(cls.classObj, sess, x.studentId);
-                  return `${st ? st.name : ""}${x.note ? "(" + x.note + ")" : ""}`;
-                })
-                .map(esc)
-                .join("، ") +
-              `</div>`;
-        }
-        h += `</div><hr style="border:0;border-top:1px dashed var(--theme-line, #e4e4e7);margin:10px 0">`;
-      });
+      rows.forEach(
+        ({
+          session: sess,
+          classInfo: cls,
+          lesson,
+          attendance,
+          scores,
+          entries,
+        }) => {
+          h += `<div class="session-detail"><b>📅 تاریخ:</b> ${faDate(sess.date)} | <b>📚 درس:</b> ${esc(lesson.name)} | <b>👨‍🏫 دبیر:</b> ${esc(lesson.teacher || "---")} | <b>کلاس:</b> ${esc(cls.classObj.name)}<br>`;
+          if (globalFilter.showAttendance) {
+            const {
+              presentNames,
+              absentNames,
+              leaveNames,
+              lateNames,
+              unknownNames,
+            } = attendance;
+            if (unknownNames.length)
+              h += `<div class="names-list muted"><b>تعیین‌نشده (${unknownNames.length}):</b> ${unknownNames.map(esc).join("، ")}</div>`;
+            if (leaveNames.length)
+              h += `<div class="names-list"><b>مرخصی:</b> ${leaveNames.map(esc).join("، ")}</div>`;
+            if (globalFilter.showPresentNames && presentNames.length > 0)
+              h += `<div class="names-list"><b class="present">✅ حاضرین (${presentNames.length}):</b> ${presentNames.map(esc).join("، ")}</div>`;
+            else if (presentNames.length > 0)
+              h += `<div class="names-list"><b class="present">✅ حاضر:</b> ${presentNames.length} نفر</div>`;
+            if (globalFilter.showAbsentNames && absentNames.length > 0)
+              h += `<div class="names-list"><b class="absent">❌ غایبین (${absentNames.length}):</b> ${absentNames.map(esc).join("، ")}</div>`;
+            else if (absentNames.length > 0)
+              h += `<div class="names-list"><b class="absent">❌ غایب:</b> ${absentNames.length} نفر</div>`;
+            if (globalFilter.showLateNames && lateNames.length > 0)
+              h += `<div class="names-list"><b class="late">⏰ تأخیری‌ها (${lateNames.length}):</b> ${lateNames.map(esc).join("، ")}</div>`;
+            else if (lateNames.length > 0)
+              h += `<div class="names-list"><b class="late">⏰ تأخیر:</b> ${lateNames.length} نفر</div>`;
+            if (
+              presentNames.length === 0 &&
+              absentNames.length === 0 &&
+              lateNames.length === 0 &&
+              leaveNames.length === 0
+            )
+              h += `<div class="names-list muted">وضعیت حضور ثبت نشده است.</div>`;
+          }
+          if (globalFilter.showScores) {
+            const exams = scores.exams;
+            if (exams.length)
+              h +=
+                `<div class="names-list" style="color:var(--status-info, #1d4f91);margin-top:8px">📊 نمرات: ` +
+                entries.exams.map(esc).join("، ") +
+                `</div>`;
+          }
+          if (globalFilter.showPosNeg) {
+            const pos = scores.positive;
+            const neg = scores.negative;
+            if (pos.length)
+              h +=
+                `<div class="names-list" style="color:var(--status-success, #16664e);margin-top:4px">➕ مثبت (${pos.length}): ` +
+                entries.positive.map(esc).join("، ") +
+                `</div>`;
+            if (neg.length)
+              h +=
+                `<div class="names-list" style="color:var(--status-danger, #9f2635);margin-top:4px">➖ منفی (${neg.length}): ` +
+                entries.negative.map(esc).join("، ") +
+                `</div>`;
+          }
+          if (globalFilter.showHomework) {
+            const hw = scores.homework;
+            if (hw.length)
+              h +=
+                `<div class="names-list" style="color:var(--status-info, #1d4f91);margin-top:4px">📝 تکالیف (${hw.length}): ` +
+                entries.homework.map(esc).join("، ") +
+                `</div>`;
+          }
+          h += `</div><hr style="border:0;border-top:1px dashed var(--theme-line, #e4e4e7);margin:10px 0">`;
+        },
+      );
       h += `</div>`;
     });
     h += `</div>`;
@@ -544,219 +449,170 @@ function buildGlobalReportText(source = db) {
     text += `🏫 مدرسه: ${cls.school.name} | کلاس: ${cls.classObj.name}\n`;
   }
   text += `================================\n\n`;
+  const report = createGlobalReportModel(findClass).build(
+    filteredSessions,
+    globalFilter,
+  );
   if (globalFilter.reportMode === "summary") {
-    filteredSessions.forEach((sess) => {
-      const cls = findClass(sess.classId, sess.schoolId);
-      const lesson = getLessonObj(cls.classObj, sess.lessonId);
-      text += `📅 ${faDate(sess.date)} | کلاس: ${cls.classObj.name} | درس: ${lesson.name} | ${getPeriodName(sess.period)}\n`;
-      if (globalFilter.studentId) {
-        const stObj = sessionStudent(
-          cls.classObj,
-          sess,
-          globalFilter.studentId,
-        );
-        if (globalFilter.showAttendance) {
-          const st = EduReportAttendance.normalize(
-            sess.attendance[globalFilter.studentId],
+    report.rows.forEach(
+      ({
+        session: sess,
+        classInfo: cls,
+        lesson,
+        attendance,
+        studentAttendance,
+        scores,
+      }) => {
+        text += `📅 ${faDate(sess.date)} | کلاس: ${cls.classObj.name} | درس: ${lesson.name} | ${getPeriodName(sess.period)}\n`;
+        if (globalFilter.studentId) {
+          const stObj = sessionStudent(
+            cls.classObj,
+            sess,
+            globalFilter.studentId,
           );
-          let att = "ثبت نشده";
-          if (st.status === "present") att = "حاضر";
-          else if (st.status === "leave") att = "مرخصی";
-          else if (st.status === "absent") att = "غایب";
-          else if (st.status === "late")
-            att = "تأخیر" + (st.minutes === null ? "" : ` (${st.minutes}د)`);
-          text += `   👤 ${stObj?.name || ""}: ${att}\n`;
-        }
-        const my = sess.scores.filter(
-          (x) => x.studentId === globalFilter.studentId,
-        );
-        if (globalFilter.showScores) {
-          const ms = my
-            .filter((x) => x.type === "mostamar")
-            .map((x) => x.value)
-            .join("، ");
-          const ps = my
-            .filter((x) => x.type === "payani")
-            .map((x) => x.value)
-            .join("، ");
-          if (my.some((score) => score.type === "classGrade"))
-            text +=
-              "   - نمره کلاسی: " +
-              my
-                .filter((score) => score.type === "classGrade")
-                .map((score) => score.value)
-                .join("، ") +
-              "\n";
-          const activityMarks = my.filter((score) => score.type === "activity");
-          if (activityMarks.length)
-            text +=
-              "   - امتیاز فعالیت: " +
-              activityMarks.map((score) => score.value).join("، ") +
-              "\n";
-          if (ms || ps)
-            text += `   - مستمر: ${ms || "—"} | پایانی: ${ps || "—"}\n`;
-        }
-        if (globalFilter.showPosNeg) {
-          const pos = my.filter((x) => x.type === "positive");
-          const neg = my.filter((x) => x.type === "negative");
-          text += `   - ➕ مثبت (${pos.length}): ${pos.map((x) => `(${x.value})`).join("، ") || "—"}\n`;
-          text += `   - ➖ منفی (${neg.length}): ${neg.map((x) => `(${x.value})`).join("، ") || "—"}\n`;
-        }
-        if (globalFilter.showHomework) {
-          const hw = my.filter((x) => x.type === "homework");
-          if (hw.length) text += `   - 📝 تکالیف: ${hw.length}\n`;
-        }
-      } else {
-        if (globalFilter.showAttendance) {
-          const { counts } = activityReportAttendance(cls.classObj, sess);
-          text += `   👥 حضور: حاضر ${counts.present + counts.late} | غایب ${counts.absent} | مرخصی ${counts.leave} | تأخیر ${counts.late} | تعیین‌نشده ${counts.unknown}\n`;
-        }
-        if (globalFilter.showScores) {
-          const m = sess.scores.filter((x) => x.type === "mostamar").length;
-          const pay = sess.scores.filter((x) => x.type === "payani").length;
-          const classMarks = sess.scores.filter(
-            (score) => score.type === "classGrade",
-          );
-          const activityMarks = sess.scores.filter(
-            (score) => score.type === "activity",
-          );
-          if (classMarks.length)
-            text +=
-              "   - نمرات کلاسی: " +
-              classMarks.map((score) => score.value).join("، ") +
-              "\n";
-          if (activityMarks.length)
-            text +=
-              "   - امتیاز فعالیت: " +
-              activityMarks.map((score) => score.value).join("، ") +
-              "\n";
-          if (m || pay) text += `   - 📊 نمرات: مستمر ${m} | پایانی ${pay}\n`;
-        }
-        if (globalFilter.showPosNeg) {
-          const pos = sess.scores.filter((x) => x.type === "positive").length;
-          const neg = sess.scores.filter((x) => x.type === "negative").length;
-          text += `   - ➕ مثبت: ${pos} | ➖ منفی: ${neg}\n`;
-        }
-        if (globalFilter.showHomework) {
-          const hw = sess.scores.filter((x) => x.type === "homework").length;
-          if (hw) text += `   - 📝 تکالیف: ${hw}\n`;
-        }
-      }
-      text += `\n`;
-    });
-  } else {
-    const groupedByPeriod = {};
-    filteredSessions.forEach((sess) => {
-      if (!groupedByPeriod[sess.period]) groupedByPeriod[sess.period] = [];
-      groupedByPeriod[sess.period].push(sess);
-    });
-    const sortedPeriods = Object.keys(groupedByPeriod).sort(
-      (a, b) => parseInt(a) - parseInt(b),
-    );
-    sortedPeriods.forEach((periodStr) => {
-      text += `📌 ${getPeriodName(parseInt(periodStr))}:\n`;
-      groupedByPeriod[periodStr].forEach((sess) => {
-        const cls = findClass(sess.classId, sess.schoolId);
-        const lesson = getLessonObj(cls.classObj, sess.lessonId);
-        text += `🔹 تاریخ: ${faDate(sess.date)} | درس: ${lesson.name} | دبیر: ${lesson.teacher || "---"} | کلاس: ${cls.classObj.name}\n`;
-        if (globalFilter.showAttendance) {
-          const presentNames = [],
-            absentNames = [],
-            leaveNames = [],
-            lateNames = [],
-            unknownNames = [];
-          activityReportAttendance(cls.classObj, sess).people.forEach(
-            ({ student: st, attendance }) => {
-              if (attendance.status === "present") presentNames.push(st.name);
-              else if (attendance.status === "leave") leaveNames.push(st.name);
-              else if (attendance.status === "absent")
-                absentNames.push(st.name);
-              else if (attendance.status === "late") {
-                presentNames.push(st.name);
-                lateNames.push(
-                  `${st.name}${attendance.minutes === null ? "" : " (" + attendance.minutes + "د)"}`,
-                );
-              } else unknownNames.push(st.name);
-            },
-          );
-          if (unknownNames.length)
-            text += `   تعیین‌نشده (${unknownNames.length}): ${unknownNames.join("، ")}\n`;
-          if (leaveNames.length)
-            text += `   مرخصی (${leaveNames.length}): ${leaveNames.join("، ")}\n`;
-          if (presentNames.length > 0) {
-            if (globalFilter.showPresentNames)
-              text += `   ✅ حاضرین (${presentNames.length}): ${presentNames.join("، ")}\n`;
-            else text += `   ✅ حاضرین: ${presentNames.length} نفر\n`;
+          if (globalFilter.showAttendance) {
+            const st = studentAttendance;
+            let att = "ثبت نشده";
+            if (st.status === "present") att = "حاضر";
+            else if (st.status === "leave") att = "مرخصی";
+            else if (st.status === "absent") att = "غایب";
+            else if (st.status === "late")
+              att = "تأخیر" + (st.minutes === null ? "" : ` (${st.minutes}د)`);
+            text += `   👤 ${stObj?.name || ""}: ${att}\n`;
           }
-          if (absentNames.length > 0) {
-            if (globalFilter.showAbsentNames)
-              text += `   ❌ غایبین (${absentNames.length}): ${absentNames.join("، ")}\n`;
-            else text += `   ❌ غایبین: ${absentNames.length} نفر\n`;
+          if (globalFilter.showScores) {
+            const ms = scores.mostamar.map((x) => x.value).join("، ");
+            const ps = scores.payani.map((x) => x.value).join("، ");
+            if (scores.classGrade.length)
+              text +=
+                "   - نمره کلاسی: " +
+                scores.classGrade.map((score) => score.value).join("، ") +
+                "\n";
+            const activityMarks = scores.activity;
+            if (activityMarks.length)
+              text +=
+                "   - امتیاز فعالیت: " +
+                activityMarks.map((score) => score.value).join("، ") +
+                "\n";
+            if (ms || ps)
+              text += `   - مستمر: ${ms || "—"} | پایانی: ${ps || "—"}\n`;
           }
-          if (lateNames.length > 0) {
-            if (globalFilter.showLateNames)
-              text += `   ⏰ تأخیری‌ها (${lateNames.length}): ${lateNames.join("، ")}\n`;
-            else text += `   ⏰ تأخیری‌ها: ${lateNames.length} نفر\n`;
+          if (globalFilter.showPosNeg) {
+            const pos = scores.positive;
+            const neg = scores.negative;
+            text += `   - ➕ مثبت (${pos.length}): ${pos.map((x) => `(${x.value})`).join("، ") || "—"}\n`;
+            text += `   - ➖ منفی (${neg.length}): ${neg.map((x) => `(${x.value})`).join("، ") || "—"}\n`;
           }
-        }
-        if (globalFilter.showScores) {
-          const ex = sess.scores.filter(
-            (x) =>
-              x.type === "mostamar" ||
-              x.type === "payani" ||
-              x.type === "classGrade" ||
-              x.type === "activity",
-          );
-          if (ex.length)
-            text +=
-              `   📊 نمرات: ` +
-              ex
-                .map((x) => {
-                  const s = sessionStudent(cls.classObj, sess, x.studentId);
-                  return `${s ? s.name : ""}(${TYPE_LABELS[x.type]}:${x.value})`;
-                })
-                .join("، ") +
-              `\n`;
-        }
-        if (globalFilter.showPosNeg) {
-          const pos = sess.scores.filter((x) => x.type === "positive");
-          const neg = sess.scores.filter((x) => x.type === "negative");
-          if (pos.length)
-            text +=
-              `   ➕ مثبت (${pos.length}): ` +
-              pos
-                .map((x) => {
-                  const s = sessionStudent(cls.classObj, sess, x.studentId);
-                  return `${s ? s.name : ""}(${x.value})`;
-                })
-                .join("، ") +
-              `\n`;
-          if (neg.length)
-            text +=
-              `   ➖ منفی (${neg.length}): ` +
-              neg
-                .map((x) => {
-                  const s = sessionStudent(cls.classObj, sess, x.studentId);
-                  return `${s ? s.name : ""}(${x.value})`;
-                })
-                .join("، ") +
-              `\n`;
-        }
-        if (globalFilter.showHomework) {
-          const hw = sess.scores.filter((x) => x.type === "homework");
-          if (hw.length)
-            text +=
-              `   📝 تکالیف (${hw.length}): ` +
-              hw
-                .map((x) => {
-                  const s = sessionStudent(cls.classObj, sess, x.studentId);
-                  return `${s ? s.name : ""}${x.note ? "(" + x.note + ")" : ""}`;
-                })
-                .join("، ") +
-              `\n`;
+          if (globalFilter.showHomework) {
+            const hw = scores.homework;
+            if (hw.length) text += `   - 📝 تکالیف: ${hw.length}\n`;
+          }
+        } else {
+          if (globalFilter.showAttendance) {
+            const { counts } = attendance;
+            text += `   👥 حضور: حاضر ${counts.present + counts.late} | غایب ${counts.absent} | مرخصی ${counts.leave} | تأخیر ${counts.late} | تعیین‌نشده ${counts.unknown}\n`;
+          }
+          if (globalFilter.showScores) {
+            const m = scores.mostamar.length;
+            const pay = scores.payani.length;
+            const classMarks = scores.classGrade;
+            const activityMarks = scores.activity;
+            if (classMarks.length)
+              text +=
+                "   - نمرات کلاسی: " +
+                classMarks.map((score) => score.value).join("، ") +
+                "\n";
+            if (activityMarks.length)
+              text +=
+                "   - امتیاز فعالیت: " +
+                activityMarks.map((score) => score.value).join("، ") +
+                "\n";
+            if (m || pay) text += `   - 📊 نمرات: مستمر ${m} | پایانی ${pay}\n`;
+          }
+          if (globalFilter.showPosNeg) {
+            const pos = scores.positive.length;
+            const neg = scores.negative.length;
+            text += `   - ➕ مثبت: ${pos} | ➖ منفی: ${neg}\n`;
+          }
+          if (globalFilter.showHomework) {
+            const hw = scores.homework.length;
+            if (hw) text += `   - 📝 تکالیف: ${hw}\n`;
+          }
         }
         text += `\n`;
-      });
+      },
+    );
+  } else {
+    report.periods.forEach(({ period: periodNum, rows }) => {
+      text += `📌 ${getPeriodName(periodNum)}:\n`;
+      rows.forEach(
+        ({
+          session: sess,
+          classInfo: cls,
+          lesson,
+          attendance,
+          scores,
+          entries,
+        }) => {
+          text += `🔹 تاریخ: ${faDate(sess.date)} | درس: ${lesson.name} | دبیر: ${lesson.teacher || "---"} | کلاس: ${cls.classObj.name}\n`;
+          if (globalFilter.showAttendance) {
+            const {
+              presentNames,
+              absentNames,
+              leaveNames,
+              lateNames,
+              unknownNames,
+            } = attendance;
+            if (unknownNames.length)
+              text += `   تعیین‌نشده (${unknownNames.length}): ${unknownNames.join("، ")}\n`;
+            if (leaveNames.length)
+              text += `   مرخصی (${leaveNames.length}): ${leaveNames.join("، ")}\n`;
+            if (presentNames.length > 0) {
+              if (globalFilter.showPresentNames)
+                text += `   ✅ حاضرین (${presentNames.length}): ${presentNames.join("، ")}\n`;
+              else text += `   ✅ حاضرین: ${presentNames.length} نفر\n`;
+            }
+            if (absentNames.length > 0) {
+              if (globalFilter.showAbsentNames)
+                text += `   ❌ غایبین (${absentNames.length}): ${absentNames.join("، ")}\n`;
+              else text += `   ❌ غایبین: ${absentNames.length} نفر\n`;
+            }
+            if (lateNames.length > 0) {
+              if (globalFilter.showLateNames)
+                text += `   ⏰ تأخیری‌ها (${lateNames.length}): ${lateNames.join("، ")}\n`;
+              else text += `   ⏰ تأخیری‌ها: ${lateNames.length} نفر\n`;
+            }
+          }
+          if (globalFilter.showScores) {
+            const ex = scores.exams;
+            if (ex.length)
+              text += `   📊 نمرات: ` + entries.exams.join("، ") + `\n`;
+          }
+          if (globalFilter.showPosNeg) {
+            const pos = scores.positive;
+            const neg = scores.negative;
+            if (pos.length)
+              text +=
+                `   ➕ مثبت (${pos.length}): ` +
+                entries.positive.join("، ") +
+                `\n`;
+            if (neg.length)
+              text +=
+                `   ➖ منفی (${neg.length}): ` +
+                entries.negative.join("، ") +
+                `\n`;
+          }
+          if (globalFilter.showHomework) {
+            const hw = scores.homework;
+            if (hw.length)
+              text +=
+                `   📝 تکالیف (${hw.length}): ` +
+                entries.homework.join("، ") +
+                `\n`;
+          }
+          text += `\n`;
+        },
+      );
       text += `--------------------------------\n`;
     });
   }

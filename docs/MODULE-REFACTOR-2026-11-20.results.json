@@ -1,0 +1,461 @@
+{
+  "schemaVersion": 1,
+  "task": "module-simplification-with-behavior-preservation-2026-11-20",
+  "executedAt": "2026-11-20T08:57:48.781Z",
+  "baseCommit": "a86356ed75ae4bccf4f07b1d539d92e89bda0e58",
+  "environment": {
+    "node": "v24.21.0",
+    "platform": "win32",
+    "browser": "Microsoft Edge / Chromium, isolated synthetic profiles"
+  },
+  "releaseVersion": "9c70c5b0d305d38d",
+  "productionSources": {
+    "mapped": 338,
+    "javascript": 216,
+    "css": 122,
+    "bundles": 37,
+    "unchanged": 327,
+    "changed": [
+      {
+        "path": "src/legacy/reports/comprehensive.js",
+        "status": "modified",
+        "sha256": "87d54ce0e9036f492ebd1a26f878fbbcfbfe6f1846c5ec74ec62c468c17ce79c",
+        "beforeSha256": "ae3883d257eae57ff774890a287c4b5ffe8ef26cbd5bcad2539bfd98601069f9",
+        "beforeLines": 767,
+        "lines": 623
+      },
+      {
+        "path": "src/services/update-preparation.js",
+        "status": "added",
+        "sha256": "b1b9ad6fdbdf63ea68d223393c3c4eeb0735a97fcfa544850e19731a13e4edc2",
+        "beforeSha256": null,
+        "beforeLines": 0,
+        "lines": 60
+      },
+      {
+        "path": "src/domain/single-file-policy.js",
+        "status": "added",
+        "sha256": "f6499efd5ef2c647e9dda874b14a1c1d7c28b15154fa27c88df88b171db67d17",
+        "beforeSha256": null,
+        "beforeLines": 0,
+        "lines": 92
+      },
+      {
+        "path": "src/workspace/backups/single-file-view.js",
+        "status": "added",
+        "sha256": "76c644243a58b79123819b7672c6cdd2b991c2ec0b36f6a76dfd1016592849e0",
+        "beforeSha256": null,
+        "beforeLines": 0,
+        "lines": 249
+      },
+      {
+        "path": "src/workspace/backups/single-file.js",
+        "status": "modified",
+        "sha256": "836c6494094f436c0386057bb17c1ba30430a1712d994edccdc213cfad262a91",
+        "beforeSha256": "967775dbc92a0bedff0b92a798567210a5c831f5b7fcec3af9d3f66c58fa2981",
+        "beforeLines": 1078,
+        "lines": 745
+      },
+      {
+        "path": "src/workspace/core/public-api.js",
+        "status": "modified",
+        "sha256": "1486baa5fed000f5b95adab2e044a2140cde10a11a1fa8249c2759cb8db799d1",
+        "beforeSha256": "101ebabf890a3dc99db8817ad87dfb9c562ff1c41c8ef7c55bf1db9ccbf7ca9d",
+        "beforeLines": 277,
+        "lines": 247
+      },
+      {
+        "path": "src/domain/reporting/activity-report.js",
+        "status": "added",
+        "sha256": "986c71ee633d7b13286623245bd5b8213cbdc50d913f5fe65149813f71f95596",
+        "beforeSha256": null,
+        "beforeLines": 0,
+        "lines": 185
+      },
+      {
+        "path": "src/features/question-bank/ui-paper.js",
+        "status": "added",
+        "sha256": "a9e9fff3e1d9af10c2a8b6db9e0bd27d4fa16daa88780445e9b97948278e3343",
+        "beforeSha256": null,
+        "beforeLines": 0,
+        "lines": 290
+      },
+      {
+        "path": "src/features/question-bank/ui-forms.js",
+        "status": "added",
+        "sha256": "17f3c3bbcdd56013464b06587f7c0af8f0f0aecb4a23494fdd93f6feb9dccf27",
+        "beforeSha256": null,
+        "beforeLines": 0,
+        "lines": 525
+      },
+      {
+        "path": "src/features/question-bank/ui-builder.js",
+        "status": "added",
+        "sha256": "3e8d1148dfea9122dc75c2b790451b7ab708b59efb4bded354c11f82cf697b7b",
+        "beforeSha256": null,
+        "beforeLines": 0,
+        "lines": 293
+      },
+      {
+        "path": "src/features/question-bank/ui.js",
+        "status": "modified",
+        "sha256": "5ac4297c15746ab6de60b00630a00267953b2d6f7d759cf355a337b310a8f5cc",
+        "beforeSha256": "df6d5e20d4ab33e503d9abd813744667241002fca293e690c22bf7258d48c75a",
+        "beforeLines": 2371,
+        "lines": 1463
+      }
+    ]
+  },
+  "unchangedStyleOutputs": [
+    {
+      "path": "assets/styles/app.css",
+      "sha256": "bef11e110bffad10a9a3d93c709a66bfb22374e13200b1918f088b28ffa7fd86",
+      "byteIdenticalToBaseline": true
+    },
+    {
+      "path": "assets/styles/daily-workflow.css",
+      "sha256": "52f8c4ba0fff86b9a517b1fe85e868a4ece19894d996c8d21895a4019e973287",
+      "byteIdenticalToBaseline": true
+    }
+  ],
+  "unchangedContracts": [
+    {
+      "path": "package.json",
+      "sha256": "5744441e8b7bfe5d032c29bb83a4a4ae9780aafd52b34d2bd6cff9714bf78fbe",
+      "byteIdenticalToBaseline": true
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "e177664c837623fd730f87d9815e7a6d0848d267796d093cf9ab04bec215f7e7",
+      "byteIdenticalToBaseline": true
+    },
+    {
+      "path": "EduManager.html",
+      "sha256": "5e9490f8cc128e1998453ad1d6743a568f8043d40aecb50b3163833984f9edad",
+      "byteIdenticalToBaseline": true
+    },
+    {
+      "path": "index.html",
+      "sha256": "f3d37f3a4c1cf7aca689c060745cd053b3a6a92761ce25f7cd0a185fcb1c4880",
+      "byteIdenticalToBaseline": true
+    },
+    {
+      "path": "app.webmanifest",
+      "sha256": "6fadd95698464e5c09214c6f8293ffc2955738e7567a0cbc9d402167bca76aa1",
+      "byteIdenticalToBaseline": true
+    },
+    {
+      "path": "src/data/schema.js",
+      "sha256": "8db34a7bb42e9f7c0e94a12f74860b1e5464a6afa92d8d9843192c12d35aaabd",
+      "byteIdenticalToBaseline": true
+    }
+  ],
+  "changes": [
+    {
+      "area": "activity reports",
+      "boundary": "Shared injected report projection; HTML/text remain separate presentation adapters",
+      "evidence": "1024 mode/scope/display combinations compare exact HTML, copied text, filtered sessions, alerts and copy-wrapper observations in synthetic fixtures against captured baseline; dedicated privacy, snapshot, ordering and disabled-field tests"
+    },
+    {
+      "area": "question bank UI",
+      "boundary": "Paper/printing, entity/question forms and exam builder factories; lifecycle/state/persistence stay coordinator-owned",
+      "evidence": "Read-only AST comparison preserves moved bodies after live state access substitution; regressions cover deferred state, localized marks, duplicates, import guards, actual exam generation and print cleanup"
+    },
+    {
+      "area": "automatic school backup",
+      "boundary": "Pure content/drop policy and existing view separated from connection, scheduling and file writing",
+      "evidence": "Existing file/installation/filename protection tests plus immutable policy and independent two-database state rendering tests",
+      "oneOffDifferentialChecks": {
+        "sourceDropPairs": 10000,
+        "snapshotCounts": 1000,
+        "viewStateCombinations": 5376,
+        "viewOutputsPerCombination": 6
+      }
+    },
+    {
+      "area": "workspace dependencies",
+      "boundary": "Only update-preparation writer barrier extracted to explicit injected service; shared workspace scope remains",
+      "evidence": "Existing PWA/runtime tests and new independent-instance, writer replacement and changed-context tests; AST architecture rule covers fifth isolated service"
+    }
+  ],
+  "unitTests": {
+    "total": 3436,
+    "passed": 3436,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "increaseOverBaseline": 37
+  },
+  "browserStages": [
+    {
+      "stage": "4-adversarial-workflow-review",
+      "total": 2386,
+      "passed": 2386,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-5T6XVc\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "0632850f6c980ae5"
+    },
+    {
+      "stage": "calendar-real-browser-lifecycle-and-viewports",
+      "total": 302,
+      "passed": 302,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-p4cKcw\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "0632850f6c980ae5"
+    },
+    {
+      "stage": "question-bank",
+      "total": 561,
+      "passed": 561,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-rvirFR\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "0632850f6c980ae5"
+    },
+    {
+      "stage": "question-bank-business",
+      "total": 283,
+      "passed": 283,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-6JORTQ\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "0632850f6c980ae5"
+    },
+    {
+      "stage": "question-bank-sample",
+      "total": 229,
+      "passed": 229,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-wCs6TE\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "0632850f6c980ae5"
+    },
+    {
+      "stage": "unified-backup-hub",
+      "total": 305,
+      "passed": 305,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-FjddNu\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "0632850f6c980ae5"
+    },
+    {
+      "stage": "question-bank-import",
+      "total": 257,
+      "passed": 257,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-fiMKH5\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "0632850f6c980ae5"
+    },
+    {
+      "stage": "modular-unit-grading",
+      "total": 255,
+      "passed": 255,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-18DUse\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "0632850f6c980ae5"
+    },
+    {
+      "stage": "modular-unit-karnameh-layout",
+      "total": 345,
+      "passed": 345,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-O7EMVR\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "0632850f6c980ae5"
+    },
+    {
+      "stage": "period-deletion",
+      "total": 277,
+      "passed": 277,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-HDf0pj\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "0632850f6c980ae5"
+    },
+    {
+      "stage": "gradebook-mobile-layout",
+      "total": 266,
+      "passed": 266,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-16A9aS\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "0632850f6c980ae5"
+    },
+    {
+      "stage": "single-academic-year-ui",
+      "total": 235,
+      "passed": 235,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-tZwuwh\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "0632850f6c980ae5"
+    },
+    {
+      "stage": "annual-backup-file-scale",
+      "total": 239,
+      "passed": 239,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-DwEBM7\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "0632850f6c980ae5"
+    },
+    {
+      "stage": "theme-reactium-acceptance",
+      "total": 411,
+      "passed": 411,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-T0KiLV\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "0632850f6c980ae5"
+    },
+    {
+      "stage": "logo-ui-pwa",
+      "total": 269,
+      "passed": 269,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-RBRNDo\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "0632850f6c980ae5"
+    },
+    {
+      "stage": "navbar-layout",
+      "total": 679,
+      "passed": 679,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-QtMHkU\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "0632850f6c980ae5"
+    },
+    {
+      "stage": "school-create-ui",
+      "total": 340,
+      "passed": 340,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-Kp7TPW\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "0632850f6c980ae5"
+    },
+    {
+      "stage": "record-edit-access",
+      "total": 265,
+      "passed": 265,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-ulRXB7\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "0632850f6c980ae5"
+    },
+    {
+      "stage": "timetable-edit-access",
+      "total": 236,
+      "passed": 236,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-qXWpIy\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "0632850f6c980ae5"
+    },
+    {
+      "stage": "week-settings",
+      "total": 246,
+      "passed": 246,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-j1WAP2\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "0632850f6c980ae5"
+    },
+    {
+      "stage": "report-review-browser",
+      "total": 233,
+      "passed": 233,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-5paTCC\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "0632850f6c980ae5"
+    },
+    {
+      "stage": "report-excel-offline",
+      "total": 251,
+      "passed": 251,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-EQ79J5\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "0632850f6c980ae5"
+    },
+    {
+      "stage": "guarded-report-copy-two-windows",
+      "total": 236,
+      "passed": 236,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-FiHbez\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "0632850f6c980ae5"
+    },
+    {
+      "stage": "academic-karnameh-excel",
+      "total": 269,
+      "passed": 269,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-Yf0Gdm\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "0632850f6c980ae5"
+    },
+    {
+      "stage": "individual-student-grade-sheet",
+      "total": 273,
+      "passed": 273,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-Wnp64e\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "0632850f6c980ae5"
+    },
+    {
+      "stage": "question-bank-output",
+      "total": 242,
+      "passed": 242,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-IY2s76\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "0632850f6c980ae5"
+    },
+    {
+      "stage": "session-history-pagination",
+      "total": 240,
+      "passed": 240,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-lWFrQ4\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "0632850f6c980ae5"
+    }
+  ],
+  "browserChecksIncludingRepeatedHarness": 10130,
+  "browserCountNote": "Suites repeat a common harness; the sum is not a count of unique business scenarios.",
+  "releaseGate": {
+    "command": "npm run check:release",
+    "exitCode": 0,
+    "log": ".cache/modular-refactor-release-verified-20261120.log"
+  },
+  "packageValidation": {
+    "command": "npm run release:package",
+    "expectedFiles": 83,
+    "actualFiles": 83,
+    "matchingFiles": 83,
+    "unexpectedFiles": 0,
+    "bytes": 6389541,
+    "sha256": "0632850f6c980ae51e72d6ebc53edc11d9f6b53e24cefd90f19b0a20d0856544",
+    "published": false
+  },
+  "initialAttempt": {
+    "log": ".cache/modular-refactor-release-20261120.log",
+    "outcome": "One stale manifest-list expectation omitted the added activity-report model; expectation updated without weakening ordering or output assertions, then complete gate rerun"
+  },
+  "boundaries": [
+    "Refactor only; no schema migration, dependency update, design/CSS change or user data mutation.",
+    "Shared workspace state is reduced at a specific dependency boundary, not entirely eliminated.",
+    "No physical Android/iPhone, native picker/share sheet, printer or native Word acceptance in this environment.",
+    "No publication, commit or push; passing tests do not prove absence of every possible defect."
+  ]
+}

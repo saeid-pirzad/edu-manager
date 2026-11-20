@@ -64,7 +64,8 @@
         "src/services/grading-results.js",
         "src/services/karnameh-excel.js",
         "src/services/installation-backup.js",
-        "src/services/year-note-scope.js"
+        "src/services/year-note-scope.js",
+        "src/services/update-preparation.js"
       ]
     },
     {
@@ -107,6 +108,8 @@
         "src/workspace/backups/full-export.js",
         "src/workspace/backups/sharing.js",
         "src/workspace/backups/single-file-name.js",
+        "src/domain/single-file-policy.js",
+        "src/workspace/backups/single-file-view.js",
         "src/workspace/backups/single-file.js",
         "src/workspace/backups/full-restore.js",
         "src/workspace/backups/import-conversion.js",
@@ -246,6 +249,7 @@
       "scope": "global",
       "sources": [
         "src/domain/reporting/attendance.js",
+        "src/domain/reporting/activity-report.js",
         "src/domain/reporting/date-ranges.js",
         "src/domain/reporting/periodic-model.js",
         "src/domain/reporting/academic-results.js",
@@ -497,6 +501,9 @@
         "src/features/question-bank/question-import.js",
         "src/features/question-bank/question-import-ui.js",
         "src/features/question-bank/school-word.js",
+        "src/features/question-bank/ui-paper.js",
+        "src/features/question-bank/ui-forms.js",
+        "src/features/question-bank/ui-builder.js",
         "src/features/question-bank/ui.js"
       ]
     }

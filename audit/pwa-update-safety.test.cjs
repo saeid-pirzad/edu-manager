@@ -102,6 +102,13 @@ async function fixture({ protocol = "https:" } = {}) {
   c.window = c;
   vm.runInContext(
     fs.readFileSync(
+      path.join(__dirname, "../src/services/update-preparation.js"),
+      "utf8",
+    ),
+    c,
+  );
+  vm.runInContext(
+    fs.readFileSync(
       path.join(__dirname, "../src/workspace/core/public-api.js"),
       "utf8",
     ),

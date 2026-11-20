@@ -97,6 +97,7 @@ function fixture() {
   context.window = context;
   for (const file of [
     "domain/reporting/attendance.js",
+    "domain/reporting/activity-report.js",
     "legacy/sessions/dialog.js",
     "legacy/ui/lesson.js",
     "legacy/ui/dashboard.js",

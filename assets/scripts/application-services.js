@@ -173,5 +173,13 @@ metas).then(rows=>resolve(periods2.map((period,index)=>({id:period.id,revision:p
 value?.settings?.password??null}))),reject)}});const[periods]=await Promise.all([pending,done]);const current=getState();if(current.connection===origin.connection&&
 current.workspace?.id===origin.id&&current.workspace.year===origin.year&&!current.resetBusy&&!current.connectionRetired)scope={year:origin.year,periods}}function invalidate(message){
 if(!message?.workspace)return;scope.periods=scope.periods.filter(period=>period.id!==message.workspace||message.revision&&period.revision>=message.revision)}return Object.
-freeze({permit,context,synchronize,invalidate})}})(globalThis);
+freeze({permit,context,synchronize,invalidate})}})(globalThis);(function(root){"use strict";root.EduUpdatePreparation=function({assertReadable,getContext,flushDrafts,
+getPeriodicReport,getPendingWrites,hasUnsavedChanges}){async function prepare(){assertReadable();const origin=getContext();const check=()=>{assertReadable();const current=getContext();
+if(current.id!==origin.id||current.connection!==origin.connection)throw Error("اطلاعات هنگام آماده‌سازی به‌روزرسانی تغییر کرد؛ دوباره تلاش کنید.")};
+for(;;){check();await flushDrafts({strict:true});const periodic=getPeriodicReport();if(periodic?.hasPendingNotes?.()){await periodic.retryNotes?.();check();if(periodic.
+hasPendingNotes())throw Error("توضیحات گزارش هنوز ذخیره نشده است؛ پیش از به‌روزرسانی ذخیرهٔ آن را دوباره امتحان کنید.")}
+const writes=getPendingWrites();await writes.records;await writes.drafts;if(writes.file)await writes.file;check();const current=getPendingWrites();if(writes.records!==
+current.records||writes.drafts!==current.drafts||writes.file!==current.file)continue;if(getPeriodicReport()?.hasPendingNotes?.())continue;if(hasUnsavedChanges())
+throw Error("ویرایش ذخیره‌نشده وجود دارد؛ پیش از به‌روزرسانی آن را ذخیره یا لغو کنید.");return true}}
+return Object.freeze({prepare})}})(globalThis);
 //# sourceMappingURL=application-services.js.map

@@ -85,6 +85,7 @@ function fixture() {
     },
   });
   vm.runInContext(source("src/domain/reporting/attendance.js"), c);
+  vm.runInContext(source("src/domain/reporting/activity-report.js"), c);
   vm.runInContext(source("src/legacy/reports/comprehensive.js"), c);
   return {
     c,

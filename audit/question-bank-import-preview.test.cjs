@@ -5,13 +5,12 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 
 function fixture() {
-  const ui = fs.readFileSync("src/features/question-bank/ui.js", "utf8");
-  const format = vm.runInNewContext(
-    ui.slice(
-      ui.indexOf("  function sheetTextDirection("),
-      ui.indexOf("  function sheet(exam)"),
-    ) + "; ({ direction: sheetTextDirection, clean: sheetCleanText });",
+  const paperContext = vm.createContext({});
+  vm.runInContext(
+    fs.readFileSync("src/features/question-bank/ui-paper.js", "utf8"),
+    paperContext,
   );
+  const format = paperContext.EduQuestionBankPaperUI.create({}).previewText;
   const context = vm.createContext({
     EduQuestionBank: {
       types: {

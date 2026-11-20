@@ -6,16 +6,16 @@ const path = require("node:path");
 
 test("print sheet isolates Persian, mixed and English prompts without moving score columns", () => {
   const source = fs.readFileSync(
-    path.join(__dirname, "../src/features/question-bank/ui.js"),
+    path.join(__dirname, "../src/features/question-bank/ui-paper.js"),
     "utf8",
   );
-  const implementation = source.slice(
-    source.indexOf("  function sheetTextDirection("),
-    source.indexOf("  async function print("),
-  );
-  const textDirection = vm.runInNewContext(
-    `${implementation}; sheetTextDirection`,
-  );
+  const context = vm.createContext({
+    crypto: { randomUUID: () => "test" },
+    document: { createTextNode: (text) => text },
+  });
+  vm.runInContext(source, context);
+  const textDirection = context.EduQuestionBankPaperUI.create({}).previewText
+    .direction;
   for (const text of [
     'const message = "سلام";',
     'console.log("سلام");',
@@ -41,14 +41,12 @@ test("print sheet isolates Persian, mixed and English prompts without moving sco
       return this.children.at(-1);
     },
   });
-  const render = vm.runInNewContext(`${implementation}; sheet`, {
+  const render = context.EduQuestionBankPaperUI.create({
     el,
-    crypto: { randomUUID: () => "test" },
     number: (value) => new Intl.NumberFormat("fa-IR").format(value),
     dateLabel: String,
     letters: ["الف", "ب", "ج", "د"],
-    document: { createTextNode: (text) => text },
-  });
+  }).sheet;
   const result = render({
     title: "آزمون",
     courseTitle: "درس",

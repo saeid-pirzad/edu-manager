@@ -36,6 +36,214 @@ test("welcome banner keeps both database file states independent and escapes nam
   assert.match(html, /data-scope="school" data-state="connected"/);
   assert.match(html, /data-scope="bank" data-state="review"/);
 });
+test("school summaries retain state precedence when permission, failure and pending writes overlap", () => {
+  const { context } = fixture();
+  const cases = [
+    { connected: false, expected: "inactive" },
+    { connected: true, expected: "paused" },
+    { connected: true, saved: true, expected: "active" },
+    { connected: true, writing: true, expected: "busy" },
+    { connected: true, saved: true, writing: true, expected: "active" },
+    { connected: true, saved: true, failure: true, expected: "error" },
+    { connected: true, failure: true, suspension: true, expected: "paused" },
+    {
+      connected: true,
+      failure: true,
+      suspension: true,
+      permission: true,
+      expected: "permission",
+    },
+    { connected: false, saved: true, writing: true, expected: "inactive" },
+  ];
+  for (const item of cases) {
+    context.scenario = item;
+    vm.runInContext(
+      `singleFile = scenario.connected ? {
+        handle: {name: 'school<script>.json', requestPermission() {}},
+        suspension: scenario.suspension ? 'restore' : undefined
+      } : null;
+      singleFileFailure = !!scenario.failure;
+      singleFilePermissionNeeded = !!scenario.permission;
+      singleFileNoticeSaved = !!scenario.saved;
+      singleFileWriting = scenario.writing ? Promise.resolve() : null;`,
+      context,
+    );
+    assert.equal(context.singleFileViewState().state, item.expected);
+    assert.equal(
+      context.singleFileViewState().needsReview,
+      !!(item.failure || item.permission || item.suspension),
+    );
+    const panel = context.singleFilePanel();
+    assert.ok(panel.includes('data-state="' + item.expected + '"'));
+    assert.doesNotMatch(panel, /<script>/);
+  }
+});
+test("welcome summaries keep school and bank review states independent across all bank connection states", () => {
+  const f = fixture();
+  let bank;
+  f.context.EduQuestionBankFileBackup = {
+    service: { state: () => bank },
+  };
+  for (const schoolReview of [false, true])
+    for (const connected of [false, true])
+      for (const state of [
+        "inactive",
+        "active",
+        "busy",
+        "permission",
+        "paused",
+        "error",
+      ]) {
+        bank = { connected, state, name: 'bank<&".json' };
+        f.context.schoolReview = schoolReview;
+        vm.runInContext(
+          `singleFile = {handle: {name: 'school.json'}};
+          singleFileFailure = schoolReview;`,
+          f.context,
+        );
+        const html = f.context.welcomeFileSummariesHtml();
+        assert.ok(
+          html.includes(
+            'data-scope="school" data-state="' +
+              (schoolReview ? "review" : "connected") +
+              '"',
+          ),
+        );
+        const expected = ["permission", "paused", "error"].includes(state)
+          ? "review"
+          : connected
+            ? "connected"
+            : "inactive";
+        assert.ok(
+          html.includes('data-scope="bank" data-state="' + expected + '"'),
+        );
+        assert.match(html, /bank&lt;&amp;&quot;\.json/);
+      }
+  assert.equal(f.writes, 0);
+  assert.equal(f.snapshots, 0);
+  assert.equal(f.getStored(), null);
+});
+test("painting school summaries preserves button availability and avoids redundant DOM writes", () => {
+  const f = fixture(),
+    buttons = Object.fromEntries(
+      ["choose", "save", "stop"].map((key) => [key, {}]),
+    );
+  let changes = 0;
+  const element = () => {
+      let content = "";
+      return {
+        get innerHTML() {
+          return content;
+        },
+        set innerHTML(value) {
+          changes++;
+          content = value;
+        },
+        closest: () => ({
+          querySelector: (selector) => buttons[selector.match(/="([^"]+)"/)[1]],
+        }),
+      };
+    },
+    welcome = element(),
+    summary = element(),
+    picker = f.context.window.showSaveFilePicker;
+  f.context.document = {
+    getElementById: (id) =>
+      id === "singleFileSummary"
+        ? summary
+        : id === "welcomeFileSummary"
+          ? welcome
+          : null,
+  };
+  for (const connected of [false, true])
+    for (const choosing of [false, true])
+      for (const writing of [false, true])
+        for (const supported of [false, true]) {
+          f.context.connected = connected;
+          f.context.choosing = choosing;
+          f.context.writing = writing;
+          f.context.window.showSaveFilePicker = supported ? picker : undefined;
+          vm.runInContext(
+            `singleFile = connected ? {handle: {name: 'school.json'}} : null;
+            singleFileChoosing = choosing;
+            singleFileWriting = writing ? Promise.resolve() : null;`,
+            f.context,
+          );
+          f.context.paintSingleFileBanner();
+          assert.equal(
+            buttons.choose.disabled,
+            !supported || choosing || writing,
+          );
+          assert.equal(
+            buttons.save.disabled,
+            !supported || choosing || writing || !connected,
+          );
+          assert.equal(buttons.stop.disabled, buttons.save.disabled);
+          const before = changes;
+          f.context.paintSingleFileBanner();
+          assert.equal(changes, before);
+        }
+  assert.equal(f.writes, 0);
+  assert.equal(f.getStored(), null);
+});
+test("bank notice painting retains its own visibility and permission action without changing the school notice", () => {
+  const f = fixture(),
+    welcome = { innerHTML: "" },
+    schoolNotice = { innerHTML: "school notice", hidden: false },
+    panel = {
+      append(element) {
+        element.parentElement = panel;
+      },
+    };
+  let notice, bank, supported;
+  f.context.document = {
+    getElementById: (id) =>
+      id === "questionBankFileBadge"
+        ? notice
+        : id === "welcomeFileSummary"
+          ? welcome
+          : id === "singleFileBadge"
+            ? schoolNotice
+            : null,
+    querySelector: () => panel,
+    createElement: () => (notice = { dataset: {} }),
+  };
+  f.context.EduQuestionBankFileBackup = {
+    service: { state: () => bank, supported: () => supported },
+  };
+  for (const state of ["error", "permission", "paused", "active", "inactive"])
+    for (const connected of [false, true])
+      for (supported of [false, true]) {
+        bank = {
+          state,
+          connected,
+          name: "bank<script>.json",
+          message: "check <file>",
+        };
+        f.context.paintQuestionBankFileNotice();
+        const visible =
+          state === "error" ||
+          (connected && ["permission", "paused"].includes(state));
+        assert.equal(notice.hidden, !visible);
+        if (visible) {
+          assert.equal(notice.dataset.state, state);
+          assert.equal(notice.parentElement, panel);
+          assert.doesNotMatch(notice.innerHTML, /<script>|<file>/);
+          assert.equal(
+            notice.innerHTML.includes(
+              'data-workspace-action="question-bank-file-permission"',
+            ),
+            state === "permission" && supported,
+          );
+        }
+        assert.deepEqual(schoolNotice, {
+          innerHTML: "school notice",
+          hidden: false,
+        });
+      }
+  assert.equal(f.writes, 0);
+  assert.equal(f.getStored(), null);
+});
 function fixture() {
   let contents = "",
     modified = 1,
@@ -213,6 +421,8 @@ function fixture() {
     "src/domain/calendar.js",
     "src/ui/backup-automatic-view.js",
     "src/workspace/backups/single-file-name.js",
+    "src/domain/single-file-policy.js",
+    "src/workspace/backups/single-file-view.js",
     "src/workspace/backups/single-file.js",
   ])
     vm.runInContext(

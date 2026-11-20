@@ -591,6 +591,7 @@ test("both application shells load the actual shared reporting bundle after poli
     );
   assert.deepEqual(bundle.sources, [
     "src/domain/reporting/attendance.js",
+    "src/domain/reporting/activity-report.js",
     "src/domain/reporting/date-ranges.js",
     "src/domain/reporting/periodic-model.js",
     "src/domain/reporting/academic-results.js",

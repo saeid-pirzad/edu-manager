@@ -1249,10 +1249,19 @@ return{...singleFileNameLedger}}function rememberSingleFileNames(value){singleFi
 {version:2,...value}))}catch{}}function reserveSingleFileName(){const previous=readSingleFileNames(),count=previous.count+1,token=Date.now().toString(36)+"-"+ ++singleFileNameReservationSequence+
 "-"+Math.random().toString(36).slice(2);rememberSingleFileNames({count,token});let released=false;return{name:"Classyar-Classroom"+(count>1?`(${count-1})`:"")+"\
 .json",release(){if(released)return false;released=true;const current=readSingleFileNames();if(current.count!==count||current.token!==token)return false;rememberSingleFileNames(
-previous);return true}}}const singleFileKey="EduManager.singleFile";const SINGLE_FILE_POLL_MS=3e4,SINGLE_FILE_DEBOUNCE_MS=2e3;let singleFileSavedSource=null,singleFileReschedule=false,
-singleFileChoosing=false;let singleFile=null,singleFileTimer=null,singleFileDebounce=null,singleFileWriting=null,singleFileFailure=false,singleFilePermissionNeeded=false,
-singleFileNoticeSaved=false,singleFileMessage="ذخیره خودکار در فایل هنوز فعال نیست.";function singleFileBannerHtml(){return EduBackupAutomaticView.
-summaryHtml({name:singleFile?.handle?.name,savedAt:singleFile?.savedAt,needsReview:singleFileFailure||singleFilePermissionNeeded||!!singleFile?.suspension})}function paintSingleFileBanner(){
+previous);return true}}}"use strict";globalThis.EduSingleFilePolicy=(()=>{function contentBaseline(snapshot){const counts={version:1,records:0,schools:0,students:0,
+lessons:0,grades:0,attendance:0,activities:0};const populatedScores=value=>{if(typeof value==="number")return Number.isFinite(value)?1:0;if(typeof value==="stri\
+ng")return value.trim()?1:0;if(!value||typeof value!=="object")return 0;return Object.values(value).reduce((total,item)=>total+populatedScores(item),0)};const scores=value=>{
+if(!value||typeof value!=="object")return;for(const[key,item]of Object.entries(value)){if(["kardaneshScores","podScores","unitScores","competencyScores"].includes(
+key))counts.grades+=populatedScores(item);else if(item&&typeof item==="object")scores(item)}};for(const row of snapshot.stores?.records||[]){if(row.logical==="m\
+eta"){counts.schools+=row.value?.layout?.length||0;continue}counts.records++;if(row.logical?.startsWith("class:")){counts.students+=(row.value?.students?.length||
+0)+(row.value?.archivedStudents?.length||0);counts.lessons+=row.value?.lessons?.length||0;scores(row.value)}else if(row.logical?.startsWith("session:")){counts.
+activities+=row.value?.scores?.length||0;counts.attendance+=Object.values(row.value?.attendance||{}).filter(value=>value!==null&&value!==void 0&&value!=="").length}}
+return counts}function sourceDropped(previous,current){if(previous?.version!==1)return false;const keys=Object.keys(current).filter(key=>key!=="version");if(keys.
+some(key=>previous[key]>0)&&keys.every(key=>current[key]===0))return true;const educational=["students","lessons","grades","attendance","activities"];if(educational.
+some(key=>previous[key]>0)&&educational.every(key=>current[key]===0))return true;return keys.some(key=>previous[key]>=10&&previous[key]-current[key]>=10&&current[key]<=
+previous[key]/2)}return Object.freeze({contentBaseline,sourceDropped})})();function singleFileBannerHtml(){return EduBackupAutomaticView.summaryHtml({name:singleFile?.
+handle?.name,savedAt:singleFile?.savedAt,needsReview:singleFileFailure||singleFilePermissionNeeded||!!singleFile?.suspension})}function paintSingleFileBanner(){
 const html=welcomeFileSummariesHtml();for(const id of["welcomeFileSummary","singleFileSummary"]){const element=document.getElementById(id);const content=id==="s\
 ingleFileSummary"?EduBackupAutomaticView.summaryHtml({...singleFileViewState(),detailed:true}):html;if(element&&element.innerHTML!==content)element.innerHTML=content}
 const panel=document.getElementById("singleFileSummary")?.closest?.(".backup-automatic");if(panel)for(const action of["choose","save","stop"]){const button=panel.
@@ -1276,14 +1285,11 @@ on-bank-file-notice"}if(notice){notice.hidden=!visible;if(visible){notice.datase
 ر بانک سؤال انتخاب نشده")+'</bdi><span class="backup-file-detail">'+esc(state2.message)+(permission?'</span></span><button type="button" clas\
 s="single-file-permission-action" data-workspace-action="question-bank-file-permission" aria-label="اجازه مجدد برای فایل بانک سؤال و آزمون‌ها: '+
 esc(state2.name)+'">اجازه مجدد</button>':" برای بررسی فایل، از منوی «پشتیبان و بازیابی»، تب «بانک سؤال و آزمون‌ها» را باز کنید.</span></span>");
-if(notice.innerHTML!==html)notice.innerHTML=html;if(notice.parentElement!==panel)panel.append(notice)}}}function renewQuestionBankFilePermission(){const service=globalThis.
-EduQuestionBankFileBackup?.service;if(!service?.supported()||service.state().state!=="permission"||document.querySelector(".qb-confirm,.qb-backup-confirm,.qb-ba\
-ckup[aria-busy='true'],.qb-page[aria-busy='true']"))return false;const tab=typeof state!=="undefined"&&state.backupTab==="bank"?"bank":"school",context=captureSingleFileAction(
-{tab,fileScoped:false});context.assertCurrent();return service.saveNow(void 0,{isCurrent:()=>context.isCurrent()})}function singleFileStatus(message,{permission=false,
-saved=false}={}){singleFileMessage=message;singleFilePermissionNeeded=permission;singleFileNoticeSaved=saved;paintSingleFileBanner();const element=document.getElementById(
-"singleFileStatus");if(element){element.innerHTML=singleFileNoticeHtml(singleFileMessage,false);element.hidden=saved;const panel=element.closest?.("details.back\
-up-automatic");if(permission&&panel)panel.open=true}const badge=document.getElementById("singleFileBadge");if(badge){badge.innerHTML=singleFileNoticeHtml();badge.
-hidden=!singleFileFailure;const panel=document.querySelector("#app .workspace-bar");const destination=panel;if(destination&&badge.parentElement!==destination)destination.
+if(notice.innerHTML!==html)notice.innerHTML=html;if(notice.parentElement!==panel)panel.append(notice)}}}function singleFileStatus(message,{permission=false,saved=false}={}){
+singleFileMessage=message;singleFilePermissionNeeded=permission;singleFileNoticeSaved=saved;paintSingleFileBanner();const element=document.getElementById("singl\
+eFileStatus");if(element){element.innerHTML=singleFileNoticeHtml(singleFileMessage,false);element.hidden=saved;const panel=element.closest?.("details.backup-aut\
+omatic");if(permission&&panel)panel.open=true}const badge=document.getElementById("singleFileBadge");if(badge){badge.innerHTML=singleFileNoticeHtml();badge.hidden=
+!singleFileFailure;const panel=document.querySelector("#app .workspace-bar");const destination=panel;if(destination&&badge.parentElement!==destination)destination.
 append(badge)}}function singleFileViewState(){return{supported:!!window.showSaveFilePicker,purpose:"اطلاعات مدرسه",name:singleFile?.handle?.name,savedAt:singleFile?.
 savedAt,needsReview:singleFileFailure||singleFilePermissionNeeded||!!singleFile?.suspension,state:singleFilePermissionNeeded?"permission":singleFile?.suspension?
 "paused":singleFileFailure?"error":!singleFile?"inactive":singleFileNoticeSaved?"active":singleFileWriting?"busy":"paused"}}function singleFilePanel(){const supported=!!window.
@@ -1294,64 +1300,58 @@ stop:!singleFile},ids:{summary:"singleFileSummary",status:"singleFileStatus",fal
 ction":"single-file-save"},ariaLabel:"اجازه مجدد برای فایل اطلاعات مدرسه: "+singleFile.handle.name}:null,actions:{choose:{"data-wor\
 kspace-action":"single-file-choose"},save:{"data-workspace-action":"single-file-save"},stop:{"data-workspace-action":"single-file-stop"}}})}function showSingleFileFallback(visible){
 singleFileFailure=visible;const element=document.getElementById("singleFileFallback");if(element){element.hidden=!visible;const panel=element.closest?.("details\
-.backup-automatic");if(visible&&panel)panel.open=true}}function singleFileContentBaseline(snapshot){const counts={version:1,records:0,schools:0,students:0,lessons:0,
-grades:0,attendance:0,activities:0};const populatedScores=value=>{if(typeof value==="number")return Number.isFinite(value)?1:0;if(typeof value==="string")return value.
-trim()?1:0;if(!value||typeof value!=="object")return 0;return Object.values(value).reduce((total,item)=>total+populatedScores(item),0)};const scores=value=>{if(!value||
-typeof value!=="object")return;for(const[key,item]of Object.entries(value)){if(["kardaneshScores","podScores","unitScores","competencyScores"].includes(key))counts.
-grades+=populatedScores(item);else if(item&&typeof item==="object")scores(item)}};for(const row of snapshot.stores?.records||[]){if(row.logical==="meta"){counts.
-schools+=row.value?.layout?.length||0;continue}counts.records++;if(row.logical?.startsWith("class:")){counts.students+=(row.value?.students?.length||0)+(row.value?.
-archivedStudents?.length||0);counts.lessons+=row.value?.lessons?.length||0;scores(row.value)}else if(row.logical?.startsWith("session:")){counts.activities+=row.
-value?.scores?.length||0;counts.attendance+=Object.values(row.value?.attendance||{}).filter(value=>value!==null&&value!==void 0&&value!=="").length}}return counts}
-function singleFileSourceDropped(previous,current){if(previous?.version!==1)return false;const keys=Object.keys(current).filter(key=>key!=="version");if(keys.some(
-key=>previous[key]>0)&&keys.every(key=>current[key]===0))return true;const educational=["students","lessons","grades","attendance","activities"];if(educational.
-some(key=>previous[key]>0)&&educational.every(key=>current[key]===0))return true;return keys.some(key=>previous[key]>=10&&previous[key]-current[key]>=10&&current[key]<=
-previous[key]/2)}function announceSingleFileSuspension(target=singleFile){pauseSingleFile();showSingleFileFallback(true);singleFileStatus((target?.suspension===
-"restore"?"پس از بازیابی، اتصال فایل متوقف است؛ فایل قبلی تغییر نکرده است. ":"کاهش غیرعادی اطلاعات شناسایی شد\
-؛ برای حفظ نسخه قبلی، فایل نوشته نشد. ")+"برای جایگزینی آگاهانه، «ذخیره اکنون / اجازه مجدد» را بزنید یا فایل دیگری انتخاب کنید.")}
-async function persistSingleFile({replace=false,target=singleFile,expectedConnectionId,guard}={}){guard?.();if(!ready||resetBusy||connectionRetired)return false;
-const sourceConnection=connection,sourceInstallation=typeof installationToken==="undefined"?"":installationToken,tx=sourceConnection.transaction(["records","dra\
-fts"],"readwrite"),done=transactionDone(tx),store=tx.objectStore("drafts"),request=store.get(singleFileKey),epoch=tx.objectStore("records").get(typeof RESET_RECORD_KEY===
-"undefined"?"@installation-reset":RESET_RECORD_KEY);let changed=false,remaining=2,failure;const persist=()=>{if(--remaining)return;try{guard?.();if((epoch.result?.
-value?.token||"")!==sourceInstallation||connection!==sourceConnection||connectionRetired||resetBusy){const error=Error("اطلاعات سیستم در پنجرهٔ دیگری جایگزین شد\
-ه است؛ اتصال فایل قدیمی تغییر نکرد.");error.code="INSTALLATION_CHANGED";throw error}if(expectedConnectionId!==void 0&&(request.result?.
-connectionId||null)!==expectedConnectionId)throw Object.assign(Error("اتصال فایل در پنجرهٔ دیگری تغییر کرده است؛ انتخاب قبلی جایگزین آن نشد."),
-{code:"SINGLE_FILE_CONNECTION_CHANGED"});if(!replace&&(!request.result||(request.result.connectionId||"")!==(target?.connectionId||"")))return;if(singleFile===target&&
-target)store.put({key:singleFileKey,...target});else if(!singleFile)store.delete(singleFileKey);else return;changed=true}catch(error){failure=error;try{tx.abort()}catch{}}};
-request.onsuccess=persist;epoch.onsuccess=persist;try{await done}catch(error){throw failure||error}return changed}function singleFileChanged(message){if(message.
-type!=="single-file-changed")return false;if(singleFile&&(singleFile.connectionId||"")!==message.connectionId){pauseSingleFile();singleFile=null;singleFileStatus(
-"اتصال فایل در پنجره دیگری متوقف یا عوض شد؛ برای ادامه دوباره فایل را انتخاب کنید.")}return true}
-async function singleFileCurrent(target,{acknowledged=false}={}){if(fullRestoreBusy)return false;if(singleFile!==target||!ready||periodLoading||blocked||resetBusy||
-connectionRetired)return false;const expectedInstallation=typeof installationToken==="undefined"?"":installationToken;const stored=await readRecord("drafts",singleFileKey),
-marker=await readRecord("records",typeof RESET_RECORD_KEY==="undefined"?"@installation-reset":RESET_RECORD_KEY);if((marker?.value?.token||"")!==expectedInstallation){
-const error=Error("اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ فایل قدیمی نوشته نشد. صفحه را دوباره بارگذاری کنید.");
-error.code="INSTALLATION_CHANGED";throw error}if(!stored||(stored.connectionId||"")!==(target.connectionId||"")){if(singleFile===target){pauseSingleFile();singleFile=
-null;singleFileStatus("اتصال فایل در پنجره دیگری متوقف یا عوض شد؛ دوباره فایل را انتخاب کنید.")}return false}
-if(stored.suspension&&!acknowledged){target.suspension=stored.suspension;announceSingleFileSuspension(target);return false}return singleFile===target&&ready&&!periodLoading&&
-!blocked&&!resetBusy&&!connectionRetired}function failSingleFile(error){pauseSingleFile();showSingleFileFallback(true);const denied=error?.name==="NotAllowedErr\
-or"||error?.name==="SecurityError";const message=(denied?"ذخیره خودکار متوقف است؛ مرورگر یا سیستم اجازه نوشتن فایل را نداد. از اجازه مجدد، انتخاب محل دیگر یا پش\
-تیبان دستی استفاده کنید. جزئیات: ":"فایل خودکار به‌روز نشد: ")+(error?.message||String(error));singleFileStatus(message,
-{permission:denied});setStatus(message,"error");return false}function pauseSingleFile(){clearInterval(singleFileTimer);clearTimeout(singleFileDebounce);singleFileTimer=
-singleFileDebounce=null}function startSingleFile(){pauseSingleFile();singleFileTimer=setInterval(()=>void syncSingleFile({force:false}),SINGLE_FILE_POLL_MS)}function scheduleSingleFile(){
-if(!singleFileTimer)return;if(singleFileWriting){singleFileReschedule=true;return}clearTimeout(singleFileDebounce);singleFileDebounce=setTimeout(()=>void syncSingleFile(
-{force:false}),SINGLE_FILE_DEBOUNCE_MS)}async function restoreSingleFile(){try{singleFile=await readRecord("drafts",singleFileKey)||null;paintSingleFileBanner();
-if(!singleFile)return;if(singleFile.suspension){announceSingleFileSuspension();return}if(!singleFile.savedAt){pauseSingleFile();showSingleFileFallback(true);singleFileStatus(
-"اولین ذخیره فایل تأیید نشده؛ ذخیره خودکار فعال نیست. «ذخیره اکنون / اجازه مجدد» را بزنید یا پشتیبان دستی بگیرید.");
-return}if(await singleFile.handle.queryPermission({mode:"readwrite"})==="granted"){if(await syncSingleFile())startSingleFile()}else{pauseSingleFile();showSingleFileFallback(
-true);singleFileStatus("مجوز فایل نیاز به تأیید دارد.",{permission:true})}}catch(error){failSingleFile(error)}}async function assertSingleFileDestination(file){
-if(typeof file.name==="string")assertClassroomFileName(file.name);if(!file.size)return null;if(typeof file.text!=="function")throw Error("خواندن محتوای فایل انت\
-خابی ممکن نیست؛ فایل تغییر نکرد.");const text=await file.text();let value;try{value=JSON.parse(text.replace(/^\uFEFF/,""))}catch(error){
-throw Error("محتوای فایل انتخابی JSON معتبر نیست؛ فایل تغییر نکرد.",{cause:error})}if(value?.format==="classyar-question\
--bank")throw Error("این فایل متعلق به بانک سؤال و طراحی آزمون است؛ برای ذخیرهٔ کلاس‌داری، فایل جداگانه‌ای انتخاب کنید. فایل تغییر نکرد.");
-try{if(value?.format==="EduManager.FullBackup"){validateFullBackup(value);return value}return legacyBackupReplacement(value)}catch(error){throw Error("این فایل \
-پشتیبان معتبر کلاس‌داری نیست؛ فایل تغییر نکرد. "+(error?.message||String(error)),{cause:error})}}function captureSingleFileAction({
-tab="school",fileScoped=true}={}){const sourceConnection=connection,sourceInstallation=typeof installationToken==="undefined"?"":installationToken,sourceFile=singleFile,
-sourceView=typeof state==="undefined"?null:state.view,sourceHub=typeof backupHubSession==="undefined"?null:backupHubSession,hubCurrent=sourceHub?.captureTab?sourceHub.
-captureTab(tab):()=>!sourceHub||sourceHub.isCurrent(tab);const sameInstallation=()=>connection===sourceConnection&&(typeof installationToken==="undefined"?"":installationToken)===
-sourceInstallation&&ready&&!resetBusy&&!connectionRetired;const isCurrent=(target=sourceFile)=>sameInstallation()&&!periodLoading&&!(typeof fullRestoreBusy!=="u\
-ndefined"&&fullRestoreBusy)&&(!fileScoped||singleFile===target)&&(typeof state==="undefined"?null:state.view)===sourceView&&hubCurrent();const assertCurrent=(target=sourceFile)=>{
-if(!isCurrent(target))throw Object.assign(Error("صفحه، اطلاعات یا اتصال فایل تغییر کرده است؛ عملیات فایل را دوباره انجام دهید."),
-{code:"SINGLE_FILE_CONTEXT_CHANGED"})};return{file:sourceFile,sameInstallation,isCurrent,assertCurrent}}async function chooseSingleFile(){if(singleFileChoosing)
-return false;if(!ready||blocked||resetBusy||connectionRetired)throw Error("بانک آماده ذخیره فایل نیست.");const context=captureSingleFileAction();
+.backup-automatic");if(visible&&panel)panel.open=true}}const singleFileKey="EduManager.singleFile";const SINGLE_FILE_POLL_MS=3e4,SINGLE_FILE_DEBOUNCE_MS=2e3;let singleFileSavedSource=null,
+singleFileReschedule=false,singleFileChoosing=false;let singleFile=null,singleFileTimer=null,singleFileDebounce=null,singleFileWriting=null,singleFileFailure=false,
+singleFilePermissionNeeded=false,singleFileNoticeSaved=false,singleFileMessage="ذخیره خودکار در فایل هنوز فعال نیست.";function renewQuestionBankFilePermission(){
+const service=globalThis.EduQuestionBankFileBackup?.service;if(!service?.supported()||service.state().state!=="permission"||document.querySelector(".qb-confirm,\
+.qb-backup-confirm,.qb-backup[aria-busy='true'],.qb-page[aria-busy='true']"))return false;const tab=typeof state!=="undefined"&&state.backupTab==="bank"?"bank":
+"school",context=captureSingleFileAction({tab,fileScoped:false});context.assertCurrent();return service.saveNow(void 0,{isCurrent:()=>context.isCurrent()})}function announceSingleFileSuspension(target=singleFile){
+pauseSingleFile();showSingleFileFallback(true);singleFileStatus((target?.suspension==="restore"?"پس از بازیابی، اتصال فایل متوقف است؛ فایل قبلی تغییر نکرده است.\
+ ":"کاهش غیرعادی اطلاعات شناسایی شد؛ برای حفظ نسخه قبلی، فایل نوشته نشد. ")+"برای جایگزینی آگاهانه، «ذخی\
+ره اکنون / اجازه مجدد» را بزنید یا فایل دیگری انتخاب کنید.")}async function persistSingleFile({replace=false,target=singleFile,
+expectedConnectionId,guard}={}){guard?.();if(!ready||resetBusy||connectionRetired)return false;const sourceConnection=connection,sourceInstallation=typeof installationToken===
+"undefined"?"":installationToken,tx=sourceConnection.transaction(["records","drafts"],"readwrite"),done=transactionDone(tx),store=tx.objectStore("drafts"),request=store.
+get(singleFileKey),epoch=tx.objectStore("records").get(typeof RESET_RECORD_KEY==="undefined"?"@installation-reset":RESET_RECORD_KEY);let changed=false,remaining=2,
+failure;const persist=()=>{if(--remaining)return;try{guard?.();if((epoch.result?.value?.token||"")!==sourceInstallation||connection!==sourceConnection||connectionRetired||
+resetBusy){const error=Error("اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ اتصال فایل قدیمی تغییر نکرد.");
+error.code="INSTALLATION_CHANGED";throw error}if(expectedConnectionId!==void 0&&(request.result?.connectionId||null)!==expectedConnectionId)throw Object.assign(
+Error("اتصال فایل در پنجرهٔ دیگری تغییر کرده است؛ انتخاب قبلی جایگزین آن نشد."),{code:"SINGLE_FILE_CONN\
+ECTION_CHANGED"});if(!replace&&(!request.result||(request.result.connectionId||"")!==(target?.connectionId||"")))return;if(singleFile===target&&target)store.put(
+{key:singleFileKey,...target});else if(!singleFile)store.delete(singleFileKey);else return;changed=true}catch(error){failure=error;try{tx.abort()}catch{}}};request.
+onsuccess=persist;epoch.onsuccess=persist;try{await done}catch(error){throw failure||error}return changed}function singleFileChanged(message){if(message.type!==
+"single-file-changed")return false;if(singleFile&&(singleFile.connectionId||"")!==message.connectionId){pauseSingleFile();singleFile=null;singleFileStatus("اتصا\
+ل فایل در پنجره دیگری متوقف یا عوض شد؛ برای ادامه دوباره فایل را انتخاب کنید.")}return true}async function singleFileCurrent(target,{
+acknowledged=false}={}){if(fullRestoreBusy)return false;if(singleFile!==target||!ready||periodLoading||blocked||resetBusy||connectionRetired)return false;const expectedInstallation=typeof installationToken===
+"undefined"?"":installationToken;const stored=await readRecord("drafts",singleFileKey),marker=await readRecord("records",typeof RESET_RECORD_KEY==="undefined"?"\
+@installation-reset":RESET_RECORD_KEY);if((marker?.value?.token||"")!==expectedInstallation){const error=Error("اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ ف\
+ایل قدیمی نوشته نشد. صفحه را دوباره بارگذاری کنید.");error.code="INSTALLATION_CHANGED";throw error}if(!stored||(stored.connectionId||
+"")!==(target.connectionId||"")){if(singleFile===target){pauseSingleFile();singleFile=null;singleFileStatus("اتصال فایل در پنجره دیگری متوقف یا عوض شد؛ دوباره ف\
+ایل را انتخاب کنید.")}return false}if(stored.suspension&&!acknowledged){target.suspension=stored.suspension;announceSingleFileSuspension(target);
+return false}return singleFile===target&&ready&&!periodLoading&&!blocked&&!resetBusy&&!connectionRetired}function failSingleFile(error){pauseSingleFile();showSingleFileFallback(
+true);const denied=error?.name==="NotAllowedError"||error?.name==="SecurityError";const message=(denied?"ذخیره خودکار متوقف است؛ مرورگر یا سیستم اجازه نوشتن فای\
+ل را نداد. از اجازه مجدد، انتخاب محل دیگر یا پشتیبان دستی استفاده کنید. جزئیات: ":"فایل خودکار به‌\
+روز نشد: ")+(error?.message||String(error));singleFileStatus(message,{permission:denied});setStatus(message,"error");return false}function pauseSingleFile(){
+clearInterval(singleFileTimer);clearTimeout(singleFileDebounce);singleFileTimer=singleFileDebounce=null}function startSingleFile(){pauseSingleFile();singleFileTimer=
+setInterval(()=>void syncSingleFile({force:false}),SINGLE_FILE_POLL_MS)}function scheduleSingleFile(){if(!singleFileTimer)return;if(singleFileWriting){singleFileReschedule=
+true;return}clearTimeout(singleFileDebounce);singleFileDebounce=setTimeout(()=>void syncSingleFile({force:false}),SINGLE_FILE_DEBOUNCE_MS)}async function restoreSingleFile(){
+try{singleFile=await readRecord("drafts",singleFileKey)||null;paintSingleFileBanner();if(!singleFile)return;if(singleFile.suspension){announceSingleFileSuspension();
+return}if(!singleFile.savedAt){pauseSingleFile();showSingleFileFallback(true);singleFileStatus("اولین ذخیره فایل تأیید نشده؛ ذخیره خودکار فعال نیست. «ذخیره اکنو\
+ن / اجازه مجدد» را بزنید یا پشتیبان دستی بگیرید.");return}if(await singleFile.handle.queryPermission({mode:"readwrite"})===
+"granted"){if(await syncSingleFile())startSingleFile()}else{pauseSingleFile();showSingleFileFallback(true);singleFileStatus("مجوز فایل نیاز به تأیید دارد.",
+{permission:true})}}catch(error){failSingleFile(error)}}async function assertSingleFileDestination(file){if(typeof file.name==="string")assertClassroomFileName(
+file.name);if(!file.size)return null;if(typeof file.text!=="function")throw Error("خواندن محتوای فایل انتخابی ممکن نیست؛ فایل تغییر نکرد.");
+const text=await file.text();let value;try{value=JSON.parse(text.replace(/^\uFEFF/,""))}catch(error){throw Error("محتوای فایل انتخابی JSON معتبر نیست؛ فایل تغیی\
+ر نکرد.",{cause:error})}if(value?.format==="classyar-question-bank")throw Error("این فایل متعلق به بانک سؤال و طراحی آزمون است؛ برای ذخیرهٔ کلاس‌داری، فایل\
+ جداگانه‌ای انتخاب کنید. فایل تغییر نکرد.");try{if(value?.format==="EduManager.FullBackup"){validateFullBackup(value);return value}
+return legacyBackupReplacement(value)}catch(error){throw Error("این فایل پشتیبان معتبر کلاس‌داری نیست؛ فایل تغییر نکرد. "+
+(error?.message||String(error)),{cause:error})}}function captureSingleFileAction({tab="school",fileScoped=true}={}){const sourceConnection=connection,sourceInstallation=typeof installationToken===
+"undefined"?"":installationToken,sourceFile=singleFile,sourceView=typeof state==="undefined"?null:state.view,sourceHub=typeof backupHubSession==="undefined"?null:
+backupHubSession,hubCurrent=sourceHub?.captureTab?sourceHub.captureTab(tab):()=>!sourceHub||sourceHub.isCurrent(tab);const sameInstallation=()=>connection===sourceConnection&&
+(typeof installationToken==="undefined"?"":installationToken)===sourceInstallation&&ready&&!resetBusy&&!connectionRetired;const isCurrent=(target=sourceFile)=>sameInstallation()&&
+!periodLoading&&!(typeof fullRestoreBusy!=="undefined"&&fullRestoreBusy)&&(!fileScoped||singleFile===target)&&(typeof state==="undefined"?null:state.view)===sourceView&&
+hubCurrent();const assertCurrent=(target=sourceFile)=>{if(!isCurrent(target))throw Object.assign(Error("صفحه، اطلاعات یا اتصال فایل تغییر کرده است؛ عملیات فایل \
+را دوباره انجام دهید."),{code:"SINGLE_FILE_CONTEXT_CHANGED"})};return{file:sourceFile,sameInstallation,isCurrent,assertCurrent}}async function chooseSingleFile(){
+if(singleFileChoosing)return false;if(!ready||blocked||resetBusy||connectionRetired)throw Error("بانک آماده ذخیره فایل نیست.");const context=captureSingleFileAction();
 context.assertCurrent();singleFileChoosing=true;let reservation,accepted=false;try{let handle;try{reservation=reserveSingleFileName();handle=await window.showSaveFilePicker(
 {suggestedName:reservation.name,excludeAcceptAllOption:true,types:[{description:"EduManager JSON",accept:{"application/json":[".json"]}}]})}catch(error){context.
 assertCurrent();if(error.name==="AbortError")return;return failSingleFile(error)}context.assertCurrent();assertClassroomFileName(handle.name);const file=await handle.
@@ -1394,11 +1394,11 @@ return currentTarget()}}singleFileStatus("در حال ذخیره فایل: "+tar
 connectionRetired||singleFile!==target)return false;assertClassroomFileName(target.handle.name);const file=await target.handle.getFile();guard?.();if(typeof file.
 name==="string")assertClassroomFileName(file.name);if(file.lastModified!==target.modified||file.size!==target.size)throw Error("فایل بیرون از این اتصال تغییر کر\
 ده؛ برای جلوگیری از بازنویسی، دوباره آن را انتخاب کنید.");const previous=await assertSingleFileDestination(file);guard?.();
-let previousBaseline=target.contentBaseline;if(!previousBaseline&&target.savedAt&&previous){previousBaseline=singleFileContentBaseline(previous)}const contentBaseline=singleFileContentBaseline(
-snapshot);if(!acknowledged&&singleFileSourceDropped(previousBaseline,contentBaseline)){target.suspension="source-drop";target.contentBaseline=previousBaseline;await persistSingleFile(
-{target,guard});guard?.();announceSingleFileSuspension(target);return false}if(!await currentTarget())return false;assertClassroomFileName(target.handle.name);const current=await target.
-handle.getFile();guard?.();if(typeof current.name==="string")assertClassroomFileName(current.name);if(current.lastModified!==file.lastModified||current.size!==file.
-size)throw Error("فایل هنگام بررسی اتصال، بیرون از برنامه تغییر کرد؛ برای جلوگیری از بازنویسی، دوباره آن را انتخاب کنید.");
+let previousBaseline=target.contentBaseline;if(!previousBaseline&&target.savedAt&&previous){previousBaseline=EduSingleFilePolicy.contentBaseline(previous)}const contentBaseline=EduSingleFilePolicy.
+contentBaseline(snapshot);if(!acknowledged&&EduSingleFilePolicy.sourceDropped(previousBaseline,contentBaseline)){target.suspension="source-drop";target.contentBaseline=
+previousBaseline;await persistSingleFile({target,guard});guard?.();announceSingleFileSuspension(target);return false}if(!await currentTarget())return false;assertClassroomFileName(
+target.handle.name);const current=await target.handle.getFile();guard?.();if(typeof current.name==="string")assertClassroomFileName(current.name);if(current.lastModified!==
+file.lastModified||current.size!==file.size)throw Error("فایل هنگام بررسی اتصال، بیرون از برنامه تغییر کرد؛ برای جلوگیری از بازنویسی، دوباره آن را انتخاب کنید.");
 stream=await target.handle.createWritable();guard?.();await stream.write(json);if(!await currentTarget()){await stream.abort();return false}closeStarted=true;await stream.
 close();stream=null;const saved=await target.handle.getFile();if(!saved.size)throw Error("فایل پس از نوشتن خالی است؛ ذخیره تأیید نشد. پشتیبان دستی بگیرید.");
 if(typeof saved.name==="string")assertClassroomFileName(saved.name);if(typeof saved.text!=="function"||await saved.text()!==json)throw Error("محتوای فایل پس از \
@@ -2789,26 +2789,21 @@ if(deletionContext!==context||workspace.id!==context.workspace||connection!==sou
 connectionRetired)return;finish();rememberRecordEditor();deletionContext=null;if(context.kind==="school"&&state.schoolId===context.id){state.view="schools";state.
 schoolId=null;state.classId=null}if(context.kind==="class"&&state.classId===context.id){state.view="school";state.classId=null}if(context.kind==="lesson"&&state.
 lessonId===context.id){state.view="class";state.lessonId=null}render();closeModal();setStatus("حذف انجام شد.","saved")}catch(error){if(!showRecordEditorError(
-error,"deleteEntityError"))handleError(error)}finally{deletionBusy=false;finish()}}async function prepareForUpdate(){assertWorkspaceReadable();const origin={id:workspace.
-id,connection};const check=()=>{assertWorkspaceReadable();if(workspace.id!==origin.id||connection!==origin.connection)throw Error("اطلاعات هنگام آماده‌سازی به‌ر\
-وزرسانی تغییر کرد؛ دوباره تلاش کنید.")};for(;;){check();await flushDrafts({strict:true});const periodic=window.EduPeriodicReports;
-if(periodic?.hasPendingNotes?.()){await periodic.retryNotes?.();check();if(periodic.hasPendingNotes())throw Error("توضیحات گزارش هنوز ذخیره نشده است؛ پیش از به‌\
-روزرسانی ذخیرهٔ آن را دوباره امتحان کنید.")}const saves=writer,pendingDrafts=draftWriter,fileWrite=singleFileWriting;await saves;
-await pendingDrafts;if(fileWrite)await fileWrite;check();if(saves!==writer||pendingDrafts!==draftWriter||fileWrite!==singleFileWriting)continue;if(window.EduPeriodicReports?.
-hasPendingNotes?.())continue;if(busy||drafts.size||assessmentContext.hasDrafts()||draftWritesPending||draftRecoveryFailed||window.EduQuestionBankUI?.hasPendingChanges?.()||
-hasRecordEditorChanges())throw Error("ویرایش ذخیره‌نشده وجود دارد؛ پیش از به‌روزرسانی آن را ذخیره یا لغو کنید.");
-return true}}function installRuntimeAPI(){EduRuntimeAPI.install({openSessionModal:openSessionModalV24,openSettingsModal:openSettingsV24,saveSettings:saveSettingsV24,
-sessionStudent:(c,x,id)=>sessionRoster(c,x).find(st=>st.id===id)||getStudentObj(c,id),knownStudentCode:(c,code,exclude)=>knownStudents(c).some(st=>st.code===code&&
-st.id!==exclude),downloadRawRecovery:rawRecoveryV24,openLessonConfig:courseUI.open,saveLessonConfig:courseUI.save,addLesson:courseUI.add,gradeStatus:policyStatus,
-buildLessonGradesHtml:(c,l)=>l.gradeMode==="kardanesh"?buildKardaneshEditor(c,l):l.gradingPolicy?courseUI.table(c,l,null,true):old.buildLessonGradesHtml(c,l),renderLessonStudents:(c,l)=>l.
-gradingPolicy?courseUI.table(c,l):old.renderLessonStudents(c,l),buildLessonReportHtml:(c,l)=>l.gradeMode==="kardanesh"||l.gradingPolicy?'<div class="card report\
--document grade-report"><button class="no-print" data-workspace-action="print">چاپ / PDF</button>'+(l.gradeMode==="kardanesh"?termAssessmentReport(c,l):courseUI.
-table(c,l))+"</div>":old.buildLessonReportHtml(c,l),defaultDB:v24DefaultDB,prepareDB:normalizeDB,validateDB:validateV24,saveDB:saveDBV24,render:renderV24,calcStudentLesson:calcV24,
-buildKardaneshGradesHtml:buildKardaneshEditor,buildKardaneshSummaryHtml:buildKardaneshSummary,openBulkScoreModal:openBulkV24,setAllAttendance:setAllAttendanceV24,
-previousSessionAttendance:previousSessionAttendanceV24,copyPreviousAttendance:copyPreviousAttendanceV24,toggleAtt:toggleAttendanceV24,changeSessionDate:changeSessionDateV24,
-addManualSession:addManualSessionV24,deleteSession:deleteSessionV24,deleteAllSessions:deleteAllSessionsV24,saveSessionUnit:saveSessionUnitV24,updateSessionUnits:updateSessionUnitsV24,
-addSessionScore:addSessionScoreV24,removeSessionScore:removeSessionScoreV24,clickMasterCell:clickMasterV24,toggleActiveDay:toggleActiveDayV24,changePeriods:changePeriodsV24,
-saveWeekStartDate:saveWeekStartDateV24,saveMasterConfig:saveMasterConfigV24,clearMasterConfig:clearMasterConfigV24,startSessionFromMaster:startSessionFromMasterV24,
+error,"deleteEntityError"))handleError(error)}finally{deletionBusy=false;finish()}}async function prepareForUpdate(){return EduUpdatePreparation({assertReadable:()=>assertWorkspaceReadable(),
+getContext:()=>({id:workspace.id,connection}),flushDrafts:options=>flushDrafts(options),getPeriodicReport:()=>window.EduPeriodicReports,getPendingWrites:()=>({records:writer,
+drafts:draftWriter,file:singleFileWriting}),hasUnsavedChanges:()=>busy||drafts.size||assessmentContext.hasDrafts()||draftWritesPending||draftRecoveryFailed||window.
+EduQuestionBankUI?.hasPendingChanges?.()||hasRecordEditorChanges()}).prepare()}function installRuntimeAPI(){EduRuntimeAPI.install({openSessionModal:openSessionModalV24,
+openSettingsModal:openSettingsV24,saveSettings:saveSettingsV24,sessionStudent:(c,x,id)=>sessionRoster(c,x).find(st=>st.id===id)||getStudentObj(c,id),knownStudentCode:(c,code,exclude)=>knownStudents(
+c).some(st=>st.code===code&&st.id!==exclude),downloadRawRecovery:rawRecoveryV24,openLessonConfig:courseUI.open,saveLessonConfig:courseUI.save,addLesson:courseUI.
+add,gradeStatus:policyStatus,buildLessonGradesHtml:(c,l)=>l.gradeMode==="kardanesh"?buildKardaneshEditor(c,l):l.gradingPolicy?courseUI.table(c,l,null,true):old.
+buildLessonGradesHtml(c,l),renderLessonStudents:(c,l)=>l.gradingPolicy?courseUI.table(c,l):old.renderLessonStudents(c,l),buildLessonReportHtml:(c,l)=>l.gradeMode===
+"kardanesh"||l.gradingPolicy?'<div class="card report-document grade-report"><button class="no-print" data-workspace-action="print">چاپ / PDF</button>'+(l.gradeMode===
+"kardanesh"?termAssessmentReport(c,l):courseUI.table(c,l))+"</div>":old.buildLessonReportHtml(c,l),defaultDB:v24DefaultDB,prepareDB:normalizeDB,validateDB:validateV24,
+saveDB:saveDBV24,render:renderV24,calcStudentLesson:calcV24,buildKardaneshGradesHtml:buildKardaneshEditor,buildKardaneshSummaryHtml:buildKardaneshSummary,openBulkScoreModal:openBulkV24,
+setAllAttendance:setAllAttendanceV24,previousSessionAttendance:previousSessionAttendanceV24,copyPreviousAttendance:copyPreviousAttendanceV24,toggleAtt:toggleAttendanceV24,
+changeSessionDate:changeSessionDateV24,addManualSession:addManualSessionV24,deleteSession:deleteSessionV24,deleteAllSessions:deleteAllSessionsV24,saveSessionUnit:saveSessionUnitV24,
+updateSessionUnits:updateSessionUnitsV24,addSessionScore:addSessionScoreV24,removeSessionScore:removeSessionScoreV24,clickMasterCell:clickMasterV24,toggleActiveDay:toggleActiveDayV24,
+changePeriods:changePeriodsV24,saveWeekStartDate:saveWeekStartDateV24,saveMasterConfig:saveMasterConfigV24,clearMasterConfig:clearMasterConfigV24,startSessionFromMaster:startSessionFromMasterV24,
 exportBackup:exportFullBackup,handleImport:handleImportV24,handleExcelImport:csvImportV24,downloadExcelTemplate:downloadCSVTemplate,openTransferModal:id=>openMembership(
 "transfer",id),deleteStudent:id=>openMembership("archive",id),restoreStudent:id=>openMembership("restore",id),doTransfer:(id,copy)=>membershipContext?.studentId===
 id?saveMembership(copy?"copy":""):void 0,deleteSchool:id=>openDeletion("school",id),deleteClass:id=>openDeletion("class",id),deleteLesson:id=>openDeletion("less\
