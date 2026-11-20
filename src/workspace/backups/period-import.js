@@ -98,12 +98,13 @@ async function exportBackupV24() {
 let backupHubSession = null;
 let backupHubRequest = 0;
 let backupHubImportOrigin = null;
+let backupHubPickerPending = false;
 
 function backupHubHtml() {
   return (
-    '<div id="backupHub" class="backup-hub"><div class="backup-hub-tabs" role="tablist" aria-label="نوع اطلاعات پشتیبان"><button type="button" id="backupSchoolTab" role="tab" data-backup-tab="school" aria-controls="backupSchoolPanel" aria-selected="true">اطلاعات مدرسه</button><button type="button" id="backupBankTab" role="tab" data-backup-tab="bank" aria-controls="backupBankPanel" aria-selected="false" tabindex="-1">بانک سؤال و آزمون‌ها</button></div><section id="backupSchoolPanel" class="backup-hub-panel" role="tabpanel" aria-labelledby="backupSchoolTab" tabindex="0"><section class="backup-manual"><h4>پشتیبان دستی</h4><p>کلاس‌ها، هنرجویان، جلسات و نمرات؛ مستقل از بانک سؤال.</p><div class="backup-action-grid"><button type="button" data-workspace-action="export-full">دریافت فایل</button><button type="button" class="ghost backup-share-entry" data-workspace-action="prepare-share-backup">ارسال فایل</button><button type="button" class="ghost" data-workspace-action="choose-import">بازیابی فایل</button></div><p id="lastExternalBackupStatus" class="backup-delivery-status" role="status">' +
+    '<div id="backupHub" class="backup-hub"><div class="backup-hub-tabs" role="tablist" aria-label="نوع اطلاعات پشتیبان"><button type="button" id="backupSchoolTab" role="tab" data-backup-tab="school" aria-controls="backupSchoolPanel" aria-selected="true">اطلاعات مدرسه</button><button type="button" id="backupBankTab" role="tab" data-backup-tab="bank" aria-controls="backupBankPanel" aria-selected="false" tabindex="-1">بانک سؤال و آزمون‌ها</button></div><section id="backupSchoolPanel" class="backup-hub-panel" role="tabpanel" aria-labelledby="backupSchoolTab" tabindex="0"><section class="backup-manual"><h4>پشتیبان دستی</h4><p>کلاس‌ها، هنرجویان، جلسات و نمرات؛ مستقل از بانک سؤال.</p><div class="backup-action-grid"><button type="button" data-workspace-action="export-full">دریافت فایل</button><button type="button" class="ghost backup-share-entry" data-workspace-action="prepare-share-backup">ارسال فایل</button><button type="button" class="ghost" data-workspace-action="choose-import" title="بازیابی اطلاعات فایل و ادامهٔ ذخیره روی همان فایل">بازیابی و ادامه کار</button></div><p id="lastExternalBackupStatus" class="backup-delivery-status" role="status">' +
     esc(lastExternalBackupLabel()) +
-    '</p><p class="backup-restore-help">فایل دریافتی، ارسالی (JSON یا TXT) و ذخیرهٔ خودکار همگی از «بازیابی فایل» قابل بازیابی‌اند.</p></section>' +
+    '</p><p class="backup-restore-help">اطلاعات فایل انتخابی بازیابی می‌شود؛ ادامهٔ ذخیره روی همان فایل JSON خواهد بود. فایل TXT و مرورگر بدون این قابلیت فقط بازیابی می‌شوند.</p></section>' +
     singleFilePanel() +
     '<details class="backup-reset"><summary>حذف اطلاعات و فایل متصل</summary><p>اطلاعات مدرسه و فقط فایل خودکارِ متصل به مدرسه حذف می‌شوند. بانک سؤال و فایل‌های دیگر محفوظ‌اند. یک پشتیبان جداگانه نگه دارید.</p><button type="button" class="danger" data-workspace-action="open-wipe">بررسی و تأیید حذف</button></details></section><section id="backupBankPanel" class="backup-hub-panel" role="tabpanel" aria-labelledby="backupBankTab" tabindex="0" hidden inert></section></div>'
   );
@@ -242,16 +243,78 @@ function mountBackupHubPage() {
 }
 
 function chooseBackupImport() {
+  if (backupHubPickerPending || backupImportReading)
+    throw Error("انتخاب یا خواندن فایل پشتیبان در حال انجام است؛ صبر کنید.");
   const visibleHub =
     document.getElementById("backupHub") && backupHubSession?.isCurrent();
   const session = visibleHub ? backupHubSession : null;
   if (visibleHub && !session?.isCurrent("school"))
     throw Error("برای بازیابی اطلاعات مدرسه، تب «اطلاعات مدرسه» را باز کنید.");
   const input = document.getElementById("importFile");
-  backupHubImportOrigin?.cleanup();
+  backupHubImportOrigin?.cleanup?.();
   backupHubImportOrigin = session
     ? { isCurrent: session.captureTab("school") }
     : null;
+  if (typeof window.showOpenFilePicker === "function") {
+    const origin = backupHubImportOrigin;
+    const sourceConnection = connection,
+      sourceWorkspace = workspace?.id,
+      sourceReady = ready,
+      sourceInstallation =
+        typeof installationToken === "undefined" ? "" : installationToken;
+    const check = () => {
+      if (
+        (origin && !origin.isCurrent()) ||
+        connection !== sourceConnection ||
+        workspace?.id !== sourceWorkspace ||
+        ready !== sourceReady ||
+        resetBusy ||
+        periodLoading ||
+        (sourceReady && connectionRetired) ||
+        (typeof installationToken === "undefined" ? "" : installationToken) !==
+          sourceInstallation
+      )
+        throw Error(
+          "صفحه یا اطلاعات هنگام انتخاب فایل تغییر کرد؛ دوباره فایل را انتخاب کنید.",
+        );
+    };
+    backupHubPickerPending = true;
+    let selection;
+    try {
+      selection = window.showOpenFilePicker({
+        multiple: false,
+        excludeAcceptAllOption: true,
+        types: [
+          {
+            description: "پشتیبان مدرسه",
+            accept: { "application/json": [".json"], "text/plain": [".txt"] },
+          },
+        ],
+      });
+    } catch (error) {
+      backupHubPickerPending = false;
+      throw error;
+    }
+    return (async () => {
+      try {
+        const [handle] = await selection;
+        check();
+        if (!handle) return false;
+        const file = await handle.getFile();
+        check();
+        return await handleImportV24(
+          { target: { files: [file], value: "" } },
+          { fileHandle: handle, importOrigin: origin },
+        );
+      } catch (error) {
+        if (error.name !== "AbortError") throw error;
+        return false;
+      } finally {
+        backupHubPickerPending = false;
+        if (backupHubImportOrigin === origin) backupHubImportOrigin = null;
+      }
+    })();
+  }
   if (backupHubImportOrigin) {
     const origin = backupHubImportOrigin;
     const cancel = () => {
@@ -309,11 +372,17 @@ function previewImport(candidate, label) {
 let backupImportReading = false;
 async function handleImportV24(
   e,
-  { fullSystemOnly = false, replaceSystem = true } = {},
+  {
+    fullSystemOnly = false,
+    replaceSystem = true,
+    fileHandle = null,
+    importOrigin,
+  } = {},
 ) {
   const file = e.target.files[0];
-  const uiOrigin = backupHubImportOrigin;
-  uiOrigin?.cleanup();
+  const uiOrigin =
+    importOrigin === undefined ? backupHubImportOrigin : importOrigin;
+  uiOrigin?.cleanup?.();
   backupHubImportOrigin = null;
   if (!file) return;
   if (backupImportReading) {
@@ -331,11 +400,15 @@ async function handleImportV24(
   if (replaceSystem) {
     pendingFullBackup = null;
     pendingFullBackupSignature = "";
+    if (typeof pendingFullBackupFile !== "undefined")
+      pendingFullBackupFile = null;
     pendingImport = null;
   }
   backupImportReading = true;
   const startedReady = ready;
   const origin = workspace?.id;
+  const expectedInstallation =
+    typeof installationToken === "undefined" ? "" : installationToken;
   let expectedConnection = connection;
   const ensureDestination = () => {
     if (uiOrigin && !uiOrigin.isCurrent())
@@ -345,6 +418,8 @@ async function handleImportV24(
     if (
       ready !== startedReady ||
       workspace?.id !== origin ||
+      (typeof installationToken === "undefined" ? "" : installationToken) !==
+        expectedInstallation ||
       resetBusy ||
       periodLoading ||
       (startedReady && connectionRetired) ||
@@ -388,13 +463,35 @@ async function handleImportV24(
     )
       return;
     ensureDestination();
-    const parsed = JSON.parse(await file.text());
+    const text = await file.text();
+    if (!text.trim())
+      throw Error(
+        "فایل خالی قابل بازیابی نیست؛ برای ذخیرهٔ اطلاعات فعلی در آن، «انتخاب فایل برای ذخیره» را بزنید.",
+      );
+    const parsed = JSON.parse(text.replace(/^\uFEFF/, ""));
     ensureDestination();
+    const sourceFile =
+      fileHandle &&
+      /\.json$/i.test(file.name) &&
+      typeof window.showSaveFilePicker === "function"
+        ? Object.freeze({
+            handle: fileHandle,
+            name: file.name,
+            size: file.size,
+            modified: file.lastModified,
+            text,
+          })
+        : null;
+    if (sourceFile) {
+      assertClassroomFileName(fileHandle.name);
+      if (fileHandle.name !== file.name)
+        throw Error("فایل انتخاب‌شده تغییر کرد؛ دوباره انتخاب کنید.");
+    }
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
       throw Error("ساختار فایل پشتیبان معتبر نیست.");
     if (parsed.format === "EduManager.FullBackup") {
       if (replaceSystem)
-        await previewReplacement(parsed, { sourceName: file.name });
+        await previewReplacement(parsed, { sourceName: file.name, sourceFile });
       else previewFullBackup(parsed);
       return;
     }
@@ -402,6 +499,7 @@ async function handleImportV24(
       const replacement = legacyBackupReplacement(parsed);
       await previewReplacement(replacement, {
         sourceName: file.name,
+        sourceFile,
         legacy: true,
       });
       return;

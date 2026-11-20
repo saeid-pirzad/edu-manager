@@ -38,11 +38,100 @@ function announceSingleFileSuspension(target = singleFile) {
   pauseSingleFile();
   showSingleFileFallback(true);
   singleFileStatus(
-    (target?.suspension === "restore"
-      ? "پس از بازیابی، اتصال فایل متوقف است؛ فایل قبلی تغییر نکرده است. "
-      : "کاهش غیرعادی اطلاعات شناسایی شد؛ برای حفظ نسخه قبلی، فایل نوشته نشد. ") +
+    (target?.suspension === "restore-source"
+      ? "اطلاعات بازیابی شد؛ ذخیرهٔ خودکار در فایل «" +
+        target.handle.name +
+        "» هنوز فعال نیست. "
+      : target?.suspension === "restore"
+        ? "پس از بازیابی، اتصال فایل متوقف است؛ فایل قبلی تغییر نکرده است. "
+        : "کاهش غیرعادی اطلاعات شناسایی شد؛ برای حفظ نسخه قبلی، فایل نوشته نشد. ") +
       "برای جایگزینی آگاهانه، «ذخیره اکنون / اجازه مجدد» را بزنید یا فایل دیگری انتخاب کنید.",
   );
+}
+async function singleFileRestoreHash(text) {
+  const bytes = new TextEncoder().encode(text);
+  return Array.from(
+    new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)),
+  )
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+async function assertRestoredSingleFileText(target, file, check = () => {}) {
+  if (!target.restoreSourceHash) return;
+  const text = await file.text();
+  check();
+  const hash = await singleFileRestoreHash(text);
+  check();
+  if (hash !== target.restoreSourceHash)
+    throw Error(
+      "فایل بازیابی‌شده بیرون از برنامه تغییر کرده است؛ فایل نوشته نشد. دوباره آن را بازیابی یا فایل دیگری برای ذخیره انتخاب کنید.",
+    );
+}
+async function continueRestoredSingleFile(target, permission) {
+  const sourceConnection = connection,
+    sourceInstallation = installationToken,
+    sourceWorkspace = workspace.id;
+  const current = () =>
+    singleFile === target &&
+    connection === sourceConnection &&
+    installationToken === sourceInstallation &&
+    workspace.id === sourceWorkspace &&
+    ready &&
+    !blocked &&
+    !resetBusy &&
+    !connectionRetired &&
+    !periodLoading;
+  const guard = () => {
+    if (!current())
+      throw Object.assign(
+        Error("زمینهٔ ذخیره پس از بازیابی تغییر کرد؛ فایل نوشته نشد."),
+        { code: "SINGLE_FILE_CONTEXT_CHANGED" },
+      );
+  };
+  try {
+    const granted = await permission;
+    guard();
+    if (!granted) {
+      pauseSingleFile();
+      singleFileStatus(
+        "بازیابی انجام شد؛ ذخیرهٔ خودکار در فایل «" +
+          target.handle.name +
+          "» فعال نیست. «ذخیره اکنون» را برای دادن مجوز بزنید.",
+        { permission: true },
+      );
+      setStatus(
+        "اطلاعات بازیابی شد؛ ادامهٔ ذخیره در فایل جدید نیازمند مجوز است.",
+        "pending",
+      );
+      return false;
+    }
+    const saved = await syncSingleFile({ resumeRestored: true, guard });
+    guard();
+    if (saved) {
+      startSingleFile();
+      setStatus(
+        "بازیابی انجام شد؛ ادامهٔ ذخیره در فایل «" +
+          target.handle.name +
+          "» فعال است.",
+        "saved",
+      );
+    } else {
+      setStatus(
+        "اطلاعات بازیابی شد؛ فایل جدید هنوز ذخیره نشده است. وضعیت ذخیرهٔ خودکار را بررسی کنید.",
+        "pending",
+      );
+    }
+    return saved;
+  } catch (error) {
+    if (current()) {
+      failSingleFile(error);
+      setStatus(
+        "اطلاعات بازیابی شد؛ ذخیرهٔ فایل جدید انجام نشد. " + error.message,
+        "pending",
+      );
+    }
+    return false;
+  }
 }
 async function persistSingleFile({
   replace = false,
@@ -134,7 +223,10 @@ function singleFileChanged(message) {
   }
   return true;
 }
-async function singleFileCurrent(target, { acknowledged = false } = {}) {
+async function singleFileCurrent(
+  target,
+  { acknowledged = false, resumeRestored = false } = {},
+) {
   if (fullRestoreBusy) return false;
   if (
     singleFile !== target ||
@@ -171,7 +263,11 @@ async function singleFileCurrent(target, { acknowledged = false } = {}) {
     }
     return false;
   }
-  if (stored.suspension && !acknowledged) {
+  if (
+    stored.suspension &&
+    !acknowledged &&
+    !(resumeRestored && stored.suspension === "restore-source")
+  ) {
     target.suspension = stored.suspension;
     announceSingleFileSuspension(target);
     return false;
@@ -359,7 +455,7 @@ async function chooseSingleFile() {
     if (
       file.size &&
       !confirm(
-        "محتوای فایل انتخابی با همه اطلاعات فعلی برنامه جایگزین شود؟ برای بازیابی، انصراف دهید و «بازیابی از فایل» را بزنید.",
+        "اطلاعات فعلی برنامه روی فایل انتخابی نوشته و محتوای قبلی فایل جایگزین شود؟ برای بازکردن اطلاعات این فایل، انصراف دهید و «بازیابی و ادامه کار» را بزنید.",
       )
     )
       return;
@@ -478,6 +574,7 @@ async function resumeSingleFile() {
     const acknowledged = !!(target.suspension || stored?.suspension);
     if (
       acknowledged &&
+      target.suspension !== "restore-source" &&
       !confirm(
         "فایل «" +
           target.handle.name +
@@ -488,7 +585,8 @@ async function resumeSingleFile() {
     context.assertCurrent();
     pauseSingleFile();
     const saved = await syncSingleFile({
-      acknowledged,
+      acknowledged: acknowledged && target.suspension !== "restore-source",
+      resumeRestored: target.suspension === "restore-source",
       guard: () => context.assertCurrent(),
     });
     context.assertCurrent();
@@ -540,7 +638,12 @@ async function disableSingleFile() {
     return failSingleFile(error);
   }
 }
-function syncSingleFile({ force = true, acknowledged = false, guard } = {}) {
+function syncSingleFile({
+  force = true,
+  acknowledged = false,
+  resumeRestored = false,
+  guard,
+} = {}) {
   if (singleFileWriting) return singleFileWriting;
   if (
     !singleFile ||
@@ -554,7 +657,10 @@ function syncSingleFile({ force = true, acknowledged = false, guard } = {}) {
   const target = singleFile;
   const currentTarget = async () => {
     guard?.();
-    const current = await singleFileCurrent(target, { acknowledged });
+    const current = await singleFileCurrent(target, {
+      acknowledged,
+      resumeRestored,
+    });
     guard?.();
     return current;
   };
@@ -591,6 +697,8 @@ function syncSingleFile({ force = true, acknowledged = false, guard } = {}) {
             throw Error(
               "فایل بیرون از برنامه تغییر کرده است؛ برای ادامه، فایل را دوباره انتخاب کنید.",
             );
+          if (target.restoreSourceHash)
+            await assertRestoredSingleFileText(target, current, guard);
           return currentTarget();
         }
       }
@@ -655,6 +763,20 @@ function syncSingleFile({ force = true, acknowledged = false, guard } = {}) {
         throw Error(
           "فایل هنگام بررسی اتصال، بیرون از برنامه تغییر کرد؛ برای جلوگیری از بازنویسی، دوباره آن را انتخاب کنید.",
         );
+      // The final re-read is after every asynchronous connection check.
+      if (target.restoreSourceHash) {
+        await assertRestoredSingleFileText(target, current, guard);
+        if (!(await currentTarget())) return false;
+        const finalFile = await target.handle.getFile();
+        guard?.();
+        assertClassroomFileName(target.handle.name);
+        if (
+          finalFile.lastModified !== current.lastModified ||
+          finalFile.size !== current.size
+        )
+          throw Error("فایل هنگام آماده‌سازی ذخیره تغییر کرد؛ نوشته نشد.");
+        await assertRestoredSingleFileText(target, finalFile, guard);
+      }
       stream = await target.handle.createWritable();
       guard?.();
       await stream.write(json);
@@ -677,6 +799,9 @@ function syncSingleFile({ force = true, acknowledged = false, guard } = {}) {
         throw Error(
           "محتوای فایل پس از نوشتن با پشتیبان کامل مطابقت ندارد؛ ذخیره تأیید نشد. پشتیبان دستی بگیرید.",
         );
+      guard?.();
+      if (target.restoreSourceHash)
+        target.restoreSourceHash = await singleFileRestoreHash(json);
       guard?.();
       target.modified = saved.lastModified;
       target.size = saved.size;

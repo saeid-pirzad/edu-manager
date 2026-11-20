@@ -39,7 +39,7 @@ test("automatic backup view preserves the school disclosure and action layout", 
   );
   assert.match(
     html,
-    /<p>فایل را یک‌بار انتخاب کنید؛ هنگام باز بودن برنامه، همان فایل به‌روز می‌شود\.<\/p>/,
+    /<p>اطلاعات فعلی برنامه در فایل انتخابی ذخیره می‌شود؛ برای بازکردن اطلاعات یک فایل، «بازیابی و ادامه کار» را بزنید\.<\/p>/,
   );
   assert.match(html, /class="backup-file-summary"/);
   assert.match(html, /class="single-file-notice backup-automatic-notice"/);
@@ -55,7 +55,7 @@ test("automatic backup view preserves the school disclosure and action layout", 
     [...html.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map(
       (match) => match[1],
     ),
-    ["انتخاب فایل", "ذخیره اکنون", "قطع اتصال"],
+    ["انتخاب فایل برای ذخیره", "ذخیره اکنون", "قطع اتصال"],
   );
   assert.equal((html.match(/<button type="button"/g) || []).length, 3);
   assert.doesNotMatch(html, /ui-button|<svg|ui-button-label/);

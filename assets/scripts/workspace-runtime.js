@@ -1306,27 +1306,41 @@ singleFilePermissionNeeded=false,singleFileNoticeSaved=false,singleFileMessage="
 const service=globalThis.EduQuestionBankFileBackup?.service;if(!service?.supported()||service.state().state!=="permission"||document.querySelector(".qb-confirm,\
 .qb-backup-confirm,.qb-backup[aria-busy='true'],.qb-page[aria-busy='true']"))return false;const tab=typeof state!=="undefined"&&state.backupTab==="bank"?"bank":
 "school",context=captureSingleFileAction({tab,fileScoped:false});context.assertCurrent();return service.saveNow(void 0,{isCurrent:()=>context.isCurrent()})}function announceSingleFileSuspension(target=singleFile){
-pauseSingleFile();showSingleFileFallback(true);singleFileStatus((target?.suspension==="restore"?"پس از بازیابی، اتصال فایل متوقف است؛ فایل قبلی تغییر نکرده است.\
- ":"کاهش غیرعادی اطلاعات شناسایی شد؛ برای حفظ نسخه قبلی، فایل نوشته نشد. ")+"برای جایگزینی آگاهانه، «ذخی\
-ره اکنون / اجازه مجدد» را بزنید یا فایل دیگری انتخاب کنید.")}async function persistSingleFile({replace=false,target=singleFile,
-expectedConnectionId,guard}={}){guard?.();if(!ready||resetBusy||connectionRetired)return false;const sourceConnection=connection,sourceInstallation=typeof installationToken===
-"undefined"?"":installationToken,tx=sourceConnection.transaction(["records","drafts"],"readwrite"),done=transactionDone(tx),store=tx.objectStore("drafts"),request=store.
-get(singleFileKey),epoch=tx.objectStore("records").get(typeof RESET_RECORD_KEY==="undefined"?"@installation-reset":RESET_RECORD_KEY);let changed=false,remaining=2,
-failure;const persist=()=>{if(--remaining)return;try{guard?.();if((epoch.result?.value?.token||"")!==sourceInstallation||connection!==sourceConnection||connectionRetired||
-resetBusy){const error=Error("اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ اتصال فایل قدیمی تغییر نکرد.");
-error.code="INSTALLATION_CHANGED";throw error}if(expectedConnectionId!==void 0&&(request.result?.connectionId||null)!==expectedConnectionId)throw Object.assign(
-Error("اتصال فایل در پنجرهٔ دیگری تغییر کرده است؛ انتخاب قبلی جایگزین آن نشد."),{code:"SINGLE_FILE_CONN\
-ECTION_CHANGED"});if(!replace&&(!request.result||(request.result.connectionId||"")!==(target?.connectionId||"")))return;if(singleFile===target&&target)store.put(
-{key:singleFileKey,...target});else if(!singleFile)store.delete(singleFileKey);else return;changed=true}catch(error){failure=error;try{tx.abort()}catch{}}};request.
-onsuccess=persist;epoch.onsuccess=persist;try{await done}catch(error){throw failure||error}return changed}function singleFileChanged(message){if(message.type!==
-"single-file-changed")return false;if(singleFile&&(singleFile.connectionId||"")!==message.connectionId){pauseSingleFile();singleFile=null;singleFileStatus("اتصا\
-ل فایل در پنجره دیگری متوقف یا عوض شد؛ برای ادامه دوباره فایل را انتخاب کنید.")}return true}async function singleFileCurrent(target,{
-acknowledged=false}={}){if(fullRestoreBusy)return false;if(singleFile!==target||!ready||periodLoading||blocked||resetBusy||connectionRetired)return false;const expectedInstallation=typeof installationToken===
-"undefined"?"":installationToken;const stored=await readRecord("drafts",singleFileKey),marker=await readRecord("records",typeof RESET_RECORD_KEY==="undefined"?"\
-@installation-reset":RESET_RECORD_KEY);if((marker?.value?.token||"")!==expectedInstallation){const error=Error("اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ ف\
-ایل قدیمی نوشته نشد. صفحه را دوباره بارگذاری کنید.");error.code="INSTALLATION_CHANGED";throw error}if(!stored||(stored.connectionId||
-"")!==(target.connectionId||"")){if(singleFile===target){pauseSingleFile();singleFile=null;singleFileStatus("اتصال فایل در پنجره دیگری متوقف یا عوض شد؛ دوباره ف\
-ایل را انتخاب کنید.")}return false}if(stored.suspension&&!acknowledged){target.suspension=stored.suspension;announceSingleFileSuspension(target);
+pauseSingleFile();showSingleFileFallback(true);singleFileStatus((target?.suspension==="restore-source"?"اطلاعات بازیابی شد؛ ذخیرهٔ خودکار در فایل «"+
+target.handle.name+"» هنوز فعال نیست. ":target?.suspension==="restore"?"پس از بازیابی، اتصال فایل متوقف است؛ فایل قبلی تغییر نکرده است. ":
+"کاهش غیرعادی اطلاعات شناسایی شد؛ برای حفظ نسخه قبلی، فایل نوشته نشد. ")+"برای جایگزینی آگاهانه، «ذخیره \
+اکنون / اجازه مجدد» را بزنید یا فایل دیگری انتخاب کنید.")}async function singleFileRestoreHash(text){const bytes=new TextEncoder().
+encode(text);return Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",bytes))).map(byte=>byte.toString(16).padStart(2,"0")).join("")}async function assertRestoredSingleFileText(target,file,check=()=>{}){
+if(!target.restoreSourceHash)return;const text=await file.text();check();const hash=await singleFileRestoreHash(text);check();if(hash!==target.restoreSourceHash)
+throw Error("فایل بازیابی‌شده بیرون از برنامه تغییر کرده است؛ فایل نوشته نشد. دوباره آن را بازیابی یا فایل دیگری برای ذخیره انتخاب کنید.")}
+async function continueRestoredSingleFile(target,permission){const sourceConnection=connection,sourceInstallation=installationToken,sourceWorkspace=workspace.id;
+const current=()=>singleFile===target&&connection===sourceConnection&&installationToken===sourceInstallation&&workspace.id===sourceWorkspace&&ready&&!blocked&&!resetBusy&&
+!connectionRetired&&!periodLoading;const guard=()=>{if(!current())throw Object.assign(Error("زمینهٔ ذخیره پس از بازیابی تغییر کرد؛ فایل نوشته نشد."),
+{code:"SINGLE_FILE_CONTEXT_CHANGED"})};try{const granted=await permission;guard();if(!granted){pauseSingleFile();singleFileStatus("بازیابی انجام شد؛ ذخیرهٔ خودک\
+ار در فایل «"+target.handle.name+"» فعال نیست. «ذخیره اکنون» را برای دادن مجوز بزنید.",{permission:true});setStatus(
+"اطلاعات بازیابی شد؛ ادامهٔ ذخیره در فایل جدید نیازمند مجوز است.","pending");return false}const saved=await syncSingleFile(
+{resumeRestored:true,guard});guard();if(saved){startSingleFile();setStatus("بازیابی انجام شد؛ ادامهٔ ذخیره در فایل «"+target.handle.
+name+"» فعال است.","saved")}else{setStatus("اطلاعات بازیابی شد؛ فایل جدید هنوز ذخیره نشده است. وضعیت ذخیرهٔ خودکار را بررسی کنید.",
+"pending")}return saved}catch(error){if(current()){failSingleFile(error);setStatus("اطلاعات بازیابی شد؛ ذخیرهٔ فایل جدید انجام نشد. "+
+error.message,"pending")}return false}}async function persistSingleFile({replace=false,target=singleFile,expectedConnectionId,guard}={}){guard?.();if(!ready||resetBusy||
+connectionRetired)return false;const sourceConnection=connection,sourceInstallation=typeof installationToken==="undefined"?"":installationToken,tx=sourceConnection.
+transaction(["records","drafts"],"readwrite"),done=transactionDone(tx),store=tx.objectStore("drafts"),request=store.get(singleFileKey),epoch=tx.objectStore("rec\
+ords").get(typeof RESET_RECORD_KEY==="undefined"?"@installation-reset":RESET_RECORD_KEY);let changed=false,remaining=2,failure;const persist=()=>{if(--remaining)
+return;try{guard?.();if((epoch.result?.value?.token||"")!==sourceInstallation||connection!==sourceConnection||connectionRetired||resetBusy){const error=Error("ا\
+طلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ اتصال فایل قدیمی تغییر نکرد.");error.code="INSTALLATI\
+ON_CHANGED";throw error}if(expectedConnectionId!==void 0&&(request.result?.connectionId||null)!==expectedConnectionId)throw Object.assign(Error("اتصال فایل در پ\
+نجرهٔ دیگری تغییر کرده است؛ انتخاب قبلی جایگزین آن نشد."),{code:"SINGLE_FILE_CONNECTION_CHANGED"});if(!replace&&(!request.
+result||(request.result.connectionId||"")!==(target?.connectionId||"")))return;if(singleFile===target&&target)store.put({key:singleFileKey,...target});else if(!singleFile)
+store.delete(singleFileKey);else return;changed=true}catch(error){failure=error;try{tx.abort()}catch{}}};request.onsuccess=persist;epoch.onsuccess=persist;try{await done}catch(error){
+throw failure||error}return changed}function singleFileChanged(message){if(message.type!=="single-file-changed")return false;if(singleFile&&(singleFile.connectionId||
+"")!==message.connectionId){pauseSingleFile();singleFile=null;singleFileStatus("اتصال فایل در پنجره دیگری متوقف یا عوض شد؛ برای ادامه دوباره فایل را انتخاب کنید\
+.")}return true}async function singleFileCurrent(target,{acknowledged=false,resumeRestored=false}={}){if(fullRestoreBusy)return false;if(singleFile!==target||!ready||
+periodLoading||blocked||resetBusy||connectionRetired)return false;const expectedInstallation=typeof installationToken==="undefined"?"":installationToken;const stored=await readRecord(
+"drafts",singleFileKey),marker=await readRecord("records",typeof RESET_RECORD_KEY==="undefined"?"@installation-reset":RESET_RECORD_KEY);if((marker?.value?.token||
+"")!==expectedInstallation){const error=Error("اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ فایل قدیمی نوشته نشد. صفحه را دوباره بارگذاری کنید.");
+error.code="INSTALLATION_CHANGED";throw error}if(!stored||(stored.connectionId||"")!==(target.connectionId||"")){if(singleFile===target){pauseSingleFile();singleFile=
+null;singleFileStatus("اتصال فایل در پنجره دیگری متوقف یا عوض شد؛ دوباره فایل را انتخاب کنید.")}return false}
+if(stored.suspension&&!acknowledged&&!(resumeRestored&&stored.suspension==="restore-source")){target.suspension=stored.suspension;announceSingleFileSuspension(target);
 return false}return singleFile===target&&ready&&!periodLoading&&!blocked&&!resetBusy&&!connectionRetired}function failSingleFile(error){pauseSingleFile();showSingleFileFallback(
 true);const denied=error?.name==="NotAllowedError"||error?.name==="SecurityError";const message=(denied?"ذخیره خودکار متوقف است؛ مرورگر یا سیستم اجازه نوشتن فای\
 ل را نداد. از اجازه مجدد، انتخاب محل دیگر یا پشتیبان دستی استفاده کنید. جزئیات: ":"فایل خودکار به‌\
@@ -1355,11 +1369,11 @@ if(singleFileChoosing)return false;if(!ready||blocked||resetBusy||connectionReti
 context.assertCurrent();singleFileChoosing=true;let reservation,accepted=false;try{let handle;try{reservation=reserveSingleFileName();handle=await window.showSaveFilePicker(
 {suggestedName:reservation.name,excludeAcceptAllOption:true,types:[{description:"EduManager JSON",accept:{"application/json":[".json"]}}]})}catch(error){context.
 assertCurrent();if(error.name==="AbortError")return;return failSingleFile(error)}context.assertCurrent();assertClassroomFileName(handle.name);const file=await handle.
-getFile();context.assertCurrent();await assertSingleFileDestination(file);context.assertCurrent();if(file.size&&!confirm("محتوای فایل انتخابی با همه اطلاعات فعل\
-ی برنامه جایگزین شود؟ برای بازیابی، انصراف دهید و «بازیابی از فایل» را بزنید."))return;context.assertCurrent();
-accepted=true;if(singleFileWriting)await singleFileWriting;context.assertCurrent();const hadFileTimer=!!singleFileTimer,previousNotice={message:singleFileMessage,
-failure:singleFileFailure,permission:singleFilePermissionNeeded,saved:singleFileNoticeSaved},target={connectionId:uid(),handle,modified:file.lastModified,size:file.
-size,savedAt:""};pauseSingleFile();singleFile=target;let persisted=false;try{persisted=await persistSingleFile({replace:true,target,expectedConnectionId:context.
+getFile();context.assertCurrent();await assertSingleFileDestination(file);context.assertCurrent();if(file.size&&!confirm("اطلاعات فعلی برنامه روی فایل انتخابی ن\
+وشته و محتوای قبلی فایل جایگزین شود؟ برای بازکردن اطلاعات این فایل، انصراف دهید و «بازیابی و ادامه کار» را بزنید."))
+return;context.assertCurrent();accepted=true;if(singleFileWriting)await singleFileWriting;context.assertCurrent();const hadFileTimer=!!singleFileTimer,previousNotice={
+message:singleFileMessage,failure:singleFileFailure,permission:singleFilePermissionNeeded,saved:singleFileNoticeSaved},target={connectionId:uid(),handle,modified:file.
+lastModified,size:file.size,savedAt:""};pauseSingleFile();singleFile=target;let persisted=false;try{persisted=await persistSingleFile({replace:true,target,expectedConnectionId:context.
 file?.connectionId||null,guard:()=>context.assertCurrent(target)});context.assertCurrent(target);const saved=await syncSingleFile({guard:()=>context.assertCurrent(
 target)});context.assertCurrent(target);broadcast({type:"single-file-changed",connectionId:target.connectionId});if(saved)startSingleFile();return saved}catch(error){
 if(!persisted||["SINGLE_FILE_CONTEXT_CHANGED","SINGLE_FILE_CONNECTION_CHANGED"].includes(error.code)){if(context.sameInstallation()&&singleFile===target){singleFile=
@@ -1371,25 +1385,27 @@ context.assertCurrent();const target=singleFile,hadFileTimer=!!singleFileTimer;t
 assertCurrent();if(permission!=="granted"){pauseSingleFile();showSingleFileFallback(true);singleFileStatus("اجازه نوشتن داده نشد؛ فایل به‌روز نشده است.",
 {permission:true});return false}if(!await singleFileCurrent(target,{acknowledged:true}))return false;context.assertCurrent();if(singleFileWriting&&!await singleFileWriting)
 return false;context.assertCurrent();if(!await singleFileCurrent(target,{acknowledged:true}))return false;context.assertCurrent();const stored=await readRecord(
-"drafts",singleFileKey);context.assertCurrent();const acknowledged=!!(target.suspension||stored?.suspension);if(acknowledged&&!confirm("فایل «"+target.handle.
-name+"» با اطلاعات فعلی مدرسه جایگزین شود؟ بانک سؤال و آزمون‌ها در فایل جدا هستند. نسخه قبلی این فایل از بین می‌رود. اگر به آن نیاز دارید، ابتدا یک کپی مستقل نگ\
-ه دارید. برای حفظ فایل، انصراف دهید یا فایل دیگری انتخاب کنید."))return false;context.assertCurrent();pauseSingleFile();
-const saved=await syncSingleFile({acknowledged,guard:()=>context.assertCurrent()});context.assertCurrent();if(saved)startSingleFile();return saved}catch(error){
-if(!context.isCurrent()||error.code==="SINGLE_FILE_CONTEXT_CHANGED"){if(context.sameInstallation()&&singleFile===target&&hadFileTimer&&!blocked&&!error.fileCommitStarted)
-startSingleFile();if(error.fileCommitStarted)throw error;context.assertCurrent();throw error}return failSingleFile(error)}}async function disableSingleFile(){const context=captureSingleFileAction();
+"drafts",singleFileKey);context.assertCurrent();const acknowledged=!!(target.suspension||stored?.suspension);if(acknowledged&&target.suspension!=="restore-sourc\
+e"&&!confirm("فایل «"+target.handle.name+"» با اطلاعات فعلی مدرسه جایگزین شود؟ بانک سؤال و آزمون‌ها در فایل جدا هستند. نسخه قبلی این فایل از بین می‌رود. اگ\
+ر به آن نیاز دارید، ابتدا یک کپی مستقل نگه دارید. برای حفظ فایل، انصراف دهید یا فایل دیگری انتخاب کنید."))
+return false;context.assertCurrent();pauseSingleFile();const saved=await syncSingleFile({acknowledged:acknowledged&&target.suspension!=="restore-source",resumeRestored:target.
+suspension==="restore-source",guard:()=>context.assertCurrent()});context.assertCurrent();if(saved)startSingleFile();return saved}catch(error){if(!context.isCurrent()||
+error.code==="SINGLE_FILE_CONTEXT_CHANGED"){if(context.sameInstallation()&&singleFile===target&&hadFileTimer&&!blocked&&!error.fileCommitStarted)startSingleFile();
+if(error.fileCommitStarted)throw error;context.assertCurrent();throw error}return failSingleFile(error)}}async function disableSingleFile(){const context=captureSingleFileAction();
 context.assertCurrent();const target=singleFile,hadFileTimer=!!singleFileTimer;pauseSingleFile();singleFile=null;try{if(await persistSingleFile({target,guard:()=>context.
 assertCurrent(null)}))broadcast({type:"single-file-changed",connectionId:null});if(singleFileWriting)await singleFileWriting;showSingleFileFallback(false);singleFileStatus(
 "اتصال متوقف شد؛ فایل موجود حذف نشده است.")}catch(error){const stale=!context.isCurrent(null);if(context.sameInstallation()&&singleFile===
 null){singleFile=target;if(hadFileTimer&&singleFile&&!blocked)startSingleFile()}if(stale)context.assertCurrent(null);if(error.code==="SINGLE_FILE_CONTEXT_CHANGE\
-D")throw error;return failSingleFile(error)}}function syncSingleFile({force=true,acknowledged=false,guard}={}){if(singleFileWriting)return singleFileWriting;if(!singleFile||
-!ready||periodLoading||blocked||resetBusy||connectionRetired)return Promise.resolve(false);const target=singleFile;const currentTarget=async()=>{guard?.();const current=await singleFileCurrent(
-target,{acknowledged});guard?.();return current};const write=async()=>{let stream,closeStarted=false;const cancelled=error=>{if(closeStarted)throw Object.assign(
-Error("صفحه یا اطلاعات هنگام بستن فایل تغییر کرده است؛ بستن/نوشتن فایل شروع شده و ممکن است فایل تغییر کرده باشد. فایل را بررسی و برای ادامه دوباره انتخاب کنید.",
-{cause:error}),{code:"SINGLE_FILE_CONTEXT_CHANGED",fileCommitStarted:true});return false};try{if(!await currentTarget())return false;assertClassroomFileName(target.
-handle.name);if(!force){const signature=await readBackupSourceSignature();if(singleFileSavedSource?.target===target&&singleFileSavedSource.signature===signature){
-const current2=await target.handle.getFile();if(typeof current2.name==="string")assertClassroomFileName(current2.name);if(current2.lastModified!==target.modified||
-current2.size!==target.size)throw Error("فایل بیرون از برنامه تغییر کرده است؛ برای ادامه، فایل را دوباره انتخاب کنید.");
-return currentTarget()}}singleFileStatus("در حال ذخیره فایل: "+target.handle.name);let snapshotSignature=null;const snapshot=await snapshotInstallation(
+D")throw error;return failSingleFile(error)}}function syncSingleFile({force=true,acknowledged=false,resumeRestored=false,guard}={}){if(singleFileWriting)return singleFileWriting;
+if(!singleFile||!ready||periodLoading||blocked||resetBusy||connectionRetired)return Promise.resolve(false);const target=singleFile;const currentTarget=async()=>{
+guard?.();const current=await singleFileCurrent(target,{acknowledged,resumeRestored});guard?.();return current};const write=async()=>{let stream,closeStarted=false;
+const cancelled=error=>{if(closeStarted)throw Object.assign(Error("صفحه یا اطلاعات هنگام بستن فایل تغییر کرده است؛ بستن/نوشتن فایل شروع شده و ممکن است فایل تغیی\
+ر کرده باشد. فایل را بررسی و برای ادامه دوباره انتخاب کنید.",{cause:error}),{code:"SINGLE_FILE_CONTEXT_CHANGED",fileCommitStarted:true});
+return false};try{if(!await currentTarget())return false;assertClassroomFileName(target.handle.name);if(!force){const signature=await readBackupSourceSignature();
+if(singleFileSavedSource?.target===target&&singleFileSavedSource.signature===signature){const current2=await target.handle.getFile();if(typeof current2.name==="\
+string")assertClassroomFileName(current2.name);if(current2.lastModified!==target.modified||current2.size!==target.size)throw Error("فایل بیرون از برنامه تغییر ک\
+رده است؛ برای ادامه، فایل را دوباره انتخاب کنید.");if(target.restoreSourceHash)await assertRestoredSingleFileText(target,
+current2,guard);return currentTarget()}}singleFileStatus("در حال ذخیره فایل: "+target.handle.name);let snapshotSignature=null;const snapshot=await snapshotInstallation(
 {onSourceSignature:signature=>{snapshotSignature=signature}});guard?.();validateFullBackup(snapshot);const json=JSON.stringify(snapshot);if(!ready||blocked||resetBusy||
 connectionRetired||singleFile!==target)return false;assertClassroomFileName(target.handle.name);const file=await target.handle.getFile();guard?.();if(typeof file.
 name==="string")assertClassroomFileName(file.name);if(file.lastModified!==target.modified||file.size!==target.size)throw Error("فایل بیرون از این اتصال تغییر کر\
@@ -1399,51 +1415,62 @@ contentBaseline(snapshot);if(!acknowledged&&EduSingleFilePolicy.sourceDropped(pr
 previousBaseline;await persistSingleFile({target,guard});guard?.();announceSingleFileSuspension(target);return false}if(!await currentTarget())return false;assertClassroomFileName(
 target.handle.name);const current=await target.handle.getFile();guard?.();if(typeof current.name==="string")assertClassroomFileName(current.name);if(current.lastModified!==
 file.lastModified||current.size!==file.size)throw Error("فایل هنگام بررسی اتصال، بیرون از برنامه تغییر کرد؛ برای جلوگیری از بازنویسی، دوباره آن را انتخاب کنید.");
-stream=await target.handle.createWritable();guard?.();await stream.write(json);if(!await currentTarget()){await stream.abort();return false}closeStarted=true;await stream.
-close();stream=null;const saved=await target.handle.getFile();if(!saved.size)throw Error("فایل پس از نوشتن خالی است؛ ذخیره تأیید نشد. پشتیبان دستی بگیرید.");
+if(target.restoreSourceHash){await assertRestoredSingleFileText(target,current,guard);if(!await currentTarget())return false;const finalFile=await target.handle.
+getFile();guard?.();assertClassroomFileName(target.handle.name);if(finalFile.lastModified!==current.lastModified||finalFile.size!==current.size)throw Error("فای\
+ل هنگام آماده‌سازی ذخیره تغییر کرد؛ نوشته نشد.");await assertRestoredSingleFileText(target,finalFile,guard)}stream=await target.
+handle.createWritable();guard?.();await stream.write(json);if(!await currentTarget()){await stream.abort();return false}closeStarted=true;await stream.close();stream=
+null;const saved=await target.handle.getFile();if(!saved.size)throw Error("فایل پس از نوشتن خالی است؛ ذخیره تأیید نشد. پشتیبان دستی بگیرید.");
 if(typeof saved.name==="string")assertClassroomFileName(saved.name);if(typeof saved.text!=="function"||await saved.text()!==json)throw Error("محتوای فایل پس از \
-نوشتن با پشتیبان کامل مطابقت ندارد؛ ذخیره تأیید نشد. پشتیبان دستی بگیرید.");guard?.();target.modified=
-saved.lastModified;target.size=saved.size;target.savedAt=snapshot.exportedAt;target.contentBaseline=contentBaseline;delete target.suspension;if(!await persistSingleFile(
-{target,guard}))return false;guard?.();singleFileSavedSource=snapshotSignature===null?null:{target,signature:snapshotSignature};recordFullBackupDelivery({kind:"\
-automatic-file",exportedAt:snapshot.exportedAt,name:target.handle.name});showSingleFileFallback(false);singleFileStatus("ذخیره شد: "+target.handle.name+"\
- — "+new Date(target.savedAt).toLocaleString("fa-IR"),{saved:true});return true}catch(error){if(stream)await stream.abort().catch(()=>{});try{guard?.()}catch(contextError){
-if(contextError.code==="SINGLE_FILE_CONTEXT_CHANGED")return cancelled(contextError);return failSingleFile(contextError)}if(error.code==="SINGLE_FILE_CONTEXT_CHA\
-NGED")return cancelled(error);if(error.code==="BACKUP_CONTEXT_CHANGED"){singleFileStatus("ذخیره فایل پس از پایان جابه‌جایی دوباره بررسی می‌شود.");
-return false}return failSingleFile(error)}};singleFileWriting=Promise.resolve().then(()=>navigator.locks?navigator.locks.request("EduManager.singleFile",write):
-write()).catch(error=>{if(error.code==="SINGLE_FILE_CONTEXT_CHANGED")throw error;return failSingleFile(error)}).finally(()=>{singleFileWriting=null;paintSingleFileBanner();
-if(singleFileReschedule){singleFileReschedule=false;scheduleSingleFile()}});return singleFileWriting}const validateFullBackup=EduFullBackupValidator.create({backupStores,
-assertSafeDataTree,isDataObject,isSafeRecordId,validateReportNotes,decodeWorkspaceRecords,validateFrozenReport,normalizeDB,validatedUndoCandidate,isSupportedGradeDraft});
-let pendingFullBackup=null,pendingFullBackupSignature="",fullRestoreBusy=false;function previewFullBackup(value,{sourceName="",legacy=false}={}){if(fullRestoreBusy)
-throw Error("بازیابی کامل در حال انجام است؛ تا پایان آن صبر کنید.");const previous=pendingFullBackup,previousSignature=pendingFullBackupSignature;
-pendingFullBackup=null;pendingFullBackupSignature="";const prepared=validateFullBackup.prepare(value);value=prepared.value;const periods=prepared.periods;const termRole=period=>{
-const base=String(period.term).split(" — بازیابی ")[0];return period.termKind||{اول:"first",دوم:"second",تابستان:"summer"}[base]||base};const roleKey=({
-period})=>JSON.stringify([period.year,termRole(period)]);const duplicateTerms=new Set(periods.map(roleKey)).size!==periods.length;const legacyContent=new Set(periods.
-map(({period})=>period.year)).size>1||periods.some(({period})=>!["first","second"].includes(termRole(period)));const outsideSessions=periods.reduce((total,{period,
-data})=>total+data.sessions.filter(session=>!EduAcademicYear.contains(period.year,session.date)).length,0);const date=new Date(value.exportedAt||"");const exportedAt=Number.
-isFinite(date.getTime())?date.toLocaleString("fa-IR"):"در فایل ثبت نشده";const opened=showModal("بازیابی اطلاعات مدرسه",'<div cl\
-ass="full-restore"><section class="full-restore-file" aria-label="مشخصات پشتیبان"><h4>پشتیبان کامل مدرسه</h4><dl><div><dt>زمان تهیه</dt><dd>'+
-esc(exportedAt)+"</dd></div><div><dt>اطلاعات موجود</dt><dd>"+periods.length.toLocaleString("fa-IR")+" نوبت، همراه نمرات، جلسات و کارنامه‌ها</dd></di\
-v>"+(sourceName?"<div><dt>فایل انتخاب‌شده</dt><dd><bdi>"+esc(sourceName)+"</bdi></dd></div>":"")+'</dl><div class="full-restore-periods"><strong>\
-نوبت‌های موجود در خود فایل</strong><ul>'+periods.map(({period})=>"<li><bdi>"+esc(period.year+" / "+period.term)+"</bdi></li>").join("")+"\
-</ul></div></section>"+(legacy?'<p class="full-restore-safety">این فایل با قالب قدیمی ذخیره شده و فقط اطلاعات نوبت درج‌شده در بالا را دارد. پس از تأیید، تمام سا\
-ل‌ها و نوبت‌های فعلی حذف می‌شوند و فقط محتوای همین فایل باقی می‌ماند.</p>':"")+(outsideSessions?'<se\
-ction class="full-restore-warning" role="status"><h4>جلسات قدیمی خارج از سال تحصیلی</h4><p>'+outsideSessions.toLocaleString("fa-IR")+" \
-جلسه خارج از بازهٔ سال خود دارد. این جلسات و سوابقشان حفظ می‌شوند؛ در گزارش سالانهٔ آن سال نمایش داده نمی‌شوند. تاریخ آن‌ها را پس از بازیابی بررسی کنید.</p></se\
-ction>":"")+(duplicateTerms?'<p class="full-restore-warning" role="status">خود فایل چند ورودی با یک سال و نوبت مشابه دارد. بازیابی، همین ورودی‌های داخل فایل را \
-نگه می‌دارد؛ برنامه آن‌ها را ادغام یا حذف نمی‌کند.</p>':"")+(legacyContent?'<p class="full-restore-warning" role="st\
-atus">این فایل سوابق قدیمی چند سال یا عنوان نوبت قدیمی دارد. همهٔ اطلاعات فایل بدون حذف یا ادغام حفظ می‌شوند؛ رابط برنامه در سالِ اطلاعات فعال داخل همین فایل با\
-ز می‌شود. پشتیبان‌گیری مستقل از نوبت اول و دوم است.</p>':"")+'<section class="full-restore-warning"><h4>اطلاعات مدرسه \
-جایگزین می‌شود</h4><p>تمام اطلاعات مدرسه به وضعیت این فایل برمی‌گردد؛ اطلاعات فایل با داده‌های فعلی ادغام نمی‌شود. بانک سؤال و آزمون‌ها جدا هستند و تغییر نمی‌کن\
-ند.</p><p>نوبت جدید یا تکراری ساخته نمی‌شود و وضعیت باز یا بستهٔ نوبت‌ها مطابق فایل خواهد بود.</p><p>ذخیره خودکار فایل مدرسه پس از بازیابی متوقف می‌ماند؛ فایل ق\
-بلی بدون تأیید جداگانهٔ شما جایگزین نمی‌شود.</p></section><label class="full-restore-confirm" for="fullRestoreConfirmed"><input type="checkbox" id="fullRestoreC\
-onfirmed"><span>می‌دانم تمام اطلاعات فعلی مدرسه با محتوای این فایل جایگزین می‌شود.</span></label><p id="operationError" role="alert"></p><div class="full-restor\
-e-actions"><button type="button" class="danger" data-full-restore data-workspace-action="restore-full">تأیید و بازیابی مدرسه</button><button type="button" class\
-="ghost" data-workspace-action="close">انصراف</button></div></div>');if(opened!==false){pendingFullBackup=value;pendingFullBackupSignature=JSON.stringify(
-value)}else{pendingFullBackup=previous;pendingFullBackupSignature=previousSignature}}function restoreCatalogSignature(rows){return JSON.stringify(rows.map(row=>[
-row.id,row.revision,row.year,row.term,row.closed]).sort((a,b)=>String(a[0]).localeCompare(String(b[0]))))}function restoreDraftSignature(rows){return JSON.stringify(
-rows.filter(row=>typeof row?.key==="string"&&row.key.startsWith("Edu24.drafts.")).map(row=>[row.key,JSON.stringify(row)]).sort(([a],[b])=>a.localeCompare(b)))}function restoreReportNotesSignature(){
-try{return JSON.stringify(Object.keys(localStorage).filter(key=>key.startsWith("EduManager.periodicDrafts.")).sort().map(key=>[key,localStorage.getItem(key)]))}catch(error){
-throw Error("خواندن توضیحات مرورگر برای بررسی تداخل ممکن نیست؛ بازیابی انجام نشد. دسترسی به حافظه مرورگر را فعال و دوباره تلاش کنید.",
+نوشتن با پشتیبان کامل مطابقت ندارد؛ ذخیره تأیید نشد. پشتیبان دستی بگیرید.");guard?.();if(target.restoreSourceHash)
+target.restoreSourceHash=await singleFileRestoreHash(json);guard?.();target.modified=saved.lastModified;target.size=saved.size;target.savedAt=snapshot.exportedAt;
+target.contentBaseline=contentBaseline;delete target.suspension;if(!await persistSingleFile({target,guard}))return false;guard?.();singleFileSavedSource=snapshotSignature===
+null?null:{target,signature:snapshotSignature};recordFullBackupDelivery({kind:"automatic-file",exportedAt:snapshot.exportedAt,name:target.handle.name});showSingleFileFallback(
+false);singleFileStatus("ذخیره شد: "+target.handle.name+" — "+new Date(target.savedAt).toLocaleString("fa-IR"),{saved:true});return true}catch(error){if(stream)
+await stream.abort().catch(()=>{});try{guard?.()}catch(contextError){if(contextError.code==="SINGLE_FILE_CONTEXT_CHANGED")return cancelled(contextError);return failSingleFile(
+contextError)}if(error.code==="SINGLE_FILE_CONTEXT_CHANGED")return cancelled(error);if(error.code==="BACKUP_CONTEXT_CHANGED"){singleFileStatus("ذخیره فایل پس از\
+ پایان جابه‌جایی دوباره بررسی می‌شود.");return false}return failSingleFile(error)}};singleFileWriting=Promise.resolve().then(()=>navigator.
+locks?navigator.locks.request("EduManager.singleFile",write):write()).catch(error=>{if(error.code==="SINGLE_FILE_CONTEXT_CHANGED")throw error;return failSingleFile(
+error)}).finally(()=>{singleFileWriting=null;paintSingleFileBanner();if(singleFileReschedule){singleFileReschedule=false;scheduleSingleFile()}});return singleFileWriting}
+const validateFullBackup=EduFullBackupValidator.create({backupStores,assertSafeDataTree,isDataObject,isSafeRecordId,validateReportNotes,decodeWorkspaceRecords,validateFrozenReport,
+normalizeDB,validatedUndoCandidate,isSupportedGradeDraft});let pendingFullBackup=null,pendingFullBackupSignature="",pendingFullBackupFile=null,fullRestoreBusy=false;
+function previewFullBackup(value,{sourceName="",legacy=false,sourceFile=null}={}){if(fullRestoreBusy)throw Error("بازیابی کامل در حال انجام است؛ تا پایان آن صبر\
+ کنید.");const previous=pendingFullBackup,previousSignature=pendingFullBackupSignature,previousFile=pendingFullBackupFile;pendingFullBackup=null;pendingFullBackupSignature=
+"";pendingFullBackupFile=null;const prepared=validateFullBackup.prepare(value);value=prepared.value;const periods=prepared.periods;const termRole=period=>{const base=String(
+period.term).split(" — بازیابی ")[0];return period.termKind||{اول:"first",دوم:"second",تابستان:"summer"}[base]||base};const roleKey=({period})=>JSON.
+stringify([period.year,termRole(period)]);const duplicateTerms=new Set(periods.map(roleKey)).size!==periods.length;const legacyContent=new Set(periods.map(({period})=>period.
+year)).size>1||periods.some(({period})=>!["first","second"].includes(termRole(period)));const outsideSessions=periods.reduce((total,{period,data})=>total+data.sessions.
+filter(session=>!EduAcademicYear.contains(period.year,session.date)).length,0);const date=new Date(value.exportedAt||"");const exportedAt=Number.isFinite(date.getTime())?
+date.toLocaleString("fa-IR"):"در فایل ثبت نشده";const fileContinuationMessage=sourceFile?"<p>پس از بازیابی، ادامهٔ ذخیره در فایل «"+
+esc(sourceFile.name)+"» انجام می‌شود. اتصال قبلی کنار گذاشته می‌شود؛ اگر مجوز نوشتن صادر نشود، اطلاعات بازیابی می‌شود و فایل جدید تا دریافت مجوز متوقف می‌ماند.<\
+/p>":"<p>در این روش فقط اطلاعات بازیابی می‌شود؛ فایل ورودی به ذخیرهٔ خودکار وصل نمی‌شود. اتصال قبلی متوقف می‌ماند. برای فایل TXT یا مرورگر بدون پشتیبانی، از پشت\
+یبان‌گیری دستی استفاده کنید.</p>";const opened=showModal("بازیابی اطلاعات مدرسه",'<div class="full-restore"><section\
+ class="full-restore-file" aria-label="مشخصات پشتیبان"><h4>پشتیبان کامل مدرسه</h4><dl><div><dt>زمان تهیه</dt><dd>'+esc(exportedAt)+
+"</dd></div><div><dt>اطلاعات موجود</dt><dd>"+periods.length.toLocaleString("fa-IR")+" نوبت، همراه نمرات، جلسات و کارنامه‌ها</dd></div>"+
+(sourceName?"<div><dt>فایل انتخاب‌شده</dt><dd><bdi>"+esc(sourceName)+"</bdi></dd></div>":"")+'</dl><div class="full-restore-periods"><strong>نوبت\
+‌های موجود در خود فایل</strong><ul>'+periods.map(({period})=>"<li><bdi>"+esc(period.year+" / "+period.term)+"</bdi></li>").join("")+"</ul></d\
+iv></section>"+(legacy?'<p class="full-restore-safety">این فایل با قالب قدیمی ذخیره شده و فقط اطلاعات نوبت درج‌شده در بالا را دارد. پس از تأیید، تمام سال‌ها و ن\
+وبت‌های فعلی حذف می‌شوند و فقط محتوای همین فایل باقی می‌ماند.</p>':"")+(outsideSessions?'<section class="fu\
+ll-restore-warning" role="status"><h4>جلسات قدیمی خارج از سال تحصیلی</h4><p>'+outsideSessions.toLocaleString("fa-IR")+" جلسه خارج از با\
+زهٔ سال خود دارد. این جلسات و سوابقشان حفظ می‌شوند؛ در گزارش سالانهٔ آن سال نمایش داده نمی‌شوند. تاریخ آن‌ها را پس از بازیابی بررسی کنید.</p></section>":
+"")+(duplicateTerms?'<p class="full-restore-warning" role="status">خود فایل چند ورودی با یک سال و نوبت مشابه دارد. بازیابی، همین ورودی‌های داخل فایل را نگه می‌د\
+ارد؛ برنامه آن‌ها را ادغام یا حذف نمی‌کند.</p>':"")+(legacyContent?'<p class="full-restore-warning" role="status">این فایل س\
+وابق قدیمی چند سال یا عنوان نوبت قدیمی دارد. همهٔ اطلاعات فایل بدون حذف یا ادغام حفظ می‌شوند؛ رابط برنامه در سالِ اطلاعات فعال داخل همین فایل باز می‌شود. پشتیبا\
+ن‌گیری مستقل از نوبت اول و دوم است.</p>':"")+'<section class="full-restore-warning"><h4>اطلاعات مدرسه جایگزین می‌شود</h4><p>تمام اطل\
+اعات مدرسه به وضعیت این فایل برمی‌گردد؛ اطلاعات فایل با داده‌های فعلی ادغام نمی‌شود. بانک سؤال و آزمون‌ها جدا هستند و تغییر نمی‌کنند.</p><p>نوبت جدید یا تکراری \
+ساخته نمی‌شود و وضعیت باز یا بستهٔ نوبت‌ها مطابق فایل خواهد بود.</p>'+fileContinuationMessage+'</section><\
+label class="full-restore-confirm" for="fullRestoreConfirmed"><input type="checkbox" id="fullRestoreConfirmed"><span>می‌دانم تمام اطلاعات فعلی مدرسه با محتوای ا\
+ین فایل جایگزین می‌شود.</span></label><p id="operationError" role="alert"></p><div class="full-restore-actions"><button type="button" class="danger" data-full-r\
+estore data-workspace-action="restore-full">'+(sourceFile?"تأیید بازیابی و ادامه کار":"تأیید و بازیابی مدرسه")+'</button>\
+<button type="button" class="ghost" data-workspace-action="close">انصراف</button></div></div>');if(opened!==false){pendingFullBackup=value;pendingFullBackupSignature=
+JSON.stringify(value);pendingFullBackupFile=sourceFile}else{pendingFullBackup=previous;pendingFullBackupSignature=previousSignature;pendingFullBackupFile=previousFile}}
+async function verifyFullRestoreFile(sourceFile,check=()=>{}){check();assertClassroomFileName(sourceFile.handle.name);const file=await sourceFile.handle.getFile();
+check();const text=await file.text();check();if(sourceFile.handle.name!==sourceFile.name||file.name!==sourceFile.name||file.size!==sourceFile.size||file.lastModified!==
+sourceFile.modified||text!==sourceFile.text)throw Error("فایل پشتیبان پس از پیش‌نمایش تغییر کرد؛ بازیابی انجام نشد. دوباره فایل را انتخاب کنید.");
+return file}function restoreCatalogSignature(rows){return JSON.stringify(rows.map(row=>[row.id,row.revision,row.year,row.term,row.closed]).sort((a,b)=>String(a[0]).
+localeCompare(String(b[0]))))}function restoreDraftSignature(rows){return JSON.stringify(rows.filter(row=>typeof row?.key==="string"&&row.key.startsWith("Edu24.\
+drafts.")).map(row=>[row.key,JSON.stringify(row)]).sort(([a],[b])=>a.localeCompare(b)))}function restoreReportNotesSignature(){try{return JSON.stringify(Object.
+keys(localStorage).filter(key=>key.startsWith("EduManager.periodicDrafts.")).sort().map(key=>[key,localStorage.getItem(key)]))}catch(error){throw Error("خواندن \
+توضیحات مرورگر برای بررسی تداخل ممکن نیست؛ بازیابی انجام نشد. دسترسی به حافظه مرورگر را فعال و دوباره تلاش کنید.",
 {cause:error})}}async function commitReportNoteValues(id,values,{preserveExisting=false}={}){const safeValues=validateReportNotes(values,id),sourceConnection=connection,
 sourceInstallation=installationToken;const current=()=>connection===sourceConnection&&installationToken===sourceInstallation&&!resetBusy&&!connectionRetired;if(!sourceConnection||
 !current()||periodLoading)throw Error("بانک برای ذخیره توضیحات گزارش آماده نیست؛ متن در حافظه حفظ شد.");const tx=sourceConnection.
@@ -1465,31 +1492,33 @@ if(fullRestoreBusy)throw Error("بازیابی کامل در حال انجام �
  کامل را انتخاب کنید.");if(!document.getElementById("fullRestoreConfirmed")?.checked)throw Error("ابتدا جایگزینی اطلاعات مدرسه با فایل انتخاب‌شد\
 ه را تأیید کنید.");if(fileMode)throw Error("بازیابی را در نسخه نصب‌شده یا نشانی HTTPS انجام دهید.");if(ready)
 assertWorkspaceReadable();else if(!connection||connectionRetired||resetBusy)throw Error("برای اتصال امن به بانک، صفحه را دوباره بارگذاری کنید.");
-const source=pendingFullBackup,origin=captureWorkspaceContext(),sourceConnection=connection,sourceInstallation=installationToken;if(!confirm("اطلاعات مدرسه به و\
-ضعیت این فایل برگردد؟ بانک سؤال و آزمون‌ها تغییر نمی‌کنند؛ نوبت جدید ساخته نمی‌شود."))return false;
-const periods=validateFullBackup(source);for(const{period}of periods)globalThis.EduRevision.next(globalThis.EduRevision.next(period.revision));fullRestoreBusy=true;
-const hadFileTimer=!!singleFileTimer;pauseSingleFile();let committedRestore=false,ownsLoading=false;const check=()=>{protectBankDraft();if(resetBusy||connectionRetired||
-connection!==sourceConnection||installationToken!==sourceInstallation||(workspace?.id||"")!==origin.id||pendingFullBackup!==source||JSON.stringify(source)!==pendingFullBackupSignature)
-throw Error("بانک، نوبت یا فایل انتخاب‌شده تغییر کرده است؛ پیش‌نمایش را دوباره باز کنید.")};try{
-if(singleFileWriting)await singleFileWriting;const guard=await readSystemRestoreGuard(check);await draftWriter.catch(()=>{});check();if(periodLoading||busy)throw Error(
-"ثبت یا جابه‌جایی اطلاعات در حال انجام است؛ دوباره تلاش کنید.");periodLoading=true;ownsLoading=true;lockControls();
-const rows=Object.fromEntries([...backupStores,"drafts"].map(name=>[name,[]]));const previous=new Map(guard.catalog.map(row=>[row.id,row]));for(const{period,data}of periods){
-const liveRevision=previous.get(period.id)?.revision;const revision=globalThis.EduRevision.next(Math.max(period.revision,Number.isSafeInteger(liveRevision)?liveRevision:
-0));globalThis.EduRevision.next(revision);const notes={...validateReportNotes(period.reportNotesRecovery,period.id),...validateReportNotes(source.reportDrafts?.[period.
-id],period.id)};const restored={...period,revision,reportNotesRecovery:notes};delete restored.reportSource;rows.catalog.push(restored);for(const[logical,value]of collectRecords(
-data))rows.records.push({key:period.id+"|"+logical,workspace:period.id,logical,value})}for(const name of["events","undo","reports","backups"])rows[name]=source.
-stores[name].filter(row=>name!=="backups"||!row.full).map(row=>clone(row));for(const undo of rows.undo){const restored=rows.catalog.find(row=>row.id===undo.id);
-const saved=source.stores.catalog.find(row=>row.id===undo.id);if(restored&&undo.revision!=null&&undo.revision===saved?.revision)undo.revision=restored.revision;
-for(const peer of undo.recoveredPeers||[]){const restoredPeer=rows.catalog.find(row=>row.id===peer.id),savedPeer=source.stores.catalog.find(row=>row.id===peer.id);
-if(restoredPeer&&peer.revision===savedPeer?.revision)peer.revision=restoredPeer.revision}}rows.drafts=(source.gradeDrafts||[]).map(row=>({...clone(row),owner:"i\
-mported",entries:row.entries.map(item=>({...clone(item),review:true,error:"بازیابی از فایل؛ نیازمند بررسی"}))}));if(source.deputyExportIdentity!==
-void 0)rows.drafts.push(EduDeputyExportIdentity.row({...source.deputyExportIdentity,token:uid()}));const marker={key:RESET_RECORD_KEY,workspace:null,logical:"in\
-stallation-reset",value:{token:uid(),phase:"cleanup",at:new Date().toISOString(),academicYear:rows.catalog.find(period=>period.id===source.activeWorkspace).year,
-activeWorkspace:source.activeWorkspace}};rows.records.push(marker);const names=[...backupStores,"drafts"];let restoredSingleFile=null;const replaceInstallation=async()=>{
-check();const tx=connection.transaction(names,"readwrite"),done=transactionDone(tx);let failure;const abort=error=>{failure=error;try{tx.abort()}catch{}};try{const request=tx.
-objectStore("catalog").getAll(),epoch=tx.objectStore("records").get(RESET_RECORD_KEY),identity=tx.objectStore("drafts").get(EduDeputyExportIdentity.key),durableDrafts=tx.
-objectStore("drafts").getAll();let remaining=4;const replace=()=>{if(--remaining)return;try{check();if((epoch.result?.value?.token||"")!==sourceInstallation)throw Error(
-"اطلاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ پیش از بازیابی دوباره بررسی کنید.");if(!restoreIdentityMatches(
+const source=pendingFullBackup,sourceFile=pendingFullBackupFile,origin=captureWorkspaceContext(),sourceConnection=connection,sourceInstallation=installationToken;
+if(!confirm("اطلاعات مدرسه به وضعیت این فایل برگردد؟ بانک سؤال و آزمون‌ها تغییر نمی‌کنند؛ نوبت جدید ساخته نمی‌شود."))
+return false;const periods=validateFullBackup(source);for(const{period}of periods)globalThis.EduRevision.next(globalThis.EduRevision.next(period.revision));let filePermission=Promise.
+resolve(false);if(sourceFile){try{filePermission=Promise.resolve(sourceFile.handle.requestPermission({mode:"readwrite"})).then(value=>value==="granted",()=>false)}catch{}}
+fullRestoreBusy=true;const hadFileTimer=!!singleFileTimer;pauseSingleFile();let committedRestore=false,ownsLoading=false,continuationTarget,restoredCount;const check=()=>{
+protectBankDraft();if(resetBusy||connectionRetired||connection!==sourceConnection||installationToken!==sourceInstallation||(workspace?.id||"")!==origin.id||pendingFullBackup!==
+source||pendingFullBackupFile!==sourceFile||JSON.stringify(source)!==pendingFullBackupSignature)throw Error("بانک، نوبت یا فایل انتخاب‌شده تغییر کرده است؛ پیش‌ن\
+مایش را دوباره باز کنید.")};try{const sourceHash=sourceFile?await singleFileRestoreHash(sourceFile.text):"";check();if(singleFileWriting)await singleFileWriting;
+const guard=await readSystemRestoreGuard(check);await draftWriter.catch(()=>{});check();if(periodLoading||busy)throw Error("ثبت یا جابه‌جایی اطلاعات در حال انجا\
+م است؛ دوباره تلاش کنید.");periodLoading=true;ownsLoading=true;lockControls();const rows=Object.fromEntries([...backupStores,"drafts"].map(name=>[
+name,[]]));const previous=new Map(guard.catalog.map(row=>[row.id,row]));for(const{period,data}of periods){const liveRevision=previous.get(period.id)?.revision;const revision=globalThis.
+EduRevision.next(Math.max(period.revision,Number.isSafeInteger(liveRevision)?liveRevision:0));globalThis.EduRevision.next(revision);const notes={...validateReportNotes(
+period.reportNotesRecovery,period.id),...validateReportNotes(source.reportDrafts?.[period.id],period.id)};const restored={...period,revision,reportNotesRecovery:notes};
+delete restored.reportSource;rows.catalog.push(restored);for(const[logical,value]of collectRecords(data))rows.records.push({key:period.id+"|"+logical,workspace:period.
+id,logical,value})}for(const name of["events","undo","reports","backups"])rows[name]=source.stores[name].filter(row=>name!=="backups"||!row.full).map(row=>clone(
+row));for(const undo of rows.undo){const restored=rows.catalog.find(row=>row.id===undo.id);const saved=source.stores.catalog.find(row=>row.id===undo.id);if(restored&&
+undo.revision!=null&&undo.revision===saved?.revision)undo.revision=restored.revision;for(const peer of undo.recoveredPeers||[]){const restoredPeer=rows.catalog.
+find(row=>row.id===peer.id),savedPeer=source.stores.catalog.find(row=>row.id===peer.id);if(restoredPeer&&peer.revision===savedPeer?.revision)peer.revision=restoredPeer.
+revision}}rows.drafts=(source.gradeDrafts||[]).map(row=>({...clone(row),owner:"imported",entries:row.entries.map(item=>({...clone(item),review:true,error:"بازیا\
+بی از فایل؛ نیازمند بررسی"}))}));if(source.deputyExportIdentity!==void 0)rows.drafts.push(EduDeputyExportIdentity.row({...source.deputyExportIdentity,
+token:uid()}));const marker={key:RESET_RECORD_KEY,workspace:null,logical:"installation-reset",value:{token:uid(),phase:"cleanup",at:new Date().toISOString(),academicYear:rows.
+catalog.find(period=>period.id===source.activeWorkspace).year,activeWorkspace:source.activeWorkspace}};rows.records.push(marker);const names=[...backupStores,"d\
+rafts"];let restoredSingleFile=null;const replaceInstallation=async()=>{check();if(sourceFile)await verifyFullRestoreFile(sourceFile,check);check();const tx=connection.
+transaction(names,"readwrite"),done=transactionDone(tx);let failure;const abort=error=>{failure=error;try{tx.abort()}catch{}};try{const request=tx.objectStore("\
+catalog").getAll(),epoch=tx.objectStore("records").get(RESET_RECORD_KEY),identity=tx.objectStore("drafts").get(EduDeputyExportIdentity.key),durableDrafts=tx.objectStore(
+"drafts").getAll();let remaining=4;const replace=()=>{if(--remaining)return;try{check();if((epoch.result?.value?.token||"")!==sourceInstallation)throw Error("اط\
+لاعات سیستم در پنجرهٔ دیگری جایگزین شده است؛ پیش از بازیابی دوباره بررسی کنید.");if(!restoreIdentityMatches(
 guard.identity,identity.result))throw Error("مشخصات فرستنده در پنجرهٔ دیگری تغییر کرده است؛ پیش از بازیابی دوباره بررسی کنید.");
 if(restoreDraftSignature(durableDrafts.result)!==guard.draftSignature)throw Error("پیش‌نویس نمرات در پنجرهٔ دیگری تغییر کرده است؛ برای حفظ آن‌ها بازیابی انجام ن\
 شد. دوباره پشتیبان را بررسی کنید.");if(restoreCatalogSignature(request.result)!==restoreCatalogSignature(guard.catalog))throw Error("ا\
@@ -1497,91 +1526,106 @@ if(restoreDraftSignature(durableDrafts.result)!==guard.draftSignature)throw Erro
 guard.reportNotesSignature)throw Error("توضیحات گزارش در پنجره دیگری تغییر کرده است؛ برای حفظ آن‌ها بازیابی انجام نشد. فایل را دوباره بررسی کنید.");
 for(const name of names)tx.objectStore(name).clear();for(const name of names){const values=name==="events"?[...rows[name].filter(row=>row.id!==void 0),...rows[name].
 filter(row=>row.id===void 0)]:rows[name];for(const row of values)tx.objectStore(name).add(row)}const currentFile=durableDrafts.result.find(row=>row.key===singleFileKey);
-restoredSingleFile=currentFile?{...currentFile,connectionId:uid(),suspension:"restore"}:null;if(restoredSingleFile)tx.objectStore("drafts").put(restoredSingleFile)}catch(error){
-abort(error)}};request.onsuccess=replace;epoch.onsuccess=replace;identity.onsuccess=replace;durableDrafts.onsuccess=replace}catch(error){abort(error)}try{await done}catch(error){
-throw failure||error}};const fileLocks=globalThis.navigator?.locks;if(fileLocks)await fileLocks.request("EduManager.singleFile",replaceInstallation);else await replaceInstallation();
-singleFile=restoredSingleFile;assessmentContext.dispose({abandon:true});committedRestore=true;installationToken=marker.value.token;broadcast({type:"installation\
--restored"});await completeResetCleanup(connection,marker);rememberAcademicYear(rows.catalog.find(period=>period.id===source.activeWorkspace).year);window.EduPeriodicReports?.
-resetDrafts();const annual=globalThis.EduAnnualModules?await synchronizeAnnualForRead(source.activeWorkspace):null;const loaded=await readWorkspaceSnapshot(source.
-activeWorkspace);isAuthenticated=false;workspace=loaded.period;db=loaded.data;committed=loaded.records;await synchronizeYearNotesScope();writeFailureGeneration++;
+restoredSingleFile=sourceFile?{key:singleFileKey,connectionId:uid(),handle:sourceFile.handle,modified:sourceFile.modified,size:sourceFile.size,savedAt:"",suspension:"\
+restore-source",restoreSourceHash:sourceHash,contentBaseline:EduSingleFilePolicy.contentBaseline(source)}:currentFile?{...currentFile,connectionId:uid(),suspension:"\
+restore"}:null;if(restoredSingleFile)tx.objectStore("drafts").put(restoredSingleFile)}catch(error){abort(error)}};request.onsuccess=replace;epoch.onsuccess=replace;
+identity.onsuccess=replace;durableDrafts.onsuccess=replace}catch(error){abort(error)}try{await done}catch(error){throw failure||error}};const fileLocks=globalThis.
+navigator?.locks;if(fileLocks)await fileLocks.request("EduManager.singleFile",replaceInstallation);else await replaceInstallation();singleFile=restoredSingleFile;
+continuationTarget=sourceFile?restoredSingleFile:null;assessmentContext.dispose({abandon:true});committedRestore=true;installationToken=marker.value.token;broadcast(
+{type:"installation-restored"});await completeResetCleanup(connection,marker);rememberAcademicYear(rows.catalog.find(period=>period.id===source.activeWorkspace).
+year);window.EduPeriodicReports?.resetDrafts();const annual=globalThis.EduAnnualModules?await synchronizeAnnualForRead(source.activeWorkspace):null;const loaded=await readWorkspaceSnapshot(
+source.activeWorkspace);isAuthenticated=false;workspace=loaded.period;db=loaded.data;committed=loaded.records;await synchronizeYearNotesScope();writeFailureGeneration++;
 writer=Promise.resolve();drafts.clear();draftGeneration++;draftRecoveryFailed=false;blocked=false;ready=true;storageBlocked=false;state={view:"schools",schoolId:null,
 classId:null,lessonId:null,tab:"students",reportTab:"comprehensive"};rememberPeriod(workspace.id);await loadDrafts();pendingFullBackup=null;pendingFullBackupSignature=
-"";periodLoading=false;ownsLoading=false;let notesSaved=true;for(const period of rows.catalog)if(!hydrateReportNotes(period))notesSaved=false;const notesFlushed=await window.
-EduPeriodicReports?.flushNotes?.();if(notesFlushed!==void 0)notesSaved=notesFlushed;closeModal();render();if(singleFile)announceSingleFileSuspension(singleFile);
-setStatus("کل اطلاعات فایل بازیابی شد؛ هیچ نوبت تکراری ساخته نشد."+(notesSaved?"":" توضیحات گزارش در بانک محفوظ‌اند؛\
- ذخیره موقت آن‌ها نیازمند تلاش مجدد است."),notesSaved?"saved":"pending");const recoveryWarning=academicWorkspaceRecoveryWarning(
+"";pendingFullBackupFile=null;periodLoading=false;ownsLoading=false;let notesSaved=true;for(const period of rows.catalog)if(!hydrateReportNotes(period))notesSaved=
+false;const notesFlushed=await window.EduPeriodicReports?.flushNotes?.();if(notesFlushed!==void 0)notesSaved=notesFlushed;closeModal();render();if(singleFile&&!continuationTarget)
+announceSingleFileSuspension(singleFile);setStatus("کل اطلاعات فایل بازیابی شد؛ هیچ نوبت تکراری ساخته نشد."+(!sourceFile?
+" ذخیرهٔ خودکار به فایل ورودی وصل نیست؛ اتصال قبلی متوقف است.":"")+(notesSaved?"":" توضیحات گزارش در بانک محفوظ‌\
+اند؛ ذخیره موقت آن‌ها نیازمند تلاش مجدد است."),notesSaved?"saved":"pending");const recoveryWarning=academicWorkspaceRecoveryWarning(
 workspace,rows.catalog);if(recoveryWarning)setStatus(recoveryWarning,"pending");for(const change of annual?.changed||[])broadcast({...change,annualModular:true});
 if(annual?.conflicts.length)setStatus("بازیابی انجام شد؛ اختلاف اطلاعات قدیمی حفظ شد: "+annual.conflicts[0].message,"error");
-return periods.length}catch(error){if(committedRestore){blocked=true;ready=false;resetScreen("اطلاعات فایل بازیابی شده است؛ تکمیل بازخوانی نیاز به بارگذاری مجدد\
- دارد. "+error.message)}throw error}finally{if(ownsLoading)periodLoading=false;fullRestoreBusy=false;if(!committedRestore&&hadFileTimer&&singleFile&&ready&&
-!blocked&&!connectionRetired)startSingleFile();lockControls()}}function legacyBackupReplacement(parsed){assertSafeDataTree(parsed);if(!isDataObject(parsed))throw Error(
-"ساختار فایل پشتیبان قدیمی معتبر نیست.");if(parsed.format!==void 0)throw Error("قالب این فایل برای تبدیل پشتیبان قدیمی پشتیبانی ن\
-می‌شود.");const validVersion=(value,label)=>{if(value!==void 0&&(!Number.isInteger(value)||value<1||value>26))throw Error("نسخهٔ "+label+" پشتیبانی \
-نمی‌شود.")};validVersion(parsed.version,"پشتیبان");validVersion(parsed.schemaVersion,"ساختار");const wrapped=Object.hasOwn(parsed,"db"),source=wrapped?
-parsed.db:parsed;if(!isDataObject(source))throw Error("اطلاعات اصلی فایل پشتیبان معتبر نیست.");if(source!==parsed&&source.format!==
-void 0)throw Error("قالب اطلاعات داخل پشتیبان قدیمی معتبر نیست.");validVersion(source.schemaVersion,"ساختار");if(source.
-version!==void 0)validVersion(source.version,"اطلاعات");const period=parsed.period;if(period!==void 0&&!isDataObject(period))throw Error("مشخصات سال تحصی\
-لی در فایل معتبر نیست.");if(period?.id!==void 0&&!isSafeRecordId(period.id))throw Error("شناسهٔ اطلاعات فایل پشتیبان معتبر نیست.");
-if(period?.closed!==void 0&&typeof period.closed!=="boolean")throw Error("وضعیت بسته‌بودن اطلاعات فایل معتبر نیست.");if(source.
-settings!==void 0&&!isDataObject(source.settings))throw Error("تنظیمات فایل پشتیبان معتبر نیست.");const outerYear=period?.year===void 0?
-void 0:EduAcademicYear.normalize(period.year);const input=clone(source);input.settings||={};if(input.settings.academicYear===void 0&&outerYear!==void 0)input.settings.
-academicYear=outerYear;if(input.settings.academicTerm===void 0&&period?.term!==void 0)input.settings.academicTerm=period.term;const normalized=normalizeDB(input,
-{legacy:(source.schemaVersion??parsed.version??23)<24}),id=period?.id||"restored-file",now=new Date().toISOString(),exportedAt=typeof parsed.exportedAt==="strin\
-g"&&Number.isFinite(Date.parse(parsed.exportedAt))?parsed.exportedAt:now,catalog={id,year:normalized.settings.academicYear,term:normalized.settings.academicTerm,
-termKind:academicTermKind(normalized.settings.academicTerm),revision:1,closed:period?.closed??false,createdAt:exportedAt,updatedAt:exportedAt},replacement={format:"\
-EduManager.FullBackup",version:2,schemaVersion:26,exportedAt,activeWorkspace:id,stores:{catalog:[catalog],records:[...collectRecords(normalized)].map(([logical,
-value])=>({key:id+"|"+logical,workspace:id,logical,value})),events:[],undo:[],reports:[],backups:[]},reportDrafts:{},gradeDrafts:[]};validateFullBackup(replacement);
-return replacement}async function exportBackupV24(){const origin=workspace.id;const ensureSource=()=>{if(!ready||periodLoading||resetBusy||connectionRetired||workspace.
-id!==origin)throw new Error("ترم هنگام تهیه پشتیبان تغییر کرده است؛ دوباره تلاش کنید.")};ensureSource();let excludedDrafts=0;
-try{await flushDrafts({strict:true})}catch(error){excludedDrafts=drafts.size;setStatus("پشتیبان از آخرین ثبت سالم تهیه می‌شود؛ ویرایش‌های ذخیره‌نشده داخل آن نیس\
-تند.","error")}await writer.catch(()=>{});ensureSource();const snapshot=await readWorkspaceSnapshot(origin);ensureSource();const{period,data:durable}=snapshot;
-const content={version:25,exportedAt:new Date().toISOString(),excludedDrafts,period:{year:period.year,term:period.term},db:durable},name="Classyar-Classroom.jso\
-n",json=JSON.stringify(content,null,2);let confirmed=false;if(window.showSaveFilePicker){let writable;try{const handle=await window.showSaveFilePicker({suggestedName:name,
-types:[{description:"پشتیبان مدرسه",accept:{"application/json":[".json"]}}]});assertClassroomFileName(handle.name);const before=await handle.getFile();
-await assertSingleFileDestination(before);const previousText=await before.text();if(previousText&&previousText!==json)throw Error("برای حفظ فایل قبلی، فایل تازه\
-‌ای انتخاب کنید.");const current=await handle.getFile();assertClassroomFileName(current.name);if(await current.text()!==previousText)throw Error("\
-فایل هنگام انتخاب تغییر کرد؛ نوشته نشد.");writable=await handle.createWritable();await writable.write(json);await writable.close();
-writable=null;const file=await handle.getFile();if(!file.size||await file.text()!==json)throw new Error("محتوای فایل پس از نوشتن تأیید نشد.");
-confirmed=true}catch(error){if(writable){try{await writable.abort()}catch(ignore){}}if(error.name==="AbortError")return false;downloadJSON(content,name)}}else downloadJSON(
-content,name);try{localStorage.setItem("Edu24.externalBackup."+origin,JSON.stringify({date:todayISO(),confirmed}))}catch(ignore){}setStatus(confirmed?"فایل پشتی\
-بان مستقل ذخیره شد.":"دانلود پشتیبان درخواست شد؛ وجود فایل را بررسی کنید.","saved");render();return confirmed?
-"confirmed":"downloaded"}let backupHubSession=null;let backupHubRequest=0;let backupHubImportOrigin=null;function backupHubHtml(){return'<div id="backupHub" cla\
-ss="backup-hub"><div class="backup-hub-tabs" role="tablist" aria-label="نوع اطلاعات پشتیبان"><button type="button" id="backupSchoolTab" role="tab" data-backup-t\
-ab="school" aria-controls="backupSchoolPanel" aria-selected="true">اطلاعات مدرسه</button><button type="button" id="backupBankTab" role="tab" data-backup-tab="ba\
-nk" aria-controls="backupBankPanel" aria-selected="false" tabindex="-1">بانک سؤال و آزمون‌ها</button></div><section id="backupSchoolPanel" class="backup-hub-pan\
-el" role="tabpanel" aria-labelledby="backupSchoolTab" tabindex="0"><section class="backup-manual"><h4>پشتیبان دستی</h4><p>کلاس‌ها، هنرجویان، جلسات و نمرات؛ مستق\
-ل از بانک سؤال.</p><div class="backup-action-grid"><button type="button" data-workspace-action="export-full">دریافت فایل</button><button type="button" class="gh\
-ost backup-share-entry" data-workspace-action="prepare-share-backup">ارسال فایل</button><button type="button" class="ghost" data-workspace-action="choose-import\
-">بازیابی فایل</button></div><p id="lastExternalBackupStatus" class="backup-delivery-status" role="status">'+esc(lastExternalBackupLabel())+'</p><p c\
-lass="backup-restore-help">فایل دریافتی، ارسالی (JSON یا TXT) و ذخیرهٔ خودکار همگی از «بازیابی فایل» قابل بازیابی‌اند.</p></section>'+
-singleFilePanel()+'<details class="backup-reset"><summary>حذف اطلاعات و فایل متصل</summary><p>اطلاعات مدرسه و فقط فایل خودکارِ متصل به مدرسه حذف می‌شوند. بانک س\
-ؤال و فایل‌های دیگر محفوظ‌اند. یک پشتیبان جداگانه نگه دارید.</p><button type="button" class="danger" data-workspace-action="open-wipe">بررسی و تأیید حذف</button\
-></details></section><section id="backupBankPanel" class="backup-hub-panel" role="tabpanel" aria-labelledby="backupBankTab" tabindex="0" hidden inert></section>\
-</div>'}async function openBackups({tab}={}){const request=++backupHubRequest;const ensureCurrent=preserveAsyncTarget();const modal=document.getElementById("mod\
-al");const body=document.getElementById("modalBody");const previousContent=body.firstChild;const previousPage=document.getElementById("app").firstChild;const wasHidden=modal.
-classList.contains("hidden");const initialTab=tab==="school"||tab==="bank"?tab:state.view==="backups"?state.backupTab:window.EduQuestionBankUI?.isPageActive?.()?
-"bank":"school";await writer.catch(()=>{});ensureCurrent();if(request!==backupHubRequest||document.getElementById("app").firstChild!==previousPage||body.firstChild!==
-previousContent||modal.classList.contains("hidden")!==wasHidden)return;if(backupHubSession?.isCurrent()){backupHubSession.selectTab(initialTab);return}state.backupTab=
-initialTab;state.view="backups";render()}function mountBackupHubPage(){backupHubSession?.dispose();const host=document.getElementById("backupPageHost");if(!host||
-state.view!=="backups")return;host.innerHTML=backupHubHtml();const initialTab=state.backupTab==="bank"?"bank":"school";const pageConnection=connection;const pageWorkspace=workspace.
-id;const root=document.getElementById("backupHub");const tabs=Array.from(root.querySelectorAll("[data-backup-tab]"));const panels={school:document.getElementById(
-"backupSchoolPanel"),bank:document.getElementById("backupBankPanel")};let alive=true;let activeTab="";let tabGeneration=0;let disposeBank=null;const isCurrent=expectedTab=>alive&&
-backupHubSession===session&&root.isConnected&&state.view==="backups"&&connection===pageConnection&&workspace.id===pageWorkspace&&(!expectedTab||activeTab===expectedTab);
-const dispose=()=>{if(!alive)return;alive=false;if(backupShareSession?.hub===session)closeBackupShare({restoreFocus:false});disposeBank?.();disposeBank=null;observer.
-disconnect();root.removeEventListener("click",handleTabClick);root.removeEventListener("keydown",handleTabKeydown);if(backupHubSession===session)backupHubSession=
-null};const selectTab=(next,focus=false)=>{if(!isCurrent()||!panels[next])return;if(next!==activeTab){tabGeneration++;if(backupShareSession?.hub===session)closeBackupShare(
-{restoreFocus:false});disposeBank?.();disposeBank=null;panels.bank.replaceChildren();activeTab=next;state.backupTab=next;for(const button of tabs){const selected=button.
-dataset.backupTab===next;button.setAttribute("aria-selected",String(selected));button.tabIndex=selected?0:-1}for(const[key,panel]of Object.entries(panels)){panel.
-hidden=key!==next;panel.inert=key!==next}if(next==="bank")disposeBank=window.EduQuestionBankBackupUI.mount(panels.bank,{isCurrent:()=>isCurrent("bank")});else paintSingleFileBanner()}
-if(focus)tabs.find(button=>button.dataset.backupTab===next)?.focus()};const handleTabClick=event=>{const button=event.target.closest("[data-backup-tab]");if(button&&
-root.contains(button))selectTab(button.dataset.backupTab)};const handleTabKeydown=event=>{if(!event.target.closest("[data-backup-tab]"))return;let next;if(event.
-key==="Home")next="school";else if(event.key==="End")next="bank";else if(event.key==="ArrowRight"||event.key==="ArrowLeft")next=activeTab==="school"?"bank":"sch\
-ool";else return;event.preventDefault();selectTab(next,true)};const observer=new MutationObserver(()=>{if(!isCurrent())dispose()});const captureTab=expectedTab=>{
-const generation=tabGeneration;return()=>isCurrent(expectedTab)&&generation===tabGeneration};const session={isCurrent,captureTab,dispose,selectTab};backupHubSession=
-session;observer.observe(document.getElementById("app"),{childList:true});root.addEventListener("click",handleTabClick);root.addEventListener("keydown",handleTabKeydown);
-selectTab(initialTab)}function chooseBackupImport(){const visibleHub=document.getElementById("backupHub")&&backupHubSession?.isCurrent();const session=visibleHub?
-backupHubSession:null;if(visibleHub&&!session?.isCurrent("school"))throw Error("برای بازیابی اطلاعات مدرسه، تب «اطلاعات مدرسه» را باز کنید.");
-const input=document.getElementById("importFile");backupHubImportOrigin?.cleanup();backupHubImportOrigin=session?{isCurrent:session.captureTab("school")}:null;if(backupHubImportOrigin){
+restoredCount=periods.length}catch(error){if(committedRestore){blocked=true;ready=false;resetScreen("اطلاعات فایل بازیابی شده است؛ تکمیل بازخوانی نیاز به بارگذا\
+ری مجدد دارد. "+error.message)}throw error}finally{if(ownsLoading)periodLoading=false;fullRestoreBusy=false;if(!committedRestore&&hadFileTimer&&singleFile&&
+ready&&!blocked&&!connectionRetired)startSingleFile();lockControls()}if(continuationTarget){try{await continueRestoredSingleFile(continuationTarget,filePermission)}catch(error){
+if(singleFile===continuationTarget)setStatus("اطلاعات بازیابی شد؛ ادامهٔ ذخیره در فایل جدید فعال نشد. "+error.message,
+"pending")}}return restoredCount}function legacyBackupReplacement(parsed){assertSafeDataTree(parsed);if(!isDataObject(parsed))throw Error("ساختار فایل پشتیبان ق\
+دیمی معتبر نیست.");if(parsed.format!==void 0)throw Error("قالب این فایل برای تبدیل پشتیبان قدیمی پشتیبانی نمی‌شود.");
+const validVersion=(value,label)=>{if(value!==void 0&&(!Number.isInteger(value)||value<1||value>26))throw Error("نسخهٔ "+label+" پشتیبانی نمی‌شود.")};
+validVersion(parsed.version,"پشتیبان");validVersion(parsed.schemaVersion,"ساختار");const wrapped=Object.hasOwn(parsed,"db"),source=wrapped?parsed.db:
+parsed;if(!isDataObject(source))throw Error("اطلاعات اصلی فایل پشتیبان معتبر نیست.");if(source!==parsed&&source.format!==void 0)throw Error(
+"قالب اطلاعات داخل پشتیبان قدیمی معتبر نیست.");validVersion(source.schemaVersion,"ساختار");if(source.version!==void 0)
+validVersion(source.version,"اطلاعات");const period=parsed.period;if(period!==void 0&&!isDataObject(period))throw Error("مشخصات سال تحصیلی در فایل معتبر \
+نیست.");if(period?.id!==void 0&&!isSafeRecordId(period.id))throw Error("شناسهٔ اطلاعات فایل پشتیبان معتبر نیست.");if(period?.
+closed!==void 0&&typeof period.closed!=="boolean")throw Error("وضعیت بسته‌بودن اطلاعات فایل معتبر نیست.");if(source.settings!==
+void 0&&!isDataObject(source.settings))throw Error("تنظیمات فایل پشتیبان معتبر نیست.");const outerYear=period?.year===void 0?void 0:EduAcademicYear.
+normalize(period.year);const input=clone(source);input.settings||={};if(input.settings.academicYear===void 0&&outerYear!==void 0)input.settings.academicYear=outerYear;
+if(input.settings.academicTerm===void 0&&period?.term!==void 0)input.settings.academicTerm=period.term;const normalized=normalizeDB(input,{legacy:(source.schemaVersion??
+parsed.version??23)<24}),id=period?.id||"restored-file",now=new Date().toISOString(),exportedAt=typeof parsed.exportedAt==="string"&&Number.isFinite(Date.parse(
+parsed.exportedAt))?parsed.exportedAt:now,catalog={id,year:normalized.settings.academicYear,term:normalized.settings.academicTerm,termKind:academicTermKind(normalized.
+settings.academicTerm),revision:1,closed:period?.closed??false,createdAt:exportedAt,updatedAt:exportedAt},replacement={format:"EduManager.FullBackup",version:2,
+schemaVersion:26,exportedAt,activeWorkspace:id,stores:{catalog:[catalog],records:[...collectRecords(normalized)].map(([logical,value])=>({key:id+"|"+logical,workspace:id,
+logical,value})),events:[],undo:[],reports:[],backups:[]},reportDrafts:{},gradeDrafts:[]};validateFullBackup(replacement);return replacement}async function exportBackupV24(){
+const origin=workspace.id;const ensureSource=()=>{if(!ready||periodLoading||resetBusy||connectionRetired||workspace.id!==origin)throw new Error("ترم هنگام تهیه \
+پشتیبان تغییر کرده است؛ دوباره تلاش کنید.")};ensureSource();let excludedDrafts=0;try{await flushDrafts({strict:true})}catch(error){
+excludedDrafts=drafts.size;setStatus("پشتیبان از آخرین ثبت سالم تهیه می‌شود؛ ویرایش‌های ذخیره‌نشده داخل آن نیستند.",
+"error")}await writer.catch(()=>{});ensureSource();const snapshot=await readWorkspaceSnapshot(origin);ensureSource();const{period,data:durable}=snapshot;const content={
+version:25,exportedAt:new Date().toISOString(),excludedDrafts,period:{year:period.year,term:period.term},db:durable},name="Classyar-Classroom.json",json=JSON.stringify(
+content,null,2);let confirmed=false;if(window.showSaveFilePicker){let writable;try{const handle=await window.showSaveFilePicker({suggestedName:name,types:[{description:"\
+پشتیبان مدرسه",accept:{"application/json":[".json"]}}]});assertClassroomFileName(handle.name);const before=await handle.getFile();await assertSingleFileDestination(
+before);const previousText=await before.text();if(previousText&&previousText!==json)throw Error("برای حفظ فایل قبلی، فایل تازه‌ای انتخاب کنید.");
+const current=await handle.getFile();assertClassroomFileName(current.name);if(await current.text()!==previousText)throw Error("فایل هنگام انتخاب تغییر کرد؛ نوشت\
+ه نشد.");writable=await handle.createWritable();await writable.write(json);await writable.close();writable=null;const file=await handle.getFile();if(!file.size||
+await file.text()!==json)throw new Error("محتوای فایل پس از نوشتن تأیید نشد.");confirmed=true}catch(error){if(writable){try{await writable.
+abort()}catch(ignore){}}if(error.name==="AbortError")return false;downloadJSON(content,name)}}else downloadJSON(content,name);try{localStorage.setItem("Edu24.ex\
+ternalBackup."+origin,JSON.stringify({date:todayISO(),confirmed}))}catch(ignore){}setStatus(confirmed?"فایل پشتیبان مستقل ذخیره شد.":"دان\
+لود پشتیبان درخواست شد؛ وجود فایل را بررسی کنید.","saved");render();return confirmed?"confirmed":"downloaded"}let backupHubSession=null;
+let backupHubRequest=0;let backupHubImportOrigin=null;let backupHubPickerPending=false;function backupHubHtml(){return'<div id="backupHub" class="backup-hub"><d\
+iv class="backup-hub-tabs" role="tablist" aria-label="نوع اطلاعات پشتیبان"><button type="button" id="backupSchoolTab" role="tab" data-backup-tab="school" aria-c\
+ontrols="backupSchoolPanel" aria-selected="true">اطلاعات مدرسه</button><button type="button" id="backupBankTab" role="tab" data-backup-tab="bank" aria-controls=\
+"backupBankPanel" aria-selected="false" tabindex="-1">بانک سؤال و آزمون‌ها</button></div><section id="backupSchoolPanel" class="backup-hub-panel" role="tabpanel\
+" aria-labelledby="backupSchoolTab" tabindex="0"><section class="backup-manual"><h4>پشتیبان دستی</h4><p>کلاس‌ها، هنرجویان، جلسات و نمرات؛ مستقل از بانک سؤال.</p\
+><div class="backup-action-grid"><button type="button" data-workspace-action="export-full">دریافت فایل</button><button type="button" class="ghost backup-share-e\
+ntry" data-workspace-action="prepare-share-backup">ارسال فایل</button><button type="button" class="ghost" data-workspace-action="choose-import" title="بازیابی ا\
+طلاعات فایل و ادامهٔ ذخیره روی همان فایل">بازیابی و ادامه کار</button></div><p id="lastExternalBackupStatus" class="backup-delivery-status" role="status">'+
+esc(lastExternalBackupLabel())+'</p><p class="backup-restore-help">اطلاعات فایل انتخابی بازیابی می‌شود؛ ادامهٔ ذخیره روی همان فایل JSON خواهد بود. فایل TXT و مر\
+ورگر بدون این قابلیت فقط بازیابی می‌شوند.</p></section>'+singleFilePanel()+'<details class="backup-reset"><summary>حذف اطلاعا\
+ت و فایل متصل</summary><p>اطلاعات مدرسه و فقط فایل خودکارِ متصل به مدرسه حذف می‌شوند. بانک سؤال و فایل‌های دیگر محفوظ‌اند. یک پشتیبان جداگانه نگه دارید.</p><but\
+ton type="button" class="danger" data-workspace-action="open-wipe">بررسی و تأیید حذف</button></details></section><section id="backupBankPanel" class="backup-hub\
+-panel" role="tabpanel" aria-labelledby="backupBankTab" tabindex="0" hidden inert></section></div>'}async function openBackups({tab}={}){const request=++backupHubRequest;
+const ensureCurrent=preserveAsyncTarget();const modal=document.getElementById("modal");const body=document.getElementById("modalBody");const previousContent=body.
+firstChild;const previousPage=document.getElementById("app").firstChild;const wasHidden=modal.classList.contains("hidden");const initialTab=tab==="school"||tab===
+"bank"?tab:state.view==="backups"?state.backupTab:window.EduQuestionBankUI?.isPageActive?.()?"bank":"school";await writer.catch(()=>{});ensureCurrent();if(request!==
+backupHubRequest||document.getElementById("app").firstChild!==previousPage||body.firstChild!==previousContent||modal.classList.contains("hidden")!==wasHidden)return;
+if(backupHubSession?.isCurrent()){backupHubSession.selectTab(initialTab);return}state.backupTab=initialTab;state.view="backups";render()}function mountBackupHubPage(){
+backupHubSession?.dispose();const host=document.getElementById("backupPageHost");if(!host||state.view!=="backups")return;host.innerHTML=backupHubHtml();const initialTab=state.
+backupTab==="bank"?"bank":"school";const pageConnection=connection;const pageWorkspace=workspace.id;const root=document.getElementById("backupHub");const tabs=Array.
+from(root.querySelectorAll("[data-backup-tab]"));const panels={school:document.getElementById("backupSchoolPanel"),bank:document.getElementById("backupBankPanel")};
+let alive=true;let activeTab="";let tabGeneration=0;let disposeBank=null;const isCurrent=expectedTab=>alive&&backupHubSession===session&&root.isConnected&&state.
+view==="backups"&&connection===pageConnection&&workspace.id===pageWorkspace&&(!expectedTab||activeTab===expectedTab);const dispose=()=>{if(!alive)return;alive=false;
+if(backupShareSession?.hub===session)closeBackupShare({restoreFocus:false});disposeBank?.();disposeBank=null;observer.disconnect();root.removeEventListener("cli\
+ck",handleTabClick);root.removeEventListener("keydown",handleTabKeydown);if(backupHubSession===session)backupHubSession=null};const selectTab=(next,focus=false)=>{
+if(!isCurrent()||!panels[next])return;if(next!==activeTab){tabGeneration++;if(backupShareSession?.hub===session)closeBackupShare({restoreFocus:false});disposeBank?.();
+disposeBank=null;panels.bank.replaceChildren();activeTab=next;state.backupTab=next;for(const button of tabs){const selected=button.dataset.backupTab===next;button.
+setAttribute("aria-selected",String(selected));button.tabIndex=selected?0:-1}for(const[key,panel]of Object.entries(panels)){panel.hidden=key!==next;panel.inert=
+key!==next}if(next==="bank")disposeBank=window.EduQuestionBankBackupUI.mount(panels.bank,{isCurrent:()=>isCurrent("bank")});else paintSingleFileBanner()}if(focus)
+tabs.find(button=>button.dataset.backupTab===next)?.focus()};const handleTabClick=event=>{const button=event.target.closest("[data-backup-tab]");if(button&&root.
+contains(button))selectTab(button.dataset.backupTab)};const handleTabKeydown=event=>{if(!event.target.closest("[data-backup-tab]"))return;let next;if(event.key===
+"Home")next="school";else if(event.key==="End")next="bank";else if(event.key==="ArrowRight"||event.key==="ArrowLeft")next=activeTab==="school"?"bank":"school";else
+return;event.preventDefault();selectTab(next,true)};const observer=new MutationObserver(()=>{if(!isCurrent())dispose()});const captureTab=expectedTab=>{const generation=tabGeneration;
+return()=>isCurrent(expectedTab)&&generation===tabGeneration};const session={isCurrent,captureTab,dispose,selectTab};backupHubSession=session;observer.observe(document.
+getElementById("app"),{childList:true});root.addEventListener("click",handleTabClick);root.addEventListener("keydown",handleTabKeydown);selectTab(initialTab)}function chooseBackupImport(){
+if(backupHubPickerPending||backupImportReading)throw Error("انتخاب یا خواندن فایل پشتیبان در حال انجام است؛ صبر کنید.");
+const visibleHub=document.getElementById("backupHub")&&backupHubSession?.isCurrent();const session=visibleHub?backupHubSession:null;if(visibleHub&&!session?.isCurrent(
+"school"))throw Error("برای بازیابی اطلاعات مدرسه، تب «اطلاعات مدرسه» را باز کنید.");const input=document.getElementById(
+"importFile");backupHubImportOrigin?.cleanup?.();backupHubImportOrigin=session?{isCurrent:session.captureTab("school")}:null;if(typeof window.showOpenFilePicker===
+"function"){const origin=backupHubImportOrigin;const sourceConnection=connection,sourceWorkspace=workspace?.id,sourceReady=ready,sourceInstallation=typeof installationToken===
+"undefined"?"":installationToken;const check=()=>{if(origin&&!origin.isCurrent()||connection!==sourceConnection||workspace?.id!==sourceWorkspace||ready!==sourceReady||
+resetBusy||periodLoading||sourceReady&&connectionRetired||(typeof installationToken==="undefined"?"":installationToken)!==sourceInstallation)throw Error("صفحه ی\
+ا اطلاعات هنگام انتخاب فایل تغییر کرد؛ دوباره فایل را انتخاب کنید.")};backupHubPickerPending=true;let selection;
+try{selection=window.showOpenFilePicker({multiple:false,excludeAcceptAllOption:true,types:[{description:"پشتیبان مدرسه",accept:{"application/json":[
+".json"],"text/plain":[".txt"]}}]})}catch(error){backupHubPickerPending=false;throw error}return(async()=>{try{const[handle]=await selection;check();if(!handle)
+return false;const file=await handle.getFile();check();return await handleImportV24({target:{files:[file],value:""}},{fileHandle:handle,importOrigin:origin})}catch(error){
+if(error.name!=="AbortError")throw error;return false}finally{backupHubPickerPending=false;if(backupHubImportOrigin===origin)backupHubImportOrigin=null}})()}if(backupHubImportOrigin){
 const origin=backupHubImportOrigin;const cancel=()=>{if(backupHubImportOrigin===origin)backupHubImportOrigin=null;origin.cleanup()};origin.cleanup=()=>input.removeEventListener(
 "cancel",cancel);input.addEventListener("cancel",cancel,{once:true})}input.click()}function previewImport(candidate,label){const preview={candidate,label,workspace:workspace?.
 id,revision:workspace?.revision,installation:typeof installationToken==="undefined"?"":installationToken};const classes=candidate.schools.flatMap(s=>s.classes),
@@ -1592,42 +1636,47 @@ migrationWarnings?.length?'<p role="alert">'+esc(candidate.migrationWarnings.joi
 رداند؛ نوبت جدید ساخته نمی‌شود. نمره‌های پودمانی مشترکِ همین سال نیز به‌روز می‌شوند؛ نمرات نوبتیِ دیگر و سایر سال‌ها تغییر نمی‌کنند.</p><button data-workspace-a\
 ction="export-period">۱. ذخیره پشتیبان اطلاعات فعلی</button><p><label><input id="restoreExternalConfirmed" type="checkbox"> نسخه فعلی را در فایل مستقل ذخیره و ب\
 ررسی کرده‌ام.</label></p><button data-mutating="1" data-workspace-action="confirm-import">۲. بازیابی اطلاعات همین نوبت</button><p id="operationError" role="aler\
-t"></p>');if(opened!==false)pendingImport=preview}let backupImportReading=false;async function handleImportV24(e,{fullSystemOnly=false,replaceSystem=true}={}){const file=e.
-target.files[0];const uiOrigin=backupHubImportOrigin;uiOrigin?.cleanup();backupHubImportOrigin=null;if(!file)return;if(backupImportReading){e.target.value="";handleError(
-new Error("خواندن فایل پشتیبان در حال انجام است؛ صبر کنید."));return}if(replaceSystem&&fullRestoreBusy){e.target.value="";
-handleError(Error("بازیابی اطلاعات مدرسه در حال انجام است؛ تا پایان آن صبر کنید."));return}if(replaceSystem){pendingFullBackup=
-null;pendingFullBackupSignature="";pendingImport=null}backupImportReading=true;const startedReady=ready;const origin=workspace?.id;let expectedConnection=connection;
-const ensureDestination=()=>{if(uiOrigin&&!uiOrigin.isCurrent())throw Error("پنجرهٔ بازیابی بسته یا عوض شده است؛ فایل را دوباره انتخاب کنید.");
-if(ready!==startedReady||workspace?.id!==origin||resetBusy||periodLoading||startedReady&&connectionRetired||replaceSystem&&connection!==expectedConnection)throw Error(
-"مقصد بازیابی هنگام خواندن فایل تغییر کرد؛ فایل را دوباره انتخاب کنید.")};const previewReplacement=async(value,details)=>{
-if(!ready&&(!connection||connectionRetired)){validateFullBackup(value);const opened=await openDatabase();try{ensureDestination()}catch(error){opened.close();throw error}
-expectedConnection=opened;connection=opened;connectionRetired=false}ensureDestination();previewFullBackup(value,details)};try{ensureDestination();assertClassroomFileName(
-file.name,{allowText:true});if(file.size>100*1024*1024&&!confirm("حجم این فایل پشتیبان حدود "+Math.ceil(file.size/1048576).toLocaleString("\
-fa-IR")+" مگابایت است. خواندن آن ممکن است زمان‌بر باشد و حافظهٔ زیادی مصرف کند؛ روی دستگاه کم‌حافظه از رایانه استفاده کنید.\nفقط فایل مورداعتماد خودتان را باز کن\
-ید. خواندن و بررسی فایل ادامه پیدا کند؟ تا تأیید نهایی بازیابی، اطلاعات فعلی تغییر نمی‌کند."))
-return;ensureDestination();const parsed=JSON.parse(await file.text());ensureDestination();if(!parsed||typeof parsed!=="object"||Array.isArray(parsed))throw Error(
-"ساختار فایل پشتیبان معتبر نیست.");if(parsed.format==="EduManager.FullBackup"){if(replaceSystem)await previewReplacement(parsed,{sourceName:file.
-name});else previewFullBackup(parsed);return}if(replaceSystem){const replacement=legacyBackupReplacement(parsed);await previewReplacement(replacement,{sourceName:file.
-name,legacy:true});return}if(fullSystemOnly)throw Error("این فایل پشتیبان کامل مدرسه نیست. فایل کامل شامل اطلاعات سال تحصیلی، هر دو ترم، مدرسه‌ها، کلاس‌ها و هنر\
-جویان را انتخاب کنید؛ اطلاعات فعلی تغییر نکرده است.");if(parsed.version!==void 0&&(!Number.isInteger(parsed.version)||
-parsed.version>26||parsed.version<1))throw Error("نسخه پشتیبان پشتیبانی نمی‌شود.");const source=parsed.db||parsed;if(source.schemaVersion>
-26)throw Error("نسخه ساختار جدیدتر پشتیبانی نمی‌شود.");const candidate=normalizeDB(source,{legacy:(source.schemaVersion??parsed.
-version??23)<24});if(!ready){if(!connection){const opened=await openDatabase();try{ensureDestination();if(connection&&connection!==opened)throw Error("اتصال بان\
-ک هنگام بازیابی تغییر کرده است.")}catch(error){if(connection!==opened)opened.close();throw error}connection=opened}ensureDestination();
-const recoveryConnection=connection;const ensureRecovery=()=>{ensureDestination();if(connection!==recoveryConnection)throw Error("اتصال بانک هنگام بازیابی تغییر\
- کرده است.")};const created=await installWorkspace(candidate,{id:uid(),year:candidate.settings.academicYear,term:candidate.settings.academicTerm});ensureRecovery();
-const loaded=await readWorkspace(created.id);ensureRecovery();workspace=created;db=loaded.data;committed=loaded.records;ready=true;blocked=false;storageBlocked=
-false;isAuthenticated=false;rememberPeriod(workspace.id);render();return}await flushDrafts({strict:true});ensureDestination();previewImport(candidate,file.name)}catch(error){
-handleError(error)}finally{backupImportReading=false;e.target.value=""}}let periodImportBusy=false;async function confirmImport(){if(periodImportBusy)throw Error(
-"بازیابی در حال انجام است؛ تا پایان آن صبر کنید.");periodImportBusy=true;try{if(fileMode)throw Error("این عملیات را در نسخه\
- نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.");if(!pendingImport||pendingImport.workspace!==workspace.id)throw Error("پیش‌نمایش\
- بازیابی منقضی شده است.");const preview=pendingImport,expectedInstallation=preview.installation??"";const context={id:preview.workspace,revision:preview.
-revision};const check=(write=false)=>{if((typeof installationToken==="undefined"?"":installationToken)!==expectedInstallation)throw Object.assign(Error("اطلاعات\
- جایگزین شده است؛ پیش‌نمایش پشتیبان را دوباره باز کنید."),{code:"INSTALLATION_CHANGED"});assertWorkspaceContext(context,
-{write});if(pendingImport!==preview)throw Error("پیش‌نمایش بازیابی تغییر کرده است؛ دوباره بررسی کنید.")};check();const savedKind=academicTermKind(
-preview.candidate.settings.academicTerm);const targetKind=workspace.termKind||academicTermKind(workspace.term);if(preview.candidate.settings.academicYear!==workspace.
-year||(savedKind&&targetKind?savedKind!==targetKind:normalizedName(preview.candidate.settings.academicTerm)!==normalizedName(workspace.term)))throw Error("این ف\
-ایل متعلق به نوبت فعلی نیست؛ همان سال و نوبت را باز کنید یا از پشتیبان کامل مدرسه استفاده کنید.");
+t"></p>');if(opened!==false)pendingImport=preview}let backupImportReading=false;async function handleImportV24(e,{fullSystemOnly=false,replaceSystem=true,fileHandle=null,
+importOrigin}={}){const file=e.target.files[0];const uiOrigin=importOrigin===void 0?backupHubImportOrigin:importOrigin;uiOrigin?.cleanup?.();backupHubImportOrigin=
+null;if(!file)return;if(backupImportReading){e.target.value="";handleError(new Error("خواندن فایل پشتیبان در حال انجام است؛ صبر کنید."));
+return}if(replaceSystem&&fullRestoreBusy){e.target.value="";handleError(Error("بازیابی اطلاعات مدرسه در حال انجام است؛ تا پایان آن صبر کنید."));
+return}if(replaceSystem){pendingFullBackup=null;pendingFullBackupSignature="";if(typeof pendingFullBackupFile!=="undefined")pendingFullBackupFile=null;pendingImport=
+null}backupImportReading=true;const startedReady=ready;const origin=workspace?.id;const expectedInstallation=typeof installationToken==="undefined"?"":installationToken;
+let expectedConnection=connection;const ensureDestination=()=>{if(uiOrigin&&!uiOrigin.isCurrent())throw Error("پنجرهٔ بازیابی بسته یا عوض شده است؛ فایل را دوبار\
+ه انتخاب کنید.");if(ready!==startedReady||workspace?.id!==origin||(typeof installationToken==="undefined"?"":installationToken)!==expectedInstallation||
+resetBusy||periodLoading||startedReady&&connectionRetired||replaceSystem&&connection!==expectedConnection)throw Error("مقصد بازیابی هنگام خواندن فایل تغییر کرد؛\
+ فایل را دوباره انتخاب کنید.")};const previewReplacement=async(value,details)=>{if(!ready&&(!connection||connectionRetired)){validateFullBackup(
+value);const opened=await openDatabase();try{ensureDestination()}catch(error){opened.close();throw error}expectedConnection=opened;connection=opened;connectionRetired=
+false}ensureDestination();previewFullBackup(value,details)};try{ensureDestination();assertClassroomFileName(file.name,{allowText:true});if(file.size>100*1024*1024&&
+!confirm("حجم این فایل پشتیبان حدود "+Math.ceil(file.size/1048576).toLocaleString("fa-IR")+" مگابایت است. خواندن آن ممکن است زمان‌بر باشد و\
+ حافظهٔ زیادی مصرف کند؛ روی دستگاه کم‌حافظه از رایانه استفاده کنید.\nفقط فایل مورداعتماد خودتان را باز کنید. خواندن و بررسی فایل ادامه پیدا کند؟ تا تأیید نهایی ب\
+ازیابی، اطلاعات فعلی تغییر نمی‌کند."))return;ensureDestination();const text=await file.text();if(!text.trim())throw Error("فایل خ\
+الی قابل بازیابی نیست؛ برای ذخیرهٔ اطلاعات فعلی در آن، «انتخاب فایل برای ذخیره» را بزنید.");
+const parsed=JSON.parse(text.replace(/^\uFEFF/,""));ensureDestination();const sourceFile=fileHandle&&/\.json$/i.test(file.name)&&typeof window.showSaveFilePicker===
+"function"?Object.freeze({handle:fileHandle,name:file.name,size:file.size,modified:file.lastModified,text}):null;if(sourceFile){assertClassroomFileName(fileHandle.
+name);if(fileHandle.name!==file.name)throw Error("فایل انتخاب‌شده تغییر کرد؛ دوباره انتخاب کنید.")}if(!parsed||typeof parsed!==
+"object"||Array.isArray(parsed))throw Error("ساختار فایل پشتیبان معتبر نیست.");if(parsed.format==="EduManager.FullBackup"){if(replaceSystem)
+await previewReplacement(parsed,{sourceName:file.name,sourceFile});else previewFullBackup(parsed);return}if(replaceSystem){const replacement=legacyBackupReplacement(
+parsed);await previewReplacement(replacement,{sourceName:file.name,sourceFile,legacy:true});return}if(fullSystemOnly)throw Error("این فایل پشتیبان کامل مدرسه نی\
+ست. فایل کامل شامل اطلاعات سال تحصیلی، هر دو ترم، مدرسه‌ها، کلاس‌ها و هنرجویان را انتخاب کنید؛ اطلاعات فعلی تغییر نکرده است.");
+if(parsed.version!==void 0&&(!Number.isInteger(parsed.version)||parsed.version>26||parsed.version<1))throw Error("نسخه پشتیبان پشتیبانی نمی‌شود.");
+const source=parsed.db||parsed;if(source.schemaVersion>26)throw Error("نسخه ساختار جدیدتر پشتیبانی نمی‌شود.");const candidate=normalizeDB(
+source,{legacy:(source.schemaVersion??parsed.version??23)<24});if(!ready){if(!connection){const opened=await openDatabase();try{ensureDestination();if(connection&&
+connection!==opened)throw Error("اتصال بانک هنگام بازیابی تغییر کرده است.")}catch(error){if(connection!==opened)opened.close();
+throw error}connection=opened}ensureDestination();const recoveryConnection=connection;const ensureRecovery=()=>{ensureDestination();if(connection!==recoveryConnection)
+throw Error("اتصال بانک هنگام بازیابی تغییر کرده است.")};const created=await installWorkspace(candidate,{id:uid(),year:candidate.
+settings.academicYear,term:candidate.settings.academicTerm});ensureRecovery();const loaded=await readWorkspace(created.id);ensureRecovery();workspace=created;db=
+loaded.data;committed=loaded.records;ready=true;blocked=false;storageBlocked=false;isAuthenticated=false;rememberPeriod(workspace.id);render();return}await flushDrafts(
+{strict:true});ensureDestination();previewImport(candidate,file.name)}catch(error){handleError(error)}finally{backupImportReading=false;e.target.value=""}}let periodImportBusy=false;
+async function confirmImport(){if(periodImportBusy)throw Error("بازیابی در حال انجام است؛ تا پایان آن صبر کنید.");periodImportBusy=
+true;try{if(fileMode)throw Error("این عملیات را در نسخه نصب‌شده برنامه یا نشانی HTTPS آن انجام دهید.");if(!pendingImport||
+pendingImport.workspace!==workspace.id)throw Error("پیش‌نمایش بازیابی منقضی شده است.");const preview=pendingImport,expectedInstallation=preview.
+installation??"";const context={id:preview.workspace,revision:preview.revision};const check=(write=false)=>{if((typeof installationToken==="undefined"?"":installationToken)!==
+expectedInstallation)throw Object.assign(Error("اطلاعات جایگزین شده است؛ پیش‌نمایش پشتیبان را دوباره باز کنید."),
+{code:"INSTALLATION_CHANGED"});assertWorkspaceContext(context,{write});if(pendingImport!==preview)throw Error("پیش‌نمایش بازیابی تغییر کرده است؛ دوباره بررسی کن\
+ید.")};check();const savedKind=academicTermKind(preview.candidate.settings.academicTerm);const targetKind=workspace.termKind||academicTermKind(workspace.term);
+if(preview.candidate.settings.academicYear!==workspace.year||(savedKind&&targetKind?savedKind!==targetKind:normalizedName(preview.candidate.settings.academicTerm)!==
+normalizedName(workspace.term)))throw Error("این فایل متعلق به نوبت فعلی نیست؛ همان سال و نوبت را باز کنید یا از پشتیبان کامل مدرسه استفاده کنید.");
 if(!document.getElementById("restoreExternalConfirmed").checked){handleError(Error("ابتدا نسخه مستقل را ذخیره و وجود فایل را تأیید کنید."));
 return}if(workspace.closed)throw Error("ترم بسته است؛ برای بازیابی در آن ابتدا ترم را بازگشایی کنید.");if(!confirm(
 "اطلاعات این ترم با نسخه پیش‌نمایش جایگزین شود؟"))return;await flushDrafts({strict:true});await writer.catch(()=>{});check(

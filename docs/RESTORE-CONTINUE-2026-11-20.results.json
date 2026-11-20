@@ -1,0 +1,464 @@
+{
+  "schemaVersion": 1,
+  "task": "restore-and-continue-saving-to-the-same-file",
+  "executedAt": "2026-11-20T10:46:46.386Z",
+  "baseCommit": "c428181ddc450dc0b730af02e52447609bfff231",
+  "environment": {
+    "node": "v24.21.0",
+    "platform": "win32",
+    "browser": "Microsoft Edge / Chromium with disposable synthetic origins"
+  },
+  "releaseVersion": "f3c30efcf0072d31",
+  "production": {
+    "bundles": 37,
+    "mappedSources": 338,
+    "changedSources": [
+      {
+        "path": "src/features/question-bank/backup-ui.js",
+        "beforeSha256": "b90ab868a32f137397e9322a0f479a8b2ff0f2750e5f3768b454b1e412af1e69",
+        "sha256": "4bfe632c2a66268c73f4647e7077f4973b325c3abd294d5bf7ef783595ac0c5a"
+      },
+      {
+        "path": "src/features/question-bank/file-backup.js",
+        "beforeSha256": "c2965e93e824bf88c7d564d58e1ac7b70d3b82b19b66692113a1333e028f39df",
+        "sha256": "1a7f5c54d6a758265708d4ebc2456ae086f99bbeb0a6122b70bf6ca980907817"
+      },
+      {
+        "path": "src/features/question-bank/ui.js",
+        "beforeSha256": "5ac4297c15746ab6de60b00630a00267953b2d6f7d759cf355a337b310a8f5cc",
+        "sha256": "742d5c5bc0a024a9c2060ade570c10a836fa1c11060cfad6922fe5f29f08b092"
+      },
+      {
+        "path": "src/styles/backups/page.css",
+        "beforeSha256": "fa7aec43a237bcbac13c070a3cda6dbbdd8abc9bba93bb510d55b8d949a97354",
+        "sha256": "9ba4761bbf42b5595829e91019eb0d32bced67cb5a9715be7b8a6d29a4a6ec25"
+      },
+      {
+        "path": "src/ui/backup-automatic-view.js",
+        "beforeSha256": "932cd0accf01566fdac89d95583dee2b76b3ae8772d2e7c0a5624c667a575211",
+        "sha256": "53a3aef0d5c2cbbed1018602b83acfd13526eb6c71f9ccf342924f5dbf30ca85"
+      },
+      {
+        "path": "src/workspace/backups/full-restore.js",
+        "beforeSha256": "4f15652f44040fa0ebd6f411347d724a9ae05f54a3a278f6a3f2084fff633fa3",
+        "sha256": "a575a91fffaa93a330ed2ad475d604fa3199ca15b3e11236a3f6b4a3a5ca7900"
+      },
+      {
+        "path": "src/workspace/backups/period-import.js",
+        "beforeSha256": "8dbc5263701fdb7088756f8e10154fcf34888e62dc825570562a5870191de561",
+        "sha256": "d6f336ed6d850978c3891689e566877c4b86f28856a6c69307462a430c9a1ab8"
+      },
+      {
+        "path": "src/workspace/backups/single-file.js",
+        "beforeSha256": "836c6494094f436c0386057bb17c1ba30430a1712d994edccdc213cfad262a91",
+        "sha256": "7fdd31df0af3a8dd1d3df57a8955c024d728687b6b3b1557be8fff7fcfc257fc"
+      }
+    ],
+    "unchangedContracts": [
+      {
+        "path": "source-map.json",
+        "sha256": "a6b9dcf5ca68ca88eb95bfc7629a5a2d048b148be75679e33b6e4e19dc40c7bb",
+        "byteIdenticalToBaseline": true
+      },
+      {
+        "path": "package.json",
+        "sha256": "5744441e8b7bfe5d032c29bb83a4a4ae9780aafd52b34d2bd6cff9714bf78fbe",
+        "byteIdenticalToBaseline": true
+      },
+      {
+        "path": "package-lock.json",
+        "sha256": "e177664c837623fd730f87d9815e7a6d0848d267796d093cf9ab04bec215f7e7",
+        "byteIdenticalToBaseline": true
+      },
+      {
+        "path": "src/data/schema.js",
+        "sha256": "8db34a7bb42e9f7c0e94a12f74860b1e5464a6afa92d8d9843192c12d35aaabd",
+        "byteIdenticalToBaseline": true
+      },
+      {
+        "path": "src/features/question-bank/domain.js",
+        "sha256": "cf4ff588924d237783ef19f4d50506feb2ef849e548a4aa88ebf0ac123e4a3f6",
+        "byteIdenticalToBaseline": true
+      },
+      {
+        "path": "src/features/question-bank/repository.js",
+        "sha256": "087baa6012237d1b0cb8c88a119cb97e474540727951791c30f175066016dd79",
+        "byteIdenticalToBaseline": true
+      },
+      {
+        "path": "src/workspace/backups/single-file-name.js",
+        "sha256": "17255b4c606e405a92aee83b7a190f55287a902e41b7b640d7048facb84b726b",
+        "byteIdenticalToBaseline": true
+      },
+      {
+        "path": "EduManager.html",
+        "sha256": "5e9490f8cc128e1998453ad1d6743a568f8043d40aecb50b3163833984f9edad",
+        "byteIdenticalToBaseline": true
+      },
+      {
+        "path": "index.html",
+        "sha256": "f3d37f3a4c1cf7aca689c060745cd053b3a6a92761ce25f7cd0a185fcb1c4880",
+        "byteIdenticalToBaseline": true
+      },
+      {
+        "path": "app.webmanifest",
+        "sha256": "6fadd95698464e5c09214c6f8293ffc2955738e7567a0cbc9d402167bca76aa1",
+        "byteIdenticalToBaseline": true
+      }
+    ]
+  },
+  "workflows": {
+    "saveDestination": "Writes current application data to a selected valid destination; never imports its data. New/zero-byte destination allowed; different populated bank destination rejected, classroom populated destination needs explicit overwrite consent.",
+    "restoreContinue": "Retains actual selected JSON handle and pinned source bytes; validates and previews, restores only after confirmation, replaces old destination only after successful restore, then verifies source save with permission.",
+    "deniedPermission": "Restore succeeds with new source pending; Save now retries THAT source. Old destination is never automatically resumed.",
+    "fallback": "TXT, read-only File input and unsupported platforms restore only; explicit no-auto-connection status.",
+    "guards": [
+      "wrong filename/scope/schema",
+      "empty restore source",
+      "source change including same size/time",
+      "preview/UI/install/connection/revision replacement",
+      "rollback",
+      "postcommit readback/write failure",
+      "concurrent file writers",
+      "large data-loss confirmation",
+      "real editor drafts distinguished from this operation's file busy state"
+    ]
+  },
+  "unitTests": {
+    "total": 3510,
+    "passed": 3510,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "increaseOverBaseline": 74
+  },
+  "browserStages": [
+    {
+      "stage": "4-adversarial-workflow-review",
+      "total": 2386,
+      "passed": 2386,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-vmZb5z\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "923c0be14a549e24"
+    },
+    {
+      "stage": "calendar-real-browser-lifecycle-and-viewports",
+      "total": 302,
+      "passed": 302,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-wR5zte\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "923c0be14a549e24"
+    },
+    {
+      "stage": "question-bank",
+      "total": 561,
+      "passed": 561,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-mJ0pER\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "923c0be14a549e24"
+    },
+    {
+      "stage": "question-bank-business",
+      "total": 283,
+      "passed": 283,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-gLGF1X\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "923c0be14a549e24"
+    },
+    {
+      "stage": "question-bank-sample",
+      "total": 229,
+      "passed": 229,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-z1X6vF\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "923c0be14a549e24"
+    },
+    {
+      "stage": "unified-backup-hub",
+      "total": 317,
+      "passed": 317,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-GiXSlO\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "923c0be14a549e24"
+    },
+    {
+      "stage": "question-bank-import",
+      "total": 257,
+      "passed": 257,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-xMEyvE\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "923c0be14a549e24"
+    },
+    {
+      "stage": "modular-unit-grading",
+      "total": 255,
+      "passed": 255,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-j3WtQe\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "923c0be14a549e24"
+    },
+    {
+      "stage": "modular-unit-karnameh-layout",
+      "total": 345,
+      "passed": 345,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-Vks8UP\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "923c0be14a549e24"
+    },
+    {
+      "stage": "period-deletion",
+      "total": 277,
+      "passed": 277,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-cuePGm\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "923c0be14a549e24"
+    },
+    {
+      "stage": "gradebook-mobile-layout",
+      "total": 266,
+      "passed": 266,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-qyxXmx\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "923c0be14a549e24"
+    },
+    {
+      "stage": "single-academic-year-ui",
+      "total": 235,
+      "passed": 235,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-HJnSC7\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "923c0be14a549e24"
+    },
+    {
+      "stage": "annual-backup-file-scale",
+      "total": 239,
+      "passed": 239,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-bZ968d\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "923c0be14a549e24"
+    },
+    {
+      "stage": "theme-reactium-acceptance",
+      "total": 411,
+      "passed": 411,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-qZt2Sd\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "923c0be14a549e24"
+    },
+    {
+      "stage": "logo-ui-pwa",
+      "total": 269,
+      "passed": 269,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-M7fOtZ\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "923c0be14a549e24"
+    },
+    {
+      "stage": "navbar-layout",
+      "total": 679,
+      "passed": 679,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-Th5dmi\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "923c0be14a549e24"
+    },
+    {
+      "stage": "school-create-ui",
+      "total": 340,
+      "passed": 340,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-2lRP4q\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "923c0be14a549e24"
+    },
+    {
+      "stage": "record-edit-access",
+      "total": 265,
+      "passed": 265,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-l7FSlP\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "923c0be14a549e24"
+    },
+    {
+      "stage": "timetable-edit-access",
+      "total": 236,
+      "passed": 236,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-URI54f\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "923c0be14a549e24"
+    },
+    {
+      "stage": "week-settings",
+      "total": 246,
+      "passed": 246,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-4MXopi\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "923c0be14a549e24"
+    },
+    {
+      "stage": "report-review-browser",
+      "total": 233,
+      "passed": 233,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-vSQ9t9\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "923c0be14a549e24"
+    },
+    {
+      "stage": "report-excel-offline",
+      "total": 251,
+      "passed": 251,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-dxE7lB\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "923c0be14a549e24"
+    },
+    {
+      "stage": "guarded-report-copy-two-windows",
+      "total": 236,
+      "passed": 236,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-9P8yBQ\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "923c0be14a549e24"
+    },
+    {
+      "stage": "academic-karnameh-excel",
+      "total": 269,
+      "passed": 269,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-Q90T4c\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "923c0be14a549e24"
+    },
+    {
+      "stage": "individual-student-grade-sheet",
+      "total": 273,
+      "passed": 273,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-ElZbv6\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "923c0be14a549e24"
+    },
+    {
+      "stage": "question-bank-output",
+      "total": 242,
+      "passed": 242,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-DbPNrb\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "923c0be14a549e24"
+    },
+    {
+      "stage": "session-history-pagination",
+      "total": 240,
+      "passed": 240,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-e1nbVZ\\data-integrity-results.json",
+      "failures": [],
+      "applicationRelease": "923c0be14a549e24"
+    }
+  ],
+  "browserChecksIncludingRepeatedHarness": 10142,
+  "focusedNativeAcceptance": {
+    "stages": [
+      {
+        "stage": "restore-continue-only",
+        "total": 238,
+        "passed": 238,
+        "failed": 0,
+        "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-Qo28xc\\data-integrity-results.json",
+        "failures": [],
+        "applicationRelease": "923c0be14a549e24"
+      }
+    ],
+    "newAssertions": 12,
+    "nativeHandleStorage": "Origin-private file system native FileSystemFileHandle; picker and permission responses controlled by audit; two independent application databases"
+  },
+  "releaseGate": {
+    "execution": "Staged completion of all check:release constituent checks on the identical frozen application build",
+    "initialCommand": "npm run check:release",
+    "initialExitCode": 1,
+    "initialLog": ".cache/restore-continue-release-20261120.log",
+    "initialFailure": "Browser audit still clicked the old automatic action label. Updated three exact copy expectations; no production changes after the initial run.",
+    "completedInitialChecks": [
+      "format:check",
+      "lint",
+      "test:unit",
+      "assets-contract",
+      "data-store-contract",
+      "workflow-review",
+      "test:calendar"
+    ],
+    "remainingRuns": [
+      {
+        "command": "npm run test:question-bank",
+        "exitCode": 1,
+        "log": ".cache/restore-continue-question-bank-final-20261120.log",
+        "completedSuites": 3,
+        "failure": "New native-file audit observed updated bytes before the save service finished its verified connection-state commit. Adjusted polling to wait for both the saved bytes and active connection, preserving all final assertions."
+      },
+      {
+        "command": "node audit/unified-backup-hub-browser.cjs",
+        "exitCode": 0,
+        "log": ".cache/restore-continue-hub-final-20261120.log"
+      },
+      {
+        "command": "npm run test:question-import",
+        "exitCode": 0,
+        "log": ".cache/restore-continue-import-final-20261120.log"
+      },
+      {
+        "command": "test:modular-unit through test:session-history, in the original check:release order",
+        "exitCode": 0,
+        "log": ".cache/restore-continue-release-remainder-20261120.log"
+      }
+    ],
+    "lintRerunAfterAuditCopyFix": {
+      "command": "npm run format:check && npm run lint",
+      "exitCode": 0,
+      "log": ".cache/restore-continue-final-style-20261120.log"
+    }
+  },
+  "packageValidation": {
+    "command": "npm run release:package",
+    "expectedFiles": 83,
+    "actualFiles": 83,
+    "matchingFiles": 83,
+    "unexpectedFiles": 0,
+    "bytes": 6439288,
+    "sha256": "923c0be14a549e2477e05abc6a32f824fd88d0f771d694c2c5e4a22012f9b4ff",
+    "published": false
+  },
+  "implementationFindingsFixed": [
+    "Native read context now also pins installation token",
+    "File busy no longer self-invalidates restore continuation, actual editor changes still cancel",
+    "Long automatic-action labels retain compact mobile layout",
+    "Permission for restored source does not approve subsequent large data loss"
+  ],
+  "boundaries": [
+    "Synthetic data only; no personal files opened or changed",
+    "No physical Android/iPhone or actual operating-system picker/share/printer acceptance",
+    "Portable JSON/schema/dependency versions unchanged; source handles/hashes remain device-local",
+    "No external-editor cross-process transaction guarantee",
+    "Package prepared locally; no publication, commit or push"
+  ]
+}

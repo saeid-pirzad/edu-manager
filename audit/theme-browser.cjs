@@ -505,7 +505,7 @@ async function run({ cdp, evaluate, cases, delay }) {
           const expectedOpen = name === "backups-automatic-open",
             automatic = observed.backupAutomatic,
             chooseSamples = observed.samples.filter(
-              (sample) => sample.text === "انتخاب فایل",
+              (sample) => sample.text === "انتخاب فایل برای ذخیره",
             );
           add(
             `THEME_BACKUP_DISCLOSURE_${width}_${expectedOpen ? "OPEN" : "CLOSED"}`,

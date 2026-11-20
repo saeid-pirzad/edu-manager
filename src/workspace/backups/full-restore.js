@@ -12,14 +12,20 @@ const validateFullBackup = EduFullBackupValidator.create({
 });
 let pendingFullBackup = null,
   pendingFullBackupSignature = "",
+  pendingFullBackupFile = null,
   fullRestoreBusy = false;
-function previewFullBackup(value, { sourceName = "", legacy = false } = {}) {
+function previewFullBackup(
+  value,
+  { sourceName = "", legacy = false, sourceFile = null } = {},
+) {
   if (fullRestoreBusy)
     throw Error("بازیابی کامل در حال انجام است؛ تا پایان آن صبر کنید.");
   const previous = pendingFullBackup,
-    previousSignature = pendingFullBackupSignature;
+    previousSignature = pendingFullBackupSignature,
+    previousFile = pendingFullBackupFile;
   pendingFullBackup = null;
   pendingFullBackupSignature = "";
+  pendingFullBackupFile = null;
   const prepared = validateFullBackup.prepare(value);
   value = prepared.value;
   const periods = prepared.periods;
@@ -51,6 +57,11 @@ function previewFullBackup(value, { sourceName = "", legacy = false } = {}) {
   const exportedAt = Number.isFinite(date.getTime())
     ? date.toLocaleString("fa-IR")
     : "در فایل ثبت نشده";
+  const fileContinuationMessage = sourceFile
+    ? "<p>پس از بازیابی، ادامهٔ ذخیره در فایل «" +
+      esc(sourceFile.name) +
+      "» انجام می‌شود. اتصال قبلی کنار گذاشته می‌شود؛ اگر مجوز نوشتن صادر نشود، اطلاعات بازیابی می‌شود و فایل جدید تا دریافت مجوز متوقف می‌ماند.</p>"
+    : "<p>در این روش فقط اطلاعات بازیابی می‌شود؛ فایل ورودی به ذخیرهٔ خودکار وصل نمی‌شود. اتصال قبلی متوقف می‌ماند. برای فایل TXT یا مرورگر بدون پشتیبانی، از پشتیبان‌گیری دستی استفاده کنید.</p>";
   const opened = showModal(
     "بازیابی اطلاعات مدرسه",
     '<div class="full-restore"><section class="full-restore-file" aria-label="مشخصات پشتیبان"><h4>پشتیبان کامل مدرسه</h4><dl><div><dt>زمان تهیه</dt><dd>' +
@@ -87,15 +98,40 @@ function previewFullBackup(value, { sourceName = "", legacy = false } = {}) {
       (legacyContent
         ? '<p class="full-restore-warning" role="status">این فایل سوابق قدیمی چند سال یا عنوان نوبت قدیمی دارد. همهٔ اطلاعات فایل بدون حذف یا ادغام حفظ می‌شوند؛ رابط برنامه در سالِ اطلاعات فعال داخل همین فایل باز می‌شود. پشتیبان‌گیری مستقل از نوبت اول و دوم است.</p>'
         : "") +
-      '<section class="full-restore-warning"><h4>اطلاعات مدرسه جایگزین می‌شود</h4><p>تمام اطلاعات مدرسه به وضعیت این فایل برمی‌گردد؛ اطلاعات فایل با داده‌های فعلی ادغام نمی‌شود. بانک سؤال و آزمون‌ها جدا هستند و تغییر نمی‌کنند.</p><p>نوبت جدید یا تکراری ساخته نمی‌شود و وضعیت باز یا بستهٔ نوبت‌ها مطابق فایل خواهد بود.</p><p>ذخیره خودکار فایل مدرسه پس از بازیابی متوقف می‌ماند؛ فایل قبلی بدون تأیید جداگانهٔ شما جایگزین نمی‌شود.</p></section><label class="full-restore-confirm" for="fullRestoreConfirmed"><input type="checkbox" id="fullRestoreConfirmed"><span>می‌دانم تمام اطلاعات فعلی مدرسه با محتوای این فایل جایگزین می‌شود.</span></label><p id="operationError" role="alert"></p><div class="full-restore-actions"><button type="button" class="danger" data-full-restore data-workspace-action="restore-full">تأیید و بازیابی مدرسه</button><button type="button" class="ghost" data-workspace-action="close">انصراف</button></div></div>',
+      '<section class="full-restore-warning"><h4>اطلاعات مدرسه جایگزین می‌شود</h4><p>تمام اطلاعات مدرسه به وضعیت این فایل برمی‌گردد؛ اطلاعات فایل با داده‌های فعلی ادغام نمی‌شود. بانک سؤال و آزمون‌ها جدا هستند و تغییر نمی‌کنند.</p><p>نوبت جدید یا تکراری ساخته نمی‌شود و وضعیت باز یا بستهٔ نوبت‌ها مطابق فایل خواهد بود.</p>' +
+      fileContinuationMessage +
+      '</section><label class="full-restore-confirm" for="fullRestoreConfirmed"><input type="checkbox" id="fullRestoreConfirmed"><span>می‌دانم تمام اطلاعات فعلی مدرسه با محتوای این فایل جایگزین می‌شود.</span></label><p id="operationError" role="alert"></p><div class="full-restore-actions"><button type="button" class="danger" data-full-restore data-workspace-action="restore-full">' +
+      (sourceFile ? "تأیید بازیابی و ادامه کار" : "تأیید و بازیابی مدرسه") +
+      '</button><button type="button" class="ghost" data-workspace-action="close">انصراف</button></div></div>',
   );
   if (opened !== false) {
     pendingFullBackup = value;
     pendingFullBackupSignature = JSON.stringify(value);
+    pendingFullBackupFile = sourceFile;
   } else {
     pendingFullBackup = previous;
     pendingFullBackupSignature = previousSignature;
+    pendingFullBackupFile = previousFile;
   }
+}
+async function verifyFullRestoreFile(sourceFile, check = () => {}) {
+  check();
+  assertClassroomFileName(sourceFile.handle.name);
+  const file = await sourceFile.handle.getFile();
+  check();
+  const text = await file.text();
+  check();
+  if (
+    sourceFile.handle.name !== sourceFile.name ||
+    file.name !== sourceFile.name ||
+    file.size !== sourceFile.size ||
+    file.lastModified !== sourceFile.modified ||
+    text !== sourceFile.text
+  )
+    throw Error(
+      "فایل پشتیبان پس از پیش‌نمایش تغییر کرد؛ بازیابی انجام نشد. دوباره فایل را انتخاب کنید.",
+    );
+  return file;
 }
 function restoreCatalogSignature(rows) {
   return JSON.stringify(
@@ -267,6 +303,7 @@ async function restoreFullBackup() {
   else if (!connection || connectionRetired || resetBusy)
     throw Error("برای اتصال امن به بانک، صفحه را دوباره بارگذاری کنید.");
   const source = pendingFullBackup,
+    sourceFile = pendingFullBackupFile,
     origin = captureWorkspaceContext(),
     sourceConnection = connection,
     sourceInstallation = installationToken;
@@ -281,11 +318,26 @@ async function restoreFullBackup() {
   // Reject exhausted input before pausing the file or draining any writers.
   for (const { period } of periods)
     globalThis.EduRevision.next(globalThis.EduRevision.next(period.revision));
+  // Keep permission inside this explicit confirmation gesture. Refusal does
+  // not undo a valid restore; the new file remains paused for a later retry.
+  let filePermission = Promise.resolve(false);
+  if (sourceFile) {
+    try {
+      filePermission = Promise.resolve(
+        sourceFile.handle.requestPermission({ mode: "readwrite" }),
+      ).then(
+        (value) => value === "granted",
+        () => false,
+      );
+    } catch {}
+  }
   fullRestoreBusy = true;
   const hadFileTimer = !!singleFileTimer;
   pauseSingleFile();
   let committedRestore = false,
-    ownsLoading = false;
+    ownsLoading = false,
+    continuationTarget,
+    restoredCount;
   const check = () => {
     protectBankDraft();
     if (
@@ -295,6 +347,7 @@ async function restoreFullBackup() {
       installationToken !== sourceInstallation ||
       (workspace?.id || "") !== origin.id ||
       pendingFullBackup !== source ||
+      pendingFullBackupFile !== sourceFile ||
       JSON.stringify(source) !== pendingFullBackupSignature
     )
       throw Error(
@@ -302,6 +355,10 @@ async function restoreFullBackup() {
       );
   };
   try {
+    const sourceHash = sourceFile
+      ? await singleFileRestoreHash(sourceFile.text)
+      : "";
+    check();
     if (singleFileWriting) await singleFileWriting;
     const guard = await readSystemRestoreGuard(check);
     await draftWriter.catch(() => {});
@@ -401,6 +458,8 @@ async function restoreFullBackup() {
     let restoredSingleFile = null;
     const replaceInstallation = async () => {
       check();
+      if (sourceFile) await verifyFullRestoreFile(sourceFile, check);
+      check();
       const tx = connection.transaction(names, "readwrite"),
         done = transactionDone(tx);
       let failure;
@@ -464,9 +523,21 @@ async function restoreFullBackup() {
             const currentFile = durableDrafts.result.find(
               (row) => row.key === singleFileKey,
             );
-            restoredSingleFile = currentFile
-              ? { ...currentFile, connectionId: uid(), suspension: "restore" }
-              : null;
+            restoredSingleFile = sourceFile
+              ? {
+                  key: singleFileKey,
+                  connectionId: uid(),
+                  handle: sourceFile.handle,
+                  modified: sourceFile.modified,
+                  size: sourceFile.size,
+                  savedAt: "",
+                  suspension: "restore-source",
+                  restoreSourceHash: sourceHash,
+                  contentBaseline: EduSingleFilePolicy.contentBaseline(source),
+                }
+              : currentFile
+                ? { ...currentFile, connectionId: uid(), suspension: "restore" }
+                : null;
             if (restoredSingleFile)
               tx.objectStore("drafts").put(restoredSingleFile);
           } catch (error) {
@@ -493,6 +564,7 @@ async function restoreFullBackup() {
       await fileLocks.request("EduManager.singleFile", replaceInstallation);
     else await replaceInstallation();
     singleFile = restoredSingleFile;
+    continuationTarget = sourceFile ? restoredSingleFile : null;
     assessmentContext.dispose({ abandon: true });
     committedRestore = true;
     installationToken = marker.value.token;
@@ -538,6 +610,7 @@ async function restoreFullBackup() {
     await loadDrafts();
     pendingFullBackup = null;
     pendingFullBackupSignature = "";
+    pendingFullBackupFile = null;
     periodLoading = false;
     ownsLoading = false;
     let notesSaved = true;
@@ -547,9 +620,13 @@ async function restoreFullBackup() {
     if (notesFlushed !== undefined) notesSaved = notesFlushed;
     closeModal();
     render();
-    if (singleFile) announceSingleFileSuspension(singleFile);
+    if (singleFile && !continuationTarget)
+      announceSingleFileSuspension(singleFile);
     setStatus(
       "کل اطلاعات فایل بازیابی شد؛ هیچ نوبت تکراری ساخته نشد." +
+        (!sourceFile
+          ? " ذخیرهٔ خودکار به فایل ورودی وصل نیست؛ اتصال قبلی متوقف است."
+          : "") +
         (notesSaved
           ? ""
           : " توضیحات گزارش در بانک محفوظ‌اند؛ ذخیره موقت آن‌ها نیازمند تلاش مجدد است."),
@@ -568,7 +645,7 @@ async function restoreFullBackup() {
           annual.conflicts[0].message,
         "error",
       );
-    return periods.length;
+    restoredCount = periods.length;
   } catch (error) {
     if (committedRestore) {
       blocked = true;
@@ -593,4 +670,19 @@ async function restoreFullBackup() {
       startSingleFile();
     lockControls();
   }
+  // File errors after commit are separate from restore errors. They must not
+  // block or roll back the successfully restored database.
+  if (continuationTarget) {
+    try {
+      await continueRestoredSingleFile(continuationTarget, filePermission);
+    } catch (error) {
+      if (singleFile === continuationTarget)
+        setStatus(
+          "اطلاعات بازیابی شد؛ ادامهٔ ذخیره در فایل جدید فعال نشد. " +
+            error.message,
+          "pending",
+        );
+    }
+  }
+  return restoredCount;
 }

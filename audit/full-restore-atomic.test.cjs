@@ -4,6 +4,15 @@ const { test } = require("node:test"),
 const fs = require("node:fs"),
   path = require("node:path"),
   vm = require("node:vm");
+function cloneStoredRow(row) {
+  // Native FileSystemFileHandle objects are structured-cloneable in browsers;
+  // retain the synthetic handle while cloning every other persisted field.
+  if (row?.handle) {
+    const { handle, ...value } = row;
+    return { ...structuredClone(value), handle };
+  }
+  return structuredClone(row);
+}
 function fixture({ syncFailure = false, asyncFailure = false } = {}) {
   const committed = [];
   let sequence = 0,
@@ -49,6 +58,9 @@ function fixture({ syncFailure = false, asyncFailure = false } = {}) {
     singleFile: null,
     singleFileWriting: null,
     singleFileKey: "file",
+    singleFileRestoreHash: async (text) =>
+      require("node:crypto").createHash("sha256").update(text).digest("hex"),
+    continueRestoredSingleFile: async () => false,
     pauseSingleFile() {},
     startSingleFile() {},
     announceSingleFileSuspension() {},
@@ -149,7 +161,7 @@ function fixture({ syncFailure = false, asyncFailure = false } = {}) {
             else if (operation.delete !== undefined)
               store.delete(operation.delete);
             else {
-              const row = structuredClone(operation.row);
+              const row = cloneStoredRow(operation.row);
               store.set(row.key ?? row.id ?? ++eventId, row);
             }
           }
@@ -176,12 +188,12 @@ function fixture({ syncFailure = false, asyncFailure = false } = {}) {
             },
             getAll() {
               const request = {
-                result: structuredClone(
+                result: (
                   c.rawStores?.[name] ||
-                    (name === "drafts" && c.liveIdentity
-                      ? [c.liveIdentity]
-                      : [...stores[name].values()]),
-                ),
+                  (name === "drafts" && c.liveIdentity
+                    ? [c.liveIdentity]
+                    : [...stores[name].values()])
+                ).map(cloneStoredRow),
               };
               queueMicrotask(() => request.onsuccess());
               return request;
@@ -210,6 +222,8 @@ function fixture({ syncFailure = false, asyncFailure = false } = {}) {
     "domain/calendar.js",
     "domain/academic-year.js",
     "domain/deputy-export-identity.js",
+    "domain/single-file-policy.js",
+    "workspace/backups/single-file-name.js",
   ])
     vm.runInContext(
       fs.readFileSync(path.join(__dirname, "../src", source), "utf8"),
@@ -1219,4 +1233,253 @@ test("full replacement preserves both a reviewed grade and long invalid raw inpu
   assert.equal(restored.owner, "imported");
   assert.ok(restored.entries.every((entry) => entry.review === true));
   assert.equal(f.source.gradeDrafts[0].entries[1].value, long);
+});
+
+function restoreSourceFixture(options) {
+  const f = fixture(options);
+  let text = JSON.stringify(f.source),
+    modified = 7,
+    name = "Classyar-Classroom(2).json";
+  const handle = {
+    name,
+    getFile: async () => {
+      const captured = text;
+      return {
+        name,
+        size: Buffer.byteLength(captured),
+        lastModified: modified,
+        text: async () => captured,
+      };
+    },
+  };
+  const sourceFile = Object.freeze({
+    handle,
+    name,
+    size: Buffer.byteLength(text),
+    modified,
+    text,
+  });
+  return {
+    ...f,
+    handle,
+    sourceFile,
+    changeText(value) {
+      text = value;
+    },
+    changeModified(value) {
+      modified = value;
+    },
+    changeName(value) {
+      name = value;
+      handle.name = value;
+    },
+  };
+}
+
+function restoreContinuationFixture({
+  permission = "granted",
+  ...options
+} = {}) {
+  const f = restoreSourceFixture(options),
+    events = [],
+    previous = {
+      key: "file",
+      connectionId: "old-file-A",
+      handle: { name: "Classyar-Classroom.json" },
+      modified: 3,
+      size: 100,
+      savedAt: "2026-11-19T10:00:00Z",
+    };
+  f.stores.drafts.set(previous.key, previous);
+  f.c.singleFile = previous;
+  f.c.singleFileTimer = 1;
+  f.c.pauseSingleFile = () => {
+    events.push("pause");
+    f.c.singleFileTimer = null;
+  };
+  f.c.startSingleFile = () => events.push("start");
+  f.handle.requestPermission = (options) => {
+    assert.equal(options.mode, "readwrite");
+    events.push("permission");
+    if (permission instanceof Error) throw permission;
+    return Promise.resolve(permission);
+  };
+  f.c.continueRestoredSingleFile = async (target, allowed) => {
+    events.push("continue");
+    assert.equal(vm.runInContext("fullRestoreBusy", f.c), false);
+    assert.equal(f.c.ready, true);
+    assert.equal(f.c.blocked, false);
+    assert.equal(f.c.singleFile, target);
+    assert.equal(target.handle, f.handle);
+    events.push((await allowed) ? "granted" : "denied");
+    return false;
+  };
+  f.c.previewFullBackup(f.source, {
+    sourceName: f.sourceFile.name,
+    sourceFile: f.sourceFile,
+  });
+  return { ...f, previous, events };
+}
+
+test("retained restore source verifies the exact file and context around both asynchronous reads", async () => {
+  const f = restoreSourceFixture();
+  let checks = 0;
+  const file = await f.c.verifyFullRestoreFile(f.sourceFile, () => checks++);
+  assert.equal(await file.text(), f.sourceFile.text);
+  assert.equal(checks, 3);
+  assert.equal(f.committed.length, 0);
+});
+
+for (const change of ["text", "modified", "name"]) {
+  test(`retained restore source rejects changed ${change} before replacement`, async () => {
+    const f = restoreSourceFixture();
+    if (change === "text")
+      f.changeText(f.sourceFile.text.replace('"revision":2', '"revision":3'));
+    else if (change === "modified") f.changeModified(8);
+    else f.changeName("Classyar-Classroom(3).json");
+    await assert.rejects(
+      f.c.verifyFullRestoreFile(f.sourceFile),
+      /فایل پشتیبان پس از پیش‌نمایش تغییر کرد/,
+    );
+    assert.equal(f.committed.length, 0);
+  });
+}
+
+for (const stage of ["getFile", "text"]) {
+  test(`retained restore source checks its original context after ${stage}`, async () => {
+    const f = restoreSourceFixture(),
+      original = f.handle.getFile;
+    let stale = false;
+    f.handle.getFile = async () => {
+      const file = await original();
+      if (stage === "getFile") stale = true;
+      else {
+        const read = file.text;
+        file.text = async () => {
+          const text = await read();
+          stale = true;
+          return text;
+        };
+      }
+      return file;
+    };
+    await assert.rejects(
+      f.c.verifyFullRestoreFile(f.sourceFile, () => {
+        if (stale) throw Error("restore source context changed");
+      }),
+      /restore source context changed/,
+    );
+    assert.equal(f.committed.length, 0);
+  });
+}
+
+test("restore and continue atomically selects file B and asks permission before yielding", async () => {
+  const f = restoreContinuationFixture(),
+    pending = f.c.restoreFullBackup();
+  assert.equal(f.events[0], "permission");
+  assert.equal(f.committed.length, 0);
+  assert.equal(await pending, 1);
+  const persisted = f.stores.drafts.get("file");
+  assert.equal(persisted.handle, f.handle);
+  assert.notEqual(persisted.connectionId, f.previous.connectionId);
+  assert.equal(persisted.suspension, "restore-source");
+  assert.equal(persisted.savedAt, "");
+  assert.equal(
+    persisted.restoreSourceHash,
+    await f.c.singleFileRestoreHash(f.sourceFile.text),
+  );
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(persisted.contentBaseline)),
+    JSON.parse(
+      JSON.stringify(f.c.EduSingleFilePolicy.contentBaseline(f.source)),
+    ),
+  );
+  assert.deepEqual(f.events, ["permission", "pause", "continue", "granted"]);
+  assert.equal(f.previous.suspension, undefined);
+  assert.equal(vm.runInContext("pendingFullBackupFile", f.c), null);
+});
+
+for (const permission of ["denied", Error("permission service unavailable")]) {
+  test(`restore remains successful with file B paused after ${typeof permission === "string" ? "permission refusal" : "permission error"}`, async () => {
+    const f = restoreContinuationFixture({ permission });
+    assert.equal(await f.c.restoreFullBackup(), 1);
+    assert.equal(f.c.workspace.id, "source");
+    assert.equal(f.c.ready, true);
+    assert.equal(f.c.blocked, false);
+    assert.equal(f.stores.drafts.get("file").handle, f.handle);
+    assert.equal(f.stores.drafts.get("file").suspension, "restore-source");
+    assert.deepEqual(f.events, ["permission", "pause", "continue", "denied"]);
+  });
+}
+
+for (const failure of ["syncFailure", "asyncFailure"]) {
+  test(`restore and continue preserves the original file A after ${failure}`, async () => {
+    const f = restoreContinuationFixture({ [failure]: true });
+    await assert.rejects(f.c.restoreFullBackup(), /write failure/);
+    assert.equal(f.stores.drafts.get("file"), f.previous);
+    assert.equal(f.c.singleFile, f.previous);
+    assert.equal(f.c.workspace.id, "original");
+    assert.equal(f.committed.length, 0);
+    assert.equal(f.events.includes("continue"), false);
+    assert.equal(f.events.at(-1), "start");
+  });
+}
+
+test("cancelling final restore consent never requests permission or changes either file connection", async () => {
+  const f = restoreContinuationFixture();
+  f.c.confirm = () => false;
+  assert.equal(await f.c.restoreFullBackup(), false);
+  assert.deepEqual(f.events, []);
+  assert.equal(f.c.singleFile, f.previous);
+  assert.equal(f.stores.drafts.get("file"), f.previous);
+  assert.equal(f.committed.length, 0);
+});
+
+test("file B changed with matching metadata while waiting for the file lock aborts replacement", async () => {
+  const f = restoreContinuationFixture();
+  let release;
+  f.c.navigator = {
+    locks: {
+      request(name, run) {
+        assert.equal(name, "EduManager.singleFile");
+        return new Promise((resolve, reject) => {
+          release = () => run().then(resolve, reject);
+        });
+      },
+    },
+  };
+  const pending = f.c.restoreFullBackup();
+  while (!release) await new Promise(setImmediate);
+  assert.equal(f.committed.length, 0);
+  f.changeText(f.sourceFile.text.replace('"revision":2', '"revision":3'));
+  release();
+  await assert.rejects(pending, /فایل پشتیبان پس از پیش‌نمایش تغییر کرد/);
+  assert.equal(f.committed.length, 0);
+  assert.equal(f.stores.drafts.get("file"), f.previous);
+  assert.equal(f.c.singleFile, f.previous);
+  assert.equal(f.events.includes("continue"), false);
+});
+
+test("a changed retained preview during source hashing cannot replace the installation", async () => {
+  const f = restoreContinuationFixture();
+  f.c.singleFileRestoreHash = async () => {
+    vm.runInContext("pendingFullBackupFile = null", f.c);
+    return "obsolete-source-hash";
+  };
+  await assert.rejects(f.c.restoreFullBackup(), /پیش‌نمایش را دوباره باز کنید/);
+  assert.equal(f.committed.length, 0);
+  assert.equal(f.c.singleFile, f.previous);
+  assert.equal(f.events.includes("continue"), false);
+});
+
+test("a source file read failure never clears the original school data or its connection", async () => {
+  const f = restoreContinuationFixture();
+  f.handle.getFile = async () => {
+    throw Error("source file unavailable");
+  };
+  await assert.rejects(f.c.restoreFullBackup(), /source file unavailable/);
+  assert.equal(f.committed.length, 0);
+  assert.equal(f.stores.drafts.get("file"), f.previous);
+  assert.equal(f.c.workspace.id, "original");
+  assert.equal(f.events.includes("continue"), false);
 });

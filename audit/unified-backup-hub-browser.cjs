@@ -57,7 +57,7 @@ function inspectHubLayout() {
     manualContract:
       manual.length === 3 &&
       manual.map((button) => button.textContent.trim()).join("|") ===
-        "دریافت فایل|ارسال فایل|بازیابی فایل" &&
+        "دریافت فایل|ارسال فایل|بازیابی و ادامه کار" &&
       manualBoxes.every(
         (box) =>
           Math.abs(box.top - manualBoxes[0].top) < 1 &&
@@ -854,10 +854,10 @@ main({
       "closing during a school file read cannot reopen its restore preview or mutate either data scope",
       await evaluate(`(async()=>{
         const school=await __hubStableSchool(),bank=JSON.stringify(await EduQuestionBankRepository.read());
-        const snapshot=await EduV24.snapshotInstallation(),input=document.getElementById('importFile'),click=input.click;
+        const snapshot=await EduV24.snapshotInstallation(),input=document.getElementById('importFile'),click=input.click,picker=window.showOpenFilePicker;
         let release,started=false;
         await EduV24.openBackups({tab:'school'});
-        input.click=()=>{};
+        input.click=()=>{};window.showOpenFilePicker=undefined;
         try {
           document.querySelector('#backupSchoolPanel [data-workspace-action=choose-import]').click();
           const file=new File([JSON.stringify(snapshot)],'Classyar-Classroom.json',{type:'application/json'});
@@ -868,7 +868,7 @@ main({
           return document.getElementById('modal').classList.contains('hidden')
             &&!document.querySelector('.full-restore')
             &&JSON.stringify(await EduQuestionBankRepository.read())===bank&&await __hubStableSchool()===school;
-        } finally {input.click=click;}
+        } finally {input.click=click;window.showOpenFilePicker=picker;}
       })()`),
     );
     check(
@@ -1172,6 +1172,10 @@ main({
           &&await (await handle.getFile()).text()===${JSON.stringify(beforeSchoolWipe.bankFile)}&&!!(await EduQuestionBankRepository.readBackup());
       })()`),
     );
+    await require("./restore-continue-browser-flow.cjs")({
+      evaluateGesture,
+      check,
+    });
   },
 }).catch((error) => {
   console.error(error.stack || String(error));

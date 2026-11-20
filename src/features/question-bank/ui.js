@@ -1453,6 +1453,7 @@
     sheet,
     print,
     previewText,
+    hasEditorPendingChanges: () => pendingChanges(),
     hasPendingChanges: () => pendingChanges() || F.state().state === "busy",
   };
   root.addEventListener("edu-question-bank-restored", () => {

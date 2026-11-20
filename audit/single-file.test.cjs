@@ -292,6 +292,8 @@ function fixture() {
     },
   };
   const context = vm.createContext({
+    crypto: require("node:crypto").webcrypto,
+    TextEncoder,
     ready: true,
     periodLoading: false,
     blocked: false,
@@ -2505,3 +2507,195 @@ for (const action of ["picker", "permission", "snapshot"])
     assert.notEqual(vm.runInContext("singleFileTimer", f.context), null);
     assert.equal(vm.runInContext("singleFileFailure", f.context), false);
   });
+
+async function restoredFileFixture() {
+  const original = fixture(),
+    source = fixture();
+  await original.context.chooseSingleFile();
+  const previous = original.contents;
+  const text = JSON.stringify(await original.context.snapshotInstallation());
+  source.replaceContents(text);
+  source.handle.name = "Classyar-Classroom(2).json";
+  const file = await source.handle.getFile();
+  original.context.workspace = { id: "restored-workspace" };
+  original.context.installationToken = "";
+  const target = {
+    connectionId: "restored-source",
+    handle: source.handle,
+    modified: file.lastModified,
+    size: file.size,
+    savedAt: "",
+    suspension: "restore-source",
+    restoreSourceHash: await original.context.singleFileRestoreHash(text),
+  };
+  original.context.target = target;
+  vm.runInContext(
+    "pauseSingleFile(); singleFile = target; singleFileSavedSource = null;",
+    original.context,
+  );
+  original.setStored({ key: "EduManager.singleFile", ...target });
+  return { original, source, target, previous, text, file };
+}
+
+test("restore continuation writes and polls only its selected source, leaving the old connected file unchanged", async () => {
+  const { original, source, target, previous } = await restoredFileFixture();
+  const writesBefore = original.writes;
+  assert.equal(
+    await original.context.continueRestoredSingleFile(
+      target,
+      Promise.resolve(true),
+    ),
+    true,
+  );
+  assert.equal(original.writes, writesBefore);
+  assert.equal(original.contents, previous);
+  assert.equal(source.writes, 1);
+  assert.equal(original.getStored().handle, source.handle);
+  assert.ok(original.getStored().savedAt);
+  assert.equal(original.getStored().suspension, undefined);
+  assert.equal(
+    original.getStored().restoreSourceHash,
+    await original.context.singleFileRestoreHash(source.contents),
+  );
+  original.context.sourceValue++;
+  await original.tick();
+  assert.equal(source.writes, 2);
+  assert.equal(original.contents, previous);
+});
+
+test("permission refusal restores a pending source and save-now grants only that new source without an old-file overwrite prompt", async () => {
+  const { original, source, target, previous } = await restoredFileFixture();
+  assert.equal(
+    await original.context.continueRestoredSingleFile(
+      target,
+      Promise.resolve(false),
+    ),
+    false,
+  );
+  assert.equal(original.getStored().handle, source.handle);
+  assert.equal(source.writes, 0);
+  assert.equal(original.contents, previous);
+  assert.equal(
+    vm.runInContext("singleFilePermissionNeeded", original.context),
+    true,
+  );
+  original.context.confirm = () => {
+    throw Error("Restore source has already been explicitly approved");
+  };
+  assert.equal(await original.context.resumeSingleFile(), true);
+  assert.equal(source.writes, 1);
+  assert.equal(original.contents, previous);
+});
+
+test("same-size and same-timestamp source mutation after the final connection check never opens a restore-source stream", async () => {
+  const { original, source, target, previous, text, file } =
+    await restoredFileFixture();
+  let reads = 0,
+    streams = 0;
+  const writable = source.handle.createWritable;
+  source.handle.createWritable = (...args) => {
+    streams++;
+    return writable(...args);
+  };
+  const changed = text.replace('"value":1', '"value":2');
+  assert.notEqual(changed, text);
+  assert.equal(changed.length, text.length);
+  source.handle.getFile = async () => ({
+    ...file,
+    text: async () => (++reads >= 3 ? changed : text),
+  });
+  assert.equal(
+    await original.context.continueRestoredSingleFile(
+      target,
+      Promise.resolve(true),
+    ),
+    false,
+  );
+  assert.equal(streams, 0);
+  assert.equal(source.writes, 0);
+  assert.equal(original.contents, previous);
+  assert.equal(original.context.ready, true);
+  assert.equal(original.context.blocked, false);
+  assert.equal(original.getStored().suspension, "restore-source");
+});
+
+test("disk failure while continuing a successful restore leaves the restored database usable and never resumes the old file", async () => {
+  const { original, source, target, previous } = await restoredFileFixture();
+  source.failWrites();
+  assert.equal(
+    await original.context.continueRestoredSingleFile(
+      target,
+      Promise.resolve(true),
+    ),
+    false,
+  );
+  assert.equal(original.context.ready, true);
+  assert.equal(original.context.blocked, false);
+  assert.equal(original.contents, previous);
+  assert.equal(source.writes, 0);
+  assert.equal(original.getStored().handle, source.handle);
+  assert.equal(vm.runInContext("singleFileTimer", original.context), null);
+});
+
+test("a stale post-restore permission completion cannot write or resume either file", async () => {
+  const { original, source, target, previous } = await restoredFileFixture();
+  let allow;
+  const pending = original.context.continueRestoredSingleFile(
+    target,
+    new Promise((resolve) => {
+      allow = resolve;
+    }),
+  );
+  original.context.installationToken = "replacement";
+  allow(true);
+  assert.equal(await pending, false);
+  assert.equal(source.writes, 0);
+  assert.equal(original.contents, previous);
+  assert.equal(vm.runInContext("singleFileTimer", original.context), null);
+});
+
+test("restored-source permission never approves a later whole-data loss without separate replacement consent", async () => {
+  const { original, source, target, previous } = await restoredFileFixture();
+  const backup = {
+    format: "EduManager.FullBackup",
+    stores: {
+      records: [
+        {
+          logical: "class:source",
+          value: { students: Array.from({ length: 12 }, (_, id) => ({ id })) },
+        },
+      ],
+    },
+  };
+  const text = JSON.stringify(backup);
+  source.replaceContents(text);
+  const file = await source.handle.getFile();
+  Object.assign(target, {
+    modified: file.lastModified,
+    size: file.size,
+    restoreSourceHash: await original.context.singleFileRestoreHash(text),
+    contentBaseline:
+      original.context.EduSingleFilePolicy.contentBaseline(backup),
+  });
+  original.setStored({ key: "EduManager.singleFile", ...target });
+  // The currently restored installation has since lost its educational data.
+  assert.equal(
+    await original.context.continueRestoredSingleFile(
+      target,
+      Promise.resolve(true),
+    ),
+    false,
+  );
+  assert.equal(source.writes, 0);
+  assert.equal(source.contents, text);
+  assert.equal(original.contents, previous);
+  assert.equal(original.getStored().suspension, "source-drop");
+  let asked = 0;
+  original.context.confirm = () => {
+    asked++;
+    return false;
+  };
+  assert.equal(await original.context.resumeSingleFile(), false);
+  assert.equal(asked, 1);
+  assert.equal(source.writes, 0);
+});

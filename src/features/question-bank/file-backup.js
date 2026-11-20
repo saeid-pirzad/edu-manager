@@ -23,8 +23,10 @@
       timer,
       debounce,
       choosing = false,
-      clearing = false;
+      clearing = false,
+      restoring = false;
     const listeners = new Set();
+    const restorePreviews = new WeakMap();
     let status = {
       state: "inactive",
       message: "ذخیرهٔ خودکار فایل فعال نیست.",
@@ -176,6 +178,7 @@
       approved = false,
       expectedId,
       expectedRevision,
+      resumeRestored = false,
       isCurrent = () => true,
     } = {}) {
       if (!supported() || !isCurrent()) return false;
@@ -200,7 +203,11 @@
             notify("permission", "مجوز فایل نیاز به تأیید دارد.");
             return false;
           }
-          if (config.suspended && !approved) {
+          if (
+            config.suspended &&
+            !approved &&
+            !(resumeRestored && config.suspended === "restore-source")
+          ) {
             notify(
               "paused",
               "نوشتن فایل برای حفظ نسخهٔ قبلی متوقف است؛ نسخهٔ قبلی را نگه دارید و برای ادامه «ذخیره اکنون» را بزنید.",
@@ -235,7 +242,10 @@
           const json = D.size(bank);
           if (current.text === json) {
             if (config.suspended) {
-              const next = { ...config };
+              const next = {
+                ...config,
+                savedAt: config.savedAt || new Date().toISOString(),
+              };
               delete next.suspended;
               await repository.writeBackup(next, { isCurrent });
               config = next;
@@ -278,7 +288,7 @@
       });
     }
     function schedule() {
-      if (!supported() || clearing) return;
+      if (!supported() || clearing || restoring) return;
       host.clearTimeout(debounce);
       debounce = host.setTimeout(() => {
         sync().catch(failed);
@@ -312,7 +322,8 @@
       return "Classyar-QuestionBank.json";
     }
     async function choose({ isCurrent = () => true } = {}) {
-      if (choosing || clearing || !supported() || !isCurrent()) return false;
+      if (choosing || clearing || restoring || !supported() || !isCurrent())
+        return false;
       choosing = true;
       try {
         // Invoke the picker before awaiting storage, preserving the click gesture.
@@ -406,7 +417,8 @@
       approve = () => false,
       { isCurrent = () => true } = {},
     ) {
-      if (clearing || !supported() || !config || !isCurrent()) return false;
+      if (clearing || restoring || !supported() || !config || !isCurrent())
+        return false;
       const target = config;
       try {
         // Permission must also be requested directly in the user's click.
@@ -418,7 +430,14 @@
           notify("permission", "اجازهٔ نوشتن داده نشد؛ فایل تغییر نکرد.");
           return false;
         }
-        if (await sync({ expectedId: target.id, isCurrent })) return true;
+        if (
+          await sync({
+            expectedId: target.id,
+            resumeRestored: true,
+            isCurrent,
+          })
+        )
+          return true;
         assertCurrent(isCurrent);
         if (status.state !== "paused") return false;
         const preview = D.validate(await repository.read());
@@ -441,10 +460,223 @@
         return failed(error);
       }
     }
+    async function readRestoreSource(source) {
+      const handle = typeof source?.getFile === "function" ? source : null;
+      if (handle && handle.kind !== "file")
+        throw Error("فقط فایل پشتیبان بانک سؤال را انتخاب کنید.");
+      if (handle) assertFileName(handle.name, { allowText: true });
+      const file = handle ? await handle.getFile() : source;
+      const name = handle?.name || file?.name;
+      assertFileName(name, { allowText: true });
+      if (typeof file?.name === "string") {
+        assertFileName(file.name, { allowText: true });
+        if (file.name !== name)
+          throw Error("نام فایل هنگام خواندن تغییر کرد؛ دوباره انتخاب کنید.");
+      }
+      if (!file || typeof file.text !== "function")
+        throw Error("خواندن فایل پشتیبان ممکن نیست.");
+      if (file.size > D.LIMIT) throw Error("سقف فایل ورودی ۲۰ مگابایت است.");
+      const text = await file.text();
+      if (!text.trim())
+        throw Error(
+          "فایل خالی قابل بازیابی نیست؛ برای ذخیرهٔ اطلاعات فعلی در آن، «انتخاب فایل برای ذخیره» را بزنید.",
+        );
+      return {
+        source,
+        handle,
+        name,
+        size: file.size,
+        lastModified: file.lastModified,
+        text,
+        bank: D.parse(text),
+      };
+    }
+    const sameRestoreSource = (a, b) =>
+      a.name === b.name &&
+      a.size === b.size &&
+      a.lastModified === b.lastModified &&
+      a.text === b.text;
+    async function previewRestore(source, { isCurrent = () => true } = {}) {
+      assertCurrent(isCurrent);
+      const selected = await readRestoreSource(source);
+      assertCurrent(isCurrent);
+      const [bank, target] = await Promise.all([
+        repository.read(),
+        repository.readBackup(),
+      ]);
+      assertCurrent(isCurrent);
+      const preview = Object.freeze({
+        name: selected.name,
+        counts: Object.freeze(counts(selected.bank)),
+        connectable: Boolean(
+          selected.handle && /\.json$/.test(selected.name) && supported(),
+        ),
+      });
+      restorePreviews.set(preview, {
+        ...selected,
+        revision: D.validate(bank).revision,
+        connectionId: target?.id || null,
+      });
+      return preview;
+    }
+    async function restore(preview, { isCurrent = () => true } = {}) {
+      const selected = restorePreviews.get(preview);
+      if (!selected) throw Error("فایل را دوباره برای بازیابی انتخاب کنید.");
+      assertCurrent(isCurrent);
+      if (choosing || clearing || restoring)
+        throw Error("عملیات فایل دیگری در حال انجام است؛ کمی صبر کنید.");
+      restoring = true;
+      restorePreviews.delete(preview);
+      let saved,
+        attached = false,
+        nextId,
+        permission = "denied";
+      const result = (message, active = false) => ({
+        restored: Boolean(saved),
+        connected: attached,
+        active,
+        message,
+      });
+      try {
+        // Begin the permission request in the explicit confirmation click,
+        // before waiting for storage or the cross-window file writer lock.
+        let requested;
+        try {
+          requested =
+            preview.connectable && selected.handle.requestPermission
+              ? selected.handle.requestPermission({ mode: "readwrite" })
+              : Promise.resolve("denied");
+        } catch {
+          requested = Promise.resolve("denied");
+        }
+        permission = await Promise.resolve(requested).catch(() => "denied");
+        if (initialized) await initialized;
+        assertCurrent(isCurrent);
+        const commit = async () => {
+          assertCurrent(isCurrent);
+          const current = await repository.readBackup();
+          assertCurrent(isCurrent);
+          if ((current?.id || null) !== selected.connectionId)
+            throw Error(
+              "اتصال فایل پس از پیش‌نمایش تغییر کرده؛ دوباره بررسی کنید.",
+            );
+          if ((await repository.read()).revision !== selected.revision)
+            throw Error("بانک پس از پیش‌نمایش تغییر کرده؛ دوباره بررسی کنید.");
+          const source = await readRestoreSource(selected.source);
+          assertCurrent(isCurrent);
+          if (!sameRestoreSource(selected, source))
+            throw Error("فایل پس از پیش‌نمایش تغییر کرده؛ بازیابی نشد.");
+          config = current;
+          // All file writers take this lock. Persist the pause before saving
+          // the replacement bank, so even a later failure cannot overwrite A.
+          if (current) {
+            config = { ...current, suspended: "restore" };
+            await repository.writeBackup(config, { isCurrent });
+            notify("paused", "فایل قبلی برای حفظ اطلاعات آن متوقف شد.");
+          }
+          assertCurrent(isCurrent);
+          saved = await repository.save(source.bank, selected.revision, {
+            isCurrent,
+          });
+          if (!preview.connectable) {
+            if (!config)
+              notify(
+                "inactive",
+                "بازیابی انجام شد؛ ذخیرهٔ خودکار فایل فعال نیست.",
+              );
+            return;
+          }
+          assertCurrent(isCurrent);
+          const verified = await readRestoreSource(selected.source);
+          assertCurrent(isCurrent);
+          if (!sameRestoreSource(selected, verified))
+            throw Error(
+              "فایل هنگام بازیابی تغییر کرده؛ ذخیرهٔ خودکار فعال نشد.",
+            );
+          const [bank, target] = await Promise.all([
+            repository.read(),
+            repository.readBackup(),
+          ]);
+          assertCurrent(isCurrent);
+          if (
+            bank.revision !== saved.revision ||
+            contents(D.validate(bank)) !== contents(source.bank) ||
+            (target?.id || null) !== selected.connectionId
+          )
+            throw Error(
+              "اطلاعات یا اتصال هنگام بازیابی تغییر کرده؛ ذخیرهٔ خودکار فعال نشد.",
+            );
+          nextId = host.crypto.randomUUID();
+          const next = {
+            id: nextId,
+            handle: selected.handle,
+            hash: await hash(verified.text),
+            counts: counts(bank),
+            savedAt: "",
+            suspended: "restore-source",
+          };
+          assertCurrent(isCurrent);
+          if ((await repository.read()).revision !== saved.revision)
+            throw Error(
+              "بانک هنگام اتصال فایل تغییر کرده؛ ذخیرهٔ خودکار فعال نشد.",
+            );
+          assertCurrent(isCurrent);
+          await repository.writeBackup(next, { isCurrent });
+          config = next;
+          attached = true;
+          notify(
+            permission === "granted" ? "paused" : "permission",
+            "بازیابی انجام شد؛ برای فعال‌شدن ذخیرهٔ خودکار در همین فایل، «ذخیره اکنون» را بزنید.",
+          );
+        };
+        if (host.navigator?.locks?.request) await locked(commit);
+        else {
+          if (await repository.readBackup())
+            throw Error(
+              "برای حفظ فایل قبلی، بازیابی را در مرورگر پشتیبانی‌شده انجام دهید.",
+            );
+          await commit();
+        }
+        if (attached && permission === "granted" && isCurrent()) {
+          const active = await sync({
+            approved: true,
+            expectedId: nextId,
+            expectedRevision: saved.revision,
+            isCurrent,
+          });
+          if (active)
+            return result(
+              "بانک سؤال بازیابی شد؛ ذخیرهٔ خودکار در همین فایل فعال است.",
+              true,
+            );
+        }
+        if (attached && (await repository.readBackup())?.id !== nextId) {
+          attached = false;
+          return result(
+            "بازیابی انجام شد؛ اتصال فایل تغییر کرده و ذخیرهٔ خودکار در فایل بازیابی‌شده فعال نیست. وضعیت ذخیره را بررسی کنید.",
+          );
+        }
+        return result(
+          attached
+            ? "بازیابی انجام شد؛ ذخیرهٔ خودکار هنوز فعال نیست. برای تأیید مجوز و ذخیره در همین فایل، «ذخیره اکنون» را بزنید."
+            : "بازیابی انجام شد؛ ذخیرهٔ خودکار فعال نیست. برای ادامه، فایل JSON را از «انتخاب فایل برای ذخیره» متصل کنید؛ فایل قبلی تغییر نکرد.",
+        );
+      } catch (error) {
+        if (!saved) throw error;
+        return result(
+          "بازیابی انجام شد؛ ذخیرهٔ خودکار فعال نشد. فایل قبلی متوقف مانده است. " +
+            (error.message || String(error)),
+        );
+      } finally {
+        restoring = false;
+      }
+    }
     async function stop({ isCurrent = () => true } = {}) {
       if (!isCurrent()) return false;
-      if (clearing)
-        throw Error("پاک‌سازی بانک سؤال در حال انجام است؛ کمی صبر کنید.");
+      if (clearing || restoring)
+        throw Error(
+          "بازیابی یا پاک‌سازی بانک سؤال در حال انجام است؛ کمی صبر کنید.",
+        );
       if (!supported()) return false;
       const expectedId = config?.id;
       return locked(async () => {
@@ -494,9 +726,9 @@
       const cancelled = () =>
         Error("عملیات لغو شد؛ اطلاعات بانک سؤال تغییر نکرد.");
       if (!isCurrent()) throw cancelled();
-      if (choosing || clearing)
+      if (choosing || clearing || restoring)
         throw Error(
-          "انتخاب فایل یا پاک‌سازی بانک سؤال در حال انجام است؛ پس از پایان آن دوباره تلاش کنید.",
+          "انتخاب فایل، بازیابی یا پاک‌سازی بانک سؤال در حال انجام است؛ پس از پایان آن دوباره تلاش کنید.",
         );
       clearing = true;
       let removed = false;
@@ -610,6 +842,8 @@
       saveNow,
       stop,
       suspend,
+      previewRestore,
+      restore,
       clear,
       subscribe,
       schedule,

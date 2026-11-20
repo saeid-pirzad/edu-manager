@@ -295,6 +295,7 @@ test("bank coordinator retains its public API and inactive lifecycle behavior", 
       "sheet",
       "print",
       "previewText",
+      "hasEditorPendingChanges",
       "hasPendingChanges",
     ].sort(),
   );
@@ -302,6 +303,7 @@ test("bank coordinator retains its public API and inactive lifecycle behavior", 
     "isMounted",
     "isPageActive",
     "isPreviewActive",
+    "hasEditorPendingChanges",
     "hasPendingChanges",
   ])
     assert.equal(ui[method](), false);
@@ -319,6 +321,7 @@ test("bank coordinator retains its public API and inactive lifecycle behavior", 
     assert.equal(ui[method](), undefined);
   fileState = "busy";
   assert.equal(ui.hasPendingChanges(), true);
+  assert.equal(ui.hasEditorPendingChanges(), false);
   assert.equal(events[0][0], "edu-question-bank-restored");
   assert.doesNotThrow(events[0][1]);
 });

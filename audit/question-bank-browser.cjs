@@ -1791,7 +1791,7 @@ main({
         const picker=window.showSaveFilePicker;
         try {
           window.showSaveFilePicker=async()=>handle;
-          await __qbOpenBackup();__qbOpenAutomaticBackup();__qbClick('انتخاب فایل');
+          await __qbOpenBackup();__qbOpenAutomaticBackup();__qbClick('انتخاب فایل برای ذخیره');
           for(let i=0;i<100&&service.state().state!=='active';i++)await new Promise(r=>setTimeout(r,30));
           if(service.state().state!=='active')throw Error(service.state().message);
         } finally {window.showSaveFilePicker=picker;}
@@ -1835,7 +1835,7 @@ main({
         try{
           window.showSaveFilePicker=async()=>__qbAutomaticFile;
           __qbOpenAutomaticBackup();
-          __qbClick('انتخاب فایل');
+          __qbClick('انتخاب فایل برای ذخیره');
           for(let i=0;i<100;i++){const config=await R.readBackup();if(service.state().state==='active'&&!config?.suspended)break;await new Promise(r=>setTimeout(r,20));}
           if(service.state().state!=='active')throw Error(service.state().message);
         }finally{window.showSaveFilePicker=picker;}

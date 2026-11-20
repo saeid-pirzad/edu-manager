@@ -91,6 +91,12 @@ function fixture() {
   });
   const repository = {
     read: async () => structuredClone(bank),
+    save: async (incoming, expected, { isCurrent = () => true } = {}) => {
+      if (!isCurrent() || expected !== bank.revision || failPersist)
+        throw Error("save rejected");
+      bank = { ...structuredClone(incoming), revision: expected + 1 };
+      return structuredClone(bank);
+    },
     clear: async (expected, { isCurrent = () => true } = {}) => {
       if (!isCurrent() || expected !== bank.revision || failPersist)
         throw Error("clear rejected");
@@ -211,6 +217,263 @@ function fixture() {
     },
   };
 }
+
+function restoreFile(f, name = "Classyar-QuestionBank(4).json") {
+  const bank = f.bank();
+  bank.questions[0].text = "پرسش بازیابی‌شده";
+  bank.revision = 41;
+  return f.file(name, D.size(bank));
+}
+
+test("restore and continue saves only to the actual selected source and future edits never reach the old file", async () => {
+  const f = fixture();
+  await f.service.choose();
+  const oldText = f.target.text(),
+    source = restoreFile(f),
+    preview = await f.service.previewRestore(source.handle);
+  assert.equal(preview.name, source.handle.name);
+  assert.equal(preview.counts.questions, 1);
+  assert.equal(preview.connectable, true);
+  const operation = f.service.restore(preview);
+  assert.equal(
+    source.handle.requests,
+    1,
+    "permission starts in the confirmation click",
+  );
+  const result = await operation;
+  assert.equal(result.restored, true);
+  assert.equal(result.active, true);
+  assert.equal(f.config().handle, source.handle);
+  assert.equal(f.bank().questions[0].text, "پرسش بازیابی‌شده");
+  assert.equal(source.handle.writes, 1);
+  assert.equal(f.target.text(), oldText);
+  f.change((bank) => (bank.questions[0].text = "ویرایش بعدی"));
+  assert.equal(await f.service.sync(), true);
+  assert.equal(JSON.parse(source.text()).questions[0].text, "ویرایش بعدی");
+  assert.equal(f.target.text(), oldText);
+  assert.equal(f.target.handle.writes, 1);
+  await assert.rejects(f.service.restore(preview), /دوباره/);
+});
+
+for (const mode of ["denied", "throws"])
+  test(`restore still succeeds with a visibly pending source when write permission ${mode}`, async () => {
+    const f = fixture();
+    await f.service.choose();
+    const oldText = f.target.text(),
+      source = restoreFile(f);
+    source.permission("denied");
+    if (mode === "throws")
+      source.handle.requestPermission = () => {
+        throw Error("no gesture");
+      };
+    const preview = await f.service.previewRestore(source.handle),
+      result = await f.service.restore(preview);
+    assert.equal(result.restored, true);
+    assert.equal(result.connected, true);
+    assert.equal(result.active, false);
+    assert.match(result.message, /هنوز فعال نیست/);
+    assert.equal(f.service.state().state, "permission");
+    assert.equal(f.config().handle, source.handle);
+    assert.equal(f.config().savedAt, "");
+    assert.equal(source.handle.opens, 0);
+    assert.equal(f.target.text(), oldText);
+    assert.equal(await f.service.sync(), false);
+    if (mode === "denied") {
+      source.permission("granted");
+      assert.equal(await f.service.saveNow(), true);
+      assert.equal(source.handle.writes, 1);
+      assert.equal(f.config().suspended, undefined);
+    }
+  });
+
+for (const mode of ["file-input", "text-handle", "unsupported"])
+  test(`manual ${mode} restore explicitly leaves automatic saving off and the old file paused`, async () => {
+    const f = fixture();
+    await f.service.choose();
+    const oldText = f.target.text(),
+      source = restoreFile(
+        f,
+        mode === "text-handle" ? "Classyar-QuestionBank.txt" : undefined,
+      ),
+      file = {
+        name: source.handle.name,
+        size: Buffer.byteLength(source.text()),
+        text: async () => source.text(),
+      };
+    if (mode === "unsupported") f.host.showSaveFilePicker = undefined;
+    const preview = await f.service.previewRestore(
+        mode === "file-input" ? file : source.handle,
+      ),
+      result = await f.service.restore(preview);
+    assert.equal(preview.connectable, false);
+    assert.equal(result.restored, true);
+    assert.equal(result.connected, false);
+    assert.equal(result.active, false);
+    assert.match(result.message, /ذخیرهٔ خودکار فعال نیست/);
+    assert.equal(f.config().handle, f.target.handle);
+    assert.equal(f.config().suspended, "restore");
+    assert.equal(source.handle.opens, 0);
+    assert.equal(f.target.text(), oldText);
+  });
+
+for (const change of ["bank", "connection", "source", "retired"])
+  test(`a ${change} change after restore preview cannot save data or write either file`, async () => {
+    const f = fixture();
+    await f.service.choose();
+    const original = f.bank(),
+      oldText = f.target.text(),
+      source = restoreFile(f),
+      preview = await f.service.previewRestore(source.handle);
+    if (change === "bank")
+      f.change((bank) => (bank.questions[0].text = "new local edit"));
+    if (change === "connection")
+      await f.repository.writeBackup({ ...f.config(), id: "peer-connection" });
+    if (change === "source")
+      source.external(source.text().replace("بازیابی", "بارگذاری"));
+    await assert.rejects(
+      f.service.restore(preview, { isCurrent: () => change !== "retired" }),
+    );
+    assert.equal(
+      f.bank().revision,
+      original.revision + (change === "bank" ? 1 : 0),
+    );
+    assert.equal(source.handle.opens, 0);
+    assert.equal(f.target.text(), oldText);
+  });
+
+test("failed bank restore leaves the old connection paused and never opens the source for writing", async () => {
+  const f = fixture();
+  await f.service.choose();
+  const original = f.bank(),
+    oldText = f.target.text(),
+    source = restoreFile(f),
+    preview = await f.service.previewRestore(source.handle);
+  f.repository.save = async () => {
+    throw Error("restore storage failed");
+  };
+  await assert.rejects(f.service.restore(preview), /restore storage failed/);
+  assert.deepEqual(f.bank(), original);
+  assert.equal(f.config().suspended, "restore");
+  assert.equal(source.handle.opens, 0);
+  assert.equal(f.target.text(), oldText);
+  assert.equal(await f.service.sync(), false);
+});
+
+for (const change of ["source", "readback", "connection", "retired"])
+  test(`a post-commit ${change} failure reports restored data without enabling writes`, async () => {
+    const f = fixture();
+    await f.service.choose();
+    const oldText = f.target.text(),
+      source = restoreFile(f),
+      preview = await f.service.previewRestore(source.handle),
+      save = f.repository.save;
+    let live = true;
+    f.repository.save = async (...args) => {
+      const bank = await save(...args);
+      if (change === "source")
+        source.external(source.text().replace("بازیابی", "بارگذاری"));
+      if (change === "readback")
+        source.handle.getFile = async () => {
+          throw Error("source unreadable");
+        };
+      if (change === "connection")
+        await f.repository.writeBackup({
+          ...f.config(),
+          id: "peer-connection",
+          suspended: "restore",
+        });
+      if (change === "retired") live = false;
+      return bank;
+    };
+    const result = await f.service.restore(preview, { isCurrent: () => live });
+    assert.equal(result.restored, true);
+    assert.equal(result.active, false);
+    assert.equal(result.connected, false);
+    assert.equal(f.bank().questions[0].text, "پرسش بازیابی‌شده");
+    assert.equal(source.handle.opens, 0);
+    assert.equal(f.target.text(), oldText);
+    assert.equal(f.config().suspended, "restore");
+  });
+
+test("a first source write verification failure preserves restored bank and never falls back to the old file", async () => {
+  const f = fixture();
+  await f.service.choose();
+  const oldText = f.target.text(),
+    source = restoreFile(f),
+    preview = await f.service.previewRestore(source.handle);
+  source.fail(true);
+  const result = await f.service.restore(preview);
+  assert.equal(result.restored, true);
+  assert.equal(result.active, false);
+  assert.equal(f.config().handle, source.handle);
+  assert.equal(f.config().suspended, "restore-source");
+  assert.equal(f.config().savedAt, "");
+  assert.equal(source.handle.writes, 0);
+  assert.equal(f.target.text(), oldText);
+});
+
+test("empty, wrong-name and wrong-schema sources are rejected before restore changes anything", async () => {
+  const f = fixture();
+  await f.service.choose();
+  const original = f.bank(),
+    connection = f.config(),
+    oldText = f.target.text();
+  for (const source of [
+    f.file("Classyar-QuestionBank.json", ""),
+    f.file("Classyar-QuestionBank.json", " \n\t "),
+    f.file("Classyar-Classroom.json", D.size(original)),
+    f.file("Classyar-QuestionBank.json", '{"school":true}'),
+  ]) {
+    await assert.rejects(f.service.previewRestore(source.handle));
+    assert.equal(source.handle.opens, 0);
+    assert.deepEqual(f.bank(), original);
+    assert.deepEqual(f.config(), connection);
+    assert.equal(f.target.text(), oldText);
+  }
+  for (const text of ["", " \n\t "])
+    await assert.rejects(
+      f.service.previewRestore(
+        f.file("Classyar-QuestionBank.json", text).handle,
+      ),
+      /فایل خالی قابل بازیابی نیست.*انتخاب فایل برای ذخیره/,
+    );
+});
+
+for (const mode of ["success", "bank-failure", "source-readback"])
+  test(`a queued peer file writer cannot reach the old file while restore ${mode} is committing`, async () => {
+    const f = fixture();
+    await f.service.choose();
+    const oldText = f.target.text(),
+      source = restoreFile(f),
+      preview = await f.service.previewRestore(source.handle),
+      entered = deferred(),
+      release = deferred(),
+      save = f.repository.save;
+    f.repository.save = async (...args) => {
+      entered.resolve();
+      await release.promise;
+      if (mode === "bank-failure") throw Error("bank save failed");
+      const bank = await save(...args);
+      if (mode === "source-readback")
+        source.external(source.text().replace("بازیابی", "بارگذاری"));
+      return bank;
+    };
+    const operation = f.service.restore(preview);
+    await entered.promise;
+    assert.equal(await f.service.choose(), false);
+    assert.equal(await f.service.saveNow(), false);
+    await assert.rejects(f.service.stop(), /بازیابی/);
+    await assert.rejects(f.service.clear(f.bank().revision), /بازیابی/);
+    const peerWrite = f.create().sync();
+    release.resolve();
+    if (mode === "bank-failure")
+      await assert.rejects(operation, /bank save failed/);
+    else assert.equal((await operation).active, mode === "success");
+    assert.equal(await peerWrite, false);
+    assert.equal(f.target.text(), oldText);
+    assert.equal(f.target.handle.writes, 1);
+    assert.equal(source.handle.writes, mode === "success" ? 1 : 0);
+  });
 test("explicit bank removal deletes only the previewed file and detaches its cleared bank", async () => {
   const f = fixture();
   await f.service.choose();

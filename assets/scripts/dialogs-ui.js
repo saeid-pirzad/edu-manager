@@ -24,104 +24,105 @@ fallback=false,ids={},aliases={},actions={},disabled={},className=""}=options;co
 ose"?"":"ghost",aliases[key])+'" data-backup-file-action="'+key+'" title="'+escape(title)+'"'+attributes(actions[key])+(!supported||disabled[key]?" disabled":"")+
 ">"+label+"</button>";const summary='<div class="'+classes("backup-file-summary",aliases.summary)+'"'+idAttribute(ids.summary)+">"+summaryHtml({...options,detailed:true})+
 "</div>";return'<details class="'+classes("backup-automatic",className)+'"'+(open?" open":"")+"><summary><span>ذخیره خودکار</span><small>اختیاری</small></summar\
-y>"+(supported?"<p>فایل را یک‌بار انتخاب کنید؛ هنگام باز بودن برنامه، همان فایل به‌روز می‌شود.</p>"+
+y>"+(supported?"<p>اطلاعات فعلی برنامه در فایل انتخابی ذخیره می‌شود؛ برای بازکردن اطلاعات یک فایل، «بازیابی و ادامه کار» را بزنید.</p>"+
 summary+'<div class="'+classes("single-file-notice backup-automatic-notice",aliases.status)+'"'+idAttribute(ids.status)+" data-backup-file-status"+(noticeHidden?
 " hidden":"")+">"+noticeHtml({...options,permission:null})+'</div><div class="'+classes("backup-automatic-fallback",aliases.fallback)+'"'+idAttribute(ids.fallback)+
 (fallback?"":" hidden")+"><p>فایل خالی پشتیبان نیست؛ فعلاً «دریافت فایل» را بزنید.</p></div>":'<p role="status"'+idAttribute(
 ids.status)+" data-backup-file-status>ذخیرهٔ خودکار در این مرورگر در دسترس نیست؛ از «دریافت فایل» استفاده کنید.</p>"+
-summary)+'<div class="'+classes("row backup-automatic-actions",aliases.actions)+'">'+action("choose","انتخاب فایل","انتخاب فایل و محل ذخیرهٔ خودکار")+
-action("save","ذخیره اکنون","ذخیره اکنون / اجازه مجدد")+action("stop","قطع اتصال","قطع اتصال")+'</div><p class="bac\
-kup-automatic-help">«ذخیره اکنون» فایل را فوراً ذخیره و در صورت نیاز مجوز نوشتن را درخواست می‌کند. «قطع اتصال» ذخیرهٔ خودکار را متوقف می‌کند؛ فایل حذف نمی‌شود.<\
-/p></details>'}root.EduBackupAutomaticView=Object.freeze({html,summaryHtml,noticeHtml})})(globalThis);let modalReturnFocus=null;function setModalBackground(inert){
-document.body.classList.toggle("modal-open",inert);for(const id of["app","uiBottomNav","mobileBar"]){const element=document.getElementById(id);if(element)element.
-inert=inert}}function modalFocusableElements(){return[...document.querySelectorAll("#modal button,#modal input,#modal select,#modal textarea,#modal a[href],#mod\
-al [tabindex]")].filter(element=>element.tabIndex>=0&&!element.matches(":disabled")&&element.getClientRects().length&&getComputedStyle(element).visibility!=="hi\
-dden"&&!element.closest("[inert]"))}function legacy_showModal(title,html){if(document.querySelector('#modal:not(.hidden) .record-editor[aria-busy="true"]'))return false;
-if(hasRecordEditorChanges()&&!confirm("تغییرات فرم فعلی ذخیره نشده‌اند؛ کنار گذاشته شوند و پنجره جدید باز شود؟"))
-return false;const modal=document.getElementById("modal");if(modal.classList.contains("hidden")){const opener=document.activeElement;modalReturnFocus=opener&&opener!==
-document.body?{element:opener,id:opener.id,action:opener.getAttribute("onclick"),headerAction:opener.getAttribute("data-header-action"),legacyAction:opener.getAttribute(
-"data-legacy-click"),legacyArgs:[...opener.attributes].filter(attribute=>attribute.name.startsWith("data-legacy-click-arg")).map(attribute=>[attribute.name,attribute.
-value])}:null}document.getElementById("modalTitle").textContent=title;document.getElementById("modalBody").innerHTML=html;modal.classList.remove("hidden");modal.
-setAttribute("aria-hidden","false");setModalBackground(true);modal.querySelector(".modal-dialog").focus({preventScroll:true});setTimeout(initShamsiPickers,0);return true}
-function recordFieldError(message,fieldId){return Object.assign(Error(message),{fieldId})}function recordFieldLabel(fieldId){const field=document.getElementById(
-fieldId);const label=field?.closest("label")||field?.labels?.[0];if(!label)return"این فیلد";return[...label.childNodes].filter(node=>node.nodeType===Node.
-TEXT_NODE).map(node=>node.textContent).join(" ").trim()||label.querySelector("span")?.textContent.trim()||"این فیلد"}function showRecordEditorError(error,errorId){
-const message=document.getElementById(errorId);if(!message)return false;message.textContent=error.message||String(error);const field=document.getElementById(error.
-fieldId||(error.message?.includes("کد درس")?"course_code":""));if(field?.closest(".record-editor")){field.setAttribute("aria-invalid","true");const descriptions=new Set(
-(field.getAttribute("aria-describedby")||"").split(/\s+/).filter(Boolean));descriptions.add(errorId);field.setAttribute("aria-describedby",[...descriptions].join(
-" "));for(let parent=field.parentElement;parent;parent=parent.parentElement)if(parent.tagName==="DETAILS")parent.open=true;requestAnimationFrame(()=>{if(!field.
-isConnected||field.disabled)return;field.focus({preventScroll:true});field.scrollIntoView({block:"nearest"})})}else message.scrollIntoView({block:"nearest"});return true}
-function resetRecordEditor(form){if(!form?.dataset.savedState||form.getAttribute("aria-busy")==="true")return;const controls=new Map([...form.elements].map(el=>[
-el.id||el.name,el]));for(const[key,value]of JSON.parse(form.dataset.savedState)){const field=controls.get(key);if(!field)continue;if(/^(checkbox|radio)$/.test(field.
-type))field.checked=value;else field.value=field.type==="password"?"":value}if(form.querySelector("#course_method"))window.EduV24.course.toggleMethod();form.querySelectorAll(
-'[aria-invalid="true"]').forEach(el=>el.removeAttribute("aria-invalid"));form.querySelectorAll('[role="alert"]').forEach(el=>{el.textContent=""});syncShamsiDisabledInputs();
-updateRecordEditorReview(form)}function updateRecordEditorReview(form){if(!form?.matches(".record-editor")||!form.dataset.savedState)return;if(form.dataset.reviewMode===
-"none")return;const state=recordEditorState(form),busy=form.getAttribute("aria-busy")==="true";if(form._reviewSignature===state+busy)return;form._reviewSignature=
-state+busy;if(form.id==="courseEditor"){const context=form.querySelector(".course-editor-status");if(!context)return;let status=context.querySelector(".record-e\
-ditor-state");if(!status){status=document.createElement("p");status.className="record-editor-state";status.setAttribute("role","status");status.setAttribute("ar\
-ia-live","polite");context.append(status)}status.textContent=busy?"در حال ذخیره تغییرات…":"";status.hidden=!busy;context.hidden=!busy&&!context.
-querySelector(".course-readonly-note");return}if(!form._reviewUI){const status=document.createElement("p");status.className="record-editor-state";status.setAttribute(
-"role","status");status.setAttribute("aria-live","polite");form.querySelector(".record-editor-context")?.append(status);const panel=document.createElement("deta\
-ils");panel.className="record-editor-review";const summary=document.createElement("summary"),list=document.createElement("div"),reset=document.createElement("bu\
-tton");list.className="record-change-list";reset.type="button";reset.className="ghost";reset.textContent="بازگردانی مقادیر فرم";reset.addEventListener(
-"click",()=>resetRecordEditor(form));panel.append(summary,list,reset);form.querySelector(".record-editor-actions")?.before(panel);form._reviewUI={status,panel,summary,
-list,reset}}const before=new Map(JSON.parse(form.dataset.savedState));const controls=new Map([...form.elements].map(el=>[el.id||el.name,el]));const changes=JSON.
-parse(state).filter(([key,value])=>before.has(key)&&before.get(key)!==value);const ui=form._reviewUI;ui.panel.hidden=changes.length===0;setControlLock(ui.reset,
-"review-saving",busy);ui.status.textContent=busy?"در حال ذخیره تغییرات…":changes.length?changes.length.toLocaleString("fa-IR")+" مورد تغییر؛ \
-هنوز ذخیره نشده":"بدون تغییر ذخیره‌نشده";ui.status.dataset.state=busy?"pending":changes.length?"changed":"clean";ui.summary.textContent=
-"بازبینی "+changes.length.toLocaleString("fa-IR")+" تغییر پیش از ذخیره";const display=(field,value)=>typeof value==="boolean"?value?"فعال":
-"غیرفعال":value===""?"خالی":field?.tagName==="SELECT"?[...field.options].find(o=>o.value===value)?.textContent||value:value;ui.list.replaceChildren(...changes.
-map(([key,value])=>{const field=controls.get(key),row=document.createElement("div"),title=document.createElement("strong");const oldValue=document.createElement(
-"span"),newValue=document.createElement("span");row.className="record-change-row";title.textContent=recordFieldLabel(key);oldValue.textContent="قبلی: "+display(
-field,before.get(key));newValue.textContent="جدید: "+display(field,value);row.append(title,oldValue,newValue);return row}))}let recordReviewScheduled=false;
-function scheduleRecordEditorReview(event){const form=event.target.closest?.(".record-editor");if(!form||recordReviewScheduled)return;recordReviewScheduled=true;
-requestAnimationFrame(()=>{recordReviewScheduled=false;if(form.isConnected)updateRecordEditorReview(form)})}document.addEventListener("input",scheduleRecordEditorReview);
-document.addEventListener("change",scheduleRecordEditorReview);const controlDisabledStates=new WeakMap,recordSaveStates=new WeakMap;function setControlDisabled(control,disabled){
-if(!control||!("disabled"in control))return;const state=controlDisabledStates.get(control);if(state){state.intrinsic=!!disabled;control.disabled=state.intrinsic||
-state.locks.size>0}else control.disabled=!!disabled}function setControlLock(control,reason,locked){if(!control||!("disabled"in control))return;let state=controlDisabledStates.
-get(control);if(!state){if(!locked)return;state={intrinsic:control.disabled,locks:new Set};controlDisabledStates.set(control,state);control.dataset.controlLock=
-"1"}if(locked)state.locks.add(reason);else state.locks.delete(reason);const disabled=state.intrinsic||state.locks.size>0;if(control.disabled!==disabled)control.
-disabled=disabled}function beginRecordEditorSave(form){if(!form)return()=>{};form.querySelectorAll('[aria-invalid="true"]').forEach(el=>el.removeAttribute("aria\
--invalid"));form.querySelectorAll('[role="alert"]').forEach(el=>{el.textContent=""});const token=Symbol("record-save");let pending=recordSaveStates.get(form);if(!pending){
-pending=new Set;recordSaveStates.set(form,pending)}pending.add(token);form.setAttribute("aria-busy","true");updateRecordEditorReview(form);const controls=[...form.
-elements];controls.forEach(control=>setControlLock(control,token,true));syncShamsiDisabledInputs();let finished=false;return()=>{if(finished)return;finished=true;
-pending.delete(token);if(!pending.size)form.removeAttribute("aria-busy");controls.forEach(control=>setControlLock(control,token,false));updateRecordEditorReview(
-form);window.EduV24?.refreshControlLocks?.();syncShamsiDisabledInputs()}}function recordEditorState(form){return JSON.stringify([...form.querySelectorAll("input\
-:not([data-gregorian-target]),select,textarea")].map(x=>[x.id||x.name,/^(checkbox|radio)$/.test(x.type)?x.checked:x.type==="password"?x.value?"رمز جدید وارد شده":
-"":x.value]))}function rememberRecordEditor(form=document.querySelector("#modal .record-editor")){if(form){form.dataset.savedState=recordEditorState(form);form.
-_reviewSignature=null;updateRecordEditorReview(form)}}function hasRecordEditorChanges(){return[...document.querySelectorAll("#modal:not(.hidden) .record-editor,\
- #app #courseEditor")].some(form=>!!form.dataset.savedState&&form.dataset.savedState!==recordEditorState(form))}function closeModal(){if(document.querySelector(
-'#modal:not(.hidden) .record-editor[aria-busy="true"]'))return;if(hasRecordEditorChanges()&&!confirm("تغییرات این فرم ذخیره نشده‌اند؛ بدون ذخیره بسته شود؟"))
-return;const modal=document.getElementById("modal");closeShamsiCalendar();globalThis.EduV24?.releaseSessionEditAccess?.();modal.classList.add("hidden");modal.setAttribute(
-"aria-hidden","true");setModalBackground(false);const previous=modalReturnFocus;modalReturnFocus=null;render();requestAnimationFrame(()=>requestAnimationFrame(()=>{
-if(!modal.classList.contains("hidden"))return;let target=previous?.element?.isConnected?previous.element:previous?.id&&document.getElementById(previous.id)||previous?.
-headerAction&&[...document.querySelectorAll("#app button[data-header-action]")].find(element=>element.dataset.headerAction===previous.headerAction)||previous?.legacyAction&&
-[...document.querySelectorAll("#app [data-legacy-click]")].find(element=>element.getAttribute("data-legacy-click")===previous.legacyAction&&previous.legacyArgs.
-every(([name,value])=>element.getAttribute(name)===value))||previous?.action&&[...document.querySelectorAll("#app button[onclick],#app a[onclick]")].find(element=>element.
-getAttribute("onclick")===previous.action)||document.getElementById("app");let closedMenu=target?.closest("details:not([open])");while(closedMenu){target=closedMenu.
-querySelector(":scope > summary");closedMenu=closedMenu.parentElement?.closest("details:not([open])")}if(target&&!target.matches(":disabled")&&!target.closest("\
-[inert]"))target.focus({preventScroll:true})}))}const recordEditAccess=new WeakMap;function initializeRecordEditAccess(form,{enabled=false,validate=()=>{},title="",
-onEnable=()=>{}}={}){if(!form)throw Error("فرم اطلاعات در دسترس نیست.");const access={enabled,validate,title,onEnable};recordEditAccess.set(
-form,access);form.dataset.recordMode=enabled?"edit":"view";if(!enabled){const notice=document.createElement("div");notice.className="record-access";notice.innerHTML=
-'<span class="record-access-status" role="status">فقط مشاهده؛ برای تغییر، ویرایش را فعال کنید.</span><button type="button" class="ghost" data-mutating="1" data-\
-record-enable-edit data-workspace-action="record-enable-edit">'+EduIcons.html("edit")+"<span>ویرایش</span></button>";const context=form.id==="courseEditor"?
-null:form.querySelector(".record-editor-context");if(context)context.append(notice);else form.prepend(notice)}form.querySelectorAll("input,select,textarea,butto\
-n").forEach(control=>{if(control.matches('[data-record-enable-edit],[data-workspace-action="close"],[data-course-cancel]'))return;setControlLock(control,"record\
--view",!enabled)})}function assertRecordEditAccess(form){const access=form&&recordEditAccess.get(form);if(!access?.enabled||!form.isConnected||form.closest("#mo\
-dal.hidden,[hidden],[inert]"))throw Error("ابتدا ویرایش این اطلاعات را فعال کنید.");access.validate()}function enableRecordEditAccess(button){
-const form=button.closest(".record-editor"),access=form&&recordEditAccess.get(form);if(!access||!form.isConnected||button.disabled||form.getAttribute("aria-busy")===
-"true"||form.closest("#modal.hidden,[hidden],[inert]"))return;access.validate();access.enabled=true;form.dataset.recordMode="edit";access.onEnable();form.querySelectorAll(
-"input,select,textarea,button").forEach(control=>setControlLock(control,"record-view",false));const status=form.querySelector(".record-access-status");if(status)
-status.textContent="ویرایش فعال است؛ تغییرات را ذخیره کنید.";if(access.title&&form.closest("#modal"))document.getElementById("mo\
-dalTitle").textContent=access.title;form.querySelector('input:not([type="hidden"]):not(:disabled),select:not(:disabled),textarea:not(:disabled)')?.focus({preventScroll:true})}
-"use strict";function openAboutDialog(){closeDataMenu();const opened=showModal("درباره کلاس‌یار و ارتباط با ما",window.EduAbout.html());
-if(opened!==false)document.getElementById("modalBody").scrollTop=0}document.addEventListener("click",event=>{const control=event.target.closest?.("button[data-a\
-bout-action]");if(control?.dataset.aboutAction==="open"&&!control.disabled&&!control.closest("[inert]")&&control.closest("#app .schools-welcome")){openAboutDialog();
-return}if(!control||control.disabled||!control.closest("#modalBody .about-app"))return;if(control.dataset.aboutAction==="close")closeModal();else if(control.dataset.
-aboutAction==="offline")window.EduPWA?.help()});"use strict";(()=>{const bindings=[["modalClose","click",()=>closeModal()],["importFile","change",event=>handleImport(
-event)],["excelFile","change",event=>handleExcelImport(event)]];for(const[id,eventName,handler]of bindings){const element=document.getElementById(id);if(!element)
-throw Error("Missing application shell element: "+id);element.addEventListener(eventName,handler)}})();"use strict";(()=>{const app=document.getElementById("app");
-const actions=new Map([["schools",()=>goSchools()],["reports",()=>goReports()],["master",()=>goMaster()],["question-bank",()=>goQuestionBank()],["settings",()=>openSettingsModal()]]);
-app.addEventListener("click",event=>{const button=event.target.closest?.("button[data-header-action]");if(!button||!app.contains(button)||!button.closest(".topb\
-ar")||button.disabled||button.closest("[inert]"))return;const action=actions.get(button.dataset.headerAction);if(action)action(event)})})();
+summary)+'<div class="'+classes("row backup-automatic-actions",aliases.actions)+'">'+action("choose","انتخاب فایل برای ذخیره","ذخیرهٔ اطلاعات\
+ فعلی برنامه در فایل و محل انتخابی")+action("save","ذخیره اکنون","ذخیره اکنون / اجازه مجدد")+action("sto\
+p","قطع اتصال","قطع اتصال")+'</div><p class="backup-automatic-help">«ذخیره اکنون» فایل را فوراً ذخیره و در صورت نیاز مجوز نوشتن را درخواست می‌کن\
+د. «قطع اتصال» ذخیرهٔ خودکار را متوقف می‌کند؛ فایل حذف نمی‌شود.</p></details>'}root.EduBackupAutomaticView=
+Object.freeze({html,summaryHtml,noticeHtml})})(globalThis);let modalReturnFocus=null;function setModalBackground(inert){document.body.classList.toggle("modal-op\
+en",inert);for(const id of["app","uiBottomNav","mobileBar"]){const element=document.getElementById(id);if(element)element.inert=inert}}function modalFocusableElements(){
+return[...document.querySelectorAll("#modal button,#modal input,#modal select,#modal textarea,#modal a[href],#modal [tabindex]")].filter(element=>element.tabIndex>=
+0&&!element.matches(":disabled")&&element.getClientRects().length&&getComputedStyle(element).visibility!=="hidden"&&!element.closest("[inert]"))}function legacy_showModal(title,html){
+if(document.querySelector('#modal:not(.hidden) .record-editor[aria-busy="true"]'))return false;if(hasRecordEditorChanges()&&!confirm("تغییرات فرم فعلی ذخیره نشد\
+ه‌اند؛ کنار گذاشته شوند و پنجره جدید باز شود؟"))return false;const modal=document.getElementById("modal");if(modal.classList.
+contains("hidden")){const opener=document.activeElement;modalReturnFocus=opener&&opener!==document.body?{element:opener,id:opener.id,action:opener.getAttribute(
+"onclick"),headerAction:opener.getAttribute("data-header-action"),legacyAction:opener.getAttribute("data-legacy-click"),legacyArgs:[...opener.attributes].filter(
+attribute=>attribute.name.startsWith("data-legacy-click-arg")).map(attribute=>[attribute.name,attribute.value])}:null}document.getElementById("modalTitle").textContent=
+title;document.getElementById("modalBody").innerHTML=html;modal.classList.remove("hidden");modal.setAttribute("aria-hidden","false");setModalBackground(true);modal.
+querySelector(".modal-dialog").focus({preventScroll:true});setTimeout(initShamsiPickers,0);return true}function recordFieldError(message,fieldId){return Object.
+assign(Error(message),{fieldId})}function recordFieldLabel(fieldId){const field=document.getElementById(fieldId);const label=field?.closest("label")||field?.labels?.[0];
+if(!label)return"این فیلد";return[...label.childNodes].filter(node=>node.nodeType===Node.TEXT_NODE).map(node=>node.textContent).join(" ").trim()||label.querySelector(
+"span")?.textContent.trim()||"این فیلد"}function showRecordEditorError(error,errorId){const message=document.getElementById(errorId);if(!message)return false;
+message.textContent=error.message||String(error);const field=document.getElementById(error.fieldId||(error.message?.includes("کد درس")?"course_code":""));if(field?.
+closest(".record-editor")){field.setAttribute("aria-invalid","true");const descriptions=new Set((field.getAttribute("aria-describedby")||"").split(/\s+/).filter(
+Boolean));descriptions.add(errorId);field.setAttribute("aria-describedby",[...descriptions].join(" "));for(let parent=field.parentElement;parent;parent=parent.parentElement)
+if(parent.tagName==="DETAILS")parent.open=true;requestAnimationFrame(()=>{if(!field.isConnected||field.disabled)return;field.focus({preventScroll:true});field.scrollIntoView(
+{block:"nearest"})})}else message.scrollIntoView({block:"nearest"});return true}function resetRecordEditor(form){if(!form?.dataset.savedState||form.getAttribute(
+"aria-busy")==="true")return;const controls=new Map([...form.elements].map(el=>[el.id||el.name,el]));for(const[key,value]of JSON.parse(form.dataset.savedState)){
+const field=controls.get(key);if(!field)continue;if(/^(checkbox|radio)$/.test(field.type))field.checked=value;else field.value=field.type==="password"?"":value}
+if(form.querySelector("#course_method"))window.EduV24.course.toggleMethod();form.querySelectorAll('[aria-invalid="true"]').forEach(el=>el.removeAttribute("aria-\
+invalid"));form.querySelectorAll('[role="alert"]').forEach(el=>{el.textContent=""});syncShamsiDisabledInputs();updateRecordEditorReview(form)}function updateRecordEditorReview(form){
+if(!form?.matches(".record-editor")||!form.dataset.savedState)return;if(form.dataset.reviewMode==="none")return;const state=recordEditorState(form),busy=form.getAttribute(
+"aria-busy")==="true";if(form._reviewSignature===state+busy)return;form._reviewSignature=state+busy;if(form.id==="courseEditor"){const context=form.querySelector(
+".course-editor-status");if(!context)return;let status=context.querySelector(".record-editor-state");if(!status){status=document.createElement("p");status.className=
+"record-editor-state";status.setAttribute("role","status");status.setAttribute("aria-live","polite");context.append(status)}status.textContent=busy?"در حال ذخیر\
+ه تغییرات…":"";status.hidden=!busy;context.hidden=!busy&&!context.querySelector(".course-readonly-note");return}if(!form._reviewUI){const status=document.
+createElement("p");status.className="record-editor-state";status.setAttribute("role","status");status.setAttribute("aria-live","polite");form.querySelector(".re\
+cord-editor-context")?.append(status);const panel=document.createElement("details");panel.className="record-editor-review";const summary=document.createElement(
+"summary"),list=document.createElement("div"),reset=document.createElement("button");list.className="record-change-list";reset.type="button";reset.className="gh\
+ost";reset.textContent="بازگردانی مقادیر فرم";reset.addEventListener("click",()=>resetRecordEditor(form));panel.append(summary,list,reset);form.
+querySelector(".record-editor-actions")?.before(panel);form._reviewUI={status,panel,summary,list,reset}}const before=new Map(JSON.parse(form.dataset.savedState));
+const controls=new Map([...form.elements].map(el=>[el.id||el.name,el]));const changes=JSON.parse(state).filter(([key,value])=>before.has(key)&&before.get(key)!==
+value);const ui=form._reviewUI;ui.panel.hidden=changes.length===0;setControlLock(ui.reset,"review-saving",busy);ui.status.textContent=busy?"در حال ذخیره تغییرات\
+…":changes.length?changes.length.toLocaleString("fa-IR")+" مورد تغییر؛ هنوز ذخیره نشده":"بدون تغییر ذخیره‌نشده";ui.
+status.dataset.state=busy?"pending":changes.length?"changed":"clean";ui.summary.textContent="بازبینی "+changes.length.toLocaleString("fa-IR")+" تغییر پیش\
+ از ذخیره";const display=(field,value)=>typeof value==="boolean"?value?"فعال":"غیرفعال":value===""?"خالی":field?.tagName==="SELECT"?[...field.
+options].find(o=>o.value===value)?.textContent||value:value;ui.list.replaceChildren(...changes.map(([key,value])=>{const field=controls.get(key),row=document.createElement(
+"div"),title=document.createElement("strong");const oldValue=document.createElement("span"),newValue=document.createElement("span");row.className="record-change\
+-row";title.textContent=recordFieldLabel(key);oldValue.textContent="قبلی: "+display(field,before.get(key));newValue.textContent="جدید: "+display(field,value);
+row.append(title,oldValue,newValue);return row}))}let recordReviewScheduled=false;function scheduleRecordEditorReview(event){const form=event.target.closest?.("\
+.record-editor");if(!form||recordReviewScheduled)return;recordReviewScheduled=true;requestAnimationFrame(()=>{recordReviewScheduled=false;if(form.isConnected)updateRecordEditorReview(
+form)})}document.addEventListener("input",scheduleRecordEditorReview);document.addEventListener("change",scheduleRecordEditorReview);const controlDisabledStates=new WeakMap,
+recordSaveStates=new WeakMap;function setControlDisabled(control,disabled){if(!control||!("disabled"in control))return;const state=controlDisabledStates.get(control);
+if(state){state.intrinsic=!!disabled;control.disabled=state.intrinsic||state.locks.size>0}else control.disabled=!!disabled}function setControlLock(control,reason,locked){
+if(!control||!("disabled"in control))return;let state=controlDisabledStates.get(control);if(!state){if(!locked)return;state={intrinsic:control.disabled,locks:new Set};
+controlDisabledStates.set(control,state);control.dataset.controlLock="1"}if(locked)state.locks.add(reason);else state.locks.delete(reason);const disabled=state.
+intrinsic||state.locks.size>0;if(control.disabled!==disabled)control.disabled=disabled}function beginRecordEditorSave(form){if(!form)return()=>{};form.querySelectorAll(
+'[aria-invalid="true"]').forEach(el=>el.removeAttribute("aria-invalid"));form.querySelectorAll('[role="alert"]').forEach(el=>{el.textContent=""});const token=Symbol(
+"record-save");let pending=recordSaveStates.get(form);if(!pending){pending=new Set;recordSaveStates.set(form,pending)}pending.add(token);form.setAttribute("aria\
+-busy","true");updateRecordEditorReview(form);const controls=[...form.elements];controls.forEach(control=>setControlLock(control,token,true));syncShamsiDisabledInputs();
+let finished=false;return()=>{if(finished)return;finished=true;pending.delete(token);if(!pending.size)form.removeAttribute("aria-busy");controls.forEach(control=>setControlLock(
+control,token,false));updateRecordEditorReview(form);window.EduV24?.refreshControlLocks?.();syncShamsiDisabledInputs()}}function recordEditorState(form){return JSON.
+stringify([...form.querySelectorAll("input:not([data-gregorian-target]),select,textarea")].map(x=>[x.id||x.name,/^(checkbox|radio)$/.test(x.type)?x.checked:x.type===
+"password"?x.value?"رمز جدید وارد شده":"":x.value]))}function rememberRecordEditor(form=document.querySelector("#modal .record-editor")){if(form){
+form.dataset.savedState=recordEditorState(form);form._reviewSignature=null;updateRecordEditorReview(form)}}function hasRecordEditorChanges(){return[...document.
+querySelectorAll("#modal:not(.hidden) .record-editor, #app #courseEditor")].some(form=>!!form.dataset.savedState&&form.dataset.savedState!==recordEditorState(form))}
+function closeModal(){if(document.querySelector('#modal:not(.hidden) .record-editor[aria-busy="true"]'))return;if(hasRecordEditorChanges()&&!confirm("تغییرات ای\
+ن فرم ذخیره نشده‌اند؛ بدون ذخیره بسته شود؟"))return;const modal=document.getElementById("modal");closeShamsiCalendar();globalThis.
+EduV24?.releaseSessionEditAccess?.();modal.classList.add("hidden");modal.setAttribute("aria-hidden","true");setModalBackground(false);const previous=modalReturnFocus;
+modalReturnFocus=null;render();requestAnimationFrame(()=>requestAnimationFrame(()=>{if(!modal.classList.contains("hidden"))return;let target=previous?.element?.
+isConnected?previous.element:previous?.id&&document.getElementById(previous.id)||previous?.headerAction&&[...document.querySelectorAll("#app button[data-header-\
+action]")].find(element=>element.dataset.headerAction===previous.headerAction)||previous?.legacyAction&&[...document.querySelectorAll("#app [data-legacy-click]")].
+find(element=>element.getAttribute("data-legacy-click")===previous.legacyAction&&previous.legacyArgs.every(([name,value])=>element.getAttribute(name)===value))||
+previous?.action&&[...document.querySelectorAll("#app button[onclick],#app a[onclick]")].find(element=>element.getAttribute("onclick")===previous.action)||document.
+getElementById("app");let closedMenu=target?.closest("details:not([open])");while(closedMenu){target=closedMenu.querySelector(":scope > summary");closedMenu=closedMenu.
+parentElement?.closest("details:not([open])")}if(target&&!target.matches(":disabled")&&!target.closest("[inert]"))target.focus({preventScroll:true})}))}const recordEditAccess=new WeakMap;
+function initializeRecordEditAccess(form,{enabled=false,validate=()=>{},title="",onEnable=()=>{}}={}){if(!form)throw Error("فرم اطلاعات در دسترس نیست.");
+const access={enabled,validate,title,onEnable};recordEditAccess.set(form,access);form.dataset.recordMode=enabled?"edit":"view";if(!enabled){const notice=document.
+createElement("div");notice.className="record-access";notice.innerHTML='<span class="record-access-status" role="status">فقط مشاهده؛ برای تغییر، ویرایش را فعال \
+کنید.</span><button type="button" class="ghost" data-mutating="1" data-record-enable-edit data-workspace-action="record-enable-edit">'+EduIcons.html("edit")+
+"<span>ویرایش</span></button>";const context=form.id==="courseEditor"?null:form.querySelector(".record-editor-context");if(context)context.append(notice);else
+form.prepend(notice)}form.querySelectorAll("input,select,textarea,button").forEach(control=>{if(control.matches('[data-record-enable-edit],[data-workspace-actio\
+n="close"],[data-course-cancel]'))return;setControlLock(control,"record-view",!enabled)})}function assertRecordEditAccess(form){const access=form&&recordEditAccess.
+get(form);if(!access?.enabled||!form.isConnected||form.closest("#modal.hidden,[hidden],[inert]"))throw Error("ابتدا ویرایش این اطلاعات را فعال کنید.");
+access.validate()}function enableRecordEditAccess(button){const form=button.closest(".record-editor"),access=form&&recordEditAccess.get(form);if(!access||!form.
+isConnected||button.disabled||form.getAttribute("aria-busy")==="true"||form.closest("#modal.hidden,[hidden],[inert]"))return;access.validate();access.enabled=true;
+form.dataset.recordMode="edit";access.onEnable();form.querySelectorAll("input,select,textarea,button").forEach(control=>setControlLock(control,"record-view",false));
+const status=form.querySelector(".record-access-status");if(status)status.textContent="ویرایش فعال است؛ تغییرات را ذخیره کنید.";
+if(access.title&&form.closest("#modal"))document.getElementById("modalTitle").textContent=access.title;form.querySelector('input:not([type="hidden"]):not(:disab\
+led),select:not(:disabled),textarea:not(:disabled)')?.focus({preventScroll:true})}"use strict";function openAboutDialog(){closeDataMenu();const opened=showModal(
+"درباره کلاس‌یار و ارتباط با ما",window.EduAbout.html());if(opened!==false)document.getElementById("modalBody").scrollTop=0}document.addEventListener(
+"click",event=>{const control=event.target.closest?.("button[data-about-action]");if(control?.dataset.aboutAction==="open"&&!control.disabled&&!control.closest(
+"[inert]")&&control.closest("#app .schools-welcome")){openAboutDialog();return}if(!control||control.disabled||!control.closest("#modalBody .about-app"))return;if(control.
+dataset.aboutAction==="close")closeModal();else if(control.dataset.aboutAction==="offline")window.EduPWA?.help()});"use strict";(()=>{const bindings=[["modalClo\
+se","click",()=>closeModal()],["importFile","change",event=>handleImport(event)],["excelFile","change",event=>handleExcelImport(event)]];for(const[id,eventName,
+handler]of bindings){const element=document.getElementById(id);if(!element)throw Error("Missing application shell element: "+id);element.addEventListener(eventName,
+handler)}})();"use strict";(()=>{const app=document.getElementById("app");const actions=new Map([["schools",()=>goSchools()],["reports",()=>goReports()],["maste\
+r",()=>goMaster()],["question-bank",()=>goQuestionBank()],["settings",()=>openSettingsModal()]]);app.addEventListener("click",event=>{const button=event.target.
+closest?.("button[data-header-action]");if(!button||!app.contains(button)||!button.closest(".topbar")||button.disabled||button.closest("[inert]"))return;const action=actions.
+get(button.dataset.headerAction);if(action)action(event)})})();
 //# sourceMappingURL=dialogs-ui.js.map

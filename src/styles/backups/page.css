@@ -21,7 +21,12 @@
     min-width: 0;
     margin: 0;
     gap: 6px;
-    white-space: nowrap;
+    white-space: normal;
+  }
+  #app #backupHub :is(.backup-manual, .backup-automatic) .ui-button-label {
+    min-width: 0;
+    white-space: normal;
+    line-height: 1.25;
   }
   #app #backupHub .backup-manual .backup-action-grid > button:nth-child(2) {
     background: var(--theme-secondary-soft) !important;
@@ -58,6 +63,7 @@
     gap: 6px;
     border-radius: 8px;
     font-size: 12px;
+    white-space: normal;
   }
   #app #backupHub .backup-automatic [data-backup-file-action="choose"] {
     background: var(--status-info-soft) !important;
@@ -96,6 +102,16 @@
   }
 }
 @media (max-width: 600px) {
+  #app
+    #backupHub
+    :is(.backup-manual, .backup-automatic)
+    :is(.backup-action-grid, .backup-automatic-actions)
+    > button
+    > :is(svg, .control-icon) {
+    width: 14px;
+    height: 14px;
+    flex: 0 0 14px;
+  }
   #app #backupHub .backup-automatic > .backup-automatic-actions {
     gap: 5px;
   }
@@ -105,6 +121,14 @@
     padding: 6px 3px;
     font-size: 10px;
     gap: 4px;
+  }
+  #app
+    #backupHub
+    .backup-automatic
+    > .backup-automatic-actions
+    > button
+    > :is(svg, .control-icon) {
+    display: none;
   }
   #app #backupHub .backup-manual .backup-action-grid {
     gap: 5px;

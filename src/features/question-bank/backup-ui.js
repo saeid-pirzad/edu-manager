@@ -29,7 +29,10 @@
     const current = () =>
       !disposed && section.isConnected && Boolean(isCurrent());
     const editorPending = () =>
-      Boolean(root.EduQuestionBankUI?.hasPendingChanges?.());
+      Boolean(
+        root.EduQuestionBankUI?.hasEditorPendingChanges?.() ??
+        root.EduQuestionBankUI?.hasPendingChanges?.(),
+      );
     function assertRestoreAllowed() {
       if (!current()) throw Error("بخش پشتیبان بسته شده؛ عملیات انجام نشد.");
       if (editorPending())
@@ -299,41 +302,77 @@
     uploadLabel.append(upload);
     manual.append(uploadLabel);
     const restore = button(
-      "بازیابی فایل",
+      "بازیابی و ادامه کار",
       "create",
       "folder",
       () => {
         assertRestoreAllowed();
         disposeShare();
+        const token = ++generation;
+        if (
+          root.isSecureContext &&
+          typeof root.showOpenFilePicker === "function"
+        ) {
+          // Keep the picker in the user's click; only this actual handle can
+          // become the destination after the selected backup is restored.
+          return root
+            .showOpenFilePicker({
+              multiple: false,
+              excludeAcceptAllOption: true,
+              types: [
+                {
+                  description: "Question bank backup",
+                  accept: {
+                    "application/json": [".json"],
+                    "text/plain": [".txt"],
+                  },
+                },
+              ],
+            })
+            .then(([handle]) =>
+              handle ? previewRestore(handle, token) : undefined,
+            )
+            .catch((failure) => {
+              if (failure.name !== "AbortError") throw failure;
+            });
+        }
         upload.click();
       },
       manualActions,
     );
     restore.classList.add("qb-backup-restore");
+    restore.title = "بازیابی و ادامهٔ ذخیره در همین فایل";
     manual.append(
       el(
         "p",
-        "فایل دریافتی، ارسالی (JSON یا TXT) و ذخیرهٔ خودکار همگی از «بازیابی فایل» قابل بازیابی‌اند.",
+        "اطلاعات فایل انتخابی جایگزین بانک فعلی می‌شود و با تأیید مجوز، ادامهٔ ذخیره روی همان فایل JSON خواهد بود. فایل TXT یا مرورگر فاقد دسترسی مستقیم، فقط بازیابی می‌شود؛ فایل قبلی متوقف می‌ماند.",
         "backup-restore-help",
       ),
     );
     upload.onchange = async () => {
       const token = ++generation;
       try {
-        assertRestoreAllowed();
         const file = upload.files[0];
         if (!file) return;
-        root.EduQuestionBankFileBackup.assertFileName(file.name, {
-          allowText: true,
-        });
-        if (file.size > D.LIMIT) throw Error("سقف فایل ورودی ۲۰ مگابایت است.");
-        const incoming = D.parse(await file.text());
-        if (!current() || token !== generation) return;
-        const baseline = D.validate(await R.read());
+        await previewRestore(file, token);
+      } catch (failure) {
+        error(failure);
+      } finally {
+        upload.value = "";
+      }
+    };
+    async function previewRestore(source, token) {
+      const live = () => current() && token === generation && !editorPending();
+      try {
+        assertRestoreAllowed();
+        const preview = await F.previewRestore(source, { isCurrent: live });
         if (!current() || token !== generation) return;
         assertRestoreAllowed();
-        void confirm(
-          `فایل «${file.name}»: ${number(incoming.courses.length)} درس، ${number(incoming.questions.length)} سؤال و ${number(incoming.exams.length)} آزمون. تمام بانک سؤال فعلی جایگزین می‌شود؛ اطلاعات مدرسه تغییر نمی‌کند. ادامه؟`,
+        const continuation = preview.connectable
+          ? "با تأیید مجوز، ادامهٔ ذخیره روی همین فایل خواهد بود."
+          : "این فایل فقط بازیابی می‌شود و ذخیرهٔ خودکار به آن متصل نمی‌شود.";
+        await confirm(
+          `فایل «${preview.name}»: ${number(preview.counts.courses)} درس، ${number(preview.counts.questions)} سؤال و ${number(preview.counts.exams)} آزمون. تمام بانک سؤال فعلی جایگزین می‌شود؛ اطلاعات مدرسه تغییر نمی‌کند. ${continuation} فایل قبلی متوقف می‌ماند. ادامه؟`,
           async () => {
             assertRestoreAllowed();
             if (token !== generation) return false;
@@ -341,24 +380,11 @@
             contents.inert = true;
             section.setAttribute("aria-busy", "true");
             try {
-              const before = D.validate(await R.read());
-              assertRestoreAllowed();
-              if (before.revision !== baseline.revision)
-                throw Error(
-                  "بانک پس از پیش‌نمایش تغییر کرده؛ فایل را دوباره بررسی کنید.",
-                );
-              await F.suspend();
-              assertRestoreAllowed();
-              if (token !== generation) return false;
-              await R.save(incoming, baseline.revision, {
-                isCurrent: () =>
-                  current() && token === generation && !editorPending(),
-              });
-              root.dispatchEvent(new Event("edu-question-bank-restored"));
-              show(
-                "بانک سؤال و آزمون‌ها بازیابی شد؛ اطلاعات مدرسه تغییر نکرد.",
-              );
-              return true;
+              const result = await F.restore(preview, { isCurrent: live });
+              if (result.restored)
+                root.dispatchEvent(new Event("edu-question-bank-restored"));
+              show(result.message);
+              return result.restored;
             } finally {
               busy = false;
               contents.inert = false;
@@ -366,13 +392,11 @@
               paint(F.state());
             }
           },
-        ).catch(error);
+        );
       } catch (failure) {
         error(failure);
-      } finally {
-        upload.value = "";
       }
-    };
+    }
     const view = root.EduBackupAutomaticView;
     const viewOptions = (state = F.state()) => {
       const attention = ["permission", "paused", "error"].includes(state.state);
