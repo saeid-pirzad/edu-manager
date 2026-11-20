@@ -199,15 +199,18 @@ hensive:18"> نام تأخیری‌ها</label>
   <div id="globalReportOutput"></div>`;return h}function updateGlobalFilter(key,val){globalFilter[key]=val;if(key==="schoolId"){globalFilter.classId="";globalFilter.
 lessonId="";globalFilter.studentId=""}if(key==="classId"){globalFilter.lessonId="";globalFilter.studentId=""}render()}function resetGlobalFilters(){globalFilter=
 {schoolId:"",classId:"",lessonId:"",studentId:"",period:"",date:"",showAttendance:true,showScores:true,showPosNeg:true,showHomework:true,reportMode:"detailed",showPresentNames:true,
-showAbsentNames:true,showLateNames:true};render()}function getFilteredSessions(){return db.sessions.filter(s=>{if(globalFilter.date&&s.date!==globalFilter.date)
-return false;if(globalFilter.schoolId&&s.schoolId!==globalFilter.schoolId)return false;if(globalFilter.classId&&s.classId!==globalFilter.classId)return false;if(globalFilter.
-lessonId&&s.lessonId!==globalFilter.lessonId)return false;if(globalFilter.period&&String(s.period)!==globalFilter.period)return false;if(globalFilter.studentId){
-const hasAtt=s.attendance[globalFilter.studentId]!==void 0;const hasScore=s.scores.some(x=>x.studentId===globalFilter.studentId);const roster=s.roster||getClassObj(
-s.schoolId,s.classId)?.students||[];if(!hasAtt&&!hasScore&&!roster.some(st=>st.id===globalFilter.studentId))return false}return true}).map(session=>{const studentId=globalFilter.
-studentId;if(!studentId)return session;const roster=session.roster||getClassObj(session.schoolId,session.classId)?.students||[];return{...session,roster:roster.
-filter(student=>student.id===studentId),attendance:Object.hasOwn(session.attendance,studentId)?{[studentId]:session.attendance[studentId]}:{},scores:session.scores.
-filter(score=>score.studentId===studentId)}}).sort((a,b)=>{if(a.date!==b.date)return b.date.localeCompare(a.date);return a.period-b.period})}function generateGlobalReport(){
-const out=document.getElementById("globalReportOutput");if(!out)return;const filteredSessions=getFilteredSessions();let h=`<div class="card">
+showAbsentNames:true,showLateNames:true};render()}function getFilteredSessions(source=db){const classroom=session=>source.schools.find(school=>school.id===session.
+schoolId)?.classes.find(item=>item.id===session.classId);return source.sessions.filter(s=>{if(globalFilter.date&&s.date!==globalFilter.date)return false;if(globalFilter.
+schoolId&&s.schoolId!==globalFilter.schoolId)return false;if(globalFilter.classId&&s.classId!==globalFilter.classId)return false;if(globalFilter.lessonId&&s.lessonId!==
+globalFilter.lessonId)return false;if(globalFilter.period&&String(s.period)!==globalFilter.period)return false;if(globalFilter.studentId){const hasAtt=s.attendance[globalFilter.
+studentId]!==void 0;const hasScore=s.scores.some(x=>x.studentId===globalFilter.studentId);const roster=s.roster||classroom(s)?.students||[];if(!hasAtt&&!hasScore&&
+!roster.some(st=>st.id===globalFilter.studentId))return false}return true}).map(session=>{const studentId=globalFilter.studentId;if(!studentId)return session;const roster=session.
+roster||classroom(session)?.students||[];return{...session,roster:roster.filter(student=>student.id===studentId),attendance:Object.hasOwn(session.attendance,studentId)?
+{[studentId]:session.attendance[studentId]}:{},scores:session.scores.filter(score=>score.studentId===studentId)}}).sort((a,b)=>{if(a.date!==b.date)return b.date.
+localeCompare(a.date);return a.period-b.period})}function activityReportAttendance(classroom,session){const counts=EduReportAttendance.emptyCounts();const people=sessionStudents(
+classroom,session).map(student=>{const attendance=EduReportAttendance.normalize(session.attendance[student.id]);EduReportAttendance.tally(counts,attendance);return{
+student,attendance}});return{counts,people}}function generateGlobalReport(){const out=document.getElementById("globalReportOutput");if(!out)return;const filteredSessions=getFilteredSessions();
+let h=`<div class="card">
     <div class="row no-print" style="justify-content:space-between;align-items:center">
       <h3 style="margin:0">📋 نتیجه گزارش (${filteredSessions.length} جلسه)</h3>
       <div>
@@ -221,10 +224,10 @@ showHomework)headers.push("تکلیف")}else{if(globalFilter.showAttendance)head
 if(globalFilter.showPosNeg)headers.push("مثبت","منفی");if(globalFilter.showHomework)headers.push("تکلیف")}h+=`<div style="overflow-x:auto;"><table \
 class="karnameh-table"><thead><tr>`;headers.forEach(header=>{h+=`<th>${header}</th>`});h+=`</tr></thead><tbody>`;filteredSessions.forEach(sess=>{const cls=findClassById(
 sess.classId);const lesson=getLessonObj(cls.classObj,sess.lessonId);h+=`<tr><td>${faDate(sess.date)}</td><td>${esc(cls.classObj.name)}</td><td>${esc(lesson.name)}\
-</td><td>زنگ ${sess.period+1}</td>`;if(globalFilter.studentId){if(globalFilter.showAttendance){const st=sess.attendance[globalFilter.studentId];let attText='\
-<span class="muted">ثبت نشده</span>';if(st==="present")attText='<span class="badge present">حاضر</span>';else if(st==="leave")attText='<span class="b\
-adge leave">مرخصی</span>';else if(st==="absent")attText='<span class="badge absent">غایب</span>';else if(st&&st.startsWith("late")){const mins=st.includes(
-":")?st.split(":")[1]:"";attText=`<span class="badge late">تأخیر ${mins?"("+mins+"د)":""}</span>`}h+=`<td>${attText}</td>`}const myScores=sess.scores.filter(
+</td><td>زنگ ${sess.period+1}</td>`;if(globalFilter.studentId){if(globalFilter.showAttendance){const st=EduReportAttendance.normalize(sess.attendance[globalFilter.
+studentId]);let attText='<span class="muted">ثبت نشده</span>';if(st.status==="present")attText='<span class="badge present">حاضر</span>';else if(st.status===
+"leave")attText='<span class="badge leave">مرخصی</span>';else if(st.status==="absent")attText='<span class="badge absent">غایب</span>';else if(st.status===
+"late"){attText=`<span class="badge late">تأخیر${st.minutes===null?"":" ("+st.minutes+"د)"}</span>`}h+=`<td>${attText}</td>`}const myScores=sess.scores.filter(
 x=>x.studentId===globalFilter.studentId);if(globalFilter.showScores){const ms=myScores.filter(x=>x.type==="mostamar").map(x=>`${x.value}`).map(esc).join("، ");
 const ps=myScores.filter(x=>x.type==="payani").map(x=>`${x.value}`).map(esc).join("، ");const classMarks=myScores.filter(score=>score.type==="classGrade").map(
 score=>score.value).join("، ");const activityMarks=myScores.filter(score=>score.type==="activity").map(score=>score.value).join("، ");h+="<td>"+(ms||"—")+" \
@@ -232,55 +235,58 @@ score=>score.value).join("، ");const activityMarks=myScores.filter(score=>score
 const pos=myScores.filter(x=>x.type==="positive");const neg=myScores.filter(x=>x.type==="negative");h+=`<td>${pos.length?pos.map(x=>`(${x.value})`).map(esc).join(
 "، "):'<span class="muted">0</span>'}</td>`;h+=`<td>${neg.length?neg.map(x=>`(${x.value})`).map(esc).join("، "):'<span class="muted">0</span>'}</td>`}if(globalFilter.
 showHomework){const hw=myScores.filter(x=>x.type==="homework");h+=`<td>${hw.length?hw.length:'<span class="muted">0</span>'}</td>`}}else{if(globalFilter.showAttendance){
-const p=Object.values(sess.attendance).filter(x=>x==="present").length;const a=Object.values(sess.attendance).filter(x=>x==="absent").length;const leaveCount=Object.
-values(sess.attendance).filter(x=>x==="leave").length;const l=Object.values(sess.attendance).filter(x=>x&&x.startsWith("late")).length;h+=`<td>✅${p+l} ❌${a}\
- ⏰${l} · مرخصی ${leaveCount}</td>`}if(globalFilter.showScores){const m=sess.scores.filter(x=>x.type==="mostamar").length;const pay=sess.scores.filter(x=>x.
-type==="payani").length;const classMarks=sess.scores.filter(score=>score.type==="classGrade").length;const activityMarks=sess.scores.filter(score=>score.type===
-"activity").length;h+="<td>"+(m||pay||classMarks||activityMarks?"مستمر: "+m+" · پایانی: "+pay+" · کلاسی: "+classMarks+" · فعالیت: "+activityMarks:
-"—")+"</td>"}if(globalFilter.showPosNeg){const pos=sess.scores.filter(x=>x.type==="positive").length;const neg=sess.scores.filter(x=>x.type==="negative").length;
-h+=`<td style="color:var(--status-success, #16664e);font-weight:600">${pos}</td>`;h+=`<td style="color:var(--status-danger, #9f2635);font-weight:600">${neg}</td\
->`}if(globalFilter.showHomework){const hw=sess.scores.filter(x=>x.type==="homework").length;h+=`<td>${hw}</td>`}}h+=`</tr>`});h+=`</tbody></table></div>`}else{h+=
-`<div class="detailed-report-box">`;let mainHeader=`📊 <b>گزارش جامع عملکرد کلاسی</b><br>`;if(globalFilter.date)mainHeader+=`📅 تاریخ: ${faDate(
-globalFilter.date)}<br>`;else mainHeader+=`📅 تاریخ تهیه گزارش: ${faDate(todayISO())}<br>`;if(globalFilter.classId){const cls=findClassById(globalFilter.
-classId);mainHeader+=`🏫 مدرسه: ${esc(cls.school.name)} | کلاس: ${esc(cls.classObj.name)}<br>`}h+=`<h2 style="text-align:center">${mainHeader}</h2>`;
-const groupedByPeriod={};filteredSessions.forEach(sess=>{if(!groupedByPeriod[sess.period])groupedByPeriod[sess.period]=[];groupedByPeriod[sess.period].push(sess)});
-const sortedPeriods=Object.keys(groupedByPeriod).sort((a,b)=>parseInt(a)-parseInt(b));sortedPeriods.forEach(periodStr=>{const periodNum=parseInt(periodStr);h+=`\
-<div class="period-block"><div class="period-title">⏰ ${getPeriodName(periodNum)}</div>`;groupedByPeriod[periodStr].forEach(sess=>{const cls=findClassById(sess.
-classId);const lesson=getLessonObj(cls.classObj,sess.lessonId);h+=`<div class="session-detail"><b>📅 تاریخ:</b> ${faDate(sess.date)} | <b>📚 درس:</b> ${esc(
-lesson.name)} | <b>👨‍🏫 دبیر:</b> ${esc(lesson.teacher||"---")} | <b>کلاس:</b> ${esc(cls.classObj.name)}<br>`;if(globalFilter.showAttendance){const presentNames=[],
-absentNames=[],leaveNames=[],lateNames=[];sessionStudents(cls.classObj,sess).forEach(st=>{const status=sess.attendance[st.id];if(status==="present")presentNames.
-push(st.name);else if(status==="leave")leaveNames.push(st.name);else if(status==="absent")absentNames.push(st.name);else if(status&&status.startsWith("late")){presentNames.
-push(st.name);const mins=status.includes(":")?status.split(":")[1]:"";lateNames.push(`${st.name} ${mins?"("+mins+"د)":""}`)}});if(leaveNames.length)h+=`<div cl\
-ass="names-list"><b>مرخصی:</b> ${leaveNames.map(esc).join("، ")}</div>`;if(globalFilter.showPresentNames&&presentNames.length>0)h+=`<div class="names-list\
-"><b class="present">✅ حاضرین (${presentNames.length}):</b> ${presentNames.map(esc).join("، ")}</div>`;else if(presentNames.length>0)h+=`<div class="na\
-mes-list"><b class="present">✅ حاضر:</b> ${presentNames.length} نفر</div>`;if(globalFilter.showAbsentNames&&absentNames.length>0)h+=`<div class="names-\
-list"><b class="absent">❌ غایبین (${absentNames.length}):</b> ${absentNames.map(esc).join("، ")}</div>`;else if(absentNames.length>0)h+=`<div class="na\
-mes-list"><b class="absent">❌ غایب:</b> ${absentNames.length} نفر</div>`;if(globalFilter.showLateNames&&lateNames.length>0)h+=`<div class="names-list">\
-<b class="late">⏰ تأخیری‌ها (${lateNames.length}):</b> ${lateNames.map(esc).join("، ")}</div>`;else if(lateNames.length>0)h+=`<div class="names-lis\
-t"><b class="late">⏰ تأخیر:</b> ${lateNames.length} نفر</div>`;if(presentNames.length===0&&absentNames.length===0&&lateNames.length===0&&leaveNames.length===
-0)h+=`<div class="names-list muted">وضعیت حضور ثبت نشده است.</div>`}if(globalFilter.showScores){const exams=sess.scores.filter(x=>x.type==="m\
-ostamar"||x.type==="payani"||x.type==="classGrade"||x.type==="activity");if(exams.length)h+=`<div class="names-list" style="color:var(--status-info, #1d4f91);ma\
-rgin-top:8px">📊 نمرات: `+exams.map(x=>{const st=sessionStudent(cls.classObj,sess,x.studentId);return`${st?st.name:""}(${TYPE_LABELS[x.type]}:${x.value})`}).
-map(esc).join("، ")+`</div>`}if(globalFilter.showPosNeg){const pos=sess.scores.filter(x=>x.type==="positive");const neg=sess.scores.filter(x=>x.type==="negativ\
-e");if(pos.length)h+=`<div class="names-list" style="color:var(--status-success, #16664e);margin-top:4px">➕ مثبت (${pos.length}): `+pos.map(x=>{const st=sessionStudent(
-cls.classObj,sess,x.studentId);return`${st?st.name:""}(${x.value})`}).map(esc).join("، ")+`</div>`;if(neg.length)h+=`<div class="names-list" style="color:var(-\
--status-danger, #9f2635);margin-top:4px">➖ منفی (${neg.length}): `+neg.map(x=>{const st=sessionStudent(cls.classObj,sess,x.studentId);return`${st?st.name:
-""}(${x.value})`}).map(esc).join("، ")+`</div>`}if(globalFilter.showHomework){const hw=sess.scores.filter(x=>x.type==="homework");if(hw.length)h+=`<div class="\
-names-list" style="color:var(--status-info, #1d4f91);margin-top:4px">📝 تکالیف (${hw.length}): `+hw.map(x=>{const st=sessionStudent(cls.classObj,sess,x.
-studentId);return`${st?st.name:""}${x.note?"("+x.note+")":""}`}).map(esc).join("، ")+`</div>`}h+=`</div><hr style="border:0;border-top:1px dashed var(--theme-l\
-ine, #e4e4e7);margin:10px 0">`});h+=`</div>`});h+=`</div>`}h+=`</div>`;out.innerHTML=h}function copyGlobalReportText(btn){return EduV24.copyReport(buildGlobalReportText,
-btn)}function buildGlobalReportText(){const filteredSessions=getFilteredSessions();if(filteredSessions.length===0)return alert("موردی برای گزارش یافت نشد.");
-let text=`📊 گزارش جامع عملکرد کلاسی
+const{counts}=activityReportAttendance(cls.classObj,sess);h+=`<td>✅${counts.present+counts.late} ❌${counts.absent} ⏰${counts.late} · مرخصی ${counts.
+leave} · تعیین‌نشده ${counts.unknown}</td>`}if(globalFilter.showScores){const m=sess.scores.filter(x=>x.type==="mostamar").length;const pay=sess.scores.
+filter(x=>x.type==="payani").length;const classMarks=sess.scores.filter(score=>score.type==="classGrade").length;const activityMarks=sess.scores.filter(score=>score.
+type==="activity").length;h+="<td>"+(m||pay||classMarks||activityMarks?"مستمر: "+m+" · پایانی: "+pay+" · کلاسی: "+classMarks+" · فعالیت: "+
+activityMarks:"—")+"</td>"}if(globalFilter.showPosNeg){const pos=sess.scores.filter(x=>x.type==="positive").length;const neg=sess.scores.filter(x=>x.type==="n\
+egative").length;h+=`<td style="color:var(--status-success, #16664e);font-weight:600">${pos}</td>`;h+=`<td style="color:var(--status-danger, #9f2635);font-weigh\
+t:600">${neg}</td>`}if(globalFilter.showHomework){const hw=sess.scores.filter(x=>x.type==="homework").length;h+=`<td>${hw}</td>`}}h+=`</tr>`});h+=`</tbody></tab\
+le></div>`}else{h+=`<div class="detailed-report-box">`;let mainHeader=`📊 <b>گزارش جامع عملکرد کلاسی</b><br>`;if(globalFilter.date)mainHeader+=
+`📅 تاریخ: ${faDate(globalFilter.date)}<br>`;else mainHeader+=`📅 تاریخ تهیه گزارش: ${faDate(todayISO())}<br>`;if(globalFilter.classId){const cls=findClassById(
+globalFilter.classId);mainHeader+=`🏫 مدرسه: ${esc(cls.school.name)} | کلاس: ${esc(cls.classObj.name)}<br>`}h+=`<h2 style="text-align:center">${mainHeader}\
+</h2>`;const groupedByPeriod={};filteredSessions.forEach(sess=>{if(!groupedByPeriod[sess.period])groupedByPeriod[sess.period]=[];groupedByPeriod[sess.period].push(
+sess)});const sortedPeriods=Object.keys(groupedByPeriod).sort((a,b)=>parseInt(a)-parseInt(b));sortedPeriods.forEach(periodStr=>{const periodNum=parseInt(periodStr);
+h+=`<div class="period-block"><div class="period-title">⏰ ${getPeriodName(periodNum)}</div>`;groupedByPeriod[periodStr].forEach(sess=>{const cls=findClassById(
+sess.classId);const lesson=getLessonObj(cls.classObj,sess.lessonId);h+=`<div class="session-detail"><b>📅 تاریخ:</b> ${faDate(sess.date)} | <b>📚 درس:</b\
+> ${esc(lesson.name)} | <b>👨‍🏫 دبیر:</b> ${esc(lesson.teacher||"---")} | <b>کلاس:</b> ${esc(cls.classObj.name)}<br>`;if(globalFilter.showAttendance){
+const presentNames=[],absentNames=[],leaveNames=[],lateNames=[],unknownNames=[];activityReportAttendance(cls.classObj,sess).people.forEach(({student:st,attendance})=>{
+if(attendance.status==="present")presentNames.push(st.name);else if(attendance.status==="leave")leaveNames.push(st.name);else if(attendance.status==="absent")absentNames.
+push(st.name);else if(attendance.status==="late"){presentNames.push(st.name);lateNames.push(`${st.name}${attendance.minutes===null?"":" ("+attendance.minutes+"د\
+)"}`)}else unknownNames.push(st.name)});if(unknownNames.length)h+=`<div class="names-list muted"><b>تعیین‌نشده (${unknownNames.length}):</b> ${unknownNames.
+map(esc).join("، ")}</div>`;if(leaveNames.length)h+=`<div class="names-list"><b>مرخصی:</b> ${leaveNames.map(esc).join("، ")}</div>`;if(globalFilter.showPresentNames&&
+presentNames.length>0)h+=`<div class="names-list"><b class="present">✅ حاضرین (${presentNames.length}):</b> ${presentNames.map(esc).join("، ")}</div>`;else if(presentNames.
+length>0)h+=`<div class="names-list"><b class="present">✅ حاضر:</b> ${presentNames.length} نفر</div>`;if(globalFilter.showAbsentNames&&absentNames.length>
+0)h+=`<div class="names-list"><b class="absent">❌ غایبین (${absentNames.length}):</b> ${absentNames.map(esc).join("، ")}</div>`;else if(absentNames.length>
+0)h+=`<div class="names-list"><b class="absent">❌ غایب:</b> ${absentNames.length} نفر</div>`;if(globalFilter.showLateNames&&lateNames.length>0)h+=`<div\
+ class="names-list"><b class="late">⏰ تأخیری‌ها (${lateNames.length}):</b> ${lateNames.map(esc).join("، ")}</div>`;else if(lateNames.length>0)h+=`<\
+div class="names-list"><b class="late">⏰ تأخیر:</b> ${lateNames.length} نفر</div>`;if(presentNames.length===0&&absentNames.length===0&&lateNames.length===
+0&&leaveNames.length===0)h+=`<div class="names-list muted">وضعیت حضور ثبت نشده است.</div>`}if(globalFilter.showScores){const exams=sess.scores.
+filter(x=>x.type==="mostamar"||x.type==="payani"||x.type==="classGrade"||x.type==="activity");if(exams.length)h+=`<div class="names-list" style="color:var(--sta\
+tus-info, #1d4f91);margin-top:8px">📊 نمرات: `+exams.map(x=>{const st=sessionStudent(cls.classObj,sess,x.studentId);return`${st?st.name:""}(${TYPE_LABELS[x.
+type]}:${x.value})`}).map(esc).join("، ")+`</div>`}if(globalFilter.showPosNeg){const pos=sess.scores.filter(x=>x.type==="positive");const neg=sess.scores.filter(
+x=>x.type==="negative");if(pos.length)h+=`<div class="names-list" style="color:var(--status-success, #16664e);margin-top:4px">➕ مثبت (${pos.length}): `+pos.
+map(x=>{const st=sessionStudent(cls.classObj,sess,x.studentId);return`${st?st.name:""}(${x.value})`}).map(esc).join("، ")+`</div>`;if(neg.length)h+=`<div class\
+="names-list" style="color:var(--status-danger, #9f2635);margin-top:4px">➖ منفی (${neg.length}): `+neg.map(x=>{const st=sessionStudent(cls.classObj,sess,x.
+studentId);return`${st?st.name:""}(${x.value})`}).map(esc).join("، ")+`</div>`}if(globalFilter.showHomework){const hw=sess.scores.filter(x=>x.type==="homework");
+if(hw.length)h+=`<div class="names-list" style="color:var(--status-info, #1d4f91);margin-top:4px">📝 تکالیف (${hw.length}): `+hw.map(x=>{const st=sessionStudent(
+cls.classObj,sess,x.studentId);return`${st?st.name:""}${x.note?"("+x.note+")":""}`}).map(esc).join("، ")+`</div>`}h+=`</div><hr style="border:0;border-top:1px \
+dashed var(--theme-line, #e4e4e7);margin:10px 0">`});h+=`</div>`});h+=`</div>`}h+=`</div>`;out.innerHTML=h}function copyGlobalReportText(btn){return EduV24.copyReport(
+buildGlobalReportText,btn)}function buildGlobalReportText(source=db){const findClass=(classId,schoolId="")=>{for(const school of source.schools){if(schoolId&&school.
+id!==schoolId)continue;const classObj=school.classes.find(item=>item.id===classId);if(classObj)return{school,classObj}}return null};const filteredSessions=getFilteredSessions(
+source);if(filteredSessions.length===0)return alert("موردی برای گزارش یافت نشد.");let text=`📊 گزارش جامع عملکرد کلاسی
 `;if(globalFilter.date)text+=`📅 تاریخ گزارش: ${faDate(globalFilter.date)}
 `;else text+=`📅 تاریخ تهیه گزارش: ${faDate(todayISO())}
-`;if(globalFilter.classId){const cls=findClassById(globalFilter.classId);text+=`🏫 مدرسه: ${cls.school.name} | کلاس: ${cls.classObj.name}
+`;if(globalFilter.classId){const cls=findClass(globalFilter.classId,globalFilter.schoolId);text+=`🏫 مدرسه: ${cls.school.name} | کلاس: ${cls.classObj.
+name}
 `}text+=`================================
 
-`;if(globalFilter.reportMode==="summary"){filteredSessions.forEach(sess=>{const cls=findClassById(sess.classId);const lesson=getLessonObj(cls.classObj,sess.lessonId);
-text+=`📅 ${faDate(sess.date)} | کلاس: ${cls.classObj.name} | درس: ${lesson.name} | ${getPeriodName(sess.period)}
-`;if(globalFilter.studentId){const stObj=sessionStudent(cls.classObj,sess,globalFilter.studentId);if(globalFilter.showAttendance){const st=sess.attendance[globalFilter.
-studentId];let att="ثبت نشده";if(st==="present")att="حاضر";else if(st==="leave")att="مرخصی";else if(st==="absent")att="غایب";else if(st&&st.
-startsWith("late"))att=`تأخیر (${st.split(":")[1]||0}د)`;text+=`   👤 ${stObj?.name||""}: ${att}
+`;if(globalFilter.reportMode==="summary"){filteredSessions.forEach(sess=>{const cls=findClass(sess.classId,sess.schoolId);const lesson=getLessonObj(cls.classObj,
+sess.lessonId);text+=`📅 ${faDate(sess.date)} | کلاس: ${cls.classObj.name} | درس: ${lesson.name} | ${getPeriodName(sess.period)}
+`;if(globalFilter.studentId){const stObj=sessionStudent(cls.classObj,sess,globalFilter.studentId);if(globalFilter.showAttendance){const st=EduReportAttendance.normalize(
+sess.attendance[globalFilter.studentId]);let att="ثبت نشده";if(st.status==="present")att="حاضر";else if(st.status==="leave")att="مرخصی";else if(st.
+status==="absent")att="غایب";else if(st.status==="late")att="تأخیر"+(st.minutes===null?"":` (${st.minutes}د)`);text+=`   👤 ${stObj?.name||""}: ${att}\
+
 `}const my=sess.scores.filter(x=>x.studentId===globalFilter.studentId);if(globalFilter.showScores){const ms=my.filter(x=>x.type==="mostamar").map(x=>x.value).join(
 "، ");const ps=my.filter(x=>x.type==="payani").map(x=>x.value).join("، ");if(my.some(score=>score.type==="classGrade"))text+="   - نمره کلاسی: "+my.filter(
 score=>score.type==="classGrade").map(score=>score.value).join("، ")+"\n";const activityMarks=my.filter(score=>score.type==="activity");if(activityMarks.length)
@@ -290,9 +296,8 @@ text+="   - امتیاز فعالیت: "+activityMarks.map(score=>score.value).j
 map(x=>`(${x.value})`).join("، ")||"—"}
 `;text+=`   - ➖ منفی (${neg.length}): ${neg.map(x=>`(${x.value})`).join("، ")||"—"}
 `}if(globalFilter.showHomework){const hw=my.filter(x=>x.type==="homework");if(hw.length)text+=`   - 📝 تکالیف: ${hw.length}
-`}}else{if(globalFilter.showAttendance){const p=Object.values(sess.attendance).filter(x=>x==="present").length;const a=Object.values(sess.attendance).filter(x=>x===
-"absent").length;const leaveCount=Object.values(sess.attendance).filter(x=>x==="leave").length;const l=Object.values(sess.attendance).filter(x=>x&&x.startsWith(
-"late")).length;text+=`   👥 حضور: حاضر ${p+l} | غایب ${a} | مرخصی ${leaveCount} | تأخیر ${l}
+`}}else{if(globalFilter.showAttendance){const{counts}=activityReportAttendance(cls.classObj,sess);text+=`   👥 حضور: حاضر ${counts.present+counts.late}\
+ | غایب ${counts.absent} | مرخصی ${counts.leave} | تأخیر ${counts.late} | تعیین‌نشده ${counts.unknown}
 `}if(globalFilter.showScores){const m=sess.scores.filter(x=>x.type==="mostamar").length;const pay=sess.scores.filter(x=>x.type==="payani").length;const classMarks=sess.
 scores.filter(score=>score.type==="classGrade");const activityMarks=sess.scores.filter(score=>score.type==="activity");if(classMarks.length)text+="   - نمرات کل\
 اسی: "+classMarks.map(score=>score.value).join("، ")+"\n";if(activityMarks.length)text+="   - امتیاز فعالیت: "+activityMarks.map(score=>score.value).
@@ -304,12 +309,14 @@ join("، ")+"\n";if(m||pay)text+=`   - 📊 نمرات: مستمر ${m} | پای
 `})}else{const groupedByPeriod={};filteredSessions.forEach(sess=>{if(!groupedByPeriod[sess.period])groupedByPeriod[sess.period]=[];groupedByPeriod[sess.period].
 push(sess)});const sortedPeriods=Object.keys(groupedByPeriod).sort((a,b)=>parseInt(a)-parseInt(b));sortedPeriods.forEach(periodStr=>{text+=`📌 ${getPeriodName(
 parseInt(periodStr))}:
-`;groupedByPeriod[periodStr].forEach(sess=>{const cls=findClassById(sess.classId);const lesson=getLessonObj(cls.classObj,sess.lessonId);text+=`🔹 تاریخ: ${faDate(
-sess.date)} | درس: ${lesson.name} | دبیر: ${lesson.teacher||"---"} | کلاس: ${cls.classObj.name}
-`;if(globalFilter.showAttendance){const presentNames=[],absentNames=[],leaveNames=[],lateNames=[];sessionStudents(cls.classObj,sess).forEach(st=>{const status=sess.
-attendance[st.id];if(status==="present")presentNames.push(st.name);else if(status==="leave")leaveNames.push(st.name);else if(status==="absent")absentNames.push(
-st.name);else if(status&&status.startsWith("late")){presentNames.push(st.name);const mins=status.includes(":")?status.split(":")[1]:"";lateNames.push(`${st.name}\
- ${mins?"("+mins+"د)":""}`)}});if(leaveNames.length)text+=`   مرخصی (${leaveNames.length}): ${leaveNames.join("، ")}
+`;groupedByPeriod[periodStr].forEach(sess=>{const cls=findClass(sess.classId,sess.schoolId);const lesson=getLessonObj(cls.classObj,sess.lessonId);text+=`🔹 تاری\
+خ: ${faDate(sess.date)} | درس: ${lesson.name} | دبیر: ${lesson.teacher||"---"} | کلاس: ${cls.classObj.name}
+`;if(globalFilter.showAttendance){const presentNames=[],absentNames=[],leaveNames=[],lateNames=[],unknownNames=[];activityReportAttendance(cls.classObj,sess).people.
+forEach(({student:st,attendance})=>{if(attendance.status==="present")presentNames.push(st.name);else if(attendance.status==="leave")leaveNames.push(st.name);else if(attendance.
+status==="absent")absentNames.push(st.name);else if(attendance.status==="late"){presentNames.push(st.name);lateNames.push(`${st.name}${attendance.minutes===null?
+"":" ("+attendance.minutes+"د)"}`)}else unknownNames.push(st.name)});if(unknownNames.length)text+=`   تعیین‌نشده (${unknownNames.length}): ${unknownNames.
+join("، ")}
+`;if(leaveNames.length)text+=`   مرخصی (${leaveNames.length}): ${leaveNames.join("، ")}
 `;if(presentNames.length>0){if(globalFilter.showPresentNames)text+=`   ✅ حاضرین (${presentNames.length}): ${presentNames.join("، ")}
 `;else text+=`   ✅ حاضرین: ${presentNames.length} نفر
 `}if(absentNames.length>0){if(globalFilter.showAbsentNames)text+=`   ❌ غایبین (${absentNames.length}): ${absentNames.join("، ")}
@@ -381,12 +388,12 @@ teacher)}`:""}</h3>
       <button data-legacy-click="reports-lesson:4">🖨️ چاپ / PDF</button>
     </div>
     <p class="muted">${sessions.length} جلسه ثبت شده</p>`;if(lesson.gradeMode==="kardanesh")h+=buildKardaneshSummaryHtml(c,lesson);if(!sessions.length)
-h+=`<div class="empty">جلسه‌ای ثبت نشده</div>`;else sessions.forEach(sess=>{const present=[],absent=[],leave=[],late=[];sessionStudents(c,sess).forEach(
-s=>{const st=sess.attendance[s.id];if(st==="present")present.push(s.name);else if(st==="leave")leave.push(s.name);else if(st==="absent")absent.push(s.name);else if(st&&
-st.startsWith("late")){present.push(s.name);const mins=st.includes(":")?st.split(":")[1]:"";late.push(`${s.name} ${mins?`(${mins}د)`:""}`)}});const pos=sess.scores.
-filter(x=>x.type==="positive");const neg=sess.scores.filter(x=>x.type==="negative");const hw=sess.scores.filter(x=>x.type==="homework");const poudman=lesson.poudmans.
-find(p=>p.id===sess.poudmanId);const unit=poudman?poudman.units.find(u=>u.id===sess.unitId):null;h+=`<div style="border:1px solid var(--theme-line, #e4e4e7);bor\
-der-radius:8px;padding:12px;margin:10px 0">
+h+=`<div class="empty">جلسه‌ای ثبت نشده</div>`;else sessions.forEach(sess=>{const present=[],absent=[],leave=[],late=[],unknown=[];sessionStudents(
+c,sess).forEach(s=>{const st=EduReportAttendance.normalize(sess.attendance[s.id]);if(st.status==="present")present.push(s.name);else if(st.status==="leave")leave.
+push(s.name);else if(st.status==="absent")absent.push(s.name);else if(st.status==="late"){present.push(s.name);late.push(`${s.name}${st.minutes===null?"":` (${st.
+minutes}د)`}`)}else unknown.push(s.name)});const pos=sess.scores.filter(x=>x.type==="positive");const neg=sess.scores.filter(x=>x.type==="negative");const hw=sess.
+scores.filter(x=>x.type==="homework");const poudman=lesson.poudmans.find(p=>p.id===sess.poudmanId);const unit=poudman?poudman.units.find(u=>u.id===sess.unitId):
+null;h+=`<div style="border:1px solid var(--theme-line, #e4e4e7);border-radius:8px;padding:12px;margin:10px 0">
       <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
         <strong>${faDate(sess.date)} — زنگ ${sess.period+1}</strong>
         <span class="muted">${lesson.gradeMode==="kardanesh"?"کاردانش: تئوری و عملی":(poudman?esc(poudman.name):"—")+" / "+(unit?esc(unit.name):
@@ -401,6 +408,7 @@ der-radius:8px;padding:12px;margin:10px 0">
       </div>
       ${absent.length?`<div style="font-size:.85em;color:var(--status-danger, #9f2635)">غایبین: ${absent.map(esc).join("، ")}</div>`:""}
       ${late.length?`<div style="font-size:.85em;color:var(--status-warning, #7c5105)">تأخیر: ${late.map(esc).join("، ")}</div>`:""}
+      ${unknown.length?`<div class="muted" style="font-size:.85em">تعیین‌نشده (${unknown.length} نفر): ${unknown.map(esc).join("، ")}</div>`:""}
       ${present.length?`<div style="font-size:.85em;color:var(--status-success, #16664e);margin-top:4px">حاضرین: ${present.map(esc).join("، ")}</div>`:""}\
 
       ${pos.length?`<div style="font-size:.85em;color:var(--status-success, #16664e);margin-top:4px">➕ مثبت: ${pos.map(x=>{const s=sessionStudent(c,sess,x.
@@ -1026,12 +1034,12 @@ arg10"),this.getAttribute("data-legacy-change-arg11"),this.getAttribute("data-le
 n-editor:9",function(event){return toggleUnitApplyDirect(this.getAttribute("data-legacy-change-arg14"),this.getAttribute("data-legacy-change-arg15"),this.getAttribute(
 "data-legacy-change-arg16"),"present",this.checked)});EduLegacyEvents.register("grading-lesson-editor:10",function(event){return toggleUnitApplyDirect(this.getAttribute(
 "data-legacy-change-arg18"),this.getAttribute("data-legacy-change-arg19"),this.getAttribute("data-legacy-change-arg20"),"late",this.checked)});function generateSessionReportText(session,c,lesson){
-const present=[],absent=[],leave=[],late=[],pos=[],neg=[],hw=[];sessionStudents(c,session).forEach(s=>{const st=session.attendance[s.id];if(st==="present")present.
-push(s.name);else if(st==="leave")leave.push(s.name);else if(st==="absent")absent.push(s.name);else if(st&&st.startsWith("late")){present.push(s.name);const mins=st.
-includes(":")?st.split(":")[1]:"0";late.push(`${s.name} (${mins} دقیقه)`)}});session.scores.forEach(sc=>{const s=sessionStudent(c,session,sc.studentId);if(!s)
-return;if(sc.type==="positive")pos.push(`${s.name} (${sc.value})`);else if(sc.type==="negative")neg.push(`${s.name} (${sc.value})`);else if(sc.type==="homework")
-hw.push(`${s.name} (${sc.note||"ثبت شد"})`)});const poudman=lesson.poudmans.find(p=>p.id===session.poudmanId);const unit=poudman?poudman.units.find(u=>u.id===
-session.unitId):null;let text=`📅 تاریخ: ${faDate(session.date)} | زنگ ${session.period+1}
+const present=[],absent=[],leave=[],late=[],unknown=[],pos=[],neg=[],hw=[];sessionStudents(c,session).forEach(s=>{const st=EduReportAttendance.normalize(session.
+attendance[s.id]);if(st.status==="present")present.push(s.name);else if(st.status==="leave")leave.push(s.name);else if(st.status==="absent")absent.push(s.name);else if(st.
+status==="late"){present.push(s.name);late.push(`${s.name}${st.minutes===null?"":` (${st.minutes} دقیقه)`}`)}else unknown.push(s.name)});session.scores.forEach(
+sc=>{const s=sessionStudent(c,session,sc.studentId);if(!s)return;if(sc.type==="positive")pos.push(`${s.name} (${sc.value})`);else if(sc.type==="negative")neg.push(
+`${s.name} (${sc.value})`);else if(sc.type==="homework")hw.push(`${s.name} (${sc.note||"ثبت شد"})`)});const poudman=lesson.poudmans.find(p=>p.id===session.
+poudmanId);const unit=poudman?poudman.units.find(u=>u.id===session.unitId):null;let text=`📅 تاریخ: ${faDate(session.date)} | زنگ ${session.period+1}
 `;text+=`📚 کلاس: ${c.name} | درس: ${lesson.name} | دبیر: ${lesson.teacher||"---"}
 `;if(poudman)text+=`📍 پودمان: ${poudman.name} | ${unit?unit.name:""}
 `;text+=`
@@ -1040,6 +1048,7 @@ session.unitId):null;let text=`📅 تاریخ: ${faDate(session.date)} | زنگ
 ✅ حاضر (${present.length} نفر): ${present.length?present.join("، "):"---"}
 ❌ غایب (${absent.length} نفر): ${absent.length?absent.join("، "):"---"}
 ⏰ تأخیر (${late.length} نفر): ${late.length?late.join("، "):"---"}
+`;if(unknown.length)text+=`تعیین‌نشده (${unknown.length} نفر): ${unknown.join("، ")}
 `;if(pos.length||neg.length||hw.length){text+=`
 📝 موارد ثبت شده:
 `;if(pos.length)text+=`➕ مثبت (${pos.length}): ${pos.join("، ")}
@@ -1562,51 +1571,52 @@ fail("کاردانش");for(const[sid,g]of Object.entries(l.kardaneshScores)){id(
 ry","midtermPractical","midtermTheory"])if(g[k]!=null)score(g[k])}}lessons.set(l.id,{classId:c.id,units,pids})})})});const slots=new Set;d.sessions.forEach(x=>{
 uid2(x.id);const c=classes.get(x.classId),l=lessons.get(x.lessonId);if(!c||c.schoolId!==x.schoolId||!l||l.classId!==x.classId)fail("ارتباط جلسه");date(
 x.date);if(!Number.isInteger(x.period)||x.period<0||x.period>11)fail("زنگ");const slot=x.classId+"|"+x.date+"|"+x.period;if(slots.has(slot))fail("جلسه تکراری");
-slots.add(slot);if(x.poudmanId&&!l.pids.has(x.poudmanId))fail("پودمان جلسه");if(x.unitId&&l.units.get(x.unitId)!==x.poudmanId)fail("واحد جلسه");
-if(!obj(x.attendance))fail("حضور");for(const[sid,status]of Object.entries(x.attendance)){id(sid);if(typeof status!=="string"||!/^(present|absent|leave|late(?::\d{1,3})?)$/.
-test(status))fail("وضعیت حضور")}arr(x.scores,"امتیازات");x.scores.forEach(sc=>{id(sc.studentId);if(!Object.hasOwn(TYPE_LABELS,sc.type)||!Number.
-isFinite(sc.value)||sc.value<0)fail("امتیاز");if(["mostamar","payani","classGrade"].includes(sc.type))score(sc.value);if(sc.note!==void 0)text(sc.note)});
-if(x.roster!==void 0){arr(x.roster,"فهرست جلسه");const rosterIds=new Set;x.roster.forEach(st=>{id(st.id);text(st.name);if(rosterIds.has(st.id))fail("فه\
-رست تکراری");rosterIds.add(st.id)})}});if(d.settings!==void 0){if(!obj(d.settings))fail("تنظیمات");if(d.settings.password!==void 0)text(d.settings.
-password);if(d.settings.weekStartDate)date(d.settings.weekStartDate)}if(d.periods!==void 0&&(!Number.isInteger(d.periods)||d.periods<1||d.periods>12))fail("تعدا\
-د زنگ");if(d.activeDays!==void 0){arr(d.activeDays,"روزها");if(new Set(d.activeDays).size!==d.activeDays.length||d.activeDays.some(x=>!Number.isInteger(
-x)||x<0||x>6))fail("روز")}if(d.masterSchedule!==void 0){if(!obj(d.masterSchedule))fail("برنامه");for(const[key,e]of Object.entries(d.masterSchedule)){if(!/^[0-6]-(?:[0-9]|1[01])-(all|odd|even)$/.
-test(key)||!obj(e))fail("خانه برنامه");const c=classes.get(e.classId),l=lessons.get(e.lessonId);if(!c||c.schoolId!==e.schoolId||!l||l.classId!==e.classId)
-fail("ارتباط برنامه")}}}function legacy_downloadRawRecovery(){const raw=localStorage.getItem(STORAGE_KEY);if(raw===null)return alert("نسخه خامی وجود\
- ندارد.");downloadLocalFile(new Blob([raw],{type:"application/json"}),"school-raw-recovery.json")}function snapshotRoster(c){return c.students.map(st=>({id:st.
-id,name:st.name,code:st.code||"",...st.recovered===true?{recovered:true}:{}}))}function sessionStudents(c,x){return x.roster||[...c.students,...c.archivedStudents||
-[]]}function validateReportNotes(value,workspaceId){if(value===void 0)return{};if(!value||typeof value!=="object"||Array.isArray(value))throw Error("بخش توضیحات\
- گزارش در پشتیبان معتبر نیست.");for(const[key,text]of Object.entries(value))if(typeof text!=="string"||!key.startsWith(workspaceId+"|")||
-key.split("|").length!==7)throw Error("توضیحات گزارش با ترم پشتیبان سازگار نیست.");return Object.fromEntries(Object.entries(value))}
-function historicalRoster(c,session){const recorded=new Set([...Object.keys(session.attendance||{}),...(session.scores||[]).map(score=>score.studentId)]);if(!recorded.
-size)return snapshotRoster(c);const known=new Map([...c.students,...c.archivedStudents||[]].map(student=>[student.id,student]));return[...recorded].map(id=>{const student=known.
-get(id);if(!student)throw Error("عضو ثبت‌شده در جلسه، در سوابق کلاس وجود ندارد: "+id);return structuredClone(student)})}function archiveStudent(c,st){
-db.sessions.filter(x=>x.classId===c.id).forEach(x=>{if(!x.roster)x.roster=historicalRoster(c,x)});(c.archivedStudents||(c.archivedStudents=[])).push({...st});c.
-students=c.students.filter(x=>x.id!==st.id)}function legacy_calcStudentLesson(c,lesson,stId,source=db){const r=calcStudentLessonBase(c,lesson,stId,source);if(lesson.
-gradeMode!=="kardanesh")return r;const g=ownScoreRecord(lesson.kardaneshScores,stId);r.practical=g.practical??null;r.theory=g.theory??null;r.avgM=r.theory;r.avgP=
-r.practical;r.final=r.practical!==null&&r.theory!==null?(r.practical*7+r.theory*3)/10:null;r.passed=r.final===null?null:r.final>=14;return r}function legacy_gradeStatus(r){
-return r.final===null?"ناقص":r.passed?"قبول":"مردود"}function legacy_buildKardaneshSummaryHtml(c,l,studentId){return'<div class="card"><h3>کاردانش \
-— '+esc(l.name)+'</h3><p>نهایی = عملی × ۷۰٪ + تئوری × ۳۰٪؛ قبولی از ۱۴. هر دو نمره الزامی است.</p><div style="overflow-x:auto"><table><thead><tr><th>دانش‌آموز\
-</th><th>عملی</th><th>تئوری</th><th>نهایی</th><th>وضعیت</th></tr></thead><tbody>'+getSortedStudents(studentId?{students:[...c.students,...c.archivedStudents||
-[]]}:c).filter(st=>!studentId||st.id===studentId).map(st=>{const r=calcStudentLesson(c,l,st.id);return"<tr><td>"+esc(st.name)+"</td><td>"+(r.practical??"—")+"\
-</td><td>"+(r.theory??"—")+"</td><td>"+(r.final===null?"—":r.final.toFixed(2))+"</td><td>"+gradeStatus(r)+"</td></tr>"}).join("")+"</tbody></table></div></d\
-iv>"}function legacy_buildKardaneshGradesHtml(c,l){return'<div class="card"><h3>ثبت نمرات کاردانش — '+esc(l.name)+'</h3><p>نمره نهایی = عملی × \
-۷۰٪ + تئوری × ۳۰٪؛ قبولی از ۱۴. حضور و امتیازها این فرمول را تغییر نمی‌دهند. نهایی خودکار ذخیره می‌شود.</p><div style="overflow-x:auto"><table><thead><tr><th>دا\
-نش‌آموز</th><th>عملی (۷۰٪)</th><th>تئوری (۳۰٪)</th><th>نهایی</th><th>وضعیت</th></tr></thead><tbody>'+getSortedStudents(c).map(st=>{
-const r=calcStudentLesson(c,l,st.id);return"<tr><td>"+esc(st.name)+"</td>"+["practical","theory"].map(field=>'<td><input aria-label="'+(field==="midtermPractica\
-l"?"عملی میان‌ترم":field==="midtermTheory"?"تئوری میان‌ترم":field==="practical"?"عملی":"تئوری")+" "+esc(st.name)+'" type="nu\
-mber" min="0" max="20" step="any" value="'+(r[field]??"")+'" data-lesson="'+l.id+'" data-student="'+st.id+'" data-field="'+field+`" data-legacy-change="grading-\
-kardanesh:0"></td>`).join("")+'<td data-kfinal="'+st.id+'">'+(r.final===null?"—":r.final.toFixed(2))+'</td><td data-kstatus="'+st.id+'">'+gradeStatus(r)+"</td\
-></tr>"}).join("")+"</tbody></table></div></div>"}async function saveKardaneshScore(input){const{lesson:lid,student:sid,field}=input.dataset,c=getClassObj(state.
-schoolId,state.classId),l=getLessonObj(c,lid);if(!l||l.gradeMode!=="kardanesh"||!c.students.some(st=>st.id===sid)||!["practical","theory"].includes(field))return;
-const value=input.value.trim()===""?null:Number(input.value);if(value!==null&&(!Number.isFinite(value)||value<0||value>20)){input.setCustomValidity("نمره باید ص\
-فر تا بیست باشد.");input.reportValidity();return}input.setCustomValidity("");const g=writableScoreRecord(l.kardaneshScores||(l.kardaneshScores={}),sid);
-if(value===null)delete g[field];else g[field]=value;l.kardaneshScores[sid]=g;await saveDB();const r=calcStudentLesson(getClassObj(state.schoolId,state.classId),
-getLessonObj(getClassObj(state.schoolId,state.classId),lid),sid);document.querySelectorAll('[data-kfinal="'+sid+'"]').forEach(el=>el.textContent=r.final===null?
-"—":r.final.toFixed(2));document.querySelectorAll('[data-kstatus="'+sid+'"]').forEach(el=>el.textContent=gradeStatus(r))}EduLegacyEvents.register("grading-kar\
-danesh:0",function(event){return saveKardaneshScore(this)});function normalizedName(name){return name.normalize("NFKC").replace(/ي/g,"ی").replace(/ك/g,"ک").
-replace(/[\s\u200c]+/g," ").trim()}async function legacy_restoreStudent(studentId){const c=getClassObj(state.schoolId,state.classId),st=(c?.archivedStudents||[]).
-find(x=>x.id===studentId);if(!st)return;if(c.students.some(x=>x.id===studentId))return alert("دانش‌آموز در فهرست فعال وجود دارد.");
+slots.add(slot);if(x.poudmanId!=null&&x.poudmanId!==""&&(!isSafeRecordId(x.poudmanId)||!l.pids.has(x.poudmanId)))fail("پودمان جلسه");if(x.unitId!=null&&
+x.unitId!==""&&(!isSafeRecordId(x.unitId)||l.units.get(x.unitId)!==x.poudmanId))fail("واحد جلسه");if(!obj(x.attendance))fail("حضور");for(const[sid,status]of Object.
+entries(x.attendance)){id(sid);if(typeof status!=="string"||!/^(present|absent|leave|late(?::\d{1,3})?)$/.test(status))fail("وضعیت حضور")}arr(x.scores,
+"امتیازات");x.scores.forEach(sc=>{id(sc.studentId);if(!Object.hasOwn(TYPE_LABELS,sc.type)||!Number.isFinite(sc.value)||sc.value<0)fail("امتیاز");if([
+"mostamar","payani","classGrade"].includes(sc.type))score(sc.value);if(sc.note!==void 0)text(sc.note)});if(x.roster!==void 0){arr(x.roster,"فهرست جلسه");
+const rosterIds=new Set;x.roster.forEach(st=>{id(st.id);text(st.name);if(st.code!==void 0&&typeof st.code!=="string")fail("کد عضو فهرست جلسه");if(rosterIds.
+has(st.id))fail("فهرست تکراری");rosterIds.add(st.id)})}});if(d.settings!==void 0){if(!obj(d.settings))fail("تنظیمات");if(d.settings.password!==
+void 0)text(d.settings.password);if(d.settings.weekStartDate)date(d.settings.weekStartDate)}if(d.periods!==void 0&&(!Number.isInteger(d.periods)||d.periods<1||d.
+periods>12))fail("تعداد زنگ");if(d.activeDays!==void 0){arr(d.activeDays,"روزها");if(new Set(d.activeDays).size!==d.activeDays.length||d.activeDays.
+some(x=>!Number.isInteger(x)||x<0||x>6))fail("روز")}if(d.masterSchedule!==void 0){if(!obj(d.masterSchedule))fail("برنامه");for(const[key,e]of Object.entries(
+d.masterSchedule)){if(!/^[0-6]-(?:[0-9]|1[01])-(all|odd|even)$/.test(key)||!obj(e))fail("خانه برنامه");const c=classes.get(e.classId),l=lessons.get(e.
+lessonId);if(!c||c.schoolId!==e.schoolId||!l||l.classId!==e.classId)fail("ارتباط برنامه")}}}function legacy_downloadRawRecovery(){const raw=localStorage.
+getItem(STORAGE_KEY);if(raw===null)return alert("نسخه خامی وجود ندارد.");downloadLocalFile(new Blob([raw],{type:"application/json"}),"school-ra\
+w-recovery.json")}function snapshotRoster(c){return c.students.map(st=>({id:st.id,name:st.name,code:st.code||"",...st.recovered===true?{recovered:true}:{}}))}function sessionStudents(c,x){
+return x.roster||[...c.students,...c.archivedStudents||[]]}function validateReportNotes(value,workspaceId){if(value===void 0)return{};if(!value||typeof value!==
+"object"||Array.isArray(value))throw Error("بخش توضیحات گزارش در پشتیبان معتبر نیست.");for(const[key,text]of Object.entries(value))
+if(typeof text!=="string"||!key.startsWith(workspaceId+"|")||key.split("|").length!==7)throw Error("توضیحات گزارش با ترم پشتیبان سازگار نیست.");
+return Object.fromEntries(Object.entries(value))}function historicalRoster(c,session){const recorded=new Set([...Object.keys(session.attendance||{}),...(session.
+scores||[]).map(score=>score.studentId)]);if(!recorded.size)return snapshotRoster(c);const known=new Map([...c.students,...c.archivedStudents||[]].map(student=>[
+student.id,student]));return[...recorded].map(id=>{const student=known.get(id);if(!student)throw Error("عضو ثبت‌شده در جلسه، در سوابق کلاس وجود ندارد: "+
+id);return structuredClone(student)})}function archiveStudent(c,st){db.sessions.filter(x=>x.classId===c.id).forEach(x=>{if(!x.roster)x.roster=historicalRoster(c,
+x)});(c.archivedStudents||(c.archivedStudents=[])).push({...st});c.students=c.students.filter(x=>x.id!==st.id)}function legacy_calcStudentLesson(c,lesson,stId,source=db){
+const r=calcStudentLessonBase(c,lesson,stId,source);if(lesson.gradeMode!=="kardanesh")return r;const g=ownScoreRecord(lesson.kardaneshScores,stId);r.practical=g.
+practical??null;r.theory=g.theory??null;r.avgM=r.theory;r.avgP=r.practical;r.final=r.practical!==null&&r.theory!==null?(r.practical*7+r.theory*3)/10:null;r.passed=
+r.final===null?null:r.final>=14;return r}function legacy_gradeStatus(r){return r.final===null?"ناقص":r.passed?"قبول":"مردود"}function legacy_buildKardaneshSummaryHtml(c,l,studentId){
+return'<div class="card"><h3>کاردانش — '+esc(l.name)+'</h3><p>نهایی = عملی × ۷۰٪ + تئوری × ۳۰٪؛ قبولی از ۱۴. هر دو نمره الزامی است.</p><div style="over\
+flow-x:auto"><table><thead><tr><th>دانش‌آموز</th><th>عملی</th><th>تئوری</th><th>نهایی</th><th>وضعیت</th></tr></thead><tbody>'+getSortedStudents(
+studentId?{students:[...c.students,...c.archivedStudents||[]]}:c).filter(st=>!studentId||st.id===studentId).map(st=>{const r=calcStudentLesson(c,l,st.id);return"\
+<tr><td>"+esc(st.name)+"</td><td>"+(r.practical??"—")+"</td><td>"+(r.theory??"—")+"</td><td>"+(r.final===null?"—":r.final.toFixed(2))+"</td><td>"+gradeStatus(
+r)+"</td></tr>"}).join("")+"</tbody></table></div></div>"}function legacy_buildKardaneshGradesHtml(c,l){return'<div class="card"><h3>ثبت نمرات کاردانش — '+
+esc(l.name)+'</h3><p>نمره نهایی = عملی × ۷۰٪ + تئوری × ۳۰٪؛ قبولی از ۱۴. حضور و امتیازها این فرمول را تغییر نمی‌دهند. نهایی خودکار ذخیره می‌شود.</p><div style="\
+overflow-x:auto"><table><thead><tr><th>دانش‌آموز</th><th>عملی (۷۰٪)</th><th>تئوری (۳۰٪)</th><th>نهایی</th><th>وضعیت</th></tr></thead><tbody>'+
+getSortedStudents(c).map(st=>{const r=calcStudentLesson(c,l,st.id);return"<tr><td>"+esc(st.name)+"</td>"+["practical","theory"].map(field=>'<td><input aria-labe\
+l="'+(field==="midtermPractical"?"عملی میان‌ترم":field==="midtermTheory"?"تئوری میان‌ترم":field==="practical"?"عملی":"تئوری")+
+" "+esc(st.name)+'" type="number" min="0" max="20" step="any" value="'+(r[field]??"")+'" data-lesson="'+l.id+'" data-student="'+st.id+'" data-field="'+field+`" \
+data-legacy-change="grading-kardanesh:0"></td>`).join("")+'<td data-kfinal="'+st.id+'">'+(r.final===null?"—":r.final.toFixed(2))+'</td><td data-kstatus="'+st.
+id+'">'+gradeStatus(r)+"</td></tr>"}).join("")+"</tbody></table></div></div>"}async function saveKardaneshScore(input){const{lesson:lid,student:sid,field}=input.
+dataset,c=getClassObj(state.schoolId,state.classId),l=getLessonObj(c,lid);if(!l||l.gradeMode!=="kardanesh"||!c.students.some(st=>st.id===sid)||!["practical","th\
+eory"].includes(field))return;const value=input.value.trim()===""?null:Number(input.value);if(value!==null&&(!Number.isFinite(value)||value<0||value>20)){input.
+setCustomValidity("نمره باید صفر تا بیست باشد.");input.reportValidity();return}input.setCustomValidity("");const g=writableScoreRecord(l.kardaneshScores||
+(l.kardaneshScores={}),sid);if(value===null)delete g[field];else g[field]=value;l.kardaneshScores[sid]=g;await saveDB();const r=calcStudentLesson(getClassObj(state.
+schoolId,state.classId),getLessonObj(getClassObj(state.schoolId,state.classId),lid),sid);document.querySelectorAll('[data-kfinal="'+sid+'"]').forEach(el=>el.textContent=
+r.final===null?"—":r.final.toFixed(2));document.querySelectorAll('[data-kstatus="'+sid+'"]').forEach(el=>el.textContent=gradeStatus(r))}EduLegacyEvents.register(
+"grading-kardanesh:0",function(event){return saveKardaneshScore(this)});function normalizedName(name){return name.normalize("NFKC").replace(/ي/g,"ی").replace(
+/ك/g,"ک").replace(/[\s\u200c]+/g," ").trim()}async function legacy_restoreStudent(studentId){const c=getClassObj(state.schoolId,state.classId),st=(c?.archivedStudents||
+[]).find(x=>x.id===studentId);if(!st)return;if(c.students.some(x=>x.id===studentId))return alert("دانش‌آموز در فهرست فعال وجود دارد.");
 c.students.push({...st});c.archivedStudents=c.archivedStudents.filter(x=>x.id!==studentId);await saveDB({classId:c.id});render()}function legacy_buildArchiveHtml(c){
 if(!c.archivedStudents?.length)return"";return'<div class="card"><h3>سوابق بایگانی‌شده</h3><p>سوابق کلاس قبلی حفظ شده‌اند. بازگردانی، عضویت فعال در این کلاس را \
 دوباره برقرار می‌کند.</p>'+c.archivedStudents.map(st=>'<div class="row"><span>'+esc(st.name)+'</span><button class="ghost" data-id="'+st.id+`\

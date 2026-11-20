@@ -12,25 +12,27 @@ c)||!text(c.school)||!text(c.name)||!Array.isArray(c.students))fail();const stud
 id)||students.has(st.id)||!text(st.name)||st.code!==void 0&&!text(st.code)||!score(st.average)||!Array.isArray(st.lessons))fail();students.add(st.id);const lessons=new Set;
 for(const l of st.lessons){if(!isDataObject(l)||!isSafeRecordId(l.id)||lessons.has(l.id)||!text(l.name)||l.mode!==void 0&&!["standard","kardanesh"].includes(l.mode)||
 !optionalBoolean(l.passed)||l.reason!==void 0&&!text(l.reason)||l.teacher!==void 0&&!text(l.teacher)||l.policy!=null&&!isDataObject(l.policy)||l.courseInfo!=null&&
-!isDataObject(l.courseInfo)||["practical","theory","mostamar","payani","final","threshold"].some(key=>!score(l[key])))fail();lessons.add(l.id);if(l.assessments!==
-void 0){if(l.mode!=="kardanesh"||!isDataObject(l.assessments)||l.assessments.version!==1)fail();for(const stage of["midterm","final"]){const r=l.assessments[stage];
+!isDataObject(l.courseInfo)||["practical","theory","mostamar","payani","final","threshold"].some(key=>!score(l[key])))fail();lessons.add(l.id);if(l.policy?.version!==
+void 0){if(!gradePolicy||![1,2].includes(l.policy.version))fail();gradePolicy.validate(l.policy);if(l.policy.method==="dual"!==(l.mode==="kardanesh"))fail()}if(l.
+assessments!==void 0){if(l.mode!=="kardanesh"||!isDataObject(l.assessments)||l.assessments.version!==1)fail();for(const stage of["midterm","final"]){const r=l.assessments[stage];
 if(!isDataObject(r)||!score(r.practical)||!score(r.theory)||l.policy?.subjectType!=="general"&&r.practical==null||r.theory==null||!score(r.final)||r.complete!==
-true)fail();if(l.policy?.dualConfigurable===true){if(!gradePolicy||l.policy.method!=="dual")fail();gradePolicy.validate(l.policy)}const expected=l.policy?.dualConfigurable===
-true?gradePolicy.dual(l.policy,r.practical,r.theory):l.policy?.subjectType==="general"?{final:r.theory,passed:null}:weightedKardanesh(r.practical,r.theory);if(r.
-final!==expected.final||r.passed!==expected.passed)fail()}if(l.practical!==l.assessments.final.practical||l.theory!==l.assessments.final.theory||l.final!==l.assessments.
-final.final||l.passed!==l.assessments.final.passed)fail()}if(l.modules!=null){if(!Array.isArray(l.modules))fail();const modules=new Set;for(const m of l.modules){
-if(!isDataObject(m)||!isSafeRecordId(m.id)||modules.has(m.id)||!text(m.name)||!score(m.final)||!optionalBoolean(m.passed)||!optionalBoolean(m.complete)||m.reason!==
-void 0&&!text(m.reason))fail();modules.add(m.id)}}if(l.unitBased===true||l.policy?.modularScope==="unit"||l.modules?.some(module=>module.units!==void 0)){if(!gradePolicy||
-!gradePolicy.unitBased(l.policy)||l.policy.version!==2)fail()}if([1,2].includes(l.policy?.version)&&l.policy.method==="modular"){if(!gradePolicy||l.mode!=="stan\
-dard"||!Array.isArray(l.modules)||!l.modules.length)fail();gradePolicy.validate(l.policy);if(gradePolicy.unitBased(l.policy)){if(l.unitBased!==true||l.final!==null||
-l.passed!==null||l.provisionalAverage!=null||l.mostamar!=null||l.payani!=null||l.practical!=null||l.theory!=null)fail();const unitIds=new Set;for(const module of l.
-modules){if(!Array.isArray(module.units)||module.inputs!==void 0||module.final!==null||module.passed!==null||module.provisionalAverage!=null)fail();for(const unit of module.
-units){if(!isDataObject(unit)||!isSafeRecordId(unit.id)||unitIds.has(unit.id)||!text(unit.name)||!score(unit.final)||typeof unit.complete!=="boolean"||!optionalBoolean(
-unit.passed)||!text(unit.reason))fail();unitIds.add(unit.id);checkInputs(unit,l.policy,true)}if(module.complete!==(module.units.length>0&&module.units.every(unit=>unit.
-complete)))fail()}if(l.complete!==l.modules.every(module=>module.complete))fail();continue}for(const module of l.modules){if(typeof module.complete!=="boolean"||
-(module.complete?module.final==null||typeof module.passed!=="boolean":module.final!=null||module.passed!=null)||module.passed===true&&module.final<l.policy.moduleMin)
-fail();checkInputs(module,l.policy)}const expected=gradePolicy.moduleAggregate(l.modules);if(l.final!==expected.final||l.passed!==expected.passed)fail()}}if(st.
-lessons.length&&st.lessons.every(lesson=>[1,2].includes(lesson.policy?.version)&&["dual","modular"].includes(lesson.policy.method))){const averagedLessons=st.lessons.
-filter(lesson=>!gradePolicy.unitBased(lesson.policy));const average=averagedLessons.length&&averagedLessons.every(lesson=>lesson.final!=null)?averagedLessons.reduce(
-(sum,lesson)=>sum+lesson.final,0)/averagedLessons.length:null;if(st.average!==average)fail()}}}return true}});
+true||r.reason!==void 0&&!text(r.reason)||!score(r.threshold))fail();if(l.policy?.dualConfigurable===true){if(!gradePolicy||l.policy.method!=="dual")fail();gradePolicy.
+validate(l.policy)}const expected=l.policy?.dualConfigurable===true?gradePolicy.dual(l.policy,r.practical,r.theory):l.policy?.subjectType==="general"?{final:r.theory,
+passed:null}:weightedKardanesh(r.practical,r.theory);if(r.final!==expected.final||r.passed!==expected.passed)fail();if(r.threshold!=null&&r.threshold!==(l.policy?.
+subjectType==="general"?null:l.policy?.dualConfigurable===true?l.policy.passMin:14))fail()}if(l.practical!==l.assessments.final.practical||l.theory!==l.assessments.
+final.theory||l.final!==l.assessments.final.final||l.passed!==l.assessments.final.passed)fail()}if(l.modules!=null){if(!Array.isArray(l.modules))fail();const modules=new Set;
+for(const m of l.modules){if(!isDataObject(m)||!isSafeRecordId(m.id)||modules.has(m.id)||!text(m.name)||!score(m.final)||!optionalBoolean(m.passed)||!optionalBoolean(
+m.complete)||m.reason!==void 0&&!text(m.reason))fail();modules.add(m.id)}}if(l.unitBased===true||l.policy?.modularScope==="unit"||l.modules?.some(module=>module.
+units!==void 0)){if(!gradePolicy||!gradePolicy.unitBased(l.policy)||l.policy.version!==2)fail()}if([1,2].includes(l.policy?.version)&&l.policy.method==="modular"){
+if(!gradePolicy||l.mode!=="standard"||!Array.isArray(l.modules)||!l.modules.length)fail();gradePolicy.validate(l.policy);if(gradePolicy.unitBased(l.policy)){if(l.
+unitBased!==true||l.final!==null||l.passed!==null||l.provisionalAverage!=null||l.mostamar!=null||l.payani!=null||l.practical!=null||l.theory!=null)fail();const unitIds=new Set;
+for(const module of l.modules){if(!Array.isArray(module.units)||module.inputs!==void 0||module.final!==null||module.passed!==null||module.provisionalAverage!=null)
+fail();for(const unit of module.units){if(!isDataObject(unit)||!isSafeRecordId(unit.id)||unitIds.has(unit.id)||!text(unit.name)||!score(unit.final)||typeof unit.
+complete!=="boolean"||!optionalBoolean(unit.passed)||!text(unit.reason))fail();unitIds.add(unit.id);checkInputs(unit,l.policy,true)}if(module.complete!==(module.
+units.length>0&&module.units.every(unit=>unit.complete)))fail()}if(l.complete!==l.modules.every(module=>module.complete))fail();continue}for(const module of l.modules){
+if(typeof module.complete!=="boolean"||(module.complete?module.final==null||typeof module.passed!=="boolean":module.final!=null||module.passed!=null)||module.passed===
+true&&module.final<l.policy.moduleMin)fail();checkInputs(module,l.policy)}const expected=gradePolicy.moduleAggregate(l.modules);if(l.final!==expected.final||l.passed!==
+expected.passed)fail()}}if(st.lessons.length&&st.lessons.every(lesson=>[1,2].includes(lesson.policy?.version)&&["dual","modular"].includes(lesson.policy.method))){
+const averagedLessons=st.lessons.filter(lesson=>!gradePolicy.unitBased(lesson.policy));const average=averagedLessons.length&&averagedLessons.every(lesson=>lesson.
+final!=null)?averagedLessons.reduce((sum,lesson)=>sum+lesson.final,0)/averagedLessons.length:null;if(st.average!==average)fail()}}}return true}});
 //# sourceMappingURL=frozen-report-validator.js.map

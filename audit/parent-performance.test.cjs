@@ -21,7 +21,10 @@ function fixture(mode) {
     "domain/reporting/attendance.js",
     "domain/reporting/date-ranges.js",
     "domain/reporting/periodic-model.js",
+    "domain/reporting/completeness.js",
+    "domain/reporting/academic-summary.js",
     "reports/periodic/text.js",
+    "reports/periodic/review.js",
     "reports/periodic/document.js",
     "reports/periodic/excel.js",
   ])

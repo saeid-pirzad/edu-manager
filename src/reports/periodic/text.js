@@ -114,6 +114,107 @@ function textReport(m) {
   );
   if (!m.sessions.length)
     lines.push("در این بازه و محدوده، جلسه مرتبطی ثبت نشده است.");
+  const attendanceReview = globalThis.EduReportCompleteness.build(m),
+    academicReview = globalThis.EduReportAcademicSummary.build(m);
+  if (m.sessions.length) {
+    lines.push(
+      "",
+      "وضعیت ثبت و پیگیری حضور در بازهٔ گزارش",
+      "ثبت‌شده / کل نفرـجلسه: " +
+        num(attendanceReview.recorded) +
+        " / " +
+        num(attendanceReview.expected),
+      "تکمیل ثبت حضور: " +
+        (attendanceReview.completionRate === null
+          ? "بدون داده"
+          : num(attendanceReview.completionRate) + "٪") +
+        " | تعیین‌نشده: " +
+        num(attendanceReview.unknown) +
+        " | جلسات با حضور ناتمام: " +
+        num(
+          attendanceReview.partialSessions +
+            attendanceReview.unrecordedSessions,
+        ),
+      "این درصد میزان تکمیل ثبت است، نه نرخ حضور؛ فقط جلسات ثبت‌شده بررسی می‌شوند.",
+    );
+    if (attendanceReview.emptyRosterSessions)
+      lines.push(
+        num(attendanceReview.emptyRosterSessions) +
+          " جلسه فاقد مشاهدهٔ حضور است؛ کامل فرض نشده و در درصد محاسبه نمی‌شود.",
+      );
+    for (const student of attendanceReview.followup)
+      lines.push(
+        student.name +
+          " | " +
+          student.className +
+          " | کد: " +
+          (student.code ?? "—") +
+          " | غایب: " +
+          num(student.absent) +
+          " | تأخیر: " +
+          num(student.late) +
+          " | تعیین‌نشده: " +
+          num(student.unknown),
+      );
+  }
+  if (academicReview.rows.length) {
+    lines.push(
+      "",
+      "تکمیل ارزشیابی و موارد نیازمند جبران",
+      "وضعیت فعلی نمرات رسمی سال در زمان تهیهٔ گزارش؛ ناقص به معنی مردودی نیست. درصد قبولی فقط از نتایج کامل و دارای معیار قبولی است.",
+    );
+    for (const row of academicReview.rows)
+      lines.push(
+        [row.className, row.lessonName, row.moduleName, row.unitName]
+          .filter(Boolean)
+          .join(" / ") +
+          ": کامل " +
+          num(row.complete) +
+          " از " +
+          num(row.assessments) +
+          " | ناقص " +
+          num(row.incomplete) +
+          " | قبول " +
+          num(row.passed) +
+          " | جبران " +
+          num(row.needsCompensation) +
+          " | بدون معیار قبولی " +
+          num(row.unclassified) +
+          " | درصد قبولی " +
+          (row.passRate === null ? "—" : num(row.passRate) + "٪"),
+      );
+    lines.push(
+      "واحدهای کار مستقل‌اند؛ برای پودمان یا درس آن‌ها نمرهٔ تجمیعی ساخته نمی‌شود.",
+    );
+    if (academicReview.followup.length) {
+      lines.push("", "هنرجویان نیازمند تکمیل ارزشیابی یا جبران");
+      for (const row of academicReview.followup)
+        lines.push(
+          [
+            row.studentName,
+            row.className,
+            row.lessonName,
+            row.moduleName,
+            row.unitName,
+          ]
+            .filter(Boolean)
+            .join(" / ") +
+            " | کد: " +
+            (row.studentCode || "—") +
+            " | " +
+            (row.status === "incomplete" ? "نمره ناقص" : "نیازمند جبران"),
+        );
+    }
+  }
+  if (academicReview.totals.unconfiguredRecords)
+    lines.push(
+      num(academicReview.totals.unconfiguredRecords) +
+        " پروندهٔ ارزشیابی فاقد ساختار پودمان یا واحد کار است؛ کامل فرض نشده است. تنظیمات درس را بررسی کنید.",
+    );
+  if (academicReview.totals.excludedLegacyRecords)
+    lines.push(
+      "سوابق روش قدیمی واحدی، نمرهٔ رسمی پودمان نیستند و در خلاصهٔ رسمی شمارش نمی‌شوند.",
+    );
   if (m.audience === "parent") {
     lines.push("", "جمع‌بندی عملکرد هنرجو در بازهٔ گزارش");
     for (const [label, value] of parentPerformanceRows(m))

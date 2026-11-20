@@ -55,6 +55,8 @@ function fixture({
     "domain/reporting/attendance.js",
     "domain/reporting/date-ranges.js",
     "domain/reporting/periodic-model.js",
+    "domain/reporting/completeness.js",
+    "domain/reporting/academic-summary.js",
     "domain/annual-modules.js",
     "workspace/domain/defaults-numbers.js",
     "legacy/grading/calculation.js",
@@ -177,6 +179,8 @@ function fixture({
     root: {
       EduReportModel: c.EduReportModel,
       EduReportDates: c.EduReportDates,
+      EduReportCompleteness: c.EduReportCompleteness,
+      EduReportAcademicSummary: c.EduReportAcademicSummary,
       EduV24: {
         async prepareReportSnapshot(options) {
           calls.push(plain(options));
@@ -226,6 +230,7 @@ function fixture({
     "date-range.js",
     "model.js",
     "text.js",
+    "review.js",
     "document.js",
     "excel.js",
     "generate.js",

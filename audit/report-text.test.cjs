@@ -18,6 +18,14 @@ function fixture() {
       },
     },
   });
+  for (const file of ["completeness.js", "academic-summary.js"])
+    vm.runInContext(
+      fs.readFileSync(
+        path.join(__dirname, "../src/domain/reporting", file),
+        "utf8",
+      ),
+      context,
+    );
   vm.runInContext(source, context);
   const model = {
     mode: "daily",
@@ -63,6 +71,9 @@ test("actual author follows every grade section and incomplete grades remain exp
   model.author = "  TEACHER  ";
   model.technicalGrades = [
     {
+      studentId: "student",
+      classId: "class",
+      lessonId: "technical",
       studentName: "STUDENT",
       className: "CLASS",
       lessonName: "TECHNICAL",
@@ -74,6 +85,9 @@ test("actual author follows every grade section and incomplete grades remain exp
   ];
   model.annualGrades = [
     {
+      studentId: "student",
+      classId: "class",
+      lessonId: "vocational",
       studentName: "STUDENT",
       className: "CLASS",
       lessonName: "VOCATIONAL",

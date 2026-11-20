@@ -69,7 +69,11 @@ function preservePeriodicAppearance(source, copy) {
   originals.forEach((original, index) => {
     // Embedded grade sheets use the same print rules as the standalone karnameh;
     // copying screen-hidden stage styles would omit the other exam stages.
-    if (original.closest(".karnameh-student-sheet,.report-session-disclosure"))
+    if (
+      original.closest(
+        ".karnameh-student-sheet,.report-session-disclosure,.report-review",
+      )
+    )
       return;
     const target = clones[index],
       style = getComputedStyle(original);
@@ -276,13 +280,13 @@ function preparePrint(button) {
   // Attendance follow-up is a screen disclosure, never a print content filter.
   copy
     .querySelectorAll(
-      "details.report-class-group, details.report-session-disclosure, details.report-session-compact",
+      "details.report-class-group, details.report-session-disclosure, details.report-session-compact, details.report-review, details.report-review-learners",
     )
     .forEach((section) => {
       section.open = true;
       section
         .querySelector(
-          ".report-class-body, .report-session-body, .report-session-content",
+          ".report-class-body, .report-session-body, .report-session-content, .report-review-body",
         )
         ?.style.setProperty("display", "block", "important");
       // Native details content can fragment as an atomic box in PDF output.
@@ -357,10 +361,24 @@ function preparePrint(button) {
 async function printReport(button, { context, validate } = {}) {
   try {
     const expected = context || captureWorkspaceContext();
+    const scope =
+      !context && typeof reportCopyScope === "function"
+        ? reportCopyScope()
+        : null;
+    const sourceConnection =
+      typeof connection === "undefined" ? null : connection;
     await document.fonts?.ready;
     await flushDrafts({ strict: true });
     await writer.catch(() => {});
     if (!fileMode) await assertReportSnapshot(expected);
+    if (
+      button?.isConnected === false ||
+      (sourceConnection && connection !== sourceConnection) ||
+      (scope !== null && reportCopyScope() !== scope)
+    )
+      throw Error(
+        "صفحه یا محدودهٔ گزارش تغییر کرد؛ گزارش را دوباره برای چاپ انتخاب کنید.",
+      );
     if (validate && !validate())
       throw Error(
         "محدوده یا متن گزارش تغییر کرده است؛ گزارش را دوباره تهیه کنید.",

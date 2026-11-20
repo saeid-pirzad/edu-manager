@@ -196,8 +196,18 @@ function legacy_validateDB(d) {
     const slot = x.classId + "|" + x.date + "|" + x.period;
     if (slots.has(slot)) fail("جلسه تکراری");
     slots.add(slot);
-    if (x.poudmanId && !l.pids.has(x.poudmanId)) fail("پودمان جلسه");
-    if (x.unitId && l.units.get(x.unitId) !== x.poudmanId) fail("واحد جلسه");
+    if (
+      x.poudmanId != null &&
+      x.poudmanId !== "" &&
+      (!isSafeRecordId(x.poudmanId) || !l.pids.has(x.poudmanId))
+    )
+      fail("پودمان جلسه");
+    if (
+      x.unitId != null &&
+      x.unitId !== "" &&
+      (!isSafeRecordId(x.unitId) || l.units.get(x.unitId) !== x.poudmanId)
+    )
+      fail("واحد جلسه");
     if (!obj(x.attendance)) fail("حضور");
     for (const [sid, status] of Object.entries(x.attendance)) {
       id(sid);
@@ -226,6 +236,8 @@ function legacy_validateDB(d) {
       x.roster.forEach((st) => {
         id(st.id);
         text(st.name);
+        if (st.code !== undefined && typeof st.code !== "string")
+          fail("کد عضو فهرست جلسه");
         if (rosterIds.has(st.id)) fail("فهرست تکراری");
         rosterIds.add(st.id);
       });

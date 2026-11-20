@@ -41,34 +41,40 @@ id);for(const p of l.poudmans)for(const u of p.units)for(const id of Object.keys
 وجود است: "+id)}}for(const x of d.sessions){const known=classStudentIds.get(x.classId);const roster=x.roster||[];for(const st of roster)if(!known.has(st.
 id))throw Error("عضو جلسه در سوابق کلاس وجود ندارد.");const members=new Set(roster.map(st=>st.id));for(const id of[...Object.keys(x.attendance),
 ...x.scores.map(sc=>sc.studentId)])if(!known.has(id)||!members.has(id))throw Error("حضور یا نمره خارج از فهرست تاریخی جلسه است.")}
-return true}function normalizeDB(input,{legacy=false}={}){assertSafeDataTree(input);if(input?.schemaVersion>26)throw Error("این بانک متعلق به نسخه جدیدتر برنامه\
- است.");const d=clone(input);const defaults=v24DefaultDB();d.settings=Object.assign({},defaults.settings,d.settings||{});d.settings.academicYear=EduAcademicYear.
-normalize(d.settings.academicYear===void 0?defaults.settings.academicYear:d.settings.academicYear);d.masterSchedule=d.masterSchedule||{};d.sessions=d.sessions||
-[];if(d.notHeldSessions===void 0)d.notHeldSessions=[];d.activeDays=d.activeDays||defaults.activeDays;d.periods=d.periods??6;const warnings=[...d.migrationWarnings||
-[]],sessionsByClass=new Map;for(const session of d.sessions){if(!sessionsByClass.has(session.classId))sessionsByClass.set(session.classId,[]);sessionsByClass.get(
-session.classId).push(session)}for(const school of d.schools||[])for(const c of school.classes||[]){c.archivedStudents=c.archivedStudents||[];c.lessons=c.lessons||
-[];const all=new Map(knownStudents(c).map(st=>[st.id,st]));for(const st of all.values())if(st.code)st.code=asciiDigits(st.code);const references=new Set;for(const l of c.
-lessons){for(const metadata of[l.courseInfo,l.gradingPolicy])if(metadata?.year!==void 0)metadata.year=EduAcademicYear.normalize(metadata.year);l.gradeMode=l.gradeMode||
-"standard";l.kardaneshScores=l.kardaneshScores||{};l.weightMostamar=l.weightMostamar??40;l.weightPayani=l.weightPayani??60;for(const id of Object.keys(l.kardaneshScores))
-references.add(id);for(const p of l.poudmans||[])for(const u of p.units||[]){u.unitScores=u.unitScores||{};u.applyOptions=Object.assign({pos:false,neg:false,hw:false,
-present:false,late:false},u.applyOptions||{});for(const id of Object.keys(u.unitScores))references.add(id);for(const id of Object.keys(u.competencyScores||{}))references.
-add(id)}deriveDualGrades(l)}for(const x of sessionsByClass.get(c.id)||[]){for(const st of x.roster||[])references.add(st.id);for(const id of Object.keys(x.attendance||
-{}))references.add(id);for(const sc of x.scores||[])references.add(sc.studentId)}if(legacy){for(const id of references)if(!all.has(id)){const st={id,name:"دانش‌\
-آموز بازیابی‌شده ("+id+")",recovered:true};c.archivedStudents.push(st);all.set(id,st);warnings.push("نام دانش‌آموز "+id+" در "+c.
-name+" نیازمند بررسی است.")}}for(const x of sessionsByClass.get(c.id)||[]){if(!x.roster){x.roster=historicalRoster(c,x)}else if(legacy){const members=new Set(
-x.roster.map(st=>st.id));for(const id of[...Object.keys(x.attendance||{}),...(x.scores||[]).map(sc=>sc.studentId)])if(!members.has(id)&&all.has(id)){x.roster.push(
-clone(all.get(id)));members.add(id)}}}}d.schemaVersion=26;d.migrationWarnings=warnings;refreshAcademicYearWarnings(d);validateV24(d);return d}const{requestPromise,
-transactionDone}=EduDataStoreRuntime;const RESET_RECORD_KEY="@installation-reset",RESET_EPOCH_KEY="EduManager.resetEpoch";let resetBusy=false,connectionRetired=false,
-installationToken="";function ownedDataKey(key){return key.startsWith("Edu24.")||key.startsWith("EduManager.periodicDrafts.")||key==="EduDeputy.teacherExport.v1"||
-key===STORAGE_KEY||key===STORAGE_KEY+"_beforeImport"}function retireConnection(dbConnection){pauseSingleFile();dbConnection.close();connectionRetired=true;ready=
-false;blocked=true;clearTimeout(draftTimer);setStatus("بانک اطلاعات در پنجره دیگری تغییر می‌کند؛ برای ادامه صفحه را دوباره بارگذاری کنید.",
-"error");lockControls()}function forgetInstallation(){pauseSingleFile();singleFile=null;clearTimeout(draftTimer);assessmentContext.dispose({abandon:true});drafts.
-clear();draftGeneration++;writeFailureGeneration++;committed.clear();draftRecoveryFailed=false;window.EduPeriodicReports?.resetDrafts();db=v24DefaultDB();workspace=
-null;ready=false;blocked=true;connectionRetired=true;isAuthenticated=false}function resetScreen(message){globalThis.EduQuestionBankUI?.dispose?.();const modal=document.
-getElementById("modal");modal.classList.add("hidden");modal.setAttribute("aria-hidden","true");document.getElementById("modalBody").replaceChildren();setModalBackground(
-false);document.getElementById("app").innerHTML='<div class="card" role="alert"><h2>پاک‌سازی اطلاعات</h2><p>'+esc(message)+'</p><button data-wor\
-kspace-action="reload">بارگذاری مجدد و ادامه</button></div>'}function invalidateInstallation(){forgetInstallation();resetScreen("اطلاعات برنام\
-ه در پنجره دیگری تغییر کرده است؛ برای خواندن وضعیت فعلی، برنامه را دوباره بارگذاری کنید.")}
+return true}function normalizeDB(input,{legacy=false}={}){assertSafeDataTree(input);if(!isDataObject(input))throw Error("ساختار بانک اطلاعات معتبر نیست.");
+if(input?.schemaVersion>26)throw Error("این بانک متعلق به نسخه جدیدتر برنامه است.");const d=clone(input);const defaults=v24DefaultDB();
+const container=(value,fallback,valid,label)=>{if(value===void 0)return fallback;if(!valid(value))throw Error("ساختار نامعتبر: "+label);return value};
+const studentCode=value=>{if(typeof value==="number"&&Number.isSafeInteger(value)&&value>=0)return String(value);if(typeof value!=="string")throw Error("کد دانش\
+‌آموز نامعتبر است.");return value};d.settings=Object.assign({},defaults.settings,container(d.settings,{},isDataObject,"تنظیمات"));d.settings.
+academicYear=EduAcademicYear.normalize(d.settings.academicYear===void 0?defaults.settings.academicYear:d.settings.academicYear);d.masterSchedule=container(d.masterSchedule,
+{},isDataObject,"برنامه");d.sessions=container(d.sessions,[],Array.isArray,"جلسات");if(d.notHeldSessions===void 0)d.notHeldSessions=[];d.activeDays=container(
+d.activeDays,defaults.activeDays,Array.isArray,"روزها");d.periods=d.periods===void 0?6:d.periods;const warnings=[...d.migrationWarnings||[]],sessionsByClass=new Map;
+for(const session of d.sessions){if(session.roster!==void 0&&!Array.isArray(session.roster))throw Error("ساختار نامعتبر: فهرست جلسه");for(const st of session.
+roster||[])if(st.code!==void 0)st.code=studentCode(st.code);if(!sessionsByClass.has(session.classId))sessionsByClass.set(session.classId,[]);sessionsByClass.get(
+session.classId).push(session)}for(const school of d.schools||[])for(const c of school.classes||[]){c.archivedStudents=container(c.archivedStudents,[],Array.isArray,
+"بایگانی هنرجویان");c.lessons=container(c.lessons,[],Array.isArray,"دروس");const all=new Map(knownStudents(c).map(st=>[st.id,st]));for(const st of all.
+values())if(st.code!==void 0)st.code=asciiDigits(studentCode(st.code));const references=new Set;for(const l of c.lessons){for(const metadata of[l.courseInfo,l.gradingPolicy])
+if(metadata?.year!==void 0)metadata.year=EduAcademicYear.normalize(metadata.year);l.gradeMode=l.gradeMode||"standard";l.kardaneshScores=container(l.kardaneshScores,
+{},isDataObject,"نمرات درس");l.weightMostamar=l.weightMostamar??40;l.weightPayani=l.weightPayani??60;for(const id of Object.keys(l.kardaneshScores))references.
+add(id);for(const p of l.poudmans||[])for(const u of p.units||[]){u.unitScores=container(u.unitScores,{},isDataObject,"نمرات واحد");u.applyOptions=Object.
+assign({pos:false,neg:false,hw:false,present:false,late:false},container(u.applyOptions,{},isDataObject,"گزینه امتیاز"));for(const id of Object.keys(
+u.unitScores))references.add(id);for(const id of Object.keys(u.competencyScores||{}))references.add(id)}deriveDualGrades(l)}for(const x of sessionsByClass.get(c.
+id)||[]){for(const st of x.roster||[])references.add(st.id);for(const id of Object.keys(x.attendance||{}))references.add(id);for(const sc of x.scores||[])references.
+add(sc.studentId)}if(legacy){for(const id of references)if(!all.has(id)){const st={id,name:"دانش‌آموز بازیابی‌شده ("+id+")",recovered:true};
+c.archivedStudents.push(st);all.set(id,st);warnings.push("نام دانش‌آموز "+id+" در "+c.name+" نیازمند بررسی است.")}}for(const x of sessionsByClass.
+get(c.id)||[]){if(x.roster===void 0){x.roster=historicalRoster(c,x)}else if(legacy){const members=new Set(x.roster.map(st=>st.id));for(const id of[...Object.keys(
+x.attendance||{}),...(x.scores||[]).map(sc=>sc.studentId)])if(!members.has(id)&&all.has(id)){x.roster.push(clone(all.get(id)));members.add(id)}}}}d.schemaVersion=
+26;d.migrationWarnings=warnings;refreshAcademicYearWarnings(d);validateV24(d);return d}const{requestPromise,transactionDone}=EduDataStoreRuntime;const RESET_RECORD_KEY="\
+@installation-reset",RESET_EPOCH_KEY="EduManager.resetEpoch";let resetBusy=false,connectionRetired=false,installationToken="";function ownedDataKey(key){return key.
+startsWith("Edu24.")||key.startsWith("EduManager.periodicDrafts.")||key==="EduDeputy.teacherExport.v1"||key===STORAGE_KEY||key===STORAGE_KEY+"_beforeImport"}function retireConnection(dbConnection){
+pauseSingleFile();dbConnection.close();connectionRetired=true;ready=false;blocked=true;clearTimeout(draftTimer);setStatus("بانک اطلاعات در پنجره دیگری تغییر می‌\
+کند؛ برای ادامه صفحه را دوباره بارگذاری کنید.","error");lockControls()}function forgetInstallation(){pauseSingleFile();singleFile=
+null;clearTimeout(draftTimer);assessmentContext.dispose({abandon:true});drafts.clear();draftGeneration++;writeFailureGeneration++;committed.clear();draftRecoveryFailed=
+false;window.EduPeriodicReports?.resetDrafts();db=v24DefaultDB();workspace=null;ready=false;blocked=true;connectionRetired=true;isAuthenticated=false}function resetScreen(message){
+globalThis.EduQuestionBankUI?.dispose?.();const modal=document.getElementById("modal");modal.classList.add("hidden");modal.setAttribute("aria-hidden","true");document.
+getElementById("modalBody").replaceChildren();setModalBackground(false);document.getElementById("app").innerHTML='<div class="card" role="alert"><h2>پاک‌سازی اط\
+لاعات</h2><p>'+esc(message)+'</p><button data-workspace-action="reload">بارگذاری مجدد و ادامه</button></div>'}function invalidateInstallation(){
+forgetInstallation();resetScreen("اطلاعات برنامه در پنجره دیگری تغییر کرده است؛ برای خواندن وضعیت فعلی، برنامه را دوباره بارگذاری کنید.")}
 async function completeResetCleanup(dbConnection,marker){const tx=dbConnection.transaction("records","readwrite"),done=transactionDone(tx),store=tx.objectStore(
 "records"),request=store.get(RESET_RECORD_KEY);let failure;request.onsuccess=()=>{try{if(request.result?.value?.token!==marker.value.token){const error=Error("ا\
 طلاعات سیستم دوباره جایگزین شده است؛ پاک‌سازی قدیمی اجرا نشد.");error.code="INSTALLATION_CHANGED";throw error}
@@ -2251,27 +2257,27 @@ const properties=["display","box-sizing","direction","font-family","font-size","
 or","background-image","text-align","text-decoration","white-space","overflow-wrap","word-break","border-top","border-right","border-bottom","border-left","bord\
 er-radius","padding","margin","gap","row-gap","column-gap","flex-direction","flex-wrap","flex-grow","flex-shrink","flex-basis","align-items","align-content","al\
 ign-self","justify-content","grid-column","grid-row","list-style","font-variant-numeric"];const originals=[source,...source.querySelectorAll("*")];const clones=[
-copy,...copy.querySelectorAll("*")];originals.forEach((original,index)=>{if(original.closest(".karnameh-student-sheet,.report-session-disclosure"))return;const target=clones[index],
-style=getComputedStyle(original);for(const property of properties)target.style.setProperty(property,style.getPropertyValue(property),"important");if(style.display===
-"grid"){const columns=style.gridTemplateColumns;target.style.setProperty("grid-template-columns",/^\d/.test(columns)&&columns.split(" ").every(value=>/^\d+(\.\d+)?px$/.
-test(value))?columns.split(" ").map(value=>"minmax(0, "+parseFloat(value)+"fr)").join(" "):columns,"important")}target.style.setProperty("print-color-adjust","e\
-xact","important");target.style.setProperty("-webkit-print-color-adjust","exact","important")});copy.style.setProperty("break-inside","auto","important");copy.style.
-setProperty("margin","0","important");copy.style.setProperty("padding","0","important");copy.style.setProperty("border","0","important")}function prepareKarnamehPrint(copy){
-const originalHeader=copy.querySelector(".karnameh-report-heading");if(!originalHeader)return;const name=originalHeader.querySelector("h3")?.textContent||"",code=copy.
-dataset.karnamehCode||"—",archived=!!copy.querySelector(".karnameh-archived-tag"),context=[["مدرسه",copy.dataset.karnamehSchool],["کلاس",copy.dataset.
-karnamehClass],["سال تحصیلی",copy.dataset.karnamehYear]],header=document.createElement("header");header.className="karnameh-print-header";header.innerHTML=
-'<div class="karnameh-print-identity"><span class="karnameh-print-kind">کارنامهٔ تحصیلی</span><h2>'+esc(name)+"</h2><p>کد هنرجو: <bdi>"+esc(
-code)+"</bdi>"+(archived?' <span class="karnameh-print-archive">بایگانی</span>':"")+'</p></div><dl class="karnameh-print-context">'+context.filter(([,value])=>value).
-map(([label,value])=>"<div><dt>"+esc(label)+"</dt><dd>"+esc(value)+"</dd></div>").join("")+"</dl>";originalHeader.replaceWith(header);copy.querySelector(".karna\
-meh-student-meta")?.remove()}function prepareKarnamehUnitPrintTables(copy){const trimColumns=(row,start,end,fixed)=>{let position=0;for(const cell of[...row.cells].
-slice(fixed)){const next=position+cell.colSpan;if(next<=start||position>=end)cell.remove();position=next}};for(const table of copy.querySelectorAll("table.karna\
-meh-unit-competency-table")){const headers=[...table.tHead?.rows[0]?.cells||[]].slice(1),count=headers.length;if(count<=5)continue;const section=table.closest("\
-.karnameh-subject-section");if(!section)continue;const hierarchy=headers.map(cell=>({module:Number(cell.dataset.karnamehModulePosition),unit:Number(cell.dataset.
-karnamehUnitIndex)}));const hasHierarchy=hierarchy.every((group,index)=>Number.isInteger(group.module)&&group.module>=0&&Number.isInteger(group.unit)&&group.unit>=
-0&&(!index||group.module>=hierarchy[index-1].module));const sections=[];for(let start=0;start<count;){let end=Math.min(start+5,count);if(hasHierarchy&&end<count&&
-hierarchy[end-1].module===hierarchy[end].module){let boundary=end;while(boundary>start&&hierarchy[boundary-1].module===hierarchy[end].module)boundary--;if(boundary>
-start)end=boundary}const part=section.cloneNode(true),sheet=part.querySelector("table.karnameh-unit-competency-table");for(const[index,row]of[...sheet.tHead.rows].
-entries())trimColumns(row,start*3,end*3,index===0?1:0);for(const body of sheet.tBodies)for(const row of body.rows)trimColumns(row,start*3,end*3,1);for(const element of[
+copy,...copy.querySelectorAll("*")];originals.forEach((original,index)=>{if(original.closest(".karnameh-student-sheet,.report-session-disclosure,.report-review"))
+return;const target=clones[index],style=getComputedStyle(original);for(const property of properties)target.style.setProperty(property,style.getPropertyValue(property),
+"important");if(style.display==="grid"){const columns=style.gridTemplateColumns;target.style.setProperty("grid-template-columns",/^\d/.test(columns)&&columns.split(
+" ").every(value=>/^\d+(\.\d+)?px$/.test(value))?columns.split(" ").map(value=>"minmax(0, "+parseFloat(value)+"fr)").join(" "):columns,"important")}target.style.
+setProperty("print-color-adjust","exact","important");target.style.setProperty("-webkit-print-color-adjust","exact","important")});copy.style.setProperty("break\
+-inside","auto","important");copy.style.setProperty("margin","0","important");copy.style.setProperty("padding","0","important");copy.style.setProperty("border",
+"0","important")}function prepareKarnamehPrint(copy){const originalHeader=copy.querySelector(".karnameh-report-heading");if(!originalHeader)return;const name=originalHeader.
+querySelector("h3")?.textContent||"",code=copy.dataset.karnamehCode||"—",archived=!!copy.querySelector(".karnameh-archived-tag"),context=[["مدرسه",copy.dataset.
+karnamehSchool],["کلاس",copy.dataset.karnamehClass],["سال تحصیلی",copy.dataset.karnamehYear]],header=document.createElement("header");header.className=
+"karnameh-print-header";header.innerHTML='<div class="karnameh-print-identity"><span class="karnameh-print-kind">کارنامهٔ تحصیلی</span><h2>'+esc(name)+
+"</h2><p>کد هنرجو: <bdi>"+esc(code)+"</bdi>"+(archived?' <span class="karnameh-print-archive">بایگانی</span>':"")+'</p></div><dl class="karnameh-p\
+rint-context">'+context.filter(([,value])=>value).map(([label,value])=>"<div><dt>"+esc(label)+"</dt><dd>"+esc(value)+"</dd></div>").join("")+"</dl>";originalHeader.
+replaceWith(header);copy.querySelector(".karnameh-student-meta")?.remove()}function prepareKarnamehUnitPrintTables(copy){const trimColumns=(row,start,end,fixed)=>{
+let position=0;for(const cell of[...row.cells].slice(fixed)){const next=position+cell.colSpan;if(next<=start||position>=end)cell.remove();position=next}};for(const table of copy.
+querySelectorAll("table.karnameh-unit-competency-table")){const headers=[...table.tHead?.rows[0]?.cells||[]].slice(1),count=headers.length;if(count<=5)continue;
+const section=table.closest(".karnameh-subject-section");if(!section)continue;const hierarchy=headers.map(cell=>({module:Number(cell.dataset.karnamehModulePosition),
+unit:Number(cell.dataset.karnamehUnitIndex)}));const hasHierarchy=hierarchy.every((group,index)=>Number.isInteger(group.module)&&group.module>=0&&Number.isInteger(
+group.unit)&&group.unit>=0&&(!index||group.module>=hierarchy[index-1].module));const sections=[];for(let start=0;start<count;){let end=Math.min(start+5,count);if(hasHierarchy&&
+end<count&&hierarchy[end-1].module===hierarchy[end].module){let boundary=end;while(boundary>start&&hierarchy[boundary-1].module===hierarchy[end].module)boundary--;
+if(boundary>start)end=boundary}const part=section.cloneNode(true),sheet=part.querySelector("table.karnameh-unit-competency-table");for(const[index,row]of[...sheet.
+tHead.rows].entries())trimColumns(row,start*3,end*3,index===0?1:0);for(const body of sheet.tBodies)for(const row of body.rows)trimColumns(row,start*3,end*3,1);for(const element of[
 part,sheet]){element.dataset.karnamehUnitStart=String(start+1);element.dataset.karnamehUnitEnd=String(end);element.dataset.karnamehUnitCount=String(end-start);if(hasHierarchy){
 element.dataset.karnamehModuleStart=String(hierarchy[start].module+1);element.dataset.karnamehModuleEnd=String(hierarchy[end-1].module+1)}}const heading=part.querySelector(
 ".karnameh-subject-header h4");if(heading){let range="واحدهای "+karnamehSheetNumber(start+1)+" تا "+karnamehSheetNumber(end);if(hasHierarchy){const first=hierarchy[start],
@@ -2286,23 +2292,26 @@ utput")||document.getElementById("lessonReportOutput")||document.getElementById(
 getElementById("app");if(!source)throw Error("گزارشی برای چاپ انتخاب نشده است.");const copy=source.cloneNode(true);const periodic=source.
 matches(".periodic-document")||!!source.querySelector(".periodic-document");const karnameh=source.matches(".karnameh-student-sheet");if(periodic)preservePeriodicAppearance(
 source,copy);if(karnameh)prepareKarnamehPrint(copy);prepareKarnamehUnitPrintTables(copy);copy.querySelectorAll("details.report-class-group, details.report-sessi\
-on-disclosure, details.report-session-compact").forEach(section=>{section.open=true;section.querySelector(".report-class-body, .report-session-body, .report-ses\
-sion-content")?.style.setProperty("display","block","important");const expanded=document.createElement("section");for(const attr of[...section.attributes])expanded.
-setAttribute(attr.name,attr.value);expanded.dataset.printExpanded="true";expanded.append(...section.childNodes);const summary=expanded.querySelector(":scope > s\
-ummary");if(summary){const heading=document.createElement("header");for(const attr of[...summary.attributes])heading.setAttribute(attr.name,attr.value);heading.
-append(...summary.childNodes);summary.replaceWith(heading)}section.replaceWith(expanded)});copy.querySelectorAll("button,.no-print,form,script,select").forEach(
-x=>x.remove());copy.querySelectorAll("input,textarea").forEach(input=>{const span=document.createElement("span");span.textContent=input.type==="checkbox"?input.
-checked?"بله":"خیر":input.value;input.replaceWith(span)});copy.querySelectorAll("*").forEach(el=>{for(const attr of[...el.attributes])if(attr.name.startsWith(
-"on")||attr.name==="id")el.removeAttribute(attr.name);el.style.removeProperty("overflow");el.style.removeProperty("overflow-x");el.style.removeProperty("overflo\
-w-y");el.style.removeProperty("max-height");el.style.removeProperty("height")});const root=document.createElement("div");root.id="printRoot";if(karnameh)root.className=
-"karnameh-print-root";root.innerHTML=periodic||karnameh?"":"<header><h1>گزارش مدرسه</h1><p>"+esc(workspace.year+" / "+workspace.term)+" · "+esc(new Date().
-toLocaleString("fa-IR"))+"</p></header>";root.append(copy);document.body.append(root);const columns=Math.max(0,...[...copy.querySelectorAll("tr")].map(tr=>[...tr.
-children].reduce((sum,cell)=>sum+(Number(cell.colSpan)||1),0)));document.getElementById("printPageStyle")?.remove();const style=document.createElement("style");
-style.id="printPageStyle";style.textContent="@page { size: A4 "+(columns>8?"landscape":"portrait")+"; margin: 12mm; }";document.head.append(style);return root}async function printReport(button,{
-context,validate}={}){try{const expected=context||captureWorkspaceContext();await document.fonts?.ready;await flushDrafts({strict:true});await writer.catch(()=>{});
-if(!fileMode)await assertReportSnapshot(expected);if(validate&&!validate())throw Error("محدوده یا متن گزارش تغییر کرده است؛ گزارش را دوباره تهیه کنید.");
-preparePrint(button);printAuthorization=expected;if(!globalThis.__EDU_PRINT_TEST__)window.print();return true}catch(error){if(context)throw error;handleError(error);
-return false}}function reportCopyScope(){return JSON.stringify({navigation:state,activity:globalFilter,lesson:lessonReportFilter,student:karnamehFilter,session:currentSessionId})}
+on-disclosure, details.report-session-compact, details.report-review, details.report-review-learners").forEach(section=>{section.open=true;section.querySelector(
+".report-class-body, .report-session-body, .report-session-content, .report-review-body")?.style.setProperty("display","block","important");const expanded=document.
+createElement("section");for(const attr of[...section.attributes])expanded.setAttribute(attr.name,attr.value);expanded.dataset.printExpanded="true";expanded.append(
+...section.childNodes);const summary=expanded.querySelector(":scope > summary");if(summary){const heading=document.createElement("header");for(const attr of[...summary.
+attributes])heading.setAttribute(attr.name,attr.value);heading.append(...summary.childNodes);summary.replaceWith(heading)}section.replaceWith(expanded)});copy.querySelectorAll(
+"button,.no-print,form,script,select").forEach(x=>x.remove());copy.querySelectorAll("input,textarea").forEach(input=>{const span=document.createElement("span");
+span.textContent=input.type==="checkbox"?input.checked?"بله":"خیر":input.value;input.replaceWith(span)});copy.querySelectorAll("*").forEach(el=>{for(const attr of[
+...el.attributes])if(attr.name.startsWith("on")||attr.name==="id")el.removeAttribute(attr.name);el.style.removeProperty("overflow");el.style.removeProperty("ove\
+rflow-x");el.style.removeProperty("overflow-y");el.style.removeProperty("max-height");el.style.removeProperty("height")});const root=document.createElement("div");
+root.id="printRoot";if(karnameh)root.className="karnameh-print-root";root.innerHTML=periodic||karnameh?"":"<header><h1>گزارش مدرسه</h1><p>"+esc(workspace.
+year+" / "+workspace.term)+" · "+esc(new Date().toLocaleString("fa-IR"))+"</p></header>";root.append(copy);document.body.append(root);const columns=Math.max(0,
+...[...copy.querySelectorAll("tr")].map(tr=>[...tr.children].reduce((sum,cell)=>sum+(Number(cell.colSpan)||1),0)));document.getElementById("printPageStyle")?.remove();
+const style=document.createElement("style");style.id="printPageStyle";style.textContent="@page { size: A4 "+(columns>8?"landscape":"portrait")+"; margin: 12mm; \
+}";document.head.append(style);return root}async function printReport(button,{context,validate}={}){try{const expected=context||captureWorkspaceContext();const scope=!context&&
+typeof reportCopyScope==="function"?reportCopyScope():null;const sourceConnection=typeof connection==="undefined"?null:connection;await document.fonts?.ready;await flushDrafts(
+{strict:true});await writer.catch(()=>{});if(!fileMode)await assertReportSnapshot(expected);if(button?.isConnected===false||sourceConnection&&connection!==sourceConnection||
+scope!==null&&reportCopyScope()!==scope)throw Error("صفحه یا محدودهٔ گزارش تغییر کرد؛ گزارش را دوباره برای چاپ انتخاب کنید.");
+if(validate&&!validate())throw Error("محدوده یا متن گزارش تغییر کرده است؛ گزارش را دوباره تهیه کنید.");preparePrint(
+button);printAuthorization=expected;if(!globalThis.__EDU_PRINT_TEST__)window.print();return true}catch(error){if(context)throw error;handleError(error);return false}}
+function reportCopyScope(){return JSON.stringify({navigation:state,activity:globalFilter,lesson:lessonReportFilter,student:karnamehFilter,session:currentSessionId})}
 async function copyReportV24(buildText,button,formatHTML){const origin=workspace?.id,sourceConnection=connection,scope=reportCopyScope();const ensureCurrent=()=>{
 if(!fileMode)assertWorkspaceReadable();else if(!ready||blocked||periodLoading||resetBusy||connectionRetired||db.settings.password&&!isAuthenticated)throw Error(
 "اطلاعات برای تهیهٔ گزارش آماده نیست.");if(workspace?.id!==origin||connection!==sourceConnection||reportCopyScope()!==scope||button?.

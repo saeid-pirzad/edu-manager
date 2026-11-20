@@ -13,13 +13,41 @@ globalThis.EduGradeDrafts = (() => {
     );
   }
   function isSupportedGradeDraft(item) {
-    return (
-      item !== null &&
-      typeof item === "object" &&
-      !Array.isArray(item) &&
-      ["k", "u", "pod", "unit"].includes(item.kind) &&
-      typeof item.value === "string"
-    );
+    if (
+      item === null ||
+      typeof item !== "object" ||
+      Array.isArray(item) ||
+      !["k", "u", "pod", "unit"].includes(item.kind) ||
+      typeof item.value !== "string"
+    )
+      return false;
+    // Older draft rows can omit context. Validate declared context without
+    // interpreting or discarding unfinished text, which must stay recoverable.
+    const validId = (value) =>
+      typeof value === "string" &&
+      /^[A-Za-z0-9_-]{1,120}$/.test(value) &&
+      !["__proto__", "prototype", "constructor"].includes(value) &&
+      !Object.getOwnPropertyNames(Object.prototype).includes(value);
+    for (const key of ["classId", "lid", "sid"])
+      if (item[key] !== undefined && !validId(item[key])) return false;
+    for (const key of ["pid", "uid"])
+      if (item[key] !== undefined && item[key] !== "" && !validId(item[key]))
+        return false;
+    if (
+      item.field !== undefined &&
+      !(
+        item.kind === "k"
+          ? ["practical", "theory", "midtermPractical", "midtermTheory"]
+          : item.kind === "u"
+            ? ["m", "p"]
+            : ["m", "c"]
+      ).includes(item.field)
+    )
+      return false;
+    for (const key of ["remove", "review"])
+      if (item[key] !== undefined && typeof item[key] !== "boolean")
+        return false;
+    return true;
   }
   function assertEntries(entries) {
     if (!Array.isArray(entries))

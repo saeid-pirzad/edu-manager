@@ -110,48 +110,92 @@ function validateV24(d) {
 
 function normalizeDB(input, { legacy = false } = {}) {
   assertSafeDataTree(input);
+  if (!isDataObject(input)) throw Error("ساختار بانک اطلاعات معتبر نیست.");
   if (input?.schemaVersion > 26)
     throw Error("این بانک متعلق به نسخه جدیدتر برنامه است.");
   const d = clone(input);
   const defaults = v24DefaultDB();
-  d.settings = Object.assign({}, defaults.settings, d.settings || {});
+  // Missing legacy containers may receive defaults; explicitly malformed JSON
+  // must not turn into an apparently successful restore with empty records.
+  const container = (value, fallback, valid, label) => {
+    if (value === undefined) return fallback;
+    if (!valid(value)) throw Error("ساختار نامعتبر: " + label);
+    return value;
+  };
+  const studentCode = (value) => {
+    // Earlier imports could store numeric codes. Convert only exact, safe
+    // integers; coercing objects or booleans would hide corrupt identifiers.
+    if (typeof value === "number" && Number.isSafeInteger(value) && value >= 0)
+      return String(value);
+    if (typeof value !== "string") throw Error("کد دانش‌آموز نامعتبر است.");
+    return value;
+  };
+  d.settings = Object.assign(
+    {},
+    defaults.settings,
+    container(d.settings, {}, isDataObject, "تنظیمات"),
+  );
   d.settings.academicYear = EduAcademicYear.normalize(
     d.settings.academicYear === undefined
       ? defaults.settings.academicYear
       : d.settings.academicYear,
   );
-  d.masterSchedule = d.masterSchedule || {};
-  d.sessions = d.sessions || [];
+  d.masterSchedule = container(d.masterSchedule, {}, isDataObject, "برنامه");
+  d.sessions = container(d.sessions, [], Array.isArray, "جلسات");
   if (d.notHeldSessions === undefined) d.notHeldSessions = [];
-  d.activeDays = d.activeDays || defaults.activeDays;
-  d.periods = d.periods ?? 6;
+  d.activeDays = container(
+    d.activeDays,
+    defaults.activeDays,
+    Array.isArray,
+    "روزها",
+  );
+  d.periods = d.periods === undefined ? 6 : d.periods;
   const warnings = [...(d.migrationWarnings || [])],
     sessionsByClass = new Map();
   for (const session of d.sessions) {
+    if (session.roster !== undefined && !Array.isArray(session.roster))
+      throw Error("ساختار نامعتبر: فهرست جلسه");
+    for (const st of session.roster || [])
+      if (st.code !== undefined) st.code = studentCode(st.code);
     if (!sessionsByClass.has(session.classId))
       sessionsByClass.set(session.classId, []);
     sessionsByClass.get(session.classId).push(session);
   }
   for (const school of d.schools || [])
     for (const c of school.classes || []) {
-      c.archivedStudents = c.archivedStudents || [];
-      c.lessons = c.lessons || [];
+      c.archivedStudents = container(
+        c.archivedStudents,
+        [],
+        Array.isArray,
+        "بایگانی هنرجویان",
+      );
+      c.lessons = container(c.lessons, [], Array.isArray, "دروس");
       const all = new Map(knownStudents(c).map((st) => [st.id, st]));
       for (const st of all.values())
-        if (st.code) st.code = asciiDigits(st.code);
+        if (st.code !== undefined) st.code = asciiDigits(studentCode(st.code));
       const references = new Set();
       for (const l of c.lessons) {
         for (const metadata of [l.courseInfo, l.gradingPolicy])
           if (metadata?.year !== undefined)
             metadata.year = EduAcademicYear.normalize(metadata.year);
         l.gradeMode = l.gradeMode || "standard";
-        l.kardaneshScores = l.kardaneshScores || {};
+        l.kardaneshScores = container(
+          l.kardaneshScores,
+          {},
+          isDataObject,
+          "نمرات درس",
+        );
         l.weightMostamar = l.weightMostamar ?? 40;
         l.weightPayani = l.weightPayani ?? 60;
         for (const id of Object.keys(l.kardaneshScores)) references.add(id);
         for (const p of l.poudmans || [])
           for (const u of p.units || []) {
-            u.unitScores = u.unitScores || {};
+            u.unitScores = container(
+              u.unitScores,
+              {},
+              isDataObject,
+              "نمرات واحد",
+            );
             u.applyOptions = Object.assign(
               {
                 pos: false,
@@ -160,7 +204,7 @@ function normalizeDB(input, { legacy = false } = {}) {
                 present: false,
                 late: false,
               },
-              u.applyOptions || {},
+              container(u.applyOptions, {}, isDataObject, "گزینه امتیاز"),
             );
             for (const id of Object.keys(u.unitScores)) references.add(id);
             for (const id of Object.keys(u.competencyScores || {}))
@@ -188,7 +232,7 @@ function normalizeDB(input, { legacy = false } = {}) {
             );
           }
       for (const x of sessionsByClass.get(c.id) || []) {
-        if (!x.roster) {
+        if (x.roster === undefined) {
           x.roster = historicalRoster(c, x);
         } else if (legacy) {
           const members = new Set(x.roster.map((st) => st.id));

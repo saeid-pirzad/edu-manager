@@ -1,5 +1,7 @@
 function excelReportSheets(m) {
-  const sheets = [];
+  const sheets = [],
+    attendanceReview = globalThis.EduReportCompleteness.build(m),
+    academicReview = globalThis.EduReportAcademicSummary.build(m);
   const sheet = (name, headers, rows, widths) =>
     sheets.push({ name, rows: [headers, ...rows], widths });
   const counts = (row) => [
@@ -89,6 +91,58 @@ function excelReportSheets(m) {
     ...countHeaders.map((header, i) => [header, counts(m.summary)[i]]),
     ["تعداد هنرجویان با سابقه جلسه", m.summary.students],
     ["نرخ حضور (درصد)", m.summary.attendanceRate],
+    ["ثبت حضور · کل نفرـجلسه", attendanceReview.expected],
+    ["ثبت حضور · ثبت‌شده", attendanceReview.recorded],
+    ["ثبت حضور · تعیین‌نشده", attendanceReview.unknown],
+    [
+      "تکمیل ثبت حضور (درصد؛ متفاوت از نرخ حضور)",
+      attendanceReview.completionRate,
+    ],
+    [
+      "جلسات با حضور ناتمام",
+      attendanceReview.partialSessions + attendanceReview.unrecordedSessions,
+    ],
+    ["جلسات فاقد مشاهدهٔ حضور", attendanceReview.emptyRosterSessions],
+    [
+      "مبنای تکمیل حضور",
+      "فقط جلسات ثبت‌شده؛ حاضر، تأخیر، غایب و مرخصی ثبت‌شده‌اند. جلسهٔ فاقد مشاهده در درصد محاسبه نمی‌شود.",
+    ],
+    ...(academicReview.rows.length
+      ? [
+          ["ارزشیابی رسمی · کامل", academicReview.totals.complete],
+          ["ارزشیابی رسمی · ناقص", academicReview.totals.incomplete],
+          ["ارزشیابی رسمی · قبول", academicReview.totals.passed],
+          [
+            "ارزشیابی رسمی · نیازمند جبران",
+            academicReview.totals.needsCompensation,
+          ],
+          [
+            "ارزشیابی رسمی · بدون معیار قبولی",
+            academicReview.totals.unclassified,
+          ],
+          [
+            "مبنای خلاصهٔ ارزشیابی",
+            "وضعیت فعلی نمرات رسمی سال در زمان تهیهٔ گزارش؛ ناقص به معنی مردودی نیست. درصد قبولی فقط از نتایج کامل و دارای معیار قبولی است. واحدهای کار مستقل‌اند؛ نمرهٔ تجمیعی پودمان یا درس برای آن‌ها ساخته نمی‌شود.",
+          ],
+        ]
+      : []),
+    ...(academicReview.totals.unconfiguredRecords
+      ? [
+          [
+            "ساختار ارزشیابی نیازمند بررسی",
+            academicReview.totals.unconfiguredRecords +
+              " پرونده فاقد ساختار پودمان یا واحد کار است؛ کامل فرض نشده است.",
+          ],
+        ]
+      : []),
+    ...(academicReview.totals.excludedLegacyRecords
+      ? [
+          [
+            "روش قدیمی واحدی",
+            "سوابق روش قدیمی واحدی، نمرهٔ رسمی پودمان نیستند و در خلاصهٔ رسمی شمارش نمی‌شوند.",
+          ],
+        ]
+      : []),
     ["ثبت‌های فعالیت", m.summary.recordedMarks],
     ...((m.technicalGrades || []).some(
       (grade) => grade.method === "modular" && !grade.unitBased,
@@ -117,6 +171,80 @@ function excelReportSheets(m) {
   ];
   sheet("خلاصه", ["عنوان", "مقدار"], metadata, [38, 95]);
   sheets[0].filter = false;
+  if (attendanceReview.followup.length)
+    sheet(
+      "پیگیری حضور",
+      [
+        "کلاس",
+        "کد دانش‌آموزی",
+        "هنرجو",
+        "جلسات",
+        "غایب",
+        "تأخیر",
+        "تعیین‌نشده",
+      ],
+      attendanceReview.followup.map((student) => [
+        student.className,
+        String(student.code ?? ""),
+        student.name,
+        student.sessions,
+        student.absent,
+        student.late,
+        student.unknown,
+      ]),
+    );
+  if (academicReview.rows.length)
+    sheet(
+      "خلاصه ارزشیابی",
+      [
+        "کلاس",
+        "درس",
+        "پودمان",
+        "واحد کار",
+        "نوع ارزشیابی",
+        "تعداد ارزشیابی",
+        "کامل",
+        "ناقص",
+        "قبول",
+        "نیازمند جبران",
+        "بدون معیار قبولی",
+        "تکمیل ثبت (درصد)",
+        "قبولی (درصد نتایج دارای معیار)",
+      ],
+      academicReview.rows.map((row) => [
+        row.className,
+        row.lessonName,
+        row.moduleName,
+        row.unitName,
+        {
+          annual: "نتیجه سالانه درس",
+          module: "پودمان",
+          unit: "واحد کار مستقل",
+        }[row.kind],
+        row.assessments,
+        row.complete,
+        row.incomplete,
+        row.passed,
+        row.needsCompensation,
+        row.unclassified,
+        row.completionRate,
+        row.passRate,
+      ]),
+    );
+  if (academicReview.followup.length)
+    sheet(
+      "پیگیری ارزشیابی",
+      ["کلاس", "کد دانش‌آموزی", "هنرجو", "درس", "پودمان", "واحد کار", "وضعیت"],
+      academicReview.followup.map((row) => [
+        row.className,
+        String(row.studentCode ?? ""),
+        row.studentName,
+        row.lessonName,
+        row.moduleName,
+        row.unitName,
+        row.status === "incomplete" ? "نمره ناقص" : "نیازمند جبران",
+      ]),
+    );
   sheet(
     "آمار روزها",
     ["تاریخ شمسی", "روز هفته", ...countHeaders, "ثبت فعالیت"],
@@ -425,7 +553,10 @@ function excelReportSheets(m) {
     ];
   const priority = [
     "حضور و غیاب",
+    "پیگیری حضور",
     "فعالیت‌ها",
+    "خلاصه ارزشیابی",
+    "پیگیری ارزشیابی",
     "نتیجه سالانه",
     "امتحانات چهار مرحله",
     "نتیجه فنی",

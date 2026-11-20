@@ -162,8 +162,12 @@ function resetGlobalFilters() {
   render();
 }
 
-function getFilteredSessions() {
-  return db.sessions
+function getFilteredSessions(source = db) {
+  const classroom = (session) =>
+    source.schools
+      .find((school) => school.id === session.schoolId)
+      ?.classes.find((item) => item.id === session.classId);
+  return source.sessions
     .filter((s) => {
       if (globalFilter.date && s.date !== globalFilter.date) return false;
       if (globalFilter.schoolId && s.schoolId !== globalFilter.schoolId)
@@ -179,8 +183,7 @@ function getFilteredSessions() {
         const hasScore = s.scores.some(
           (x) => x.studentId === globalFilter.studentId,
         );
-        const roster =
-          s.roster || getClassObj(s.schoolId, s.classId)?.students || [];
+        const roster = s.roster || classroom(s)?.students || [];
         if (
           !hasAtt &&
           !hasScore &&
@@ -195,10 +198,7 @@ function getFilteredSessions() {
       if (!studentId) return session;
       // Scope the complete session projection, not just the list of sessions.
       // The detailed renderer and copied text must not expose other students.
-      const roster =
-        session.roster ||
-        getClassObj(session.schoolId, session.classId)?.students ||
-        [];
+      const roster = session.roster || classroom(session)?.students || [];
       return {
         ...session,
         roster: roster.filter((student) => student.id === studentId),
@@ -212,6 +212,18 @@ function getFilteredSessions() {
       if (a.date !== b.date) return b.date.localeCompare(a.date);
       return a.period - b.period;
     });
+}
+
+function activityReportAttendance(classroom, session) {
+  const counts = EduReportAttendance.emptyCounts();
+  const people = sessionStudents(classroom, session).map((student) => {
+    const attendance = EduReportAttendance.normalize(
+      session.attendance[student.id],
+    );
+    EduReportAttendance.tally(counts, attendance);
+    return { student, attendance };
+  });
+  return { counts, people };
 }
 
 function generateGlobalReport() {
@@ -256,17 +268,18 @@ function generateGlobalReport() {
       h += `<tr><td>${faDate(sess.date)}</td><td>${esc(cls.classObj.name)}</td><td>${esc(lesson.name)}</td><td>زنگ ${sess.period + 1}</td>`;
       if (globalFilter.studentId) {
         if (globalFilter.showAttendance) {
-          const st = sess.attendance[globalFilter.studentId];
+          const st = EduReportAttendance.normalize(
+            sess.attendance[globalFilter.studentId],
+          );
           let attText = '<span class="muted">ثبت نشده</span>';
-          if (st === "present")
+          if (st.status === "present")
             attText = '<span class="badge present">حاضر</span>';
-          else if (st === "leave")
+          else if (st.status === "leave")
             attText = '<span class="badge leave">مرخصی</span>';
-          else if (st === "absent")
+          else if (st.status === "absent")
             attText = '<span class="badge absent">غایب</span>';
-          else if (st && st.startsWith("late")) {
-            const mins = st.includes(":") ? st.split(":")[1] : "";
-            attText = `<span class="badge late">تأخیر ${mins ? "(" + mins + "د)" : ""}</span>`;
+          else if (st.status === "late") {
+            attText = `<span class="badge late">تأخیر${st.minutes === null ? "" : " (" + st.minutes + "د)"}</span>`;
           }
           h += `<td>${attText}</td>`;
         }
@@ -327,19 +340,8 @@ function generateGlobalReport() {
         }
       } else {
         if (globalFilter.showAttendance) {
-          const p = Object.values(sess.attendance).filter(
-            (x) => x === "present",
-          ).length;
-          const a = Object.values(sess.attendance).filter(
-            (x) => x === "absent",
-          ).length;
-          const leaveCount = Object.values(sess.attendance).filter(
-            (x) => x === "leave",
-          ).length;
-          const l = Object.values(sess.attendance).filter(
-            (x) => x && x.startsWith("late"),
-          ).length;
-          h += `<td>✅${p + l} ❌${a} ⏰${l} · مرخصی ${leaveCount}</td>`;
+          const { counts } = activityReportAttendance(cls.classObj, sess);
+          h += `<td>✅${counts.present + counts.late} ❌${counts.absent} ⏰${counts.late} · مرخصی ${counts.leave} · تعیین‌نشده ${counts.unknown}</td>`;
         }
         if (globalFilter.showScores) {
           const m = sess.scores.filter((x) => x.type === "mostamar").length;
@@ -408,18 +410,24 @@ function generateGlobalReport() {
           const presentNames = [],
             absentNames = [],
             leaveNames = [],
-            lateNames = [];
-          sessionStudents(cls.classObj, sess).forEach((st) => {
-            const status = sess.attendance[st.id];
-            if (status === "present") presentNames.push(st.name);
-            else if (status === "leave") leaveNames.push(st.name);
-            else if (status === "absent") absentNames.push(st.name);
-            else if (status && status.startsWith("late")) {
-              presentNames.push(st.name);
-              const mins = status.includes(":") ? status.split(":")[1] : "";
-              lateNames.push(`${st.name} ${mins ? "(" + mins + "د)" : ""}`);
-            }
-          });
+            lateNames = [],
+            unknownNames = [];
+          activityReportAttendance(cls.classObj, sess).people.forEach(
+            ({ student: st, attendance }) => {
+              if (attendance.status === "present") presentNames.push(st.name);
+              else if (attendance.status === "leave") leaveNames.push(st.name);
+              else if (attendance.status === "absent")
+                absentNames.push(st.name);
+              else if (attendance.status === "late") {
+                presentNames.push(st.name);
+                lateNames.push(
+                  `${st.name}${attendance.minutes === null ? "" : " (" + attendance.minutes + "د)"}`,
+                );
+              } else unknownNames.push(st.name);
+            },
+          );
+          if (unknownNames.length)
+            h += `<div class="names-list muted"><b>تعیین‌نشده (${unknownNames.length}):</b> ${unknownNames.map(esc).join("، ")}</div>`;
           if (leaveNames.length)
             h += `<div class="names-list"><b>مرخصی:</b> ${leaveNames.map(esc).join("، ")}</div>`;
           if (globalFilter.showPresentNames && presentNames.length > 0)
@@ -516,21 +524,29 @@ function copyGlobalReportText(btn) {
   return EduV24.copyReport(buildGlobalReportText, btn);
 }
 
-function buildGlobalReportText() {
-  const filteredSessions = getFilteredSessions();
+function buildGlobalReportText(source = db) {
+  const findClass = (classId, schoolId = "") => {
+    for (const school of source.schools) {
+      if (schoolId && school.id !== schoolId) continue;
+      const classObj = school.classes.find((item) => item.id === classId);
+      if (classObj) return { school, classObj };
+    }
+    return null;
+  };
+  const filteredSessions = getFilteredSessions(source);
   if (filteredSessions.length === 0) return alert("موردی برای گزارش یافت نشد.");
   let text = `📊 گزارش جامع عملکرد کلاسی\n`;
   if (globalFilter.date)
     text += `📅 تاریخ گزارش: ${faDate(globalFilter.date)}\n`;
   else text += `📅 تاریخ تهیه گزارش: ${faDate(todayISO())}\n`;
   if (globalFilter.classId) {
-    const cls = findClassById(globalFilter.classId);
+    const cls = findClass(globalFilter.classId, globalFilter.schoolId);
     text += `🏫 مدرسه: ${cls.school.name} | کلاس: ${cls.classObj.name}\n`;
   }
   text += `================================\n\n`;
   if (globalFilter.reportMode === "summary") {
     filteredSessions.forEach((sess) => {
-      const cls = findClassById(sess.classId);
+      const cls = findClass(sess.classId, sess.schoolId);
       const lesson = getLessonObj(cls.classObj, sess.lessonId);
       text += `📅 ${faDate(sess.date)} | کلاس: ${cls.classObj.name} | درس: ${lesson.name} | ${getPeriodName(sess.period)}\n`;
       if (globalFilter.studentId) {
@@ -540,13 +556,15 @@ function buildGlobalReportText() {
           globalFilter.studentId,
         );
         if (globalFilter.showAttendance) {
-          const st = sess.attendance[globalFilter.studentId];
+          const st = EduReportAttendance.normalize(
+            sess.attendance[globalFilter.studentId],
+          );
           let att = "ثبت نشده";
-          if (st === "present") att = "حاضر";
-          else if (st === "leave") att = "مرخصی";
-          else if (st === "absent") att = "غایب";
-          else if (st && st.startsWith("late"))
-            att = `تأخیر (${st.split(":")[1] || 0}د)`;
+          if (st.status === "present") att = "حاضر";
+          else if (st.status === "leave") att = "مرخصی";
+          else if (st.status === "absent") att = "غایب";
+          else if (st.status === "late")
+            att = "تأخیر" + (st.minutes === null ? "" : ` (${st.minutes}د)`);
           text += `   👤 ${stObj?.name || ""}: ${att}\n`;
         }
         const my = sess.scores.filter(
@@ -590,19 +608,8 @@ function buildGlobalReportText() {
         }
       } else {
         if (globalFilter.showAttendance) {
-          const p = Object.values(sess.attendance).filter(
-            (x) => x === "present",
-          ).length;
-          const a = Object.values(sess.attendance).filter(
-            (x) => x === "absent",
-          ).length;
-          const leaveCount = Object.values(sess.attendance).filter(
-            (x) => x === "leave",
-          ).length;
-          const l = Object.values(sess.attendance).filter(
-            (x) => x && x.startsWith("late"),
-          ).length;
-          text += `   👥 حضور: حاضر ${p + l} | غایب ${a} | مرخصی ${leaveCount} | تأخیر ${l}\n`;
+          const { counts } = activityReportAttendance(cls.classObj, sess);
+          text += `   👥 حضور: حاضر ${counts.present + counts.late} | غایب ${counts.absent} | مرخصی ${counts.leave} | تأخیر ${counts.late} | تعیین‌نشده ${counts.unknown}\n`;
         }
         if (globalFilter.showScores) {
           const m = sess.scores.filter((x) => x.type === "mostamar").length;
@@ -649,25 +656,31 @@ function buildGlobalReportText() {
     sortedPeriods.forEach((periodStr) => {
       text += `📌 ${getPeriodName(parseInt(periodStr))}:\n`;
       groupedByPeriod[periodStr].forEach((sess) => {
-        const cls = findClassById(sess.classId);
+        const cls = findClass(sess.classId, sess.schoolId);
         const lesson = getLessonObj(cls.classObj, sess.lessonId);
         text += `🔹 تاریخ: ${faDate(sess.date)} | درس: ${lesson.name} | دبیر: ${lesson.teacher || "---"} | کلاس: ${cls.classObj.name}\n`;
         if (globalFilter.showAttendance) {
           const presentNames = [],
             absentNames = [],
             leaveNames = [],
-            lateNames = [];
-          sessionStudents(cls.classObj, sess).forEach((st) => {
-            const status = sess.attendance[st.id];
-            if (status === "present") presentNames.push(st.name);
-            else if (status === "leave") leaveNames.push(st.name);
-            else if (status === "absent") absentNames.push(st.name);
-            else if (status && status.startsWith("late")) {
-              presentNames.push(st.name);
-              const mins = status.includes(":") ? status.split(":")[1] : "";
-              lateNames.push(`${st.name} ${mins ? "(" + mins + "د)" : ""}`);
-            }
-          });
+            lateNames = [],
+            unknownNames = [];
+          activityReportAttendance(cls.classObj, sess).people.forEach(
+            ({ student: st, attendance }) => {
+              if (attendance.status === "present") presentNames.push(st.name);
+              else if (attendance.status === "leave") leaveNames.push(st.name);
+              else if (attendance.status === "absent")
+                absentNames.push(st.name);
+              else if (attendance.status === "late") {
+                presentNames.push(st.name);
+                lateNames.push(
+                  `${st.name}${attendance.minutes === null ? "" : " (" + attendance.minutes + "د)"}`,
+                );
+              } else unknownNames.push(st.name);
+            },
+          );
+          if (unknownNames.length)
+            text += `   تعیین‌نشده (${unknownNames.length}): ${unknownNames.join("، ")}\n`;
           if (leaveNames.length)
             text += `   مرخصی (${leaveNames.length}): ${leaveNames.join("، ")}\n`;
           if (presentNames.length > 0) {

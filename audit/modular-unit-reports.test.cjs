@@ -36,6 +36,8 @@ function fixture({ complete = false } = {}) {
     "domain/grade-math.js",
     "domain/grade-policy.js",
     "domain/reporting/academic-results.js",
+    "domain/reporting/completeness.js",
+    "domain/reporting/academic-summary.js",
     "domain/annual-modules.js",
     "workspace/domain/defaults-numbers.js",
     "legacy/grading/calculation.js",
@@ -50,6 +52,7 @@ function fixture({ complete = false } = {}) {
     "workspace/reports/karnameh-excel-data.js",
     "validation/frozen-report.js",
     "reports/periodic/text.js",
+    "reports/periodic/review.js",
     "reports/periodic/document.js",
     "reports/periodic/excel.js",
   ])
@@ -60,7 +63,11 @@ function fixture({ complete = false } = {}) {
     );
   c.old = { calcStudentLesson: c.legacy_calcStudentLesson };
   c.gradeStatus = c.policyStatus;
-  c.root = { EduV24: { finalText: c.finalText } };
+  c.root = {
+    EduV24: { finalText: c.finalText },
+    EduReportCompleteness: c.EduReportCompleteness,
+    EduReportAcademicSummary: c.EduReportAcademicSummary,
+  };
   const inputs = [
       { m: 0, c: 3 },
       { m: 4.5, c: 3 },

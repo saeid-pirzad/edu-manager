@@ -18,6 +18,8 @@ function fixture() {
     "domain/reporting/attendance.js",
     "domain/reporting/date-ranges.js",
     "domain/reporting/periodic-model.js",
+    "domain/reporting/completeness.js",
+    "domain/reporting/academic-summary.js",
   ])
     vm.runInContext(
       fs.readFileSync(path.join(__dirname, "../src", file), "utf8"),
@@ -27,11 +29,14 @@ function fixture() {
     EduReportDates: c.EduReportDates,
     EduReportModel: c.EduReportModel,
     EduReportAttendance: c.EduReportAttendance,
+    EduReportCompleteness: c.EduReportCompleteness,
+    EduReportAcademicSummary: c.EduReportAcademicSummary,
   });
   for (const file of [
     "reports/periodic/date-range.js",
     "reports/periodic/model.js",
     "reports/periodic/text.js",
+    "reports/periodic/review.js",
     "reports/periodic/document.js",
   ])
     vm.runInContext(

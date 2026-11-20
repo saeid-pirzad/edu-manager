@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "task": "json-data-audit-2026-11-20",
+  "executedAt": "2026-11-20T06:52:57.784Z",
+  "scope": "Program JSON schema, record codec, actual synthetic downloads and full restoration; no personal classroom backup supplied or restored.",
+  "allUnitTests": {
+    "command": "node --test",
+    "total": 3359,
+    "failed": 0,
+    "skipped": 0
+  },
+  "addedJsonTests": {
+    "command": "npm run test:json-data",
+    "total": 127,
+    "failed": 0,
+    "attendance": 93,
+    "grades": 20,
+    "reportCards": 14
+  },
+  "browserStages": [
+    {
+      "scope": "annual",
+      "stage": "annual-backup-file-scale",
+      "total": 239,
+      "passed": 239,
+      "failed": 0
+    },
+    {
+      "scope": "backup",
+      "stage": "unified-backup-hub",
+      "total": 305,
+      "passed": 305,
+      "failed": 0
+    },
+    {
+      "scope": "modular",
+      "stage": "modular-unit-grading",
+      "total": 255,
+      "passed": 255,
+      "failed": 0
+    },
+    {
+      "scope": "modular",
+      "stage": "modular-unit-karnameh-layout",
+      "total": 345,
+      "passed": 345,
+      "failed": 0
+    },
+    {
+      "scope": "workflow",
+      "stage": "4-adversarial-workflow-review",
+      "total": 2386,
+      "passed": 2386,
+      "failed": 0
+    }
+  ],
+  "browserChecksIncludingRepeatedHarness": 3530,
+  "browserCountNote": "Each browser suite includes repeated common harness checks; the sum is not a unique business-scenario count.",
+  "actualSyntheticJsonFile": {
+    "filename": "Classyar-Classroom.json",
+    "bytes": 4744391,
+    "sha256": "34b70add793868de7fe52fc24867b6cd07fe1cda134a2a2d5faf012ac34c8628",
+    "format": "EduManager.FullBackup",
+    "version": 2,
+    "schemaVersion": 26,
+    "storeRows": {
+      "records": 522,
+      "catalog": 2,
+      "events": 3,
+      "backups": 2,
+      "undo": 1,
+      "reports": 1
+    },
+    "gradeDraftRows": 3,
+    "sourceCounts": {
+      "terms": 2,
+      "schools": 2,
+      "classes": 4,
+      "knownStudents": 100,
+      "activeStudents": 96,
+      "sessions": 512,
+      "personSessions": 12800,
+      "scoreRecords": 3584,
+      "modules": 20,
+      "units": 40,
+      "lessons": 8,
+      "perTermSessions": [256, 256],
+      "ordinaryBackups": 2,
+      "frozenReports": 1,
+      "undo": 1,
+      "pendingDrafts": 3
+    },
+    "sourceDomainHash": "88e07edad48236bc147937cd99367f6d2bc97c8f130929bfafd32d3f7da6fbe1",
+    "domainEqualityAfterFirstRestore": true,
+    "domainEqualityAfterSecondRestore": true,
+    "domainEqualityAfterFreshOfflineDocument": true
+  },
+  "staticChecks": {
+    "format": "pass",
+    "eslint": "pass",
+    "buildCheck": "pass",
+    "assetsContract": "pass",
+    "dataStoreContract": "pass",
+    "diffCheck": "pass"
+  },
+  "build": {
+    "bundles": 37,
+    "sourceFiles": 331,
+    "packageFiles": 83,
+    "packageByteMismatches": 0,
+    "workerVersion": "a6a85e36b85b8bf6"
+  },
+  "environment": "Isolated temporary profiles and synthetic data in desktop Edge and Node.js. No real Android/iPhone hardware exercised by these tests."
+}

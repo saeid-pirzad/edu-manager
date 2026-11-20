@@ -113,6 +113,12 @@ globalThis.EduFrozenReportValidator = Object.freeze({
           )
             fail();
           lessons.add(l.id);
+          if (l.policy?.version !== undefined) {
+            if (!gradePolicy || ![1, 2].includes(l.policy.version)) fail();
+            gradePolicy.validate(l.policy);
+            if ((l.policy.method === "dual") !== (l.mode === "kardanesh"))
+              fail();
+          }
           if (l.assessments !== undefined) {
             if (
               l.mode !== "kardanesh" ||
@@ -129,7 +135,9 @@ globalThis.EduFrozenReportValidator = Object.freeze({
                 (l.policy?.subjectType !== "general" && r.practical == null) ||
                 r.theory == null ||
                 !score(r.final) ||
-                r.complete !== true
+                r.complete !== true ||
+                (r.reason !== undefined && !text(r.reason)) ||
+                !score(r.threshold)
               )
                 fail();
               if (l.policy?.dualConfigurable === true) {
@@ -143,6 +151,16 @@ globalThis.EduFrozenReportValidator = Object.freeze({
                     ? { final: r.theory, passed: null }
                     : weightedKardanesh(r.practical, r.theory);
               if (r.final !== expected.final || r.passed !== expected.passed)
+                fail();
+              if (
+                r.threshold != null &&
+                r.threshold !==
+                  (l.policy?.subjectType === "general"
+                    ? null
+                    : l.policy?.dualConfigurable === true
+                      ? l.policy.passMin
+                      : 14)
+              )
                 fail();
             }
             if (

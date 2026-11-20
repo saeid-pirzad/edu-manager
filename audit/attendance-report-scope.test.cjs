@@ -84,6 +84,7 @@ function fixture() {
       throw Error(message);
     },
   });
+  vm.runInContext(source("src/domain/reporting/attendance.js"), c);
   vm.runInContext(source("src/legacy/reports/comprehensive.js"), c);
   return {
     c,
@@ -281,3 +282,76 @@ for (const late of ["late", "late:0", "late:10"]) {
     assert.match(text, /غایب \(0 نفر\)/);
   });
 }
+
+test("copied activity reports read names, rosters, attendance and scores only from their captured source", () => {
+  const f = fixture(),
+    durable = structuredClone(f.c.db);
+  f.c.globalFilter.schoolId = "school";
+  f.c.globalFilter.classId = "class";
+  f.c.getLessonObj = (classroom, id) =>
+    classroom.lessons.find((lesson) => lesson.id === id);
+  f.school.name = "LIVE_SCHOOL";
+  f.cls.name = "LIVE_CLASS";
+  f.lesson.name = "LIVE_LESSON";
+  f.session.attendance.selected = "absent";
+  f.session.scores[0].value = 777;
+  const before = JSON.stringify(durable),
+    text = f.c.buildGlobalReportText(durable);
+  assert.match(text, /مدرسه: SCHOOL \| کلاس: CLASS/);
+  assert.match(text, /درس: LESSON/);
+  assert.match(text, /CLASS_MARK:16/);
+  assert.match(text, /تأخیری‌ها \(1\): SELECTED_HISTORICAL \(10د\)/);
+  assert.doesNotMatch(text, /LIVE_|777/);
+  assert.equal(JSON.stringify(durable), before);
+});
+
+for (const mode of ["summary", "detailed"])
+  test(
+    mode +
+      " activity report counts the complete historical roster and exposes unknown attendance",
+    () => {
+      const f = fixture();
+      f.c.globalFilter.studentId = "";
+      f.c.globalFilter.reportMode = mode;
+      f.session.attendance.phantom = "present";
+      f.session.attendance.other = "late:invalid";
+      f.c.generateGlobalReport();
+      const text = f.c.buildGlobalReportText();
+      if (mode === "summary") {
+        assert.match(
+          f.output.innerHTML,
+          /✅1 ❌0 ⏰1 · مرخصی 0 · تعیین‌نشده 2/,
+        );
+        assert.match(
+          text,
+          /حاضر 1 \| غایب 0 \| مرخصی 0 \| تأخیر 1 \| تعیین‌نشده 2/,
+        );
+      } else {
+        assert.match(f.output.innerHTML, /تعیین‌نشده \(2\)/);
+        assert.match(
+          text,
+          /تعیین‌نشده \(2\): OTHER_PRIVATE، UNKNOWN_HISTORICAL/,
+        );
+      }
+      assert.doesNotMatch(f.output.innerHTML + text, /invalid|phantom/);
+    },
+  );
+
+for (const [raw, minutes] of [
+  ["late", null],
+  ["late:0", 0],
+  ["late:9", 9],
+])
+  test(
+    "single-pupil activity copy preserves lateness minutes for " + raw,
+    () => {
+      const f = fixture();
+      f.c.globalFilter.reportMode = "summary";
+      f.session.attendance.selected = raw;
+      f.c.generateGlobalReport();
+      const text = f.c.buildGlobalReportText();
+      if (minutes === null)
+        assert.doesNotMatch(text + f.output.innerHTML, /\(0د\)/);
+      else assert.ok(text.includes("(" + minutes + "د)"));
+    },
+  );

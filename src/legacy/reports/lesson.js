@@ -119,17 +119,19 @@ function legacy_buildLessonReportHtml(c, lesson) {
       const present = [],
         absent = [],
         leave = [],
-        late = [];
+        late = [],
+        unknown = [];
       sessionStudents(c, sess).forEach((s) => {
-        const st = sess.attendance[s.id];
-        if (st === "present") present.push(s.name);
-        else if (st === "leave") leave.push(s.name);
-        else if (st === "absent") absent.push(s.name);
-        else if (st && st.startsWith("late")) {
+        const st = EduReportAttendance.normalize(sess.attendance[s.id]);
+        if (st.status === "present") present.push(s.name);
+        else if (st.status === "leave") leave.push(s.name);
+        else if (st.status === "absent") absent.push(s.name);
+        else if (st.status === "late") {
           present.push(s.name);
-          const mins = st.includes(":") ? st.split(":")[1] : "";
-          late.push(`${s.name} ${mins ? `(${mins}د)` : ""}`);
-        }
+          late.push(
+            `${s.name}${st.minutes === null ? "" : ` (${st.minutes}د)`}`,
+          );
+        } else unknown.push(s.name);
       });
       const pos = sess.scores.filter((x) => x.type === "positive");
       const neg = sess.scores.filter((x) => x.type === "negative");
@@ -152,6 +154,7 @@ function legacy_buildLessonReportHtml(c, lesson) {
       </div>
       ${absent.length ? `<div style="font-size:.85em;color:var(--status-danger, #9f2635)">غایبین: ${absent.map(esc).join("، ")}</div>` : ""}
       ${late.length ? `<div style="font-size:.85em;color:var(--status-warning, #7c5105)">تأخیر: ${late.map(esc).join("، ")}</div>` : ""}
+      ${unknown.length ? `<div class="muted" style="font-size:.85em">تعیین‌نشده (${unknown.length} نفر): ${unknown.map(esc).join("، ")}</div>` : ""}
       ${present.length ? `<div style="font-size:.85em;color:var(--status-success, #16664e);margin-top:4px">حاضرین: ${present.map(esc).join("، ")}</div>` : ""}
       ${
         pos.length

@@ -19,6 +19,14 @@ function fixture(name) {
       },
     },
   });
+  for (const file of ["completeness.js", "academic-summary.js"])
+    vm.runInContext(
+      fs.readFileSync(
+        path.join(__dirname, "../src/domain/reporting", file),
+        "utf8",
+      ),
+      context,
+    );
   vm.runInContext(
     fs.readFileSync(
       path.join(__dirname, "../src/reports/periodic", name),

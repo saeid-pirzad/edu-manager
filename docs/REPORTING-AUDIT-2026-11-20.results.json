@@ -1,0 +1,199 @@
+{
+  "schemaVersion": 1,
+  "task": "reporting-audit-2026-11-20",
+  "executedAt": "2026-11-20T06:28:38.992Z",
+  "releaseGate": {
+    "command": "npm run check:release",
+    "exitCode": 0,
+    "unitTests": 3228,
+    "unitFailures": 0,
+    "browserStages": [
+      {
+        "stage": "4-adversarial-workflow-review",
+        "total": 2386,
+        "passed": 2386,
+        "failed": 0
+      },
+      {
+        "stage": "question-bank",
+        "total": 561,
+        "passed": 561,
+        "failed": 0
+      },
+      {
+        "stage": "question-bank-business",
+        "total": 283,
+        "passed": 283,
+        "failed": 0
+      },
+      {
+        "stage": "question-bank-sample",
+        "total": 229,
+        "passed": 229,
+        "failed": 0
+      },
+      {
+        "stage": "unified-backup-hub",
+        "total": 305,
+        "passed": 305,
+        "failed": 0
+      },
+      {
+        "stage": "question-bank-import",
+        "total": 257,
+        "passed": 257,
+        "failed": 0
+      },
+      {
+        "stage": "modular-unit-grading",
+        "total": 255,
+        "passed": 255,
+        "failed": 0
+      },
+      {
+        "stage": "modular-unit-karnameh-layout",
+        "total": 345,
+        "passed": 345,
+        "failed": 0
+      },
+      {
+        "stage": "period-deletion",
+        "total": 277,
+        "passed": 277,
+        "failed": 0
+      },
+      {
+        "stage": "gradebook-mobile-layout",
+        "total": 266,
+        "passed": 266,
+        "failed": 0
+      },
+      {
+        "stage": "single-academic-year-ui",
+        "total": 235,
+        "passed": 235,
+        "failed": 0
+      },
+      {
+        "stage": "annual-backup-file-scale",
+        "total": 239,
+        "passed": 239,
+        "failed": 0
+      },
+      {
+        "stage": "theme-reactium-acceptance",
+        "total": 411,
+        "passed": 411,
+        "failed": 0
+      },
+      {
+        "stage": "logo-ui-pwa",
+        "total": 269,
+        "passed": 269,
+        "failed": 0
+      },
+      {
+        "stage": "navbar-layout",
+        "total": 679,
+        "passed": 679,
+        "failed": 0
+      },
+      {
+        "stage": "school-create-ui",
+        "total": 340,
+        "passed": 340,
+        "failed": 0
+      },
+      {
+        "stage": "record-edit-access",
+        "total": 265,
+        "passed": 265,
+        "failed": 0
+      },
+      {
+        "stage": "timetable-edit-access",
+        "total": 236,
+        "passed": 236,
+        "failed": 0
+      },
+      {
+        "stage": "week-settings",
+        "total": 246,
+        "passed": 246,
+        "failed": 0
+      },
+      {
+        "stage": "report-review-browser",
+        "total": 233,
+        "passed": 233,
+        "failed": 0
+      },
+      {
+        "stage": "report-excel-offline",
+        "total": 251,
+        "passed": 251,
+        "failed": 0
+      },
+      {
+        "stage": "guarded-report-copy-two-windows",
+        "total": 236,
+        "passed": 236,
+        "failed": 0
+      },
+      {
+        "stage": "academic-karnameh-excel",
+        "total": 269,
+        "passed": 269,
+        "failed": 0
+      },
+      {
+        "stage": "individual-student-grade-sheet",
+        "total": 273,
+        "passed": 273,
+        "failed": 0
+      },
+      {
+        "stage": "question-bank-output",
+        "total": 242,
+        "passed": 242,
+        "failed": 0
+      }
+    ],
+    "checksIncludingRepeatedHarness": 9588,
+    "failures": 0
+  },
+  "build": {
+    "bundles": 37,
+    "sourceFiles": 331,
+    "releaseVersion": "001a81b211fa002f"
+  },
+  "environment": "Isolated synthetic installations in desktop Edge; viewport emulation is not physical Android/iPhone acceptance.",
+  "finalRegression": {
+    "unitTests": 3232,
+    "unitFailures": 0,
+    "command": "node --test",
+    "exitCode": 0
+  },
+  "finalReportBrowserStages": [
+    {
+      "stage": "report-review-browser",
+      "total": 233,
+      "passed": 233,
+      "failed": 0
+    },
+    {
+      "stage": "report-excel-offline",
+      "total": 251,
+      "passed": 251,
+      "failed": 0
+    }
+  ],
+  "finalChecks": {
+    "format": "passed",
+    "lint": "passed",
+    "buildCheck": "passed",
+    "diffWhitespace": "passed",
+    "packageFiles": 83,
+    "packageMatchesSource": true
+  }
+}

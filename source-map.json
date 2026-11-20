@@ -248,7 +248,9 @@
         "src/domain/reporting/attendance.js",
         "src/domain/reporting/date-ranges.js",
         "src/domain/reporting/periodic-model.js",
-        "src/domain/reporting/academic-results.js"
+        "src/domain/reporting/academic-results.js",
+        "src/domain/reporting/completeness.js",
+        "src/domain/reporting/academic-summary.js"
       ]
     },
     {
@@ -270,6 +272,7 @@
         "src/reports/periodic/events-notes.js",
         "src/reports/periodic/model.js",
         "src/reports/periodic/text.js",
+        "src/reports/periodic/review.js",
         "src/reports/periodic/document.js",
         "src/reports/periodic/events-document.js",
         "src/reports/periodic/filters.js",
@@ -350,6 +353,7 @@
         "src/styles/select-controls.css",
         "src/styles/reports/periodic/document.css",
         "src/styles/reports/periodic/attendance-summary.css",
+        "src/styles/reports/periodic/review.css",
         "src/styles/reports/periodic/attendance-layout.css",
         "src/styles/reports/periodic/attendance-detail.css",
         "src/styles/reports/periodic/excel-sharing.css",

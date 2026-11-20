@@ -1,0 +1,238 @@
+.periodic-document .report-review {
+  margin-block: 16px;
+  border: 1px solid var(--theme-line);
+  border-radius: 12px;
+  background: var(--theme-surface);
+  min-width: 0;
+}
+.report-review > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 48px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  list-style: none;
+}
+.report-review > summary::-webkit-details-marker {
+  display: none;
+}
+.report-review > summary:focus-visible {
+  outline: 2px solid var(--theme-primary);
+  outline-offset: 3px;
+}
+.report-review > summary::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-inline-end: 1.5px solid currentColor;
+  border-block-end: 1.5px solid currentColor;
+  transform: rotate(45deg);
+  flex-shrink: 0;
+  margin-inline-start: auto;
+}
+.report-review[open] > summary::after {
+  transform: rotate(225deg);
+}
+.report-review-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 11px;
+}
+.report-review-badges > span {
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: var(--theme-surface-muted);
+  font-variant-numeric: tabular-nums;
+}
+.report-review:not([open]) > .report-review-body {
+  display: none;
+}
+.report-review-body {
+  padding: 0 12px 12px;
+  min-width: 0;
+}
+.report-review-body h4 {
+  font-size: 13px;
+  margin: 14px 0 10px;
+}
+.report-review-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+.report-review-metrics > div {
+  min-width: 0;
+  padding: 9px 6px;
+  text-align: center;
+  border-radius: 8px;
+  background: var(--theme-surface-muted);
+}
+.report-review-metrics dt {
+  font-size: 11px;
+  line-height: 1.8;
+}
+.report-review-metrics dd {
+  margin: 3px 0 0;
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.report-review-metrics > div:first-child dd,
+.report-review-table td:nth-child(2) {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+.report-review-followup {
+  font-size: 12px;
+  line-height: 1.9;
+  color: var(--theme-ink);
+}
+.report-review .report-review-attention {
+  color: var(--status-danger);
+  font-weight: 700;
+}
+.report-review-passed {
+  color: var(--status-success);
+}
+.report-review-table-wrap {
+  max-height: 26rem;
+  overflow: auto;
+  min-width: 0;
+}
+.report-review-table-wrap:focus-visible {
+  outline: 2px solid var(--theme-primary);
+  outline-offset: 2px;
+}
+.report-review-table {
+  width: 100%;
+  min-width: 600px;
+  table-layout: fixed;
+  font-size: 12px;
+}
+.report-review-table caption {
+  text-align: start;
+  padding-block: 6px;
+  font-size: 11px;
+  color: var(--theme-muted);
+}
+.report-review-table :is(th, td) {
+  padding: 8px 6px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.report-review-table th:first-child {
+  width: 200px;
+  text-align: start;
+  overflow-wrap: anywhere;
+}
+.periodic-document .report-review .report-review-table thead th {
+  color: var(--theme-secondary);
+  background: var(--theme-secondary-soft);
+  white-space: normal;
+  font-size: inherit;
+}
+.periodic-document .report-review .report-review-table tbody th {
+  color: var(--theme-ink);
+  background: var(--theme-surface);
+  white-space: normal;
+  font-weight: 600;
+  font-size: inherit;
+}
+.periodic-document .report-review .report-review-table td {
+  white-space: nowrap;
+}
+.report-review-table th small {
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  margin-top: 3px;
+  color: var(--theme-muted);
+}
+.report-review-learners > summary {
+  min-height: 44px;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1.9;
+  padding-block: 8px;
+}
+.report-review-learners > summary span {
+  color: var(--theme-muted);
+  margin-inline-start: 6px;
+}
+.report-review-learners:not([open]) > ul {
+  display: none;
+}
+.report-review-learners ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  max-height: 24rem;
+  overflow: auto;
+}
+.report-review-learners li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding: 10px 2px;
+  font-size: 12px;
+  border-block-start: 1px solid var(--theme-line-soft);
+}
+.report-review-learners small {
+  flex-basis: 100%;
+  color: var(--theme-muted);
+  font-size: 11px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+@media screen and (max-width: 600px) {
+  .report-review > summary {
+    padding: 8px;
+    font-size: 12px;
+  }
+  .report-review-body {
+    padding: 0 8px 8px;
+  }
+  .report-review-badges {
+    font-size: 10px;
+    gap: 4px;
+  }
+  .report-review-metrics {
+    gap: 4px;
+  }
+  .report-review-metrics dt {
+    font-size: 10px;
+  }
+  .report-review-table {
+    font-size: 11px;
+  }
+}
+@media print {
+  .report-review > summary {
+    display: none;
+  }
+  .report-review .report-review-body {
+    display: block;
+  }
+  .report-review-table-wrap {
+    max-height: none;
+    overflow: visible;
+  }
+  .report-review-table thead {
+    display: table-header-group;
+  }
+  .report-review-table tr {
+    break-inside: avoid;
+  }
+  .report-review-learners ul {
+    display: block;
+    max-height: none;
+    overflow: visible;
+  }
+}

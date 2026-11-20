@@ -542,6 +542,25 @@ test("shared reporting APIs are frozen and expose only their explicit host-indep
   }
 });
 
+test("custom report spans allow a leap year but reject oversized allocation before projecting any days", () => {
+  const c = fixture(),
+    source = sourceFixture(),
+    input = options({
+      mode: "weekly",
+      date: "2028-01-01",
+      startDate: "2028-01-01",
+      endDate: "2028-12-31",
+    }),
+    before = JSON.stringify(source);
+  assert.equal(build(c, source, input).days.length, 366);
+  for (const endDate of ["2029-01-01", "9999-12-31"])
+    assert.throws(
+      () => build(c, source, { ...input, endDate }),
+      /حداکثر ۳۶۶ روز/,
+    );
+  assert.equal(JSON.stringify(source), before);
+});
+
 test("both application shells load the actual shared reporting bundle after policies and before every consumer", () => {
   const c = vm.createContext({ structuredClone });
   for (const file of [
@@ -575,6 +594,8 @@ test("both application shells load the actual shared reporting bundle after poli
     "src/domain/reporting/date-ranges.js",
     "src/domain/reporting/periodic-model.js",
     "src/domain/reporting/academic-results.js",
+    "src/domain/reporting/completeness.js",
+    "src/domain/reporting/academic-summary.js",
   ]);
   for (const [file, consumers] of [
     [

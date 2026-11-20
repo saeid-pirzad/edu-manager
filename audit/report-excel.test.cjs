@@ -17,6 +17,8 @@ function fixture(audience = "management", mode = "daily") {
     "domain/reporting/attendance.js",
     "domain/reporting/date-ranges.js",
     "domain/reporting/periodic-model.js",
+    "domain/reporting/completeness.js",
+    "domain/reporting/academic-summary.js",
     "reports/periodic/xlsx-workbook.js",
     "reports/periodic/excel.js",
   ])
