@@ -783,7 +783,13 @@ async function dailyFlow() {
   check(
     "REUSE_AVAILABLE",
     "Next bell offers the same-class same-day attendance shortcut",
-    !!reuse && reuse.textContent.includes("۱"),
+    !!reuse &&
+      reuse.textContent.includes("انتقال حضور") &&
+      reuse.getAttribute("aria-label").includes("۱") &&
+      reuse
+        .closest(".session-attendance-reuse")
+        .querySelector(".session-reuse-copy")
+        .textContent.includes("همین کلاس"),
   );
   document
     .querySelector('.att-btns[data-sid="' + ids.students[0] + '"] .present')

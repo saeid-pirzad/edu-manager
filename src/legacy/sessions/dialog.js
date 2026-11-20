@@ -201,13 +201,13 @@ function legacy_openSessionModal(session, { activitySaved = null } = {}) {
     String(session.period + 1),
     [session],
   );
-  h += `<details class="session-date-tools"><summary>${EduIcons.html("edit")}<span>ویرایش تاریخ و زنگ</span></summary><div class="form-row session-date-grid">
+  h += `<details class="session-date-tools"><summary>${EduIcons.html("edit")}<span class="session-tool-copy"><strong>اصلاح تاریخ و زنگ جلسه</strong><small>برای اصلاح جلسه‌ای که اشتباه ثبت شده است</small></span></summary><p class="session-date-help">حضور و فعالیت‌های همین جلسه حفظ می‌شوند؛ فقط تاریخ و زنگ اصلاح می‌شود.</p><div class="form-row session-date-grid">
     <label class="session-field"><span>تاریخ جلسه</span>
       <input type="date" id="sessDate" data-session-calendar="edit" data-session-id="${esc(session.id)}" value="${session.date}" min="${academicRange.start}" max="${academicRange.end}" data-legacy-change="sessions-dialog:0">
       <span class="shamsi-display" id="shamsiSessDate">${toShamsi(session.date)}</span>
     </label>
     <label class="session-field"><span>زنگ طبق برنامه</span><select id="sessPeriod">${sessionSelection.options}</select></label>
-    <button type="button" class="ghost" data-legacy-click="sessions-dialog:1" data-legacy-click-arg3="${esc(session.id)}">ذخیره تغییرات</button>
+    <button type="button" class="ghost" data-legacy-click="sessions-dialog:1" data-legacy-click-arg3="${esc(session.id)}">ذخیره تاریخ و زنگ</button>
   </div><p class="session-schedule-hint" id="sessScheduleStatus" role="status">${esc(sessionSelection.summary)}</p></details>`;
   if (lesson.gradeMode !== "kardanesh")
     h += `<div class="form-row session-unit-fields">
@@ -230,7 +230,7 @@ function legacy_openSessionModal(session, { activitySaved = null } = {}) {
       <button type="button" class="ghost" data-mutating="1" data-legacy-click="sessions-dialog:all-present">همه حاضر</button>
       <button type="button" class="danger" data-mutating="1" data-legacy-click="sessions-dialog:7">همه غایب</button>
     </div>
-  </div>${previousAttendance ? `<div class="session-attendance-reuse"><button type="button" class="ghost" data-mutating="1" data-legacy-click="sessions-dialog:reuse-previous" data-session-target="${esc(session.id)}">${EduIcons.html("copy")}از زنگ ${(previousAttendance.period + 1).toLocaleString("fa-IR")} بگیر</button><small>فقط تعیین‌نشده‌ها؛ تأخیر قبلی «حاضر» می‌شود.</small></div>` : ""}<label class="session-attendance-search"><span>جست‌وجوی هنرجو</span><input type="search" placeholder="نام یا کد دانش‌آموزی…" value="${esc(attendanceQuery)}" data-legacy-input="sessions-dialog:attendance-search"></label><p class="session-attendance-no-results" role="status" hidden>هنرجویی پیدا نشد.</p><div class="session-attendance-list">`;
+  </div>${previousAttendance ? `<div class="session-attendance-reuse"><div class="session-reuse-copy"><strong>تکمیل حضور از جلسهٔ قبلی همین کلاس</strong><span>از زنگ ${(previousAttendance.period + 1).toLocaleString("fa-IR")} به زنگ ${(session.period + 1).toLocaleString("fa-IR")} · همین روز</span></div><button type="button" class="ghost" data-mutating="1" data-legacy-click="sessions-dialog:reuse-previous" data-session-target="${esc(session.id)}" aria-label="انتقال حضور از زنگ ${(previousAttendance.period + 1).toLocaleString("fa-IR")} همین کلاس به زنگ ${(session.period + 1).toLocaleString("fa-IR")}">${EduIcons.html("copy")}انتقال حضور</button><small>فقط تعیین‌نشده‌ها تکمیل می‌شوند؛ ثبت‌های فعلی حفظ و تأخیر قبلی «حاضر» محسوب می‌شود.</small></div>` : ""}<label class="session-attendance-search"><span>جست‌وجوی هنرجو</span><input type="search" placeholder="نام یا کد دانش‌آموزی…" value="${esc(attendanceQuery)}" data-legacy-input="sessions-dialog:attendance-search"></label><p class="session-attendance-no-results" role="status" hidden>هنرجویی پیدا نشد.</p><div class="session-attendance-list">`;
   const sortedStudents = getSortedStudents({
     students: sessionStudents(c, session),
   });

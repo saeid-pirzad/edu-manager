@@ -113,6 +113,25 @@ test("reuse selects nearest earlier recorded bell, not later, empty or unrelated
   f.c.db.sessions.push(near);
   assert.equal(f.c.previousSessionAttendanceV24(f.target).id, "near");
 });
+
+test("class A bell one, class B bell two, class A bell three reuses only class A", async () => {
+  const f = fixture();
+  const otherClass = {
+    ...f.source,
+    id: "class-b-bell-two",
+    classId: "class-b",
+    period: 1,
+    attendance: { a: "present", b: "absent", c: "present" },
+  };
+  f.c.db.sessions.push(otherClass);
+  const before = JSON.stringify(otherClass);
+  assert.equal(f.c.previousSessionAttendanceV24(f.target).id, f.source.id);
+  await f.c.copyPreviousAttendanceV24(f.target.id);
+  assert.equal(f.target.attendance.a, "absent");
+  assert.equal(f.target.attendance.b, "present");
+  assert.equal(f.target.attendance.c, "leave");
+  assert.equal(JSON.stringify(otherClass), before);
+});
 test("reuse rejects stale targets and missing sources without writing", async () => {
   const f = fixture();
   await assert.rejects(f.c.copyPreviousAttendanceV24("source"), /جلسهٔ قبلی/);

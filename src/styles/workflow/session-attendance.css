@@ -54,6 +54,46 @@
   :is(#modalBody, .qb-body) .session-workspace .session-date-tools {
     margin-top: 4px;
   }
+  #modalBody .session-date-tools .session-tool-copy {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+    line-height: 1.8;
+  }
+  #modalBody .session-tool-copy strong {
+    font-size: 12px;
+    font-weight: 600;
+  }
+  #modalBody .session-tool-copy small {
+    font-size: 10px;
+    color: var(--theme-muted);
+  }
+  #modalBody .session-date-tools > summary > svg {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    color: var(--theme-muted);
+  }
+  #modalBody .session-date-tools > .session-date-help {
+    margin: 0;
+    padding: 0 12px;
+    font-size: 11px;
+    line-height: 1.9;
+    color: var(--theme-muted);
+  }
+  #modalBody .session-date-tools > .session-date-grid {
+    margin: 10px 12px;
+  }
+  #modalBody .session-date-grid > button.ui-button {
+    font-size: 12px;
+    line-height: 1.7;
+    padding: 8px 12px;
+    white-space: normal;
+  }
+  #modalBody .session-date-tools > .session-schedule-hint {
+    margin-inline: 12px;
+    margin-bottom: 12px;
+  }
   :is(#modalBody, .qb-body) .session-workspace .session-mode-picker {
     gap: 3px;
     margin-block: 12px;
@@ -110,18 +150,38 @@
     font-size: 12px;
   }
   :is(#modalBody, .qb-body) .session-attendance-reuse {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 6px 12px;
+    gap: 8px 12px;
     margin-block: 12px;
+    padding: 12px;
+    border: 1px solid var(--theme-secondary-line);
+    border-radius: 12px;
+    background: var(--theme-secondary-soft);
+  }
+  #modalBody .session-attendance-reuse .session-reuse-copy {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+    line-height: 1.8;
+  }
+  #modalBody .session-reuse-copy strong {
+    font-size: 12px;
+    color: var(--theme-ink);
+  }
+  #modalBody .session-reuse-copy span {
+    font-size: 11px;
+    color: var(--theme-muted);
   }
   :is(#modalBody, .qb-body) .session-attendance-reuse button {
     min-height: 44px;
     margin: 0;
     font-size: 12px;
+    white-space: nowrap;
   }
   :is(#modalBody, .qb-body) .session-attendance-reuse small {
+    grid-column: 1 / -1;
     color: var(--theme-muted);
     font-size: 11px;
     line-height: 1.8;
@@ -205,6 +265,16 @@
 }
 
 @media screen and (max-width: 420px) {
+  #modalBody .session-date-tools > .session-date-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  #modalBody .session-attendance-reuse {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 10px;
+  }
+  #modalBody .session-attendance-reuse button {
+    width: 100%;
+  }
   #modalBody .session-workspace .session-attendance-heading {
     gap: 10px;
     padding: 10px;
