@@ -81,13 +81,17 @@ function filterSessionAttendance(input) {
 }
 function sessionAttendanceProgress(session, classroom) {
   const roster = sessionStudents(classroom, session);
-  const unset = roster.filter(
-    (student) => !session.attendance[student.id],
-  ).length;
-  const present = roster.filter(
-    (student) => session.attendance[student.id] === "present",
-  ).length;
-  return { total: roster.length, unset, present };
+  const counts = EduReportAttendance.emptyCounts();
+  for (const student of roster)
+    EduReportAttendance.tally(
+      counts,
+      EduReportAttendance.normalize(session.attendance[student.id]),
+    );
+  return {
+    total: roster.length,
+    unset: counts.unknown,
+    present: counts.present + counts.late,
+  };
 }
 function refreshSessionAttendanceProgress() {
   const root = document.querySelector("#modalBody .session-workspace");

@@ -1,0 +1,2728 @@
+{
+  "schemaVersion": 1,
+  "task": "final-source-and-business-review-2026-11-20",
+  "executedAt": "2026-11-20T08:15:55.630Z",
+  "baseCommit": "417b3e43f1a0137e2c010a64d3e176b266375576",
+  "environment": {
+    "node": "v24.21.0",
+    "platform": "win32",
+    "browser": "Microsoft Edge / Chromium, isolated synthetic audit profiles"
+  },
+  "releaseVersion": "efafbba6bcbcdb24",
+  "sourceCoverage": {
+    "mappedFiles": 331,
+    "javascriptFiles": 209,
+    "styleFiles": 122,
+    "bundles": 37,
+    "method": "Full production JS read, component/data/async call tracing, complete CSS selector/declaration/media review; embedded font base64 checked via asset integrity, not manually decoded. Generated bundles verified against sources rather than read as independent source.",
+    "files": [
+      {
+        "path": "src/legacy/core/formatting.js",
+        "sha256": "b8bb58737a101f81158f0a02faff820879eef339f83bafb765eea1a8136289fd",
+        "lines": 86,
+        "reviewer": "root",
+        "method": "complete production/release source read"
+      },
+      {
+        "path": "src/legacy/core/state.js",
+        "sha256": "75a67d62e568f2622d78f7e02741969e0f64a20fc7b1d0e7116b4da86b4bef1b",
+        "lines": 86,
+        "reviewer": "root",
+        "method": "complete production/release source read"
+      },
+      {
+        "path": "src/legacy/data/legacy-storage.js",
+        "sha256": "dd5214cb744f230645a986d03728082b05e0c5700583bf776c451432ca018aaa",
+        "lines": 74,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/data/selectors.js",
+        "sha256": "7859f8f02ac94714f29fa9ce6715a399e21932bfd8d4afc07bd11059ab89fa21",
+        "lines": 54,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/ui/navigation.js",
+        "sha256": "a2548c3f8d3b8f4d656c7b88305782928b0f9cdb0177dbac6e3d3e360852e581",
+        "lines": 65,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/ui/login-render.js",
+        "sha256": "555c4fa742b8e4ea5489873467e56ca07da88042bf860860f3663257cd22d516",
+        "lines": 143,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/events/ui-login-render.js",
+        "sha256": "c4d18daec3d61f1b65e2ef695efa7f08f06a888a0d94ab87fe7e587e0e859fdf",
+        "lines": 5,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/ui/header-menus.js",
+        "sha256": "519b46cec89b0510c8226725c541ebfda71c27ad17a75303d5d3bacb2b9d581b",
+        "lines": 250,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/ui/clipboard.js",
+        "sha256": "76da4b8ea9558e6078694f9ae01366cd981325f52f31f78ca8cbd5960354a8a1",
+        "lines": 102,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/events/ui-clipboard.js",
+        "sha256": "0c74ef2eebc110e841fbb13b918e50c983671cc765eb7997ef020440f2fc03b7",
+        "lines": 9,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/reports/comprehensive.js",
+        "sha256": "ae3883d257eae57ff774890a287c4b5ffe8ef26cbd5bcad2539bfd98601069f9",
+        "lines": 768,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/events/reports-comprehensive.js",
+        "sha256": "ef4eb21a7d14d5a59cc18a45ebffac787a3c62d1a1cbe1bb80ecd45a31f66443",
+        "lines": 89,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/reports/lesson.js",
+        "sha256": "5f8230288098006fe0e7244493a1d62a462f97a08d0ea9a0b3d80678440ca3c4",
+        "lines": 261,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/events/reports-lesson.js",
+        "sha256": "f382bf0728cd80400032a7c18eb3dbb84382847fdbbff751f20da9c62079fd80",
+        "lines": 24,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/reports/student.js",
+        "sha256": "2b4b7b884b60f4a2b13c07c1bd104b86f23d931706740620fd83033d0615c837",
+        "lines": 263,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/events/reports-student.js",
+        "sha256": "24c46bf98e7a41d231a015c1a920258f3e6a93a1de3099bbfdfce36fd747f343",
+        "lines": 111,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/grading/bulk-editor.js",
+        "sha256": "5cfa2eb28a425a2fea86201395da1cb6570ba12f9ca068e138ae01e732188037",
+        "lines": 107,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/events/grading-bulk-editor.js",
+        "sha256": "e545a240e287de201454e81496ea2b682270ed43cab2d88419cd866e9676e4f2",
+        "lines": 77,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/grading/calculation.js",
+        "sha256": "3a08fc71a58e802a375238da046b663afd938b65f4a2782d3f0c47252656849d",
+        "lines": 151,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/ui/dashboard.js",
+        "sha256": "14e8e0f9259aa4cff056580bb3ca6283be9a8f57ec7eb71b9c8dd460f99b6da2",
+        "lines": 486,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/events/ui-dashboard.js",
+        "sha256": "ba1dff69dfe7daf3692c34e42b414b0c26fc015041911467773c5e66c156c338",
+        "lines": 66,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/ui/school-class.js",
+        "sha256": "06bef6994e5a649ab86a9f85cd7ca579c8a2976c4de58d06490cf9fd62287133",
+        "lines": 285,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/events/ui-school-class.js",
+        "sha256": "2a6e28c9108e1e02231b11a30ca52cfef9ddb81759e3bee7fde96ccfd9961292",
+        "lines": 142,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/data/download.js",
+        "sha256": "08a07f345841e2e1abbf1191d5d65d6c353d5f7db6aaf365db757d5ebd835fc9",
+        "lines": 20,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/students/csv-import.js",
+        "sha256": "2445b276a01e1d374a6e59bd50a0e4f0d885b594759f04097b001e23ec4cc501",
+        "lines": 75,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/students/editor.js",
+        "sha256": "2da5c421ed6e17d1a3a352cf0fdad9c71c5da52b41fa3ce91aa71f7cd8a589cb",
+        "lines": 23,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/events/students-editor.js",
+        "sha256": "16ca1760e291e04af6c8fcbf054a86406e2f2b03aff946cd93af146f0c0b0dee",
+        "lines": 9,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/ui/lesson.js",
+        "sha256": "a29f1b313706567dab0d92c3d5ff2ef7b94d31db867dfffe63143961957ecab7",
+        "lines": 300,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/events/ui-lesson.js",
+        "sha256": "eb0125ab232ba1510580642170d95df429e121da0526850a233581ce8b3569af",
+        "lines": 47,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/sessions/actions.js",
+        "sha256": "18b61127b89850dfa4ecec484d11b16ca9a248181fd9e856eab96d79a77ef3ec",
+        "lines": 72,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/grading/lesson-editor.js",
+        "sha256": "96531e2ae224ed6a3bd42ca1aacd456e55c1af5825c68f7275ca8f9cf09f0506",
+        "lines": 119,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/events/grading-lesson-editor.js",
+        "sha256": "130e35bb82c99eb046f89dca9235a0f392aa4456ade16304391710eb60b40098",
+        "lines": 95,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/reports/session-text.js",
+        "sha256": "22a762d6e27b9069365fcabd19fb8866cd211a71a15802d675c6b89715229ded",
+        "lines": 69,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/schedule/timetable.js",
+        "sha256": "08af18bb7405237f402427e8ce3ec0aab1be506ad1d34e77368f1535b9c097c2",
+        "lines": 554,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/events/schedule-timetable.js",
+        "sha256": "7f142662e2a24008d7da6adbdd4223402ab85d823c6a296b2437987e675c1f50",
+        "lines": 126,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/students/membership.js",
+        "sha256": "1059fce07fc7267531090e44263f8b86757aa7860759ff0641209031c4138dd1",
+        "lines": 148,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/events/students-membership.js",
+        "sha256": "f19eeef2501eb056bc16c4d8932bbebc435677a1ee9b6710d4adaf395b2ada5b",
+        "lines": 17,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/courses/config.js",
+        "sha256": "8849a4cc4e9d766439bb807666679e6d113f3453a51d39b35af02b71dcca2c88",
+        "lines": 80,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/events/courses-config.js",
+        "sha256": "7d96718ab1ee5d2b1d9f3c5cec12e93e622359d2187b0fa2989485429266995a",
+        "lines": 14,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/sessions/view-refresh.js",
+        "sha256": "4fb77b5d7c6269b34a00d2f61fb93883e3f694182e6a1fe8c3dd853d913f2a5e",
+        "lines": 304,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/sessions/dialog.js",
+        "sha256": "81bf6e0d9dc29e6159c403dc59d79cf4c236c765b36cf618605390a7e9b03450",
+        "lines": 455,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/events/sessions-dialog.js",
+        "sha256": "8ca97553d9ff7e01f3e735682342cf8d4fd511b82004141077884fb467b0cc13",
+        "lines": 193,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/data/backup-import.js",
+        "sha256": "00a1636848989afc67aa0882953564c4679140335d6e7ac5bad4a63ba0ba9d88",
+        "lines": 127,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/validation/database.js",
+        "sha256": "108b38563df560c4171c01bb641e2acbc6ce0b5006fbd83739f4bf633c533a2f",
+        "lines": 276,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/students/roster.js",
+        "sha256": "39eef62f4b3493a95a70e959b1380a8a96b27890ce965d0e7e45264f04f6b65b",
+        "lines": 65,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/grading/kardanesh.js",
+        "sha256": "67e34927a19cde105fb26031d12f81c92adc2ba27e1bc4c37fc8f01306647f53",
+        "lines": 145,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/events/grading-kardanesh.js",
+        "sha256": "b917eb507adcead5d0f97b796fc34d912385b6b3206c03bcb911c1683307acc9",
+        "lines": 5,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/students/archive.js",
+        "sha256": "7c0be59709825e9825433174b638b225d79755061610112927208c45a997364c",
+        "lines": 46,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/events/students-archive.js",
+        "sha256": "6b9752cbc62bdcec3fa7c00397b2fc7a455d9053f290abce8018b0b51ff44124",
+        "lines": 9,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/legacy/core/runtime-facade.js",
+        "sha256": "d52bc3da3ab53b3297435ba2e8bf9d2ec57310e513df5b9a3d71acf55a3e746c",
+        "lines": 446,
+        "reviewer": "root",
+        "method": "complete production/release source read"
+      },
+      {
+        "path": "src/services/grading-results.js",
+        "sha256": "94cb52874d25f8d6876ab72adcf06d3d200cb9e42ab219a43bd737755c7a1ff7",
+        "lines": 451,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/services/karnameh-excel.js",
+        "sha256": "33b507db2a95872c2e4392e9430400e4d11580a1b77c234291edb19cc0b651dc",
+        "lines": 400,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/services/installation-backup.js",
+        "sha256": "4a25b032af3be4679b5aadb4686536a17909a8088d3aa0342964f57b258cfdf7",
+        "lines": 318,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/services/year-note-scope.js",
+        "sha256": "fa961b16e77f5d3cec6f53384661d1b50c20e1f99446710aa137e5360588ce1d",
+        "lines": 110,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/workspace/core/state.js",
+        "sha256": "6f68aff0f26392b71b76d55bc6d53f04cbe63e43247d39cf09d477946caf1898",
+        "lines": 52,
+        "reviewer": "root",
+        "method": "complete production/release source read"
+      },
+      {
+        "path": "src/workspace/core/async-target.js",
+        "sha256": "340b774e6444cec8c5ea9926002eabf816c671a4314fdd09da8235e9032829dc",
+        "lines": 20,
+        "reviewer": "root",
+        "method": "complete production/release source read"
+      },
+      {
+        "path": "src/workspace/domain/defaults-numbers.js",
+        "sha256": "0f64fdc341ead9599fd49d923d41352583904a19a7e322544f1ed0398be3467a",
+        "lines": 87,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/validation/database.js",
+        "sha256": "ab70665c554d7606c42c3173cada9c383bb6f82f2073c2cbc62c7395fad6187d",
+        "lines": 256,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/data/reset.js",
+        "sha256": "cb0c475989bc14319eccd26274417575df35f95b612fae9491c861bc98c7a9dc",
+        "lines": 146,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/data/records.js",
+        "sha256": "fe00599a5ac5c6e9b93d359a7324f9b91fedc0a9b0a342491a87cd18623e8a5c",
+        "lines": 108,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/grading/annual-modular.js",
+        "sha256": "bdb47d21b8d44f77d6324a3c72834626f899eaee7422613e31706030607fe84a",
+        "lines": 224,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/periods/shared-directory.js",
+        "sha256": "aeb344efb4bc5d4a91b224ca3242ca9ede1e3d8942bbe60050d4676089286ab5",
+        "lines": 247,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/grading/scope.js",
+        "sha256": "6e3b931fef6b218319e0d76397dfeb751d0c29d8090f0f5a0005f251a669f2d9",
+        "lines": 46,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/data/save.js",
+        "sha256": "c470866b6f8737c1b4da0631de3efd907d8f385386b3eb575cde181679bc7fa5",
+        "lines": 251,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/periods/install.js",
+        "sha256": "8e8f85060166bd5fb04fb9d2b0bcc5adbd03dbd3e5c306fdcde9a83a5d8e218f",
+        "lines": 186,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/periods/single-year.js",
+        "sha256": "ba8e1d10d374fa4c0f449629a36b40cd12a759962e79f58527d82bee1a701e4b",
+        "lines": 113,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/periods/year-editor.js",
+        "sha256": "f72654c8bb2ea074b09694a93d8c117aadd2f34069e41251f0444c789705cea0",
+        "lines": 50,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/periods/academic-years.js",
+        "sha256": "c93917cd9e13e9377deded4dd5aa77f09609b6c7244fd31e815a653d6d9481c6",
+        "lines": 176,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/core/bootstrap.js",
+        "sha256": "94425df000111c71f37c4b946d39d9301bffcd772b654fadcbb4ff01de20cdf9",
+        "lines": 123,
+        "reviewer": "root",
+        "method": "complete production/release source read"
+      },
+      {
+        "path": "src/workspace/ui/save-status.js",
+        "sha256": "0e479704820d8b7aff16b98f7f89d5777a4c6815fa8f55710d2e72458ce18498",
+        "lines": 79,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/drafts/persistence.js",
+        "sha256": "73143d407ede534ab5b7efc14ec286b75a3ebd0d6cb87bf9c906642f3d381c3f",
+        "lines": 315,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/drafts/inputs.js",
+        "sha256": "7bfb99fc0dd9d1ade3b20777e5f543e1942c160fa93ca408a6310ea9de3e403b",
+        "lines": 83,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/drafts/flush.js",
+        "sha256": "3e3d6a82258cf7555ed3612d975fd34eb74487454c37903ec01edacfbc716920",
+        "lines": 171,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/grading/cells.js",
+        "sha256": "b3efc20049e35ed8c26c616496a38077a56995926d6c927f15efdaa8bcc2dcef",
+        "lines": 89,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/grading/events.js",
+        "sha256": "e1847ea49aede81b74a15020734254a527a1d4b59e5e06f84d7d419abb60e6de",
+        "lines": 92,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/grading/results.js",
+        "sha256": "9a9aa04e8b347e88a55294f7abcd41dcba7b68f8bd0687332d95e13c9a3ccea8",
+        "lines": 63,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/grading/assessment-term.js",
+        "sha256": "5a146c53366254d40c5eed401cdccc91aacae1c9d831b3eb1e0e269fd48f34c0",
+        "lines": 96,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/grading/assessment-context.js",
+        "sha256": "5efedb4815be9612d3e3ccc0c48955c037661d669395b682b36c0f52007fbf64",
+        "lines": 920,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/grading/editors.js",
+        "sha256": "49ef4b43a764f2271d82925e733afad6436b1af45ecc7bbb27737e13f2eb4827",
+        "lines": 318,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/ui/locks-render.js",
+        "sha256": "a290a129266fd100190f0a377b1cec44b619450843f8c71c503b717f13477fcd",
+        "lines": 318,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/sessions/edit-access.js",
+        "sha256": "7df113fe4babdd865dd5511e38c6314785d18ade22c2b9341210aef433c71211",
+        "lines": 244,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/sessions/actions.js",
+        "sha256": "43baf3b576b2f60fe4ca3e954fe0613b0d2d4285dd99f4ad863cd7f470eff1e1",
+        "lines": 673,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/sessions/year-view.js",
+        "sha256": "7582c23a6ccb3ee9b3e7ded6464136615b2fc410b40bc0dccec5c7eb5bc73093",
+        "lines": 129,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/schedule/actions.js",
+        "sha256": "322479e546b6d06794346ce47549c1642ea97115418c6dee8cc2253a898826ca",
+        "lines": 357,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/sessions/reminder-view.js",
+        "sha256": "49307bd3911679c5115408e2a90835d98f1e20748215d09c9282d2d02221eea5",
+        "lines": 377,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/sessions/reminders.js",
+        "sha256": "7eb3bdad2953c7049aab906b02b37f86346d3c84d9b6f6373f3f5874e96e0514",
+        "lines": 562,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/backups/local.js",
+        "sha256": "8a6cdec022634e16c9b656791f2f5b72967b3972602d186aa58949f4cb99781b",
+        "lines": 179,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/backups/full-export.js",
+        "sha256": "351cf932887c529e704a7e7ebdbc507d2729d567b8b39219ea01bf267b3c29f6",
+        "lines": 69,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/backups/sharing.js",
+        "sha256": "5f3985edb08a8de5787d397d25ee24fafe87a32fd685dc562f21e8a39f6221ce",
+        "lines": 247,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/backups/single-file-name.js",
+        "sha256": "17255b4c606e405a92aee83b7a190f55287a902e41b7b640d7048facb84b726b",
+        "lines": 69,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/backups/single-file.js",
+        "sha256": "967775dbc92a0bedff0b92a798567210a5c831f5b7fcec3af9d3f66c58fa2981",
+        "lines": 1079,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/backups/full-restore.js",
+        "sha256": "4f15652f44040fa0ebd6f411347d724a9ae05f54a3a278f6a3f2084fff633fa3",
+        "lines": 597,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/backups/import-conversion.js",
+        "sha256": "8d2d385f07c7dbcd752c58758c3a8d7c47ca7819bafffd5bc9045621f1326969",
+        "lines": 90,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/backups/period-import.js",
+        "sha256": "8dbc5263701fdb7088756f8e10154fcf34888e62dc825570562a5870191de561",
+        "lines": 599,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/history/undo.js",
+        "sha256": "491c7126db29b5b4becda76a476b92bc67c6f28e5d3dda48e51b73532dd00749",
+        "lines": 180,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/periods/switch-create.js",
+        "sha256": "807ddc1b426087d2666be0935ab64ccb42e2898a6bb132cd263c8807e4206b72",
+        "lines": 697,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/periods/labels.js",
+        "sha256": "a11e7b5a33ad19beb3bd8cf689ed8cff2e571f252c5c1d214bc2886116d60eac",
+        "lines": 90,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/reports/finalize.js",
+        "sha256": "b065fb8d956759d7166c10f0cd054b15734231e794ae9aa8b39d909c7f2ff429",
+        "lines": 342,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/reports/karnameh-grid.js",
+        "sha256": "135fe9ee551c04e5cbd4ffac019821239de0722b90ff803121b2d0693fe875d4",
+        "lines": 941,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/reports/student.js",
+        "sha256": "f09fee3cb97b68a81e17be0d5278e389bcd7c9703d4be3ab6c602246a65455e2",
+        "lines": 957,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/reports/karnameh-excel-data.js",
+        "sha256": "e6abee5d4519425efccbf1fc172a9993980f98072992aea89a0baed705de20b5",
+        "lines": 18,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/reports/karnameh-excel.js",
+        "sha256": "4ed8e0b5f0f70751cc4f5ea880589602675a60f39ba5c937421bc674157de1f8",
+        "lines": 538,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/reports/printing.js",
+        "sha256": "0059ee6d5170b6f5cae74dc8df66398a380799787f30151b6cafa87e01c3bef4",
+        "lines": 396,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/reports/copy.js",
+        "sha256": "de5895b8469f4836333655288a7ec1df564e8d5da07207158684b2348402afed",
+        "lines": 54,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/students/csv-import.js",
+        "sha256": "1174a6f40f9d50976673340e7e792804a1b8cc6887c020af12e2652f39bd91b9",
+        "lines": 349,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/students/editor.js",
+        "sha256": "3cb6f346fa44dd182fabccf446ce7b84e37ae7347c74f096df5ff269661b94a8",
+        "lines": 260,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/data/wipe.js",
+        "sha256": "84503335deabe650b89a353b34d090f6694e65ccea3c1915c656897e170cf316",
+        "lines": 246,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/ui/install.js",
+        "sha256": "4401d986e004e266ce33a4658641fe842990dfd4a6772c66db861ff73580c250",
+        "lines": 166,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/ui/actions.js",
+        "sha256": "5fb7da6fa240efc3ec188a47ba4f98a8f65cc7183fd6dbb1a9ef2b5e5209613a",
+        "lines": 162,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/entities/create.js",
+        "sha256": "de2fb8a5082dc04ba7a0e40426b9ccf0905183c6fe93e39004a3ef0c1edf0a65",
+        "lines": 94,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/reports/year-notes-scope.js",
+        "sha256": "f1355ac514797d25d17824cbc57bc8a04e0795f523f219669a3da3a675a72bfc",
+        "lines": 31,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/reports/snapshots.js",
+        "sha256": "3ea4f62f0081e6ca4805e52d39f8e0add285fedfcffdb8a51e4573d375e0a886",
+        "lines": 484,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/settings/editor.js",
+        "sha256": "cc2f8d94d436fbfbc179505e473ba7bcbadcb9773e986bf36c530f364c272614",
+        "lines": 192,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/entities/edit.js",
+        "sha256": "aee733c5642e7628ab63999d4d543148713925a1c8a26925664ab4cd884b026b",
+        "lines": 196,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/students/membership.js",
+        "sha256": "0dd0956b4382527951b1c39e884edb7e9b7f80e4c622e081081710a3c1621b34",
+        "lines": 249,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/entities/delete.js",
+        "sha256": "a9282196401ca3e4bc78b4ef9971d21e2fe85de74fb8e0339749dedfbaec6e06",
+        "lines": 226,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/core/public-api.js",
+        "sha256": "101ebabf890a3dc99db8817ad87dfb9c562ff1c41c8ef7c55bf1db9ccbf7ca9d",
+        "lines": 278,
+        "reviewer": "root",
+        "method": "complete production/release source read"
+      },
+      {
+        "path": "src/workspace/drafts/review.js",
+        "sha256": "af514bcbcb0fb649c7c50c13f86d5cdab942c0429a1a38df90475ef518be1dde",
+        "lines": 135,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/students/archive.js",
+        "sha256": "30fa6f9b0ff645cb2d2d09c7b699902db21b8fb3f69d403a53eff59d15371bd0",
+        "lines": 23,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/data/raw-recovery.js",
+        "sha256": "cfe9bbce0b08a8b779f02874a20195be5865c5924b34d13cfe14dbd3449bbb1d",
+        "lines": 87,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/collaboration/session-drafts.js",
+        "sha256": "435b0e15316ba90a4d8d0dbba49f2f0e4403af226a8253b9656415292eb299cc",
+        "lines": 271,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/courses/year-history.js",
+        "sha256": "2167286f55e112085b54a32dcc32f6e8130973662e136a313363be4aef1ae656",
+        "lines": 82,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/courses/rules.js",
+        "sha256": "26ccec41c8fe0211a9360e7617e517de83c9e268bfa713badea23c5c8a88fce7",
+        "lines": 97,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/courses/results.js",
+        "sha256": "82075f2c09f4ffc661ccc53c4fbe648ab2530c250f60340761b7b3ac77c98f2e",
+        "lines": 88,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/workspace/core/start.js",
+        "sha256": "e04c1f587b96edde51e2262385c45c3937ae3a9098cd22ab00d35e96e86bb25b",
+        "lines": 56,
+        "reviewer": "root",
+        "method": "complete production/release source read"
+      },
+      {
+        "path": "src/ui/app-shell.js",
+        "sha256": "df931f3eb9a1f3c22fc0005d67ebaf015073d5ff2355d816029ab7380039f187",
+        "lines": 900,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/domain/calendar.js",
+        "sha256": "91ea74c3f7f1a6cdad3c7e5d95a22d65c302f619433acb88510508f9a0aa4c67",
+        "lines": 112,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/domain/academic-year.js",
+        "sha256": "84c7a74dbc1cf83b28f75145c6f9dcbb01b28a9a053e955f0bf8125b74e014c9",
+        "lines": 132,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/ui/calendar.js",
+        "sha256": "e835e2e736d0f369900bfd9cabd7be7a8263b821ca97ab91cbd1010921185b14",
+        "lines": 521,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/ui/events-calendar.js",
+        "sha256": "8d10aefdd3b82e396c89eae14f7c2791de5318e5433183bc230067d62962e7fe",
+        "lines": 13,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/ui/course/state-controls.js",
+        "sha256": "53a05832e98ab7e961d527cfeb710d9c18d221a85227df6b0c95f0e0f112d9c9",
+        "lines": 40,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/ui/course/inline-editor.js",
+        "sha256": "5f28f2f881ae3a8cfb64f31d5065c0cd0a4d471fb8ba48c044903c0d5253cab7",
+        "lines": 73,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/ui/course/structure-names.js",
+        "sha256": "0353f97099bc4ae9ad13fa63c6823bc2e358edac63b23957ec8ab49660a6e0c3",
+        "lines": 77,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/ui/course/form.js",
+        "sha256": "14e0bdd3f6f062efef90692f89c0e16e8512040a518638a39e09bd6f1d2a24d3",
+        "lines": 271,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/ui/course/form-events.js",
+        "sha256": "bfbc54f4a2fcd4c2966ddaac28967ec4e9a2a1dc6a7fe50950c26160195e1c4e",
+        "lines": 22,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/ui/course/method.js",
+        "sha256": "3d67fb579e717c6cbd4d750b6c5b2cb5e17e0a825b8e94fde5436d403c5db1a2",
+        "lines": 66,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/ui/course/save.js",
+        "sha256": "b0b1d8ce28fc1d2aa4e7f174c45ee6a70c79f1f5d210a685e64996113882cbc5",
+        "lines": 309,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/ui/course/copy-gate.js",
+        "sha256": "3105adbdd09a39ea48fdb2d3386c32d9b4729229289caca4816fb280f6fcf06a",
+        "lines": 104,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/ui/course/table-events.js",
+        "sha256": "d3db8d4ecbcc720e15e53206dba4f93ff3bdee83cf03e3c6f554fdde923c9bb4",
+        "lines": 36,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/ui/course/table-api.js",
+        "sha256": "9b0629c0848fe17565855e863e4e85e98f3424f746067342c699e6705dc62c0b",
+        "lines": 385,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/domain/csv-parser.js",
+        "sha256": "b07563c26d4c34f17150cb43fd80b4b3d1c23eb9a40539d022360b8ffda27ade",
+        "lines": 80,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/domain/data-boundary.js",
+        "sha256": "a27309b08af1b56a812280a5bfc9f4842cbab325da9881543f3d93e7b0e9cdcb",
+        "lines": 45,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/domain/revision.js",
+        "sha256": "8398a56f0710986faa837a12b92211cf9ad6200b9296a51ad04e5a5a70de3f1c",
+        "lines": 19,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/data/idb-promises.js",
+        "sha256": "6577de2189ac7b4a72a27dfb25ad4b9cb4449d719ffab3650cd351c47705fd80",
+        "lines": 20,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/data/schema.js",
+        "sha256": "8db34a7bb42e9f7c0e94a12f74860b1e5464a6afa92d8d9843192c12d35aaabd",
+        "lines": 25,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/data/idb-connection.js",
+        "sha256": "05a5c4fb3dc9a1acc257a980a6025433cd3458d6853525aafb92b35f93f9a4c4",
+        "lines": 132,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/ui/backup-automatic-view.js",
+        "sha256": "932cd0accf01566fdac89d95583dee2b76b3ae8772d2e7c0a5624c667a575211",
+        "lines": 247,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/ui/dialogs.js",
+        "sha256": "f0f5ab8c532a657e45d90c7f23660c6429f3248fdf06f856a2362d138b558d6f",
+        "lines": 478,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/ui/about.js",
+        "sha256": "bfc4abccdd467416d404c4924c7774ccdeab8de01ee34dccac14b63657dd8ed4",
+        "lines": 28,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/ui/shell-events.js",
+        "sha256": "29acc4cc60c7c579925694f2dccaa38816005629d17f8dbda6df644bad7034e2",
+        "lines": 17,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/ui/header-events.js",
+        "sha256": "c6329ecccc939e8cef9b9abce42ebead53d92847a344460ef455450881c56158",
+        "lines": 27,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/validation/frozen-report.js",
+        "sha256": "004bd011e05f661fc282c30befab42b826a76993f6379ffcd28cce21a6663f2b",
+        "lines": 308,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/validation/full-backup.js",
+        "sha256": "283cbc0e5d7d5e44c0e6ed60bc11cb209b3adb2c0a1d12e4633bae2c6460c911",
+        "lines": 315,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/domain/grade-drafts.js",
+        "sha256": "4ac777ae09619cc6e327e06c9347cc28ce36772a510cce5dff31082acbc30592",
+        "lines": 119,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/domain/grade-math.js",
+        "sha256": "bc672905e45d58353bc16745e3452aee7f47f7a391a2dc6ec7766728040fec69",
+        "lines": 37,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/domain/grade-policy.js",
+        "sha256": "ba588cf996e9a91d235864f2ec173ad6c3290284a16805617486ac69038dd936",
+        "lines": 458,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/domain/annual-modules.js",
+        "sha256": "257d26887799df5084abdf794ee82afa21329b4fed8c9e7999ca2226bb635bd8",
+        "lines": 325,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/domain/academic-year-directory.js",
+        "sha256": "473635fcd02b0545524438cabfe9cbc4195e10d8cac1e831b1e65050d10f786b",
+        "lines": 591,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/domain/academic-year-courses.js",
+        "sha256": "52d61f20a2b9f769d4ab1117faae16ad0ec38db2f697e6af4c8de3633a08da16",
+        "lines": 424,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/domain/reporting/attendance.js",
+        "sha256": "031bc16ca96bf2be48757ae219b5e841b41d2a9666d6c25a4e9af391fb50e545",
+        "lines": 150,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/domain/reporting/date-ranges.js",
+        "sha256": "bcb250a7e2ed0852a7eedb6248cf8840fc6c58106ecb7f34bae12841a7c19c09",
+        "lines": 64,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/domain/reporting/periodic-model.js",
+        "sha256": "e68cce1b7150291d2408062d761674534b802d93b22beb3ec5a14174ffd81050",
+        "lines": 314,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/domain/reporting/academic-results.js",
+        "sha256": "4df308541aeb730946bbe9c6dfffbeabc8638f23d8705db20de0067245531bce",
+        "lines": 117,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/domain/reporting/completeness.js",
+        "sha256": "b06b630bacc42c3e90cec6c189e232b6915830cd571fe2c53da4d01fdde2aed0",
+        "lines": 55,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/domain/reporting/academic-summary.js",
+        "sha256": "e8fae05d37c9a3b091a36b9e08e46cf4212f88b13b403b74a17d9685b9177810",
+        "lines": 210,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/domain/history-changes.js",
+        "sha256": "7d4ed3b30ea99b20d5641b4e21408fbd360bba2c2bd2f704cc3fd48718ae5ad9",
+        "lines": 44,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/domain/password.js",
+        "sha256": "0c852573a218e7f22a8d686a13698a96b24e92d1c22d5f16139c9e77b833613e",
+        "lines": 34,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/reports/periodic/date-range.js",
+        "sha256": "eec46ccb06fb0b057902b310d65d91dada05e2feab7eaab2eb2d74f2984584d9",
+        "lines": 11,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/reports/periodic/notes.js",
+        "sha256": "394b1ab7bbf59248f15be5aff0e5899a5b382a1b7a64dd59fd74e56a960ed94d",
+        "lines": 388,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/reports/periodic/events-notes.js",
+        "sha256": "747de5705eac7e548b9f9e3098943552cb3cf611deb9ea67245e27d50baf2d31",
+        "lines": 5,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/reports/periodic/model.js",
+        "sha256": "5acd4937cd33603e044431f295aba4c0b5e5a2d947551fd98df9938358e0223d",
+        "lines": 48,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/reports/periodic/text.js",
+        "sha256": "66ff51b83d38b3ca7e088487549dd8974f8a476efe7263c3e03d3bcca5c819ea",
+        "lines": 573,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/reports/periodic/review.js",
+        "sha256": "067df8d72cbf196fa1d944e90728957365634eeb658a52826b866f397d41ffa7",
+        "lines": 123,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/reports/periodic/document.js",
+        "sha256": "3e265630e8023f5d63eebb2d4a4f8d4cd6238c1420d4ab13dd074c3dd8dea830",
+        "lines": 492,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/reports/periodic/events-document.js",
+        "sha256": "1c2711d2baa8ec1b14dc09d587ef7ea86d6b9ad086cdaab1b647d30bb51a909c",
+        "lines": 36,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/reports/periodic/filters.js",
+        "sha256": "a31e422580ae78865ef2d381fbebde69c7327e17e5221f3fea118551438b6e70",
+        "lines": 100,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/reports/periodic/render.js",
+        "sha256": "fcb87367dcaca5a385f2690a7b397503920cb5233e9fabd2787cbdd57501f0ee",
+        "lines": 115,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/reports/periodic/events-render.js",
+        "sha256": "f948519c68ae741442027cb77af73a95b8c8549b2b374f9172482fcf7afe3915",
+        "lines": 44,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/reports/periodic/generate.js",
+        "sha256": "087c153781a14968f804eaf91556802a15114d1bd45ba7d5adfce463e50135fa",
+        "lines": 233,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/reports/periodic/xlsx-workbook.js",
+        "sha256": "526eb885efaa48ae840391ad6e2a85b4673c20154b6c07368dcdb13c8e462757",
+        "lines": 481,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/reports/periodic/excel.js",
+        "sha256": "a2e849915560881b2d52226dc459bbd9545ab687a72d556693d78d987911d340",
+        "lines": 635,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/reports/periodic/excel-sharing.js",
+        "sha256": "9e72bcc378b5ebe1df3da5fb4726816893a0d70d683d09295b71c07de0a62eba",
+        "lines": 242,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/reports/periodic/output.js",
+        "sha256": "49eb2e097c9bbbf837aafb490c7657f8fa54fc993d9825703cb5781abe78de5c",
+        "lines": 145,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/pwa/manifest.js",
+        "sha256": "0230435b76a1d7d3db24887285ef06fb4bda5ca115b3ea0c5538e2fd58cf9b22",
+        "lines": 11,
+        "reviewer": "root",
+        "method": "complete production/release source read"
+      },
+      {
+        "path": "src/pwa/install-update.js",
+        "sha256": "80c6b8b4b327d09a315afd3b23e8a3e2b8889ebb6468bd5be63d725909412c1a",
+        "lines": 396,
+        "reviewer": "root",
+        "method": "complete production/release source read"
+      },
+      {
+        "path": "src/data/commit-plan.js",
+        "sha256": "9d810c15bb2c2b61cc72f825b7ff3da5cf990f1c1456dfce0cd378f6f3cff6a6",
+        "lines": 42,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/domain/session-slots.js",
+        "sha256": "257499b3d7bb3aaf999ff6430e321da41332e4b570ee7087bde0d45b42a33ff4",
+        "lines": 215,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/domain/attendance-reminders.js",
+        "sha256": "5c8f7df821608fadfd80157f8d3042680b1cb364535659189c8477fc8ba84209",
+        "lines": 283,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/data/academic-directory-transaction.js",
+        "sha256": "bdaa9a92b1d68affe1f920fe0925a813de3f47da7b08d0c9d66cc26a407686fd",
+        "lines": 906,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/data/record-transaction.js",
+        "sha256": "6097e4129eaa147a4c80d7a5420ce66c1b13061930d32fa3aa3063366e309614",
+        "lines": 395,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/validation/undo.js",
+        "sha256": "03dc77f28cec87212c8067e2bc1ac9c655acd0aeebeb1f80fa6a11c13a4af92c",
+        "lines": 118,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/data/workspace-records.js",
+        "sha256": "6abea6ba148250abd3700e6a2b814dfa51713e4f3dee814ab58f10f0d9219e86",
+        "lines": 166,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/styles/fonts.css",
+        "sha256": "9e5df0bf36d6ff0be1d1545f68a180d11793f8ad6a2284fd77c9e510c7fd518e",
+        "lines": 27,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all font-face descriptors; embedded base64 payload reviewed only for asset metadata/integrity (canonical base64, WOFF2 signature and exact header length), not glyph semantics"
+      },
+      {
+        "path": "src/styles/product-tokens.css",
+        "sha256": "3354aa6f6fad2507fc59420b3393e4e46c7423d54a87d8fbfb8c56115c2b03f4",
+        "lines": 104,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/base.css",
+        "sha256": "a7a4568be9fdc44d67fe6241ccafbda0aa8c471f6ccdd608dd889c24fdb7fdca",
+        "lines": 790,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/calendar.css",
+        "sha256": "be650b04fbd603a7977ac2c994229cec456b373b4ffc96802e88778d8b22db90",
+        "lines": 185,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/responsive.css",
+        "sha256": "f99c3ecb1de13558a70900298cf63aacefce1d346e19b33de0ff911824f9f471",
+        "lines": 473,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/mobile-first.css",
+        "sha256": "07bd9e4a415988da2a3a5bc4f34fb1e950b1c4bf19bcc8fc6942d522cdb081fa",
+        "lines": 411,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/class-lessons.css",
+        "sha256": "7fb6c0e8facb6226411f97d34fa41d703531571883869d681468bed9e9ffccf7",
+        "lines": 575,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/tables.css",
+        "sha256": "b0a29b59b0a2d9fa9ec899989d72168e2a93984c23a61a85420e6b16468171f5",
+        "lines": 202,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/experience.css",
+        "sha256": "1062ff211acc25605defa019eb32638e17c143ce6dfdf337f5af1629517b3d66",
+        "lines": 372,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/students.css",
+        "sha256": "9a4fe80a24bc77b633e4a81c7a9fc11c21a0f4745804dc1a3430c25aae1fdd1c",
+        "lines": 554,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/header.css",
+        "sha256": "da885e49a640e3f5609bdc91f5fcea5b223ddb0d08103d9fe3fa6a84fe7da939",
+        "lines": 312,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/mobile-width.css",
+        "sha256": "7c5b4cba64f21acf602f90342fb89a1dac69fa3c60974817c562a1265b2b3a0e",
+        "lines": 165,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/mobile-experience.css",
+        "sha256": "84f601058ecdd34f45aad35514a75cc8e2aa6c6dd08ea15200c7e1351ff644aa",
+        "lines": 475,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/mobile-navigation.css",
+        "sha256": "fa462706d934a7cba434c790cd205373eb0effa4849770c7d5d66c894b23ac52",
+        "lines": 42,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/dropdowns.css",
+        "sha256": "10ee488423389c1b2f7df214822a2e6b4a7d787e2e46ef33d3492da3e7ead31b",
+        "lines": 72,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/header-consistency.css",
+        "sha256": "fcd868f5199141980bceeabbe35e4df097a28a7ab8207af961419d8dd354ffbd",
+        "lines": 88,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/hamburger.css",
+        "sha256": "aea64124cda3852912fc353483ed77a28770cac0b6758b54233923146b16cf27",
+        "lines": 93,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/weekly/foundation.css",
+        "sha256": "c8307bb24f033dfd2cde8f22692d14096ff3c1c414b0c5eef2dde57954c7b7f6",
+        "lines": 472,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations and media blocks read; assessed hidden/state behavior, mobile viewport, focus, keyboard, content flow and print against existing UI callers"
+      },
+      {
+        "path": "src/styles/weekly/agenda.css",
+        "sha256": "1097707b03ceb8a76f4547d3d4cf7b85b3a221dddc0150864fab43d50235f7a4",
+        "lines": 729,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations and media blocks read; assessed hidden/state behavior, mobile viewport, focus, keyboard, content flow and print against existing UI callers"
+      },
+      {
+        "path": "src/styles/weekly/navigation.css",
+        "sha256": "bfe9e39eb3fb72754bb69ac8372a3380df531fd0b53e1f639b012c74898c3c21",
+        "lines": 108,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations and media blocks read; assessed hidden/state behavior, mobile viewport, focus, keyboard, content flow and print against existing UI callers"
+      },
+      {
+        "path": "src/styles/weekly/day-heading.css",
+        "sha256": "fc5c2e4c18eeb31ce16ebc7df5a8d2d68371a93684ff3d40ebb89ca2efef3a43",
+        "lines": 76,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations and media blocks read; assessed hidden/state behavior, mobile viewport, focus, keyboard, content flow and print against existing UI callers"
+      },
+      {
+        "path": "src/styles/weekly/mobile.css",
+        "sha256": "0db27ffd173440502b323cee8c02a92ffba4302199c4bfd97bda25581a83e2e6",
+        "lines": 241,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations and media blocks read; assessed hidden/state behavior, mobile viewport, focus, keyboard, content flow and print against existing UI callers"
+      },
+      {
+        "path": "src/styles/weekly/controls.css",
+        "sha256": "8c75ce0467c557d8d4d545a01dd6cf8b834389c477c9176ffb03a5124b842717",
+        "lines": 197,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations and media blocks read; assessed hidden/state behavior, mobile viewport, focus, keyboard, content flow and print against existing UI callers"
+      },
+      {
+        "path": "src/styles/weekly-config.css",
+        "sha256": "3be5040f09244a3712b17cd715a9a39df780b9a518188743783373534ebbe8f4",
+        "lines": 252,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations and media blocks read; assessed hidden/state behavior, mobile viewport, focus, keyboard, content flow and print against existing UI callers"
+      },
+      {
+        "path": "src/styles/dashboard-reports.css",
+        "sha256": "cc34d9f289f8ba00c49cb620c16b77636dd7fe2ce21ed67d2eb854569ee21282",
+        "lines": 441,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations and media blocks read; assessed hidden/state behavior, mobile viewport, focus, keyboard, content flow and print against existing UI callers"
+      },
+      {
+        "path": "src/styles/dashboard-metrics.css",
+        "sha256": "fa962636757476c6b74bb2f6d4702f99ffcd0044380dc76205e934ec4d52e2ae",
+        "lines": 121,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations and media blocks read; assessed hidden/state behavior, mobile viewport, focus, keyboard, content flow and print against existing UI callers"
+      },
+      {
+        "path": "src/styles/select-controls.css",
+        "sha256": "b2ec6ad10398cec1b48ce3e01f03c72c02589f79e7f7559bd2d02679441ea322",
+        "lines": 89,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/reports/periodic/document.css",
+        "sha256": "0b717a54c467683a57f7f588a9b071b9f53cb4d4747ea975134421a885641073",
+        "lines": 601,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/reports/periodic/attendance-summary.css",
+        "sha256": "f28ab6f5bfe003da64e2d7839288dba3910b230794f3b10ddb41225eccf3f66c",
+        "lines": 279,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/reports/periodic/review.css",
+        "sha256": "4f8b8bb0824e85cca9ef0f87ef20b2f6c76eb39ed1184b2fc4f3b34a688bdb2d",
+        "lines": 239,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/reports/periodic/attendance-layout.css",
+        "sha256": "adf7e0f255d7c506bc09e6bde69f8f0d622dc5e2553ff9bdc8eeb7902dcb80a2",
+        "lines": 131,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/reports/periodic/attendance-detail.css",
+        "sha256": "e9381b316f580a5d04fea21663deb0f40645df245c703781e300d4404304fbd6",
+        "lines": 335,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/reports/periodic/excel-sharing.css",
+        "sha256": "80452f390608463e053fbfa865b74695749c885f1f127a4d1cbe39df739f8a3a",
+        "lines": 170,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/dashboard/daily-work.css",
+        "sha256": "2f75d2208f45166723cb052d43537dcde7c54b3b5ca0868b2de65ff5005d50da",
+        "lines": 258,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations and media blocks read; assessed hidden/state behavior, mobile viewport, focus, keyboard, content flow and print against existing UI callers"
+      },
+      {
+        "path": "src/styles/editors/record-foundation.css",
+        "sha256": "4a025fa1c6f87352ba1c8402f4aefee6f9b4d6227b443590f781401932a3ad2c",
+        "lines": 124,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/navigation/workspace-tools.css",
+        "sha256": "fcc78e838ca779d11c08cdf7c534cc2e9b598f7213f7918cd7551d200449cf42",
+        "lines": 402,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations and media blocks read; assessed hidden/state behavior, mobile viewport, focus, keyboard, content flow and print against existing UI callers"
+      },
+      {
+        "path": "src/styles/editors/course-layout.css",
+        "sha256": "69af871858005a852827b328eeb28690dcfdc9e9e26e163436b125ec989be2e0",
+        "lines": 326,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/editors/course-fields.css",
+        "sha256": "a1a00c8f60e5fdc11bcca1d17e87c01441d237d2c132c48537c3130087df3d62",
+        "lines": 87,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/editors/record-mobile.css",
+        "sha256": "89d1177b0980d8aa5a586e3883043c4bde0ca255892df7668e1459ba1e70af1e",
+        "lines": 9,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/dashboard/today-agenda.css",
+        "sha256": "ab7184d390dc9dc971dbfdce209160807719602e3744d98ae1475600f185168f",
+        "lines": 205,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations and media blocks read; assessed hidden/state behavior, mobile viewport, focus, keyboard, content flow and print against existing UI callers"
+      },
+      {
+        "path": "src/styles/attendance-reminders.css",
+        "sha256": "f47a667775d6c96f821b2ffb4fc5cbc718738216ed88b1e8cbacca4e468a04f0",
+        "lines": 1044,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations and media blocks read; assessed hidden/state behavior, mobile viewport, focus, keyboard, content flow and print against existing UI callers"
+      },
+      {
+        "path": "src/styles/session-edit-access.css",
+        "sha256": "7994a81dffc7d89ac5cd9cd597338f1395917787d9f3e105e1e0745b33bd0a73",
+        "lines": 770,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/welcome-banner.css",
+        "sha256": "25951111ffd550704021f56f313096e931fb389a4a67fe3043eec80724ef0973",
+        "lines": 350,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations and media blocks read; assessed hidden/state behavior, mobile viewport, focus, keyboard, content flow and print against existing UI callers"
+      },
+      {
+        "path": "src/styles/about-dialog.css",
+        "sha256": "a5eed311ee5aadf3ff355db651b6fee7ce39ec7791f6a8625338998c67345b2f",
+        "lines": 283,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations and media blocks read; assessed hidden/state behavior, mobile viewport, focus, keyboard, content flow and print against existing UI callers"
+      },
+      {
+        "path": "src/styles/backups/foundation.css",
+        "sha256": "f35b09a1b0fb5d6be56faa81b96fbeecc0825b45fd054151f28b8f5e7fd296ee",
+        "lines": 323,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations and media blocks read; assessed hidden/state behavior, mobile viewport, focus, keyboard, content flow and print against existing UI callers"
+      },
+      {
+        "path": "src/styles/backups/deputy.css",
+        "sha256": "7d31cf9f95095ee0e48852db25b0c17ec411f757f8544475275ed68688832397",
+        "lines": 130,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations and media blocks read; assessed hidden/state behavior, mobile viewport, focus, keyboard, content flow and print against existing UI callers"
+      },
+      {
+        "path": "src/styles/backups/workflow.css",
+        "sha256": "b945c7ea39a8cd3e37d72ac03c487f9e73599285414c4c9ad6c9202ebe1edc80",
+        "lines": 135,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations and media blocks read; assessed hidden/state behavior, mobile viewport, focus, keyboard, content flow and print against existing UI callers"
+      },
+      {
+        "path": "src/styles/backups/tabs.css",
+        "sha256": "8bc29ddc7ea70f7dabfe542573ebae3052d7ec237a82e1d2f7120df2685a6c67",
+        "lines": 302,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations and media blocks read; assessed hidden/state behavior, mobile viewport, focus, keyboard, content flow and print against existing UI callers"
+      },
+      {
+        "path": "src/styles/backups/hierarchy.css",
+        "sha256": "6bbe8793209c074c4691a86fd43936e15caf398f631acf8a217c3a4ab5115a1f",
+        "lines": 160,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations and media blocks read; assessed hidden/state behavior, mobile viewport, focus, keyboard, content flow and print against existing UI callers"
+      },
+      {
+        "path": "src/styles/backups/reset.css",
+        "sha256": "2a22d5366aacb2e19c0cb4fe5b9fb3cff636ad9ce453745fcb4d0335b0f1553a",
+        "lines": 111,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations and media blocks read; assessed hidden/state behavior, mobile viewport, focus, keyboard, content flow and print against existing UI callers"
+      },
+      {
+        "path": "src/styles/backups/page.css",
+        "sha256": "fa7aec43a237bcbac13c070a3cda6dbbdd8abc9bba93bb510d55b8d949a97354",
+        "lines": 126,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations and media blocks read; assessed hidden/state behavior, mobile viewport, focus, keyboard, content flow and print against existing UI callers"
+      },
+      {
+        "path": "src/styles/service-bar.css",
+        "sha256": "9b2d80ae9c554e735739e0db9395811201098fd438e2bc79c9e2489762d8f897",
+        "lines": 272,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations and media blocks read; assessed hidden/state behavior, mobile viewport, focus, keyboard, content flow and print against existing UI callers"
+      },
+      {
+        "path": "src/styles/offline-help.css",
+        "sha256": "a534f6967638693e2cefa3862db6436405b0e32d70b391fbdcb1c2b64c4aa00e",
+        "lines": 415,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations and media blocks read; assessed hidden/state behavior, mobile viewport, focus, keyboard, content flow and print against existing UI callers"
+      },
+      {
+        "path": "src/styles/question-bank/workspace.css",
+        "sha256": "9286d0b8d864c470af64f591a1027231044c2fcedcdf0f3aef86bdadb31d7163",
+        "lines": 407,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/question-bank/import.css",
+        "sha256": "26b949a7d063c5b9cb0b58eaa1da824671de76aeac3489001ee0391bb15b06a6",
+        "lines": 274,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/question-bank/navigation.css",
+        "sha256": "7fe83be806601f34e75d881066a9118b2559ddba75b98af7439d267cf621e72d",
+        "lines": 59,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/question-bank/question-library.css",
+        "sha256": "a14f0c244c3c34c4c67206d0c834b8a326177e2e2e1c280359f687a841da3630",
+        "lines": 287,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/question-bank/question-entry.css",
+        "sha256": "5e1c440f7ac7b977271a4bd9704a315503e273be715d07973f0052619bf70f1c",
+        "lines": 54,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/question-bank/question-card.css",
+        "sha256": "d8ed557179fdd69f6af5f8ceca6758d2879ca4ea09797e7e8dc7af17ad04d9cc",
+        "lines": 192,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/question-bank/builder.css",
+        "sha256": "71fb7976d3908860e8f1728b9fc378d926540cb738077ce52c2f03250d76a210",
+        "lines": 152,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/question-bank/exam-library.css",
+        "sha256": "5b9fdb0f8845c5f519b8265116eb4f84a46ac71f9976820553a2f947537a8d52",
+        "lines": 122,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/question-bank/disclosures.css",
+        "sha256": "7ac03966485f0ca19f7f35236c6c18205728e86fca402776f82cc4ae0e9b93a2",
+        "lines": 127,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/question-bank/sheet.css",
+        "sha256": "5bad95f1bd618190a1f748e79377811641d236bc0cf7db8109394bc7f72d4abc",
+        "lines": 224,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/question-bank/menu-sheet.css",
+        "sha256": "f7ecda7947348d515ed44c65e2a841527ede3654a7cebbb06df327e2e2a62bb9",
+        "lines": 65,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/question-bank/question-mobile.css",
+        "sha256": "9160ef7bf21909f60d58c48cf1b1a87dbbbc862bb504467c92d2aea429333cc6",
+        "lines": 488,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/question-bank/question-entry-layout.css",
+        "sha256": "695063bcca394b25200df541db2e19872f6f7fd96fc102c3d8b743897584b753",
+        "lines": 56,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/question-bank/builder-layout.css",
+        "sha256": "3b6efc919e656142e3b20e943e0c2d37ba67ef73a12b8750fbbb6e02e4edbed9",
+        "lines": 247,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/question-bank/exam-library-layout.css",
+        "sha256": "2c5501ab8726569a0aadea4418f313f4c8500ef1d78c56d2459f0c1a57b33c41",
+        "lines": 140,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/question-bank/keyboard.css",
+        "sha256": "be9f7923d4e4d809180c5e083efa7b7e22edc66e40ba81498e792ac6ce432965",
+        "lines": 132,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/question-bank/builder-responsive.css",
+        "sha256": "714ff358ad3fc17033919608242c8e713b224ba6bb71024c1c51dc476fbb3cd0",
+        "lines": 163,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/question-bank/print.css",
+        "sha256": "0142b66701c920f2a441b148ac243706bbb33ff0fa6975c9ce02d12b388e0a03",
+        "lines": 45,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/workflow/layout.css",
+        "sha256": "a498655198d411ccd0f2f448761a65d694c3bcf4af3cb401c34db6506075e007",
+        "lines": 264,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/workflow/components.css",
+        "sha256": "25b9f02572fa554044dfd6e1396ceb722cd24e5c3a3c37fa8b4c0f2cc9b5456d",
+        "lines": 575,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/workflow/identity.css",
+        "sha256": "5baec1989273d98dfd002c5f279ad120b447146a25fd10a0e79131deece44735",
+        "lines": 232,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/workflow/touch-foundation.css",
+        "sha256": "4518aba350b7428d09a67bfc011ed04966d93cb45dc3cb5bfe51098cec08e94f",
+        "lines": 1103,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/workflow/entity-editor.css",
+        "sha256": "8dfcca2f3f373d170c469269af2ccec3d2f939c2d0a4c0aa5a618d517cf5e6fe",
+        "lines": 153,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/workflow/course-editor.css",
+        "sha256": "ad74d25d390be09d1a4b72063f4f629ee6cee4b3436455c353269c87511f3651",
+        "lines": 174,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/workflow/student-actions.css",
+        "sha256": "824641796bf19b51053f8b70bffa392b559ddfc48357b9e0d6a83ca929822663",
+        "lines": 72,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/workflow/student-directory-layout.css",
+        "sha256": "073c16f6e720a8ea9de80fc6a0efc5f8b0b2d55b54dda2585faaef7bcb83c19f",
+        "lines": 120,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/workflow/session-directory.css",
+        "sha256": "9c9e2d628f54de1e9a99c65cb98c76107ab3b5160e373886d683616f41da2ba3",
+        "lines": 412,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/workflow/class-lesson-directory.css",
+        "sha256": "f228f5febe044be1e9a7219e3c33fca8e8f9ab358244b5b5f40dfe94763a1e5b",
+        "lines": 202,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/workflow/session-editor.css",
+        "sha256": "b04da5a49a2c5f637eb785b05f1ca15ff07648fe8601bbc786b2ae27b4de13f5",
+        "lines": 731,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/workflow/session-attendance.css",
+        "sha256": "9275c37205a68d607745394059f7b537201b1ab1269384e6733a649a388a4ccd",
+        "lines": 298,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/workflow/student-directory-rows.css",
+        "sha256": "582311933601f30547ac4cced8996feaaed9d670fb568e522e15bfbc49134be0",
+        "lines": 79,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/workflow/directory-desktop.css",
+        "sha256": "7bfadbce8ec3788d1459597836319eb4de9e5c970be2e70d187a2355561fdbe5",
+        "lines": 138,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/workflow/settings-editor.css",
+        "sha256": "44b1950033cd40e82c86ffe3cc4b056a1194edcb18f25a7cc12fd5dc73362f06",
+        "lines": 183,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/workflow/weekly-settings.css",
+        "sha256": "25f755425c2e95c18bb0e432b92a72576277be081ace7f25506f7803f8c31489",
+        "lines": 201,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/workflow/report-navigation.css",
+        "sha256": "513f043dd10f24ed16f748a98f37b049796f1e5fed009dfd7c2ee3ef89ecb8b7",
+        "lines": 308,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/workflow/period-dialogs.css",
+        "sha256": "d7959827686e329a6457ed93a2ca9a9710fab34ae0f2c9a5f303da75eeaea76c",
+        "lines": 85,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/workflow/academic-records.css",
+        "sha256": "c3acd1387c4be951cfc5d9df9a63323ec6c87f6d91bd409eb2709d1afa7da88c",
+        "lines": 147,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/workflow/period-records.css",
+        "sha256": "026c1492f9e310c9fafeb0db23a90d83c38f2fd53050599f4620ceea1a4aae1a",
+        "lines": 330,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/workflow/draft-review.css",
+        "sha256": "cbf6b119a0b5b4c67a0eadec5a69d8df7f8415214d5d99afeef350c0165762df",
+        "lines": 187,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/workflow/draft-list.css",
+        "sha256": "100be0e1d639472322d4b204075e4460ca1f4c93b4eab350eff2d4610c7b7a64",
+        "lines": 133,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/workflow/header-actions.css",
+        "sha256": "cd1f270020d61cb253d352d9ce3c5db3d2b975486a28838d8c8f9ca4a46e447f",
+        "lines": 66,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/workflow/directory-mobile-actions.css",
+        "sha256": "26c6c37d0357e67e7f6e28f62440fea0d570a6456ad3e2f1dd6b5dbf51fa1e24",
+        "lines": 32,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/workflow/wipe-editor.css",
+        "sha256": "ad5dbe1882bf3e659c48d805ed337b5b67080c0b16cc2042050bcc912759048a",
+        "lines": 125,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/workflow/backup-share.css",
+        "sha256": "3ec6c00869093be97a459c50ecade7494437b17a4110670124050e8ab5f2c4d4",
+        "lines": 107,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/workflow/navigation-tools.css",
+        "sha256": "3c5c7ed7166e14dee896cb474ade696c4793fb442047f34beb35a14970055e63",
+        "lines": 215,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/workflow/restore-review.css",
+        "sha256": "c37c57ae76bd913134052e3a5a85e9f4d86d97b3e0ac53d1f41f6e30ffb755cc",
+        "lines": 107,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/workflow/period-delete.css",
+        "sha256": "92cc975bd583057ae2c795aaef45fae6821faa15388204251a8a99f0f832838c",
+        "lines": 58,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/workflow/period-label.css",
+        "sha256": "543aa645f26730058b4fe44660d6308c2306df8d4972f726068c51e37902de85",
+        "lines": 94,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/workflow/undo-preview.css",
+        "sha256": "9c02681b36c7854468fe6b12bd78dd06f2ef263a47794c1856434845b79d60ea",
+        "lines": 48,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/workflow/membership-editor.css",
+        "sha256": "67bccb9f2d9af59eb8e35f6f223b3e095245cc0d458b1246c1427fb34cbc9215",
+        "lines": 124,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/workflow/karnameh-controls.css",
+        "sha256": "eec5e8d3e27fda8d06904017e16dd8c24b51502d20d94ec0823fd84266c9fdfe",
+        "lines": 112,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/workflow/grade-report.css",
+        "sha256": "8328c9a89edb795869753dcc8cde30869479a2f6e1f6ce783794873099a35bc7",
+        "lines": 171,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/workflow/karnameh-assessment.css",
+        "sha256": "6b4c14a40f9c6fb7ea25d86a0e9adfd12e4f8482767986006233e5a49bf06438",
+        "lines": 120,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/workflow/karnameh-year.css",
+        "sha256": "a12af86ea8a78f2690c1bca7ee67534a757424facb9956180f0c3cefbd9db0ea",
+        "lines": 322,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/workflow/session-schedule.css",
+        "sha256": "634ea06316dd895e65c3600efd71f1ca442cece0051d8675cbd8210b901d328b",
+        "lines": 22,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/workflow/navigation-layout.css",
+        "sha256": "316c2bf4c0582217fd1f0e1572e725606956bd96eed5b571cef60cba0e305314",
+        "lines": 102,
+        "reviewer": "final_workspace_flows",
+        "method": "complete source read and relationship review"
+      },
+      {
+        "path": "src/styles/grading/assessment.css",
+        "sha256": "2c3cbf1289821ca78356a5d9ac8667bb58e83900dde0ff5f92bce0704fe87ab1",
+        "lines": 642,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/grading/modular.css",
+        "sha256": "ea4995efed13bdaac841604369f57b2c0dbb3add0119671d8a1a8b9f4998daa2",
+        "lines": 468,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/grading/input-layout.css",
+        "sha256": "fe1834bb516bbb7d22fcf73969068a2ca99c7a57c2b5bbb741127898b06aeb3c",
+        "lines": 60,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/grading/assessment-responsive.css",
+        "sha256": "d39e1cc675dda6192d545fba8d61658c08adae4602dc9aa7d4a0479eb8dabaa8",
+        "lines": 324,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/grading/save-feedback.css",
+        "sha256": "30b7ed39140da7083478469689cee712b0b262fc1aa17a1ef1b37f28f3c3f030",
+        "lines": 67,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/reports/karnameh/sheet.css",
+        "sha256": "aab3c8b84d375cf6aae3191b83fef3c56219c2069915c96a8f4d850d932c8e4a",
+        "lines": 532,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/reports/karnameh/responsive.css",
+        "sha256": "b80621d2cd95211ecc567d0787cbb17f881e91cbee3d3f9b836cc8f088919112",
+        "lines": 308,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/reports/karnameh/print.css",
+        "sha256": "c5e096823e7ebf95b6c438b6a4e7bfdf0dade4444470123698b8fdab0d71741c",
+        "lines": 292,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/reports/karnameh/excel.css",
+        "sha256": "eb36f834840663f14960fb21e042020d0a2ee788768bb959d7a589c631762c36",
+        "lines": 208,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/buttons.css",
+        "sha256": "d5fe134e07c92ccf316673f90bc5e483905f9e181a6023d67da9ce217bd2a32c",
+        "lines": 387,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/pagination.css",
+        "sha256": "f61d87fb835a86142993299420297f387b4cb2c0959506bfaaca066171d44fb0",
+        "lines": 71,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/surfaces.css",
+        "sha256": "03a97bc3d97c1ba33974913cdedfc585d69737a0d39d882bed79ba42d5a38b8c",
+        "lines": 432,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/styles/lesson-sessions.css",
+        "sha256": "6da39162abdb19cd1fdd825be9d8e8419032848edb17c789996857ec34954e4c",
+        "lines": 187,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all selectors, declarations, media and container rules; cumulative behavioral pass plus complete remaining declaration pass"
+      },
+      {
+        "path": "src/domain/deputy-export-identity.js",
+        "sha256": "8a54817a63b35b80127225e5c99c76ec2eb87085b681339a45948c5e515c0df4",
+        "lines": 98,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/domain/deputy-exchange.js",
+        "sha256": "43c92b2f1f79c66a12c4a6c6381e92759f26532877f283ff7630dd4d8194219d",
+        "lines": 1173,
+        "reviewer": "final-data-reviewed",
+        "method": "all production source lines"
+      },
+      {
+        "path": "src/core/icons.js",
+        "sha256": "21e31c8c05505f4b6f385fb09538d2e368a7d7a2e6141f375730401ee6a6ea4f",
+        "lines": 58,
+        "reviewer": "root",
+        "method": "complete production/release source read"
+      },
+      {
+        "path": "src/core/runtime-api.js",
+        "sha256": "4f7dba3562997680bc07335913052eba7d3f7e77308b09917ead6df436925ccd",
+        "lines": 26,
+        "reviewer": "root",
+        "method": "complete production/release source read"
+      },
+      {
+        "path": "src/legacy/core/events.js",
+        "sha256": "b1d8b04eb1935854dbdee3d4aa801479b474e4245a49eabee18cf78015731835",
+        "lines": 77,
+        "reviewer": "root",
+        "method": "complete production/release source read"
+      },
+      {
+        "path": "src/ui/about-content.js",
+        "sha256": "db1e7c528a90eaae45316834cbf54636b2773804d8829a2c0b8a141dec2baddc",
+        "lines": 19,
+        "reviewer": "final-frontend-reviewed",
+        "method": "all production source lines; traced form lifecycle, runtime delegation, scope and outputs"
+      },
+      {
+        "path": "src/pwa/offline-help.js",
+        "sha256": "3259c683130aad6a8813fc45e6856e0675b6b74693df6099bff10b46c3d8e2e7",
+        "lines": 13,
+        "reviewer": "root",
+        "method": "complete production/release source read"
+      },
+      {
+        "path": "src/features/question-bank/domain.js",
+        "sha256": "cf4ff588924d237783ef19f4d50506feb2ef849e548a4aa88ebf0ac123e4a3f6",
+        "lines": 464,
+        "reviewer": "root",
+        "method": "complete production/release source read"
+      },
+      {
+        "path": "src/features/question-bank/sample-bank.js",
+        "sha256": "b0d90f18584f386323a890ddd7937fdebde5c13bbbfce198cf722d7e04cecf31",
+        "lines": 296,
+        "reviewer": "root",
+        "method": "complete production/release source read"
+      },
+      {
+        "path": "src/features/question-bank/repository.js",
+        "sha256": "087baa6012237d1b0cb8c88a119cb97e474540727951791c30f175066016dd79",
+        "lines": 146,
+        "reviewer": "root",
+        "method": "complete production/release source read"
+      },
+      {
+        "path": "src/features/question-bank/file-backup.js",
+        "sha256": "c2965e93e824bf88c7d564d58e1ac7b70d3b82b19b66692113a1333e028f39df",
+        "lines": 629,
+        "reviewer": "root",
+        "method": "complete production/release source read"
+      },
+      {
+        "path": "src/features/question-bank/backup-sharing.js",
+        "sha256": "2c5343f6b3432f60986ffbbd296e6476f2a40902311d419bc967611b6ab8816f",
+        "lines": 176,
+        "reviewer": "root",
+        "method": "complete production/release source read"
+      },
+      {
+        "path": "src/features/question-bank/backup-ui.js",
+        "sha256": "b90ab868a32f137397e9322a0f479a8b2ff0f2750e5f3768b454b1e412af1e69",
+        "lines": 563,
+        "reviewer": "root",
+        "method": "complete production/release source read"
+      },
+      {
+        "path": "src/features/question-bank/question-import.js",
+        "sha256": "6d3d5f33162abf64e2c0bed764ca045c329f201c597edce9fa09ad9c1b78ffeb",
+        "lines": 558,
+        "reviewer": "root",
+        "method": "complete production/release source read"
+      },
+      {
+        "path": "src/features/question-bank/question-import-ui.js",
+        "sha256": "f8dae5a42ec9177986ca9c59ac5ab5cbe029cedd852962ca7a563a6d55f2e526",
+        "lines": 318,
+        "reviewer": "root",
+        "method": "complete production/release source read"
+      },
+      {
+        "path": "src/features/question-bank/school-word.js",
+        "sha256": "a55cbb21e8a14717bcfa6e3d1b69b6df3a9f69db959c3904f10d1547911110df",
+        "lines": 384,
+        "reviewer": "root",
+        "method": "complete production/release source read"
+      },
+      {
+        "path": "src/features/question-bank/ui.js",
+        "sha256": "df6d5e20d4ab33e503d9abd813744667241002fca293e690c22bf7258d48c75a",
+        "lines": 2372,
+        "reviewer": "root",
+        "method": "complete production/release source read"
+      }
+    ]
+  },
+  "findings": [
+    {
+      "id": "FR-01",
+      "severity": "P2",
+      "status": "fixed",
+      "path": "src/data/academic-directory-transaction.js",
+      "issue": "Pending shared-directory save read catalog labels from mutable caller meta instead of its record snapshot",
+      "evidence": "Three regressions fail against old implementation; fixed implementation also passes actual FullBackup label validation",
+      "triggerLimit": "Persistence-boundary race reproduced with pending IndexedDB plus caller model mutation; normal busy-locked UI click path was not demonstrated"
+    },
+    {
+      "id": "FR-02",
+      "severity": "P2",
+      "status": "fixed",
+      "path": "src/workspace/periods/year-editor.js",
+      "issue": "Settled failed save blocked Academic Year navigation even after rollback",
+      "evidence": "Real save rollback regression plus workspace/connection/installation/blocked/loading/draft guards"
+    },
+    {
+      "id": "FR-03",
+      "severity": "P2",
+      "status": "fixed",
+      "paths": ["src/legacy/sessions/dialog.js", "src/legacy/ui/lesson.js"],
+      "issue": "Displayed present count excluded late pupils despite report contract",
+      "evidence": "present + late + late:0 + late:10 yields four present, with late retained as subset; canonical attendance tally reused"
+    },
+    {
+      "id": "FR-04",
+      "severity": "P2",
+      "status": "fixed",
+      "path": "src/legacy/ui/dashboard.js",
+      "issue": "Empty historical roster was labelled completed attendance",
+      "evidence": "Valid session with roster=[] now displays review-needed status; roster and records remain unchanged"
+    },
+    {
+      "id": "FR-05",
+      "severity": "P3",
+      "status": "fixed",
+      "path": "src/legacy/reports/comprehensive.js",
+      "issue": "Copied detailed activity report omitted homework note visible in HTML",
+      "evidence": "Screen and copied text regression checks retain the same explanation"
+    },
+    {
+      "id": "FR-06",
+      "severity": "P3",
+      "status": "fixed",
+      "path": "src/features/question-bank/domain.js",
+      "issue": "Question-bank exam/import validation allowed year 0000 outside calendar/native date contract",
+      "evidence": "Creation and JSON import reject year zero/invalid days and retain valid years 0001..9999; source bank unchanged",
+      "compatibility": "Previously imported/API-created archives containing year 0000 now fail validation explicitly. Native form never generated year 0000; invalid archives are neither rewritten nor deleted automatically."
+    },
+    {
+      "id": "FR-07",
+      "severity": "P2 coverage",
+      "status": "fixed",
+      "paths": ["package.json", "audit/release-gate.test.cjs"],
+      "issue": "Session-history pagination browser suite absent from release/CI",
+      "evidence": "Added dedicated existing suite to release gate and contract assertion; final output separately passes 240 checks"
+    }
+  ],
+  "unitTests": {
+    "total": 3399,
+    "passed": 3399,
+    "failed": 0,
+    "additionalRegressionTests": 15
+  },
+  "browserStages": [
+    {
+      "stage": "4-adversarial-workflow-review",
+      "total": 2386,
+      "passed": 2386,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-2EvaNO\\data-integrity-results.json",
+      "applicationRelease": "1ec77f921215dc1f",
+      "failures": []
+    },
+    {
+      "stage": "calendar-real-browser-lifecycle-and-viewports",
+      "total": 302,
+      "passed": 302,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-rVnfG2\\data-integrity-results.json",
+      "applicationRelease": "1ec77f921215dc1f",
+      "failures": []
+    },
+    {
+      "stage": "question-bank",
+      "total": 561,
+      "passed": 561,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-n2PScT\\data-integrity-results.json",
+      "applicationRelease": "1ec77f921215dc1f",
+      "failures": []
+    },
+    {
+      "stage": "question-bank-business",
+      "total": 283,
+      "passed": 283,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-ewHwFv\\data-integrity-results.json",
+      "applicationRelease": "1ec77f921215dc1f",
+      "failures": []
+    },
+    {
+      "stage": "question-bank-sample",
+      "total": 229,
+      "passed": 229,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-isQ3jt\\data-integrity-results.json",
+      "applicationRelease": "1ec77f921215dc1f",
+      "failures": []
+    },
+    {
+      "stage": "unified-backup-hub",
+      "total": 305,
+      "passed": 305,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-zXs92s\\data-integrity-results.json",
+      "applicationRelease": "1ec77f921215dc1f",
+      "failures": []
+    },
+    {
+      "stage": "question-bank-import",
+      "total": 257,
+      "passed": 257,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-DoW48w\\data-integrity-results.json",
+      "applicationRelease": "1ec77f921215dc1f",
+      "failures": []
+    },
+    {
+      "stage": "modular-unit-grading",
+      "total": 255,
+      "passed": 255,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-mMxp0k\\data-integrity-results.json",
+      "applicationRelease": "1ec77f921215dc1f",
+      "failures": []
+    },
+    {
+      "stage": "modular-unit-karnameh-layout",
+      "total": 345,
+      "passed": 345,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-8efO6O\\data-integrity-results.json",
+      "applicationRelease": "1ec77f921215dc1f",
+      "failures": []
+    },
+    {
+      "stage": "period-deletion",
+      "total": 277,
+      "passed": 277,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-GvtOfw\\data-integrity-results.json",
+      "applicationRelease": "1ec77f921215dc1f",
+      "failures": []
+    },
+    {
+      "stage": "gradebook-mobile-layout",
+      "total": 266,
+      "passed": 266,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-ZNkHDG\\data-integrity-results.json",
+      "applicationRelease": "1ec77f921215dc1f",
+      "failures": []
+    },
+    {
+      "stage": "single-academic-year-ui",
+      "total": 235,
+      "passed": 235,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-914MXj\\data-integrity-results.json",
+      "applicationRelease": "1ec77f921215dc1f",
+      "failures": []
+    },
+    {
+      "stage": "annual-backup-file-scale",
+      "total": 239,
+      "passed": 239,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-u1DAlj\\data-integrity-results.json",
+      "applicationRelease": "1ec77f921215dc1f",
+      "failures": []
+    },
+    {
+      "stage": "theme-reactium-acceptance",
+      "total": 411,
+      "passed": 411,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-leT85S\\data-integrity-results.json",
+      "applicationRelease": "1ec77f921215dc1f",
+      "failures": []
+    },
+    {
+      "stage": "logo-ui-pwa",
+      "total": 269,
+      "passed": 269,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-9mpAmd\\data-integrity-results.json",
+      "applicationRelease": "1ec77f921215dc1f",
+      "failures": []
+    },
+    {
+      "stage": "navbar-layout",
+      "total": 679,
+      "passed": 679,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-gJSNFg\\data-integrity-results.json",
+      "applicationRelease": "1ec77f921215dc1f",
+      "failures": []
+    },
+    {
+      "stage": "school-create-ui",
+      "total": 340,
+      "passed": 340,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-sDZLoK\\data-integrity-results.json",
+      "applicationRelease": "1ec77f921215dc1f",
+      "failures": []
+    },
+    {
+      "stage": "record-edit-access",
+      "total": 265,
+      "passed": 265,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-ILsWi1\\data-integrity-results.json",
+      "applicationRelease": "1ec77f921215dc1f",
+      "failures": []
+    },
+    {
+      "stage": "timetable-edit-access",
+      "total": 236,
+      "passed": 236,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-uGTSCR\\data-integrity-results.json",
+      "applicationRelease": "1ec77f921215dc1f",
+      "failures": []
+    },
+    {
+      "stage": "week-settings",
+      "total": 246,
+      "passed": 246,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-FRWWwy\\data-integrity-results.json",
+      "applicationRelease": "1ec77f921215dc1f",
+      "failures": []
+    },
+    {
+      "stage": "report-review-browser",
+      "total": 233,
+      "passed": 233,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-3h1pjr\\data-integrity-results.json",
+      "applicationRelease": "1ec77f921215dc1f",
+      "failures": []
+    },
+    {
+      "stage": "report-excel-offline",
+      "total": 251,
+      "passed": 251,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-kNQXv3\\data-integrity-results.json",
+      "applicationRelease": "1ec77f921215dc1f",
+      "failures": []
+    },
+    {
+      "stage": "guarded-report-copy-two-windows",
+      "total": 236,
+      "passed": 236,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-6qJelF\\data-integrity-results.json",
+      "applicationRelease": "1ec77f921215dc1f",
+      "failures": []
+    },
+    {
+      "stage": "academic-karnameh-excel",
+      "total": 269,
+      "passed": 269,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-yFZIjB\\data-integrity-results.json",
+      "applicationRelease": "1ec77f921215dc1f",
+      "failures": []
+    },
+    {
+      "stage": "individual-student-grade-sheet",
+      "total": 273,
+      "passed": 273,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-Ek5A6S\\data-integrity-results.json",
+      "applicationRelease": "1ec77f921215dc1f",
+      "failures": []
+    },
+    {
+      "stage": "question-bank-output",
+      "total": 242,
+      "passed": 242,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-xylBoe\\data-integrity-results.json",
+      "applicationRelease": "1ec77f921215dc1f",
+      "failures": []
+    },
+    {
+      "stage": "session-history-pagination",
+      "total": 240,
+      "passed": 240,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-bcxipl\\data-integrity-results.json",
+      "applicationRelease": "1ec77f921215dc1f",
+      "failures": []
+    }
+  ],
+  "focusedBrowserStages": [
+    {
+      "stage": "lesson-sessions-compact",
+      "total": 244,
+      "passed": 244,
+      "failed": 0,
+      "resultFile": "D:\\Users\\pirzad\\AppData\\Local\\Temp\\edu-integrity-audit-7r441p\\data-integrity-results.json",
+      "failures": []
+    }
+  ],
+  "browserChecksIncludingRepeatedHarness": 10130,
+  "browserCountNote": "Summed browser suites repeat a common harness; this is not a count of unique business scenarios.",
+  "validationCommands": [
+    "npm run build",
+    "npm run check:release",
+    "npm run test:session-history",
+    "node --test --test-isolation=none audit/release-gate.test.cjs",
+    "npm run release:package",
+    "npm run format:check",
+    "npm run lint"
+  ],
+  "releaseGate": {
+    "command": "npm run check:release",
+    "exitCode": 0,
+    "workerVersionStableDuringRun": true
+  },
+  "packageValidation": {
+    "command": "npm run release:package",
+    "expectedFiles": 83,
+    "actualFiles": 83,
+    "matchingFiles": 83,
+    "unexpectedFiles": 0,
+    "bytes": 6380270,
+    "sha256": "1ec77f921215dc1fea5ff5b3b9ccd2a8cebdd5e2092f21dacced8432fd0ffd0c",
+    "published": false
+  },
+  "unresolvedConfirmedDefects": [],
+  "releaseCommandNote": "Final complete release gate includes the added session-history suite. A previous attempt found one stale browser expectation excluding late pupils from present; that expectation was corrected against BUSINESS-RULES, then the complete final gate was rerun. Generated assets remained unchanged throughout the final gate.",
+  "dependencyGraph": {
+    "lockfileVersion": 3,
+    "rootDevDependencies": {
+      "@eslint/js": "10.0.1",
+      "esbuild": "0.28.2",
+      "eslint": "10.0.0",
+      "globals": "16.5.0",
+      "prettier": "3.9.9"
+    },
+    "lockedPackageCount": 99,
+    "allDevelopmentDependencies": true,
+    "unresolvedRequiredOrOptionalEdges": [],
+    "registryOrIntegrityFailures": [],
+    "installScripts": [
+      {
+        "path": "node_modules/esbuild",
+        "version": "0.28.2"
+      }
+    ],
+    "packageLockSha256": "e177664c837623fd730f87d9815e7a6d0848d267796d093cf9ab04bec215f7e7",
+    "changes": "No lockfile/dependency install or update performed"
+  },
+  "logs": [
+    ".cache/final-release-verified-20261120.log",
+    ".cache/final-history-20261120.log",
+    ".cache/final-lesson-20261120.log",
+    ".cache/final-format-20261120.log",
+    ".cache/final-lint-20261120.log"
+  ],
+  "boundaries": [
+    "Synthetic data and disposable browser profiles only; personal school/question-bank files were not opened or changed.",
+    "No Android/iPhone physical-device keyboard, native picker/share sheet, printer or native Word acceptance performed.",
+    "No publication, push, schema migration, dependency update or authentication/licensing feature introduced.",
+    "No claim that static review or passing tests proves absence of every possible defect."
+  ],
+  "finalStaticChecks": {
+    "formatExitCode": 0,
+    "lintExitCode": 0,
+    "sourceHashMatches": 331,
+    "sourceHashMismatches": 0
+  }
+}

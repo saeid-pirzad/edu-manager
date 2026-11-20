@@ -52,6 +52,9 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
       annual = globalThis.EduAnnualModules,
       courses = globalThis.EduAcademicYearCourses,
       copy = (value) => structuredClone(value),
+      // Meta contains nested references to the live editor. Keep catalog labels
+      // in the same snapshot as the serialized record changes queued below.
+      sourceMeta = copy(records.get("meta")),
       directoryRevisions =
         options.directoryRevisions === undefined
           ? null
@@ -265,9 +268,8 @@ globalThis.EduAcademicDirectoryTransaction = Object.freeze({
             error.code = "WORKSPACE_CONFLICT";
             throw error;
           }
-          const meta = records.get("meta"),
-            year = meta?.settings?.academicYear ?? live.year,
-            term = meta?.settings?.academicTerm ?? live.term;
+          const year = sourceMeta?.settings?.academicYear ?? live.year,
+            term = sourceMeta?.settings?.academicTerm ?? live.term;
           if (
             year !== live.year &&
             catalog.some((row) => row.id !== live.id && row.year === live.year)

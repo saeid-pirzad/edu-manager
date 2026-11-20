@@ -1,9 +1,21 @@
 async function openAcademicYear() {
   assertWorkspaceReadable();
-  await flushDrafts({ strict: true });
-  await writer;
-  const origin = captureWorkspaceContext(),
+  const sourceWorkspace = workspace.id,
     database = connection,
+    sourceInstallation =
+      typeof installationToken === "undefined" ? "" : installationToken;
+  await flushDrafts({ strict: true });
+  // Failed writes already restored durable data; they must not strand navigation.
+  await writer.catch(() => {});
+  assertWorkspaceReadable();
+  if (
+    workspace.id !== sourceWorkspace ||
+    connection !== database ||
+    (typeof installationToken === "undefined" ? "" : installationToken) !==
+      sourceInstallation
+  )
+    throw Error("نوبت یا اتصال سال تغییر کرده است؛ سال را دوباره باز کنید.");
+  const origin = captureWorkspaceContext(),
     rows = await allFrom("catalog");
   assertWorkspaceContext(origin);
   if (connection !== database) throw Error("اتصال سال تغییر کرده است.");

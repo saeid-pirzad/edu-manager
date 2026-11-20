@@ -250,13 +250,12 @@ function renderLessonSessions(
     h +=
       '<div class="empty"><strong>اولین جلسه را شروع کنید</strong><p>تاریخ و زنگ را در فرم بالا انتخاب کنید؛ سپس حضور و فعالیت کلاس را ثبت کنید.</p></div>';
   for (const session of sessions) {
-    const counts = { present: 0, absent: 0, late: 0, leave: 0 };
-    for (const value of Object.values(session.attendance || {})) {
-      if (value === "present" || value === "absent" || value === "leave")
-        counts[value]++;
-      else if (typeof value === "string" && value.startsWith("late"))
-        counts.late++;
-    }
+    const counts = EduReportAttendance.emptyCounts();
+    for (const student of sessionStudents(c, session))
+      EduReportAttendance.tally(
+        counts,
+        EduReportAttendance.normalize(session.attendance[student.id]),
+      );
     const pod = lesson.poudmans.find((p) => p.id === session.poudmanId);
     const unit = pod?.units.find((u) => u.id === session.unitId);
     const foreign =
@@ -286,7 +285,7 @@ function renderLessonSessions(
         '<span class="session-unit">' +
         esc([pod?.name, unit?.name].filter(Boolean).join(" / ")) +
         "</span>";
-    h += `<span class="session-counts"><span class="session-present"><b>${counts.present.toLocaleString("fa-IR")}</b> حاضر</span><span class="session-absent"><b>${counts.absent.toLocaleString("fa-IR")}</b> غایب</span><span class="session-late"><b>${counts.late.toLocaleString("fa-IR")}</b> تأخیر</span><span class="session-leave"><b>${counts.leave.toLocaleString("fa-IR")}</b> مرخصی</span><span class="session-activities"><b>${session.scores.length.toLocaleString("fa-IR")}</b> فعالیت</span></span><span class="session-enter-label">ورود به جلسه <span aria-hidden="true">${EduIcons.html("arrow")}</span></span></button>`;
+    h += `<span class="session-counts"><span class="session-present"><b>${(counts.present + counts.late).toLocaleString("fa-IR")}</b> حاضر</span><span class="session-absent"><b>${counts.absent.toLocaleString("fa-IR")}</b> غایب</span><span class="session-late"><b>${counts.late.toLocaleString("fa-IR")}</b> تأخیر</span><span class="session-leave"><b>${counts.leave.toLocaleString("fa-IR")}</b> مرخصی</span><span class="session-activities"><b>${session.scores.length.toLocaleString("fa-IR")}</b> فعالیت</span></span><span class="session-enter-label">ورود به جلسه <span aria-hidden="true">${EduIcons.html("arrow")}</span></span></button>`;
     if (!foreign)
       h +=
         '<button type="button" class="session-delete" data-legacy-click="ui-lesson:9" data-legacy-click-arg4="' +

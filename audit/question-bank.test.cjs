@@ -45,6 +45,35 @@ function spec() {
     duration: "۶۰",
   };
 }
+test("exam dates match the positive four-digit year contract of the calendar and native date field", () => {
+  const bank = fixture();
+  const before = JSON.stringify(bank);
+  for (const date of [
+    "0000-01-01",
+    "0000-02-29",
+    "2026-02-29",
+    "2026-04-31",
+    "10000-01-01",
+  ]) {
+    assert.throws(() => D.generate(bank, { ...spec(), date }), /مشخصات آزمون/);
+    const archived = D.generate(bank, spec());
+    archived.date = date;
+    assert.throws(
+      () => D.parse(JSON.stringify({ ...bank, exams: [archived] })),
+      /آزمون/,
+    );
+  }
+  for (const date of ["0001-01-01", "2000-02-29", "2024-02-29", "9999-12-31"]) {
+    const exam = D.generate(bank, { ...spec(), date });
+    assert.equal(exam.date, date);
+    assert.equal(
+      D.parse(JSON.stringify({ ...bank, exams: [exam] })).exams[0].date,
+      date,
+    );
+  }
+  assert.equal(JSON.stringify(bank), before);
+});
+
 test("target exam scores support localized decimals and reject invalid totals", () => {
   assert.equal(D.examScore("۲۰"), 2000);
   assert.equal(D.examScore("٣٠"), 3000);

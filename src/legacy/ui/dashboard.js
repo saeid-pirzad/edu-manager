@@ -413,8 +413,9 @@ function renderTodayAgenda() {
     );
   html += '<div class="today-agenda-list">';
   for (const { period, school, classroom, lesson, session } of planned) {
+    const roster = session ? session.roster || classroom.students : [];
     const unknown = session
-      ? (session.roster || classroom.students).filter(
+      ? roster.filter(
           (student) =>
             !/^(present|absent|leave|late(?::\d+)?)$/.test(
               session.attendance?.[student.id] || "",
@@ -436,11 +437,13 @@ function renderTodayAgenda() {
       "</p>" +
       (session
         ? '<span class="today-agenda-status' +
-          (unknown ? " is-pending" : "") +
+          (unknown || !roster.length ? " is-pending" : "") +
           '">' +
-          (unknown
-            ? unknown.toLocaleString("fa-IR") + " حضور تعیین‌نشده"
-            : "حضوروغیاب کامل") +
+          (!roster.length
+            ? "فهرست حضور خالی؛ نیازمند بررسی"
+            : unknown
+              ? unknown.toLocaleString("fa-IR") + " حضور تعیین‌نشده"
+              : "حضوروغیاب کامل") +
           "</span>"
         : "") +
       '</div><button type="button" class="today-agenda-action' +

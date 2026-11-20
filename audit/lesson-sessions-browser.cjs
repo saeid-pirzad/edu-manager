@@ -245,7 +245,9 @@ async function run({ cdp, evaluate, cases, delay }) {
         JSON.stringify([fixture.current, fixture.plain, fixture.peer]) &&
         JSON.stringify(content.counts) ===
           JSON.stringify(
-            [125, 9, 8, 8, 126].map((n) => n.toLocaleString("fa-IR")),
+            // The fixture has 125 on-time and 8 late pupils; late is a
+            // subset of present, consistent with attendance reports.
+            [125 + 8, 9, 8, 8, 126].map((n) => n.toLocaleString("fa-IR")),
           ) &&
         content.labels.every((label) => label.trim().length > 1) &&
         content.unit.includes(fixture.moduleName) &&

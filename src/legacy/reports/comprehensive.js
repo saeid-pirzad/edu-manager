@@ -750,7 +750,7 @@ function buildGlobalReportText(source = db) {
               hw
                 .map((x) => {
                   const s = sessionStudent(cls.classObj, sess, x.studentId);
-                  return `${s ? s.name : ""}`;
+                  return `${s ? s.name : ""}${x.note ? "(" + x.note + ")" : ""}`;
                 })
                 .join("، ") +
               `\n`;

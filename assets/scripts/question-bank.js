@@ -36,10 +36,10 @@ q.options)||q.options.length!==4||!Array.from(q.options).every(text)||new Set(q.
 3)fail("چهار گزینه متفاوت و پاسخ معتبر لازم است.")}else{if(Object.hasOwn(q,"options"))fail("گزینه اضافی برای این نوع سؤال مجاز ن\
 یست.");if(q.type==="boolean"?typeof q.answer!=="boolean":!text(q.answer))fail("پاسخ سؤال معتبر نیست.")}}function size(bank){const json=JSON.
 stringify(bank);if(new TextEncoder().encode(json).length>LIMIT)fail("سقف حجم بانک ۲۰ مگابایت است.");return json}function validDate(value){
-return typeof value==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&Number.isFinite(Date.parse(value))&&new Date(value).toISOString().slice(0,10)===value}function validate(bank){
-if(!bank||bank.format!=="classyar-question-bank"||bank.version!==1||!Number.isSafeInteger(bank.revision)||bank.revision<0||Object.keys(bank).sort().join()!==["f\
-ormat","version","revision","courses","units","questions","exams"].sort().join())fail("قالب یا نسخه فایل بانک سؤال معتبر نیست.");
-const allIds=new Set;for(const key of["courses","units","questions","exams"]){if(!Array.isArray(bank[key]))fail("ساختار بانک نامعتبر است.");
+return typeof value==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&value.slice(0,4)!=="0000"&&Number.isFinite(Date.parse(value))&&new Date(value).toISOString().
+slice(0,10)===value}function validate(bank){if(!bank||bank.format!=="classyar-question-bank"||bank.version!==1||!Number.isSafeInteger(bank.revision)||bank.revision<
+0||Object.keys(bank).sort().join()!==["format","version","revision","courses","units","questions","exams"].sort().join())fail("قالب یا نسخه فایل بانک سؤال معتبر\
+ نیست.");const allIds=new Set;for(const key of["courses","units","questions","exams"]){if(!Array.isArray(bank[key]))fail("ساختار بانک نامعتبر است.");
 for(const item of bank[key]){if(!item||!text(item.id)||allIds.has(item.id))fail("شناسه خالی یا تکراری است.");allIds.add(item.id)}}const uniqueTitles=(items,scope)=>{
 const titles=new Set;for(const item of items){const key=JSON.stringify([scope(item),String(item.title).trim()]);if(!text(item.title)||titles.has(key))fail("عنوا\
 ن خالی یا تکراری است.");titles.add(key)}};uniqueTitles(bank.courses,()=>"");uniqueTitles(bank.units,u=>u.courseId);for(const c of bank.courses)fields(

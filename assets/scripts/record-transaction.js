@@ -79,20 +79,20 @@ parse(json);return key==="meta"?model.layoutHasChanges(previous?.layout||[],curr
 class:")&&(model.hasChanges(previous,current)||globalThis.EduAcademicYearCourses?.hasChanges(previous,current))})},async commit(options){const{connection,expectedInstallation="",
 records,changed,removed,action,keepUndo,normalizedName,academicTermKind,annualChanged,decodeRecords,historicalRoster,directorySourceUpdates}=options;const workspace={
 ...options.workspace},model=globalThis.EduAcademicYearDirectory,annual=globalThis.EduAnnualModules,courses=globalThis.EduAcademicYearCourses,copy=value=>structuredClone(
-value),directoryRevisions=options.directoryRevisions===void 0?null:copy(options.directoryRevisions),recoveredUndo=options.recoveredUndo===void 0?null:copy(options.
-recoveredUndo),tx=connection.transaction(["records","catalog","events","undo"],"readwrite"),done=globalThis.EduDataStoreRuntime.transactionDone(tx);let failure,
-nextCatalog;const peerUpdates=[],sourceUpdates=[];const abort=error=>{failure=error;try{tx.abort()}catch{}};const readRows=id=>tx.objectStore("records").getAll(
-IDBKeyRange.bound(id+"|",id+"}",false,true));const asMap=(rows,id)=>{decodeRecords(rows,{workspaceId:id});return new Map(rows.map(row=>[row.logical,copy(row.value)]))};
-const validate=(map,id)=>decodeRecords([...map].map(([logical,value])=>({key:id+"|"+logical,workspace:id,logical,value})),{workspaceId:id});const owner=(layout,id)=>layout.
-find(school=>school.classes.includes(id))?.id;const freeze=(oldMap,nextMap,classId)=>{const oldClass=oldMap.get("class:"+classId);if(!oldClass)return;for(const[
-key,previous]of oldMap){const current=nextMap.get(key);if(!key.startsWith("session:")||previous.classId!==classId||previous.roster||!current||current.roster)continue;
-current.roster=historicalRoster(oldClass,previous)}};const repairRecoveredIdentity=(map,plan)=>{const previous=new Map([...plan.previous?.students||[],...plan.previous?.
-archivedStudents||[]].map(student=>[student.id,student])),repaired=[...plan.current.students||[],...plan.current.archivedStudents||[]].filter(student=>previous.
-get(student.id)?.recovered&&student.recovered===false&&!student.name.startsWith("دانش‌آموز بازیابی‌شده"));for(const student of repaired){for(const[
-key,session]of map)if(key.startsWith("session:")&&session.classId===plan.current.id){for(const member of session.roster||[])if(member.id===student.id&&member.recovered){
-member.name=student.name;member.recovered=false}}const unresolved=[...map].some(([key,classroom])=>key.startsWith("class:")&&[...classroom.students||[],...classroom.
-archivedStudents||[]].some(member=>member.id===student.id&&member.recovered));const meta=map.get("meta");if(!unresolved&&Array.isArray(meta.migrationWarnings))meta.
-migrationWarnings=meta.migrationWarnings.filter(message=>!message.startsWith("نام دانش‌آموز "+student.id+" در "))}};const restoreRecoveredPeer=(oldMap,nextMap,peer,plans)=>{
+value),sourceMeta=copy(records.get("meta")),directoryRevisions=options.directoryRevisions===void 0?null:copy(options.directoryRevisions),recoveredUndo=options.recoveredUndo===
+void 0?null:copy(options.recoveredUndo),tx=connection.transaction(["records","catalog","events","undo"],"readwrite"),done=globalThis.EduDataStoreRuntime.transactionDone(
+tx);let failure,nextCatalog;const peerUpdates=[],sourceUpdates=[];const abort=error=>{failure=error;try{tx.abort()}catch{}};const readRows=id=>tx.objectStore("r\
+ecords").getAll(IDBKeyRange.bound(id+"|",id+"}",false,true));const asMap=(rows,id)=>{decodeRecords(rows,{workspaceId:id});return new Map(rows.map(row=>[row.logical,
+copy(row.value)]))};const validate=(map,id)=>decodeRecords([...map].map(([logical,value])=>({key:id+"|"+logical,workspace:id,logical,value})),{workspaceId:id});
+const owner=(layout,id)=>layout.find(school=>school.classes.includes(id))?.id;const freeze=(oldMap,nextMap,classId)=>{const oldClass=oldMap.get("class:"+classId);
+if(!oldClass)return;for(const[key,previous]of oldMap){const current=nextMap.get(key);if(!key.startsWith("session:")||previous.classId!==classId||previous.roster||
+!current||current.roster)continue;current.roster=historicalRoster(oldClass,previous)}};const repairRecoveredIdentity=(map,plan)=>{const previous=new Map([...plan.
+previous?.students||[],...plan.previous?.archivedStudents||[]].map(student=>[student.id,student])),repaired=[...plan.current.students||[],...plan.current.archivedStudents||
+[]].filter(student=>previous.get(student.id)?.recovered&&student.recovered===false&&!student.name.startsWith("دانش‌آموز بازیابی‌شده"));for(const student of repaired){
+for(const[key,session]of map)if(key.startsWith("session:")&&session.classId===plan.current.id){for(const member of session.roster||[])if(member.id===student.id&&
+member.recovered){member.name=student.name;member.recovered=false}}const unresolved=[...map].some(([key,classroom])=>key.startsWith("class:")&&[...classroom.students||
+[],...classroom.archivedStudents||[]].some(member=>member.id===student.id&&member.recovered));const meta=map.get("meta");if(!unresolved&&Array.isArray(meta.migrationWarnings))
+meta.migrationWarnings=meta.migrationWarnings.filter(message=>!message.startsWith("نام دانش‌آموز "+student.id+" در "))}};const restoreRecoveredPeer=(oldMap,nextMap,peer,plans)=>{
 const invalid=()=>{const error=Error("سابقهٔ بازگردانی نام‌های بازیابی‌شده با اطلاعات نوبت‌های سال سازگار نیست؛ تغییری انجام نشد.");
 error.code="ACADEMIC_DIRECTORY_CONFLICT";throw error},corrections=new Map;for(const plan of plans){const previous=new Map([...plan.previous?.students||[],...plan.
 previous?.archivedStudents||[]].map(student=>[student.id,student]));for(const student of[...plan.current.students||[],...plan.current.archivedStudents||[]]){const corrected=previous.
@@ -110,12 +110,12 @@ peer.migrationWarnings)}};try{const epoch=tx.objectStore("records").get("@instal
 abort(Object.assign(Error("اطلاعات در پنجرهٔ دیگری جایگزین شده است؛ صفحه را دوباره باز کنید."),{code:"INSTA\
 LLATION_CHANGED"}))};const request=tx.objectStore("catalog").getAll();request.onsuccess=()=>{if(failure)return;try{const catalog=request.result,live=catalog.find(
 row=>row.id===workspace.id);if(!live||live.revision!==workspace.revision){const error=Error("اطلاعات در پنجرهٔ دیگری تغییر کرده است؛ صفحه را دوباره بارگذاری کنی\
-د.");error.code="WORKSPACE_CONFLICT";throw error}const meta=records.get("meta"),year=meta?.settings?.academicYear??live.year,term=meta?.settings?.academicTerm??
-live.term;if(year!==live.year&&catalog.some(row=>row.id!==live.id&&row.year===live.year))throw Error("سال تحصیلی دارای نوبت مشترک است؛ تغییر سال و فهرست را هم‌ز\
-مان انجام ندهید.");if(catalog.some(row=>row.id!==live.id&&row.year===year&&normalizedName(row.term)===normalizedName(term)))throw Error("عنوان نوبت\
- در این سال تکراری است.");const family=catalog.filter(row=>row.id===live.id||row.year===year),loaded=new Map;if(directoryRevisions!==null){const valid=Array.
-isArray(directoryRevisions)&&directoryRevisions.every(row=>row&&typeof row.id==="string"&&row.year===year&&Number.isSafeInteger(row.revision)&&row.revision>0),signature=rows=>JSON.
-stringify(rows.map(row=>[row.id,row.year,row.revision]).sort(([a],[b])=>a.localeCompare(b)));if(!valid||signature(directoryRevisions)!==signature(family)){const error=Error(
+د.");error.code="WORKSPACE_CONFLICT";throw error}const year=sourceMeta?.settings?.academicYear??live.year,term=sourceMeta?.settings?.academicTerm??live.term;if(year!==
+live.year&&catalog.some(row=>row.id!==live.id&&row.year===live.year))throw Error("سال تحصیلی دارای نوبت مشترک است؛ تغییر سال و فهرست را هم‌زمان انجام ندهید.");
+if(catalog.some(row=>row.id!==live.id&&row.year===year&&normalizedName(row.term)===normalizedName(term)))throw Error("عنوان نوبت در این سال تکراری است.");
+const family=catalog.filter(row=>row.id===live.id||row.year===year),loaded=new Map;if(directoryRevisions!==null){const valid=Array.isArray(directoryRevisions)&&
+directoryRevisions.every(row=>row&&typeof row.id==="string"&&row.year===year&&Number.isSafeInteger(row.revision)&&row.revision>0),signature=rows=>JSON.stringify(
+rows.map(row=>[row.id,row.year,row.revision]).sort(([a],[b])=>a.localeCompare(b)));if(!valid||signature(directoryRevisions)!==signature(family)){const error=Error(
 "فهرست یکی از نوبت‌های سال پس از بررسی اولیه تغییر کرده است؛ عملیات انجام نشد. صفحه را دوباره بارگذاری کنید.");
 error.code="WORKSPACE_CONFLICT";throw error}}let pending=family.length;for(const period of family){const rows=readRows(period.id);rows.onsuccess=()=>{try{loaded.
 set(period.id,asMap(rows.result,period.id));if(--pending)return;apply(family,live,year,term,loaded)}catch(error){abort(error)}}}}catch(error){abort(error)}}}catch(error){

@@ -44,7 +44,7 @@ function condition(source) {
   return match[1];
 }
 
-test("release verification and CI include the isolated complete-year backup file roundtrip", () => {
+test("release verification and CI include the complete-year backup and full session-history browser checks", () => {
   const manifest = JSON.parse(
     fs.readFileSync(path.join(root, "package.json"), "utf8"),
   );
@@ -57,6 +57,16 @@ test("release verification and CI include the isolated complete-year backup file
       .split(/\s*&&\s*/)
       .includes("npm run test:annual-backup"),
     "the full-year roundtrip must stop a failed release",
+  );
+  assert.equal(
+    manifest.scripts["test:session-history"],
+    "npm run build:check && node audit/session-history-pagination-browser.cjs",
+  );
+  assert.ok(
+    manifest.scripts["check:release"]
+      .split(/\s*&&\s*/)
+      .includes("npm run test:session-history"),
+    "history pagination and access to old sessions must stop a failed release",
   );
   const verify = job(workflow(), "verify");
   const verifyIndex = verify.indexOf("- run: npm run check:release");

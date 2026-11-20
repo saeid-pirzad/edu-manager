@@ -256,6 +256,7 @@
     return (
       typeof value === "string" &&
       /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+      value.slice(0, 4) !== "0000" &&
       Number.isFinite(Date.parse(value)) &&
       new Date(value).toISOString().slice(0, 10) === value
     );

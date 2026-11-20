@@ -331,7 +331,7 @@ join("، ")}
 `;if(neg.length)text+=`   ➖ منفی (${neg.length}): `+neg.map(x=>{const s=sessionStudent(cls.classObj,sess,x.studentId);return`${s?s.name:""}(${x.value})`}).
 join("، ")+`
 `}if(globalFilter.showHomework){const hw=sess.scores.filter(x=>x.type==="homework");if(hw.length)text+=`   📝 تکالیف (${hw.length}): `+hw.map(x=>{const s=sessionStudent(
-cls.classObj,sess,x.studentId);return`${s?s.name:""}`}).join("، ")+`
+cls.classObj,sess,x.studentId);return`${s?s.name:""}${x.note?"("+x.note+")":""}`}).join("، ")+`
 `}text+=`
 `});text+=`--------------------------------
 `})}text+=`
@@ -727,46 +727,47 @@ gendaTitle"><header class="today-agenda-heading"><span class="today-agenda-icon"
 Title">برنامه امروز</h2><p>'+esc(faDate(date))+'</p></div><button type="button" class="ghost" data-legacy-click="ui-dashboard:3">'+EduIcons.html("cal\
 endar-week")+"<span>برنامه هفتگی</span></button></header>";if(!planned.length)return html+'<p class="today-agenda-empty">'+(inYear?"برای امروز برنامه\
 ‌ای ثبت نشده است.":"امروز خارج از سال تحصیلی فعال است؛ برای ثبت سوابق، وارد درس شوید.")+"</p><\
-/section>";html+='<div class="today-agenda-list">';for(const{period,school,classroom,lesson,session}of planned){const unknown=session?(session.roster||classroom.
-students).filter(student=>!/^(present|absent|leave|late(?::\d+)?)$/.test(session.attendance?.[student.id]||"")).length:0;const label=session?"ادامه جلسه":
-closed?"ترم بسته است":"شروع جلسه";html+='<article class="today-agenda-row"><span class="today-agenda-period">'+esc(getPeriodName(period))+'</s\
-pan><div class="today-agenda-copy"><h3>'+esc(lesson.name)+"</h3><p>"+esc(school.name+" · "+classroom.name)+"</p>"+(session?'<span class="today-agenda-status'+(unknown?
-" is-pending":"")+'">'+(unknown?unknown.toLocaleString("fa-IR")+" حضور تعیین‌نشده":"حضوروغیاب کامل")+"</span>":"")+'</div><button ty\
-pe="button" class="today-agenda-action'+(session?" ghost":"")+'" data-legacy-click="today-agenda" data-session="'+esc(session?.id||"")+'" data-school="'+esc(school.
-id)+'" data-class="'+esc(classroom.id)+'" data-lesson="'+esc(lesson.id)+'" data-date="'+esc(date)+'" data-day="'+day+'" data-period="'+period+'"'+(!session?' da\
-ta-mutating="1"':"")+(closed&&!session?" disabled":"")+' aria-label="'+esc(label+" "+lesson.name+" · "+classroom.name+" · "+getPeriodName(period))+'"><span>'+
-(session?"ادامه":closed?"بسته":"شروع")+"</span>"+EduIcons.html("arrow")+"</button></article>"}return html+"</div></section>"}EduLegacyEvents.register(
-"dashboard-open",function(){return this.dataset.kind==="school"?goSchool(this.dataset.key):goClass(this.dataset.key)});EduLegacyEvents.register("dashboard-delet\
-e",function(){return this.dataset.kind==="school"?deleteSchool(this.dataset.key):deleteClass(this.dataset.key)});EduLegacyEvents.register("dashboard-task",function(){
-return this.dataset.task==="session"?dashboardOpenSession(this.dataset.key):dashboardReviewGrades(this.dataset.key)});EduLegacyEvents.register("dashboard-agenda",
-function(){return this.dataset.session?dashboardOpenSession(this.dataset.session):dashboardStartSession(Number(this.dataset.day),Number(this.dataset.period),this.
-dataset.date)});EduLegacyEvents.register("ui-dashboard:0",function(event){return filterDashboardEntities(this)});EduLegacyEvents.register("ui-dashboard:1",function(event){
-return openReportScope(this.getAttribute("data-legacy-click-arg7"),this.getAttribute("data-legacy-click-arg8"),this.getAttribute("data-legacy-click-arg9"))});EduLegacyEvents.
-register("ui-dashboard:2",function(event){return dashboardDailyReport()});EduLegacyEvents.register("ui-dashboard:3",function(event){return goMaster()});EduLegacyEvents.
-register("ui-dashboard:4",function(event){return EduV24.openEntityEditor(this.getAttribute("data-legacy-click-arg15"),this.getAttribute("data-legacy-click-arg16"),
-this.getAttribute("data-legacy-click-arg17"))});EduLegacyEvents.register("today-agenda",function(){if(this.dataset.session)return dashboardOpenSession(this.dataset.
-session);const selection={date:this.dataset.date,day:Number(this.dataset.day),period:Number(this.dataset.period),schoolId:this.dataset.school,classId:this.dataset.
-class,lessonId:this.dataset.lesson};return runSessionFormAction(this,()=>EduV24.startTodaySession(selection))});function studentAvatarHtml(studentId){const tone=Array.
-from(String(studentId)).reduce((hash,char)=>Math.imul(hash,31)+char.codePointAt(0)>>>0,0)%5;return'<span class="student-avatar student-avatar-icon" data-tone="'+
-tone+'" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" focusable="false"><circle cx="24" cy="24" r="19" fill="currentColor" opacity=".09"/><circle cx="\
-24" cy="18" r="7" fill="currentColor"/><path d="M11 38c0-7.2 5.8-12 13-12s13 4.8 13 12c-3.5 3.1-8 4.5-13 4.5S14.5 41.1 11 38Z" fill="currentColor"/><path d="M20\
- 16a4 4 0 0 1 4-4" stroke="white" stroke-opacity=".5" stroke-width="2" stroke-linecap="round"/><path d="m36 7 1.1 3.4L40.5 12l-3.4 1.2L36 17l-1.2-3.8L31.5 12l3.\
-3-1.6L36 7Z" fill="currentColor" opacity=".65"/></svg></span>'}function createPanelHeading(icon,title,note=""){return'<summary><span class="create-panel-symbol"\
- aria-hidden="true">'+EduIcons.html(icon)+'</span><span class="create-panel-title"><strong>'+title+"</strong>"+(note?"<small>"+note+"</small>":"")+'</span><span\
- class="create-panel-toggle" aria-hidden="true"></span></summary>'}function renderEntityQuickCreate(kind,empty){const school=kind==="school";const label=school?
-"مدرسه":"کلاس";const token=school?"1":"5";return'<details class="card quick-create entity-quick-create create-panel no-print'+(school?" school-create":
-" class-create")+'"'+(empty?" open":"")+">"+createPanelHeading(school?"school":"classroom",label+" جدید",school?"":"نام کلاس؛ هنرجویان و درس‌ها در مرحله بعد")+
-'<form data-legacy-submit="ui-school-class:'+token+'" data-entity-create="'+kind+'" class="row"><label class="entity-create-field">نام '+label+'<input id="'+
-kind+'CreateName" name="name" placeholder="'+(school?"مثلاً هنرستان دانش":"مثلاً دهم شبکه")+'" aria-describedby="'+kind+'CreateError\
-" required maxlength="500"'+(school?' enterkeyhint="done"':"")+'></label><div class="create-panel-footer"><button type="submit" data-mutating="1">ثبت '+label+
-'</button></div><p id="'+kind+'CreateError" class="entity-create-error" role="alert"></p></form></details>'}function renderSchools(){let h=headerHtml()+`<sectio\
-n class="workflow-welcome schools-welcome no-print"><span class="schools-welcome-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentCo\
-lor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M8 9h1M15 9h1M8 12h1M15 12h1"/></svg></spa\
-n><div class="schools-welcome-copy"><h2>مدرسه‌های من</h2><p>مدرسه‌ها را اضافه، ویرایش یا حذف کنید؛ برای مدیریت کلاس‌ها وارد مدرسه شوید.</p></div><button type="b\
-utton" class="schools-about" data-about-action="open"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle c\
-x="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></svg><span>درباره و ارتباط</span></button></section>`;h+='<section id="attendanceReminderRegion\
-" class="no-print" aria-live="polite"></section>';h+=renderTodayAgenda();h+=dashboardDirectory(db.schools,"schools");h+=renderEntityQuickCreate("school",!db.schools.
-length);return h}function renderSchool(){const school=getSchool(state.schoolId);if(!school){state.view="schools";return renderSchools()}let h=headerHtml()+breadcrumbHtml(
+/section>";html+='<div class="today-agenda-list">';for(const{period,school,classroom,lesson,session}of planned){const roster=session?session.roster||classroom.students:
+[];const unknown=session?roster.filter(student=>!/^(present|absent|leave|late(?::\d+)?)$/.test(session.attendance?.[student.id]||"")).length:0;const label=session?
+"ادامه جلسه":closed?"ترم بسته است":"شروع جلسه";html+='<article class="today-agenda-row"><span class="today-agenda-period">'+esc(getPeriodName(
+period))+'</span><div class="today-agenda-copy"><h3>'+esc(lesson.name)+"</h3><p>"+esc(school.name+" · "+classroom.name)+"</p>"+(session?'<span class="today-age\
+nda-status'+(unknown||!roster.length?" is-pending":"")+'">'+(!roster.length?"فهرست حضور خالی؛ نیازمند بررسی":unknown?unknown.toLocaleString(
+"fa-IR")+" حضور تعیین‌نشده":"حضوروغیاب کامل")+"</span>":"")+'</div><button type="button" class="today-agenda-action'+(session?" ghos\
+t":"")+'" data-legacy-click="today-agenda" data-session="'+esc(session?.id||"")+'" data-school="'+esc(school.id)+'" data-class="'+esc(classroom.id)+'" data-less\
+on="'+esc(lesson.id)+'" data-date="'+esc(date)+'" data-day="'+day+'" data-period="'+period+'"'+(!session?' data-mutating="1"':"")+(closed&&!session?" disabled":
+"")+' aria-label="'+esc(label+" "+lesson.name+" · "+classroom.name+" · "+getPeriodName(period))+'"><span>'+(session?"ادامه":closed?"بسته":"شروع")+
+"</span>"+EduIcons.html("arrow")+"</button></article>"}return html+"</div></section>"}EduLegacyEvents.register("dashboard-open",function(){return this.dataset.kind===
+"school"?goSchool(this.dataset.key):goClass(this.dataset.key)});EduLegacyEvents.register("dashboard-delete",function(){return this.dataset.kind==="school"?deleteSchool(
+this.dataset.key):deleteClass(this.dataset.key)});EduLegacyEvents.register("dashboard-task",function(){return this.dataset.task==="session"?dashboardOpenSession(
+this.dataset.key):dashboardReviewGrades(this.dataset.key)});EduLegacyEvents.register("dashboard-agenda",function(){return this.dataset.session?dashboardOpenSession(
+this.dataset.session):dashboardStartSession(Number(this.dataset.day),Number(this.dataset.period),this.dataset.date)});EduLegacyEvents.register("ui-dashboard:0",
+function(event){return filterDashboardEntities(this)});EduLegacyEvents.register("ui-dashboard:1",function(event){return openReportScope(this.getAttribute("data-\
+legacy-click-arg7"),this.getAttribute("data-legacy-click-arg8"),this.getAttribute("data-legacy-click-arg9"))});EduLegacyEvents.register("ui-dashboard:2",function(event){
+return dashboardDailyReport()});EduLegacyEvents.register("ui-dashboard:3",function(event){return goMaster()});EduLegacyEvents.register("ui-dashboard:4",function(event){
+return EduV24.openEntityEditor(this.getAttribute("data-legacy-click-arg15"),this.getAttribute("data-legacy-click-arg16"),this.getAttribute("data-legacy-click-ar\
+g17"))});EduLegacyEvents.register("today-agenda",function(){if(this.dataset.session)return dashboardOpenSession(this.dataset.session);const selection={date:this.
+dataset.date,day:Number(this.dataset.day),period:Number(this.dataset.period),schoolId:this.dataset.school,classId:this.dataset.class,lessonId:this.dataset.lesson};
+return runSessionFormAction(this,()=>EduV24.startTodaySession(selection))});function studentAvatarHtml(studentId){const tone=Array.from(String(studentId)).reduce(
+(hash,char)=>Math.imul(hash,31)+char.codePointAt(0)>>>0,0)%5;return'<span class="student-avatar student-avatar-icon" data-tone="'+tone+'" aria-hidden="true"><sv\
+g viewBox="0 0 48 48" fill="none" focusable="false"><circle cx="24" cy="24" r="19" fill="currentColor" opacity=".09"/><circle cx="24" cy="18" r="7" fill="curren\
+tColor"/><path d="M11 38c0-7.2 5.8-12 13-12s13 4.8 13 12c-3.5 3.1-8 4.5-13 4.5S14.5 41.1 11 38Z" fill="currentColor"/><path d="M20 16a4 4 0 0 1 4-4" stroke="whi\
+te" stroke-opacity=".5" stroke-width="2" stroke-linecap="round"/><path d="m36 7 1.1 3.4L40.5 12l-3.4 1.2L36 17l-1.2-3.8L31.5 12l3.3-1.6L36 7Z" fill="currentColo\
+r" opacity=".65"/></svg></span>'}function createPanelHeading(icon,title,note=""){return'<summary><span class="create-panel-symbol" aria-hidden="true">'+EduIcons.
+html(icon)+'</span><span class="create-panel-title"><strong>'+title+"</strong>"+(note?"<small>"+note+"</small>":"")+'</span><span class="create-panel-toggle" ar\
+ia-hidden="true"></span></summary>'}function renderEntityQuickCreate(kind,empty){const school=kind==="school";const label=school?"مدرسه":"کلاس";const token=school?
+"1":"5";return'<details class="card quick-create entity-quick-create create-panel no-print'+(school?" school-create":" class-create")+'"'+(empty?" open":"")+">"+
+createPanelHeading(school?"school":"classroom",label+" جدید",school?"":"نام کلاس؛ هنرجویان و درس‌ها در مرحله بعد")+'<form \
+data-legacy-submit="ui-school-class:'+token+'" data-entity-create="'+kind+'" class="row"><label class="entity-create-field">نام '+label+'<input id="'+kind+'C\
+reateName" name="name" placeholder="'+(school?"مثلاً هنرستان دانش":"مثلاً دهم شبکه")+'" aria-describedby="'+kind+'CreateError" requi\
+red maxlength="500"'+(school?' enterkeyhint="done"':"")+'></label><div class="create-panel-footer"><button type="submit" data-mutating="1">ثبت '+label+'</but\
+ton></div><p id="'+kind+'CreateError" class="entity-create-error" role="alert"></p></form></details>'}function renderSchools(){let h=headerHtml()+`<section clas\
+s="workflow-welcome schools-welcome no-print"><span class="schools-welcome-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s\
+troke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M8 9h1M15 9h1M8 12h1M15 12h1"/></svg></span><div\
+ class="schools-welcome-copy"><h2>مدرسه‌های من</h2><p>مدرسه‌ها را اضافه، ویرایش یا حذف کنید؛ برای مدیریت کلاس‌ها وارد مدرسه شوید.</p></div><button type="button"\
+ class="schools-about" data-about-action="open"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12"\
+ cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></svg><span>درباره و ارتباط</span></button></section>`;h+='<section id="attendanceReminderRegion" clas\
+s="no-print" aria-live="polite"></section>';h+=renderTodayAgenda();h+=dashboardDirectory(db.schools,"schools");h+=renderEntityQuickCreate("school",!db.schools.length);
+return h}function renderSchool(){const school=getSchool(state.schoolId);if(!school){state.view="schools";return renderSchools()}let h=headerHtml()+breadcrumbHtml(
 [{label:"مدرسه‌ها",action:"ui-school-class:2"},{label:school.name},{label:"کلاس‌ها"}]);h+=dashboardDirectory(school.classes,"classes",school.id);
 h+=renderEntityQuickCreate("class",!school.classes.length);return h}function classroomTabsHtml(label,items,compact=false){return'<div class="tabs classroom-tabs'+
 (compact?" classroom-tabs-compact":"")+'" role="group" aria-label="'+esc(label)+'">'+items.map(({tab,action,icon,title,detail=""})=>{const active=state.tab===tab;
@@ -933,32 +934,32 @@ length.toLocaleString("fa-IR")+"</span></h3><p>"+(annual?"همهٔ جلسات س
 نید.")+"</p></div>";if(sessions.length&&!annual)h+=`<details class="session-list-actions"><summary>گزینه‌ها</summary><div><button class="danger" data-legacy-\
 click="ui-lesson:7" data-legacy-click-arg0="${esc(classId)}" data-legacy-click-arg1="${esc(lessonId)}">حذف همه جلسات</button></div></details>`;h+='</\
 header><div class="session-list">';if(!sessions.length)h+='<div class="empty"><strong>اولین جلسه را شروع کنید</strong><p>تاریخ و زنگ را در فرم بالا انتخاب کنید؛\
- سپس حضور و فعالیت کلاس را ثبت کنید.</p></div>';for(const session of sessions){const counts={present:0,absent:0,late:0,leave:0};for(const value of Object.
-values(session.attendance||{})){if(value==="present"||value==="absent"||value==="leave")counts[value]++;else if(typeof value==="string"&&value.startsWith("late"))
-counts.late++}const pod=lesson.poudmans.find(p=>p.id===session.poudmanId);const unit=pod?.units.find(u=>u.id===session.unitId);const foreign=!!session.sourcePeriodId&&
-session.sourcePeriodId!==window.EduV24?.getReportContext().id;const id=esc(session.sourceSessionId||session.id),title=faDate(session.date)+" · زنگ "+(session.
-period+1).toLocaleString("fa-IR");h+=`<article class="session-card${session.date===todayISO()?" is-today":""}"><button type="button" class="session-open" ${foreign?
-`data-workspace-action="year-session" data-workspace="${esc(session.sourcePeriodId)}" data-key="${esc(id)}"`:`data-legacy-click="ui-lesson:8" data-legacy-click-\
-arg0="${esc(id)}"`} aria-label="ورود به جلسه `+esc(title)+'"><span class="session-identity"><span class="session-calendar" aria-hidden="true">'+EduIcons.
-html("calendar")+'</span><span class="session-date"><strong>'+esc(faDate(session.date))+'</strong><span class="session-date-meta"><span class="session-period">ز\
-نگ '+(session.period+1).toLocaleString("fa-IR")+"</span>"+(session.date===todayISO()?'<span class="session-today">امروز</span>':"")+"</span></span></span\
->";if(pod||unit)h+='<span class="session-unit">'+esc([pod?.name,unit?.name].filter(Boolean).join(" / "))+"</span>";h+=`<span class="session-counts"><span class=\
-"session-present"><b>${counts.present.toLocaleString("fa-IR")}</b> حاضر</span><span class="session-absent"><b>${counts.absent.toLocaleString("fa-IR")}</b> غ\
-ایب</span><span class="session-late"><b>${counts.late.toLocaleString("fa-IR")}</b> تأخیر</span><span class="session-leave"><b>${counts.leave.toLocaleString(
-"fa-IR")}</b> مرخصی</span><span class="session-activities"><b>${session.scores.length.toLocaleString("fa-IR")}</b> فعالیت</span></span><span class="session\
--enter-label">ورود به جلسه <span aria-hidden="true">${EduIcons.html("arrow")}</span></span></button>`;if(!foreign)h+='<button type="button" class="ses\
-sion-delete" data-legacy-click="ui-lesson:9" data-legacy-click-arg4="'+esc(id)+'" aria-label="حذف جلسه '+esc(title)+'"><svg width="20" height="20" viewBo\
-x="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/></svg></butt\
-on>';h+="</article>"}return h+"</div></section>"}EduLegacyEvents.register("ui-lesson:0",function(event){return goSchools()});EduLegacyEvents.register("ui-lesson\
-:1",function(event){return goSchool(this.getAttribute("data-legacy-click-arg0"))});EduLegacyEvents.register("ui-lesson:2",function(event){return backToClass()});
-EduLegacyEvents.register("ui-lesson:4",function(event){return setTab("sessions")});EduLegacyEvents.register("ui-lesson:5",function(event){return setTab("grades")});
-EduLegacyEvents.register("ui-lesson:6",function(event){event.preventDefault();return runSessionFormAction(this,()=>addManualSession(event,this.getAttribute("dat\
-a-legacy-submit-arg0")))});EduLegacyEvents.register("ui-lesson:7",function(event){return deleteAllSessions(this.getAttribute("data-legacy-click-arg0"),this.getAttribute(
-"data-legacy-click-arg1"))});EduLegacyEvents.register("ui-lesson:8",function(event){return openExistingSession(this.getAttribute("data-legacy-click-arg0"))});EduLegacyEvents.
-register("ui-lesson:9",function(event){return deleteSession(this.getAttribute("data-legacy-click-arg4"))});EduLegacyEvents.register("ui-lesson:session-date",function(){
-return refreshLessonSessionSchedule(this.form)});async function legacy_deleteSession(sessId){if(!confirm("آیا از حذف این جلسه مطمئن هستید؟ اطلاعات حضور و نمرات \
-آن پاک خواهد شد."))return;db.sessions=db.sessions.filter(s=>s.id!==sessId);await saveDB();render()}async function legacy_deleteAllSessions(classId,lessonId){
-if(!confirm("⚠️ هشدار: آیا از حذف تمام جلسات این درس مطمئن هستید؟ تمام حضور و غیاب‌ها و نمرات ثبت شده در این جلسات برای همیشه پاک می‌شوند."))
+ سپس حضور و فعالیت کلاس را ثبت کنید.</p></div>';for(const session of sessions){const counts=EduReportAttendance.emptyCounts();for(const student of sessionStudents(
+c,session))EduReportAttendance.tally(counts,EduReportAttendance.normalize(session.attendance[student.id]));const pod=lesson.poudmans.find(p=>p.id===session.poudmanId);
+const unit=pod?.units.find(u=>u.id===session.unitId);const foreign=!!session.sourcePeriodId&&session.sourcePeriodId!==window.EduV24?.getReportContext().id;const id=esc(
+session.sourceSessionId||session.id),title=faDate(session.date)+" · زنگ "+(session.period+1).toLocaleString("fa-IR");h+=`<article class="session-card${session.
+date===todayISO()?" is-today":""}"><button type="button" class="session-open" ${foreign?`data-workspace-action="year-session" data-workspace="${esc(session.sourcePeriodId)}\
+" data-key="${esc(id)}"`:`data-legacy-click="ui-lesson:8" data-legacy-click-arg0="${esc(id)}"`} aria-label="ورود به جلسه `+esc(title)+'"><span class="\
+session-identity"><span class="session-calendar" aria-hidden="true">'+EduIcons.html("calendar")+'</span><span class="session-date"><strong>'+esc(faDate(session.
+date))+'</strong><span class="session-date-meta"><span class="session-period">زنگ '+(session.period+1).toLocaleString("fa-IR")+"</span>"+(session.date===todayISO()?
+'<span class="session-today">امروز</span>':"")+"</span></span></span>";if(pod||unit)h+='<span class="session-unit">'+esc([pod?.name,unit?.name].filter(Boolean).
+join(" / "))+"</span>";h+=`<span class="session-counts"><span class="session-present"><b>${(counts.present+counts.late).toLocaleString("fa-IR")}</b> حاضر</span>\
+<span class="session-absent"><b>${counts.absent.toLocaleString("fa-IR")}</b> غایب</span><span class="session-late"><b>${counts.late.toLocaleString("fa-IR")}\
+</b> تأخیر</span><span class="session-leave"><b>${counts.leave.toLocaleString("fa-IR")}</b> مرخصی</span><span class="session-activities"><b>${session.
+scores.length.toLocaleString("fa-IR")}</b> فعالیت</span></span><span class="session-enter-label">ورود به جلسه <span aria-hidden="true">${EduIcons.
+html("arrow")}</span></span></button>`;if(!foreign)h+='<button type="button" class="session-delete" data-legacy-click="ui-lesson:9" data-legacy-click-arg4="'+esc(
+id)+'" aria-label="حذف جلسه '+esc(title)+'"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hid\
+den="true"><path d="M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/></svg></button>';h+="</article>"}return h+"</div></section>"}EduLegacyEvents.register("\
+ui-lesson:0",function(event){return goSchools()});EduLegacyEvents.register("ui-lesson:1",function(event){return goSchool(this.getAttribute("data-legacy-click-ar\
+g0"))});EduLegacyEvents.register("ui-lesson:2",function(event){return backToClass()});EduLegacyEvents.register("ui-lesson:4",function(event){return setTab("sess\
+ions")});EduLegacyEvents.register("ui-lesson:5",function(event){return setTab("grades")});EduLegacyEvents.register("ui-lesson:6",function(event){event.preventDefault();
+return runSessionFormAction(this,()=>addManualSession(event,this.getAttribute("data-legacy-submit-arg0")))});EduLegacyEvents.register("ui-lesson:7",function(event){
+return deleteAllSessions(this.getAttribute("data-legacy-click-arg0"),this.getAttribute("data-legacy-click-arg1"))});EduLegacyEvents.register("ui-lesson:8",function(event){
+return openExistingSession(this.getAttribute("data-legacy-click-arg0"))});EduLegacyEvents.register("ui-lesson:9",function(event){return deleteSession(this.getAttribute(
+"data-legacy-click-arg4"))});EduLegacyEvents.register("ui-lesson:session-date",function(){return refreshLessonSessionSchedule(this.form)});async function legacy_deleteSession(sessId){
+if(!confirm("آیا از حذف این جلسه مطمئن هستید؟ اطلاعات حضور و نمرات آن پاک خواهد شد."))return;db.sessions=
+db.sessions.filter(s=>s.id!==sessId);await saveDB();render()}async function legacy_deleteAllSessions(classId,lessonId){if(!confirm("⚠️ هشدار: آیا از حذف تمام جل\
+سات این درس مطمئن هستید؟ تمام حضور و غیاب‌ها و نمرات ثبت شده در این جلسات برای همیشه پاک می‌شوند."))
 return;db.sessions=db.sessions.filter(s=>!(s.classId===classId&&s.lessonId===lessonId));await saveDB();render()}async function legacy_addManualSession(e,lessonId){
 e.preventDefault();const c=getClassObj(state.schoolId,state.classId);const date=e.target.date.value;const period=parseInt(e.target.period.value)-1;if(!date||isNaN(
 period)||period<0)return alert("اطلاعات نامعتبر");const existing=db.sessions.find(s=>s.classId===c.id&&s.date===date&&s.period===period);if(existing){
@@ -1366,19 +1367,19 @@ nce","activity"].includes(panel))return;const root=document.querySelector("#moda
 const normalize=value=>String(value).normalize("NFKC").replace(/ي/g,"ی").replace(/ك/g,"ک").replace(/[\u200c\u200d]/g," ").replace(/\s+/g," ").trim().toLocaleLowerCase(
 "fa");const query=normalize(input.value);let visible=0;for(const row of root.querySelectorAll(".att-row")){row.hidden=!normalize(row.dataset.search).includes(query);
 if(!row.hidden)visible++}const empty=root.querySelector(".session-attendance-no-results");if(empty)empty.hidden=!query||visible>0}function sessionAttendanceProgress(session,classroom){
-const roster=sessionStudents(classroom,session);const unset=roster.filter(student=>!session.attendance[student.id]).length;const present=roster.filter(student=>session.
-attendance[student.id]==="present").length;return{total:roster.length,unset,present}}function refreshSessionAttendanceProgress(){const root=document.querySelector(
-"#modalBody .session-workspace");if(!root||root.dataset.sessionId!==currentSessionId)return;const session=getSessionById(currentSessionId);const classroom=session&&
-getClassObj(session.schoolId,session.classId);if(!session||!classroom)return;const progress=sessionAttendanceProgress(session,classroom);const label=root.querySelector(
-"[data-session-attendance-progress]");if(label)label.textContent=(progress.total-progress.unset).toLocaleString("fa-IR")+" از "+progress.total.toLocaleString(
-"fa-IR")+" نفر ثبت شده · تعیین‌نشده: "+progress.unset.toLocaleString("fa-IR");const presentLabel=root.querySelector("[data-session-attendan\
-ce-present]");if(presentLabel){const text=progress.present.toLocaleString("fa-IR")+" حاضر";if(presentLabel.textContent!==text)presentLabel.textContent=text}
-const fillButtons=root.querySelectorAll('[data-legacy-click="sessions-dialog:6"],[data-legacy-click="sessions-dialog:remaining-absent"]');const meter=root.querySelector(
-"[data-session-attendance-meter]");if(meter){meter.max=Math.max(progress.total,1);meter.value=progress.total-progress.unset}for(const fill of fillButtons)setControlLock(
-fill,"attendance-complete",progress.unset===0);const reuse=root.querySelector('[data-legacy-click="sessions-dialog:reuse-previous"]');if(reuse)setControlLock(reuse,
-"attendance-complete",progress.unset===0)}function refreshSessionActivityInput(form,changedControl=null){if(!form?.isConnected)return;const type=form.elements.type.
-value;const value=form.elements.value;const count=["positive","negative"].includes(type);if(count&&(value.value===""||changedControl?.name==="type"))value.value=
-type==="positive"?"0.25":"0.5";value.placeholder=["classGrade","mostamar","payani"].includes(type)?"۰ تا ۲۰":"۰ تا ۱۰۰۰";const students=form.elements.
+const roster=sessionStudents(classroom,session);const counts=EduReportAttendance.emptyCounts();for(const student of roster)EduReportAttendance.tally(counts,EduReportAttendance.
+normalize(session.attendance[student.id]));return{total:roster.length,unset:counts.unknown,present:counts.present+counts.late}}function refreshSessionAttendanceProgress(){
+const root=document.querySelector("#modalBody .session-workspace");if(!root||root.dataset.sessionId!==currentSessionId)return;const session=getSessionById(currentSessionId);
+const classroom=session&&getClassObj(session.schoolId,session.classId);if(!session||!classroom)return;const progress=sessionAttendanceProgress(session,classroom);
+const label=root.querySelector("[data-session-attendance-progress]");if(label)label.textContent=(progress.total-progress.unset).toLocaleString("fa-IR")+" از "+
+progress.total.toLocaleString("fa-IR")+" نفر ثبت شده · تعیین‌نشده: "+progress.unset.toLocaleString("fa-IR");const presentLabel=root.querySelector(
+"[data-session-attendance-present]");if(presentLabel){const text=progress.present.toLocaleString("fa-IR")+" حاضر";if(presentLabel.textContent!==text)presentLabel.
+textContent=text}const fillButtons=root.querySelectorAll('[data-legacy-click="sessions-dialog:6"],[data-legacy-click="sessions-dialog:remaining-absent"]');const meter=root.
+querySelector("[data-session-attendance-meter]");if(meter){meter.max=Math.max(progress.total,1);meter.value=progress.total-progress.unset}for(const fill of fillButtons)
+setControlLock(fill,"attendance-complete",progress.unset===0);const reuse=root.querySelector('[data-legacy-click="sessions-dialog:reuse-previous"]');if(reuse)setControlLock(
+reuse,"attendance-complete",progress.unset===0)}function refreshSessionActivityInput(form,changedControl=null){if(!form?.isConnected)return;const type=form.elements.
+type.value;const value=form.elements.value;const count=["positive","negative"].includes(type);if(count&&(value.value===""||changedControl?.name==="type"))value.
+value=type==="positive"?"0.25":"0.5";value.placeholder=["classGrade","mostamar","payani"].includes(type)?"۰ تا ۲۰":"۰ تا ۱۰۰۰";const students=form.elements.
 studentId;const next=form.querySelector("[data-session-next]");if(next)setControlLock(next,"student-last",students.selectedIndex<1||students.selectedIndex>=students.
 options.length-1)}function captureSessionActivityForm(){const form=document.querySelector("#modalBody .session-entry-form");if(!form)return null;return Object.fromEntries(
 ["studentId","type","value","note"].map(name=>[name,form.elements[name].value]))}function legacy_openSessionModal(session,{activitySaved=null}={}){const selectedPanel=!document.
