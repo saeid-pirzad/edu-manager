@@ -2,7 +2,11 @@
 (function (root) {
   "use strict";
   function isoDate(value) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(value))
+    if (
+      typeof value !== "string" ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(value) ||
+      value.startsWith("0000-")
+    )
       throw Error("تاریخ معتبر انتخاب کنید.");
     const d = new Date(value + "T12:00:00Z");
     if (!Number.isFinite(+d) || d.toISOString().slice(0, 10) !== value)
@@ -10,8 +14,15 @@
     return d;
   }
   function addDays(value, n) {
+    if (!Number.isSafeInteger(n)) throw Error("تاریخ معتبر انتخاب کنید.");
     const d = isoDate(value);
     d.setUTCDate(d.getUTCDate() + n);
+    if (
+      !Number.isFinite(+d) ||
+      d.getUTCFullYear() < 1 ||
+      d.getUTCFullYear() > 9999
+    )
+      throw Error("تاریخ معتبر انتخاب کنید.");
     return d.toISOString().slice(0, 10);
   }
   function range(mode, date, academicYear, selection = {}) {
@@ -35,10 +46,9 @@
         d.getUTCDate(),
       );
       const iso = (parts) =>
-        parts
-          .map((v, i) => (i ? String(v).padStart(2, "0") : String(v)))
-          .join("-");
+        parts.map((v, i) => String(v).padStart(i ? 2 : 4, "0")).join("-");
       const start = iso(jalaliToGregorian(jy, jm, 1));
+      isoDate(start);
       const next = iso(
         jalaliToGregorian(jm === 12 ? jy + 1 : jy, jm === 12 ? 1 : jm + 1, 1),
       );

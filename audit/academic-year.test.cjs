@@ -70,7 +70,7 @@ test("academic year supports positive four-digit early years without an arbitrar
   assert.equal(year.normalize("0001-0002"), "0001-0002");
   assert.deepEqual(plain(year.range("0001-0002")), {
     start: "0622-09-23",
-    end: "0623-09-22",
+    end: "0623-09-23",
   });
   assert.equal(year.normalize("0999-1000"), "0999-1000");
 });

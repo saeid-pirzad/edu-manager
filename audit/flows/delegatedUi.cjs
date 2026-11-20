@@ -64,13 +64,7 @@ module.exports = async function delegatedUi() {
   closeModal();
   showModal(
     "Calendar delegation",
-    '<input id="delegatedDate" type="date" value="' +
-      todayISO() +
-      '" min="' +
-      todayISO() +
-      '" max="' +
-      todayISO() +
-      '">',
+    '<input id="delegatedDate" type="date" value="' + todayISO() + '">',
   );
   initShamsiPickers();
   document.getElementById("delegatedDate").nextElementSibling.click();
@@ -82,14 +76,26 @@ module.exports = async function delegatedUi() {
     calPopup.classList.contains("open") &&
       [calViewYear, calViewMonth].join("-") !== before,
   );
+  closeShamsiCalendar();
+  const dateField = document.getElementById("delegatedDate");
+  dateField.min = dateField.value;
+  dateField.max = dateField.value;
+  dateField.nextElementSibling.click();
+  const boundedMonth = [calViewYear, calViewMonth].join("-");
+  const nextMonth = document.querySelector(
+    '#calPopup [data-calendar-direction="1"]',
+  );
+  nextMonth.click();
   check(
     "DU05-RANGE",
-    "native date bounds disable every date in the next month of the actual popup",
-    document.querySelectorAll("#calPopup .cal-days button:not(:disabled)")
-      .length === 0,
+    "native date bounds retain the one allowed day and prevent navigation outside its month",
+    nextMonth.disabled &&
+      document.querySelector('#calPopup [data-calendar-direction="-1"]')
+        .disabled &&
+      [calViewYear, calViewMonth].join("-") === boundedMonth &&
+      document.querySelectorAll("#calPopup .cal-days button:not(:disabled)")
+        .length === 1,
   );
-  document.querySelector('#calPopup [data-calendar-direction="-1"]').click();
-  const dateField = document.getElementById("delegatedDate");
   const selectedDate = dateField.value;
   let dateEvents = 0;
   dateField.addEventListener("change", () => dateEvents++);

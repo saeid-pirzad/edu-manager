@@ -15,29 +15,26 @@ function set(key, value) {
   )
     return;
   if (key === "detailLevel" && !["summary", "full"].includes(value)) return;
-  if (["date", "startDate", "endDate"].includes(key)) {
-    try {
-      isoDate(value);
-    } catch (e) {
-      error(e);
-      return;
+  const changes = { [key]: value };
+  try {
+    if (["date", "startDate", "endDate"].includes(key)) isoDate(value);
+    if (key === "endDate" && filters.startDate && value < filters.startDate)
+      throw Error("تاریخ پایان نباید قبل از تاریخ شروع باشد.");
+    if (key === "date" && filters.mode === "weekly") {
+      const dates = range("weekly", value);
+      changes.startDate = dates.start;
+      changes.endDate = dates.end;
     }
-  }
-  if (key === "endDate" && filters.startDate && value < filters.startDate) {
-    error(Error("تاریخ پایان نباید قبل از تاریخ شروع باشد."));
+    if (key === "startDate") {
+      changes.date = value;
+      if (!filters.endDate || filters.endDate < value)
+        changes.endDate = addDays(value, 6);
+    }
+  } catch (e) {
+    error(e);
     return;
   }
-  filters[key] = value;
-  if (key === "date" && filters.mode === "weekly") {
-    const dates = range("weekly", value);
-    filters.startDate = dates.start;
-    filters.endDate = dates.end;
-  }
-  if (key === "startDate") {
-    filters.date = value;
-    if (!filters.endDate || filters.endDate < value)
-      filters.endDate = addDays(value, 6);
-  }
+  Object.assign(filters, changes);
   if (key === "schoolId") {
     filters.classId = "";
     filters.studentId = "";

@@ -49,8 +49,12 @@
   padding: 0;
   flex-shrink: 0;
 }
-#calPopup .cal-header button:hover {
+#calPopup .cal-header button:not(:disabled):hover {
   background: var(--theme-primary-soft, #fef0f0);
+}
+#calPopup .cal-header button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 #calPopup .cal-header button svg {
   width: 20px;

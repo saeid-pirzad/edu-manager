@@ -42,7 +42,9 @@ function todayISO() {
 function faDate(iso) {
   if (!iso) return "";
   try {
-    return new Date(iso + "T00:00:00").toLocaleDateString("fa-IR");
+    return new Date(iso + "T12:00:00Z").toLocaleDateString("fa-IR", {
+      timeZone: "UTC",
+    });
   } catch (e) {
     return iso;
   }
@@ -70,7 +72,7 @@ function clamp(v, a, b) {
   return Math.max(a, Math.min(b, v));
 }
 function getDayIdxFromDate(dateStr) {
-  return (new Date(dateStr + "T00:00:00").getDay() + 1) % 7;
+  return (new Date(dateStr + "T12:00:00Z").getUTCDay() + 1) % 7;
 }
 function getPeriodName(p) {
   return `زنگ ${p + 1}`;

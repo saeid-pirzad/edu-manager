@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "task": "calendar-audit-2026-11-20",
+  "executedAt": "2026-11-20T07:35:50.377Z",
+  "scope": "Calendar conversion, date ranges and filters, civil-date labels, picker lifecycle/ownership, form state, bounds, focus and visual viewports.",
+  "architecture": {
+    "picker": "Internal JavaScript/CSS",
+    "conversion": "Native Intl Persian calendar, Latin numeric parts, UTC civil dates",
+    "storedDates": "Gregorian YYYY-MM-DD unchanged",
+    "networkRuntimeDependency": false,
+    "boundedYearCache": 256
+  },
+  "addedUnitTests": {
+    "calendarDomain": 13,
+    "uiState": 7,
+    "reportFilters": 5,
+    "total": 25
+  },
+  "checkGate": {
+    "command": "npm run check",
+    "status": "pass",
+    "unitTests": {
+      "total": 3384,
+      "failed": 0,
+      "skipped": 0
+    },
+    "workflow": {
+      "stage": "4-adversarial-workflow-review",
+      "total": 2386,
+      "passed": 2386,
+      "failed": 0
+    }
+  },
+  "finalRegression": {
+    "allUnitTests": {
+      "total": 3384,
+      "failed": 0,
+      "skipped": 0
+    },
+    "browser": {
+      "stage": "calendar-real-browser-lifecycle-and-viewports",
+      "total": 302,
+      "passed": 302,
+      "failed": 0,
+      "dedicatedCalendarChecks": 76,
+      "repeatedHarnessChecks": 226
+    },
+    "questionBank": {
+      "stage": "question-bank",
+      "total": 561,
+      "passed": 561,
+      "failed": 0
+    },
+    "timezoneCases": [
+      "UTC",
+      "Asia/Tehran",
+      "America/Los_Angeles",
+      "Pacific/Apia"
+    ],
+    "exhaustiveDailyRange": "1900-01-01 through 2150-12-31",
+    "jalaliBoundaryYears": "1 through 9378 (Nowruz and Mehr)",
+    "isoEndpoints": ["0001-01-01", "9999-12-31"],
+    "staticChecks": {
+      "format": "pass",
+      "eslint": "pass",
+      "build": "pass",
+      "assets": "pass",
+      "dataContract": "pass",
+      "diffCheck": "pass"
+    }
+  },
+  "baseline": {
+    "total": 270,
+    "failed": 12,
+    "dedicatedFailureReproductions": true
+  },
+  "build": {
+    "bundles": 37,
+    "sourceFiles": 331,
+    "packageFiles": 83,
+    "byteMismatches": 0,
+    "workerVersion": "0c5e1661d4319a15"
+  },
+  "environment": "Node.js and isolated desktop Edge profiles with synthetic data; emulated viewports, touch/zoom and visual viewport. No physical Android/iPhone acceptance claimed."
+}

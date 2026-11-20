@@ -3,25 +3,25 @@ globalThis.__EDU_SINGLE_FILE__=true;const STORAGE_KEY="schoolManagerDB_v22";cons
 "پنجشنبه","جمعه"];const TYPE_LABELS={mostamar:"مستمر",payani:"پایانی",positive:"مثبت",negative:"منفی",classGrade:"نمره کلاسی",
 activity:"امتیاز فعالیت",homework:"تکلیف"};const COLORS=["#4f46e5","#0891b2","#059669","#d97706","#dc2626","#7c3aed","#db2777","#0284c7","#65a3\
 0d","#9333ea"];function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}function todayISO(){const d=new Date;return`${d.getFullYear()}\
--${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}function faDate(iso){if(!iso)return"";try{return new Date(iso+"T00:00:00").toLocaleDateString(
-"fa-IR")}catch(e){return iso}}function toShamsi(iso){return faDate(iso)}function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"\
-&gt;",'"':"&quot;","'":"&#39;"})[c])}function todayIdx(){return(new Date().getDay()+1)%7}function clamp(v,a,b){return Math.max(a,Math.min(b,v))}function getDayIdxFromDate(dateStr){
-return(new Date(dateStr+"T00:00:00").getDay()+1)%7}function getPeriodName(p){return`زنگ ${p+1}`}function toFaNum(num){const faDigits=["۰","۱","۲","۳","۴",
-"۵","۶","۷","۸","۹"];return String(num).replace(/\d/g,d=>faDigits[d])}function getSortedStudents(classObj){return[...classObj?.students||[]]}function makeDefaultPoudmans(){
-return Array.from({length:5},(_,i)=>({id:"p"+uid()+i,name:"پودمان "+(i+1),units:[{id:"u"+uid()+i+"a",name:"واحد ۱",unitScores:{},applyOptions:{pos:false,
-neg:false,hw:false,present:false,late:false}},{id:"u"+uid()+i+"b",name:"واحد ۲",unitScores:{},applyOptions:{pos:false,neg:false,hw:false,present:false,late:false}}]}))}
-function legacy_defaultDB(){return{schools:[],sessions:[],masterSchedule:{},activeDays:[0,1,2,3,4,5],periods:6,settings:{weekStartDate:todayISO(),academicYear:"\
-۱۴۰۳-۱۴۰۴",password:""}}}let storageSnapshot=null,storageBlocked=false,storageProblem="";let db=loadDB();let state={view:"schools",schoolId:null,classId:null,
-lessonId:null,tab:"lessons",masterFilter:null,reportTab:"comprehensive"};let currentSessionId=null;let isAuthenticated=false;let globalFilter={schoolId:"",classId:"",
-lessonId:"",studentId:"",period:"",date:"",showAttendance:true,showScores:true,showPosNeg:true,showHomework:true,reportMode:"detailed",showPresentNames:true,showAbsentNames:true,
-showLateNames:true};let lessonReportFilter={schoolId:"",classId:"",lessonId:""};let karnamehFilter={schoolId:"",classId:"",studentId:""};function loadDB(){try{storageSnapshot=
-localStorage.getItem(STORAGE_KEY);if(storageSnapshot)return prepareDB(JSON.parse(storageSnapshot))}catch(e){storageBlocked=true;storageProblem="داده قابل خواندن\
- نیست؛ ذخیره مسدود شد. نسخه خام را دریافت و پشتیبان سالم بازیابی کنید.";console.error(e)}return defaultDB()}
-function migrateUnitScores(d){(d.schools||[]).forEach(s=>s.classes.forEach(c=>{(c.lessons||[]).forEach(l=>{(l.poudmans||[]).forEach(p=>{(p.units||[]).forEach(u=>{
-if(!u.unitScores)u.unitScores={};if(!u.applyOptions)u.applyOptions={};u.applyOptions=Object.assign({pos:false,neg:false,hw:false,present:false,late:false},u.applyOptions)})})})}))}
-function migrateToMaster(d){if(!d.masterSchedule)d.masterSchedule={};if(!d.periods){let mx=6;(d.schools||[]).forEach(s=>s.classes.forEach(c=>{if(c.periods>mx)mx=
-c.periods}));d.periods=mx}if(!d.activeDays)d.activeDays=[0,1,2,3,4,5]}function legacy_saveDB(){try{if(storageBlocked)throw Error(storageProblem);if(localStorage.
-getItem(STORAGE_KEY)!==storageSnapshot)throw Error("داده در تب دیگری تغییر کرده؛ صفحه را دوباره بارگذاری کنید.");
+-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}function faDate(iso){if(!iso)return"";try{return new Date(iso+"T12:00:00Z").toLocaleDateString(
+"fa-IR",{timeZone:"UTC"})}catch(e){return iso}}function toShamsi(iso){return faDate(iso)}function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;",
+"<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c])}function todayIdx(){return(new Date().getDay()+1)%7}function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function getDayIdxFromDate(dateStr){return(new Date(dateStr+"T12:00:00Z").getUTCDay()+1)%7}function getPeriodName(p){return`زنگ ${p+1}`}function toFaNum(num){
+const faDigits=["۰","۱","۲","۳","۴","۵","۶","۷","۸","۹"];return String(num).replace(/\d/g,d=>faDigits[d])}function getSortedStudents(classObj){return[
+...classObj?.students||[]]}function makeDefaultPoudmans(){return Array.from({length:5},(_,i)=>({id:"p"+uid()+i,name:"پودمان "+(i+1),units:[{id:"u"+uid()+i+
+"a",name:"واحد ۱",unitScores:{},applyOptions:{pos:false,neg:false,hw:false,present:false,late:false}},{id:"u"+uid()+i+"b",name:"واحد ۲",unitScores:{},
+applyOptions:{pos:false,neg:false,hw:false,present:false,late:false}}]}))}function legacy_defaultDB(){return{schools:[],sessions:[],masterSchedule:{},activeDays:[
+0,1,2,3,4,5],periods:6,settings:{weekStartDate:todayISO(),academicYear:"۱۴۰۳-۱۴۰۴",password:""}}}let storageSnapshot=null,storageBlocked=false,storageProblem="";
+let db=loadDB();let state={view:"schools",schoolId:null,classId:null,lessonId:null,tab:"lessons",masterFilter:null,reportTab:"comprehensive"};let currentSessionId=null;
+let isAuthenticated=false;let globalFilter={schoolId:"",classId:"",lessonId:"",studentId:"",period:"",date:"",showAttendance:true,showScores:true,showPosNeg:true,
+showHomework:true,reportMode:"detailed",showPresentNames:true,showAbsentNames:true,showLateNames:true};let lessonReportFilter={schoolId:"",classId:"",lessonId:""};
+let karnamehFilter={schoolId:"",classId:"",studentId:""};function loadDB(){try{storageSnapshot=localStorage.getItem(STORAGE_KEY);if(storageSnapshot)return prepareDB(
+JSON.parse(storageSnapshot))}catch(e){storageBlocked=true;storageProblem="داده قابل خواندن نیست؛ ذخیره مسدود شد. نسخه خام را دریافت و پشتیبان سالم بازیابی کنید.";
+console.error(e)}return defaultDB()}function migrateUnitScores(d){(d.schools||[]).forEach(s=>s.classes.forEach(c=>{(c.lessons||[]).forEach(l=>{(l.poudmans||[]).
+forEach(p=>{(p.units||[]).forEach(u=>{if(!u.unitScores)u.unitScores={};if(!u.applyOptions)u.applyOptions={};u.applyOptions=Object.assign({pos:false,neg:false,hw:false,
+present:false,late:false},u.applyOptions)})})})}))}function migrateToMaster(d){if(!d.masterSchedule)d.masterSchedule={};if(!d.periods){let mx=6;(d.schools||[]).
+forEach(s=>s.classes.forEach(c=>{if(c.periods>mx)mx=c.periods}));d.periods=mx}if(!d.activeDays)d.activeDays=[0,1,2,3,4,5]}function legacy_saveDB(){try{if(storageBlocked)
+throw Error(storageProblem);if(localStorage.getItem(STORAGE_KEY)!==storageSnapshot)throw Error("داده در تب دیگری تغییر کرده؛ صفحه را دوباره بارگذاری کنید.");
 const next=prepareDB(db),raw=JSON.stringify(next);localStorage.setItem(STORAGE_KEY,raw);storageSnapshot=raw;db=next;return true}catch(e){try{db=storageSnapshot?
 prepareDB(JSON.parse(storageSnapshot)):defaultDB()}catch(ignore){}alert("ذخیره انجام نشد؛ تغییر اخیر ثبت نشده است. "+e.message);
 throw e}}function getSchool(id){return db.schools.find(s=>s.id===id)}function getClassObj(sId,cId){const s=getSchool(sId);return s?s.classes.find(c=>c.id===cId):

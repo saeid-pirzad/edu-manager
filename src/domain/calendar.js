@@ -1,72 +1,111 @@
-function gregorianToJalali(gy, gm, gd) {
-  const g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
-  let jy = gy <= 1600 ? 0 : 979;
-  gy -= gy <= 1600 ? 621 : 1600;
-  const gy2 = gm > 2 ? gy + 1 : gy;
-  let days =
-    365 * gy +
-    Math.floor((gy2 + 3) / 4) -
-    Math.floor((gy2 + 99) / 100) +
-    Math.floor((gy2 + 399) / 400) -
-    80 +
-    gd +
-    g_d_m[gm - 1];
-  jy += 33 * Math.floor(days / 12053);
-  days %= 12053;
-  jy += 4 * Math.floor(days / 1461);
-  days %= 1461;
-  if (days > 365) {
-    jy += Math.floor((days - 1) / 365);
-    days = (days - 1) % 365;
-  }
-  const jm =
-    days < 186 ? 1 + Math.floor(days / 31) : 7 + Math.floor((days - 186) / 30);
-  const jd = 1 + (days < 186 ? days % 31 : (days - 186) % 30);
-  return [jy, jm, jd];
+// Use the same offline Persian calendar as the application's Intl date labels.
+// Gregorian civil dates remain the persisted format; no locale text is parsed.
+let calendarPersianFormatter = null;
+const calendarYearStarts = new Map();
+const calendarDayMilliseconds = 86400000;
+
+function calendarInvalidDate() {
+  return new RangeError("تاریخ معتبر انتخاب کنید.");
 }
+
+function calendarUTCDate(year, month, day) {
+  const date = new Date(0);
+  date.setUTCHours(0, 0, 0, 0);
+  // Date.UTC and the multi-argument Date constructor remap years 0…99.
+  date.setUTCFullYear(year, month - 1, day);
+  return date;
+}
+
+function calendarPersianParts(date) {
+  if (!calendarPersianFormatter) {
+    try {
+      const formatter = new Intl.DateTimeFormat("en-US", {
+        calendar: "persian",
+        numberingSystem: "latn",
+        timeZone: "UTC",
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
+      });
+      const options = formatter.resolvedOptions();
+      if (options.calendar !== "persian" || options.numberingSystem !== "latn")
+        throw Error();
+      calendarPersianFormatter = formatter;
+    } catch (cause) {
+      throw Error("تقویم فارسی در این مرورگر پشتیبانی نمی‌شود.", { cause });
+    }
+  }
+  const result = [];
+  for (const part of calendarPersianFormatter.formatToParts(date)) {
+    if (part.type === "year") result[0] = Number(part.value);
+    if (part.type === "month") result[1] = Number(part.value);
+    if (part.type === "day") result[2] = Number(part.value);
+  }
+  if (result.length !== 3 || !result.every(Number.isInteger))
+    throw Error("تقویم فارسی در این مرورگر پشتیبانی نمی‌شود.");
+  return result;
+}
+
+function gregorianToJalali(gy, gm, gd) {
+  if (
+    ![gy, gm, gd].every(Number.isInteger) ||
+    gy < 1 ||
+    gy > 9999 ||
+    gm < 1 ||
+    gm > 12 ||
+    gd < 1 ||
+    gd > 31
+  )
+    throw calendarInvalidDate();
+  const date = calendarUTCDate(gy, gm, gd);
+  if (
+    date.getUTCFullYear() !== gy ||
+    date.getUTCMonth() + 1 !== gm ||
+    date.getUTCDate() !== gd
+  )
+    throw calendarInvalidDate();
+  return calendarPersianParts(date);
+}
+
+function calendarJalaliYearStart(jy) {
+  if (calendarYearStarts.has(jy)) return calendarYearStarts.get(jy);
+  // Find the first UTC civil day of this Persian year. Searching an entire
+  // Gregorian year also supports early and distant dates without an assumed
+  // equinox day or a repeated 33-year leap cycle.
+  let low = calendarUTCDate(jy + 621, 1, 1).getTime() / calendarDayMilliseconds,
+    high = calendarUTCDate(jy + 622, 1, 1).getTime() / calendarDayMilliseconds;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2),
+      parts = calendarPersianParts(new Date(middle * calendarDayMilliseconds));
+    if (parts[0] < jy) low = middle + 1;
+    else high = middle;
+  }
+  const timestamp = low * calendarDayMilliseconds,
+    actual = calendarPersianParts(new Date(timestamp));
+  if (actual[0] !== jy || actual[1] !== 1 || actual[2] !== 1)
+    throw calendarInvalidDate();
+  if (calendarYearStarts.size >= 256)
+    calendarYearStarts.delete(calendarYearStarts.keys().next().value);
+  calendarYearStarts.set(jy, timestamp);
+  return timestamp;
+}
+
 function jalaliToGregorian(jy, jm, jd) {
-  let gy = jy <= 979 ? 621 : 1600;
-  jy -= jy <= 979 ? 0 : 979;
-  let days =
-    365 * jy +
-    Math.floor(jy / 33) * 8 +
-    Math.floor(((jy % 33) + 3) / 4) +
-    78 +
-    jd +
-    (jm < 7 ? (jm - 1) * 31 : (jm - 7) * 30 + 186);
-  gy += 400 * Math.floor(days / 146097);
-  days %= 146097;
-  if (days > 36524) {
-    gy += 100 * Math.floor(--days / 36524);
-    days %= 36524;
-    if (days >= 365) days++;
-  }
-  gy += 4 * Math.floor(days / 1461);
-  days %= 1461;
-  if (days > 365) {
-    gy += Math.floor((days - 1) / 365);
-    days = (days - 1) % 365;
-  }
-  let gd = days + 1;
-  const sal_a = [
-    0,
-    31,
-    (gy % 4 === 0 && gy % 100 !== 0) || gy % 400 === 0 ? 29 : 28,
-    31,
-    30,
-    31,
-    30,
-    31,
-    31,
-    30,
-    31,
-    30,
-    31,
-  ];
-  let gm = 1;
-  for (; gm <= 12; gm++) {
-    if (gd <= sal_a[gm]) break;
-    gd -= sal_a[gm];
-  }
-  return [gy, gm, gd];
+  if (
+    ![jy, jm, jd].every(Number.isInteger) ||
+    jy < -621 ||
+    jy > 9999 ||
+    jm < 1 ||
+    jm > 12 ||
+    jd < 1 ||
+    jd > 31
+  )
+    throw calendarInvalidDate();
+  // Retain day overflow for the picker's round-trip rejection of e.g. 30
+  // Esfand in an ordinary year. Only a validated selection is persisted.
+  const offset = (jm <= 6 ? (jm - 1) * 31 : 186 + (jm - 7) * 30) + jd - 1,
+    date = new Date(
+      calendarJalaliYearStart(jy) + offset * calendarDayMilliseconds,
+    );
+  return [date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate()];
 }

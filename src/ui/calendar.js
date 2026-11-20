@@ -29,22 +29,107 @@ let calViewYear = 1403,
   calViewMonth = 1,
   calSelectedJalali = null;
 const calPopup = document.getElementById("calPopup");
+let calProxySequence = 0,
+  calOwnerObserver = null;
+
+function calendarValidISO(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value))
+    return false;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(0);
+  date.setUTCFullYear(year, month - 1, day);
+  return year > 0 && date.toISOString().slice(0, 10) === value;
+}
+
+function syncShamsiInput(input) {
+  const proxy = input.nextElementSibling;
+  if (!proxy?.dataset.gregorianTarget) return;
+  if (input.dataset.calendarInvalid && input.validity?.valid) {
+    delete input.dataset.calendarInvalid;
+    input.removeAttribute("aria-invalid");
+  }
+  if (calendarValidISO(input.value)) {
+    const parts = input.value.split("-").map(Number);
+    const [jy, jm, jd] = gregorianToJalali(...parts);
+    proxy.value = `${calendarFaNum(jy)}/${calendarFaNum(String(jm).padStart(2, "0"))}/${calendarFaNum(String(jd).padStart(2, "0"))}`;
+    Object.assign(proxy.dataset, { jy, jm, jd });
+  } else {
+    proxy.value = "";
+    for (const key of ["jy", "jm", "jd"]) delete proxy.dataset[key];
+  }
+  for (const name of ["aria-describedby", "aria-invalid"])
+    if (input.hasAttribute(name))
+      proxy.setAttribute(name, input.getAttribute(name));
+    else proxy.removeAttribute(name);
+  proxy.setAttribute("aria-required", String(Boolean(input.required)));
+}
+
+function calendarTargetAvailable(input) {
+  return Boolean(
+    input &&
+    input.isConnected !== false &&
+    !input.matches?.(":disabled") &&
+    !input.readOnly &&
+    !input.closest?.("[inert],[hidden],.hidden,dialog:not([open])"),
+  );
+}
+
+function positionShamsiCalendar() {
+  if (!calPopup.classList.contains("open")) return;
+  const viewport = window.visualViewport;
+  const width = viewport?.width || window.innerWidth;
+  const height = viewport?.height || window.innerHeight;
+  const left = viewport?.offsetLeft || 0;
+  const top = viewport?.offsetTop || 0;
+  calPopup.style.position = "fixed";
+  calPopup.style.maxWidth = Math.max(0, width - 24) + "px";
+  calPopup.style.maxHeight = Math.max(0, height - 24) + "px";
+  calPopup.style.left =
+    left + Math.max(12, (width - calPopup.offsetWidth) / 2) + "px";
+  calPopup.style.top =
+    top + Math.max(12, (height - calPopup.offsetHeight) / 2) + "px";
+}
+
+function focusShamsiCalendar(preferred) {
+  (
+    (preferred && calPopup.querySelector(preferred)) ||
+    calPopup.querySelector(".selected:not(:disabled)") ||
+    calPopup.querySelector(".today:not(:disabled)") ||
+    calPopup.querySelector(".cal-days button:not(:disabled)") ||
+    calPopup.querySelector(".calendar-close")
+  )?.focus({ preventScroll: true });
+}
+
+window.addEventListener?.("resize", positionShamsiCalendar);
+window.visualViewport?.addEventListener("resize", positionShamsiCalendar);
+window.visualViewport?.addEventListener("scroll", positionShamsiCalendar);
 
 function closeShamsiCalendar(restoreFocus = false) {
+  const closedInput = calTargetInput;
+  calOwnerObserver?.disconnect();
+  calOwnerObserver = null;
   calPopup.classList.remove("open");
   const proxy = calTargetInput?.nextElementSibling;
   if (proxy?.dataset.gregorianTarget)
     proxy.setAttribute("aria-expanded", "false");
   if (restoreFocus)
     requestAnimationFrame(() => {
+      if (calPopup.classList.contains("open") || calTargetInput !== closedInput)
+        return;
       const target = proxy?.isConnected
         ? proxy
         : proxy?.id
           ? document.getElementById(proxy.id)
           : null;
-      if (target && !target.matches(":disabled") && !target.closest("[inert]"))
+      if (
+        target &&
+        !target.matches(":disabled") &&
+        !target.closest("[inert],[hidden],.hidden,dialog:not([open])")
+      )
         target.focus({ preventScroll: true });
     });
+  // Keep the shared popup alive when its owning form/dialog is replaced.
+  if (calPopup.parentElement !== document.body) document.body.append(calPopup);
 }
 // The calendar is a nested popup: Escape closes it before its parent dialog.
 document.addEventListener(
@@ -94,13 +179,24 @@ function syncShamsiDisabledInputs() {
         proxy,
         input.matches(":disabled") || input.readOnly,
       );
+    syncShamsiInput(input);
   }
 }
 
 function initShamsiPickers() {
   const dateInputs = document.querySelectorAll('input[type="date"]');
   dateInputs.forEach((input) => {
-    if (input.dataset.shamsiApplied) return;
+    if (input.dataset.shamsiApplied) {
+      syncShamsiInput(input);
+      const proxy = input.nextElementSibling;
+      if (proxy?.dataset.gregorianTarget)
+        setShamsiPickerDisabled(
+          proxy,
+          input.matches(":disabled") || input.readOnly,
+        );
+      return;
+    }
+    const labels = [...(input.labels || [])];
     input.dataset.shamsiApplied = "1";
     input.style.display = "none";
     const shamsiInput = document.createElement("input");
@@ -114,31 +210,39 @@ function initShamsiPickers() {
       shamsiInput,
       input.matches(":disabled") || input.readOnly,
     );
-    if (input.id) shamsiInput.id = input.id + "-shamsi";
+    const proxyBaseId = input.id ? input.id + "-shamsi" : "shamsi-date";
+    shamsiInput.id = proxyBaseId;
+    while (document.getElementById(shamsiInput.id))
+      shamsiInput.id = proxyBaseId + "-" + ++calProxySequence;
     shamsiInput.setAttribute(
       "aria-label",
       input.getAttribute("aria-label") ||
-        [...(input.labels || [])]
-          .map((label) => label.textContent.trim())
-          .join(" ") ||
+        labels.map((label) => label.textContent.trim()).join(" ") ||
+        input.getAttribute("title") ||
         "انتخاب تاریخ",
     );
     shamsiInput.setAttribute("aria-haspopup", "dialog");
     shamsiInput.setAttribute("aria-controls", "calPopup");
     shamsiInput.setAttribute("aria-expanded", "false");
     shamsiInput.dataset.gregorianTarget = "true";
-    const gVal = input.value;
-    if (gVal) {
-      const parts = gVal.split("-");
-      if (parts.length === 3) {
-        const [jy, jm, jd] = gregorianToJalali(+parts[0], +parts[1], +parts[2]);
-        shamsiInput.value = `${calendarFaNum(jy)}/${calendarFaNum(String(jm).padStart(2, "0"))}/${calendarFaNum(String(jd).padStart(2, "0"))}`;
-        shamsiInput.dataset.jy = jy;
-        shamsiInput.dataset.jm = jm;
-        shamsiInput.dataset.jd = jd;
-      }
-    }
     input.parentNode.insertBefore(shamsiInput, input.nextSibling);
+    for (const label of labels) label.htmlFor = shamsiInput.id;
+    syncShamsiInput(input);
+    for (const type of ["input", "change"])
+      input.addEventListener(type, () => syncShamsiInput(input));
+    input.form?.addEventListener("reset", () =>
+      queueMicrotask(() => {
+        if (input.isConnected) syncShamsiInput(input);
+      }),
+    );
+    input.addEventListener("invalid", (event) => {
+      event.preventDefault();
+      if (!calendarTargetAvailable(input)) return;
+      input.dataset.calendarInvalid = "true";
+      input.setAttribute("aria-invalid", "true");
+      shamsiInput.focus({ preventScroll: true });
+      shamsiInput.click();
+    });
     shamsiInput.addEventListener("keydown", (event) => {
       if (["Enter", " ", "ArrowDown"].includes(event.key)) {
         event.preventDefault();
@@ -147,9 +251,9 @@ function initShamsiPickers() {
     });
     shamsiInput.addEventListener("click", (e) => {
       e.stopPropagation();
-      if (input.matches(":disabled") || input.readOnly || !input.isConnected)
-        return;
+      if (!calendarTargetAvailable(input)) return;
       closeShamsiCalendar();
+      syncShamsiInput(input);
       (
         input.closest("dialog[open]") ||
         (input.closest("#modal")
@@ -160,7 +264,7 @@ function initShamsiPickers() {
       calPopup.setAttribute("aria-label", "انتخاب تاریخ شمسی");
       shamsiInput.setAttribute("aria-expanded", "true");
       calTargetInput = input;
-      if (shamsiInput.dataset.jy) {
+      if (calendarValidISO(input.value)) {
         calSelectedJalali = [
           +shamsiInput.dataset.jy,
           +shamsiInput.dataset.jm,
@@ -179,30 +283,39 @@ function initShamsiPickers() {
         calViewYear = tjy;
         calViewMonth = tjm;
       }
-
-      // === محاسبه موقعیت برای وسط صفحه (مخصوصاً موبایل) ===
+      // Start inside the allowed interval, including an empty historical field.
+      let anchor = calendarISODate(
+        ...jalaliToGregorian(calViewYear, calViewMonth, 1),
+      );
+      if (anchor < "0001-01-01") anchor = "0001-01-01";
+      if (anchor > "9999-12-31") anchor = "9999-12-31";
+      if (calendarValidISO(input.min) && anchor < input.min) anchor = input.min;
+      if (calendarValidISO(input.max) && anchor > input.max) anchor = input.max;
+      [calViewYear, calViewMonth] = gregorianToJalali(
+        ...anchor.split("-").map(Number),
+      );
       calPopup.classList.add("open");
-      // اطمینان از اینکه تقویم رندر شده تا ابعادش مشخص بشه
       renderShamsiCalendar(shamsiInput);
-
-      const popupWidth = calPopup.offsetWidth || 300;
-      const popupHeight = calPopup.offsetHeight || 350;
-      const windowWidth = window.innerWidth;
-      const windowHeight = window.innerHeight;
-
-      let left = (windowWidth - popupWidth) / 2;
-      let top = (windowHeight - popupHeight) / 2;
-
-      // اگر کیبورد باز بود یا صفحه کوچک بود، حداقل ۱۰ پیکسل از بالا فاصله بگیره
-      if (top < 10) top = 10;
-
-      calPopup.style.left = left + "px";
-      calPopup.style.top = top + "px";
-      // برای اینکه مطمئن شویم روی موبایل درست در مرکز قفل میشه
-      calPopup.style.position = "fixed";
-      calPopup
-        .querySelector(".selected,.today,.cal-days button:not(:disabled)")
-        ?.focus({ preventScroll: true });
+      positionShamsiCalendar();
+      focusShamsiCalendar();
+      if (typeof MutationObserver === "function") {
+        calOwnerObserver = new MutationObserver(() => {
+          if (!calendarTargetAvailable(input)) closeShamsiCalendar();
+        });
+        calOwnerObserver.observe(document.body, {
+          subtree: true,
+          childList: true,
+          attributes: true,
+          attributeFilter: [
+            "class",
+            "hidden",
+            "inert",
+            "open",
+            "disabled",
+            "readonly",
+          ],
+        });
+      }
     });
   });
 }
@@ -217,15 +330,55 @@ function calendarISODate(gy, gm, gd) {
   );
 }
 function calendarDateWithinBounds(input, isoDate) {
-  const valid = (bound) =>
-    typeof bound === "string" && /^\d{4}-\d{2}-\d{2}$/.test(bound);
   return (
-    (!valid(input?.min) || isoDate >= input.min) &&
-    (!valid(input?.max) || isoDate <= input.max) &&
+    calendarValidISO(isoDate) &&
+    (!calendarValidISO(input?.min) || isoDate >= input.min) &&
+    (!calendarValidISO(input?.max) || isoDate <= input.max) &&
     (!input?.dataset?.sessionCalendar ||
       (typeof window.sessionCalendarDateAllowed === "function" &&
         window.sessionCalendarDateAllowed(input, isoDate)))
   );
+}
+
+function calendarDateFromParts(parts) {
+  return calendarUTCDate(...parts);
+}
+
+function calendarAdjacentMonth(delta) {
+  const month = calViewMonth + delta;
+  return month === 0
+    ? [calViewYear - 1, 12]
+    : month === 13
+      ? [calViewYear + 1, 1]
+      : [calViewYear, month];
+}
+
+function calendarMonthAvailable(year, month) {
+  try {
+    const start = calendarDateFromParts(jalaliToGregorian(year, month, 1));
+    const next = calendarDateFromParts(
+      jalaliToGregorian(
+        month === 12 ? year + 1 : year,
+        month === 12 ? 1 : month + 1,
+        1,
+      ),
+    );
+    const lower = calendarValidISO(calTargetInput?.min)
+      ? calTargetInput.min
+      : "0001-01-01";
+    const upper = calendarValidISO(calTargetInput?.max)
+      ? calTargetInput.max
+      : "9999-12-31";
+    return (
+      lower <= upper &&
+      start.getTime() <=
+        calendarDateFromParts(upper.split("-").map(Number)).getTime() &&
+      next.getTime() >
+        calendarDateFromParts(lower.split("-").map(Number)).getTime()
+    );
+  } catch {
+    return false;
+  }
 }
 
 function renderShamsiCalendar(shamsiInput) {
@@ -241,19 +394,24 @@ function renderShamsiCalendar(shamsiInput) {
     const a = jalaliToGregorian(jy, 1, 1),
       b = jalaliToGregorian(jy + 1, 1, 1);
     return Math.round(
-      (Date.UTC(b[0], b[1] - 1, b[2]) - Date.UTC(a[0], a[1] - 1, a[2])) /
+      (calendarDateFromParts(b).getTime() -
+        calendarDateFromParts(a).getTime()) /
         86400000,
     ) === 366
       ? 30
       : 29;
   })(calViewYear, calViewMonth);
   const [gy, gm, gd] = jalaliToGregorian(calViewYear, calViewMonth, 1);
-  const firstDay = (new Date(gy, gm - 1, gd).getDay() + 1) % 7;
+  const firstDay = (calendarDateFromParts([gy, gm, gd]).getUTCDay() + 1) % 7;
+  const previousDisabled = !calendarMonthAvailable(
+    ...calendarAdjacentMonth(-1),
+  );
+  const nextDisabled = !calendarMonthAvailable(...calendarAdjacentMonth(1));
   let h = "";
   h += `<div class="cal-header">
-    <button type="button" data-calendar-action="prev" title="ماه قبل" aria-label="ماه قبل" data-calendar-direction="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9 6 6 6-6 6"/></svg></button>
+    <button type="button" ${previousDisabled ? "disabled" : ""} data-calendar-action="prev" title="ماه قبل" aria-label="ماه قبل" data-calendar-direction="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9 6 6 6-6 6"/></svg></button>
     <div class="cal-title" aria-live="polite" aria-atomic="true">${MONTHS_FA[calViewMonth - 1]} ${calendarFaNum(calViewYear)}</div>
-    <button type="button" data-calendar-action="next" title="ماه بعد" aria-label="ماه بعد" data-calendar-direction="1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m15 6-6 6 6 6"/></svg></button>
+    <button type="button" ${nextDisabled ? "disabled" : ""} data-calendar-action="next" title="ماه بعد" aria-label="ماه بعد" data-calendar-direction="1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m15 6-6 6 6 6"/></svg></button>
   </div>`;
   h += `<div class="cal-weekdays">`;
   WEEKDAYS_FA.forEach((d) => (h += `<div>${d}</div>`));
@@ -287,21 +445,17 @@ function renderShamsiCalendar(shamsiInput) {
 }
 
 window.calChangeMonth = function (delta) {
-  calViewMonth += delta;
-  if (calViewMonth < 1) {
-    calViewMonth = 12;
-    calViewYear--;
-  }
-  if (calViewMonth > 12) {
-    calViewMonth = 1;
-    calViewYear++;
-  }
+  if (delta !== -1 && delta !== 1) return false;
+  const adjacent = calendarAdjacentMonth(delta);
+  if (!calendarMonthAvailable(...adjacent)) return false;
+  [calViewYear, calViewMonth] = adjacent;
   renderShamsiCalendar(calTargetInput);
-  calPopup
-    .querySelector(
-      '[data-calendar-direction="' + (delta < 0 ? "-1" : "1") + '"]',
-    )
-    ?.focus({ preventScroll: true });
+  positionShamsiCalendar();
+  focusShamsiCalendar(
+    '[data-calendar-direction="' +
+      (delta < 0 ? "-1" : "1") +
+      '"]:not(:disabled)',
+  );
 };
 
 window.calSelectDay = function (d) {
@@ -309,17 +463,19 @@ window.calSelectDay = function (d) {
   if (
     !calPopup.classList.contains("open") ||
     !input ||
-    input.isConnected === false ||
-    input.matches?.(":disabled") ||
-    input.readOnly ||
-    input.closest?.("[inert]")
+    !calendarTargetAvailable(input)
   ) {
     closeShamsiCalendar(true);
     return false;
   }
   if (!Number.isInteger(d) || d < 1 || d > 31) return false;
-  const [gy, gm, gd] = jalaliToGregorian(calViewYear, calViewMonth, d);
-  const actual = gregorianToJalali(gy, gm, gd);
+  let gy, gm, gd, actual;
+  try {
+    [gy, gm, gd] = jalaliToGregorian(calViewYear, calViewMonth, d);
+    actual = gregorianToJalali(gy, gm, gd);
+  } catch {
+    return false;
+  }
   if (
     actual[0] !== calViewYear ||
     actual[1] !== calViewMonth ||

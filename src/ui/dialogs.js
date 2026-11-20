@@ -128,6 +128,7 @@ function resetRecordEditor(form) {
   form.querySelectorAll('[role="alert"]').forEach((el) => {
     el.textContent = "";
   });
+  syncShamsiDisabledInputs();
   updateRecordEditorReview(form);
 }
 function updateRecordEditorReview(form) {

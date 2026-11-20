@@ -352,18 +352,18 @@ set(this.getAttribute("data-legacy-change-arg2"),this.value)});EduLegacyEvents.r
 register("reports-periodic-render:7",function(event){return EduPeriodicReports.author(this.value)});EduLegacyEvents.register("reports-periodic-render:8",function(event){
 return EduPeriodicReports.note(this.value)});EduLegacyEvents.register("reports-periodic-render:9",function(event){return EduPeriodicReports.generate()});function set(key,value){
 if(!["audience","date","startDate","endDate","schoolId","classId","studentId","detailLevel","annualFirstId","annualSecondId"].includes(key))return;if(key==="det\
-ailLevel"&&!["summary","full"].includes(value))return;if(["date","startDate","endDate"].includes(key)){try{isoDate(value)}catch(e){error(e);return}}if(key==="en\
-dDate"&&filters.startDate&&value<filters.startDate){error(Error("تاریخ پایان نباید قبل از تاریخ شروع باشد."));return}filters[key]=
-value;if(key==="date"&&filters.mode==="weekly"){const dates=range("weekly",value);filters.startDate=dates.start;filters.endDate=dates.end}if(key==="startDate"){
-filters.date=value;if(!filters.endDate||filters.endDate<value)filters.endDate=addDays(value,6)}if(key==="schoolId"){filters.classId="";filters.studentId=""}if(key===
-"classId"||key==="audience")filters.studentId="";last=null;root.render()}function error(e){const el=document.getElementById("periodicError");if(el)el.textContent=
-e.message||String(e)}function invalidate(message="اطلاعات گزارش تغییر کرده است؛ دوباره گزارش را تهیه کنید."){invalidateExcelShare(
-message);last=null;const out=document.getElementById("periodicReportOutput");if(out)out.innerHTML='<div class="card empty" role="status">'+esc(message)+"</div>";
-syncReportActions();error(Error(message))}function isPreparedCurrent(prepared){return!!prepared&&last===prepared&&prepared.signature===reportSignature()}function syncReportActions(){
-document.querySelectorAll(".periodic-build,.periodic-export-actions button").forEach(button=>button.disabled=busy);const copyDisabled=busy||!isPreparedCurrent(last);
-document.querySelectorAll("[data-deputy-copy]").forEach(button=>button.disabled=copyDisabled)}async function generate(){if(busy)return null;busy=true;let input,
-signature,preparedNoteScope,preparedNoteVersion;syncReportActions();try{input=inputSnapshot();if(noteReadErrors.has(noteWorkspaceId())&&!notes.has(noteKey(filters)))
-throw Error("توضیحات ذخیره‌شده این گزارش قابل خواندن نیست؛ پیش از تهیه گزارش آن را بررسی کنید.");
+ailLevel"&&!["summary","full"].includes(value))return;const changes={[key]:value};try{if(["date","startDate","endDate"].includes(key))isoDate(value);if(key==="e\
+ndDate"&&filters.startDate&&value<filters.startDate)throw Error("تاریخ پایان نباید قبل از تاریخ شروع باشد.");if(key==="date"&&filters.
+mode==="weekly"){const dates=range("weekly",value);changes.startDate=dates.start;changes.endDate=dates.end}if(key==="startDate"){changes.date=value;if(!filters.
+endDate||filters.endDate<value)changes.endDate=addDays(value,6)}}catch(e){error(e);return}Object.assign(filters,changes);if(key==="schoolId"){filters.classId="";
+filters.studentId=""}if(key==="classId"||key==="audience")filters.studentId="";last=null;root.render()}function error(e){const el=document.getElementById("perio\
+dicError");if(el)el.textContent=e.message||String(e)}function invalidate(message="اطلاعات گزارش تغییر کرده است؛ دوباره گزارش را تهیه کنید."){
+invalidateExcelShare(message);last=null;const out=document.getElementById("periodicReportOutput");if(out)out.innerHTML='<div class="card empty" role="status">'+
+esc(message)+"</div>";syncReportActions();error(Error(message))}function isPreparedCurrent(prepared){return!!prepared&&last===prepared&&prepared.signature===reportSignature()}
+function syncReportActions(){document.querySelectorAll(".periodic-build,.periodic-export-actions button").forEach(button=>button.disabled=busy);const copyDisabled=busy||
+!isPreparedCurrent(last);document.querySelectorAll("[data-deputy-copy]").forEach(button=>button.disabled=copyDisabled)}async function generate(){if(busy)return null;
+busy=true;let input,signature,preparedNoteScope,preparedNoteVersion;syncReportActions();try{input=inputSnapshot();if(noteReadErrors.has(noteWorkspaceId())&&!notes.
+has(noteKey(filters)))throw Error("توضیحات ذخیره‌شده این گزارش قابل خواندن نیست؛ پیش از تهیه گزارش آن را بررسی کنید.");
 const inputSettings=value=>JSON.stringify(Object.fromEntries(Object.entries(value).filter(([key])=>key!=="note")));signature=inputSettings(input);preparedNoteScope=
 noteScopeSignature();preparedNoteVersion=noteEditGeneration;const refreshPreparedInput=()=>{const current=inputSnapshot(),scope=noteScopeSignature();if(signature!==
 inputSettings(current)||preparedNoteVersion!==noteEditGeneration||scope===preparedNoteScope&&current.note!==input.note)throw Error("تنظیمات گزارش تغییر کرده است\
